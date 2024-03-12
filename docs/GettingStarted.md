@@ -43,19 +43,26 @@ This repo follows a pretty straight forward folder structure.
 
 1. Make sure you have the proper permissions. If you are reading this, you probably do.
 
-2. Clone the repository.
+1. Clone the repository.
 
     ```pwsh
     git clone https://AzureCSI@dev.azure.com/AzureCSI/Woodinville/_git/Kingsgate.MSCP <optional_enlistment_directory>
     ```
 
-3. Use powershell and not CMD. Launch powershell in administrator mode. Ensure that your powershell instance has the `Execution Policy` set to allow you to run scripts. If you don't, run the following command in powershell:
+1. Use powershell and not CMD. Launch powershell in administrator mode. Ensure that your powershell instance has the `Execution Policy` set to allow you to run scripts. If you don't, run the following command in powershell:
 
     ```pwsh
     Set-ExecutionPolicy -ExecutionPolicy Bypass -Force -Scope CurrentUser
     ```
 
-4. Run the `./start.ps1` script in a powershell window. This will setup the build environment (to the default toolchain), download and install any dependencies needed,, load scripts used for build, and display a help menu. This should take approximately 20 to 25 minutes, depending on if this is your first time or not.
+1. If you haven't already (or see an error such as 'ERROR: Failed to update Universal Packages tooling.  The requested resource requires user authentication: https://azurecsi.visualstudio.com/_apis'), log into the az cli using a PAT with Packaging (read) in the AzureCSI org
+
+    ```pwsh
+        echo "{Your PAT here}" | az devops login  --organization https://azurecsi.visualstudio.com/
+    ```
+
+
+1. Run the `./start.ps1` script in a powershell window. This will setup the build environment (to the default toolchain), download and install any dependencies needed,, load scripts used for build, and display a help menu. This should take approximately 20 to 25 minutes, depending on if this is your first time or not.
 
     The optional parameter for Toolchains are located under `/tools/cmakes/toolchain`. The default is **arm-eabi-aarch**. The default script sets up the environment and can launch VS Code for Dev, Test and Debug. To launch VSCode, automatically, add the `-launchVSCode Yes` parameter to `./start.ps1`.
 
@@ -65,7 +72,7 @@ This repo follows a pretty straight forward folder structure.
     >    1. Before executing/running the `./start.ps1`, confirm that you are able to access the links mentioned in the `git` section of `packages.xml` file located in the `tools` directory.
     >    2. While executing/running the `./start.ps1`, you might need to enter your Microsoft login credentials in a pop-up dialog box from "**Git Credential Manager**" multiple times.
 
-5. You can run these steps from a VS Code Terminal instance (running powershell) or from a normal powershell instance.
+1. You can run these steps from a VS Code Terminal instance (running powershell) or from a normal powershell instance.
 
 ## Building Firmware
 

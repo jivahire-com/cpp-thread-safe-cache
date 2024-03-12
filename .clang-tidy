@@ -1,0 +1,17 @@
+---
+# https://clang.llvm.org/extra/clang-tidy/checks/list.html
+Checks: >
+  -*,
+  clang-analyzer-*,
+  readability-*,
+  -readability-function-cognitive-complexity,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  -modernize-avoid-c-arrays,
+  misc-*,
+  llvm-include-order,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  -readability-magic-numbers,
+  -readability-non-const-parameter
+WarningsAsErrors: '*'
+AnalyzeTemporaryDtors: false

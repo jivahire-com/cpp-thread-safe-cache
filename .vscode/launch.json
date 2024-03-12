@@ -1,0 +1,71 @@
+{
+    "configurations": [
+        {
+            "name": "SCP App SVP",
+            "type": "cppdbg",
+            "request": "launch",
+            "targetArchitecture": "arm",
+            "miDebuggerPath":  "${workspaceFolder}/.externs/azpkg/gdb.arm.eabi.aarch-win64.8.3.201903/arm-none-eabi-gdb.exe",
+            "miDebuggerArgs":  "--symbols=${workspaceFolder}/.build/Debug/arm-eabi-aarch/bin/scp_fw.elf",
+            // port determined from svp launch configuration
+            "miDebuggerServerAddress": "localhost:12348",
+            "program": "${workspaceFolder}/.build/Debug/arm-eabi-aarch/bin/scp_fw.elf",
+            "args": [],
+            "MIMode": "gdb",
+            "cwd": "${workspaceFolder}",
+            "customLaunchSetupCommands": [
+                {
+                    // port determined from svp launch configuration
+                    "text": "target remote localhost:12348",
+                    "description": "Attach to remote target",
+                    "ignoreFailures": false
+                }
+            ]
+        },
+        {
+            "name": "CDED-SDM App SVP",
+            "type": "cppdbg",
+            "request": "launch",
+            "targetArchitecture": "arm",
+            "miDebuggerPath":  "${workspaceFolder}/.externs/azpkg/gdb.arm.eabi.aarch-win64.8.3.201903/arm-none-eabi-gdb.exe",
+            "miDebuggerArgs":  "--symbols=${workspaceFolder}/.build/Debug/arm-eabi-aarch/bin/cded_fw.elf",
+            // port determined from svp launch configuration
+            "miDebuggerServerAddress": "localhost:12345",
+            "program": "${workspaceFolder}/.build/Debug/arm-eabi-aarch/bin/cded_fw.elf",
+            "args": [],
+            "MIMode": "gdb",
+            "cwd": "${workspaceFolder}",
+            "customLaunchSetupCommands": [
+                {
+                    // port determined from svp launch configuration
+                    "text": "target remote localhost:12345",
+                    "description": "Attach to remote target",
+                    "ignoreFailures": false
+                }
+            ]
+        },
+
+        {
+            "name": "SDM App SVP",
+            "type": "cppdbg",
+            "request": "launch",
+            "targetArchitecture": "arm",
+            "miDebuggerPath":  "${workspaceFolder}/.externs/azpkg/gdb.arm.eabi.aarch-win64.8.3.201903/arm-none-eabi-gdb.exe",
+            "miDebuggerArgs":  "--symbols=${workspaceFolder}/.build/Debug/arm-eabi-aarch/bin/sdm_fw.elf",
+            // port determined from svp launch configuration
+            "miDebuggerServerAddress": "localhost:12346",
+            "program": "${workspaceFolder}/.build/Debug/arm-eabi-aarch/bin/sdm_fw.elf",
+            "args": [],
+            "MIMode": "gdb",
+            "cwd": "${workspaceFolder}",
+            "customLaunchSetupCommands": [
+                {
+                    // port determined from svp launch configuration
+                    "text": "target remote localhost:12346",
+                    "description": "Attach to remote target",
+                    "ignoreFailures": false
+                }
+            ]
+        },
+    ]
+}

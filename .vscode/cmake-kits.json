@@ -1,0 +1,10 @@
+[
+    {
+        "name": "EchoFalls gcc.arm.eabi.aarch-win64",
+        "compilers": {
+            "C": "${env:REPO_APP_PATH_gcc.arm.eabi.aarch-win64}\\bin\\arm-none-eabi-gcc.exe",
+            "CXX": "${env:REPO_APP_PATH_gcc.arm.eabi.aarch-win64}\\bin\\arm-none-eabi-g++.exe"
+        },
+        "toolchainFile": "${env:REPO_APP_CMAKE_TOOKCHAIN_DIR}\\toolchain.cmake"
+    }
+]

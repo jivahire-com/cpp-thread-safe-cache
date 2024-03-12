@@ -1,0 +1,20 @@
+steps:
+- task: PowerShell@2
+  displayName: External repo access
+  inputs:
+    targetType: 'inline'
+    script: |
+      
+      # Variable Group: https://dev.azure.com/AzureCSI/Woodinville/_library?itemType=VariableGroups&view=VariableGroupView&variableGroupId=127&path=ef-pipeline-config
+      $ExpressAuthToken = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$(xware_code_read)"))
+      $SilibsAuthToken = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$(ms_tsd_code_read)"))
+      $DuvallFWAuthToken = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$(1pfw_code_read)"))
+
+      # set up git config 
+      git config --global http.https://azurecsi.visualstudio.com/DuvallFw/_git/mirror.cmocka/.extraheader "AUTHORIZATION: Basic $DuvallFWAuthToken"
+      git config --global http.https://azurecsi.visualstudio.com/DuvallFw/_git/1pfw.fwlibs/.extraheader "AUTHORIZATION: Basic $DuvallFWAuthToken"
+      git config --global http.https://expresslogic.visualstudio.com/X-Ware/_git/threadx.extraHeader "AUTHORIZATION: Basic $ExpressAuthToken"
+      git config --global http.https://dev.azure.com/ms-tsd/SiInfra/_git/silibs_common/.extraHeader "AUTHORIZATION: Basic $SilibsAuthToken"
+      git config --global http.https://dev.azure.com/ms-tsd/Kingsgate/_git/silibs/.extraHeader "AUTHORIZATION: Basic $SilibsAuthToken"
+
+- task: NuGetAuthenticate@1

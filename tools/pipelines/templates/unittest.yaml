@@ -1,0 +1,125 @@
+parameters:
+- name: Artifact
+  type: string
+  default: 'bins'
+- name: Toolchain
+  type: string
+  default: 'i386-pc-windows-msvc'
+- name: Configuration
+  type: string
+  default: 'Debug'
+- name: BranchCoverage
+  type: string
+  default: '0.0'
+- name: LineCoverage
+  type: string
+  default: '0.0'
+
+jobs:
+- job: 'Unit_Tests'
+  displayName: Unit Tests
+  steps: 
+
+    # Set up permissions for other repos
+    - template: auth.yaml
+
+    # Download input artifact
+    - task: DownloadBuildArtifacts@0
+      displayName: Download Packages manifest
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        artifactName: '${{ parameters.Artifact }}'
+        downloadPath: '$(System.ArtifactsDirectory)'
+
+    # Main test task, loads test scripts and runs the orchestrator
+    - task: PowerShell@2
+      displayName: Unit Tests
+      inputs:
+        targetType: 'inline'
+        script: |
+          $env:AZURE_DEVOPS_EXT_PAT = "$(System.AccessToken)"
+          $env:REPO_APP_ROOT = "$(Build.SourcesDirectory)"
+
+          & "$(Build.SourcesDirectory)\start.ps1" -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
+
+          & "${env:REPO_APP_PATH_1pfw.tools.win64}\sptest" `
+            /devicesfile:"$(Build.SourcesDirectory)\tests\unit\SpTestDevices.xml" `
+            /packagesdir:"$(System.ArtifactsDirectory)\${{ parameters.Artifact }}"\bin `
+            /logsdir:"$(System.ArtifactsDirectory)\Unit_Test_Logs" `
+            /define:test_bin_dir="$(System.ArtifactsDirectory)\${{ parameters.Artifact }}"\bin `
+            /define:test_src_dir="$(Build.SourcesDirectory)" `
+            /runtests
+
+          & "${env:REPO_APP_PATH_report-generator}/tools/net6.0/ReportGenerator.exe" `
+            -reports:"$(System.ArtifactsDirectory)\Unit_Test_Logs\**\**\cobertura.xml" `
+            -targetdir:"$(System.ArtifactsDirectory)\Coverage" `
+            -sourcedirs:"$(Build.SourcesDirectory)\apps;$(Build.SourcesDirectory)\drivers;$(Build.SourcesDirectory)\libs;$(Build.SourcesDirectory)\services" `
+            -reporttypes:"Cobertura"
+
+    - task: PublishTestResults@2
+      displayName: Publish Unit Tests Results
+      condition: succeededOrFailed()
+      inputs:
+        testRunTitle: '[Windows] Kingsgate Unit Tests'
+        testResultsFormat: 'VSTest'
+        testResultsFiles: '**/TestRun_*.trx'
+        searchFolder: '$(System.ArtifactsDirectory)\Unit_Test_Logs'
+        failTaskOnFailedTests: true
+        publishRunAttachments: true
+
+    # code coverage
+    # when unittest is invoked locally, the summary file can be found in:
+    #   .\.testlogs\<TestRun_#>\Coverage\Cobertura.xml
+    # the summary file exposes branch and line coverage rates which are checked against a target
+    # the target coverages are provided to this template as parameters and are clipped between 0.0 and 1.0
+    - task: PublishCodeCoverageResults@1
+      displayName: Publish Code Coverage
+      condition: succeededOrFailed()
+      inputs:
+        codeCoverageTool: 'Cobertura'
+        summaryFileLocation: '$(System.ArtifactsDirectory)\Coverage\Cobertura.xml'
+        pathToSources: '$(Build.SourcesDirectory)\'
+
+    # check code coverage against target    
+    - task: Powershell@2
+      displayName: Check Coverage
+      inputs:
+        targetType: 'inline'
+        script: |
+          # get xml object
+          $cov_xml = [xml] (get-content -raw "$(System.ArtifactsDirectory)\Coverage\Cobertura.xml")
+
+          # type-check and convert coverage parameters to numbers
+          $lineCoverage = 0.0
+          $branchCoverage = 0.0
+          if (${{ parameters.LineCoverage }} -is [int] -or ${{ parameters.LineCoverage }} -is [double]) {
+            $lineCoverage = [Math]::Max(0.0, [Math]::Min(1.0, ${{ parameters.LineCoverage }} ))
+          } else {
+            Write-Host "LineCoverage parameter is not a number! Using 0.0 coverage target."
+          }
+          if (${{ parameters.BranchCoverage }} -is [int] -or ${{ parameters.BranchCoverage }} -is [double]) {
+            $branchCoverage = [Math]::Max(0.0, [Math]::Min(1.0, ${{ parameters.BranchCoverage }} ))
+          } else {
+            Write-Host "BranchCoverage parameter is not a number! Using 0.0 coverage target."
+          }
+
+          # check coverage rates
+          Write-Host  "Line coverage:   Target [" $lineCoverage "] Actual [" $cov_xml.coverage.'line-rate' "]"
+          Write-Host  "Branch coverage: Target [" $branchCoverage "] Actual [" $cov_xml.coverage.'branch-rate' "]"
+          if ($cov_xml.coverage.'line-rate' -lt $lineCoverage) {
+            throw "Line coverage is less than target!"
+          }
+          if ($cov_xml.coverage.'branch-rate' -lt $branchCoverage) {
+            throw "Branch coverage is less than target!"
+          }
+          Write-Host "Coverage check passed!"
+
+    # Publish results as a pipeline artifact
+    - task: PublishBuildArtifacts@1
+      displayName: Publish test results
+      condition: succeededOrFailed()
+      inputs:
+        PathtoPublish: '$(System.ArtifactsDirectory)\Unit_Test_Logs'
+        ArtifactName: '${{ parameters.Artifact }}.UnitTestResults'
+        publishLocation: 'Container'

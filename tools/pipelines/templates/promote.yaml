@@ -1,0 +1,20 @@
+jobs:
+- job: 'Tag'
+  displayName: Tag
+  steps: 
+    - checkout: self
+      persistCredentials: true
+
+    # Set up permissions for other repos
+    - template: auth.yaml
+
+    # git tag task. Creates an incremental tag based on every PR completion
+    - task: PowerShell@2
+      displayName: gitTag
+      inputs:
+        workingDirectory: '$(Build.SourcesDirectory)'
+        targetType: 'inline'
+        script: |
+          git tag 'EchoFalls_v$(Build.BuildNumber)'
+          git push origin 'EchoFalls_v$(Build.BuildNumber)'
+

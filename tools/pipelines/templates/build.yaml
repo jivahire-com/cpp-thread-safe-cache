@@ -1,0 +1,39 @@
+parameters:
+- name: ArtifactName
+  type: string
+  default: 'bins'
+- name: Toolchain
+  type: string
+  default: 'i386-pc-windows-msvc'
+- name: Configuration
+  type: string
+  default: 'Release'
+
+jobs:
+- job: 'Build'
+  displayName: Build
+  steps: 
+
+    # Set up permissions for other repos
+    - template: auth.yaml
+
+    # Main build task, performs setenv for given toolchain/config selected and
+    # the build command
+    - task: PowerShell@2
+      displayName: Build
+      env:
+        AZURE_DEVOPS_EXT_PAT : $(System.AccessToken)
+      inputs:
+        workingDirectory: '$(Build.SourcesDirectory)'
+        targetType: 'inline'
+        script: |
+          ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
+          build
+
+    # Publish results as a pipeline artifact
+    - task: PublishBuildArtifacts@1
+      displayName: Publish build results
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)/.build/${{ parameters.Configuration }}/${{ parameters.Toolchain }}/'
+        ArtifactName: '${{ parameters.ArtifactName }}.${{ parameters.Toolchain }}.${{ parameters.Configuration }}'
+        publishLocation: 'Container'

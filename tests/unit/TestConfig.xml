@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TestPackage xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Name>@TARGET@</Name>
+  <Description>CMocka Unit Tests</Description>
+  <TestSuites>@TARGET@</TestSuites>
+
+  <Targets>
+    <Target Type="Host" />
+  </Targets>
+
+  <DeviceCommands>
+    <Device Target="Host">
+
+      <Setup>
+      </Setup>
+
+      <Execute>
+
+        <Command WaitForExit="true" Timeout="300000">
+          powershell "$(test_src_dir)\tools\pwsh\Run-Coverage.ps1" -TestExecutable "$(test_bin_dir)\@TARGET@.exe" -ExecutableArgs "$(current_log_dir)\result.xml" -CoverageFile "$(current_log_dir)\cobertura.xml" -LogPath "$(current_log_dir)"
+        </Command>
+
+        <Command>
+          spparsejunitfile $(current_log_dir)/result.xml
+        </Command>
+
+      </Execute>
+
+      <Cleanup>
+      </Cleanup>
+
+    </Device>
+
+  </DeviceCommands>
+</TestPackage>

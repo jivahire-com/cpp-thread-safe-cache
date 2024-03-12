@@ -1,0 +1,26 @@
+{
+    "version": "0.2",
+    "ignorePaths": [
+        ".externs/**",
+        "**/.*"
+    ],
+    "dictionaryDefinitions": [],
+    "dictionaries": [],
+    "words": [
+        "bugcheck",
+        "bugchecking",
+        "cortexm",
+        "threadx",
+        "unmarshal",
+        "unmarshalled",
+        "struct",
+        "iwyu",
+        "proxystub",
+        "marshallable",
+        "semihosting",
+        "failfast"
+    ],
+    "ignoreWords": [],
+    "import": [],
+    "useGitignore": true
+}

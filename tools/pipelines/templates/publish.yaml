@@ -1,0 +1,66 @@
+parameters:
+- name: Toolchain
+  type: object
+  default: []
+- name: Version
+  type: string
+
+jobs:
+- job: 'Publish'
+  displayName: Publish
+  steps: 
+
+    # Set up permissions for other repos
+    - template: auth.yaml
+
+    - ${{each flavor in parameters.Toolchain}}:
+
+      - task: DownloadBuildArtifacts@0
+        displayName: Download Packages manifest
+        inputs:
+          buildType: 'current'
+          downloadType: 'single'
+          artifactName: 'bins.${{ flavor }}.Release'
+          downloadPath: '$(Build.SourcesDirectory)\.build\Release\${{ flavor }}'
+
+      - task: DownloadBuildArtifacts@0
+        displayName: Download Packages manifest
+        inputs:
+          buildType: 'current'
+          downloadType: 'single'
+          artifactName: 'bins.${{ flavor }}.Debug'
+          downloadPath: '$(Build.SourcesDirectory)\.build\Debug\${{ flavor }}'
+
+      - task: PowerShell@2
+        displayName: Rename folder
+        inputs:
+          targetType: 'inline'
+          script: |
+            mv '$(Build.SourcesDirectory)\.build\Release\${{ flavor }}\bins.${{ flavor }}.Release\*' '$(Build.SourcesDirectory)\.build\Release\${{ flavor }}' -WhatIf
+            mv '$(Build.SourcesDirectory)\.build\Release\${{ flavor }}\bins.${{ flavor }}.Release\*' '$(Build.SourcesDirectory)\.build\Release\${{ flavor }}'
+
+            mv '$(Build.SourcesDirectory)\.build\Debug\${{ flavor }}\bins.${{ flavor }}.Debug\*' '$(Build.SourcesDirectory)\.build\Debug\${{ flavor }}' -WhatIf
+            mv '$(Build.SourcesDirectory)\.build\Debug\${{ flavor }}\bins.${{ flavor }}.Debug\*' '$(Build.SourcesDirectory)\.build\Debug\${{ flavor }}'
+
+    - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+      displayName: 'SBOM Generation Task'
+      inputs:
+        BuildDropPath: '$(Build.SourcesDirectory)'
+
+    - task: NuGetCommand@2
+      displayName: 'Generate NuGet Package'
+      inputs:
+        command: 'pack'
+        packagesToPack: '$(Build.SourcesDirectory)\tools\pipelines\packages\echofalls.socfw.arm-eabi-aarch\echofalls.socfw.arm-eabi-aarch.nuspec'
+        versioningScheme: 'off'
+        buildProperties: 'TARGET_VERSION=${{ parameters.Version }}'
+
+    # Update this to a new feed
+    # Publishes to the following feed: https://dev.azure.com/AzureCSI/Woodinville/_artifacts/feed/Kingsgate.SoCFW
+    # - task: NuGetCommand@2
+    #   displayName: 'Publish Nuget Package'
+    #   inputs:
+    #     command: 'push'
+    #     packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+    #     nuGetFeedType: 'internal'
+    #     publishVstsFeed: '2610da6a-0168-48f8-b34a-f1c882cb6660/166ae2c2-87aa-4f02-a3c3-ace7b4b0d747'

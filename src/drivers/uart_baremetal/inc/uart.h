@@ -1,0 +1,29 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+/**
+ * @file Uart.h
+ * Uart public API
+ */
+
+#pragma once
+
+/*----------- Nested includes ------------*/
+#include <stddef.h>
+#include <stdint.h>
+
+/*-- Symbolic Constant Macros (defines) --*/
+#define UART0BASE_SCP     (uint32_t)0x44002000U
+#define UART0BASE_SDM     (uint32_t)0x40B9F000U
+#define UART0BASE_CDEDSDM (uint32_t)0x40B9F000U
+
+/*-------------- Typedefs ----------------*/
+
+/*-- Declarations (Statics and globals) --*/
+
+/*--------- Function Prototypes ----------*/
+
+void UartInit(uint32_t base_addr);
+void UartWrite(void *pSrc, size_t Length);
+uint32_t UartRead(void *pSrc, size_t Length);

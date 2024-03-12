@@ -1,0 +1,13 @@
+<packages>
+    <universal_packages>
+        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="llvm.win64" version="12.0.2"/>
+        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="include-what-you-use" version="12.0.1"/>
+        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="microsoft.windows.msvc.bins" version="14.29.30133"/>
+    </universal_packages>
+
+    <nuget_packages>
+        <package name="microsoft.windows.sdk.buildtools" version="10.0.22000.194" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/nuget/v3/index.json"/>
+        <package name="microsoft.windows.sdk.cpp" version="10.0.19041.4" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/nuget/v3/index.json"/>
+        <package name="microsoft.windows.sdk.cpp.x86" version="10.0.19041.4" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/nuget/v3/index.json"/>
+    </nuget_packages>
+</packages>

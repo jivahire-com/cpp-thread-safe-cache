@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "*.h": "c",
+        "*.idl": "c",
+        "future": "c",
+        "system_error": "c",
+        "regex": "c"
+    },
+    "cmake.buildDirectory": "${env:REPO_APP_TARGET_BUILD_DIR}",
+    "cmake.buildTask": true,
+    "C_Cpp.dimInactiveRegions": false,
+    "C_Cpp.doxygen.generatedStyle": "/**",
+    "C_Cpp.doxygen.generateOnType": true
+}

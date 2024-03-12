@@ -1,0 +1,72 @@
+parameters:
+- name: Toolchain
+  type: string
+  default: 'i386-pc-windows-msvc'
+- name: Configuration
+  type: string
+  default: 'Release'
+
+jobs:
+- job: 'Compliance'
+  displayName: Compliance
+  steps: 
+
+    # Credential scanning
+    - task: CredScan@3
+
+    # Term checker
+    - task: PoliCheck@2
+      condition: and(succeeded() , eq(variables['ENABLE_POLICHECK'], 'true'))
+      inputs:
+        targetType: 'F'
+        targetArgument: '$(Build.SourcesDirectory)'
+      
+    # Set up permissions for other repos as Semmle performs build
+    - template: auth.yaml
+
+    # Run Semmle
+    - task: Semmle@1
+      displayName: Static analysis
+      condition: and(succeeded() , eq(variables['ENABLE_SEMMLE'], 'true'))
+      env:
+        AZURE_DEVOPS_EXT_PAT : $(System.AccessToken)
+      inputs:
+        sourceCodeDirectory: '$(Build.SourcesDirectory)'
+        language: 'cpp'
+        buildCommandsString: 'powershell -Command "./start.ps1; setenv -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}; build"'
+        querySuite: 'Recommended'
+        timeout: '1800'
+        addProjectDirToScanningExclusionList: false
+        disallowBuildIfAntivirusScanningEnabled: false
+
+    # Checks the results of the tasks and breaks on error
+    - task: PostAnalysis@2
+      displayName: Error enforcing
+      inputs:
+        GdnBreakAllTools: false
+        GdnBreakGdnToolCredScan: true
+        GdnBreakGdnToolPoliCheck: true
+        GdnBreakGdnToolSemmle: true
+        GdnBreakBaselineFiles: '$(Build.SourcesDirectory)/tools/guardian/'
+        GdnBreakBaselines: 'ComplianceBaseline'
+        GdnBreakOutputBaselineFile: '$(System.ArtifactsDirectory)/.gdnbaselines'
+        GdnBreakOutputBaseline: 'ComplianceBaseline'
+
+    # Publish the given baseline in case of error
+    - task: PublishBuildArtifacts@1
+      displayName: Publish baseline
+      condition: failed()
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'ComplianceBaseline'
+        publishLocation: 'Container'
+
+   # Validate proper justification for exceptions
+    - task: PowerShell@2
+      displayName: Exception check
+      inputs:
+        targetType: 'inline'
+        workingDirectory: '$(Build.SourcesDirectory)'
+        script: |
+          ./start.ps1
+          Test-GuardianBaseline "$(Build.SourcesDirectory)\tools\guardian"

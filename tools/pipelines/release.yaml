@@ -1,0 +1,76 @@
+
+name: 0.1.0.$(rev:r)
+
+trigger: none
+
+variables:
+- group: ef-pipeline-config
+- name: OfficialBuild
+  value : $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+
+- ${{ if variables['OfficialBuild'] }}:
+  - name: BuildVersion
+    value: $[ variables['Build.BuildNumber'] ]
+- ${{ else }}:
+  - name: BuildVersion
+    value:  $[format('{0}-dev', variables['Build.BuildNumber'])]
+
+# Build stage
+stages:
+
+- stage: Build_x86_Debug
+  dependsOn: []
+  pool: 
+    name: 1pfw-kingsgate-windows
+  jobs:
+  - template: templates/build.yaml
+    parameters:
+      Toolchain: i386-pc-windows-msvc
+      Configuration: Debug
+      ArtifactName: bins
+
+- stage: Build_Arm_EABI_AARCH_Debug
+  dependsOn: []
+  pool: 
+    name: 1pfw-kingsgate-windows
+  jobs:
+  - template: templates/build.yaml
+    parameters:
+      Toolchain: arm-eabi-aarch
+      Configuration: Debug
+      ArtifactName: bins
+
+- stage: Build_Arm_EABI_AARCH_Release
+  dependsOn: []
+  pool: 
+    name: 1pfw-kingsgate-windows
+  jobs:
+  - template: templates/build.yaml
+    parameters:
+      Toolchain: arm-eabi-aarch
+      Configuration: Release
+      ArtifactName: bins
+
+- stage: Unit_Test_x86
+  dependsOn: Build_x86_Debug
+  pool: 
+    name: 1pfw-kingsgate-windows
+  jobs:
+  - template: templates/unittest.yaml
+    parameters:
+      Artifact: bins.i386-pc-windows-msvc.Debug
+      Toolchain: i386-pc-windows-msvc
+      Configuration: Debug
+      BranchCoverage: $(branch_coverage)
+      LineCoverage: $(line_coverage)
+
+- stage: Publish
+  dependsOn: [Unit_Test_x86, Build_x86_Debug, Build_Arm_EABI_AARCH_Release, Build_Arm_EABI_AARCH_Debug]
+  condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
+  pool: 
+    name: 1pfw-kingsgate-windows
+  jobs:
+  - template: templates/publish.yaml
+    parameters:
+      Toolchain: [i386-pc-windows-msvc, arm-eabi-aarch]
+      Version: $(BuildVersion)

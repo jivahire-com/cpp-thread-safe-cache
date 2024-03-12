@@ -55,12 +55,11 @@ jobs:
         versioningScheme: 'off'
         buildProperties: 'TARGET_VERSION=${{ parameters.Version }}'
 
-    # Update this to a new feed
-    # Publishes to the following feed: https://dev.azure.com/AzureCSI/Woodinville/_artifacts/feed/Kingsgate.SoCFW
-    # - task: NuGetCommand@2
-    #   displayName: 'Publish Nuget Package'
-    #   inputs:
-    #     command: 'push'
-    #     packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
-    #     nuGetFeedType: 'internal'
-    #     publishVstsFeed: '2610da6a-0168-48f8-b34a-f1c882cb6660/166ae2c2-87aa-4f02-a3c3-ace7b4b0d747'
+    Publishes to the following feed: https://dev.azure.com/AzureCSI/Woodinville/_artifacts/feed/Kingsgate.SoCFW
+    - task: NuGetCommand@2
+      displayName: 'Publish Nuget Package'
+      inputs:
+        command: 'push'
+        packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+        nuGetFeedType: 'internal'
+        publishVstsFeed: '2610da6a-0168-48f8-b34a-f1c882cb6660/166ae2c2-87aa-4f02-a3c3-ace7b4b0d747'

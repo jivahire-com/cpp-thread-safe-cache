@@ -15,6 +15,6 @@ jobs:
         workingDirectory: '$(Build.SourcesDirectory)'
         targetType: 'inline'
         script: |
-          git tag 'EchoFalls_v$(Build.BuildNumber)'
-          git push origin 'EchoFalls_v$(Build.BuildNumber)'
+          git tag 'kingsgate_mscp_v$(Build.BuildNumber)'
+          git push origin 'kingsgate_mscp_v$(Build.BuildNumber)'
 

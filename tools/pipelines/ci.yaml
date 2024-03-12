@@ -57,6 +57,7 @@ stages:
       Artifact: bins.i386-pc-windows-msvc.Debug
       Toolchain: i386-pc-windows-msvc
       Configuration: Debug
+      # Pipeline variables defined within ADO
       BranchCoverage: $(branch_coverage)
       LineCoverage: $(line_coverage)
 

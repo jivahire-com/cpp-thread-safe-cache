@@ -83,23 +83,31 @@ The below is an example of passing in simulation parameters to a simulation rele
     --pyargs `
     --output_dir "<repo_root_dir>\.svp_simulator\" `
     --template_name KingsgateSVP `
-    --parameter KingsgateSVP.VABRPSS0.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.RPSS0.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.CSS.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.CSS.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.HSSS.HSP.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.RMSS.MCP.MCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.HSSS.HSSS_POR.#SCML_PROPERTIES#scp_rstn_init_value=0x0 `
-    --parameter KingsgateSVP.HSSS.HSSS_POR.#SCML_PROPERTIES#scp_init_vector_param=0x0 `
-    --parameter KingsgateSVP.RMSS.SCP.SCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/ImageInfo/cpu0/initial_image=<path_to_scp_elf> `
-    --parameter KingsgateSVP.RMSS.SCP.terminal_uart_scp.#SCML_PROPERTIES#ENABLE_TCP_ON_PORT=4257 `
-    --parameter KingsgateSVP.RMSS.SCP.SCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/config/dtcm_enable=true `
-    --parameter KingsgateSVP.RMSS.SCP.SCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/config/itcm_enable=true `
-    --parameter KingsgateSVP.RMSS.SCP.SCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/config/dtcm_size=512 `
-    --parameter KingsgateSVP.RMSS.SCP.SCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/config/itcm_size=512 `
+    --parameter KingsgateSVP.DIE_0.CSS.HndBaseElement.AP_NS_UART0_PHY.#SCML_PROPERTIES#TerminalAutoOpen=false `
+    --parameter KingsgateSVP.DIE_0.CDEDSS.#EXTRA_PROPERTIES#runtime_disabled=true `
+    --parameter KingsgateSVP.DIE_0.HSSS.HSP.#EXTRA_PROPERTIES#runtime_disabled=true `
+    --parameter KingsgateSVP.DIE_0.HSSS.HSSS_POR.#SCML_PROPERTIES#css_rstn_init_value=0 `
+    --parameter KingsgateSVP.DIE_0.HSSS.HSSS_POR.#SCML_PROPERTIES#mcp_init_vector_param=0 `
+    --parameter KingsgateSVP.DIE_0.HSSS.HSSS_POR.#SCML_PROPERTIES#mcp_rstn_init_value=0 `
+    --parameter KingsgateSVP.DIE_0.HSSS.HSSS_POR.#SCML_PROPERTIES#scp_init_vector_param=0 `
+    --parameter KingsgateSVP.DIE_0.HSSS.HSSS_POR.#SCML_PROPERTIES#scp_rstn_init_value=0 `
+    --parameter KingsgateSVP.DIE_0.RPSS0.#EXTRA_PROPERTIES#runtime_disabled=true `
+    --parameter KingsgateSVP.DIE_0.RPSS1.#EXTRA_PROPERTIES#runtime_disabled=true `
+    --parameter KingsgateSVP.DIE_0.RPSS2.#EXTRA_PROPERTIES#runtime_disabled=true `
+    --parameter KingsgateSVP.DIE_0.RPSS3.#EXTRA_PROPERTIES#runtime_disabled=true `
+    --parameter KingsgateSVP.DIE_0.SDMSS.#EXTRA_PROPERTIES#runtime_disabled=true `
+    --parameter KingsgateSVP.DIE_0.VABRPSS0.#EXTRA_PROPERTIES#runtime_disabled=true `
+    --parameter KingsgateSVP.DIE_0.VABRPSS1.#EXTRA_PROPERTIES#runtime_disabled=true `
+    --parameter KingsgateSVP.DIE_0.VABRPSS2.#EXTRA_PROPERTIES#runtime_disabled=true `
+    --parameter KingsgateSVP.DIE_0.VABRPSS3.#EXTRA_PROPERTIES#runtime_disabled=true `
+    --parameter KingsgateSVP.DIE_1.#EXTRA_PROPERTIES#runtime_disabled=true `
+    --parameter KingsgateSVP.DIE_0.RMSS.MCP.MCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/ImageInfo/cpu0/initial_image=../../../../../.build/Debug/arm-eabi-aarch/bin/mcp_fw.elf `
+    --parameter KingsgateSVP.DIE_0.RMSS.MCP.terminal_uart_mcp.#SCML_PROPERTIES#TerminalAutoOpen=false `
+    --parameter KingsgateSVP.DIE_0.RMSS.SCP.SCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/ImageInfo/cpu0/initial_image=../../../../../.build/Debug/arm-eabi-aarch/bin/scp_fw.elf `
+    --parameter KingsgateSVP.DIE_0.RMSS.SCP.terminal_uart_scp.#SCML_PROPERTIES#TerminalAutoOpen=false `
     --pyargs_end
 ```
-You can also create a parameters txt file and pass it to the script. Anything between the `--pyargs` and the `--pyargs_end` that matches the `--paramsfile <filename>` format is a parameter config file to the simulation. The format of this config file is similar to the parameters. Refer [svpcfg-scp_sdm_cded_ap.txt](./../../tools/vpcfg/svpcfg-scp_sdm_cded_ap.txt) for an example.
+You can also create a parameters txt file and pass it to the script. Anything between the `--pyargs` and the `--pyargs_end` that matches the `--paramsfile <filename>` format is a parameter config file to the simulation. The format of this config file is similar to the parameters. Refer [svpcfg-scp_mcp_chie_bins.txt](./../../tools/vpcfg/svpcfg-scp_mcp_chie_bins.txt) for an example.
 
 ## How to use it
 
@@ -113,52 +121,52 @@ The following powershell module provides wrapped startup and shutdown functions 
 
     1. Generate the build artifacts: `> build`
 
-1. Run the SVP helper powershell function, with the scp_sdm_cded_ap configuration: `> runsvp -SimConfig scp_sdm_cded_ap`.
+1. Run the SVP helper powershell function, with the scp_mcp_chie_bins configuration: `> runsvp -SimConfig scp_mcp_chie_bins 1`.
 
         Example Output:
-
         ```pwsh
-        PS E:\EchoFalls> runsvp -SimConfig scp_sdm_cded_ap
+            PS D:\repos\kng_mscp> runsvp scp_mcp_chie_bins 1
 
-        Stopping the current simulation background job (if there is one).
+            Stopping the current simulation (if there is one).
 
-                No Simulator background job to stop.
+                    Stopping Simualator background job: ID == 1
 
-        Invoking SVP - Using Config:
-                -svp_sim_dir     : E:/EchoFalls/.externs/azpkg/microsoft.internal.virtualized.kingsgate.svp.7.1.1-commit246
-                -svp_runtime_dir : E:/EchoFalls/.externs/azpkg/microsoft.internal.windows.virtualizerruntime.2023.3.2
+            Invoking SVP - Using Config:
+                    -svp_sim_dir     : D:/repos/kng_mscp/.externs/azpkg/microsoft.internal.virtualized.kingsgate.svp.7.1.1-commit258
+                    -svp_runtime_dir : D:/repos/kng_mscp/.externs/azpkg/microsoft.internal.windows.virtualizerruntime.2023.3.2
 
-        Using Parameters:
-                -SimConfig    : scp_sdm_cded_ap
-                -WorkspaceDir : E:\EchoFalls\.svp_simulator\workspace
-                -UseGUI       : False
+            Using Parameters:
+                    -SimConfig    : scp_mcp_chie_bins
+                    -WorkspaceDir : D:\repos\kng_mscp\.svp_simulator\workspace
+                    -UseGUI       : True
 
+            Using chie fw bins where applicable. SVP test bins are used for anything that is missing.
 
-        Starting simlulation [scp_sdm_cded_ap] as a background job. Job information displayed on creation.
-
-
-        Simulation Connectivity:
-                SCP UART telnet : localhost:4257
-                CDED-SDM GDB    : localhost:12345
-                SDM GDB         : localhost:12346
-                AP GDB          : localhost:12347
-                SCP GDB         : localhost:12348
+            Starting simlulation [scp_mcp_chie_bins] in GUI Mode.
 
 
-        Please wait for the 'sim.exe' to launch via the below job:
-                Job Details:
-                        Id    : 45
-                        Name  : Job45
-                        State : Running
+            Please wait for the 'sim.exe' to launch via the below job:
+                    Job Details:
+                            Id    : 3
+                            Name  : Job3
+                            State : Running
 
-                Simulatin Started. Time to Start: 60 seconds
-                The Simulation can be attached to with the GUI: vs.exe -d E:\EchoFalls\.svp_simulator\workspace
+                    Simulatin Started. Time to Start: 120 seconds
+                    The Simulation can be attached to with the GUI: vs.exe -d D:\repos\kng_mscp\.svp_simulator\workspace
 
-        Run the follow to stop the simulation background job: stopsvp
+            Expected Simulation Connectivity:
+                    MCP UART telnet : localhost:4256
+                    SCP UART telnet : localhost:4257
+                    MCP DIE 0 GDB   : localhost:12349
+                    SCP DIE 0 GDB   : localhost:12350
+                    Ensure configuration matches symbols used!
+
+
+            Run the following to stop the simulation background job: stopsvp
         ```
     > **_NOTE:_**
     > 1. This example runs in the headless, no GUI, mode.
-    > 2. On your first run you may be prompted to allow access to the executables and runtimes used.
+    > 2. On your first run you may be prompted to allow access to the executables and runtime(s) used.
 
 1. You can now use your program of choice to connect to the telnet session to see the UART. You can also use GDB to connect to the core.
 
@@ -170,9 +178,9 @@ You can also use the GUI provided by Synopsys. To do this, we'll piggy back off 
 
 1. Instead of `runsvp`, use the command `runsvp -UseGui $true`. This will launch the Virtualizer Runtime VDK. This will also create a base project, with an example configuration and launch the simulation.
 
-1. The default configuration is `scp_sdm_cded_ap`. You can create and use other configurations as needed. Refer Section `Creating and Using Configurations` for more information to create your own configurations and use them.
+1. The default configuration is `scp_mcp_chie_bins`. You can create and use other configurations as needed. Refer Section `Creating and Using Configurations` for more information to create your own configurations and use them.
 
-1. Let the simulation run once to check your setup. You can confirm that the setup is working by checking that UART shells are created for each of the cores AP0, SCP, SDM-EMCPU and CDED-SDM-EMCPU and there is text output on them. Then, stop the simulation. 
+1. Let the simulation run once to check your setup. You can confirm that the setup is working by checking that UART shells are created for each of the cores and there is text output on them. Then, stop the simulation. 
 
 1. You can use the GUI to modify the simulation parameters, debug the running simulation, etc. For example, you can change the configuration to point to locally built binaries for any of the cores instead of example binaries. A full list of what you can do and how to do it for the GUI is not available at the moment. Please read through whatever material the SVP team has on their team page (linked above). 
 
@@ -180,7 +188,7 @@ You can also use the GUI provided by Synopsys. To do this, we'll piggy back off 
 
 ### Creating and Using Configurations
 
-1. To create a configuration, refer [svpcfg-scp_sdm_cded_ap.txt](./../../tools/vpcfg/svpcfg-scp_sdm_cded_ap.txt) for an example. It is a list of parameter overrides on the default config in the format `<paramater>=<value>`. The SVP launch script decodes these to apply to the project. 
+1. To create a configuration, refer [svpcfg-scp_mcp_chie_bins.txt](./../../tools/vpcfg/svpcfg-scp_mcp_chie_bins.txt) for an example. It is a list of parameter overrides on the default config in the format `<paramater>=<value>`. The SVP launch script decodes these to apply to the project. 
 
 1. Use the [parameters](./Parameters/) files to check which parameters you'd like to override and create a new configuration. Name it `svpcfg-<configuration-name>.txt`.
 
@@ -212,8 +220,8 @@ Instaed of `Stopping the SVP Simulation` and `Starting the SVP Simulation`, you 
  
 2. Edit the current config file referred to as `vpcfg`. 
  
-    - In the `Project Explorer` tab in the left hand side pane, go to the `KingsgateSVP -> vpconfigs -> SVPConfig-scp_sdm_cded_ap.vpcfg` where `SVPConfig-scp_sdm_cded_ap.vpcfg` is the default vpcfg file. 
-    -  Right-click on this `SVPConfig-scp_sdm_cded_ap.vpcfg` file and select the `Configuration Editor` as shown below: 
+    - In the `Project Explorer` tab in the left hand side pane, go to the `KingsgateSVP -> vpconfigs -> SVPConfig-scp_mcp_chie_bins.vpcfg` where `SVPConfig-scp_mcp_chie_bins.vpcfg` is the default vpcfg file. 
+    -  Right-click on this `SVPConfig-scp_mcp_chie_bins.vpcfg` file and select the `Configuration Editor` as shown below: 
  
 [![svp-vdk_creation-vpcfg_editing-2](./../.img/svp-vdk_creation-vpcfg_editing-2.jpg)](./../.img/svp-vdk_creation-vpcfg_editing-2.jpg) 
  
@@ -289,7 +297,7 @@ code .
  
 8. Confirm that the `gdb port` i.e. `localhost:12348` is correct in `Step 9` by cross-checking it with the SVP simulation output which provides the `gdb port` details for each of the cores as below. 
  
-    - Start the SVP simulation by clicking the green-color play icon which shows this text when the cursor is hovered over it `Run SVPConfig-scp_sdm_cded_ap`. 
+    - Start the SVP simulation by clicking the green-color play icon which shows this text when the cursor is hovered over it `Run SVPConfig-scp_mcp_chie_bins`. 
     - Because we un-checked/disabled the `Auto-continue at initial crunch` option in `Step 3`, the SVP simulation stops at the `initial_crunch` breakpoint which is in the bottom-left pane called `Breakpoints`. 
     - Click the `Simulation Output` window, and check the `gdb port` for the desired core. For us, it is the `SCP` core which is `SCP_ARM_CORTEX_M7` and the assigned `gdb port` is `12348`. 
     - If the `gdb port` displayed here is different than that of the VS Code `gdb port`, then you need to update the VS Code `launch.json` -> `miDebuggerServerAddress` to the `gdb port` displayed by the SVP simulator which in our case is `12348` as shown in `Step 9`. 

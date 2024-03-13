@@ -33,16 +33,16 @@ Function Stop-Virtualizer()
 Starts a SVP Virtualizer Simulation, running in a background job.
 
 .PARAMETER SimConfig
-What defualt simulation parameters to launch with. Default: scp_sdm_cded_ap
+What defualt simulation parameters to launch with. Default: scp_mcp_chie_bins
 
 .PARAMETER UseGUI
 $true (1) or $false (0). If true will setup and run the simulation with the GUI, otherwise will run with no GUI. Default: $false
 
 .EXAMPLE
-Invoke-Virtualizer -SimConfig scp_sdm_cded_ap -UseGUI $False
+Invoke-Virtualizer -SimConfig scp_mcp_chie_bins -UseGUI $False
 #>
 Function Invoke-Virtualizer(
-    [Parameter(Mandatory=$false)] [ValidateSet('scp_sdm_cded_ap', 'scp_sdm_cded_ap_chie_bins')] [string] $SimConfig = "scp_sdm_cded_ap",
+    [Parameter(Mandatory=$false)] [ValidateSet('scp_mcp_svp_bins', 'scp_mcp_chie_bins')] [string] $SimConfig = "scp_mcp_chie_bins",
     [Parameter(Mandatory=$false)] [boolean] $UseGUI = $false
 )
 {
@@ -100,11 +100,11 @@ Function Invoke-Virtualizer(
     # Additionally perform any any config specific setup as needed
     $svpcfg_param_file = "$env:REPO_APP_ROOT\tools\vpcfg\svpcfg-$SimConfig.txt"
     switch ($SimConfig) { 
-        "scp_sdm_cded_ap" { 
+        "scp_mcp_svp_bins" { 
             Write-Host "Initial run will be configured with SVP test bins."
             Break; 
         }
-        "scp_sdm_cded_ap_chie_bins" {
+        "scp_mcp_chie_bins" {
             Write-Host "Using chie fw bins where applicable. SVP test bins are used for anything that is missing."
             Break; 
         }
@@ -171,18 +171,6 @@ Function Invoke-Virtualizer(
             $using:input_parameters `
             --pyargs_end
         }
-
-        Write-Host ""
-        Write-Host "Expected Simulation Connectivity:"
-        Write-Host "`tSCP UART telnet : localhost:4257"
-
-        # GDB setup on the headless mode is broken in this SVP release, overrides resolve this for now. Update once patched: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1624373
-        Write-Host "`tCDED-SDM GDB    : localhost:12345"
-        Write-Host "`tSDM GDB         : localhost:12346"
-        Write-Host "`tAP0 GDB          : localhost:12347"
-        Write-Host "`tSCP GDB         : localhost:12348"
-        Write-Host "`tEnsure configuration matches symbols used!"
-        Write-Host ""
     }
 
     # Both cases launch sim.exe, so we can validate that it started to ensure setup is correct.
@@ -217,6 +205,17 @@ Function Invoke-Virtualizer(
             Stop-Virtualizer
             Throw "Failed to start sim.exe within: $timeout_s seconds" 
         } 
+
+        Write-Host ""
+        Write-Host "Expected Simulation Connectivity:"
+        Write-Host "`tMCP UART telnet : localhost:4256"
+        Write-Host "`tSCP UART telnet : localhost:4257"
+
+        # GDB setup on the headless mode is broken in this SVP release, overrides resolve this for now. Update once patched: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1624373
+        Write-Host "`tMCP DIE 0 GDB   : localhost:12349"
+        Write-Host "`tSCP DIE 0 GDB   : localhost:12350"
+        Write-Host "`tEnsure configuration matches symbols used!"
+        Write-Host ""
 
         Write-Host "" 
         Write-Host "Run the following to stop the simulation background job: stopsvp" 

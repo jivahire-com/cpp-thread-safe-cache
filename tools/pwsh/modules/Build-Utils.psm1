@@ -314,7 +314,8 @@ Function Get-PipPackages($PackageFile)
         $Message = $Message + (" " + "." * (70 - $Message.Length) + " ") 
         Write-Host  $Message -NoNewLine -ForegroundColor Cyan
 
-        $Command = "-m pip install $($Package.name)==$($Package.version) -i $($Package.source) --no-warn-script-location --disable-pip-version-check"
+        # See https://github.com/pypa/pip/issues/8559 for json2html dependency
+        $Command = "-m pip install $($Package.name)==$($Package.version) -i $($Package.source) --no-warn-script-location --disable-pip-version-check --use-pep517"
 
         $Output = Invoke-Executable -exe "${env:REPO_APP_PATH_python.win64}/tools/python.exe" -exeArgs $Command
 
@@ -421,7 +422,7 @@ Function Set-RepoEnv()
         $env:REPO_APP_TOOLCHAIN = $Toolchain
         $env:REPO_APP_BUILD_CONFIG = $Configuration
         
-        $env:REPO_APP_ROOT = (Get-Item "$PSScriptRoot\..\..\..\").FullName
+        $env:REPO_APP_ROOT = (Get-Item "$PSScriptRoot\..\..\..\").ToString().Replace("\","/")
         $env:REPO_APP_BUILD_DIR = (Join-Path $env:REPO_APP_ROOT ".build").replace("\", "/")
         $env:REPO_APP_TEST_LOG_DIR = (Join-Path $env:REPO_APP_ROOT ".testlogs").replace("\", "/")
         $env:REPO_APP_EXTERNS_DIR = (Join-Path "$env:REPO_APP_ROOT" ".externs").replace("\", "/")

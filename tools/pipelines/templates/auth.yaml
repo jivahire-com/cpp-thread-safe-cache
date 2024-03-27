@@ -21,3 +21,8 @@ steps:
       git config --global http.https://dev.azure.com/ms-tsd/Base_IP/_git/crypto_fw_libs/.extraHeader "AUTHORIZATION: Basic $SilibsAuthToken"
 
 - task: NuGetAuthenticate@1
+
+- task: PipAuthenticate@1
+  displayName: 'Pip Authenticate'
+  inputs:
+    artifactFeeds: 'Woodinville/echofalls.fw.deps'

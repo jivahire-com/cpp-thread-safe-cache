@@ -38,6 +38,14 @@
 /.testlogs
 /.svp_simulator
 
+# Pythia payloads
+.payload*/
+
 # Generated files
 /libs/build_data/build_data.h
 /libs/build_data/build_data.c
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class

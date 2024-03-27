@@ -1,0 +1,167 @@
+
+<#
+.SYNOPSIS
+Read a file and output the same contents of the file to a file, with all strings expanded. This expands environement variables.
+
+.PARAMETER in_file
+Path to the file to read the raw content from.
+
+.PARAMETER out_file
+Path to create a file at with expanded variables.
+
+.EXAMPLE
+Expand-File -in_file <file_with_env_vars> -out_file <file_with_env_vars>.expanded
+#>
+Function Expand-File(
+    [Parameter(Mandatory=$true)] [string] $in_file,
+    [Parameter(Mandatory=$true)] [string] $out_file
+){
+
+    # Read the contents of the input file
+    $content = Get-Content $in_file -Raw
+
+    # If the input is a string, expand any environment variables in it
+    if ($content -is [string]) {
+        $content = $ExecutionContext.InvokeCommand.ExpandString($content)
+    }
+    else {
+        Throw "Unable to parse file. Raw content not a string! : $in_file"
+    }
+
+    # Send the content to the outfile
+    $content | Set-Content $out_file
+}
+
+<#
+.SYNOPSIS
+Starts a local Pythia Test Run, using the SVP Recipe.
+
+.PARAMETER test
+Path to the test to run. Can be a python file, robot file, or a directory containing robot files.
+
+.EXAMPLE
+Invoke-Pythia -test .\tests\functional\pythia\tests\heart_beat\heart_beat.py
+#>
+Function Invoke-Pythia(
+    [Parameter(Mandatory=$true)] [string] $test
+)
+{
+
+    Write-Host ""
+    Write-Host "`tInvoking Pythia Functional Test"
+    Write-Host ""
+
+    $test = Join-Path -Path $env:REPO_APP_ROOT -ChildPath $test
+
+    if (-not (Test-Path -Path $test))
+    {
+        throw "Path not found: $test"
+    }
+
+    # Create test run paths based on timestamp
+    $time_stamp = (Get-Date -Format "yyyy_MM_dd_hhmmss")
+    $pythia_test_dir = Join-Path -Path $env:REPO_APP_TEST_LOG_DIR -ChildPath "pythia"
+    $test_results_dir = Join-Path -Path $pythia_test_dir -ChildPath $time_stamp
+
+    # Create the test results directory
+    New-Item -ItemType Directory -Path $test_results_dir | Out-Null
+
+    # Setup the paths for the necessary Pythia configurations
+    # In\Out for pre/post processed json files (for variable expansion)
+    $recipe_file_in = Join-Path -Path $env:REPO_APP_ROOT -ChildPath "tests\functional\pythia\recipes\svp.json"
+    $recipe_file_out = Join-Path -Path $test_results_dir -ChildPath "recipe.json"
+
+    $workspace_config_in = Join-Path -Path $env:REPO_APP_ROOT -ChildPath "tests\functional\pythia\configs\svp_workspace.json"
+    $workspace_config_out = Join-Path -Path $test_results_dir -ChildPath "workspace.json"
+
+    $host_config_in = Join-Path -Path $env:REPO_APP_ROOT -ChildPath "tests\functional\pythia\hosts\localhost.json"
+    $host_config_out = Join-Path -Path $test_results_dir -ChildPath "host.json"
+
+    # Create new json files with expanded string values, expanding environment variables
+    Expand-File -in_file $recipe_file_in -out_file $recipe_file_out
+    Expand-File -in_file $workspace_config_in -out_file $workspace_config_out
+    Expand-File -in_file $host_config_in -out_file $host_config_out
+
+    # Setup the payload needed by Pythia
+    $recipe_payload_dest = Join-Path -Path $pythia_test_dir -ChildPath ("payload_"+ [IO.Path]::GetFileNameWithoutExtension($recipe_file_in))
+
+    # Does this payload already exist, if not download it
+    if (-not (Test-Path -Path $recipe_payload_dest))
+    {
+        Write-Host "`Creating: $recipe_payload_dest"
+
+        # Create the recipe payload from the json
+        & ${env:REPO_APP_PATH_python.win64}\tools\python.exe -m pythia.tdk.rrm.payload_download.payload_download `
+            --recipe $recipe_file_out `
+            --version "0" `
+            --dest $recipe_payload_dest
+
+        Write-Host "`tPayload Directoy created! Created: $recipe_payload_dest"
+    }
+    else {
+        Write-Host "`tPayload Directoy already exists! Not creating: $recipe_payload_dest"
+    }
+
+    Write-Host ""
+    Write-Host "`tStoring Test Results: $test_results_dir "
+    Write-Host ""
+
+    Write-Host ""
+    Write-Host "`t`tUsing Test: $test"
+    Write-Host "`t`tUsing Recipe: $recipe_file_out"
+    Write-Host "`t`tUsing Workspace Config: $workspace_config_out"
+    Write-Host "`t`tUsing Host Config: $host_config_out"
+    Write-Host "`t`tUsing Payload: $recipe_payload_dest"
+    Write-Host ""
+
+    # This can also be set via the host configuration json for pythia, however that requires absolute paths.
+    # Resolving the paths allows us to update the version and not have to update the paths.
+    $env:SNPS_VS_VDK_SEARCH_PATHS=(Resolve-Path ${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}\win\release\*\*\*\).toString()
+
+    # Move to the test directory. Pythia will use relative paths once executed, moving into the test
+    # dir will put any any folders that get created there (for things we can't configure atm, ex: SVP output dir).
+    Push-Location -Path $test_results_dir
+
+    # Allow for single ile tests or test directories (for robot directories)
+    $test_type = [IO.Path]::GetExtension($test)
+    if ((Test-Path -Path $test -PathType Container))
+    {
+        $test_type = "dir"
+    }
+
+    switch -regex ($test_type) {
+        # Whether the test is a single robot file or a directory, the setup and running of them is the same
+        ".robot|dir" {
+            & ${env:REPO_APP_PATH_python.win64}\tools\python.exe -m robot `
+            --variable WORKSPACE_CONFIG:"$workspace_config_out" `
+            --variable LOG_DIR:"$test_results_dir" `
+            --variable PAYLOAD_DIR:"$recipe_payload_dest" `
+            --variable HOST_CONFIG:"$host_config_out" `
+            --debugfile rlog.txt  `
+            --outputdir $test_results_dir `
+            -K on `
+            -L TRACE `
+            -W 120 `
+            -x Results.xml `
+            $test
+        }
+        # Setup and run a single python test
+        ".py" {
+            & ${env:REPO_APP_PATH_python.win64}\tools\python.exe $test `
+            --workspace_config $workspace_config_out `
+            --log_dir $test_results_dir `
+            --payload_dir $recipe_payload_dest `
+            --host_config $host_config_out
+        }
+        default {
+            Throw "Unsupported Test Type: $test_type"
+        }
+    }
+
+    # Move back to wherever the function was invoked from
+    Pop-Location
+
+    Write-Host ""
+    Write-Host "`tPythia Tests Completed. Please see tests results: $test_results_dir"
+    Write-Host ""
+}

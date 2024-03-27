@@ -3,12 +3,17 @@
 ## Pre-requisites
 
 1. Windows 10+.
-2. [GIT](<https://git-scm.com/downloads>). There are some basic steps to be taken while installing git. Please ensure:
+1. [GIT](<https://git-scm.com/downloads>). There are some basic steps to be taken while installing git. Please ensure:
     1. Your ADO username and password are entered. As an alternative, you can link a personalized access token (PAT) to your git installation. Follow [these steps](<https://learn.microsoft.com/en-us/azure/devops/repos/git/set-up-credential-managers?view=azure-devops#using-the-git-credential-manager>).
     1. If you plan to clone via ssh, you will need to generate a public key and add it to your ADO account. For more details, follow [these steps](<https://learn.microsoft.com/en-us/azure/devops/repos/git/use-ssh-keys-to-authenticate?view=azure-devops>)
-3. (Optional) Visual Studio Code (<https://code.visualstudio.com/download>).  
+1. (Optional) Visual Studio Code (<https://code.visualstudio.com/download>).  
     a. After installation, launch VS Code, go to the Extensions tab on the left (Ctrl+Shift+X) and install all the recommended plugins.  
     b. Exit VS Code
+1. Enable Windows Long Paths from an Administrator PowerShell:
+
+    ```pwsh
+    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -Type DWORD
+    ```
 
 **NOTE:** Remaining pre-requisites will be automatically setup and installed by the repo through packaging tools.
 
@@ -60,7 +65,6 @@ This repo follows a pretty straight forward folder structure.
     ```pwsh
         echo "{Your PAT here}" | az devops login  --organization https://azurecsi.visualstudio.com/
     ```
-
 
 1. Run the `./start.ps1` script in a powershell window. This will setup the build environment (to the default toolchain), download and install any dependencies needed,, load scripts used for build, and display a help menu. This should take approximately 20 to 25 minutes, depending on if this is your first time or not.
 

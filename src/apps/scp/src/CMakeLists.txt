@@ -28,6 +28,7 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::a
 target_link_libraries(
     ${TARGET}
         PRIVATE
+            ms::lib::css
             ms::lib::debug
             ms::lib::event_trace::trace
             ms::lib::threadx
@@ -36,6 +37,11 @@ target_link_libraries(
             ms::vectors::cortex_m7
             fwlib.platform.dfwkhost.threadx
             fwlib.dfwk
+            clocks_sequence
+            idsw
+            kng_silibs_platform
+            ppu_v1
+            silibs_platform
 )
 
 target_include_directories(

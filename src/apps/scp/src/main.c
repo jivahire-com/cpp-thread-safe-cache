@@ -10,7 +10,9 @@
 /*------------- Includes -----------------*/
 
 #include <DfwkThreadXHost.h>
+#include <css.h>
 #include <debug.h>
+#include <idsw.h>
 #include <scp_event_trace_collector.h>
 #include <scp_events.h>
 #include <stdbool.h>
@@ -46,6 +48,12 @@ static void soc_init(void)
 {
     UartInit(UART0BASE_SCP);
     DebugInit();
+
+    idsw_set_cpu_type(CPU_SCP);
+    idsw_set_platform_sdv(PLATFORM_SVP_SIM);
+
+    css_pre_mesh_init();
+    css_post_mesh_init();
 }
 
 // Prior to main, an assembly function initializes .bss and invokes constructors

@@ -31,16 +31,16 @@ target_link_libraries(
             ms::lib::css
             ms::lib::debug
             ms::lib::event_trace::trace
+            ms::lib::mesh
             ms::lib::threadx
             ms::service::scp_etc
             ms::driver::uart
             ms::vectors::cortex_m7
             fwlib.platform.dfwkhost.threadx
             fwlib.dfwk
-            clocks_sequence
             idsw
+            idhw
             kng_silibs_platform
-            ppu_v1
             silibs_platform
 )
 

@@ -10,5 +10,4 @@
     "cmake.buildTask": true,
     "C_Cpp.dimInactiveRegions": false,
     "C_Cpp.doxygen.generatedStyle": "/**",
-    "C_Cpp.doxygen.generateOnType": true
 }

@@ -1,21 +1,21 @@
 enabled_on(arm-eabi-aarch)
 
-set(TARGET kng.lib.css)
+set(TARGET kng.lib.mesh)
 
 add_library(${TARGET} 
     STATIC 
-        css.c
+        src/mesh.c
 )
 
 target_link_libraries(${TARGET} 
     PRIVATE
+    cmn800
+    cmn800_skus
+    cmn800_sequence
     fwlib.assert
-    atu
-    clocks_sequence
     kng_silibs_platform
     ppu_v1
     silibs_platform
-    tower_system_control
 )
 
 target_include_directories(${TARGET}
@@ -28,4 +28,4 @@ lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})
 
-add_library(ms::lib::css ALIAS ${TARGET})
+add_library(ms::lib::mesh ALIAS ${TARGET})

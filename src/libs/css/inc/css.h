@@ -14,6 +14,7 @@
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define ATU_AP_ARSM_ADDRESS (0x60000000U)
 
 /*-------------- Typedefs ----------------*/
 
@@ -27,10 +28,14 @@
  *              - MSXP PCR
  *              - Systop PPU
  *              - SCP and system PIK
+ *              - SCP ATU initialization & global map setup
+ * 
+ *    @param[in] die_num
+ *              Current die numer
  * 
  *    @retval none
  */
-void css_pre_mesh_init();
+void css_pre_mesh_init(uint8_t die_num);
 
 /**
  *
@@ -41,3 +46,15 @@ void css_pre_mesh_init();
  *    @retval none
  */
 void css_post_mesh_init();
+
+/**
+ *
+ *    The function configures system tower as a temporary workaround to support SVP. 
+ *    System tower should be configured by HSP FW in the production flow
+ * 
+ *    @param[in] die_num
+ *              Current die numer
+ * 
+ *    @retval none
+ */
+void css_configure_system_tower(uint8_t die_num);

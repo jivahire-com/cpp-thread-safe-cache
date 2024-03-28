@@ -3,6 +3,7 @@ avs
 clocks_sequence
 cml
 cmn800
+cmn800_sequence
 cmn800_skus
 cmsdk_wd
 ddr_i3c

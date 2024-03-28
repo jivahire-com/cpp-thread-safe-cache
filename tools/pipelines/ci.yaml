@@ -47,6 +47,13 @@ stages:
       Configuration: Release
       ArtifactName: bins
 
+- stage: Pythia_Tests
+  dependsOn: [Build_Arm_EABI_AARCH_Debug]
+  pool: 
+    name: 1pfw-kingsgate-windows
+  jobs:
+  - template: templates/pythia_test.yaml
+
 - stage: Unit_Test_x86
   dependsOn: Build_x86_Debug
   pool: 
@@ -63,7 +70,7 @@ stages:
 
 # Promote is to tag the merge commit so that it can be used by tag reference. This stage is configured to tag by BuildNumber after every PR closure.
 - stage: Promote
-  dependsOn: [Unit_Test_x86, Build_x86_Debug, Build_Arm_EABI_AARCH_Release, Build_Arm_EABI_AARCH_Debug]
+  dependsOn: [Unit_Test_x86, Build_x86_Debug, Build_Arm_EABI_AARCH_Release, Build_Arm_EABI_AARCH_Debug, Pythia_Tests]
   # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
   condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
   pool: 

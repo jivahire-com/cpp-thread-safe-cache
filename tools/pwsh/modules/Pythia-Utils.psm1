@@ -68,8 +68,6 @@ Function Invoke-Pythia(
 
     # Setup the paths for the necessary Pythia configurations
     # In\Out for pre/post processed json files (for variable expansion)
-    $recipe_file_in = Join-Path -Path $env:REPO_APP_ROOT -ChildPath "tests\functional\pythia\recipes\svp.json"
-    $recipe_file_out = Join-Path -Path $test_results_dir -ChildPath "recipe.json"
 
     $workspace_config_in = Join-Path -Path $env:REPO_APP_ROOT -ChildPath "tests\functional\pythia\configs\svp_workspace.json"
     $workspace_config_out = Join-Path -Path $test_results_dir -ChildPath "workspace.json"
@@ -78,29 +76,11 @@ Function Invoke-Pythia(
     $host_config_out = Join-Path -Path $test_results_dir -ChildPath "host.json"
 
     # Create new json files with expanded string values, expanding environment variables
-    Expand-File -in_file $recipe_file_in -out_file $recipe_file_out
     Expand-File -in_file $workspace_config_in -out_file $workspace_config_out
     Expand-File -in_file $host_config_in -out_file $host_config_out
 
-    # Setup the payload needed by Pythia
-    $recipe_payload_dest = Join-Path -Path $pythia_test_dir -ChildPath ("payload_"+ [IO.Path]::GetFileNameWithoutExtension($recipe_file_in))
-
-    # Does this payload already exist, if not download it
-    if (-not (Test-Path -Path $recipe_payload_dest))
-    {
-        Write-Host "`Creating: $recipe_payload_dest"
-
-        # Create the recipe payload from the json
-        & ${env:REPO_APP_PATH_python.win64}\tools\python.exe -m pythia.tdk.rrm.payload_download.payload_download `
-            --recipe $recipe_file_out `
-            --version "0" `
-            --dest $recipe_payload_dest
-
-        Write-Host "`tPayload Directoy created! Created: $recipe_payload_dest"
-    }
-    else {
-        Write-Host "`tPayload Directoy already exists! Not creating: $recipe_payload_dest"
-    }
+    # Set the payload to the pre-made SVP Payload
+    $recipe_payload_dir = Join-Path -Path $env:REPO_APP_ROOT -ChildPath "tests\functional\pythia\payloads\payload_svp"
 
     Write-Host ""
     Write-Host "`tStoring Test Results: $test_results_dir "
@@ -108,10 +88,9 @@ Function Invoke-Pythia(
 
     Write-Host ""
     Write-Host "`t`tUsing Test: $test"
-    Write-Host "`t`tUsing Recipe: $recipe_file_out"
     Write-Host "`t`tUsing Workspace Config: $workspace_config_out"
     Write-Host "`t`tUsing Host Config: $host_config_out"
-    Write-Host "`t`tUsing Payload: $recipe_payload_dest"
+    Write-Host "`t`tUsing Payload: $recipe_payload_dir"
     Write-Host ""
 
     # This can also be set via the host configuration json for pythia, however that requires absolute paths.
@@ -135,7 +114,7 @@ Function Invoke-Pythia(
             & ${env:REPO_APP_PATH_python.win64}\tools\python.exe -m robot `
             --variable WORKSPACE_CONFIG:"$workspace_config_out" `
             --variable LOG_DIR:"$test_results_dir" `
-            --variable PAYLOAD_DIR:"$recipe_payload_dest" `
+            --variable PAYLOAD_DIR:"$recipe_payload_dir" `
             --variable HOST_CONFIG:"$host_config_out" `
             --debugfile rlog.txt  `
             --outputdir $test_results_dir `
@@ -150,7 +129,7 @@ Function Invoke-Pythia(
             & ${env:REPO_APP_PATH_python.win64}\tools\python.exe $test `
             --workspace_config $workspace_config_out `
             --log_dir $test_results_dir `
-            --payload_dir $recipe_payload_dest `
+            --payload_dir $recipe_payload_dir `
             --host_config $host_config_out
         }
         default {
@@ -164,4 +143,5 @@ Function Invoke-Pythia(
     Write-Host ""
     Write-Host "`tPythia Tests Completed. Please see tests results: $test_results_dir"
     Write-Host ""
+
 }

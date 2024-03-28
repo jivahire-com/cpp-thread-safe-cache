@@ -1,0 +1,60 @@
+parameters:
+- name: Toolchain
+  type: string
+  default: 'arm-eabi-aarch'
+- name: Configuration
+  type: string
+  default: 'Debug'
+- name: Test_Suite_Path
+  type: string
+  default: 'tests\functional\pythia\'
+
+jobs:
+- job: 'Pythia_Tests'
+  displayName: Pythia Tests
+  steps: 
+
+    # Set up permissions for other repos
+    - template: auth.yaml
+
+    # Dump agent information (useful for debugging)
+    - template: agent_info.yaml
+
+    # 1. Setup the environment for the toolchain \ configuration
+    # 2. Build the FW
+    # 3. Invoke Pythia
+    # Logs will be under $(Build.SourcesDirectory)\.testlogs\pythia
+    - task: PowerShell@2
+      displayName: Run Test Suites
+      env:
+        AZURE_DEVOPS_EXT_PAT : $(System.AccessToken)
+      inputs:
+        workingDirectory: '$(Build.SourcesDirectory)'
+        targetType: 'inline'
+        showWarnings: true
+        script: | 
+          ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
+          build
+          Invoke-Pythia -test ${{ parameters.Test_Suite_Path }}
+
+    # Publish the results of the test suite
+    - task: PublishTestResults@2
+      displayName: Publish Pythia Tests Results
+      condition: succeededOrFailed()
+      inputs:
+        testRunTitle: 'Kingsgate Pythia Tests'
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '**\Results.xml'
+        searchFolder: '$(Build.SourcesDirectory)\.testlogs\pythia'
+        failTaskOnFailedTests: true
+        publishRunAttachments: true
+        mergeTestResults: true
+
+    # Publish results as a pipeline artifact
+    - task: PublishBuildArtifacts@1
+      displayName: Publish test results
+      condition: succeededOrFailed()
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)\.testlogs\pythia'
+        ArtifactName: 'PythiaTestResults'
+        publishLocation: 'Container'

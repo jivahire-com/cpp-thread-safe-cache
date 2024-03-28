@@ -1,0 +1,14 @@
+steps:
+- task: PowerShell@2
+  displayName: Agent Information
+  inputs:
+    targetType: 'inline'
+    script: |
+      $computer_info = Get-ComputerInfo
+      $ipconfig = ipconfig -all
+
+      Write-Host "------- Computer Info -------"
+      $computer_info
+
+      Write-Host "------- IP Config -------"
+      $ipconfig

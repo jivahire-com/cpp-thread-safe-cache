@@ -97,6 +97,14 @@ SECTIONS
         _EventMetadata_Test_et_msdata_end = ABSOLUTE(.);
     } > CODE
 
+   .note.gnu.build-id : ALIGN(4)
+    {
+        _build_id_msdata_start = ABSOLUTE(.);
+        *(.note.gnu.build-id)
+        . = ALIGN (4);
+        _build_id_msdata_end = ABSOLUTE(.);
+    } > CODE
+
     .data : 
     {
         __data_load_start__ = LOADADDR(.data);

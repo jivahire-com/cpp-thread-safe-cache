@@ -61,6 +61,7 @@ target_link_options(
             -Wl,-Map=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/scp/${TARGET}.map 
             -L${CMAKE_CURRENT_SOURCE_DIR}/../inc
             -ereset_handler
+            -Wl,--build-id
 )
 
 set_property(

@@ -29,6 +29,26 @@ jobs:
         script: |
           ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
           build
+          
+    - task: PowerShell@2
+      displayName: Copy Artifacts
+      inputs:
+        targetType: 'inline'
+        script: |
+          mkdir -p publish
+          Copy-Item -Path .\.build\${{ parameters.Configuration }}\**\bin\* -Recurse -Destination ./publish
+          Copy-Item -Recurse ./publish $(Build.ArtifactStagingDirectory)
+
+    - task: PublishSymbols@2
+      displayName: Publish Symbol Files - Debug and Release
+      condition: succeeded()
+      inputs:
+        SymbolsFolder: '$(Build.ArtifactStagingDirectory)/publish'
+        SearchPattern: |
+          *.elf
+          *.pdb
+        SymbolServerType: 'TeamServices'
+        SymbolExpirationInDays: '365'
 
     # Publish results as a pipeline artifact
     - task: PublishBuildArtifacts@1

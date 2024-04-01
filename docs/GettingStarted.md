@@ -12,7 +12,7 @@
 1. Enable Windows Long Paths from an Administrator PowerShell:
 
     ```pwsh
-    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -Type DWORD
+    New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
     ```
 
 **NOTE:** Remaining pre-requisites will be automatically setup and installed by the repo through packaging tools.

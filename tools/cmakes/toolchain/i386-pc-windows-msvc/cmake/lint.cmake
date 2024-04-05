@@ -1,8 +1,5 @@
 function(lint_target TARGET)
 
-    # Increased warning level
-    target_compile_options(${TARGET} PRIVATE -Wall -Wextra -Werror -Wextra-semi)
-
     # Clang-Tidy linter
     if (DEFINED REPO_CLANG_TIDY)
         set_target_properties(${TARGET} PROPERTIES CXX_CLANG_TIDY "${REPO_CLANG_TIDY}")

@@ -5,7 +5,7 @@ set(TARGET_URL $ENV{REPO_APP_GIT_THREADX.URL})
 set(TARGET_DIR ${REPO_ROOT_DIR}/.externs/repo/threadx)
 
 # Add special compile options for subdirectory
-#add_compile_options(-Wno-deprecated-declarations -Wno-invalid-noreturn)
+add_compile_options(-w)
 
 FetchContent_Declare(
     ${TARGET}

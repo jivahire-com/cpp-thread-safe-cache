@@ -1,6 +1,9 @@
 set(TARGET 1pfw_fwlibs)
 set(TARGET_DIR ${REPO_ROOT_DIR}/.externs/repo/1pfw_fwlibs)
 
+# Disable warnings for shared libs
+add_compile_options(-w)
+
 # Options for cmake module
 option(FPFW_ENABLE_TESTS "Compiles unit tests" OFF)
 option(FPFW_ENABLE_COVERAGE "Enables code coverage in compilation" OFF)

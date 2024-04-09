@@ -1,6 +1,17 @@
 {
     "configurations": [
         {
+            "name": "(Windows) Launch",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${input:programName}",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "externalTerminal"
+        },
+        {
             "name": "MCP SVP - DIE 0",
             "type": "cppdbg",
             "request": "launch",
@@ -44,5 +55,13 @@
                 }
             ]
         },
+    ],
+    "inputs": [
+        {
+            "id": "programName",
+            "description": "Program to Run",
+            "default": "",
+            "type": "promptString"
+        }
     ]
 }

@@ -1,5 +1,3 @@
-enabled_on(arm-eabi-aarch)
-
 set(TARGET_DIR ${REPO_ROOT_DIR}/.externs/repo/silibs)
 set(LIB_OUTS_DIR ${CMAKE_BINARY_DIR})
 
@@ -21,6 +19,13 @@ add_compile_options(-w)
 file (STRINGS "silibs_manifest" SILIB_LIST)
 
 foreach(SILIB ${SILIB_LIST})
+  # TODO: Currently RAS and CMN800 libs don't build on clang
+  # ADO: 1749700
+  if(SILIB MATCHES "ras_|cmn800|cml" AND "$ENV{REPO_APP_TOOLCHAIN}" STREQUAL "i386-pc-windows-msvc")
+    message("Skipping silibs/${SILIB} ...")
+    continue()
+  endif()
+
   message("Adding silibs/${SILIB} ...")
   add_subdirectory(${TARGET_DIR}/libraries/${SILIB} ${LIB_OUTS_DIR}/${SILIB})
 endforeach()

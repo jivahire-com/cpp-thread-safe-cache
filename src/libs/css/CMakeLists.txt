@@ -1,5 +1,3 @@
-enabled_on(arm-eabi-aarch)
-
 set(TARGET kng.lib.css)
 
 add_library(${TARGET} 

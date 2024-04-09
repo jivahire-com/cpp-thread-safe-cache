@@ -1,0 +1,36 @@
+set(TARGET css_init.test)
+
+set(SOURCES
+    test_css_init.cpp
+    ${CMAKE_SOURCE_DIR}/src/apps/scp/src/css_init.c
+)
+
+# Compile test
+add_executable(${TARGET} ${SOURCES})
+
+target_link_libraries(${TARGET}
+    PRIVATE
+        atu
+        clocks_sequence
+        fwlib.init
+        idhw
+        idsw
+        ms::cmocka::testrunner
+        ms::lib::css
+        silibs_platform
+        tower_system_control
+)
+
+lint_target(${TARGET})
+format_target(${TARGET})
+coverage_target(${TARGET})
+unit_test_target(${TARGET})
+
+#mock the functions needed
+mock_target(${TARGET}
+    css_configure_system_tower
+    css_post_mesh_init
+    css_pre_mesh_init
+    idhw_get_die_id
+    idsw_get_platform_sdv
+)

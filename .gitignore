@@ -49,3 +49,6 @@
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Merge files
+*.orig

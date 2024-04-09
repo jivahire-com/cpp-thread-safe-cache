@@ -19,6 +19,10 @@ set(TARGET scp_fw)
 add_executable(
     ${TARGET}
         main.c
+        css_init.c
+        et_init.c
+        mesh_init.c
+        uart_init.c
         scp_events.c
 )
 
@@ -39,6 +43,7 @@ target_link_libraries(
             ms::lib::cortex::m7::nvic
             fwlib.platform.dfwkhost.threadx
             fwlib.dfwk
+            fwlib.init
             idsw
             idhw
             silibs_platform

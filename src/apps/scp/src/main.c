@@ -9,20 +9,17 @@
 
 /*------------- Includes -----------------*/
 #include <DfwkThreadXHost.h>
-#include <css.h>
 #include <debug.h>
+#include <fpfw_init.h>
 #include <idhw.h>
 #include <idsw.h>
-#include <mesh.h>
 #include <nvic.h>
-#include <scp_event_trace_collector.h>
 #include <scp_events.h>
 #include <silibs_scp_top_regs.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <tx_api.h>
-#include <uart.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define KB                  (1024)
@@ -45,6 +42,9 @@ static uint8_t* s_main_stack;
 
 static uint8_t* s_dfwk_stack;
 static DFWK_THREADX_HOST s_dfwk_host;
+
+extern fpfw_init_component_t _data_fpfw_init_start;
+extern fpfw_init_component_t _data_fpfw_init_end;
 
 /*-------------- Functions ---------------*/
 
@@ -77,31 +77,13 @@ static void soc_init(void)
     /* Get SoC Versions, IDs and Configuration */
     get_soc_hw_version_id_config();
 
-    UartInit(UART0BASE_SCP);
     DebugInit();
-
-    uint8_t die_num = (uint8_t)idhw_get_die_id();
-    printf("die_num %d\n", die_num);
-
-    css_pre_mesh_init(die_num);
-
-    // TODO: System tower should be configured by HSP, until then configure here for SVP
-    if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
-    {
-        printf("Initializing System Control Tower\n");
-        css_configure_system_tower(die_num);
-        printf("System Control Tower initialization complete.\n");
-    }
-
-    mesh_init(die_num);
-    css_post_mesh_init();
 }
 
 // Prior to main, an assembly function initializes .bss and invokes constructors
 // see cortexm7_vectors.S for the initial reset_handler entrypoint
 int main(void)
 {
-
     soc_init();
 
     /* Enter the ThreadX kernel. Performing Low and High level initialization. */
@@ -149,22 +131,22 @@ void tx_application_define(void* firstUnusedMemory)
 
     /* Post ThreadX Low \ High Level initialization CM7 Setup */
     nvic_init(true);
-
-    /* Core Service(s) initialization */
-    scp_etc_initialize();
 }
 
 // The main initialization routine executes on a thread to allow the use of synchronization objects
 void main_thread(ULONG thread_input)
 {
-    uint32_t count = 0;
     UNUSED(thread_input);
 
-    printf("\nHello World - SCP!\n");
+    // Initialize components defined by FPFW init library
+    fpfw_init(&_data_fpfw_init_start, &_data_fpfw_init_end);
 
     (void)DfwkThreadxHostInitialize(&s_dfwk_host, s_dfwk_stack, DFWK_STACK_SIZE, 1, 1, TX_NO_TIME_SLICE);
 
+    printf("\nHello World - SCP!\n");
+
     // Do nothing
+    uint32_t count = 0;
     while (true)
     {
         tx_thread_sleep(2);

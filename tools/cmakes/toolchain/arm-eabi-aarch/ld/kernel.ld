@@ -105,6 +105,14 @@ SECTIONS
         _build_id_msdata_end = ABSOLUTE(.);
     } > CODE
 
+    .data.fpfw_init : ALIGN(4)
+    {
+        _data_fpfw_init_start = ABSOLUTE(.);
+        *(.data.fpfw_init)
+        . = ALIGN (4);
+        _data_fpfw_init_end = ABSOLUTE(.);
+    } > CODE
+
     .data : 
     {
         __data_load_start__ = LOADADDR(.data);

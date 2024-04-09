@@ -13,6 +13,7 @@
 #include <debug.h>
 #include <mcp_event_trace_collector.h>
 #include <mcp_events.h>
+#include <nvic.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -55,7 +56,7 @@ int main(void)
 
     soc_init();
 
-    /* Enter the ThreadX kernel.  */
+    /* Enter the ThreadX kernel. Performing Low and High level initialization. */
     tx_kernel_enter();
 
     /* Keep compiler happy, we should never return from the kernel */
@@ -77,6 +78,8 @@ void tx_application_define(void* firstUnusedMemory)
     // in mcp we have no use for this pointer
     UNUSED(firstUnusedMemory);
 
+    /* ThreadX Component Utilization */
+
     /* Create a byte memory pool from which to allocate the thread stacks.  */
     (void)tx_byte_pool_create(&s_stack_mem_pool_ctrl, "stack byte pool", &s_stack_pool_memory, STACK_MEM_POOL_SIZE);
 
@@ -96,6 +99,10 @@ void tx_application_define(void* firstUnusedMemory)
 
     (void)tx_byte_allocate(&s_stack_mem_pool_ctrl, (VOID**)&s_dfwk_stack, DFWK_STACK_SIZE, TX_NO_WAIT);
 
+    /* Post ThreadX Low \ High Level initialization CM7 Setup */
+    nvic_init(true);
+
+    /* Core Service(s) initialization */
     mcp_etc_initialize();
 }
 

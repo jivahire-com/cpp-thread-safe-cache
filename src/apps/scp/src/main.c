@@ -14,8 +14,10 @@
 #include <idhw.h>
 #include <idsw.h>
 #include <mesh.h>
+#include <nvic.h>
 #include <scp_event_trace_collector.h>
 #include <scp_events.h>
+#include <silibs_scp_top_regs.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -27,9 +29,6 @@
 #define STACK_MEM_POOL_SIZE (32 * KB)
 #define MAIN_STACK_SIZE     (4 * KB)
 #define DFWK_STACK_SIZE     (4 * KB)
-
-// System ID Registers (SID)
-#define SCP_TOP_SYS_ID_ADDRESS (0x2A4A0000)
 
 /*--------- Typedefs ----------*/
 
@@ -48,10 +47,11 @@ static uint8_t* s_dfwk_stack;
 static DFWK_THREADX_HOST s_dfwk_host;
 
 /*-------------- Functions ---------------*/
+
 static void get_soc_hw_version_id_config()
 {
     /* Set System ID Base Address*/
-    idhw_set_sid_base((uintptr_t)SCP_TOP_SYS_ID_ADDRESS);
+    idhw_set_sid_base((uintptr_t)SCP_TOP_SID_ADDRESS);
 
     /* Set CPU type to SCP */
     idsw_set_cpu_type(CPU_SCP);
@@ -94,7 +94,6 @@ static void soc_init(void)
     }
 
     mesh_init(die_num);
-
     css_post_mesh_init();
 }
 
@@ -105,7 +104,7 @@ int main(void)
 
     soc_init();
 
-    /* Enter the ThreadX kernel.  */
+    /* Enter the ThreadX kernel. Performing Low and High level initialization. */
     tx_kernel_enter();
 
     /* Keep compiler happy, we should never return from the kernel */
@@ -127,6 +126,8 @@ void tx_application_define(void* firstUnusedMemory)
     // in SCP we have no use for this pointer
     UNUSED(firstUnusedMemory);
 
+    /* ThreadX Component Utilization */
+
     /* Create a byte memory pool from which to allocate the thread stacks.  */
     (void)tx_byte_pool_create(&s_stack_mem_pool_ctrl, "stack byte pool", &s_stack_pool_memory, STACK_MEM_POOL_SIZE);
 
@@ -146,6 +147,10 @@ void tx_application_define(void* firstUnusedMemory)
 
     (void)tx_byte_allocate(&s_stack_mem_pool_ctrl, (VOID**)&s_dfwk_stack, DFWK_STACK_SIZE, TX_NO_WAIT);
 
+    /* Post ThreadX Low \ High Level initialization CM7 Setup */
+    nvic_init(true);
+
+    /* Core Service(s) initialization */
     scp_etc_initialize();
 }
 

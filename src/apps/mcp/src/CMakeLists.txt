@@ -34,6 +34,7 @@ target_link_libraries(
             ms::service::mcp_etc
             ms::driver::uart
             ms::vectors::cortex_m7
+            ms::lib::cortex::m7::nvic
             fwlib.platform.dfwkhost.threadx
             fwlib.dfwk
 )

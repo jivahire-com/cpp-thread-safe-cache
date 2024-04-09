@@ -36,12 +36,13 @@ target_link_libraries(
             ms::service::scp_etc
             ms::driver::uart
             ms::vectors::cortex_m7
+            ms::lib::cortex::m7::nvic
             fwlib.platform.dfwkhost.threadx
             fwlib.dfwk
             idsw
             idhw
-            kng_silibs_platform
             silibs_platform
+            silibs::kng_silibs_platform
 )
 
 target_include_directories(

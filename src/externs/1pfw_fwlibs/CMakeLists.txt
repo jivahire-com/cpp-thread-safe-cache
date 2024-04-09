@@ -14,7 +14,6 @@ option(FPFW_ENABLE_DOCS "Creates doxygen documentation" OFF)
 set(FPFW_PLATFORM_IMPL_LOCK "fwlib.platform.lock.threadx")
 
 # Generic ports implmented within this project
-set(FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 set(FPFW_PLATFORM_IMPL_THREADX "ms::lib::threadx")
 
 include(FetchContent)
@@ -36,5 +35,3 @@ include($ENV{REPO_APP_CMAKE_TOOLCHAIN_DIR}/cmake/lint.cmake)
 include($ENV{REPO_APP_CMAKE_TOOLCHAIN_DIR}/cmake/format.cmake)
 include($ENV{REPO_APP_CMAKE_TOOLCHAIN_DIR}/cmake/coverage.cmake)
 include($ENV{REPO_APP_CMAKE_TOOLCHAIN_DIR}/cmake/mock.cmake)
-
-add_subdirectory(ports)

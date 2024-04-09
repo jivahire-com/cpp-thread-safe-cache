@@ -11,6 +11,7 @@
 #include <FpFwAssert.h>
 #include <cmn800_sequence.h>
 #include <cmn_config.h>
+#include <idsw.h>
 #include <kng_soc_constants.h>
 #include <mesh.h>
 #include <stdint.h>
@@ -34,6 +35,12 @@ void mesh_init(uint8_t die_num)
     cmn800_sequence_param.D2D_INIT = 0;
     cmn800_sequence_param.SKIP_PERIPH_TOWER_INIT = 0;
     cmn800_sequence_param.SKIP_FABRIC_TOWER_INIT = 0;
+
+    if (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE)
+    {
+        cmn800_sequence_param.cmn_config_enum = CONFIG_1D_UMA_8HNS_HIER_3SN_enum; // 1 Die FPGA
+        printf("cmn800_sequence_param.cmn_config_enum 0x%lx\n", cmn800_sequence_param.cmn_config_enum);
+    }
 
     sts = cmn800_sequence(cmn800_sequence_param);
     printf("cmn800_sequence sts 0x%x\n", sts);

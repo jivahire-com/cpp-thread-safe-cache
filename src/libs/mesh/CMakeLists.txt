@@ -12,6 +12,7 @@ target_link_libraries(${TARGET}
     cmn800
     cmn800_skus
     cmn800_sequence
+    idsw
     fwlib.assert
     kng_silibs_platform
     ppu_v1

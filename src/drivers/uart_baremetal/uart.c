@@ -16,6 +16,8 @@
 /* cSpell:ignore LCRL LCRM LCRH */
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define UART_CORE_CLOCK (10UL * 1000UL * 1000UL)
+#define PL011_ECR_CLR   UINT8_C(0xFF)
 
 /*-------------- Typedefs ----------------*/
 
@@ -32,15 +34,29 @@ static uint32_t uart_base_addr = UART0BASE_SCP;
  */
 void UartInit(uint32_t base_addr)
 {
+    uint32_t clock_rate_x4;
+    uint32_t divisor_integer;
+    uint32_t divisor_fractional;
+    uint32_t divisor;
+
     uart_base_addr = base_addr;
 
     // Disable the serial port while setting the baud rate and word length
     UART0_CR = 0;
 
-    // Set the correct baud rate and word length. TODO: Update this as needed for HW.
-    UART0_LCRL = LCRL_Baud_460800;
-    UART0_LCRM = LCRM_Baud_460800;
-    UART0_LCRH = LCRH_Word_Length_8;
+    // 10Mhz x 4 for Big FPGA
+    clock_rate_x4 = UART_CORE_CLOCK * 4;
+
+    /* Calculate integer and fractional divisors */
+    divisor = clock_rate_x4 / 115200;
+    divisor_integer = divisor / 64;
+    divisor_fractional = divisor % 64;
+
+    UART0_LCRL = divisor_integer;
+    UART0_LCRM = divisor_fractional;
+
+    UART0_ECR = PL011_ECR_CLR;
+    UART0_LCRH = LCRH_Word_Length_8 | LCRH_Fifo_Enabled;
 
     // Now enable the serial port
     UART0_CR = CR_UART_Enable | CR_TX_Int_Enable | CR_RX_Int_Enable; // Enable UART0 with no interrupts

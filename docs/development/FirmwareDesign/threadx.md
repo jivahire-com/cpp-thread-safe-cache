@@ -19,6 +19,8 @@ This document is intended to provide more detail into how ThreadX is initialized
 | - | - |
 | CM7 | Cortex M7 |
 | crt0 | Startup routine(s) linked into a C program that performs any initialization work before calling `main()` |
+| DTCM | Data Tightly Coupled Memory |
+| ITCM | Instruction Tightly Coupled Memory |
 | RTOS | Real Time Operating System |
 
 ### Reference Documents
@@ -45,6 +47,33 @@ We utilize two linker scripts, one that defines sections / etc... that every cor
 Every core should include the common linker script found [here](../../../tools/cmakes/toolchain/arm-eabi-aarch/ld/kernel.ld). It setups the sections in the necessary locations, as defined per core (which requires this to be included in each cores script after defining necessary setup). One of which is setting the vector table to be at the start of the CODE section.
 
 You can see an example of a core specific linker script (that uses the common one) [here](../../../src/apps/scp/inc/scp_memory.ld).
+
+### Linker Sections
+
+The MCP and SCP cores contain two blocks of tightly coupled memory, ITCM and DTCM. Instructions are executed out of the ITCM and data is placed within the DTCM (data, bss, heap, etc..).
+
+Each core must setup the required start addresses and sizes used by the common linker script:
+
+```c
+   __CODE_START__ // Start address of instruction memory
+   __CODE_SIZE__  // Size of instruction memory, in bytes
+   __DATA_START__ // Start address of data memory
+   __DATA_SIZE__  // Size of data memory, in bytes
+   __STACKSIZE__  // Size of the ThreadX System Stack
+```
+
+These map directly to the start and sizes of the TCMs for each core. The ThreadX System Stack is placed at the very end of the DATA region.
+
+#### Common Sections
+
+| Section | Memory Region | Description |
+| - | - | - |
+| .vectors | CODE | Initial Vector Table |
+| .text | CODE | Executable Instructions \ Non Code Writeable Data |
+| .data | DATA |  Initialized, non-zero, data |
+| .bss | DATA | Uninitialized, or zero initialized, data |
+| .heap | DATA | Space available for dynamic allocation. Spans from the end of the .bss section to `__STACKSIZE__` from the end of of the DATA region |
+| .stack | DATA | Memory at the end of the DATA region allocated for the ThreadX System Stack |
 
 ## ThreadX
 

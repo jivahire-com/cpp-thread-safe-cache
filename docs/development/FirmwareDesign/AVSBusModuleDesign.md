@@ -260,8 +260,8 @@ Callback execution will be handled by the Driver completing the associated reque
 the DFWK and the DFWK executing the callback, outside of the Driver's context, ensuring passive
 completion of callbacks (outside of ISRs).
 
-Finally, the client receives and processes the *MOD_AVS_REQUEST*
-response event sent by the AVS driver.
+Finally, the client receives and processes the *AVS request*
+response sent by the AVS driver.
 
 ## API
 
@@ -273,13 +273,15 @@ The AVS driver APIs shall be available to the client to do the following:
 
  The goal is to be able to send multiple commands at once, without waiting for the return.  This should be feasible via the avs_send_cmd_frame API (AVS lib).
 
-| API                                                                           | Description                                           |
-| -----------                                                                   | ----------------------------------------------------- |
-| ModAVSClientWrite         | Write data to the voltage rail |
-| ModAVSClientRead          | Read data from the voltage rail|
-| ModAVSClientReadAll       | Read voltage, current, temperature from the voltage rails|
-| ModAVSClientWriteMulti    | Writes data to multiple client specified voltage rails |
-| ModAVSClientReadsMulti    | Reads data from multiple client specified rails |
+| API                          | Description                                           |
+| -----------                  | ----------------------------------------------------- |
+| scp_avs_client_write         | Write data to the voltage rail |
+| scp_avs_client_read          | Read data from the voltage rail|
+| scp_avs_client_read_all      | Read voltage, current, temperature from the voltage rails|
+| scp_avs_client_write_multi   | Writes data to multiple client specified voltage rails |
+| scp_avs_client_read_multi    | Reads data from multiple client specified rails |
+| scp_avs_status_error         | Checks the data read for errors |
+
 Command data types used with scp_avs API's (avs_lib.h)
 ```C
 typedef enum
@@ -338,40 +340,51 @@ enum avs_bus_id
     AVS_BUS_MAX
 };
 
-enum avs_internal_event_idx
+enum avs_sync_request_type
 {
-    AVS_EVENT_WRITE_DATA,   // non _RESP events are triggered by the client
-    AVS_EVENT_READ_DATA,
-    AVS_EVENT_READ_ALL_VCT,
-    AVS_EVENT_READ_MULTI,
-    AVS_EVENT_WRITE_MULTI,
-    AVS_EVENT_WRITE_DATA_RESP,  // the _RESP events are triggered when the avs_libs interrupt occurs
-    AVS_EVENT_READ_DATA_RESP,
-    AVS_EVENT_READ_ALL_VCT_RESP,
-    AVS_EVENT_READ_MULTI_RESP,
-    AVS_EVENT_WRITE_MULTI_RESP,
-    AVS_EVENT_COMPLETE,
-    AVS_EVENT_COUNT
+    AVS_GET_ERROR_COUNTS
 };
 
-// Defines used with mod_avs_status_error(uint32_t resp_data)
-#define AVS_ERROR_NONE                  0x00
-#define AVS_ERROR_CRC                   0x01  // Interrupt CRC error
-#define AVS_ERROR_ACK_NO_ACTION_BUSY    0x02  // TargetAck = 0x01 Good CRC, no action taken, resource busy
-#define AVS_ERROR_ACK_BAD_CRC_NO_ACTION 0x04  // TargetAck = 0x10 Bad CRC, no action taken
-#define AVS_ERROR_ACK_INVALID_NO_ACTION 0x08  // TargetAck = 0x11 Good CRC, invalid selector, data type or incorrect data. No action taken
-#define AVS_VDONE                       0x10  // VDone - bit
-#define AVS_ERROR_STATUS_ALERT          0x20  // StatusAlert bit 19 in response.
-#define AVS_NO_CONTROL                  0x40  // AVS_Ctrl StatusResponse bit (1 when controlling AVS output, 0 when not) set this bit when no control
+enum avs_internal_request_type_idx
+{
+    AVS_REQUEST_READ_DATA,  // non _RESP events are triggered by the client
+    AVS_REQUEST_WRITE_DATA,
+    AVS_REQUEST_READ_ALL_VCT,
+    AVS_REQUEST_READ_MULTI,
+    AVS_REQUEST_WRITE_MULTI,
+    AVS_REQUEST_WRITE_DATA_RESP,  // the _RESP events are triggered when the avs_libs interrupt occurs, TBD if these are needed
+    AVS_REQUEST_READ_DATA_RESP,
+    AVS_REQUEST_READ_ALL_VCT_RESP,
+    AVS_REQUEST_READ_MULTI_RESP,
+    AVS_REQUEST_WRITE_MULTI_RESP,
+    AVS_REQUEST_COUNT
+};
+
+// Defines used with scp_avs_status_error(uint32_t resp_data)
+typedef struct _avs_error_t
+{
+    union {
+        struct {
+            uint8_t crc_error : 1;          // Interrupt CRC error
+            uint8_t no_action_busy : 1;     // TargetAck = 0x01 Good CRC, no action taken, resource busy
+            uint8_t bad_crc_no_action : 1;  // TargetAck = 0x10 Bad CRC, no action taken
+            uint8_t invalid_no_action : 1;  // TargetAck = 0x11 Good CRC, invalid selector, data type or incorrect data. No action taken
+            uint8_t v_done : 1;             // VDone - bit
+            uint8_t status_alert : 1;       // StatusAlert bit 19 in response
+            uint8_t no_control : 1;         // AVS StatusResponse bit (1 when controlling AVS output, 0 when not) set this bit when no control
+       };
+       uint8_t as_uint8;
+    };
+} avs_error_t, *pavs_error;
 
 /*-------------- Typedefs ----------------*/
-typedef struct _avs_error_count_t {
+typedef struct _scp_avs_error_count_t {
     uint16_t crc_error_count;
     uint16_t ack_no_action_busy_error_count;
     uint16_t ack_bad_crc_no_action_error_count;
     uint16_t ack_invalid_no_action_error_count;
     uint16_t status_alert_error_count;
-} avs_error_count_t;
+} scp_avs_error_count_t, *pscp_avs_error_count;
 
 typedef struct _avs_device_t {
   uint8_t dev_id;
@@ -380,33 +393,32 @@ typedef struct _avs_device_t {
 /*!
  * \brief AVS Event Delayed Response params (16bytes max framework limitation)
  */
-typedef struct _avs_event_params_t {
+typedef struct _scp_avs_command_params_t {
     union {
         void *data_ptr;
         uint32_t avs_data;
     } data;
     uint8_t error;
-    uint8_t bus_id;              // 0 - 4 (0 - 3 on Die 0, 4 on Die 1)
     uint8_t rail_id;             // specific rail or rail number to start reading (in avs_master_command_mem_start_t this is 'command_type')
     uint8_t rail_count_to_read;  // number of rails requested to be read
     uint8_t cmd_type : 4;        // commands (AVS_VOLTAGE_RW, AVS_CURRENT_READ, etc.), are 4 bits - extra bits can indicate special cases like v+c+t
     uint8_t rsvd : 3;            // unused
     uint8_t unused : 1;
-} avs_event_params_t;
+} scp_avs_command_params_t;
 
-typedef struct _avs_vr_vct_t {
-    uint16_t voltage;      // 1LSB=1mV
-    uint16_t current;      // 1LSB=10mA
-    uint16_t temperature;  // 1LSB=0.1C
+typedef struct _scp_avs_vr_vct_t {
+    uint16_t voltage_mV;      // 1LSB=1mV
+    uint16_t current_cA;      // 1LSB=10mA
+    uint16_t temperature_dC;  // 1LSB=0.1 Celsius
     uint8_t error_voltage;
     uint8_t error_current;
     uint8_t error_temperature;
-} avs_vr_vct_t;
+} _scp_avs_vr_vct_t;
 
 /*!
  * \brief Module AVS
  */
-typedef struct _mod_avs_config_t {
+typedef struct _scp_avs_config_t {
     /*! Interrupt number of the AVSBus */
     const unsigned int avs_irq;
     /*! Address of avs */
@@ -417,7 +429,7 @@ typedef struct _mod_avs_config_t {
     uintptr_t nw_afm_csr_avs_clk_addr;
     /*! MData, drive strength range = 0 - 7 */
     uintptr_t nw_afm_csr_mdata_addr;
-} mod_avs_config_t;
+} scp_avs_config_t;
 
 struct avs_element {
     /*! Element name */
@@ -428,28 +440,30 @@ struct avs_element {
     const void *data;
 } ;
 
-typedef struct _mod_avs_request_t {
-    DFWK_ASYNC_REQUEST_HEADER header;
-    avs_vr_vct_t *avs_response_data;  // Response structure (avs_vr_vct_t) used when reading AVS VCT. Have the client provide a pointer to this.
-    avs_event_params_t *avs_params; 
-} mod_avs_request_t, *pmod_avs_request;
+typedef struct _scp_avs_request_t {
+    DFWK_ASYNC_REQUEST_HEADER Header;
+    scp_avs_vr_vct_t *avs_response_data;  // Response structure (scp_avs_vr_vct_t) used when reading AVS VCT. Have the client provide a pointer to this.
+    scp_avs_command_params_t *avs_params; 
+} scp_avs_request_t, *pscp_avs_request;
 
-typedef struct _mod_avs_device_t {
-    DFWK_DEVICE_HEADER header;
-    const mod_avs_config_t *config;
+typedef struct _scp_avs_device_t {
+    DFWK_DEVICE_HEADER Header;
+    const scp_avs_config_t *config;
     DFWK_QUEUE avs_queue;
-    pmod_avs_request outstanding_request;
+    pscp_avs_request outstanding_request;
     uint8_t avs_bus_num;
-} mod_avs_device_t, *pmod_avs_device;
+    pscp_avs_error_count avs_response_errors;
+} scp_avs_device_t, *pscp_avs_device;
 
-typedef struct _mod_avs_interface_t {
+typedef struct _scp_avs_interface_t {
     DFWK_INTERFACE_HEADER Header;
-    pmod_avs_device Device;
-} mod_avs_interface_t, *pmod_avs_interface;
+    pscp_avs_device Device;
+} scp_avs_interface_t, *pscp_avs_interface;
 
-typedef struct _mod_avs_get_request_t {
+typedef struct {
     DFWK_SYNC_REQUEST_HEADER Header;
-} mod_avs_get_request_t, *pmod_avs_get_request;
+    pscp_avs_error_count avs_request_errors;
+} scp_avs_get_request_t, *pscp_avs_get_request;
 
 typedef struct _avs_client_context_t
 {
@@ -473,21 +487,26 @@ typedef struct _avs_client_context_t
  *    @param[in]  Device
  *        The device object
  * 
- *    @brief Open the AVS device.  The AVS bus will be configured based on static 
- *           configuration information.
+ *    @brief Open the AVS device.  Initialize the AVS interrupts. 
+ *           The AVS bus will be configured based on static 
+ *           configuration information.  Called once for each AVS bus.
  *
  */
-void ModAVSDriverInitialize(pmod_avs_device Device);
+void scp_avs_driver_initialize(pscp_avs_device Device);
 
 /**
  *
- *    Initializes the AVS driver interface (synchronous and asynchronous).  
+ *    Initializes the AVS module interface (synchronous and asynchronous).  
  *
  *    @param[in]  Device
  *    @param[in]  Interface
+ * 
+ *    @brief Called (num of AVS) X number of clients.
+ *           If the client makes a synchronous request, then scp_avs_dispatch_sync is called.
+ *           If the client makes an asynchronous request, then the request is placed on the Device queue.
  *
  */
-void ModAVSInterfaceInitialize(pmod_avs_device Device, pmod_avs_interface Interface);
+void scp_avs_interface_initialize(pscp_avs_device Device, pscp_avs_interface Interface);
 
 /**
  *
@@ -499,7 +518,7 @@ void ModAVSInterfaceInitialize(pmod_avs_device Device, pmod_avs_interface Interf
  *   @param[in] CompletionContext
  *
  */
-static inline void ModAVSClientWrite(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext)
+static inline void scp_avs_client_write(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext)
 
 /**
  *
@@ -511,7 +530,7 @@ static inline void ModAVSClientWrite(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASY
  *   @param[in] CompletionContext
  *
  */
-static inline void ModAVSClientRead(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext)
+static inline void scp_avs_client_read(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext)
 
 /**
  *
@@ -523,7 +542,7 @@ static inline void ModAVSClientRead(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYN
  *   @param[in] CompletionContext
  *
  */
-static inline void ModAVSClientReadAll(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext)
+static inline void scp_avs_client_read_all(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext)
 
 /**
  *
@@ -536,7 +555,7 @@ static inline void ModAVSClientReadAll(PDFWK_INTERFACE_HEADER Interface, PDFWK_A
  *   @param[in] count - count of provided array entries
  *
  */
-static inline void ModAVSClientReadMulti(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext, uint8_t count)
+static inline void scp_avs_client_read_multi(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext, uint8_t count)
 
 /**
  *
@@ -549,19 +568,16 @@ static inline void ModAVSClientReadMulti(PDFWK_INTERFACE_HEADER Interface, PDFWK
  *   @param[in] count - count of provided array entries
  *
  */
-static inline void ModAVSClientWriteMulti(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext, uint8_t count)
+static inline void scp_avs_client_write_multi(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext, uint8_t count)
 
 /**
  * 
- * Checks the data read for errors. 
- * bits 21 and 22 = Target ACK
- * bits 16 - 20 = status response. (VDone bit 20, StatusAlert bit 19, AVS_Control bit 18, MfrSpec 17 and 16)
- * 
+ * Retrieves the error counts (scp_avs_error_count_t)
  *
- *   @param[in] resp_data Data read from the AVSBus following a read/write.
- *   @retval error (i.e. AVS_ERROR_ACK_NO_ACTION_BUSY, AVS_ERROR_STATUS_ALERT, etc.).
+ *   @param[in] Interface
+ * 
  */
-uint8_t mod_avs_status_error(uint32_t resp_data);
+static inline void scp_avs_get_error_counts(PDFWK_INTERFACE_HEADER Interface)
 
 ```
 

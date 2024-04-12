@@ -28,23 +28,16 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::a
 target_link_libraries(
     ${TARGET}
         PRIVATE
-            ms::lib::debug
             ms::lib::event_trace::trace
             ms::lib::threadx
-            ms::service::mcp_etc
-            ms::driver::uart
             ms::vectors::cortex_m7
-            ms::lib::cortex::m7::nvic
-            fwlib.platform.dfwkhost.threadx
-            fwlib.dfwk
+            ms::lib::runtime_init::mcp
+            fwlib.init
+            fwlib.utils
 )
 
 target_include_directories(
     ${TARGET}
-        SYSTEM PUBLIC
-            ${REPO_ROOT_DIR}/.externs/azpkg/kng_soc_mason_csr_collateral.0.5.1/ap_addr_map/registerheader
-            ${REPO_ROOT_DIR}/.externs/azpkg/kng_soc_mason_csr_collateral.0.5.1/mcp_addr_map/registerheader
-
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/../inc
 )

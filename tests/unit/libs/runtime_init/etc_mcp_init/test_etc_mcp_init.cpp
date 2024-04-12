@@ -3,8 +3,8 @@
 //
 
 /**
- * @file test_css_init.cpp
- * CSS init tests
+ * @file test_etc_mcp_init.cpp
+ * MCP ETC Init test
  */
 
 /*------------- Includes -----------------*/
@@ -22,25 +22,25 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-extern fpfw_init_component_t _fpfw_component_et_init;
+extern fpfw_init_component_t _fpfw_component_etc_init;
 
 /*------------- Functions ----------------*/
 //
 // Mocks
 //
-void __wrap_scp_etc_initialize()
+void __wrap_mcp_etc_initialize()
 {
     function_called();
 }
 //
 // Tests
 //
-TEST_FUNCTION(test_et_init, nullptr, nullptr)
+TEST_FUNCTION(test_etc_init, nullptr, nullptr)
 {
     // Set up expectations
-    expect_function_call(__wrap_scp_etc_initialize);
+    expect_function_call(__wrap_mcp_etc_initialize);
 
     // Call API under test
-    _fpfw_component_et_init.init_fn();
+    _fpfw_component_etc_init.init_fn();
 }
 }

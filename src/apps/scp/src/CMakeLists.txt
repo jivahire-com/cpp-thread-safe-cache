@@ -19,10 +19,6 @@ set(TARGET scp_fw)
 add_executable(
     ${TARGET}
         main.c
-        css_init.c
-        et_init.c
-        mesh_init.c
-        uart_init.c
         scp_events.c
 )
 
@@ -32,30 +28,17 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::a
 target_link_libraries(
     ${TARGET}
         PRIVATE
-            ms::lib::css
-            ms::lib::debug
             ms::lib::event_trace::trace
-            ms::lib::mesh
             ms::lib::threadx
-            ms::service::scp_etc
-            ms::driver::uart
             ms::vectors::cortex_m7
-            ms::lib::cortex::m7::nvic
-            fwlib.platform.dfwkhost.threadx
-            fwlib.dfwk
+            ms::lib::runtime_init::scp
             fwlib.init
-            idsw
-            idhw
-            silibs_platform
-            silibs::kng_silibs_platform
+            fwlib.utils
+
 )
 
 target_include_directories(
     ${TARGET}
-        SYSTEM PUBLIC
-            ${REPO_ROOT_DIR}/.externs/azpkg/kng_soc_mason_csr_collateral.0.5.1/ap_addr_map/registerheader
-            ${REPO_ROOT_DIR}/.externs/azpkg/kng_soc_mason_csr_collateral.0.5.1/scp_addr_map/registerheader
-
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/../inc
 )

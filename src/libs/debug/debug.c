@@ -34,7 +34,7 @@ FILE __stdin;  // NOLINT
 FILE __stderr; // NOLINT
 
 /*-------------- Functions ---------------*/
-void DebugInit()
+void debug_init()
 {
 }
 

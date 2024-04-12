@@ -17,4 +17,4 @@ lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})
 
-add_library(ms::driver::uart ALIAS ${TARGET})
+add_library(ms::driver::bm::uart ALIAS ${TARGET})

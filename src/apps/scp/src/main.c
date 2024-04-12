@@ -8,14 +8,9 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkThreadXHost.h>
-#include <debug.h>
+#include <FpFwUtils.h>
 #include <fpfw_init.h>
-#include <idhw.h>
-#include <idsw.h>
-#include <nvic.h>
 #include <scp_events.h>
-#include <silibs_scp_top_regs.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -40,51 +35,15 @@ static TX_BYTE_POOL s_stack_mem_pool_ctrl;
 static TX_THREAD s_main_thread;
 static uint8_t* s_main_stack;
 
-static uint8_t* s_dfwk_stack;
-static DFWK_THREADX_HOST s_dfwk_host;
-
 extern fpfw_init_component_t _data_fpfw_init_start;
 extern fpfw_init_component_t _data_fpfw_init_end;
 
 /*-------------- Functions ---------------*/
 
-static void get_soc_hw_version_id_config()
-{
-    /* Set System ID Base Address*/
-    idhw_set_sid_base((uintptr_t)SCP_TOP_SID_ADDRESS);
-
-    /* Set CPU type to SCP */
-    idsw_set_cpu_type(CPU_SCP);
-
-    /* Fetch SoC ID from SID Regs*/
-    uint32_t hw_soc_id = idhw_get_soc_id();
-    UNUSED(hw_soc_id);
-
-    /* Fetch Die ID from SID Regs and set SW Die ID for firmware */
-    idsw_set_die_id(idhw_get_die_id());
-
-    /* Get platform ID from SID Regs */
-    PLAT_ID hw_platform_id = idhw_get_platform_id_from_hw();
-
-    /* Set SW platform ID for firmware */
-    idsw_set_platform_sdv(hw_platform_id);
-
-    /* SVT, Single Die Boot Enable Regs skipped */
-}
-
-static void soc_init(void)
-{
-    /* Get SoC Versions, IDs and Configuration */
-    get_soc_hw_version_id_config();
-
-    DebugInit();
-}
-
 // Prior to main, an assembly function initializes .bss and invokes constructors
 // see cortexm7_vectors.S for the initial reset_handler entrypoint
 int main(void)
 {
-    soc_init();
 
     /* Enter the ThreadX kernel. Performing Low and High level initialization. */
     tx_kernel_enter();
@@ -105,8 +64,7 @@ int main(void)
 void tx_application_define(void* firstUnusedMemory)
 {
     // firstUnusedMemory is derived from __RAM_segment_used_end__ + 4 bytes
-    // in SCP we have no use for this pointer
-    UNUSED(firstUnusedMemory);
+    FPFW_UNUSED(firstUnusedMemory);
 
     /* ThreadX Component Utilization */
 
@@ -127,21 +85,14 @@ void tx_application_define(void* firstUnusedMemory)
                            TX_NO_TIME_SLICE,
                            TX_AUTO_START);
 
-    (void)tx_byte_allocate(&s_stack_mem_pool_ctrl, (VOID**)&s_dfwk_stack, DFWK_STACK_SIZE, TX_NO_WAIT);
-
-    /* Post ThreadX Low \ High Level initialization CM7 Setup */
-    nvic_init(true);
+    // Initialize components defined by FPFW init library
+    fpfw_init(&_data_fpfw_init_start, &_data_fpfw_init_end);
 }
 
 // The main initialization routine executes on a thread to allow the use of synchronization objects
 void main_thread(ULONG thread_input)
 {
-    UNUSED(thread_input);
-
-    // Initialize components defined by FPFW init library
-    fpfw_init(&_data_fpfw_init_start, &_data_fpfw_init_end);
-
-    (void)DfwkThreadxHostInitialize(&s_dfwk_host, s_dfwk_stack, DFWK_STACK_SIZE, 1, 1, TX_NO_TIME_SLICE);
+    FPFW_UNUSED(thread_input);
 
     printf("\nHello World - SCP!\n");
 

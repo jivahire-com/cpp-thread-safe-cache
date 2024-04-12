@@ -20,5 +20,4 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
-void DebugInit();
-
+void debug_init();

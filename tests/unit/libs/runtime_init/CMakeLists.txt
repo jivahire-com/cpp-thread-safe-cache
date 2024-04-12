@@ -1,0 +1,5 @@
+add_subdirectory(css_init)
+add_subdirectory(dfwk)
+add_subdirectory(etc_mcp_init)
+add_subdirectory(etc_scp_init)
+add_subdirectory(hw_version_init)

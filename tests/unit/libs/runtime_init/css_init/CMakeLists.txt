@@ -1,24 +1,24 @@
-set(TARGET et_init.test)
+set(TARGET css_init.test)
 
 set(SOURCES
-    test_et_init.cpp
-    ${CMAKE_SOURCE_DIR}/src/apps/scp/src/et_init.c
+    test_css_init.cpp
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/css_init.c
 )
 
 # Compile test
 add_executable(${TARGET} ${SOURCES})
 
-set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
-
 target_link_libraries(${TARGET}
     PRIVATE
+        atu
+        clocks_sequence
         fwlib.init
         idhw
+        idsw
         ms::cmocka::testrunner
-        ms::lib::event_trace::trace
-        ms::mocks::event_trace
-        ms::service::scp_etc
+        ms::lib::css
         silibs_platform
+        tower_system_control
 )
 
 lint_target(${TARGET})
@@ -28,5 +28,9 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    scp_etc_initialize
+    css_configure_system_tower
+    css_post_mesh_init
+    css_pre_mesh_init
+    idhw_get_die_id
+    idsw_get_platform_sdv
 )

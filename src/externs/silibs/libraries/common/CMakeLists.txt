@@ -4,7 +4,7 @@ message("- Adding Silibs Common Override --")
 set(TARGET extern.silibs.silibs_platform)
 
 set(SRCS
-${CMAKE_CURRENT_SOURCE_DIR}/silibs_platform/src/silibs_platform.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/silibs_platform/src/silibs_platform.c
 )
 
 add_library(${TARGET} STATIC ${SRCS})
@@ -12,7 +12,12 @@ add_library(${TARGET} STATIC ${SRCS})
 target_include_directories(
     ${TARGET}
         SYSTEM PUBLIC
-          ${TARGET_DIR}/libraries/common/silibs_platform/include
+            ${TARGET_DIR}/libraries/common/silibs_platform/include
+        SYSTEM INTERFACE
+            $ENV{REPO_APP_PATH_kng_soc_mason_csr_collateral}/ap_addr_map/registerheader
+            $ENV{REPO_APP_PATH_kng_soc_mason_csr_collateral}/hsss_dfp_addr_map/registerheader
+            $ENV{REPO_APP_PATH_kng_soc_mason_csr_collateral}/mcp_addr_map/registerheader
+            $ENV{REPO_APP_PATH_kng_soc_mason_csr_collateral}/scp_addr_map/registerheader
 )
 
 target_link_libraries(${TARGET}

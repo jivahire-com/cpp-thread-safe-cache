@@ -9,16 +9,13 @@
 
 /*------------- Includes -----------------*/
 
-#include <DfwkThreadXHost.h>
-#include <debug.h>
-#include <mcp_event_trace_collector.h>
+#include <FpFwUtils.h>
+#include <fpfw_init.h>
 #include <mcp_events.h>
-#include <nvic.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <tx_api.h>
-#include <uart.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define KB                  (1024)
@@ -39,22 +36,13 @@ static TX_BYTE_POOL s_stack_mem_pool_ctrl;
 static TX_THREAD s_main_thread;
 static uint8_t* s_main_stack;
 
-static uint8_t* s_dfwk_stack;
-static DFWK_THREADX_HOST s_dfwk_host;
-
-/*-------------- Functions ---------------*/
-static void soc_init(void)
-{
-    UartInit(UART0BASE_MCP);
-    DebugInit();
-}
+extern fpfw_init_component_t _data_fpfw_init_start;
+extern fpfw_init_component_t _data_fpfw_init_end;
 
 // Prior to main, an assembly function initializes .bss and invokes constructors
 // see cortexm7_vectors.S for the initial reset_handler entrypoint
 int main(void)
 {
-
-    soc_init();
 
     /* Enter the ThreadX kernel. Performing Low and High level initialization. */
     tx_kernel_enter();
@@ -76,7 +64,7 @@ void tx_application_define(void* firstUnusedMemory)
 {
     // firstUnusedMemory is derived from __RAM_segment_used_end__ + 4 bytes
     // in mcp we have no use for this pointer
-    UNUSED(firstUnusedMemory);
+    FPFW_UNUSED(firstUnusedMemory);
 
     /* ThreadX Component Utilization */
 
@@ -97,26 +85,19 @@ void tx_application_define(void* firstUnusedMemory)
                            TX_NO_TIME_SLICE,
                            TX_AUTO_START);
 
-    (void)tx_byte_allocate(&s_stack_mem_pool_ctrl, (VOID**)&s_dfwk_stack, DFWK_STACK_SIZE, TX_NO_WAIT);
-
-    /* Post ThreadX Low \ High Level initialization CM7 Setup */
-    nvic_init(true);
-
-    /* Core Service(s) initialization */
-    mcp_etc_initialize();
+    // Initialize components defined by FPFW init library
+    fpfw_init(&_data_fpfw_init_start, &_data_fpfw_init_end);
 }
 
 // The main initialization routine executes on a thread to allow the use of synchronization objects
 void main_thread(ULONG thread_input)
 {
-    uint32_t count = 0;
-    UNUSED(thread_input);
+    FPFW_UNUSED(thread_input);
 
     printf("\nHello World - MCP!\n");
 
-    (void)DfwkThreadxHostInitialize(&s_dfwk_host, s_dfwk_stack, DFWK_STACK_SIZE, 1, 1, TX_NO_TIME_SLICE);
-
     // Do nothing
+    uint32_t count = 0;
     while (true)
     {
         tx_thread_sleep(2);

@@ -16,7 +16,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(debug, FPFW_INIT_DEPENDENCIES("uart_bm"))
+FPFW_INIT_COMPONENT(debug, FPFW_INIT_DEPENDENCIES("std_io"))
 {
     debug_init();
 

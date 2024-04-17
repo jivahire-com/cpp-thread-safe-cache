@@ -6,6 +6,7 @@ cmn800
 cmn800_sequence
 cmn800_skus
 cmsdk_wd
+common/uart_pl011
 ddr_i3c
 ddrss
 dmac

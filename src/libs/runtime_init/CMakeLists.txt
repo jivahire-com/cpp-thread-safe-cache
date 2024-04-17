@@ -1,5 +1,8 @@
 enabled_on(arm-eabi-aarch)
 
+# 
+# Setup the SCP Runtime Init
+# 
 set(TARGET kng.lib.scp.runtime_init.scp)
 
 add_library(${TARGET} 
@@ -11,7 +14,7 @@ add_library(${TARGET}
         hw_version_scp_init.c
         mesh_init.c
         nvic_init.c
-        uart_scp_init.c
+        textio_init.c
 )
 
 target_link_libraries(
@@ -21,11 +24,12 @@ target_link_libraries(
         fwlib.init
         fwlib.platform.dfwkhost.threadx
         fwlib.utils
-        ms::driver::bm::uart
+        ms::driver::textio::pl011
         ms::lib::css
         ms::lib::debug
         ms::lib::cortex::m7::nvic
         ms::lib::mesh
+        ms::lib::stdio_textio
         ms::lib::threadx
         ms::service::scp_etc
         silibs::idhw
@@ -34,11 +38,16 @@ target_link_libraries(
         silibs::kng_silibs_platform
 )
 
+target_compile_definitions(${TARGET} PRIVATE UART_BASE_ADDR=SCP_TOP_SCP_UART_ADDRESS)
+
 lint_target(${TARGET})
 coverage_target(${TARGET})
 
 add_library(ms::lib::runtime_init::scp ALIAS ${TARGET})
 
+# 
+# Setup the MCP Runtime Init
+# 
 set(TARGET kng.lib.scp.runtime_init.mcp)
 
 add_library(${TARGET} 
@@ -47,7 +56,7 @@ add_library(${TARGET}
         dfwk_init.c
         etc_mcp_init.c
         nvic_init.c
-        uart_mcp_init.c
+        textio_init.c
 )
 
 target_link_libraries(
@@ -57,9 +66,10 @@ target_link_libraries(
         fwlib.init
         fwlib.platform.dfwkhost.threadx
         fwlib.utils
-        ms::driver::bm::uart
+        ms::driver::textio::pl011
         ms::lib::debug
         ms::lib::cortex::m7::nvic
+        ms::lib::stdio_textio
         ms::lib::threadx
         ms::service::mcp_etc
         silibs::idhw
@@ -67,6 +77,8 @@ target_link_libraries(
         silibs::platform
         silibs::kng_silibs_platform
 )
+
+target_compile_definitions(${TARGET} PRIVATE UART_BASE_ADDR=MCP_TOP_MCP_UART_ADDRESS)
 
 lint_target(${TARGET})
 coverage_target(${TARGET})

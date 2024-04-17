@@ -16,7 +16,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(etc_init, FPFW_INIT_DEPENDENCIES("uart_bm"))
+FPFW_INIT_COMPONENT(etc_init, FPFW_INIT_DEPENDENCIES("std_io"))
 {
     scp_etc_initialize();
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 
 #include <FpFwCMocka.h>
+#include <FpFwUtils.h>
 #include <thread_x_mocks.h>
 #include <tx_api.h> // for UINT, ULONG, TX_QUEUE, TX_S...
 
@@ -28,6 +29,11 @@ extern uint32_t _tx_thread_system_state; // ThreadX global used by 'TX_THREAD_GE
 void threadx_mock_set_system_state(uint32_t state)
 {
     _tx_thread_system_state = state;
+}
+
+void __wrap__tx_thread_interrupt_control(UINT posture)
+{
+    FPFW_UNUSED(posture);
 }
 
 UINT __wrap__txe_queue_create(TX_QUEUE* queue_ptr, CHAR* name_ptr, UINT message_size, VOID* queue_start, ULONG queue_size, UINT queue_control_block_size)
@@ -102,5 +108,37 @@ UINT __wrap__txe_semaphore_get(TX_SEMAPHORE* semaphore_ptr, ULONG wait_option)
 UINT __wrap__txe_semaphore_put(TX_SEMAPHORE* semaphore_ptr)
 {
     check_expected_ptr(semaphore_ptr);
+    return mock_type(UINT);
+}
+
+UINT __wrap__txe_timer_activate(TX_TIMER* timer_ptr)
+{
+    FPFW_UNUSED(timer_ptr);
+    return mock_type(UINT);
+}
+
+UINT __wrap__txe_timer_create(TX_TIMER* timer_ptr,
+                              CHAR* name_ptr,
+                              VOID (*expiration_function)(ULONG id),
+                              ULONG expiration_input,
+                              ULONG initial_ticks,
+                              ULONG reschedule_ticks,
+                              UINT auto_activate,
+                              UINT timer_control_block_size)
+{
+    FPFW_UNUSED(timer_ptr);
+    FPFW_UNUSED(name_ptr);
+    FPFW_UNUSED(expiration_function);
+    FPFW_UNUSED(expiration_input);
+    FPFW_UNUSED(initial_ticks);
+    FPFW_UNUSED(reschedule_ticks);
+    FPFW_UNUSED(auto_activate);
+    FPFW_UNUSED(timer_control_block_size);
+    return mock_type(UINT);
+}
+
+UINT __wrap__txe_timer_deactivate(TX_TIMER* timer_ptr)
+{
+    FPFW_UNUSED(timer_ptr);
     return mock_type(UINT);
 }

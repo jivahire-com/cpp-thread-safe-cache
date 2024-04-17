@@ -41,5 +41,7 @@ FPFW_INIT_COMPONENT(dfwk)
                       );
     // clang-format on
 
+    // Enable users access to the drvfwk object. The first member being the schedule,
+    // enabling users to pass the object from the init library into DfwkDeviceInitialize().
     return (fpfw_init_result_t){status, &drvfwk};
 }

@@ -30,6 +30,8 @@ target_link_libraries(
         PRIVATE
             ms::lib::event_trace::trace
             ms::lib::threadx
+            ms::lib::stdio_textio
+            ms::driver::textio::pl011
             ms::vectors::cortex_m7
             ms::lib::runtime_init::mcp
             fwlib.init

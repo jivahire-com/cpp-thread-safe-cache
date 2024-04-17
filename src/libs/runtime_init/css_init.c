@@ -18,7 +18,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(css_prme, FPFW_INIT_DEPENDENCIES("uart_bm", "hw_ver"))
+FPFW_INIT_COMPONENT(css_prme, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver"))
 {
     uint8_t die_num = (uint8_t)idhw_get_die_id();
     printf("CSS Pre Mesh init, die_num [%d]\n", die_num);
@@ -37,7 +37,7 @@ FPFW_INIT_COMPONENT(css_prme, FPFW_INIT_DEPENDENCIES("uart_bm", "hw_ver"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(css_pome, FPFW_INIT_DEPENDENCIES("uart_bm", "mesh"))
+FPFW_INIT_COMPONENT(css_pome, FPFW_INIT_DEPENDENCIES("std_io", "mesh"))
 {
     printf("CSS Post Mesh init\n");
 

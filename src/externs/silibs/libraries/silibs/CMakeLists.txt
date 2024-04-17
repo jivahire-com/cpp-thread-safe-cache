@@ -4,12 +4,14 @@ set(LIB_OUTS_DIR ${CMAKE_BINARY_DIR})
 message("----------------------------------")
 message("----- Adding Silibs CMAKEs -------")
 
+
 add_compile_options(-I${TARGET_DIR}/libraries/common/silibs_platform/include
                     -I${TARGET_DIR}/registerheader_overrides
-                    -I${REPO_ROOT_DIR}/.externs/azpkg/kng_soc_mason_csr_collateral.0.5.1/scp_addr_map/registerheader
-                    -I${REPO_ROOT_DIR}/.externs/azpkg/kng_soc_mason_csr_collateral.0.5.1/mcp_addr_map/registerheader
-                    -I${REPO_ROOT_DIR}/.externs/azpkg/kng_soc_mason_csr_collateral.0.5.1/ap_addr_map/registerheader
-                    -I${REPO_ROOT_DIR}/.externs/azpkg/kng_soc_mason_csr_collateral.0.5.1/hsss_dfp_addr_map/registerheader
+                    # REPO_APP_PATH_kng_soc_mason_csr_collateral env variable set by start.ps1 when pulling the kng_soc_mason_csr_collateral package
+                    -I$ENV{REPO_APP_PATH_kng_soc_mason_csr_collateral}/scp_addr_map/registerheader
+                    -I$ENV{REPO_APP_PATH_kng_soc_mason_csr_collateral}/mcp_addr_map/registerheader
+                    -I$ENV{REPO_APP_PATH_kng_soc_mason_csr_collateral}/ap_addr_map/registerheader
+                    -I$ENV{REPO_APP_PATH_kng_soc_mason_csr_collateral}/hsss_dfp_addr_map/registerheader
 )
 
 # Disable warnings for shared libs

@@ -13,7 +13,6 @@
 #include "debug.h"
 
 #include "bugcheck.h"
-#include "uart.h"
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -193,59 +192,6 @@ void _bugcheck(uint32_t bugcheck_code, uint32_t arg0, uint32_t arg1, uint32_t ar
  * Remapping IO functions
  *
  *******************************/
-
-int _write_r(struct _reent* reent, int fh, const unsigned char* buf, unsigned len)
-{
-    UNUSED(reent);
-    UNUSED(fh);
-
-    UartWrite((void*)buf, len);
-    return len;
-}
-
-int _read_r(struct _reent* reent, int fh, unsigned char* buf, unsigned len)
-{
-    UNUSED(reent);
-    UNUSED(fh);
-
-    return UartRead(buf, len);
-}
-
-int _open_r(struct _reent* reent, const char* name, int openmode, int flags)
-{
-    int fh = 0;
-    UNUSED(reent);
-    UNUSED(name);
-    UNUSED(openmode);
-    UNUSED(flags);
-
-    return fh;
-}
-
-int _close_r(struct _reent* reent, int fh)
-{
-    UNUSED(reent);
-    UNUSED(fh);
-
-    return 0;
-}
-
-int _isatty_r(struct _reent* reent, int fh)
-{
-    UNUSED(reent);
-    UNUSED(fh);
-
-    return 0;
-}
-
-int _lseek_r(struct _reent* reent, int fh, long pos)
-{
-    UNUSED(reent);
-    UNUSED(fh);
-    UNUSED(pos);
-
-    return -1;
-}
 
 void _exit(int __status)
 {

@@ -1,3 +1,4 @@
+add_subdirectory(accelerator_ip)
 add_subdirectory(css)
 add_subdirectory(event_trace)
 add_subdirectory(scp_avs)

@@ -1,4 +1,5 @@
 
+add_subdirectory(accelerator_ip)
 add_subdirectory(build_data)
 add_subdirectory(css)
 add_subdirectory(debug)

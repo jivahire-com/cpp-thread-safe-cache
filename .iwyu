@@ -2,5 +2,6 @@
     { symbol: ["memset", "private", "<string.h>", "public"] },
     { symbol: ["memcpy_s", "private", "<string.h>", "public"] },
     { symbol: ["memcpy", "private", "<string.h>", "public"] },
+    { symbol: ["sprintf_s", "private", "<stdio.h>", "public"] },
     { include: ["<tx_port.h>", "private", "<tx_api.h>", "public"] }
 ]

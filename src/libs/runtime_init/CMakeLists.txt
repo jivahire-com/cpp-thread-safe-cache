@@ -12,6 +12,7 @@ add_library(${TARGET}
         dfwk_init.c
         etc_scp_init.c
         hw_version_scp_init.c
+        icc_transport_init/mscp_hspmbx_init.c
         mesh_init.c
         nvic_init.c
         textio_init.c
@@ -22,8 +23,11 @@ target_link_libraries(
     PRIVATE
         fwlib.dfwk
         fwlib.init
+        fwlib.mboxprimitives
         fwlib.platform.dfwkhost.threadx
+        fwlib.platform.timers.threadx
         fwlib.utils
+        fwlib.Driver.MboxIccTransport
         ms::driver::textio::pl011
         ms::lib::css
         ms::lib::debug
@@ -35,10 +39,19 @@ target_link_libraries(
         silibs::idhw
         silibs::idsw
         silibs::platform
-        silibs::kng_silibs_platform
+        silibs::kng_silibs_platform        
 )
 
-target_compile_definitions(${TARGET} PRIVATE UART_BASE_ADDR=SCP_TOP_SCP_UART_ADDRESS)
+# Ensure ms::lib::arm_utils precedes ICC transport driver in linker invocation by specifying this link dependency edge
+target_link_libraries(fwlib.Driver.MboxIccTransport PRIVATE ms::lib::arm_utils)
+# Define base addresses during compile time for respective core fw
+target_compile_definitions(
+    ${TARGET} 
+    PRIVATE 
+        MSCP2HSP_MAILBOX_BASE_ADDRESS=SCP_TOP_SCP2HSP_MAILBOX_ADDRESS 
+        UART_BASE_ADDR=SCP_TOP_SCP_UART_ADDRESS
+)
+
 
 lint_target(${TARGET})
 coverage_target(${TARGET})
@@ -55,6 +68,7 @@ add_library(${TARGET}
         debug_init.c
         dfwk_init.c
         etc_mcp_init.c
+        icc_transport_init/mscp_hspmbx_init.c
         nvic_init.c
         textio_init.c
 )
@@ -64,8 +78,11 @@ target_link_libraries(
     PRIVATE
         fwlib.dfwk
         fwlib.init
+        fwlib.mboxprimitives
         fwlib.platform.dfwkhost.threadx
+        fwlib.platform.timers.threadx
         fwlib.utils
+        fwlib.Driver.MboxIccTransport
         ms::driver::textio::pl011
         ms::lib::debug
         ms::lib::cortex::m7::nvic
@@ -78,7 +95,15 @@ target_link_libraries(
         silibs::kng_silibs_platform
 )
 
-target_compile_definitions(${TARGET} PRIVATE UART_BASE_ADDR=MCP_TOP_MCP_UART_ADDRESS)
+# Ensure ms::lib::arm_utils precedes ICC transport driver in linker invocation by specifying this link dependency edge
+target_link_libraries(fwlib.Driver.MboxIccTransport PRIVATE ms::lib::arm_utils)
+# Define base addresses during compile time for respective core fw
+target_compile_definitions(
+    ${TARGET} 
+    PRIVATE 
+        MSCP2HSP_MAILBOX_BASE_ADDRESS=MCP_TOP_MCP2HSP_MAILBOX_ADDRESS 
+        UART_BASE_ADDR=MCP_TOP_MCP_UART_ADDRESS
+)
 
 lint_target(${TARGET})
 coverage_target(${TARGET})

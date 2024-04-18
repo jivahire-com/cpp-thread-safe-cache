@@ -16,6 +16,9 @@ set(FPFW_PLATFORM_IMPL_LOCK "fwlib.platform.lock.threadx")
 # Generic ports implmented within this project
 set(FPFW_PLATFORM_IMPL_THREADX "ms::lib::threadx")
 
+# Generic timer ports implmented within this project
+set(FPFW_PLATFORM_IMPL_TIMER "fwlib.platform.timers.threadx")
+
 include(FetchContent)
 FetchContent_Declare(
     ${TARGET}

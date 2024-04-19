@@ -25,8 +25,8 @@ FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk"))
     static textio_pl011_config_t pl011_config = {
         .base_address = UART_BASE_ADDR,
         .interrupt    = 0,
-        .baud_rate    = 460800,
-        .clk_freq     = 24000000,
+        .baud_rate    = 115200,
+        .clk_freq     = 10000000,
         .wlen         = UART_PL011_WLEN_8,
         .stop_bits    = UART_PL011_STOP_BITS_1,
         .parity       = UART_PL011_PARITY_NONE,

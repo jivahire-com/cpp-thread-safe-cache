@@ -14,10 +14,10 @@
 #include <DfwkDriver.h>
 #include <DfwkThreadXHost.h>
 #include <FpFwAssert.h>
+#include <fpfw_init.h>
 #include <scp_avs.h>
 #include <scp_avs_cli.h>
 #include <scp_avs_driver.h>
-#include <scp_avs_driver_i.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -116,7 +116,7 @@ int32_t scp_avs_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER Request)
 
 void scp_avs_driver_initialize(pscp_avs_device Device)
 {
-    printf("\n AVS init, avs_bus_num =  %x \n", Device->avs_bus_num);
+    printf("\nAVS init, avs_bus_num =  %x \n", Device->avs_bus_num);
     fflush(stdout);
 
     // Set up the queue for each driver, based on the driver config. Any event that is put on the queue will call scp_avs_dispatch.
@@ -137,19 +137,8 @@ void scp_request_completion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Completion
     FPFW_UNUSED(Request);
 }
 
-// This will be called by the main_thread
-void scp_avs_init(PDFWK_THREADX_HOST thread_dfwk_host)
+void scp_avs_init(pscp_avs_device avsDevice, DFWK_SCHEDULE* scheduler)
 {
-    printf("\n Starting ModAVS \n");
-    fflush(stdout);
-
-    static scp_avs_device_t avsDevice;
-    static scp_avs_interface_t avsInterface;
-    static scp_avs_request_t avs_Request;
-
-    DfwkDeviceInitialize(&avsDevice.Header, &thread_dfwk_host->Schedule);
-    scp_avs_driver_initialize(&avsDevice); // call once for each AVS bus
-    scp_avs_interface_initialize(&avsDevice, &avsInterface);
-    DfwkClientInterfaceOpen(&avsInterface.Header);
-    DfwkAsyncRequestInititalize(&avs_Request.Header, sizeof(avs_Request));
+    DfwkDeviceInitialize(&avsDevice->Header, scheduler);
+    scp_avs_driver_initialize(avsDevice);
 }

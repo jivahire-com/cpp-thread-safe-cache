@@ -7,6 +7,7 @@ set(TARGET kng.lib.scp.runtime_init.scp)
 
 add_library(${TARGET} 
     OBJECT 
+        avs_scp_init.c
         css_init.c
         debug_init.c
         dfwk_init.c
@@ -28,6 +29,7 @@ target_link_libraries(
         fwlib.platform.timers.threadx
         fwlib.utils
         fwlib.Driver.MboxIccTransport
+        ms::lib::scp_avs
         ms::driver::textio::pl011
         ms::lib::css
         ms::lib::debug
@@ -36,6 +38,7 @@ target_link_libraries(
         ms::lib::stdio_textio
         ms::lib::threadx
         ms::service::scp_etc
+        silibs::avs
         silibs::idhw
         silibs::idsw
         silibs::platform

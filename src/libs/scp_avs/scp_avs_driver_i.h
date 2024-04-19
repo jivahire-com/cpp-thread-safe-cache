@@ -10,31 +10,14 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
-
 #include <scp_avs_driver.h>
 #include <debug.h>
 #include <DfwkDriver.h>
 #include <DfwkThreadXHost.h>
 #include <FpFwAssert.h>
 #include <scp_avs.h>
-#include <scp_avs_driver.h>
 #include <stdint.h>
-
 /*-------------- Typedefs ----------------*/
-
-typedef struct _scp_avs_device_t {
-    DFWK_DEVICE_HEADER Header;
-    const scp_avs_config_t *config;
-    DFWK_QUEUE avs_queue;
-    pscp_avs_request outstanding_request;
-    uint8_t avs_bus_num;
-    pscp_avs_error_count avs_response_errors;
-} scp_avs_device_t, *pscp_avs_device;
-
-typedef struct _scp_avs_interface_t {
-    DFWK_INTERFACE_HEADER Header;
-    pscp_avs_device Device;
-} scp_avs_interface_t, *pscp_avs_interface;
 
 /*--------- Function Prototypes ----------*/
 
@@ -51,20 +34,6 @@ typedef struct _scp_avs_interface_t {
  *
  */
 void scp_avs_driver_initialize(pscp_avs_device Device);
-
-/**
- *
- *    Initializes the AVS module interface (synchronous and asynchronous).  
- *
- *    @param[in]  Device
- *    @param[in]  Interface
- * 
- *    @brief Called (num of AVS) X number of clients.
- *           If the client makes a synchronous request, then scp_avs_dispatch_sync is called.
- *           If the client makes an asynchronous request, then the request is placed on the Device queue.
- *
- */
-void scp_avs_interface_initialize(pscp_avs_device Device, pscp_avs_interface Interface);
 
 /**
  *

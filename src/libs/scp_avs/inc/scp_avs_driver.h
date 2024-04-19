@@ -20,7 +20,6 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
-
 typedef struct _scp_avs_request_t {
     DFWK_ASYNC_REQUEST_HEADER Header;
     scp_avs_vr_vct_t *avs_response_data;  // Response structure (scp_avs_vr_vct_t) used when reading AVS VCT. Have the client provide a pointer to this.
@@ -36,6 +35,20 @@ typedef struct {
     DFWK_SYNC_REQUEST_HEADER Header;
     pscp_avs_error_count avs_request_errors;
 } scp_avs_get_request_t, *pscp_avs_get_request;
+
+typedef struct _scp_avs_device_t {
+    DFWK_DEVICE_HEADER Header;
+    const scp_avs_config_t *config;
+    DFWK_QUEUE avs_queue;
+    pscp_avs_request outstanding_request;
+    uint8_t avs_bus_num;
+    pscp_avs_error_count avs_response_errors;
+} scp_avs_device_t, *pscp_avs_device;
+
+typedef struct _scp_avs_interface_t {
+    DFWK_INTERFACE_HEADER Header;
+    pscp_avs_device Device;
+} scp_avs_interface_t, *pscp_avs_interface;
 
 /*--------- Function Prototypes ----------*/
 
@@ -107,22 +120,28 @@ static inline void scp_avs_get_error_counts(PDFWK_INTERFACE_HEADER Interface)
  *
  *    Initializes the AVS device.  
  *
- *    @param[in]  Device
- *        The device object
+ *    @param[in]  avsDevice
+ *    @param[in]  scheduler
  * 
  *    @brief Open the AVS device.  The AVS bus will be configured based on static 
  *           configuration information.
  *
  */
-void scp_avs_init(PDFWK_THREADX_HOST thread_dfwk_host);
+ void scp_avs_init(pscp_avs_device avsDevice, DFWK_SCHEDULE* scheduler);
 
-/**
+ /**
  *
- *    This will handle the AVS interrupt, and will copy the response buffer into the client buffer.
- *    @param[in]  context
- *        SCP AVS device information.
+ *    Initializes the AVS module interface (synchronous and asynchronous).  
+ *
+ *    @param[in]  Device
+ *    @param[in]  Interface
+ * 
+ *    @brief Called (num of AVS) X number of clients.
+ *           If the client makes a synchronous request, then scp_avs_dispatch_sync is called.
+ *           If the client makes an asynchronous request, then the request is placed on the Device queue.
  *
  */
+void scp_avs_interface_initialize(pscp_avs_device Device, pscp_avs_interface Interface);
 
 #ifdef __cplusplus
 }

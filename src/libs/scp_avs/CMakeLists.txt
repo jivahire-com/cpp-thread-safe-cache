@@ -24,6 +24,7 @@ target_link_libraries(
             ms::lib::debug
             fwlib.assert
             fwlib.dfwk
+            fwlib.init
             fwlib.datastructures.linkedlist
             fwlib.utils
             silibs_platform

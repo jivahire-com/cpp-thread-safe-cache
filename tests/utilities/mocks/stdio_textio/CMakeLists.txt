@@ -7,7 +7,7 @@ set(SRC
 
 set(LIBS 
         PRIVATE
-            fwlib.DriverInterface.TextIo
+            fwlib.drivers.interface.text_io
             fwlib.utils
             ms::cmocka::mocks
 )

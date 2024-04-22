@@ -17,7 +17,7 @@ target_include_directories(${TARGET}
 target_link_libraries(${TARGET} 
     PUBLIC 
         fwlib.dfwk
-        fwlib.DriverInterface.TextIo
+        fwlib.drivers.interface.text_io
         silibs::common::lib_uart_pl011
         ms::lib::debug
         ms::lib::threadx

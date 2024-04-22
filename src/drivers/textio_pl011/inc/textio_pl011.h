@@ -4,13 +4,13 @@
 
 /**
  * @file textio_pl011.h
- * pl011 uart driver that implements the FpFwTextIoInterface. This driver is based on DFWK from the 1pfw.fwlibs repo.
+ * pl011 uart driver that implements the fpfw_text_io_interface. This driver is based on DFWK from the 1pfw.fwlibs repo.
  */
 
 #pragma once
 
 /*----------- Nested includes ------------*/
-#include <FpFwTextIoInterface.h>
+#include <fpfw_text_io_interface.h>
 #include <uart_pl011.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -39,8 +39,8 @@ typedef struct {
 
     const textio_pl011_config_t *config;
 
-    PFPFW_TEXT_IO_ASYNC_READ_REQUEST pending_read_request;
-    PFPFW_TEXT_IO_ASYNC_WRITE_REQUEST pending_write_request;
+    p_fpfw_text_io_async_read_request_t pending_read_request;
+    p_fpfw_text_io_async_write_request_t pending_write_request;
 
     TX_TIMER polling_timer;
 } textio_pl011_device_t;

@@ -10,12 +10,12 @@
 /*------------- Includes -----------------*/
 #include <DfwkDriver.h> // for DfwkAsyncRequestComplete, DfwkQueue...
 #include <DfwkHost.h>
-#include <FpFwAssert.h>          // for FPFW_RUNTIME_ASSERT
-#include <FpFwTextIoInterface.h> // for _FPFW_TEXT_IO_ASYNC_READ_REQUEST
-#include <stdbool.h>             // for false
-#include <stddef.h>              // for NULL, size_t
-#include <stdint.h>              // for uint8_t, uint16_t, int32_t
-#include <textio_pl011.h>        // for textio_pl011_device_t, textio_pl011_c...
+#include <FpFwAssert.h>             // for FPFW_RUNTIME_ASSERT
+#include <fpfw_text_io_interface.h> // for _FPFW_TEXT_IO_ASYNC_READ_REQUEST
+#include <stdbool.h>                // for false
+#include <stddef.h>                 // for NULL, size_t
+#include <stdint.h>                 // for uint8_t, uint16_t, int32_t
+#include <textio_pl011.h>           // for textio_pl011_device_t, textio_pl011_c...
 #include <textio_pl011_i.h>
 #include <uart_pl011.h> // for uart_pl011_intr_mask_set, UART_PL01...
 
@@ -28,8 +28,8 @@
 
 /*-- Declarations (Statics and globals) --*/
 
-static void textio_pl011_read_rx_data(textio_pl011_device_t* device, PFPFW_TEXT_IO_ASYNC_READ_REQUEST request);
-static void textio_pl011_write_tx_data(textio_pl011_device_t* device, PFPFW_TEXT_IO_ASYNC_WRITE_REQUEST request);
+static void textio_pl011_read_rx_data(textio_pl011_device_t* device, p_fpfw_text_io_async_read_request_t request);
+static void textio_pl011_write_tx_data(textio_pl011_device_t* device, p_fpfw_text_io_async_write_request_t request);
 
 /*-------------- Functions ---------------*/
 
@@ -40,10 +40,10 @@ void textio_pl011_default_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER request, voi
     // Move the request to the appropriate queue.
     switch (request->RequestType)
     {
-    case TEXT_DRIVER_READ_ASYNC_REQUEST_ID:
+    case FPFW_TEXT_IO_REQUEST_ID_READ_ASYNC:
         DfwkQueueEnqueueRequest(&device->read_queue, request);
         break;
-    case TEXT_DRIVER_WRITE_ASYNC_REQUEST_ID:
+    case FPFW_TEXT_IO_REQUEST_ID_WRITE_ASYNC:
         DfwkQueueEnqueueRequest(&device->write_queue, request);
         break;
     default:
@@ -56,17 +56,17 @@ void textio_pl011_rx_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER request, void* co
 {
     textio_pl011_device_t* device = (textio_pl011_device_t*)context;
 
-    FPFW_RUNTIME_ASSERT(request->RequestType == TEXT_DRIVER_READ_ASYNC_REQUEST_ID);
+    FPFW_RUNTIME_ASSERT(request->RequestType == FPFW_TEXT_IO_REQUEST_ID_READ_ASYNC);
 
-    PFPFW_TEXT_IO_ASYNC_READ_REQUEST read_request = (PFPFW_TEXT_IO_ASYNC_READ_REQUEST)request;
-    read_request->Output.ReadBytes = 0;
-    read_request->Output.ReadStatus = TEXT_IO_STATUS_FAIL;
+    p_fpfw_text_io_async_read_request_t read_request = (p_fpfw_text_io_async_read_request_t)request;
+    read_request->output.read_bytes = 0;
+    read_request->output.read_status = FPFW_TEXT_IO_STATUS_FAIL;
     textio_pl011_read_rx_data(device, read_request);
 
-    if (read_request->Output.ReadBytes == read_request->Input.ByteCount)
+    if (read_request->output.read_bytes == read_request->input.byte_count)
     {
         uart_pl011_intr_mask_clear(device->config->base_address, UART_PL011_RX_TIMEOUT_INTR_MASK | UART_PL011_RX_INTR_MASK);
-        read_request->Output.ReadStatus = TEXT_IO_STATUS_SUCCESS;
+        read_request->output.read_status = FPFW_TEXT_IO_STATUS_SUCCESS;
         DfwkAsyncRequestComplete(request);
     }
     else
@@ -83,17 +83,17 @@ void textio_pl011_tx_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER request, void* co
 {
     textio_pl011_device_t* device = (textio_pl011_device_t*)context;
 
-    FPFW_RUNTIME_ASSERT(request->RequestType == TEXT_DRIVER_WRITE_ASYNC_REQUEST_ID);
+    FPFW_RUNTIME_ASSERT(request->RequestType == FPFW_TEXT_IO_REQUEST_ID_WRITE_ASYNC);
 
-    PFPFW_TEXT_IO_ASYNC_WRITE_REQUEST write_request = (PFPFW_TEXT_IO_ASYNC_WRITE_REQUEST)request;
-    write_request->Output.WrittenBytes = 0;
-    write_request->Output.WriteStatus = TEXT_IO_STATUS_FAIL;
+    p_fpfw_text_io_async_write_request_t write_request = (p_fpfw_text_io_async_write_request_t)request;
+    write_request->output.written_bytes = 0;
+    write_request->output.write_status = FPFW_TEXT_IO_STATUS_FAIL;
     textio_pl011_write_tx_data(device, write_request);
 
-    if (write_request->Output.WrittenBytes == write_request->Input.ByteCount)
+    if (write_request->output.written_bytes == write_request->input.byte_count)
     {
         uart_pl011_intr_mask_clear(device->config->base_address, UART_PL011_TX_INTR_MASK);
-        write_request->Output.WriteStatus = TEXT_IO_STATUS_SUCCESS;
+        write_request->output.write_status = FPFW_TEXT_IO_STATUS_SUCCESS;
         DfwkAsyncRequestComplete(request);
     }
     else
@@ -113,26 +113,26 @@ int32_t textio_pl011_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
 
     switch (request->RequestType)
     {
-    case TEXT_DRIVER_READ_SYNC_REQUEST_ID: {
+    case FPFW_TEXT_IO_REQUEST_ID_READ_SYNC: {
         // clang-format off
-            PFPFW_TEXT_IO_SYNC_READ_REQUEST read_request = (PFPFW_TEXT_IO_SYNC_READ_REQUEST)request;
+            p_fpfw_text_io_sync_read_request_t read_request = (p_fpfw_text_io_sync_read_request_t)request;
             size_t bytes_read = uart_pl011_read(
                                     config->base_address,
-                                    read_request->Input.Buffer,
-                                    read_request->Input.ByteCount
+                                    read_request->input.buffer,
+                                    read_request->input.byte_count
                                 );
-            read_request->Output.ReadBytes = bytes_read;
+            read_request->output.read_bytes = bytes_read;
         // clang-format on
         break;
     }
-    case TEXT_DRIVER_WRITE_SYNC_REQUEST_ID: {
-        PFPFW_TEXT_IO_SYNC_WRITE_REQUEST write_request = (PFPFW_TEXT_IO_SYNC_WRITE_REQUEST)request;
-        uint8_t* byte_ptr = (uint8_t*)write_request->Input.Buffer;
+    case FPFW_TEXT_IO_REQUEST_ID_WRITE_SYNC: {
+        p_fpfw_text_io_sync_write_request_t write_request = (p_fpfw_text_io_sync_write_request_t)request;
+        uint8_t* byte_ptr = (uint8_t*)write_request->input.buffer;
 
         // Ensure the output written bytes is 0
-        write_request->Output.WrittenBytes = 0;
+        write_request->output.written_bytes = 0;
 
-        while (write_request->Output.WrittenBytes < write_request->Input.ByteCount)
+        while (write_request->output.written_bytes < write_request->input.byte_count)
         {
             uart_pl011_write_byte(config->base_address, *byte_ptr);
             if (*byte_ptr == '\n')
@@ -140,7 +140,7 @@ int32_t textio_pl011_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
                 uart_pl011_write_byte(config->base_address, '\r');
             }
             byte_ptr++;
-            write_request->Output.WrittenBytes++;
+            write_request->output.written_bytes++;
         }
         break;
     }
@@ -206,11 +206,11 @@ static void textio_pl011_copy_fifo_to_request(textio_pl011_device_t* device)
     {
         // Copy data from the hw fifo to the pending request if there is one.
         textio_pl011_read_rx_data(device, device->pending_read_request);
-        if (device->pending_read_request->Output.ReadBytes == device->pending_read_request->Input.ByteCount)
+        if (device->pending_read_request->output.read_bytes == device->pending_read_request->input.byte_count)
         {
             uart_pl011_intr_mask_clear(device->config->base_address, UART_PL011_RX_TIMEOUT_INTR_MASK | UART_PL011_RX_INTR_MASK);
-            device->pending_read_request->Output.ReadStatus = TEXT_IO_STATUS_SUCCESS;
-            DfwkAsyncRequestComplete(&device->pending_read_request->Header);
+            device->pending_read_request->output.read_status = FPFW_TEXT_IO_STATUS_SUCCESS;
+            DfwkAsyncRequestComplete(&device->pending_read_request->header);
             device->pending_read_request = NULL;
         }
     }
@@ -226,11 +226,11 @@ static void textio_pl011_copy_request_to_fifo(textio_pl011_device_t* device)
     {
         textio_pl011_write_tx_data(device, device->pending_write_request);
 
-        if (device->pending_write_request->Output.WrittenBytes == device->pending_write_request->Input.ByteCount)
+        if (device->pending_write_request->output.written_bytes == device->pending_write_request->input.byte_count)
         {
             uart_pl011_intr_mask_clear(device->config->base_address, UART_PL011_TX_INTR_MASK);
-            device->pending_write_request->Output.WriteStatus = TEXT_IO_STATUS_SUCCESS;
-            DfwkAsyncRequestComplete(&device->pending_write_request->Header);
+            device->pending_write_request->output.write_status = FPFW_TEXT_IO_STATUS_SUCCESS;
+            DfwkAsyncRequestComplete(&device->pending_write_request->header);
             device->pending_write_request = NULL;
         }
     }
@@ -269,23 +269,23 @@ void textio_pl011_isr(void* context)
     }
 }
 
-static void textio_pl011_read_rx_data(textio_pl011_device_t* device, PFPFW_TEXT_IO_ASYNC_READ_REQUEST request)
+static void textio_pl011_read_rx_data(textio_pl011_device_t* device, p_fpfw_text_io_async_read_request_t request)
 {
-    uint8_t* byte_ptr = (uint8_t*)request->Input.Buffer + request->Output.ReadBytes;
+    uint8_t* byte_ptr = (uint8_t*)request->input.buffer + request->output.read_bytes;
 
-    while ((request->Output.ReadBytes < request->Input.ByteCount) &&
+    while ((request->output.read_bytes < request->input.byte_count) &&
            !uart_pl011_rx_fifo_is_empty(device->config->base_address))
     {
         *byte_ptr = uart_pl011_read_byte(device->config->base_address);
         byte_ptr++;
-        request->Output.ReadBytes++;
+        request->output.read_bytes++;
     }
 }
 
-static void textio_pl011_write_tx_data(textio_pl011_device_t* device, PFPFW_TEXT_IO_ASYNC_WRITE_REQUEST request)
+static void textio_pl011_write_tx_data(textio_pl011_device_t* device, p_fpfw_text_io_async_write_request_t request)
 {
-    uint8_t* byte_ptr = (uint8_t*)request->Input.Buffer + request->Output.WrittenBytes;
-    while ((request->Output.WrittenBytes < request->Input.ByteCount) &&
+    uint8_t* byte_ptr = (uint8_t*)request->input.buffer + request->output.written_bytes;
+    while ((request->output.written_bytes < request->input.byte_count) &&
            !uart_pl011_tx_fifo_is_full(device->config->base_address))
     {
         uart_pl011_write_byte(device->config->base_address, *byte_ptr);
@@ -294,7 +294,7 @@ static void textio_pl011_write_tx_data(textio_pl011_device_t* device, PFPFW_TEXT
             uart_pl011_write_byte(device->config->base_address, '\r');
         }
         byte_ptr++;
-        request->Output.WrittenBytes++;
+        request->output.written_bytes++;
     }
 }
 

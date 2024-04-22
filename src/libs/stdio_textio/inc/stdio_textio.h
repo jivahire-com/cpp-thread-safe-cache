@@ -11,7 +11,7 @@
 
 /*----------- Nested includes ------------*/
 
-#include <FpFwTextIoInterface.h>
+#include <fpfw_text_io_interface.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 

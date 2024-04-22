@@ -45,14 +45,14 @@ int _write_r(struct _reent* reent, int fh, const unsigned char* buf, unsigned le
     int bytes_written = 0;
     if (s_textio_interface != NULL)
     {
-        FPFW_TEXT_IO_SYNC_WRITE_REQUEST write_request = {.Header = {.RequestType = TEXT_DRIVER_WRITE_SYNC_REQUEST_ID},
-                                                         .Input = {
-                                                             .Buffer = (unsigned char*)buf,
-                                                             .ByteCount = len,
-                                                         }};
-        int32_t status = DfwkInterfaceSendSync(s_textio_interface, &write_request.Header);
+        fpfw_text_io_sync_write_request_t write_request = {.header = {.RequestType = FPFW_TEXT_IO_REQUEST_ID_WRITE_SYNC},
+                                                           .input = {
+                                                               .buffer = (unsigned char*)buf,
+                                                               .byte_count = len,
+                                                           }};
+        int32_t status = DfwkInterfaceSendSync(s_textio_interface, &write_request.header);
         FPFW_RUNTIME_ASSERT(status == DFWK_SUCCESS);
-        bytes_written += write_request.Output.WrittenBytes;
+        bytes_written += write_request.output.written_bytes;
     }
 
     return bytes_written;

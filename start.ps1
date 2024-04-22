@@ -14,5 +14,6 @@ foreach($Module in $Modules)
 # Call the environment setup with input 
 Set-RepoEnv -Toolchain $Toolchain -Configuration $Configuration
 
-# Dump help block for SVP
+# Dump help block for SVP and FPGA Debug
 Get-SvpHelp
+Get-FPGAHelp

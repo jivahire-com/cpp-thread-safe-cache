@@ -33,7 +33,7 @@ target_link_libraries(
         ms::driver::textio::pl011
         ms::lib::css
         ms::lib::debug
-        ms::lib::cortex::m7::nvic
+        ms::lib::cortex_m7::nvic
         ms::lib::mesh
         ms::lib::stdio_textio
         ms::lib::threadx
@@ -88,7 +88,7 @@ target_link_libraries(
         fwlib.Driver.MboxIccTransport
         ms::driver::textio::pl011
         ms::lib::debug
-        ms::lib::cortex::m7::nvic
+        ms::lib::cortex_m7::nvic
         ms::lib::stdio_textio
         ms::lib::threadx
         ms::service::mcp_etc

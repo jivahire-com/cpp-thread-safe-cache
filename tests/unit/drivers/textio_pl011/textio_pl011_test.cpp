@@ -12,6 +12,7 @@
 extern "C" {
 #include <DfwkClient.h>
 #include <DfwkHost.h>
+#include <FpFwUtils.h>
 #include <error_handler.h>
 #include <textio_pl011.h> // for textio_pl011_device_t, textio_pl011...
 #include <textio_pl011_i.h>

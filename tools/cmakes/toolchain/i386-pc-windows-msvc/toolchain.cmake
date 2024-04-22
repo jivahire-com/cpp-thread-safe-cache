@@ -26,8 +26,8 @@ set(CMAKE_CXX_COMPILER_RANLIB "${CMAKE_RANLIB}")
 
 # Set compilation to enable debug symbols
 # Set compilation to respect target architecture
-set(CMAKE_C_FLAGS "-g -m32 --target=${CLANG_TARGET_TRIPLE} -Wall -Wextra -Werror")
-set(CMAKE_CXX_FLAGS "-g -m32 --target=${CLANG_TARGET_TRIPLE} -Wall -Wextra -Werror")
+set(CMAKE_C_FLAGS "-g -m32 --target=${CLANG_TARGET_TRIPLE} -Wall -Wextra -Werror -Wno-missing-field-initializers")
+set(CMAKE_CXX_FLAGS "-g -m32 --target=${CLANG_TARGET_TRIPLE} -Wall -Wextra -Werror -Wno-missing-field-initializers")
 
 # Set repo utilities
 set(REPO_CLANG_TIDY "${CMAKE_SOURCE_DIR}/tools/cmakes/toolchain/${CLANG_TARGET_TRIPLE}/clang-tidy.cmd" --quiet)

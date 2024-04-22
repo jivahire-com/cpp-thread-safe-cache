@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 
 #include <FpFwCMocka.h>
+#include <FpFwUtils.h>
 #include <stdio_textio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/

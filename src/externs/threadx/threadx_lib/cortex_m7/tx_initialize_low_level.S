@@ -46,7 +46,7 @@ SYSTICK_CYCLES    =   ((SYSTEM_CLOCK / 100) -1)     // SYSTICK set for 100 ticks
 /*  FUNCTION                                               RELEASE        */
 /*                                                                        */
 /*    _tx_initialize_low_level                          Cortex-M7/GNU     */
-/*                                                           x.x          */
+/*                                                           6.1          */
 /*  AUTHOR                                                                */
 /*                                                                        */
 /*    William E. Lamie, Microsoft Corporation                             */
@@ -79,9 +79,11 @@ SYSTICK_CYCLES    =   ((SYSTEM_CLOCK / 100) -1)     // SYSTICK set for 100 ticks
 /*                                                                        */
 /*    DATE              NAME                      DESCRIPTION             */
 /*                                                                        */
-/*  09-30-2020     William E. Lamie         Initial Version 6.1           */
-/*  xx-xx-xxxx     Scott Larson             Modified comment(s),          */
-/*                                            resulting in version x.x    */
+/*  05-19-2020     William E. Lamie         Initial Version 6.0           */
+/*  09-30-2020     William E. Lamie         Modified Comment(s), fixed    */
+/*                                            GNU assembly comment, clean */
+/*                                            up whitespace, resulting    */
+/*                                            in version 6.1              */
 /*                                                                        */
 /**************************************************************************/
 // VOID   _tx_initialize_low_level(VOID)
@@ -91,7 +93,6 @@ SYSTICK_CYCLES    =   ((SYSTEM_CLOCK / 100) -1)     // SYSTICK set for 100 ticks
 _tx_initialize_low_level:
 
     /* Disable interrupts during ThreadX initialization.  */
-    
     CPSID   i
 
     /* Enable divide by zero traps */
@@ -107,7 +108,7 @@ _tx_initialize_low_level:
 
     LDR     r0, =_tx_initialize_unused_memory       // Build address of unused memory pointer
     LDR     r1, =__RAM_segment_used_end__           // Build first free address
-    ADD     r1, r1, #4                              // 
+    ADD     r1, r1, #4                              //
     STR     r1, [r0]                                // Setup first unused memory pointer
 
     /* Setup Vector Table Offset Register.  */
@@ -117,11 +118,16 @@ _tx_initialize_low_level:
     STR     r1, [r0, #0xD08]                        // Set vector table address
 
     /* Set system stack pointer from vector value.  */
-
     LDR     r0, =_tx_thread_system_stack_ptr        // Build address of system stack pointer
     LDR     r1, =_vectors                           // Pickup address of vector table
     LDR     r1, [r1]                                // Pickup reset stack pointer
     STR     r1, [r0]                                // Save system stack pointer
+
+    /* Enable the cycle count register.  */
+    LDR     r0, =0xE0001000                         // Build address of DWT register
+    LDR     r1, [r0]                                // Pickup the current value
+    ORR     r1, r1, #1                              // Set the CYCCNTENA bit
+    STR     r1, [r0]                                // Enable the cycle count register
 
     /* Configure SysTick.  */
 
@@ -132,22 +138,24 @@ _tx_initialize_low_level:
     STR     r1, [r0, #0x10]                         // Setup SysTick Control
 
     /* Configure handler priorities.  */
-
     LDR     r1, =0x00000000                         // Rsrv, UsgF, BusF, MemM
     STR     r1, [r0, #0xD18]                        // Setup System Handlers 4-7 Priority Registers
-
     LDR     r1, =0xFF000000                         // SVCl, Rsrv, Rsrv, Rsrv
     STR     r1, [r0, #0xD1C]                        // Setup System Handlers 8-11 Priority Registers
                                                     // Note: SVC must be lowest priority, which is 0xFF
-
     LDR     r1, =0x40FF0000                         // SysT, PnSV, Rsrv, DbgM
     STR     r1, [r0, #0xD20]                        // Setup System Handlers 12-15 Priority Registers
                                                     // Note: PnSV must be lowest priority, which is 0xFF
 
     /* Return to caller.  */
-
-    BX      lr 
+    BX      lr
 // }
+
+/* added to catch the SVC */
+    .global  __tx_SVCallHandler
+    .thumb_func
+__tx_SVCallHandler:
+    B       __tx_SVCallHandler
 
 /* Generic interrupt handler template */
     .global  __tx_IntHandler
@@ -177,9 +185,8 @@ __tx_IntHandler:
 __tx_SysTickHandler:
     .thumb_func
 SysTick_Handler:
-// VOID TimerInterruptHandler (VOID)
+// VOID SysTick_Handler (VOID)
 // {
-
     PUSH    {r0, lr}
 #ifdef TX_ENABLE_EXECUTION_CHANGE_NOTIFY
     BL      _tx_execution_isr_enter             // Call the ISR enter function
@@ -189,12 +196,11 @@ SysTick_Handler:
     BL      _tx_execution_isr_exit              // Call the ISR exit function
 #endif
     POP     {r0, lr}
-    BX      LR
+    BX      lr
 // }
 
-
 /* NMI, DBG handlers */
-    .global  __tx_NMIHandler 
+    .global  __tx_NMIHandler
     .thumb_func
 __tx_NMIHandler:
     B       __tx_NMIHandler
@@ -203,8 +209,6 @@ __tx_NMIHandler:
     .thumb_func
 __tx_DBGHandler:
     B       __tx_DBGHandler
-
-    /* @TODO - Revisit this as to make sure it's still functional now that threadx modules are not used - https://azurecsi.visualstudio.com/DuvallFw/_workitems/edit/1478138 */
     
     /* Memory Exception Handler.  */
     /* BusFault_Handler.          */

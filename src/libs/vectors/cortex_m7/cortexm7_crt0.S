@@ -86,7 +86,6 @@ crt0_memory_set:
 memory_set_done:
   bx lr
 
-  /* Setup attibutes of stack and heap sections so they don't take up room in the elf file */
   /* These attributes are commented out since we want to include these sections in the output binary that
      will be merged into the TCM RAM image */
   //.section .stack, "wa", %nobits

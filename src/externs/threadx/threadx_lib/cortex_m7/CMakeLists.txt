@@ -190,10 +190,9 @@ set(SRCS
     
     # See originals from ThreadX Port as needed
     # ${TARGET_DIR}/ports/cortex_m7/gnu/example_build/tx_initialize_low_level.S
-    # ${TARGET_DIR}/ports/cortex_m7/gnu/src/tx_thread_schedule.S
     ${CMAKE_CURRENT_SOURCE_DIR}/tx_initialize_low_level.S
-    ${CMAKE_CURRENT_SOURCE_DIR}/tx_thread_schedule.S
     
+    ${TARGET_DIR}/ports/cortex_m7/gnu/src/tx_thread_schedule.S
     ${TARGET_DIR}/ports/cortex_m7/gnu/src/tx_thread_stack_build.S
     ${TARGET_DIR}/ports/cortex_m7/gnu/src/tx_thread_system_return.S
     ${TARGET_DIR}/ports/cortex_m7/gnu/src/tx_thread_context_save.S

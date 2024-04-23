@@ -24,12 +24,16 @@ target_include_directories(
 
 target_link_libraries(
     ${TARGET}
-        PRIVATE
-        ms::lib::debug
+    PUBLIC
         silibs::atu
+        silibs::kng_silibs_platform
+        silibs::sdm_init
+    PRIVATE
+        fwlib.assert
+        ms::lib::debug
         silibs::idsw
         silibs::pcr_vab
-        silibs::sdm_init
+        silibs::pcr_rpss
         silibs::smmu
         silibs::smmu_voyager
         silibs::tower_sdmss

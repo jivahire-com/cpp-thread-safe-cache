@@ -7,6 +7,7 @@ set(TARGET kng.lib.scp.runtime_init.scp)
 
 add_library(${TARGET} 
     OBJECT 
+        accelerator_ip_init.c
         avs_scp_init.c
         css_init.c
         debug_init.c
@@ -31,6 +32,7 @@ target_link_libraries(
         fwlib.Driver.MboxIccTransport
         ms::lib::scp_avs
         ms::driver::textio::pl011
+        ms::lib::accelerator_ip
         ms::lib::css
         ms::lib::debug
         ms::lib::cortex_m7::nvic

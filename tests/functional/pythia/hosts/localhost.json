@@ -26,7 +26,7 @@
         "setup_script": "${env:REPO_APP_PATH_microsoft.internal.windows.virtualizerruntime}/SLS/windows/setup.bat",
         "params": {
             "KingsgateSVP.DIE_0.CSS.HndBaseElement.AP_NS_UART0_PHY.#SCML_PROPERTIES#TerminalAutoOpen": "false",
-            "KingsgateSVP.DIE_0.CDEDSS.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_0.CDEDSS.#EXTRA_PROPERTIES#runtime_disabled": "false",
             "KingsgateSVP.DIE_0.HSSS.HSP.#EXTRA_PROPERTIES#runtime_disabled": "true",
             "KingsgateSVP.DIE_0.HSSS.HSSS_POR.#SCML_PROPERTIES#css_rstn_init_value": "0",
             "KingsgateSVP.DIE_0.HSSS.HSSS_POR.#SCML_PROPERTIES#mcp_init_vector_param": "0",
@@ -37,7 +37,7 @@
             "KingsgateSVP.DIE_0.RPSS1.#EXTRA_PROPERTIES#runtime_disabled": "true",
             "KingsgateSVP.DIE_0.RPSS2.#EXTRA_PROPERTIES#runtime_disabled": "true",
             "KingsgateSVP.DIE_0.RPSS3.#EXTRA_PROPERTIES#runtime_disabled": "true",
-            "KingsgateSVP.DIE_0.SDMSS.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_0.SDMSS.#EXTRA_PROPERTIES#runtime_disabled": "false",
             "KingsgateSVP.DIE_0.VABRPSS0.#EXTRA_PROPERTIES#runtime_disabled": "true",
             "KingsgateSVP.DIE_0.VABRPSS1.#EXTRA_PROPERTIES#runtime_disabled": "true",
             "KingsgateSVP.DIE_0.VABRPSS2.#EXTRA_PROPERTIES#runtime_disabled": "true",

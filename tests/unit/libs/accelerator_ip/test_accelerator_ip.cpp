@@ -14,6 +14,7 @@
 extern "C" {
 #include <accelerator_ip.h>
 #include <idsw.h>
+#include <pcr_rpss.h>
 #include <utils.h>
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
@@ -240,75 +241,163 @@ int __wrap_smmu_enable_access_check(uintptr_t smmu_base_addr)
     return SILIBS_SUCCESS;
 }
 
+int __wrap_idsw_get_platform_sdv()
+{
+    return PLATFORM_FPGA_LARGE;
+}
+
+void __wrap_deassert_pcr_reset(uintptr_t vab_pcr_base_addr)
+{
+    UNUSED(vab_pcr_base_addr);
+}
+
+int __wrap_vab_pcr_init(uintptr_t vab_pcr_base_addr)
+{
+    vab_pcr_base_addr = mock_type(uintptr_t);
+
+    if (vab_pcr_base_addr == 0x0)
+    {
+        return SILIBS_E_PARAM;
+    }
+
+    return SILIBS_SUCCESS;
+}
+
+void __wrap_FpFwAssert(int expression)
+{
+    UNUSED(expression);
+}
+
+int __wrap_pcr_rpss_configure_clocks(pcr_rpss_entity_t* pcr, uint32_t us_timeout)
+{
+    UNUSED(pcr);
+    UNUSED(us_timeout);
+
+    return SILIBS_SUCCESS;
+}
+
+int __wrap_pcr_rpss_deassert_por_reset(pcr_rpss_entity_t* pcr)
+{
+    UNUSED(pcr);
+
+    return SILIBS_SUCCESS;
+}
+
+int __wrap_pcr_rpss_verify(pcr_rpss_entity_t* pcr)
+{
+    pcr = mock_type(pcr_rpss_entity_t*);
+
+    if (pcr == nullptr)
+    {
+        return SILIBS_E_PARAM;
+    }
+
+    return SILIBS_SUCCESS;
+}
+
+void config_vab_pass()
+{
+    // VAB init success
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);  // VAB atu_map
+    will_return(__wrap_vab_pcr_init, 0x12345678); // VAB PCR init
+    will_return(__wrap_smmu_enable_access_check, 0x12345678);
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // VAB atu_unmap
+}
+
+void config_ss_pass()
+{
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);     // SS Tower atu_map
+    will_return(__wrap_pcr_rpss_verify, 0x12345678); // SS Tower pcr init
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);   // SS Tower atu_unmap
+}
+
+void config_accel_ip_pass()
+{
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);   // configure_accel_ip atu_map
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // configure_accel_ip atu_unmap
+}
+
 TEST_FUNCTION(accel_ip_pre_boot_config_pass_test, nullptr, nullptr)
 {
     // Happy case
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);              // VAB init atu_map
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);            // VAB init atu_unmap
-    will_return(__wrap_smmu_enable_access_check, 0x12345678); // smmu_enable_access_check
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);              // SS Tower init atu_map
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);            // SS Tower init atu_unmap
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);              // configure_accel_ip atu_map
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);            // configure_accel_ip atu_unmap
+    config_vab_pass();
+    config_ss_pass();
+    config_accel_ip_pass();
     assert_int_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
 }
 
-TEST_FUNCTION(accel_ip_pre_boot_config_fail_test, nullptr, nullptr)
+TEST_FUNCTION(accel_ip_pre_boot_config_vab_atu_map_fail_test, nullptr, nullptr)
 {
     // VAB atu_map fail
     will_return(__wrap_idsw_get_die_id, SOC_D0);
     will_return(__wrap_atu_map, SILIBS_E_PARAM);
     assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
 
+TEST_FUNCTION(accel_ip_pre_boot_config_vab_pcr_init_fail_test, nullptr, nullptr)
+{
+    // VAB atu_map pass, VAB pcr fail
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);   // VAB atu_map
+    will_return(__wrap_vab_pcr_init, 0x0);         // VAB PCR init
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // VAB atu_unmap
+    assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
+
+TEST_FUNCTION(accel_ip_pre_boot_config_vab_smmu_enable_fail_test, nullptr, nullptr)
+{
     // VAB atu_map pass, VAB atu_unmap fail
     will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS); // VAB atu_map
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);  // VAB atu_map
+    will_return(__wrap_vab_pcr_init, 0x12345678); // VAB PCR init
     will_return(__wrap_smmu_enable_access_check, 0x0);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // VAB atu_unmap
-    assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
-
-    // VAB atu_map success, smmu_enable_access_check success, VAB atu_unmap fail
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS); // VAB atu_map
-    will_return(__wrap_smmu_enable_access_check, 0x12345678);
     will_return(__wrap_atu_unmap, SILIBS_E_PARAM); // VAB atu_unmap
     assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
 
+TEST_FUNCTION(accel_ip_pre_boot_config_ss_atu_map_fail_test, nullptr, nullptr)
+{
     // VAB init success, SS Tower atu_map fail
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS); // VAB atu_map
-    will_return(__wrap_smmu_enable_access_check, 0x12345678);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // VAB atu_unmap
-    will_return(__wrap_atu_map, SILIBS_E_PARAM);   // SS Tower atu_map
+    config_vab_pass();
+    will_return(__wrap_atu_map, SILIBS_E_PARAM); // SS Tower atu_map
     assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
 
+TEST_FUNCTION(accel_ip_pre_boot_config_ss_pcr_init_fail_test, nullptr, nullptr)
+{
+    // VAB init success, SS Tower atu_map success, SS pcr fail
+    config_vab_pass();
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);   // SS Tower atu_map
+    will_return(__wrap_pcr_rpss_verify, nullptr);  // SS Tower pcr init
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // SS Tower atu_unmap
+    assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
+
+TEST_FUNCTION(accel_ip_pre_boot_config_ss_atu_unmap_fail_test, nullptr, nullptr)
+{
     // VAB init success, SS Tower atu_map success, SS Tower atu_unmap fail
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS); // VAB atu_map
-    will_return(__wrap_smmu_enable_access_check, 0x12345678);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // VAB atu_unmap
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);   // SS Tower atu_map
-    will_return(__wrap_atu_unmap, SILIBS_E_PARAM); // SS Tower atu_unmap
+    config_vab_pass();
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);     // SS Tower atu_map
+    will_return(__wrap_pcr_rpss_verify, 0x12345678); // SS Tower pcr init
+    will_return(__wrap_atu_unmap, SILIBS_E_PARAM);   // SS Tower atu_unmap
     assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
 
+TEST_FUNCTION(accel_ip_pre_boot_config_accel_ip_atu_map_fail_test, nullptr, nullptr)
+{
     // VAB init success, SS Tower success, accel IP atu_map fail
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS); // VAB atu_map
-    will_return(__wrap_smmu_enable_access_check, 0x12345678);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // VAB atu_unmap
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);   // SS Tower atu_map
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // SS Tower atu_unmap
-    will_return(__wrap_atu_map, SILIBS_E_PARAM);   // accel ip atu_map
+    config_vab_pass();
+    config_ss_pass();
+    will_return(__wrap_atu_map, SILIBS_E_PARAM); // accel ip atu_map
     assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
 
-    // VAB init success, SS Tower success, accel IP atu_map fail
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS); // VAB atu_map
-    will_return(__wrap_smmu_enable_access_check, 0x12345678);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // VAB atu_unmap
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);   // SS Tower atu_map
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // SS Tower atu_unmap
+TEST_FUNCTION(accel_ip_pre_boot_config_accel_ip_atu_unmap_fail_test, nullptr, nullptr)
+{
+    // VAB init success, SS Tower success, accel IP atu_unmap fail
+    config_vab_pass();
+    config_ss_pass();
     will_return(__wrap_atu_map, SILIBS_SUCCESS);   // accel ip atu_map
     will_return(__wrap_atu_unmap, SILIBS_E_PARAM); // accel ip atu_unmap
     assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);

@@ -11,9 +11,11 @@
 /*-------------------------------- Includes ---------------------------------*/
 #include "vab_sdm_top_regs.h"
 
+#include <FpFwAssert.h>
 #include <accelerator_ip_priv.h>
 #include <debug.h>
 #include <idsw.h>
+#include <pcr_rpss.h>
 #include <silibs_ap_top_regs.h>
 #include <silibs_kng_soc.h>
 #include <smmu.h>
@@ -37,16 +39,13 @@ static int32_t configure_vab(vab_ctxt_t* p_vab_ctxt, atu_mapping_ctxt_t* p_vab_a
 {
     atu_map_entry_t* p_atu_map_entry = p_vab_atu_mapping_ctxt->p_atu_map_entry;
     atu_id_t atu_id = p_vab_atu_mapping_ctxt->ss_atu_id;
-    uint64_t scp_smmu_base_addr;
-    uint64_t mscp_start_address; // start address of the region in SCP/MCP address map
-    uint64_t vab_base_addr;      // vab base address
-    int32_t ret = SILIBS_SUCCESS;
+    int32_t sts = SILIBS_SUCCESS;
 
     // TODO (ADO 1728276): fix this after silib VAB code refactoring is done
     UNUSED(p_vab_ctxt);
 
     // Map ATU
-    ret = atu_map(atu_id, p_atu_map_entry);
+    int32_t ret = atu_map(atu_id, p_atu_map_entry);
     if (ret != SILIBS_SUCCESS)
     {
         debug_print("Vab ATU Mapping failed");
@@ -55,28 +54,32 @@ static int32_t configure_vab(vab_ctxt_t* p_vab_ctxt, atu_mapping_ctxt_t* p_vab_a
     }
 
     // Get vab base address and tower base address after ATU mapped successfully
-    vab_base_addr = p_atu_map_entry->ap_base_address;
-    mscp_start_address = p_atu_map_entry->mscp_start_address;
+    uint64_t vab_base_addr = p_atu_map_entry->ap_base_address;
+    uint64_t mscp_start_address = p_atu_map_entry->mscp_start_address;
 
     // Configure VAB SAM
     configure_vab_system_addr_map(vab_base_addr, mscp_start_address + VAB_VAB_TOWER_ADDRESS);
     debug_print("Vab SAM Configuration Completed");
 
-#if 0 // TODO (ADO 1728276): Clock is not implemented in SVP so commenting till SVP gets ready
-    // Configure VAB PCR
-    deassert_pcr_reset(mscp_start_address + VAB_VAB_PCR_TOP_ADDRESS);
-    ret = vab_pcr_init(mscp_start_address + VAB_VAB_PCR_TOP_ADDRESS);
-    if (ret != SILIBS_SUCCESS)
+    // TODO (ADO 1728276): PCR is not implemented in SVP
+    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
     {
-        debug_print("Vab PCR configuration failed");
-        ret = ACCEL_RET_FAIL_VAB_PCR;
-        goto exit_atu_unmap;
+        // Configure VAB PCR
+        deassert_pcr_reset(mscp_start_address + VAB_VAB_PCR_TOP_ADDRESS);
+        ret = vab_pcr_init(mscp_start_address + VAB_VAB_PCR_TOP_ADDRESS);
+        if (ret != SILIBS_SUCCESS)
+        {
+            debug_print("Vab PCR configuration failed");
+            ret = ACCEL_RET_FAIL_VAB_PCR;
+            goto exit_atu_unmap;
+        }
     }
-#endif
+
     // Configure SMMU. Current configuration is in bypass mode only
-    scp_smmu_base_addr = mscp_start_address + VAB_SMMU_YARDLEY_VAB_ADDRESS;
+    uint64_t scp_smmu_base_addr = mscp_start_address + VAB_SMMU_YARDLEY_VAB_ADDRESS;
     smmu_enable_access(scp_smmu_base_addr);
     ret = smmu_enable_access_check(scp_smmu_base_addr);
+
     if (ret != SILIBS_SUCCESS)
     {
         debug_print("Vab SMMU is not enabled");
@@ -84,38 +87,32 @@ static int32_t configure_vab(vab_ctxt_t* p_vab_ctxt, atu_mapping_ctxt_t* p_vab_a
         goto exit_atu_unmap;
     }
 
-    ret = atu_unmap(atu_id, p_atu_map_entry);
-    if (ret != SILIBS_SUCCESS)
-    {
-        debug_print("Vab ATU Unmapping failed");
-        ret = ACCEL_RET_FAIL_ATU_UNMAP;
-    }
-
-    return ret;
-
 exit_atu_unmap:
     // Destroy ATU Mapping (SCP View) for the given VAB instance
-    atu_unmap(atu_id, p_atu_map_entry);
+    sts = atu_unmap(atu_id, p_atu_map_entry);
+    if (sts != SILIBS_SUCCESS)
+    {
+        debug_print("Vab ATU Unmapping failed");
+    }
 
 exit:
-    return ret;
+    return ((ret != SILIBS_SUCCESS) ? ret : sts);
 }
 
-#if 0 // TODO (ADO 1728276) : Not supported in SVP so commented.
-static PCR_INSTANCE get_ss_pcr_type(eACCELERATOR_TYPE accel_type)
+static PCR_RPSS_INSTANCE get_ss_pcr_type(eACCELERATOR_TYPE accel_type)
 {
-    PCR_INSTANCE ss_pcr_type;
+    PCR_RPSS_INSTANCE ss_pcr_type;
 
     switch (accel_type)
     {
     case ACCELERATOR_SDMSS:
-        ss_pcr_type = PCR_SDMSS;
+        ss_pcr_type = PCR_SDMSS0;
         break;
     case ACCELERATOR_CDEDSS:
-        ss_pcr_type = PCR_CDEDSS;
+        ss_pcr_type = PCR_CDEDSS0;
         break;
     default:
-        ss_pcr_type = NUM_PCR_RPSS;
+        ss_pcr_type = NUM_PCR_RPSS_INSTANCES;
     }
 
     return ss_pcr_type;
@@ -125,8 +122,8 @@ static int32_t accelss_init_pcr(eACCELERATOR_TYPE accel_type, uint32_t accelss_p
 {
     int32_t ret = ACCEL_RET_SUCCESS;
 
-    PCR_INSTANCE ss_pcr_type = get_ss_pcr_type(accel_type);
-    if (ss_pcr_type != NUM_PCR_RPSS)
+    PCR_RPSS_INSTANCE ss_pcr_type = get_ss_pcr_type(accel_type);
+    if (ss_pcr_type == NUM_PCR_RPSS_INSTANCES)
     {
         return ACCEL_RET_FAIL_SS_PCR;
     }
@@ -138,12 +135,11 @@ static int32_t accelss_init_pcr(eACCELERATOR_TYPE accel_type, uint32_t accelss_p
         return ACCEL_RET_FAIL_SS_PCR;
     }
 
-    pcr_rpss_deassert_por_reset(pcr);
     pcr_rpss_configure_clocks(pcr, ACCEL_PCR_CONFIG_TIMEOUT);
+    pcr_rpss_deassert_por_reset(pcr);
 
     return ret;
 }
-#endif
 
 static int32_t configure_accel_subsystem_tower(accelip_metadata_t accelip_metadata,
                                                tower_attr_t* p_accelss_tower_attr,
@@ -151,8 +147,7 @@ static int32_t configure_accel_subsystem_tower(accelip_metadata_t accelip_metada
 {
     atu_map_entry_t* p_atu_map_entry = p_accelss_atu_mapping_ctxt->p_atu_map_entry;
     atu_id_t atu_id = p_accelss_atu_mapping_ctxt->ss_atu_id;
-    uint32_t mscp_start_address; // start address of the region in SCP/MCP address map
-    int32_t ret = ACCEL_RET_SUCCESS;
+    int32_t sts = SILIBS_SUCCESS;
 
     // Will be used when more IP of this tower will be configured.
     UNUSED(p_accelss_tower_attr);
@@ -160,7 +155,7 @@ static int32_t configure_accel_subsystem_tower(accelip_metadata_t accelip_metada
     debug_print("Accel SS init start");
 
     // Create ATU Mapping (SCP View) for the Accel SS
-    ret = atu_map(atu_id, p_atu_map_entry);
+    int32_t ret = atu_map(atu_id, p_atu_map_entry);
     if (ret != SILIBS_SUCCESS)
     {
         debug_print("Accel SS ATU Mapping failed");
@@ -168,43 +163,43 @@ static int32_t configure_accel_subsystem_tower(accelip_metadata_t accelip_metada
     }
 
     // Get Accel subsystem base address and tower base address after ATU mapped successfully
-    mscp_start_address = p_atu_map_entry->mscp_start_address;
+    uint32_t mscp_start_address = p_atu_map_entry->mscp_start_address;
 
     if (accelip_metadata.accel_type == ACCELERATOR_SDMSS)
     {
         configure_sdmss_system_addr_map(mscp_start_address + SDMSS_CONFIG_SDMSS_TOWER_ADDRESS,
                                         (SDMSS_INSTANCE)accelip_metadata.die_instance);
     }
-#if 0 // TODO (ADO 1728276) : Not supported in SVP so commented.
-    // Configure Accel SS PCR
-    ret = accelss_init_pcr(accelip_metadata.accel_type, mscp_start_address + SDMSS_CONFIG_SDMSS_PCR_TOP_ADDRESS);
-    if (ret != SILIBS_SUCCESS)
-    {
-        debug_print("Accel SS PCR configuration failed");
-        ret = ACCEL_RET_FAIL_SS_PCR;
-        goto exit_atu_unmap;
-    }
-#endif
 
-    // Destroy ATU mapping
-    ret = atu_unmap(atu_id, p_atu_map_entry);
-    if (ret != SILIBS_SUCCESS)
+    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
     {
-        debug_print("Accel SS ATU Unmapping failed");
-        ret = ACCEL_RET_FAIL_ATU_UNMAP;
+        // Configure Accel SS PCR
+        ret = accelss_init_pcr(accelip_metadata.accel_type, mscp_start_address + SDMSS_CONFIG_SDMSS_PCR_TOP_ADDRESS);
+        if (ret != SILIBS_SUCCESS)
+        {
+            debug_print("Accel SS PCR configuration failed");
+            ret = ACCEL_RET_FAIL_SS_PCR;
+            goto exit_atu_unmap;
+        }
     }
 
     debug_print("Accel SS init done");
 
-    return ret;
+exit_atu_unmap:
+    // Destroy ATU Mapping (SCP View) for the given VAB instance
+    sts = atu_unmap(atu_id, p_atu_map_entry);
+    if (sts != SILIBS_SUCCESS)
+    {
+        debug_print("Accel SS ATU Unmapping failed");
+    }
+
+    return ((ret != SILIBS_SUCCESS) ? ret : sts);
 }
 
-#if 0 // TODO (ADO 1728276) : Currently smmu is configured in bypass mode
 static void silibs_configure_smmu_connection(uint64_t accelip_config_base_addr)
 {
     sdm_init_smmu_connection_seq(accelip_config_base_addr);
 }
-#endif
 
 static int32_t silib_sdm_init_set_pf_type0_ven_dev_id(uintptr_t ext_cfg_addr, uint16_t ven_id, uint16_t dev_id)
 {
@@ -534,10 +529,11 @@ static int32_t configure_accel_ip(accelip_ctxt_t* p_accelip_ctxt, atu_mapping_ct
     // Configure emCPU (M7) params
     silibs_configure_emcpu_params(accel_ip_config_base_addr, p_accelip_ctxt->p_emcpu_ctxt);
 
-#if 0 // TODO (ADO 1728276) : Currently smmu is configured in bypass mode
-    // Configure DTI/LTI params
-    silibs_configure_smmu_connection(accel_ip_config_base_addr);
-#endif
+    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+    {
+        // Configure DTI/LTI params
+        silibs_configure_smmu_connection(accel_ip_config_base_addr);
+    }
 
     // Destroy ATU mapping
     ret = atu_unmap(atu_id, p_atu_map_entry);
@@ -591,13 +587,8 @@ int32_t scp_accelerators_init(void)
 
     subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
 
-    if (p_ss_ctxt == NULL)
-    {
-        critical_print("Accel ctxt is null");
-        return ACCEL_RET_FAIL_INVALID_CONFIG;
-    }
+    FPFW_RUNTIME_ASSERT(p_ss_ctxt != NULL);
 
-    //
     printf("Number of Accelerator intances present : %d\n", (int)accel_ctxt_size);
 
     // Init all available Accelerator instances
@@ -607,11 +598,7 @@ int32_t scp_accelerators_init(void)
         if (p_ss_ctxt[index].accelip_metadata.die_instance == current_die_instance)
         {
             ret = init_accelerator(&p_ss_ctxt[index]);
-
-            if (ret != ACCEL_RET_SUCCESS)
-            {
-                critical_print("Accel init failed: Die : %d Accel ctxt index : %d Err: %d\n", current_die_instance, (int)index, ret);
-            }
+            FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
         }
     }
 

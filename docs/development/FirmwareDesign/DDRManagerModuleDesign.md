@@ -82,6 +82,62 @@ To deactivate throttling, all 12 temperature sensors must be below the low tempe
 
 The memory controller is already reading the MRR4 register for self-refresh control.  If the MRR temperature value exceeds a programmable threshold, the memory controller will generate an interrupt to SCP on the local chiplet. The MRR temperature threshold may be different from the SPD polling threshold and is independently configurable. Only a single threshold may be programmed to the memory controller.
 
+### DDR Manager init
+
+```mermaid
+sequenceDiagram
+    participant fpfw as fpfw_init;
+    participant init as ddr_manager_init;
+    participant q as ddr_manager_queue;
+    participant libs as silicon_libs;
+
+    fpfw->>init: ddr_manager_init()
+    init->>init: tx_queue_create()
+    
+    init--)q: tx_queue_send(EVENT_CREATE_MEMORY_MAP)
+    activate q
+    init--)q: tx_queue_send(EVENT_CREATE_BDAT)
+    init--)q: tx_queue_send(EVENT_CREATE_SMBIOS_TABLES)
+
+    init->>init: tx_thread_create()
+
+    create participant worker as ddr_manager_worker
+    init->>worker: start worker thread
+    init->>init: tx_timer_create(I3C temperature/power)
+    Note over init: timer cb will enqueue a "EVENT_I3C_POLL_DIMMS" msg
+
+    worker--)q: tx_queue_receive()
+    q--Xworker: EVENT_CREATE_MEMORY_MAP
+    worker->>libs: ddrss_get_memory_map()
+    libs->>worker: (memory map)
+    worker->>worker: process_memory_map()
+    create participant UEFI as UEFI Variable Store
+    worker-XUEFI: MEMORY MAP
+
+    worker--)q: tx_queue_receive()
+    q--)worker: EVENT_CREATE_BDAT
+    worker->>libs: ddrss_get_training_data()
+    libs->>worker: (training data)
+    worker->>worker: create_bdat()
+    create participant DDR as Reserved DDR Memory
+    worker-XDDR: ACPI BDAT
+
+    worker--)q: tx_queue_receive()
+    q--)worker: EVENT_CREATE_SMBIOS_TABLES
+    deactivate q
+
+    worker->>libs: ddrss_get_dimm_spd_data()
+    libs->>worker: (all DIMMs SPD data)
+    Note over worker, libs: May need to read SPD via I3C driver if not cached
+    worker->>libs: get_memory_config_details()
+    libs->>worker: (sys. details)
+    worker->>worker: create_SMBIOS_TYPE_16()
+    worker-XDDR: SMBIOS_TYPE_16_TABLE
+    loop Number of DIMMS
+        worker->>worker: create_SMBIOS_TYPE_17()
+        worker-XDDR: SMBIOS_TYPE_17_TABLE
+    end
+```
 ### Memory Training Data Reporting to UEFI
 
 #### <li> **BDAT**

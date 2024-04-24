@@ -1,8 +1,8 @@
 enabled_on(arm-eabi-aarch)
 
-# 
+#
 # Setup the SCP Runtime Init
-# 
+#
 set(TARGET kng.lib.scp.runtime_init.scp)
 
 add_library(${TARGET} 
@@ -17,11 +17,12 @@ add_library(${TARGET}
         icc_transport_init/mscp_hspmbx_init.c
         mesh_init.c
         nvic_init.c
+        pcie_init.c
         textio_init.c
 )
 
 target_link_libraries(
-    ${TARGET} 
+    ${TARGET}
     PRIVATE
         fwlib.dfwk
         fwlib.init
@@ -32,6 +33,7 @@ target_link_libraries(
         fwlib.Driver.MboxIccTransport
         ms::lib::scp_avs
         ms::driver::textio::pl011
+        ms::driver::pcie
         ms::lib::accelerator_ip
         ms::lib::css
         ms::lib::debug
@@ -39,6 +41,7 @@ target_link_libraries(
         ms::lib::mesh
         ms::lib::stdio_textio
         ms::lib::threadx
+        ms::service::pcie_manager
         ms::service::scp_etc
         silibs::avs
         silibs::idhw
@@ -63,13 +66,13 @@ coverage_target(${TARGET})
 
 add_library(ms::lib::runtime_init::scp ALIAS ${TARGET})
 
-# 
+#
 # Setup the MCP Runtime Init
-# 
+#
 set(TARGET kng.lib.scp.runtime_init.mcp)
 
-add_library(${TARGET} 
-    OBJECT 
+add_library(${TARGET}
+    OBJECT
         debug_init.c
         dfwk_init.c
         etc_mcp_init.c
@@ -79,7 +82,7 @@ add_library(${TARGET}
 )
 
 target_link_libraries(
-    ${TARGET} 
+    ${TARGET}
     PRIVATE
         fwlib.dfwk
         fwlib.init

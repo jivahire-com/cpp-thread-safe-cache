@@ -47,9 +47,9 @@ target_include_directories(
 
 target_link_options(
     ${TARGET}
-        PRIVATE 
-            -T ${CMAKE_CURRENT_LIST_DIR}/../inc/scp_memory.ld 
-            -Wl,-Map=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/scp/${TARGET}.map 
+        PRIVATE
+            -T ${CMAKE_CURRENT_LIST_DIR}/../inc/scp_memory.ld
+            -Wl,-Map=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/scp/${TARGET}.map
             -L${CMAKE_CURRENT_SOURCE_DIR}/../inc
             -ereset_handler
             -Wl,--build-id
@@ -57,8 +57,8 @@ target_link_options(
 
 set_property(
     TARGET ${TARGET}
-    APPEND PROPERTY LINK_DEPENDS 
-        ${CMAKE_CURRENT_LIST_DIR}/../inc/scp_memory.ld 
+    APPEND PROPERTY LINK_DEPENDS
+        ${CMAKE_CURRENT_LIST_DIR}/../inc/scp_memory.ld
         ${COMMON_LINK_FILES}
 )
 
@@ -67,12 +67,12 @@ set_property(
 #   can use generator expressions to add additional link time requiements to this
 #   target. See io/CMakeLists.txt for an example.
 set_target_properties(
-    ${TARGET} 
-        PROPERTIES 
+    ${TARGET}
+        PROPERTIES
             THREADX_KERNEL 1
 )
 
-# Generate a .bin file with the raw binary output from the linked .elf 
+# Generate a .bin file with the raw binary output from the linked .elf
 set(FIRMWARE_BIN ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/scp/${TARGET}.bin)
 
 add_custom_command(
@@ -88,7 +88,7 @@ add_custom_command(
 # This allows other targets to find the path to the .bin file for combining in to the complete firmware package
 # see package/CMakeLists.txt
 set_property(
-    TARGET ${TARGET} 
+    TARGET ${TARGET}
     PROPERTY FIRMWARE_BIN
         ${FIRMWARE_BIN}
 )

@@ -1,12 +1,12 @@
 set(TARGET mock.threadx)
 
-add_library(${TARGET} 
-    STATIC 
+add_library(${TARGET}
+    STATIC
         thread_x_mocks.c
 )
 
 target_include_directories(${TARGET}
-    PUBLIC 
+    PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
 )
 
@@ -33,6 +33,7 @@ mock_target(${TARGET}
     _txe_timer_activate
     _txe_timer_create
     _txe_timer_deactivate
+    _txe_timer_delete
 )
 
 add_library(ms::mocks::threadx ALIAS ${TARGET})

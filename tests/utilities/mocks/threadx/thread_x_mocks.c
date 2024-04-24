@@ -137,6 +137,12 @@ UINT __wrap__txe_timer_create(TX_TIMER* timer_ptr,
     return mock_type(UINT);
 }
 
+UINT __wrap__txe_timer_delete(TX_TIMER* timer_ptr)
+{
+    FPFW_UNUSED(timer_ptr);
+    return mock_type(UINT);
+}
+
 UINT __wrap__txe_timer_deactivate(TX_TIMER* timer_ptr)
 {
     FPFW_UNUSED(timer_ptr);

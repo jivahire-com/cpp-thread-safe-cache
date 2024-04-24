@@ -32,7 +32,9 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 static DFWK_SCHEDULE s_schedule;
-static scp_avs_device_t test_avs_device;
+scp_avs_device_t test_avs_device = {
+    .config = {},
+};
 static scp_avs_interface_t test_avs_interface;
 static scp_avs_request_t test_avs_Request;
 static scp_avs_get_request_t test_avs_get_Request;

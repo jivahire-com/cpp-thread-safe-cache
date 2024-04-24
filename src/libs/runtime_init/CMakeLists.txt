@@ -39,6 +39,7 @@ target_link_libraries(
         ms::lib::debug
         ms::lib::cortex_m7::nvic
         ms::lib::mesh
+        ms::lib::scp_interrupts
         ms::lib::stdio_textio
         ms::lib::threadx
         ms::service::pcie_manager
@@ -47,7 +48,8 @@ target_link_libraries(
         silibs::idhw
         silibs::idsw
         silibs::platform
-        silibs::kng_silibs_platform        
+        silibs::kng_silibs_platform
+        register_headers
 )
 
 # Ensure ms::lib::arm_utils precedes ICC transport driver in linker invocation by specifying this link dependency edge

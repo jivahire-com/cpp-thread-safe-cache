@@ -38,7 +38,7 @@ typedef struct {
 
 typedef struct _scp_avs_device_t {
     DFWK_DEVICE_HEADER Header;
-    const scp_avs_config_t *config;
+    const scp_avs_config_t config;
     DFWK_QUEUE avs_queue;
     pscp_avs_request outstanding_request;
     uint8_t avs_bus_num;

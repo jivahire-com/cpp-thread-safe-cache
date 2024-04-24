@@ -5,7 +5,11 @@
 
 /*------------- Includes -----------------*/
 #include <fpfw_init.h>
+#include <padring_southeast_regs.h>
 #include <scp_avs_driver.h>
+#include <scp_interrupts.h>
+#include <silibs_scp_exp_top_regs.h>
+#include <silibs_scp_top_regs.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -17,10 +21,16 @@
 
 /*------------- Functions ----------------*/
 
-// TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1743391. Add config for each AVS below.
 FPFW_INIT_COMPONENT(avs0, FPFW_INIT_DEPENDENCIES("dfwk", "std_io"))
 {
-    static scp_avs_device_t avs_device;
+    static scp_avs_device_t avs_device = {
+        .config = {
+            .avs_irq = HW_INT_AVS_CTRL_0_INT,
+            .reg_base_addr = (uintptr_t)SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_AVS_0_ADDRESS,
+            .rail_count = 2,
+            .afm_csr_avs_clk_addr = (uintptr_t)SCP_TOP_SCP_EXP_ADDRESS + SCP_TOP_AFM_SE_ADDRESS + PADRING_SOUTHEAST_SOUTHEAST_AFM_CSR_AVS0_CLK_ADDRESS,
+            .afm_csr_mdata_addr = (uintptr_t)SCP_TOP_SCP_EXP_ADDRESS + SCP_TOP_AFM_SE_ADDRESS + PADRING_SOUTHEAST_SOUTHEAST_AFM_CSR_AVS0_MDATA_ADDRESS,
+        }};
     avs_device.avs_bus_num = AVS_BUS0;
 
     fpfw_init_component_id_t dfwk_id = "dfwk";
@@ -43,7 +53,15 @@ FPFW_INIT_COMPONENT(avs0_int, FPFW_INIT_DEPENDENCIES("avs0"))
 
 FPFW_INIT_COMPONENT(avs1, FPFW_INIT_DEPENDENCIES("dfwk", "std_io"))
 {
-    static scp_avs_device_t avs_device;
+    static scp_avs_device_t avs_device = {
+        .config = {
+            .avs_irq = HW_INT_AVS_CTRL_1_INT,
+            .reg_base_addr = (uintptr_t)SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_AVS_1_ADDRESS,
+            .rail_count = 2,
+            .afm_csr_avs_clk_addr = (uintptr_t)SCP_TOP_SCP_EXP_ADDRESS + SCP_TOP_AFM_SE_ADDRESS + PADRING_SOUTHEAST_SOUTHEAST_AFM_CSR_AVS1_CLK_ADDRESS,
+            .afm_csr_mdata_addr = (uintptr_t)SCP_TOP_SCP_EXP_ADDRESS + SCP_TOP_AFM_SE_ADDRESS + PADRING_SOUTHEAST_SOUTHEAST_AFM_CSR_AVS1_MDATA_ADDRESS,
+        }};
+
     avs_device.avs_bus_num = AVS_BUS1;
 
     fpfw_init_component_id_t dfwk_id = "dfwk";
@@ -66,7 +84,15 @@ FPFW_INIT_COMPONENT(avs1_int, FPFW_INIT_DEPENDENCIES("avs1"))
 
 FPFW_INIT_COMPONENT(avs2, FPFW_INIT_DEPENDENCIES("dfwk", "std_io"))
 {
-    static scp_avs_device_t avs_device;
+    static scp_avs_device_t avs_device = {
+        .config = {
+            .avs_irq = HW_INT_AVS_CTRL_2_INT,
+            .reg_base_addr = (uintptr_t)SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_AVS_2_ADDRESS,
+            .rail_count = 2,
+            .afm_csr_avs_clk_addr = (uintptr_t)SCP_TOP_SCP_EXP_ADDRESS + SCP_TOP_AFM_SE_ADDRESS + PADRING_SOUTHEAST_SOUTHEAST_AFM_CSR_AVS2_CLK_ADDRESS,
+            .afm_csr_mdata_addr = (uintptr_t)SCP_TOP_SCP_EXP_ADDRESS + SCP_TOP_AFM_SE_ADDRESS + PADRING_SOUTHEAST_SOUTHEAST_AFM_CSR_AVS2_MDATA_ADDRESS,
+        }};
+
     avs_device.avs_bus_num = AVS_BUS2;
 
     fpfw_init_component_id_t dfwk_id = "dfwk";
@@ -89,7 +115,15 @@ FPFW_INIT_COMPONENT(avs2_int, FPFW_INIT_DEPENDENCIES("avs2"))
 
 FPFW_INIT_COMPONENT(avs3, FPFW_INIT_DEPENDENCIES("dfwk", "std_io"))
 {
-    static scp_avs_device_t avs_device;
+    static scp_avs_device_t avs_device = {
+        .config = {
+            .avs_irq = HW_INT_AVS_CTRL_3_INT,
+            .reg_base_addr = (uintptr_t)SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_AVS_3_ADDRESS,
+            .rail_count = 2,
+            .afm_csr_avs_clk_addr = (uintptr_t)SCP_TOP_SCP_EXP_ADDRESS + SCP_TOP_AFM_SE_ADDRESS + PADRING_SOUTHEAST_SOUTHEAST_AFM_CSR_AVS3_CLK_ADDRESS,
+            .afm_csr_mdata_addr = (uintptr_t)SCP_TOP_SCP_EXP_ADDRESS + SCP_TOP_AFM_SE_ADDRESS + PADRING_SOUTHEAST_SOUTHEAST_AFM_CSR_AVS3_MDATA_ADDRESS,
+        }};
+
     avs_device.avs_bus_num = AVS_BUS3;
 
     fpfw_init_component_id_t dfwk_id = "dfwk";

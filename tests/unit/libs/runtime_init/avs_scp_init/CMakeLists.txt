@@ -18,10 +18,12 @@ target_link_libraries(${TARGET}
         fwlib.datastructures.linkedlist
         fwlib.utils
         ms::cmocka::testrunner
+        ms::lib::scp_interrupts
         ms::lib::threadx
         scp_avs
         silibs::avs
         silibs_platform
+        silibs::kng_silibs_platform
 )
 
 lint_target(${TARGET})

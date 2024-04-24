@@ -105,9 +105,9 @@ typedef struct _scp_avs_config_t {
     /*! Number of rails on the specified avs*/
     uint8_t rail_count;
     /*! AFM CLOCK, drive strength range = 0 - 7 */
-    uintptr_t nw_afm_csr_avs_clk_addr;
+    uintptr_t afm_csr_avs_clk_addr;
     /*! MData, drive strength range = 0 - 7 */
-    uintptr_t nw_afm_csr_mdata_addr;
+    uintptr_t afm_csr_mdata_addr;
 } scp_avs_config_t;
 
 struct avs_element {

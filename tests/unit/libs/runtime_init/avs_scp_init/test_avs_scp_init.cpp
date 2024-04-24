@@ -117,7 +117,9 @@ TEST_FUNCTION(test_avs3_scp, nullptr, nullptr)
 TEST_FUNCTION(test_avs0_scp_init, nullptr, nullptr)
 {
     // Set up expectations
-    scp_avs_device_t test_avs_device;
+    scp_avs_device_t test_avs_device = {
+        .config = {},
+    };
     fpfw_init_component_id_t avs_id = "avs0";
 
     will_return(__wrap_fpfw_init_get_handle, &test_avs_device);
@@ -131,7 +133,9 @@ TEST_FUNCTION(test_avs0_scp_init, nullptr, nullptr)
 TEST_FUNCTION(test_avs1_scp_init, nullptr, nullptr)
 {
     // Set up expectations
-    scp_avs_device_t test_avs_device;
+    scp_avs_device_t test_avs_device = {
+        .config = {},
+    };
     fpfw_init_component_id_t avs_id = "avs1";
 
     will_return(__wrap_fpfw_init_get_handle, &test_avs_device);
@@ -145,7 +149,9 @@ TEST_FUNCTION(test_avs1_scp_init, nullptr, nullptr)
 TEST_FUNCTION(test_avs2_scp_init, nullptr, nullptr)
 {
     // Set up expectations
-    scp_avs_device_t test_avs_device;
+    scp_avs_device_t test_avs_device = {
+        .config = {},
+    };
     fpfw_init_component_id_t avs_id = "avs2";
 
     will_return(__wrap_fpfw_init_get_handle, &test_avs_device);
@@ -159,7 +165,9 @@ TEST_FUNCTION(test_avs2_scp_init, nullptr, nullptr)
 TEST_FUNCTION(test_avs3_scp_init, nullptr, nullptr)
 {
     // Set up expectations
-    scp_avs_device_t test_avs_device;
+    scp_avs_device_t test_avs_device = {
+        .config = {},
+    };
     fpfw_init_component_id_t avs_id = "avs3";
 
     will_return(__wrap_fpfw_init_get_handle, &test_avs_device);

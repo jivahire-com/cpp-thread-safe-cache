@@ -36,9 +36,9 @@ This document is intended to provide more detail into how ThreadX is initialized
 
 The first thing the CM7 needs is a Vector Table, with the first entry on REST being the value of main stack pointer, `SP_main`. The second being the reset vector. See Table B1-4 in the technical reference manual, ARM DDI 0403E.e section B1.5.2. CM7 resets the Vector Table Offset Register (VTOR) to 0x00000000 on reset.
 
-To facilitate this a static library containing the Vector Table is built and linked into every executable (ELF), we use linker scripts to place it appropriately in memory. It also contains the crt0 routines needed before we call the `main()` function for the executable.
+To facilitate this we build a vector table directly into the Cortex M7 version of ThreadX, we then use linker scripts to place it appropriately in memory. We also provide the crt0 routines needed before we call the `main()` function for the executable.
 
-See ours [here](../../../src/libs/vectors/cortex_m7/).
+See ours [here](https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/src/externs/threadx/threadx_lib/cortex_m7/).
 
 ## Linker Scripts
 
@@ -77,9 +77,9 @@ These map directly to the start and sizes of the TCMs for each core. The ThreadX
 
 ## ThreadX
 
-The large majority of our ThreadX setup follows the CM7 port provided by ThreadX (find that [here](https://expresslogic.visualstudio.com/X-Ware/_git/threadx?version=GTpromote_threadx_1pfw_1&path=/ports/cortex_m7/gnu)). We do override the low level initialization and thread scheduling (ours are very similar to the port, see files directly for differences). This enables us to do any program specific changes we might want.
+The large majority of our ThreadX setup follows the CM7 port provided by ThreadX (find that [here](https://expresslogic.visualstudio.com/X-Ware/_git/threadx?version=GTpromote_threadx_1pfw_1&path=/ports/cortex_m7/gnu)). We do override the low level initialization (ours are very similar to the port, see files directly for differences). This enables us to do any program specific changes we might want.
 
-Find our overrides [here](../../../src/externs/threadx/threadx_lib/cortex_m7/).
+Find our overrides [here](https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/src/externs/threadx/threadx_lib/cortex_m7/).
 
 ## Coming out of RESET
 

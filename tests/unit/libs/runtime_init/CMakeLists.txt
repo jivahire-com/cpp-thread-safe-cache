@@ -1,4 +1,5 @@
 add_subdirectory(avs_scp_init)
+add_subdirectory(cli_init)
 add_subdirectory(css_init)
 add_subdirectory(dfwk)
 add_subdirectory(etc_mcp_init)

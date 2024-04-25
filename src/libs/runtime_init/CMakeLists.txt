@@ -9,6 +9,7 @@ add_library(${TARGET}
     OBJECT 
         accelerator_ip_init.c
         avs_scp_init.c
+        cli_init.c
         css_init.c
         debug_init.c
         dfwk_init.c
@@ -24,6 +25,7 @@ add_library(${TARGET}
 target_link_libraries(
     ${TARGET}
     PRIVATE
+        fwlib.cli
         fwlib.dfwk
         fwlib.init
         fwlib.mboxprimitives
@@ -52,8 +54,9 @@ target_link_libraries(
         register_headers
 )
 
-# Ensure ms::lib::arm_utils precedes ICC transport driver in linker invocation by specifying this link dependency edge
+# Ensure ms::lib::arm_utils precedes the following libs in linker invocation by specifying this link dependency edge
 target_link_libraries(fwlib.Driver.MboxIccTransport PRIVATE ms::lib::arm_utils)
+
 # Define base addresses during compile time for respective core fw
 target_compile_definitions(
     ${TARGET} 
@@ -73,8 +76,9 @@ add_library(ms::lib::runtime_init::scp ALIAS ${TARGET})
 #
 set(TARGET kng.lib.scp.runtime_init.mcp)
 
-add_library(${TARGET}
-    OBJECT
+add_library(${TARGET} 
+    OBJECT 
+        cli_init.c
         debug_init.c
         dfwk_init.c
         etc_mcp_init.c
@@ -86,6 +90,7 @@ add_library(${TARGET}
 target_link_libraries(
     ${TARGET}
     PRIVATE
+        fwlib.cli
         fwlib.dfwk
         fwlib.init
         fwlib.mboxprimitives
@@ -105,8 +110,9 @@ target_link_libraries(
         silibs::kng_silibs_platform
 )
 
-# Ensure ms::lib::arm_utils precedes ICC transport driver in linker invocation by specifying this link dependency edge
+# Ensure ms::lib::arm_utils precedes the following libs in linker invocation by specifying this link dependency edge
 target_link_libraries(fwlib.Driver.MboxIccTransport PRIVATE ms::lib::arm_utils)
+
 # Define base addresses during compile time for respective core fw
 target_compile_definitions(
     ${TARGET} 

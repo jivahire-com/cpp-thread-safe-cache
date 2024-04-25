@@ -172,3 +172,22 @@ A coverage report will be generated when running with the **unittest** command f
 
 By default Coverage is located in:  
 ```.testlogs/*/Coverage``` and the report can be viewed at ```.testlogs/*/Coverage/index.html```
+
+## Troubleshooting
+
+Some environments may be missing certain necessary .dll libraries which could manifest by all unit tests failing with similar output when running 'unittest'
+
+```powershell
+[11:03:48::787] STDERR : error: E:/kng/.testlogs\TestRun_2024-04-25_11-03-11\12.icc_transport_mscp_hspmbx_init.test.Host/raw.profraw: no such file or directory
+[11:03:48::926] STDERR : error: E:/kng/.testlogs\TestRun_2024-04-25_11-03-11\12.icc_transport_mscp_hspmbx_init.test.Host/data.profdata: could not read profile data!no such file or directory
+```
+
+Another symptom when running a stand-alone unit test presents with it immediately returning with no ouptut.
+
+From https://visualstudio.microsoft.com/downloads/#remote-tools-for-visual-studio-2022
+
+- Install the Desktop development with C++ workload without a full Visual Studio IDE installation.
+- From the Visual Studio Downloads page, scroll down until you see Tools for Visual Studio under the All Downloads section
+- Select the download for Build Tools for Visual Studio 2022 (and then run the installer)
+- Select "Desktop development with C++
+- Keep the default checked items under Installation details and add "MSVCv140 - VS 2015 C++ build tools... to the list

@@ -23,11 +23,13 @@
 
 | Document | Link |
 | - | - |
-| Kingsgate Implementing Sharepoint | [Link](https://microsoft.sharepoint.com/teams/Kingsgate) |
-| Kingsgate Non-Implementing Sharepoint | [Link](https://microsoft.sharepoint.com/:f:/t/EchoFalls/EvloMwJaw0JOpeseROOTZhUBSoBbSV4XjkX_1zjgfiY_8A?e=UMMXep) |
-| ARM - Cortex M7 | [Link](https://microsoft.sharepoint.com/:f:/t/EchoFalls/EqOiUGxwN2tItARlv1NwY9kBtr0WAk2DOD2mBdW-KPeMFg?e=AUjrqY) |
-| ARM - Poseidon | [Link](https://microsoft.sharepoint.com/:f:/t/EchoFalls/EuwQVuIJPwxOuFSdLwhYvlUBdYdXTuQXiobMQpstf6vGAA?e=LkutPe) |
-| ARM - General | [Link](https://microsoft.sharepoint.com/:f:/t/EchoFalls/Ejj7dRSEfe9IiNUg7w0sQSQBAZSZmywGU7DmwyEl5FMMbg?e=1iFmZz) |
+| Kingsgate Implementing Sharepoint | [Link](https://microsoft.sharepoint.com/teams/Kingsgate/Shared%20Documents/Forms/AllItems.aspx) |
+| Kingsgate Non-Implementing Sharepoint | [Link](https://microsoft.sharepoint.com/teams/EchoFalls/Shared%20Documents/Forms/AllItems.aspx) |
+| Kingsgate Mason Documentation | [Link](https://kingsgatedocs.azurewebsites.net/static/latest/domains/index.html) |
+| ARM - Cortex M7 | [Link](https://microsoft.sharepoint.com/:f:/r/teams/Kingsgate/Shared%20Documents/Third%20Party%20IP/ARM/Core/M7%20(AT610)/r1p2-00rel2?csf=1&web=1&e=s0hZZv) |
+| ARM - Voyage | [Link](https://microsoft.sharepoint.com/:f:/r/teams/Kingsgate/Shared%20Documents/Third%20Party%20IP/ARM/Voyager?csf=1&web=1&e=jQW8uu) |
+| ARM - Poseidon | [Link](https://microsoft.sharepoint.com/:f:/r/teams/Kingsgate/Shared%20Documents/Third%20Party%20IP/ARM/Core/Poseidon%20r0p1?csf=1&web=1&e=n2CERO) |
+| ARM - General | [Link](https://microsoft.sharepoint.com/:f:/r/teams/Kingsgate/Shared%20Documents/Third%20Party%20IP/ARM?csf=1&web=1&e=bNt1vc) |
 
 ## Repo Structure
 
@@ -112,7 +114,7 @@ This repo follows a pretty straight forward folder structure.
 
 ## Running the Firmware - Emulation
 
-The firmware can be loaded into the Emulation Environment for this project. See the SVP Documentation [here](./SVP/UsingSVP.md).
+The firmware can be loaded into the Emulation Environment for this project. See the SVP Documentation [here](./debug_user_guides/svp/UsingSVP.md).
 
 ## Unit Tests
 
@@ -125,18 +127,14 @@ See the below list for issues found and how to overcome them. Please add to this
 1. Running builds if you have switched branches.
     If you have switched branches, run start.ps1 again to update the environment. Dependencies or environment variables may have changed for the new branch. This will stabilize as the environment matures, but consider this procedure for now.
 
-2. Permissions to run powershell script: PowerShell says "execution of scripts is disabled on this system."
+1. Permissions to run powershell script: PowerShell says "execution of scripts is disabled on this system."
     By default, the running of certain scripts are restricted on Windows. You are especially prone to this issue if you have a new laptop. Set the execution policy to Unrestricted in Powershell using:
 
     ```pwsh
     Set-ExecutionPolicy -ExecutionPolicy Bypass -Force -Scope CurrentUser
     ```
 
-TODO: Is this needed?
-3. Error: Unable to find *.dlls for build.
-    Run PowerShell as administrator always to ensure a proper build.
-
-4. dotnet dependencies for test
+1. dotnet dependencies for test
     Running unit tests requires dotnet installed. Follow these URLs and install the necessary dependencies if you face any dotnet issues.
     (<https://aka.ms/dotnet-core-applaunch?framework=Microsoft.NETCore.App&framework_version=5.0.0&arch=x64&rid=win10-x64>)
     (<https://aka.ms/dotnet-core-applaunch?missing_runtime=true&arch=x64&rid=win10-x64&apphost_version=5.0.14>)

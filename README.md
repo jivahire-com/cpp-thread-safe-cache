@@ -1,3 +1,9 @@
-Checkout our [Getting Started Guide](./docs/GettingStarted.md) and [Guidelines](./docs/guidelines/GeneralGuidelines.md).
+# Welcome to the MSCP Repo
 
-Debugging guidelines can be found for different SDVs at [bigFPGA](./docs/debug_user_guides/big_fpga/big_fpga_debug_ug.md) and [SVP](./docs/debug_user_guides/svp/UsingSVP.md)).
+Checkout our documentation [here](./docs/)
+
+- [Getting Started Guide](./docs/GettingStarted.md)
+- [Guidelines (C, CMAKE, Git, etc...)](./docs/guidelines/GeneralGuidelines.md)
+- [Debugging](./docs/debug_user_guides/)
+- [Templates](./docs/.templates)
+- [Development (Design, Pipelines, Unit Testing, etc...)](./docs/development/)

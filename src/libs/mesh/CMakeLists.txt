@@ -1,5 +1,3 @@
-enabled_on(arm-eabi-aarch)
-
 set(TARGET kng.lib.mesh)
 
 add_library(${TARGET} 

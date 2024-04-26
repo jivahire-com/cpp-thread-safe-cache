@@ -39,8 +39,8 @@ void mesh_init(uint8_t die_num)
     if (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE)
     {
         cmn800_sequence_param.cmn_config_enum = CONFIG_1D_UMA_8HNS_HIER_3SN_enum; // 1 Die FPGA
-        printf("cmn800_sequence_param.cmn_config_enum 0x%lx\n", cmn800_sequence_param.cmn_config_enum);
     }
+    printf("cmn800_sequence_param.cmn_config_enum 0x%x\n", (uint8_t)cmn800_sequence_param.cmn_config_enum);
 
     sts = cmn800_sequence(cmn800_sequence_param);
     printf("cmn800_sequence sts 0x%x\n", sts);

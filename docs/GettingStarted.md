@@ -6,8 +6,8 @@
 1. [GIT](<https://git-scm.com/downloads>). There are some basic steps to be taken while installing git. Please ensure:
     1. Your ADO username and password are entered. As an alternative, you can link a personalized access token (PAT) to your git installation. Follow [these steps](<https://learn.microsoft.com/en-us/azure/devops/repos/git/set-up-credential-managers?view=azure-devops#using-the-git-credential-manager>).
     1. If you plan to clone via ssh, you will need to generate a public key and add it to your ADO account. For more details, follow [these steps](<https://learn.microsoft.com/en-us/azure/devops/repos/git/use-ssh-keys-to-authenticate?view=azure-devops>)
-1. (Optional) Visual Studio Code (<https://code.visualstudio.com/download>).  
-    a. After installation, launch VS Code, go to the Extensions tab on the left (Ctrl+Shift+X) and install all the recommended plugins.  
+1. (Optional) Visual Studio Code (<https://code.visualstudio.com/download>).
+    a. After installation, launch VS Code, go to the Extensions tab on the left (Ctrl+Shift+X) and install all the recommended plugins.
     b. Exit VS Code
 1. Enable Windows Long Paths from an Administrator PowerShell:
 
@@ -56,7 +56,9 @@ This repo follows a pretty straight forward folder structure.
     git clone https://AzureCSI@dev.azure.com/AzureCSI/Woodinville/_git/Kingsgate.MSCP <optional_enlistment_directory>
     ```
 
-1. Use powershell and not CMD. Launch powershell in administrator mode. Ensure that your powershell instance has the `Execution Policy` set to allow you to run scripts. If you don't, run the following command in powershell:
+1. Use powershell and not CMD. Ensure that your powershell instance has the `Execution Policy` set to allow you to run scripts. If you don't, run the following command in powershell:
+
+> **NOTE:**  SVP will not launch correctly from the latest 7.x version of powershell.  Version 7.2.19 works correctly. Task https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1778090 will resolve.
 
     ```pwsh
     Set-ExecutionPolicy -ExecutionPolicy Bypass -Force -Scope CurrentUser

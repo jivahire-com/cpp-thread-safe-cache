@@ -59,7 +59,7 @@ Function Invoke-Virtualizer(
     $env:SNPSLMD_LICENSE_FILE="40003@gem-lic-01.svceng.com;40003@wanlic.svceng.com"
     $env:SNPS_VPX_START_SIMULATION_TIMEOUT = 600
     $env:SNPS_VPSESSION_LAUNCH_TIMEOUT_SEC = 600
-    $env:SNPS_VPX_DEFAULT_TIMEOUT = 600 
+    $env:SNPS_VPX_DEFAULT_TIMEOUT = 600
 
     $env:SNPS_VS_VDK_SEARCH_PATHS=(Resolve-Path $svp_sim_dir\win\release\*\*\*\).toString()
 
@@ -79,8 +79,8 @@ Function Invoke-Virtualizer(
     }
 
     # Rename the existing workspace if it exists
-    if (Test-Path -Path $workspace_dir) { 
-        $old_workspace_dir = $workspace_dir + "_" + (Get-Date -Format "yyyyMMddhhmmss") 
+    if (Test-Path -Path $workspace_dir) {
+        $old_workspace_dir = $workspace_dir + "_" + (Get-Date -Format "yyyyMMddhhmmss")
         Rename-Item -Path $workspace_dir -NewName $old_workspace_dir -Force
     }
 
@@ -99,14 +99,14 @@ Function Invoke-Virtualizer(
     # Select the config file based on SimConfig. These configurations are stored under tools/vpcfg.
     # Additionally perform any any config specific setup as needed
     $svpcfg_param_file = "$env:REPO_APP_ROOT\tools\vpcfg\svpcfg-$SimConfig.txt"
-    switch ($SimConfig) { 
-        "scp_mcp_svp_bins" { 
+    switch ($SimConfig) {
+        "scp_mcp_svp_bins" {
             Write-Host "Initial run will be configured with SVP test bins."
-            Break; 
+            Break;
         }
         "scp_mcp_chie_bins" {
             Write-Host "Using chie fw bins where applicable. SVP test bins are used for anything that is missing."
-            Break; 
+            Break;
         }
         Default {
             Throw "$SimConfig not implemented yet!"
@@ -126,17 +126,17 @@ Function Invoke-Virtualizer(
     # the regression license. For our developer use case we will run with `tve`, enabling a developer to run in headless mode AND
     # attach to that simulation with the Virtualizer Studio if desired.
     Invoke-CmdScript "$svp_runtime_dir\SLS\windows\setup.bat" tve
-    
+
     # Regression example
-    # Invoke-CmdScript "$svp_runtime_dir\SLS\windows\setup.bat" tvrb 
+    # Invoke-CmdScript "$svp_runtime_dir\SLS\windows\setup.bat" tvrb
 
     $job = $null
     # Run with the GUI
-    if ($UseGUI) 
+    if ($UseGUI)
     {
 
-        Write-Host "" 
-        Write-Host "Starting simlulation [$SimConfig] in GUI Mode." 
+        Write-Host ""
+        Write-Host "Starting simlulation [$SimConfig] in GUI Mode."
         Write-Host ""
 
         $job = Start-job -ScriptBlock {
@@ -148,15 +148,15 @@ Function Invoke-Virtualizer(
             --vpconfig $using:SimConfig  `
             --output_dir $using:env:REPO_APP_ROOT/.svp_simulator/  `
             $using:input_parameters  `
-            --pyargs_end 
+            --pyargs_end
         }
 
     }
     # Run in headless mode
     else {
 
-        Write-Host "" 
-        Write-Host "Starting simlulation [$SimConfig] as a background job. Job information displayed on creation." 
+        Write-Host ""
+        Write-Host "Starting simlulation [$SimConfig] as a background job. Job information displayed on creation."
         Write-Host ""
 
         $job = Start-job -ScriptBlock {
@@ -174,53 +174,53 @@ Function Invoke-Virtualizer(
     }
 
     # Both cases launch sim.exe, so we can validate that it started to ensure setup is correct.
-    if ($null -ne $job) 
-    { 
-        $env:SVP_SIM_JOB_ID = $job.Id 
-
-        Write-Host "" 
-        Write-Host "Please wait for the 'sim.exe' to launch via the below job:" 
-        Write-Host "`tJob Details:" 
-        Write-Host "`t`tId    :" $job.Id 
-        Write-Host "`t`tName  :" $job.Name 
-        Write-Host "`t`tState :" $job.State 
-        Write-Host "" 
-
-        # Wait 300 seconds, checking every 5 seconds for the `sim.exe` to finish launching
-        $time_waited_s = 0 
-        $timeout_s = 300 
-        while ($time_waited_s -lt $timeout_s) { 
-            Start-Sleep 5 
-            $time_waited_s += 5 
-            if ($null -ne (Get-Process | Where-Object {$_.Name -eq "sim"})) 
-            { 
-                Write-Host "`tSimulatin Started. Time to Start: $time_waited_s seconds" 
-                Write-Host "`tThe Simulation can be attached to with the GUI: vs.exe -d $workspace_dir" 
-                break; 
-            } 
-        }
-
-        if ($time_waited_s -eq $timeout_s) 
-        {
-            Stop-Virtualizer
-            Throw "Failed to start sim.exe within: $timeout_s seconds" 
-        } 
+    if ($null -ne $job)
+    {
+        $env:SVP_SIM_JOB_ID = $job.Id
 
         Write-Host ""
-        Write-Host "Expected Simulation Connectivity:"
+        Write-Host "Please wait for the 'sim.exe' to launch via the below job:"
+        Write-Host "`tJob Details:"
+        Write-Host "`t`tId    :" $job.Id
+        Write-Host "`t`tName  :" $job.Name
+        Write-Host "`t`tState :" $job.State
+        Write-Host ""
+
+        # Wait 300 seconds, checking every 5 seconds for the `sim.exe` to finish launching
+        $time_waited_s = 0
+        $timeout_s = 300
+        while ($time_waited_s -lt $timeout_s) {
+            Start-Sleep 5
+            $time_waited_s += 5
+            if ($null -ne (Get-Process | Where-Object {$_.Name -eq "sim"}))
+            {
+                Write-Host "`tSimulatin Started. Time to Start: $time_waited_s seconds"
+                Write-Host "`tThe Simulation can be attached to with the GUI: vs.exe -d $workspace_dir"
+                break;
+            }
+        }
+
+        if ($time_waited_s -eq $timeout_s)
+        {
+            Stop-Virtualizer
+            Throw "Failed to start sim.exe within: $timeout_s seconds"
+        }
+
+        Write-Host ""
+        Write-Host "Expected Simulation Connectivity: If connection issues, check port config in SVP log."
         Write-Host "`tMCP UART telnet : localhost:4256"
         Write-Host "`tSCP UART telnet : localhost:4257"
 
         # GDB setup on the headless mode is broken in this SVP release, overrides resolve this for now. Update once patched: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1624373
-        Write-Host "`tMCP DIE 0 GDB   : localhost:12349"
-        Write-Host "`tSCP DIE 0 GDB   : localhost:12350"
+        Write-Host "`tMCP DIE 0 GDB   : localhost:12350"
+        Write-Host "`tSCP DIE 0 GDB   : localhost:12351"
         Write-Host "`tEnsure configuration matches symbols used!"
         Write-Host ""
 
-        Write-Host "" 
-        Write-Host "Run the following to stop the simulation background job: stopsvp" 
-        Write-Host "" 
-    } 
+        Write-Host ""
+        Write-Host "Run the following to stop the simulation background job: stopsvp"
+        Write-Host ""
+    }
 }
 
 <#
@@ -238,7 +238,7 @@ Function Get-SvpHelp()
     foreach($Command in $Commands)
     {
         $Message = $Command.Name
-        $Message = $Message + (" " * (20 - $Message.Length)) 
+        $Message = $Message + (" " * (20 - $Message.Length))
         $Help = Get-Help $Command
         Write-Host $Message -NoNewLine -ForegroundColor Yellow
         Write-Host $Help.Synopsis

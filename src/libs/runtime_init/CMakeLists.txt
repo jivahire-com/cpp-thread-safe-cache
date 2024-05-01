@@ -20,6 +20,7 @@ add_library(${TARGET}
         nvic_init.c
         pcie_init.c
         textio_init.c
+        ddr_manager_init.c
 )
 
 target_link_libraries(
@@ -44,6 +45,7 @@ target_link_libraries(
         ms::lib::scp_interrupts
         ms::lib::stdio_textio
         ms::lib::threadx
+        ms::service::ddr_manager
         ms::service::pcie_manager
         ms::service::scp_etc
         silibs::avs

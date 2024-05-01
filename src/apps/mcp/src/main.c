@@ -43,6 +43,11 @@ extern fpfw_init_component_t _data_fpfw_init_end;
 // see cortexm7_vectors.S for the initial reset_handler entrypoint
 int main(void)
 {
+    // uncomment to debug early init with headless SVP
+    // volatile bool go = false;
+    // while (!go)
+    // {
+    // }
 
     /* Enter the ThreadX kernel. Performing Low and High level initialization. */
     tx_kernel_enter();

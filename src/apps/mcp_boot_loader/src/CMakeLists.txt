@@ -18,15 +18,16 @@ set(TARGET mcp_boot_loader)
 
 add_executable(
     ${TARGET}
+        handlers.c
         main.c
 )
 
-# TODO: The corex_m7 vectors is a placeholder and will be replaced by a bootloader specific vector implementation
-# ADO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1484399
 target_link_libraries(
     ${TARGET}
         PRIVATE
-            ms::vectors::cortex_m7
+            ms::vectors::m7_boot_loader
+            boot_loader_interface
+            register_headers
 )
 
 target_include_directories(

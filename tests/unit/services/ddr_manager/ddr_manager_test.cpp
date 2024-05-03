@@ -8,17 +8,15 @@
  */
 
 /*------------- Includes -----------------*/
-#include <CMockaWrapper.h>
-#include <cstddef> // for NULL
-#include <cstdint>
+#include <CMockaWrapper.h> // IWYU pragma: keep
+#include <cstddef>         // IWYU pragma: keep
+#include <cstdint>         // IWYU pragma: keep
 
 extern "C" {
-#include <ddr_manager.h>
-#include <ddr_manager_i.h>
-#include <error_handler.h>
-#include <fpfw_init.h>
-#include <idhw.h>
-#include <tx_api.h>
+#include <ddr_manager.h>   // for ddr_manager_init, ddr_service_context_t
+#include <ddr_manager_i.h> // for ddr_poll_dimms, ddr_worker_thread_func
+#include <error_handler.h> // for set_error_handler_return
+#include <tx_api.h>        // for TX_SUCCESS, ULONG, TX_NOT_DONE, TX_NO_MEMORY
 } // extern "C"
 
 /*-- Symbolic Constant Macros (defines) --*/

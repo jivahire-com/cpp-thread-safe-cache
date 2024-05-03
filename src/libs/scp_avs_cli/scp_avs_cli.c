@@ -9,12 +9,9 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkClient.h>
-#include <FpFwAssert.h>
-#include <scp_avs.h>
-#include <scp_avs_cli.h>
-#include <scp_avs_driver.h>
-#include <stdint.h>
+#include <DfwkClient.h>     // for DfwkAsyncRequestInititalize, PDFWK_INTER...
+#include <scp_avs_cli.h>    // for avs_client_init_completion_routine, pavs...
+#include <scp_avs_driver.h> // for scp_avs_request_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 

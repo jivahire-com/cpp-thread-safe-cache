@@ -9,9 +9,9 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkPtrTypes.h>
-#include <FpFwCMocka.h>
-#include <cmocka.h>
+#include <DfwkPtrTypes.h> // for PDFWK_ASYNC_REQUEST_HEADER, PDFWK_QUEUE
+#include <FpFwCMocka.h>   // IWYU pragma: keep
+#include <cmocka.h>       // IWYU pragma: keep
 
 /*-- Symbolic Constant Macros (defines) --*/
 

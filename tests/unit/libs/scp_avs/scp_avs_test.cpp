@@ -8,21 +8,21 @@
  */
 
 /*------------- Includes -----------------*/
+#include "inc\scp_avs_test_mocks.h" // IWYU pragma: keep
+
+#include <CMockaWrapper.h> // IWYU pragma: keep
+#include <cstdint>         // IWYU pragma: keep
 
 extern "C" {
+#include "DfwkHost.h"  // for DfwkDeviceInitialize
+#include "FpFwUtils.h" // for FPFW_UNUSED
+
 #include <DfwkClient.h>
 #include <DfwkDriver.h>
-#include <DfwkThreadXHost.h>
 #include <scp_avs.h>
-#include <scp_avs_cli.h>
 #include <scp_avs_driver.h>
 #include <scp_avs_driver_i.h>
 }
-#include "inc\scp_avs_test_mocks.h"
-
-#include <CMockaWrapper.h>
-#include <cstddef>
-#include <cstdint>
 
 /*-- Symbolic Constant Macros (defines) --*/
 

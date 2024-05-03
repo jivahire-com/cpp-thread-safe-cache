@@ -9,11 +9,9 @@
 
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h>
-#include <cstdint>
 
 extern "C" {
 #include <fpfw_init.h>
-#include <idhw.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 

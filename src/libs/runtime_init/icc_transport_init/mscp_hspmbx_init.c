@@ -6,13 +6,13 @@
 /*------------- Includes -----------------*/
 #include <DfwkHost.h>                // for DfwkDeviceInitialize
 #include <DfwkThreadXHost.h>         // for PDFWK_THREADX_HOST
-#include <MboxPrimitives.h>          // for HSP_MBX_FIFO_DEPTH, MBX_IMPL_PO...
+#include <MboxPrimitives.h>          // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_I...
 #include <fpfw_init.h>               // for fpfw_init_get_handle, FPFW_INIT...
 #include <fpfw_mbox_icc_transport.h> // for ICC_MBX_ASYNC_RECV, ICC_MBX_ASY...
 #include <fpfw_status.h>             // for fpfw_status_t
 #include <fpfw_timer_port.h>         // for _fpfw_timer_t
-#include <silibs_mcp_top_regs.h>     // for MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
-#include <silibs_scp_top_regs.h>     // for SCP_TOP_SCP2HSP_MAILBOX_ADDRESS
+#include <silibs_mcp_top_regs.h>     // IWYU pragma: keep for MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
+#include <silibs_scp_top_regs.h>     // IWYU pragma: keepfor SCP_TOP_SCP2HSP_MAILBOX_ADDRESS
 #include <stdint.h>                  // for uint32_t
 
 /*-------------- Macros ------------------*/

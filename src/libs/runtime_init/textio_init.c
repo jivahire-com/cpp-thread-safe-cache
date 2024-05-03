@@ -4,13 +4,15 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkHost.h>        // for DfwkDeviceInitialize
-#include <DfwkThreadXHost.h> // for PDFWK_THREADX_HOST
-#include <fpfw_init.h>
-#include <silibs_mcp_top_regs.h>
-#include <silibs_scp_top_regs.h>
-#include <stdio_textio.h>
-#include <textio_pl011.h>
+#include "uart_pl011.h" // for UART_PL011_PARITY_NONE, UART_PL011_STOP...
+
+#include <DfwkThreadXHost.h>     // for PDFWK_THREADX_HOST
+#include <fpfw_init.h>           // for FPFW_INIT_STATUS_SUCCESS, fpfw_init_get...
+#include <silibs_mcp_top_regs.h> // IWYU pragma: keep
+#include <silibs_scp_top_regs.h> // IWYU pragma: keep
+#include <stddef.h>              // for NULL
+#include <stdio_textio.h>        // for stdio_textio_init
+#include <textio_pl011.h>        // for textio_pl011_device_t, textio_pl011_dev...
 
 /*------------- Typedefs -----------------*/
 

@@ -10,16 +10,13 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkCommon.h>
-#include <DfwkDriver.h>
-#include <ErrorHandler.h>
-#include <FpFwAssert.h>
-#include <pcie_dfwk.h>
-#include <silibs_status.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <tx_api.h>
+#include <DfwkDriver.h>    // for PDFWK_ASYNC_REQUEST_HEADER, DfwkAsyncRequ...
+#include <ErrorHandler.h>  // for FPFwErrorRaise
+#include <FpFwAssert.h>    // for FPFW_RUNTIME_ASSERT
+#include <pcie_dfwk.h>     // for pcie_async_request_t, pciess_device_inter...
+#include <silibs_status.h> // for SILIBS_E_TIMEOUT
+#include <stdio.h>         // for printf, NULL
+#include <tx_api.h>        // for TX_AUTO_ACTIVATE, TX_SUCCESS, tx_timer_cr...
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define RP_LINK_TRAINING_TIMEOUT_TICKS (2)

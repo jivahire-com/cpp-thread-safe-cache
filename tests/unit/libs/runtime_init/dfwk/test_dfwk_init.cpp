@@ -8,13 +8,14 @@
  */
 
 /*------------- Includes -----------------*/
-#include <CMockaWrapper.h>
-#include <cstdint>
+#include <CMockaWrapper.h> // IWYU pragma: keep
+#include <cstdint>         // IWYU pragma: keep
 
 extern "C" {
 #include <DfwkThreadXHost.h>
 #include <FpFwUtils.h>
 #include <fpfw_init.h>
+#include <tx_api.h> // for UINT, ULONG, VOID
 
 /*-- Symbolic Constant Macros (defines) --*/
 

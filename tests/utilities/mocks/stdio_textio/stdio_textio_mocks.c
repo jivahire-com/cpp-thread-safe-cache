@@ -9,9 +9,11 @@
 
 /*------------- Includes -----------------*/
 
-#include <FpFwCMocka.h>
-#include <FpFwUtils.h>
-#include <stdio_textio.h>
+#include "DfwkPtrTypes.h" // for PDFWK_INTERFACE_HEADER
+
+#include <FpFwCMocka.h>   // for function_called
+#include <FpFwUtils.h>    // for FPFW_UNUSED
+#include <stdio_textio.h> // for stdio_textio_init
 
 /*-- Symbolic Constant Macros (defines) --*/
 

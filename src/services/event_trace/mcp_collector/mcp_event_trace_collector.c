@@ -9,22 +9,16 @@
 
 /*------------- Includes -----------------*/
 
+#include "IFpFwEventTracingGeneration.h"        // for FPFW_ET_LOG
 #include "mcp_event_trace_collector_events_i.h" // IWYU pragma: keep
+#include "mcp_event_trace_collector_events_i.h" // for EventWriteMcpEtcInit
 
-#include <IFpFwEventTracing.h>
-#include <IFpFwEventTracingBuffers.h>
-#include <IFpFwEventTracingController.h>
-#include <IFpFwEventTracingDecoder.h>
-#include <IFpFwEventTracingDefines.h>
-#include <IFpFwEventTracingEvents.h>
-#include <build_data.h>
-#include <event_trace_collector.h>
-#include <mcp_event_trace_collector.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <tx_api.h>
-#include <tx_thread.h>
+#include <IFpFwEventTracingBuffers.h>  // for PFPFW_ET_MANIFEST_ID
+#include <build_data.h>                // for BUILD_ELF_SECTION_BI...
+#include <event_trace_collector.h>     // for ETC_SERVICE_CORE_BUF...
+#include <mcp_event_trace_collector.h> // for mcp_etc_initialize
+#include <stdint.h>                    // for uintptr_t, uint8_t
+#include <tx_api.h>                    // for TX_MINIMUM_STACK
 
 /*-- Symbolic Constant Macros (defines) --*/
 

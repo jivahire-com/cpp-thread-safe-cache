@@ -4,8 +4,9 @@
  */
 
 /*------------- Includes -----------------*/
-#include <accelerator_ip.h>
-#include <fpfw_init.h>
+#include <accelerator_ip.h>  // for scp_accelerators_init
+#include <fpfw_init.h>       // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMP...
+#include <stdio.h>           // for printf, NULL
 
 /*------------- Typedefs -----------------*/
 

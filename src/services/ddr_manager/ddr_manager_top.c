@@ -8,12 +8,13 @@
  */
 
 /*------------- Includes -----------------*/
-#include "ddr_manager.h"
-#include "ddr_manager_i.h"
+#include "ddr_manager.h"   // for (anonymous struct)::(anonymous), ddr_serv...
+#include "ddr_manager_i.h" // for ddr_create_bdat, ddr_create_memory_map
 
-#include <ErrorHandler.h>
-#include <stdio.h>
-#include <tx_api.h>
+#include <ErrorHandler.h> // for FPFwErrorRaise
+#include <stdint.h>       // for uint32_t
+#include <stdio.h>        // for printf
+#include <tx_api.h>       // for TX_SUCCESS, ULONG, TX_AUTO_ACTIVATE, TX_A...
 
 // Tell cspell to ignore .. why are we using cSpell?
 /* cSpell:ignore DIMM DIMMS */

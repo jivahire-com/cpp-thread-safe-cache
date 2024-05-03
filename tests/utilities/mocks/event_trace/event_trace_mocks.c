@@ -14,6 +14,7 @@
 #include <IFpFwEventTracingDefines.h>
 #include <IFpFwEventTracingEvents.h>
 #include <IFpFwEventTracingStatus.h>
+#include <stdint.h> // for uint8_t, uint32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 

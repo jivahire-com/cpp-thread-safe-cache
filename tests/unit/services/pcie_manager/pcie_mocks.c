@@ -9,11 +9,10 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkCommon.h>
-#include <DfwkThreadXHost.h>
-#include <FpFwCMocka.h>
-#include <pcie_dfwk.h>
-#include <stddef.h>
+#include <DfwkCommon.h> // for PDFWK_ASYNC_REQUEST_HEADER, DFWK_ASYNC_REQUE...
+#include <FpFwCMocka.h> // for check_expected_ptr, assert_non_null, assert_...
+#include <pcie_dfwk.h>  // for pcie_async_request_t, pciess_device_t
+#include <stddef.h>     // for size_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 

@@ -9,9 +9,10 @@
 
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h>
-#include <cstdint>
 
 extern "C" {
+#include "debug.h" // for UNUSED
+
 #include <DfwkDriver.h>
 #include <DfwkThreadXHost.h>
 #include <fpfw_init.h>

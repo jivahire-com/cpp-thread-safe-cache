@@ -8,12 +8,13 @@
  */
 
 /*------------- Includes -----------------*/
-#include <CMockaWrapper.h>
-#include <cstdint>
+#include <CMockaWrapper.h> // IWYU pragma: keep
+#include <cstdint>         // IWYU pragma: keep
 
 extern "C" {
+#include "idsw.h" // for DIE_ID, PLAT_ID, _PLAT_ID
+
 #include <fpfw_init.h>
-#include <idhw.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 

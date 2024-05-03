@@ -10,17 +10,16 @@
 
 /*------------- Includes -----------------*/
 
-#include <DfwkClient.h>
-#include <DfwkDriver.h>
-#include <DfwkThreadXHost.h>
-#include <FpFwAssert.h>
-#include <fpfw_init.h>
-#include <scp_avs.h>
-#include <scp_avs_cli.h>
-#include <scp_avs_driver.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
+#include "DfwkHost.h"  // for DfwkDeviceInitialize
+#include "FpFwUtils.h" // for FPFW_UNUSED
+
+#include <DfwkDriver.h>     // for PDFWK_ASYNC_REQUEST_HEADER, _DFWK_ASYNC_...
+#include <FpFwAssert.h>     // for FPFW_RUNTIME_ASSERT
+#include <scp_avs.h>        // for avs_internal_request_type_idx, avs_sync_...
+#include <scp_avs_driver.h> // for pscp_avs_device, pscp_avs_interface, psc...
+#include <stdbool.h>        // for false
+#include <stdint.h>         // for int32_t, uint8_t
+#include <stdio.h>          // for printf, fflush, stdout
 
 /*-- Symbolic Constant Macros (defines) --*/
 

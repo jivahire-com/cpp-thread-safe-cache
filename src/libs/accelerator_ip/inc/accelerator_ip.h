@@ -10,16 +10,13 @@
 #pragma once
 
 /*----------------------------- Nested includes -----------------------------*/
-#include <stdint.h>
-#include <accelerator_ip_bcfg_params.h>
-#include <accelerator_ip_pcie_params.h>
-#include <atu_lib.h>
-#include <kng_soc_constants.h>
-#include <silibs_kng_soc.h>
-#include <sdm_init.h>
-#include <sdm_ext_cfg_regs.h>
-#include <tower_utility.h>
-#include <stdio.h>
+#include "_addressblock_0x100000_regs.h"  // for _addressblock_0x100000_bcfg...
+#include <accelerator_ip_pcie_params.h>   // for accelip_pcie_ctxt_t
+#include <atu_lib.h>                      // for atu_id_t, atu_map_entry_t
+#include <kng_soc_constants.h>            // for DIE_INSTANCE
+#include <sdm_init.h>                     // for sdm_mem_init_t
+#include <stdbool.h>                      // for bool
+#include <stdint.h>                       // for int32_t, uint64_t, uint8_t
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 

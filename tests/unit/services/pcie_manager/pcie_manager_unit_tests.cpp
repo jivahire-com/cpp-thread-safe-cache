@@ -8,20 +8,21 @@
  */
 
 /*------------- Includes -----------------*/
-extern "C" {
-#include <DfwkPtrTypes.h>
-#include <error_handler.h>
-#include <kng_soc_constants.h>
-#include <pcie_dfwk.h>
-#include <pcie_manager_i.h>
-#include <scp_pcie_manager.h>
-#include <silibs_status.h>
-#include <tx_api.h>
-}
+#include <CMockaWrapper.h> // IWYU pragma: keep
+#include <cstddef>         // IWYU pragma: keep
+#include <cstdint>         // IWYU pragma: keep
 
-#include <CMockaWrapper.h>
-#include <cstddef>
-#include <cstdint>
+extern "C" {
+#include <DfwkPtrTypes.h>      // for PDFWK_SCHEDULE
+#include <errno.h>             // for EINVAL
+#include <error_handler.h>     // for set_error_handler_return
+#include <kng_soc_constants.h> // for RPSS0
+#include <pcie_dfwk.h>         // for pciess_device_interface_t, pciess_dev...
+#include <pcie_manager_i.h>    // for rpss_req_completion_cb, send_start_li...
+#include <scp_pcie_manager.h>  // for scp_pcie_initialize, pcie_manager_con...
+#include <silibs_status.h>     // for SILIBS_E_TIMEOUT
+#include <tx_api.h>            // for TX_NOT_DONE, TX_NO_MEMORY, TX_NO_WAIT
+}
 
 /*-- Symbolic Constant Macros (defines) --*/
 

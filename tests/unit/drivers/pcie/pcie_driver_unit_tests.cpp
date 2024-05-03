@@ -9,19 +9,19 @@
  */
 
 /*------------- Includes -----------------*/
+#include <CMockaWrapper.h> // IWYU pragma: keep
+#include <cstddef>         // IWYU pragma: keep
+#include <cstdint>         // IWYU pragma: keep
+
 extern "C" {
 #include <DfwkPtrTypes.h>
-#include <ErrorHandler.h>
 #include <error_handler.h>
 #include <kng_soc_constants.h>
 #include <pcie_dfwk.h>
 #include <pcie_dfwk_i.h>
+#include <silibs_status.h> // for SILIBS_E_PARAM, SILIBS_SUCCESS
 #include <tx_api.h>
 }
-
-#include <CMockaWrapper.h>
-#include <cstddef>
-#include <cstdint>
 
 /*-- Symbolic Constant Macros (defines) --*/
 

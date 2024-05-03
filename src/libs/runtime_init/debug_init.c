@@ -5,8 +5,9 @@
 
 /*------------- Includes -----------------*/
 
-#include <debug.h>
-#include <fpfw_init.h>
+#include <debug.h>      // for debug_init
+#include <fpfw_init.h>  // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
+#include <stddef.h>     // for NULL
 
 /*------------- Typedefs -----------------*/
 

@@ -8,19 +8,15 @@
  */
 
 /*------------- Includes -----------------*/
+#include <CMockaWrapper.h> // IWYU pragma: keep
+#include <cstddef>         // IWYU pragma: keep
 
 extern "C" {
-#include <IFpFwEventTracingBuffers.h>
-#include <IFpFwEventTracingController.h>
-#include <event_trace_collector.h>
-#include <mcp_event_trace_collector.h>
-#include <thread_x_mocks.h>
-#include <tx_api.h>
-}
+#include "IFpFwEventTracingStatus.h" // for FPFW_ET_SUCCESS
 
-#include <CMockaWrapper.h>
-#include <cstddef>
-#include <cstdint>
+#include <mcp_event_trace_collector.h> // for mcp_etc_initialize
+#include <tx_api.h>                    // for TX_SUCCESS
+}
 
 /*-- Symbolic Constant Macros (defines) --*/
 

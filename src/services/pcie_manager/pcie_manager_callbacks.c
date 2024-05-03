@@ -9,13 +9,15 @@
  */
 
 /*------------- Includes -----------------*/
-#include <ErrorHandler.h>
-#include <FpFwAssert.h>
-#include <pcie_manager_i.h>
-#include <scp_pcie_manager.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <tx_api.h>
+#include "DfwkPtrTypes.h" // for PDFWK_ASYNC_REQUEST_HEADER
+#include "pcie_dfwk.h"    // for pcie_async_request_t
+
+#include <ErrorHandler.h>     // for FPFwErrorRaise
+#include <FpFwAssert.h>       // for FPFW_RUNTIME_ASSERT
+#include <pcie_manager_i.h>   // for rpss_req_completion_cb
+#include <scp_pcie_manager.h> // for pcie_manager_context_t, pciess_complet...
+#include <stdio.h>            // for printf, NULL
+#include <tx_api.h>           // for TX_NO_WAIT, TX_SUCCESS, tx_queue_send
 
 /*-- Symbolic Constant Macros (defines) --*/
 

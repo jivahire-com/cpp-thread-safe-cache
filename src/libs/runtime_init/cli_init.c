@@ -4,11 +4,10 @@
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwCli.h>      // for FPFW_CLI_CONFIG, FpFwCliInitialize, FPFW_C...
+#include <FpFwCli.h>      // for FpFwCliInitialize, FpFwCliStart, FPFW_CLI_...
 #include <fpfw_init.h>    // for fpfw_init_get_handle, FPFW_INIT_COMPONENT
-#include <stddef.h>       // for NULL
 #include <stdint.h>       // for uint8_t
-#include <stdio.h>        // for printf
+#include <stdio.h>        // for printf, NULL, stdout
 #include <textio_pl011.h> // for textio_pl011_device_interface_initialize
 
 /*------- Symbolic Constant Macros (defines) ----------*/

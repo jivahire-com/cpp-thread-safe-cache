@@ -6,7 +6,6 @@
 /*------------- Includes -----------------*/
 #include <fpfw_init.h>
 #include <mcp_event_trace_collector.h>
-#include <stdint.h>
 #include <stdio.h>
 
 /*------------- Typedefs -----------------*/

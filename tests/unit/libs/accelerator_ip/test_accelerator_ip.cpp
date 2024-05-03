@@ -8,14 +8,20 @@
  */
 
 /*-------------------------------- Includes ---------------------------------*/
-#include <CMockaWrapper.h> // for TEST_FUNCTION, assert_int_equal
-#include <cstddef>         // for NULL
+#include <CMockaWrapper.h> // IWYU pragma: keep
 
 extern "C" {
-#include <accelerator_ip.h>
-#include <idsw.h>
-#include <pcr_rpss.h>
-#include <utils.h>
+#include "atu_lib.h"           // for ATU_ID_MAX, atu_id_t, atu_map_entry_t
+#include "kng_soc_constants.h" // for SOC_D0, SDMSS_INSTANCE
+#include "sdm_init.h"          // for sdm_mem_init_t
+#include "silibs_kng_soc.h"    // for D0_SDM_RCIEP_BUS, D1_CDED_RCEC_BUS
+#include "silibs_status.h"     // for SILIBS_SUCCESS, SILIBS_E_PARAM
+
+#include <accelerator_ip.h> // for scp_accelerators_init, ACCEL_RET_SUCCESS
+#include <idsw.h>           // for DIE_ID, _PLAT_ID
+#include <pcr_rpss.h>       // for pcr_rpss_entity_t
+#include <stdint.h>         // for uintptr_t, uint32_t, uint8_t, uint64_t
+#include <utils.h>          // for UNUSED
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 

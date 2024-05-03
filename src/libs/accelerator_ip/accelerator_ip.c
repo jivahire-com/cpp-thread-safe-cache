@@ -9,18 +9,32 @@
  */
 
 /*-------------------------------- Includes ---------------------------------*/
-#include "vab_sdm_top_regs.h"
+#include "accelerator_ip.h" // for subsystem_ctxt_t, atu_mappi...
 
-#include <FpFwAssert.h>
-#include <accelerator_ip_priv.h>
-#include <debug.h>
-#include <idsw.h>
-#include <pcr_rpss.h>
-#include <silibs_ap_top_regs.h>
-#include <silibs_kng_soc.h>
-#include <smmu.h>
-#include <tower_sdmss.h>
-#include <vab_pcr_init.h>
+#include "_addressblock_0x100000_regs.h" // for _addressblock_0x100000_bcfg...
+#include "accelerator_ip_pcie_params.h"  // for pcie_type0_ctxt_t, pcie_ctr...
+#include "atu_lib.h"                     // for atu_map, atu_unmap, atu_map...
+#include "kng_soc_constants.h"           // for DIE_INSTANCE, SDMSS_INSTANCE
+#include "sdm_ext_cfg_regs.h"            // for ptr_sdm_ext_cfg_reg, (anony...
+#include "sdm_init.h"                    // for sdm_init_deassert_nsysreset
+#include "sdmss_config_regs.h"           // for SDMSS_CONFIG_SDMSS_PCR_TOP_...
+#include "silibs_platform.h"             // for debug_print, MMIO_UPDATE32
+#include "silibs_status.h"               // for SILIBS_SUCCESS
+#include "tower_vab.h"                   // for configure_vab_system_addr_map
+#include "vab_regs.h"                    // for VAB_VAB_PCR_TOP_ADDRESS
+
+#include <FpFwAssert.h>          // for FPFW_RUNTIME_ASSERT
+#include <accelerator_ip_priv.h> // for get_accelerator_ctxt
+#include <debug.h>               // for UNUSED
+#include <idsw.h>                // for idsw_get_platform_sdv, PLAT...
+#include <pcr_rpss.h>            // for PCR_RPSS_INSTANCE, pcr_rpss...
+#include <silibs_kng_soc.h>      // for PCIE_ECAM_START
+#include <smmu.h>                // for smmu_enable_access, smmu_en...
+#include <stdbool.h>             // for true
+#include <stdint.h>              // for int32_t, uintptr_t, uint8_t
+#include <stdio.h>               // for printf, NULL
+#include <tower_sdmss.h>         // for configure_sdmss_system_addr...
+#include <vab_pcr_init.h>        // for deassert_pcr_reset, vab_pcr...
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 

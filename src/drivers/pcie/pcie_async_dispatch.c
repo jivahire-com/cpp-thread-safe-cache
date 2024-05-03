@@ -9,13 +9,12 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkDriver.h>
-#include <DfwkPtrTypes.h>
-#include <FpFwUtils.h>
-#include <pcie_dfwk.h>
-#include <pcie_dfwk_i.h>
-#include <silibs_status.h>
-#include <stdio.h>
+#include <DfwkDriver.h>    // for DfwkAsyncRequestComplete, DfwkQueueEnqueu...
+#include <FpFwUtils.h>     // for FPFW_UNUSED
+#include <pcie_dfwk.h>     // for pcie_async_request_t, _pcie_rp_async_requ...
+#include <pcie_dfwk_i.h>   // for begin_link_training, pcie_default_dispatch
+#include <silibs_status.h> // for SILIBS_E_PARAM, SILIBS_SUCCESS
+#include <stdio.h>         // for printf
 
 /*-- Symbolic Constant Macros (defines) --*/
 

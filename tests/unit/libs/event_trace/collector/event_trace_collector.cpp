@@ -8,9 +8,13 @@
  */
 
 /*------------- Includes -----------------*/
+#include <CMockaWrapper.h> // IWYU pragma: keep
+#include <cstddef>         // IWYU pragma: keep
+#include <cstdint>         // IWYU pragma: keep
 
 extern "C" {
-#include <FpFwUtils.h>
+#include "IFpFwEventTracingStatus.h" // for FPFW_ET_E_INVALIDARG, FPFW_...
+
 #include <IFpFwEventTracingBuffers.h>
 #include <IFpFwEventTracingController.h>
 #include <error_handler.h>
@@ -21,10 +25,6 @@ extern "C" {
 #include <tx_initialize.h>
 }
 
-#include <CMockaWrapper.h>
-#include <cstddef>
-#include <cstdint>
-
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
@@ -34,7 +34,7 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 
 // clang-format off
-static etc_service_config_t s_etc_config = 
+static etc_service_config_t s_etc_config =
 {
     .mode = ETC_SERVICE_MODE_STDIO,
     .trace_buffer_memory =
@@ -49,7 +49,7 @@ static etc_service_config_t s_etc_config =
         .priority = 15,                   // NOLINT - Test value
         .time_slice_option = TX_NO_TIME_SLICE,
     },
-    .event_manifest = 
+    .event_manifest =
     {
         .provider_start = 0x7001000, // NOLINT - Test value
         .provider_end = 0x7002000,   // NOLINT - Test value

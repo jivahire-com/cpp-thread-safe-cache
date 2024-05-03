@@ -8,14 +8,15 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkDriver.h>
-#include <DfwkPtrTypes.h>
-#include <DfwkThreadXHost.h>
-#include <FpFwAssert.h>
-#include <pcie_dfwk.h>
-#include <pcie_dfwk_i.h>
-#include <stdint.h>
-#include <stdio.h>
+#include "DfwkHost.h" // for DfwkDeviceInitialize
+
+#include <DfwkDriver.h>    // for DfwkQueueInitialize, DfwkInterfaceInitialize
+#include <FpFwAssert.h>    // for FPFW_RUNTIME_ASSERT
+#include <pcie_dfwk.h>     // for pcie_sync_request_t, pciess_device_t, ROO...
+#include <pcie_dfwk_i.h>   // for pcie_default_dispatch, pcie_per_rp_dispatch
+#include <silibs_status.h> // for SILIBS_SUCCESS
+#include <stdint.h>        // for int32_t, uint8_t
+#include <stdio.h>         // for NULL, printf
 
 /*-- Symbolic Constant Macros (defines) --*/
 

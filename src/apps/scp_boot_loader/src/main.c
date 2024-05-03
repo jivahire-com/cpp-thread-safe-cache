@@ -1,5 +1,3 @@
-#include <stdint.h>
-
 /*
  * The SCP boot loader is expected to perform the following actions:
  * 1. Hold the compressed SCP firmware in mainimage section of boot binary

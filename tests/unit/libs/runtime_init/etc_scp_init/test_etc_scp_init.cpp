@@ -8,12 +8,10 @@
  */
 
 /*------------- Includes -----------------*/
-#include <CMockaWrapper.h>
-#include <cstdint>
+#include <CMockaWrapper.h> // for CmockaWrapperTest, TEST_FUNCTION, expect_...
 
 extern "C" {
 #include <fpfw_init.h>
-#include <idhw.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 

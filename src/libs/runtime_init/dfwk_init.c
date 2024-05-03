@@ -5,10 +5,10 @@
 
 /*------------- Includes -----------------*/
 
-#include <DfwkHost.h>
-#include <DfwkThreadXHost.h>
-#include <fpfw_init.h>
-#include <tx_api.h>
+#include <DfwkThreadXHost.h> // for DfwkThreadxHostInitialize, DFWK_THREADX...
+#include <fpfw_init.h>       // for FPFW_INIT_COMPONENT, fpfw_init_result_t
+#include <stdint.h>          // for uint32_t, uint8_t
+#include <tx_api.h>          // for TX_MINIMUM_STACK, TX_NO_TIME_SLICE
 
 /*-- Symbolic Constant Macros (defines) --*/
 

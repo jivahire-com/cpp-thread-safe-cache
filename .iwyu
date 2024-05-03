@@ -3,5 +3,16 @@
     { symbol: ["memcpy_s", "private", "<string.h>", "public"] },
     { symbol: ["memcpy", "private", "<string.h>", "public"] },
     { symbol: ["sprintf_s", "private", "<stdio.h>", "public"] },
+    { symbol: ["VOID", "private", "<tx_api.h>", "public"] },
+    { symbol: ["CHAR", "private", "<tx_api.h>", "public"] },
+    { symbol: ["UCHAR", "private", "<tx_api.h>", "public"] },
+    { symbol: ["INT", "private", "<tx_api.h>", "public"] },
+    { symbol: ["UINT", "private", "<tx_api.h>", "public"] },
+    { symbol: ["LONG", "private", "<tx_api.h>", "public"] },
+    { symbol: ["ULONG", "private", "<tx_api.h>", "public"] },
+    { symbol: ["SHORT", "private", "<tx_api.h>", "public"] },
+    { symbol: ["USHORT", "private", "<tx_api.h>", "public"] },
+    { symbol: ["stdout", "private", "<stdio.h>", "public"] },
+    { symbol: ["GUID", "private", "<Guid.h>", "public"] },
     { include: ["<tx_port.h>", "private", "<tx_api.h>", "public"] }
 ]

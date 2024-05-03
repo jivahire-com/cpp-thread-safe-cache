@@ -4,11 +4,13 @@
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwUtils.h>
-#include <fpfw_init.h>
-#include <idhw.h>
-#include <idsw.h>
-#include <silibs_scp_top_regs.h>
+#include <FpFwUtils.h>           // for FPFW_UNUSED
+#include <fpfw_init.h>           // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT...
+#include <idhw.h>                // for idhw_get_die_id, idhw_get_platform_...
+#include <idsw.h>                // for idsw_set_cpu_type, idsw_set_die_id
+#include <silibs_scp_top_regs.h> // for SCP_TOP_SID_ADDRESS
+#include <stddef.h>              // for NULL
+#include <stdint.h>              // for uint32_t, uintptr_t
 
 /*------------- Typedefs -----------------*/
 

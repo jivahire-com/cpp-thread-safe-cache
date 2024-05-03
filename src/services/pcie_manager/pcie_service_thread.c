@@ -8,14 +8,16 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkClient.h>
-#include <DfwkCommon.h>
-#include <pcie_dfwk.h>
-#include <pcie_manager_i.h>
-#include <scp_pcie_manager.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <tx_api.h>
+#include "FpFwAssert.h" // for FPFW_RUNTIME_ASSERT
+
+#include <DfwkClient.h>       // for DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE
+#include <pcie_dfwk.h>        // for pcie_async_request_t, pcie_dfwk_interf...
+#include <pcie_manager_i.h>   // for rpss_req_completion_cb, rpss_service_t...
+#include <scp_pcie_manager.h> // for pcie_manager_context_t, pciess_complet...
+#include <stdbool.h>          // for true
+#include <stdint.h>           // for uint8_t
+#include <stdio.h>            // for fflush, printf, stdout
+#include <tx_api.h>           // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
 
 /*-- Symbolic Constant Macros (defines) --*/
 

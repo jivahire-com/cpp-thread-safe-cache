@@ -9,7 +9,7 @@
 #define FPFW_ET_IMPLEMENTATION
 #define FPFW_ET_METADATA
 
-#include "mcp_event_trace_collector_events_i.h"
+#include "mcp_event_trace_collector_events_i.h" // IWYU pragma: keep
 
 /*------------- Typedefs -----------------*/
 

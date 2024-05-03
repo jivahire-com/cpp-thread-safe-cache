@@ -9,15 +9,12 @@
 
 /*------------- Includes -----------------*/
 
+#include <CMockaWrapper.h>
+
 extern "C" {
 #include <DfwkClient.h>
-#include <DfwkDriver.h>
-#include <DfwkThreadXHost.h>
 }
 
-#include <CMockaWrapper.h>
-#include <cstddef>
-#include <cstdint>
 extern "C" {
 
 /*-- Symbolic Constant Macros (defines) --*/

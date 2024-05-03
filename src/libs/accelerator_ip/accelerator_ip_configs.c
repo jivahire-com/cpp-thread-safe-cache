@@ -9,11 +9,22 @@
  */
 
 /*-------------------------------- Includes ---------------------------------*/
-#include "silibs_ap_top_regs.h"
-#include "silibs_kng_soc.h"
-#include "vab_sdm_top_regs.h"
+#include "_addressblock_0x100000_regs.h" // for _addressblock_0x100000_bcfg...
+#include "accelerator_ip.h"              // for ACCELERATOR_SDMSS, atu_mapp...
+#include "accelerator_ip_bcfg_params.h"  // for BCFG_BOOT_CFG_PF_TYPE0_CLAS...
+#include "accelerator_ip_pcie_params.h"  // for pcie_bdf_t, pcie_class_code_t
+#include "atu_lib.h"                     // for ATU_ID_MSCP, atu_map_entry_t
+#include "kng_soc_constants.h"           // for SOC_D0, ATU_PAGE_SIZE
+#include "nocni_nitower_sdm_2_regs.h"    // for NOCNI_NITOWER_SDM_2_U_ASNI_...
+#include "sdm_init.h"                    // for sdm_mem_init_t
+#include "sdmss_config_regs.h"           // for SDMSS_CONFIG_SDMSS_TOWER_AD...
+#include "silibs_common.h"               // for ALIGN_UP, ARRAY_SIZE
+#include "silibs_kng_soc.h"              // for D0_SDM_RCEC_BUS, D0_SDM_RCI...
+#include "vab_regs.h"                    // for VAB_VAB_TOWER_ADDRESS
 
-#include <accelerator_ip_priv.h>
+#include <accelerator_ip_priv.h> // for AP_TOP_D0_VAB_SDM_ADDRESS
+#include <stdbool.h>             // for true, false
+#include <stdint.h>              // for uint32_t
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 

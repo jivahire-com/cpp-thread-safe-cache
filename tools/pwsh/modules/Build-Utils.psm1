@@ -2,7 +2,7 @@
 # Copyright (C) Microsoft Corporation. All rights reserved.
 #
 
-# Invokes a Cmd.exe shell script and updates the environment. 
+# Invokes a Cmd.exe shell script and updates the environment.
 Function Invoke-CmdScript {
     param(
         [String] $scriptName
@@ -51,7 +51,7 @@ Function Get-FileFromWeb(
         Add-Type -TypeDefinition $Source | Out-Null
     }
 
-    try 
+    try
     {
         # Removing the progress bar greatly speeds up Invoke-WebRequest
         $ProgressPreference = 'SilentlyContinue'
@@ -121,25 +121,25 @@ Function Get-FileFromWeb(
 Function Install-AzCli()
 {
     $Message = "AzureCLI"
-    $Message = $Message + (" " + "." * (70 - $Message.Length) + " ") 
+    $Message = $Message + (" " + "." * (70 - $Message.Length) + " ")
     Write-Host  $Message -NoNewLine -ForegroundColor Cyan
 
     $ExpectedPath = "${env:ProgramFiles(x86)}\Microsoft SDKs\Azure\CLI2\wbin\"
 
-    if (-not (Test-Path $ExpectedPath)) 
+    if (-not (Test-Path $ExpectedPath))
     {
         Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\AzureCLI.msi
         $Return = Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet /passive' -PassThru
         rm .\AzureCLI.msi
-        
+
         if ($Return.ExitCode -ne 0)
-        { 
+        {
             Write-Host "Failed" -ForegroundColor Red
             throw "Unable to install AzCli"
         }
 
         if (-not (Test-Path $ExpectedPath))
-        { 
+        {
             Write-Host "Failed" -ForegroundColor Red
             throw "Unable to install AzCli"
         }
@@ -158,7 +158,7 @@ Function Install-AzCli()
         {
             Write-Host "Azure Devops install failed" -ForegroundColor Yellow
             Write-Host $Return
-        } 
+        }
         Write-Host "Exists" -ForegroundColor Green
         $env:Path += ";$ExpectedPath"
     }
@@ -168,7 +168,7 @@ Function Install-AzCli()
 Function Install-Nuget()
 {
     $Message = "NuGet"
-    $Message = $Message + (" " + "." * (70 - $Message.Length) + " ") 
+    $Message = $Message + (" " + "." * (70 - $Message.Length) + " ")
     Write-Host  $Message -NoNewLine -ForegroundColor Cyan
     mkdir -ErrorAction SilentlyContinue "$env:REPO_APP_EXTERNS_DIR/tools" | Out-Null
 
@@ -189,7 +189,7 @@ Function Set-GitReferences($PackageFile)
     foreach($Package in $PackageConfig.packages.git.ChildNodes)
     {
         $Message = "$($Package.name) @ $($Package.tag)"
-        $Message = $Message + (" " + "." * (70 - $Message.Length) + " ") 
+        $Message = $Message + (" " + "." * (70 - $Message.Length) + " ")
         Write-Host  $Message -NoNewLine -ForegroundColor Cyan
         [System.Environment]::SetEnvironmentVariable("REPO_APP_GIT_$($Package.name).URL", $Package.url)
         [System.Environment]::SetEnvironmentVariable("REPO_APP_GIT_$($Package.name).TAG", $Package.tag)
@@ -213,17 +213,17 @@ Function Get-AzPackages($PackageFile, $TargetDir)
         # Auth is required
         if ($LASTEXITCODE -ne 0)
         {
-            $Return = Invoke-Expression "az login --only-show-errors" 
+            $Return = Invoke-Expression "az login --only-show-errors"
             if ($LASTEXITCODE -ne 0){ throw "Unable to authenticate user"}
         }
     }
-    
+
     [Xml]$PackageConfig = Get-Content $PackageFile
 
     foreach($Package in $PackageConfig.packages.universal_packages.ChildNodes)
     {
         $Message = "$($Package.name) @ $($Package.version)"
-        $Message = $Message + (" " + "." * (70 - $Message.Length) + " ") 
+        $Message = $Message + (" " + "." * (70 - $Message.Length) + " ")
         Write-Host  $Message -NoNewLine -ForegroundColor Cyan
 
         $PackageTargetPath = "$($TargetDir)\$($Package.name).$($Package.version)".replace("\", "/")
@@ -236,19 +236,19 @@ Function Get-AzPackages($PackageFile, $TargetDir)
             continue
         }
 
-        $Command = "artifacts universal download " + 
-            "--organization $($Package.org) " + 
-            "--project=$($Package.project) " + 
-            "--scope $($Package.scope) " + 
-            "--feed $($Package.feed) " + 
-            "--name $($Package.name) " + 
-            "--version $($Package.version) " + 
+        $Command = "artifacts universal download " +
+            "--organization $($Package.org) " +
+            "--project=$($Package.project) " +
+            "--scope $($Package.scope) " +
+            "--feed $($Package.feed) " +
+            "--name $($Package.name) " +
+            "--version $($Package.version) " +
             "--path $PackageTargetPath"
 
         $Output = Invoke-Executable -exe "az" -exeArgs $Command
 
         if ($LASTEXITCODE -ne 0)
-        { 
+        {
             Write-Host "Failed" -ForegroundColor Red
             Write-Host $Output -ForegroundColor Red
             throw "Unable to download $($Package.name).$($Package.version) [$LASTEXITCODE]"
@@ -266,13 +266,13 @@ Function Get-NugetPackages($PackageFile, $TargetDir)
     }
 
     $TargetDir = (Get-Item $TargetDir).FullName
-    
+
     [Xml]$PackageConfig = Get-Content $PackageFile
 
     foreach($Package in $PackageConfig.packages.nuget_packages.ChildNodes)
     {
         $Message = "$($Package.name) @ $($Package.version)"
-        $Message = $Message + (" " + "." * (70 - $Message.Length) + " ") 
+        $Message = $Message + (" " + "." * (70 - $Message.Length) + " ")
         Write-Host  $Message -NoNewLine -ForegroundColor Cyan
 
         $PackageTargetPath = "$($TargetDir)\$($Package.name).$($Package.version)".replace("\", "/")
@@ -284,17 +284,17 @@ Function Get-NugetPackages($PackageFile, $TargetDir)
             Write-Host "Exists" -ForegroundColor Green
             continue
         }
-   
-        $Command = "install " + 
-            "$($Package.name) " + 
-            "-version $($Package.version) " + 
-            "-source $($Package.source) " + 
+
+        $Command = "install " +
+            "$($Package.name) " +
+            "-version $($Package.version) " +
+            "-source $($Package.source) " +
             "-OutputDirectory $TargetDir"
 
         $Output = Invoke-Executable -exe $env:REPO_APP_NUGET_EXE -exeArgs $Command
 
         if ($LASTEXITCODE -ne 0)
-        { 
+        {
             Write-Host "Failed" -ForegroundColor Red
             Write-Host $Output -ForegroundColor Red
             throw "Unable to download $($Package.name).$($Package.version) [$LASTEXITCODE]"
@@ -309,9 +309,9 @@ Function Get-PipPackages($PackageFile)
     [Xml]$PackageConfig = Get-Content $PackageFile
 
     foreach($Package in $PackageConfig.packages.pip_packages.ChildNodes)
-    {   
+    {
         $Message = "$($Package.name) @ $($Package.version)"
-        $Message = $Message + (" " + "." * (70 - $Message.Length) + " ") 
+        $Message = $Message + (" " + "." * (70 - $Message.Length) + " ")
         Write-Host  $Message -NoNewLine -ForegroundColor Cyan
 
         # See https://github.com/pypa/pip/issues/8559 for json2html dependency
@@ -320,7 +320,7 @@ Function Get-PipPackages($PackageFile)
         $Output = Invoke-Executable -exe "${env:REPO_APP_PATH_python.win64}/tools/python.exe" -exeArgs $Command
 
         if ($LASTEXITCODE -ne 0)
-        { 
+        {
             Write-Host "Failed" -ForegroundColor Red
             Write-Host $Output -ForegroundColor Red
             throw "Unable to download $($Package.name).$($Package.version) [$LASTEXITCODE]"
@@ -361,7 +361,7 @@ Toolchain to initialize the repo with
 Artifact configuration debug/release
 
 .EXAMPLE
-Set-RepoEnv -Toolchain arm64-pc-windows-msvc -Configuration debug
+Set-RepoEnv -Toolchain i386-pc-windows-msvc -Configuration debug
 #>
 Function Set-RepoEnv()
 {
@@ -421,7 +421,7 @@ Function Set-RepoEnv()
         #env
         $env:REPO_APP_TOOLCHAIN = $Toolchain
         $env:REPO_APP_BUILD_CONFIG = $Configuration
-        
+
         $env:REPO_APP_ROOT = (Get-Item "$PSScriptRoot\..\..\..\").ToString().Replace("\","/")
         $env:REPO_APP_BUILD_DIR = (Join-Path $env:REPO_APP_ROOT ".build").replace("\", "/")
         $env:REPO_APP_TEST_LOG_DIR = (Join-Path $env:REPO_APP_ROOT ".testlogs").replace("\", "/")
@@ -447,7 +447,7 @@ Function Set-RepoEnv()
 
         Get-AzPackages -PackageFile "$env:REPO_APP_TOOLS_DIR/packages.$Toolchain.xml" -TargetDir $env:REPO_APP_AZPKG_DIR
         Get-NugetPackages -PackageFile "$env:REPO_APP_TOOLS_DIR/packages.$Toolchain.xml" -TargetDir $env:REPO_APP_NUGET_DIR
-        Get-PipPackages -PackageFile "$env:REPO_APP_TOOLS_DIR/packages.$Toolchain.xml" 
+        Get-PipPackages -PackageFile "$env:REPO_APP_TOOLS_DIR/packages.$Toolchain.xml"
         Set-GitReferences -PackageFile "$env:REPO_APP_TOOLS_DIR/packages.$Toolchain.xml"
 
         # Set Build
@@ -457,19 +457,19 @@ Function Set-RepoEnv()
         $host.ui.RawUI.WindowTitle = $Name
 
         Write-Title "Welcome to the $Name repo" -Color Yellow
-        
+
         $Links = @{
             "[Getting Started]" = "https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.MSCP.SDM.CDED?path=/docs/GettingStarted.md"
             "[Guidelines]" = "https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.MSCP.SDM.CDED?path=/docs/guidelines/GeneralGuidelines.md"
         }
-        
+
         $ConcatString = ""
         $Length = 0
         $Links.GetEnumerator() | %{$ConcatString += " " + (Format-Url -Label $_.key -Url $_.value)}
         $Links.GetEnumerator() | %{$Length += $_.key.Length}
         $DecoratorSize = ($Host.UI.RawUI.WindowSize.Width - $Length - 5)/2
         Write-Host ((' ' * $DecoratorSize) + $ConcatString) -ForegroundColor Blue
-        
+
         Write-Host "`nAvailable commands:`n"
         Get-RepoHelp
     }
@@ -547,9 +547,9 @@ Function Invoke-UnitTests($Suite)
         /define:test_bin_dir="$env:REPO_APP_BUILD_DIR/$env:REPO_APP_BUILD_CONFIG/$env:REPO_APP_TOOLCHAIN/bin" `
         /define:test_src_dir="$env:REPO_APP_ROOT" `
         $SuiteArg /runtests /hideWindows
-   
+
        $TargetLogDir = (Get-ChildItem $env:REPO_APP_TEST_LOG_DIR | Sort -Descending)[0].FullName
-   
+
        & "${env:REPO_APP_PATH_report-generator}/tools/net6.0/ReportGenerator.exe" `
            -reports:"$TargetLogDir/**/cobertura.xml" `
            -targetdir:"$TargetLogDir/Coverage" `
@@ -557,7 +557,7 @@ Function Invoke-UnitTests($Suite)
     }
     else {
         Write-Host -ForegroundColor Red "No packages found at path:" "$env:REPO_APP_BUILD_DIR/$env:REPO_APP_BUILD_CONFIG/$env:REPO_APP_TOOLCHAIN/bin"
-        Write-Host -ForegroundColor Yellow "Are any unit tests enabled for the configuration?" $env:REPO_APP_TOOLCHAIN $env:REPO_APP_BUILD_CONFIG 
+        Write-Host -ForegroundColor Yellow "Are any unit tests enabled for the configuration?" $env:REPO_APP_TOOLCHAIN $env:REPO_APP_BUILD_CONFIG
     }
 }
 
@@ -587,7 +587,7 @@ Function Get-RepoHelp()
     foreach($Command in $Commands)
     {
         $Message = $Command.Name
-        $Message = $Message + (" " * (20 - $Message.Length)) 
+        $Message = $Message + (" " * (20 - $Message.Length))
         $Help = Get-Help $Command
         Write-Host $Message -NoNewLine -ForegroundColor Yellow
         Write-Host $Help.Synopsis
@@ -604,7 +604,7 @@ Parse Version Data from the CI and Release Pipelines, and set to environment var
 Get-VersionData
 #>
 Function Get-VersionData()
-{ 
+{
     # Install powershell-yaml if not available
     Install-Module powershell-yaml -Force -MinimumVersion "0.4.7" -Scope CurrentUser -WarningAction SilentlyContinue
 

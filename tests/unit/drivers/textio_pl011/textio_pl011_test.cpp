@@ -8,22 +8,23 @@
  */
 
 /*------------- Includes -----------------*/
+#include <CMockaWrapper.h> // IWYU pragma: keep
+#include <cstddef>         // IWYU pragma: keep
+#include <cstdint>         // IWYU pragma: keep
+#include <cstring>         // IWYU pragma: keep
 
 extern "C" {
-#include <DfwkClient.h>
-#include <DfwkHost.h>
-#include <FpFwUtils.h>
-#include <error_handler.h>
-#include <textio_pl011.h> // for textio_pl011_device_t, textio_pl011...
-#include <textio_pl011_i.h>
-#include <tx_api.h>     // for TX_SUCCESS, TX_NO_ACTIVATE, tx_time...
-#include <uart_pl011.h> // for uart_pl011_intr_mask_clear, uart_pl...
-}
+#include "fpfw_text_io_interface.h" // for fpfw_text_io_async_read_request_t
 
-#include <CMockaWrapper.h>
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
+#include <DfwkClient.h>     // for DfwkAsyncRequestInititalize, DFW...
+#include <DfwkHost.h>       // for DfwkScheduleInitialize, DfwkSche...
+#include <FpFwUtils.h>      // for FPFW_UNUSED
+#include <error_handler.h>  // for set_error_handler_return
+#include <textio_pl011.h>   // for textio_pl011_device_initialize
+#include <textio_pl011_i.h> // for textio_pl011_timer_cb
+#include <tx_api.h>         // for TX_SUCCESS, ULONG, TX_TIMER_ERROR
+#include <uart_pl011.h>     // for UART_PL011_RX_INTR_MASK, UART_PL...
+}
 
 /*-- Symbolic Constant Macros (defines) --*/
 

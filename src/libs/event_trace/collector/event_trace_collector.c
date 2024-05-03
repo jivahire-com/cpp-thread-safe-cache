@@ -9,22 +9,23 @@
 
 /*------------- Includes -----------------*/
 
-#include "event_trace_collector_i.h"
+#include "IFpFwEventTracingStatus.h" // for FPFW_ET_SUCCESS, FPFW_ET_E_...
+#include "event_trace_collector_i.h" // for etc_buffer_complete_cb, etc...
 
-#include <ErrorHandler.h>
-#include <IFpFwEventTracing.h>
-#include <IFpFwEventTracingBuffers.h>
-#include <IFpFwEventTracingController.h>
-#include <IFpFwEventTracingDecoder.h>
-#include <IFpFwEventTracingDefines.h>
-#include <IFpFwEventTracingEvents.h>
-#include <event_trace_collector.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <tx_api.h>
-#include <tx_initialize.h>
-#include <tx_thread.h>
+#include <ErrorHandler.h>                // for FPFwErrorRaise
+#include <IFpFwEventTracing.h>           // for FPFwETTraceInitialize
+#include <IFpFwEventTracingBuffers.h>    // for PFPFW_ET_CORE_BUFFER_HEADER
+#include <IFpFwEventTracingController.h> // for FPFwETControllerRecycleBuffer
+#include <IFpFwEventTracingDecoder.h>    // for FPFwETDecoderPrintEvent
+#include <IFpFwEventTracingDefines.h>    // for FPFW_ET_EVENT_METADATA_HEADER
+#include <IFpFwEventTracingEvents.h>     // for FPFW_ET_PROVIDER_EVENT_FILTER
+#include <event_trace_collector.h>       // for (anonymous struct)::(anonym...
+#include <stdbool.h>                     // for true
+#include <stddef.h>                      // for NULL
+#include <stdint.h>                      // for uint8_t, uint32_t, uint64_t
+#include <tx_api.h>                      // for TX_SUCCESS, TX_NO_WAIT, ULONG
+#include <tx_initialize.h>               // for TX_INITIALIZE_IN_PROGRESS
+#include <tx_thread.h>                   // IWYU pragma: keep
 
 /*------------- Typedefs -----------------*/
 

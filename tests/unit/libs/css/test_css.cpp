@@ -12,12 +12,12 @@
 #include <cstdint>
 
 extern "C" {
-#include <atu_lib.h>
-#include <clocks_sequence.h>
-#include <css.h>
-#include <fpfw_init.h>
-#include <idhw.h>
-#include <ppu_v1.h>
+#include "idsw.h" // for DIE_ID
+
+#include <atu_lib.h>         // for ATU_ID_MSCP, atu_id_t, atu_map_entry_t
+#include <clocks_sequence.h> // for clocks_sequence_css_pre_mesh_init_t
+#include <css.h>             // for css_pre_mesh_init
+#include <ppu_v1.h>          // for PPU_V1_OPMODE_01
 
 /*-- Symbolic Constant Macros (defines) --*/
 

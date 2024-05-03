@@ -9,10 +9,11 @@
 
 /*------------- Includes -----------------*/
 
-#include <FpFwCMocka.h>
-#include <FpFwUtils.h>
-#include <thread_x_mocks.h>
-#include <tx_api.h> // for UINT, ULONG, TX_QUEUE, TX_S...
+#include <FpFwCMocka.h>     // for check_expected, check_expected_ptr, mock...
+#include <FpFwUtils.h>      // for FPFW_UNUSED
+#include <stdint.h>         // for uint32_t
+#include <thread_x_mocks.h> // for threadx_mock_set_system_state
+#include <tx_api.h>         // for UINT, ULONG, VOID, CHAR, TX_TIMER, TX_QUEUE
 
 /*-- Symbolic Constant Macros (defines) --*/
 

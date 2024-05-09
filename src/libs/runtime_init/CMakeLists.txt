@@ -56,9 +56,6 @@ target_link_libraries(
         register_headers
 )
 
-# Ensure ms::lib::arm_utils precedes the following libs in linker invocation by specifying this link dependency edge
-target_link_libraries(fwlib.Driver.MboxIccTransport PRIVATE ms::lib::arm_utils)
-
 # Define base addresses during compile time for respective core fw
 target_compile_definitions(
     ${TARGET} 
@@ -111,9 +108,6 @@ target_link_libraries(
         silibs::platform
         silibs::kng_silibs_platform
 )
-
-# Ensure ms::lib::arm_utils precedes the following libs in linker invocation by specifying this link dependency edge
-target_link_libraries(fwlib.Driver.MboxIccTransport PRIVATE ms::lib::arm_utils)
 
 # Define base addresses during compile time for respective core fw
 target_compile_definitions(

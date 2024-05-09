@@ -16,7 +16,7 @@
 
     <git>
         <repo name="cmocka" url="https://azurecsi.visualstudio.com/DuvallFw/_git/mirror.cmocka" tag="promote_cmocka_1"/>
-        <repo name="1pfw_fwlibs" url="https://azurecsi.visualstudio.com/DuvallFw/_git/1pfw.fwlibs" tag="v2.0.218"/>
+        <repo name="1pfw_fwlibs" url="https://azurecsi.visualstudio.com/DuvallFw/_git/1pfw.fwlibs" tag="v2.0.225"/>
         <repo name="threadx" url="https://expresslogic.visualstudio.com/X-Ware/_git/threadx" tag="promote_threadx_1pfw_1"/>
         <repo name="silibs" url="https://ms-tsd@dev.azure.com/ms-tsd/Kingsgate/_git/silibs" tag="promote_kng_silibs_fpga_r13_17"/>
         <repo name="cmsis" url="https://github.com/ARM-software/CMSIS_6" tag="v6.0.0"/>

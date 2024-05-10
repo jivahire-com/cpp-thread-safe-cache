@@ -21,6 +21,7 @@ add_library(${TARGET}
         pcie_init.c
         textio_init.c
         ddr_manager_init.c
+        power_init.c
 )
 
 target_link_libraries(
@@ -47,6 +48,7 @@ target_link_libraries(
         ms::lib::threadx
         ms::service::ddr_manager
         ms::service::pcie_manager
+        ms::service::power
         ms::service::scp_etc
         silibs::avs
         silibs::idhw

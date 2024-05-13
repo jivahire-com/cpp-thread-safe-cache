@@ -2,8 +2,6 @@
 # Post cloning the library, the make file also describes the files needed to build the library 
 # and exports zlib as library to be used
 
-enabled_on(arm-eabi-aarch)
-
 set(TARGET extern.populate.zlib)
 set(TARGET_DIR ${REPO_ROOT_DIR}/.externs/repo/zlib)
 
@@ -42,10 +40,9 @@ SET(SRC
 add_library(${TARGET} STATIC ${SRC})
 target_include_directories(
     ${TARGET}
-        SYSTEM PUBLIC
+      PUBLIC
             ${TARGET_DIR}
-            ${REPO_ROOT_DIR}/.build/Debug/arm-eabi-aarch/src/externs/zlib/zlib
-            ${REPO_ROOT_DIR}/.build/Release/arm-eabi-aarch/src/externs/zlib/zlib
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../src/externs/zlib/zlib
 )
 
 add_library(ms::lib::zlib ALIAS extern.populate.zlib)

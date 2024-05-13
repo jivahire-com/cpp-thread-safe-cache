@@ -8,24 +8,21 @@
  */
 
 /*------------- Includes -----------------*/
-
-#include <kingsgate_boot.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include <kingsgate_boot.h> // for kingsgate_boot_metadata_t, BITMASK_WARM_...
 #ifdef UNIT_TEST
     #include <mock_mcp_mmap.h>
 #else
-    #include <mcp_mmap.h>
+    #include <mcp_mmap.h> // for MCP_DTCM_RAM_SIZE, MCP_MSCP_EXP_SRAM0_ADDR, MCP_TOP_MCP_DATA_RAM_ADDRESS, MCP_TOP_MC...
 #endif
-
+#include <stdbool.h> // for bool
+#include <stddef.h>  // for size_t
+#include <stdint.h>  // for uint32_t
 #ifdef UNIT_TEST
     #define NORETURN
 #else
-    #include <stdnoreturn.h>
+    #include <stdnoreturn.h> // for noreturn
     #define NORETURN noreturn
 #endif
-
 /*-------------- Typedefs ----------------*/
 
 /*-- Declarations (Statics and globals) --*/
@@ -51,7 +48,7 @@ NORETURN void arch_exception_reset(void)
 {
     kingsgate_boot_metadata_t* boot_metadata = (kingsgate_boot_metadata_t*)(MCP_MSCP_EXP_SRAM0_ADDR);
 
-    // TODO: Need to profile ITCM/DTCM clear and see if its possible to optimize using memset/DMA 
+    // TODO: Need to profile ITCM/DTCM clear and see if its possible to optimize using memset/DMA
     // ADO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1777866/?triage=true
     /*
      * NOLINT is set to skip LINT checks for the ITCM clear, this for two reasons
@@ -64,11 +61,11 @@ NORETURN void arch_exception_reset(void)
     }
 
     // NOTE: Currently HSP doesn't download metadata and reset reason will always be cold boot
-    bool is_warm_boot_detected = boot_metadata->ResetReason & BITMASK_WARM_BOOT;
+    bool is_warm_boot_detected = boot_metadata->reset_reason & BITMASK_WARM_BOOT;
 
     if (!is_warm_boot_detected)
     {
-        for (uint32_t mem_offset = 0; mem_offset < MCP_TOP_MCP_DATA_RAM_SIZE; mem_offset += sizeof(uint32_t))
+        for (uint32_t mem_offset = 0; mem_offset < MCP_DTCM_RAM_SIZE; mem_offset += sizeof(uint32_t))
         {
             // NOLINT added as a precaution against -Wint-to-pointer-cast error
             *(volatile uint32_t*)((size_t)MCP_TOP_MCP_DATA_RAM_ADDRESS + mem_offset) = 0x0;

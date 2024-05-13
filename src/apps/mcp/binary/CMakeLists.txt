@@ -5,6 +5,10 @@
 # in to a single .bin file that can be loaded in to the start address of TCM
 
 # Get the paths to the application firmware and other binaries
+# Also it takes bootloader and runtime to combine them into an embedded elf and bin , with runtime 
+# firmware ITCM and DTCM sections embedded as compressed .gz , prepended by header.
+include("${CMAKE_SOURCE_DIR}/src/libs/boot_loader/cmake/CreateBootloaderEmbed.cmake")
+
 get_target_property(MCP_FW_BIN mcp_fw FIRMWARE_BIN)
 
 set(BIN_INPUTS 
@@ -37,4 +41,8 @@ set_target_properties(
 add_dependencies(
     mcp_firmware
         mcp_fw
+        mcp_boot_loader
 )
+
+# Embeds  the bootloader and fw into a single elf and also generate .bin file
+create_bootloader_embed(mcp mcp_fw mcp_boot_loader mcp_boot_loader_embed_fw)

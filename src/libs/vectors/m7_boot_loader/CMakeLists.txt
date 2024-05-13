@@ -8,6 +8,7 @@ set(TARGET vectors.m7_boot_loader)
 set(SRC
     boot_loader_vectors.S
     boot_loader_crt0.S
+    launch_image.S
 )
 
 add_library(${TARGET} STATIC ${SRC})

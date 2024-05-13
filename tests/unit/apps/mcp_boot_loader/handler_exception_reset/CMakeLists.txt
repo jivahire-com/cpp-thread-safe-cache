@@ -17,7 +17,7 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::a
 target_link_libraries(${TARGET}
     PRIVATE
     ms::cmocka::testrunner
-	boot_loader_interface
+	ms::lib::boot_loader
 )
 
 lint_target(${TARGET})

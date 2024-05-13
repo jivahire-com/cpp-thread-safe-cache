@@ -28,6 +28,9 @@ _vectors:
   .thumb_func
 reset_handler:
   // Reset ITCM, DTCM to zero and jump to _start
+  //The arch_exception_reset pushes r3, lr to stack hence updating SP here
+  ldr r1, =__stack_end__
+  mov sp, r1
   ldr r0, =arch_exception_reset
   bx r0
 

@@ -1,6 +1,6 @@
 /**
- * @file uart_scp_init.c
- * Instantiates UART for the SCP
+ * @file cli_init.c
+ * Initialize & start cli textio interface
  */
 
 /*------------- Includes -----------------*/

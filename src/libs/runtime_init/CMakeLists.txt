@@ -15,6 +15,7 @@ add_library(${TARGET}
         dfwk_init.c
         etc_scp_init.c
         hw_version_scp_init.c
+        icc_cli_init.c
         icc_transport_init/mscp_hspmbx_init.c
         mesh_init.c
         nvic_init.c
@@ -42,6 +43,7 @@ target_link_libraries(
         ms::lib::css
         ms::lib::debug
         ms::lib::cortex_m7::nvic
+        ms::lib::icc::cli
         ms::lib::mesh
         ms::lib::scp_interrupts
         ms::lib::stdio_textio
@@ -83,6 +85,7 @@ add_library(${TARGET}
         debug_init.c
         dfwk_init.c
         etc_mcp_init.c
+        icc_cli_init.c
         icc_transport_init/mscp_hspmbx_init.c
         nvic_init.c
         textio_init.c
@@ -102,6 +105,7 @@ target_link_libraries(
         ms::driver::textio::pl011
         ms::lib::debug
         ms::lib::cortex_m7::nvic
+        ms::lib::icc::cli
         ms::lib::stdio_textio
         ms::lib::threadx
         ms::service::mcp_etc

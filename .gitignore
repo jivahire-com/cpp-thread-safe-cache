@@ -52,3 +52,6 @@ __pycache__/
 
 # Merge files
 *.orig
+
+# Build size files
+*.sizes

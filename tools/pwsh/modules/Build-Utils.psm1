@@ -504,6 +504,35 @@ Invoke-Build
 Function Invoke-Build()
 {
     ninja -C $env:REPO_APP_TARGET_BUILD_DIR $args
+    Invoke-Buildsize
+}
+
+<#
+.SYNOPSIS
+Finds the size of .text, .data, and .bss sections of current build .elf file
+
+.EXAMPLE
+Invoke-Buildsize
+#>
+Function Invoke-Buildsize()
+{
+    $ErrorActionPreference = "SilentlyContinue"
+
+    # Set up the path to search for elf files
+    $BuildDirectory = Join-Path -Path $(Get-ChildItem -Path "Env:REPO_APP_TARGET_BUILD_DIR").Value -ChildPath 'bin'
+
+    # Use Get-ChildItem to find all files with .elf extension in the directory
+    $elfFiles = Get-ChildItem -Path $BuildDirectory -Filter *.elf
+    $currentDirectory = Get-Location
+
+    # Iterate over each .elf file
+    foreach ($file in $elfFiles) {
+        $FileName = $($file.FullName)
+        $tempFile = Join-Path -Path $currentDirectory -ChildPath "$([System.IO.Path]::GetFileNameWithoutExtension($FileName)).sizes"
+
+        # Process each .elf file for sizes
+        & "$env:REPO_APP_TOOLS_DIR\pwsh\binsize\binsizes.ps1" -FileName $file
+    }
 }
 
 <#

@@ -4,16 +4,17 @@
  */
 
 /*------------- Includes -----------------*/
-#include "DfwkThreadXHost.h" // for DFWK_THREADX_HOST
-#include "scp_avs.h"         // for avs_bus_id
-
-#include <fpfw_init.h>               // for FPFW_INIT_STATUS_SUCCESS, fpfw_...
-#include <padring_southeast_regs.h>  // for PADRING_SOUTHEAST_SOUTHEAST_AFM...
-#include <scp_avs_driver.h>          // for scp_avs_init, scp_avs_interface...
-#include <scp_interrupts.h>          // for _IRQn_t
-#include <silibs_scp_exp_top_regs.h> // for SCP_EXP_TOP_AVS_0_ADDRESS, SCP_...
-#include <silibs_scp_top_regs.h>     // for SCP_TOP_SCP_EXP_ADDRESS, SCP_TO...
-#include <stdint.h>                  // for uintptr_t
+#include <DfwkClient.h>
+#include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
+#include <fpfw_init.h>
+#include <padring_southeast_regs.h>
+#include <scp_avs.h>
+#include <scp_avs_driver.h>
+#include <scp_interrupts.h>
+#include <silibs_scp_exp_top_regs.h>
+#include <silibs_scp_top_regs.h>
+#include <stdint.h>
+#include <stdio.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -23,7 +24,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(avs0, FPFW_INIT_DEPENDENCIES("dfwk", "std_io"))
+FPFW_INIT_COMPONENT(avs0, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic"))
 {
     static scp_avs_device_t avs_device = {
         .config = {
@@ -53,7 +54,7 @@ FPFW_INIT_COMPONENT(avs0_int, FPFW_INIT_DEPENDENCIES("avs0"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_interface};
 }
 
-FPFW_INIT_COMPONENT(avs1, FPFW_INIT_DEPENDENCIES("dfwk", "std_io"))
+FPFW_INIT_COMPONENT(avs1, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic"))
 {
     static scp_avs_device_t avs_device = {
         .config = {
@@ -84,7 +85,7 @@ FPFW_INIT_COMPONENT(avs1_int, FPFW_INIT_DEPENDENCIES("avs1"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_interface};
 }
 
-FPFW_INIT_COMPONENT(avs2, FPFW_INIT_DEPENDENCIES("dfwk", "std_io"))
+FPFW_INIT_COMPONENT(avs2, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic"))
 {
     static scp_avs_device_t avs_device = {
         .config = {
@@ -115,7 +116,7 @@ FPFW_INIT_COMPONENT(avs2_int, FPFW_INIT_DEPENDENCIES("avs2"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_interface};
 }
 
-FPFW_INIT_COMPONENT(avs3, FPFW_INIT_DEPENDENCIES("dfwk", "std_io"))
+FPFW_INIT_COMPONENT(avs3, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic"))
 {
     static scp_avs_device_t avs_device = {
         .config = {

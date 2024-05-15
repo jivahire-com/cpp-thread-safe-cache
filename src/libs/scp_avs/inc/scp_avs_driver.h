@@ -23,8 +23,13 @@
 typedef struct _scp_avs_request_t {
     DFWK_ASYNC_REQUEST_HEADER Header;
     scp_avs_vr_vct_t *avs_response_data;  // Response structure (scp_avs_vr_vct_t) used when reading AVS VCT. Have the client provide a pointer to this.
-    scp_avs_command_params_t *avs_params; 
+    scp_avs_command_params_t avs_params; 
 } scp_avs_request_t, *pscp_avs_request;
+
+typedef struct _scp_avs_isr_request_t {
+    DFWK_ASYNC_REQUEST_HEADER Header;
+    pscp_avs_request outstanding_client_request;
+} scp_avs_isr_request_t, *pscp_avs_isr_request;
 
 /* 
 Todo: Long term - have the client provide an array with 16 bytes, which contains the 
@@ -40,7 +45,9 @@ typedef struct _scp_avs_device_t {
     DFWK_DEVICE_HEADER Header;
     const scp_avs_config_t config;
     DFWK_QUEUE avs_queue;
+    DFWK_QUEUE avs_isr_resp_queue;
     pscp_avs_request outstanding_request;
+    scp_avs_isr_request_t isr_request;
     uint8_t avs_bus_num;
     pscp_avs_error_count avs_response_errors;
 } scp_avs_device_t, *pscp_avs_device;

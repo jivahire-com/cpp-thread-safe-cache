@@ -22,6 +22,7 @@ extern "C" {
 #include <scp_avs.h>
 #include <scp_avs_driver.h>
 #include <scp_avs_driver_i.h>
+#include <scp_interrupts.h>
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -32,9 +33,11 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 static DFWK_SCHEDULE s_schedule;
-scp_avs_device_t test_avs_device = {
-    .config = {},
+static scp_avs_device_t test_avs_device = {
+    .config = {.avs_irq = HW_INT_AVS_CTRL_0_INT},
+    .avs_bus_num = AVS_BUS0,
 };
+
 static scp_avs_interface_t test_avs_interface;
 static scp_avs_request_t test_avs_Request;
 static scp_avs_get_request_t test_avs_get_Request;
@@ -51,8 +54,6 @@ static void test_scp_request_completion(PDFWK_ASYNC_REQUEST_HEADER Request, void
 static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
-
-    test_avs_device.avs_bus_num = AVS_BUS1;
 
     DfwkDeviceInitialize(&test_avs_device.Header, &s_schedule);
 
@@ -79,18 +80,28 @@ static int test_cleanup(void** pContext)
 
 TEST_FUNCTION(scp_avs_driver_init_test, test_setup, test_cleanup)
 {
-    test_avs_device.avs_bus_num = AVS_BUS2;
+    expect_value(__wrap_avs_init, avs_base_addr, test_avs_device.avs_bus_num);
+
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_AVS_CTRL_0_INT);
+
+    expect_any(__wrap_nvic_irq_set_isr_with_param, isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (uintptr_t)&test_avs_device);
+
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_AVS_CTRL_0_INT);
+
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_AVS_CTRL_0_INT);
+
+    expect_value(__wrap_avs_enable_interrupt, avs_id, test_avs_device.avs_bus_num);
+    expect_any(__wrap_avs_enable_interrupt, intr);
 
     scp_avs_driver_initialize(&test_avs_device);
-    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS2);
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
 }
 
 TEST_FUNCTION(scp_avs_interface_init_test, test_setup, test_cleanup)
 {
-    test_avs_device.avs_bus_num = AVS_BUS1;
-
     scp_avs_interface_initialize(&test_avs_device, &test_avs_interface);
-    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS1);
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
 }
 
 TEST_FUNCTION(scp_avs_client_read_test, test_setup, test_cleanup)
@@ -164,42 +175,78 @@ TEST_FUNCTION(scp_avs_client_write_multi_test, test_setup, test_cleanup)
 
 TEST_FUNCTION(scp_avs_dispatch_test_read, test_setup, test_cleanup)
 {
+    test_avs_device.avs_bus_num = AVS_BUS0;
+
+    test_avs_Request.avs_params.cmd_type = AVS_VOLTAGE_RW;
+    test_avs_Request.avs_params.rail_id = 1;
     test_avs_Request.Header.RequestType = AVS_REQUEST_READ_DATA;
+
+    expect_value(__wrap_avs_send_cmd_frame, avs_id, AVS_BUS0);
+    expect_value(__wrap_avs_send_cmd_frame, cmd_num, 1);
+
+    avs_master_command_t expected_master_command = {
+        .command_data_type = AVS_VOLTAGE_RW,
+        .command_type = 1, // rail id
+        .command_control = AVS_CMD_READ,
+        .command_group = AVS_CGROUP,
+    };
+    expect_memory(__wrap_avs_send_cmd_frame, cmd_mem, &expected_master_command, sizeof(expected_master_command));
 
     scp_avs_dispatch(&test_avs_Request.Header, nullptr);
     assert_int_equal((uintptr_t)test_avs_device.outstanding_request, (uintptr_t)&test_avs_Request);
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
 }
 
 TEST_FUNCTION(scp_avs_dispatch_test_write, test_setup, test_cleanup)
 {
+    test_avs_device.avs_bus_num = AVS_BUS0;
+    scp_avs_command_params_t test_command_params = {};
+
+    test_avs_Request.avs_params = test_command_params;
     test_avs_Request.Header.RequestType = AVS_REQUEST_WRITE_DATA;
 
     scp_avs_dispatch(&test_avs_Request.Header, nullptr);
     assert_int_equal((uintptr_t)test_avs_device.outstanding_request, (uintptr_t)&test_avs_Request);
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
 }
 
 TEST_FUNCTION(scp_avs_dispatch_test_read_all, test_setup, test_cleanup)
 {
+    test_avs_device.avs_bus_num = AVS_BUS1;
+    scp_avs_command_params_t test_command_params = {};
+
+    test_avs_Request.avs_params = test_command_params;
     test_avs_Request.Header.RequestType = AVS_REQUEST_READ_ALL_VCT;
 
     scp_avs_dispatch(&test_avs_Request.Header, nullptr);
     assert_int_equal((uintptr_t)test_avs_device.outstanding_request, (uintptr_t)&test_avs_Request);
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS1);
 }
 
 TEST_FUNCTION(scp_avs_dispatch_test_read_multi, test_setup, test_cleanup)
 {
+    test_avs_device.avs_bus_num = AVS_BUS1;
+    scp_avs_command_params_t test_command_params = {};
+
+    test_avs_Request.avs_params = test_command_params;
     test_avs_Request.Header.RequestType = AVS_REQUEST_READ_MULTI;
 
     scp_avs_dispatch(&test_avs_Request.Header, nullptr);
     assert_int_equal((uintptr_t)test_avs_device.outstanding_request, (uintptr_t)&test_avs_Request);
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS1);
 }
 
 TEST_FUNCTION(scp_avs_dispatch_test_write_multi, test_setup, test_cleanup)
 {
+    test_avs_device.avs_bus_num = AVS_BUS0;
+    scp_avs_command_params_t test_command_params = {};
+
+    test_avs_Request.avs_params = test_command_params;
     test_avs_Request.Header.RequestType = AVS_REQUEST_WRITE_MULTI;
 
     scp_avs_dispatch(&test_avs_Request.Header, nullptr);
     assert_int_equal((uintptr_t)test_avs_device.outstanding_request, (uintptr_t)&test_avs_Request);
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
 }
 
 TEST_FUNCTION(scp_avs_dispatch_sync, test_setup, test_cleanup)

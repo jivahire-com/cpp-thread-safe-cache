@@ -127,4 +127,3 @@ lint_target(${TARGET})
 coverage_target(${TARGET})
 
 add_library(ms::lib::runtime_init::mcp ALIAS ${TARGET})
-

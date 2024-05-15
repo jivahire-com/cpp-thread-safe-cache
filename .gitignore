@@ -41,6 +41,9 @@
 # Pythia payloads
 .payload*/
 
+# VS Code
+/.vscode/settings.json
+
 # Generated files
 /libs/build_data/build_data.h
 /libs/build_data/build_data.c

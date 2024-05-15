@@ -18,6 +18,8 @@ target_link_libraries(
     ${TARGET}
         PRIVATE
             silibs::avs
+            ms::lib::arm_intrinsic
+            ms::lib::cortex_m7::nvic
             silibs::ddrss
             scp_avs_cli
         PUBLIC

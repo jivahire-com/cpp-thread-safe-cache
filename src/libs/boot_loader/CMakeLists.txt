@@ -1,17 +1,23 @@
 set(TARGET boot_loader)
 
-# Add target for the service
-add_library(
-    ${TARGET} STATIC
-        kingsgate_boot.c
-        unpack_image.c
+set(SOURCES
+    kingsgate_boot.c
+    unpack_image.c
 )
+
+if (arm-eabi-aarch)
+set(SOURCES ${SOURCES}
+    dummy_sys_calls.c
+)
+endif()
+
+add_library(${TARGET} ${SOURCES})
 
 target_include_directories(
     ${TARGET} PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
         ${REPO_ROOT_DIR}/.externs/repo/zlib
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../src/externs/zlib/zlib		
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../src/externs/zlib/zlib
 )
 
 target_link_libraries(

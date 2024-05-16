@@ -66,7 +66,7 @@ SECTIONS
     } > CODE
     __exidx_end = .;
 
-   .note.gnu.build-id : ALIGN(4)
+   .note.gnu.build-id (READONLY): ALIGN(4)
     {
         _build_id_msdata_start = ABSOLUTE(.);
         *(.note.gnu.build-id)
@@ -75,7 +75,7 @@ SECTIONS
     } > CODE
 
     /* Main Image */
-    .mainimage : {
+    .mainimage (READONLY) : {
         . = ALIGN(4);
         _mainimage_s = .;
         KEEP(*(.mainimage))
@@ -114,9 +114,9 @@ SECTIONS
 
         /* All data end */
         __data_end__ = .;
-    } > DATA
+    } > DATA AT> CODE
 
-    .bss :
+    .bss (NOLOAD):
     {
         . = ALIGN(4);
         __bss_start__ = .;
@@ -128,7 +128,7 @@ SECTIONS
 
     /* Use the remaining data allotment for the .heap section */
     /* The C runtime expects .heap to follow .bss */
-    .heap :
+    .heap (NOLOAD):
     {
         __heap_start__ = ALIGN(4);
         /* "end" indicates the end of .bss and beginning of the .heap */
@@ -146,7 +146,7 @@ SECTIONS
         PROVIDE(heap_end = .);
     } > DATA
 
-    .stack ALIGN(4):
+    .stack ALIGN(4)(NOLOAD):
     {
         __stack_start__ = ALIGN(4);
         FILL(0x00)

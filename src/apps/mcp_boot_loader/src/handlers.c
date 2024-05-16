@@ -65,7 +65,7 @@ NORETURN void arch_exception_reset(void)
 
     if (!is_warm_boot_detected)
     {
-        for (uint32_t mem_offset = 0; mem_offset < MCP_DTCM_RAM_SIZE; mem_offset += sizeof(uint32_t))
+        for (uint32_t mem_offset = 0; mem_offset < MCP_TOP_MCP_DATA_RAM_SIZE; mem_offset += sizeof(uint32_t))
         {
             // NOLINT added as a precaution against -Wint-to-pointer-cast error
             *(volatile uint32_t*)((size_t)MCP_TOP_MCP_DATA_RAM_ADDRESS + mem_offset) = 0x0;

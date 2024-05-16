@@ -18,7 +18,7 @@
 extern void *SCP_MSCP_EXP_SRAM0_ADDR;
 
 extern uint32_t SCP_TOP_SCP_INST_RAM_SIZE;
-extern uint32_t SCP_DTCM_RAM_SIZE;
+extern uint32_t SCP_TOP_SCP_DATA_RAM_SIZE;
 
 extern uint8_t *SCP_TOP_SCP_INST_RAM_ADDRESS;
 extern uint8_t *SCP_TOP_SCP_DATA_RAM_ADDRESS;

@@ -20,7 +20,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(hw_ver)
+FPFW_INIT_COMPONENT(hw_ver, FPFW_INIT_DEPENDENCIES("mpu"))
 {
 
     /* Set System ID Base Address*/

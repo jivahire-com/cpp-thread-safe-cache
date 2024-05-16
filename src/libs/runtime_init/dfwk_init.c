@@ -25,7 +25,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(dfwk)
+FPFW_INIT_COMPONENT(dfwk, FPFW_INIT_DEPENDENCIES("mpu"))
 {
     static DFWK_THREADX_HOST drvfwk;
     static uint8_t stack[DFWK_STACK_SIZE];

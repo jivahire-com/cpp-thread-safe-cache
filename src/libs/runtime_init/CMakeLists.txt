@@ -20,6 +20,7 @@ add_library(${TARGET}
         mesh_init.c
         nvic_init.c
         pcie_init.c
+        scp_mpu_init.c
         textio_init.c
         ddr_manager_init.c
         power_init.c
@@ -40,6 +41,7 @@ target_link_libraries(
         ms::driver::textio::pl011
         ms::driver::pcie
         ms::lib::accelerator_ip
+        ms::lib::cortex_m7::mpu
         ms::lib::css
         ms::lib::debug
         ms::lib::cortex_m7::nvic
@@ -68,7 +70,6 @@ target_compile_definitions(
         UART_BASE_ADDR=SCP_TOP_SCP_UART_ADDRESS
 )
 
-
 lint_target(${TARGET})
 coverage_target(${TARGET})
 
@@ -87,6 +88,7 @@ add_library(${TARGET}
         etc_mcp_init.c
         icc_cli_init.c
         icc_transport_init/mscp_hspmbx_init.c
+        mcp_mpu_init.c
         nvic_init.c
         textio_init.c
 )

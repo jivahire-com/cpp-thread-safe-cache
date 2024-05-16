@@ -1,11 +1,11 @@
 /**
- * @file nvic_init.c
- * Initialize the NVIC
+ * @file mcp_mpu_init.c
+ * Instantiates MPU for the MCP
  */
 
 /*------------- Includes -----------------*/
-#include <fpfw_init.h>
-#include <nvic.h>
+#include <fpfw_init.h>  // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
+#include <stddef.h>     // for NULL
 
 /*------------- Typedefs -----------------*/
 
@@ -15,10 +15,8 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(nvic, FPFW_INIT_DEPENDENCIES("mpu"))
+// TODO: Initialize MPU regions.
+FPFW_INIT_COMPONENT(mpu)
 {
-    // Initialize the NVIC and reallocate the Vector Table
-    nvic_init(true);
-
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

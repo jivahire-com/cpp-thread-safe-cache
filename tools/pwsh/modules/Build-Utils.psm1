@@ -503,6 +503,8 @@ Invoke-Build
 #>
 Function Invoke-Build()
 {
+    # Keeps x86 build from failing/breaking pipeline build stage
+    $ErrorActionPreference = "SilentlyContinue"
     ninja -C $env:REPO_APP_TARGET_BUILD_DIR $args
     Invoke-Buildsize
 }
@@ -516,7 +518,13 @@ Invoke-Buildsize
 #>
 Function Invoke-Buildsize()
 {
-    $ErrorActionPreference = "SilentlyContinue"
+    # ElfBuildSizes is an environment variable that is set to "one" by start.ps1
+    # Any other value causes all .elf files in the build directory to be processed for section sizes
+    if ($env:ElfBuildSizes -eq "one") {
+       # Calling binsizes script without a filename argument defaults to only scp_fw.elf
+       & "$env:REPO_APP_TOOLS_DIR\pwsh\binsize\binsizes.ps1"
+       return
+    }
 
     # Set up the path to search for elf files
     $BuildDirectory = Join-Path -Path $(Get-ChildItem -Path "Env:REPO_APP_TARGET_BUILD_DIR").Value -ChildPath 'bin'

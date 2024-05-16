@@ -1,6 +1,7 @@
 param (
     [string] $Toolchain = "arm-eabi-aarch",
     [string] $Configuration = "Debug",
+    [string] $ElfBuildSizes = "one",
     [boolean] $SkipEnv = $false
 )
 
@@ -15,6 +16,9 @@ foreach ($Module in $Modules) {
 if (-not $SkipEnv) {
     Set-RepoEnv -Toolchain $Toolchain -Configuration $Configuration
 }
+
+# Set environment variable to dictate if one/all .elf files are parsed for size
+$env:ElfBuildSizes = $ElfBuildSizes
 
 # Dump help block for SVP and FPGA Debug
 Get-SvpHelp

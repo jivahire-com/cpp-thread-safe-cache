@@ -10,6 +10,7 @@ add_library(${TARGET}
         accelerator_ip_init.c
         avs_scp_init.c
         cli_init.c
+        cli_ddr_init.c
         css_init.c
         debug_init.c
         dfwk_init.c
@@ -51,6 +52,7 @@ target_link_libraries(
         ms::lib::scp_interrupts
         ms::lib::stdio_textio
         ms::lib::threadx
+        ms::lib::ddr::cli
         ms::service::ddr_manager
         ms::service::pcie_manager
         ms::service::power

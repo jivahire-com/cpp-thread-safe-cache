@@ -114,8 +114,6 @@ You can also create a parameters txt file and pass it to the script. Anything be
 
 The following powershell module provides wrapped startup and shutdown functions for SVP: [SVP-Utils.psm1](../../tools/pwsh/modules/SVP-Utils.psm1). It's designed to start a simulation, running in the background, with set input parameters. The available set of input parameter configurations is expected to grow, however in the below example we'll use one that sideloads the scp, sdm, cded-sdm and ap images (feel free to look at the parameters in this example to see the configuration used).
 
-> **NOTE:**  SVP will not launch correctly from the latest 7.x version of powershell.  Version 7.2.19 works correctly. Task https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1778090 will resolve.
-
 1. Ensure your shell environment is up to date for your repo enlistment: > `.\start.ps1`.
 
 1. Ensure your toolchain and configuration has build artifacts:

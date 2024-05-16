@@ -58,8 +58,6 @@ This repo follows a pretty straight forward folder structure.
 
 1. Use powershell and not CMD. Ensure that your powershell instance has the `Execution Policy` set to allow you to run scripts. If you don't, run the following command in powershell:
 
-> **NOTE:**  SVP will not launch correctly from the latest 7.x version of powershell.  Version 7.2.19 works correctly. Task https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1778090 will resolve.
-
     ```pwsh
     Set-ExecutionPolicy -ExecutionPolicy Bypass -Force -Scope CurrentUser
     ```

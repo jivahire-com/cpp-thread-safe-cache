@@ -13,8 +13,31 @@ Function Stop-Virtualizer()
 {
     if ($null -ne $env:SVP_SIM_JOB_ID)
     {
+        # set to $true to print out simulator output for debugging
+        $DebugMode = $false;
+
+        if($DebugMode) {
+            $retrievedJob = Get-Job -Id $env:SVP_SIM_JOB_ID
+
+            # Retrieve and print the job output, including checking for errors
+            $output = $retrievedJob | Receive-Job -Keep
+
+            # Check if output contains any errors
+            foreach ($item in $output) {
+                if ($item -is [System.Management.Automation.ErrorRecord]) {
+                    Write-Host "Error: $($item.Exception.Message)" -ForegroundColor Red
+                }
+                else {
+                    Write-Host "Output: $item"
+                }
+            }
+
+            # Check detailed job information if needed
+            $retrievedJob | Get-Job | Format-List *
+        }
+
         # Stopping the Job will stop headless mode
-        Write-Host "`tStopping Simualator background job: ID == $env:SVP_SIM_JOB_ID"
+        Write-Host "`tStopping Simulator background job: ID == $env:SVP_SIM_JOB_ID"
         Stop-Job -Id $env:SVP_SIM_JOB_ID
         $env:SVP_SIM_JOB_ID = $null
     }
@@ -127,7 +150,7 @@ Function Invoke-Virtualizer(
 
     # Build the additional simulation parameters to pass to the `run_fixed_vdk.py`, as a array of arguements.
     # This is uncurled in the call to the executable.
-    $input_parameters = ((Get-Content -Path $svpcfg_param_file | ForEach-Object { "--parameter "+ $_ + " " }) -join " ").split(" ")
+    $input_parameters = (Get-Content -Path $svpcfg_param_file | ForEach-Object { @("--parameter", "$($_.TrimEnd())") })
 
     # The difference between running with `tve` and `tvrb` is that the license server used changes. When using `tvrb` the regression
     # licenses are used, which we have a lot more of. This pool however does not allow for the GUI to attach to a simulation running
@@ -148,15 +171,20 @@ Function Invoke-Virtualizer(
         Write-Host ""
 
         $job = Start-job -ScriptBlock {
-            vs.exe  `
-            -d $using:workspace_dir  `
-            -s $using:svp_sim_dir/win/release/run_fixed_vdk.py  `
-            --pyargs  `
-            --template_name KingsgateSVP  `
-            --vpconfig $using:SimConfig  `
-            --output_dir $using:env:REPO_APP_ROOT/.svp_simulator/  `
-            $using:input_parameters  `
-            --pyargs_end
+
+            try{
+                vs.exe  `
+                -d $using:workspace_dir  `
+                -s $using:svp_sim_dir/win/release/run_fixed_vdk.py  `
+                --pyargs  `
+                --template_name KingsgateSVP  `
+                --vpconfig $using:SimConfig  `
+                --output_dir $using:env:REPO_APP_ROOT/.svp_simulator/  `
+                $using:input_parameters  `
+                --pyargs_end
+            } catch {
+                Write-Error $_.Exception.Message
+            }
         }
 
     }
@@ -168,16 +196,21 @@ Function Invoke-Virtualizer(
         Write-Host ""
 
         $job = Start-job -ScriptBlock {
-            vssh.exe `
-            -d $using:workspace_dir `
-            -s $using:svp_sim_dir\win\release\run_fixed_vdk.py `
-            --pyargs `
-            --debug `
-            --template_name KingsgateSVP `
-            --vpconfig $using:SimConfig `
-            --output_dir $using:env:REPO_APP_ROOT\.svp_simulator\ `
-            $using:input_parameters `
-            --pyargs_end
+            try {
+                vssh.exe `
+                -d $using:workspace_dir `
+                -s $using:svp_sim_dir\win\release\run_fixed_vdk.py `
+                --pyargs `
+                --debug `
+                --template_name KingsgateSVP `
+                --vpconfig $using:SimConfig `
+                --output_dir $using:env:REPO_APP_ROOT\.svp_simulator\ `
+                $using:input_parameters `
+                --pyargs_end
+            }
+            catch {
+                Write-Error $_.Exception.Message
+            }
         }
     }
 
@@ -202,7 +235,7 @@ Function Invoke-Virtualizer(
             $time_waited_s += 5
             if ($null -ne (Get-Process | Where-Object {$_.Name -eq "sim"}))
             {
-                Write-Host "`tSimulatin Started. Time to Start: $time_waited_s seconds"
+                Write-Host "`tSimulation Started. Time to Start: $time_waited_s seconds"
                 Write-Host "`tThe Simulation can be attached to with the GUI: vs.exe -d $workspace_dir"
                 break;
             }

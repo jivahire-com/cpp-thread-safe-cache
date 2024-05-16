@@ -21,7 +21,7 @@
         <repo name="silibs" url="https://ms-tsd@dev.azure.com/ms-tsd/Kingsgate/_git/silibs" tag="promote_silibs_595"/>
         <repo name="silibs_common" url="https://dev.azure.com/ms-tsd/SiInfra/_git/silibs_common" tag="promote_silibs_common_49"/>
         <repo name="cmsis" url="https://github.com/ARM-software/CMSIS_6" tag="v6.0.0"/>
-        <repo name="cortex_m7" url="https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7" tag="kingsgate_cortex_m7_v0.1.1.15"/>
+        <repo name="cortex_m7" url="https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7" tag="kingsgate_cortex_m7_v0.1.1.16"/>
         <repo name="zlib" url="https://github.com/madler/zlib.git" tag="v1.3.1"/>
     </git>
 

@@ -20,7 +20,7 @@ target_link_libraries(${TARGET}
 target_include_directories(${TARGET}
     PUBLIC 
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
-        ${REPO_ROOT_DIR}/.externs/azpkg/kng_soc_mason_csr_collateral.0.5.1/ap_addr_map/registerheader
+        ${REPO_ROOT_DIR}/.externs/azpkg/kingsgate_register_header.0.9.3/ap_addr_map/registerheader
 )
 
 lint_target(${TARGET})

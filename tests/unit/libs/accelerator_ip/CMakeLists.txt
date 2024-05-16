@@ -55,7 +55,7 @@ mock_target(${TARGET}
     configure_vab_system_addr_map
     deassert_pcr_reset
     vab_pcr_init
-    pcr_rpss_configure_clocks
+    pcr_rpss_configure_clock
     pcr_rpss_deassert_por_reset
     pcr_rpss_verify
 )

@@ -40,7 +40,6 @@ sdm_init
 semaphore
 sensor_ram_bridge
 smmu
-smmu_voyager
 tower_cdedss
 tower_d2dss
 tower_ddrss

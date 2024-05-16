@@ -12,29 +12,30 @@
 #include "accelerator_ip.h" // for subsystem_ctxt_t, atu_mappi...
 
 #include "_addressblock_0x100000_regs.h" // for _addressblock_0x100000_bcfg...
-#include "accelerator_ip_pcie_params.h"  // for pcie_type0_ctxt_t, pcie_ctr...
 #include "atu_lib.h"                     // for atu_map, atu_unmap, atu_map...
 #include "kng_soc_constants.h"           // for DIE_INSTANCE, SDMSS_INSTANCE
-#include "sdm_ext_cfg_regs.h"            // for ptr_sdm_ext_cfg_reg, (anony...
 #include "sdm_init.h"                    // for sdm_init_deassert_nsysreset
 #include "sdmss_config_regs.h"           // for SDMSS_CONFIG_SDMSS_PCR_TOP_...
 #include "silibs_platform.h"             // for debug_print, MMIO_UPDATE32
 #include "silibs_status.h"               // for SILIBS_SUCCESS
 #include "tower_vab.h"                   // for configure_vab_system_addr_map
-#include "vab_regs.h"                    // for VAB_VAB_PCR_TOP_ADDRESS
 
 #include <FpFwAssert.h>          // for FPFW_RUNTIME_ASSERT
 #include <accelerator_ip_priv.h> // for get_accelerator_ctxt
 #include <debug.h>               // for UNUSED
 #include <idsw.h>                // for idsw_get_platform_sdv, PLAT...
 #include <pcr_rpss.h>            // for PCR_RPSS_INSTANCE, pcr_rpss...
-#include <silibs_kng_soc.h>      // for PCIE_ECAM_START
-#include <smmu.h>                // for smmu_enable_access, smmu_en...
-#include <stdbool.h>             // for true
-#include <stdint.h>              // for int32_t, uintptr_t, uint8_t
-#include <stdio.h>               // for printf, NULL
-#include <tower_sdmss.h>         // for configure_sdmss_system_addr...
-#include <vab_pcr_init.h>        // for deassert_pcr_reset, vab_pcr...
+#include <sdmss_config_regs.h>
+#include <silibs_ap_top_regs.h>
+#include <silibs_kng_soc.h> // for PCIE_ECAM_START
+#include <smmu.h>           // for smmu_enable_access, smmu_en...
+#include <stdbool.h>        // for true
+#include <stdint.h>         // for int32_t, uintptr_t, uint8_t
+#include <stdio.h>          // for printf, NULL
+#include <tower_sdmss.h>    // for configure_sdmss_system_addr...
+#include <vab_cded_ioss_top_regs.h>
+#include <vab_pcr_init.h> // for deassert_pcr_reset, vab_pcr...
+#include <vab_sdm_top_regs.h>
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
@@ -92,7 +93,7 @@ static int32_t configure_vab(vab_ctxt_t* p_vab_ctxt, atu_mapping_ctxt_t* p_vab_a
     // Configure SMMU. Current configuration is in bypass mode only
     uint64_t scp_smmu_base_addr = mscp_start_address + VAB_SMMU_YARDLEY_VAB_ADDRESS;
     smmu_enable_access(scp_smmu_base_addr);
-    ret = smmu_enable_access_check(scp_smmu_base_addr);
+    ret = smmu_enable_access_check(scp_smmu_base_addr) ? SILIBS_SUCCESS : SILIBS_E_PANIC;
 
     if (ret != SILIBS_SUCCESS)
     {
@@ -113,46 +114,20 @@ exit:
     return ((ret != SILIBS_SUCCESS) ? ret : sts);
 }
 
-static PCR_RPSS_INSTANCE get_ss_pcr_type(eACCELERATOR_TYPE accel_type)
+static int32_t accelss_init_pcr(uint32_t accelss_pcr_base_addr)
 {
-    PCR_RPSS_INSTANCE ss_pcr_type;
+    pcr_rpss_entity_t pcr = {0};
+    int sts = ACCEL_RET_SUCCESS;
+    sts = pcr_rpss_init_entity(&pcr, PCR_RPSS_CLOCK_EN_APB | PCR_RPSS_CLOCK_EN_P0, accelss_pcr_base_addr);
+    ASSERT_FAIL(sts == SILIBS_SUCCESS);
+    sts = pcr_rpss_configure_clock(&pcr, PCR_RPSS_CLOCK_APB, PCR_CLOCK_SELECT_B, PCR_RPSS_DEFAULT_DIV, ACCEL_PCR_CONFIG_TIMEOUT);
+    ASSERT_FAIL(sts == SILIBS_SUCCESS);
+    sts = pcr_rpss_configure_clock(&pcr, PCR_RPSS_CLOCK_P0, PCR_CLOCK_SELECT_B, PCR_RPSS_NO_DIV, ACCEL_PCR_CONFIG_TIMEOUT);
+    ASSERT_FAIL(sts == SILIBS_SUCCESS);
+    sts = pcr_rpss_deassert_por_reset(&pcr);
+    ASSERT_FAIL(sts == SILIBS_SUCCESS);
 
-    switch (accel_type)
-    {
-    case ACCELERATOR_SDMSS:
-        ss_pcr_type = PCR_SDMSS0;
-        break;
-    case ACCELERATOR_CDEDSS:
-        ss_pcr_type = PCR_CDEDSS0;
-        break;
-    default:
-        ss_pcr_type = NUM_PCR_RPSS_INSTANCES;
-    }
-
-    return ss_pcr_type;
-}
-
-static int32_t accelss_init_pcr(eACCELERATOR_TYPE accel_type, uint32_t accelss_pcr_base_addr)
-{
-    int32_t ret = ACCEL_RET_SUCCESS;
-
-    PCR_RPSS_INSTANCE ss_pcr_type = get_ss_pcr_type(accel_type);
-    if (ss_pcr_type == NUM_PCR_RPSS_INSTANCES)
-    {
-        return ACCEL_RET_FAIL_SS_PCR;
-    }
-
-    pcr_rpss_entity_t* pcr = pcr_rpss_get_entity(ss_pcr_type);
-    pcr_rpss_set_base(pcr, accelss_pcr_base_addr);
-    if (pcr_rpss_verify(pcr) != SILIBS_SUCCESS)
-    {
-        return ACCEL_RET_FAIL_SS_PCR;
-    }
-
-    pcr_rpss_configure_clocks(pcr, ACCEL_PCR_CONFIG_TIMEOUT);
-    pcr_rpss_deassert_por_reset(pcr);
-
-    return ret;
+    return sts;
 }
 
 static int32_t configure_accel_subsystem_tower(accelip_metadata_t accelip_metadata,
@@ -178,6 +153,9 @@ static int32_t configure_accel_subsystem_tower(accelip_metadata_t accelip_metada
 
     // Get Accel subsystem base address and tower base address after ATU mapped successfully
     uint32_t mscp_start_address = p_atu_map_entry->mscp_start_address;
+    uint32_t accel_pcr_addr_offset = (accelip_metadata.accel_type == ACCELERATOR_SDMSS)
+                                         ? SDMSS_CONFIG_SDMSS_PCR_TOP_ADDRESS
+                                         : CDEDSS_CONFIG_CDEDSS_PCR_ADDRESS;
 
     if (accelip_metadata.accel_type == ACCELERATOR_SDMSS)
     {
@@ -188,7 +166,7 @@ static int32_t configure_accel_subsystem_tower(accelip_metadata_t accelip_metada
     if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
     {
         // Configure Accel SS PCR
-        ret = accelss_init_pcr(accelip_metadata.accel_type, mscp_start_address + SDMSS_CONFIG_SDMSS_PCR_TOP_ADDRESS);
+        ret = accelss_init_pcr(mscp_start_address + accel_pcr_addr_offset);
         if (ret != SILIBS_SUCCESS)
         {
             debug_print("Accel SS PCR configuration failed");

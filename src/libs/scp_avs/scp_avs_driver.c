@@ -183,7 +183,7 @@ void scp_avs_driver_initialize(pscp_avs_device Device)
     // Set up the queue for each driver to hold the AVS data read.
     DfwkQueueInitialize(&Device->avs_isr_resp_queue, &Device->Header, scp_avs_isr_dispatch, &Device->Header, DfwkQueueType_SerializedDispatch);
 
-    avs_init((uint32_t)Device->avs_bus_num);
+    avs_init((uint32_t)Device->avs_bus_num, NULL);
 
     printf("\nAVS bus num =  %d, AVS IRQ =  %d \n", Device->avs_bus_num, Device->config.avs_irq);
 

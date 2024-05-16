@@ -77,6 +77,8 @@ void css_pre_mesh_init(uint8_t die_num)
     scp_clocks_pre_mesh_param.system_ppu_opmode = PPU_V1_OPMODE_01;
     scp_clocks_pre_mesh_param.skip_css_pcr_init = false;
     scp_clocks_pre_mesh_param.skip_msxp_pcr_init = false;
+    scp_clocks_pre_mesh_param.system_smmu_gpt_enabled = false;
+    scp_clocks_pre_mesh_param.system_smmu_l0gptsz = 0;
     int sts = clocks_sequence_css_pre_mesh_init(&scp_clocks_pre_mesh_param);
     FPFW_RUNTIME_ASSERT(sts == 0);
 
@@ -88,11 +90,17 @@ void css_pre_mesh_init(uint8_t die_num)
 
 void css_configure_system_tower(uint8_t die_num)
 {
+    // System tower should be configured by the HSP in two stages - presystop and post-systop bringup
+    // Since this function is running on SCP after systop de-assertion, we can configure system tower in one-shot
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
 
     int sts = atu_map(ATU_ID_MSCP, &atu_system_tower_map[die_num]);
     FPFW_RUNTIME_ASSERT(sts == 0);
-    configure_system_address_map_for_ni_tower(atu_system_tower_map[die_num].mscp_start_address, die_num);
+    tower_system_control_configure_aon_apu(atu_system_tower_map[die_num].mscp_start_address, die_num);
+    tower_system_control_configure_aon_sam(atu_system_tower_map[die_num].mscp_start_address, die_num);
+
+    tower_system_control_configure_systop_apu(atu_system_tower_map[die_num].mscp_start_address, die_num);
+    tower_system_control_configure_systop_sam(atu_system_tower_map[die_num].mscp_start_address, die_num);
     sts = atu_unmap(ATU_ID_MSCP, &atu_system_tower_map[die_num]);
     FPFW_RUNTIME_ASSERT(sts == 0);
 }

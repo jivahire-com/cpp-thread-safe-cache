@@ -12,7 +12,7 @@ target_include_directories(
         PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}/../inc
             ${REPO_ROOT_DIR}/.externs/repo/silibs/libraries/common/silibs_platform/include
-            ${REPO_ROOT_DIR}/.externs/azpkg/kng_soc_mason_csr_collateral.0.5.1/ap_addr_map/registerheader
+            ${REPO_ROOT_DIR}/.externs/azpkg/kingsgate_register_header.0.9.3/ap_addr_map/registerheader
 
         PRIVATE
             

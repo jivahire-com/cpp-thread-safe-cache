@@ -1,11 +1,13 @@
 message("----------------------------------")
-message("---- Adding Silibs KNG PLAT ------")
+message("---- Adding Silibs SPI Bridge ----")
 
 set(TARGET extern.silibs.spi_bridge)
 
-set(SOURCES ${TARGET_DIR}/libraries/spi_bridge/src/spi_bridge.c)
+set(SRCS
+    ${TARGET_DIR}/libraries/spi_bridge/src/spi_bridge.c
+)
 
-add_library(${TARGET} STATIC ${SOURCES})
+add_library(${TARGET} STATIC ${SRCS})
 
 target_include_directories(
     ${TARGET}
@@ -17,8 +19,7 @@ target_include_directories(
 
 target_link_libraries(${TARGET}
     PUBLIC
-        silibs::platform
-        register_headers
+        silibs::kng_silibs_platform 
 )
 
 add_library(spi_bridge ALIAS ${TARGET})

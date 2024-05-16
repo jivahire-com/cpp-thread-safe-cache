@@ -1,5 +1,5 @@
 message("----------------------------------")
-message("---- Adding Silibs KNG PLAT ------")
+message("-- Adding Silibs KNG Platform ----")
 
 set(TARGET extern.silibs.kng_silibs_platform)
 
@@ -14,7 +14,7 @@ target_include_directories(
 target_link_libraries(${TARGET}
     INTERFACE
         silibs::platform
-        register_headers
+        ms::lib::register_headers
 )
 
 add_library(kng_silibs_platform ALIAS ${TARGET})

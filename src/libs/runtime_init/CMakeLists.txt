@@ -16,15 +16,14 @@ add_library(${TARGET}
         dfwk_init.c
         etc_scp_init.c
         hw_version_scp_init.c
-        icc_cli_init.c
         icc_transport_init/mscp_hspmbx_init.c
         mesh_init.c
         nvic_init.c
         pcie_init.c
-        scp_mpu_init.c
         textio_init.c
         ddr_manager_init.c
         power_init.c
+        scp_mpu_init.c
 )
 
 target_link_libraries(

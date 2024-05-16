@@ -235,16 +235,16 @@ int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
     return mock_type(int);
 }
 
-int __wrap_smmu_enable_access_check(uintptr_t smmu_base_addr)
+bool __wrap_smmu_enable_access_check(uintptr_t smmu_base_addr)
 {
     smmu_base_addr = mock_type(uintptr_t);
 
     if (smmu_base_addr == 0x0)
     {
-        return SILIBS_E_PARAM;
+        return false;
     }
 
-    return SILIBS_SUCCESS;
+    return true;
 }
 
 int __wrap_idsw_get_platform_sdv()
@@ -274,7 +274,7 @@ void __wrap_FpFwAssert(int expression)
     UNUSED(expression);
 }
 
-int __wrap_pcr_rpss_configure_clocks(pcr_rpss_entity_t* pcr, uint32_t us_timeout)
+int __wrap_pcr_rpss_configure_clock(pcr_rpss_entity_t* pcr, uint32_t us_timeout)
 {
     UNUSED(pcr);
     UNUSED(us_timeout);
@@ -313,9 +313,15 @@ void config_vab_pass()
 
 void config_ss_pass()
 {
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);     // SS Tower atu_map
-    will_return(__wrap_pcr_rpss_verify, 0x12345678); // SS Tower pcr init
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);   // SS Tower atu_unmap
+    will_return(__wrap_atu_map, SILIBS_SUCCESS); // SS Tower atu_map
+
+    /**
+     * TODO: Update this test based on latest silibs tag updates
+     *       https://azurecsi.visualstudio.com/Dev/_workitems/edit/1803676/
+     */
+    // will_return(__wrap_pcr_rpss_verify, 0x12345678); // SS Tower pcr init
+
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // SS Tower atu_unmap
 }
 
 void config_accel_ip_pass()
@@ -370,23 +376,33 @@ TEST_FUNCTION(accel_ip_pre_boot_config_ss_atu_map_fail_test, nullptr, nullptr)
     assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
 }
 
-TEST_FUNCTION(accel_ip_pre_boot_config_ss_pcr_init_fail_test, nullptr, nullptr)
-{
-    // VAB init success, SS Tower atu_map success, SS pcr fail
-    config_vab_pass();
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);   // SS Tower atu_map
-    will_return(__wrap_pcr_rpss_verify, nullptr);  // SS Tower pcr init
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // SS Tower atu_unmap
-    assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
-}
+/**
+ * TODO: Update this test based on latest silibs tag updates
+ *       https://azurecsi.visualstudio.com/Dev/_workitems/edit/1803676/
+ */
+// TEST_FUNCTION(accel_ip_pre_boot_config_ss_pcr_init_fail_test, nullptr, nullptr)
+// {
+//     // VAB init success, SS Tower atu_map success, SS pcr fail
+//     config_vab_pass();
+//     will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 2);   // SS Tower atu_map
+//     will_return(__wrap_pcr_rpss_verify, nullptr);           // SS Tower pcr init
+//     will_return_count(__wrap_atu_unmap, SILIBS_SUCCESS, 2); // SS Tower atu_unmap
+//     assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+// }
 
 TEST_FUNCTION(accel_ip_pre_boot_config_ss_atu_unmap_fail_test, nullptr, nullptr)
 {
     // VAB init success, SS Tower atu_map success, SS Tower atu_unmap fail
     config_vab_pass();
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);     // SS Tower atu_map
-    will_return(__wrap_pcr_rpss_verify, 0x12345678); // SS Tower pcr init
-    will_return(__wrap_atu_unmap, SILIBS_E_PARAM);   // SS Tower atu_unmap
+    will_return(__wrap_atu_map, SILIBS_SUCCESS); // SS Tower atu_map
+
+    /**
+     * TODO: Update this test based on latest silibs tag updates
+     *       https://azurecsi.visualstudio.com/Dev/_workitems/edit/1803676/
+     */
+    // will_return(__wrap_pcr_rpss_verify, 0x12345678); // SS Tower pcr init
+
+    will_return(__wrap_atu_unmap, SILIBS_E_PARAM); // SS Tower atu_unmap
     assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
 }
 

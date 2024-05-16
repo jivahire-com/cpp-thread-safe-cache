@@ -16,6 +16,8 @@ target_link_libraries(${TARGET}
         fwlib.utils
         ms::cmocka::testrunner
         ms::driver::textio::pl011
+        ms::lib::threadx
+        silibs::common::lib_uart_pl011
         silibs::platform
         silibs::kng_silibs_platform
 )

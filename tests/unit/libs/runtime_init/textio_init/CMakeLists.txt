@@ -11,12 +11,15 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.dfwk
+        fwlib.drivers.interface.text_io
         fwlib.init
         fwlib.utils
         fwlib.platform.dfwkhost.threadx
         ms::cmocka::testrunner
         ms::driver::textio::pl011
         ms::lib::stdio_textio
+        ms::lib::threadx
+        silibs::common::lib_uart_pl011
         silibs::platform
         silibs::kng_silibs_platform
 )

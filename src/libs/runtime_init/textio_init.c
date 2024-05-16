@@ -4,7 +4,6 @@
  */
 
 /*------------- Includes -----------------*/
-#include "uart_pl011.h" // for UART_PL011_PARITY_NONE, UART_PL011_STOP...
 
 #include <DfwkThreadXHost.h>     // for PDFWK_THREADX_HOST
 #include <fpfw_init.h>           // for FPFW_INIT_STATUS_SUCCESS, fpfw_init_get...
@@ -13,6 +12,7 @@
 #include <stddef.h>              // for NULL
 #include <stdio_textio.h>        // for stdio_textio_init
 #include <textio_pl011.h>        // for textio_pl011_device_t, textio_pl011_dev...
+#include <uart_pl011.h>          // for UART_PL011_PARITY_NONE, UART_PL011_STOP...
 
 /*------------- Typedefs -----------------*/
 

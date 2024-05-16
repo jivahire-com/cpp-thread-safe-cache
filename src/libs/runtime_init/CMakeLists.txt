@@ -31,6 +31,7 @@ target_link_libraries(
     PRIVATE
         fwlib.cli
         fwlib.dfwk
+        fwlib.drivers.interface.text_io
         fwlib.init
         fwlib.mboxprimitives
         fwlib.platform.dfwkhost.threadx
@@ -55,6 +56,7 @@ target_link_libraries(
         ms::service::power
         ms::service::scp_etc
         silibs::avs
+        silibs::common::lib_uart_pl011
         silibs::idhw
         silibs::idsw
         silibs::platform
@@ -111,10 +113,12 @@ target_link_libraries(
         ms::lib::stdio_textio
         ms::lib::threadx
         ms::service::mcp_etc
+        silibs::common::lib_uart_pl011
         silibs::idhw
         silibs::idsw
         silibs::platform
         silibs::kng_silibs_platform
+        register_headers
 )
 
 # Define base addresses during compile time for respective core fw

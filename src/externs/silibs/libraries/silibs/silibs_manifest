@@ -6,7 +6,6 @@ cmn800
 cmn800_sequence
 cmn800_skus
 cmsdk_wd
-common/uart_pl011
 ddr_i3c
 ddrss
 dmac
@@ -19,9 +18,7 @@ idhw
 idsw
 intu
 ioss
-kng_silibs_platform
 lib_i3c
-mhuv3
 pcie
 pcr_clock_config
 pcr_css
@@ -44,7 +41,6 @@ semaphore
 sensor_ram_bridge
 smmu
 smmu_voyager
-spi_bridge
 tower_cdedss
 tower_d2dss
 tower_ddrss

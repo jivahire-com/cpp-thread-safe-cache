@@ -11,6 +11,7 @@ add_library(${TARGET}
         avs_scp_init.c
         cli_init.c
         cli_ddr_init.c
+        cli_power_init.c
         css_init.c
         debug_init.c
         dfwk_init.c
@@ -63,6 +64,7 @@ target_link_libraries(
         silibs::platform
         silibs::kng_silibs_platform
         register_headers
+        ms::lib::power::cli
 )
 
 # Define base addresses during compile time for respective core fw
@@ -134,3 +136,4 @@ lint_target(${TARGET})
 coverage_target(${TARGET})
 
 add_library(ms::lib::runtime_init::mcp ALIAS ${TARGET})
+

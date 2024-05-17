@@ -2,6 +2,7 @@
 add_subdirectory(accelerator_ip)
 add_subdirectory(boot_loader)
 add_subdirectory(build_data)
+add_subdirectory(cli_power)
 add_subdirectory(css)
 add_subdirectory(debug)
 add_subdirectory(event_trace)

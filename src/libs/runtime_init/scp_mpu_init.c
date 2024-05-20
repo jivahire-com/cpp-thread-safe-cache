@@ -20,6 +20,7 @@
 // TODO: Still TBD if Normal WB RWA is valid given Boot RAM cannot do 8 or 16 bit writes.
 FPFW_INIT_COMPONENT(mpu)
 {
+    // clang-format off
     // Setup regions
     const ARM_MPU_Region_t regions[] = {
         /**
@@ -125,8 +126,9 @@ FPFW_INIT_COMPONENT(mpu)
                                  ARM_MPU_REGION_SIZE_1MB),
         }
     };
+    // clang-format on
 
-    uint8_t region_count = sizeof(regions) / sizeof(regions[0]); 
+    uint8_t region_count = sizeof(regions) / sizeof(regions[0]);
 
     mpu_init(regions, region_count);
 

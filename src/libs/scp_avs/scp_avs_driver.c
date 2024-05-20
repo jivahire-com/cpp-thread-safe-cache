@@ -45,6 +45,13 @@ void scp_avs_isr(void* context)
     int status = SILIBS_SUCCESS;
 
     // TODO (https://azurecsi.visualstudio.com/Dev/_workitems/edit/1484968) check for errors.
+
+    /**
+     * TODO: Update interrupt clearing to clear based on the status of the irq, not the irq number. The
+     *       irq is currently disabled so this won't fire.
+     *       ADO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1805156
+     */
+
     status = avs_clear_interrupt_status(device->avs_bus_num, device->config.avs_irq);
 
     FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
@@ -176,7 +183,6 @@ int32_t scp_avs_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER Request)
 
 void scp_avs_driver_initialize(pscp_avs_device Device)
 {
-    nvic_status_t status;
 
     // Set up the queue for each driver, based on the driver config. Any event that is put on the queue will call scp_avs_dispatch.
     DfwkQueueInitialize(&Device->avs_queue, &Device->Header, scp_avs_dispatch, &Device->Header, DfwkQueueType_SerializedDispatch);
@@ -187,14 +193,20 @@ void scp_avs_driver_initialize(pscp_avs_device Device)
 
     printf("\nAVS bus num =  %d, AVS IRQ =  %d \n", Device->avs_bus_num, Device->config.avs_irq);
 
-    status = nvic_irq_set_isr_with_param(Device->config.avs_irq, scp_avs_isr, Device);
-    FPFW_RUNTIME_ASSERT(status == NVIC_STATUS_SUCCESS);
+    /**
+     * TODO: Update ISR handling to work on R17+ FPGAs, including ones that don't have AVS HW.
+     *       Update Unit tests to cover isr.
+     *       ADO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1805156
+     */
 
-    status = nvic_irq_clear_pending(Device->config.avs_irq);
-    FPFW_RUNTIME_ASSERT(status == NVIC_STATUS_SUCCESS);
+    // nvic_status_t status = nvic_irq_set_isr_with_param(Device->config.avs_irq, scp_avs_isr, Device);
+    // FPFW_RUNTIME_ASSERT(status == NVIC_STATUS_SUCCESS);
 
-    status = nvic_irq_enable(Device->config.avs_irq);
-    FPFW_RUNTIME_ASSERT(status == NVIC_STATUS_SUCCESS);
+    // status = nvic_irq_clear_pending(Device->config.avs_irq);
+    // FPFW_RUNTIME_ASSERT(status == NVIC_STATUS_SUCCESS);
+
+    // status = nvic_irq_enable(Device->config.avs_irq);
+    // FPFW_RUNTIME_ASSERT(status == NVIC_STATUS_SUCCESS);
 
     avs_enable_interrupt((uint32_t)Device->avs_bus_num, (uint32_t)Device->config.avs_irq);
 }

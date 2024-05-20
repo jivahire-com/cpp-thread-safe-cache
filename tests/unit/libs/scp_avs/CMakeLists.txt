@@ -34,9 +34,10 @@ mock_target(${TARGET}
     DfwkAsyncRequestSetCompletionRoutine 
     avs_init 
     avs_enable_interrupt
-    nvic_irq_set_isr_with_param
-    nvic_irq_clear_pending
-    nvic_irq_enable
+    # TODO: ADO https://azurecsi.visualstudio.com/Dev/_workitems/edit/1805156
+    # nvic_irq_set_isr_with_param
+    # nvic_irq_clear_pending
+    # nvic_irq_enable
     avs_send_cmd_frame
 )
 

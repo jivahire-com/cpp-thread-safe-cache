@@ -42,7 +42,7 @@
 #define BCFG_BOOT_CFG_RCEC_TYPE0_REV_REV_ID                 (0x00)  // TODO (ADO 1728266): value need to be updated once decided
 #define BCFG_BOOT_CFG_RCEC_TYPE0_INTR_PIN                   (0x02)
 
-#define DIE0_SDMSS_INSTANCE0_INT_VECTOR                     (0x0)   // TODO (ADO 1728266): Check the value once decided
+#define DIE0_SDMSS_INSTANCE0_INT_VECTOR                     (0x80000)
 
 /*-------------------------------- Typedefs ---------------------------------*/
 

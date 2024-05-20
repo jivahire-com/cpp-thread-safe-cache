@@ -122,11 +122,12 @@ static pcie_type0_ctxt_t die0_sdmss_instance0_rcec_type0_attr = {
     &die0_sdmss_instance0_rcec_class_code_attr,      // class code
     BCFG_BOOT_CFG_RCEC_TYPE0_INTR_PIN};              // interrupt pin INTB
 
-// Setting whole struct to 0 == false
-static sdm_mem_init_t die0_sdmss_instance0_mem_init_attr = {0};
+// TODO : Need to restore original value https://azurecsi.visualstudio.com/Dev/_workitems/edit/1805683
+static sdm_mem_init_t die0_sdmss_instance0_mem_init_attr = {{true, true, true, true, true, false}};
 
-// Setting whole struct to 0 == false
-static _addressblock_0x100000_bcfg_boot_cfg_ecc_dis die0_sdmss_instance0_ecc_dis = {0};
+// TODO : Need to restore original value https://azurecsi.visualstudio.com/Dev/_workitems/edit/1805683
+static _addressblock_0x100000_bcfg_boot_cfg_ecc_dis die0_sdmss_instance0_ecc_dis = {
+    {true, true, true, true, false, true, true, true, true, false}};
 
 static accelip_pcie_ctxt_t die0_sdmss_instance0_pcie_ctxt = {&die0_sdmss_instance0_rciep_type0_attr,
                                                              &die0_sdmss_instance0_rcec_type0_attr,
@@ -138,8 +139,8 @@ static accelip_pcie_ctxt_t die0_sdmss_instance0_pcie_ctxt = {&die0_sdmss_instanc
 static accelip_emcpu_ctxt_t die0_sdmss_instance0_emcpu_ctxt = {&die0_sdmss_instance0_mem_init_attr,
                                                                DIE0_SDMSS_INSTANCE0_INT_VECTOR,
                                                                false, // Enable fence
-                                                               true,  // Enable I-TCM
-                                                               true,  // Enable D-TCM
+                                                               false, // Disable I-TCM ECC for FPGA, need to restore, WI 1805683
+                                                               false, // Disable D-TCM ECC for FPGA, need to restore, WI 1805683
                                                                &die0_sdmss_instance0_ecc_dis};
 
 static vab_ctxt_t die0_sdmss_instance0_vab_ctxt = {&die0_sdmss_instance0_vab_tower_attr};

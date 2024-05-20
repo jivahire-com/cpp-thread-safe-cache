@@ -82,22 +82,17 @@ TEST_FUNCTION(scp_avs_driver_init_test, test_setup, test_cleanup)
 {
     expect_value(__wrap_avs_init, avs_base_addr, test_avs_device.avs_bus_num);
 
-    /**
-     * TODO: Revisit once IRS on BIG FPGAs without AVS supported, on R17+.
-     *       ADO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1805156
-     */
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_AVS_CTRL_0_INT);
 
-    // expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_AVS_CTRL_0_INT);
+    expect_any(__wrap_nvic_irq_set_isr_with_param, isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (uintptr_t)&test_avs_device);
 
-    // expect_any(__wrap_nvic_irq_set_isr_with_param, isr);
-    // expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (uintptr_t)&test_avs_device);
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_AVS_CTRL_0_INT);
 
-    // expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_AVS_CTRL_0_INT);
-
-    // expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_AVS_CTRL_0_INT);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_AVS_CTRL_0_INT);
 
     expect_value(__wrap_avs_enable_interrupt, avs_id, test_avs_device.avs_bus_num);
-    expect_any(__wrap_avs_enable_interrupt, intr);
+    expect_value(__wrap_avs_enable_interrupt, intr, AVS_IRQ_CMD_DONE);
 
     scp_avs_driver_initialize(&test_avs_device);
     assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);

@@ -44,29 +44,25 @@ void __wrap_DfwkAsyncRequestSetCompletionRoutine(PDFWK_ASYNC_REQUEST_HEADER Requ
     check_expected(CompletionContext);
 }
 
-/**
- * TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1805156
- */
+nvic_status_t __wrap_nvic_irq_set_isr_with_param(uint32_t irq_num, isr_callback_fn_with_params_t isr, void* parameter)
+{
+    check_expected(irq_num);
+    check_expected(isr);
+    check_expected(parameter);
+    return (NVIC_STATUS_SUCCESS);
+}
 
-// nvic_status_t __wrap_nvic_irq_set_isr_with_param(uint32_t irq_num, isr_callback_fn_with_params_t isr, void* parameter)
-// {
-//     check_expected(irq_num);
-//     check_expected(isr);
-//     check_expected(parameter);
-//     return (NVIC_STATUS_SUCCESS);
-// }
+nvic_status_t __wrap_nvic_irq_clear_pending(uint32_t irq_num)
+{
+    check_expected(irq_num);
+    return (NVIC_STATUS_SUCCESS);
+}
 
-// nvic_status_t __wrap_nvic_irq_clear_pending(uint32_t irq_num)
-// {
-//     check_expected(irq_num);
-//     return (NVIC_STATUS_SUCCESS);
-// }
-
-// nvic_status_t __wrap_nvic_irq_enable(uint32_t irq_num)
-// {
-//     check_expected(irq_num);
-//     return (NVIC_STATUS_SUCCESS);
-// }
+nvic_status_t __wrap_nvic_irq_enable(uint32_t irq_num)
+{
+    check_expected(irq_num);
+    return (NVIC_STATUS_SUCCESS);
+}
 
 void __wrap_avs_enable_interrupt(uint32_t avs_id, uint32_t intr)
 {

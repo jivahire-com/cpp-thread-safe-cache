@@ -42,21 +42,29 @@
 void scp_avs_isr(void* context)
 {
     pscp_avs_device device = (pscp_avs_device)context;
-    int status = SILIBS_SUCCESS;
-
-    // TODO (https://azurecsi.visualstudio.com/Dev/_workitems/edit/1484968) check for errors.
 
     /**
-     * TODO: Update interrupt clearing to clear based on the status of the irq, not the irq number. The
-     *       irq is currently disabled so this won't fire.
-     *       ADO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1805156
+     * 1. Get the interrupt status
+     * 2. Clear the CMD DONE interrupt status (will clear it even if not set).
+     * 3. If the CMD DONE interrupt status bit is set enqueue the request
+     *
+     * TODO: Update status handling for possible statuses
+     *       ADO: (https://azurecsi.visualstudio.com/Dev/_workitems/edit/1484968)
      */
 
-    status = avs_clear_interrupt_status(device->avs_bus_num, device->config.avs_irq);
-
+    uint32_t intr_status = 0;
+    int status = avs_get_interrupt_status(device->avs_bus_num, &intr_status);
     FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
-    device->isr_request.outstanding_client_request = device->outstanding_request;
-    DfwkQueueEnqueueRequest(&device->avs_isr_resp_queue, (PDFWK_ASYNC_REQUEST_HEADER)&device->isr_request);
+
+    status = avs_clear_interrupt_status(device->avs_bus_num, AVS_IRQ_CMD_DONE);
+    FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
+
+    if ((intr_status & (AVS_IRQ_CMD_DONE)))
+    {
+        device->isr_request.outstanding_client_request = device->outstanding_request;
+        DfwkQueueEnqueueRequest(&device->avs_isr_resp_queue, (PDFWK_ASYNC_REQUEST_HEADER)&device->isr_request);
+    }
+
     __DSB();
 }
 
@@ -193,22 +201,18 @@ void scp_avs_driver_initialize(pscp_avs_device Device)
 
     printf("\nAVS bus num =  %d, AVS IRQ =  %d \n", Device->avs_bus_num, Device->config.avs_irq);
 
-    /**
-     * TODO: Update ISR handling to work on R17+ FPGAs, including ones that don't have AVS HW.
-     *       Update Unit tests to cover isr.
-     *       ADO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1805156
-     */
+    // Configure the NVIC Handling
+    nvic_status_t status = nvic_irq_set_isr_with_param(Device->config.avs_irq, scp_avs_isr, Device);
+    FPFW_RUNTIME_ASSERT(status == NVIC_STATUS_SUCCESS);
 
-    // nvic_status_t status = nvic_irq_set_isr_with_param(Device->config.avs_irq, scp_avs_isr, Device);
-    // FPFW_RUNTIME_ASSERT(status == NVIC_STATUS_SUCCESS);
+    status = nvic_irq_clear_pending(Device->config.avs_irq);
+    FPFW_RUNTIME_ASSERT(status == NVIC_STATUS_SUCCESS);
 
-    // status = nvic_irq_clear_pending(Device->config.avs_irq);
-    // FPFW_RUNTIME_ASSERT(status == NVIC_STATUS_SUCCESS);
+    status = nvic_irq_enable(Device->config.avs_irq);
+    FPFW_RUNTIME_ASSERT(status == NVIC_STATUS_SUCCESS);
 
-    // status = nvic_irq_enable(Device->config.avs_irq);
-    // FPFW_RUNTIME_ASSERT(status == NVIC_STATUS_SUCCESS);
-
-    avs_enable_interrupt((uint32_t)Device->avs_bus_num, (uint32_t)Device->config.avs_irq);
+    // Configure the AVS HW to fire the ISR only on CMD ONE
+    FPFW_RUNTIME_ASSERT(avs_enable_interrupt(Device->avs_bus_num, AVS_IRQ_CMD_DONE) == SILIBS_SUCCESS);
 }
 
 void scp_avs_interface_initialize(pscp_avs_device Device, pscp_avs_interface Interface)

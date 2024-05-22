@@ -5,8 +5,8 @@ enabled_on(arm-eabi-aarch)
 #
 set(TARGET kng.lib.scp.runtime_init.scp)
 
-add_library(${TARGET} 
-    OBJECT 
+add_library(${TARGET}
+    OBJECT
         accelerator_ip_init.c
         avs_scp_init.c
         cli_init.c
@@ -22,6 +22,7 @@ add_library(${TARGET}
         nvic_init.c
         pcie_init.c
         textio_init.c
+        vab_init.c
         ddr_manager_init.c
         power_init.c
         scp_mpu_init.c
@@ -53,6 +54,7 @@ target_link_libraries(
         ms::lib::stdio_textio
         ms::lib::threadx
         ms::lib::ddr::cli
+        ms::lib::vab
         ms::service::ddr_manager
         ms::service::pcie_manager
         ms::service::power
@@ -69,9 +71,9 @@ target_link_libraries(
 
 # Define base addresses during compile time for respective core fw
 target_compile_definitions(
-    ${TARGET} 
-    PRIVATE 
-        MSCP2HSP_MAILBOX_BASE_ADDRESS=SCP_TOP_SCP2HSP_MAILBOX_ADDRESS 
+    ${TARGET}
+    PRIVATE
+        MSCP2HSP_MAILBOX_BASE_ADDRESS=SCP_TOP_SCP2HSP_MAILBOX_ADDRESS
         UART_BASE_ADDR=SCP_TOP_SCP_UART_ADDRESS
 )
 
@@ -85,8 +87,8 @@ add_library(ms::lib::runtime_init::scp ALIAS ${TARGET})
 #
 set(TARGET kng.lib.scp.runtime_init.mcp)
 
-add_library(${TARGET} 
-    OBJECT 
+add_library(${TARGET}
+    OBJECT
         cli_init.c
         debug_init.c
         dfwk_init.c
@@ -126,9 +128,9 @@ target_link_libraries(
 
 # Define base addresses during compile time for respective core fw
 target_compile_definitions(
-    ${TARGET} 
-    PRIVATE 
-        MSCP2HSP_MAILBOX_BASE_ADDRESS=MCP_TOP_MCP2HSP_MAILBOX_ADDRESS 
+    ${TARGET}
+    PRIVATE
+        MSCP2HSP_MAILBOX_BASE_ADDRESS=MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
         UART_BASE_ADDR=MCP_TOP_MCP_UART_ADDRESS
 )
 
@@ -136,4 +138,3 @@ lint_target(${TARGET})
 coverage_target(${TARGET})
 
 add_library(ms::lib::runtime_init::mcp ALIAS ${TARGET})
-

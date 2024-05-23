@@ -1,6 +1,10 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
 /**
- * @file uart_scp_init.c
- * Instantiates UART for the SCP
+ * @file textio_init.c
+ * Instantiates TextIO Interface from UART for MSCP
  */
 
 /*------------- Includes -----------------*/

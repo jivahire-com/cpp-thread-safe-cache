@@ -5,7 +5,7 @@
 To clone the repository, use
 
 ```pwsh
-git clone https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.MSCP.SDM.CDED
+git clone https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.MSCP
 ```
 
 ## Developer Branch Naming
@@ -42,14 +42,14 @@ After the feature is implemented or a bug is fixed, submit your code for review 
 
     Limit the short description to under 50 characters so that it shows up easily in git log if needed.
 
-5. **PR Description:** The Echofalls repo has a standard PR Description template. Please fill up the template with all relevant details. In a squash merge, the PR description is stored as the commit message body.
+5. **PR Description:** The Kingsgate.MSCP repo has a standard PR Description template. Please fill up the template with all relevant details. In a squash merge, the PR description is stored as the commit message body.
 6. **ADO Work Item:** It is mandatory to link an ADO work item to the PR for completion.
 7. **Reviewers:** Add the relevant stakeholders to the reviewers section. There's a mandatory requirement of 2 reviewers who have not committed code to the branch being reviewed.
 8. **PR Completion:** Merge the changes into main once review and approvals are complete.
 
 ## Repo Branching Guidelines
 
-For the Echofalls repository, we are following trunk based development, which is widely used, including on the pioneer repo. For more information, please refer [link](<https://trunkbaseddevelopment.com/>). Some salient features are:
+For the Kingsgate.MSCP repository, we are following trunk based development, which is widely used, including on the pioneer repo. For more information, please refer [link](<https://trunkbaseddevelopment.com/>). Some salient features are:
 
 - The trunk is the only long lived branch in the repo. All developed code that is accepted to be a part of the product will be merged into this trunk. For us, `main` branch is the trunk.
 - All developers branch from the trunk to create or implement features. These implemented features are merged back into the trunk via a PR (pull request).  

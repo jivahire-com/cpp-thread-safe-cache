@@ -169,7 +169,7 @@ We've wrapped the setup needed to run Pythia based tests in a PowerShell functio
 
 The provided `Invoke-Pythia -test <path to .py or path to dir>` function can be used to execute a test. All test results will be stored in a newly created test directory under `<repo_enlistment>/.testlogs/pythia`. Check the test results with the appropriate timestamp (also logged when running the test).
 
-You can run a single python file or an entire directory of Robot Framework Test Suites.
+You can run a single python file or an entire directory of Robot Framework Test Suites. For examples, refer to the commands in the gif below.
 
 Example:
 

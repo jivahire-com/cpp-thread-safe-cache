@@ -26,7 +26,7 @@ Function Export-FPGAbins(
     Copy-Item $BinLoc\*.elf $ShareDriveLoc\$User\$Repo\$BinLoc\ -Force
 
     if ($TransferMethod -eq "git_commit") {
-         # Push all changes to git
+        # Push all changes to git
         Write-Host  "Pushing all changes to git... Fetch changes on FPGA system"
         git add --all
         git commit -m "FPGA Debug Source Sync - $timestamp"

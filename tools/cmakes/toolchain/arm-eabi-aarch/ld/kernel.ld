@@ -68,28 +68,28 @@ SECTIONS
      * Will be 0 sized if Event Trace is not used. Grows as providers and events added.
      * Placed in ITCM.
      */
-    .EventMetadata.et.msdata : ALIGN(4)
+    .EventMetadata.et.msdata (READONLY): ALIGN(4)
     {
         _EventMetadata_et_msdata_start = ABSOLUTE(.);
         KEEP(*(.EventMetadata.et.msdata))
         . = ALIGN (4);
         _EventMetadata_et_msdata_end = ABSOLUTE(.);
     } > CODE
-    .ProviderMetadata.et.msdata : ALIGN(4)
+    .ProviderMetadata.et.msdata (READONLY): ALIGN(4)
     {
         _ProviderMetadata_et_msdata_start = ABSOLUTE(.);
         KEEP(*(.ProviderMetadata.et.msdata))
         . = ALIGN (4);
         _ProviderMetadata_et_msdata_end = ABSOLUTE(.);
     } > CODE
-    .ProviderMetadata.Test.et.msdata : ALIGN(4)
+    .ProviderMetadata.Test.et.msdata (READONLY): ALIGN(4)
     {
         _ProviderMetadata_Test_et_msdata_start = ABSOLUTE(.);
         KEEP(*(.ProviderMetadata.Test.et.msdata))
         . = ALIGN (4);
         _ProviderMetadata_Test_et_msdata_end = ABSOLUTE(.);
     } > CODE
-    .EventMetadata.Test.et.msdata : ALIGN(4)
+    .EventMetadata.Test.et.msdata (READONLY): ALIGN(4)
     {
         _EventMetadata_Test_et_msdata_start = ABSOLUTE(.);
         KEEP(*(.EventMetadata.Test.et.msdata))
@@ -97,7 +97,7 @@ SECTIONS
         _EventMetadata_Test_et_msdata_end = ABSOLUTE(.);
     } > CODE
 
-   .note.gnu.build-id : ALIGN(4)
+    .note.gnu.build-id (READONLY): ALIGN(4)
     {
         _build_id_msdata_start = ABSOLUTE(.);
         *(.note.gnu.build-id)
@@ -105,7 +105,7 @@ SECTIONS
         _build_id_msdata_end = ABSOLUTE(.);
     } > CODE
 
-    .data.fpfw_init : ALIGN(4)
+    .data.fpfw_init (READONLY): ALIGN(4)
     {
         _data_fpfw_init_start = ABSOLUTE(.);
         *(.data.fpfw_init)

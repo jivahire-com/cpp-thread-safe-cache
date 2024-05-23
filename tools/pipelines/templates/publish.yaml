@@ -55,7 +55,7 @@ jobs:
         versioningScheme: 'off'
         buildProperties: 'TARGET_VERSION=${{ parameters.Version }}'
 
-    Publishes to the following feed: https://dev.azure.com/AzureCSI/Woodinville/_artifacts/feed/Kingsgate.SoCFW
+    # Publishes to the following feed: https://dev.azure.com/AzureCSI/Woodinville/_artifacts/feed/Kingsgate.SoCFW
     - task: NuGetCommand@2
       displayName: 'Publish Nuget Package'
       inputs:

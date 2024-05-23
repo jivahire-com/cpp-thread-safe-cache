@@ -3,8 +3,8 @@
 //
 
 /**
- * @file Debug.h
- * Debug public API
+ * @file debug.h
+ * Header for debug library public APIs
  */
 
 #pragma once

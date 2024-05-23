@@ -29,7 +29,7 @@ The Silicon Virtual Platform (SVP) is a tool provided by Synopsys to assist in c
 
 SVP is CPU and RAM intensive application/tool. Because of this, it is not advised to run SVP on local laptop, rather, it is advised to use the Microsoft Virtual DevBox which comes with 64 CPU cores, and 64 GB RAM.
 
-To get your own personal SCHIE DevBox Workstation, visit this [Request DevBox Link](https://sihelp.corp.microsoft.com/portal/service?btn=73&itil_requesttype_id=3&root_category=30&autolog=true&id=45). At the time of writing this section, requesting of this DevBox was free for use till 2025. Thanks to Aniruddha Tiru (atiru@microsoft.com) for this gathering the details to get this DevBox setup.
+To get your own personal SCHIE DevBox Workstation, visit this [Request DevBox Link](https://sihelp.corp.microsoft.com/portal/service?btn=73&itil_requesttype_id=3&root_category=30&autolog=true&id=45). At the time of writing this section, requesting of this DevBox was free for use till 2025.
 
 Details needed to get your DevBox are as below and may vary based on your team:
 
@@ -44,6 +44,7 @@ Below table points to the team based links to get the above details needed to re
 | Team | Link |
 | - | - |
 | SDM\CDED Team Page | [DevBox Request Details](https://woodinvillewiki.com/display/1PSOCFW/Developer+Onboarding#DeveloperOnboarding-VirtualDevBox/DevBox(neededforSVP)) |
+ 
 
 Once you get the approval email for your DevBox, you can access your setup from Web Browser at this [Microsoft DevBox Link](https://devbox.microsoft.com/).
 
@@ -161,7 +162,7 @@ Run the following to stop the simulation background job: stopsvp
 
 1. You can now use your program of choice to connect to the telnet session to see the UART. You can also use GDB to connect to the core.
 
-2. To stop the simulation either kill the `sim.exe` executable that is started OR run `> stopsvp`.
+1. To stop the simulation either kill the `sim.exe` executable that is started OR run `> stopsvp`.
 
 ### Launching SVP
 

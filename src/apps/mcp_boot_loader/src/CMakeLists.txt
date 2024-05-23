@@ -28,7 +28,7 @@ target_link_libraries(
             ms::vectors::m7_boot_loader
             ms::lib::boot_loader
             ms::cmsis::interface
-            register_headers
+            ms::lib::register_headers
 )
 
 target_include_directories(

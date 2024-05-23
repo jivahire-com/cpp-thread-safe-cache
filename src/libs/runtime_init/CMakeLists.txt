@@ -65,8 +65,8 @@ target_link_libraries(
         silibs::idsw
         silibs::platform
         silibs::kng_silibs_platform
-        register_headers
         ms::lib::power::cli
+        ms::lib::register_headers
 )
 
 # Define base addresses during compile time for respective core fw

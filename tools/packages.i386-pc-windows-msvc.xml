@@ -3,6 +3,8 @@
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="llvm.win64" version="18.1.4"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="include-what-you-use" version="18.1.4"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="microsoft.windows.msvc.bins" version="14.29.30133"/>
+        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="lcov.cobertura" version="1.6.0"/>
+        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="report-generator" version="5.1.3"/>
     </universal_packages>
 
     <nuget_packages>
@@ -10,4 +12,5 @@
         <package name="microsoft.windows.sdk.cpp" version="10.0.19041.4" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/nuget/v3/index.json"/>
         <package name="microsoft.windows.sdk.cpp.x86" version="10.0.19041.4" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/nuget/v3/index.json"/>
     </nuget_packages>
+    
 </packages>

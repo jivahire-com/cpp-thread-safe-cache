@@ -27,14 +27,13 @@
 | Kingsgate Non-Implementing Sharepoint | [Link](https://microsoft.sharepoint.com/teams/EchoFalls/Shared%20Documents/Forms/AllItems.aspx) |
 | Kingsgate Mason Documentation | [Link](https://kingsgatedocs.azurewebsites.net/static/latest/domains/index.html) |
 | ARM - Cortex M7 | [Link](https://microsoft.sharepoint.com/:f:/r/teams/Kingsgate/Shared%20Documents/Third%20Party%20IP/ARM/Core/M7%20(AT610)/r1p2-00rel2?csf=1&web=1&e=s0hZZv) |
-| ARM - Voyage | [Link](https://microsoft.sharepoint.com/:f:/r/teams/Kingsgate/Shared%20Documents/Third%20Party%20IP/ARM/Voyager?csf=1&web=1&e=jQW8uu) |
+| ARM - Voyager | [Link](https://microsoft.sharepoint.com/:f:/r/teams/Kingsgate/Shared%20Documents/Third%20Party%20IP/ARM/Voyager?csf=1&web=1&e=jQW8uu) |
 | ARM - Poseidon | [Link](https://microsoft.sharepoint.com/:f:/r/teams/Kingsgate/Shared%20Documents/Third%20Party%20IP/ARM/Core/Poseidon%20r0p1?csf=1&web=1&e=n2CERO) |
 | ARM - General | [Link](https://microsoft.sharepoint.com/:f:/r/teams/Kingsgate/Shared%20Documents/Third%20Party%20IP/ARM?csf=1&web=1&e=bNt1vc) |
 
 ## Repo Structure
 
 This repo follows a pretty straight forward folder structure.
-| Name | Description |
 | Name | Description |
 | - | - |
 | docs | Any documentation markdown files. |
@@ -85,12 +84,11 @@ This repo follows a pretty straight forward folder structure.
 1. You can build using two options:
 
     1. Run the `build` function from powershell.
+    ```pwsh
+    build <target> <mode> <loglevel> <buildsystem>
+    ```
 
-        ``` pwsh
-        build <target> <mode> <loglevel> <buildsystem>
-        ```
-
-    2. Via VS Code's Task Feature, under the `Terminal` menu, click on `Run Build Task` option. Then select build in the dropdown that appears.
+    1. Via VS Code's Task Feature, under the `Terminal` menu, click on `Run Build Task` option. Then select build in the dropdown that appears.
 
     ![img](./.img/gettingstarted_build.gif)
 
@@ -102,12 +100,11 @@ This repo follows a pretty straight forward folder structure.
 1. You can clean the build using two options:
 
     1. Run the `cleanbuild` function from powershell.
+    ```pwsh
+    cleanbuild
+    ```
 
-        ``` pwsh
-        cleanbuild
-        ```
-
-    2. Via VS Code's Task Feature, under the `Terminal` menu, click on `cleanbuild` option. Then select build in the dropdown that appears.
+    1. Via VS Code's Task Feature, under the `Terminal` menu, click on `cleanbuild` option. Then select build in the dropdown that appears.
 
     > **_NOTE:_**
     > 1. The command is `cleanbuild` AND NOT `clean` due to Powershell 7.3 adding `clean` as a [keyword](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_functions_advanced_methods?view=powershell-7.3#clean).

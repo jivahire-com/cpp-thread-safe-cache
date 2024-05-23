@@ -1,3 +1,7 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
 /**
  * @file dfwk_init.c
  * Initialize the driver framework runtime.

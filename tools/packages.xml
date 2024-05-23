@@ -2,11 +2,7 @@
     <universal_packages>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="cmake.win64" version="3.24.0"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="ninja.win64" version="1.10.1"/>
-        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="report-generator" version="5.1.3"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="python.win64" version="3.10.11-dev"/>
-        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="lcov.cobertura" version="1.6.0"/>
-        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="microsoft.internal.windows.virtualizerruntime" version="2023.3.2"/>
-        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="microsoft.internal.virtualized.kingsgate.svp" version="8.0.3340"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="kingsgate_register_header" version="0.9.3"/>
     </universal_packages>
 
@@ -24,11 +20,5 @@
         <repo name="cortex_m7" url="https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7" tag="kingsgate_cortex_m7_v0.1.1.16"/>
         <repo name="zlib" url="https://github.com/madler/zlib.git" tag="v1.3.1"/>
     </git>
-
-    <pip_packages>
-        <package name="pythia-tdk-rrm" version="0.1.36" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
-        <package name="pythia-tdk-echofalls" version="0.1.19" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
-        <package name="diagtool" version="1.0.184" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
-    </pip_packages>
 
 </packages>

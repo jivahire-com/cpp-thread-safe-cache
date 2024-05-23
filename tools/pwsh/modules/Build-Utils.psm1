@@ -459,8 +459,8 @@ Function Set-RepoEnv()
         Write-Title "Welcome to the $Name repo" -Color Yellow
 
         $Links = @{
-            "[Getting Started]" = "https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.MSCP.SDM.CDED?path=/docs/GettingStarted.md"
-            "[Guidelines]" = "https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.MSCP.SDM.CDED?path=/docs/guidelines/GeneralGuidelines.md"
+            "[Getting Started]" = "https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.MSCP?path=/docs/GettingStarted.md"
+            "[Guidelines]" = "https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.MSCP?path=/docs/guidelines/GeneralGuidelines.md"
         }
 
         $ConcatString = ""

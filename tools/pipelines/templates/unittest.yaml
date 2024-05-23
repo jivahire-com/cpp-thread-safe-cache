@@ -54,7 +54,7 @@ jobs:
           & "${env:REPO_APP_PATH_report-generator}/tools/net6.0/ReportGenerator.exe" `
             -reports:"$(System.ArtifactsDirectory)\Unit_Test_Logs\**\**\cobertura.xml" `
             -targetdir:"$(System.ArtifactsDirectory)\Coverage" `
-            -sourcedirs:"$(Build.SourcesDirectory)\src;" `
+            -sourcedirs:"$(Build.SourcesDirectory)\src" `
             -reporttypes:"Cobertura"
 
     - task: PublishTestResults@2

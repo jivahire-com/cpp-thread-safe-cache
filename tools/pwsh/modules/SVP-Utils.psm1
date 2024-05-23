@@ -144,10 +144,6 @@ Function Invoke-Virtualizer(
         }
     }
 
-    # Copy overrides for the svp python tooling into the release. Overrides provide GDB support in headless mode.
-    # TODO: Remove override step once fixed in a new SVP Release: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1624373
-    Get-ChildItem ${env:REPO_APP_ROOT}tools/vpcfg/overrides | Copy-Item -Destination $svp_sim_dir/win/release -Force -Recurse
-
     # Build the additional simulation parameters to pass to the `run_fixed_vdk.py`, as a array of arguements.
     # This is uncurled in the call to the executable.
     $input_parameters = (Get-Content -Path $svpcfg_param_file | ForEach-Object { @("--parameter", "$($_.TrimEnd())") })
@@ -165,7 +161,6 @@ Function Invoke-Virtualizer(
     # Run with the GUI
     if ($UseGUI)
     {
-
         Write-Host ""
         Write-Host "Starting simlulation [$SimConfig] in GUI Mode."
         Write-Host ""
@@ -186,11 +181,10 @@ Function Invoke-Virtualizer(
                 Write-Error $_.Exception.Message
             }
         }
-
     }
     # Run in headless mode
     else {
-
+        
         Write-Host ""
         Write-Host "Starting simlulation [$SimConfig] as a background job. Job information displayed on creation."
         Write-Host ""
@@ -273,6 +267,7 @@ Get-SvpHelp
 #>
 Function Get-SvpHelp()
 {
+    Write-Host "Available Commands for SVP Virtualizer:"
     $Commands = (Get-Module SVP-Utils).ExportedAliases.Values.GetEnumerator()
 
     Write-Host ""

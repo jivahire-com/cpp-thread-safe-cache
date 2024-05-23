@@ -1,3 +1,7 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
 /**
  * @file cli_init.c
  * Initialize & start cli textio interface

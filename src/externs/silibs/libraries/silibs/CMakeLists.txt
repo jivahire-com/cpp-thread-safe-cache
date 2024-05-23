@@ -1,9 +1,8 @@
 set(TARGET_DIR ${REPO_ROOT_DIR}/.externs/repo/silibs)
-set(LIB_OUTS_DIR ${CMAKE_BINARY_DIR})
+set(LIB_OUTS_DIR ${CMAKE_BINARY_DIR}/src/externs/silibs/libraries)
 
 message("----------------------------------")
 message("----- Adding Silibs CMAKEs -------")
-
 
 add_compile_options(-I${TARGET_DIR}/libraries/common/silibs_platform/include
                     -I${TARGET_DIR}/registerheader_overrides

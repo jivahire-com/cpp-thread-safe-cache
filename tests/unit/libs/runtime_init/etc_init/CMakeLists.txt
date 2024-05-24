@@ -1,8 +1,8 @@
-set(TARGET etc_scp_init.test)
+set(TARGET etc_init.test)
 
 set(SOURCES
-    test_etc_scp_init.cpp
-    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/etc_scp_init.c
+    test_etc_init.cpp
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/etc_init.c
 )
 
 # Compile test
@@ -13,12 +13,11 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::a
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.init
-        idhw
+        ms::build_data
         ms::cmocka::testrunner
-        ms::lib::event_trace::trace
+        ms::lib::event_trace::collector
+        ms::lib::threadx
         ms::mocks::event_trace
-        ms::service::scp_etc
-        silibs_platform
 )
 
 lint_target(${TARGET})
@@ -26,7 +25,7 @@ format_target(${TARGET})
 coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
-#mock the functions needed
+# mock the functions needed
 mock_target(${TARGET}
-    scp_etc_initialize
+    etc_initialize
 )

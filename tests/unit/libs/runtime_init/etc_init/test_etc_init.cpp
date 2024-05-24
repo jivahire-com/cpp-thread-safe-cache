@@ -26,7 +26,7 @@ extern fpfw_init_component_t _fpfw_component_etc_init;
 //
 // Mocks
 //
-void __wrap_mcp_etc_initialize()
+void __wrap_etc_initialize()
 {
     function_called();
 }
@@ -36,7 +36,7 @@ void __wrap_mcp_etc_initialize()
 TEST_FUNCTION(test_etc_init, nullptr, nullptr)
 {
     // Set up expectations
-    expect_function_call(__wrap_mcp_etc_initialize);
+    expect_function_call(__wrap_etc_initialize);
 
     // Call API under test
     _fpfw_component_etc_init.init_fn();

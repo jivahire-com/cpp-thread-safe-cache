@@ -16,7 +16,7 @@ add_library(${TARGET}
         ddrss_init.c
         debug_init.c
         dfwk_init.c
-        etc_scp_init.c
+        etc_init.c
         hw_version_scp_init.c
         icc_transport_init/mscp_hspmbx_init.c
         mesh_init.c
@@ -41,6 +41,7 @@ target_link_libraries(
         fwlib.platform.timers.threadx
         fwlib.utils
         fwlib.Driver.MboxIccTransport
+        ms::build_data
         ms::lib::scp_avs
         ms::driver::textio::pl011
         ms::driver::pcie
@@ -50,6 +51,7 @@ target_link_libraries(
         ms::lib::ddrss_init
         ms::lib::debug
         ms::lib::cortex_m7::nvic
+        ms::lib::event_trace::collector
         ms::lib::icc::cli
         ms::lib::mesh
         ms::lib::scp_interrupts
@@ -60,7 +62,6 @@ target_link_libraries(
         ms::service::ddr_manager
         ms::service::pcie_manager
         ms::service::power
-        ms::service::scp_etc
         silibs::avs
         silibs::common::lib_uart_pl011
         silibs::idhw
@@ -94,7 +95,7 @@ add_library(${TARGET}
         cli_init.c
         debug_init.c
         dfwk_init.c
-        etc_mcp_init.c
+        etc_init.c
         icc_cli_init.c
         icc_transport_init/mscp_hspmbx_init.c
         mcp_mpu_init.c
@@ -113,13 +114,14 @@ target_link_libraries(
         fwlib.platform.timers.threadx
         fwlib.utils
         fwlib.Driver.MboxIccTransport
+        ms::build_data
         ms::driver::textio::pl011
         ms::lib::debug
         ms::lib::cortex_m7::nvic
+        ms::lib::event_trace::collector
         ms::lib::icc::cli
         ms::lib::stdio_textio
         ms::lib::threadx
-        ms::service::mcp_etc
         silibs::common::lib_uart_pl011
         silibs::idhw
         silibs::idsw

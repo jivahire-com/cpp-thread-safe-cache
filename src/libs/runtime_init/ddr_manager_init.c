@@ -25,7 +25,7 @@
 
 /*-------------- Functions ---------------*/
 //Todo: Add "ddr_training" to dependencies when available
-FPFW_INIT_COMPONENT(ddrman, FPFW_INIT_DEPENDENCIES("std_io", "mesh", "hw_ver")) 
+FPFW_INIT_COMPONENT(ddrman, FPFW_INIT_DEPENDENCIES("ddr", "std_io", "mesh", "hw_ver")) 
 {
     static uint8_t ddr_stack[DDR_STACK_SIZE];
     static uint32_t ddr_queue_pool[10];

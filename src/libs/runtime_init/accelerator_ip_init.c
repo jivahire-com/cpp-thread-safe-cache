@@ -24,7 +24,7 @@
  * `css_pome` which in-turn depends on the `std_io`, `hw_ver` and `mesh`.
  */
 //FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh"))
-FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("css_pome"))
+FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("ddr"))
 {
     // Initialize the Accelerators
     printf("Accelerator init start!!!\n");

@@ -1,6 +1,7 @@
 add_subdirectory(accelerator_ip)
 add_subdirectory(boot_loader)
 add_subdirectory(css)
+add_subdirectory(ddrss)
 add_subdirectory(mesh)
 add_subdirectory(event_trace)
 add_subdirectory(scp_avs)

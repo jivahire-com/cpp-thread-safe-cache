@@ -2,7 +2,8 @@ param (
     [string] $Toolchain = "arm-eabi-aarch",
     [string] $Configuration = "Debug",
     [string] $ElfBuildSizes = "one",
-    [boolean] $SkipEnv = $false
+    [boolean] $SkipEnv = $false,
+    [boolean] $MSCP_vUART = $false
 )
 
 $Name = (Get-Item "$PSScriptRoot").Name
@@ -14,7 +15,7 @@ foreach ($Module in $Modules) {
 
 # Call the environment setup with input
 if (-not $SkipEnv) {
-    Set-RepoEnv -Toolchain $Toolchain -Configuration $Configuration
+    Set-RepoEnv -Toolchain $Toolchain -Configuration $Configuration -MSCP_vUART $MSCP_vUART
 }
 
 # Set environment variable to dictate if one/all .elf files are parsed for size

@@ -368,7 +368,8 @@ Function Set-RepoEnv()
     [CmdletBinding()]
     param(
         [ValidateSet("Debug", "Release")]
-        [string] $Configuration = "Debug"
+        [string] $Configuration = "Debug",
+        [boolean] $MSCP_vUART = $false
     )
     DynamicParam
     {
@@ -413,14 +414,18 @@ Function Set-RepoEnv()
 
         $Toolchain = $PSBoundParameters.Toolchain
 
+        $MSCP_vUART = $PSBoundParameters.MSCP_vUART
+
         # Config
         Write-Title -Title "Configuration" -Color Cyan
         Write-Host "Toolchain:     $Toolchain"
         Write-Host "Configuration: $Configuration"
+        Write-Host "MSCP vUART:    $MSCP_vUART"
 
         #env
         $env:REPO_APP_TOOLCHAIN = $Toolchain
         $env:REPO_APP_BUILD_CONFIG = $Configuration
+        $env:REPO_APP_MSCP_VUART = $MSCP_vUART
 
         $env:REPO_APP_ROOT = (Get-Item "$PSScriptRoot\..\..\..\").ToString().Replace("\","/")
         $env:REPO_APP_BUILD_DIR = (Join-Path $env:REPO_APP_ROOT ".build").replace("\", "/")

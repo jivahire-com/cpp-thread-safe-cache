@@ -72,13 +72,26 @@ target_link_libraries(
         ms::lib::register_headers
 )
 
-# Define base addresses during compile time for respective core fw
 target_compile_definitions(
     ${TARGET}
     PRIVATE
-        MSCP2HSP_MAILBOX_BASE_ADDRESS=SCP_TOP_SCP2HSP_MAILBOX_ADDRESS
+       MSCP2HSP_MAILBOX_BASE_ADDRESS=SCP_TOP_SCP2HSP_MAILBOX_ADDRESS
+)
+
+# Define base addresses during compile time for respective core fw
+if($ENV{REPO_APP_MSCP_VUART})
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+       UART_BASE_ADDR=SCP_TOP_DBGR_SCP_UART_ADDRESS
+)
+else()
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
         UART_BASE_ADDR=SCP_TOP_SCP_UART_ADDRESS
 )
+endif()
 
 lint_target(${TARGET})
 coverage_target(${TARGET})
@@ -130,13 +143,26 @@ target_link_libraries(
         register_headers
 )
 
-# Define base addresses during compile time for respective core fw
 target_compile_definitions(
     ${TARGET}
     PRIVATE
-        MSCP2HSP_MAILBOX_BASE_ADDRESS=MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
+       MSCP2HSP_MAILBOX_BASE_ADDRESS=MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
+)
+
+# Define base addresses during compile time for respective core fw
+if($ENV{REPO_APP_MSCP_VUART})
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+       UART_BASE_ADDR=MCP_TOP_DBGR_MCP_UART_ADDRESS
+)
+else()
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
         UART_BASE_ADDR=MCP_TOP_MCP_UART_ADDRESS
 )
+endif()
 
 lint_target(${TARGET})
 coverage_target(${TARGET})

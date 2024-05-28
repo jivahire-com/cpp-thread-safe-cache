@@ -117,7 +117,7 @@ Function Invoke-Virtualizer(
     Write-Host "`t-SimConfig    : $SimConfig"
     Write-Host "`t-WorkspaceDir : $workspace_dir"
     Write-Host "`t-UseGUI       : $UseGUI"
-    Write-Host ""
+    Write-Host "`t-MSCP vUART   : $env:REPO_APP_MSCP_VUART"
 
     # Select the config file based on SimConfig. These configurations are stored under tools/vpcfg.
     # Additionally perform any any config specific setup as needed

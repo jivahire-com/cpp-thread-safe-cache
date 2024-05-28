@@ -1,2 +1,0 @@
-add_subdirectory(silibs_platform)
-add_subdirectory(uart_pl011)

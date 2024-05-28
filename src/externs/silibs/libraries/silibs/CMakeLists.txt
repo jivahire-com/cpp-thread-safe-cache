@@ -25,7 +25,7 @@ add_subdirectory(spi_bridge)
 
 
 # Optimize for DDRSS silibs image size
-target_compile_options (ddrss PRIVATE "-O2")
+target_compile_options (ddrss PRIVATE "-O2" "-DDDRSS_COMPILE_DEBUG_LEVEL=DDRSS_DEBUG_LEVEL_CRITICAL")
 
 # Add math library for DDRSS silibs. It uses float calculation for timing
 if (arm-eabi-aarch)

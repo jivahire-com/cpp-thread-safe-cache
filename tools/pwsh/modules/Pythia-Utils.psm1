@@ -72,12 +72,22 @@ Function Invoke-Pythia(
     $workspace_config_in = Join-Path -Path $env:REPO_APP_ROOT -ChildPath "tests\functional\pythia\configs\svp_workspace.json"
     $workspace_config_out = Join-Path -Path $test_results_dir -ChildPath "workspace.json"
 
-    $host_config_in = Join-Path -Path $env:REPO_APP_ROOT -ChildPath "tests\functional\pythia\hosts\localhost.json"
-    $host_config_out = Join-Path -Path $test_results_dir -ChildPath "host.json"
-
     # Create new json files with expanded string values, expanding environment variables
     Expand-File -in_file $workspace_config_in -out_file $workspace_config_out
-    Expand-File -in_file $host_config_in -out_file $host_config_out
+
+    $host_configs_path = Join-Path -Path $env:REPO_APP_ROOT -ChildPath "tests\functional\pythia\hosts\"
+
+    $iteration = 1
+    Get-ChildItem $host_configs_path |
+    Foreach-Object {
+        $host_config_in = Join-Path $host_configs_path -ChildPath $_
+        $host_config_out = Join-Path -Path $test_results_dir -ChildPath $_
+
+        # Create new json files with expanded string values, expanding environment variables
+        Expand-File -in_file $host_config_in -out_file $host_config_out
+        Write-Host "`t` Host Config $iteration : $host_config_out"
+        $iteration++
+    }
 
     # Set the payload to the pre-made SVP Payload
     $recipe_payload_dir = Join-Path -Path $env:REPO_APP_ROOT -ChildPath "tests\functional\pythia\payloads\payload_svp"
@@ -89,7 +99,6 @@ Function Invoke-Pythia(
     Write-Host ""
     Write-Host "`t`tUsing Test: $test"
     Write-Host "`t`tUsing Workspace Config: $workspace_config_out"
-    Write-Host "`t`tUsing Host Config: $host_config_out"
     Write-Host "`t`tUsing Payload: $recipe_payload_dir"
     Write-Host ""
 
@@ -101,41 +110,18 @@ Function Invoke-Pythia(
     # dir will put any any folders that get created there (for things we can't configure atm, ex: SVP output dir).
     Push-Location -Path $test_results_dir
 
-    # Allow for single ile tests or test directories (for robot directories)
-    $test_type = [IO.Path]::GetExtension($test)
-    if ((Test-Path -Path $test -PathType Container))
-    {
-        $test_type = "dir"
-    }
-
-    switch -regex ($test_type) {
-        # Whether the test is a single robot file or a directory, the setup and running of them is the same
-        ".robot|dir" {
-            & ${env:REPO_APP_PATH_python.win64}\tools\python.exe -m robot `
-            --variable WORKSPACE_CONFIG:"$workspace_config_out" `
-            --variable LOG_DIR:"$test_results_dir" `
-            --variable PAYLOAD_DIR:"$recipe_payload_dir" `
-            --variable HOST_CONFIG:"$host_config_out" `
-            --debugfile rlog.txt  `
-            --outputdir $test_results_dir `
-            -K on `
-            -L TRACE `
-            -W 120 `
-            -x Results.xml `
-            $test
-        }
-        # Setup and run a single python test
-        ".py" {
-            & ${env:REPO_APP_PATH_python.win64}\tools\python.exe $test `
-            --workspace_config $workspace_config_out `
-            --log_dir $test_results_dir `
-            --payload_dir $recipe_payload_dir `
-            --host_config $host_config_out
-        }
-        default {
-            Throw "Unsupported Test Type: $test_type"
-        }
-    }
+    & ${env:REPO_APP_PATH_python.win64}\tools\python.exe -m robot `
+    --variable WORKSPACE_CONFIG:"$workspace_config_out" `
+    --variable LOG_DIR:"$test_results_dir" `
+    --variable PAYLOAD_DIR:"$recipe_payload_dir" `
+    --variable HOST_CONFIG_DIR:"$test_results_dir" `
+    --debugfile rlog.txt  `
+    --outputdir $test_results_dir `
+    -K on `
+    -L TRACE `
+    -W 120 `
+    -x Results.xml `
+    $test
 
     # Move back to wherever the function was invoked from
     Pop-Location

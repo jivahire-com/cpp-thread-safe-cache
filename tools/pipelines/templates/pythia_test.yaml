@@ -7,7 +7,7 @@ parameters:
   default: 'Debug'
 - name: Test_Suite_Path
   type: string
-  default: 'tests\functional\pythia\'
+  default: 'tests\functional\pythia\test_suites'
 
 jobs:
 - job: 'Pythia_Tests'

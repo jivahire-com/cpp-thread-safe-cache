@@ -20,6 +20,7 @@ add_library(${TARGET}
         hw_version_scp_init.c
         icc_transport_init/mscp_hspmbx_init.c
         mesh_init.c
+        ioss_init.c
         nvic_init.c
         pcie_init.c
         textio_init.c
@@ -27,6 +28,7 @@ add_library(${TARGET}
         ddr_manager_init.c
         power_init.c
         scp_mpu_init.c
+        usb_init.c
 )
 
 target_link_libraries(
@@ -54,6 +56,8 @@ target_link_libraries(
         ms::lib::event_trace::collector
         ms::lib::icc::cli
         ms::lib::mesh
+        ms::lib::ioss_init
+        ms::lib::ioss::usb
         ms::lib::scp_interrupts
         ms::lib::stdio_textio
         ms::lib::threadx

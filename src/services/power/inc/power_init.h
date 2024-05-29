@@ -11,6 +11,7 @@
 
 /*----------- Nested includes ------------*/
 #include "power_dfwk.h"
+#include "power_runconfig.h"
 
 #include <DfwkTypes.h>
 
@@ -23,7 +24,7 @@
 extern "C" {
 #endif
 
-void power_init(ppower_service_t p_device, PDFWK_SCHEDULE p_schedule);
+void power_init(ppower_service_t p_device, PDFWK_SCHEDULE p_schedule, const power_service_config_t* p_config);
 void power_interface_init(ppower_service_t p_device, ppower_service_interface_t p_interface);
 
 #ifdef __cplusplus

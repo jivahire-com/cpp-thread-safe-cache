@@ -8,6 +8,10 @@
  */
 
 /*------------- Includes -----------------*/
+#include "power_hw_int_i.h"
+#include "power_i.h"
+#include "power_runconfig.h" // for ppower_service_config_t
+#include "power_runconfig_i.h"
 
 #include <DfwkDriver.h> // for DfwkInterfaceInitialize, DfwkQueueInitia...
 #include <DfwkHost.h>   // for DfwkDeviceInitialize
@@ -17,7 +21,6 @@
 #include <power_init.h> // for power_init, power_interface_init
 #include <stdbool.h>    // for false
 #include <stdint.h>     // for int32_t
-#include <stdio.h>      // for printf
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -58,9 +61,22 @@ void power_interface_init(ppower_service_t p_device, ppower_service_interface_t 
     p_interface->p_device = p_device;
 }
 
-void power_init(ppower_service_t p_device, PDFWK_SCHEDULE p_schedule)
+void power_init(ppower_service_t p_device, PDFWK_SCHEDULE p_schedule, const power_service_config_t* p_config)
 {
-    printf("\npower_init\n");
+    POWER_LOG_INFO("power_init");
     DfwkDeviceInitialize(&p_device->header, p_schedule);
     DfwkQueueInitialize(&p_device->default_queue, &p_device->header, power_service_dispatch, &p_device->header, DfwkQueueType_SerializedDispatch);
+
+    // intialize power service runtime configuration (knobs, fuses, static config, etc)
+    power_runconfig_init(p_config);
+
+    power_telcfg_t telemetry_config;
+    power_telemetry_init_config(&telemetry_config);
+
+    const power_runconfig_t* p_runconfig = power_runconfig_get();
+    // SOC portion of init (TOP PVT)
+    power_init_soc(p_runconfig);
+
+    // core portion of init
+    power_init_core(p_runconfig, &telemetry_config);
 }

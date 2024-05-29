@@ -17,6 +17,9 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::lib::threadx
         ms::service::power
+        silibs::atu
+        silibs::idsw
+        silibs::kng_silibs_platform
 )
 
 lint_target(${TARGET})
@@ -26,7 +29,9 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    atu_map    
     fpfw_init_get_handle
+    idsw_get_die_id
     power_init
     power_interface_init
 )

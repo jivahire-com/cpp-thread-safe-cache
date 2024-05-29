@@ -8,18 +8,24 @@
  */
 
 /*------------- Includes -----------------*/
-#include "power_test.h"
+#include "power_test.h" // for POWER_TEST
 
 #include <cstddef> // for NULL
-#include <cstdint>
+#include <cstdint> // for uintptr_t
 
 extern "C" {
-#include <power_dfwk.h> // for ppower_service_t, ppower_service_interfa...
-#include <power_init.h> // for power_init, power_interface_init
+
+#include <CMockaWrapper.h>     // for expect_value, check_expected_ptr, Cmo...
+#include <DfwkCommon.h>        // for PDFWK_DEVICE_HEADER, DFWK_ASYNC_REQUE...
+#include <power_dfwk.h>        // for power_service_t, power_service_interf...
+#include <power_hw_int_i.h>    // for power_telcfg_t
+#include <power_init.h>        // for power_init, power_interface_init
+#include <power_runconfig.h>   // for power_service_config_t
+#include <power_runconfig_i.h> // for power_runconfig_t
+
 } // extern "C"
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define UNUSED(x) (void)(x)
 
 /*------------- Typedefs -----------------*/
 
@@ -29,6 +35,7 @@ extern "C" {
 
 DFWK_ASYNC_REQUEST_DISPATCH s_dispatch_routine = NULL;
 DFWK_REQUEST_DISPATCH_SYNC s_dispatch_routine_sync = NULL;
+const power_telcfg_t* sp_telemetry_config;
 
 /*------------- Functions ----------------*/
 //
@@ -77,13 +84,50 @@ void __wrap_FpFwAssert(int expression)
 {
     check_expected(expression);
 }
+
+// wrap for power_runconfig_init
+void __wrap_power_runconfig_init(const power_service_config_t* p_config)
+{
+    check_expected_ptr(p_config);
 }
+
+// wrap for power_telemetry_init_config
+void __wrap_power_telemetry_init_config(const power_telcfg_t* p_telemetry_config)
+{
+    assert_non_null(p_telemetry_config);
+    sp_telemetry_config = p_telemetry_config;
+}
+
+// wrap for power_init_soc
+void __wrap_power_init_soc(const power_runconfig_t* p_runconfig)
+{
+    check_expected_ptr(p_runconfig);
+}
+
+// wrap for power_init_core
+void __wrap_power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t* p_telemetry_config)
+{
+    check_expected_ptr(p_runconfig);
+    assert_int_equal((uintptr_t)p_telemetry_config, (uintptr_t)sp_telemetry_config);
+}
+
+// wrap for power_runconfig_get
+power_runconfig_t* __wrap_power_runconfig_get()
+{
+    return mock_type(power_runconfig_t*);
+}
+
+} // extern "C"
+
 //
 // Tests
 //
 POWER_TEST(init, NULL, NULL)
 {
     power_service_t test_device;
+    power_service_config_t test_config;
+    power_runconfig_t test_runconfig;
+
     DFWK_SCHEDULE test_schedule;
 
     expect_value(__wrap_DfwkDeviceInitialize, Device, &test_device.header);
@@ -94,7 +138,13 @@ POWER_TEST(init, NULL, NULL)
     expect_value(__wrap_DfwkQueueInitialize, DispatchContext, &test_device.header);
     expect_value(__wrap_DfwkQueueInitialize, QueueType, DfwkQueueType_SerializedDispatch);
 
-    power_init(&test_device, &test_schedule);
+    // add the expected/check values for power internal functions
+    expect_value(__wrap_power_runconfig_init, p_config, &test_config);
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+    expect_value(__wrap_power_init_soc, p_runconfig, &test_runconfig);
+    expect_value(__wrap_power_init_core, p_runconfig, &test_runconfig);
+
+    power_init(&test_device, &test_schedule, &test_config);
 }
 
 POWER_TEST(interface_init, NULL, NULL)

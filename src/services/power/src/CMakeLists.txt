@@ -3,7 +3,13 @@ set(TARGET kng.service.power_service)
 
 add_library(${TARGET}
     STATIC
+        power_fuses.c
+        power_hw_int.c
+        power_hw_int_gpio.c
+        power_hw_int_telemetry.c
+        power_knobs.c
         power_main.c
+        power_runconfig.c
 )
 
 target_include_directories(${TARGET}
@@ -14,6 +20,12 @@ target_include_directories(${TARGET}
 )
 
 target_link_libraries(${TARGET}
+    PUBLIC
+        ms::lib::corebits
+        silibs::dvfs
+        silibs::kng_silibs_platform
+        silibs::pvt
+        silibs::sensor_ram_bridge
     PRIVATE
         fwlib.dfwk
         fwlib.platform.errorhandler

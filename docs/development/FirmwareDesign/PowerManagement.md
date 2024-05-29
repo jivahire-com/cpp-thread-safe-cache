@@ -43,7 +43,7 @@ This document is intended to describe the design detail for the module implement
 | BMC Power Capping Specification (CedarCrest Platform) | [Link](https://microsoft.sharepoint.com/:w:/t/CSIFWReview/EQcZCoL71LFHjSnAqmv0sqABaM9Uw1MGpgEoVJspKjwqng?e=oyqBlY)
 | 1PFW PLDM Shared Library Documentation | [Link](https://azurecsi.visualstudio.com/DuvallFw/_git/1pfw.fwlibs?path=/doc/Modules/PLDM.md)
 | ARM Neoverse N2 Supplemental Perf/Power Document (MPMM info)| [Link](https://microsoft.sharepoint.com/:b:/r/teams/PioneerSoCNon-implementing/Shared%20Documents/General/Third-party%20IP/Arm/Cores/Neoverse%20N2%20-%20Perseus%20(MP128)/r0p0%20-%20In%20PNR%20A0/Arm_Neoverse_N2_Supplemental_Performance_Power_Document.pdf?csf=1&web=1&e=XJfU76)
-
+| KG Power Delivery Tracker | [Link](https://microsoft.sharepoint.com/teams/EchoFalls/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2FEchoFalls%2FShared%20Documents%2FKingsgate%20SOC%2FSIPI%2FPI%2FPowerDeliveryTracker&p=true&ga=1&ovuser=72f988bf%2D86f1%2D41af%2D91ab%2D2d7cd011db47%2Ctimphi%40microsoft%2Ecom&OR=Teams%2DHL&CT=1716318033088&clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiI0OS8yNDA1MDMwNzYxMCIsIkhhc0ZlZGVyYXRlZFVzZXIiOmZhbHNlfQ%3D%3D) |
 ## Requirements 
 
  - Shall limit SOC power to the minimum of the provided power cap or the configured maximums (thermal/electrical limit)

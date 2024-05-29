@@ -15,13 +15,15 @@
 
 /*-------------- Typedefs ----------------*/
 // struct for the power service/device
-typedef struct {
+typedef struct
+{
     DFWK_DEVICE_HEADER header;
     DFWK_QUEUE default_queue;
 } power_service_t, *ppower_service_t;
 
 // struct for an interface to the power service
-typedef struct  {
+typedef struct
+{
     DFWK_INTERFACE_HEADER header;
     ppower_service_t p_device;
 } power_service_interface_t, *ppower_service_interface_t;
@@ -30,7 +32,6 @@ typedef struct  {
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 #ifdef __cplusplus
 }

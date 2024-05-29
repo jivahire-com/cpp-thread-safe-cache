@@ -14,8 +14,11 @@ extern "C" {
 #include <DfwkDriver.h>      // for DFWK_SCHEDULE
 #include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
 #include <FpFwUtils.h>       // for FPFW_UNUSED
+#include <atu_lib.h>         // for atu_map_entry_t, atu_entry_attr_t
 #include <fpfw_init.h>       // for fpfw_init_result_t, fpfw_init_component_t
+#include <idsw.h>            // for idsw_get_die_id
 #include <power_dfwk.h>      // for ppower_service_t, etc
+#include <power_runconfig.h> // for power_service_config_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -37,9 +40,10 @@ void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
     return mock_type(void*);
 }
 
-void __wrap_power_init(ppower_service_t p_device, PDFWK_SCHEDULE p_schedule)
+void __wrap_power_init(ppower_service_t p_device, PDFWK_SCHEDULE p_schedule, const power_service_config_t* p_config)
 {
     assert_non_null(p_device);
+    assert_non_null(p_config);
     check_expected_ptr(p_schedule);
 }
 
@@ -47,6 +51,19 @@ void __wrap_power_interface_init(ppower_service_t p_device, ppower_service_inter
 {
     check_expected_ptr(p_device);
     assert_non_null(p_interface);
+}
+
+// wrap idsw_get_die_id
+DIE_ID __wrap_idsw_get_die_id(void)
+{
+    return mock_type(DIE_ID);
+}
+
+int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    check_expected(atu_id);
+    check_expected_ptr(atu_map_entry);
+    return mock_type(int);
 }
 
 //
@@ -57,6 +74,12 @@ TEST_FUNCTION(power_init_pwr_svc, nullptr, nullptr)
 {
     //! Set up expectations
     DFWK_THREADX_HOST test_host = {};
+
+    // only doing basic tests on die_id and atu_map as the current implementation is temporary
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    expect_any(__wrap_atu_map, atu_map_entry);
+    will_return(__wrap_atu_map, 0);
 
     will_return(__wrap_fpfw_init_get_handle, &test_host); //! driver fmwk host handle
     expect_value(__wrap_power_init, p_schedule, &(test_host.Schedule));

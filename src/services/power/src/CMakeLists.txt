@@ -3,6 +3,7 @@ set(TARGET kng.service.power_service)
 
 add_library(${TARGET}
     STATIC
+        power_events.c
         power_fuses.c
         power_hw_int.c
         power_hw_int_gpio.c
@@ -30,6 +31,7 @@ target_link_libraries(${TARGET}
         fwlib.dfwk
         fwlib.platform.errorhandler
         fwlib.platform.threadx
+        ms::lib::event_trace::trace
 )
 
 lint_target(${TARGET})

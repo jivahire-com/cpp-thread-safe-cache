@@ -27,6 +27,7 @@
 #include <fgpll_regs.h>    // for fgpll_pll_error_mask_cr, (anonymous u...
 #include <odcm.h>          // for odcm_init, odcm_telemetry_config, ODC...
 #include <pex_regs.h>      // for PEX_CORE_PLL_ADDRESS
+#include <power_events.h>  // for POWER_ET_FATAL, POWER_ET_TYPE_CURVE_H...
 #include <pvt.h>           // for PVT_SUCCESS, reset_tile_pvt_dts_vm
 #include <pvt_struct.h>    // for pvt_alarm_setting_config_t, pvt_thres...
 #include <silibs_common.h> // for ARRAY_SIZE, MAX
@@ -344,8 +345,7 @@ static void power_init_update_dvfs_cfg_core(const power_runconfig_t* p_runconfig
         // curve has no supported pstates
         POWER_LOG_CRIT("Assigned VF curve %d for core %d has no valid pstates", assigned_vft, core);
 
-        // TODO: https://dev.azure.com/AzureCSI/Dev/_queries/edit/1491050
-        // POWER_ET_FATAL(POWER_ET_TYPE_CURVE_HAS_NO_VALID_PSTATES, 0, POWER_ET_ENCODE_DETAIL_CORE(assigned_vft, core));
+        POWER_ET_FATAL(POWER_ET_TYPE_CURVE_HAS_NO_VALID_PSTATES, 0, POWER_ET_ENCODE_DETAIL_CORE(assigned_vft, core));
 
         BUG_CHECK(CC_SC_NO_VALID_PSTATES, core, assigned_vft);
     }
@@ -623,16 +623,14 @@ void power_init_ws_core(const power_runconfig_t* p_runconfig, const power_telcfg
     /* Only big fpga, zebu, rtl sim would have DVFS, etc */
     if (!power_hw_supported())
     {
-        // TODO: https://dev.azure.com/AzureCSI/Dev/_queries/edit/1491050
-        // POWER_ET_ERROR(POWER_ET_TYPE_PLATFORM_NOT_SUPPORTED_SKIPPING_DVFS_INIT);
+        POWER_ET_ERROR(POWER_ET_TYPE_PLATFORM_NOT_SUPPORTED_SKIPPING_DVFS_INIT, ET_NOPARAM);
         POWER_LOG_INFO("Skipping intialization of power HW");
         return;
     }
 
     power_warm_init_core_reset_pvt(p_runconfig);
 
-    // TODO: https://dev.azure.com/AzureCSI/Dev/_queries/edit/1491050
-    // POWER_ET_STATUS(POWER_ET_TYPE_DVFS_REINIT);
+    POWER_ET_STATUS(POWER_ET_TYPE_DVFS_REINIT);
     POWER_LOG_INFO("Reinitializing DVFS telemetry");
 
     for (unsigned int core = 0; core < core_count; ++core)
@@ -684,8 +682,7 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
     /* Only big fpga, zebu, rtl sim would have DVFS, etc */
     if (!power_hw_supported())
     {
-        // TODO: https://dev.azure.com/AzureCSI/Dev/_queries/edit/1491050
-        // POWER_ET_ERROR(POWER_ET_TYPE_PLATFORM_NOT_SUPPORTED_SKIPPING_DVFS_INIT);
+        POWER_ET_ERROR(POWER_ET_TYPE_PLATFORM_NOT_SUPPORTED_SKIPPING_DVFS_INIT, ET_NOPARAM);
         POWER_LOG_INFO("Skipping intialization of power HW");
         return;
     }
@@ -703,8 +700,7 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
     tile_pvt_telem_setting_config_t tile_pvt_telem_settings = PVT_TILE_TELEM_DEFAULT_CONFIG;
     power_init_update_tilepvt_cfg(p_runconfig, &tile_pvt_settings);
 
-    // TODO: https://dev.azure.com/AzureCSI/Dev/_queries/edit/1491050
-    // POWER_ET_STATUS(POWER_ET_TYPE_DVFS_INIT);
+    POWER_ET_STATUS(POWER_ET_TYPE_DVFS_INIT);
     POWER_LOG_INFO("Initializing DVFS");
 
     for (unsigned int core = 0; core < core_count; ++core)
@@ -793,8 +789,7 @@ void power_init_soc(const power_runconfig_t* p_runconfig)
     /* Only big fpga, zebu, rtl sim would have soc pvt */
     if (!power_hw_supported())
     {
-        // TODO: https://dev.azure.com/AzureCSI/Dev/_queries/edit/1491050
-        // POWER_ET_ERROR(POWER_ET_TYPE_PLATFORM_NOT_SUPPORTED_SKIPPING_SOC_HW_INIT);
+        POWER_ET_ERROR(POWER_ET_TYPE_PLATFORM_NOT_SUPPORTED_SKIPPING_SOC_HW_INIT, ET_NOPARAM);
         POWER_LOG_INFO("Skipping intialization of soc power HW");
         return;
     }

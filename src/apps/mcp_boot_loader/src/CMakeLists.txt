@@ -26,6 +26,7 @@ target_link_libraries(
     ${TARGET}
         PRIVATE
             ms::vectors::m7_boot_loader
+            ms::boot_loader::interface
             ms::lib::boot_loader
             ms::cmsis::interface
             ms::lib::register_headers

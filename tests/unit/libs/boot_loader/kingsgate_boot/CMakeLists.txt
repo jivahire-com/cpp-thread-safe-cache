@@ -3,6 +3,7 @@ set(TARGET kng_mscp_boot_loader.test)
 set(SOURCES
     test_kingsgate_boot.cpp
     ${CMAKE_SOURCE_DIR}/src/libs/boot_loader/kingsgate_boot.c
+    ${CMAKE_SOURCE_DIR}/src/libs/boot_loader/unpack_image.c
 )
 
 # Compile test
@@ -10,17 +11,28 @@ add_executable(${TARGET} ${SOURCES})
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-target_compile_definitions(${TARGET} PUBLIC UNIT_TEST)
+target_compile_definitions(${TARGET} PRIVATE UNIT_TEST)
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
 target_link_libraries(${TARGET}
     PRIVATE
+    fwlib.mboxprimitives
     ms::cmocka::testrunner
-    ms::lib::boot_loader
+    ms::boot_loader::interface
+    ms::lib::zlib
 )
 
 lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})
 unit_test_target(${TARGET})
+
+#mock the functions needed
+mock_target(${TARGET}
+    FpFwMailboxInit
+    FpFwMailboxFlushFIFO
+    FpFwMailboxReceive
+    FpFwMailboxSend
+    __disable_irq
+)

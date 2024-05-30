@@ -1,28 +1,37 @@
+set(TARGET boot.loader.interface)
+
+add_library(${TARGET} INTERFACE)
+
+target_include_directories(${TARGET} INTERFACE
+                           ${CMAKE_CURRENT_SOURCE_DIR}
+                           ${CMAKE_CURRENT_SOURCE_DIR}/inc
+                           ${REPO_ROOT_DIR}/.externs/repo/zlib
+                           ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../src/externs/zlib/zlib
+)
+
+add_library(ms::boot_loader::interface ALIAS ${TARGET})
+
+enabled_on(arm-eabi-aarch)
+
 set(TARGET boot_loader)
 
-set(SOURCES
-    kingsgate_boot.c
-    unpack_image.c
+# Add target for the service
+add_library(
+    ${TARGET} STATIC
+        kingsgate_boot.c
+        unpack_image.c
+        dummy_sys_calls.c
 )
 
-if (arm-eabi-aarch)
-set(SOURCES ${SOURCES}
-    dummy_sys_calls.c
-)
-endif()
-
-add_library(${TARGET} ${SOURCES})
-
-target_include_directories(
-    ${TARGET} PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/inc
-        ${REPO_ROOT_DIR}/.externs/repo/zlib
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../src/externs/zlib/zlib
-)
+add_compile_definitions(${TARGET} PRIVATE MBOX_STUB)
 
 target_link_libraries(
     ${TARGET}
     PRIVATE
+    register_headers
+    fwlib.mboxprimitives
+    ms::cmsis::interface
+    ms::boot_loader::interface
     ms::lib::zlib
 )
 

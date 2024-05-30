@@ -10,14 +10,15 @@ add_executable(${TARGET} ${SOURCES})
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-target_compile_definitions(${TARGET} PUBLIC UNIT_TEST)
+target_compile_definitions(${TARGET} PRIVATE UNIT_TEST)
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
 target_link_libraries(${TARGET}
     PRIVATE
     ms::cmocka::testrunner
-    ms::lib::boot_loader
+    ms::boot_loader::interface
+    ms::lib::zlib
 )
 
 lint_target(${TARGET})

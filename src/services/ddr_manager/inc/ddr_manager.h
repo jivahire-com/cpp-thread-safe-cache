@@ -44,6 +44,7 @@ typedef struct
     struct
     {
         void* p_queue;        // Pointer to the queue
+        UINT msg_size;        //Size in no. of 32b words
         UINT queue_num_words; // Number of 32b words in the queue
     } queue_config;
 } ddr_service_config_t;

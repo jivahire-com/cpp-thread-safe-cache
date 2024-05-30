@@ -45,7 +45,8 @@ FPFW_INIT_COMPONENT(ddrman, FPFW_INIT_DEPENDENCIES("ddr", "std_io", "mesh", "hw_
         },
         .queue_config = {
             .p_queue = ddr_queue_pool,
-            .queue_num_words = sizeof(ddr_queue_pool[0]) / sizeof(uint32_t),
+            .msg_size = sizeof(ddr_queue_pool[0])/sizeof(uint32_t),
+            .queue_num_words = sizeof(ddr_queue_pool) / sizeof(uint32_t),
         }
     };
 

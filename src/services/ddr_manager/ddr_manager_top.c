@@ -106,15 +106,41 @@ void ddr_timer_cb(ULONG pddr_service_ctx)
  */
 void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_config_t* pconfig)
 {
+    uint32_t work_queue_msg = 0;
     int status = tx_queue_create((TX_QUEUE*)&pddr_service_ctx->work_queue, /* TX_QUEUE *queue_ptr */
                                  (char*)DDR_WORK_QUEUE_NAME,               /* CHAR *name_ptr */
-                                 pconfig->queue_config.queue_num_words,    /* UINT message_size */
-                                 pconfig->queue_config.p_queue,            /* VOID *queue_start */
-                                 (sizeof(pconfig->queue_config.p_queue))); /* ULONG queue_size */
+                                 pconfig->queue_config.msg_size, /* UINT message_size in 32-bit word */
+                                 pconfig->queue_config.p_queue,  /* VOID *queue_start */
+                                 sizeof(uint32_t) * pconfig->queue_config.queue_num_words); /* ULONG queue_size in bytes */
 
     if (status != TX_SUCCESS)
     {
-        printf("tx_queue_create err\n");
+        printf("tx_queue_create err %d\n", status);
+        FPFwErrorRaise(status);
+    }
+
+    work_queue_msg = DDR_CREATE_MEMORY_MAP_EVENT;
+    status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
+    if (status != TX_SUCCESS)
+    {
+        printf("tx_queue_send DDR_CREATE_MEMORY_MAP_EVENT err %d\n", status);
+        FPFwErrorRaise(status);
+    }
+
+    work_queue_msg = DDR_CREATE_BDAT_EVENT;
+    status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
+
+    if (status != TX_SUCCESS)
+    {
+        printf("tx_queue_send DDR_CREATE_BDAT_EVENT err %d\n", status);
+        FPFwErrorRaise(status);
+    }
+
+    work_queue_msg = DDR_CREATE_SMBIOS_TABLES_EVENT;
+    status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
+    if (status != TX_SUCCESS)
+    {
+        printf("tx_queue_send DDR_CREATE_SMBIOS_TABLES_EVENT err %d\n", status);
         FPFwErrorRaise(status);
     }
 
@@ -145,7 +171,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
 
     if (status != TX_SUCCESS)
     {
-        printf("timer create err\n");
+        printf("timer create err %d\n", status);
         FPFwErrorRaise(status);
     }
 }

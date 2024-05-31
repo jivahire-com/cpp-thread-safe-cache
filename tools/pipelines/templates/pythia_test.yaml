@@ -20,6 +20,15 @@ jobs:
     # Dump agent information (useful for debugging)
     - template: agent_info.yaml
 
+    # Download input artifact
+    - task: DownloadBuildArtifacts@0
+      displayName: Download Packages manifest
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        artifactName: bins.arm-eabi-aarch.Debug
+        downloadPath: '$(System.ArtifactsDirectory)'
+
     # 1. Setup the environment for the toolchain \ configuration
     # 2. Build the FW
     # 3. Invoke Pythia
@@ -34,7 +43,11 @@ jobs:
         showWarnings: true
         script: | 
           ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
-          build
+
+          $bin_src_dir = "$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug/bin"
+          $bin_dest_dir = "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch"
+          Copy-Item $bin_src_dir $bin_dest_dir -Recurse -Force
+
           Invoke-Pythia -test ${{ parameters.Test_Suite_Path }}
 
     # Publish the results of the test suite

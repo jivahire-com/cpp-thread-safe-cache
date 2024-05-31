@@ -1,7 +1,4 @@
 parameters:
-- name: Artifact
-  type: string
-  default: 'bins'
 - name: Toolchain
   type: string
   default: 'i386-pc-windows-msvc'
@@ -25,11 +22,19 @@ jobs:
 
     # Download input artifact
     - task: DownloadBuildArtifacts@0
-      displayName: Download Packages manifest
+      displayName: Download Packages Windows
       inputs:
         buildType: 'current'
         downloadType: 'single'
-        artifactName: '${{ parameters.Artifact }}'
+        artifactName: 'bins.i386-pc-windows-msvc.Debug'
+        downloadPath: '$(System.ArtifactsDirectory)'
+
+    - task: DownloadBuildArtifacts@0
+      displayName: Download Packages ARM
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        artifactName: 'bins.arm-eabi-aarch.Debug'
         downloadPath: '$(System.ArtifactsDirectory)'
 
     # Main test task, loads test scripts and runs the orchestrator
@@ -45,9 +50,9 @@ jobs:
 
           & "${env:REPO_APP_PATH_1pfw.tools.win64}\sptest" `
             /devicesfile:"$(Build.SourcesDirectory)\tests\unit\SpTestDevices.xml" `
-            /packagesdir:"$(System.ArtifactsDirectory)\${{ parameters.Artifact }}"\bin `
+            /packagesdir:"$(System.ArtifactsDirectory)\bins.i386-pc-windows-msvc.Debug"\bin `
             /logsdir:"$(System.ArtifactsDirectory)\Unit_Test_Logs" `
-            /define:test_bin_dir="$(System.ArtifactsDirectory)\${{ parameters.Artifact }}"\bin `
+            /define:test_bin_dir="$(System.ArtifactsDirectory)\bins.i386-pc-windows-msvc.Debug"\bin `
             /define:test_src_dir="$(Build.SourcesDirectory)" `
             /runtests
 
@@ -121,5 +126,5 @@ jobs:
       condition: succeededOrFailed()
       inputs:
         PathtoPublish: '$(System.ArtifactsDirectory)\Unit_Test_Logs'
-        ArtifactName: '${{ parameters.Artifact }}.UnitTestResults'
+        ArtifactName: 'bins.i386-pc-windows-msvc.Debug.UnitTestResults'
         publishLocation: 'Container'

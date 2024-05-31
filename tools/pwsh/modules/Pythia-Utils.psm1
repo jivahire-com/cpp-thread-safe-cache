@@ -37,10 +37,10 @@ Function Expand-File(
 Starts a local Pythia Test Run, using the SVP Recipe.
 
 .PARAMETER test
-Path to the test to run. Can be a python file, robot file, or a directory containing robot files.
+Path to the test to run. Can be a robot file, or a directory containing robot files.
 
 .EXAMPLE
-Invoke-Pythia -test .\tests\functional\pythia\tests\heart_beat\heart_beat.py
+Invoke-Pythia -test .\tests\functional\pythia\test_suites\heart_beat\
 #>
 Function Invoke-Pythia(
     [Parameter(Mandatory=$true)] [string] $test
@@ -129,5 +129,8 @@ Function Invoke-Pythia(
     Write-Host ""
     Write-Host "`tPythia Tests Completed. Please see tests results: $test_results_dir"
     Write-Host ""
+
+    Write-Host "Removing .svp_simulator dir"
+    Remove-Item $test_results_dir/.svp_simulator -Force
 
 }

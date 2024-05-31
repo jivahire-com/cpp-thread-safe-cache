@@ -55,13 +55,12 @@ stages:
   - template: templates/pythia_test.yaml
 
 - stage: Unit_Test_x86
-  dependsOn: Build_x86_Debug
+  dependsOn: [Build_x86_Debug, Build_Arm_EABI_AARCH_Debug]
   pool: 
     name: 1pfw-kingsgate-windows
   jobs:
   - template: templates/unittest.yaml
     parameters:
-      Artifact: bins.i386-pc-windows-msvc.Debug
       Toolchain: i386-pc-windows-msvc
       Configuration: Debug
       # Pipeline variables defined within ADO

@@ -22,6 +22,12 @@ add_executable(
         main.c
 )
 
+# Set output location
+set_target_properties( ${TARGET}
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mcp_boot_loader"
+)
+
 target_link_libraries(
     ${TARGET}
         PRIVATE
@@ -59,31 +65,12 @@ target_link_options(${TARGET} PUBLIC "LINKER:--undefined=_open"
                                         "LINKER:--undefined=_fstat"
                                         "LINKER:--undefined=_isatty"
                                         "LINKER:--undefined=_lseek"
-                                        "LINKER:--undefined=_read
-                                        -Og")
+                                        "LINKER:--undefined=_read"
+                                        "-Og")
 
 
 # The libnosys library provides stub definitions for syscalls needed to prevent linker errors
 target_link_options(${TARGET} PUBLIC "--specs=nosys.specs")
-
-
-#
-# Force the linker to include any object files containing our implementations of
-# functions that the standard library relies on.
-#
-
-#
-# Try to identify any standard libraries that require special treatment.
-#
-
-include(CheckSymbolExists)
-
-check_symbol_exists("__NEWLIB__" "sys/features.h" KNG_HAVE_NEWLIB)
-
-if(KNG_HAVE_NEWLIB)
-    target_link_options(${TARGET} PUBLIC "LINKER:--undefined=posix_memalign"
-                                           "LINKER:--undefined=_sbrk")
-endif()
 
 set_property(
     TARGET ${TARGET}
@@ -93,18 +80,6 @@ set_property(
 
 # Setting compiler optimization level to -Og to match Pioneer boot code compilation flags
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Og")
-
-# Generate a .bin file with the raw binary output from the linked .elf
-set(FIRMWARE_BIN ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mcp_boot_loader/${TARGET}.bin)
-
-add_custom_command(
-    TARGET ${TARGET}
-    POST_BUILD
-    COMMAND ${OBJ_COPY} -O binary ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET}${CMAKE_EXECUTABLE_SUFFIX_C} ${FIRMWARE_BIN}
-    DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET}
-    BYPRODUCTS ${FIRMWARE_BIN}
-    COMMENT "Creating mcp_boot_loader bin file"
-)
 
 lint_target(${TARGET})
 format_target(${TARGET})

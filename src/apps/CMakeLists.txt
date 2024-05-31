@@ -14,8 +14,8 @@ set(MANIFEST_FILE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/man/etman.bin)
 
 add_custom_command(
     OUTPUT ${MANIFEST_FILE}
-    COMMAND $ENV{REPO_APP_PATH_python.win64}/tools/python.exe -m diagtool.app ${MANIFEST_FILE} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/scp_fw.elf ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mcp_fw.elf
-    DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/scp_fw ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mcp_fw
+    COMMAND $ENV{REPO_APP_PATH_python.win64}/tools/python.exe -m diagtool.app ${MANIFEST_FILE} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/scp/scp_fw.elf ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mcp/mcp_fw.elf
+    DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/scp/scp_fw.elf ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mcp/mcp_fw.elf
     COMMENT "Generating Trace Manifest - ${MANIFEST_FILE}"
 )
 

@@ -328,6 +328,8 @@ Function Get-PipPackages($PackageFile)
 
         Write-Host "Done" -ForegroundColor Green
     }
+
+    $env:Path += ";${env:REPO_APP_PATH_python.win64}/tools/Scripts"
 }
 
 Function Write-Title($Title, $Color)

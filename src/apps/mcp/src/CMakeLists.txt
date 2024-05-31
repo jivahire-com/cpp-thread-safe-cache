@@ -22,6 +22,12 @@ add_executable(
         mcp_events.c
 )
 
+# Set output location
+set_target_properties( ${TARGET}
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mcp"
+)
+
 # Defining platform APIs
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
@@ -71,27 +77,10 @@ set_target_properties(
             THREADX_KERNEL 1
 )
 
-# Generate a .bin file with the raw binary output from the linked .elf 
-set(FIRMWARE_BIN ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mcp/${TARGET}.bin)
-
-add_custom_command(
-    TARGET ${TARGET}
-    POST_BUILD
-    COMMAND ${OBJ_COPY} -O binary ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET}${CMAKE_EXECUTABLE_SUFFIX_C} ${FIRMWARE_BIN}
-    DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET}
-    BYPRODUCTS ${FIRMWARE_BIN}
-    COMMENT "Creating mcp_fw bin file"
-)
-
-# Set the FIRMWARE_BIN property on this target
-# This allows other targets to find the path to the .bin file for combining in to the complete firmware package
-# see package/CMakeLists.txt
-set_property(
-    TARGET ${TARGET} 
-    PROPERTY FIRMWARE_BIN
-        ${FIRMWARE_BIN}
-)
-
 lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})
+
+# Embeds  the bootloader and fw into a single elf and also generate .bin file
+include("${CMAKE_SOURCE_DIR}/src/libs/boot_loader/cmake/CreateBootloaderEmbed.cmake")
+create_bootloader_embed(mcp mcp_fw mcp_boot_loader mcp_boot_loader_embed_fw)

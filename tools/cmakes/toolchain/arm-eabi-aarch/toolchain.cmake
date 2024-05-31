@@ -12,8 +12,8 @@ set(CMAKE_CXX_COMPILER "$ENV{REPO_APP_PATH_gcc.arm.eabi.aarch-win64}/bin/arm-non
 set(CMAKE_ASM_COMPILER "$ENV{REPO_APP_PATH_gcc.arm.eabi.aarch-win64}/bin/arm-none-eabi-gcc.exe")
 
 # Set C flags
-set(CMAKE_C_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -nostartfiles -L${CMAKE_CURRENT_LIST_DIR}/ld -Wall -Wextra -Werror")
-set(CMAKE_CXX_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -nostartfiles -L${CMAKE_CURRENT_LIST_DIR}/ld -Wall -Wextra -Werror")
+set(CMAKE_C_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -nostartfiles -L${CMAKE_CURRENT_LIST_DIR}/ld -Wall -Wextra -Werror -ftest-coverage")
+set(CMAKE_CXX_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -nostartfiles -L${CMAKE_CURRENT_LIST_DIR}/ld -Wall -Wextra -Werror -ftest-coverage")
 set(CMAKE_ASM_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -nostartfiles -L${CMAKE_CURRENT_LIST_DIR}/ld")
 set(CMAKE_EXE_LINKER_FLAGS_INIT "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -L${CMAKE_CURRENT_LIST_DIR}/ld")
 

@@ -62,8 +62,6 @@ int __wrap_cmn800_sequence(cmn800_sequence_params_t cmn800_sequence_param)
     check_expected(cmn800_sequence_param.HNS_SPARE_DIE0);
     check_expected(cmn800_sequence_param.HNS_SPARE_DIE1);
     check_expected(cmn800_sequence_param.D2D_INIT);
-    check_expected(cmn800_sequence_param.SKIP_PERIPH_TOWER_INIT);
-    check_expected(cmn800_sequence_param.SKIP_FABRIC_TOWER_INIT);
     function_called();
     return 0;
 }
@@ -84,8 +82,6 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_0_SVP, setup_svp_platform, setu
     expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.HNS_SPARE_DIE0, 0);
     expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.HNS_SPARE_DIE1, 0);
     expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.D2D_INIT, 0);
-    expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.SKIP_PERIPH_TOWER_INIT, 0);
-    expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.SKIP_FABRIC_TOWER_INIT, 0);
     expect_function_call(__wrap_cmn800_sequence);
 
     // Call API under test
@@ -103,8 +99,6 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_SVP, setup_svp_platform, setu
     expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.HNS_SPARE_DIE0, 0);
     expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.HNS_SPARE_DIE1, 0);
     expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.D2D_INIT, 0);
-    expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.SKIP_PERIPH_TOWER_INIT, 0);
-    expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.SKIP_FABRIC_TOWER_INIT, 0);
     expect_function_call(__wrap_cmn800_sequence);
 
     // Call API under test
@@ -122,8 +116,6 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_0_FPGA, setup_fpga_platform, se
     expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.HNS_SPARE_DIE0, 0);
     expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.HNS_SPARE_DIE1, 0);
     expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.D2D_INIT, 0);
-    expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.SKIP_PERIPH_TOWER_INIT, 0);
-    expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.SKIP_FABRIC_TOWER_INIT, 0);
     expect_function_call(__wrap_cmn800_sequence);
 
     // Call API under test
@@ -141,8 +133,6 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_FPGA, setup_fpga_platform, se
     expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.HNS_SPARE_DIE0, 0);
     expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.HNS_SPARE_DIE1, 0);
     expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.D2D_INIT, 0);
-    expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.SKIP_PERIPH_TOWER_INIT, 0);
-    expect_value(__wrap_cmn800_sequence, cmn800_sequence_param.SKIP_FABRIC_TOWER_INIT, 0);
     expect_function_call(__wrap_cmn800_sequence);
 
     // Call API under test

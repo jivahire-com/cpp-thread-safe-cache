@@ -55,7 +55,7 @@ PLAT_ID __wrap_idsw_get_platform_sdv(void)
 TEST_FUNCTION(test_usb_init_success, nullptr, nullptr)
 {
     // Set up expectations
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     const auto test_die = (DIE_ID)0;
     will_return_always(__wrap_idhw_get_die_id, test_die);
     expect_function_calls(__wrap_usb_init, 2);
@@ -64,7 +64,7 @@ TEST_FUNCTION(test_usb_init_success, nullptr, nullptr)
     _fpfw_component_usb.init_fn();
 }
 
-TEST_FUNCTION(test_usb_init_svp, NULL, NULL)
+TEST_FUNCTION(test_usb_init_bypass_svp, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
 
@@ -72,9 +72,25 @@ TEST_FUNCTION(test_usb_init_svp, NULL, NULL)
     _fpfw_component_usb.init_fn();
 }
 
+TEST_FUNCTION(test_usb_init_bypass_fpga, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+
+    // Call API under test
+    _fpfw_component_usb.init_fn();
+}
+
+TEST_FUNCTION(test_usb_init_bypass_fpga_large, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
+
+    // Call API under test
+    _fpfw_component_usb.init_fn();
+}
+
 TEST_FUNCTION(test_usb_init_die1, NULL, NULL)
 {
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     const auto test_die = (DIE_ID)1;
     will_return_always(__wrap_idhw_get_die_id, test_die);
 

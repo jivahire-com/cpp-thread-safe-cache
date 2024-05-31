@@ -49,6 +49,7 @@ tower_mgmtap
 tower_perip
 tower_rpss
 tower_sdmss
+tower_sequence
 tower_system_control
 tower_utility
 tower_vab

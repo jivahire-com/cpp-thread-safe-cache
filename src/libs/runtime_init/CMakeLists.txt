@@ -28,6 +28,7 @@ add_library(${TARGET}
         ddr_manager_init.c
         power_init.c
         scp_mpu_init.c
+        tower_init.c
         startup_shutdown_init.c
         usb_init.c
 )
@@ -64,6 +65,7 @@ target_link_libraries(
         ms::lib::threadx
         ms::lib::ddr::cli
         ms::lib::vab
+        ms::lib::tower
         ms::service::ddr_manager
         ms::service::pcie_manager
         ms::service::power

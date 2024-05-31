@@ -34,8 +34,6 @@ void mesh_init(uint8_t die_num)
     cmn800_sequence_param.HNS_SPARE_DIE1 = 0;
     cmn800_sequence_param.D2D_INIT = 0;
     cmn800_sequence_param.BOOT_2D_ENABLE = 0;
-    cmn800_sequence_param.SKIP_PERIPH_TOWER_INIT = 0;
-    cmn800_sequence_param.SKIP_FABRIC_TOWER_INIT = 0;
     cmn800_sequence_param.USE_HW_TIMER = 0;
 
     if (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE)

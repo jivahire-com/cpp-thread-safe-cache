@@ -19,6 +19,8 @@ extern "C" {
 #include <idsw.h>            // for idsw_get_die_id
 #include <power_dfwk.h>      // for ppower_service_t, etc
 #include <power_runconfig.h> // for power_service_config_t
+#include <startup_shutdown.h>
+#include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -66,6 +68,16 @@ int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
     return mock_type(int);
 }
 
+int32_t __wrap_sos_register_ssi(PDFWK_INTERFACE_HEADER p_interface,
+                                pstartup_ssi_registration_t p_registration,
+                                PDFWK_INTERFACE_HEADER p_ssi_interface)
+{
+    check_expected_ptr(p_interface);
+    check_expected_ptr(p_registration);
+    check_expected_ptr(p_ssi_interface);
+    return mock_type(int32_t);
+}
+}
 //
 // Tests
 //
@@ -96,8 +108,20 @@ TEST_FUNCTION(power_init_pwr_int, nullptr, nullptr)
 {
     // Set up expectations
     power_service_t power_device = {};
-    will_return(__wrap_fpfw_init_get_handle, &power_device); //! uart device handle
+    DFWK_INTERFACE_HEADER ssi_interface = {};
+
+    will_return(__wrap_fpfw_init_get_handle, &power_device);
     expect_value(__wrap_power_interface_init, p_device, &power_device);
+    // interface init is called twice
+    will_return(__wrap_fpfw_init_get_handle, &power_device);
+    expect_value(__wrap_power_interface_init, p_device, &power_device);
+
+    will_return(__wrap_fpfw_init_get_handle, &ssi_interface);
+    expect_value(__wrap_sos_register_ssi, p_interface, &ssi_interface);
+    // p_registration and p_ssi_interface come from static allocations in the function
+    expect_any(__wrap_sos_register_ssi, p_registration);
+    expect_any(__wrap_sos_register_ssi, p_ssi_interface);
+    will_return(__wrap_sos_register_ssi, FPFW_INIT_STATUS_SUCCESS);
 
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_pwr_int.init_fn();
@@ -105,5 +129,4 @@ TEST_FUNCTION(power_init_pwr_int, nullptr, nullptr)
     //! Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
     assert_non_null(result.associated_handle);
-}
 }

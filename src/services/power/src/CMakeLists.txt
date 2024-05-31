@@ -31,6 +31,7 @@ target_link_libraries(${TARGET}
         fwlib.dfwk
         fwlib.platform.errorhandler
         fwlib.platform.threadx
+        ms::client_interface::startup_shutdown
         ms::lib::event_trace::trace
 )
 

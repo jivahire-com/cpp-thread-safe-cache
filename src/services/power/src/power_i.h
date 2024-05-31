@@ -59,6 +59,10 @@
 extern "C" {
 #endif
 
+// for unit test, only
+// function to sequence AP core/SOC power initialization
+void power_ap_soc_init();
+
 #ifdef __cplusplus
 }
 #endif

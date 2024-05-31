@@ -19,6 +19,7 @@ extern "C" {
 #include <DfwkCommon.h>        // for PDFWK_DEVICE_HEADER, DFWK_ASYNC_REQUE...
 #include <power_dfwk.h>        // for power_service_t, power_service_interf...
 #include <power_hw_int_i.h>    // for power_telcfg_t
+#include <power_i.h>           // for power_init, power_interface_init
 #include <power_init.h>        // for power_init, power_interface_init
 #include <power_runconfig.h>   // for power_service_config_t
 #include <power_runconfig_i.h> // for power_runconfig_t
@@ -126,7 +127,6 @@ POWER_TEST(init, NULL, NULL)
 {
     power_service_t test_device;
     power_service_config_t test_config;
-    power_runconfig_t test_runconfig;
 
     DFWK_SCHEDULE test_schedule;
 
@@ -140,11 +140,19 @@ POWER_TEST(init, NULL, NULL)
 
     // add the expected/check values for power internal functions
     expect_value(__wrap_power_runconfig_init, p_config, &test_config);
+
+    power_init(&test_device, &test_schedule, &test_config);
+}
+
+POWER_TEST(init_ap_soc, NULL, NULL)
+{
+    power_runconfig_t test_runconfig;
+
     will_return(__wrap_power_runconfig_get, &test_runconfig);
     expect_value(__wrap_power_init_soc, p_runconfig, &test_runconfig);
     expect_value(__wrap_power_init_core, p_runconfig, &test_runconfig);
 
-    power_init(&test_device, &test_schedule, &test_config);
+    power_ap_soc_init();
 }
 
 POWER_TEST(interface_init, NULL, NULL)

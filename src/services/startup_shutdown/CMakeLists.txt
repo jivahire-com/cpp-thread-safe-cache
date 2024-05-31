@@ -1,0 +1,77 @@
+# client interface code
+set(TARGET kng.client_interface.startup_shutdown)
+
+add_library(${TARGET} 
+    STATIC  
+    startup_shutdown_client_interface.c
+)
+
+target_link_libraries(${TARGET} 
+    PUBLIC
+    PRIVATE
+        fwlib.dfwk
+        fwlib.platform.errorhandler
+)
+
+target_include_directories(${TARGET}
+    PUBLIC 
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+lint_target(${TARGET})
+format_target(${TARGET})
+coverage_target(${TARGET})
+
+add_library(ms::client_interface::startup_shutdown ALIAS kng.client_interface.startup_shutdown)
+
+
+# scp/mcp service
+set(STARTUP_COMMON_SOURCE 
+    startup_shutdown.c
+    startup_shutdown_ssi.c
+    startup_shutdown_thread.c
+)
+
+set(STARTUP_COMMON_LIBS 
+    fwlib.dfwk     
+    fwlib.platform.errorhandler
+    fwlib.init
+    ms::build_data
+    ms::lib::threadx
+    ms::lib::debug
+    ms::client_interface::startup_shutdown
+)
+
+# scp
+
+set(TARGET kng.service.scp_startup_shutdown)
+
+add_library(${TARGET} 
+    STATIC  
+        ${STARTUP_COMMON_SOURCE}
+        startup_shutdown_scp.c
+)
+
+target_link_libraries(${TARGET} 
+    PUBLIC
+    PRIVATE
+        ${STARTUP_COMMON_LIBS}
+)
+
+target_include_directories(${TARGET}
+    PUBLIC 
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+lint_target(${TARGET})
+format_target(${TARGET})
+coverage_target(${TARGET})
+
+add_library(ms::service::scp_startup_shutdown ALIAS kng.service.scp_startup_shutdown)
+
+# mcp
+

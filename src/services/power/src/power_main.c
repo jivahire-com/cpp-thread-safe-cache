@@ -19,8 +19,9 @@
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <power_dfwk.h> // for ppower_service_t, ppower_service_interfa...
 #include <power_init.h> // for power_init, power_interface_init
-#include <stdbool.h>    // for false
-#include <stdint.h>     // for int32_t
+#include <startup_shutdown_ssi.h>
+#include <stdbool.h> // for false
+#include <stdint.h>  // for int32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -38,6 +39,32 @@ static void power_service_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p
 
     switch (p_request->RequestType)
     {
+    /* boot and shutdown requests */
+    case SSI_STARTUP_STAGE_START_ASYNC: {
+        pssi_startup_notification_request_t ssi_request = (pssi_startup_notification_request_t)p_request;
+        switch (ssi_request->stage)
+        {
+        case STARTUP_AP_SOC_POWER_INIT:
+            power_ap_soc_init();
+            break;
+        default:
+            // nothing to do for other types.
+            break;
+        }
+        // complete request
+        DfwkAsyncRequestComplete(p_request);
+    }
+    break;
+    case SSI_STARTUP_STAGE_COMPLETE_ASYNC: {
+        // complete immediately, since nothing to do
+        DfwkAsyncRequestComplete(p_request);
+    }
+    break;
+    case SSI_SHUTDOWN_QUIESCE_ASYNC: {
+        // complete immediately, since nothing to do
+        DfwkAsyncRequestComplete(p_request);
+    }
+    break;
     default:
         FPFW_RUNTIME_ASSERT(false);
         break;
@@ -69,7 +96,10 @@ void power_init(ppower_service_t p_device, PDFWK_SCHEDULE p_schedule, const powe
 
     // intialize power service runtime configuration (knobs, fuses, static config, etc)
     power_runconfig_init(p_config);
+}
 
+void power_ap_soc_init()
+{
     power_telcfg_t telemetry_config;
     power_telemetry_init_config(&telemetry_config);
 

@@ -28,6 +28,7 @@ add_library(${TARGET}
         ddr_manager_init.c
         power_init.c
         scp_mpu_init.c
+        startup_shutdown_init.c
         usb_init.c
 )
 
@@ -66,6 +67,7 @@ target_link_libraries(
         ms::service::ddr_manager
         ms::service::pcie_manager
         ms::service::power
+        ms::service::scp_startup_shutdown 
         silibs::avs
         silibs::common::lib_uart_pl011
         silibs::idhw

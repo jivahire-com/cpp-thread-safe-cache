@@ -22,6 +22,7 @@
 #include <silibs_ap_top_regs.h>    // for AP_TOP_D0_CORE_CLUSTER_SIZE, AP_T...
 #include <silibs_scp_exp_top_regs.h>
 #include <silibs_scp_top_regs.h>
+#include <startup_shutdown.h>
 #include <stdint.h> // for uint32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -101,10 +102,20 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &power_service};
 }
 
-FPFW_INIT_COMPONENT(pwr_int, FPFW_INIT_DEPENDENCIES("pwr_svc"))
+FPFW_INIT_COMPONENT(pwr_int, FPFW_INIT_DEPENDENCIES("pwr_svc", "sos_int"))
 {
     static power_service_interface_t power_interface;
-    power_interface_init(fpfw_init_get_handle("pwr_dev"), &power_interface);
+    power_interface_init(fpfw_init_get_handle("pwr_svc"), &power_interface);
+
+    /*========= Begin code for SSI registration =========*/
+    // create an interface specifically for SSI and register it
+    static power_service_interface_t power_ssi_interface;
+    power_interface_init(fpfw_init_get_handle("pwr_svc"), &power_ssi_interface);
+    // static data for SSI registration
+    static startup_ssi_registration_t ssi_registration;
+    int32_t status = sos_register_ssi(fpfw_init_get_handle("sos_int"), &ssi_registration, &power_ssi_interface.header);
+    FPFW_RUNTIME_ASSERT(status == FPFW_INIT_STATUS_SUCCESS);
+    /*=========== End code for SSI registration ==========*/
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &power_interface};
 }

@@ -1,0 +1,65 @@
+set(TARGET sos.test)
+
+# Compile test
+add_executable(${TARGET} 
+    startup_shutdown_interface_test.cpp
+    startup_shutdown_scp_test.cpp
+    startup_shutdown_test.cpp
+    startup_shutdown_thread_test.cpp
+) 
+
+target_link_libraries(${TARGET}    
+    PRIVATE
+        ms::cmocka::testrunner
+        ms::lib::threadx
+        ms::mocks::event_trace
+        ms::mocks::threadx
+        ms::service::scp_startup_shutdown
+    PUBLIC
+        fwlib.assert
+        fwlib.dfwk
+        fwlib.datastructures.linkedlist
+        fwlib.utils
+ )
+
+# Get private includes for module under test
+target_include_directories(${TARGET} 
+    PRIVATE 
+        $<TARGET_PROPERTY:ms::service::scp_startup_shutdown,INCLUDE_DIRECTORIES>
+)
+
+lint_target(${TARGET})
+format_target(${TARGET})
+coverage_target(${TARGET})
+unit_test_target(${TARGET})
+
+#mock the functions needed
+mock_target(${TARGET}
+    DfwkAsyncRequestComplete
+    DfwkAsyncRequestInititalize
+    DfwkAsyncRequestSetCompletionRoutine
+    DfwkDeviceInitialize
+    DfwkQueueInitialize
+    DfwkInterfaceInitialize
+    DfwkInterfaceSendAsync
+    DfwkInterfaceSendSync
+    DfwkInterfaceOpen
+    FpFwListInitialize  
+    FpFwListInsertTail
+    sos_core_boot_stages
+    sos_core_boot_stage_count
+    sos_queue_shutdown
+    sos_queue_start_phase
+    sos_thread_init
+    ssi_shutdown_quiesce
+    ssi_startup_stage_complete
+    ssi_startup_stage_start
+    _txe_event_flags_create
+    _txe_event_flags_get
+    _txe_event_flags_set
+    _txe_queue_create
+    _txe_queue_send
+    _txe_thread_create
+)
+
+target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

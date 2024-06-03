@@ -13,6 +13,7 @@ target_link_libraries(${TARGET}
     silibs::cmn800
     silibs::cmn800_skus
     silibs::cmn800_sequence
+    silibs::idhw
     silibs::idsw
     silibs::kng_silibs_platform
     silibs::ppu_v1

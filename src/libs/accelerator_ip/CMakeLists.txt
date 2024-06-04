@@ -17,6 +17,7 @@ target_include_directories(
             ${REPO_ROOT_DIR}/.externs/repo/silibs/libraries/common/silibs_platform/include
             ${REPO_ROOT_DIR}/.externs/azpkg/kingsgate_register_header.0.9.3/ap_addr_map/registerheader
             ${REPO_ROOT_DIR}/.externs/repo/silibs/libraries/tower_utility/include
+            ${REPO_ROOT_DIR}/src/libs/utils/include
 
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/inc_priv
@@ -31,6 +32,7 @@ target_link_libraries(
     PRIVATE
         fwlib.assert
         ms::lib::debug
+        ms::lib::utils
         silibs::idsw
         silibs::pcr_vab
         silibs::pcr_rpss

@@ -9,37 +9,51 @@
  */
 
 /*-------------------------------- Includes ---------------------------------*/
-#include "accelerator_ip.h" // for subsystem_ctxt_t, atu_mappi...
+#include "accelerator_ip.h"
 
-#include "_addressblock_0x100000_regs.h" // for _addressblock_0x100000_bcfg...
-#include "atu_lib.h"                     // for atu_map, atu_unmap, atu_map...
-#include "kng_soc_constants.h"           // for DIE_INSTANCE, SDMSS_INSTANCE
-#include "sdm_init.h"                    // for sdm_init_deassert_nsysreset
-#include "sdmss_config_regs.h"           // for SDMSS_CONFIG_SDMSS_PCR_TOP_...
-#include "silibs_platform.h"             // for debug_print, MMIO_UPDATE32
-#include "silibs_status.h"               // for SILIBS_SUCCESS
-#include "tower_vab.h"                   // for configure_vab_system_addr_map
+#include "accelerator_ip_pcie_params.h" // for pcie_type0_ctxt_t, pcie_...
+#include "sdm_ext_cfg_regs.h"           // for ptr_sdm_ext_cfg_reg, (an...
 
-#include <FpFwAssert.h>          // for FPFW_RUNTIME_ASSERT
-#include <accelerator_ip_priv.h> // for get_accelerator_ctxt
-#include <debug.h>               // for UNUSED
-#include <idsw.h>                // for idsw_get_platform_sdv, PLAT...
-#include <pcr_rpss.h>            // for PCR_RPSS_INSTANCE, pcr_rpss...
-#include <sdmss_config_regs.h>
-#include <silibs_ap_top_regs.h>
-#include <silibs_kng_soc.h> // for PCIE_ECAM_START
-#include <smmu.h>           // for smmu_enable_access, smmu_en...
-#include <stdbool.h>        // for true
-#include <stdint.h>         // for int32_t, uintptr_t, uint8_t
-#include <stdio.h>          // for printf, NULL
-#include <tower_sdmss.h>    // for configure_sdmss_system_addr...
-#include <vab_cded_ioss_top_regs.h>
-#include <vab_pcr_init.h> // for deassert_pcr_reset, vab_pcr...
-#include <vab_sdm_top_regs.h>
+#include <FpFwAssert.h>                     // for FPFW_RUNTIME_ASSERT
+#include <_addressblock_0x100000_regs.h>    // for _addressblock_0x100000_b...
+#include <accelerator_ip_priv.h>            // for get_accelerator_ctxt
+#include <atu_lib.h>                        // for atu_map, atu_unmap, atu_...
+#include <cdedss_config_regs.h>             // for CDEDSS_CONFIG_CDEDSS_PCR...
+#include <debug.h>                          // for UNUSED
+#include <idsw.h>                           // for idsw_get_platform_sdv
+#include <kng_soc_constants.h>              // for DIE_INSTANCE, SDMSS_INST...
+#include <mmu_yardley_tcu_x2_custom_regs.h> // for MMU_YARDLEY_TCU_X2_CUSTO...
+#include <pcr_clock_config.h>               // for PCR_CLOCK_SELECT_B
+#include <pcr_rpss.h>                       // for pcr_rpss_configure_clock
+#include <sdm_init.h>                       // for sdm_init_deassert_nsysreset
+#include <sdmss_config_regs.h>              // for SDMSS_CONFIG_SDMSS_PCR_T...
+#include <silibs_kng_soc.h>                 // for PCIE_ECAM_START
+#include <silibs_platform.h>                // for debug_print, MMIO_UPDATE32
+#include <silibs_status.h>                  // for SILIBS_SUCCESS, SILIBS_E...
+#include <smmu.h>                           // for smmu_configure_gbpa, smm...
+#include <smmu_knobs.h>                     // for smmu_gbpa_cfg_t
+#include <smmu_yardley_eac_vab_regs.h>      // for SMMU_YARDLEY_EAC_VAB_TCU...
+#include <stdbool.h>                        // for true
+#include <stdint.h>                         // for int32_t, uintptr_t, uint...
+#include <stdio.h>                          // for printf, NULL
+#include <tower_sdmss.h>                    // for configure_sdmss_system_a...
+#include <tower_vab.h>                      // for configure_vab_system_add...
+#include <utils.h>                          // for sleep_ms()...
+#include <vab_pcr_init.h>                   // for deassert_pcr_reset, vab_...
+#include <vab_regs.h>                       // for VAB_VAB_PCR_TOP_ADDRESS
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
 #define ACCEL_PCR_CONFIG_TIMEOUT (10)
+
+/// @TODO: ADO 1831262: Replace SMMU_YARDLEY_DEV_VAB_UNIQ_TCU_VAB_ADDRESS with
+/// SMMU_YARDLEY_EAC_VAB_TCU_VAB_ADDRESS when R17 is ready.
+#ifndef SMMU_YARDLEY_DEV_VAB_UNIQ_TCU_VAB_ADDRESS
+    #define SMMU_YARDLEY_DEV_VAB_UNIQ_TCU_VAB_ADDRESS (SMMU_YARDLEY_EAC_VAB_TCU_VAB_ADDRESS)
+#endif
+
+#define SLEEP_100_MS                                (100)
+#define MAX_RETRY_CNT_FOR_SMMU_CONFIGURE_GPBA_CHECK (50)
 
 /*-------------------------------- Typedefs ---------------------------------*/
 
@@ -91,15 +105,46 @@ static int32_t configure_vab(vab_ctxt_t* p_vab_ctxt, atu_mapping_ctxt_t* p_vab_a
     }
 
     // Configure SMMU. Current configuration is in bypass mode only
-    uint64_t scp_smmu_base_addr = mscp_start_address + VAB_SMMU_YARDLEY_VAB_ADDRESS;
-    smmu_enable_access(scp_smmu_base_addr);
-    ret = smmu_enable_access_check(scp_smmu_base_addr) ? SILIBS_SUCCESS : SILIBS_E_PANIC;
+    uint64_t smmu_base_addr = mscp_start_address + VAB_SMMU_YARDLEY_VAB_ADDRESS;
+    uintptr_t smmu_tcu_base_addr =
+        smmu_base_addr + SMMU_YARDLEY_DEV_VAB_UNIQ_TCU_VAB_ADDRESS + MMU_YARDLEY_TCU_X2_CUSTOM_VAB_TCU_X2_ADDRESS;
 
+    smmu_enable_access(smmu_tcu_base_addr);
+    ret = smmu_enable_access_check(smmu_tcu_base_addr) ? SILIBS_SUCCESS : SILIBS_E_PANIC;
     if (ret != SILIBS_SUCCESS)
     {
         debug_print("Vab SMMU is not enabled");
         ret = ACCEL_RET_FAIL_SMMU_ENABLE;
         goto exit_atu_unmap;
+    }
+
+    SECURITY_STATE security_state = SECURITY_STATE_NON_SECURE;
+    smmu_gbpa_cfg_t smmu_gbpa_cfg = {0};
+    smmu_gbpa_cfg.sh_cfg = 1;
+
+    ret = smmu_configure_gbpa(smmu_tcu_base_addr, &smmu_gbpa_cfg, security_state);
+    if (ret != SILIBS_SUCCESS)
+    {
+        debug_print("Vab SMMU GBPA Failed");
+        ret = ACCEL_RET_FAIL_SMMU_GPBA_ENABLE;
+        goto exit_atu_unmap;
+    }
+
+    uint32_t retry_cnt = 0;
+
+    // TODO: ADO 1831262: Remove the below polling loop
+    while (!smmu_configure_gbpa_check(smmu_tcu_base_addr, security_state))
+    {
+        sleep_ms(SLEEP_100_MS);
+
+        // We will try for 5 seconds in worst case
+        retry_cnt++;
+        if (retry_cnt > MAX_RETRY_CNT_FOR_SMMU_CONFIGURE_GPBA_CHECK)
+        {
+            debug_print("Vab SMMU GBPA Check Failed");
+            ret = ACCEL_RET_FAIL_SMMU_GPBA_ENABLE;
+            goto exit_atu_unmap;
+        }
     }
 
 exit_atu_unmap:

@@ -12,8 +12,11 @@
  */
 
 /*------------- Includes -----------------*/
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+// This is based on estimate CORTEX M7 runs @ 1GHz
+#define CORTEX_M7_ONE_MS_CPU_CYCLES (1000 * 1000)
 
 /*------------- Typedefs -----------------*/
 
@@ -26,4 +29,20 @@
 void dummy_function(void)
 {
     /* dummy function, do nothing */
+}
+
+void sleep_ms(uint32_t milliseconds)
+{
+    uint32_t count = 0;
+    uint32_t i = 0;
+
+    while (count < milliseconds)
+    {
+        for (i = 0; i < CORTEX_M7_ONE_MS_CPU_CYCLES; i++)
+        {
+            asm volatile("nop");
+        }
+
+        count++;
+    }
 }

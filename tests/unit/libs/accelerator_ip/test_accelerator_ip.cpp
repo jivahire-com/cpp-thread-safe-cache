@@ -16,10 +16,13 @@ extern "C" {
 #include "sdm_init.h"          // for sdm_mem_init_t
 #include "silibs_kng_soc.h"    // for D0_SDM_RCIEP_BUS, D1_CDED_RCEC_BUS
 #include "silibs_status.h"     // for SILIBS_SUCCESS, SILIBS_E_PARAM
+#include "smmu_knobs.h"        // for smmu_gbpa_cfg_t
 
 #include <accelerator_ip.h> // for scp_accelerators_init, ACCEL_RET_SUCCESS
 #include <idsw.h>           // for DIE_ID, _PLAT_ID
 #include <pcr_rpss.h>       // for pcr_rpss_entity_t
+#include <smmu.h>           // for smmu_gpba_cfg
+#include <stddef.h>         // for NULL
 #include <stdint.h>         // for uintptr_t, uint32_t, uint8_t, uint64_t
 #include <utils.h>          // for UNUSED
 
@@ -215,6 +218,23 @@ void __wrap_smmu_enable_access(uintptr_t smmu_base_addr)
     UNUSED(smmu_base_addr);
 }
 
+int __wrap_smmu_configure_gbpa(uintptr_t smmu_tcu_base, smmu_gbpa_cfg_t* smmu_gbpa_cfg, SECURITY_STATE security_state)
+{
+    UNUSED(smmu_tcu_base);
+    UNUSED(smmu_gbpa_cfg);
+    UNUSED(security_state);
+
+    return mock_type(int);
+}
+
+bool __wrap_smmu_configure_gbpa_check(uintptr_t smmu_tcu_base, SECURITY_STATE security_state)
+{
+    UNUSED(smmu_tcu_base);
+    UNUSED(security_state);
+
+    return mock_type(bool);
+}
+
 int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
 {
     if (atu_id >= ATU_ID_MAX || atu_map_entry == nullptr)
@@ -308,6 +328,8 @@ void config_vab_pass()
     will_return(__wrap_atu_map, SILIBS_SUCCESS);  // VAB atu_map
     will_return(__wrap_vab_pcr_init, 0x12345678); // VAB PCR init
     will_return(__wrap_smmu_enable_access_check, 0x12345678);
+    will_return(__wrap_smmu_configure_gbpa, SILIBS_SUCCESS);
+    will_return(__wrap_smmu_configure_gbpa_check, true);
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // VAB atu_unmap
 }
 
@@ -365,6 +387,39 @@ TEST_FUNCTION(accel_ip_pre_boot_config_vab_smmu_enable_fail_test, nullptr, nullp
     will_return(__wrap_vab_pcr_init, 0x12345678); // VAB PCR init
     will_return(__wrap_smmu_enable_access_check, 0x0);
     will_return(__wrap_atu_unmap, SILIBS_E_PARAM); // VAB atu_unmap
+    assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
+
+TEST_FUNCTION(accel_ip_pre_boot_config_vab_smmu_configure_gbpa_fail_test, nullptr, nullptr)
+{
+    // Setup
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);  // VAB atu_map
+    will_return(__wrap_vab_pcr_init, 0x12345678); // VAB PCR init
+    will_return(__wrap_smmu_enable_access_check, 0x12345678);
+
+    // Setup the params to Test API
+    will_return(__wrap_smmu_configure_gbpa, SILIBS_E_PARAM);
+
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // VAB atu_unmap
+
+    // Test
+    assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
+
+TEST_FUNCTION(accel_ip_pre_boot_config_vab_smmu_configure_gbpa_check_fail_test, nullptr, nullptr)
+{
+    // Setup
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);  // VAB atu_map
+    will_return(__wrap_vab_pcr_init, 0x12345678); // VAB PCR init
+    will_return(__wrap_smmu_enable_access_check, 0x12345678);
+    will_return(__wrap_smmu_configure_gbpa, SILIBS_SUCCESS);
+    will_return_always(__wrap_smmu_configure_gbpa_check, false);
+
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // VAB atu_unmap
+
+    // Test
     assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
 }
 

@@ -8,17 +8,17 @@ set(SOURCES
 add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
-    PRIVATE 
+    PRIVATE
         atu
         idsw
-        smmu    
+        smmu
         pcr_rpss
         sdm_init
         tower_vab
         ms::lib::accelerator_ip
         ms::lib::utils
         ms::cmocka::testrunner
-        kng_silibs_platform     
+        kng_silibs_platform
 )
 
 lint_target(${TARGET})
@@ -39,6 +39,8 @@ mock_target(${TARGET}
     idsw_get_platform_sdv
     smmu_enable_access
     smmu_enable_access_check
+    smmu_configure_gbpa
+    smmu_configure_gbpa_check
     configure_sdmss_system_addr_map
     sdm_init_smmu_connection_seq
     sdm_init_set_ecam_base

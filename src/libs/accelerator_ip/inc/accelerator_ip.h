@@ -22,7 +22,7 @@
 
 /*-------------------------------- Typedefs ---------------------------------*/
 typedef enum {
-    ACCEL_RET_FAIL_SS_INIT = (-17), // Total number of error types
+    ACCEL_RET_FAIL_SS_INIT = (-18), // Total number of error types
     ACCEL_RET_FAIL_SS_NA,
     ACCEL_RET_FAIL_DBG,
     ACCEL_RET_FAIL_CSR,
@@ -32,6 +32,7 @@ typedef enum {
     ACCEL_RET_FAIL_SS_PCR,
     ACCEL_RET_FAIL_SDMSS_PCR,
     ACCEL_RET_FAIL_SMMU_ENABLE,
+    ACCEL_RET_FAIL_SMMU_GPBA_ENABLE,
     ACCEL_RET_FAIL_TOWER,
     ACCEL_RET_FAIL_ATU_MAP,
     ACCEL_RET_FAIL_ATU_UNMAP,

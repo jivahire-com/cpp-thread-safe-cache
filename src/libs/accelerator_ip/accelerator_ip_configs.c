@@ -60,10 +60,10 @@
 /*------------------- Declarations (Statics and globals) --------------------*/
 static atu_map_entry_t die0_sdmss_instance0_vab_atu_map_entry = {
     // D0-SDMSS0
-    .ap_base_address = AP_TOP_D0_VAB_SDM_ADDRESS,
+    .ap_base_address = AP_TOP_D0_VAB_SDM_ADDRESS + VAB_SDM_TOP_VAB_ADDRESS,
     .mscp_start_address = 0,
-    .mscp_end_address = AP_TOP_D0_VAB_SDM_SIZE - 1,
-    .attribute = {.axprot0 = 0x3, .axprot1 = 0x2, .axnse = 0x3},
+    .mscp_end_address = ALIGN_UP(AP_TOP_D0_VAB_SDM_SIZE, ATU_PAGE_SIZE) - 1,
+    .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT},
 };
 
 static atu_map_entry_t die0_sdmss_instance0_accelss_atu_map_entry = {

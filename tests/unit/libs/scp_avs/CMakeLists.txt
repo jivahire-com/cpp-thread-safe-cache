@@ -30,14 +30,17 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    DfwkAsyncRequestSetCompletionRoutine
     DfwkInterfaceSendAsync
-    DfwkAsyncRequestSetCompletionRoutine 
-    avs_init 
+    DfwkQueueEnqueueRequest
+    avs_clear_interrupt_status
     avs_enable_interrupt
+    avs_get_interrupt_status
+    avs_init
+    avs_send_cmd_frame
     nvic_irq_set_isr_with_param
     nvic_irq_clear_pending
     nvic_irq_enable
-    avs_send_cmd_frame
 )
 
 # Supressing warnings, needed for scp_avs.h

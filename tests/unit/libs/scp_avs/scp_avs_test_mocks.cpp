@@ -14,6 +14,7 @@ extern "C" {
 #include <DfwkClient.h>
 #include <avs_lib.h>
 #include <nvic.h>
+#include <silibs_status.h> // for SILIBS_SUCCESS
 #include <stdint.h>
 }
 
@@ -80,5 +81,23 @@ int __wrap_avs_send_cmd_frame(uint32_t avs_id, uint32_t cmd_num, avs_master_comm
     check_expected(cmd_num);
     check_expected(cmd_mem);
     return (SILIBS_SUCCESS);
+}
+int __wrap_avs_get_interrupt_status(uintptr_t avs_base_or_id, uint32_t* intr)
+{
+    *intr = AVS_IRQ_CMD_DONE;
+
+    check_expected(avs_base_or_id);
+    return (SILIBS_SUCCESS);
+}
+int __wrap_avs_clear_interrupt_status(uintptr_t avs_base_or_id, uint32_t intr)
+{
+    check_expected(avs_base_or_id);
+    check_expected(intr);
+    return (SILIBS_SUCCESS);
+}
+void __wrap_DfwkQueueEnqueueRequest(PDFWK_QUEUE Queue, PDFWK_ASYNC_REQUEST_HEADER Request)
+{
+    check_expected_ptr(Queue);
+    check_expected_ptr(Request);
 }
 }

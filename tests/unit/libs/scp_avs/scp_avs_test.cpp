@@ -14,11 +14,11 @@
 #include <cstdint>         // IWYU pragma: keep
 
 extern "C" {
-#include "DfwkHost.h"  // for DfwkDeviceInitialize
-#include "FpFwUtils.h" // for FPFW_UNUSED
-
 #include <DfwkClient.h>
 #include <DfwkDriver.h>
+#include <DfwkHost.h>  // for DfwkDeviceInitialize
+#include <FpFwUtils.h> // for FPFW_UNUSED
+#include <avs_lib.h>   // for AVS_VOLTAGE_RW, AVS_CMD_READ, AVS_IRQ_...
 #include <scp_avs.h>
 #include <scp_avs_driver.h>
 #include <scp_avs_driver_i.h>
@@ -255,4 +255,23 @@ TEST_FUNCTION(scp_avs_dispatch_sync, test_setup, test_cleanup)
 
     scp_avs_dispatch_sync(&test_avs_get_Request.Header);
     assert_int_equal(test_avs_get_Request.Header.RequestType, AVS_GET_ERROR_COUNTS);
+}
+
+TEST_FUNCTION(scp_avs_isr_test, test_setup, test_cleanup)
+{
+    scp_avs_device_t test_avs_isr_device = {
+        .config = {.avs_irq = HW_INT_AVS_CTRL_1_INT},
+        .avs_bus_num = AVS_BUS1,
+    };
+
+    expect_value(__wrap_avs_get_interrupt_status, avs_base_or_id, test_avs_isr_device.avs_bus_num);
+
+    expect_value(__wrap_avs_clear_interrupt_status, avs_base_or_id, test_avs_isr_device.avs_bus_num);
+    expect_value(__wrap_avs_clear_interrupt_status, intr, AVS_IRQ_CMD_DONE);
+
+    expect_value(__wrap_DfwkQueueEnqueueRequest, Queue, &test_avs_isr_device.avs_isr_resp_queue);
+    expect_value(__wrap_DfwkQueueEnqueueRequest, Request, &test_avs_isr_device.isr_request);
+
+    scp_avs_isr(&test_avs_isr_device);
+    assert_int_equal(test_avs_isr_device.isr_request.outstanding_client_request, test_avs_isr_device.outstanding_request);
 }

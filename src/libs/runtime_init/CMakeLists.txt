@@ -12,6 +12,8 @@ add_library(${TARGET}
         cli_init.c
         cli_ddr_init.c
         cli_power_init.c
+        crash_dump_init.c
+        crash_dump_init_scp.c
         css_init.c
         ddrss_init.c
         debug_init.c
@@ -37,6 +39,7 @@ target_link_libraries(
     ${TARGET}
     PRIVATE
         fwlib.cli
+        fwlib.crashDump
         fwlib.dfwk
         fwlib.drivers.interface.text_io
         fwlib.init
@@ -51,6 +54,7 @@ target_link_libraries(
         ms::driver::pcie
         ms::lib::accelerator_ip
         ms::lib::cortex_m7::mpu
+        ms::lib::crash_dump::scp
         ms::lib::css
         ms::lib::ddrss_init
         ms::lib::debug
@@ -114,6 +118,7 @@ set(TARGET kng.lib.scp.runtime_init.mcp)
 add_library(${TARGET}
     OBJECT
         cli_init.c
+        crash_dump_init.c
         debug_init.c
         dfwk_init.c
         etc_init.c
@@ -128,6 +133,7 @@ target_link_libraries(
     ${TARGET}
     PRIVATE
         fwlib.cli
+        fwlib.crashDump
         fwlib.dfwk
         fwlib.init
         fwlib.mboxprimitives
@@ -139,6 +145,7 @@ target_link_libraries(
         ms::driver::textio::pl011
         ms::lib::debug
         ms::lib::cortex_m7::nvic
+        ms::lib::crash_dump::mcp
         ms::lib::event_trace::collector
         ms::lib::icc::cli
         ms::lib::stdio_textio

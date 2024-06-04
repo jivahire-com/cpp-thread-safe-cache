@@ -1,6 +1,7 @@
 add_subdirectory(avs_scp_init)
 add_subdirectory(cli_init)
 add_subdirectory(cli_ddr_init)
+add_subdirectory(crash_dump_init)
 add_subdirectory(css_init)
 add_subdirectory(ddrss_init)
 add_subdirectory(dfwk)

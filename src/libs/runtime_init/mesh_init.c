@@ -17,7 +17,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(mesh, FPFW_INIT_DEPENDENCIES("css_prme"))
+FPFW_INIT_COMPONENT(mesh, FPFW_INIT_DEPENDENCIES("css_prme", "cd_init"))
 {
     uint8_t die_num = (uint8_t)idhw_get_die_id();
     printf("Mesh init, die_num: [%u]\n", die_num);

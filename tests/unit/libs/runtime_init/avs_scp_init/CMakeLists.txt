@@ -13,10 +13,10 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::a
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.dfwk
-        fwlib.init
+        fwlib.lib.init
         fwlib.platform.dfwkhost.threadx
-        fwlib.datastructures.linkedlist
-        fwlib.utils
+        fwlib.lib.linkedlist
+        fwlib.lib.utils
         ms::cmocka::testrunner
         ms::lib::scp_interrupts
         ms::lib::threadx

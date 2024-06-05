@@ -2,9 +2,9 @@ set(TARGET scp_avs_test.test)
 
 # Compile test
 add_executable(${TARGET} scp_avs_test.cpp
-                         scp_avs_test_mocks.cpp) 
+                         scp_avs_test_mocks.cpp)
 
-target_link_libraries(${TARGET}    
+target_link_libraries(${TARGET}
     PRIVATE
         ms::cmocka::testrunner
         ms::lib::scp_interrupts
@@ -13,10 +13,10 @@ target_link_libraries(${TARGET}
         ms::mocks::event_trace
         ms::mocks::threadx
     PUBLIC
-        fwlib.assert
+        fwlib.lib.assert
         fwlib.dfwk
-        fwlib.datastructures.linkedlist
-        fwlib.utils
+        fwlib.lib.linkedlist
+        fwlib.lib.utils
         silibs::kng_silibs_platform
  )
 
@@ -32,6 +32,8 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     DfwkAsyncRequestSetCompletionRoutine
     DfwkInterfaceSendAsync
+    DfwkAsyncRequestSetCompletionRoutine
+    avs_init
     DfwkQueueEnqueueRequest
     avs_clear_interrupt_status
     avs_enable_interrupt

@@ -11,8 +11,8 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-        fwlib.init
-        fwlib.crashDump
+        fwlib.lib.init
+        fwlib.lib.crashDump
         ms::cmocka::testrunner
         ms::lib::crash_dump::scp
 )

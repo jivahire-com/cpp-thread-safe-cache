@@ -41,8 +41,8 @@ target_link_libraries(
             ms::driver::textio::pl011
             ms::vectors::cortex_m7
             ms::lib::runtime_init::scp
-            fwlib.init
-            fwlib.utils
+            fwlib.lib.init
+            fwlib.lib.utils
 
 )
 

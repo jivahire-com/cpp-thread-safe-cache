@@ -11,15 +11,15 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET}
     PRIVATE
         clocks_sequence
-        fwlib.init
+        fwlib.lib.init
         idhw
-        fwlib.utils
+        fwlib.lib.utils
         idsw
         ms::cmocka::testrunner
         ms::lib::ioss_init
         silibs_platform
         kng_silibs_platform
-        fwlib.assert
+        fwlib.lib.assert
         ppu_v1
         atu
         pcr_ioss

@@ -38,16 +38,16 @@ add_library(${TARGET}
 target_link_libraries(
     ${TARGET}
     PRIVATE
-        fwlib.cli
-        fwlib.crashDump
+        fwlib.service.cli
+        fwlib.lib.crashDump
         fwlib.dfwk
-        fwlib.drivers.interface.text_io
-        fwlib.init
-        fwlib.mboxprimitives
+        fwlib.driver.interface.text_io
+        fwlib.lib.init
+        fwlib.lib.mboxPrimitives
         fwlib.platform.dfwkhost.threadx
-        fwlib.platform.timers.threadx
-        fwlib.utils
-        fwlib.Driver.MboxIccTransport
+        fwlib.lib.platform.impl.timers.threadx
+        fwlib.lib.utils
+        fwlib.driver.mboxIccTransport
         ms::build_data
         ms::lib::scp_avs
         ms::driver::textio::pl011
@@ -73,7 +73,7 @@ target_link_libraries(
         ms::service::ddr_manager
         ms::service::pcie_manager
         ms::service::power
-        ms::service::scp_startup_shutdown 
+        ms::service::scp_startup_shutdown
         silibs::avs
         silibs::common::lib_uart_pl011
         silibs::idhw
@@ -132,15 +132,15 @@ add_library(${TARGET}
 target_link_libraries(
     ${TARGET}
     PRIVATE
-        fwlib.cli
-        fwlib.crashDump
+        fwlib.service.cli
+        fwlib.lib.crashDump
         fwlib.dfwk
-        fwlib.init
-        fwlib.mboxprimitives
+        fwlib.lib.init
+        fwlib.lib.mboxPrimitives
         fwlib.platform.dfwkhost.threadx
-        fwlib.platform.timers.threadx
-        fwlib.utils
-        fwlib.Driver.MboxIccTransport
+        fwlib.lib.platform.impl.timers.threadx
+        fwlib.lib.utils
+        fwlib.driver.mboxIccTransport
         ms::build_data
         ms::driver::textio::pl011
         ms::lib::debug

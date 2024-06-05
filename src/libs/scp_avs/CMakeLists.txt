@@ -3,12 +3,12 @@ set(TARGET scp_avs)
 set(SRC
     ./scp_avs_driver.c)
 
-set(LIBS PUBLIC fwlib.dfwk fwlib.datastructures.linkedlist fwlib.assert)
+set(LIBS PUBLIC fwlib.dfwk fwlib.lib.linkedlist fwlib.lib.assert)
 
-add_library(${TARGET} STATIC ${SRC})    
+add_library(${TARGET} STATIC ${SRC})
 
 target_include_directories(${TARGET}
-    PUBLIC 
+    PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -24,11 +24,11 @@ target_link_libraries(
             scp_avs_cli
         PUBLIC
             ms::lib::debug
-            fwlib.assert
+            fwlib.lib.assert
             fwlib.dfwk
-            fwlib.init
-            fwlib.datastructures.linkedlist
-            fwlib.utils
+            fwlib.lib.init
+            fwlib.lib.linkedlist
+            fwlib.lib.utils
             silibs_platform
 )
 

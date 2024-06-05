@@ -9,7 +9,7 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-    fwlib.utils
+    fwlib.lib.utils
     fwlib.dfwk
     fwlib.platform.dfwkhost.threadx
     kng_silibs_platform

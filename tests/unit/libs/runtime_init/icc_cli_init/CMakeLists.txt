@@ -10,9 +10,9 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-        fwlib.cli
-        fwlib.init
-        fwlib.utils
+        fwlib.service.cli
+        fwlib.lib.init
+        fwlib.lib.utils
         ms::lib::icc::cli
         ms::cmocka::testrunner
         silibs::platform

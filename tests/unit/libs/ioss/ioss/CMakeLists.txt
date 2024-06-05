@@ -16,11 +16,11 @@ target_link_libraries(${TARGET}
         ms::lib::error_handler
         silibs_platform
         silibs::kng_silibs_platform
-        fwlib.assert
+        fwlib.lib.assert
         ppu_v1
         atu
         pcr_ioss
-        fwlib.utils
+        fwlib.lib.utils
 )
 
 lint_target(${TARGET})

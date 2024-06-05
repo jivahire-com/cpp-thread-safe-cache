@@ -11,8 +11,8 @@ target_link_libraries(${TARGET}
     PRIVATE
         cmn800
         cmn800_sequence
-        fwlib.init
-        fwlib.utils
+        fwlib.lib.init
+        fwlib.lib.utils
         idsw
         kng_silibs_platform
         ms::cmocka::testrunner

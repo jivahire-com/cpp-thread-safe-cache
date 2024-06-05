@@ -9,11 +9,11 @@ add_library(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
-    fwlib.assert
+    fwlib.lib.assert
     fwlib.dfwk
-    fwlib.platform.errorhandler
+    fwlib.lib.interface.platform.errorhandler
     fwlib.platform.dfwkhost.threadx
-    fwlib.utils
+    fwlib.lib.utils
     kng_silibs_platform
     ms::lib::threadx
     silibs_platform

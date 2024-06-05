@@ -29,8 +29,8 @@ target_link_libraries(${TARGET}
         silibs::sensor_ram_bridge
     PRIVATE
         fwlib.dfwk
-        fwlib.platform.errorhandler
-        fwlib.platform.threadx
+        fwlib.lib.interface.platform.errorhandler
+        fwlib.lib.interface.platform.threadx
         ms::client_interface::startup_shutdown
         ms::lib::event_trace::trace
 )

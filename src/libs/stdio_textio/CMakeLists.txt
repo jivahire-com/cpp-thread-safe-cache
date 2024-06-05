@@ -6,11 +6,11 @@ set(SRC
     ./stdio_textio.c
 )
 
-set(LIBS 
+set(LIBS
         PRIVATE
-            fwlib.assert
-            fwlib.drivers.interface.text_io
-            fwlib.utils
+            fwlib.lib.assert
+            fwlib.driver.interface.text_io
+            fwlib.lib.utils
 )
 
 add_library(${TARGET} STATIC ${SRC})

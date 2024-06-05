@@ -11,15 +11,15 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.dfwk
-        fwlib.init
+        fwlib.lib.init
         fwlib.platform.dfwkhost.threadx
-        fwlib.utils
+        fwlib.lib.utils
         ms::lib::threadx
         ms::cmocka::testrunner
 )
 
 # Generic threadx lock port provided by fwlibs
-set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_LOCK "fwlib.platform.lock.threadx")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_LOCK "fwlib.lib.platform.impl.lock.threadx")
 
 # Generic ports implmented within this project
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_THREADX "ms::lib::threadx")

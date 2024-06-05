@@ -1,11 +1,11 @@
 set(TARGET power.test.runconfig)
 
 # Compile test
-add_executable(${TARGET} 
+add_executable(${TARGET}
     power_runconfig_test.cpp
-) 
+)
 
-target_link_libraries(${TARGET}    
+target_link_libraries(${TARGET}
     PRIVATE
         ms::cmocka::testrunner
         ms::lib::scp_avs
@@ -14,19 +14,19 @@ target_link_libraries(${TARGET}
         ms::mocks::threadx
         ms::service::power
     PUBLIC
-        fwlib.assert
+        fwlib.lib.assert
         fwlib.dfwk
-        fwlib.datastructures.linkedlist
-        fwlib.utils
+        fwlib.lib.linkedlist
+        fwlib.lib.utils
  )
 
 # Get private includes for module under test
-target_include_directories(${TARGET} 
-    PRIVATE 
+target_include_directories(${TARGET}
+    PRIVATE
         $<TARGET_PROPERTY:ms::service::power,INCLUDE_DIRECTORIES>
         ../
         ../mocks/
-        
+
 )
 
 # Defining platform APIs
@@ -41,8 +41,8 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    dvfs_vft_from_fuse_data    
-    power_fuses_read    
+    dvfs_vft_from_fuse_data
+    power_fuses_read
     power_knobs_read
 )
 

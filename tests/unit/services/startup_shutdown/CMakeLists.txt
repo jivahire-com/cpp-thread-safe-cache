@@ -1,14 +1,14 @@
 set(TARGET sos.test)
 
 # Compile test
-add_executable(${TARGET} 
+add_executable(${TARGET}
     startup_shutdown_interface_test.cpp
     startup_shutdown_scp_test.cpp
     startup_shutdown_test.cpp
     startup_shutdown_thread_test.cpp
-) 
+)
 
-target_link_libraries(${TARGET}    
+target_link_libraries(${TARGET}
     PRIVATE
         ms::cmocka::testrunner
         ms::lib::threadx
@@ -16,15 +16,15 @@ target_link_libraries(${TARGET}
         ms::mocks::threadx
         ms::service::scp_startup_shutdown
     PUBLIC
-        fwlib.assert
+        fwlib.lib.assert
         fwlib.dfwk
-        fwlib.datastructures.linkedlist
-        fwlib.utils
+        fwlib.lib.linkedlist
+        fwlib.lib.utils
  )
 
 # Get private includes for module under test
-target_include_directories(${TARGET} 
-    PRIVATE 
+target_include_directories(${TARGET}
+    PRIVATE
         $<TARGET_PROPERTY:ms::service::scp_startup_shutdown,INCLUDE_DIRECTORIES>
 )
 
@@ -44,7 +44,7 @@ mock_target(${TARGET}
     DfwkInterfaceSendAsync
     DfwkInterfaceSendSync
     DfwkInterfaceOpen
-    FpFwListInitialize  
+    FpFwListInitialize
     FpFwListInsertTail
     sos_core_boot_stages
     sos_core_boot_stage_count

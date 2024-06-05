@@ -1,20 +1,20 @@
 # client interface code
 set(TARGET kng.client_interface.startup_shutdown)
 
-add_library(${TARGET} 
-    STATIC  
+add_library(${TARGET}
+    STATIC
     startup_shutdown_client_interface.c
 )
 
-target_link_libraries(${TARGET} 
+target_link_libraries(${TARGET}
     PUBLIC
     PRIVATE
         fwlib.dfwk
-        fwlib.platform.errorhandler
+        fwlib.lib.interface.platform.errorhandler
 )
 
 target_include_directories(${TARGET}
-    PUBLIC 
+    PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -28,16 +28,16 @@ add_library(ms::client_interface::startup_shutdown ALIAS kng.client_interface.st
 
 
 # scp/mcp service
-set(STARTUP_COMMON_SOURCE 
+set(STARTUP_COMMON_SOURCE
     startup_shutdown.c
     startup_shutdown_ssi.c
     startup_shutdown_thread.c
 )
 
-set(STARTUP_COMMON_LIBS 
-    fwlib.dfwk     
-    fwlib.platform.errorhandler
-    fwlib.init
+set(STARTUP_COMMON_LIBS
+    fwlib.dfwk
+    fwlib.lib.interface.platform.errorhandler
+    fwlib.lib.init
     ms::build_data
     ms::lib::threadx
     ms::lib::debug
@@ -48,20 +48,20 @@ set(STARTUP_COMMON_LIBS
 
 set(TARGET kng.service.scp_startup_shutdown)
 
-add_library(${TARGET} 
-    STATIC  
+add_library(${TARGET}
+    STATIC
         ${STARTUP_COMMON_SOURCE}
         startup_shutdown_scp.c
 )
 
-target_link_libraries(${TARGET} 
+target_link_libraries(${TARGET}
     PUBLIC
     PRIVATE
         ${STARTUP_COMMON_LIBS}
 )
 
 target_include_directories(${TARGET}
-    PUBLIC 
+    PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}

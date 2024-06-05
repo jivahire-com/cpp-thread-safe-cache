@@ -11,8 +11,8 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.dfwk
-        fwlib.init
-        fwlib.utils
+        fwlib.lib.init
+        fwlib.lib.utils
         fwlib.platform.dfwkhost.threadx
         ms::client_interface::startup_shutdown
         ms::cmocka::testrunner
@@ -30,7 +30,7 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    DfwkAsyncRequestInititalize    
+    DfwkAsyncRequestInititalize
     fpfw_init_get_handle
     idsw_get_die_id
     sos_init

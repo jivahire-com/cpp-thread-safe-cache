@@ -15,8 +15,8 @@ add_library(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
-    fwlib.assert
-    fwlib.crashDump
+    fwlib.lib.assert
+    fwlib.lib.crashDump
     ms::lib::threadx
 )
 
@@ -48,8 +48,8 @@ add_library(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
-    fwlib.assert
-    fwlib.crashDump
+    fwlib.lib.assert
+    fwlib.lib.crashDump
     ms::lib::threadx
 )
 

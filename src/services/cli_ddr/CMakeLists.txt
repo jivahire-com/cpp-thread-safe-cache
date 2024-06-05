@@ -16,7 +16,7 @@ target_include_directories(
 target_link_libraries(
     ${TARGET}
         PRIVATE
-        fwlib.cli
+        fwlib.service.cli
 )
 
 lint_target(${TARGET})

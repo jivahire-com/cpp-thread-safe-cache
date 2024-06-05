@@ -1,15 +1,15 @@
 set(TARGET kng.lib.ioss.usb)
 
-add_library(${TARGET} 
-    STATIC 
+add_library(${TARGET}
+    STATIC
         usb.c
 )
 
-target_link_libraries(${TARGET} 
+target_link_libraries(${TARGET}
     PRIVATE
         kng_silibs_platform
         silibs_platform
-        fwlib.assert
+        fwlib.lib.assert
         ppu_v1
         atu
         ioss
@@ -19,7 +19,7 @@ target_link_libraries(${TARGET}
 )
 
 target_include_directories(${TARGET}
-    PUBLIC 
+    PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 

@@ -1,5 +1,5 @@
 set(TARGET ddr_manager_service)
-set(LIBS PUBLIC fwlib.dfwk fwlib.assert)
+set(LIBS PUBLIC fwlib.dfwk fwlib.lib.assert)
 
 # Add target for the service
 add_library(${TARGET}
@@ -23,12 +23,12 @@ target_link_libraries(${TARGET}
         silibs::platform
         idhw
         fwlib.dfwk
-        fwlib.init
+        fwlib.lib.init
     PUBLIC
         fwlib.platform.dfwkhost.threadx
         fwlib.dfwk
-        fwlib.platform.errorhandler
-        fwlib.platform.threadx
+        fwlib.lib.interface.platform.errorhandler
+        fwlib.lib.interface.platform.threadx
 )
 
 lint_target(${TARGET})

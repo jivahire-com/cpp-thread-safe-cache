@@ -2,10 +2,10 @@ set(TARGET kng.lib.event_trace.trace)
 
 add_library(${TARGET} INTERFACE)
 
-target_link_libraries(${TARGET} 
+target_link_libraries(${TARGET}
     INTERFACE
-        fwlib.utils
-        EventTracing
+        fwlib.lib.utils
+        fwlib.lib.eventTracing.eventTracing
         IFPFW.EventTracing
 )
 

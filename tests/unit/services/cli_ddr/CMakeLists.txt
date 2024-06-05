@@ -12,7 +12,7 @@ target_compile_definitions(${TARGET} PUBLIC UNIT_TEST)
 
 target_link_libraries(${TARGET}
     PRIVATE
-        fwlib.cli
+        fwlib.service.cli
         ms::cmocka::testrunner
 )
 

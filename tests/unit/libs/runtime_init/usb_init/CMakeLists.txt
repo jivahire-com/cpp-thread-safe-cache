@@ -10,15 +10,15 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-        fwlib.init
+        fwlib.lib.init
         idhw
-        fwlib.utils
+        fwlib.lib.utils
         idsw
         ms::cmocka::testrunner
         ms::lib::ioss::usb
         silibs_platform
         kng_silibs_platform
-        fwlib.assert
+        fwlib.lib.assert
 )
 
 lint_target(${TARGET})

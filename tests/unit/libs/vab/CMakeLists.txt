@@ -9,7 +9,7 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-    fwlib.utils
+    fwlib.lib.utils
     ms::cmocka::mocks
     ms::cmocka::testrunner
     ms::lib::error_handler

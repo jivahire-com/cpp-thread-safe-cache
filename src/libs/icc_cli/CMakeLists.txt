@@ -4,10 +4,10 @@ set(SRC
     src/icc_mbox_cli.c
 )
 
-set(LIBS 
+set(LIBS
         PRIVATE
-            fwlib.cli
-            fwlib.utils
+            fwlib.service.cli
+            fwlib.lib.utils
             silibs::kng_silibs_platform
             silibs::platform
 )

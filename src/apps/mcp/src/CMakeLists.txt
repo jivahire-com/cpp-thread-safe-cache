@@ -40,8 +40,8 @@ target_link_libraries(
             ms::driver::textio::pl011
             ms::vectors::cortex_m7
             ms::lib::runtime_init::mcp
-            fwlib.init
-            fwlib.utils
+            fwlib.lib.init
+            fwlib.lib.utils
 )
 
 target_include_directories(
@@ -52,9 +52,9 @@ target_include_directories(
 
 target_link_options(
     ${TARGET}
-        PRIVATE 
-            -T ${CMAKE_CURRENT_LIST_DIR}/../inc/mcp_memory.ld 
-            -Wl,-Map=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mcp/${TARGET}.map 
+        PRIVATE
+            -T ${CMAKE_CURRENT_LIST_DIR}/../inc/mcp_memory.ld
+            -Wl,-Map=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mcp/${TARGET}.map
             -L${CMAKE_CURRENT_SOURCE_DIR}/../inc
             -ereset_handler
             -Wl,--build-id
@@ -62,8 +62,8 @@ target_link_options(
 
 set_property(
     TARGET ${TARGET}
-    APPEND PROPERTY LINK_DEPENDS 
-        ${CMAKE_CURRENT_LIST_DIR}/../inc/mcp_memory.ld 
+    APPEND PROPERTY LINK_DEPENDS
+        ${CMAKE_CURRENT_LIST_DIR}/../inc/mcp_memory.ld
         ${COMMON_LINK_FILES}
 )
 
@@ -72,8 +72,8 @@ set_property(
 #   can use generator expressions to add additional link time requiements to this
 #   target. See io/CMakeLists.txt for an example.
 set_target_properties(
-    ${TARGET} 
-        PROPERTIES 
+    ${TARGET}
+        PROPERTIES
             THREADX_KERNEL 1
 )
 

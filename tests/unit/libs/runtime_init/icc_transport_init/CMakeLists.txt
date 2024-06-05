@@ -7,12 +7,12 @@ set(SOURCES
 
 set(LIBRARIES
     fwlib.dfwk
-    fwlib.init
-    fwlib.mboxprimitives
+    fwlib.lib.init
+    fwlib.lib.mboxPrimitives
     fwlib.platform.dfwkhost.threadx
-    fwlib.platform.timers.threadx
-    fwlib.utils
-    fwlib.Driver.MboxIccTransport
+    fwlib.lib.platform.impl.timers.threadx
+    fwlib.lib.utils
+    fwlib.driver.mboxIccTransport
     ms::cmocka::testrunner
     ms::lib::threadx
     silibs::platform
@@ -25,12 +25,12 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET} PRIVATE ${LIBRARIES})
 
 # Generic threadx lock port provided by fwlibs
-set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_LOCK "fwlib.platform.lock.threadx")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_LOCK "fwlib.lib.platform.impl.lock.threadx")
 
 # Generic ports implmented within this project
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_THREADX "ms::lib::threadx")
 
-# Provide compile time definition 
+# Provide compile time definition
 target_compile_definitions(${TARGET} PRIVATE MSCP2HSP_MAILBOX_BASE_ADDRESS=1000)
 
 lint_target(${TARGET})

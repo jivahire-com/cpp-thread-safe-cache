@@ -9,14 +9,14 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-        fwlib.init
+        fwlib.lib.init
         ms::cmocka::testrunner
         ms::cmocka::mocks
         ms::lib::ioss::usb
         ms::lib::error_handler
         silibs_platform
         kng_silibs_platform
-        fwlib.assert
+        fwlib.lib.assert
         idsw
         usb_init
         silibs::ioss

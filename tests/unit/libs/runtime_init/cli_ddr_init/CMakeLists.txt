@@ -10,9 +10,9 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-        fwlib.init
-        fwlib.cli 		
-        ms::lib::ddr::cli		
+        fwlib.lib.init
+        fwlib.service.cli
+        ms::lib::ddr::cli
         ms::cmocka::testrunner
 )
 

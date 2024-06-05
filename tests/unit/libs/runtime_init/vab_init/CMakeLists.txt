@@ -9,7 +9,7 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-    fwlib.init
+    fwlib.lib.init
     ms::cmocka::testrunner
     ms::lib::vab
     silibs::idsw

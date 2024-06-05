@@ -11,13 +11,13 @@ option(FPFW_ENABLE_LINT "Enables additional lints during compilation" OFF)
 option(FPFW_ENABLE_DOCS "Creates doxygen documentation" OFF)
 
 # Generic threadx lock port provided by fwlibs
-set(FPFW_PLATFORM_IMPL_LOCK "fwlib.platform.lock.threadx")
+set(FPFW_PLATFORM_IMPL_LOCK "fwlib.lib.platform.impl.lock.threadx")
 
 # Generic ports implmented within this project
 set(FPFW_PLATFORM_IMPL_THREADX "ms::lib::threadx")
 
 # Generic timer ports implmented within this project
-set(FPFW_PLATFORM_IMPL_TIMER "fwlib.platform.timers.threadx")
+set(FPFW_PLATFORM_IMPL_TIMER "fwlib.lib.platform.impl.timers.threadx")
 
 include(FetchContent)
 FetchContent_Declare(
@@ -30,7 +30,7 @@ FetchContent_Declare(
 FetchContent_GetProperties(${TARGET})
 
 if (NOT ${TARGET}_POPULATED)
-    FetchContent_Populate(${TARGET})    
+    FetchContent_Populate(${TARGET})
     add_subdirectory(${TARGET_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src/1pfw.fwlibs EXCLUDE_FROM_ALL)
 endif()
 
@@ -39,4 +39,4 @@ include($ENV{REPO_APP_CMAKE_TOOLCHAIN_DIR}/cmake/format.cmake)
 include($ENV{REPO_APP_CMAKE_TOOLCHAIN_DIR}/cmake/coverage.cmake)
 include($ENV{REPO_APP_CMAKE_TOOLCHAIN_DIR}/cmake/mock.cmake)
 
-target_compile_options(fwlib.crashDump PRIVATE "-O2")
+target_compile_options(fwlib.lib.crashDump PRIVATE "-O2")

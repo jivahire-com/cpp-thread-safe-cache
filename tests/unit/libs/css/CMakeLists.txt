@@ -11,7 +11,7 @@ target_link_libraries(${TARGET}
     PRIVATE
         atu
         clocks_sequence
-        fwlib.init
+        fwlib.lib.init
         idhw
         idsw
         kng_silibs_platform

@@ -1,15 +1,15 @@
 set(TARGET power.test.hw_int)
 
 # Compile test
-add_executable(${TARGET} 
+add_executable(${TARGET}
     power_hw_int_test.cpp
     power_hw_int_telemetry_test.cpp
     ../mocks/mock_dvfs.c
     ../mocks/mock_odcm.c
     ../mocks/mock_pvt.c
-) 
+)
 
-target_link_libraries(${TARGET}    
+target_link_libraries(${TARGET}
     PRIVATE
         ms::cmocka::testrunner
         ms::lib::scp_avs
@@ -18,19 +18,19 @@ target_link_libraries(${TARGET}
         ms::mocks::threadx
         ms::service::power
     PUBLIC
-        fwlib.assert
+        fwlib.lib.assert
         fwlib.dfwk
-        fwlib.datastructures.linkedlist
-        fwlib.utils
+        fwlib.lib.linkedlist
+        fwlib.lib.utils
  )
 
 # Get private includes for module under test
-target_include_directories(${TARGET} 
-    PRIVATE 
+target_include_directories(${TARGET}
+    PRIVATE
         $<TARGET_PROPERTY:ms::service::power,INCLUDE_DIRECTORIES>
         ../
         ../mocks/
-        
+
 )
 
 # Defining platform APIs

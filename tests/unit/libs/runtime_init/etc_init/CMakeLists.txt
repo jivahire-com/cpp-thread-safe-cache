@@ -12,7 +12,7 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::a
 
 target_link_libraries(${TARGET}
     PRIVATE
-        fwlib.init
+        fwlib.lib.init
         ms::build_data
         ms::cmocka::testrunner
         ms::lib::event_trace::collector

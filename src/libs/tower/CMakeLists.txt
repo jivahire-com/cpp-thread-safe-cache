@@ -1,13 +1,13 @@
 set(TARGET kng.lib.tower)
 
-add_library(${TARGET} 
-    STATIC 
+add_library(${TARGET}
+    STATIC
         tower.c
 )
 
-target_link_libraries(${TARGET} 
+target_link_libraries(${TARGET}
     PRIVATE
-    fwlib.assert
+    fwlib.lib.assert
     silibs_platform
     ms::lib::register_headers
     silibs::atu
@@ -16,7 +16,7 @@ target_link_libraries(${TARGET}
 )
 
 target_include_directories(${TARGET}
-    PUBLIC 
+    PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
 )
 

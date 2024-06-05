@@ -17,7 +17,7 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::a
 
 target_link_libraries(${TARGET}
     PRIVATE
-    fwlib.mboxprimitives
+    fwlib.lib.mboxPrimitives
     ms::cmocka::testrunner
     ms::boot_loader::interface
     ms::lib::zlib

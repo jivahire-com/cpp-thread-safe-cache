@@ -5,10 +5,10 @@ set(SRC
     ./stdio_textio_mocks.c
 )
 
-set(LIBS 
+set(LIBS
         PRIVATE
-            fwlib.drivers.interface.text_io
-            fwlib.utils
+            fwlib.driver.interface.text_io
+            fwlib.lib.utils
             ms::cmocka::mocks
 )
 

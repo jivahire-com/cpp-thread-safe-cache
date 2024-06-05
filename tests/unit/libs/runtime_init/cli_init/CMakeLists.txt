@@ -10,10 +10,10 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-        fwlib.cli
+        fwlib.service.cli
         fwlib.dfwk
-        fwlib.init
-        fwlib.utils
+        fwlib.lib.init
+        fwlib.lib.utils
         ms::cmocka::testrunner
         ms::driver::textio::pl011
         ms::lib::threadx

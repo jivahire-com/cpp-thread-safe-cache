@@ -15,8 +15,8 @@ set(LIBS
         ms::lib::stdio_textio
         ms::driver::textio::pl011
         ms::mocks::threadx
-        fwlib.init
-        fwlib.utils
+        fwlib.lib.init
+        fwlib.lib.utils
 )
 
 # Compile test

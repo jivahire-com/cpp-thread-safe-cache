@@ -11,9 +11,9 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.dfwk
-        fwlib.drivers.interface.text_io
-        fwlib.init
-        fwlib.utils
+        fwlib.driver.interface.text_io
+        fwlib.lib.init
+        fwlib.lib.utils
         fwlib.platform.dfwkhost.threadx
         ms::cmocka::testrunner
         ms::driver::textio::pl011

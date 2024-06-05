@@ -30,7 +30,7 @@ target_link_libraries(
         silibs::kng_silibs_platform
         silibs::sdm_init
     PRIVATE
-        fwlib.assert
+        fwlib.lib.assert
         ms::lib::debug
         ms::lib::utils
         silibs::idsw

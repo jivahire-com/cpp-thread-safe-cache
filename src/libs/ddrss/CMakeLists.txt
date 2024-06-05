@@ -13,7 +13,7 @@ target_link_libraries(${TARGET}
     ddrss
     atu
     idsw
-    fwlib.assert
+    fwlib.lib.assert
 )
 
 target_include_directories(${TARGET}

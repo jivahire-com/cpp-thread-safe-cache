@@ -12,7 +12,7 @@ target_link_libraries(
         PRIVATE
         fwlib.dfwk
         fwlib.platform.dfwkhost.threadx
-        fwlib.platform.errorhandler
+        fwlib.lib.interface.platform.errorhandler
         kng_silibs_platform
         ms::driver::pcie
         ms::lib::debug

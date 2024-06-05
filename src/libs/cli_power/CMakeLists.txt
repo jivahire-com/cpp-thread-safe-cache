@@ -17,7 +17,7 @@ target_link_libraries(
     ${TARGET}
         PRIVATE
         ms::build_data
-        fwlib.cli
+        fwlib.service.cli
 )
 
 lint_target(${TARGET})

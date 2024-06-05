@@ -1,13 +1,13 @@
 set(TARGET kng.lib.css)
 
-add_library(${TARGET} 
-    STATIC 
+add_library(${TARGET}
+    STATIC
         css.c
 )
 
-target_link_libraries(${TARGET} 
+target_link_libraries(${TARGET}
     PRIVATE
-    fwlib.assert
+    fwlib.lib.assert
     ms::lib::register_headers
     silibs_platform
     silibs::atu
@@ -18,7 +18,7 @@ target_link_libraries(${TARGET}
 )
 
 target_include_directories(${TARGET}
-    PUBLIC 
+    PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
 )
 

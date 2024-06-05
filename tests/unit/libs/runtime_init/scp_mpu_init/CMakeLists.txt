@@ -10,10 +10,10 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-        fwlib.init
-        fwlib.utils
+        fwlib.lib.init
+        fwlib.lib.utils
         ms::cmocka::testrunner
-        ms::cmsis::interface 
+        ms::cmsis::interface
         ms::lib::cortex_m7::mpu
         silibs::platform
         silibs::kng_silibs_platform

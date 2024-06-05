@@ -29,7 +29,7 @@ target_link_libraries(
     ${TARGET}
     PRIVATE
     register_headers
-    fwlib.mboxprimitives
+    fwlib.lib.mboxPrimitives
     ms::cmsis::interface
     ms::boot_loader::interface
     ms::lib::zlib

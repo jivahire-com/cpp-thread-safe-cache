@@ -8,7 +8,7 @@ add_library(${TARGET}
 target_link_libraries(
     ${TARGET}
         PRIVATE
-            fwlib.assert
+            fwlib.lib.assert
             ms::lib::debug
             silibs::atu
             silibs::kng_silibs_platform

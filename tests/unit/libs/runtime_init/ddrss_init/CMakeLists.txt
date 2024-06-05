@@ -10,7 +10,7 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-        fwlib.init
+        fwlib.lib.init
         idhw
         ms::cmocka::testrunner
         ms::lib::ddrss_init

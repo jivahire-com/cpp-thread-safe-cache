@@ -21,7 +21,7 @@
 FPFW_ET_DEFINE_PROVIDER_EX(
     EVENT_TRACE_PROVIDER_ID_MCP_MAIN, // ID
     MCP_MAIN,                         // Name
-    ET_MASK                           // Logging Level Mask
+    ET_LEVEL_MASK_ALL                 // Logging Level Mask
 )
 
 /**

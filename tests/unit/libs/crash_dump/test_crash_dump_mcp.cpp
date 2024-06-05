@@ -3,8 +3,8 @@
 //
 
 /**
- * @file test_crash_dump.cpp
- * Crash dump tests
+ * @file test_crash_dump_mcp.cpp
+ * Crash dump tests for MCP
  */
 
 /*------------- Includes -----------------*/
@@ -17,12 +17,18 @@
 #include <stddef.h>        // for NULL
 
 extern "C" {
-#include <crash_dump.h> // for crash_dump_init
-#include <tx_api.h>     // for UINT, TX_MUTEX, CHAR, ULONG
+#include <crash_dump.h>      // for crash_dump_init
+#include <crash_dump_gpio.h> // for cd_gpio_assert_cd_available, cd_gpio_as...
+#include <tx_api.h>          // for UINT, TX_MUTEX, CHAR, ULONG
 
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
+typedef struct _gpio_test_data_t
+{
+    bool input;
+    uint32_t expected_level;
+} gpio_test_data_t;
 
 /*-------- Function Prototypes -----------*/
 
@@ -132,6 +138,16 @@ UINT __wrap__tx_mutex_put(TX_MUTEX* mutex_ptr)
     return 0;
 }
 
+int __wrap_gpio_set_output(uint32_t gpio_pin_id, uint32_t level)
+{
+    check_expected(gpio_pin_id);
+    check_expected(level);
+
+    function_called();
+
+    return 0;
+}
+
 //
 // Tests
 //
@@ -142,6 +158,10 @@ UINT __wrap__tx_mutex_put(TX_MUTEX* mutex_ptr)
 TEST_FUNCTION(test_crash_dump_init, nullptr, nullptr)
 {
     // Set up expectations
+    expect_function_call(__wrap_gpio_set_output);
+    expect_value(__wrap_gpio_set_output, gpio_pin_id, 0x0602); // MSCP_EXP_GPIO_6 | SAFE_MODE_REQ (2)
+    expect_value(__wrap_gpio_set_output, level, 1);
+
     expect_function_call(__wrap_FPFwCDInitMemoryPool);
     expect_not_value(__wrap_FPFwCDInitMemoryPool, ctx, NULL);
     expect_any(__wrap_FPFwCDInitMemoryPool, baseAddr);
@@ -178,5 +198,51 @@ TEST_FUNCTION(test_crash_dump_init, nullptr, nullptr)
 
     // Call API under test
     crash_dump_init();
+}
+
+TEST_FUNCTION(test_crash_dump_in_progress_assert, nullptr, nullptr)
+{
+    gpio_test_data_t test_data[] = {{
+                                        .input = true,
+                                        .expected_level = 0,
+                                    },
+                                    {
+                                        .input = false,
+                                        .expected_level = 1,
+                                    }};
+
+    for (size_t i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++)
+    {
+        // Set up expectations
+        expect_function_call(__wrap_gpio_set_output);
+        expect_value(__wrap_gpio_set_output, gpio_pin_id, 0x0602); // MSCP_EXP_GPIO_6 | SAFE_MODE_REQ (2)
+        expect_value(__wrap_gpio_set_output, level, test_data[i].expected_level);
+
+        // Call API under test
+        cd_gpio_assert_cd_in_progress(test_data[i].input);
+    }
+}
+
+TEST_FUNCTION(test_crash_dump_available_assert, nullptr, nullptr)
+{
+    gpio_test_data_t test_data[] = {{
+                                        .input = true,
+                                        .expected_level = 0,
+                                    },
+                                    {
+                                        .input = false,
+                                        .expected_level = 1,
+                                    }};
+
+    for (size_t i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++)
+    {
+        // Set up expectations
+        expect_function_call(__wrap_gpio_set_output);
+        expect_value(__wrap_gpio_set_output, gpio_pin_id, 0x0603); // MSCP_EXP_GPIO_6 | GPIO_CD_AVAILABLE (3)
+        expect_value(__wrap_gpio_set_output, level, test_data[i].expected_level);
+
+        // Call API under test
+        cd_gpio_assert_cd_available(test_data[i].input);
+    }
 }
 }

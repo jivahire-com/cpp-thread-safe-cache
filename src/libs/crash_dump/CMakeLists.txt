@@ -51,6 +51,8 @@ target_link_libraries(${TARGET}
     fwlib.lib.assert
     fwlib.lib.crashDump
     ms::lib::threadx
+    silibs::gpio
+    silibs_platform
 )
 
 target_include_directories(${TARGET}

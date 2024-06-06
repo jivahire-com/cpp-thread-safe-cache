@@ -22,8 +22,9 @@
 
 /*-------- Function Prototypes -----------*/
 #ifndef GPIO_DRIVER_AVAILABLE // Stub of gpio until driver is available : https://azurecsi.visualstudio.com/Dev/_workitems/edit/1828509
-#include "FpFwUtils.h" // for FPFW_UNUSED
-#include <stdint.h>    // for uint32_t
+    #include "FpFwUtils.h" // for FPFW_UNUSED
+
+    #include <stdint.h> // for uint32_t
 
 int gpio_set_output(uint32_t gpio_pin_id, uint32_t level)
 {

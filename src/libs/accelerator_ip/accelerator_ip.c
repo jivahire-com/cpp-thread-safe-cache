@@ -77,7 +77,7 @@ static int32_t configure_vab(vab_ctxt_t* p_vab_ctxt, atu_mapping_ctxt_t* p_vab_a
     int32_t ret = atu_map(atu_id, p_atu_map_entry);
     if (ret != SILIBS_SUCCESS)
     {
-        debug_print("Vab ATU Mapping failed");
+        debug_print("Vab ATU Mapping failed\n");
         ret = ACCEL_RET_FAIL_ATU_MAP;
         goto exit;
     }
@@ -88,7 +88,7 @@ static int32_t configure_vab(vab_ctxt_t* p_vab_ctxt, atu_mapping_ctxt_t* p_vab_a
 
     // Configure VAB SAM
     configure_vab_system_addr_map(vab_base_addr, mscp_start_address + VAB_VAB_TOWER_ADDRESS);
-    debug_print("Vab SAM Configuration Completed");
+    debug_print("Vab SAM Configuration Completed\n");
 
     // TODO (ADO 1728276): PCR is not implemented in SVP
     if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
@@ -98,7 +98,7 @@ static int32_t configure_vab(vab_ctxt_t* p_vab_ctxt, atu_mapping_ctxt_t* p_vab_a
         ret = vab_pcr_init(mscp_start_address + VAB_VAB_PCR_TOP_ADDRESS);
         if (ret != SILIBS_SUCCESS)
         {
-            debug_print("Vab PCR configuration failed");
+            debug_print("Vab PCR configuration failed\n");
             ret = ACCEL_RET_FAIL_VAB_PCR;
             goto exit_atu_unmap;
         }
@@ -113,7 +113,7 @@ static int32_t configure_vab(vab_ctxt_t* p_vab_ctxt, atu_mapping_ctxt_t* p_vab_a
     ret = smmu_enable_access_check(smmu_tcu_base_addr) ? SILIBS_SUCCESS : SILIBS_E_PANIC;
     if (ret != SILIBS_SUCCESS)
     {
-        debug_print("Vab SMMU is not enabled");
+        debug_print("Vab SMMU is not enabled\n");
         ret = ACCEL_RET_FAIL_SMMU_ENABLE;
         goto exit_atu_unmap;
     }
@@ -125,7 +125,7 @@ static int32_t configure_vab(vab_ctxt_t* p_vab_ctxt, atu_mapping_ctxt_t* p_vab_a
     ret = smmu_configure_gbpa(smmu_tcu_base_addr, &smmu_gbpa_cfg, security_state);
     if (ret != SILIBS_SUCCESS)
     {
-        debug_print("Vab SMMU GBPA Failed");
+        debug_print("Vab SMMU GBPA Failed\n");
         ret = ACCEL_RET_FAIL_SMMU_GPBA_ENABLE;
         goto exit_atu_unmap;
     }
@@ -141,7 +141,7 @@ static int32_t configure_vab(vab_ctxt_t* p_vab_ctxt, atu_mapping_ctxt_t* p_vab_a
         retry_cnt++;
         if (retry_cnt > MAX_RETRY_CNT_FOR_SMMU_CONFIGURE_GPBA_CHECK)
         {
-            debug_print("Vab SMMU GBPA Check Failed");
+            debug_print("Vab SMMU GBPA Check Failed\n");
             ret = ACCEL_RET_FAIL_SMMU_GPBA_ENABLE;
             goto exit_atu_unmap;
         }
@@ -152,7 +152,7 @@ exit_atu_unmap:
     sts = atu_unmap(atu_id, p_atu_map_entry);
     if (sts != SILIBS_SUCCESS)
     {
-        debug_print("Vab ATU Unmapping failed");
+        debug_print("Vab ATU Unmapping failed\n");
     }
 
 exit:
@@ -186,13 +186,13 @@ static int32_t configure_accel_subsystem_tower(accelip_metadata_t accelip_metada
     // Will be used when more IP of this tower will be configured.
     UNUSED(p_accelss_tower_attr);
 
-    debug_print("Accel SS init start");
+    debug_print("Accel SS init start\n");
 
     // Create ATU Mapping (SCP View) for the Accel SS
     int32_t ret = atu_map(atu_id, p_atu_map_entry);
     if (ret != SILIBS_SUCCESS)
     {
-        debug_print("Accel SS ATU Mapping failed");
+        debug_print("Accel SS ATU Mapping failed\n");
         return ACCEL_RET_FAIL_ATU_MAP;
     }
 
@@ -214,20 +214,20 @@ static int32_t configure_accel_subsystem_tower(accelip_metadata_t accelip_metada
         ret = accelss_init_pcr(mscp_start_address + accel_pcr_addr_offset);
         if (ret != SILIBS_SUCCESS)
         {
-            debug_print("Accel SS PCR configuration failed");
+            debug_print("Accel SS PCR configuration failed\n");
             ret = ACCEL_RET_FAIL_SS_PCR;
             goto exit_atu_unmap;
         }
     }
 
-    debug_print("Accel SS init done");
+    debug_print("Accel SS init done\n");
 
 exit_atu_unmap:
     // Destroy ATU Mapping (SCP View) for the given VAB instance
     sts = atu_unmap(atu_id, p_atu_map_entry);
     if (sts != SILIBS_SUCCESS)
     {
-        debug_print("Accel SS ATU Unmapping failed");
+        debug_print("Accel SS ATU Unmapping failed\n");
     }
 
     return ((ret != SILIBS_SUCCESS) ? ret : sts);
@@ -474,7 +474,7 @@ static int32_t sdm_init_enable_ecc(uintptr_t ext_cfg_addr, _addressblock_0x10000
 
 static void silibs_configure_pcie_params(uint64_t accelip_config_base_addr, accelip_pcie_ctxt_t* p_pcie_ctxt_t)
 {
-    debug_print("PCIe Params init start");
+    debug_print("PCIe Params init start\n");
 
     // Pre pcie config
     silib_sdm_init_set_rciep_pf_type0(accelip_config_base_addr, p_pcie_ctxt_t->p_rciep_type0_ctxt);
@@ -500,14 +500,14 @@ static void silibs_configure_pcie_params(uint64_t accelip_config_base_addr, acce
 
     // TODO (ADO 1728281): total BPEs setting
 
-    debug_print("PCIe Params init done");
+    debug_print("PCIe Params init done\n");
 }
 
 static int32_t silibs_configure_emcpu_params(uint64_t accelip_config_base_addr, accelip_emcpu_ctxt_t* p_emcpu_ctxt_t)
 {
     int32_t ret = SILIBS_SUCCESS;
 
-    debug_print("Accel emCPU Params init start");
+    debug_print("Accel emCPU Params init start\n");
 
     // Set emCPU interrupt vector base
     sdm_init_set_emcpu_initvtor(accelip_config_base_addr, p_emcpu_ctxt_t->int_vtor);
@@ -537,7 +537,7 @@ static int32_t silibs_configure_emcpu_params(uint64_t accelip_config_base_addr, 
     // Boot emCPU Firmware
     sdm_init_disable_cpu_wait(accelip_config_base_addr);
 
-    debug_print("Accel emCPU Params init done");
+    debug_print("Accel emCPU Params init done\n");
 
     return ret;
 }
@@ -551,7 +551,7 @@ static int32_t configure_accel_ip(accelip_ctxt_t* p_accelip_ctxt, atu_mapping_ct
     int32_t ret = atu_map(atu_id, p_atu_map_entry);
     if (ret != SILIBS_SUCCESS)
     {
-        debug_print("Accel IP ATU Mapping failed");
+        debug_print("Accel IP ATU Mapping failed\n");
         ret = ACCEL_RET_FAIL_ATU_MAP;
         goto exit;
     }
@@ -576,7 +576,7 @@ static int32_t configure_accel_ip(accelip_ctxt_t* p_accelip_ctxt, atu_mapping_ct
     ret = atu_unmap(atu_id, p_atu_map_entry);
     if (ret != SILIBS_SUCCESS)
     {
-        debug_print("Accel IP ATU Unmapping failed");
+        debug_print("Accel IP ATU Unmapping failed\n");
         ret = ACCEL_RET_FAIL_ATU_UNMAP;
     }
 
@@ -590,7 +590,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
     int32_t ret = configure_vab(p_ss_ctxt->p_vab_ctxt, p_ss_ctxt->p_vab_atu_mapping_ctxt);
     if (ret != ACCEL_RET_SUCCESS)
     {
-        critical_print("VAB configuration failed.");
+        critical_print("VAB configuration failed.\n");
         return ACCEL_RET_FAIL_VAB;
     }
 
@@ -600,7 +600,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
                                           p_ss_ctxt->p_accelss_atu_mapping_ctxt);
     if (ret != ACCEL_RET_SUCCESS)
     {
-        critical_print("Accel Subsystem configuration failed.");
+        critical_print("Accel Subsystem configuration failed.\n");
         return ACCEL_RET_FAIL_TOWER;
     }
 
@@ -608,7 +608,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
     ret = configure_accel_ip(p_ss_ctxt->p_accelip_ctxt, p_ss_ctxt->p_accelss_atu_mapping_ctxt);
     if (ret != ACCEL_RET_SUCCESS)
     {
-        critical_print("Accel IP configuration failed.");
+        critical_print("Accel IP configuration failed.\n");
         return ACCEL_RET_FAIL_ACCEL_IP;
     }
 

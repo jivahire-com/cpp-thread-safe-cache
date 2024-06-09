@@ -15,6 +15,7 @@ KingsgateSVP.DIE_0.VABRPSS0.#EXTRA_PROPERTIES#runtime_disabled=true
 KingsgateSVP.DIE_0.VABRPSS1.#EXTRA_PROPERTIES#runtime_disabled=true
 KingsgateSVP.DIE_0.VABRPSS2.#EXTRA_PROPERTIES#runtime_disabled=true
 KingsgateSVP.DIE_0.VABRPSS3.#EXTRA_PROPERTIES#runtime_disabled=true
+KingsgateSVP.DIE_0.HSSS.HSP.HSP_E21_LT_PSP.#EXTRA_PROPERTIES#runtime_disabled=true
 KingsgateSVP.DIE_1.#EXTRA_PROPERTIES#runtime_disabled=true
 KingsgateSVP.DIE_0.RMSS.MCP.MCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/ImageInfo/cpu0/initial_image=../../../../../.externs/azpkg/microsoft.internal.virtualized.kingsgate.svp.9.0.3660/firmware/release/Kingsgate_mcp.axf
 KingsgateSVP.DIE_0.RMSS.MCP.terminal_uart_mcp.#SCML_PROPERTIES#TerminalAutoOpen=false

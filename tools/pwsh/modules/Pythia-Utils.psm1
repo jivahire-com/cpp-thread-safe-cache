@@ -131,6 +131,6 @@ Function Invoke-Pythia(
     Write-Host ""
 
     Write-Host "Removing .svp_simulator dir"
-    Remove-Item $test_results_dir/.svp_simulator -Force
+    Remove-Item $test_results_dir/.svp_simulator -Recurse -Force
 
 }

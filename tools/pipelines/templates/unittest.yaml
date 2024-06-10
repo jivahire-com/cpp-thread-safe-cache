@@ -48,13 +48,24 @@ jobs:
 
           & "$(Build.SourcesDirectory)\start.ps1" -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
 
+          $TargetLogDir = "$(System.ArtifactsDirectory)\Unit_Test_Logs"
           & "${env:REPO_APP_PATH_1pfw.tools.win64}\sptest" `
             /devicesfile:"$(Build.SourcesDirectory)\tests\unit\SpTestDevices.xml" `
             /packagesdir:"$(System.ArtifactsDirectory)\bins.i386-pc-windows-msvc.Debug"\bin `
-            /logsdir:"$(System.ArtifactsDirectory)\Unit_Test_Logs" `
+            /logsdir:"$TargetLogDir" `
             /define:test_bin_dir="$(System.ArtifactsDirectory)\bins.i386-pc-windows-msvc.Debug"\bin `
             /define:test_src_dir="$(Build.SourcesDirectory)" `
             /runtests
+
+          $GcovrCoverageDir = (Get-ChildItem $TargetLogDir | Sort -Descending)[0].FullName
+          $GcovrCoverageDir = "$GcovrCoverageDir/gcov_reports/"
+          mkdir "$GcovrCoverageDir" -Force
+          $GcovOutput = $GcovrCoverageDir.replace("\", "/")
+          $RepoRoot = $env:REPO_APP_ROOT.replace("\", "/")
+          $GcovRoot = "$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug".replace("\", "/")
+          & gcovr --root $RepoRoot --object-directory "$GcovRoot" --filter "${RepoRoot}src/" --gcov-ignore-errors=no_working_dir_found --verbose `
+                  --exclude-unreachable-branches --gcov-executable "${env:REPO_APP_PATH_gcc.arm.eabi.aarch-win64}/bin/arm-none-eabi-gcov.exe" `
+                  --exclude ".+_cli.c" --exclude ".+cli_power.c" --exclude ".+cli_ddr.c" --cobertura --output $GcovOutput
 
           & "${env:REPO_APP_PATH_report-generator}/tools/net6.0/ReportGenerator.exe" `
             -reports:"$(System.ArtifactsDirectory)\Unit_Test_Logs\**\**\cobertura.xml" `

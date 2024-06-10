@@ -170,6 +170,18 @@ Inputs may be different for each test suite. Inputs may come from mock functions
 A coverage report will be generated when running with the **unittest** command for all tests:
 ```unittest```
 
+Note: coverage is determined by first determining what is coverable when building the firmware targets.  
+(GCC will output *.gcno files).  
+This is combined with what is actually covered by the unit tests when executed.
+
+Because the former comes from the ARM gcc build, and the latter the clang Windows build, for the most accurate coverage, ensure the ARM toolchain build is run prior to running the ```unittest``` comand.
+
+```mermaid
+graph LR
+    A[ARM Build Coverage Artifacts] --> C[Coverage Generation]
+    B[Clang Windows Build/Test Coverage Artifacts] --> C
+```
+
 By default Coverage is located in:  
 ```.testlogs/*/Coverage``` and the report can be viewed at ```.testlogs/*/Coverage/index.html```
 

@@ -20,3 +20,16 @@ Write-Host "Exit Code $LASTEXITCODE"
 & "${env:REPO_APP_PATH_llvm.win64}/bin/llvm-profdata.exe" merge -sparse "$ProfRawFile" -o "$ProfDataFile"
 & "${env:REPO_APP_PATH_llvm.win64}/bin/llvm-cov.exe" export -format=lcov -instr-profile "$ProfDataFile" "$TestExecutable" $ExcludedPaths | Out-File -File $LCovFile -Encoding ascii
 & "${env:REPO_APP_PATH_python.win64}\tools\python.exe" "${env:REPO_APP_PATH_lcov.cobertura}\lcov_cobertura.py" "$LCovFile" --base-dir "$env:REPO_APP_ROOT" -o "$CoverageFile"
+
+# Convert class names into file names
+$xmlContent = Get-Content $CoverageFile -Raw
+$pattern = 'class .+ name="(?<classname>.+)"'
+$matches = [regex]::Matches($xmlContent, $pattern)
+
+
+foreach ($match in $matches) {
+    $className = $match.Groups["classname"].value
+    $fileName = $className.Split('.')[-2..-1] -Join "_"
+    $xmlContent = $xmlContent.Replace($className, $fileName)
+}
+Set-Content -Path $CoverageFile -Value $xmlContent

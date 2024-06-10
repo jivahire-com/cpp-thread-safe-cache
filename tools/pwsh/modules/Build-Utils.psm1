@@ -525,6 +525,12 @@ Invoke-Buildsize
 #>
 Function Invoke-Buildsize()
 {
+    if ($env:TF_BUILD)
+    {
+        # Don't output sizes if building in the pipeline
+        return
+    }
+
     # ElfBuildSizes is an environment variable that is set to "one" by start.ps1
     # Any other value causes all .elf files in the build directory to be processed for section sizes
     if ($env:ElfBuildSizes -eq "one") {
@@ -564,6 +570,30 @@ Function Invoke-Clean()
 
 <#
 .SYNOPSIS
+Generates coverage from the unit tests.
+NB: requires the unit tests to be built and run first
+Also requires the FW to be built with the ARM configuration
+
+.EXAMPLE
+Generate-Coverage
+#>
+Function Generate-Coverage($TargetLogDir)
+{
+    mkdir "$TargetLogDir/gcov_reports" -Force
+    $GcovOutput = "$TargetLogDir/gcov_reports/".replace("\", "/")
+    $RepoRoot = $env:REPO_APP_ROOT.replace("\", "/")
+    & gcovr --filter "${RepoRoot}src/" --gcov-exclude-directories "${RepoRoot}/.build/Debug/arm-eabi-aarch/src/externs/" --verbose --exclude-unreachable-branches `
+            --gcov-executable "${env:REPO_APP_PATH_gcc.arm.eabi.aarch-win64}/bin/arm-none-eabi-gcov.exe" `
+            --exclude ".+_cli.c" --exclude ".+cli_power.c" --exclude ".+cli_ddr.c" --cobertura --output $GcovOutput
+
+    & "${env:REPO_APP_PATH_report-generator}/tools/net6.0/ReportGenerator.exe" `
+        -reports:"$TargetLogDir/**/cobertura.xml" `
+        -targetdir:"$TargetLogDir/Coverage" `
+        -reporttypes:"Cobertura;Html"
+}
+
+<#
+.SYNOPSIS
 Runs the unit tests for the current configuration
 
 .EXAMPLE
@@ -594,10 +624,7 @@ Function Invoke-UnitTests($Suite)
 
        $TargetLogDir = (Get-ChildItem $env:REPO_APP_TEST_LOG_DIR | Sort -Descending)[0].FullName
 
-       & "${env:REPO_APP_PATH_report-generator}/tools/net6.0/ReportGenerator.exe" `
-           -reports:"$TargetLogDir/**/cobertura.xml" `
-           -targetdir:"$TargetLogDir/Coverage" `
-           -reporttypes:"Cobertura;Html"
+       Generate-Coverage $TargetLogDir
     }
     else {
         Write-Host -ForegroundColor Red "No packages found at path:" "$env:REPO_APP_BUILD_DIR/$env:REPO_APP_BUILD_CONFIG/$env:REPO_APP_TOOLCHAIN/bin"

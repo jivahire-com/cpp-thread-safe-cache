@@ -28,7 +28,9 @@ target_link_libraries(${TARGET} PRIVATE ${LIBRARIES})
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_LOCK "fwlib.lib.platform.impl.lock.threadx")
 
 # Generic ports implmented within this project
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_THREADX "ms::lib::threadx")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
 # Provide compile time definition
 target_compile_definitions(${TARGET} PRIVATE MSCP2HSP_MAILBOX_BASE_ADDRESS=1000)

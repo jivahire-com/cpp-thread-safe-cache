@@ -16,7 +16,7 @@
 #include <stdint.h>                  // for uint32_t
 
 /*-------------- Macros ------------------*/
-#define KG_HSP_MBOX_POLL_INTERVAL_NS (100000ULL)
+#define KG_HSP_MBOX_POLL_INTERVAL_NS (20000000ULL)
 
 /*------------- Typedefs -----------------*/
 
@@ -32,6 +32,7 @@ FPFW_INIT_COMPONENT(hspmbox, FPFW_INIT_DEPENDENCIES("dfwk"))
     static fpfw_mbox_icc_transport_device_t mscp_mbx_dev = {};
     static fpfw_mbox_icc_transport_config_t cfg = {
         .mbox_dev_cfg = {.MbxFifoDepth = HSP_MBX_FIFO_DEPTH,
+                         .MbxMesgHandlingType = MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME_FIXED_SIZE,
                          .MbxImplementation = MBX_IMPL_POLLING,
                          .MsgSizeBytes = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t)),
                          .MbxBaseAddr = MSCP2HSP_MAILBOX_BASE_ADDRESS},

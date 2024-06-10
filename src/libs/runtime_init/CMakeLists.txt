@@ -22,6 +22,7 @@ add_library(${TARGET}
         etc_init.c
         hw_version_scp_init.c
         icc_transport_init/mscp_hspmbx_init.c
+        icc_cli_init.c
         mesh_init.c
         ioss_init.c
         nvic_init.c

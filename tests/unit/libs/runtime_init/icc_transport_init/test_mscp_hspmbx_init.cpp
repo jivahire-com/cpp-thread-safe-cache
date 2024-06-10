@@ -46,6 +46,8 @@ fpfw_status_t __wrap_fpfw_mbox_icc_transport_dfwk_device_init(fpfw_mbox_icc_tran
     assert_non_null(dev);
     assert_int_equal(cfg->mbox_dev_cfg.MbxFifoDepth, HSP_MBX_FIFO_DEPTH);
     assert_int_equal(cfg->mbox_dev_cfg.MbxBaseAddr, 1000);
+    assert_int_equal(cfg->mbox_dev_cfg.MbxMesgHandlingType, MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME_FIXED_SIZE);
+    assert_int_equal(cfg->mbox_dev_cfg.MbxImplementation, MBX_IMPL_POLLING);
     assert_int_equal(cfg->mbox_dev_cfg.MsgSizeBytes, HSP_MBX_FIFO_DEPTH * sizeof(uint32_t));
     return mock_type(fpfw_status_t);
 }

@@ -94,6 +94,7 @@ FPFW_MBX_PAYLOAD mail_box_send_payload = {.payloadBuffer = &hsp_mbox_data,
                                           .payloadSize = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t))};
 
 FPFW_MBX_REG_CONFIG mail_box_config = {.MbxFifoDepth = HSP_MBX_FIFO_DEPTH,
+                                       .MbxMesgHandlingType = MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME_FIXED_SIZE,
                                        .MbxImplementation = MBX_IMPL_POLLING,
                                        .MsgSizeBytes = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t)),
                                        .MbxBaseAddr = SCP_TOP_SCP2HSP_MAILBOX_ADDRESS};
@@ -115,6 +116,7 @@ int32_t __wrap_FpFwMailboxInit(PFPFW_MBX_REG_CONFIG pConfig, PFPFW_MBX_PRIMITIVE
     check_expected_ptr(pMbxCtx);
 
     check_expected(pConfig->MbxFifoDepth);
+    check_expected(pConfig->MbxMesgHandlingType);
     check_expected(pConfig->MbxImplementation);
     check_expected(pConfig->MsgSizeBytes);
     check_expected(pConfig->MbxBaseAddr);
@@ -175,6 +177,7 @@ TEST_FUNCTION(test_hsp_mail_box_init_mbox_create_fail, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -189,6 +192,7 @@ TEST_FUNCTION(test_hsp_mail_box_init_mbox_flush_fail, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -214,6 +218,7 @@ TEST_FUNCTION(test_hsp_mail_box_init_success, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_value(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth, mail_box_config.MbxFifoDepth);
+    expect_value(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType, mail_box_config.MbxMesgHandlingType);
     expect_value(__wrap_FpFwMailboxInit, pConfig->MbxImplementation, mail_box_config.MbxImplementation);
     expect_value(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes, mail_box_config.MsgSizeBytes);
     expect_value(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr, mail_box_config.MbxBaseAddr);
@@ -378,6 +383,7 @@ TEST_FUNCTION(test_load_image_mailbox_init_fail, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
 
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -397,6 +403,7 @@ TEST_FUNCTION(test_scp_boot_config_src_base_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -449,6 +456,7 @@ TEST_FUNCTION(test_scp_boot_config_src_end_size_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -500,6 +508,7 @@ TEST_FUNCTION(test_scp_boot_config_image_size_zero_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -551,6 +560,7 @@ TEST_FUNCTION(test_scp_boot_config_itc_ram_base_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -602,6 +612,7 @@ TEST_FUNCTION(test_scp_boot_config_itc_ram_size_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -653,6 +664,7 @@ TEST_FUNCTION(test_scp_boot_config_dtc_ram_base_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -704,6 +716,7 @@ TEST_FUNCTION(test_scp_boot_config_dtc_ram_size_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -755,6 +768,7 @@ TEST_FUNCTION(test_scp_boot_config_meta_base_null_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -806,6 +820,7 @@ TEST_FUNCTION(test_mcp_boot_config_src_base_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -857,6 +872,7 @@ TEST_FUNCTION(test_mcp_boot_config_src_end_size_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -908,6 +924,7 @@ TEST_FUNCTION(test_mcp_boot_config_image_size_zero_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -959,6 +976,7 @@ TEST_FUNCTION(test_mcp_boot_config_itc_ram_base_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1010,6 +1028,7 @@ TEST_FUNCTION(test_mcp_boot_config_itc_ram_size_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1061,6 +1080,7 @@ TEST_FUNCTION(test_mcp_boot_config_dtc_ram_base_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1112,6 +1132,7 @@ TEST_FUNCTION(test_mcp_boot_config_dtc_ram_size_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1163,6 +1184,7 @@ TEST_FUNCTION(test_mcp_boot_config_meta_base_null_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1214,6 +1236,7 @@ TEST_FUNCTION(test_scp_load_image_error_hsp_send_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1265,6 +1288,7 @@ TEST_FUNCTION(test_mcp_load_image_error_hsp_send_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1317,6 +1341,7 @@ TEST_FUNCTION(test_scp_start_hsp_send_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1354,6 +1379,7 @@ TEST_FUNCTION(test_mcp_start_hsp_send_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1389,6 +1415,7 @@ TEST_FUNCTION(test_scp_irq_disable_hsp_send_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1438,6 +1465,7 @@ TEST_FUNCTION(test_mcp_irq_disable_hsp_send_failure, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1486,6 +1514,7 @@ TEST_FUNCTION(test_scp_boot_reason_hsp_send_fail, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1545,6 +1574,7 @@ TEST_FUNCTION(test_mcp_boot_reason_hsp_send_fail, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1606,6 +1636,7 @@ TEST_FUNCTION(test_scp_cold_boot_unpack_image_fail, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1680,6 +1711,7 @@ TEST_FUNCTION(test_scp_warm_boot_unpack_image_fail, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1755,6 +1787,7 @@ TEST_FUNCTION(test_mcp_cold_boot_unpack_image_fail, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1829,6 +1862,7 @@ TEST_FUNCTION(test_mcp_warm_boot_unpack_image_fail, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1907,6 +1941,7 @@ TEST_FUNCTION(test_scp_boot_success, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
@@ -1977,6 +2012,7 @@ TEST_FUNCTION(test_mcp_boot_success, nullptr, nullptr)
     expect_any(__wrap_FpFwMailboxInit, pConfig);
     expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
     expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);

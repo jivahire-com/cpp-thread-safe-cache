@@ -5,8 +5,12 @@
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="gcc.arm.eabi.aarch-win64" version="13.2.20201009"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="gdb.arm.eabi.aarch-win64" version="8.3.201903"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="microsoft.internal.windows.virtualizerruntime" version="2023.3.2"/>
-        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="microsoft.internal.virtualized.kingsgate.svp" version="9.0.3660"/>
+        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="microsoft.internal.virtualized.kingsgate.svp" version="9.0.3722"/>
     </universal_packages>
+
+    <nuget_packages>
+        <package name="kingsgate.ap.baremetal" version="0.0.1.2-dev" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/Kingsgate.SoCFW/nuget/v3/index.json"/>
+    </nuget_packages>
 
     <pip_packages>
         <package name="pythia-tdk-rrm" version="0.1.42" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>

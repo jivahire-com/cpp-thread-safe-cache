@@ -8,6 +8,8 @@
    These should be derived from the global memory map for the target controller
 */
 
+ENTRY(reset_handler)
+
 MEMORY
 {
   CODE   (rx) : ORIGIN = __CODE_START__, LENGTH = __CODE_SIZE__
@@ -108,7 +110,7 @@ SECTIONS
     .data.fpfw_init (READONLY): ALIGN(4)
     {
         _data_fpfw_init_start = ABSOLUTE(.);
-        *(.data.fpfw_init)
+        KEEP(*(.data.fpfw_init))
         . = ALIGN (4);
         _data_fpfw_init_end = ABSOLUTE(.);
     } > CODE

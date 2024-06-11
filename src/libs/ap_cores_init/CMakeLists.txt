@@ -16,7 +16,7 @@ target_include_directories(
 target_link_libraries(
     ${TARGET}
     PRIVATE
-        fwlib.assert
+        fwlib.lib.assert
         ms::lib::register_headers
         silibs::atu
         silibs::platform

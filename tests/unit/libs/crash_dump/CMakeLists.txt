@@ -51,7 +51,7 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-    fwlib.crashDump
+    fwlib.lib.crashDump
     ms::cmocka::testrunner
     ms::lib::crash_dump::mcp
     ms::lib::threadx

@@ -26,10 +26,10 @@ FPFW_INIT_COMPONENT(usb, FPFW_INIT_DEPENDENCIES("ioss"))
 {
     // Re-enable when SVP is ready to test ADO TASK #1793926
     // TODO: ADO 1826681 Re-enable on FPGA once the vab sequence library has been integrated
-    if ((idsw_get_platform_sdv() == PLATFORM_SVP_SIM) || (idsw_get_platform_sdv() == PLATFORM_FPGA) ||
-        (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE))
+    if (((idsw_get_platform_sdv() <= PLATFORM_SVP_SIM) && (idsw_get_platform_sdv() >= PLATFORM_FPGA)) ||
+        ((idsw_get_platform_sdv() <= PLATFORM_EMU_2D_8C) && (idsw_get_platform_sdv() >= PLATFORM_EMU)))
     {
-        printf("%s: skip USB init on SVP and FPGA for now!\n", __func__);
+        printf("%s: skip USB init on SVP, FPGA and ZEBU for now!\n", __func__);
         return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
     }
 

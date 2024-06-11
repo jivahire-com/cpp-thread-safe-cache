@@ -16,6 +16,7 @@ extern "C" {
 
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <fpfw_init.h> // for fpfw_init_component_t
+#include <stddef.h>    // for NULL
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -83,6 +84,70 @@ TEST_FUNCTION(test_usb_init_bypass_fpga, NULL, NULL)
 TEST_FUNCTION(test_usb_init_bypass_fpga_large, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
+
+    // Call API under test
+    _fpfw_component_usb.init_fn();
+}
+
+TEST_FUNCTION(test_usb_init_bypass_fpga_tiny, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_TINY);
+
+    // Call API under test
+    _fpfw_component_usb.init_fn();
+}
+
+TEST_FUNCTION(test_usb_init_bypass_fpga_small, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_SMALL);
+
+    // Call API under test
+    _fpfw_component_usb.init_fn();
+}
+
+TEST_FUNCTION(test_usb_init_bypass_fpga_large_rvp, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE_RVP);
+
+    // Call API under test
+    _fpfw_component_usb.init_fn();
+}
+
+TEST_FUNCTION(test_usb_init_bypass_zebu, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU);
+
+    // Call API under test
+    _fpfw_component_usb.init_fn();
+}
+
+TEST_FUNCTION(test_usb_init_bypass_zebu_1D, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_1D);
+
+    // Call API under test
+    _fpfw_component_usb.init_fn();
+}
+
+TEST_FUNCTION(test_usb_init_bypass_zebu_2D, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_2D);
+
+    // Call API under test
+    _fpfw_component_usb.init_fn();
+}
+
+TEST_FUNCTION(test_usb_init_bypass_zebu_1D_8C, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_1D_8C);
+
+    // Call API under test
+    _fpfw_component_usb.init_fn();
+}
+
+TEST_FUNCTION(test_usb_init_bypass_zebu_2D_8C, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_2D_8C);
 
     // Call API under test
     _fpfw_component_usb.init_fn();

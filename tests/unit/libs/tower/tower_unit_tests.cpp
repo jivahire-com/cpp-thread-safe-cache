@@ -36,11 +36,11 @@ TEST_FUNCTION(test_tower_sequence_init, nullptr, nullptr)
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_not_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_resolved_addr, 0);
+    expect_not_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_not_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_resolved_addr, 0);
+    expect_not_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, false);
@@ -52,11 +52,11 @@ TEST_FUNCTION(test_tower_sequence_init, nullptr, nullptr)
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_sam, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_apu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_resolved_addr, 0);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_tower_resolved_addr, 0);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_resolved_addr, 0);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 

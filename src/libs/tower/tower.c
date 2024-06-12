@@ -37,13 +37,13 @@ void tower_init(uint8_t die_num)
     tower_sequence_params.tower_configure_fabric_apu = true;
     atu_map_entry_t atu_fabric_tower_map = ATU_MAPPING_FABRIC_TOWER((die_num == 0 ? SOC_D0 : SOC_D1));
     FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_fabric_tower_map));
-    tower_sequence_params.tower_fabric_resolved_addr = atu_fabric_tower_map.mscp_start_address;
+    tower_sequence_params.tower_fabric_tower_resolved_addr = atu_fabric_tower_map.mscp_start_address;
 
     // Peripheral Tower
     tower_sequence_params.tower_configure_periph_apu = true;
     atu_map_entry_t atu_peripheral_tower_map = ATU_MAPPING_PERIPHERAL_TOWER((die_num == 0 ? SOC_D0 : SOC_D1));
     FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_peripheral_tower_map));
-    tower_sequence_params.tower_periph_resolved_addr = atu_peripheral_tower_map.mscp_start_address;
+    tower_sequence_params.tower_periph_tower_resolved_addr = atu_peripheral_tower_map.mscp_start_address;
 
     // TODO: D2DSS towers
 
@@ -60,12 +60,12 @@ void tower_init(uint8_t die_num)
     // SDMSS tower
     tower_sequence_params.tower_configure_sdmss_sam = false;
     tower_sequence_params.tower_configure_sdmss_apu = false;
-    tower_sequence_params.tower_sdmss_resolved_addr = 0;
+    tower_sequence_params.tower_sdmss_tower_resolved_addr = 0;
 
     // IOSS tower
     tower_sequence_params.tower_configure_ioss_sam = false;
     tower_sequence_params.tower_configure_ioss_apu = false;
-    tower_sequence_params.tower_ioss_resolved_addr = 0;
+    tower_sequence_params.tower_ioss_tower_resolved_addr = 0;
 
     tower_sequence_params.die_id = die_num;
 

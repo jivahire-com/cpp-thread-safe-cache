@@ -15,7 +15,6 @@ gpio
 gtimer
 i2c
 idhw
-idsw
 intu
 ioss
 lib_i3c
@@ -32,6 +31,7 @@ pcr_vab
 pik_clock
 ppu_v1
 pvt
+ras_arm
 ras_framework
 ras_mcp
 ras_mscp

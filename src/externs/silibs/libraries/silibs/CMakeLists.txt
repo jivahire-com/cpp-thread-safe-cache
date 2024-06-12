@@ -1,8 +1,13 @@
 set(TARGET_DIR ${REPO_ROOT_DIR}/.externs/repo/silibs)
+set(TARGET_DIR_SILIBS_COMMON ${REPO_ROOT_DIR}/.externs/repo/silibs_common)
 set(LIB_OUTS_DIR ${CMAKE_BINARY_DIR}/src/externs/silibs/libraries)
 
 message("----------------------------------")
 message("----- Adding Silibs CMAKEs -------")
+
+#Silibs arm gcc version is older than MSCP arm. Hence for forcing enum size
+#that's needed for MSCP unit test case ,passing this flag
+add_compile_options(-DMSCP_SILIBS_COMPILATION)
 
 add_compile_options(-I${TARGET_DIR}/libraries/common/silibs_platform/include
                     -I${TARGET_DIR}/registerheader_overrides
@@ -18,6 +23,8 @@ foreach(SILIB ${SILIB_LIST})
   message("Adding silibs/${SILIB} ...")
   add_subdirectory(${TARGET_DIR}/libraries/${SILIB} ${LIB_OUTS_DIR}/${SILIB})
 endforeach()
+
+add_subdirectory(${TARGET_DIR_SILIBS_COMMON}/idsw ${LIB_OUTS_DIR}/idsw)
 
 # Add the libraries where we either implement our own source or our own cmakes
 add_subdirectory(kng_silibs_platform)

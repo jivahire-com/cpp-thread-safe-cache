@@ -51,10 +51,10 @@ int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
 int __wrap_tower_sequence_configure_towers(tower_sequence_soc_init_params_t* tower_sequence_param)
 {
     check_expected(tower_sequence_param->tower_configure_fabric_apu);
-    check_expected(tower_sequence_param->tower_fabric_resolved_addr);
+    check_expected(tower_sequence_param->tower_fabric_tower_resolved_addr);
 
     check_expected(tower_sequence_param->tower_configure_periph_apu);
-    check_expected(tower_sequence_param->tower_periph_resolved_addr);
+    check_expected(tower_sequence_param->tower_periph_tower_resolved_addr);
 
     check_expected(tower_sequence_param->tower_configure_vab_sam);
     check_expected(tower_sequence_param->tower_configure_vab_apu);
@@ -66,11 +66,11 @@ int __wrap_tower_sequence_configure_towers(tower_sequence_soc_init_params_t* tow
 
     check_expected(tower_sequence_param->tower_configure_sdmss_sam);
     check_expected(tower_sequence_param->tower_configure_sdmss_apu);
-    check_expected(tower_sequence_param->tower_sdmss_resolved_addr);
+    check_expected(tower_sequence_param->tower_sdmss_tower_resolved_addr);
 
     check_expected(tower_sequence_param->tower_configure_ioss_sam);
     check_expected(tower_sequence_param->tower_configure_ioss_apu);
-    check_expected(tower_sequence_param->tower_ioss_resolved_addr);
+    check_expected(tower_sequence_param->tower_ioss_tower_resolved_addr);
 
     check_expected(tower_sequence_param->die_id);
     function_called();

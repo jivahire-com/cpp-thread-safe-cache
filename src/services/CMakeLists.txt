@@ -1,5 +1,7 @@
+
 add_subdirectory(cli_ddr)
-add_subdirectory(pcie_manager)
 add_subdirectory(ddr_manager)
+add_subdirectory(fuse)
+add_subdirectory(pcie_manager)
 add_subdirectory(power)
 add_subdirectory(startup_shutdown)

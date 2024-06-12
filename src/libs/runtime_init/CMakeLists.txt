@@ -20,6 +20,7 @@ add_library(${TARGET}
         debug_init.c
         dfwk_init.c
         etc_init.c
+        fuse_init.c
         hw_version_scp_init.c
         icc_transport_init/mscp_hspmbx_init.c
         icc_cli_init.c
@@ -74,6 +75,7 @@ target_link_libraries(
         ms::lib::vab
         ms::lib::tower
         ms::service::ddr_manager
+        ms::service::fuse
         ms::service::pcie_manager
         ms::service::power
         ms::service::scp_startup_shutdown

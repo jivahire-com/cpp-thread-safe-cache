@@ -80,8 +80,8 @@ Function Invoke-Pythia(
     $iteration = 1
     Get-ChildItem $host_configs_path |
     Foreach-Object {
-        $host_config_in = Join-Path $host_configs_path -ChildPath $_
-        $host_config_out = Join-Path -Path $test_results_dir -ChildPath $_
+        $host_config_in = Join-Path $host_configs_path -ChildPath $_.Name
+        $host_config_out = Join-Path -Path $test_results_dir -ChildPath $_.Name
 
         # Create new json files with expanded string values, expanding environment variables
         Expand-File -in_file $host_config_in -out_file $host_config_out

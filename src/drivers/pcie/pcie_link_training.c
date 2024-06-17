@@ -76,6 +76,6 @@ void begin_link_training(PDFWK_ASYNC_REQUEST_HEADER req)
     if (status != TX_SUCCESS)
     {
         printf("Failed to create link training timer! TX_STATUS: %d\n", status);
-        FPFwErrorRaise(status);
+        FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 }

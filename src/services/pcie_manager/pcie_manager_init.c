@@ -42,7 +42,7 @@ void scp_pcie_initialize(PDFWK_SCHEDULE schedule)
     if (schedule == NULL)
     {
         printf("%s: Failure - NULL driver framework schedule!\n", __func__);
-        FPFwErrorRaise(-EINVAL);
+        FPFwErrorRaise(-EINVAL, 0, 0, 0, 0);
     }
 
     for (RPSS_INSTANCE i = RPSS0; i < PCIE_RPSS_COUNT; i++)
@@ -63,7 +63,7 @@ void scp_pcie_initialize(PDFWK_SCHEDULE schedule)
         if (status != TX_SUCCESS)
         {
             printf("%s: Failed to create work queues! TX_STATUS: %d\n", __func__, status);
-            FPFwErrorRaise(status);
+            FPFwErrorRaise(status, 0, 0, 0, 0);
         }
 
         /* Spawn off a thread that is responsible for managing each root port sub system */
@@ -80,7 +80,7 @@ void scp_pcie_initialize(PDFWK_SCHEDULE schedule)
         if (status != TX_SUCCESS)
         {
             printf("%s: Failed to create worker threads! TX_STATUS: %d\n", __func__, status);
-            FPFwErrorRaise(status);
+            FPFwErrorRaise(status, 0, 0, 0, 0);
         }
     }
 }

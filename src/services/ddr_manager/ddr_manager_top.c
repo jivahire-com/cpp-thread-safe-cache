@@ -41,7 +41,7 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
         if (status != TX_SUCCESS)
         {
             printf("DDR worker: Error with tx_queue_receive\n");
-            FPFwErrorRaise(status);
+            FPFwErrorRaise(status, 0, 0, 0, 0);
         }
         else
         {
@@ -116,7 +116,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     if (status != TX_SUCCESS)
     {
         printf("tx_queue_create err %d\n", status);
-        FPFwErrorRaise(status);
+        FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
     work_queue_msg = DDR_CREATE_MEMORY_MAP_EVENT;
@@ -124,7 +124,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     if (status != TX_SUCCESS)
     {
         printf("tx_queue_send DDR_CREATE_MEMORY_MAP_EVENT err %d\n", status);
-        FPFwErrorRaise(status);
+        FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
     work_queue_msg = DDR_CREATE_BDAT_EVENT;
@@ -133,7 +133,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     if (status != TX_SUCCESS)
     {
         printf("tx_queue_send DDR_CREATE_BDAT_EVENT err %d\n", status);
-        FPFwErrorRaise(status);
+        FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
     work_queue_msg = DDR_CREATE_SMBIOS_TABLES_EVENT;
@@ -141,7 +141,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     if (status != TX_SUCCESS)
     {
         printf("tx_queue_send DDR_CREATE_SMBIOS_TABLES_EVENT err %d\n", status);
-        FPFwErrorRaise(status);
+        FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
     status = tx_thread_create((TX_THREAD*)&pddr_service_ctx->work_thread, /* TX_THREAD *thread_ptr */
@@ -158,7 +158,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     if (status != TX_SUCCESS)
     {
         printf("thread create err\n");
-        FPFwErrorRaise(status);
+        FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
     status = tx_timer_create((TX_TIMER*)&pddr_service_ctx->ddr_polling_timer, /* TX_TIMER *timer_ptr */
@@ -172,6 +172,6 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     if (status != TX_SUCCESS)
     {
         printf("timer create err %d\n", status);
-        FPFwErrorRaise(status);
+        FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 }

@@ -17,6 +17,8 @@ target_link_libraries(${TARGET}
     silibs::atu
     silibs::kng_silibs_platform
     silibs_platform
+    silibs::vab_init
+    silibs::smmu
 )
 
 lint_target(${TARGET})
@@ -27,8 +29,5 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     atu_map
     atu_unmap
-    configure_vab_system_addr_map
-    deassert_pcr_reset
-    tower_configure_vab_apu
-    vab_pcr_init
+    vab_init
 )

@@ -45,22 +45,6 @@ int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
     return mock_type(int);
 }
 
-void __wrap_tower_configure_ioss_apu(uint64_t ioss_base_addr, uintptr_t tower_base_addr)
-{
-    check_expected(ioss_base_addr);
-    check_expected(tower_base_addr);
-
-    return;
-}
-
-void __wrap_configure_ioss_system_addr_map(uint64_t ioss_base_addr, uint64_t ioss_tower_base_addr)
-{
-    check_expected(ioss_base_addr);
-    check_expected(ioss_tower_base_addr);
-
-    return;
-}
-
 void __wrap_program_ioss_pcr_usb_reset(uintptr_t pcr_base_addr)
 {
     check_expected(pcr_base_addr);

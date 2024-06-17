@@ -32,54 +32,139 @@ PLAT_ID __wrap_idsw_get_platform_sdv(void)
     return mock_type(PLAT_ID);
 }
 
-int __wrap_vab_init(uint16_t vab_instances_to_init)
+DIE_ID __wrap_idsw_get_die_id(void)
+{
+    return mock_type(DIE_ID);
+}
+
+int __wrap_vab_common_init(uint16_t vab_instances_to_init)
 {
     check_expected(vab_instances_to_init);
-    function_called();
+    // function_called();
 
     return 0;
 }
 
-TEST_FUNCTION(test_vab_init_silicon, nullptr, nullptr)
+TEST_FUNCTION(test_vab_init_silicon_die0, nullptr, nullptr)
 {
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
-    expect_value(__wrap_vab_init,
+    const auto test_die = (DIE_ID)0;
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return_always(__wrap_idsw_get_die_id, test_die);
+    expect_value(__wrap_vab_common_init,
                  vab_instances_to_init,
-                 ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3)));
-    expect_function_call(__wrap_vab_init);
+                 ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) |
+                  (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS)));
     _fpfw_component_vab.init_fn();
 }
 
-TEST_FUNCTION(test_vab_init_fpga, nullptr, nullptr)
+TEST_FUNCTION(test_vab_init_silicon_die1, nullptr, nullptr)
 {
-    expect_value_count(__wrap_vab_init, vab_instances_to_init, ((1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2)), 3);
-
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
-    expect_function_call(__wrap_vab_init);
-    _fpfw_component_vab.init_fn();
-
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
-    expect_function_call(__wrap_vab_init);
-    _fpfw_component_vab.init_fn();
-
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE_RVP);
-    expect_function_call(__wrap_vab_init);
+    const auto test_die = (DIE_ID)1;
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return_always(__wrap_idsw_get_die_id, test_die);
+    expect_value(__wrap_vab_common_init,
+                 vab_instances_to_init,
+                 ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3) |
+                  (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS)));
     _fpfw_component_vab.init_fn();
 }
 
-TEST_FUNCTION(test_vab_init_svp, nullptr, nullptr)
+TEST_FUNCTION(test_vab_init_fpga_die0, nullptr, nullptr)
 {
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
-    expect_value(__wrap_vab_init, vab_instances_to_init, 0);
-    expect_function_call(__wrap_vab_init);
+    const auto test_die = (DIE_ID)0;
+    will_return_always(__wrap_idsw_get_die_id, test_die);
+    expect_value(__wrap_vab_common_init,
+                 vab_instances_to_init,
+                 ((1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS)));
+
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     _fpfw_component_vab.init_fn();
 }
+
+TEST_FUNCTION(test_vab_init_fpga_large_die0, nullptr, nullptr)
+{
+    const auto test_die = (DIE_ID)0;
+    will_return_always(__wrap_idsw_get_die_id, test_die);
+    expect_value(__wrap_vab_common_init,
+                 vab_instances_to_init,
+                 ((1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS)));
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
+    _fpfw_component_vab.init_fn();
+}
+
+TEST_FUNCTION(test_vab_init_fpga_large_rvp_die0, nullptr, nullptr)
+{
+    const auto test_die = (DIE_ID)0;
+    will_return_always(__wrap_idsw_get_die_id, test_die);
+    expect_value(__wrap_vab_common_init,
+                 vab_instances_to_init,
+                 ((1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS)));
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE_RVP);
+    _fpfw_component_vab.init_fn();
+}
+
+TEST_FUNCTION(test_vab_init_fpga_die1, nullptr, nullptr)
+{
+    const auto test_die = (DIE_ID)1;
+    will_return_always(__wrap_idsw_get_die_id, test_die);
+    expect_value(__wrap_vab_common_init,
+                 vab_instances_to_init,
+                 ((1 << D1_VAB1_RPSS1) | (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS)));
+
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+    _fpfw_component_vab.init_fn();
+}
+
+TEST_FUNCTION(test_vab_init_fpga_large_die1, nullptr, nullptr)
+{
+    const auto test_die = (DIE_ID)1;
+    will_return_always(__wrap_idsw_get_die_id, test_die);
+    expect_value(__wrap_vab_common_init,
+                 vab_instances_to_init,
+                 ((1 << D1_VAB1_RPSS1) | (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS)));
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
+    _fpfw_component_vab.init_fn();
+}
+
+TEST_FUNCTION(test_vab_init_fpga_large_rvp_die1, nullptr, nullptr)
+{
+    const auto test_die = (DIE_ID)1;
+    will_return_always(__wrap_idsw_get_die_id, test_die);
+    expect_value(__wrap_vab_common_init,
+                 vab_instances_to_init,
+                 ((1 << D1_VAB1_RPSS1) | (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS)));
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE_RVP);
+    _fpfw_component_vab.init_fn();
+}
+
+/* TODO: SVP tests can be enabled once SVP implements VAB PCR init as vab_common is not called for SVP right
+now TEST_FUNCTION(test_vab_init_svp_die0, nullptr, nullptr)
+{
+    const auto test_die = (DIE_ID)0;
+    will_return_always(__wrap_idsw_get_die_id, test_die);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    expect_value(__wrap_vab_common_init, vab_instances_to_init, ((1 << D0_VAB4_SDMSS) | (1 <<
+D0_VAB5_CDEDSS_IOSS))); _fpfw_component_vab.init_fn();
+}
+
+TEST_FUNCTION(test_vab_init_svp_die1, nullptr, nullptr)
+{
+    const auto test_die = (DIE_ID)1;
+    will_return_always(__wrap_idsw_get_die_id, test_die);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    expect_value(__wrap_vab_common_init,
+                 vab_instances_to_init,
+                 ((1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS)));
+    _fpfw_component_vab.init_fn();
+}
+*/
 
 TEST_FUNCTION(test_vab_init_invalid_plat, nullptr, nullptr)
 {
-    will_return(__wrap_idsw_get_platform_sdv, 0x100);
-    expect_value(__wrap_vab_init, vab_instances_to_init, 0);
-    expect_function_call(__wrap_vab_init);
+    const auto test_die = (DIE_ID)1;
+    will_return_always(__wrap_idsw_get_die_id, test_die);
+    will_return_always(__wrap_idsw_get_platform_sdv, 0x100);
+    expect_value(__wrap_vab_common_init, vab_instances_to_init, 0);
     _fpfw_component_vab.init_fn();
 }
 }

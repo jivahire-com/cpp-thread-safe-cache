@@ -13,6 +13,7 @@ target_link_libraries(${TARGET}
     silibs::atu
     silibs::kng_silibs_platform
     silibs::tower_sequence
+    idsw
 )
 
 target_include_directories(${TARGET}

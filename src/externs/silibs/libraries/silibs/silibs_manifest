@@ -54,4 +54,5 @@ tower_system_control
 tower_utility
 tower_vab
 usb_init
+vab_init
 vab_pcr_init

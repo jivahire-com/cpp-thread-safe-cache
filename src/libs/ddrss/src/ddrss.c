@@ -44,7 +44,7 @@ void ddrss_lib_init(uint8_t die_num)
     {
         printf("DDRSS init for FPGA platform\n");
 
-        use_fixed_atu_mapping = true;
+        use_fixed_atu_mapping = false;
 
         ddrss_platform_override = DDRSS_PLATFORM_FPGA;
     }
@@ -99,7 +99,7 @@ void ddrss_lib_init(uint8_t die_num)
     ddrss_cfgs.ddrss_base_die[SOC_D1] = atu_map_struct[SOC_D1].mscp_start_address;
     ddrss_cfgs.debug_level = DDRSS_DEBUG_LEVEL_INFO;
     ddrss_cfgs.numa_cfg = DDRSS_NUMA_CFG_UMA;
-    ddrss_cfgs.ext_knobs.ddrss_mask = 0xFFF;
+    ddrss_cfgs.ext_knobs.ddrss_mask = 0x3F;
     ddrss_cfgs.ext_knobs.interleave_mc_cnt = 0;
     if (ddrss_platform_override != DDRSS_PLATFORM_UNKNOWN)
     {

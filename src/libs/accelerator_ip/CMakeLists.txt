@@ -14,9 +14,6 @@ target_include_directories(
     ${TARGET}
         PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}/inc
-            ${REPO_ROOT_DIR}/.externs/repo/silibs/libraries/common/silibs_platform/include
-            ${REPO_ROOT_DIR}/.externs/azpkg/kingsgate_register_header.0.9.3/ap_addr_map/registerheader
-            ${REPO_ROOT_DIR}/.externs/repo/silibs/libraries/tower_utility/include
             ${REPO_ROOT_DIR}/src/libs/utils/include
 
         PRIVATE
@@ -39,8 +36,11 @@ target_link_libraries(
         silibs::smmu
         silibs::tower_sdmss
         silibs::tower_system_control
+        silibs::tower_utility
         silibs::tower_vab
         silibs::vab_pcr_init
+        silibs_platform
+        ms::lib::register_headers
 )
 
 lint_target(${TARGET})

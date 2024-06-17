@@ -37,7 +37,9 @@ atu_map_entry_t atu_global_map_die0[] = {
         .mscp_end_address = ALIGN_UP(ATU_AP_ARSM_ADDRESS + ARSM_SIZE, ATU_PAGE_SIZE) - 1,
         .attribute = {ATU_BUS_ATTR_NS},
     },
-};
+    // Append an special all zero entry to indicate zeroing-out all unused ATU entries during init.
+    // It is required on FPGA platform when CMM scripts has ATU initialized already before running.
+    {0}};
 
 atu_map_entry_t atu_global_map_die1[] = {
     {
@@ -46,7 +48,9 @@ atu_map_entry_t atu_global_map_die1[] = {
         .mscp_end_address = ALIGN_UP(ATU_AP_ARSM_ADDRESS + ARSM_SIZE, ATU_PAGE_SIZE) - 1,
         .attribute = {ATU_BUS_ATTR_NS},
     },
-};
+    // Append an special all zero entry to indicate zeroing-out all unused ATU entries during init.
+    // It is required on FPGA platform when CMM scripts has ATU initialized already before running.
+    {0}};
 
 #define MAX_SYSTEM_TOWER_INSTANCES (2)
 atu_map_entry_t atu_system_tower_map[MAX_SYSTEM_TOWER_INSTANCES] = {
@@ -84,7 +88,8 @@ void css_pre_mesh_init(uint8_t die_num)
 
     // Initialization of ATU
     atu_map_entry_t* atu_global_map = (die_num == 0) ? atu_global_map_die0 : atu_global_map_die1;
-    sts = atu_init(ATU_ID_MSCP, atu_global_map, ARRAY_SIZE(&atu_global_map));
+    int atu_entry_num = (die_num == 0) ? ARRAY_SIZE(atu_global_map_die0) : ARRAY_SIZE(atu_global_map_die1);
+    sts = atu_init(ATU_ID_MSCP, atu_global_map, atu_entry_num);
     FPFW_RUNTIME_ASSERT(sts == 0);
 }
 

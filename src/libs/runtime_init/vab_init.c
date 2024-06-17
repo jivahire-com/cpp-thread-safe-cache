@@ -24,36 +24,72 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(vab, FPFW_INIT_DEPENDENCIES("css_pome"))
-{
-    printf("VAB Initialization: Begin\n");
 
-    /* Choose which VAB instances are to be initialized based on SDV type */
+static uint16_t vab_instances_to_be_enabled(uint8_t die_num)
+{
     uint16_t vab_instances_to_init = 0;
     PLAT_ID plat = idsw_get_platform_sdv();
     switch (plat)
     {
     case PLATFORM_SVP_SIM:
-        printf("Skip RPSS VAB init on SVP!\n");
+        // Skip RPSS on SVP to avoid simulation slowdown
+        if (die_num == 0)
+        {
+            vab_instances_to_init = ((1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS));
+        }
+        else
+        {
+            vab_instances_to_init = ((1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS));
+        }
         break;
 
     case PLATFORM_FPGA:
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
-        vab_instances_to_init = ((1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2));
+        if (die_num == 0)
+        {
+            vab_instances_to_init =
+                ((1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS));
+        }
+        else
+        {
+            vab_instances_to_init = ((1 << D1_VAB1_RPSS1) | (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS));
+        }
         break;
 
     case PLATFORM_RVP_EVT_SILICON:
-        vab_instances_to_init =
-            ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3));
+        if (die_num == 0)
+        {
+            vab_instances_to_init = ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) |
+                                     (1 << D0_VAB3_RPSS3) | (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS));
+        }
+        else
+        {
+            vab_instances_to_init = ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) |
+                                     (1 << D1_VAB3_RPSS3) | (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS));
+        }
         break;
 
     default:
-        printf("Skip RPSS VAB init on unknown platform id: %d\n", plat);
+        printf("Skip VAB init on unknown platform id: %d\n", plat);
         break;
     }
 
-    vab_init(vab_instances_to_init);
+    return vab_instances_to_init;
+}
+
+FPFW_INIT_COMPONENT(vab, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "ddr"))
+{
+    uint8_t die_num = (uint8_t)idsw_get_die_id();
+    printf("VAB Initialization: Begin for die:0x%x\n", die_num);
+    if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
+    {
+        printf("Skip running VAB init on SVP as PCRs are not supported\n");
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+    uint16_t vab_instances_enabled = vab_instances_to_be_enabled(die_num);
+    printf("Bit mask of VAB instances to be enabled: 0x%x\n", vab_instances_enabled);
+    vab_common_init(vab_instances_enabled);
     printf("VAB Initialization: End\n");
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

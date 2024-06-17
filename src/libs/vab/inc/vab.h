@@ -21,8 +21,8 @@
 
 /*--------- Function Prototypes ----------*/
 /**
- *  @brief Brings a passed set of VABs out of reset and carries out any
- *         required programming to initialize them.
+ *  @brief Configures all the VAB instances for the given die
+ *         VAB instances programmed depends on the platform type
  *
  *  @note This function will block till all VABs are initialized and out of
  *        reset.
@@ -36,4 +36,4 @@
  *      SILIBS_SUCCESS - all VABs successfully initialized
  *      SILIBS_ERROR - VAB initialization failure for one or more VABs.
  */
-int vab_init(uint16_t vab_instances_to_init);
+int vab_common_init(uint16_t vab_instances_to_init);

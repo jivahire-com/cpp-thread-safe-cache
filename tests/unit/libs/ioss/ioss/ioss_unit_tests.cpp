@@ -30,10 +30,6 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static uint64_t expected_base_addresses[NUM_IOSS_INSTANCES] = {
-    (AP_TOP_D0_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS),
-    (AP_TOP_D1_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS)};
-
 /*------------- Functions ----------------*/
 //
 // Tests
@@ -52,10 +48,6 @@ TEST_FUNCTION(test_valid_die_0, NULL, NULL)
 {
     int die_num = 0;
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_value(__wrap_tower_configure_ioss_apu, ioss_base_addr, expected_base_addresses[die_num]);
-    expect_value(__wrap_tower_configure_ioss_apu, tower_base_addr, IOSS_TOP_NOCNI_NITOWER_IOSS_ADDRESS);
-    expect_value(__wrap_configure_ioss_system_addr_map, ioss_base_addr, expected_base_addresses[die_num]);
-    expect_value(__wrap_configure_ioss_system_addr_map, ioss_tower_base_addr, IOSS_TOP_NOCNI_NITOWER_IOSS_ADDRESS);
     expect_value(__wrap_program_ioss_pcr_usb_reset, pcr_base_addr, IOSS_TOP_IOSS_PCR_ADDRESS);
     will_return(__wrap_program_ioss_pcr_clock_mux, SILIBS_SUCCESS);
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
@@ -66,10 +58,6 @@ TEST_FUNCTION(test_valid_die_1, NULL, NULL)
 {
     int die_num = 1;
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_value(__wrap_tower_configure_ioss_apu, ioss_base_addr, expected_base_addresses[die_num]);
-    expect_value(__wrap_tower_configure_ioss_apu, tower_base_addr, IOSS_TOP_NOCNI_NITOWER_IOSS_ADDRESS);
-    expect_value(__wrap_configure_ioss_system_addr_map, ioss_base_addr, expected_base_addresses[die_num]);
-    expect_value(__wrap_configure_ioss_system_addr_map, ioss_tower_base_addr, IOSS_TOP_NOCNI_NITOWER_IOSS_ADDRESS);
     expect_value(__wrap_program_ioss_pcr_usb_reset, pcr_base_addr, IOSS_TOP_IOSS_PCR_ADDRESS);
     will_return(__wrap_program_ioss_pcr_clock_mux, SILIBS_SUCCESS);
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
@@ -91,10 +79,6 @@ TEST_FUNCTION(test_program_ioss_pcr_clock_fail, NULL, NULL)
 {
     int die_num = 0;
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_value(__wrap_tower_configure_ioss_apu, ioss_base_addr, expected_base_addresses[die_num]);
-    expect_value(__wrap_tower_configure_ioss_apu, tower_base_addr, IOSS_TOP_NOCNI_NITOWER_IOSS_ADDRESS);
-    expect_value(__wrap_configure_ioss_system_addr_map, ioss_base_addr, expected_base_addresses[die_num]);
-    expect_value(__wrap_configure_ioss_system_addr_map, ioss_tower_base_addr, IOSS_TOP_NOCNI_NITOWER_IOSS_ADDRESS);
     expect_value(__wrap_program_ioss_pcr_usb_reset, pcr_base_addr, IOSS_TOP_IOSS_PCR_ADDRESS);
     will_return(__wrap_program_ioss_pcr_clock_mux, SILIBS_E_PARAM);
     expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
@@ -108,10 +92,6 @@ TEST_FUNCTION(test_atu_unmap_fail, NULL, NULL)
 {
     int die_num = 0;
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_value(__wrap_tower_configure_ioss_apu, ioss_base_addr, expected_base_addresses[die_num]);
-    expect_value(__wrap_tower_configure_ioss_apu, tower_base_addr, IOSS_TOP_NOCNI_NITOWER_IOSS_ADDRESS);
-    expect_value(__wrap_configure_ioss_system_addr_map, ioss_base_addr, expected_base_addresses[die_num]);
-    expect_value(__wrap_configure_ioss_system_addr_map, ioss_tower_base_addr, IOSS_TOP_NOCNI_NITOWER_IOSS_ADDRESS);
     expect_value(__wrap_program_ioss_pcr_usb_reset, pcr_base_addr, IOSS_TOP_IOSS_PCR_ADDRESS);
     will_return(__wrap_program_ioss_pcr_clock_mux, SILIBS_SUCCESS);
     will_return(__wrap_atu_unmap, SILIBS_E_INIT);

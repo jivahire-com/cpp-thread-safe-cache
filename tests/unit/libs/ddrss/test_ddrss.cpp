@@ -27,16 +27,6 @@ extern "C" {
 /*------------- Functions ----------------*/
 
 //
-// Mocks
-//
-
-int __wrap_ddrss_init(ddrss_cfg_knobs_t* cfg_knobs)
-{
-    FPFW_UNUSED(cfg_knobs);
-    return mock_type(int);
-}
-
-//
 // Tests
 //
 
@@ -63,7 +53,11 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga, NULL, NULL)
     // atu map is fixed so no atu map / un map calls
     idsw_set_platform_sdv(PLATFORM_FPGA_LARGE);
 
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
+
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     ddrss_lib_init(test_die);
 }

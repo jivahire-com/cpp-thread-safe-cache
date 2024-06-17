@@ -34,4 +34,5 @@ mock_target(${TARGET}
     tower_sequence_configure_towers
     atu_map
     atu_unmap
+    idsw_get_platform_sdv
 )

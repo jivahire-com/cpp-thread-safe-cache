@@ -3,8 +3,8 @@
 //
 
 /**
- * @file
- * Mock functions for vab initialization.
+ * @file tower_mocks.c
+ * Mock functions for tower sequence
  */
 
 /*------------- Includes -----------------*/
@@ -12,7 +12,9 @@
 #include <FpFwUtils.h>
 #include <atu_lib.h>
 #include <cmocka.h> // IWYU pragma: keep
-#include <vab_init.h>
+#include <ddrss_lib.h>
+#include <silibs_status.h>
+#include <stddef.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -23,11 +25,17 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
+
+//
+// Mocks
+//
 int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
 {
-    check_expected(atu_id);
-
-    /* Keep mscp base zero to allow checking base address in UTs */
+    if (atu_id >= ATU_ID_MAX || atu_map_entry == NULL)
+    {
+        return SILIBS_E_PARAM;
+    }
+    // Keep mscp base non-zero to allow checking base address in UTs
     atu_map_entry->mscp_start_address = 0xffffffff;
 
     return mock_type(int);
@@ -35,19 +43,16 @@ int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
 
 int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
 {
-    check_expected(atu_id);
-    FPFW_UNUSED(atu_map_entry);
+    if (atu_id >= ATU_ID_MAX || atu_map_entry == NULL)
+    {
+        return SILIBS_E_PARAM;
+    }
 
     return mock_type(int);
 }
 
-int __wrap_vab_init(vab_init_t* vab_init_params)
+int __wrap_ddrss_init(ddrss_cfg_knobs_t* cfg_knobs)
 {
-    check_expected(vab_init_params->security_state);
-    check_expected(vab_init_params->vab_smmu_gbpa_cfg->sh_cfg);
-    check_expected(vab_init_params->system_counter_delay);
-    check_expected(vab_init_params->vab_resolved_base_addr);
-
-    function_called();
-    return 0;
+    FPFW_UNUSED(cfg_knobs);
+    return mock_type(int);
 }

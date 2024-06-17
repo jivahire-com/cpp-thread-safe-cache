@@ -13,6 +13,7 @@ target_link_libraries(${TARGET}
     ddrss
     atu
     idsw
+    silibs::ras_arm
     fwlib.lib.assert
 )
 

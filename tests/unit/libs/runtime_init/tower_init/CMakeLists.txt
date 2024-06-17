@@ -24,6 +24,6 @@ coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
 mock_target(${TARGET}
-    idhw_get_die_id
+    idsw_get_die_id
     tower_init
 )

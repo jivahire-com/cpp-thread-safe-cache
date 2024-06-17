@@ -12,10 +12,9 @@ target_link_libraries(
             ms::lib::debug
             silibs::atu
             silibs::kng_silibs_platform
-            silibs::pcr_vab
             silibs::platform
-            silibs::tower_vab
-            silibs::vab_pcr_init
+            silibs::smmu
+            silibs::vab_init
             silibs_platform
 
 )

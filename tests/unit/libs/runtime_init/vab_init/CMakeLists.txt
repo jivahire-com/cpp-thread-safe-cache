@@ -23,5 +23,6 @@ unit_test_target(${TARGET})
 
 mock_target(${TARGET}
     idsw_get_platform_sdv
-    vab_init
+    idsw_get_die_id
+    vab_common_init
 )

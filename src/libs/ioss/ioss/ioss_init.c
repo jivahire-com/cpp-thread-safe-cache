@@ -20,7 +20,6 @@
 #include <silibs_common.h>          // for ALIGN_UP
 #include <silibs_status.h>          // for SILIBS_SUCCESS
 #include <stdint.h>                 // for uint64_t, uint32_t, uint8_t
-#include <tower_ioss.h>             // for configure_ioss_system_addr_map
 #include <vab_cded_ioss_top_regs.h> // for VAB_CDED_IOSS_TOP_IOSS_ADDRESS
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -29,11 +28,6 @@
 /*------------- Typedefs -----------------*/
 
 /*-- Declarations (Statics and globals) --*/
-static uint64_t ioss_addrs[NUM_IOSS_INSTANCES] = {
-    AP_TOP_D0_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS,
-    AP_TOP_D1_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS,
-};
-
 static atu_map_entry_t atu_ioss_map[NUM_IOSS_INSTANCES] = {
     {
         // D0-IOSS0
@@ -60,10 +54,6 @@ void ioss_init(uint8_t die_num)
     FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
 
     uint32_t resolved_ioss_base_addr = atu_ioss_map[die_num].mscp_start_address;
-
-    // IOSS tower
-    tower_configure_ioss_apu(ioss_addrs[die_num], (resolved_ioss_base_addr + IOSS_TOP_NOCNI_NITOWER_IOSS_ADDRESS));
-    configure_ioss_system_addr_map(ioss_addrs[die_num], (resolved_ioss_base_addr + IOSS_TOP_NOCNI_NITOWER_IOSS_ADDRESS));
 
     // IOSS PCR init
     // Enable USBSS

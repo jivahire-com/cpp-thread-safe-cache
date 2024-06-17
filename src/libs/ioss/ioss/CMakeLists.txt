@@ -13,7 +13,6 @@ target_link_libraries(${TARGET}
         ppu_v1
         atu
         pcr_ioss
-        tower_ioss
         idsw
 )
 

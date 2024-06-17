@@ -13,18 +13,12 @@
 /*------------- Includes -----------------*/
 #include <FpFwAssert.h>
 #include <atu_lib.h>
+#include <kng_atu_mappings.h>
 #include <kng_soc_constants.h>
-#include <silibs_ap_top_regs.h>
-#include <silibs_common.h>
 #include <silibs_status.h>
+#include <smmu_knobs.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <tower_vab.h>
-#include <vab_cded_ioss_top_regs.h>
-#include <vab_pcr_init.h>
-#include <vab_regs.h>
-#include <vab_rpss_top_regs.h>
-#include <vab_sdm_top_regs.h>
+#include <vab_init.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -33,143 +27,48 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static atu_map_entry_t atu_vab_map[MAX_VAB_INSTANCES] = {
-    {
-        /* D0-RPSS0 */
-        .ap_base_address = AP_TOP_D0_VAB_RPSS0_ADDRESS + VAB_RPSS_TOP_VAB_ADDRESS,
-        .mscp_start_address = 0,
-        .mscp_end_address = ALIGN_UP(AP_TOP_D0_VAB_RPSS0_SIZE, ATU_PAGE_SIZE) - 1,
-        .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT},
-    },
-    {
-        /* D0-RPSS1 */
-        .ap_base_address = AP_TOP_D0_VAB_RPSS1_ADDRESS + VAB_RPSS_TOP_VAB_ADDRESS,
-        .mscp_start_address = 0,
-        .mscp_end_address = ALIGN_UP(AP_TOP_D0_VAB_RPSS0_SIZE, ATU_PAGE_SIZE) - 1,
-        .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT},
-    },
-    {
-        /* D0-RPSS2 */
-        .ap_base_address = AP_TOP_D0_VAB_RPSS2_ADDRESS + VAB_RPSS_TOP_VAB_ADDRESS,
-        .mscp_start_address = 0,
-        .mscp_end_address = ALIGN_UP(AP_TOP_D0_VAB_RPSS0_SIZE, ATU_PAGE_SIZE) - 1,
-        .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT},
-    },
-    {
-        /* D0-RPSS3 */
-        .ap_base_address = AP_TOP_D0_VAB_RPSS3_ADDRESS + VAB_RPSS_TOP_VAB_ADDRESS,
-        .mscp_start_address = 0,
-        .mscp_end_address = ALIGN_UP(AP_TOP_D0_VAB_RPSS0_SIZE, ATU_PAGE_SIZE) - 1,
-        .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT},
-    },
-    {
-        /* D1-RPSS0 */
-        .ap_base_address = AP_TOP_D1_VAB_RPSS0_ADDRESS + VAB_RPSS_TOP_VAB_ADDRESS,
-        .mscp_start_address = 0,
-        .mscp_end_address = ALIGN_UP(AP_TOP_D0_VAB_RPSS0_SIZE, ATU_PAGE_SIZE) - 1,
-        .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT},
-    },
-    {
-        /* D1-RPSS1 */
-        .ap_base_address = AP_TOP_D1_VAB_RPSS1_ADDRESS + VAB_RPSS_TOP_VAB_ADDRESS,
-        .mscp_start_address = 0,
-        .mscp_end_address = ALIGN_UP(AP_TOP_D0_VAB_RPSS0_SIZE, ATU_PAGE_SIZE) - 1,
-        .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT},
-    },
-    {
-        /* D1-RPSS2 */
-        .ap_base_address = AP_TOP_D1_VAB_RPSS2_ADDRESS + VAB_RPSS_TOP_VAB_ADDRESS,
-        .mscp_start_address = 0,
-        .mscp_end_address = ALIGN_UP(AP_TOP_D0_VAB_RPSS0_SIZE, ATU_PAGE_SIZE) - 1,
-        .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT},
-    },
-    {
-        /* D1-RPSS3 */
-        .ap_base_address = AP_TOP_D1_VAB_RPSS3_ADDRESS + VAB_RPSS_TOP_VAB_ADDRESS,
-        .mscp_start_address = 0,
-        .mscp_end_address = ALIGN_UP(AP_TOP_D0_VAB_RPSS0_SIZE, ATU_PAGE_SIZE) - 1,
-        .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT},
-    },
-    {
-        /* D0-SDMSS */
-        .ap_base_address = AP_TOP_D0_VAB_SDM_ADDRESS + VAB_SDM_TOP_VAB_ADDRESS,
-        .mscp_start_address = 0,
-        .mscp_end_address = ALIGN_UP(AP_TOP_D0_VAB_SDM_SIZE, ATU_PAGE_SIZE) - 1,
-        .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT},
-    },
-    {
-        /* D1-SDMSS */
-        .ap_base_address = AP_TOP_D1_VAB_SDM_ADDRESS + VAB_SDM_TOP_VAB_ADDRESS,
-        .mscp_start_address = 0,
-        .mscp_end_address = ALIGN_UP(AP_TOP_D0_VAB_SDM_SIZE, ATU_PAGE_SIZE) - 1,
-        .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT},
-    },
-    {
-        /* D0-CDED/IOSS */
-        .ap_base_address = AP_TOP_D0_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_VAB_ADDRESS,
-        .mscp_start_address = 0,
-        .mscp_end_address = ALIGN_UP(AP_TOP_D0_VAB_CDED_IOSS_SIZE, ATU_PAGE_SIZE) - 1,
-        .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT},
-    },
-    {
-        /* D1-CDED/IOSS */
-        .ap_base_address = AP_TOP_D1_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_VAB_ADDRESS,
-        .mscp_start_address = 0,
-        .mscp_end_address = ALIGN_UP(AP_TOP_D0_VAB_CDED_IOSS_SIZE, ATU_PAGE_SIZE) - 1,
-        .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT},
-    },
-};
-
 /*------------- Functions ----------------*/
-static int init_one_vab(SUBSYSTEM_WITH_VAB_ID vab_id)
+
+int vab_common_init(uint16_t vab_instances_to_init)
 {
     int status = SILIBS_SUCCESS;
-    int unmap_status = SILIBS_SUCCESS;
 
-    status = atu_map(ATU_ID_MSCP, &atu_vab_map[vab_id]);
-    if (status != SILIBS_SUCCESS)
-    {
-        printf("%s: atu_map failed! VAB id: %d | Status: %d\n", __func__, vab_id, status);
-        goto exit;
-    }
+    atu_map_entry_t atu_vabss_map[MAX_VAB_INSTANCES] = {
+        ATU_MAPPING_D0_VAB0_RPSS0(),
+        ATU_MAPPING_D0_VAB1_RPSS1(),
+        ATU_MAPPING_D0_VAB2_RPSS2(),
+        ATU_MAPPING_D0_VAB3_RPSS3(),
+        ATU_MAPPING_D1_VAB0_RPSS0(),
+        ATU_MAPPING_D1_VAB1_RPSS1(),
+        ATU_MAPPING_D1_VAB2_RPSS2(),
+        ATU_MAPPING_D1_VAB3_RPSS3(),
+        ATU_MAPPING_D0_VAB4_SDMSS(),
+        ATU_MAPPING_D1_VAB4_SDMSS(),
+        ATU_MAPPING_D0_VAB5_CDEDSS_IOSS(),
+        ATU_MAPPING_D1_VAB5_CDEDSS_IOSS(),
+    };
 
-    uint64_t mscp_start_address = atu_vab_map[vab_id].mscp_start_address;
-    uint64_t vab_base_addr = atu_vab_map[vab_id].ap_base_address;
+    // Keep the default memory attributes
+    smmu_gbpa_cfg_t smmu_gbpa_cfg = {0};
+    smmu_gbpa_cfg.sh_cfg = 1;
 
-    /* HSP will configure VAB SAMs and APUs so this will be removed later */
-    tower_configure_vab_apu(vab_base_addr, mscp_start_address + VAB_VAB_TOWER_ADDRESS);
-    configure_vab_system_addr_map(vab_base_addr, mscp_start_address + VAB_VAB_TOWER_ADDRESS);
-
-    deassert_pcr_reset(mscp_start_address + VAB_VAB_PCR_TOP_ADDRESS);
-    status = vab_pcr_init(mscp_start_address + VAB_VAB_PCR_TOP_ADDRESS);
-    if (status != SILIBS_SUCCESS)
-    {
-        printf("%s: vab_pcr_init failed. VAB id: %d | Status: %d\n", __func__, vab_id, status);
-        goto atu_unmap_and_exit;
-    }
-
-atu_unmap_and_exit:
-    unmap_status = atu_unmap(ATU_ID_MSCP, &atu_vab_map[vab_id]);
-    if (unmap_status != SILIBS_SUCCESS)
-    {
-        printf("%s: atu_unmap failed. VAB id: %d | Status: %d\n", __func__, vab_id, unmap_status);
-        status = unmap_status;
-    }
-
-exit:
-    return status;
-}
-
-int vab_init(uint16_t vab_instances_to_init)
-{
-    int status = SILIBS_SUCCESS;
+    vab_init_t vab_init_cfg = {.vab_smmu_gbpa_cfg = &smmu_gbpa_cfg};
 
     for (uint16_t vab_id = 0; vab_id < MAX_VAB_INSTANCES; vab_id++)
     {
         if ((vab_instances_to_init >> vab_id) & 0x1)
         {
-            status |= init_one_vab((SUBSYSTEM_WITH_VAB_ID)vab_id);
-            FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
+            FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_vabss_map[vab_id]));
+
+            // TODO: What should be the default security state? This is used for configuring SMMU registers
+            vab_init_cfg.security_state = SECURITY_STATE_NON_SECURE;
+            // TODO: Use silibs knobs to get the system counter delay value
+            vab_init_cfg.system_counter_delay = 0;
+            vab_init_cfg.vab_resolved_base_addr = atu_vabss_map[vab_id].mscp_start_address;
+
+            FPFW_RUNTIME_ASSERT(!vab_init(&vab_init_cfg));
+
+            FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_vabss_map[vab_id]));
         }
     }
     return status;

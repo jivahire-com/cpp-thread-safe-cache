@@ -32,10 +32,9 @@ static uint16_t vab_instances_to_be_enabled(uint8_t die_num)
     switch (plat)
     {
     case PLATFORM_SVP_SIM:
-        // Skip RPSS on SVP to avoid simulation slowdown
         if (die_num == 0)
         {
-            vab_instances_to_init = ((1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS));
+            vab_instances_to_init = ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS));
         }
         else
         {
@@ -82,11 +81,6 @@ FPFW_INIT_COMPONENT(vab, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "ddr"))
 {
     uint8_t die_num = (uint8_t)idsw_get_die_id();
     printf("VAB Initialization: Begin for die:0x%x\n", die_num);
-    if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
-    {
-        printf("Skip running VAB init on SVP as PCRs are not supported\n");
-        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
-    }
     uint16_t vab_instances_enabled = vab_instances_to_be_enabled(die_num);
     printf("Bit mask of VAB instances to be enabled: 0x%x\n", vab_instances_enabled);
     vab_common_init(vab_instances_enabled);

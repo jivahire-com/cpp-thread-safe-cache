@@ -51,4 +51,4 @@ typedef struct _pcie_manager_context_t
  *
  *  @retval     None. Errors raised if failure in initialization.
  */
-void scp_pcie_initialize(PDFWK_SCHEDULE schedule);
+void scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init);

@@ -11,6 +11,7 @@
 #include <DfwkPtrTypes.h>
 #include <DfwkThreadXHost.h>
 #include <fpfw_init.h>
+#include <idsw.h>
 #include <scp_pcie_manager.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -24,10 +25,34 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk"))
+FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "vab"))
 {
     fpfw_init_component_id_t dfwk_id = "dfwk";
     PDFWK_THREADX_HOST host = fpfw_init_get_handle(dfwk_id);
-    scp_pcie_initialize(&(host->Schedule));
+    uint16_t rpss_to_init = 0;
+    PLAT_ID plat = idsw_get_platform_sdv();
+
+    switch (plat)
+    {
+    case PLATFORM_SVP_SIM:
+        rpss_to_init = ((1 << RPSS0));
+        break;
+
+    case PLATFORM_FPGA:
+    case PLATFORM_FPGA_LARGE:
+    case PLATFORM_FPGA_LARGE_RVP:
+        rpss_to_init = ((1 << RPSS1) | (1 << RPSS2));
+        break;
+
+    case PLATFORM_RVP_EVT_SILICON:
+        rpss_to_init = ((1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3));
+        break;
+
+    default:
+        printf("Skip RPSS init on unknown platform id: %d\n", plat);
+        break;
+    }
+
+    scp_pcie_initialize(&(host->Schedule), rpss_to_init);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

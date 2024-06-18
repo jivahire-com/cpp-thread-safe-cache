@@ -8,15 +8,16 @@
  */
 
 /*------------- Includes -----------------*/
-#include "DfwkHost.h" // for DfwkDeviceInitialize
+#include "DfwkHost.h"
 
-#include <DfwkDriver.h>    // for DfwkQueueInitialize, DfwkInterfaceInitialize
-#include <FpFwAssert.h>    // for FPFW_RUNTIME_ASSERT
-#include <pcie_dfwk.h>     // for pcie_sync_request_t, pciess_device_t, ROO...
-#include <pcie_dfwk_i.h>   // for pcie_default_dispatch, pcie_per_rp_dispatch
-#include <silibs_status.h> // for SILIBS_SUCCESS
-#include <stdint.h>        // for int32_t, uint8_t
-#include <stdio.h>         // for NULL, printf
+#include <DfwkDriver.h>
+#include <FpFwAssert.h>
+#include <pcie_dfwk.h>
+#include <pcie_dfwk_i.h>
+#include <pcie_rpss_init_i.h>
+#include <silibs_status.h>
+#include <stdint.h>
+#include <stdio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -30,9 +31,28 @@
 int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
 {
     pcie_sync_request_t* r = (pcie_sync_request_t*)incoming;
+    silibs_status_t sts = SILIBS_SUCCESS;
 
-    printf("Received synchronous request on RPSS: %d!\n", r->rpss_index);
-    r->status = SILIBS_SUCCESS;
+    switch (r->header.RequestType)
+    {
+    case (INITIAL_CONFIG_REQUEST):
+        printf("Begin initial RPSS: %1d programming!\n", r->rpss_index);
+        sts = begin_rpss_init(incoming);
+        break;
+    case (PRE_RP_INIT_REQUEST):
+        printf("Begin RPSS: %1d pre-rp ready programming!\n", r->rpss_index);
+        sts = begin_rpss_pre_rp_ready_init(incoming);
+        break;
+    case (POST_RP_INIT_REQUEST):
+        printf("Begin RPSS: %1d post-rp ready programming!\n", r->rpss_index);
+        sts = begin_rpss_post_rp_ready_init(incoming);
+        break;
+    default:
+        printf("Bad sync req type on RPSS: %d!\n", r->rpss_index);
+        sts = SILIBS_E_PARAM;
+        break;
+    }
+    r->status = sts;
 
     return 0;
 }

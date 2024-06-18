@@ -27,26 +27,26 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+static atu_map_entry_t atu_vabss_map[MAX_VAB_INSTANCES] = {
+    ATU_MAPPING_D0_VAB0_RPSS0(),
+    ATU_MAPPING_D0_VAB1_RPSS1(),
+    ATU_MAPPING_D0_VAB2_RPSS2(),
+    ATU_MAPPING_D0_VAB3_RPSS3(),
+    ATU_MAPPING_D1_VAB0_RPSS0(),
+    ATU_MAPPING_D1_VAB1_RPSS1(),
+    ATU_MAPPING_D1_VAB2_RPSS2(),
+    ATU_MAPPING_D1_VAB3_RPSS3(),
+    ATU_MAPPING_D0_VAB4_SDMSS(),
+    ATU_MAPPING_D1_VAB4_SDMSS(),
+    ATU_MAPPING_D0_VAB5_CDEDSS_IOSS(),
+    ATU_MAPPING_D1_VAB5_CDEDSS_IOSS(),
+};
+
 /*------------- Functions ----------------*/
 
 int vab_common_init(uint16_t vab_instances_to_init)
 {
     int status = SILIBS_SUCCESS;
-
-    atu_map_entry_t atu_vabss_map[MAX_VAB_INSTANCES] = {
-        ATU_MAPPING_D0_VAB0_RPSS0(),
-        ATU_MAPPING_D0_VAB1_RPSS1(),
-        ATU_MAPPING_D0_VAB2_RPSS2(),
-        ATU_MAPPING_D0_VAB3_RPSS3(),
-        ATU_MAPPING_D1_VAB0_RPSS0(),
-        ATU_MAPPING_D1_VAB1_RPSS1(),
-        ATU_MAPPING_D1_VAB2_RPSS2(),
-        ATU_MAPPING_D1_VAB3_RPSS3(),
-        ATU_MAPPING_D0_VAB4_SDMSS(),
-        ATU_MAPPING_D1_VAB4_SDMSS(),
-        ATU_MAPPING_D0_VAB5_CDEDSS_IOSS(),
-        ATU_MAPPING_D1_VAB5_CDEDSS_IOSS(),
-    };
 
     // Keep the default memory attributes
     smmu_gbpa_cfg_t smmu_gbpa_cfg = {0};

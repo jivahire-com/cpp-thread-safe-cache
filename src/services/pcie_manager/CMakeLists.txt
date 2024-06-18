@@ -17,6 +17,7 @@ target_link_libraries(
         ms::driver::pcie
         ms::lib::debug
         ms::lib::threadx
+        silibs::idsw
         silibs_platform
 )
 

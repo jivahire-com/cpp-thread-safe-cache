@@ -10,8 +10,10 @@
 
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h> // IWYU pragma: keep
-#include <cstddef>         // IWYU pragma: keep
-#include <cstdint>         // IWYU pragma: keep
+#include <atu_lib.h>
+#include <cstddef> // IWYU pragma: keep
+#include <cstdint> // IWYU pragma: keep
+#include <idsw.h>
 
 extern "C" {
 #include <DfwkPtrTypes.h>
@@ -65,12 +67,75 @@ TEST_FUNCTION(interface_init, NULL, NULL)
     assert_ptr_equal(iface.dev, &dev);
 }
 
-TEST_FUNCTION(test_sync_requests, NULL, NULL)
+/* Test case for initial pciess init sync. request successful path */
+TEST_FUNCTION(test_pcie_rpss_init_success, NULL, NULL)
 {
+    /* Setup the request for an rpss */
     pcie_sync_request_t r;
+    r.header.RequestType = INITIAL_CONFIG_REQUEST;
+    r.req_type = INITIAL_CONFIG_REQUEST;
     r.rpss_index = RPSS2;
+
+    /* Setup silibs expectations */
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    expect_value(__wrap_pciess_config_entity, program_phy_regs, true);
+    expect_value(__wrap_pciess_config_entity, enable_apu, true);
+    will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
+    will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
+    will_return(__wrap_pciess_deassert_por_reset, SILIBS_SUCCESS);
     int32_t ret = pcie_sched_sync_op(&(r.header));
-    /* For now, any sync. requests return success buy default. */
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+}
+
+/* Test case for initial pciess init sync. request atu mapping failures */
+TEST_FUNCTION(test_pcie_rpss_init_atu_map_fail, NULL, NULL)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    r.header.RequestType = INITIAL_CONFIG_REQUEST;
+    r.req_type = INITIAL_CONFIG_REQUEST;
+    r.rpss_index = RPSS2;
+
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, SILIBS_E_RANGE);
+    expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
+    if (!set_error_handler_return())
+    {
+        pcie_sched_sync_op(&(r.header));
+    }
+}
+
+TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success, NULL, NULL)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    r.header.RequestType = PRE_RP_INIT_REQUEST;
+    r.req_type = PRE_RP_INIT_REQUEST;
+    r.rpss_index = RPSS2;
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return(__wrap_pciess_phys_sram_init_done, SILIBS_SUCCESS);
+    will_return(__wrap_pciess_rps_pre_rp_ready_init, SILIBS_SUCCESS);
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_success, NULL, NULL)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    r.header.RequestType = POST_RP_INIT_REQUEST;
+    r.req_type = POST_RP_INIT_REQUEST;
+    r.rpss_index = RPSS2;
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return(__wrap_pciess_rps_ready, SILIBS_SUCCESS);
+    will_return(__wrap_pciess_rps_post_rp_ready_init, SILIBS_SUCCESS);
+    int32_t ret = pcie_sched_sync_op(&(r.header));
     assert_int_equal(ret, 0);
     assert_int_equal(r.status, SILIBS_SUCCESS);
 }

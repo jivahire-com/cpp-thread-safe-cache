@@ -37,7 +37,7 @@ static pciess_device_t dev[PCIE_RPSS_COUNT];
 static pciess_device_interface_t iface[PCIE_RPSS_COUNT];
 
 /*------------- Functions ----------------*/
-void scp_pcie_initialize(PDFWK_SCHEDULE schedule)
+void scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init)
 {
     if (schedule == NULL)
     {
@@ -47,6 +47,11 @@ void scp_pcie_initialize(PDFWK_SCHEDULE schedule)
 
     for (RPSS_INSTANCE i = RPSS0; i < PCIE_RPSS_COUNT; i++)
     {
+        if (((rpss_to_init >> i) & 0x1) != 0x1)
+        {
+            continue;
+        }
+
         /* Initialize PCIe rpss drivers before starting up service threads */
         pcie_dfwk_init(&(dev[i]), schedule);
 

@@ -4,8 +4,7 @@
 
 /**
  * @file
- * This section is used to describe the file and any relevant
- * information related to it purpose and how it should be used.
+ * Driver framework mocks for the PCIe driver
  */
 
 /*------------- Includes -----------------*/

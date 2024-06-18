@@ -33,8 +33,9 @@ typedef enum _pcie_rp_async_request_t
 /* Sync operations supported by each root port on a pcie subsystem*/
 typedef enum _pcie_rp_sync_request_t
 {
-    PRE_CDM_INIT_REQUEST = 0x00,
-    POST_CDM_INIT_REQUEST,
+    INITIAL_CONFIG_REQUEST = 0x00,
+    PRE_RP_INIT_REQUEST,
+    POST_RP_INIT_REQUEST,
     PCIE_MAX_SYNC_REQ
 } pcie_rp_sync_request_t;
 

@@ -39,12 +39,13 @@ static pcie_manager_context_t ctx = {.rpss_idx = RPSS0, .dev = &dev, .iface = &i
 TEST_FUNCTION(init_fail, NULL, NULL)
 {
     auto* sched = (PDFWK_SCHEDULE)0xdeadbeef;
+    uint16_t rpss_to_init = (RPSS0 | RPSS1 | RPSS2 | RPSS3);
 
     // Bad args
     expect_value(FPFwErrorRaise, error, (uint32_t)(-EINVAL));
     if (!set_error_handler_return())
     {
-        scp_pcie_initialize(nullptr);
+        scp_pcie_initialize(nullptr, rpss_to_init);
     }
 
     // tx queue fails
@@ -59,7 +60,7 @@ TEST_FUNCTION(init_fail, NULL, NULL)
     expect_value(FPFwErrorRaise, error, (uint32_t)TX_NO_MEMORY);
     if (!set_error_handler_return())
     {
-        scp_pcie_initialize(sched);
+        scp_pcie_initialize(sched, rpss_to_init);
     }
 
     // tx thread fails
@@ -80,7 +81,7 @@ TEST_FUNCTION(init_fail, NULL, NULL)
     expect_value(FPFwErrorRaise, error, (uint32_t)TX_NOT_DONE);
     if (!set_error_handler_return())
     {
-        scp_pcie_initialize(sched);
+        scp_pcie_initialize(sched, rpss_to_init);
     }
 }
 

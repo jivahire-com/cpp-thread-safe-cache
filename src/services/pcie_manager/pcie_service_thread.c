@@ -10,7 +10,8 @@
 /*------------- Includes -----------------*/
 #include "FpFwAssert.h" // for FPFW_RUNTIME_ASSERT
 
-#include <DfwkClient.h>       // for DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE
+#include <DfwkClient.h> // for DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE
+#include <idsw.h>
 #include <pcie_dfwk.h>        // for pcie_async_request_t, pcie_dfwk_interf...
 #include <pcie_manager_i.h>   // for rpss_req_completion_cb, rpss_service_t...
 #include <scp_pcie_manager.h> // for pcie_manager_context_t, pciess_complet...
@@ -20,6 +21,13 @@
 #include <tx_api.h>           // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
 
 /*-- Symbolic Constant Macros (defines) --*/
+/*
+ * Service initialization sleep durations to yield worker threads while
+ * they are waiting for phy sram load and reset events to complete
+ * within an rpss.
+ */
+#define PRE_SI_WORKER_YIELD_TICKS  (2)
+#define POST_SI_WORKER_YIELD_TICKS (200)
 
 /*------------- Typedefs -----------------*/
 
@@ -62,13 +70,34 @@ void rpss_service_thread_fn(ULONG thread_input)
     pcie_manager_context_t* ctx = (pcie_manager_context_t*)(thread_input);
     pciess_device_t* d = ctx->dev;
     pciess_device_interface_t* iface = ctx->iface;
+    unsigned long worker_yield_ticks =
+        (idsw_get_platform_sdv() >= PLATFORM_RVP_EVT_SILICON) ? POST_SI_WORKER_YIELD_TICKS : PRE_SI_WORKER_YIELD_TICKS;
 
     /* Initialize and open the interface for this root port subsystem */
     pcie_dfwk_interface_init(d, iface);
     DfwkClientInterfaceOpen(&(iface->header));
 
     /* Send synchronous requests for pre-link training RPSS setup */
-    tx_thread_sleep(1);
+    pcie_sync_request_t sync_req = {
+        .header = {.RequestType = INITIAL_CONFIG_REQUEST},
+        .rpss_index = ctx->rpss_idx,
+        .rp_index = 0xF,
+        .req_type = INITIAL_CONFIG_REQUEST,
+    };
+    int32_t status = DfwkInterfaceSendSync((PDFWK_INTERFACE_HEADER)(ctx->iface), &sync_req.header);
+    FPFW_RUNTIME_ASSERT(status == DFWK_SUCCESS);
+    tx_thread_sleep(worker_yield_ticks);
+
+    sync_req.header.RequestType = PRE_RP_INIT_REQUEST;
+    sync_req.req_type = PRE_RP_INIT_REQUEST;
+    status = DfwkInterfaceSendSync((PDFWK_INTERFACE_HEADER)(ctx->iface), &sync_req.header);
+    FPFW_RUNTIME_ASSERT(status == DFWK_SUCCESS);
+    tx_thread_sleep(worker_yield_ticks);
+
+    sync_req.header.RequestType = POST_RP_INIT_REQUEST;
+    sync_req.req_type = POST_RP_INIT_REQUEST;
+    status = DfwkInterfaceSendSync((PDFWK_INTERFACE_HEADER)(ctx->iface), &sync_req.header);
+    FPFW_RUNTIME_ASSERT(status == DFWK_SUCCESS);
 
     /* Begin link training on all enabled root ports on this subsystem */
     send_start_link_training_requests(ctx);

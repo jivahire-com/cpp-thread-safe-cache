@@ -8,12 +8,13 @@
  */
 
 /*--------------- Includes ---------------*/
-#include "crash_dump_overrides_i.h" // for cacheFlushOverride, cacheInvalidateOverride
+#include "crash_dump_gpio.h"      // for cd_gpio_assert_cd_in_progress
+#include "crash_dump_overrides.h" // for cacheFlushOverride, cacheInvalidateOverride
+#include "crash_dump_payload.h"   // for crash_dump_register_core_registers
 
 #include <FpFwAssert.h>               // for FPFW_RUNTIME_ASSERT
 #include <crash_dump.h>               // for crash_dump_init
-#include <crash_dump_gpio.h>          // for cd_gpio_assert_cd_in_progress
-#include <crash_dump_register.h>      // for crash_dump_register_core_registers
+#include <crash_dump_memory.h>        // for CRASH_DUMP_FULL_SIZE
 #include <modules/CdDumpDescriptor.h> // for FPFwCDInitDumpDescriptor
 #include <modules/CdMemoryPool.h>     // for FPFwCDInintMemoryPool
 #include <stdbool.h>                  // for false
@@ -21,22 +22,23 @@
 #include <tx_api.h> // for TX_MUTEX, TX_SUCCESS, TX_NO_INHERIT, TX_WAIT_FOREVER, tx_mutex_create
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define CRASH_DUMP_NUM_DESCRIPTORS 1 // ToDo: Re-evaluate this number
+#define CRASH_DUMP_NUM_DESCRIPTORS 128 // ToDo: Re-evaluate this number
 
 /*-------------- Typedefs ----------------*/
 
 /*-------- Function Prototypes -----------*/
-static void init_mem_pool();
-static void init_dump_desc();
-static void init_dump_file();
-static void init_dump_manager();
+STATIC void init_mem_pool();
+STATIC void init_dump_desc();
+STATIC void init_dump_file();
+STATIC void init_dump_manager();
 
 /*-- Declarations (Statics and globals) --*/
-static FPFwCrashDumpCtx crash_dump_ctx = {};
-static FPFwCDMemPoolCtx mem_ctx = {};
-static FPFwCDDumpDescriptorCtx desc_ctx = {};
-static FPFwCDDumpDescriptor desc_list[CRASH_DUMP_NUM_DESCRIPTORS] = {};
-static TX_MUTEX desc_mutex = {};
+STATIC FPFwCrashDumpCtx crash_dump_ctx = {};
+STATIC FPFwCDMemPoolCtx mem_ctx = {};
+STATIC FPFwCDDumpDescriptorCtx desc_ctx = {};
+STATIC FPFwCDDumpFileCtx file_ctx = {};
+STATIC FPFwCDDumpDescriptor desc_list[CRASH_DUMP_NUM_DESCRIPTORS] = {};
+STATIC TX_MUTEX desc_mutex = {};
 
 /*------------- Functions ----------------*/
 /**
@@ -55,8 +57,6 @@ FPFwCrashDumpCtx* GetCrashDumpContext()
  */
 void crash_dump_init()
 {
-    // ToDo: Read and set up crash dump configuration
-
     // De-assert CD_IN_PROGRESS
     cd_gpio_assert_cd_in_progress(false);
 
@@ -79,14 +79,17 @@ void crash_dump_init()
     // Add capture information about the core and the firmware
     crash_dump_register_standard_info();
 
+    // Register ThreadX data
+    crash_dump_register_threadx();
+
     // ToDo: Enable Debug Monitor exception
 }
 
 /**
- * @brief ToDo: Read mem pool size from the configuration.
+ * @brief Initialize crash dump memory pool.
  *
  */
-static void init_mem_pool()
+STATIC void init_mem_pool()
 {
     uint64_t cd_mem_pool = 0;
     uint32_t block_size = 0;
@@ -100,10 +103,10 @@ static void init_mem_pool()
 }
 
 /**
- * @brief ToDo: Initialize crash dump description.
+ * @brief Initialize crash dump description.
  *
  */
-static void init_dump_desc()
+STATIC void init_dump_desc()
 {
     // Create Tx mutex for descriptor set
     FPFW_RUNTIME_ASSERT(tx_mutex_create(&desc_mutex, "cd desc mutex", TX_NO_INHERIT) == TX_SUCCESS);
@@ -117,17 +120,27 @@ static void init_dump_desc()
 }
 
 /**
- * @brief ToDo: Initialize crash dump file.
+ * @brief Initialize crash dump file.
  *
  */
-static void init_dump_file()
+STATIC void init_dump_file()
 {
+    FPFW_RUNTIME_ASSERT(FPFwCDInitDumpFile(&file_ctx));
+    (void)FPFwCDDumpFileOverrideInValidMemory(&file_ctx, &inMemoryOverride);
+    (void)FPFwCDDumpFileOverrideInValidCsrMemory(&file_ctx, &inMemoryOverride);
+    (void)FPFwCDDumpFileOverrideInValidGlobalMemory(&file_ctx, &inGlobalMemoryOverride);
+    file_ctx.product = CD_PRODUCT_ID_KINGSGATE;
 }
 
 /**
- * @brief ToDo: Initialize crash dump manager.
+ * @brief Initialize crash dump manager.
  *
  */
-static void init_dump_manager()
+STATIC void init_dump_manager()
 {
+    FPFW_RUNTIME_ASSERT(FPFwCDInitDumpManager(&crash_dump_ctx, &mem_ctx, &desc_ctx, &file_ctx, NULL, CRASH_DUMP_FULL_SIZE)); // No state manager.
+    FPFwCDOverridePrintf(&crash_dump_printf);
+    (void)FPFwCDDumpManagerSetPreDumpCallback(&crash_dump_ctx, &preDumpCallbackOverride, NULL);
+    (void)FPFwCDDumpManagerSetPostDumpCallback(&crash_dump_ctx, &postDumpCallbackOverride, NULL);
+    (void)FPFwCDDumpManagerOverrideGetCurTime(&crash_dump_ctx, &getCurTimeDefault);
 }

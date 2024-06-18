@@ -8,19 +8,43 @@
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwUtils.h> // for FPFW_UNUSED
-#include <stdint.h>    // for uint32_t, uint64_t
-#include <tx_api.h>    // for tx_mutex_get, tx_mutex_put
+#include "crash_dump_overrides.h"
+
+#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
+#include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <crash_dump.h> // for STATIC
+#include <stdarg.h>     // for va_list, va_start, va_end
+#include <stdbool.h>    // for bool
+#include <stdint.h>     // for uint32_t, uint64_t
+#include <stdio.h>      // for printf
+#include <tx_api.h>     // for tx_mutex_get, tx_mutex_put
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define PRE_DUMP_CB_MAX 16
 
 /*------------- Typedefs -----------------*/
+typedef struct
+{
+    void (*callback_fn)(void*);
+    void* callback_ctx;
+} dump_callback_t;
 
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+STATIC dump_callback_t pre_dump_callbacks[PRE_DUMP_CB_MAX];
+STATIC uint32_t pre_dump_cb_count = 0;
 
 /*------------- Functions ----------------*/
+void crash_dump_register_pre_dump_callback(void cb(void*), void* ctx)
+{
+    FPFW_RUNTIME_ASSERT(pre_dump_cb_count < PRE_DUMP_CB_MAX - 1);
+    FPFW_RUNTIME_ASSERT(cb != NULL);
+
+    pre_dump_callbacks[pre_dump_cb_count].callback_fn = cb;
+    pre_dump_callbacks[pre_dump_cb_count].callback_ctx = ctx;
+    pre_dump_cb_count++;
+}
 
 /*------- Memory Pool Overrides -------*/
 void cacheFlushOverride(uint64_t addr, uint32_t size)
@@ -44,4 +68,79 @@ uint32_t mutexLockOverride(void* mutex_ctx)
 uint32_t mutexUnlockOverride(void* mutex_ctx)
 {
     return tx_mutex_put((TX_MUTEX*)mutex_ctx);
+}
+
+/*------- Dump File Overrides -------*/
+bool inMemoryOverride(void* addr, uint32_t size)
+{
+    uintptr_t end_address = (uintptr_t)addr;
+    if (size > 0)
+    {
+        end_address += (size - 1);
+    }
+    // only return true if start and end addresses in valid memory space
+    return in_memory((uintptr_t)addr, end_address);
+}
+
+bool inGlobalMemoryOverride(uint64_t addr, uint32_t size)
+{
+    FPFW_UNUSED(addr);
+    FPFW_UNUSED(size);
+
+    return true;
+}
+
+/*------- Dump Manager Overrides -------*/
+/**
+ * @brief Crash dump pre-dump callback override to call all registered pre-dump callbacks
+ *
+ * @param preDumpCtx
+ * @return true if succeeded, otherwise false
+ */
+bool preDumpCallbackOverride(void* preDumpCtx)
+{
+    FPFW_UNUSED(preDumpCtx);
+
+    for (uint32_t i = 0; i < pre_dump_cb_count; i++)
+    {
+        pre_dump_callbacks[i].callback_fn(pre_dump_callbacks[i].callback_ctx);
+    }
+
+    return true;
+}
+
+/**
+ * @brief ToDo: Implement this function with the actual post dump implementation
+ *
+ * @param postDumpCtx
+ * @return true if succeeded, otherwise false
+ */
+bool postDumpCallbackOverride(void* postDumpCtx)
+{
+    FPFW_UNUSED(postDumpCtx);
+    return true;
+}
+
+/**
+ * @brief ToDo: Implement this function with the actual time implementation
+ *
+ * @return
+ */
+uint64_t getCurTimeDefault(void)
+{
+    return 0;
+}
+
+/*------- Utility Overrides -------*/
+int crash_dump_printf(const char* format, ...)
+{
+    // ToDo: Implement this function with the actual printf implementation
+    size_t length = 0;
+    va_list args;
+
+    va_start(args, format);
+    length = printf(format, args);
+    va_end(args);
+
+    return length;
 }

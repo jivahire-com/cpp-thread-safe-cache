@@ -1,21 +1,50 @@
+set(CRASH_DUMP_SOURCE_DIR
+    ${CMAKE_SOURCE_DIR}/src/libs/crash_dump
+)
 #
 # crash dump unit test for SCP
 #
 set(TARGET crash_dump.scp.test)
 
+set(CRASH_DUMP_SOURCES
+    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_init.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_overrides.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_payload_core.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_payload_msft.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_payload_threadx.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/scp/crash_dump_init_scp.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/scp/crash_dump_gpio.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/scp/crash_dump_overrides.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/scp/crash_dump_payload.c
+)
+
 set(SOURCES
+    ${CRASH_DUMP_SOURCES}
+    test_crash_dump.cpp
     test_crash_dump_scp.cpp
+    test_crash_dump_mocks.cpp
 )
 
 # Compile test
 add_executable(${TARGET} ${SOURCES})
 
+target_compile_definitions(${TARGET} PRIVATE UNIT_TEST)
+
+target_include_directories(${TARGET}
+    PRIVATE
+        ${CRASH_DUMP_SOURCE_DIR}/inc
+)
+
 target_link_libraries(${TARGET}
     PRIVATE
+    fwlib.lib.assert
     fwlib.lib.crashDump
+    ms::build_data
     ms::cmocka::testrunner
-    ms::lib::crash_dump::scp
+    ms::cmsis::interface
     ms::lib::threadx
+    silibs::kng_silibs_platform
 )
 
 lint_target(${TARGET})
@@ -32,9 +61,25 @@ mock_target(${TARGET}
     FPFwCDDumpDescriptorSetMutexCtx
     FPFwCDDumpDescriptorOverrideMutexLock
     FPFwCDDumpDescriptorOverrideMutexUnlock
+    FPFwCDInitDumpFile
+    FPFwCDDumpFileOverrideInValidMemory
+    FPFwCDDumpFileOverrideInValidCsrMemory
+    FPFwCDDumpFileOverrideInValidGlobalMemory
+    FPFwCDInitDumpManager
+    FPFwCDOverridePrintf
+    FPFwCDDumpManagerSetPreDumpCallback
+    FPFwCDDumpManagerSetPostDumpCallback
+    FPFwCDDumpManagerOverrideGetCurTime
+    CdRegisterMMIORegisterSet
+    CdRegisterAddress32
+    CdRegisterAddress64
+    CdRegisterAddress32PointerArray
+    CdRegisterCallback
+    CdRegisterRegisterSet
     _txe_mutex_create
     _tx_mutex_get
     _tx_mutex_put
+    gpio_set_output
 )
 
 #
@@ -42,19 +87,46 @@ mock_target(${TARGET}
 #
 set(TARGET crash_dump.mcp.test)
 
+set(CRASH_DUMP_SOURCES
+    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_init.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_overrides.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_payload_core.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_payload_msft.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_payload_threadx.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/mcp/crash_dump_gpio.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/mcp/crash_dump_overrides.c
+    ${CRASH_DUMP_SOURCE_DIR}/src/mcp/crash_dump_payload.c
+)
+
 set(SOURCES
+    ${CRASH_DUMP_SOURCES}
+    test_crash_dump.cpp
     test_crash_dump_mcp.cpp
+    test_crash_dump_mocks.cpp
 )
 
 # Compile test
 add_executable(${TARGET} ${SOURCES})
 
+target_compile_definitions(${TARGET} PRIVATE UNIT_TEST)
+
+target_include_directories(${TARGET}
+    PRIVATE
+        ${CRASH_DUMP_SOURCE_DIR}/inc
+)
+
 target_link_libraries(${TARGET}
     PRIVATE
+    fwlib.lib.assert
     fwlib.lib.crashDump
+    ms::build_data
     ms::cmocka::testrunner
-    ms::lib::crash_dump::mcp
+    ms::cmsis::interface
     ms::lib::threadx
+    silibs::kng_silibs_platform
+    silibs::gpio
+    silibs_platform
 )
 
 lint_target(${TARGET})
@@ -71,6 +143,21 @@ mock_target(${TARGET}
     FPFwCDDumpDescriptorSetMutexCtx
     FPFwCDDumpDescriptorOverrideMutexLock
     FPFwCDDumpDescriptorOverrideMutexUnlock
+    FPFwCDInitDumpFile
+    FPFwCDDumpFileOverrideInValidMemory
+    FPFwCDDumpFileOverrideInValidCsrMemory
+    FPFwCDDumpFileOverrideInValidGlobalMemory
+    FPFwCDInitDumpManager
+    FPFwCDOverridePrintf
+    FPFwCDDumpManagerSetPreDumpCallback
+    FPFwCDDumpManagerSetPostDumpCallback
+    FPFwCDDumpManagerOverrideGetCurTime
+    CdRegisterMMIORegisterSet
+    CdRegisterAddress32
+    CdRegisterAddress64
+    CdRegisterAddress32PointerArray
+    CdRegisterCallback
+    CdRegisterRegisterSet
     _txe_mutex_create
     _tx_mutex_get
     _tx_mutex_put

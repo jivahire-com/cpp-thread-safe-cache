@@ -3,14 +3,15 @@
 //
 
 /**
- * @file crash_dump_gpio_scp.c
+ * @file crash_dump_gpio.c
  *    SCP Crash Dump GPIO functionality
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwUtils.h>       // for FPFW_UNUSED
-#include <crash_dump_gpio.h> // for cd_gpio_assert_cd_available, cd_gpio_as...
-#include <stdbool.h>         // for bool
+#include "../crash_dump_gpio.h" // for cd_gpio_assert_cd_available, cd_gpio_as...
+
+#include <FpFwUtils.h> // for FPFW_UNUSED
+#include <stdbool.h>   // for bool
 
 /*-- Symbolic Constant Macros (defines) --*/
 

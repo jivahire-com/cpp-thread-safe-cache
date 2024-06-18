@@ -3,14 +3,15 @@
 //
 
 /**
- * @file crash_dump_gpio_mcp.c
+ * @file crash_dump_gpio.c
  *    MCP Crash Dump GPIO functionality
  */
 
 /*------------- Includes -----------------*/
-#include <crash_dump_gpio.h> // for cd_gpio_assert_cd_available, cd_gpio_as...
-#include <gpio_lib.h>        // for gpio_set_output, GPIO_CTRL_PIN_ID, MSCP...
-#include <stdbool.h>         // for bool
+#include "../crash_dump_gpio.h" // for cd_gpio_assert_cd_available, cd_gpio_as...
+
+#include <gpio_lib.h> // for gpio_set_output, GPIO_CTRL_PIN_ID, MSCP...
+#include <stdbool.h>  // for bool
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define SAFE_MODE_REQ       2

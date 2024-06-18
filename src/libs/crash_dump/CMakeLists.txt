@@ -1,3 +1,5 @@
+enabled_on(arm-eabi-aarch)
+
 # SCP Crash dump
 set(TARGET kng.lib.crash_dump.scp)
 
@@ -6,18 +8,23 @@ add_library(${TARGET}
         src/crash_dump.c
         src/crash_dump_init.c
         src/crash_dump_overrides.c
-        src/crash_dump_register_standard.c
+        src/crash_dump_payload_core.c
+        src/crash_dump_payload_msft.c
+        src/crash_dump_payload_threadx.c
         src/scp/crash_dump_init_scp.c
-        src/scp/crash_dump_gpio_scp.c
-        src/scp/crash_dump_overrides_scp.c
-        src/scp/crash_dump_register_scp.c
+        src/scp/crash_dump_gpio.c
+        src/scp/crash_dump_overrides.c
+        src/scp/crash_dump_payload.c
 )
 
 target_link_libraries(${TARGET}
     PRIVATE
-    fwlib.lib.assert
-    fwlib.lib.crashDump
-    ms::lib::threadx
+        fwlib.lib.assert
+        fwlib.lib.crashDump
+        ms::build_data
+        ms::cmsis::interface
+        silibs::kng_silibs_platform
+        ms::lib::threadx
 )
 
 target_include_directories(${TARGET}
@@ -40,19 +47,24 @@ add_library(${TARGET}
         src/crash_dump.c
         src/crash_dump_init.c
         src/crash_dump_overrides.c
-        src/crash_dump_register_standard.c
-        src/mcp/crash_dump_gpio_mcp.c
-        src/mcp/crash_dump_overrides_mcp.c
-        src/mcp/crash_dump_register_mcp.c
+        src/crash_dump_payload_core.c
+        src/crash_dump_payload_msft.c
+        src/crash_dump_payload_threadx.c
+        src/mcp/crash_dump_gpio.c
+        src/mcp/crash_dump_overrides.c
+        src/mcp/crash_dump_payload.c
 )
 
 target_link_libraries(${TARGET}
     PRIVATE
-    fwlib.lib.assert
-    fwlib.lib.crashDump
-    ms::lib::threadx
-    silibs::gpio
-    silibs_platform
+        fwlib.lib.assert
+        fwlib.lib.crashDump
+        ms::build_data
+        ms::cmsis::interface
+        silibs::kng_silibs_platform
+        ms::lib::threadx
+        silibs::gpio
+        silibs_platform
 )
 
 target_include_directories(${TARGET}

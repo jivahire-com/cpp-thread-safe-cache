@@ -12,6 +12,7 @@
 /*----------- Nested includes ------------*/
 
 #include <power_runconfig.h>
+#include <assert.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -49,7 +50,7 @@ void power_knobs_ws_update(power_knobs_t* p_knobs);
 
 /* Fuse specific APIs */
 void power_fuses_read(power_fuse_data_t* p_fuses);
-unsigned int power_fuses_get_curve_assignment(unsigned core);
+int32_t power_fuses_get_curve_assignment(uint32_t core, uint32_t* curve_assignment);
 
 #ifdef __cplusplus
 }

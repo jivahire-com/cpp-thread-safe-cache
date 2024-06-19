@@ -16,6 +16,7 @@ set(LIBS
         ms::driver::textio::pl011
         fwlib.lib.init
         fwlib.lib.utils
+        ras_arm
 )
 
 # Compile test

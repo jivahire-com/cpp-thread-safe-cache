@@ -47,9 +47,11 @@ mock_target(${TARGET}
     DfwkDeviceInitialize
     DfwkQueueInitialize
     DfwkInterfaceInitialize
+    platform_read_fuse
     power_init_core
     power_init_soc
-    power_runconfig_get
+    power_fuses_is_power_hw_supported
+    power_runconfig_get  
     power_runconfig_init
     power_telemetry_init_config
 )

@@ -11,6 +11,7 @@
 
 #include "power_runconfig.h"
 
+#include "fpfw_status.h"
 #include "power_hw_int_i.h"
 #include "power_i.h"
 #include "power_runconfig_i.h"
@@ -67,8 +68,8 @@ static void runconfig_generate_derived_vfts()
         {
             continue;
         }
-        curve_assignment = power_fuses_get_curve_assignment(core_idx);
-        if (curve_assignment >= VFT_CURVESET_COUNT)
+        int status = power_fuses_get_curve_assignment(core_idx, (uint32_t*)&curve_assignment);
+        if ((curve_assignment >= VFT_CURVESET_COUNT) || (status != FPFW_STATUS_SUCCESS))
         {
             BUG_CHECK(CC_SC_FUSE_CURVE_ASSIGNMENT, core_idx, curve_assignment);
         }

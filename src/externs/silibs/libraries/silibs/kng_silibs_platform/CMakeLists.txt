@@ -9,8 +9,6 @@ target_include_directories(
     ${TARGET}
         SYSTEM INTERFACE
             ${TARGET_DIR}/libraries/kng_silibs_platform/include
-            ${TARGET_DIR}/libraries/ras_arm/include
-            ${TARGET_DIR}/libraries/ras_framework/include
 )
 
 target_link_libraries(${TARGET}

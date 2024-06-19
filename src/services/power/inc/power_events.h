@@ -11,8 +11,10 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
-#include <event_trace.h>
-#include <event_trace_providers.h>
+#include <assert.h>                 // for static_assert
+#include <event_trace.h>            // for _MH_IS_PARENTHESIZED_imp1, _MH_SP...
+#include <event_trace_providers.h>  // for EVENT_TRACE_PROVIDER_ID_SCP_POWER
+#include <stdint.h>                 // for UINT8_MAX
 
 /*-- Symbolic Constant Macros (defines) --*/
 

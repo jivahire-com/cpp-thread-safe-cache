@@ -21,6 +21,10 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 /* static config macros*/
+#define MAX_BYTES_PER_FUSE (8)
+#define BITS_PER_BYTE      (8)
+#define MAX_BITS_PER_FUSE  (MAX_BYTES_PER_FUSE * BITS_PER_BYTE)
+
 #define NUM_SOC_VM  18
 #define NUM_TILE_VM 4
 

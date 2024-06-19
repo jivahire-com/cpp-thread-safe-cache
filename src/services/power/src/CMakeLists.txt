@@ -11,6 +11,7 @@ add_library(${TARGET}
         power_knobs.c
         power_main.c
         power_runconfig.c
+        power_stub.c
 )
 
 target_include_directories(${TARGET}
@@ -27,10 +28,12 @@ target_link_libraries(${TARGET}
         silibs::kng_silibs_platform
         silibs::pvt
         silibs::sensor_ram_bridge
+        silibs::fuse
     PRIVATE
         fwlib.dfwk
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.interface.platform.threadx
+        fwlib.lib.status
         ms::client_interface::startup_shutdown
         ms::lib::event_trace::trace
 )

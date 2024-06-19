@@ -136,7 +136,7 @@ static void setup_forced_pstate(uintptr_t cluster_pex_base_addr, dvfs_config_t* 
     dvfs_cfg->init_cfg.freq_table_init = false;
 
     // duplicate the assigned vft to temp
-    memcpy(temp_vft, dvfs_cfg->fuse_cfg.vft, sizeof(*temp_vft));
+    memcpy(temp_vft, dvfs_cfg->fuse_cfg.vft, sizeof(dvfs_vft_t));
     // reassign to copy
     dvfs_cfg->fuse_cfg.vft = temp_vft;
 

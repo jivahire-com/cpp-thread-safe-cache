@@ -22,6 +22,7 @@ extern "C" {
 #include <corebits.h>      // for corebits_set_bit
 #include <dvfs.h>
 #include <dvfs_struct.h>       // for dvfs_vf_slope_t
+#include <fpfw_status.h>       // for FPFW_STATUS_SUCCESS
 #include <power_hw_int_i.h>    // for power_telcfg_t
 #include <power_runconfig.h>   // for power_service_config_t
 #include <power_runconfig_i.h> // for power_runconfig_t
@@ -300,8 +301,10 @@ POWER_TEST(runconfig_derived_curve_assignment_curve_assignment, setup, NULL)
 
     for (unsigned core_idx = 0; core_idx < NUM_AP_CORES_PER_DIE; ++core_idx)
     {
-        unsigned curve_assignment = power_fuses_get_curve_assignment(core_idx);
+        unsigned curve_assignment = 0;
+        int status = power_fuses_get_curve_assignment(core_idx, &curve_assignment);
         assert_int_equal(curve_assignment, power_runconfig_get()->derived.assigned_vft[core_idx]);
+        assert_int_equal(status, FPFW_STATUS_SUCCESS);
     }
 }
 

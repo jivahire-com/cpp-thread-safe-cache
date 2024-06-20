@@ -70,6 +70,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_silicon, nullptr, nullptr)
     will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_tower_sequence_configure_towers);
+    will_return(__wrap_tower_configure_sdmss_sam_with_isolation_disabled, SILIBS_SUCCESS);
 
     // Call API under test
     tower_init(test_die);
@@ -116,6 +117,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_silicon, nullptr, nullptr)
     will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_tower_sequence_configure_towers);
+    will_return(__wrap_tower_configure_sdmss_sam_with_isolation_disabled, SILIBS_SUCCESS);
 
     // Call API under test
     tower_init(test_die);
@@ -161,6 +163,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_fpga, nullptr, nullptr)
     will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_tower_sequence_configure_towers);
+    will_return(__wrap_tower_configure_sdmss_sam_with_isolation_disabled, SILIBS_SUCCESS);
 
     // Call API under test
     tower_init(test_die);
@@ -204,6 +207,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_fpga, nullptr, nullptr)
     will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_tower_sequence_configure_towers);
+    will_return(__wrap_tower_configure_sdmss_sam_with_isolation_disabled, SILIBS_SUCCESS);
 
     // Call API under test
     tower_init(test_die);
@@ -247,6 +251,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_svp, nullptr, nullptr)
     will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_tower_sequence_configure_towers);
+    will_return(__wrap_tower_configure_sdmss_sam_with_isolation_disabled, SILIBS_SUCCESS);
 
     // Call API under test
     tower_init(test_die);
@@ -290,6 +295,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_svp, nullptr, nullptr)
     will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_tower_sequence_configure_towers);
+    will_return(__wrap_tower_configure_sdmss_sam_with_isolation_disabled, SILIBS_SUCCESS);
 
     // Call API under test
     tower_init(test_die);
@@ -332,6 +338,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_invalid_platform, nullptr, nullptr)
 
     expect_function_call(__wrap_tower_sequence_configure_towers);
 
+    will_return(__wrap_tower_configure_sdmss_sam_with_isolation_disabled, SILIBS_SUCCESS);
     // Call API under test
     tower_init(test_die);
 }
@@ -373,6 +380,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_invalid_platform, nullptr, nullptr)
 
     expect_function_call(__wrap_tower_sequence_configure_towers);
 
+    will_return(__wrap_tower_configure_sdmss_sam_with_isolation_disabled, SILIBS_SUCCESS);
     // Call API under test
     tower_init(test_die);
 }

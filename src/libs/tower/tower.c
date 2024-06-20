@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <tower.h>
+#include <tower_sdmss.h>
 #include <tower_sequence.h>
 
 /*------------- Typedefs -----------------*/
@@ -244,6 +245,12 @@ void tower_init(uint8_t die_num)
     printf("Configure all towers\n");
     FPFW_RUNTIME_ASSERT(!tower_sequence_configure_towers(&tower_sequence_params));
     printf("Towers configured\n");
+
+    // TODO: Move to accelerator_ip.c once it integrates sequence lib and configure this based on
+    // isolation enable fuse and knob values
+    // Assume isolation is not enabled for now and reprogram the sdmss tower
+    printf("Configure sdmss tower with isolation disabled\n");
+    tower_configure_sdmss_sam_with_isolation_disabled(sdmss_tower_map.mscp_start_address, (SDMSS_INSTANCE)die_num);
 
     // Un-map towers
     printf("Unmap towers\n");

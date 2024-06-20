@@ -83,3 +83,16 @@ int __wrap_tower_sequence_configure_towers(tower_sequence_soc_init_params_t* tow
     function_called();
     return 0;
 }
+
+int __wrap_tower_configure_sdmss_sam_with_isolation_disabled(uintptr_t tower_base_addr, SDMSS_INSTANCE sdmss_id)
+{
+    if (tower_base_addr == 0)
+    {
+        return SILIBS_E_PARAM;
+    }
+    if (sdmss_id >= NUM_SDMSS_INSTANCES)
+    {
+        return SILIBS_E_PARAM;
+    }
+    return mock_type(int);
+}

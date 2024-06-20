@@ -12,6 +12,7 @@ target_link_libraries(${TARGET}
     ms::lib::register_headers
     silibs::atu
     silibs::kng_silibs_platform
+    silibs::tower_sdmss
     silibs::tower_sequence
     idsw
 )

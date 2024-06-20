@@ -170,6 +170,8 @@ TEST_FUNCTION(test_link_training_dispatch, NULL, NULL)
     r.rp_index = 3;
     r.rp_op = INITIATE_LINK_TRAINING;
 
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS3);
+    will_return(__wrap_pciess_rp_initiate_link_training, SILIBS_SUCCESS);
     will_return(__wrap__txe_timer_delete, TX_SUCCESS);
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
     pcie_per_rp_dispatch(&(r.header), nullptr);
@@ -184,6 +186,8 @@ TEST_FUNCTION(test_link_training_threadx_failure, NULL, NULL)
     r.rp_index = 3;
     r.rp_op = INITIATE_LINK_TRAINING;
 
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS3);
+    will_return(__wrap_pciess_rp_initiate_link_training, SILIBS_SUCCESS);
     will_return(__wrap__txe_timer_delete, TX_SUCCESS);
     will_return(__wrap__txe_timer_create, TX_TIMER_ERROR);
     expect_value(FPFwErrorRaise, error, (uint32_t)(TX_TIMER_ERROR));

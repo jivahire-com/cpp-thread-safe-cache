@@ -10,10 +10,12 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkDriver.h>    // for PDFWK_ASYNC_REQUEST_HEADER, DfwkAsyncRequ...
-#include <ErrorHandler.h>  // for FPFwErrorRaise
-#include <FpFwAssert.h>    // for FPFW_RUNTIME_ASSERT
-#include <pcie_dfwk.h>     // for pcie_async_request_t, pciess_device_inter...
+#include <DfwkDriver.h>   // for PDFWK_ASYNC_REQUEST_HEADER, DfwkAsyncRequ...
+#include <ErrorHandler.h> // for FPFwErrorRaise
+#include <FpFwAssert.h>   // for FPFW_RUNTIME_ASSERT
+#include <pcie_dfwk.h>    // for pcie_async_request_t, pciess_device_inter...
+#include <pcie_ss_common.h>
+#include <pciess.h>
 #include <silibs_status.h> // for SILIBS_E_TIMEOUT
 #include <stdio.h>         // for printf, NULL
 #include <tx_api.h>        // for TX_AUTO_ACTIVATE, TX_SUCCESS, tx_timer_cr...
@@ -35,8 +37,15 @@ static void pcie_rp_timer_expiry_cb(unsigned long cb_ptr)
     PDFWK_ASYNC_REQUEST_HEADER req = (PDFWK_ASYNC_REQUEST_HEADER)cb_ptr;
     pcie_async_request_t* r = (pcie_async_request_t*)req;
 
+    /*
+     * Check link training done
+     * This will rely on the link up interrupt when support is implemented
+     * https://azurecsi.visualstudio.com/Dev/_workitems/edit/1513835
+     */
+    pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
+    r->status = pciess_rp_get_link_train_done(&(rpss->rps[r->rp_index]));
+
     /* Signal request completion */
-    r->status = SILIBS_E_TIMEOUT;
     DfwkAsyncRequestComplete(req);
 }
 
@@ -54,6 +63,8 @@ void begin_link_training(PDFWK_ASYNC_REQUEST_HEADER req)
     pcie_async_request_t* r = (pcie_async_request_t*)req;
 
     /* Call silibs API to begin link training for this RP here */
+    pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
+    pciess_rp_initiate_link_training(&(rpss->rps[r->rp_index]));
 
     /*
      * Create and start a one shot timer to handle cases where a root port fails

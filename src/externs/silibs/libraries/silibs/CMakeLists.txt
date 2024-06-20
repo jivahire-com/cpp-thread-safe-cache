@@ -35,9 +35,9 @@ add_subdirectory(spi_bridge)
 # DDRSS_PHY_TRAIN_FW_BUILTIN_ENABLE
 #   0: Store the PHY training FW in the external RAM/FLASH
 #   1: Built-in the PHY training FW as part of the SCP image
-target_compile_options (ddrss PRIVATE "-O2" "-DDDRSS_COMPILE_DEBUG_LEVEL=DDRSS_DEBUG_LEVEL_CRITICAL" "-DDDRSS_PHY_TRAIN_FW_BUILTIN_ENABLE=0")
-target_compile_options (pciess PRIVATE "-O2")
-target_compile_options (pcie PRIVATE "-O2")
+target_compile_options (ddrss PRIVATE "-Os" "-DDDRSS_COMPILE_DEBUG_LEVEL=DDRSS_DEBUG_LEVEL_CRITICAL" "-DDDRSS_PHY_TRAIN_FW_BUILTIN_ENABLE=0")
+target_compile_options (pciess PRIVATE "-Os")
+target_compile_options (pcie PRIVATE "-Os")
 
 # Add math library for DDRSS silibs. It uses float calculation for timing
 if (arm-eabi-aarch)

@@ -53,6 +53,7 @@ mock_target(${TARGET}
     pciess_config_entity
     pciess_config_ss_for_bifur
     pciess_deassert_por_reset
+    pciess_rp_initiate_link_training
     pciess_phys_sram_init_done
     pciess_rps_pre_rp_ready_init
     pciess_rps_ready

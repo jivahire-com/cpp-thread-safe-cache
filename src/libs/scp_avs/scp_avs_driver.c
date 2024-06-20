@@ -71,7 +71,7 @@ void scp_avs_isr(void* context)
 void scp_avs_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
 {
     FPFW_UNUSED(Context);
-    pscp_avs_interface Interface = (pscp_avs_interface)Request->OwningInterface;
+    pscp_avs_interface_t Interface = (pscp_avs_interface_t)Request->OwningInterface;
     pscp_avs_device device = Interface->Device;               // Device associated with this request
     pscp_avs_request avs_request = (pscp_avs_request)Request; // this has the cmd_type, rail, etc.
     int status = SILIBS_SUCCESS;
@@ -137,22 +137,36 @@ void scp_avs_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
 void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
 {
     pscp_avs_request original_request = ((pscp_avs_isr_request)Request)->outstanding_client_request;
-    pscp_avs_interface Interface = (pscp_avs_interface)original_request->Header.OwningInterface;
+    pscp_avs_interface_t Interface = (pscp_avs_interface_t)original_request->Header.OwningInterface;
     pscp_avs_device device = Interface->Device; // Device associated with this request
 
     FPFW_UNUSED(Context);
     printf("\n scp_avs_isr_dispatch, RequestType = %x\n", (uint8_t)Request->RequestType);
 
+    int status = SILIBS_SUCCESS;
+    original_request->avs_response_status = SILIBS_SUCCESS;
     uint32_t scp_avs_resp_buf[AVS_CMD_BUFF_SIZE];
-    uint32_t scp_avs_resp_idx = 0;
-    uint32_t scp_avs_resp_num = 0;
+    uint32_t scp_avs_resp_idx = 0; // index to read from the command response buffer
+    uint32_t scp_avs_resp_num = 0; // count to read from the command response buffer
 
     switch (original_request->Header.RequestType)
     {
     case AVS_REQUEST_READ_DATA:
-        scp_avs_resp_idx = 0;
-        scp_avs_resp_num = 1;
-        avs_get_cmd_resp_data(device->avs_bus_num, scp_avs_resp_idx, scp_avs_resp_num, scp_avs_resp_buf);
+        scp_avs_resp_idx = 0; // for single reads this will always be zero.
+        scp_avs_resp_num = 1; // for single reads this will always be one, to indicate only one response is to be read
+        status = avs_get_cmd_resp_data(device->avs_bus_num, scp_avs_resp_idx, scp_avs_resp_num, scp_avs_resp_buf);
+
+        if (status != SILIBS_SUCCESS)
+        {
+            printf("\n avs_get_cmd_resp_data failure!\n");
+            original_request->avs_response_status = status;
+        }
+        else
+        {
+            // Populate the data to be sent to the client.
+            original_request->avs_response_single_resp = (int16_t)(scp_avs_resp_buf[scp_avs_resp_idx] & 0xFFFF);
+            printf(" AVS raw data read:  %0x\n", (int16_t)scp_avs_resp_buf[scp_avs_resp_idx]);
+        }
         break;
 
     case AVS_REQUEST_WRITE_DATA:
@@ -162,14 +176,9 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         break;
 
     default:
-        FPFW_RUNTIME_ASSERT(false);
         break;
     }
 
-    for (uint32_t j = scp_avs_resp_idx; j < scp_avs_resp_num; j++)
-    {
-        printf(" AVS data %02x: %08x\n", (int)j, ((int)scp_avs_resp_buf[j] & 0xFFFF));
-    }
     DfwkAsyncRequestComplete(&original_request->Header);
 }
 
@@ -215,7 +224,7 @@ void scp_avs_driver_initialize(pscp_avs_device Device)
     FPFW_RUNTIME_ASSERT(avs_enable_interrupt(Device->avs_bus_num, AVS_IRQ_CMD_DONE) == SILIBS_SUCCESS);
 }
 
-void scp_avs_interface_initialize(pscp_avs_device Device, pscp_avs_interface Interface)
+void scp_avs_interface_initialize(pscp_avs_device Device, pscp_avs_interface_t Interface)
 {
     DfwkInterfaceInitialize(&Interface->Header, &Device->Header, &Device->avs_queue, scp_avs_dispatch_sync);
     Interface->Device = Device;

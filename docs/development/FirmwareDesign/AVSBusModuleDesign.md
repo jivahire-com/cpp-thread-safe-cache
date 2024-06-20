@@ -426,9 +426,9 @@ typedef struct _scp_avs_config_t {
     /*! Number of rails on the specified avs*/
     uint8_t rail_count;
     /*! AFM CLOCK, drive strength range = 0 - 7 */
-    uintptr_t nw_afm_csr_avs_clk_addr;
+    uintptr_t afm_csr_avs_clk_addr;
     /*! MData, drive strength range = 0 - 7 */
-    uintptr_t nw_afm_csr_mdata_addr;
+    uintptr_t afm_csr_mdata_addr;
 } scp_avs_config_t;
 
 struct avs_element {
@@ -442,15 +442,21 @@ struct avs_element {
 
 typedef struct _scp_avs_request_t {
     DFWK_ASYNC_REQUEST_HEADER Header;
-    scp_avs_vr_vct_t *avs_response_data;  // Response structure (scp_avs_vr_vct_t) used when reading AVS VCT. Have the client provide a pointer to this.
+    union {
+        scp_avs_vr_vct_t avs_response_vct;  // Response structure (scp_avs_vr_vct_t) used when reading AVS VCT. Have the client provide a pointer to this.
+        int16_t avs_response_single_resp;   // Single read of voltage (1LSB=1mV), current (1LSB=10mA), or temperature(1LSB=0.1C).
+        int16_t avs_response_status;
+    };
     scp_avs_command_params_t *avs_params; 
 } scp_avs_request_t, *pscp_avs_request;
 
 typedef struct _scp_avs_device_t {
     DFWK_DEVICE_HEADER Header;
-    const scp_avs_config_t *config;
+    const scp_avs_config_t config;
     DFWK_QUEUE avs_queue;
+    DFWK_QUEUE avs_isr_resp_queue;
     pscp_avs_request outstanding_request;
+    scp_avs_isr_request_t isr_request;
     uint8_t avs_bus_num;
     pscp_avs_error_count avs_response_errors;
 } scp_avs_device_t, *pscp_avs_device;
@@ -458,7 +464,7 @@ typedef struct _scp_avs_device_t {
 typedef struct _scp_avs_interface_t {
     DFWK_INTERFACE_HEADER Header;
     pscp_avs_device Device;
-} scp_avs_interface_t, *pscp_avs_interface;
+} scp_avs_interface_t, *pscp_avs_interface_t;
 
 typedef struct {
     DFWK_SYNC_REQUEST_HEADER Header;
@@ -468,7 +474,7 @@ typedef struct {
 typedef struct _avs_client_context_t
 {
     PDFWK_INTERFACE_HEADER avs_interface;
-    mod_avs_request_t Request;
+    scp_avs_request_t Request;
     avs_client_init_completion_routine avs_init_completion;
     void* InitCompletionContext;
 } avs_client_context_t, *pavs_client_context;
@@ -506,7 +512,18 @@ void scp_avs_driver_initialize(pscp_avs_device Device);
  *           If the client makes an asynchronous request, then the request is placed on the Device queue.
  *
  */
-void scp_avs_interface_initialize(pscp_avs_device Device, pscp_avs_interface Interface);
+void scp_avs_interface_initialize(pscp_avs_device Device, pscp_avs_interface_t Interface);
+
+/**
+ *
+ *    Initializes the AVS CLI interface  
+ *
+ *    @param[in]  Interface
+ * 
+ *    @brief Called for each AVS.
+ *
+ */
+void scp_avs_cli_initialize(pscp_avs_interface_t Interface);
 
 /**
  *

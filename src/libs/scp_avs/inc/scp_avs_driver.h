@@ -22,7 +22,11 @@
 /*-------------- Typedefs ----------------*/
 typedef struct _scp_avs_request_t {
     DFWK_ASYNC_REQUEST_HEADER Header;
-    scp_avs_vr_vct_t *avs_response_data;  // Response structure (scp_avs_vr_vct_t) used when reading AVS VCT. Have the client provide a pointer to this.
+    union {
+        scp_avs_vr_vct_t avs_response_vct;  // Response structure (scp_avs_vr_vct_t) used when reading AVS VCT. Have the client provide a pointer to this.
+        int16_t avs_response_single_resp;   // Single read of voltage (1LSB=1mV), current (1LSB=10mA), or temperature(1LSB=0.1C).
+    };
+    int avs_response_status;
     scp_avs_command_params_t avs_params; 
 } scp_avs_request_t, *pscp_avs_request;
 
@@ -55,7 +59,7 @@ typedef struct _scp_avs_device_t {
 typedef struct _scp_avs_interface_t {
     DFWK_INTERFACE_HEADER Header;
     pscp_avs_device Device;
-} scp_avs_interface_t, *pscp_avs_interface;
+} scp_avs_interface_t, *pscp_avs_interface_t;
 
 /*--------- Function Prototypes ----------*/
 
@@ -68,7 +72,7 @@ static inline void scp_avs_client_read(PDFWK_INTERFACE_HEADER Interface, PDFWK_A
     pscp_avs_request avs_read_request = (pscp_avs_request) Request;
     FPFW_RUNTIME_ASSERT(Request->AllocatedSize >= sizeof(scp_avs_request_t));
 
-    avs_read_request->Header.RequestType = AVS_REQUEST_READ_DATA; 
+    avs_read_request->Header.RequestType = AVS_REQUEST_READ_DATA;
     DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext); 
     DfwkInterfaceSendAsync(Interface, Request); 
 }
@@ -148,7 +152,7 @@ static inline void scp_avs_get_error_counts(PDFWK_INTERFACE_HEADER Interface)
  *           If the client makes an asynchronous request, then the request is placed on the Device queue.
  *
  */
-void scp_avs_interface_initialize(pscp_avs_device Device, pscp_avs_interface Interface);
+void scp_avs_interface_initialize(pscp_avs_device Device, pscp_avs_interface_t Interface);
 
 #ifdef __cplusplus
 }

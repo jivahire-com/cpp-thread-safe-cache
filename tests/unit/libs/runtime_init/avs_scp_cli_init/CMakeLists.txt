@@ -1,0 +1,39 @@
+set(TARGET avs_scp_cli_init.test)
+
+set(SOURCES
+    test_avs_scp_cli_init.cpp
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/avs_scp_cli_init.c
+)
+
+# Compile test
+add_executable(${TARGET} ${SOURCES})
+
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+
+target_link_libraries(${TARGET}
+    PRIVATE
+        fwlib.dfwk
+        fwlib.lib.init
+        fwlib.platform.dfwkhost.threadx
+        fwlib.lib.linkedlist
+        fwlib.lib.utils
+        ms::cmocka::testrunner
+        ms::lib::scp_interrupts
+        ms::lib::threadx
+        scp_avs
+        scp_avs_cli
+        silibs::avs
+        silibs_platform
+        silibs::kng_silibs_platform
+)
+
+lint_target(${TARGET})
+format_target(${TARGET})
+coverage_target(${TARGET})
+unit_test_target(${TARGET})
+
+#mock the functions needed
+mock_target(${TARGET}
+    scp_avs_cli_initialize
+    fpfw_init_get_handle
+)

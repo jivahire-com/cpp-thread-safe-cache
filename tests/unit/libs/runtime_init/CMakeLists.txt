@@ -1,4 +1,5 @@
 add_subdirectory(avs_scp_init)
+add_subdirectory(avs_scp_cli_init)
 add_subdirectory(cli_init)
 add_subdirectory(cli_ddr_init)
 add_subdirectory(crash_dump_init)

@@ -33,3 +33,13 @@ typedef struct _avs_client_context_t
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
+/**
+ *
+ *    Initializes the AVS CLI interface  
+ *
+ *    @param[in]  Interface
+ * 
+ *    @brief Called for each AVS.
+ *
+ */
+void scp_avs_cli_initialize(pscp_avs_interface_t Interface);

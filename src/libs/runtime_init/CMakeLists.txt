@@ -10,6 +10,7 @@ add_library(${TARGET}
         accelerator_ip_init.c
         ap_cores_runtime_init.c
         avs_scp_init.c
+        avs_scp_cli_init.c
         cli_init.c
         cli_ddr_init.c
         cli_power_init.c
@@ -54,6 +55,7 @@ target_link_libraries(
         fwlib.driver.mboxIccTransport
         ms::build_data
         ms::lib::scp_avs
+        ms::lib::scp_avs::cli 
         ms::driver::textio::pl011
         ms::driver::pcie
         ms::lib::accelerator_ip

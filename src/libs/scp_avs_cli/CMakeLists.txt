@@ -13,8 +13,8 @@ target_include_directories(${TARGET}
 target_link_libraries(
     ${TARGET}
         PRIVATE
+            fwlib.service.cli
             silibs::avs
-            silibs::ddrss
             scp_avs
         PUBLIC
             fwlib.lib.assert

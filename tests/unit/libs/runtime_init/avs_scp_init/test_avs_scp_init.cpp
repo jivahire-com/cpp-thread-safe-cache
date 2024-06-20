@@ -44,7 +44,7 @@ void __wrap_scp_avs_init(pscp_avs_device avsDevice, DFWK_SCHEDULE* scheduler)
     check_expected(scheduler);
 }
 
-void __wrap_scp_avs_interface_initialize(pscp_avs_device Device, pscp_avs_interface Interface)
+void __wrap_scp_avs_interface_initialize(pscp_avs_device Device, pscp_avs_interface_t Interface)
 {
     check_expected(Device);
     UNUSED(Interface);

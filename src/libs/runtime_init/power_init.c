@@ -16,14 +16,17 @@
 #include <FpFwUtils.h>             // for knowing how big 1k is
 #include <atu_lib.h>               // for atu_map_entry_t, atu_entry_attr_t
 #include <core_cluster_top_regs.h> // for CORE_CLUSTER_TOP_CORE_CLUSTER0_AD...
-#include <fpfw_init.h>             // for fpfw_init_get_handle, FPFW_INIT_S...
-#include <idsw.h>                  // for idsw_get_die_id
-#include <power_init.h>            // for power_init, power_interface_init
-#include <silibs_ap_top_regs.h>    // for AP_TOP_D0_CORE_CLUSTER_SIZE, AP_T...
+#include <corebits.h>
+#include <fpfw_init.h>          // for fpfw_init_get_handle, FPFW_INIT_S...
+#include <idsw.h>               // for idsw_get_die_id
+#include <kng_soc_constants.h>  // for NUM_AP_CORES_PER_DIE
+#include <power_init.h>         // for power_init, power_interface_init
+#include <silibs_ap_top_regs.h> // for AP_TOP_D0_CORE_CLUSTER_SIZE, AP_T...
 #include <silibs_scp_exp_top_regs.h>
 #include <silibs_scp_top_regs.h>
 #include <startup_shutdown.h>
-#include <stdint.h> // for uint32_t
+#include <stdbool.h> // for false, true
+#include <stdint.h>  // for uint32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 /* TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1820413
@@ -40,6 +43,11 @@
 
 FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc"))
 {
+#define SVP_NUM_CORES_PER_DIE 4
+    // fpga platform has an unusual set of available cores
+    static const corebits_t fpga_platform_cores = (corebits_t)COREBITS_INIT_UINT32(0x000c0300, 0x00c03000, 0);
+    static const corebits_t platform_cores = (corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFF, 0xFFFFFFFF, 0xF);
+
     const atu_entry_attr_t atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT};
     static power_service_t power_service;
     static power_service_config_t power_config = {
@@ -96,6 +104,30 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc"))
     /* == END ATU MAP of CORE_CLUSTER == */
 
     power_config.cluster_pex_base = atu_map_struct.mscp_start_address;
+
+    // platform defaults
+    power_config.platform_cores_in_die = &platform_cores;
+    power_config.platform_die_core_count = NUM_AP_CORES_PER_DIE;
+    power_config.platform_soc_power_support = false;
+    power_config.platform_core_power_support = false;
+    
+    // platform overrides
+    switch (idsw_get_platform_sdv())
+    {
+    case PLATFORM_SVP_SIM:
+        // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1811925/
+        // update based on https://azurecsi.visualstudio.com/Dev/_workitems/edit/1811919
+        power_config.platform_die_core_count = SVP_NUM_CORES_PER_DIE;
+        break;
+    case PLATFORM_FPGA_LARGE:
+    case PLATFORM_FPGA_LARGE_RVP:
+        power_config.platform_cores_in_die = &fpga_platform_cores;
+        // currently FPGA is failing soc_pvt_init, so only support core power for now
+        power_config.platform_core_power_support = true;
+        break;
+    default:
+        break;
+    }
 
     power_init(&power_service, fpfw_init_get_handle((void*)"dfwk"), &power_config);
 

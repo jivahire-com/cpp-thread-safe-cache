@@ -435,12 +435,15 @@ static int setup(void** state)
 {
     UNUSED(state);
 
+    static const corebits_t default_cores = (const corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFF, 0xFFFFFFFF, 0xF);
+
     base_config();
     base_telemetry();
 
-    // temporary way to ensure calls to HW
-    // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1811925/
-    s_pw_supported = true;
+    s_config.platform_soc_power_support = true;
+    s_config.platform_core_power_support = true;
+    s_config.platform_cores_in_die = &default_cores;
+    s_config.platform_die_core_count = TEST_CORE_COUNT;
 
     return 0;
 }
@@ -715,6 +718,26 @@ POWER_TEST(hwi_init_ws_core, setup, teardown)
 }
 
 /* init ws core test; expect calls to all telemetry init APIs based on core count */
+POWER_TEST(hwi_init_ws_core__disabled_core, setup, teardown)
+{
+    // disable core 1
+    static const corebits_t disabled_core = (const corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFD, 0xFFFFFFFF, 0xF);
+
+    s_config.platform_cores_in_die = &disabled_core;
+    // increase core count, still expect same result because core 1 is disabled
+    s_config.platform_die_core_count = TEST_CORE_COUNT + 1;
+
+    // this is the default expectation setup for running init_core
+    init_ws_core_base_expect(TEST_CORE_COUNT, MAX_PLIMIT);
+    // run core init
+    power_init_ws_core(&s_runconfig, &s_telcfg);
+    // verify odcm config
+    validate_odcm_cfg(TEST_CORE_COUNT - 1, true);
+    // verify tile pvt config
+    validate_tile_pvt_telemetry(TEST_CORE_COUNT - 1);
+}
+
+/* init ws core test; expect calls to all telemetry init APIs based on core count */
 POWER_TEST(hwi_init_ws_core__force_pstate, setup, teardown)
 {
 
@@ -734,7 +757,7 @@ POWER_TEST(hwi_init_ws_core__force_pstate, setup, teardown)
 POWER_TEST(hwi_init_ws_core__not_supported, setup, teardown)
 {
 
-    s_pw_supported = false;
+    s_config.platform_core_power_support = false;
     // run core init
     power_init_ws_core(&s_runconfig, &s_telcfg);
 }
@@ -757,6 +780,7 @@ POWER_TEST(hwi_init_core__forced_pstate, setup, teardown)
 
     // setup scp_exp_csr_base such that our fgpll_reg is at the appropriate offset
     power_service_config_t test_config;
+    test_config = s_config;
     test_config.cluster_pex_base = (uintptr_t)(&fake_regs) - PEX_CORE_PLL_ADDRESS;
     s_runconfig.p_sconfig = &test_config;
 
@@ -903,6 +927,22 @@ POWER_TEST(hwi_init_core__adclk_enable, setup, teardown)
     power_init_core(&s_runconfig, &s_telcfg);
 }
 
+POWER_TEST(hwi_init_core__core_disabled, setup, teardown)
+{
+
+    // disable core 1
+    static const corebits_t disabled_core = (const corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFD, 0xFFFFFFFF, 0xF);
+
+    s_config.platform_cores_in_die = &disabled_core;
+    // increase core count, still expect same result because core 1 is disabled
+    s_config.platform_die_core_count = TEST_CORE_COUNT + 1;
+
+    // this is the default expectation setup for running init_core
+    init_core_base_expect();
+    // run core init
+    power_init_core(&s_runconfig, &s_telcfg);
+}
+
 /* init core test, provide invalid vft curve for second core */
 #ifdef BUGCHECK_TESTS
 POWER_TEST(hwi_init_core__dvfs_vft, setup, teardown)
@@ -1038,6 +1078,7 @@ POWER_TEST(hwi_power_set_plimit, setup, teardown)
 #define TEST_PLIMIT 18
 
     power_service_config_t config;
+
     s_runconfig.p_sconfig = &config;
     config.cluster_pex_base = 0x1000;
     config.cluster_stride = 1;

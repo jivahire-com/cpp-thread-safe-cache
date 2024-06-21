@@ -38,6 +38,7 @@ mock_target(${TARGET}
     atu_map
     fpfw_init_get_handle
     idsw_get_die_id
+    idsw_get_platform_sdv
     power_init
     power_interface_init
     sos_register_ssi

@@ -490,14 +490,18 @@ typedef struct _power_vm_detail
  */
 typedef struct _power_service_config_t
 {
-    uintptr_t soc_pvt_base;                 // soc pvt base address
-    uintptr_t scf_mhu_base;                 // scf mhu base address
-    uintptr_t scp_exp_csr_base;             // scp exp csr base address - needed to set FORCE_PMIN
-    uintptr_t cluster_pex_base;             // cluster pex base address
-    uintptr_t scp_pwrctrl_base;             // scp pwrctrl base address
-    uint32_t cluster_stride;                // number of bytes between each cluster
-    power_vm_detail_t soc_vm[NUM_SOC_VM];   // soc vm config detail
-    power_vm_detail_t tile_vm[NUM_TILE_VM]; // tile vm config detail
+    uintptr_t soc_pvt_base;                  // soc pvt base address
+    uintptr_t scf_mhu_base;                  // scf mhu base address
+    uintptr_t scp_exp_csr_base;              // scp exp csr base address - needed to set FORCE_PMIN
+    uintptr_t cluster_pex_base;              // cluster pex base address
+    uintptr_t scp_pwrctrl_base;              // scp pwrctrl base address
+    uint32_t cluster_stride;                 // number of bytes between each cluster
+    power_vm_detail_t soc_vm[NUM_SOC_VM];    // soc vm config detail
+    power_vm_detail_t tile_vm[NUM_TILE_VM];  // tile vm config detail
+    const corebits_t* platform_cores_in_die; // platform cores
+    unsigned int platform_die_core_count;    // platform core count
+    bool platform_soc_power_support;         // true if soc power supported on platform
+    bool platform_core_power_support;        // true if tile/core power supported on platform
 } power_service_config_t, *ppower_service_config_t;
 
 /**

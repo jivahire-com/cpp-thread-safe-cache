@@ -65,21 +65,7 @@ void core_pll_mask_error_sr(const power_runconfig_t* p_runconfig, int core);
 pvt_alarm_setting_config_t s_pvt_vm_alarm_settings[MAX_PVT_VM_CHANNELS] = {0};
 pvt_alarm_setting_config_t s_pvt_dts_alarm_settings[MAX_PVT_DTS_CHANNELS] = {0};
 
-// TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1811925/
-// remove temporary for test without system info
-bool s_pw_supported = false;
-unsigned s_core_count = 1;
-
 /*------------- Functions ----------------*/
-
-// temporary to init one core
-unsigned int system_info_get_core_count()
-{
-    // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1811925/
-    // update based on https://azurecsi.visualstudio.com/Dev/_workitems/edit/1811919
-
-    return s_core_count;
-}
 
 /**
  * @brief Copies PLL config from starting pstate to next pstates
@@ -585,13 +571,18 @@ void power_warm_init_core_reset_pvt(const power_runconfig_t* p_runconfig)
 {
     FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
 
-    const unsigned int core_count = system_info_get_core_count();
     const power_service_config_t* p_config = p_runconfig->p_sconfig;
+    const unsigned int core_count = p_config->platform_die_core_count;
 
     FPFW_RUNTIME_ASSERT(p_config != NULL);
 
     for (unsigned int core = 0; core < core_count; ++core)
     {
+        if (!corebits_is_bit_set(p_config->platform_cores_in_die, core))
+        {
+            // skip cores not present in platform
+            continue;
+        }
         const uintptr_t cluster_pex_base_addr = (p_config->cluster_pex_base + (p_config->cluster_stride * core));
 
         /* One tile per two cores */
@@ -615,13 +606,13 @@ void power_init_ws_core(const power_runconfig_t* p_runconfig, const power_telcfg
     FPFW_RUNTIME_ASSERT(p_telemetry_config != NULL);
     FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
 
-    const unsigned int core_count = system_info_get_core_count();
     const power_service_config_t* p_config = p_runconfig->p_sconfig;
+    const unsigned int core_count = p_config->platform_die_core_count;
 
     FPFW_RUNTIME_ASSERT(p_config != NULL);
 
     /* Only big fpga, zebu, rtl sim would have DVFS, etc */
-    if (!power_hw_supported())
+    if (!(p_config->platform_core_power_support))
     {
         POWER_ET_ERROR(POWER_ET_TYPE_PLATFORM_NOT_SUPPORTED_SKIPPING_DVFS_INIT, ET_NOPARAM);
         POWER_LOG_INFO("Skipping intialization of power HW");
@@ -637,6 +628,12 @@ void power_init_ws_core(const power_runconfig_t* p_runconfig, const power_telcfg
     {
         const uintptr_t cluster_pex_base_addr = (p_config->cluster_pex_base + (p_config->cluster_stride * core));
         const bool core_enabled = corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core);
+
+        if (!corebits_is_bit_set(p_config->platform_cores_in_die, core))
+        {
+            // skip cores not present in platform
+            continue;
+        }
 
         if (core_enabled)
         {
@@ -670,8 +667,9 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
 {
     FPFW_RUNTIME_ASSERT(p_telemetry_config != NULL);
     FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
-    const unsigned int core_count = system_info_get_core_count();
+
     const power_service_config_t* p_config = p_runconfig->p_sconfig;
+    const unsigned int core_count = p_config->platform_die_core_count;
     const power_knobs_t* p_knobs = &p_runconfig->knobs;
 
     FPFW_RUNTIME_ASSERT(p_config != NULL);
@@ -680,7 +678,7 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
     int return_value = 0;
 
     /* Only big fpga, zebu, rtl sim would have DVFS, etc */
-    if (!power_hw_supported())
+    if (!(p_config->platform_core_power_support))
     {
         POWER_ET_ERROR(POWER_ET_TYPE_PLATFORM_NOT_SUPPORTED_SKIPPING_DVFS_INIT, ET_NOPARAM);
         POWER_LOG_INFO("Skipping intialization of power HW");
@@ -707,6 +705,12 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
     {
         const uintptr_t cluster_pex_base_addr = (p_config->cluster_pex_base + (p_config->cluster_stride * core));
         const bool core_enabled = corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core);
+
+        if (!corebits_is_bit_set(p_config->platform_cores_in_die, core))
+        {
+            // skip cores not present in platform
+            continue;
+        }
 
         core_pll_mask_error_sr(p_runconfig, core);
 
@@ -752,6 +756,7 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
             power_init_update_tilepvt_tile_cfg(p_runconfig, &tile_pvt_settings, tile_num);
             // update tile pvt telemetry addreses
             power_init_update_tilepvt_telemetry_cfg(&tile_pvt_telem_settings, p_telemetry_config, tile_num);
+
             return_value = tile_pvt_init(tile_num, cluster_pex_base_addr, &tile_pvt_telem_settings, &tile_pvt_settings);
             if (return_value != PVT_SUCCESS)
             {
@@ -765,6 +770,12 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
     {
         const uintptr_t cluster_pex_base_addr = (p_config->cluster_pex_base + (p_config->cluster_stride * core));
         const bool core_enabled = corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core);
+
+        if (!corebits_is_bit_set(p_config->platform_cores_in_die, core))
+        {
+            // skip cores not present in platform
+            continue;
+        }
 
         if (core_enabled)
         {
@@ -787,12 +798,13 @@ void power_init_soc(const power_runconfig_t* p_runconfig)
     FPFW_RUNTIME_ASSERT(p_config != NULL);
 
     /* Only big fpga, zebu, rtl sim would have soc pvt */
-    if (!power_hw_supported())
+    if (!(p_config->platform_soc_power_support))
     {
         POWER_ET_ERROR(POWER_ET_TYPE_PLATFORM_NOT_SUPPORTED_SKIPPING_SOC_HW_INIT, ET_NOPARAM);
         POWER_LOG_INFO("Skipping intialization of soc power HW");
         return;
     }
+
     pvt_setting_config_t soc_pvt_settings = PVT_SOC_SETTING_DEFAULT;
     power_init_update_socpvt_cfg(p_runconfig, &soc_pvt_settings);
 
@@ -835,12 +847,6 @@ uint32_t power_hw_get_adclk_count(const power_runconfig_t* p_runconfig, unsigned
         dvfs_get_adclk_droop_count(cluster_pex_base_addr, &droop_count);
     }
     return droop_count;
-}
-
-bool power_hw_supported()
-{
-    // SVP currently not supported; skip for now
-    return s_pw_supported;
 }
 
 bool power_hw_uses_pvt_model()

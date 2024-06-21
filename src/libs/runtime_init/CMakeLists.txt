@@ -55,9 +55,10 @@ target_link_libraries(
         fwlib.driver.mboxIccTransport
         ms::build_data
         ms::lib::scp_avs
-        ms::lib::scp_avs::cli 
-        ms::driver::textio::pl011
+        ms::lib::scp_avs::cli
         ms::driver::pcie
+        ms::driver::sensor_fifo
+        ms::driver::textio::pl011
         ms::lib::accelerator_ip
         ms::lib::ap_cores_init
         ms::lib::cortex_m7::mpu
@@ -83,6 +84,8 @@ target_link_libraries(
         ms::service::pcie_manager
         ms::service::power
         ms::service::scp_startup_shutdown
+        ms::service::sensor_fifo
+        ms::service::sensor_fifo::cli
         silibs::avs
         silibs::common::lib_uart_pl011
         silibs::idhw
@@ -97,6 +100,7 @@ target_compile_definitions(
     ${TARGET}
     PRIVATE
        MSCP2HSP_MAILBOX_BASE_ADDRESS=SCP_TOP_SCP2HSP_MAILBOX_ADDRESS
+       SCP_RUNTIME_INIT
 )
 
 # Define base addresses during compile time for respective core fw
@@ -135,6 +139,7 @@ add_library(${TARGET}
         icc_transport_init/mscp_hspmbx_init.c
         mcp_mpu_init.c
         nvic_init.c
+        sensor_fifo_init.c
         textio_init.c
 )
 
@@ -151,6 +156,7 @@ target_link_libraries(
         fwlib.lib.utils
         fwlib.driver.mboxIccTransport
         ms::build_data
+        ms::driver::sensor_fifo
         ms::driver::textio::pl011
         ms::lib::debug
         ms::lib::cortex_m7::nvic
@@ -159,6 +165,8 @@ target_link_libraries(
         ms::lib::icc::cli
         ms::lib::stdio_textio
         ms::lib::threadx
+        ms::service::sensor_fifo
+        ms::service::sensor_fifo::cli
         silibs::common::lib_uart_pl011
         silibs::idhw
         silibs::idsw
@@ -171,6 +179,7 @@ target_compile_definitions(
     ${TARGET}
     PRIVATE
        MSCP2HSP_MAILBOX_BASE_ADDRESS=MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
+       MCP_RUNTIME_INIT
 )
 
 # Define base addresses during compile time for respective core fw

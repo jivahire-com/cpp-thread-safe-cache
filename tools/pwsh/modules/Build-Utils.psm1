@@ -188,6 +188,12 @@ Function Set-GitReferences($PackageFile)
 
     foreach($Package in $PackageConfig.packages.git.ChildNodes)
     {
+        # Skip if $Package is a comment
+        if ($Package -is [System.Xml.XmlComment])
+        {
+            continue
+        }
+
         $Message = "$($Package.name) @ $($Package.tag)"
         $Message = $Message + (" " + "." * (70 - $Message.Length) + " ")
         Write-Host  $Message -NoNewLine -ForegroundColor Cyan
@@ -222,6 +228,12 @@ Function Get-AzPackages($PackageFile, $TargetDir)
 
     foreach($Package in $PackageConfig.packages.universal_packages.ChildNodes)
     {
+        # Skip if $Package is a comment
+        if ($Package -is [System.Xml.XmlComment])
+        {
+            continue
+        }
+
         $Message = "$($Package.name) @ $($Package.version)"
         $Message = $Message + (" " + "." * (70 - $Message.Length) + " ")
         Write-Host  $Message -NoNewLine -ForegroundColor Cyan
@@ -271,6 +283,12 @@ Function Get-NugetPackages($PackageFile, $TargetDir)
 
     foreach($Package in $PackageConfig.packages.nuget_packages.ChildNodes)
     {
+        # Skip if $Package is a comment
+        if ($Package -is [System.Xml.XmlComment])
+        {
+            continue
+        }
+
         $Message = "$($Package.name) @ $($Package.version)"
         $Message = $Message + (" " + "." * (70 - $Message.Length) + " ")
         Write-Host  $Message -NoNewLine -ForegroundColor Cyan
@@ -310,6 +328,11 @@ Function Get-PipPackages($PackageFile)
 
     foreach($Package in $PackageConfig.packages.pip_packages.ChildNodes)
     {
+        # Skip if $Package is a comment
+        if ($Package -is [System.Xml.XmlComment])
+        {
+            continue
+        }
         $Message = "$($Package.name) @ $($Package.version)"
         $Message = $Message + (" " + "." * (70 - $Message.Length) + " ")
         Write-Host  $Message -NoNewLine -ForegroundColor Cyan

@@ -22,4 +22,10 @@
         <repo name="zlib" url="https://github.com/madler/zlib.git" tag="v1.3.1"/>
     </git>
 
+    <pip_packages>
+        <!-- /// @TODO: numpy 2.0 has a binary incompatibility, remove once fixed https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/1875594 -->
+        <package name="numpy" version="1.26.4" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/" />
+        <package name="error-code-generator" version="0.1.*" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/" />
+    </pip_packages>
+
 </packages>

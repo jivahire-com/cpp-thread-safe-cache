@@ -25,6 +25,7 @@ target_link_libraries(${TARGET}
         ms::cmsis::interface
         silibs::kng_silibs_platform
         ms::lib::threadx
+        ms::lib::error_codes
 )
 
 target_include_directories(${TARGET}
@@ -65,6 +66,7 @@ target_link_libraries(${TARGET}
         ms::lib::threadx
         silibs::gpio
         silibs_platform
+        ms::lib::error_codes
 )
 
 target_include_directories(${TARGET}

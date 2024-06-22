@@ -10,8 +10,6 @@
 /*----------- Nested includes ------------*/
 
 #include <DfwkCommon.h>
-#include <FpFwAssert.h>
-#include <FpFwLinkedList.h>
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -28,7 +26,7 @@ enum APCORE_REQUEST_IDS
     APCORE_CORE_POWER_OFF_ASYNC,
 };
 
-typedef struct _apcore_asynchronous_request_t
+typedef struct _ap_core_asynchronous_request_t
 {
     DFWK_ASYNC_REQUEST_HEADER header;
     union
@@ -36,7 +34,7 @@ typedef struct _apcore_asynchronous_request_t
         uint32_t core_id;
         uint64_t rvbaraddr;
     } data;
-} apcore_asynchronous_request_t, *papcore_asynchronous_request_t;
+} ap_core_asynchronous_request_t, *pap_core_asynchronous_request_t;
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -46,13 +44,13 @@ typedef struct _apcore_asynchronous_request_t
  *  Function to send an asynchronous request to set rvbaraddr of all cores (local and remote die)
  *
  *  @param p_interface The interface to the APCore service
- *  @param p_request A DFWK request with enough space for a apcore_asynchronous_request_t
+ *  @param p_request A DFWK request with enough space for a ap_core_asynchronous_request_t
  *  @param rvbaraddr The rvbaraddr to set for all cores
  *  @param completion_routine A completion routine to call when the operation has completed
  *  @param p_completion_context A context that is supplied when the completion routine is called.
  */
-void apcore_set_rvbaraddr(PDFWK_INTERFACE_HEADER p_interface,
-                          papcore_asynchronous_request_t p_request,
+void ap_core_set_rvbaraddr(PDFWK_INTERFACE_HEADER p_interface,
+                          pap_core_asynchronous_request_t p_request,
                           uint64_t rvbaraddr,
                           DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
                           void* p_completion_context);
@@ -61,13 +59,13 @@ void apcore_set_rvbaraddr(PDFWK_INTERFACE_HEADER p_interface,
  *  Function to send an asynchronous request to power on a core
  *
  *  @param p_interface The interface to the APCore service
- *  @param p_request A DFWK request with enough space for a apcore_asynchronous_request_t
+ *  @param p_request A DFWK request with enough space for a ap_core_asynchronous_request_t
  *  @param core_id The core to power on
  *  @param completion_routine A completion routine to call when the operation has completed
  *  @param p_completion_context A context that is supplied when the completion routine is called.
  */
-void apcore_core_power_on(PDFWK_INTERFACE_HEADER p_interface,
-                          papcore_asynchronous_request_t p_request,
+void ap_core_core_power_on(PDFWK_INTERFACE_HEADER p_interface,
+                          pap_core_asynchronous_request_t p_request,
                           uint32_t core_id,
                           DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
                           void* p_completion_context);
@@ -76,13 +74,13 @@ void apcore_core_power_on(PDFWK_INTERFACE_HEADER p_interface,
  * @brief Function to send an asynchronous request to power off a core
  *
  * @param p_interface The interface to the APCore service
- * @param p_request A DFWK request with enough space for a apcore_asynchronous_request_t
+ * @param p_request A DFWK request with enough space for a ap_core_asynchronous_request_t
  * @param core_id The core to power off
  * @param completion_routine A completion routine to call when the operation has completed
  * @param p_completion_context A context that is supplied when the completion routine is called.
  */
-void apcore_core_power_off(PDFWK_INTERFACE_HEADER p_interface,
-                           papcore_asynchronous_request_t p_request,
+void ap_core_core_power_off(PDFWK_INTERFACE_HEADER p_interface,
+                           pap_core_asynchronous_request_t p_request,
                            uint32_t core_id,
                            DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
                            void* p_completion_context);

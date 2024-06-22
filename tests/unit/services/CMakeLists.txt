@@ -1,3 +1,4 @@
+add_subdirectory(ap_core)
 add_subdirectory(cli_ddr)
 add_subdirectory(ddr_manager)
 add_subdirectory(pcie_manager)

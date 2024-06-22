@@ -8,7 +8,7 @@ set(TARGET kng.lib.scp.runtime_init.scp)
 add_library(${TARGET}
     OBJECT
         accelerator_ip_init.c
-        ap_cores_runtime_init.c
+        ap_core_init.c
         avs_scp_init.c
         avs_scp_cli_init.c
         cli_init.c
@@ -60,7 +60,6 @@ target_link_libraries(
         ms::driver::sensor_fifo
         ms::driver::textio::pl011
         ms::lib::accelerator_ip
-        ms::lib::ap_cores_init
         ms::lib::cortex_m7::mpu
         ms::lib::crash_dump::scp
         ms::lib::css
@@ -79,6 +78,7 @@ target_link_libraries(
         ms::lib::ddr::cli
         ms::lib::vab
         ms::lib::tower
+        ms::service::ap_core
         ms::service::ddr_manager
         ms::service::fuse
         ms::service::pcie_manager

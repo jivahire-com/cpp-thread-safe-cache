@@ -1,0 +1,56 @@
+// Copyright Microsoft. All rights reserved.
+
+/**
+ * @file ap_core_i.h
+ * This file contains the internal definitions for the APcore service
+ */
+
+#pragma once
+
+/*----------- Nested includes ------------*/
+#include "ap_core_init.h"
+
+#include <DfwkCommon.h>
+#include <FpFwAssert.h>
+#include <FpFwLinkedList.h>
+#include <corebits.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <tx_api.h>
+
+/*-- Symbolic Constant Macros (defines) --*/
+/*-- Symbolic Constant Macros (defines) --*/
+#define MODULE_NAME "[APcore] "
+#define NEWLINE     "\n"
+
+// set to 1 for more verbose logs
+#define APCORE_ENABLE_TRACE_LEVEL_LOG 1
+
+#if APCORE_ENABLE_TRACE_LEVEL_LOG
+#define APCORE_LOG_TRACE(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#else
+#define APCORE_LOG_TRACE(fmt, ...) 
+#endif
+#define APCORE_LOG_INFO(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define APCORE_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define APCORE_LOG_CRIT(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+
+/*-------------- Typedefs ----------------*/
+typedef struct
+{
+    const ap_core_service_config_t* p_config;
+    corebits_t enabled_cores;
+} ap_core_service_context_t, *pap_core_service_context_t;
+
+/*-- Declarations (Statics and globals) --*/
+
+/*--------- Function Prototypes ----------*/
+
+void ap_core_ppu_init(ap_core_service_context_t *p_context);
+void ap_core_ppu_clusters_on(ap_core_service_context_t* p_context);
+void ap_core_ppu_core_set_power_state(ap_core_service_context_t* p_context, unsigned core_idx, bool power_state_on);
+
+unsigned int ap_core_util_boot_core(ap_core_service_context_t* p_context);
+void ap_core_util_set_rvbaraddr(ap_core_service_context_t* p_context, unsigned core_idx, uint64_t rvbaraddr);
+void ap_core_util_set_all_rvbaraddr(ap_core_service_context_t* p_context, uint64_t rvbaraddr);
+void ap_core_util_get_fuse_enabled_cores(corebits_t *p_enabled_cores);

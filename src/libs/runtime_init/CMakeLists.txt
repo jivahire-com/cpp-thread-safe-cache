@@ -38,6 +38,7 @@ add_library(${TARGET}
         tower_init.c
         startup_shutdown_init.c
         usb_init.c
+        sds_init.c
 )
 
 target_link_libraries(
@@ -94,6 +95,7 @@ target_link_libraries(
         silibs::kng_silibs_platform
         ms::lib::power::cli
         ms::lib::register_headers
+        ms::service::sds_service
 )
 
 target_compile_definitions(

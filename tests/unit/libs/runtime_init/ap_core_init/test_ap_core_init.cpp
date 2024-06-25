@@ -25,6 +25,7 @@ extern "C" {
 #include <string.h> // for memcpy
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define DEFAULT_BOOT_CORE_RVBARADDR (0x00010000ull)
 
 /*------------- Typedefs -----------------*/
 
@@ -77,6 +78,16 @@ int __wrap_atu_find_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
 {
     check_expected(atu_id);
     check_expected_ptr(atu_map_entry);
+    return mock_type(int);
+}
+
+int __wrap_atu_translate_address(atu_id_t atu_id, uint64_t ap_addr, uint32_t* mscp_addr)
+{
+    check_expected(atu_id);
+    check_expected(ap_addr);
+    assert_non_null(mscp_addr);
+    // return a value
+    *mscp_addr = mock_type(uint32_t);
     return mock_type(int);
 }
 
@@ -148,8 +159,9 @@ TEST_FUNCTION(ap_core_init_ap_core_svc__svp, nullptr, nullptr)
 
 TEST_FUNCTION(ap_core_init_ap_core_svc__bigfpga, nullptr, nullptr)
 {
-    //! Set up expectations
+    // Set up expectations
     DFWK_THREADX_HOST test_host = {};
+    uint32_t rvbar_value = 0;
 
     // only doing basic tests on die_id and atu_map as the current implementation is temporary
     will_return(__wrap_idsw_get_die_id, DIE_0);
@@ -162,12 +174,20 @@ TEST_FUNCTION(ap_core_init_ap_core_svc__bigfpga, nullptr, nullptr)
 
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
 
-    //! Call the function under test
+    // on FPGA we also expect a call that will write forever loop; it uses atu_translate_address call
+    expect_value(__wrap_atu_translate_address, atu_id, ATU_ID_MSCP);
+    expect_value(__wrap_atu_translate_address, ap_addr, DEFAULT_BOOT_CORE_RVBARADDR);
+    // return for mscp_addr - only works if our data address is in lower 32GB
+    will_return(__wrap_atu_translate_address, (uint32_t)&rvbar_value);
+    will_return(__wrap_atu_translate_address, 0);
+
+    // Call the function under test
     fpfw_init_result_t result = _fpfw_component_ap_core_svc.init_fn();
 
-    //! Perform necessary assertions on result
+    // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
     assert_non_null(result.associated_handle);
+    assert_int_not_equal(rvbar_value, 0);
 
     // bigfpga has no core 0
     assert_false(corebits_is_bit_set(s_saved_config.platform_cores_in_die, 0));

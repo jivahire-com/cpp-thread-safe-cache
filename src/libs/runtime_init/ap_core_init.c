@@ -36,9 +36,20 @@
 #define DEFAULT_BOOT_CORE_RVBARADDR (0x00010000ull)
 
 /*-------------- Functions ---------------*/
+static void setup_ap_loop_to_self(uint64_t rvbaraddr)
+{
+#define ARM64_LOOP 0x14000000
+    // setup loop to self
+    // find SCP address for the rvbar
+    uint32_t translated_rvbar;
+    // expect that there is a global translation for rvbar
+    FPFW_RUNTIME_ASSERT(!atu_translate_address(ATU_ID_MSCP, rvbaraddr, &translated_rvbar));
+    // write a loop to self instruction at the entry point to enable side-load of FW when HSP not present, etc
+    *(volatile uint32_t*)translated_rvbar = ARM64_LOOP;
+}
 
 // dependency on pwr_svc only due to https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1820413; pwr_svc already mapping, so rely on that here
-FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "pwr_svc"))
+FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "pwr_svc", "tower_cfg"))
 {
 #define SVP_NUM_CORES_PER_DIE 4
     // fpga platform has an unusual set of available cores
@@ -84,6 +95,8 @@ FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "pwr_svc"))
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
         ap_core_config.platform_cores_in_die = &fpga_platform_cores;
+        // put a loop to self at the rbvaraddr (FW load would replace this)
+        setup_ap_loop_to_self(ap_core_config.boot_core_rvbaraddr);
         break;
     default:
         break;

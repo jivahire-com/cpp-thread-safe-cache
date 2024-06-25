@@ -35,11 +35,12 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    ap_core_init
+    ap_core_interface_init
     atu_find_map
+    atu_translate_address
     fpfw_init_get_handle
     idsw_get_die_id
     idsw_get_platform_sdv
-    ap_core_init
-    ap_core_interface_init
     sos_register_ssi
 )

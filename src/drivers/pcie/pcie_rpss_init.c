@@ -8,13 +8,14 @@
  */
 
 /*------------- Includes -----------------*/
-#define __NO_CSR_TYPEDEFS__            // Needed to avoid huge buffers in ap_top_regs.h
-#define __NO_ADDRMAP_TYPEDEFS__        // Needed to avoid huge buffers in ap_top_regs.h
-#include <DfwkDriver.h>                // for PDFWK_SYNC_REQUEST_HEADER
-#include <FpFwAssert.h>                // for FPFW_RUNTIME_ASSERT
-#include <ap_top_regs.h>               // for AP_TOP_D0_VAB_RPSS0_ADDRESS
-#include <atu_lib.h>                   // for atu_map, ATU_ID_MSCP, atu_map...
-#include <idsw.h>                      // for idsw_get_platform_sdv, _PLAT_ID
+#define __NO_CSR_TYPEDEFS__     // Needed to avoid huge buffers in ap_top_regs.h
+#define __NO_ADDRMAP_TYPEDEFS__ // Needed to avoid huge buffers in ap_top_regs.h
+#include <DfwkDriver.h>         // for PDFWK_SYNC_REQUEST_HEADER
+#include <FpFwAssert.h>         // for FPFW_RUNTIME_ASSERT
+#include <ap_top_regs.h>        // for AP_TOP_D0_VAB_RPSS0_ADDRESS
+#include <atu_lib.h>            // for atu_map, ATU_ID_MSCP, atu_map...
+#include <idsw.h>               // for idsw_get_platform_sdv, _PLAT_ID
+#include <idsw_kng.h>
 #include <kng_atu_mappings.h>          // for ATU_MAPPING_RPSS0_CFG, ATU_MA...
 #include <kng_soc_constants.h>         // for NUM_RPSS, RPSS_INSTANCE
 #include <pcie_dfwk.h>                 // for pcie_sync_request_t

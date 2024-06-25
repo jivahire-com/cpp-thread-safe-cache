@@ -11,7 +11,8 @@
 #include <CMockaWrapper.h> // for expect_value, check_expected, CmockaWra...
 
 extern "C" {
-#include <idsw.h> // for idsw_set_platform_sdv, DIE_ID, _PLAT_ID
+#include <idsw.h> // for idsw_set_platform_sdv
+#include <idsw_kng.h>
 #include <kng_soc_constants.h>
 #include <silibs_status.h>
 #include <tower.h>
@@ -32,7 +33,7 @@ extern "C" {
 TEST_FUNCTION(test_tower_sequence_init_die0_silicon, nullptr, nullptr)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)0;
+    const auto test_die = (KNG_DIE_ID)0;
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
@@ -79,7 +80,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_silicon, nullptr, nullptr)
 TEST_FUNCTION(test_tower_sequence_init_die1_silicon, nullptr, nullptr)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
@@ -126,7 +127,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_silicon, nullptr, nullptr)
 TEST_FUNCTION(test_tower_sequence_init_die0_fpga, nullptr, nullptr)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)0;
+    const auto test_die = (KNG_DIE_ID)0;
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
@@ -172,7 +173,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_fpga, nullptr, nullptr)
 TEST_FUNCTION(test_tower_sequence_init_die1_fpga, nullptr, nullptr)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
@@ -216,7 +217,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_fpga, nullptr, nullptr)
 TEST_FUNCTION(test_tower_sequence_init_die0_svp, nullptr, nullptr)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)0;
+    const auto test_die = (KNG_DIE_ID)0;
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
@@ -260,7 +261,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_svp, nullptr, nullptr)
 TEST_FUNCTION(test_tower_sequence_init_die1_svp, nullptr, nullptr)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
@@ -304,7 +305,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_svp, nullptr, nullptr)
 TEST_FUNCTION(test_tower_sequence_init_die0_invalid_platform, nullptr, nullptr)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)0;
+    const auto test_die = (KNG_DIE_ID)0;
     will_return_always(__wrap_idsw_get_platform_sdv, 0x100);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
@@ -346,7 +347,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_invalid_platform, nullptr, nullptr)
 TEST_FUNCTION(test_tower_sequence_init_die1_invalid_platform, nullptr, nullptr)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idsw_get_platform_sdv, 0x100);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);

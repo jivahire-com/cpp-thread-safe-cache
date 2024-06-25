@@ -13,7 +13,8 @@ target_link_libraries(${TARGET}
         cmn800_sequence
         fwlib.lib.init
         fwlib.lib.utils
-        idsw
+        silibs::idsw
+        silibs::idsw_kng
         kng_silibs_platform
         ms::cmocka::testrunner
         ms::lib::mesh

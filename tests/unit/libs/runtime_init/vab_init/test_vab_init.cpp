@@ -16,6 +16,7 @@
 extern "C" {
 #include <fpfw_init.h>
 #include <idsw.h>
+#include <idsw_kng.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -27,14 +28,14 @@ extern "C" {
 extern fpfw_init_component_t _fpfw_component_vab;
 
 /*------------- Functions ----------------*/
-PLAT_ID __wrap_idsw_get_platform_sdv(void)
+KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
 {
-    return mock_type(PLAT_ID);
+    return mock_type(KNG_PLAT_ID);
 }
 
-DIE_ID __wrap_idsw_get_die_id(void)
+KNG_DIE_ID __wrap_idsw_get_die_id(void)
 {
-    return mock_type(DIE_ID);
+    return mock_type(KNG_DIE_ID);
 }
 
 int __wrap_vab_common_init(uint16_t vab_instances_to_init)
@@ -47,7 +48,7 @@ int __wrap_vab_common_init(uint16_t vab_instances_to_init)
 
 TEST_FUNCTION(test_vab_init_silicon_die0, nullptr, nullptr)
 {
-    const auto test_die = (DIE_ID)0;
+    const auto test_die = (KNG_DIE_ID)0;
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
@@ -59,7 +60,7 @@ TEST_FUNCTION(test_vab_init_silicon_die0, nullptr, nullptr)
 
 TEST_FUNCTION(test_vab_init_silicon_die1, nullptr, nullptr)
 {
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
@@ -71,7 +72,7 @@ TEST_FUNCTION(test_vab_init_silicon_die1, nullptr, nullptr)
 
 TEST_FUNCTION(test_vab_init_fpga_die0, nullptr, nullptr)
 {
-    const auto test_die = (DIE_ID)0;
+    const auto test_die = (KNG_DIE_ID)0;
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
                  vab_instances_to_init,
@@ -83,7 +84,7 @@ TEST_FUNCTION(test_vab_init_fpga_die0, nullptr, nullptr)
 
 TEST_FUNCTION(test_vab_init_fpga_large_die0, nullptr, nullptr)
 {
-    const auto test_die = (DIE_ID)0;
+    const auto test_die = (KNG_DIE_ID)0;
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
                  vab_instances_to_init,
@@ -94,7 +95,7 @@ TEST_FUNCTION(test_vab_init_fpga_large_die0, nullptr, nullptr)
 
 TEST_FUNCTION(test_vab_init_fpga_large_rvp_die0, nullptr, nullptr)
 {
-    const auto test_die = (DIE_ID)0;
+    const auto test_die = (KNG_DIE_ID)0;
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
                  vab_instances_to_init,
@@ -105,7 +106,7 @@ TEST_FUNCTION(test_vab_init_fpga_large_rvp_die0, nullptr, nullptr)
 
 TEST_FUNCTION(test_vab_init_fpga_die1, nullptr, nullptr)
 {
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
                  vab_instances_to_init,
@@ -117,7 +118,7 @@ TEST_FUNCTION(test_vab_init_fpga_die1, nullptr, nullptr)
 
 TEST_FUNCTION(test_vab_init_fpga_large_die1, nullptr, nullptr)
 {
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
                  vab_instances_to_init,
@@ -128,7 +129,7 @@ TEST_FUNCTION(test_vab_init_fpga_large_die1, nullptr, nullptr)
 
 TEST_FUNCTION(test_vab_init_fpga_large_rvp_die1, nullptr, nullptr)
 {
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
                  vab_instances_to_init,
@@ -140,7 +141,7 @@ TEST_FUNCTION(test_vab_init_fpga_large_rvp_die1, nullptr, nullptr)
 /* TODO: SVP tests can be enabled once SVP implements VAB PCR init as vab_common is not called for SVP right
 now TEST_FUNCTION(test_vab_init_svp_die0, nullptr, nullptr)
 {
-    const auto test_die = (DIE_ID)0;
+    const auto test_die = (KNG_DIE_ID)0;
     will_return_always(__wrap_idsw_get_die_id, test_die);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     expect_value(__wrap_vab_common_init, vab_instances_to_init, ((1 << D0_VAB4_SDMSS) | (1 <<
@@ -149,7 +150,7 @@ D0_VAB5_CDEDSS_IOSS))); _fpfw_component_vab.init_fn();
 
 TEST_FUNCTION(test_vab_init_svp_die1, nullptr, nullptr)
 {
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idsw_get_die_id, test_die);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     expect_value(__wrap_vab_common_init,
@@ -161,7 +162,7 @@ TEST_FUNCTION(test_vab_init_svp_die1, nullptr, nullptr)
 
 TEST_FUNCTION(test_vab_init_invalid_plat, nullptr, nullptr)
 {
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idsw_get_die_id, test_die);
     will_return_always(__wrap_idsw_get_platform_sdv, 0x100);
     expect_value(__wrap_vab_common_init, vab_instances_to_init, 0);

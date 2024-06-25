@@ -19,6 +19,7 @@ target_link_libraries(${TARGET}
         silibs::atu
         silibs::idhw
         silibs::idsw
+        silibs::idsw_kng
         silibs::kng_silibs_platform
         silibs::tower_sequence
         silibs_platform

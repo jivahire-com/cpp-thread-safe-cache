@@ -14,7 +14,8 @@ target_link_libraries(${TARGET}
     silibs::kng_silibs_platform
     silibs::tower_sdmss
     silibs::tower_sequence
-    idsw
+    silibs::idsw
+    silibs::idsw_kng
 )
 
 target_include_directories(${TARGET}

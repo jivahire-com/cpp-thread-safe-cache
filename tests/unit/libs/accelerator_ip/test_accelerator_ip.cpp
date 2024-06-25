@@ -19,12 +19,13 @@ extern "C" {
 #include "smmu_knobs.h"        // for smmu_gbpa_cfg_t
 
 #include <accelerator_ip.h> // for scp_accelerators_init, ACCEL_RET_SUCCESS
-#include <idsw.h>           // for DIE_ID, _PLAT_ID
-#include <pcr_rpss.h>       // for pcr_rpss_entity_t
-#include <smmu.h>           // for smmu_gpba_cfg
-#include <stddef.h>         // for NULL
-#include <stdint.h>         // for uintptr_t, uint32_t, uint8_t, uint64_t
-#include <utils.h>          // for UNUSED
+#include <idsw.h>
+#include <idsw_kng.h> // for KNG_DIE_ID
+#include <pcr_rpss.h> // for pcr_rpss_entity_t
+#include <smmu.h>     // for smmu_gpba_cfg
+#include <stddef.h>   // for NULL
+#include <stdint.h>   // for uintptr_t, uint32_t, uint8_t, uint64_t
+#include <utils.h>    // for UNUSED
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
@@ -202,9 +203,9 @@ int __wrap_sdm_init_set_rcec_bdf(const uintptr_t ext_cfg_addr, const uint8_t bus
     return SILIBS_SUCCESS;
 }
 
-DIE_ID __wrap_idsw_get_die_id()
+KNG_DIE_ID __wrap_idsw_get_die_id()
 {
-    return mock_type(DIE_ID);
+    return mock_type(KNG_DIE_ID);
 }
 
 void __wrap_configure_vab_system_addr_map(uint64_t vab_base_addr, uint64_t tower_base_addr)

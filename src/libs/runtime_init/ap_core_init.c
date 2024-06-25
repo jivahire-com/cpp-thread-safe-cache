@@ -17,6 +17,7 @@
 #include <corebits.h>
 #include <fpfw_init.h>          // for fpfw_init_get_handle, FPFW_INIT_S...
 #include <idsw.h>               // for idsw_get_die_id
+#include <idsw_kng.h>           // for NUM_DIE
 #include <kng_soc_constants.h>  // for NUM_AP_CORES_PER_DIE
 #include <silibs_ap_top_regs.h> // for AP_TOP_D0_CORE_CLUSTER_SIZE, AP_T...
 #include <startup_shutdown.h>

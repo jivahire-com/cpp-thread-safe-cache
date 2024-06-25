@@ -13,6 +13,7 @@ target_link_libraries(${TARGET}
     ms::cmocka::testrunner
     ms::lib::vab
     silibs::idsw
+    silibs::idsw_kng
     silibs::kng_silibs_platform
 )
 

@@ -12,10 +12,9 @@
 #include <cstdint>
 
 extern "C" {
-#include "idsw.h" // for DIE_ID
-
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <fpfw_init.h> // for fpfw_init_component_t
+#include <idsw_kng.h>  // for KNG_DIE_ID, KNG_PLAT_ID
 #include <stddef.h>    // for NULL
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -40,14 +39,14 @@ int __wrap_usb_init(uint32_t usb_init_block)
     return 0;
 }
 
-DIE_ID __wrap_idhw_get_die_id()
+KNG_DIE_ID __wrap_idhw_get_die_id()
 {
-    return mock_type(DIE_ID);
+    return mock_type(KNG_DIE_ID);
 }
 
-PLAT_ID __wrap_idsw_get_platform_sdv(void)
+KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
 {
-    return mock_type(PLAT_ID);
+    return mock_type(KNG_PLAT_ID);
 }
 
 //
@@ -57,7 +56,7 @@ TEST_FUNCTION(test_usb_init_success, nullptr, nullptr)
 {
     // Set up expectations
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
-    const auto test_die = (DIE_ID)0;
+    const auto test_die = (KNG_DIE_ID)0;
     will_return_always(__wrap_idhw_get_die_id, test_die);
     expect_function_calls(__wrap_usb_init, 2);
 
@@ -156,7 +155,7 @@ TEST_FUNCTION(test_usb_init_bypass_zebu_2D_8C, NULL, NULL)
 TEST_FUNCTION(test_usb_init_die1, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idhw_get_die_id, test_die);
 
     // Call API under test

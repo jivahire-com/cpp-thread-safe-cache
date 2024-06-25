@@ -13,7 +13,8 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         idhw
         fwlib.lib.utils
-        idsw
+        silibs::idsw
+        silibs::idsw_kng
         ms::cmocka::testrunner
         ms::lib::ioss::usb
         silibs_platform

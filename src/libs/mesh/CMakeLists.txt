@@ -15,6 +15,7 @@ target_link_libraries(${TARGET}
     silibs::cmn800_sequence
     silibs::idhw
     silibs::idsw
+    silibs::idsw_kng
     silibs::kng_silibs_platform
     silibs::ppu_v1
 )

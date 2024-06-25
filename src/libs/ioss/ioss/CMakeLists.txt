@@ -13,7 +13,8 @@ target_link_libraries(${TARGET}
         ppu_v1
         atu
         pcr_ioss
-        idsw
+        silibs::idsw
+        silibs::idsw_kng
 )
 
 target_include_directories(${TARGET}

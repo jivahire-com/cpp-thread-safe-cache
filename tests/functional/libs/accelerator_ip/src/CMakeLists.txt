@@ -23,6 +23,7 @@ target_link_libraries(
         PRIVATE
         silibs::atu
         silibs::idsw
+        silibs::idsw_kng
         silibs::kng_silibs_platform
 )
 

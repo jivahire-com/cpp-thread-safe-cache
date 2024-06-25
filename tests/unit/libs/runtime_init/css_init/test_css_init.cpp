@@ -12,9 +12,8 @@
 #include <cstdint>         // IWYU pragma: keep
 
 extern "C" {
-#include "idsw.h" // for DIE_ID, PLAT_ID, _PLAT_ID
-
 #include <fpfw_init.h>
+#include <idsw_kng.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -45,14 +44,14 @@ void __wrap_css_configure_system_tower(uint8_t die_num)
     check_expected(die_num);
 }
 
-DIE_ID __wrap_idhw_get_die_id()
+KNG_DIE_ID __wrap_idhw_get_die_id()
 {
-    return mock_type(DIE_ID);
+    return mock_type(KNG_DIE_ID);
 }
 
-PLAT_ID __wrap_idsw_get_platform_sdv()
+KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
 {
-    return mock_type(PLAT_ID);
+    return mock_type(KNG_PLAT_ID);
 }
 
 //
@@ -61,7 +60,7 @@ PLAT_ID __wrap_idsw_get_platform_sdv()
 TEST_FUNCTION(test_css_pre_mesh_init, nullptr, nullptr)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idhw_get_die_id, test_die);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     expect_value(__wrap_css_pre_mesh_init, die_num, test_die);

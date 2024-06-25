@@ -14,6 +14,7 @@
 #include <cstddef> // IWYU pragma: keep
 #include <cstdint> // IWYU pragma: keep
 #include <idsw.h>
+#include <idsw_kng.h>
 
 extern "C" {
 #include <DfwkPtrTypes.h>

@@ -4,10 +4,11 @@
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwUtils.h>           // for FPFW_UNUSED
-#include <fpfw_init.h>           // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT...
-#include <idhw.h>                // for idhw_get_die_id, idhw_get_platform_...
-#include <idsw.h>                // for idsw_set_cpu_type, idsw_set_die_id
+#include <FpFwUtils.h> // for FPFW_UNUSED
+#include <fpfw_init.h> // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT...
+#include <idhw.h>      // for idhw_get_die_id, idhw_get_platform_...
+#include <idsw.h>      // for idsw_set_cpu_type, idsw_set_die_id
+#include <idsw_kng.h>
 #include <silibs_scp_top_regs.h> // for SCP_TOP_SID_ADDRESS
 #include <stddef.h>              // for NULL
 #include <stdint.h>              // for uint32_t, uintptr_t
@@ -37,7 +38,7 @@ FPFW_INIT_COMPONENT(hw_ver, FPFW_INIT_DEPENDENCIES("mpu"))
     idsw_set_die_id(idhw_get_die_id());
 
     /* Get platform ID from SID Regs */
-    PLAT_ID hw_platform_id = idhw_get_platform_id_from_hw();
+    KNG_PLAT_ID hw_platform_id = idhw_get_platform_id_from_hw();
 
     /* Set SW platform ID for firmware */
     idsw_set_platform_sdv(hw_platform_id);

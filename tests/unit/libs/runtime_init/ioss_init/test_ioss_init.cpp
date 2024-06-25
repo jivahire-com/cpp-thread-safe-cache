@@ -12,10 +12,9 @@
 #include <cstdint>
 
 extern "C" {
-#include "idsw.h" // for DIE_ID
-
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <fpfw_init.h> // for fpfw_init_component_t
+#include <idsw_kng.h>  // for KNG_DIE_ID, KNG_PLAT_ID
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -37,14 +36,14 @@ int __wrap_ioss_init(uint8_t die_num)
     return 0;
 }
 
-DIE_ID __wrap_idhw_get_die_id()
+KNG_DIE_ID __wrap_idhw_get_die_id()
 {
-    return mock_type(DIE_ID);
+    return mock_type(KNG_DIE_ID);
 }
 
-PLAT_ID __wrap_idsw_get_platform_sdv(void)
+KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
 {
-    return mock_type(PLAT_ID);
+    return mock_type(KNG_PLAT_ID);
 }
 
 //
@@ -53,7 +52,7 @@ PLAT_ID __wrap_idsw_get_platform_sdv(void)
 TEST_FUNCTION(test_ioss_init_silicon, nullptr, nullptr)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)0;
+    const auto test_die = (KNG_DIE_ID)0;
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idhw_get_die_id, test_die);
     expect_value(__wrap_ioss_init, die_num, test_die);
@@ -88,7 +87,7 @@ TEST_FUNCTION(test_ioss_init_bypass_fpga_large, NULL, NULL)
 
 TEST_FUNCTION(test_ioss_init_die1, NULL, NULL)
 {
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idhw_get_die_id, test_die);
 

@@ -12,7 +12,8 @@
 #include <atu_lib.h>               // for atu_id_t, atu_map_entry_t
 #include <cmocka.h>                // IWYU pragma: keep
 #include <e32_mem_map_regs.h>      // for e32_mem_map_reg
-#include <idsw.h>                  // for PLAT_ID
+#include <idsw.h>                  // for platform ID declarations
+#include <idsw_kng.h>              // for KNG_PLAT_ID
 #include <kng_soc_constants.h>     // for RPSS_INSTANCE
 #include <pcie_knobs.h>            // for pcie_cfg_t
 #include <pcie_ss_common.h>        // for pcie_ss_entity_t
@@ -37,9 +38,9 @@ static e32_mem_map_reg mock_bcast_block;
 static rpss_p1_reg mock_p1_block;
 
 /*------------- Functions ----------------*/
-PLAT_ID __wrap_idsw_get_platform_sdv(void)
+KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
 {
-    return mock_type(PLAT_ID);
+    return mock_type(KNG_PLAT_ID);
 }
 
 int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)

@@ -12,6 +12,7 @@
 #include <FpFwAssert.h>
 #include <atu_lib.h>
 #include <idsw.h>
+#include <idsw_kng.h>
 #include <kng_atu_mappings.h>
 #include <kng_soc_constants.h>
 #include <stdbool.h>
@@ -47,7 +48,7 @@ static uint16_t tower_vab_instances_to_be_enabled(uint8_t die_num)
 {
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
     uint16_t vab_instances_to_init = 0;
-    PLAT_ID plat = idsw_get_platform_sdv();
+    KNG_PLAT_ID plat = idsw_get_platform_sdv();
     switch (plat)
     {
     case PLATFORM_SVP_SIM:
@@ -92,7 +93,7 @@ static uint16_t tower_rpss_instances_to_be_enabled(uint8_t die_num)
 {
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
     uint16_t rpss_instances_to_init = 0;
-    PLAT_ID plat = idsw_get_platform_sdv();
+    KNG_PLAT_ID plat = idsw_get_platform_sdv();
     switch (plat)
     {
     case PLATFORM_SVP_SIM:

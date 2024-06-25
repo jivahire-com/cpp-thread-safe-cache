@@ -12,6 +12,7 @@
 #include <DfwkThreadXHost.h>
 #include <fpfw_init.h>
 #include <idsw.h>
+#include <idsw_kng.h>
 #include <scp_pcie_manager.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -30,7 +31,7 @@ FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "v
     fpfw_init_component_id_t dfwk_id = "dfwk";
     PDFWK_THREADX_HOST host = fpfw_init_get_handle(dfwk_id);
     uint16_t rpss_to_init = 0;
-    PLAT_ID plat = idsw_get_platform_sdv();
+    KNG_PLAT_ID plat = idsw_get_platform_sdv();
 
     switch (plat)
     {

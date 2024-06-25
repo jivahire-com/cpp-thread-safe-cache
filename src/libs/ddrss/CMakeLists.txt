@@ -12,7 +12,8 @@ target_link_libraries(${TARGET}
     kng_silibs_platform
     ddrss
     atu
-    idsw
+    silibs::idsw
+    silibs::idsw_kng
     silibs::ras_arm
     fwlib.lib.assert
 )

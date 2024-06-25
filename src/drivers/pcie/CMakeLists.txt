@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
     fwlib.platform.dfwkhost.threadx
     silibs::atu
     silibs::idsw
+    silibs::idsw_kng
     silibs::kng_silibs_platform
     silibs::pcie
     silibs::pciess

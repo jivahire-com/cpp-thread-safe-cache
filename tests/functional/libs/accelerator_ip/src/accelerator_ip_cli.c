@@ -12,6 +12,7 @@
 #include <accelerator_ip_cli.h>
 #include <atu_lib.h>
 #include <idsw.h>
+#include <idsw_kng.h>
 #include <silibs_ap_top_regs.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -231,7 +232,7 @@ static bool scp_sdm_emcpu_init_test(uint32_t die_id)
 int32_t accelerator_ip_bringup_test(int32_t argc, char **argv)
 {
     uint32_t result = true;
-    DIE_ID die_id = idsw_get_die_id();
+    KNG_DIE_ID die_id = idsw_get_die_id();
 
     // 1st argument fn name, 2nd test type
     if (argc != MAX_CMDLINE_ARG)

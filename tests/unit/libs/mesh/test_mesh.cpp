@@ -14,7 +14,8 @@ extern "C" {
 #include <FpFwUtils.h>       // for FPFW_UNUSED
 #include <cmn800_sequence.h> // for cmn800_sequence_params_t
 #include <cmn_config.h>      // for CMN800_CONFIG_CONFIG
-#include <idsw.h>            // for idsw_set_platform_sdv, DIE_ID, _PLAT_ID
+#include <idsw.h>            // for idsw_set_platform_sdv
+#include <idsw_kng.h>        // for PLATFORM_FPGA_LARGE, PLATFORM_SVP_SIM
 #include <mesh.h>            // for mesh_init
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -120,7 +121,7 @@ bool __wrap_idhw_is_single_die_boot_en(void)
 TEST_FUNCTION(test_mesh_init_single_die_boot_Die_0_SVP, setup_svp_platform, setup_undefined_platform)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)0;
+    const auto test_die = (KNG_DIE_ID)0;
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -140,7 +141,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_0_SVP, setup_svp_platform, setu
 TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_SVP, setup_svp_platform, setup_undefined_platform)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
 
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
@@ -161,7 +162,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_SVP, setup_svp_platform, setu
 TEST_FUNCTION(test_mesh_init_single_die_boot_Die_0_FPGA, setup_fpga_platform, setup_undefined_platform)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)0;
+    const auto test_die = (KNG_DIE_ID)0;
 
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
@@ -182,7 +183,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_0_FPGA, setup_fpga_platform, se
 TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_FPGA, setup_fpga_platform, setup_undefined_platform)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
 
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
@@ -204,7 +205,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_FPGA, setup_fpga_platform, se
 TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_0_SVP, setup_svp_platform_dual_die, setup_undefined_platform)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)0;
+    const auto test_die = (KNG_DIE_ID)0;
 
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
@@ -234,7 +235,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_0_SVP, setup_svp_platform_dual_di
 TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_SVP, setup_svp_platform_dual_die, setup_undefined_platform)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
 
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
@@ -264,7 +265,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_SVP, setup_svp_platform_dual_di
 TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_0_FPGA, setup_fpga_platform_dual_die, setup_undefined_platform)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)0;
+    const auto test_die = (KNG_DIE_ID)0;
 
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
@@ -294,7 +295,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_0_FPGA, setup_fpga_platform_dual_
 TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_FPGA, setup_fpga_platform_dual_die, setup_undefined_platform)
 {
     // Set up expectations
-    const auto test_die = (DIE_ID)1;
+    const auto test_die = (KNG_DIE_ID)1;
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 

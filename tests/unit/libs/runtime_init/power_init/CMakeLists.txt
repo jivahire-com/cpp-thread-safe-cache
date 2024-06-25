@@ -20,6 +20,7 @@ target_link_libraries(${TARGET}
         ms::service::power
         silibs::atu
         silibs::idsw
+        silibs::idsw_kng
         silibs::kng_silibs_platform
 )
 

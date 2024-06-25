@@ -13,7 +13,8 @@ target_link_libraries(${TARGET}
         clocks_sequence
         fwlib.lib.init
         idhw
-        idsw
+        silibs::idsw
+        silibs::idsw_kng
         kng_silibs_platform
         ms::cmocka::testrunner
         ms::lib::css

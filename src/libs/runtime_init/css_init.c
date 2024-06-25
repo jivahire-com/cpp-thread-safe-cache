@@ -8,6 +8,7 @@
 #include <fpfw_init.h>
 #include <idhw.h>
 #include <idsw.h>
+#include <idsw_kng.h>
 #include <stdint.h>
 #include <stdio.h>
 

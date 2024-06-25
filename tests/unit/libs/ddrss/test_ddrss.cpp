@@ -15,6 +15,7 @@ extern "C" {
 #include <ddrss.h>
 #include <ddrss_lib.h>
 #include <idsw.h>
+#include <idsw_kng.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -33,7 +34,7 @@ extern "C" {
 TEST_FUNCTION(test_ddrss_lib_init_skip, NULL, NULL)
 {
 
-    const uint8_t test_die = (DIE_ID)0;
+    const uint8_t test_die = (KNG_DIE_ID)0;
 
     // ddrss init is skipped on svp, therefore no expectations
     idsw_set_platform_sdv(PLATFORM_SVP_SIM);
@@ -47,7 +48,7 @@ TEST_FUNCTION(test_ddrss_lib_init_skip, NULL, NULL)
 TEST_FUNCTION(test_ddrss_lib_init_fpga, NULL, NULL)
 {
 
-    const uint8_t test_die = (DIE_ID)0;
+    const uint8_t test_die = (KNG_DIE_ID)0;
 
     // ddrss init is not skipped on the Big FPGA, and the
     // atu map is fixed so no atu map / un map calls

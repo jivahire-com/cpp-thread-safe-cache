@@ -15,6 +15,7 @@ extern "C" {
 #include <FpFwUtils.h>
 #include <fpfw_init.h>
 #include <idsw.h>
+#include <idsw_kng.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -35,7 +36,7 @@ void __wrap_idhw_set_sid_base(uintptr_t sid_base)
     function_called();
 }
 
-void __wrap_idsw_set_cpu_type(CPU_TYPE cpu_type)
+void __wrap_idsw_set_cpu_type(KNG_CPU_TYPE cpu_type)
 {
     FPFW_UNUSED(cpu_type);
     function_called();
@@ -45,23 +46,23 @@ uint32_t __wrap_idhw_get_soc_id()
 {
     return mock_type(uint32_t);
 }
-DIE_ID __wrap_idhw_get_die_id()
+KNG_DIE_ID __wrap_idhw_get_die_id()
 {
-    return mock_type(DIE_ID);
+    return mock_type(KNG_DIE_ID);
 }
 
-void __wrap_idsw_set_die_id(DIE_ID die_id)
+void __wrap_idsw_set_die_id(KNG_DIE_ID die_id)
 {
     FPFW_UNUSED(die_id);
     function_called();
 }
 
-PLAT_ID __wrap_idhw_get_platform_id_from_hw()
+KNG_PLAT_ID __wrap_idhw_get_platform_id_from_hw()
 {
-    return mock_type(PLAT_ID);
+    return mock_type(KNG_PLAT_ID);
 }
 
-void __wrap_idsw_set_platform_sdv(PLAT_ID plat_id)
+void __wrap_idsw_set_platform_sdv(KNG_PLAT_ID plat_id)
 {
     FPFW_UNUSED(plat_id);
     function_called();

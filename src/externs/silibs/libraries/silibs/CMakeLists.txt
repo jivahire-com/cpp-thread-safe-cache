@@ -1,5 +1,5 @@
 set(TARGET_DIR ${REPO_ROOT_DIR}/.externs/repo/silibs)
-set(TARGET_DIR_SILIBS_COMMON ${REPO_ROOT_DIR}/.externs/repo/silibs_common)
+set(TARGET_DIR_SILIBS_COMMON ${REPO_ROOT_DIR}/.externs/repo/silibs/libraries/common)
 set(LIB_OUTS_DIR ${CMAKE_BINARY_DIR}/src/externs/silibs/libraries)
 
 message("----------------------------------")
@@ -25,6 +25,7 @@ foreach(SILIB ${SILIB_LIST})
 endforeach()
 
 add_subdirectory(${TARGET_DIR_SILIBS_COMMON}/idsw ${LIB_OUTS_DIR}/idsw)
+add_subdirectory(${TARGET_DIR_SILIBS_COMMON}/idsw_kng ${LIB_OUTS_DIR}/idsw_kng)
 
 # Add the libraries where we either implement our own source or our own cmakes
 add_subdirectory(kng_silibs_platform)

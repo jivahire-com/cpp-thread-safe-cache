@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         silibs::atu
         silibs::ddrss
         silibs::idsw
+        silibs::idsw_kng
         silibs::kng_silibs_platform
         silibs::ras_arm
 )

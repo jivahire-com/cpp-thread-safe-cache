@@ -10,7 +10,8 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET}
     PRIVATE
         atu
-        idsw
+        silibs::idsw
+        silibs::idsw_kng
         smmu
         pcr_rpss
         sdm_init

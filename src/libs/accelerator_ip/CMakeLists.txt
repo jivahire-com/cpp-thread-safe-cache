@@ -31,6 +31,7 @@ target_link_libraries(
         ms::lib::debug
         ms::lib::utils
         silibs::idsw
+        silibs::idsw_kng
         silibs::pcr_vab
         silibs::pcr_rpss
         silibs::smmu

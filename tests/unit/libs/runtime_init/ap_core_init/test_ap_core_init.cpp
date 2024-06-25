@@ -19,6 +19,7 @@ extern "C" {
 #include <corebits.h>          // for corebits_is_bit_set, corebits_is_clear
 #include <fpfw_init.h>         // for fpfw_init_result_t, fpfw_init_component_t
 #include <idsw.h>              // for idsw_get_die_id
+#include <idsw_kng.h>          // for KNG_DIE_ID, KNG_PLAT_ID
 #include <kng_soc_constants.h> // for NUM_AP_CORES_PER_DIE
 #include <startup_shutdown.h>
 #include <stdint.h>
@@ -64,14 +65,14 @@ void __wrap_ap_core_interface_init(pap_core_service_t p_device, pap_core_interfa
 }
 
 // wrap idsw_get_die_id
-DIE_ID __wrap_idsw_get_die_id(void)
+KNG_DIE_ID __wrap_idsw_get_die_id(void)
 {
-    return mock_type(DIE_ID);
+    return mock_type(KNG_DIE_ID);
 }
 
-PLAT_ID __wrap_idsw_get_platform_sdv(void)
+KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
 {
-    return mock_type(PLAT_ID);
+    return mock_type(KNG_PLAT_ID);
 }
 
 int __wrap_atu_find_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)

@@ -17,8 +17,9 @@
 #include <atu_lib.h>               // for atu_map_entry_t, atu_entry_attr_t
 #include <core_cluster_top_regs.h> // for CORE_CLUSTER_TOP_CORE_CLUSTER0_AD...
 #include <corebits.h>
-#include <fpfw_init.h>          // for fpfw_init_get_handle, FPFW_INIT_S...
-#include <idsw.h>               // for idsw_get_die_id
+#include <fpfw_init.h> // for fpfw_init_get_handle, FPFW_INIT_S...
+#include <idsw.h>      // for idsw_get_die_id
+#include <idsw_kng.h>
 #include <kng_soc_constants.h>  // for NUM_AP_CORES_PER_DIE
 #include <power_init.h>         // for power_init, power_interface_init
 #include <silibs_ap_top_regs.h> // for AP_TOP_D0_CORE_CLUSTER_SIZE, AP_T...
@@ -110,7 +111,7 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc"))
     power_config.platform_die_core_count = NUM_AP_CORES_PER_DIE;
     power_config.platform_soc_power_support = false;
     power_config.platform_core_power_support = false;
-    
+
     // platform overrides
     switch (idsw_get_platform_sdv())
     {

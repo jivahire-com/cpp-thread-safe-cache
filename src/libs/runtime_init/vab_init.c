@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include <fpfw_init.h>
 #include <idsw.h>
+#include <idsw_kng.h>
 #include <kng_soc_constants.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -28,7 +29,7 @@
 static uint16_t vab_instances_to_be_enabled(uint8_t die_num)
 {
     uint16_t vab_instances_to_init = 0;
-    PLAT_ID plat = idsw_get_platform_sdv();
+    KNG_PLAT_ID plat = idsw_get_platform_sdv();
     switch (plat)
     {
     case PLATFORM_SVP_SIM:

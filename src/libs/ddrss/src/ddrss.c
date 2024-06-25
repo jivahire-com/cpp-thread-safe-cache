@@ -14,6 +14,7 @@
 #include <ddrss.h>
 #include <ddrss_lib.h>
 #include <idsw.h>
+#include <idsw_kng.h>
 #include <silibs_ap_top_regs.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -29,7 +30,7 @@ void ddrss_lib_init(uint8_t die_num)
     ddrss_cfg_knobs_t ddrss_cfgs;
     bool ddrss_init_skip = false;
     bool use_fixed_atu_mapping = false;
-    PLAT_ID platform_id = idsw_get_platform_sdv();
+    KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
     DDRSS_PLATFORM_TYPE ddrss_platform_override = DDRSS_PLATFORM_UNKNOWN;
     atu_map_entry_t atu_map_struct[NUM_DIE];
 

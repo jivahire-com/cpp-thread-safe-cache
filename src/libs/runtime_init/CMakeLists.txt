@@ -91,6 +91,7 @@ target_link_libraries(
         silibs::common::lib_uart_pl011
         silibs::idhw
         silibs::idsw
+        silibs::idsw_kng
         silibs::platform
         silibs::kng_silibs_platform
         ms::lib::power::cli

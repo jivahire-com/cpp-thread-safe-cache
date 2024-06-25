@@ -12,7 +12,8 @@
 #include <cmn800_sequence.h>   // for cmn800_sequence, d2dss_sequence, cmn8...
 #include <cmn_config.h>        // for CMN800_CONFIG_CONFIG
 #include <idhw.h>              // for idhw_is_single_die_boot_en
-#include <idsw.h>              // for idsw_get_platform_sdv, _PLAT_ID
+#include <idsw.h>              // for idsw_get_platform_sdv,
+#include <idsw_kng.h>          // for PLATFORM_FPGA_LARGE
 #include <kng_soc_constants.h> // for NUM_DIE
 #include <mesh.h>              // for mesh_init
 #include <stdbool.h>           // for true

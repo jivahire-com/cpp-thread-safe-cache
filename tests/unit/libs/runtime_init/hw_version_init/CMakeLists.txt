@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         silibs_platform
         silibs::idhw
         silibs::idsw
+        silibs::idsw_kng
         silibs::kng_silibs_platform
 )
 

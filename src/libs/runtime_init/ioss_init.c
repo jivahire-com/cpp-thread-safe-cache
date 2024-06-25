@@ -6,10 +6,10 @@
 /*------------- Includes -----------------*/
 #include "ioss_init.h" // for ioss_init
 
-#include "idsw.h" // for idsw_get_platform_sdv, _PLAT_ID
-
-#include <fpfw_init.h>         // for FPFW_INIT_STATUS_SUCCESS, fpfw_init_r...
-#include <idhw.h>              // for idhw_get_die_id
+#include <fpfw_init.h> // for FPFW_INIT_STATUS_SUCCESS, fpfw_init_r...
+#include <idhw.h>      // for idhw_get_die_id
+#include <idsw.h>
+#include <idsw_kng.h>
 #include <kng_soc_constants.h> // for SOC_D0
 #include <stdint.h>            // for uint8_t
 #include <stdio.h>             // for printf, NULL

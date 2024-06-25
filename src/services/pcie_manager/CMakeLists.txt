@@ -18,6 +18,7 @@ target_link_libraries(
         ms::lib::debug
         ms::lib::threadx
         silibs::idsw
+        silibs::idsw_kng
         silibs_platform
 )
 

@@ -14,12 +14,13 @@ target_link_libraries(${TARGET}
         ms::cmocka::mocks
         ms::lib::ioss::usb
         ms::lib::error_handler
-        silibs_platform
         kng_silibs_platform
         fwlib.lib.assert
-        idsw
-        usb_init
+        silibs::idsw
+        silibs::idsw_kng
         silibs::ioss
+        silibs_platform
+        usb_init
 )
 
 lint_target(${TARGET})

@@ -9,7 +9,6 @@
 
 /*------------- Includes -----------------*/
 #include <FpFwAssert.h>              // for FPFW_DEBUG_ASSERT
-#include <crash_dump.h>              // for STATIC
 #include <silibs_scp_exp_top_regs.h> // for SCP_EXP_TOP_SCF_RAM_ADDRESS, SCP_EXP_TOP_SCF_RAM_SIZE
 #include <silibs_scp_top_regs.h> // for SCP_TOP_SCP_EXP_ADDRESS, SCP_TOP_SCP_INST_RAM_ADDRESS, SCP_TOP_SCP_INST_RAM_SIZE
 #include <stdbool.h>             // for bool
@@ -27,7 +26,7 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-STATIC uint8_t s_cd_block_pool_memory[CD_DEFAULT_MEM_POOL_SIZE] = {};
+static uint8_t s_cd_block_pool_memory[CD_DEFAULT_MEM_POOL_SIZE] = {};
 
 /*------------- Functions ----------------*/
 

@@ -27,18 +27,18 @@
 /*-------------- Typedefs ----------------*/
 
 /*-------- Function Prototypes -----------*/
-STATIC void init_mem_pool();
-STATIC void init_dump_desc();
-STATIC void init_dump_file();
-STATIC void init_dump_manager();
+static void init_mem_pool();
+static void init_dump_desc();
+static void init_dump_file();
+static void init_dump_manager();
 
 /*-- Declarations (Statics and globals) --*/
-STATIC FPFwCrashDumpCtx crash_dump_ctx = {};
-STATIC FPFwCDMemPoolCtx mem_ctx = {};
-STATIC FPFwCDDumpDescriptorCtx desc_ctx = {};
-STATIC FPFwCDDumpFileCtx file_ctx = {};
-STATIC FPFwCDDumpDescriptor desc_list[CRASH_DUMP_NUM_DESCRIPTORS] = {};
-STATIC TX_MUTEX desc_mutex = {};
+static FPFwCrashDumpCtx crash_dump_ctx = {};
+static FPFwCDMemPoolCtx mem_ctx = {};
+static FPFwCDDumpDescriptorCtx desc_ctx = {};
+static FPFwCDDumpFileCtx file_ctx = {};
+static FPFwCDDumpDescriptor desc_list[CRASH_DUMP_NUM_DESCRIPTORS] = {};
+static TX_MUTEX desc_mutex = {};
 
 /*------------- Functions ----------------*/
 /**
@@ -89,7 +89,7 @@ void crash_dump_init()
  * @brief Initialize crash dump memory pool.
  *
  */
-STATIC void init_mem_pool()
+static void init_mem_pool()
 {
     uint64_t cd_mem_pool = 0;
     uint32_t block_size = 0;
@@ -106,7 +106,7 @@ STATIC void init_mem_pool()
  * @brief Initialize crash dump description.
  *
  */
-STATIC void init_dump_desc()
+static void init_dump_desc()
 {
     // Create Tx mutex for descriptor set
     FPFW_RUNTIME_ASSERT(tx_mutex_create(&desc_mutex, "cd desc mutex", TX_NO_INHERIT) == TX_SUCCESS);
@@ -123,7 +123,7 @@ STATIC void init_dump_desc()
  * @brief Initialize crash dump file.
  *
  */
-STATIC void init_dump_file()
+static void init_dump_file()
 {
     FPFW_RUNTIME_ASSERT(FPFwCDInitDumpFile(&file_ctx));
     (void)FPFwCDDumpFileOverrideInValidMemory(&file_ctx, &inMemoryOverride);
@@ -136,7 +136,7 @@ STATIC void init_dump_file()
  * @brief Initialize crash dump manager.
  *
  */
-STATIC void init_dump_manager()
+static void init_dump_manager()
 {
     FPFW_RUNTIME_ASSERT(FPFwCDInitDumpManager(&crash_dump_ctx, &mem_ctx, &desc_ctx, &file_ctx, NULL, CRASH_DUMP_FULL_SIZE)); // No state manager.
     FPFwCDOverridePrintf(&crash_dump_printf);

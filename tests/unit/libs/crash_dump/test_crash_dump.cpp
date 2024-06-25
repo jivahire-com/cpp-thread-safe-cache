@@ -27,6 +27,7 @@ extern "C" {
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
+extern int init_crash_dump_context(void** pContext);
 
 /*-- Declarations (Statics and globals) --*/
 extern uint8_t __stack_start__;
@@ -40,16 +41,6 @@ extern TX_THREAD* _tx_thread_created_ptr;
 extern ULONG _tx_thread_created_count;
 extern ULONG _tx_thread_system_state;
 
-extern FPFwCrashDumpCtx crash_dump_ctx;
-extern FPFwCDMemPoolCtx mem_ctx;
-extern FPFwCDDumpDescriptorCtx desc_ctx;
-extern FPFwCDDumpFileCtx file_ctx;
-extern FPFwCDDumpDescriptor desc_list[];
-extern TX_MUTEX desc_mutex;
-
-extern CD_MSFT_VERSION_INFO cdMsftVersionInfo;
-extern CD_THREADX_DATA cdThreadXData;
-
 /*------------- Functions ----------------*/
 //
 // Expectations
@@ -57,93 +48,70 @@ extern CD_THREADX_DATA cdThreadXData;
 void set_expectations_init_mem_pool()
 {
     expect_function_call(__wrap_FPFwCDInitMemoryPool);
-    expect_value(__wrap_FPFwCDInitMemoryPool, ctx, &mem_ctx);
     expect_any(__wrap_FPFwCDInitMemoryPool, baseAddr);
     expect_any(__wrap_FPFwCDInitMemoryPool, poolSize);
 
     expect_function_call(__wrap_FPFwCDMemPoolOverrideCacheFlush);
-    expect_value(__wrap_FPFwCDMemPoolOverrideCacheFlush, memPoolCtx, &mem_ctx);
     expect_value(__wrap_FPFwCDMemPoolOverrideCacheFlush, cacheFlush, &cacheFlushOverride);
 
     expect_function_call(__wrap_FPFwCDMemPoolOverrideCacheInvalidate);
-    expect_value(__wrap_FPFwCDMemPoolOverrideCacheInvalidate, memPoolCtx, &mem_ctx);
     expect_value(__wrap_FPFwCDMemPoolOverrideCacheInvalidate, cacheInvalidate, &cacheInvalidateOverride);
 }
 
 void set_expectations_init_dump_desc()
 {
     expect_function_call(__wrap__txe_mutex_create);
-    expect_value(__wrap__txe_mutex_create, mutex_ptr, &desc_mutex);
     expect_string(__wrap__txe_mutex_create, name_ptr, "cd desc mutex");
 
     expect_function_call(__wrap_FPFwCDInitDumpDescriptor);
-    expect_value(__wrap_FPFwCDInitDumpDescriptor, ctx, &desc_ctx);
-    expect_value(__wrap_FPFwCDInitDumpDescriptor, dumpDescriptorArray, desc_list);
     expect_any(__wrap_FPFwCDInitDumpDescriptor, arraySize);
 
     expect_function_call(__wrap_FPFwCDDumpDescriptorSetMutexCtx);
-    expect_value(__wrap_FPFwCDDumpDescriptorSetMutexCtx, dumpDescCtx, &desc_ctx);
-    expect_value(__wrap_FPFwCDDumpDescriptorSetMutexCtx, mutexCtx, &desc_mutex);
 
     expect_function_call(__wrap_FPFwCDDumpDescriptorOverrideMutexLock);
-    expect_value(__wrap_FPFwCDDumpDescriptorOverrideMutexLock, dumpDescCtx, &desc_ctx);
     expect_value(__wrap_FPFwCDDumpDescriptorOverrideMutexLock, mutexLock, &mutexLockOverride);
 
     expect_function_call(__wrap_FPFwCDDumpDescriptorOverrideMutexUnlock);
-    expect_value(__wrap_FPFwCDDumpDescriptorOverrideMutexUnlock, dumpDescCtx, &desc_ctx);
     expect_value(__wrap_FPFwCDDumpDescriptorOverrideMutexUnlock, mutexUnlock, &mutexUnlockOverride);
 }
 
 void set_expectations_init_dump_file()
 {
     expect_function_call(__wrap_FPFwCDInitDumpFile);
-    expect_value(__wrap_FPFwCDInitDumpFile, ctx, &file_ctx);
 
     expect_function_call(__wrap_FPFwCDDumpFileOverrideInValidMemory);
-    expect_value(__wrap_FPFwCDDumpFileOverrideInValidMemory, dumpFileCtx, &file_ctx);
     expect_value(__wrap_FPFwCDDumpFileOverrideInValidMemory, inValidMemory, &inMemoryOverride);
 
     expect_function_call(__wrap_FPFwCDDumpFileOverrideInValidCsrMemory);
-    expect_value(__wrap_FPFwCDDumpFileOverrideInValidCsrMemory, dumpFileCtx, &file_ctx);
     expect_value(__wrap_FPFwCDDumpFileOverrideInValidCsrMemory, inValidCsrMemory, &inMemoryOverride);
 
     expect_function_call(__wrap_FPFwCDDumpFileOverrideInValidGlobalMemory);
-    expect_value(__wrap_FPFwCDDumpFileOverrideInValidGlobalMemory, dumpFileCtx, &file_ctx);
     expect_value(__wrap_FPFwCDDumpFileOverrideInValidGlobalMemory, inValidGlobalMemory, &inGlobalMemoryOverride);
 }
 
 void set_expectations_init_dump_manager()
 {
     expect_function_call(__wrap_FPFwCDInitDumpManager);
-    expect_value(__wrap_FPFwCDInitDumpManager, ctx, &crash_dump_ctx);
-    expect_value(__wrap_FPFwCDInitDumpManager, memPoolCtx, &mem_ctx);
-    expect_value(__wrap_FPFwCDInitDumpManager, descCtx, &desc_ctx);
-    expect_value(__wrap_FPFwCDInitDumpManager, fileCtx, &file_ctx);
-    expect_value(__wrap_FPFwCDInitDumpManager, stateCtx, NULL); // No state manager
     expect_value(__wrap_FPFwCDInitDumpManager, totalDumpSize, CRASH_DUMP_FULL_SIZE);
 
     expect_function_call(__wrap_FPFwCDOverridePrintf);
     expect_value(__wrap_FPFwCDOverridePrintf, printOverride, &crash_dump_printf);
 
     expect_function_call(__wrap_FPFwCDDumpManagerSetPreDumpCallback);
-    expect_value(__wrap_FPFwCDDumpManagerSetPreDumpCallback, ctx, &crash_dump_ctx);
     expect_value(__wrap_FPFwCDDumpManagerSetPreDumpCallback, preDumpCallback, &preDumpCallbackOverride);
     expect_value(__wrap_FPFwCDDumpManagerSetPreDumpCallback, preDumpCtx, NULL);
 
     expect_function_call(__wrap_FPFwCDDumpManagerSetPostDumpCallback);
-    expect_value(__wrap_FPFwCDDumpManagerSetPostDumpCallback, ctx, &crash_dump_ctx);
     expect_value(__wrap_FPFwCDDumpManagerSetPostDumpCallback, postDumpCallback, &postDumpCallbackOverride);
     expect_value(__wrap_FPFwCDDumpManagerSetPostDumpCallback, postDumpCtx, NULL);
 
     expect_function_call(__wrap_FPFwCDDumpManagerOverrideGetCurTime);
-    expect_value(__wrap_FPFwCDDumpManagerOverrideGetCurTime, ctx, &crash_dump_ctx);
     expect_value(__wrap_FPFwCDDumpManagerOverrideGetCurTime, getCurTime, &getCurTimeDefault);
 }
 
 void set_expectations_crash_dump_register_core_registers()
 {
     expect_function_call(__wrap_CdRegisterRegisterSet);
-    expect_value(__wrap_CdRegisterRegisterSet, ctx, &crash_dump_ctx);
     expect_value(__wrap_CdRegisterRegisterSet, address, &g_core_crash_context);
     expect_value(__wrap_CdRegisterRegisterSet, regIndex, 0);  // CORE_BUILTIN_REG_INDEX
     expect_value(__wrap_CdRegisterRegisterSet, regCount, 16); // CORE_BUILTIN_REG_COUNT
@@ -153,7 +121,6 @@ void set_expectations_crash_dump_register_core_registers()
 void set_expectations_crash_dump_register_core_stack()
 {
     expect_function_call(__wrap_CdRegisterAddress32);
-    expect_value(__wrap_CdRegisterAddress32, ctx, &crash_dump_ctx);
     expect_value(__wrap_CdRegisterAddress32, address, &__stack_start__);
     expect_value(__wrap_CdRegisterAddress32, size, &__stack_end__ - &__stack_start__);
     expect_value(__wrap_CdRegisterAddress32, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
@@ -162,8 +129,7 @@ void set_expectations_crash_dump_register_core_stack()
 void set_expectations_crash_dump_register_standard_info()
 {
     expect_function_call(__wrap_CdRegisterAddress32);
-    expect_value(__wrap_CdRegisterAddress32, ctx, &crash_dump_ctx);
-    expect_value(__wrap_CdRegisterAddress32, address, &cdMsftVersionInfo);
+    expect_not_value(__wrap_CdRegisterAddress32, address, NULL);
     expect_value(__wrap_CdRegisterAddress32, size, sizeof(CD_MSFT_VERSION_INFO));
     expect_value(__wrap_CdRegisterAddress32, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
 }
@@ -171,30 +137,34 @@ void set_expectations_crash_dump_register_standard_info()
 void set_expectations_crash_dump_register_threadx()
 {
     expect_function_call(__wrap_CdRegisterCallback); // crash_dump_capture_threadx
-    expect_value(__wrap_CdRegisterCallback, ctx, &crash_dump_ctx);
     expect_not_value(__wrap_CdRegisterCallback, callback, NULL);
     expect_value(__wrap_CdRegisterCallback, context, NULL);
     expect_value(__wrap_CdRegisterCallback, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
 }
 
-void set_expectations_crash_dump_register_address32(FPFwCrashDumpCtx* ctx_exp, void* address_exp, uint32_t size_exp, FPFwCdDumpPriority priority_exp)
+void set_expectations_crash_dump_register_address32(void* address_exp, uint32_t size_exp, FPFwCdDumpPriority priority_exp)
 {
     expect_function_call(__wrap_CdRegisterAddress32);
-    expect_value(__wrap_CdRegisterAddress32, ctx, ctx_exp);
     expect_value(__wrap_CdRegisterAddress32, address, address_exp);
     expect_value(__wrap_CdRegisterAddress32, size, size_exp);
     expect_value(__wrap_CdRegisterAddress32, priority, priority_exp);
 }
 
-void set_expectations_crash_dump_register_address32_ptr_array(FPFwCrashDumpCtx* ctx_exp,
-                                                              FPFwCdDumpPriority priority_exp,
+void set_expectations_crash_dump_register_address32_no_address(uint32_t size_exp, FPFwCdDumpPriority priority_exp)
+{
+    expect_function_call(__wrap_CdRegisterAddress32);
+    expect_not_value(__wrap_CdRegisterAddress32, address, NULL);
+    expect_value(__wrap_CdRegisterAddress32, size, size_exp);
+    expect_value(__wrap_CdRegisterAddress32, priority, priority_exp);
+}
+
+void set_expectations_crash_dump_register_address32_ptr_array(FPFwCdDumpPriority priority_exp,
                                                               uint32_t minimumChunkSize_exp,
                                                               uint32_t maximumRegistrationCount_exp,
                                                               void** pointerArray_exp,
                                                               uint32_t pointerArrayCount_exp)
 {
     expect_function_call(__wrap_CdRegisterAddress32PointerArray);
-    expect_value(__wrap_CdRegisterAddress32PointerArray, ctx, ctx_exp);
     expect_value(__wrap_CdRegisterAddress32PointerArray, priority, priority_exp);
     expect_value(__wrap_CdRegisterAddress32PointerArray, minimumChunkSize, minimumChunkSize_exp);
     expect_value(__wrap_CdRegisterAddress32PointerArray, maximumRegistrationCount, maximumRegistrationCount_exp);
@@ -208,7 +178,7 @@ void set_expectations_crash_dump_register_address32_ptr_array(FPFwCrashDumpCtx* 
  * @brief crash dump initialization test
  *
  */
-TEST_FUNCTION(test_crash_dump_init, nullptr, nullptr)
+TEST_FUNCTION(test_crash_dump_init, init_crash_dump_context, nullptr)
 {
     // Set up expectations
     set_expectations_gpio_set_output();
@@ -271,34 +241,33 @@ TEST_FUNCTION(test_crash_dump_capture_threadx, NULL, NULL)
 
     // Set up expectations
     // cdThreadXData
-    set_expectations_crash_dump_register_address32(&crash_dump_ctx, &cdThreadXData, sizeof(CD_THREADX_DATA), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    set_expectations_crash_dump_register_address32_no_address(sizeof(CD_THREADX_DATA), FPFW_CD_DUMP_PRIORITY_CRITICAL);
 
     // _tx_thread_system_stack_ptr
-    set_expectations_crash_dump_register_address32(&crash_dump_ctx, &_tx_thread_system_stack_ptr, sizeof(void*), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    set_expectations_crash_dump_register_address32(&_tx_thread_system_stack_ptr, sizeof(void*), FPFW_CD_DUMP_PRIORITY_CRITICAL);
 
     // _tx_thread_current_ptr
-    set_expectations_crash_dump_register_address32(&crash_dump_ctx, &_tx_thread_current_ptr, sizeof(TX_THREAD*), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    set_expectations_crash_dump_register_address32(&_tx_thread_current_ptr, sizeof(TX_THREAD*), FPFW_CD_DUMP_PRIORITY_CRITICAL);
 
     // _tx_thread_execute_ptr
-    set_expectations_crash_dump_register_address32(&crash_dump_ctx, &_tx_thread_execute_ptr, sizeof(TX_THREAD*), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    set_expectations_crash_dump_register_address32(&_tx_thread_execute_ptr, sizeof(TX_THREAD*), FPFW_CD_DUMP_PRIORITY_CRITICAL);
 
     // _tx_thread_created_ptr
-    set_expectations_crash_dump_register_address32(&crash_dump_ctx, &_tx_thread_created_ptr, sizeof(TX_THREAD*), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    set_expectations_crash_dump_register_address32(&_tx_thread_created_ptr, sizeof(TX_THREAD*), FPFW_CD_DUMP_PRIORITY_CRITICAL);
 
     // _tx_thread_created_count
-    set_expectations_crash_dump_register_address32(&crash_dump_ctx, &_tx_thread_created_count, sizeof(ULONG), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    set_expectations_crash_dump_register_address32(&_tx_thread_created_count, sizeof(ULONG), FPFW_CD_DUMP_PRIORITY_CRITICAL);
 
     // _tx_thread_system_state
-    set_expectations_crash_dump_register_address32(&crash_dump_ctx, (void*)&_tx_thread_system_state, sizeof(ULONG), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    set_expectations_crash_dump_register_address32((void*)&_tx_thread_system_state, sizeof(ULONG), FPFW_CD_DUMP_PRIORITY_CRITICAL);
 
     // _tx_thread_created_ptr (pThread)
     for (int i = 0; i < 2; i++)
     {
-        set_expectations_crash_dump_register_address32(&crash_dump_ctx, &threads[i], sizeof(TX_THREAD), FPFW_CD_DUMP_PRIORITY_CRITICAL);
-        set_expectations_crash_dump_register_address32(&crash_dump_ctx, threads[i].tx_thread_stack_start, 500, FPFW_CD_DUMP_PRIORITY_CRITICAL);
-        set_expectations_crash_dump_register_address32(&crash_dump_ctx, threads[i].tx_thread_name, 8, FPFW_CD_DUMP_PRIORITY_CRITICAL);
-        set_expectations_crash_dump_register_address32_ptr_array(&crash_dump_ctx,
-                                                                 FPFW_CD_DUMP_PRIORITY_OPPORTUNISTIC,
+        set_expectations_crash_dump_register_address32(&threads[i], sizeof(TX_THREAD), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+        set_expectations_crash_dump_register_address32(threads[i].tx_thread_stack_start, 500, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+        set_expectations_crash_dump_register_address32(threads[i].tx_thread_name, 8, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+        set_expectations_crash_dump_register_address32_ptr_array(FPFW_CD_DUMP_PRIORITY_OPPORTUNISTIC,
                                                                  128,
                                                                  128,
                                                                  (void**)threads[i].tx_thread_stack_start,

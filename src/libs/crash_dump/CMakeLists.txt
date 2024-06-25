@@ -1,5 +1,3 @@
-enabled_on(arm-eabi-aarch)
-
 # SCP Crash dump
 set(TARGET kng.lib.crash_dump.scp)
 

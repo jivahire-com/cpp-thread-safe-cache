@@ -9,7 +9,6 @@
 
 /*------------- Includes -----------------*/
 #include <FpFwAssert.h>              // for FPFW_DEBUG_ASSERT
-#include <crash_dump.h>              // for STATIC
 #include <silibs_mcp_exp_top_regs.h> // for MCP_EXP_TOP_SCF_RAM_ADDRESS, MCP_EXP_TOP_SCF_RAM_SIZE
 #include <silibs_mcp_top_regs.h>     // for MCP_TOP_MCP_EXP_ADDRESS
 #include <stdbool.h>                 // for bool
@@ -26,7 +25,7 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-STATIC uint8_t s_cd_block_pool_memory[CD_DEFAULT_MEM_POOL_SIZE] = {};
+static uint8_t s_cd_block_pool_memory[CD_DEFAULT_MEM_POOL_SIZE] = {};
 
 /*------------- Functions ----------------*/
 

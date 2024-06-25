@@ -10,18 +10,11 @@
 #pragma once
 
 /*--------------- Includes ---------------*/
+#include <FpFwUtils.h>
 #include <modules/CdDumpManager.h>
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#ifdef UNIT_TEST
-    #define NORETURN
-    #define STATIC
-#else
-    #include <stdnoreturn.h> // for noreturn
-    #define NORETURN noreturn
-    #define STATIC static
-#endif
 
 /*-------------- Typedefs ----------------*/
 typedef struct _CD_GUID {
@@ -62,7 +55,7 @@ extern core_crash_context_t g_core_crash_context;
  * @param p1, p2, p3, p4
  *  User defined parameter data stored with the crash dump bug check details
  */
-NORETURN void crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4);
+FPFW_NORETURN void crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4);
 
 /**
  * @brief Get the Crash Dump Context object

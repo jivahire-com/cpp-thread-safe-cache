@@ -45,25 +45,21 @@ void set_expectations_crash_dump_register_default_registers()
 {
     // ToDo: Add more register checks for SCP_EXP, Watchdog and Power control registers
     expect_function_call(__wrap_CdRegisterMMIORegisterSet); // SCB->MMFAR
-    expect_not_value(__wrap_CdRegisterMMIORegisterSet, ctx, NULL);
     expect_value(__wrap_CdRegisterMMIORegisterSet, regAddress, &SCB->MMFAR);
     expect_value(__wrap_CdRegisterMMIORegisterSet, regCount, 1);
     expect_value(__wrap_CdRegisterMMIORegisterSet, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
 
     expect_function_call(__wrap_CdRegisterMMIORegisterSet); // SCB->BFAR
-    expect_not_value(__wrap_CdRegisterMMIORegisterSet, ctx, NULL);
     expect_value(__wrap_CdRegisterMMIORegisterSet, regAddress, &SCB->BFAR);
     expect_value(__wrap_CdRegisterMMIORegisterSet, regCount, 1);
     expect_value(__wrap_CdRegisterMMIORegisterSet, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
 
     expect_function_call(__wrap_CdRegisterMMIORegisterSet); // SCB->HFSR
-    expect_not_value(__wrap_CdRegisterMMIORegisterSet, ctx, NULL);
     expect_value(__wrap_CdRegisterMMIORegisterSet, regAddress, &SCB->HFSR);
     expect_value(__wrap_CdRegisterMMIORegisterSet, regCount, 1);
     expect_value(__wrap_CdRegisterMMIORegisterSet, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
 
     expect_function_call(__wrap_CdRegisterMMIORegisterSet); // SCB->CFSR
-    expect_not_value(__wrap_CdRegisterMMIORegisterSet, ctx, NULL);
     expect_value(__wrap_CdRegisterMMIORegisterSet, regAddress, &SCB->CFSR);
     expect_value(__wrap_CdRegisterMMIORegisterSet, regCount, 1);
     expect_value(__wrap_CdRegisterMMIORegisterSet, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);

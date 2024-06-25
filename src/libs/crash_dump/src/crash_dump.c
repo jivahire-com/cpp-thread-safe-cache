@@ -9,6 +9,7 @@
 
 /*--------------- Includes ---------------*/
 #include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <cmsis_m7.h>   // for __WFI
 #include <crash_dump.h> // for crash_dump_handler
 #include <stdint.h>     // for uint32_t
 
@@ -19,10 +20,10 @@
 /*-- Declarations (Statics and globals) --*/
 core_crash_context_t g_core_crash_context;
 
-__attribute__((__weak__)) NORETURN void crash_dump_wait_forever();
+__attribute__((__weak__)) FPFW_NORETURN void crash_dump_wait_forever();
 
 /*------------- Functions ----------------*/
-NORETURN void crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
+FPFW_NORETURN void crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
 {
     FPFW_UNUSED(errorCode);
     FPFW_UNUSED(p1);
@@ -37,14 +38,12 @@ NORETURN void crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2,
 /**
  * Hangs the core by WFI indefinitely
  */
-__attribute__((__weak__)) NORETURN void crash_dump_wait_forever()
+__attribute__((__weak__)) FPFW_NORETURN void crash_dump_wait_forever()
 {
-#ifndef UNIT_TEST
     while (1)
     {
-        __asm__ volatile("wfi"); // Wait for interrupt
+        __WFI();
     }
-#endif
 }
 
 void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)

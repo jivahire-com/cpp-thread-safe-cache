@@ -1,26 +1,9 @@
-set(CRASH_DUMP_SOURCE_DIR
-    ${CMAKE_SOURCE_DIR}/src/libs/crash_dump
-)
 #
 # crash dump unit test for SCP
 #
 set(TARGET crash_dump.scp.test)
 
-set(CRASH_DUMP_SOURCES
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_init.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_overrides.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_payload_core.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_payload_msft.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_payload_threadx.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/scp/crash_dump_init_scp.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/scp/crash_dump_gpio.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/scp/crash_dump_overrides.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/scp/crash_dump_payload.c
-)
-
 set(SOURCES
-    ${CRASH_DUMP_SOURCES}
     test_crash_dump.cpp
     test_crash_dump_scp.cpp
     test_crash_dump_mocks.cpp
@@ -28,8 +11,6 @@ set(SOURCES
 
 # Compile test
 add_executable(${TARGET} ${SOURCES})
-
-target_compile_definitions(${TARGET} PRIVATE UNIT_TEST)
 
 target_include_directories(${TARGET}
     PRIVATE
@@ -43,6 +24,7 @@ target_link_libraries(${TARGET}
     ms::build_data
     ms::cmocka::testrunner
     ms::cmsis::interface
+    ms::lib::crash_dump::scp
     ms::lib::threadx
     silibs::kng_silibs_platform
 )
@@ -87,20 +69,7 @@ mock_target(${TARGET}
 #
 set(TARGET crash_dump.mcp.test)
 
-set(CRASH_DUMP_SOURCES
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_init.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_overrides.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_payload_core.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_payload_msft.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_payload_threadx.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/mcp/crash_dump_gpio.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/mcp/crash_dump_overrides.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/mcp/crash_dump_payload.c
-)
-
 set(SOURCES
-    ${CRASH_DUMP_SOURCES}
     test_crash_dump.cpp
     test_crash_dump_mcp.cpp
     test_crash_dump_mocks.cpp
@@ -108,8 +77,6 @@ set(SOURCES
 
 # Compile test
 add_executable(${TARGET} ${SOURCES})
-
-target_compile_definitions(${TARGET} PRIVATE UNIT_TEST)
 
 target_include_directories(${TARGET}
     PRIVATE
@@ -123,6 +90,7 @@ target_link_libraries(${TARGET}
     ms::build_data
     ms::cmocka::testrunner
     ms::cmsis::interface
+    ms::lib::crash_dump::mcp
     ms::lib::threadx
     silibs::kng_silibs_platform
     silibs::gpio

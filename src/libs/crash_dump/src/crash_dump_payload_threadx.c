@@ -37,7 +37,7 @@
 /*-------------- Typedefs ----------------*/
 
 /*-- Declarations (Statics and globals) --*/
-STATIC CD_THREADX_DATA cdThreadXData;
+static CD_THREADX_DATA cdThreadXData;
 
 /*--------- Function Prototypes ----------*/
 

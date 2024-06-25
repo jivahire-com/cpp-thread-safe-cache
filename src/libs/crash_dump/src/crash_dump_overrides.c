@@ -12,7 +12,6 @@
 
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>  // for FPFW_UNUSED
-#include <crash_dump.h> // for STATIC
 #include <stdarg.h>     // for va_list, va_start, va_end
 #include <stdbool.h>    // for bool
 #include <stdint.h>     // for uint32_t, uint64_t
@@ -32,8 +31,8 @@ typedef struct
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-STATIC dump_callback_t pre_dump_callbacks[PRE_DUMP_CB_MAX];
-STATIC uint32_t pre_dump_cb_count = 0;
+static dump_callback_t pre_dump_callbacks[PRE_DUMP_CB_MAX];
+static uint32_t pre_dump_cb_count = 0;
 
 /*------------- Functions ----------------*/
 void crash_dump_register_pre_dump_callback(void cb(void*), void* ctx)

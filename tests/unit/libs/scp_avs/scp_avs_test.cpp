@@ -200,10 +200,27 @@ TEST_FUNCTION(scp_avs_dispatch_test_read, test_setup, test_cleanup)
 TEST_FUNCTION(scp_avs_dispatch_test_write, test_setup, test_cleanup)
 {
     test_avs_device.avs_bus_num = AVS_BUS0;
-    scp_avs_command_params_t test_command_params = {};
-
-    test_avs_Request.avs_params = test_command_params;
+    test_avs_Request.avs_params.cmd_type = AVS_VOLTAGE_RW;
+    test_avs_Request.avs_params.rail_id = 1;
+    test_avs_Request.avs_params.data.avs_data = 995;
     test_avs_Request.Header.RequestType = AVS_REQUEST_WRITE_DATA;
+
+    expect_value(__wrap_avs_send_cmd_frame, avs_id, AVS_BUS0);
+    expect_value(__wrap_avs_send_cmd_frame, cmd_num, 2);
+
+    avs_master_command_t avs_test_buffer[2] = {};
+
+    avs_test_buffer[0].command_data = 995;
+    avs_test_buffer[0].command_data_type = AVS_VOLTAGE_RW;
+    avs_test_buffer[0].command_type = 1; // rail ID
+    avs_test_buffer[0].command_control = AVS_CMD_WRITE_COMMIT;
+    avs_test_buffer[0].command_group = AVS_CGROUP;
+    avs_test_buffer[1].command_data_type = AVS_VOLTAGE_RW;
+    avs_test_buffer[1].command_type = 1;
+    avs_test_buffer[1].command_group = AVS_CGROUP;
+    avs_test_buffer[1].command_control = AVS_CMD_READ;
+
+    expect_memory(__wrap_avs_send_cmd_frame, cmd_mem, avs_test_buffer, sizeof(avs_test_buffer));
 
     scp_avs_dispatch(&test_avs_Request.Header, nullptr);
     assert_int_equal((uintptr_t)test_avs_device.outstanding_request, (uintptr_t)&test_avs_Request);

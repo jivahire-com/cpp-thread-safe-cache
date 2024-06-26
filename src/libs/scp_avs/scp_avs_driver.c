@@ -77,51 +77,68 @@ void scp_avs_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
     int status = SILIBS_SUCCESS;
 
     avs_master_command_t avs_buffer[AVS_CMD_BUFF_SIZE] = {};
+    uint32_t scp_avs_cmd_num = 0; // Entry number in the command frame array.
 
-    avs_master_command_t* avs_command = (avs_master_command_t*)&avs_buffer;
-    avs_command[0].command_data_type = avs_request->avs_params.cmd_type; // used for single reads/writes.
-    avs_command[0].command_type = avs_request->avs_params.rail_id;
-    avs_command[0].command_group = AVS_CGROUP;
+    avs_buffer[0].command_data_type = avs_request->avs_params.cmd_type;
+    avs_buffer[0].command_type = avs_request->avs_params.rail_id;
+    avs_buffer[0].command_group = AVS_CGROUP;
 
     printf("\n scp_avs_dispatch\n");
 
     switch (Request->RequestType)
     {
     case AVS_REQUEST_READ_DATA:
+        scp_avs_cmd_num = 1;
         device->outstanding_request = avs_request;
         printf("\n AVS_REQUEST_READ_DATA, avs_bus = %x, rail = %x, cmd = %x\n",
                device->avs_bus_num,
                avs_request->avs_params.rail_id,
                avs_request->avs_params.cmd_type);
-        avs_command[0].command_control = AVS_CMD_READ;
+        avs_buffer[0].command_control = AVS_CMD_READ;
 
-        status = avs_send_cmd_frame(device->avs_bus_num, 1, avs_command);
+        status = avs_send_cmd_frame(device->avs_bus_num, scp_avs_cmd_num, avs_buffer);
         break;
 
     case AVS_REQUEST_WRITE_DATA:
-        avs_command[0].command_control = AVS_CMD_WRITE_COMMIT;
+        scp_avs_cmd_num = 0;
         device->outstanding_request = avs_request;
-        // This is where the actual write to the AVS goes.
-        // int avs_send_cmd_frame(uint32_t avs_id, uint32_t cmd_num, avs_master_command_t *cmd_mem)
+        printf("\n AVS_REQUEST_WRITE_DATA, avs_bus = %x, rail = %x, cmd = %x, data = %u\n",
+               device->avs_bus_num,
+               avs_request->avs_params.rail_id,
+               avs_request->avs_params.cmd_type,
+               (int)avs_request->avs_params.data.avs_data);
+        avs_buffer[scp_avs_cmd_num].command_control = AVS_CMD_WRITE_COMMIT;
+        avs_buffer[scp_avs_cmd_num].command_data = avs_request->avs_params.data.avs_data;
+
+        scp_avs_cmd_num++;
+
+        avs_buffer[scp_avs_cmd_num].command_type = avs_request->avs_params.rail_id;
+        avs_buffer[scp_avs_cmd_num].command_data_type = AVS_VOLTAGE_RW;
+        avs_buffer[scp_avs_cmd_num].command_group = AVS_CGROUP;
+        avs_buffer[scp_avs_cmd_num].command_control = AVS_CMD_READ;
+
+        scp_avs_cmd_num++; // two commands sent, write then read to verify data written
+
+        status = avs_send_cmd_frame(device->avs_bus_num, scp_avs_cmd_num, avs_buffer);
         break;
 
     case AVS_REQUEST_READ_ALL_VCT:
         device->outstanding_request = avs_request;
-        avs_command[0].command_control = AVS_CMD_READ;
+        avs_buffer[0].command_control = AVS_CMD_READ;
         // This is where the actual read all to the AVS goes.
         // int avs_send_cmd_frame(uint32_t avs_id, uint32_t cmd_num, avs_master_command_t *cmd_mem)
         break;
 
     case AVS_REQUEST_READ_MULTI:
         device->outstanding_request = avs_request;
-        avs_command[0].command_control = AVS_CMD_READ;
+        avs_buffer[0].command_control = AVS_CMD_READ;
         // This is where the actual read multi to the AVS goes.
         // int avs_send_cmd_frame(uint32_t avs_id, uint32_t cmd_num, avs_master_command_t *cmd_mem)
         break;
 
     case AVS_REQUEST_WRITE_MULTI:
         device->outstanding_request = avs_request;
-        avs_command[0].command_control = AVS_CMD_WRITE_COMMIT;
+        avs_buffer[0].command_control = AVS_CMD_WRITE_COMMIT;
         // This is where the actual write multi to the AVS goes.
         // int avs_send_cmd_frame(uint32_t avs_id, uint32_t cmd_num, avs_master_command_t *cmd_mem)
         break;
@@ -165,11 +182,30 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         {
             // Populate the data to be sent to the client.
             original_request->avs_response_single_resp = (int16_t)(scp_avs_resp_buf[scp_avs_resp_idx] & 0xFFFF);
-            printf(" AVS raw data read:  %0x\n", (int16_t)scp_avs_resp_buf[scp_avs_resp_idx]);
+            printf(" AVS raw data read: 0x%0x\n", (int16_t)scp_avs_resp_buf[scp_avs_resp_idx]);
         }
         break;
 
     case AVS_REQUEST_WRITE_DATA:
+        scp_avs_resp_idx = 0;
+        scp_avs_resp_num = 2; // setting to 2 since two commands (1st is the write command, 2nd is the read of the data to verify)
+        status = avs_get_cmd_resp_data(device->avs_bus_num, scp_avs_resp_idx, scp_avs_resp_num, scp_avs_resp_buf);
+
+        if (status != SILIBS_SUCCESS)
+        {
+            printf("\n avs_get_cmd_resp_data (AVS Write) failure!\n");
+            original_request->avs_response_status = status;
+        }
+        else
+        {
+            // Populate the data to be sent to the client. scp_avs_resp_buf[0] contains the write status.
+            // scp_avs_resp_buf[1] contains the data from the read which was executed immediately after the write.
+            // So scp_avs_resp_buf[(scp_avs_resp_idx + 1)] is sent to the client, which should match the value of the voltage written.
+            original_request->avs_response_single_resp = (int16_t)(scp_avs_resp_buf[(scp_avs_resp_idx + 1)] & 0xFFFF);
+            printf(" AVS Write. Raw data read after write: 0x%0x\n", (int16_t)scp_avs_resp_buf[1]);
+        }
+        break;
+
     case AVS_REQUEST_READ_ALL_VCT:
     case AVS_REQUEST_READ_MULTI:
     case AVS_REQUEST_WRITE_MULTI:

@@ -161,6 +161,133 @@
           "Description": "Bug Log due to a condition evaluating to false. Trace event gets generated"
         }
       ]
+    },
+    {
+      "Facility_Name": "FACILITY_SOCPOWER",
+      "Facility_Value": 58,
+      "Facility_Description": "This is for error codes within SOC power module",
+      "Errors": [
+        {
+          "Name": "KNG_SC_UNUSED_ERROR",
+          "Value": 0,
+          "Description": "Do not use, defined to prevent use of 0 as error code."
+        },
+        {
+          "Name": "KNG_SC_FWK_ERROR",
+          "Value": 1,
+          "Description": "Unexpected error from FWK received"
+        },
+        {
+          "Name": "KNG_SC_CORE_ODCM_INIT",
+          "Value": 2,
+          "Description": "Core ODCM initialization error"
+        },
+        {
+          "Name": "KNG_SC_CORE_DVFS_CFG_INIT",
+          "Value": 3,
+          "Description": "Core DVFS config error"
+        },
+        {
+          "Name": "KNG_SC_CORE_DVFS_INIT",
+          "Value": 4,
+          "Description": "Core DFVS initialization error"
+        },
+        {
+          "Name": "KNG_SC_TILE_PVT_INIT",
+          "Value": 5,
+          "Description": "Tile PVT initialization error"
+        },
+        {
+          "Name": "KNG_SC_TILE_PVT_RECONFIG",
+          "Value": 6,
+          "Description": "Tile PVT reconfiguration (warmstart) error"
+        },
+        {
+          "Name": "KNG_SC_CORE_WAIT_FLL_CAL",
+          "Value": 7,
+          "Description": "Core FLL calibration error"
+        },
+        {
+          "Name": "KNG_SC_SOC_PVT_INIT",
+          "Value": 8,
+          "Description": "SOC PVT initialization error"
+        },
+        {
+          "Name": "KNG_SC_FUSE_LDO_MVOLT_CONV",
+          "Value": 9,
+          "Description": "Error using fused values for LDODAC to mV conversion"
+        },
+        {
+          "Name": "KNG_SC_FUSE_GEN_VFT",
+          "Value": 10,
+          "Description": "Error using fused values to generate VFT"
+        },
+        {
+          "Name": "KNG_SC_FUSE_CURVE_ASSIGNMENT",
+          "Value": 11,
+          "Description": "Fused curve assignment for core out of bounds"
+        },
+        {
+          "Name": "KNG_SC_WARMSTART_DATA_MISSING",
+          "Value": 12,
+          "Description": "Warmstart data not present on warmstart"
+        },
+        {
+          "Name": "KNG_SC_WARMSTART_DATA_VERSION",
+          "Value": 13,
+          "Description": "Warmstart data found, but too small to contain version info"
+        },
+        {
+          "Name": "KNG_SC_WARMSTART_DATA_CORRUPT",
+          "Value": 14,
+          "Description": "Warmstart data found, but insufficient"
+        },
+        {
+          "Name": "KNG_SC_WARMSTART_DATA_UNKNOWN",
+          "Value": 15,
+          "Description": "Warmstart data found, but doesn't match a known version"
+        },
+        {
+          "Name": "KNG_SC_FUSE_L2V_SLOPE",
+          "Value": 16,
+          "Description": "LDODAC to voltage gradient is missing"
+        },
+        {
+          "Name": "KNG_SC_FUSE_DTS_Y",
+          "Value": 17,
+          "Description": "DTS Y coefficient is 0 (would cause div by 0)"
+        },
+        {
+          "Name": "KNG_SC_FUSE_TDP_NUM_CORES",
+          "Value": 18,
+          "Description": "TDP num cores 0 (would cause div by 0)"
+        },
+        {
+          "Name": "KNG_SC_COREPLL_LOCK",
+          "Value": 19,
+          "Description": "Core PLL lock interrupt received"
+        },
+        {
+          "Name": "KNG_SC_COREPLL_UNLOCK",
+          "Value": 20,
+          "Description": "Core PLL unlock interrupt received"
+        },
+        {
+          "Name": "KNG_SC_FUSE_INVALID_NOMINAL",
+          "Value": 21,
+          "Description": "Fuse or knob override of nominal pstate not supported by all cores"
+        },
+        {
+          "Name": "KNG_SC_FUSE_UNSUPPORTED_PMMREV",
+          "Value": 22,
+          "Description": "Fused PMM rev not known by FW"
+        },
+        {
+          "Name": "KNG_SC_NO_VALID_PSTATES",
+          "Value": 23,
+          "Description": "Fused curve has no valid pstates"
+        }
+      ]
     }
   ]
 }

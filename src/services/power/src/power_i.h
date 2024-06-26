@@ -36,11 +36,6 @@
 /* other helper macros */
 #define FLOAT_TO_UNSIGNED(x) ((unsigned)(x + 0.5f))
 
-/* temporary */
-#define BUG_CHECK(code, param1, param2)            FPFW_RUNTIME_ASSERT(false)
-#define BUG_ASSERT(condition)                      FPFW_RUNTIME_ASSERT(condition)
-#define BUG_ASSERT_PARAM(expected, param1, param2) FPFW_RUNTIME_ASSERT(expected)
-
 // Helpers for DTS Coefficient values taken from fuses:
 // temp as these should go in pvt_struct.h; use only if not already defined
 #define DTS_K_COEFF_FUSED_TEMP(fused_k) (-1.0F * (float)fused_k)

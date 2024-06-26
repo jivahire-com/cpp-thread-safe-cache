@@ -1,8 +1,7 @@
 # SCP Crash dump
 set(TARGET kng.lib.crash_dump.scp)
 
-add_library(${TARGET}
-    STATIC
+set (SOURCES 
         src/crash_dump.c
         src/crash_dump_init.c
         src/crash_dump_overrides.c
@@ -15,10 +14,21 @@ add_library(${TARGET}
         src/scp/crash_dump_payload.c
 )
 
+if("$ENV{REPO_APP_TOOLCHAIN}" STREQUAL "i386-pc-windows-msvc")
+    set (SOURCES ${SOURCES} src/win32/crash_dump_dummy_symbols.c)
+endif()
+
+add_library(${TARGET}
+    STATIC
+        ${SOURCES}
+)
+
 target_link_libraries(${TARGET}
+    PUBLIC
+        fwlib.lib.crashDump
+        ms::lib::debug
     PRIVATE
         fwlib.lib.assert
-        fwlib.lib.crashDump
         ms::build_data
         ms::cmsis::interface
         silibs::kng_silibs_platform
@@ -41,8 +51,7 @@ add_library(ms::lib::crash_dump::scp ALIAS ${TARGET})
 # MCP Crash dump
 set(TARGET kng.lib.crash_dump.mcp)
 
-add_library(${TARGET}
-    STATIC
+set (SOURCES 
         src/crash_dump.c
         src/crash_dump_init.c
         src/crash_dump_overrides.c
@@ -54,10 +63,21 @@ add_library(${TARGET}
         src/mcp/crash_dump_payload.c
 )
 
+if("$ENV{REPO_APP_TOOLCHAIN}" STREQUAL "i386-pc-windows-msvc")
+    set (SOURCES ${SOURCES} src/win32/crash_dump_dummy_symbols.c)
+endif()
+
+add_library(${TARGET}
+    STATIC
+        ${SOURCES}
+)
+
 target_link_libraries(${TARGET}
+    PUBLIC
+        fwlib.lib.crashDump
+        ms::lib::debug
     PRIVATE
         fwlib.lib.assert
-        fwlib.lib.crashDump
         ms::build_data
         ms::cmsis::interface
         silibs::kng_silibs_platform

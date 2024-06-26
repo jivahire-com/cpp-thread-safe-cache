@@ -12,8 +12,6 @@
 /*------------- Includes -----------------*/
 #include "debug.h"
 
-#include "bugcheck.h"
-
 #include <inttypes.h>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -153,38 +151,6 @@ char* tx_str(int result)
         return "TX_FEATURE_NOT_ENABLED";
     default:
         return "unknown";
-    }
-}
-
-void _bugcheck(uint32_t bugcheck_code, uint32_t arg0, uint32_t arg1, uint32_t arg2)
-{
-    printf("BUGCHECK(%08" PRIx32 ", %08" PRIx32 ", %08" PRIx32 ", %08" PRIx32 ")\n", bugcheck_code, arg0, arg1, arg2);
-
-    switch (bugcheck_code)
-    {
-    case BUGCHECK_FAILFAST:
-        printf("Failfast in %s:%s\n", (char*)arg2, number_to_string(arg1));
-        break;
-    case BUGCHECK_ASSERT:
-        printf("Assertion false in %s:%s\n", (char*)arg2, number_to_string(arg1));
-        break;
-    case BUGCHECK_ASSERT_EQ:
-    case BUGCHECK_ASSERT_NEQ:
-        printf("Assertion failed in %s:%s\n", (char*)arg2, number_to_string(arg1));
-        printf("Actual value is \"0x%08" PRIx32 "\".\n", arg0);
-        break;
-    case BUGCHECK_ASSERT_TX_SUCCESS:
-        printf("Assertion failed in %s:%s\n", (char*)arg2, number_to_string(arg1));
-        printf("Result is \"0x%02" PRIx32 "\": %s\n", arg0, tx_str(arg0));
-        break;
-    }
-    (void)bugcheck_code;
-    (void)arg0;
-    (void)arg1;
-    (void)arg2;
-    while (1)
-    {
-        // @TODO - Implement with bugcheck / crashdump handling
     }
 }
 

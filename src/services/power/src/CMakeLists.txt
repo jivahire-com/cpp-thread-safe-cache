@@ -36,6 +36,8 @@ target_link_libraries(${TARGET}
         fwlib.lib.status
         ms::client_interface::startup_shutdown
         ms::lib::event_trace::trace
+        ms::lib::crash_dump::scp
+        ms::lib::error_codes
 )
 
 lint_target(${TARGET})

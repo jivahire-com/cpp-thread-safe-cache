@@ -30,10 +30,6 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-uint8_t __stack_start__ = 0;
-uint8_t __stack_end__ = 0;
-uint8_t _build_id_msdata_start = 0;
-
 FPFwCrashDumpCtx* mock_crash_dump_ctx;
 FPFwCDMemPoolCtx* mock_memPoolCtx;
 FPFwCDDumpDescriptorCtx* mock_descCtx;

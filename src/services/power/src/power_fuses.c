@@ -13,6 +13,7 @@
 #include "pvt_struct.h"        // for TILE_PVT_NUM_CHANNELS_DTS
 
 #include <FpFwAssert.h>        // for FPFW_RUNTIME_ASSERT
+#include <bug_check.h>         // for BUG_CHECK
 #include <corebits.h>          // for corebits_set_bit, corebits_clear_bit
 #include <dvfs_struct.h>       // for dvfs_core_memasst_entry_t, dvfs_core_...
 #include <fpfw_status.h>       // for FPFW_STATUS_SUCCESS, FPFW_STATUS_INVA...
@@ -158,7 +159,7 @@ uint8_t power_fuses_get_pmm_rev()
         // these are known PMM revisions supported by this file
         break;
     default:
-        BUG_CHECK(CC_SC_FUSE_UNSUPPORTED_PMMREV, pmm_rev, 0);
+        BUG_CHECK(KNG_SC_FUSE_UNSUPPORTED_PMMREV, pmm_rev, 0);
     }
 
     return pmm_rev;
@@ -208,7 +209,7 @@ int32_t power_fuses_get_dts_coeff(uint32_t k_offset,
             if (fuse_data_y == 0)
             {
                 POWER_LOG_CRIT(MODULE_NAME "DTS coeff y_val at 0x%x is 0", (unsigned int)y_offset);
-                BUG_CHECK(CC_SC_FUSE_DTS_Y, (uint16_t)fuse_data_y, y_offset);
+                BUG_CHECK(KNG_SC_FUSE_DTS_Y, (uint16_t)fuse_data_y, y_offset);
             }
 
             // read DTS K value
@@ -364,7 +365,7 @@ int32_t power_fuses_get_ldodac_to_voltage(dvfs_vf_slope_t* slope_offset)
     if ((fuse_data == 0) || (status != FPFW_STATUS_SUCCESS))
     {
         POWER_LOG_CRIT(MODULE_NAME "ldodac_to_voltage gradient is 0");
-        BUG_CHECK(CC_SC_FUSE_L2V_SLOPE, (uint16_t)fuse_data, 0);
+        BUG_CHECK(KNG_SC_FUSE_L2V_SLOPE, (uint16_t)fuse_data, 0);
     }
     slope_offset->slope_uvolt = (uint16_t)fuse_data;
 

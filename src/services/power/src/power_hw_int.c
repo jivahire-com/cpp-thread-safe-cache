@@ -21,6 +21,7 @@
 
 #include <FpFwAssert.h>    // for FPFW_RUNTIME_ASSERT
 #include <assert.h>        // for static_assert
+#include <bug_check.h>     // for BUG_CHECK
 #include <corebits.h>      // for corebits_is_bit_set
 #include <dvfs.h>          // for dvfs_get_cppc_from_pstate, dvfs_pll_g...
 #include <dvfs_regs.h>     // for (anonymous union)::(anonymous), dvfs_...
@@ -333,7 +334,7 @@ static void power_init_update_dvfs_cfg_core(const power_runconfig_t* p_runconfig
 
         POWER_ET_FATAL(POWER_ET_TYPE_CURVE_HAS_NO_VALID_PSTATES, 0, POWER_ET_ENCODE_DETAIL_CORE(assigned_vft, core));
 
-        BUG_CHECK(CC_SC_NO_VALID_PSTATES, core, assigned_vft);
+        BUG_CHECK(KNG_SC_NO_VALID_PSTATES, core, assigned_vft);
     }
     p_dvfs_cfg->fuse_cfg.core_disabled = false;
     // use assigned VF table
@@ -595,7 +596,7 @@ void power_warm_init_core_reset_pvt(const power_runconfig_t* p_runconfig)
             if (return_value != PVT_SUCCESS)
             {
                 POWER_LOG_CRIT("tile_pvt_sda_reconfig for tile %d returned %d", (int)tile_num, return_value);
-                BUG_CHECK(CC_SC_TILE_PVT_RECONFIG, tile_num, return_value);
+                BUG_CHECK(KNG_SC_TILE_PVT_RECONFIG, tile_num, return_value);
             }
         }
     }
@@ -721,7 +722,7 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
             if (return_value != ODCM_SUCCESS)
             {
                 POWER_LOG_CRIT("odcm_init for core %d returned %d", core, return_value);
-                BUG_CHECK(CC_SC_CORE_ODCM_INIT, core, return_value);
+                BUG_CHECK(KNG_SC_CORE_ODCM_INIT, core, return_value);
             }
 
             // update dvfs config, including core-specific init
@@ -744,7 +745,7 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
         if (return_value != DVFS_SUCCESS)
         {
             POWER_LOG_CRIT("dvfs_init for core %d returned %d", core, return_value);
-            BUG_CHECK(CC_SC_CORE_DVFS_INIT, core, return_value);
+            BUG_CHECK(KNG_SC_CORE_DVFS_INIT, core, return_value);
         }
 
         /* One tile per two cores */
@@ -761,7 +762,7 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
             if (return_value != PVT_SUCCESS)
             {
                 POWER_LOG_CRIT("tile_pvt_init for tile %d returned %d", (int)tile_num, return_value);
-                BUG_CHECK(CC_SC_TILE_PVT_INIT, tile_num, return_value);
+                BUG_CHECK(KNG_SC_TILE_PVT_INIT, tile_num, return_value);
             }
         }
     }
@@ -784,7 +785,7 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
             if (return_value != DVFS_SUCCESS)
             {
                 POWER_LOG_CRIT("wait_for_FLLCalDone on core %d returned %d", core, return_value);
-                BUG_CHECK(CC_SC_CORE_WAIT_FLL_CAL, core, return_value);
+                BUG_CHECK(KNG_SC_CORE_WAIT_FLL_CAL, core, return_value);
             }
         }
     }
@@ -812,7 +813,7 @@ void power_init_soc(const power_runconfig_t* p_runconfig)
     if (status != PVT_SUCCESS)
     {
         POWER_LOG_CRIT("soc_pvt_init returned %d", status);
-        BUG_CHECK(CC_SC_SOC_PVT_INIT, 0, status);
+        BUG_CHECK(KNG_SC_SOC_PVT_INIT, 0, status);
     }
 }
 

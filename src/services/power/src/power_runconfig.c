@@ -16,7 +16,8 @@
 #include "power_i.h"
 #include "power_runconfig_i.h"
 
-#include <corebits.h> // for corebits_is_bit_set, corebits_is_clear
+#include <bug_check.h> // for BUG_CHECK
+#include <corebits.h>  // for corebits_is_bit_set, corebits_is_clear
 #include <dvfs.h>
 #include <dvfs_struct.h>   // for dvfs_vft_t, NUM_PSTATES, dvfs_vf_fuse...
 #include <silibs_common.h> // for MAX, MIN
@@ -71,7 +72,7 @@ static void runconfig_generate_derived_vfts()
         int status = power_fuses_get_curve_assignment(core_idx, (uint32_t*)&curve_assignment);
         if ((curve_assignment >= VFT_CURVESET_COUNT) || (status != FPFW_STATUS_SUCCESS))
         {
-            BUG_CHECK(CC_SC_FUSE_CURVE_ASSIGNMENT, core_idx, curve_assignment);
+            BUG_CHECK(KNG_SC_FUSE_CURVE_ASSIGNMENT, core_idx, curve_assignment);
         }
         corebits_set_bit(&power_runconfig.derived.vfts[curve_assignment].assigned_cores, core_idx);
         power_runconfig.derived.assigned_vft[core_idx] = curve_assignment;
@@ -90,7 +91,7 @@ static void runconfig_generate_derived_vfts()
                                                  &power_runconfig.dvfs_vft.curveset[vf_idx].curve[crv_idx]);
             if (DVFS_SUCCESS != status)
             {
-                BUG_CHECK(CC_SC_FUSE_GEN_VFT, vf_idx, status);
+                BUG_CHECK(KNG_SC_FUSE_GEN_VFT, vf_idx, status);
             }
             // track min_plimit to ensure all curves have same
             if (crv_idx > 0)
@@ -133,7 +134,7 @@ static void runconfig_generate_derived_vfts()
                     &voltage_mv);
                 if (DVFS_SUCCESS != status)
                 {
-                    BUG_CHECK(CC_SC_FUSE_LDO_MVOLT_CONV, (pstate_idx << 16) | vf_idx, status);
+                    BUG_CHECK(KNG_SC_FUSE_LDO_MVOLT_CONV, (pstate_idx << 16) | vf_idx, status);
                 }
                 found_voltage_mv = MAX(found_voltage_mv, voltage_mv);
             }
@@ -159,7 +160,7 @@ static void runconfig_generate_derived_tdp()
     // check that all cores support nominal
     if (power_runconfig.derived.pnominal < get_global_min_plimit())
     {
-        BUG_CHECK(CC_SC_FUSE_INVALID_NOMINAL, power_runconfig.derived.pnominal, get_global_min_plimit());
+        BUG_CHECK(KNG_SC_FUSE_INVALID_NOMINAL, power_runconfig.derived.pnominal, get_global_min_plimit());
     }
 
     // determine if knob override or fused value used for thermal watts limit

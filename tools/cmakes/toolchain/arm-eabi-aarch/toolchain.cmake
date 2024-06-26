@@ -42,3 +42,9 @@ file(GLOB COMMON_LINK_FILES ${CMAKE_CURRENT_LIST_DIR}/ld/*.ld)
 define_property(TARGET PROPERTY FIRMWARE_BIN 
     BRIEF_DOCS "Binary file of the output firmware" 
     FULL_DOCS "Binary file of the output firmware")
+
+# temporarily enable optimization for size
+# revert:  https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/1885631
+add_compile_options(
+    "-Os"
+)

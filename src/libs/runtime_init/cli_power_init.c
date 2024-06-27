@@ -1,3 +1,7 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
 /**
  * @file cli_power_init.c
  * Instantiates power cli for SCP
@@ -19,8 +23,12 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(cli_pwr, FPFW_INIT_DEPENDENCIES("cli", "pwr_svc"))
+FPFW_INIT_COMPONENT(cli_pwr, FPFW_INIT_DEPENDENCIES("cli", "pwr_int"))
 {
-    FPFW_CLI_STATUS status = cli_power_init();
-    return (fpfw_init_result_t){status, NULL};
+    static power_service_interface_t* power_interface;
+    
+    // printf("Initializing Power CLI\n");
+    power_interface = (power_service_interface_t*)fpfw_init_get_handle("pwr_int");
+
+    return (fpfw_init_result_t){cli_power_init(power_interface), NULL};
 }

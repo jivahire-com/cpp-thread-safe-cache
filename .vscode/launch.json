@@ -19,7 +19,7 @@
             "miDebuggerPath":  "${workspaceFolder}/.externs/azpkg/gdb.arm.eabi.aarch-win64.8.3.201903/arm-none-eabi-gdb.exe",
             "miDebuggerArgs":  "--symbols=${workspaceFolder}/.build/Debug/arm-eabi-aarch/bin/mcp/mcp_fw.elf",
             // port determined from svp launch configuration
-            "miDebuggerServerAddress": "localhost:12352",
+            "miDebuggerServerAddress": "localhost:12366",
             "program": "${workspaceFolder}/.build/Debug/arm-eabi-aarch/bin/mcp/mcp_fw.elf",
             "args": [],
             "MIMode": "gdb",
@@ -27,7 +27,7 @@
             "customLaunchSetupCommands": [
                 {
                     // port determined from svp launch configuration
-                    "text": "target remote localhost:12352",
+                    "text": "target remote localhost:12366",
                     "description": "Attach to remote target",
                     "ignoreFailures": false
                 }
@@ -41,7 +41,7 @@
             "miDebuggerPath":  "${workspaceFolder}/.externs/azpkg/gdb.arm.eabi.aarch-win64.8.3.201903/arm-none-eabi-gdb.exe",
             "miDebuggerArgs":  "--symbols=${workspaceFolder}/.build/Debug/arm-eabi-aarch/bin/scp/scp_fw.elf",
             // port determined from svp launch configuration
-            "miDebuggerServerAddress": "localhost:12353",
+            "miDebuggerServerAddress": "localhost:12367",
             "program": "${workspaceFolder}/.build/Debug/arm-eabi-aarch/bin/scp/scp_fw.elf",
             "args": [],
             "MIMode": "gdb",
@@ -49,7 +49,7 @@
             "customLaunchSetupCommands": [
                 {
                     // port determined from svp launch configuration
-                    "text": "target remote localhost:12353",
+                    "text": "target remote localhost:12367",
                     "description": "Attach to remote target",
                     "ignoreFailures": false
                 }

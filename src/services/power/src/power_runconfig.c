@@ -34,11 +34,33 @@
 
 static power_runconfig_t power_runconfig = {};
 
+power_runconfig_dictionary_element_t power_runconfig_dictionary[] = {
+    {POWER_RUNCONFIG_FUSES, &power_runconfig.fuses},
+    {POWER_RUNCONFIG_KNOBS, &power_runconfig.knobs},
+};
+
+const uint32_t length_power_runconfig_dictionary =
+    sizeof(power_runconfig_dictionary) / sizeof(power_runconfig_dictionary_element_t);
+
 /*------------- Functions ----------------*/
 
 power_runconfig_t* power_runconfig_get()
 {
     return &power_runconfig;
+}
+
+void* power_runconfig_get_element(power_runconfig_element_t id)
+{
+    for (uint32_t index = 0; index < length_power_runconfig_dictionary; index++)
+    {
+        /* Return the pointer to the element referenced by the power runconfig element ID */
+        if (id == power_runconfig_dictionary[index].id)
+        {
+            return power_runconfig_dictionary[index].p_runconfig_element;
+        }
+    }
+
+    return NULL;
 }
 
 /* function to return the min_plimit supported by all cores */

@@ -562,6 +562,14 @@ typedef struct _power_derived_config_t
     uint8_t pnominal;                           // nominal pstate
 } power_derived_config_t;
 
+/* List of different kinds of elements that can be queried from the runconfig structure*/
+typedef enum {
+    POWER_RUNCONFIG_KNOBS, 
+    POWER_RUNCONFIG_FUSES,
+
+    POWER_RUNCONFIG_UNKNOWN
+} power_runconfig_element_t;
+
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus
 extern "C" {

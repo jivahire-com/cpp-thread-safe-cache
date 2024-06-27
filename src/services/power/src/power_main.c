@@ -33,8 +33,9 @@
 
 /*------------- Functions ----------------*/
 
-static void power_service_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
+static void power_service_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 {
+
     FPFW_UNUSED(p_context);
 
     switch (p_request->RequestType)
@@ -65,6 +66,21 @@ static void power_service_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p
         DfwkAsyncRequestComplete(p_request);
     }
     break;
+    case CLI_COMMANDS_POWER_CONFIG: {
+        ppower_service_cli_request_t p_cli_request = (ppower_service_cli_request_t)p_request;
+
+        /* Pass the pointer to the requested data through the CompletionContext */
+        p_cli_request->p_requested_data = power_runconfig_get_element(p_cli_request->power_runconfig_element_id);
+        DfwkAsyncRequestComplete(p_request);
+    }
+    break;
+    case CLI_COMMANDS_POWER_STATUS:
+    case CLI_COMMANDS_POWER_SET:
+    case CLI_COMMANDS_POWER_LOG: {
+        // Placeholder to service `pwr set`, `pwr status` and `pwr log` async commands
+        DfwkAsyncRequestComplete(p_request);
+    }
+    break;
     default:
         FPFW_RUNTIME_ASSERT(false);
         break;
@@ -75,6 +91,14 @@ static int32_t power_service_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER p_request)
 {
     switch (p_request->RequestType)
     {
+    case CLI_COMMANDS_POWER_CONFIG:
+    // Placeholder to service `pwr cfg_knobs` sync command
+    case CLI_COMMANDS_POWER_SET:
+    // Placeholder to service `pwr set` sync command
+    case CLI_COMMANDS_POWER_STATUS:
+    // Placeholder to service `pwr status` sync command
+    case CLI_COMMANDS_POWER_LOG:
+    // Placeholder to service `pwr log` sync command
     default:
         FPFW_RUNTIME_ASSERT(false);
         break;
@@ -92,7 +116,7 @@ void power_init(ppower_service_t p_device, PDFWK_SCHEDULE p_schedule, const powe
 {
     POWER_LOG_INFO("power_init");
     DfwkDeviceInitialize(&p_device->header, p_schedule);
-    DfwkQueueInitialize(&p_device->default_queue, &p_device->header, power_service_dispatch, &p_device->header, DfwkQueueType_SerializedDispatch);
+    DfwkQueueInitialize(&p_device->default_queue, &p_device->header, power_service_dispatch_async, &p_device->header, DfwkQueueType_SerializedDispatch);
 
     // intialize power service runtime configuration (knobs, fuses, static config, etc)
     power_runconfig_init(p_config);

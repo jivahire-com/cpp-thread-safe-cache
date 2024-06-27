@@ -46,15 +46,15 @@ This document is intended to describe the design detail for the module implement
 | KG Power Delivery Tracker | [Link](https://microsoft.sharepoint.com/teams/EchoFalls/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2FEchoFalls%2FShared%20Documents%2FKingsgate%20SOC%2FSIPI%2FPI%2FPowerDeliveryTracker&p=true&ga=1&ovuser=72f988bf%2D86f1%2D41af%2D91ab%2D2d7cd011db47%2Ctimphi%40microsoft%2Ecom&OR=Teams%2DHL&CT=1716318033088&clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiI0OS8yNDA1MDMwNzYxMCIsIkhhc0ZlZGVyYXRlZFVzZXIiOmZhbHNlfQ%3D%3D) |
 ## Requirements 
 
- - Shall limit SOC power to the minimum of the provided power cap or the configured maximums (thermal/electrical limit)
-   -  Shall limit to provided power cap 
-   -  Shall limit to configured max power budget when provided cap not present 
-   -  Shall make use of OSPM provided throttling priorities and OSPMNominalPerformance when configured for per-VM power capping; otherwise if configured for all-core power capping, cores will be throttled uniformly 
-   -  Within constraints of power limit; shall opportunistically seek to raise frequencies above OSPMNominalPerformance taking into account OSPM provided boost priorities (aka turbo/boost) 
- - Shall configure HW control loops for adaptive clocking, thermal, and current limiting 
- - Shall generate SCF telemetry packets (writes to sensor RAM) for SOC TOP (PVT) sensors and SOC VRs 
- - Shall collect adaptive clocking droop counts and provide to telemetry service
- - Shall collect core aging monitor output on configured cadence (daily) and provide to telemetry service
+- Shall limit SOC power to the minimum of the provided power cap or the configured maximums (thermal/electrical limit)
+  - Shall limit to provided power cap
+  - Shall limit to configured max power budget when provided cap not present
+  - Shall make use of OSPM provided throttling priorities and OSPMNominalPerformance when configured for per-VM power capping; otherwise if configured for all-core power capping, cores will be throttled uniformly
+  - Within constraints of power limit; shall opportunistically seek to raise frequencies above OSPMNominalPerformance taking into account OSPM provided boost priorities (aka turbo/boost)
+- Shall configure HW control loops for adaptive clocking, thermal, and current limiting
+- Shall generate SCF telemetry packets (writes to sensor RAM) for SOC TOP (PVT) sensors and SOC VRs
+- Shall collect adaptive clocking droop counts and provide to telemetry service
+- Shall collect core aging monitor output on configured cadence (daily) and provide to telemetry service
  - Shall provide calculation of SOC power to BMC 
  - Shall provide (through PLDM) interface to BMC for power capping
 
@@ -169,6 +169,7 @@ These knobs are available for debug and test purposes.  Once the project reaches
 > Italicized knobs are new/updated for KNG - some are simply die0/1, vcpu0/1 splits of knobs
 
 ### **Power Control Loop**
+
 The power control loop is responsible for limiting CPU performance to meet the given power requirement (the lesser of max, and an active power cap).  It does this while also attempting to achieve the per-core performance requested by the OS/hypervisor.
 At its core, the power control loop implements a PID control to determine the performance which can be distributed to the CPU cores--the proportional, integral and derivative coefficients of which are available to be tuned via configuration variables.
 The beginning of loop activity is triggered by a periodic timer event.
@@ -313,13 +314,17 @@ stateDiagram-v2
     Error --> [*]
 
 ```
+
 #### **Idle**
+
 This is the default state of the control loop at boot and at the completion of all control loop iterations.  If the power management is in a degraded condition due to a previous error completing the complete control loop iteration, entry into this state from a non-error state will exit that degraded condition.
 
 #### **Collect Inputs**
+
 The purpose of this state is to make any requests for input into the control loop which will be handled asynchronously, while collecting other data synchronously.  Specifically, AVS reads are started, which are necessary for power calculations; at the same time, sensor fifo is flushed for all the latest updates to core CPPC (desired, throttle priority, boost priority), and last-pstate registers are read to determine current core state (pstate, cstate, temperature, etc).
 
 *One diagram below is included to show the basic interaction between involved modules.*
+
 ```mermaid
 sequenceDiagram
     participant Timer ISR
@@ -366,13 +371,15 @@ sequenceDiagram
 ```
 
 #### **Exchange Input with Remote Die**
+
 The following collected inputs, etc, will be exchanged with the remote SCP: power cap; AVS rail reads; per-core pstate, desired, throttle priority, boost priority, nominal (KNG HW documentation calls this base) performance; and current PID/resource state.
 
-
 #### **Distribute Available Power/Performance**
+
 At this point, both SCP core control loops have the necessary input to calculate SOC/CPU power and perform distribution of resources.  FW must calculate SOC non-core power to report total SOC power on query; that detail is also used to isolate the CPU portion of the power cap to be used for error calculations within the PID control.
 
 **Calculate SOC Power**
+
 ```
 For each AVS rail:
   P_soc += V_rail * I_rail
@@ -472,12 +479,14 @@ Curve   0
    0.241980    0.261393    1.295915    0.024107  480.000000     30 1800
    0.241980    0.261393    1.154603    0.024107  480.000000     31 1600
 ```
-Below are the calculations for reflkg and dynamic in the columns above.  Runtime leakage is scaled with temperature using a 3rd order polynomial, *f_T*(T), so here we divide the fused leakage by the output of the polynomial at the fused temperature.  Ideally, the fused temp would produce a 1 with the polynomial coefficients, but above this is not the case.
+
+- Below are the calculations for reflkg and dynamic in the columns above.  Runtime leakage is scaled with temperature using a 3rd order polynomial, *f_T*(T), so here we divide the fused leakage by the output of the polynomial at the fused temperature.  Ideally, the fused temp would produce a 1 with the polynomial coefficients, but above this is not the case.
 
 ```
 dynamic = AF_scaler_max_power * power_current_throttling_cfg.Iref_to_max_percent * Cdyn_dhrystoneAF * V * F + dyn_ldo
 reflkg = lkg / f_T(fused_temp)
 ```
+
 > In the previous project, we scaled from dhrystone to max power workload with/without MPMM enabled.  For KNG we will scale to max power, but use power_current_throttling_cfg knob to limit current to some percentage of max.  
 
 At runtime, the per-core, per-pstate dynamic current and the reference leakage scaled to temperature are summed to produce I_peak.
@@ -765,9 +774,34 @@ The power proxy on the MCP0 will create PDR records and register two sensors and
 |Throttling Sensor|Used by BMC to determine current throttling state of SOC|state sensor (performance)|Normal/Throttled/Degraded
 |SOC Power Cap Effecter|Used by BMC to set a power cap on the SOC|numeric effecter|Watts
 
-
 ## Early Validation
 
 While the mechanics of the power control loop will be tested pre-silicon, there will be no actual clock scaling or voltage control until we're running on silicon.  For this reason, a SW power model (python) which currently models the power of the CPU VR (loadline loss, core LDO losses, static/dynamic core power, etc) has been developed which will be used to test behavior of the PID loop with varying power caps, core activities, VM throttle/boost priorities, remote die info, etc.
 
+## CLI Interface
 
+### CLI Requirements
+
+- As described earlier, the CLI interface for the power service shall exist outside of the power service itself.
+- The CLI interface on any of the dies shall interact with both dies and fetch required values. That way, power service on both dies can be controlled using one CLI.
+- The power service CLI shall be able to handle both synchronous (non-posted) and asynchronous (posted) commands.
+
+### CLI Design
+
+The power_cli module piggybacks on the FpFWCLI module from shared services. Since the 1pfw CLI service supports 2 levels of menu/sub-menu, the CLI commands are architected into 2 layers:
+
+- All commands fall under the `pwr` menu.
+- There are 4 kinds of commands that are provided:
+    1. `cfg` to query (pre-set) configurations.
+    1. `set` to set configurable inputs.
+    1. `status` to query various power parameters in real time.
+    1. `log` to control logging features in the power service.
+
+The `cfg` commands also have a sub-command to query knob settings.
+
+The naming convention for different commands is this: `<menu> <command_category>_<command_subcategory(optional)>_<command>`. For example, to set the power status cap, the command would be `pwr set_cap`.
+
+> Note: The current design implemented supports only Die 0.
+
+- The CLI interacts with the power service via a driver framework interface. It uses the default queue to send async messages to the power service.
+- The power service shares the default queue with the SSI service. Hence, care needs to be taken that the RequestTypes for SSI and Power CLI do not overlap.

@@ -35,6 +35,12 @@ typedef struct _power_runconfig_t
     void* original_warmstart; // used to store a copy of calculated warmstart data before a warmstart recovery
 } power_runconfig_t, *ppower_runconfig_t;
 
+/* Definition of the dictionary entry of parameters that can be queried from the power runconfig structure */
+typedef struct {
+    power_runconfig_element_t id;
+    void* p_runconfig_element;
+} power_runconfig_dictionary_element_t;
+
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus
 extern "C" {
@@ -42,6 +48,7 @@ extern "C" {
 
 /* General runtime config APIs */
 power_runconfig_t* power_runconfig_get();
+void* power_runconfig_get_element(power_runconfig_element_t id);
 void power_runconfig_init(const power_service_config_t* p_config);
 
 /* Knob specific APIs */

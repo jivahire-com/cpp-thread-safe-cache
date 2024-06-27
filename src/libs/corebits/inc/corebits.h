@@ -22,7 +22,7 @@
 
 // helpers for printf
 #define COREBITS_FMT_STR            "%x:%08x:%08x"
-#define COREBITS_FMT_DATA(corebits) corebits.bits[2], corebits.bits[1], corebits.bits[0]
+#define COREBITS_FMT_DATA(corebits) (unsigned int)corebits.bits[2], (unsigned int)corebits.bits[1], (unsigned int)corebits.bits[0]
 
 // helpers for init
 #define COREBITS_INIT_UINT32(core0_31, core32_63, core64_95) \

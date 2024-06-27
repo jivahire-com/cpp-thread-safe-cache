@@ -17,6 +17,7 @@ target_link_libraries(${TARGET}
         fwlib.platform.dfwkhost.threadx
         ms::cmocka::testrunner
         ms::driver::textio::pl011
+        ms::lib::scp_interrupts
         ms::lib::stdio_textio
         ms::lib::threadx
         silibs::common::lib_uart_pl011
@@ -24,7 +25,13 @@ target_link_libraries(${TARGET}
         silibs::kng_silibs_platform
 )
 
-target_compile_definitions(${TARGET} PRIVATE UART_BASE_ADDR=123456)
+target_compile_definitions(${TARGET} 
+    PRIVATE 
+        UART_BASE_ADDR=123456
+        UART_IRQ=654321)
+
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
 lint_target(${TARGET})
 format_target(${TARGET})

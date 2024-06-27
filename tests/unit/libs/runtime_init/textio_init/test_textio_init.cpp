@@ -48,7 +48,7 @@ void __wrap_textio_pl011_device_initialize(textio_pl011_device_t* device, const 
     check_expected_ptr(schedule);
     //! Verify expected uart configuration settings set by the init function
     assert_int_equal(config->base_address, TEST_UART_BASE_ADDRESS);
-    assert_int_equal(config->interrupt, 0);
+    assert_int_equal(config->interrupt, UART_IRQ);
     assert_int_equal(config->baud_rate, UART_BAUD_RATE);
     assert_int_equal(config->clk_freq, UART_CLK_FREQ);
     assert_int_equal(config->wlen, UART_PL011_WLEN_8);

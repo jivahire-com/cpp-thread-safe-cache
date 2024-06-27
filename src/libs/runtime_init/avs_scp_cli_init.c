@@ -10,7 +10,6 @@
 #include <scp_avs.h>
 #include <scp_avs_cli.h>
 #include <scp_avs_driver.h>
-#include <scp_interrupts.h>
 #include <stdint.h>
 #include <stdio.h>
 

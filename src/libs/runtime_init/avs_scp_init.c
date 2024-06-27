@@ -7,10 +7,10 @@
 #include <DfwkClient.h>
 #include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
 #include <fpfw_init.h>
+#include <interrupts.h>
 #include <padring_southeast_regs.h>
 #include <scp_avs.h>
 #include <scp_avs_driver.h>
-#include <scp_interrupts.h>
 #include <silibs_scp_exp_top_regs.h>
 #include <silibs_scp_top_regs.h>
 #include <stdint.h>

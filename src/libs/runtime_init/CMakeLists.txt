@@ -112,12 +112,14 @@ target_compile_definitions(
     ${TARGET}
     PRIVATE
        UART_BASE_ADDR=SCP_TOP_DBGR_SCP_UART_ADDRESS
+       UART_IRQ=HW_INT_SCP_VUART_INT
 )
 else()
 target_compile_definitions(
     ${TARGET}
     PRIVATE
         UART_BASE_ADDR=SCP_TOP_SCP_UART_ADDRESS
+        UART_IRQ=HW_INT_SCP_UART_INT
 )
 endif()
 
@@ -166,6 +168,7 @@ target_link_libraries(
         ms::lib::crash_dump::mcp
         ms::lib::event_trace::collector
         ms::lib::icc::cli
+        ms::lib::mcp_interrupts
         ms::lib::stdio_textio
         ms::lib::threadx
         ms::service::sensor_fifo
@@ -191,12 +194,14 @@ target_compile_definitions(
     ${TARGET}
     PRIVATE
        UART_BASE_ADDR=MCP_TOP_DBGR_MCP_UART_ADDRESS
+       UART_IRQ=HW_INT_MCP_VUART_INT
 )
 else()
 target_compile_definitions(
     ${TARGET}
     PRIVATE
         UART_BASE_ADDR=MCP_TOP_MCP_UART_ADDRESS
+        UART_IRQ=HW_INT_MCP_UART_INT
 )
 endif()
 

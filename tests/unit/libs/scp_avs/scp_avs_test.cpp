@@ -19,10 +19,10 @@ extern "C" {
 #include <DfwkHost.h>  // for DfwkDeviceInitialize
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <avs_lib.h>   // for AVS_VOLTAGE_RW, AVS_CMD_READ, AVS_IRQ_...
+#include <interrupts.h>
 #include <scp_avs.h>
 #include <scp_avs_driver.h>
 #include <scp_avs_driver_i.h>
-#include <scp_interrupts.h>
 }
 
 /*-- Symbolic Constant Macros (defines) --*/

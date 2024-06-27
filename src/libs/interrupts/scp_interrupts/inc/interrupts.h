@@ -3,7 +3,7 @@
 //
 
 /**
- *  @file scp_interrupts.h
+ *  @file interrupts.h
 */
 
 #pragma once
@@ -11,6 +11,6 @@
 /*--------------- Includes ---------------*/
 
 /*------------- Typedefs -----------------*/
- typedef enum _IRQn_t {
+ typedef enum _SCP_IRQn_t {
     #include <kng_scp_ints.h>
-} IRQn_t;
+} SCP_IRQn_t;

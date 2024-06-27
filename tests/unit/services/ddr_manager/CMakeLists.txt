@@ -34,6 +34,9 @@ target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:ms::service::ddr_
 # set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_THREADX "extern.threadx.interface.win32")
 # set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
+
 lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})

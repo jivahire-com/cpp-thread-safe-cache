@@ -34,15 +34,11 @@ mock_target(${TARGET}
     FpFwAssert
     debug_print
     critical_print
+    mmio_write8
     mmio_write32
     mmio_update32 
     idsw_get_die_id
     idsw_get_platform_sdv
-    smmu_enable_access
-    smmu_enable_access_check
-    smmu_configure_gbpa
-    smmu_configure_gbpa_check
-    configure_sdmss_system_addr_map
     sdm_init_smmu_connection_seq
     sdm_init_set_ecam_base
     sdm_init_set_rciep_bdf
@@ -55,10 +51,8 @@ mock_target(${TARGET}
     sdm_init_enable_dtcm_ecc
     sdm_init_disable_cpu_wait
     sdm_init_set_rcec_bdf
-    configure_vab_system_addr_map
-    deassert_pcr_reset
-    vab_pcr_init
+    sdm_init_write_pre_pcie_cfg
     pcr_rpss_configure_clock
     pcr_rpss_deassert_por_reset
-    pcr_rpss_verify
+    pcr_rpss_init_entity
 )

@@ -22,9 +22,12 @@
 #include "silibs_kng_soc.h"              // for D0_SDM_RCEC_BUS, D0_SDM_RCI...
 #include "vab_regs.h"                    // for VAB_VAB_TOWER_ADDRESS
 
-#include <accelerator_ip_priv.h> // for AP_TOP_D0_VAB_SDM_ADDRESS
-#include <stdbool.h>             // for true, false
-#include <stdint.h>              // for uint32_t
+#include <accelerator_ip_priv.h>    // for AP_TOP_D0_VAB_SDM_ADDRESS
+#include <sdm_init_knobs.h>         // for MSFT_VENDOR_ID, CDED_PCI_DE...
+#include <stdbool.h>                // for true, false
+#include <stddef.h>                 // for NULL
+#include <stdint.h>                 // for uint32_t
+#include <vab_cded_ioss_top_regs.h> // for VAB_CDED_IOSS_TOP_VAB_ADDRESS
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
@@ -147,6 +150,144 @@ static vab_ctxt_t die0_sdmss_instance0_vab_ctxt = {&die0_sdmss_instance0_vab_tow
 
 static accelip_ctxt_t die0_sdmss_instance0_accelip_ctxt = {&die0_sdmss_instance0_pcie_ctxt, &die0_sdmss_instance0_emcpu_ctxt};
 
+/* ---- D0 CDEDSS Instance 0 (D0-CDEDSS0) Context data-structures ----------- */
+
+// ---- ATU Map for VAB5 ---- //
+static atu_map_entry_t die0_cdedss_instance0_vab_atu_map_entry = {
+    .ap_base_address = AP_TOP_D0_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_VAB_ADDRESS,
+    .mscp_start_address = 0,
+    .mscp_end_address = ALIGN_UP(AP_TOP_D0_VAB_CDED_IOSS_SIZE, ATU_PAGE_SIZE) - 1,
+    .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT},
+};
+
+// ---- VAB Context - ATU Map for VAB5 ---- //
+static atu_mapping_ctxt_t die0_cdedss_instance0_vab_atu_mapping_ctxt = {ATU_ID_MSCP, &die0_cdedss_instance0_vab_atu_map_entry};
+
+// ---- VAB Tower ---- //
+static tower_attr_t die0_cdedss_instance0_vab_tower_attr = {0}; // Will be updated at run time after ATU mapping done
+
+// ---- VAB Context ---- //
+static vab_ctxt_t die0_cdedss_instance0_vab_ctxt = {&die0_cdedss_instance0_vab_tower_attr};
+
+// ---- ATU Map for Accel i.e. CDEDSS0 ---- //
+static atu_map_entry_t die0_cdedss_instance0_accelss_atu_map_entry = {
+    .ap_base_address = AP_TOP_D0_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_CDEDSS_ADDRESS,
+    .mscp_start_address = 0,
+    .mscp_end_address = ALIGN_UP(AP_TOP_D0_VAB_CDED_IOSS_SIZE, ATU_PAGE_SIZE) - 1,
+    .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT},
+};
+
+// ---- AccelSS ATU Map Context ---- //
+static atu_mapping_ctxt_t die0_cdedss_instance0_accelss_atu_mapping_ctxt = {ATU_ID_MSCP, &die0_cdedss_instance0_accelss_atu_map_entry};
+
+// ---- AccelSS - Silibs Pre-PCIe Config ---- //
+static sdm_pre_pcie_cfg_t die0_cdedss_instance0_pre_pcie_cfg = {
+    // PF RCiEP PCI T0 Cfg
+    {
+        .pci_t0_revision_id = 0,                        // Revision ID of the device
+        .pci_t0_base_class_code = CDED_BASE_CLASS_CODE, // Base class code of the device
+        .pci_t0_sub_class_code = CDED_SUB_CLASS_CODE,   // Sub class code of the device
+        .pci_t0_subsystem_id = CDED_PCI_DEVICE_ID,      // Subsystem ID of the device
+        .pci_t0_subsystem_vendor_id = MSFT_VENDOR_ID,   // Subsystem vendor ID of the device
+        .pci_t0_device_id = CDED_PCI_DEVICE_ID,         // PCI device ID
+        .pci_t0_vendor_id = MSFT_VENDOR_ID,             // PCI vendor ID
+        .pci_t0_int_pin = INT_PIN_A,                    // Legacy interrupt pin setting
+    },
+
+    // VF RCiEP PCI T0 Cfg
+    {0},
+
+    // RCEC PCI T0 Cfg
+    {
+        .pci_t0_revision_id = 0,                        // Revision ID of the device
+        .pci_t0_base_class_code = RCEC_BASE_CLASS_CODE, // Base class code of the device
+        .pci_t0_sub_class_code = RCEC_SUB_CLASS_CODE,   // Sub class code of the device
+        .pci_t0_subsystem_id = RCEC_PCI_DEVICE_ID,      // Subsystem ID of the device
+        .pci_t0_subsystem_vendor_id = MSFT_VENDOR_ID,   // Subsystem vendor ID of the device
+        .pci_t0_device_id = RCEC_PCI_DEVICE_ID,         // PCI device ID
+        .pci_t0_vendor_id = MSFT_VENDOR_ID,             // PCI vendor ID
+        .pci_t0_int_pin = INT_PIN_B,                    // Legacy interrupt pin setting
+    },
+
+    .dti_v3_protocol = DTI_ATS_V3, // DTI protocol to use (v2 or v3)
+
+    // Response to config access timeout
+    .pf_cfg_timeout_response = CRS_RESPONSE,
+    .vf_cfg_timeout_response = CRS_RESPONSE,
+
+    .tee_io_supp = true, // TODO: ADO 1885063: Enable TEE IO support capability
+
+    .gic_tid = 0,      // GIC TID
+    .smmu_dti_tid = 0, // SMMU DTI TID
+
+    .gpa_pasid_en = false,     // Enable GPA PASID support for Rd/Wr address pointers
+    .cpl_gpa_pasid_en = false, // Enable GPA PASID support for completion address pointers
+
+    .tdisp_allow_t_cfg_wrt = false, // Allow Protected registers to be updated
+                                    // while in the TDISP RUN or CONFIG_LOCKED
+                                    // state and the register write has the T
+                                    // bit set
+    .tdisp_allow_t_cmd_sub = false, // Allow T bit enabled Command Submissions
+                                    // to a Work Queues while in the TDISP
+                                    // CONFIG_UNLOCKED state (T bit cleared)
+
+    .pf_global_invalidate_support = false, // Must be false/disabled for TDISP.
+                                           // Refer to PCIe Base Spec 10.5.1.2
+                                           // for details
+    .vf_global_invalidate_support = false, // Must be false/disabled for TDISP.
+                                           // Refer to PCIe Base Spec 10.5.1.2
+                                           // for details
+
+    .rcec_assoc_bus = 0, // Bus number of RCiEP associated with the RCEC. See
+                         // PCIe Base Spec 7.9.10.3 for details.
+
+    .rciep_pf_bars_prefetch_enable = 0,    // 2-bit field. Bit0 enables prefetch
+                                           // for BAR0 (PF CFG) and Bit1 enables
+                                           // prefetch for BAR1 (PF Cmd Q).
+                                           // Expected to be set only for debug
+                                           // purposes.
+    .rciep_sriov_bars_prefetch_enable = 0, // 2-bit field. Bit0 enables prefetch
+                                           // for BAR0 (VF CFG) and Bit1 enables
+                                           // prefetch for BAR1 (VF Cmd Q).
+                                           // Expected to be set only for debug
+                                           // purposes.
+
+    .total_vfs = 32, // The number of VFs to report in the SRIOV capability
+                     // TotalVFs field for the device. Refer to PCIe Base
+                     // Spec 9.3.3.6 for details.
+
+    .sriov_vf_dev_id = SDM_PCI_DEVICE_ID, // The device ID for VFs. Refer to
+                                          // PCIe Base Spec 9.3.3.11 for details.
+};
+
+// ---- AccelSS PCIe RCiEP BDF ---- //
+static pcie_bdf_t die0_cdedss_instance0_rciep_bdf = {.bus = D0_CDED_RCIEP_BUS, .dev = 0, .func = 0};
+
+// ---- AccelSS PCIe RCEC BDF ---- //
+static pcie_bdf_t die0_cdedss_instance0_rcec_bdf = {.bus = D0_CDED_RCEC_BUS, .dev = 0, .func = 0};
+
+// ---- AccelSS PCIe Context ---- //
+static accelip_pcie_ctxt_t die0_cdedss_instance0_pcie_ctxt = {NULL, NULL, NULL, NULL, &die0_cdedss_instance0_rciep_bdf, &die0_cdedss_instance0_rcec_bdf};
+
+// ---- AccelSS emCPU (M7) - Memory attributes ---- //
+static sdm_mem_init_t die0_cdedss_instance0_mem_init_attr = {0};
+
+// ---- AccelSS emCPU (M7) - ECC Context ---- //
+static _addressblock_0x100000_bcfg_boot_cfg_ecc_dis die0_cdedss_instance0_ecc_dis = {0};
+
+// ---- AccelSS emCPU (M7) Context ---- //
+static accelip_emcpu_ctxt_t die0_cdedss_instance0_emcpu_ctxt = {&die0_cdedss_instance0_mem_init_attr,
+                                                                DIE0_CDEDSS_INSTANCE0_INT_VECTOR,
+                                                                false, // Enable fence
+                                                                false, // Enable I-TCM
+                                                                false, // Enable D-TCM
+                                                                &die0_cdedss_instance0_ecc_dis};
+
+// ---- AccelSS Context ---- //
+static accelip_ctxt_t die0_cdedss_instance0_accelip_ctxt = {&die0_cdedss_instance0_pcie_ctxt, // PCIe Ctxt
+                                                            &die0_cdedss_instance0_emcpu_ctxt};
+
+/* ---- Sub-system Context data-structures across Die's --------------------- */
 static subsystem_ctxt_t ss_ctxts[] = {
     // D0 SDMSS Instance 0
     {
@@ -155,11 +296,22 @@ static subsystem_ctxt_t ss_ctxts[] = {
         &die0_sdmss_instance0_vab_atu_mapping_ctxt,
         &die0_sdmss_instance0_accelss_tower_attr,
         &die0_sdmss_instance0_accelss_atu_mapping_ctxt,
+        NULL,                              // Pre-PCIe Cfg
         &die0_sdmss_instance0_accelip_ctxt // accel details
     },
 
-    // TBD
     // D0 CDEDSS Instance 0
+    {
+        {.die_instance = SOC_D0, .accel_type = ACCELERATOR_CDEDSS, .accel_instance = 0},
+        &die0_cdedss_instance0_vab_ctxt,
+        &die0_cdedss_instance0_vab_atu_mapping_ctxt,
+        NULL, // HSP will initialize CDEDSS Tower, and hence it is not needed
+        &die0_cdedss_instance0_accelss_atu_mapping_ctxt,
+        &die0_cdedss_instance0_pre_pcie_cfg, // Pre-PCIe Cfg
+        &die0_cdedss_instance0_accelip_ctxt  // Accelerator sub-system Context
+    },
+
+    // TBD
     // D1 SDMSS Instance 0
     // D1 CDEDSS Instance 0
 };

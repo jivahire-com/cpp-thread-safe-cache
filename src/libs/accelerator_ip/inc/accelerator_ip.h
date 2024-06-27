@@ -17,6 +17,7 @@
 #include <sdm_init.h>                     // for sdm_mem_init_t
 #include <stdbool.h>                      // for bool
 #include <stdint.h>                       // for int32_t, uint64_t, uint8_t
+#include <sdm_init_knobs.h> // for sdm_pre_pcie_cfg_t
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 
@@ -94,6 +95,9 @@ typedef struct {
     // Accel Sybsystem
     tower_attr_t        *p_accelss_tower_attr;
     atu_mapping_ctxt_t  *p_accelss_atu_mapping_ctxt;
+
+    // Silibs Data-structure for Pre-PCIe Config
+    sdm_pre_pcie_cfg_t  *p_pre_pcie_cfg;
 
     // AccelIP details
     accelip_ctxt_t      *p_accelip_ctxt;

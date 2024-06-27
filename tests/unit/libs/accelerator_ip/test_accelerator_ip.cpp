@@ -14,18 +14,19 @@ extern "C" {
 #include "atu_lib.h"           // for ATU_ID_MAX, atu_id_t, atu_map_entry_t
 #include "kng_soc_constants.h" // for SOC_D0, SDMSS_INSTANCE
 #include "sdm_init.h"          // for sdm_mem_init_t
+#include "sdm_init_knobs.h"    // for sdm_pre_pcie_cfg_t
 #include "silibs_kng_soc.h"    // for D0_SDM_RCIEP_BUS, D1_CDED_RCEC_BUS
 #include "silibs_status.h"     // for SILIBS_SUCCESS, SILIBS_E_PARAM
 #include "smmu_knobs.h"        // for smmu_gbpa_cfg_t
 
 #include <accelerator_ip.h> // for scp_accelerators_init, ACCEL_RET_SUCCESS
-#include <idsw.h>
-#include <idsw_kng.h> // for KNG_DIE_ID
-#include <pcr_rpss.h> // for pcr_rpss_entity_t
-#include <smmu.h>     // for smmu_gpba_cfg
-#include <stddef.h>   // for NULL
-#include <stdint.h>   // for uintptr_t, uint32_t, uint8_t, uint64_t
-#include <utils.h>    // for UNUSED
+#include <idsw.h>           // for DIE_ID, _PLAT_ID
+#include <idsw_kng.h>       // for KNG_DIE_ID
+#include <pcr_rpss.h>       // for pcr_rpss_entity_t
+#include <smmu.h>           // for smmu_gpba_cfg
+#include <stddef.h>         // for NULL
+#include <stdint.h>         // for uintptr_t, uint32_t, uint8_t, uint64_t
+#include <utils.h>          // for UNUSED
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
@@ -40,10 +41,10 @@ extern "C" {
 /*----------------------------- Static Functions ----------------------------*/
 
 /*----------------------------- Global Functions ----------------------------*/
-void __wrap_configure_sdmss_system_addr_map(uintptr_t tower_base_addr, SDMSS_INSTANCE sdmss_id)
+void __wrap_mmio_write8(volatile uint8_t* addr, uint8_t data)
 {
-    UNUSED(tower_base_addr);
-    UNUSED(sdmss_id);
+    UNUSED(addr);
+    UNUSED(data);
 }
 
 void __wrap_mmio_write32(volatile uint32_t* addr, uint32_t data)
@@ -106,6 +107,16 @@ int __wrap_sdm_init_enable_ecam(const uintptr_t ext_cfg_addr, const bool enable)
     UNUSED(enable);
 
     if (ext_cfg_addr == 0x0)
+    {
+        return SILIBS_E_PARAM;
+    }
+
+    return SILIBS_SUCCESS;
+}
+
+int __wrap_sdm_init_write_pre_pcie_cfg(const uintptr_t ext_cfg_addr, const sdm_pre_pcie_cfg_t* pre_pcie_cfg)
+{
+    if ((ext_cfg_addr == 0x0) || (pre_pcie_cfg == NULL))
     {
         return SILIBS_E_PARAM;
     }
@@ -295,6 +306,15 @@ void __wrap_FpFwAssert(int expression)
     UNUSED(expression);
 }
 
+int __wrap_pcr_rpss_init_entity(pcr_rpss_entity_t* pcr, uint16_t enabled_clocks, uintptr_t base)
+{
+    UNUSED(pcr);
+    UNUSED(enabled_clocks);
+    UNUSED(base);
+
+    return SILIBS_SUCCESS;
+}
+
 int __wrap_pcr_rpss_configure_clock(pcr_rpss_entity_t* pcr, uint32_t us_timeout)
 {
     UNUSED(pcr);
@@ -307,177 +327,142 @@ int __wrap_pcr_rpss_deassert_por_reset(pcr_rpss_entity_t* pcr)
 {
     UNUSED(pcr);
 
-    return SILIBS_SUCCESS;
-}
-
-int __wrap_pcr_rpss_verify(pcr_rpss_entity_t* pcr)
-{
-    pcr = mock_type(pcr_rpss_entity_t*);
-
-    if (pcr == nullptr)
-    {
-        return SILIBS_E_PARAM;
-    }
-
-    return SILIBS_SUCCESS;
-}
-
-void config_vab_pass()
-{
-    // VAB init success
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);  // VAB atu_map
-    will_return(__wrap_vab_pcr_init, 0x12345678); // VAB PCR init
-    will_return(__wrap_smmu_enable_access_check, 0x12345678);
-    will_return(__wrap_smmu_configure_gbpa, SILIBS_SUCCESS);
-    will_return(__wrap_smmu_configure_gbpa_check, true);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // VAB atu_unmap
+    return mock_type(int);
 }
 
 void config_ss_pass()
 {
-    will_return(__wrap_atu_map, SILIBS_SUCCESS); // SS Tower atu_map
+    // for D0 SDMSS
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);                     // SS Tower atu_map
+    will_return(__wrap_pcr_rpss_deassert_por_reset, SILIBS_SUCCESS); // PCR RPSS
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);                   // SS Tower atu_unmap
+}
 
-    /**
-     * TODO: Update this test based on latest silibs tag updates
-     *       https://azurecsi.visualstudio.com/Dev/_workitems/edit/1803676/
-     */
-    // will_return(__wrap_pcr_rpss_verify, 0x12345678); // SS Tower pcr init
-
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // SS Tower atu_unmap
+void config_ss_cdedss_pass()
+{
+    // for D0 CDEDSS
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);                     // SS Tower atu_map
+    will_return(__wrap_pcr_rpss_deassert_por_reset, SILIBS_SUCCESS); // PCR RPSS
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);                   // SS Tower atu_unmap
 }
 
 void config_accel_ip_pass()
 {
+    // for D0 SDMSS
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);   // configure_accel_ip atu_map
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // configure_accel_ip atu_unmap
+}
+
+void config_accel_ip_cdedss_pass()
+{
+    // for D0 CDEDSS
     will_return(__wrap_atu_map, SILIBS_SUCCESS);   // configure_accel_ip atu_map
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // configure_accel_ip atu_unmap
 }
 
 TEST_FUNCTION(accel_ip_pre_boot_config_pass_test, nullptr, nullptr)
 {
-    // Happy case
-    config_vab_pass();
+    // Setup
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+
+    // Happy case for SDMSS
     config_ss_pass();
     config_accel_ip_pass();
+
+    // Happy case for CDEDSS
+    config_ss_cdedss_pass();
+    config_accel_ip_cdedss_pass();
+
     assert_int_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
-}
-
-TEST_FUNCTION(accel_ip_pre_boot_config_vab_atu_map_fail_test, nullptr, nullptr)
-{
-    // VAB atu_map fail
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_atu_map, SILIBS_E_PARAM);
-    assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
-}
-
-TEST_FUNCTION(accel_ip_pre_boot_config_vab_pcr_init_fail_test, nullptr, nullptr)
-{
-    // VAB atu_map pass, VAB pcr fail
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);   // VAB atu_map
-    will_return(__wrap_vab_pcr_init, 0x0);         // VAB PCR init
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // VAB atu_unmap
-    assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
-}
-
-TEST_FUNCTION(accel_ip_pre_boot_config_vab_smmu_enable_fail_test, nullptr, nullptr)
-{
-    // VAB atu_map pass, VAB atu_unmap fail
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);  // VAB atu_map
-    will_return(__wrap_vab_pcr_init, 0x12345678); // VAB PCR init
-    will_return(__wrap_smmu_enable_access_check, 0x0);
-    will_return(__wrap_atu_unmap, SILIBS_E_PARAM); // VAB atu_unmap
-    assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
-}
-
-TEST_FUNCTION(accel_ip_pre_boot_config_vab_smmu_configure_gbpa_fail_test, nullptr, nullptr)
-{
-    // Setup
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);  // VAB atu_map
-    will_return(__wrap_vab_pcr_init, 0x12345678); // VAB PCR init
-    will_return(__wrap_smmu_enable_access_check, 0x12345678);
-
-    // Setup the params to Test API
-    will_return(__wrap_smmu_configure_gbpa, SILIBS_E_PARAM);
-
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // VAB atu_unmap
-
-    // Test
-    assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
-}
-
-TEST_FUNCTION(accel_ip_pre_boot_config_vab_smmu_configure_gbpa_check_fail_test, nullptr, nullptr)
-{
-    // Setup
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);  // VAB atu_map
-    will_return(__wrap_vab_pcr_init, 0x12345678); // VAB PCR init
-    will_return(__wrap_smmu_enable_access_check, 0x12345678);
-    will_return(__wrap_smmu_configure_gbpa, SILIBS_SUCCESS);
-    will_return_always(__wrap_smmu_configure_gbpa_check, false);
-
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS); // VAB atu_unmap
-
-    // Test
-    assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
 }
 
 TEST_FUNCTION(accel_ip_pre_boot_config_ss_atu_map_fail_test, nullptr, nullptr)
 {
-    // VAB init success, SS Tower atu_map fail
-    config_vab_pass();
+    // Setup
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+
+    // SS Tower atu_map fail for SDMSS
     will_return(__wrap_atu_map, SILIBS_E_PARAM); // SS Tower atu_map
+
+    // SS Tower atu_map fail for CDEDSS
+    will_return(__wrap_atu_map, SILIBS_E_PARAM); // SS Tower atu_map
+
     assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
 }
 
-/**
- * TODO: Update this test based on latest silibs tag updates
- *       https://azurecsi.visualstudio.com/Dev/_workitems/edit/1803676/
- */
-// TEST_FUNCTION(accel_ip_pre_boot_config_ss_pcr_init_fail_test, nullptr, nullptr)
-// {
-//     // VAB init success, SS Tower atu_map success, SS pcr fail
-//     config_vab_pass();
-//     will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 2);   // SS Tower atu_map
-//     will_return(__wrap_pcr_rpss_verify, nullptr);           // SS Tower pcr init
-//     will_return_count(__wrap_atu_unmap, SILIBS_SUCCESS, 2); // SS Tower atu_unmap
-//     assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
-// }
+TEST_FUNCTION(accel_ip_pre_boot_config_ss_pcr_init_fail_test, nullptr, nullptr)
+{
+    // Setup
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+
+    // SS Tower atu_map success, SS pcr fail for SDMSS
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);                     // SS Tower atu_map
+    will_return(__wrap_pcr_rpss_deassert_por_reset, SILIBS_E_PARAM); // PCR RPSS FAIL
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);                   // SS Tower atu_unmap
+
+    // SS Tower atu_map success, SS pcr fail for CDEDSS
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);                     // SS Tower atu_map
+    will_return(__wrap_pcr_rpss_deassert_por_reset, SILIBS_E_PARAM); // PCR RPSS FAIL
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);                   // SS Tower atu_unmap
+
+    assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
 
 TEST_FUNCTION(accel_ip_pre_boot_config_ss_atu_unmap_fail_test, nullptr, nullptr)
 {
-    // VAB init success, SS Tower atu_map success, SS Tower atu_unmap fail
-    config_vab_pass();
-    will_return(__wrap_atu_map, SILIBS_SUCCESS); // SS Tower atu_map
+    // Setup
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
 
-    /**
-     * TODO: Update this test based on latest silibs tag updates
-     *       https://azurecsi.visualstudio.com/Dev/_workitems/edit/1803676/
-     */
-    // will_return(__wrap_pcr_rpss_verify, 0x12345678); // SS Tower pcr init
+    // SS Tower atu_map success, SS Tower atu_unmap fail for SDMSS
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);                     // SS Tower atu_map
+    will_return(__wrap_pcr_rpss_deassert_por_reset, SILIBS_SUCCESS); // PCR RPSS
 
     will_return(__wrap_atu_unmap, SILIBS_E_PARAM); // SS Tower atu_unmap
+
+    // SS Tower atu_map success, SS Tower atu_unmap fail for CDEDSS
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);                     // SS Tower atu_map
+    will_return(__wrap_pcr_rpss_deassert_por_reset, SILIBS_SUCCESS); // PCR RPSS
+
+    will_return(__wrap_atu_unmap, SILIBS_E_PARAM); // SS Tower atu_unmap
+
     assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
 }
 
 TEST_FUNCTION(accel_ip_pre_boot_config_accel_ip_atu_map_fail_test, nullptr, nullptr)
 {
-    // VAB init success, SS Tower success, accel IP atu_map fail
-    config_vab_pass();
+    // Setup
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+
+    // SS Tower success, accel IP atu_map fail for SDMSS
     config_ss_pass();
+
     will_return(__wrap_atu_map, SILIBS_E_PARAM); // accel ip atu_map
+
+    // SS Tower success, accel IP atu_map fail for CDEDSS
+    config_ss_cdedss_pass();
+
+    will_return(__wrap_atu_map, SILIBS_E_PARAM); // accel ip atu_map
+
     assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
 }
 
 TEST_FUNCTION(accel_ip_pre_boot_config_accel_ip_atu_unmap_fail_test, nullptr, nullptr)
 {
-    // VAB init success, SS Tower success, accel IP atu_unmap fail
-    config_vab_pass();
+    // Setup
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+
+    // SS Tower success, accel IP atu_unmap fail for SDMSS
     config_ss_pass();
+
     will_return(__wrap_atu_map, SILIBS_SUCCESS);   // accel ip atu_map
     will_return(__wrap_atu_unmap, SILIBS_E_PARAM); // accel ip atu_unmap
+
+    // SS Tower success, accel IP atu_unmap fail for CDEDSS
+    config_ss_cdedss_pass();
+
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);   // accel ip atu_map
+    will_return(__wrap_atu_unmap, SILIBS_E_PARAM); // accel ip atu_unmap
+
     assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
 }
 }

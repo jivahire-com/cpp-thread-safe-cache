@@ -34,7 +34,7 @@
 #define BCFG_BOOT_CFG_PF_TYPE0_SS_ID_SUBSYS_ID              (0x00)  // TODO (ADO 1728266): value need to be updated once decided
 #define BCFG_BOOT_CFG_PF_TYPE0_REV_REV_ID                   (0x00)  // TODO (ADO 1728266): value need to be updated once decided
 #define BCFG_BOOT_CFG_PF_TYPE0_INTR_PIN                     (0x01)
-						
+
 #define BCFG_BOOT_CFG_RCEC_TYPE0_SDM_ID_VEN_ID              (0x1414)
 #define BCFG_BOOT_CFG_RCEC_TYPE0_SDM_ID_DEV_ID              (0xC012)
 #define BCFG_BOOT_CFG_RCEC_TYPE0_SS_ID_SUBSYS_VENDOR_ID     (0x00)  // TODO (ADO 1728266): value need to be updated once decided
@@ -42,7 +42,12 @@
 #define BCFG_BOOT_CFG_RCEC_TYPE0_REV_REV_ID                 (0x00)  // TODO (ADO 1728266): value need to be updated once decided
 #define BCFG_BOOT_CFG_RCEC_TYPE0_INTR_PIN                   (0x02)
 
+/*
+ * Boot vector for emCPU - to be programmed in initvtor prior to M7 reset
+ * deassertion.
+ */
 #define DIE0_SDMSS_INSTANCE0_INT_VECTOR                     (0x80000)
+#define DIE0_CDEDSS_INSTANCE0_INT_VECTOR                    (0x80000)
 
 /*-------------------------------- Typedefs ---------------------------------*/
 

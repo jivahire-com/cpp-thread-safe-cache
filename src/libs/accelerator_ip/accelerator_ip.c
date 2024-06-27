@@ -8,39 +8,42 @@
  * on the SoC.
  */
 
+/*-------------------------------- Features ---------------------------------*/
+/*
+ * TODO: ADO 1831262: Remove the below flag and related code once HSP supports
+ * initialization of CDEDSS Tower.
+ */
+//#define FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP
+
 /*-------------------------------- Includes ---------------------------------*/
 #include "accelerator_ip.h"
 
-#include "accelerator_ip_pcie_params.h" // for pcie_type0_ctxt_t, pcie_...
-#include "sdm_ext_cfg_regs.h"           // for ptr_sdm_ext_cfg_reg, (an...
+#include "accelerator_ip_pcie_params.h" // for pcie_type0_ctxt_t, pcie_ctr...
+#include "sdm_ext_cfg_regs.h"           // for ptr_sdm_ext_cfg_reg, (anony...
+#include "sdm_init_knobs.h"             // for sdm_pre_pcie_cfg_t
 
-#include <FpFwAssert.h>                     // for FPFW_RUNTIME_ASSERT
-#include <_addressblock_0x100000_regs.h>    // for _addressblock_0x100000_b...
-#include <accelerator_ip_priv.h>            // for get_accelerator_ctxt
-#include <atu_lib.h>                        // for atu_map, atu_unmap, atu_...
-#include <cdedss_config_regs.h>             // for CDEDSS_CONFIG_CDEDSS_PCR...
-#include <idsw.h>                           // for idsw_get_platform_sdv
-#include <idsw_kng.h>                       // for idsw_die_id_t, DIE_UNINIT...
-#include <kng_soc_constants.h>              // for DIE_INSTANCE, SDMSS_INST...
-#include <mmu_yardley_tcu_x2_custom_regs.h> // for MMU_YARDLEY_TCU_X2_CUSTO...
-#include <pcr_clock_config.h>               // for PCR_CLOCK_SELECT_B
-#include <pcr_rpss.h>                       // for pcr_rpss_configure_clock
-#include <sdm_init.h>                       // for sdm_init_deassert_nsysreset
-#include <sdmss_config_regs.h>              // for SDMSS_CONFIG_SDMSS_PCR_T...
-#include <silibs_kng_soc.h>                 // for PCIE_ECAM_START
-#include <silibs_platform.h>                // for debug_print, MMIO_UPDATE32
-#include <silibs_status.h>                  // for SILIBS_SUCCESS, SILIBS_E...
-#include <smmu.h>                           // for smmu_configure_gbpa, smm...
-#include <smmu_knobs.h>                     // for smmu_gbpa_cfg_t
-#include <smmu_yardley_eac_vab_regs.h>      // for SMMU_YARDLEY_EAC_VAB_TCU...
-#include <stdbool.h>                        // for true
-#include <stdint.h>                         // for int32_t, uintptr_t, uint...
-#include <stdio.h>                          // for printf, NULL
-#include <tower_sdmss.h>                    // for configure_sdmss_system_a...
-#include <tower_vab.h>                      // for configure_vab_system_add...
-#include <utils.h>                          // for sleep_ms, UNUSED
-#include <vab_pcr_init.h>                   // for deassert_pcr_reset, vab_...
-#include <vab_regs.h>                       // for VAB_VAB_PCR_TOP_ADDRESS
+#include <FpFwAssert.h>                  // for FPFW_RUNTIME_ASSERT
+#include <_addressblock_0x100000_regs.h> // for _addressblock_0x100000_bcfg...
+#include <accelerator_ip_priv.h>         // for get_accelerator_ctxt
+#include <atu_lib.h>                     // for atu_map, atu_unmap, atu_map...
+#include <cdedss_config_regs.h>          // for CDEDSS_CONFIG_CDEDSS_PCR_AD...
+#include <idsw.h>                        // for idsw_get_platform_sdv, idsw...
+#include <idsw_kng.h>                    // for PLATFORM_SVP_SIM
+#include <kng_soc_constants.h>           // for DIE_INSTANCE
+#include <pcr_clock_config.h>            // for PCR_CLOCK_SELECT_B
+#include <pcr_rpss.h>                    // for pcr_rpss_configure_clock
+#include <sdm_init.h>                    // for sdm_init_enable_ecam, sdm_i...
+#include <sdmss_config_regs.h>           // for SDMSS_CONFIG_SDMSS_PCR_TOP_...
+#include <silibs_kng_soc.h>              // for PCIE_ECAM_START
+#include <silibs_platform.h>             // for debug_print, MMIO_UPDATE32
+#include <silibs_status.h>               // for SILIBS_SUCCESS
+#include <stdbool.h>                     // for true
+#include <stdint.h>                      // for int32_t, uintptr_t, uint32_t
+#include <stdio.h>                       // for printf, NULL
+#ifdef FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP
+    #include <tower_cdedss.h> // for configure_cdedss_hsp_system_addr_map()
+#endif                        /* FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP */
+#include <utils.h>            // for UNUSED
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
@@ -64,101 +67,6 @@
 /*--------------------------------- Externs ---------------------------------*/
 
 /*----------------------------- Static Functions ----------------------------*/
-static int32_t configure_vab(vab_ctxt_t* p_vab_ctxt, atu_mapping_ctxt_t* p_vab_atu_mapping_ctxt)
-{
-    atu_map_entry_t* p_atu_map_entry = p_vab_atu_mapping_ctxt->p_atu_map_entry;
-    atu_id_t atu_id = p_vab_atu_mapping_ctxt->ss_atu_id;
-    int32_t sts = SILIBS_SUCCESS;
-
-    // TODO (ADO 1728276): fix this after silib VAB code refactoring is done
-    UNUSED(p_vab_ctxt);
-
-    // Map ATU
-    int32_t ret = atu_map(atu_id, p_atu_map_entry);
-    if (ret != SILIBS_SUCCESS)
-    {
-        debug_print("Vab ATU Mapping failed\n");
-        ret = ACCEL_RET_FAIL_ATU_MAP;
-        goto exit;
-    }
-
-    // Get vab base address and tower base address after ATU mapped successfully
-    uint64_t vab_base_addr = p_atu_map_entry->ap_base_address;
-    uint64_t mscp_start_address = p_atu_map_entry->mscp_start_address;
-
-    // Configure VAB SAM
-    configure_vab_system_addr_map(vab_base_addr, mscp_start_address + VAB_VAB_TOWER_ADDRESS);
-    debug_print("Vab SAM Configuration Completed\n");
-
-    // TODO (ADO 1728276): PCR is not implemented in SVP
-    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
-    {
-        // Configure VAB PCR
-        deassert_pcr_reset(mscp_start_address + VAB_VAB_PCR_TOP_ADDRESS);
-        ret = vab_pcr_init(mscp_start_address + VAB_VAB_PCR_TOP_ADDRESS);
-        if (ret != SILIBS_SUCCESS)
-        {
-            debug_print("Vab PCR configuration failed\n");
-            ret = ACCEL_RET_FAIL_VAB_PCR;
-            goto exit_atu_unmap;
-        }
-    }
-
-    // Configure SMMU. Current configuration is in bypass mode only
-    uint64_t smmu_base_addr = mscp_start_address + VAB_SMMU_YARDLEY_VAB_ADDRESS;
-    uintptr_t smmu_tcu_base_addr =
-        smmu_base_addr + SMMU_YARDLEY_DEV_VAB_UNIQ_TCU_VAB_ADDRESS + MMU_YARDLEY_TCU_X2_CUSTOM_VAB_TCU_X2_ADDRESS;
-
-    smmu_enable_access(smmu_tcu_base_addr);
-    ret = smmu_enable_access_check(smmu_tcu_base_addr) ? SILIBS_SUCCESS : SILIBS_E_PANIC;
-    if (ret != SILIBS_SUCCESS)
-    {
-        debug_print("Vab SMMU is not enabled\n");
-        ret = ACCEL_RET_FAIL_SMMU_ENABLE;
-        goto exit_atu_unmap;
-    }
-
-    SECURITY_STATE security_state = SECURITY_STATE_NON_SECURE;
-    smmu_gbpa_cfg_t smmu_gbpa_cfg = {0};
-    smmu_gbpa_cfg.sh_cfg = 1;
-
-    ret = smmu_configure_gbpa(smmu_tcu_base_addr, &smmu_gbpa_cfg, security_state);
-    if (ret != SILIBS_SUCCESS)
-    {
-        debug_print("Vab SMMU GBPA Failed\n");
-        ret = ACCEL_RET_FAIL_SMMU_GPBA_ENABLE;
-        goto exit_atu_unmap;
-    }
-
-    uint32_t retry_cnt = 0;
-
-    // TODO: ADO 1831262: Remove the below polling loop
-    while (!smmu_configure_gbpa_check(smmu_tcu_base_addr, security_state))
-    {
-        sleep_ms(SLEEP_100_MS);
-
-        // We will try for 5 seconds in worst case
-        retry_cnt++;
-        if (retry_cnt > MAX_RETRY_CNT_FOR_SMMU_CONFIGURE_GPBA_CHECK)
-        {
-            debug_print("Vab SMMU GBPA Check Failed\n");
-            ret = ACCEL_RET_FAIL_SMMU_GPBA_ENABLE;
-            goto exit_atu_unmap;
-        }
-    }
-
-exit_atu_unmap:
-    // Destroy ATU Mapping (SCP View) for the given VAB instance
-    sts = atu_unmap(atu_id, p_atu_map_entry);
-    if (sts != SILIBS_SUCCESS)
-    {
-        debug_print("Vab ATU Unmapping failed\n");
-    }
-
-exit:
-    return ((ret != SILIBS_SUCCESS) ? ret : sts);
-}
-
 static int32_t accelss_init_pcr(uint32_t accelss_pcr_base_addr)
 {
     pcr_rpss_entity_t pcr = {0};
@@ -175,9 +83,9 @@ static int32_t accelss_init_pcr(uint32_t accelss_pcr_base_addr)
     return sts;
 }
 
-static int32_t configure_accel_subsystem_tower(accelip_metadata_t accelip_metadata,
-                                               tower_attr_t* p_accelss_tower_attr,
-                                               atu_mapping_ctxt_t* p_accelss_atu_mapping_ctxt)
+static int32_t configure_accel_subsystem_pcr(accelip_metadata_t accelip_metadata,
+                                             tower_attr_t* p_accelss_tower_attr,
+                                             atu_mapping_ctxt_t* p_accelss_atu_mapping_ctxt)
 {
     atu_map_entry_t* p_atu_map_entry = p_accelss_atu_mapping_ctxt->p_atu_map_entry;
     atu_id_t atu_id = p_accelss_atu_mapping_ctxt->ss_atu_id;
@@ -186,7 +94,7 @@ static int32_t configure_accel_subsystem_tower(accelip_metadata_t accelip_metada
     // Will be used when more IP of this tower will be configured.
     UNUSED(p_accelss_tower_attr);
 
-    debug_print("Accel SS init start\n");
+    debug_print("Accel SS PCR Init start\n");
 
     // Create ATU Mapping (SCP View) for the Accel SS
     int32_t ret = atu_map(atu_id, p_atu_map_entry);
@@ -198,20 +106,36 @@ static int32_t configure_accel_subsystem_tower(accelip_metadata_t accelip_metada
 
     // Get Accel subsystem base address and tower base address after ATU mapped successfully
     uint32_t mscp_start_address = p_atu_map_entry->mscp_start_address;
-    uint32_t accel_pcr_addr_offset = (accelip_metadata.accel_type == ACCELERATOR_SDMSS)
-                                         ? SDMSS_CONFIG_SDMSS_PCR_TOP_ADDRESS
-                                         : CDEDSS_CONFIG_CDEDSS_PCR_ADDRESS;
+    uint32_t accelss_pcr_base_addr = 0;
 
     if (accelip_metadata.accel_type == ACCELERATOR_SDMSS)
     {
-        configure_sdmss_system_addr_map(mscp_start_address + SDMSS_CONFIG_SDMSS_TOWER_ADDRESS,
-                                        (SDMSS_INSTANCE)accelip_metadata.die_instance);
+        // update the PCR Base for SDMSS
+        accelss_pcr_base_addr = mscp_start_address + SDMSS_CONFIG_SDMSS_PCR_TOP_ADDRESS;
+    }
+    else // accelip_metadata.accel_type == ACCELERATOR_CDEDSS
+    {
+        /*
+         * Since HSP FW is not ready for the handshake, we would be consuming
+         * the cmm scripts from FPGA team to configure the CDEDSS Tower.
+         *
+         * Once HSP FW is available, we need to follow the below steps:
+         *   - Send request to HSP to configure the CDEDSS Tower via Mailbox.
+         *   - Wait for the confirmation from HSP via Mailbox about the status
+         *     to configure the CDEDSS Tower.
+         *   - Take further action based on SUCCESS/FAIL.
+         *
+         * This ADO catpures the status of HSP FW readiness: 1568266
+         */
+
+        // update the PCR Base for SDMSS
+        accelss_pcr_base_addr = mscp_start_address + CDEDSS_CONFIG_CDEDSS_PCR_ADDRESS;
     }
 
     if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
     {
         // Configure Accel SS PCR
-        ret = accelss_init_pcr(mscp_start_address + accel_pcr_addr_offset);
+        ret = accelss_init_pcr(accelss_pcr_base_addr);
         if (ret != SILIBS_SUCCESS)
         {
             debug_print("Accel SS PCR configuration failed\n");
@@ -220,7 +144,7 @@ static int32_t configure_accel_subsystem_tower(accelip_metadata_t accelip_metada
         }
     }
 
-    debug_print("Accel SS init done\n");
+    debug_print("Accel SS PCR Init done\n");
 
 exit_atu_unmap:
     // Destroy ATU Mapping (SCP View) for the given VAB instance
@@ -472,6 +396,21 @@ static int32_t sdm_init_enable_ecc(uintptr_t ext_cfg_addr, _addressblock_0x10000
     return SILIBS_SUCCESS;
 }
 
+static void sdm_init_configure_pcie_ecam(uint64_t accelip_config_base_addr, accelip_pcie_ctxt_t* p_pcie_ctxt_t)
+{
+    sdm_init_set_ecam_base(accelip_config_base_addr, PCIE_ECAM_START);
+
+    sdm_init_set_rciep_bdf(accelip_config_base_addr,
+                           p_pcie_ctxt_t->p_rciep_bdf->bus,
+                           p_pcie_ctxt_t->p_rciep_bdf->dev,
+                           p_pcie_ctxt_t->p_rciep_bdf->func);
+
+    sdm_init_set_rcec_bdf(accelip_config_base_addr,
+                          p_pcie_ctxt_t->p_rcec_bdf->bus,
+                          p_pcie_ctxt_t->p_rcec_bdf->dev,
+                          p_pcie_ctxt_t->p_rcec_bdf->func);
+}
+
 static void silibs_configure_pcie_params(uint64_t accelip_config_base_addr, accelip_pcie_ctxt_t* p_pcie_ctxt_t)
 {
     debug_print("PCIe Params init start\n");
@@ -483,15 +422,7 @@ static void silibs_configure_pcie_params(uint64_t accelip_config_base_addr, acce
     silib_sdm_init_set_pf_tid_ctrl_reg(accelip_config_base_addr, p_pcie_ctxt_t->tid_ctrl);
 
     // ECAM setup
-    sdm_init_set_ecam_base(accelip_config_base_addr, PCIE_ECAM_START);
-    sdm_init_set_rciep_bdf(accelip_config_base_addr,
-                           p_pcie_ctxt_t->p_rciep_bdf->bus,
-                           p_pcie_ctxt_t->p_rciep_bdf->dev,
-                           p_pcie_ctxt_t->p_rciep_bdf->func);
-    sdm_init_set_rcec_bdf(accelip_config_base_addr,
-                          p_pcie_ctxt_t->p_rcec_bdf->bus,
-                          p_pcie_ctxt_t->p_rcec_bdf->dev,
-                          p_pcie_ctxt_t->p_rcec_bdf->func);
+    sdm_init_configure_pcie_ecam(accelip_config_base_addr, p_pcie_ctxt_t);
 
     // Enable ECAM
     sdm_init_enable_ecam(accelip_config_base_addr, true);
@@ -503,7 +434,9 @@ static void silibs_configure_pcie_params(uint64_t accelip_config_base_addr, acce
     debug_print("PCIe Params init done\n");
 }
 
-static int32_t silibs_configure_emcpu_params(uint64_t accelip_config_base_addr, accelip_emcpu_ctxt_t* p_emcpu_ctxt_t)
+static int32_t silibs_configure_emcpu_params(accelip_metadata_t* p_accelip_metadata,
+                                             uint64_t accelip_config_base_addr,
+                                             accelip_emcpu_ctxt_t* p_emcpu_ctxt_t)
 {
     int32_t ret = SILIBS_SUCCESS;
 
@@ -528,7 +461,11 @@ static int32_t silibs_configure_emcpu_params(uint64_t accelip_config_base_addr, 
     sdm_init_enable_dtcm_ecc(accelip_config_base_addr, p_emcpu_ctxt_t->enable_dtcm_ecc);
 
     // Enable SDM ECC
-    sdm_init_enable_ecc(accelip_config_base_addr, p_emcpu_ctxt_t->p_cfg_ecc);
+    // TODO: ADO 1875811: Enable CDED ECC
+    if (p_accelip_metadata->accel_type == ACCELERATOR_SDMSS)
+    {
+        sdm_init_enable_ecc(accelip_config_base_addr, p_emcpu_ctxt_t->p_cfg_ecc);
+    }
 
     // Check for emCPU Firmware Download Readiness
     // TODO (ADO 1728282): Not supported in SVP so commented.
@@ -542,10 +479,15 @@ static int32_t silibs_configure_emcpu_params(uint64_t accelip_config_base_addr, 
     return ret;
 }
 
-static int32_t configure_accel_ip(accelip_ctxt_t* p_accelip_ctxt, atu_mapping_ctxt_t* p_accelss_atu_mapping_ctxt)
+static int32_t configure_accel_ip(accelip_metadata_t* p_accelip_metadata,
+                                  accelip_ctxt_t* p_accelip_ctxt,
+                                  atu_mapping_ctxt_t* p_accelss_atu_mapping_ctxt,
+                                  sdm_pre_pcie_cfg_t* p_pre_pcie_cfg)
 {
     atu_map_entry_t* p_atu_map_entry = p_accelss_atu_mapping_ctxt->p_atu_map_entry;
     atu_id_t atu_id = p_accelss_atu_mapping_ctxt->ss_atu_id;
+
+    debug_print("accel lib: Configure Accel IP Start\n");
 
     // Create ATU Mapping (SCP View) for the Accel IP
     int32_t ret = atu_map(atu_id, p_atu_map_entry);
@@ -558,18 +500,38 @@ static int32_t configure_accel_ip(accelip_ctxt_t* p_accelip_ctxt, atu_mapping_ct
 
     // Get Accel subsystem mscp start and Accel IP base addr after ATU mapped successfully
     uint64_t mscp_start_address = p_atu_map_entry->mscp_start_address;
-    uint64_t accel_ip_config_base_addr = mscp_start_address + SDMSS_CONFIG_SDM_EXT_CFG_ADDRESS;
+    uint64_t accel_ip_ext_config_base_addr = mscp_start_address;
 
-    // Configure PCIe params
-    silibs_configure_pcie_params(accel_ip_config_base_addr, p_accelip_ctxt->p_pcie_ctxt);
+    // TODO: ADO 1831262: Make the init flow for `ACCELERATOR_SDMSS` and
+    // `ACCELERATOR_CDEDSS` same.
+    if (p_accelip_metadata->accel_type == ACCELERATOR_SDMSS)
+    {
+        accel_ip_ext_config_base_addr += SDMSS_CONFIG_SDM_EXT_CFG_ADDRESS;
+
+        // Configure PCIe params
+        silibs_configure_pcie_params(accel_ip_ext_config_base_addr, p_accelip_ctxt->p_pcie_ctxt);
+    }
+    else if (p_accelip_metadata->accel_type == ACCELERATOR_CDEDSS)
+    {
+        accel_ip_ext_config_base_addr += CDEDSS_CONFIG_SDM_EXT_CFG_ADDRESS;
+
+        // Initialize Pre-PCIe Config
+        sdm_init_write_pre_pcie_cfg(accel_ip_ext_config_base_addr, p_pre_pcie_cfg);
+
+        // Configure PCIe eCAM
+        sdm_init_configure_pcie_ecam(accel_ip_ext_config_base_addr, p_accelip_ctxt->p_pcie_ctxt);
+
+        // Enable PCIe eCAM
+        sdm_init_enable_ecam(accel_ip_ext_config_base_addr, true);
+    }
 
     // Configure emCPU (M7) params
-    silibs_configure_emcpu_params(accel_ip_config_base_addr, p_accelip_ctxt->p_emcpu_ctxt);
+    silibs_configure_emcpu_params(p_accelip_metadata, accel_ip_ext_config_base_addr, p_accelip_ctxt->p_emcpu_ctxt);
 
     if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
     {
         // Configure DTI/LTI params
-        silibs_configure_smmu_connection(accel_ip_config_base_addr);
+        silibs_configure_smmu_connection(accel_ip_ext_config_base_addr);
     }
 
     // Destroy ATU mapping
@@ -581,38 +543,139 @@ static int32_t configure_accel_ip(accelip_ctxt_t* p_accelip_ctxt, atu_mapping_ct
     }
 
 exit:
+    debug_print("accel lib: Configure Accel IP Done\n");
+
     return ret;
 }
 
-static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
+#if defined(FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP)
+//#define FEATURE_CDEDSS_ATU_STATIC_MAPPING
+static int32_t init_hsp_cdedss_tower_atu_map(atu_map_entry_t* p_cdeedss_tower_atu_map_entry)
 {
-    // Configure VAB (SAM, APU, FMU, PMU)
-    int32_t ret = configure_vab(p_ss_ctxt->p_vab_ctxt, p_ss_ctxt->p_vab_atu_mapping_ctxt);
-    if (ret != ACCEL_RET_SUCCESS)
+    int32_t ret = ACCEL_RET_SUCCESS;
+
+    #if defined(FEATURE_CDEDSS_ATU_STATIC_MAPPING)
+        #include <silibs_common.h>                                                            // for ALIGN_UP
+    p_cdeedss_tower_atu_map_entry->mscp_start_address = 0;                                    // 0x78000000;
+    p_cdeedss_tower_atu_map_entry->mscp_end_address = ALIGN_UP(0x8000000, ATU_PAGE_SIZE) - 1; // 0x7fffffff;
+    #else  /* !FEATURE_CDEDSS_ATU_STATIC_MAPPING */
+    p_cdeedss_tower_atu_map_entry->mscp_start_address = 0x78000000;
+    p_cdeedss_tower_atu_map_entry->mscp_end_address = 0x7fffffff;
+    #endif /* FEATURE_CDEDSS_ATU_STATIC_MAPPING */
+
+    p_cdeedss_tower_atu_map_entry->attribute.axprot0 = 0x3;
+    p_cdeedss_tower_atu_map_entry->attribute.axprot1 = 0x2;
+    p_cdeedss_tower_atu_map_entry->attribute.axnse = 0x3;
+
+    ret = atu_map(ATU_ID_MSCP, p_cdeedss_tower_atu_map_entry);
+    if (ret != SILIBS_SUCCESS)
     {
-        critical_print("VAB configuration failed.\n");
-        return ACCEL_RET_FAIL_VAB;
+        debug_print("accel_lib: WA: CDEDSS Tower ATU Mapping failed\n");
+        ret = ACCEL_RET_FAIL_ATU_MAP;
     }
 
-    // Configure Accel SubSystem tower
-    ret = configure_accel_subsystem_tower(p_ss_ctxt->accelip_metadata,
-                                          p_ss_ctxt->p_accelss_tower_attr,
-                                          p_ss_ctxt->p_accelss_atu_mapping_ctxt);
+    return ret;
+}
+
+static int32_t init_hsp_cdedss_tower_atu_unmap(atu_map_entry_t* p_cdeedss_tower_atu_map_entry)
+{
+    int32_t ret = ACCEL_RET_SUCCESS;
+
+    // TODO: WA until HSP configures CDEDSS Tower
+    ret = atu_unmap(ATU_ID_MSCP, p_cdeedss_tower_atu_map_entry);
+    if (ret != SILIBS_SUCCESS)
+    {
+        debug_print("Accel IP CDEDSS Tower ATU Unmapping failed\n");
+        ret = ACCEL_RET_FAIL_ATU_UNMAP;
+    }
+
+    return ret;
+}
+
+static int32_t init_hsp_cdedss_tower(atu_map_entry_t* p_cdeedss_tower_atu_map_entry)
+{
+    int32_t ret = ACCEL_RET_SUCCESS;
+
+    // Create ATU Mapping (SCP View) for the CDEDSS Tower
+    #define HSSS_DFP_TOP_KD_CDEDSS_HSP_AXI_ADDRESS (0xffffff0000000U)
+
+    p_cdeedss_tower_atu_map_entry->ap_base_address = (uint64_t)HSSS_DFP_TOP_KD_CDEDSS_HSP_AXI_ADDRESS;
+
+    // Create ATU Mapping (SCP View) for the Accel IP CDEDSS Tower
+    init_hsp_cdedss_tower_atu_map(p_cdeedss_tower_atu_map_entry);
     if (ret != ACCEL_RET_SUCCESS)
     {
-        critical_print("Accel Subsystem configuration failed.\n");
+        return ret;
+    }
+
+    uint32_t cdedss_tower_atu_mapped_addr = p_cdeedss_tower_atu_map_entry->mscp_start_address;
+
+    debug_print("accel_lib: WA: Initializing CDEDSS Tower\n");
+
+    configure_cdedss_hsp_system_addr_map(HSSS_DFP_TOP_KD_CDEDSS_HSP_AXI_ADDRESS, cdedss_tower_atu_mapped_addr);
+
+    debug_print("accel_lib: WA: CDEDSS Tower initialization complete.\n");
+
+    return ret;
+}
+#endif /* FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP */
+
+static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
+{
+    int32_t ret = ACCEL_RET_SUCCESS;
+
+#ifdef FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP
+    // TODO: WA until HSP configures CDEDSS Tower
+    atu_map_entry_t cdeedss_tower_atu_map_entry = {0};
+
+    if ((idsw_get_platform_sdv() == PLATFORM_SVP_SIM) && (p_ss_ctxt->accelip_metadata.accel_type == ACCELERATOR_CDEDSS))
+    {
+        ret = init_hsp_cdedss_tower(&cdeedss_tower_atu_map_entry);
+        if (ret != ACCEL_RET_SUCCESS)
+        {
+            debug_print("accel_lib: WA: CDEDSS Tower Init failed\n");
+            goto exit;
+        }
+    }
+#endif /* FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP */
+
+    // Configure Accelerator SubSystem Tower
+    ret = configure_accel_subsystem_pcr(p_ss_ctxt->accelip_metadata,
+                                        p_ss_ctxt->p_accelss_tower_attr,
+                                        p_ss_ctxt->p_accelss_atu_mapping_ctxt);
+    if (ret != ACCEL_RET_SUCCESS)
+    {
+        critical_print("Accel Subsystem PCR configuration failed.\n");
         return ACCEL_RET_FAIL_TOWER;
     }
 
+#ifdef FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP
+    // Destroy ATU mapping
+    if ((idsw_get_platform_sdv() == PLATFORM_SVP_SIM) && (p_ss_ctxt->accelip_metadata.accel_type == ACCELERATOR_CDEDSS))
+    {
+        ret = init_hsp_cdedss_tower_atu_unmap(&cdeedss_tower_atu_map_entry);
+        if (ret != ACCEL_RET_SUCCESS)
+        {
+            debug_print("accel_lib: WA: CDEDSS Tower Init failed\n");
+            goto exit;
+        }
+    }
+#endif /* FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP */
+
     // Configure AccelIP pre boot registers
-    ret = configure_accel_ip(p_ss_ctxt->p_accelip_ctxt, p_ss_ctxt->p_accelss_atu_mapping_ctxt);
+    ret = configure_accel_ip(&(p_ss_ctxt->accelip_metadata),
+                             p_ss_ctxt->p_accelip_ctxt,
+                             p_ss_ctxt->p_accelss_atu_mapping_ctxt,
+                             p_ss_ctxt->p_pre_pcie_cfg);
     if (ret != ACCEL_RET_SUCCESS)
     {
         critical_print("Accel IP configuration failed.\n");
-        return ACCEL_RET_FAIL_ACCEL_IP;
+        ret = ACCEL_RET_FAIL_ACCEL_IP;
+        goto exit;
     }
 
-    return ACCEL_RET_SUCCESS;
+exit:
+    return ret;
 }
 
 /*----------------------------- Global Functions ----------------------------*/
@@ -626,7 +689,7 @@ int32_t scp_accelerators_init(void)
 
     FPFW_RUNTIME_ASSERT(p_ss_ctxt != NULL);
 
-    printf("Number of Accelerator intances present : %d\n", (int)accel_ctxt_size);
+    printf("Number of Accelerator intances present: %d\n", (int)accel_ctxt_size);
 
     // Init all available Accelerator instances
     for (uint32_t index = 0; index < accel_ctxt_size; index++)
@@ -634,6 +697,19 @@ int32_t scp_accelerators_init(void)
         // TODO (ADO 1728772) : init any particular accelerator instance only if that is enabled in fuse
         if (p_ss_ctxt[index].accelip_metadata.die_instance == current_die_instance)
         {
+            printf("accel lib: Initializing for die_id=%d, accel_type=%d, accel_instance=%d\n",
+                   p_ss_ctxt[index].accelip_metadata.die_instance,
+                   p_ss_ctxt[index].accelip_metadata.accel_type,
+                   p_ss_ctxt[index].accelip_metadata.accel_instance);
+
+            // TODO: ADO 1831262: Remove the below check once SVP supports CDED BCFG access
+            if ((idsw_get_platform_sdv() == PLATFORM_SVP_SIM) &&
+                (p_ss_ctxt[index].accelip_metadata.accel_type == ACCELERATOR_CDEDSS))
+            {
+                debug_print("accel lib: Skipping CDED initialization for SVP\n");
+                continue;
+            }
+
             ret = init_accelerator(&p_ss_ctxt[index]);
             FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
         }

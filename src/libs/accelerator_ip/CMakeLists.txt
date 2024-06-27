@@ -35,6 +35,7 @@ target_link_libraries(
         silibs::pcr_vab
         silibs::pcr_rpss
         silibs::smmu
+        silibs::tower_cdedss # TODO: ADO 1831262: Remove me after completing the ADO
         silibs::tower_sdmss
         silibs::tower_system_control
         silibs::tower_utility

@@ -119,7 +119,7 @@ Note: Kingsgate will not support SoC level Warm Reset/Boot. Only M7 SCP/MCP core
       should apply only for cold boot.SCP as platform should have logic to know if its core boot is warm or cold ,and that is outside scope of this
       design .There should be a public interface in SCP firmware that could be leveraged by all services to know boot reason.
 
-1. The Fuse service should have dependency on "dfwk" , "mesh" , "hspmbox" and "icc_mbx" components with these to be started before.
+1. The Fuse service should have dependency on "dfwk" , "mesh" and "icc_hspmbx" components with these to be started before.
 2. The HSP as part of boot sequence brings RMSS subsystem out of reset. This will include the MSCP_EXP subsystem containing the System Fuse Controller.
 3. HSP must read the fuses required for the SCP , MCP and SFC memory trim (ITCRAM, DTCRAM, MSCP_EXP RAM and SFC Fuse RAM) directly from the Fuse Macros
    and program the appropriate registers with these values.

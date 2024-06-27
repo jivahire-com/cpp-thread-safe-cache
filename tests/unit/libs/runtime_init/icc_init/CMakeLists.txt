@@ -1,8 +1,8 @@
-set(TARGET icc_transport_mscp_hspmbx_init.test)
+set(TARGET icc_init.test)
 
 set(SOURCES
-    test_mscp_hspmbx_init.cpp
-    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/icc_transport_init/mscp_hspmbx_init.c
+    test_icc_init.cpp
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/icc_init.c
 )
 
 set(LIBRARIES
@@ -13,8 +13,11 @@ set(LIBRARIES
     fwlib.lib.platform.impl.timers.threadx
     fwlib.lib.utils
     fwlib.driver.mboxIccTransport
+    fwlib.service.icc_dispatcher
+    fwlib.service.iccBase
     ms::cmocka::testrunner
     ms::lib::threadx
+    ms::lib::icc_platform_defines
     silibs::platform
     silibs::kng_silibs_platform
 )
@@ -22,6 +25,7 @@ set(LIBRARIES
 # Compile test
 add_executable(${TARGET} ${SOURCES})
 
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)
 target_link_libraries(${TARGET} PRIVATE ${LIBRARIES})
 
 # Generic threadx lock port provided by fwlibs
@@ -45,4 +49,6 @@ mock_target(${TARGET}
     fpfw_init_get_handle
     fpfw_mbox_icc_transport_dfwk_device_init
     fpfw_mbox_icc_transport_dfwk_interface_init
+    fpfw_icc_base_init
+    fpfw_icc_dispatcher_start
 )

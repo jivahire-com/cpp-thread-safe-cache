@@ -7,19 +7,27 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DfwkStatus.h> // for DFWK_SUCCESS
+#include <FpFwAssert.h>
 #include <FpFwCli.h>             // for FpFwCliPrint, _FPFW_CLI_STATUS, FPF...
 #include <FpFwLinkedList.h>      // for NULL_LIST_ENTRY
 #include <FpFwUtils.h>           // for FPFW_UNUSED, FPFW_ARRAY_SIZE
-#include <icc_cli.h>             // for icc_cli_init
+#include <fpfw_icc_base.h>       // for fpfw_icc_base_send_recv_req_t, fpfw...
+#include <fpfw_icc_dispatcher.h> // for fpfw_icc_dispatch_table_entry
+#include <fpfw_status.h>         // for fpfw_status_t
+#include <icc_cli.h>             // for ICC_CLI_HSP_MBX, ICC_CLI_MAX_TRANSP...
 #include <silibs_mcp_top_regs.h> // for MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
 #include <silibs_scp_top_regs.h> // for SCP_TOP_SCP2HSP_MAILBOX_ADDRESS
 #include <stdint.h>              // for uint32_t, uint8_t
-#include <stdlib.h>              // for atoi
+#include <stdlib.h>              // for atoi, NULL, size_t
+#include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 //! @todo Get the mailbox registers from the header files
-#define MAX_ICC_MAILBOXES_INST 2
-#define MAX_ICC_MAILBOX_REGS   8
+#define MAX_ICC_MAILBOXES_INST    2
+#define MAX_ICC_MAILBOX_REGS      8
+#define HSP_MBX_FIFO_DEPTH        4
+#define HSP_MAILBOX_TEST_CMD_CODE 0x0
 
 /*-------------- Typedefs ----------------*/
 typedef struct _icc_mbx_ctx_t
@@ -43,11 +51,16 @@ static const char* mbx_reg_names[MAX_ICC_MAILBOX_REGS] = {
     "H2S_FIFO_PUSH",
     "H2S_FIFO_POP",
 };
-/*--------- Function Prototypes ----------*/
 
+static fpfw_icc_base_ctx_t* icc_base_ctx[ICC_CLI_MAX_TRANSPORT_TYPE] = {NULL};
+static fpfw_icc_base_send_recv_req_t send_recv_params = {0};
+static uint32_t payload_buffer[HSP_MBX_FIFO_DEPTH] = {0, 0, 0, 0};
+static uint32_t recv_payload[HSP_MBX_FIFO_DEPTH] = {0, 0, 0, 0};
+/*--------- Function Prototypes ----------*/
 static FPFW_CLI_STATUS display_mbx_list(int argc, const char** argv);
 static FPFW_CLI_STATUS display_mbx_register_status(int argc, const char** argv);
 static FPFW_CLI_STATUS set_mbx_reg_val(int argc, const char** argv);
+static FPFW_CLI_STATUS hsp_mbox_echo(int argc, const char** argv);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -55,12 +68,23 @@ static FPFW_CLI_COMMAND s_icc_cmd_list[] = {
     {NULL_LIST_ENTRY, "icc", "mbx_list", display_mbx_list, "Displays the mailbox instances", "Usage: mbx_list (no arguments)"},
     {NULL_LIST_ENTRY, "icc", "mbx_reg_show", display_mbx_register_status, "Displays the mailbox register status", "Usage: mbx_reg_show <inst_id, SCP=0, MCP=1>"},
     {NULL_LIST_ENTRY, "icc", "mbx_reg_set", set_mbx_reg_val, "Sets the mailbox register value", "Usage: mbx_reg_set <inst_id (SCP=0, MCP=1)> <reg_id(0 to 7)> <val(uint32_t)>"},
+    {NULL_LIST_ENTRY, "icc", "echo", hsp_mbox_echo, "Sends a mailbox mesg to HSP & receives one", "Usage: echo <(uint32_t) (uint32_t) (uint32_t) (uint32_t)>"},
 };
 
 /*------------- Functions ----------------*/
 
-void icc_cli_init(void)
+void icc_cli_init(icc_cli_init_params_t* params)
 {
+    FPFW_RUNTIME_ASSERT(params != NULL);
+    //! open interface for all the supported transports
+    for (icc_cli_interface_type i = ICC_CLI_HSP_MBX; i < ICC_CLI_MAX_TRANSPORT_TYPE; i++)
+    {
+        if (params->icc_base_ctx[i] != NULL)
+        {
+            icc_base_ctx[i] = (fpfw_icc_base_ctx_t*)params->icc_base_ctx[i];
+        }
+    }
+    //! register the icc commands
     FpFwCliRegisterTable(s_icc_cmd_list, FPFW_ARRAY_SIZE(s_icc_cmd_list));
 }
 
@@ -143,5 +167,63 @@ static FPFW_CLI_STATUS set_mbx_reg_val(int argc, const char** argv)
                  (uint32_t)reg_address,
                  old_value,
                  new_value);
+    return CLI_SUCCESS;
+}
+
+void my_icc_base_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    fpfw_icc_base_send_recv_req_t* req_params = (fpfw_icc_base_send_recv_req_t*)context; // NOLINT
+    if (status != DFWK_SUCCESS)
+    {
+        FpFwCliPrint("[ECHO TEST]   MSCP->HSP Recv Failed: Status[0x%x]\n", status);
+        return;
+    }
+    memcpy(recv_payload, req_params->recv_entry.payload_buffer, output_size_bytes); // NOLINT
+    //! verify success, output status
+    FpFwCliPrint("[ECHO TEST]   MSCP->HSP Recv Complete: Status[0x%x] ReceivedBytes[%d] Payload[0x%x 0x%x "
+                 "0x%x 0x%x]\n",
+                 status,
+                 output_size_bytes,
+                 recv_payload[0],
+                 recv_payload[1],
+                 recv_payload[2],
+                 recv_payload[3]);
+}
+
+static FPFW_CLI_STATUS hsp_mbox_echo(int argc, const char** argv)
+{
+    FPFW_UNUSED(argv);
+    if (argc != 5)
+    {
+        FpFwCliPrint("Echo cmd: Insufficient Payload Args, Using default values\n");
+        payload_buffer[0] = 0x0;
+        payload_buffer[1] = 0xAAAAAAAA;
+        payload_buffer[2] = 0xBBBBBBBB;
+        payload_buffer[3] = 0xCCCCCCCC;
+    }
+    else
+    {
+        payload_buffer[0] = atoi(argv[1]);
+        payload_buffer[1] = atoi(argv[2]);
+        payload_buffer[2] = atoi(argv[3]);
+        payload_buffer[3] = atoi(argv[4]);
+    }
+
+    //! Prepare send request
+    send_recv_params.payload_buffer = payload_buffer;
+    send_recv_params.buffer_size = sizeof(payload_buffer);
+    send_recv_params.cb = my_icc_base_recv_complete_notify;
+    send_recv_params.cb_ctx = &send_recv_params;
+
+    //! Send the payload & wait for response
+    fpfw_status_t status = fpfw_icc_base_send_recv(icc_base_ctx[ICC_CLI_HSP_MBX], &send_recv_params);
+
+    //! Print the status message
+    FpFwCliPrint("[ECHO TEST]   MSCP->HSP Send Initiated: Status[0x%x] Payload[0x%x 0x%x 0x%x 0x%x]\n",
+                 status,
+                 payload_buffer[0],
+                 payload_buffer[1],
+                 payload_buffer[2],
+                 payload_buffer[3]);
     return CLI_SUCCESS;
 }

@@ -6,8 +6,12 @@ set(SRC
 
 set(LIBS
         PRIVATE
+            fwlib.lib.assert
+            fwlib.service.iccBase
+            fwlib.service.icc_dispatcher
             fwlib.service.cli
             fwlib.lib.utils
+            ms::lib::icc_platform_defines
             silibs::kng_silibs_platform
             silibs::platform
 )

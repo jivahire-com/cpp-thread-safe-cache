@@ -24,7 +24,7 @@ add_library(${TARGET}
         fuse_init.c
         gtimer_init.c
         hw_version_scp_init.c
-        icc_transport_init/mscp_hspmbx_init.c
+        icc_init.c
         icc_cli_init.c
         mesh_init.c
         ioss_init.c
@@ -54,6 +54,8 @@ target_link_libraries(
         fwlib.lib.platform.impl.timers.threadx
         fwlib.lib.utils
         fwlib.driver.mboxIccTransport
+        fwlib.service.icc_dispatcher
+        fwlib.service.iccBase
         ms::build_data
         ms::lib::scp_avs
         ms::lib::scp_avs::cli
@@ -70,6 +72,7 @@ target_link_libraries(
         ms::lib::event_trace::collector
         ms::lib::gtimer
         ms::lib::icc::cli
+        ms::lib::icc_platform_defines
         ms::lib::mesh
         ms::lib::ioss_init
         ms::lib::ioss::usb
@@ -99,6 +102,8 @@ target_link_libraries(
         ms::lib::register_headers
         ms::service::sds_service
 )
+
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)
 
 target_compile_definitions(
     ${TARGET}
@@ -142,7 +147,7 @@ add_library(${TARGET}
         dfwk_init.c
         etc_init.c
         icc_cli_init.c
-        icc_transport_init/mscp_hspmbx_init.c
+        icc_init.c
         mcp_mpu_init.c
         nvic_init.c
         sensor_fifo_init.c
@@ -161,6 +166,8 @@ target_link_libraries(
         fwlib.lib.platform.impl.timers.threadx
         fwlib.lib.utils
         fwlib.driver.mboxIccTransport
+        fwlib.service.icc_dispatcher
+        fwlib.service.iccBase
         ms::build_data
         ms::driver::sensor_fifo
         ms::driver::textio::pl011
@@ -169,6 +176,7 @@ target_link_libraries(
         ms::lib::crash_dump::mcp
         ms::lib::event_trace::collector
         ms::lib::icc::cli
+        ms::lib::icc_platform_defines
         ms::lib::mcp_interrupts
         ms::lib::stdio_textio
         ms::lib::threadx
@@ -182,6 +190,8 @@ target_link_libraries(
         silibs::sensor_ram_bridge
         register_headers
 )
+
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)
 
 target_compile_definitions(
     ${TARGET}

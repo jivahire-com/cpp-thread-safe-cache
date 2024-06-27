@@ -55,6 +55,46 @@
                 }
             ]
         },
+        {
+            "name": "Debug Lib Unit Test - Select",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin/${input:selectLibUnitTest}",
+            "symbolSearchPath": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
+            "console": true
+        },
+        {
+            "name": "Debug Lib Unit Test - Last Selected",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin/${input:lastLibUnitTest}",
+            "symbolSearchPath": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
+            "console": true
+        },
+        {
+            "name": "Debug Service Unit Test - Select",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin/${input:selectSvcUnitTest}",
+            "symbolSearchPath": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
+            "console": true
+        },
+        {
+            "name": "Debug Service Unit Test - Last Selected",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin/${input:lastSvcUnitTest}",
+            "symbolSearchPath": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
+            "console": true
+        }
     ],
     "inputs": [
         {
@@ -62,6 +102,53 @@
             "description": "Program to Run",
             "default": "",
             "type": "promptString"
+        },
+        {
+            "id": "selectLibUnitTest",
+            "type": "command",
+            "command": "extension.commandvariable.pickStringRemember",
+            "args": {
+                "description": "Pick a Lib unit test to run",
+                "key": "savedLibUnitTest",
+                "options": [
+                    [
+                        "Sensor Fifo Driver",
+                        "kng.driver.sensor_fifo.test.exe"
+                    ],
+                ],
+            },
+        },
+        {
+            "id": "lastLibUnitTest",
+            "type": "command",
+            "command": "extension.commandvariable.remember",
+            "args": {
+                "key": "savedLibUnitTest"
+            }
+        },
+        {
+            "id": "selectSvcUnitTest",
+            "type": "command",
+            "command": "extension.commandvariable.pickStringRemember",
+            "args": {
+                "description": "Pick a service unit test to run",
+                "key": "savedSvcUnitTest",
+                "options": [
+                    [
+                        "Sensor Fifo Service",
+                        "service.sensor_fifo.test.exe"
+                    ],
+                ],
+            },
+        },
+        {
+            "id": "lastSvcUnitTest",
+            "type": "command",
+            "command": "extension.commandvariable.remember",
+            "args": {
+                "key": "savedSvcUnitTest"
+            }
         }
+
     ]
 }

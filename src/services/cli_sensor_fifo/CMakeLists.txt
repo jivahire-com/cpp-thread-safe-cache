@@ -10,6 +10,7 @@ target_link_libraries(
         PRIVATE
         fwlib.service.cli
         ms::driver::sensor_fifo
+        ms::service::sensor_fifo
 )
 
 target_include_directories(${TARGET}

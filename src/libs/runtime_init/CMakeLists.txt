@@ -94,6 +94,7 @@ target_link_libraries(
         silibs::idsw_kng
         silibs::platform
         silibs::kng_silibs_platform
+        silibs::sensor_ram_bridge
         ms::lib::power::cli
         ms::lib::register_headers
         ms::service::sds_service
@@ -178,6 +179,7 @@ target_link_libraries(
         silibs::idsw
         silibs::platform
         silibs::kng_silibs_platform
+        silibs::sensor_ram_bridge
         register_headers
 )
 

@@ -67,41 +67,84 @@ for a third epoch before the previous two are completed an error is signaled.
 The SOC is physically implemented as two dies (chiplets). Each die has 34 tiles.  Each tile contains two cores and two HNFs(Hierarchical NOC Framework).  Some of the data is collected per tile, other data is collected per core. The sensor RAM and control processors are replicated on each die.
 Therefore there will be two full instances running on a SOC, collecting data for half of the system.
 
+For this design, stride indicates when the fifo write pointer is incremented.
+For tile temp, tile voltage, and core current, the fifo write pointer is not incremented until the data is received
+from all of the tiles and cores respectively.
+
 ```c
-          *---------------------------------------------------------*
-          |           PState Telemetry Fifo                         |
-          | entries = 16, stride = 16, cores = 68, Total = 17408    |
-          +---------------------------------------------------------+
-          |           SCP Msg Telemetry Fifo  (req multiple of 128) |
-          | entries =  4, stride = 16, cores = 68, Total =  4352    |
-          +---------------------------------------------------------+
-          |       Temperature Telemetry Buffer     DVFS             |
-          | entries =  8, stride = 32, tiles = 34, Total =  8704    |
-          +---------------------------------------------------------+
-          |         Voltage Telemetry Buffer      DVFS              |
-          | entries =   8, stride =  16, 34 tiles, Total =  4352    |
-          +---------------------------------------------------------+
-          |         Current Telemetry Buffer                        |
-          | entries = 16, stride =   16, 68 cores, Total = 17408    |
-          +---------------------------------------------------------+
-          |     SOC PVT Temperature Telemetry Buffer                |
-          | entries =  4, stride =   40,           Total =   160    |
-          +---------------------------------------------------------+
-          |      SOC PVT Voltage Telemetry Buffer                   |
-          | entries =  4, stride =   48,           Total =   192    |
-          +---------------------------------------------------------+
-          | DIMM Temperature Telemetry Buffer                       |
-          | entries =  8, stride =   24, 12 chan   Total =  2304    |
-          +---------------------------------------------------------+
-          | VR Temperature Telemetry Buffer                         |
-          | entries =  24, stride =   24,          Total =   576    |
-          +---------------------------------------------------------+
-          | VR Current Telemetry Buffer                             |
-          | entries =  24, stride =   40,          Total =   960    |
-          +---------------------------------------------------------+
-          |                                        Total = 56416    |
-          |            Unused = 9120                                |
-          *---------------------------------------------------------*
+          *---------------------------------------------------------------------------------*
+          |               PState Telemetry Fifo  (entries multiple of 128)                  |
+          |      entries = 1152, entry size = 16, stride = 16,             Total = 18432    |
+          +---------------------------------------------------------------------------------+
+          |               SCP Msg Telemetry Fifo  (entries multiple of 128)                 |
+          |          entries =  256, entry size = 16,  stride = 16,        Total =  4096    |
+          +---------------------------------------------------------------------------------+
+          |                       Tile Temperature Telemetry Buffer                         |
+          | entries = 8, entry size = 32, tiles = 34, stride = (32 * 34),  Total =  8704    |
+          +---------------------------------------------------------------------------------+
+          |                         Tile Voltage Telemetry Buffer                           |
+          | entries = 8, entry size = 16, tiles = 34, stride = (16 * 34),  Total =  4352    |
+          +---------------------------------------------------------------------------------+
+          |                          Core Current Telemetry Buffer                          |
+          | entries = 16, entry size = 16, cores = 68, stride = (16 * 68), Total = 17408    |
+          +---------------------------------------------------------------------------------+
+          |                      SOC PVT Temperature Telemetry Buffer                       |
+          |           entries = 8, entry size = 40, stride = 40,           Total =   320    |
+          +---------------------------------------------------------------------------------+
+          |                        SOC PVT Voltage Telemetry Buffer                         |
+          |               entries = 8, entry size = 48, stride = 48,       Total =   384    |
+          +---------------------------------------------------------------------------------+
+          |                     DIMM Temperature Telemetry Buffer                           |
+          | entries = 8, entry size = 24, 12 channels, stride = (24 * 12)  Total =  2304    |
+          +---------------------------------------------------------------------------------+
+          |                       VR Temperature Telemetry Buffer                           |
+          |              entries = 24, entry size = 24, stride = 24,       Total =   576    |
+          +---------------------------------------------------------------------------------+
+          |                        VR Current Telemetry Buffer                              |
+          |             entries = 24, entry size = 40, stride = 40,        Total =   960    |
+          +---------------------------------------------------------------------------------+
+          |                                        Total = 57536                            |
+          |            Unused = 8000                                                        |
+          *---------------------------------------------------------------------------------*
+```
+
+The FPGA only has 32k SCF RAM so therefore it needs smaller sized fifos.
+
+```c
+          *---------------------------------------------------------------------------------*
+          |               PState Telemetry Fifo  (entries multiple of 128)                  |
+          |      entries = 512, entry size = 16, stride = 16,              Total =  8192    |
+          +---------------------------------------------------------------------------------+
+          |               SCP Msg Telemetry Fifo  (entries multiple of 128)                 |
+          |          entries =  128, entry size = 16,  stride = 16,        Total =  2048    |
+          +---------------------------------------------------------------------------------+
+          |                       Tile Temperature Telemetry Buffer                         |
+          | entries = 4, entry size = 32, tiles = 34, stride = (32 * 34),  Total =  4352    |
+          +---------------------------------------------------------------------------------+
+          |                         Tile Voltage Telemetry Buffer                           |
+          | entries = 4, entry size = 16, tiles = 34, stride = (16 * 34),  Total =  2176    |
+          +---------------------------------------------------------------------------------+
+          |                          Core Current Telemetry Buffer                          |
+          | entries = 8, entry size = 16, cores = 68, stride = (16 * 68),  Total =  8704    |
+          +---------------------------------------------------------------------------------+
+          |                      SOC PVT Temperature Telemetry Buffer                       |
+          |           entries = 8, entry size = 40, stride = 40,           Total =   320    |
+          +---------------------------------------------------------------------------------+
+          |                        SOC PVT Voltage Telemetry Buffer                         |
+          |               entries = 8, entry size = 48, stride = 48,       Total =   384    |
+          +---------------------------------------------------------------------------------+
+          |                     DIMM Temperature Telemetry Buffer                           |
+          | entries = 8, entry size = 24, 12 channels, stride = (24 * 12)  Total =  2304    |
+          +---------------------------------------------------------------------------------+
+          |                       VR Temperature Telemetry Buffer                           |
+          |              entries = 24, entry size = 24, stride = 24,       Total =   576    |
+          +---------------------------------------------------------------------------------+
+          |                        VR Current Telemetry Buffer                              |
+          |             entries = 24, entry size = 40, stride = 40,        Total =   960    |
+          +---------------------------------------------------------------------------------+
+          |                                        Total = 30016                            |
+          |            Unused = 2753                                                        |
+          *---------------------------------------------------------------------------------*
 ```
 
 ### Design Overview
@@ -169,7 +212,8 @@ classDiagram
 
 ### Configuration
 
-The scf_mhu_device initialization function will configure the 64k SCF RAM. It will partition the RAM between all of the FIFO's and configure the hardware registers as necessary.  At this time, there are no requirements to support compile or runtime variations. If such requirements are added, then the configuration data can be moved to the platform runtime init.
+The scf_mhu_device initialization function will configure the 64k SCF RAM. It will partition the RAM between all of the FIFO's and configure the hardware registers as necessary.  The FPGA has half of the SCF RAM, therefore run-time init will detect the
+platform, and pass configuration data to the scf_mhu_device initialization function.
 
 ## API
 

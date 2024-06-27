@@ -28,10 +28,12 @@
 		"mhutchie.git-graph",
 		// For Markdown Diagrams
 		"bierner.markdown-mermaid",
+		// store previous selection for launch and tasks - set this user settings.json "commandvariable.remember.persistent.file" to save between sessions
+		"rioj7.command-variable",
 
 	],
 	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.
 	"unwantedRecommendations": [
-		
+
 	]
 }

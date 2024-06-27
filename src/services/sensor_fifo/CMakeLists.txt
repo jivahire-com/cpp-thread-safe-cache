@@ -2,6 +2,7 @@ set(TARGET kng.service.sensor_fifo)
 
 add_library(${TARGET}
     STATIC
+        sensor_fifo_common.c
         sensor_fifo_public.c
 )
 

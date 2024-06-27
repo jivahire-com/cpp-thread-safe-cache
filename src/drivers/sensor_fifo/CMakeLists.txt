@@ -11,11 +11,14 @@ add_library(${TARGET_DRIVER}
 )
 
 target_link_libraries(${TARGET_DRIVER}
+    PUBLIC
+    fwlib.lib.status
+
     PRIVATE
-    fwlib.lib.assert
     fwlib.dfwk
-    fwlib.lib.interface.platform.errorhandler
     fwlib.platform.dfwkhost.threadx
+    fwlib.lib.assert
+    fwlib.lib.interface.platform.errorhandler
     fwlib.lib.utils
     kng.device.scf_mhu
     ms::lib::threadx
@@ -43,6 +46,9 @@ add_library(${TARGET_DEVICE}
 )
 
 target_link_libraries(${TARGET_DEVICE}
+    PUBLIC
+    fwlib.lib.status
+
     PRIVATE
     fwlib.lib.assert
     fwlib.dfwk

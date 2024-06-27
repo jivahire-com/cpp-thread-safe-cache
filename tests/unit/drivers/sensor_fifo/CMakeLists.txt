@@ -1,0 +1,48 @@
+set(TARGET kng.driver.sensor_fifo.test)
+
+set(SOURCES
+    test_sensor_fifo_driver.cpp
+    sensor_fifo_mock.c
+)
+
+add_executable(${TARGET} ${SOURCES})
+
+target_link_libraries(${TARGET}
+    PRIVATE
+    kng.driver.sensor_fifo
+    kng.device.scf_mhu
+
+    fwlib.dfwk
+    fwlib.lib.assert
+    fwlib.platform.dfwkhost.threadx
+    ms::cmocka::mocks
+    ms::cmocka::testrunner
+    ms::lib::error_handler
+    ms::mocks::threadx
+    silibs::kng_silibs_platform
+    silibs_platform
+    silibs::sensor_ram_bridge
+)
+
+# Defining platform APIs
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")
+
+# Get private includes for module under test
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.driver.sensor_fifo,INCLUDE_DIRECTORIES>)
+
+lint_target(${TARGET})
+format_target(${TARGET})
+coverage_target(${TARGET})
+unit_test_target(${TARGET})
+
+mock_target(${TARGET}
+    FpFwAssert
+    DfwkDeviceInitialize
+    DfwkInterfaceInitialize
+    DfwkInterfaceSendSync
+    mmio_read32
+    mmio_write32
+    mmio_update32
+    mmio_read64
+    mmio_write64
+)

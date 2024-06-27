@@ -34,37 +34,35 @@
  */
 typedef enum
 {
-    TEMPERATURE_TELEMETRY_HW_FIFO = 0,
-    VOLTAGE_TELEMETRY_HW_FIFO = 1,
-    CURRENT_TELEMETRY_HW_FIFO = 2,
-    PSTATE_TELEMETRY_HW_FIFO = 3,
-    SCP_MESSAGING_HW_FIFO = 4,
-    SOC_PVT_TEMP_FW_FIFO = 5,
-    SOC_PVT_VOLTAGE_FW_FIFO = 6,
-    DIMM_TEMP_FW_FIFO = 7,
-    VR_TEMP_BUFFER_FW_FIFO = 8,
-    VR_CURRENT_BUFFER_FW_FIFO = 9,
-    MAX_FIFO_ID = 10
+    SENSOR_FIFO_PSTATE_TELEMETRY_HW = 0,
+    SENSOR_FIFO_SCP_MSG_TELEMETRY_HW = 1,
+    SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW = 2,
+    SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW = 3,
+    SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW = 4,
+    SENSOR_FIFO_PVT_TEMP_FW = 5,
+    SENSOR_FIFO_PVT_VOLTAGE_FW = 6,
+    SENSOR_FIFO_DIMM_TEMP_FW = 7,
+    SENSOR_FIFO_VR_TEMP_FW = 8,
+    SENSOR_FIFO_VR_CURRENT_FW = 9,
+    SENSOR_FIFO_MAX_ID = 10
 } SENSOR_FIFO_ID;
-
-#define LAST_CORE_TILE_SENSOR_FIFO CURRENT_TELEMETRY_FIFO
 
 /**
  * @brief Information describing a single FIFO
  *
  */
 typedef struct {
-    uint32_t start_address;
-    uint32_t end_address;
-    uint32_t buffersize;
-    uint8_t entry_size;
-    uint8_t stride_size;
-    SENSOR_FIFO_ID fifo_id;
-    bool enabled;
-} sensor_fifo_properties_t;
+    uint16_t entry_size_bytes;
+    uint16_t stride_size_bytes;
+    uint32_t start_address; ///< inclusive
+    uint32_t end_address; ///< inclusive
+    uint16_t epoch_count; ///< number of strides in the fifo, 1 indexed
+    char*    name;
+} sensor_fifo_properties_t, *psensor_fifo_properties_t;
+
 
 /**
- * @brief Single entry for  SOC_PVT_TEMP_FW_FIFO
+ * @brief Single entry for  SENSOR_FIFO_PVT_TEMP_FW
  *
  */
 typedef struct __attribute__((packed)) {
@@ -74,7 +72,7 @@ typedef struct __attribute__((packed)) {
 } soc_pvt_temp_t;
 
 /**
- * @brief Single entry for  SOC_PVT_VOLTAGE_FW_FIFO
+ * @brief Single entry for  SENSOR_FIFO_PVT_VOLTAGE_FW
  *
  */
 typedef struct __attribute__((packed)) {
@@ -84,7 +82,7 @@ typedef struct __attribute__((packed)) {
 } soc_pvt_voltage_t;
 
 /**
- * @brief Single entry for  VR_TEMP_BUFFER_FW_FIFO
+ * @brief Single entry for  SENSOR_FIFO_VR_TEMP_FW
  *
  */
 typedef struct __attribute__((packed)) {
@@ -93,7 +91,7 @@ typedef struct __attribute__((packed)) {
 } vr_temp_t;
 
 /**
- * @brief Single entry for VR_CURRENT_BUFFER_FW_FIFO
+ * @brief Single entry for SENSOR_FIFO_VR_CURRENT_FW
  *
  */
 typedef struct __attribute__((packed)) {
@@ -103,7 +101,7 @@ typedef struct __attribute__((packed)) {
 } vr_current_t;
 
 /**
- * @brief Single entry for  DIMM_TEMP_FW_FIFO
+ * @brief Single entry for  SENSOR_FIFO_DIMM_TEMP_FW
  *
  */
 typedef struct __attribute__((packed)) {
@@ -197,7 +195,7 @@ void sensor_fifo_svc_discard(SENSOR_FIFO_ID fifo);
  * @param[in] fifo - Select the specific fifo
  * @param[out] properties - Information about an individual fifo
  */
-void sensor_fifo_svc_get_properties(SENSOR_FIFO_ID fifo, sensor_fifo_properties_t* properties);
+void sensor_fifo_svc_get_properties(SENSOR_FIFO_ID fifo, psensor_fifo_properties_t properties);
 
 /**
  * @brief Retrieve operational health of the sensor fifo service for telemetry reporting. This will clear the data.
@@ -212,7 +210,7 @@ void sensor_fifo_svc_get_properties(SENSOR_FIFO_ID fifo, sensor_fifo_properties_
 void sensor_fifo_svc_poll_health(sensor_fifo_health_status_t* health_status);
 
 /**
- * @brief - Add an entry to SOC_PVT_TEMP_FW_FIFO
+ * @brief - Add an entry to SENSOR_FIFO_PVT_TEMP_FW
  *
  * @note Thread Safe - Yes
  * @note ISR safe - No
@@ -224,7 +222,7 @@ void sensor_fifo_svc_poll_health(sensor_fifo_health_status_t* health_status);
 void sensor_fifo_svc_add_soc_pvt_temperature(soc_pvt_temp_t* pvt_temperature);
 
 /**
- * @brief - Add an entry to SOC_PVT_VOLTAGE_FW_FIFO
+ * @brief - Add an entry to SENSOR_FIFO_PVT_VOLTAGE_FW
  *
  * @note Thread Safe - Yes
  * @note ISR safe - No
@@ -236,7 +234,7 @@ void sensor_fifo_svc_add_soc_pvt_temperature(soc_pvt_temp_t* pvt_temperature);
 void sensor_fifo_svc_add_soc_pvt_voltage(soc_pvt_voltage_t* pvt_voltage);
 
 /**
- * @brief - Add an entry to DIMM_TEMP_FW_FIFO
+ * @brief - Add an entry to SENSOR_FIFO_DIMM_TEMP_FW
  *
  * @note Thread Safe - Yes
  * @note ISR safe - No
@@ -248,7 +246,7 @@ void sensor_fifo_svc_add_soc_pvt_voltage(soc_pvt_voltage_t* pvt_voltage);
 void sensor_fifo_svc_add_dimm_info(sensor_ram_dimm_info_t* dimm_info);
 
 /**
- * @brief - Add an entry to VR_TEMP_BUFFER_FW_FIFO
+ * @brief - Add an entry to SENSOR_FIFO_VR_TEMP_FW
  *
  * @note Thread Safe - Yes
  * @note ISR safe - No
@@ -260,7 +258,7 @@ void sensor_fifo_svc_add_dimm_info(sensor_ram_dimm_info_t* dimm_info);
 void sensor_fifo_svc_add_vr_temperature(vr_temp_t* vr_temperature);
 
 /**
- * @brief - Add an entry to VR_CURRENT_BUFFER_FW_FIFO
+ * @brief - Add an entry to SENSOR_FIFO_VR_CURRENT_FW
  *
  * @note Thread Safe - Yes
  * @note ISR safe - No
@@ -272,7 +270,7 @@ void sensor_fifo_svc_add_vr_temperature(vr_temp_t* vr_temperature);
 void sensor_fifo_svc_add_vr_current(vr_current_t* vr_current);
 
 /**
- * @brief Poll TEMPERATURE_TELEMETRY_HW_FIFO and read out an entry if available
+ * @brief Poll SENSOR_FIFO_TEMPERATURE_TELEMETRY_HW and read out an entry if available
  *
  * @note Thread Safe - Yes
  * @note ISR safe - No
@@ -286,7 +284,7 @@ void sensor_fifo_svc_add_vr_current(vr_current_t* vr_current);
 sensor_ram_poll_status_t sensor_fifo_svc_poll_tile_temperature(sensor_telem_t* temperature_data, uint8_t* tile_index);
 
 /**
- * @brief Poll VOLTAGE_TELEMETRY_HW_FIFO and read out an entry if available
+ * @brief Poll SENSOR_FIFO_VOLTAGE_TELEMETRY_HW and read out an entry if available
  *
  * @note Thread Safe - Yes
  * @note ISR safe - No
@@ -300,7 +298,7 @@ sensor_ram_poll_status_t sensor_fifo_svc_poll_tile_temperature(sensor_telem_t* t
 sensor_ram_poll_status_t sensor_fifo_svc_poll_tile_voltage(volt_data_t* voltage_data, uint8_t* tile_index);
 
 /**
- * @brief Poll CURRENT_TELEMETRY_HW_FIFO and read out an entry if available
+ * @brief Poll SENSOR_FIFO_CURRENT_TELEMETRY_HW and read out an entry if available
  *
  * @note Thread Safe - Yes
  * @note ISR safe - No
@@ -315,7 +313,7 @@ sensor_ram_poll_status_t sensor_fifo_svc_poll_tile_voltage(volt_data_t* voltage_
 sensor_ram_poll_status_t sensor_fifo_svc_poll_tile_current(uint64_t* time_stamp, current_data_t* current_data, uint8_t* tile_index);
 
 /**
- * @brief Poll PSTATE_TELEMETRY_HW_FIFO and read out an entry if available
+ * @brief Poll SENSOR_FIFO_PSTATE_TELEMETRY_HW and read out an entry if available
  *
  * @note Thread Safe - Yes
  * @note ISR safe - No
@@ -328,7 +326,7 @@ sensor_ram_poll_status_t sensor_fifo_svc_poll_tile_current(uint64_t* time_stamp,
 sensor_ram_poll_status_t sensor_fifo_svc_poll_core_pstate(pstate_telem_t* state_data);
 
 /**
- * @brief Poll SCP_MESSAGING_HW_FIFO and read out an entry if available
+ * @brief Poll SENSOR_FIFO_SCP_MSG_TELEMETRY_HW and read out an entry if available
  *
  * @note Thread Safe - Yes
  * @note ISR safe - No
@@ -341,7 +339,7 @@ sensor_ram_poll_status_t sensor_fifo_svc_poll_core_pstate(pstate_telem_t* state_
 sensor_ram_poll_status_t sensor_fifo_svc_poll_scp_message(plimit_msg_telem_t* plimit_msg);
 
 /**
- * @brief Poll SOC_PVT_TEMP_FW_FIFO and read out an entry if available
+ * @brief Poll SENSOR_FIFO_PVT_TEMP_FW and read out an entry if available
  *
  * @note Thread Safe - Yes
  * @note ISR safe - No
@@ -354,7 +352,7 @@ sensor_ram_poll_status_t sensor_fifo_svc_poll_scp_message(plimit_msg_telem_t* pl
 sensor_ram_poll_status_t sensor_fifo_svc_poll_soc_pvt_temperature(soc_pvt_temp_t* pvt_temperature);
 
 /**
- * @brief Poll SOC_PVT_VOLTAGE_FW_FIFO and read out an entry if available
+ * @brief Poll SENSOR_FIFO_PVT_VOLTAGE_FW and read out an entry if available
  *
  * @note Thread Safe - Yes
  * @note ISR safe - No
@@ -367,7 +365,7 @@ sensor_ram_poll_status_t sensor_fifo_svc_poll_soc_pvt_temperature(soc_pvt_temp_t
 sensor_ram_poll_status_t sensor_fifo_svc_poll_soc_pvt_voltage(soc_pvt_voltage_t* pvt_voltage);
 
 /**
- * @brief Poll DIMM_TEMP_FW_FIFO and read out an entry if available
+ * @brief Poll SENSOR_FIFO_DIMM_TEMP_FW and read out an entry if available
  *
  * @note Thread Safe - Yes
  * @note ISR safe - No
@@ -380,7 +378,7 @@ sensor_ram_poll_status_t sensor_fifo_svc_poll_soc_pvt_voltage(soc_pvt_voltage_t*
 sensor_ram_poll_status_t sensor_fifo_svc_poll_dimm_info(sensor_ram_dimm_info_t* dimm_info);
 
 /**
- * @brief Poll VR_TEMP_BUFFER_FW_FIFO and read out an entry if available
+ * @brief Poll SENSOR_FIFO_VR_TEMP_FW and read out an entry if available
  *
  * @note Thread Safe - Yes
  * @note ISR safe - No
@@ -393,7 +391,7 @@ sensor_ram_poll_status_t sensor_fifo_svc_poll_dimm_info(sensor_ram_dimm_info_t* 
 sensor_ram_poll_status_t sensor_fifo_svc_poll_vr_temperature(vr_temp_t* vr_temperature);
 
 /**
- * @brief Poll VR_CURRENT_BUFFER_FW_FIFO and read out an entry if available
+ * @brief Poll SENSOR_FIFO_VR_CURRENT_FW and read out an entry if available
  *
  * @note Thread Safe - Yes
  * @note ISR safe - No

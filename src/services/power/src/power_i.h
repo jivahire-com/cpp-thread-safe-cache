@@ -10,6 +10,8 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <fpfw_status.h>       // for FPFW_STATUS_SUCCESS, FPFW_STATUS_INVA...
+#include <kng_error.h>
 #include <power_runconfig_i.h>
 #include <FpFwAssert.h>
 #include <stdbool.h>

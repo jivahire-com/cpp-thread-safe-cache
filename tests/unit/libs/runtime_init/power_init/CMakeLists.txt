@@ -37,6 +37,7 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     atu_map
+    crash_dump_bug_check
     fpfw_init_get_handle
     idsw_get_die_id
     idsw_get_platform_sdv

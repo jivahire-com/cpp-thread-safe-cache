@@ -16,7 +16,6 @@
 #include <bug_check.h>         // for BUG_CHECK
 #include <corebits.h>          // for corebits_set_bit, corebits_clear_bit
 #include <dvfs_struct.h>       // for dvfs_core_memasst_entry_t, dvfs_core_...
-#include <fpfw_status.h>       // for FPFW_STATUS_SUCCESS, FPFW_STATUS_INVA...
 #include <fuse_defines.h>      // for VF_CORE_ANCHOR_SEL_WIDTH, CORE_CDYN_0...
 #include <kng_soc_constants.h> // for NUM_AP_CORES_PER_DIE
 #include <power_events.h>      // for POWER_ET_WARN, POWER_ET_ENCODE_FREQ_C...
@@ -148,7 +147,7 @@ uint8_t power_fuses_get_pmm_rev()
     // read fuse for data
     int32_t status =
         platform_read_fuse((uint32_t*)&fuse_data, TEST_FLOW_CHECKS_PMM_REVISION_BIT_OFFSET, TEST_FLOW_CHECKS_PMM_REVISION_WIDTH);
-    BUG_ASSERT(status == FPFW_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
 
     const uint8_t pmm_rev = (uint8_t)fuse_data;
     // check supported revisions
@@ -160,6 +159,7 @@ uint8_t power_fuses_get_pmm_rev()
         break;
     default:
         BUG_CHECK(KNG_SC_FUSE_UNSUPPORTED_PMMREV, pmm_rev, 0);
+        break;
     }
 
     return pmm_rev;
@@ -175,15 +175,15 @@ int32_t power_fuses_get_dts_coeff(uint32_t k_offset,
                                   dts_coeff_t* dts_coeff)
 {
     // verify input -- count of elements with the spacing we were given doesn't exceed count of fuse elements
-    BUG_ASSERT((coeff_count * coeff_spacing) <= fuse_elements);
-    BUG_ASSERT(k_width > 0);
-    BUG_ASSERT(y_width > 0);
-    BUG_ASSERT(fuse_elements > 0);
+    BUG_ASSERT_PARAM(((coeff_count * coeff_spacing) <= fuse_elements), (coeff_count * coeff_spacing), fuse_elements);
+    BUG_ASSERT_PARAM((k_width > 0), k_width, 0);
+    BUG_ASSERT_PARAM((y_width > 0), y_width, 0);
+    BUG_ASSERT_PARAM((fuse_elements > 0), fuse_elements, 0);
 
     // check for NULL parameter
     if (!dts_coeff)
     {
-        return FPFW_STATUS_INVALID_ARGS;
+        return FPFW_STATUS_NULL_POINTER;
     }
 
     // get pmm rev
@@ -252,11 +252,13 @@ int32_t power_fuses_read_memasst(dvfs_core_memasst_entries_t* memasst_entries)
 {
     // unexpected, but if something changes want to know about it
     // NOTE: The SCP FW is starting from 0x80 and 0x0 could contain garbage data hence commenting out below line
-    FPFW_RUNTIME_ASSERT(DIMOF((memasst_entries->entry)) >= DIMOF(core_memasst_tpemab_offsets));
+    BUG_ASSERT_PARAM((DIMOF((((dvfs_core_memasst_entries_t*)0)->entry)) >= DIMOF(core_memasst_tpemab_offsets)),
+                     DIMOF((((dvfs_core_memasst_entries_t*)0)->entry)),
+                     DIMOF(core_memasst_tpemab_offsets));
 
     if (!memasst_entries)
     {
-        return FPFW_STATUS_INVALID_ARGS;
+        return FPFW_STATUS_NULL_POINTER;
     }
 
     // clear structure
@@ -318,7 +320,7 @@ int32_t power_fuses_clear_core_valid_bits(corebits_t* valid_bits)
     uint32_t corebit = 0;
     if (!valid_bits)
     {
-        return FPFW_STATUS_INVALID_ARGS;
+        return FPFW_STATUS_NULL_POINTER;
     }
 
     // iterate over fuses
@@ -355,7 +357,7 @@ int32_t power_fuses_get_ldodac_to_voltage(dvfs_vf_slope_t* slope_offset)
 {
     if (!slope_offset)
     {
-        return FPFW_STATUS_INVALID_ARGS;
+        return FPFW_STATUS_NULL_POINTER;
     }
 
     uint64_t fuse_data = 0;
@@ -409,7 +411,7 @@ int32_t power_fuses_get_ldo_headroom(uint8_t* ldo_headroom)
 {
     if (!ldo_headroom)
     {
-        return FPFW_STATUS_INVALID_ARGS;
+        return FPFW_STATUS_NULL_POINTER;
     }
 
     uint64_t fuse_data = 0;
@@ -428,7 +430,7 @@ int32_t power_fuses_get_vcpu_guardband(uint8_t* vcpu_guardband)
 {
     if (!vcpu_guardband)
     {
-        return FPFW_STATUS_INVALID_ARGS;
+        return FPFW_STATUS_NULL_POINTER;
     }
 
     uint64_t fuse_data = 0;
@@ -446,11 +448,11 @@ int32_t power_fuses_get_vcpu_guardband(uint8_t* vcpu_guardband)
 int32_t power_fuses_vcpu_leakage(power_vcpu_interp_t* vcpu_leakage, uint32_t count)
 {
     // unexpected, but if something changes want to know about it
-    FPFW_RUNTIME_ASSERT(count >= DIMOF(vcpu_leakage_temp_offsets));
+    BUG_ASSERT_PARAM((count >= DIMOF(vcpu_leakage_temp_offsets)), count, DIMOF(vcpu_leakage_temp_offsets));
 
     if (!vcpu_leakage)
     {
-        return FPFW_STATUS_INVALID_ARGS;
+        return FPFW_STATUS_NULL_POINTER;
     }
 
     // clear structure
@@ -490,11 +492,11 @@ int32_t power_fuses_vcpu_leakage(power_vcpu_interp_t* vcpu_leakage, uint32_t cou
 int32_t power_fuses_ldo_dyn(power_vcpu_interp_t* vcpu_ldo_dyn, uint32_t count)
 {
     // unexpected, but if something changes want to know about it
-    FPFW_RUNTIME_ASSERT(count >= DIMOF(vcpu_ldo_dyn_temp_offsets));
+    BUG_ASSERT_PARAM((count >= DIMOF(vcpu_ldo_dyn_temp_offsets)), count, DIMOF(vcpu_ldo_dyn_temp_offsets));
 
     if (!vcpu_ldo_dyn)
     {
-        return FPFW_STATUS_INVALID_ARGS;
+        return FPFW_STATUS_NULL_POINTER;
     }
 
     // clear structure
@@ -534,11 +536,11 @@ int32_t power_fuses_ldo_dyn(power_vcpu_interp_t* vcpu_ldo_dyn, uint32_t count)
 int32_t power_fuses_core_cdyn(power_vcpu_interp_t* core_cdyn, uint32_t count)
 {
     // unexpected, but if something changes want to know about it
-    FPFW_RUNTIME_ASSERT(count >= DIMOF(core_cdyn_cdyn_offsets));
+    BUG_ASSERT_PARAM((count >= DIMOF(core_cdyn_cdyn_offsets)), count, DIMOF(core_cdyn_cdyn_offsets));
 
     if (!core_cdyn)
     {
-        return FPFW_STATUS_INVALID_ARGS;
+        return FPFW_STATUS_NULL_POINTER;
     }
 
     // clear structure
@@ -568,7 +570,7 @@ int32_t power_fuses_process_id(power_fuse_process_id_t* process_id)
 {
     if (!process_id)
     {
-        return FPFW_STATUS_INVALID_ARGS;
+        return FPFW_STATUS_NULL_POINTER;
     }
 
     uint64_t fuse_data = 0;
@@ -589,7 +591,7 @@ int32_t power_fuses_get_tdp_config(power_fuse_tdp_t* tdp_config)
 {
     if (!tdp_config)
     {
-        return FPFW_STATUS_INVALID_ARGS;
+        return FPFW_STATUS_NULL_POINTER;
     }
 
     uint64_t fuse_data = 0;
@@ -600,7 +602,7 @@ int32_t power_fuses_get_tdp_config(power_fuse_tdp_t* tdp_config)
     {
         // we divide by num cores, so it can't be 0
         POWER_LOG_CRIT(MODULE_NAME "TDP num cores is 0");
-        BUG_CHECK(FPFW_STATUS_FAIL, (uint16_t)fuse_data, 0);
+        BUG_CHECK(KNG_SC_FUSE_TDP_NUM_CORES, (uint16_t)fuse_data, 0);
     }
     tdp_config->num_cores = (uint8_t)fuse_data;
 
@@ -624,10 +626,10 @@ int32_t power_fuses_get_tdp_config(power_fuse_tdp_t* tdp_config)
 int32_t power_fuses_get_curve_assignment(uint32_t core, uint32_t* curve_assignment)
 {
     // ensure unexpected doesn't occur
-    FPFW_RUNTIME_ASSERT(core < VF_CORE_ANCHOR_SEL_ARRAY_ELEMENTS);
+    BUG_ASSERT_PARAM((core < VF_CORE_ANCHOR_SEL_ARRAY_ELEMENTS), core, VF_CORE_ANCHOR_SEL_ARRAY_ELEMENTS);
     if (!curve_assignment)
     {
-        return FPFW_STATUS_INVALID_ARGS;
+        return FPFW_STATUS_NULL_POINTER;
     }
 
     uint64_t fuse_data = 0;
@@ -649,23 +651,25 @@ int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offs
 {
     // unexpected, but if something changes want to know about it
     // Checking that the size of pair index in the innermost struct matches with our array definitions
-    FPFW_RUNTIME_ASSERT(DIMOF(vf_curves->curveset[0].curve[0].pair) >= DIMOF(core_vft_fuse_freq_offsets[0]));
-    FPFW_RUNTIME_ASSERT(DVFS_FUSED_PAIRS_COUNT >= VFT_CURVESET_COUNT);
+    BUG_ASSERT_PARAM((DIMOF(((power_fuse_vf_curveset_t*)0)->curveset[0].curve[0].pair) >=
+                      DIMOF(core_vft_fuse_freq_offsets[0])),
+                     DIMOF(((power_fuse_vf_curveset_t*)0)->curveset[0].curve[0].pair),
+                     DIMOF(core_vft_fuse_freq_offsets[0]));
+    BUG_ASSERT_PARAM((DVFS_FUSED_PAIRS_COUNT >= VFT_CURVESET_COUNT), DVFS_FUSED_PAIRS_COUNT, VFT_CURVESET_COUNT);
 
     if (!vf_curves)
     {
-        return FPFW_STATUS_INVALID_ARGS;
+        return FPFW_STATUS_NULL_POINTER;
     }
 
     if (ldo_offset != 0)
     {
         POWER_ET_WARN(POWER_ET_TYPE_FUSE_LDO_OFFSET, ldo_offset);
-        POWER_LOG_WARN(MODULE_NAME "Fused LDO values offset by %d", ldo_offset);
+        POWER_LOG_WARN(MODULE_NAME "Fused LDO values offset by %d\n", ldo_offset);
     }
 
     // clear structure
     memset(vf_curves, 0, sizeof(power_fuse_vf_curveset_t));
-
     // iterate over fuses
     for (uint32_t curve_idx = 0; curve_idx < DIMOF(core_vft_fuse_freq_offsets); ++curve_idx)
     {
@@ -709,7 +713,7 @@ void power_fuses_read(power_fuse_data_t* p_fuses)
     power_runconfig_t* p_run_config = power_runconfig_get();
 
     /* temp implementation for fuse reads */
-    FPFW_RUNTIME_ASSERT(p_fuses != NULL);
+    BUG_ASSERT_PARAM((p_fuses != NULL), (uint32_t)p_fuses, (uint32_t)NULL);
 
     const uint32_t core_count = NUM_AP_CORES_PER_DIE; // system_info_get_core_count();
 
@@ -723,31 +727,31 @@ void power_fuses_read(power_fuse_data_t* p_fuses)
     if (power_fuses_is_power_hw_supported())
     {
         int32_t status = power_fuses_clear_core_valid_bits(&p_fuses->valid_cores);
-        FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
         status = power_fuses_read_vf(&p_fuses->vf, p_run_config->knobs.ldo_offset);
-        FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
         status = power_fuses_read_memasst(&p_fuses->memasst);
-        FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
         status = power_fuses_get_ldodac_to_voltage(&p_fuses->ldodac_to_volt);
-        FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
         status = power_fuses_get_dts_coeff_tile(&p_fuses->dts_coeff_tile[0], ARRAY_SIZE(p_fuses->dts_coeff_tile));
-        FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
         status = power_fuses_get_dts_coeff_soctop(&p_fuses->dts_coeff_soctop[0], ARRAY_SIZE(p_fuses->dts_coeff_soctop));
-        FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);
-        status = power_fuses_get_ldo_headroom(&p_fuses->v_ldo_dropout_mv);
-        FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);
-        status = power_fuses_get_vcpu_guardband(&p_fuses->vcpu_guardband_mv);
-        FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
+        status = power_fuses_get_ldo_headroom(&p_fuses->v_ldo_dropout_mv); // read fuse - 1
+        BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
+        status = power_fuses_get_vcpu_guardband(&p_fuses->vcpu_guardband_mv); // read fuse - 1
+        BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
         status = power_fuses_vcpu_leakage(&p_fuses->vcpu_leakage[0], DIMOF(p_fuses->vcpu_leakage));
-        FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
         status = power_fuses_ldo_dyn(&p_fuses->vcpu_ldo_dyn[0], DIMOF(p_fuses->vcpu_ldo_dyn));
-        FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
         status = power_fuses_core_cdyn(&p_fuses->core_cdyn[0], DIMOF(p_fuses->core_cdyn));
-        FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);
-        status = power_fuses_process_id(&p_fuses->process_id);
-        FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);
-        status = power_fuses_get_tdp_config(&p_fuses->tdp_config);
-        FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
+        status = power_fuses_process_id(&p_fuses->process_id); // read fuse - 1
+        BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
+        status = power_fuses_get_tdp_config(&p_fuses->tdp_config); // read fuse - 3
+        BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
     }
     else
     {
@@ -777,5 +781,4 @@ void power_fuses_read(power_fuse_data_t* p_fuses)
                                                      .power_A = TDP_DEFAULT_POWER_A};
         p_fuses->tdp_config = default_tdp_config;
     }
-    POWER_LOG_INFO("power_fuses_read completed\n");
 }

@@ -3,6 +3,7 @@ set(TARGET power.test.runconfig)
 # Compile test
 add_executable(${TARGET}
     power_runconfig_test.cpp
+    ../mocks/mock_bug_check.c
 )
 
 target_link_libraries(${TARGET}
@@ -19,6 +20,8 @@ target_link_libraries(${TARGET}
         fwlib.lib.linkedlist
         fwlib.lib.utils
  )
+
+target_compile_definitions(${TARGET} PRIVATE UNIT_TEST)
 
 # Get private includes for module under test
 target_include_directories(${TARGET}
@@ -44,6 +47,7 @@ mock_target(${TARGET}
     dvfs_vft_from_fuse_data
     power_fuses_read
     power_knobs_read
+    crash_dump_bug_check
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

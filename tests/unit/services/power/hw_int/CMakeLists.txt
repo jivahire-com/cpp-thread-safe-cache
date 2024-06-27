@@ -7,6 +7,7 @@ add_executable(${TARGET}
     ../mocks/mock_dvfs.c
     ../mocks/mock_odcm.c
     ../mocks/mock_pvt.c
+    ../mocks/mock_bug_check.c
 )
 
 target_link_libraries(${TARGET}
@@ -23,6 +24,8 @@ target_link_libraries(${TARGET}
         fwlib.lib.linkedlist
         fwlib.lib.utils
  )
+
+target_compile_definitions(${TARGET} PRIVATE UNIT_TEST)
 
 # Get private includes for module under test
 target_include_directories(${TARGET}
@@ -45,6 +48,7 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    crash_dump_bug_check
     dvfs_get_adclk_droop_count
     dvfs_init
     dvfs_pll_dsm_toggle_start

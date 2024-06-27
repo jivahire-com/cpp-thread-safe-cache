@@ -91,6 +91,15 @@ int32_t __wrap_sos_register_ssi(PDFWK_INTERFACE_HEADER p_interface,
     check_expected_ptr(p_ssi_interface);
     return mock_type(int32_t);
 }
+
+void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
+{
+    check_expected(errorCode);
+    check_expected(p1);
+    check_expected(p2);
+    check_expected(p3);
+    check_expected(p4);
+}
 }
 //
 // Tests

@@ -2,11 +2,10 @@ set(TARGET power.test.main)
 
 # Compile test
 add_executable(${TARGET}
-    # TODO: fix and re-enable fuse tests
-    # https://azurecsi.visualstudio.com/Dev/_workitems/edit/1884741
-    # power_fuses_test.cpp
+    power_fuses_test.cpp
     power_knobs_test.cpp
     power_main_test.cpp
+    ../mocks/mock_bug_check.c
 )
 
 target_link_libraries(${TARGET}
@@ -23,6 +22,8 @@ target_link_libraries(${TARGET}
         fwlib.lib.linkedlist
         fwlib.lib.utils
  )
+
+target_compile_definitions(${TARGET} PRIVATE UNIT_TEST)
 
 # Get private includes for module under test
 target_include_directories(${TARGET}
@@ -49,13 +50,14 @@ mock_target(${TARGET}
     DfwkDeviceInitialize
     DfwkQueueInitialize
     DfwkInterfaceInitialize
-    #platform_read_fuse
+    platform_read_fuse
     power_init_core
     power_init_soc
-    #power_fuses_is_power_hw_supported
+    power_fuses_is_power_hw_supported
     power_runconfig_get  
     power_runconfig_init
     power_telemetry_init_config
+    crash_dump_bug_check
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

@@ -24,6 +24,7 @@ extern "C" {
 #include <dvfs.h>                  // for dvfs_get_cppc_from_pstate, _DVFS_...
 #include <dvfs_struct.h>           // for DVFS_DEF_PLIMIT_INDEX_NOMINAL
 #include <fgpll_regs.h>            // for (anonymous), fgpll_reg, ptr_fgpll...
+#include <mock_bug_check.h>        // for __wrap_crash_dump_bug_check
 #include <odcm.h>                  // for _ODCM_RETCODE
 #include <odcm_struct.h>           // for ODCM_DEFAULT_CONFIG, odcm_config_t
 #include <pex_regs.h>              // for PEX_CORE_PLL_ADDRESS

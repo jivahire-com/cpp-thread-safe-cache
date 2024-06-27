@@ -23,6 +23,7 @@ extern "C" {
 #include <dvfs.h>
 #include <dvfs_struct.h>       // for dvfs_vf_slope_t
 #include <fpfw_status.h>       // for FPFW_STATUS_SUCCESS
+#include <mock_bug_check.h>    // for __wrap_crash_dump_bug_check
 #include <power_hw_int_i.h>    // for power_telcfg_t
 #include <power_runconfig.h>   // for power_service_config_t
 #include <power_runconfig_i.h> // for power_runconfig_t

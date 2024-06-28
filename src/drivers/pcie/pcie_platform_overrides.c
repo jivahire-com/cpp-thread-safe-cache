@@ -12,7 +12,6 @@
 /*------------- Includes -----------------*/
 #include "pcie_ss_common.h" // for pcie_ss_entity_t, ss_bases_t
 
-#include <idsw.h>            // for idsw_get_platform_sdv, SILIBS_...
 #include <rpss_p1_regs.h>    // for rpss_p1_reg, rpss_p1_rp_fuse
 #include <silibs_platform.h> // for MMIO_WRITE32
 

@@ -31,7 +31,6 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static pcie_ss_entity_t mock_pcie_ent;
 static pcie_x16_general_reg mock_general_reg_block;
 static pcie_x16_e32_phy_reg mock_phy_block;
 static e32_mem_map_reg mock_bcast_block;
@@ -57,9 +56,7 @@ pcie_ss_entity_t* __wrap_pciess_get_entity(RPSS_INSTANCE rpss_idx)
 {
     check_expected(rpss_idx);
 
-    mock_pcie_ent.id = rpss_idx;
-
-    return &(mock_pcie_ent);
+    return mock_ptr_type(pcie_ss_entity_t*);
 }
 
 silibs_status_t __wrap_pciess_config_entity(pcie_ss_entity_t* ss,

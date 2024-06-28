@@ -184,7 +184,7 @@ target_link_libraries(
         ms::service::sensor_fifo::cli
         silibs::common::lib_uart_pl011
         silibs::idhw
-        silibs::idsw
+        silibs::idsw_kng
         silibs::platform
         silibs::kng_silibs_platform
         silibs::sensor_ram_bridge

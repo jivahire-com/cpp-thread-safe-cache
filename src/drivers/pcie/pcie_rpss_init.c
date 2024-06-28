@@ -73,6 +73,31 @@ static pcie_cfg_t pcie_cfg_np = {
 };
 
 /*------------- Functions ----------------*/
+static void populate_rb_configs_from_rpss_entity(pcie_ss_entity_t* rpss, pcie_root_bridge_config* rb_configs)
+{
+    for (uint8_t i = 0; i < ROOT_PORTS_PER_RPSS; i++)
+    {
+        if (rpss->rps[i].valid == false || rpss->rps[i].enabled == false)
+        {
+            rb_configs[i].flags.is_enabled = false;
+            continue;
+        }
+
+        rb_configs[i].flags.is_enabled = rpss->rps[i].enabled;
+        rb_configs[i].flags.hot_plug_enabled = pcie_cfg_np.rp_cfgs[i].pcie_rp_hotplug_capable;
+        rb_configs[i].slot_number = pcie_cfg_np.rp_cfgs[i].pcie_rp_slot_num;
+
+        rb_configs[i].mmiol.base = rpss->ranges[i].mmiol_start;
+        rb_configs[i].mmiol.limit = rpss->ranges[i].mmiol_end;
+
+        rb_configs[i].mmioh.base = rpss->ranges[i].mmioh_start;
+        rb_configs[i].mmioh.limit = rpss->ranges[i].mmioh_end;
+
+        rb_configs[i].bus.base = rpss->rps[i].bus_cfg.primary_bus;
+        rb_configs[i].bus.limit = rpss->rps[i].bus_cfg.subordinate_bus;
+    }
+}
+
 int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
 {
     pcie_sync_request_t* r = (pcie_sync_request_t*)req;
@@ -101,6 +126,10 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
 
     sts = pciess_deassert_por_reset(rpss);
     FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+
+    pciess_device_interface_t* iface = (pciess_device_interface_t*)(req->OwningInterface);
+    pciess_device_t* dev = (pciess_device_t*)(iface->dev);
+    populate_rb_configs_from_rpss_entity(rpss, dev->rb_configs);
 
     /* Do not unmap ATU entries as they are required for runtime handling */
     return sts;

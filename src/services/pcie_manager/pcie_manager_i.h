@@ -33,6 +33,16 @@
 void rpss_service_thread_fn(ULONG thread_input);
 
 /**
+ *  @brief Worker thread for setting the root bridge and VAB config variable.
+ *
+ *  @param[in]  thread_input  Thread context for each root port worker passed in
+ *                            by ThreadX.
+ *
+ *  @return     None
+ */
+void config_variable_service_thread_fn(ULONG thread_input);
+
+/**
  *  @brief Request the PCIe driver to initiate link training on all enabled root
  *         ports on a given root port subsystem.
  *

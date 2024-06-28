@@ -10,16 +10,18 @@
 /*------------- Includes -----------------*/
 #include "FpFwAssert.h" // for FPFW_RUNTIME_ASSERT
 
-#include <DfwkClient.h> // for DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE
-#include <idsw.h>
+#include <DfwkClient.h>   // for DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE
+#include <ErrorHandler.h> // for FPFwErrorRaise
 #include <idsw_kng.h>
+#include <pcie_config_variable.h>
 #include <pcie_dfwk.h>        // for pcie_async_request_t, pcie_dfwk_interf...
 #include <pcie_manager_i.h>   // for rpss_req_completion_cb, rpss_service_t...
 #include <scp_pcie_manager.h> // for pcie_manager_context_t, pciess_complet...
-#include <stdbool.h>          // for true
-#include <stdint.h>           // for uint8_t
-#include <stdio.h>            // for fflush, printf, stdout
-#include <tx_api.h>           // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
+#include <silibs_kng_soc.h>
+#include <stdbool.h> // for true
+#include <stdint.h>  // for uint8_t
+#include <stdio.h>   // for fflush, printf, stdout
+#include <tx_api.h>  // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
 
 /*-- Symbolic Constant Macros (defines) --*/
 /*
@@ -87,6 +89,10 @@ void rpss_service_thread_fn(ULONG thread_input)
     };
     int32_t status = DfwkInterfaceSendSync((PDFWK_INTERFACE_HEADER)(ctx->iface), &sync_req.header);
     FPFW_RUNTIME_ASSERT(status == DFWK_SUCCESS);
+
+    /* Set bit in event flags to signal that these configs are populated */
+    tx_event_flags_set(ctx->event_ptr, (1 << ctx->rpss_idx), TX_OR);
+
     tx_thread_sleep(worker_yield_ticks);
 
     sync_req.header.RequestType = PRE_RP_INIT_REQUEST;

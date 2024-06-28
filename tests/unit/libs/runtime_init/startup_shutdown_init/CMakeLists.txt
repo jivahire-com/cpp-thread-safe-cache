@@ -19,7 +19,7 @@ target_link_libraries(${TARGET}
         ms::lib::threadx
         ms::service::scp_startup_shutdown
         silibs::atu
-        silibs::idsw
+        silibs::idsw_kng
         silibs::kng_silibs_platform
 )
 

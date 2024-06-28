@@ -3,7 +3,8 @@ set(TARGET kng.service.scp_pcie_manager)
 add_library(${TARGET}
     STATIC
         pcie_manager_init.c
-        pcie_service_thread.c
+        pcie_rpss_manager_thread.c
+        pcie_config_manager_thread.c
         pcie_manager_callbacks.c
 )
 
@@ -25,6 +26,7 @@ target_link_libraries(
 target_include_directories(${TARGET}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
+        ${REPO_ROOT_DIR}/.externs/repo/silibs/soc_fw_shared/include
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
 )

@@ -15,6 +15,7 @@
 #include <FpFwAssert.h>
 #include <kng_soc_constants.h>
 #include <silibs_platform.h>
+#include <pcie_config_variable.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -63,6 +64,7 @@ typedef struct _pciess_device_t
     DFWK_QUEUE default_queue;
     DFWK_QUEUE per_rp_queue[ROOT_PORTS_PER_RPSS];
     TX_TIMER per_rp_timer[ROOT_PORTS_PER_RPSS];
+    pcie_root_bridge_config *rb_configs;    // pointer to rb config
 } pciess_device_t;
 
 typedef struct _pciess_device_interface_t

@@ -12,7 +12,7 @@ target_link_libraries(${TARGET}
     fwlib.lib.init
     ms::cmocka::testrunner
     ms::lib::tower
-    silibs::idsw
+    silibs::idsw_kng
     silibs::idhw
     silibs::kng_silibs_platform
     silibs::tower_sequence

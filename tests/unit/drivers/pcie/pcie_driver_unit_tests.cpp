@@ -22,7 +22,8 @@ extern "C" {
 #include <kng_soc_constants.h>
 #include <pcie_dfwk.h>
 #include <pcie_dfwk_i.h>
-#include <silibs_status.h> // for SILIBS_E_PARAM, SILIBS_SUCCESS
+#include <pcie_ss_common.h> // for pcie_ss_entity_t
+#include <silibs_status.h>  // for SILIBS_E_PARAM, SILIBS_SUCCESS
 #include <tx_api.h>
 }
 
@@ -35,6 +36,9 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 pciess_device_t dev;
 pciess_device_interface_t iface;
+
+/* mock entity*/
+pcie_ss_entity_t mock_pcie_ent;
 
 /*------------- Functions ----------------*/
 /* Test cases for top-level driver initialization */
@@ -71,16 +75,30 @@ TEST_FUNCTION(interface_init, NULL, NULL)
 /* Test case for initial pciess init sync. request successful path */
 TEST_FUNCTION(test_pcie_rpss_init_success, NULL, NULL)
 {
+    /*Setup the mock interface and device*/
+    pcie_root_bridge_config rb_configs[4];
+    pciess_device_t dev;
+    dev.rb_configs = rb_configs;
+    pciess_device_interface_t iface;
+    iface.dev = &dev;
+
     /* Setup the request for an rpss */
     pcie_sync_request_t r;
     r.header.RequestType = INITIAL_CONFIG_REQUEST;
     r.req_type = INITIAL_CONFIG_REQUEST;
     r.rpss_index = RPSS2;
 
+    /* Set the owning interface*/
+    PDFWK_SYNC_REQUEST_HEADER req = (PDFWK_SYNC_REQUEST_HEADER)&r;
+    req->OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
+
+    mock_pcie_ent.id = r.rpss_index;
+
     /* Setup silibs expectations */
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
     expect_value(__wrap_pciess_config_entity, program_phy_regs, true);
     expect_value(__wrap_pciess_config_entity, enable_apu, true);
     will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
@@ -89,6 +107,48 @@ TEST_FUNCTION(test_pcie_rpss_init_success, NULL, NULL)
     int32_t ret = pcie_sched_sync_op(&(r.header));
     assert_int_equal(ret, 0);
     assert_int_equal(r.status, SILIBS_SUCCESS);
+}
+
+/* Test case for successful rb config population*/
+TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, NULL, NULL)
+{
+    /*Setup the mock interface and device*/
+    pcie_root_bridge_config rb_configs[4];
+    pciess_device_t dev;
+    dev.rb_configs = rb_configs;
+    pciess_device_interface_t iface;
+    iface.dev = &dev;
+
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    r.header.RequestType = INITIAL_CONFIG_REQUEST;
+    r.req_type = INITIAL_CONFIG_REQUEST;
+    r.rpss_index = RPSS2;
+
+    /* Set the owning interface*/
+    PDFWK_SYNC_REQUEST_HEADER req = (PDFWK_SYNC_REQUEST_HEADER)&r;
+    req->OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
+
+    mock_pcie_ent.id = r.rpss_index;
+    mock_pcie_ent.rps[0].enabled = true;
+    mock_pcie_ent.rps[0].valid = true;
+    mock_pcie_ent.rps[3].enabled = true;
+    mock_pcie_ent.rps[3].valid = true;
+
+    /* Setup silibs expectations */
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    expect_value(__wrap_pciess_config_entity, program_phy_regs, true);
+    expect_value(__wrap_pciess_config_entity, enable_apu, true);
+    will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
+    will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
+    will_return(__wrap_pciess_deassert_por_reset, SILIBS_SUCCESS);
+    pcie_sched_sync_op(&(r.header));
+
+    assert_int_equal(rb_configs[0].flags.is_enabled, true);
+    assert_int_equal(rb_configs[3].flags.is_enabled, true);
 }
 
 /* Test case for initial pciess init sync. request atu mapping failures */
@@ -116,7 +176,11 @@ TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success, NULL, NULL)
     r.header.RequestType = PRE_RP_INIT_REQUEST;
     r.req_type = PRE_RP_INIT_REQUEST;
     r.rpss_index = RPSS2;
+
+    mock_pcie_ent.id = r.rpss_index;
+
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return(__wrap_pciess_phys_sram_init_done, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_pre_rp_ready_init, SILIBS_SUCCESS);
@@ -132,7 +196,11 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_success, NULL, NULL)
     r.header.RequestType = POST_RP_INIT_REQUEST;
     r.req_type = POST_RP_INIT_REQUEST;
     r.rpss_index = RPSS2;
+
+    mock_pcie_ent.id = r.rpss_index;
+
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return(__wrap_pciess_rps_ready, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_post_rp_ready_init, SILIBS_SUCCESS);
@@ -171,7 +239,10 @@ TEST_FUNCTION(test_link_training_dispatch, NULL, NULL)
     r.rp_index = 3;
     r.rp_op = INITIATE_LINK_TRAINING;
 
+    mock_pcie_ent.id = r.rpss_index;
+
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS3);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
     will_return(__wrap_pciess_rp_initiate_link_training, SILIBS_SUCCESS);
     will_return(__wrap__txe_timer_delete, TX_SUCCESS);
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
@@ -187,7 +258,10 @@ TEST_FUNCTION(test_link_training_threadx_failure, NULL, NULL)
     r.rp_index = 3;
     r.rp_op = INITIATE_LINK_TRAINING;
 
+    mock_pcie_ent.id = r.rpss_index;
+
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS3);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
     will_return(__wrap_pciess_rp_initiate_link_training, SILIBS_SUCCESS);
     will_return(__wrap__txe_timer_delete, TX_SUCCESS);
     will_return(__wrap__txe_timer_create, TX_TIMER_ERROR);

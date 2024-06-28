@@ -44,5 +44,10 @@ mock_target(${TARGET}
     _txe_thread_create
     _txe_queue_send
     _txe_queue_receive
+    _txe_event_flags_create
+    _txe_event_flags_set
+    _txe_event_flags_get
+    _txe_event_flags_delete
+    idsw_get_die_id
     pcie_dfwk_init
 )

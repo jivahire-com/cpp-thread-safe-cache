@@ -11,8 +11,9 @@
 /*------------- Includes -----------------*/
 #include <DfwkCommon.h> // for PDFWK_ASYNC_REQUEST_HEADER, DFWK_ASYNC_REQUE...
 #include <FpFwCMocka.h> // for check_expected_ptr, assert_non_null, assert_...
-#include <pcie_dfwk.h>  // for pcie_async_request_t, pciess_device_t
-#include <stddef.h>     // for size_t
+#include <idsw_kng.h>
+#include <pcie_dfwk.h> // for pcie_async_request_t, pciess_device_t
+#include <stddef.h>    // for size_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -50,4 +51,15 @@ void __wrap_DfwkInterfaceSendAsync(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC
 {
     check_expected_ptr(Interface);
     check_expected_ptr(Request);
+}
+
+UINT __wrap__txe_event_flags_delete(TX_EVENT_FLAGS_GROUP* group_ptr)
+{
+    check_expected(group_ptr);
+    return mock_type(UINT);
+}
+
+KNG_DIE_ID __wrap_idsw_get_die_id(void)
+{
+    return mock_type(KNG_DIE_ID);
 }

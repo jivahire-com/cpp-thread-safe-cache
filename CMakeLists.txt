@@ -12,6 +12,9 @@ set(REPO_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install)
 
+# Steer SCP/MCP builds to use stdint data types when ingesting common headers shared with UEFI
+add_compile_definitions(SCP_CONFIG_VARIABLE_TYPE)
+
 # Python3 executable path
 set (Python3_EXECUTABLE $ENV{REPO_APP_PATH_python.win64}/tools/python.exe)
 

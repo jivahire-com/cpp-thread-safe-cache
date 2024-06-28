@@ -11,10 +11,12 @@
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h> // IWYU pragma: keep
 #include <atu_lib.h>
-#include <cstddef> // IWYU pragma: keep
-#include <cstdint> // IWYU pragma: keep
-#include <idsw.h>
+#include <cmocka.h> // IWYU pragma: keep
+#include <cstddef>  // IWYU pragma: keep
+#include <cstdint>  // IWYU pragma: keep
 #include <idsw_kng.h>
+#include <pcie_common.h>
+#include <pcie_ss_common.h>
 
 extern "C" {
 #include <DfwkPtrTypes.h>
@@ -95,6 +97,7 @@ TEST_FUNCTION(test_pcie_rpss_init_success, NULL, NULL)
     mock_pcie_ent.id = r.rpss_index;
 
     /* Setup silibs expectations */
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
@@ -136,6 +139,7 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, NULL, NULL)
     mock_pcie_ent.rps[3].valid = true;
 
     /* Setup silibs expectations */
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
@@ -181,7 +185,7 @@ TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success, NULL, NULL)
 
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return(__wrap_pciess_phys_sram_init_done, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_pre_rp_ready_init, SILIBS_SUCCESS);
     int32_t ret = pcie_sched_sync_op(&(r.header));

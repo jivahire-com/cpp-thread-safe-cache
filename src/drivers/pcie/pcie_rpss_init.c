@@ -142,12 +142,7 @@ int begin_rpss_pre_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
     FPFW_RUNTIME_ASSERT(rpss != NULL);
 
-    /*
-     * Skip SRAM init done check on sim platforms that don't have a PHY.
-     * SVP bug to fix this to allow testing -
-     * https://azurecsi.visualstudio.com/1P-SoC-Modeling/_workitems/edit/1841638
-     */
-    if (idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON)
+    if (!(IS_PLATFORM_FPGA()))
     {
         sts = pciess_phys_sram_init_done(rpss);
         FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);

@@ -26,6 +26,8 @@ This document is intended to describe the design detail for the module implement
 | MPMM                  | Max Power Mitigation                                                   |
 | VR                    | Voltage Rail                                                           |
 | AVS                   | Adaptive voltage scaling - dedicated BUS for processor voltage control |
+| AF                    | Activity factor - used in dynamic current calculation                  |
+| Cdyn                  | Dynamic capacitance - used in dynamic current calculation              |
 
 ### Reference Documents
 
@@ -103,7 +105,7 @@ Items below may change slightly as the project proceeds; initial fuse understand
 | DTS coefficients | Y/K values for PVT temperature sensor calibration |
 | VF curve(s) anchor points and assignments | Set of 4-7 anchor points per up to *#* VF curves and detail about CPU/temp (ITD) curve assignments |
 | DVFS_CORE_MEM_ASST | Table for determining necessary memasst values for pstate voltages | 
-| CORE_DISABLE | Detail on which of the 66/die CPU cores should be powered on for use |
+| CORE_DISABLE | Detail on which of the 68/die CPU cores should be powered on for use |
 | V_LDO_headroom | LDO headroom voltage used to calculate required LDO input | 
 | V_guardband | Additional guardband voltage added when calculating CPU VR setpoint | 
 | TDP Config | Core count, nominal frequency, and TDP (W) | 
@@ -120,13 +122,15 @@ These knobs are available for debug and test purposes.  Once the project reaches
 |power_remote_poll_interval|Remote (MCP) polling interval in milliseconds for power state.|250|
 |power_pid|Power PID configuration (type: power_pid_config_t). Defaults based on Python model.||
 |power_soc_maximum_thermal_watts_limit|SOC maximum power limit specific to thermal (W). Defaults to fused value if set to 0.|350|
-|power_soc_maximum_electrical_current_limit|Vcpu current maximum value (A) used to determine the maximum electrical power limit. update: Separate into VCPU0 and VCPU1.|500|
-|*power_r_loadline_vcpu0*|Loadline resistance (uOhm - used in Vcpu calculation). Default: 350. |350|
-|*power_r_loadline_vcpu1*|Loadline resistance (uOhm - used in Vcpu calculation). Default: 350. |350|
+|*power_soc_maximum_electrical_current_limit_vcpu0*|Vcpu0 current maximum value (A) used to determine the maximum electrical power limit. |500|
+|*power_soc_maximum_electrical_current_limit_vcpu1*|Vcpu1 current maximum value (A) used to determine the maximum electrical power limit. |500|
+|*power_r_loadline_vcpu0*|Loadline resistance (uOhm - used in Vcpu calculation). Default: 400. |400|
+|*power_r_loadline_vcpu1*|Loadline resistance (uOhm - used in Vcpu calculation). Default: 400. |400|
 |power_vsys_r_loadline|Loadline resistance (uOhm - used in Vsys power calculation)|700|
 |power_activity_factor_mpmm_enabled|Activity factor adjustment against dhrystone when MPMM enabled (percentage, used in Vcpu/dynamic current calculation).|200|
 |power_activity_factor_mpmm_disabled|Activity factor adjustment against dhrystone when MPMM disabled (percentage, used in Vcpu/dynamic current calculation). update: need to add 3 current threshold knobs|250|
 |power_capping_mode|Power capping mode (type: power_capping_mode_t). Default: PER_VM.|PER_VM|
+|power_enable_velocity_boost|Enable for velocity boost (priority-based turbo).  Disabling leaves turbo enabled, without priority.  |TRUE|
 |*power_c4_cores_limit_to_nominal*|True to limit cores in C4 c-state to nominal performance.|TRUE|
 |power_c3_cores_limit_to_nominal|True to limit cores in C3 c-state to nominal performance.|TRUE|
 |power_c2_cores_limit_to_nominal|True to limit cores in C2 c-state to nominal performance.|TRUE|
@@ -398,8 +402,9 @@ The PID will regulate only the power of the CPU cores, so it is necessary to iso
 ```
 P_cap = MIN(P_MTL, P_power_cap)
 P_cpu_cap = P_cap - P_soc_notcpu
-P_MEL = V_cpu0 * I_MEL + V_cpu1 * I_MEL
-P_cpu_cap = MIN(P_cpu_cap, P_MEL)
+P_MEL0 = V_cpu0 * I_MEL + V_cpu1 * I_cpu1
+P_MEL1 = V_cpu0 * I_cpu0 + V_cpu1 * I_MEL
+P_cpu_cap = MIN(P_cpu_cap, P_MEL0, P_MEL1)
 
 PID_error_input = P_cpu_cap - P_cpu
 ```
@@ -599,7 +604,7 @@ flowchart TD
     Comm0["`Initialize Knob-based Config`"]
     Comm1["`Adjust any voltage rails included in forced_vrs knob`"]
 
-    Comm10["`*Cluster/core init start; Telemetry Init* 
+    Comm10["`*Cluster/core init start*; *Telemetry Init* 
     (outside of Power Service)`"]
 
 
@@ -805,3 +810,16 @@ The naming convention for different commands is this: `<menu> <command_category>
 
 - The CLI interacts with the power service via a driver framework interface. It uses the default queue to send async messages to the power service.
 - The power service shares the default queue with the SSI service. Hence, care needs to be taken that the RequestTypes for SSI and Power CLI do not overlap.
+
+## Opens / In-progress
+
+The following items are still in-progress or need additional design consideration.
+
+* Mechanism to override ALL VRs (power_forced_vrs) - desired for tuning - current discussion is here:  https://azurecsi.visualstudio.com/Dev/_workitems/edit/1632264
+* Mesh power management config knobs - https://azurecsi.visualstudio.com/Dev/_workitems/edit/1885275
+* D2D power management config knobs - https://azurecsi.visualstudio.com/Dev/_workitems/edit/1885280
+* Accelerator power management - https://azurecsi.visualstudio.com/Dev/_workitems/edit/1885245
+* CLI support for forced freq/voltage - https://azurecsi.visualstudio.com/Dev/_workitems/edit/1887364
+* Vcpu optimizations - https://azurecsi.visualstudio.com/Dev/_workitems/edit/1888554
+* Warmstart and Multi-die synchronization - https://azurecsi.visualstudio.com/Dev/_workitems/edit/1888868
+

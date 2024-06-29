@@ -187,12 +187,14 @@ static void print_power_config_interval(power_knobs_t* knobs)
 static void print_power_config_limits(power_knobs_t* knobs)
 {
     printf("\nConfigured Control Loop Limits\n");
-    printf("------------------------------\n");
-    printf("Thermal/watt    Vcpu current\n");
+    printf("---------------------------------------------\n");
+    printf("Thermal/watt    Vcpu0 current   Vcpu1 current\n");
     print_padding(knobs->soc_maximum_thermal_watts_limit, 10);
-    printf("%uW    ", knobs->soc_maximum_thermal_watts_limit);
-    print_padding(knobs->soc_maximum_electrical_current_limit, 10);
-    printf("%uA", knobs->soc_maximum_electrical_current_limit);
+    printf("%uW     ", knobs->soc_maximum_thermal_watts_limit);
+    print_padding(knobs->soc_maximum_electrical_current_limit_vcpu0, 10);
+    printf("%uA    ", knobs->soc_maximum_electrical_current_limit_vcpu0);
+    print_padding(knobs->soc_maximum_electrical_current_limit_vcpu1, 10);
+    printf("%uA", knobs->soc_maximum_electrical_current_limit_vcpu1);
     printf("\n");
 }
 /* -------------------------------------- */

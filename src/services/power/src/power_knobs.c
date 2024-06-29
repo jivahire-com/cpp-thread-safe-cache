@@ -56,8 +56,10 @@ void power_knobs_read(power_knobs_t* p_knobs)
     p_knobs->pvt_loop_interval = 1000;    // config_get_power_pvt_loop_interval();
     p_knobs->temp_telemetry_divider = 10; // config_get_power_temp_telemetry_divider();
 
-    p_knobs->soc_maximum_electrical_current_limit =
-        500; // config_get_power_soc_maximum_electrical_current_limit();  // Vcpu max current in amps
+    p_knobs->soc_maximum_electrical_current_limit_vcpu0 =
+        500; // config_get_power_soc_maximum_electrical_current_limit_vcpu0();  // Vcpu max current in amps
+    p_knobs->soc_maximum_electrical_current_limit_vcpu1 =
+        500; // config_get_power_soc_maximum_electrical_current_limit_vcpu1();  // Vcpu max current in amps
     p_knobs->r_loadline_uohm = 400; // config_get_power_r_loadline();                            // (uOhm)
     p_knobs->vsys_r_loadline_uohm = 300; // config_get_power_vsys_r_loadline();                       // (uOhm)
     p_knobs->ldo_offset = 0;             // config_get_power_ldo_offset();
@@ -66,6 +68,7 @@ void power_knobs_read(power_knobs_t* p_knobs)
     p_knobs->mpmm = (power_mpmm_config_t){.enable = false, .gear = 2}; // config_get_power_mpmm();
 
     p_knobs->capping_mode = power_capping_mode_t_PER_VM; // config_get_power_capping_mode();
+    p_knobs->power_enable_velocity_boost = true;         // config_get_power_enable_velocity_boost();
     p_knobs->c4_cores_limit_to_nominal = true;           // config_get_power_c3_cores_limit_to_nominal();
     p_knobs->c3_cores_limit_to_nominal = true;           // config_get_power_c3_cores_limit_to_nominal();
     p_knobs->c2_cores_limit_to_nominal = true;           // config_get_power_c2_cores_limit_to_nominal();

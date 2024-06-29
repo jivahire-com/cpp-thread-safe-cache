@@ -325,9 +325,10 @@ typedef struct _power_knobs_t
     uint16_t vsys_r_loadline_uohm; // Loadline resistance used in VR power adjustment calculation (uOhm)
     uint16_t soc_maximum_thermal_watts_limit;      // SOC maximum power limit,
                                                    // specific to thermal (W)
-    uint16_t soc_maximum_electrical_current_limit; // Vcpu current maximum value (A)
+    uint16_t soc_maximum_electrical_current_limit_vcpu0; // Vcpu0 current maximum value (A)
                                                    // which is used to determine the
                                                    // maximum electrical power limit
+    uint16_t soc_maximum_electrical_current_limit_vcpu1; // Vcpu1 current maximum value (A)
     int16_t vcpu_offset_mv;                        // offset in mV to apply to Vcpu calculation
     uint8_t force_pstate;                          // 32 to disable, 0-31 to force pstate
 
@@ -341,6 +342,7 @@ typedef struct _power_knobs_t
                                        // below SCP calculated plimit -- TODO -
                                        // use desired perf from success message?
     uint8_t activity_factor_dhry_adjustment; // A default activity factor to use with peak CPU current calculation
+    bool power_enable_velocity_boost; // Enable velocity boost (prioritized turbo vs equal turbo)
     bool allow_plimit_below_nominal; // Outside of power capping, drop plimit to OS desired perf even if below nominal
     bool c4_cores_limit_to_nominal; // true to limit cores in c4 c-state to nominal perf
     bool c3_cores_limit_to_nominal; // true to limit cores in c3 c-state to nominal perf

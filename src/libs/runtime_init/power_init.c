@@ -144,7 +144,7 @@ FPFW_INIT_COMPONENT(pwr_int, FPFW_INIT_DEPENDENCIES("pwr_svc", "sos_int"))
     // create an interface specifically for SSI and register it
     static power_service_interface_t power_ssi_interface;
     power_interface_init(fpfw_init_get_handle("pwr_svc"), &power_ssi_interface);
-    
+
     // static data for SSI registration
     static startup_ssi_registration_t ssi_registration;
     int32_t status = sos_register_ssi(fpfw_init_get_handle("sos_int"), &ssi_registration, &power_ssi_interface.header);

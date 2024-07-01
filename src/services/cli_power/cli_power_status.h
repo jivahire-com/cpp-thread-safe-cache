@@ -10,7 +10,8 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
-#include <FpFwCli.h>
+#include "DfwkPtrTypes.h"     // for PDFWK_ASYNC_REQUEST_HEADER
+#include "power_runconfig.h"  // for power_if_cmd_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 

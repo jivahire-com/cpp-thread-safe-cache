@@ -29,7 +29,7 @@ typedef struct
 typedef struct {
     const char* sub_command;
     print_function fn;
-    power_runconfig_element_t power_runconfig_element_id;
+    power_if_cmd_t power_ext_if_cmd_id;
 } power_cli_sub_command_dictionary_element_t, *ppower_cli_sub_command_dictionary_element_t;
 
 /*-- Declarations (Statics and globals) --*/

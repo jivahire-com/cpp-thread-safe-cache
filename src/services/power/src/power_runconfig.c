@@ -25,22 +25,47 @@
 #include <string.h> // for memset
 
 /*-- Symbolic Constant Macros (defines) --*/
+/* Setting all pwr set commands to a generic fake dummy_set_function. To be updated (ADO: 1887411) */
+#define DUMMY_SET_CAP_FUNCTION            dummy_set_function
+#define DUMMY_SET_DESIRED_PSTATE_FUNCTION dummy_set_function
+#define DUMMY_SET_PLIMIT_FUNCTION         dummy_set_function
+#define DUMMY_SET_LOOP_DISABLES_FUNCTION  dummy_set_function
+#define DUMMY_SET_RACK_LIMIT_FUNCTION     dummy_set_function
+#define DUMMY_SET_MINUPDATE_FUNCTION      dummy_set_function
+#define DUMMY_SET_NOMINAL_FUNCTION        dummy_set_function
 
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
+void dummy_set_function(char* p_string, void* p_set_data);
 
 /*-- Declarations (Statics and globals) --*/
 
 static power_runconfig_t power_runconfig = {};
 
-power_runconfig_dictionary_element_t power_runconfig_dictionary[] = {
-    {POWER_RUNCONFIG_FUSES, &power_runconfig.fuses},
-    {POWER_RUNCONFIG_KNOBS, &power_runconfig.knobs},
+power_runconfig_read_dictionary_element_t power_runconfig_read_dictionary[] = {
+    {POWER_IF_CMD_GET_RUNCONFIG_FUSES, &power_runconfig.fuses},
+    {POWER_IF_CMD_GET_RUNCONFIG_KNOBS, &power_runconfig.knobs},
 };
 
-const uint32_t length_power_runconfig_dictionary =
-    sizeof(power_runconfig_dictionary) / sizeof(power_runconfig_dictionary_element_t);
+// clang-format off
+/* Setting all pwr set commands to fake dummy set functions. To be updated (ADO: 1887411) */
+power_runconfig_write_dictionary_element_t power_runconfig_set_dictionary[] = {
+    {POWER_IF_CMD_SET_CAP,              DUMMY_SET_CAP_FUNCTION              , "power cap"           },
+    {POWER_IF_CMD_SET_DESIRED_PSTATE,   DUMMY_SET_DESIRED_PSTATE_FUNCTION   , "desired pstate"      },
+    {POWER_IF_CMD_SET_PLIMIT,           DUMMY_SET_PLIMIT_FUNCTION           , "power limit"         },
+    {POWER_IF_CMD_SET_LOOP_DISABLES,    DUMMY_SET_LOOP_DISABLES_FUNCTION    , "loop disables"       },
+    {POWER_IF_CMD_SET_RACK_LIMIT,       DUMMY_SET_RACK_LIMIT_FUNCTION       , "rack power limit"    },
+    {POWER_IF_CMD_SET_MINUPDATE,        DUMMY_SET_MINUPDATE_FUNCTION        , "min update interval" },
+    {POWER_IF_CMD_SET_NOMINAL,          DUMMY_SET_NOMINAL_FUNCTION          , "nominal pstate"      },
+};
+// clang-format on
+
+const uint32_t length_power_runconfig_read_dictionary =
+    sizeof(power_runconfig_read_dictionary) / sizeof(power_runconfig_read_dictionary_element_t);
+
+const uint32_t length_power_runconfig_set_dictionary =
+    sizeof(power_runconfig_set_dictionary) / sizeof(power_runconfig_write_dictionary_element_t);
 
 /*------------- Functions ----------------*/
 
@@ -49,18 +74,38 @@ power_runconfig_t* power_runconfig_get()
     return &power_runconfig;
 }
 
-void* power_runconfig_get_element(power_runconfig_element_t id)
+void* power_runconfig_get_element(power_if_cmd_t id)
 {
-    for (uint32_t index = 0; index < length_power_runconfig_dictionary; index++)
+    for (uint32_t index = 0; index < length_power_runconfig_read_dictionary; index++)
     {
         /* Return the pointer to the element referenced by the power runconfig element ID */
-        if (id == power_runconfig_dictionary[index].id)
+        if (id == power_runconfig_read_dictionary[index].id)
         {
-            return power_runconfig_dictionary[index].p_runconfig_element;
+            return power_runconfig_read_dictionary[index].p_runconfig_element;
         }
     }
 
     return NULL;
+}
+
+void power_runconfig_set_element(power_if_cmd_t id, void* p_set_data)
+{
+    for (uint32_t index = 0; index < length_power_runconfig_set_dictionary; index++)
+    {
+        /* Return the pointer to the element referenced by the power runconfig element ID */
+        if (id == power_runconfig_set_dictionary[index].id)
+        {
+            power_runconfig_set_dictionary[index].p_function(power_runconfig_set_dictionary[index].p_string, p_set_data);
+        }
+    }
+}
+
+/* dummy_set_function to be removed (ADO: 1887411) */
+void dummy_set_function(char* p_string, void* p_set_data)
+{
+    FPFW_UNUSED(p_set_data);
+
+    printf("Setting value of %s in placeholder set function\n", p_string);
 }
 
 /* function to return the min_plimit supported by all cores */

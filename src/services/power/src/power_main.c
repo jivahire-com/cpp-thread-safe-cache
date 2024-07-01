@@ -8,20 +8,20 @@
  */
 
 /*------------- Includes -----------------*/
-#include "power_hw_int_i.h"
-#include "power_i.h"
-#include "power_runconfig.h" // for ppower_service_config_t
-#include "power_runconfig_i.h"
+#include "power_hw_int_i.h"    // for power_init_core, power_init_soc
+#include "power_i.h"           // for POWER_LOG_INFO, power_ap_soc_init
+#include "power_runconfig.h"   // for power_service_config_t
+#include "power_runconfig_i.h" // for power_runconfig_get_element, power...
 
-#include <DfwkDriver.h> // for DfwkInterfaceInitialize, DfwkQueueInitia...
-#include <DfwkHost.h>   // for DfwkDeviceInitialize
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
-#include <FpFwUtils.h>  // for FPFW_UNUSED
-#include <power_dfwk.h> // for ppower_service_t, ppower_service_interfa...
-#include <power_init.h> // for power_init, power_interface_init
-#include <startup_shutdown_ssi.h>
-#include <stdbool.h> // for false
-#include <stdint.h>  // for int32_t
+#include <DfwkDriver.h>           // for DfwkAsyncRequestComplete, DfwkInte...
+#include <DfwkHost.h>             // for DfwkDeviceInitialize
+#include <FpFwAssert.h>           // for FPFW_RUNTIME_ASSERT
+#include <FpFwUtils.h>            // for FPFW_UNUSED
+#include <power_dfwk.h>           // for (anonymous), ppower_service_cli_re...
+#include <power_init.h>           // for power_init, power_interface_init
+#include <startup_shutdown_ssi.h> // for pssi_startup_notification_request_t
+#include <stdbool.h>              // for false
+#include <stdint.h>               // for int32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -68,16 +68,18 @@ static void power_service_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER p_request, v
     break;
     case CLI_COMMANDS_POWER_CONFIG: {
         ppower_service_cli_request_t p_cli_request = (ppower_service_cli_request_t)p_request;
-
-        /* Pass the pointer to the requested data through the CompletionContext */
-        p_cli_request->p_requested_data = power_runconfig_get_element(p_cli_request->power_runconfig_element_id);
+        p_cli_request->p_requested_data = power_runconfig_get_element(p_cli_request->power_ext_if_cmd_id);
+        DfwkAsyncRequestComplete(p_request);
+    }
+    break;
+    case CLI_COMMANDS_POWER_SET: {
+        ppower_service_cli_request_t p_cli_request = (ppower_service_cli_request_t)p_request;
+        power_runconfig_set_element(p_cli_request->power_ext_if_cmd_id, p_cli_request->p_set_data);
         DfwkAsyncRequestComplete(p_request);
     }
     break;
     case CLI_COMMANDS_POWER_STATUS:
-    case CLI_COMMANDS_POWER_SET:
     case CLI_COMMANDS_POWER_LOG: {
-        // Placeholder to service `pwr set`, `pwr status` and `pwr log` async commands
         DfwkAsyncRequestComplete(p_request);
     }
     break;
@@ -92,7 +94,7 @@ static int32_t power_service_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER p_request)
     switch (p_request->RequestType)
     {
     case CLI_COMMANDS_POWER_CONFIG:
-    // Placeholder to service `pwr cfg_knobs` sync command
+    // Placeholder to service `pwr cfg` sync command
     case CLI_COMMANDS_POWER_SET:
     // Placeholder to service `pwr set` sync command
     case CLI_COMMANDS_POWER_STATUS:

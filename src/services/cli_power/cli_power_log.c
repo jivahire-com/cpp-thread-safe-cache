@@ -8,10 +8,11 @@
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwUtils.h>
-#include <cli_power.h>
+#include "DfwkCommon.h" // for PDFWK_ASYNC_REQUEST_HEADER, _DFWK_ASYNC_REQU...
+
+#include <FpFwUtils.h> // for FPFW_UNUSED
 #include <cli_power_log.h>
-#include <power_dfwk.h>
+#include <stdio.h> // for printf
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -29,5 +30,5 @@ void cli_power_log_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* compl
     FPFW_UNUSED(p_request);
     FPFW_UNUSED(completion_context);
 
-    printf("Commands to be implemented\n");
+    printf("Power Logging yet to be implemented\n");
 }

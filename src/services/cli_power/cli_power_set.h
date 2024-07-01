@@ -11,6 +11,7 @@
 
 /*----------- Nested includes ------------*/
 #include <FpFwCli.h>
+#include <power_runconfig.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -33,3 +34,15 @@
  *      None
  */
 void cli_power_set_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* completion_context);
+
+/**
+ *  @brief  Get the runconfig element ID for the sub-command. 
+ * This is used to trigger the appropriate set function in the power service.
+ * 
+ *  @param[in] sub_command
+ *     Pointer to the sub-command string
+ * 
+ *  @return
+ *      The runconfig element ID for the sub-command
+ */
+power_if_cmd_t cli_power_set_get_cmd_id(char* sub_command);

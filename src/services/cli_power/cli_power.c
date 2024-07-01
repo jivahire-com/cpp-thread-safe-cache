@@ -8,18 +8,21 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkClient.h>
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT>
-#include <FpFwUtils.h>
-#include <cli_power.h>
-#include <cli_power_common.h>
-#include <cli_power_config.h>
-#include <cli_power_interface.h>
-#include <cli_power_log.h>
-#include <cli_power_set.h>
-#include <cli_power_status.h>
-#include <power_dfwk.h>
-#include <power_runconfig.h>
+#include "FpFwCli.h"        // for FPFW_CLI_STATUS, CLI_ERROR, FpFwCli...
+#include "FpFwLinkedList.h" // for NULL_LIST_ENTRY
+
+#include <DfwkClient.h>          // for DfwkAsyncRequestInititalize, DfwkAs...
+#include <FpFwUtils.h>           // for FPFW_ARRAY_SIZE
+#include <cli_power.h>           // for cli_power_init
+#include <cli_power_config.h>    // for cli_power_config_get_cmd_id, cli_po...
+#include <cli_power_interface.h> // for cli_power_cmd_context_t
+#include <cli_power_log.h>       // for cli_power_log_async_print
+#include <cli_power_set.h>       // for cli_power_set_get_cmd_id, cli_power...
+#include <cli_power_status.h>    // for cli_power_status_async_print
+#include <power_dfwk.h>          // for power_service_cli_request_t, (anony...
+#include <power_runconfig.h>     // for POWER_IF_CMD_UNKNOWN, power_if_cmd_t
+#include <stdint.h>              // for uint8_t
+#include <stdio.h>               // for printf, NULL
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -51,15 +54,32 @@ static FPFW_CLI_COMMAND cli_power_commands[] = {
 //clang-format on
 
 /*-------------- Functions ---------------*/
+static power_if_cmd_t cli_power_get_cmd_id(e_cli_power_command_id_t command, char* subcommand)
+{
+    switch (command) {
+        case CLI_COMMANDS_POWER_CONFIG:
+            return cli_power_config_get_cmd_id(subcommand);
+        case CLI_COMMANDS_POWER_SET:
+            return cli_power_set_get_cmd_id(subcommand);
+        default: 
+            return POWER_IF_CMD_UNKNOWN;
+    }
+}
 
-static FPFW_CLI_STATUS dispatch_power_cli_async_request(e_cli_power_command_id_t command_id, char* subcommand, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine )
+static FPFW_CLI_STATUS dispatch_power_cli_async_request(uint8_t die, e_cli_power_command_id_t command, char* subcommand, void* p_set_data, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine )
 {
     
-        power_cli_cmd_context.request.header.RequestType = command_id;
-        power_cli_cmd_context.request.sub_command = subcommand;
-        power_cli_cmd_context.request.power_runconfig_element_id = cli_power_config_get_runconfig_element_id(subcommand);
+        power_cli_cmd_context.request.die = die;
 
-        if (power_cli_cmd_context.request.power_runconfig_element_id == POWER_RUNCONFIG_UNKNOWN)
+        power_cli_cmd_context.request.header.RequestType = command;
+        power_cli_cmd_context.request.sub_command = subcommand;
+
+        power_cli_cmd_context.request.p_requested_data = NULL;
+        power_cli_cmd_context.request.p_set_data = p_set_data;
+
+        power_cli_cmd_context.request.power_ext_if_cmd_id = cli_power_get_cmd_id(command, subcommand);
+
+        if (power_cli_cmd_context.request.power_ext_if_cmd_id == POWER_IF_CMD_UNKNOWN)
         {
             printf("Sub-command unsupported!!\n");
             return CLI_ERROR;
@@ -78,17 +98,19 @@ static FPFW_CLI_STATUS cli_power_config_command(int argc, const char** argv)
         return CLI_ERROR;
     }
 
-    return dispatch_power_cli_async_request(CLI_COMMANDS_POWER_CONFIG, (char*)argv[1], cli_power_config_async_print);
+    /* Die - 0 (Default), Cmd ID - CLI_COMMANDS_POWER_CONFIG, subcommand - argv[1], setval - None (Unused), callback - cli_power_config_async_print */
+    return dispatch_power_cli_async_request(0, CLI_COMMANDS_POWER_CONFIG, (char*)argv[1], NULL, cli_power_config_async_print);
 }
 
 static FPFW_CLI_STATUS cli_power_set_command(int argc, const char** argv)
 { 
     if (argc < 2) {
-        printf("Usage: pwr set <sub_cmd>\n");
+        printf("Usage: pwr set <sub_command>\n");
         return CLI_ERROR;
     }
 
-    return dispatch_power_cli_async_request(CLI_COMMANDS_POWER_SET, (char*)argv[1], cli_power_set_async_print);
+    /* Die - 0 (Default), Cmd ID - CLI_COMMANDS_POWER_CONFIG, subcommand - argv[1], setval - None (Unused), callback - cli_power_set_async_print */
+    return dispatch_power_cli_async_request(0, CLI_COMMANDS_POWER_SET, (char*)argv[1], NULL, cli_power_set_async_print);
 }
 
 static FPFW_CLI_STATUS cli_power_status_command(int argc, const char** argv)
@@ -98,7 +120,8 @@ static FPFW_CLI_STATUS cli_power_status_command(int argc, const char** argv)
         return CLI_ERROR;
     }
 
-    return dispatch_power_cli_async_request(CLI_COMMANDS_POWER_STATUS, (char*)argv[1], cli_power_status_async_print);
+    /* Die - 0 (Default), Cmd ID - CLI_COMMANDS_POWER_CONFIG, subcommand - argv[1], setval - None (Unused), callback - cli_power_config_async_print */
+    return dispatch_power_cli_async_request(0, CLI_COMMANDS_POWER_STATUS, (char*)argv[1], NULL, cli_power_status_async_print);
 }
 
 static FPFW_CLI_STATUS cli_power_log_command(int argc, const char** argv)
@@ -108,7 +131,8 @@ static FPFW_CLI_STATUS cli_power_log_command(int argc, const char** argv)
         return CLI_ERROR;
     }
 
-    return dispatch_power_cli_async_request(CLI_COMMANDS_POWER_LOG, (char*)argv[1], cli_power_log_async_print);
+    /* Die - 0 (Default), Cmd ID - CLI_COMMANDS_POWER_CONFIG, subcommand - argv[1], setval - None (Unused), callback - cli_power_config_async_print */
+    return dispatch_power_cli_async_request(0, CLI_COMMANDS_POWER_LOG, (char*)argv[1], NULL, cli_power_log_async_print);
 }
 
 FPFW_CLI_STATUS cli_power_init(ppower_service_interface_t p_interface)

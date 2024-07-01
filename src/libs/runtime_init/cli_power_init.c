@@ -8,11 +8,10 @@
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwCli.h>
-#include <cli_power.h>
-#include <fpfw_init.h> 
-#include <stddef.h>
-#include <stdio.h>
+#include "power_dfwk.h"  // for power_service_interface_t
+#include <cli_power.h>   // for cli_power_init
+#include <fpfw_init.h>   // for fpfw_init_get_handle, FPFW_INIT_COMPONENT
+#include <stddef.h>      // for NULL
 
 /*-- Symbolic Constant Macros (defines) --*/
 

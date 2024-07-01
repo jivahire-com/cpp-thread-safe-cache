@@ -564,13 +564,20 @@ typedef struct _power_derived_config_t
     uint8_t pnominal;                           // nominal pstate
 } power_derived_config_t;
 
-/* List of different kinds of elements that can be queried from the runconfig structure*/
+/* List of different command IDs that can be sent to the the power service */
 typedef enum {
-    POWER_RUNCONFIG_KNOBS, 
-    POWER_RUNCONFIG_FUSES,
+    POWER_IF_CMD_GET_RUNCONFIG_KNOBS, 
+    POWER_IF_CMD_GET_RUNCONFIG_FUSES,
+    POWER_IF_CMD_SET_CAP,
+    POWER_IF_CMD_SET_DESIRED_PSTATE,
+    POWER_IF_CMD_SET_PLIMIT, 
+    POWER_IF_CMD_SET_LOOP_DISABLES,
+    POWER_IF_CMD_SET_RACK_LIMIT,
+    POWER_IF_CMD_SET_MINUPDATE,
+    POWER_IF_CMD_SET_NOMINAL,
 
-    POWER_RUNCONFIG_UNKNOWN
-} power_runconfig_element_t;
+    POWER_IF_CMD_UNKNOWN
+} power_if_cmd_t;
 
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus

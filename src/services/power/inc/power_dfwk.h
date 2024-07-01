@@ -44,9 +44,16 @@ typedef struct
 /* Structure for the async dfwk CLI request to the power interface */
 typedef struct {
     DFWK_ASYNC_REQUEST_HEADER header;
+    uint8_t die;
+
     char* sub_command;
+    power_if_cmd_t power_ext_if_cmd_id;
+
+    /* Structure elements for fetch data requests to power service*/
     void* p_requested_data;
-    power_runconfig_element_t power_runconfig_element_id;
+
+    /* Structure elements for set data requests to power service*/
+    void* p_set_data;   // p_set_data is set as a void pointer at present. This will be replaced by a more specific structure based on the set requests.
 } power_service_cli_request_t, *ppower_service_cli_request_t;
 
 /*--------- Function Prototypes ----------*/

@@ -21,6 +21,8 @@
 #define NOMINAL_PSTATE_MAX (MAX_PLIMIT)
 
 /*-------------- Typedefs ----------------*/
+typedef void (*power_service_setval)(char* p_string, void* p_set_data);
+
 /**
  * @brief Struct for runtime configuration data
  */
@@ -37,9 +39,16 @@ typedef struct _power_runconfig_t
 
 /* Definition of the dictionary entry of parameters that can be queried from the power runconfig structure */
 typedef struct {
-    power_runconfig_element_t id;
+    power_if_cmd_t id;
     void* p_runconfig_element;
-} power_runconfig_dictionary_element_t;
+} power_runconfig_read_dictionary_element_t;
+
+/* Definition of the dictionary entry of parameters that can be set in the power runconfig from an external interface */
+typedef struct {
+    power_if_cmd_t id;
+    power_service_setval p_function;
+    char* p_string;
+} power_runconfig_write_dictionary_element_t;
 
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus
@@ -48,7 +57,8 @@ extern "C" {
 
 /* General runtime config APIs */
 power_runconfig_t* power_runconfig_get();
-void* power_runconfig_get_element(power_runconfig_element_t id);
+void* power_runconfig_get_element(power_if_cmd_t id);
+void power_runconfig_set_element(power_if_cmd_t id, void* p_set_data);
 void power_runconfig_init(const power_service_config_t* p_config);
 
 /* Knob specific APIs */

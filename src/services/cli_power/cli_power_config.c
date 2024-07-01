@@ -51,33 +51,33 @@ static void print_power_config_min_allowed_plimit(power_knobs_t* knobs);
 
 // clang-format off
 /* Structure storing the dictionary of sub-command string against its corresponding print function */
-power_cli_sub_command_dictionary_element_t power_cli_config_sub_command_dictionary[] = {
-    {"fuse",                (print_function)print_power_config_fuse,                POWER_RUNCONFIG_FUSES},
-    {"dts",                 (print_function)print_power_config_dts,                 POWER_RUNCONFIG_FUSES},
-    {"memasst",             (print_function)print_power_config_memasst,             POWER_RUNCONFIG_FUSES},
-    {"intervals",           (print_function)print_power_config_interval,            POWER_RUNCONFIG_KNOBS},
-    {"limits",              (print_function)print_power_config_limits,              POWER_RUNCONFIG_KNOBS},
-    {"mpmm",                (print_function)print_power_config_mpmm,                POWER_RUNCONFIG_KNOBS},
-    {"pid",                 (print_function)print_power_config_pidcfg,              POWER_RUNCONFIG_KNOBS},
-    {"pvt",                 (print_function)print_power_config_thresholds,          POWER_RUNCONFIG_KNOBS},
-    {"ctrlloop",            (print_function)print_power_config_loopcfg,             POWER_RUNCONFIG_KNOBS},
-    {"srvmode",             (print_function)print_power_config_survivability_mode,  POWER_RUNCONFIG_KNOBS},
-    {"tel",                 (print_function)print_power_config_tel,                 POWER_RUNCONFIG_KNOBS},
-    {"throttle",            (print_function)print_power_config_throttling,          POWER_RUNCONFIG_KNOBS},
-    {"static",              (print_function)print_power_config_static_rails,        POWER_RUNCONFIG_KNOBS},
-    {"allowed_min_plimit",  (print_function)print_power_config_min_allowed_plimit,  POWER_RUNCONFIG_KNOBS},
-    {"allowed_max_plimit",  (print_function)print_power_config_max_allowed_plimit,  POWER_RUNCONFIG_KNOBS},
-    {"fgpll",               (print_function)print_power_config_fgpll,               POWER_RUNCONFIG_KNOBS},
-    {"knobs",               (print_function)print_power_config_knobs,               POWER_RUNCONFIG_KNOBS},
+const power_cli_sub_command_dictionary_element_t power_cli_config_sub_command_dictionary[] = {
+    {"fuse",                (print_function)print_power_config_fuse,                POWER_IF_CMD_GET_RUNCONFIG_FUSES},
+    {"dts",                 (print_function)print_power_config_dts,                 POWER_IF_CMD_GET_RUNCONFIG_FUSES},
+    {"memasst",             (print_function)print_power_config_memasst,             POWER_IF_CMD_GET_RUNCONFIG_FUSES},
+    {"intervals",           (print_function)print_power_config_interval,            POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"limits",              (print_function)print_power_config_limits,              POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"mpmm",                (print_function)print_power_config_mpmm,                POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"pid",                 (print_function)print_power_config_pidcfg,              POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"pvt",                 (print_function)print_power_config_thresholds,          POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"ctrlloop",            (print_function)print_power_config_loopcfg,             POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"srvmode",             (print_function)print_power_config_survivability_mode,  POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"tel",                 (print_function)print_power_config_tel,                 POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"throttle",            (print_function)print_power_config_throttling,          POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"static",              (print_function)print_power_config_static_rails,        POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"allowed_min_plimit",  (print_function)print_power_config_min_allowed_plimit,  POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"allowed_max_plimit",  (print_function)print_power_config_max_allowed_plimit,  POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"fgpll",               (print_function)print_power_config_fgpll,               POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"knobs",               (print_function)print_power_config_knobs,               POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
     /* TODO: The below functions need to be added after the underlying print functions are ported. 
     These CLI functions are not implemented in this PR. */
     /*
-    {"coremin",             (print_function)print_power_config_min_plimit,          POWER_RUNCONFIG_FUSES},
-    {"lkgcalc",             (print_function)print_power_config_lkg,                 POWER_RUNCONFIG_FUSES},
-    {"tel",                 (print_function)print_power_config_tel,                 POWER_RUNCONFIG_FUSES},
-    {"vft",                 (print_function)print_power_config_vft,                 POWER_RUNCONFIG_FUSES},
-    {"vftpre",              (print_function)print_power_config_vftpre,              POWER_RUNCONFIG_FUSES},
-    {"vcpucalc",            (print_function)print_power_config_vcpucalc,            POWER_RUNCONFIG_KNOBS},
+    {"coremin",             (print_function)print_power_config_min_plimit,          POWER_IF_CMD_GET_RUNCONFIG_FUSES},
+    {"lkgcalc",             (print_function)print_power_config_lkg,                 POWER_IF_CMD_GET_RUNCONFIG_FUSES},
+    {"tel",                 (print_function)print_power_config_tel,                 POWER_IF_CMD_GET_RUNCONFIG_FUSES},
+    {"vft",                 (print_function)print_power_config_vft,                 POWER_IF_CMD_GET_RUNCONFIG_FUSES},
+    {"vftpre",              (print_function)print_power_config_vftpre,              POWER_IF_CMD_GET_RUNCONFIG_FUSES},
+    {"vcpucalc",            (print_function)print_power_config_vcpucalc,            POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
     */
 };
 //clang-format on
@@ -219,7 +219,7 @@ static void print_power_config_pidcfg(power_knobs_t* knobs)
     printf("Ki             : (%u.%03u)\n", (unsigned int)knobs->pid.kit / 1000, (unsigned int)knobs->pid.kit % 1000);
     printf("Kd             : (%u.%03u)\n", (unsigned int)knobs->pid.kdt / 1000, (unsigned int)knobs->pid.kdt % 1000);
     printf("Setpoint offset: %umW\n", (unsigned int)knobs->pid.setpoint_offset);
-    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1491013 */
+    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
     // printf("Resource max   : %u\n", knobs->pid.resource_max);
     printf("\n");
 }
@@ -309,7 +309,7 @@ static void print_power_config_loopcfg(power_knobs_t* knobs)
     printf("C2 limits to nominal: %s\n", knobs->c2_cores_limit_to_nominal ? s_true_str : s_false_str);
     printf("C3 limits to nominal: %s\n", knobs->c3_cores_limit_to_nominal ? s_true_str : s_false_str);
     printf("Allow plimit<nominal: %s\n", knobs->allow_plimit_below_nominal ? s_true_str : s_false_str);
-    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1491013 */
+    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
     // printf("Minimal turbo pri   : %s\n", knobs->allow_minimal_turbo_prioritization ? s_true_str : s_false_str);
     printf("Intervals to lower  : %u\n", knobs->intervals_to_lower_plimit);
     printf("Allwd plimit minimum: %u\n", knobs->allowed_plimit_minimum);
@@ -318,7 +318,7 @@ static void print_power_config_loopcfg(power_knobs_t* knobs)
     printf("Step size dn maximum: %u\n", knobs->max_plimit_step_size_down);
     printf("Min plimit upds/loop: ");
     
-    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1491013 */
+    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
     // print_minupdate(knobs->minimum_plimit_updates);
     // printf("\n");
     // printf("Nominal pstate      : ");
@@ -362,7 +362,7 @@ static void print_power_config_survivability_mode(power_knobs_t* knobs)
     printf("Enabled : %s\n", knobs->enable_survivability_mode ? s_true_str : s_false_str);
     printf("P-State : %d", knobs->survivability_mode_pstate);
     printf(" / ");
-    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1491013 */
+    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
     // printf("%d MHz", dvfs_get_freq_from_plimit(knobs->survivability_mode_pstate));
     printf("\n");
 }
@@ -396,7 +396,7 @@ static void print_power_config_throttling(power_knobs_t* knobs)
     printf("\nThrottle configuration\n");
     printf("----------------------\n");
     printf("Current throttling\n");
-    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1491013 */
+    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
     // printf("  Lower threshold   : %u\n", knobs->current_throt.lower_threshold_percent);
     // printf("  Upper threshold   : %u\n", knobs->current_throt.upper_threshold_percent);
     // printf("  Peak threshold    : %u\n", knobs->current_throt.peak_threshold_percent);
@@ -436,7 +436,7 @@ static void print_power_config_fgpll(power_knobs_t* knobs)
     printf("\nFGPLL Config\n");
     printf("--------------\n");
     printf("Cal Enabled : %s\n", knobs->calsm_enable ? s_true_str : s_false_str);
-    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1491013 */
+    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
     // printf("P-State Cap : %d", knobs->ftable_pstate_cap);
     // printf(" / ");
     // printf("%d MHz", dvfs_get_freq_from_plimit(knobs->ftable_pstate_cap));
@@ -479,24 +479,24 @@ static void print_power_config_min_allowed_plimit(power_knobs_t* knobs)
 /* -------------------------------------- */
 
 /* -------------------------------------- */
-power_runconfig_element_t cli_power_config_get_runconfig_element_id(char* sub_command)
+power_if_cmd_t cli_power_config_get_cmd_id(char* sub_command)
 {
     if (sub_command == NULL)
     {
-        return POWER_RUNCONFIG_UNKNOWN;
+        return POWER_IF_CMD_UNKNOWN;
     }
 
-    /* Parse dictionary for subcommand and fetch corresponding power_runconfig_element_id */
+    /* Parse dictionary for subcommand and fetch corresponding power_ext_if_cmd_id */
     for (uint32_t index = 0; index < length_dictionary; index++)
     {
         if (strcmp(sub_command, power_cli_config_sub_command_dictionary[index].sub_command) == 0)
         {
-            return power_cli_config_sub_command_dictionary[index].power_runconfig_element_id;
+            return power_cli_config_sub_command_dictionary[index].power_ext_if_cmd_id;
         }
     }
 
     /* If sub-command is not found in the dictionary */
-    return POWER_RUNCONFIG_UNKNOWN;
+    return POWER_IF_CMD_UNKNOWN;
 }
 
 void cli_power_config_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* completion_context)

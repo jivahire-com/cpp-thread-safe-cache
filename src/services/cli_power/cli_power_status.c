@@ -8,10 +8,16 @@
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwUtils.h>
-#include <cli_power_common.h>
+#include "DfwkCommon.h" // for _DFWK_ASYNC_REQUEST_HEADER
+#include "power_dfwk.h" // for (anonymous), ppower_service_cli_req...
+
+#include <FpFwUtils.h>           // for FPFW_UNUSED
+#include <cli_power_common.h>    // for ST_COUNT
+#include <cli_power_interface.h> // for power_cli_sub_command_dictionary_el...
 #include <cli_power_status.h>
-#include <power_dfwk.h>
+#include <stdint.h> // for uint32_t
+#include <stdio.h>  // for printf, NULL
+#include <string.h> // for strcmp
 
 /*-- Symbolic Constant Macros (defines) --*/
 

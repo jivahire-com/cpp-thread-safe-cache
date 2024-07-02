@@ -61,6 +61,15 @@ typedef struct _scp_avs_interface_t {
     pscp_avs_device Device;
 } scp_avs_interface_t, *pscp_avs_interface_t;
 
+typedef enum _scp_avs_status_t {
+    SCP_AVS_STATUS_SUCCESS,
+    SCP_AVS_STATUS_READ_FAIL,
+    SCP_AVS_STATUS_WRITE_FAIL,
+    SCP_AVS_STATUS_READ_ALL_VCT_FAIL,
+    SCP_AVS_STATUS_READ_MULTI_FAIL,
+    SCP_AVS_STATUS_WRITE_MULTI_FAIL,
+} scp_avs_status_t;
+
 /*--------- Function Prototypes ----------*/
 
 #ifdef __cplusplus

@@ -32,11 +32,13 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     DfwkAsyncRequestSetCompletionRoutine
     DfwkInterfaceSendAsync
+    DfwkAsyncRequestComplete
     DfwkAsyncRequestSetCompletionRoutine
     avs_init
     DfwkQueueEnqueueRequest
     avs_clear_interrupt_status
     avs_enable_interrupt
+    avs_get_cmd_resp_data
     avs_get_interrupt_status
     avs_init
     avs_send_cmd_frame

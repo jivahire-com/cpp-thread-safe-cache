@@ -63,3 +63,13 @@ void scp_avs_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context);
  *
 */
 int32_t scp_avs_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER Request);
+
+/**
+ *
+ *    This will handle the AVS asynchronous calls (following the ISR).
+ * 
+ *    @param[in]  Request
+ *    @param[in]  Context
+ *
+*/
+void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context);

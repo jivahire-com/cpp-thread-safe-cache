@@ -161,7 +161,7 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
     printf("\n scp_avs_isr_dispatch, RequestType = %x\n", (uint8_t)Request->RequestType);
 
     int status = SILIBS_SUCCESS;
-    original_request->avs_response_status = SILIBS_SUCCESS;
+    original_request->avs_response_status = SCP_AVS_STATUS_SUCCESS; // this will be sent to the client
     uint32_t scp_avs_resp_buf[AVS_CMD_BUFF_SIZE];
     uint32_t scp_avs_resp_idx = 0; // index to read from the command response buffer
     uint32_t scp_avs_resp_num = 0; // count to read from the command response buffer
@@ -175,8 +175,8 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
 
         if (status != SILIBS_SUCCESS)
         {
-            printf("\n avs_get_cmd_resp_data failure!\n");
-            original_request->avs_response_status = status;
+            printf("\n avs_get_cmd_resp_data failure (Read)!\n");
+            original_request->avs_response_status = SCP_AVS_STATUS_READ_FAIL;
         }
         else
         {
@@ -193,8 +193,8 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
 
         if (status != SILIBS_SUCCESS)
         {
-            printf("\n avs_get_cmd_resp_data (AVS Write) failure!\n");
-            original_request->avs_response_status = status;
+            printf("\n avs_get_cmd_resp_data (Write) failure!\n");
+            original_request->avs_response_status = SCP_AVS_STATUS_WRITE_FAIL;
         }
         else
         {

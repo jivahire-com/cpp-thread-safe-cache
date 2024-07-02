@@ -41,6 +41,7 @@ static scp_avs_device_t test_avs_device = {
 static scp_avs_interface_t test_avs_interface;
 static scp_avs_request_t test_avs_Request;
 static scp_avs_get_request_t test_avs_get_Request;
+static scp_avs_isr_request_t test_avs_isr_Request;
 
 /*----------- Mock Functions -------------*/
 
@@ -193,6 +194,43 @@ TEST_FUNCTION(scp_avs_dispatch_test_read, test_setup, test_cleanup)
     expect_memory(__wrap_avs_send_cmd_frame, cmd_mem, &expected_master_command, sizeof(expected_master_command));
 
     scp_avs_dispatch(&test_avs_Request.Header, nullptr);
+    assert_int_equal((uintptr_t)test_avs_device.outstanding_request, (uintptr_t)&test_avs_Request);
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
+}
+
+TEST_FUNCTION(scp_avs_isr_dispatch_test_read, test_setup, test_cleanup)
+{
+    test_avs_device.avs_bus_num = AVS_BUS0;
+    test_avs_isr_Request.outstanding_client_request = &test_avs_Request;
+
+    test_avs_isr_Request.outstanding_client_request->Header.RequestType = AVS_REQUEST_READ_DATA;
+
+    expect_value(__wrap_avs_get_cmd_resp_data, avs_base_or_id, test_avs_device.avs_bus_num);
+    expect_value(__wrap_avs_get_cmd_resp_data, resp_idx, 0);
+    expect_value(__wrap_avs_get_cmd_resp_data, resp_num, 1);
+
+    expect_any(__wrap_avs_get_cmd_resp_data, resp_buf);
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_avs_device.outstanding_request->Header);
+
+    scp_avs_isr_dispatch(&test_avs_isr_Request.Header, nullptr);
+    assert_int_equal((uintptr_t)test_avs_device.outstanding_request, (uintptr_t)&test_avs_Request);
+}
+
+TEST_FUNCTION(scp_avs_isr_dispatch_test_write, test_setup, test_cleanup)
+{
+    test_avs_device.avs_bus_num = AVS_BUS0;
+    test_avs_isr_Request.outstanding_client_request = &test_avs_Request;
+
+    test_avs_isr_Request.outstanding_client_request->Header.RequestType = AVS_REQUEST_WRITE_DATA;
+
+    expect_value(__wrap_avs_get_cmd_resp_data, avs_base_or_id, test_avs_device.avs_bus_num);
+    expect_value(__wrap_avs_get_cmd_resp_data, resp_idx, 0);
+    expect_value(__wrap_avs_get_cmd_resp_data, resp_num, 2); // should be 2, since two commands sent.  The first the write the second the read.
+
+    expect_any(__wrap_avs_get_cmd_resp_data, resp_buf);
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_avs_device.outstanding_request->Header);
+
+    scp_avs_isr_dispatch(&test_avs_isr_Request.Header, nullptr);
     assert_int_equal((uintptr_t)test_avs_device.outstanding_request, (uintptr_t)&test_avs_Request);
     assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
 }

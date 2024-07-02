@@ -45,6 +45,11 @@ void __wrap_DfwkAsyncRequestSetCompletionRoutine(PDFWK_ASYNC_REQUEST_HEADER Requ
     check_expected(CompletionContext);
 }
 
+void __wrap_DfwkAsyncRequestComplete(PDFWK_ASYNC_REQUEST_HEADER Request)
+{
+    check_expected(Request);
+}
+
 nvic_status_t __wrap_nvic_irq_set_isr_with_param(uint32_t irq_num, isr_callback_fn_with_params_t isr, void* parameter)
 {
     check_expected(irq_num);
@@ -80,6 +85,14 @@ int __wrap_avs_send_cmd_frame(uint32_t avs_id, uint32_t cmd_num, avs_master_comm
     check_expected(avs_id);
     check_expected(cmd_num);
     check_expected(cmd_mem);
+    return (SILIBS_SUCCESS);
+}
+int __wrap_avs_get_cmd_resp_data(uint32_t avs_base_or_id, uint32_t resp_idx, uint32_t resp_num, uint32_t* resp_buf)
+{
+    check_expected(avs_base_or_id);
+    check_expected(resp_idx);
+    check_expected(resp_num);
+    check_expected(resp_buf);
     return (SILIBS_SUCCESS);
 }
 int __wrap_avs_get_interrupt_status(uintptr_t avs_base_or_id, uint32_t* intr)

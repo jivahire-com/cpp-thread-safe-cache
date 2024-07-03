@@ -4,7 +4,9 @@
         "*.idl": "c",
         "future": "c",
         "system_error": "c",
-        "regex": "c"
+        "regex": "c",
+        "compare": "cpp",
+        "cstdint": "cpp"
     },
     "cmake.buildDirectory": "${env:REPO_APP_TARGET_BUILD_DIR}",
     "cmake.buildTask": true,

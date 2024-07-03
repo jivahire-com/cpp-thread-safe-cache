@@ -61,6 +61,7 @@ target_link_libraries(
         ms::lib::scp_avs::cli
         ms::driver::pcie
         ms::driver::sensor_fifo
+        ms::driver::vab
         ms::driver::textio::pl011
         ms::lib::accelerator_ip
         ms::lib::cortex_m7::mpu
@@ -80,7 +81,6 @@ target_link_libraries(
         ms::lib::stdio_textio
         ms::lib::threadx
         ms::lib::ddr::cli
-        ms::lib::vab
         ms::lib::tower
         ms::service::ap_core
         ms::service::ddr_manager

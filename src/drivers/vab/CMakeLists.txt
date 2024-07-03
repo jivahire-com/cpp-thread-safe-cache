@@ -1,4 +1,4 @@
-set(TARGET kng.lib.vab)
+set(TARGET kng.drivers.vab)
 
 add_library(${TARGET}
     STATIC
@@ -26,7 +26,7 @@ target_include_directories(${TARGET}
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-add_library(ms::lib::vab ALIAS kng.lib.vab)
+add_library(ms::driver::vab ALIAS kng.drivers.vab)
 
 lint_target(${TARGET})
 format_target(${TARGET})

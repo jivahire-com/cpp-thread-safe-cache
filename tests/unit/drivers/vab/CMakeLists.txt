@@ -1,4 +1,4 @@
-set(TARGET vab_lib.test)
+set(TARGET vab_driver.test)
 
 set(SOURCES
     vab_mocks.c
@@ -13,7 +13,7 @@ target_link_libraries(${TARGET}
     ms::cmocka::mocks
     ms::cmocka::testrunner
     ms::lib::error_handler
-    ms::lib::vab
+    ms::driver::vab
     silibs::atu
     silibs::kng_silibs_platform
     silibs_platform

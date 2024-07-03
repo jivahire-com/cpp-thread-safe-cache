@@ -11,7 +11,7 @@ target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.init
     ms::cmocka::testrunner
-    ms::lib::vab
+    ms::driver::vab
     silibs::idsw
     silibs::idsw_kng
     silibs::kng_silibs_platform

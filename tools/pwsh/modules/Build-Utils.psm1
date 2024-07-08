@@ -657,6 +657,49 @@ Function Invoke-UnitTests($Suite)
 
 <#
 .SYNOPSIS
+Runs a local unit test suite with coverage. Skips entire system  code coverage.
+
+.EXAMPLE
+Invoke-LocalUnitTests
+#>
+Function Invoke-LocalUnitTests($Suite)
+{
+    if ($Suite)
+    {
+        $SuiteArg = "/suite:$Suite"
+    }
+
+    if (($env:REPO_APP_TOOLCHAIN -ne "i386-pc-windows-msvc") -Or ($env:REPO_APP_BUILD_CONFIG -ne "Debug"))
+    {
+        Write-Host -ForegroundColor Red "Incorrect toolchain / configuration for unit tests, use Toolchain - i386-pc-windows-msvc and config - Debug"
+        return
+    }
+
+    if(Test-Path -Path "$env:REPO_APP_BUILD_DIR/$env:REPO_APP_BUILD_CONFIG/$env:REPO_APP_TOOLCHAIN/bin/*test*")
+    {
+        & ${env:REPO_APP_PATH_1pfw.tools.win64}/sptest.exe `
+        /devicesfile:"$env:REPO_APP_ROOT/tests/unit/SpTestDevices.xml" `
+        /packagesdir:"$env:REPO_APP_BUILD_DIR/$env:REPO_APP_BUILD_CONFIG/$env:REPO_APP_TOOLCHAIN/bin" `
+        /logsdir:"$env:REPO_APP_TEST_LOG_DIR" `
+        /define:test_bin_dir="$env:REPO_APP_BUILD_DIR/$env:REPO_APP_BUILD_CONFIG/$env:REPO_APP_TOOLCHAIN/bin" `
+        /define:test_src_dir="$env:REPO_APP_ROOT" `
+        $SuiteArg /runtests /hideWindows
+
+       $TargetLogDir = (Get-ChildItem $env:REPO_APP_TEST_LOG_DIR | Sort -Descending)[0].FullName
+
+       & "${env:REPO_APP_PATH_report-generator}/tools/net6.0/ReportGenerator.exe" `
+       -reports:"$TargetLogDir/**/cobertura.xml" `
+       -targetdir:"$TargetLogDir/Coverage" `
+       -reporttypes:"Cobertura;Html"
+    }
+    else {
+        Write-Host -ForegroundColor Red "No packages found at path:" "$env:REPO_APP_BUILD_DIR/$env:REPO_APP_BUILD_CONFIG/$env:REPO_APP_TOOLCHAIN/bin"
+        Write-Host -ForegroundColor Yellow "Are any unit tests enabled for the configuration?" $env:REPO_APP_TOOLCHAIN $env:REPO_APP_BUILD_CONFIG
+    }
+}
+
+<#
+.SYNOPSIS
 Returns a url string for display
 
 .EXAMPLE
@@ -725,5 +768,6 @@ New-Alias -Name build -Value Invoke-Build
 New-Alias -Name cleanbuild -Value Invoke-Clean
 New-Alias -Name unittest -Value Invoke-UnitTests
 New-Alias -Name repohelp -Value Get-RepoHelp
+New-Alias -Name localunittest -Value Invoke-LocalUnitTests
 
 Export-ModuleMember -Alias * -Function *

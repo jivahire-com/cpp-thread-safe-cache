@@ -33,7 +33,9 @@ add_library(${TARGET}
     STATIC
         ${STARTUP_COMMON_SOURCE}
         ap_core.c
+        ap_core_fw_load.c
         ap_core_ppu.c
+        ap_core_system_info.c
         ap_core_util.c
 )
 
@@ -44,7 +46,11 @@ target_link_libraries(${TARGET}
         fwlib.dfwk
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.init
+        fwlib.service.iccBase
         ms::build_data
+        ms::lib::crash_dump::scp
+        ms::lib::hsp_firmware_headers
+        ms::lib::error_codes
         ms::lib::threadx
         ms::lib::debug
         ms::client_interface::ap_core

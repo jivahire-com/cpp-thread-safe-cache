@@ -72,6 +72,7 @@ target_link_libraries(
         ms::lib::cortex_m7::nvic
         ms::lib::event_trace::collector
         ms::lib::gtimer
+        ms::lib::hsp_firmware_headers
         ms::lib::icc::cli
         ms::lib::icc_platform_defines
         ms::lib::mesh

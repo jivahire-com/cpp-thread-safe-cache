@@ -11,12 +11,13 @@
 #include <CMockaWrapper.h> // for assert_int_equal, assert_non_null, expe...
 
 extern "C" {
-#include <DfwkDriver.h>        // for DFWK_SCHEDULE
-#include <DfwkThreadXHost.h>   // for DFWK_THREADX_HOST
-#include <FpFwUtils.h>         // for FPFW_UNUSED
-#include <ap_core_init.h>      // for ap_core_service_config_t
-#include <atu_lib.h>           // for atu_map_entry_t, atu_entry_attr_t
-#include <corebits.h>          // for corebits_is_bit_set, corebits_is_clear
+#include <DfwkDriver.h>      // for DFWK_SCHEDULE
+#include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
+#include <FpFwUtils.h>       // for FPFW_UNUSED
+#include <ap_core_init.h>    // for ap_core_service_config_t
+#include <atu_lib.h>         // for atu_map_entry_t, atu_entry_attr_t
+#include <corebits.h>        // for corebits_is_bit_set, corebits_is_clear
+#include <fpfw_icc_base.h>
 #include <fpfw_init.h>         // for fpfw_init_result_t, fpfw_init_component_t
 #include <idsw.h>              // for idsw_get_die_id
 #include <idsw_kng.h>          // for KNG_DIE_ID, KNG_PLAT_ID
@@ -48,10 +49,14 @@ void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
     return mock_type(void*);
 }
 
-void __wrap_ap_core_init(pap_core_service_t p_device, PDFWK_SCHEDULE p_schedule, const ap_core_service_config_t* p_config)
+void __wrap_ap_core_init(pap_core_service_t p_device,
+                         PDFWK_SCHEDULE p_schedule,
+                         fpfw_icc_base_ctx_t* icc_base_ctx,
+                         const ap_core_service_config_t* p_config)
 {
     assert_non_null(p_device);
     assert_non_null(p_config);
+    assert_non_null(icc_base_ctx);
     check_expected_ptr(p_schedule);
 
     // save config for some tests
@@ -117,6 +122,9 @@ TEST_FUNCTION(ap_core_init_ap_core_svc, nullptr, nullptr)
     expect_any(__wrap_atu_find_map, atu_map_entry);
     will_return(__wrap_atu_find_map, 0);
 
+    fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(0xdeadbeef);
+    will_return(__wrap_fpfw_init_get_handle, dummy_icc_hspmbx_ctx);
+
     will_return(__wrap_fpfw_init_get_handle, &test_host); //! driver fmwk host handle
     expect_value(__wrap_ap_core_init, p_schedule, &(test_host.Schedule));
 
@@ -142,6 +150,9 @@ TEST_FUNCTION(ap_core_init_ap_core_svc__svp, nullptr, nullptr)
     expect_value(__wrap_atu_find_map, atu_id, ATU_ID_MSCP);
     expect_any(__wrap_atu_find_map, atu_map_entry);
     will_return(__wrap_atu_find_map, 0);
+
+    fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(0xdeadbeef);
+    will_return(__wrap_fpfw_init_get_handle, dummy_icc_hspmbx_ctx);
 
     will_return(__wrap_fpfw_init_get_handle, &test_host); //! driver fmwk host handle
     expect_value(__wrap_ap_core_init, p_schedule, &(test_host.Schedule));
@@ -169,6 +180,9 @@ TEST_FUNCTION(ap_core_init_ap_core_svc__bigfpga, nullptr, nullptr)
     expect_value(__wrap_atu_find_map, atu_id, ATU_ID_MSCP);
     expect_any(__wrap_atu_find_map, atu_map_entry);
     will_return(__wrap_atu_find_map, 0);
+
+    fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(0xdeadbeef);
+    will_return(__wrap_fpfw_init_get_handle, dummy_icc_hspmbx_ctx);
 
     will_return(__wrap_fpfw_init_get_handle, &test_host); //! driver fmwk host handle
     expect_value(__wrap_ap_core_init, p_schedule, &(test_host.Schedule));

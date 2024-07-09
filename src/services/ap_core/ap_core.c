@@ -18,6 +18,8 @@
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
 #include <corebits.h>
+#include <fpfw_icc_base.h>        // for fpfw_icc_base_send, fpfw_icc_base...
+#include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
 #include <startup_shutdown_ssi.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -31,6 +33,7 @@
 
 /*-- Declarations (Statics and globals) --*/
 static ap_core_service_context_t s_ap_core_ctx = {0};
+static fpfw_icc_base_ctx_t* s_icc_base_ctx = NULL;
 
 /*------------- Functions ----------------*/
 
@@ -98,6 +101,7 @@ static void ap_core_ssi_start_primary_ap_core_boot(pssi_startup_notification_req
 void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 {
     FPFW_UNUSED(p_context);
+    s_ap_core_ctx.outstanding_request = (pap_core_asynchronous_request_t)p_request;
 
     switch (p_request->RequestType)
     {
@@ -126,6 +130,17 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
         case STARTUP_PRIMARY_AP_CORE_BOOT:
             // turn on primary AP core
             ap_core_ssi_start_primary_ap_core_boot(ssi_request);
+            break;
+        case STARTUP_BL31_LOAD:
+            if (!system_info_is_hsp_present())
+            {
+                // if no HSP is present, just complete p_request
+                DfwkAsyncRequestComplete(p_request);
+                break;
+            }
+
+            // request TFA firmware load (BL31)
+            ap_core_request_load_tfa(s_icc_base_ctx);
             break;
         default:
             // nothing to do for other types.
@@ -177,7 +192,10 @@ void ap_core_interface_init(pap_core_service_t p_device, pap_core_interface_t p_
     p_interface->p_device = p_device;
 }
 
-void ap_core_init(pap_core_service_t p_device, PDFWK_SCHEDULE p_schedule, const ap_core_service_config_t* p_config)
+void ap_core_init(pap_core_service_t p_device,
+                  PDFWK_SCHEDULE p_schedule,
+                  fpfw_icc_base_ctx_t* icc_base_ctx,
+                  const ap_core_service_config_t* p_config)
 {
     FPFW_RUNTIME_ASSERT(p_device != NULL);
     FPFW_RUNTIME_ASSERT(p_schedule != NULL);
@@ -189,6 +207,7 @@ void ap_core_init(pap_core_service_t p_device, PDFWK_SCHEDULE p_schedule, const 
 
     // store off device config
     s_ap_core_ctx.p_config = p_config;
+    s_icc_base_ctx = icc_base_ctx;
 
     // read fuses to get enabled cores
     ap_core_util_get_fuse_enabled_cores(&s_ap_core_ctx.enabled_cores);
@@ -196,4 +215,9 @@ void ap_core_init(pap_core_service_t p_device, PDFWK_SCHEDULE p_schedule, const 
     corebits_and(&s_ap_core_ctx.enabled_cores, p_config->platform_cores_in_die);
 
     ap_core_ppu_init(&s_ap_core_ctx);
+}
+
+pap_core_asynchronous_request_t ap_core_get_outstanding_request()
+{
+    return s_ap_core_ctx.outstanding_request;
 }

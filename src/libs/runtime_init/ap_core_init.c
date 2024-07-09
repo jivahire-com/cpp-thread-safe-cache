@@ -50,7 +50,7 @@ static void setup_ap_loop_to_self(uint64_t rvbaraddr)
 }
 
 // dependency on pwr_svc only due to https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1820413; pwr_svc already mapping, so rely on that here
-FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "pwr_svc", "tower_cfg"))
+FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "pwr_svc", "tower_cfg", "icc_hspmbx"))
 {
 #define SVP_NUM_CORES_PER_DIE 4
     // fpga platform has an unusual set of available cores
@@ -102,7 +102,9 @@ FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "pwr_svc", "towe
     default:
         break;
     }
-    ap_core_init(&ap_core_service, fpfw_init_get_handle((void*)"dfwk"), &ap_core_config);
+
+    fpfw_icc_base_ctx_t* icc_hspmbx_ctx = fpfw_init_get_handle("icc_hspmbx");
+    ap_core_init(&ap_core_service, fpfw_init_get_handle("dfwk"), icc_hspmbx_ctx, &ap_core_config);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &ap_core_service};
 }

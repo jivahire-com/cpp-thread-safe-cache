@@ -13,7 +13,7 @@
  * TODO: ADO 1831262: Remove the below flag and related code once HSP supports
  * initialization of CDEDSS Tower.
  */
-//#define FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP
+// #define FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP
 
 /*-------------------------------- Includes ---------------------------------*/
 #include "accelerator_ip.h"
@@ -549,7 +549,7 @@ exit:
 }
 
 #if defined(FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP)
-//#define FEATURE_CDEDSS_ATU_STATIC_MAPPING
+// #define FEATURE_CDEDSS_ATU_STATIC_MAPPING
 static int32_t init_hsp_cdedss_tower_atu_map(atu_map_entry_t* p_cdeedss_tower_atu_map_entry)
 {
     int32_t ret = ACCEL_RET_SUCCESS;

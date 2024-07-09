@@ -3,12 +3,15 @@ set(TARGET ap_core.test)
 # Compile test
 add_executable(${TARGET}
     ap_core_main_test.cpp
+    ap_core_ppu_test.cpp
     ap_core_util_test.cpp
 )
 
 target_link_libraries(${TARGET}
     PRIVATE
+        fwlib.service.iccBase
         ms::cmocka::testrunner
+        ms::lib::hsp_firmware_headers 
         ms::lib::scp_avs
         ms::lib::threadx
         ms::mocks::event_trace
@@ -54,6 +57,12 @@ mock_target(${TARGET}
     ap_core_util_set_all_rvbaraddr
     ap_core_util_set_rvbaraddr
 
+    fpfw_icc_base_send
+    fpfw_icc_base_recv
+
+    ppu_v1_init
+
+    system_info_is_hsp_present
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

@@ -11,7 +11,9 @@
 
 #include <DfwkCommon.h>
 #include <corebits.h>
+#include <fpfw_icc_base.h>
 #include <stdbool.h>
+#include "ap_core.h"
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -43,6 +45,6 @@ typedef struct _ap_core_service_config_t
 /*--------- Function Prototypes ----------*/
 
 void ap_core_interface_init(pap_core_service_t p_device, pap_core_interface_t p_interface);
-void ap_core_init(pap_core_service_t p_device, PDFWK_SCHEDULE p_schedule, const ap_core_service_config_t* p_config);
+void ap_core_init(pap_core_service_t p_device, PDFWK_SCHEDULE p_schedule, fpfw_icc_base_ctx_t* icc_base_ctx, const ap_core_service_config_t* p_config);
 
 

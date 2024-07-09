@@ -21,5 +21,6 @@
 /*-------------- Typedefs ----------------*/
 
 /*-- Declarations (Statics and globals) --*/
+extern bool should_mock_ap_core_ppu_init;
 
 /*--------- Function Prototypes ----------*/

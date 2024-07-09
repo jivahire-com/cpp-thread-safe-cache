@@ -21,6 +21,7 @@ extern "C" {
 #include <ap_core_i.h>
 #include <ap_core_init.h>
 #include <corebits.h>
+#include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
 #include <startup_shutdown_ssi.h>
 
 } // extern "C"
@@ -32,10 +33,13 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+bool should_mock_ap_core_ppu_init = true;
 
-DFWK_ASYNC_REQUEST_DISPATCH s_dispatch_routine = NULL;
-DFWK_REQUEST_DISPATCH_SYNC s_dispatch_routine_sync = NULL;
-pap_core_service_context_t s_ap_core_ctx = NULL;
+static DFWK_ASYNC_REQUEST_DISPATCH s_dispatch_routine = NULL;
+static DFWK_REQUEST_DISPATCH_SYNC s_dispatch_routine_sync = NULL;
+static pap_core_service_context_t s_ap_core_ctx = NULL;
+static icc_base_recv_complete_notify fw_load_cb = NULL;
+static uint32_t icc_hspmbx_ctx;
 
 /*------------- Functions ----------------*/
 //
@@ -96,8 +100,14 @@ void __wrap_ap_core_util_get_fuse_enabled_cores(corebits_t* p_enabled_cores)
     check_expected_ptr(p_enabled_cores);
 }
 
+void __real_ap_core_ppu_init(ap_core_service_context_t* p_context);
 void __wrap_ap_core_ppu_init(ap_core_service_context_t* p_context)
 {
+    if (!should_mock_ap_core_ppu_init)
+    {
+        __real_ap_core_ppu_init(p_context);
+        return;
+    }
     assert_non_null(p_context);
     check_expected_ptr(p_context);
     s_ap_core_ctx = p_context;
@@ -139,6 +149,28 @@ void __wrap_ap_core_util_set_all_rvbaraddr(ap_core_service_context_t* p_context,
     check_expected(rvbaraddr);
 }
 
+fpfw_status_t __wrap_fpfw_icc_base_send(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_send_req_t* params)
+{
+    assert_non_null(icc_ctx);
+    check_expected_ptr(params->payload_buffer);
+    return mock_type(fpfw_status_t);
+}
+
+fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_recv_req_t* params)
+{
+    assert_non_null(icc_ctx);
+    check_expected(params->recv_cmd_code);
+    fw_load_cb = params->cb;
+    ((kng_hsp_mailbox_msg*)(params->payload_buffer))->header.cmd = mock_type(int);
+
+    return mock_type(fpfw_status_t);
+}
+
+bool __wrap_system_info_is_hsp_present()
+{
+    return mock_type(bool);
+}
+
 } // extern "C"
 
 //
@@ -168,7 +200,7 @@ AP_CORE_TEST(init, NULL, NULL)
     expect_not_value(__wrap_FpFwAssert, expression, false);
     expect_not_value(__wrap_FpFwAssert, expression, false);
 
-    ap_core_init(&test_device, &test_schedule, &test_config);
+    ap_core_init(&test_device, &test_schedule, (fpfw_icc_base_ctx_t*)&icc_hspmbx_ctx, &test_config);
 }
 
 AP_CORE_TEST(interface_init, NULL, NULL)
@@ -350,4 +382,38 @@ AP_CORE_TEST(dispatch_shutdown, NULL, NULL)
 
     assert_non_null(s_dispatch_routine);
     s_dispatch_routine(&test_request.header, &test_device.header);
+}
+
+AP_CORE_TEST(dispatch_bl31_load, NULL, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_BL31_LOAD; // unhandled stage
+
+    // Set up expectations
+    will_return(__wrap_system_info_is_hsp_present, true);
+
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
+
+    kng_hsp_mailbox_cmd_load_fw_req send_request = {
+        .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
+        .header.context = 0,
+        .id = HspFirmwareIdPeManagementMode,
+        .address = 0x00000000,
+        .size = 0x00000000,
+    };
+    expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request, sizeof(send_request));
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    // Call API under test
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+
+    // Call the callback to simulate the response
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+    fw_load_cb(NULL, 0, FPFW_STATUS_SUCCESS);
 }

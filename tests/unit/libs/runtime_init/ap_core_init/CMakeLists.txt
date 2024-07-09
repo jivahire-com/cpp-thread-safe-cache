@@ -14,6 +14,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.lib.utils
         fwlib.platform.dfwkhost.threadx
+        fwlib.service.iccBase
         ms::client_interface::startup_shutdown
         ms::cmocka::testrunner
         ms::lib::threadx

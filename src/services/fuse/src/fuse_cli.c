@@ -35,7 +35,7 @@ FPFW_CLI_COMMAND cli_fuse_commands[] = {
 static uint8_t get_sample_fuse(const unsigned fuse_bit_offset, const unsigned fuse_bit_size)
 {
 
-    KNG_PLAT_ID  platform_id = idsw_get_platform_sdv();
+    KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
 
     // only read fuses on silicon platform
     if (platform_id == PLATFORM_RVP_EVT_SILICON)

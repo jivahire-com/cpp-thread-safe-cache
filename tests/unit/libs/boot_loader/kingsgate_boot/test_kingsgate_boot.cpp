@@ -94,7 +94,7 @@ FPFW_MBX_PAYLOAD mail_box_send_payload = {.payloadBuffer = &hsp_mbox_data,
                                           .payloadSize = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t))};
 
 FPFW_MBX_REG_CONFIG mail_box_config = {.MbxFifoDepth = HSP_MBX_FIFO_DEPTH,
-                                       .MbxMesgHandlingType = MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME_FIXED_SIZE,
+                                       .MbxMesgHandlingType = MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME,
                                        .MbxImplementation = MBX_IMPL_POLLING,
                                        .MsgSizeBytes = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t)),
                                        .MbxBaseAddr = SCP_TOP_SCP2HSP_MAILBOX_ADDRESS};

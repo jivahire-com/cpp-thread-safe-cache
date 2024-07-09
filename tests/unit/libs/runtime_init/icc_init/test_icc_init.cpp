@@ -23,11 +23,11 @@ extern "C" {
 #define HSP_MBOX_MAX_CMD_CODE       (0xFFFFU)
 #define HSP_MBOX_MIN_CMD_CODE       (0x1U)
 #define HSP_MBOX_CMD_CODE_SIZE      (16U)
-#define HSP_MBOX_CMD_CODE_START_POS (16U) //! 16th bit from lsb
+#define HSP_MBOX_CMD_CODE_START_POS (0U) //! 16th bit from lsb
 #define HSP_MBOX_MAX_SEQ_NUM        (0xFFU)
 #define HSP_MBOX_MIN_SEQ_NUM        (0x0U)
 #define HSP_MBOX_SEQ_NUM_SIZE       (8U)
-#define HSP_MBOX_SEQ_NUM_START_POS  (24U) //! 24th bit from lsb
+#define HSP_MBOX_SEQ_NUM_START_POS  (16U) //! 24th bit from lsb
 
 /*------------- Typedefs -----------------*/
 
@@ -58,7 +58,7 @@ fpfw_status_t __wrap_fpfw_mbox_icc_transport_dfwk_device_init(fpfw_mbox_icc_tran
     assert_non_null(dev);
     assert_int_equal(cfg->mbox_dev_cfg.MbxFifoDepth, HSP_MBX_FIFO_DEPTH);
     assert_int_equal(cfg->mbox_dev_cfg.MbxBaseAddr, 1000);
-    assert_int_equal(cfg->mbox_dev_cfg.MbxMesgHandlingType, MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME_FIXED_SIZE);
+    assert_int_equal(cfg->mbox_dev_cfg.MbxMesgHandlingType, MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME);
     assert_int_equal(cfg->mbox_dev_cfg.MbxImplementation, MBX_IMPL_POLLING);
     assert_int_equal(cfg->mbox_dev_cfg.MsgSizeBytes, HSP_MBX_FIFO_DEPTH * sizeof(uint32_t));
     return mock_type(fpfw_status_t);

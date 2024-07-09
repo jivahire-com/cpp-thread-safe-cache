@@ -34,11 +34,11 @@
 #define HSP_MBOX_MAX_CMD_CODE        (0xFFFFU)
 #define HSP_MBOX_MIN_CMD_CODE        (0x1U)
 #define HSP_MBOX_CMD_CODE_SIZE       (16U)
-#define HSP_MBOX_CMD_CODE_START_POS  (16U) //! 16th bit from lsb
+#define HSP_MBOX_CMD_CODE_START_POS  (0U) //! 16th bit from lsb
 #define HSP_MBOX_MAX_SEQ_NUM         (0xFFU)
 #define HSP_MBOX_MIN_SEQ_NUM         (0x0U)
 #define HSP_MBOX_SEQ_NUM_SIZE        (8U)
-#define HSP_MBOX_SEQ_NUM_START_POS   (24U) //! 24th bit from lsb
+#define HSP_MBOX_SEQ_NUM_START_POS   (16U) //! 24th bit from lsb
 
 /*------------- Typedefs -----------------*/
 
@@ -68,7 +68,7 @@ FPFW_INIT_COMPONENT(icc_hspmbx, FPFW_INIT_DEPENDENCIES("dfwk"))
     static struct _fpfw_timer_t timer[ICC_MAX_ASYNC_REQ_TYPE] = {};
     static fpfw_mbox_icc_transport_config_t cfg = {
         .mbox_dev_cfg = {.MbxFifoDepth = HSP_MBX_FIFO_DEPTH,
-                         .MbxMesgHandlingType = MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME_FIXED_SIZE,
+                         .MbxMesgHandlingType = MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME,
                          .MbxImplementation = MBX_IMPL_POLLING,
                          .MsgSizeBytes = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t)),
                          .MbxBaseAddr = MSCP2HSP_MAILBOX_BASE_ADDRESS},

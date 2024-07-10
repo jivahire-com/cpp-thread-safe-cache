@@ -13,7 +13,7 @@
  * TODO: ADO 1831262: Remove the below flag and related code once HSP supports
  * initialization of CDEDSS Tower.
  */
-// #define FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP
+#define FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP
 
 /*-------------------------------- Includes ---------------------------------*/
 #include "accelerator_ip.h"
@@ -40,23 +40,23 @@
 #include <stdbool.h>                     // for true
 #include <stdint.h>                      // for int32_t, uintptr_t, uint32_t
 #include <stdio.h>                       // for printf, NULL
-#ifdef FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP
-    #include <tower_cdedss.h> // for configure_cdedss_hsp_system_addr_map()
-#endif                        /* FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP */
-#include <utils.h>            // for UNUSED
+#include <utils.h>                       // for UNUSED
+
+#if defined(FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP)
+    #include <silibs_common.h> // for ALIGN_UP
+    #include <tower_cdedss.h>  // for configure_cdedss_hsp_system_addr_map()
+#endif                         /* FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP */
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
 #define ACCEL_PCR_CONFIG_TIMEOUT (10)
 
-/// @TODO: ADO 1831262: Replace SMMU_YARDLEY_DEV_VAB_UNIQ_TCU_VAB_ADDRESS with
-/// SMMU_YARDLEY_EAC_VAB_TCU_VAB_ADDRESS when R17 is ready.
-#ifndef SMMU_YARDLEY_DEV_VAB_UNIQ_TCU_VAB_ADDRESS
-    #define SMMU_YARDLEY_DEV_VAB_UNIQ_TCU_VAB_ADDRESS (SMMU_YARDLEY_EAC_VAB_TCU_VAB_ADDRESS)
-#endif
-
 #define SLEEP_100_MS                                (100)
 #define MAX_RETRY_CNT_FOR_SMMU_CONFIGURE_GPBA_CHECK (50)
+
+#if defined(FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP)
+    #define HSSS_DFP_TOP_KD_CDEDSS_HSP_AXI_ADDRESS (0xffffff0000000U)
+#endif /* FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP */
 
 /*-------------------------------- Typedefs ---------------------------------*/
 
@@ -495,6 +495,10 @@ static int32_t configure_accel_ip(accelip_metadata_t* p_accelip_metadata,
     {
         debug_print("Accel IP ATU Mapping failed\n");
         ret = ACCEL_RET_FAIL_ATU_MAP;
+        /*
+         * TODO: ADO 1889561: Remove this goto and rather return from here as
+         * there is nothing to unwind here.
+         */
         goto exit;
     }
 
@@ -539,6 +543,9 @@ static int32_t configure_accel_ip(accelip_metadata_t* p_accelip_metadata,
     if (ret != SILIBS_SUCCESS)
     {
         debug_print("Accel IP ATU Unmapping failed\n");
+        /*
+         * TODO: ADO 1889561: Return from here as there is nothing to unwind here.
+         */
         ret = ACCEL_RET_FAIL_ATU_UNMAP;
     }
 
@@ -549,70 +556,64 @@ exit:
 }
 
 #if defined(FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP)
-// #define FEATURE_CDEDSS_ATU_STATIC_MAPPING
 static int32_t init_hsp_cdedss_tower_atu_map(atu_map_entry_t* p_cdeedss_tower_atu_map_entry)
 {
-    int32_t ret = ACCEL_RET_SUCCESS;
-
-    #if defined(FEATURE_CDEDSS_ATU_STATIC_MAPPING)
-        #include <silibs_common.h>                                                            // for ALIGN_UP
     p_cdeedss_tower_atu_map_entry->mscp_start_address = 0;                                    // 0x78000000;
     p_cdeedss_tower_atu_map_entry->mscp_end_address = ALIGN_UP(0x8000000, ATU_PAGE_SIZE) - 1; // 0x7fffffff;
-    #else  /* !FEATURE_CDEDSS_ATU_STATIC_MAPPING */
-    p_cdeedss_tower_atu_map_entry->mscp_start_address = 0x78000000;
-    p_cdeedss_tower_atu_map_entry->mscp_end_address = 0x7fffffff;
-    #endif /* FEATURE_CDEDSS_ATU_STATIC_MAPPING */
 
     p_cdeedss_tower_atu_map_entry->attribute.axprot0 = 0x3;
     p_cdeedss_tower_atu_map_entry->attribute.axprot1 = 0x2;
     p_cdeedss_tower_atu_map_entry->attribute.axnse = 0x3;
 
-    ret = atu_map(ATU_ID_MSCP, p_cdeedss_tower_atu_map_entry);
+    int32_t ret = atu_map(ATU_ID_MSCP, p_cdeedss_tower_atu_map_entry);
     if (ret != SILIBS_SUCCESS)
     {
         debug_print("accel_lib: WA: CDEDSS Tower ATU Mapping failed\n");
-        ret = ACCEL_RET_FAIL_ATU_MAP;
+        return ACCEL_RET_FAIL_ATU_MAP;
     }
 
-    return ret;
+    return ACCEL_RET_SUCCESS;
 }
 
 static int32_t init_hsp_cdedss_tower_atu_unmap(atu_map_entry_t* p_cdeedss_tower_atu_map_entry)
 {
-    int32_t ret = ACCEL_RET_SUCCESS;
-
     // TODO: WA until HSP configures CDEDSS Tower
-    ret = atu_unmap(ATU_ID_MSCP, p_cdeedss_tower_atu_map_entry);
+    int32_t ret = atu_unmap(ATU_ID_MSCP, p_cdeedss_tower_atu_map_entry);
     if (ret != SILIBS_SUCCESS)
     {
         debug_print("Accel IP CDEDSS Tower ATU Unmapping failed\n");
-        ret = ACCEL_RET_FAIL_ATU_UNMAP;
+        return ACCEL_RET_FAIL_ATU_UNMAP;
     }
 
-    return ret;
+    return ACCEL_RET_SUCCESS;
 }
 
 static int32_t init_hsp_cdedss_tower(atu_map_entry_t* p_cdeedss_tower_atu_map_entry)
 {
-    int32_t ret = ACCEL_RET_SUCCESS;
-
     // Create ATU Mapping (SCP View) for the CDEDSS Tower
-    #define HSSS_DFP_TOP_KD_CDEDSS_HSP_AXI_ADDRESS (0xffffff0000000U)
-
     p_cdeedss_tower_atu_map_entry->ap_base_address = (uint64_t)HSSS_DFP_TOP_KD_CDEDSS_HSP_AXI_ADDRESS;
 
     // Create ATU Mapping (SCP View) for the Accel IP CDEDSS Tower
-    init_hsp_cdedss_tower_atu_map(p_cdeedss_tower_atu_map_entry);
+    int32_t ret = init_hsp_cdedss_tower_atu_map(p_cdeedss_tower_atu_map_entry);
     if (ret != ACCEL_RET_SUCCESS)
     {
         return ret;
     }
 
     uint32_t cdedss_tower_atu_mapped_addr = p_cdeedss_tower_atu_map_entry->mscp_start_address;
+    CDEDSS_INSTANCE cdedss_id = 0;
 
     debug_print("accel_lib: WA: Initializing CDEDSS Tower\n");
 
     configure_cdedss_hsp_system_addr_map(HSSS_DFP_TOP_KD_CDEDSS_HSP_AXI_ADDRESS, cdedss_tower_atu_mapped_addr);
+    configure_cdedss_vab_system_addr_map(cdedss_id, cdedss_tower_atu_mapped_addr);
+
+    // Destroy ATU mapping
+    ret = init_hsp_cdedss_tower_atu_unmap(p_cdeedss_tower_atu_map_entry);
+    if (ret != ACCEL_RET_SUCCESS)
+    {
+        return ret;
+    }
 
     debug_print("accel_lib: WA: CDEDSS Tower initialization complete.\n");
 
@@ -624,43 +625,51 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
 {
     int32_t ret = ACCEL_RET_SUCCESS;
 
-#ifdef FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP
-    // TODO: WA until HSP configures CDEDSS Tower
-    atu_map_entry_t cdeedss_tower_atu_map_entry = {0};
-
-    if ((idsw_get_platform_sdv() == PLATFORM_SVP_SIM) && (p_ss_ctxt->accelip_metadata.accel_type == ACCELERATOR_CDEDSS))
+    if (p_ss_ctxt->accelip_metadata.accel_type == ACCELERATOR_CDEDSS)
     {
-        ret = init_hsp_cdedss_tower(&cdeedss_tower_atu_map_entry);
-        if (ret != ACCEL_RET_SUCCESS)
+#ifdef FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP
+        // TODO: WA until HSP configures CDEDSS Tower
+        atu_map_entry_t cdeedss_tower_atu_map_entry = {0};
+
+        if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
         {
-            debug_print("accel_lib: WA: CDEDSS Tower Init failed\n");
-            goto exit;
+            ret = init_hsp_cdedss_tower(&cdeedss_tower_atu_map_entry);
+            if (ret != ACCEL_RET_SUCCESS)
+            {
+                debug_print("accel_lib: WA: CDEDSS Tower Init failed\n");
+                return ret;
+            }
+        }
+        else
+#endif /* FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP */
+        {
+            /*
+             * Since HSP FW is not ready for the handshake, we would be consuming
+             * the cmm scripts from FPGA team to configure the CDEDSS Tower.
+             *
+             * Once HSP FW is available, we need to follow the below steps:
+             *   - Send request to HSP to configure the CDEDSS Tower via Mailbox.
+             *   - Wait for the confirmation from HSP via Mailbox about the status
+             *     to configure the CDEDSS Tower.
+             *   - Take further action based on SUCCESS/FAIL.
+             *
+             * This ADO catpures the status of HSP FW readiness: 1568266
+             */
         }
     }
-#endif /* FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP */
 
     // Configure Accelerator SubSystem Tower
-    ret = configure_accel_subsystem_pcr(p_ss_ctxt->accelip_metadata,
-                                        p_ss_ctxt->p_accelss_tower_attr,
-                                        p_ss_ctxt->p_accelss_atu_mapping_ctxt);
-    if (ret != ACCEL_RET_SUCCESS)
+    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
     {
-        critical_print("Accel Subsystem PCR configuration failed.\n");
-        return ACCEL_RET_FAIL_TOWER;
-    }
-
-#ifdef FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP
-    // Destroy ATU mapping
-    if ((idsw_get_platform_sdv() == PLATFORM_SVP_SIM) && (p_ss_ctxt->accelip_metadata.accel_type == ACCELERATOR_CDEDSS))
-    {
-        ret = init_hsp_cdedss_tower_atu_unmap(&cdeedss_tower_atu_map_entry);
+        ret = configure_accel_subsystem_pcr(p_ss_ctxt->accelip_metadata,
+                                            p_ss_ctxt->p_accelss_tower_attr,
+                                            p_ss_ctxt->p_accelss_atu_mapping_ctxt);
         if (ret != ACCEL_RET_SUCCESS)
         {
-            debug_print("accel_lib: WA: CDEDSS Tower Init failed\n");
-            goto exit;
+            critical_print("Accel Subsystem PCR configuration failed.\n");
+            return ACCEL_RET_FAIL_SS_PCR;
         }
     }
-#endif /* FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP */
 
     // Configure AccelIP pre boot registers
     ret = configure_accel_ip(&(p_ss_ctxt->accelip_metadata),
@@ -702,15 +711,12 @@ int32_t scp_accelerators_init(void)
                    p_ss_ctxt[index].accelip_metadata.accel_type,
                    p_ss_ctxt[index].accelip_metadata.accel_instance);
 
-            // TODO: ADO 1831262: Remove the below check once SVP supports CDED BCFG access
-            if ((idsw_get_platform_sdv() == PLATFORM_SVP_SIM) &&
-                (p_ss_ctxt[index].accelip_metadata.accel_type == ACCELERATOR_CDEDSS))
-            {
-                debug_print("accel lib: Skipping CDED initialization for SVP\n");
-                continue;
-            }
-
             ret = init_accelerator(&p_ss_ctxt[index]);
+
+            /*
+             * TODO: ADO 1889561: If we are asserting here, then there's really
+             * no point of a return from the function.
+             */
             FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
         }
     }

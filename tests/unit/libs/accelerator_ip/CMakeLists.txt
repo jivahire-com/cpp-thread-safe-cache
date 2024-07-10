@@ -31,12 +31,14 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     atu_map
     atu_unmap
+    configure_cdedss_hsp_system_addr_map
+    configure_cdedss_vab_system_addr_map
     FpFwAssert
     debug_print
     critical_print
     mmio_write8
     mmio_write32
-    mmio_update32 
+    mmio_update32
     idsw_get_die_id
     idsw_get_platform_sdv
     sdm_init_smmu_connection_seq

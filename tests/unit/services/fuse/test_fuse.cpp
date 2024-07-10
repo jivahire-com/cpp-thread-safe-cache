@@ -24,12 +24,15 @@ extern "C" {
 #include <fuses_top_regs.h>
 #include <idsw.h>
 #include <idsw_kng.h>
+#include <setjmp.h>
 #include <silibs_platform.h>
 #include <silibs_scp_exp_top_regs.h>
 #include <silibs_scp_top_regs.h>
+#include <stdnoreturn.h>
 #include <utils.h> // for UNUSED
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define BUGCHECK_MOCK_RETURN() (setjmp(cd_mock_jump_buf))
 
 /*------------- Typedefs -----------------*/
 
@@ -37,6 +40,7 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 // bool simulate_fuse = true;
+static jmp_buf cd_mock_jump_buf;
 
 /*------------- Functions ----------------*/
 extern int read_override_from_spi();
@@ -52,16 +56,16 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
 
 silibs_status_t __wrap_fuse_dma_copy_to_ram_blocking()
 {
-    function_called();
-    return 0;
+    // function_called();
+    return mock_type(int);
 }
 
 int __wrap_read_fuse(const unsigned fuse_bit_offset, const unsigned fuse_bit_size)
 {
     check_expected(fuse_bit_offset);
     check_expected(fuse_bit_size);
-    function_called();
-    return 1;
+    // function_called();
+    return mock_type(int);
 }
 
 silibs_status_t __wrap_apply_fuse_override(idsw_die_id_t die_id, const uintptr_t override_buffer)
@@ -125,6 +129,19 @@ silibs_status_t __wrap_fuse_dist_get_exclusion_list(KNG_PLAT_ID plat_id,
     function_called();
     return SILIBS_SUCCESS;
 }
+
+noreturn void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
+{
+    check_expected(errorCode);
+    FPFW_UNUSED(p1);
+    FPFW_UNUSED(p2);
+    FPFW_UNUSED(p3);
+    FPFW_UNUSED(p4);
+
+    // Handle noreturn, allowing control to return to test
+    longjmp(cd_mock_jump_buf, 1);
+}
+
 //
 // Tests
 //
@@ -132,11 +149,11 @@ silibs_status_t __wrap_fuse_dist_get_exclusion_list(KNG_PLAT_ID plat_id,
 TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RTL_SIM);
-    expect_function_call(__wrap_fuse_dma_copy_to_ram_blocking);
     expect_value(__wrap_read_fuse, fuse_bit_offset, TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_BIT_OFFSET);
     expect_value(__wrap_read_fuse, fuse_bit_size, TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_WIDTH);
-    expect_function_call(__wrap_read_fuse);
     expect_function_call(__wrap_trigger_debugger_for_manual_overrides);
+    will_return_always(__wrap_fuse_dma_copy_to_ram_blocking, 0);
+    will_return_always(__wrap_read_fuse, 1);
     assert_int_equal(platform_fuse_override(), SILIBS_E_SUPPORT);
 }
 
@@ -145,7 +162,7 @@ TEST_FUNCTION(test_read_fuse, NULL, NULL)
     uint64_t fuse_data = 0;
     expect_value(__wrap_read_fuse, fuse_bit_offset, TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_BIT_OFFSET);
     expect_value(__wrap_read_fuse, fuse_bit_size, TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_WIDTH);
-    expect_function_call(__wrap_read_fuse);
+    will_return_always(__wrap_read_fuse, 1);
     platform_read_for_fuse((uintptr_t)&fuse_data,
                            TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_BIT_OFFSET,
                            TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_WIDTH);
@@ -164,6 +181,7 @@ TEST_FUNCTION(test_fuse_distribute_SIM_RTL, NULL, NULL)
     assert_int_equal(platform_fuse_distribution(), SILIBS_E_SUPPORT);
     // Debug prints
 }
+
 TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE, NULL, NULL)
 {
     fuse_dist_exclude_range_t fuse_dist_exclude_list1[10] = {}; // Allocate memory
@@ -253,5 +271,26 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE, NULL, NULL)
 
     // Debug prints
     printf("Freed memory for fuse_dist_exclude_list1\n");
+}
+
+TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RTL_SIM);
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_WIDTH);
+    will_return(__wrap_fuse_dma_copy_to_ram_blocking, 1);
+
+    if (!BUGCHECK_MOCK_RETURN())
+    {
+        platform_fuse_override();
+    }
+
+    will_return(__wrap_fuse_dma_copy_to_ram_blocking, 0);
+    will_return_always(__wrap_read_fuse, 0);
+    if (!BUGCHECK_MOCK_RETURN())
+    {
+        platform_fuse_override();
+    }
 }
 }

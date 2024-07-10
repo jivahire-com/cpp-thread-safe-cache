@@ -40,6 +40,7 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    crash_dump_bug_check
     idsw_get_platform_sdv
     fuse_dma_copy_to_ram_blocking
     read_fuse

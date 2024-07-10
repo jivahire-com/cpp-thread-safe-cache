@@ -8,7 +8,7 @@
 
 /*------------- Includes -----------------*/
 
-#include <FpFwAssert.h>              // for FPFW_RUNTIME_ASSERT
+#include <bug_check.h>               // for BUG_ASSERT_PARAM, BUG_ASSERT
 #include <fpfw_init.h>               // for fpfw_init_get_handle, FPFW_INIT_C...
 #include <fpfw_mbox_icc_transport.h> // for ICC_MBX_ASYNC_RECV, ICC_MBX_ASY...
 #include <fpfw_status.h>             // for fpfw_status_t
@@ -68,9 +68,9 @@ static int read_override_from_spi()
     HSP_MAILBOX_MSG response;
     size_t output_size = 0;
     fpfw_status_t status = fpfw_mbox_icc_transport_dfwk_interface_init(fpfw_init_get_handle("icc_mbx"), &mscp_mbx_intf);
-    FPFW_RUNTIME_ASSERT(status == FPFW_INIT_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM((status == FPFW_INIT_STATUS_SUCCESS), status, FPFW_INIT_STATUS_SUCCESS);
     retval = fpfw_icc_transport_get_max_mesg_size_sync_req(mscp_mbx_intf, &output_size);
-    FPFW_RUNTIME_ASSERT(retval == FPFW_INIT_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM((retval == FPFW_INIT_STATUS_SUCCESS), retval, FPFW_INIT_STATUS_SUCCESS);
     message.Cmd = HstpMailboxCmdLoadFirmware;
     message.Msg[0] = HspFirmwareIdFuseOverride;
     message.Msg[1] = SCP_TOP_SCP_EXP_ADDRESS;
@@ -122,7 +122,7 @@ int platform_fuse_override()
         // Cache base fuse data from efuse blocks into SoC RAM location
         status = platform_fuse_copy_to_ram();
         FUSE_ET_STATUS(FUSE_ET_TYPE_RAM_DMA_COPY);
-        FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
+        BUG_ASSERT_PARAM((status == SILIBS_SUCCESS), status, SILIBS_SUCCESS);
         const bool is_fused_part = read_fuse(TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_BIT_OFFSET,
                                              TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_WIDTH) != 0;
         // Read override buffer from SPI Flash and apply to fuses if present
@@ -132,7 +132,7 @@ int platform_fuse_override()
         if (!is_fused_part && !fuse_overrides_present)
         {
             FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_NO_OVERRIDES);
-            FPFW_RUNTIME_ASSERT(0);
+            BUG_ASSERT(false);
         }
         else if (!is_fused_part && fuse_overrides_present)
         {

@@ -22,6 +22,8 @@ target_link_libraries(${TARGET}
         fwlib.lib.mboxPrimitives
         fwlib.driver.mboxIccTransport
         fwlib.service.cli
+        ms::lib::crash_dump::scp
+        ms::lib::error_codes
         ms::lib::event_trace::trace
         ms::lib::register_headers
         ms::lib::utils
@@ -30,7 +32,6 @@ target_link_libraries(${TARGET}
         silibs::idsw_kng
         silibs::platform
         silibs::kng_silibs_platform
-        
 )
 
 lint_target(${TARGET})

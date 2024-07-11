@@ -11,7 +11,8 @@
 #include <FpFwCli.h>        // for FPFW_CLI_STATUS, CLI_SUCCESS, FpFwCliReg...
 #include <FpFwLinkedList.h> // for NULL_LIST_ENTRY
 #include <FpFwUtils.h>      // for FPFW_UNUSED, FPFW_ARRAY_SIZE
-#include <stdio.h>          // for printf
+#include <ddrss_lib.h>
+#include <stdio.h> // for printf
 
 #ifdef UNIT_TEST
     #define STATIC
@@ -46,8 +47,6 @@ STATIC FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char** Argv)
     FPFW_UNUSED(Argc);
     FPFW_UNUSED(Argv);
 
-    // TODO Silibs to provide APIs with arguments list
-    // https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/584974
     printf("Work in progress: ecc_ce_error_injection!!\n");
 
     return CLI_SUCCESS;

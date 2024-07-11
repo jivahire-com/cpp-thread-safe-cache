@@ -8,6 +8,11 @@ set(SOURCES
 # Compile test
 add_executable(${TARGET} ${SOURCES})
 
+if (i386-pc-windows-msvc)
+    set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+    set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
+endif()
+
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.init
@@ -24,6 +29,6 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    ddrss_lib_init
-    idhw_get_die_id
+    prod_ddrss_lib_init
+    idsw_get_die_id
 )

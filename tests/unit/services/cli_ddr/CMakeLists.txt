@@ -14,6 +14,10 @@ target_link_libraries(${TARGET}
     PRIVATE
         fwlib.service.cli
         ms::cmocka::testrunner
+        silibs::ddrss
+        silibs::platform
+        silibs::kng_silibs_platform
+        silibs::ras_arm
 )
 
 lint_target(${TARGET})

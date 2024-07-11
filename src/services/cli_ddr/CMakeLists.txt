@@ -15,8 +15,13 @@ target_include_directories(
 
 target_link_libraries(
     ${TARGET}
+        PUBLIC
+        silibs::ddrss
         PRIVATE
         fwlib.service.cli
+        silibs::platform
+        silibs::kng_silibs_platform
+        silibs::ras_arm
 )
 
 lint_target(${TARGET})

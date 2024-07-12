@@ -36,3 +36,17 @@ include(${REPO_ROOT_DIR}/tools/cmakes/scripts/unit_test.cmake)
 # Build sources
 add_subdirectory(src)
 add_subdirectory(tests)
+
+enabled_on(arm-eabi-aarch)
+
+# Define a custom target that depends on all other targets
+add_custom_target(all_app_targets ALL
+    DEPENDS mcp_fw scp_fw mcp_boot_loader scp_boot_loader
+)
+
+# create file if all of the targets built
+add_custom_command(
+    TARGET all_app_targets
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_BINARY_DIR}/.allbuilt"
+)

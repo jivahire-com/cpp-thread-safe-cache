@@ -536,7 +536,13 @@ Function Invoke-Build()
     # Keeps x86 build from failing/breaking pipeline build stage
     $ErrorActionPreference = "SilentlyContinue"
     ninja -C $env:REPO_APP_TARGET_BUILD_DIR $args
-    Invoke-Buildsize
+
+    # check for successful build
+    $build_status = Join-Path -Path $(Get-ChildItem -Path "Env:REPO_APP_TARGET_BUILD_DIR").Value -ChildPath '.allbuilt'
+    if (Test-Path -Path $build_status){
+        Remove-Item -Path $build_status -Force
+        Invoke-Buildsize
+    }
 }
 
 <#

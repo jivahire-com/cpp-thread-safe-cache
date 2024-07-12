@@ -52,16 +52,16 @@ class sdm_memcpy_test(BaseMSCPTest):
 
         # Ensure the host config file used alongside this test has these connections defined.
 
-        assert self.dut.mb.soc_0.apns is not None
+        assert self.dut.mb.node_0.soc.primary_die.apns.channel_manager is not None
 
-        self.dut.mb.soc_0.apns.open()
-        assert self.dut.mb.soc_0.apns.is_open()
+        self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel().open()
+        assert self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel().is_open()
 
-        apns_lines = ' '.join(self.read_and_log_lines(connection=self.dut.mb.soc_0.apns, num_lines=15))
+        apns_lines = ' '.join(self.read_and_log_lines(connection=self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel(), num_lines=15))
 
         test_pass = True if ('compare_data_buffer: INFO: SUCCESS' in apns_lines) else False
 
-        self.dut.mb.soc_0.apns.close()
+        self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel().close()
 
         # Notify of the test results. If test_pass is False it is an error (which also signals to the base test class that the test failed).
         self.test_notify(step="sdm_memcpy", msg="Success", _is_error=not(test_pass))

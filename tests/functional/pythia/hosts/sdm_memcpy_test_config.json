@@ -2,25 +2,46 @@
     "id": "DEBUG_HOST",
     "ip": "127.0.0.1",
     "connections": {
-        "mb": {
-            "soc_0": {
-                "is_present": true,
-                "scp": {
-                    "host": "localhost",
-                    "port": 4257,
-                    "timeout_seconds": 60.0
-                },
-                "mcp": {
-                    "host": "localhost",
-                    "port": 4256,
-                    "timeout_seconds": 60.0
-                },
-                "apns": {
-                    "host": "localhost",
-                    "port": 4258,
-                    "timeout_seconds": 60.0
-                }
-            }
+        "mb": { 
+            "node_0": { 
+                "is_present": true, 
+                "soc": { 
+                    "is_present": true, 
+                    "primary_die": { 
+                        "is_present": true, 
+                        "scp": { 
+                            "channels": { 
+                                "telnet": { 
+                                    "host": "localhost", 
+                                    "port": 4257, 
+                                    "timeout_seconds": 60.0 
+                                }, 
+                                "default": "telnet" 
+                            } 
+                        }, 
+                        "mcp": { 
+                            "channels": { 
+                                "telnet": { 
+                                    "host": "localhost", 
+                                    "port": 4256, 
+                                    "timeout_seconds": 60.0 
+                                }, 
+                                "default": "telnet" 
+                            } 
+                        },
+                        "apns": {
+                            "channels": { 
+                                "telnet": { 
+                                    "host": "localhost",
+                                    "port": 4258,
+                                    "timeout_seconds": 60.0 
+                                }, 
+                                "default": "telnet" 
+                            }
+                        } 
+                    } 
+                } 
+            } 
         }
     },
     "svp_config": {

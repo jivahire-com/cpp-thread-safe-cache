@@ -68,17 +68,17 @@ class mscp_heart_beat_bootloader(BaseMSCPTest):
 
         # Ensure the host config file used alongside this test has these connections defined.
 
-        assert self.dut.mb.soc_0.scp is not None
+        assert self.dut.mb.node_0.soc.primary_die.scp.channel_manager is not None
 
-        self.dut.mb.soc_0.scp.open()
+        self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel().open()
 
-        assert self.dut.mb.soc_0.scp.is_open()
+        assert self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel().is_open()
 
-        scp_lines = ' '.join(self.read_and_log_lines(connection=self.dut.mb.soc_0.scp, num_lines=30))
+        scp_lines = ' '.join(self.read_and_log_lines(connection=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel(), num_lines=30))
 
         test_pass = True if ('HeartBeat' in scp_lines) else False
 
-        self.dut.mb.soc_0.scp.close()
+        self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel().close()
 
         # Notify of the test results. If test_pass is False it is an error (which also signals to the base test class that the test failed).
         self.test_notify(step="HeartBeat", msg="Test Done", _is_error=not(test_pass))
@@ -98,17 +98,17 @@ class mscp_heart_beat_bootloader(BaseMSCPTest):
         self.dut.setup()
 
         # Ensure the host config file used alongside this test has these connections defined.
-        assert self.dut.mb.soc_0.mcp is not None
+        assert self.dut.mb.node_0.soc.primary_die.mcp.channel_manager is not None
 
-        self.dut.mb.soc_0.mcp.open()
+        self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel().open()
 
-        assert self.dut.mb.soc_0.mcp.is_open()
+        assert self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel().is_open()
 
-        mcp_lines = ' '.join(self.read_and_log_lines(connection=self.dut.mb.soc_0.mcp, num_lines=30))
+        mcp_lines = ' '.join(self.read_and_log_lines(connection=self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel(), num_lines=30))
 
         test_pass = True if ('HeartBeat' in mcp_lines) else False
 
-        self.dut.mb.soc_0.mcp.close()
+        self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel().close()
 
         # Notify of the test results. If test_pass is False it is an error (which also signals to the base test class that the test failed).
         self.test_notify(step="HeartBeat", msg="Test Done", _is_error=not(test_pass))

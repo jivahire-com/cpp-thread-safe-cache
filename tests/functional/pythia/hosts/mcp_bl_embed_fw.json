@@ -2,15 +2,26 @@
     "id": "DEBUG_HOST",
     "ip": "127.0.0.1",
     "connections": {
-        "mb": {
-            "soc_0": {
-                "is_present": true,
-                "mcp": {
-                    "host": "localhost",
-                    "port": 4256,
-                    "timeout_seconds": 60.0
-                }
-            }
+        "mb": { 
+            "node_0": { 
+                "is_present": true, 
+                "soc": { 
+                    "is_present": true, 
+                    "primary_die": { 
+                        "is_present": true, 
+                        "mcp": { 
+                            "channels": { 
+                                "telnet": { 
+                                    "host": "localhost", 
+                                    "port": 4256, 
+                                    "timeout_seconds": 60.0 
+                                }, 
+                                "default": "telnet" 
+                            } 
+                        } 
+                    } 
+                } 
+            } 
         }
     },
     "svp_config": {

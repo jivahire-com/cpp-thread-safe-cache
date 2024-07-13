@@ -26,6 +26,7 @@ add_library(${TARGET}
         hw_version_scp_init.c
         icc_init.c
         icc_cli_init.c
+        icc_transport_init/scp_icc_mhu_trans_init.c
         mesh_init.c
         ioss_init.c
         nvic_init.c
@@ -37,6 +38,7 @@ add_library(${TARGET}
         scp_mpu_init.c
         tower_init.c
         startup_shutdown_init.c
+        scmi_cli_init.c
         usb_init.c
         sds_init.c
 )
@@ -59,6 +61,7 @@ target_link_libraries(
         ms::build_data
         ms::lib::scp_avs
         ms::lib::scp_avs::cli
+        ms::driver::icc_mhu_trans
         ms::driver::pcie
         ms::driver::sensor_fifo
         ms::driver::vab
@@ -78,6 +81,7 @@ target_link_libraries(
         ms::lib::mesh
         ms::lib::ioss_init
         ms::lib::ioss::usb
+        ms::lib::scmi::cli
         ms::lib::scp_interrupts
         ms::lib::stdio_textio
         ms::lib::threadx

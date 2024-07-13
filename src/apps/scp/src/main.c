@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include <FpFwUtils.h>
 #include <fpfw_init.h>
+#include <scmi_prim.h>
 #include <scp_events.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -107,5 +108,9 @@ void main_thread(ULONG thread_input)
     {
         tx_thread_sleep(2);
         FPFW_ET_LOG(ScpHeartBeat, count++);
+
+        // **TODO will have to remove this once the SCMI Driver framework gets implemented
+        // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1903038
+        scmi_poll_message();
     }
 }

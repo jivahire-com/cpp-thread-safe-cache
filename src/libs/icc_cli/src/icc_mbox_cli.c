@@ -3,7 +3,7 @@
 //
 
 /**
- * @file icc commands for hsp mbx.c
+ * @file icc commands for hsp mbx.c and mhu transports
  */
 
 /*------------- Includes -----------------*/
@@ -17,6 +17,7 @@
 #include <fpfw_icc_transport_interface.h> // for FPFW_ICC_TRANSPORT_ASYNC_S...
 #include <fpfw_status.h>                  // for fpfw_status_t
 #include <icc_cli.h>                      // for ICC_CLI_HSP_MBX, icc_cli_i...
+#include <icc_mhu_trans_prim.h>           // for icc_mhu primitives
 #include <silibs_mcp_top_regs.h>          // for MCP_TOP_MCP2HSP_MAILBOX_AD...
 #include <silibs_scp_top_regs.h>          // for SCP_TOP_SCP2HSP_MAILBOX_AD...
 #include <stdbool.h>                      // for false, bool, true
@@ -74,6 +75,8 @@ static FPFW_CLI_STATUS set_mbx_reg_val(int argc, const char** argv);
 static FPFW_CLI_STATUS hsp_mbox_echo(int argc, const char** argv);
 static FPFW_CLI_STATUS hsp_mbox_send(int argc, const char** argv);
 static FPFW_CLI_STATUS hsp_mbox_recv(int argc, const char** argv);
+static FPFW_CLI_STATUS mhu_send(int argc, const char** argv);
+static FPFW_CLI_STATUS scmi_stat(int argc, const char** argv);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -84,6 +87,9 @@ static FPFW_CLI_COMMAND s_icc_cmd_list[] = {
     {NULL_LIST_ENTRY, "icc", "echo", hsp_mbox_echo, "Sends a mailbox mesg to HSP & receives one", "Usage: echo <(uint32_t) (uint32_t) (uint32_t) (uint32_t)>"},
     {NULL_LIST_ENTRY, "icc", "send", hsp_mbox_send, "Sends a mailbox mesg to HSP", "Usage: send <(uint32_t) (uint32_t) (uint32_t) (uint32_t)>"},
     {NULL_LIST_ENTRY, "icc", "recv", hsp_mbox_recv, "Expects to recv mailbox mesg from HSP", "Usage: recv <(cmd code)>"},
+    {NULL_LIST_ENTRY, "icc", "mhu_send", mhu_send, "Sends message via MHU", "Usage: mhu_send <index> <command> <size> <data0> ... <data 2>"},
+    {NULL_LIST_ENTRY, "icc", "scmi_stat", scmi_stat, "Checks MHU SCMI Stat bit", "Usage: scmi_stat <index>"},
+
 };
 
 /*------------- Functions ----------------*/
@@ -413,4 +419,51 @@ static FPFW_CLI_STATUS hsp_mbox_recv(int argc, const char** argv)
     }
 
     return cli_status;
+}
+
+static FPFW_CLI_STATUS mhu_send(int argc, const char** argv)
+{
+
+    if (argc < 4)
+    {
+        FpFwCliPrint("ERROR! Insufficient Args mhu_send\n");
+        FpFwCliPrint("Usage: mhu_send <index> <command> <size> <data0> ... <data 2>\n");
+        FpFwCliPrint("          up to 32 bytes of data can be sent\n");
+        return CLI_ERROR;
+    }
+
+    // Take the arguments
+    int index = atoi(argv[1]);
+    uint32_t command = atoi(argv[2]);
+    size_t size = atoi(argv[3]);
+    uint8_t data[32];
+
+    if (size != 0 && argc > 4 && (size <= (size_t)(argc - 4)))
+    {
+        for (uint8_t count = 0; count < size; count++)
+        {
+            data[count] = atoi(argv[4 + count]);
+        }
+    }
+
+    FpFwCliPrint("Sending data to MHU\n");
+    icc_mhu_trans_send_message_idx(index, command, data, size);
+
+    return CLI_SUCCESS;
+}
+
+static FPFW_CLI_STATUS scmi_stat(int argc, const char** argv)
+{
+
+    if (argc != 2)
+    {
+        FpFwCliPrint("ERROR! Insufficient Args mhu_dbs\n");
+        FpFwCliPrint("Usage: scmi_stat <index>\n");
+
+        return CLI_ERROR;
+    }
+    int index = atoi(argv[1]);
+    icc_mhu_trans_check_scmi_status_bit(index);
+    FpFwCliPrint("MHU SCMI status bit check\n");
+    return CLI_SUCCESS;
 }

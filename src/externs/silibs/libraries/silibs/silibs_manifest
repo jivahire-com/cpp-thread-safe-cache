@@ -14,10 +14,12 @@ fuse
 gpio
 gtimer
 i2c
+icc_mhu
 idhw
 intu
 ioss
 lib_i3c
+mhuv3
 pcie
 pciess
 pcr_clock_config

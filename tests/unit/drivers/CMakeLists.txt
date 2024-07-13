@@ -1,3 +1,5 @@
+add_subdirectory(icc_mhu)
 add_subdirectory(pcie)
+add_subdirectory(scmi_drv)
 add_subdirectory(sensor_fifo)
 add_subdirectory(vab)

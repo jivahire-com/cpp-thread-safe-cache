@@ -12,10 +12,12 @@
 
 extern "C" {
 #include <FpFwUtils.h> // for FPFW_UNUSED
-#include <icc_mhu.h>   // for icc mhu
+#include <ap_core.h>
+#include <icc_mhu.h> // for icc mhu
 #include <icc_mhu_cfg.h>
 #include <icc_mhu_trans_prim.h>
 #include <kng_scmi_shared.h> // for SCMI Data structures and functions
+#include <scmi_init.h>
 #include <scmi_prim.h>
 #include <scmi_prim_i.h>
 #include <stddef.h> // for NULL
@@ -57,6 +59,14 @@ static int test_teardown(void** pContext)
 //
 // Tests
 //
+TEST_FUNCTION(test_scmi_set_apcore_interface, test_setup, test_teardown)
+{
+#define APCORE_INTERFACE 0x12345678
+    expect_value(__wrap_DfwkClientInterfaceOpen, Interface, APCORE_INTERFACE);
+    will_return(__wrap_DfwkClientInterfaceOpen, 0);
+    scmi_set_apcore_interface((DFWK_INTERFACE_HEADER*)APCORE_INTERFACE);
+}
+
 TEST_FUNCTION(test_scmi_send_resp, test_setup, test_teardown)
 {
     scmi_protocol_version_resp_t protocol_ver_resp;
@@ -105,13 +115,21 @@ TEST_FUNCTION(test_scmi_check_message, test_setup, test_teardown)
 
 TEST_FUNCTION(test_scmi_ap_core_protocol_cmds, test_setup, test_teardown)
 {
+#define RVBARLO 0x12345678
+#define RVBARHI 0x87654321
+
     // AP Core Command Tests
     uint8_t data[] = {1, 2, 3, 4};
     will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
     int status = __real_scmi_ap_core_protocol_cmds(SCMI_PROTOCOL_VERSION, data, 0);
     assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
 
-    status = __real_scmi_ap_core_protocol_cmds(SCMI_AP_CORE_RESET_ADDR_SET_MSG, data, 2);
+    // test set rvbaraddr handling
+    scmi_apcore_reset_address_set_a2p_t reset_addr_set = {RVBARLO, RVBARHI, 0};
+    expect_any(__wrap_DfwkAsyncRequestInititalize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInititalize, RequestSize, sizeof(ap_core_asynchronous_request_t));
+    expect_value(__wrap_ap_core_set_rvbaraddr, rvbaraddr, ((uint64_t)RVBARHI << 32 | RVBARLO));
+    status = __real_scmi_ap_core_protocol_cmds(SCMI_AP_CORE_RESET_ADDR_SET_MSG, (uint8_t*)&reset_addr_set, sizeof(reset_addr_set));
     assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
 
     status = __real_scmi_ap_core_protocol_cmds(SCMI_AP_CORE_RESET_ADDR_GET_MSG, data, 2);
@@ -143,14 +161,30 @@ TEST_FUNCTION(test_scmi_sys_pwr_protocol_cmds, test_setup, test_teardown)
 
 TEST_FUNCTION(test_scmi_power_protocol_cmds, test_setup, test_teardown)
 {
+#define TEST_CORE_NUM 5
+
     // Power Domain Commands
     uint8_t data[] = {1, 2, 3, 4};
     will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
     int status = __real_scmi_power_protocol_cmds(SCMI_PROTOCOL_VERSION, data, 0);
     assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
 
-    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
-    status = __real_scmi_power_protocol_cmds(SCMI_PWR_STATE_SET_MSG, data, 2);
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
+
+    // test core power on
+    scmi_pd_power_state_set_a2p_t power_set = {0, TEST_CORE_NUM, SCMI_PD_CORE_STATE_ON};
+    expect_any(__wrap_DfwkAsyncRequestInititalize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInititalize, RequestSize, sizeof(ap_core_asynchronous_request_t));
+    expect_value(__wrap_ap_core_core_power_on, core_id, TEST_CORE_NUM);
+    status = __real_scmi_power_protocol_cmds(SCMI_PWR_STATE_SET_MSG, (uint8_t*)&power_set, sizeof(power_set));
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
+
+    // test core power off
+    power_set.power_state = SCMI_PD_CORE_STATE_OFF;
+    expect_any(__wrap_DfwkAsyncRequestInititalize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInititalize, RequestSize, sizeof(ap_core_asynchronous_request_t));
+    expect_value(__wrap_ap_core_core_power_off, core_id, TEST_CORE_NUM);
+    status = __real_scmi_power_protocol_cmds(SCMI_PWR_STATE_SET_MSG, (uint8_t*)&power_set, sizeof(power_set));
     assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
 
     will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);

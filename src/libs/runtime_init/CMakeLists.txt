@@ -35,6 +35,7 @@ add_library(${TARGET}
         vab_init.c
         ddr_manager_init.c
         power_init.c
+        scmi_init.c
         scp_mpu_init.c
         tower_init.c
         startup_shutdown_init.c
@@ -64,6 +65,7 @@ target_link_libraries(
         ms::driver::icc_mhu_trans
         ms::driver::pcie
         ms::driver::sensor_fifo
+        ms::driver::scmi_drv
         ms::driver::vab
         ms::driver::textio::pl011
         ms::lib::accelerator_ip

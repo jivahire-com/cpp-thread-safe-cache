@@ -12,6 +12,7 @@
 #include <DfwkClient.h>         // for PDFWK_DEVICE_HEADER, PDFWK_INTERFACE_HEADER
 #include <FpFwCMocka.h>         // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>          // for FPFW_UNUSED
+#include <ap_core.h>            // for pap_core_asynchronous_request_t
 #include <icc_mhu_trans_prim.h> // for icc mhu
 #include <kng_scmi_shared.h>    // for SCMI Data structures and functions
 #include <scmi_prim.h>
@@ -81,4 +82,56 @@ int __wrap_scmi_ap_core_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t
     FPFW_UNUSED(payload);
     FPFW_UNUSED(size);
     return mock_type(int);
+}
+
+int32_t __wrap_DfwkClientInterfaceOpen(PDFWK_INTERFACE_HEADER Interface)
+{
+    check_expected_ptr(Interface);
+    return mock_type(int32_t);
+}
+
+void __wrap_DfwkAsyncRequestInititalize(PDFWK_ASYNC_REQUEST_HEADER Request, size_t RequestSize)
+{
+    check_expected_ptr(Request);
+    check_expected(RequestSize);
+    Request->AllocatedSize = RequestSize;
+}
+
+void __wrap_ap_core_set_rvbaraddr(PDFWK_INTERFACE_HEADER p_interface,
+                                  pap_core_asynchronous_request_t p_request,
+                                  uint64_t rvbaraddr,
+                                  DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                                  void* p_completion_context)
+{
+    FPFW_UNUSED(p_interface);
+    FPFW_UNUSED(p_request);
+    FPFW_UNUSED(completion_routine);
+    FPFW_UNUSED(p_completion_context);
+    check_expected(rvbaraddr);
+}
+
+void __wrap_ap_core_core_power_on(PDFWK_INTERFACE_HEADER p_interface,
+                                  pap_core_asynchronous_request_t p_request,
+                                  uint32_t core_id,
+                                  DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                                  void* p_completion_context)
+{
+    FPFW_UNUSED(p_interface);
+    FPFW_UNUSED(p_request);
+    FPFW_UNUSED(completion_routine);
+    FPFW_UNUSED(p_completion_context);
+    check_expected(core_id);
+}
+
+void __wrap_ap_core_core_power_off(PDFWK_INTERFACE_HEADER p_interface,
+                                   pap_core_asynchronous_request_t p_request,
+                                   uint32_t core_id,
+                                   DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                                   void* p_completion_context)
+{
+    FPFW_UNUSED(p_interface);
+    FPFW_UNUSED(p_request);
+    FPFW_UNUSED(completion_routine);
+    FPFW_UNUSED(p_completion_context);
+    check_expected(core_id);
 }

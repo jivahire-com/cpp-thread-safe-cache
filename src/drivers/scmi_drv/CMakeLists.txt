@@ -16,11 +16,13 @@ target_include_directories(${TARGET}
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.assert
+        fwlib.dfwk
         fwlib.lib.utils
         fwlib.service.cli
         silibs::kng_silibs_platform
         ms::lib::register_headers		
         ms::driver::icc_mhu_trans	
+        ms::service::ap_core	
 	PUBLIC
         ms::lib::debug
         silibs_platform

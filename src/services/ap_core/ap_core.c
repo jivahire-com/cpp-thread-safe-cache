@@ -20,6 +20,7 @@
 #include <corebits.h>
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_send, fpfw_icc_base...
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
+#include <inttypes.h>
 #include <startup_shutdown_ssi.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -40,7 +41,9 @@ static fpfw_icc_base_ctx_t* s_icc_base_ctx = NULL;
 // dispatcher function to handle set of rvbaraddr
 static void ap_core_dispatch_set_rvbaraddr(pap_core_asynchronous_request_t p_request)
 {
-    APCORE_LOG_INFO("Set RVBARADDR, address %llx", p_request->data.rvbaraddr);
+    APCORE_LOG_INFO("Set RVBARADDR, address %" PRIx32 "%08" PRIx32,
+                    (uint32_t)((p_request->data.rvbaraddr) >> 32),
+                    (uint32_t)p_request->data.rvbaraddr);
 
     // call utility function to set all rvbar addresses
     ap_core_util_set_all_rvbaraddr(&s_ap_core_ctx, p_request->data.rvbaraddr);

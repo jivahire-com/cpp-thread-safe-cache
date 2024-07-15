@@ -8,15 +8,20 @@
  */
 
 /*------------- Includes -----------------*/
+#include "scmi_init.h"
 #include "scmi_prim_i.h"
 
+#include <DfwkClient.h>
 #include <FpFwAssert.h>
-#include <FpFwCli.h> // for FpFwCliPrint, _FPFW_CLI_STATUS, FPF...
+#include <FpFwCli.h> // for SCMI_LOG_INFO, _FPFW_CLI_STATUS, FPF...
+#include <ap_core.h>
 #include <debug.h>
 #include <icc_mhu_trans_prim.h>
+#include <inttypes.h>
 #include <kng_icc_shared.h>
 #include <kng_scmi_shared.h>
 #include <scmi_prim.h>
+#include <stdint.h>
 #include <string.h>
 
 // Local data structures
@@ -35,10 +40,48 @@ typedef struct
 } scmi_transport_message_t;
 
 static scmi_transport_message_t scmi_message;
+static DFWK_INTERFACE_HEADER* p_apcore_interface = NULL;
+static ap_core_asynchronous_request_t apcore_request;
 static uint8_t scmi_debug = 0;
 void scmi_set_debug_mode(uint8_t mode)
 {
     scmi_debug = mode;
+}
+
+void ap_core_power_complete(int32_t status)
+{
+    scmi_pd_power_state_notify_p2a_t resp;
+    resp.status = status;
+    scmi_send_resp(SCMI_PWR_DMN_PROTO_ID, SCMI_PWR_STATE_SET_MSG, (uint8_t*)&resp, sizeof(resp));
+    SCMI_LOG_INFO("Sent SCMI_PWR_STATE_SET_MSG response: %d\n", (int)resp.status);
+}
+
+void ap_core_power_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+{
+    FPFW_UNUSED(request);
+    FPFW_UNUSED(p_completion_context);
+    ap_core_power_complete(SCMI_STATUS_SUCCESS);
+}
+
+void ap_core_power(uint32_t power_domain, uint32_t power_state)
+{
+    // ensure the apcore interface was set
+    FPFW_RUNTIME_ASSERT(p_apcore_interface != NULL);
+
+    DfwkAsyncRequestInititalize(&apcore_request.header, sizeof(apcore_request));
+    if ((power_state & SCMI_PD_CORE_STATE_MASK) == (SCMI_PD_CORE_STATE_OFF))
+    {
+        ap_core_core_power_off(p_apcore_interface, &apcore_request, power_domain, ap_core_power_completion, NULL);
+    }
+    else if ((power_state & SCMI_PD_CORE_STATE_MASK) == (SCMI_PD_CORE_STATE_ON))
+    {
+        ap_core_core_power_on(p_apcore_interface, &apcore_request, power_domain, ap_core_power_completion, NULL);
+    }
+    else
+    {
+        SCMI_LOG_INFO("Invalid Power State: %" PRIx32 "\n", power_state);
+        ap_core_power_complete(SCMI_STATUS_INVALID_PARAMETERS);
+    }
 }
 
 int scmi_power_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
@@ -66,10 +109,32 @@ int scmi_power_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
         SCMI_LOG_INFO("SCMI_PWR_PROTOCOL_VERSION: %x\n", cmd_code);
         break;
     }
+    case SCMI_PROTO_MSG_ATTR_MSG: {
+        scmi_protocol_message_attributes_a2p_t* p_message_attr = (scmi_protocol_message_attributes_a2p_t*)payload;
+        SCMI_LOG_INFO("SCMI_PROTO_ATTR_MSG: %x message_id %" PRIx32 "\n", cmd_code, p_message_attr->message_id);
+        scmi_protocol_message_attributes_p2a_t resp;
+        resp.status = SCMI_STATUS_SUCCESS;
+        resp.attributes = 0;
+        switch (p_message_attr->message_id)
+        {
+        // supported messages here
+        case SCMI_PWR_STATE_SET_MSG:
+            break;
+        // everything else is unsupported
+        default:
+            resp.status = SCMI_STATUS_NOT_FOUND;
+            break;
+        }
+        SCMI_LOG_INFO("SCMI_PROTO_MSG_ATTR_MSG: returning %" PRId32 " (attr: %" PRIx32 ")\n", resp.status, resp.attributes);
+        scmi_send_resp(SCMI_PWR_DMN_PROTO_ID, SCMI_PROTO_MSG_ATTR_MSG, (uint8_t*)&resp, sizeof(resp));
+        break;
+    }
     case SCMI_PWR_STATE_SET_MSG: {
         SCMI_LOG_INFO("SCMI_PWR_STATE_SET_MSG: %x\n", cmd_code);
-        int32_t status = 0;
-        scmi_send_resp(SCMI_PWR_DMN_PROTO_ID, SCMI_PWR_STATE_SET_MSG, (uint8_t*)&status, sizeof(status));
+        scmi_pd_power_state_set_a2p_t power_state;
+        // because alignment :(
+        memcpy(&power_state, payload, sizeof(power_state));
+        ap_core_power(power_state.domain_id, power_state.power_state);
         break;
     }
     case SCMI_PWR_STATE_GET_MSG:
@@ -113,6 +178,26 @@ int scmi_sys_pwr_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
         SCMI_LOG_INFO("SCMI_SYS_PWR_PROTOCOL_VERSION: %x\n", cmd_code);
         break;
     }
+    case SCMI_PROTO_MSG_ATTR_MSG: {
+        scmi_protocol_message_attributes_a2p_t* p_message_attr = (scmi_protocol_message_attributes_a2p_t*)payload;
+        SCMI_LOG_INFO("SCMI_PROTO_MSG_ATTR_MSG: %x message_id %" PRIx32 "\n", cmd_code, p_message_attr->message_id);
+        scmi_protocol_message_attributes_p2a_t resp;
+        resp.status = SCMI_STATUS_SUCCESS;
+        resp.attributes = 0;
+        switch (p_message_attr->message_id)
+        {
+        // supported messages here
+        case SCMI_SYS_PWR_STATE_SET_MSG:
+            break;
+        // everything else is unsupported
+        default:
+            resp.status = SCMI_STATUS_NOT_FOUND;
+            break;
+        }
+        SCMI_LOG_INFO("SCMI_PROTO_MSG_ATTR_MSG: returning %" PRId32 " (attr: %" PRIx32 ")\n", resp.status, resp.attributes);
+        scmi_send_resp(SCMI_PWR_DMN_PROTO_ID, SCMI_PROTO_MSG_ATTR_MSG, (uint8_t*)&resp, sizeof(resp));
+        break;
+    }
     case SCMI_SYS_PWR_STATE_SET_MSG: {
         SCMI_LOG_INFO("SCMI_SYS_PWR_STATE_SET_MSG: %x\n", cmd_code);
         int32_t status = 0;
@@ -136,6 +221,25 @@ int scmi_sys_pwr_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
     }
 
     return status;
+}
+
+void ap_core_reset_addr_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+{
+    FPFW_UNUSED(request);
+    FPFW_UNUSED(p_completion_context);
+    scmi_apcore_reset_address_set_p2a_t resp;
+    resp.status = SCMI_STATUS_SUCCESS;
+    scmi_send_resp(SCMI_AP_CORE_PROTO_ID, SCMI_AP_CORE_RESET_ADDR_SET_MSG, (uint8_t*)&resp, sizeof(resp));
+    SCMI_LOG_INFO("Sent SCMI_AP_CORE_RESET_ADDR_SET_MSG response: %d\n", (int)resp.status);
+}
+
+void ap_core_reset_addr_set(uint64_t reset_address)
+{
+    // ensure the apcore interface was set
+    FPFW_RUNTIME_ASSERT(p_apcore_interface != NULL);
+
+    DfwkAsyncRequestInititalize(&apcore_request.header, sizeof(apcore_request));
+    ap_core_set_rvbaraddr(p_apcore_interface, &apcore_request, reset_address, ap_core_reset_addr_completion, NULL);
 }
 
 int scmi_ap_core_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
@@ -162,9 +266,38 @@ int scmi_ap_core_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
         SCMI_LOG_INFO("SCMI_AP_CORE_PROTOCOL_VERSION: %x\n", cmd_code);
         break;
     }
-    case SCMI_AP_CORE_RESET_ADDR_SET_MSG:
-        SCMI_LOG_INFO("SCMI_AP_CORE_RESET_ADDR_SET_MSG: %x\n", cmd_code);
+    case SCMI_PROTO_MSG_ATTR_MSG: {
+        scmi_protocol_message_attributes_a2p_t* p_message_attr = (scmi_protocol_message_attributes_a2p_t*)payload;
+        SCMI_LOG_INFO("SCMI_PROTO_MSG_ATTR_MSG: %x message_id %" PRIx32 "\n", cmd_code, p_message_attr->message_id);
+        scmi_protocol_message_attributes_p2a_t resp;
+        resp.status = SCMI_STATUS_SUCCESS;
+        resp.attributes = 0;
+        switch (p_message_attr->message_id)
+        {
+        // supported messages here
+        case SCMI_AP_CORE_RESET_ADDR_SET_MSG:
+            break;
+        // everything else is unsupported
+        default:
+            resp.status = SCMI_STATUS_NOT_FOUND;
+            break;
+        }
+        SCMI_LOG_INFO("SCMI_PROTO_MSG_ATTR_MSG: returning %d (attr: %" PRIx32 ")\n", (int)resp.status, resp.attributes);
+        scmi_send_resp(SCMI_PWR_DMN_PROTO_ID, SCMI_PROTO_MSG_ATTR_MSG, (uint8_t*)&resp, sizeof(resp));
         break;
+    }
+    case SCMI_AP_CORE_RESET_ADDR_SET_MSG: {
+        scmi_apcore_reset_address_set_a2p_t reset_address;
+        memcpy(&reset_address, payload, sizeof(reset_address));
+        SCMI_LOG_INFO("SCMI_AP_CORE_RESET_ADDR_SET_MSG: %x high: %08" PRIx32 " low: %08" PRIx32
+                      " attr: %08" PRIx32 "\n",
+                      cmd_code,
+                      reset_address.reset_address_high,
+                      reset_address.reset_address_low,
+                      reset_address.attributes);
+        ap_core_reset_addr_set(((uint64_t)reset_address.reset_address_high << 32) | reset_address.reset_address_low);
+    }
+    break;
 
     case SCMI_AP_CORE_RESET_ADDR_GET_MSG:
         SCMI_LOG_INFO("SCMI_AP_CORE_RESET_ADDR_GET_MSG: %x\n", cmd_code);
@@ -264,4 +397,11 @@ int scmi_send_resp(uint8_t protocol_id, uint8_t cmd_id, uint8_t* payload, size_t
     memcpy(local_packet.payload, payload, size);
     size_t icc_size = local_packet.smt_header.payload_size + sizeof(local_packet.smt_header);
     return icc_mhu_trans_send_message_idx(ICC_MHU_TRANS_SCMI_RESP_INDEX, ICC_SCMI_CLIENT_MOD_RESP, (uint8_t*)&local_packet, icc_size);
+}
+
+void scmi_set_apcore_interface(DFWK_INTERFACE_HEADER* p_interface)
+{
+    // save the interface off for later use
+    p_apcore_interface = p_interface;
+    DfwkClientInterfaceOpen(p_interface);
 }

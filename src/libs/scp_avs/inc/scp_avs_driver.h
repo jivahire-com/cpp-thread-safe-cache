@@ -80,7 +80,6 @@ static inline void scp_avs_client_read(PDFWK_INTERFACE_HEADER Interface, PDFWK_A
 {
     pscp_avs_request avs_read_request = (pscp_avs_request) Request;
     FPFW_RUNTIME_ASSERT(Request->AllocatedSize >= sizeof(scp_avs_request_t));
-
     avs_read_request->Header.RequestType = AVS_REQUEST_READ_DATA;
     DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext); 
     DfwkInterfaceSendAsync(Interface, Request); 
@@ -90,7 +89,6 @@ static inline void scp_avs_client_write(PDFWK_INTERFACE_HEADER Interface, PDFWK_
 {
     pscp_avs_request avs_write_request = (pscp_avs_request) Request;
     FPFW_RUNTIME_ASSERT(Request->AllocatedSize >= sizeof(scp_avs_request_t));
-
     avs_write_request->Header.RequestType = AVS_REQUEST_WRITE_DATA; 
     DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext); 
     DfwkInterfaceSendAsync(Interface, Request);  
@@ -100,7 +98,6 @@ static inline void scp_avs_client_read_all(PDFWK_INTERFACE_HEADER Interface, PDF
 {
     pscp_avs_request avs_read_all_request = (pscp_avs_request) Request;
     FPFW_RUNTIME_ASSERT(Request->AllocatedSize >= sizeof(scp_avs_request_t));
-
     avs_read_all_request->Header.RequestType = AVS_REQUEST_READ_ALL_VCT; 
     DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext); 
     DfwkInterfaceSendAsync(Interface, Request);  
@@ -111,7 +108,6 @@ static inline void scp_avs_client_read_multi(PDFWK_INTERFACE_HEADER Interface, P
     FPFW_UNUSED(count); // for now unused
     pscp_avs_request avs_read_multi_request = (pscp_avs_request) Request;
     FPFW_RUNTIME_ASSERT(Request->AllocatedSize >= sizeof(scp_avs_request_t));
-
     avs_read_multi_request->Header.RequestType = AVS_REQUEST_READ_MULTI; 
     DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext); 
     DfwkInterfaceSendAsync(Interface, Request);
@@ -122,7 +118,6 @@ static inline void scp_avs_client_write_multi(PDFWK_INTERFACE_HEADER Interface, 
     FPFW_UNUSED(count); // for now unused
     pscp_avs_request avs_write_multi_request = (pscp_avs_request) Request;
     FPFW_RUNTIME_ASSERT(Request->AllocatedSize >= sizeof(scp_avs_request_t));
-
     avs_write_multi_request->Header.RequestType = AVS_REQUEST_WRITE_MULTI; 
     DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext); 
     DfwkInterfaceSendAsync(Interface, Request);  
@@ -132,7 +127,6 @@ static inline void scp_avs_get_error_counts(PDFWK_INTERFACE_HEADER Interface)
 {
     scp_avs_get_request_t request;
     request.Header.RequestType = AVS_GET_ERROR_COUNTS;
-
     DfwkInterfaceSendSync(Interface, &request.Header);
 }
 

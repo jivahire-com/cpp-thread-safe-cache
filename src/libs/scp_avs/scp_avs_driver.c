@@ -111,7 +111,6 @@ void scp_avs_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         avs_buffer[scp_avs_cmd_num].command_data = avs_request->avs_params.data.avs_data;
 
         scp_avs_cmd_num++;
-
         avs_buffer[scp_avs_cmd_num].command_type = avs_request->avs_params.rail_id;
         avs_buffer[scp_avs_cmd_num].command_data_type = AVS_VOLTAGE_RW;
         avs_buffer[scp_avs_cmd_num].command_group = AVS_CGROUP;
@@ -123,10 +122,31 @@ void scp_avs_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         break;
 
     case AVS_REQUEST_READ_ALL_VCT:
+        scp_avs_cmd_num = 0;
         device->outstanding_request = avs_request;
-        avs_buffer[0].command_control = AVS_CMD_READ;
-        // This is where the actual read all to the AVS goes.
-        // int avs_send_cmd_frame(uint32_t avs_id, uint32_t cmd_num, avs_master_command_t *cmd_mem)
+        printf("\n AVS_REQUEST_READ_ALL_VCT, avs_bus = %x, rail = %x\n",
+               device->avs_bus_num,
+               avs_request->avs_params.rail_id);
+        avs_buffer[scp_avs_cmd_num].command_type = avs_request->avs_params.rail_id;
+        avs_buffer[scp_avs_cmd_num].command_data_type = AVS_VOLTAGE_RW;
+        avs_buffer[scp_avs_cmd_num].command_group = AVS_CGROUP;
+        avs_buffer[scp_avs_cmd_num].command_control = AVS_CMD_READ;
+
+        scp_avs_cmd_num++;
+        avs_buffer[scp_avs_cmd_num].command_type = avs_request->avs_params.rail_id;
+        avs_buffer[scp_avs_cmd_num].command_data_type = AVS_CURRENT_READ;
+        avs_buffer[scp_avs_cmd_num].command_group = AVS_CGROUP;
+        avs_buffer[scp_avs_cmd_num].command_control = AVS_CMD_READ;
+
+        scp_avs_cmd_num++;
+        avs_buffer[scp_avs_cmd_num].command_type = avs_request->avs_params.rail_id;
+        avs_buffer[scp_avs_cmd_num].command_data_type = AVS_TEMPERATURE_READ;
+        avs_buffer[scp_avs_cmd_num].command_group = AVS_CGROUP;
+        avs_buffer[scp_avs_cmd_num].command_control = AVS_CMD_READ;
+
+        scp_avs_cmd_num++; // three commands sent (voltage, current, temperature)
+
+        status = avs_send_cmd_frame(device->avs_bus_num, scp_avs_cmd_num, avs_buffer);
         break;
 
     case AVS_REQUEST_READ_MULTI:
@@ -207,6 +227,27 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         break;
 
     case AVS_REQUEST_READ_ALL_VCT:
+        scp_avs_resp_idx = 0;
+        scp_avs_resp_num = 3; // Indicates the number of values read: voltage, current, and temperature.
+        status = avs_get_cmd_resp_data(device->avs_bus_num, scp_avs_resp_idx, scp_avs_resp_num, scp_avs_resp_buf);
+
+        if (status != SILIBS_SUCCESS)
+        {
+            printf("\n avs_get_cmd_resp_data failure (Read VCT)!\n");
+            original_request->avs_response_status = SCP_AVS_STATUS_READ_ALL_VCT_FAIL;
+        }
+        else
+        {
+            original_request->avs_response_vct.voltage_mV = (int16_t)(scp_avs_resp_buf[scp_avs_resp_idx++] & 0xFFFF);
+            original_request->avs_response_vct.current_cA = (int16_t)(scp_avs_resp_buf[scp_avs_resp_idx++] & 0xFFFF);
+            original_request->avs_response_vct.temperature_dC = (int16_t)(scp_avs_resp_buf[scp_avs_resp_idx] & 0xFFFF);
+            printf(" AVS Read raw data VCT. \n  Volt: 0x%0x, Cur: 0x%0x, Temp: 0x%0x",
+                   (int16_t)scp_avs_resp_buf[0],
+                   (int16_t)scp_avs_resp_buf[1],
+                   (int16_t)scp_avs_resp_buf[2]);
+        }
+        break;
+
     case AVS_REQUEST_READ_MULTI:
     case AVS_REQUEST_WRITE_MULTI:
         break;

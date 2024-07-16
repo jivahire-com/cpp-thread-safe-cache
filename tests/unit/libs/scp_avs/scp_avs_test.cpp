@@ -216,6 +216,24 @@ TEST_FUNCTION(scp_avs_isr_dispatch_test_read, test_setup, test_cleanup)
     assert_int_equal((uintptr_t)test_avs_device.outstanding_request, (uintptr_t)&test_avs_Request);
 }
 
+TEST_FUNCTION(scp_avs_isr_dispatch_test_read_all, test_setup, test_cleanup)
+{
+    test_avs_device.avs_bus_num = AVS_BUS0;
+    test_avs_isr_Request.outstanding_client_request = &test_avs_Request;
+
+    test_avs_isr_Request.outstanding_client_request->Header.RequestType = AVS_REQUEST_READ_ALL_VCT;
+
+    expect_value(__wrap_avs_get_cmd_resp_data, avs_base_or_id, test_avs_device.avs_bus_num);
+    expect_value(__wrap_avs_get_cmd_resp_data, resp_idx, 0);
+    expect_value(__wrap_avs_get_cmd_resp_data, resp_num, 3); // should be 3 for 3 values read (VCT)
+
+    expect_any(__wrap_avs_get_cmd_resp_data, resp_buf);
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_avs_device.outstanding_request->Header);
+
+    scp_avs_isr_dispatch(&test_avs_isr_Request.Header, nullptr);
+    assert_int_equal((uintptr_t)test_avs_device.outstanding_request, (uintptr_t)&test_avs_Request);
+}
+
 TEST_FUNCTION(scp_avs_isr_dispatch_test_write, test_setup, test_cleanup)
 {
     test_avs_device.avs_bus_num = AVS_BUS0;
@@ -267,15 +285,33 @@ TEST_FUNCTION(scp_avs_dispatch_test_write, test_setup, test_cleanup)
 
 TEST_FUNCTION(scp_avs_dispatch_test_read_all, test_setup, test_cleanup)
 {
-    test_avs_device.avs_bus_num = AVS_BUS1;
-    scp_avs_command_params_t test_command_params = {};
-
-    test_avs_Request.avs_params = test_command_params;
+    test_avs_device.avs_bus_num = AVS_BUS0;
+    test_avs_Request.avs_params.rail_id = 0;
     test_avs_Request.Header.RequestType = AVS_REQUEST_READ_ALL_VCT;
+
+    expect_value(__wrap_avs_send_cmd_frame, avs_id, AVS_BUS0);
+    expect_value(__wrap_avs_send_cmd_frame, cmd_num, 3); // 3, since one for each read (VCT)
+
+    avs_master_command_t avs_test_buffer[3] = {};
+
+    avs_test_buffer[0].command_data_type = AVS_VOLTAGE_RW;
+    avs_test_buffer[0].command_type = 0; // rail ID
+    avs_test_buffer[0].command_control = AVS_CMD_READ;
+    avs_test_buffer[0].command_group = AVS_CGROUP;
+    avs_test_buffer[1].command_data_type = AVS_CURRENT_READ;
+    avs_test_buffer[1].command_type = 0;
+    avs_test_buffer[1].command_group = AVS_CGROUP;
+    avs_test_buffer[1].command_control = AVS_CMD_READ;
+    avs_test_buffer[2].command_data_type = AVS_TEMPERATURE_READ;
+    avs_test_buffer[2].command_type = 0;
+    avs_test_buffer[2].command_group = AVS_CGROUP;
+    avs_test_buffer[2].command_control = AVS_CMD_READ;
+
+    expect_memory(__wrap_avs_send_cmd_frame, cmd_mem, avs_test_buffer, sizeof(avs_test_buffer));
 
     scp_avs_dispatch(&test_avs_Request.Header, nullptr);
     assert_int_equal((uintptr_t)test_avs_device.outstanding_request, (uintptr_t)&test_avs_Request);
-    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS1);
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
 }
 
 TEST_FUNCTION(scp_avs_dispatch_test_read_multi, test_setup, test_cleanup)

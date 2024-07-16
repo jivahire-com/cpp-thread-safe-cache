@@ -392,15 +392,14 @@ Function Set-RepoEnv()
 {
     [CmdletBinding()]
     param(
-        [ValidateSet("Debug", "Release")]
-        [string] $Configuration = "Debug",
+        [ValidateSet("Debug", "Release")] [string] $Configuration = "Debug",
         [boolean] $MSCP_vUART = $false
     )
     DynamicParam
     {
         $RepoRoot = "$PSScriptRoot\..\..\..\"
         $Attributes = New-Object System.Management.Automation.ParameterAttribute
-        $Attributes.Mandatory = $true
+        $Attributes.Mandatory = $false
         $Attributes.ParameterSetName = "__AllParameterSets"
         $Attributes.Position = 1
 
@@ -417,10 +416,12 @@ Function Set-RepoEnv()
         $AttribColl.Add($Attributes)
         $AttribColl.Add($ValidateSet)
 
-        $RuntimeParam = New-Object System.Management.Automation.RuntimeDefinedParameter("Toolchain", [string], $AttribColl)
-
+        $Toolchain = New-Object System.Management.Automation.RuntimeDefinedParameter("Toolchain", [string], $AttribColl)
+        $Toolchain.Value = $Values[0] # Default to the first toolchain
+        
         $ParamDic = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
-        $ParamDic.Add("Toolchain", $RuntimeParam)
+        $ParamDic.Add("Toolchain", $Toolchain)
+        $PSBoundParameters["Toolchain"] = $Toolchain.Value
 
         return $ParamDic
     }

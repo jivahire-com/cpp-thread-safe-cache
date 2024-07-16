@@ -66,7 +66,7 @@ Invoke-Virtualizer -SimConfig scp_mcp_chie_bins -UseGUI $False
 #>
 Function Invoke-Virtualizer(
     [Parameter(Mandatory=$false)] [ValidateSet('scp_mcp_svp_bins', 'scp_mcp_chie_bins','scp_bl_embed_fw','mcp_bl_embed_fw')] [string] $SimConfig = "scp_mcp_chie_bins",
-    [Parameter(Mandatory=$false)] [boolean] $UseGUI = $false
+    [Parameter(Mandatory=$false)] [switch] $UseGUI
 )
 {
     # Setup the workspace for the virtulizer

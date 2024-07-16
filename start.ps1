@@ -10,7 +10,7 @@ $Name = (Get-Item "$PSScriptRoot").Name
 $Modules = Get-ChildItem "$PSScriptRoot/tools/pwsh/modules"
 
 foreach ($Module in $Modules) {
-    Import-Module $Module.FullName -Force
+    Import-Module $Module.FullName -Force -DisableNameChecking
 }
 
 # Call the environment setup with input

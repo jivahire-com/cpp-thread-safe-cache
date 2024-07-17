@@ -58,7 +58,6 @@ stages:
   jobs:
   - template: templates/unittest.yaml
     parameters:
-      Artifact: bins.i386-pc-windows-msvc.Debug
       Toolchain: i386-pc-windows-msvc
       Configuration: Debug
       BranchCoverage: $(branch_coverage)
@@ -66,7 +65,7 @@ stages:
 
 - stage: Publish
   dependsOn: [Unit_Test_x86, Build_x86_Debug, Build_Arm_EABI_AARCH_Release, Build_Arm_EABI_AARCH_Debug]
-  condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
+  condition: eq(variables['OfficialBuild'], 'true')
   pool: 
     name: 1pfw-kingsgate-windows
   jobs:

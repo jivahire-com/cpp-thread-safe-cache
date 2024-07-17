@@ -1,0 +1,111 @@
+
+name: 0.1.1.$(rev:r)
+
+trigger: 
+  branches:
+    include:
+    # Auto trigger pipeline every time there is a PR completion to main, enables promoting (tagging) for official builds
+    - main
+
+parameters:
+# One Branch Parameter
+- name: 'debug'
+  displayName: 'Enable debug output'
+  type: boolean
+  default: false
+
+variables:
+- group: ef-pipeline-config
+# One Branch Variables
+- name: system.debug
+  value: ${{ parameters.debug }}
+- name: WindowsContainerImage
+  value: 'onebranch.azurecr.io/windows/ltsc2019/vse2019:latest'
+
+resources:
+  repositories: 
+    - repository: templates
+      type: git
+      name: OneBranch.Pipelines/GovernedTemplates
+      ref: refs/heads/main
+
+extends:
+  template: v2/OneBranch.Official.CrossPlat.yml@templates
+  parameters:
+    cloudvault: # https://aka.ms/obpipelines/cloudvault
+      enabled: false
+    globalSdl: # https://aka.ms/obpipelines/sdl
+      asyncSdl:
+        enabled: true
+        tsaOptionsFile: .config/tsaoptions.json
+      tsa:
+        enabled: false # onebranch publish all sdl results to TSA. If TSA is disabled all SDL tools will forced into 'break' build mode.
+      # credscan:
+      #   suppressionsFile: $(Build.SourcesDirectory)\.config\CredScanSuppressions.json
+      binskim:
+        break: true # always break the build on binskim issues in addition to TSA upload
+      policheck:
+        break: true # always break the build on policheck issues. You can disable it by setting to 'false'
+      # suppression:
+      #   suppressionFile: $(Build.SourcesDirectory)\.gdn\global.gdnsuppress
+      codeql:
+        compiled: 
+          enabled: true
+
+    stages:
+
+    - stage: Build_x86_Debug
+      dependsOn: []
+      pool: 
+        name: 1pfw-kingsgate-windows
+      jobs:
+      - template: tools/pipelines/templates/build.yaml@self
+        parameters:
+          Toolchain: i386-pc-windows-msvc
+          Configuration: Debug
+          ArtifactName: bins
+
+    - stage: Build_Arm_EABI_AARCH_Debug
+      dependsOn: []
+      pool: 
+        name: 1pfw-kingsgate-windows
+      jobs:
+      - template: tools/pipelines/templates/build.yaml@self
+        parameters:
+          Toolchain: arm-eabi-aarch
+          Configuration: Debug
+          ArtifactName: bins
+
+    - stage: Build_Arm_EABI_AARCH_Release
+      dependsOn: []
+      pool: 
+        name: 1pfw-kingsgate-windows
+      jobs:
+      - template: tools/pipelines/templates/build.yaml@self
+        parameters:
+          Toolchain: arm-eabi-aarch
+          Configuration: Release
+          ArtifactName: bins
+
+    - stage: Unit_Test_x86
+      dependsOn: Build_x86_Debug
+      pool: 
+        name: 1pfw-kingsgate-windows
+      jobs:
+      - template: tools/pipelines/templates/unittest.yaml@self
+        parameters:
+          Toolchain: i386-pc-windows-msvc
+          Configuration: Debug
+          BranchCoverage: $(branch_coverage)
+          LineCoverage: $(line_coverage)
+
+    - stage: Publish
+      dependsOn: [Unit_Test_x86, Build_x86_Debug, Build_Arm_EABI_AARCH_Release, Build_Arm_EABI_AARCH_Debug]
+      condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+      pool: 
+        name: 1pfw-kingsgate-windows
+      jobs:
+      - template: tools/pipelines/templates/publish.yaml@self
+        parameters:
+          Toolchain: [i386-pc-windows-msvc, arm-eabi-aarch]
+          Version: $(BuildVersion)

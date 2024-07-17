@@ -11,22 +11,17 @@
     </metadata>
     <files>
         <!-- Build Metadata-->
-        <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\libs\build_data\build_data.h" target="build\bin\arm-eabi-aarch\Debug\scp\build_data\"/>
-        <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\libs\build_data\build_data.h" target="build\bin\arm-eabi-aarch\Release\scp\build_data\"/>
-	    <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\libs\build_data\build_data.h" target="build\bin\arm-eabi-aarch\Debug\mcp\build_data\"/>
-        <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\libs\build_data\build_data.h" target="build\bin\arm-eabi-aarch\Release\mcp\build_data\"/>
+        <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\src\libs\build_data\build_data.h" target="build\bin\arm-eabi-aarch\Debug\scp\build_data\"/>
+	    <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\src\libs\build_data\build_data.h" target="build\bin\arm-eabi-aarch\Debug\mcp\build_data\"/>
 
         <!-- Event Trace Manifests -->
         <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\bin\man\*" target="build\bin\arm-eabi-aarch\Debug\man\" />
-        <file src="..\..\..\..\.build\Release\arm-eabi-aarch\bin\man\*" target="build\bin\arm-eabi-aarch\Release\man\" />
 
         <!-- SCP -->
         <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\bin\scp\*" target="build\bin\arm-eabi-aarch\Debug\scp\" />
-        <file src="..\..\..\..\.build\Release\arm-eabi-aarch\bin\scp\*" target="build\bin\arm-eabi-aarch\Release\scp\" />
 	
 	    <!-- MCP -->
         <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\bin\mcp\*" target="build\bin\arm-eabi-aarch\Debug\mcp\" />
-        <file src="..\..\..\..\.build\Release\arm-eabi-aarch\bin\mcp\*" target="build\bin\arm-eabi-aarch\Release\mcp\" />
 
     </files>
 </package>

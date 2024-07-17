@@ -20,14 +20,6 @@ jobs:
         inputs:
           buildType: 'current'
           downloadType: 'single'
-          artifactName: 'bins.${{ flavor }}.Release'
-          downloadPath: '$(Build.SourcesDirectory)\.build\Release\${{ flavor }}'
-
-      - task: DownloadBuildArtifacts@0
-        displayName: Download Packages manifest
-        inputs:
-          buildType: 'current'
-          downloadType: 'single'
           artifactName: 'bins.${{ flavor }}.Debug'
           downloadPath: '$(Build.SourcesDirectory)\.build\Debug\${{ flavor }}'
 
@@ -36,9 +28,6 @@ jobs:
         inputs:
           targetType: 'inline'
           script: |
-            mv '$(Build.SourcesDirectory)\.build\Release\${{ flavor }}\bins.${{ flavor }}.Release\*' '$(Build.SourcesDirectory)\.build\Release\${{ flavor }}' -WhatIf
-            mv '$(Build.SourcesDirectory)\.build\Release\${{ flavor }}\bins.${{ flavor }}.Release\*' '$(Build.SourcesDirectory)\.build\Release\${{ flavor }}'
-
             mv '$(Build.SourcesDirectory)\.build\Debug\${{ flavor }}\bins.${{ flavor }}.Debug\*' '$(Build.SourcesDirectory)\.build\Debug\${{ flavor }}' -WhatIf
             mv '$(Build.SourcesDirectory)\.build\Debug\${{ flavor }}\bins.${{ flavor }}.Debug\*' '$(Build.SourcesDirectory)\.build\Debug\${{ flavor }}'
 

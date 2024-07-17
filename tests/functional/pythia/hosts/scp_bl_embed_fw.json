@@ -55,7 +55,8 @@
             "KingsgateSVP.DIE_0.RMSS.SCP.SCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/ImageInfo/cpu0/initial_image": "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch/bin/scp_boot_loader_embed_fw.elf",
             "KingsgateSVP.DIE_0.RMSS.SCP.terminal_uart_scp.#SCML_PROPERTIES#TerminalAutoOpen": "false",
             "KingsgateSVP.DIE_0.RMSS.SCP.SCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/config/INITVTOR": "0x1200080",
-            "KingsgateSVP.DIE_0.RPSS0.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image":"${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}/win/configs/dummy_emcpu.axf"
+            "KingsgateSVP.DIE_0.RPSS0.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image":"${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}/firmware/release/nvme.elf",
+            "KingsgateSVP.DIE_0.RPSS0.PCIe_EPs.NVMe_SSD_EP_BB_x16.Periphs.UART_PHY_EP.#SCML_PROPERTIES#TerminalAutoOpen" : "false"
         },
         "env_vars": {
             "ARMLMD_LICENSE_FILE": "40002@wanlic.svceng.com",

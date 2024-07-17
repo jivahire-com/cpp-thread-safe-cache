@@ -41,4 +41,5 @@ KingsgateSVP.DIE_0.RMSS.MCP.terminal_uart_mcp.#SCML_PROPERTIES#TerminalAutoOpen=
 KingsgateSVP.DIE_0.RMSS.SCP.terminal_uart_scp.#SCML_PROPERTIES#TerminalAutoOpen=false
 KingsgateSVP.DIE_0.RPSS0.#EXTRA_PROPERTIES#runtime_disabled=false
 KingsgateSVP.DIE_0.VABRPSS0.#EXTRA_PROPERTIES#runtime_disabled=false
-KingsgateSVP.DIE_0.RPSS0.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image={configs/dummy_emcpu.axf,,,image+symbols,}
+KingsgateSVP.DIE_0.RPSS0.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image={../../../../../.externs/azpkg/microsoft.internal.virtualized.kingsgate.svp.10.0.4110/firmware/debug/nvme.elf,,,image+symbols,}
+KingsgateSVP.DIE_0.RPSS0.PCIe_EPs.NVMe_SSD_EP_BB_x16.Periphs.UART_PHY_EP.#SCML_PROPERTIES#TerminalAutoOpen=false

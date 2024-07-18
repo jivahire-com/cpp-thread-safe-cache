@@ -4,6 +4,7 @@ add_library(${TARGET}
     STATIC
     pcie_async_dispatch.c
     pcie_dfwk_init.c
+    pcie_irq.c
     pcie_link_training.c
     pcie_rpss_init.c
     pcie_platform_overrides.c
@@ -19,12 +20,15 @@ target_link_libraries(${TARGET}
     silibs::atu
     silibs::idsw
     silibs::idsw_kng
+    silibs::intu
     silibs::kng_silibs_platform
     silibs::pcie
     silibs::pciess
     silibs::pcr_rpss
     silibs::tower_rpss
+    ms::lib::scp_interrupts
     ms::lib::threadx
+    ms::driver::vab
     silibs_platform
 )
 

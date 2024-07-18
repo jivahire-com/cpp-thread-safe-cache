@@ -39,7 +39,7 @@ typedef struct _pcie_manager_context_t
     pciess_completion_request_t cmpl_req[PCIE_OUTSTANDING_REQ_QUOTA];
     TX_THREAD worker;
     TX_QUEUE work_queue;
-    TX_EVENT_FLAGS_GROUP *event_ptr;
+    TX_EVENT_FLAGS_GROUP* event_ptr;
 } pcie_manager_context_t;
 
 /* This is the thread context block for config service thread*/
@@ -47,9 +47,9 @@ typedef struct _pcie_config_manager_context_t
 {
     TX_THREAD worker;
     uint16_t event_flags_mask;
-    TX_EVENT_FLAGS_GROUP *event_ptr;
-    kingsgate_pcie_root_bridge_config *rb_config_var;
-    kingsgate_pcie_vab_config *vab_config_var;
+    TX_EVENT_FLAGS_GROUP* event_ptr;
+    kingsgate_pcie_root_bridge_config* rb_config_var;
+    kingsgate_pcie_vab_config* vab_config_var;
 } pcie_config_manager_context_t;
 
 /*-- Declarations (Statics and globals) --*/

@@ -18,6 +18,7 @@
 #include <silibs_status.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -71,6 +72,7 @@ void pcie_dfwk_init(pciess_device_t* dev, PDFWK_SCHEDULE schedule)
     FPFW_RUNTIME_ASSERT(dev != NULL);
     FPFW_RUNTIME_ASSERT(schedule != NULL);
 
+    FPFW_RUNTIME_ASSERT(init_async_request_pool() == TX_SUCCESS);
     DfwkDeviceInitialize(&(dev->header), schedule);
     DfwkQueueInitialize(&(dev->default_queue), &(dev->header), pcie_default_dispatch, NULL, DfwkQueueType_ImmediateDispatch);
 

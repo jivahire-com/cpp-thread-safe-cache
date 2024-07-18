@@ -37,6 +37,11 @@ static e32_mem_map_reg mock_bcast_block;
 static rpss_p1_reg mock_p1_block;
 
 /*------------- Functions ----------------*/
+idsw_die_id_t __wrap_idsw_get_die_id(void)
+{
+    return mock_type(idsw_die_id_t);
+}
+
 KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
 {
     return mock_type(KNG_PLAT_ID);
@@ -118,8 +123,34 @@ silibs_status_t __wrap_pciess_rps_post_rp_ready_init(pcie_ss_entity_t* ss)
     return mock_type(silibs_status_t);
 }
 
+silibs_status_t __wrap_pciess_rps_clear_intus(pcie_ss_entity_t* ss)
+{
+    assert_non_null(ss);
+    return mock_type(silibs_status_t);
+}
+
+silibs_status_t __wrap_pciess_rp_clear_intus(pcie_rp_entity_t* rp)
+{
+    assert_non_null(rp);
+    return mock_type(silibs_status_t);
+}
+
 silibs_status_t __wrap_pciess_rp_initiate_link_training(pcie_rp_entity_t* rp)
 {
     assert_non_null(rp);
     return mock_type(silibs_status_t);
+}
+
+silibs_status_t __wrap_pciess_rp_get_link_train_done(pcie_rp_entity_t* rp)
+{
+    assert_non_null(rp);
+    return mock_type(silibs_status_t);
+}
+
+int __wrap_intu_get_interrupt_status(uintptr_t intu_base_addr, uint32_t* intr)
+{
+    assert_non_null(intu_base_addr);
+    assert_non_null(intr);
+    *intr = mock();
+    return 0;
 }

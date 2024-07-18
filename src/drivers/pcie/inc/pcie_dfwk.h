@@ -14,8 +14,8 @@
 #include <DfwkThreadXHost.h>
 #include <FpFwAssert.h>
 #include <kng_soc_constants.h>
-#include <silibs_platform.h>
 #include <pcie_config_variable.h>
+#include <silibs_platform.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -47,6 +47,7 @@ typedef struct _pcie_async_request_t
     uint8_t rp_index;
     pcie_rp_async_request_t rp_op;
     silibs_status_t status;
+    TX_TIMER expiry_timer;
 } pcie_async_request_t;
 
 typedef struct _pcie_sync_request_t
@@ -63,8 +64,7 @@ typedef struct _pciess_device_t
     DFWK_DEVICE_HEADER header; /* Ensure this is always the first field in this struct */
     DFWK_QUEUE default_queue;
     DFWK_QUEUE per_rp_queue[ROOT_PORTS_PER_RPSS];
-    TX_TIMER per_rp_timer[ROOT_PORTS_PER_RPSS];
-    pcie_root_bridge_config *rb_configs;    // pointer to rb config
+    pcie_root_bridge_config* rb_configs; // pointer to rb config
 } pciess_device_t;
 
 typedef struct _pciess_device_interface_t

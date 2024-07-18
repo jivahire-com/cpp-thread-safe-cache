@@ -25,7 +25,6 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-
 static uint16_t vab_instances_to_be_enabled(uint8_t die_num)
 {
     uint16_t vab_instances_to_init = 0;
@@ -86,5 +85,32 @@ FPFW_INIT_COMPONENT(vab, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "ddr"))
     printf("Bit mask of VAB instances to be enabled: 0x%x\n", vab_instances_enabled);
     vab_common_init(vab_instances_enabled);
     printf("VAB Initialization: End\n");
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
+FPFW_INIT_COMPONENT(accel_vab_irq, FPFW_INIT_DEPENDENCIES("vab", "accel", "nvic"))
+{
+    uint16_t vab_instances_to_init = 0;
+    uint8_t die_id = (uint8_t)idsw_get_die_id();
+
+    /*
+     * Only enable accelerator VABs here.
+     * RPSS VABs will be enabled from within the PCIe driver after RPSS intus
+     * are programmed.
+     */
+    switch (die_id)
+    {
+    case 0:
+        vab_instances_to_init = ((1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS));
+        break;
+    case 1:
+        vab_instances_to_init = ((1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS));
+        break;
+    default:
+        printf("accel_vab_irq init skipped! Got invalid die id: %d\n", die_id);
+        break;
+    }
+
+    enable_vab_isrs(vab_instances_to_init);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

@@ -26,6 +26,7 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_vab;
+extern fpfw_init_component_t _fpfw_component_accel_vab_irq;
 
 /*------------- Functions ----------------*/
 KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
@@ -44,6 +45,11 @@ int __wrap_vab_common_init(uint16_t vab_instances_to_init)
     // function_called();
 
     return 0;
+}
+
+void __wrap_enable_vab_isrs(uint16_t vab_instances_to_init)
+{
+    check_expected(vab_instances_to_init);
 }
 
 TEST_FUNCTION(test_vab_init_silicon_die0, nullptr, nullptr)
@@ -167,5 +173,19 @@ TEST_FUNCTION(test_vab_init_invalid_plat, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_platform_sdv, 0x100);
     expect_value(__wrap_vab_common_init, vab_instances_to_init, 0);
     _fpfw_component_vab.init_fn();
+}
+
+TEST_FUNCTION(test_non_pcie_vab_isr_init_silicon_die0, nullptr, nullptr)
+{
+    will_return_always(__wrap_idsw_get_die_id, 0);
+    expect_value(__wrap_enable_vab_isrs, vab_instances_to_init, ((1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS)));
+    _fpfw_component_accel_vab_irq.init_fn();
+}
+
+TEST_FUNCTION(test_non_pcie_vab_isr_init_silicon_die1, nullptr, nullptr)
+{
+    will_return_always(__wrap_idsw_get_die_id, 1);
+    expect_value(__wrap_enable_vab_isrs, vab_instances_to_init, ((1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS)));
+    _fpfw_component_accel_vab_irq.init_fn();
 }
 }

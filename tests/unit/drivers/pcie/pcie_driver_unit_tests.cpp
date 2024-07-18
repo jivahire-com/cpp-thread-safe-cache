@@ -15,8 +15,11 @@
 #include <cstddef>  // IWYU pragma: keep
 #include <cstdint>  // IWYU pragma: keep
 #include <idsw_kng.h>
+#include <interrupts.h>
 #include <pcie_common.h>
 #include <pcie_ss_common.h>
+#include <stdint.h>
+#include <tx_port.h>
 
 extern "C" {
 #include <DfwkPtrTypes.h>
@@ -24,25 +27,73 @@ extern "C" {
 #include <kng_soc_constants.h>
 #include <pcie_dfwk.h>
 #include <pcie_dfwk_i.h>
+#include <pcie_irq.h>
 #include <pcie_ss_common.h> // for pcie_ss_entity_t
 #include <silibs_status.h>  // for SILIBS_E_PARAM, SILIBS_SUCCESS
 #include <tx_api.h>
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
+/*
+ * This corresponds to:
+ * Number of dies (2) * Number of rpss per die (4) * Number of rps per rpss (4)
+ * Upto 1 outstanding 1 req. per rp can be sent by the service.
+ */
+#define MAX_ASYNC_REQ_POOL_SIZE (32)
 
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-pciess_device_t dev;
-pciess_device_interface_t iface;
+static pciess_device_t dev;
+static pciess_device_interface_t iface;
+static pcie_async_request_t r;
 
 /* mock entity*/
 pcie_ss_entity_t mock_pcie_ent;
 
 /*------------- Functions ----------------*/
+static int test_setup(void** ctx)
+{
+    FPFW_UNUSED(ctx);
+    return 0;
+}
+
+static int test_teardown(void** ctx)
+{
+    FPFW_UNUSED(ctx);
+
+    /* Cleanup dispatch pool */
+    expect_any_always(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_value_count(__wrap__txe_semaphore_get, wait_option, TX_NO_WAIT, -1);
+    will_return_always(__wrap__txe_semaphore_get, TX_SUCCESS);
+    expect_any_always(__wrap__txe_semaphore_put, semaphore_ptr);
+    will_return_always(__wrap__txe_semaphore_put, TX_SUCCESS);
+    for (uint8_t i = 0; i < NUM_RPSS; i++)
+    {
+        for (uint8_t ii = 0; ii < ROOT_PORTS_PER_RPSS; ii++)
+        {
+            for (uint8_t iii = 0; iii < PCIE_MAX_ASYNC_REQ; iii++)
+            {
+                pcie_async_request_t* r = get_pending_async_req_for_this_rp(i, ii, (pcie_rp_async_request_t)iii);
+                if (r != NULL)
+                {
+                    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &(r->header));
+                    complete_async_req_for_this_rp(r);
+                }
+            }
+        }
+    }
+
+    /* Clean up statics */
+    memset(&dev, 0x0, sizeof(dev));
+    memset(&r, 0x0, sizeof(r));
+    memset(&iface, 0x0, sizeof(iface));
+
+    return 0;
+}
+
 /* Test cases for top-level driver initialization */
 TEST_FUNCTION(driver_init, NULL, NULL)
 {
@@ -55,12 +106,16 @@ TEST_FUNCTION(driver_init, NULL, NULL)
         pcie_dfwk_init(nullptr, nullptr);
     }
 
-    /* No need to mock any dfwk functionality in the good case as of now */
+    expect_any_always(__wrap__txe_semaphore_create, semaphore_ptr);
+    expect_any_always(__wrap__txe_semaphore_create, name_ptr);
+    expect_any_always(__wrap__txe_semaphore_create, semaphore_control_block_size);
+    will_return_always(__wrap__txe_semaphore_create, TX_SUCCESS);
+    expect_value_count(__wrap__txe_semaphore_create, initial_count, 1, MAX_ASYNC_REQ_POOL_SIZE);
     pcie_dfwk_init(&dev, sched);
 }
 
 /* Test cases for top-level interface initialization */
-TEST_FUNCTION(interface_init, NULL, NULL)
+TEST_FUNCTION(interface_init, test_setup, test_teardown)
 {
     /* Check whether bad inputs are rejected */
     expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
@@ -75,7 +130,7 @@ TEST_FUNCTION(interface_init, NULL, NULL)
 }
 
 /* Test case for initial pciess init sync. request successful path */
-TEST_FUNCTION(test_pcie_rpss_init_success, NULL, NULL)
+TEST_FUNCTION(test_pcie_rpss_init_success, test_setup, test_teardown)
 {
     /*Setup the mock interface and device*/
     pcie_root_bridge_config rb_configs[4];
@@ -113,7 +168,7 @@ TEST_FUNCTION(test_pcie_rpss_init_success, NULL, NULL)
 }
 
 /* Test case for successful rb config population*/
-TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, NULL, NULL)
+TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardown)
 {
     /*Setup the mock interface and device*/
     pcie_root_bridge_config rb_configs[4];
@@ -156,7 +211,7 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, NULL, NULL)
 }
 
 /* Test case for initial pciess init sync. request atu mapping failures */
-TEST_FUNCTION(test_pcie_rpss_init_atu_map_fail, NULL, NULL)
+TEST_FUNCTION(test_pcie_rpss_init_atu_map_fail, test_setup, test_teardown)
 {
     /* Setup the request for an rpss */
     pcie_sync_request_t r;
@@ -173,7 +228,7 @@ TEST_FUNCTION(test_pcie_rpss_init_atu_map_fail, NULL, NULL)
     }
 }
 
-TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success, NULL, NULL)
+TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success, test_setup, test_teardown)
 {
     /* Setup the request for an rpss */
     pcie_sync_request_t r;
@@ -193,7 +248,7 @@ TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success, NULL, NULL)
     assert_int_equal(r.status, SILIBS_SUCCESS);
 }
 
-TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_success, NULL, NULL)
+TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_success, test_setup, test_teardown)
 {
     /* Setup the request for an rpss */
     pcie_sync_request_t r;
@@ -208,23 +263,19 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_success, NULL, NULL)
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return(__wrap_pciess_rps_ready, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_post_rp_ready_init, SILIBS_SUCCESS);
+    will_return(__wrap_pciess_rps_clear_intus, SILIBS_SUCCESS);
+    expect_value(__wrap_enable_vab_isrs, vab_instances_to_init, (1 << r.rpss_index));
     int32_t ret = pcie_sched_sync_op(&(r.header));
     assert_int_equal(ret, 0);
     assert_int_equal(r.status, SILIBS_SUCCESS);
 }
 
-TEST_FUNCTION(test_default_async_dispatch, NULL, NULL)
+TEST_FUNCTION(test_default_async_dispatch, test_setup, test_teardown)
 {
     /* Setup the request */
-    pcie_async_request_t r;
     iface.dev = &dev;
     r.header.OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
     r.rpss_index = RPSS3;
-    r.rp_index = 3;
-
-    expect_value(__wrap_DfwkQueueEnqueueRequest, Queue, &(dev.per_rp_queue[3]));
-    expect_value(__wrap_DfwkQueueEnqueueRequest, Request, &(r.header));
-    pcie_default_dispatch(&(r.header), nullptr);
 
     /* Check out of bounds root port index */
     r.rp_index = 50;
@@ -233,10 +284,9 @@ TEST_FUNCTION(test_default_async_dispatch, NULL, NULL)
     assert_int_equal(r.status, SILIBS_E_PARAM);
 }
 
-TEST_FUNCTION(test_link_training_dispatch, NULL, NULL)
+TEST_FUNCTION(test_dispatch_pool_full, test_setup, test_teardown)
 {
     /* Setup the request */
-    pcie_async_request_t r;
     iface.dev = &dev;
     r.header.OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
     r.rpss_index = RPSS3;
@@ -244,7 +294,53 @@ TEST_FUNCTION(test_link_training_dispatch, NULL, NULL)
     r.rp_op = INITIATE_LINK_TRAINING;
 
     mock_pcie_ent.id = r.rpss_index;
+    mock_pcie_ent.rps[0].enabled = false;
+    mock_pcie_ent.rps[1].enabled = false;
+    mock_pcie_ent.rps[2].enabled = false;
+    mock_pcie_ent.rps[3].enabled = true;
 
+    expect_any_always(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_value_count(__wrap__txe_semaphore_get, wait_option, TX_NO_WAIT, -1);
+    will_return_always(__wrap__txe_semaphore_get, TX_SUCCESS);
+    expect_any_always(__wrap__txe_semaphore_put, semaphore_ptr);
+    will_return_always(__wrap__txe_semaphore_put, TX_SUCCESS);
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS3);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    will_return(__wrap_pciess_rp_initiate_link_training, SILIBS_SUCCESS);
+    will_return(__wrap__txe_timer_delete, TX_SUCCESS);
+    will_return(__wrap__txe_timer_create, TX_SUCCESS);
+    pcie_per_rp_dispatch(&(r.header), nullptr);
+
+    /*
+     * If a request is queued again on the same RP it should be immediately completed as the
+     * previous one is pending.
+     */
+    r.rpss_index = RPSS3;
+    r.rp_index = 3;
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &(r.header));
+    pcie_per_rp_dispatch(&(r.header), nullptr);
+}
+
+TEST_FUNCTION(test_link_training_dispatch, test_setup, test_teardown)
+{
+    /* Setup the request */
+    iface.dev = &dev;
+    r.header.OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
+    r.rpss_index = RPSS3;
+    r.rp_index = 3;
+    r.rp_op = INITIATE_LINK_TRAINING;
+
+    mock_pcie_ent.id = r.rpss_index;
+    mock_pcie_ent.rps[0].enabled = true;
+    mock_pcie_ent.rps[1].enabled = true;
+    mock_pcie_ent.rps[2].enabled = true;
+    mock_pcie_ent.rps[3].enabled = true;
+
+    expect_any_always(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_value_count(__wrap__txe_semaphore_get, wait_option, TX_NO_WAIT, -1);
+    will_return_always(__wrap__txe_semaphore_get, TX_SUCCESS);
+    expect_any_always(__wrap__txe_semaphore_put, semaphore_ptr);
+    will_return_always(__wrap__txe_semaphore_put, TX_SUCCESS);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS3);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
     will_return(__wrap_pciess_rp_initiate_link_training, SILIBS_SUCCESS);
@@ -253,9 +349,9 @@ TEST_FUNCTION(test_link_training_dispatch, NULL, NULL)
     pcie_per_rp_dispatch(&(r.header), nullptr);
 }
 
-TEST_FUNCTION(test_link_training_threadx_failure, NULL, NULL)
+TEST_FUNCTION(test_link_training_dispatch_disabled_rp, test_setup, test_teardown)
 {
-    pcie_async_request_t r;
+    /* Setup the request */
     iface.dev = &dev;
     r.header.OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
     r.rpss_index = RPSS3;
@@ -263,7 +359,42 @@ TEST_FUNCTION(test_link_training_threadx_failure, NULL, NULL)
     r.rp_op = INITIATE_LINK_TRAINING;
 
     mock_pcie_ent.id = r.rpss_index;
+    mock_pcie_ent.rps[0].enabled = false;
+    mock_pcie_ent.rps[1].enabled = false;
+    mock_pcie_ent.rps[2].enabled = false;
+    mock_pcie_ent.rps[3].enabled = false;
 
+    expect_any_always(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_value_count(__wrap__txe_semaphore_get, wait_option, TX_NO_WAIT, -1);
+    will_return_always(__wrap__txe_semaphore_get, TX_SUCCESS);
+    expect_any_always(__wrap__txe_semaphore_put, semaphore_ptr);
+    will_return_always(__wrap__txe_semaphore_put, TX_SUCCESS);
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS3);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &(r.header));
+    pcie_per_rp_dispatch(&(r.header), nullptr);
+    assert_int_equal(r.status, SILIBS_E_SUPPORT);
+}
+
+TEST_FUNCTION(test_link_training_threadx_failure, test_setup, test_teardown)
+{
+    iface.dev = &dev;
+    r.header.OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
+    r.rpss_index = RPSS3;
+    r.rp_index = 3;
+    r.rp_op = INITIATE_LINK_TRAINING;
+
+    mock_pcie_ent.id = r.rpss_index;
+    mock_pcie_ent.rps[0].enabled = true;
+    mock_pcie_ent.rps[1].enabled = true;
+    mock_pcie_ent.rps[2].enabled = true;
+    mock_pcie_ent.rps[3].enabled = true;
+
+    expect_any_always(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_value_count(__wrap__txe_semaphore_get, wait_option, TX_NO_WAIT, -1);
+    will_return_always(__wrap__txe_semaphore_get, TX_SUCCESS);
+    expect_any_always(__wrap__txe_semaphore_put, semaphore_ptr);
+    will_return_always(__wrap__txe_semaphore_put, TX_SUCCESS);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS3);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
     will_return(__wrap_pciess_rp_initiate_link_training, SILIBS_SUCCESS);
@@ -276,7 +407,7 @@ TEST_FUNCTION(test_link_training_threadx_failure, NULL, NULL)
     }
 }
 
-TEST_FUNCTION(test_link_training_bad_input, NULL, NULL)
+TEST_FUNCTION(test_link_training_bad_input, test_setup, test_teardown)
 {
     expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
     if (!set_error_handler_return())
@@ -285,10 +416,9 @@ TEST_FUNCTION(test_link_training_bad_input, NULL, NULL)
     }
 }
 
-TEST_FUNCTION(test_get_status_dispatch, NULL, NULL)
+TEST_FUNCTION(test_wait_for_event_dispatch, test_setup, test_teardown)
 {
     /* Setup the request */
-    pcie_async_request_t r;
     iface.dev = &dev;
     r.header.OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
     r.rpss_index = RPSS3;
@@ -296,14 +426,18 @@ TEST_FUNCTION(test_get_status_dispatch, NULL, NULL)
     r.rp_op = WAIT_FOR_EVENT;
 
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &(r.header));
+    expect_any_always(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_value_count(__wrap__txe_semaphore_get, wait_option, TX_NO_WAIT, 2);
+    will_return_always(__wrap__txe_semaphore_get, TX_SUCCESS);
+    expect_any_always(__wrap__txe_semaphore_put, semaphore_ptr);
+    will_return_always(__wrap__txe_semaphore_put, TX_SUCCESS);
     pcie_per_rp_dispatch(&(r.header), nullptr);
     assert_int_equal(r.status, SILIBS_SUCCESS);
 }
 
-TEST_FUNCTION(test_unknown_req_dispatch, NULL, NULL)
+TEST_FUNCTION(test_unknown_req_dispatch, test_setup, test_teardown)
 {
     /* Setup the request */
-    pcie_async_request_t r;
     iface.dev = &dev;
     r.header.OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
     r.rpss_index = RPSS3;
@@ -311,6 +445,118 @@ TEST_FUNCTION(test_unknown_req_dispatch, NULL, NULL)
     r.rp_op = PCIE_MAX_ASYNC_REQ;
 
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &(r.header));
+    expect_any_always(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_value_count(__wrap__txe_semaphore_get, wait_option, TX_NO_WAIT, 2);
+    will_return_always(__wrap__txe_semaphore_get, TX_SUCCESS);
+    expect_any_always(__wrap__txe_semaphore_put, semaphore_ptr);
+    will_return_always(__wrap__txe_semaphore_put, TX_SUCCESS);
     pcie_per_rp_dispatch(&(r.header), nullptr);
     assert_int_equal(r.status, SILIBS_E_PARAM);
+}
+
+TEST_FUNCTION(test_pcie_link_up_irq, test_setup, test_teardown)
+{
+    will_return_always(__wrap_idsw_get_die_id, 0);
+    will_return_always(__wrap_pciess_rp_clear_intus, SILIBS_SUCCESS);
+    will_return_always(__wrap_intu_get_interrupt_status, 0x00002000);
+    expect_any_always(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_value_count(__wrap__txe_semaphore_get, wait_option, TX_NO_WAIT, -1);
+    will_return_always(__wrap__txe_semaphore_get, TX_SUCCESS);
+    expect_any_always(__wrap__txe_semaphore_put, semaphore_ptr);
+    will_return_always(__wrap__txe_semaphore_put, TX_SUCCESS);
+    will_return_always(__wrap__txe_timer_deactivate, TX_SUCCESS);
+
+    uint32_t irq_num = HW_INT_VAB0_COMBINED_SCP_INT;
+    for (uint8_t i = RPSS0; i < RPSS4; i++, irq_num++)
+    {
+        pcie_async_request_t req;
+        req.rpss_index = (RPSS_INSTANCE)i;
+        req.rp_index = 0;
+        req.rp_op = INITIATE_LINK_TRAINING;
+
+        add_async_req_to_pool(&req);
+        mock_pcie_ent.id = (RPSS_INSTANCE)i;
+        mock_pcie_ent.rps[0].enabled = true;
+        mock_pcie_ent.rps[1].enabled = false;
+        mock_pcie_ent.rps[2].enabled = false;
+        mock_pcie_ent.rps[3].enabled = false;
+
+        /* Setup silibs expectations */
+        expect_value(__wrap_pciess_get_entity, rpss_idx, i);
+        will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+        will_return(__wrap_pciess_rp_get_link_train_done, SILIBS_SUCCESS);
+        expect_value(__wrap_DfwkAsyncRequestComplete, Request, &(req.header));
+        rpss_irq_callback(irq_num);
+    }
+}
+
+TEST_FUNCTION(test_invalid_irq, test_setup, test_teardown)
+{
+    will_return_always(__wrap_idsw_get_die_id, 0);
+    uint32_t irq_num = HW_INT_VAB4_COMBINED_SCP_INT;
+    for (uint8_t i = RPSS0; i < RPSS1; i++, irq_num++)
+    {
+        mock_pcie_ent.id = (RPSS_INSTANCE)i;
+        mock_pcie_ent.rps[0].enabled = true;
+        mock_pcie_ent.rps[1].enabled = true;
+        mock_pcie_ent.rps[2].enabled = true;
+        mock_pcie_ent.rps[3].enabled = true;
+
+        expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
+        if (!set_error_handler_return())
+        {
+            rpss_irq_callback(irq_num);
+        }
+    }
+}
+
+TEST_FUNCTION(test_non_link_up_irq, test_setup, test_teardown)
+{
+    will_return_always(__wrap_idsw_get_die_id, 0);
+    uint32_t irq_num = HW_INT_VAB0_COMBINED_SCP_INT;
+    will_return_always(__wrap_pciess_rp_clear_intus, SILIBS_SUCCESS);
+    will_return_always(__wrap_intu_get_interrupt_status, 0x00004000);
+    for (uint8_t i = RPSS0; i < RPSS1; i++, irq_num++)
+    {
+        mock_pcie_ent.id = (RPSS_INSTANCE)i;
+        mock_pcie_ent.rps[0].enabled = true;
+        mock_pcie_ent.rps[1].enabled = true;
+        mock_pcie_ent.rps[2].enabled = true;
+        mock_pcie_ent.rps[3].enabled = true;
+        expect_value(__wrap_pciess_get_entity, rpss_idx, i);
+        will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+        rpss_irq_callback(irq_num);
+    }
+}
+
+TEST_FUNCTION(test_get_async_req_invalid_error_paths, test_setup, test_teardown)
+{
+    pcie_async_request_t* req;
+    req = get_pending_async_req_for_this_rp(0xFF, 0xFF, INITIATE_LINK_TRAINING);
+    assert_ptr_equal(req, nullptr);
+
+    expect_any_always(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_value_count(__wrap__txe_semaphore_get, wait_option, TX_NO_WAIT, -1);
+    will_return(__wrap__txe_semaphore_get, TX_SEMAPHORE_ERROR);
+    req = get_pending_async_req_for_this_rp(RPSS0, 0, INITIATE_LINK_TRAINING);
+    assert_ptr_equal(req, nullptr);
+}
+
+TEST_FUNCTION(test_complete_async_req_error_paths, test_setup, test_teardown)
+{
+    r.rpss_index = RPSS0;
+    r.rp_index = 0;
+    expect_any_always(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_value(__wrap__txe_semaphore_get, wait_option, TX_NO_WAIT);
+    will_return(__wrap__txe_semaphore_get, TX_SEMAPHORE_ERROR);
+    /* Ensure no completions are sent if we cannot get the semaphore */
+    complete_async_req_for_this_rp(&r);
+
+    /* Out of range indices are passed for rpss/rp*/
+    r.rpss_index = (RPSS_INSTANCE)(NUM_RPSS);
+    r.rp_index = 0xFF;
+    complete_async_req_for_this_rp(&r);
+
+    /* Ensure the function returns without doing anything incase a null input is passed */
+    complete_async_req_for_this_rp(nullptr);
 }

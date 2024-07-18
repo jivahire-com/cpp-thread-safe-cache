@@ -3,20 +3,30 @@ set(TARGET kng.drivers.vab)
 add_library(${TARGET}
     STATIC
         vab_common_setup.c
+        vab_irq.c
 )
 
 target_link_libraries(
     ${TARGET}
         PRIVATE
+            fwlib.dfwk
             fwlib.lib.assert
+            fwlib.platform.dfwkhost.threadx
+            ms::driver::pcie
             ms::lib::debug
+            ms::lib::interrupts
+            ms::lib::register_headers
+            ms::lib::scp_interrupts
+            ms::lib::threadx
             silibs::atu
+            silibs::idsw_kng
+            silibs::intu
             silibs::kng_silibs_platform
+            silibs::pcie
             silibs::platform
             silibs::smmu
             silibs::vab_init
             silibs_platform
-
 )
 
 target_include_directories(${TARGET}

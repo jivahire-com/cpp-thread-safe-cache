@@ -37,3 +37,16 @@
  *      SILIBS_ERROR - VAB initialization failure for one or more VABs.
  */
 int vab_common_init(uint16_t vab_instances_to_init);
+
+/**
+ *  @brief Install interrupt handlers for VAB interrupts that are routed to
+ *         SCP.
+ *
+ *  @param[in] vab_instances_to_init
+ *             Bitmap of all VAB instances to be initialized. VAB bit positions
+ *             correspond to SUBSYSTEM_WITH_VAB_ID as described in
+ *             kng_soc_constants.h.
+ *
+ *  @return    None
+ */
+void enable_vab_isrs(uint16_t vab_instances_to_init);

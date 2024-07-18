@@ -10,24 +10,25 @@
 /*------------- Includes -----------------*/
 #define __NO_CSR_TYPEDEFS__     // Needed to avoid huge buffers in ap_top_regs.h
 #define __NO_ADDRMAP_TYPEDEFS__ // Needed to avoid huge buffers in ap_top_regs.h
-#include <DfwkDriver.h>         // for PDFWK_SYNC_REQUEST_HEADER
-#include <FpFwAssert.h>         // for FPFW_RUNTIME_ASSERT
-#include <ap_top_regs.h>        // for AP_TOP_D0_VAB_RPSS0_ADDRESS
-#include <atu_lib.h>            // for atu_map, ATU_ID_MSCP, atu_map...
-#include <idsw.h>               // for idsw_get_platform_sdv, _PLAT_ID
+#include <DfwkDriver.h>
+#include <FpFwAssert.h>
+#include <ap_top_regs.h>
+#include <atu_lib.h>
+#include <idsw.h>
 #include <idsw_kng.h>
-#include <kng_atu_mappings.h>          // for ATU_MAPPING_RPSS0_CFG, ATU_MA...
-#include <kng_soc_constants.h>         // for NUM_RPSS, RPSS_INSTANCE
-#include <pcie_dfwk.h>                 // for pcie_sync_request_t
-#include <pcie_knobs.h>                // for PCIE_BIFURCATION_1X16, PCIE_C...
-#include <pcie_platform_overrides_i.h> // for plat_overrides_pre_pciess_con...
-#include <pcie_ss_common.h>            // for pcie_ss_entity_t
-#include <pciess.h>                    // for pciess_get_entity, pciess_con...
-#include <silibs_status.h>             // for SILIBS_SUCCESS, silibs_status_t
-#include <stdbool.h>                   // for true, false
-#include <stdint.h>                    // for uint64_t, uint8_t
-#include <stdio.h>                     // for NULL
-#include <vab_rpss_top_regs.h>         // for VAB_RPSS_TOP_RPSS_ADDRESS
+#include <kng_atu_mappings.h>
+#include <kng_soc_constants.h>
+#include <pcie_dfwk.h>
+#include <pcie_knobs.h>
+#include <pcie_platform_overrides_i.h>
+#include <pcie_ss_common.h>
+#include <pciess.h>
+#include <silibs_status.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <vab.h>
+#include <vab_rpss_top_regs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -175,6 +176,12 @@ int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
 
     sts = pciess_rps_post_rp_ready_init(rpss);
     FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+
+    sts = pciess_rps_clear_intus(rpss);
+    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+
+    /* Enable RPSS VAB ISRs now as the rpss is programmed and ready to go */
+    enable_vab_isrs((1 << rpss->id));
 
     return sts;
 }

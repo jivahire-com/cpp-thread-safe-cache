@@ -17,12 +17,17 @@ target_link_libraries(${TARGET}
     silibs::kng_silibs_platform
 )
 
+# Defining platform APIs
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
+
 lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
 mock_target(${TARGET}
+    enable_vab_isrs
     idsw_get_platform_sdv
     idsw_get_die_id
     vab_common_init

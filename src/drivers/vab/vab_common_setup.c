@@ -17,6 +17,7 @@
 #include <kng_soc_constants.h>
 #include <silibs_status.h>
 #include <smmu_knobs.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <vab_init.h>
 
@@ -43,12 +44,11 @@ static atu_map_entry_t atu_vabss_map[MAX_VAB_INSTANCES] = {
 };
 
 /*------------- Functions ----------------*/
-
 int vab_common_init(uint16_t vab_instances_to_init)
 {
     int status = SILIBS_SUCCESS;
 
-    // Keep the default memory attributes
+    /* Keep the default memory attributes */
     smmu_gbpa_cfg_t smmu_gbpa_cfg = {0};
     smmu_gbpa_cfg.sh_cfg = 1;
 
@@ -65,6 +65,7 @@ int vab_common_init(uint16_t vab_instances_to_init)
             // TODO: Use silibs knobs to get the system counter delay value
             vab_init_cfg.system_counter_delay = 0;
             vab_init_cfg.vab_resolved_base_addr = atu_vabss_map[vab_id].mscp_start_address;
+            vab_init_cfg.vab_configure_intu = true;
 
             FPFW_RUNTIME_ASSERT(!vab_init(&vab_init_cfg));
 

@@ -56,24 +56,24 @@
             ]
         },
         {
-            "name": "Debug Lib Unit Test - Select",
+            "name": "Debug Driver Unit Test - Select",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin/${input:selectLibUnitTest}",
+            "program": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin/${input:selectDriverUnitTest}",
             "symbolSearchPath": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
             "console": true
         },
         {
-            "name": "Debug Lib Unit Test - Last Selected",
+            "name": "Debug Driver Unit Test - Last Selected",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin/${input:lastLibUnitTest}",
+            "program": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin/${input:lastDriverUnitTest}",
             "symbolSearchPath": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
-            "console": true
+            "console": true,
         },
         {
             "name": "Debug Service Unit Test - Select",
@@ -104,12 +104,12 @@
             "type": "promptString"
         },
         {
-            "id": "selectLibUnitTest",
+            "id": "selectDriverUnitTest",
             "type": "command",
             "command": "extension.commandvariable.pickStringRemember",
             "args": {
-                "description": "Pick a Lib unit test to run",
-                "key": "savedLibUnitTest",
+                "description": "Pick a Driver unit test to run",
+                "key": "savedDriverUnitTest",
                 "options": [
                     [
                         "Sensor Fifo Driver",
@@ -119,11 +119,11 @@
             },
         },
         {
-            "id": "lastLibUnitTest",
+            "id": "lastDriverUnitTest",
             "type": "command",
             "command": "extension.commandvariable.remember",
             "args": {
-                "key": "savedLibUnitTest"
+                "key": "savedDriverUnitTest"
             }
         },
         {

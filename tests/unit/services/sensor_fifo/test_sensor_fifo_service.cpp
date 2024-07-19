@@ -12,7 +12,9 @@
 
 extern "C" {
 #include "DfwkStatus.h"                   // for DFWK_SUCCESS
+#include "fpfw_status.h"                  // for FPFW_STATUS_SUCCESS, FPFW_...
 #include "sensor_fifo_driver_interface.h" // for sensor_fifo_device_propert...
+#include "sensor_fifo_service_init.h"
 
 #include <FpFwUtils.h>           // for FPFW_UNUSED
 #include <sensor_fifo_service.h> // for SENSOR_FIFO_CORE_CURRENT_T...
@@ -78,13 +80,103 @@ TEST_FUNCTION(test_svc_get_prop, test_setup, nullptr)
     assert_string_equal(fifo_properties.name, s_name);
 }
 
-TEST_FUNCTION(test_svc_poll_tile_temp, nullptr, nullptr)
+TEST_FUNCTION(test_svc_poll_tile_temp, test_setup, nullptr)
 {
-    // this api is a stub for now, UT will be updated when function implemented
-    sensor_telem_t temperature_data;
-    uint8_t tile_index;
+#define EXPECTED_TIMESTAMP (0x323431)
+
+    // num_entries_read = 1, num_entries_remaining = 0
+    tile_temp_t temperature_data = {0};
+    tile_temp_t mock_data;
+    mock_data.timestamp = EXPECTED_TIMESTAMP;
+    uint16_t tile_index = 0;
+
+    will_return(__wrap_sensor_fifo_driver_read_entry, &mock_data);
+    will_return(__wrap_sensor_fifo_driver_read_entry, 1);  // num_entries_read
+    will_return(__wrap_sensor_fifo_driver_read_entry, 0);  // num_entries_remaining
+    will_return(__wrap_sensor_fifo_driver_read_entry, 62); // stride_index
+    will_return(__wrap_sensor_fifo_driver_read_entry, FPFW_STATUS_SUCCESS);
+
     sensor_ram_poll_status_t status = sensor_fifo_svc_poll_tile_temperature(&temperature_data, &tile_index);
+
+    assert_true(status.curr_data_is_valid);
+    assert_false(status.more_entries);
+    assert_int_equal(temperature_data.timestamp, EXPECTED_TIMESTAMP);
+
+    // num_entries_read = 0, num_entries_remaining = 1
+    temperature_data.timestamp = 0;
+    will_return(__wrap_sensor_fifo_driver_read_entry, &mock_data);
+    will_return(__wrap_sensor_fifo_driver_read_entry, 0);  // num_entries_read
+    will_return(__wrap_sensor_fifo_driver_read_entry, 1);  // num_entries_remaining
+    will_return(__wrap_sensor_fifo_driver_read_entry, 62); // stride_index
+    will_return(__wrap_sensor_fifo_driver_read_entry, FPFW_STATUS_SUCCESS);
+
+    status = sensor_fifo_svc_poll_tile_temperature(&temperature_data, &tile_index);
+
+    assert_false(status.curr_data_is_valid);
+    assert_true(status.more_entries);
+    assert_int_equal(temperature_data.timestamp, 0);
+
+    // num_entries_read = 1, num_entries_remaining = 1, FPFW_STATUS_FAIL
+    temperature_data.timestamp = 0;
+    will_return(__wrap_sensor_fifo_driver_read_entry, &mock_data);
+    will_return(__wrap_sensor_fifo_driver_read_entry, 1);  // num_entries_read
+    will_return(__wrap_sensor_fifo_driver_read_entry, 1);  // num_entries_remaining
+    will_return(__wrap_sensor_fifo_driver_read_entry, 62); // stride_index
+    will_return(__wrap_sensor_fifo_driver_read_entry, FPFW_STATUS_FAIL);
+
+    status = sensor_fifo_svc_poll_tile_temperature(&temperature_data, &tile_index);
 
     assert_false(status.curr_data_is_valid);
     assert_false(status.more_entries);
+    ;
+}
+
+TEST_FUNCTION(test_svc_poll_scp_msg, test_setup, nullptr)
+{
+#define EXPECTED_TIMESTAMP (0x323431)
+
+    // num_entries_read = 1, num_entries_remaining = 0
+    plimit_msg_telem_t scp_msg = {0};
+    plimit_msg_telem_t mock_data;
+    mock_data.timestamp = EXPECTED_TIMESTAMP;
+
+    will_return(__wrap_sensor_fifo_driver_read_entry, &mock_data);
+    will_return(__wrap_sensor_fifo_driver_read_entry, 1);  // num_entries_read
+    will_return(__wrap_sensor_fifo_driver_read_entry, 0);  // num_entries_remaining
+    will_return(__wrap_sensor_fifo_driver_read_entry, 62); // stride_index
+    will_return(__wrap_sensor_fifo_driver_read_entry, FPFW_STATUS_SUCCESS);
+
+    sensor_ram_poll_status_t status = sensor_fifo_svc_poll_scp_message(&scp_msg);
+
+    assert_true(status.curr_data_is_valid);
+    assert_false(status.more_entries);
+    assert_int_equal(scp_msg.timestamp, EXPECTED_TIMESTAMP);
+
+    // num_entries_read = 0, num_entries_remaining = 1
+    scp_msg.timestamp = 0;
+    will_return(__wrap_sensor_fifo_driver_read_entry, &mock_data);
+    will_return(__wrap_sensor_fifo_driver_read_entry, 0);  // num_entries_read
+    will_return(__wrap_sensor_fifo_driver_read_entry, 1);  // num_entries_remaining
+    will_return(__wrap_sensor_fifo_driver_read_entry, 62); // stride_index
+    will_return(__wrap_sensor_fifo_driver_read_entry, FPFW_STATUS_SUCCESS);
+
+    status = sensor_fifo_svc_poll_scp_message(&scp_msg);
+
+    assert_false(status.curr_data_is_valid);
+    assert_true(status.more_entries);
+    assert_int_equal(scp_msg.timestamp, 0);
+
+    // num_entries_read = 1, num_entries_remaining = 1, FPFW_STATUS_FAIL
+    scp_msg.timestamp = 0;
+    will_return(__wrap_sensor_fifo_driver_read_entry, &mock_data);
+    will_return(__wrap_sensor_fifo_driver_read_entry, 1);  // num_entries_read
+    will_return(__wrap_sensor_fifo_driver_read_entry, 1);  // num_entries_remaining
+    will_return(__wrap_sensor_fifo_driver_read_entry, 62); // stride_index
+    will_return(__wrap_sensor_fifo_driver_read_entry, FPFW_STATUS_FAIL);
+
+    status = sensor_fifo_svc_poll_scp_message(&scp_msg);
+
+    assert_false(status.curr_data_is_valid);
+    assert_false(status.more_entries);
+    ;
 }

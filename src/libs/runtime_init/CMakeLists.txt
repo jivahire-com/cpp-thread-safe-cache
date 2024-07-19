@@ -37,6 +37,7 @@ add_library(${TARGET}
         power_init.c
         scmi_init.c
         scp_mpu_init.c
+        sensor_fifo_init.c
         tower_init.c
         startup_shutdown_init.c
         scmi_cli_init.c
@@ -157,7 +158,6 @@ add_library(${TARGET}
         icc_init.c
         mcp_mpu_init.c
         nvic_init.c
-        sensor_fifo_init.c
         textio_init.c
 )
 

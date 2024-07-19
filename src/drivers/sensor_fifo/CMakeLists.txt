@@ -43,6 +43,7 @@ set(TARGET_DEVICE kng.device.scf_mhu)
 add_library(${TARGET_DEVICE}
     STATIC
     scf_mhu_device.c
+    hw_fifo.c
 )
 
 target_link_libraries(${TARGET_DEVICE}

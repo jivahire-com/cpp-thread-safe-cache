@@ -2,6 +2,7 @@ set(TARGET kng.driver.sensor_fifo.test)
 
 set(SOURCES
     test_sensor_fifo_driver.cpp
+    test_hw_fifo.cpp
     sensor_fifo_mock.c
 )
 
@@ -45,4 +46,7 @@ mock_target(${TARGET}
     mmio_update32
     mmio_read64
     mmio_write64
+    scf_trigger_start
+    scf_trigger_stop
+    init_scf_mhu
 )

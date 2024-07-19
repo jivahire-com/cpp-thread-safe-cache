@@ -9,12 +9,17 @@
 
 /*----------- Nested includes ------------*/
 
+
 #include <DfwkThreadXHost.h>     // for PDFWK_THREADX_HOST
+#include <device_fifo_id.h>
 #include <fpfw_init.h>           // for FPFW_INIT_STATUS_SUCCESS, fpfw_init_get...
+#include <idsw.h>                // for idsw_get_die_id
+#include <idsw_kng.h>
 #include <scf_mhu_device.h>
 #include <sensor_fifo_cli_service.h>
 #include <sensor_fifo_driver_interface.h>
 #include <sensor_fifo_service.h>
+#include <sensor_fifo_service_init.h>
 #include <silibs_mcp_exp_top_regs.h> // IWYU pragma: keep
 #include <silibs_mcp_top_regs.h>     // IWYU pragma: keep
 #include <silibs_scp_exp_top_regs.h> // IWYU pragma: keep
@@ -46,7 +51,7 @@
 // the end address needs to subtract the QUADWORD and an additional byte for inclusive range compares
 // The firmware fifo's do not have that offset as firmware provides the timestamp.
 
-static_assert((int)SENSOR_FIFO_MAX_ID == (int)SCF_MHU_FIFO_MAX_ID, "SENSOR_FIFO_MAX_ID != SCF_MHU_FIFO_MAX_ID");
+static_assert((int)SENSOR_FIFO_MAX_ID == (int)DEVICE_FIFO_MAX_ID, "SENSOR_FIFO_MAX_ID != DEVICE_FIFO_MAX_ID");
 
 #define SCF_RAM_BUFFER_SIZE_BYTES (65536)
 
@@ -85,31 +90,31 @@ static_assert((TILE_VOLT_FIFO_NUM_ENTRIES <= 16), "TILE_VOLT_FIFO_NUM_ENTRIES <=
 #define CORE_CURRENT_FIFO_END_ADDR            (CORE_CURRENT_FIFO_START_ADDR + (CORE_CURRENT_FIFO_NUM_ENTRIES * CORE_CURRENT_FIFO_STRIDE_SIZE_BYTES) - TIMESTAMP_SIZE - 1)
 static_assert((CORE_CURRENT_FIFO_NUM_ENTRIES <= 16), "CORE_CURRENT_FIFO_NUM_ENTRIES <= 16");
 
-#define PVT_TEMP_FIFO_NUM_ENTRIES             (8)   // number of strides
+#define PVT_TEMP_FIFO_NUM_ENTRIES             (8)
 #define PVT_TEMP_FIFO_ENTRY_SIZE_BYTES        (QUADWORD_ADDRESS_SIZE * 5U)
 #define PVT_TEMP_FIFO_STRIDE_SIZE_BYTES       (QUADWORD_ADDRESS_SIZE * 5U)
 #define PVT_TEMP_FIFO_START_ADDR              (CORE_CURRENT_FIFO_END_ADDR + 1)
 #define PVT_TEMP_FIFO_END_ADDR                (PVT_TEMP_FIFO_START_ADDR + (PVT_TEMP_FIFO_NUM_ENTRIES * PVT_TEMP_FIFO_STRIDE_SIZE_BYTES) - 1)
 
-#define PVT_VOLT_FIFO_NUM_ENTRIES             (8)   // number of strides
+#define PVT_VOLT_FIFO_NUM_ENTRIES             (8)
 #define PVT_VOLT_FIFO_ENTRY_SIZE_BYTES        (QUADWORD_ADDRESS_SIZE * 6U)
 #define PVT_VOLT_FIFO_STRIDE_SIZE_BYTES       (QUADWORD_ADDRESS_SIZE * 6U)
 #define PVT_VOLT_FIFO_START_ADDR              (PVT_TEMP_FIFO_END_ADDR + 1)
 #define PVT_VOLT_FIFO_END_ADDR                (PVT_VOLT_FIFO_START_ADDR + (PVT_VOLT_FIFO_NUM_ENTRIES * PVT_VOLT_FIFO_STRIDE_SIZE_BYTES) - 1)
 
-#define DIMM_FIFO_NUM_ENTRIES                 (8)   // number of strides
+#define DIMM_FIFO_NUM_ENTRIES                 (8)
 #define DIMM_FIFO_ENTRY_SIZE_BYTES            (BUFFER_ADDRESS_INC_3QW)
 #define DIMM_FIFO_STRIDE_SIZE_BYTES           (DIMM_FIFO_ENTRY_SIZE_BYTES * 12U) //12 channels
 #define DIMM_FIFO_START_ADDR                  (PVT_VOLT_FIFO_END_ADDR + 1)
 #define DIMM_FIFO_END_ADDR                    (DIMM_FIFO_START_ADDR + (DIMM_FIFO_NUM_ENTRIES * DIMM_FIFO_STRIDE_SIZE_BYTES) - 1)
 
-#define VR_TEMP_FIFO_NUM_ENTRIES              (24)   // number of strides
+#define VR_TEMP_FIFO_NUM_ENTRIES              (24)
 #define VR_TEMP_FIFO_ENTRY_SIZE_BYTES         (BUFFER_ADDRESS_INC_3QW)
 #define VR_TEMP_FIFO_STRIDE_SIZE_BYTES        (VR_TEMP_FIFO_ENTRY_SIZE_BYTES)
 #define VR_TEMP_FIFO_START_ADDR               (DIMM_FIFO_END_ADDR + 1)
 #define VR_TEMP_FIFO_END_ADDR                 (VR_TEMP_FIFO_START_ADDR + (VR_TEMP_FIFO_NUM_ENTRIES * VR_TEMP_FIFO_STRIDE_SIZE_BYTES) - 1)
 
-#define VR_CURRENT_FIFO_NUM_ENTRIES           (24)   // number of strides
+#define VR_CURRENT_FIFO_NUM_ENTRIES           (24)
 #define VR_CURRENT_FIFO_ENTRY_SIZE_BYTES      (QUADWORD_ADDRESS_SIZE * 5U)
 #define VR_CURRENT_FIFO_STRIDE_SIZE_BYTES     (QUADWORD_ADDRESS_SIZE * 5U)
 #define VR_CURRENT_FIFO_START_ADDR            (VR_TEMP_FIFO_END_ADDR + 1)
@@ -171,11 +176,11 @@ static_assert(FPGA_VR_CURRENT_FIFO_END_ADDR < (SCF_RAM_BASE_ADDRESS + FPGA_SCF_R
 
 static scf_mhu_device_config_t s_scf_mhu_device_cfg =
 {
-    .scf_mhu_base_address = SCF_MHU_BASE_ADDRESS,
-    .scf_csr_base_address = SCF_EXP_CSR_BASE_ADDRESS,
-    .scf_ram_base_address = SCF_RAM_BASE_ADDRESS,
-    .scf_ram_buffer_size  = SCF_RAM_BUFFER_SIZE_BYTES,
-    .is_scp               = IS_SCP
+    .scf_mhu_base_address     = SCF_MHU_BASE_ADDRESS,
+    .scf_exp_csr_base_address = SCF_EXP_CSR_BASE_ADDRESS,
+    .scf_ram_base_address     = SCF_RAM_BASE_ADDRESS,
+    .scf_ram_buffer_size      = SCF_RAM_BUFFER_SIZE_BYTES,
+    .is_scp                   = IS_SCP
 };
 
 /**
@@ -184,8 +189,7 @@ static scf_mhu_device_config_t s_scf_mhu_device_cfg =
  */
 static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
     [SENSOR_FIFO_PSTATE_TELEMETRY_HW] = {
-                                                .device_fifo_id = SCF_MHU_FIFO_PSTATE_TELEMETRY_HW,
-                                                .fifo_enabled = 0,
+                                                .device_fifo_id = DEVICE_FIFO_PSTATE_TLM_HW_PROD,
                                                 .entry_count = PSTATE_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = PSTATE_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = PSTATE_FIFO_STRIDE_SIZE_BYTES,
@@ -194,8 +198,7 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .name = "PSTATE Fifo",
                                                 },
     [SENSOR_FIFO_SCP_MSG_TELEMETRY_HW] = {
-                                                .device_fifo_id = SCF_MHU_FIFO_SCP_MSG_TELEMETRY_HW,
-                                                .fifo_enabled = 0,
+                                                .device_fifo_id = DEVICE_FIFO_SCP_MSG_TLM_HW_PROD,
                                                 .entry_count = SCP_MSG_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = SCP_MSG_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = SCP_MSG_FIFO_STRIDE_SIZE_BYTES,
@@ -204,8 +207,7 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .name = "SCP Msg Fifo",
                                                 },
     [SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW] = {
-                                                .device_fifo_id = SCF_MHU_FIFO_TILE_TEMPERATURE_TELEMETRY_HW,
-                                                .fifo_enabled = 0,
+                                                .device_fifo_id = DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD,
                                                 .entry_count = TILE_TEMP_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = TILE_TEMP_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = TILE_TEMP_FIFO_STRIDE_SIZE_BYTES,
@@ -214,8 +216,7 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .name = "Tile Temperature Fifo",
                                                 },
     [SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW] = {
-                                                .device_fifo_id = SCF_MHU_FIFO_TILE_VOLTAGE_TELEMETRY_HW,
-                                                .fifo_enabled = 0,
+                                                .device_fifo_id = DEVICE_FIFO_TILE_VOLT_TLM_HW_PROD,
                                                 .entry_count = TILE_VOLT_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = TILE_VOLT_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = TILE_VOLT_FIFO_STRIDE_SIZE_BYTES,
@@ -224,8 +225,7 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .name = "Tile Voltage Fifo",
                                                 },
     [SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW] = {
-                                                .device_fifo_id = SCF_MHU_FIFO_CORE_CURRENT_TELEMETRY_HW,
-                                                .fifo_enabled = 0,
+                                                .device_fifo_id = DEVICE_FIFO_CORE_CURRENT_TLM_HW_PROD,
                                                 .entry_count = CORE_CURRENT_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = CORE_CURRENT_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = CORE_CURRENT_FIFO_STRIDE_SIZE_BYTES,
@@ -234,19 +234,17 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .name = "Core Current Fifo",
                                                 },
     [SENSOR_FIFO_PVT_TEMP_FW] = {
-                                                .device_fifo_id = SCF_MHU_FIFO_PVT_TEMP_FW,
-                                                .fifo_enabled = 0,
+                                                .device_fifo_id = DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD,
                                                 .entry_count = PVT_TEMP_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = PVT_TEMP_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = PVT_TEMP_FIFO_STRIDE_SIZE_BYTES,
                                                 .start_address = PVT_TEMP_FIFO_START_ADDR,
-                                                .end_address = PVT_TEMP_FIFO_START_ADDR,
+                                                .end_address = PVT_TEMP_FIFO_END_ADDR,
                                                 .name = "PVT Temperature Fifo",
                                                 },
 
     [SENSOR_FIFO_PVT_VOLTAGE_FW] = {
-                                                .device_fifo_id = SCF_MHU_FIFO_PVT_VOLTAGE_FW,
-                                                .fifo_enabled = 0,
+                                                .device_fifo_id = DEVICE_FIFO_PVT_VOLT_TLM_FW_PROD,
                                                 .entry_count = PVT_VOLT_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = PVT_VOLT_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = PVT_VOLT_FIFO_STRIDE_SIZE_BYTES,
@@ -255,8 +253,7 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .name = "PVT Voltage Fifo",
                                                 },
     [SENSOR_FIFO_DIMM_TEMP_FW] = {
-                                                .device_fifo_id = SCF_MHU_FIFO_DIMM_TEMP_FW,
-                                                .fifo_enabled = 0,
+                                                .device_fifo_id = DEVICE_FIFO_DIMM_TEMP_TLM_FW_PROD,
                                                 .entry_count = DIMM_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = DIMM_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = DIMM_FIFO_STRIDE_SIZE_BYTES,
@@ -265,8 +262,7 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .name = "DIMM Fifo",
                                                 },
     [SENSOR_FIFO_VR_TEMP_FW] = {
-                                                .device_fifo_id = SCF_MHU_FIFO_VR_TEMP_FW,
-                                                .fifo_enabled = 0,
+                                                .device_fifo_id = DEVICE_FIFO_VR_TEMP_TLM_FW_PROD,
                                                 .entry_count = VR_TEMP_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = VR_TEMP_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = VR_TEMP_FIFO_STRIDE_SIZE_BYTES,
@@ -275,8 +271,7 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .name = "VR Temp Fifo",
                                                 },
     [SENSOR_FIFO_VR_CURRENT_FW] = {
-                                                .device_fifo_id = SCF_MHU_FIFO_VR_CURRENT_FW,
-                                                .fifo_enabled = 0,
+                                                .device_fifo_id = DEVICE_FIFO_VR_CURRENT_TLM_FW_PROD,
                                                 .entry_count = VR_CURRENT_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = VR_CURRENT_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = VR_CURRENT_FIFO_STRIDE_SIZE_BYTES,
@@ -288,51 +283,66 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
 
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(sensor_fifo, FPFW_INIT_DEPENDENCIES("dfwk"))
+FPFW_INIT_COMPONENT(sensor_fifo, FPFW_INIT_DEPENDENCIES("dfwk","hw_ver","std_io"))
 {
-    //for now use the fpga sizes, later will need to dynamically determine which sizes to use
-    // https://azurecsi.visualstudio.com/Dev/_workitems/edit/1485734
+    switch (idsw_get_platform_sdv())
+    {
+        // fall-thru intended
+    case PLATFORM_FPGA:
+    case PLATFORM_FPGA_TINY:
+    case PLATFORM_FPGA_SMALL:
+    case PLATFORM_FPGA_LARGE:
+    case PLATFORM_FPGA_LARGE_RVP:
 
-    s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].entry_count = FPGA_TILE_TEMP_FIFO_NUM_ENTRIES;
-    s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].start_address = FPGA_TILE_TEMP_FIFO_START_ADDR;
-    s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].end_address = FPGA_TILE_TEMP_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].entry_count = FPGA_TILE_TEMP_FIFO_NUM_ENTRIES;
+        s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].start_address = FPGA_TILE_TEMP_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].end_address = FPGA_TILE_TEMP_FIFO_END_ADDR;
 
-    s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].entry_count = FPGA_TILE_VOLT_FIFO_NUM_ENTRIES;
-    s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].start_address = FPGA_TILE_VOLT_FIFO_START_ADDR;
-    s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].end_address = FPGA_TILE_VOLT_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].entry_count = FPGA_TILE_VOLT_FIFO_NUM_ENTRIES;
+        s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].start_address = FPGA_TILE_VOLT_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].end_address = FPGA_TILE_VOLT_FIFO_END_ADDR;
 
-    s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].entry_count = FPGA_CORE_CURRENT_FIFO_NUM_ENTRIES;
-    s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].start_address = FPGA_CORE_CURRENT_FIFO_START_ADDR;
-    s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].end_address = FPGA_CORE_CURRENT_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].entry_count = FPGA_CORE_CURRENT_FIFO_NUM_ENTRIES;
+        s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].start_address = FPGA_CORE_CURRENT_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].end_address = FPGA_CORE_CURRENT_FIFO_END_ADDR;
 
-    s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].entry_count = FPGA_PSTATE_FIFO_NUM_ENTRIES;
-    s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].start_address = FPGA_PSTATE_FIFO_START_ADDR;
-    s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].end_address = FPGA_PSTATE_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].entry_count = FPGA_PSTATE_FIFO_NUM_ENTRIES;
+        s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].start_address = FPGA_PSTATE_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].end_address = FPGA_PSTATE_FIFO_END_ADDR;
 
-    s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].entry_count = FPGA_SCP_MSG_FIFO_NUM_ENTRIES;
-    s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].start_address = FPGA_SCP_MSG_FIFO_START_ADDR;
-    s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].end_address = FPGA_SCP_MSG_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].entry_count = FPGA_SCP_MSG_FIFO_NUM_ENTRIES;
+        s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].start_address = FPGA_SCP_MSG_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].end_address = FPGA_SCP_MSG_FIFO_END_ADDR;
 
-    s_fifo_properties[SENSOR_FIFO_PVT_TEMP_FW].start_address = FPGA_PVT_TEMP_FIFO_START_ADDR;
-    s_fifo_properties[SENSOR_FIFO_PVT_TEMP_FW].end_address = FPGA_PVT_TEMP_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_PVT_TEMP_FW].start_address = FPGA_PVT_TEMP_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_PVT_TEMP_FW].end_address = FPGA_PVT_TEMP_FIFO_END_ADDR;
 
-    s_fifo_properties[SENSOR_FIFO_PVT_VOLTAGE_FW].start_address = FPGA_PVT_VOLT_FIFO_START_ADDR;
-    s_fifo_properties[SENSOR_FIFO_PVT_VOLTAGE_FW].end_address = FPGA_PVT_VOLT_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_PVT_VOLTAGE_FW].start_address = FPGA_PVT_VOLT_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_PVT_VOLTAGE_FW].end_address = FPGA_PVT_VOLT_FIFO_END_ADDR;
 
-    s_fifo_properties[SENSOR_FIFO_DIMM_TEMP_FW].start_address = FPGA_DIMM_FIFO_START_ADDR;
-    s_fifo_properties[SENSOR_FIFO_DIMM_TEMP_FW].end_address = FPGA_DIMM_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_DIMM_TEMP_FW].start_address = FPGA_DIMM_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_DIMM_TEMP_FW].end_address = FPGA_DIMM_FIFO_END_ADDR;
 
-    s_fifo_properties[SENSOR_FIFO_VR_TEMP_FW].start_address = FPGA_VR_TEMP_FIFO_START_ADDR;
-    s_fifo_properties[SENSOR_FIFO_VR_TEMP_FW].end_address = FPGA_VR_TEMP_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_VR_TEMP_FW].start_address = FPGA_VR_TEMP_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_VR_TEMP_FW].end_address = FPGA_VR_TEMP_FIFO_END_ADDR;
 
-    s_fifo_properties[SENSOR_FIFO_VR_CURRENT_FW].start_address = FPGA_VR_CURRENT_FIFO_START_ADDR;
-    s_fifo_properties[SENSOR_FIFO_VR_CURRENT_FW].end_address = FPGA_VR_CURRENT_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_VR_CURRENT_FW].start_address = FPGA_VR_CURRENT_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_VR_CURRENT_FW].end_address = FPGA_VR_CURRENT_FIFO_END_ADDR;
 
-    s_scf_mhu_device_cfg.scf_ram_buffer_size = FPGA_SCF_RAM_BUFFER_SIZE_BYTES;
+        s_scf_mhu_device_cfg.scf_ram_buffer_size = FPGA_SCF_RAM_BUFFER_SIZE_BYTES;
+
+    default:
+        break;
+    }
 
     // get driver fwk threadx handle
     fpfw_init_component_id_t dfwk_id = "dfwk";
     PDFWK_THREADX_HOST drvfwk = (PDFWK_THREADX_HOST)fpfw_init_get_handle(dfwk_id);
+
+    /// TODO:  from fuse service get info for the following
+    s_scf_mhu_device_cfg.tile_mask = 0;
+    s_scf_mhu_device_cfg.core_mask_lo = 0;
+    s_scf_mhu_device_cfg.core_mask_hi = 0;
 
     static scf_mhu_device_t scf_mhu_device = {0};
     scf_mhu_device_initialize(&scf_mhu_device, &drvfwk->Schedule, s_fifo_properties, ARRAY_SIZE(s_fifo_properties), &s_scf_mhu_device_cfg);

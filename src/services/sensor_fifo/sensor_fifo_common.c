@@ -9,12 +9,16 @@
 
 /*------------- Includes -----------------*/
 #include "sensor_fifo_driver_interface.h" // for psensor_fifo_device_proper...
-#include "sensor_fifo_service.h"          // for SENSOR_FIFO_ID, SENSOR_FIF...
+#include "sensor_fifo_events_i.h"
+#include "sensor_fifo_service.h" // for SENSOR_FIFO_ID, SENSOR_FIF...
 
-#include <DfwkClient.h> // for DfwkClientInterfaceOpen
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
-#include <stddef.h>     // for NULL
-#include <stdint.h>     // for int32_t
+#include <DfwkClient.h>                  // for DfwkClientInterfaceOpen
+#include <FpFwAssert.h>                  // for FPFW_RUNTIME_ASSERT
+#include <IFpFwEventTracingGeneration.h> // for FPFW_ET_LOG
+#include <fpfw_status.h>                 // for FPFW_STATUS_FAILED, fpfw_s...
+#include <stdbool.h>                     // for bool
+#include <stddef.h>                      // for NULL
+#include <stdint.h>                      // for int32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -48,4 +52,37 @@ void sensor_fifo_svc_get_properties(SENSOR_FIFO_ID fifo, psensor_fifo_properties
     properties->end_address = device_properties->end_address;
     properties->epoch_count = device_properties->entry_count;
     properties->name = device_properties->name;
+}
+
+void sensor_fifo_svc_set_global_hw_enable(bool enable)
+{
+    fpfw_status_t status = sensor_fifo_driver_inf_set_global_hw_enable(pSensor_fifo_driver_inf, enable);
+    if (FPFW_STATUS_FAILED(status))
+    {
+        FPFW_ET_LOG(GlobalEnableFail, status);
+    }
+}
+
+void sensor_fifo_svc_enable_fifo(SENSOR_FIFO_ID fifo)
+{
+    fpfw_status_t status =
+        sensor_fifo_driver_inf_set_fifo_enable(pSensor_fifo_driver_inf,
+                                               pSensor_fifo_driver_inf->device->fifo_property_table[fifo].device_fifo_id,
+                                               true);
+    if (FPFW_STATUS_FAILED(status))
+    {
+        FPFW_ET_LOG(FifoEnableFail, status);
+    }
+}
+
+void sensor_fifo_svc_disable_fifo(SENSOR_FIFO_ID fifo)
+{
+    fpfw_status_t status =
+        sensor_fifo_driver_inf_set_fifo_enable(pSensor_fifo_driver_inf,
+                                               pSensor_fifo_driver_inf->device->fifo_property_table[fifo].device_fifo_id,
+                                               false);
+    if (FPFW_STATUS_FAILED(status))
+    {
+        FPFW_ET_LOG(FifoDisableFail, status);
+    }
 }

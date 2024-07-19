@@ -3,6 +3,7 @@ set(TARGET kng.service.sensor_fifo)
 add_library(${TARGET}
     STATIC
         sensor_fifo_common.c
+        sensor_fifo_events.c
         sensor_fifo_public.c
 )
 
@@ -14,7 +15,9 @@ target_link_libraries(
           fwlib.lib.interface.platform.errorhandler
           ms::lib::debug
           ms::lib::threadx
+          ms::lib::event_trace::trace
           ms::driver::sensor_fifo
+
 )
 
 # Many of the fifo's are populated by hardware, therefore the entry format is pre-determined.

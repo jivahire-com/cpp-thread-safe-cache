@@ -10,7 +10,6 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
-#include <sensor_fifo_driver_interface.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -59,6 +58,38 @@ typedef struct {
     uint16_t epoch_count; ///< number of strides in the fifo, 1 indexed
     char*    name;
 } sensor_fifo_properties_t, *psensor_fifo_properties_t;
+
+/**
+ * @brief Single entry for  SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW
+ *
+ */
+typedef struct
+{
+    uint64_t timestamp;
+    temp_full_data0_t temp0;
+    temp_full_data1_t temp1;
+    temp_full_data2_t temp2;
+} tile_temp_t;
+
+/**
+ * @brief Single entry for  SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW
+ *
+ */
+typedef struct
+{
+    uint64_t timestamp;
+    volt_data_t data;
+} tile_voltage_t;
+
+/**
+ * @brief Single entry for  SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW
+ *
+ */
+typedef struct
+{
+    uint64_t timestamp;
+ current_data_t data;
+} core_current_t;
 
 
 /**
@@ -135,18 +166,18 @@ typedef struct {
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
-
 /**
- * @brief Initialize the service.
+ * @brief Global Enable/Disable for all hardware fifos
  *
  * @note Thread Safe - Yes
  * @note ISR safe - No
  * @note Blocking call - No
  * @note Additional stack requirements - No
  *
- * @param[in] driver_interface - Pointer to a platform driver interface
+ * @param[in] enable - true - hardware fifo's enabled via sensor_fifo_svc_enable_fifo will collect data
+ *                     false - all hardware fifo's are disabled
  */
-void sensor_fifo_svc_initialize(sensor_fifo_driver_interface_t* driver_interface);
+void sensor_fifo_svc_set_global_hw_enable(bool enable);
 
 /**
  * @brief Enables Data Collection
@@ -158,7 +189,7 @@ void sensor_fifo_svc_initialize(sensor_fifo_driver_interface_t* driver_interface
  *
  * @param[in] fifo - Select the specific fifo
  */
-void sensor_fifo_svc_enable(SENSOR_FIFO_ID fifo);
+void sensor_fifo_svc_enable_fifo(SENSOR_FIFO_ID fifo);
 
 /**
  * @brief Disables Data Collection
@@ -170,19 +201,7 @@ void sensor_fifo_svc_enable(SENSOR_FIFO_ID fifo);
  *
  * @param[in] fifo - Select the specific fifo
  */
-void sensor_fifo_svc_disable(SENSOR_FIFO_ID fifo);
-
-/**
- * @brief Empties and discards all of the entries
- *
- * @note Thread Safe - Yes
- * @note ISR safe - No
- * @note Blocking call - No
- * @note Additional stack requirements - No
- *
- * @param[in] fifo - Select the specific fifo
- */
-void sensor_fifo_svc_discard(SENSOR_FIFO_ID fifo);
+void sensor_fifo_svc_hw_fifo_disable(SENSOR_FIFO_ID fifo);
 
 /**
  * @brief Retrieve fifo properties
@@ -278,10 +297,10 @@ void sensor_fifo_svc_add_vr_current(vr_current_t* vr_current);
  * @note Additional stack requirements - No
  *
  * @param[out] temperature_data - destination pointer for entry read from fifo
- * @param[out] tile_index - destination pointer for entry's tile index
+ * @param[out] tile_index - destination pointer for entry's tile index. 0 indexed
  * @retval sensor_ram_poll_status_t - See documentation for return values
  */
-sensor_ram_poll_status_t sensor_fifo_svc_poll_tile_temperature(sensor_telem_t* temperature_data, uint8_t* tile_index);
+sensor_ram_poll_status_t sensor_fifo_svc_poll_tile_temperature(tile_temp_t* temperature_data, uint16_t* tile_index);
 
 /**
  * @brief Poll SENSOR_FIFO_VOLTAGE_TELEMETRY_HW and read out an entry if available
@@ -292,10 +311,10 @@ sensor_ram_poll_status_t sensor_fifo_svc_poll_tile_temperature(sensor_telem_t* t
  * @note Additional stack requirements - No
  *
  * @param[out] voltage_data - destination pointer for entry read from fifo
- * @param[out] tile_index - destination pointer for entry's tile index
+ * @param[out] tile_index - destination pointer for entry's tile index. 0 indexed
  * @retval sensor_ram_poll_status_t - See documentation for return values
  */
-sensor_ram_poll_status_t sensor_fifo_svc_poll_tile_voltage(volt_data_t* voltage_data, uint8_t* tile_index);
+sensor_ram_poll_status_t sensor_fifo_svc_poll_tile_voltage(tile_voltage_t* voltage_data, uint16_t* tile_index);
 
 /**
  * @brief Poll SENSOR_FIFO_CURRENT_TELEMETRY_HW and read out an entry if available
@@ -305,12 +324,11 @@ sensor_ram_poll_status_t sensor_fifo_svc_poll_tile_voltage(volt_data_t* voltage_
  * @note Blocking call - No
  * @note Additional stack requirements - No
  *
- * @param[out] time_stamp - destination pointer for timestamp of entry
  * @param[out] current_data - destination pointer for entry read from fifo
- * @param[out] tile_index - destination pointer for entry's tile index
+ * @param[out] tile_index - destination pointer for entry's tile index. 0 indexed
  * @retval sensor_ram_poll_status_t - See documentation for return values
  */
-sensor_ram_poll_status_t sensor_fifo_svc_poll_tile_current(uint64_t* time_stamp, current_data_t* current_data, uint8_t* tile_index);
+sensor_ram_poll_status_t sensor_fifo_svc_poll_tile_current(core_current_t* current_data, uint16_t* tile_index);
 
 /**
  * @brief Poll SENSOR_FIFO_PSTATE_TELEMETRY_HW and read out an entry if available

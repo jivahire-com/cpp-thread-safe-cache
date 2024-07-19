@@ -23,7 +23,7 @@ Function Export-FPGAbins(
     # # Create the directory structure if not present on R drive
     Write-Host "Creating binary directory structure on R drive and copying elfs..."
     New-Item -ItemType Directory -Force -Path "$ShareDriveLoc\$User\$Repo\$BinLoc"
-    Copy-Item $BinLoc\*.elf $ShareDriveLoc\$User\$Repo\$BinLoc\ -Force
+    Get-ChildItem -Path $BinLoc -Recurse -Filter *.elf | ForEach-Object { Copy-Item -Path $_.FullName -Destination $ShareDriveLoc\$User\$Repo\$BinLoc\ -Force }
 
     if ($TransferMethod -eq "git_commit") {
         # Push all changes to git
@@ -55,7 +55,7 @@ Function Get-FPGAHelp()
     foreach($Command in $Commands)
     {
         $Message = $Command.Name
-        $Message = $Message + (" " * (20 - $Message.Length)) 
+        $Message = $Message + (" " * (20 - $Message.Length))
         $Help = Get-Help $Command
         Write-Host $Message -NoNewLine -ForegroundColor Yellow
         Write-Host $Help.Synopsis

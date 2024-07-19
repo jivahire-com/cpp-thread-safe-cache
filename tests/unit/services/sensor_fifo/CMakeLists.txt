@@ -5,6 +5,7 @@ set(SOURCES
     sensor_fifo_service_mock.c
 )
 
+
 set(LIBS
     PRIVATE
         kng.service.sensor_fifo
@@ -16,17 +17,14 @@ set(LIBS
 # Compile test
 add_executable(${TARGET} ${SOURCES})
 
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+
 target_link_libraries(${TARGET}
         ${LIBS}
 )
 
 # Get private includes for module under test
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.service.sensor_fifo,INCLUDE_DIRECTORIES>)
-
-# Defining platform APIs
-# set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")
-# set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_THREADX "extern.threadx.interface.win32")
-# set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
 lint_target(${TARGET})
 format_target(${TARGET})
@@ -35,4 +33,8 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     DfwkClientInterfaceOpen
     FpFwAssert
+    DfwkDeviceInitialize
+    DfwkInterfaceInitialize
+    DfwkInterfaceSendSync
+    sensor_fifo_driver_read_entry
 )

@@ -53,7 +53,7 @@ void __wrap_scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init)
 TEST_FUNCTION(test_die0_svp_init, NULL, NULL)
 {
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
-    expect_value(__wrap_scp_pcie_initialize, rpss_to_init, (1 << RPSS0));
+    expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3)));
     _fpfw_component_pcie.init_fn();
 }
 

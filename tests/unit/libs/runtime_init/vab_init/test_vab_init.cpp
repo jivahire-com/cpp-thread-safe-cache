@@ -144,14 +144,16 @@ TEST_FUNCTION(test_vab_init_fpga_large_rvp_die1, nullptr, nullptr)
     _fpfw_component_vab.init_fn();
 }
 
-/* TODO: SVP tests can be enabled once SVP implements VAB PCR init as vab_common is not called for SVP right
-now TEST_FUNCTION(test_vab_init_svp_die0, nullptr, nullptr)
+TEST_FUNCTION(test_vab_init_svp_die0, nullptr, nullptr)
 {
     const auto test_die = (KNG_DIE_ID)0;
     will_return_always(__wrap_idsw_get_die_id, test_die);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
-    expect_value(__wrap_vab_common_init, vab_instances_to_init, ((1 << D0_VAB4_SDMSS) | (1 <<
-D0_VAB5_CDEDSS_IOSS))); _fpfw_component_vab.init_fn();
+    expect_value(__wrap_vab_common_init,
+                 vab_instances_to_init,
+                 ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) |
+                  (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS)));
+    _fpfw_component_vab.init_fn();
 }
 
 TEST_FUNCTION(test_vab_init_svp_die1, nullptr, nullptr)
@@ -159,12 +161,9 @@ TEST_FUNCTION(test_vab_init_svp_die1, nullptr, nullptr)
     const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idsw_get_die_id, test_die);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
-    expect_value(__wrap_vab_common_init,
-                 vab_instances_to_init,
-                 ((1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS)));
+    expect_value(__wrap_vab_common_init, vab_instances_to_init, ((1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS)));
     _fpfw_component_vab.init_fn();
 }
-*/
 
 TEST_FUNCTION(test_vab_init_invalid_plat, nullptr, nullptr)
 {

@@ -34,7 +34,8 @@ static uint16_t vab_instances_to_be_enabled(uint8_t die_num)
     case PLATFORM_SVP_SIM:
         if (die_num == 0)
         {
-            vab_instances_to_init = ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS));
+            vab_instances_to_init = ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) |
+                                     (1 << D0_VAB3_RPSS3) | (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS));
         }
         else
         {

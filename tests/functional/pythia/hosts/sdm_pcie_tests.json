@@ -90,9 +90,21 @@
             "KingsgateSVP.DIE_0.SDMSS.SDM_EMCPU.terminal_uart_sdm.#EXTRA_PROPERTIES#runtime_disabled":"true",
             "KingsgateSVP.DIE_1.#EXTRA_PROPERTIES#runtime_disabled":"true",
             "KingsgateSVP.DIE_0.RPSS0.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.RPSS1.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.RPSS2.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.RPSS3.#EXTRA_PROPERTIES#runtime_disabled": "false",
             "KingsgateSVP.DIE_0.VABRPSS0.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.VABRPSS1.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.VABRPSS2.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.VABRPSS3.#EXTRA_PROPERTIES#runtime_disabled": "false",
             "KingsgateSVP.DIE_0.RPSS0.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image":"${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}/firmware/release/nvme.elf",
-            "KingsgateSVP.DIE_0.RPSS0.PCIe_EPs.NVMe_SSD_EP_BB_x16.Periphs.UART_PHY_EP.#SCML_PROPERTIES#TerminalAutoOpen" : "false"
+            "KingsgateSVP.DIE_0.RPSS0.PCIe_EPs.NVMe_SSD_EP_BB_x16.Periphs.UART_PHY_EP.#SCML_PROPERTIES#TerminalAutoOpen" : "false",
+            "KingsgateSVP.DIE_0.RPSS1.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image":"${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}/firmware/release/nvme.elf",
+            "KingsgateSVP.DIE_0.RPSS1.PCIe_EPs.NVMe_SSD_EP_BB_x16.Periphs.UART_PHY_EP.#SCML_PROPERTIES#TerminalAutoOpen" : "false",
+            "KingsgateSVP.DIE_0.RPSS2.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image":"${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}/firmware/release/nvme.elf",
+            "KingsgateSVP.DIE_0.RPSS2.PCIe_EPs.NVMe_SSD_EP_BB_x16.Periphs.UART_PHY_EP.#SCML_PROPERTIES#TerminalAutoOpen" : "false",
+            "KingsgateSVP.DIE_0.RPSS3.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image":"${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}/firmware/release/nvme.elf",
+            "KingsgateSVP.DIE_0.RPSS3.PCIe_EPs.NVMe_SSD_EP_BB_x16.Periphs.UART_PHY_EP.#SCML_PROPERTIES#TerminalAutoOpen" : "false"
         },
         "env_vars": {
             "ARMLMD_LICENSE_FILE": "40002@wanlic.svceng.com",

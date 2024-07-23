@@ -188,6 +188,17 @@ runsvp -SimConfig scp_mcp_chie_bins -UseGui $true
 runsvp scp_mcp_chie_bins 1
 ```
 
+### With kingsgate hsp scp ifwi flash
+
+Create-ScpIfwi.ps1 takes the ifwi from hsp sprt package and appends scp image with it to create a kingsgate 
+hsp scp ifwi. This step needs to be repeated everytime the scp fw is being built.
+Launch the SVP with the hsp bl scp config.
+
+```powershell
+tools\pwsh\Create-ScpIfwi.ps1
+Invoke-Virtualizer -SimConfig hsp_bl_scp -UseGUI
+```
+
 ### Using the Synopsys GUI
 
 1. Start SVP with the GUI as shown above. This will launch the Virtualizer Runtime VDK. This will also create a base project, with an example configuration and launch the simulation.

@@ -58,3 +58,6 @@ __pycache__/
 
 # Build size files
 *.sizes
+
+# flash files
+*.flash

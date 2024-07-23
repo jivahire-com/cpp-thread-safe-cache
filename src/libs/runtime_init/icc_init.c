@@ -16,6 +16,7 @@
 #include <fpfw_status.h>             // for FPFW_STATUS_SUCCESS, fpfw_status_t
 #include <fpfw_timer_port.h>         // for _fpfw_timer_t
 #include <icc_platform_defines.h>
+#include <interrupts.h>
 #include <silibs_mcp_top_regs.h>
 #include <silibs_scp_top_regs.h>
 #include <stdbool.h> // for true
@@ -69,11 +70,12 @@ FPFW_INIT_COMPONENT(icc_hspmbx, FPFW_INIT_DEPENDENCIES("dfwk"))
     static fpfw_mbox_icc_transport_config_t cfg = {
         .mbox_dev_cfg = {.MbxFifoDepth = HSP_MBX_FIFO_DEPTH,
                          .MbxMesgHandlingType = MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME,
-                         .MbxImplementation = MBX_IMPL_POLLING,
+                         .MbxImplementation = MBX_IMPL_INTERRUPT,
                          .MsgSizeBytes = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t)),
                          .MbxBaseAddr = MSCP2HSP_MAILBOX_BASE_ADDRESS},
         .timer_period = KG_HSP_MBOX_POLL_INTERVAL_NS,
         .timer_handle = {&timer[ICC_MBX_ASYNC_SEND], &timer[ICC_MBX_ASYNC_RECV]},
+        .mbx_irq_num = HW_INT_HSP2MSCP_MBOX_INT,
     };
 
     //! Statics declarations required for mailbox transport driver

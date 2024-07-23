@@ -278,14 +278,14 @@ void my_icc_base_send_complete_notify(void* context, fpfw_status_t status)
     fpfw_icc_base_send_req_t* req_params = (fpfw_icc_base_send_req_t*)context; // NOLINT
     if (status != DFWK_SUCCESS)
     {
-        FpFwCliPrint("[ECHO TEST]   MSCP->HSP Send Failed: Status[0x%x] Internal Status[0x%x]\n",
+        FpFwCliPrint("[SEND TEST]   MSCP->HSP Send Failed: Status[0x%x] Internal Status[0x%x]\n",
                      status,
                      req_params->send_req.Output.Status);
     }
     else
     {
         //! verify success, output status
-        FpFwCliPrint("[ECHO TEST]   MSCP->HSP Send Complete: Status[0x%x] Payload[0x%x 0x%x "
+        FpFwCliPrint("[SEND TEST]   MSCP->HSP Send Complete: Status[0x%x] Payload[0x%x 0x%x "
                      "0x%x 0x%x]\n",
                      status,
                      send_payload_buffer[0],
@@ -341,10 +341,10 @@ static FPFW_CLI_STATUS hsp_mbox_send(int argc, const char** argv)
     {
         FpFwCliPrint("[SEND TEST]   MSCP->HSP Send Initiated: Status[0x%x] Payload[0x%x 0x%x 0x%x 0x%x]\n",
                      status,
-                     payload_buffer[0],
-                     payload_buffer[1],
-                     payload_buffer[2],
-                     payload_buffer[3]);
+                     send_payload_buffer[0],
+                     send_payload_buffer[1],
+                     send_payload_buffer[2],
+                     send_payload_buffer[3]);
         //! Status is success, Set the flag to indicate the test is active
         is_send_test_active = true;
         cli_status = CLI_SUCCESS;

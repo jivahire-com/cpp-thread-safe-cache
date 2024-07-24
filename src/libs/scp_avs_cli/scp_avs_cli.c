@@ -17,11 +17,6 @@
 #include <scp_avs_driver.h> // for scp_avs_request_t
 
 /*-- Symbolic Constant Macros (defines) --*/
-
-// TODO: Initialize the CLI for the remaining AVS buses.  AVS_BUS1 - AVS_BUS3 for Die0, and AVS_BUS4 for Die1.
-// https://azurecsi.visualstudio.com/Dev/_workitems/edit/1484956
-// This represents the AVS CLI buses initialized. This first PR only has AVS0 initialized.
-#define MAX_AVS_INST    1
 #define MAX_AVS_RAILS   2
 #define MAX_CLI_VOLTAGE 1000 // mV
 
@@ -40,7 +35,7 @@ typedef struct _avs_cli_request_context_t
 } avs_cli_request_context_t;
 avs_cli_request_context_t cli_avs_request = {0};
 
-pscp_avs_interface_t cli_avs_interface;
+pscp_avs_interface_t cli_avs_interfaces[MAX_AVS_INST] = {0};
 
 static FPFW_CLI_COMMAND scp_avs_cli_list[] = {
     {NULL_LIST_ENTRY, "avs", "avs_read", scp_avs_read_data_cli, "AVS read data", "Usage: avs_read <avs bus number> <rail number> <read command type>"},
@@ -62,9 +57,9 @@ bool check_not_in_use(void)
 
 void AVSCLIRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext)
 {
-    FPFW_UNUSED(CompletionContext);
     FPFW_UNUSED(Request);
 
+    int cli_avs_bus = (int)CompletionContext;
     cli_avs_request.in_use = false;
 
     if (cli_avs_request.request.avs_response_status != SILIBS_SUCCESS)
@@ -78,7 +73,7 @@ void AVSCLIRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Completio
     case AVS_REQUEST_WRITE_DATA:
         FpFwCliPrint("\n AVS CLI Write complete\n");
         FpFwCliPrint("\n AVS voltage read.\n AVSBus = %d\n rail = %d\n AVS volt. = %d.%03d\n",
-                     cli_avs_interface->Device->avs_bus_num,
+                     cli_avs_bus,
                      cli_avs_request.request.avs_params.rail_id,
                      ((cli_avs_request.request.avs_response_single_resp) / 1000),
                      ((cli_avs_request.request.avs_response_single_resp) % 1000));
@@ -89,7 +84,7 @@ void AVSCLIRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Completio
         {
         case AVS_VOLTAGE_RW:
             FpFwCliPrint("\n AVS voltage read.\n AVSBus = %d\n rail = %d\n AVS volt. = %d.%03d\n",
-                         cli_avs_interface->Device->avs_bus_num,
+                         cli_avs_bus,
                          cli_avs_request.request.avs_params.rail_id,
                          ((cli_avs_request.request.avs_response_single_resp) / 1000),
                          ((cli_avs_request.request.avs_response_single_resp) % 1000));
@@ -97,7 +92,7 @@ void AVSCLIRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Completio
 
         case AVS_CURRENT_READ:
             FpFwCliPrint("\n AVS current read.\n AVSBus = %d\n rail = %d\n AVS current = %d.%02d\n",
-                         cli_avs_interface->Device->avs_bus_num,
+                         cli_avs_bus,
                          cli_avs_request.request.avs_params.rail_id,
                          ((cli_avs_request.request.avs_response_single_resp) / 100),
                          ((cli_avs_request.request.avs_response_single_resp) % 100));
@@ -106,7 +101,7 @@ void AVSCLIRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Completio
         case AVS_TEMPERATURE_READ:
             FpFwCliPrint(
                 "\n AVS temperature read.\n AVSBus = %d\n rail = %d\n AVS temperature_dC = %d.%01d\n",
-                cli_avs_interface->Device->avs_bus_num,
+                cli_avs_bus,
                 cli_avs_request.request.avs_params.rail_id,
                 ((cli_avs_request.request.avs_response_single_resp) / 10),
                 ((cli_avs_request.request.avs_response_single_resp) % 10));
@@ -121,7 +116,7 @@ void AVSCLIRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Completio
     case AVS_REQUEST_READ_ALL_VCT:
         FpFwCliPrint("\n AVS read VCT.\n  AVSBus = %d\n  rail = %d\n  AVS volt. = %d.%03d\n  AVS current = "
                      "%d.%02d\n  AVS temperature_dC = %d.%01d\n\n",
-                     cli_avs_interface->Device->avs_bus_num,
+                     cli_avs_bus,
                      cli_avs_request.request.avs_params.rail_id,
                      ((cli_avs_request.request.avs_response_vct.voltage_mV) / 1000),
                      ((cli_avs_request.request.avs_response_vct.voltage_mV) % 1000),
@@ -157,11 +152,13 @@ static FPFW_CLI_STATUS scp_avs_read_data_cli(int argc, const char** argv)
         }
         AVS_CMD_DATA_TYPE cmd_type = atoi(argv[3]);
 
-        cli_avs_interface->Device->avs_bus_num = avs_bus;
         cli_avs_request.request.avs_params.rail_id = rail_sel;
         cli_avs_request.request.avs_params.cmd_type = cmd_type;
         cli_avs_request.in_use = true;
-        scp_avs_client_read(&cli_avs_interface->Header, &cli_avs_request.request.Header, AVSCLIRequestCompletion, NULL);
+        scp_avs_client_read(&cli_avs_interfaces[avs_bus]->Header,
+                            &cli_avs_request.request.Header,
+                            AVSCLIRequestCompletion,
+                            (void*)avs_bus);
     }
     else
     {
@@ -200,14 +197,15 @@ static FPFW_CLI_STATUS scp_avs_write_data_cli(int argc, const char** argv)
             FpFwCliPrint("ERROR! Invalid Arg (vr_data > MAX) \n");
             return CLI_ERROR;
         }
-
-        cli_avs_interface->Device->avs_bus_num = avs_bus;
         cli_avs_request.request.avs_params.rail_id = rail_sel;
         cli_avs_request.request.avs_params.cmd_type = cmd_type;
         cli_avs_request.request.avs_params.data.avs_data = vr_data;
         cli_avs_request.in_use = true;
 
-        scp_avs_client_write(&cli_avs_interface->Header, &cli_avs_request.request.Header, AVSCLIRequestCompletion, NULL);
+        scp_avs_client_write(&cli_avs_interfaces[avs_bus]->Header,
+                             &cli_avs_request.request.Header,
+                             AVSCLIRequestCompletion,
+                             (void*)avs_bus);
     }
     else
     {
@@ -239,12 +237,14 @@ static FPFW_CLI_STATUS scp_avs_read_vct_cli(int argc, const char** argv)
         }
         AVS_CMD_DATA_TYPE cmd_type = AVS_VOLTAGE_RW; // setting to the voltage read as the default for the first read.
 
-        cli_avs_interface->Device->avs_bus_num = avs_bus;
         cli_avs_request.request.avs_params.rail_id = rail_sel;
         cli_avs_request.request.avs_params.cmd_type = cmd_type;
         cli_avs_request.in_use = true;
 
-        scp_avs_client_read_all(&cli_avs_interface->Header, &cli_avs_request.request.Header, AVSCLIRequestCompletion, NULL);
+        scp_avs_client_read_all(&cli_avs_interfaces[avs_bus]->Header,
+                                &cli_avs_request.request.Header,
+                                AVSCLIRequestCompletion,
+                                (void*)avs_bus);
     }
     else
     {
@@ -255,15 +255,17 @@ static FPFW_CLI_STATUS scp_avs_read_vct_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-void scp_avs_cli_initialize(pscp_avs_interface_t Interface)
+void scp_avs_cli_initialize(pscp_avs_interface_t avs_array[])
 {
     FpFwCliRegisterTable(scp_avs_cli_list, FPFW_ARRAY_SIZE(scp_avs_cli_list));
 
-    cli_avs_interface = Interface;
+    // TODO: After implementing code for Die1 (AVS_BUS4) then modify to < AVS_BUS_MAX
+    // https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/1874964
 
-    // This needs to be done for all AVS, so 4 interfaces.
-    //  Perhaps pass pointers for the interface for each AVS bus. Can be a single config struct.
-    DfwkClientInterfaceOpen(&Interface->Header); // goes into the AVS init. do this for all AVS so 4 interfaces
+    for (uint8_t i = 0; i < AVS_BUS4; i++)
+    {
+        cli_avs_interfaces[i] = avs_array[i];
+    }
 
     //
     // Only need to initialize the async request once here.

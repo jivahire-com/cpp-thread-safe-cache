@@ -50,6 +50,7 @@ FPFW_INIT_COMPONENT(avs0_int, FPFW_INIT_DEPENDENCIES("avs0"))
     fpfw_init_component_id_t avs_id = "avs0";
 
     scp_avs_interface_initialize(fpfw_init_get_handle(avs_id), &avs_interface);
+    DfwkClientInterfaceOpen(&avs_interface.Header);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_interface};
 }
@@ -81,6 +82,7 @@ FPFW_INIT_COMPONENT(avs1_int, FPFW_INIT_DEPENDENCIES("avs1"))
     fpfw_init_component_id_t avs_id = "avs1";
 
     scp_avs_interface_initialize(fpfw_init_get_handle(avs_id), &avs_interface);
+    DfwkClientInterfaceOpen(&avs_interface.Header);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_interface};
 }
@@ -112,6 +114,7 @@ FPFW_INIT_COMPONENT(avs2_int, FPFW_INIT_DEPENDENCIES("avs2"))
     fpfw_init_component_id_t avs_id = "avs2";
 
     scp_avs_interface_initialize(fpfw_init_get_handle(avs_id), &avs_interface);
+    DfwkClientInterfaceOpen(&avs_interface.Header);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_interface};
 }
@@ -143,6 +146,7 @@ FPFW_INIT_COMPONENT(avs3_int, FPFW_INIT_DEPENDENCIES("avs3"))
     fpfw_init_component_id_t avs_id = "avs3";
 
     scp_avs_interface_initialize(fpfw_init_get_handle(avs_id), &avs_interface);
+    DfwkClientInterfaceOpen(&avs_interface.Header);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_interface};
 }

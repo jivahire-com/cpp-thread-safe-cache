@@ -11,10 +11,8 @@
 #include <CMockaWrapper.h>
 
 extern "C" {
-#include "debug.h" // for UNUSED
 
 #include <DfwkDriver.h>
-#include <DfwkThreadXHost.h>
 #include <fpfw_init.h>
 #include <scp_avs_driver.h>
 
@@ -37,23 +35,39 @@ void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
     return mock_type(void*);
 }
 
-void __wrap_scp_avs_cli_initialize(PDFWK_INTERFACE_HEADER Interface)
+void __wrap_scp_avs_cli_initialize(pscp_avs_interface_t interface_array[])
 {
-    check_expected_ptr(Interface);
+    check_expected_ptr(interface_array);
 }
 
 //
 // Tests
 //
-TEST_FUNCTION(test_avs0_scp_cli, nullptr, nullptr)
+TEST_FUNCTION(test_avs_scp_cli, nullptr, nullptr)
 {
     // Set up expectations
-    scp_avs_interface_t* avs0_test_host = {};
+    scp_avs_interface_t* avs_test_array[4] = {0};
+    scp_avs_interface_t avs0_test_host = {};
+    scp_avs_interface_t avs1_test_host = {};
+    scp_avs_interface_t avs2_test_host = {};
+    scp_avs_interface_t avs3_test_host = {};
 
-    // Set up expectations
     will_return(__wrap_fpfw_init_get_handle, &avs0_test_host);
+    will_return(__wrap_fpfw_init_get_handle, &avs1_test_host);
+    will_return(__wrap_fpfw_init_get_handle, &avs2_test_host);
+    will_return(__wrap_fpfw_init_get_handle, &avs3_test_host);
+
+    avs_test_array[0] = &avs0_test_host;
+    avs_test_array[1] = &avs1_test_host;
+    avs_test_array[2] = &avs2_test_host;
+    avs_test_array[3] = &avs3_test_host;
+
     expect_any(__wrap_fpfw_init_get_handle, id);
-    expect_any(__wrap_scp_avs_cli_initialize, Interface);
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    expect_any(__wrap_fpfw_init_get_handle, id);
+
+    expect_memory(__wrap_scp_avs_cli_initialize, interface_array, avs_test_array, sizeof(avs_test_array));
 
     // Call API under test
     _fpfw_component_avs_cli.init_fn();

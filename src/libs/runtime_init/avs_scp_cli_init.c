@@ -21,11 +21,15 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(avs_cli, FPFW_INIT_DEPENDENCIES("cli", "avs0_int"))
+FPFW_INIT_COMPONENT(avs_cli, FPFW_INIT_DEPENDENCIES("cli", "avs0_int", "avs1_int", "avs2_int", "avs3_int"))
 {
-    scp_avs_interface_t* avs0_int = (scp_avs_interface_t*)fpfw_init_get_handle("avs0_int");
+    scp_avs_interface_t* cli_array[MAX_AVS_INST] = {0};
 
-    // eventually do this for all AVS
-    scp_avs_cli_initialize(avs0_int);
+    cli_array[AVS_BUS0] = (scp_avs_interface_t*)fpfw_init_get_handle("avs0_int");
+    cli_array[AVS_BUS1] = (scp_avs_interface_t*)fpfw_init_get_handle("avs1_int");
+    cli_array[AVS_BUS2] = (scp_avs_interface_t*)fpfw_init_get_handle("avs2_int");
+    cli_array[AVS_BUS3] = (scp_avs_interface_t*)fpfw_init_get_handle("avs3_int");
+
+    scp_avs_cli_initialize(cli_array);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

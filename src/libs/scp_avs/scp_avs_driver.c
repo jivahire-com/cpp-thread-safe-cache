@@ -90,10 +90,6 @@ void scp_avs_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
     case AVS_REQUEST_READ_DATA:
         scp_avs_cmd_num = 1;
         device->outstanding_request = avs_request;
-        printf("\n AVS_REQUEST_READ_DATA, avs_bus = %x, rail = %x, cmd = %x\n",
-               device->avs_bus_num,
-               avs_request->avs_params.rail_id,
-               avs_request->avs_params.cmd_type);
         avs_buffer[0].command_control = AVS_CMD_READ;
 
         status = avs_send_cmd_frame(device->avs_bus_num, scp_avs_cmd_num, avs_buffer);
@@ -102,11 +98,6 @@ void scp_avs_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
     case AVS_REQUEST_WRITE_DATA:
         scp_avs_cmd_num = 0;
         device->outstanding_request = avs_request;
-        printf("\n AVS_REQUEST_WRITE_DATA, avs_bus = %x, rail = %x, cmd = %x, data = %u\n",
-               device->avs_bus_num,
-               avs_request->avs_params.rail_id,
-               avs_request->avs_params.cmd_type,
-               (int)avs_request->avs_params.data.avs_data);
         avs_buffer[scp_avs_cmd_num].command_control = AVS_CMD_WRITE_COMMIT;
         avs_buffer[scp_avs_cmd_num].command_data = avs_request->avs_params.data.avs_data;
 
@@ -124,9 +115,6 @@ void scp_avs_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
     case AVS_REQUEST_READ_ALL_VCT:
         scp_avs_cmd_num = 0;
         device->outstanding_request = avs_request;
-        printf("\n AVS_REQUEST_READ_ALL_VCT, avs_bus = %x, rail = %x\n",
-               device->avs_bus_num,
-               avs_request->avs_params.rail_id);
         avs_buffer[scp_avs_cmd_num].command_type = avs_request->avs_params.rail_id;
         avs_buffer[scp_avs_cmd_num].command_data_type = AVS_VOLTAGE_RW;
         avs_buffer[scp_avs_cmd_num].command_group = AVS_CGROUP;

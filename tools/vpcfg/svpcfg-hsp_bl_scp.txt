@@ -1,6 +1,6 @@
 KingsgateSVP.DIE_1.#EXTRA_PROPERTIES#runtime_disabled=true
-KingsgateSVP.Platform_Flash.PlatformFlash.#EXTRA_PROPERTIES#/ImageInfo/EEPROM_Image=../../../../../kingsgate_ifwi_scp.flash
-KingsgateSVP.Platform_Flash.PlatformFlash.#SCML_PROPERTIES#EEPROM_Image=../../../../../kingsgate_ifwi_scp.flash
+KingsgateSVP.Platform_Flash.PlatformFlash.#EXTRA_PROPERTIES#/ImageInfo/EEPROM_Image=../../../../../.build/Debug/arm-eabi-aarch/bin/flash/kingsgate_ifwi_scp.flash
+KingsgateSVP.Platform_Flash.PlatformFlash.#SCML_PROPERTIES#EEPROM_Image=../../../../../.build/Debug/arm-eabi-aarch/bin/flash/kingsgate_ifwi_scp.flash
 KingsgateSVP.DIE_0.HSSS.HSP.HSP_E21_LT_PSP.#EXTRA_PROPERTIES#/ImageInfo/core0/cpu0/initial_image=../../../../../.externs/nuget/kingsgate.firmware.a0rom.0.9.0.5/release/bin/sim/rom-sim.elf
 KingsgateSVP.DIE_0.HSSS.HSP.Periphs.HSP_GFC.#SCML_PROPERTIES#FuseVhxFile=../../../../../.externs/nuget/kingsgate.firmware.a0rom.0.9.0.5/release/test/fuses/kng_fuses_test.vhx
 KingsgateSVP.DIE_0.HSSS.HSP.Periphs.HSP_UART_PHY.#SCML_PROPERTIES#ENABLE_TCP_ON_PORT=0

@@ -522,6 +522,7 @@ Set-Cmake -Toolchain win -Configuration debug
 Function Set-Cmake($Toolchain = $env:REPO_APP_TOOLCHAIN, $Configuration = $env:REPO_APP_BUILD_CONFIG)
 {
     $env:REPO_APP_TARGET_BUILD_DIR = "$env:REPO_APP_BUILD_DIR\$Configuration\$Toolchain"
+    $env:REPO_APP_TARGET_FLASH_DIR = Join-Path $env:REPO_APP_TARGET_BUILD_DIR/bin "flash"
     & ${env:REPO_APP_PATH_cmake.win64}/bin/cmake.exe --no-warn-unused-cli -G Ninja -B $env:REPO_APP_TARGET_BUILD_DIR -DCMAKE_TOOLCHAIN_FILE="$env:REPO_APP_CMAKE_TOOLCHAIN_DIR\toolchain.cmake" -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_BUILD_TYPE="$Configuration" -Wno-dev
 }
 
@@ -543,6 +544,7 @@ Function Invoke-Build()
     if (Test-Path -Path $build_status){
         Remove-Item -Path $build_status -Force
         Invoke-Buildsize
+        Invoke-CreateIfwi
     }
 }
 
@@ -584,6 +586,34 @@ Function Invoke-Buildsize()
         # Process each .elf file for sizes
         & "$env:REPO_APP_TOOLS_DIR\pwsh\binsize\binsizes.ps1" -FileName $file
     }
+}
+
+<#
+.SYNOPSIS
+Creates the kingsgate hsp and scp ifwi file to run on SVP
+
+.EXAMPLE
+Invoke-CreateIfwi
+#>
+Function Invoke-CreateIfwi()
+{
+    if ($env:REPO_APP_TOOLCHAIN -ne "arm-eabi-aarch")
+    {
+        Write-Host "`nSkipping ifwi creation`n"
+        return
+    }
+
+    # check if flash folder is already present if not create it
+    if (-not (Test-Path -Path $env:REPO_APP_TARGET_FLASH_DIR -PathType Container)) {
+        New-Item -Path $env:REPO_APP_TARGET_FLASH_DIR -ItemType Directory | Out-Null
+        Write-Host "Created $env:REPO_APP_TARGET_FLASH_DIR"
+    } else {
+        Write-Host "$env:REPO_APP_TARGET_FLASH_DIR already exists"
+    }
+
+   
+    # invoke the script to create the ifwi file
+    & "$env:REPO_APP_TOOLS_DIR\pwsh\Create-ScpIfwi.ps1"
 }
 
 <#

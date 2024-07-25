@@ -16,6 +16,7 @@ set(LIBS
         ms::driver::textio::pl011
         fwlib.lib.init
         fwlib.lib.utils
+        fwlib.lib.spinlock
         ras_arm
 )
 

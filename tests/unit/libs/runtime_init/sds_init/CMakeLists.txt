@@ -7,6 +7,7 @@ set(SOURCES
 
 # Compile test
 add_executable(${TARGET} ${SOURCES})
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
 target_link_libraries(${TARGET}
     PRIVATE
@@ -15,6 +16,8 @@ target_link_libraries(${TARGET}
         fwlib.platform.dfwkhost.threadx
         fwlib.lib.linkedlist
         fwlib.lib.utils
+        fwlib.lib.status
+        fwlib.lib.spinlock
         ms::cmocka::testrunner
         ms::lib::threadx
         ms::service::sds_service

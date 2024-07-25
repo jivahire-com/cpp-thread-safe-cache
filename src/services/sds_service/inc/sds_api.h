@@ -18,12 +18,6 @@
 #include <stdio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define MODULE_NAME "[SDS_SVC] "
-#define NEWLINE     "\n"
-
-#define SDS_LOG_INFO(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
-#define SDS_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
-#define SDS_LOG_CRIT(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 
 /*-------------- Typedefs ----------------*/
 /**
@@ -32,8 +26,19 @@
  *    SDS module will provide a read/write type through the interface to the clients.
  *
  */
+typedef struct {
+    void* base;
+    uint32_t size;
+} sds_region_desc_t;
+
+typedef struct {
+    const sds_region_desc_t *regions;
+    uint32_t region_count;
+} sds_config_t;
+
 typedef enum _sds_api_type
 {
+    SDS_IO_REQUEST_CREATION_SYNC,
     SDS_IO_REQUEST_READ_SYNC,
     SDS_IO_REQUEST_WRITE_SYNC,
 } sds_api_type_t;
@@ -48,6 +53,9 @@ typedef struct {
 typedef struct  {
     DFWK_INTERFACE_HEADER header;
     psds_service_t p_device;
+    const char* module_name;
+    uint32_t request_size;
+    uint32_t region_id;
 } sds_service_interface_t, *psds_service_interface_t;
 
 // struct for an request to the sds service
@@ -56,37 +64,53 @@ typedef struct {
     struct 
     {
         void* buffer;
-        size_t byte_count;
+        uint32_t byte_count;
     } input;
-    struct
-    {
-        size_t processed_bytes;
-    } output;
 } sds_service_request_t, *psds_service_request_t;
 
 /*--------- Function Prototypes ----------*/
 /**
- * Read data from within a Shared Data Structure, asynchronously. 
- *
- *  @param pInterface An interface to a driver that implements the SDS interface.
- *
- *  @param buffer A buffer to read data into.
+ *  query the SDS configuration information
  * 
- *  @param buffer_size The size of the buffer.
- * 
- *  @param processed_bytes The number of bytes read.
+ *  @return sds_config_t sds configuration data.
  */
-int32_t sds_read(PDFWK_INTERFACE_HEADER pInterface, void *buffer, size_t buffer_size, size_t *processed_bytes);
+sds_config_t* retrieve_sds_config_info();
 
 /**
- *  Write data within a Shared Data Structure, asynchronously.
+ *  Initialize the SDS block if doesn't exist. if exists, return success.
  *
- *  @param pInterface An interface to a driver that implements the SDS interface.
+ *  @param p_interface An interface handle that implements the SDS interface.
+ * 
+ *  @param module_name The name of the module to create the block for
+ * 
+ *  @param request_size The size of memory that module is requesting
+ * 
+ *  @return int32_t The status of the operation.
+ */
+int32_t sds_block_creation(PDFWK_INTERFACE_HEADER p_interface, const char* module_name, uint32_t request_size, uint32_t region_id);
+
+/**
+ * Read data from within a Shared Data Structure. 
+ *
+ *  @param p_interface An interface handle that implements the SDS interface.
  *
  *  @param buffer A buffer to read data into.
  * 
  *  @param buffer_size The size of the buffer.
  * 
- *  @param processed_bytes The number of bytes written.
+ *  @return The status of the operation.
  */
-int32_t sds_write(PDFWK_INTERFACE_HEADER pInterface, void *buffer, size_t buffer_size, size_t *processed_bytes);
+int32_t sds_block_read(PDFWK_INTERFACE_HEADER p_interface, void* buffer, size_t buffer_size);
+
+/**
+ *  Write data within a Shared Data Structure.
+ *
+ *  @param p_interface An interface handle that implements the SDS interface.
+ *
+ *  @param buffer A buffer to read data into.
+ *
+ *  @param buffer_size The size of the buffer.
+ *
+ *  @return The status of the operation.
+ */
+int32_t sds_block_write(PDFWK_INTERFACE_HEADER p_interface, void *buffer, size_t buffer_size);

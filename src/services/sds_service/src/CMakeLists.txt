@@ -19,6 +19,10 @@ target_link_libraries(${TARGET}
         fwlib.dfwk
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.interface.platform.threadx
+        fwlib.lib.status
+        fwlib.lib.spinlock
+        ms::lib::error_codes
+        ms::lib::crash_dump::scp
 )
 
 lint_target(${TARGET})

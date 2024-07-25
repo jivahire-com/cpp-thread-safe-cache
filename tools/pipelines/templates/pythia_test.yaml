@@ -8,10 +8,13 @@ parameters:
 - name: Test_Suite_Path
   type: string
   default: 'tests\functional\pythia\test_suites'
+- name: Platform
+  type: string
+  default: 'svp'  
 
 jobs:
 - job: 'Pythia_Tests'
-  displayName: Pythia Tests
+  displayName: ${{ parameters.Platform }} Pythia Tests
   steps: 
 
     # Set up permissions for other repos
@@ -29,7 +32,7 @@ jobs:
         artifactName: bins.arm-eabi-aarch.Debug
         downloadPath: '$(System.ArtifactsDirectory)'
 
-    # 1. Setup the environment for the toolchain \ configuration
+    # 1. Setup the environment
     # 2. Build the FW
     # 3. Invoke Pythia
     # Logs will be under $(Build.SourcesDirectory)\.testlogs\pythia

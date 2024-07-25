@@ -1,3 +1,8 @@
+parameters:
+- name: ArtifactName
+  type: string
+  default: 'kingsgate_mscp'
+
 jobs:
 - job: 'Tag'
   displayName: Tag
@@ -15,6 +20,6 @@ jobs:
         workingDirectory: '$(Build.SourcesDirectory)'
         targetType: 'inline'
         script: |
-          git tag 'kingsgate_mscp_v$(Build.BuildNumber)'
-          git push origin 'kingsgate_mscp_v$(Build.BuildNumber)'
+          git tag '$(Build.ArtifactName)_v$(Build.BuildNumber)'
+          git push origin '$(Build.ArtifactName)_v$(Build.BuildNumber)'
 

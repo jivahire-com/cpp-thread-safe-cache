@@ -1,0 +1,65 @@
+
+name: 0.1.0.$(rev:r)
+
+trigger: 
+  branches:
+    include:
+    - main    # Auto trigger pipeline every time there is a PR completion to main, enables promoting (tagging) for official builds
+
+variables:
+- group: ef-pipeline-config
+- name: OfficialBuild
+  value : $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+
+# Build stage
+stages:
+
+- stage: Build_Arm_EABI_AARCH_Debug
+  dependsOn: []
+  pool: 
+    name: 1pfw-kingsgate-windows
+  jobs:
+  - template: templates/build.yaml
+    parameters:
+      Toolchain: arm-eabi-aarch
+      Configuration: Debug
+      ArtifactName: bins
+
+- stage: Build_Arm_EABI_AARCH_Release
+  dependsOn: []
+  pool: 
+    name: 1pfw-kingsgate-windows
+  jobs:
+  - template: templates/build.yaml
+    parameters:
+      Toolchain: arm-eabi-aarch
+      Configuration: Release
+      ArtifactName: bins
+
+- stage: SVP_Pythia_Tests
+  dependsOn: [Build_Arm_EABI_AARCH_Debug]
+  pool: 
+    name: 1pfw-kingsgate-windows
+  jobs:
+  - template: templates/pythia_test.yaml
+
+- stage: FPGA_Pythia_Tests
+  dependsOn: [Build_Arm_EABI_AARCH_Debug]
+  pool: 
+    name: 1pfw-kingsgate-big-fpga
+  jobs:
+  - template: templates/pythia_test.yaml
+    parameters:
+      Platform: fpga
+
+# This is to tag the commits that pass nightly tests.
+- stage: Promote
+  dependsOn: [ Build_Arm_EABI_AARCH_Release, Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests, FPGA_Pythia_Tests ]
+  # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
+  condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
+  pool: 
+    name: 1pfw-kingsgate-windows
+  jobs:
+  - template: templates/promote.yaml
+    parameters:
+      ArtifactName: kingsgate_mscp_nightly

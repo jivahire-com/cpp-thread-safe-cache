@@ -20,6 +20,5 @@ jobs:
         workingDirectory: '$(Build.SourcesDirectory)'
         targetType: 'inline'
         script: |
-          git tag '$(Build.ArtifactName)_v$(Build.BuildNumber)'
-          git push origin '$(Build.ArtifactName)_v$(Build.BuildNumber)'
-
+          git tag '${{ parameters.ArtifactName }}_v$(Build.BuildNumber)'
+          git push origin '${{ parameters.ArtifactName }}_v$(Build.BuildNumber)'

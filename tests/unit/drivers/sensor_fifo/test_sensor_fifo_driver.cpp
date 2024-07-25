@@ -168,11 +168,17 @@ TEST_FUNCTION(test_request_dispatch_write_reg, nullptr, nullptr)
 
 TEST_FUNCTION(test_request_dispatch_global_hw_enable, fw_fifo_setup, fw_fifo_teardown)
 {
+    snsr_fifo_mock_check_mmio_inputs = false;
+    snsr_fifo_mock_use_real_mmio = false;
+
     sensor_fifo_drv_inf_global_enable global_enable_req;
 
     global_enable_req.header.RequestType = SENSOR_FIFO_SYNC_SET_GLOBAL_HW_ENABLE;
     global_enable_req.input.enable = true;
 
+    will_return_count(__wrap_mmio_read32, 0x0, -1); // value and number is not pertinent for this
+    expect_value(__wrap_scf_trigger_stop, scp_exp_csr_base_address, csr_placeholder);
+    expect_function_call(__wrap_init_scf_mhu);
     expect_value(__wrap_scf_trigger_start, scp_exp_csr_base_address, csr_placeholder);
     fpfw_status_t status = scf_mhu_request_dispatch_sync((PDFWK_SYNC_REQUEST_HEADER)&global_enable_req);
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
@@ -361,6 +367,22 @@ TEST_FUNCTION(test_request_dispatch_query_empty, fw_fifo_setup, fw_fifo_teardown
     {
         assert_false(is_empty[id]);
     }
+}
+
+TEST_FUNCTION(test_request_dispatch_reset, fw_fifo_setup, fw_fifo_teardown)
+{
+    snsr_fifo_mock_check_mmio_inputs = false;
+    snsr_fifo_mock_use_real_mmio = false;
+
+    DFWK_SYNC_REQUEST_HEADER reset_req;
+    reset_req.RequestType = SENSOR_FIFO_SYNC_RESET;
+
+    will_return_count(__wrap_mmio_read32, 0x0, -1); // value and number is not pertinent for this
+    expect_value(__wrap_scf_trigger_stop, scp_exp_csr_base_address, csr_placeholder);
+    expect_function_call(__wrap_init_scf_mhu);
+
+    fpfw_status_t status = scf_mhu_request_dispatch_sync((PDFWK_SYNC_REQUEST_HEADER)&reset_req);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
 }
 
 TEST_FUNCTION(test_request_dispatch_sync_bad, nullptr, nullptr)
@@ -682,4 +704,17 @@ TEST_FUNCTION(test_driver_inf_read_entries_fail, nullptr, nullptr)
     status =
         sensor_fifo_driver_read_entry(NULL, DEVICE_FIFO_TILE_VOLT_TLM_HW_PROD, 10, dest_data, &num_entries_read, &num_entries_remaining, &stride_index);
     assert_int_equal(status, FPFW_STATUS_INVALID_ARGS);
+}
+
+TEST_FUNCTION(test_driver_inf_reset, nullptr, nullptr)
+{
+    sensor_fifo_driver_interface_t driver_inf;
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Interface, &driver_inf);
+    expect_any(__wrap_DfwkInterfaceSendSync, Request);
+    will_return(__wrap_DfwkInterfaceSendSync, FPFW_STATUS_SUCCESS);
+
+    fpfw_status_t status = sensor_fifo_driver_reset(&driver_inf);
+
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
 }

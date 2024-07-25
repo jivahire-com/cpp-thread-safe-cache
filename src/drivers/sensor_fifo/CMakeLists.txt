@@ -60,6 +60,7 @@ target_link_libraries(${TARGET_DEVICE}
     ms::lib::threadx
     silibs_platform
     silibs::sensor_ram_bridge
+    utils
 )
 
 target_include_directories(${TARGET_DEVICE}

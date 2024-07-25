@@ -542,7 +542,7 @@ TEST_FUNCTION(test_hw_fifo_write_fail_cases, fw_fifo_setup, fw_fifo_teardown)
     memset(tile_temp_fifo, 0x00, sizeof(tile_temp_fifo));
 
     assert_true(hw_fifo_is_empty(DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD));
-    // will return fail status
+    // will return FPFW_STATUS_DISABLED
     hw_fifo_disable(DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD);
 
     expect_value_count(__wrap_FpFwAssert, expression, true, 4);
@@ -552,7 +552,7 @@ TEST_FUNCTION(test_hw_fifo_write_fail_cases, fw_fifo_setup, fw_fifo_teardown)
                                                TILE_TEMP_FIFO_ENTRY_SIZE_BYTES,
                                                NUM_STRIDE_ENTRIES,
                                                ENTRY_INDEX_IN_STRIDE);
-    assert_int_equal(status, FPFW_STATUS_FAIL);
+    assert_int_equal(status, FPFW_STATUS_DISABLED);
 
     hw_fifo_enable(DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD);
 

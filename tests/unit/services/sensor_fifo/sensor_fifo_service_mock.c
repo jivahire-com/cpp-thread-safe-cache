@@ -16,7 +16,6 @@
 #include <sensor_fifo_driver_interface.h>
 #include <stddef.h> // for size_t
 #include <stdint.h> // for int32_t
-#include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -62,7 +61,26 @@ int32_t __wrap_DfwkInterfaceSendSync(PDFWK_INTERFACE_HEADER Interface, PDFWK_SYN
 {
     assert_non_null(Interface);
     assert_non_null(Request);
+    check_expected(Request->RequestType);
     return mock_type(int32_t);
+}
+
+fpfw_status_t __wrap_sensor_fifo_driver_write_entries(sensor_fifo_driver_interface_t* driver_interface,
+                                                      DEVICE_FIFO_ID fifo_id,
+                                                      uint8_t* src_data,
+                                                      size_t entry_size,
+                                                      uint16_t num_entries,
+                                                      uint16_t stride_index)
+{
+    assert_non_null(driver_interface);
+    assert_non_null(src_data);
+
+    check_expected(fifo_id);
+    check_expected(entry_size);
+    check_expected(num_entries);
+    check_expected(stride_index);
+
+    return mock_type(fpfw_status_t);
 }
 
 fpfw_status_t __wrap_sensor_fifo_driver_read_entry(sensor_fifo_driver_interface_t* driver_interface,
@@ -78,14 +96,12 @@ fpfw_status_t __wrap_sensor_fifo_driver_read_entry(sensor_fifo_driver_interface_
     assert_non_null(num_entries_read);
     assert_non_null(num_entries_remaining);
     assert_non_null(stride_index);
-    FPFW_UNUSED(fifo_id);
 
-    uint8_t* mocked_src = mock_type(uint8_t*);
+    check_expected(fifo_id);
+    check_expected(entry_size);
+    FPFW_UNUSED(dest_data);
+
     *num_entries_read = mock_type(uint16_t);
-    if (*num_entries_read > 0)
-    {
-        memcpy_s(dest_data, entry_size, mocked_src, entry_size);
-    }
     *num_entries_remaining = mock_type(uint16_t);
     *stride_index = mock_type(uint16_t);
 

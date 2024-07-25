@@ -88,7 +88,7 @@ typedef struct
 typedef struct
 {
     uint64_t timestamp;
- current_data_t data;
+    current_data_t data;
 } core_current_t;
 
 
@@ -201,7 +201,7 @@ void sensor_fifo_svc_enable_fifo(SENSOR_FIFO_ID fifo);
  *
  * @param[in] fifo - Select the specific fifo
  */
-void sensor_fifo_svc_hw_fifo_disable(SENSOR_FIFO_ID fifo);
+void sensor_fifo_svc_disable_fifo(SENSOR_FIFO_ID fifo);
 
 /**
  * @brief Retrieve fifo properties
@@ -325,10 +325,10 @@ sensor_ram_poll_status_t sensor_fifo_svc_poll_tile_voltage(tile_voltage_t* volta
  * @note Additional stack requirements - No
  *
  * @param[out] current_data - destination pointer for entry read from fifo
- * @param[out] tile_index - destination pointer for entry's tile index. 0 indexed
+ * @param[out] core_index - destination pointer for entry's core index. 0 indexed
  * @retval sensor_ram_poll_status_t - See documentation for return values
  */
-sensor_ram_poll_status_t sensor_fifo_svc_poll_tile_current(core_current_t* current_data, uint16_t* tile_index);
+sensor_ram_poll_status_t sensor_fifo_svc_poll_core_current(core_current_t* current_data, uint16_t* core_index);
 
 /**
  * @brief Poll SENSOR_FIFO_PSTATE_TELEMETRY_HW and read out an entry if available

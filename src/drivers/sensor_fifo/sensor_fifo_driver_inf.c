@@ -213,3 +213,13 @@ fpfw_status_t sensor_fifo_driver_read_entry(sensor_fifo_driver_interface_t* driv
 
     return status;
 }
+
+fpfw_status_t sensor_fifo_driver_reset(sensor_fifo_driver_interface_t* driver_interface)
+{
+    DFWK_SYNC_REQUEST_HEADER reset_req;
+    reset_req.RequestType = SENSOR_FIFO_SYNC_RESET;
+
+    fpfw_status_t status = DfwkInterfaceSendSync(&driver_interface->base_interface, &reset_req);
+
+    return status;
+}

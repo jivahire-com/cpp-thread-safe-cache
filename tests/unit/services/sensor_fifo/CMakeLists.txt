@@ -25,6 +25,7 @@ target_link_libraries(${TARGET}
 
 # Get private includes for module under test
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.service.sensor_fifo,INCLUDE_DIRECTORIES>)
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.driver.sensor_fifo,INCLUDE_DIRECTORIES>)
 
 lint_target(${TARGET})
 format_target(${TARGET})
@@ -37,4 +38,5 @@ mock_target(${TARGET}
     DfwkInterfaceInitialize
     DfwkInterfaceSendSync
     sensor_fifo_driver_read_entry
+    sensor_fifo_driver_write_entries
 )

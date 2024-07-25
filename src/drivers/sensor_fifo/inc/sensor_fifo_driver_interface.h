@@ -162,3 +162,11 @@ fpfw_status_t sensor_fifo_driver_read_entry(sensor_fifo_driver_interface_t* driv
                                             uint16_t* num_entries_read,
                                             uint16_t* num_entries_remaining,
                                             uint16_t* stride_index);
+
+/**
+ * @brief Disable and clear all Fifos
+ *
+ * @param[in] driver_interface - driver instance
+ * @retval fpfw_status_t
+ */
+fpfw_status_t sensor_fifo_driver_reset(sensor_fifo_driver_interface_t* driver_interface);

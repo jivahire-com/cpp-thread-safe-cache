@@ -27,6 +27,7 @@
 #include <stdbool.h>         // for false, true
 #include <stddef.h>          // for size_t
 #include <stdint.h>          // for UINT32_MAX, uintptr_t
+#include <utils.h>           // for sleep_ms
 
 /*-- Symbolic Constant Macros (defines) --*/
 // clang-format off
@@ -74,6 +75,7 @@
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
+static void reset_fifos(void);
 
 /*-- Declarations (Statics and globals) --*/
 pscf_mhu_device_config_t sp_scf_mhu_device_cfg;
@@ -214,10 +216,17 @@ void scf_mhu_device_initialize(pscf_mhu_device_t scf_mhu_device,
     scf_config.scf_ram_buffer_size = sp_scf_mhu_device_cfg->scf_ram_buffer_size;
     scf_set_working_config((uintptr_t)&scf_config);
 
+    reset_fifos();
+}
+
+static void reset_fifos(void)
+{
     if (sp_scf_mhu_device_cfg->is_scp)
     {
         // turn off global enable
         scf_trigger_stop(sp_scf_mhu_device_cfg->scf_exp_csr_base_address);
+
+        sleep_ms(1); // wait for telemetry to flush, 1ms per RMSS HAS
 
         clear_scf_ram();
 
@@ -233,6 +242,11 @@ void scf_mhu_device_initialize(pscf_mhu_device_t scf_mhu_device,
         for (DEVICE_FIFO_ID id = DEVICE_FIFO_PSTATE_TLM_HW_PROD; id <= LAST_HW_PROD_FIFO_ID; id++)
         {
             hw_fifo_disable(id);
+
+            // hw leaves write pointer at zero until the first hw producer actually adds data and then updates the write pointer
+            // this handles the case when the test mode is entered without enabling the hw producers
+            uint32_t read_ptr = MMIO_READ32(hw_fifo_control[id].read_pointer_reg_address);
+            MMIO_WRITE32(hw_fifo_control[id].write_pointer_reg_address, read_ptr);
         }
     }
     else // MCP
@@ -260,6 +274,7 @@ fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
         psensor_fifo_drv_inf_global_enable global_en_req = (psensor_fifo_drv_inf_global_enable)request;
         if (global_en_req->input.enable)
         {
+            reset_fifos(); // if re-enabling from test mode, need to reconfig hw
             scf_trigger_start(sp_scf_mhu_device_cfg->scf_exp_csr_base_address);
         }
         else
@@ -327,6 +342,10 @@ fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
         {
             (*is_empty_req->output.is_empty)[fifo_id] = hw_fifo_is_empty(fifo_id);
         }
+    }
+    break;
+    case SENSOR_FIFO_SYNC_RESET: {
+        reset_fifos();
     }
     break;
 

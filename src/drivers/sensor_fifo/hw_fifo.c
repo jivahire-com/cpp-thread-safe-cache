@@ -52,7 +52,13 @@ void hw_fifo_enable(DEVICE_FIFO_ID fifo_id)
     {
         // clear fifo on disabled-to-enabled transition
         uint32_t write_ptr = MMIO_READ32(s_hw_fifo_control[fifo_id].write_pointer_reg_address);
-        MMIO_WRITE32(s_hw_fifo_control[fifo_id].read_pointer_reg_address, write_ptr);
+        uint32_t read_ptr = MMIO_READ32(s_hw_fifo_control[fifo_id].read_pointer_reg_address);
+
+        if (read_ptr != write_ptr)
+        {
+            MMIO_WRITE32(s_hw_fifo_control[fifo_id].read_pointer_reg_address, write_ptr);
+        }
+
         s_hw_fifo_control[fifo_id].latched_write_address = UINT32_MAX;
 
         if (fifo_id <= LAST_HW_PROD_FIFO_ID)
@@ -61,8 +67,8 @@ void hw_fifo_enable(DEVICE_FIFO_ID fifo_id)
                           s_hw_fifo_control[fifo_id].enable_mask,
                           s_hw_fifo_control[fifo_id].enable_mask);
         }
-        s_hw_fifo_control[fifo_id].enabled = true;
     }
+    s_hw_fifo_control[fifo_id].enabled = true;
 }
 
 bool hw_fifo_is_enabled(DEVICE_FIFO_ID fifo_id)
@@ -96,9 +102,9 @@ fpfw_status_t hw_fifo_write_entry(DEVICE_FIFO_ID fifo_id, uint8_t* src_data, siz
     FPFW_RUNTIME_ASSERT(entry_size == s_hw_fifo_prop_table[fifo_id].entry_size_bytes);
     FPFW_RUNTIME_ASSERT(num_entries > 0);
 
-    if (s_hw_fifo_control[fifo_id].enabled == 0)
+    if (hw_fifo_is_enabled(fifo_id) == false)
     {
-        return FPFW_STATUS_FAIL;
+        return FPFW_STATUS_DISABLED;
     }
 
     fpfw_status_t status = FPFW_STATUS_SUCCESS;
@@ -225,7 +231,7 @@ fpfw_status_t hw_fifo_read_entry(DEVICE_FIFO_ID fifo_id,
     uint32_t fifo_read_addr = 0;
     int silibs_status = 0;
 
-    if ((s_hw_fifo_control[fifo_id].enabled != 0) && (!hw_fifo_is_empty(fifo_id)))
+    if (hw_fifo_is_enabled(fifo_id) && (!hw_fifo_is_empty(fifo_id)))
     {
         if (s_hw_fifo_control[fifo_id].latched_write_address == UINT32_MAX)
         {

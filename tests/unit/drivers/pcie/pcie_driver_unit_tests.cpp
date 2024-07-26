@@ -260,7 +260,6 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_success, test_setup, test_teardo
 
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return(__wrap_pciess_rps_ready, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_post_rp_ready_init, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_clear_intus, SILIBS_SUCCESS);

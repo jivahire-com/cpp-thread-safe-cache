@@ -163,16 +163,8 @@ int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
     FPFW_RUNTIME_ASSERT(rpss != NULL);
 
-    /*
-     * CDM in reset never goes to 0x0 on SVP so skip it for now.
-     * SVP Bug 1841610
-     * https://azurecsi.visualstudio.com/1P-SoC-Modeling/_workitems/edit/1841610
-     */
-    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
-    {
-        sts = pciess_rps_ready(rpss);
-        FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
-    }
+    sts = pciess_rps_ready(rpss);
+    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
 
     sts = pciess_rps_post_rp_ready_init(rpss);
     FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);

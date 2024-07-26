@@ -36,25 +36,10 @@ mock_target(${TARGET}
     FpFwAssert
     debug_print
     critical_print
-    mmio_write8
-    mmio_write32
-    mmio_update32
     idsw_get_die_id
     idsw_get_platform_sdv
-    sdm_init_smmu_connection_seq
-    sdm_init_set_ecam_base
-    sdm_init_set_rciep_bdf
-    sdm_init_enable_ecam
-    sdm_init_set_emcpu_initvtor
-    sdm_init_enable_fence
-    sdm_init_deassert_nsysreset
-    sdm_init_trigger_memory_init_blocking
-    sdm_init_enable_itcm_ecc
-    sdm_init_enable_dtcm_ecc
-    sdm_init_disable_cpu_wait
-    sdm_init_set_rcec_bdf
-    sdm_init_write_pre_pcie_cfg
     pcr_rpss_configure_clock
     pcr_rpss_deassert_por_reset
     pcr_rpss_init_entity
+    accelip_ss_init
 )

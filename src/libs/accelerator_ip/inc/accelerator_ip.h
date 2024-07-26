@@ -10,14 +10,11 @@
 #pragma once
 
 /*----------------------------- Nested includes -----------------------------*/
-#include "_addressblock_0x100000_regs.h"  // for _addressblock_0x100000_bcfg...
-#include <accelerator_ip_pcie_params.h>   // for accelip_pcie_ctxt_t
 #include <atu_lib.h>                      // for atu_id_t, atu_map_entry_t
 #include <kng_soc_constants.h>            // for DIE_INSTANCE
-#include <sdm_init.h>                     // for sdm_mem_init_t
-#include <stdbool.h>                      // for bool
 #include <stdint.h>                       // for int32_t, uint64_t, uint8_t
-#include <sdm_init_knobs.h> // for sdm_pre_pcie_cfg_t
+
+#include <accelip_ss_init.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 
@@ -52,55 +49,14 @@ typedef enum {
 
 typedef struct {
     DIE_INSTANCE        die_instance;
-    eACCELERATOR_TYPE   accel_type;
+    ACCELIP_SS_INSTANCE   accel_type;
     uint8_t             accel_instance;
 } accelip_metadata_t;
 
 typedef struct {
-    atu_id_t        ss_atu_id;
-    atu_map_entry_t *p_atu_map_entry;
-} atu_mapping_ctxt_t;
-
-// Some more atttributes might get added in future
-typedef struct {
-    uint64_t tower_base_addr; // Absolute address for the given tower to be programmed
-} tower_attr_t;
-
-// Some more atttributes might get added in future
-typedef struct {
-    tower_attr_t    *p_tower_attr;
-} vab_ctxt_t;
-
-typedef struct {
-    sdm_mem_init_t                                      *p_mem_init;
-    uintptr_t                                           int_vtor;  // interrupt vector
-    bool                                                enable_fence;
-    bool                                                enable_itcm_ecc;
-    bool                                                enable_dtcm_ecc;
-    _addressblock_0x100000_bcfg_boot_cfg_ecc_dis       *p_cfg_ecc;
-} accelip_emcpu_ctxt_t;
-
-typedef struct {
-    accelip_pcie_ctxt_t *p_pcie_ctxt;
-    accelip_emcpu_ctxt_t *p_emcpu_ctxt;
-} accelip_ctxt_t;
-
-typedef struct {
     accelip_metadata_t   accelip_metadata;
-
-    // VAB
-    vab_ctxt_t          *p_vab_ctxt;
-    atu_mapping_ctxt_t  *p_vab_atu_mapping_ctxt;
-
-    // Accel Sybsystem
-    tower_attr_t        *p_accelss_tower_attr;
-    atu_mapping_ctxt_t  *p_accelss_atu_mapping_ctxt;
-
-    // Silibs Data-structure for Pre-PCIe Config
-    sdm_pre_pcie_cfg_t  *p_pre_pcie_cfg;
-
-    // AccelIP details
-    accelip_ctxt_t      *p_accelip_ctxt;
+    atu_map_entry_t     *p_accelip_atu_map;
+    accelip_ss_init_t   *p_init_params;
 } subsystem_ctxt_t;
 
 /*------------------- Declarations (Statics and globals) --------------------*/

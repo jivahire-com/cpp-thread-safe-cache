@@ -6,6 +6,10 @@ parameters:
 jobs:
 - job: 'Tag'
   displayName: Tag
+  pool: 
+    name: 1pfw-kingsgate-windows
+    isCustom: true
+    type: windows
   steps: 
     - checkout: self
       persistCredentials: true

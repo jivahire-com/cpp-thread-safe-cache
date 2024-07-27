@@ -13,44 +13,39 @@ variables:
 
 # Build stage
 stages:
+- stage: Build_x86_Debug
+  dependsOn: []
+  jobs:
+  - template: templates/build.yaml
+    parameters:
+      Toolchain: i386-pc-windows-msvc
+      Configuration: Debug
+      ArtifactName: Build_x86_Debug
 
 - stage: Build_Arm_EABI_AARCH_Debug
   dependsOn: []
-  pool: 
-    name: 1pfw-kingsgate-windows
   jobs:
   - template: templates/build.yaml
     parameters:
       Toolchain: arm-eabi-aarch
       Configuration: Debug
-      ArtifactName: bins
-
-- stage: Build_Arm_EABI_AARCH_Release
-  dependsOn: []
-  pool: 
-    name: 1pfw-kingsgate-windows
-  jobs:
-  - template: templates/build.yaml
-    parameters:
-      Toolchain: arm-eabi-aarch
-      Configuration: Release
-      ArtifactName: bins
+      ArtifactName: Build_Arm_EABI_AARCH_Debug
 
 - stage: SVP_Pythia_Tests
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
-  pool: 
-    name: 1pfw-kingsgate-windows
   jobs:
   - template: templates/pythia_test.yaml
+    parameters:
+      ArtifactName: Pythia_Tests
 
 - stage: FPGA_Pythia_Tests
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
-  pool: 
-    name: 1pfw-kingsgate-big-fpga
   jobs:
   - template: templates/pythia_test.yaml
     parameters:
       Platform: fpga
+      ArtifactName: Pythia_Tests
+      Pool: 1pfw-kingsgate-big-fpga
 
 # This is to tag the commits that pass nightly tests.
 - stage: Promote

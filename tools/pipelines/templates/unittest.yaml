@@ -11,31 +11,29 @@ parameters:
 - name: LineCoverage
   type: string
   default: '0.0'
+- name: ArtifactName
+  type: string
+  default: 'bins'
 
 jobs:
 - job: 'Unit_Tests'
   displayName: Unit Tests
+  pool: 
+    name: 1pfw-kingsgate-windows
+    isCustom: true
+    type: windows
   steps: 
 
     # Set up permissions for other repos
     - template: auth.yaml
 
     # Download input artifact
-    - task: DownloadBuildArtifacts@0
-      displayName: Download Packages Windows
+    - task: DownloadPipelineArtifact@2
       inputs:
-        buildType: 'current'
-        downloadType: 'single'
-        artifactName: 'bins.i386-pc-windows-msvc.Debug'
-        downloadPath: '$(System.ArtifactsDirectory)'
-
-    - task: DownloadBuildArtifacts@0
-      displayName: Download Packages ARM
-      inputs:
-        buildType: 'current'
-        downloadType: 'single'
-        artifactName: 'bins.arm-eabi-aarch.Debug'
-        downloadPath: '$(System.ArtifactsDirectory)'
+          buildType: 'current'
+          downloadType: 'single'
+          artifactName: 'drop_Build_x86_Debug_Build'
+          downloadPath: '$(System.ArtifactsDirectory)\bins.i386-pc-windows-msvc.Debug'
 
     # Main test task, loads test scripts and runs the orchestrator
     - task: PowerShell@2
@@ -132,10 +130,8 @@ jobs:
           Write-Host "Coverage check passed!"
 
     # Publish results as a pipeline artifact
-    - task: PublishBuildArtifacts@1
-      displayName: Publish test results
-      condition: succeededOrFailed()
+    - task: PublishPipelineArtifact@1
       inputs:
-        PathtoPublish: '$(System.ArtifactsDirectory)\Unit_Test_Logs'
-        ArtifactName: 'bins.i386-pc-windows-msvc.Debug.UnitTestResults'
-        publishLocation: 'Container'
+        targetPath: '$(System.ArtifactsDirectory)\Unit_Test_Logs'
+        artifact: 'drop_${{ parameters.ArtifactName }}_Unit_Tests'
+        publishLocation: 'pipeline'

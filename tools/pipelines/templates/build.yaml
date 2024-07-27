@@ -11,6 +11,14 @@ parameters:
 
 jobs:
 - job: 'Build'
+  pool: 
+    name: 1pfw-kingsgate-windows
+    isCustom: true
+    type: windows
+
+  variables:
+    ob_outputDirectory: '$(Build.SourcesDirectory)/.build/${{ parameters.Configuration }}/${{ parameters.Toolchain }}/'
+
   displayName: Build
   steps: 
 
@@ -51,9 +59,8 @@ jobs:
         SymbolExpirationInDays: '365'
 
     # Publish results as a pipeline artifact
-    - task: PublishBuildArtifacts@1
-      displayName: Publish build results
+    - task: PublishPipelineArtifact@1
       inputs:
-        PathtoPublish: '$(Build.SourcesDirectory)/.build/${{ parameters.Configuration }}/${{ parameters.Toolchain }}/'
-        ArtifactName: '${{ parameters.ArtifactName }}.${{ parameters.Toolchain }}.${{ parameters.Configuration }}'
-        publishLocation: 'Container'
+        targetPath: '$(Build.SourcesDirectory)/.build/${{ parameters.Configuration }}/${{ parameters.Toolchain }}/'
+        artifact: 'drop_${{ parameters.ArtifactName }}_Build'
+        publishLocation: 'pipeline'

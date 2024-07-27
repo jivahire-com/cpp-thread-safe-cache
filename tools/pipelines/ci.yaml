@@ -13,51 +13,33 @@ variables:
 
 # Build stage
 stages:
-
 - stage: Build_x86_Debug
   dependsOn: []
-  pool: 
-    name: 1pfw-kingsgate-windows
   jobs:
   - template: templates/build.yaml
     parameters:
       Toolchain: i386-pc-windows-msvc
       Configuration: Debug
-      ArtifactName: bins
+      ArtifactName: Build_x86_Debug
 
 - stage: Build_Arm_EABI_AARCH_Debug
   dependsOn: []
-  pool: 
-    name: 1pfw-kingsgate-windows
   jobs:
   - template: templates/build.yaml
     parameters:
       Toolchain: arm-eabi-aarch
       Configuration: Debug
-      ArtifactName: bins
-
-- stage: Build_Arm_EABI_AARCH_Release
-  dependsOn: []
-  pool: 
-    name: 1pfw-kingsgate-windows
-  jobs:
-  - template: templates/build.yaml
-    parameters:
-      Toolchain: arm-eabi-aarch
-      Configuration: Release
-      ArtifactName: bins
+      ArtifactName: Build_Arm_EABI_AARCH_Debug
 
 - stage: SVP_Pythia_Tests
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
-  pool: 
-    name: 1pfw-kingsgate-windows
   jobs:
   - template: templates/pythia_test.yaml
+    parameters:
+      ArtifactName: Pythia_Tests
 
 - stage: Unit_Test_x86
   dependsOn: [Build_x86_Debug, Build_Arm_EABI_AARCH_Debug]
-  pool: 
-    name: 1pfw-kingsgate-windows
   jobs:
   - template: templates/unittest.yaml
     parameters:
@@ -66,10 +48,11 @@ stages:
       # Pipeline variables defined within ADO
       BranchCoverage: $(branch_coverage)
       LineCoverage: $(line_coverage)
+      ArtifactName: Unit_Test_x86
 
 # Promote is to tag the merge commit so that it can be used by tag reference. This stage is configured to tag by BuildNumber after every PR closure.
 - stage: Promote
-  dependsOn: [Unit_Test_x86, Build_x86_Debug, Build_Arm_EABI_AARCH_Release, Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests]
+  dependsOn: [Unit_Test_x86, Build_x86_Debug, Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests]
   # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
   condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
   pool: 

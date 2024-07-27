@@ -1,11 +1,7 @@
 
 name: 0.1.2.$(rev:r)
 
-trigger: 
-  branches:
-    include:
-    # Auto trigger pipeline every time there is a PR completion to main, enables promoting (tagging) for official builds
-    - main
+trigger: none
 
 parameters:
 # One Branch Parameter
@@ -30,7 +26,7 @@ resources:
       ref: refs/heads/main
 
 extends:
-  template: v2/OneBranch.Official.CrossPlat.yml@templates
+  template: v2/OneBranch.NonOfficial.CrossPlat.yml@templates
   parameters:
     cloudvault: # https://aka.ms/obpipelines/cloudvault
       enabled: false
@@ -48,12 +44,14 @@ extends:
         break: true # always break the build on policheck issues. You can disable it by setting to 'false'
       # suppression:
       #   suppressionFile: $(Build.SourcesDirectory)\.gdn\global.gdnsuppress
+      # Code QL not supported:
+      #  ##[warning]CodeQL analysis is not available on 'pull', 'tags', 'user(s)' and 'topic' branches, or OneBranch Pull Request pipelines. This cannot be overridden.
       codeql:
         compiled: 
-          enabled: true
+          enabled: false
 
+    # Build stage
     stages:
-
     - stage: Build_x86_Debug
       dependsOn: []
       jobs:
@@ -72,30 +70,23 @@ extends:
           Configuration: Debug
           ArtifactName: Build_Arm_EABI_AARCH_Debug
 
+    - stage: Pythia_Tests
+      dependsOn: [Build_Arm_EABI_AARCH_Debug]
+      jobs:
+      - template: tools/pipelines/templates/pythia_test.yaml@self
+        parameters:
+          ArtifactName: Pythia_Tests
+
     - stage: Unit_Test_x86
-      dependsOn: Build_x86_Debug
+      dependsOn: [Build_x86_Debug, Build_Arm_EABI_AARCH_Debug]
       jobs:
       - template: tools/pipelines/templates/unittest.yaml@self
         parameters:
           Toolchain: i386-pc-windows-msvc
           Configuration: Debug
+          # Pipeline variables defined within ADO
           BranchCoverage: $(branch_coverage)
           LineCoverage: $(line_coverage)
           ArtifactName: Unit_Test_x86
 
-    - stage: Publish
-      dependsOn: [Unit_Test_x86, Build_x86_Debug, Build_Arm_EABI_AARCH_Debug]
-      condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
-      jobs:
-      - template: tools/pipelines/templates/publish.yaml@self
-        parameters:
-          Toolchain: [i386-pc-windows-msvc, arm-eabi-aarch]
-          Version: $(BuildVersion)
 
-    # Promote is to tag the merge commit so that it can be used by tag reference. This stage is configured to tag by BuildNumber after every PR closure.
-    - stage: Promote
-      dependsOn: [Unit_Test_x86, Build_x86_Debug, Build_Arm_EABI_AARCH_Debug]
-      # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
-      condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
-      jobs:
-      - template: tools/pipelines/templates/promote.yaml@self

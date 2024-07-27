@@ -78,6 +78,9 @@ set_property(
         ${CMAKE_CURRENT_LIST_DIR}/../inc/mcp_boot_loader_memory.ld
 )
 
+# Defining platform APIs
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+
 # Setting compiler optimization level to -Og to match Pioneer boot code compilation flags
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Og")
 

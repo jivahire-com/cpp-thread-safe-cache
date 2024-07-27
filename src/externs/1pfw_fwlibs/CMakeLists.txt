@@ -5,10 +5,10 @@ set(TARGET_DIR ${REPO_ROOT_DIR}/.externs/repo/1pfw_fwlibs)
 add_compile_options(-w)
 
 # Options for cmake module
-option(FPFW_ENABLE_TESTS "Compiles unit tests" OFF)
-option(FPFW_ENABLE_COVERAGE "Enables code coverage in compilation" OFF)
-option(FPFW_ENABLE_LINT "Enables additional lints during compilation" OFF)
-option(FPFW_ENABLE_DOCS "Creates doxygen documentation" OFF)
+option(FPFW_FWLIBS_ENABLE_TESTS "Compiles unit tests" OFF)
+option(FPFW_FWLIBS_ENABLE_COVERAGE "Enables code coverage in compilation" OFF)
+option(FPFW_FWLIBS_ENABLE_LINT "Enables additional lints during compilation" OFF)
+option(FPFW_FWLIBS_ENABLE_DOCS "Creates doxygen documentation" OFF)
 
 # Generic threadx lock port provided by fwlibs
 set(FPFW_PLATFORM_IMPL_LOCK "fwlib.lib.platform.impl.lock.threadx")

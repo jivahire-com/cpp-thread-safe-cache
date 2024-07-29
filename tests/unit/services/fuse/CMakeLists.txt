@@ -17,7 +17,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.assert
         silibs::fuse
         silibs::idsw
-        silibs::idsw_kng  
+        silibs::idsw_kng
         silibs::kng_silibs_platform
         silibs::platform
 
@@ -42,6 +42,7 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     crash_dump_bug_check
     idsw_get_platform_sdv
+    idsw_get_die_id
     fuse_dma_copy_to_ram_blocking
     read_fuse
     apply_fuse_override

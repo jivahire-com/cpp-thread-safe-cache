@@ -12,20 +12,20 @@
 #include "power_runconfig_i.h" // for power_runconfig_t, power_runconfig_get
 #include "pvt_struct.h"        // for TILE_PVT_NUM_CHANNELS_DTS
 
-#include <FpFwAssert.h>        // for FPFW_RUNTIME_ASSERT
-#include <bug_check.h>         // for BUG_CHECK
-#include <corebits.h>          // for corebits_set_bit, corebits_clear_bit
-#include <dvfs_struct.h>       // for dvfs_core_memasst_entry_t, dvfs_core_...
-#include <fuse_defines.h>      // for VF_CORE_ANCHOR_SEL_WIDTH, CORE_CDYN_0...
-#include <kng_soc_constants.h> // for NUM_AP_CORES_PER_DIE
-#include <power_events.h>      // for POWER_ET_WARN, POWER_ET_ENCODE_FREQ_C...
-#include <power_i.h>           // for DIMOF, BUG_ASSERT, BUG_CHECK, MODULE_...
-#include <power_stub_i.h>      // for platform_read_fuse, power_fuses_is_po...
-#include <silibs_common.h>     // for ARRAY_SIZE
-#include <stdbool.h>           // for bool
-#include <stddef.h>            // for NULL
-#include <stdint.h>            // for uint32_t, uint8_t, int32_t, uint64_t
-#include <string.h>            // for memset
+#include <FpFwAssert.h>             // for FPFW_RUNTIME_ASSERT
+#include <bug_check.h>              // for BUG_CHECK
+#include <corebits.h>               // for corebits_set_bit, corebits_clear_bit
+#include <dvfs_struct.h>            // for dvfs_core_memasst_entry_t, dvfs_core_...
+#include <kingsgate_fuse_defines.h> // for VF_CORE_ANCHOR_SEL_WIDTH, CORE_CDYN_0...
+#include <kng_soc_constants.h>      // for NUM_AP_CORES_PER_DIE
+#include <power_events.h>           // for POWER_ET_WARN, POWER_ET_ENCODE_FREQ_C...
+#include <power_i.h>                // for DIMOF, BUG_ASSERT, BUG_CHECK, MODULE_...
+#include <power_stub_i.h>           // for platform_read_fuse, power_fuses_is_po...
+#include <silibs_common.h>          // for ARRAY_SIZE
+#include <stdbool.h>                // for bool
+#include <stddef.h>                 // for NULL
+#include <stdint.h>                 // for uint32_t, uint8_t, int32_t, uint64_t
+#include <string.h>                 // for memset
 /*-- Symbolic Constant Macros (defines) --*/
 
 // defaults for gradient/offset equation for platforms where fuse isn't available

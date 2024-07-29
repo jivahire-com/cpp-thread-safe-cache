@@ -8,13 +8,13 @@
  */
 
 /*------------- Includes -----------------*/
-#include <fpfw_status.h>     // for FPFW_STATUS_INVALID_ARGS, FPFW_STATUS_S...
-#include <fuse_defines.h>    // for TEST_FLOW_CHECKS_PMM_REVISION_BIT_OFFSET
-#include <power_runconfig.h> // for BITS_PER_BYTE, MAX_BITS_PER_FUSE
-#include <power_stub_i.h>    // for platform_read_fuse, power_fuses_is_powe...
-#include <stdbool.h>         // for bool, true
-#include <stdint.h>          // for uint32_t, int32_t, uint64_t
-#include <string.h>          // for memcpy, size_t
+#include <fpfw_status.h>            // for FPFW_STATUS_INVALID_ARGS, FPFW_STATUS_S...
+#include <kingsgate_fuse_defines.h> // for TEST_FLOW_CHECKS_PMM_REVISION_BIT_OFFSET
+#include <power_runconfig.h>        // for BITS_PER_BYTE, MAX_BITS_PER_FUSE
+#include <power_stub_i.h>           // for platform_read_fuse, power_fuses_is_powe...
+#include <stdbool.h>                // for bool, true
+#include <stdint.h>                 // for uint32_t, int32_t, uint64_t
+#include <string.h>                 // for memcpy, size_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 

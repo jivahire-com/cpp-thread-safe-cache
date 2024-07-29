@@ -10,17 +10,17 @@
 #include <FpFwCli.h>        // for FpFwCliInitialize, FpFwCliStart, FPFW_CLI_...
 #include <fpfw_init.h>      // for fpfw_init_get_handle, FPFW_INIT_C...
 #include <fuse.h>           // fuse library functions
-#include <fuse_defines.h>   // Test revision get
 #include <fuse_dma.h>       // apply copy fuse to ram
 #include <fuse_events.h>    // apply event trace for fuse
 #include <fuse_init.h>      // fuse service API interface
 #include <fuses_top_regs.h> // efuse registry address
 #include <idsw.h>           // SW platform id
 #include <idsw_kng.h>
-#include <stdbool.h> // for false, true
-#include <stdint.h>  // for uintptr_t
-#include <stdio.h>   // for NULL, printf
-#include <utils.h>   // for sleep_ms()...
+#include <kingsgate_fuse_defines.h> // Test revision get
+#include <stdbool.h>                // for false, true
+#include <stdint.h>                 // for uintptr_t
+#include <stdio.h>                  // for NULL, printf
+#include <utils.h>                  // for sleep_ms()...
 
 /*------------- Typedefs -----------------*/
 

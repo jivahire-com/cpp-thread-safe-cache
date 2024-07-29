@@ -13,7 +13,6 @@
 #include <fpfw_mbox_icc_transport.h> // for ICC_MBX_ASYNC_RECV, ICC_MBX_ASY...
 #include <fpfw_status.h>             // for fpfw_status_t
 #include <fuse.h>                    // fuse library functions
-#include <fuse_defines.h>            // Test revision get
 #include <fuse_dma.h>                // apply copy fuse to ram
 #include <fuse_events.h>             // apply event trace for fuse
 #include <fuse_init.h>               // fuse service API interface
@@ -21,8 +20,10 @@
 #include <fuses_top_regs.h>
 #include <idsw.h> // SW platform id
 #include <idsw_kng.h>
-#include <silibs_mcp_top_regs.h> // for MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
-#include <silibs_platform.h>     // silibs status and result
+#include <kingsgate_fuse_defines.h> // Test revision get
+#include <kng_soc_constants.h>      // for DIE_INSTANCE
+#include <silibs_mcp_top_regs.h>    // for MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
+#include <silibs_platform.h>        // silibs status and result
 #include <silibs_scp_exp_top_regs.h>
 #include <silibs_scp_top_regs.h> // for SCP_TOP_SCP2HSP_MAILBOX_ADDRESS
 #include <stdbool.h>             // for false, true
@@ -116,6 +117,8 @@ int platform_fuse_override()
 {
     int status = 0;
     uint32_t Kingsgate_fuse_override_buffer_location = (uint32_t)(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS);
+    DIE_INSTANCE die_id = (DIE_INSTANCE)idsw_get_die_id();
+
     // Skip for platforms that do not support fuses
     if (platform_requires_fuse_distribution())
     {
@@ -138,7 +141,7 @@ int platform_fuse_override()
         {
             printf(FUSE_NAME "Unfused part with fuse overrides in SPI. Applying overrides ignoring "
                              "per-fuse valids.\n");
-            status = apply_fuse_override_ignoring_valids(DIE_0, Kingsgate_fuse_override_buffer_location);
+            status = apply_fuse_override_ignoring_valids(die_id, Kingsgate_fuse_override_buffer_location);
             FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_IGNORE_VALIDS);
             if (status != SILIBS_SUCCESS)
             {
@@ -152,7 +155,7 @@ int platform_fuse_override()
         else
         {
             printf(FUSE_NAME "Fused part with fuse overrides in SPI. Applying all valid overrides.\n");
-            status = apply_fuse_override(DIE_0, Kingsgate_fuse_override_buffer_location);
+            status = apply_fuse_override(die_id, Kingsgate_fuse_override_buffer_location);
             FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_WITH_OVERRIDES);
             if (status != SILIBS_SUCCESS)
             {
@@ -172,19 +175,21 @@ int platform_fuse_distribution(void)
     const fuse_dist_exclude_range_t* fuse_dist_exclude_list = NULL;
     uint32_t exclude_list_count = 0;
     KNG_PLAT_ID plat_id = idsw_get_platform_sdv();
+    DIE_INSTANCE die_id = (DIE_INSTANCE)idsw_get_die_id();
+
     switch (plat_id)
     {
     case PLATFORM_FPGA:
         printf("[KingGate_FUSE] Platform is FPGA\n");
-        fuse_dist_get_exclusion_list(plat_id, &fuse_dist_exclude_list, &exclude_list_count);
+        fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
         break;
     case PLATFORM_FPGA_LARGE:
         printf(FUSE_NAME "Platform is FPGA_Large\n");
-        fuse_dist_get_exclusion_list(plat_id, &fuse_dist_exclude_list, &exclude_list_count);
+        fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
         break;
     case PLATFORM_FPGA_LARGE_RVP:
         printf(FUSE_NAME "Platform is FPGA_Large_RVP\n");
-        fuse_dist_get_exclusion_list(plat_id, &fuse_dist_exclude_list, &exclude_list_count);
+        fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
         break;
     case PLATFORM_RVP_EVT_SILICON:
         printf(FUSE_NAME "Platform is PLATFORM_RVP_EVT_SILICON\n");
@@ -198,14 +203,14 @@ int platform_fuse_distribution(void)
     FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_START);
     if (platform_requires_fuse_distribution())
     {
-        status = distribute_fuses(DIE_0, POST_HSP_DIST_MAJOR, POST_HSP_DIST_MINOR, fuse_dist_exclude_list, exclude_list_count);
+        status = distribute_fuses(die_id, POST_HSP_DIST_MAJOR, POST_HSP_DIST_MINOR, fuse_dist_exclude_list, exclude_list_count);
         FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR0);
         if (status != SILIBS_SUCCESS)
         {
             return status;
         }
         printf(FUSE_NAME "Phase 0 fuse distribution complete\n");
-        status = distribute_fuses(DIE_0, POST_HSP_DIST_MAJOR, MESH_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
+        status = distribute_fuses(die_id, POST_HSP_DIST_MAJOR, MESH_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
         FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR1);
         if (status != SILIBS_SUCCESS)
         {
@@ -213,7 +218,7 @@ int platform_fuse_distribution(void)
         }
         printf(FUSE_NAME "Phase 1 fuse distribution complete\n");
 
-        status = distribute_fuses(DIE_0, POST_MESH_INIT_MAJOR, POST_MESH_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
+        status = distribute_fuses(die_id, POST_MESH_INIT_MAJOR, POST_MESH_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
         FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR4_MINOR0);
         if (status != SILIBS_SUCCESS)
         {
@@ -221,7 +226,7 @@ int platform_fuse_distribution(void)
         }
         printf(FUSE_NAME "Phase 2 fuse distribution complete\n");
 
-        status = distribute_fuses(DIE_0, POST_MESH_INIT_MAJOR, POST_BRIDGE_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
+        status = distribute_fuses(die_id, POST_MESH_INIT_MAJOR, POST_BRIDGE_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
         FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR4_MINOR1);
 
         if (status != SILIBS_SUCCESS)

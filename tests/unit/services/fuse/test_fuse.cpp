@@ -17,13 +17,13 @@ extern "C" {
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <fuse.h>
 #include <fuse_client.h>
-#include <fuse_defines.h> // Test revision get
 #include <fuse_dist_platform_exclusions.h>
 #include <fuse_init.h>
 #include <fuse_struct.h>
 #include <fuses_top_regs.h>
 #include <idsw.h>
 #include <idsw_kng.h>
+#include <kingsgate_fuse_defines.h> // Test revision get
 #include <setjmp.h>
 #include <silibs_platform.h>
 #include <silibs_scp_exp_top_regs.h>
@@ -54,6 +54,11 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
     return mock_type(KNG_PLAT_ID);
 }
 
+KNG_DIE_ID __wrap_idsw_get_die_id(void)
+{
+    return mock_type(KNG_DIE_ID);
+}
+
 silibs_status_t __wrap_fuse_dma_copy_to_ram_blocking()
 {
     // function_called();
@@ -68,7 +73,7 @@ int __wrap_read_fuse(const unsigned fuse_bit_offset, const unsigned fuse_bit_siz
     return mock_type(int);
 }
 
-silibs_status_t __wrap_apply_fuse_override(idsw_die_id_t die_id, const uintptr_t override_buffer)
+silibs_status_t __wrap_apply_fuse_override(KNG_DIE_ID die_id, const uintptr_t override_buffer)
 {
     check_expected(die_id);
     check_expected_ptr(override_buffer);
@@ -76,7 +81,7 @@ silibs_status_t __wrap_apply_fuse_override(idsw_die_id_t die_id, const uintptr_t
     return SILIBS_SUCCESS;
 }
 
-silibs_status_t __wrap_distribute_fuses(idsw_die_id_t die_id,
+silibs_status_t __wrap_distribute_fuses(KNG_DIE_ID die_id,
                                         const FUSE_DISTRIBUTION_MAJOR_PHASE phase_maj,
                                         const FUSE_DISTRIBUTION_MINOR_PHASE phase_min,
                                         const fuse_dist_exclude_range_t* exclude_list,
@@ -117,10 +122,12 @@ silibs_status_t __wrap_fuse_get_exclude_list_soc_nano(const fuse_dist_exclude_ra
     return SILIBS_SUCCESS;
 }
 
-silibs_status_t __wrap_fuse_dist_get_exclusion_list(KNG_PLAT_ID plat_id,
+silibs_status_t __wrap_fuse_dist_get_exclusion_list(KNG_DIE_ID die_id,
+                                                    KNG_PLAT_ID plat_id,
                                                     const fuse_dist_exclude_range_t** IP_exclude_list,
                                                     uint32_t* IP_exclude_count)
 {
+    check_expected(die_id);
     check_expected(plat_id);
     check_expected_ptr(IP_exclude_list);
     check_expected_ptr(IP_exclude_count);
@@ -149,11 +156,12 @@ noreturn void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint3
 TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RTL_SIM);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_fuse_dma_copy_to_ram_blocking, 0);
     expect_value(__wrap_read_fuse, fuse_bit_offset, TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_BIT_OFFSET);
     expect_value(__wrap_read_fuse, fuse_bit_size, TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_WIDTH);
-    expect_function_call(__wrap_trigger_debugger_for_manual_overrides);
-    will_return_always(__wrap_fuse_dma_copy_to_ram_blocking, 0);
     will_return_always(__wrap_read_fuse, 1);
+    expect_function_call(__wrap_trigger_debugger_for_manual_overrides);
     assert_int_equal(platform_fuse_override(), SILIBS_E_SUPPORT);
 }
 
@@ -177,6 +185,7 @@ TEST_FUNCTION(test_fuse_distribute_SIM_RTL, NULL, NULL)
 {
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RTL_SIM);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
     assert_int_equal(platform_fuse_distribution(), SILIBS_E_SUPPORT);
     // Debug prints
@@ -195,11 +204,12 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE, NULL, NULL)
     }
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
-
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     // Debug prints
     printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
 
     // Setup expectations for __wrap_fuse_dist_get_exclusion_list
+    expect_any(__wrap_fuse_dist_get_exclusion_list, die_id);
     expect_any(__wrap_fuse_dist_get_exclusion_list, plat_id);
     expect_any(__wrap_fuse_dist_get_exclusion_list, IP_exclude_list);
     expect_any(__wrap_fuse_dist_get_exclusion_list, IP_exclude_count);
@@ -219,7 +229,7 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE, NULL, NULL)
     }
 
     // Setup expectations for __wrap_distribute_fuses
-    expect_value(__wrap_distribute_fuses, die_id, DIE_0);
+    expect_any(__wrap_distribute_fuses, die_id);
     expect_value(__wrap_distribute_fuses, phase_maj, POST_HSP_DIST_MAJOR);
     expect_value(__wrap_distribute_fuses, phase_min, POST_HSP_DIST_MINOR);
     expect_memory(__wrap_distribute_fuses, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
@@ -276,6 +286,8 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE, NULL, NULL)
 TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RTL_SIM);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
     expect_value(__wrap_read_fuse, fuse_bit_offset, TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_BIT_OFFSET);
     expect_value(__wrap_read_fuse, fuse_bit_size, TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_WIDTH);

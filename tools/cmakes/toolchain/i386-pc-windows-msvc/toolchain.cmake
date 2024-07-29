@@ -30,7 +30,7 @@ set(CMAKE_C_FLAGS "-g -m32 --target=${CLANG_TARGET_TRIPLE} -Wall -Wextra -Werror
 set(CMAKE_CXX_FLAGS "-g -m32 --target=${CLANG_TARGET_TRIPLE} -Wall -Wextra -Werror -Wno-missing-field-initializers")
 
 # Set repo utilities
-set(REPO_CLANG_TIDY "${CMAKE_SOURCE_DIR}/tools/cmakes/toolchain/${CLANG_TARGET_TRIPLE}/clang-tidy.cmd" --quiet)
+# set(REPO_CLANG_TIDY "${CMAKE_SOURCE_DIR}/tools/cmakes/toolchain/${CLANG_TARGET_TRIPLE}/clang-tidy.cmd" --quiet)
 set(REPO_IWYU "${CMAKE_SOURCE_DIR}/tools/cmakes/toolchain/${CLANG_TARGET_TRIPLE}/iwyu.cmd" "-Xiwyu" "--quoted_includes_first" "-Xiwyu" "--mapping_file=${CMAKE_SOURCE_DIR}/.iwyu")
 set(REPO_CLANG_FORMAT $ENV{REPO_APP_PATH_llvm.win64}/bin/clang-format.exe)
 

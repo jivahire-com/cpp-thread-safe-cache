@@ -8,7 +8,7 @@ KingsgateSVP.DIE_0.CDEDSS.KMP_EMCPU.terminal_uart_kmp.#EXTRA_PROPERTIES#runtime_
 KingsgateSVP.DIE_0.CDEDSS.KMP_EMCPU.KMP_EMCPU_UART.#EXTRA_PROPERTIES#runtime_disabled=true
 KingsgateSVP.DIE_0.CDEDSS.SDM_EMCPU.terminal_uart_sdm.#EXTRA_PROPERTIES#runtime_disabled=true
 KingsgateSVP.DIE_0.CDEDSS.SDM_EMCPU.SDM_EMCPU_UART.#EXTRA_PROPERTIES#runtime_disabled=true
-KingsgateSVP.DIE_0.CSS.CPU_SS.app00.#EXTRA_PROPERTIES#/ImageInfo/cpu0/initial_image={../../../../../.externs/nuget/kingsgate.ap.baremetal.0.0.1.7-dev/build/bin/arm-aarch64-none/Debug/ap_test.elf,,,image+symbols,}
+KingsgateSVP.DIE_0.CSS.CPU_SS.app00.#EXTRA_PROPERTIES#/ImageInfo/cpu0/initial_image={../../../../../.externs/nuget/kingsgate.ap.baremetal.0.0.1.11-dev/build/bin/arm-aarch64-none/Debug/ap_test.elf,,,image+symbols,}
 KingsgateSVP.DIE_0.CSS.HndBaseElement.AP_NS_UART0_PHY.#SCML_PROPERTIES#TerminalAutoOpen=false
 KingsgateSVP.DIE_0.CSS.HndBaseElement.AP_NS_UART0.#EXTRA_PROPERTIES#runtime_disabled=false
 KingsgateSVP.DIE_0.CSS.HndBaseElement.AP_S_UART0.#EXTRA_PROPERTIES#TerminalAutoOpen=false

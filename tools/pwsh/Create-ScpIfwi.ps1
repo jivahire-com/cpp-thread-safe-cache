@@ -2,7 +2,7 @@ param (
     [string]$hsp_ifwi_image = "kingsgate_ifwi.flash",
     [string]$scp_img = "scp_boot_loader_embed_fw.bin",
     [string]$output_file = "kingsgate_ifwi_scp.flash",
-    [int]$scp_image_address = 95000
+    [int]$scp_image_address = 131072
 )
 
 # Binary paths

@@ -24,6 +24,7 @@ target_link_libraries(${TARGET}
         scp_avs_cli
         silibs::avs
         silibs_platform
+        silibs::idsw_kng
         silibs::kng_silibs_platform
 )
 
@@ -36,4 +37,5 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     scp_avs_cli_initialize
     fpfw_init_get_handle
+    idsw_get_die_id
 )

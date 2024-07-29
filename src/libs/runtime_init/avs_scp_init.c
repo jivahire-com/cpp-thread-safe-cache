@@ -7,6 +7,7 @@
 #include <DfwkClient.h>
 #include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
 #include <fpfw_init.h>
+#include <idsw_kng.h>
 #include <interrupts.h>
 #include <padring_southeast_regs.h>
 #include <scp_avs.h>
@@ -55,8 +56,13 @@ FPFW_INIT_COMPONENT(avs0_int, FPFW_INIT_DEPENDENCIES("avs0"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_interface};
 }
 
-FPFW_INIT_COMPONENT(avs1, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic"))
+FPFW_INIT_COMPONENT(avs1, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic", "hw_ver"))
 {
+    if (idsw_get_die_id() == DIE_1)
+    { // DIE_1 only has one AVSBus.
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+
     static scp_avs_device_t avs_device = {
         .config = {
             .avs_irq = HW_INT_AVS_CTRL_1_INT,
@@ -78,6 +84,11 @@ FPFW_INIT_COMPONENT(avs1, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic"))
 
 FPFW_INIT_COMPONENT(avs1_int, FPFW_INIT_DEPENDENCIES("avs1"))
 {
+    if (idsw_get_die_id() == DIE_1)
+    {
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+
     static scp_avs_interface_t avs_interface = {};
     fpfw_init_component_id_t avs_id = "avs1";
 
@@ -87,8 +98,13 @@ FPFW_INIT_COMPONENT(avs1_int, FPFW_INIT_DEPENDENCIES("avs1"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_interface};
 }
 
-FPFW_INIT_COMPONENT(avs2, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic"))
+FPFW_INIT_COMPONENT(avs2, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic", "hw_ver"))
 {
+    if (idsw_get_die_id() == DIE_1)
+    {
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+
     static scp_avs_device_t avs_device = {
         .config = {
             .avs_irq = HW_INT_AVS_CTRL_2_INT,
@@ -110,6 +126,11 @@ FPFW_INIT_COMPONENT(avs2, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic"))
 
 FPFW_INIT_COMPONENT(avs2_int, FPFW_INIT_DEPENDENCIES("avs2"))
 {
+    if (idsw_get_die_id() == DIE_1)
+    {
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+
     static scp_avs_interface_t avs_interface = {};
     fpfw_init_component_id_t avs_id = "avs2";
 
@@ -119,8 +140,13 @@ FPFW_INIT_COMPONENT(avs2_int, FPFW_INIT_DEPENDENCIES("avs2"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_interface};
 }
 
-FPFW_INIT_COMPONENT(avs3, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic"))
+FPFW_INIT_COMPONENT(avs3, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic", "hw_ver"))
 {
+    if (idsw_get_die_id() == DIE_1)
+    {
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+
     static scp_avs_device_t avs_device = {
         .config = {
             .avs_irq = HW_INT_AVS_CTRL_3_INT,
@@ -142,6 +168,11 @@ FPFW_INIT_COMPONENT(avs3, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic"))
 
 FPFW_INIT_COMPONENT(avs3_int, FPFW_INIT_DEPENDENCIES("avs3"))
 {
+    if (idsw_get_die_id() == DIE_1)
+    {
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+
     static scp_avs_interface_t avs_interface = {};
     fpfw_init_component_id_t avs_id = "avs3";
 

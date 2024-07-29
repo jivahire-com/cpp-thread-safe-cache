@@ -23,6 +23,7 @@ target_link_libraries(${TARGET}
         scp_avs
         silibs::avs
         silibs_platform
+        silibs::idsw_kng
         silibs::kng_silibs_platform
 )
 

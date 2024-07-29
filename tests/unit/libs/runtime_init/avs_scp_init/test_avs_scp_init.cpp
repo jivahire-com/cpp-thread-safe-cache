@@ -16,6 +16,7 @@ extern "C" {
 #include <DfwkDriver.h>
 #include <DfwkThreadXHost.h>
 #include <fpfw_init.h>
+#include <idsw_kng.h>
 #include <scp_avs_driver.h>
 
 /*-- Symbolic Constant Macros (defines) --*/

@@ -13,6 +13,7 @@
 #include <FpFwCli.h>
 #include <FpFwLinkedList.h>
 #include <FpFwUtils.h>
+#include <idsw_kng.h>
 #include <scp_avs_cli.h>    // for avs_client_init_completion_routine, pavs...
 #include <scp_avs_driver.h> // for scp_avs_request_t
 
@@ -28,6 +29,7 @@ static FPFW_CLI_STATUS scp_avs_write_data_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS scp_avs_read_vct_cli(int argc, const char** argv);
 
 /*-- Declarations (Statics and globals) --*/
+static uint8_t max_num_avs_bus = 0;
 typedef struct _avs_cli_request_context_t
 {
     scp_avs_request_t request;
@@ -138,7 +140,7 @@ static FPFW_CLI_STATUS scp_avs_read_data_cli(int argc, const char** argv)
     if (check_not_in_use() && (argc == 4))
     {
         int avs_bus = atoi(argv[1]);
-        if (avs_bus < 0 || avs_bus >= MAX_AVS_INST)
+        if (avs_bus < 0 || avs_bus >= max_num_avs_bus)
         {
             FpFwCliPrint("ERROR! Invalid Arg (avs_bus) \n");
             return CLI_ERROR;
@@ -176,7 +178,7 @@ static FPFW_CLI_STATUS scp_avs_write_data_cli(int argc, const char** argv)
     if (check_not_in_use() && (argc == 5))
     {
         int avs_bus = atoi(argv[1]);
-        if (avs_bus < 0 || avs_bus >= MAX_AVS_INST)
+        if (avs_bus < 0 || avs_bus >= max_num_avs_bus)
         {
             FpFwCliPrint("ERROR! Invalid Arg (avs_bus) \n");
             return CLI_ERROR;
@@ -223,7 +225,7 @@ static FPFW_CLI_STATUS scp_avs_read_vct_cli(int argc, const char** argv)
     if (check_not_in_use() && (argc == 3))
     {
         int avs_bus = atoi(argv[1]);
-        if (avs_bus < 0 || avs_bus >= MAX_AVS_INST)
+        if (avs_bus < 0 || avs_bus >= max_num_avs_bus)
         {
             FpFwCliPrint("ERROR! Invalid Arg (avs_bus) \n");
             return CLI_ERROR;
@@ -259,10 +261,10 @@ void scp_avs_cli_initialize(pscp_avs_interface_t avs_array[])
 {
     FpFwCliRegisterTable(scp_avs_cli_list, FPFW_ARRAY_SIZE(scp_avs_cli_list));
 
-    // TODO: After implementing code for Die1 (AVS_BUS4) then modify to < AVS_BUS_MAX
-    // https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/1874964
+    KNG_DIE_ID current_die = idsw_get_die_id();
+    max_num_avs_bus = ((current_die == DIE_0) ? 4 : 1); // DIE_1 only has one AVSBus.
 
-    for (uint8_t i = 0; i < AVS_BUS4; i++)
+    for (uint8_t i = 0; i < max_num_avs_bus; i++)
     {
         cli_avs_interfaces[i] = avs_array[i];
     }

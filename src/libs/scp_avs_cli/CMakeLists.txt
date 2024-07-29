@@ -15,6 +15,7 @@ target_link_libraries(
         PRIVATE
             fwlib.service.cli
             silibs::avs
+            silibs::idsw_kng
             scp_avs
         PUBLIC
             fwlib.lib.assert

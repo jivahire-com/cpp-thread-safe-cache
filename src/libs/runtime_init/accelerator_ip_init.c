@@ -6,6 +6,8 @@
 /*------------- Includes -----------------*/
 #include <accelerator_ip.h>  // for scp_accelerators_init
 #include <fpfw_init.h>       // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMP...
+#include <idsw.h>
+#include <idsw_kng.h>
 #include <stdio.h>           // for printf, NULL
 
 /*------------- Typedefs -----------------*/
@@ -24,13 +26,16 @@
  * `css_pome` which in-turn depends on the `std_io`, `hw_ver` and `mesh`.
  */
 //FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh"))
-FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("vab"))
+FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("vab", "hw_ver"))
 {
-    // Initialize the Accelerators
-    printf("Accelerator init start!!!\n");
-    scp_accelerators_init();
-    printf("Accelerator init complete!!!\n");
-
+    //! @todo https://azurecsi.visualstudio.com/Dev/_workitems/edit/1941641
+    if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
+    {
+        // Initialize the Accelerators
+        printf("Accelerator init start!!!\n");
+        scp_accelerators_init();
+        printf("Accelerator init complete!!!\n");
+    }
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 

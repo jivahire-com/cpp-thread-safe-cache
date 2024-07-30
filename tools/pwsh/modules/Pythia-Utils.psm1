@@ -43,7 +43,8 @@ Path to the test to run. Can be a robot file, or a directory containing robot fi
 Invoke-Pythia -test .\tests\functional\pythia\test_suites\heart_beat\
 #>
 Function Invoke-Pythia(
-    [Parameter(Mandatory=$true)] [string] $test
+    [Parameter(Mandatory=$true)] [string] $test,
+    [Parameter(Mandatory=$true)] [ValidateSet('svp', 'fpga')] [string] $platform = "svp"
 )
 {
 
@@ -75,7 +76,11 @@ Function Invoke-Pythia(
     # Create new json files with expanded string values, expanding environment variables
     Expand-File -in_file $workspace_config_in -out_file $workspace_config_out
 
-    $host_configs_path = Join-Path -Path $env:REPO_APP_ROOT -ChildPath "tests\functional\pythia\hosts\"
+    if ($platform -eq "svp") {
+        $host_configs_path = Join-Path -Path $env:REPO_APP_ROOT -ChildPath "tests\functional\pythia\hosts\svp_hosts"
+    } elseif ($platform -eq "fpga") {
+        $host_configs_path = Join-Path -Path $env:REPO_APP_ROOT -ChildPath "tests\functional\pythia\hosts\fpga_hosts"
+    }
 
     $iteration = 1
     Get-ChildItem $host_configs_path |
@@ -130,7 +135,9 @@ Function Invoke-Pythia(
     Write-Host "`tPythia Tests Completed. Please see tests results: $test_results_dir"
     Write-Host ""
 
-    Write-Host "Removing .svp_simulator dir"
-    Remove-Item $test_results_dir/.svp_simulator -Recurse -Force
+    if ($platform -eq "svp") {
+        Write-Host "Removing .svp_simulator dir"
+        Remove-Item $test_results_dir/.svp_simulator -Recurse -Force
+    }
 
 }

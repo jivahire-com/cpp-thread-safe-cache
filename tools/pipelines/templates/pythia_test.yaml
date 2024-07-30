@@ -5,18 +5,19 @@ parameters:
 - name: Configuration
   type: string
   default: 'Debug'
+- name: Platform
+  type: string
+  default: 'svp'  
 - name: Test_Suite_Path
   type: string
   default: 'tests\functional\pythia\test_suites'
 - name: ArtifactName
   type: string
   default: 'bins'
-- name: Platform
-  type: string
-  default: 'svp'  
 - name: Pool
   type: string
   default: '1pfw-kingsgate-windows'  
+
 
 jobs:
 - job: 'Pythia_Tests'
@@ -64,7 +65,7 @@ jobs:
           $bin_dest_dir = "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch"
           Copy-Item $bin_src_dir $bin_dest_dir -Recurse -Force
 
-          Invoke-Pythia -test ${{ parameters.Test_Suite_Path }}
+          Invoke-Pythia -test ${{ parameters.Test_Suite_Path }}\${{ parameters.Platform }} -platform ${{ parameters.Platform }}
 
     # Publish the results of the test suite
     - task: PublishTestResults@2

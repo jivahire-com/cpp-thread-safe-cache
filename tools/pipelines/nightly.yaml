@@ -10,15 +10,6 @@ variables:
 
 # Build stage
 stages:
-- stage: Build_x86_Debug
-  dependsOn: []
-  jobs:
-  - template: templates/build.yaml
-    parameters:
-      Toolchain: i386-pc-windows-msvc
-      Configuration: Debug
-      ArtifactName: Build_x86_Debug
-
 - stage: Build_Arm_EABI_AARCH_Debug
   dependsOn: []
   jobs:
@@ -33,7 +24,7 @@ stages:
   jobs:
   - template: templates/pythia_test.yaml
     parameters:
-      ArtifactName: Pythia_Tests
+      ArtifactName: SVP_Pythia_Tests
 
 - stage: FPGA_Pythia_Tests
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
@@ -41,12 +32,12 @@ stages:
   - template: templates/pythia_test.yaml
     parameters:
       Platform: fpga
-      ArtifactName: Pythia_Tests
+      ArtifactName: FPGA_Pythia_Tests
       Pool: 1pfw-kingsgate-big-fpga
 
 # This is to tag the commits that pass nightly tests.
 - stage: Promote
-  dependsOn: [ Build_Arm_EABI_AARCH_Release, Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests, FPGA_Pythia_Tests ]
+  dependsOn: [ Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests, FPGA_Pythia_Tests ]
   # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
   condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
   pool: 

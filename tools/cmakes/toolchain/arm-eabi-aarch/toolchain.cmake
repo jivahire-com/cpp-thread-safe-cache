@@ -25,9 +25,9 @@ option(REPO_ENABLE_TESTS "Compiles unit tests" ON)
 option(REPO_ENABLE_COVERAGE "Enables code coverage in compilation" ON)
 
 # Set repo utilities
-# set(REPO_CLANG_TIDY "${CMAKE_SOURCE_DIR}/tools/cmakes/toolchain/arm-eabi-aarch/clang-tidy.cmd" 
-#     "--quiet" 
-#     "--extra-arg=--target=thumb")
+set(REPO_CLANG_TIDY "${CMAKE_SOURCE_DIR}/tools/cmakes/toolchain/arm-eabi-aarch/clang-tidy.cmd" 
+    "--quiet" 
+    "--extra-arg=--target=thumb")
 
 set(REPO_IWYU "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmakes/toolchain/arm-eabi-aarch/iwyu.cmd" 
     "-Xiwyu" "--quoted_includes_first" 

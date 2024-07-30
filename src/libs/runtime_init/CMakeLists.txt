@@ -111,6 +111,7 @@ target_link_libraries(
         ms::service::sds_service
 )
 
+# @todo remove after completing task https://azurecsi.visualstudio.com/Dev/_workitems/edit/1933312/
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)
 
 target_compile_definitions(
@@ -199,6 +200,7 @@ target_link_libraries(
         register_headers
 )
 
+# @todo remove after completing task https://azurecsi.visualstudio.com/Dev/_workitems/edit/1933312/
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)
 
 target_compile_definitions(

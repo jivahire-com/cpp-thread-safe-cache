@@ -8,9 +8,12 @@
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwAssert.h>        // for FPFW_RUNTIME_ASSERT
-#include <cmn800_sequence.h>   // for cmn800_sequence, d2dss_sequence, cmn8...
-#include <cmn_config.h>        // for CMN800_CONFIG_CONFIG
+#include <FpFwAssert.h>     // for FPFW_RUNTIME_ASSERT
+#include <MboxPrimitives.h> // for FPFW_MBX_PAYLOAD, FpFwMailbox...
+#include <bug_check.h>
+#include <cmn800_sequence.h> // for cmn800_sequence, d2dss_sequence, cmn8...
+#include <cmn_config.h>      // for CMN800_CONFIG_CONFIG
+#include <hsp_firmware_headers.h>
 #include <idhw.h>              // for idhw_is_single_die_boot_en
 #include <idsw.h>              // for idsw_get_platform_sdv,
 #include <idsw_kng.h>          // for PLATFORM_FPGA_LARGE
@@ -19,15 +22,41 @@
 #include <stdbool.h>           // for true
 #include <stdint.h>            // for uint8_t
 #include <stdio.h>             // for printf
+#include <system_info.h>
 
 /*------------- Defines -----------------*/
 bool dual_die_boot = false; // ADO: 1825901 Deprecate after ADO is implemented by SVP
+static FPFW_MBX_PRIMITIVE_CTX* s_mail_box_context;
 
 /*------------- Functions ----------------*/
+static void hsp_send_recv_enable_smmu()
+{
+    kng_hsp_mailbox_msg send_msg = {
+        .header.cmd = HSP_MAILBOX_CMD_ENABLE_SMMU_ACCESS_REQ,
+    };
 
-void mesh_init(uint8_t die_num)
+    kng_hsp_mailbox_msg recv_msg;
+
+    FPFW_MBX_PAYLOAD send_payload = {.payloadBuffer = &send_msg, .payloadSize = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t))};
+    FPFW_MBX_PAYLOAD receive_payload = {.payloadBuffer = &recv_msg,
+                                        .payloadSize = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t))};
+
+    while (FpFwMailboxSend(s_mail_box_context, &send_payload) != FPFW_MBX_SUCCESS)
+    {
+    }
+
+    while (FpFwMailboxReceive(s_mail_box_context, &receive_payload) != FPFW_MBX_SUCCESS)
+    {
+    }
+    BUG_ASSERT(recv_msg.header.cmd == HSP_MAILBOX_CMD_ENABLE_SMMU_ACCESS_RSP);
+    BUG_ASSERT(recv_msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+}
+
+void mesh_init(uint8_t die_num, FPFW_MBX_PRIMITIVE_CTX* hsp_mbx_ctx)
 {
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
+
+    s_mail_box_context = hsp_mbx_ctx;
 
     int sts = 0x0;
 
@@ -73,16 +102,11 @@ void mesh_init(uint8_t die_num)
     printf("cmn800_sequence sts 0x%x\n", sts);
     FPFW_RUNTIME_ASSERT(sts == 0);
 
-    // ADO 1728673
-    // Wait for HSP to configure system SMMU in Bypass mode (TBU feeding into RND-5)
-    // so that SCP addresses (e.g. D2D related CSR read/writes) make it thru the mesh to the HNT
-    // HSP_MAILBOX_MSG mbx_msg = {};
-    // mbx_msg.Cmd = HspMailboxCmdSMMUEnableAccess;
-    // while (!sp_mbx_send(SCP_HSP_MBX_ADDRESS, (uint32_t *)&mbx_msg, 0x4))
-    //     ;
-    // while (!sp_mbx_receive(SCP_HSP_MBX_ADDRESS, (uint32_t *)&mbx_msg, 0x4))
-    //     ;
-    // hw_assert(SP_SUCCEEDED(mbx_msg.ReturnStatus.Status));
+    if (system_info_is_hsp_present())
+    {
+        printf("Send enable SMMU in bypass mode\n");
+        hsp_send_recv_enable_smmu();
+    }
 
     if (cmn800_sequence_param.BOOT_2D_ENABLE)
     {

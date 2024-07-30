@@ -58,4 +58,3 @@ void ap_core_util_set_all_rvbaraddr(ap_core_service_context_t* p_context, uint64
 void ap_core_util_get_fuse_enabled_cores(corebits_t *p_enabled_cores);
 void ap_core_request_load_tfa(fpfw_icc_base_ctx_t* icc_hspmbx_ctx);
 pap_core_asynchronous_request_t ap_core_get_outstanding_request();
-bool system_info_is_hsp_present();

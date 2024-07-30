@@ -1,28 +1,27 @@
-set(TARGET mesh.test)
+set(TARGET mesh_init.test)
 
 set(SOURCES
-    test_mesh.cpp
+    test_mesh_init.cpp
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/mesh_init.c
 )
 
-# Compile test
 add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-        cmn800
-        cmn800_sequence
-        fwlib.lib.init
-        fwlib.lib.utils
-        idhw
-        silibs::idsw
-        silibs::idsw_kng
-        kng_silibs_platform
-        ms::cmocka::testrunner
-        ms::lib::mesh
-        silibs_platform
-        ms::lib::hsp_firmware_headers
-        fwlib.lib.mboxPrimitives
-        fwlib.service.iccBase
+    cmn800
+    cmn800_sequence
+    fwlib.lib.init
+    fwlib.lib.utils
+    idhw
+    silibs::idsw
+    silibs::idsw_kng
+    kng_silibs_platform
+    ms::cmocka::testrunner
+    ms::lib::mesh
+    silibs_platform
+    fwlib.driver.mboxIccTransport
+    fwlib.service.iccBase
 )
 
 # @todo remove after completing task https://azurecsi.visualstudio.com/Dev/_workitems/edit/1933312/
@@ -38,13 +37,8 @@ format_target(${TARGET})
 coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
-# Mock the functions needed
 mock_target(${TARGET}
-    cmn800_sequence
-    idhw_is_single_die_boot_en
-    d2dss_sequence
-    cmn800_sequence_svp_updates
-    FpFwMailboxSend
-    FpFwMailboxReceive
-    system_info_is_hsp_present
+    idhw_get_die_id
+    fpfw_init_get_handle
+    mesh_init
 )

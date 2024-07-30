@@ -19,6 +19,12 @@
 typedef union HSP_BOOT_METADATA HSP_BOOT_METADATA;
 typedef struct kng_hsp_mailbox_cmd_load_fw_req kng_hsp_mailbox_cmd_load_fw_req;
 
+typedef enum _HSP_MAILBOX_RSP_STATUS {
+	HSP_MAILBOX_RSP_STATUS_SUCCESS = 0,
+	HSP_MAILBOX_RSP_STATUS_FAILURE = 1,
+	HSP_MAILBOX_RSP_STATUS_MAX
+} HSP_MAILBOX_RSP_STATUS;
+
 /**
  * @brief Generic Mailbox message. Remove when HSP headers support it.
  * 

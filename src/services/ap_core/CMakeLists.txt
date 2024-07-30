@@ -35,7 +35,6 @@ add_library(${TARGET}
         ap_core.c
         ap_core_fw_load.c
         ap_core_ppu.c
-        ap_core_system_info.c
         ap_core_util.c
 )
 
@@ -51,6 +50,7 @@ target_link_libraries(${TARGET}
         ms::lib::crash_dump::scp
         ms::lib::hsp_firmware_headers
         ms::lib::error_codes
+        ms::lib::system_info
         ms::lib::threadx
         ms::lib::debug
         ms::client_interface::ap_core

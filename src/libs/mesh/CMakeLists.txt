@@ -7,9 +7,16 @@ add_library(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
+    fwlib.driver.mboxIccTransport
     fwlib.lib.assert
+    fwlib.lib.mboxPrimitives
+    fwlib.service.iccBase
     silibs_platform
+    ms::lib::crash_dump::scp
+    ms::lib::error_codes
+    ms::lib::hsp_firmware_headers
     ms::lib::register_headers
+    ms::lib::system_info
     silibs::cmn800
     silibs::cmn800_skus
     silibs::cmn800_sequence

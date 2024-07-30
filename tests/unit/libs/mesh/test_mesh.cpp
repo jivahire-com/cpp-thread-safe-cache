@@ -11,12 +11,15 @@
 #include <CMockaWrapper.h> // for expect_value, check_expected, CmockaWra...
 
 extern "C" {
-#include <FpFwUtils.h>       // for FPFW_UNUSED
-#include <cmn800_sequence.h> // for cmn800_sequence_params_t
-#include <cmn_config.h>      // for CMN800_CONFIG_CONFIG
-#include <idsw.h>            // for idsw_set_platform_sdv
-#include <idsw_kng.h>        // for PLATFORM_FPGA_LARGE, PLATFORM_SVP_SIM
-#include <mesh.h>            // for mesh_init
+#include <FpFwUtils.h>            // for FPFW_UNUSED
+#include <MboxPrimitives.h>       // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_PAYLOAD
+#include <cmn800_sequence.h>      // for cmn800_sequence_params_t
+#include <cmn_config.h>           // for CMN800_CONFIG_CONFIG
+#include <hsp_firmware_headers.h> // for kng_hsp_mailbox_msg
+#include <idsw.h>                 // for idsw_set_platform_sdv, PLATFORM_UN...
+#include <idsw_kng.h>             // for KNG_DIE_ID, _KNG_PLAT_ID
+#include <mesh.h>                 // for mesh_init
+#include <stdint.h>               // for int32_t, uint32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -27,8 +30,33 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 bool simulate_single_die = true;
 extern bool dual_die_boot; // ADO: 1825901 Deprecate after ADO is implemented by SVP
+static FPFW_MBX_PRIMITIVE_CTX test_hsp_mbx_ctx;
 
 /*------------- Functions ----------------*/
+//! Mocks for mailbox primitives called inside hsp_send_recv_enable_smmu()
+int32_t __wrap_FpFwMailboxSend(PFPFW_MBX_PRIMITIVE_CTX pMbxCtx, PFPFW_MBX_PAYLOAD pMessage)
+{
+    printf("FpFwMailboxReceive\n");
+    FPFW_UNUSED(pMbxCtx);
+    FPFW_UNUSED(pMessage);
+    return FPFW_MBX_SUCCESS;
+}
+
+int32_t __wrap_FpFwMailboxReceive(PFPFW_MBX_PRIMITIVE_CTX pMbxCtx, PFPFW_MBX_PAYLOAD pMessage)
+{
+    FPFW_UNUSED(pMbxCtx);
+    printf("FpFwMailboxReceive\n");
+    kng_hsp_mailbox_msg* msg = (kng_hsp_mailbox_msg*)pMessage->payloadBuffer;
+    msg->header.cmd = HSP_MAILBOX_CMD_ENABLE_SMMU_ACCESS_RSP;
+    msg->rsp.status = HSP_MAILBOX_RSP_STATUS_SUCCESS;
+    return FPFW_MBX_SUCCESS;
+}
+
+bool __wrap_system_info_is_hsp_present()
+{
+    return true;
+}
+
 //
 // Setup and Teardown Functions
 //
@@ -122,6 +150,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_0_SVP, setup_svp_platform, setu
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)0;
+
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -135,7 +164,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_0_SVP, setup_svp_platform, setu
     expect_function_call(__wrap_cmn800_sequence);
 
     // Call API under test
-    mesh_init(test_die);
+    mesh_init(test_die, &test_hsp_mbx_ctx);
 }
 
 TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_SVP, setup_svp_platform, setup_undefined_platform)
@@ -156,7 +185,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_SVP, setup_svp_platform, setu
     expect_function_call(__wrap_cmn800_sequence);
 
     // Call API under test
-    mesh_init(test_die);
+    mesh_init(test_die, &test_hsp_mbx_ctx);
 }
 
 TEST_FUNCTION(test_mesh_init_single_die_boot_Die_0_FPGA, setup_fpga_platform, setup_undefined_platform)
@@ -177,7 +206,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_0_FPGA, setup_fpga_platform, se
     expect_function_call(__wrap_cmn800_sequence);
 
     // Call API under test
-    mesh_init(test_die);
+    mesh_init(test_die, &test_hsp_mbx_ctx);
 }
 
 TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_FPGA, setup_fpga_platform, setup_undefined_platform)
@@ -198,7 +227,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_FPGA, setup_fpga_platform, se
     expect_function_call(__wrap_cmn800_sequence);
 
     // Call API under test
-    mesh_init(test_die);
+    mesh_init(test_die, &test_hsp_mbx_ctx);
 }
 
 // Dual Die Boot
@@ -229,7 +258,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_0_SVP, setup_svp_platform_dual_di
     expect_function_call(__wrap_d2dss_sequence);
 
     // Call API under test
-    mesh_init(test_die);
+    mesh_init(test_die, &test_hsp_mbx_ctx);
 }
 
 TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_SVP, setup_svp_platform_dual_die, setup_undefined_platform)
@@ -259,7 +288,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_SVP, setup_svp_platform_dual_di
     expect_function_call(__wrap_d2dss_sequence);
 
     // Call API under test
-    mesh_init(test_die);
+    mesh_init(test_die, &test_hsp_mbx_ctx);
 }
 
 TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_0_FPGA, setup_fpga_platform_dual_die, setup_undefined_platform)
@@ -289,13 +318,14 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_0_FPGA, setup_fpga_platform_dual_
     expect_function_call(__wrap_d2dss_sequence);
 
     // Call API under test
-    mesh_init(test_die);
+    mesh_init(test_die, &test_hsp_mbx_ctx);
 }
 
 TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_FPGA, setup_fpga_platform_dual_die, setup_undefined_platform)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
+
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -318,6 +348,6 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_FPGA, setup_fpga_platform_dual_
     expect_function_call(__wrap_d2dss_sequence);
 
     // Call API under test
-    mesh_init(test_die);
+    mesh_init(test_die, &test_hsp_mbx_ctx);
 }
 }

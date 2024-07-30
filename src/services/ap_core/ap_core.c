@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <system_info.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 

@@ -13,6 +13,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::lib::hsp_firmware_headers 
         ms::lib::scp_avs
+        ms::lib::system_info
         ms::lib::threadx
         ms::mocks::event_trace
         ms::mocks::threadx

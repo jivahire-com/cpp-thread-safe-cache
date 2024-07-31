@@ -70,7 +70,7 @@ FPFW_INIT_COMPONENT(icc_hspmbx, FPFW_INIT_DEPENDENCIES("dfwk"))
     static fpfw_mbox_icc_transport_config_t cfg = {
         .mbox_dev_cfg = {.MbxFifoDepth = HSP_MBX_FIFO_DEPTH,
                          .MbxMesgHandlingType = MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME,
-                         .MbxImplementation = MBX_IMPL_INTERRUPT,
+                         .MbxImplementation = MBX_IMPL_POLLING,
                          .MsgSizeBytes = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t)),
                          .MbxBaseAddr = MSCP2HSP_MAILBOX_BASE_ADDRESS},
         .timer_period = KG_HSP_MBOX_POLL_INTERVAL_NS,

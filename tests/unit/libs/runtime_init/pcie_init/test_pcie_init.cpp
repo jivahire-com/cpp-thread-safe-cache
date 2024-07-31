@@ -19,6 +19,7 @@ extern "C" {
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <kng_soc_constants.h>
+#include <pcie_dfwk.h>
 #include <scp_pcie_manager.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -29,6 +30,7 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_pcie;
+extern fpfw_init_component_t _fpfw_component_pcie_cli;
 
 /*------------- Functions ----------------*/
 void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
@@ -41,6 +43,11 @@ void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
 idsw_plat_id_t __wrap_idsw_get_platform_sdv()
 {
     return mock_type(idsw_plat_id_t);
+}
+
+void __wrap_pcie_cli_init(pciess_device_t* pcie_dev_handles)
+{
+    assert_non_null(pcie_dev_handles);
 }
 
 void __wrap_scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init)
@@ -76,4 +83,9 @@ TEST_FUNCTION(test_die0_unknown_plat_init, NULL, NULL)
     will_return(__wrap_idsw_get_platform_sdv, 0xFF);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, 0);
     _fpfw_component_pcie.init_fn();
+}
+
+TEST_FUNCTION(test_cli_init, NULL, NULL)
+{
+    _fpfw_component_pcie_cli.init_fn();
 }

@@ -84,7 +84,7 @@ void rpss_service_thread_fn(ULONG thread_input)
     pcie_sync_request_t sync_req = {
         .header = {.RequestType = INITIAL_CONFIG_REQUEST},
         .rpss_index = ctx->rpss_idx,
-        .rp_index = 0xF,
+        .rp_index = 0x0,
         .req_type = INITIAL_CONFIG_REQUEST,
     };
     int32_t status = DfwkInterfaceSendSync((PDFWK_INTERFACE_HEADER)(ctx->iface), &sync_req.header);

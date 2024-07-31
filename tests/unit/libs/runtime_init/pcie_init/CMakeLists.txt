@@ -17,6 +17,7 @@ target_link_libraries(${TARGET}
     ms::driver::pcie
     ms::lib::threadx
     ms::service::pcie_manager
+    ms::service::pcie_manager::cli
     silibs::idsw
     silibs::idsw_kng
     silibs::kng_silibs_platform
@@ -36,5 +37,6 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     fpfw_init_get_handle
     idsw_get_platform_sdv
+    pcie_cli_init
     scp_pcie_initialize
 )

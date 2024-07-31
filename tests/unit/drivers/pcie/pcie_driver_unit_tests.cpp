@@ -144,6 +144,7 @@ TEST_FUNCTION(test_pcie_rpss_init_success, test_setup, test_teardown)
     r.header.RequestType = INITIAL_CONFIG_REQUEST;
     r.req_type = INITIAL_CONFIG_REQUEST;
     r.rpss_index = RPSS2;
+    r.rp_index = 0;
 
     /* Set the owning interface*/
     PDFWK_SYNC_REQUEST_HEADER req = (PDFWK_SYNC_REQUEST_HEADER)&r;
@@ -182,6 +183,7 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
     r.header.RequestType = INITIAL_CONFIG_REQUEST;
     r.req_type = INITIAL_CONFIG_REQUEST;
     r.rpss_index = RPSS2;
+    r.rp_index = 0;
 
     /* Set the owning interface*/
     PDFWK_SYNC_REQUEST_HEADER req = (PDFWK_SYNC_REQUEST_HEADER)&r;
@@ -218,6 +220,7 @@ TEST_FUNCTION(test_pcie_rpss_init_atu_map_fail, test_setup, test_teardown)
     r.header.RequestType = INITIAL_CONFIG_REQUEST;
     r.req_type = INITIAL_CONFIG_REQUEST;
     r.rpss_index = RPSS2;
+    r.rp_index = 0;
 
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
     will_return(__wrap_atu_map, SILIBS_E_RANGE);
@@ -235,6 +238,7 @@ TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success, test_setup, test_teardow
     r.header.RequestType = PRE_RP_INIT_REQUEST;
     r.req_type = PRE_RP_INIT_REQUEST;
     r.rpss_index = RPSS2;
+    r.rp_index = 0;
 
     mock_pcie_ent.id = r.rpss_index;
 
@@ -255,6 +259,7 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_success, test_setup, test_teardo
     r.header.RequestType = POST_RP_INIT_REQUEST;
     r.req_type = POST_RP_INIT_REQUEST;
     r.rpss_index = RPSS2;
+    r.rp_index = 0;
 
     mock_pcie_ent.id = r.rpss_index;
 

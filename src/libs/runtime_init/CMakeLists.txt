@@ -94,6 +94,7 @@ target_link_libraries(
         ms::service::ddr_manager
         ms::service::fuse
         ms::service::pcie_manager
+        ms::service::pcie_manager::cli
         ms::service::power
         ms::service::scp_startup_shutdown
         ms::service::sensor_fifo

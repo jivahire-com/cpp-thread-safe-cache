@@ -8,13 +8,15 @@
  */
 
 /*------------- Includes -----------------*/
-#include "DfwkHost.h"
-
 #include <DfwkDriver.h>
+#include <DfwkHost.h>
 #include <FpFwAssert.h>
+#include <pcie_cli_helpers_i.h>
 #include <pcie_dfwk.h>
 #include <pcie_dfwk_i.h>
 #include <pcie_rpss_init_i.h>
+#include <pcie_ss_common.h>
+#include <pciess.h>
 #include <silibs_status.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -31,8 +33,16 @@
 /*------------- Functions ----------------*/
 int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
 {
+    /* No null check required here as DFWK handles it for us */
     pcie_sync_request_t* r = (pcie_sync_request_t*)incoming;
     silibs_status_t sts = SILIBS_SUCCESS;
+
+    if (r->rp_index >= PCIE_RPSS_COUNT || r->rpss_index >= PCIE_RPSS_COUNT)
+    {
+        printf("pcie sync request out of bounds: RPSS[%d] | RP Index[%d]!\n", r->rpss_index, r->rp_index);
+        r->status = SILIBS_E_PARAM;
+        return 0;
+    }
 
     switch (r->header.RequestType)
     {
@@ -47,6 +57,17 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
     case (POST_RP_INIT_REQUEST):
         printf("Begin RPSS: %1d post-rp ready programming!\n", r->rpss_index);
         sts = begin_rpss_post_rp_ready_init(incoming);
+        break;
+    case (GET_RPSS_ENTITY_REQUEST):
+        r->status = SILIBS_E_PARAM;
+        if (r->p_requested_data != NULL)
+        {
+            *((pcie_ss_entity_t**)(r->p_requested_data)) = pciess_get_entity(r->rpss_index);
+            r->status = SILIBS_SUCCESS;
+        }
+        break;
+    case (CLI_REQUEST):
+        handle_cli_request(r);
         break;
     default:
         printf("Bad sync req type on RPSS: %d!\n", r->rpss_index);

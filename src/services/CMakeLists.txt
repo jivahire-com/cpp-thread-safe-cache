@@ -1,6 +1,7 @@
 
 add_subdirectory(ap_core)
 add_subdirectory(cli_ddr)
+add_subdirectory(cli_pcie)
 add_subdirectory(cli_power)
 add_subdirectory(cli_sensor_fifo)
 add_subdirectory(ddr_manager)

@@ -9,18 +9,17 @@
  */
 
 /*------------- Includes -----------------*/
-#include "DfwkPtrTypes.h" // for PDFWK_SCHEDULE
-
-#include <ErrorHandler.h>      // for FPFwErrorRaise
-#include <errno.h>             // for EINVAL
-#include <kng_soc_constants.h> // for RPSS0, RPSS_INSTANCE
-#include <pcie_dfwk.h>         // for PCIE_RPSS_COUNT, pcie_dfwk_init, pcie...
-#include <pcie_manager_i.h>    // for rpss_service_thread_fn
-#include <scp_pcie_manager.h>  // for pcie_manager_context_t, pciess_comple...
-#include <stddef.h>            // for NULL
-#include <stdint.h>            // for uint32_t, uint8_t
-#include <stdio.h>             // for printf
-#include <tx_api.h>            // for TX_SUCCESS, TX_AUTO_START, TX_NO_TIME...
+#include <DfwkPtrTypes.h>
+#include <ErrorHandler.h>
+#include <errno.h>
+#include <kng_soc_constants.h>
+#include <pcie_dfwk.h>
+#include <pcie_manager_i.h>
+#include <scp_pcie_manager.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define KB                                (1024)
@@ -80,7 +79,7 @@ void scp_pcie_config_service_initialize(uint16_t rpss_to_init)
     }
 }
 
-void scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init)
+void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init)
 {
     if (schedule == NULL)
     {
@@ -135,4 +134,6 @@ void scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init)
             FPFwErrorRaise(status, 0, 0, 0, 0);
         }
     }
+
+    return (void*)(&dev[0]);
 }

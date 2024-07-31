@@ -3,6 +3,7 @@ set(TARGET kng.driver.scp_pcie_manager)
 add_library(${TARGET}
     STATIC
     pcie_async_dispatch.c
+    pcie_cli_helpers.c
     pcie_dfwk_init.c
     pcie_irq.c
     pcie_link_training.c
@@ -26,9 +27,9 @@ target_link_libraries(${TARGET}
     silibs::pciess
     silibs::pcr_rpss
     silibs::tower_rpss
+    ms::driver::vab
     ms::lib::scp_interrupts
     ms::lib::threadx
-    ms::driver::vab
     silibs_platform
 )
 

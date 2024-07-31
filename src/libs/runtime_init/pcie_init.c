@@ -13,6 +13,7 @@
 #include <fpfw_init.h>
 #include <idsw.h>
 #include <idsw_kng.h>
+#include <pcie_cli.h>
 #include <scp_pcie_manager.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -51,6 +52,14 @@ FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "v
         break;
     }
 
-    scp_pcie_initialize(&(host->Schedule), rpss_to_init);
+    void* pcie_dev_handles = scp_pcie_initialize(&(host->Schedule), rpss_to_init);
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, pcie_dev_handles};
+}
+
+FPFW_INIT_COMPONENT(pcie_cli, FPFW_INIT_DEPENDENCIES("pcie", "cli"))
+{
+    fpfw_init_component_id_t pcie_id = "pcie";
+    void* pcie_dev_handles = fpfw_init_get_handle(pcie_id);
+    pcie_cli_init((pciess_device_t*)pcie_dev_handles);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

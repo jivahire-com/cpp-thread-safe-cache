@@ -62,6 +62,11 @@ typedef struct _pcie_config_manager_context_t
  *  @param[in]  schedule  Driver framework scheduler being used by the host.
  *  @param[in]  rpss_to_init Number of RPSS being initialized
  *
- *  @retval     None. Errors raised if failure in initialization.
+ *  @retval     Array of PCIe device handles for all four RPSS on the system
+ *              Cab be used by dependent services - like the PCIe CLI to
+ *              interface with the pcie driver.
+ *
+ *              Errors in rpss init are fatal and are raised directly through
+ *              FpFwErrorRaise when encountered.
  */
-void scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init);
+void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init);

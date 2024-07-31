@@ -16,6 +16,7 @@
 #include <kng_soc_constants.h>
 #include <pcie_config_variable.h>
 #include <silibs_platform.h>
+#include <stdint.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -37,8 +38,18 @@ typedef enum _pcie_rp_sync_request_t
     INITIAL_CONFIG_REQUEST = 0x00,
     PRE_RP_INIT_REQUEST,
     POST_RP_INIT_REQUEST,
+    GET_RPSS_ENTITY_REQUEST,
+    CLI_REQUEST,
     PCIE_MAX_SYNC_REQ
 } pcie_rp_sync_request_t;
+
+typedef enum _pcie_cli_req_op_t
+{
+    GET_RP_LTSSM_STATE = 0,
+    GET_RP_LINK_STATE,
+    GET_RP_DBI_CONFIG_HDR,
+    MAX_PCIE_CLI_REQ_OP
+} pcie_cli_req_op_t;
 
 typedef struct _pcie_async_request_t
 {
@@ -57,6 +68,8 @@ typedef struct _pcie_sync_request_t
     uint8_t rp_index;
     pcie_rp_sync_request_t req_type;
     silibs_status_t status;
+    void* p_sent_data;
+    void* p_requested_data;
 } pcie_sync_request_t;
 
 typedef struct _pciess_device_t

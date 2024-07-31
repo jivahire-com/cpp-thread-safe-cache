@@ -59,10 +59,10 @@ Starts a SVP Virtualizer Simulation, running in a background job.
 What defualt simulation parameters to launch with. Default: scp_mcp_chie_bins
 
 .PARAMETER UseGUI
-$true (1) or $false (0). If true will setup and run the simulation with the GUI, otherwise will run with no GUI. Default: $false
+If -UseGUI specified it will setup and run the simulation with the GUI, otherwise will run with no GUI.
 
 .EXAMPLE
-Invoke-Virtualizer -SimConfig scp_mcp_chie_bins -UseGUI $False
+Invoke-Virtualizer -SimConfig scp_mcp_chie_bins -UseGUI
 #>
 Function Invoke-Virtualizer(
     [Parameter(Mandatory=$false)] [ValidateSet('scp_mcp_svp_bins', 'scp_mcp_chie_bins','scp_bl_embed_fw','mcp_bl_embed_fw', 'hsp_bl_scp')] [string] $SimConfig = "scp_mcp_chie_bins",

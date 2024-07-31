@@ -174,8 +174,8 @@ The following are all equivalent
 
 ```powershell
 runsvp
-runsvp -SimConfig scp_mcp_chie_bins -UseGui $false
-runsvp scp_mcp_chie_bins 0
+runsvp -SimConfig scp_mcp_chie_bins
+runsvp scp_mcp_chie_bins
 ```
 
 #### With the GUI
@@ -183,9 +183,8 @@ runsvp scp_mcp_chie_bins 0
 These are also equivalent
 
 ```powershell
-runsvp -UseGui $true
-runsvp -SimConfig scp_mcp_chie_bins -UseGui $true
-runsvp scp_mcp_chie_bins 1
+runsvp -UseGui
+runsvp -SimConfig scp_mcp_chie_bins -UseGui
 ```
 
 ### With kingsgate hsp scp ifwi flash

@@ -19,7 +19,6 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::lib::threadx
         ms::service::ap_core
-        ms::service::atu_service
         silibs::atu
         silibs::idsw
         silibs::idsw_kng
@@ -40,8 +39,10 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     ap_core_init
     ap_core_interface_init
+    atu_find_map
     atu_translate_address
     fpfw_init_get_handle
+    idsw_get_die_id
     idsw_get_platform_sdv
     sos_register_ssi
 )

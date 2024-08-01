@@ -12,7 +12,6 @@
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>  // for knowing how big 1k is
 #include <ap_core_init.h>
-#include <atu_api.h>               // for ATU_AP_CORE_CLUSTER_ADDRESS
 #include <atu_lib.h>               // for atu_map_entry_t, atu_entry_attr_t
 #include <core_cluster_top_regs.h> // for CORE_CLUSTER_TOP_CORE_CLUSTER0_AD...
 #include <corebits.h>
@@ -25,6 +24,16 @@
 #include <stdint.h> // for uint32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
+/* TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1820413
+   Replace/update once ATU static mapping is available */
+#define AP_CORE_CLUSTER_BASE_ADDR(die_num) \
+    (((die_num) == 0) ? AP_TOP_D0_CORE_CLUSTER_ADDRESS : AP_TOP_D1_CORE_CLUSTER_ADDRESS)
+#define AP_CLUSTER_BASE_ADDR(die_num, cluster_num) \
+    (AP_CORE_CLUSTER_BASE_ADDR(die_num) + ((cluster_num) * AP_CLUSTER_SIZE))
+// define a few macros to handle 8KB alignment
+#define ATU_ALIGNMENT_SIZE (8 * FPFW_KB)
+#define ATU_ALIGN(size)    (FPFW_ALIGN_BY(ATU_ALIGNMENT_SIZE, size))
+
 #define DEFAULT_BOOT_CORE_RVBARADDR (0x00010000ull)
 
 /*-------------- Functions ---------------*/
@@ -40,7 +49,8 @@ static void setup_ap_loop_to_self(uint64_t rvbaraddr)
     *(volatile uint32_t*)translated_rvbar = ARM64_LOOP;
 }
 
-FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "tower_cfg", "icc_hspmbx", "atu_svc"))
+// dependency on pwr_svc only due to https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1820413; pwr_svc already mapping, so rely on that here
+FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "pwr_svc", "tower_cfg", "icc_hspmbx"))
 {
 #define SVP_NUM_CORES_PER_DIE 4
     // fpga platform has an unusual set of available cores
@@ -53,8 +63,25 @@ FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "tower_cfg", "ic
         .cluster_stride = (CORE_CLUSTER_TOP_CORE_CLUSTER1_ADDRESS - CORE_CLUSTER_TOP_CORE_CLUSTER0_ADDRESS),
     };
 
+    /* TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1820413
+             Update once ATU static mapping is available */
+
+    /* == BEGIN ATU MAP of CORE_CLUSTER == */
+    uint32_t die_num = idsw_get_die_id();
+    atu_map_entry_t atu_map_struct = {};
+    // Step-1 Setup ATU map for the entire core cluster
+    atu_map_struct.ap_base_address = AP_CORE_CLUSTER_BASE_ADDR(die_num);
+    atu_map_struct.mscp_start_address = 0;
+    // The size of the mapped region must be 8KB aligned
+    uint32_t core_cluster_size = (die_num == 0) ? AP_TOP_D0_CORE_CLUSTER_SIZE : AP_TOP_D1_CORE_CLUSTER_SIZE;
+    atu_map_struct.mscp_end_address = ATU_ALIGN(core_cluster_size) - 1;
+    // using find map, expecting existing mapping
+    FPFW_RUNTIME_ASSERT(!atu_find_map(ATU_ID_MSCP, &atu_map_struct));
+    /* == END ATU MAP of CORE_CLUSTER == */
+
+    ap_core_config.cluster_pex_base = atu_map_struct.mscp_start_address;
+
     // platform defaults
-    ap_core_config.cluster_pex_base = ATU_AP_CORE_CLUSTER_ADDRESS;
     ap_core_config.platform_cores_in_die = &platform_cores;
     ap_core_config.platform_die_core_count = NUM_AP_CORES_PER_DIE;
 

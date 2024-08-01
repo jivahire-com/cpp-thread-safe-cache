@@ -69,9 +69,22 @@ void __wrap_ap_core_interface_init(pap_core_service_t p_device, pap_core_interfa
     assert_non_null(p_interface);
 }
 
+// wrap idsw_get_die_id
+KNG_DIE_ID __wrap_idsw_get_die_id(void)
+{
+    return mock_type(KNG_DIE_ID);
+}
+
 KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
 {
     return mock_type(KNG_PLAT_ID);
+}
+
+int __wrap_atu_find_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    check_expected(atu_id);
+    check_expected_ptr(atu_map_entry);
+    return mock_type(int);
 }
 
 int __wrap_atu_translate_address(atu_id_t atu_id, uint64_t ap_addr, uint32_t* mscp_addr)
@@ -103,6 +116,12 @@ TEST_FUNCTION(ap_core_init_ap_core_svc, nullptr, nullptr)
     //! Set up expectations
     DFWK_THREADX_HOST test_host = {};
 
+    // only doing basic tests on die_id and atu_map as the current implementation is temporary
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    expect_value(__wrap_atu_find_map, atu_id, ATU_ID_MSCP);
+    expect_any(__wrap_atu_find_map, atu_map_entry);
+    will_return(__wrap_atu_find_map, 0);
+
     fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(0xdeadbeef);
     will_return(__wrap_fpfw_init_get_handle, dummy_icc_hspmbx_ctx);
 
@@ -125,6 +144,12 @@ TEST_FUNCTION(ap_core_init_ap_core_svc__svp, nullptr, nullptr)
 {
     //! Set up expectations
     DFWK_THREADX_HOST test_host = {};
+
+    // only doing basic tests on die_id and atu_map as the current implementation is temporary
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    expect_value(__wrap_atu_find_map, atu_id, ATU_ID_MSCP);
+    expect_any(__wrap_atu_find_map, atu_map_entry);
+    will_return(__wrap_atu_find_map, 0);
 
     fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(0xdeadbeef);
     will_return(__wrap_fpfw_init_get_handle, dummy_icc_hspmbx_ctx);
@@ -149,6 +174,12 @@ TEST_FUNCTION(ap_core_init_ap_core_svc__bigfpga, nullptr, nullptr)
     // Set up expectations
     DFWK_THREADX_HOST test_host = {};
     uint32_t rvbar_value = 0;
+
+    // only doing basic tests on die_id and atu_map as the current implementation is temporary
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    expect_value(__wrap_atu_find_map, atu_id, ATU_ID_MSCP);
+    expect_any(__wrap_atu_find_map, atu_map_entry);
+    will_return(__wrap_atu_find_map, 0);
 
     fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(0xdeadbeef);
     will_return(__wrap_fpfw_init_get_handle, dummy_icc_hspmbx_ctx);

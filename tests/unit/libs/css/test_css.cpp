@@ -38,6 +38,15 @@ int __wrap_clocks_sequence_css_pre_mesh_init(const clocks_sequence_css_pre_mesh_
     return 0;
 }
 
+int __wrap_atu_init(atu_id_t atu_id, const atu_map_entry_t* atu_map_config, uint32_t num)
+{
+    check_expected(atu_id);
+    check_expected_ptr(atu_map_config);
+    check_expected(num);
+
+    return 0;
+}
+
 //
 // Tests
 //
@@ -53,6 +62,10 @@ TEST_FUNCTION(test_css_pre_mesh_init, nullptr, nullptr)
                   clocks_sequence_params,
                   &scp_clocks_pre_mesh_param,
                   sizeof(scp_clocks_pre_mesh_param));
+
+    expect_value(__wrap_atu_init, atu_id, ATU_ID_MSCP);
+    expect_any(__wrap_atu_init, atu_map_config);
+    expect_any(__wrap_atu_init, num);
 
     // Call API under test
     css_pre_mesh_init(test_die);

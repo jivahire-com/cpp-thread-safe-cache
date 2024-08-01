@@ -20,7 +20,7 @@ add_library(${TARGET}
         ddrss_init.c
         debug_init.c
         dfwk_init.c
-        etc_init.c
+        etc_etd_init.c
         fuse_init.c
         gtimer_init.c
         hw_version_scp_init.c
@@ -76,7 +76,6 @@ target_link_libraries(
         ms::lib::ddrss_init
         ms::lib::debug
         ms::lib::cortex_m7::nvic
-        ms::lib::event_trace::collector
         ms::lib::gtimer
         ms::lib::hsp_firmware_headers
         ms::lib::icc::cli
@@ -92,6 +91,8 @@ target_link_libraries(
         ms::lib::tower
         ms::service::ap_core
         ms::service::ddr_manager
+        ms::service::event_trace::collector
+        ms::service::event_trace::decoder
         ms::service::fuse
         ms::service::pcie_manager
         ms::service::pcie_manager::cli
@@ -156,7 +157,7 @@ add_library(${TARGET}
         crash_dump_init.c
         debug_init.c
         dfwk_init.c
-        etc_init.c
+        etc_etd_init.c
         icc_cli_init.c
         icc_init.c
         mcp_mpu_init.c
@@ -184,12 +185,13 @@ target_link_libraries(
         ms::lib::debug
         ms::lib::cortex_m7::nvic
         ms::lib::crash_dump::mcp
-        ms::lib::event_trace::collector
         ms::lib::icc::cli
         ms::lib::icc_platform_defines
         ms::lib::mcp_interrupts
         ms::lib::stdio_textio
         ms::lib::threadx
+        ms::service::event_trace::collector
+        ms::service::event_trace::decoder
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
         silibs::common::lib_uart_pl011

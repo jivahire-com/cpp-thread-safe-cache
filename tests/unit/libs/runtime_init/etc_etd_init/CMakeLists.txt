@@ -1,8 +1,8 @@
-set(TARGET etc_init.test)
+set(TARGET etc_etd_init.test)
 
 set(SOURCES
-    test_etc_init.cpp
-    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/etc_init.c
+    test_etc_etd_init.cpp
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/etc_etd_init.c
 )
 
 # Compile test
@@ -15,8 +15,9 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         ms::build_data
         ms::cmocka::testrunner
-        ms::lib::event_trace::collector
         ms::lib::threadx
+        ms::service::event_trace::collector
+        ms::service::event_trace::decoder
         ms::mocks::event_trace
 )
 
@@ -28,4 +29,5 @@ unit_test_target(${TARGET})
 # mock the functions needed
 mock_target(${TARGET}
     etc_initialize
+    etd_initialize
 )

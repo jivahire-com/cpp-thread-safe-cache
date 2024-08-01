@@ -1,8 +1,8 @@
-set(TARGET power_init.test)
+set(TARGET atu_init.test)
 
 set(SOURCES
-    test_power_init.cpp
-    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/power_init.c
+    test_atu_init.cpp
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/atu_init.c
 )
 
 # Compile test
@@ -10,18 +10,19 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-        fwlib.dfwk
+     fwlib.dfwk
         fwlib.lib.init
-        fwlib.lib.utils
         fwlib.platform.dfwkhost.threadx
-        ms::client_interface::startup_shutdown
-        ms::cmocka::testrunner
-        ms::lib::threadx
-        ms::service::power
-        ms::service::atu_service
+        fwlib.lib.linkedlist
+        fwlib.lib.utils
+        atu
         silibs::idsw
         silibs::idsw_kng
-        silibs::kng_silibs_platform
+        ms::cmocka::testrunner
+        ms::lib::css
+        silibs_platform
+        ms::service::atu_service
+        ms::lib::threadx
 )
 
 # Defining platform APIs
@@ -36,10 +37,7 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    crash_dump_bug_check
     fpfw_init_get_handle
-    idsw_get_platform_sdv
-    power_init
-    power_interface_init
-    sos_register_ssi
+    idsw_get_die_id
+    atu_init
 )

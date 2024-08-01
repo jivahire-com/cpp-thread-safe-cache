@@ -26,32 +26,6 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-#define ARSM_BASE_ADDRESS_DIEn(n) \
-    ((AP_TOP_D0_ARSM_SHARED_SRAM_ADDRESS) + ((AP_TOP_D1_ARSM_SHARED_SRAM_ADDRESS) * (n)))
-#define ARSM_SIZE (AP_TOP_D0_ARSM_SHARED_SRAM_SIZE)
-
-atu_map_entry_t atu_global_map_die0[] = {
-    {
-        .ap_base_address = ARSM_BASE_ADDRESS_DIEn(0),
-        .mscp_start_address = ATU_AP_ARSM_ADDRESS,
-        .mscp_end_address = ALIGN_UP(ATU_AP_ARSM_ADDRESS + ARSM_SIZE, ATU_PAGE_SIZE) - 1,
-        .attribute = {ATU_BUS_ATTR_NS},
-    },
-    // Append an special all zero entry to indicate zeroing-out all unused ATU entries during init.
-    // It is required on FPGA platform when CMM scripts has ATU initialized already before running.
-    {0}};
-
-atu_map_entry_t atu_global_map_die1[] = {
-    {
-        .ap_base_address = ARSM_BASE_ADDRESS_DIEn(1),
-        .mscp_start_address = ATU_AP_ARSM_ADDRESS,
-        .mscp_end_address = ALIGN_UP(ATU_AP_ARSM_ADDRESS + ARSM_SIZE, ATU_PAGE_SIZE) - 1,
-        .attribute = {ATU_BUS_ATTR_NS},
-    },
-    // Append an special all zero entry to indicate zeroing-out all unused ATU entries during init.
-    // It is required on FPGA platform when CMM scripts has ATU initialized already before running.
-    {0}};
-
 #define MAX_SYSTEM_TOWER_INSTANCES (2)
 atu_map_entry_t atu_system_tower_map[MAX_SYSTEM_TOWER_INSTANCES] = {
     {
@@ -84,12 +58,6 @@ void css_pre_mesh_init(uint8_t die_num)
     scp_clocks_pre_mesh_param.system_smmu_gpt_enabled = false;
     scp_clocks_pre_mesh_param.system_smmu_l0gptsz = 0;
     int sts = clocks_sequence_css_pre_mesh_init(&scp_clocks_pre_mesh_param);
-    FPFW_RUNTIME_ASSERT(sts == 0);
-
-    // Initialization of ATU
-    atu_map_entry_t* atu_global_map = (die_num == 0) ? atu_global_map_die0 : atu_global_map_die1;
-    int atu_entry_num = (die_num == 0) ? ARRAY_SIZE(atu_global_map_die0) : ARRAY_SIZE(atu_global_map_die1);
-    sts = atu_init(ATU_ID_MSCP, atu_global_map, atu_entry_num);
     FPFW_RUNTIME_ASSERT(sts == 0);
 }
 

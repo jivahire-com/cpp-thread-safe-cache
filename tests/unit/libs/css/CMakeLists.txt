@@ -30,6 +30,5 @@ unit_test_target(${TARGET})
 
 # Mock the functions needed
 mock_target(${TARGET}
-    atu_init
     clocks_sequence_css_pre_mesh_init
 )

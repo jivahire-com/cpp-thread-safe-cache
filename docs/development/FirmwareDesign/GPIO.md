@@ -229,3 +229,38 @@ To set async request completion callback, use DWFK API [DfwkAsyncRequestSetCompl
 | Request                | Description                                                     |
 | ---------------------- | --------------------------------------------------------------- |
 | GPIO_REQUEST_ISR_ASYNC | Request deferred ISR callback through async completion callback |
+
+## Example of GPIO ISR
+```code
+static void gpio_isr_callback(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext)
+{
+    FPFW_UNUSED(CompletionContext);
+    FPFW_UNUSED(gpio_request);
+    pgpio_request_t gpio_request = (pgpio_request_t)Request;
+
+    printf("%s : level (%ld) re-enqueue GPIO callback for %ld(%ld:%ld)\n",
+           __FUNCTION__,
+           gpio_request->level,
+           gpio_request->gpio_pin_id,
+           GET_GPIO_CTRL_ID(gpio_request->gpio_pin_id),
+           GET_GPIO_PIN_ID(gpio_request->gpio_pin_id));
+    gpio_cmd_async(gpio_request);
+}
+
+void myRegisterGPIO_ISR()
+{
+    // ...
+
+    gpio_request_t isr_request = {0};
+
+    DfwkAsyncRequestInititalize(&isr_request.Header, sizeof(gpio_request_t));
+
+    isr_request.Header.RequestType = GPIO_REQUEST_ISR_ASYNC;
+    isr_request.gpio_pin_id = GPIO_CTRL_PIN_ID(MSCP_EXP_GPIO_6, 2);
+
+    DfwkAsyncRequestSetCompletionRoutine(&isr_request.Header, gpio_isr_callback, NULL);
+    gpio_cmd_async(&isr_request);
+
+    // ...
+}
+```

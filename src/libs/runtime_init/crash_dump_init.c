@@ -21,7 +21,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(cd_init)
+FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("gpio_lib"))
 {
     crash_dump_init();
 

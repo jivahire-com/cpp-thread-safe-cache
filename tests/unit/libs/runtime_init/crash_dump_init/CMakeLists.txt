@@ -1,22 +1,5 @@
 set(TARGET crash_dump_init.test)
 
-set(CRASH_DUMP_SOURCE_DIR
-    ${CMAKE_SOURCE_DIR}/src/libs/crash_dump
-)
-
-set(CRASH_DUMP_SOURCES
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_init.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_overrides.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_payload_core.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_payload_msft.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/crash_dump_payload_threadx.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/scp/crash_dump_init_scp.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/scp/crash_dump_gpio.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/scp/crash_dump_overrides.c
-    ${CRASH_DUMP_SOURCE_DIR}/src/scp/crash_dump_payload.c
-)
-
 set(SOURCES
     test_crash_dump_init.cpp
     ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/crash_dump_init.c
@@ -25,8 +8,6 @@ set(SOURCES
 
 # Compile test
 add_executable(${TARGET} ${SOURCES})
-
-target_compile_definitions(${TARGET} PRIVATE UNIT_TEST)
 
 target_include_directories(${TARGET}
     PRIVATE
@@ -38,6 +19,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.lib.crashDump
         ms::cmocka::testrunner
+        ms::lib::crash_dump::scp
 )
 
 lint_target(${TARGET})

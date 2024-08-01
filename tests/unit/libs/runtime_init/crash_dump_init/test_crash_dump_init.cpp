@@ -46,6 +46,9 @@ TEST_FUNCTION(test_crash_dump_init, nullptr, nullptr)
     // Set up expectations
     expect_function_call(__wrap_crash_dump_init);
 
+    // Check dependencies
+    assert_string_equal("gpio_lib", _fpfw_component_cd_init.children[0]);
+
     // Call API under test
     _fpfw_component_cd_init.init_fn();
 }

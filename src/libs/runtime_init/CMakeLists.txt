@@ -44,6 +44,7 @@ add_library(${TARGET}
         usb_init.c
         sds_init.c
         warm_start_init.c
+        gpio_init.c
 )
 
 target_link_libraries(
@@ -64,6 +65,7 @@ target_link_libraries(
         ms::build_data
         ms::lib::scp_avs
         ms::lib::scp_avs::cli
+        ms::driver::gpio
         ms::driver::icc_mhu_trans
         ms::driver::pcie
         ms::driver::sensor_fifo
@@ -165,6 +167,7 @@ add_library(${TARGET}
         mcp_mpu_init.c
         nvic_init.c
         textio_init.c
+        gpio_init.c
 )
 
 target_link_libraries(
@@ -182,6 +185,7 @@ target_link_libraries(
         fwlib.service.icc_dispatcher
         fwlib.service.iccBase
         ms::build_data
+        ms::driver::gpio
         ms::driver::sensor_fifo
         ms::driver::textio::pl011
         ms::lib::debug

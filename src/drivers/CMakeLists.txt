@@ -1,3 +1,4 @@
+add_subdirectory(gpio)
 add_subdirectory(icc_mhu_trans)
 add_subdirectory(pcie)
 add_subdirectory(scmi_drv)

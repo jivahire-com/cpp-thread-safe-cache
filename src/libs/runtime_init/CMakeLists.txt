@@ -43,6 +43,7 @@ add_library(${TARGET}
         scmi_cli_init.c
         usb_init.c
         sds_init.c
+        warm_start_init.c
 )
 
 target_link_libraries(
@@ -111,6 +112,7 @@ target_link_libraries(
         ms::lib::power::cli
         ms::lib::register_headers
         ms::service::sds_service
+        ms::lib::warm_start
 )
 
 # @todo remove after completing task https://azurecsi.visualstudio.com/Dev/_workitems/edit/1933312/

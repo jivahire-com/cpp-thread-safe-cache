@@ -1,0 +1,29 @@
+# SCP 
+set(TARGET kng.lib.warm_start)
+
+set (SOURCES 
+        src/warm_start.c
+)
+add_library(${TARGET}  STATIC ${SOURCES})
+
+target_link_libraries(
+    ${TARGET}
+        PUBLIC
+            fwlib.lib.status
+        PRIVATE
+            fwlib.lib.assert
+            ms::lib::crash_dump::scp
+            ms::lib::error_codes
+            ms::lib::threadx
+)
+
+target_include_directories(${TARGET}
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc
+)
+
+lint_target(${TARGET})
+format_target(${TARGET})
+coverage_target(${TARGET})
+
+add_library(ms::lib::warm_start ALIAS ${TARGET})

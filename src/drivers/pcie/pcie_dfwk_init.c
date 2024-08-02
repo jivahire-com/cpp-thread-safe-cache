@@ -17,6 +17,7 @@
 #include <pcie_rpss_init_i.h>
 #include <pcie_ss_common.h>
 #include <pciess.h>
+#include <pciess_int.h>
 #include <silibs_status.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -57,6 +58,10 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
     case (POST_RP_INIT_REQUEST):
         printf("Begin RPSS: %1d post-rp ready programming!\n", r->rpss_index);
         sts = begin_rpss_post_rp_ready_init(incoming);
+        break;
+    case (INITIATE_LINK_TRAINING):
+        printf("Begin RPSS: %1d Link Training!\n", r->rpss_index);
+        begin_link_training(incoming);
         break;
     case (GET_RPSS_ENTITY_REQUEST):
         r->status = SILIBS_E_PARAM;

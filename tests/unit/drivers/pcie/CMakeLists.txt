@@ -77,4 +77,5 @@ mock_target(${TARGET}
     pciess_rps_pre_rp_ready_init
     pciess_rps_ready
     pciess_rps_post_rp_ready_init
+    pciess_probe
 )

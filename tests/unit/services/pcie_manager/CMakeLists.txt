@@ -3,6 +3,7 @@ set(TARGET scp_pcie_manager.test)
 set(SOURCES
     pcie_manager_unit_tests.cpp
     pcie_mocks.c
+    pcie_silibs_mocks.c
 )
 
 add_executable(${TARGET} ${SOURCES})
@@ -20,6 +21,10 @@ target_link_libraries(${TARGET}
     ms::lib::threadx
     ms::mocks::threadx
     ms::service::pcie_manager
+    silibs::kng_silibs_platform
+    silibs::pcie
+    silibs::pciess
+    silibs::pcr_rpss    
     silibs_platform
 )
 
@@ -52,4 +57,7 @@ mock_target(${TARGET}
     _txe_event_flags_delete
     idsw_get_die_id
     pcie_dfwk_init
+    pciess_rp_get_link_train_done
+    scp_pcie_get_manager_context
+    send_sync_get_rpss_entity
 )

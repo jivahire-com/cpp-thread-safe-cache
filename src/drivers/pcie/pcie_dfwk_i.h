@@ -44,16 +44,6 @@ void pcie_default_dispatch(PDFWK_ASYNC_REQUEST_HEADER incoming, void* context);
 void pcie_per_rp_dispatch(PDFWK_ASYNC_REQUEST_HEADER req, void* context);
 
 /**
- *  @brief Begins link training on the root port associated with the input
- *         request and starts a timer to handle link training timeouts.
- *
- *  @param[in] req Pointer to an asynchronous pcie request.
- *
- *  @return  None - failures will be returned at the time of request completion.
- */
-void begin_link_training(PDFWK_ASYNC_REQUEST_HEADER req);
-
-/**
  *  @brief Handles synchronous requests sent to the PCIe driver.
  *
  *  @param[in] incoming Pointer to an incoming synchronous pcie request.

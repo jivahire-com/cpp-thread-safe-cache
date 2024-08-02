@@ -6,6 +6,7 @@ add_library(${TARGET}
         pcie_rpss_manager_thread.c
         pcie_config_manager_thread.c
         pcie_manager_callbacks.c
+        pcie_rp_event_handler.c
 )
 
 target_link_libraries(
@@ -20,6 +21,8 @@ target_link_libraries(
         ms::lib::threadx
         silibs::idsw
         silibs::idsw_kng
+        silibs::pciess
+        silibs::pcie
         silibs_platform
 )
 

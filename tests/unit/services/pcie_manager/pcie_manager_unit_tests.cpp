@@ -13,13 +13,14 @@
 #include <cstdint>         // IWYU pragma: keep
 
 extern "C" {
-#include <DfwkPtrTypes.h>      // for PDFWK_SCHEDULE
-#include <errno.h>             // for EINVAL
-#include <error_handler.h>     // for set_error_handler_return
-#include <kng_soc_constants.h> // for RPSS0
-#include <pcie_dfwk.h>         // for pciess_device_interface_t, pciess_dev...
-#include <pcie_manager_i.h>    // for rpss_req_completion_cb, send_start_li...
-#include <scp_pcie_manager.h>  // for scp_pcie_initialize, pcie_manager_con...
+#include <DfwkPtrTypes.h>          // for PDFWK_SCHEDULE
+#include <errno.h>                 // for EINVAL
+#include <error_handler.h>         // for set_error_handler_return
+#include <kng_soc_constants.h>     // for RPSS0
+#include <pcie_dfwk.h>             // for pciess_device_interface_t, pciess_dev...
+#include <pcie_manager_i.h>        // for rpss_req_completion_cb, send_start_li...
+#include <pcie_rp_event_handler.h> // for process_wait_for_event_data
+#include <scp_pcie_manager.h>      // for scp_pcie_initialize, pcie_manager_con...
 #include <silibs_kng_soc.h>
 #include <silibs_status.h> // for SILIBS_E_TIMEOUT
 #include <tx_api.h>        // for TX_NOT_DONE, TX_NO_MEMORY, TX_NO_WAIT
@@ -35,6 +36,7 @@ extern "C" {
 static pciess_device_t dev;
 static pciess_device_interface_t iface;
 static pcie_manager_context_t ctx = {.rpss_idx = RPSS0, .dev = &dev, .iface = &iface};
+static pcie_ss_entity_t mock_pcie_ent;
 
 /*------------- Functions ----------------*/
 TEST_FUNCTION(pcie_service_init_fail, NULL, NULL)
@@ -229,22 +231,6 @@ TEST_FUNCTION(config_service_thread_success_die1, NULL, NULL)
     assert_int_equal(rb_config_var.rootbridge_config[17].mmioh.base, D1_CDED_MMIOH_START);
 }
 
-/* Test case to validate async requests sent for each root port */
-TEST_FUNCTION(test_link_training_req, NULL, NULL)
-{
-    for (auto& i : ctx.async_req)
-    {
-        expect_value(__wrap_DfwkAsyncRequestInititalize, Request, &i);
-        expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, Request, &i);
-        expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionRoutine, rpss_req_completion_cb);
-        expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionContext, &ctx);
-        expect_value(__wrap_DfwkInterfaceSendAsync, Interface, &(iface));
-        expect_value(__wrap_DfwkInterfaceSendAsync, Request, &i);
-    }
-
-    send_start_link_training_requests(&ctx);
-}
-
 /* Tests to validate completion request handling */
 TEST_FUNCTION(test_completion_callback, NULL, NULL)
 {
@@ -276,5 +262,61 @@ TEST_FUNCTION(test_completion_callback_queue_full, NULL, NULL)
     if (!set_error_handler_return())
     {
         rpss_req_completion_cb(&(ctx.async_req[0].header), &ctx);
+    }
+}
+
+// Test Link UP  [ Success/Degraded/Fail]
+TEST_FUNCTION(test_process_wait_for_event_linktrain_cases, NULL, NULL)
+{
+    silibs_status_t status;
+
+    for (uint8_t i = RPSS0; i < RPSS4; i++)
+    {
+        mock_pcie_ent.id = (RPSS_INSTANCE)i;
+        mock_pcie_ent.rps[0].enabled = true;
+        mock_pcie_ent.rps[1].enabled = false;
+        mock_pcie_ent.rps[2].enabled = false;
+        mock_pcie_ent.rps[3].enabled = false;
+
+        /* Setup silibs expectations */
+        will_return(__wrap_send_sync_get_rpss_entity, &mock_pcie_ent);
+        will_return(__wrap_pciess_rp_get_link_train_done, SILIBS_SUCCESS);
+        status = pcie_rp_check_link(i, 0);
+        assert_int_equal(status, SILIBS_SUCCESS);
+
+        will_return(__wrap_send_sync_get_rpss_entity, &mock_pcie_ent);
+        will_return(__wrap_pciess_rp_get_link_train_done, SILIBS_E_OVERWRITTEN);
+        status = pcie_rp_check_link(i, 0);
+        assert_int_equal(status, SILIBS_E_OVERWRITTEN);
+
+        will_return(__wrap_send_sync_get_rpss_entity, &mock_pcie_ent);
+        will_return(__wrap_pciess_rp_get_link_train_done, SILIBS_E_TIMEOUT);
+        status = pcie_rp_check_link(i, 0);
+        assert_int_equal(status, SILIBS_E_TIMEOUT);
+    }
+}
+
+// Test Link down
+TEST_FUNCTION(test_process_wait_for_event_linkdown, NULL, NULL)
+{
+    pciess_completion_request_t cmpl_req;
+    cmpl_req.async_data.data = 0x0001; // LINK_DWN|DTIM
+
+    for (uint8_t i = RPSS0; i < RPSS4; i++)
+    {
+        /* Setup silibs expectations */
+        process_wait_for_event_data(i, &cmpl_req);
+    }
+}
+
+// Test Default case
+TEST_FUNCTION(test_process_wait_for_event_linktrain_other, NULL, NULL)
+{
+    pciess_completion_request_t cmpl_req;
+    cmpl_req.async_data.data = 0x002; // DTIM
+
+    for (uint8_t i = RPSS0; i < RPSS4; i++)
+    {
+        process_wait_for_event_data(i, &cmpl_req);
     }
 }

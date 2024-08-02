@@ -18,7 +18,7 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define PCIE_OUTSTANDING_REQ_QUOTA (4) /* This allows up to 4 outstanding async. requests per rpss */
-
+#define MAX_PENDING_WAIT_FOR_EVENT_PER_RP   (2) /* Max number of pending wait for event Req per RP */
 /*-------------- Typedefs ----------------*/
 
 /* PCIe completion request format - this is what is used by the service for internal communication */
@@ -27,6 +27,7 @@ typedef struct _pciess_completion_request_t
     pcie_rp_async_request_t op;
     uint8_t rp_index;
     silibs_status_t status;
+    pcie_async_data_t async_data;
 } pciess_completion_request_t;
 
 /* This is the thread context block for each RPSS management thread */
@@ -35,11 +36,12 @@ typedef struct _pcie_manager_context_t
     RPSS_INSTANCE rpss_idx;
     pciess_device_t* dev;
     pciess_device_interface_t* iface;
-    pcie_async_request_t async_req[ROOT_PORTS_PER_RPSS];
+    pcie_async_request_t async_req[ROOT_PORTS_PER_RPSS * MAX_PENDING_WAIT_FOR_EVENT_PER_RP];
     pciess_completion_request_t cmpl_req[PCIE_OUTSTANDING_REQ_QUOTA];
     TX_THREAD worker;
     TX_QUEUE work_queue;
     TX_EVENT_FLAGS_GROUP* event_ptr;
+    TX_TIMER expiry_timer[ROOT_PORTS_PER_RPSS];
 } pcie_manager_context_t;
 
 /* This is the thread context block for config service thread*/
@@ -70,3 +72,17 @@ typedef struct _pcie_config_manager_context_t
  *              FpFwErrorRaise when encountered.
  */
 void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init);
+
+/*--------- Function Prototypes ----------*/
+/**
+ *  @brief      Send WAIT_FOR_EVENT Asysn message to the RP 
+ *
+ *  @param[in]  ctx     Manager Context
+ *  @param[in]  rp_idx  RP index within the RPSS 
+ *  @param[in]  num_event Number of WAIT_FOR_EVENT async messages to send 
+ *              Max number set by MAX_PENDING_WAIT_FOR_EVENT_PER_RP.
+ *
+ *  @retval     None. Errors raised if failure in initialization.
+ */
+void send_async_wait_for_event(pcie_manager_context_t* ctx, uint8_t rp_idx, uint8_t num_event);
+

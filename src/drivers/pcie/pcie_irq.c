@@ -15,10 +15,12 @@
 #include <intu_lib.h>
 #include <kng_soc_constants.h>
 #include <pcie_dfwk.h>
+#include <pcie_dfwk_i.h>
 #include <pcie_irq.h>
 #include <pcie_rp_common.h>
 #include <pcie_ss_common.h>
 #include <pciess.h>
+#include <pciess_int.h>
 #include <rpss_addr_map_regs.h>
 #include <silibs_common.h>
 #include <stdbool.h>
@@ -33,10 +35,9 @@
 
 /*-------- Function Prototypes -----------*/
 static pcie_ss_entity_t* get_rpss_entity_from_irq_num(uint32_t irq_num);
-static bool is_pcie_link_up(uint32_t status);
 
 /*-- Declarations (Statics and globals) --*/
-
+static pciess_int_probe_t int_info = {0};
 /*------------- Functions ----------------*/
 static pcie_ss_entity_t* get_rpss_entity_from_irq_num(uint32_t irq_num)
 {
@@ -75,42 +76,82 @@ static pcie_ss_entity_t* get_rpss_entity_from_irq_num(uint32_t irq_num)
     return pciess_get_entity(rpss_idx);
 }
 
-static bool is_pcie_link_up(uint32_t status)
-{
-    if ((status & RPSS_PCIE_LINK_UP) != 0x00)
-    {
-        return true;
-    }
-
-    return false;
-}
-
 void rpss_irq_callback(uint32_t irq_num)
 {
     pcie_ss_entity_t* ss = get_rpss_entity_from_irq_num(irq_num);
+    pcie_async_request_t* pending_req = {0};
 
-    for (uint8_t i = 0; i < ROOT_PORTS_PER_RPSS; i++)
+    memset(&int_info, 0x0, sizeof(pciess_int_probe_t));
+
+    /* Probe all PCIESS INT */
+    if (pciess_probe(ss, &int_info, INTU_TO_SCP))
     {
-        pcie_rp_entity_t* rp = &(ss->rps[i]);
-
-        if (!rp->enabled)
+        for (uint8_t rp_idx = 0; rp_idx < ROOT_PORTS_PER_RPSS; rp_idx++)
         {
-            continue;
-        }
+            bool int_present = false;
+            uint32_t int_data = 0; // for Now this is the only data filled into the request
+            for (uint32_t int_idx = 0; int_idx < PCIESS_RP_NUM_INTERRUPTS; int_idx++)
+            {
+                if (int_info.rp_ints[rp_idx].ints[int_idx].asserted == true)
+                {
+                    switch (int_idx)
+                    {
+                    case PCIESS_RP_INT_LINK_DOWN: {
+                        if (int_info.rp_ints[rp_idx].ints[int_idx].asserted == true)
+                        {
+                            int_present = true;
+                            int_data |= 0x1 << PCIESS_RP_INT_LINK_DOWN;
+                            printf("Link Down : RPSS IRQ: 0x%x \t RP: 0x%x \n", (unsigned int)irq_num, rp_idx);
+                        }
+                        break;
+                    }
+                    case PCIESS_RP_INT_LINK_UP: {
+                        if (int_info.rp_ints[rp_idx].ints[int_idx].asserted == true)
+                        {
+                            int_present = true;
+                            int_data |= 0x1 << PCIESS_RP_INT_LINK_UP;
+                            printf("Link Up : RPSS IRQ: 0x%x \t RP: 0x%x \n", (unsigned int)irq_num, rp_idx);
+                        }
+                        break;
+                    }
 
-        uint32_t status = 0;
-        uint64_t rpss_intu_addr =
-            rp->bases._base + RPSS_ADDR_MAP_RPSS_INTU_IAGG_P0_ADDRESS + (RPSS_INTU_STRIDE * rp->id);
-        intu_get_interrupt_status(rpss_intu_addr, &status);
+                    case PCIESS_RP_INT_DTIM:
+                    case PCIESS_RP_INT_LTIM:
+                    case PCIESS_RP_INT_RASDP:
+                    case PCIESS_RP_INT_HP_PME:
+                    case PCIESS_RP_INT_WAKEUP:
+                    case PCIESS_RP_INT_PM_PME:
+                    case PCIESS_RP_INT_PM_TO_ACK:
+                    case PCIESS_RP_INT_GLOBAL_IDE:
+                    case PCIESS_RP_INT_AES_HCFG:
+                    case PCIESS_RP_INT_SEND_C:
+                    case PCIESS_RP_INT_SEND_NF:
+                    case PCIESS_RP_INT_SEND_F:
+                    case PCIESS_RP_INT_DPC:
+                    default: {
+                        printf("Default:: Unhandled FW PCIE INT \n");
+                        break;
+                    }
+                    }
+                }
+            }
+            // If int_present is set for a given RP, then complete the request for that
+            // specific RP
+            if (int_present)
+            {
+                pending_req = get_pending_async_req_for_this_rp(ss->id, rp_idx, WAIT_FOR_EVENT);
+                if (pending_req)
+                {
+                    // Update Req Completion Data
+                    // Update pending_req with INT data
+                    pending_req->async_data.data = int_data;
 
-        if (is_pcie_link_up(status) == true)
-        {
-            pcie_link_up_interrupt_callback(ss, i);
+                    complete_async_req_for_this_rp(pending_req);
+                }
+            }
         }
-        else
-        {
-            printf("Unhandled INTU status received on rp_idx(%d): (0x%llx)\n", i, (uint64_t)status);
-        }
-        pciess_rp_clear_intus(&(ss->rps[i]));
     }
+
+    /* Clear Pending PCIESS INT  */
+    pciess_clear_handler(ss, &int_info, INTU_TO_SCP);
 }

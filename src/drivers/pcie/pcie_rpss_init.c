@@ -177,3 +177,13 @@ int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
 
     return sts;
 }
+
+void begin_link_training(PDFWK_SYNC_REQUEST_HEADER req)
+{
+    pcie_sync_request_t* r = (pcie_sync_request_t*)req;
+
+    pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
+    FPFW_RUNTIME_ASSERT(rpss != NULL);
+
+    pciess_rp_initiate_link_training(&(rpss->rps[r->rp_index]));
+}

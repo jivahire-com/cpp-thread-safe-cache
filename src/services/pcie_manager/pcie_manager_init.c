@@ -44,6 +44,12 @@ static kingsgate_pcie_vab_config vab_config_var = {0};
 
 /*------------- Functions ----------------*/
 
+pcie_manager_context_t* scp_pcie_get_manager_context(uint8_t rpss_idx)
+{
+    FPFW_RUNTIME_ASSERT(rpss_idx < PCIE_RPSS_COUNT);
+    return &pcie_mgr_ctx[rpss_idx];
+}
+
 /*  Initialize the event flags for configuration variables and
  *  start the thread to be alerted when all configs are populated
  */

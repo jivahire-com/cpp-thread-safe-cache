@@ -27,8 +27,7 @@
 /* Async operations supported by each root port on a pcie subsystem*/
 typedef enum _pcie_rp_async_request_t
 {
-    INITIATE_LINK_TRAINING = 0x00,
-    WAIT_FOR_EVENT,
+    WAIT_FOR_EVENT = 0x00,
     PCIE_MAX_ASYNC_REQ
 } pcie_rp_async_request_t;
 
@@ -38,10 +37,20 @@ typedef enum _pcie_rp_sync_request_t
     INITIAL_CONFIG_REQUEST = 0x00,
     PRE_RP_INIT_REQUEST,
     POST_RP_INIT_REQUEST,
+	INITIATE_LINK_TRAINING,
     GET_RPSS_ENTITY_REQUEST,
     CLI_REQUEST,
     PCIE_MAX_SYNC_REQ
 } pcie_rp_sync_request_t;
+
+/*
+ * For now async callback just has a INT mask 
+ * passed back to the service.
+ */
+typedef struct _pcie_async_data_t
+{
+    uint32_t data;
+}pcie_async_data_t;
 
 typedef enum _pcie_cli_req_op_t
 {
@@ -58,7 +67,7 @@ typedef struct _pcie_async_request_t
     uint8_t rp_index;
     pcie_rp_async_request_t rp_op;
     silibs_status_t status;
-    TX_TIMER expiry_timer;
+    pcie_async_data_t async_data;
 } pcie_async_request_t;
 
 typedef struct _pcie_sync_request_t

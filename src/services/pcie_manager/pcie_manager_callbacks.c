@@ -12,9 +12,10 @@
 #include "DfwkPtrTypes.h" // for PDFWK_ASYNC_REQUEST_HEADER
 #include "pcie_dfwk.h"    // for pcie_async_request_t
 
-#include <ErrorHandler.h>     // for FPFwErrorRaise
-#include <FpFwAssert.h>       // for FPFW_RUNTIME_ASSERT
-#include <pcie_manager_i.h>   // for rpss_req_completion_cb
+#include <ErrorHandler.h>   // for FPFwErrorRaise
+#include <FpFwAssert.h>     // for FPFW_RUNTIME_ASSERT
+#include <pcie_manager_i.h> // for rpss_req_completion_cb
+#include <pciess_int.h>
 #include <scp_pcie_manager.h> // for pcie_manager_context_t, pciess_complet...
 #include <stdio.h>            // for printf, NULL
 #include <tx_api.h>           // for TX_NO_WAIT, TX_SUCCESS, tx_queue_send
@@ -39,7 +40,14 @@ void rpss_req_completion_cb(PDFWK_ASYNC_REQUEST_HEADER req, void* ctx_ref)
     cmpl.rp_index = async_req->rp_index;
     cmpl.op = async_req->rp_op;
     cmpl.status = async_req->status;
+    cmpl.async_data = async_req->async_data;
 
+    // If LINK_UP is received, then we stop the timer
+    if (async_req->async_data.data & (0x1 << PCIESS_RP_INT_LINK_UP))
+    {
+        printf("%s LINK_UP received \n", __func__);
+        tx_timer_delete(&(ctx->expiry_timer[async_req->rp_index]));
+    }
     /*
      * Because of how async requests are pended by the service, we should
      * never run out of worker queue space. In case it happens, it is indicative

@@ -122,30 +122,36 @@ unsigned int add_async_req_to_pool(pcie_async_request_t* req)
 void pcie_per_rp_dispatch(PDFWK_ASYNC_REQUEST_HEADER req, void* context)
 {
     FPFW_UNUSED(context);
-
     pcie_async_request_t* r = (pcie_async_request_t*)req;
-    unsigned int status = add_async_req_to_pool(r);
-    if (status != TX_SUCCESS)
-    {
-        printf("Failed to enqueue request for RPSS: %d | RP Index: %d! Status: %d\n", r->rpss_index, r->rp_index, status);
-        DfwkAsyncRequestComplete(req);
-        return;
-    }
 
-    switch (r->rp_op)
+    if (r->rp_op < PCIE_MAX_ASYNC_REQ)
     {
-    case INITIATE_LINK_TRAINING:
-        begin_link_training(req);
-        break;
-    case WAIT_FOR_EVENT:
-        r->status = SILIBS_SUCCESS;
-        complete_async_req_for_this_rp(r);
-        break;
-    default:
-        printf("Received an unknown request for RPSS: %d | RP Index: %d!\n", r->rpss_index, r->rp_index);
+        unsigned int status = add_async_req_to_pool(r);
+        if (status != TX_SUCCESS)
+        {
+            printf("Failed to enqueue request for RPSS: %d | RP Index: %d! Status: %d\n", r->rpss_index, r->rp_index, status);
+            DfwkAsyncRequestComplete(req);
+            return;
+        }
+
+        switch (r->rp_op)
+        {
+        case WAIT_FOR_EVENT: {
+            /* Do any async request pre-processing here based on r->rp_op type if needed */
+            break;
+        }
+        default: {
+            printf("Received an unknown request for RPSS: %d | RP Index: %d!\n", r->rpss_index, r->rp_index);
+            r->status = SILIBS_E_PARAM;
+            complete_async_req_for_this_rp(r);
+            break;
+        }
+        }
+    }
+    else
+    {
+        /* Mark Request as Invalid Paramter */
         r->status = SILIBS_E_PARAM;
-        complete_async_req_for_this_rp(r);
-        break;
     }
 }
 

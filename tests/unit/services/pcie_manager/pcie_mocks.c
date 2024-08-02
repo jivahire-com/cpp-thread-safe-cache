@@ -12,8 +12,10 @@
 #include <DfwkCommon.h> // for PDFWK_ASYNC_REQUEST_HEADER, DFWK_ASYNC_REQUE...
 #include <FpFwCMocka.h> // for check_expected_ptr, assert_non_null, assert_...
 #include <idsw_kng.h>
-#include <pcie_dfwk.h> // for pcie_async_request_t, pciess_device_t
-#include <stddef.h>    // for size_t
+#include <pcie_dfwk.h>      // for pcie_async_request_t, pciess_device_t
+#include <pcie_ss_common.h> // pciess_entity
+#include <scp_pcie_manager.h>
+#include <stddef.h> // for size_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -62,4 +64,16 @@ UINT __wrap__txe_event_flags_delete(TX_EVENT_FLAGS_GROUP* group_ptr)
 KNG_DIE_ID __wrap_idsw_get_die_id(void)
 {
     return mock_type(KNG_DIE_ID);
+}
+
+pcie_manager_context_t* __wrap_scp_pcie_get_manager_context(uint8_t rpss_idx)
+{
+    (void)rpss_idx;
+    return mock_ptr_type(pcie_manager_context_t*);
+}
+
+pcie_ss_entity_t* __wrap_send_sync_get_rpss_entity(uint8_t rpss_idx)
+{
+    (void)rpss_idx;
+    return mock_ptr_type(pcie_ss_entity_t*);
 }

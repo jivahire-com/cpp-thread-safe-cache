@@ -10,7 +10,7 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
-
+#include <fpfw_icc_base.h>
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
@@ -20,7 +20,7 @@
 extern "C" {
 #endif
 
-void fuse_init();
+void fuse_init(fpfw_icc_base_ctx_t* icc_base_ctx);
 /**
  * Read fuse API
  *

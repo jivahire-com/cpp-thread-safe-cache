@@ -1,13 +1,18 @@
-set(TARGET fuse.test)
+set(TARGET fuse_init.test)
 
-add_executable(${TARGET}
-   test_fuse.cpp
+set(SOURCES
+    test_fuse_init.cpp
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/fuse_init.c
 )
+
+
+add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
         ms::cmocka::mocks
         ms::cmocka::testrunner
+        ms::lib::hsp_firmware_headers
         ms::lib::scp_interrupts
         ms::lib::threadx
         ms::mocks::event_trace
@@ -15,15 +20,19 @@ target_link_libraries(${TARGET}
         ms::service::fuse
     PUBLIC
         fwlib.lib.assert
+        fwlib.lib.init
+        fwlib.lib.mboxPrimitives
+        fwlib.driver.mboxIccTransport
+        fwlib.service.cli
+        fwlib.service.iccBase
+        fwlib.service.icc_dispatcher
         silibs::fuse
         silibs::idsw
-        silibs::idsw_kng
+        silibs::idsw_kng  
         silibs::kng_silibs_platform
         silibs::platform
 
  )
-
-
 
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:ms::service::fuse,INCLUDE_DIRECTORIES>)
 
@@ -37,20 +46,8 @@ unit_test_target(${TARGET})
 
 
 mock_target(${TARGET}
-    crash_dump_bug_check
-    idsw_get_platform_sdv
-    idsw_get_die_id
-    fuse_dma_copy_to_ram_blocking
-    read_fuse
-    apply_fuse_override
-    distribute_fuses
-    trigger_debugger_for_manual_overrides
-    apply_fuse_override_ignoring_valids
-    fuse_dist_get_exclusion_list
-    fuse_get_exclude_list_fpga
-    fpfw_init_get_handle
-    fpfw_icc_base_send
-    fpfw_icc_base_recv
-)
+   fpfw_init_get_handle
+   fuse_init
+   platform_fuse_init_cli
 
-target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)
+)

@@ -8,16 +8,17 @@
 
 /*------------- Includes -----------------*/
 
-#include <bug_check.h>               // for BUG_ASSERT_PARAM, BUG_ASSERT
-#include <fpfw_init.h>               // for fpfw_init_get_handle, FPFW_INIT_C...
-#include <fpfw_mbox_icc_transport.h> // for ICC_MBX_ASYNC_RECV, ICC_MBX_ASY...
-#include <fpfw_status.h>             // for fpfw_status_t
-#include <fuse.h>                    // fuse library functions
-#include <fuse_dma.h>                // apply copy fuse to ram
-#include <fuse_events.h>             // apply event trace for fuse
-#include <fuse_init.h>               // fuse service API interface
+#include <bug_check.h>     // for BUG_ASSERT_PARAM, BUG_ASSERT
+#include <fpfw_icc_base.h> // for fpfw_icc_base_send_recv_req_t, fpfw...
+#include <fpfw_init.h>     // for fpfw_init_get_handle, FPFW_INIT_C...
+#include <fpfw_status.h>   // for fpfw_status_t
+#include <fuse.h>          // fuse library functions
+#include <fuse_dma.h>      // apply copy fuse to ram
+#include <fuse_events.h>   // apply event trace for fuse
+#include <fuse_init.h>     // fuse service API interface
 #include <fuse_struct.h>
 #include <fuses_top_regs.h>
+#include <hsp_firmware_headers.h>
 #include <idsw.h> // SW platform id
 #include <idsw_kng.h>
 #include <kingsgate_fuse_defines.h> // Test revision get
@@ -41,7 +42,13 @@
 static bool platform_requires_fuse_distribution();
 static int platform_fuse_copy_to_ram();
 static int read_override_from_spi();
+static void fuse_icc_base_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status);
+static void request_load_fuse_send_complete_cb(void* context, fpfw_status_t status);
 /*-- Declarations (Statics and globals) --*/
+
+static kng_hsp_mailbox_msg recv_payload_buffer;
+static fpfw_icc_base_ctx_t* icc_base_ctx_fuse;
+
 /*------------- Functions ----------------*/
 static bool platform_requires_fuse_distribution()
 {
@@ -58,41 +65,52 @@ static int platform_fuse_copy_to_ram()
 {
     return fuse_dma_copy_to_ram_blocking();
 }
+static void request_load_fuse_send_complete_cb(void* context, fpfw_status_t status)
+{
+    FPFW_UNUSED(context);
+    FPFW_UNUSED(status);
+}
+
+static void fuse_icc_base_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    FPFW_UNUSED(context);
+    FPFW_UNUSED(output_size_bytes);
+    BUG_ASSERT(status == FPFW_STATUS_SUCCESS);
+    BUG_ASSERT(recv_payload_buffer.header.cmd == HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_RSP);
+    BUG_ASSERT(recv_payload_buffer.rsp.status == 0);
+    printf(FUSE_NAME "Request FW load received \n");
+    FUSE_ET_STATUS(FUSE_ET_TYPE_MAILBOX_REQUEST_OVERRIDES);
+}
+
 static int read_override_from_spi()
 {
-    int retval = 0;
-// TODO:  Integrate with ICC
-// https://azurecsi.visualstudio.com/Dev/_workitems/edit/1884658
-#ifdef _HAS_ICC_READY
-    static fpfw_mbox_icc_transport_intrf_t mscp_mbx_intf = {};
-    HSP_MAILBOX_MSG message;
-    HSP_MAILBOX_MSG response;
-    size_t output_size = 0;
-    fpfw_status_t status = fpfw_mbox_icc_transport_dfwk_interface_init(fpfw_init_get_handle("icc_mbx"), &mscp_mbx_intf);
-    BUG_ASSERT_PARAM((status == FPFW_INIT_STATUS_SUCCESS), status, FPFW_INIT_STATUS_SUCCESS);
-    retval = fpfw_icc_transport_get_max_mesg_size_sync_req(mscp_mbx_intf, &output_size);
-    BUG_ASSERT_PARAM((retval == FPFW_INIT_STATUS_SUCCESS), retval, FPFW_INIT_STATUS_SUCCESS);
-    message.Cmd = HstpMailboxCmdLoadFirmware;
-    message.Msg[0] = HspFirmwareIdFuseOverride;
-    message.Msg[1] = SCP_TOP_SCP_EXP_ADDRESS;
-    message.Msg[2] = SCP_EXP_TOP_RAM0_ADDRESS;
-    printf("\n");
-    do
-    {
-        // mailbox send may fail if response is in fifo (w/ additional response also queued); attempt to read/clear any pending response.
-        fpfw_icc_transport_try_recv_sync_req(mscp_mbx_intf, &response, sizeof(HSP_MAILBOX_MSG), &output_size);
-    } while (fpfw_icc_transport_try_send_sync_req(mscp_mbx_intf, &message) != FPFW_INIT_STATUS_SUCCESS);
-    response.Cmd = 0;
-    while ((fpfw_icc_transport_try_recv_sync_req(mscp_mbx_intf, &response, sizeof(HSP_MAILBOX_MSG), &output_size) !=
-            FPFW_INIT_STATUS_SUCCESS) ||
-           (response.Cmd != message.Cmd))
-    {
-        sleep_ms(1);
-    }
-#else
-    return SILIBS_E_SUPPORT;
-#endif
-    return retval;
+    static fpfw_icc_base_recv_req_t recv_params = {
+        .payload_buffer = &recv_payload_buffer,
+        .buffer_size = sizeof(recv_payload_buffer),
+        .recv_cmd_code = HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_RSP,
+        .cb = fuse_icc_base_recv_complete_notify,
+        .cb_ctx = NULL,
+    };
+    fpfw_status_t status = fpfw_icc_base_recv(icc_base_ctx_fuse, &recv_params);
+    BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
+    static kng_hsp_mailbox_cmd_load_fw_req send_request = {
+        .header.cmd = HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ,
+        .header.context = 0,
+        .id = HspFirmwareIdFuseOverrideDie0,
+        // Todo The HSP need to decide the address is
+        // https://azurecsi.visualstudio.com/Dev/_workitems/edit/1937493
+        .address = SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS,
+        .size = SCP_EXP_TOP_RAM1_SIZE,
+    };
+    static fpfw_icc_base_send_req_t send_params = {
+        .payload_buffer = &send_request,
+        .cb = request_load_fuse_send_complete_cb,
+        .cb_ctx = NULL,
+        .buffer_size = sizeof(send_request),
+    };
+    status = fpfw_icc_base_send(icc_base_ctx_fuse, &send_params);
+    BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
+    return status;
 }
 int platform_read_for_fuse(const uintptr_t fuse_store_addr, const uint64_t fuse_bit_offset, const uint32_t fuse_bit_size)
 {
@@ -245,7 +263,8 @@ int platform_fuse_distribution(void)
     return status;
 }
 // This placeholder here is to verify the Fuse event trace log
-void fuse_init()
+void fuse_init(fpfw_icc_base_ctx_t* icc_base_ctx)
 {
+    icc_base_ctx_fuse = icc_base_ctx;
     FUSE_ET_STATUS(FUSE_ET_TYPE_SVC_START);
 }

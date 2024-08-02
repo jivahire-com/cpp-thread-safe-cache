@@ -6,10 +6,11 @@
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwAssert.h>     // for FPFW_RUNTIME_ASSERT
-#include <FpFwCli.h>        // for FpFwCliInitialize, FpFwCliStart, FPFW_CLI_...
-#include <fpfw_init.h>      // for fpfw_init_get_handle, FPFW_INIT_C...
-#include <fuse.h>           // fuse library functions
+#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
+#include <FpFwCli.h>    // for FpFwCliInitialize, FpFwCliStart, FPFW_CLI_...
+#include <fpfw_init.h>  // for fpfw_init_get_handle, FPFW_INIT_C...
+#include <fuse.h>       // fuse library functions
+#include <fuse_client.h>
 #include <fuse_dma.h>       // apply copy fuse to ram
 #include <fuse_events.h>    // apply event trace for fuse
 #include <fuse_init.h>      // fuse service API interface

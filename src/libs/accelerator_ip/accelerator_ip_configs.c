@@ -27,6 +27,18 @@
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
+// This is a basic a vector table and spin loop at reset code.
+// This is implemented for FPGA, where elf is not preloaded.
+// This should be removed once we have the code download sequence pulled in. ADO (1728282)
+static const uint32_t sdm_cded_spin_loop[] = {
+    0x20000200, 0x00080049, 0x00000000, 0x00000000, // 0x80000 - 0x8000F
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, // 0x80010 - 0x8001F
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, // 0x80020 - 0x8002F
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, // 0x80030 - 0x8003F
+    0x00000000, 0x00000000, 0xF05F2500, 0x60055000, // 0x80040 - 0x8004F
+    0xE7FC3501, 0x00000000, 0x00000000, 0x00000000  // 0x80050 - 0x8005F
+};
+
 /*-------------------------------- Typedefs ---------------------------------*/
 
 /*--------------------------- Function Prototypes ---------------------------*/
@@ -121,14 +133,15 @@ static sdm_pre_pcie_cfg_t die0_sdmss_pre_pcie_cfg = {
                                           // PCIe Base Spec 9.3.3.11 for details.
 };
 
-static accelip_ss_init_t die0_sdmss_init_params_ctxt = {.sdm_emcpu_init_cfg = &die0_sdmss_sdm_emcpu_init_cfg,
-                                                        .fw_preload_enabled = true,
-                                                        .sdm_emcpu_fw_image_start_addr = 0x0, // TODO : ADO (1728282)
-                                                        .sdm_emcpu_fw_image_size = 0, // TODO : ADO (1728282)
-                                                        .init_level = ACCELIP_INIT_ECAM_ENABLED,
-                                                        .sdm_mem_init = &die0_sdmss_sdm_mem_init,
-                                                        .pre_pcie_cfg = &die0_sdmss_pre_pcie_cfg,
-                                                        .accelip_ss_cfg = &die0_sdmss_ss_cfg};
+static accelip_ss_init_t die0_sdmss_init_params_ctxt = {
+    .sdm_emcpu_init_cfg = &die0_sdmss_sdm_emcpu_init_cfg,
+    .fw_preload_enabled = true,
+    .sdm_emcpu_fw_image_start_addr = (uintptr_t)&sdm_cded_spin_loop[0], // TODO : ADO (1728282)
+    .sdm_emcpu_fw_image_size = sizeof(sdm_cded_spin_loop),              // TODO : ADO (1728282)
+    .init_level = ACCELIP_INIT_ECAM_ENABLED,
+    .sdm_mem_init = &die0_sdmss_sdm_mem_init,
+    .pre_pcie_cfg = &die0_sdmss_pre_pcie_cfg,
+    .accelip_ss_cfg = &die0_sdmss_ss_cfg};
 /****** SDMSS context data end ******/
 
 /****** CDEDSS context data start ******/
@@ -220,14 +233,15 @@ static sdm_pre_pcie_cfg_t die0_cdedss_pre_pcie_cfg = {
                                            // PCIe Base Spec 9.3.3.11 for details.
 };
 
-static accelip_ss_init_t die0_cdedss_init_params_ctxt = {.sdm_emcpu_init_cfg = &die0_cdedss_sdm_emcpu_init_cfg,
-                                                         .fw_preload_enabled = true,
-                                                         .sdm_emcpu_fw_image_start_addr = 0x0, // TODO : ADO (1728282)
-                                                         .sdm_emcpu_fw_image_size = 0, // TODO : ADO (1728282)
-                                                         .init_level = ACCELIP_INIT_ECAM_ENABLED,
-                                                         .sdm_mem_init = &die0_cdedss_sdm_mem_init,
-                                                         .pre_pcie_cfg = &die0_cdedss_pre_pcie_cfg,
-                                                         .accelip_ss_cfg = &die0_cdedss_ss_cfg};
+static accelip_ss_init_t die0_cdedss_init_params_ctxt = {
+    .sdm_emcpu_init_cfg = &die0_cdedss_sdm_emcpu_init_cfg,
+    .fw_preload_enabled = true,
+    .sdm_emcpu_fw_image_start_addr = (uintptr_t)&sdm_cded_spin_loop[0], // TODO : ADO (1728282)
+    .sdm_emcpu_fw_image_size = sizeof(sdm_cded_spin_loop),              // TODO : ADO (1728282)
+    .init_level = ACCELIP_INIT_ECAM_ENABLED,
+    .sdm_mem_init = &die0_cdedss_sdm_mem_init,
+    .pre_pcie_cfg = &die0_cdedss_pre_pcie_cfg,
+    .accelip_ss_cfg = &die0_cdedss_ss_cfg};
 /****** CDEDSS context data end ******/
 
 /* ---- Sub-system Context data-structures across Die's --------------------- */

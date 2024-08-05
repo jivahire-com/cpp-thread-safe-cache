@@ -129,7 +129,7 @@ TEST_FUNCTION(accelip_pre_boot_config_pass_test, nullptr, nullptr)
 {
     // Happy case setup
     will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
 
     // init accelertor
     will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 3);
@@ -143,7 +143,7 @@ TEST_FUNCTION(accelip_pre_boot_config_atu_map_fail_test, nullptr, nullptr)
 {
     // ATU MAP fail
     will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
 
     will_return_count(__wrap_atu_map, SILIBS_E_PARAM, 2);
 
@@ -154,7 +154,7 @@ TEST_FUNCTION(accelip_pre_boot_config_atu_unmap_fail_test, nullptr, nullptr)
 {
     // ATU UNMAP fail
     will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
 
     will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 2);
     will_return(__wrap_accelip_ss_init, SILIBS_SUCCESS);
@@ -167,7 +167,7 @@ TEST_FUNCTION(accelip_pre_boot_config_accelip_ss_init_fail_test, nullptr, nullpt
 {
     // Accelip ss init fail
     will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
 
     will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 3);
     will_return_count(__wrap_accelip_ss_init, SILIBS_E_PARAM, 2);

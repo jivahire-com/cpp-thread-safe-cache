@@ -22,7 +22,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(ws_init, FPFW_INIT_DEPENDENCIES("mpu") )
+FPFW_INIT_COMPONENT(ws_init, FPFW_INIT_DEPENDENCIES("mpu"))
 {
     warm_start_init();
 

@@ -190,6 +190,13 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
         return ACCEL_RET_FAIL_ACCEL_IP;
     }
 
+    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+    {
+        // On FPGA, SDM and CDED Firmware are not preloaded in the respective ITCMs. (Hence setting to false for FPGA)
+        // This will enable silibs to load the spin loop firmware in the ITCM before releasing the cores from reset.
+        p_ss_ctxt->p_init_params->fw_preload_enabled = false;
+    }
+
     ret = accelip_ss_init(p_accelip_atu_map->mscp_start_address,
                           p_ss_ctxt->accelip_metadata.accel_type,
                           p_ss_ctxt->p_init_params);

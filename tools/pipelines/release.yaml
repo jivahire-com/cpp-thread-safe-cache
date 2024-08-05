@@ -17,59 +17,50 @@ variables:
 
 # Build stage
 stages:
-
 - stage: Build_x86_Debug
   dependsOn: []
-  pool: 
-    name: 1pfw-kingsgate-windows
   jobs:
   - template: templates/build.yaml
     parameters:
       Toolchain: i386-pc-windows-msvc
       Configuration: Debug
-      ArtifactName: bins
+      ArtifactName: Build_x86_Debug
 
 - stage: Build_Arm_EABI_AARCH_Debug
   dependsOn: []
-  pool: 
-    name: 1pfw-kingsgate-windows
   jobs:
   - template: templates/build.yaml
     parameters:
       Toolchain: arm-eabi-aarch
       Configuration: Debug
-      ArtifactName: bins
+      ArtifactName: Build_Arm_EABI_AARCH_Debug
 
-- stage: Build_Arm_EABI_AARCH_Release
-  dependsOn: []
-  pool: 
-    name: 1pfw-kingsgate-windows
+- stage: SVP_Pythia_Tests
+  dependsOn: [Build_Arm_EABI_AARCH_Debug]
   jobs:
-  - template: templates/build.yaml
+  - template: templates/pythia_test.yaml
     parameters:
-      Toolchain: arm-eabi-aarch
-      Configuration: Release
-      ArtifactName: bins
+      ArtifactName: SVP_Pythia_Tests
 
 - stage: Unit_Test_x86
-  dependsOn: Build_x86_Debug
-  pool: 
-    name: 1pfw-kingsgate-windows
+  dependsOn: [Build_x86_Debug, Build_Arm_EABI_AARCH_Debug]
   jobs:
   - template: templates/unittest.yaml
     parameters:
       Toolchain: i386-pc-windows-msvc
       Configuration: Debug
+      # Pipeline variables defined within ADO
       BranchCoverage: $(branch_coverage)
       LineCoverage: $(line_coverage)
+      ArtifactName: Unit_Test_x86
 
 - stage: Publish
-  dependsOn: [Unit_Test_x86, Build_x86_Debug, Build_Arm_EABI_AARCH_Release, Build_Arm_EABI_AARCH_Debug]
+  dependsOn: [Unit_Test_x86, Build_x86_Debug, Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests]
   condition: eq(variables['OfficialBuild'], 'true')
   pool: 
     name: 1pfw-kingsgate-windows
   jobs:
   - template: templates/publish.yaml
     parameters:
-      Toolchain: [i386-pc-windows-msvc, arm-eabi-aarch]
+      Toolchain: [arm-eabi-aarch]
       Version: $(BuildVersion)

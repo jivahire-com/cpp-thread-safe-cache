@@ -14,7 +14,6 @@
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define ATU_AP_ARSM_ADDRESS (0x60000000U)
 
 /*-------------- Typedefs ----------------*/
 

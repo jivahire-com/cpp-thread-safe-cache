@@ -23,7 +23,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(ioss, FPFW_INIT_DEPENDENCIES("vab"))
+FPFW_INIT_COMPONENT(ioss, FPFW_INIT_DEPENDENCIES("atu_svc", "vab"))
 {
     // Re-enable when SVP is ready to test ADO TASK #1793926
     // TODO: ADO 1826681 Re-enable on FPGA once the vab sequence library has been integrated

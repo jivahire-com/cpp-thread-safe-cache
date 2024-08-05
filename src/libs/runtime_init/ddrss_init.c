@@ -17,7 +17,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(ddr, FPFW_INIT_DEPENDENCIES("css_pome"))
+FPFW_INIT_COMPONENT(ddr, FPFW_INIT_DEPENDENCIES("css_pome", "atu_svc"))
 {
     KNG_DIE_ID die_num = idsw_get_die_id();
     printf("DDR init, die_num: [%u]\n", die_num);

@@ -26,7 +26,7 @@
  * `css_pome` which in-turn depends on the `std_io`, `hw_ver` and `mesh`.
  */
 //FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh"))
-FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("vab", "hw_ver"))
+FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("vab", "hw_ver","atu_svc"))
 {
     //! @todo https://azurecsi.visualstudio.com/Dev/_workitems/edit/1941641
     if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)

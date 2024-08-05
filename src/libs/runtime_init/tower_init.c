@@ -17,7 +17,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(tower_cfg, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh"))
+FPFW_INIT_COMPONENT(tower_cfg, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh", "atu_svc"))
 {
     uint8_t die_num = (uint8_t)idsw_get_die_id();
     printf("Tower init, die_num [%d]\n", die_num);

@@ -9,6 +9,7 @@ add_library(${TARGET}
     OBJECT
         accelerator_ip_init.c
         ap_core_init.c
+        atu_init.c
         avs_scp_init.c
         avs_scp_cli_init.c
         cli_init.c
@@ -115,6 +116,7 @@ target_link_libraries(
         ms::lib::register_headers
         ms::service::sds_service
         ms::lib::warm_start
+        ms::service::atu_service
 )
 
 # @todo remove after completing task https://azurecsi.visualstudio.com/Dev/_workitems/edit/1933312/

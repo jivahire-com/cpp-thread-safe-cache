@@ -102,8 +102,10 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
 
         // Map both DDRSS DIE0 and DIE1 cfg space through ATU
         memcpy(&atu_map_struct[SOC_D1], &atu_map_struct[SOC_D0], sizeof(atu_map_entry_t));
+
         sts = atu_map(ATU_ID_MSCP, &atu_map_struct[SOC_D0]);
         FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+
         atu_map_struct[SOC_D1].ap_base_address = AP_TOP_D1_DDRSS_0_ADDRESS;
         sts = atu_map(ATU_ID_MSCP, &atu_map_struct[SOC_D1]);
         FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);

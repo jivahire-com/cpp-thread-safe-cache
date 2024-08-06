@@ -51,6 +51,8 @@ class mscp_heart_beat_bootloader(BaseMSCPTest):
             return self.test_scp_bl_embed_fw()
         elif self.test_core == "mcp":
             return self.test_mcp_bl_embed_fw()
+        elif self.test_core == "hsp_scp":
+            return self.test_hsp_scp_bl_embed_fw()
         else:
             raise ValueError(f"Unknown core: {self.test_core}")
 
@@ -109,6 +111,37 @@ class mscp_heart_beat_bootloader(BaseMSCPTest):
         test_pass = True if ('HeartBeat' in mcp_lines) else False
 
         self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel().close()
+
+        # Notify of the test results. If test_pass is False it is an error (which also signals to the base test class that the test failed).
+        self.test_notify(step="HeartBeat", msg="Test Done", _is_error=not(test_pass))
+        self.dut.teardown()
+
+        return test_pass
+
+    def test_hsp_scp_bl_embed_fw(self):
+        """
+        Test function:
+            1. Setup the Test.
+            2. Assert that a connection to SCP on DIE 0 can be
+                established and open it.
+            3. Look for the HeartBeat from the SCP.
+            4. Teardown Test.
+        """
+        self.dut.setup()
+
+        # Ensure the host config file used alongside this test has these connections defined.
+
+        assert self.dut.mb.node_0.soc.primary_die.scp.channel_manager is not None
+
+        self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel().open()
+
+        assert self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel().is_open()
+
+        scp_lines = ' '.join(self.read_and_log_lines(connection=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel(), num_lines=30))
+
+        test_pass = True if ('HeartBeat' in scp_lines) else False
+
+        self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel().close()
 
         # Notify of the test results. If test_pass is False it is an error (which also signals to the base test class that the test failed).
         self.test_notify(step="HeartBeat", msg="Test Done", _is_error=not(test_pass))

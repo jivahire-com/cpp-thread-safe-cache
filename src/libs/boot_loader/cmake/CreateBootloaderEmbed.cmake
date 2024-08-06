@@ -41,7 +41,7 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
     # The output bootloader contains the compressed mainimage
     set(EMBED_FW_ELF_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${EMBED_FW_TARGET}.elf")
 
-    # Path for the output bootloaader .bin file
+    # Path for the output bootloader .bin file
     set(EMBED_FW_BIN_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${FW_BLOCK}/${EMBED_FW_TARGET}.bin")
     
     # Path to the python script which generates the .embed file

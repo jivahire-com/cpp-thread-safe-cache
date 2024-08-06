@@ -11,21 +11,22 @@
 #ifndef UNIT_TEST
     #include <cmsis_compiler.h>
 #endif
-#include <MboxPrimitives.h>    // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_STATUS
-#include <hsp_interaction_i.h> // for sleep_ms, send_post_code, hsp_...
-#include <kingsgate_boot.h>    // for kingsgate_boot_metadata_t, BITMASK_W...
+#include <MboxPrimitives.h>       // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_STATUS
+#include <hsp_firmware_headers.h> // for HSP_MAILBOX_CMD_BOOT_STATUS_NOTIFY, HspFirmwareIdScp...
+#include <hsp_interaction_i.h>    // for sleep_ms, send_post_code, hsp_...
+#include <kingsgate_boot.h>       // for kingsgate_boot_metadata_t, BITMASK_W...
 #ifdef UNIT_TEST
     #include <mock_scp_mcp_top.h> // for MCP_TOP_MCP2HSP_MAILBOX_ADDRESS, SCP...
 #else
     #include <mcp_top_regs.h>
     #include <scp_top_regs.h>
 #endif
-#include <boot_status_codes.h>  // for _boot_status_code_t, boot_status_code_t
-#include <sample_hsp_mailbox.h> // for _HSP_FIRMWARE_ID, _HSP_MBOX_STATUS_EX
-#include <stdbool.h>            // for false, bool, true
-#include <stddef.h>             // for NULL
-#include <stdint.h>             // for uint32_t
-#include <unpack_image.h>       // for unpack_image
+#include <boot_status_codes.h> // for _boot_status_code_t, boot_status_code_t
+#include <stdbool.h>           // for false, bool, true
+#include <stddef.h>            // for NULL
+#include <stdint.h>            // for uint32_t
+#include <system_info.h>
+#include <unpack_image.h> // for unpack_image
 
 /*-- Symbolic Constant Macros (defines) --*/
 // This is based on estimate CORTEX M7 runs @ 1GHz
@@ -35,13 +36,17 @@
 #define MAX_RETRY_HSP_MBOX (500)
 
 /*-------------- Typedefs ----------------*/
+typedef enum _HSP_MBOX_STATUS_EX
+{
+    HSP_MBOX_STATUS_NOT_FATAL = 0,
+    HSP_MBOX_STATUS_FATAL,
+    HSP_MBOX_STATUS_COMPLETE,
+} HSP_MBOX_STATUS_EX;
 
 /*--------- Function Prototypes ----------*/
-
 extern void __disable_irq(void);
 
 /*-- Declarations (Statics and globals) --*/
-
 static FPFW_MBX_PRIMITIVE_CTX g_mail_box_context;
 
 /*------------- Functions ----------------*/
@@ -66,11 +71,15 @@ bool send_post_code(boot_status_code_t boot_post_code, bool is_scp, bool is_fata
 {
     // TODO: Replace the  mail box data and response with proper structure once it has been defined on HSP
     // side ADO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1793271
-    HSP_MAILBOX_MSG hsp_mbox_data = {.Cmd = HspMailboxCmdFirmwareBootStatus,
-                                     .BootStatus.Id = is_scp ? HspFirmwareIdScp : HspFirmwareIdMcp,
-                                     .BootStatus.Status = boot_post_code,
-                                     .BootStatus.StatusEx = is_fatal ? HSP_MBOX_STATUS_FATAL : HSP_MBOX_STATUS_NOT_FATAL};
-    HSP_MAILBOX_MSG hsp_mbox_rsp;
+    struct kng_hsp_mailbox_boot_status_notify hsp_mbox_data = {
+        .header.cmd = HSP_MAILBOX_CMD_BOOT_STATUS_NOTIFY,
+        .header.seq = 0,
+        .header.context = 0,
+        .header.flags = 0,
+        .id = is_scp ? HspFirmwareIdScp : HspFirmwareIdMcp,
+        .boot_status = boot_post_code,
+        .boot_status_ex = is_fatal ? HSP_MBOX_STATUS_FATAL : HSP_MBOX_STATUS_NOT_FATAL};
+    kng_hsp_mailbox_msg hsp_mbox_rsp;
 
     FPFW_MBX_PAYLOAD mail_box_send_payload = {.payloadBuffer = &hsp_mbox_data,
                                               .payloadSize = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t))};
@@ -79,6 +88,11 @@ bool send_post_code(boot_status_code_t boot_post_code, bool is_scp, bool is_fata
     uint32_t count = 0;
     bool ret_code = true;
 
+    if (!system_info_is_hsp_present())
+    {
+        // If HSP is not present simply return true so boot loader can proceed
+        return ret_code;
+    }
     if (is_scp && (boot_post_code >= BOOT_STATUS_CODE_SCP_MAX))
     {
         // Post code is out of range of SCP
@@ -162,7 +176,7 @@ void* load_image(kingsgate_boot_config_t* boot_config)
     bool is_scp = false;
     bool is_error_config = true;
 
-    kingsgate_boot_metadata_t* boot_meta_data = NULL;
+    HSP_BOOT_METADATA* boot_meta_data = NULL;
 
     // If boot config is null or cpu type is invalid we simply return as there is nothing we can do
     // dont know where to send status code
@@ -172,7 +186,7 @@ void* load_image(kingsgate_boot_config_t* boot_config)
     }
 
     // Boot metadata is expected to be stored at the beginning of the MSCP_EXP SRAM chosen
-    boot_meta_data = (kingsgate_boot_metadata_t*)(boot_config->boot_meta_base);
+    boot_meta_data = (HSP_BOOT_METADATA*)(boot_config->boot_meta_base);
 
     if (boot_config->cpu_type == MSCP_CPU_SCP)
     {
@@ -209,31 +223,31 @@ void* load_image(kingsgate_boot_config_t* boot_config)
 
     if (boot_config->data_src_base == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_DATA_SRC_BASE : BOOT_STATUS_CODE_MCP_E_DATA_SRC_BASE;
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
     }
     else if (boot_config->data_src_end <= boot_config->data_src_base)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_IMAGE_SIZE : BOOT_STATUS_CODE_MCP_E_IMAGE_SIZE;
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
     }
     else if (boot_config->itc_ram_base == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_ITCRAM_BASE : BOOT_STATUS_CODE_MCP_E_ITCRAM_BASE;
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
     }
     else if (boot_config->itc_ram_size == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_ITCRAM_SIZE : BOOT_STATUS_CODE_MCP_E_ITCRAM_SIZE;
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
     }
     else if (boot_config->dtc_ram_base == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_DTCRAM_BASE : BOOT_STATUS_CODE_MCP_E_DTCRAM_BASE;
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
     }
     else if (boot_config->dtc_ram_size == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_DTCRAM_SIZE : BOOT_STATUS_CODE_MCP_E_DTCRAM_SIZE;
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
     }
     else if (boot_config->boot_meta_base == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_META : BOOT_STATUS_CODE_MCP_E_BOOT_META;
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
     }
     else
     {
@@ -254,7 +268,7 @@ void* load_image(kingsgate_boot_config_t* boot_config)
         goto hsp_send_failed;
     }
 
-    if (boot_meta_data->reset_reason & BITMASK_WARM_BOOT)
+    if (boot_meta_data->ResetReason & BITMASK_WARM_BOOT)
     {
         boot_status = is_scp ? BOOT_STATUS_CODE_SCP_WARM_BOOT : BOOT_STATUS_CODE_MCP_WARM_BOOT;
     }
@@ -277,9 +291,9 @@ void* load_image(kingsgate_boot_config_t* boot_config)
                      boot_config->dtc_ram_base,
                      boot_config->dtc_ram_size) == false)
     {
-        // Unpack image mainly fails due to size mismatch or decompres failure. However no status code
+        // Unpack image mainly fails due to size mismatch or decompress failure. However no status code
         // for decompress failure.
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_SIZE : BOOT_STATUS_CODE_MCP_E_SIZE;
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
         goto load_image_failed;
     }
 
@@ -293,7 +307,7 @@ load_image_failed:
 
 hsp_send_failed:
     // There is a boot status for this , but there is no way to send this out
-    boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_SEND_HSP_FAILURE : BOOT_STATUS_CODE_MCP_E_SEND_HSP_FAILURE;
+    boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
     (void)boot_status;
     return NULL;
 }

@@ -23,15 +23,15 @@ add_library(
         dummy_sys_calls.c
 )
 
-add_compile_definitions(${TARGET} PRIVATE MBOX_STUB)
-
 target_link_libraries(
     ${TARGET}
     PRIVATE
     register_headers
     fwlib.lib.mboxPrimitives
-    ms::cmsis::interface
     ms::boot_loader::interface
+    ms::cmsis::interface
+    ms::lib::hsp_firmware_headers
+    ms::lib::system_info
     ms::lib::zlib
 )
 

@@ -35,3 +35,4 @@ typedef union _kng_hsp_mailbox_msg {
     uint32_t as_uint32[4];
 } kng_hsp_mailbox_msg;
 
+/*--------- Function Prototypes ----------*/

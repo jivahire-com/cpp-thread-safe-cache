@@ -20,6 +20,8 @@ target_link_libraries(${TARGET}
     fwlib.lib.mboxPrimitives
     ms::cmocka::testrunner
     ms::boot_loader::interface
+    ms::lib::hsp_firmware_headers
+    ms::lib::system_info
     ms::lib::zlib
 )
 
@@ -34,5 +36,6 @@ mock_target(${TARGET}
     FpFwMailboxFlushFIFO
     FpFwMailboxReceive
     FpFwMailboxSend
+    system_info_is_hsp_present
     __disable_irq
 )

@@ -23,7 +23,7 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
-#define BITMASK_WARM_BOOT          (0b10000000)
+#define BITMASK_WARM_BOOT          (0b1000)
 
 /*-------------- Typedefs ----------------*/
 

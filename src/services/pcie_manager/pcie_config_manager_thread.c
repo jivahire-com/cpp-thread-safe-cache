@@ -173,11 +173,19 @@ void config_variable_service_thread_fn(ULONG thread_input)
     printf("rb_config_varname ");
     for (uint8_t i = 0; i < sizeof(rb_config_varname_die_0) / sizeof(uint16_t); i++)
     {
+        if (rb_config_varname[i] == 0x00) // 0x00 is the end of string
+        {
+            break;
+        }
         printf("%c", (char)rb_config_varname[i]);
     }
     printf("\nvab_config_varname ");
     for (uint8_t i = 0; i < sizeof(vab_config_varname_die_0) / sizeof(uint16_t); i++)
     {
+        if (vab_config_varname[i] == 0x00) // 0x00 is the end of string
+        {
+            break;
+        }
         printf("%c", (char)vab_config_varname[i]);
     }
     printf("\n");

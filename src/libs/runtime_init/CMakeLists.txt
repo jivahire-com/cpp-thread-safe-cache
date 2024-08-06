@@ -46,6 +46,7 @@ add_library(${TARGET}
         sds_init.c
         warm_start_init.c
         gpio_init.c
+        i3c_controller_init.c
 )
 
 target_link_libraries(
@@ -82,6 +83,7 @@ target_link_libraries(
         ms::lib::cortex_m7::nvic
         ms::lib::gtimer
         ms::lib::hsp_firmware_headers
+        ms::lib::i3c_controller
         ms::lib::icc::cli
         ms::lib::icc_platform_defines
         ms::lib::mesh

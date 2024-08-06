@@ -3,6 +3,7 @@ set(TARGET kng.service.power_service)
 
 add_library(${TARGET}
     STATIC
+        pid_resource.c
         power_events.c
         power_fuses.c
         power_hw_int.c

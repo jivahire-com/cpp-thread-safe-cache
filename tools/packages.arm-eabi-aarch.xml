@@ -10,12 +10,12 @@
     </universal_packages>
 
     <nuget_packages>
-        <package name="kingsgate.ap.baremetal" version="0.0.1.11-dev" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/Kingsgate.SoCFW/nuget/v3/index.json"/>
+        <package name="kingsgate.ap.baremetal" version="0.0.1.15-dev" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/Kingsgate.SoCFW/nuget/v3/index.json"/>
     </nuget_packages>
 
     <pip_packages>
-        <package name="pythia-tdk-rrm" version="0.1.46" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
-        <package name="pythia-tdk-echofalls" version="0.1.27" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
+        <package name="pythia-tdk-rrm" version="0.1.50" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
+        <package name="pythia-tdk-echofalls" version="0.1.31" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
         <package name="diagtool" version="1.0.184" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
     </pip_packages>
 

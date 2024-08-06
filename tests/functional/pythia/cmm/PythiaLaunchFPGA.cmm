@@ -28,7 +28,7 @@
 
 
 // Update FPGA Version here
-&FPGA_REV="R19"
+&FPGA_REV="R21"
 
 // --------------------------------------------------------------------
 // Setup Script Execution Options
@@ -41,6 +41,9 @@
 
 // Setting to initialize SDM Cores: '1' = Init SDM and load with ProdFW
 &SDM_LOAD_PROD_FW= 0.
+
+// Setting to initialize CDED Cores: '1' = Init CDED and load with ProdFW
+&CDED_LOAD_PROD_FW= 0.
 
 // --------------------------------------------------------------------
 // Launch SCPInitFPGA

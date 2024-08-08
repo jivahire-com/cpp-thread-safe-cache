@@ -146,6 +146,16 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
             // request TFA firmware load (BL31)
             ap_core_request_load_tfa(s_icc_base_ctx);
             break;
+        case STARTUP_MCP_LOAD:
+            if (!system_info_is_hsp_present())
+            {
+                // if no HSP is present, just complete p_request
+                DfwkAsyncRequestComplete(p_request);
+                break;
+            }
+
+            ap_core_request_mcp_load(s_icc_base_ctx);
+            break;
         default:
             // nothing to do for other types.
             // complete p_request

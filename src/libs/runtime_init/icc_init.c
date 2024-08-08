@@ -16,6 +16,8 @@
 #include <fpfw_status.h>             // for FPFW_STATUS_SUCCESS, fpfw_status_t
 #include <fpfw_timer_port.h>         // for _fpfw_timer_t
 #include <icc_platform_defines.h>
+#include <idsw.h>
+#include <idsw_kng.h>
 #include <interrupts.h>
 #include <silibs_mcp_top_regs.h>
 #include <silibs_scp_top_regs.h>
@@ -63,20 +65,38 @@
  * 4. If the base init is successful, call fpfw_icc_dispatcher_start()
  * 5. Finally return the initialized icc base ctx to the user for invoking icc base APIs
  */
-FPFW_INIT_COMPONENT(icc_hspmbx, FPFW_INIT_DEPENDENCIES("dfwk"))
+FPFW_INIT_COMPONENT(icc_hspmbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
 {
     //! Statics declarations required for mailbox primitive
     static struct _fpfw_timer_t timer[ICC_MAX_ASYNC_REQ_TYPE] = {};
     static fpfw_mbox_icc_transport_config_t cfg = {
         .mbox_dev_cfg = {.MbxFifoDepth = HSP_MBX_FIFO_DEPTH,
                          .MbxMesgHandlingType = MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME,
-                         .MbxImplementation = MBX_IMPL_POLLING,
+                         .MbxImplementation = MBX_IMPL_INTERRUPT,
                          .MsgSizeBytes = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t)),
                          .MbxBaseAddr = MSCP2HSP_MAILBOX_BASE_ADDRESS},
         .timer_period = KG_HSP_MBOX_POLL_INTERVAL_NS,
         .timer_handle = {&timer[ICC_MBX_ASYNC_SEND], &timer[ICC_MBX_ASYNC_RECV]},
         .mbx_irq_num = HW_INT_HSP2MSCP_MBOX_INT,
     };
+
+    //! @todo Remove this clause after SVP updates mailbox interrupt correctly.
+    if (idsw_get_cpu_type() == CPU_SCP)
+    {
+        //! Only check for platform for SCP core
+        if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
+        {
+            //! Update the IRQ number as per SVP support
+            cfg.mbx_irq_num = HW_INT_HSP2MSCP_MBOX_INT_SVP;
+        }
+    }
+    else
+    {
+        //! MCP doesn't have support to check for platform
+        //! No way to set the appropriate IRQ as it's different for svp vs bfpga
+        //! Set mailbox to be polling for MCP. SCP is interrupt implementation. (Just Ewwww!)
+        cfg.mbox_dev_cfg.MbxImplementation = MBX_IMPL_POLLING;
+    }
 
     //! Statics declarations required for mailbox transport driver
     static fpfw_mbox_icc_transport_device_t mscp_mbx_dev = {};

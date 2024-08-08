@@ -23,7 +23,7 @@
  * @brief Initialize and configure GPIO registers.
  *
  */
-FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu"))
+FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver"))
 {
     int status = SILIBS_SUCCESS;
 

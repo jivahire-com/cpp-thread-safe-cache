@@ -128,8 +128,10 @@ target_compile_definitions(
     ${TARGET}
     PRIVATE
        MSCP2HSP_MAILBOX_BASE_ADDRESS=SCP_TOP_SCP2HSP_MAILBOX_ADDRESS
-       HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2SCP_MHU_INT
+       HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2SCP_MB_SW_INT
        SCP_RUNTIME_INIT
+       # @todo remove after SVP updates it's HSP mbx intr number
+       HW_INT_HSP2MSCP_MBOX_INT_SVP=HW_INT_HSP2SCP_MHU_INT
 )
 
 # Define base addresses during compile time for respective core fw
@@ -166,6 +168,7 @@ add_library(${TARGET}
         debug_init.c
         dfwk_init.c
         etc_etd_init.c
+        hw_version_mcp_init.c
         icc_cli_init.c
         icc_init.c
         mcp_mpu_init.c
@@ -206,6 +209,7 @@ target_link_libraries(
         ms::service::sensor_fifo::cli
         silibs::common::lib_uart_pl011
         silibs::idhw
+        silibs::idsw
         silibs::idsw_kng
         silibs::platform
         silibs::kng_silibs_platform
@@ -220,8 +224,10 @@ target_compile_definitions(
     ${TARGET}
     PRIVATE
        MSCP2HSP_MAILBOX_BASE_ADDRESS=MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
-       HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2MCP_MHU_INT
+       HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2MCP_MB_SW_INT
        MCP_RUNTIME_INIT
+       # @todo remove after SVP updates it's HSP mbx intr number
+       HW_INT_HSP2MSCP_MBOX_INT_SVP=HW_INT_HSP2MCP_MHU_INT
 )
 
 # Define base addresses during compile time for respective core fw

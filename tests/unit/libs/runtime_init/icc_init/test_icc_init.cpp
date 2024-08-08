@@ -18,6 +18,8 @@ extern "C" {
 #include <fpfw_mbox_icc_transport.h> // for fpfw_mbox_icc_transport_device_t
 #include <fpfw_status.h>             // for fpfw_status_t, FPFW_STATUS_SUCCESS
 #include <icc_platform_defines.h>
+#include <idsw.h>     // for KNG_DIE_ID, KNG_PLAT_ID
+#include <idsw_kng.h> // for KNG_DIE_ID, KNG_PLAT_ID
 
 /*---------------Macros-------------------*/
 #define HSP_MBOX_MAX_CMD_CODE       (0xFFFFU)
@@ -51,6 +53,16 @@ void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
     return mock_type(void*);
 }
 
+KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
+{
+    return mock_type(KNG_PLAT_ID);
+}
+
+idsw_cpu_type_t __wrap_idsw_get_cpu_type(void)
+{
+    return mock_type(idsw_cpu_type_t);
+}
+
 fpfw_status_t __wrap_fpfw_mbox_icc_transport_dfwk_device_init(fpfw_mbox_icc_transport_device_t* dev,
                                                               fpfw_mbox_icc_transport_config_t* cfg)
 {
@@ -59,7 +71,7 @@ fpfw_status_t __wrap_fpfw_mbox_icc_transport_dfwk_device_init(fpfw_mbox_icc_tran
     assert_int_equal(cfg->mbox_dev_cfg.MbxFifoDepth, HSP_MBX_FIFO_DEPTH);
     assert_int_equal(cfg->mbox_dev_cfg.MbxBaseAddr, 1000);
     assert_int_equal(cfg->mbox_dev_cfg.MbxMesgHandlingType, MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME);
-    assert_int_equal(cfg->mbox_dev_cfg.MbxImplementation, MBX_IMPL_POLLING);
+    assert_int_equal(cfg->mbox_dev_cfg.MbxImplementation, MBX_IMPL_INTERRUPT);
     assert_int_equal(cfg->mbox_dev_cfg.MsgSizeBytes, HSP_MBX_FIFO_DEPTH * sizeof(uint32_t));
     return mock_type(fpfw_status_t);
 }
@@ -116,6 +128,8 @@ TEST_FUNCTION(test_icc_hspmbx_init, nullptr, nullptr)
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
+    will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_hspmbx.init_fn();

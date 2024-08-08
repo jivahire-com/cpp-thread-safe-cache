@@ -88,3 +88,9 @@ coverage_target(${TARGET})
 # Embeds  the bootloader and fw into a single elf and also generate .bin file
 include("${CMAKE_SOURCE_DIR}/src/libs/boot_loader/cmake/CreateBootloaderEmbed.cmake")
 create_bootloader_embed(scp scp_fw scp_boot_loader scp_boot_loader_embed_fw)
+
+add_custom_command(
+    TARGET ${TARGET}
+    COMMAND init_graph_tool -i ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/scp/scp_fw.elf
+    COMMAND echo "Checking for Cyclic Dependencies for ${TARGET}"
+)

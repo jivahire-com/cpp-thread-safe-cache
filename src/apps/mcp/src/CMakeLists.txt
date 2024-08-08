@@ -85,3 +85,9 @@ coverage_target(${TARGET})
 # Embeds  the bootloader and fw into a single elf and also generate .bin file
 include("${CMAKE_SOURCE_DIR}/src/libs/boot_loader/cmake/CreateBootloaderEmbed.cmake")
 create_bootloader_embed(mcp mcp_fw mcp_boot_loader mcp_boot_loader_embed_fw)
+
+add_custom_command(
+    TARGET ${TARGET}
+    COMMAND init_graph_tool -i ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mcp/mcp_fw.elf
+    COMMAND echo "Checking for Cyclic Dependencies for ${TARGET}"
+)

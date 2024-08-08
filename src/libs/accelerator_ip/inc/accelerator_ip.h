@@ -55,7 +55,7 @@ typedef struct {
 
 typedef struct {
     accelip_metadata_t   accelip_metadata;
-    atu_map_entry_t     *p_accelip_atu_map;
+    const atu_map_entry_t  *p_accelip_atu_map;
     accelip_ss_init_t   *p_init_params;
 } subsystem_ctxt_t;
 
@@ -75,4 +75,18 @@ typedef struct {
  *  On failure, failure code
  */
 int32_t scp_accelerators_init(void);
+
+/**
+ * @brief Accelerator isolation control
+ *
+ * \b Description:
+ * Accelerators are isolated by default. Based on fuses and knobs, configure isolation for accelerators
+ *
+ * @param[in] void
+ *
+ * @retval
+ *  On success, ACCEL_RET_SUCCESS
+ *  On failure, failure code
+ */
+int32_t scp_accelerators_isolation_control(void);
 

@@ -28,6 +28,7 @@
 #include <silibs_status.h>     // for SILIBS_SUCCESS
 #include <stdint.h>            // for int32_t, uintptr_t, uint32_t
 #include <stdio.h>             // for printf, NULL
+#include <string.h>            // for memcpy
 
 #if defined(FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP)
     #include <silibs_common.h> // for ALIGN_UP
@@ -182,14 +183,17 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
         }
     }
 
-    atu_map_entry_t* p_accelip_atu_map = p_ss_ctxt->p_accelip_atu_map;
-    ret = atu_map(ATU_ID_MSCP, p_accelip_atu_map);
+    atu_map_entry_t atu_map_entry;
+    memcpy((void*)&atu_map_entry, (void*)p_ss_ctxt->p_accelip_atu_map, sizeof(atu_map_entry_t));
+
+    ret = atu_map(ATU_ID_MSCP, &atu_map_entry);
     if (ret != SILIBS_SUCCESS)
     {
         critical_print("Accel IP: init_accelerator: ATU MAP failed.\n");
         return ACCEL_RET_FAIL_ACCEL_IP;
     }
-
+    debug_print("atu mapped for accel ip\n");
+    
     if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
     {
         // On FPGA, SDM and CDED Firmware are not preloaded in the respective ITCMs. (Hence setting to false for FPGA)
@@ -197,7 +201,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
         p_ss_ctxt->p_init_params->fw_preload_enabled = false;
     }
 
-    ret = accelip_ss_init(p_accelip_atu_map->mscp_start_address,
+    ret = accelip_ss_init(atu_map_entry.mscp_start_address,
                           p_ss_ctxt->accelip_metadata.accel_type,
                           p_ss_ctxt->p_init_params);
     if (ret != SILIBS_SUCCESS)
@@ -206,7 +210,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
         return ACCEL_RET_FAIL_SS_INIT;
     }
 
-    ret = atu_unmap(ATU_ID_MSCP, p_accelip_atu_map);
+    ret = atu_unmap(ATU_ID_MSCP, &atu_map_entry);
     if (ret != SILIBS_SUCCESS)
     {
         critical_print("Accel IP: init_accelerator: ATU UNMAP failed.\n");
@@ -246,5 +250,47 @@ int32_t scp_accelerators_init(void)
         }
     }
 
+    return ret;
+}
+
+int32_t scp_accelerators_isolation_control(void)
+{
+    // TODO: read the knob (and fuse if implemented).  For now we are hardcoding to de-isolate
+    DIE_INSTANCE current_die_instance = (DIE_INSTANCE)idsw_get_die_id();
+    int32_t ret = ACCEL_RET_SUCCESS;
+    uint32_t accel_ctxt_size = 0;
+
+    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
+
+    FPFW_RUNTIME_ASSERT(p_ss_ctxt != NULL);
+
+    printf("Number of Accelerator instances present: %d\n", (int)accel_ctxt_size);
+
+    // Init all available Accelerator instances
+    for (uint32_t index = 0; index < accel_ctxt_size; index++)
+    {
+        // TODO (ADO 1728772) : init any particular accelerator instance only if that is enabled in fuse
+        if (p_ss_ctxt[index].accelip_metadata.die_instance == current_die_instance)
+        {
+            debug_print("accel lib: Initializing for die_id = %d, accel_type = %d, accel_instance = %d\n",
+                        p_ss_ctxt[index].accelip_metadata.die_instance,
+                        p_ss_ctxt[index].accelip_metadata.accel_type,
+                        p_ss_ctxt[index].accelip_metadata.accel_instance);
+
+            atu_map_entry_t atu_map_entry;
+            memcpy((void*)&atu_map_entry, (void*)p_ss_ctxt[index].p_accelip_atu_map, sizeof(atu_map_entry_t));
+
+            ret = atu_map(ATU_ID_MSCP, &atu_map_entry);
+            FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
+
+            ret = accelip_ss_enable_ip_isolation(atu_map_entry.mscp_start_address,
+                                                 p_ss_ctxt[index].accelip_metadata.accel_type,
+                                                 p_ss_ctxt[index].p_init_params->accelip_ss_cfg->isolation_enable);
+            FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
+
+            ret = atu_unmap(ATU_ID_MSCP, &atu_map_entry);
+            FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
+        }
+    }
     return ret;
 }

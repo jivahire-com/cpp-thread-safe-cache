@@ -9,18 +9,19 @@
 
 /*------------- Includes -----------------*/
 
-#include <FpFwAssert.h>
-#include <atu_lib.h>
-#include <idsw.h>
-#include <idsw_kng.h>
-#include <kng_atu_mappings.h>
-#include <kng_soc_constants.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <tower.h>
-#include <tower_sdmss.h>
-#include <tower_sequence.h>
+#include <FpFwAssert.h>        // for FPFW_RUNTIME_ASSERT
+#include <atu_lib.h>           // for atu_map, atu_unmap, atu_map_entry_t
+#include <idsw.h>              // for idsw_get_platform_sdv
+#include <idsw_kng.h>          // for PLATFORM_SVP_SIM, KNG_PLAT_ID, PLATFO...
+#include <kng_atu_mappings.h>  // for ATU_MAPPING_D0_RPSS0_TOWER, ATU_MAPPI...
+#include <kng_soc_constants.h> // for SOC_D0, SOC_D1, D0_VAB1_RPSS1, D0_VAB...
+#include <silibs_platform.h>   // for ASSERT_FAIL
+#include <stdbool.h>           // for true, false
+#include <stdint.h>            // for uint16_t, uint8_t, uintptr_t
+#include <stdio.h>             // for printf
+#include <tower.h>             // for tower_init
+#include <tower_sdmss.h>       // for tower_configure_sdmss_sam_with_isolat...
+#include <tower_sequence.h>    // for tower_sequence_soc_init_params_t, tow...
 
 /*------------- Typedefs -----------------*/
 
@@ -166,7 +167,23 @@ void tower_init(uint8_t die_num)
     FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_peripheral_tower_map));
     tower_sequence_params.tower_periph_tower_resolved_addr = atu_peripheral_tower_map.mscp_start_address;
 
-    // TODO: D2DSS towers
+    // D2DSS towers
+    atu_map_entry_t atu_d2d_cfg0_tower_map = ATU_MAPPING_D2DSS_CFG0_TOWER((die_num == 0 ? SOC_D0 : SOC_D1));
+    atu_map_entry_t atu_d2d_cfg1_tower_map = ATU_MAPPING_D2DSS_CFG1_TOWER((die_num == 0 ? SOC_D0 : SOC_D1));
+
+    // TODO: WI 1947006 SVP doesn't model d2d tower registers
+    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+    {
+        ASSERT_FAIL(!atu_map(ATU_ID_MSCP, &atu_d2d_cfg0_tower_map));
+        tower_sequence_params.tower_d2dss_cfg0_tower_resolved_addr = atu_d2d_cfg0_tower_map.mscp_start_address;
+
+        ASSERT_FAIL(!atu_map(ATU_ID_MSCP, &atu_d2d_cfg1_tower_map));
+        tower_sequence_params.tower_d2dss_cfg1_tower_resolved_addr = atu_d2d_cfg1_tower_map.mscp_start_address;
+
+        tower_sequence_params.tower_configure_d2dss_apu = true;
+        // TODO: WI:754849 D2D towers have known parity issues that are flagged once FMU is enabled
+        tower_sequence_params.tower_configure_d2dss_fmu = false;
+    }
 
     // VAB Towers
     uint16_t vab_instances_to_init = tower_vab_instances_to_be_enabled(die_num);
@@ -230,6 +247,11 @@ void tower_init(uint8_t die_num)
     tower_sequence_params.tower_sdmss_tower_resolved_addr = sdmss_tower_map.mscp_start_address;
     tower_sequence_params.tower_configure_sdmss_sam = true;
     tower_sequence_params.tower_configure_sdmss_apu = true;
+    // TODO: Isolation information should be derived from fuse and knob values
+    // For now, assume isolation is not enabled for now and configure the sdmss tower for isolation disabled
+    // TODO: Wait for promote_silibs_866 to integrate and remove lines 268-272 below
+    // printf("Configure SDMSS tower for isolation disabled, TODO: derive this from knobs & fuses\n");
+    // tower_sequence_params.tower_sdmss_isolation_enabled = false;
 
     // IOSS tower
     printf("Configure IOSS tower ATU map\n");
@@ -255,6 +277,12 @@ void tower_init(uint8_t die_num)
     printf("Unmap towers\n");
     FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_peripheral_tower_map));
     FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_fabric_tower_map));
+
+    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+    {
+        FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_d2d_cfg0_tower_map));
+        FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_d2d_cfg1_tower_map));
+    }
 
     for (uint16_t vab_id = 0; vab_id < MAX_VAB_INSTANCES; vab_id++)
     {

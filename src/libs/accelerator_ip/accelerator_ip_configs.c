@@ -45,7 +45,7 @@ static const uint32_t sdm_cded_spin_loop[] = {
 
 /*------------------- Declarations (Statics and globals) --------------------*/
 /****** SDMSS context data start ******/
-static atu_map_entry_t die0_sdmss_atu_map = ATU_MAPPING_SDMSS_BASE(SOC_D0);
+static const atu_map_entry_t die0_sdmss_atu_map = ATU_MAPPING_SDMSS_BASE(SOC_D0);
 static sdm_emcpu_init_cfg_t die0_sdmss_sdm_emcpu_init_cfg = {.initvtor_byte_addr = DIE0_SDMSS_INSTANCE0_INT_VECTOR,
                                                              .enable_itcm_ecc = false,
                                                              .enable_dtcm_ecc = false};
@@ -145,7 +145,7 @@ static accelip_ss_init_t die0_sdmss_init_params_ctxt = {
 /****** SDMSS context data end ******/
 
 /****** CDEDSS context data start ******/
-static atu_map_entry_t die0_cdedss_atu_map = ATU_MAPPING_CDEDSS_BASE(SOC_D0);
+static const atu_map_entry_t die0_cdedss_atu_map = ATU_MAPPING_CDEDSS_BASE(SOC_D0);
 static sdm_emcpu_init_cfg_t die0_cdedss_sdm_emcpu_init_cfg = {.initvtor_byte_addr = DIE0_CDEDSS_INSTANCE0_INT_VECTOR,
                                                               .enable_itcm_ecc = false,
                                                               .enable_dtcm_ecc = false};

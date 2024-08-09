@@ -62,6 +62,11 @@ int __wrap_tower_sequence_configure_towers(tower_sequence_soc_init_params_t* tow
     check_expected(tower_sequence_param->tower_configure_periph_apu);
     check_expected(tower_sequence_param->tower_periph_tower_resolved_addr);
 
+    check_expected(tower_sequence_param->tower_configure_d2dss_apu);
+    check_expected(tower_sequence_param->tower_configure_d2dss_fmu);
+    check_expected(tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr);
+    check_expected(tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr);
+
     check_expected(tower_sequence_param->tower_configure_vab_sam);
     check_expected(tower_sequence_param->tower_configure_vab_apu);
     check_expected(tower_sequence_param->tower_configure_vab_fmu);
@@ -74,6 +79,7 @@ int __wrap_tower_sequence_configure_towers(tower_sequence_soc_init_params_t* tow
 
     check_expected(tower_sequence_param->tower_configure_sdmss_sam);
     check_expected(tower_sequence_param->tower_configure_sdmss_apu);
+    check_expected(tower_sequence_param->tower_sdmss_isolation_enabled);
     check_expected(tower_sequence_param->tower_sdmss_tower_resolved_addr);
 
     check_expected(tower_sequence_param->tower_configure_ioss_sam);
@@ -83,17 +89,4 @@ int __wrap_tower_sequence_configure_towers(tower_sequence_soc_init_params_t* tow
     check_expected(tower_sequence_param->die_id);
     function_called();
     return 0;
-}
-
-int __wrap_tower_configure_sdmss_sam_with_isolation_disabled(uintptr_t tower_base_addr, SDMSS_INSTANCE sdmss_id)
-{
-    if (tower_base_addr == 0)
-    {
-        return SILIBS_E_PARAM;
-    }
-    if (sdmss_id >= NUM_SDMSS_INSTANCES)
-    {
-        return SILIBS_E_PARAM;
-    }
-    return mock_type(int);
 }

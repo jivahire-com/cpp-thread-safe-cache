@@ -36,5 +36,4 @@ mock_target(${TARGET}
     atu_map
     atu_unmap
     idsw_get_platform_sdv
-    tower_configure_sdmss_sam_with_isolation_disabled
 )

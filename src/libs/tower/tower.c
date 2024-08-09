@@ -20,7 +20,6 @@
 #include <stdint.h>            // for uint16_t, uint8_t, uintptr_t
 #include <stdio.h>             // for printf
 #include <tower.h>             // for tower_init
-#include <tower_sdmss.h>       // for tower_configure_sdmss_sam_with_isolat...
 #include <tower_sequence.h>    // for tower_sequence_soc_init_params_t, tow...
 
 /*------------- Typedefs -----------------*/
@@ -170,7 +169,6 @@ void tower_init(uint8_t die_num)
     // D2DSS towers
     atu_map_entry_t atu_d2d_cfg0_tower_map = ATU_MAPPING_D2DSS_CFG0_TOWER((die_num == 0 ? SOC_D0 : SOC_D1));
     atu_map_entry_t atu_d2d_cfg1_tower_map = ATU_MAPPING_D2DSS_CFG1_TOWER((die_num == 0 ? SOC_D0 : SOC_D1));
-
     // TODO: WI 1947006 SVP doesn't model d2d tower registers
     if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
     {
@@ -249,9 +247,8 @@ void tower_init(uint8_t die_num)
     tower_sequence_params.tower_configure_sdmss_apu = true;
     // TODO: Isolation information should be derived from fuse and knob values
     // For now, assume isolation is not enabled for now and configure the sdmss tower for isolation disabled
-    // TODO: Wait for promote_silibs_866 to integrate and remove lines 268-272 below
-    // printf("Configure SDMSS tower for isolation disabled, TODO: derive this from knobs & fuses\n");
-    // tower_sequence_params.tower_sdmss_isolation_enabled = false;
+    printf("Configure SDMSS tower for isolation disabled, TODO: derive this from knobs & fuses\n");
+    tower_sequence_params.tower_sdmss_isolation_enabled = false;
 
     // IOSS tower
     printf("Configure IOSS tower ATU map\n");
@@ -266,12 +263,6 @@ void tower_init(uint8_t die_num)
     printf("Configure all towers\n");
     FPFW_RUNTIME_ASSERT(!tower_sequence_configure_towers(&tower_sequence_params));
     printf("Towers configured\n");
-
-    // TODO: Move to accelerator_ip.c once it integrates sequence lib and configure this based on
-    // isolation enable fuse and knob values
-    // Assume isolation is not enabled for now and reprogram the sdmss tower
-    printf("Configure sdmss tower with isolation disabled\n");
-    tower_configure_sdmss_sam_with_isolation_disabled(sdmss_tower_map.mscp_start_address, (SDMSS_INSTANCE)die_num);
 
     // Un-map towers
     printf("Unmap towers\n");
@@ -300,4 +291,5 @@ void tower_init(uint8_t die_num)
     }
     FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &sdmss_tower_map));
     FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &ioss_tower_map));
+    printf("Towers unmapped\n");
 }

@@ -11,7 +11,6 @@
 #include <CMockaWrapper.h> // for expect_value, check_expected, CmockaWra...
 
 extern "C" {
-#include <idsw.h> // for idsw_set_platform_sdv
 #include <idsw_kng.h>
 #include <kng_soc_constants.h>
 #include <silibs_status.h>
@@ -43,6 +42,11 @@ TEST_FUNCTION(test_tower_sequence_init_die0_silicon, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
+
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
@@ -60,6 +64,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_silicon, nullptr, nullptr)
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_isolation_enabled, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
@@ -71,7 +76,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_silicon, nullptr, nullptr)
     will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_tower_sequence_configure_towers);
-    will_return(__wrap_tower_configure_sdmss_sam_with_isolation_disabled, SILIBS_SUCCESS);
 
     // Call API under test
     tower_init(test_die);
@@ -90,6 +94,11 @@ TEST_FUNCTION(test_tower_sequence_init_die1_silicon, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
+
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
@@ -107,6 +116,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_silicon, nullptr, nullptr)
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_isolation_enabled, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
@@ -118,7 +128,6 @@ TEST_FUNCTION(test_tower_sequence_init_die1_silicon, nullptr, nullptr)
     will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_tower_sequence_configure_towers);
-    will_return(__wrap_tower_configure_sdmss_sam_with_isolation_disabled, SILIBS_SUCCESS);
 
     // Call API under test
     tower_init(test_die);
@@ -137,6 +146,11 @@ TEST_FUNCTION(test_tower_sequence_init_die0_fpga, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
+
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
@@ -153,6 +167,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_fpga, nullptr, nullptr)
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_isolation_enabled, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
@@ -164,7 +179,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_fpga, nullptr, nullptr)
     will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_tower_sequence_configure_towers);
-    will_return(__wrap_tower_configure_sdmss_sam_with_isolation_disabled, SILIBS_SUCCESS);
 
     // Call API under test
     tower_init(test_die);
@@ -183,6 +197,11 @@ TEST_FUNCTION(test_tower_sequence_init_die1_fpga, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
+
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
@@ -197,6 +216,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_fpga, nullptr, nullptr)
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_isolation_enabled, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
@@ -208,7 +228,6 @@ TEST_FUNCTION(test_tower_sequence_init_die1_fpga, nullptr, nullptr)
     will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_tower_sequence_configure_towers);
-    will_return(__wrap_tower_configure_sdmss_sam_with_isolation_disabled, SILIBS_SUCCESS);
 
     // Call API under test
     tower_init(test_die);
@@ -227,6 +246,11 @@ TEST_FUNCTION(test_tower_sequence_init_die0_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0x0);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0x0);
+
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, false);
@@ -244,6 +268,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_svp, nullptr, nullptr)
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_isolation_enabled, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
@@ -255,7 +280,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_svp, nullptr, nullptr)
     will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_tower_sequence_configure_towers);
-    will_return(__wrap_tower_configure_sdmss_sam_with_isolation_disabled, SILIBS_SUCCESS);
 
     // Call API under test
     tower_init(test_die);
@@ -274,6 +298,11 @@ TEST_FUNCTION(test_tower_sequence_init_die1_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0x0);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0x0);
+
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, false);
@@ -288,6 +317,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_svp, nullptr, nullptr)
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_isolation_enabled, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
@@ -299,7 +329,6 @@ TEST_FUNCTION(test_tower_sequence_init_die1_svp, nullptr, nullptr)
     will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_tower_sequence_configure_towers);
-    will_return(__wrap_tower_configure_sdmss_sam_with_isolation_disabled, SILIBS_SUCCESS);
 
     // Call API under test
     tower_init(test_die);
@@ -318,6 +347,11 @@ TEST_FUNCTION(test_tower_sequence_init_die0_invalid_platform, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
+
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, false);
@@ -330,6 +364,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_invalid_platform, nullptr, nullptr)
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_isolation_enabled, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
@@ -342,7 +377,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_invalid_platform, nullptr, nullptr)
 
     expect_function_call(__wrap_tower_sequence_configure_towers);
 
-    will_return(__wrap_tower_configure_sdmss_sam_with_isolation_disabled, SILIBS_SUCCESS);
     // Call API under test
     tower_init(test_die);
 }
@@ -360,6 +394,11 @@ TEST_FUNCTION(test_tower_sequence_init_die1_invalid_platform, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
+
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, false);
@@ -372,6 +411,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_invalid_platform, nullptr, nullptr)
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_isolation_enabled, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_sdmss_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
@@ -384,7 +424,6 @@ TEST_FUNCTION(test_tower_sequence_init_die1_invalid_platform, nullptr, nullptr)
 
     expect_function_call(__wrap_tower_sequence_configure_towers);
 
-    will_return(__wrap_tower_configure_sdmss_sam_with_isolation_disabled, SILIBS_SUCCESS);
     // Call API under test
     tower_init(test_die);
 }

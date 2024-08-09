@@ -75,6 +75,7 @@ TEST_FUNCTION(test_successful_init_all_vabs, NULL, NULL)
             expect_value(__wrap_vab_init, vab_init_params->system_counter_delay, 0);
             expect_value(__wrap_vab_init, vab_init_params->vab_resolved_base_addr, 0x0);
             expect_value(__wrap_vab_init, vab_init_params->vab_configure_intu, true);
+            expect_value(__wrap_vab_init, vab_init_params->vab_id, vab_id);
 
             expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
             will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
@@ -113,6 +114,7 @@ TEST_FUNCTION(test_atu_unmap_fail, NULL, NULL)
             expect_value(__wrap_vab_init, vab_init_params->system_counter_delay, 0);
             expect_value(__wrap_vab_init, vab_init_params->vab_resolved_base_addr, 0x0);
             expect_value(__wrap_vab_init, vab_init_params->vab_configure_intu, true);
+            expect_value(__wrap_vab_init, vab_init_params->vab_id, vab_id);
             expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
             will_return(__wrap_atu_unmap, SILIBS_E_INIT);
 

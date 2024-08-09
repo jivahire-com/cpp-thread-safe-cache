@@ -66,6 +66,7 @@ int vab_common_init(uint16_t vab_instances_to_init)
             vab_init_cfg.system_counter_delay = 0;
             vab_init_cfg.vab_resolved_base_addr = atu_vabss_map[vab_id].mscp_start_address;
             vab_init_cfg.vab_configure_intu = true;
+            vab_init_cfg.vab_id = vab_id;
 
             FPFW_RUNTIME_ASSERT(!vab_init(&vab_init_cfg));
 

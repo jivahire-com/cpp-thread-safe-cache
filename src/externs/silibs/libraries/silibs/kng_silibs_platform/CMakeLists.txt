@@ -9,6 +9,8 @@ target_include_directories(
     ${TARGET}
         SYSTEM INTERFACE
             ${TARGET_DIR}/libraries/kng_silibs_platform/include
+            ${TARGET_DIR}/soc_fw_shared/include
+
 )
 
 target_link_libraries(${TARGET}

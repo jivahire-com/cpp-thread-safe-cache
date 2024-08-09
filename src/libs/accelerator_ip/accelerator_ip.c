@@ -193,7 +193,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
         return ACCEL_RET_FAIL_ACCEL_IP;
     }
     debug_print("atu mapped for accel ip\n");
-    
+
     if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
     {
         // On FPGA, SDM and CDED Firmware are not preloaded in the respective ITCMs. (Hence setting to false for FPGA)
@@ -201,9 +201,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
         p_ss_ctxt->p_init_params->fw_preload_enabled = false;
     }
 
-    ret = accelip_ss_init(atu_map_entry.mscp_start_address,
-                          p_ss_ctxt->accelip_metadata.accel_type,
-                          p_ss_ctxt->p_init_params);
+    ret = accelip_ss_init(atu_map_entry.mscp_start_address, p_ss_ctxt->accelip_metadata.accel_type, p_ss_ctxt->p_init_params);
     if (ret != SILIBS_SUCCESS)
     {
         critical_print("Accel IP: init_accelerator: accelip ss init failed.\n");
@@ -269,6 +267,11 @@ int32_t scp_accelerators_isolation_control(void)
     // Init all available Accelerator instances
     for (uint32_t index = 0; index < accel_ctxt_size; index++)
     {
+        // TODO: Skip initializing cded until cded tower is configured
+        if (index == 1)
+        {
+            continue;
+        }
         // TODO (ADO 1728772) : init any particular accelerator instance only if that is enabled in fuse
         if (p_ss_ctxt[index].accelip_metadata.die_instance == current_die_instance)
         {

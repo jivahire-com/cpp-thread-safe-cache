@@ -24,14 +24,27 @@ set(CMAKE_EXECUTABLE_SUFFIX_CXX ".elf")
 option(REPO_ENABLE_TESTS "Compiles unit tests" ON)
 option(REPO_ENABLE_COVERAGE "Enables code coverage in compilation" ON)
 
+# Enable response files
+set(CMAKE_C_USE_RESPONSE_FILE_FOR_OBJECTS TRUE)
+set(CMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS TRUE)
+set(CMAKE_NINJA_FORCE_RESPONSE_FILE TRUE)
+
 # Set repo utilities
 set(REPO_CLANG_TIDY "${CMAKE_SOURCE_DIR}/tools/cmakes/toolchain/arm-eabi-aarch/clang-tidy.cmd" 
     "--quiet" 
-    "--extra-arg=--target=thumb")
+    "--extra-arg=--target=thumb"
+    "--extra-arg=-mfloat-abi=soft"
+    "--extra-arg=-Qunused-arguments"
+    "--extra-arg=-isystem"
+    "--extra-arg=$ENV{REPO_APP_PATH_gcc.arm.eabi.aarch-win64}/arm-none-eabi/include"
+    "-p"
+    "${CMAKE_BINARY_DIR}/compile_commands.json")
 
-set(REPO_IWYU "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmakes/toolchain/arm-eabi-aarch/iwyu.cmd" 
-    "-Xiwyu" "--quoted_includes_first" 
-    "-Xiwyu" "--mapping_file=${CMAKE_SOURCE_DIR}/.iwyu")
+# TODO: Enable IWYU once IWYU fails builds on warnings
+# ADO: 1967581
+#set(REPO_IWYU "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmakes/toolchain/arm-eabi-aarch/iwyu.cmd" 
+#    "-Xiwyu" "--quoted_includes_first" 
+#    "-Xiwyu" "--mapping_file=${CMAKE_SOURCE_DIR}/.iwyu")
 
 set(REPO_CLANG_FORMAT "$ENV{REPO_APP_PATH_llvm.win64}/bin/clang-format.exe")
 

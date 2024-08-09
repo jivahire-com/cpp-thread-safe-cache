@@ -523,7 +523,7 @@ Function Set-Cmake($Toolchain = $env:REPO_APP_TOOLCHAIN, $Configuration = $env:R
 {
     $env:REPO_APP_TARGET_BUILD_DIR = "$env:REPO_APP_BUILD_DIR\$Configuration\$Toolchain"
     $env:REPO_APP_TARGET_FLASH_DIR = Join-Path $env:REPO_APP_TARGET_BUILD_DIR/bin "flash"
-    & ${env:REPO_APP_PATH_cmake.win64}/bin/cmake.exe --no-warn-unused-cli -G Ninja -B $env:REPO_APP_TARGET_BUILD_DIR -DCMAKE_TOOLCHAIN_FILE="$env:REPO_APP_CMAKE_TOOLCHAIN_DIR\toolchain.cmake" -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_BUILD_TYPE="$Configuration" -Wno-dev
+    & ${env:REPO_APP_PATH_cmake.win64}/bin/cmake.exe --no-warn-unused-cli -G Ninja -B $env:REPO_APP_TARGET_BUILD_DIR -DCMAKE_TOOLCHAIN_FILE="$env:REPO_APP_CMAKE_TOOLCHAIN_DIR\toolchain.cmake" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="$Configuration" -Wno-dev
 }
 
 <#

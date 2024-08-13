@@ -20,6 +20,8 @@ target_link_libraries(${TARGET}
         ms::driver::gpio
         ms::lib::interrupts
         ms::lib::scp_interrupts
+        silibs::idsw
+        silibs::idsw_kng
 )
 
 # Defining platform APIs

@@ -15,18 +15,18 @@ target_include_directories(${TARGET}
 
 target_link_libraries(${TARGET}
     PUBLIC
-    fwlib.dfwk
-    fwlib.platform.dfwkhost.threadx
-    ms::lib::error_codes
-    ms::lib::threadx
-    silibs::gpio
-    silibs_platform
+        fwlib.dfwk
+        fwlib.platform.dfwkhost.threadx
+        ms::lib::error_codes
+        ms::lib::threadx
+        silibs::gpio
+        silibs_platform
     PRIVATE
-    fwlib.lib.assert
-    fwlib.lib.init
-    fwlib.lib.utils
-    silibs::kng_silibs_platform
-    ms::lib::cortex_m7::nvic
+        fwlib.lib.assert
+        fwlib.lib.init
+        fwlib.lib.utils
+        ms::lib::cortex_m7::nvic
+        silibs::kng_silibs_platform
 )
 
 add_library(ms::driver::gpio ALIAS kng.driver.gpio)

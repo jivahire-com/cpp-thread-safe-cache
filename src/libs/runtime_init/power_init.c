@@ -33,7 +33,7 @@
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc"))
+FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc", "gpio_lib"))
 {
 #define SVP_NUM_CORES_PER_DIE 4
     // fpga platform has an unusual set of available cores

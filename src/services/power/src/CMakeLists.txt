@@ -26,6 +26,9 @@ target_link_libraries(${TARGET}
     PUBLIC
         ms::lib::corebits
         silibs::dvfs
+        silibs::gpio
+        silibs::idsw
+        silibs::idsw_kng
         silibs::kng_silibs_platform
         silibs::pvt
         silibs::sensor_ram_bridge

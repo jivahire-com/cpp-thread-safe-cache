@@ -101,8 +101,9 @@ void __wrap_gpio_interface_init(pgpio_interface_t iface, pgpio_device_t dev)
 TEST_FUNCTION(test_gpio_lib_init, nullptr, nullptr)
 {
     // Set up expectations
-    expect_function_call(__wrap_gpio_init);
     expect_function_call(__wrap_gpio_afm_init);
+    expect_function_call(__wrap_gpio_init);
+
 
     // Check dependencies
     assert_string_equal("mpu", _fpfw_component_gpio_lib.children[0]);

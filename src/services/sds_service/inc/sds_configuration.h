@@ -13,15 +13,8 @@
 /*----------- Nested includes ------------*/
 /*-------------- Typedefs ----------------*/
 enum sds_region_index {
-    PLATFORM_SDS_REGION_SECURE,
-    PLATFORM_SDS_REGION_NONSECURE,
+    PLATFORM_SDS_REGION_ARSM_DIE0,
     PLATFORM_SDS_REGION_COUNT,
 };
-
-// TBD: This is a placeholder for the actual SDS region configuration
-#define SCP_SDS_SECURE_BASE 0x100
-#define SCP_SDS_SECURE_SIZE 0x100
-#define SCP_SDS_NON_SECURE_BASE 0x100
-#define SCP_SDS_NON_SECURE_SIZE 0x100
 
 /*--------- Function Prototypes ----------*/

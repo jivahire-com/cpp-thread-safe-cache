@@ -53,19 +53,19 @@ typedef struct {
 typedef struct  {
     DFWK_INTERFACE_HEADER header;
     psds_service_t p_device;
-    const char* module_name;
-    uint32_t request_size;
-    uint32_t region_id;
 } sds_service_interface_t, *psds_service_interface_t;
 
 // struct for an request to the sds service
 typedef struct {
     DFWK_SYNC_REQUEST_HEADER header;
+    uint32_t sds_module_id;
+    uint32_t sds_module_size;
+    uint32_t sds_module_region_id;
     struct 
     {
         void* buffer;
         uint32_t byte_count;
-    } input;
+    } io;
 } sds_service_request_t, *psds_service_request_t;
 
 /*--------- Function Prototypes ----------*/
@@ -79,20 +79,19 @@ sds_config_t* retrieve_sds_config_info();
 /**
  *  Initialize the SDS block if doesn't exist. if exists, return success.
  *
- *  @param p_interface An interface handle that implements the SDS interface.
  * 
- *  @param module_name The name of the module to create the block for
+ *  @param sds_module_id The id of the module to create the block for
  * 
  *  @param request_size The size of memory that module is requesting
  * 
  *  @return int32_t The status of the operation.
  */
-int32_t sds_block_creation(PDFWK_INTERFACE_HEADER p_interface, const char* module_name, uint32_t request_size, uint32_t region_id);
+int32_t sds_block_creation(uint32_t sds_module_id, uint32_t request_size, uint32_t region_id);
 
 /**
  * Read data from within a Shared Data Structure. 
  *
- *  @param p_interface An interface handle that implements the SDS interface.
+ *  @param sds_module_id The id of the module to create the block for
  *
  *  @param buffer A buffer to read data into.
  * 
@@ -100,17 +99,16 @@ int32_t sds_block_creation(PDFWK_INTERFACE_HEADER p_interface, const char* modul
  * 
  *  @return The status of the operation.
  */
-int32_t sds_block_read(PDFWK_INTERFACE_HEADER p_interface, void* buffer, size_t buffer_size);
+int32_t sds_block_read(uint32_t sds_module_id, void* buffer, size_t buffer_size);
 
 /**
  *  Write data within a Shared Data Structure.
  *
- *  @param p_interface An interface handle that implements the SDS interface.
  *
- *  @param buffer A buffer to read data into.
+ *  @param buffer A buffer to write data into sds.
  *
  *  @param buffer_size The size of the buffer.
  *
  *  @return The status of the operation.
  */
-int32_t sds_block_write(PDFWK_INTERFACE_HEADER p_interface, void *buffer, size_t buffer_size);
+int32_t sds_block_write(uint32_t sds_module_id, void* buffer, size_t buffer_size);

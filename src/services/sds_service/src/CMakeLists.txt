@@ -10,6 +10,7 @@ add_library(${TARGET}
 target_include_directories(${TARGET}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/../inc
+        ${REPO_ROOT_DIR}/.externs/repo/silibs/soc_fw_shared/include
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -21,8 +22,10 @@ target_link_libraries(${TARGET}
         fwlib.lib.interface.platform.threadx
         fwlib.lib.status
         fwlib.lib.spinlock
+        fwlib.lib.init
         ms::lib::error_codes
         ms::lib::crash_dump::scp
+        ms::service::atu_service
 )
 
 lint_target(${TARGET})

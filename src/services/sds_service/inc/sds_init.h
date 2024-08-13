@@ -20,16 +20,18 @@
 #define SUPPORTED_VERSION_MINOR 0x0
 /* The major version of the SDS schema supported by this implementation */
 #define SUPPORTED_VERSION_MAJOR 0x1
-#define MODULE_NAME "[SDS_SVC] "
-#define NEWLINE     "\n"
+#define SDS_MODULE_NAME "[SDS_SVC] "
+#ifndef NEWLINE
+#define NEWLINE "\n"
+#endif
 
 #define SDS_ALIGNMENT_SIZE 8
 #define SDS_ALIGN(size) (FPFW_ALIGN_BY(SDS_ALIGNMENT_SIZE, size))
 #define SDS_MIN_REGION_SIZE (FPFW_ALIGN_BY(SDS_ALIGNMENT_SIZE, (sizeof(sds_region_header_t) + sizeof(sds_block_header_t))))
 
-#define SDS_LOG_INFO(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
-#define SDS_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
-#define SDS_LOG_CRIT(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define SDS_LOG_INFO(fmt, ...) printf(SDS_MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define SDS_LOG_WARN(fmt, ...) printf(SDS_MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define SDS_LOG_CRIT(fmt, ...) printf(SDS_MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 
 /*-------------- Typedefs ----------------*/
 typedef struct {

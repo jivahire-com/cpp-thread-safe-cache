@@ -13,6 +13,8 @@
 
 #include <FpFwAssert.h>
 #include <bug_check.h>
+#include <fpfw_init.h>
+#include <kng_error.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -21,20 +23,25 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+psds_service_interface_t sds_interface = NULL;
 
 /*------------- Functions ----------------*/
-int32_t sds_io_request(PDFWK_INTERFACE_HEADER p_interface, void* buffer, size_t buffer_size, sds_api_type_t requestType)
+int32_t sds_io_request(psds_service_interface_t p_interface, uint32_t sds_module_id, void* buffer, size_t buffer_size, sds_api_type_t requestType)
 {
-    BUG_ASSERT(buffer != NULL);
+    if (buffer_size == 0 || buffer == NULL)
+    {
+        return KNG_E_INVALIDARG;
+    }
 
-    sds_service_request_t request;
+    sds_service_request_t request = {};
     request.header.RequestType = requestType;
-    request.input.buffer = buffer;
-    request.input.byte_count = buffer_size;
+    request.sds_module_id = sds_module_id;
+    request.io.buffer = buffer;
+    request.io.byte_count = buffer_size;
 
-    int32_t status = DfwkInterfaceSendSync(p_interface, &request.header);
+    int32_t status = DfwkInterfaceSendSync(&p_interface->header, &request.header);
 
-    if (status != DFWK_SUCCESS)
+    if (status != KNG_SUCCESS)
     {
         SDS_LOG_CRIT("Failed to send SDS request. Op Code: %d, Error code: %d", (int)requestType, (int)status);
     }
@@ -42,28 +49,35 @@ int32_t sds_io_request(PDFWK_INTERFACE_HEADER p_interface, void* buffer, size_t 
     return status;
 }
 
-int32_t sds_block_creation(PDFWK_INTERFACE_HEADER p_interface, const char* module_name, uint32_t request_size, uint32_t region_id)
+int32_t sds_block_creation(uint32_t sds_module_id, uint32_t request_size, uint32_t region_id)
 {
-    BUG_ASSERT(module_name != NULL);
-    BUG_ASSERT(request_size != 0);
+    if (request_size == 0 || request_size < SDS_MIN_REGION_SIZE)
+    {
+        return KNG_E_INVALIDARG;
+    }
 
     sds_config_t* sds_config = retrieve_sds_config_info();
-
     BUG_ASSERT(sds_config != NULL);
-    BUG_ASSERT(region_id <= sds_config->region_count);
-    BUG_ASSERT(SDS_MIN_REGION_SIZE <= request_size);
 
-    sds_service_interface_t* p_sds_interface = (sds_service_interface_t*)p_interface;
-    p_sds_interface->module_name = module_name;
-    p_sds_interface->request_size = request_size;
-    p_sds_interface->region_id = region_id;
+    if (sds_config->region_count < region_id)
+    {
+        return KNG_E_INVALIDARG;
+    }
+
+    if (sds_interface == NULL)
+    {
+        return KNG_E_NOINTERFACE;
+    }
 
     sds_service_request_t request = {};
     request.header.RequestType = SDS_IO_REQUEST_CREATION_SYNC;
+    request.sds_module_id = sds_module_id;
+    request.sds_module_size = request_size;
+    request.sds_module_region_id = region_id;
 
-    int32_t status = DfwkInterfaceSendSync(p_interface, &request.header);
+    int32_t status = DfwkInterfaceSendSync(&sds_interface->header, &request.header);
 
-    if (status != DFWK_SUCCESS)
+    if (status != KNG_SUCCESS)
     {
         SDS_LOG_CRIT("Failed to create SDS block. Error code: %d", (int)status);
     }
@@ -71,12 +85,22 @@ int32_t sds_block_creation(PDFWK_INTERFACE_HEADER p_interface, const char* modul
     return status;
 }
 
-int32_t sds_block_read(PDFWK_INTERFACE_HEADER p_interface, void* buffer, size_t buffer_size)
+int32_t sds_block_read(uint32_t sds_module_id, void* buffer, size_t buffer_size)
 {
-    return sds_io_request(p_interface, buffer, buffer_size, SDS_IO_REQUEST_READ_SYNC);
+    if (sds_interface == NULL)
+    {
+        return KNG_E_NOINTERFACE;
+    }
+
+    return sds_io_request(sds_interface, sds_module_id, buffer, buffer_size, SDS_IO_REQUEST_READ_SYNC);
 }
 
-int32_t sds_block_write(PDFWK_INTERFACE_HEADER p_interface, void* buffer, size_t buffer_size)
+int32_t sds_block_write(uint32_t sds_module_id, void* buffer, size_t buffer_size)
 {
-    return sds_io_request(p_interface, buffer, buffer_size, SDS_IO_REQUEST_WRITE_SYNC);
+    if (sds_interface == NULL)
+    {
+        return KNG_E_NOINTERFACE;
+    }
+
+    return sds_io_request(sds_interface, sds_module_id, buffer, buffer_size, SDS_IO_REQUEST_WRITE_SYNC);
 }

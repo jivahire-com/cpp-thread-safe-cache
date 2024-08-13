@@ -21,12 +21,14 @@
 #define ATU_AP_ARSM_ADDRESS (0x60000000U)
 #define ATU_AP_CORE_CLUSTER_ADDRESS (0x70000000U)
 
-#define MODULE_NAME "[ATU_SVC] "
-#define NEWLINE     "\n"
+#define ATU_MODULE_NAME "[ATU_SVC] "
+#ifndef NEWLINE
+#define NEWLINE "\n"
+#endif
 
-#define ATU_LOG_INFO(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
-#define ATU_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
-#define ATU_LOG_CRIT(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define ATU_LOG_INFO(fmt, ...) printf(ATU_MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define ATU_LOG_WARN(fmt, ...) printf(ATU_MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define ATU_LOG_CRIT(fmt, ...) printf(ATU_MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 
 /*-------------- Typedefs ----------------*/
 /**

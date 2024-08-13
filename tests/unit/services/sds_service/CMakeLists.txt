@@ -25,6 +25,7 @@ target_link_libraries(${TARGET}
         ms::service::sds_service
         ms::lib::error_codes
         ms::lib::crash_dump::scp
+        ms::service::atu_service
 )
 
 lint_target(${TARGET})
@@ -34,8 +35,10 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    fpfw_init_get_handle
     retrieve_sds_config_info
     DfwkInterfaceSendSync
     DfwkDeviceInitialize
     DfwkQueueInitialize
+    FPFwSpinLockInitialize
 )

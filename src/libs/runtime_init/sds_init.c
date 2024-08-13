@@ -15,7 +15,7 @@
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(sds_svc, FPFW_INIT_DEPENDENCIES("dfwk"))
+FPFW_INIT_COMPONENT(sds_svc, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc"))
 {
     static sds_service_t sds_service;
     sds_init(&sds_service, fpfw_init_get_handle((void*)"dfwk"));

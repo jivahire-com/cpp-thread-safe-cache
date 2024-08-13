@@ -1,6 +1,7 @@
 set(TARGET ddr_manager.test)
 
 set(SOURCES
+    ddr_manager_i3c_test.cpp
     ddr_manager_test.cpp
 )
 
@@ -14,6 +15,7 @@ set(LIBS
         ms::mocks::threadx
         ms::lib::stdio_textio
         ms::driver::textio::pl011
+        silibs::ddr_i3c
         fwlib.lib.init
         fwlib.lib.utils
         fwlib.lib.spinlock
@@ -48,4 +50,7 @@ mock_target(${TARGET}
     _txe_queue_send
     _txe_queue_receive
     _txe_timer_create
+    ddr_i3c_interface_read_temp_sensor_mr_reg
+    ddr_i3c_interface_get_instance
+    idhw_get_die_id
 )

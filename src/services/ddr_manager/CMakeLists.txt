@@ -5,6 +5,7 @@ set(LIBS PUBLIC fwlib.dfwk fwlib.lib.assert)
 add_library(${TARGET}
     STATIC
         ddr_manager_acpi_smbios_tables.c
+        ddr_manager_i3c.c
         ddr_manager_memory_map.c
         ddr_manager_polling.c
         ddr_manager_top.c
@@ -19,11 +20,15 @@ target_include_directories(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
+        silibs::ddr_i3c
         silibs::ddrss
+        silibs::idhw
         silibs::platform
         idhw
         fwlib.dfwk
         fwlib.lib.init
+        ms::lib::crash_dump::scp
+        ms::lib::error_codes
     PUBLIC
         fwlib.platform.dfwkhost.threadx
         fwlib.dfwk

@@ -15,6 +15,7 @@
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define CORES_PER_TILE (NUM_AP_CORES_PER_DIE / NUM_CPU_TILES)
 
 /*-------------- Typedefs ----------------*/
 /**
@@ -117,12 +118,12 @@ bool power_hw_uses_pvt_model();
 bool power_hw_full_init_allowed();
 
 /**
- * @brief Helper function to convert a raw DTS sample to a value in 0.1C
+ * @brief Helper function to convert a raw DTS sample to a value in 1/10 degrees C
  *
  * @return none
  *
  */
-uint16_t power_hw_dts_pvt_raw_to_temp_p1C(uint16_t raw, dts_coeff_t fused_coeff);
+uint16_t power_hw_dts_pvt_raw_to_temp_dC(uint16_t raw, dts_coeff_t fused_coeff);
 
 /**
  * @brief Update a plimit

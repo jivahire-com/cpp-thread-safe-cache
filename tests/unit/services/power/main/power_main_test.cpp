@@ -92,6 +92,18 @@ void __wrap_power_runconfig_init(const power_service_config_t* p_config)
     check_expected_ptr(p_config);
 }
 
+void __wrap_power_loops_init()
+{
+    // nothing to do
+    function_called();
+}
+
+void __wrap_power_timer_start_loop_timers()
+{
+    // nothing to do
+    function_called();
+}
+
 // wrap for power_telemetry_init_config
 void __wrap_power_telemetry_init_config(const power_telcfg_t* p_telemetry_config)
 {
@@ -141,6 +153,8 @@ POWER_TEST(init, NULL, NULL)
     // add the expected/check values for power internal functions
     expect_value(__wrap_power_runconfig_init, p_config, &test_config);
 
+    expect_function_call(__wrap_power_loops_init);
+
     power_init(&test_device, &test_schedule, &test_config);
 }
 
@@ -151,6 +165,8 @@ POWER_TEST(init_ap_soc, NULL, NULL)
     will_return(__wrap_power_runconfig_get, &test_runconfig);
     expect_value(__wrap_power_init_soc, p_runconfig, &test_runconfig);
     expect_value(__wrap_power_init_core, p_runconfig, &test_runconfig);
+
+    expect_function_call(__wrap_power_timer_start_loop_timers);
 
     power_ap_soc_init();
 }

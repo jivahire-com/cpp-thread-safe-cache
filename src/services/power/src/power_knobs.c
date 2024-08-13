@@ -52,15 +52,16 @@ void power_knobs_read(power_knobs_t* p_knobs)
     p_knobs->pid = (power_pid_config_t){.kpt = 15000UL, .kit = 2000000UL, .kdt = 0UL, .setpoint_offset = 5000UL}; // config_get_power_pid();
     p_knobs->soc_maximum_thermal_watts_limit = 350; // config_get_power_soc_maximum_thermal_watts_limit();
 
-    p_knobs->control_loop_interval = 100; // config_get_power_control_loop_interval();
-    p_knobs->pvt_loop_interval = 1000;    // config_get_power_pvt_loop_interval();
+    p_knobs->control_loop_interval = 10;  // config_get_power_control_loop_interval();
+    p_knobs->pvt_loop_interval = 100;     // config_get_power_pvt_loop_interval();
     p_knobs->temp_telemetry_divider = 10; // config_get_power_temp_telemetry_divider();
 
     p_knobs->soc_maximum_electrical_current_limit_vcpu0 =
         500; // config_get_power_soc_maximum_electrical_current_limit_vcpu0();  // Vcpu max current in amps
     p_knobs->soc_maximum_electrical_current_limit_vcpu1 =
         500; // config_get_power_soc_maximum_electrical_current_limit_vcpu1();  // Vcpu max current in amps
-    p_knobs->r_loadline_uohm = 400; // config_get_power_r_loadline();                            // (uOhm)
+    p_knobs->r_loadline_vcpu0_uohm = 400; // config_get_power_r_loadline_vcpu0(); // (uOhm)
+    p_knobs->r_loadline_vcpu1_uohm = 400; // config_get_power_r_loadline_vcpu1(); // (uOhm)
     p_knobs->vsys_r_loadline_uohm = 300; // config_get_power_vsys_r_loadline();                       // (uOhm)
     p_knobs->ldo_offset = 0;             // config_get_power_ldo_offset();
     p_knobs->activity_factor_dhry_adjustment = 100; // activity factor with mpmm disabled (default)

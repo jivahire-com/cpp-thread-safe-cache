@@ -13,16 +13,14 @@
 #include "power_runconfig.h" // for VM_FLAGS_NONE, VM_FLAGS_DIV2, pow...
 
 #include <FpFwAssert.h>            // for FPFW_RUNTIME_ASSERT
-#include <FpFwUtils.h>             // for knowing how big 1k is
 #include <atu_api.h>               // for ATU_AP_CORE_CLUSTER_ADDRESS
 #include <core_cluster_top_regs.h> // for CORE_CLUSTER_TOP_CORE_CLUSTER0_AD...
 #include <corebits.h>
 #include <fpfw_init.h> // for fpfw_init_get_handle, FPFW_INIT_S...
 #include <idsw.h>      // for idsw_get_die_id
 #include <idsw_kng.h>
-#include <kng_soc_constants.h>  // for NUM_AP_CORES_PER_DIE
-#include <power_init.h>         // for power_init, power_interface_init
-#include <silibs_ap_top_regs.h> // for AP_TOP_D0_CORE_CLUSTER_SIZE, AP_T...
+#include <kng_soc_constants.h> // for NUM_AP_CORES_PER_DIE
+#include <power_init.h>        // for power_init, power_interface_init
 #include <silibs_scp_exp_top_regs.h>
 #include <silibs_scp_top_regs.h>
 #include <startup_shutdown.h>

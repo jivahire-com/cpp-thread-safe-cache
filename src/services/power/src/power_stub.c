@@ -3,11 +3,12 @@
 //
 
 /**
- * @file power_fuses.c
- * Implementation of power fuse reads
+ * @file power_stub.c
+ * Stub implementation for power related functions
  */
 
 /*------------- Includes -----------------*/
+#include <FpFwUtils.h>
 #include <fpfw_status.h>            // for FPFW_STATUS_INVALID_ARGS, FPFW_STATUS_S...
 #include <kingsgate_fuse_defines.h> // for TEST_FLOW_CHECKS_PMM_REVISION_BIT_OFFSET
 #include <power_runconfig.h>        // for BITS_PER_BYTE, MAX_BITS_PER_FUSE
@@ -57,4 +58,16 @@ int32_t platform_read_fuse(const uint32_t* target_addr, const uint32_t fuse_bit_
 
     // Always return Success.
     return FPFW_STATUS_SUCCESS;
+}
+
+// Implement force_pmin
+// TODO ADO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491042/
+void power_hw_clear_force_pmin(power_pmin_type_t type)
+{
+    FPFW_UNUSED(type);
+}
+
+void power_hw_force_pmin(power_pmin_type_t type)
+{
+    FPFW_UNUSED(type);
 }

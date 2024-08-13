@@ -10,10 +10,12 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <FpFwAssert.h>
+#include <DfwkDriver.h>
+
 #include <fpfw_status.h>       // for FPFW_STATUS_SUCCESS, FPFW_STATUS_INVA...
 #include <kng_error.h>
 #include <power_runconfig_i.h>
-#include <FpFwAssert.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -21,8 +23,10 @@
 #define MODULE_NAME "[PWRSVC] "
 #define NEWLINE     "\n"
 
+#define POWER_LOG_TRACE(fmt, ...) 
 #define POWER_LOG_INFO(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define POWER_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define POWER_LOG_ERR(fmt, ...)  printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define POWER_LOG_CRIT(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 
 #ifndef MIN
@@ -51,11 +55,45 @@
         (dout / 16384.0F * DTS_Y_COEFF_FUSED_TEMP(fused_y) + DTS_K_COEFF_FUSED_TEMP(fused_k))
 #endif
 
+/* Macros to convert AVS uint16_t to float */
+#define AVS_TEMPERATURE_FLOAT(x) (((float)x) / 10)
+#define AVS_CURRENT_FLOAT(x)     (((float)x) / 100)
+#define AVS_VOLTAGE_FLOAT(x)     (((float)x) / 1000)
+
 /* other helper macros */
 #define DIMOF(x) (sizeof(x) / sizeof(x[0]))
 
-/*-------------- Typedefs ----------------*/
+/* min/max Vcpu limits */
+#define VR_VCPU_MAX_VOLTAGE_MV 1320
+#define VR_VCPU_MIN_VOLTAGE_MV 750
 
+/* power cap */
+#define NO_POWER_CAP (UINT16_MAX)
+
+/*-------------- Typedefs ----------------*/
+// Enums for power cap result
+enum _power_cap_update_result_t
+{
+    MP_POWER_CAP_SUCCESS = 0,
+    MP_POWER_CAP_PENDING,
+    MP_POWER_CAP_FAIL_PREVIOUS_UPDATED, /* Returned (via callback) when a
+                                           previous request fails due to new
+                                           request */
+    MP_POWER_CAP_FAIL_CLI_NOT_ALLOWED,  /* CLI not allowed if non-CLI in progress
+                                         */
+};
+
+// structure for storing local/remote power calculations
+typedef struct _power_latest_calcs
+{
+    float soc_power;    // most recent soc power measurement
+    float vcpu_power;   // most recent vcpu power measurement
+    uint16_t vcpu_avs_voltage; // most recent vcpu voltage
+    uint16_t vcpu_avs_current; // most recent vcpu current
+} power_latest_calcs_t;
+
+// Callback function pointer type for power cap
+typedef void (*power_cap_completed_callback_t)(int result, uint16_t current_cap, uint16_t previous_cap_watts);
 
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus
@@ -223,6 +261,181 @@ int32_t power_fuses_get_tdp_config(power_fuse_tdp_t* tdp_config);
  *
  */
 int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offset);
+
+/**
+ * @brief Get timestamp counter value
+ *
+ * \b Description:
+ *      Use to get current 64bit timestamp value
+ *
+ * @return counter
+ *
+ */
+uint64_t power_timer_get_counter();
+/**
+ * @brief Get timestamp counter ticks for duration in microseconds
+ *
+ * \b Description:
+ *      Use to get an equivalent duration in counter ticks for an input in
+ * microseconds
+ *
+ * @param[in] time_in_us - time in microseconds to convert to ticks
+ *
+ * @return counter
+ *
+ */
+uint64_t power_timer_get_counter_ticks_us(uint16_t time_in_us);
+
+/**
+ * @brief Convert counter ticks into microseconds
+ *
+ * \b Description:
+ *      Use to get an equivalent duration in microseconds for an input in counter ticks
+ *
+ * @param[in] ticks - time in ticks to convert to microseconds
+ * 
+ * @return time in us
+ *
+ */
+uint64_t power_timer_get_us_from_counter(uint32_t ticks);
+
+/**
+ * @brief Start the loop timers
+ *
+ * \b Description:
+ *      Use to start loop timers once all init is done
+ *
+ */
+void power_timer_start_loop_timers();
+
+/**
+ * @brief Handler for async requests related to CLI
+ *
+ * @param[in] p_request - The power service async request
+ * @param[in] p_context - Related context given to async handler function
+ *
+ */
+void power_cli_requests_async_handler(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context);
+
+/**
+ * @brief Call kick off VR reads necessary for power calculations
+ *
+ * @return none
+ *
+ */
+void power_vrs_initiate_vr_reads();
+
+/**
+ * @brief Returns recent power in mW
+ *
+ * @return power in mW
+ *
+ */
+uint32_t power_vrs_get_recent_power_mw();
+
+/**
+ * @brief Initiates send of vcpu voltage write, will lead to signal of voltage change pending/done
+ *
+ * @param[in] voltage_mv - Voltage in mV
+ *
+ * @return none
+ *
+ */
+void power_vrs_write_vcpu_voltage(uint16_t voltage_mv);
+
+
+/**
+ * @brief Initiates read of vcpu voltage, will lead to signal of voltage change pending/done
+ *
+ * @return none
+ *
+ */
+void power_vrs_read_vcpu_voltage();
+
+/**
+ * @brief Init function to initialize internal power_cap and related data.
+ *
+ * @return none
+ *
+ */
+void power_cap_init();
+
+
+
+/**
+ * @brief Get VRcpu portion of power cap for use in control loop
+ *
+ * \b Description:
+ *      Called to determine the current VRcpu portion of the power cap; this
+ * function also determines which of the various caps are the acting
+ * cap--maximum thermal limit in watts, maximum electrical limit (specific to
+ * VRcpu rail), or the rack power cap
+ *
+ * @param[out] p_new_cap - Pointer to boolean, which if provided will be set to
+ * true if a new rack power cap has been put into place
+ * @param[in] p_local_power - local power inputs
+ * @param[in] p_remote_power - remote power inputs
+ *
+ * @return VRcpu portion of power cap
+ *
+ */
+float power_cap_get_vrcpu_cap(bool *p_new_cap, power_latest_calcs_t* p_local_power, power_latest_calcs_t* p_remote_power);
+
+/**
+ * @brief Indicate that previous power cap has been finalized
+ *
+ * \b Description:
+ *      After a call to power_cap_get_vrcpu_cap, a call to this function
+ * indicates that control loop is updated to achieve the new goal and initial HW
+ * changes have been made.  The primary function of this API is to notify the
+ * cap requestor that the cap is now in place.
+ *
+ * @return none
+ *
+ */
+void power_cap_finalize();
+
+/**
+ * @brief Update the SOC power cap (rack limit)
+ *
+ * \b Description:
+ *      This API should be called to pass in updates to the SOC power cap.
+ *
+ * @param[in] callback - Pointer to callback function which will be called once
+ * cap is in place
+ * @param[in] new_power_cap - the new SOC power cap in watts
+ * @param[in] source_is_cli - should be true if source is CLI; used to ensure
+ * CLI does not interfere with actual rack limit changes
+ *
+ * @return a pending or fail result (see _power_cap_update_result_t)
+ *
+ */
+int power_cap_update(power_cap_completed_callback_t callback, uint16_t new_power_cap, bool source_is_cli);
+
+/**
+ * @brief Cancel an existing SOC power cap (rack limit)
+ *
+ * \b Description:
+ *      This API should be called to cancel a previous power cap.
+ *
+ * @param[in] callback - Pointer to callback function which will be called once
+ * cap is in place
+ * @param[in] source_is_cli - should be true if source is CLI; used to ensure
+ * CLI does not interfere with actual rack limit changes
+ *
+ * @return a pending or fail result (see _power_cap_update_result_t)
+ *
+ */
+int power_cap_cancel(power_cap_completed_callback_t callback, bool source_is_cli);
+
+/**
+ * @brief Get power capping capped state
+ *
+ * @return true if capped
+ *
+ */
+bool power_cap_is_capped();
+
 
 #ifdef __cplusplus
 }

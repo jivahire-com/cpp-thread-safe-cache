@@ -19,13 +19,13 @@
 #include "power_runconfig.h" // for power_knobs_t, dts_coeff_t, power_run...
 #include "power_runconfig_i.h"
 
-#include <FpFwAssert.h>    // for FPFW_RUNTIME_ASSERT
-#include <assert.h>        // for static_assert
-#include <bug_check.h>     // for BUG_CHECK
-#include <corebits.h>      // for corebits_is_bit_set
-#include <dvfs.h>          // for dvfs_get_cppc_from_pstate, dvfs_pll_g...
-#include <dvfs_regs.h>     // for (anonymous union)::(anonymous), dvfs_...
-#include <fgpll_regs.h>    // for fgpll_pll_error_mask_cr, (anonymous u...
+#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
+#include <bug_check.h>  // for BUG_CHECK
+#include <corebits.h>   // for corebits_is_bit_set
+#include <dvfs.h>       // for dvfs_get_cppc_from_pstate, dvfs_pll_g...
+#include <dvfs_regs.h>  // for (anonymous union)::(anonymous), dvfs_...
+#include <fgpll_regs.h> // for fgpll_pll_error_mask_cr, (anonymous u...
+#include <kng_error.h>
 #include <odcm.h>          // for odcm_init, odcm_telemetry_config, ODC...
 #include <pex_regs.h>      // for PEX_CORE_PLL_ADDRESS
 #include <power_events.h>  // for POWER_ET_FATAL, POWER_ET_TYPE_CURVE_H...
@@ -43,8 +43,6 @@
 void core_pll_mask_error_sr(const power_runconfig_t* p_runconfig, int core);
 
 /*-- Declarations (Statics and globals) --*/
-#define CORES_PER_TILE (NUM_AP_CORES_PER_DIE / NUM_CPU_TILES)
-
 // PVT dout helper macros
 #define CLIP_PVT(dout) (uint16_t)(dout > UINT16_MAX ? UINT16_MAX : dout)
 // temperature thresholds are in 0.1C increments, divide by 10 to get value for dout
@@ -448,7 +446,7 @@ static void power_init_update_tilepvt_tile_cfg(const power_runconfig_t* p_runcon
     }
 }
 
-uint16_t power_hw_dts_pvt_raw_to_temp_p1C(uint16_t raw, dts_coeff_t fused_coeff)
+uint16_t power_hw_dts_pvt_raw_to_temp_dC(uint16_t raw, dts_coeff_t fused_coeff)
 {
     return (uint16_t)FLOAT_TO_UNSIGNED((DOUT2TEMP_FUSED(raw, fused_coeff.k_val, fused_coeff.y_val)) * 10);
 }
@@ -484,7 +482,7 @@ static void power_init_update_tilepvt_telemetry_cfg(tile_pvt_telem_setting_confi
 static uint16_t power_init_find_sochot_safe_temp_hyst(uint16_t config_hyst, dts_coeff_t fused_coeff)
 {
     uint16_t raw_hyst = TEMPTHRESHOLD2DOUT(config_hyst, fused_coeff);
-    while ((raw_hyst < UINT16_MAX) && (power_hw_dts_pvt_raw_to_temp_p1C(raw_hyst, fused_coeff) < config_hyst))
+    while ((raw_hyst < UINT16_MAX) && (power_hw_dts_pvt_raw_to_temp_dC(raw_hyst, fused_coeff) < config_hyst))
     {
         // basically, we want to increase the raw value until the temp calculated from the raw value is >= the input hysteresis temp
         // this will ensure that if we wait for polled temp < this value before clearing pmin, that we can ensure we went below the
@@ -731,10 +729,27 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
             // reconfigure PLLs and VMAT if we're forcing a pstate
             if (p_knobs->force_pstate < NUM_PSTATES)
             {
+                // determine core's curve minimum plimit/pstate
+                const unsigned int assigned_vft = p_runconfig->derived.assigned_vft[core];
+                const uint8_t curve_min_plimit = p_runconfig->derived.vfts[assigned_vft].min_plimit;
+                uint8_t forced_pstate = p_knobs->force_pstate;
+
+                // clip forced pstate if less than supported by curve
+                if (forced_pstate < curve_min_plimit)
+                {
+                    POWER_ET_ERROR(POWER_ET_TYPE_FORCE_PSTATE_CLIPPED,
+                                   POWER_ET_ENCODE_DETAIL_CORE(curve_min_plimit, core));
+                    POWER_LOG_ERR("force_pstate clipped for core %u: requested %u, core/curve minimum: %u",
+                                  core,
+                                  forced_pstate,
+                                  curve_min_plimit);
+                    forced_pstate = curve_min_plimit;
+                }
+
                 // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491054/
                 // for ITD, need to make sure ITD is disabled for force-pstate (would need highest voltage for
                 // any pstate across the curves) or need to make sure we have 4 updated curves using this api
-                setup_forced_pstate(cluster_pex_base_addr, &dvfs_cfg, &forced_pstate_vft, core, p_knobs->force_pstate);
+                setup_forced_pstate(cluster_pex_base_addr, &dvfs_cfg, &forced_pstate_vft, core, forced_pstate);
             }
         }
         else

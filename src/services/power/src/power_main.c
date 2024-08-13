@@ -8,8 +8,9 @@
  */
 
 /*------------- Includes -----------------*/
-#include "power_hw_int_i.h"    // for power_init_core, power_init_soc
-#include "power_i.h"           // for POWER_LOG_INFO, power_ap_soc_init
+#include "power_hw_int_i.h" // for power_init_core, power_init_soc
+#include "power_i.h"        // for POWER_LOG_INFO, power_ap_soc_init
+#include "power_loops_i.h"
 #include "power_runconfig.h"   // for power_service_config_t
 #include "power_runconfig_i.h" // for power_runconfig_get_element, power...
 
@@ -66,23 +67,12 @@ static void power_service_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER p_request, v
         DfwkAsyncRequestComplete(p_request);
     }
     break;
-    case CLI_COMMANDS_POWER_CONFIG: {
-        ppower_service_cli_request_t p_cli_request = (ppower_service_cli_request_t)p_request;
-        p_cli_request->p_requested_data = power_runconfig_get_element(p_cli_request->power_ext_if_cmd_id);
-        DfwkAsyncRequestComplete(p_request);
-    }
-    break;
-    case CLI_COMMANDS_POWER_SET: {
-        ppower_service_cli_request_t p_cli_request = (ppower_service_cli_request_t)p_request;
-        power_runconfig_set_element(p_cli_request->power_ext_if_cmd_id, p_cli_request->p_set_data);
-        DfwkAsyncRequestComplete(p_request);
-    }
-    break;
+    case CLI_COMMANDS_POWER_CONFIG:
+    case CLI_COMMANDS_POWER_SET:
     case CLI_COMMANDS_POWER_STATUS:
-    case CLI_COMMANDS_POWER_LOG: {
-        DfwkAsyncRequestComplete(p_request);
-    }
-    break;
+    case CLI_COMMANDS_POWER_LOG:
+        power_cli_requests_async_handler(p_request, p_context);
+        break;
     default:
         FPFW_RUNTIME_ASSERT(false);
         break;
@@ -122,6 +112,12 @@ void power_init(ppower_service_t p_device, PDFWK_SCHEDULE p_schedule, const powe
 
     // intialize power service runtime configuration (knobs, fuses, static config, etc)
     power_runconfig_init(p_config);
+
+    // initialize power cap
+    power_cap_init();
+
+    // setup control and telemetry loops
+    power_loops_init();
 }
 
 void power_ap_soc_init()
@@ -135,4 +131,7 @@ void power_ap_soc_init()
 
     // core portion of init
     power_init_core(p_runconfig, &telemetry_config);
+
+    // start loop timers
+    power_timer_start_loop_timers();
 }

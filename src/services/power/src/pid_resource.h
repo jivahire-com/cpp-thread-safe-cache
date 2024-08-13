@@ -95,6 +95,7 @@ void pid_reset();
  * \b Description:
  *      Provide a starting value for the count of resources the PID is managing
  *
+ * @param[in] resources - Update/initialize resource count
  */
 void pid_set_resources(uint32_t resources);
 

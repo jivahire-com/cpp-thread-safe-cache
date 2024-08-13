@@ -12,6 +12,7 @@
 
 /*----------- Nested includes ------------*/
 #include <assert.h>                 // for static_assert
+#include <corebits.h>               // for COREBITS_FMT_DATA
 #include <event_trace.h>            // for _MH_IS_PARENTHESIZED_imp1, _MH_SP...
 #include <event_trace_providers.h>  // for EVENT_TRACE_PROVIDER_ID_SCP_POWER
 #include <stdint.h>                 // for UINT8_MAX
@@ -25,7 +26,7 @@
 #define POWER_ET_STATUS(type)               EventWritePowerStatus((type))
 #define POWER_ET_STATUS_PARAM(type, param)  EventWritePowerStatusParam((param), (type))
 #ifdef COREBITS_FMT_DATA
-    #define POWER_ET_AFFECTED_CORES(type, cores) EventWritePowerAffectedCoresWarn(COREBITS_FMT_DATA(cores), (type))
+    #define POWER_ET_AFFECTED_CORES(type, cores) EventWritePowerWarnParamAffectedCores(COREBITS_FMT_DATA(cores), (type))
 #endif
 
 /* Helpers to encode values in 32b parameter */
@@ -127,7 +128,6 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID f
                      POWER_ET_ID_TYPE_WARNING_AFFECTED_CORES,   // Event ID, for this provider
                      PowerWarnParamAffectedCores,               // Event Name
                      FPFW_ET_LEVEL_WARNING,                     // Event Log Level, filterable by provider mask
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, cores3),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, cores2),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, cores1),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, cores0),

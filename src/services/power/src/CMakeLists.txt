@@ -4,15 +4,21 @@ set(TARGET kng.service.power_service)
 add_library(${TARGET}
     STATIC
         pid_resource.c
+        power_cap.c
+        power_cli_requests.c
         power_events.c
         power_fuses.c
         power_hw_int.c
         power_hw_int_gpio.c
         power_hw_int_telemetry.c
+        power_hw_int_vrs.c
         power_knobs.c
+        power_loops.c
+        power_loops_control.c
         power_main.c
         power_runconfig.c
         power_stub.c
+        power_timer.c
 )
 
 target_include_directories(${TARGET}

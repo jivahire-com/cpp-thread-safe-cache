@@ -1,12 +1,13 @@
-set(TARGET power.test.main)
+set(TARGET power.test.loops)
 
 # Compile test
 add_executable(${TARGET}
-    power_cap_test.cpp
-    power_fuses_test.cpp
-    power_knobs_test.cpp
-    power_main_test.cpp
-    power_pid_test.cpp
+    power_loops_control_test.cpp    
+    power_loops_test.cpp
+    
+    ../mocks/mock_dvfs.c
+    ../mocks/mock_odcm.c
+    ../mocks/mock_pvt.c
     ../mocks/mock_bug_check.c
 )
 
@@ -48,20 +49,34 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    _txe_queue_create
+    _txe_queue_receive
+    _txe_queue_send
+    _txe_thread_create
     FpFwAssert
-    DfwkDeviceInitialize
-    DfwkQueueInitialize
-    DfwkInterfaceInitialize
-    platform_read_fuse
-    power_init_core
-    power_init_soc
-    power_fuses_is_power_hw_supported
-    power_loops_init
-    power_runconfig_get  
-    power_runconfig_init
-    power_telemetry_init_config
-    power_timer_start_loop_timers
-    crash_dump_bug_check
+    pid_calculate_resources
+    pid_init
+    pid_reset
+    pid_set_resources
+    pid_update_setpoint
+    power_cap_get_vrcpu_cap
+    power_cap_finalize
+    power_hw_clear_force_pmin
+    power_hw_force_pmin
+    power_hw_gpio_rack_limit_asserted
+    power_loops_control_init
+    power_loops_init_loop
+    power_loops_change_state
+    power_loops_handle_event
+    power_loops_retry_fail
+    power_runconfig_get
+    power_timer_get_counter
+    power_timer_get_counter_ticks_us
+    power_timer_get_us_from_counter
+    power_vrs_initiate_vr_reads
+    power_vrs_read_vcpu_voltage
+    power_vrs_write_vcpu_voltage
+    scf_get_core_state
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

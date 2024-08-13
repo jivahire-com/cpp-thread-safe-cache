@@ -47,6 +47,9 @@
 #define VFT_CURVESET_COUNT           7
 #define VFT_PER_SET                  4
 
+/* number of power samples for averaging of soc power output */
+#define SOC_POWER_AVG_COUNT 5
+
 /*-------------- Typedefs ----------------*/
 
 /* =============================================================*/
@@ -321,7 +324,8 @@ typedef struct _power_knobs_t
     uint16_t pvt_loop_interval;      // PVT telemetry loop timer interval (ms)
     uint16_t temp_telemetry_divider; // Number of control loop intervals per 1
                                      // VR temperature telemetry
-    uint16_t r_loadline_uohm; // Loadline resistance used in VR setpoint (and power adjustment) calculation (uOhm)
+    uint16_t r_loadline_vcpu0_uohm; // Loadline resistance used in VR setpoint (and power adjustment) calculation (uOhm)
+    uint16_t r_loadline_vcpu1_uohm; // Loadline resistance used in VR setpoint (and power adjustment) calculation (uOhm)
     uint16_t vsys_r_loadline_uohm; // Loadline resistance used in VR power adjustment calculation (uOhm)
     uint16_t soc_maximum_thermal_watts_limit;      // SOC maximum power limit,
                                                    // specific to thermal (W)

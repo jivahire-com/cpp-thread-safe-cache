@@ -18,13 +18,43 @@
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define MODULE_NAME "[AVS] "
+#define NEWLINE     "\n"
+
+// set to 1 for more verbose logs
+#define AVS_ENABLE_TRACE_LEVEL_LOG 0
+
+#if AVS_ENABLE_TRACE_LEVEL_LOG
+#define AVS_LOG_TRACE(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#else
+#define AVS_LOG_TRACE(fmt, ...) 
+#endif
+#define AVS_LOG_INFO(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define AVS_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define AVS_LOG_CRIT(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 
 /*-------------- Typedefs ----------------*/
+typedef enum _scp_avs_rail_count_t {
+    AVS_RAIL0,
+    AVS_RAIL1,
+    MAX_AVS_RAILS,
+}scp_avs_rail_count_t;
+
+typedef struct _scp_avs_response_data_t {
+    uint16_t data;
+    uint8_t error;
+} scp_avs_response_data_t;
+
+typedef struct _scp_avs_response_multi_t {
+    scp_avs_response_data_t avs_response_multi[AVS_CMD_BUFF_SIZE];
+} scp_avs_response_multi_t;
+
 typedef struct _scp_avs_request_t {
     DFWK_ASYNC_REQUEST_HEADER Header;
     union {
         scp_avs_vr_vct_t avs_response_vct;  // Response structure (scp_avs_vr_vct_t) used when reading AVS VCT. Have the client provide a pointer to this.
         int16_t avs_response_single_resp;   // Single read of voltage (1LSB=1mV), current (1LSB=10mA), or temperature(1LSB=0.1C).
+        scp_avs_response_multi_t avs_resp_multi;
     };
     int avs_response_status;
     scp_avs_command_params_t avs_params; 
@@ -105,22 +135,21 @@ static inline void scp_avs_client_read_all(PDFWK_INTERFACE_HEADER Interface, PDF
 
 static inline void scp_avs_client_read_multi(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext, uint8_t count)
 {
-    FPFW_UNUSED(count); // for now unused
     pscp_avs_request avs_read_multi_request = (pscp_avs_request) Request;
     FPFW_RUNTIME_ASSERT(Request->AllocatedSize >= sizeof(scp_avs_request_t));
-    avs_read_multi_request->Header.RequestType = AVS_REQUEST_READ_MULTI; 
+    avs_read_multi_request->Header.RequestType = AVS_REQUEST_READ_MULTI;
+    avs_read_multi_request->avs_params.cmd_count = count; 
     DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext); 
     DfwkInterfaceSendAsync(Interface, Request);
 }
-
 static inline void scp_avs_client_write_multi(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext, uint8_t count)
 {
-    FPFW_UNUSED(count); // for now unused
     pscp_avs_request avs_write_multi_request = (pscp_avs_request) Request;
     FPFW_RUNTIME_ASSERT(Request->AllocatedSize >= sizeof(scp_avs_request_t));
-    avs_write_multi_request->Header.RequestType = AVS_REQUEST_WRITE_MULTI; 
+    avs_write_multi_request->Header.RequestType = AVS_REQUEST_WRITE_MULTI;
+    avs_write_multi_request->avs_params.cmd_count = count; 
     DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext); 
-    DfwkInterfaceSendAsync(Interface, Request);  
+    DfwkInterfaceSendAsync(Interface, Request);
 }
 
 static inline void scp_avs_get_error_counts(PDFWK_INTERFACE_HEADER Interface)

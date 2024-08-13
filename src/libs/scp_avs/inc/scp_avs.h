@@ -30,7 +30,9 @@
 #define AVS_VDONE_SHIFT          (20)
 #define AVS_ERR_ACK_SHIFT        (21)
 
-/*-------------- Typedefs ----------------*/
+// Maximum of 16 commands programmed into command memory (// AVSBus Master APB IP Databook | [Link](https://dev.azure.com/ms-tsd/Cedar_Crest/_git/pi_3rd_party_avs?path=/src/avs_top/docs/sdvt_avsbus_master_apb_microsoft_iip_databook.pdf))
+#define AVS_CMD_BUFF_SIZE 16
+/*---------- Typedefs ----------------*/
 
 enum avs_internal_request_type_idx
 {    
@@ -84,19 +86,25 @@ typedef struct _avs_error_t
     };
 } avs_error_t, *pavs_error;
 
+typedef struct _command_info_t {
+    uint8_t rail_id;             // specific rail or rail number to start reading (in avs_master_command_mem_start_t this is 'command_type')
+    uint8_t cmd_type : 4;        // commands (AVS_VOLTAGE_RW, AVS_CURRENT_READ, etc.), are 4 bits - extra bits can indicate special cases like v+c+t
+    uint8_t rsvd : 3;            // unused
+    uint8_t unused : 1;
+} command_info_t;
+
 typedef struct _scp_avs_command_params_t {
     union {
         void *data_ptr;
         uint32_t avs_data;
-    } data;
-    uint8_t error;         
-    uint8_t rail_id;             // specific rail or rail number to start reading (in avs_master_command_mem_start_t this is 'command_type')
-    uint8_t rail_count_to_read;  // number of rails requested to be read
-    uint8_t cmd_type : 4;        // commands (AVS_VOLTAGE_RW, AVS_CURRENT_READ, etc.), are 4 bits - extra bits can indicate special cases like v+c+t
-    uint8_t rsvd : 3;            // unused
-    uint8_t unused : 1;
-} scp_avs_command_params_t;
-
+    };
+    union {
+        command_info_t avs_cmd_info;
+        command_info_t avs_cmd_array[AVS_CMD_BUFF_SIZE];        
+    };
+     uint8_t error; 
+     uint8_t cmd_count;          // how many commands in the command array to read data.
+} scp_avs_command_params_t; 
 typedef struct _scp_avs_config_t {
     /*! Interrupt number of the AVSBus */
     const unsigned int avs_irq;

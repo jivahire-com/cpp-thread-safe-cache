@@ -25,8 +25,7 @@
 #include <stdio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-// Maximum of 16 commands programmed into command memory (// AVSBus Master APB IP Databook | [Link](https://dev.azure.com/ms-tsd/Cedar_Crest/_git/pi_3rd_party_avs?path=/src/avs_top/docs/sdvt_avsbus_master_apb_microsoft_iip_databook.pdf))
-#define AVS_CMD_BUFF_SIZE 16
+
 /*-------------- Typedefs ----------------*/
 
 /*--------- Function Prototypes ----------*/
@@ -79,11 +78,12 @@ void scp_avs_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
     avs_master_command_t avs_buffer[AVS_CMD_BUFF_SIZE] = {};
     uint32_t scp_avs_cmd_num = 0; // Entry number in the command frame array.
 
-    avs_buffer[0].command_data_type = avs_request->avs_params.cmd_type;
-    avs_buffer[0].command_type = avs_request->avs_params.rail_id;
+    avs_buffer[0].command_data_type = avs_request->avs_params.avs_cmd_info.cmd_type;
+    avs_buffer[0].command_type = avs_request->avs_params.avs_cmd_info.rail_id;
+
     avs_buffer[0].command_group = AVS_CGROUP;
 
-    printf("\n scp_avs_dispatch\n");
+    AVS_LOG_TRACE("scp_avs_dispatch");
 
     switch (Request->RequestType)
     {
@@ -99,10 +99,10 @@ void scp_avs_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         scp_avs_cmd_num = 0;
         device->outstanding_request = avs_request;
         avs_buffer[scp_avs_cmd_num].command_control = AVS_CMD_WRITE_COMMIT;
-        avs_buffer[scp_avs_cmd_num].command_data = avs_request->avs_params.data.avs_data;
+        avs_buffer[scp_avs_cmd_num].command_data = avs_request->avs_params.avs_data;
 
         scp_avs_cmd_num++;
-        avs_buffer[scp_avs_cmd_num].command_type = avs_request->avs_params.rail_id;
+        avs_buffer[scp_avs_cmd_num].command_type = avs_request->avs_params.avs_cmd_info.rail_id;
         avs_buffer[scp_avs_cmd_num].command_data_type = AVS_VOLTAGE_RW;
         avs_buffer[scp_avs_cmd_num].command_group = AVS_CGROUP;
         avs_buffer[scp_avs_cmd_num].command_control = AVS_CMD_READ;
@@ -115,19 +115,19 @@ void scp_avs_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
     case AVS_REQUEST_READ_ALL_VCT:
         scp_avs_cmd_num = 0;
         device->outstanding_request = avs_request;
-        avs_buffer[scp_avs_cmd_num].command_type = avs_request->avs_params.rail_id;
+        avs_buffer[scp_avs_cmd_num].command_type = avs_request->avs_params.avs_cmd_info.rail_id;
         avs_buffer[scp_avs_cmd_num].command_data_type = AVS_VOLTAGE_RW;
         avs_buffer[scp_avs_cmd_num].command_group = AVS_CGROUP;
         avs_buffer[scp_avs_cmd_num].command_control = AVS_CMD_READ;
 
         scp_avs_cmd_num++;
-        avs_buffer[scp_avs_cmd_num].command_type = avs_request->avs_params.rail_id;
+        avs_buffer[scp_avs_cmd_num].command_type = avs_request->avs_params.avs_cmd_info.rail_id;
         avs_buffer[scp_avs_cmd_num].command_data_type = AVS_CURRENT_READ;
         avs_buffer[scp_avs_cmd_num].command_group = AVS_CGROUP;
         avs_buffer[scp_avs_cmd_num].command_control = AVS_CMD_READ;
 
         scp_avs_cmd_num++;
-        avs_buffer[scp_avs_cmd_num].command_type = avs_request->avs_params.rail_id;
+        avs_buffer[scp_avs_cmd_num].command_type = avs_request->avs_params.avs_cmd_info.rail_id;
         avs_buffer[scp_avs_cmd_num].command_data_type = AVS_TEMPERATURE_READ;
         avs_buffer[scp_avs_cmd_num].command_group = AVS_CGROUP;
         avs_buffer[scp_avs_cmd_num].command_control = AVS_CMD_READ;
@@ -139,16 +139,23 @@ void scp_avs_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
 
     case AVS_REQUEST_READ_MULTI:
         device->outstanding_request = avs_request;
-        avs_buffer[0].command_control = AVS_CMD_READ;
-        // This is where the actual read multi to the AVS goes.
-        // int avs_send_cmd_frame(uint32_t avs_id, uint32_t cmd_num, avs_master_command_t *cmd_mem)
+        scp_avs_cmd_num = avs_request->avs_params.cmd_count;
+
+        for (uint8_t index = 0; index < scp_avs_cmd_num; index++)
+        {
+            avs_buffer[index].command_type = avs_request->avs_params.avs_cmd_array[index].rail_id;
+            avs_buffer[index].command_data_type = avs_request->avs_params.avs_cmd_array[index].cmd_type;
+            avs_buffer[index].command_group = AVS_CGROUP;
+            avs_buffer[index].command_control = AVS_CMD_READ;
+        }
+        AVS_LOG_TRACE("Read multi, 0x%0x commands", (uint8_t)scp_avs_cmd_num);
+        status = avs_send_cmd_frame(device->avs_bus_num, scp_avs_cmd_num, avs_buffer);
         break;
 
     case AVS_REQUEST_WRITE_MULTI:
         device->outstanding_request = avs_request;
         avs_buffer[0].command_control = AVS_CMD_WRITE_COMMIT;
-        // This is where the actual write multi to the AVS goes.
-        // int avs_send_cmd_frame(uint32_t avs_id, uint32_t cmd_num, avs_master_command_t *cmd_mem)
+        // TODO: https://azurecsi.visualstudio.com/Woodinville/_queries/edit/1941698/?triage=true
         break;
 
     default:
@@ -166,7 +173,7 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
     pscp_avs_device device = Interface->Device; // Device associated with this request
 
     FPFW_UNUSED(Context);
-    printf("\n scp_avs_isr_dispatch, RequestType = %x\n", (uint8_t)Request->RequestType);
+    AVS_LOG_TRACE("scp_avs_isr_dispatch, RequestType = %x", (uint8_t)Request->RequestType);
 
     int status = SILIBS_SUCCESS;
     original_request->avs_response_status = SCP_AVS_STATUS_SUCCESS; // this will be sent to the client
@@ -183,14 +190,14 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
 
         if (status != SILIBS_SUCCESS)
         {
-            printf("\n avs_get_cmd_resp_data failure (Read)!\n");
+            AVS_LOG_CRIT("avs_get_cmd_resp_data failure (Read)!");
             original_request->avs_response_status = SCP_AVS_STATUS_READ_FAIL;
         }
         else
         {
             // Populate the data to be sent to the client.
             original_request->avs_response_single_resp = (int16_t)(scp_avs_resp_buf[scp_avs_resp_idx] & 0xFFFF);
-            printf(" AVS raw data read: 0x%0x\n", (int16_t)scp_avs_resp_buf[scp_avs_resp_idx]);
+            AVS_LOG_TRACE("Raw data read: 0x%0x", (int16_t)scp_avs_resp_buf[scp_avs_resp_idx]);
         }
         break;
 
@@ -201,7 +208,7 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
 
         if (status != SILIBS_SUCCESS)
         {
-            printf("\n avs_get_cmd_resp_data (Write) failure!\n");
+            AVS_LOG_CRIT("avs_get_cmd_resp_data (Write) failure!");
             original_request->avs_response_status = SCP_AVS_STATUS_WRITE_FAIL;
         }
         else
@@ -210,7 +217,7 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
             // scp_avs_resp_buf[1] contains the data from the read which was executed immediately after the write.
             // So scp_avs_resp_buf[(scp_avs_resp_idx + 1)] is sent to the client, which should match the value of the voltage written.
             original_request->avs_response_single_resp = (int16_t)(scp_avs_resp_buf[(scp_avs_resp_idx + 1)] & 0xFFFF);
-            printf(" AVS Write. Raw data read after write: 0x%0x\n", (int16_t)scp_avs_resp_buf[1]);
+            AVS_LOG_TRACE("Raw data read after AVS write: 0x%0x", (int16_t)scp_avs_resp_buf[1]);
         }
         break;
 
@@ -221,7 +228,7 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
 
         if (status != SILIBS_SUCCESS)
         {
-            printf("\n avs_get_cmd_resp_data failure (Read VCT)!\n");
+            AVS_LOG_CRIT("avs_get_cmd_resp_data failure (Read VCT)!");
             original_request->avs_response_status = SCP_AVS_STATUS_READ_ALL_VCT_FAIL;
         }
         else
@@ -229,14 +236,38 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
             original_request->avs_response_vct.voltage_mV = (int16_t)(scp_avs_resp_buf[scp_avs_resp_idx++] & 0xFFFF);
             original_request->avs_response_vct.current_cA = (int16_t)(scp_avs_resp_buf[scp_avs_resp_idx++] & 0xFFFF);
             original_request->avs_response_vct.temperature_dC = (int16_t)(scp_avs_resp_buf[scp_avs_resp_idx] & 0xFFFF);
-            printf(" AVS Read raw data VCT. \n  Volt: 0x%0x, Cur: 0x%0x, Temp: 0x%0x",
-                   (int16_t)scp_avs_resp_buf[0],
-                   (int16_t)scp_avs_resp_buf[1],
-                   (int16_t)scp_avs_resp_buf[2]);
+            AVS_LOG_TRACE("Read raw data VCT. \n  Volt: 0x%0x, Cur: 0x%0x, Temp: 0x%0x",
+                          (int16_t)scp_avs_resp_buf[0],
+                          (int16_t)scp_avs_resp_buf[1],
+                          (int16_t)scp_avs_resp_buf[2]);
         }
         break;
 
     case AVS_REQUEST_READ_MULTI:
+        scp_avs_resp_idx = 0;
+        scp_avs_resp_num = original_request->avs_params.cmd_count;
+
+        status = avs_get_cmd_resp_data(device->avs_bus_num, scp_avs_resp_idx, scp_avs_resp_num, scp_avs_resp_buf);
+
+        if (status != SILIBS_SUCCESS)
+        {
+            AVS_LOG_CRIT("avs_get_cmd_resp_data failure (Read multi)!");
+            original_request->avs_response_status = SCP_AVS_STATUS_READ_MULTI_FAIL;
+        }
+        else
+        {
+            AVS_LOG_TRACE("Read multi, AVSBus = %d", device->avs_bus_num);
+            for (scp_avs_resp_idx = 0; scp_avs_resp_idx < scp_avs_resp_num; scp_avs_resp_idx++)
+            {
+                original_request->avs_resp_multi.avs_response_multi[scp_avs_resp_idx].data =
+                    (int16_t)(scp_avs_resp_buf[scp_avs_resp_idx] & 0xFFFF);
+                AVS_LOG_TRACE("data[%d]: 0x%0x",
+                              (int16_t)scp_avs_resp_idx,
+                              original_request->avs_resp_multi.avs_response_multi[scp_avs_resp_idx].data);
+            }
+        }
+        break;
+
     case AVS_REQUEST_WRITE_MULTI:
         break;
 
@@ -259,7 +290,7 @@ int32_t scp_avs_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER Request)
         break;
     }
 
-    printf("\n scp_avs_dispatch_sync\n");
+    AVS_LOG_TRACE("scp_avs_dispatch_sync");
     return 0; //(DFWK_SUCCESS);
 }
 
@@ -273,7 +304,7 @@ void scp_avs_driver_initialize(pscp_avs_device Device)
 
     avs_init((uint32_t)Device->avs_bus_num, NULL);
 
-    printf("\nAVS bus num =  %d, AVS IRQ =  %d \n", Device->avs_bus_num, Device->config.avs_irq);
+    AVS_LOG_INFO("AVS bus num =  %d, IRQ =  %d", Device->avs_bus_num, Device->config.avs_irq);
 
     // Configure the NVIC Handling
     nvic_status_t status = nvic_irq_set_isr_with_param(Device->config.avs_irq, scp_avs_isr, Device);
@@ -295,13 +326,6 @@ void scp_avs_interface_initialize(pscp_avs_device Device, pscp_avs_interface_t I
     Interface->Device = Device;
     Interface->Device->avs_response_errors = 0;
     DfwkAsyncRequestInititalize((PDFWK_ASYNC_REQUEST_HEADER)&Device->isr_request, sizeof(Device));
-}
-
-// Completion routine for an async request.
-void scp_request_completion(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext)
-{
-    FPFW_UNUSED(CompletionContext);
-    FPFW_UNUSED(Request);
 }
 
 void scp_avs_init(pscp_avs_device avsDevice, DFWK_SCHEDULE* scheduler)

@@ -17,6 +17,7 @@ target_link_libraries(${TARGET}
         sdm_init
         tower_vab
         ms::lib::accelerator_ip
+        ms::lib::system_info
         ms::lib::utils
         ms::cmocka::testrunner
         kng_silibs_platform
@@ -41,5 +42,6 @@ mock_target(${TARGET}
     pcr_rpss_configure_clock
     pcr_rpss_deassert_por_reset
     pcr_rpss_init_entity
+    system_info_is_hsp_present
     accelip_ss_init
 )

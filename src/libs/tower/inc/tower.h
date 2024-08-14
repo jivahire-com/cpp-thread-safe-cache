@@ -11,6 +11,7 @@
 
 /*--------------- Includes ---------------*/
 
+#include <MboxPrimitives.h> // for FPFW_MBX_PAYLOAD, FpFwMailbox...
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -34,7 +35,9 @@
  *  
  *    @param[in] die_num
  *              Current die numer
+ *    @param[in] p_mbox_prim_ctx
+ *              Pointer to mailbox primitives API structure
  * 
  *    @retval none
  */
-void tower_init(uint8_t die_num);
+void tower_init(uint8_t die_num, FPFW_MBX_PRIMITIVE_CTX* p_mbox_prim_ctx);

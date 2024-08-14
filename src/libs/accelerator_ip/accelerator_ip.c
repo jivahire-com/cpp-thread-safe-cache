@@ -29,6 +29,7 @@
 #include <stdint.h>            // for int32_t, uintptr_t, uint32_t
 #include <stdio.h>             // for printf, NULL
 #include <string.h>            // for memcpy
+#include <system_info.h>
 
 #if defined(FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP)
     #include <silibs_common.h> // for ALIGN_UP
@@ -156,7 +157,9 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
         // TODO: WA until HSP configures CDEDSS Tower
         atu_map_entry_t cdeedss_tower_atu_map_entry = {0};
 
-        if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
+        // NOTE: The SVP version must be updated to allow for a HSP that can program the tower
+        // This check is to allow boot to continue on SVP when HSP is not part of vpconfig
+        if ((idsw_get_platform_sdv() == PLATFORM_SVP_SIM) && (!system_info_is_hsp_present()))
         {
             ret = init_hsp_cdedss_tower(&cdeedss_tower_atu_map_entry);
             if (ret != ACCEL_RET_SUCCESS)
@@ -267,11 +270,6 @@ int32_t scp_accelerators_isolation_control(void)
     // Init all available Accelerator instances
     for (uint32_t index = 0; index < accel_ctxt_size; index++)
     {
-        // TODO: Skip initializing cded until cded tower is configured
-        if (index == 1)
-        {
-            continue;
-        }
         // TODO (ADO 1728772) : init any particular accelerator instance only if that is enabled in fuse
         if (p_ss_ctxt[index].accelip_metadata.die_instance == current_die_instance)
         {

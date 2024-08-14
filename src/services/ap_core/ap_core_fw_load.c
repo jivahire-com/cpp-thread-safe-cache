@@ -66,11 +66,18 @@ static void request_mcp_load_complete_notify(void* context, size_t output_size_b
     FPFW_UNUSED(context);
     FPFW_UNUSED(output_size_bytes);
 
+    union _icc_max_msg_size_padding
+    {
+        struct kng_hsp_mailbox_cmd_start_core_req start_req;
+        uint32_t as_uint32_t[4];
+    };
+    // The fpfw_icc_base_send needs a total of 16 bytes in payload buffer and the start request struct is not
+    // large enough Hence creating a temporary union to allocate a larger size buffer
+    // TODO: Replace with proper definition from HSP headers once published
+    static union _icc_max_msg_size_padding mcp_start_req = {.start_req.header.cmd = HSP_MAILBOX_CMD_START_CORE_REQ,
+                                                            .start_req.id = HspFirmwareIdMcp};
     // TODO: Fill out the request with appropriate values
     // Need to add an ADO
-    static struct kng_hsp_mailbox_cmd_start_core_req mcp_start_req = {.header.cmd = HSP_MAILBOX_CMD_START_CORE_REQ,
-                                                                      .id = HspFirmwareIdMcp};
-
     static fpfw_icc_base_send_req_t send_params = {
         .payload_buffer = &mcp_start_req,
         .cb = request_send_complete_cb,

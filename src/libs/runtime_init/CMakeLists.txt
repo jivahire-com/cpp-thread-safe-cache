@@ -92,6 +92,7 @@ target_link_libraries(
         ms::lib::scmi::cli
         ms::lib::scp_interrupts
         ms::lib::stdio_textio
+        ms::lib::system_info
         ms::lib::threadx
         ms::lib::ddr::cli
         ms::lib::tower

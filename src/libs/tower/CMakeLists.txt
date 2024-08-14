@@ -8,8 +8,13 @@ add_library(${TARGET}
 target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.assert
+    fwlib.lib.mboxPrimitives
+    kng.lib.crash_dump.scp
     silibs_platform
+    ms::lib::error_codes
+    ms::lib::hsp_firmware_headers
     ms::lib::register_headers
+    ms::lib::system_info
     silibs::atu
     silibs::kng_silibs_platform
     silibs::tower_sequence

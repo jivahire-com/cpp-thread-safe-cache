@@ -31,6 +31,7 @@ target_link_libraries(
         fwlib.lib.assert
         ms::lib::debug
         ms::lib::utils
+        ms::lib::system_info
         silibs::idsw
         silibs::idsw_kng
         silibs::pcr_vab

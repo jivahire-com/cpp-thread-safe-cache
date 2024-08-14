@@ -9,8 +9,10 @@
 
 /*------------- Includes -----------------*/
 
-#include <FpFwAssert.h>        // for FPFW_RUNTIME_ASSERT
-#include <atu_lib.h>           // for atu_map, atu_unmap, atu_map_entry_t
+#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
+#include <atu_lib.h>    // for atu_map, atu_unmap, atu_map_entry_t
+#include <bug_check.h>
+#include <hsp_firmware_headers.h>
 #include <idsw.h>              // for idsw_get_platform_sdv
 #include <idsw_kng.h>          // for PLATFORM_SVP_SIM, KNG_PLAT_ID, PLATFO...
 #include <kng_atu_mappings.h>  // for ATU_MAPPING_D0_RPSS0_TOWER, ATU_MAPPI...
@@ -19,8 +21,11 @@
 #include <stdbool.h>           // for true, false
 #include <stdint.h>            // for uint16_t, uint8_t, uintptr_t
 #include <stdio.h>             // for printf
-#include <tower.h>             // for tower_init
-#include <tower_sequence.h>    // for tower_sequence_soc_init_params_t, tow...
+#include <system_info.h>
+#include <tower.h>          // for tower_init
+#include <tower_sequence.h> // for tower_sequence_soc_init_params_t, tow....
+
+/*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
 
@@ -148,7 +153,45 @@ static atu_map_entry_t atu_rpss_tower_maps[NUM_RPSS] = {
     ATU_MAPPING_D1_RPSS3_TOWER(),
 };
 
-void tower_init(uint8_t die_num)
+/**
+ * @brief Post SCP init tower enable
+ *
+ * \b Description:
+ * This function informs HSP to enable the DDRSS and CDEDSS towers, the flags in the message
+ * is used to inform HSP on whether isolation is enabled or not
+ *
+ * @param[in] p_mbox_prim_ctx - Pointer to mailbox primitive context structure
+ * @param[in] isolation_flag - indicates if accelerator isolation is enabled (0x0) or not (0x4)
+ *
+ * @retval void
+ */
+static void hsp_send_recv_post_scp_init_tower_config(FPFW_MBX_PRIMITIVE_CTX* p_mbox_prim_ctx, uint8_t isolation_flag)
+{
+    kng_hsp_mailbox_msg send_msg = {.header.cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ,
+                                    .header.flags = isolation_flag};
+
+    kng_hsp_mailbox_msg recv_msg;
+
+    FPFW_MBX_PAYLOAD send_payload = {.payloadBuffer = &send_msg, .payloadSize = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t))};
+    FPFW_MBX_PAYLOAD receive_payload = {.payloadBuffer = &recv_msg,
+                                        .payloadSize = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t))};
+
+    while (FpFwMailboxSend(p_mbox_prim_ctx, &send_payload) != FPFW_MBX_SUCCESS)
+    {
+    }
+
+    printf("HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ Sent to HSP\n");
+
+    while (FpFwMailboxReceive(p_mbox_prim_ctx, &receive_payload) != FPFW_MBX_SUCCESS)
+    {
+    }
+    printf("HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_RSP received from HSP\n");
+
+    BUG_ASSERT(recv_msg.header.cmd == HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_RSP);
+    BUG_ASSERT(recv_msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+}
+
+void tower_init(uint8_t die_num, FPFW_MBX_PRIMITIVE_CTX* p_mbox_prim_ctx)
 {
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
 
@@ -249,6 +292,16 @@ void tower_init(uint8_t die_num)
     // For now, assume isolation is not enabled for now and configure the sdmss tower for isolation disabled
     printf("Configure SDMSS tower for isolation disabled, TODO: derive this from knobs & fuses\n");
     tower_sequence_params.tower_sdmss_isolation_enabled = false;
+
+    // CDEDSS Tower
+    // Send a message to HSP for configuring CDESS tower (along with isolation enabled/disabled)
+    // TODO: Isolation information should be derived from fuse and knob values
+    // For now, assume isolation is not enabled for now and configure the CDESS tower for isolation disabled
+    if (system_info_is_hsp_present())
+    {
+        hsp_send_recv_post_scp_init_tower_config(p_mbox_prim_ctx, HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED);
+        // Not sure if we need to add more variables to the tower struct and keep track of it
+    }
 
     // IOSS tower
     printf("Configure IOSS tower ATU map\n");

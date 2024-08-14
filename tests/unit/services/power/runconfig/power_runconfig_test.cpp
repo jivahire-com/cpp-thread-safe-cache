@@ -65,10 +65,10 @@ void __wrap_power_fuses_read(power_fuse_data_t* p_fuses)
     memcpy_s(p_fuses, sizeof(power_fuse_data_t), mock_ptr_type(power_fuse_data_t*), sizeof(power_fuse_data_t));
 }
 
-int __wrap_dvfs_vft_from_fuse_data(const dvfs_vf_fused_pairs_t* vf_pairs,
-                                   const dvfs_core_memasst_entries_t* core_memasst_entries,
-                                   uint8_t* min_valid_plimit,
-                                   dvfs_vft_t* vft)
+int __wrap_dvfs_vft_from_fuse_data_per_itd(const dvfs_vf_fused_pairs_t* vf_pairs,
+                                           const dvfs_core_memasst_entries_t* core_memasst_entries,
+                                           uint8_t* min_valid_plimit,
+                                           dvfs_vft_t* vft)
 {
     UNUSED(vf_pairs);
     check_expected_ptr(core_memasst_entries);
@@ -155,10 +155,10 @@ void set_default_expectations(uint8_t min_plimit)
 
     for (unsigned iter = 0; iter < VFT_CURVESET_COUNT * VFT_CURVE_COUNT_PER_CURVESET; ++iter)
     {
-        expect_memory(__wrap_dvfs_vft_from_fuse_data, core_memasst_entries, &s_expected_fuses.memasst, sizeof(dvfs_core_memasst_entries_t));
-        will_return(__wrap_dvfs_vft_from_fuse_data, min_plimit);              // min_valid_plimit
-        will_return(__wrap_dvfs_vft_from_fuse_data, (uintptr_t)&default_vft); // vft
-        will_return(__wrap_dvfs_vft_from_fuse_data, DVFS_SUCCESS);            // status
+        expect_memory(__wrap_dvfs_vft_from_fuse_data_per_itd, core_memasst_entries, &s_expected_fuses.memasst, sizeof(dvfs_core_memasst_entries_t));
+        will_return(__wrap_dvfs_vft_from_fuse_data_per_itd, min_plimit);              // min_valid_plimit
+        will_return(__wrap_dvfs_vft_from_fuse_data_per_itd, (uintptr_t)&default_vft); // vft
+        will_return(__wrap_dvfs_vft_from_fuse_data_per_itd, DVFS_SUCCESS);            // status
     }
 }
 

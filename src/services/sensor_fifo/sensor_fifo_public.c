@@ -136,13 +136,13 @@ sensor_ram_poll_status_t sensor_fifo_svc_poll_core_pstate(pstate_telem_t* state_
         &stride_index);
 }
 
-sensor_ram_poll_status_t sensor_fifo_svc_poll_scp_message(plimit_msg_telem_t* plimit_msg)
+sensor_ram_poll_status_t sensor_fifo_svc_poll_scp_message(plimit_telem_msg_t* plimit_msg)
 {
     uint16_t stride_index = 0; // not used
 
     return fifo_poll_helper(
         pSensor_fifo_driver_inf->device->fifo_property_table[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].device_fifo_id,
-        sizeof(plimit_msg_telem_t),
+        sizeof(plimit_telem_msg_t),
         (uint8_t*)plimit_msg,
         &stride_index);
 }

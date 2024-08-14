@@ -354,7 +354,7 @@ sensor_ram_poll_status_t sensor_fifo_svc_poll_core_pstate(pstate_telem_t* state_
  * @param[out] plimit_msg - destination pointer for entry read from fifo
  * @retval sensor_ram_poll_status_t - See documentation for return values
  */
-sensor_ram_poll_status_t sensor_fifo_svc_poll_scp_message(plimit_msg_telem_t* plimit_msg);
+sensor_ram_poll_status_t sensor_fifo_svc_poll_scp_message(plimit_telem_msg_t* plimit_msg);
 
 /**
  * @brief Poll SENSOR_FIFO_PVT_TEMP_FW and read out an entry if available

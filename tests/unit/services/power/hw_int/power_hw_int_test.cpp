@@ -408,6 +408,10 @@ void validate_dvfs_cfg(unsigned int core)
     // c1
     dvfs_cfg.init_cfg.c1_telem_en = knobs->c1_tel_enable;
 
+    // TODO: enable ITD (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491054/)
+    // (fix force_pstate vmat copy, full VFT generation before enabling)
+    dvfs_cfg.init_cfg.pex_features.itd_en = 0;
+
     // adclk offset
     if (knobs->adclk_offset.enable)
     {
@@ -814,14 +818,14 @@ POWER_TEST(hwi_init_core__forced_pstate, setup, teardown)
         assert_int_equal(ftable_cr2[pstate_idx].freqctrl, ftable_cr2[TEST_FORCED_PSTATE].freqctrl);
         assert_int_equal(ftable_cr2[pstate_idx].dco0div, ftable_cr2[TEST_FORCED_PSTATE].dco0div);
 
-        assert_int_equal(vft->ldo_dac_in[pstate_idx], vft->ldo_dac_in[TEST_FORCED_PSTATE]);
-        assert_int_equal(vft->memasst_hd_ema[pstate_idx], vft->memasst_hd_ema[TEST_FORCED_PSTATE]);
-        assert_int_equal(vft->memasst_hd_rawlm[pstate_idx], vft->memasst_hd_rawlm[TEST_FORCED_PSTATE]);
-        assert_int_equal(vft->memasst_hshc_ema[pstate_idx], vft->memasst_hshc_ema[TEST_FORCED_PSTATE]);
-        assert_int_equal(vft->memasst_hshc_rawlm[pstate_idx], vft->memasst_hshc_rawlm[TEST_FORCED_PSTATE]);
-        assert_int_equal(vft->memasst_tp_emaa[pstate_idx], vft->memasst_tp_emaa[TEST_FORCED_PSTATE]);
-        assert_int_equal(vft->memasst_tp_emab[pstate_idx], vft->memasst_tp_emab[TEST_FORCED_PSTATE]);
-        assert_int_equal(vft->memasst_hd_emaw[pstate_idx], vft->memasst_hd_emaw[TEST_FORCED_PSTATE]);
+        assert_int_equal(vft->vmat_info[0].ldo_dac_in[pstate_idx], vft->vmat_info[0].ldo_dac_in[TEST_FORCED_PSTATE]);
+        assert_int_equal(vft->vmat_info[0].memasst_hd_ema[pstate_idx], vft->vmat_info[0].memasst_hd_ema[TEST_FORCED_PSTATE]);
+        assert_int_equal(vft->vmat_info[0].memasst_hd_rawlm[pstate_idx], vft->vmat_info[0].memasst_hd_rawlm[TEST_FORCED_PSTATE]);
+        assert_int_equal(vft->vmat_info[0].memasst_hshc_ema[pstate_idx], vft->vmat_info[0].memasst_hshc_ema[TEST_FORCED_PSTATE]);
+        assert_int_equal(vft->vmat_info[0].memasst_hshc_rawlm[pstate_idx], vft->vmat_info[0].memasst_hshc_rawlm[TEST_FORCED_PSTATE]);
+        assert_int_equal(vft->vmat_info[0].memasst_tp_emaa[pstate_idx], vft->vmat_info[0].memasst_tp_emaa[TEST_FORCED_PSTATE]);
+        assert_int_equal(vft->vmat_info[0].memasst_tp_emab[pstate_idx], vft->vmat_info[0].memasst_tp_emab[TEST_FORCED_PSTATE]);
+        assert_int_equal(vft->vmat_info[0].memasst_hd_emaw[pstate_idx], vft->vmat_info[0].memasst_hd_emaw[TEST_FORCED_PSTATE]);
     }
 }
 

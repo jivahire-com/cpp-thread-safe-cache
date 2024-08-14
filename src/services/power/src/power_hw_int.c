@@ -128,14 +128,14 @@ static void setup_forced_pstate(uintptr_t cluster_pex_base_addr, dvfs_config_t* 
     // copy vft settings to lower perf pstates
     for (unsigned pstate_idx = pstate + 1; pstate_idx < NUM_PSTATES; ++pstate_idx)
     {
-        temp_vft->ldo_dac_in[pstate_idx] = temp_vft->ldo_dac_in[pstate];
-        temp_vft->memasst_hd_ema[pstate_idx] = temp_vft->memasst_hd_ema[pstate];
-        temp_vft->memasst_hd_rawlm[pstate_idx] = temp_vft->memasst_hd_rawlm[pstate];
-        temp_vft->memasst_hshc_ema[pstate_idx] = temp_vft->memasst_hshc_ema[pstate];
-        temp_vft->memasst_hshc_rawlm[pstate_idx] = temp_vft->memasst_hshc_rawlm[pstate];
-        temp_vft->memasst_tp_emaa[pstate_idx] = temp_vft->memasst_tp_emaa[pstate];
-        temp_vft->memasst_tp_emab[pstate_idx] = temp_vft->memasst_tp_emab[pstate];
-        temp_vft->memasst_hd_emaw[pstate_idx] = temp_vft->memasst_hd_emaw[pstate];
+        temp_vft->vmat_info[0].ldo_dac_in[pstate_idx] = temp_vft->vmat_info[0].ldo_dac_in[pstate];
+        temp_vft->vmat_info[0].memasst_hd_ema[pstate_idx] = temp_vft->vmat_info[0].memasst_hd_ema[pstate];
+        temp_vft->vmat_info[0].memasst_hd_rawlm[pstate_idx] = temp_vft->vmat_info[0].memasst_hd_rawlm[pstate];
+        temp_vft->vmat_info[0].memasst_hshc_ema[pstate_idx] = temp_vft->vmat_info[0].memasst_hshc_ema[pstate];
+        temp_vft->vmat_info[0].memasst_hshc_rawlm[pstate_idx] = temp_vft->vmat_info[0].memasst_hshc_rawlm[pstate];
+        temp_vft->vmat_info[0].memasst_tp_emaa[pstate_idx] = temp_vft->vmat_info[0].memasst_tp_emaa[pstate];
+        temp_vft->vmat_info[0].memasst_tp_emab[pstate_idx] = temp_vft->vmat_info[0].memasst_tp_emab[pstate];
+        temp_vft->vmat_info[0].memasst_hd_emaw[pstate_idx] = temp_vft->vmat_info[0].memasst_hd_emaw[pstate];
     }
 }
 
@@ -278,6 +278,9 @@ static void power_init_update_dvfs_cfg_common(const power_runconfig_t* p_runconf
     p_dvfs_cfg->static_pll_cfg.dco1_lckcntsel = p_knobs->plllock_cfg.lckcntsel;
     // enable c1 telemetry based on knob
     p_dvfs_cfg->init_cfg.c1_telem_en = p_knobs->c1_tel_enable;
+    // TODO: enable ITD (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491054/)
+    // (fix force_pstate vmat copy, full VFT generation before enabling)
+    p_dvfs_cfg->init_cfg.pex_features.itd_en = 0;
 }
 
 static unsigned find_lowest_nonlin_pstate_idx(const power_runconfig_t* p_runconfig, const power_core_vft_t* p_vft)

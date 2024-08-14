@@ -44,7 +44,7 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    dvfs_vft_from_fuse_data
+    dvfs_vft_from_fuse_data_per_itd
     power_fuses_read
     power_knobs_read
     crash_dump_bug_check

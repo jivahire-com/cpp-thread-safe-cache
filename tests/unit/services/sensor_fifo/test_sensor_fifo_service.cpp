@@ -304,10 +304,10 @@ TEST_FUNCTION(test_svc_poll_pstate, test_setup, nullptr)
 
 TEST_FUNCTION(test_svc_poll_scp_msg, test_setup, nullptr)
 {
-    plimit_msg_telem_t sensor_data = {0};
+    plimit_telem_msg_t sensor_data = {0};
 
     expect_value(__wrap_sensor_fifo_driver_read_entry, fifo_id, DEVICE_FIFO_SCP_MSG_TLM_HW_PROD);
-    expect_value(__wrap_sensor_fifo_driver_read_entry, entry_size, sizeof(plimit_msg_telem_t));
+    expect_value(__wrap_sensor_fifo_driver_read_entry, entry_size, sizeof(plimit_telem_msg_t));
     will_return(__wrap_sensor_fifo_driver_read_entry, 1);  // num_entries_read
     will_return(__wrap_sensor_fifo_driver_read_entry, 0);  // num_entries_remaining
     will_return(__wrap_sensor_fifo_driver_read_entry, 62); // stride_index

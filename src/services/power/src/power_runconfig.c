@@ -151,11 +151,12 @@ static void runconfig_generate_derived_vfts()
         uint8_t min_plimit = 0;
         for (unsigned crv_idx = 0; crv_idx < VFT_CURVE_COUNT_PER_CURVESET; ++crv_idx)
         {
-
-            int status = dvfs_vft_from_fuse_data(&power_runconfig.fuses.vf.curveset[vf_idx].curve[crv_idx],
-                                                 &power_runconfig.fuses.memasst,
-                                                 &min_plimit,
-                                                 &power_runconfig.dvfs_vft.curveset[vf_idx].curve[crv_idx]);
+            // TODO: fix curve structure for ITD - shouldn't have 4 curves and 4 vmat_info (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491054/)
+            int status = dvfs_vft_from_fuse_data_per_itd(
+                &power_runconfig.fuses.vf.curveset[vf_idx].curve[crv_idx],
+                &power_runconfig.fuses.memasst,
+                &min_plimit,
+                &power_runconfig.dvfs_vft.curveset[vf_idx].curve[crv_idx].vmat_info[0]);
             if (DVFS_SUCCESS != status)
             {
                 BUG_CHECK(KNG_SC_FUSE_GEN_VFT, vf_idx, status);
@@ -196,7 +197,7 @@ static void runconfig_generate_derived_vfts()
             {
                 uint16_t voltage_mv;
                 int status = dvfs_mvolt_from_ldo_dac(
-                    power_runconfig.dvfs_vft.curveset[vf_idx].curve[crv_idx].ldo_dac_in[pstate_idx],
+                    power_runconfig.dvfs_vft.curveset[vf_idx].curve[crv_idx].vmat_info[0].ldo_dac_in[pstate_idx],
                     &power_runconfig.fuses.ldodac_to_volt,
                     &voltage_mv);
                 if (DVFS_SUCCESS != status)

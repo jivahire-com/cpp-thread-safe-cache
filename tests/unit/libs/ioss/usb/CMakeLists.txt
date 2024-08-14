@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
         silibs::ioss
         silibs_platform
         usb_init
+        atu
 )
 
 lint_target(${TARGET})
@@ -31,4 +32,7 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     usbss_init
+    atu_map
+    atu_unmap
+    set_mscp_ioss_base_addr
 )

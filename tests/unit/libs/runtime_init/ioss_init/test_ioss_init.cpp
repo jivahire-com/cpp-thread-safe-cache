@@ -61,9 +61,13 @@ TEST_FUNCTION(test_ioss_init_silicon, nullptr, nullptr)
     _fpfw_component_ioss.init_fn();
 }
 
-TEST_FUNCTION(test_ioss_init_bypass_svp, NULL, NULL)
+TEST_FUNCTION(test_ioss_init_svp, NULL, NULL)
 {
+    // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    will_return_always(__wrap_idhw_get_die_id, test_die);
+    expect_value(__wrap_ioss_init, die_num, test_die);
 
     // Call API under test
     _fpfw_component_ioss.init_fn();

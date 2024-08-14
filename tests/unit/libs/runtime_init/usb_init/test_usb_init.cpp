@@ -58,15 +58,18 @@ TEST_FUNCTION(test_usb_init_success, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     const auto test_die = (KNG_DIE_ID)0;
     will_return_always(__wrap_idhw_get_die_id, test_die);
-    expect_function_calls(__wrap_usb_init, 2);
+    expect_function_call(__wrap_usb_init);
 
     // Call API under test
     _fpfw_component_usb.init_fn();
 }
 
-TEST_FUNCTION(test_usb_init_bypass_svp, NULL, NULL)
+TEST_FUNCTION(test_usb_init_svp, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return_always(__wrap_idhw_get_die_id, test_die);
+    expect_function_call(__wrap_usb_init);
 
     // Call API under test
     _fpfw_component_usb.init_fn();

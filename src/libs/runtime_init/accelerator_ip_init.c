@@ -28,14 +28,11 @@
 //FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh"))
 FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("vab", "hw_ver", "accel_iso_cfg", "atu_svc"))
 {
-    //! @todo https://azurecsi.visualstudio.com/Dev/_workitems/edit/1941641
-    if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
-    {
-        // Initialize the Accelerators
-        printf("Accelerator init start!!!\n");
-        scp_accelerators_init();
-        printf("Accelerator init complete!!!\n");
-    }
+    // Initialize the Accelerators
+    printf("Accelerator init start!!!\n");
+    scp_accelerators_init();
+    printf("Accelerator init complete!!!\n");
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 

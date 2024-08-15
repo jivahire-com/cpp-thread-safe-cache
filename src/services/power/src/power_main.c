@@ -118,6 +118,9 @@ void power_init(ppower_service_t p_device, PDFWK_SCHEDULE p_schedule, const powe
 
     // setup control and telemetry loops
     power_loops_init();
+    // initialize individual power loops
+    power_loops_control_init();
+    power_loops_telemetry_init();
 }
 
 void power_ap_soc_init()

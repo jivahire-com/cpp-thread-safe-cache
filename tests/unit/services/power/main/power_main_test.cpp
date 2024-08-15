@@ -130,6 +130,16 @@ power_runconfig_t* __wrap_power_runconfig_get()
     return mock_type(power_runconfig_t*);
 }
 
+void __wrap_power_loops_control_init()
+{
+    function_called();
+}
+
+void __wrap_power_loops_telemetry_init()
+{
+    function_called();
+}
+
 } // extern "C"
 
 //
@@ -154,6 +164,8 @@ POWER_TEST(init, NULL, NULL)
     expect_value(__wrap_power_runconfig_init, p_config, &test_config);
 
     expect_function_call(__wrap_power_loops_init);
+    expect_function_call(__wrap_power_loops_control_init);
+    expect_function_call(__wrap_power_loops_telemetry_init);
 
     power_init(&test_device, &test_schedule, &test_config);
 }

@@ -205,8 +205,7 @@ static void collect_inputs_handler(int event, const void* event_data)
     case POWER_LOOP_STATE_SIGNAL_ENTRY:
         // Start state collection
         // Request VR currents - done from telem loop not here
-        // TODO: move with initial telemetry loops (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491018/)
-        power_vrs_initiate_vr_reads();
+
         // Drain Sensor FIFO
         hw_drain_sensor_fifo();
         // Get max temperature, core state from SCF

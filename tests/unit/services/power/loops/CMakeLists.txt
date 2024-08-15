@@ -3,6 +3,7 @@ set(TARGET power.test.loops)
 # Compile test
 add_executable(${TARGET}
     power_loops_control_test.cpp    
+    power_loops_telemetry_test.cpp   
     power_loops_test.cpp
     
     ../mocks/mock_dvfs.c
@@ -61,10 +62,10 @@ mock_target(${TARGET}
     pid_update_setpoint
     power_cap_get_vrcpu_cap
     power_cap_finalize
+    power_hw_check_io_temp_force_pmin
     power_hw_clear_force_pmin
     power_hw_force_pmin
     power_hw_gpio_rack_limit_asserted
-    power_loops_control_init
     power_loops_init_loop
     power_loops_change_state
     power_loops_handle_event
@@ -77,6 +78,8 @@ mock_target(${TARGET}
     power_vrs_read_vcpu_voltage
     power_vrs_write_vcpu_voltage
     scf_get_core_state
+    soc_pvt_handle_dts_irq_exclear
+    soc_pvt_handle_vm_irq_exclear
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

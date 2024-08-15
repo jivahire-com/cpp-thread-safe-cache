@@ -124,11 +124,6 @@ UINT __wrap__txe_queue_receive(TX_QUEUE* queue_ptr, VOID* destination_ptr, ULONG
     return mock_type(UINT);
 }
 
-void __wrap_power_loops_control_init()
-{
-    function_called();
-}
-
 void __wrap_FpFwAssert(int expression)
 {
     check_expected(expression);
@@ -196,8 +191,6 @@ POWER_TEST(power_loops_init, NULL, NULL)
     will_return(__wrap__txe_thread_create, TX_SUCCESS);
 
     expect_value_count(__wrap_FpFwAssert, expression, true, 2);
-
-    expect_function_call(__wrap_power_loops_control_init);
 
     // call the function
     power_loops_init();

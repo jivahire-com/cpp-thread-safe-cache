@@ -263,6 +263,80 @@ typedef struct _power_ctrl_loop_detail_t {
 } power_ctrl_loop_detail_t;
 
 
+// -----------------------------------
+// Telemetry Loop Specific Definitions
+// -----------------------------------
+
+/**
+ *  @brief Enum of VR telemetry states
+ */
+typedef enum _power_vr_telem_state_t
+{
+    POWER_VR_TELEM_STATE_IDLE = POWER_LOOP_IDLE_STATE_ID,
+    POWER_VR_TELEM_STATE_CURRENT_TELEMETRY,
+    POWER_VR_TELEM_STATE_TEMP_TELEMETRY,
+    POWER_VR_TELEM_STATE_ERROR,
+    POWER_VR_TELEM_STATE_MAX,
+} power_vr_telem_state_t;
+
+/**
+ *  @brief Enum of VR telemetry loop signals
+ */
+typedef enum _power_vr_telem_signal_t
+{
+    POWER_VR_TELEM_SIGNAL_ENTRY = POWER_LOOP_STATE_SIGNAL_ENTRY,  // initial entry into state
+    POWER_VR_TELEM_SIGNAL_INTERVAL = POWER_LOOP_STATE_SIGNAL_INTERVAL,
+    POWER_VR_TELEM_SIGNAL_VR_CURRENT,
+    POWER_VR_TELEM_SIGNAL_VR_CURRENT_FAIL,
+    POWER_VR_TELEM_SIGNAL_VR_TEMP,
+    POWER_VR_TELEM_SIGNAL_MAX,
+} power_vr_telem_signal_t;
+
+/**
+ *  @brief Enum of PVT telemetry states
+ *
+ *  PVT loop is simpler; no events other than interval -- read_pvt does not
+ * require a signal/event to return to idle, so no chance for entry into an
+ * error state. Keeping the same basic structure to allow for timestamping, etc.
+ */
+typedef enum _power_pvt_telem_state_t
+{
+    POWER_PVT_TELEM_STATE_IDLE = POWER_LOOP_IDLE_STATE_ID,
+    POWER_PVT_TELEM_STATE_READ_PVT,
+    POWER_PVT_TELEM_STATE_MAX,
+} power_pvt_telem_state_t;
+
+/**
+ *  @brief Enum of PVT telemetry loop signals
+ */
+typedef enum _power_pvt_telem_signal_t
+{
+    POWER_PVT_TELEM_SIGNAL_ENTRY = POWER_LOOP_STATE_SIGNAL_ENTRY,  // initial entry into state
+    POWER_PVT_TELEM_SIGNAL_INTERVAL = POWER_LOOP_STATE_SIGNAL_INTERVAL,
+    POWER_PVT_TELEM_SIGNAL_MAX,
+} power_pvt_telem_signal_t;
+
+/**
+ *  @brief Structure for PVT state
+ */
+typedef struct _power_telemetry_pvt_state_t {
+    uint64_t valid_samples;    // count of valid samples
+    uint16_t last_sample;      // last sample value (converted from raw)
+    uint16_t last_sample_raw;  // last sample value
+    uint16_t sample_hi;        // highest sample value (converted)
+    uint16_t sample_lo;        // lowest sample value (converted)
+} power_telemetry_pvt_state_t;
+
+/**
+ *  @brief Struct for telemetry loops state
+ */
+typedef struct _power_telem_loop_detail_t {
+    power_telemetry_pvt_state_t soc_top_temp_data[SOC_PVT_TOTAL_CHANNELS_DTS];
+    power_telemetry_pvt_state_t soc_top_voltage_data[SOC_PVT_TOTAL_CHANNELS_VM];
+    uint16_t soc_max_temp_dC;    // soc max temp in 0.1C
+    power_vrs_avs_latest_t* vr_data;
+} power_telem_loop_detail_t;
+
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus
 extern "C" {
@@ -270,6 +344,7 @@ extern "C" {
 
 void power_loops_init();
 void power_loops_control_init();
+void power_loops_telemetry_init();
 
 void power_loops_init_loop(power_loop_context_t * context);
 void power_loops_exec_in_idle(power_exec_in_idle_handler_t p_handler, PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context);
@@ -278,6 +353,8 @@ void power_loops_change_state(power_loop_context_t* context, int state);
 bool power_loops_retry_fail(power_loop_context_t *context, power_loop_retries_t type);
 
 void power_loops_control_handle_event(power_ctrl_loop_signal_t event, const void* event_data); 
+void power_loops_vr_telem_handle_event(power_vr_telem_signal_t event, const void* event_data);
+void power_loops_pvt_telem_handle_event(power_pvt_telem_signal_t event, const void* event_data);
 
 #ifdef __cplusplus
 }

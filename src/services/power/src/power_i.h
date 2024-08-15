@@ -23,7 +23,7 @@
 #define MODULE_NAME "[PWRSVC] "
 #define NEWLINE     "\n"
 
-#define POWER_LOG_TRACE(fmt, ...) 
+#define POWER_LOG_TRACE(fmt, ...)
 #define POWER_LOG_INFO(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define POWER_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define POWER_LOG_ERR(fmt, ...)  printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
@@ -91,6 +91,14 @@ typedef struct _power_latest_calcs
     uint16_t vcpu_avs_voltage; // most recent vcpu voltage
     uint16_t vcpu_avs_current; // most recent vcpu current
 } power_latest_calcs_t;
+
+// structure for tracking latest v/c/t from AVS for each rail
+typedef struct _power_vrs_avs_latest
+{
+    uint16_t voltage;     // Raw AVS value, 1LSB=1mV
+    uint16_t current;     // Raw AVS value, 1LSB=10mA
+    uint16_t temperature; // Raw AVS value, 1LSB=0.1 Celsius
+} power_vrs_avs_latest_t;
 
 // Callback function pointer type for power cap
 typedef void (*power_cap_completed_callback_t)(int result, uint16_t current_cap, uint16_t previous_cap_watts);

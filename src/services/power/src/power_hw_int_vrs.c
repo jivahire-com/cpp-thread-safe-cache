@@ -43,14 +43,6 @@
     } while (0)
 
 /*------------- Typedefs -----------------*/
-// structure for tracking latest v/c/t from AVS for each rail
-typedef struct _power_vrs_avs_latest
-{
-    uint16_t voltage;     // Raw AVS value, 1LSB=1mV
-    uint16_t current;     // Raw AVS value, 1LSB=10mA
-    uint16_t temperature; // Raw AVS value, 1LSB=0.1 Celsius
-} power_vrs_avs_latest_t;
-
 // context structure for VRs
 typedef struct _power_vrs_context
 {
@@ -89,6 +81,7 @@ void power_vrs_initiate_vr_reads()
     s_power_vrs_ctx.latest_power.vcpu_avs_current = s_power_vrs_ctx.vr_inputs[VR_CPU_IDX].current;
 
     power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VR_READ, &s_power_vrs_ctx.latest_power);
+    power_loops_vr_telem_handle_event(POWER_VR_TELEM_SIGNAL_VR_CURRENT, s_power_vrs_ctx.vr_inputs);
 }
 
 void power_vrs_write_vcpu_voltage(uint16_t voltage_mv)

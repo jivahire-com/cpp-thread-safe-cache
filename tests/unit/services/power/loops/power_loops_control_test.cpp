@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include "power_test.h" // for POWER_TEST
+#include "power_test_loops.h"
 
 #include <cstddef> // for NULL
 
@@ -37,13 +38,12 @@ extern "C" {
 typedef VOID (*entry_function_t)(ULONG entry_input);
 
 /*-------- Function Prototypes -----------*/
-void __real_power_loops_control_init();
 
 /*-- Declarations (Statics and globals) --*/
-static power_loop_context_t* s_loop_context = NULL;
 static power_latest_calcs_t* s_local_power = NULL;
 static power_latest_calcs_t* s_remote_power = NULL;
-
+static power_loop_context_t* s_loop_context[LOOP_MAX] = {NULL, NULL};
+static unsigned int s_context_index = 0;
 /*------------- Functions ----------------*/
 //
 // Mocks
@@ -51,7 +51,8 @@ static power_latest_calcs_t* s_remote_power = NULL;
 
 void __wrap_power_loops_init_loop(power_loop_context_t* p_context)
 {
-    s_loop_context = p_context;
+    s_loop_context[s_context_index++] = p_context;
+    s_context_index = s_context_index > LOOP_MAX ? 0 : s_context_index; // only allow 2 contexts
     check_expected_ptr(p_context);
 }
 
@@ -180,6 +181,31 @@ uint64_t __wrap_power_timer_get_us_from_counter(uint32_t ticks)
 /*-------- Function Prototypes -----------*/
 
 /*------------- Functions ----------------*/
+void reset_context()
+{
+    s_context_index = 0;
+    for (unsigned int idx = 0; idx < LOOP_MAX; idx++)
+    {
+        s_loop_context[idx] = NULL;
+    }
+}
+
+power_loop_context_t* loop_context(unsigned int index)
+{
+    assert_true(index < LOOP_MAX);
+    return s_loop_context[index];
+}
+void call_handler(power_ctrl_loop_state_t state, power_ctrl_loop_signal_t signal, const void* data)
+{
+    call_handler(CTRL, (int)state, (int)signal, data);
+}
+
+void call_handler(unsigned int index, int state, int signal, const void* data)
+{
+    power_loop_context_t* p_context = loop_context(index);
+    assert_non_null(p_context);
+    p_context->handlers[state](signal, data);
+}
 
 POWER_TEST(power_loops_control_init, NULL, NULL)
 {
@@ -223,8 +249,10 @@ POWER_TEST(power_loops_control_init, NULL, NULL)
     // expectations for power_loops_init_loop
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 
+    reset_context(); // ensure we start fresh on context collection
     // this (below wrapper) also captures the context pointer when init function is called
     expect_not_value(__wrap_power_loops_init_loop, p_context, NULL);
+    
 
     // expectations for pid_init
     expect_memory(__wrap_pid_init, p_config, &test_pid_config, sizeof(pid_config_t));
@@ -233,7 +261,7 @@ POWER_TEST(power_loops_control_init, NULL, NULL)
     expect_value(__wrap_pid_set_resources, resources, init_resources);
 
     // call the function
-    __real_power_loops_control_init();
+    power_loops_control_init();
 }
 
 // test for power_control_loop_retry_fail
@@ -255,6 +283,11 @@ POWER_TEST(power_loops_control_handle_event, NULL, NULL)
 
 void setup_expectations_for_state_change(power_ctrl_loop_state_t state)
 {
+    setup_expectations_for_state_change((int)state);
+}
+
+void setup_expectations_for_state_change(int state)
+{
     // runtime assert
     expect_value(__wrap_FpFwAssert, expression, true);
     // expectations for power_loops_change_state
@@ -270,11 +303,6 @@ void setup_expectations_for_retry_fail(power_loop_retries_t type, bool fail)
     will_return(__wrap_power_loops_retry_fail, fail);
 }
 
-void call_handler(power_ctrl_loop_state_t state, power_ctrl_loop_signal_t signal, const void* data)
-{
-    assert_non_null(s_loop_context);
-    s_loop_context->handlers[state](signal, data);
-}
 
 // test for idle_handler
 POWER_TEST(control_idle_handler__signal_interval, NULL, NULL)
@@ -301,11 +329,11 @@ POWER_TEST(control_idle_error_handler__enter_exit_error, NULL, NULL)
     // call error handler
     call_handler(POWER_CONTROL_STATE_ERROR, POWER_CTRL_LOOP_SIGNAL_ENTRY, NULL);
     // setup error expectation (none, nothing should happen if last state is error)
-    s_loop_context->status.last_state = POWER_CONTROL_STATE_ERROR;
+    loop_context(CTRL)->status.last_state = POWER_CONTROL_STATE_ERROR;
     // call error handler
     call_handler(POWER_CONTROL_STATE_IDLE, POWER_CTRL_LOOP_SIGNAL_ENTRY, NULL);
     // setup error expectation
-    s_loop_context->status.last_state = POWER_CONTROL_STATE_EXCHANGE_COMPLETION;
+    loop_context(CTRL)->status.last_state = POWER_CONTROL_STATE_EXCHANGE_COMPLETION;
     expect_value(__wrap_power_hw_clear_force_pmin, type, PM_PMIN_POWER_CAP);
     call_handler(POWER_CONTROL_STATE_IDLE, POWER_CTRL_LOOP_SIGNAL_ENTRY, NULL);
 }
@@ -352,7 +380,7 @@ POWER_TEST(control_collect_inputs_handler__signal_entry, NULL, NULL)
     power_service_config_t sconfig = {};
     power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
     // expectations on entry
-    expect_function_call(__wrap_power_vrs_initiate_vr_reads);
+
     // expectations for get_current_state
     // set core 0 to valid for HW reads
     corebits_set_bit(&test_runconfig.fuses.valid_cores, 0);

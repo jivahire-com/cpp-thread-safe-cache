@@ -138,9 +138,6 @@ void power_loops_init()
                               TX_NO_TIME_SLICE,                                   /* ULONG time_slice */
                               TX_AUTO_START);                                     /* UINT auto_start */
     FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);
-
-    // initialize individual power loops
-    power_loops_control_init();
 }
 
 static void power_loops_internal_handle_event(power_loop_context_t* p_context, int event, const void* event_data)

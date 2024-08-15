@@ -8,6 +8,8 @@
  */
 
 /*------------- Includes -----------------*/
+#include "power_runconfig_i.h" // for power_runconfig_t, power_runconfig_get
+
 #include <FpFwUtils.h>
 #include <fpfw_status.h>            // for FPFW_STATUS_INVALID_ARGS, FPFW_STATUS_S...
 #include <kingsgate_fuse_defines.h> // for TEST_FLOW_CHECKS_PMM_REVISION_BIT_OFFSET
@@ -70,4 +72,21 @@ void power_hw_clear_force_pmin(power_pmin_type_t type)
 void power_hw_force_pmin(power_pmin_type_t type)
 {
     FPFW_UNUSED(type);
+}
+
+static bool power_hw_is_io_temp_force_pmin()
+{
+    // TODO ADO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491042/
+    // get implementation from pioneer
+    return false;
+}
+
+void power_hw_check_io_temp_force_pmin(uint16_t max_temp_dC)
+{
+    power_runconfig_t* p_runconfig = power_runconfig_get();
+    // the io_temp bit in force_pmin is sticky, so we need to clear it if it remains set after temp is below hysteresis threshold
+    if ((max_temp_dC < p_runconfig->knobs.soc_temp.hot.hyst_threshold) && power_hw_is_io_temp_force_pmin())
+    {
+        power_hw_clear_force_pmin(PM_PMIN_IOTEMP);
+    }
 }

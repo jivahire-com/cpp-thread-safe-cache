@@ -15,6 +15,7 @@ add_library(${TARGET}
         power_knobs.c
         power_loops.c
         power_loops_control.c
+        power_loops_telemetry.c
         power_main.c
         power_runconfig.c
         power_stub.c

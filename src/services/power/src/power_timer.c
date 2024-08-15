@@ -29,6 +29,7 @@
 typedef struct _power_timer_context
 {
     TX_TIMER control_loop_timer;
+    TX_TIMER pvt_telem_loop_timer;
 } power_timer_context_t;
 
 /*-------- Function Prototypes -----------*/
@@ -70,11 +71,23 @@ void ctrl_loop_timer_cb(ULONG ctx)
         (power_loops_disable_t_CTRL_LOOP | power_loops_disable_t_VR_TELEM_LOOP))
     {
         /* telemetry event is sent if either loop is enabled, since control loop depends on VR current collection */
-        // vr_telem_loop_handle_event(MPVR_EVENT_INTERVAL_ALARM, NULL);
+        power_loops_vr_telem_handle_event(POWER_VR_TELEM_SIGNAL_INTERVAL, NULL);
     }
     if ((p_runconfig->knobs.loops_disable & power_loops_disable_t_CTRL_LOOP) == 0)
     {
         power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_INTERVAL, NULL);
+    }
+}
+
+void pvt_telem_loop_timer_cb(ULONG ctx)
+{
+    FPFW_RUNTIME_ASSERT(ctx != 0);
+
+    power_runconfig_t* p_runconfig = (power_runconfig_t*)ctx;
+    /* PVT telemetry driven by this pvt interval event */
+    if ((p_runconfig->knobs.loops_disable & power_loops_disable_t_PVT_TELEM_LOOP) == 0)
+    {
+        power_loops_pvt_telem_handle_event(POWER_PVT_TELEM_SIGNAL_INTERVAL, NULL);
     }
 }
 
@@ -86,6 +99,16 @@ void power_timer_start_loop_timers()
 
     int status =
         tx_timer_create(&s_power_timer_ctx.control_loop_timer, PWR_CTRL_NAME, ctrl_loop_timer_cb, (ULONG)p_runconfig, ticks, ticks, TX_AUTO_ACTIVATE);
+    BUG_ASSERT_PARAM(status == TX_SUCCESS, status, 0);
 
+    // ticks appear to be 10ms; this is temporary until we have gtimer integration
+    ticks = FPFW_MIN(p_runconfig->knobs.pvt_loop_interval / 10, 1);
+    status = tx_timer_create(&s_power_timer_ctx.pvt_telem_loop_timer,
+                             PWR_CTRL_NAME,
+                             pvt_telem_loop_timer_cb,
+                             (ULONG)p_runconfig,
+                             ticks,
+                             ticks,
+                             TX_AUTO_ACTIVATE);
     BUG_ASSERT_PARAM(status == TX_SUCCESS, status, 0);
 }

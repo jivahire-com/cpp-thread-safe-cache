@@ -38,7 +38,7 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
     pcie_sync_request_t* r = (pcie_sync_request_t*)incoming;
     silibs_status_t sts = SILIBS_SUCCESS;
 
-    if (r->rp_index >= PCIE_RPSS_COUNT || r->rpss_index >= PCIE_RPSS_COUNT)
+    if (r->rp_index >= PCIESS_NUM_PORTS || r->rpss_index >= PCIE_NUM_RPSS)
     {
         printf("pcie sync request out of bounds: RPSS[%d] | RP Index[%d]!\n", r->rpss_index, r->rp_index);
         r->status = SILIBS_E_PARAM;
@@ -102,7 +102,7 @@ void pcie_dfwk_init(pciess_device_t* dev, PDFWK_SCHEDULE schedule)
     DfwkDeviceInitialize(&(dev->header), schedule);
     DfwkQueueInitialize(&(dev->default_queue), &(dev->header), pcie_default_dispatch, NULL, DfwkQueueType_ImmediateDispatch);
 
-    for (uint8_t i = 0; i < ROOT_PORTS_PER_RPSS; i++)
+    for (uint8_t i = 0; i < PCIESS_NUM_PORTS; i++)
     {
         DfwkQueueInitialize(&(dev->per_rp_queue[i]), &(dev->header), pcie_per_rp_dispatch, NULL, DfwkQueueType_SerializedDispatch);
     }

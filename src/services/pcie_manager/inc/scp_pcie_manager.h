@@ -11,6 +11,7 @@
 
 /*----------- Nested includes ------------*/
 #include <DfwkThreadXHost.h>
+#include <idsw_kng.h>
 #include <kng_soc_constants.h>
 #include <pcie_config_variable.h>
 #include <pcie_dfwk.h>
@@ -36,12 +37,12 @@ typedef struct _pcie_manager_context_t
     RPSS_INSTANCE rpss_idx;
     pciess_device_t* dev;
     pciess_device_interface_t* iface;
-    pcie_async_request_t async_req[ROOT_PORTS_PER_RPSS * MAX_PENDING_WAIT_FOR_EVENT_PER_RP];
+    pcie_async_request_t async_req[PCIESS_NUM_PORTS * MAX_PENDING_WAIT_FOR_EVENT_PER_RP];
     pciess_completion_request_t cmpl_req[PCIE_OUTSTANDING_REQ_QUOTA];
     TX_THREAD worker;
     TX_QUEUE work_queue;
     TX_EVENT_FLAGS_GROUP* event_ptr;
-    TX_TIMER expiry_timer[ROOT_PORTS_PER_RPSS];
+    TX_TIMER expiry_timer[PCIESS_NUM_PORTS];
 } pcie_manager_context_t;
 
 /* This is the thread context block for config service thread*/
@@ -71,7 +72,7 @@ typedef struct _pcie_config_manager_context_t
  *              Errors in rpss init are fatal and are raised directly through
  *              FpFwErrorRaise when encountered.
  */
-void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init);
+void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DIE_ID die_id);
 
 /*--------- Function Prototypes ----------*/
 /**

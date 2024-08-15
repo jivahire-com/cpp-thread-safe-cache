@@ -36,7 +36,7 @@ void config_variable_service_thread_fn(ULONG thread_input)
     ULONG event;
     kingsgate_pcie_root_bridge_config* rb_config_var = ctx->rb_config_var;
     kingsgate_pcie_vab_config* vab_config_var = ctx->vab_config_var;
-    KNG_DIE_ID current_die_instance = idsw_get_die_id();
+    KNG_DIE_ID current_die_instance = (KNG_DIE_ID)idsw_get_die_id();
 
     int status = tx_event_flags_get(ctx->event_ptr, ctx->event_flags_mask, TX_AND, &event, TX_WAIT_FOREVER);
     if (status != TX_SUCCESS)
@@ -52,35 +52,35 @@ void config_variable_service_thread_fn(ULONG thread_input)
     /* Note that there is no MMIOL for either RB*/
     if (current_die_instance == DIE_0)
     {
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS].mmioh.base = D0_SDM_MMIOH_START;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS].mmioh.limit = D0_SDM_MMIOH_END;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS].bus.base = D0_SDM_RCIEP_BUS;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS].bus.limit = D0_SDM_RCEC_BUS;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS].flags.is_enabled = true;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS].flags.is_integrated_endpoint = true;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].mmioh.base = D0_SDM_MMIOH_START;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].mmioh.limit = D0_SDM_MMIOH_END;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].bus.base = D0_SDM_RCIEP_BUS;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].bus.limit = D0_SDM_RCEC_BUS;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_enabled = true;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_integrated_endpoint = true;
 
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS + 1].mmioh.base = D0_CDED_MMIOH_START;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS + 1].mmioh.limit = D0_CDED_MMIOH_END;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS + 1].bus.base = D0_CDED_RCIEP_BUS;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS + 1].bus.limit = D0_CDED_RCEC_BUS;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS + 1].flags.is_enabled = true;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS + 1].flags.is_integrated_endpoint = true;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmioh.base = D0_CDED_MMIOH_START;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmioh.limit = D0_CDED_MMIOH_END;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].bus.base = D0_CDED_RCIEP_BUS;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].bus.limit = D0_CDED_RCEC_BUS;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].flags.is_enabled = true;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].flags.is_integrated_endpoint = true;
     }
     else
     {
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS].mmioh.base = D1_SDM_MMIOH_START;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS].mmioh.limit = D1_SDM_MMIOH_END;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS].bus.base = D1_SDM_RCIEP_BUS;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS].bus.limit = D1_SDM_RCEC_BUS;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS].flags.is_enabled = true;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS].flags.is_integrated_endpoint = true;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].mmioh.base = D1_SDM_MMIOH_START;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].mmioh.limit = D1_SDM_MMIOH_END;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].bus.base = D1_SDM_RCIEP_BUS;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].bus.limit = D1_SDM_RCEC_BUS;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_enabled = true;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_integrated_endpoint = true;
 
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS + 1].mmioh.base = D1_CDED_MMIOH_START;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS + 1].mmioh.limit = D1_CDED_MMIOH_END;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS + 1].bus.base = D1_CDED_RCIEP_BUS;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS + 1].bus.limit = D1_CDED_RCEC_BUS;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS + 1].flags.is_enabled = true;
-        rb_config_var->rootbridge_config[PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS + 1].flags.is_integrated_endpoint = true;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmioh.base = D1_CDED_MMIOH_START;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmioh.limit = D1_CDED_MMIOH_END;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].bus.base = D1_CDED_RCIEP_BUS;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].bus.limit = D1_CDED_RCEC_BUS;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].flags.is_enabled = true;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].flags.is_integrated_endpoint = true;
     }
 
     /* Print RB configurations */

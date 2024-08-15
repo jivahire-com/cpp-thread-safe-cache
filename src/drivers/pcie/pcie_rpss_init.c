@@ -76,7 +76,7 @@ static pcie_cfg_t pcie_cfg_np = {
 /*------------- Functions ----------------*/
 static void populate_rb_configs_from_rpss_entity(pcie_ss_entity_t* rpss, pcie_root_bridge_config* rb_configs)
 {
-    for (uint8_t i = 0; i < ROOT_PORTS_PER_RPSS; i++)
+    for (uint8_t i = 0; i < PCIESS_NUM_PORTS; i++)
     {
         if (rpss->rps[i].valid == false || rpss->rps[i].enabled == false)
         {
@@ -113,7 +113,7 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
     uint64_t ap_subsystem_config_addr = rpss_addrs[rpss_id] + VAB_RPSS_TOP_RPSS_ADDRESS;
     uint64_t resolved_subsystem_config_addr = atu_pciess_config_map[rpss_id].mscp_start_address;
 
-    pcie_ss_entity_t* rpss = pciess_get_entity((RPSS_INSTANCE)rpss_id);
+    pcie_ss_entity_t* rpss = pciess_get_entity(rpss_id);
     FPFW_RUNTIME_ASSERT(rpss != NULL);
 
     sts = pciess_config_entity(rpss, resolved_subsystem_config_addr, ap_subsystem_config_addr, &pcie_cfg_np, true, true);

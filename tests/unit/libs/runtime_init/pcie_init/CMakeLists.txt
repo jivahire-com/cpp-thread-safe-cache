@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
     silibs::idsw
     silibs::idsw_kng
     silibs::kng_silibs_platform
+    silibs::pcie
 )
 
 if(i386-pc-windows-msvc)
@@ -39,4 +40,5 @@ mock_target(${TARGET}
     idsw_get_platform_sdv
     pcie_cli_init
     scp_pcie_initialize
+    idsw_get_die_id
 )

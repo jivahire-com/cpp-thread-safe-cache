@@ -69,7 +69,7 @@ static FPFW_CLI_COMMAND pcie_cli_table[] = {
 };
 /* clang-format on */
 
-static pciess_device_interface_t iface[PCIE_RPSS_COUNT] = {0};
+static pciess_device_interface_t iface[PCIE_RPSS_PER_DIE] = {0};
 static pcie_ss_entity_t* curr_ss_entity = NULL;
 
 /*------------- Functions ----------------*/
@@ -86,20 +86,13 @@ static FPFW_CLI_STATUS dump_rpss_entity(int argc, const char** argv)
         return CLI_ERROR;
     }
 
-    /* TODO: Support Die 1 RPSS in the CLI */
-    if (rpss_idx >= RPSS4)
-    {
-        FpFwCliPrint("Die 1 rpss[%d] not currently supported by the pcie cli!\n", rpss_idx);
-        return CLI_SUCCESS;
-    }
-
     curr_ss_entity = NULL;
     pcie_sync_request_t req = {0};
     req.p_requested_data = (void*)(&curr_ss_entity);
     req.rpss_index = rpss_idx;
     req.req_type = GET_RPSS_ENTITY_REQUEST;
     req.header.RequestType = GET_RPSS_ENTITY_REQUEST;
-    DfwkInterfaceSendSync((PDFWK_INTERFACE_HEADER)(&iface[rpss_idx]), &req.header);
+    DfwkInterfaceSendSync((PDFWK_INTERFACE_HEADER)(&iface[rpss_idx % PCIE_RPSS_PER_DIE]), &req.header);
 
     if (req.status == SILIBS_SUCCESS && curr_ss_entity != NULL)
     {
@@ -128,13 +121,6 @@ static FPFW_CLI_STATUS dump_rp_entity(int argc, const char** argv)
         return CLI_ERROR;
     }
 
-    /* TODO: Support Die 1 RPSS in the CLI */
-    if (rpss_idx >= RPSS4)
-    {
-        FpFwCliPrint("Die 1 rpss[%d] not currently supported by the pcie cli!\n", rpss_idx);
-        return CLI_SUCCESS;
-    }
-
     curr_ss_entity = NULL;
     pcie_sync_request_t req = {0};
     req.p_requested_data = (void*)(&curr_ss_entity);
@@ -142,7 +128,7 @@ static FPFW_CLI_STATUS dump_rp_entity(int argc, const char** argv)
     req.rp_index = rp_idx;
     req.req_type = GET_RPSS_ENTITY_REQUEST;
     req.header.RequestType = GET_RPSS_ENTITY_REQUEST;
-    DfwkInterfaceSendSync((PDFWK_INTERFACE_HEADER)(&iface[rpss_idx]), &req.header);
+    DfwkInterfaceSendSync((PDFWK_INTERFACE_HEADER)(&iface[rpss_idx % PCIE_RPSS_PER_DIE]), &req.header);
 
     if (req.status == SILIBS_SUCCESS && curr_ss_entity != NULL)
     {
@@ -172,13 +158,6 @@ static FPFW_CLI_STATUS dump_rp_link_info(int argc, const char** argv)
         return CLI_ERROR;
     }
 
-    /* TODO: Support Die 1 RPSS in the CLI */
-    if (rpss_idx >= RPSS4)
-    {
-        FpFwCliPrint("Die 1 rpss[%d] not currently supported by the pcie cli!\n", rpss_idx);
-        return CLI_SUCCESS;
-    }
-
     PCIE_LTSSM_STATE ltssm_state = 0;
     pcie_cli_req_op_t cli_op = GET_RP_LTSSM_STATE;
     pcie_link_state_t* current_link_state = {0};
@@ -190,7 +169,7 @@ static FPFW_CLI_STATUS dump_rp_link_info(int argc, const char** argv)
     req.header.RequestType = CLI_REQUEST;
     req.p_sent_data = (void*)(&cli_op);
     req.p_requested_data = (void*)(&ltssm_state);
-    DfwkInterfaceSendSync((PDFWK_INTERFACE_HEADER)(&iface[rpss_idx]), &req.header);
+    DfwkInterfaceSendSync((PDFWK_INTERFACE_HEADER)(&iface[rpss_idx % PCIE_RPSS_PER_DIE]), &req.header);
     if (req.status != SILIBS_SUCCESS)
     {
         FpFwCliPrint("pcie cli: Failed to get ltssm state from the PCIe driver! silibs_status: %d\n", (int)req.status);
@@ -221,13 +200,6 @@ static FPFW_CLI_STATUS dump_rp_dbi_cfg_hdr(int argc, const char** argv)
         return CLI_ERROR;
     }
 
-    /* TODO: Support Die 1 RPSS in the CLI */
-    if (rpss_idx >= RPSS4)
-    {
-        FpFwCliPrint("Die 1 rpss[%d] not currently supported by the pcie cli!\n", rpss_idx);
-        return CLI_SUCCESS;
-    }
-
     rc4sx16_pf0_type1_hdr_reg* rp_t1_hdr = NULL;
     pcie_cli_req_op_t cli_op = GET_RP_DBI_CONFIG_HDR;
 
@@ -239,7 +211,7 @@ static FPFW_CLI_STATUS dump_rp_dbi_cfg_hdr(int argc, const char** argv)
     req.header.RequestType = CLI_REQUEST;
     req.p_sent_data = (void*)(&cli_op);
     req.p_requested_data = (void*)(&rp_t1_hdr);
-    DfwkInterfaceSendSync((PDFWK_INTERFACE_HEADER)(&iface[rpss_idx]), &req.header);
+    DfwkInterfaceSendSync((PDFWK_INTERFACE_HEADER)(&iface[rpss_idx % PCIE_RPSS_PER_DIE]), &req.header);
 
     if (req.status == SILIBS_SUCCESS)
     {
@@ -263,7 +235,7 @@ void pcie_cli_init(pciess_device_t* pcie_dev_handles)
     }
 
     /* Initialize and open up PCIe interfaces so that we can issue requests to the PCIe driver later on */
-    for (uint8_t i = 0; i < PCIE_RPSS_COUNT; i++)
+    for (uint8_t i = 0; i < PCIE_RPSS_PER_DIE; i++)
     {
         pcie_dfwk_interface_init(&(pcie_dev_handles[i]), &(iface[i]));
         DfwkClientInterfaceOpen(&(iface[i].header));

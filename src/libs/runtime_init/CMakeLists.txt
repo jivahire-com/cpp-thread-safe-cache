@@ -113,6 +113,7 @@ target_link_libraries(
         silibs::idsw
         silibs::idsw_kng
         silibs::platform
+        silibs::pcie
         silibs::kng_silibs_platform
         silibs::sensor_ram_bridge
         ms::lib::power::cli

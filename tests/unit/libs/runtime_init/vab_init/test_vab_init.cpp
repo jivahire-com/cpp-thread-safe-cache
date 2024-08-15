@@ -116,7 +116,7 @@ TEST_FUNCTION(test_vab_init_fpga_die1, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
                  vab_instances_to_init,
-                 ((1 << D1_VAB1_RPSS1) | (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS)));
+                 ((1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS)));
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     _fpfw_component_vab.init_fn();
@@ -128,7 +128,7 @@ TEST_FUNCTION(test_vab_init_fpga_large_die1, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
                  vab_instances_to_init,
-                 ((1 << D1_VAB1_RPSS1) | (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS)));
+                 ((1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS)));
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
     _fpfw_component_vab.init_fn();
 }
@@ -139,7 +139,7 @@ TEST_FUNCTION(test_vab_init_fpga_large_rvp_die1, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
                  vab_instances_to_init,
-                 ((1 << D1_VAB1_RPSS1) | (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS)));
+                 ((1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS)));
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE_RVP);
     _fpfw_component_vab.init_fn();
 }

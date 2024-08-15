@@ -86,7 +86,7 @@ void rpss_irq_callback(uint32_t irq_num)
     /* Probe all PCIESS INT */
     if (pciess_probe(ss, &int_info, INTU_TO_SCP))
     {
-        for (uint8_t rp_idx = 0; rp_idx < ROOT_PORTS_PER_RPSS; rp_idx++)
+        for (uint8_t rp_idx = 0; rp_idx < PCIESS_NUM_PORTS; rp_idx++)
         {
             bool int_present = false;
             uint32_t int_data = 0; // for Now this is the only data filled into the request

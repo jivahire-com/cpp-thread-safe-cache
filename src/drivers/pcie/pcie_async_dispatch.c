@@ -21,8 +21,8 @@
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define PCIE_ASYNC_POOL_SIZE                (PCIE_RPSS_COUNT * ROOT_PORTS_PER_RPSS * NUM_DIE)
-#define GET_RPSS_POOL_IDX(rpss_idx, rp_idx) ((rpss_idx * ROOT_PORTS_PER_RPSS) + rp_idx)
+#define PCIE_ASYNC_POOL_SIZE                (PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS)
+#define GET_RPSS_POOL_IDX(rpss_idx, rp_idx) (((rpss_idx % PCIE_RPSS_PER_DIE) * PCIESS_NUM_PORTS) + rp_idx)
 
 /*------------- Typedefs -----------------*/
 typedef struct _pcie_async_pool_t
@@ -40,7 +40,8 @@ static pcie_async_pool_t async_req_pool[PCIE_ASYNC_POOL_SIZE] = {0};
 pcie_async_request_t* get_pending_async_req_for_this_rp(uint8_t rpss_idx, uint8_t rp_idx, pcie_rp_async_request_t req_type)
 {
     pcie_async_request_t* req = NULL;
-    if ((rpss_idx >= PCIE_RPSS_COUNT) || (rp_idx >= ROOT_PORTS_PER_RPSS) || (req_type >= PCIE_MAX_ASYNC_REQ))
+
+    if ((rpss_idx >= PCIE_NUM_RPSS) || (rp_idx >= PCIESS_NUM_PORTS) || (req_type >= PCIE_MAX_ASYNC_REQ))
     {
         goto exit;
     }
@@ -73,7 +74,8 @@ exit:
 
 void complete_async_req_for_this_rp(pcie_async_request_t* req)
 {
-    if ((req == NULL) || (req->rpss_index >= PCIE_RPSS_COUNT) || (req->rp_index >= ROOT_PORTS_PER_RPSS))
+
+    if ((req == NULL) || (req->rpss_index >= PCIE_NUM_RPSS) || (req->rp_index >= PCIESS_NUM_PORTS))
     {
         return;
     }
@@ -165,7 +167,7 @@ void pcie_default_dispatch(PDFWK_ASYNC_REQUEST_HEADER incoming, void* context)
     pciess_device_t* dev = (pciess_device_t*)(iface->dev);
     pcie_async_request_t* r = (pcie_async_request_t*)incoming;
 
-    if (r->rp_index >= PCIE_RPSS_COUNT || r->rpss_index >= PCIE_RPSS_COUNT)
+    if (r->rp_index >= PCIESS_NUM_PORTS || r->rpss_index >= PCIE_NUM_RPSS)
     {
         printf("Root port invalid for RPSS: %d | RP Index: %d!\n", r->rpss_index, r->rp_index);
         r->status = SILIBS_E_PARAM;

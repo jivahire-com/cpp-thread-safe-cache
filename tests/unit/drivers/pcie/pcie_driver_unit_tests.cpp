@@ -37,10 +37,10 @@ extern "C" {
 /*-- Symbolic Constant Macros (defines) --*/
 /*
  * This corresponds to:
- * Number of dies (2) * Number of rpss per die (4) * Number of rps per rpss (4)
+ * Number of rpss per die (4) * Number of rps per rpss (4)
  * Upto 1 outstanding 1 req. per rp can be sent by the service.
  */
-#define MAX_ASYNC_REQ_POOL_SIZE (32)
+#define MAX_ASYNC_REQ_POOL_SIZE (16)
 
 /*------------- Typedefs -----------------*/
 
@@ -72,7 +72,7 @@ static int test_teardown(void** ctx)
     will_return_always(__wrap__txe_semaphore_put, TX_SUCCESS);
     for (uint8_t i = 0; i < NUM_RPSS; i++)
     {
-        for (uint8_t ii = 0; ii < ROOT_PORTS_PER_RPSS; ii++)
+        for (uint8_t ii = 0; ii < PCIESS_NUM_PORTS; ii++)
         {
             for (uint8_t iii = 0; iii < PCIE_MAX_ASYNC_REQ; iii++)
             {

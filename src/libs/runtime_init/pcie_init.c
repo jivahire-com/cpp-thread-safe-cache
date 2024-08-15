@@ -33,18 +33,35 @@ FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "v
     PDFWK_THREADX_HOST host = fpfw_init_get_handle(dfwk_id);
     uint16_t rpss_to_init = 0;
     KNG_PLAT_ID plat = idsw_get_platform_sdv();
+    KNG_DIE_ID die_id = (KNG_DIE_ID)idsw_get_die_id();
+
+    uint16_t rpss_mask = 0;
+    bool die1_rpss_enabled = true; /* Will be fetched via config manager */
+    if (die_id == DIE_0)
+    {
+        rpss_mask = (1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3);
+    }
+    else if (die_id == DIE_1 && die1_rpss_enabled)
+    {
+        rpss_mask = (1 << RPSS4) | (1 << RPSS5) | (1 << RPSS6) | (1 << RPSS7);
+    }
+    else
+    {
+        printf("WARNING: rpss_mask == %d\n", rpss_mask);
+    }
 
     switch (plat)
     {
     case PLATFORM_FPGA:
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
-        rpss_to_init = ((1 << RPSS1) | (1 << RPSS2));
+        rpss_to_init = ((1 << RPSS1) | (1 << RPSS2) | (1 << RPSS5) | (1 << RPSS6));
         break;
 
     case PLATFORM_SVP_SIM:
     case PLATFORM_RVP_EVT_SILICON:
-        rpss_to_init = ((1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3));
+        rpss_to_init = ((1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3) | (1 << RPSS4) |
+                        (1 << RPSS5) | (1 << RPSS6) | (1 << RPSS7));
         break;
 
     default:
@@ -52,7 +69,8 @@ FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "v
         break;
     }
 
-    void* pcie_dev_handles = scp_pcie_initialize(&(host->Schedule), rpss_to_init);
+    rpss_to_init &= rpss_mask;
+    void* pcie_dev_handles = scp_pcie_initialize(&(host->Schedule), rpss_to_init, die_id);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, pcie_dev_handles};
 }
 

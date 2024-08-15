@@ -42,13 +42,13 @@ static pcie_ss_entity_t mock_pcie_ent;
 TEST_FUNCTION(pcie_service_init_fail, NULL, NULL)
 {
     auto* sched = (PDFWK_SCHEDULE)0xdeadbeef;
-    uint16_t rpss_to_init = (RPSS0 | RPSS1 | RPSS2 | RPSS3);
+    uint16_t rpss_to_init = ((1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3));
 
     // Bad args
     expect_value(FPFwErrorRaise, error, (uint32_t)(-EINVAL));
     if (!set_error_handler_return())
     {
-        scp_pcie_initialize(nullptr, rpss_to_init);
+        scp_pcie_initialize(nullptr, rpss_to_init, DIE_0);
     }
 
     expect_any_always(__wrap__txe_event_flags_create, group_ptr);
@@ -80,7 +80,7 @@ TEST_FUNCTION(pcie_service_init_fail, NULL, NULL)
     expect_value(FPFwErrorRaise, error, (uint32_t)TX_NO_MEMORY);
     if (!set_error_handler_return())
     {
-        scp_pcie_initialize(sched, rpss_to_init);
+        scp_pcie_initialize(sched, rpss_to_init, DIE_0);
     }
 
     // tx thread fails
@@ -92,14 +92,46 @@ TEST_FUNCTION(pcie_service_init_fail, NULL, NULL)
     expect_value(FPFwErrorRaise, error, (uint32_t)TX_NOT_DONE);
     if (!set_error_handler_return())
     {
-        scp_pcie_initialize(sched, rpss_to_init);
+        scp_pcie_initialize(sched, rpss_to_init, DIE_0);
     }
+}
+
+TEST_FUNCTION(pcie_service_init_success_die1, NULL, NULL)
+{
+    auto* sched = (PDFWK_SCHEDULE)0xdeadbeef;
+    uint16_t rpss_to_init = ((1 << RPSS4) | (1 << RPSS5) | (1 << RPSS6) | (1 << RPSS7));
+
+    expect_any_always(__wrap__txe_event_flags_create, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_create, name_ptr);
+    expect_any_always(__wrap__txe_event_flags_create, event_control_block_size);
+    expect_any_always(__wrap__txe_thread_create, thread_ptr);
+    expect_any_always(__wrap__txe_thread_create, name_ptr);
+    expect_any_always(__wrap__txe_thread_create, entry_function);
+    expect_any_always(__wrap__txe_thread_create, entry_input);
+    expect_any_always(__wrap__txe_thread_create, stack_start);
+    expect_any_always(__wrap__txe_thread_create, stack_size);
+    expect_any_always(__wrap__txe_thread_create, priority);
+    expect_any_always(__wrap__txe_thread_create, preempt_threshold);
+    expect_any_always(__wrap__txe_thread_create, time_slice);
+    expect_any_always(__wrap__txe_thread_create, auto_start);
+    expect_any_always(__wrap__txe_thread_create, thread_control_block_size);
+    expect_value_count(__wrap_pcie_dfwk_init, schedule, sched, 4);
+    will_return_always(__wrap__txe_thread_create, TX_SUCCESS);
+    will_return_always(__wrap__txe_event_flags_create, TX_SUCCESS);
+    will_return_always(__wrap__txe_queue_create, TX_SUCCESS);
+    expect_any_always(__wrap__txe_queue_create, queue_ptr);
+    expect_any_always(__wrap__txe_queue_create, name_ptr);
+    expect_any_always(__wrap__txe_queue_create, message_size);
+    expect_any_always(__wrap__txe_queue_create, queue_start);
+    expect_any_always(__wrap__txe_queue_create, queue_size);
+    expect_any_always(__wrap__txe_queue_create, queue_control_block_size);
+    scp_pcie_initialize(sched, rpss_to_init, DIE_1);
 }
 
 TEST_FUNCTION(config_service_init_fail, NULL, NULL)
 {
     auto* sched = (PDFWK_SCHEDULE)0xdeadbeef;
-    uint16_t rpss_to_init = (RPSS0 | RPSS1 | RPSS2 | RPSS3);
+    uint16_t rpss_to_init = ((1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3));
 
     // tx_event_flags_create fails
     expect_any_always(__wrap__txe_event_flags_create, group_ptr);
@@ -110,7 +142,7 @@ TEST_FUNCTION(config_service_init_fail, NULL, NULL)
 
     if (!set_error_handler_return())
     {
-        scp_pcie_initialize(sched, rpss_to_init);
+        scp_pcie_initialize(sched, rpss_to_init, DIE_0);
     }
 
     // tx_thread_create fails
@@ -131,7 +163,7 @@ TEST_FUNCTION(config_service_init_fail, NULL, NULL)
 
     if (!set_error_handler_return())
     {
-        scp_pcie_initialize(sched, rpss_to_init);
+        scp_pcie_initialize(sched, rpss_to_init, DIE_0);
     }
 }
 
@@ -302,7 +334,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkdown, NULL, NULL)
     pciess_completion_request_t cmpl_req;
     cmpl_req.async_data.data = 0x0001; // LINK_DWN|DTIM
 
-    for (uint8_t i = RPSS0; i < RPSS4; i++)
+    for (uint8_t i = RPSS0; i < RPSS7; i++)
     {
         /* Setup silibs expectations */
         process_wait_for_event_data(i, &cmpl_req);
@@ -315,7 +347,7 @@ TEST_FUNCTION(test_process_wait_for_event_linktrain_other, NULL, NULL)
     pciess_completion_request_t cmpl_req;
     cmpl_req.async_data.data = 0x002; // DTIM
 
-    for (uint8_t i = RPSS0; i < RPSS4; i++)
+    for (uint8_t i = RPSS0; i < RPSS7; i++)
     {
         process_wait_for_event_data(i, &cmpl_req);
     }

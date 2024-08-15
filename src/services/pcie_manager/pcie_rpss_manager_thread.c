@@ -64,7 +64,7 @@ static void pcie_sched_async_op(PDFWK_INTERFACE_HEADER iface,
 
 static void send_async_wait_for_event_for_pciess(pcie_manager_context_t* ctx)
 {
-    for (uint8_t rp_idx = 0; rp_idx < ROOT_PORTS_PER_RPSS; rp_idx++)
+    for (uint8_t rp_idx = 0; rp_idx < PCIESS_NUM_PORTS; rp_idx++)
     {
         send_async_wait_for_event(ctx, rp_idx, MAX_PENDING_WAIT_FOR_EVENT_PER_RP);
     }
@@ -88,7 +88,7 @@ static void start_link_training_timer(pcie_manager_context_t* ctx)
     unsigned int status;
     pcie_ss_entity_t* rpss = send_sync_get_rpss_entity(ctx->rpss_idx);
 
-    for (uint8_t rp_idx = 0; rp_idx < ROOT_PORTS_PER_RPSS; rp_idx++)
+    for (uint8_t rp_idx = 0; rp_idx < PCIESS_NUM_PORTS; rp_idx++)
     {
         // Start the LT Timer only for enabled RP.
         if (rpss->rps[rp_idx].enabled)
@@ -157,7 +157,7 @@ void send_sync_start_link_training_requests(pcie_manager_context_t* ctx)
     };
 
     /* The number of root ports to be enabled will change based on PCIe configuration */
-    for (uint8_t rp_idx = 0; rp_idx < ROOT_PORTS_PER_RPSS; rp_idx++)
+    for (uint8_t rp_idx = 0; rp_idx < PCIESS_NUM_PORTS; rp_idx++)
     {
         if (rpss->rps[rp_idx].enabled)
         {

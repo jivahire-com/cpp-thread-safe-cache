@@ -14,14 +14,13 @@
 #include <DfwkThreadXHost.h>
 #include <FpFwAssert.h>
 #include <kng_soc_constants.h>
+#include <pcie_common.h>
 #include <pcie_config_variable.h>
 #include <silibs_platform.h>
 #include <stdint.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define PCIE_RPSS_COUNT     (4)
-#define ROOT_PORTS_PER_RPSS (4)
 
 /*-------------- Typedefs ----------------*/
 /* Async operations supported by each root port on a pcie subsystem*/
@@ -85,7 +84,7 @@ typedef struct _pciess_device_t
 {
     DFWK_DEVICE_HEADER header; /* Ensure this is always the first field in this struct */
     DFWK_QUEUE default_queue;
-    DFWK_QUEUE per_rp_queue[ROOT_PORTS_PER_RPSS];
+    DFWK_QUEUE per_rp_queue[PCIESS_NUM_PORTS];
     pcie_root_bridge_config* rb_configs; // pointer to rb config
 } pciess_device_t;
 

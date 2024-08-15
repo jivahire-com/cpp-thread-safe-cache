@@ -81,7 +81,7 @@ unsigned int add_async_req_to_pool(pcie_async_request_t* req);
  *          an rpss + root port combination.
  *
  *  @param[in] rpss_idx  Root port subsystem index to retrieve an async.
- *                       request for. Must be less than PCIE_RPSS_COUNT (4)
+ *                       request for. Must be less than PCIE_RPSS_PER_DIE (4)
  *                       on each die.
  *
  *  @param[in] rp_idx    Root port index within the rpss to retrieve an async.

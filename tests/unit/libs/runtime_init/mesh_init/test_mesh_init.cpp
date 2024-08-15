@@ -11,10 +11,9 @@
 #include <CMockaWrapper.h> // for CmockaWrapperTest, TEST_FUNCTION, che...
 
 extern "C" {
+#include <FpFwUtils.h>               // for FPFW_UNUSED
 #include <fpfw_icc_base.h>   // for fpfw_icc_base_init, fpfw_icc_ba...
-#include <fpfw_icc_base_i.h> // for fpfw_icc_base_ctx_t
 #include <fpfw_init.h>
-#include <fpfw_mbox_icc_transport.h> // for ICC_MBX_ASYNC_RECV, ICC_MBX_ASY...
 #include <idhw.h>
 #include <mesh.h>
 #include <stdint.h>
@@ -28,34 +27,19 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_mesh;
-static FPFW_MBX_PRIMITIVE_CTX test_hsp_mbx_ctx;
-static fpfw_mbox_icc_transport_device_t test_hsp_mbx_dev = {
-    .mbox_prim_ctx = test_hsp_mbx_ctx,
-};
-
-static DFWK_INTERFACE_HEADER test_icc_transport_interface = {
-    .OwningDevice = (PDFWK_DEVICE_HEADER)&test_hsp_mbx_dev,
-};
-
-static fpfw_icc_base_config test_icc_cfg = {
-    .transport_interface = &test_icc_transport_interface,
-};
-
-static fpfw_icc_base_ctx_t test_icc_ctx = {
-    .icc_cfg = test_icc_cfg,
-};
+static uint32_t dummy_icc_ctx = 0;
 
 /*------------- Functions ----------------*/
 void* __wrap_fpfw_init_get_handle(const char* id)
 {
     FPFW_UNUSED(id);
-    return &test_icc_ctx;
+    return &dummy_icc_ctx;
 }
 
-int __wrap_mesh_init(uint8_t die_num, FPFW_MBX_PRIMITIVE_CTX* hsp_mbx_ctx)
+int __wrap_mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 {
     check_expected(die_num);
-    assert_non_null(hsp_mbx_ctx);
+    assert_non_null(icc_ctx);
 
     return SILIBS_SUCCESS;
 }

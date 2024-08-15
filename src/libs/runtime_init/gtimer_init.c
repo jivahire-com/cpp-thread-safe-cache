@@ -27,7 +27,7 @@ static_assert(REFCLK_FREQUENCY_HZ * REFCLK_SCALING_FACTOR == 1000000000, "REFCLK
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(gtimer)
+FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_NULL_NODE)
 {
     gtimer_init(SCP_TOP_GEN_CNTR_CTRL_ADDRESS, REFCLK_FREQUENCY_HZ, REFCLK_SCALING_FACTOR);
 

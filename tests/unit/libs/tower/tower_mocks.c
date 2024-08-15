@@ -9,9 +9,9 @@
 
 /*------------- Includes -----------------*/
 #include <FpFwCMocka.h> // IWYU pragma: keep
-#include <MboxPrimitives.h> // for FPFW_MBX_PAYLOAD, FpFwMailbox...
 #include <atu_lib.h>
 #include <cmocka.h> // IWYU pragma: keep
+#include <fpfw_icc_base.h>
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <hsp_firmware_headers.h> // for HSP_MAILBOX_CMD_BOOT_STATUS_NOTIFY, HspFirmwareIdScp...
@@ -93,59 +93,19 @@ int __wrap_tower_sequence_configure_towers(tower_sequence_soc_init_params_t* tow
     return 0;
 }
 
-int32_t __wrap_FpFwMailboxInit(PFPFW_MBX_REG_CONFIG pConfig, PFPFW_MBX_PRIMITIVE_CTX pMbxCtx)
+fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, void* payload_buffer, size_t buffer_size, size_t* output_recv_bytes)
 {
-    check_expected_ptr(pConfig);
-    check_expected_ptr(pMbxCtx);
+    check_expected_ptr(icc_ctx);
+    check_expected_ptr(payload_buffer);
+    check_expected(buffer_size);
+    check_expected_ptr(output_recv_bytes);
 
-    check_expected(pConfig->MbxFifoDepth);
-    check_expected(pConfig->MbxMesgHandlingType);
-    check_expected(pConfig->MbxImplementation);
-    check_expected(pConfig->MsgSizeBytes);
-    check_expected(pConfig->MbxBaseAddr);
-
-    return mock_type(int32_t);
-}
-
-int32_t __wrap_FpFwMailboxFlushFIFO(PFPFW_MBX_PRIMITIVE_CTX pMbxCtx)
-{
-    check_expected_ptr(pMbxCtx);
-
-    return mock_type(int32_t);
-}
-
-int32_t __wrap_FpFwMailboxReceive(PFPFW_MBX_PRIMITIVE_CTX pMbxCtx, PFPFW_MBX_PAYLOAD pMessage)
-{
-    if (pMbxCtx == NULL || pMessage == NULL)
-        return FPFW_MBX_E_INVALID_ARGS;
-
-    kng_hsp_mailbox_msg *recv_msg = (kng_hsp_mailbox_msg *) pMessage->payloadBuffer;
+    kng_hsp_mailbox_msg *recv_msg = (kng_hsp_mailbox_msg *)payload_buffer;
     recv_msg->header.cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_RSP;
     recv_msg->rsp.status = HSP_MAILBOX_RSP_STATUS_SUCCESS;
+    *output_recv_bytes = sizeof(kng_hsp_mailbox_msg);
 
-    return mock_type(int32_t);
-}
-
-int32_t __wrap_FpFwMailboxSend(PFPFW_MBX_PRIMITIVE_CTX pMbxCtx, PFPFW_MBX_PAYLOAD pMessage)
-{
-    uint32_t* tower_int_cmd = NULL;
-    uint32_t cmd = 0;
-    uint8_t flags = 0;
-
-    check_expected_ptr(pMbxCtx);
-    check_expected_ptr(pMessage);
-
-    check_expected_ptr(pMessage->payloadBuffer);
-    check_expected(pMessage->payloadSize);
-
-    tower_int_cmd = (uint32_t*)(pMessage->payloadBuffer);
-    cmd = tower_int_cmd[0] & 0xFFFF;
-    flags = (tower_int_cmd[0] >> 28) & 0xF;
-
-    check_expected(cmd);
-    check_expected(flags);
-
-    return mock_type(int32_t);
+    return mock_type(fpfw_status_t);
 }
 
 bool __wrap_system_info_is_hsp_present()

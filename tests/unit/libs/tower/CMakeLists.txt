@@ -13,8 +13,8 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::li
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.init
-        fwlib.lib.mboxPrimitives
         fwlib.lib.utils
+        fwlib.service.iccBase
         ms::cmocka::mocks
         ms::cmocka::testrunner
         ms::lib::error_handler
@@ -36,13 +36,10 @@ unit_test_target(${TARGET})
 
 # Mock the functions needed
 mock_target(${TARGET}
-    FpFwMailboxInit
-    FpFwMailboxFlushFIFO
-    FpFwMailboxReceive
-    FpFwMailboxSend
     tower_sequence_configure_towers
     atu_map
     atu_unmap
     idsw_get_platform_sdv
     system_info_is_hsp_present
+    fpfw_icc_base_send_recv_sync
 )

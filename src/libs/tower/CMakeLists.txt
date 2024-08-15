@@ -8,7 +8,7 @@ add_library(${TARGET}
 target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.assert
-    fwlib.lib.mboxPrimitives
+    fwlib.service.iccBase
     kng.lib.crash_dump.scp
     silibs_platform
     ms::lib::error_codes

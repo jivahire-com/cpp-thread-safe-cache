@@ -6,9 +6,7 @@
 /*------------- Includes -----------------*/
 #include <FpFwAssert.h>
 #include <fpfw_icc_base.h>   // for fpfw_icc_base_init, fpfw_icc_ba...
-#include <fpfw_icc_base_i.h> // for fpfw_icc_base_ctx_t
 #include <fpfw_init.h>
-#include <fpfw_mbox_icc_transport.h> // for ICC_MBX_ASYNC_RECV, ICC_MBX_ASY...
 #include <idsw.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -24,16 +22,14 @@
 FPFW_INIT_COMPONENT(tower_cfg, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh", "atu_svc", "icc_hspmbx"))
 {
     uint8_t die_num = (uint8_t)idsw_get_die_id();
-    // Fetch the primitive mailbox context and forward it to the init API
+
     fpfw_icc_base_ctx_t* icc_ctx = fpfw_init_get_handle("icc_hspmbx");
-    FPFW_MBX_PRIMITIVE_CTX* p_mbox_prim_ctx =
-        &((fpfw_mbox_icc_transport_device_t*)icc_ctx->icc_cfg.transport_interface->OwningDevice)->mbox_prim_ctx;
     
     FPFW_RUNTIME_ASSERT(icc_ctx != NULL);
     
     printf("Tower init, die_num [%d]\n", die_num);
 
-    tower_init(die_num, p_mbox_prim_ctx);
+    tower_init(die_num, icc_ctx);
 
     printf("Tower init done, die_num [%d]\n", die_num);
 

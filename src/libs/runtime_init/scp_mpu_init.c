@@ -18,7 +18,7 @@
 /*------------- Functions ----------------*/
 
 // TODO: Still TBD if Normal WB RWA is valid given Boot RAM cannot do 8 or 16 bit writes.
-FPFW_INIT_COMPONENT(mpu)
+FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
 {
     // clang-format off
     // Setup regions

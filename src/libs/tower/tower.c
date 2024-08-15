@@ -12,6 +12,7 @@
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <atu_lib.h>    // for atu_map, atu_unmap, atu_map_entry_t
 #include <bug_check.h>
+#include <fpfw_status.h>
 #include <hsp_firmware_headers.h>
 #include <idsw.h>              // for idsw_get_platform_sdv
 #include <idsw_kng.h>          // for PLATFORM_SVP_SIM, KNG_PLAT_ID, PLATFO...
@@ -160,38 +161,32 @@ static atu_map_entry_t atu_rpss_tower_maps[NUM_RPSS] = {
  * This function informs HSP to enable the DDRSS and CDEDSS towers, the flags in the message
  * is used to inform HSP on whether isolation is enabled or not
  *
- * @param[in] p_mbox_prim_ctx - Pointer to mailbox primitive context structure
+ * @param[in] icc_ctx - Pointer to icc base context structure
  * @param[in] isolation_flag - indicates if accelerator isolation is enabled (0x0) or not (0x4)
  *
  * @retval void
  */
-static void hsp_send_recv_post_scp_init_tower_config(FPFW_MBX_PRIMITIVE_CTX* p_mbox_prim_ctx, uint8_t isolation_flag)
+static void hsp_send_recv_post_scp_init_tower_config(fpfw_icc_base_ctx_t* icc_ctx, uint8_t isolation_flag)
 {
-    kng_hsp_mailbox_msg send_msg = {.header.cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ,
-                                    .header.flags = isolation_flag};
+    size_t recv_msg_size_bytes = 0;
+    kng_hsp_mailbox_msg msg = {};
+    msg.header.cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ;
+    msg.header.flags = isolation_flag;
 
-    kng_hsp_mailbox_msg recv_msg;
-
-    FPFW_MBX_PAYLOAD send_payload = {.payloadBuffer = &send_msg, .payloadSize = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t))};
-    FPFW_MBX_PAYLOAD receive_payload = {.payloadBuffer = &recv_msg,
-                                        .payloadSize = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t))};
-
-    while (FpFwMailboxSend(p_mbox_prim_ctx, &send_payload) != FPFW_MBX_SUCCESS)
-    {
-    }
-
-    printf("HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ Sent to HSP\n");
-
-    while (FpFwMailboxReceive(p_mbox_prim_ctx, &receive_payload) != FPFW_MBX_SUCCESS)
-    {
-    }
+    printf("Prepare to send HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ to HSP\n");
+    //! Send the message to HSP & get response, blocking call
+    fpfw_status_t icc_status =
+        fpfw_icc_base_send_recv_sync(icc_ctx, &msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
     printf("HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_RSP received from HSP\n");
 
-    BUG_ASSERT(recv_msg.header.cmd == HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_RSP);
-    BUG_ASSERT(recv_msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+    //! Verify sync return status & response message
+    BUG_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
+    BUG_ASSERT(recv_msg_size_bytes > 0);
+    BUG_ASSERT(msg.header.cmd == HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_RSP);
+    BUG_ASSERT(msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
 }
 
-void tower_init(uint8_t die_num, FPFW_MBX_PRIMITIVE_CTX* p_mbox_prim_ctx)
+void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 {
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
 
@@ -299,7 +294,7 @@ void tower_init(uint8_t die_num, FPFW_MBX_PRIMITIVE_CTX* p_mbox_prim_ctx)
     // For now, assume isolation is not enabled for now and configure the CDESS tower for isolation disabled
     if (system_info_is_hsp_present())
     {
-        hsp_send_recv_post_scp_init_tower_config(p_mbox_prim_ctx, HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED);
+        hsp_send_recv_post_scp_init_tower_config(icc_ctx, HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED);
         // Not sure if we need to add more variables to the tower struct and keep track of it
     }
 

@@ -12,8 +12,6 @@
 
 extern "C" {
 #include <fpfw_icc_base.h>
-#include <fpfw_icc_base_i.h> // for fpfw_icc_base_ctx_t
-#include <fpfw_mbox_icc_transport.h>
 #include <fpfw_init.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -28,11 +26,8 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_tower_cfg;
-static fpfw_icc_base_ctx_t icc_ctx;
-static fpfw_icc_base_config icc_cfg;
-static DFWK_INTERFACE_HEADER transport_interface;
-static PDFWK_DEVICE_HEADER owning_device;
-static fpfw_mbox_icc_transport_device_t transport_device_context;
+static fpfw_icc_base_ctx_t* icc_ctx = nullptr;
+static uint32_t dummy_icc_ctx = 0;
 
 /*------------- Functions ----------------*/
 
@@ -60,12 +55,9 @@ TEST_FUNCTION(test_tower_init, nullptr, nullptr)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
-
+    
     // Setting up the ICC flow
-    owning_device = (PDFWK_DEVICE_HEADER) &transport_device_context;
-    transport_interface.OwningDevice = owning_device;
-    icc_cfg.transport_interface = &transport_interface;
-    icc_ctx.icc_cfg = icc_cfg;
+    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
 
     expect_string(__wrap_fpfw_init_get_handle, id, "icc_hspmbx");
     expect_function_call(__wrap_fpfw_init_get_handle);

@@ -11,7 +11,9 @@
 #include <CMockaWrapper.h>
 
 extern "C" {
+#include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <fpfw_init.h>
+#include <icc_cli.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -26,8 +28,9 @@ extern fpfw_init_component_t _fpfw_component_icc_cli;
 //
 // Mocks
 //
-void __wrap_icc_cli_init()
+void __wrap_icc_cli_init(icc_cli_init_params_t *params)
 {
+    FPFW_UNUSED(params);
     function_called();
 }
 //

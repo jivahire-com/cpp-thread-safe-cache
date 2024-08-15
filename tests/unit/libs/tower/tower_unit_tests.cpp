@@ -11,6 +11,7 @@
 #include <CMockaWrapper.h> // for expect_value, check_expected, CmockaWra...
 
 extern "C" {
+#include <fpfw_icc_base.h> // for fpfw_icc_base_ctx_t
 #include <idsw_kng.h>
 #include <hsp_firmware_headers.h>
 #include <kng_soc_constants.h>
@@ -34,7 +35,9 @@ TEST_FUNCTION(test_tower_sequence_init_die0_silicon, nullptr, nullptr)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)0;
-    FPFW_MBX_PRIMITIVE_CTX mbx_ctx;
+    uint32_t dummy_icc_ctx = 0;
+    fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_system_info_is_hsp_present, false);
 
@@ -81,14 +84,16 @@ TEST_FUNCTION(test_tower_sequence_init_die0_silicon, nullptr, nullptr)
     expect_function_call(__wrap_tower_sequence_configure_towers);
 
     // Call API under test
-    tower_init(test_die, (FPFW_MBX_PRIMITIVE_CTX *) &mbx_ctx);
+    tower_init(test_die, icc_ctx);
 }
 
 TEST_FUNCTION(test_tower_sequence_init_die1_silicon, nullptr, nullptr)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
-    FPFW_MBX_PRIMITIVE_CTX mbx_ctx;
+    uint32_t dummy_icc_ctx = 0;
+    fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_system_info_is_hsp_present, false);
 
@@ -135,14 +140,16 @@ TEST_FUNCTION(test_tower_sequence_init_die1_silicon, nullptr, nullptr)
     expect_function_call(__wrap_tower_sequence_configure_towers);
 
     // Call API under test
-    tower_init(test_die, (FPFW_MBX_PRIMITIVE_CTX *) &mbx_ctx);
+    tower_init(test_die, icc_ctx);
 }
 
 TEST_FUNCTION(test_tower_sequence_init_die0_fpga, nullptr, nullptr)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)0;
-    FPFW_MBX_PRIMITIVE_CTX mbx_ctx;
+    uint32_t dummy_icc_ctx = 0;
+    fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return_always(__wrap_system_info_is_hsp_present, false);
 
@@ -188,14 +195,16 @@ TEST_FUNCTION(test_tower_sequence_init_die0_fpga, nullptr, nullptr)
     expect_function_call(__wrap_tower_sequence_configure_towers);
 
     // Call API under test
-    tower_init(test_die, (FPFW_MBX_PRIMITIVE_CTX *) &mbx_ctx);
+    tower_init(test_die, icc_ctx);
 }
 
 TEST_FUNCTION(test_tower_sequence_init_die1_fpga, nullptr, nullptr)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
-    FPFW_MBX_PRIMITIVE_CTX mbx_ctx;
+    uint32_t dummy_icc_ctx = 0;
+    fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return_always(__wrap_system_info_is_hsp_present, false);
 
@@ -239,14 +248,16 @@ TEST_FUNCTION(test_tower_sequence_init_die1_fpga, nullptr, nullptr)
     expect_function_call(__wrap_tower_sequence_configure_towers);
 
     // Call API under test
-    tower_init(test_die, (FPFW_MBX_PRIMITIVE_CTX *) &mbx_ctx);
+    tower_init(test_die, icc_ctx);
 }
 
 TEST_FUNCTION(test_tower_sequence_init_die0_svp, nullptr, nullptr)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)0;
-    FPFW_MBX_PRIMITIVE_CTX mbx_ctx;
+    uint32_t dummy_icc_ctx = 0;
+    fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return_always(__wrap_system_info_is_hsp_present, false);
 
@@ -293,14 +304,16 @@ TEST_FUNCTION(test_tower_sequence_init_die0_svp, nullptr, nullptr)
     expect_function_call(__wrap_tower_sequence_configure_towers);
 
     // Call API under test
-    tower_init(test_die, (FPFW_MBX_PRIMITIVE_CTX *) &mbx_ctx);
+    tower_init(test_die, icc_ctx);
 }
 
 TEST_FUNCTION(test_tower_sequence_init_die1_svp, nullptr, nullptr)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
-    FPFW_MBX_PRIMITIVE_CTX mbx_ctx;
+    uint32_t dummy_icc_ctx = 0;
+    fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return_always(__wrap_system_info_is_hsp_present, false);
 
@@ -344,14 +357,16 @@ TEST_FUNCTION(test_tower_sequence_init_die1_svp, nullptr, nullptr)
     expect_function_call(__wrap_tower_sequence_configure_towers);
 
     // Call API under test
-    tower_init(test_die, (FPFW_MBX_PRIMITIVE_CTX *) &mbx_ctx);
+    tower_init(test_die, icc_ctx);
 }
 
 TEST_FUNCTION(test_tower_sequence_init_die0_invalid_platform, nullptr, nullptr)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)0;
-    FPFW_MBX_PRIMITIVE_CTX mbx_ctx;
+    uint32_t dummy_icc_ctx = 0;
+    fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
+
     will_return_always(__wrap_idsw_get_platform_sdv, 0x100);
     will_return_always(__wrap_system_info_is_hsp_present, false);
 
@@ -393,14 +408,16 @@ TEST_FUNCTION(test_tower_sequence_init_die0_invalid_platform, nullptr, nullptr)
     expect_function_call(__wrap_tower_sequence_configure_towers);
 
     // Call API under test
-    tower_init(test_die, (FPFW_MBX_PRIMITIVE_CTX *) &mbx_ctx);
+    tower_init(test_die, icc_ctx);
 }
 
 TEST_FUNCTION(test_tower_sequence_init_die1_invalid_platform, nullptr, nullptr)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
-    FPFW_MBX_PRIMITIVE_CTX mbx_ctx;
+    uint32_t dummy_icc_ctx = 0;
+    fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
+
     will_return_always(__wrap_idsw_get_platform_sdv, 0x100);
     will_return_always(__wrap_system_info_is_hsp_present, false);
 
@@ -442,33 +459,29 @@ TEST_FUNCTION(test_tower_sequence_init_die1_invalid_platform, nullptr, nullptr)
     expect_function_call(__wrap_tower_sequence_configure_towers);
 
     // Call API under test
-    tower_init(test_die, (FPFW_MBX_PRIMITIVE_CTX *) &mbx_ctx);
+    tower_init(test_die, icc_ctx);
 }
 
 TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die0_svp, nullptr, nullptr)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)0;
-    FPFW_MBX_PRIMITIVE_CTX mbx_ctx;
-    kng_hsp_mailbox_msg send_msg = {.header = {
+    uint32_t dummy_icc_ctx = 0;
+    fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
+    kng_hsp_mailbox_msg msg = {.header = {
         .cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ,
         .flags = HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED
     }};
-    FPFW_MBX_PAYLOAD send_payload = {.payloadBuffer = &send_msg, .payloadSize = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t))};
+    size_t output_recv_bytes = 0;
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return_always(__wrap_system_info_is_hsp_present, true);
 
-    expect_any_always(__wrap_FpFwMailboxSend, pMbxCtx);
-    expect_any_always(__wrap_FpFwMailboxSend, pMessage);
-    expect_any_always(__wrap_FpFwMailboxSend, pMessage->payloadBuffer);
-    expect_value_count(__wrap_FpFwMailboxSend, pMessage->payloadSize, send_payload.payloadSize, 1);
-
-    expect_value_count(__wrap_FpFwMailboxSend, cmd, (send_msg.header.cmd & 0xFFFF), 1);
-    expect_value_count(__wrap_FpFwMailboxSend, flags, send_msg.header.flags, 1);
-
-    will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
-    will_return(__wrap_FpFwMailboxReceive, FPFW_MBX_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_send_recv_sync, icc_ctx, icc_ctx);
+    expect_memory(__wrap_fpfw_icc_base_send_recv_sync, payload_buffer, &msg, sizeof(msg));
+    expect_memory(__wrap_fpfw_icc_base_send_recv_sync, output_recv_bytes, &output_recv_bytes, sizeof(output_recv_bytes));
+    expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, sizeof(msg));
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
@@ -513,35 +526,29 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die0_svp, nullptr, nullptr)
     expect_function_call(__wrap_tower_sequence_configure_towers);
 
     // Call API under test
-    tower_init(test_die, (FPFW_MBX_PRIMITIVE_CTX *) &mbx_ctx);
+    tower_init(test_die, icc_ctx);
 }
 
 TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die1_svp, nullptr, nullptr)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
-    FPFW_MBX_PRIMITIVE_CTX mbx_ctx;
-    kng_hsp_mailbox_msg send_msg = {.header = {
+    uint32_t dummy_icc_ctx = 0;
+    fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
+    kng_hsp_mailbox_msg msg = {.header = {
         .cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ,
         .flags = HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED
     }};
-    FPFW_MBX_PAYLOAD send_payload = {.payloadBuffer = &send_msg, .payloadSize = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t))};
+    size_t output_recv_bytes = 0;
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return_always(__wrap_system_info_is_hsp_present, true);
 
-    expect_any_always(__wrap_FpFwMailboxSend, pMbxCtx);
-    expect_any_always(__wrap_FpFwMailboxSend, pMessage);
-    expect_any_always(__wrap_FpFwMailboxSend, pMessage->payloadBuffer);
-    expect_value_count(__wrap_FpFwMailboxSend, pMessage->payloadSize, send_payload.payloadSize, 2);
-
-    expect_value_count(__wrap_FpFwMailboxSend, cmd, (send_msg.header.cmd & 0xFFFF), 2);
-    expect_value_count(__wrap_FpFwMailboxSend, flags, send_msg.header.flags, 2);
-
-    will_return(__wrap_FpFwMailboxSend, FPFW_MBX_UNINITIALIZED);
-    will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
-    will_return(__wrap_FpFwMailboxReceive, FPFW_MBX_UNINITIALIZED);
-    will_return(__wrap_FpFwMailboxReceive, FPFW_MBX_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_send_recv_sync, icc_ctx, icc_ctx);
+    expect_memory(__wrap_fpfw_icc_base_send_recv_sync, payload_buffer, &msg, sizeof(msg));
+    expect_memory(__wrap_fpfw_icc_base_send_recv_sync, output_recv_bytes, &output_recv_bytes, sizeof(output_recv_bytes));
+    expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, sizeof(msg));
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
@@ -583,6 +590,6 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die1_svp, nullptr, nullptr)
     expect_function_call(__wrap_tower_sequence_configure_towers);
 
     // Call API under test
-    tower_init(test_die, (FPFW_MBX_PRIMITIVE_CTX *) &mbx_ctx);
+    tower_init(test_die, icc_ctx);
 }
 }

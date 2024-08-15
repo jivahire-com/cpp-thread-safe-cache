@@ -16,7 +16,7 @@
 /*------------- Functions ----------------*/
 
 // TODO: Initialize MPU regions.
-FPFW_INIT_COMPONENT(mpu)
+FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
 {
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

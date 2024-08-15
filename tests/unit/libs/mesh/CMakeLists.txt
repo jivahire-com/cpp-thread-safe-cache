@@ -21,7 +21,6 @@ target_link_libraries(${TARGET}
         ms::lib::mesh
         silibs_platform
         ms::lib::hsp_firmware_headers
-        fwlib.lib.mboxPrimitives
         fwlib.service.iccBase
 )
 
@@ -44,7 +43,6 @@ mock_target(${TARGET}
     idhw_is_single_die_boot_en
     d2dss_sequence
     cmn800_sequence_svp_updates
-    FpFwMailboxSend
-    FpFwMailboxReceive
+    fpfw_icc_base_send_recv_sync
     system_info_is_hsp_present
 )

@@ -8,11 +8,11 @@
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwAssert.h>     // for FPFW_RUNTIME_ASSERT
-#include <MboxPrimitives.h> // for FPFW_MBX_PAYLOAD, FpFwMailbox...
+#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <bug_check.h>
 #include <cmn800_sequence.h> // for cmn800_sequence, d2dss_sequence, cmn8...
 #include <cmn_config.h>      // for CMN800_CONFIG_CONFIG
+#include <fpfw_icc_base.h>   // for fpfw_icc_base_ctx_t
 #include <hsp_firmware_headers.h>
 #include <idhw.h>              // for idhw_is_single_die_boot_en
 #include <idsw.h>              // for idsw_get_platform_sdv,
@@ -26,37 +26,32 @@
 
 /*------------- Defines -----------------*/
 bool dual_die_boot = false; // ADO: 1825901 Deprecate after ADO is implemented by SVP
-static FPFW_MBX_PRIMITIVE_CTX* s_mail_box_context;
+static fpfw_icc_base_ctx_t* s_mbx_icc_ctx;
 
 /*------------- Functions ----------------*/
 static void hsp_send_recv_enable_smmu()
 {
-    kng_hsp_mailbox_msg send_msg = {
+    size_t recv_msg_size_bytes = 0;
+    kng_hsp_mailbox_msg msg = {
         .header.cmd = HSP_MAILBOX_CMD_ENABLE_SMMU_ACCESS_REQ,
     };
 
-    kng_hsp_mailbox_msg recv_msg;
+    //! Send the message to HSP & get response, blocking call
+    fpfw_status_t icc_status =
+        fpfw_icc_base_send_recv_sync(s_mbx_icc_ctx, &msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
 
-    FPFW_MBX_PAYLOAD send_payload = {.payloadBuffer = &send_msg, .payloadSize = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t))};
-    FPFW_MBX_PAYLOAD receive_payload = {.payloadBuffer = &recv_msg,
-                                        .payloadSize = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t))};
-
-    while (FpFwMailboxSend(s_mail_box_context, &send_payload) != FPFW_MBX_SUCCESS)
-    {
-    }
-
-    while (FpFwMailboxReceive(s_mail_box_context, &receive_payload) != FPFW_MBX_SUCCESS)
-    {
-    }
-    BUG_ASSERT(recv_msg.header.cmd == HSP_MAILBOX_CMD_ENABLE_SMMU_ACCESS_RSP);
-    BUG_ASSERT(recv_msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+    //! Verify sync return status & response message
+    BUG_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
+    BUG_ASSERT(recv_msg_size_bytes > 0);
+    BUG_ASSERT(msg.header.cmd == HSP_MAILBOX_CMD_ENABLE_SMMU_ACCESS_RSP);
+    BUG_ASSERT(msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
 }
 
-void mesh_init(uint8_t die_num, FPFW_MBX_PRIMITIVE_CTX* hsp_mbx_ctx)
+void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 {
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
 
-    s_mail_box_context = hsp_mbx_ctx;
+    s_mbx_icc_ctx = icc_ctx;
 
     int sts = 0x0;
 

@@ -20,12 +20,8 @@ target_link_libraries(${TARGET}
     ms::cmocka::testrunner
     ms::lib::mesh
     silibs_platform
-    fwlib.driver.mboxIccTransport
     fwlib.service.iccBase
 )
-
-# @todo remove after completing task https://azurecsi.visualstudio.com/Dev/_workitems/edit/1933312/
-target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)
 
 # Generic ports implmented within this project
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")

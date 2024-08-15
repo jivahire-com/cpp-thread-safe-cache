@@ -61,4 +61,10 @@ void rpss_req_completion_cb(PDFWK_ASYNC_REQUEST_HEADER req, void* ctx_ref)
         printf("%s: PCIe RPSS: %d | RP Index: %d | tx_queue_send error - %d\n", __func__, async_req->rpss_index, cmpl.rp_index, status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
+
+    /*
+     * Send new WAIT_FOR_EVENT async request to the Driver becasue we always have
+     * MAX_PENDING_WAIT_FOR_EVENT_PER_RP pending requests
+     */
+    send_async_wait_for_event(ctx, async_req->rp_index, 1);
 }

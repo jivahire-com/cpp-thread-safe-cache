@@ -77,3 +77,11 @@ pcie_ss_entity_t* __wrap_send_sync_get_rpss_entity(uint8_t rpss_idx)
     (void)rpss_idx;
     return mock_ptr_type(pcie_ss_entity_t*);
 }
+
+/*
+void __wrap_end_async_wait_for_event(pcie_manager_context_t* ctx, uint8_t rp_idx, uint8_t num_event)
+{
+    (void)(rp_idx);
+    (void)(num_event);
+
+}*/

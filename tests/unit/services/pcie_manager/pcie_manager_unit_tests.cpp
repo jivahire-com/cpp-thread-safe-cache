@@ -27,7 +27,8 @@ extern "C" {
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
-
+#define TEST_COMPLETION_ROUTINE ((DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE)0x00ef6430)
+#define TEST_COMPLETION_CONTEXT ((void*)0x00f36000)
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -264,10 +265,24 @@ TEST_FUNCTION(config_service_thread_success_die1, NULL, NULL)
 }
 
 /* Tests to validate completion request handling */
-TEST_FUNCTION(test_completion_callback, NULL, NULL)
+TEST_FUNCTION(test_completion_callback, NULL, NULL) // abe
 {
     auto& async_req = ctx.async_req[0];
     async_req.status = SILIBS_E_TIMEOUT;
+
+    mock_pcie_ent.id = (RPSS_INSTANCE)0;
+    mock_pcie_ent.rps[0].enabled = true;
+    mock_pcie_ent.rps[1].enabled = false;
+    mock_pcie_ent.rps[2].enabled = false;
+    mock_pcie_ent.rps[3].enabled = false;
+    will_return(__wrap_send_sync_get_rpss_entity, &mock_pcie_ent);
+
+    expect_any(__wrap_DfwkAsyncRequestInititalize, Request);
+    expect_any(__wrap_DfwkAsyncRequestSetCompletionRoutine, Request);
+    expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionRoutine, rpss_req_completion_cb);
+    expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionContext, &ctx);
+    expect_value(__wrap_DfwkInterfaceSendAsync, Interface, &ctx.iface->header);
+    expect_any(__wrap_DfwkInterfaceSendAsync, Request);
 
     /* Setup worker queue expectations */
     expect_value(__wrap__txe_queue_send, queue_ptr, &(ctx.work_queue));

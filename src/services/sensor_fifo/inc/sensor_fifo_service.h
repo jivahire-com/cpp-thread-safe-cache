@@ -97,7 +97,7 @@ typedef struct
  *
  */
 typedef struct __attribute__((packed)) {
-    uint64_t time_stamp;
+    uint64_t timestamp;
     uint16_t sensor_temp[NUMBER_OF_SOC_TEMP_SENSORS];
     uint8_t  padding[2]; // needs to be multiple of QUADWORD_SIZE
 } soc_pvt_temp_t;
@@ -107,7 +107,7 @@ typedef struct __attribute__((packed)) {
  *
  */
 typedef struct __attribute__((packed)) {
-    uint64_t time_stamp;
+    uint64_t timestamp;
     uint16_t sensor_voltage[NUMBER_OF_SOC_VOLT_MON_SENSORS];
     uint8_t  padding[4]; // needs to be multiple of QUADWORD_SIZE
 } soc_pvt_voltage_t;
@@ -117,7 +117,7 @@ typedef struct __attribute__((packed)) {
  *
  */
 typedef struct __attribute__((packed)) {
-    uint64_t time_stamp;
+    uint64_t timestamp;
     uint16_t vr_temp[MAX_NUM_OF_VR_RAILS];
 } vr_temp_t;
 
@@ -126,7 +126,7 @@ typedef struct __attribute__((packed)) {
  *
  */
 typedef struct __attribute__((packed)) {
-    uint64_t time_stamp;
+    uint64_t timestamp;
     uint16_t vr_current[MAX_NUM_OF_VR_RAILS];
     uint16_t vr_voltage[MAX_NUM_OF_VR_RAILS];
 } vr_current_t;

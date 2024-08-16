@@ -1,0 +1,461 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+/**
+ * @file telmain_rim.c
+ * Non dfwk APIs for telemetry run time information manager
+ * capturing all sensor data and placed into respective runtime
+ * telemetry resources
+ */
+
+/*------------- Includes -----------------*/
+#include "telmain_i.h" // internal APIs
+
+#include <assert.h>              // IWYU pragma: keep for static_assert
+#include <fpfw_status.h>         // for FPFW_STATUS_SUCCEEDED, fpf...
+#include <pwr_telemetry_data.h>  // for Power telemetry data structures
+#include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
+#include <stdbool.h>             // for false, true
+#include <stddef.h>              // for size_t
+#include <stdint.h>              // for uint8_t, uint16_t
+
+/*-- Symbolic Constant Macros (defines) --*/
+
+/*------------- Typedefs -----------------*/
+
+typedef struct
+{
+    uint8_t throttling_type;
+    uint8_t event;
+} throttling_properties_t;
+
+/*-------- Function Prototypes -----------*/
+
+/*-- Declarations (Statics and globals) --*/
+
+// ** May need to move to ARSM, ADO task
+//  https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1978713
+core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
+tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
+soc_runtime_info_t soc_info;
+
+uint16_t core_pwr_sample[NUMBER_OF_CORES_PER_DIE] = {0};
+uint32_t pstate_accum[NUMBER_OF_CORES_PER_DIE][NUMBER_OF_PSTATES] = {0};
+
+static throttling_properties_t throttling_prop[] = {
+    // throttling_type              // event                // Status from HAS Document index value
+    {THROTTLING_TYPE_NONE, THROTTLING_EV_NONE},       //   b0000 - None
+    {THROTTLING_TYPE_CURRENT, THROTTLING_START},      //   b0001 - Current Throttling Start
+    {THROTTLING_TYPE_TEMPERATURE, THROTTLING_START},  //   b0010 - Temperature Throttling Start
+    {THROTTLING_TYPE_RACK_LIMIT, THROTTLING_START},   //   b0011 - Rack Limit Throttling Start
+    {THROTTLING_TYPE_VR_HOT, THROTTLING_START},       //   b0100 - Sys_ForcePmin Throttling Start
+    {THROTTLING_TYPE_ADAPTIVE_CLK, THROTTLING_START}, //   b0101 - Adaptive Clocking Throttling Start
+    {THROTTLING_TYPE_CURRENT, THROTTLING_END},        //   b0110 - Current Throttling End
+    {THROTTLING_TYPE_TEMPERATURE, THROTTLING_END},    //   b0111 - Temperature Throttling End
+    {THROTTLING_TYPE_RACK_LIMIT, THROTTLING_END},     //   b1000 - Rack Limit Throttling End
+    {THROTTLING_TYPE_VR_HOT, THROTTLING_END},         //   b1001 - Sys_ForcePmin Throttling End
+    {THROTTLING_TYPE_ADAPTIVE_CLK, THROTTLING_END},   //   b1010 - Adaptive Clocking Throttling End
+};
+
+/*------------- Functions ----------------*/
+
+// Based on the HAS, there are 3 temperature sensors for each Core in each tile
+int16_t find_hot_core_temp(int16_t temp0, int16_t temp1, int16_t temp2)
+{
+    int16_t inst_temp = (temp0 > temp1) ? temp0 : temp1;
+    inst_temp = (inst_temp > temp2) ? inst_temp : temp2;
+    return inst_temp;
+}
+
+int telmain_log_tile_temperature(tile_temp_t* temperature_data, uint8_t tile_index)
+{
+    // For all details on the reference how this code was implemented, please
+    // refer to the Power Management, Power Telemetry and Sensor Hardware Architecture Specifications (HAS)
+
+    // Check first if our tile number is correct
+    if (tile_index >= NUMBER_OF_TILES_PER_DIE)
+    {
+        return TELMAIN_STATUS_ERROR;
+    }
+
+    // Since this is a tile temperature, log the temperature where the tile temp belongs for the core
+    uint8_t core_id = tile_index * 2;
+
+    // First check for Temp Valid bit to indicate whether we are using the Beat 3 clock
+    // off the Tile Temp Telemetry. If the temp valid indicator says 0 or not valid
+    // we should not be reading the other strides, just read the first data stride that
+    // contains the max temperature id and max temp of the tile. Temp valid or not
+    // we must read the max id and max tile temp
+    if (temperature_data->temp0.temp_valid == 1)
+    {
+
+        // **TODO, modify this logging solution to account for the coefficients from the fuses
+        // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1978733
+
+        // Check between which is bigger to log for tile core0
+        int16_t inst_temp_0 = temperature_data->temp1.temp0;
+        int16_t inst_temp_1 = temperature_data->temp1.temp1;
+        int16_t inst_temp_2 = temperature_data->temp1.temp2;
+        core[core_id].temperature.instantaneous = find_hot_core_temp(inst_temp_0, inst_temp_1, inst_temp_2);
+
+        // Check between which is bigger to log for tile core1
+        inst_temp_0 = temperature_data->temp1.temp3;
+        inst_temp_1 = temperature_data->temp2.temp4;
+        inst_temp_2 = temperature_data->temp2.temp5;
+        core[core_id + 1].temperature.instantaneous = find_hot_core_temp(inst_temp_0, inst_temp_1, inst_temp_2);
+
+        // Log all the HNF Temperature
+        soc_info.hnf[core_id].temperature.instantaneous = temperature_data->temp2.temp6;
+        soc_info.hnf[core_id + 1].temperature.instantaneous = temperature_data->temp2.temp7;
+    }
+
+    // Also store the Max tile temperatures and its ID
+    tile[tile_index].current_max_temperature = temperature_data->temp0.max_temp;
+    tile[tile_index].current_max_id = temperature_data->temp0.max_id;
+
+    return 0;
+}
+
+int telmain_log_tile_voltage(tile_voltage_t* voltage_data, uint8_t tile_index)
+{
+    // For all details on the reference how this code was implemented, please
+    // refer to the Power Management, Power Telemetry and Sensor Hardware Architecture Specifications (HAS)
+
+    // Check first if our tile number is correct
+    if (tile_index >= NUMBER_OF_TILES_PER_DIE)
+    {
+        return TELMAIN_STATUS_ERROR;
+    }
+
+    // Since this is a tile voltage, log the core where the tile voltage belongs
+    uint8_t core_id = tile_index * 2;
+    core[core_id].voltage.instantaneous = DOUT2MILLIVOLTS(voltage_data->data.vcore0);
+    core[core_id + 1].voltage.instantaneous = DOUT2MILLIVOLTS(voltage_data->data.vcore1);
+
+    // Log the tile vcpu and vsys
+    tile[tile_index].vcpu.instantaneous = DOUT2MILLIVOLTS(voltage_data->data.vcpu);
+    tile[tile_index].vsys.instantaneous = DOUT2MILLIVOLTS(voltage_data->data.vsys);
+    return 0;
+}
+
+int telmain_log_core_current(core_current_t* current_data, uint8_t core_index)
+{
+    // Each index here refers to the core, check if correct
+    if (core_index >= NUMBER_OF_CORES_PER_DIE)
+    {
+        return TELMAIN_STATUS_ERROR;
+    }
+
+    uint8_t core_id = core_index;
+    core[core_id].current_pkt_timestamp = current_data->timestamp;
+    if (current_data->timestamp == 0)
+    {
+        return TELMAIN_STATUS_SUCCESS;
+    }
+
+    // Get the current conversions. Conversion factors for the currents needs to be fine tuned
+    //   by the SVT and Silicon team.
+    current_t current;
+    current.min = (uint16_t)(current_data->data.min * CORE_CURRENT_CONVERSION_FACTOR);
+    current.average = (uint16_t)(current_data->data.avg * CORE_CURRENT_CONVERSION_FACTOR);
+    current.max = (uint16_t)(current_data->data.max * CORE_CURRENT_CONVERSION_FACTOR);
+
+    // check for Minimum currents, where the initial minimum is 0
+    if (core[core_id].current.min > current.min || core[core_id].current.min == 0)
+    {
+        core[core_id].current.min = current.min;
+    }
+
+    // check for Maximum currents
+    if (core[core_id].current.max < current.max)
+    {
+        core[core_id].current.max = current.max;
+    }
+
+    // Check for the change bit
+    if (current_data->data.change == 1)
+    {
+        core[core_id].flags.id_change_bit = 1;
+        core[core_id].power_index = 0;
+        core_pwr_sample[core_id] = 0;
+        core[core_id].pstate_timestamp = current_data->timestamp;
+    }
+    else
+    {
+        // Stuff the power readings here
+        if (core[core_id].power_index < MAX_NUMBER_POWER_SAMPLE)
+        {
+            // We will keep up to a number of samples defined (currenly 500)
+            core_pwr_sample[core_id] += current_data->data.pwr;
+            core[core_id].power_index++;
+        }
+
+        // NOTE: Based on pioneer throttling scenarios there are corner cases on the
+        //   SCF RAM Current Telemetry packet that doesnt indicate the change bit set but
+        //   a Pstate change happens at the end of the Current telemetry sampling. For this
+        //   situation, we consider the power measurement to be valid and should belong to
+        //   the previous pstate before the change. On situations where the core is throttling,
+        //   pstate change packets may not appear or be delayed, while current telemetry may
+        //   indicate a change on pstate first. - We may revisit this after the real silicon for
+        //   KNG comes in https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1753817
+        //
+        if (core[core_id].current_tel_pstate != current_data->data.pstate)
+        {
+            core[core_id].flags.pstate_change = 1;
+            core[core_id].pstate_timestamp = current_data->timestamp;
+        }
+    }
+
+    // The average current reported from SCF is the average of the span of time
+    //   of measurement window (1mS) therefore, we will treat this as the
+    //   instantaneous current @ 1mS
+
+    core[core_id].current.instantaneous = current.average;
+
+    // Log the Ldo Voltage at this instant
+    core[core_id].ldo_voltage = current_data->data.volt;
+
+    // Got the current telemetry pstate
+    core[core_id].current_tel_pstate = current_data->data.pstate;
+
+    // Log the average power of the core in this instant
+    core[core_id].current_mpam_id = current_data->data.mpam_id_low;
+
+    return TELMAIN_STATUS_SUCCESS;
+}
+
+int update_core_pstate_timestamps(uint8_t core_id, uint8_t pstate, uint64_t timestamp)
+{
+    // Update the residency of the previous pstate
+    if (core[core_id].pstate_timestamp != 0 && core[core_id].pstate_timestamp < timestamp)
+    {
+        //  obtain the time stamp difference @ uS
+        uint64_t timestamp_diff = (timestamp - core[core_id].pstate_timestamp) / 1000;
+        core[core_id].pstate[pstate].residency += timestamp_diff;
+        pstate_accum[core_id][pstate] += timestamp_diff;
+    }
+
+    core[core_id].pstate_timestamp = timestamp;
+    return TELMAIN_STATUS_SUCCESS;
+}
+
+int telmain_log_core_pstate(pstate_telem_t* pstate_telemetry)
+{
+    // Power information per P State Per Core is updated based on current
+    // telemetry (which also provides power information). See the update
+    // in telmain_chk_upd_pstate().
+
+    // Convert Sensor Data into Pstate Entry
+    uint8_t core_id = pstate_telemetry->data.core;
+    if (core_id >= NUMBER_OF_CORES_PER_DIE)
+    {
+        return TELMAIN_STATUS_ERROR;
+    }
+
+    // Check for throttling indication first. If System is throttling, do not
+    // take snapshots of Pstates and Cstates
+
+    if (pstate_telemetry->data.throttle_status == NO_THROTTLING)
+    {
+        // check to log the Core Pstate if there are changes
+        if (pstate_telemetry->data.pstate != core[core_id].current_pstate)
+        {
+            core[core_id].current_pstate = pstate_telemetry->data.pstate;
+            core[core_id].pstate[pstate_telemetry->data.pstate].entry_count++;
+            core[core_id].pstate_timestamp = pstate_telemetry->timestamp;
+        }
+
+        // Process other task only if we are not throttling
+        if (core[core_id].flags.throttling_start == 0)
+        {
+
+            // **Place holder for processing cstate latency here
+            // https://dev.azure.com/AzureCSI/Dev/_queries/edit/1755548/?triage=true
+            // chk_and_update_cstate(core_id, pstate_telemetry->data.cstate, pstate_telemetry->timestamp);
+
+            //! reset the throttling type to no throttling
+            core[core_id].throttling_type = THROTTLING_TYPE_NONE;
+            core[core_id].throttling_event = THROTTLING_EV_NONE;
+            core[core_id].nominal_pstate = pstate_telemetry->data.pstate;
+        }
+
+        // Save the current plimit
+        core[core_id].current_plimit = pstate_telemetry->data.plimit;
+    }
+    else
+    {
+        THROTTLING_STATUS prop_index = pstate_telemetry->data.throttle_status;
+        core[core_id].throttling_type = throttling_prop[prop_index].throttling_type;
+        core[core_id].throttling_event = throttling_prop[prop_index].event;
+
+        // Check for throttle events start
+        if (pstate_telemetry->data.throttle_status != core[core_id].throttling_status)
+        {
+            // Store the current status for throttling information
+
+            core[core_id].flags.throttling_ev_change = 1;
+
+            // If there is a throttling end event, process it to calculate the following:
+            //    1. Update of the cores throttking residency according to the throttling type
+            //    2. Update the runtime throttling counter which is used for the MPAM throttling calculation and update
+            //    3. Store the latest core max pstate and average pstate during throttling.
+            if (prop_index >= CURRENT_THROTTLING_END)
+            {
+                if (core[core_id].throttle_timestamp != 0 && pstate_telemetry->timestamp > core[core_id].throttle_timestamp)
+                {
+                    // Get the Throttling time stamp now and subtrack from previous
+                    uint64_t timestamp_now = (pstate_telemetry->timestamp - core[core_id].throttle_timestamp) / 1000;
+
+                    // This is the per core and per type throttling residency in uS
+                    core[core_id].throttle_info[prop_index - CURRENT_THROTTLING_END].residency += timestamp_now;
+
+                    // This throttling counter will be used by the MPAM for VM Throttling
+                    core[core_id].throttling_counter += timestamp_now;
+                }
+                core[core_id].throttle_info[prop_index - CURRENT_THROTTLING_END].exit_count++;
+
+                // Record the current pstate
+                core[core_id].current_pstate = pstate_telemetry->data.pstate;
+
+                // Indicate that the throttling have at least ended once
+                core[core_id].flags.throttling_end = 1;
+                core[core_id].flags.throttling_start = 0;
+            }
+            else
+            {
+                core[core_id].throttle_info[prop_index - 1].entry_count++;
+
+                // Indicate that the throttling start
+                core[core_id].flags.throttling_start = 1;
+                core[core_id].throttle_timestamp = pstate_telemetry->timestamp;
+            }
+        }
+
+        if (core[core_id].throttling_type == THROTTLING_TYPE_RACK_LIMIT)
+        {
+            // Check if there was a priority id change
+            if (core[core_id].throttling_priority_id != pstate_telemetry->data.vm_throttle_pri)
+            {
+                core[core_id].flags.rack_priority_change = 1;
+                core[core_id].throttling_priority_id = pstate_telemetry->data.vm_throttle_pri;
+            }
+        }
+    }
+
+    //! set the throttling status
+    core[core_id].throttling_status = pstate_telemetry->data.throttle_status;
+    return TELMAIN_STATUS_SUCCESS;
+}
+
+void telmain_log_vr_temp(vr_temp_t* vr_temperature)
+{
+    // Extract VR Temperature entries for all VR Rails
+    for (uint8_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
+    {
+        soc_info.rail[vr_index].temperature.instantaneous = vr_temperature->vr_temp[vr_index];
+    }
+}
+
+void telmain_log_vr_current(vr_current_t* vr_current)
+{
+
+    // Extract VR Current and voltage entries for all VR Rails
+    for (uint8_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
+    {
+        soc_info.rail[vr_index].current.instantaneous = vr_current->vr_current[vr_index];
+        soc_info.rail[vr_index].voltage.instantaneous = vr_current->vr_voltage[vr_index];
+    }
+}
+
+/*
+ * Telemetry runtime information manager.
+ */
+void telmain_runtime_info_mgr(void)
+{
+
+    // Allocate enough buffer for 8 strides from sensor fifo. Please review this if the sensor fifo may have more entries, optimize when less
+    uint64_t buffer_data[MAX_BUFFER_ENTRIES];
+    sensor_ram_poll_status_t status;
+
+    // NOTE: All sensor fifo API to check and poll data availability is guaranteed to return
+    //  more_entries as false once all entries that was latched during the initial call has been
+    //  consumed. This guarantees that we can exit the loops within this API
+
+    // Check and poll for tile temperatures
+    do
+    {
+        tile_temp_t* temperature_data = (tile_temp_t*)buffer_data;
+        uint16_t tile_index;
+        status = sensor_fifo_svc_poll_tile_temperature(temperature_data, &tile_index);
+        if (status.curr_data_is_valid == true)
+        {
+            // process the tile temperature
+            telmain_log_tile_temperature(temperature_data, tile_index);
+        }
+
+    } while (status.more_entries == true);
+
+    // Check and poll for tile voltages
+    do
+    {
+        tile_voltage_t* voltage_data = (tile_voltage_t*)buffer_data;
+        uint16_t tile_index;
+        status = sensor_fifo_svc_poll_tile_voltage(voltage_data, &tile_index);
+        if (status.curr_data_is_valid == true)
+        {
+            // process the tile voltage
+            telmain_log_tile_voltage(voltage_data, tile_index);
+        }
+
+    } while (status.more_entries == true);
+
+    // Check and poll for core currents
+    do
+    {
+        core_current_t* current_data = (core_current_t*)buffer_data;
+        uint16_t core_index;
+        status = sensor_fifo_svc_poll_core_current(current_data, &core_index);
+        if (status.curr_data_is_valid == true)
+        {
+            // process the tile voltage
+            telmain_log_core_current(current_data, core_index);
+        }
+    } while (status.more_entries == true);
+
+    // Check and poll for core pstate packets
+    do
+    {
+        pstate_telem_t* state_data = (pstate_telem_t*)buffer_data;
+        status = sensor_fifo_svc_poll_core_pstate(state_data);
+        if (status.curr_data_is_valid == true)
+        {
+            // process the tile voltage
+            telmain_log_core_pstate(state_data);
+        }
+    } while (status.more_entries == true);
+
+    // Check and poll for VR Temperatures
+    do
+    {
+        vr_temp_t* vr_temperature = (vr_temp_t*)buffer_data;
+        status = sensor_fifo_svc_poll_vr_temperature(vr_temperature);
+        if (status.curr_data_is_valid == true)
+        {
+            // process the tile voltage
+            telmain_log_vr_temp(vr_temperature);
+        }
+    } while (status.more_entries == true);
+
+    // Check and poll for VR Current and Voltage
+    do
+    {
+        vr_current_t* vr_current = (vr_current_t*)buffer_data;
+        status = sensor_fifo_svc_poll_vr_current(vr_current);
+        if (status.curr_data_is_valid == true)
+        {
+            // process the tile voltage
+            telmain_log_vr_current(vr_current);
+        }
+    } while (status.more_entries == true);
+}

@@ -104,7 +104,8 @@ typedef struct _scp_avs_command_params_t {
     };
      uint8_t error; 
      uint8_t cmd_count;          // how many commands in the command array to read data.
-} scp_avs_command_params_t; 
+} scp_avs_command_params_t;
+ 
 typedef struct _scp_avs_config_t {
     /*! Interrupt number of the AVSBus */
     const unsigned int avs_irq;

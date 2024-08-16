@@ -34,6 +34,7 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    idsw_get_die_id
     scp_avs_init
     scp_avs_interface_initialize
     fpfw_init_get_handle

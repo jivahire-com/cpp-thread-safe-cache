@@ -393,17 +393,26 @@ typedef struct _avs_device_t {
 /*!
  * \brief AVS Event Delayed Response params (16bytes max framework limitation)
  */
+#define AVS_CMD_BUFF_SIZE 16
+
+typedef struct _command_info_t {
+    uint8_t rail_id;             // specific rail or rail number to start reading (in avs_master_command_mem_start_t this is 'command_type')
+    uint8_t cmd_type : 4;        // commands (AVS_VOLTAGE_RW, AVS_CURRENT_READ, etc.), are 4 bits - extra bits can indicate special cases like v+c+t
+    uint8_t rsvd : 3;            // unused
+    uint8_t unused : 1;
+} command_info_t;
+
 typedef struct _scp_avs_command_params_t {
     union {
         void *data_ptr;
         uint32_t avs_data;
-    } data;
-    uint8_t error;
-    uint8_t rail_id;             // specific rail or rail number to start reading (in avs_master_command_mem_start_t this is 'command_type')
-    uint8_t rail_count_to_read;  // number of rails requested to be read
-    uint8_t cmd_type : 4;        // commands (AVS_VOLTAGE_RW, AVS_CURRENT_READ, etc.), are 4 bits - extra bits can indicate special cases like v+c+t
-    uint8_t rsvd : 3;            // unused
-    uint8_t unused : 1;
+    };
+    union {
+        command_info_t avs_cmd_info;
+        command_info_t avs_cmd_array[AVS_CMD_BUFF_SIZE];        
+    };
+     uint8_t error; 
+     uint8_t cmd_count;          // how many commands in the command array to read data.
 } scp_avs_command_params_t;
 
 typedef struct _scp_avs_vr_vct_t {
@@ -440,14 +449,24 @@ struct avs_element {
     const void *data;
 } ;
 
+typedef struct _scp_avs_response_data_t {
+    uint16_t data;
+    uint8_t error;
+} scp_avs_response_data_t;
+
+typedef struct _scp_avs_response_multi_t {
+    scp_avs_response_data_t avs_response_multi[AVS_CMD_BUFF_SIZE];
+} scp_avs_response_multi_t;
+
 typedef struct _scp_avs_request_t {
     DFWK_ASYNC_REQUEST_HEADER Header;
     union {
         scp_avs_vr_vct_t avs_response_vct;  // Response structure (scp_avs_vr_vct_t) used when reading AVS VCT. Have the client provide a pointer to this.
         int16_t avs_response_single_resp;   // Single read of voltage (1LSB=1mV), current (1LSB=10mA), or temperature(1LSB=0.1C).
-        int16_t avs_response_status;
+        scp_avs_response_multi_t avs_resp_multi;
     };
-    scp_avs_command_params_t *avs_params; 
+    int avs_response_status;
+    scp_avs_command_params_t avs_params; 
 } scp_avs_request_t, *pscp_avs_request;
 
 typedef struct _scp_avs_device_t {
@@ -523,7 +542,7 @@ void scp_avs_interface_initialize(pscp_avs_device Device, pscp_avs_interface_t I
  *    @brief Called for each AVS.
  *
  */
-void scp_avs_cli_initialize(pscp_avs_interface_t Interface);
+void scp_avs_cli_initialize(pscp_avs_interface_t avs_array[]);
 
 /**
  *
@@ -582,10 +601,9 @@ static inline void scp_avs_client_read_multi(PDFWK_INTERFACE_HEADER Interface, P
  *   @param[in] Request
  *   @param[in] CompletionRoutine
  *   @param[in] CompletionContext
- *   @param[in] count - count of provided array entries
  *
  */
-static inline void scp_avs_client_write_multi(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext, uint8_t count)
+static inline void scp_avs_client_write_multi(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext)
 
 /**
  * 

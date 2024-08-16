@@ -161,8 +161,6 @@ TEST_FUNCTION(scp_avs_client_read_multi_test, test_setup, test_cleanup)
 
 TEST_FUNCTION(scp_avs_client_write_multi_test, test_setup, test_cleanup)
 {
-    uint8_t test_count = 2;
-
     expect_value(__wrap_DfwkInterfaceSendAsync, Interface, (uintptr_t)&test_avs_interface);
     expect_value(__wrap_DfwkInterfaceSendAsync, Request, (uintptr_t)&test_avs_Request);
 
@@ -170,7 +168,7 @@ TEST_FUNCTION(scp_avs_client_write_multi_test, test_setup, test_cleanup)
     expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionRoutine, test_scp_request_completion);
     expect_any(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionContext);
 
-    scp_avs_client_write_multi(&test_avs_interface.Header, &test_avs_Request.Header, test_scp_request_completion, nullptr, test_count);
+    scp_avs_client_write_multi(&test_avs_interface.Header, &test_avs_Request.Header, test_scp_request_completion, nullptr);
     assert_int_equal(test_avs_Request.Header.RequestType, AVS_REQUEST_WRITE_MULTI);
 }
 
@@ -335,7 +333,7 @@ TEST_FUNCTION(scp_avs_dispatch_test_read_all, test_setup, test_cleanup)
 }
 
 TEST_FUNCTION(scp_avs_dispatch_test_read_multi, test_setup, test_cleanup)
-{
+{    
     test_avs_device.avs_bus_num = AVS_BUS0;
     test_avs_Request.avs_params.avs_cmd_array[0].rail_id = 0;
     test_avs_Request.avs_params.avs_cmd_array[0].cmd_type = AVS_VOLTAGE_RW;
@@ -365,14 +363,33 @@ TEST_FUNCTION(scp_avs_dispatch_test_read_multi, test_setup, test_cleanup)
     assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
 }
 
-TEST_FUNCTION(scp_avs_dispatch_test_write_multi, test_setup, test_cleanup)
+TEST_FUNCTION(scp_avs_dispatch_test_write_multi, test_setup, test_cleanup) 
 {
     test_avs_device.avs_bus_num = AVS_BUS0;
-    scp_avs_command_params_t test_command_params = {};
-
-    test_avs_Request.avs_params = test_command_params;
+    test_avs_Request.avs_params.avs_cmd_array[0].rail_id = 0;
+    test_avs_Request.avs_resp_multi.avs_response_multi[0].data = 900;
+    test_avs_Request.avs_params.avs_cmd_array[1].rail_id = 1;
+    test_avs_Request.avs_resp_multi.avs_response_multi[1].data = 902;
+    test_avs_Request.avs_params.avs_cmd_array[1].cmd_type = AVS_CURRENT_READ;
     test_avs_Request.Header.RequestType = AVS_REQUEST_WRITE_MULTI;
 
+    expect_value(__wrap_avs_send_cmd_frame, avs_id, AVS_BUS0);
+    expect_value(__wrap_avs_send_cmd_frame, cmd_num, MAX_AVS_RAILS); // sending 2 commands, one for each rail read
+
+    avs_master_command_t avs_test_buffer[2] = {};
+
+    avs_test_buffer[0].command_data_type = AVS_VOLTAGE_RW;
+    avs_test_buffer[0].command_type = 0; // rail ID
+    avs_test_buffer[0].command_control = AVS_CMD_WRITE_COMMIT;
+    avs_test_buffer[0].command_group = AVS_CGROUP;
+    avs_test_buffer[0].command_data = 900;
+    avs_test_buffer[1].command_data_type = AVS_VOLTAGE_RW;
+    avs_test_buffer[1].command_type = 1; // rail ID
+    avs_test_buffer[1].command_group = AVS_CGROUP;
+    avs_test_buffer[1].command_data = 902;
+    avs_test_buffer[1].command_control = AVS_CMD_WRITE_COMMIT;
+
+    expect_memory(__wrap_avs_send_cmd_frame, cmd_mem, avs_test_buffer, sizeof(avs_test_buffer));
     scp_avs_dispatch(&test_avs_Request.Header, nullptr);
     assert_int_equal((uintptr_t)test_avs_device.outstanding_request, (uintptr_t)&test_avs_Request);
     assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);

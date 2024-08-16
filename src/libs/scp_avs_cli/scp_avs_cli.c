@@ -28,6 +28,7 @@ static FPFW_CLI_STATUS scp_avs_read_data_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS scp_avs_write_data_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS scp_avs_read_vct_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS scp_avs_read_multi_cli(int argc, const char** argv);
+static FPFW_CLI_STATUS scp_avs_write_multi_cli(int argc, const char** argv);
 
 /*-- Declarations (Statics and globals) --*/
 static uint8_t max_num_avs_bus = 0;
@@ -45,6 +46,8 @@ static FPFW_CLI_COMMAND scp_avs_cli_list[] = {
     {NULL_LIST_ENTRY, "avs", "avs_write", scp_avs_write_data_cli, "AVS write data", "Usage: avs_write <avs bus number> <rail number> <write command type> <data>"},
     {NULL_LIST_ENTRY, "avs", "avs_read_all", scp_avs_read_vct_cli, "AVS read VCT", "Usage: avs_read_all <avs bus number> <rail number>"},
     {NULL_LIST_ENTRY, "avs", "avs_read_m", scp_avs_read_multi_cli, "AVS read multi", "Usage: avs_read_multi <avs bus number> <command count> <rail> <cmd> <rail> <cmd>... Max CLI cmds accepted = 6"},
+    {NULL_LIST_ENTRY, "avs", "avs_write_m", scp_avs_write_multi_cli, "AVS write multi", "Usage: avs_write_multi <avs bus number> <data (rail 0)> <data (rail 1)>"},
+
 };
 
 /*------------- Functions ----------------*/
@@ -136,10 +139,14 @@ void AVSCLIRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Completio
         FpFwCliPrint("\n AVS read multi, AVSBus = %d, cmd_count = %d\n", cli_avs_bus, scp_cmd_count);
         for (uint8_t scp_avs_resp_idx = 0; scp_avs_resp_idx < scp_cmd_count; scp_avs_resp_idx++)
         {
-            FpFwCliPrint(" data[%d]: 0x%0x\n",
+            FpFwCliPrint(" data[%d]: %d\n",
                          (int16_t)scp_avs_resp_idx,
                          cli_avs_request.request.avs_resp_multi.avs_response_multi[scp_avs_resp_idx].data);
         }
+        break;
+
+    case AVS_REQUEST_WRITE_MULTI:
+        FpFwCliPrint("\n AVS write multi complete\n");
         break;
 
     default:
@@ -150,7 +157,7 @@ void AVSCLIRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Completio
 
 static FPFW_CLI_STATUS scp_avs_read_data_cli(int argc, const char** argv)
 {
-    FpFwCliPrint("\nscp_avs_read_data_cli func. call\n\n");
+    FpFwCliPrint("\nscp_avs_read_data_cli func. call\n");
 
     if (check_not_in_use() && (argc == 4))
     {
@@ -188,7 +195,7 @@ static FPFW_CLI_STATUS scp_avs_read_data_cli(int argc, const char** argv)
 
 static FPFW_CLI_STATUS scp_avs_write_data_cli(int argc, const char** argv)
 {
-    FpFwCliPrint("\nscp_avs_write_data_cli func. call\n\n");
+    FpFwCliPrint("\nscp_avs_write_data_cli func. call\n");
 
     if (check_not_in_use() && (argc == 5))
     {
@@ -235,7 +242,7 @@ static FPFW_CLI_STATUS scp_avs_write_data_cli(int argc, const char** argv)
 
 static FPFW_CLI_STATUS scp_avs_read_vct_cli(int argc, const char** argv)
 {
-    FpFwCliPrint("\nscp_avs_read_vct_cli func. call\n\n");
+    FpFwCliPrint("\nscp_avs_read_vct_cli func. call\n");
 
     if (check_not_in_use() && (argc == 3))
     {
@@ -274,7 +281,7 @@ static FPFW_CLI_STATUS scp_avs_read_vct_cli(int argc, const char** argv)
 
 static FPFW_CLI_STATUS scp_avs_read_multi_cli(int argc, const char** argv)
 {
-    FpFwCliPrint("\nscp_avs_read_multi_cli func. call\n\n");
+    FpFwCliPrint("\nscp_avs_read_multi_cli func. call\n");
 
     if (check_not_in_use() && (argc > 4))
     {
@@ -323,6 +330,54 @@ static FPFW_CLI_STATUS scp_avs_read_multi_cli(int argc, const char** argv)
     {
         FpFwCliPrint(" AVS read multi CLI Help\n");
         FpFwCliPrint("Cmds: 4+, <avs_bus> <cmd_count> <rail_sel> <cmd_type>...\n");
+        return CLI_ERROR;
+    }
+    return CLI_SUCCESS;
+}
+
+static FPFW_CLI_STATUS scp_avs_write_multi_cli(int argc, const char** argv)
+{
+    FpFwCliPrint("\nscp_avs_write_multi_cli func. call\n");
+
+    if (check_not_in_use() && (argc == 4))
+    {
+        int avs_bus = atoi(argv[1]);
+        if (avs_bus < 0 || avs_bus >= max_num_avs_bus)
+        {
+            FpFwCliPrint("ERROR! Invalid Arg (avs_bus) \n");
+            return CLI_ERROR;
+        }
+
+        uint32_t vr_data = (uint32_t)atoi(argv[2]);
+        FpFwCliPrint("AVSBus = %d\n", avs_bus);
+        FpFwCliPrint("AVS write data rail 0 = %u \n", vr_data);
+        if (vr_data > MAX_CLI_VOLTAGE)
+        {
+            FpFwCliPrint("ERROR! Invalid Arg rail 0 (vr_data > MAX) \n");
+            return CLI_ERROR;
+        }
+        cli_avs_request.request.avs_resp_multi.avs_response_multi[AVS_RAIL0].data = vr_data;
+
+        vr_data = (uint32_t)atoi(argv[3]);
+        FpFwCliPrint("AVS write data rail 1 = %u \n", vr_data);
+        if (vr_data > MAX_CLI_VOLTAGE)
+        {
+            FpFwCliPrint("ERROR! Invalid Arg rail 1 (vr_data > MAX) \n");
+            return CLI_ERROR;
+        }
+        cli_avs_request.request.avs_resp_multi.avs_response_multi[AVS_RAIL1].data = vr_data;
+
+        cli_avs_request.in_use = true;
+
+        scp_avs_client_write_multi(&cli_avs_interfaces[avs_bus]->Header,
+                                   &cli_avs_request.request.Header,
+                                   AVSCLIRequestCompletion,
+                                   (void*)avs_bus);
+    }
+    else
+    {
+        FpFwCliPrint(" AVS write multi CLI Help\n");
+        FpFwCliPrint("Cmds: 3, <avs_bus> <vr_data (rail 0)> <vr_data (rail 1)> \n");
         return CLI_ERROR;
     }
     return CLI_SUCCESS;

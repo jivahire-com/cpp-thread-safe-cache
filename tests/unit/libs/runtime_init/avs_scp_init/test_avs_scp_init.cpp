@@ -57,6 +57,11 @@ void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
     return mock_type(void*);
 }
 
+idsw_die_id_t __wrap_idsw_get_die_id(void)
+{
+    return mock_type(KNG_DIE_ID);
+}
+
 //
 // Tests
 //
@@ -80,6 +85,8 @@ TEST_FUNCTION(test_avs1_scp, nullptr, nullptr)
     fpfw_init_component_id_t dfwk_id = "dfwk";
 
     // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_value(__wrap_scp_avs_init, scheduler, &(test_host.Schedule));
     expect_memory(__wrap_fpfw_init_get_handle, id, dfwk_id, sizeof(fpfw_init_component_id_t));
@@ -94,6 +101,8 @@ TEST_FUNCTION(test_avs2_scp, nullptr, nullptr)
     fpfw_init_component_id_t dfwk_id = "dfwk";
 
     // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_value(__wrap_scp_avs_init, scheduler, &(test_host.Schedule));
     expect_memory(__wrap_fpfw_init_get_handle, id, dfwk_id, sizeof(fpfw_init_component_id_t));
@@ -108,6 +117,8 @@ TEST_FUNCTION(test_avs3_scp, nullptr, nullptr)
     fpfw_init_component_id_t dfwk_id = "dfwk";
 
     // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die); 
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_value(__wrap_scp_avs_init, scheduler, &(test_host.Schedule));
     expect_memory(__wrap_fpfw_init_get_handle, id, dfwk_id, sizeof(fpfw_init_component_id_t));
@@ -134,12 +145,14 @@ TEST_FUNCTION(test_avs0_scp_init, nullptr, nullptr)
 
 TEST_FUNCTION(test_avs1_scp_init, nullptr, nullptr)
 {
-    // Set up expectations
+   // Set up expectations
     scp_avs_device_t test_avs_device = {
         .config = {},
     };
     fpfw_init_component_id_t avs_id = "avs1";
+    const auto test_die = (KNG_DIE_ID)0;
 
+    will_return(__wrap_idsw_get_die_id, test_die);
     will_return(__wrap_fpfw_init_get_handle, &test_avs_device);
     expect_value(__wrap_scp_avs_interface_initialize, Device, &test_avs_device);
     expect_memory(__wrap_fpfw_init_get_handle, id, avs_id, sizeof(fpfw_init_component_id_t));
@@ -155,6 +168,9 @@ TEST_FUNCTION(test_avs2_scp_init, nullptr, nullptr)
         .config = {},
     };
     fpfw_init_component_id_t avs_id = "avs2";
+    const auto test_die = (KNG_DIE_ID)0;
+
+    will_return(__wrap_idsw_get_die_id, test_die);
 
     will_return(__wrap_fpfw_init_get_handle, &test_avs_device);
     expect_value(__wrap_scp_avs_interface_initialize, Device, &test_avs_device);
@@ -171,6 +187,9 @@ TEST_FUNCTION(test_avs3_scp_init, nullptr, nullptr)
         .config = {},
     };
     fpfw_init_component_id_t avs_id = "avs3";
+    const auto test_die = (KNG_DIE_ID)0;
+
+    will_return(__wrap_idsw_get_die_id, test_die);
 
     will_return(__wrap_fpfw_init_get_handle, &test_avs_device);
     expect_value(__wrap_scp_avs_interface_initialize, Device, &test_avs_device);

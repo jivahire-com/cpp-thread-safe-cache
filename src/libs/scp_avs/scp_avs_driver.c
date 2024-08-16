@@ -153,9 +153,21 @@ void scp_avs_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         break;
 
     case AVS_REQUEST_WRITE_MULTI:
+        // AVS voltage write of both rails
         device->outstanding_request = avs_request;
-        avs_buffer[0].command_control = AVS_CMD_WRITE_COMMIT;
-        // TODO: https://azurecsi.visualstudio.com/Woodinville/_queries/edit/1941698/?triage=true
+        uint8_t index;
+        uint8_t rail;
+        for (index = 0, rail = AVS_RAIL0; rail < MAX_AVS_RAILS; index++, rail++)
+        {
+            avs_buffer[index].command_type = rail;
+            avs_buffer[index].command_data_type = AVS_VOLTAGE_RW; // cmd_type
+            avs_buffer[index].command_data = avs_request->avs_resp_multi.avs_response_multi[index].data;
+
+            avs_buffer[index].command_group = AVS_CGROUP;
+            avs_buffer[index].command_control = AVS_CMD_WRITE_COMMIT;
+            AVS_LOG_TRACE("Write multi, %d data", (int16_t)avs_buffer[index].command_data);
+        }
+        status = avs_send_cmd_frame(device->avs_bus_num, MAX_AVS_RAILS, avs_buffer);
         break;
 
     default:
@@ -269,6 +281,16 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         break;
 
     case AVS_REQUEST_WRITE_MULTI:
+        scp_avs_resp_idx = 0;
+        scp_avs_resp_num = 1;
+
+        status = avs_get_cmd_resp_data(device->avs_bus_num, scp_avs_resp_idx, scp_avs_resp_num, scp_avs_resp_buf);
+
+        if (status != SILIBS_SUCCESS)
+        {
+            AVS_LOG_CRIT("avs_get_cmd_resp_data failure (Write multi)!");
+            original_request->avs_response_status = SCP_AVS_STATUS_WRITE_MULTI_FAIL;
+        }
         break;
 
     default:

@@ -142,12 +142,11 @@ static inline void scp_avs_client_read_multi(PDFWK_INTERFACE_HEADER Interface, P
     DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext); 
     DfwkInterfaceSendAsync(Interface, Request);
 }
-static inline void scp_avs_client_write_multi(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext, uint8_t count)
+static inline void scp_avs_client_write_multi(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext)
 {
     pscp_avs_request avs_write_multi_request = (pscp_avs_request) Request;
     FPFW_RUNTIME_ASSERT(Request->AllocatedSize >= sizeof(scp_avs_request_t));
     avs_write_multi_request->Header.RequestType = AVS_REQUEST_WRITE_MULTI;
-    avs_write_multi_request->avs_params.cmd_count = count; 
     DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext); 
     DfwkInterfaceSendAsync(Interface, Request);
 }

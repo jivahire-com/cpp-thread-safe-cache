@@ -53,6 +53,7 @@ mock_target(${TARGET}
     DfwkQueueInitialize
     DfwkInterfaceInitialize
     platform_read_fuse
+    power_hw_full_init_allowed
     power_init_core
     power_init_soc
     power_fuses_is_power_hw_supported
@@ -64,6 +65,14 @@ mock_target(${TARGET}
     power_telemetry_init_config
     power_timer_start_loop_timers
     crash_dump_bug_check
+    ws_data_get
+    ws_data_put
+    reset_tile_pvt_dts_vm
+    tile_pvt_sda_reconfig
+    odcm_telemetry_config
+    dvfs_telemetry_config
+    dvfs_set_plimit
+    tile_pvt_dma_config
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

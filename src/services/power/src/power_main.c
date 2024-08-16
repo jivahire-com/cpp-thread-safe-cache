@@ -13,6 +13,7 @@
 #include "power_loops_i.h"
 #include "power_runconfig.h"   // for power_service_config_t
 #include "power_runconfig_i.h" // for power_runconfig_get_element, power...
+#include "power_warmstart_i.h" // for power_ws_save_fuse_init
 
 #include <DfwkDriver.h>           // for DfwkAsyncRequestComplete, DfwkInte...
 #include <DfwkHost.h>             // for DfwkDeviceInitialize
@@ -110,11 +111,22 @@ void power_init(ppower_service_t p_device, PDFWK_SCHEDULE p_schedule, const powe
     DfwkDeviceInitialize(&p_device->header, p_schedule);
     DfwkQueueInitialize(&p_device->default_queue, &p_device->header, power_service_dispatch_async, &p_device->header, DfwkQueueType_SerializedDispatch);
 
+    const bool full_init = power_hw_full_init_allowed();
+
     // intialize power service runtime configuration (knobs, fuses, static config, etc)
     power_runconfig_init(p_config);
 
     // initialize power cap
     power_cap_init();
+
+    if (!full_init)
+    {
+        power_runconfig_t* p_runconfig = power_runconfig_get();
+
+        // if not a full init, then we need to restore the warm start data
+        power_ws_recover_fuse_init(p_runconfig);
+        power_knobs_ws_update(&p_runconfig->knobs);
+    }
 
     // setup control and telemetry loops
     power_loops_init();
@@ -125,15 +137,27 @@ void power_init(ppower_service_t p_device, PDFWK_SCHEDULE p_schedule, const powe
 
 void power_ap_soc_init()
 {
+    const bool full_init = power_hw_full_init_allowed();
     power_telcfg_t telemetry_config;
     power_telemetry_init_config(&telemetry_config);
 
     const power_runconfig_t* p_runconfig = power_runconfig_get();
-    // SOC portion of init (TOP PVT)
-    power_init_soc(p_runconfig);
 
-    // core portion of init
-    power_init_core(p_runconfig, &telemetry_config);
+    if (full_init)
+    {
+        // SOC portion of init (TOP PVT)
+        power_init_soc(p_runconfig);
+
+        // core portion of init
+        power_init_core(p_runconfig, &telemetry_config);
+
+        // once core init is done, store warm start data for future warm starts.
+        power_ws_save_fuse_init(p_runconfig);
+    }
+    else
+    {
+        power_init_ws_core(p_runconfig, &telemetry_config);
+    }
 
     // start loop timers
     power_timer_start_loop_timers();

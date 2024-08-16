@@ -20,6 +20,7 @@ add_library(${TARGET}
         power_runconfig.c
         power_stub.c
         power_timer.c
+        power_warmstart.c
 )
 
 target_include_directories(${TARGET}
@@ -49,6 +50,7 @@ target_link_libraries(${TARGET}
         ms::lib::event_trace::trace
         ms::lib::crash_dump::scp
         ms::lib::error_codes
+        ms::lib::warm_start
 )
 
 lint_target(${TARGET})

@@ -31,12 +31,16 @@
 // This is implemented for FPGA, where elf is not preloaded.
 // This should be removed once we have the code download sequence pulled in. ADO (1728282)
 static const uint32_t sdm_cded_spin_loop[] = {
-    0x20000200, 0x00080049, 0x00000000, 0x00000000, // 0x80000 - 0x8000F
-    0x00000000, 0x00000000, 0x00000000, 0x00000000, // 0x80010 - 0x8001F
+    0x20000200, 0x00080049, 0x00080059, 0x00080069, // 0x80000 - 0x8000F
+    0x00080079, 0x00080089, 0x00080099, 0x00000000, // 0x80010 - 0x8001F
     0x00000000, 0x00000000, 0x00000000, 0x00000000, // 0x80020 - 0x8002F
     0x00000000, 0x00000000, 0x00000000, 0x00000000, // 0x80030 - 0x8003F
     0x00000000, 0x00000000, 0xF05F2500, 0x60055000, // 0x80040 - 0x8004F
-    0xE7FC3501, 0x00000000, 0x00000000, 0x00000000  // 0x80050 - 0x8005F
+    0xE7FC3501, 0x00000000, 0x35012500, 0xBF00E7FD, // 0x80050 - 0x8005F
+    0x00000000, 0x00000000, 0x35012500, 0xBF00E7FD, // 0x80060 - 0x8006F
+    0x00000000, 0x00000000, 0x35012500, 0xBF00E7FD, // 0x80070 - 0x8007F
+    0x00000000, 0x00000000, 0x35012500, 0xBF00E7FD, // 0x80080 - 0x8008F
+    0x00000000, 0x00000000, 0x35012500, 0xBF00E7FD, // 0x80090 - 0x8009F
 };
 
 /*-------------------------------- Typedefs ---------------------------------*/
@@ -46,7 +50,8 @@ static const uint32_t sdm_cded_spin_loop[] = {
 /*------------------- Declarations (Statics and globals) --------------------*/
 /****** SDMSS context data start ******/
 static const atu_map_entry_t die0_sdmss_atu_map = ATU_MAPPING_SDMSS_BASE(SOC_D0);
-static sdm_emcpu_init_cfg_t die0_sdmss_sdm_emcpu_init_cfg = {.initvtor_byte_addr = DIE0_SDMSS_INSTANCE0_INT_VECTOR,
+static sdm_emcpu_init_cfg_t die0_sdmss_sdm_emcpu_init_cfg = {.release_m7_halt = true,
+                                                             .initvtor_byte_addr = DIE0_SDMSS_INSTANCE0_INT_VECTOR,
                                                              .enable_itcm_ecc = false,
                                                              .enable_dtcm_ecc = false};
 static sdm_mem_init_t die0_sdmss_sdm_mem_init = {.lstrg = false, .itcm = false, .d0tcm = false, .d1tcm = false, .ecu = false};
@@ -146,7 +151,8 @@ static accelip_ss_init_t die0_sdmss_init_params_ctxt = {
 
 /****** CDEDSS context data start ******/
 static const atu_map_entry_t die0_cdedss_atu_map = ATU_MAPPING_CDEDSS_BASE(SOC_D0);
-static sdm_emcpu_init_cfg_t die0_cdedss_sdm_emcpu_init_cfg = {.initvtor_byte_addr = DIE0_CDEDSS_INSTANCE0_INT_VECTOR,
+static sdm_emcpu_init_cfg_t die0_cdedss_sdm_emcpu_init_cfg = {.release_m7_halt = true,
+                                                              .initvtor_byte_addr = DIE0_CDEDSS_INSTANCE0_INT_VECTOR,
                                                               .enable_itcm_ecc = false,
                                                               .enable_dtcm_ecc = false};
 static sdm_mem_init_t die0_cdedss_sdm_mem_init = {.lstrg = false, .itcm = false, .d0tcm = false, .d1tcm = false, .ecu = false};

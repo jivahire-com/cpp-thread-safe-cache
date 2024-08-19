@@ -14,6 +14,7 @@ add_library(${TARGET}
 target_include_directories(${TARGET}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
+        ${REPO_ROOT_DIR}/.externs/repo/silibs/soc_fw_shared/include
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -23,12 +24,14 @@ target_link_libraries(${TARGET}
         silibs::ddr_i3c
         silibs::ddrss
         silibs::idhw
+        silibs::kng_silibs_platform
         silibs::platform
-        idhw
+        silibs::ras_arm
         fwlib.dfwk
         fwlib.lib.init
         ms::lib::crash_dump::scp
         ms::lib::error_codes
+        ms::service::sds_service
     PUBLIC
         fwlib.platform.dfwkhost.threadx
         fwlib.dfwk

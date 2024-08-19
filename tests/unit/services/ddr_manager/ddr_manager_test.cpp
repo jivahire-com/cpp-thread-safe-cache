@@ -238,7 +238,6 @@ TEST_FUNCTION(ddr_worker_thread_func_success, NULL, NULL)
 // TODO: Replace this test as these functions begin to get written
 TEST_FUNCTION(ddr_worker_thread_func_test_message_types, NULL, NULL)
 {
-    ddr_create_memory_map();
     ddr_create_bdat();
     ddr_create_smbios_tables();
     ddr_process_i3c_data();

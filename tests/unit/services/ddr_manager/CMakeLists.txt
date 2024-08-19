@@ -3,6 +3,7 @@ set(TARGET ddr_manager.test)
 set(SOURCES
     ddr_manager_i3c_test.cpp
     ddr_manager_test.cpp
+    ddr_memory_map_test.cpp
 )
 
 set(LIBS

@@ -20,6 +20,7 @@ target_link_libraries(${TARGET}
         ms::mocks::event_trace
         ms::mocks::threadx
         ms::service::power
+        ms::service::sensor_fifo
     PUBLIC
         fwlib.lib.assert
         fwlib.dfwk
@@ -80,6 +81,10 @@ mock_target(${TARGET}
     scf_get_core_state
     soc_pvt_handle_dts_irq_exclear
     soc_pvt_handle_vm_irq_exclear
+    sensor_fifo_svc_add_soc_pvt_temperature
+    sensor_fifo_svc_add_soc_pvt_voltage
+    sensor_fifo_svc_add_vr_temperature
+    sensor_fifo_svc_add_vr_current
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

@@ -20,6 +20,7 @@
 #include <bug_check.h>
 #include <debug.h>
 #include <inttypes.h>
+#include <sensor_fifo_service.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <tx_api.h>
@@ -30,6 +31,7 @@
 
 #define MAX_VR_PER_DIE 8
 #define VR_CPU_IDX     0
+static_assert(MAX_VR_PER_DIE == MAX_NUM_OF_VR_RAILS, "MAX_VR_PER_DIE != MAX_NUM_OF_VR_RAILS");
 
 #define DO_ONLY_ONCE(...)                    \
     do                                       \

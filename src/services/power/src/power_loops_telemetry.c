@@ -25,6 +25,7 @@
 #include <pvt.h>        // for PVT_SUCCESS, reset_tile_pvt_dts_vm
 #include <pvt_struct.h> // for pvt_alarm_setting_config_t, pvt_thres...
 #include <scf_power.h>
+#include <sensor_fifo_service.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -389,68 +390,68 @@ static void hw_read_pvts()
 
 static void hw_send_telemetry(power_telem_type_t type)
 {
-    FPFW_UNUSED(type);
-
-    /* TODO:  https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491034/
-    // slightly updated pioneer implementation below
-
-    #define QUADSIZE(x) ((sizeof(x) + 7) / 8)  // quadword size
-
-    sensor_ram_entry_t entry = {0};
-    uint32_t fifo_id         = MAX_FIFO_ID;
-    uint32_t entry_qsize;
-
     // all entries require a timestamp
-    entry.common.time_stamp = power_timer_get_counter();
-    switch (type) {
-        case PM_TELEMETRY_SOC_TOP_TEMP:
-            // ensure there's enough available storage in the provided type
-            ASSERT(SOC_PVT_TOTAL_CHANNELS_DTS <= DIMOF(entry.soc_pvt_temp.sensor_temp));
-            for (int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_DTS; ++pvt_idx) {
-                entry.soc_pvt_temp.sensor_temp[pvt_idx] = s_telem_loop.soc_top_temp_data[pvt_idx].last_sample;
-            }
-            fifo_id     = SOC_PVT_TEMP_FIFO;
-            entry_qsize = QUADSIZE(entry.soc_pvt_temp);
-            break;
-        case PM_TELEMETRY_SOC_TOP_VOLT:
-            // ensure there's enough available storage in the provided type
-            ASSERT(SOC_PVT_TOTAL_CHANNELS_VM <= DIMOF(entry.soc_pvt_voltage.sensor_voltage));
-            for (int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_VM; ++pvt_idx) {
-                entry.soc_pvt_voltage.sensor_voltage[pvt_idx] = s_telem_loop.soc_top_voltage_data[pvt_idx].last_sample;
-            }
-            fifo_id     = SOC_PVT_VOLTAGE_FIFO;
-            entry_qsize = QUADSIZE(entry.soc_pvt_voltage);
-            break;
-        case PM_TELEMETRY_VR_TEMP:
-            // always expect that we have pointer to data if we're here
-            FPFW_RUNTIME_ASSERT(s_telem_loop.p_vr_data != NULL);
-            // ensure there's enough available storage in the provided type
-            ASSERT(MPCL_VR_COUNT <= DIMOF(entry.vr_temp.vr_temp));
-            for (int vr_idx = 0; vr_idx < MPCL_VR_COUNT; ++vr_idx) {
-                entry.vr_temp.vr_temp[vr_idx] = s_telem_loop.vr_inputs[vr_idx].temperature;
-            }
-            fifo_id     = VR_TEMP_BUFFER_FIFO;
-            entry_qsize = QUADSIZE(entry.vr_temp);
-            break;
-        case PM_TELEMETRY_VR_CURRENT:
-            // always expect that we have pointer to data if we're here
-            FPFW_RUNTIME_ASSERT(s_telem_loop.p_vr_data != NULL);
-            // ensure there's enough available storage in the provided type
-            ASSERT(MPCL_VR_COUNT <= DIMOF(entry.vr_current.vr_current));
-            ASSERT(MPCL_VR_COUNT <= DIMOF(entry.vr_current.vr_voltage));
-            for (int vr_idx = 0; vr_idx < MPCL_VR_COUNT; ++vr_idx) {
-                entry.vr_current.vr_current[vr_idx] = s_telem_loop.vr_inputs[vr_idx].current;
-                entry.vr_current.vr_voltage[vr_idx] = s_telem_loop.vr_inputs[vr_idx].voltage;
-            }
-            entry_qsize = QUADSIZE(entry.vr_current);
-            fifo_id     = VR_CURRENT_BUFFER_FIFO;
-            break;
+    uint64_t timestamp = power_timer_get_counter();
+
+    switch (type)
+    {
+    case PM_TELEMETRY_SOC_TOP_TEMP: {
+        soc_pvt_temp_t data = {.timestamp = timestamp};
+
+        static_assert(SOC_PVT_TOTAL_CHANNELS_DTS == NUMBER_OF_SOC_TEMP_SENSORS,
+                      "SOC_PVT_TOTAL_CHANNELS_DTS != NUMBER_OF_SOC_TEMP_SENSORS");
+        for (int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_DTS; ++pvt_idx)
+        {
+            data.sensor_temp[pvt_idx] = s_telem_loop.soc_top_temp_data[pvt_idx].last_sample;
+        }
+
+        sensor_fifo_svc_add_soc_pvt_temperature(&data);
+        break;
     }
-    ASSERT(fifo_id != MAX_FIFO_ID);
-    if (fifo_id != MAX_FIFO_ID) {
-        int status;
-        status = sensor_fifo_api->mod_sensor_fifo_add_entry(fifo, data, size);
-        ASSERT(status == FWK_SUCCESS);
+    case PM_TELEMETRY_SOC_TOP_VOLT: {
+        soc_pvt_voltage_t data = {.timestamp = timestamp};
+
+        static_assert(SOC_PVT_TOTAL_CHANNELS_VM == NUMBER_OF_SOC_VOLT_MON_SENSORS,
+                      "SOC_PVT_TOTAL_CHANNELS_VM != NUMBER_OF_SOC_VOLT_MON_SENSORS");
+
+        for (int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_VM; ++pvt_idx)
+        {
+            data.sensor_voltage[pvt_idx] = s_telem_loop.soc_top_voltage_data[pvt_idx].last_sample;
+        }
+
+        sensor_fifo_svc_add_soc_pvt_voltage(&data);
+        break;
     }
-    */
+    case PM_TELEMETRY_VR_TEMP: {
+        vr_temp_t data = {.timestamp = timestamp};
+
+        // always expect that we have pointer to data if we're here
+        FPFW_RUNTIME_ASSERT(s_telem_loop.vr_data != NULL);
+
+        for (int vr_idx = 0; vr_idx < MAX_NUM_OF_VR_RAILS; ++vr_idx)
+        {
+            data.vr_temp[vr_idx] = s_telem_loop.vr_data[vr_idx].temperature;
+        }
+
+        sensor_fifo_svc_add_vr_temperature(&data);
+        break;
+    }
+    case PM_TELEMETRY_VR_CURRENT: {
+        vr_current_t data = {.timestamp = timestamp};
+
+        // always expect that we have pointer to data if we're here
+        FPFW_RUNTIME_ASSERT(s_telem_loop.vr_data != NULL);
+
+        for (int vr_idx = 0; vr_idx < MAX_NUM_OF_VR_RAILS; ++vr_idx)
+        {
+            data.vr_current[vr_idx] = s_telem_loop.vr_data[vr_idx].current;
+            data.vr_voltage[vr_idx] = s_telem_loop.vr_data[vr_idx].voltage;
+        }
+
+        sensor_fifo_svc_add_vr_current(&data);
+        break;
+    }
+    default:
+        break;
+    }
 }

@@ -15,21 +15,22 @@
 
 extern "C" {
 
-#include "power_i.h"           // for power_latest_calcs_t
-#include "power_runconfig.h"   // for MIN_PLIMIT, power_service_config_t
-#include "power_runconfig_i.h" // for power_runconfig_t
+#include "power_i.h"                // for power_latest_calcs_t
+#include "power_runconfig.h"        // for MIN_PLIMIT, power_service_config_t
+#include "power_runconfig_i.h"      // for power_runconfig_t
 
-#include <CMockaWrapper.h> // for CmockaWrapperTest, expect_value, will...
-#include <corebits.h>      // for corebits_set_bit
-#include <pid_resource.h>  // for pid_config_t
-#include <power_loops_i.h> // for _power_ctrl_loop_state_t, _power_ctrl...
-#include <power_stub_i.h>  // for _power_pmin_type_t, power_pmin_type_t
-#include <pvt.h>
-#include <scf_power.h>     // for SCF_CORE_POWER_STATE_T
-#include <stdint.h>        // for uint32_t, uint64_t, uintptr_t, uint16_t
-#include <stdio.h>         // for printf
-#include <string.h>        // for memcpy
-#include <tx_api.h>        // for ULONG, VOID
+#include <CMockaWrapper.h>          // for CmockaWrapperTest, expect_value, will...
+#include <corebits.h>               // for corebits_set_bit
+#include <pid_resource.h>           // for pid_config_t
+#include <power_loops_i.h>          // for _power_ctrl_loop_state_t, _power_ctrl...
+#include <power_stub_i.h>           // for _power_pmin_type_t, power_pmin_type_t
+#include <pvt.h>                    // for pvt_irq_soc_dts_data_t, pvt_irq_soc_vm...
+#include <scf_power.h>              // for SCF_CORE_POWER_STATE_T
+#include <sensor_fifo_service.h>    // for sensor_fifo_svc_add_soc_pvt_t...
+#include <stdint.h>                 // for uint32_t, uint64_t, uintptr_t, uint16_t
+#include <stdio.h>                  // for printf
+#include <string.h>                 // for memcpy
+#include <tx_api.h>                 // for ULONG, VOID
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define TEST_STATES     2
@@ -42,9 +43,20 @@ typedef VOID (*entry_function_t)(ULONG entry_input);
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static power_vrs_avs_latest_t s_vr_inputs[MAX_VR_PER_DIE];
+static power_vrs_avs_latest_t s_vr_inputs[MAX_VR_PER_DIE] = {
+    {.voltage = 1, .current = 2, .temperature = 3},
+    {.voltage = 4, .current = 5, .temperature = 6},
+    {.voltage = 7, .current = 8, .temperature = 9},
+    {.voltage = 10, .current = 11, .temperature = 12},
+    {.voltage = 13, .current = 14, .temperature = 15},
+    {.voltage = 16, .current = 17, .temperature = 18},
+    {.voltage = 19, .current = 20, .temperature = 21},
+    {.voltage = 22, .current = 23, .temperature = 24}
+};
 static pvt_irq_soc_dts_data_t s_dts_samples = {0};
 static pvt_irq_soc_vm_data_t s_vm_samples = {0};
+static uint16_t s_pvt_teamp[SOC_PVT_TOTAL_CHANNELS_DTS] = {0};
+static uint16_t s_pvt_voltage[SOC_PVT_TOTAL_CHANNELS_VM] = {0};
 
 /*------------- Functions ----------------*/
 //
@@ -74,12 +86,76 @@ void __wrap_power_hw_check_io_temp_force_pmin(uint16_t max_temp_dC)
     check_expected(max_temp_dC);
 }
 
+void __wrap_sensor_fifo_svc_add_soc_pvt_temperature(soc_pvt_temp_t* pvt_temperature)
+{
+    assert_non_null(pvt_temperature);
+    check_expected(pvt_temperature->timestamp);
+
+    for(int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_DTS; ++pvt_idx)
+    {
+        assert_true(pvt_temperature->sensor_temp[pvt_idx] == s_pvt_teamp[pvt_idx]);
+    }
+
+    function_called();
+}
+
+void __wrap_sensor_fifo_svc_add_soc_pvt_voltage(soc_pvt_voltage_t* pvt_voltage)
+{
+    assert_non_null(pvt_voltage);
+    check_expected(pvt_voltage->timestamp);
+
+    for(int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_VM; ++pvt_idx)
+    {
+        assert_true(pvt_voltage->sensor_voltage[pvt_idx] == s_pvt_voltage[pvt_idx]);
+    }
+
+    function_called();
+}
+
+void __wrap_sensor_fifo_svc_add_vr_temperature(vr_temp_t* vr_temperature)
+{
+    assert_non_null(vr_temperature);
+    check_expected(vr_temperature->timestamp);
+
+    for (int vr_idx = 0; vr_idx < MAX_NUM_OF_VR_RAILS; ++vr_idx)
+    {
+        assert_true(vr_temperature->vr_temp[vr_idx] == s_vr_inputs[vr_idx].temperature);
+    }
+
+    function_called();
+}
+
+void __wrap_sensor_fifo_svc_add_vr_current(vr_current_t* vr_current)
+{
+    assert_non_null(vr_current);
+    check_expected(vr_current->timestamp);
+
+    for (int vr_idx = 0; vr_idx < MAX_NUM_OF_VR_RAILS; ++vr_idx)
+    {
+        assert_true(vr_current->vr_current[vr_idx] == s_vr_inputs[vr_idx].current);
+        assert_true(vr_current->vr_voltage[vr_idx] == s_vr_inputs[vr_idx].voltage);
+    }
+
+    function_called();
+}
+
 // End mocks
 
 } // extern "C"
 /*-------- Function Prototypes -----------*/
 
 /*------------- Functions ----------------*/
+
+static int setup_telemetry_fifo(void** state)
+{
+    UNUSED(state);
+
+    memset(s_pvt_teamp, 0, sizeof(s_pvt_teamp));
+    memset(s_pvt_voltage, 0, sizeof(s_pvt_voltage));
+
+    return 0;
+}
+
 void call_handler(power_vr_telem_state_t state, power_vr_telem_signal_t signal, const void* data)
 {
     call_handler(VR_TELEM, (int)state, (int)signal, data);
@@ -227,12 +303,16 @@ POWER_TEST(vr_telem_current_telemetry_handler__signal_vr_current, NULL, NULL)
     // set the temp_telemetry divider to 2
     test_runconfig.knobs.temp_telemetry_divider = TELEMETRY_DIVIDER;
     
-    // TODO:  https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491034/
-    // set expectations for calls to send telemetry 
-
     for (int entry = 0; entry < (TELEMETRY_DIVIDER -1); entry++)
     {
         will_return(__wrap_power_runconfig_get, &test_runconfig);
+
+        // expectations for the hw_send_telemetry (PM_TELEMETRY_VR_CURRENT)
+        will_return(__wrap_power_timer_get_counter, 100);
+        expect_value(__wrap_FpFwAssert, expression, true);
+        expect_value(__wrap_sensor_fifo_svc_add_vr_current, vr_current->timestamp, 100);
+        expect_function_call(__wrap_sensor_fifo_svc_add_vr_current);
+
         // every entry except the last one should not send temp telemetry
         setup_expectations_for_state_change(POWER_VR_TELEM_STATE_IDLE);
         // call state handler
@@ -240,6 +320,13 @@ POWER_TEST(vr_telem_current_telemetry_handler__signal_vr_current, NULL, NULL)
     }
 
     will_return(__wrap_power_runconfig_get, &test_runconfig);
+
+    // expectations for the hw_send_telemetry (PM_TELEMETRY_VR_CURRENT)
+    will_return(__wrap_power_timer_get_counter, 100);
+    expect_value(__wrap_FpFwAssert, expression, true);
+    expect_value(__wrap_sensor_fifo_svc_add_vr_current, vr_current->timestamp, 100);
+    expect_function_call(__wrap_sensor_fifo_svc_add_vr_current);
+
     // last entry should send temp telemetry
     setup_expectations_for_state_change(POWER_VR_TELEM_STATE_TEMP_TELEMETRY);
     // call state handler
@@ -286,8 +373,11 @@ POWER_TEST(vr_telem_current_telemetry_handler__signal_default, NULL, NULL)
 // tests for temp telemetry handler
 POWER_TEST(vr_telem_temp_telemetry_handler__signal_entry, NULL, NULL)
 {
-    // TODO:  https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491034/
-    // set expectations for calls to send telemetry 
+    // expectations for the hw_send_telemetry (PM_TELEMETRY_VR_TEMP)
+    will_return(__wrap_power_timer_get_counter, 100);
+    expect_value(__wrap_FpFwAssert, expression, true);
+    expect_value(__wrap_sensor_fifo_svc_add_vr_temperature, vr_temperature->timestamp, 100);
+    expect_function_call(__wrap_sensor_fifo_svc_add_vr_temperature);
 
     // expect state change to idle
     setup_expectations_for_state_change(POWER_VR_TELEM_STATE_IDLE);
@@ -340,18 +430,23 @@ void setup_expectations_for_read_pvt(bool max_temp)
 
         s_dts_samples.valid_bits |= (max_temp ? 0 : 1 << pvt_idx); // mark entries valid if not testing max temp
         s_dts_samples.sample_data[pvt_idx] = TEMP2DOUT_FUSED((TEST_TEMP_DC/10), test_runconfig.fuses.dts_coeff_soctop[0].k_val, test_runconfig.fuses.dts_coeff_soctop[0].y_val);  // div by 10, since PVT only expect temp in degrees C
+
+        // Convert raw to temperature to check against telemetry
+        // If conversion logic (in power_hw_dts_pvt_raw_to_temp_dC) changed, this will need to be updated
+        s_pvt_teamp[pvt_idx] = (uint16_t)FLOAT_TO_UNSIGNED((DOUT2TEMP_FUSED(s_dts_samples.sample_data[pvt_idx], test_runconfig.fuses.dts_coeff_soctop[pvt_idx].k_val, test_runconfig.fuses.dts_coeff_soctop[pvt_idx].y_val)) * 10);
     }
-    
-    // TODO:  https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491034/
-    // generate VM data similar to above we can use to validate send telemetry calls
     
     s_vm_samples.valid_bits = 0;
     for (unsigned int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_VM; ++pvt_idx) {
         s_vm_samples.valid_bits |= 1 << pvt_idx; // mark entries valid
         s_vm_samples.sample_data[pvt_idx] = VOLTS2DOUT(TEST_VOLTS_F);
+
+        // Convert raw to voltage to check against telemetry
+        // If conversion logic (in process_pvt_vm_samples) changed, this will need to be updated
+        const bool div_by_2 = ((sconfig.soc_vm[pvt_idx].flags & VM_FLAGS_DIV2) != 0);
+        s_pvt_voltage[pvt_idx] = (uint16_t)FLOAT_TO_UNSIGNED((DOUT2VOLTS(s_vm_samples.sample_data[pvt_idx])) * (div_by_2 ? 2000 : 1000));
     }
    
-
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 
     // expectations for soc_pvt_handle_dts_irq_exclear
@@ -372,32 +467,46 @@ void setup_expectations_for_read_pvt(bool max_temp)
 }
 
 // tests for pvt_telem_pvt_telemetry_handler
-POWER_TEST(pvt_telem_pvt_telemetry_handler, NULL, NULL)
+POWER_TEST(pvt_telem_pvt_telemetry_handler, setup_telemetry_fifo, NULL)
 {
+    // expectations for the hw_send_telemetry (PM_TELEMETRY_SOC_TOP_TEMP)
+    will_return(__wrap_power_timer_get_counter, 100);
+    expect_value(__wrap_sensor_fifo_svc_add_soc_pvt_temperature, pvt_temperature->timestamp, 100);
+    expect_function_call(__wrap_sensor_fifo_svc_add_soc_pvt_temperature);
+
+    // expectations for the hw_send_telemetry (PM_TELEMETRY_SOC_TOP_VOLT)
+    will_return(__wrap_power_timer_get_counter, 200);
+    expect_value(__wrap_sensor_fifo_svc_add_soc_pvt_voltage, pvt_voltage->timestamp, 200);
+    expect_function_call(__wrap_sensor_fifo_svc_add_soc_pvt_voltage);
+
     // at the end we should go back to idle state
     setup_expectations_for_state_change(POWER_PVT_TELEM_STATE_IDLE);
 
     // expectations for the read pvt call
     setup_expectations_for_read_pvt(false);
 
-    // TODO:  https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491034/
-    // set expectations for calls to send telemetry 
-
     // call state handler
     call_handler(POWER_PVT_TELEM_STATE_READ_PVT, POWER_PVT_TELEM_SIGNAL_ENTRY, NULL);
 }
 
 // tests for pvt_telem_pvt_telemetry_handler
-POWER_TEST(pvt_telem_pvt_telemetry_handler__max_temp, NULL, NULL)
+POWER_TEST(pvt_telem_pvt_telemetry_handler__max_temp, setup_telemetry_fifo, NULL)
 {
+    // expectations for the hw_send_telemetry (PM_TELEMETRY_SOC_TOP_TEMP)
+    will_return(__wrap_power_timer_get_counter, 100);
+    expect_value(__wrap_sensor_fifo_svc_add_soc_pvt_temperature, pvt_temperature->timestamp, 100);
+    expect_function_call(__wrap_sensor_fifo_svc_add_soc_pvt_temperature);
+
+    // expectations for the hw_send_telemetry (PM_TELEMETRY_SOC_TOP_VOLT)
+    will_return(__wrap_power_timer_get_counter, 200);
+    expect_value(__wrap_sensor_fifo_svc_add_soc_pvt_voltage, pvt_voltage->timestamp, 200);
+    expect_function_call(__wrap_sensor_fifo_svc_add_soc_pvt_voltage);
+
     // at the end we should go back to idle state
     setup_expectations_for_state_change(POWER_PVT_TELEM_STATE_IDLE);
 
     // expectations for the read pvt call
     setup_expectations_for_read_pvt(true);
-
-    // TODO:  https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491034/
-    // set expectations for calls to send telemetry 
 
     // call state handler
     call_handler(POWER_PVT_TELEM_STATE_READ_PVT, POWER_PVT_TELEM_SIGNAL_ENTRY, NULL);

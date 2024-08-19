@@ -51,6 +51,7 @@ target_link_libraries(${TARGET}
         ms::lib::crash_dump::scp
         ms::lib::error_codes
         ms::lib::warm_start
+        ms::service::sensor_fifo
 )
 
 lint_target(${TARGET})

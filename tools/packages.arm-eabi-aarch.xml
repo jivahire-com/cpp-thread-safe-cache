@@ -11,6 +11,7 @@
 
     <nuget_packages>
         <package name="kingsgate.ap.baremetal" version="0.0.1.15-dev" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/Kingsgate.SoCFW/nuget/v3/index.json"/>
+        <package name="kingsgate.sdm.cded" version="0.1.0.48-dev" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/Kingsgate.SoCFW/nuget/v3/index.json"/>
     </nuget_packages>
 
     <pip_packages>

@@ -4,39 +4,131 @@
 
 <#
 .SYNOPSIS
-Copies the elf files to the R drive. Synchronizes the source to git to fetch on the FPGA system.
+Fetches the DC-SCM IP from a predefines list of PC names and their corresponding DC-SCP IP addresses
 
 .EXAMPLE
-Sync-FPGADebug
+Get-DCSCPIP 'DH6'
 #>
-Function Export-FPGAbins(
-    [Parameter(Mandatory=$false)] [string] $ShareDriveLoc = "\\lakshmi.svceng.com\rdu_lab\Users",
-    [Parameter(Mandatory=$false)] [string] $User = "mscp_shared_debug",
-    [Parameter(Mandatory=$false)] [string] $Repo = "Kingsgate.MSCP",
-    [Parameter(Mandatory=$false)] [string] $BinLoc = ".build\Debug\arm-eabi-aarch\bin",
-    [Parameter(Mandatory=$false)] [ValidateSet('git_commit', 'src_copy')] [string] $TransferMethod = "git_commit"
+function Get-DCSCPIP {
+    param (
+        [string]$PCName
+    )
+
+    # Define an array of hashtables with PC Name and DC-SCM IP
+    $IPList = @(
+        @{ "PC Name" = "DE3";  "DC-SCM IP" = "172.29.232.21" },
+        @{ "PC Name" = "DE4";  "DC-SCM IP" = "172.29.233.220"},
+        @{ "PC Name" = "DE6";  "DC-SCM IP" = "172.29.232.25" },
+        @{ "PC Name" = "DH3";  "DC-SCM IP" = "172.29.232.28" },
+        @{ "PC Name" = "DH4";  "DC-SCM IP" = "172.29.232.22" },
+        @{ "PC Name" = "DH5";  "DC-SCM IP" = "172.29.233.221"},
+        @{ "PC Name" = "DH6";  "DC-SCM IP" = "172.29.232.27" },
+        @{ "PC Name" = "DH7";  "DC-SCM IP" = "172.29.232.24" },
+        @{ "PC Name" = "DH10"; "DC-SCM IP" = "172.29.232.23" },
+        @{ "PC Name" = "DH11"; "DC-SCM IP" = "172.29.232.29" },
+        @{ "PC Name" = "DH12"; "DC-SCM IP" = "172.29.232.13" },
+        @{ "PC Name" = "DH13"; "DC-SCM IP" = "172.29.232.15" },
+        @{ "PC Name" = "DH14"; "DC-SCM IP" = "172.29.233.222"},
+        @{ "PC Name" = "DF2";  "DC-SCM IP" = "172.29.232.11" },
+        @{ "PC Name" = "DF5";  "DC-SCM IP" = "172.29.232.26" },
+        @{ "PC Name" = "DF8";  "DC-SCM IP" = "172.29.232.14" },
+        @{ "PC Name" = "DF11"; "DC-SCM IP" = "172.29.232.12" },
+        @{ "PC Name" = "DF14"; "DC-SCM IP" = "172.29.232.8"  }
+    )
+
+    # Find the matching PC Name and return the DC-SCM IP
+    $index = $IPList | Where-Object { $_."PC Name" -eq $PCName }
+
+    if ($index) {
+        return $index."DC-SCM IP"
+    } else {
+        return "PC Name not found"
+    }
+}
+
+
+<#
+.SYNOPSIS
+Clears the flash on the FPGA (Run only on an FPGA system)
+
+.EXAMPLE
+Clear-FPGAFlash $ip <dc-scm IP> $loc <location of the image> $file <image file> $user <username> $pw <password>
+#>
+Function Clear-FPGAFlash(
+    [Parameter(Mandatory=$true)] [string] $system,
+    [Parameter(Mandatory=$false)] [string] $loc = "//lakshmi.svceng.com/rdu_lab/Kingsgate/images/DC-SCM_V1_2/BIOS0",
+    [Parameter(Mandatory=$false)] [string] $file = "BIOS0_sp1_while_one.img",
+    [Parameter(Mandatory=$false)] [string] $user = "admin",
+    [Parameter(Mandatory=$false)] [string] $pw = "admin"
+)
+{
+    Write-FPGAFlash -system $system -loc $loc -file $file -user $user -pw $pw
+}
+
+<#
+.SYNOPSIS
+Programs the flash on the FPGA (Run only on an FPGA system)
+
+.EXAMPLE
+Write-FPGAFlash -ip <dc-scm IP> -loc <location of the image> -file <image file> -user <username> -pw <password>
+#>
+Function Write-FPGAFlash(
+    [Parameter(Mandatory=$true)] [string] $system,
+    [Parameter(Mandatory=$false)] [string] $loc = ".build/Debug/arm-eabi-aarch/bin/flash",
+    [Parameter(Mandatory=$false)] [string] $file = "kingsgate_ifwi_scp.flash",
+    [Parameter(Mandatory=$false)] [string] $user = "admin",
+    [Parameter(Mandatory=$false)] [string] $pw = "admin",
+    [Parameter(Mandatory=$false)] [string] $dest = "/tmp"
 )
 {
 
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+    Write-Host -ForegroundColor Red "                  ,,,,,                     "
+    Write-Host -ForegroundColor Red "            ,;) .'     ',                   "
+    Write-Host -ForegroundColor Red ";;,,_,-.-.,;;'_,||\   /;!,_                 "
+    Write-Host -ForegroundColor Red "   ;;/:|:);{ ;;;|| \./ ;|;;\__              "
+    Write-Host -ForegroundColor Red "     L;/-';/ \;;\',/ \//;;.') \             "
+    Write-Host -ForegroundColor Red "      :'''' - \;;'.___/;;;/  . _'-._        "
+    Write-Host -ForegroundColor Red "           \     \;\;;/;/.'_7:.  '). \_     "
+    Write-Host -ForegroundColor Red "            | '._ );}{;//.'    '-:_\'.,\    "
+    Write-Host -ForegroundColor Red "             \  ( |/;;/_/           \./;\   "
+    Write-Host -ForegroundColor Red "             |\ ( /;;/_/             /;;;\  "
+    Write-Host -ForegroundColor Red "             )__(/;;/_/              \;;;/  "
+    Write-Host -ForegroundColor Red "           _;:':;;;;:';-._                  "
+    Write-Host -ForegroundColor Red "          /   \''''''/  -.'-._              "
+    Write-Host -ForegroundColor Red "        .'     '.  ,'         '-.           "
+    Write-Host -ForegroundColor Red "       /    /   r--,..__       '.\          "
+    Write-Host -ForegroundColor Red "     .'    '  .'        '--._     ]         "
+    Write-Host -ForegroundColor Red "     (     :.(;>        _ .' '- ;/          "
+    Write-Host -ForegroundColor Red "     |      /:;(    ._.';(   __.'  Your friendly neighbourhood web-slinger says: "
+    Write-Host -ForegroundColor Red "      '- -''|;:/    (;;;;-'--'        - With Great Power comes Great Responsibility!!"
+    Write-Host -ForegroundColor Red "            |;/     |;;(              - Please only program your test FPGA!!!"
+    Write-Host -ForegroundColor Red "            ''      /;;|              - Do not flash someone else's FPGA!!!"
+    Write-Host -ForegroundColor Red "                    \;;|              - Use the right system name!!!"
+    Write-Host -ForegroundColor Red "                     \/                     "
+    
 
-    # # Create the directory structure if not present on R drive
-    Write-Host "Creating binary directory structure on R drive and copying elfs..."
-    New-Item -ItemType Directory -Force -Path "$ShareDriveLoc\$User\$Repo\$BinLoc"
-    Get-ChildItem -Path $BinLoc -Recurse -Filter *.elf | ForEach-Object { Copy-Item -Path $_.FullName -Destination $ShareDriveLoc\$User\$Repo\$BinLoc\ -Force }
+    $filepath = "$loc/$file"
+    $ip = Get-DCSCPIP "$system"
 
-    if ($TransferMethod -eq "git_commit") {
-        # Push all changes to git
-        Write-Host  "Pushing all changes to git... Fetch changes on FPGA system"
-        git add --all
-        git commit -m "FPGA Debug Source Sync - $timestamp"
-        git push -f origin HEAD
+    Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+    Write-Host -ForegroundColor Blue "Downloading Flash Image via BMC . . ."
+    Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+    Write-Host -ForegroundColor Blue "Ssytem: RDU-120015-$system"
+    Write-Host -ForegroundColor Blue "IP    : $ip"
+    Write-Host -ForegroundColor Blue "File  : $filepath"
+    Write-Host -ForegroundColor Blue "Dest  : ${ip}:${dest}"
+    Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+    pscp -scp -pw $pw $filepath $user@${ip}:$dest
+    Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
 
-    } elseif ($TransferMethod -eq "src_copy") {
-        # Copy src folder to R Drive
-        Write-Host  "Copying src folder to R:\$User\$Repo"
-        Copy-Item src $ShareDriveLoc\$User\$Repo -Force
-    }
+    Write-host ""
+
+    Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+    Write-Host -ForegroundColor Blue "Programming SoC Flash . . ."
+    Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+    plink -batch -ssh $user@${ip} -pw $pw bios-updater -mode fwupdate -file $dest/$file
+    Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
 }
 
 <#
@@ -63,7 +155,9 @@ Function Get-FPGAHelp()
     Write-Host ""
 }
 
+New-Alias -Name clearscpfw -Value Clear-FPGAFlash -Force
 New-Alias -Name expbins -Value Export-FPGAbins -Force
+New-Alias -Name flashscpfw -Value Write-FPGAFlash -Force
 New-Alias -Name helpfpga -Value Get-FPGAHelp -Force
 
 Export-ModuleMember -Alias * -Function *

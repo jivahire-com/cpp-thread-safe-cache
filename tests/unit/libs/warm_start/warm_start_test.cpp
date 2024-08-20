@@ -200,4 +200,46 @@ TEST_FUNCTION(ws_data_put_current_expected_id_last, setup, teardown)
 
     assert_ptr_equal(ws_data_put(WARM_START_ID_LAST, p_data, size), &(test_p_ws_list.entry.data));
 }
+
+TEST_FUNCTION(ws_data_put_current_expected_id_reserved_cli_test, setup, teardown)
+{
+    expect_function_call(__wrap__txe_mutex_get);
+    expect_function_call(__wrap__txe_mutex_put);
+
+    ws_data_entry_t test_p_next = {.id = WARM_START_ID_RESERVED_CLI_TEST, .checksum = -255, .size = 0x1, .data = 0xFF};
+    ws_data_list_t test_p_ws_list = {
+        .magic_id = WARM_START_MAGIC_ID,
+        .entry = {.p_next = &test_p_next, .id = WARM_START_ID_RESERVED, .checksum = -255, .size = 0x1, .data = 0xFF}};
+    p_ws_list = &test_p_ws_list;
+    uint32_t size = 0x1;
+
+    uint8_t data = 6;
+    void* p_data = &data;
+
+    assert_ptr_equal(ws_data_put(WARM_START_ID_RESERVED_CLI_TEST, p_data, size), &(test_p_next.data));
 }
+
+TEST_FUNCTION(ws_data_expected_equal_value_for_cli_id, setup, teardown)
+{
+    expect_function_call(__wrap__txe_mutex_get);
+    expect_function_call(__wrap__txe_mutex_put);
+    
+    ws_data_entry_t test_p_next = {.id = WARM_START_ID_LAST, .checksum = -255, .size = 0x1, .data = 0xFF};
+    ws_data_list_t test_p_ws_list = {.magic_id = 0, .entry = {.p_next = &test_p_next}};
+
+    p_ws_list = &test_p_ws_list;
+    uint32_t size = 0x1;
+
+    uint8_t data = 6;
+    void* p_data = &data;
+
+    assert_non_null(ws_data_put(WARM_START_ID_RESERVED_CLI_TEST, p_data, size));
+
+    expect_function_call(__wrap__txe_mutex_get);
+    expect_function_call(__wrap__txe_mutex_put);
+
+    assert_int_equal( *(int *)ws_data_get(WARM_START_ID_RESERVED_CLI_TEST, &size), data);
+}
+
+}
+

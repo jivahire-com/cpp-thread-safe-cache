@@ -19,13 +19,14 @@
 typedef enum _mod_ws_data_id_t_
 {
     WARM_START_ID_RESERVED           = 0,
+    WARM_START_ID_RESERVED_CLI_TEST,
     WARM_START_ID_POWER_FUSE,
     WARM_START_ID_LAST  // Keep last
 } mod_ws_data_id_t;
 
 #define WARM_START_ID_STRINGS \
     { \
-        "RESERVED", "POWER_FUSE", "LAST" \
+        "RESERVED", "CLI" , "POWER_FUSE", "LAST" \
     }
 
 /*-- Declarations (Statics and globals) --*/

@@ -1,0 +1,246 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+/**
+ * @file warm_start_cli.c
+ * This file contains the implementation of the Warm Start CLIs RD, WR & DISP
+ */
+
+/*------------- Includes -----------------*/
+#include <DfwkClient.h> // for DfwkAsyncRequestInititalize, PDFWK_INTER...
+#include <FpFwCli.h>
+#include <FpFwLinkedList.h>
+#include <FpFwUtils.h>
+#include <bug_check.h> // for BUG_ASSERT
+#include <stdint.h>
+#include <stdlib.h> // for atoi
+#include <string.h> // for strcmp
+#include <warm_start.h>
+#include <warm_start_cli.h> // for avs_client_init_completion_routine, pavs...
+#include <warm_start_i.h>
+
+/*-- Symbolic Constant Macros (defines) --*/
+#define MAX_DATA_COUNT 16
+
+/*-------------- Typedefs ----------------*/
+
+/*--------- Function Prototypes ----------*/
+
+static FPFW_CLI_STATUS ws_write_cli(int argc, const char** argv);
+static FPFW_CLI_STATUS ws_read_cli(int argc, const char** argv);
+static FPFW_CLI_STATUS ws_disp_cli(int argc, const char** argv);
+
+/*-- Declarations (Statics and globals) --*/
+
+extern ws_data_list_t* p_ws_list;
+
+static FPFW_CLI_COMMAND warm_start_cli_list[] = {
+    {NULL_LIST_ENTRY, "warm_start", "wsrd", ws_read_cli, "Warm Start Read Data", "syntax: wswr <id> <space separated bytes>\nWrites warm data\n"},
+    {NULL_LIST_ENTRY, "warm_start", "wswr", ws_write_cli, "Warm Start Write Data", "syntax: wsrd <id> \nReads warm data\n"},
+    {NULL_LIST_ENTRY, "warm_start", "wsdisp", ws_disp_cli, "Warm Start Display Data", "syntax: wsdisp \nDisplays information around the warm data mechanism\n"},
+};
+
+char* ws_reason_strings[] = {"Reset Reason unknown\n", "Power On Reset\n", "Pre AP core boot Warm Reset\n", "Post AP core boot Warm Reset\n"};
+
+char* id_strings[] = WARM_START_ID_STRINGS;
+
+/*------------- Functions ----------------*/
+
+/**
+ *  CLI command for writing warm data
+ *
+ *  @param argc
+ *      Number of arguments provided
+ *
+ *  @param argv
+ *      pointer array for the argument strings
+ *
+ *  @return
+ *      CLI_SUCCESS (always)
+ */
+static FPFW_CLI_STATUS ws_write_cli(int argc, const char** argv)
+{
+    uint32_t id;
+    uint8_t data[MAX_DATA_COUNT];
+
+    if (argc < 3)
+    {
+        FpFwCliPrint("Incorrect parameters\n");
+        FpFwCliPrint("Syntax: wswr <ID> <space separated bytes data>\n");
+        FpFwCliPrint("Example: wswr 7 1 23 45 6\n");
+        return CLI_SUCCESS;
+    }
+
+    if (argc - 2 > MAX_DATA_COUNT)
+    {
+        FpFwCliPrint("Too many data bytes provided. Maximum allowed is %d\n", MAX_DATA_COUNT);
+        return CLI_SUCCESS;
+    }
+
+    id = atoi(argv[1]) & 0xFF;
+
+    if (id < WARM_START_ID_LAST)
+    {
+        // Load data from other arguments
+        for (int32_t i = 2; (i < argc) && ((i - 3) < MAX_DATA_COUNT); i++)
+        {
+            data[i - 2] = atoi(argv[i]) & 0xFF;
+        }
+
+        ws_data_put((mod_ws_data_id_t)id, data, argc - 2);
+    }
+    else
+    {
+        FpFwCliPrint("Invalid ID %d\n", id);
+    }
+
+    return CLI_SUCCESS;
+}
+
+/**
+ *  CLI command for reading warm data
+ *
+ *  @param argc
+ *      Number of arguments provided
+ *
+ *  @param argv
+ *      pointer array for the argument strings
+ *
+ *  @return
+ *      CLI_SUCCESS (always)
+ */
+static FPFW_CLI_STATUS ws_read_cli(int argc, const char** argv)
+{
+    uint32_t count;
+    uint32_t id;
+    uint8_t* p_data;
+
+    if (argc < 2)
+    {
+        FpFwCliPrint("Incorrect parameters\n");
+        FpFwCliPrint("Syntax: wsrd <ID>\n");
+        FpFwCliPrint("Example: wsrd 7\n");
+        return CLI_SUCCESS;
+    }
+
+    id = atoi(argv[1]) & 0xFF;
+
+    if (id < WARM_START_ID_LAST)
+    {
+        p_data = ws_data_get(id, &count);
+
+        if (p_data == NULL)
+        {
+            FpFwCliPrint("Data for %d doesn't exist\n", id);
+            return CLI_SUCCESS;
+        }
+
+        FpFwCliPrint("Data for %d ", id);
+        if (id < WARM_START_ID_LAST)
+        {
+            FpFwCliPrint("(%s)", id_strings[id]);
+        }
+        for (uint32_t i = 0; i < count; i++)
+        {
+            if ((i % MAX_DATA_COUNT) == 0)
+            {
+                FpFwCliPrint("\n");
+                FpFwCliPrint("%04x: ", i);
+            }
+            FpFwCliPrint("%02x ", p_data[i]);
+        }
+
+        FpFwCliPrint("\n");
+    }
+    else
+    {
+        FpFwCliPrint("Invalid ID %d\n", id);
+    }
+
+    return CLI_SUCCESS;
+}
+
+/**
+ *  CLI command for displaying the warm data manifest
+ *
+ *  @param argc
+ *      Number of arguments provided
+ *
+ *  @param argv
+ *      pointer array for the argument strings
+ *
+ *  @return
+ *      CLI_SUCCESS (always)
+ */
+static FPFW_CLI_STATUS ws_disp_cli(int argc, const char** argv)
+{
+    FPFW_UNUSED(argc);
+    FPFW_UNUSED(argv);
+    BUG_ASSERT(p_ws_list != NULL);
+    ws_data_entry_t* p_entry = &p_ws_list->entry;
+    uint32_t total_reserved = 0;
+    uint32_t total_fragments = 0;
+    uint32_t total_taken = 0;
+    uint32_t total_entries = 0;
+    void* p_last = NULL;
+
+    if (p_ws_list->magic_id != WARM_START_MAGIC_ID)
+    {
+        FpFwCliPrint("No warm data present\n");
+        return CLI_SUCCESS;
+    }
+
+    // Display entry data
+    while (p_entry != NULL)
+    {
+        if (p_entry->id < WARM_START_ID_LAST)
+        {
+            FpFwCliPrint("ID: %s (%d), Size: %d, Location: 0x%08X \n",
+                         id_strings[p_entry->id],
+                         p_entry->id,
+                         p_entry->size,
+                         &p_entry->data);
+        }
+        else
+        {
+            FpFwCliPrint("ID: %d, Size: %d: Location: 0x%08X \n", p_entry->id, p_entry->size, &p_entry->data);
+        }
+
+        // Keep track of things
+        if (p_entry->id == WARM_START_ID_RESERVED)
+        {
+            total_reserved += p_entry->size;
+            if (p_entry->p_next != NULL)
+            {
+                total_fragments += p_entry->size;
+            }
+        }
+        else
+        {
+            total_taken += p_entry->size;
+        }
+        total_entries++;
+
+        p_last = p_entry;
+        p_entry = p_entry->p_next;
+    }
+
+    FpFwCliPrint("Number of Entries: %d\n", total_entries);
+    FpFwCliPrint("Space not used: %d\n", total_reserved);
+    FpFwCliPrint("Space used: %d\n", total_taken);
+    FpFwCliPrint("Fragmented Spaced: %d\n", total_fragments);
+    FpFwCliPrint("Expected Memory Taken: %d\n",
+                 ((total_entries - 1) * (sizeof(ws_data_entry_t) - 4)) + sizeof(ws_data_list_t) + total_taken + total_fragments);
+    FpFwCliPrint("Actual Memory Taken: %d\n",
+                 ((uint32_t)((uint32_t)p_last - (uint32_t)p_ws_list)) + sizeof(ws_data_entry_t));
+
+    return CLI_SUCCESS;
+}
+
+void warm_start_cli_init()
+{
+    FpFwCliRegisterTable(warm_start_cli_list, FPFW_ARRAY_SIZE(warm_start_cli_list));
+
+    FpFwCliPrint("Warm Start CLI Init Complete\n");
+}

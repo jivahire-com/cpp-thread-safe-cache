@@ -45,6 +45,7 @@ add_library(${TARGET}
         usb_init.c
         sds_init.c
         warm_start_init.c
+        warm_start_cli_init.c
         gpio_init.c
         i3c_controller_init.c
 )
@@ -120,6 +121,7 @@ target_link_libraries(
         ms::lib::register_headers
         ms::service::sds_service
         ms::lib::warm_start
+        ms::lib::warm_start::cli
         ms::service::atu_service
 )
 
@@ -208,6 +210,7 @@ target_link_libraries(
         ms::service::event_trace::decoder
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
+        ms::lib::cortex_m7::mpu
         silibs::common::lib_uart_pl011
         silibs::idhw
         silibs::idsw

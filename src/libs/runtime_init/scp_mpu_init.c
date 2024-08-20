@@ -91,7 +91,7 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
                                  CACHEABLE,
                                  BUFFERABLE,
                                  DISABLE_SUBREGION,
-                                 ARM_MPU_REGION_SIZE_512KB),
+                                 ARM_MPU_REGION_SIZE_1MB),
         },
         /**
          * MPU Region 4 - MSCP_EXP SCF RAM

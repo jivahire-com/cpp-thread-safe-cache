@@ -75,7 +75,7 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
             cmn800_sequence_param.BOOT_2D_ENABLE = true;
         }
     }
-    if (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE)
+    if (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE || idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE_RVP)
     {
         if (idhw_is_single_die_boot_en())
         {

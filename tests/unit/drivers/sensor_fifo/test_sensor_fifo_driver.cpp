@@ -176,9 +176,6 @@ TEST_FUNCTION(test_request_dispatch_global_hw_enable, fw_fifo_setup, fw_fifo_tea
     global_enable_req.header.RequestType = SENSOR_FIFO_SYNC_SET_GLOBAL_HW_ENABLE;
     global_enable_req.input.enable = true;
 
-    will_return_count(__wrap_mmio_read32, 0x0, -1); // value and number is not pertinent for this
-    expect_value(__wrap_scf_trigger_stop, scp_exp_csr_base_address, csr_placeholder);
-    expect_function_call(__wrap_init_scf_mhu);
     expect_value(__wrap_scf_trigger_start, scp_exp_csr_base_address, csr_placeholder);
     fpfw_status_t status = scf_mhu_request_dispatch_sync((PDFWK_SYNC_REQUEST_HEADER)&global_enable_req);
     assert_int_equal(status, FPFW_STATUS_SUCCESS);

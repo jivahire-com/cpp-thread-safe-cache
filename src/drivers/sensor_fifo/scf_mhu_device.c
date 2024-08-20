@@ -274,7 +274,6 @@ fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
         psensor_fifo_drv_inf_global_enable global_en_req = (psensor_fifo_drv_inf_global_enable)request;
         if (global_en_req->input.enable)
         {
-            reset_fifos(); // if re-enabling from test mode, need to reconfig hw
             scf_trigger_start(sp_scf_mhu_device_cfg->scf_exp_csr_base_address);
         }
         else

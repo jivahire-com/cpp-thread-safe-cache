@@ -13,6 +13,7 @@
 
 #include <bug_check.h>
 #include <ddr_i3c.h>
+#include <i3c_controller.h>
 #include <idhw.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -27,10 +28,11 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-static uint16_t ts_convert_temperature(uint8_t ts_low, uint8_t ts_high, bool* is_positive)
+static ddr_manager_i3c_temperature_t ts_convert_temperature(uint8_t ts_low, uint8_t ts_high)
 {
     uint8_t ts_integer = 0;
     uint8_t ts_fraction = 0;
+    bool is_positive = true;
 
     if (ts_low & BIT2)
     {
@@ -74,13 +76,14 @@ static uint16_t ts_convert_temperature(uint8_t ts_low, uint8_t ts_high, bool* is
     }
     if (ts_high & BIT4)
     {
-        *is_positive = false;
+        is_positive = false;
     }
     else
     {
-        *is_positive = true;
+        is_positive = true;
     }
-    return ((ts_integer << 8) | ts_fraction);
+
+    return (ddr_manager_i3c_temperature_t){{{ts_fraction, ts_integer}}, is_positive};
 }
 
 static int get_ts_idx(uint8_t i3c_dev_idx, int channel_idx)
@@ -109,7 +112,13 @@ static uint8_t i3c_get_dev_id(uint32_t ddrss_index)
     return DDR_I3C_DEV_MAX;
 }
 
-int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, uint16_t* ts_scaled_celsius, bool* is_positive)
+void ddr_manager_i3c_init()
+{
+    // Initialize I3C Interface
+    ddr_i3c_interface_set_instance(get_i3c0(), get_i3c1());
+}
+
+int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manager_i3c_temperature_t* ts_scaled_celsius)
 {
     BUG_ASSERT_PARAM(dimm_idx >= 0 && dimm_idx <= 11, dimm_idx, 0);
     BUG_ASSERT_PARAM(channel_idx == 0 || channel_idx == 1, channel_idx, 0);
@@ -121,6 +130,10 @@ int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, uint16_t*
 
     i3c_instance_t* i3c_instance;
     KNG_DIE_ID die_num = idhw_get_die_id();
+    // DIE0.I3C0: DDRSS 1/3/5
+    // DIE0.I3C1: DDRSS 0/2/4
+    // DIE1.I3C0: DDRSS 6/8/10
+    // DIE1.I3C1: DDRSS 7/9/11
     if (die_num == DIE_0)
     {
         i3c_instance = (dimm_idx % 2 ? i3c_instance_0 : i3c_instance_1);
@@ -143,7 +156,7 @@ int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, uint16_t*
     int status = ddr_i3c_interface_read_temp_sensor_mr_reg(i3c_instance, &i3c_cmd, ts_idx, TS_MR49, &ts_low, &data_len);
     if (status != DDR_I3C_INTERFACE_SUCCESS)
     {
-        printf("Temperature Sensor MR49 Read Failed");
+        printf("Temperature Sensor MR49 Read Failed\n");
         return DDR_MANAGER_I3C_TRANSACTION_ERROR;
     }
 
@@ -152,13 +165,11 @@ int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, uint16_t*
     status = ddr_i3c_interface_read_temp_sensor_mr_reg(i3c_instance, &i3c_cmd, ts_idx, TS_MR50, &ts_high, &data_len);
     if (status != DDR_I3C_INTERFACE_SUCCESS)
     {
-        printf("Temperature Sensor MR50 Read Failed");
+        printf("Temperature Sensor MR50 Read Failed\n");
         return DDR_MANAGER_I3C_TRANSACTION_ERROR;
     }
 
-    bool positive_value = true;
-    *ts_scaled_celsius = ts_convert_temperature(ts_low, ts_high, &positive_value);
-    *is_positive = positive_value;
+    *ts_scaled_celsius = ts_convert_temperature(ts_low, ts_high);
 
     return DDR_MANAGER_I3C_SUCCESS;
 }

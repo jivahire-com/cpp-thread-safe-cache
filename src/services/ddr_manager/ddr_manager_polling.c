@@ -13,68 +13,127 @@
  */
 
 /*------------- Includes -----------------*/
-// Need ddr I3C driver
 #include "ddr_manager_i.h"
+#include "ddr_manager_i3c.h"
 
 #include <stdio.h>
 
-// Tell cspell to ignore .. why are we using cSpell?
-/* cSpell:ignore DIMM DIMMS DFWK */
-
 /*-- Symbolic Constant Macros (defines) --*/
-#define MAX_DIMM_IDX (5) // Each die will address 6 DIMMs
 
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
+// Check DIMM temperatures against thresholds and engage BWL if necessary
+void check_dimm_temp_thresholds();
 
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
+// TODO: Stubs for config_manager_get_ddr_dimm_temp_threshold_low,
+// config_manager_get_ddr_dimm_temp_threshold_high, config_manager_get_ddr_dimm_temp_threshold_critical
+// Replace with actual implementation once config_manager is implemented ADO: #:1831724
+uint16_t config_manager_get_ddr_dimm_temp_threshold_low()
+{
+    return 80 << 8;
+}
+
+uint16_t config_manager_get_ddr_dimm_temp_threshold_high()
+{
+    return 100 << 8;
+}
+
+uint16_t config_manager_get_ddr_dimm_temp_threshold_critical()
+{
+    return 120 << 8;
+}
+
 void ddr_poll_dimms()
 {
-    ddr_poll_low_dimms();
-    ddr_poll_high_dimms();
-}
-
-void ddr_poll_low_dimms()
-{
-    // DIMMS 0-2
-    static int i3c0_dimm_idx = 0;
-    printf("I3C0: Polling DIMM %d\n", i3c0_dimm_idx);
-
-    // Todo: implement as async. calls to DDR I3C driver with callback that puts event on DDR manager queue
-    // DFWK DDR I3C read with callback: Poll both DIMM temperature sensors (ch. 0/1)
-    // Poll DIMM PMIC power register
-    // Send all to telemetry driver
-
-    i3c0_dimm_idx++;
-    if (i3c0_dimm_idx > 2)
+    if (!ddr_manager_platform_is_polling_supported())
     {
-        i3c0_dimm_idx = 0;
+        printf("DDR polling not supported on this platform, skipping\n");
+        return;
     }
-}
 
-void ddr_poll_high_dimms()
-{
-    // DIMMS 3-5
-    static int i3c1_dimm_idx = 3;
-    printf("I3C1: Polling DIMM %d\n", i3c1_dimm_idx);
-
-    // Todo: implement as async. calls to DDR I3C driver with callback that puts event on DDR manager queue
-    // DFWK DDR I3C read with callback: Poll both DIMM temperature sensors (ch. 0/1)
-    // Poll DIMM PMIC power register
-    // Send all to telemetry driver
-
-    i3c1_dimm_idx++;
-    if (i3c1_dimm_idx > 5)
+    for (int dimm_idx = 0; dimm_idx < NUM_DIMM; dimm_idx++)
     {
-        i3c1_dimm_idx = 3;
+        ddr_manager_i3c_temperature_t ts0_temp;
+        if (ddr_manager_temperature_sensor_read(dimm_idx, 0, &ts0_temp) == DDR_MANAGER_I3C_SUCCESS)
+        {
+            ddr_telemetry_update_dimm_temp(dimm_idx, 0, ts0_temp);
+        }
+        else
+        {
+            printf("Failed to read temperature sensor 0 on DIMM %d\n", dimm_idx);
+        }
+
+        ddr_manager_i3c_temperature_t ts1_temp;
+        if (ddr_manager_temperature_sensor_read(dimm_idx, 1, &ts1_temp) == DDR_MANAGER_I3C_SUCCESS)
+        {
+            ddr_telemetry_update_dimm_temp(dimm_idx, 1, ts0_temp);
+        }
+        else
+        {
+            printf("Failed to read temperature sensor 1 on DIMM %d\n", dimm_idx);
+        }
     }
+
+    check_dimm_temp_thresholds();
 }
 
-void ddr_process_i3c_data()
+// Checks cached DIMM temperatures against thresholds initially read from config knobs
+// Thresholds may be overridden via CLI at runtime (ddr_bwl command) but will not affect config knobs values
+// Above 'high' -> Engage BWL - unless bwl_force_disabled == true
+// Below 'low'  -> If BWL engaged, disengage - unless bwl_force_enabled == true
+// Above 'crit' -> Blow things up
+void check_dimm_temp_thresholds()
 {
-    // Process I3C data callback from DDR I3C driver when implemented
-    printf("Processing DDR I3C data\n");
+    uint16_t temp_threshold_low = config_manager_get_ddr_dimm_temp_threshold_low();
+    uint16_t temp_threshold_high = config_manager_get_ddr_dimm_temp_threshold_high();
+    uint16_t temp_threshold_critical = config_manager_get_ddr_dimm_temp_threshold_critical();
+
+    uint16_t max_dimm_temp = 0;
+    for (int dimm_idx = 0; dimm_idx < NUM_DIMM; dimm_idx++)
+    {
+        ddr_manager_i3c_temperature_t ts0_temp = ddr_telemetry_get_dimm_temp(dimm_idx, 0);
+        ddr_manager_i3c_temperature_t ts1_temp = ddr_telemetry_get_dimm_temp(dimm_idx, 1);
+
+        // Set the max_dimm_temp, accounting for negative temperatures
+        if (ts0_temp.is_positive)
+        {
+            max_dimm_temp = ts0_temp.as_uint16 > max_dimm_temp ? ts0_temp.as_uint16 : max_dimm_temp;
+        }
+        else if (ts1_temp.is_positive)
+        {
+            max_dimm_temp = ts1_temp.as_uint16 > max_dimm_temp ? ts1_temp.as_uint16 : max_dimm_temp;
+        }
+        else if (!ts0_temp.is_positive && !ts1_temp.is_positive)
+        {
+            // If both temps are negative, set the max to 0
+            max_dimm_temp = 0;
+        }
+
+        if ((ts0_temp.is_positive && ts0_temp.as_uint16 > temp_threshold_critical) ||
+            (ts0_temp.is_positive && ts1_temp.as_uint16 > temp_threshold_critical))
+        {
+            printf("DIMM %d has exceeded critical temperature threshold\n", dimm_idx);
+
+            // Blow things up
+            ddr_manager_set_thermal_trip_gpio();
+
+            // And BUG_CHECK here?
+        }
+    }
+
+    // Engage BWL if the max DIMM temperature exceeds the high threshold
+    if (max_dimm_temp > temp_threshold_high)
+    {
+        ddr_manager_engage_bwl();
+    }
+
+    // Disengage BWL if the max DIMM temperature falls below the low threshold
+    if (max_dimm_temp < temp_threshold_low)
+    {
+        ddr_manager_disengage_bwl();
+    }
 }

@@ -68,8 +68,7 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0, NULL, NULL)
     // Arrange
     const int dimm_idx = 0;
     const int channel_idx = 0;
-    uint16_t ts_scaled_celsius;
-    bool is_positive;
+    ddr_manager_i3c_temperature_t ts_scaled_celsius;
 
     // Set up the expected calls
     will_return_always(__wrap_idhw_get_die_id, DIE_0);
@@ -86,12 +85,13 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0, NULL, NULL)
     will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
 
     // Act
-    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius, &is_positive);
+    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius);
 
     // Assert
     assert_int_equal(DDR_MANAGER_I3C_SUCCESS, result);
-    assert_int_equal(0x3f19, ts_scaled_celsius);
-    assert_true(is_positive);
+    assert_int_equal(63, ts_scaled_celsius.temp_int);
+    assert_int_equal(25, ts_scaled_celsius.temp_frac);
+    assert_true(ts_scaled_celsius.is_positive);
 }
 
 TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0_die1, NULL, NULL)
@@ -99,8 +99,7 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0_die1, NULL, NULL)
     // Arrange
     const int dimm_idx = 0;
     const int channel_idx = 0;
-    uint16_t ts_scaled_celsius;
-    bool is_positive;
+    ddr_manager_i3c_temperature_t ts_scaled_celsius;
 
     // Set up the expected calls
     will_return_always(__wrap_idhw_get_die_id, DIE_1);
@@ -117,12 +116,13 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0_die1, NULL, NULL)
     will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
 
     // Act
-    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius, &is_positive);
+    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius);
 
     // Assert
     assert_int_equal(DDR_MANAGER_I3C_SUCCESS, result);
-    assert_int_equal(0x3f19, ts_scaled_celsius);
-    assert_true(is_positive);
+    assert_int_equal(63, ts_scaled_celsius.temp_int);
+    assert_int_equal(25, ts_scaled_celsius.temp_frac);
+    assert_true(ts_scaled_celsius.is_positive);
 }
 
 TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr1, NULL, NULL)
@@ -130,8 +130,7 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr1, NULL, NULL)
     // Arrange
     const int dimm_idx = 1;
     const int channel_idx = 0;
-    uint16_t ts_scaled_celsius;
-    bool is_positive;
+    ddr_manager_i3c_temperature_t ts_scaled_celsius;
 
     // Set up the expected calls
     will_return_always(__wrap_idhw_get_die_id, DIE_0);
@@ -148,12 +147,13 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr1, NULL, NULL)
     will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
 
     // Act
-    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius, &is_positive);
+    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius);
 
     // Assert
     assert_int_equal(DDR_MANAGER_I3C_SUCCESS, result);
-    assert_int_equal(0x3f19, ts_scaled_celsius);
-    assert_true(is_positive);
+    assert_int_equal(63, ts_scaled_celsius.temp_int);
+    assert_int_equal(25, ts_scaled_celsius.temp_frac);
+    assert_true(ts_scaled_celsius.is_positive);
 }
 
 TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr2, NULL, NULL)
@@ -161,8 +161,7 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr2, NULL, NULL)
     // Arrange
     const int dimm_idx = 2;
     const int channel_idx = 0;
-    uint16_t ts_scaled_celsius;
-    bool is_positive;
+    ddr_manager_i3c_temperature_t ts_scaled_celsius;
 
     // Set up the expected calls
     will_return_always(__wrap_idhw_get_die_id, DIE_0);
@@ -179,12 +178,13 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr2, NULL, NULL)
     will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
 
     // Act
-    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius, &is_positive);
+    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius);
 
     // Assert
     assert_int_equal(DDR_MANAGER_I3C_SUCCESS, result);
-    assert_int_equal(0x3f19, ts_scaled_celsius);
-    assert_true(is_positive);
+    assert_int_equal(63, ts_scaled_celsius.temp_int);
+    assert_int_equal(25, ts_scaled_celsius.temp_frac);
+    assert_true(ts_scaled_celsius.is_positive);
 }
 
 TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr3, NULL, NULL)
@@ -192,8 +192,7 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr3, NULL, NULL)
     // Arrange
     const int dimm_idx = 3;
     const int channel_idx = 0;
-    uint16_t ts_scaled_celsius;
-    bool is_positive;
+    ddr_manager_i3c_temperature_t ts_scaled_celsius;
 
     // Set up the expected calls
     will_return_always(__wrap_idhw_get_die_id, DIE_0);
@@ -210,12 +209,13 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr3, NULL, NULL)
     will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
 
     // Act
-    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius, &is_positive);
+    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius);
 
     // Assert
     assert_int_equal(DDR_MANAGER_I3C_SUCCESS, result);
-    assert_int_equal(0x3f19, ts_scaled_celsius);
-    assert_true(is_positive);
+    assert_int_equal(63, ts_scaled_celsius.temp_int);
+    assert_int_equal(25, ts_scaled_celsius.temp_frac);
+    assert_true(ts_scaled_celsius.is_positive);
 }
 
 TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr4, NULL, NULL)
@@ -223,8 +223,7 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr4, NULL, NULL)
     // Arrange
     const int dimm_idx = 4;
     const int channel_idx = 0;
-    uint16_t ts_scaled_celsius;
-    bool is_positive;
+    ddr_manager_i3c_temperature_t ts_scaled_celsius;
 
     // Set up the expected calls
     will_return_always(__wrap_idhw_get_die_id, DIE_0);
@@ -241,12 +240,13 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr4, NULL, NULL)
     will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
 
     // Act
-    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius, &is_positive);
+    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius);
 
     // Assert
     assert_int_equal(DDR_MANAGER_I3C_SUCCESS, result);
-    assert_int_equal(0x3f19, ts_scaled_celsius);
-    assert_true(is_positive);
+    assert_int_equal(63, ts_scaled_celsius.temp_int);
+    assert_int_equal(25, ts_scaled_celsius.temp_frac);
+    assert_true(ts_scaled_celsius.is_positive);
 }
 
 TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0_negative, NULL, NULL)
@@ -254,8 +254,7 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0_negative, NULL, NULL
     // Arrange
     const int dimm_idx = 0;
     const int channel_idx = 0;
-    uint16_t ts_scaled_celsius;
-    bool is_positive;
+    ddr_manager_i3c_temperature_t ts_scaled_celsius;
 
     // Set up the expected calls
     will_return_always(__wrap_idhw_get_die_id, DIE_0);
@@ -272,12 +271,12 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0_negative, NULL, NULL
     will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
 
     // Act
-    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius, &is_positive);
+    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius);
 
     // Assert
     assert_int_equal(DDR_MANAGER_I3C_SUCCESS, result);
-    assert_int_equal(0x3f19, ts_scaled_celsius);
-    assert_false(is_positive);
+    assert_int_equal(0x3f19, ts_scaled_celsius.as_uint16);
+    assert_false(ts_scaled_celsius.is_positive);
 }
 
 TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0_low_word_error, NULL, NULL)
@@ -285,8 +284,7 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0_low_word_error, NULL
     // Arrange
     const int dimm_idx = 0;
     const int channel_idx = 0;
-    uint16_t ts_scaled_celsius;
-    bool is_positive;
+    ddr_manager_i3c_temperature_t ts_scaled_celsius;
 
     // Set up the expected calls
     will_return_always(__wrap_idhw_get_die_id, DIE_0);
@@ -297,7 +295,7 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0_low_word_error, NULL
     will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_ERROR);
 
     // Act
-    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius, &is_positive);
+    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius);
 
     // Assert
     assert_int_equal(DDR_MANAGER_I3C_TRANSACTION_ERROR, result);
@@ -308,8 +306,7 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0_high_word_error, NUL
     // Arrange
     const int dimm_idx = 0;
     const int channel_idx = 0;
-    uint16_t ts_scaled_celsius;
-    bool is_positive;
+    ddr_manager_i3c_temperature_t ts_scaled_celsius;
 
     // Set up the expected calls
     will_return_always(__wrap_idhw_get_die_id, DIE_0);
@@ -326,7 +323,7 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0_high_word_error, NUL
     will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_ERROR);
 
     // Act
-    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius, &is_positive);
+    int result = ddr_manager_temperature_sensor_read(dimm_idx, channel_idx, &ts_scaled_celsius);
 
     // Assert
     assert_int_equal(DDR_MANAGER_I3C_TRANSACTION_ERROR, result);

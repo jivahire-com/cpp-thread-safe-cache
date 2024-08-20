@@ -17,6 +17,7 @@ extern "C" {
 #include <ddr_manager_i.h> // for ddr_poll_dimms, ddr_worker_thread_func
 #include <error_handler.h> // for set_error_handler_return
 #include <tx_api.h>        // for TX_SUCCESS, ULONG, TX_NOT_DONE, TX_NO_MEMORY
+#include <FpFwUtils.h>     // for FPFW_UNUSED
 } // extern "C"
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -32,6 +33,21 @@ extern "C" {
 //
 // Mocks
 //
+extern "C"
+{
+UINT __wrap__txe_mutex_create(TX_MUTEX* mutex_ptr, CHAR* name_ptr, UINT inherit, UINT mutex_control_block_size)
+{
+    assert_non_null(mutex_ptr); // Ensure the mutex pointer is not NULL
+
+    assert_non_null(name_ptr);
+    FPFW_UNUSED(inherit);
+    FPFW_UNUSED(mutex_control_block_size);
+
+    function_called();
+
+    return 0;
+}
+} // extern "C"
 
 //
 // Tests
@@ -199,8 +215,11 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     expect_value(__wrap__txe_thread_create, auto_start, TX_AUTO_START);
     expect_any(__wrap__txe_thread_create, thread_control_block_size);
     will_return(__wrap__txe_thread_create, TX_SUCCESS);
-
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
+
+    // Telemetry init
+    expect_function_call(__wrap__txe_mutex_create);
+
     ddr_manager_init(&ddr_service_ctx, &config);
 }
 
@@ -240,9 +259,4 @@ TEST_FUNCTION(ddr_worker_thread_func_test_message_types, NULL, NULL)
 {
     ddr_create_bdat();
     ddr_create_smbios_tables();
-    ddr_process_i3c_data();
-    ddr_poll_dimms();
-    ddr_poll_dimms();
-    ddr_poll_dimms();
-    ddr_poll_dimms();
 }

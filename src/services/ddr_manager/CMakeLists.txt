@@ -5,9 +5,13 @@ set(LIBS PUBLIC fwlib.dfwk fwlib.lib.assert)
 add_library(${TARGET}
     STATIC
         ddr_manager_acpi_smbios_tables.c
+        ddr_manager_bwl.c
+        ddr_manager_gpio.c
         ddr_manager_i3c.c
         ddr_manager_memory_map.c
+        ddr_manager_platform.c
         ddr_manager_polling.c
+        ddr_manager_telemetry.c
         ddr_manager_top.c
 )
 
@@ -31,6 +35,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         ms::lib::crash_dump::scp
         ms::lib::error_codes
+        ms::lib::i3c_controller
         ms::service::sds_service
     PUBLIC
         fwlib.platform.dfwkhost.threadx

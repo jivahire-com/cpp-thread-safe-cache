@@ -69,7 +69,6 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
 
             case DDR_I3C_DATA_READY_EVENT:
                 // This should be triggered by an async. completion notification from the DDR I3C driver / dfwk
-                ddr_process_i3c_data();
                 break;
 
             default:
@@ -174,4 +173,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
         printf("timer create err %d\n", status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
+
+    ddr_manager_i3c_init();
+    ddr_init_telemetry();
 }

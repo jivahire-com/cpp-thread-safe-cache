@@ -21,6 +21,17 @@ typedef enum {
     DDR_MANAGER_I3C_TRANSACTION_ERROR = -1,
 } ddr_manager_i3c_status_t;
 
+typedef struct {
+    union {
+        struct {
+            uint8_t temp_frac; // 0.01 degree C
+            uint8_t temp_int;  // degree C
+        };
+        uint16_t as_uint16;
+    };
+    bool is_positive;  // true if positive, false if negative
+} ddr_manager_i3c_temperature_t;
+
 typedef enum
 {
     TS_MR0 = 0,    // Device Type MSB
@@ -64,4 +75,9 @@ typedef enum
  *  @return
  *      status - Return status
  */
-int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, uint16_t* ts_scaled_celsius, bool* is_positive);
+int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manager_i3c_temperature_t* ts_scaled_celsius);
+
+/**
+ *  API to initialize the DDR I3C interface
+ */
+void ddr_manager_i3c_init();

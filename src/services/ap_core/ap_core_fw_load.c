@@ -18,6 +18,10 @@
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_send, fpfw_icc_base...
 #include <fpfw_status.h>          // for fpfw_init_get_handle, FPFW_INIT_S...
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
+#define __NO_CSR_TYPEDEFS__
+#include <mcp_top_regs.h>
+#undef __NO_CSR_TYPEDEFS__
+#include <mcp_exp_top_regs.h>
 #include <startup_shutdown_ssi.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -26,6 +30,7 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
+#define TFA_FW_LOAD_ADDRESS 0x10000
 
 /*-------- Function Prototypes -----------*/
 
@@ -34,13 +39,13 @@ static kng_hsp_mailbox_msg recv_payload_buffer;
 static fpfw_icc_base_ctx_t* p_icc_hspmbx_ctx;
 
 /*------------- Functions ----------------*/
-static void request_load_tfa_send_complete_cb(void* context, fpfw_status_t status)
+static void request_send_complete_cb(void* context, fpfw_status_t status)
 {
     FPFW_UNUSED(context);
     FPFW_UNUSED(status);
 }
 
-static void request_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+static void request_tfa_load_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     FPFW_UNUSED(context);
     FPFW_UNUSED(output_size_bytes);
@@ -51,14 +56,7 @@ static void request_recv_complete_notify(void* context, size_t output_size_bytes
 
     DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
 
-    APCORE_LOG_TRACE("Request FW load received");
-}
-
-/*------------- Functions ----------------*/
-static void request_send_complete_cb(void* context, fpfw_status_t status)
-{
-    FPFW_UNUSED(context);
-    FPFW_UNUSED(status);
+    APCORE_LOG_TRACE("Request TFA FW load received");
 }
 
 static void request_mcp_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -115,13 +113,11 @@ void ap_core_request_mcp_load(fpfw_icc_base_ctx_t* icc_hspmbx_ctx)
     fpfw_status_t status = fpfw_icc_base_recv(p_icc_hspmbx_ctx, &recv_params);
     BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
 
-    // TODO: Fill out the request with appropriate values
-    // Need to add an ADO
     static kng_hsp_mailbox_cmd_load_fw_req send_request = {
         .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
         .header.context = 0,
         .id = HspFirmwareIdMcp,
-        .address = 0x00000000,
+        .address = MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM0_ADDRESS,
         .size = 0x00000000,
     };
 
@@ -147,7 +143,7 @@ void ap_core_request_load_tfa(fpfw_icc_base_ctx_t* icc_hspmbx_ctx)
         .payload_buffer = &recv_payload_buffer,
         .buffer_size = sizeof(recv_payload_buffer),
         .recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_RSP,
-        .cb = request_recv_complete_notify,
+        .cb = request_tfa_load_recv_complete_notify,
         .cb_ctx = NULL,
     };
 
@@ -161,13 +157,13 @@ void ap_core_request_load_tfa(fpfw_icc_base_ctx_t* icc_hspmbx_ctx)
         .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
         .header.context = 0,
         .id = HspFirmwareIdPeManagementMode,
-        .address = 0x00000000,
+        .address = TFA_FW_LOAD_ADDRESS,
         .size = 0x00000000,
     };
 
     static fpfw_icc_base_send_req_t send_params = {
         .payload_buffer = &send_request,
-        .cb = request_load_tfa_send_complete_cb,
+        .cb = request_send_complete_cb,
         .cb_ctx = NULL,
         .buffer_size = sizeof(send_request),
     };

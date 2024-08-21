@@ -22,6 +22,10 @@ extern "C" {
 #include <ap_core_init.h>
 #include <corebits.h>
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
+#define __NO_CSR_TYPEDEFS__
+#include <mcp_top_regs.h>
+#undef __NO_CSR_TYPEDEFS__
+#include <mcp_exp_top_regs.h>
 #include <startup_shutdown_ssi.h>
 
 } // extern "C"
@@ -399,11 +403,12 @@ AP_CORE_TEST(dispatch_bl31_load, NULL, NULL)
     will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_RSP);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 
+#define TFA_FW_LOAD_ADDRESS 0x10000
     kng_hsp_mailbox_cmd_load_fw_req send_request = {
         .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
         .header.context = 0,
         .id = HspFirmwareIdPeManagementMode,
-        .address = 0x00000000,
+        .address = TFA_FW_LOAD_ADDRESS,
         .size = 0x00000000,
     };
     expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request, sizeof(send_request));
@@ -437,7 +442,7 @@ AP_CORE_TEST(dispatch_mcp_load, NULL, NULL)
         .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
         .header.context = 0,
         .id = HspFirmwareIdMcp,
-        .address = 0x00000000,
+        .address = MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM0_ADDRESS,
         .size = 0x00000000,
     };
     expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request, sizeof(send_request));

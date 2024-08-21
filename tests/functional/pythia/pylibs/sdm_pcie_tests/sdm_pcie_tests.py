@@ -5,6 +5,7 @@
 - Tests that checks for sdm memcpy completes from AP core0.
 """
 
+import re
 from pathlib import Path
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
@@ -91,29 +92,56 @@ class sdm_pcie_tests(EchoFallsBaseTest):
         self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel().open()
         self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel().is_open()
 
-    def check_success_strings(self, dut_lines_data, *success_strings):
+
+    def strings_to_look(self, dut_lines_data, success_strings, failure_strings):
         """
-        Check if the success strings are present in the provided lines.
+        Check for failure and success strings in the provided lines, ignoring numbers in the data.
 
         :param dut_lines_data: List of lines read from UART.
         :param success_strings: List of success strings to look for.
-        :return: List of found success strings.
+        :param failure_strings: List of failure strings to look for.
+        :return: True if all success strings are found as full lines and failure strings are absent.
         """
-        dut_lines = ' '.join(dut_lines_data)
-        found_strings = []
-        test_pass = False
+        print("dut lines data:", dut_lines_data)
 
-        for line in dut_lines.splitlines():
-            for success_string in success_strings:
-                if success_string in line:
-                    print(f"Success string found: {line}")
-                    found_strings.append(success_string)
-                    test_pass = True
+        # Compile a pattern for each failure string to match exact words
+        failure_patterns = [re.compile(r'\b{}\b'.format(re.escape(fail_str))) for fail_str in failure_strings]
 
-        self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel().close()
+        # Check for any failure string in any line
+        for line in dut_lines_data:
+            for fail_pattern in failure_patterns:
+                if re.search(fail_pattern, line):
+                    self.log.error(f"Failure string '{fail_pattern.pattern}' found in line: {line.strip()}")
+                    return False  # Immediate return on failure detection
 
-        # Notify of the test results. If test_pass is False it is an error.
-        self.test_notify(step="sdm_pcie", msg="test done", _is_error=not test_pass)
+        # Clean and preprocess the lines by removing or replacing numbers
+        modified_dut_lines_data = []
+        for line in dut_lines_data:
+            # Remove numbers
+            modified_line = re.sub(r'\d+', '', line).strip()
+            modified_dut_lines_data.append(modified_line)
+
+        # Join all modified lines into a single text
+        full_text = ' '.join(modified_dut_lines_data)
+
+        # Check for the presence of each success string in the modified text
+        for success_str in success_strings:
+            if success_str not in full_text:
+                self.log.error(f"Success string '{success_str}' not found in data.")
+                return False
+            else:
+                self.log.info(f"Success string '{success_str}' found.")
+
+        # Return True if all success strings are found and no failures are detected
+        return True
+
+
+    def test_teardown(self):
+        """
+        Test teardown function:
+            1. Close the connection.
+            2. Teardown the DUT.
+        """
+        if self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel().is_open():
+            self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel().close()
         self.dut.teardown()
-
-        return found_strings

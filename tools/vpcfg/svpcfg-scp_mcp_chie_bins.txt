@@ -34,6 +34,7 @@ KingsgateSVP.DIE_0.RMSS.SCP.SCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/config/INITVTOR
 KingsgateSVP.DIE_0.RMSS.SCP.terminal_uart_scp.#SCML_PROPERTIES#TerminalAutoOpen=false
 KingsgateSVP.DIE_0.SDMSS.SDM_EMCPU.SDM_EMCPU_UART.#EXTRA_PROPERTIES#runtime_disabled=true
 KingsgateSVP.DIE_0.SDMSS.SDM_EMCPU.terminal_uart_sdm.#EXTRA_PROPERTIES#runtime_disabled=true
+KingsgateSVP.DIE_0.CDEDSS.SDM_EMCPU.SDM_EMCPU_UART.#EXTRA_PROPERTIES#TerminalAutoOpen=false
 KingsgateSVP.DIE_1.#EXTRA_PROPERTIES#runtime_disabled=true
 KingsgateSVP.DIE_0.RPSS0.#EXTRA_PROPERTIES#runtime_disabled=false
 KingsgateSVP.DIE_0.VABRPSS0.#EXTRA_PROPERTIES#runtime_disabled=false

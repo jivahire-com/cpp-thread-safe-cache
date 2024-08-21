@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 *** Settings ***
 Documentation    Verifies SCP/MCP Heart Beat transmits on the UART
 
@@ -11,8 +13,14 @@ Library     pylibs.heart_beat.mscp_heart_beat
 ...             host_config=${HOST_CONFIG_DIR}/mscp_runtime_fw.json
 ...             WITH NAME    heart_beat_test_lib
 
+#This tag can be used for filtering, executing, or reporting specific tests related to this identifier.
+Force Tags          1958704
+
+*** Variables ***
+${ado_number}       1958704
+
 *** Test Cases ***
-Test Case - MSCP Heart Beat
+Test Case - MSCP: MSCP HeartBeat Test: FR [1423800] ${ado_number}
     # Get an instance of the test library
     ${test_object}=    Get Library Instance    heart_beat_test_lib
     

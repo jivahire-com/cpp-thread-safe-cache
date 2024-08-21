@@ -1,4 +1,5 @@
 add_subdirectory(accelerator_ip)
+add_subdirectory(accel_intr)
 add_subdirectory(boot_loader)
 add_subdirectory(corebits)
 add_subdirectory(crash_dump)

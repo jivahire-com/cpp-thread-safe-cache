@@ -1,5 +1,6 @@
 
 add_subdirectory(accelerator_ip)
+add_subdirectory(accel_intr)
 add_subdirectory(arm_intrinsic)
 add_subdirectory(boot_loader)
 add_subdirectory(build_data)

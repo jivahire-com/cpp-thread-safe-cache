@@ -10,6 +10,7 @@
 #pragma once
 
 /*--------------- Includes ---------------*/
+#include <stdint.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -22,3 +23,12 @@
  *
  */
 #define __DSB() 
+
+/*--------- Function Prototypes ----------*/
+
+/**
+ * __RBIT function is specific to ARM ISA
+ */
+uint32_t __RBIT(uint32_t val);
+
+

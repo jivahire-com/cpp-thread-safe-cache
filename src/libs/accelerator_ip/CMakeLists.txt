@@ -23,6 +23,7 @@ target_include_directories(
 target_link_libraries(
     ${TARGET}
     PUBLIC
+        ms::lib::accel_intr
         silibs::accelip_ss_init
         silibs::atu
         silibs::kng_silibs_platform

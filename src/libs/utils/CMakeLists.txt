@@ -11,6 +11,13 @@ target_include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+target_link_libraries(
+    ${TARGET}
+    PUBLIC
+        ms::lib::arm_intrinsic
+)
+
+
 lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})

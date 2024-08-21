@@ -1,3 +1,5 @@
+add_subdirectory(accel_intr_client)
+add_subdirectory(accel_intr_service)
 add_subdirectory(ap_core)
 add_subdirectory(cli_ddr)
 add_subdirectory(ddr_manager)

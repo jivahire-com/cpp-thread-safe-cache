@@ -40,6 +40,7 @@ ras_framework
 ras_mcp
 ras_mscp
 ras_scp
+sdm_ext_interrupts
 sdm_init
 semaphore
 sensor_ram_bridge

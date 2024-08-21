@@ -1,3 +1,5 @@
+add_subdirectory(accel_intr_client_init)
+add_subdirectory(accel_intr_service_init)
 add_subdirectory(ap_core_init)
 add_subdirectory(avs_scp_init)
 add_subdirectory(avs_scp_cli_init)

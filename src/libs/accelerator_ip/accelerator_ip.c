@@ -19,6 +19,7 @@
 #include "accelerator_ip.h"
 
 #include <FpFwAssert.h>          // for FPFW_RUNTIME_ASSERT
+#include <accel_intr.h>          // for accel_intr_irq_init
 #include <accelerator_ip_priv.h> // for get_accelerator_ctxt
 #include <atu_lib.h>             // for atu_map, atu_unmap, atu_map...
 #include <idsw.h>                // for idsw_get_platform_sdv, idsw...
@@ -211,11 +212,35 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
         return ACCEL_RET_FAIL_SS_INIT;
     }
 
+/**
+ * TODO: Task 1982595: [SCP] Accel IP Move to Static ATU map
+ */
+#if 0
     ret = atu_unmap(ATU_ID_MSCP, &atu_map_entry);
     if (ret != SILIBS_SUCCESS)
     {
         critical_print("Accel IP: init_accelerator: ATU UNMAP failed.\n");
         return ACCEL_RET_FAIL_ACCEL_IP;
+    }
+    debug_print("atu unmapped for accel ip\n");
+#endif
+
+    /**
+     * TODO: Task 1976613: [SCP] Enable Accel Interrupt handling in SVP
+     */
+    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+    {
+        /**
+         * TODO: Task 1973445: [SCP] Move Accel Intr init in SCP after mailbox communication
+         */
+        printf("accel lib: Initialize accel interrupt\n");
+
+        ret = accel_intr_irq_init(get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type), atu_map_entry.mscp_start_address);
+        if (ret != ACCEL_INTR_RET_SUCCESS)
+        {
+            critical_print("Accel IP: init_accelerator: Accel Interrupt init failed.\n");
+            return ACCEL_RET_FAIL_INTR_INIT;
+        }
     }
 
     return ACCEL_RET_SUCCESS;

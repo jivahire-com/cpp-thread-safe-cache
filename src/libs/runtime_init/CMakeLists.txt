@@ -8,6 +8,8 @@ set(TARGET kng.lib.scp.runtime_init.scp)
 add_library(${TARGET}
     OBJECT
         accelerator_ip_init.c
+        accel_intr_client_init.c
+        accel_intr_service_init.c
         ap_core_init.c
         atu_init.c
         avs_scp_init.c
@@ -97,6 +99,8 @@ target_link_libraries(
         ms::lib::threadx
         ms::lib::ddr::cli
         ms::lib::tower
+        ms::service::accel_intr_client
+        ms::service::accel_intr_service
         ms::service::ap_core
         ms::service::ddr_manager
         ms::service::event_trace::collector

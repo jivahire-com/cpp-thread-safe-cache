@@ -17,6 +17,9 @@ parameters:
 - name: Pool
   type: string
   default: '1pfw-kingsgate-windows'  
+- name: TestAgent
+  type: string
+  default: 'SVP'  
 
 
 jobs:
@@ -64,6 +67,8 @@ jobs:
           $bin_src_dir = "$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug/bin"
           $bin_dest_dir = "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch"
           Copy-Item $bin_src_dir $bin_dest_dir -Recurse -Force
+
+          flashscpfw ${{ parameters.TestAgent }}
 
           Invoke-Pythia -test ${{ parameters.Test_Suite_Path }}\${{ parameters.Platform }} -platform ${{ parameters.Platform }}
 

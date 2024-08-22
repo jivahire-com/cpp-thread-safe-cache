@@ -34,6 +34,7 @@ stages:
       Platform: fpga
       ArtifactName: FPGA_Pythia_Tests
       Pool: 1pfw-kingsgate-big-fpga
+      TestAgent: 'DH3'
 
 # This is to tag the commits that pass nightly tests.
 - stage: Promote

@@ -5,6 +5,7 @@
 // --------------------------------------------------------------------
 &CUR_DIR=Os.PresentPracticeDirectory()
 &REPO_PATH_AP_BAREMETAL_ELF = OS.ENV(REPO_APP_PATH_kingsgate.ap.baremetal)
+&REPO_PATH_AP_SDM_CDED_ELF = OS.ENV(REPO_APP_PATH_kingsgate.sdm.cded)
 &REPO_PATH_KINGSGATE_FW_SCRIPTS = OS.ENV(REPO_APP_PATH_kingsgate.fw.scripts)
 &REPO_ROOT_DIR = OS.ENV(REPO_APP_ROOT)
 &REPO_APP_BUILD_DIR = OS.ENV(REPO_APP_BUILD_DIR)
@@ -22,10 +23,9 @@
 // These paths point to the baseline elfs included in the repo for testing. 
 &SCP_ELF_LOC="&REPO_APP_BUILD_DIR\&REPO_APP_BUILD_CONFIG\arm-eabi-aarch\bin\scp\scp_fw.elf"
 &MCP_ELF_LOC="&REPO_APP_BUILD_DIR\&REPO_APP_BUILD_CONFIG\arm-eabi-aarch\bin\mcp\mcp_fw.elf"
-&SDM_ELF_LOC="&RUN_DIR\elfs\sdm_fw.elf"
-&CDED_ELF_LOC="&RUN_DIR\elfs\cded_fw.elf"
+&SDM_ELF_LOC="&REPO_PATH_AP_SDM_CDED_ELF\build\bin\arm-eabi-aarch\Debug\sdm\sdm_fw.elf"
+&CDED_ELF_LOC="&REPO_PATH_AP_SDM_CDED_ELF\build\bin\arm-eabi-aarch\Debug\cded\cded_fw.elf"
 &AP_ELF_LOC="&REPO_PATH_AP_BAREMETAL_ELF\build\bin\arm-aarch64-none\Debug\ap_test.elf"
-
 
 // Update FPGA Version here
 &FPGA_REV="R21"
@@ -33,19 +33,29 @@
 // --------------------------------------------------------------------
 // Setup Script Execution Options
 // --------------------------------------------------------------------
-// Setting to Bypass Clocks' setup: '1' = INIT Clocks from Script
-&INIT_CLOCKS=1.
+// Boot from flash: '1' = Boot from flash (No HSP init/SCP download in code)
+&BOOT_FROM_FLASH=1.
 
 // Setting to initialize AP Cores: '1' = Init AP Cores
 &INIT_AP_CORES= 1.
 
 // Setting to initialize SDM Cores: '1' = Init SDM and load with ProdFW
-&SDM_LOAD_PROD_FW= 0.
+&SDM_LOAD_PROD_FW= 1.
 
 // Setting to initialize CDED Cores: '1' = Init CDED and load with ProdFW
-&CDED_LOAD_PROD_FW= 0.
+&CDED_LOAD_PROD_FW= 1.
 
 // --------------------------------------------------------------------
 // Launch SCPInitFPGA
 // --------------------------------------------------------------------
-CD.DO &RUN_DIR/SCPInitFPGA.cmm
+
+IF (&BOOT_FROM_FLASH==1.)
+(
+    PRINT "Run this on HSP Trace32 . . ."
+    CD.DO &RUN_DIR/HSPInitFPGA.cmm
+)
+ELSE
+(
+    PRINT "Run this on SCP Trace32 . . ."
+    CD.DO &RUN_DIR/SCPInitFPGA.cmm
+)

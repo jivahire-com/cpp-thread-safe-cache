@@ -34,7 +34,7 @@ function Get-DCSCPIP {
         @{ "PC Name" = "DF8";  "DC-SCM IP" = "172.29.232.14" },
         @{ "PC Name" = "DF11"; "DC-SCM IP" = "172.29.232.12" },
         @{ "PC Name" = "DF14"; "DC-SCM IP" = "172.29.232.8"  }
-    )
+    )  
 
     # Find the matching PC Name and return the DC-SCM IP
     $index = $IPList | Where-Object { $_."PC Name" -eq $PCName }
@@ -42,7 +42,7 @@ function Get-DCSCPIP {
     if ($index) {
         return $index."DC-SCM IP"
     } else {
-        return "PC Name not found"
+        return "na"
     }
 }
 
@@ -82,53 +82,64 @@ Function Write-FPGAFlash(
 )
 {
 
-    Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-    Write-Host -ForegroundColor Red "                  ,,,,,                     "
-    Write-Host -ForegroundColor Red "            ,;) .'     ',                   "
-    Write-Host -ForegroundColor Red ";;,,_,-.-.,;;'_,||\   /;!,_                 "
-    Write-Host -ForegroundColor Red "   ;;/:|:);{ ;;;|| \./ ;|;;\__              "
-    Write-Host -ForegroundColor Red "     L;/-';/ \;;\',/ \//;;.') \             "
-    Write-Host -ForegroundColor Red "      :'''' - \;;'.___/;;;/  . _'-._        "
-    Write-Host -ForegroundColor Red "           \     \;\;;/;/.'_7:.  '). \_     "
-    Write-Host -ForegroundColor Red "            | '._ );}{;//.'    '-:_\'.,\    "
-    Write-Host -ForegroundColor Red "             \  ( |/;;/_/           \./;\   "
-    Write-Host -ForegroundColor Red "             |\ ( /;;/_/             /;;;\  "
-    Write-Host -ForegroundColor Red "             )__(/;;/_/              \;;;/  "
-    Write-Host -ForegroundColor Red "           _;:':;;;;:';-._                  "
-    Write-Host -ForegroundColor Red "          /   \''''''/  -.'-._              "
-    Write-Host -ForegroundColor Red "        .'     '.  ,'         '-.           "
-    Write-Host -ForegroundColor Red "       /    /   r--,..__       '.\          "
-    Write-Host -ForegroundColor Red "     .'    '  .'        '--._     ]         "
-    Write-Host -ForegroundColor Red "     (     :.(;>        _ .' '- ;/          "
-    Write-Host -ForegroundColor Red "     |      /:;(    ._.';(   __.'  Your friendly neighbourhood web-slinger says: "
-    Write-Host -ForegroundColor Red "      '- -''|;:/    (;;;;-'--'        - With Great Power comes Great Responsibility!!"
-    Write-Host -ForegroundColor Red "            |;/     |;;(              - Please only program your test FPGA!!!"
-    Write-Host -ForegroundColor Red "            ''      /;;|              - Do not flash someone else's FPGA!!!"
-    Write-Host -ForegroundColor Red "                    \;;|              - Use the right system name!!!"
-    Write-Host -ForegroundColor Red "                     \/                     "
-    
-
     $filepath = "$loc/$file"
     $ip = Get-DCSCPIP "$system"
 
-    Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-    Write-Host -ForegroundColor Blue "Downloading Flash Image via BMC . . ."
-    Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-    Write-Host -ForegroundColor Blue "Ssytem: RDU-120015-$system"
-    Write-Host -ForegroundColor Blue "IP    : $ip"
-    Write-Host -ForegroundColor Blue "File  : $filepath"
-    Write-Host -ForegroundColor Blue "Dest  : ${ip}:${dest}"
-    Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-    pscp -scp -pw $pw $filepath $user@${ip}:$dest
-    Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+    # Program flash if FPGA system found
+    if ($ip -ne "na")
+    {
+        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+        Write-Host -ForegroundColor Red "                  ,,,,,                     "
+        Write-Host -ForegroundColor Red "            ,;) .'     ',                   "
+        Write-Host -ForegroundColor Red ";;,,_,-.-.,;;'_,||\   /;!,_                 "
+        Write-Host -ForegroundColor Red "   ;;/:|:);{ ;;;|| \./ ;|;;\__              "
+        Write-Host -ForegroundColor Red "     L;/-';/ \;;\',/ \//;;.') \             "
+        Write-Host -ForegroundColor Red "      :'''' - \;;'.___/;;;/  . _'-._        "
+        Write-Host -ForegroundColor Red "           \     \;\;;/;/.'_7:.  '). \_     "
+        Write-Host -ForegroundColor Red "            | '._ );}{;//.'    '-:_\'.,\    "
+        Write-Host -ForegroundColor Red "             \  ( |/;;/_/           \./;\   "
+        Write-Host -ForegroundColor Red "             |\ ( /;;/_/             /;;;\  "
+        Write-Host -ForegroundColor Red "             )__(/;;/_/              \;;;/  "
+        Write-Host -ForegroundColor Red "           _;:':;;;;:';-._                  "
+        Write-Host -ForegroundColor Red "          /   \''''''/  -.'-._              "
+        Write-Host -ForegroundColor Red "        .'     '.  ,'         '-.           "
+        Write-Host -ForegroundColor Red "       /    /   r--,..__       '.\          "
+        Write-Host -ForegroundColor Red "     .'    '  .'        '--._     ]         "
+        Write-Host -ForegroundColor Red "     (     :.(;>        _ .' '- ;/          "
+        Write-Host -ForegroundColor Red "     |      /:;(    ._.';(   __.'  Your friendly neighbourhood web-slinger says: "
+        Write-Host -ForegroundColor Red "      '- -''|;:/    (;;;;-'--'        - With Great Power comes Great Responsibility!!"
+        Write-Host -ForegroundColor Red "            |;/     |;;(              - Please only program your test FPGA!!!"
+        Write-Host -ForegroundColor Red "            ''      /;;|              - Do not flash someone else's FPGA!!!"
+        Write-Host -ForegroundColor Red "                    \;;|              - Use the right system name!!!"
+        Write-Host -ForegroundColor Red "                     \/                     "
+    
 
-    Write-host ""
+        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+        Write-Host -ForegroundColor Blue "Downloading Flash Image via BMC . . ."
+        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+        Write-Host -ForegroundColor Blue "Ssytem: RDU-120015-$system"
+        Write-Host -ForegroundColor Blue "IP    : $ip"
+        Write-Host -ForegroundColor Blue "File  : $filepath"
+        Write-Host -ForegroundColor Blue "Dest  : ${ip}:${dest}"
+        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+        echo "y" | pscp -scp -pw $pw $filepath $user@${ip}:$dest
+        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
 
-    Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-    Write-Host -ForegroundColor Blue "Programming SoC Flash . . ."
-    Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-    plink -batch -ssh $user@${ip} -pw $pw bios-updater -mode fwupdate -file $dest/$file
-    Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+        Write-host ""
+
+        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+        Write-Host -ForegroundColor Blue "Programming SoC Flash . . ."
+        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+        echo "n" | plink -ssh $user@${ip} -pw $pw bios-updater -mode fwupdate -file $dest/$file
+        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+    }
+    # Skip if unknown config or SVP
+    else 
+    {
+        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+        Write-Host "SVP/Unknown config detected. Skipping SoC Flash Programming"
+        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+    }
 }
 
 <#

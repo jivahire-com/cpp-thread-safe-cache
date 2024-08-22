@@ -1,6 +1,7 @@
 set(TARGET ddr_manager.test)
 
 set(SOURCES
+    ddr_manager_bwl_test.cpp
     ddr_manager_i3c_test.cpp
     ddr_manager_polling_test.cpp
     ddr_manager_test.cpp
@@ -57,7 +58,5 @@ mock_target(${TARGET}
     ddr_manager_set_thermal_trip_gpio
     ddr_i3c_interface_get_instance
     idhw_get_die_id
-    ddr_manager_engage_bwl
-    ddr_manager_disengage_bwl
     ddr_manager_platform_is_polling_supported
 )

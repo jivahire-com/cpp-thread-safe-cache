@@ -13,6 +13,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include "ddr_manager_bwl.h"
 #include "ddr_manager_i.h"
 #include "ddr_manager_i3c.h"
 
@@ -128,12 +129,12 @@ void check_dimm_temp_thresholds()
     // Engage BWL if the max DIMM temperature exceeds the high threshold
     if (max_dimm_temp > temp_threshold_high)
     {
-        ddr_manager_engage_bwl();
+        ddr_manager_enable_bwl_i3c();
     }
 
     // Disengage BWL if the max DIMM temperature falls below the low threshold
     if (max_dimm_temp < temp_threshold_low)
     {
-        ddr_manager_disengage_bwl();
+        ddr_manager_disable_bwl_i3c();
     }
 }

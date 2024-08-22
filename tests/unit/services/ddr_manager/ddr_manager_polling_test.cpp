@@ -14,6 +14,7 @@
 
 extern "C" {
 #include <ddr_i3c.h>
+#include <ddr_manager_bwl.h>
 #include <ddr_manager_i.h>   // for ddr_poll_dimms, ddr_worker_thread_func
 #include <idhw.h>
 } // extern "C"
@@ -33,16 +34,6 @@ extern "C" {
 // Mocks
 //
 extern "C" {
-void __wrap_ddr_manager_engage_bwl()
-{
-    function_called();
-}
-
-void __wrap_ddr_manager_disengage_bwl()
-{
-    function_called();
-}
-
 void __wrap_ddr_manager_set_thermal_trip_gpio()
 {
     function_called();
@@ -92,14 +83,12 @@ TEST_FUNCTION(test_ddr_manager_poll_below_high_to_low_thresh, NULL, NULL)
         will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
     }
 
-    expect_function_call(__wrap_ddr_manager_engage_bwl);
-    expect_function_call(__wrap_ddr_manager_disengage_bwl);
-
     // Act
     ddr_poll_dimms();
-    ddr_poll_dimms();
+    assert_true(ddr_manager_get_bwl_engaged());
 
-    // Assert
+    ddr_poll_dimms();
+    assert_false(ddr_manager_get_bwl_engaged());
 }
 
 TEST_FUNCTION(test_ddr_manager_poll_crit_thresh, NULL, NULL)
@@ -126,7 +115,6 @@ TEST_FUNCTION(test_ddr_manager_poll_crit_thresh, NULL, NULL)
     {
         expect_function_call(__wrap_ddr_manager_set_thermal_trip_gpio);
     }
-    expect_function_call(__wrap_ddr_manager_engage_bwl);
 
     // Act
     ddr_poll_dimms();

@@ -78,16 +78,6 @@ uint16_t config_manager_get_ddr_dimm_temp_threshold_critical();
 void ddr_manager_set_thermal_trip_gpio();
 
 /**
- * Engages the bandwidth limiter for the DDR manager.
- */
-void ddr_manager_engage_bwl();
-
-/**
- * Disengages the bandwidth limiter for the DDR manager.
- */
-void ddr_manager_disengage_bwl();
-
-/**
  * Checks if polling is supported on the platform for the DDR manager.
  *
  * @return true if polling is supported, false otherwise.

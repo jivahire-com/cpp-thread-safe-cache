@@ -9,6 +9,8 @@
  */
 
 /*------------- Includes -----------------*/
+#include "ddr_manager_bwl.h"
+
 #include "ddr_manager_i.h"
 
 #include <stdio.h>
@@ -16,26 +18,119 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
+// BWL State bitmask values
+typedef enum
+{
+    BWL_STATE_DISABLED = 0,
+    BWL_STATE_ENABLED_I3C = 0x1,
+    BWL_STATE_ENABLED_MR4 = 0x2,
+    BWL_STATE_ENABLED_FORCED = 0x4,
+} bwl_state_t;
 
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+static bwl_state_t bwl_state = BWL_STATE_DISABLED;
+static bool s_bwlEngaged = false;
 
 /*------------- Functions ----------------*/
-void ddr_manager_engage_bwl()
+static void ddr_manager_engage_bwl()
 {
     // Engage the DDR BWL
     // This is a stub implementation
     // Replace with actual implementation
     // ADO: #1983310
+    if (s_bwlEngaged)
+    {
+        return;
+    }
+
+    s_bwlEngaged = true;
     printf("Engaging DDR BWL\n");
 }
 
-void ddr_manager_disengage_bwl()
+static void ddr_manager_disengage_bwl()
 {
     // Disengage the DDR BWL
     // This is a stub implementation
     // Replace with actual implementation
     // ADO: #1983310
+    if (!s_bwlEngaged)
+    {
+        return;
+    }
+
+    s_bwlEngaged = false;
     printf("Disengaging DDR BWL\n");
+}
+
+bool ddr_manager_get_bwl_engaged()
+{
+    return s_bwlEngaged;
+}
+
+void ddr_manager_enable_bwl_i3c()
+{
+    if (bwl_state == BWL_STATE_DISABLED)
+    {
+        ddr_manager_engage_bwl();
+        printf("BWL enabled by I3C polling\n");
+    }
+
+    bwl_state |= BWL_STATE_ENABLED_I3C;
+}
+
+void ddr_manager_disable_bwl_i3c()
+{
+    bwl_state &= ~(BWL_STATE_ENABLED_I3C);
+
+    if (bwl_state == BWL_STATE_DISABLED)
+    {
+        ddr_manager_disengage_bwl();
+        printf("BWL disabled by I3C polling\n");
+    }
+}
+
+void ddr_manager_enable_bwl_mr4()
+{
+    if (bwl_state == BWL_STATE_DISABLED)
+    {
+        ddr_manager_engage_bwl();
+        printf("BWL enabled by MR4 interrupt\n");
+    }
+
+    bwl_state |= BWL_STATE_ENABLED_MR4;
+}
+
+void ddr_manager_disable_bwl_mr4()
+{
+    bwl_state &= ~(BWL_STATE_ENABLED_MR4);
+
+    if (bwl_state == BWL_STATE_DISABLED)
+    {
+        ddr_manager_disengage_bwl();
+        printf("BWL disabled by MR4 interrupt\n");
+    }
+}
+
+void ddr_manager_enable_bwl_force()
+{
+    if (bwl_state == BWL_STATE_DISABLED)
+    {
+        ddr_manager_engage_bwl();
+        printf("BWL forced enabled\n");
+    }
+
+    bwl_state |= BWL_STATE_ENABLED_FORCED;
+}
+
+void ddr_manager_disable_bwl_force()
+{
+    bwl_state &= ~(BWL_STATE_ENABLED_FORCED);
+
+    if (bwl_state == BWL_STATE_DISABLED)
+    {
+        printf("BWL forced disabled\n");
+        ddr_manager_disengage_bwl();
+    }
 }

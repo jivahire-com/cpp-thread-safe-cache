@@ -60,6 +60,11 @@ FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "v
 
     case PLATFORM_SVP_SIM:
     case PLATFORM_RVP_EVT_SILICON:
+    case PLATFORM_EMU_1D:
+    case PLATFORM_EMU_1D_8C:
+    case PLATFORM_EMU_2D:
+    case PLATFORM_EMU_2D_8C:
+        // Note: Emu only supports bifur 1x16 for rpss2&rpss3 on each die
         rpss_to_init = ((1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3) | (1 << RPSS4) |
                         (1 << RPSS5) | (1 << RPSS6) | (1 << RPSS7));
         break;

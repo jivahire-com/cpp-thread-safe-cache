@@ -69,6 +69,10 @@ static uint16_t tower_vab_instances_to_be_enabled(uint8_t die_num)
         break;
 
     case PLATFORM_RVP_EVT_SILICON:
+    case PLATFORM_EMU_1D:
+    case PLATFORM_EMU_1D_8C:
+    case PLATFORM_EMU_2D:
+    case PLATFORM_EMU_2D_8C:
         vab_instances_to_init = (die_num == 0) ? TOWER_DIE0_VAB_INSTANCES_ENABLED_ON_SILICON
                                                : TOWER_DIE1_VAB_INSTANCES_ENABLED_ON_SILICON;
         break;
@@ -114,6 +118,10 @@ static uint16_t tower_rpss_instances_to_be_enabled(uint8_t die_num)
         break;
 
     case PLATFORM_RVP_EVT_SILICON:
+    case PLATFORM_EMU_1D:
+    case PLATFORM_EMU_1D_8C:
+    case PLATFORM_EMU_2D:
+    case PLATFORM_EMU_2D_8C:
         rpss_instances_to_init = (die_num == 0) ? TOWER_DIE0_RPSS_INSTANCES_ENABLED_ON_SILICON
                                                 : TOWER_DIE1_RPSS_INSTANCES_ENABLED_ON_SILICON;
         break;

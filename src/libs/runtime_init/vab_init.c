@@ -59,6 +59,10 @@ static uint16_t vab_instances_to_be_enabled(uint8_t die_num)
         break;
 
     case PLATFORM_RVP_EVT_SILICON:
+    case PLATFORM_EMU_1D:
+    case PLATFORM_EMU_1D_8C:
+    case PLATFORM_EMU_2D:
+    case PLATFORM_EMU_2D_8C:
         if (die_num == 0)
         {
             vab_instances_to_init = ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) |

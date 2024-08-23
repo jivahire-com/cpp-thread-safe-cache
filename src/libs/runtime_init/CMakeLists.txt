@@ -31,6 +31,7 @@ add_library(${TARGET}
         icc_cli_init.c
         icc_transport_init/scp_icc_mhu_trans_init.c
         mesh_init.c
+        mesh_scp_cli_init.c
         ioss_init.c
         nvic_init.c
         pcie_init.c
@@ -90,6 +91,7 @@ target_link_libraries(
         ms::lib::icc::cli
         ms::lib::icc_platform_defines
         ms::lib::mesh
+        ms::lib::mesh::cli
         ms::lib::ioss_init
         ms::lib::ioss::usb
         ms::lib::scmi::cli

@@ -135,3 +135,4 @@ jobs:
         targetPath: '$(System.ArtifactsDirectory)\Unit_Test_Logs'
         artifact: 'drop_${{ parameters.ArtifactName }}_Unit_Tests'
         publishLocation: 'pipeline'
+        parallel: true

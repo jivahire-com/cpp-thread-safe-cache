@@ -139,8 +139,6 @@ target_compile_definitions(
        MSCP2HSP_MAILBOX_BASE_ADDRESS=SCP_TOP_SCP2HSP_MAILBOX_ADDRESS
        HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2SCP_MB_SW_INT
        SCP_RUNTIME_INIT
-       # @todo remove after SVP updates it's HSP mbx intr number
-       HW_INT_HSP2MSCP_MBOX_INT_SVP=HW_INT_HSP2SCP_MHU_INT
 )
 
 # Define base addresses during compile time for respective core fw
@@ -235,8 +233,6 @@ target_compile_definitions(
        MSCP2HSP_MAILBOX_BASE_ADDRESS=MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
        HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2MCP_MB_SW_INT
        MCP_RUNTIME_INIT
-       # @todo remove after SVP updates it's HSP mbx intr number
-       HW_INT_HSP2MSCP_MBOX_INT_SVP=HW_INT_HSP2MCP_MHU_INT
 )
 
 # Define base addresses during compile time for respective core fw

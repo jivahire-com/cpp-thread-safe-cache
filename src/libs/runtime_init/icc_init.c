@@ -80,24 +80,6 @@ FPFW_INIT_COMPONENT(icc_hspmbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
         .mbx_irq_num = HW_INT_HSP2MSCP_MBOX_INT,
     };
 
-    //! @todo Remove this clause after SVP updates mailbox interrupt correctly.
-    if (idsw_get_cpu_type() == CPU_SCP)
-    {
-        //! Only check for platform for SCP core
-        if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
-        {
-            //! Update the IRQ number as per SVP support
-            cfg.mbx_irq_num = HW_INT_HSP2MSCP_MBOX_INT_SVP;
-        }
-    }
-    else
-    {
-        //! MCP doesn't have support to check for platform
-        //! No way to set the appropriate IRQ as it's different for svp vs bfpga
-        //! Set mailbox to be polling for MCP. SCP is interrupt implementation. (Just Ewwww!)
-        cfg.mbox_dev_cfg.MbxImplementation = MBX_IMPL_POLLING;
-    }
-
     //! Statics declarations required for mailbox transport driver
     static fpfw_mbox_icc_transport_device_t mscp_mbx_dev = {};
     static fpfw_mbox_icc_transport_intrf_t mscp_mbx_intf = {};

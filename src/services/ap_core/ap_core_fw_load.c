@@ -156,7 +156,7 @@ void ap_core_request_load_tfa(fpfw_icc_base_ctx_t* icc_hspmbx_ctx)
     static kng_hsp_mailbox_cmd_load_fw_req send_request = {
         .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
         .header.context = 0,
-        .id = HspFirmwareIdPeManagementMode,
+        .id = HspFirmwareIdPeSecurityMonitor,
         .address = TFA_FW_LOAD_ADDRESS,
         .size = 0x00000000,
     };

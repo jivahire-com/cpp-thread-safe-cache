@@ -407,7 +407,7 @@ AP_CORE_TEST(dispatch_bl31_load, NULL, NULL)
     kng_hsp_mailbox_cmd_load_fw_req send_request = {
         .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
         .header.context = 0,
-        .id = HspFirmwareIdPeManagementMode,
+        .id = HspFirmwareIdPeSecurityMonitor,
         .address = TFA_FW_LOAD_ADDRESS,
         .size = 0x00000000,
     };

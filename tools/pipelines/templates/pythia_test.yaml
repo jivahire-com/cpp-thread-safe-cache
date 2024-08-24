@@ -72,6 +72,11 @@ jobs:
 
           Invoke-Pythia -test ${{ parameters.Test_Suite_Path }}\${{ parameters.Platform }} -platform ${{ parameters.Platform }}
 
+          # Remove intermediate output / output that contains system variables (ie: Azure credentials)
+          Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\output.xml"
+          Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\rlog.txt"
+          Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\generated" -Recurse -Force
+
     # Publish the results of the test suite
     - task: PublishTestResults@2
       displayName: Publish Pythia Tests Results
@@ -91,3 +96,4 @@ jobs:
         targetPath: '$(Build.SourcesDirectory)\.testlogs\pythia'
         artifact: 'drop_${{ parameters.ArtifactName }}_Pythia_Tests'
         publishLocation: 'pipeline'
+        parallel: true

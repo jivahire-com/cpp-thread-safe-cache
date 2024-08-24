@@ -128,8 +128,6 @@ TEST_FUNCTION(test_icc_hspmbx_init, nullptr, nullptr)
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
-    will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_hspmbx.init_fn();

@@ -42,8 +42,6 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::li
 # Provide compile time definition
 target_compile_definitions(${TARGET} PRIVATE MSCP2HSP_MAILBOX_BASE_ADDRESS=1000)
 target_compile_definitions(${TARGET} PRIVATE HW_INT_HSP2MSCP_MBOX_INT=0)
-# @todo remove after SVP updates it's HSP mbx intr number
-target_compile_definitions(${TARGET} PRIVATE HW_INT_HSP2MSCP_MBOX_INT_SVP=0)
 
 lint_target(${TARGET})
 format_target(${TARGET})

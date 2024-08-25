@@ -64,6 +64,16 @@ typedef struct {
 
 /*--------------------------- Function Prototypes ---------------------------*/
 /**
+ * @brief Get ATU mapped address for ext_cfg based on Accel Type
+ *
+ *
+ * @param[in] accel_type : Accelerator type : SDM / CDED
+ *
+ * @retval ATU mapped Accel Ext Cfg address
+ */
+uint32_t accelerator_ip_get_atu_mapped_cfg_address(eACCELERATOR_TYPE accel_type);
+
+/**
  * @brief Initialize Accelerator
  *
  * \b Description:

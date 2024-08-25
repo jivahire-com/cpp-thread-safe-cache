@@ -53,6 +53,10 @@
 /*--------------------------- Function Prototypes ---------------------------*/
 
 /*------------------- Declarations (Statics and globals) --------------------*/
+/**
+ * Store ATU mapped address
+ */
+static uint32_t accel_intr_atu_map_address[MAX_ACCELERATOR_TYPES];
 
 /*--------------------------------- Externs ---------------------------------*/
 
@@ -198,6 +202,8 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
     }
     debug_print("atu mapped for accel ip\n");
 
+    accel_intr_atu_map_address[get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type)] = atu_map_entry.mscp_start_address;
+
     if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
     {
         // On FPGA, SDM and CDED Firmware are not preloaded in the respective ITCMs. (Hence setting to false for FPGA)
@@ -235,7 +241,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
          */
         printf("accel lib: Initialize accel interrupt\n");
 
-        ret = accel_intr_irq_init(get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type), atu_map_entry.mscp_start_address);
+        ret = accel_intr_irq_init(get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type));
         if (ret != ACCEL_INTR_RET_SUCCESS)
         {
             critical_print("Accel IP: init_accelerator: Accel Interrupt init failed.\n");
@@ -247,6 +253,12 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
 }
 
 /*----------------------------- Global Functions ----------------------------*/
+
+uint32_t accelerator_ip_get_atu_mapped_cfg_address(eACCELERATOR_TYPE accel_type)
+{
+    return accel_intr_atu_map_address[accel_type];
+}
+
 int32_t scp_accelerators_init(void)
 {
     DIE_INSTANCE current_die_instance = (DIE_INSTANCE)idsw_get_die_id();

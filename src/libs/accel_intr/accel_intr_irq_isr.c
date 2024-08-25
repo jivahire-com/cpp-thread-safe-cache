@@ -394,7 +394,7 @@ void accel_intr_isr(void* callback_param)
     uint32_t IRQnum = (uint32_t)callback_param;
 
     // Based on ATU MAP get sdm_ext_cfg base address
-    uint32_t ext_cfg_addr = accel_intr_get_atu_mapped_cfg_address(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(IRQnum));
+    uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(IRQnum));
 
     uint32_t validate_irq_status =
         accel_intr_process_fatal_interrupts(IRQnum, ext_cfg_addr, ACCEL_INTR_PROCESS_INTR_IN_TOP_HALF);

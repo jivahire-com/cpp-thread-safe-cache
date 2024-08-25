@@ -44,7 +44,7 @@ typedef enum {
  *  On success, ACCEL_INTR_RET_SUCCESS
  *  On failure, ACCEL_INTR_RET_FAIL_*
  */
-int accel_intr_irq_init(eACCELERATOR_TYPE accel_type, uint32_t atu_mapped_address);
+int accel_intr_irq_init(eACCELERATOR_TYPE accel_type);
 
 /**
  * @brief Function called when ASYNC request for SDM_MSG0_INTR is  received
@@ -65,13 +65,3 @@ void accel_intr_handle_sdm_msg_recvd(uint32_t IRQnum);
  *
  */
 void accel_intr_handle_fatal_intr_recvd(uint32_t IRQnum);
-
-/**
- * @brief Get ATU mapped address for ext_cfg based on Accel Type
- *
- *
- * @param[in] accel_type : Accelerator type : SDM / CDED
- *
- * @retval ATU mapped Accel Ext Cfg address
- */
-uint32_t accel_intr_get_atu_mapped_cfg_address(eACCELERATOR_TYPE accel_type);

@@ -50,11 +50,6 @@
 
 /*------------------- Declarations (Statics and globals) --------------------*/
 
-/**
- * Store ATU mapped address
- */
-static uint32_t accel_intr_atu_map_address[MAX_ACCELERATOR_TYPES];
-
 /*--------------------------------- Externs ---------------------------------*/
 
 /*----------------------------- Static Functions ----------------------------*/
@@ -102,11 +97,6 @@ void accel_intr_emcpu_wdt_control(uint32_t ext_cfg_addr, uint8_t enable)
     MMIO_WRITE32(wdt_ctrl_reg_addr, emcpu_cfg_wdt_ctrl.as_uint32);
 
     cortex_m7_atomic_call_data_memory_barrier();
-}
-
-uint32_t accel_intr_get_atu_mapped_cfg_address(eACCELERATOR_TYPE accel_type)
-{
-    return accel_intr_atu_map_address[accel_type];
 }
 
 void accel_intr_clear_disable_irq_in_sdm_intr_tree(uint32_t ext_cfg_addr,
@@ -175,7 +165,7 @@ void accel_intr_mask_interrupt_level_1(uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_
     cortex_m7_atomic_call_data_memory_barrier();
 }
 
-int accel_intr_irq_init(eACCELERATOR_TYPE accel_type, uint32_t atu_mapped_address)
+int accel_intr_irq_init(eACCELERATOR_TYPE accel_type)
 {
     if (accel_type >= MAX_ACCELERATOR_TYPES)
     {
@@ -184,8 +174,6 @@ int accel_intr_irq_init(eACCELERATOR_TYPE accel_type, uint32_t atu_mapped_addres
     }
 
     uint32_t ret = ACCEL_INTR_RET_SUCCESS;
-
-    accel_intr_atu_map_address[accel_type] = atu_mapped_address;
 
     /**
      * Create timers used in Crash dump collection handshake
@@ -206,7 +194,7 @@ int accel_intr_irq_init(eACCELERATOR_TYPE accel_type, uint32_t atu_mapped_addres
 
     // Mask all interrupts in Level 1 register first
     uint32_t interrupt_mask = SL_GET_BIT_MASK_RANGE(SDM_EXT_EMCPU_WDT_ERR_INTR, SDM_EXT_SDM_MSG3_INTR);
-    sdm_ext_int_mask_disable(accel_intr_get_atu_mapped_cfg_address(accel_type), SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask);
+    sdm_ext_int_mask_disable(accelerator_ip_get_atu_mapped_cfg_address(accel_type), SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask);
 
     // For each individual interrupt, clear and unmask at level 1 and level 2
     for (eACCEL_INTR idx = ACCEL_INTR_EMCPU_WDT_ERR; idx < ACCEL_INTR_MAX; idx++)
@@ -214,7 +202,7 @@ int accel_intr_irq_init(eACCELERATOR_TYPE accel_type, uint32_t atu_mapped_addres
         if (accel_intr_irq_data[idx].accel_irq_init_fn != NULL)
         {
             // Call init function for that IRQ, always returns SUCCESS
-            (void)accel_intr_irq_data[idx].accel_irq_init_fn(accel_intr_get_atu_mapped_cfg_address(accel_type),
+            (void)accel_intr_irq_data[idx].accel_irq_init_fn(accelerator_ip_get_atu_mapped_cfg_address(accel_type),
                                                              accel_intr_irq_data[idx].accel_irq_bit);
         }
     }

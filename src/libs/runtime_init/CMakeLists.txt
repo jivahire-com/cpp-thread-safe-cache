@@ -14,6 +14,7 @@ add_library(${TARGET}
         atu_init.c
         avs_scp_init.c
         avs_scp_cli_init.c
+        cli_accel_intr_init.c
         cli_init.c
         cli_ddr_init.c
         cli_power_init.c
@@ -79,6 +80,7 @@ target_link_libraries(
         ms::driver::vab
         ms::driver::textio::pl011
         ms::lib::accelerator_ip
+        ms::lib::cli_accel_int
         ms::lib::cortex_m7::mpu
         ms::lib::crash_dump::scp
         ms::lib::css

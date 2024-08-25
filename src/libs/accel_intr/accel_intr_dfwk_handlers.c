@@ -116,7 +116,7 @@ static void accel_intr_handle_sdm_msg_send(eACCELERATOR_TYPE accel_type)
     // Send interrupt to Accel emCPU
     uint32_t intr2_msg_send_intr_addr =
         ACCEL_INTR_GET_DERIVED_ADDR(_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_MSG_SEND_INTR_ADDRESS,
-                                    accel_intr_get_atu_mapped_cfg_address(accel_type));
+                                    accelerator_ip_get_atu_mapped_cfg_address(accel_type));
 
     _addressblock_0x100000_misc_sys_ext_intr2_msg_send_intr misc_sys_ext_intr2_msg_send_intr;
     misc_sys_ext_intr2_msg_send_intr.as_uint32 = 0x0;
@@ -173,7 +173,7 @@ static void accel_intr_request_crash_dump_collection(uint32_t IRQnum, uint32_t t
     fpfw_timer_enable(&accel_intr_crash_dump_collection_timers[accel_type], ACCEL_INTR_HANDSHAKE_TIMER_DELAY_IN_NUMBER_OF_TICKS);
 
     // Enable SDM_MSG0_INTR
-    accel_intr_single_level_irq_init(accel_intr_get_atu_mapped_cfg_address(accel_type), SDM_EXT_SDM_MSG0_INTR);
+    accel_intr_single_level_irq_init(accelerator_ip_get_atu_mapped_cfg_address(accel_type), SDM_EXT_SDM_MSG0_INTR);
 
     // Clear and Enable IRQ
     // Both functions always return SUCCESS
@@ -204,7 +204,7 @@ static void accel_intr_clear_and_unmask_interrupts(uint32_t IRQnum)
         {
             // Call init function for that IRQ, always returns SUCCESS
             (void)accel_intr_irq_data[idx].accel_irq_init_fn(
-                accel_intr_get_atu_mapped_cfg_address(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(IRQnum)),
+                accelerator_ip_get_atu_mapped_cfg_address(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(IRQnum)),
                 accel_intr_irq_data[idx].accel_irq_bit);
         }
     }
@@ -293,7 +293,7 @@ uint32_t accel_intr_crash_dump_collection_timer_init(eACCELERATOR_TYPE accel_typ
 void accel_intr_handle_fatal_intr_recvd(uint32_t IRQnum)
 {
     // Based on ATU MAP get sdm_ext_cfg base address
-    uint32_t ext_cfg_addr = accel_intr_get_atu_mapped_cfg_address(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(IRQnum));
+    uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(IRQnum));
 
     /**
      * 1. Loop through all FATAL interrupts to note and log triggered interrupts.

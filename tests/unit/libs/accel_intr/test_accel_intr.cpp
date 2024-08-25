@@ -92,7 +92,7 @@ TEST_FUNCTION(test_accel_intr_irq_init_pass_sdm, nullptr, nullptr)
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, SDMSS_IRQ_NUMBER);
     expect_value(__wrap_nvic_irq_enable, irq_num, SDMSS_IRQ_NUMBER);
 
-    assert_int_equal(accel_intr_irq_init(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(SDMSS_IRQ_NUMBER), 0x0), ACCEL_INTR_RET_SUCCESS);
+    assert_int_equal(accel_intr_irq_init(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(SDMSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
 }
 
 /**
@@ -123,7 +123,7 @@ TEST_FUNCTION(test_accel_intr_irq_init_pass_cded, nullptr, nullptr)
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, CDEDSS_IRQ_NUMBER);
     expect_value(__wrap_nvic_irq_enable, irq_num, CDEDSS_IRQ_NUMBER);
 
-    assert_int_equal(accel_intr_irq_init(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(CDEDSS_IRQ_NUMBER), 0x0), ACCEL_INTR_RET_SUCCESS);
+    assert_int_equal(accel_intr_irq_init(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(CDEDSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
 }
 
 /**
@@ -135,7 +135,7 @@ TEST_FUNCTION(test_accel_intr_irq_init_fail_timer_init, nullptr, nullptr)
     expect_any(__wrap_fpfw_timer_create, cb);
     will_return_always(__wrap_fpfw_timer_create, FPFW_STATUS_INVALID_ARGS);
 
-    assert_int_equal(accel_intr_irq_init(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(SDMSS_IRQ_NUMBER), 0x0),
+    assert_int_equal(accel_intr_irq_init(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(SDMSS_IRQ_NUMBER)),
                      ACCEL_INTR_RET_FAIL_TIMER_CREATE);
 }
 
@@ -163,7 +163,7 @@ TEST_FUNCTION(test_accel_intr_irq_init_fail_nvic_init, nullptr, nullptr)
     expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER);
     will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_ERROR);
 
-    assert_int_equal(accel_intr_irq_init(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(SDMSS_IRQ_NUMBER), 0x0), ACCEL_INTR_RET_FAIL_INTR_NVIC);
+    assert_int_equal(accel_intr_irq_init(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(SDMSS_IRQ_NUMBER)), ACCEL_INTR_RET_FAIL_INTR_NVIC);
 }
 
 /**

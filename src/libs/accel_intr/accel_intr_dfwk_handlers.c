@@ -243,10 +243,8 @@ static void accel_intr_handle_sdm_msg_recv_timeout(void* ctx, fpfw_dur_t latency
         /**
          * 2. Re-init all interrupts routed from ACCEL IP and supported in SCP in level 1 registers
          * Level 2 registers are cleared as part of Accel emCPU boot up
-         * TODO: Do this when Accel emCPU reset is enabled
-         * Task 1908548: [SCP] Implementation of SDM Fatal Interrupt in SCP
          */
-        // accel_intr_clear_and_unmask_interrupts(paccel_intr_crash_dump_collection_timer_data->IRQnum);
+        accel_intr_clear_and_unmask_interrupts(paccel_intr_crash_dump_collection_timer_data->IRQnum);
 
         /**
          * 3. Trigger doorbell interrupt `SYS2_MSG0_INTR` again to collect ACCEL Subsystem Dump

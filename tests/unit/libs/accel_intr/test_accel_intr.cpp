@@ -418,6 +418,10 @@ TEST_FUNCTION(test_accel_intr_handle_sdm_msg_recv_timeout_count_0, NULL, NULL)
     expect_any_always(__wrap_mmio_write32, addr);
     expect_any_always(__wrap_mmio_write32, data);
 
+    expect_any_always(__wrap_mmio_update32, addr);
+    expect_any_always(__wrap_mmio_update32, data);
+    expect_any_always(__wrap_mmio_update32, mask);
+
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, SDMSS_IRQ_NUMBER);
     expect_value(__wrap_nvic_irq_enable, irq_num, SDMSS_IRQ_NUMBER);

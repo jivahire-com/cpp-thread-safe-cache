@@ -39,10 +39,11 @@
 /**
  * Reset values for these counters are max_value - 1
  * This will make sure interrupt is triggered for all UE errors
- * These are 4 bit counters, hence mask ix 0xF
  */
-#define ACCEL_INTR_UE_CNTR_RESET_VALUE      (0xE)
-#define ACCEL_CNTR_UE_CNTR_RESET_VALUE_MASK (0xF)
+#define ACCEL_INTR_UE_CNTR_RESET_VALUE                                  \
+    (_ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BPE_SB_TEL_ECC_CNTR_UE_MASK - \
+     (0x1 << _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BPE_SB_TEL_ECC_CNTR_UE_LSB))
+#define ACCEL_CNTR_UE_CNTR_RESET_VALUE_MASK (_ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BPE_SB_TEL_ECC_CNTR_UE_MASK)
 
 /*-------------------------------- Typedefs ---------------------------------*/
 
@@ -243,20 +244,14 @@ uint32_t accel_intr_ue_ecc_err_init(uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUM
     // Clear and enable TEL_ECC errors
     uint32_t interrupt_mask = SL_GET_BIT_MASK_RANGE(SDM_EXT_BPE_SCRATCH_ERR_INTR, SDM_EXT_LSTRG_ERR_INTR);
 
-    // Clear and disable TEL_ECC errors
-    accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_UN_CORREC_ECC, interrupt_mask, SDM_EXT_UE_ECC_ERR_INTR_VECTOR);
-
-    // Clear and disable FAB_ECC errors
-    accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr,
-                                                  SDM_EXT_CATEGORY_ID_FABRIC_ERROR,
-                                                  FAB_UN_CORREC_ERR_BIT_MASK,
-                                                  SDM_EXT_UE_ECC_ERR_INTR_VECTOR);
-
     /**
      * TODO: Task 1982366: [SCP] Accel IP Fatal Interrupt Cleanup Tasks / Comments
      * Move reset counter logic to Silibs
+     * @note: We set TEL_ECC error counters to MAX - 1.
+     * This needs to be done to make sure every UE error results in an interrupt.
+     * This is done when initialising interrupts for first time and
+     * when re-initialising them on next consecutive cycles.
      */
-    // Reset counters
     for (uint32_t err_type = SDM_EXT_BPE_SCRATCH_ERR_INTR; err_type <= SDM_EXT_LSTRG_ERR_INTR; err_type++)
     {
         uint32_t reg_addr =
@@ -269,6 +264,15 @@ uint32_t accel_intr_ue_ecc_err_init(uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUM
         cortex_m7_atomic_call_data_memory_barrier();
     }
 
+    // Clear and disable TEL_ECC errors and SDM_EXT_TCM_UE_ECC_ERR_INTR
+    accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_UN_CORREC_ECC, interrupt_mask, SDM_EXT_TCM_UE_ECC_ERR_INTR);
+
+    // Clear and disable FAB_ECC errors and SDM_EXT_UE_ECC_ERR_INTR_VECTOR
+    accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr,
+                                                  SDM_EXT_CATEGORY_ID_FABRIC_ERROR,
+                                                  FAB_UN_CORREC_ERR_BIT_MASK,
+                                                  SDM_EXT_UE_ECC_ERR_INTR_VECTOR);
+
     /**
      * TODO: Task 1982366: [SCP] Accel IP Fatal Interrupt Cleanup Tasks / Comments
      * Combine FAB_ECC and TEL_ECC errors for UE errors under one category
@@ -276,6 +280,14 @@ uint32_t accel_intr_ue_ecc_err_init(uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUM
     // Enable the interrupts
     accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_UN_CORREC_ECC, interrupt_mask);
     accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_FABRIC_ERROR, FAB_UN_CORREC_ERR_BIT_MASK);
+
+    /**
+     * TODO: FW Task 779516: sdm_ext_interrupts and sdm_em_interrupts : Create separate category for TCM_UE_ECC_ERR
+     * ITCM, DxTCM UE ECC errors are logged as UE_ECC_ERR and TCM_UE_ECC_ERR.
+     * We handle all ECC errors as part of UE_ECC_ERR, but Silibs code is currently handling TCM_UE_ECC_ERR as part of UE_ECC_ERR.
+     * When enabling UE_ECC for TCMs also enables TCM_UE_ECC. To avoid that, we need to explicitly disable TCM_UE_ECC_ERR
+     */
+    accel_intr_mask_interrupt_level_1(ext_cfg_addr, SDM_EXT_TCM_UE_ECC_ERR_INTR);
 
     return ACCEL_INTR_RET_SUCCESS;
 }

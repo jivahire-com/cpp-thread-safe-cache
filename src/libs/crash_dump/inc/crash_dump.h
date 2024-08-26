@@ -140,3 +140,9 @@ void crash_dump_register_address64(uint64_t address, uint32_t size, FPFwCdDumpPr
  * @param pointerArrayCount Number of addresses in pointerArray
  */
 void crash_dump_register_address32_pointer_array(FPFwCdDumpPriority priority, uint32_t minChunkSize, uint32_t maxRegistrationCount, void** pointerArray, uint32_t pointerArrayCount);
+
+/**
+ * @brief Registers crash dump CLI commands
+ * 
+ */
+void crash_dump_cli_init(void);

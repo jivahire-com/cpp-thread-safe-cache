@@ -3,6 +3,7 @@ set(TARGET kng.lib.crash_dump.scp)
 
 set (SOURCES 
         src/crash_dump.c
+        src/crash_dump_cli.c
         src/crash_dump_init.c
         src/crash_dump_overrides.c
         src/crash_dump_payload_core.c
@@ -29,6 +30,7 @@ target_link_libraries(${TARGET}
         ms::lib::debug
     PRIVATE
         fwlib.lib.assert
+        fwlib.service.cli
         ms::build_data
         ms::cmsis::interface
         silibs::kng_silibs_platform
@@ -53,6 +55,7 @@ set(TARGET kng.lib.crash_dump.mcp)
 
 set (SOURCES 
         src/crash_dump.c
+        src/crash_dump_cli.c
         src/crash_dump_init.c
         src/crash_dump_overrides.c
         src/crash_dump_payload_core.c
@@ -78,6 +81,7 @@ target_link_libraries(${TARGET}
         ms::lib::debug
     PRIVATE
         fwlib.lib.assert
+        fwlib.service.cli
         ms::build_data
         ms::cmsis::interface
         silibs::kng_silibs_platform

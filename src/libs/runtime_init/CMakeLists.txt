@@ -20,6 +20,7 @@ add_library(${TARGET}
         cli_power_init.c
         crash_dump_init.c
         crash_dump_init_scp.c
+        cli_crash_dump_init.c
         css_init.c
         ddrss_init.c
         debug_init.c
@@ -174,6 +175,7 @@ add_library(${TARGET}
     OBJECT
         cli_init.c
         crash_dump_init.c
+        cli_crash_dump_init.c
         debug_init.c
         dfwk_init.c
         etc_etd_init.c

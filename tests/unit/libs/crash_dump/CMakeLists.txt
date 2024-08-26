@@ -5,6 +5,7 @@ set(TARGET crash_dump.scp.test)
 
 set(SOURCES
     test_crash_dump.cpp
+    test_crash_dump_cli.cpp
     test_crash_dump_scp.cpp
     test_crash_dump_mocks.cpp
 )
@@ -21,6 +22,7 @@ target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.assert
     fwlib.lib.crashDump
+    fwlib.service.cli
     ms::build_data
     ms::cmocka::testrunner
     ms::cmsis::interface
@@ -52,6 +54,9 @@ mock_target(${TARGET}
     FPFwCDDumpManagerSetPreDumpCallback
     FPFwCDDumpManagerSetPostDumpCallback
     FPFwCDDumpManagerOverrideGetCurTime
+    FpFwCliRegisterTable
+    FpFwCliPrint
+    FPFwCDRegisterAddress32
     CdRegisterMMIORegisterSet
     CdRegisterAddress32
     CdRegisterAddress64
@@ -71,6 +76,7 @@ set(TARGET crash_dump.mcp.test)
 
 set(SOURCES
     test_crash_dump.cpp
+    test_crash_dump_cli.cpp
     test_crash_dump_mcp.cpp
     test_crash_dump_mocks.cpp
 )
@@ -87,6 +93,7 @@ target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.assert
     fwlib.lib.crashDump
+    fwlib.service.cli
     ms::build_data
     ms::cmocka::testrunner
     ms::cmsis::interface
@@ -120,6 +127,9 @@ mock_target(${TARGET}
     FPFwCDDumpManagerSetPreDumpCallback
     FPFwCDDumpManagerSetPostDumpCallback
     FPFwCDDumpManagerOverrideGetCurTime
+    FpFwCliRegisterTable
+    FpFwCliPrint
+    FPFwCDRegisterAddress32
     CdRegisterMMIORegisterSet
     CdRegisterAddress32
     CdRegisterAddress64

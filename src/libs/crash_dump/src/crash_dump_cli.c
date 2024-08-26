@@ -1,0 +1,144 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+/**
+ * @file crash dump cli commands
+ */
+
+/*------------- Includes -----------------*/
+#include <FpFwCli.h>    // for FPFW_CLI_COMMAND, FpFwCliRegisterTable
+#include <FpFwUtils.h>  // for FPFW_ARRAY_SIZE, FPFW_UNUSED
+#include <bug_check.h>  // for BUG_CHECK
+#include <crash_dump.h> // for FPFwCDRegisterAddress32, GetCrashDumpContext
+#include <kng_error.h>  // for KNG_SUCCESS
+#include <string.h>     // for strlen
+
+/*-- Symbolic Constant Macros (defines) --*/
+
+/*-------------- Typedefs ----------------*/
+
+/*--------- Function Prototypes ----------*/
+static FPFW_CLI_STATUS cd_register_beef(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS cd_register_string(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS cd_bug_check(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS cd_trigger_exception(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS cd_set_single_core_mode(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS cd_stack_overflow(int argc, const char** pp_argv);
+
+/*-- Declarations (Statics and globals) --*/
+static FPFW_CLI_COMMAND s_cd_cmd_list[] = {
+    {NULL_LIST_ENTRY, "crashdump", "cd_register_beef", cd_register_beef, "Registers filler hex as data to be stored in Crash Dump", "Usage: cd_register_beef (no arguments)"},
+    {NULL_LIST_ENTRY, "crashdump", "cd_register_string", cd_register_string, "Registers a string to be stored in a crash dump", "Usage: cd_register_string <string>"},
+    {NULL_LIST_ENTRY, "crashdump", "cd_bug_check", cd_bug_check, "Invokes a bugcheck with the given error code", "Usage: cd_bug_check <error code>"},
+    {NULL_LIST_ENTRY, "crashdump", "cd_set_single_core_mode", cd_set_single_core_mode, "Generates single core crash dump", "Usage: cd_set_single_core_mode (no arguments)"},
+    {NULL_LIST_ENTRY, "crashdump", "cd_trigger_exception", cd_trigger_exception, "Triggers an exception, causing a fault handler to execute", "Usage: cd_trigger_exception (no arguments)"},
+    {NULL_LIST_ENTRY, "crashdump", "cd_stack_overflow", cd_stack_overflow, "Causes stack overflow to test crash dump behavior", "Usage: cd_stack_overflow (no arguments)"},
+};
+
+static uint32_t dead_beef = 0xDEADBEEF;
+static uint32_t beef_cafe = 0xBEEFCAFE;
+
+/*------------- Functions ----------------*/
+void crash_dump_cli_init(void)
+{
+    //! register the crash dump commands
+    FpFwCliRegisterTable(s_cd_cmd_list, FPFW_ARRAY_SIZE(s_cd_cmd_list));
+}
+
+static FPFW_CLI_STATUS cd_register_beef(int argc, const char** pp_argv)
+{
+    FPFW_UNUSED(argc);
+    FPFW_UNUSED(pp_argv);
+    FPFwCDRegisterAddress32(&dead_beef, sizeof(dead_beef));
+    FPFwCDRegisterAddress32(&beef_cafe, sizeof(beef_cafe));
+
+    return CLI_SUCCESS;
+}
+
+static FPFW_CLI_STATUS cd_register_string(int argc, const char** pp_argv)
+{
+    if (argc == 2)
+    {
+        const char* input_str = pp_argv[1];
+        FpFwCliPrint("Storing %s\n", input_str);
+
+        FPFwCDRegisterAddress32((void*)input_str, strlen(input_str));
+    }
+    else
+    {
+        FpFwCliPrint("Invalid arguments!\n");
+    }
+
+    return CLI_SUCCESS;
+}
+
+static FPFW_CLI_STATUS cd_bug_check(int argc, const char** pp_argv)
+{
+    uint32_t crashCode = KNG_E_FAIL;
+
+    if (argc == 2)
+    {
+        crashCode = atoi(pp_argv[1]);
+        FpFwCliPrint("Using Crash Code: %d\n", crashCode);
+    }
+    else
+    {
+        FpFwCliPrint("Using Default Crash Code: %d\n", crashCode);
+    }
+
+    FpFwCliPrint("Crash Dump collection requested. Entering dump handler\n");
+    BUG_CHECK(crashCode, 2, 3);
+    FpFwCliPrint("Crash Dump collection completed.\n");
+    FpFwCliPrint("Command to save dump to a file on BEMU:\n");
+    FpFwCliPrint("  .writemem \"SCP.hmp\" 0x%08x 0x%08x\n",
+                 GetCrashDumpContext()->memPoolCtx->baseAddr,
+                 (GetCrashDumpContext()->memPoolCtx->nextAddr - 1));
+    FpFwCliPrint("To print the dump to stdout, run the following cli command:\n");
+    FpFwCliPrint("  cd_print_dump\n");
+
+    return CLI_SUCCESS;
+}
+
+static FPFW_CLI_STATUS cd_trigger_exception(int argc, const char** pp_argv)
+{
+    FPFW_UNUSED(argc);
+    FPFW_UNUSED(pp_argv);
+    volatile uint32_t* const invalid_ptr = (volatile uint32_t* const)(0xFFFFFFFF);
+
+    FpFwCliPrint("Triggering exception\n");
+    FpFwCliPrint("Dereferencing invalid_ptr [%lu]\n", *invalid_ptr);
+
+    return CLI_SUCCESS;
+}
+
+static FPFW_CLI_STATUS cd_set_single_core_mode(int argc, const char** pp_argv)
+{
+    FPFW_UNUSED(argc);
+    FPFW_UNUSED(pp_argv);
+
+    // ToDo: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1484994
+    // crash_dump_set_is_primary_available(false);
+    // crash_dump_disable_cti();
+
+    return CLI_SUCCESS;
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winfinite-recursion"
+static void overflow_recurse() // NOLINT
+{
+    // overflow the stack (push LR will do it)
+    overflow_recurse();
+}
+#pragma GCC diagnostic pop
+
+static FPFW_CLI_STATUS cd_stack_overflow(int argc, const char** pp_argv)
+{
+    FPFW_UNUSED(argc);
+    FPFW_UNUSED(pp_argv);
+
+    overflow_recurse();
+
+    return CLI_SUCCESS;
+}

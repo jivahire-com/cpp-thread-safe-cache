@@ -120,6 +120,10 @@ void __wrap___disable_irq()
 {
 }
 
+void __wrap_system_info_init()
+{
+}
+
 int32_t __wrap_FpFwMailboxInit(PFPFW_MBX_REG_CONFIG pConfig, PFPFW_MBX_PRIMITIVE_CTX pMbxCtx)
 {
     check_expected_ptr(pConfig);

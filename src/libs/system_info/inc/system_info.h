@@ -19,7 +19,13 @@
 /*--------- Function Prototypes ----------*/
 /**
  * @brief Checks if the HSP (Hardware Security Processor) is present.
- *
+ * @note This function should be called after system_info_init() is called.
  * @return true if the HSP is present, false otherwise.
  */
 bool system_info_is_hsp_present();
+
+/**
+ * @brief Caches the system information.
+ * 
+ */
+void system_info_init();

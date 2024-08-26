@@ -215,7 +215,8 @@ void* load_image(kingsgate_boot_config_t* boot_config)
     {
         return NULL;
     }
-
+    // Init system info here
+    system_info_init();
     if (send_post_code(boot_status, is_scp, false) == false)
     {
         goto hsp_send_failed;

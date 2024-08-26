@@ -23,11 +23,20 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+static bool is_hsp_present = false;
 
 /*------------- Functions ----------------*/
 bool system_info_is_hsp_present()
 {
+    return is_hsp_present;
+}
+
+void system_info_init()
+{
     HSP_BOOT_METADATA* boot_meta_data = (HSP_BOOT_METADATA*)(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS);
     // Temporary until HSP writes actual metadata instead of arbitrary values
-    return boot_meta_data->MetadataVersion == 0x1 && boot_meta_data->ResetReason == 0x7;
+    if (boot_meta_data->MetadataVersion == 0x1 && boot_meta_data->ResetReason == 0x7)
+    {
+        is_hsp_present = true;
+    }
 }

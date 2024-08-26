@@ -44,6 +44,7 @@ add_library(${TARGET}
         scmi_init.c
         scp_mpu_init.c
         sensor_fifo_init.c
+        system_info_init.c
         tower_init.c
         startup_shutdown_init.c
         scmi_cli_init.c
@@ -132,6 +133,7 @@ target_link_libraries(
         ms::lib::warm_start
         ms::lib::warm_start::cli
         ms::service::atu_service
+        ms::lib::system_info
 )
 
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)
@@ -184,6 +186,7 @@ add_library(${TARGET}
         icc_init.c
         mcp_mpu_init.c
         nvic_init.c
+        system_info_init.c
         textio_init.c
         gpio_init.c
 )
@@ -219,6 +222,7 @@ target_link_libraries(
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
         ms::lib::cortex_m7::mpu
+        ms::lib::system_info
         silibs::common::lib_uart_pl011
         silibs::idhw
         silibs::idsw

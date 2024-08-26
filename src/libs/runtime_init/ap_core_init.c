@@ -40,7 +40,7 @@ static void setup_ap_loop_to_self(uint64_t rvbaraddr)
     *(volatile uint32_t*)translated_rvbar = ARM64_LOOP;
 }
 
-FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "tower_cfg", "icc_hspmbx", "atu_svc"))
+FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "tower_cfg", "icc_hspmbx", "atu_svc", "sysinfo"))
 {
 #define SVP_NUM_CORES_PER_DIE 4
     // fpga platform has an unusual set of available cores

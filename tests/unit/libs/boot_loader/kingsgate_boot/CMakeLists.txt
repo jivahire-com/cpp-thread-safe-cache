@@ -37,5 +37,6 @@ mock_target(${TARGET}
     FpFwMailboxReceive
     FpFwMailboxSend
     system_info_is_hsp_present
+    system_info_init
     __disable_irq
 )

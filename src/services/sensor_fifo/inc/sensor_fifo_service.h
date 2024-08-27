@@ -29,6 +29,7 @@
 // One die has 8 VR's and the other has 2.  Reserve space for the max number.
 #define MAX_NUM_OF_VR_RAILS        (8)
 #define QUADWORD_SIZE              (8)
+#define FIFO_TIMESTAMP_SIZE        (QUADWORD_SIZE)
 
 /*-------------- Typedefs ----------------*/
 /**
@@ -57,9 +58,9 @@ typedef enum
 typedef struct {
     uint16_t entry_size_bytes;
     uint16_t stride_size_bytes;
-    uint32_t start_address; ///< inclusive
-    uint32_t end_address; ///< inclusive
-    uint16_t epoch_count; ///< number of strides in the fifo, 1 indexed
+    uint32_t start_address_incl; ///< inclusive
+    uint32_t end_address_excl; ///< exclusive, last address + 1, size = end_address_excl - start_address_incl
+    uint16_t num_entries_or_strides; ///< (entry_size_bytes == stride_size_bytes) ? num_entries : num_strides. 1 indexed
     char*    name;
 } sensor_fifo_properties_t, *psensor_fifo_properties_t;
 

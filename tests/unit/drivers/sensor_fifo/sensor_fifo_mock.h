@@ -19,6 +19,8 @@
 #include <stdint.h>                        // for uint32_t, uint8_t
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define FIFO_TIMESTAMP_SIZE (8)
+
 #define PSTATE_FIFO_NUM_ENTRIES (4)
 #define PSTATE_FIFO_ENTRY_SIZE_BYTES (16)
 #define PSTATE_FIFO_STRIDE_SIZE_BYTES (PSTATE_FIFO_ENTRY_SIZE_BYTES)
@@ -75,17 +77,21 @@
 extern bool snsr_fifo_mock_check_mmio_inputs;
 extern bool snsr_fifo_mock_use_real_mmio;
 
-extern uint8_t pstate_fifo[PSTATE_FIFO_NUM_ENTRIES * PSTATE_FIFO_STRIDE_SIZE_BYTES];
-extern uint8_t msg_fifo[SCP_MSG_FIFO_NUM_ENTRIES * SCP_MSG_FIFO_STRIDE_SIZE_BYTES];
-extern uint8_t tile_temp_fifo[TILE_TEMP_FIFO_NUM_ENTRIES * TILE_TEMP_FIFO_STRIDE_SIZE_BYTES];
-extern uint8_t tile_volt_fifo[TILE_VOLT_FIFO_NUM_ENTRIES * TILE_VOLT_FIFO_STRIDE_SIZE_BYTES];
-extern uint8_t core_current_fifo[CORE_CURRENT_FIFO_NUM_ENTRIES * CORE_CURRENT_FIFO_STRIDE_SIZE_BYTES];
-extern uint8_t pvt_temp_fifo[PVT_TEMP_FIFO_NUM_ENTRIES * PVT_TEMP_FIFO_STRIDE_SIZE_BYTES];
-extern uint8_t pvt_volt_fifo[PVT_VOLT_FIFO_NUM_ENTRIES * PVT_VOLT_FIFO_STRIDE_SIZE_BYTES];
-extern uint8_t dimm_temp_fifo[DIMM_FIFO_NUM_ENTRIES * DIMM_FIFO_STRIDE_SIZE_BYTES];
-extern uint8_t vr_temp_fifo[VR_TEMP_FIFO_NUM_ENTRIES * VR_TEMP_FIFO_STRIDE_SIZE_BYTES];
-extern uint8_t vr_curr_fifo[VR_CURRENT_FIFO_NUM_ENTRIES * VR_CURRENT_FIFO_STRIDE_SIZE_BYTES];
 
+typedef struct
+{
+    uint8_t __attribute__((aligned(8))) pstate_fifo[PSTATE_FIFO_NUM_ENTRIES * PSTATE_FIFO_STRIDE_SIZE_BYTES];
+    uint8_t __attribute__((aligned(8))) msg_fifo[SCP_MSG_FIFO_NUM_ENTRIES * SCP_MSG_FIFO_STRIDE_SIZE_BYTES];
+    uint8_t __attribute__((aligned(8))) tile_temp_fifo[TILE_TEMP_FIFO_NUM_ENTRIES * TILE_TEMP_FIFO_STRIDE_SIZE_BYTES];
+    uint8_t __attribute__((aligned(8))) tile_volt_fifo[TILE_VOLT_FIFO_NUM_ENTRIES * TILE_VOLT_FIFO_STRIDE_SIZE_BYTES];
+    uint8_t __attribute__((aligned(8))) core_current_fifo[CORE_CURRENT_FIFO_NUM_ENTRIES * CORE_CURRENT_FIFO_STRIDE_SIZE_BYTES];
+    uint8_t __attribute__((aligned(8))) pvt_temp_fifo[PVT_TEMP_FIFO_NUM_ENTRIES * PVT_TEMP_FIFO_STRIDE_SIZE_BYTES];
+    uint8_t __attribute__((aligned(8))) pvt_volt_fifo[PVT_VOLT_FIFO_NUM_ENTRIES * PVT_VOLT_FIFO_STRIDE_SIZE_BYTES];
+    uint8_t __attribute__((aligned(8))) dimm_temp_fifo[DIMM_FIFO_NUM_ENTRIES * DIMM_FIFO_STRIDE_SIZE_BYTES];
+    uint8_t __attribute__((aligned(8))) vr_temp_fifo[VR_TEMP_FIFO_NUM_ENTRIES * VR_TEMP_FIFO_STRIDE_SIZE_BYTES];
+    uint8_t __attribute__((aligned(8))) vr_curr_fifo[VR_CURRENT_FIFO_NUM_ENTRIES * VR_CURRENT_FIFO_STRIDE_SIZE_BYTES];
+} sensor_fifo_mem_t;
+extern sensor_fifo_mem_t fifo_mem;
 
 extern uint32_t pstate_fifo_ctrl_reg;
 extern uint32_t msg_fifo_ctrl_reg;

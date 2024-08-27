@@ -43,26 +43,29 @@
         .current_expiration_buffer_timer        = 6000,             \
     }
 
-#define DEFAULT_TLM_CFG                                                                                                                                             \
-    {                                                                                                                                                               \
-        .temp_telem_start_address            = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD].start_address,          \
-        .temp_buffer_size                    = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD].entry_count - 1,        \
-        .temp_telem_end_address              = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD].end_address,            \
-        .volt_telem_start_address            = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_TILE_VOLT_TLM_HW_PROD].start_address,          \
-        .volt_buffer_size                    = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_TILE_VOLT_TLM_HW_PROD].entry_count - 1,        \
-        .volt_telem_end_address              = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_TILE_VOLT_TLM_HW_PROD].end_address,            \
-        .current_telem_start_address         = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_CORE_CURRENT_TLM_HW_PROD].start_address,       \
-        .current_buffer_size                 = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_CORE_CURRENT_TLM_HW_PROD].entry_count - 1,     \
-        .current_telem_end_address           = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_CORE_CURRENT_TLM_HW_PROD].end_address,         \
-        .pstate_telem_fifo_start_address     = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_PSTATE_TLM_HW_PROD].start_address,             \
-        .pstate_fifo_size                    = (sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_PSTATE_TLM_HW_PROD].entry_count / 128) - 1,   \
-        .scp_msg_fifo_start_address          = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_SCP_MSG_TLM_HW_PROD].start_address,            \
-        .scp_msg_fifo_size                   = (sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_SCP_MSG_TLM_HW_PROD].entry_count / 128) -1,   \
-        .soc_pvt_temp_telem_start_address    = {sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD].start_address, 0,0,0},  \
-        .soc_pvt_volt_telem_start_address    = {sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_PVT_VOLT_TLM_FW_PROD].start_address, 0,0,0},  \
-        .dimm_temp_start_address             = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_DIMM_TEMP_TLM_FW_PROD].start_address,          \
-        .vr_temp_start_address               = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_VR_TEMP_TLM_FW_PROD].start_address,            \
-        .vr_curr_start_address               = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_VR_CURRENT_TLM_FW_PROD].start_address,         \
+// start_address_incl has been defined as the physical fifo start location
+// the hardware fifo producers require programming the start address incremented by 8 bytes to reserve space for an automated timestamp
+// the firmware fifo producers do not require this, but do so anyway to allow for the same underlying fifo management code to be used
+#define DEFAULT_TLM_CFG                                                                                                                                                                          \
+    {                                                                                                                                                                                            \
+        .temp_telem_start_address            = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD].start_address_incl + QUADWORD_ADDRESS_SIZE,          \
+        .temp_buffer_size                    = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD].entry_count - 1,                                     \
+        .temp_telem_end_address              = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD].end_address_excl - 1,                                \
+        .volt_telem_start_address            = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_TILE_VOLT_TLM_HW_PROD].start_address_incl + QUADWORD_ADDRESS_SIZE,          \
+        .volt_buffer_size                    = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_TILE_VOLT_TLM_HW_PROD].entry_count - 1,                                     \
+        .volt_telem_end_address              = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_TILE_VOLT_TLM_HW_PROD].end_address_excl - 1,                                \
+        .current_telem_start_address         = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_CORE_CURRENT_TLM_HW_PROD].start_address_incl + QUADWORD_ADDRESS_SIZE,       \
+        .current_buffer_size                 = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_CORE_CURRENT_TLM_HW_PROD].entry_count - 1,                                  \
+        .current_telem_end_address           = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_CORE_CURRENT_TLM_HW_PROD].end_address_excl - 1,                             \
+        .pstate_telem_fifo_start_address     = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_PSTATE_TLM_HW_PROD].start_address_incl + QUADWORD_ADDRESS_SIZE,             \
+        .pstate_fifo_size                    = (sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_PSTATE_TLM_HW_PROD].entry_count / 128) - 1,                                \
+        .scp_msg_fifo_start_address          = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_SCP_MSG_TLM_HW_PROD].start_address_incl + QUADWORD_ADDRESS_SIZE,            \
+        .scp_msg_fifo_size                   = (sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_SCP_MSG_TLM_HW_PROD].entry_count / 128) - 1,                               \
+        .soc_pvt_temp_telem_start_address    = {sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD].start_address_incl + QUADWORD_ADDRESS_SIZE, 0,0,0},  \
+        .soc_pvt_volt_telem_start_address    = {sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_PVT_VOLT_TLM_FW_PROD].start_address_incl + QUADWORD_ADDRESS_SIZE, 0,0,0},  \
+        .dimm_temp_start_address             = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_DIMM_TEMP_TLM_FW_PROD].start_address_incl + QUADWORD_ADDRESS_SIZE,          \
+        .vr_temp_start_address               = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_VR_TEMP_TLM_FW_PROD].start_address_incl + QUADWORD_ADDRESS_SIZE,            \
+        .vr_curr_start_address               = sp_scf_mhu_device->sensor_fifo_device.fifo_property_table[DEVICE_FIFO_VR_CURRENT_TLM_FW_PROD].start_address_incl + QUADWORD_ADDRESS_SIZE,         \
         .tile_mask                           = 0,                                                                                                                   \
         .core_mask_lo                        = 0,                                                                                                                   \
         .core_mask_hi                        = 0,                                                                                                                   \

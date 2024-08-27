@@ -71,14 +71,14 @@ static int fw_fifo_setup(void** pContext)
 
     static scf_base_config scf_config;
     scf_config.scf_mhu_base_address = (uintptr_t)mhu_placeholder;
-    scf_config.scf_ram_base_address = (uintptr_t)pvt_temp_fifo;
-    scf_config.scf_ram_buffer_size = sizeof(pvt_temp_fifo);
+    scf_config.scf_ram_base_address = (uintptr_t)fifo_mem.pstate_fifo;
+    scf_config.scf_ram_buffer_size = sizeof(fifo_mem);
     scf_set_working_config((uintptr_t)&scf_config);
 
     static scf_mhu_device_config_t scf_mhu_device_cfg = {.scf_mhu_base_address = (uintptr_t)mhu_placeholder,
                                                          .scf_exp_csr_base_address = (uintptr_t)csr_placeholder,
-                                                         .scf_ram_base_address = (uintptr_t)pvt_temp_fifo,
-                                                         .scf_ram_buffer_size = sizeof(pvt_temp_fifo),
+                                                         .scf_ram_base_address = (uintptr_t)fifo_mem.pstate_fifo,
+                                                         .scf_ram_buffer_size = sizeof(fifo_mem),
                                                          .is_scp = true};
 
     sp_scf_mhu_device_cfg = &scf_mhu_device_cfg;
@@ -193,10 +193,10 @@ TEST_FUNCTION(test_request_dispatch_write_read_entry, fw_fifo_setup, fw_fifo_tea
     uint8_t src_data[PVT_TEMP_FIFO_ENTRY_SIZE_BYTES] = {0};
 
     memset(src_data, ENTRY_VALUE, PVT_TEMP_FIFO_ENTRY_SIZE_BYTES);
-    memset(pvt_temp_fifo, 0x00, sizeof(pvt_temp_fifo));
+    memset(fifo_mem.pvt_temp_fifo, 0x00, sizeof(fifo_mem.pvt_temp_fifo));
 
-    pvt_temp_fifo_read_reg = (uint32_t)(pvt_temp_fifo + PVT_TEMP_FIFO_ENTRY_SIZE_BYTES);
-    pvt_temp_fifo_write_reg = (uint32_t)(pvt_temp_fifo + PVT_TEMP_FIFO_ENTRY_SIZE_BYTES);
+    pvt_temp_fifo_read_reg = (uint32_t)(fifo_mem.pvt_temp_fifo  + FIFO_TIMESTAMP_SIZE + PVT_TEMP_FIFO_ENTRY_SIZE_BYTES);
+    pvt_temp_fifo_write_reg = (uint32_t)(fifo_mem.pvt_temp_fifo  + FIFO_TIMESTAMP_SIZE + PVT_TEMP_FIFO_ENTRY_SIZE_BYTES);
 
     assert_true(hw_fifo_is_empty(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD));
 
@@ -277,14 +277,14 @@ TEST_FUNCTION(test_request_dispatch_update_write_ptr, fw_fifo_setup, fw_fifo_tea
     update_stride_req.header.RequestType = SENSOR_FIFO_SYNC_UPDATE_WRITE_PTR;
     update_stride_req.input.fifo_id = DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD;
 
-    pvt_temp_fifo_write_reg = (uint32_t)(pvt_temp_fifo);
+    pvt_temp_fifo_write_reg = (uint32_t)(fifo_mem.pvt_temp_fifo);
 
     expect_value_count(__wrap_FpFwAssert, expression, true, 1);
 
     fpfw_status_t status = scf_mhu_request_dispatch_sync((PDFWK_SYNC_REQUEST_HEADER)&update_stride_req);
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
 
-    assert_int_equal(pvt_temp_fifo_write_reg, (uint32_t)(pvt_temp_fifo + PVT_TEMP_FIFO_STRIDE_SIZE_BYTES));
+    assert_int_equal(pvt_temp_fifo_write_reg, (uint32_t)(fifo_mem.pvt_temp_fifo + PVT_TEMP_FIFO_STRIDE_SIZE_BYTES));
 }
 
 TEST_FUNCTION(test_request_dispatch_query_enabled, fw_fifo_setup, fw_fifo_teardown)

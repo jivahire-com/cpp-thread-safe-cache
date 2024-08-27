@@ -20,6 +20,7 @@
 #include <silibs_status.h>     // for SILIBS_SUCCESS
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define FIFO_TIMESTAMP_SIZE (8)
 
 /*------------- Typedefs -----------------*/
 
@@ -51,12 +52,12 @@ void hw_fifo_enable(DEVICE_FIFO_ID fifo_id)
     if (hw_fifo_is_enabled(fifo_id) == false)
     {
         // clear fifo on disabled-to-enabled transition
-        uint32_t write_ptr = MMIO_READ32(s_hw_fifo_control[fifo_id].write_pointer_reg_address);
-        uint32_t read_ptr = MMIO_READ32(s_hw_fifo_control[fifo_id].read_pointer_reg_address);
+        uint32_t read_addr = hw_fifo_get_read_address(fifo_id);
+        uint32_t write_addr = hw_fifo_get_write_address(fifo_id);
 
-        if (read_ptr != write_ptr)
+        if (read_addr != write_addr)
         {
-            MMIO_WRITE32(s_hw_fifo_control[fifo_id].read_pointer_reg_address, write_ptr);
+            hw_fifo_update_read_ptr(fifo_id, write_addr);
         }
 
         s_hw_fifo_control[fifo_id].latched_write_address = UINT32_MAX;
@@ -110,7 +111,8 @@ fpfw_status_t hw_fifo_write_entry(DEVICE_FIFO_ID fifo_id, uint8_t* src_data, siz
     fpfw_status_t status = FPFW_STATUS_SUCCESS;
     uint16_t entries_to_copy = num_entries;
     uint32_t number_of_entries_per_stride = s_hw_fifo_prop_table[fifo_id].stride_size_bytes / entry_size;
-    uintptr_t curr_fifo_write_addr = MMIO_READ32(s_hw_fifo_control[fifo_id].write_pointer_reg_address);
+
+    uintptr_t curr_fifo_write_addr = hw_fifo_get_write_address(fifo_id);
 
     if (number_of_entries_per_stride > 1)
     {
@@ -127,7 +129,7 @@ fpfw_status_t hw_fifo_write_entry(DEVICE_FIFO_ID fifo_id, uint8_t* src_data, siz
     else
     {
         // determine if there are enough entries to wrap around the fifo
-        uint32_t entries_until_end = (s_hw_fifo_prop_table[fifo_id].end_address + 1 - curr_fifo_write_addr) / entry_size;
+        uint32_t entries_until_end = (s_hw_fifo_prop_table[fifo_id].end_address_excl - curr_fifo_write_addr) / entry_size;
         if (entries_until_end < entries_to_copy)
         {
             status = hw_fifo_write_helper(curr_fifo_write_addr, src_data, entry_size, entries_until_end);
@@ -136,7 +138,7 @@ fpfw_status_t hw_fifo_write_entry(DEVICE_FIFO_ID fifo_id, uint8_t* src_data, siz
                 s_hw_fifo_control[fifo_id].write_errors++;
                 return status;
             }
-            curr_fifo_write_addr = s_hw_fifo_prop_table[fifo_id].start_address;
+            curr_fifo_write_addr = s_hw_fifo_prop_table[fifo_id].start_address_incl;
             entries_to_copy -= entries_until_end;
             src_data += (entry_size * entries_until_end);
         }
@@ -177,34 +179,34 @@ fpfw_status_t hw_fifo_write_helper(uintptr_t curr_write_addr, uint8_t* src_data,
 
 void hw_fifo_update_write_ptr_by_size(DEVICE_FIFO_ID fifo_id, size_t element_size, uint16_t num_elements)
 {
-    uint32_t curr_write_addr = MMIO_READ32(s_hw_fifo_control[fifo_id].write_pointer_reg_address);
-    uint32_t curr_read_addr = MMIO_READ32(s_hw_fifo_control[fifo_id].read_pointer_reg_address);
+    uint32_t actual_read_addr = hw_fifo_get_read_address(fifo_id);
+    uint32_t actual_write_addr = hw_fifo_get_write_address(fifo_id);
+    uint32_t actual_start_addr = s_hw_fifo_prop_table[fifo_id].start_address_incl;
 
-    size_t fifo_size = s_hw_fifo_prop_table[fifo_id].end_address + 1 - s_hw_fifo_prop_table[fifo_id].start_address;
+    size_t fifo_size = s_hw_fifo_prop_table[fifo_id].end_address_excl - actual_start_addr;
 
-    size_t remaining_size = (curr_read_addr > curr_write_addr) ? (curr_read_addr - curr_write_addr)
-                                                               : (fifo_size - (curr_write_addr - curr_read_addr));
+    size_t remaining_size = (actual_read_addr > actual_write_addr)
+                                ? (actual_read_addr - actual_write_addr)
+                                : (fifo_size - (actual_write_addr - actual_read_addr));
 
     // handles wrap around as well as adding more elements than the buffer holds
-    uint32_t next_write_offset =
-        (curr_write_addr - s_hw_fifo_prop_table[fifo_id].start_address + (num_elements * element_size)) % fifo_size;
-    uint32_t next_write_addr = s_hw_fifo_prop_table[fifo_id].start_address + next_write_offset;
+    uint32_t next_write_offset = (actual_write_addr - actual_start_addr + (num_elements * element_size)) % fifo_size;
+    uint32_t next_write_addr = actual_start_addr + next_write_offset;
 
     if ((num_elements * element_size) >= remaining_size)
     {
         s_hw_fifo_control[fifo_id].overflow_count++;
 
         uint32_t next_read_addr = next_write_addr + element_size;
-        if (next_read_addr > s_hw_fifo_prop_table[fifo_id].end_address)
+        if (next_read_addr >= s_hw_fifo_prop_table[fifo_id].end_address_excl)
         {
-            next_read_addr = s_hw_fifo_prop_table[fifo_id].start_address +
-                             (next_read_addr - (s_hw_fifo_prop_table[fifo_id].end_address + 1));
+            next_read_addr = actual_start_addr + (next_read_addr - (s_hw_fifo_prop_table[fifo_id].end_address_excl));
         }
         // overflowed,  drop oldest entries
-        MMIO_WRITE32(s_hw_fifo_control[fifo_id].read_pointer_reg_address, next_read_addr);
+        hw_fifo_update_read_ptr(fifo_id, next_read_addr);
     }
 
-    MMIO_WRITE32(s_hw_fifo_control[fifo_id].write_pointer_reg_address, next_write_addr);
+    hw_fifo_update_write_ptr(fifo_id, next_write_addr);
 }
 
 void hw_fifo_update_write_ptr_by_stride_size(DEVICE_FIFO_ID fifo_id)
@@ -237,11 +239,10 @@ fpfw_status_t hw_fifo_read_entry(DEVICE_FIFO_ID fifo_id,
         {
             // user contract is that on the first read of a poll period, the current write pointer location is
             // latched and all of the entries are read until the write pointer is reached
-            s_hw_fifo_control[fifo_id].latched_write_address =
-                MMIO_READ32(s_hw_fifo_control[fifo_id].write_pointer_reg_address);
+            s_hw_fifo_control[fifo_id].latched_write_address = hw_fifo_get_write_address(fifo_id);
         }
 
-        fifo_read_addr = MMIO_READ32(s_hw_fifo_control[fifo_id].read_pointer_reg_address);
+        fifo_read_addr = hw_fifo_get_read_address(fifo_id);
         silibs_status = scf_ram_read_entry(fifo_read_addr, (uintptr_t)dest_loc, (entry_size / QUADWORD_ADDRESS_SIZE));
         if (silibs_status == SILIBS_SUCCESS)
         {
@@ -266,16 +267,17 @@ fpfw_status_t hw_fifo_read_entry(DEVICE_FIFO_ID fifo_id,
 
 void hw_fifo_update_read_ptr_by_entry_size(DEVICE_FIFO_ID fifo_id, uint16_t num_entries)
 {
-    uint32_t next_read_addr = MMIO_READ32(s_hw_fifo_control[fifo_id].read_pointer_reg_address);
+    uint32_t actual_start_addr = s_hw_fifo_prop_table[fifo_id].start_address_incl;
+    uint32_t next_read_addr = hw_fifo_get_read_address(fifo_id);
+
     next_read_addr += (s_hw_fifo_prop_table[fifo_id].entry_size_bytes * num_entries);
 
-    if (next_read_addr > s_hw_fifo_prop_table[fifo_id].end_address)
+    if (next_read_addr >= s_hw_fifo_prop_table[fifo_id].end_address_excl)
     {
-        next_read_addr = s_hw_fifo_prop_table[fifo_id].start_address +
-                         (next_read_addr - (s_hw_fifo_prop_table[fifo_id].end_address + 1));
+        next_read_addr = actual_start_addr + (next_read_addr - (s_hw_fifo_prop_table[fifo_id].end_address_excl));
     }
 
-    MMIO_WRITE32(s_hw_fifo_control[fifo_id].read_pointer_reg_address, next_read_addr);
+    hw_fifo_update_read_ptr(fifo_id, next_read_addr);
 }
 
 bool hw_fifo_is_empty(DEVICE_FIFO_ID fifo_id)
@@ -283,8 +285,7 @@ bool hw_fifo_is_empty(DEVICE_FIFO_ID fifo_id)
     bool empty = true;
     if (hw_fifo_is_enabled(fifo_id))
     {
-        empty = (MMIO_READ32(s_hw_fifo_control[fifo_id].write_pointer_reg_address) ==
-                 MMIO_READ32(s_hw_fifo_control[fifo_id].read_pointer_reg_address));
+        empty = (hw_fifo_get_read_address(fifo_id) == hw_fifo_get_write_address(fifo_id));
     }
     return empty;
 }
@@ -296,8 +297,8 @@ size_t hw_fifo_get_remaining_latched_entries(DEVICE_FIFO_ID fifo_id)
     if (s_hw_fifo_control[fifo_id].latched_write_address != UINT32_MAX)
     {
 
-        size_t buffer_size = s_hw_fifo_prop_table[fifo_id].end_address + 1 - s_hw_fifo_prop_table[fifo_id].start_address;
-        uint32_t read_addr = MMIO_READ32(s_hw_fifo_control[fifo_id].read_pointer_reg_address);
+        size_t buffer_size = s_hw_fifo_prop_table[fifo_id].end_address_excl - s_hw_fifo_prop_table[fifo_id].start_address_incl;
+        uint32_t read_addr = hw_fifo_get_read_address(fifo_id);
         uint32_t write_addr = (uint32_t)s_hw_fifo_control[fifo_id].latched_write_address;
 
         // Calculate the distance in bytes from read_addr to write_addr
@@ -309,8 +310,8 @@ size_t hw_fifo_get_remaining_latched_entries(DEVICE_FIFO_ID fifo_id)
         else
         {
             // If write_addr has wrapped around
-            distance = buffer_size - (read_addr - s_hw_fifo_prop_table[fifo_id].start_address) +
-                       (write_addr - s_hw_fifo_prop_table[fifo_id].start_address);
+            distance = buffer_size - (read_addr - s_hw_fifo_prop_table[fifo_id].start_address_incl) +
+                       (write_addr - s_hw_fifo_prop_table[fifo_id].start_address_incl);
         }
 
         // Calculate the number of entries
@@ -329,9 +330,29 @@ uint16_t hw_fifo_get_stride_index(DEVICE_FIFO_ID fifo_id, uint32_t fifo_read_add
 
     if (number_of_entries_per_stride > 1)
     {
-        uint32_t address_diff = fifo_read_addr - s_hw_fifo_prop_table[fifo_id].start_address;
+        uint32_t address_diff = fifo_read_addr - s_hw_fifo_prop_table[fifo_id].start_address_incl;
         stride_index = (address_diff / s_hw_fifo_prop_table[fifo_id].entry_size_bytes) % number_of_entries_per_stride;
     }
 
     return stride_index;
+}
+
+uint32_t hw_fifo_get_read_address(DEVICE_FIFO_ID fifo_id)
+{
+    return MMIO_READ32(s_hw_fifo_control[fifo_id].read_pointer_reg_address) - FIFO_TIMESTAMP_SIZE;
+}
+
+uint32_t hw_fifo_get_write_address(DEVICE_FIFO_ID fifo_id)
+{
+    return MMIO_READ32(s_hw_fifo_control[fifo_id].write_pointer_reg_address) - FIFO_TIMESTAMP_SIZE;
+}
+
+void hw_fifo_update_read_ptr(DEVICE_FIFO_ID fifo_id, uint32_t address)
+{
+    MMIO_WRITE32(s_hw_fifo_control[fifo_id].read_pointer_reg_address, address + FIFO_TIMESTAMP_SIZE);
+}
+
+void hw_fifo_update_write_ptr(DEVICE_FIFO_ID fifo_id, uint32_t address)
+{
+    MMIO_WRITE32(s_hw_fifo_control[fifo_id].write_pointer_reg_address, address + FIFO_TIMESTAMP_SIZE);
 }

@@ -163,3 +163,37 @@ fpfw_status_t hw_fifo_write_helper(uintptr_t curr_write_addr, uint8_t* src_data,
  * @retval uint16_t - stride index when valid. STRIDE_INDEX_UNUSED when entry size == stride size
  */
 uint16_t hw_fifo_get_stride_index(DEVICE_FIFO_ID fifo_id, uint32_t fifo_read_addr);
+
+/**
+ * @brief Helper function to get the current read address of the fifo. Takes into account the timestamp offset.
+ *
+ * @param[in] fifo_id - fifo identifier
+ * @retval uint32_t - current read address
+ */
+uint32_t hw_fifo_get_read_address(DEVICE_FIFO_ID fifo_id);
+
+/**
+ * @brief Helper function to get the current write address of the fifo. Takes into account the timestamp offset.
+ *
+ * @param[in] fifo_id - fifo identifier
+ * @retval uint32_t - current write address
+ */
+uint32_t hw_fifo_get_write_address(DEVICE_FIFO_ID fifo_id);
+
+/**
+ * @brief Helper function to update the read pointer and take into account the timestamp offset.
+ *
+ * @param[in] fifo_id - fifo identifier
+ * @param[in] address - address to update the read pointer to
+ * @retval none
+ */
+void hw_fifo_update_read_ptr(DEVICE_FIFO_ID fifo_id, uint32_t address);
+
+/**
+ * @brief Helper function to update the write pointer and take into account the timestamp offset.
+ *
+ * @param[in] fifo_id - fifo identifier
+ * @param[in] address - address to update the write pointer to
+ * @retval none
+ */
+void hw_fifo_update_write_ptr(DEVICE_FIFO_ID fifo_id, uint32_t address);

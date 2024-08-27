@@ -48,9 +48,9 @@ void sensor_fifo_svc_get_properties(SENSOR_FIFO_ID fifo, psensor_fifo_properties
 
     properties->entry_size_bytes = device_properties->entry_size_bytes;
     properties->stride_size_bytes = device_properties->stride_size_bytes;
-    properties->start_address = device_properties->start_address;
-    properties->end_address = device_properties->end_address;
-    properties->epoch_count = device_properties->entry_count;
+    properties->start_address_incl = device_properties->start_address_incl;
+    properties->end_address_excl = device_properties->end_address_excl;
+    properties->num_entries_or_strides = device_properties->entry_count;
     properties->name = device_properties->name;
 }
 

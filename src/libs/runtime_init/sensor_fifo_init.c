@@ -29,8 +29,6 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
-#define TIMESTAMP_SIZE (QUADWORD_ADDRESS_SIZE)
-
 #if defined (SCP_RUNTIME_INIT)
   #define SCF_MHU_BASE_ADDRESS (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCF_MHU_ADDRESS)
   #define SCF_RAM_BASE_ADDRESS (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCF_RAM_ADDRESS)
@@ -46,10 +44,12 @@
   #error runtime not defined
 #endif
 
-// NOTE:  for the five hardware fifo's, the SCF hardware adds a timestamp before every entry
-// therefore the start address is offset by TIMESTAMP_SIZE.  Note the entry size and stride size accounts for the timestamp quad word
-// the end address needs to subtract the QUADWORD and an additional byte for inclusive range compares
-// The firmware fifo's do not have that offset as firmware provides the timestamp.
+// NOTE:  for the five hardware fifo's, the SCF hardware adds a timestamp before every entry. The hardware requires
+// that the start address be programmed with an 8 byte offset to account for the timestamp.  That is handled
+// internally by the firmware. Therefore all of the configurations below assign the actual fifo start address to START_ADDR.
+// END_ADDR is the end of the fifo plus 1 byte.  That allows the size to be simply calculated by END_ADDR - START_ADDR.
+// The inclusive end address is END_ADDR - 1.  Hardware that requires the inclusive end address is handled internally by the
+// firmware.
 
 static_assert((int)SENSOR_FIFO_MAX_ID == (int)DEVICE_FIFO_MAX_ID, "SENSOR_FIFO_MAX_ID != DEVICE_FIFO_MAX_ID");
 
@@ -58,67 +58,67 @@ static_assert((int)SENSOR_FIFO_MAX_ID == (int)DEVICE_FIFO_MAX_ID, "SENSOR_FIFO_M
 #define PSTATE_FIFO_NUM_ENTRIES               (1152)
 #define PSTATE_FIFO_ENTRY_SIZE_BYTES          (BUFFER_ADDRESS_INC_2QW)
 #define PSTATE_FIFO_STRIDE_SIZE_BYTES         (BUFFER_ADDRESS_INC_2QW)
-#define PSTATE_FIFO_START_ADDR                (SCF_RAM_BASE_ADDRESS + TIMESTAMP_SIZE)  // Offset on qword for Timestamp added by MSCP_EXP
-#define PSTATE_FIFO_END_ADDR                  (PSTATE_FIFO_START_ADDR + (PSTATE_FIFO_NUM_ENTRIES * PSTATE_FIFO_STRIDE_SIZE_BYTES) - TIMESTAMP_SIZE - 1)
+#define PSTATE_FIFO_START_ADDR                (SCF_RAM_BASE_ADDRESS)
+#define PSTATE_FIFO_END_ADDR                  (PSTATE_FIFO_START_ADDR + (PSTATE_FIFO_NUM_ENTRIES * PSTATE_FIFO_STRIDE_SIZE_BYTES))
 static_assert((PSTATE_FIFO_NUM_ENTRIES % 128) == 0, "PSTATE_FIFO_NUM_ENTRIES needs to be multiple of 128");
 
 #define SCP_MSG_FIFO_NUM_ENTRIES              (256)
 #define SCP_MSG_FIFO_ENTRY_SIZE_BYTES         (BUFFER_ADDRESS_INC_2QW)
 #define SCP_MSG_FIFO_STRIDE_SIZE_BYTES        (BUFFER_ADDRESS_INC_2QW)
-#define SCP_MSG_FIFO_START_ADDR               (PSTATE_FIFO_END_ADDR + 1 + TIMESTAMP_SIZE)
-#define SCP_MSG_FIFO_END_ADDR                 (SCP_MSG_FIFO_START_ADDR + (SCP_MSG_FIFO_NUM_ENTRIES * SCP_MSG_FIFO_STRIDE_SIZE_BYTES) - TIMESTAMP_SIZE - 1)
+#define SCP_MSG_FIFO_START_ADDR               (PSTATE_FIFO_END_ADDR)
+#define SCP_MSG_FIFO_END_ADDR                 (SCP_MSG_FIFO_START_ADDR + (SCP_MSG_FIFO_NUM_ENTRIES * SCP_MSG_FIFO_STRIDE_SIZE_BYTES))
 static_assert((SCP_MSG_FIFO_NUM_ENTRIES % 128) == 0, "SCP_MSG_FIFO_NUM_ENTRIES needs to be multiple of 128");
 
 #define TILE_TEMP_FIFO_NUM_ENTRIES            (8)   // number of strides
 #define TILE_TEMP_FIFO_ENTRY_SIZE_BYTES       (BUFFER_ADDRESS_INC_4QW)
 #define TILE_TEMP_FIFO_STRIDE_SIZE_BYTES      (TILE_TEMP_FIFO_ENTRY_SIZE_BYTES * NUM_CPU_TILES )
-#define TILE_TEMP_FIFO_START_ADDR             (SCP_MSG_FIFO_END_ADDR + 1 + TIMESTAMP_SIZE)
-#define TILE_TEMP_FIFO_END_ADDR               (TILE_TEMP_FIFO_START_ADDR + (TILE_TEMP_FIFO_NUM_ENTRIES * TILE_TEMP_FIFO_STRIDE_SIZE_BYTES) - TIMESTAMP_SIZE - 1)
+#define TILE_TEMP_FIFO_START_ADDR             (SCP_MSG_FIFO_END_ADDR)
+#define TILE_TEMP_FIFO_END_ADDR               (TILE_TEMP_FIFO_START_ADDR + (TILE_TEMP_FIFO_NUM_ENTRIES * TILE_TEMP_FIFO_STRIDE_SIZE_BYTES))
 static_assert((TILE_TEMP_FIFO_NUM_ENTRIES <= 16), "TILE_TEMP_FIFO_NUM_ENTRIES <= 16");
 
 #define TILE_VOLT_FIFO_NUM_ENTRIES            (8)   // number of strides
 #define TILE_VOLT_FIFO_ENTRY_SIZE_BYTES       (BUFFER_ADDRESS_INC_2QW)
 #define TILE_VOLT_FIFO_STRIDE_SIZE_BYTES      (TILE_VOLT_FIFO_ENTRY_SIZE_BYTES * NUM_CPU_TILES )
-#define TILE_VOLT_FIFO_START_ADDR             (TILE_TEMP_FIFO_END_ADDR + 1 + TIMESTAMP_SIZE)
-#define TILE_VOLT_FIFO_END_ADDR               (TILE_VOLT_FIFO_START_ADDR + (TILE_VOLT_FIFO_NUM_ENTRIES * TILE_VOLT_FIFO_STRIDE_SIZE_BYTES) - TIMESTAMP_SIZE - 1)
+#define TILE_VOLT_FIFO_START_ADDR             (TILE_TEMP_FIFO_END_ADDR)
+#define TILE_VOLT_FIFO_END_ADDR               (TILE_VOLT_FIFO_START_ADDR + (TILE_VOLT_FIFO_NUM_ENTRIES * TILE_VOLT_FIFO_STRIDE_SIZE_BYTES))
 static_assert((TILE_VOLT_FIFO_NUM_ENTRIES <= 16), "TILE_VOLT_FIFO_NUM_ENTRIES <= 16");
 
 #define CORE_CURRENT_FIFO_NUM_ENTRIES         (16)   // number of strides
 #define CORE_CURRENT_FIFO_ENTRY_SIZE_BYTES    (BUFFER_ADDRESS_INC_2QW)
 #define CORE_CURRENT_FIFO_STRIDE_SIZE_BYTES   (CORE_CURRENT_FIFO_ENTRY_SIZE_BYTES * NUM_AP_CORES_PER_DIE )
-#define CORE_CURRENT_FIFO_START_ADDR          (TILE_VOLT_FIFO_END_ADDR + 1 + TIMESTAMP_SIZE)
-#define CORE_CURRENT_FIFO_END_ADDR            (CORE_CURRENT_FIFO_START_ADDR + (CORE_CURRENT_FIFO_NUM_ENTRIES * CORE_CURRENT_FIFO_STRIDE_SIZE_BYTES) - TIMESTAMP_SIZE - 1)
+#define CORE_CURRENT_FIFO_START_ADDR          (TILE_VOLT_FIFO_END_ADDR)
+#define CORE_CURRENT_FIFO_END_ADDR            (CORE_CURRENT_FIFO_START_ADDR + (CORE_CURRENT_FIFO_NUM_ENTRIES * CORE_CURRENT_FIFO_STRIDE_SIZE_BYTES))
 static_assert((CORE_CURRENT_FIFO_NUM_ENTRIES <= 16), "CORE_CURRENT_FIFO_NUM_ENTRIES <= 16");
 
 #define PVT_TEMP_FIFO_NUM_ENTRIES             (8)
 #define PVT_TEMP_FIFO_ENTRY_SIZE_BYTES        (QUADWORD_ADDRESS_SIZE * 5U)
 #define PVT_TEMP_FIFO_STRIDE_SIZE_BYTES       (QUADWORD_ADDRESS_SIZE * 5U)
-#define PVT_TEMP_FIFO_START_ADDR              (CORE_CURRENT_FIFO_END_ADDR + 1)
-#define PVT_TEMP_FIFO_END_ADDR                (PVT_TEMP_FIFO_START_ADDR + (PVT_TEMP_FIFO_NUM_ENTRIES * PVT_TEMP_FIFO_STRIDE_SIZE_BYTES) - 1)
+#define PVT_TEMP_FIFO_START_ADDR              (CORE_CURRENT_FIFO_END_ADDR )
+#define PVT_TEMP_FIFO_END_ADDR                (PVT_TEMP_FIFO_START_ADDR + (PVT_TEMP_FIFO_NUM_ENTRIES * PVT_TEMP_FIFO_STRIDE_SIZE_BYTES))
 
 #define PVT_VOLT_FIFO_NUM_ENTRIES             (8)
 #define PVT_VOLT_FIFO_ENTRY_SIZE_BYTES        (QUADWORD_ADDRESS_SIZE * 6U)
 #define PVT_VOLT_FIFO_STRIDE_SIZE_BYTES       (QUADWORD_ADDRESS_SIZE * 6U)
-#define PVT_VOLT_FIFO_START_ADDR              (PVT_TEMP_FIFO_END_ADDR + 1)
-#define PVT_VOLT_FIFO_END_ADDR                (PVT_VOLT_FIFO_START_ADDR + (PVT_VOLT_FIFO_NUM_ENTRIES * PVT_VOLT_FIFO_STRIDE_SIZE_BYTES) - 1)
+#define PVT_VOLT_FIFO_START_ADDR              (PVT_TEMP_FIFO_END_ADDR)
+#define PVT_VOLT_FIFO_END_ADDR                (PVT_VOLT_FIFO_START_ADDR + (PVT_VOLT_FIFO_NUM_ENTRIES * PVT_VOLT_FIFO_STRIDE_SIZE_BYTES))
 
 #define DIMM_FIFO_NUM_ENTRIES                 (8)
 #define DIMM_FIFO_ENTRY_SIZE_BYTES            (BUFFER_ADDRESS_INC_3QW)
 #define DIMM_FIFO_STRIDE_SIZE_BYTES           (DIMM_FIFO_ENTRY_SIZE_BYTES * 12U) //12 channels
-#define DIMM_FIFO_START_ADDR                  (PVT_VOLT_FIFO_END_ADDR + 1)
-#define DIMM_FIFO_END_ADDR                    (DIMM_FIFO_START_ADDR + (DIMM_FIFO_NUM_ENTRIES * DIMM_FIFO_STRIDE_SIZE_BYTES) - 1)
+#define DIMM_FIFO_START_ADDR                  (PVT_VOLT_FIFO_END_ADDR)
+#define DIMM_FIFO_END_ADDR                    (DIMM_FIFO_START_ADDR + (DIMM_FIFO_NUM_ENTRIES * DIMM_FIFO_STRIDE_SIZE_BYTES))
 
 #define VR_TEMP_FIFO_NUM_ENTRIES              (24)
 #define VR_TEMP_FIFO_ENTRY_SIZE_BYTES         (BUFFER_ADDRESS_INC_3QW)
 #define VR_TEMP_FIFO_STRIDE_SIZE_BYTES        (VR_TEMP_FIFO_ENTRY_SIZE_BYTES)
-#define VR_TEMP_FIFO_START_ADDR               (DIMM_FIFO_END_ADDR + 1)
-#define VR_TEMP_FIFO_END_ADDR                 (VR_TEMP_FIFO_START_ADDR + (VR_TEMP_FIFO_NUM_ENTRIES * VR_TEMP_FIFO_STRIDE_SIZE_BYTES) - 1)
+#define VR_TEMP_FIFO_START_ADDR               (DIMM_FIFO_END_ADDR )
+#define VR_TEMP_FIFO_END_ADDR                 (VR_TEMP_FIFO_START_ADDR + (VR_TEMP_FIFO_NUM_ENTRIES * VR_TEMP_FIFO_STRIDE_SIZE_BYTES))
 
 #define VR_CURRENT_FIFO_NUM_ENTRIES           (24)
 #define VR_CURRENT_FIFO_ENTRY_SIZE_BYTES      (QUADWORD_ADDRESS_SIZE * 5U)
 #define VR_CURRENT_FIFO_STRIDE_SIZE_BYTES     (QUADWORD_ADDRESS_SIZE * 5U)
-#define VR_CURRENT_FIFO_START_ADDR            (VR_TEMP_FIFO_END_ADDR + 1)
-#define VR_CURRENT_FIFO_END_ADDR              (VR_CURRENT_FIFO_START_ADDR + (VR_CURRENT_FIFO_NUM_ENTRIES * VR_CURRENT_FIFO_STRIDE_SIZE_BYTES) - 1)
+#define VR_CURRENT_FIFO_START_ADDR            (VR_TEMP_FIFO_END_ADDR)
+#define VR_CURRENT_FIFO_END_ADDR              (VR_CURRENT_FIFO_START_ADDR + (VR_CURRENT_FIFO_NUM_ENTRIES * VR_CURRENT_FIFO_STRIDE_SIZE_BYTES))
 
 static_assert(VR_CURRENT_FIFO_END_ADDR < (SCF_RAM_BASE_ADDRESS + SCF_RAM_BUFFER_SIZE_BYTES), "Exceeded SCF RAM capacity");
 
@@ -126,45 +126,45 @@ static_assert(VR_CURRENT_FIFO_END_ADDR < (SCF_RAM_BASE_ADDRESS + SCF_RAM_BUFFER_
 #define FPGA_SCF_RAM_BUFFER_SIZE_BYTES (32768)
 
 #define FPGA_PSTATE_FIFO_NUM_ENTRIES               (512)
-#define FPGA_PSTATE_FIFO_START_ADDR                (SCF_RAM_BASE_ADDRESS + TIMESTAMP_SIZE)  // Offset on qword for Timestamp added by MSCP_EXP
-#define FPGA_PSTATE_FIFO_END_ADDR                  (FPGA_PSTATE_FIFO_START_ADDR + (FPGA_PSTATE_FIFO_NUM_ENTRIES * PSTATE_FIFO_STRIDE_SIZE_BYTES) - TIMESTAMP_SIZE - 1)
+#define FPGA_PSTATE_FIFO_START_ADDR                (SCF_RAM_BASE_ADDRESS)
+#define FPGA_PSTATE_FIFO_END_ADDR                  (FPGA_PSTATE_FIFO_START_ADDR + (FPGA_PSTATE_FIFO_NUM_ENTRIES * PSTATE_FIFO_STRIDE_SIZE_BYTES))
 static_assert((FPGA_PSTATE_FIFO_NUM_ENTRIES % 128) == 0, "FPGA_PSTATE_FIFO_NUM_ENTRIES needs to be multiple of 128");
 
 #define FPGA_SCP_MSG_FIFO_NUM_ENTRIES              (128)
-#define FPGA_SCP_MSG_FIFO_START_ADDR               (FPGA_PSTATE_FIFO_END_ADDR + 1 + TIMESTAMP_SIZE)
-#define FPGA_SCP_MSG_FIFO_END_ADDR                 (FPGA_SCP_MSG_FIFO_START_ADDR + (FPGA_SCP_MSG_FIFO_NUM_ENTRIES * SCP_MSG_FIFO_STRIDE_SIZE_BYTES) - TIMESTAMP_SIZE - 1)
+#define FPGA_SCP_MSG_FIFO_START_ADDR               (FPGA_PSTATE_FIFO_END_ADDR)
+#define FPGA_SCP_MSG_FIFO_END_ADDR                 (FPGA_SCP_MSG_FIFO_START_ADDR + (FPGA_SCP_MSG_FIFO_NUM_ENTRIES * SCP_MSG_FIFO_STRIDE_SIZE_BYTES))
 static_assert((FPGA_SCP_MSG_FIFO_NUM_ENTRIES % 128) == 0, "FPGA_SCP_MSG_FIFO_NUM_ENTRIES needs to be multiple of 128");
 
 #define FPGA_TILE_TEMP_FIFO_NUM_ENTRIES            (4)   // number of strides
-#define FPGA_TILE_TEMP_FIFO_START_ADDR             (FPGA_SCP_MSG_FIFO_END_ADDR + 1 + TIMESTAMP_SIZE)
-#define FPGA_TILE_TEMP_FIFO_END_ADDR               (FPGA_TILE_TEMP_FIFO_START_ADDR + (FPGA_TILE_TEMP_FIFO_NUM_ENTRIES * TILE_TEMP_FIFO_STRIDE_SIZE_BYTES) - TIMESTAMP_SIZE - 1)
+#define FPGA_TILE_TEMP_FIFO_START_ADDR             (FPGA_SCP_MSG_FIFO_END_ADDR)
+#define FPGA_TILE_TEMP_FIFO_END_ADDR               (FPGA_TILE_TEMP_FIFO_START_ADDR + (FPGA_TILE_TEMP_FIFO_NUM_ENTRIES * TILE_TEMP_FIFO_STRIDE_SIZE_BYTES))
 static_assert((FPGA_TILE_TEMP_FIFO_NUM_ENTRIES <= 16), "FPGA_TILE_TEMP_FIFO_NUM_ENTRIES <= 16");
 
 #define FPGA_TILE_VOLT_FIFO_NUM_ENTRIES            (4)   // number of strides
-#define FPGA_TILE_VOLT_FIFO_START_ADDR             (FPGA_TILE_TEMP_FIFO_END_ADDR + 1 + TIMESTAMP_SIZE)
-#define FPGA_TILE_VOLT_FIFO_END_ADDR               (FPGA_TILE_VOLT_FIFO_START_ADDR + (FPGA_TILE_VOLT_FIFO_NUM_ENTRIES * TILE_VOLT_FIFO_STRIDE_SIZE_BYTES) - TIMESTAMP_SIZE - 1)
+#define FPGA_TILE_VOLT_FIFO_START_ADDR             (FPGA_TILE_TEMP_FIFO_END_ADDR)
+#define FPGA_TILE_VOLT_FIFO_END_ADDR               (FPGA_TILE_VOLT_FIFO_START_ADDR + (FPGA_TILE_VOLT_FIFO_NUM_ENTRIES * TILE_VOLT_FIFO_STRIDE_SIZE_BYTES))
 static_assert((FPGA_TILE_VOLT_FIFO_NUM_ENTRIES <= 16), "FPGA_TILE_VOLT_FIFO_NUM_ENTRIES <= 16");
 
 #define FPGA_CORE_CURRENT_FIFO_NUM_ENTRIES         (8)   // number of strides
-#define FPGA_CORE_CURRENT_FIFO_START_ADDR          (FPGA_TILE_VOLT_FIFO_END_ADDR + 1 + TIMESTAMP_SIZE)
-#define FPGA_CORE_CURRENT_FIFO_END_ADDR            (FPGA_CORE_CURRENT_FIFO_START_ADDR + (FPGA_CORE_CURRENT_FIFO_NUM_ENTRIES * CORE_CURRENT_FIFO_STRIDE_SIZE_BYTES) - TIMESTAMP_SIZE - 1)
+#define FPGA_CORE_CURRENT_FIFO_START_ADDR          (FPGA_TILE_VOLT_FIFO_END_ADDR)
+#define FPGA_CORE_CURRENT_FIFO_END_ADDR            (FPGA_CORE_CURRENT_FIFO_START_ADDR + (FPGA_CORE_CURRENT_FIFO_NUM_ENTRIES * CORE_CURRENT_FIFO_STRIDE_SIZE_BYTES))
 static_assert((FPGA_CORE_CURRENT_FIFO_NUM_ENTRIES <= 16), "FPGA_CORE_CURRENT_FIFO_NUM_ENTRIES <= 16");
 
 // FPGA number of entries is the same for the following, but the memory map still needs a shift
-#define FPGA_PVT_TEMP_FIFO_START_ADDR              (FPGA_CORE_CURRENT_FIFO_END_ADDR + 1)
-#define FPGA_PVT_TEMP_FIFO_END_ADDR                (FPGA_PVT_TEMP_FIFO_START_ADDR + (PVT_TEMP_FIFO_NUM_ENTRIES * PVT_TEMP_FIFO_STRIDE_SIZE_BYTES) - 1)
+#define FPGA_PVT_TEMP_FIFO_START_ADDR              (FPGA_CORE_CURRENT_FIFO_END_ADDR)
+#define FPGA_PVT_TEMP_FIFO_END_ADDR                (FPGA_PVT_TEMP_FIFO_START_ADDR + (PVT_TEMP_FIFO_NUM_ENTRIES * PVT_TEMP_FIFO_STRIDE_SIZE_BYTES))
 
-#define FPGA_PVT_VOLT_FIFO_START_ADDR              (FPGA_PVT_TEMP_FIFO_END_ADDR + 1)
-#define FPGA_PVT_VOLT_FIFO_END_ADDR                (FPGA_PVT_VOLT_FIFO_START_ADDR + (PVT_VOLT_FIFO_NUM_ENTRIES * PVT_VOLT_FIFO_STRIDE_SIZE_BYTES) - 1)
+#define FPGA_PVT_VOLT_FIFO_START_ADDR              (FPGA_PVT_TEMP_FIFO_END_ADDR)
+#define FPGA_PVT_VOLT_FIFO_END_ADDR                (FPGA_PVT_VOLT_FIFO_START_ADDR + (PVT_VOLT_FIFO_NUM_ENTRIES * PVT_VOLT_FIFO_STRIDE_SIZE_BYTES))
 
-#define FPGA_DIMM_FIFO_START_ADDR                  (FPGA_PVT_VOLT_FIFO_END_ADDR + 1)
-#define FPGA_DIMM_FIFO_END_ADDR                    (FPGA_DIMM_FIFO_START_ADDR + (DIMM_FIFO_NUM_ENTRIES * DIMM_FIFO_STRIDE_SIZE_BYTES) - 1)
+#define FPGA_DIMM_FIFO_START_ADDR                  (FPGA_PVT_VOLT_FIFO_END_ADDR)
+#define FPGA_DIMM_FIFO_END_ADDR                    (FPGA_DIMM_FIFO_START_ADDR + (DIMM_FIFO_NUM_ENTRIES * DIMM_FIFO_STRIDE_SIZE_BYTES))
 
-#define FPGA_VR_TEMP_FIFO_START_ADDR               (FPGA_DIMM_FIFO_END_ADDR + 1)
-#define FPGA_VR_TEMP_FIFO_END_ADDR                 (FPGA_VR_TEMP_FIFO_START_ADDR + (VR_TEMP_FIFO_NUM_ENTRIES * VR_TEMP_FIFO_STRIDE_SIZE_BYTES) - 1)
+#define FPGA_VR_TEMP_FIFO_START_ADDR               (FPGA_DIMM_FIFO_END_ADDR)
+#define FPGA_VR_TEMP_FIFO_END_ADDR                 (FPGA_VR_TEMP_FIFO_START_ADDR + (VR_TEMP_FIFO_NUM_ENTRIES * VR_TEMP_FIFO_STRIDE_SIZE_BYTES))
 
-#define FPGA_VR_CURRENT_FIFO_START_ADDR            (FPGA_VR_TEMP_FIFO_END_ADDR + 1)
-#define FPGA_VR_CURRENT_FIFO_END_ADDR              (FPGA_VR_CURRENT_FIFO_START_ADDR + (VR_CURRENT_FIFO_NUM_ENTRIES * VR_CURRENT_FIFO_STRIDE_SIZE_BYTES) - 1)
+#define FPGA_VR_CURRENT_FIFO_START_ADDR            (FPGA_VR_TEMP_FIFO_END_ADDR)
+#define FPGA_VR_CURRENT_FIFO_END_ADDR              (FPGA_VR_CURRENT_FIFO_START_ADDR + (VR_CURRENT_FIFO_NUM_ENTRIES * VR_CURRENT_FIFO_STRIDE_SIZE_BYTES))
 
 static_assert(FPGA_VR_CURRENT_FIFO_END_ADDR < (SCF_RAM_BASE_ADDRESS + FPGA_SCF_RAM_BUFFER_SIZE_BYTES), "Exceeded FPGA SCF RAM capacity");
 
@@ -193,8 +193,8 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .entry_count = PSTATE_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = PSTATE_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = PSTATE_FIFO_STRIDE_SIZE_BYTES,
-                                                .start_address = PSTATE_FIFO_START_ADDR,
-                                                .end_address = PSTATE_FIFO_END_ADDR,
+                                                .start_address_incl = PSTATE_FIFO_START_ADDR,
+                                                .end_address_excl = PSTATE_FIFO_END_ADDR,
                                                 .name = "PSTATE Fifo",
                                                 },
     [SENSOR_FIFO_SCP_MSG_TELEMETRY_HW] = {
@@ -202,8 +202,8 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .entry_count = SCP_MSG_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = SCP_MSG_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = SCP_MSG_FIFO_STRIDE_SIZE_BYTES,
-                                                .start_address = SCP_MSG_FIFO_START_ADDR,
-                                                .end_address = SCP_MSG_FIFO_END_ADDR,
+                                                .start_address_incl = SCP_MSG_FIFO_START_ADDR,
+                                                .end_address_excl = SCP_MSG_FIFO_END_ADDR,
                                                 .name = "SCP Msg Fifo",
                                                 },
     [SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW] = {
@@ -211,8 +211,8 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .entry_count = TILE_TEMP_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = TILE_TEMP_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = TILE_TEMP_FIFO_STRIDE_SIZE_BYTES,
-                                                .start_address = TILE_TEMP_FIFO_START_ADDR,
-                                                .end_address = TILE_TEMP_FIFO_END_ADDR,
+                                                .start_address_incl = TILE_TEMP_FIFO_START_ADDR,
+                                                .end_address_excl = TILE_TEMP_FIFO_END_ADDR,
                                                 .name = "Tile Temperature Fifo",
                                                 },
     [SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW] = {
@@ -220,8 +220,8 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .entry_count = TILE_VOLT_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = TILE_VOLT_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = TILE_VOLT_FIFO_STRIDE_SIZE_BYTES,
-                                                .start_address = TILE_VOLT_FIFO_START_ADDR,
-                                                .end_address = TILE_VOLT_FIFO_END_ADDR,
+                                                .start_address_incl = TILE_VOLT_FIFO_START_ADDR,
+                                                .end_address_excl = TILE_VOLT_FIFO_END_ADDR,
                                                 .name = "Tile Voltage Fifo",
                                                 },
     [SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW] = {
@@ -229,8 +229,8 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .entry_count = CORE_CURRENT_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = CORE_CURRENT_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = CORE_CURRENT_FIFO_STRIDE_SIZE_BYTES,
-                                                .start_address = CORE_CURRENT_FIFO_START_ADDR,
-                                                .end_address = CORE_CURRENT_FIFO_END_ADDR,
+                                                .start_address_incl = CORE_CURRENT_FIFO_START_ADDR,
+                                                .end_address_excl = CORE_CURRENT_FIFO_END_ADDR,
                                                 .name = "Core Current Fifo",
                                                 },
     [SENSOR_FIFO_PVT_TEMP_FW] = {
@@ -238,8 +238,8 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .entry_count = PVT_TEMP_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = PVT_TEMP_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = PVT_TEMP_FIFO_STRIDE_SIZE_BYTES,
-                                                .start_address = PVT_TEMP_FIFO_START_ADDR,
-                                                .end_address = PVT_TEMP_FIFO_END_ADDR,
+                                                .start_address_incl = PVT_TEMP_FIFO_START_ADDR,
+                                                .end_address_excl = PVT_TEMP_FIFO_END_ADDR,
                                                 .name = "PVT Temperature Fifo",
                                                 },
 
@@ -248,8 +248,8 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .entry_count = PVT_VOLT_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = PVT_VOLT_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = PVT_VOLT_FIFO_STRIDE_SIZE_BYTES,
-                                                .start_address = PVT_VOLT_FIFO_START_ADDR,
-                                                .end_address = PVT_VOLT_FIFO_END_ADDR,
+                                                .start_address_incl = PVT_VOLT_FIFO_START_ADDR,
+                                                .end_address_excl = PVT_VOLT_FIFO_END_ADDR,
                                                 .name = "PVT Voltage Fifo",
                                                 },
     [SENSOR_FIFO_DIMM_TEMP_FW] = {
@@ -257,8 +257,8 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .entry_count = DIMM_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = DIMM_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = DIMM_FIFO_STRIDE_SIZE_BYTES,
-                                                .start_address = DIMM_FIFO_START_ADDR,
-                                                .end_address = DIMM_FIFO_END_ADDR,
+                                                .start_address_incl = DIMM_FIFO_START_ADDR,
+                                                .end_address_excl = DIMM_FIFO_END_ADDR,
                                                 .name = "DIMM Fifo",
                                                 },
     [SENSOR_FIFO_VR_TEMP_FW] = {
@@ -266,8 +266,8 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .entry_count = VR_TEMP_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = VR_TEMP_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = VR_TEMP_FIFO_STRIDE_SIZE_BYTES,
-                                                .start_address = VR_TEMP_FIFO_START_ADDR,
-                                                .end_address = VR_TEMP_FIFO_END_ADDR,
+                                                .start_address_incl = VR_TEMP_FIFO_START_ADDR,
+                                                .end_address_excl = VR_TEMP_FIFO_END_ADDR,
                                                 .name = "VR Temp Fifo",
                                                 },
     [SENSOR_FIFO_VR_CURRENT_FW] = {
@@ -275,8 +275,8 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 .entry_count = VR_CURRENT_FIFO_NUM_ENTRIES,
                                                 .entry_size_bytes = VR_CURRENT_FIFO_ENTRY_SIZE_BYTES,
                                                 .stride_size_bytes = VR_CURRENT_FIFO_STRIDE_SIZE_BYTES,
-                                                .start_address = VR_CURRENT_FIFO_START_ADDR,
-                                                .end_address = VR_CURRENT_FIFO_END_ADDR,
+                                                .start_address_incl = VR_CURRENT_FIFO_START_ADDR,
+                                                .end_address_excl = VR_CURRENT_FIFO_END_ADDR,
                                                 .name = "VR Current Fifo",
                                                 },
 };
@@ -295,39 +295,39 @@ FPFW_INIT_COMPONENT(sensor_fifo, FPFW_INIT_DEPENDENCIES("dfwk","hw_ver","std_io"
     case PLATFORM_FPGA_LARGE_RVP:
 
         s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].entry_count = FPGA_TILE_TEMP_FIFO_NUM_ENTRIES;
-        s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].start_address = FPGA_TILE_TEMP_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].end_address = FPGA_TILE_TEMP_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].start_address_incl = FPGA_TILE_TEMP_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].end_address_excl = FPGA_TILE_TEMP_FIFO_END_ADDR;
 
         s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].entry_count = FPGA_TILE_VOLT_FIFO_NUM_ENTRIES;
-        s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].start_address = FPGA_TILE_VOLT_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].end_address = FPGA_TILE_VOLT_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].start_address_incl = FPGA_TILE_VOLT_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].end_address_excl = FPGA_TILE_VOLT_FIFO_END_ADDR;
 
         s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].entry_count = FPGA_CORE_CURRENT_FIFO_NUM_ENTRIES;
-        s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].start_address = FPGA_CORE_CURRENT_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].end_address = FPGA_CORE_CURRENT_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].start_address_incl = FPGA_CORE_CURRENT_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].end_address_excl = FPGA_CORE_CURRENT_FIFO_END_ADDR;
 
         s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].entry_count = FPGA_PSTATE_FIFO_NUM_ENTRIES;
-        s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].start_address = FPGA_PSTATE_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].end_address = FPGA_PSTATE_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].start_address_incl = FPGA_PSTATE_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].end_address_excl = FPGA_PSTATE_FIFO_END_ADDR;
 
         s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].entry_count = FPGA_SCP_MSG_FIFO_NUM_ENTRIES;
-        s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].start_address = FPGA_SCP_MSG_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].end_address = FPGA_SCP_MSG_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].start_address_incl = FPGA_SCP_MSG_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].end_address_excl = FPGA_SCP_MSG_FIFO_END_ADDR;
 
-        s_fifo_properties[SENSOR_FIFO_PVT_TEMP_FW].start_address = FPGA_PVT_TEMP_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_PVT_TEMP_FW].end_address = FPGA_PVT_TEMP_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_PVT_TEMP_FW].start_address_incl = FPGA_PVT_TEMP_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_PVT_TEMP_FW].end_address_excl = FPGA_PVT_TEMP_FIFO_END_ADDR;
 
-        s_fifo_properties[SENSOR_FIFO_PVT_VOLTAGE_FW].start_address = FPGA_PVT_VOLT_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_PVT_VOLTAGE_FW].end_address = FPGA_PVT_VOLT_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_PVT_VOLTAGE_FW].start_address_incl = FPGA_PVT_VOLT_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_PVT_VOLTAGE_FW].end_address_excl = FPGA_PVT_VOLT_FIFO_END_ADDR;
 
-        s_fifo_properties[SENSOR_FIFO_DIMM_TEMP_FW].start_address = FPGA_DIMM_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_DIMM_TEMP_FW].end_address = FPGA_DIMM_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_DIMM_TEMP_FW].start_address_incl = FPGA_DIMM_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_DIMM_TEMP_FW].end_address_excl = FPGA_DIMM_FIFO_END_ADDR;
 
-        s_fifo_properties[SENSOR_FIFO_VR_TEMP_FW].start_address = FPGA_VR_TEMP_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_VR_TEMP_FW].end_address = FPGA_VR_TEMP_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_VR_TEMP_FW].start_address_incl = FPGA_VR_TEMP_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_VR_TEMP_FW].end_address_excl = FPGA_VR_TEMP_FIFO_END_ADDR;
 
-        s_fifo_properties[SENSOR_FIFO_VR_CURRENT_FW].start_address = FPGA_VR_CURRENT_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_VR_CURRENT_FW].end_address = FPGA_VR_CURRENT_FIFO_END_ADDR;
+        s_fifo_properties[SENSOR_FIFO_VR_CURRENT_FW].start_address_incl = FPGA_VR_CURRENT_FIFO_START_ADDR;
+        s_fifo_properties[SENSOR_FIFO_VR_CURRENT_FW].end_address_excl = FPGA_VR_CURRENT_FIFO_END_ADDR;
 
         s_scf_mhu_device_cfg.scf_ram_buffer_size = FPGA_SCF_RAM_BUFFER_SIZE_BYTES;
 

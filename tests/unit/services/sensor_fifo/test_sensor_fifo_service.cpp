@@ -28,7 +28,7 @@ extern "C" {
 #define STRIDE_SIZE_BYTES (48)
 #define START_ADDR        (7)
 #define END_ADDR          (9)
-#define EPOCH_COUNT       (3)
+#define STRIDE_COUNT      (3)
 
 /*------------- Typedefs -----------------*/
 
@@ -74,9 +74,9 @@ TEST_FUNCTION(test_svc_get_prop, test_setup, nullptr)
 {
     s_test_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].entry_size_bytes = ENTRY_SIZE_BYTES;
     s_test_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].stride_size_bytes = STRIDE_SIZE_BYTES;
-    s_test_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].start_address = START_ADDR;
-    s_test_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].end_address = ENTRY_SIZE_BYTES;
-    s_test_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].entry_count = EPOCH_COUNT;
+    s_test_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].start_address_incl = START_ADDR;
+    s_test_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].end_address_excl = END_ADDR;
+    s_test_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].entry_count = STRIDE_COUNT;
     s_test_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].name = s_name;
 
     expect_value(__wrap_FpFwAssert, expression, true);
@@ -87,9 +87,9 @@ TEST_FUNCTION(test_svc_get_prop, test_setup, nullptr)
 
     assert_int_equal(fifo_properties.entry_size_bytes, ENTRY_SIZE_BYTES);
     assert_int_equal(fifo_properties.stride_size_bytes, STRIDE_SIZE_BYTES);
-    assert_int_equal(fifo_properties.start_address, START_ADDR);
-    assert_int_equal(fifo_properties.end_address, ENTRY_SIZE_BYTES);
-    assert_int_equal(fifo_properties.epoch_count, EPOCH_COUNT);
+    assert_int_equal(fifo_properties.start_address_incl, START_ADDR);
+    assert_int_equal(fifo_properties.end_address_excl, END_ADDR);
+    assert_int_equal(fifo_properties.num_entries_or_strides, STRIDE_COUNT);
     assert_string_equal(fifo_properties.name, s_name);
 }
 

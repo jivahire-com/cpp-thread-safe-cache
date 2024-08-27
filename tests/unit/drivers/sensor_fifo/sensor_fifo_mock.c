@@ -34,7 +34,8 @@ void __wrap_init_scf_mhu(uintptr_t scf_mhu_base_addr, telemetry_common_cfg_t* te
 bool snsr_fifo_mock_check_mmio_inputs = true;
 bool snsr_fifo_mock_use_real_mmio = false;
 
-uint8_t pstate_fifo[PSTATE_FIFO_NUM_ENTRIES * PSTATE_FIFO_ENTRY_SIZE_BYTES];
+sensor_fifo_mem_t fifo_mem;
+
 
 sensor_fifo_device_properties_t test_fifo_properties[DEVICE_FIFO_MAX_ID] = {
     [DEVICE_FIFO_PSTATE_TLM_HW_PROD] =
@@ -43,8 +44,8 @@ sensor_fifo_device_properties_t test_fifo_properties[DEVICE_FIFO_MAX_ID] = {
             .entry_count = PSTATE_FIFO_NUM_ENTRIES,
             .entry_size_bytes = PSTATE_FIFO_ENTRY_SIZE_BYTES,
             .stride_size_bytes = PSTATE_FIFO_STRIDE_SIZE_BYTES,
-            .start_address = (uintptr_t)pstate_fifo,
-            .end_address = (uintptr_t)(pstate_fifo + sizeof(pstate_fifo) - 1),
+            .start_address_incl = (uintptr_t)fifo_mem.pstate_fifo,
+            .end_address_excl = (uintptr_t)(fifo_mem.pstate_fifo + sizeof(fifo_mem.pstate_fifo)),
             .name = "PSTATE Fifo",
         },
     [DEVICE_FIFO_SCP_MSG_TLM_HW_PROD] =
@@ -53,8 +54,8 @@ sensor_fifo_device_properties_t test_fifo_properties[DEVICE_FIFO_MAX_ID] = {
             .entry_count = SCP_MSG_FIFO_NUM_ENTRIES,
             .entry_size_bytes = SCP_MSG_FIFO_ENTRY_SIZE_BYTES,
             .stride_size_bytes = SCP_MSG_FIFO_STRIDE_SIZE_BYTES,
-            .start_address = (uintptr_t)msg_fifo,
-            .end_address = (uintptr_t)(msg_fifo + sizeof(msg_fifo) - 1),
+            .start_address_incl = (uintptr_t)fifo_mem.msg_fifo,
+            .end_address_excl = (uintptr_t)(fifo_mem.msg_fifo + sizeof(fifo_mem.msg_fifo)),
             .name = "SCP Msg Fifo",
         },
     [DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD] =
@@ -63,8 +64,8 @@ sensor_fifo_device_properties_t test_fifo_properties[DEVICE_FIFO_MAX_ID] = {
             .entry_count = TILE_TEMP_FIFO_NUM_ENTRIES,
             .entry_size_bytes = TILE_TEMP_FIFO_ENTRY_SIZE_BYTES,
             .stride_size_bytes = TILE_TEMP_FIFO_STRIDE_SIZE_BYTES,
-            .start_address = (uintptr_t)tile_temp_fifo,
-            .end_address = (uintptr_t)(tile_temp_fifo + sizeof(tile_temp_fifo) - 1),
+            .start_address_incl = (uintptr_t)fifo_mem.tile_temp_fifo,
+            .end_address_excl = (uintptr_t)(fifo_mem.tile_temp_fifo + sizeof(fifo_mem.tile_temp_fifo)),
             .name = "Tile Temperature Fifo",
         },
     [DEVICE_FIFO_TILE_VOLT_TLM_HW_PROD] =
@@ -73,8 +74,8 @@ sensor_fifo_device_properties_t test_fifo_properties[DEVICE_FIFO_MAX_ID] = {
             .entry_count = TILE_VOLT_FIFO_NUM_ENTRIES,
             .entry_size_bytes = TILE_VOLT_FIFO_ENTRY_SIZE_BYTES,
             .stride_size_bytes = TILE_VOLT_FIFO_STRIDE_SIZE_BYTES,
-            .start_address = (uintptr_t)tile_volt_fifo,
-            .end_address = (uintptr_t)(tile_volt_fifo + sizeof(tile_volt_fifo) - 1),
+            .start_address_incl = (uintptr_t)fifo_mem.tile_volt_fifo,
+            .end_address_excl = (uintptr_t)(fifo_mem.tile_volt_fifo + sizeof(fifo_mem.tile_volt_fifo)),
             .name = "Tile Voltage Fifo",
         },
     [DEVICE_FIFO_CORE_CURRENT_TLM_HW_PROD] =
@@ -83,8 +84,8 @@ sensor_fifo_device_properties_t test_fifo_properties[DEVICE_FIFO_MAX_ID] = {
             .entry_count = CORE_CURRENT_FIFO_NUM_ENTRIES,
             .entry_size_bytes = CORE_CURRENT_FIFO_ENTRY_SIZE_BYTES,
             .stride_size_bytes = CORE_CURRENT_FIFO_STRIDE_SIZE_BYTES,
-            .start_address = (uintptr_t)core_current_fifo,
-            .end_address = (uintptr_t)(core_current_fifo + sizeof(core_current_fifo) - 1),
+            .start_address_incl = (uintptr_t)fifo_mem.core_current_fifo,
+            .end_address_excl = (uintptr_t)(fifo_mem.core_current_fifo + sizeof(fifo_mem.core_current_fifo)),
             .name = "Core Current Fifo",
         },
     [DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD] =
@@ -93,8 +94,8 @@ sensor_fifo_device_properties_t test_fifo_properties[DEVICE_FIFO_MAX_ID] = {
             .entry_count = PVT_TEMP_FIFO_NUM_ENTRIES,
             .entry_size_bytes = PVT_TEMP_FIFO_ENTRY_SIZE_BYTES,
             .stride_size_bytes = PVT_TEMP_FIFO_STRIDE_SIZE_BYTES,
-            .start_address = (uintptr_t)pvt_temp_fifo,
-            .end_address = (uintptr_t)(pvt_temp_fifo + sizeof(pvt_temp_fifo) - 1),
+            .start_address_incl = (uintptr_t)fifo_mem.pvt_temp_fifo,
+            .end_address_excl = (uintptr_t)(fifo_mem.pvt_temp_fifo + sizeof(fifo_mem.pvt_temp_fifo)),
             .name = "PVT Temperature Fifo",
         },
 
@@ -104,8 +105,8 @@ sensor_fifo_device_properties_t test_fifo_properties[DEVICE_FIFO_MAX_ID] = {
             .entry_count = PVT_VOLT_FIFO_NUM_ENTRIES,
             .entry_size_bytes = PVT_VOLT_FIFO_ENTRY_SIZE_BYTES,
             .stride_size_bytes = PVT_VOLT_FIFO_STRIDE_SIZE_BYTES,
-            .start_address = (uintptr_t)pvt_volt_fifo,
-            .end_address = (uintptr_t)(pvt_volt_fifo + sizeof(pvt_volt_fifo) - 1),
+            .start_address_incl = (uintptr_t)fifo_mem.pvt_volt_fifo,
+            .end_address_excl = (uintptr_t)(fifo_mem.pvt_volt_fifo + sizeof(fifo_mem.pvt_volt_fifo)),
             .name = "PVT Voltage Fifo",
         },
     [DEVICE_FIFO_DIMM_TEMP_TLM_FW_PROD] =
@@ -114,8 +115,8 @@ sensor_fifo_device_properties_t test_fifo_properties[DEVICE_FIFO_MAX_ID] = {
             .entry_count = DIMM_FIFO_NUM_ENTRIES,
             .entry_size_bytes = DIMM_FIFO_ENTRY_SIZE_BYTES,
             .stride_size_bytes = DIMM_FIFO_STRIDE_SIZE_BYTES,
-            .start_address = (uintptr_t)dimm_temp_fifo,
-            .end_address = (uintptr_t)(dimm_temp_fifo + sizeof(dimm_temp_fifo) - 1),
+            .start_address_incl = (uintptr_t)fifo_mem.dimm_temp_fifo,
+            .end_address_excl = (uintptr_t)(fifo_mem.dimm_temp_fifo + sizeof(fifo_mem.dimm_temp_fifo)),
             .name = "DIMM Fifo",
         },
     [DEVICE_FIFO_VR_TEMP_TLM_FW_PROD] =
@@ -124,8 +125,8 @@ sensor_fifo_device_properties_t test_fifo_properties[DEVICE_FIFO_MAX_ID] = {
             .entry_count = VR_TEMP_FIFO_NUM_ENTRIES,
             .entry_size_bytes = VR_TEMP_FIFO_ENTRY_SIZE_BYTES,
             .stride_size_bytes = VR_TEMP_FIFO_STRIDE_SIZE_BYTES,
-            .start_address = (uintptr_t)vr_temp_fifo,
-            .end_address = (uintptr_t)(vr_temp_fifo + sizeof(vr_temp_fifo) - 1),
+            .start_address_incl = (uintptr_t)fifo_mem.vr_temp_fifo,
+            .end_address_excl = (uintptr_t)(fifo_mem.vr_temp_fifo + sizeof(fifo_mem.vr_temp_fifo)),
             .name = "VR Temp Fifo",
         },
     [DEVICE_FIFO_VR_CURRENT_TLM_FW_PROD] =
@@ -134,22 +135,13 @@ sensor_fifo_device_properties_t test_fifo_properties[DEVICE_FIFO_MAX_ID] = {
             .entry_count = VR_CURRENT_FIFO_NUM_ENTRIES,
             .entry_size_bytes = VR_CURRENT_FIFO_ENTRY_SIZE_BYTES,
             .stride_size_bytes = VR_CURRENT_FIFO_STRIDE_SIZE_BYTES,
-            .start_address = (uintptr_t)vr_curr_fifo,
-            .end_address = (uintptr_t)(vr_curr_fifo + sizeof(vr_curr_fifo) - 1),
+            .start_address_incl = (uintptr_t)fifo_mem.vr_curr_fifo,
+            .end_address_excl = (uintptr_t)(fifo_mem.vr_curr_fifo + sizeof(fifo_mem.vr_curr_fifo)),
             .name = "VR Current Fifo",
         },
 };
 
-uint8_t __attribute__((aligned(8))) pstate_fifo[PSTATE_FIFO_NUM_ENTRIES * PSTATE_FIFO_STRIDE_SIZE_BYTES];
-uint8_t __attribute__((aligned(8))) msg_fifo[SCP_MSG_FIFO_NUM_ENTRIES * SCP_MSG_FIFO_STRIDE_SIZE_BYTES];
-uint8_t __attribute__((aligned(8))) tile_temp_fifo[TILE_TEMP_FIFO_NUM_ENTRIES * TILE_TEMP_FIFO_STRIDE_SIZE_BYTES];
-uint8_t __attribute__((aligned(8))) tile_volt_fifo[TILE_VOLT_FIFO_NUM_ENTRIES * TILE_VOLT_FIFO_STRIDE_SIZE_BYTES];
-uint8_t __attribute__((aligned(8))) core_current_fifo[CORE_CURRENT_FIFO_NUM_ENTRIES * CORE_CURRENT_FIFO_STRIDE_SIZE_BYTES];
-uint8_t __attribute__((aligned(8))) pvt_temp_fifo[PVT_TEMP_FIFO_NUM_ENTRIES * PVT_TEMP_FIFO_STRIDE_SIZE_BYTES];
-uint8_t __attribute__((aligned(8))) pvt_volt_fifo[PVT_VOLT_FIFO_NUM_ENTRIES * PVT_VOLT_FIFO_STRIDE_SIZE_BYTES];
-uint8_t __attribute__((aligned(8))) dimm_temp_fifo[DIMM_FIFO_NUM_ENTRIES * DIMM_FIFO_STRIDE_SIZE_BYTES];
-uint8_t __attribute__((aligned(8))) vr_temp_fifo[VR_TEMP_FIFO_NUM_ENTRIES * VR_TEMP_FIFO_STRIDE_SIZE_BYTES];
-uint8_t __attribute__((aligned(8))) vr_curr_fifo[VR_CURRENT_FIFO_NUM_ENTRIES * VR_CURRENT_FIFO_STRIDE_SIZE_BYTES];
+
 
 uint32_t pstate_fifo_ctrl_reg = 0;
 uint32_t msg_fifo_ctrl_reg = 0;
@@ -157,27 +149,27 @@ uint32_t tile_temp_fifo_ctrl_reg = 0;
 uint32_t tile_volt_fifo_ctrl_reg = 0;
 uint32_t core_current_fifo_ctrl_reg = 0;
 
-uint32_t pstate_fifo_read_reg = (uint32_t)pstate_fifo;
-uint32_t msg_fifo_read_reg = (uint32_t)msg_fifo;
-uint32_t tile_temp_fifo_read_reg = (uint32_t)tile_temp_fifo;
-uint32_t tile_volt_fifo_read_reg = (uint32_t)tile_volt_fifo;
-uint32_t core_current_fifo_read_reg = (uint32_t)core_current_fifo;
-uint32_t pvt_temp_fifo_read_reg = (uint32_t)pvt_temp_fifo;
-uint32_t pvt_volt_fifo_read_reg = (uint32_t)pvt_volt_fifo;
-uint32_t dimm_temp_fifo_read_reg = (uint32_t)dimm_temp_fifo;
-uint32_t vr_temp_fifo_read_reg = (uint32_t)vr_temp_fifo;
-uint32_t vr_curr_fifo_read_reg = (uint32_t)vr_curr_fifo;
+uint32_t pstate_fifo_read_reg = (uint32_t)fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t msg_fifo_read_reg = (uint32_t)fifo_mem.msg_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t tile_temp_fifo_read_reg = (uint32_t)fifo_mem.tile_temp_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t tile_volt_fifo_read_reg = (uint32_t)fifo_mem.tile_volt_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t core_current_fifo_read_reg = (uint32_t)fifo_mem.core_current_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t pvt_temp_fifo_read_reg = (uint32_t)fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t pvt_volt_fifo_read_reg = (uint32_t)fifo_mem.pvt_volt_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t dimm_temp_fifo_read_reg = (uint32_t)fifo_mem.dimm_temp_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t vr_temp_fifo_read_reg = (uint32_t)fifo_mem.vr_temp_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t vr_curr_fifo_read_reg = (uint32_t)fifo_mem.vr_curr_fifo + FIFO_TIMESTAMP_SIZE;
 
-uint32_t pstate_fifo_write_reg = (uint32_t)pstate_fifo;
-uint32_t msg_fifo_write_reg = (uint32_t)msg_fifo;
-uint32_t tile_temp_fifo_write_reg = (uint32_t)tile_temp_fifo;
-uint32_t tile_volt_fifo_write_reg = (uint32_t)tile_volt_fifo;
-uint32_t core_current_fifo_write_reg = (uint32_t)core_current_fifo;
-uint32_t pvt_temp_fifo_write_reg = (uint32_t)pvt_temp_fifo;
-uint32_t pvt_volt_fifo_write_reg = (uint32_t)pvt_volt_fifo;
-uint32_t dimm_temp_fifo_write_reg = (uint32_t)dimm_temp_fifo;
-uint32_t vr_temp_fifo_write_reg = (uint32_t)vr_temp_fifo;
-uint32_t vr_curr_fifo_write_reg = (uint32_t)vr_curr_fifo;
+uint32_t pstate_fifo_write_reg = (uint32_t)fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t msg_fifo_write_reg = (uint32_t)fifo_mem.msg_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t tile_temp_fifo_write_reg = (uint32_t)fifo_mem.tile_temp_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t tile_volt_fifo_write_reg = (uint32_t)fifo_mem.tile_volt_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t core_current_fifo_write_reg = (uint32_t)fifo_mem.core_current_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t pvt_temp_fifo_write_reg = (uint32_t)fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t pvt_volt_fifo_write_reg = (uint32_t)fifo_mem.pvt_volt_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t dimm_temp_fifo_write_reg = (uint32_t)fifo_mem.dimm_temp_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t vr_temp_fifo_write_reg = (uint32_t)fifo_mem.vr_temp_fifo + FIFO_TIMESTAMP_SIZE;
+uint32_t vr_curr_fifo_write_reg = (uint32_t)fifo_mem.vr_curr_fifo + FIFO_TIMESTAMP_SIZE;
 
 sensor_fifo_control_t test_hw_fifo_control[] = {
 
@@ -283,27 +275,27 @@ void initialize_mock_fifos(void)
     tile_volt_fifo_ctrl_reg = 0;
     core_current_fifo_ctrl_reg = 0;
 
-    pstate_fifo_read_reg = (uint32_t)pstate_fifo;
-    msg_fifo_read_reg = (uint32_t)msg_fifo;
-    tile_temp_fifo_read_reg = (uint32_t)tile_temp_fifo;
-    tile_volt_fifo_read_reg = (uint32_t)tile_volt_fifo;
-    core_current_fifo_read_reg = (uint32_t)core_current_fifo;
-    pvt_temp_fifo_read_reg = (uint32_t)pvt_temp_fifo;
-    pvt_volt_fifo_read_reg = (uint32_t)pvt_volt_fifo;
-    dimm_temp_fifo_read_reg = (uint32_t)dimm_temp_fifo;
-    vr_temp_fifo_read_reg = (uint32_t)vr_temp_fifo;
-    vr_curr_fifo_read_reg = (uint32_t)vr_curr_fifo;
+    pstate_fifo_read_reg = (uint32_t)fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE;
+    msg_fifo_read_reg = (uint32_t)fifo_mem.msg_fifo + FIFO_TIMESTAMP_SIZE;
+    tile_temp_fifo_read_reg = (uint32_t)fifo_mem.tile_temp_fifo + FIFO_TIMESTAMP_SIZE;
+    tile_volt_fifo_read_reg = (uint32_t)fifo_mem.tile_volt_fifo + FIFO_TIMESTAMP_SIZE;
+    core_current_fifo_read_reg = (uint32_t)fifo_mem.core_current_fifo + FIFO_TIMESTAMP_SIZE;
+    pvt_temp_fifo_read_reg = (uint32_t)fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE;
+    pvt_volt_fifo_read_reg = (uint32_t)fifo_mem.pvt_volt_fifo + FIFO_TIMESTAMP_SIZE;
+    dimm_temp_fifo_read_reg = (uint32_t)fifo_mem.dimm_temp_fifo + FIFO_TIMESTAMP_SIZE;
+    vr_temp_fifo_read_reg = (uint32_t)fifo_mem.vr_temp_fifo + FIFO_TIMESTAMP_SIZE;
+    vr_curr_fifo_read_reg = (uint32_t)fifo_mem.vr_curr_fifo + FIFO_TIMESTAMP_SIZE;
 
-    pstate_fifo_write_reg = (uint32_t)pstate_fifo;
-    msg_fifo_write_reg = (uint32_t)msg_fifo;
-    tile_temp_fifo_write_reg = (uint32_t)tile_temp_fifo;
-    tile_volt_fifo_write_reg = (uint32_t)tile_volt_fifo;
-    core_current_fifo_write_reg = (uint32_t)core_current_fifo;
-    pvt_temp_fifo_write_reg = (uint32_t)pvt_temp_fifo;
-    pvt_volt_fifo_write_reg = (uint32_t)pvt_volt_fifo;
-    dimm_temp_fifo_write_reg = (uint32_t)dimm_temp_fifo;
-    vr_temp_fifo_write_reg = (uint32_t)vr_temp_fifo;
-    vr_curr_fifo_write_reg = (uint32_t)vr_curr_fifo;
+    pstate_fifo_write_reg = (uint32_t)fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE;
+    msg_fifo_write_reg = (uint32_t)fifo_mem.msg_fifo + FIFO_TIMESTAMP_SIZE;
+    tile_temp_fifo_write_reg = (uint32_t)fifo_mem.tile_temp_fifo + FIFO_TIMESTAMP_SIZE;
+    tile_volt_fifo_write_reg = (uint32_t)fifo_mem.tile_volt_fifo + FIFO_TIMESTAMP_SIZE;
+    core_current_fifo_write_reg = (uint32_t)fifo_mem.core_current_fifo + FIFO_TIMESTAMP_SIZE;
+    pvt_temp_fifo_write_reg = (uint32_t)fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE;
+    pvt_volt_fifo_write_reg = (uint32_t)fifo_mem.pvt_volt_fifo + FIFO_TIMESTAMP_SIZE;
+    dimm_temp_fifo_write_reg = (uint32_t)fifo_mem.dimm_temp_fifo + FIFO_TIMESTAMP_SIZE;
+    vr_temp_fifo_write_reg = (uint32_t)fifo_mem.vr_temp_fifo + FIFO_TIMESTAMP_SIZE;
+    vr_curr_fifo_write_reg = (uint32_t)fifo_mem.vr_curr_fifo + FIFO_TIMESTAMP_SIZE;
 
     hw_fifo_init(test_fifo_properties, test_hw_fifo_control);
 

@@ -117,11 +117,11 @@ static FPFW_CLI_STATUS list_properties(int Argc, const char** Argv)
     {
         sensor_fifo_svc_get_properties(fifo_idx, &properties);
         FpFwCliPrint("\nFifo ID = %d: Fifo Name = %s\n", fifo_idx, properties.name);
-        FpFwCliPrint("       entry size = %d: stride size = %d: epoch count = %d\n",
+        FpFwCliPrint("       entry size = %d: stride size = %d: num entries or strides = %d\n",
                      properties.entry_size_bytes,
                      properties.stride_size_bytes,
-                     properties.epoch_count);
-        FpFwCliPrint("       start addr = 0x%x: end addr = 0x%x\n", properties.start_address, properties.end_address);
+                     properties.num_entries_or_strides);
+        FpFwCliPrint("       start addr = 0x%x: end addr = 0x%x\n", properties.start_address_incl, properties.end_address_excl - 1);
         FpFwCliPrint("       enabled = %s: empty = %s\n", enabled[fifo_idx] ? "true" : "false", empty[fifo_idx] ? "yes" : "no");
     }
 

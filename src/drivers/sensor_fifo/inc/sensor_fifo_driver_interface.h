@@ -20,14 +20,15 @@
 /*-- Symbolic Constant Macros (defines) --*/
 #define STRIDE_INDEX_UNUSED (UINT16_MAX)
 
+
 /*-------------- Typedefs ----------------*/
 typedef struct {
     DEVICE_FIFO_ID  device_fifo_id;  ///< fifo identifier for specific device register access
     uint16_t entry_count;
     uint16_t entry_size_bytes;
     uint16_t stride_size_bytes;
-    uintptr_t start_address;
-    uintptr_t end_address;
+    uintptr_t start_address_incl;
+    uintptr_t end_address_excl;
     char*    name;
 } sensor_fifo_device_properties_t,*psensor_fifo_device_properties_t;
 

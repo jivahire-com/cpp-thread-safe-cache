@@ -159,6 +159,9 @@ void power_ap_soc_init()
         power_init_ws_core(p_runconfig, &telemetry_config);
     }
 
+    // enable telemetry before we start loops
+    power_telemetry_enable();
+
     // start loop timers
     power_timer_start_loop_timers();
 }

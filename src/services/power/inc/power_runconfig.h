@@ -355,6 +355,15 @@ typedef struct _power_knobs_t
     bool calsm_enable;              // true to enable fgpll calibration
     bool c1_tel_enable;             // should C1 telemetry be enabled
 
+    bool soc_vm_overvolt_en; // enable SOC VM overvolt alarm
+    bool soc_vm_undervolt_en; // enable SOC VM undervolt alarm
+    bool tile_vm_overvolt_en; // enable Tile VM overvolt alarm
+    bool tile_vm_undervolt_en; // enable Tile VM undervolt alarm
+    bool soc_temp_hot_en; // enable SOC temp hot alarm
+    bool soc_temp_thermtrip_en; // enable SOC temp thermtrip alarm
+    bool tile_temp_hot_en; // enable Tile temp hot alarm
+    bool tile_temp_thermtrip_en; // enable Tile temp thermtrip alarm
+
     uint8_t survivability_mode_pstate; // Pstate to boot to under survivability mode
     uint8_t nominal_pstate;            // Pstate to use for nominal
     int8_t ldo_offset;                 // ldo dac code offset

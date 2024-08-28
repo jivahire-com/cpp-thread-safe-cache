@@ -166,6 +166,16 @@ void base_config()
     }
 
     knobs->force_pstate = NUM_PSTATES;
+
+    // default enable all PVT alarms
+    knobs->soc_vm_overvolt_en = true;
+    knobs->soc_vm_undervolt_en = true;
+    knobs->tile_vm_overvolt_en = true;
+    knobs->tile_vm_undervolt_en = true;
+    knobs->soc_temp_hot_en = true;
+    knobs->soc_temp_thermtrip_en = true;
+    knobs->tile_temp_hot_en = true;
+    knobs->tile_temp_thermtrip_en = true;
 }
 
 // converts knob settings to expected config values in our global config
@@ -182,6 +192,8 @@ void validate_odcm_cfg(unsigned int core, bool telem_only)
     local_odcm_cfg.telem_cfg.buffer_start_addr =
         s_telcfg.current_telem_start_addr + (core * s_telcfg.current_telem_entry_size);
     local_odcm_cfg.telem_cfg.buffer_size = s_telcfg.current_telem_buffer_size;
+    local_odcm_cfg.telem_cfg.buffer_stride = s_telcfg.current_telem_stride_size;
+
     if (telem_only)
     {
         assert_memory_equal(&mock_odcm_last_config()->telem_cfg,
@@ -429,9 +441,12 @@ void validate_tile_pvt_telemetry(unsigned int core)
     tile_pvt_telem_cfg.temp_buffer_start_addr =
         s_telcfg.temp_telem_start_addr + ((core / 2) * s_telcfg.temp_telem_entry_size);
     tile_pvt_telem_cfg.volt_dma_settings.buffer_size = s_telcfg.volt_telem_buffer_size;
+    tile_pvt_telem_cfg.volt_dma_settings.buffer_stride = s_telcfg.volt_telem_stride_size;
+
     tile_pvt_telem_cfg.volt_buffer_start_addr =
         s_telcfg.volt_telem_start_addr + ((core / 2) * s_telcfg.volt_telem_entry_size);
     tile_pvt_telem_cfg.temp_dma_settings.buffer_size = s_telcfg.temp_telem_buffer_size;
+    tile_pvt_telem_cfg.temp_dma_settings.buffer_stride = s_telcfg.temp_telem_stride_size;
 
     assert_memory_equal(mock_pvt_last_tile_telem_config(), &tile_pvt_telem_cfg, sizeof(tile_pvt_telem_cfg));
 }
@@ -820,12 +835,18 @@ POWER_TEST(hwi_init_core__forced_pstate, setup, teardown)
 
         assert_int_equal(vft->vmat_info[0].ldo_dac_in[pstate_idx], vft->vmat_info[0].ldo_dac_in[TEST_FORCED_PSTATE]);
         assert_int_equal(vft->vmat_info[0].memasst_hd_ema[pstate_idx], vft->vmat_info[0].memasst_hd_ema[TEST_FORCED_PSTATE]);
-        assert_int_equal(vft->vmat_info[0].memasst_hd_rawlm[pstate_idx], vft->vmat_info[0].memasst_hd_rawlm[TEST_FORCED_PSTATE]);
-        assert_int_equal(vft->vmat_info[0].memasst_hshc_ema[pstate_idx], vft->vmat_info[0].memasst_hshc_ema[TEST_FORCED_PSTATE]);
-        assert_int_equal(vft->vmat_info[0].memasst_hshc_rawlm[pstate_idx], vft->vmat_info[0].memasst_hshc_rawlm[TEST_FORCED_PSTATE]);
-        assert_int_equal(vft->vmat_info[0].memasst_tp_emaa[pstate_idx], vft->vmat_info[0].memasst_tp_emaa[TEST_FORCED_PSTATE]);
-        assert_int_equal(vft->vmat_info[0].memasst_tp_emab[pstate_idx], vft->vmat_info[0].memasst_tp_emab[TEST_FORCED_PSTATE]);
-        assert_int_equal(vft->vmat_info[0].memasst_hd_emaw[pstate_idx], vft->vmat_info[0].memasst_hd_emaw[TEST_FORCED_PSTATE]);
+        assert_int_equal(vft->vmat_info[0].memasst_hd_rawlm[pstate_idx],
+                         vft->vmat_info[0].memasst_hd_rawlm[TEST_FORCED_PSTATE]);
+        assert_int_equal(vft->vmat_info[0].memasst_hshc_ema[pstate_idx],
+                         vft->vmat_info[0].memasst_hshc_ema[TEST_FORCED_PSTATE]);
+        assert_int_equal(vft->vmat_info[0].memasst_hshc_rawlm[pstate_idx],
+                         vft->vmat_info[0].memasst_hshc_rawlm[TEST_FORCED_PSTATE]);
+        assert_int_equal(vft->vmat_info[0].memasst_tp_emaa[pstate_idx],
+                         vft->vmat_info[0].memasst_tp_emaa[TEST_FORCED_PSTATE]);
+        assert_int_equal(vft->vmat_info[0].memasst_tp_emab[pstate_idx],
+                         vft->vmat_info[0].memasst_tp_emab[TEST_FORCED_PSTATE]);
+        assert_int_equal(vft->vmat_info[0].memasst_hd_emaw[pstate_idx],
+                         vft->vmat_info[0].memasst_hd_emaw[TEST_FORCED_PSTATE]);
     }
 }
 
@@ -1083,6 +1104,7 @@ POWER_TEST(hwi_power_set_plimit, setup, teardown)
 #define TEST_PLIMIT 18
 
     power_service_config_t config;
+    dvfs_plimit plimit = {.vf_index = TEST_PLIMIT, .power_cap = true};
 
     s_runconfig.p_sconfig = &config;
     config.cluster_pex_base = 0x1000;
@@ -1090,17 +1112,16 @@ POWER_TEST(hwi_power_set_plimit, setup, teardown)
     unsigned int core = 5;
     const uintptr_t cluster_pex_base_addr = (config.cluster_pex_base + (config.cluster_stride * core));
 
-    expect_value(__wrap_dvfs_set_plimit, cluster_pex_base_addr, cluster_pex_base_addr);
-    expect_value(__wrap_dvfs_set_plimit, plimit_index, TEST_PLIMIT);
-    expect_value(__wrap_dvfs_set_plimit, rack_power_cap, true);
+    expect_value(__wrap_dvfs_config_plimit, cluster_pex_base_addr, cluster_pex_base_addr);
+    expect_value(__wrap_dvfs_config_plimit, plimit_val, plimit.as_uint32);
 
-    power_set_plimit(&s_runconfig, core, TEST_PLIMIT, true);
+    power_set_plimit(&s_runconfig, core, plimit);
 
-    expect_value(__wrap_dvfs_set_plimit, cluster_pex_base_addr, cluster_pex_base_addr);
-    expect_value(__wrap_dvfs_set_plimit, plimit_index, TEST_PLIMIT);
-    expect_value(__wrap_dvfs_set_plimit, rack_power_cap, false);
+    expect_value(__wrap_dvfs_config_plimit, cluster_pex_base_addr, cluster_pex_base_addr);
+    plimit.power_cap = false;
+    expect_value(__wrap_dvfs_config_plimit, plimit_val, plimit.as_uint32);
 
-    power_set_plimit(&s_runconfig, core, TEST_PLIMIT, false);
+    power_set_plimit(&s_runconfig, core, plimit);
     s_runconfig.p_sconfig = NULL;
 }
 

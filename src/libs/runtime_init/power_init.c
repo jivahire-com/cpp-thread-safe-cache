@@ -36,6 +36,7 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc
 #define SVP_NUM_CORES_PER_DIE 4
     // fpga platform has an unusual set of available cores
     static const corebits_t fpga_platform_cores = (corebits_t)COREBITS_INIT_UINT32(0x000c0300, 0x00c03000, 0);
+    static const corebits_t svp_cores = (corebits_t)COREBITS_INIT_UINT32(0xF, 0x0, 0x0);
     static const corebits_t platform_cores = (corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFF, 0xFFFFFFFF, 0xF);
 
     static power_service_t power_service;
@@ -89,11 +90,15 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc
         // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1811925/
         // update based on https://azurecsi.visualstudio.com/Dev/_workitems/edit/1811919
         power_config.platform_die_core_count = SVP_NUM_CORES_PER_DIE;
+        power_config.platform_cores_in_die = &svp_cores;
+        power_config.platform_soc_power_support = true;
+        power_config.platform_core_power_support = true;
         break;
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
         power_config.platform_cores_in_die = &fpga_platform_cores;
-        // currently FPGA is failing soc_pvt_init, so only support core power for now
+        // FPGA r21 supports core and soc power management
+        power_config.platform_soc_power_support = true;
         power_config.platform_core_power_support = true;
         break;
     default:

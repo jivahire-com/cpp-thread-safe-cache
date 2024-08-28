@@ -15,22 +15,22 @@
 
 extern "C" {
 
-#include "power_i.h"                // for power_latest_calcs_t
-#include "power_runconfig.h"        // for MIN_PLIMIT, power_service_config_t
-#include "power_runconfig_i.h"      // for power_runconfig_t
+#include "power_i.h"           // for power_latest_calcs_t
+#include "power_runconfig.h"   // for MIN_PLIMIT, power_service_config_t
+#include "power_runconfig_i.h" // for power_runconfig_t
 
-#include <CMockaWrapper.h>          // for CmockaWrapperTest, expect_value, will...
-#include <corebits.h>               // for corebits_set_bit
-#include <pid_resource.h>           // for pid_config_t
-#include <power_loops_i.h>          // for _power_ctrl_loop_state_t, _power_ctrl...
-#include <power_stub_i.h>           // for _power_pmin_type_t, power_pmin_type_t
-#include <pvt.h>                    // for pvt_irq_soc_dts_data_t, pvt_irq_soc_vm...
-#include <scf_power.h>              // for SCF_CORE_POWER_STATE_T
-#include <sensor_fifo_service.h>    // for sensor_fifo_svc_add_soc_pvt_t...
-#include <stdint.h>                 // for uint32_t, uint64_t, uintptr_t, uint16_t
-#include <stdio.h>                  // for printf
-#include <string.h>                 // for memcpy
-#include <tx_api.h>                 // for ULONG, VOID
+#include <CMockaWrapper.h>       // for CmockaWrapperTest, expect_value, will...
+#include <corebits.h>            // for corebits_set_bit
+#include <pid_resource.h>        // for pid_config_t
+#include <power_loops_i.h>       // for _power_ctrl_loop_state_t, _power_ctrl...
+#include <power_stub_i.h>        // for _power_pmin_type_t, power_pmin_type_t
+#include <pvt.h>                 // for pvt_irq_soc_dts_data_t, pvt_irq_soc_vm...
+#include <scf_power.h>           // for SCF_CORE_POWER_STATE_T
+#include <sensor_fifo_service.h> // for sensor_fifo_svc_add_soc_pvt_t...
+#include <stdint.h>              // for uint32_t, uint64_t, uintptr_t, uint16_t
+#include <stdio.h>               // for printf
+#include <string.h>              // for memcpy
+#include <tx_api.h>              // for ULONG, VOID
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define TEST_STATES     2
@@ -43,16 +43,14 @@ typedef VOID (*entry_function_t)(ULONG entry_input);
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static power_vrs_avs_latest_t s_vr_inputs[MAX_VR_PER_DIE] = {
-    {.voltage = 1, .current = 2, .temperature = 3},
-    {.voltage = 4, .current = 5, .temperature = 6},
-    {.voltage = 7, .current = 8, .temperature = 9},
-    {.voltage = 10, .current = 11, .temperature = 12},
-    {.voltage = 13, .current = 14, .temperature = 15},
-    {.voltage = 16, .current = 17, .temperature = 18},
-    {.voltage = 19, .current = 20, .temperature = 21},
-    {.voltage = 22, .current = 23, .temperature = 24}
-};
+static power_vrs_avs_latest_t s_vr_inputs[MAX_VR_PER_DIE] = {{.voltage = 1, .current = 2, .temperature = 3},
+                                                             {.voltage = 4, .current = 5, .temperature = 6},
+                                                             {.voltage = 7, .current = 8, .temperature = 9},
+                                                             {.voltage = 10, .current = 11, .temperature = 12},
+                                                             {.voltage = 13, .current = 14, .temperature = 15},
+                                                             {.voltage = 16, .current = 17, .temperature = 18},
+                                                             {.voltage = 19, .current = 20, .temperature = 21},
+                                                             {.voltage = 22, .current = 23, .temperature = 24}};
 static pvt_irq_soc_dts_data_t s_dts_samples = {0};
 static pvt_irq_soc_vm_data_t s_vm_samples = {0};
 static uint16_t s_pvt_teamp[SOC_PVT_TOTAL_CHANNELS_DTS] = {0};
@@ -91,7 +89,7 @@ void __wrap_sensor_fifo_svc_add_soc_pvt_temperature(soc_pvt_temp_t* pvt_temperat
     assert_non_null(pvt_temperature);
     check_expected(pvt_temperature->timestamp);
 
-    for(int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_DTS; ++pvt_idx)
+    for (int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_DTS; ++pvt_idx)
     {
         assert_true(pvt_temperature->sensor_temp[pvt_idx] == s_pvt_teamp[pvt_idx]);
     }
@@ -104,7 +102,7 @@ void __wrap_sensor_fifo_svc_add_soc_pvt_voltage(soc_pvt_voltage_t* pvt_voltage)
     assert_non_null(pvt_voltage);
     check_expected(pvt_voltage->timestamp);
 
-    for(int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_VM; ++pvt_idx)
+    for (int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_VM; ++pvt_idx)
     {
         assert_true(pvt_voltage->sensor_voltage[pvt_idx] == s_pvt_voltage[pvt_idx]);
     }
@@ -266,7 +264,7 @@ POWER_TEST(vr_telem_current_telemetry_handler__signal_entry, NULL, NULL)
 {
     power_service_config_t sconfig = {};
     power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
-    
+
     // expectations on entry
     expect_function_call(__wrap_power_vrs_initiate_vr_reads);
 
@@ -286,7 +284,7 @@ POWER_TEST(vr_telem_current_telemetry_handler__signal_vr_current__loop_disabled,
 
     // expectations on entry
     setup_expectations_for_state_change(POWER_VR_TELEM_STATE_IDLE);
-    
+
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 
     // call state handler
@@ -296,14 +294,14 @@ POWER_TEST(vr_telem_current_telemetry_handler__signal_vr_current__loop_disabled,
 // tests for current telemetry handler
 POWER_TEST(vr_telem_current_telemetry_handler__signal_vr_current, NULL, NULL)
 {
-#define TELEMETRY_DIVIDER 2 
+#define TELEMETRY_DIVIDER 2
     power_service_config_t sconfig = {};
     power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
 
     // set the temp_telemetry divider to 2
     test_runconfig.knobs.temp_telemetry_divider = TELEMETRY_DIVIDER;
-    
-    for (int entry = 0; entry < (TELEMETRY_DIVIDER -1); entry++)
+
+    for (int entry = 0; entry < (TELEMETRY_DIVIDER - 1); entry++)
     {
         will_return(__wrap_power_runconfig_get, &test_runconfig);
 
@@ -337,7 +335,7 @@ POWER_TEST(vr_telem_current_telemetry_handler__signal_interval_error, NULL, NULL
 {
     power_service_config_t sconfig = {};
     power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
-    
+
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 
     setup_expectations_for_state_change(POWER_VR_TELEM_STATE_ERROR);
@@ -350,7 +348,7 @@ POWER_TEST(vr_telem_current_telemetry_handler__signal_interval_retry, NULL, NULL
 {
     power_service_config_t sconfig = {};
     power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
-    
+
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 
     setup_expectations_for_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL, false);
@@ -363,9 +361,9 @@ POWER_TEST(vr_telem_current_telemetry_handler__signal_default, NULL, NULL)
     // nothing should happen, no expectations to setup (except for the runconfig get)
     power_service_config_t sconfig = {};
     power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
-    
+
     will_return(__wrap_power_runconfig_get, &test_runconfig);
-    
+
     // call state handler
     call_handler(POWER_VR_TELEM_STATE_CURRENT_TELEMETRY, POWER_VR_TELEM_SIGNAL_MAX, NULL);
 }
@@ -381,10 +379,9 @@ POWER_TEST(vr_telem_temp_telemetry_handler__signal_entry, NULL, NULL)
 
     // expect state change to idle
     setup_expectations_for_state_change(POWER_VR_TELEM_STATE_IDLE);
-     // call state handler
+    // call state handler
     call_handler(POWER_VR_TELEM_STATE_TEMP_TELEMETRY, POWER_VR_TELEM_SIGNAL_ENTRY, NULL);
 }
-
 
 // test for pvt idle_handler
 POWER_TEST(pvt_telem_idle_handler__signal_entry, NULL, NULL)
@@ -411,42 +408,50 @@ POWER_TEST(pvt_telem_idle_handler__signal_default, NULL, NULL)
     call_handler(POWER_PVT_TELEM_STATE_IDLE, POWER_PVT_TELEM_SIGNAL_MAX, NULL);
 }
 
-
 void setup_expectations_for_read_pvt(bool max_temp)
 {
 #define TEST_PVT_BASE 0x1234
-#define TEST_TEMP_DC 900
+#define TEST_TEMP_DC  900
 #define TEST_VOLTS_MV 1100
-#define TEST_VOLTS_F (((float)TEST_VOLTS_MV)/1000)
+#define TEST_VOLTS_F  (((float)TEST_VOLTS_MV) / 1000)
     // read pvts needs runconfig for the service config
     static power_service_config_t sconfig = {.soc_pvt_base = TEST_PVT_BASE};
     static power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
-    
+
     // generate DTS data, we can validate it via the __wrap_power_hw_check_io_temp_force_pmin
     s_dts_samples.valid_bits = 0;
-    for (unsigned int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_DTS; ++pvt_idx) {
+    for (unsigned int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_DTS; ++pvt_idx)
+    {
         test_runconfig.fuses.dts_coeff_soctop[pvt_idx].k_val = (uint16_t)(DTS_K_COEFFICIENT * -1.0F);
         test_runconfig.fuses.dts_coeff_soctop[pvt_idx].y_val = (uint16_t)DTS_Y_COEFFICIENT;
 
         s_dts_samples.valid_bits |= (max_temp ? 0 : 1 << pvt_idx); // mark entries valid if not testing max temp
-        s_dts_samples.sample_data[pvt_idx] = TEMP2DOUT_FUSED((TEST_TEMP_DC/10), test_runconfig.fuses.dts_coeff_soctop[0].k_val, test_runconfig.fuses.dts_coeff_soctop[0].y_val);  // div by 10, since PVT only expect temp in degrees C
+        s_dts_samples.sample_data[pvt_idx] = TEMP2DOUT_FUSED((TEST_TEMP_DC / 10),
+                                                             test_runconfig.fuses.dts_coeff_soctop[0].k_val,
+                                                             test_runconfig.fuses.dts_coeff_soctop[0].y_val); // div by 10, since PVT only expect temp in degrees C
 
         // Convert raw to temperature to check against telemetry
         // If conversion logic (in power_hw_dts_pvt_raw_to_temp_dC) changed, this will need to be updated
-        s_pvt_teamp[pvt_idx] = (uint16_t)FLOAT_TO_UNSIGNED((DOUT2TEMP_FUSED(s_dts_samples.sample_data[pvt_idx], test_runconfig.fuses.dts_coeff_soctop[pvt_idx].k_val, test_runconfig.fuses.dts_coeff_soctop[pvt_idx].y_val)) * 10);
+        s_pvt_teamp[pvt_idx] =
+            (uint16_t)FLOAT_TO_UNSIGNED((DOUT2TEMP_FUSED(s_dts_samples.sample_data[pvt_idx],
+                                                         test_runconfig.fuses.dts_coeff_soctop[pvt_idx].k_val,
+                                                         test_runconfig.fuses.dts_coeff_soctop[pvt_idx].y_val)) *
+                                        10);
     }
-    
+
     s_vm_samples.valid_bits = 0;
-    for (unsigned int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_VM; ++pvt_idx) {
+    for (unsigned int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_VM; ++pvt_idx)
+    {
         s_vm_samples.valid_bits |= 1 << pvt_idx; // mark entries valid
         s_vm_samples.sample_data[pvt_idx] = VOLTS2DOUT(TEST_VOLTS_F);
 
         // Convert raw to voltage to check against telemetry
         // If conversion logic (in process_pvt_vm_samples) changed, this will need to be updated
         const bool div_by_2 = ((sconfig.soc_vm[pvt_idx].flags & VM_FLAGS_DIV2) != 0);
-        s_pvt_voltage[pvt_idx] = (uint16_t)FLOAT_TO_UNSIGNED((DOUT2VOLTS(s_vm_samples.sample_data[pvt_idx])) * (div_by_2 ? 2000 : 1000));
+        s_pvt_voltage[pvt_idx] =
+            (uint16_t)FLOAT_TO_UNSIGNED((DOUT2VOLTS(s_vm_samples.sample_data[pvt_idx])) * (div_by_2 ? 2000 : 1000));
     }
-   
+
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 
     // expectations for soc_pvt_handle_dts_irq_exclear
@@ -462,8 +467,7 @@ void setup_expectations_for_read_pvt(bool max_temp)
     will_return(__wrap_soc_pvt_handle_vm_irq_exclear, 0);
 
     // expectations for power_hw_check_io_temp_force_pmin
-    expect_value(__wrap_power_hw_check_io_temp_force_pmin, max_temp_dC, max_temp ? UINT16_MAX : TEST_TEMP_DC);    
-    
+    expect_value(__wrap_power_hw_check_io_temp_force_pmin, max_temp_dC, max_temp ? UINT16_MAX : TEST_TEMP_DC);
 }
 
 // tests for pvt_telem_pvt_telemetry_handler
@@ -511,5 +515,3 @@ POWER_TEST(pvt_telem_pvt_telemetry_handler__max_temp, setup_telemetry_fifo, NULL
     // call state handler
     call_handler(POWER_PVT_TELEM_STATE_READ_PVT, POWER_PVT_TELEM_SIGNAL_ENTRY, NULL);
 }
-
-

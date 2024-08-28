@@ -31,6 +31,8 @@
 #define POWER_LOOP_RETRY_COUNT 10
 // number of throttling priorities 
 #define VM_THROT_COUNT 8
+// number of throttling priorities 
+#define VM_BOOST_COUNT 8
 
 /* Macros to convert between plimit and resource count */
 #define PLIMIT_TO_RESOURCES(x) (MAX_PLIMIT - (x))  // for now, these are 1:1, reversed
@@ -219,6 +221,13 @@ typedef struct _power_core_t {
 } power_core_t;
 
 /**
+ * @brief Struct for all-core data
+ */
+typedef struct _power_cores_t {
+    power_core_t core[NUM_AP_CORES_PER_DIE];
+} power_cores_t;
+
+/**
  * @brief Struct for plimit selection stats
  */
 typedef struct _power_plimit_stats_t {
@@ -252,7 +261,8 @@ typedef struct _power_ctrl_loop_detail_t {
     corebits_t pstate_not_forced;
     corebits_t plimit_valid[NUM_PSTATES];
     corebits_t throttle_priority[VM_THROT_COUNT];
-    power_core_t cores[NUM_AP_CORES_PER_DIE];
+    corebits_t boost_priority[VM_THROT_COUNT];
+    power_cores_t cores;
     bool throttling;       // currently throttling 
     bool throttle_query;   // same as throttling, but will remain true until queried
     bool rack_limit;       // cached value of last rack_limit flag observed

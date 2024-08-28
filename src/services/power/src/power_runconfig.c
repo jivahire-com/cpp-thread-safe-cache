@@ -255,4 +255,7 @@ void power_runconfig_init(const power_service_config_t* p_config)
     // generate derived data
     runconfig_generate_derived_vfts();
     runconfig_generate_derived_tdp();
+
+    // update valid cores to only include those that are present
+    corebits_and(&power_runconfig.fuses.valid_cores, p_config->platform_cores_in_die);
 }

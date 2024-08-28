@@ -114,6 +114,12 @@ void __wrap_power_timer_start_loop_timers()
     function_called();
 }
 
+void __wrap_power_telemetry_enable()
+{
+    // nothing to do
+    function_called();
+}
+
 // wrap for power_telemetry_init_config
 void __wrap_power_telemetry_init_config(const power_telcfg_t* p_telemetry_config)
 {
@@ -313,6 +319,7 @@ POWER_TEST(init_ap_soc, NULL, NULL)
     will_return(__wrap_ws_data_put, &test_ws_stored);
     expect_function_call(__wrap_ws_data_put);
 
+    expect_function_call(__wrap_power_telemetry_enable);
     expect_function_call(__wrap_power_timer_start_loop_timers);
 
     power_ap_soc_init();
@@ -336,6 +343,7 @@ POWER_TEST(init_ap_soc_ws, NULL, NULL)
     expect_function_call(__wrap_reset_tile_pvt_dts_vm);
     expect_function_call(__wrap_tile_pvt_sda_reconfig);
     expect_function_call(__wrap_tile_pvt_dma_config);
+    expect_function_call(__wrap_power_telemetry_enable);
     expect_function_call(__wrap_power_timer_start_loop_timers);
 
     power_ap_soc_init();

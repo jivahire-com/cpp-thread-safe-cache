@@ -63,6 +63,7 @@ mock_target(${TARGET}
     power_runconfig_get  
     power_runconfig_init
     power_telemetry_init_config
+    power_telemetry_enable
     power_timer_start_loop_timers
     crash_dump_bug_check
     ws_data_get

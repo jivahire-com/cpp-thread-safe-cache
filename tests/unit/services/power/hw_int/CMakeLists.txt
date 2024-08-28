@@ -49,6 +49,7 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     crash_dump_bug_check
+    dvfs_config_plimit
     dvfs_get_adclk_droop_count
     dvfs_init
     dvfs_pll_dsm_toggle_start
@@ -58,6 +59,10 @@ mock_target(${TARGET}
     odcm_init
     odcm_telemetry_config
     reset_tile_pvt_dts_vm
+    sensor_fifo_svc_enable_fifo
+    sensor_fifo_svc_get_properties
+    sensor_fifo_svc_poll_scp_message
+    sensor_fifo_svc_set_global_hw_enable
     soc_pvt_init
     tile_pvt_dma_config
     tile_pvt_init

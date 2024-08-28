@@ -72,6 +72,14 @@ void __wrap_dvfs_set_plimit(const uintptr_t cluster_pex_base_addr, uint8_t plimi
     return;
 }
 
+void __wrap_dvfs_config_plimit(const uintptr_t cluster_pex_base_addr, dvfs_plimit plimit)
+{
+    check_expected(cluster_pex_base_addr);
+    uint32_t plimit_val = plimit.as_uint32;
+    check_expected(plimit_val);
+    return;
+}
+
 int __wrap_dvfs_get_adclk_droop_count(const uintptr_t cluster_pex_base_addr, uint32_t* droop_count)
 {
     check_expected(cluster_pex_base_addr);

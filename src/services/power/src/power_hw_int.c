@@ -186,6 +186,7 @@ static void power_init_update_odcm_cfg_core(odcm_telem_config_t* odcm_telem_cfg,
     odcm_telem_cfg->buffer_start_addr =
         p_telemetry_config->current_telem_start_addr + (core * p_telemetry_config->current_telem_entry_size);
     odcm_telem_cfg->buffer_size = p_telemetry_config->current_telem_buffer_size;
+    odcm_telem_cfg->buffer_stride = p_telemetry_config->current_telem_stride_size;
 }
 
 /**
@@ -396,8 +397,8 @@ static void power_init_update_tilepvt_cfg(const power_runconfig_t* p_runconfig, 
     {
         const bool div_by_2 = ((p_runconfig->p_sconfig->tile_vm[vm_idx].flags & VM_FLAGS_DIV2) != 0);
         pvt_alarm_setting_config_t alarm_setting = {0};
-        alarm_setting.alarma_enable = true;
-        alarm_setting.alarmb_enable = true;
+        alarm_setting.alarma_enable = p_knobs->tile_vm_overvolt_en;
+        alarm_setting.alarmb_enable = p_knobs->tile_vm_undervolt_en;
         alarm_setting.alarma_thresholds.hyst_threshold =
             VOLTTHRESHOLD2DOUT(p_knobs->tile_vm.thresholds[vm_idx].overvolt.hyst_threshold, div_by_2);
         alarm_setting.alarma_thresholds.alarm_threshold =
@@ -427,6 +428,7 @@ static void power_init_update_tilepvt_tile_cfg(const power_runconfig_t* p_runcon
 {
     FPFW_RUNTIME_ASSERT(pvt_cfg != NULL);
     FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
+
     const power_knobs_t* p_knobs = &p_runconfig->knobs;
     const power_fuse_data_t* fuses = &p_runconfig->fuses;
 
@@ -435,8 +437,8 @@ static void power_init_update_tilepvt_tile_cfg(const power_runconfig_t* p_runcon
     for (int dts_idx = 0; dts_idx < TILE_PVT_NUM_CHANNELS_DTS; ++dts_idx)
     {
         pvt_alarm_setting_config_t alarm_setting = {0};
-        alarm_setting.alarma_enable = true;
-        alarm_setting.alarmb_enable = true;
+        alarm_setting.alarma_enable = p_knobs->tile_temp_hot_en;
+        alarm_setting.alarmb_enable = p_knobs->tile_temp_thermtrip_en;
         alarm_setting.alarma_thresholds.hyst_threshold =
             TEMPTHRESHOLD2DOUT(p_knobs->tile_temp_throt.hot.hyst_threshold, fuses->dts_coeff_tile[tile]);
         alarm_setting.alarma_thresholds.alarm_threshold =
@@ -479,7 +481,9 @@ static void power_init_update_tilepvt_telemetry_cfg(tile_pvt_telem_setting_confi
     pvt_telem_cfg->volt_buffer_start_addr =
         p_telemetry_config->volt_telem_start_addr + (tile * p_telemetry_config->volt_telem_entry_size);
     pvt_telem_cfg->temp_dma_settings.buffer_size = p_telemetry_config->temp_telem_buffer_size;
+    pvt_telem_cfg->temp_dma_settings.buffer_stride = p_telemetry_config->temp_telem_stride_size;
     pvt_telem_cfg->volt_dma_settings.buffer_size = p_telemetry_config->volt_telem_buffer_size;
+    pvt_telem_cfg->volt_dma_settings.buffer_stride = p_telemetry_config->volt_telem_stride_size;
 }
 
 static uint16_t power_init_find_sochot_safe_temp_hyst(uint16_t config_hyst, dts_coeff_t fused_coeff)
@@ -525,8 +529,8 @@ static void power_init_update_socpvt_cfg(const power_runconfig_t* p_runconfig, p
     for (int dts_idx = 0; dts_idx < SOC_PVT_TOTAL_CHANNELS_DTS; ++dts_idx)
     {
         pvt_alarm_setting_config_t alarm_setting = {0};
-        alarm_setting.alarma_enable = true;
-        alarm_setting.alarmb_enable = true;
+        alarm_setting.alarma_enable = p_knobs->soc_temp_hot_en;
+        alarm_setting.alarmb_enable = p_knobs->soc_temp_thermtrip_en;
         alarm_setting.alarma_thresholds.hyst_threshold =
             power_init_find_sochot_safe_temp_hyst(p_knobs->soc_temp.hot.hyst_threshold, fuses->dts_coeff_soctop[dts_idx]);
         alarm_setting.alarma_thresholds.alarm_threshold =
@@ -543,8 +547,8 @@ static void power_init_update_socpvt_cfg(const power_runconfig_t* p_runconfig, p
     {
         const bool div_by_2 = ((p_runconfig->p_sconfig->soc_vm[vm_idx].flags & VM_FLAGS_DIV2) != 0);
         pvt_alarm_setting_config_t alarm_setting = {0};
-        alarm_setting.alarma_enable = true;
-        alarm_setting.alarmb_enable = true;
+        alarm_setting.alarma_enable = p_knobs->soc_vm_overvolt_en;
+        alarm_setting.alarmb_enable = p_knobs->soc_vm_undervolt_en;
         alarm_setting.alarma_thresholds.hyst_threshold =
             VOLTTHRESHOLD2DOUT(p_knobs->soc_vm.thresholds[vm_idx].overvolt.hyst_threshold, div_by_2);
         alarm_setting.alarma_thresholds.alarm_threshold =
@@ -835,7 +839,7 @@ void power_init_soc(const power_runconfig_t* p_runconfig)
     }
 }
 
-void power_set_plimit(const power_runconfig_t* p_runconfig, unsigned int core, uint8_t plimit, bool rack_power_cap)
+void power_set_plimit(const power_runconfig_t* p_runconfig, unsigned int core, dvfs_plimit plimit)
 {
     FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
 
@@ -843,10 +847,7 @@ void power_set_plimit(const power_runconfig_t* p_runconfig, unsigned int core, u
     FPFW_RUNTIME_ASSERT(p_config != NULL);
 
     const uintptr_t cluster_pex_base_addr = (p_config->cluster_pex_base + (p_config->cluster_stride * core));
-    // log the plimit selection
-    // TODO: https://dev.azure.com/AzureCSI/Dev/_queries/edit/1811056
-    // power_log_core(core, POWER_LOG_DATA(PLIMIT, {.plimit = plimit, .rack_cap = rack_power_cap}));
-    dvfs_set_plimit(cluster_pex_base_addr, plimit, rack_power_cap);
+    dvfs_config_plimit(cluster_pex_base_addr, plimit);
 }
 
 uint32_t power_hw_get_adclk_count(const power_runconfig_t* p_runconfig, unsigned int core)

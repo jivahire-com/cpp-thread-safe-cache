@@ -10,9 +10,12 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <dvfs.h>
+#include <power_loops_i.h>
 #include <power_runconfig_i.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <telemetry_data_struct.h>   // for plimit_data_msg_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define CORES_PER_TILE (NUM_AP_CORES_PER_DIE / NUM_CPU_TILES)
@@ -28,23 +31,24 @@ typedef struct _power_telcfg_t
     uint32_t current_telem_start_addr;
     uint32_t temp_telem_start_addr;
     uint32_t volt_telem_start_addr;
-    uint32_t vrtemp_telem_start_addr;
-    uint32_t vrcurr_telem_start_addr;
-    uint32_t socpvtvolt_telem_start_addr;
-    uint32_t socpvttemp_telem_start_addr;
 
     uint32_t current_telem_buffer_size;
     uint32_t temp_telem_buffer_size;
     uint32_t volt_telem_buffer_size;
 
+    uint32_t current_telem_stride_size;
+    uint32_t temp_telem_stride_size;
+    uint32_t volt_telem_stride_size;
+
     uint8_t current_telem_entry_size;
     uint8_t temp_telem_entry_size;
     uint8_t volt_telem_entry_size;
-    uint8_t vrtemp_telem_entry_size;
-    uint8_t vrcurr_telem_entry_size;
-    uint8_t socpvtvolt_telem_entry_size;
-    uint8_t socpvttemp_telem_entry_size;
 } power_telcfg_t;
+
+enum plimit_telem_msg_types {
+    PLIMIT_SUCCESS_TYPE = 0,
+    PLIMIT_UPDATE_TYPE = 1,
+}; 
 
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus
@@ -133,7 +137,7 @@ uint16_t power_hw_dts_pvt_raw_to_temp_dC(uint16_t raw, dts_coeff_t fused_coeff);
  *      a polling loop that doesn't stall the rest of the firmware
  *
  */
-void power_set_plimit(const power_runconfig_t* p_runconfig, unsigned int core, uint8_t plimit, bool rack_power_cap);
+void power_set_plimit(const power_runconfig_t* p_runconfig, unsigned int core, dvfs_plimit plimit);
 
 /**
  * @brief Checks if HW has GPIO connected meaningfully
@@ -178,6 +182,20 @@ uint32_t power_hw_get_adclk_count(const power_runconfig_t* p_runconfig, unsigned
  */
 void power_telemetry_init_config(power_telcfg_t* telemetry_config);
 
+/**
+ * @brief Enable power telemetry (fifos, etc)
+ *
+ */
+void power_telemetry_enable();
+
+/**
+ * @brief Polls telemetry service for plimit success/update messages
+ *
+ * @param[in] p_cores - Core data to update
+ * @param[in] p_success_bits - Core plimit success bits to update
+ *
+ */
+void power_telemetry_message_poll(power_cores_t *p_cores, corebits_t *p_success_bits);
 
 
 // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1811925/

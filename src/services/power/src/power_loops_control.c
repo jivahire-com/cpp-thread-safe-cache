@@ -47,6 +47,7 @@ static void error_handler(int event, const void* event_data);
 static void hw_get_core_state(power_runconfig_t* p_runconfig, unsigned core, power_core_t* core_state);
 static void hw_drain_sensor_fifo();
 static void hw_calculate_vcpu(power_runconfig_t* p_runconfig);
+static void hw_write_plimits(power_runconfig_t* p_runconfig);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -147,7 +148,7 @@ static void get_current_state()
         // only want to engage in state collection for valid cores
         if (corebits_is_bit_set(&p_runconfig->fuses.valid_cores, i))
         {
-            power_core_t* core = &s_ctrl_loop.cores[i];
+            power_core_t* core = &s_ctrl_loop.cores.core[i];
             hw_get_core_state(p_runconfig, i, core);
             // basically - need to assign cores to their throttling priority,
             // which is being kept per priority level in the throttle_priority
@@ -315,6 +316,8 @@ static void distribute_available_handler(int event, const void* event_data)
         // sets pending bits on a configured minimum number of cores
         power_distribution_minimum_plimit_updates();
         */
+        // remove with above TODO
+        s_ctrl_loop.plimits_pending = p_runconfig->fuses.valid_cores;
 
         // clear pending bits for any CPUs that are disabled
         corebits_and(&s_ctrl_loop.plimits_pending, &p_runconfig->fuses.valid_cores);
@@ -452,8 +455,7 @@ static void set_plimit_handler(power_ctrl_loop_state_t next_state, power_ctrl_lo
     case POWER_LOOP_STATE_SIGNAL_ENTRY:
         // Start state collection
         // Set PLIMITs
-        // TODO: can only write plimits after we integrate with sensor fifo (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1811872/)
-        // power_context.loop_hw_int->write_plimits();
+        hw_write_plimits(p_runconfig);
         // Push PLIMIT pending event
         power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_PLIMIT_PENDING, NULL);
         // store start_counter and first plimit send (last retry time)
@@ -487,8 +489,7 @@ static void set_plimit_handler(power_ctrl_loop_state_t next_state, power_ctrl_lo
                 // update last send time
                 plimit->counter_last_send = counter;
                 // set remaining plimits
-                // TODO: can only write plimits after we integrate with sensor fifo (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1811872/)
-                // power_context.loop_hw_int->write_plimits();
+                hw_write_plimits(p_runconfig);
             }
             // Push PLIMIT pending event
             power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_PLIMIT_PENDING, NULL);
@@ -504,7 +505,7 @@ static void set_plimit_handler(power_ctrl_loop_state_t next_state, power_ctrl_lo
             POWER_ET_AFFECTED_CORES(POWER_ET_TYPE_CTRLLOOP_PLIMITS_SUCCESSFUL, s_ctrl_loop.plimits_successful);
             for (unsigned i = 0; i < BITTYPE_COUNT; ++i)
             {
-                POWER_LOG_ERR("%d Pending %08" PRIu32 " Successful %08" PRIu32,
+                POWER_LOG_ERR("%d Pending %08" PRIx32 " Successful %08" PRIx32,
                               i,
                               s_ctrl_loop.plimits_pending.bits[i],
                               s_ctrl_loop.plimits_successful.bits[i]);
@@ -628,15 +629,16 @@ static void hw_get_core_state(power_runconfig_t* p_runconfig, unsigned core, pow
 
 static void hw_drain_sensor_fifo()
 {
-    // actual implementation would call poll function, process success/fails
-    // TODO: integrate with sensor fifo (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1811872/)
-    // mod_power_scp_msg_poll();
+    // call poll function, process success/fails
+    power_telemetry_message_poll(&s_ctrl_loop.cores, &s_ctrl_loop.plimits_successful);
 }
 
 static void hw_calculate_vcpu(power_runconfig_t* p_runconfig)
 {
     // calculate the necessary LDO input voltage
     /* TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1505723/
+
+    // reminder that vcpu_calc needs to provide per-core current limit data used in loadline calculation (we need to save that calculation for setting of plimit later)
 
     uint16_t ldo_in_mv     = power_vcpu_calc_max_core_voltage_mv() +
     power_context.runconfig.fuses.v_ldo_dropout_mv; float loadline_drop_mv = power_vcpu_calc_peak_current_A()
@@ -666,6 +668,45 @@ static void hw_calculate_vcpu(power_runconfig_t* p_runconfig)
                     ldo_in_mv,
                     loadline_drop_mv,
                     s_ctrl_loop.required_vcpu);
+}
+
+static void hw_write_plimits(power_runconfig_t* p_runconfig)
+{
+    // local for rack_limited pstate
+    uint8_t plimited = power_cap_is_capped() ? p_runconfig->derived.pnominal : MAX_PLIMIT;
+
+    // changes should be the set of cores with pending and not yet successful plimit updates
+    corebits_t changes = s_ctrl_loop.plimits_successful;
+    corebits_inv(&changes);
+    corebits_and(&changes, &s_ctrl_loop.plimits_pending);
+
+    int core = corebits_first(&changes);
+    while (core != -1)
+    {
+        // if the selected limit is greater than the established plimit for rack throttling, rack_limit_throttle should be true
+        bool rack_limit_throttle = (s_ctrl_loop.cores.core[core].selected_plimit > plimited);
+        // clear the core from changes; we'll iterate until this is empty
+        corebits_clear_bit(&changes, core);
+
+        dvfs_plimit plimit_req = {
+            .vf_index = s_ctrl_loop.cores.core[core].selected_plimit,
+            .power_cap = rack_limit_throttle,
+            /* TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1505723/
+               these values need to come from vcpu calculation
+            */
+            .currthresh_1 = 0x66,
+            .currthresh_2 = 0xA7,
+            .currthresh_3 = 0xE6,
+        };
+
+        power_set_plimit(p_runconfig, core, plimit_req);
+
+        // log the plimit selection
+        // TODO: https://dev.azure.com/AzureCSI/Dev/_queries/edit/1811056
+        // power_log_core(core, POWER_LOG_DATA(PLIMIT, {.plimit = plimit, .rack_cap = rack_power_cap}));
+
+        core = corebits_first(&changes);
+    }
 }
 
 void power_loops_control_init()
@@ -706,7 +747,7 @@ void power_loops_control_init()
         for (unsigned int core = 0; core < core_count; ++core)
         {
             // if pstate is forced, we'll always select max plimit
-            s_ctrl_loop.cores[core].selected_plimit = MAX_PLIMIT;
+            s_ctrl_loop.cores.core[core].selected_plimit = MAX_PLIMIT;
         }
     }
 

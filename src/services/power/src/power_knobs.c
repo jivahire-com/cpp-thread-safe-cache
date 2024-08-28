@@ -12,7 +12,8 @@
 #include "power_runconfig.h"   // for power_knobs_t, power_adclk_offset_cfg_t
 #include "power_runconfig_i.h" // for power_knobs_read, power_knobs_ws_update
 
-#include <FpFwAssert.h>        // for FPFW_RUNTIME_ASSERT
+#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
+#include <idsw_kng.h>
 #include <kng_soc_constants.h> // for NUM_AP_CORES_PER_DIE
 #include <silibs_common.h>     // for ARRAY_SIZE
 #include <stdbool.h>           // for false, true
@@ -152,6 +153,32 @@ void power_knobs_read(power_knobs_t* p_knobs)
                         .undervolt = {.hyst_threshold = 777, .alarm_threshold = 727}},
                        {.overvolt = {.hyst_threshold = 1006, .alarm_threshold = 1056},
                         .undervolt = {.hyst_threshold = 775, .alarm_threshold = 725}}}}; // config_get_power_soc_vms();
+
+    // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491012/
+    // replace with platform override when we get knob support
+    if IS_PLATFORM_FPGA ()
+    {
+        // FPGA has random values for temp/vm pvts, so disable the related alarms
+        p_knobs->soc_vm_overvolt_en = false;     // config_get_power_soc_vm_overvolt_en();
+        p_knobs->soc_vm_undervolt_en = false;    // config_get_power_soc_vm_undervolt_en();
+        p_knobs->tile_vm_overvolt_en = false;    // config_get_power_tile_vm_overvolt_en();
+        p_knobs->tile_vm_undervolt_en = false;   // config_get_power_tile_vm_undervolt_en();
+        p_knobs->soc_temp_hot_en = false;        // config_get_power_soc_hot_en();
+        p_knobs->soc_temp_thermtrip_en = false;  // config_get_power_soc_thermtrip_en();
+        p_knobs->tile_temp_hot_en = false;       // config_get_power_tile_hot_en();
+        p_knobs->tile_temp_thermtrip_en = false; // config_get_power_tile_thermtrip_en();
+    }
+    else
+    {
+        p_knobs->soc_vm_overvolt_en = true;     // config_get_power_soc_vm_overvolt_en();
+        p_knobs->soc_vm_undervolt_en = true;    // config_get_power_soc_vm_undervolt_en();
+        p_knobs->tile_vm_overvolt_en = true;    // config_get_power_tile_vm_overvolt_en();
+        p_knobs->tile_vm_undervolt_en = true;   // config_get_power_tile_vm_undervolt_en();
+        p_knobs->soc_temp_hot_en = true;        // config_get_power_soc_hot_en();
+        p_knobs->soc_temp_thermtrip_en = true;  // config_get_power_soc_thermtrip_en();
+        p_knobs->tile_temp_hot_en = true;       // config_get_power_tile_hot_en();
+        p_knobs->tile_temp_thermtrip_en = true; // config_get_power_tile_thermtrip_en();
+    }
 
     p_knobs->vcpu_offset_mv = 0; // config_get_power_vcpu_offset();
 

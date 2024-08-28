@@ -56,6 +56,7 @@ mock_target(${TARGET}
     _txe_queue_send
     _txe_thread_create
     FpFwAssert
+    corebits_first
     pid_calculate_resources
     pid_init
     pid_reset
@@ -72,6 +73,8 @@ mock_target(${TARGET}
     power_loops_handle_event
     power_loops_retry_fail
     power_runconfig_get
+    power_set_plimit
+    power_telemetry_message_poll
     power_timer_get_counter
     power_timer_get_counter_ticks_us
     power_timer_get_us_from_counter

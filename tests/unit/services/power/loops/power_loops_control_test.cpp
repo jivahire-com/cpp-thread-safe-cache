@@ -175,6 +175,25 @@ uint64_t __wrap_power_timer_get_us_from_counter(uint32_t ticks)
     return mock_type(uint64_t);
 }
 
+void __wrap_power_set_plimit(const power_runconfig_t* p_runconfig, unsigned int core, dvfs_plimit plimit)
+{
+    UNUSED(plimit);
+    check_expected_ptr(p_runconfig);
+    check_expected(core);
+}
+
+int __wrap_corebits_first(const corebits_t* corebits)
+{
+    assert_non_null(corebits);
+    return mock_type(int);
+}
+
+void __wrap_power_telemetry_message_poll(power_cores_t* p_cores, corebits_t* p_success_bits)
+{
+    check_expected_ptr(p_cores);
+    check_expected_ptr(p_success_bits);
+}
+
 // End mocks
 
 } // extern "C"
@@ -252,7 +271,6 @@ POWER_TEST(power_loops_control_init, NULL, NULL)
     reset_context(); // ensure we start fresh on context collection
     // this (below wrapper) also captures the context pointer when init function is called
     expect_not_value(__wrap_power_loops_init_loop, p_context, NULL);
-    
 
     // expectations for pid_init
     expect_memory(__wrap_pid_init, p_config, &test_pid_config, sizeof(pid_config_t));
@@ -302,7 +320,6 @@ void setup_expectations_for_retry_fail(power_loop_retries_t type, bool fail)
     expect_value(__wrap_power_loops_retry_fail, type, type);
     will_return(__wrap_power_loops_retry_fail, fail);
 }
-
 
 // test for idle_handler
 POWER_TEST(control_idle_handler__signal_interval, NULL, NULL)
@@ -374,6 +391,12 @@ void set_expectations_for_get_core_state(power_runconfig_t* p_runconfig)
     expect_value(__wrap_FpFwAssert, expression, true);
 }
 
+void setup_message_poll()
+{
+    expect_not_value(__wrap_power_telemetry_message_poll, p_cores, NULL);
+    expect_not_value(__wrap_power_telemetry_message_poll, p_success_bits, NULL);
+}
+
 // tests for collect_inputs_handler
 POWER_TEST(control_collect_inputs_handler__signal_entry, NULL, NULL)
 {
@@ -388,6 +411,8 @@ POWER_TEST(control_collect_inputs_handler__signal_entry, NULL, NULL)
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 
     set_expectations_for_get_core_state(&test_runconfig);
+
+    setup_message_poll();
 
     // call state handler
     call_handler(POWER_CONTROL_STATE_COLLECT_INPUTS, POWER_CTRL_LOOP_SIGNAL_ENTRY, NULL);
@@ -661,6 +686,17 @@ POWER_TEST(control_wait_vr_before_handler__signal_done, NULL, NULL)
     call_handler(POWER_CONTROL_STATE_WAIT_VR_BEFORE_PLIMIT, POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
 }
 
+void setup_write_plimits()
+{
+#define TEST_CORE 5
+
+    // expectations for power_set_plimit
+    expect_any(__wrap_power_set_plimit, p_runconfig);
+    expect_value(__wrap_power_set_plimit, core, TEST_CORE);
+    will_return(__wrap_corebits_first, TEST_CORE);
+    will_return(__wrap_corebits_first, -1);
+}
+
 // set plimit after tests
 void setup_plimit_handler()
 {
@@ -678,6 +714,7 @@ POWER_TEST(control_set_plimit_after_handler__signal_entry, NULL, NULL)
 {
     // expectations on entry
     setup_plimit_handler();
+    setup_write_plimits();
 
     // expectations for power_loops_handle_event (entry case)
     expect_not_value(__wrap_power_loops_handle_event, context, NULL);
@@ -692,6 +729,7 @@ POWER_TEST(control_set_plimit_after_handler__signal_plimit, NULL, NULL)
 {
     // expectations on entry
     setup_plimit_handler();
+    setup_message_poll();
 
     // expectations for pending case
     expect_any(__wrap_power_timer_get_us_from_counter, ticks);
@@ -741,6 +779,7 @@ POWER_TEST(control_set_plimit_before_handler__signal_plimit, NULL, NULL)
 {
     // expectations on entry
     setup_plimit_handler();
+    setup_message_poll();
 
     // expectations for pending case
     expect_any(__wrap_power_timer_get_us_from_counter, ticks);

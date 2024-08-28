@@ -51,6 +51,9 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 static power_knobs_t s_expected_knobs = {};
 static power_fuse_data_t s_expected_fuses = {};
+static const corebits_t platform_cores = (corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFF, 0xFFFFFFFF, 0xF);
+static power_service_config_t s_test_config = {.platform_cores_in_die = &platform_cores};
+
 /*------------- Functions ----------------*/
 //
 // Mocks
@@ -160,28 +163,26 @@ void set_default_expectations(uint8_t min_plimit)
         will_return(__wrap_dvfs_vft_from_fuse_data_per_itd, (uintptr_t)&default_vft); // vft
         will_return(__wrap_dvfs_vft_from_fuse_data_per_itd, DVFS_SUCCESS);            // status
     }
+
+
 }
 
 // ensure static config pointer saved in runconfig init
 POWER_TEST(runconfig_sconfig, setup, NULL)
 {
-    power_service_config_t test_config = {};
-
     set_default_expectations(TEST_MIN_VALID_PLIMIT);
 
-    power_runconfig_init(&test_config);
+    power_runconfig_init(&s_test_config);
 
-    assert_int_equal((uintptr_t)&test_config, (uintptr_t)power_runconfig_get()->p_sconfig);
+    assert_int_equal((uintptr_t)&s_test_config, (uintptr_t)power_runconfig_get()->p_sconfig);
 }
 
 // ensure happy path for knob reads from runconfig init
 POWER_TEST(runconfig_knobs, setup, NULL)
 {
-    power_service_config_t test_config = {};
-
     set_default_expectations(TEST_MIN_VALID_PLIMIT);
 
-    power_runconfig_init(&test_config);
+    power_runconfig_init(&s_test_config);
 
     assert_memory_equal(&s_expected_knobs, (uintptr_t)&power_runconfig_get()->knobs, sizeof(power_knobs_t));
 }
@@ -189,11 +190,9 @@ POWER_TEST(runconfig_knobs, setup, NULL)
 // ensure happy path for fuse reads from runconfig init
 POWER_TEST(runconfig_fuses, setup, NULL)
 {
-    power_service_config_t test_config = {};
-
     set_default_expectations(TEST_MIN_VALID_PLIMIT);
 
-    power_runconfig_init(&test_config);
+    power_runconfig_init(&s_test_config);
 
     assert_memory_equal(&s_expected_fuses, (uintptr_t)&power_runconfig_get()->fuses, sizeof(power_fuse_data_t));
 }
@@ -201,11 +200,9 @@ POWER_TEST(runconfig_fuses, setup, NULL)
 // ensure happy path for derived tdp configuration
 POWER_TEST(runconfig_derived, setup, NULL)
 {
-    power_service_config_t test_config = {};
-
     set_default_expectations(TEST_MIN_VALID_PLIMIT);
 
-    power_runconfig_init(&test_config);
+    power_runconfig_init(&s_test_config);
 
     assert_int_equal(power_hw_pstate_from_freq(s_expected_fuses.tdp_config.freq_MHz),
                      power_runconfig_get()->derived.pnominal);
@@ -218,14 +215,12 @@ POWER_TEST(runconfig_derived_tdp_knob_override, setup, NULL)
 #define TEST_PSTATE_OVERRIDE        2
 #define TEST_THERMAL_LIMIT_OVERRIDE 500
 
-    power_service_config_t test_config = {};
-
     set_default_expectations(TEST_MIN_VALID_PLIMIT);
 
     s_expected_knobs.nominal_pstate = TEST_PSTATE_OVERRIDE;
     s_expected_knobs.soc_maximum_thermal_watts_limit = TEST_THERMAL_LIMIT_OVERRIDE;
 
-    power_runconfig_init(&test_config);
+    power_runconfig_init(&s_test_config);
 
     assert_int_equal(TEST_PSTATE_OVERRIDE, power_runconfig_get()->derived.pnominal);
     assert_int_equal(TEST_THERMAL_LIMIT_OVERRIDE, power_runconfig_get()->derived.soc_maximum_thermal_watts_limit);
@@ -234,11 +229,9 @@ POWER_TEST(runconfig_derived_tdp_knob_override, setup, NULL)
 // ensure core assigned to curve when enabled
 POWER_TEST(runconfig_derived_curve_assignment, setup, NULL)
 {
-    power_service_config_t test_config = {};
-
     set_default_expectations(TEST_MIN_VALID_PLIMIT);
 
-    power_runconfig_init(&test_config);
+    power_runconfig_init(&s_test_config);
 
     for (unsigned core_idx = 0; core_idx < NUM_AP_CORES_PER_DIE; ++core_idx)
     {
@@ -259,15 +252,12 @@ POWER_TEST(runconfig_derived_curve_assignment, setup, NULL)
 POWER_TEST(runconfig_derived_curve_assignment_core_disabled, setup, NULL)
 {
 #define TEST_DISABLED_CORE 5
-    power_service_config_t test_config = {};
-    memset(&test_config, 0, sizeof(test_config));
-
     set_default_expectations(TEST_MIN_VALID_PLIMIT);
 
     // disable a core
     corebits_clear_bit(&s_expected_fuses.valid_cores, TEST_DISABLED_CORE);
 
-    power_runconfig_init(&test_config);
+    power_runconfig_init(&s_test_config);
 
     for (unsigned core_idx = 0; core_idx < NUM_AP_CORES_PER_DIE; ++core_idx)
     {
@@ -294,11 +284,9 @@ POWER_TEST(runconfig_derived_curve_assignment_core_disabled, setup, NULL)
 // ensure indexed curve assignment matches fuses
 POWER_TEST(runconfig_derived_curve_assignment_curve_assignment, setup, NULL)
 {
-    power_service_config_t test_config = {};
-
     set_default_expectations(TEST_MIN_VALID_PLIMIT);
 
-    power_runconfig_init(&test_config);
+    power_runconfig_init(&s_test_config);
 
     for (unsigned core_idx = 0; core_idx < NUM_AP_CORES_PER_DIE; ++core_idx)
     {
@@ -312,12 +300,10 @@ POWER_TEST(runconfig_derived_curve_assignment_curve_assignment, setup, NULL)
 // ensure default VFT if no valid curve
 POWER_TEST(runconfig_default_if_no_valid_curve, setup, NULL)
 {
-    power_service_config_t test_config = {};
-
     // min_plimit of NUM_PSTATES indicates fuses didn't result in a valid curve
     set_default_expectations(NUM_PSTATES);
 
-    power_runconfig_init(&test_config);
+    power_runconfig_init(&s_test_config);
 
     assert_int_not_equal(power_runconfig_get()->derived.vfts[0].min_plimit, NUM_PSTATES);
 }

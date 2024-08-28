@@ -14,7 +14,6 @@
 #include <DfwkHost.h>   // for DfwkDeviceInitialize
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>  // for FPFW_UNUSED
-#include <accel_intr.h> // for accel_intr_handle_fatal_intr_recvd, accel_in...
 #include <stdbool.h>    // for false
 #include <string.h>     // for NULL
 
@@ -32,40 +31,7 @@ static void accel_intr_service_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER p_reque
 {
     FPFW_UNUSED(p_context);
 
-    switch (p_request->RequestType)
-    {
-    /**
-     * Handle Accel IP FATAL interrupt
-     */
-    case ACCEL_INTR_SERVICE_FATAL_INTR_RECVD: {
-        paccel_intr_service_request_t p_accel_intr_service_request = (paccel_intr_service_request_t)p_request;
-
-        // Call handler
-        accel_intr_handle_fatal_intr_recvd(p_accel_intr_service_request->IRQnum);
-
-        // complete request
-        DfwkAsyncRequestComplete(p_request);
-    }
-    break;
-
-    /**
-     * Handle Accel IP SDM_MSG interrupt
-     */
-    case ACCEL_INTR_SERVICE_SDM_MSG_RECVD: {
-        paccel_intr_service_request_t p_accel_intr_service_request = (paccel_intr_service_request_t)p_request;
-
-        // Call handler
-        accel_intr_handle_sdm_msg_recvd(p_accel_intr_service_request->IRQnum);
-
-        // complete request
-        DfwkAsyncRequestComplete(p_request);
-    }
-    break;
-
-    default:
-        FPFW_RUNTIME_ASSERT(false);
-        break;
-    }
+    DfwkAsyncRequestComplete(p_request);
 }
 
 static int32_t accel_intr_service_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER p_request)

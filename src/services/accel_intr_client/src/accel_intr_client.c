@@ -13,7 +13,9 @@
 #include "accel_intr_service_interface.h" // for accel_intr_service_cmd_con...
 
 #include <DfwkClient.h> // for DfwkAsyncRequestInititalize
+#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <accel_intr.h> // for accel_intr_handle_fatal_intr_recvd, accel_in...
 #include <stddef.h>     // for NULL
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -27,12 +29,43 @@ static accel_intr_service_cmd_context_t accel_intr_service_cmd_context;
 
 /*-------------- Functions ---------------*/
 /**
- * This is an empty handler since Completion Function is needed by DFWK
+ * Moving actual interrupt ptocessing to the callback function here.
+ * Keeping this before DfwkAsyncRequestComplete was causing a crash.
+ * This needs to be reviewed and modifie if necessary.
+ * TODO: Task 2000244: [SCP] Accel IP Fatal Interrupt DWFK Usage
  */
-static void accel_intr_async_request_complete(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+static void accel_intr_async_request_complete(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_completion_context)
 {
-    FPFW_UNUSED(request);
     FPFW_UNUSED(p_completion_context);
+
+    switch (p_request->RequestType)
+    {
+    /**
+     * Handle Accel IP FATAL interrupt
+     */
+    case ACCEL_INTR_SERVICE_FATAL_INTR_RECVD: {
+        paccel_intr_service_request_t p_accel_intr_service_request = (paccel_intr_service_request_t)p_request;
+
+        // Call handler
+        accel_intr_handle_fatal_intr_recvd(p_accel_intr_service_request->IRQnum);
+    }
+    break;
+
+    /**
+     * Handle Accel IP SDM_MSG interrupt
+     */
+    case ACCEL_INTR_SERVICE_SDM_MSG_RECVD: {
+        paccel_intr_service_request_t p_accel_intr_service_request = (paccel_intr_service_request_t)p_request;
+
+        // Call handler
+        accel_intr_handle_sdm_msg_recvd(p_accel_intr_service_request->IRQnum);
+    }
+    break;
+
+    default:
+        FPFW_RUNTIME_ASSERT(false);
+        break;
+    }
 }
 
 static void dispatch_accel_intr_async_request(uint32_t IRQnum,

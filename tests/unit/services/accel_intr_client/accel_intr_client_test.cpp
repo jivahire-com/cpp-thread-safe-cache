@@ -27,6 +27,8 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CurCompletionRoutine;
+PDFWK_ASYNC_REQUEST_HEADER CurHeader;
 
 /*------------- Functions ----------------*/
 
@@ -49,6 +51,8 @@ void __wrap_DfwkAsyncRequestSetCompletionRoutine(PDFWK_ASYNC_REQUEST_HEADER Requ
     assert_non_null(Request);
     assert_non_null(CompletionRoutine);
     assert_null(CompletionContext);
+    CurCompletionRoutine = CompletionRoutine;
+    CurHeader = Request;
 }
 
 /**
@@ -90,6 +94,39 @@ int32_t __wrap_DfwkClientInterfaceOpen(PDFWK_INTERFACE_HEADER Interface)
     return mock_type(int32_t);
 }
 
+/**
+ * @brief Mock function for accel_intr_handle_fatal_intr_recvd
+ *
+ * @param[in] IRQnum : IRQnum to identify between SDM / CDED Accel IP
+ *
+ */
+void __wrap_accel_intr_handle_fatal_intr_recvd(uint32_t IRQnum)
+{
+    check_expected(IRQnum);
+}
+
+/**
+ * @brief Mock function for accel_intr_handle_sdm_msg_recvd
+ *
+ * @param[in] IRQnum : IRQnum to identify between SDM / CDED Accel IP
+ *
+ */
+void __wrap_accel_intr_handle_sdm_msg_recvd(uint32_t IRQnum)
+{
+    check_expected(IRQnum);
+}
+
+/**
+ * @brief Mock function for FpFwAssert
+ *
+ * @param[in] expression : Expression to validate
+ *
+ */
+void __wrap_FpFwAssert(int expression)
+{
+    check_expected(expression);
+}
+
 } // extern "C"
 
 /****************************
@@ -108,11 +145,20 @@ TEST_FUNCTION(test_accel_intr_client, NULL, NULL)
 
     expect_any(__wrap_DfwkAsyncRequestInititalize, Request);
 
+    expect_value(__wrap_accel_intr_handle_fatal_intr_recvd, IRQnum, 0x77);
+    expect_value(__wrap_accel_intr_handle_sdm_msg_recvd, IRQnum, 0x77);
+
     accel_intr_client_init(&accel_intr_interface);
 
     expect_value_count(__wrap_DfwkInterfaceSendAsync, Interface, &accel_intr_interface, 2);
 
-    send_sdm_msg_async_request(0x1);
+    send_sdm_msg_async_request(0x77);
 
-    send_fatal_intr_async_request(0x1);
+    assert_non_null(CurCompletionRoutine);
+    CurCompletionRoutine(CurHeader, NULL);
+
+    send_fatal_intr_async_request(0x77);
+
+    assert_non_null(CurCompletionRoutine);
+    CurCompletionRoutine(CurHeader, NULL);
 }

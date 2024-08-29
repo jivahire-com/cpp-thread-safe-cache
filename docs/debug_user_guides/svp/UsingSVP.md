@@ -102,9 +102,9 @@ The below is an example of passing in simulation parameters to a simulation rele
     --parameter KingsgateSVP.DIE_0.VABRPSS2.#EXTRA_PROPERTIES#runtime_disabled=true `
     --parameter KingsgateSVP.DIE_0.VABRPSS3.#EXTRA_PROPERTIES#runtime_disabled=true `
     --parameter KingsgateSVP.DIE_1.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.DIE_0.RMSS.MCP.MCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/ImageInfo/cpu0/initial_image=../../../../../.build/Debug/arm-eabi-aarch/bin/mcp_fw.elf `
+    --parameter KingsgateSVP.DIE_0.RMSS.MCP.MCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/ImageInfo/cpu0/initial_image=$(REPO_APP_BUILD_DIR)/$(REPO_APP_BUILD_CONFIG)/arm-eabi-aarch/bin/mcp_fw.elf `
     --parameter KingsgateSVP.DIE_0.RMSS.MCP.terminal_uart_mcp.#SCML_PROPERTIES#TerminalAutoOpen=false `
-    --parameter KingsgateSVP.DIE_0.RMSS.SCP.SCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/ImageInfo/cpu0/initial_image=../../../../../.build/Debug/arm-eabi-aarch/bin/scp_fw.elf `
+    --parameter KingsgateSVP.DIE_0.RMSS.SCP.SCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/ImageInfo/cpu0/initial_image=$(REPO_APP_BUILD_DIR)/$(REPO_APP_BUILD_CONFIG)/arm-eabi-aarch/bin/scp_fw.elf `
     --parameter KingsgateSVP.DIE_0.RMSS.SCP.terminal_uart_scp.#SCML_PROPERTIES#TerminalAutoOpen=false `
     --pyargs_end
 ```

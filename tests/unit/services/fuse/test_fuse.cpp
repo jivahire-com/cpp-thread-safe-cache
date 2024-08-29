@@ -201,8 +201,8 @@ TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RTL_SIM);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_fuse_dma_copy_to_ram_blocking, 0);
-    expect_value(__wrap_read_fuse, fuse_bit_offset, TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_BIT_OFFSET);
-    expect_value(__wrap_read_fuse, fuse_bit_size, TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_WIDTH);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
     will_return_always(__wrap_read_fuse, 1);
     expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_RSP);
     will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_RSP);
@@ -231,12 +231,12 @@ TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
 TEST_FUNCTION(test_read_fuse, NULL, NULL)
 {
     uint64_t fuse_data = 0;
-    expect_value(__wrap_read_fuse, fuse_bit_offset, TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_BIT_OFFSET);
-    expect_value(__wrap_read_fuse, fuse_bit_size, TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_WIDTH);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
     will_return_always(__wrap_read_fuse, 1);
     platform_read_for_fuse((uintptr_t)&fuse_data,
-                           TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_BIT_OFFSET,
-                           TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_WIDTH);
+                           SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET,
+                           SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
 }
 
 TEST_FUNCTION(test_fuse_distribute_SIM_RTL, NULL, NULL)
@@ -395,8 +395,8 @@ TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
-    expect_value(__wrap_read_fuse, fuse_bit_offset, TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_BIT_OFFSET);
-    expect_value(__wrap_read_fuse, fuse_bit_size, TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_WIDTH);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
     will_return(__wrap_fuse_dma_copy_to_ram_blocking, 1);
 
     // Mock ICC send/receive function

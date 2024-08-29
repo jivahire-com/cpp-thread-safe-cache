@@ -116,9 +116,6 @@ static sdm_pre_pcie_cfg_t die0_sdmss_pre_pcie_cfg = {
                                            // Refer to PCIe Base Spec 10.5.1.2
                                            // for details
 
-    .rcec_assoc_bus = 0, // Bus number of RCiEP associated with the RCEC. See
-                         // PCIe Base Spec 7.9.10.3 for details.
-
     .rciep_pf_bars_prefetch_enable = 0,    // 2-bit field. Bit0 enables prefetch
                                            // for BAR0 (PF CFG) and Bit1 enables
                                            // prefetch for BAR1 (PF Cmd Q).
@@ -216,9 +213,6 @@ static sdm_pre_pcie_cfg_t die0_cdedss_pre_pcie_cfg = {
     .vf_global_invalidate_support = false, // Must be false/disabled for TDISP.
                                            // Refer to PCIe Base Spec 10.5.1.2
                                            // for details
-
-    .rcec_assoc_bus = 0, // Bus number of RCiEP associated with the RCEC. See
-                         // PCIe Base Spec 7.9.10.3 for details.
 
     .rciep_pf_bars_prefetch_enable = 0,    // 2-bit field. Bit0 enables prefetch
                                            // for BAR0 (PF CFG) and Bit1 enables

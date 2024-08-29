@@ -144,10 +144,11 @@ int platform_fuse_override()
         status = platform_fuse_copy_to_ram();
         FUSE_ET_STATUS(FUSE_ET_TYPE_RAM_DMA_COPY);
         BUG_ASSERT_PARAM((status == SILIBS_SUCCESS), status, SILIBS_SUCCESS);
-        const bool is_fused_part = read_fuse(TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_BIT_OFFSET,
-                                             TEST_FLOW_CHECKS_SILICON_MAJOR_REVISION_WIDTH) != 0;
-        // Read override buffer from SPI Flash and apply to fuses if present
-        status = read_override_from_spi();
+
+        const bool is_fused_part =
+            (read_fuse(SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH) != 0);
+        status = read_override_from_spi(); // Read override buffer from SPI Flash and apply to fuses if present
+
         FUSE_ET_STATUS(FUSE_ET_TYPE_MAILBOX_REQUEST_OVERRIDES);
         const bool fuse_overrides_present = (status == SILIBS_SUCCESS);
         if (!is_fused_part && !fuse_overrides_present)

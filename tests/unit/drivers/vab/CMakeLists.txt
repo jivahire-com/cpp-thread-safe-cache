@@ -26,6 +26,7 @@ target_link_libraries(${TARGET}
     silibs_platform
     silibs::vab_init
     silibs::smmu
+    silibs::intu
 )
 
 # Defining platform APIs

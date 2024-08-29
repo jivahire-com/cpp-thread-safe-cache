@@ -4,6 +4,7 @@ avs
 clocks_sequence
 cml
 cmn800
+cmn800_ras_sequence
 cmn800_sequence
 cmn800_skus
 cmsdk_wd

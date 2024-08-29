@@ -25,7 +25,7 @@
 
 /*-------------- Functions ---------------*/
 //Todo: Add "ddr_training" to dependencies when available
-FPFW_INIT_COMPONENT(ddrman, FPFW_INIT_DEPENDENCIES("ddr", "std_io", "mesh", "hw_ver")) 
+FPFW_INIT_COMPONENT(ddrman, FPFW_INIT_DEPENDENCIES("ddr", "std_io", "mesh", "hw_ver", "icc_hspmbx")) 
 {
     static uint8_t ddr_stack[DDR_STACK_SIZE];
     static uint32_t ddr_queue_pool[10];
@@ -50,6 +50,7 @@ FPFW_INIT_COMPONENT(ddrman, FPFW_INIT_DEPENDENCIES("ddr", "std_io", "mesh", "hw_
         }
     };
 
-    ddr_manager_init(&ddr_service_ctx, &config);
+    fpfw_icc_base_ctx_t* icc_ctx = fpfw_init_get_handle("icc_hspmbx");
+    ddr_manager_init(&ddr_service_ctx, &config, icc_ctx);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

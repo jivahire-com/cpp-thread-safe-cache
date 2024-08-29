@@ -10,6 +10,7 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <fpfw_icc_base.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <DfwkThreadXHost.h>
@@ -59,4 +60,4 @@ typedef struct
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
-void ddr_manager_init(ddr_service_context_t *pddr_service_ctx, ddr_service_config_t *pconfig);
+void ddr_manager_init(ddr_service_context_t *pddr_service_ctx, ddr_service_config_t *pconfig, fpfw_icc_base_ctx_t *icc_ctx);

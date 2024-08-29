@@ -12,9 +12,13 @@
 #include "ddr_manager_i.h" // for ddr_create_bdat, ddr_create_memory_map
 
 #include <ErrorHandler.h> // for FPFwErrorRaise
-#include <stdint.h>       // for uint32_t
-#include <stdio.h>        // for printf
-#include <tx_api.h>       // for TX_SUCCESS, ULONG, TX_AUTO_ACTIVATE, TX_A...
+#include <bug_check.h>
+#include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
+#include <hsp_firmware_headers.h> // for mbox command codes
+#include <stdint.h>               // for uint32_t
+#include <stdio.h>                // for printf
+#include <system_info.h>
+#include <tx_api.h> // for TX_SUCCESS, ULONG, TX_AUTO_ACTIVATE, TX_A...
 
 // Tell cspell to ignore .. why are we using cSpell?
 /* cSpell:ignore DIMM DIMMS */
@@ -33,21 +37,21 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
     uint32_t received_message;
     UINT status;
 
-    printf("DDR worker thread begin\n");
+    printf("[DDR_MGR] worker thread begin\n");
 
     while (1)
     {
         status = tx_queue_receive(&ddr_service_ctx->work_queue, &received_message, TX_WAIT_FOREVER);
         if (status != TX_SUCCESS)
         {
-            printf("DDR worker: Error with tx_queue_receive\n");
+            printf("[DDR_MGR] worker: Error with tx_queue_receive\n");
             FPFwErrorRaise(status, 0, 0, 0, 0);
         }
         else
         {
             // Process received message
             // TODO: Task #1778297: Replace printf with debug level Event Trace Event
-            printf("DDR Q Message received: %d\n", (int)received_message);
+            printf("[DDR_MGR] DDR Q Message received: %d\n", (int)received_message);
 
             switch ((DDR_MANAGER_MESSAGE_TYPE)received_message)
             {
@@ -72,7 +76,7 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
                 break;
 
             default:
-                printf("Unknown message type\n");
+                printf("[DDR_MGR] Unknown message type\n");
                 break;
             }
         }
@@ -85,8 +89,27 @@ void ddr_timer_cb(ULONG pddr_service_ctx)
     ddr_service_context_t* ddr_service_ctx = (ddr_service_context_t*)pddr_service_ctx;
     uint32_t msg_dimm_polling = DDR_POLL_DIMMS_I3C_EVENT;
 
-    printf("Sending a message for test to DDR worker thread..\n");
+    printf("[DDR_MGR] Sending a message for test to DDR worker thread..\n");
     tx_queue_send(&ddr_service_ctx->work_queue, &msg_dimm_polling, TX_NO_WAIT);
+}
+
+static void hsp_send_ddr_init_notify(fpfw_icc_base_ctx_t* icc_ctx)
+{
+    size_t recv_msg_size_bytes = 0;
+    kng_hsp_mailbox_msg msg = {
+        .header.cmd = HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY,
+    };
+    //! Send the message to HSP & get response, blocking call
+    printf("[DDR_MGR] Sending DDR message to HSP\n");
+    fpfw_status_t icc_status =
+        fpfw_icc_base_send_recv_sync(icc_ctx, &msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
+
+    //! Verify sync return status & response message
+    BUG_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
+    BUG_ASSERT(recv_msg_size_bytes > 0);
+    BUG_ASSERT(msg.header.cmd == HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY_RSP);
+    BUG_ASSERT(msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+    printf("[DDR_MGR] DDR message to HSP sent\n");
 }
 
 /**
@@ -100,10 +123,13 @@ void ddr_timer_cb(ULONG pddr_service_ctx)
  *    @param[in] pconfig
  *        Configuration. Gives initial parameters to each of the ThreadX objects
  *
+ *   @param[in] icc_ctx
+ *       ICC context for sending DDR init notify to HSP
+ *
  *    @retval
  *        None
  */
-void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_config_t* pconfig)
+void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_config_t* pconfig, fpfw_icc_base_ctx_t* icc_ctx)
 {
     uint32_t work_queue_msg = 0;
     int status = tx_queue_create((TX_QUEUE*)&pddr_service_ctx->work_queue, /* TX_QUEUE *queue_ptr */
@@ -114,7 +140,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
 
     if (status != TX_SUCCESS)
     {
-        printf("tx_queue_create err %d\n", status);
+        printf("[DDR_MGR] tx_queue_create err %d\n", status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -122,7 +148,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
     if (status != TX_SUCCESS)
     {
-        printf("tx_queue_send DDR_CREATE_MEMORY_MAP_EVENT err %d\n", status);
+        printf("[DDR_MGR] tx_queue_send DDR_CREATE_MEMORY_MAP_EVENT err %d\n", status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -131,7 +157,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
 
     if (status != TX_SUCCESS)
     {
-        printf("tx_queue_send DDR_CREATE_BDAT_EVENT err %d\n", status);
+        printf("[DDR_MGR] tx_queue_send DDR_CREATE_BDAT_EVENT err %d\n", status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -139,7 +165,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
     if (status != TX_SUCCESS)
     {
-        printf("tx_queue_send DDR_CREATE_SMBIOS_TABLES_EVENT err %d\n", status);
+        printf("[DDR_MGR] tx_queue_send DDR_CREATE_SMBIOS_TABLES_EVENT err %d\n", status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -156,7 +182,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
 
     if (status != TX_SUCCESS)
     {
-        printf("thread create err\n");
+        printf("[DDR_MGR] thread create err\n");
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -170,10 +196,18 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
 
     if (status != TX_SUCCESS)
     {
-        printf("timer create err %d\n", status);
+        printf("[DDR_MGR] timer create err %d\n", status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
     ddr_manager_i3c_init();
     ddr_init_telemetry();
+    if (system_info_is_hsp_present())
+    {
+        hsp_send_ddr_init_notify(icc_ctx);
+    }
+    else
+    {
+        printf("[DDR_MGR] No HSP detected\n");
+    }
 }

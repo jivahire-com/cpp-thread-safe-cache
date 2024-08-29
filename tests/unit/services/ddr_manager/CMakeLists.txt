@@ -14,6 +14,7 @@ set(LIBS
         ms::service::ddr_manager
         ms::cmocka::testrunner
         ms::lib::error_handler
+        ms::lib::hsp_firmware_headers
         ms::lib::threadx
         ms::mocks::threadx
         ms::lib::stdio_textio
@@ -22,6 +23,7 @@ set(LIBS
         fwlib.lib.init
         fwlib.lib.utils
         fwlib.lib.spinlock
+        fwlib.service.iccBase
         ras_arm
 )
 
@@ -57,6 +59,8 @@ mock_target(${TARGET}
     ddr_i3c_interface_read_temp_sensor_mr_reg
     ddr_manager_set_thermal_trip_gpio
     ddr_i3c_interface_get_instance
-    idhw_get_die_id
     ddr_manager_platform_is_polling_supported
+    fpfw_icc_base_send_recv_sync
+    idhw_get_die_id
+    system_info_is_hsp_present
 )

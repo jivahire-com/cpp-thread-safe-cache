@@ -33,9 +33,12 @@ target_link_libraries(${TARGET}
         silibs::ras_arm
         fwlib.dfwk
         fwlib.lib.init
+        fwlib.service.iccBase
         ms::lib::crash_dump::scp
         ms::lib::error_codes
+        ms::lib::hsp_firmware_headers
         ms::lib::i3c_controller
+        ms::lib::system_info
         ms::service::sds_service
     PUBLIC
         fwlib.platform.dfwkhost.threadx

@@ -16,6 +16,7 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define KB                  (1024)
+#define MB                  (KB * 1024)
 #define UNUSED(x)           (void)(x)
 
 /*-------------- Typedefs ----------------*/

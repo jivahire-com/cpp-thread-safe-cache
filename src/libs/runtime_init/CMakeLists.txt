@@ -181,6 +181,7 @@ add_library(${TARGET}
         debug_init.c
         dfwk_init.c
         etc_etd_init.c
+        etr_init.c
         hw_version_mcp_init.c
         icc_cli_init.c
         icc_init.c
@@ -214,11 +215,13 @@ target_link_libraries(
         ms::lib::crash_dump::mcp
         ms::lib::icc::cli
         ms::lib::icc_platform_defines
+        ms::lib::interface::in_band_telemetry_ddr
         ms::lib::mcp_interrupts
         ms::lib::stdio_textio
         ms::lib::threadx
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
+        ms::service::event_trace::relay
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
         ms::lib::cortex_m7::mpu

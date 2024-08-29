@@ -138,6 +138,10 @@
                         "Sensor Fifo Service",
                         "service.sensor_fifo.test.exe"
                     ],
+                    [
+                        "Event Trace Relay Service",
+                        "service.event_trace.relay.test.exe"
+                    ],
                 ],
             },
         },

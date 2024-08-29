@@ -16,7 +16,7 @@
 
     <git>
         <repo name="cmocka" url="https://azurecsi.visualstudio.com/DuvallFw/_git/mirror.cmocka" tag="promote_cmocka_1"/>
-        <repo name="1pfw_fwlibs" url="https://azurecsi.visualstudio.com/DuvallFw/_git/1pfw.fwlibs" tag="v2.0.400"/>
+        <repo name="1pfw_fwlibs" url="https://azurecsi.visualstudio.com/DuvallFw/_git/1pfw.fwlibs" tag="v2.0.427"/>
         <repo name="threadx" url="https://dev.azure.com/AzureCSI/DuvallFw/_git/mirror.threadx" tag="v6.4.1_rel"/>
         <repo name="silibs" url="https://ms-tsd@dev.azure.com/ms-tsd/Kingsgate/_git/silibs" tag="promote_silibs_934"/>
         <!-- /// @todo: remove "silibs_common" https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/1838599 -->

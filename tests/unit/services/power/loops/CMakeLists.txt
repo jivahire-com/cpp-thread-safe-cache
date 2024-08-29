@@ -64,7 +64,6 @@ mock_target(${TARGET}
     pid_update_setpoint
     power_cap_get_vrcpu_cap
     power_cap_finalize
-    power_hw_check_io_temp_force_pmin
     power_hw_clear_force_pmin
     power_hw_force_pmin
     power_hw_gpio_rack_limit_asserted

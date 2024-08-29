@@ -14,6 +14,7 @@
 
 #include "dvfs_struct.h"     // for dvfs_config_t, dvfs_init_config_t
 #include "odcm_struct.h"     // for odcm_config_t, odcm_telem_config_t
+#include "power_hw_int_i.h"  // for force pmin
 #include "power_hw_int_i.h"  // for power_telcfg_t, power_hw_dts_pvt_raw_...
 #include "power_i.h"         // for TEMP2DOUT_FUSED, BUG_CHECK
 #include "power_runconfig.h" // for power_knobs_t, dts_coeff_t, power_run...
@@ -26,16 +27,19 @@
 #include <dvfs_regs.h>  // for (anonymous union)::(anonymous), dvfs_...
 #include <fgpll_regs.h> // for fgpll_pll_error_mask_cr, (anonymous u...
 #include <kng_error.h>
-#include <odcm.h>          // for odcm_init, odcm_telemetry_config, ODC...
-#include <pex_regs.h>      // for PEX_CORE_PLL_ADDRESS
-#include <power_events.h>  // for POWER_ET_FATAL, POWER_ET_TYPE_CURVE_H...
-#include <pvt.h>           // for PVT_SUCCESS, reset_tile_pvt_dts_vm
-#include <pvt_struct.h>    // for pvt_alarm_setting_config_t, pvt_thres...
+#include <odcm.h>         // for odcm_init, odcm_telemetry_config, ODC...
+#include <pex_regs.h>     // for PEX_CORE_PLL_ADDRESS
+#include <power_events.h> // for POWER_ET_FATAL, POWER_ET_TYPE_CURVE_H...
+#include <pvt.h>          // for PVT_SUCCESS, reset_tile_pvt_dts_vm
+#include <pvt_struct.h>   // for pvt_alarm_setting_config_t, pvt_thres...
+#include <scp_exp_csr_regs.h>
 #include <silibs_common.h> // for ARRAY_SIZE, MAX
-#include <stdbool.h>       // for bool, true, false
-#include <stddef.h>        // for NULL
-#include <stdint.h>        // for UINT16_MAX, uint16_t, uint8_t, uintptr_t
-#include <string.h>        // for memcpy
+#include <silibs_scp_exp_top_regs.h>
+#include <silibs_scp_top_regs.h>
+#include <stdbool.h> // for bool, true, false
+#include <stddef.h>  // for NULL
+#include <stdint.h>  // for UINT16_MAX, uint16_t, uint8_t, uintptr_t
+#include <string.h>  // for memcpy
 
 /*------------- Typedefs -----------------*/
 
@@ -915,4 +919,52 @@ void core_pll_mask_error_sr(const power_runconfig_t* p_runconfig, int core)
     pll_error_mask.override = (pll_error_mask.as_uint32 != 0) ? 0x1 : 0x0;
 
     pll_regs->pll_error_mask_cr.as_uint32 = pll_error_mask.as_uint32;
+}
+
+void power_hw_clear_force_pmin(power_pmin_type_t type)
+{
+    power_runconfig_t* runconfig = power_runconfig_get();
+    vptr_scp_exp_csr_reg scp_exp_csr_regs_base = (vptr_scp_exp_csr_reg)runconfig->p_sconfig->scp_exp_csr_base;
+
+    switch (type)
+    {
+    case PM_PMIN_ALL:
+        scp_exp_csr_regs_base->force_pmin_reg.as_uint32 = 0;
+        break;
+
+    case PM_LOCKUP_UE_RR:
+        scp_exp_csr_regs_base->force_pmin_reg.lockup_ue_rr = 0;
+        break;
+
+    case PM_FW_PMIN_CONTROL:
+        scp_exp_csr_regs_base->force_pmin_reg.fw_pmin_control = 0;
+        break;
+
+    default:
+        break;
+    }
+}
+
+void power_hw_force_pmin(power_pmin_type_t type)
+{
+    power_runconfig_t* config = power_runconfig_get();
+    // expect that there's never a reason to set all the PMIN bits
+    FPFW_RUNTIME_ASSERT(type != PM_PMIN_ALL);
+
+    vptr_scp_exp_csr_reg scp_exp_csr_regs_base = (vptr_scp_exp_csr_reg)config->p_sconfig->scp_exp_csr_base;
+
+    switch (type)
+    {
+    case PM_LOCKUP_UE_RR:
+        scp_exp_csr_regs_base->force_pmin_reg.lockup_ue_rr = 1;
+
+        break;
+    case PM_FW_PMIN_CONTROL:
+        scp_exp_csr_regs_base->force_pmin_reg.fw_pmin_control = 1;
+        break;
+
+    case PM_PMIN_ALL:
+    default:
+        break;
+    }
 }

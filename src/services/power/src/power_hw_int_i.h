@@ -50,10 +50,40 @@ enum plimit_telem_msg_types {
     PLIMIT_UPDATE_TYPE = 1,
 }; 
 
+
+// Enum for pmin type used in hw interface function
+typedef enum _power_pmin_type_t
+{
+    PM_PMIN_ALL = 0,
+    PM_LOCKUP_UE_RR, //Lockup or UE Or ResetReq
+    PM_FW_PMIN_CONTROL, //Firmware PMIN Control
+} power_pmin_type_t;
+
+
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * @brief Sets force PMIN bit to force HW to minimum (perf) pstate
+ *
+ * @param[in] type   - type of pmin to force
+ *
+ * @return none
+ *
+ */
+void power_hw_force_pmin(power_pmin_type_t type);
+
+/**
+ * @brief Clears force PMIN bit 
+ *  
+ * @param[in] type   - type of pmin to force
+ *
+ * @return none
+ *
+ */
+void power_hw_clear_force_pmin(power_pmin_type_t type);
 
 /**
  * @brief Initializes core-specific power HW (dvfs, odcm, tile pvt, etc)

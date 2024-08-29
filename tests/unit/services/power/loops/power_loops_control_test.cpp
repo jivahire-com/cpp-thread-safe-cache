@@ -18,7 +18,7 @@ extern "C" {
 #include "power_i.h"           // for power_latest_calcs_t
 #include "power_runconfig.h"   // for MIN_PLIMIT, power_service_config_t
 #include "power_runconfig_i.h" // for power_runconfig_t
-
+#include "power_hw_int_i.h"  
 #include <CMockaWrapper.h> // for CmockaWrapperTest, expect_value, will...
 #include <corebits.h>      // for corebits_set_bit
 #include <pid_resource.h>  // for pid_config_t
@@ -342,7 +342,7 @@ POWER_TEST(control_idle_error_handler__enter_exit_error, NULL, NULL)
 {
     // simulate entering error state, then entering idle with last state an error, and entering idle with last
     // state not an error setup error expectation
-    expect_value(__wrap_power_hw_force_pmin, type, PM_PMIN_POWER_CAP);
+    expect_value(__wrap_power_hw_force_pmin, type, PM_FW_PMIN_CONTROL);
     // call error handler
     call_handler(POWER_CONTROL_STATE_ERROR, POWER_CTRL_LOOP_SIGNAL_ENTRY, NULL);
     // setup error expectation (none, nothing should happen if last state is error)
@@ -351,7 +351,7 @@ POWER_TEST(control_idle_error_handler__enter_exit_error, NULL, NULL)
     call_handler(POWER_CONTROL_STATE_IDLE, POWER_CTRL_LOOP_SIGNAL_ENTRY, NULL);
     // setup error expectation
     loop_context(CTRL)->status.last_state = POWER_CONTROL_STATE_EXCHANGE_COMPLETION;
-    expect_value(__wrap_power_hw_clear_force_pmin, type, PM_PMIN_POWER_CAP);
+    expect_value(__wrap_power_hw_clear_force_pmin, type, PM_FW_PMIN_CONTROL);
     call_handler(POWER_CONTROL_STATE_IDLE, POWER_CTRL_LOOP_SIGNAL_ENTRY, NULL);
 }
 

@@ -28,6 +28,7 @@ extern "C" {
 #include <odcm.h>                  // for _ODCM_RETCODE
 #include <odcm_struct.h>           // for ODCM_DEFAULT_CONFIG, odcm_config_t
 #include <pex_regs.h>              // for PEX_CORE_PLL_ADDRESS
+#include <power_hw_int_i.h> 
 #include <power_hw_int_i.h>        // for power_init_core, power_init_soc
 #include <power_i.h>               // for TEMP2DOUT_FUSED
 #include <power_runconfig.h>       // for power_knobs_t, power_fuse_data_t
@@ -36,6 +37,9 @@ extern "C" {
 #include <pvt_struct.h>            // for VOLTS2DOUT, pvt_alarm_setting_con...
 #include <silibs_common.h>         // for ARRAY_SIZE, MAX
 #include <string.h>                // for memset
+#include <scp_exp_csr_regs.h>
+#include <silibs_scp_exp_top_regs.h>
+#include <silibs_scp_top_regs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -65,8 +69,6 @@ static _power_service_config_t s_config = {
 };
 static power_runconfig_t s_runconfig = {.p_sconfig = &s_config};
 
-} // extern "C"
-
 /*------------- Functions ----------------*/
 //
 // Mocks
@@ -75,6 +77,15 @@ static power_runconfig_t s_runconfig = {.p_sconfig = &s_config};
 /*-------- Function Prototypes -----------*/
 
 /*------------- Functions ----------------*/
+
+// wrap for power_runconfig_get
+power_runconfig_t* __wrap_power_runconfig_get()
+{
+    return mock_type(power_runconfig_t*);
+}
+
+} // extern "C"
+
 void base_telemetry()
 {
     memset(&s_telcfg, 0, sizeof(s_telcfg));
@@ -1168,4 +1179,51 @@ POWER_TEST(power_hw_get_adclk_count, setup, teardown)
                 DVFS_SUCCESS); // doesn't matter what we put here, since return from this function is ignored
 
     assert_int_equal(power_hw_get_adclk_count(&s_runconfig, 0), TEST_DROOP_COUNT);
+}
+
+POWER_TEST(power_hw_force_pmin, setup, teardown)
+{
+    scp_exp_csr_reg fake_reg = {{{0}}};
+
+    power_service_config_t sconfig = {.scp_exp_csr_base = (uintptr_t) &(fake_reg)};
+    power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
+
+    scp_exp_csr_force_pmin_reg expected_pmin_reg = {{.fw_pmin_control = 1}};
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+
+    power_hw_force_pmin(PM_FW_PMIN_CONTROL);
+
+    assert_int_equal(fake_reg.force_pmin_reg.fw_pmin_control, expected_pmin_reg.fw_pmin_control);
+    
+    expected_pmin_reg.lockup_ue_rr = 1;
+
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+    power_hw_force_pmin(PM_LOCKUP_UE_RR);
+    
+    assert_int_equal(fake_reg.force_pmin_reg.lockup_ue_rr, expected_pmin_reg.lockup_ue_rr);
+}
+
+POWER_TEST(power_hw_clear_force_pmin, setup, teardown)
+{
+
+    scp_exp_csr_reg fake_reg = {{{0}}};
+    fake_reg.force_pmin_reg.fw_pmin_control = 1;
+    fake_reg.force_pmin_reg.lockup_ue_rr = 1;
+
+    power_service_config_t sconfig = {.scp_exp_csr_base = (uintptr_t) &(fake_reg)};
+    power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
+
+    scp_exp_csr_force_pmin_reg expected_pmin_reg = {{.fw_pmin_control = 0}};
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+
+    power_hw_clear_force_pmin(PM_FW_PMIN_CONTROL);
+
+    assert_int_equal(fake_reg.force_pmin_reg.fw_pmin_control, expected_pmin_reg.fw_pmin_control);
+    
+    expected_pmin_reg.lockup_ue_rr = 0;
+
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+    power_hw_clear_force_pmin(PM_LOCKUP_UE_RR);
+    
+    assert_int_equal(fake_reg.force_pmin_reg.lockup_ue_rr, expected_pmin_reg.lockup_ue_rr);
 }

@@ -74,6 +74,8 @@ mock_target(${TARGET}
     dvfs_telemetry_config
     dvfs_set_plimit
     tile_pvt_dma_config
+    crash_dump_register_pre_dump_callback
+    power_hw_clear_force_pmin
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

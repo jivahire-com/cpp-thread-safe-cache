@@ -18,7 +18,6 @@
 #include <stdbool.h>                // for bool, true
 #include <stdint.h>                 // for uint32_t, int32_t, uint64_t
 #include <string.h>                 // for memcpy, size_t
-
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
@@ -48,7 +47,7 @@ int32_t platform_read_fuse(const uint32_t* target_addr, const uint32_t fuse_bit_
     }
 
     // need valid fuse values for DTS Y/K val
-	const uint32_t tile_y_start = TILE_THERMALS_SENSOR_Y_BIT_OFFSET;
+    const uint32_t tile_y_start = TILE_THERMALS_SENSOR_Y_BIT_OFFSET;
     const uint32_t tile_y_end =
         TILE_THERMALS_SENSOR_Y_BIT_OFFSET + TILE_THERMALS_SENSOR_Y_WIDTH * TILE_THERMALS_SENSOR_Y_ARRAY_ELEMENTS;
     const uint32_t tile_k_start = TILE_THERMALS_SENSOR_K_BIT_OFFSET;
@@ -84,33 +83,4 @@ int32_t platform_read_fuse(const uint32_t* target_addr, const uint32_t fuse_bit_
 
     // Always return Success.
     return FPFW_STATUS_SUCCESS;
-}
-
-// Implement force_pmin
-// TODO ADO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491042/
-void power_hw_clear_force_pmin(power_pmin_type_t type)
-{
-    FPFW_UNUSED(type);
-}
-
-void power_hw_force_pmin(power_pmin_type_t type)
-{
-    FPFW_UNUSED(type);
-}
-
-static bool power_hw_is_io_temp_force_pmin()
-{
-    // TODO ADO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491042/
-    // get implementation from pioneer
-    return false;
-}
-
-void power_hw_check_io_temp_force_pmin(uint16_t max_temp_dC)
-{
-    power_runconfig_t* p_runconfig = power_runconfig_get();
-    // the io_temp bit in force_pmin is sticky, so we need to clear it if it remains set after temp is below hysteresis threshold
-    if ((max_temp_dC < p_runconfig->knobs.soc_temp.hot.hyst_threshold) && power_hw_is_io_temp_force_pmin())
-    {
-        power_hw_clear_force_pmin(PM_PMIN_IOTEMP);
-    }
 }

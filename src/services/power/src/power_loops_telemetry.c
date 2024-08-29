@@ -10,11 +10,11 @@
 /*------------- Includes -----------------*/
 #include "pid_resource.h"
 #include "power_events.h"
+#include "power_hw_int_i.h" // for force pmin
 #include "power_hw_int_i.h"
 #include "power_i.h"
 #include "power_loops_i.h"
 #include "power_runconfig_i.h"
-#include "power_stub_i.h"
 
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
@@ -383,9 +383,6 @@ static void hw_read_pvts()
 
     process_pvt_dts_samples(&dts_samples, &p_runconfig->fuses);
     process_pvt_vm_samples(&vm_samples, p_sconfig);
-
-    // handle clear of force pmin if necessary
-    power_hw_check_io_temp_force_pmin(s_telem_loop.soc_max_temp_dC);
 }
 
 static void hw_send_telemetry(power_telem_type_t type)

@@ -52,6 +52,7 @@ target_link_libraries(${TARGET}
         ms::lib::error_codes
         ms::lib::warm_start
         ms::service::sensor_fifo
+        register_headers
 )
 
 lint_target(${TARGET})

@@ -10,7 +10,7 @@
 /*------------- Includes -----------------*/
 #include "power_test.h" // for POWER_TEST
 #include "power_test_loops.h"
-
+#include "power_hw_int_i.h"  
 #include <cstddef> // for NULL
 
 extern "C" {
@@ -77,11 +77,6 @@ int __wrap_soc_pvt_handle_vm_irq_exclear(uintptr_t soc_pvt_top_base_address, pvt
     memcpy(irq_data, mock_ptr_type(pvt_irq_soc_vm_data_t*), sizeof(pvt_irq_soc_vm_data_t));
     check_expected(clear_status);
     return mock_type(int);
-}
-
-void __wrap_power_hw_check_io_temp_force_pmin(uint16_t max_temp_dC)
-{
-    check_expected(max_temp_dC);
 }
 
 void __wrap_sensor_fifo_svc_add_soc_pvt_temperature(soc_pvt_temp_t* pvt_temperature)
@@ -465,9 +460,6 @@ void setup_expectations_for_read_pvt(bool max_temp)
     expect_value(__wrap_soc_pvt_handle_vm_irq_exclear, clear_status, PVT_IRQ_DONE);
     will_return(__wrap_soc_pvt_handle_vm_irq_exclear, (uintptr_t)&s_vm_samples);
     will_return(__wrap_soc_pvt_handle_vm_irq_exclear, 0);
-
-    // expectations for power_hw_check_io_temp_force_pmin
-    expect_value(__wrap_power_hw_check_io_temp_force_pmin, max_temp_dC, max_temp ? UINT16_MAX : TEST_TEMP_DC);
 }
 
 // tests for pvt_telem_pvt_telemetry_handler

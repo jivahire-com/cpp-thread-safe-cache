@@ -68,6 +68,7 @@ mock_target(${TARGET}
     tile_pvt_init
     tile_pvt_sda_reconfig
     wait_for_FLLCalDone
+    power_runconfig_get
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

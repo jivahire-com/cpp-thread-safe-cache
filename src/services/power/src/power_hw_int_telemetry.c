@@ -92,7 +92,7 @@ static void process_plimit_message(plimit_telem_msg_t* p_msg, power_cores_t* p_c
     switch (p_msg->data.type)
     {
     case PLIMIT_SUCCESS_TYPE:
-        // a success message packet will be sent after evert PLIMIT register write	
+        // a success message packet will be sent after evert PLIMIT register write
         // success messages will always include current CPPC desired perf value, so save it here
         p_cores->core[core_id].desired_pstate = p_msg->data.s_desired_perf;
         if (p_cores->core[core_id].selected_plimit == p_msg->data.plimit)
@@ -108,7 +108,7 @@ static void process_plimit_message(plimit_telem_msg_t* p_msg, power_cores_t* p_c
         else
         {
             // this is unexpected, but keep the print for early HW issues
-			// if it does happen, control loop will retry due to success bit not being set
+            // if it does happen, control loop will retry due to success bit not being set
             POWER_LOG_WARN("plimit success core%d selected %d != success %d",
                            core_id,
                            p_cores->core[core_id].selected_plimit,
@@ -116,7 +116,7 @@ static void process_plimit_message(plimit_telem_msg_t* p_msg, power_cores_t* p_c
         }
         break;
     case PLIMIT_UPDATE_TYPE:
-	    // update message packets will be sent when a CPPC register is update in DVFS NON-SEC (OS write)
+        // update message packets will be sent when a CPPC register is update in DVFS NON-SEC (OS write)
         p_cores->core[core_id].desired_pstate = p_msg->data.cppc_update_msg.desired_perf;
         p_cores->core[core_id].current_throt_priority = p_msg->data.cppc_update_msg.throttle_pri;
         p_cores->core[core_id].current_boost_priority = p_msg->data.cppc_update_msg.boost_pri;

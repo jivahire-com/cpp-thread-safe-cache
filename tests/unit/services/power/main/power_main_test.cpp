@@ -20,6 +20,7 @@ extern "C" {
 #include <DfwkCommon.h>        // for PDFWK_DEVICE_HEADER, DFWK_ASYNC_REQUE...
 #include <odcm_struct.h>       // for odcm_telem_config_t
 #include <power_dfwk.h>        // for power_service_t, power_service_interf...
+#include <power_hw_int_i.h>   
 #include <power_hw_int_i.h>    // for power_telcfg_t
 #include <power_i.h>           // for power_init, power_interface_init
 #include <power_init.h>        // for power_init, power_interface_init
@@ -36,7 +37,6 @@ extern "C" {
 
 /*-------- Function Prototypes -----------*/
 void __real_power_runconfig_init(const power_service_config_t* p_config);
-
 /*-- Declarations (Statics and globals) --*/
 
 DFWK_ASYNC_REQUEST_DISPATCH s_dispatch_routine = NULL;
@@ -48,6 +48,13 @@ const power_telcfg_t* sp_telemetry_config;
 // Mocks
 //
 extern "C" {
+
+void __wrap_power_hw_clear_force_pmin(power_pmin_type_t type)
+{
+    function_called();
+    check_expected(type);
+}
+
 // wrapper function that checks expected values for the incoming parameters
 void __wrap_DfwkInterfaceInitialize(PDFWK_INTERFACE_HEADER Interface,
                                     PDFWK_DEVICE_HEADER Device,
@@ -228,6 +235,13 @@ void __wrap_power_loops_telemetry_init()
     function_called();
 }
 
+void __wrap_crash_dump_register_pre_dump_callback(void cb(void*), void* ctx)
+{
+    FPFW_UNUSED(ctx);
+    FPFW_UNUSED(cb);
+    function_called();
+}
+
 } // extern "C"
 
 //
@@ -255,7 +269,8 @@ POWER_TEST(init, NULL, NULL)
     expect_function_call(__wrap_power_loops_init);
     expect_function_call(__wrap_power_loops_control_init);
     expect_function_call(__wrap_power_loops_telemetry_init);
-
+    expect_function_call(__wrap_crash_dump_register_pre_dump_callback);
+    
     power_init(&test_device, &test_schedule, &test_config);
 }
 
@@ -297,6 +312,7 @@ POWER_TEST(init_ws, NULL, NULL)
     expect_function_call(__wrap_power_loops_init);
     expect_function_call(__wrap_power_loops_control_init);
     expect_function_call(__wrap_power_loops_telemetry_init);
+    expect_function_call(__wrap_crash_dump_register_pre_dump_callback);
 
     power_init(&test_device, &test_schedule, &test_config);
 }
@@ -321,6 +337,8 @@ POWER_TEST(init_ap_soc, NULL, NULL)
 
     expect_function_call(__wrap_power_telemetry_enable);
     expect_function_call(__wrap_power_timer_start_loop_timers);
+    expect_function_call(__wrap_power_hw_clear_force_pmin);
+    expect_value(__wrap_power_hw_clear_force_pmin, type, PM_PMIN_ALL);
 
     power_ap_soc_init();
 }
@@ -345,6 +363,8 @@ POWER_TEST(init_ap_soc_ws, NULL, NULL)
     expect_function_call(__wrap_tile_pvt_dma_config);
     expect_function_call(__wrap_power_telemetry_enable);
     expect_function_call(__wrap_power_timer_start_loop_timers);
+    expect_function_call(__wrap_power_hw_clear_force_pmin);
+    expect_value(__wrap_power_hw_clear_force_pmin, type, PM_PMIN_ALL);
 
     power_ap_soc_init();
 }

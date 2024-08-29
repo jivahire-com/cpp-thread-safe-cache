@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include "pid_resource.h"
 #include "power_events.h"
+#include "power_hw_int_i.h" // for force pmin
 #include "power_hw_int_i.h"
 #include "power_i.h"
 #include "power_loops_i.h"
@@ -117,7 +118,7 @@ static void idle_handler(int event, const void* event_data)
         {
             s_ctrl_loop.loop_failure = false;
             // clear HW signal
-            power_hw_clear_force_pmin(PM_PMIN_POWER_CAP);
+            power_hw_clear_force_pmin(PM_FW_PMIN_CONTROL);
         }
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
@@ -592,7 +593,7 @@ static void error_handler(int event, const void* event_data)
         // force pmin with HW signal
         s_ctrl_loop.loop_failure = true;
         s_ctrl_loop.loop_fail_query |= true; // shouldn't be cleared until queried
-        power_hw_force_pmin(PM_PMIN_POWER_CAP);
+        power_hw_force_pmin(PM_FW_PMIN_CONTROL);
         POWER_ET_ERROR(POWER_ET_TYPE_CTRLLOOP_ERROR_ENTRY,
                        POWER_ET_ENCODE_RETRIES_STATE(s_control_loop_context.status.retries[POWER_LOOP_RETRY_TYPE_INTERVAL],
                                                      s_control_loop_context.status.last_state));

@@ -18,14 +18,6 @@
 /*-------------- Typedefs ----------------*/
 //#define POWER_FUSE_PLAT_STUB_WAR        1
 
-// Enum for pmin type used in hw interface function
-typedef enum _power_pmin_type_t
-{
-    PM_PMIN_ALL = 0,
-    PM_PMIN_IOTEMP,
-    PM_PMIN_POWER_CAP,
-} power_pmin_type_t;
-
 /*--------- Function Prototypes ----------*/
 
 /**
@@ -47,34 +39,3 @@ bool power_fuses_is_power_hw_supported();
  * @return FPFW_STATUS_SUCCESS or FPFW_STATUS_INVALID_ARGS
  */
 int32_t platform_read_fuse(const uint32_t * target_addr, const uint32_t fuse_bit_offset, const uint32_t fuse_bit_size);
-
-/**
- * @brief Sets force PMIN bit to force HW to minimum (perf) pstate
- *
- * @param[in] type   - type of pmin to force
- *
- * @return none
- *
- */
-void power_hw_force_pmin(power_pmin_type_t type);
-
-/**
- * @brief Clears force PMIN bits to enable HW to leave minimum (perf) pstate
- *
- * @param[in] type   - type of pmin to force
- *
- * @return none
- *
- */
-void power_hw_clear_force_pmin(power_pmin_type_t type);
-
-/**
- * @brief Clears force PMIN io_temp bit (if set) when SOC TOP (io) temps are below hysteresis value to allow HW to leave minimum (perf)
- * pstate
- *
- * @param[in] max_temp_dC   - current max temp in 0.1 degrees C
- * 
- * @return none
- *
- */
-void power_hw_check_io_temp_force_pmin(uint16_t max_temp_dC);

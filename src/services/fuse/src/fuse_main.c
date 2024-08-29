@@ -187,7 +187,7 @@ int platform_fuse_override()
     FUSE_ET_STATUS(FUSE_ET_TYPE_OVERRIDE_COMPLETE);
     return status;
 }
-int platform_fuse_distribution(void)
+int platform_fuse_distribution(int stage)
 {
     int status = 0;
     const fuse_dist_exclude_range_t* fuse_dist_exclude_list = NULL;
@@ -221,45 +221,50 @@ int platform_fuse_distribution(void)
     FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_START);
     if (platform_requires_fuse_distribution())
     {
-        status = distribute_fuses(die_id, POST_HSP_DIST_MAJOR, POST_HSP_DIST_MINOR, fuse_dist_exclude_list, exclude_list_count);
-        FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR0);
-        if (status != SILIBS_SUCCESS)
+        if (stage == 0)
         {
-            return status;
+            status = distribute_fuses(die_id, POST_HSP_DIST_MAJOR, POST_HSP_DIST_MINOR, fuse_dist_exclude_list, exclude_list_count);
+            FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR0);
+            if (status != SILIBS_SUCCESS)
+            {
+                return status;
+            }
+            printf(FUSE_NAME "Phase 0 fuse distribution complete\n");
         }
-        printf(FUSE_NAME "Phase 0 fuse distribution complete\n");
-        status = distribute_fuses(die_id, POST_HSP_DIST_MAJOR, MESH_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
-        FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR1);
-        if (status != SILIBS_SUCCESS)
+        else if (stage == 1)
         {
-            return status;
+            status = distribute_fuses(die_id, POST_HSP_DIST_MAJOR, MESH_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
+            FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR1);
+            if (status != SILIBS_SUCCESS)
+            {
+                return status;
+            }
+            printf(FUSE_NAME "Phase 1 fuse distribution complete\n");
+
+            status = distribute_fuses(die_id, POST_MESH_INIT_MAJOR, POST_MESH_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
+            FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR4_MINOR0);
+            if (status != SILIBS_SUCCESS)
+            {
+                return status;
+            }
+            printf(FUSE_NAME "Phase 2 fuse distribution complete\n");
+
+            status = distribute_fuses(die_id, POST_MESH_INIT_MAJOR, POST_BRIDGE_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
+            FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR4_MINOR1);
+
+            if (status != SILIBS_SUCCESS)
+            {
+                return status;
+            }
+            printf(FUSE_NAME "Phase 3 fuse distribution complete\n");
+
+            // TODO Task: Integrate with ICC for HSP mailbox load of override
+            // https://azurecsi.visualstudio.com/Dev/_workitems/edit/1884658
+            // status = write_fuse_info_to_spi();
         }
-        printf(FUSE_NAME "Phase 1 fuse distribution complete\n");
-
-        status = distribute_fuses(die_id, POST_MESH_INIT_MAJOR, POST_MESH_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
-        FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR4_MINOR0);
-        if (status != SILIBS_SUCCESS)
-        {
-            return status;
-        }
-        printf(FUSE_NAME "Phase 2 fuse distribution complete\n");
-
-        status = distribute_fuses(die_id, POST_MESH_INIT_MAJOR, POST_BRIDGE_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
-        FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR4_MINOR1);
-
-        if (status != SILIBS_SUCCESS)
-        {
-            return status;
-        }
-        printf(FUSE_NAME "Phase 3 fuse distribution complete\n");
-
-        // TODO Task: Integrate with ICC for HSP mailbox load of override
-        // https://azurecsi.visualstudio.com/Dev/_workitems/edit/1884658
-        // status = write_fuse_info_to_spi();
+        printf(FUSE_NAME "fuse distribution complete \n");
+        FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_END);
     }
-    printf(FUSE_NAME "fuse distribution complete \n");
-    FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_END);
-
     return status;
 }
 // This placeholder here is to verify the Fuse event trace log

@@ -37,12 +37,12 @@ int platform_fuse_override(void);
  *
  * Description:
  *      This API will return the value of the fuse override result.
- *
+ *      stage (0 -> distribute to MSCP 1-> distribute from HNP to the last 2-> All distribute)
  *
  * @return FPFW_INIT_STATUS_SUCCES on success
  *
  */
-int platform_fuse_distribution(void);
+int platform_fuse_distribution(int stage);
 /**
  * Read fuse API
  *

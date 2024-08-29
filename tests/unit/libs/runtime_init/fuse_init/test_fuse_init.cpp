@@ -46,6 +46,17 @@ void __wrap_fuse_init(fpfw_icc_base_ctx_t* icc_base_ctx)
     check_expected_ptr(icc_base_ctx);
 }
 
+int __wrap_platform_fuse_override(void)
+{
+    return mock_type(int);
+}
+
+int __wrap_platform_fuse_distribution(int stage)
+{
+    check_expected(stage);
+    return mock_type(int);
+}
+
 FPFW_CLI_STATUS __wrap_platform_fuse_init_cli(void)
 {
     function_called();
@@ -62,6 +73,9 @@ TEST_FUNCTION(test_fuse_svc_init, NULL, NULL)
     will_return(__wrap_fpfw_init_get_handle, dummy_icc_hspmbx_ctx);
     expect_function_call(__wrap_fpfw_init_get_handle);
     expect_value(__wrap_fuse_init, icc_base_ctx, dummy_icc_hspmbx_ctx);
+    will_return(__wrap_platform_fuse_override, CLI_SUCCESS);
+    expect_value(__wrap_platform_fuse_distribution,stage,0);
+    will_return(__wrap_platform_fuse_distribution, CLI_SUCCESS);
     _fpfw_component_fuse_svc.init_fn();
 }
 
@@ -69,7 +83,8 @@ TEST_FUNCTION(test_cli_fuse_init, NULL, NULL)
 {
     expect_function_call(__wrap_platform_fuse_init_cli);
     will_return(__wrap_platform_fuse_init_cli, CLI_SUCCESS);
-
+    expect_value(__wrap_platform_fuse_distribution,stage,1);
+    will_return(__wrap_platform_fuse_distribution, CLI_SUCCESS);
     _fpfw_component_cli_fuse.init_fn();
 }
 }

@@ -48,6 +48,8 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
    fpfw_init_get_handle
    fuse_init
+   platform_fuse_override
+   platform_fuse_distribution
    platform_fuse_init_cli
 
 )

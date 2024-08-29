@@ -10,6 +10,7 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET}
     PRIVATE
         atu
+        fwlib.service.iccBase
         silibs::idsw
         silibs::idsw_kng
         smmu
@@ -17,10 +18,16 @@ target_link_libraries(${TARGET}
         sdm_init
         tower_vab
         ms::lib::accelerator_ip
+        ms::lib::hsp_firmware_headers
         ms::lib::system_info
         ms::lib::utils
         ms::cmocka::testrunner
         kng_silibs_platform
+    PUBLIC
+        fwlib.lib.assert
+        fwlib.dfwk
+        fwlib.lib.linkedlist
+        fwlib.lib.utils
 )
 
 # Defining platform APIs
@@ -36,6 +43,7 @@ unit_test_target(${TARGET})
 
 # Mock the functions needed
 mock_target(${TARGET}
+    accel_intr_get_atu_mapped_cfg_address
     atu_map
     atu_unmap
     configure_cdedss_hsp_system_addr_map
@@ -51,4 +59,11 @@ mock_target(${TARGET}
     system_info_is_hsp_present
     accelip_ss_init
     accel_intr_irq_init
+    fpfw_icc_base_send
+    fpfw_icc_base_recv
+    fpfw_init_get_handle
+    sdm_init_disable_cpu_wait
+    sdm_init_enable_fence
+    sdm_init_deassert_nsysreset
+    system_info_is_hsp_present
 )

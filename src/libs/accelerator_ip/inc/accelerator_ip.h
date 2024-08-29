@@ -49,6 +49,13 @@ typedef enum {
 } eACCELERATOR_TYPE;
 
 typedef struct {
+    uintptr_t itcm_bin_addr;
+    uintptr_t itcm_bin_size;
+    uintptr_t dtcm_bin_addr;
+    uintptr_t dtcm_bin_size;
+} accelip_mem_info_t;
+
+typedef struct {
     DIE_INSTANCE        die_instance;
     ACCELIP_SS_INSTANCE   accel_type;
     uint8_t             accel_instance;
@@ -58,7 +65,10 @@ typedef struct {
     accelip_metadata_t   accelip_metadata;
     const atu_map_entry_t  *p_accelip_atu_map;
     accelip_ss_init_t   *p_init_params;
+    accelip_mem_info_t mem_info;
 } subsystem_ctxt_t;
+
+typedef void (*crash_dump_cb_t)(void *);
 
 /*------------------- Declarations (Statics and globals) --------------------*/
 
@@ -101,3 +111,19 @@ int32_t scp_accelerators_init(void);
  */
 int32_t scp_accelerators_isolation_control(void);
 
+/**
+ * @brief Accelerator EMCPU recovery flow
+ *
+ * \b Description:
+ * This function is invoked when the EMCPU encounters a fatal and has to be reset
+ *
+ * @param[in] accel_type - Accelerator the EMCPU belongs to
+ * 
+ * @param[in] cb_fun - Callback to be invoked when recovery sequence is completed
+ * 
+ * @param[in] cb_ctx - Context to be passed to the callback function
+ *
+ * @retval
+ *  No return value
+ */
+void scp_accelerators_emcpu_reset(eACCELERATOR_TYPE accel_type, crash_dump_cb_t cb_fun, void *cb_ctx);

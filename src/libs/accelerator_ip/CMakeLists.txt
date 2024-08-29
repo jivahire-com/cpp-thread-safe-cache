@@ -20,6 +20,9 @@ target_include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/inc_priv
 )
 
+# @todo remove after completing task https://azurecsi.visualstudio.com/Dev/_workitems/edit/1933312/
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)
+
 target_link_libraries(
     ${TARGET}
     PUBLIC
@@ -30,7 +33,15 @@ target_link_libraries(
         silibs::sdm_init
     PRIVATE
         fwlib.lib.assert
+        fwlib.driver.mboxIccTransport
+        fwlib.lib.init
+        fwlib.service.icc_dispatcher
+        fwlib.service.iccBase
+        kng.lib.crash_dump.scp
         ms::lib::debug
+        ms::lib::error_codes
+        ms::lib::hsp_firmware_headers
+        ms::lib::register_headers
         ms::lib::utils
         ms::lib::system_info
         silibs::idsw
@@ -45,7 +56,6 @@ target_link_libraries(
         silibs::tower_vab
         silibs::vab_pcr_init
         silibs_platform
-        ms::lib::register_headers
 )
 
 lint_target(${TARGET})

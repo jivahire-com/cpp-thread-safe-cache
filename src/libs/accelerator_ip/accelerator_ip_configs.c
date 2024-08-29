@@ -251,12 +251,19 @@ static accelip_ss_init_t die0_cdedss_init_params_ctxt = {
 /****** CDEDSS context data end ******/
 
 /* ---- Sub-system Context data-structures across Die's --------------------- */
+// TODO: ADO: 1984962 Replace the ITCM/DTCM address and sizes with appropriate values
 static subsystem_ctxt_t ss_ctxts[] = {
     // D0 SDMSS Instance 0
-    {{.die_instance = SOC_D0, .accel_type = D0_ACCELIP_SDMSS, .accel_instance = 0}, &die0_sdmss_atu_map, &die0_sdmss_init_params_ctxt},
+    {{.die_instance = SOC_D0, .accel_type = D0_ACCELIP_SDMSS, .accel_instance = 0},
+     &die0_sdmss_atu_map,
+     &die0_sdmss_init_params_ctxt,
+     {.itcm_bin_addr = 0x0, .itcm_bin_size = 0x0, .dtcm_bin_addr = 0x0, .dtcm_bin_size = 0x0}},
 
     // D0 CDEDSS Instance 0
-    {{.die_instance = SOC_D0, .accel_type = D0_ACCELIP_CDEDSS, .accel_instance = 0}, &die0_cdedss_atu_map, &die0_cdedss_init_params_ctxt},
+    {{.die_instance = SOC_D0, .accel_type = D0_ACCELIP_CDEDSS, .accel_instance = 0},
+     &die0_cdedss_atu_map,
+     &die0_cdedss_init_params_ctxt,
+     {.itcm_bin_addr = 0x0, .itcm_bin_size = 0x0, .dtcm_bin_addr = 0x0, .dtcm_bin_size = 0x0}},
 
     // TBD
     // D1 SDMSS Instance 0

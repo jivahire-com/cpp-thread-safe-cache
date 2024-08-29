@@ -70,7 +70,7 @@ jobs:
 
           flashscpfw ${{ parameters.TestAgent }}
 
-          Invoke-Pythia -test ${{ parameters.Test_Suite_Path }}\${{ parameters.Platform }} -platform ${{ parameters.Platform }}
+          Invoke-Pythia -test ${{ parameters.Test_Suite_Path }} -platform ${{ parameters.Platform }}
 
           # Remove intermediate output / output that contains system variables (ie: Azure credentials)
           Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\output.xml"

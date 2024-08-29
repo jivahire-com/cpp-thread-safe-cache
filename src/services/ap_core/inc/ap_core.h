@@ -37,6 +37,7 @@ typedef struct _ap_core_asynchronous_request_t
 } ap_core_asynchronous_request_t, *pap_core_asynchronous_request_t;
 
 /*-- Declarations (Statics and globals) --*/
+#define DEFAULT_POWER_TRANSITION_TIMEOUT_MS 10*1000
 
 /*--------- Function Prototypes ----------*/
 

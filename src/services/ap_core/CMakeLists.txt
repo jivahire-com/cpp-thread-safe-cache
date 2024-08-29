@@ -47,6 +47,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.service.iccBase
         ms::build_data
+        ms::lib::utils
         ms::lib::crash_dump::scp
         ms::lib::hsp_firmware_headers
         ms::lib::error_codes

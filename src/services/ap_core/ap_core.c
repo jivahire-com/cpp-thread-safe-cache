@@ -60,7 +60,7 @@ static void ap_core_dispatch_core_power_on(pap_core_asynchronous_request_t p_req
     APCORE_LOG_INFO("Core power on, core ID %u", (unsigned)p_request->data.core_id);
 
     // power on core
-    ap_core_ppu_core_set_power_state(&s_ap_core_ctx, p_request->data.core_id, true);
+    ap_core_ppu_core_set_power_state(&s_ap_core_ctx, p_request->data.core_id, true, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
     // complete p_request; for local cores, there's nothing to wait on
     // TODO: revisit for multi-die
     //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/1869647
@@ -73,7 +73,7 @@ static void ap_core_dispatch_core_power_off(pap_core_asynchronous_request_t p_re
     APCORE_LOG_INFO("Core power off, core ID %u", (unsigned)p_request->data.core_id);
 
     // power on core
-    ap_core_ppu_core_set_power_state(&s_ap_core_ctx, p_request->data.core_id, false);
+    ap_core_ppu_core_set_power_state(&s_ap_core_ctx, p_request->data.core_id, false, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
     // complete p_request; for local cores, there's nothing to wait on
     // TODO: revisit for multi-die
     //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/1869647
@@ -85,7 +85,7 @@ static void ap_core_ssi_start_cluster_init(pssi_startup_notification_request_t p
 {
     // turn on cluster PPUs
     APCORE_LOG_INFO("Cluster power on");
-    ap_core_ppu_clusters_on(&s_ap_core_ctx);
+    ap_core_ppu_clusters_on(&s_ap_core_ctx, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
     // for now, PPU is synchronous
     DfwkAsyncRequestComplete(&p_request->header);
 }
@@ -96,7 +96,7 @@ static void ap_core_ssi_start_primary_ap_core_boot(pssi_startup_notification_req
     unsigned int boot_core = ap_core_util_boot_core(&s_ap_core_ctx);
     APCORE_LOG_INFO("Primary AP core power on (%d)", boot_core);
     ap_core_util_set_rvbaraddr(&s_ap_core_ctx, boot_core, s_ap_core_ctx.p_config->boot_core_rvbaraddr);
-    ap_core_ppu_core_set_power_state(&s_ap_core_ctx, boot_core, true);
+    ap_core_ppu_core_set_power_state(&s_ap_core_ctx, boot_core, true, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
     // for now, PPU is synchronous
     DfwkAsyncRequestComplete(&p_request->header);
 }

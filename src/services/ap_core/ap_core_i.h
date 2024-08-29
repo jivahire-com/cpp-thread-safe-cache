@@ -49,8 +49,8 @@ typedef struct
 /*--------- Function Prototypes ----------*/
 
 void ap_core_ppu_init(ap_core_service_context_t *p_context);
-void ap_core_ppu_clusters_on(ap_core_service_context_t* p_context);
-void ap_core_ppu_core_set_power_state(ap_core_service_context_t* p_context, unsigned core_idx, bool power_state_on);
+void ap_core_ppu_clusters_on(ap_core_service_context_t* p_context, uint32_t timeout_ms);
+void ap_core_ppu_core_set_power_state(ap_core_service_context_t* p_context, unsigned core_idx, bool power_state_on, uint32_t timeout_ms);
 
 unsigned int ap_core_util_boot_core(ap_core_service_context_t* p_context);
 void ap_core_util_set_rvbaraddr(ap_core_service_context_t* p_context, unsigned core_idx, uint64_t rvbaraddr);

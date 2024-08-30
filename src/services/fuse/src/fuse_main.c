@@ -106,7 +106,7 @@ static int read_override_from_spi()
     static kng_hsp_mailbox_cmd_load_fw_req send_request = {
         .header.cmd = HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ,
         .header.context = 0,
-        .id = HspFirmwareIdFuseOverrideDie0,
+        .id = HSP_FIRMWARE_ID_FUSE_OVERRIDE_DIE_0,
         // Todo The HSP need to decide the address is
         // https://azurecsi.visualstudio.com/Dev/_workitems/edit/1937493
         .address = SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS,

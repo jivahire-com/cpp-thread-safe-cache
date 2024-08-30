@@ -119,8 +119,13 @@ static void request_send_complete_cb(void* context, fpfw_status_t status);
 
 // TODO ADO: 1994002
 static emcpu_mbox_buffs_t mbox_buffs[MAX_ACCELERATOR_TYPES] = {
-    {.send_buff = {.header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ, .context = 0}, .id = HspFirmwareIdSdm}},
-    {.send_buff = {.header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ, .context = 0}, .id = HspFirmwareIdCded}}};
+    {.send_buff =
+         {
+             .header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ, .context = 0},
+         }},
+    {.send_buff = {
+         .header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ, .context = 0},
+     }}};
 
 static emcpu_rst_struct_t cpu_rst_info[MAX_ACCELERATOR_TYPES] = {
     {.mbox_params = {.recv_params = {.payload_buffer = &mbox_buffs[ACCELERATOR_SDMSS].recv_buff,
@@ -412,12 +417,16 @@ static void invoke_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
         cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_DTCM_LOAD;
         mbox_buffs[accel_type].send_buff.address = p_ss_ctxt->mem_info.itcm_bin_addr;
         mbox_buffs[accel_type].send_buff.size = p_ss_ctxt->mem_info.itcm_bin_size;
+        mbox_buffs[accel_type].send_buff.id =
+            accel_type == ACCELERATOR_SDMSS ? HSP_FIRMWARE_ID_SDM_ITCM : HSP_FIRMWARE_ID_CDED_ITCM;
         cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_ITCM_FW_LOAD_INVOKED;
         break;
     case EMCPU_DTCM_LOAD:
         cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_LOAD_MAX;
         mbox_buffs[accel_type].send_buff.address = p_ss_ctxt->mem_info.dtcm_bin_addr;
         mbox_buffs[accel_type].send_buff.size = p_ss_ctxt->mem_info.dtcm_bin_size;
+        mbox_buffs[accel_type].send_buff.id =
+            accel_type == ACCELERATOR_SDMSS ? HSP_FIRMWARE_ID_SDM_DTCM : HSP_FIRMWARE_ID_CDED_DTCM;
         cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_DTCM_FW_LOAD_INVOKED;
         break;
     case EMCPU_LOAD_MAX:

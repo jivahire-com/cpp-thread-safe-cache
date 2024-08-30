@@ -45,8 +45,11 @@ typedef enum _ssi_startup_stage
     STARTUP_AP_SOC_POWER_INIT,
     STARTUP_PHASE_AP_ASYNC = 0x100, /* Phase included in cold boot and AP warm reset */
     STARTUP_BL31_LOAD,
-    STARTUP_BL32_LOAD,
+    STARTUP_STMM_LOAD,
     STARTUP_BL33_LOAD,
+    STARTUP_HAFNIUM_LOAD,
+    STARTUP_RMM_LOAD,
+    STARTUP_SPMC_LOAD,
     STARTUP_PRIMARY_AP_CORE_BOOT,
 } ssi_startup_stage_t;
 

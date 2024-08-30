@@ -336,16 +336,22 @@ TEST_FUNCTION(accelip_emcpu_reset_cded_test, init_accelerators_to_setup_cfg_mem,
     will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_RSP);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 
-    kng_hsp_mailbox_cmd_load_fw_req send_request = {
+    kng_hsp_mailbox_cmd_load_fw_req send_request1 = {
         .header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ, .context = 0x0},
-        .id = HspFirmwareIdSdm,
+        .id = HSP_FIRMWARE_ID_SDM_ITCM,
         .address = 0x00000000,
         .size = 0x00000000,
     };
-    expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request, sizeof(send_request));
+    expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request1, sizeof(send_request1));
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
 
-    expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request, sizeof(send_request));
+    kng_hsp_mailbox_cmd_load_fw_req send_request2 = {
+        .header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ, .context = 0x0},
+        .id = HSP_FIRMWARE_ID_SDM_DTCM,
+        .address = 0x00000000,
+        .size = 0x00000000,
+    };
+    expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request2, sizeof(send_request2));
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
 
     scp_accelerators_emcpu_reset(ACCELERATOR_SDMSS, cb_fun, NULL);
@@ -379,16 +385,22 @@ TEST_FUNCTION(accelip_emcpu_reset_sdm_test, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_RSP);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 
-    kng_hsp_mailbox_cmd_load_fw_req send_request = {
+    kng_hsp_mailbox_cmd_load_fw_req send_request1 = {
         .header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ, .context = 0x0},
-        .id = HspFirmwareIdCded,
+        .id = HSP_FIRMWARE_ID_CDED_ITCM,
         .address = 0x00000000,
         .size = 0x00000000,
     };
-    expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request, sizeof(send_request));
+    expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request1, sizeof(send_request1));
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
 
-    expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request, sizeof(send_request));
+    kng_hsp_mailbox_cmd_load_fw_req send_request2 = {
+        .header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ, .context = 0x0},
+        .id = HSP_FIRMWARE_ID_CDED_DTCM,
+        .address = 0x00000000,
+        .size = 0x00000000,
+    };
+    expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request2, sizeof(send_request2));
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
 
     scp_accelerators_emcpu_reset(ACCELERATOR_CDEDSS, cb_fun, NULL);

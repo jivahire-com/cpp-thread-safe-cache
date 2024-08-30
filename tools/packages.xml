@@ -8,10 +8,10 @@
 
     <nuget_packages>
         <package name="1pfw.tools.win64" version="1.0.153" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/nuget/v3/index.json"/>
-        <package name="kingsgate.hsp.headers.release" version="0.8.0.37" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
-        <package name="kingsgate.sprt.release" version="0.8.0.37" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
-        <package name="kingsgate.firmware.a0rom" version="0.9.0.5" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
-        <package name="kingsgate.headers.a0rom" version="0.9.0.5" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
+        <package name="kingsgate.hsp.headers.release" version="0.8.0.54" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
+        <package name="kingsgate.sprt.release" version="0.8.0.54" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
+        <package name="kingsgate.firmware.a0rom" version="0.9.0.170" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
+        <package name="kingsgate.headers.a0rom" version="0.9.0.170" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
     </nuget_packages>
 
     <git>

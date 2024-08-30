@@ -76,7 +76,7 @@ bool send_post_code(boot_status_code_t boot_post_code, bool is_scp, bool is_fata
         .header.seq = 0,
         .header.context = 0,
         .header.flags = 0,
-        .id = is_scp ? HspFirmwareIdScp : HspFirmwareIdMcp,
+        .id = is_scp ? HSP_FIRMWARE_ID_SCP : HSP_FIRMWARE_ID_MCP,
         .boot_status = boot_post_code,
         .boot_status_ex = is_fatal ? HSP_MBOX_STATUS_FATAL : HSP_MBOX_STATUS_NOT_FATAL};
     kng_hsp_mailbox_msg hsp_mbox_rsp;

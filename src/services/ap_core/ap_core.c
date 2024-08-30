@@ -144,7 +144,62 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
             }
 
             // request TFA firmware load (BL31)
-            ap_core_request_load_tfa(s_icc_base_ctx);
+            ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_BL31);
+            break;
+        case STARTUP_STMM_LOAD:
+            if (!system_info_is_hsp_present())
+            {
+                // if no HSP is present, just complete p_request
+                DfwkAsyncRequestComplete(p_request);
+                break;
+            }
+
+            // request STMM firmware load
+            ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_STMM);
+            break;
+        case STARTUP_BL33_LOAD:
+            if (!system_info_is_hsp_present())
+            {
+                // if no HSP is present, just complete p_request
+                DfwkAsyncRequestComplete(p_request);
+                break;
+            }
+
+            // request BL33 firmware load
+            ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_BL33);
+            break;
+        case STARTUP_HAFNIUM_LOAD:
+            if (!system_info_is_hsp_present())
+            {
+                // if no HSP is present, just complete p_request
+                DfwkAsyncRequestComplete(p_request);
+                break;
+            }
+
+            // request Hafnium firmware load
+            ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_HAFNIUM);
+            break;
+        case STARTUP_RMM_LOAD:
+            if (!system_info_is_hsp_present())
+            {
+                // if no HSP is present, just complete p_request
+                DfwkAsyncRequestComplete(p_request);
+                break;
+            }
+
+            // request RMM firmware load
+            ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_RMM);
+            break;
+        case STARTUP_SPMC_LOAD:
+            if (!system_info_is_hsp_present())
+            {
+                // if no HSP is present, just complete p_request
+                DfwkAsyncRequestComplete(p_request);
+                break;
+            }
+
+            // request SPMC manifest load
+            ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_SPMC);
             break;
         case STARTUP_MCP_LOAD:
             if (!system_info_is_hsp_present())
@@ -154,7 +209,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
                 break;
             }
 
-            ap_core_request_mcp_load(s_icc_base_ctx);
+            ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_MCP);
             break;
         default:
             // nothing to do for other types.

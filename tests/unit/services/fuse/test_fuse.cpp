@@ -214,7 +214,7 @@ TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
     kng_hsp_mailbox_cmd_load_fw_req send_request = {
         .header.cmd = HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ,
         .header.context = 0,
-        .id = HspFirmwareIdFuseOverrideDie0,
+        .id = HSP_FIRMWARE_ID_FUSE_OVERRIDE_DIE_0,
         .address = SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS,
         .size = SCP_EXP_TOP_RAM1_SIZE,
     };
@@ -420,7 +420,7 @@ TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
     kng_hsp_mailbox_cmd_load_fw_req send_request = {
         .header.cmd = HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ,
         .header.context = 0,
-        .id = HspFirmwareIdFuseOverrideDie0,
+        .id = HSP_FIRMWARE_ID_FUSE_OVERRIDE_DIE_0,
         .address = SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS,
         .size = SCP_EXP_TOP_RAM1_SIZE,
     };

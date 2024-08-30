@@ -44,6 +44,17 @@ typedef struct
     pap_core_asynchronous_request_t outstanding_request;
 } ap_core_service_context_t, *pap_core_service_context_t;
 
+typedef enum {
+    AP_FW_ID_BL31 = 0,
+    AP_FW_ID_STMM,
+    AP_FW_ID_BL33,
+    AP_FW_ID_HAFNIUM,
+    AP_FW_ID_RMM,
+    AP_FW_ID_SPMC,
+    AP_FW_ID_MCP,
+    AP_FW_ID_MAX,
+} ap_fw_id_t;
+
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
@@ -56,6 +67,6 @@ unsigned int ap_core_util_boot_core(ap_core_service_context_t* p_context);
 void ap_core_util_set_rvbaraddr(ap_core_service_context_t* p_context, unsigned core_idx, uint64_t rvbaraddr);
 void ap_core_util_set_all_rvbaraddr(ap_core_service_context_t* p_context, uint64_t rvbaraddr);
 void ap_core_util_get_fuse_enabled_cores(corebits_t *p_enabled_cores);
-void ap_core_request_load_tfa(fpfw_icc_base_ctx_t* icc_hspmbx_ctx);
+void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t fw_id);
 void ap_core_request_mcp_load(fpfw_icc_base_ctx_t* icc_hspmbx_ctx);
 pap_core_asynchronous_request_t ap_core_get_outstanding_request();

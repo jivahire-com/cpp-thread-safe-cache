@@ -200,6 +200,9 @@ TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RTL_SIM);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    
+    // TODO: reinstate with // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2002810
+    /*
     will_return_always(__wrap_fuse_dma_copy_to_ram_blocking, 0);
     expect_value(__wrap_read_fuse, fuse_bit_offset, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET);
     expect_value(__wrap_read_fuse, fuse_bit_size, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
@@ -225,6 +228,7 @@ TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
 
     // Expectation for trigger_debugger_for_manual_overrides
     expect_function_call(__wrap_trigger_debugger_for_manual_overrides);
+    */
     assert_int_equal(platform_fuse_override(), 0);
 }
 
@@ -287,6 +291,9 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_0, NULL, NULL)
                fuse_dist_exclude_list1[i].end_addr);
     }
 
+    // TODO: reinstate with // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2002810
+    /*
+
     // Setup expectations for __wrap_distribute_fuses
     expect_any(__wrap_distribute_fuses, die_id);
     expect_value(__wrap_distribute_fuses, phase_maj, POST_HSP_DIST_MAJOR);
@@ -299,7 +306,8 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_0, NULL, NULL)
            "phase_min=POST_HSP_DIST_MINOR, exclude_list=%p, exclude_list_count=%u\n",
            (void*)fuse_dist_exclude_list1,
            exclude_list_count1);
-    
+    */
+
     unsigned int status = platform_fuse_distribution(0);
     assert_int_equal(status, 0);
     // Debug prints
@@ -320,6 +328,7 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    
     // Debug prints
     // Debug prints
     printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
@@ -344,6 +353,9 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
                fuse_dist_exclude_list1[i].end_addr);
     }
 
+    // TODO: reinstate with // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2002810
+    /*
+    
     // Setup expectations for __wrap_distribute_fuses
 
     
@@ -382,6 +394,7 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
            "phase_min=POST_BRIDGE_INIT_MINOR, exclude_list=%p, exclude_list_count=%u\n",
            (void*)fuse_dist_exclude_list1,
            exclude_list_count1);
+    */
 
     unsigned int status = platform_fuse_distribution(1);
     assert_int_equal(status, 0);
@@ -391,7 +404,7 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
 
 TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
 {
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RTL_SIM);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);

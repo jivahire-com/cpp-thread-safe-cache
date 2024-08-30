@@ -54,10 +54,20 @@ static bool platform_requires_fuse_distribution()
 {
     bool status = false;
     KNG_PLAT_ID plat_id = idsw_get_platform_sdv();
-    if ((plat_id == PLATFORM_FPGA) || (plat_id == PLATFORM_RTL_SIM) || (plat_id == PLATFORM_FPGA_LARGE) ||
-        (plat_id == PLATFORM_RVP_EVT_SILICON) || (plat_id == PLATFORM_FPGA_LARGE_RVP))
+    switch (plat_id)
     {
+    case PLATFORM_RVP_EVT_SILICON:
         status = true;
+        break;
+    // TODO: leave FPGA platforms here until tested working
+    // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2002810
+    case PLATFORM_RTL_SIM:
+    case PLATFORM_FPGA:
+    case PLATFORM_FPGA_LARGE:
+    case PLATFORM_FPGA_LARGE_RVP:
+    default:
+        printf(FUSE_NAME "Fuse distribution not supported in FW for platform\n");
+        break;
     }
     return status;
 }

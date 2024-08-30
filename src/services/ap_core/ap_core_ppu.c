@@ -169,7 +169,9 @@ void ap_core_ppu_core_set_power_state(ap_core_service_context_t* p_context, unsi
     else
     {
         // power core off
-        // determine proper core off sequence
-        FPFW_RUNTIME_ASSERT(false);
+        // TODO : determine proper core off sequence
+        // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1824038/
+    
+        APCORE_LOG_INFO("AP Core Power off Requested, For now NOP to unblock SBSA testing");
     }
 }

@@ -21,8 +21,10 @@ set(LIBRARIES
     ms::lib::icc_platform_defines
     silibs::platform
     silibs::kng_silibs_platform
+    silibs::idhw
     silibs::idsw
     silibs::idsw_kng
+    silibs::spi_bridge
 )
 
 # Compile test
@@ -40,8 +42,18 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_THREADX "ms::lib::
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
 # Provide compile time definition
-target_compile_definitions(${TARGET} PRIVATE MSCP2HSP_MAILBOX_BASE_ADDRESS=1000)
-target_compile_definitions(${TARGET} PRIVATE HW_INT_HSP2MSCP_MBOX_INT=0)
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+       MSCP2HSP_MAILBOX_BASE_ADDRESS=1000
+       HW_INT_HSP2MSCP_MBOX_INT=0
+       MSCP_TOP_MSCP_EXP_ADDRESS=1000
+       MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=1000
+       MSCP_EXP_TOP_SPI_CTRL_ADDRESS=0
+       MSCP_EXP_TOP_SPI_BRIDGE_ADDRESS=0
+       # @todo remove after SVP updates it's HSP mbx intr number
+       HW_INT_HSP2MSCP_MBOX_INT_SVP=0
+)
 
 lint_target(${TARGET})
 format_target(${TARGET})
@@ -57,4 +69,9 @@ mock_target(${TARGET}
     fpfw_icc_dispatcher_start
     idsw_get_platform_sdv
     idsw_get_cpu_type
+    spi_bridge_init
+    spi_bridge_check_errors
+    spi_bridge_clear_error_interrupts
+    spi_controller_init
+    spi_controller_check_errors
 )

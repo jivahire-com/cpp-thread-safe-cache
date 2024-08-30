@@ -18,21 +18,28 @@
 #include <fpfw_status.h>                  // for fpfw_status_t
 #include <icc_cli.h>                      // for ICC_CLI_HSP_MBX, icc_cli_i...
 #include <icc_mhu_trans_prim.h>           // for icc_mhu primitives
-#include <silibs_mcp_top_regs.h>          // for MCP_TOP_MCP2HSP_MAILBOX_AD...
-#include <silibs_scp_top_regs.h>          // for SCP_TOP_SCP2HSP_MAILBOX_AD...
-#include <stdbool.h>                      // for false, bool, true
-#include <stdint.h>                       // for uint32_t, uint8_t
-#include <stdlib.h>                       // for atoi, NULL, size_t
+#include <idhw.h>                         // for idhw_is_single_die_boot_en
+#include <idsw.h>                         // for idsw_get_platform_sdv,
+#include <idsw_kng.h>                     // for PLATFORM_FPGA_LARGE
+#include <mscp_exp_spi_synchronize_dies.h>
+#include <silibs_mcp_top_regs.h> // for MCP_TOP_MCP2HSP_MAILBOX_AD...
+#include <silibs_scp_top_regs.h> // for SCP_TOP_SCP2HSP_MAILBOX_AD...
+#include <stdbool.h>             // for false, bool, true
+#include <stdint.h>              // for uint32_t, uint8_t
+#include <stdlib.h>              // for atoi, NULL, size_t
+#include <string.h>              // for memset
 
 /*-- Symbolic Constant Macros (defines) --*/
 //! @todo Get the mailbox registers from the header files
 #define MAX_ICC_MAILBOXES_INST    2
 #define MAX_ICC_MAILBOX_REGS      8
 #define HSP_MBX_FIFO_DEPTH        4
+#define D2D_MBX_FIFO_DEPTH        16
 #define HSP_MAILBOX_TEST_CMD_CODE 0x0U
 #define HSP_MBOX_TEST_PAYLOAD_1   0xAAAAAAAAUL
 #define HSP_MBOX_TEST_PAYLOAD_2   0xBBBBBBBBUL
 #define HSP_MBOX_TEST_PAYLOAD_3   0xCCCCCCCCUL
+#define D2D_MBOX_TEST_PAYLOAD     0x11111111UL
 
 /*-------------- Typedefs ----------------*/
 typedef struct _icc_mbx_ctx_t
@@ -64,9 +71,15 @@ static fpfw_icc_base_recv_req_t recv_params = {0};
 static uint32_t payload_buffer[HSP_MBX_FIFO_DEPTH] = {0, 0, 0, 0};
 static uint32_t send_payload_buffer[HSP_MBX_FIFO_DEPTH] = {0, 0, 0, 0};
 static uint32_t recv_payload_buffer[HSP_MBX_FIFO_DEPTH] = {0, 0, 0, 0};
+static fpfw_icc_base_send_req_t d2d_send_params = {0};
+static fpfw_icc_base_recv_req_t d2d_recv_params = {0};
+static uint32_t d2d_send_payload_buffer[D2D_MBX_FIFO_DEPTH] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static uint32_t d2d_recv_payload_buffer[D2D_MBX_FIFO_DEPTH] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 static bool is_echo_test_active = false;
 static bool is_send_test_active = false;
 static bool is_recv_test_active = false;
+static bool is_d2d_send_test_active = false;
+static bool is_d2d_recv_test_active = false;
 
 /*--------- Function Prototypes ----------*/
 static FPFW_CLI_STATUS display_mbx_list(int argc, const char** argv);
@@ -77,6 +90,9 @@ static FPFW_CLI_STATUS hsp_mbox_send(int argc, const char** argv);
 static FPFW_CLI_STATUS hsp_mbox_recv(int argc, const char** argv);
 static FPFW_CLI_STATUS mhu_send(int argc, const char** argv);
 static FPFW_CLI_STATUS scmi_stat(int argc, const char** argv);
+static FPFW_CLI_STATUS d2d_mbox_send(int argc, const char** argv);
+static FPFW_CLI_STATUS d2d_mbox_recv(int argc, const char** argv);
+static FPFW_CLI_STATUS d2d_sync_test(int argc, const char** argv);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -89,7 +105,9 @@ static FPFW_CLI_COMMAND s_icc_cmd_list[] = {
     {NULL_LIST_ENTRY, "icc", "recv", hsp_mbox_recv, "Expects to recv mailbox mesg from HSP", "Usage: recv <(cmd code)>"},
     {NULL_LIST_ENTRY, "icc", "mhu_send", mhu_send, "Sends message via MHU", "Usage: mhu_send <index> <command> <size> <data0> ... <data 2>"},
     {NULL_LIST_ENTRY, "icc", "scmi_stat", scmi_stat, "Checks MHU SCMI Stat bit", "Usage: scmi_stat <index>"},
-
+    {NULL_LIST_ENTRY, "icc", "die_send", d2d_mbox_send, "Sends a mailbox mesg to remote die", "Usage: die_send <(uint32_t) (uint32_t) (uint32_t) (uint32_t)>"},
+    {NULL_LIST_ENTRY, "icc", "die_recv", d2d_mbox_recv, "Expects to recv mailbox mesg from remote die", "Usage: die_recv <(cmd code)>"},
+    {NULL_LIST_ENTRY, "icc", "die_sync", d2d_sync_test, "Write to shared sram from current to remote die", "Usage: die_sync <(local addr) (remote addr) (uint32_t)>"},
 };
 
 /*------------- Functions ----------------*/
@@ -466,4 +484,217 @@ static FPFW_CLI_STATUS scmi_stat(int argc, const char** argv)
     icc_mhu_trans_check_scmi_status_bit(index);
     FpFwCliPrint("MHU SCMI status bit check\n");
     return CLI_SUCCESS;
+}
+
+void my_d2d_icc_base_send_complete_notify(void* context, fpfw_status_t status)
+{
+    fpfw_icc_base_send_req_t* req_params = (fpfw_icc_base_send_req_t*)context; // NOLINT
+    if (status != DFWK_SUCCESS)
+    {
+        FpFwCliPrint("[D2D SEND TEST]   SCP->M/SCP Send Failed: Status[0x%x] Internal Status[0x%x]\n",
+                     status,
+                     req_params->send_req.Output.Status);
+    }
+    else
+    {
+        //! verify success, output status
+        FpFwCliPrint("[D2D SEND TEST]   SCP->M/SCP Send Complete: Status[0x%x] Payload[", status);
+        for (uint32_t i = 0; i < D2D_MBX_FIFO_DEPTH; i++)
+        {
+            FpFwCliPrint("0x%x ", d2d_send_payload_buffer[i]);
+        }
+        FpFwCliPrint("]\n");
+    }
+    is_d2d_send_test_active = false;
+}
+
+static FPFW_CLI_STATUS d2d_mbox_send(int argc, const char** argv)
+{
+    FPFW_CLI_STATUS cli_status = CLI_ERROR;
+
+    //! Prevent overwriting of the send payload buffer
+    if (is_d2d_send_test_active)
+    {
+        FpFwCliPrint("D2D Send cmd: Test already active, please wait for completion\n");
+        return cli_status;
+    }
+
+    if (argc != 5)
+    {
+        FpFwCliPrint("D2D Send cmd: Insufficient Payload Args, Using default values\n");
+        for (uint32_t i = 0; i < D2D_MBX_FIFO_DEPTH; i++)
+        {
+            d2d_send_payload_buffer[i] = D2D_MBOX_TEST_PAYLOAD * (i);
+        }
+    }
+    else
+    {
+        memset(d2d_send_payload_buffer, 0, sizeof(d2d_send_payload_buffer));
+        d2d_send_payload_buffer[0] = atoi(argv[1]);
+        d2d_send_payload_buffer[1] = atoi(argv[2]);
+        d2d_send_payload_buffer[2] = atoi(argv[3]);
+        d2d_send_payload_buffer[3] = atoi(argv[4]);
+    }
+
+    //! Prepare send request
+    d2d_send_params.payload_buffer = d2d_send_payload_buffer;
+    d2d_send_params.buffer_size = sizeof(d2d_send_payload_buffer);
+    d2d_send_params.cb = my_d2d_icc_base_send_complete_notify;
+    d2d_send_params.cb_ctx = &d2d_send_params;
+
+    //! Send the payload & wait for response
+    fpfw_status_t status = fpfw_icc_base_send(icc_base_ctx[ICC_CLI_D2D_MBX], &d2d_send_params);
+
+    //! print status message
+    if (status != DFWK_SUCCESS)
+    {
+        FpFwCliPrint("[D2D SEND TEST]   SCP->M/SCP Send Failed: Status[0x%x]\n", status);
+    }
+    else
+    {
+        //! verify success, output status
+        FpFwCliPrint("[D2D SEND TEST]   SCP->M/SCP Send Initiated: Status[0x%x] Payload[", status);
+        for (uint32_t i = 0; i < D2D_MBX_FIFO_DEPTH; i++)
+        {
+            FpFwCliPrint("0x%x ", d2d_send_payload_buffer[i]);
+        }
+        FpFwCliPrint("]\n");
+
+        is_d2d_send_test_active = true;
+        cli_status = CLI_SUCCESS;
+    }
+    return cli_status;
+}
+
+void my_d2d_icc_base_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    fpfw_icc_base_recv_req_t* req_params = (fpfw_icc_base_recv_req_t*)context; // NOLINT
+    if (status != DFWK_SUCCESS)
+    {
+        FpFwCliPrint("[D2D RECV TEST]   SCP->M/SCP Recv Failed: Status[0x%x] CmdCode[0x%x]\n",
+                     status,
+                     req_params->recv_cmd_code);
+    }
+    else
+    {
+        //! verify success, output status
+        FpFwCliPrint("[D2D RECV TEST]   SCP->M/SCP Recv Complete: Status[0x%x] ReceivedBytes[%d] "
+                     "CmdCode[0x%x] Payload[",
+                     status,
+                     output_size_bytes,
+                     req_params->recv_cmd_code);
+        for (uint32_t i = 0; i < D2D_MBX_FIFO_DEPTH; i++)
+        {
+            FpFwCliPrint("0x%x ", d2d_recv_payload_buffer[i]);
+        }
+        FpFwCliPrint("]\n");
+    }
+    is_d2d_recv_test_active = false;
+}
+
+static FPFW_CLI_STATUS d2d_mbox_recv(int argc, const char** argv)
+{
+    FPFW_CLI_STATUS cli_status = CLI_ERROR;
+
+    if (is_d2d_recv_test_active)
+    {
+        FpFwCliPrint("D2D Recv cmd: Test already active, please wait for completion\n");
+        return cli_status;
+    }
+
+    if (argc < 2)
+    {
+        FpFwCliPrint("D2D Recv cmd: Insufficient Args, Command Code Required\n");
+        return cli_status;
+    }
+    uint32_t recv_cmd_code = atoi(argv[1]);
+
+    //! @todo Check if the cmd code is valid, check from platform specific header file
+
+    //! Prepare recv request
+    d2d_recv_params.payload_buffer = d2d_recv_payload_buffer;
+    d2d_recv_params.buffer_size = sizeof(d2d_recv_payload_buffer);
+    d2d_recv_params.recv_cmd_code = recv_cmd_code;
+    d2d_recv_params.cb = my_d2d_icc_base_recv_complete_notify;
+    d2d_recv_params.cb_ctx = &d2d_recv_params;
+
+    //! Register for recv thru icc base
+    fpfw_status_t status = fpfw_icc_base_recv(icc_base_ctx[ICC_CLI_D2D_MBX], &d2d_recv_params);
+
+    //! Print the status message
+    if (status != DFWK_SUCCESS)
+    {
+        FpFwCliPrint("[D2D RECV TEST]   SCP->M/SCP Recv Failed: Status[0x%x] CmdCode[0x%x]\n", status, recv_cmd_code);
+    }
+    else
+    {
+        FpFwCliPrint("[D2D RECV TEST]   SCP->M/SCP Recv Initiated: Status[0x%x] CmdCode[0x%x]\n", status, recv_cmd_code);
+        //! Status is success, Set the flag to indicate the test is active
+        is_d2d_recv_test_active = true;
+        cli_status = CLI_SUCCESS;
+    }
+
+    return cli_status;
+}
+
+// KNG SOC Address Map > MSCP_EXP Address Map
+// +-------------+-------------+-------+---------------------+
+// | Addr Start  | Addr End    | Size  | Name                |
+// +-------------+-------------+-------+---------------------+
+// | 0x0169_0000 | 0x0169_FFFF | 64kiB | MSCP_EXP/SPI Host   |
+// | 0x016A_0000 | 0x016A_FFFF | 64kiB | MSCP_EXP/SPI Bridge |
+// +-------------+-------------+-------+---------------------+
+// KNG SOC Address Map->MSCP_EXP Address Map
+// 0x0120_0000    0x012F_FFFF    1024kiB    MSCP_EXP/RAM0    SRAM0
+// 0x0130_0000    0x013F_FFFF    1024kiB    MSCP_EXP/RAM1    SRAM1
+
+//! Defaults for the test
+// #define LOCAL_WRITE_ADDR     MSCP_EXP_RAM0
+// #define REMOTE_WRITE_ADDR    (LOCAL_WRITE_ADDR + 4)
+// #define SYNC_VALUE           (0xD2DB600D) // "die to die be good"
+
+static mscp_exp_spi_sync_point_t my_d2d_sync_point;
+
+/**
+ * Check for synchronization if the dies using the SPI. The synchronization will happen
+ * through SRAM0 in die 1. Die 0 will use the SPI to access this memory. Die 1
+ * will use local access to this memory. SRAM0 in DIE1 will be the memory used.
+ */
+static FPFW_CLI_STATUS d2d_sync_test(int argc, const char** argv)
+{
+    FPFW_CLI_STATUS cli_status = CLI_ERROR;
+
+    if (argc != 4)
+    {
+        FpFwCliPrint("D2D Sync: Using Defaults:\n");
+        my_d2d_sync_point.local_write_addr = d2d_sync_point.local_write_addr;
+        my_d2d_sync_point.remote_write_addr = d2d_sync_point.remote_write_addr;
+        my_d2d_sync_point.value = d2d_sync_point.value;
+    }
+    else
+    {
+        FpFwCliPrint("D2D Sync: Override Defaults:\n");
+        my_d2d_sync_point.local_write_addr = (uintptr_t)atoi(argv[1]);
+        my_d2d_sync_point.remote_write_addr = (uintptr_t)atoi(argv[2]);
+        my_d2d_sync_point.value = (uint32_t)atoi(argv[3]);
+    }
+    FpFwCliPrint("Local Write Addr [0x%x]\nRemote Write Addr [0x%x]\nValue [0x%x]\n",
+                 my_d2d_sync_point.local_write_addr,
+                 my_d2d_sync_point.remote_write_addr,
+                 my_d2d_sync_point.value);
+
+    //! Get the die number to perform sync test
+    uint8_t die_num = (uint8_t)idhw_get_die_id();
+    FpFwCliPrint("D2D Sync Test Die [%d]\n", die_num);
+    int status = mscp_exp_spi_synchronize_dies(my_d2d_sync_point, die_num);
+    if (status != 0)
+    {
+        FpFwCliPrint("D2D Sync Test Failed\n");
+    }
+    else
+    {
+        FpFwCliPrint("D2D Sync Test Passed\n");
+        cli_status = CLI_SUCCESS;
+    }
+    return cli_status;
 }

@@ -127,6 +127,7 @@ target_link_libraries(
         silibs::pcie
         silibs::kng_silibs_platform
         silibs::sensor_ram_bridge
+        silibs::spi_bridge
         ms::lib::power::cli
         ms::lib::register_headers
         ms::service::sds_service
@@ -143,6 +144,10 @@ target_compile_definitions(
     PRIVATE
        MSCP2HSP_MAILBOX_BASE_ADDRESS=SCP_TOP_SCP2HSP_MAILBOX_ADDRESS
        HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2SCP_MB_SW_INT
+       MSCP_TOP_MSCP_EXP_ADDRESS=SCP_TOP_SCP_EXP_ADDRESS
+       MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=SCP_EXP_TOP_MSCP_MBOX_ADDRESS
+       MSCP_EXP_TOP_SPI_CTRL_ADDRESS=SCP_EXP_TOP_SPI_CTRL_ADDRESS
+       MSCP_EXP_TOP_SPI_BRIDGE_ADDRESS=SCP_EXP_TOP_SPI_BRIDGE_ADDRESS
        SCP_RUNTIME_INIT
 )
 
@@ -233,6 +238,7 @@ target_link_libraries(
         silibs::platform
         silibs::kng_silibs_platform
         silibs::sensor_ram_bridge
+        silibs::spi_bridge
         register_headers
 )
 
@@ -243,6 +249,10 @@ target_compile_definitions(
     PRIVATE
        MSCP2HSP_MAILBOX_BASE_ADDRESS=MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
        HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2MCP_MB_SW_INT
+       MSCP_TOP_MSCP_EXP_ADDRESS=MCP_TOP_MCP_EXP_ADDRESS
+       MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=MCP_EXP_TOP_MSCP_MBOX_ADDRESS
+       MSCP_EXP_TOP_SPI_CTRL_ADDRESS=0
+       MSCP_EXP_TOP_SPI_BRIDGE_ADDRESS=0
        MCP_RUNTIME_INIT
 )
 

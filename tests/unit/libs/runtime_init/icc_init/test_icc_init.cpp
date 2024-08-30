@@ -22,14 +22,6 @@ extern "C" {
 #include <idsw_kng.h> // for KNG_DIE_ID, KNG_PLAT_ID
 
 /*---------------Macros-------------------*/
-#define HSP_MBOX_MAX_CMD_CODE       (0xFFFFU)
-#define HSP_MBOX_MIN_CMD_CODE       (0x1U)
-#define HSP_MBOX_CMD_CODE_SIZE      (16U)
-#define HSP_MBOX_CMD_CODE_START_POS (0U) //! 16th bit from lsb
-#define HSP_MBOX_MAX_SEQ_NUM        (0xFFU)
-#define HSP_MBOX_MIN_SEQ_NUM        (0x0U)
-#define HSP_MBOX_SEQ_NUM_SIZE       (8U)
-#define HSP_MBOX_SEQ_NUM_START_POS  (16U) //! 24th bit from lsb
 
 /*------------- Typedefs -----------------*/
 
@@ -37,6 +29,7 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_icc_hspmbx;
+extern fpfw_init_component_t _fpfw_component_icc_d2dmbx;
 
 /*------------- Mock Functions ----------------*/
 
@@ -63,16 +56,73 @@ idsw_cpu_type_t __wrap_idsw_get_cpu_type(void)
     return mock_type(idsw_cpu_type_t);
 }
 
+int  __wrap_spi_controller_init(uintptr_t spi_master_reg, uint16_t clkDiv)
+{
+    FPFW_UNUSED(spi_master_reg);
+    FPFW_UNUSED(clkDiv);
+    return mock_type(int);
+}
+
+int  __wrap_spi_bridge_init(uintptr_t spi_bridge_reg, uint16_t clkDiv)
+{
+    FPFW_UNUSED(spi_bridge_reg);
+    FPFW_UNUSED(clkDiv);
+    return mock_type(int);
+}
+
+int  __wrap_spi_controller_check_errors(uintptr_t spi_master_reg)
+{
+    FPFW_UNUSED(spi_master_reg);
+    return mock_type(int);
+}
+
+int  __wrap_spi_bridge_check_errors(uintptr_t spi_bridge_reg)
+{
+    FPFW_UNUSED(spi_bridge_reg);
+    return mock_type(int);
+}
+
+int  __wrap_spi_bridge_clear_error_interrupts(uintptr_t spi_bridge_reg)
+{
+    FPFW_UNUSED(spi_bridge_reg);
+    return mock_type(int);
+}
+
 fpfw_status_t __wrap_fpfw_mbox_icc_transport_dfwk_device_init(fpfw_mbox_icc_transport_device_t* dev,
                                                               fpfw_mbox_icc_transport_config_t* cfg)
 {
     assert_non_null(cfg);
     assert_non_null(dev);
-    assert_int_equal(cfg->mbox_dev_cfg.MbxFifoDepth, HSP_MBX_FIFO_DEPTH);
-    assert_int_equal(cfg->mbox_dev_cfg.MbxBaseAddr, 1000);
+    
     assert_int_equal(cfg->mbox_dev_cfg.MbxMesgHandlingType, MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME);
-    assert_int_equal(cfg->mbox_dev_cfg.MbxImplementation, MBX_IMPL_INTERRUPT);
-    assert_int_equal(cfg->mbox_dev_cfg.MsgSizeBytes, HSP_MBX_FIFO_DEPTH * sizeof(uint32_t));
+    
+    if (cfg->mbox_dev_cfg.MbxFifoDepth == HSP_MBX_FIFO_DEPTH)
+    {
+        //! The base address is compiler defined in Cmake for this test
+        assert_int_equal(cfg->mbox_dev_cfg.MbxBaseAddr, 1000);
+        assert_int_equal(cfg->mbox_dev_cfg.MbxImplementation, MBX_IMPL_INTERRUPT);
+        assert_int_equal(cfg->mbox_dev_cfg.MsgSizeBytes, HSP_MBOX_MAX_MESG_SIZE_BYTES);
+        assert_int_equal(cfg->mbox_dev_cfg.MbxSendBaseAddr, 0);
+        assert_int_equal(cfg->mbox_dev_cfg.MbxRecvBaseAddr, 0);
+        assert_null(cfg->mbox_dev_cfg.RemoteRegRead32);
+        assert_null(cfg->mbox_dev_cfg.RemoteRegWrite32);
+    }
+    else if (cfg->mbox_dev_cfg.MbxFifoDepth == D2D_MBX_FIFO_DEPTH)
+    {
+        //! The base address is compiler defined in Cmake for this test
+        assert_int_equal(cfg->mbox_dev_cfg.MbxBaseAddr, 2000);
+        assert_int_equal(cfg->mbox_dev_cfg.MbxImplementation, MBX_IMPL_POLLING);
+        assert_int_equal(cfg->mbox_dev_cfg.MsgSizeBytes, D2D_FIFO_MBOX_MAX_MESG_SIZE_BYTES);
+        assert_int_equal(cfg->mbox_dev_cfg.MbxSendBaseAddr, 2000);
+        assert_int_equal(cfg->mbox_dev_cfg.MbxRecvBaseAddr, 2000);
+        assert_non_null(cfg->mbox_dev_cfg.RemoteRegRead32);
+        assert_non_null(cfg->mbox_dev_cfg.RemoteRegWrite32);
+    }
+    else
+    {
+        assert_false(0);
+    }
+    
     return mock_type(fpfw_status_t);
 }
 
@@ -91,17 +141,19 @@ fpfw_status_t __wrap_fpfw_icc_base_init(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
     assert_non_null(icc_cfg->transport_interface);
     assert_non_null(icc_cfg->dispatch_cfg.transport_interface);
     assert_non_null(icc_cfg->dispatch_cfg.dispatcher_buffer);
-    assert_int_equal(icc_cfg->dispatch_cfg.dispatcher_buffer_size, HSP_MBOX_MAX_MESG_SIZE_BYTES);
     assert_true(icc_cfg->dispatch_cfg.strategy.cmd_code.is_used);
     assert_true(icc_cfg->dispatch_cfg.strategy.seq_num.is_used);
-    assert_int_equal(icc_cfg->dispatch_cfg.strategy.cmd_code.size_bits, HSP_MBOX_CMD_CODE_SIZE);
-    assert_int_equal(icc_cfg->dispatch_cfg.strategy.seq_num.size_bits, HSP_MBOX_SEQ_NUM_SIZE);
-    assert_int_equal(icc_cfg->dispatch_cfg.strategy.cmd_code.start_pos, HSP_MBOX_CMD_CODE_START_POS);
-    assert_int_equal(icc_cfg->dispatch_cfg.strategy.seq_num.start_pos, HSP_MBOX_SEQ_NUM_START_POS);
-    assert_int_equal(icc_cfg->dispatch_cfg.strategy.cmd_code.valid_max, HSP_MBOX_MAX_CMD_CODE);
-    assert_int_equal(icc_cfg->dispatch_cfg.strategy.seq_num.valid_max, HSP_MBOX_MAX_SEQ_NUM);
-    assert_int_equal(icc_cfg->dispatch_cfg.strategy.cmd_code.valid_min, HSP_MBOX_MIN_CMD_CODE);
-    assert_int_equal(icc_cfg->dispatch_cfg.strategy.seq_num.valid_min, HSP_MBOX_MIN_SEQ_NUM);
+
+    check_expected(icc_cfg->dispatch_cfg.dispatcher_buffer_size);
+    check_expected(icc_cfg->dispatch_cfg.strategy.cmd_code.size_bits);
+    check_expected(icc_cfg->dispatch_cfg.strategy.seq_num.size_bits);
+    check_expected(icc_cfg->dispatch_cfg.strategy.cmd_code.start_pos);
+    check_expected(icc_cfg->dispatch_cfg.strategy.seq_num.start_pos);
+    check_expected(icc_cfg->dispatch_cfg.strategy.cmd_code.valid_max);
+    check_expected(icc_cfg->dispatch_cfg.strategy.seq_num.valid_max);
+    check_expected(icc_cfg->dispatch_cfg.strategy.cmd_code.valid_min);
+    check_expected(icc_cfg->dispatch_cfg.strategy.seq_num.valid_min);
+
     assert_null(icc_cfg->ctx);
     assert_null(icc_cfg->dispatch_cfg.match_strategy_cb);
     assert_null(icc_cfg->dispatch_cfg.match_strategy_ctx);
@@ -126,6 +178,15 @@ TEST_FUNCTION(test_icc_hspmbx_init, nullptr, nullptr)
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.dispatcher_buffer_size, HSP_MBOX_MAX_MESG_SIZE_BYTES);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.size_bits, HSP_MBOX_CMD_CODE_SIZE);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.size_bits, HSP_MBOX_SEQ_NUM_SIZE);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.start_pos, HSP_MBOX_CMD_CODE_START_POS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.start_pos, HSP_MBOX_SEQ_NUM_START_POS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.valid_max, HSP_MBOX_MAX_CMD_CODE);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_max, HSP_MBOX_MAX_SEQ_NUM);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.valid_min, HSP_MBOX_MIN_CMD_CODE);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_min, HSP_MBOX_MIN_SEQ_NUM);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
 
@@ -137,5 +198,40 @@ TEST_FUNCTION(test_icc_hspmbx_init, nullptr, nullptr)
     assert_non_null(result.associated_handle);
 }
 
+TEST_FUNCTION(test_icc_d2dmbx_init, nullptr, nullptr)
+{
+    // Set up expectations
+    DFWK_THREADX_HOST test_host = {};
+
+    //! Verify wrapped APIs are invoked in order
+    will_return(__wrap_fpfw_init_get_handle, &test_host);
+    expect_function_call(__wrap_DfwkDeviceInitialize);
+    will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.dispatcher_buffer_size, D2D_FIFO_MBOX_MAX_MESG_SIZE_BYTES);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.size_bits, D2D_MBOX_CMD_CODE_SIZE);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.size_bits, D2D_MBOX_SEQ_NUM_SIZE);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.start_pos, D2D_MBOX_CMD_CODE_START_POS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.start_pos, D2D_MBOX_SEQ_NUM_START_POS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.valid_max, D2D_MBOX_MAX_CMD_CODE);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_max, D2D_MBOX_MAX_SEQ_NUM);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.valid_min, D2D_MBOX_MIN_CMD_CODE);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_min, D2D_MBOX_MIN_SEQ_NUM);
+    will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_spi_bridge_init, SILIBS_SUCCESS);
+    will_return(__wrap_spi_bridge_check_errors, SILIBS_SUCCESS);
+    will_return(__wrap_spi_bridge_clear_error_interrupts, SILIBS_SUCCESS);
+    will_return(__wrap_spi_controller_init, SILIBS_SUCCESS);
+    will_return(__wrap_spi_controller_check_errors, SILIBS_SUCCESS);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_icc_d2dmbx.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_STATUS_SUCCESS);
+    assert_non_null(result.associated_handle);
+}
 // Add more test cases if needed
 }

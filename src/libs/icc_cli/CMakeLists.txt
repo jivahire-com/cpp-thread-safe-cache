@@ -15,6 +15,10 @@ set(LIBS
             ms::lib::icc_platform_defines
             silibs::kng_silibs_platform
             silibs::platform
+            silibs::idhw
+            silibs::idsw
+            silibs::idsw_kng
+            silibs::spi_bridge
 )
 
 add_library(${TARGET} STATIC ${SRC})

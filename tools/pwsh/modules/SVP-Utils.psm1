@@ -65,7 +65,7 @@ If -UseGUI specified it will setup and run the simulation with the GUI, otherwis
 Invoke-Virtualizer -SimConfig scp_mcp_chie_bins -UseGUI
 #>
 Function Invoke-Virtualizer(
-    [Parameter(Mandatory=$false)] [ValidateSet('scp_mcp_chie_bins','mcp_bl_embed_fw', 'hsp_bl_scp')] [string] $SimConfig = "scp_mcp_chie_bins",
+    [Parameter(Mandatory=$false)] [ValidateSet('scp_mcp_chie_bins','mcp_bl_embed_fw', 'hsp_bl_scp', 'scp_mcp_chie_bins_dual_die')] [string] $SimConfig = "scp_mcp_chie_bins",
     [Parameter(Mandatory=$false)] [switch] $UseGUI
 )
 {
@@ -133,6 +133,10 @@ Function Invoke-Virtualizer(
         }
         "hsp_bl_scp" {
             Write-Host "Using HSP rom with SCP Bootloader embed FW method for chie fw."
+            Break;
+        }
+        "scp_mcp_chie_bins_dual_die" {
+            Write-Host "Using chie fw bins for both dies."
             Break;
         }
         Default {
@@ -243,8 +247,10 @@ Function Invoke-Virtualizer(
         Write-Host "`tSCP UART telnet : localhost:4257"
 
         # GDB setup on the headless mode is broken in this SVP release, overrides resolve this for now. Update once patched: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1624373
-        Write-Host "`tMCP DIE 0 GDB   : localhost:12352"
-        Write-Host "`tSCP DIE 0 GDB   : localhost:12353"
+        Write-Host "`tMCP DIE 0 GDB   : localhost:12368"
+        Write-Host "`tSCP DIE 0 GDB   : localhost:12369"
+        Write-Host "`tMCP DIE 1 GDB   : localhost:12393"
+        Write-Host "`tSCP DIE 1 GDB   : localhost:12394"
         Write-Host "`tEnsure configuration matches symbols used!"
         Write-Host ""
 

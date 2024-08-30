@@ -5,6 +5,7 @@ set(TARGET extern.silibs.spi_bridge)
 
 set(SRCS
     ${TARGET_DIR}/libraries/spi_bridge/src/spi_bridge.c
+    ${TARGET_DIR}/libraries/spi_bridge/src/mscp_exp_spi_synchronize_dies.c
 )
 
 add_library(${TARGET} STATIC ${SRCS})

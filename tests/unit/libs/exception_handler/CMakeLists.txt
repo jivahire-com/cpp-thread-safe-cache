@@ -1,0 +1,34 @@
+set(TARGET exception_handler.test)
+
+set(SOURCES
+    test_exception_handler.cpp
+)
+
+# Compile test
+add_executable(${TARGET} ${SOURCES})
+
+target_link_libraries(${TARGET}
+    PRIVATE
+        ms::cmocka::testrunner
+        ms::lib::error_codes
+        ms::lib::exception_handler::scp
+        ms::lib::threadx
+        ms::lib::crash_dump::scp
+)
+
+target_include_directories(${TARGET}
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/libs/exception_handler/src
+)
+
+lint_target(${TARGET})
+format_target(${TARGET})
+coverage_target(${TARGET})
+unit_test_target(${TARGET})
+
+# mock the functions needed
+mock_target(${TARGET}
+    crash_dump_bug_check
+    crash_dump_handler
+    crash_dump_bug_check_initiated_dump
+)

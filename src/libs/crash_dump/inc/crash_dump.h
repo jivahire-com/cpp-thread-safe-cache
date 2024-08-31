@@ -58,6 +58,18 @@ extern core_crash_context_t g_core_crash_context;
 FPFW_NORETURN void crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4);
 
 /**
+ * @brief Check if a bug check has been initiated
+ *
+ * @return true if a bug check has been initiated
+ */
+bool crash_dump_bug_check_initiated_dump();
+
+/**
+ * @brief Wait forever
+ */
+FPFW_NORETURN void crash_dump_wait_forever();
+
+/**
  * @brief Get the Crash Dump Context object
  * 
  * @return Pointer to static crash dump context.

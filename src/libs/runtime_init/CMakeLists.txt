@@ -26,6 +26,7 @@ add_library(${TARGET}
         debug_init.c
         dfwk_init.c
         etc_etd_init.c
+        exception_handler_init.c
         fuse_init.c
         gtimer_init.c
         hw_version_scp_init.c
@@ -89,6 +90,7 @@ target_link_libraries(
         ms::lib::ddrss_init
         ms::lib::debug
         ms::lib::cortex_m7::nvic
+        ms::lib::exception_handler::scp
         ms::lib::gtimer
         ms::lib::hsp_firmware_headers
         ms::lib::i3c_controller
@@ -187,6 +189,7 @@ add_library(${TARGET}
         dfwk_init.c
         etc_etd_init.c
         etr_init.c
+        exception_handler_init.c
         hw_version_mcp_init.c
         icc_cli_init.c
         icc_init.c
@@ -218,6 +221,7 @@ target_link_libraries(
         ms::lib::debug
         ms::lib::cortex_m7::nvic
         ms::lib::crash_dump::mcp
+        ms::lib::exception_handler::mcp
         ms::lib::icc::cli
         ms::lib::icc_platform_defines
         ms::lib::interface::in_band_telemetry_ddr

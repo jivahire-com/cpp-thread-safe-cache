@@ -32,8 +32,8 @@
  *      User parameters included with the bug check information.
  */
 #define BUG_CHECK(errorCode, p1, p2) \
-    DBGPRINT("Bug Check: [%"PRId32"] File [%s:%d] P1: [%"PRIu32"] P2: [%"PRIu32"]\n", (int32_t)errorCode, __FILE__, __LINE__, (uint32_t)p1, (uint32_t)p2); \
-    crash_dump_bug_check(errorCode, (uint32_t)__FILE__, __LINE__, p1, p2)
+    DBGPRINT("Bug Check: [%"PRId32"] File [%s:%d] P1: [%"PRIu32"] P2: [%"PRIu32"]\n", (int32_t)(errorCode), __FILE__, __LINE__, (uint32_t)(p1), (uint32_t)(p2)); \
+    crash_dump_bug_check((errorCode), (uint32_t)__FILE__, __LINE__, (uint32_t)(p1), (uint32_t)(p2))
 
 /**
  * The BUG_ASSERT() macro will generate a bug check if the condition parameter

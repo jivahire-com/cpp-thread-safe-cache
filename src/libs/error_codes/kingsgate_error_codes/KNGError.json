@@ -132,6 +132,11 @@
           "Name": "KNG_CD_EXTERNAL_REQUEST",
           "Value": 7,
           "Description": "Crash dump caused by external request (eg: BMC)"
+        },
+        {
+          "Name": "KNG_CD_THREAD_STACK_ERROR",
+          "Value": 8,
+          "Description": "Crash dump caused by TX thread stack error Bug Check"
         }
       ]
     },

@@ -5,7 +5,7 @@
 [[_TOC_]]
 
 ## Introduction
-This document outlines the design for the APcore service, which is a critical component of the MSCP AP core boot process. The APcore service is responsible for managing local and remote AP core and cluster power transitions related to boot, secondary core power on, shutdown/reset, and AP system "warm" reset (RESET2).
+This document outlines the design for the APcore service, which is a critical component of the MSCP AP core boot process. The APcore service is responsible for managing die-local AP core and cluster power transitions related to boot, secondary core power on, shutdown/reset, and AP system "warm" reset (RESET2).
 
 ### Terms
 
@@ -44,9 +44,9 @@ The APcore service will have dependencies on the following via OS, pisoc libs, a
 
 The APcore service will be implemented using the driver framework.  To support the specified requirements, the service will implement a unique, service-specific interface as well as the startup/shutdown interface (SSI), and complete registration with the startup/shutdown service.  
 
-To achieve core and cluster power transitions, the service will send appropriate requests to the local and remote (TBD) PPUs using the silicon libs PPU library.  
+To achieve core and cluster power transitions, the service will send appropriate requests to the local die PPUs using the silicon libs PPU library.  
 
-Remote handling is [TBD](https://azurecsi.visualstudio.com/Dev/_workitems/edit/1869647), but it is likely necessary to send requests to the remote APcore service, as some aspects of PPU (interrupts, specifically) are tied to the die of the specific AP core.  If interrupts are deemed to not be required, then it is also possible to write to the remote die's address space.   Note that interactions based on SSI will be for local die cores, only, as the startup/shutdown service will already provide necessary die<->die synchronization.
+>NOTE: Remote die AP core handling is unnecessary due to all users of APcore having a presence on both dies and will already remote their requests to the appropriate die.   This is true of SCMI (TFA will send SCMI requests to the SCP for the die that owns the AP core), startup/shutown (which will provide it's own die<->die synchronization for boot stages), etc.  This works well, as some aspects of PPU (interrupts, specifically) are tied to the die of the specific AP core.  
 
 ### Primary Core Boot
 
@@ -173,7 +173,7 @@ sequenceDiagram
 
 ### Set Reset Vector Address (RVBARADDR)
 
-The service will iterate over all cores, setting the RVBARADDR for each core to the value provided.  This is necessary to be able to handle the SCMI apcore_reset_address_set request.  Remote to other die if necessary; depends largely on ATU mapping.
+The service will iterate over all cores, setting the RVBARADDR for each core to the value provided.  This is necessary to be able to handle the SCMI apcore_reset_address_set request. 
 
 ```mermaid
 sequenceDiagram
@@ -191,14 +191,13 @@ sequenceDiagram
 
 ### Core Power On/Off
 
-The service will transition the specific core on/off using the PPU library.  This is necessary to handle the SCMI pd_power_state_set SCMI.  Remote to other die if necessary; PPU transitions using PPU irqs must be local to core's die.
+The service will transition the specific core on/off using the PPU library.  This is necessary to handle the SCMI pd_power_state_set SCMI.  PPU transitions using PPU irqs must be local to core's die.
 
 ```mermaid
 sequenceDiagram
     participant SCMI as SCMI Command Handler
     participant SSI1 as APcore Service
     SCMI -) SSI1: DFWK Request (APCORE_CORE_POWER_ON_ASYNC)
-    Note left of PPU: TBD - Handling for Core on remote die
     SSI1 ->> PPU: ppu_v1_set_power_mode(MODE_ON)
     PPU -->> SSI1: 
     SSI1 ->> PPU: ppu_dynamic_enable(MODE_OFF)
@@ -213,18 +212,18 @@ The service-specific DFWK requests are defined with available helper functions i
 
 | APcore Service DFWK Request ID | Description                                           |
 | -----------        | ----------------------------------------------------- |
-| APCORE_SET_RVBARADDR_ASYNC  | Used to set local and remote die reset vector address  |
-| APCORE_CORE_POWER_ON_ASYNC  | Used to power on a specific AP core (local or remote die) |
-| APCORE_CORE_POWER_OFF_ASYNC  | Used to power off a specific AP core (local or remote die) |
+| APCORE_SET_RVBARADDR_ASYNC  | Used to set local die reset vector address  |
+| APCORE_CORE_POWER_ON_ASYNC  | Used to power on a specific AP core (local to die) |
+| APCORE_CORE_POWER_OFF_ASYNC  | Used to power off a specific AP core (local to die) |
 
 Additionally, the service implements handlers for [Startup/Shutdown Interface (SSI)](../../../src/services/startup_shutdown/inc/startup_shutdown_ssi.h) requests.
 
 | APcore Service SSI Request ID | Phase/Type | Description                                           |
 | -----------        | -- | ----------------------------------------------------- |
-| SSI_STARTUP_STAGE_START_ASYNC  | STARTUP_PRIMARY_AP_CORE_BOOT | The service will boot the determined primary core |
-| SSI_STARTUP_STAGE_START_ASYNC  | STARTUP_CLUSTER_CORE_INIT / COLD_BOOT | The service will transition clusters off->on  |
+| SSI_STARTUP_STAGE_START_ASYNC  | STARTUP_PRIMARY_AP_CORE_BOOT | The service will boot the determined primary core (if local to die) |
+| SSI_STARTUP_STAGE_START_ASYNC  | STARTUP_CLUSTER_CORE_INIT / COLD_BOOT | The service will transition local clusters off->on  |
 | SSI_SHUTDOWN_QUIESCE_ASYNC     | SHUTDOWN, COLD_RESET | The service will power off all local die cores and clusters |
-| SSI_SHUTDOWN_QUIESCE_ASYNC     | AP_WARM_RESET | The service will power off all cores in preparation for AP warm reset |
+| SSI_SHUTDOWN_QUIESCE_ASYNC     | AP_WARM_RESET | The service will power off all local cores in preparation for AP warm reset |
 
 ## Warm Reset Considerations
 

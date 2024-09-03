@@ -64,13 +64,14 @@ class sdm_pcie_test(EchoFallsBaseTest):
         self.log.info("Running SDM PCIE Test. . .")
         self.dut.setup()
 
+        core_com_channel=self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel()
+
         if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
             KngPythiaTestSetup.reset_fpga_load_prodfw(self)
         
         elif (self.dut.get_dut_type() == DeviceType.SVP):
-            assert self.dut.mb.node_0.soc.primary_die.apns.channel_manager is not None
-            self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel().open()
-            self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel().is_open()
+            core_com_channel.open()
+            core_com_channel.is_open()
 
         else:
             self.log.error("Unsupported DUT type")
@@ -78,13 +79,13 @@ class sdm_pcie_test(EchoFallsBaseTest):
             return False
 
         self.log.info("Submitting ap_bm pcie_test command . . .") 
-        command_response=KngPythiaTestIF.write_to_uart(self=self, connection=self.dut.mb.node_0.soc.primary_die.apns.channel_manager, command="ap_bm pcie_test") 
+        command_response=core_com_channel.execute_command(command="ap_bm pcie_test", command_args= "")
         
         if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
             test_result = KngPythiaTestIF.parse_log(self=self, log_lines=command_response[1], pass_logs=pass_logs, fail_logs=fail_logs)
 
         elif (self.dut.get_dut_type() == DeviceType.SVP):
-            command_response=KngPythiaTestIF.read_from_uart(self=self, connection=self.dut.mb.node_0.soc.primary_die.apns.channel_manager, num_lines=17)
+            command_response=KngPythiaTestIF.read_from_uart(self=self, connection=self.dut.mb.node_0.soc.primary_die.apns.channel_manager, num_lines=35)
             test_result=KngPythiaTestIF.parse_log(self=self, log_lines=command_response, pass_logs=pass_logs, fail_logs=fail_logs)
         
         else:

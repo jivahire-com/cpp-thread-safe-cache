@@ -68,7 +68,7 @@ class mcp_heart_beat(EchoFallsBaseTest):
             self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel().open()
             assert self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel().is_open()
 
-            mcp_lines = ' '.join(KngPythiaTestIF.read_and_log_lines(self,connection=self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel(), num_lines=30))
+            mcp_lines = ' '.join(KngPythiaTestIF.read_from_uart(self,connection=self.dut.mb.node_0.soc.primary_die.mcp.channel_manager, num_lines=10))
             test_result = True if ('HeartBeat' in mcp_lines) else False
 
             self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel().close()
@@ -101,7 +101,7 @@ class mcp_heart_beat(EchoFallsBaseTest):
             self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel().open()
             assert self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel().is_open()
 
-            mcp_lines = ' '.join(KngPythiaTestIF.read_and_log_lines(self,connection=self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel(), num_lines=30))
+            mcp_lines = ' '.join(KngPythiaTestIF.read_from_uart(self,connection=self.dut.mb.node_0.soc.primary_die.mcp.channel_manager, num_lines=30))
             test_result = True if ('HeartBeat' in mcp_lines) else False
 
             self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel().close()

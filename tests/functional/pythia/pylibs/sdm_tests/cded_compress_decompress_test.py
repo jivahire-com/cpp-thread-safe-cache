@@ -2,9 +2,9 @@
 
 """
 - Python based Pythia 2.0 Test.
-- Tests the HeartBeat from SCP via UART.
+- Test that checks for cded compress decompress completion from AP core0.
 """
-import time
+
 import sys, os
 from pathlib import Path
 
@@ -17,8 +17,7 @@ from pythia.tdk.echofalls.constants.dut_types import DeviceType
 
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
-# Class name must match file name for Robot Framework Library usage
-class scp_heart_beat(EchoFallsBaseTest):
+class cded_compress_decompress_test(EchoFallsBaseTest):
 
     """
     :param name:                Name of the test case
@@ -54,41 +53,45 @@ class scp_heart_beat(EchoFallsBaseTest):
             host_name,
         )
     
-    def scp_heartbeat(self):
+    def cded_compress_decompress_test(self, pass_logs, fail_logs):
+        """ 
+        Test function: 
+            1. Setup the Test. 
+            2. Wait for AP to be up. Send 'ap_bm cded_test' command 
+            3. Read response and check if test passed or failed based on response
+            4. Teardown Test. 
         """
-        SCP heartbeat test:
-            1. Setup the Test.
-            2. Look for the SCP HeartBeat.
-            3. Teardown Test.
-        """
-        self.log.info("Running SCP heartBeat test . . .")
+        self.log.info("Running CDED compress decompress Test. . .")
         self.dut.setup()
+
+        core_com_channel=self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel()
 
         if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
             KngPythiaTestSetup.reset_fpga_load_prodfw(self)
-            time.sleep(30)
-            exp_num_lines=1400
         
         elif (self.dut.get_dut_type() == DeviceType.SVP):
-            # Ensure the host config file used alongside this test has these connections defined.
-            assert self.dut.mb.node_0.soc.primary_die.scp.channel_manager is not None
-            self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel().open()
-            assert self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel().is_open()
-            exp_num_lines=30
+            core_com_channel.open()
+            core_com_channel.is_open()
 
         else:
             self.log.error("Unsupported DUT type")
             self.dut.teardown()
             return False
 
+        self.log.info("Submitting ap_bm cded_test command . . .") 
+        command_response=core_com_channel.execute_command(command="ap_bm cded_test", command_args= "")
 
-        self.log.info("Reading SCP UART for HeartBeat . . .")
-        scp_lines = ' '.join(KngPythiaTestIF.read_from_uart(self=self, connection=self.dut.mb.node_0.soc.primary_die.scp.channel_manager, num_lines=exp_num_lines))
+        if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
+            test_result = KngPythiaTestIF.parse_log(self=self, log_lines=command_response[1], pass_logs=pass_logs, fail_logs=fail_logs)
 
-        self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel().close()
-
-        test_result = True if ('HeartBeat' in scp_lines) else False
-        self.test_notify(step="HeartBeat", msg="Test Done", _is_error=not(test_result))
+        elif (self.dut.get_dut_type() == DeviceType.SVP):
+            command_response=KngPythiaTestIF.read_from_uart(self=self, connection=self.dut.mb.node_0.soc.primary_die.apns.channel_manager, num_lines=50)
+            test_result=KngPythiaTestIF.parse_log(self=self, log_lines=command_response, pass_logs=pass_logs, fail_logs=fail_logs)
+        
+        else:
+            self.log.error("Unsupported DUT type")
+            self.dut.teardown()
+            return False
+            
         self.dut.teardown()
-
         return test_result

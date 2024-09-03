@@ -45,19 +45,6 @@ class KngPythiaTestIF(EchoFallsBaseTest):
             host_config,
             host_name,
         )
-    
-    def read_and_log_lines(self, connection, num_lines):
-        self.log.info(f"Reading [{num_lines}] lines from [{connection}]")
-
-        lines = []
-        for x in range(0, num_lines):
-            try:
-                line = connection.read_line()
-                lines.append(line)
-                self.log.info(f"Line [{x}]: \n {line}")
-            except:
-                self.log.error(f"Failed to read line [{x}] of [{num_lines}] lines")
-        return lines
 
     def read_from_uart(self, connection, num_lines):
         """
@@ -71,7 +58,7 @@ class KngPythiaTestIF(EchoFallsBaseTest):
         read_log = []
         for x in range(num_lines):
             try:
-                line = connection.get_current_channel().read_line()
+                line = connection.get_current_channel().read_line(timeout_seconds=5)
                 read_log.append(line)
                 self.log.info(f"Line [{x}]: \n {line}")
             except Exception as e:
@@ -148,16 +135,3 @@ class KngPythiaTestIF(EchoFallsBaseTest):
             return False  # Test fails if any success strings are missing
 
         return result
-    
-    def write_to_uart(self, connection, command):
-        """
-            Write a command to the UART connection and get the result.
-            :param connection: The UART connection object.
-            :param cmd: The command to execute on the UART connection.
-            :return: The result of the command execution.
-        """
-        assert self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel().is_open()
-        
-        command_response = ""
-        command_response = connection.get_current_channel().execute_command(command=command, command_args= "")
-        return command_response

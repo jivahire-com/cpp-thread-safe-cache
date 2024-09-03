@@ -69,7 +69,8 @@
             "SNPSLMD_LICENSE_FILE": "40003@gem-lic-01.svceng.com;40003@wanlic.svceng.com",
             "SNPS_VPX_START_SIMULATION_TIMEOUT": "1200",
             "SNPS_VPSESSION_LAUNCH_TIMEOUT_SEC": "1200",
-            "SNPS_VPX_DEFAULT_TIMEOUT": "1200"
+            "SNPS_VPX_DEFAULT_TIMEOUT": "1200",
+            "PYTHIA_DELAY_AFTER_SVP_LAUNCH": "180"
         }
     }
 }

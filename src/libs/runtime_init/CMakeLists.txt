@@ -14,6 +14,7 @@ add_library(${TARGET}
         atu_init.c
         avs_scp_init.c
         avs_scp_cli_init.c
+        build_info_cli_init.c
         cli_accel_intr_init.c
         cli_init.c
         cli_ddr_init.c
@@ -107,6 +108,7 @@ target_link_libraries(
         ms::lib::threadx
         ms::lib::ddr::cli
         ms::lib::tower
+        ms::lib::build_info_cli
         ms::service::accel_intr_client
         ms::service::accel_intr_service
         ms::service::ap_core

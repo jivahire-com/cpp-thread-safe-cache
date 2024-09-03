@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 
 #include <DfwkThreadXHost.h>     // for PDFWK_THREADX_HOST
+#include <build_data.h>          // for BUILD_PC, BUILD_TIMESTAMP, GIT_BRANCH
 #include <fpfw_init.h>           // for FPFW_INIT_STATUS_SUCCESS, fpfw_init_get...
 #include <interrupts.h>          // IWYU pragma: keep
 #include <silibs_mcp_top_regs.h> // IWYU pragma: keep
@@ -26,6 +27,44 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
+static void print_build_info()
+{
+    CRITICAL_PRINT("--------------------------------------------------------------\n");
+    CRITICAL_PRINT(" _  ___\n");
+    CRITICAL_PRINT("| |/ (_)_ __   __ _ ___  __ _  __ _| |_ ___\n");
+    CRITICAL_PRINT("| ' /| | '_ \\ / _` / __|/ _` |/ _` | __/ _ \\\n");
+    CRITICAL_PRINT("| . \\| | | | | (_| \\__ \\ (_| | (_| | ||  __/\n");
+    CRITICAL_PRINT("|_|\\_\\_|_| |_|\\__, |___/\\__, |\\__,_|\\__\\___|\n");
+    CRITICAL_PRINT(" __  __  ____ |____/____|____/___                _ _______        __\n");
+    CRITICAL_PRINT("|  \\/  |/ ___| / ___|  _ \\  |  _ \\ _ __ ___   __| |  ___\\ \\      / /\n");
+    CRITICAL_PRINT("| |\\/| |\\___ \\| |   | |_) | | |_) | '__/ _ \\ / _` | |_   \\ \\ /\\ / / \n");
+    CRITICAL_PRINT("| |  | | ___) | |___|  __/  |  __/| | | (_) | (_| |  _|   \\ V  V /  \n");
+    CRITICAL_PRINT("|_|  |_||____/ \\____|_|     |_|   |_|  \\___/ \\__,_|_|      \\_/\\_/  \n");
+
+    CRITICAL_PRINT("----------------------------------------------------------------\n");
+    CRITICAL_PRINT("Build Version: %d.%d.%d\n", (int)MAJOR_VERSION, (int)MINOR_VERSION, (int)PATCH_VERSION);
+    CRITICAL_PRINT("Branch: %s\n", GIT_BRANCH);
+    CRITICAL_PRINT("Commit: %s\n", GIT_COMMIT_SHA);
+    CRITICAL_PRINT("Build Timestamp: %s\n", BUILD_TIMESTAMP);
+    CRITICAL_PRINT("Build PC: %s\n", BUILD_PC);
+    CRITICAL_PRINT("----------------------------------------------------------------\n");
+
+    /* MSCP Build Info */
+    CRITICAL_PRINT("MSCP tag " SCP_DESCRIBE "\n");
+    CRITICAL_PRINT("MSCP Commit " GIT_COMMIT_SHA "\n");
+
+    /* Silibs Info */
+    CRITICAL_PRINT("Silibs tag " SILIBS_DESCRIBE "\n");
+    CRITICAL_PRINT("Silibs Commit " SILIBS_LAST_COMMIT_DESCRIBE "\n");
+
+    /* SDM Info */
+    CRITICAL_PRINT("SDM tag " SDM_DESCRIBE "\n");
+    CRITICAL_PRINT("SDM Commit " SDM_LAST_COMMIT_DESCRIBE "\n");
+
+
+    CRITICAL_PRINT("----------------------------------------------------------------\n");
+}
+
 FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk", "nvic"))
 {
     fpfw_init_component_id_t dfwk_id = "dfwk";
@@ -63,5 +102,9 @@ FPFW_INIT_COMPONENT(std_io, FPFW_INIT_DEPENDENCIES("uart"))
     // Initialize a pl011 interface for stdio_textio
     textio_pl011_device_interface_initialize(uart_handle, &pl011_interface_stdio);
     stdio_textio_init(&pl011_interface_stdio.header);
+
+    /* SCP Build Info */
+    print_build_info();
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

@@ -15,6 +15,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.lib.utils
         fwlib.platform.dfwkhost.threadx
+        ms::build_data
         ms::cmocka::testrunner
         ms::driver::textio::pl011
         ms::lib::scp_interrupts

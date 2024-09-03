@@ -26,6 +26,8 @@
 // Word length in bytes
 #define DEFAULT_WORD_SIZE sizeof(uint32_t)
 
+#define ACCEL_CLI_GET_CFG_ADDRESS(addr) (SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS + addr)
+
 /*-------------------------------- Typedefs ---------------------------------*/
 
 /*--------------------------- Function Prototypes ---------------------------*/
@@ -49,55 +51,73 @@ static FPFW_CLI_COMMAND s_accel_int_commands_table[] = {
 reg_data_t accel_interrupt_handler_registers[] = {
     // sdm_ext_cfg_regs.emcpu_cfg.wdt_intr_set
     {
-        .reg_address = _ADDRESSBLOCK_0X100000_EMCPU_CFG_WDT_INTR_SET_ADDRESS,
+        .reg_address = ACCEL_CLI_GET_CFG_ADDRESS(_ADDRESSBLOCK_0X100000_EMCPU_CFG_WDT_INTR_SET_ADDRESS),
         .reg_rw_type = READ_WRITE_ONE_TO_SET,
         .word_size   = DEFAULT_WORD_SIZE
     },
     // sdm_ext_cfg_regs_regs.bcfg.boot_cfg.fab_wdt_intr_set
     {
-        .reg_address = _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_FAB_WDT_INTR_SET_ADDRESS,
+        .reg_address = ACCEL_CLI_GET_CFG_ADDRESS(_ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_FAB_WDT_INTR_SET_ADDRESS),
         .reg_rw_type = READ_WRITE_ONE_TO_SET,
         .word_size   = DEFAULT_WORD_SIZE
     },
     // sdm_ext_cfg_regs_regs.bcfg.boot_cfg.sdm_wdt_intr_set
     {
-        .reg_address = _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_SDM_WDT_INTR_SET_ADDRESS,
+        .reg_address = ACCEL_CLI_GET_CFG_ADDRESS(_ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_SDM_WDT_INTR_SET_ADDRESS),
         .reg_rw_type = READ_WRITE_ONE_TO_SET,
         .word_size   = DEFAULT_WORD_SIZE
     },
     // sdm_ext_cfg_regs.bcfg.boot_cfg.fab_err_intr_set
     {
-        .reg_address = _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_FAB_ERR_INTR_SET_ADDRESS,
+        .reg_address = ACCEL_CLI_GET_CFG_ADDRESS(_ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_FAB_ERR_INTR_SET_ADDRESS),
         .reg_rw_type = READ_WRITE_ONE_TO_SET,
         .word_size   = DEFAULT_WORD_SIZE
     },
     // sdm_ext_cfg_regs.misc.sys_ext_intr2.msk
     {
-        .reg_address = _ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_MSK_ADDRESS,
+        .reg_address = ACCEL_CLI_GET_CFG_ADDRESS(_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_MSK_ADDRESS),
         .reg_rw_type = READ_WRITE,
         .word_size   = DEFAULT_WORD_SIZE
     },
     // sdm_ext_cfg_regs.misc.sys_ext_intr2.stat
     {
-        .reg_address = _ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_STAT_ADDRESS,
+        .reg_address = ACCEL_CLI_GET_CFG_ADDRESS(_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_STAT_ADDRESS),
         .reg_rw_type = READ_ONLY,        // Setting this to Read Only over CLI for protection. HW settings: READ_WRITE_ONE_TO_CLEAR
         .word_size   = DEFAULT_WORD_SIZE
     },
     // sdm_ext_cfg_regs.misc.sys_ext_intr2.stat_set
     {
-        .reg_address = _ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_STAT_SET_ADDRESS,
+        .reg_address = ACCEL_CLI_GET_CFG_ADDRESS(_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_STAT_SET_ADDRESS),
         .reg_rw_type = READ_WRITE_ONE_TO_SET,
         .word_size   = DEFAULT_WORD_SIZE
     },
     // sdm_ext_cfg_regs.misc.sys_ext_intr2.msg_send_intr
     {
-        .reg_address = _ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_MSG_SEND_INTR_ADDRESS,
+        .reg_address = ACCEL_CLI_GET_CFG_ADDRESS(_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_MSG_SEND_INTR_ADDRESS),
         .reg_rw_type = READ_WRITE_ONE_TO_SET,
         .word_size   = DEFAULT_WORD_SIZE
     },
     // sdm_ext_cfg_regs.misc.sys_ext_intr2.msg_send_intr_mask
     {
-        .reg_address = _ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_MSG_SEND_INTR_MSK_ADDRESS,
+        .reg_address = ACCEL_CLI_GET_CFG_ADDRESS(_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_MSG_SEND_INTR_MSK_ADDRESS),
+        .reg_rw_type = READ_ONLY,
+        .word_size   = DEFAULT_WORD_SIZE
+    },
+    // ITCM
+    {
+        .reg_address = SDM_EXT_CFG_EMCPU_TCM_ITCM_ADDRESS + DEFAULT_WORD_SIZE,
+        .reg_rw_type = READ_ONLY,
+        .word_size   = DEFAULT_WORD_SIZE
+    },
+    // D0TCM
+    {
+        .reg_address = SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS + DEFAULT_WORD_SIZE,
+        .reg_rw_type = READ_ONLY,
+        .word_size   = DEFAULT_WORD_SIZE
+    },
+    // D1TCM
+    {
+        .reg_address = SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS + (SDM_EXT_CFG_EMCPU_TCM_DTCM_SIZE >> 1) + DEFAULT_WORD_SIZE,
         .reg_rw_type = READ_ONLY,
         .word_size   = DEFAULT_WORD_SIZE
     },
@@ -159,8 +179,7 @@ static int cli_accel_int_read_write_reg(uint32_t reg_offset, uint32_t* reg_value
 {
     int index = cli_accel_int_get_register_idx(reg_offset);
 
-    uint32_t reg_addr = accelerator_ip_get_atu_mapped_cfg_address(ACCELERATOR_SDMSS) +
-                        SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS + reg_offset;
+    uint32_t reg_addr = accelerator_ip_get_atu_mapped_cfg_address(ACCELERATOR_SDMSS) + reg_offset;
 
     if (index < 0)
     {

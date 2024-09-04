@@ -64,6 +64,10 @@ mock_target(${TARGET}
     pid_update_setpoint
     power_cap_get_vrcpu_cap
     power_cap_finalize
+    power_distribution_distribute_resources
+    power_distribution_distribute_warmstart_resources
+    power_distribution_get_minimum_plimit
+    power_distribution_minimum_plimit_updates
     power_hw_clear_force_pmin
     power_hw_force_pmin
     power_hw_gpio_rack_limit_asserted

@@ -88,6 +88,7 @@ typedef enum
     power_loops_minimum_plimit_t_MIN_16 = 5,           // Require 16 plimit requests
     power_loops_minimum_plimit_t_MIN_32 = 6,           // Require 32 plimit requests
     power_loops_minimum_plimit_t_MIN_64 = 7,           // Require 64 plimit requests
+    power_loops_minimum_plimit_t_MIN_128 = 8,           // Require max 128 plimit requests
     _power_loops_minimum_plimit_t_PADDING = 0xffffffff // Force packing to int size
 } power_loops_minimum_plimit_t;
 

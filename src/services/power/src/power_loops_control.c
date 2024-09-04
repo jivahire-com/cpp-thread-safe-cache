@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include "pid_resource.h"
+#include "power_distribution_i.h"
 #include "power_events.h"
 #include "power_hw_int_i.h" // for force pmin
 #include "power_hw_int_i.h"
@@ -144,13 +145,13 @@ static void get_current_state()
     // hw_get_state();
 
     // now read per core state
-    for (unsigned i = 0; i < NUM_AP_CORES_PER_DIE; ++i)
+    for (unsigned core_idx = 0; core_idx < NUM_AP_CORES_PER_DIE; ++core_idx)
     {
         // only want to engage in state collection for valid cores
-        if (corebits_is_bit_set(&p_runconfig->fuses.valid_cores, i))
+        if (corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core_idx))
         {
-            power_core_t* core = &s_ctrl_loop.cores.core[i];
-            hw_get_core_state(p_runconfig, i, core);
+            power_core_t* core = &s_ctrl_loop.cores.core[core_idx];
+            hw_get_core_state(p_runconfig, core_idx, core);
             // basically - need to assign cores to their throttling priority,
             // which is being kept per priority level in the throttle_priority
             // array.  If we're in all-core power capping mode, then index into
@@ -165,36 +166,37 @@ static void get_current_state()
                                                                         : (VM_THROT_COUNT - 1);
             }
             // set bit for core in its throttle priority level
-            corebits_set_bit(&s_ctrl_loop.throttle_priority[index], i);
+            corebits_set_bit(&s_ctrl_loop.throttle_priority[index], core_idx);
 
             // find the minimum (max performance) allowable plimit for this core
             // based on collected data
-            uint8_t core_min_plimit = MIN_PLIMIT; // power_distribution_get_minimum_plimit(core);
+            uint8_t core_min_plimit = power_distribution_get_minimum_plimit(p_runconfig, &s_ctrl_loop.cores, core_idx);
 
             // below would be totally unexpected, but since we're using
             // values passed in through config (which should already be
             // doing bounds checks), adding this to be
             if (core_min_plimit > MAX_PLIMIT)
             {
-                POWER_ET_WARN(POWER_ET_TYPE_CTRLLOOP_INVALID_MIN_PLIMIT, POWER_ET_ENCODE_DETAIL_CORE(core_min_plimit, i));
+                POWER_ET_WARN(POWER_ET_TYPE_CTRLLOOP_INVALID_MIN_PLIMIT,
+                              POWER_ET_ENCODE_DETAIL_CORE(core_min_plimit, core_idx));
                 POWER_LOG_ERR("[POWER CTRL LOOP] Invalid min plimit: %d", core_min_plimit);
                 core_min_plimit = MAX_PLIMIT;
             }
 
             // set a bit in the plimit_valid bits for the minimum plimit of this
             // core
-            corebits_set_bit(&s_ctrl_loop.plimit_valid[core_min_plimit], i);
+            corebits_set_bit(&s_ctrl_loop.plimit_valid[core_min_plimit], core_idx);
             // set value per core for eventual adjustment
             core->min_plimit = core_min_plimit;
         }
     }
 
     // complete plimit_valid data
-    for (int i = 0; i < MAX_PLIMIT; ++i)
+    for (int plimit_idx = 0; plimit_idx < MAX_PLIMIT; ++plimit_idx)
     {
         // if a plimit is valid in a higher perf, we'll automatically indicate
         // it is valid in a lower perf
-        corebits_or(&s_ctrl_loop.plimit_valid[i + 1], &s_ctrl_loop.plimit_valid[i]);
+        corebits_or(&s_ctrl_loop.plimit_valid[plimit_idx + 1], &s_ctrl_loop.plimit_valid[plimit_idx]);
     }
 }
 
@@ -239,10 +241,8 @@ static void warmstart_entry_handler(int event, const void* event_data)
     // get necessary runtime config data
     power_runconfig_t* p_runconfig = power_runconfig_get();
 
-    /* TODO:  https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491026/
     // Fixed Distribution
-    power_distribution_distribute_warmstart_resources();
-    */
+    power_distribution_distribute_warmstart_resources(p_runconfig, &s_ctrl_loop);
 
     // clear pending bits for any CPUs that are disabled
     corebits_and(&s_ctrl_loop.plimits_pending, &p_runconfig->fuses.valid_cores);
@@ -310,15 +310,11 @@ static void distribute_available_handler(int event, const void* event_data)
                                            .vcpu_cap = temp}));
         */
 
-        /* TODO:  https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491026/
         // Determine Distribution
-        power_distribution_distribute_resources();
+        power_distribution_distribute_resources(p_runconfig, &s_ctrl_loop);
 
         // sets pending bits on a configured minimum number of cores
-        power_distribution_minimum_plimit_updates();
-        */
-        // remove with above TODO
-        s_ctrl_loop.plimits_pending = p_runconfig->fuses.valid_cores;
+        power_distribution_minimum_plimit_updates(p_runconfig, &s_ctrl_loop);
 
         // clear pending bits for any CPUs that are disabled
         corebits_and(&s_ctrl_loop.plimits_pending, &p_runconfig->fuses.valid_cores);
@@ -504,12 +500,12 @@ static void set_plimit_handler(power_ctrl_loop_state_t next_state, power_ctrl_lo
             POWER_LOG_ERR("Pending PLIMIT changes.");
             POWER_ET_AFFECTED_CORES(POWER_ET_TYPE_CTRLLOOP_PLIMITS_PENDING, s_ctrl_loop.plimits_pending);
             POWER_ET_AFFECTED_CORES(POWER_ET_TYPE_CTRLLOOP_PLIMITS_SUCCESSFUL, s_ctrl_loop.plimits_successful);
-            for (unsigned i = 0; i < BITTYPE_COUNT; ++i)
+            for (unsigned pending_idx = 0; pending_idx < BITTYPE_COUNT; ++pending_idx)
             {
                 POWER_LOG_ERR("%d Pending %08" PRIx32 " Successful %08" PRIx32,
-                              i,
-                              s_ctrl_loop.plimits_pending.bits[i],
-                              s_ctrl_loop.plimits_successful.bits[i]);
+                              pending_idx,
+                              s_ctrl_loop.plimits_pending.bits[pending_idx],
+                              s_ctrl_loop.plimits_successful.bits[pending_idx]);
             }
             power_control_loop_change_state(POWER_CONTROL_STATE_ERROR);
         }

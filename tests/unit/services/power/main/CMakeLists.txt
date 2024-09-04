@@ -3,6 +3,7 @@ set(TARGET power.test.main)
 # Compile test
 add_executable(${TARGET}
     power_cap_test.cpp
+    power_distribution_test.cpp
     power_fuses_test.cpp
     power_knobs_test.cpp
     power_main_test.cpp

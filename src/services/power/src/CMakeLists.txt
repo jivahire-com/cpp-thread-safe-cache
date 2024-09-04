@@ -6,6 +6,7 @@ add_library(${TARGET}
         pid_resource.c
         power_cap.c
         power_cli_requests.c
+        power_distribution.c
         power_events.c
         power_fuses.c
         power_hw_int.c

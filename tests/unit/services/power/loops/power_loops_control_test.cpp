@@ -194,6 +194,32 @@ void __wrap_power_telemetry_message_poll(power_cores_t* p_cores, corebits_t* p_s
     check_expected_ptr(p_success_bits);
 }
 
+void __wrap_power_distribution_distribute_resources(power_runconfig_t* p_runconfig, power_ctrl_loop_detail_t* p_ctrlloop)
+{
+    check_expected_ptr(p_runconfig);
+    check_expected_ptr(p_ctrlloop);
+}
+
+void __wrap_power_distribution_distribute_warmstart_resources(power_runconfig_t* p_runconfig, power_ctrl_loop_detail_t* p_ctrlloop)
+{
+    check_expected_ptr(p_runconfig);
+    check_expected_ptr(p_ctrlloop);
+}
+
+uint8_t __wrap_power_distribution_get_minimum_plimit(power_runconfig_t* p_runconfig, power_cores_t* p_cores, unsigned int core)
+{
+    check_expected_ptr(p_runconfig);
+    check_expected_ptr(p_cores);
+    check_expected(core);
+    return mock_type(uint8_t);
+}
+
+void __wrap_power_distribution_minimum_plimit_updates(power_runconfig_t* p_runconfig, power_ctrl_loop_detail_t* p_ctrlloop)
+{
+    check_expected_ptr(p_runconfig);
+    check_expected_ptr(p_ctrlloop);
+}
+
 // End mocks
 
 } // extern "C"
@@ -400,13 +426,16 @@ void setup_message_poll()
 // tests for collect_inputs_handler
 POWER_TEST(control_collect_inputs_handler__signal_entry, NULL, NULL)
 {
+#define DEFAULT_MIN_PLIMIT 0x10
+#define DEFAULT_CORE_ZERO 0 // needs to be 0 for this test
+
     power_service_config_t sconfig = {};
     power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
     // expectations on entry
 
     // expectations for get_current_state
     // set core 0 to valid for HW reads
-    corebits_set_bit(&test_runconfig.fuses.valid_cores, 0);
+    corebits_set_bit(&test_runconfig.fuses.valid_cores, DEFAULT_CORE_ZERO);
 
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 
@@ -414,8 +443,15 @@ POWER_TEST(control_collect_inputs_handler__signal_entry, NULL, NULL)
 
     setup_message_poll();
 
+    // will get minimum plimit
+    expect_value(__wrap_power_distribution_get_minimum_plimit, core, DEFAULT_CORE_ZERO);
+    expect_value(__wrap_power_distribution_get_minimum_plimit, p_runconfig, &test_runconfig);
+    expect_not_value(__wrap_power_distribution_get_minimum_plimit, p_cores, NULL);
+    will_return(__wrap_power_distribution_get_minimum_plimit, DEFAULT_MIN_PLIMIT);
+
     // call state handler
     call_handler(POWER_CONTROL_STATE_COLLECT_INPUTS, POWER_CTRL_LOOP_SIGNAL_ENTRY, NULL);
+
 }
 
 POWER_TEST(control_collect_inputs_handler__signal_vr_read, NULL, NULL)
@@ -463,6 +499,11 @@ POWER_TEST(control_warmstart_handler__signal_entry, NULL, NULL)
     will_return(__wrap_power_runconfig_get, &test_runconfig);
     // should change state to set VR before PLIMIT after handling fixed warmstart distribution
     setup_expectations_for_state_change(POWER_CONTROL_STATE_SET_VR_BEFORE_PLIMIT);
+    
+    // setup expectations for warmstart distribution
+    expect_value(__wrap_power_distribution_distribute_warmstart_resources, p_runconfig, &test_runconfig);
+    expect_not_value(__wrap_power_distribution_distribute_warmstart_resources, p_ctrlloop, NULL);
+    
     // call state handler
     call_handler(POWER_CONTROL_STATE_WARMSTART_ENTRY, POWER_CTRL_LOOP_SIGNAL_ENTRY, NULL);
 }
@@ -505,6 +546,13 @@ void setup_dist_available_signal_entry(bool new_cap, bool rack_limit)
     }
 
     setup_expectations_for_state_change(POWER_CONTROL_STATE_SET_VR_BEFORE_PLIMIT);
+
+    // set expectations for distribute resources
+    expect_value(__wrap_power_distribution_distribute_resources, p_runconfig, &test_runconfig);
+    expect_not_value(__wrap_power_distribution_distribute_resources, p_ctrlloop, NULL);
+    // set expectations for minimum plimit updates
+    expect_value(__wrap_power_distribution_minimum_plimit_updates, p_runconfig, &test_runconfig);
+    expect_not_value(__wrap_power_distribution_minimum_plimit_updates, p_ctrlloop, NULL);
 
     // call state handler
     call_handler(POWER_CONTROL_STATE_DISTRIBUTE_AVAILABLE, POWER_CTRL_LOOP_SIGNAL_ENTRY, NULL);

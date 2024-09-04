@@ -70,6 +70,9 @@
 /* power cap */
 #define NO_POWER_CAP (UINT16_MAX)
 
+/* max number of minimum plimit update options */
+#define PLIMIT_UPDATE_MAX 8
+
 /*-------------- Typedefs ----------------*/
 // Enums for power cap result
 enum _power_cap_update_result_t

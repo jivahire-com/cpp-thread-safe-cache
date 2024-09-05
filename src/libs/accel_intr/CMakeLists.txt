@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
     PUBLIC
         ms::lib::utils
         ms::lib::accelerator_ip
+        silibs::idsw_kng
         silibs::kng_silibs_platform
         silibs::sdm_em_ext_interrupts
         ms::service::accel_intr_service

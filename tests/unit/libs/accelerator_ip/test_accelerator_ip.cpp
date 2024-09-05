@@ -143,16 +143,14 @@ void __wrap_configure_cdedss_vab_system_addr_map(CDEDSS_INSTANCE cdedss_id, uint
     UNUSED(tower_base_addr);
 }
 
-int __wrap_accel_intr_irq_init(eACCELERATOR_TYPE accel_type, uint32_t atu_mapped_address)
+int __wrap_accel_intr_irq_init(eACCELERATOR_TYPE accel_type)
 {
-    UNUSED(atu_mapped_address);
-
     if (accel_type >= MAX_ACCELERATOR_TYPES)
     {
         return ACCEL_INTR_RET_FAIL_INTR_INIT;
     }
 
-    return mock_type(int);
+    return ACCEL_INTR_RET_SUCCESS;
 }
 
 bool __wrap_system_info_is_hsp_present()

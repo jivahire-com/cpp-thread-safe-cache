@@ -23,7 +23,8 @@
 #include <accelerator_ip.h> // for ACCELERATOR_CDEDSS, ACCELERATOR_SDMSS
 #include <bitops.h>
 #include <cortex_m7_atomics.h> // for cortex_m7_atomic_call_data_memory_barrier
-#include <kng_atu_mappings.h>  // for ATU_MAPPING_CDEDSS_BASE, ATU...
+#include <idsw_kng.h>
+#include <kng_atu_mappings.h> // for ATU_MAPPING_CDEDSS_BASE, ATU...
 #include <nvic.h>
 #include <sdm_ext_cfg_regs.h> // for _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BPE_SB_TEL_ECC_CNTR_ADDRESS
 #include <stdbool.h>          // for false
@@ -89,6 +90,13 @@ static uint32_t accel_intr_nvic_init(eACCELERATOR_TYPE accel_type)
 
 void accel_intr_emcpu_wdt_control(uint32_t ext_cfg_addr, uint8_t enable)
 {
+    if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
+    {
+        // Watchdog interrupt is not supported in SVP yet so return in case of SVP
+        // TODO: ADO 2013017: Remove this when SVP support WDT interrupt.
+        return;
+    }
+
     _addressblock_0x100000_emcpu_cfg_wdt_ctrl emcpu_cfg_wdt_ctrl;
     emcpu_cfg_wdt_ctrl.as_uint32 = 0x0;
     emcpu_cfg_wdt_ctrl.en = enable;

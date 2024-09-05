@@ -311,21 +311,15 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
 #endif
 
     /**
-     * TODO: Task 1976613: [SCP] Enable Accel Interrupt handling in SVP
+     * TODO: Task 1973445: [SCP] Move Accel Intr init in SCP after mailbox communication
      */
-    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
-    {
-        /**
-         * TODO: Task 1973445: [SCP] Move Accel Intr init in SCP after mailbox communication
-         */
-        printf("accel lib: Initialize accel interrupt\n");
+    printf("accel lib: Initialize accel interrupt\n");
 
-        ret = accel_intr_irq_init(get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type));
-        if (ret != ACCEL_INTR_RET_SUCCESS)
-        {
-            critical_print("Accel IP: init_accelerator: Accel Interrupt init failed.\n");
-            return ACCEL_RET_FAIL_INTR_INIT;
-        }
+    ret = accel_intr_irq_init(get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type));
+    if (ret != ACCEL_INTR_RET_SUCCESS)
+    {
+        critical_print("Accel IP: init_accelerator: Accel Interrupt init failed.\n");
+        return ACCEL_RET_FAIL_INTR_INIT;
     }
 
     return ACCEL_RET_SUCCESS;

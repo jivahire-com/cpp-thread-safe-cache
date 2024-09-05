@@ -189,8 +189,8 @@ runsvp -SimConfig scp_mcp_chie_bins -UseGui
 
 ### With kingsgate hsp scp ifwi flash
 
-Create-ScpIfwi.ps1 takes the ifwi from hsp sprt package and appends scp image with it to create a kingsgate 
-hsp scp ifwi. This step needs to be repeated everytime the scp fw is being built.
+Building FW automatically creates a test IFWI with the locally built SCP and MCP FW (and the dependencies specified in packages.xml)
+This is used with the hsp_bl_scp SVP config.
 Launch the SVP with the hsp bl scp config.
 
 ```powershell

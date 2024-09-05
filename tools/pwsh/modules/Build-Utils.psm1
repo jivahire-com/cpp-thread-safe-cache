@@ -612,8 +612,9 @@ Function Invoke-CreateIfwi()
     }
 
    
-    # invoke the script to create the ifwi file
-    & "$env:REPO_APP_TOOLS_DIR\pwsh\Create-ScpIfwi.ps1"
+    # invoke datwizard to create the ifwi files
+    & ${env:REPO_APP_PATH_1pfw.datwizard-preview-x86_64-pc-windows-msvc}\tools\datwizard.exe build --manifest-path $env:REPO_APP_TOOLS_DIR/dat_config/dat.toml --flavor kingsgate.ifwi.svp.debug.custom --outdir $env:REPO_APP_TARGET_FLASH_DIR
+    & ${env:REPO_APP_PATH_1pfw.datwizard-preview-x86_64-pc-windows-msvc}\tools\datwizard.exe build --manifest-path $env:REPO_APP_TOOLS_DIR/dat_config/dat.toml --flavor kingsgate.ifwi.fpga.debug.custom --outdir $env:REPO_APP_TARGET_FLASH_DIR
 }
 
 <#

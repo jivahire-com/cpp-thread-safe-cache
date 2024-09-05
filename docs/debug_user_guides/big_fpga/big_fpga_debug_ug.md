@@ -69,11 +69,12 @@ This is the user guide to debug MSCP firmware on the BigFPGA machines.
     ```
 
 1. To start TRACE32 sessions for HSP, SCP, MCP, AP, run the `TRACE32_USB.bat` script found under `R:\Kingsgate\Kingsgate_TRACE32\Start` folder.
+1. SCP the FPGA IFWI to the BMC (.build\Debug\arm-eabi-aarch\bin\flash\kingsgate.ifwi.fpga.debug.custom.dat)
+1. Use bios-updater on BMC to flash the IFWI: `bios-updater -mode fwupdate -file /tmp/kingsgate.ifwi.fpga.debug.custom.dat`
 1. Reset the SoC by running the following from the TRACE32 HSP session: `cd.do R:\Kingsgate\Kingsgate_TRACE32\Prep\HSPresetSystem.cmm`.
-1. Init the SoC and bring up AP from reset using this command on the SCP TRACE32 SCP session: `cd.do R:\Kingsgate\Kingsgate_TRACE32\Prep\SCPprepAP.cmm`
-1. (O) Load the production scp firmware by running this command on the SCP TRACE32 SCP session: `Data.LOAD.Elf R:\Users\<alias>\Kingsgate.MSCP\.build\Debug\arm-eabi-aarch\bin\scp_fw.elf /StripPART "Kingsgate.MSCP`. In this, replace `<alias>` with your alias folder name created during **Environment Setup**. This command loads scp_fw.elf and strips all prefixes before Kingsgate.MSCP in any referenced paths.
+1. (O) Load the production scp firmware symbols by running this command on the SCP TRACE32 SCP session: `Data.LOAD.Elf R:\Users\<alias>\Kingsgate.MSCP\.build\Debug\arm-eabi-aarch\bin\scp_fw.elf /nocode /StripPART "Kingsgate.MSCP"`. In this, replace `<alias>` with your alias folder name created during **Environment Setup**. This command loads scp_fw.elf symbols and strips all prefixes before Kingsgate.MSCP in any referenced paths.
 1. (O) Run the command `symbol.SourcePATH.SetBaseDir R:\Users\<alias>\Kingsgate.MSCP` on the SCP Trace32 session to remap reference paths to the network drive. Again, replace `<alias>` with your alias folder name created during **Environment Setup**.
 1. (O) You can now debug code on the FPGA system, and source code is updated and mapped to the elf.
-1. (O) In case you need to make changes to code and test, update the source code on your Dev PC, and perform steps 1, 4, 6, 7, and 8.
+1. (O) In case you need to make changes to code and test, update the source code on your Dev PC, and perform steps 2, 3, 4 again
 
 ## FPGA FAQs

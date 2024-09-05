@@ -50,6 +50,7 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     # Mock external MSCP interfaces
     enable_vab_isrs
+    plat_overrides_post_rp_ready
     # DFWK mocks
     DfwkQueueEnqueueRequest
     DfwkAsyncRequestComplete

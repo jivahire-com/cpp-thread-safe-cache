@@ -33,3 +33,15 @@
  *          the pcie rpss.
  */
 void plat_overrides_pre_pciess_config_ss_for_bifur(pcie_ss_entity_t* rpss);
+
+/**
+ *  @brief Overrides : 
+ *          1. Program the GIC Comparator in the RPSS to enable MSI 
+ *
+ *  @param[in] rpss
+ *             Instance of the pcie rpss being configured.
+ *
+ * @return None - majority of this routine will just overwrite registers within
+ *          the pcie rpss.
+ */
+void plat_overrides_post_rp_ready(pcie_ss_entity_t* rpss);

@@ -268,6 +268,7 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_success, test_setup, test_teardo
     will_return(__wrap_pciess_rps_post_rp_ready_init, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_clear_intus, SILIBS_SUCCESS);
     expect_value(__wrap_enable_vab_isrs, vab_instances_to_init, (1 << r.rpss_index));
+    expect_value(__wrap_plat_overrides_post_rp_ready, rpss, &mock_pcie_ent);
     int32_t ret = pcie_sched_sync_op(&(r.header));
     assert_int_equal(ret, 0);
     assert_int_equal(r.status, SILIBS_SUCCESS);

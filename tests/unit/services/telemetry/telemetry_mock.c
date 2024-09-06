@@ -10,12 +10,10 @@
 /*------------- Includes -----------------*/
 #include "telemetry_ut.h"
 
-#include <DfwkClient.h> // for PDFWK_DEVICE_HEADER, PDFWK_INTERFACE_HEADER
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <pwr_telemetry_data.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
-#include <telmain_i.h>
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
 
 /*-- Symbolic Constant Macros (defines) --*/

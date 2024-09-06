@@ -3,14 +3,12 @@
 //
 
 /**
- * @file telmain_rim.c
- * Non dfwk APIs for telemetry run time information manager
- * capturing all sensor data and placed into respective runtime
- * telemetry resources
+ * @file tlm_logger.c
+ * Consume sensor fifo data and log telemetry data
  */
 
 /*------------- Includes -----------------*/
-#include "telmain_i.h" // internal APIs
+#include "tlm_logger_i.h" // internal APIs
 
 #include <assert.h>              // IWYU pragma: keep for static_assert
 #include <fpfw_status.h>         // for FPFW_STATUS_SUCCEEDED, fpf...
@@ -26,8 +24,8 @@
 
 typedef struct
 {
-    uint8_t throttling_type;
-    uint8_t event;
+    uint8_t throttle_source;
+    uint8_t transition_event;
 } throttling_properties_t;
 
 /*-------- Function Prototypes -----------*/
@@ -44,18 +42,18 @@ uint16_t core_pwr_sample[NUMBER_OF_CORES_PER_DIE] = {0};
 uint32_t pstate_accum[NUMBER_OF_CORES_PER_DIE][NUMBER_OF_PSTATES] = {0};
 
 static throttling_properties_t throttling_prop[] = {
-    // throttling_type              // event                // Status from HAS Document index value
-    {THROTTLING_TYPE_NONE, THROTTLING_EV_NONE},       //   b0000 - None
-    {THROTTLING_TYPE_CURRENT, THROTTLING_START},      //   b0001 - Current Throttling Start
-    {THROTTLING_TYPE_TEMPERATURE, THROTTLING_START},  //   b0010 - Temperature Throttling Start
-    {THROTTLING_TYPE_RACK_LIMIT, THROTTLING_START},   //   b0011 - Rack Limit Throttling Start
-    {THROTTLING_TYPE_VR_HOT, THROTTLING_START},       //   b0100 - Sys_ForcePmin Throttling Start
-    {THROTTLING_TYPE_ADAPTIVE_CLK, THROTTLING_START}, //   b0101 - Adaptive Clocking Throttling Start
-    {THROTTLING_TYPE_CURRENT, THROTTLING_END},        //   b0110 - Current Throttling End
-    {THROTTLING_TYPE_TEMPERATURE, THROTTLING_END},    //   b0111 - Temperature Throttling End
-    {THROTTLING_TYPE_RACK_LIMIT, THROTTLING_END},     //   b1000 - Rack Limit Throttling End
-    {THROTTLING_TYPE_VR_HOT, THROTTLING_END},         //   b1001 - Sys_ForcePmin Throttling End
-    {THROTTLING_TYPE_ADAPTIVE_CLK, THROTTLING_END},   //   b1010 - Adaptive Clocking Throttling End
+    // throttle             transition event              // Status from HAS Document index value
+    {THROTTLE_SOURCE_NONE, THROTTLE_TRNSN_NONE},          //   b0000 - None
+    {THROTTLE_SOURCE_CURRENT, THROTTLE_TRNSN_START},      //   b0001 - Current Throttling Start
+    {THROTTLE_SOURCE_TEMPERATURE, THROTTLE_TRNSN_START},  //   b0010 - Temperature Throttling Start
+    {THROTTLE_SOURCE_RACK_LIMIT, THROTTLE_TRNSN_START},   //   b0011 - Rack Limit Throttling Start
+    {THROTTLE_SOURCE_VR_HOT, THROTTLE_TRNSN_START},       //   b0100 - Sys_ForcePmin Throttling Start
+    {THROTTLE_SOURCE_ADAPTIVE_CLK, THROTTLE_TRNSN_START}, //   b0101 - Adaptive Clocking Throttling Start
+    {THROTTLE_SOURCE_CURRENT, THROTTLE_TRNSN_END},        //   b0110 - Current Throttling End
+    {THROTTLE_SOURCE_TEMPERATURE, THROTTLE_TRNSN_END},    //   b0111 - Temperature Throttling End
+    {THROTTLE_SOURCE_RACK_LIMIT, THROTTLE_TRNSN_END},     //   b1000 - Rack Limit Throttling End
+    {THROTTLE_SOURCE_VR_HOT, THROTTLE_TRNSN_END},         //   b1001 - Sys_ForcePmin Throttling End
+    {THROTTLE_SOURCE_ADAPTIVE_CLK, THROTTLE_TRNSN_END},   //   b1010 - Adaptive Clocking Throttling End
 };
 
 /*------------- Functions ----------------*/
@@ -68,7 +66,7 @@ int16_t find_hot_core_temp(int16_t temp0, int16_t temp1, int16_t temp2)
     return inst_temp;
 }
 
-int telmain_log_tile_temperature(tile_temp_t* temperature_data, uint8_t tile_index)
+fpfw_status_t tlm_logger_log_tile_temperature(tile_temp_t* temperature_data, uint8_t tile_index)
 {
     // For all details on the reference how this code was implemented, please
     // refer to the Power Management, Power Telemetry and Sensor Hardware Architecture Specifications (HAS)
@@ -76,7 +74,7 @@ int telmain_log_tile_temperature(tile_temp_t* temperature_data, uint8_t tile_ind
     // Check first if our tile number is correct
     if (tile_index >= NUMBER_OF_TILES_PER_DIE)
     {
-        return TELMAIN_STATUS_ERROR;
+        return FPFW_STATUS_INVALID_ARGS;
     }
 
     // Since this is a tile temperature, log the temperature where the tile temp belongs for the core
@@ -114,10 +112,10 @@ int telmain_log_tile_temperature(tile_temp_t* temperature_data, uint8_t tile_ind
     tile[tile_index].current_max_temperature = temperature_data->temp0.max_temp;
     tile[tile_index].current_max_id = temperature_data->temp0.max_id;
 
-    return 0;
+    return FPFW_STATUS_SUCCESS;
 }
 
-int telmain_log_tile_voltage(tile_voltage_t* voltage_data, uint8_t tile_index)
+fpfw_status_t tlm_logger_log_tile_voltage(tile_voltage_t* voltage_data, uint8_t tile_index)
 {
     // For all details on the reference how this code was implemented, please
     // refer to the Power Management, Power Telemetry and Sensor Hardware Architecture Specifications (HAS)
@@ -125,7 +123,7 @@ int telmain_log_tile_voltage(tile_voltage_t* voltage_data, uint8_t tile_index)
     // Check first if our tile number is correct
     if (tile_index >= NUMBER_OF_TILES_PER_DIE)
     {
-        return TELMAIN_STATUS_ERROR;
+        return FPFW_STATUS_INVALID_ARGS;
     }
 
     // Since this is a tile voltage, log the core where the tile voltage belongs
@@ -136,22 +134,22 @@ int telmain_log_tile_voltage(tile_voltage_t* voltage_data, uint8_t tile_index)
     // Log the tile vcpu and vsys
     tile[tile_index].vcpu.instantaneous = DOUT2MILLIVOLTS(voltage_data->data.vcpu);
     tile[tile_index].vsys.instantaneous = DOUT2MILLIVOLTS(voltage_data->data.vsys);
-    return 0;
+    return FPFW_STATUS_SUCCESS;
 }
 
-int telmain_log_core_current(core_current_t* current_data, uint8_t core_index)
+fpfw_status_t tlm_logger_log_core_current(core_current_t* current_data, uint8_t core_index)
 {
     // Each index here refers to the core, check if correct
     if (core_index >= NUMBER_OF_CORES_PER_DIE)
     {
-        return TELMAIN_STATUS_ERROR;
+        return FPFW_STATUS_INVALID_ARGS;
     }
 
     uint8_t core_id = core_index;
     core[core_id].current_pkt_timestamp = current_data->timestamp;
     if (current_data->timestamp == 0)
     {
-        return TELMAIN_STATUS_SUCCESS;
+        return FPFW_STATUS_SUCCESS;
     }
 
     // Get the current conversions. Conversion factors for the currents needs to be fine tuned
@@ -222,10 +220,10 @@ int telmain_log_core_current(core_current_t* current_data, uint8_t core_index)
     // Log the average power of the core in this instant
     core[core_id].current_mpam_id = current_data->data.mpam_id_low;
 
-    return TELMAIN_STATUS_SUCCESS;
+    return FPFW_STATUS_SUCCESS;
 }
 
-int update_core_pstate_timestamps(uint8_t core_id, uint8_t pstate, uint64_t timestamp)
+fpfw_status_t update_core_pstate_timestamps(uint8_t core_id, uint8_t pstate, uint64_t timestamp)
 {
     // Update the residency of the previous pstate
     if (core[core_id].pstate_timestamp != 0 && core[core_id].pstate_timestamp < timestamp)
@@ -237,26 +235,26 @@ int update_core_pstate_timestamps(uint8_t core_id, uint8_t pstate, uint64_t time
     }
 
     core[core_id].pstate_timestamp = timestamp;
-    return TELMAIN_STATUS_SUCCESS;
+    return FPFW_STATUS_SUCCESS;
 }
 
-int telmain_log_core_pstate(pstate_telem_t* pstate_telemetry)
+fpfw_status_t tlm_logger_log_core_pstate(pstate_telem_t* pstate_telemetry)
 {
     // Power information per P State Per Core is updated based on current
     // telemetry (which also provides power information). See the update
-    // in telmain_chk_upd_pstate().
+    // in tlm_logger_chk_upd_pstate().
 
     // Convert Sensor Data into Pstate Entry
     uint8_t core_id = pstate_telemetry->data.core;
     if (core_id >= NUMBER_OF_CORES_PER_DIE)
     {
-        return TELMAIN_STATUS_ERROR;
+        return FPFW_STATUS_INVALID_ARGS;
     }
 
     // Check for throttling indication first. If System is throttling, do not
     // take snapshots of Pstates and Cstates
 
-    if (pstate_telemetry->data.throttle_status == NO_THROTTLING)
+    if (pstate_telemetry->data.throttle_status == NO_THROTTLE)
     {
         // check to log the Core Pstate if there are changes
         if (pstate_telemetry->data.pstate != core[core_id].current_pstate)
@@ -267,7 +265,7 @@ int telmain_log_core_pstate(pstate_telem_t* pstate_telemetry)
         }
 
         // Process other task only if we are not throttling
-        if (core[core_id].flags.throttling_start == 0)
+        if (core[core_id].flags.throttling_start_occurred == 0)
         {
 
             // **Place holder for processing cstate latency here
@@ -275,8 +273,8 @@ int telmain_log_core_pstate(pstate_telem_t* pstate_telemetry)
             // chk_and_update_cstate(core_id, pstate_telemetry->data.cstate, pstate_telemetry->timestamp);
 
             //! reset the throttling type to no throttling
-            core[core_id].throttling_type = THROTTLING_TYPE_NONE;
-            core[core_id].throttling_event = THROTTLING_EV_NONE;
+            core[core_id].throttle_source = THROTTLE_SOURCE_NONE;
+            core[core_id].throttle_trnsn_event = THROTTLE_TRNSN_NONE;
             core[core_id].nominal_pstate = pstate_telemetry->data.pstate;
         }
 
@@ -285,9 +283,9 @@ int telmain_log_core_pstate(pstate_telem_t* pstate_telemetry)
     }
     else
     {
-        THROTTLING_STATUS prop_index = pstate_telemetry->data.throttle_status;
-        core[core_id].throttling_type = throttling_prop[prop_index].throttling_type;
-        core[core_id].throttling_event = throttling_prop[prop_index].event;
+        PSTATE_THROTTLE_STATUS_CODES prop_index = pstate_telemetry->data.throttle_status;
+        core[core_id].throttle_source = throttling_prop[prop_index].throttle_source;
+        core[core_id].throttle_trnsn_event = throttling_prop[prop_index].transition_event;
 
         // Check for throttle events start
         if (pstate_telemetry->data.throttle_status != core[core_id].throttling_status)
@@ -297,42 +295,42 @@ int telmain_log_core_pstate(pstate_telem_t* pstate_telemetry)
             core[core_id].flags.throttling_ev_change = 1;
 
             // If there is a throttling end event, process it to calculate the following:
-            //    1. Update of the cores throttking residency according to the throttling type
+            //    1. Update of the cores throttling residency according to the throttling type
             //    2. Update the runtime throttling counter which is used for the MPAM throttling calculation and update
             //    3. Store the latest core max pstate and average pstate during throttling.
-            if (prop_index >= CURRENT_THROTTLING_END)
+            if (prop_index >= CURRENT_THROTTLE_END)
             {
                 if (core[core_id].throttle_timestamp != 0 && pstate_telemetry->timestamp > core[core_id].throttle_timestamp)
                 {
-                    // Get the Throttling time stamp now and subtrack from previous
+                    // Get the Throttling time stamp now and subtract from previous
                     uint64_t timestamp_now = (pstate_telemetry->timestamp - core[core_id].throttle_timestamp) / 1000;
 
                     // This is the per core and per type throttling residency in uS
-                    core[core_id].throttle_info[prop_index - CURRENT_THROTTLING_END].residency += timestamp_now;
+                    core[core_id].throttle_info[prop_index - CURRENT_THROTTLE_END].residency += timestamp_now;
 
                     // This throttling counter will be used by the MPAM for VM Throttling
                     core[core_id].throttling_counter += timestamp_now;
                 }
-                core[core_id].throttle_info[prop_index - CURRENT_THROTTLING_END].exit_count++;
+                core[core_id].throttle_info[prop_index - CURRENT_THROTTLE_END].exit_count++;
 
                 // Record the current pstate
                 core[core_id].current_pstate = pstate_telemetry->data.pstate;
 
                 // Indicate that the throttling have at least ended once
-                core[core_id].flags.throttling_end = 1;
-                core[core_id].flags.throttling_start = 0;
+                core[core_id].flags.throttling_end_occurred = 1;
+                core[core_id].flags.throttling_start_occurred = 0;
             }
             else
             {
                 core[core_id].throttle_info[prop_index - 1].entry_count++;
 
                 // Indicate that the throttling start
-                core[core_id].flags.throttling_start = 1;
+                core[core_id].flags.throttling_start_occurred = 1;
                 core[core_id].throttle_timestamp = pstate_telemetry->timestamp;
             }
         }
 
-        if (core[core_id].throttling_type == THROTTLING_TYPE_RACK_LIMIT)
+        if (core[core_id].throttle_source == THROTTLE_SOURCE_RACK_LIMIT)
         {
             // Check if there was a priority id change
             if (core[core_id].throttling_priority_id != pstate_telemetry->data.vm_throttle_pri)
@@ -345,10 +343,10 @@ int telmain_log_core_pstate(pstate_telem_t* pstate_telemetry)
 
     //! set the throttling status
     core[core_id].throttling_status = pstate_telemetry->data.throttle_status;
-    return TELMAIN_STATUS_SUCCESS;
+    return FPFW_STATUS_SUCCESS;
 }
 
-void telmain_log_vr_temp(vr_temp_t* vr_temperature)
+void tlm_logger_log_vr_temp(vr_temp_t* vr_temperature)
 {
     // Extract VR Temperature entries for all VR Rails
     for (uint8_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
@@ -357,7 +355,7 @@ void telmain_log_vr_temp(vr_temp_t* vr_temperature)
     }
 }
 
-void telmain_log_vr_current(vr_current_t* vr_current)
+void tlm_logger_log_vr_current(vr_current_t* vr_current)
 {
 
     // Extract VR Current and voltage entries for all VR Rails
@@ -368,12 +366,8 @@ void telmain_log_vr_current(vr_current_t* vr_current)
     }
 }
 
-/*
- * Telemetry runtime information manager.
- */
-void telmain_runtime_info_mgr(void)
+void data_proc_tlm_cmpnt_aggregate_pwr_tlm_data(void)
 {
-
     // Allocate enough buffer for 8 strides from sensor fifo. Please review this if the sensor fifo may have more entries, optimize when less
     uint64_t buffer_data[MAX_BUFFER_ENTRIES];
     sensor_ram_poll_status_t status;
@@ -391,7 +385,7 @@ void telmain_runtime_info_mgr(void)
         if (status.curr_data_is_valid == true)
         {
             // process the tile temperature
-            telmain_log_tile_temperature(temperature_data, tile_index);
+            tlm_logger_log_tile_temperature(temperature_data, tile_index);
         }
 
     } while (status.more_entries == true);
@@ -405,7 +399,7 @@ void telmain_runtime_info_mgr(void)
         if (status.curr_data_is_valid == true)
         {
             // process the tile voltage
-            telmain_log_tile_voltage(voltage_data, tile_index);
+            tlm_logger_log_tile_voltage(voltage_data, tile_index);
         }
 
     } while (status.more_entries == true);
@@ -419,7 +413,7 @@ void telmain_runtime_info_mgr(void)
         if (status.curr_data_is_valid == true)
         {
             // process the tile voltage
-            telmain_log_core_current(current_data, core_index);
+            tlm_logger_log_core_current(current_data, core_index);
         }
     } while (status.more_entries == true);
 
@@ -431,7 +425,7 @@ void telmain_runtime_info_mgr(void)
         if (status.curr_data_is_valid == true)
         {
             // process the tile voltage
-            telmain_log_core_pstate(state_data);
+            tlm_logger_log_core_pstate(state_data);
         }
     } while (status.more_entries == true);
 
@@ -443,7 +437,7 @@ void telmain_runtime_info_mgr(void)
         if (status.curr_data_is_valid == true)
         {
             // process the tile voltage
-            telmain_log_vr_temp(vr_temperature);
+            tlm_logger_log_vr_temp(vr_temperature);
         }
     } while (status.more_entries == true);
 
@@ -455,7 +449,15 @@ void telmain_runtime_info_mgr(void)
         if (status.curr_data_is_valid == true)
         {
             // process the tile voltage
-            telmain_log_vr_current(vr_current);
+            tlm_logger_log_vr_current(vr_current);
         }
     } while (status.more_entries == true);
+}
+
+void data_proc_tlm_cmpnt_aggregate_perf_tlm_data(void)
+{
+}
+
+void data_proc_tlm_cmpnt_aggregate_24hr_tlm_data(void)
+{
 }

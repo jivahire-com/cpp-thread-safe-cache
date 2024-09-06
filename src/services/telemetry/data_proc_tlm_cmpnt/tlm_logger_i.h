@@ -3,7 +3,7 @@
 //
 
 /**
- * @file telmain_i.h
+ * @file tlm_logger_i.h
  *  Private header
  */
 
@@ -13,9 +13,6 @@
 extern "C" {
 #endif
 
-#define TELMAIN_STATUS_SUCCESS    0
-#define TELMAIN_STATUS_ERROR      -1
-#define TELMAIN_STATUS_NULL_ERROR -2
 
 #define MAX_BUFFER_ENTRIES 		 8
 #define MAX_NUMBER_POWER_SAMPLE  100
@@ -30,6 +27,7 @@ extern "C" {
 
 /*----------- Nested includes ------------*/
 
+#include <fpfw_status.h>
 #include <sensor_fifo_service.h> // for sensor ram data structures
 #include <stdint.h>
 
@@ -43,9 +41,9 @@ extern "C" {
  * @param temperature_data - SCF RAM formatted resource for temperature packets
  * @param tile_index - index to the tile id being referenced by the entry
  *
- * @return internal TELMAIN SUCCESS on processing
+ * @return fpfw_status_t
  */
-int telmain_log_tile_temperature(tile_temp_t* temperature_data, uint8_t tile_index);
+fpfw_status_t tlm_logger_log_tile_temperature(tile_temp_t* temperature_data, uint8_t tile_index);
 
 /**
  * @brief Internal API to log tile/core voltages
@@ -53,9 +51,9 @@ int telmain_log_tile_temperature(tile_temp_t* temperature_data, uint8_t tile_ind
  * @param voltage_data - SCF RAM formatted resource for voltage packets
  * @param tile_index - index to the tile id being referenced by the entry
  *
- * @return internal TELMAIN SUCCESS on processing
+ * @return fpfw_status_t
  */
-int telmain_log_tile_voltage(tile_voltage_t* voltage_data, uint8_t tile_index);
+fpfw_status_t tlm_logger_log_tile_voltage(tile_voltage_t* voltage_data, uint8_t tile_index);
 
 /**
  * @brief Internal API to log core currents and power
@@ -63,9 +61,9 @@ int telmain_log_tile_voltage(tile_voltage_t* voltage_data, uint8_t tile_index);
  * @param current_data - SCF RAM formatted resource for core current packets
  * @param core_index - index to the core id being referenced by the entry
  *
- * @return internal TELMAIN SUCCESS on processing
+ * @return fpfw_status_t
  */
-int telmain_log_core_current(core_current_t* current_data, uint8_t core_index);
+fpfw_status_t tlm_logger_log_core_current(core_current_t* current_data, uint8_t core_index);
 
 /**
  * @brief helper function to update the pstate runtime timestamp
@@ -74,9 +72,9 @@ int telmain_log_core_current(core_current_t* current_data, uint8_t core_index);
  * @param pstate - pstate that is reference to where it needs to be updated
  * @param timestamp - timestamp used for the update
  *
- * @return internal TELMAIN SUCCESS on processing
+ * @return fpfw_status_t
  */
-int update_core_pstate_timestamps(uint8_t core_id, uint8_t pstate, uint64_t timestamp);
+fpfw_status_t update_core_pstate_timestamps(uint8_t core_id, uint8_t pstate, uint64_t timestamp);
 
 /**
  * @brief Internal API to log voltage regulator (VR) temperatures
@@ -85,16 +83,16 @@ int update_core_pstate_timestamps(uint8_t core_id, uint8_t pstate, uint64_t time
  *
  * @return None
  */
-void telmain_log_vr_temp(vr_temp_t* vr_temperature);
+void tlm_logger_log_vr_temp(vr_temp_t* vr_temperature);
 
 /**
  * @brief Internal API to log voltage regulator (VR) current and voltage
  *
  * @param vr_current - SCF RAM formatted resource for VR Currents (and voltages)
  *
- * @return NONE
+ * @return None
  */
-void telmain_log_vr_current(vr_current_t* vr_current);
+void tlm_logger_log_vr_current(vr_current_t* vr_current);
 
 /**
  * @brief Internal API to log pstate telemetry packets, for pstate, cstate and throttling info
@@ -102,20 +100,9 @@ void telmain_log_vr_current(vr_current_t* vr_current);
  * @param pstate_telemetry - SCF RAM formatted resource for pstate packets
  *        NOTE: The Pstate packet contains the core id reference internally.
  *
- * @return internal TELMAIN SUCCESS on processing
+ * @return fpfw_status_t
  */
-int telmain_log_core_pstate(pstate_telem_t* pstate_telemetry);
-
-/**
- * @brief Runtime information manager for Main telemetry
- *
- * @return None
- */
-void telmain_runtime_info_mgr(void);
-
-
-
-
+fpfw_status_t tlm_logger_log_core_pstate(pstate_telem_t* pstate_telemetry);
 
 
 #ifdef __cplusplus

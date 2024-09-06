@@ -99,5 +99,5 @@ void accel_intr_client_init(paccel_intr_service_interface_t p_interface)
     // Open Driver Framework Interface for Power CLI, initialize async requests
     DfwkClientInterfaceOpen(&accel_intr_service_cmd_context.p_interface->header);
     DfwkAsyncRequestInitialize(&accel_intr_service_cmd_context.request.header,
-                                sizeof(accel_intr_service_cmd_context.request.header));
+                               sizeof(accel_intr_service_cmd_context.request.header));
 }

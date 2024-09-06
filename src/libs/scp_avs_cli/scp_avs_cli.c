@@ -399,6 +399,6 @@ void scp_avs_cli_initialize(pscp_avs_interface_t avs_array[])
     // Only need to initialize the async request once here.
     //
     DfwkAsyncRequestInitialize((PDFWK_ASYNC_REQUEST_HEADER)&cli_avs_request.request.Header,
-                                sizeof(cli_avs_request.request));
+                               sizeof(cli_avs_request.request));
     FpFwCliPrint(" AVS CLI init complete\n");
 }

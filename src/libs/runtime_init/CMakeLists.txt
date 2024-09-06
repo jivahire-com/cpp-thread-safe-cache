@@ -235,6 +235,7 @@ target_link_libraries(
         ms::service::event_trace::relay
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
+        ms::service::telemetry
         ms::lib::cortex_m7::mpu
         ms::lib::system_info
         silibs::common::lib_uart_pl011

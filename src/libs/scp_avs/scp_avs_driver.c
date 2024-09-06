@@ -347,7 +347,7 @@ void scp_avs_interface_initialize(pscp_avs_device Device, pscp_avs_interface_t I
     DfwkInterfaceInitialize(&Interface->Header, &Device->Header, &Device->avs_queue, scp_avs_dispatch_sync);
     Interface->Device = Device;
     Interface->Device->avs_response_errors = 0;
-    DfwkAsyncRequestInititalize((PDFWK_ASYNC_REQUEST_HEADER)&Device->isr_request, sizeof(Device));
+    DfwkAsyncRequestInitialize((PDFWK_ASYNC_REQUEST_HEADER)&Device->isr_request, sizeof(Device));
 }
 
 void scp_avs_init(pscp_avs_device avsDevice, DFWK_SCHEDULE* scheduler)

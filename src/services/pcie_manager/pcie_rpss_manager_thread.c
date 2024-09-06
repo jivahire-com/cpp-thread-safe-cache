@@ -183,7 +183,7 @@ void send_async_wait_for_event(pcie_manager_context_t* ctx, uint8_t rp_idx, uint
         {
             pcie_async_request_t* async_req =
                 &(ctx->async_req[rp_idx * MAX_PENDING_WAIT_FOR_EVENT_PER_RP + req_per_rp]);
-            DfwkAsyncRequestInititalize(&(async_req->header), sizeof(pcie_async_request_t));
+            DfwkAsyncRequestInitialize(&(async_req->header), sizeof(pcie_async_request_t));
             async_req->rpss_index = ctx->rpss_idx;
             async_req->rp_index = rp_idx;
             async_req->rp_op = WAIT_FOR_EVENT;

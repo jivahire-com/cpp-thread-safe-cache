@@ -44,7 +44,7 @@ coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
 mock_target(${TARGET}
-    DfwkAsyncRequestInititalize
+    DfwkAsyncRequestInitialize
     DfwkAsyncRequestSetCompletionRoutine
     DfwkInterfaceSendAsync
     _txe_queue_create

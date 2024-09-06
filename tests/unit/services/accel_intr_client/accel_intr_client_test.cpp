@@ -69,13 +69,13 @@ void __wrap_DfwkInterfaceSendAsync(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC
 }
 
 /**
- * @brief Mock function for DfwkAsyncRequestInititalize
+ * @brief Mock function for DfwkAsyncRequestInitialize
  *
  * @param[in] Request : Request passed from caller function
  * @param[in] RequestSize : Size of Request sent
  *
  */
-void __wrap_DfwkAsyncRequestInititalize(PDFWK_ASYNC_REQUEST_HEADER Request, size_t RequestSize)
+void __wrap_DfwkAsyncRequestInitialize(PDFWK_ASYNC_REQUEST_HEADER Request, size_t RequestSize)
 {
     check_expected_ptr(Request);
     assert_int_equal(RequestSize, sizeof(DFWK_ASYNC_REQUEST_HEADER));
@@ -143,7 +143,7 @@ TEST_FUNCTION(test_accel_intr_client, NULL, NULL)
     expect_value(__wrap_DfwkClientInterfaceOpen, Interface, &(accel_intr_interface.header));
     will_return(__wrap_DfwkClientInterfaceOpen, DFWK_SUCCESS);
 
-    expect_any(__wrap_DfwkAsyncRequestInititalize, Request);
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
 
     expect_value(__wrap_accel_intr_handle_fatal_intr_recvd, IRQnum, 0x77);
     expect_value(__wrap_accel_intr_handle_sdm_msg_recvd, IRQnum, 0x77);

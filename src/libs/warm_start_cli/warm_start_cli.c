@@ -8,7 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkClient.h> // for DfwkAsyncRequestInititalize, PDFWK_INTER...
+#include <DfwkClient.h> // for DfwkAsyncRequestInitialize, PDFWK_INTER...
 #include <FpFwCli.h>
 #include <FpFwLinkedList.h>
 #include <FpFwUtils.h>

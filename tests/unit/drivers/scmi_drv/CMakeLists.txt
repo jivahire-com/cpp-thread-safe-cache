@@ -37,7 +37,7 @@ coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
 mock_target(${TARGET}
-    DfwkAsyncRequestInititalize
+    DfwkAsyncRequestInitialize
     DfwkClientInterfaceOpen
     ap_core_core_power_off
     ap_core_core_power_on

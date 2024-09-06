@@ -277,7 +277,7 @@ TEST_FUNCTION(test_completion_callback, NULL, NULL) // abe
     mock_pcie_ent.rps[3].enabled = false;
     will_return(__wrap_send_sync_get_rpss_entity, &mock_pcie_ent);
 
-    expect_any(__wrap_DfwkAsyncRequestInititalize, Request);
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
     expect_any(__wrap_DfwkAsyncRequestSetCompletionRoutine, Request);
     expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionRoutine, rpss_req_completion_cb);
     expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionContext, &ctx);

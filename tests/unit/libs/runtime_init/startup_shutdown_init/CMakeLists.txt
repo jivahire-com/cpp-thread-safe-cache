@@ -30,7 +30,7 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    DfwkAsyncRequestInititalize
+    DfwkAsyncRequestInitialize
     fpfw_init_get_handle
     idsw_get_die_id
     sos_init

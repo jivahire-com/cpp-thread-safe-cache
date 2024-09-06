@@ -37,7 +37,7 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     DfwkAsyncRequestSetCompletionRoutine
     DfwkInterfaceSendAsync
-    DfwkAsyncRequestInititalize
+    DfwkAsyncRequestInitialize
     DfwkClientInterfaceOpen
     accel_intr_handle_fatal_intr_recvd
     accel_intr_handle_sdm_msg_recvd

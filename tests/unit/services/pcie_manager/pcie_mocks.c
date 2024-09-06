@@ -33,7 +33,7 @@ void __wrap_pcie_dfwk_init(pciess_device_t* dev, PDFWK_SCHEDULE schedule)
     check_expected_ptr(schedule);
 }
 
-void __wrap_DfwkAsyncRequestInititalize(PDFWK_ASYNC_REQUEST_HEADER Request, size_t RequestSize)
+void __wrap_DfwkAsyncRequestInitialize(PDFWK_ASYNC_REQUEST_HEADER Request, size_t RequestSize)
 {
     check_expected_ptr(Request);
     assert_int_equal(RequestSize, sizeof(pcie_async_request_t));

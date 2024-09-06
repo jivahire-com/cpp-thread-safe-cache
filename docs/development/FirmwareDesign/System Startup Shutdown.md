@@ -244,7 +244,7 @@ Shutdown request:
 
 ```c
     static startup_shutdown_request_t shutdown_request;
-    DfwkAsyncRequestInititalize((void*)&shutdown_request.header, sizeof(shutdown_request));
+    DfwkAsyncRequestInitialize((void*)&shutdown_request.header, sizeof(shutdown_request));
     // p_sos_interface is stored fpfw_init_get_handle("ssi_int") from component init
     sos_shutdown((void*)p_sos_interface, &shutdown_request, SHUTDOWN, completion_callback, NULL);  
 ```

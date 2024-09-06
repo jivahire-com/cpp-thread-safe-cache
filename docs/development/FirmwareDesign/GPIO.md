@@ -253,7 +253,7 @@ void myRegisterGPIO_ISR()
 
     gpio_request_t isr_request = {0};
 
-    DfwkAsyncRequestInititalize(&isr_request.Header, sizeof(gpio_request_t));
+    DfwkAsyncRequestInitialize(&isr_request.Header, sizeof(gpio_request_t));
 
     isr_request.Header.RequestType = GPIO_REQUEST_ISR_ASYNC;
     isr_request.gpio_pin_id = GPIO_CTRL_PIN_ID(MSCP_EXP_GPIO_6, 2);

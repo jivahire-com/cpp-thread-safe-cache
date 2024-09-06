@@ -12,7 +12,7 @@
 
 #include "accel_intr_service_interface.h" // for accel_intr_service_cmd_con...
 
-#include <DfwkClient.h> // for DfwkAsyncRequestInititalize
+#include <DfwkClient.h> // for DfwkAsyncRequestInitialize
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <accel_intr.h> // for accel_intr_handle_fatal_intr_recvd, accel_in...
@@ -98,6 +98,6 @@ void accel_intr_client_init(paccel_intr_service_interface_t p_interface)
 
     // Open Driver Framework Interface for Power CLI, initialize async requests
     DfwkClientInterfaceOpen(&accel_intr_service_cmd_context.p_interface->header);
-    DfwkAsyncRequestInititalize(&accel_intr_service_cmd_context.request.header,
+    DfwkAsyncRequestInitialize(&accel_intr_service_cmd_context.request.header,
                                 sizeof(accel_intr_service_cmd_context.request.header));
 }

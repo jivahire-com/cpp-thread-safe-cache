@@ -126,8 +126,8 @@ TEST_FUNCTION(test_scmi_ap_core_protocol_cmds, test_setup, test_teardown)
 
     // test set rvbaraddr handling
     scmi_apcore_reset_address_set_a2p_t reset_addr_set = {RVBARLO, RVBARHI, 0};
-    expect_any(__wrap_DfwkAsyncRequestInititalize, Request);
-    expect_value(__wrap_DfwkAsyncRequestInititalize, RequestSize, sizeof(ap_core_asynchronous_request_t));
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(ap_core_asynchronous_request_t));
     expect_value(__wrap_ap_core_set_rvbaraddr, rvbaraddr, ((uint64_t)RVBARHI << 32 | RVBARLO));
     status = __real_scmi_ap_core_protocol_cmds(SCMI_AP_CORE_RESET_ADDR_SET_MSG, (uint8_t*)&reset_addr_set, sizeof(reset_addr_set));
     assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
@@ -173,16 +173,16 @@ TEST_FUNCTION(test_scmi_power_protocol_cmds, test_setup, test_teardown)
 
     // test core power on
     scmi_pd_power_state_set_a2p_t power_set = {0, TEST_CORE_NUM, SCMI_PD_CORE_STATE_ON};
-    expect_any(__wrap_DfwkAsyncRequestInititalize, Request);
-    expect_value(__wrap_DfwkAsyncRequestInititalize, RequestSize, sizeof(ap_core_asynchronous_request_t));
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(ap_core_asynchronous_request_t));
     expect_value(__wrap_ap_core_core_power_on, core_id, TEST_CORE_NUM);
     status = __real_scmi_power_protocol_cmds(SCMI_PWR_STATE_SET_MSG, (uint8_t*)&power_set, sizeof(power_set));
     assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
 
     // test core power off
     power_set.power_state = SCMI_PD_CORE_STATE_OFF;
-    expect_any(__wrap_DfwkAsyncRequestInititalize, Request);
-    expect_value(__wrap_DfwkAsyncRequestInititalize, RequestSize, sizeof(ap_core_asynchronous_request_t));
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(ap_core_asynchronous_request_t));
     expect_value(__wrap_ap_core_core_power_off, core_id, TEST_CORE_NUM);
     status = __real_scmi_power_protocol_cmds(SCMI_PWR_STATE_SET_MSG, (uint8_t*)&power_set, sizeof(power_set));
     assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);

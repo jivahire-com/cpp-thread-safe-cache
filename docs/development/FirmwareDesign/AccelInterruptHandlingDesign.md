@@ -127,7 +127,7 @@ We will use DriverFramework and FPFW timer for implementation and communication 
 * Top-half related initialization sequence
     * Open Interface for triggering Bottom-Half execution using `DfwkClientInterfaceOpen`
         * Same interface can be used for both FATAL and SYS_MSG communication.
-    * Initialize Async Request using `DfwkAsyncRequestInititalize` : This will be used by ISR to kick off bottom-half execution.
+    * Initialize Async Request using `DfwkAsyncRequestInitialize` : This will be used by ISR to kick off bottom-half execution.
 
 ```mermaid
 sequenceDiagram
@@ -143,7 +143,7 @@ sequenceDiagram
     SCP_EMCPU_DFWK-->>-SCP_EMCPU_ACCEL_INTR_SERVICE: Interface init done
     SCP_EMCPU_ACCEL_INTR->>+SCP_EMCPU_DFWK: Open interface using DfwkClientInterfaceOpen
     SCP_EMCPU_DFWK-->>-SCP_EMCPU_ACCEL_INTR: Open interface done
-    SCP_EMCPU_ACCEL_INTR->>+SCP_EMCPU_DFWK: Async Request init using DfwkAsyncRequestInititalize
+    SCP_EMCPU_ACCEL_INTR->>+SCP_EMCPU_DFWK: Async Request init using DfwkAsyncRequestInitialize
     SCP_EMCPU_DFWK-->>-SCP_EMCPU_ACCEL_INTR: Async Request init done
     Note over SCP_EMCPU_ACCEL_INTR: Register SCP_EMCPU_ACCELIP_ISR
 ```

@@ -36,7 +36,7 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     DfwkAsyncRequestComplete
-    DfwkAsyncRequestInititalize
+    DfwkAsyncRequestInitialize
     DfwkAsyncRequestSetCompletionRoutine
     DfwkDeviceInitialize
     DfwkQueueInitialize

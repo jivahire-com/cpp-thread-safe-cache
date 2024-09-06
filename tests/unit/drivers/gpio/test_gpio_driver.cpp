@@ -13,7 +13,7 @@
 extern "C" {
 #include "real_proto.h" // for __real_DfwkQueueEnqueueRequest
 
-#include <DfwkCommon.h>     // for DfwkAsyncRequestInititalize, DfwkAsyncRe...
+#include <DfwkCommon.h>     // for DfwkAsyncRequestInitialize, DfwkAsyncRe...
 #include <DfwkSchedule.h>   // for DFWK_SCHEDULE
 #include <FpFwLinkedList.h> // for FpFwListEntryInitialize, FpFwListInitialize
 #include <FpFwLock.h>       // for FpFwLockInitialize
@@ -212,7 +212,7 @@ TEST_FUNCTION(test_gpio_isr_callback_thread_main_id, test_setup, test_teardown)
 
     for (unsigned int i = 0; i < sizeof(requests) / sizeof(requests[0]); i++)
     {
-        DfwkAsyncRequestInititalize(&requests[i].Header, sizeof(gpio_request_t));
+        DfwkAsyncRequestInitialize(&requests[i].Header, sizeof(gpio_request_t));
         DfwkAsyncRequestSetCompletionRoutine(&requests[i].Header, gpio_isr_callback, NULL);
     }
 
@@ -255,7 +255,7 @@ TEST_FUNCTION(test_gpio_isr_callback_thread_main_mask, test_setup, test_teardown
 
     for (unsigned int i = 0; i < sizeof(requests) / sizeof(requests[0]); i++)
     {
-        DfwkAsyncRequestInititalize(&requests[i].Header, sizeof(gpio_request_t));
+        DfwkAsyncRequestInitialize(&requests[i].Header, sizeof(gpio_request_t));
         DfwkAsyncRequestSetCompletionRoutine(&requests[i].Header, gpio_isr_callback, NULL);
     }
 
@@ -312,7 +312,7 @@ TEST_FUNCTION(test_gpio_cmd_async, test_setup, test_teardown)
     assert_int_equal(ret, KNG_E_INVALIDARG);
 
     // Configure request properly.
-    DfwkAsyncRequestInititalize(&gpio_request.Header, sizeof(gpio_request_t));
+    DfwkAsyncRequestInitialize(&gpio_request.Header, sizeof(gpio_request_t));
     DfwkAsyncRequestSetCompletionRoutine(&gpio_request.Header, gpio_isr_callback, NULL);
 
     expect_function_call(__wrap_DfwkQueueEnqueueRequest);

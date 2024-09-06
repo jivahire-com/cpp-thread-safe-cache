@@ -125,7 +125,7 @@ void __wrap_DfwkAsyncRequestComplete(PDFWK_ASYNC_REQUEST_HEADER Request)
     check_expected_ptr(Request);
 }
 
-void __wrap_DfwkAsyncRequestInititalize(PDFWK_ASYNC_REQUEST_HEADER Request, size_t RequestSize)
+void __wrap_DfwkAsyncRequestInitialize(PDFWK_ASYNC_REQUEST_HEADER Request, size_t RequestSize)
 {
     check_expected_ptr(Request);
     check_expected(RequestSize);
@@ -282,8 +282,8 @@ SOS_TEST(dispatch_sync_STARTUP_REGISTER_SSI_SYNC, NULL, NULL)
     expect_value(__wrap_DfwkInterfaceOpen, ClientDevice, &test_device.header);
     will_return(__wrap_DfwkInterfaceOpen, DFWK_SUCCESS);
 
-    expect_value(__wrap_DfwkAsyncRequestInititalize, Request, &test_registration.ssi_request);
-    expect_value(__wrap_DfwkAsyncRequestInititalize, RequestSize, sizeof(test_registration.ssi_request));
+    expect_value(__wrap_DfwkAsyncRequestInitialize, Request, &test_registration.ssi_request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(test_registration.ssi_request));
 
     expect_value(__wrap_FpFwListInsertTail, list, &sp_sos_service_context->ssi_registrations);
     expect_value(__wrap_FpFwListInsertTail, newEntry, &test_request.p_registration->list_entry);

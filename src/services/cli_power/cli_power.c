@@ -11,7 +11,7 @@
 #include "FpFwCli.h"        // for FPFW_CLI_STATUS, CLI_ERROR, FpFwCli...
 #include "FpFwLinkedList.h" // for NULL_LIST_ENTRY
 
-#include <DfwkClient.h>          // for DfwkAsyncRequestInititalize, DfwkAs...
+#include <DfwkClient.h>          // for DfwkAsyncRequestInitialize, DfwkAs...
 #include <FpFwUtils.h>           // for FPFW_ARRAY_SIZE
 #include <cli_power.h>           // for cli_power_init
 #include <cli_power_config.h>    // for cli_power_config_get_cmd_id, cli_po...
@@ -150,7 +150,7 @@ FPFW_CLI_STATUS cli_power_init(ppower_service_interface_t p_interface)
 
     // Open Driver Framework Interface for Power CLI, initialize async requests
     DfwkClientInterfaceOpen(&power_cli_cmd_context.p_interface->header);
-    DfwkAsyncRequestInititalize(&power_cli_cmd_context.request.header, sizeof(power_cli_cmd_context.request.header));
+    DfwkAsyncRequestInitialize(&power_cli_cmd_context.request.header, sizeof(power_cli_cmd_context.request.header));
 
     return CLI_SUCCESS;
 }

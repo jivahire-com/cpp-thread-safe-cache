@@ -65,7 +65,7 @@ static int test_setup(void** pContext)
     {
         return result;
     }
-    DfwkAsyncRequestInititalize(&test_avs_Request.Header, sizeof(test_avs_Request));
+    DfwkAsyncRequestInitialize(&test_avs_Request.Header, sizeof(test_avs_Request));
     test_avs_Request.Header.OwningInterface = &test_avs_interface.Header;
     DfwkInterfaceInitialize(&test_avs_interface.Header, &test_avs_device.Header, &test_avs_device.avs_queue, scp_avs_dispatch_sync);
 

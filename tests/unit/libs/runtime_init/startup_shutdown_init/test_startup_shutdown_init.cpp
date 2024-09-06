@@ -53,7 +53,7 @@ void __wrap_sos_interface_init(psos_device_t p_device, psos_interface_t p_interf
     check_expected(shared);
 }
 
-void __wrap_DfwkAsyncRequestInititalize(PDFWK_ASYNC_REQUEST_HEADER Request, size_t RequestSize)
+void __wrap_DfwkAsyncRequestInitialize(PDFWK_ASYNC_REQUEST_HEADER Request, size_t RequestSize)
 {
     check_expected_ptr(Request);
     check_expected(RequestSize);
@@ -126,8 +126,8 @@ TEST_FUNCTION(sos_init_sos_int, nullptr, nullptr)
     will_return(__wrap_sos_register_ssi, FPFW_INIT_STATUS_SUCCESS);
 
     // now handle unit test of phase start requests
-    expect_any(__wrap_DfwkAsyncRequestInititalize, Request);
-    expect_value(__wrap_DfwkAsyncRequestInititalize, RequestSize, sizeof(startup_start_phase_request_t));
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(startup_start_phase_request_t));
     // sos_start_phase calls
     // synchronous
     expect_any(__wrap_sos_start_phase, p_interface);

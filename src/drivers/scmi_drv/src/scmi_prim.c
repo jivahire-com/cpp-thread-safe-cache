@@ -68,7 +68,7 @@ void ap_core_power(uint32_t power_domain, uint32_t power_state)
     // ensure the apcore interface was set
     FPFW_RUNTIME_ASSERT(p_apcore_interface != NULL);
 
-    DfwkAsyncRequestInititalize(&apcore_request.header, sizeof(apcore_request));
+    DfwkAsyncRequestInitialize(&apcore_request.header, sizeof(apcore_request));
     if ((power_state & SCMI_PD_CORE_STATE_MASK) == (SCMI_PD_CORE_STATE_OFF))
     {
         ap_core_core_power_off(p_apcore_interface, &apcore_request, power_domain, ap_core_power_completion, NULL);
@@ -238,7 +238,7 @@ void ap_core_reset_addr_set(uint64_t reset_address)
     // ensure the apcore interface was set
     FPFW_RUNTIME_ASSERT(p_apcore_interface != NULL);
 
-    DfwkAsyncRequestInititalize(&apcore_request.header, sizeof(apcore_request));
+    DfwkAsyncRequestInitialize(&apcore_request.header, sizeof(apcore_request));
     ap_core_set_rvbaraddr(p_apcore_interface, &apcore_request, reset_address, ap_core_reset_addr_completion, NULL);
 }
 

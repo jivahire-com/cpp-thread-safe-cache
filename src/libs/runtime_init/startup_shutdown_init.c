@@ -8,7 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkCommon.h>            // for DfwkAsyncRequestInititalize, PDFW...
+#include <DfwkCommon.h>            // for DfwkAsyncRequestInitialize, PDFW...
 #include <FpFwAssert.h>            // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>             // for FPFW_UNUSED
 #include <fpfw_init.h>             // for fpfw_init_get_handle, FPFW_INIT_C...
@@ -53,7 +53,7 @@ FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc"))
 
     // send synchronous and asynchronous startup stage start requests
     static startup_start_phase_request_t startup_phase_request;
-    DfwkAsyncRequestInititalize((void*)&startup_phase_request.header.async, sizeof(startup_phase_request));
+    DfwkAsyncRequestInitialize((void*)&startup_phase_request.header.async, sizeof(startup_phase_request));
     // queue the boot phases for this reset type - cold boot for now
     sos_start_phase((void*)&sos_interface, NULL, COLD_BOOT, STARTUP_PHASE_MSCP_ASYNC, NULL, NULL); // synchronous
     sos_start_phase((void*)&sos_interface, &startup_phase_request, COLD_BOOT, STARTUP_PHASE_AP_ASYNC, boot_completion, NULL); // asynchronous

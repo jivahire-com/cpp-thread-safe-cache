@@ -9,7 +9,7 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkClient.h> // for DfwkAsyncRequestInititalize, PDFWK_INTER...
+#include <DfwkClient.h> // for DfwkAsyncRequestInitialize, PDFWK_INTER...
 #include <FpFwCli.h>
 #include <FpFwLinkedList.h>
 #include <FpFwUtils.h>
@@ -398,7 +398,7 @@ void scp_avs_cli_initialize(pscp_avs_interface_t avs_array[])
     //
     // Only need to initialize the async request once here.
     //
-    DfwkAsyncRequestInititalize((PDFWK_ASYNC_REQUEST_HEADER)&cli_avs_request.request.Header,
+    DfwkAsyncRequestInitialize((PDFWK_ASYNC_REQUEST_HEADER)&cli_avs_request.request.Header,
                                 sizeof(cli_avs_request.request));
     FpFwCliPrint(" AVS CLI init complete\n");
 }

@@ -103,7 +103,7 @@ int32_t sos_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER p_request)
         // all interfaces need to be opened
         DfwkInterfaceOpen(p_registration->p_ssi_interface, &p_device->header);
         // need to store the request structure to linked list for future use
-        DfwkAsyncRequestInititalize((void*)&p_registration->ssi_request, sizeof(p_registration->ssi_request));
+        DfwkAsyncRequestInitialize((void*)&p_registration->ssi_request, sizeof(p_registration->ssi_request));
         // add registration to registrations list
         FpFwListInsertTail(&s_sos_ctx.ssi_registrations, &p_registration->list_entry);
         // generate a unique bitmask for this registration

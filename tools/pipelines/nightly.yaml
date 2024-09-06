@@ -22,18 +22,16 @@ stages:
 - stage: SVP_Pythia_Tests
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
   jobs:
-  - template: templates/pythia_test.yaml
+  - template: templates/svp_pythia_test.yaml
     parameters:
       ArtifactName: SVP_Pythia_Tests
 
 - stage: FPGA_Pythia_Tests
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
   jobs:
-  - template: templates/pythia_test.yaml
+  - template: templates/fpga_pythia_test.yaml
     parameters:
-      Platform: fpga
       ArtifactName: FPGA_Pythia_Tests
-      Pool: 1pfw-kingsgate-big-fpga
       TestAgent: 'DH3'
 
 # This is to tag the commits that pass nightly tests.

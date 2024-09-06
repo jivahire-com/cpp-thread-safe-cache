@@ -5,9 +5,6 @@ parameters:
 - name: Configuration
   type: string
   default: 'Debug'
-- name: Platform
-  type: string
-  default: 'svp'  
 - name: Test_Suite_Path
   type: string
   default: 'tests\functional\pythia\test_suites'
@@ -16,15 +13,12 @@ parameters:
   default: 'bins'
 - name: Pool
   type: string
-  default: '1pfw-kingsgate-windows'  
-- name: TestAgent
-  type: string
-  default: 'SVP'  
+  default: '1pfw-kingsgate-windows'   
 
 
 jobs:
-- job: 'Pythia_Tests'
-  displayName: ${{ parameters.Platform }} Pythia Tests
+- job: 'SVP_Pythia_Tests'
+  displayName: SVP Pythia Tests
   pool: 
     name: ${{ parameters.Pool }}
     isCustom: true
@@ -68,21 +62,20 @@ jobs:
           $bin_dest_dir = "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch"
           Copy-Item $bin_src_dir $bin_dest_dir -Recurse -Force
 
-          flashscpfw ${{ parameters.TestAgent }}
-
-          Invoke-Pythia -test ${{ parameters.Test_Suite_Path }} -platform ${{ parameters.Platform }}
+          Invoke-Pythia -test ${{ parameters.Test_Suite_Path }} -platform svp
 
           # Remove intermediate output / output that contains system variables (ie: Azure credentials)
           Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\output.xml"
           Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\rlog.txt"
           Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\generated" -Recurse -Force
+          Remove-Item .externs -Force -Recurse
 
     # Publish the results of the test suite
     - task: PublishTestResults@2
-      displayName: Publish Pythia Tests Results
+      displayName: Publish SVP Pythia Tests Results
       condition: succeededOrFailed()
       inputs:
-        testRunTitle: 'Kingsgate Pythia Tests'
+        testRunTitle: 'Kingsgate SVP Pythia Tests'
         testResultsFormat: 'JUnit'
         testResultsFiles: '**\Results.xml'
         searchFolder: '$(Build.SourcesDirectory)\.testlogs\pythia'
@@ -94,6 +87,6 @@ jobs:
     - task: PublishPipelineArtifact@1
       inputs:
         targetPath: '$(Build.SourcesDirectory)\.testlogs\pythia'
-        artifact: 'drop_${{ parameters.ArtifactName }}_Pythia_Tests'
+        artifact: 'drop_${{ parameters.ArtifactName }}_SVP_Pythia_Tests'
         publishLocation: 'pipeline'
         parallel: true

@@ -1,0 +1,98 @@
+parameters:
+- name: Toolchain
+  type: string
+  default: 'arm-eabi-aarch'
+- name: Configuration
+  type: string
+  default: 'Debug' 
+- name: Test_Suite_Path
+  type: string
+  default: 'tests\functional\pythia\test_suites'
+- name: ArtifactName
+  type: string
+  default: 'bins'
+- name: Pool
+  type: string
+  default: '1pfw-kingsgate-big-fpga'  
+- name: TestAgent
+  type: string
+  default: 'DH3'  
+
+
+jobs:
+- job: 'FPGA_Pythia_Tests'
+  displayName: FPGA Pythia Tests
+  pool: 
+    name: ${{ parameters.Pool }}
+    demands: Agent.Name -equals RDU-120015-${{ parameters.TestAgent }}
+    isCustom: true
+    type: windows
+
+  variables:
+    ob_outputDirectory: '$(Build.SourcesDirectory)\.testlogs\pythia'
+
+  steps: 
+
+    # Set up permissions for other repos
+    - template: auth.yaml
+
+    # Dump agent information (useful for debugging)
+    - template: agent_info.yaml
+
+    # Download input artifact
+    - task: DownloadPipelineArtifact@2
+      inputs:
+          buildType: 'current'
+          downloadType: 'single'
+          artifactName: 'drop_Build_Arm_EABI_AARCH_Debug_Build'
+          downloadPath: '$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug'
+
+    # 1. Setup the environment
+    # 2. Build the FW
+    # 3. Invoke Pythia
+    # Logs will be under $(Build.SourcesDirectory)\.testlogs\pythia
+    - task: PowerShell@2
+      displayName: Run Test Suites
+      env:
+        AZURE_DEVOPS_EXT_PAT : $(System.AccessToken)
+      inputs:
+        workingDirectory: '$(Build.SourcesDirectory)'
+        targetType: 'inline'
+        showWarnings: true
+        script: | 
+          ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
+
+          $bin_src_dir = "$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug/bin"
+          $bin_dest_dir = "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch"
+          Copy-Item $bin_src_dir $bin_dest_dir -Recurse -Force
+
+          flashscpfw ${{ parameters.TestAgent }}
+
+          Invoke-Pythia -test ${{ parameters.Test_Suite_Path }} -platform fpga
+
+          # Remove intermediate output / output that contains system variables (ie: Azure credentials)
+          Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\output.xml"
+          Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\rlog.txt"
+          Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\generated" -Recurse -Force
+          Remove-Item .externs -Force -Recurse
+
+    # Publish the results of the test suite
+    - task: PublishTestResults@2
+      displayName: Publish FPGA Pythia Tests Results
+      condition: succeededOrFailed()
+      inputs:
+        testRunTitle: 'Kingsgate FPGA Pythia Tests'
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '**\Results.xml'
+        searchFolder: '$(Build.SourcesDirectory)\.testlogs\pythia'
+        failTaskOnFailedTests: true
+        publishRunAttachments: true
+        mergeTestResults: true
+
+    # Publish results as a pipeline artifact
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.SourcesDirectory)\.testlogs\pythia'
+        artifact: 'drop_${{ parameters.ArtifactName }}_FPGA_Pythia_Tests'
+        publishLocation: 'pipeline'
+        parallel: true

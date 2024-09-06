@@ -34,9 +34,9 @@ stages:
 - stage: SVP_Pythia_Tests
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
   jobs:
-  - template: templates/pythia_test.yaml
+  - template: templates/svp_pythia_test.yaml
     parameters:
-      ArtifactName: Pythia_Tests
+      ArtifactName: SVP_Pythia_Tests
 
 - stage: Unit_Test_x86
   dependsOn: [Build_x86_Debug, Build_Arm_EABI_AARCH_Debug]

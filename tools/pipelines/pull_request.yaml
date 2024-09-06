@@ -70,12 +70,12 @@ extends:
           Configuration: Debug
           ArtifactName: Build_Arm_EABI_AARCH_Debug
 
-    - stage: Pythia_Tests
+    - stage: SVP_Pythia_Tests
       dependsOn: [Build_Arm_EABI_AARCH_Debug]
       jobs:
-      - template: tools/pipelines/templates/pythia_test.yaml@self
+      - template: tools/pipelines/templates/svp_pythia_test.yaml@self
         parameters:
-          ArtifactName: Pythia_Tests
+          ArtifactName: SVP_Pythia_Tests
 
     - stage: Unit_Test_x86
       dependsOn: [Build_x86_Debug, Build_Arm_EABI_AARCH_Debug]

@@ -1,11 +1,14 @@
 set(TARGET ddr_manager.test)
 
 set(SOURCES
+    common_mocks.c
     ddr_manager_bwl_test.cpp
     ddr_manager_i3c_test.cpp
     ddr_manager_polling_test.cpp
+    ddr_manager_temp_interrupts_test.cpp
     ddr_manager_test.cpp
     ddr_memory_map_test.cpp
+    mock_bug_check.c
 )
 
 set(LIBS
@@ -13,6 +16,7 @@ set(LIBS
         idhw
         ms::service::ddr_manager
         ms::cmocka::testrunner
+        ms::lib::error_codes
         ms::lib::error_handler
         ms::lib::hsp_firmware_headers
         ms::lib::threadx
@@ -56,6 +60,8 @@ mock_target(${TARGET}
     _txe_queue_send
     _txe_queue_receive
     _txe_timer_create
+    crash_dump_bug_check
+    ddrss_refresh_rate_read_status
     ddr_i3c_interface_read_temp_sensor_mr_reg
     ddr_manager_set_thermal_trip_gpio
     ddr_i3c_interface_get_instance

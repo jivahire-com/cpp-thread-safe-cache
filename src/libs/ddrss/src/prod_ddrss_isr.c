@@ -17,6 +17,7 @@
 
 #include <FpFwAssert.h>
 #include <arm_intrinsic.h>
+#include <bug_check.h>
 #include <ddrss.h>
 #include <ddrss_intu.h>
 #include <ddrss_lib.h>
@@ -34,6 +35,8 @@
 /*--------- Function Prototypes ----------*/
 
 /*-- Declarations (Statics and globals) --*/
+static void (*s_critical_temp_cb)(uint32_t) = NULL;
+static void (*s_temp_changed_cb)(uint32_t) = NULL;
 
 /*-------------- Functions ---------------*/
 
@@ -386,8 +389,9 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
             mc_intu_err |= (1 << DDRSS_MC_INTR_EVT_REF_TEMP_CHANGED);
         }
         mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_MEDIAREFTEMPCHANGED);
-        // TODO: BWL: Handle the temperature change by sending to DDR_Manager queue: RAS - Temperature
-        // ADO Feature#1140772, Task#1494090
+
+        // Handle the temperature change by sending to DDR_Manager queue: RAS - Temperature
+        s_temp_changed_cb(mc);
     }
 
     if (mc_intu_sts & (1 << DDRSS_INTU_MC_MEDIAREFTEMPHIGH))
@@ -396,11 +400,12 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         sub_sts = ddrss_mc_event_clear_interrupt(mc, DDRSS_MC_INTR_EVT_REF_TEMP_HIGH);
         if (sub_sts != SILIBS_SUCCESS)
         {
-            mc_intu_err |= (1 << DDRSS_MC_INTR_EVT_REF_TEMP_CHANGED);
+            mc_intu_err |= (1 << DDRSS_MC_INTR_EVT_REF_TEMP_HIGH);
         }
         mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_MEDIAREFTEMPHIGH);
-        // TODO: BWL: Handle the temperature change by sending to DDR_Manager queue: RAS - Temperature
-        // ADO Feature#1140772, Task#1494090
+
+        // Invoke the callback to handle critical temperature
+        s_critical_temp_cb(mc);
     }
 
     if (mc_intu_sts & (1 << DDRSS_INTU_MC_PHYINLP3))
@@ -439,4 +444,13 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
     }
 
     return sts;
+}
+
+void ddrss_register_temp_interrupts(void (*critical_cb)(uint32_t), void (*changed_cb)(uint32_t))
+{
+    BUG_ASSERT(critical_cb != NULL);
+    BUG_ASSERT(changed_cb != NULL);
+
+    s_critical_temp_cb = critical_cb;
+    s_temp_changed_cb = changed_cb;
 }

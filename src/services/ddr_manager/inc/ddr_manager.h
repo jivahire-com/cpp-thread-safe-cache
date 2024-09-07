@@ -10,6 +10,7 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <assert.h>
 #include <fpfw_icc_base.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -24,8 +25,15 @@ typedef enum
     DDR_CREATE_BDAT_EVENT,
     DDR_CREATE_SMBIOS_TABLES_EVENT,
     DDR_POLL_DIMMS_I3C_EVENT,
-    DDR_I3C_DATA_READY_EVENT,
+    DDR_TEMP_CHANGED_EVENT,
 } DDR_MANAGER_MESSAGE_TYPE;
+
+typedef struct __attribute__((packed))
+{
+    uint16_t message_type;
+    uint16_t message_data;
+} ddr_manager_message_t;
+static_assert(sizeof(ddr_manager_message_t) % 4 == 0, "ddr_manager_message_t size is not a multiple of 4");
 
 typedef struct
 {

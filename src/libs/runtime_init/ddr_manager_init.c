@@ -28,7 +28,7 @@
 FPFW_INIT_COMPONENT(ddrman, FPFW_INIT_DEPENDENCIES("ddr", "std_io", "mesh", "hw_ver", "icc_hspmbx")) 
 {
     static uint8_t ddr_stack[DDR_STACK_SIZE];
-    static uint32_t ddr_queue_pool[10];
+    static ddr_manager_message_t ddr_queue_pool[10];
     static ddr_service_context_t ddr_service_ctx = {0};
 
     ddr_service_config_t config = {

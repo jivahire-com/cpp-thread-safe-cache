@@ -8,7 +8,7 @@ add_library(${TARGET}
 
 if (i386-pc-windows-msvc)
     set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
-    message("Windows build detected - spoofing interrupt library.")
+    message("[${TARGET}] Windows build detected - spoofing interrupt library.")
 endif()
 
 target_link_libraries(${TARGET}
@@ -19,6 +19,8 @@ target_link_libraries(${TARGET}
     PRIVATE
     ms::lib::cortex_m7::nvic
     ms::lib::arm_intrinsic
+    ms::lib::crash_dump::scp
+    ms::lib::error_codes
     ms::lib::scp_interrupts
     silibs::platform
     kng_silibs_platform

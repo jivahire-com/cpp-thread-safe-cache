@@ -17,9 +17,11 @@ extern "C" {
 #include <ddr_manager_i.h> // for ddr_poll_dimms, ddr_worker_thread_func
 #include <error_handler.h> // for set_error_handler_return
 #include <hsp_firmware_headers.h>
+#include <kng_error.h>
 #include <tx_api.h>        // for TX_SUCCESS, ULONG, TX_NOT_DONE, TX_NO_MEMORY
 #include <fpfw_icc_base.h>
 #include <FpFwUtils.h>     // for FPFW_UNUSED
+#include "mock_bug_check.h"
 } // extern "C"
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -104,9 +106,9 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     expect_any_always(__wrap__txe_queue_send, source_ptr);
     expect_any_always(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_QUEUE_ERROR);
-    expect_value(FPFwErrorRaise, error, (uint32_t)TX_QUEUE_ERROR);
+    expect_value(__wrap_crash_dump_bug_check, errorCode, (uint32_t)KNG_BGCHK_BUGCHECK);
 
-    if (!set_error_handler_return())
+    if (!bugcheck_mock_return())
     {
         ddr_manager_init(&ddr_service_context, &ddr_service_config, icc_ctx);
     }
@@ -116,9 +118,9 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
 
     // tx queue send DDR BDAT EVENT fails
     will_return(__wrap__txe_queue_send, TX_QUEUE_ERROR);
-    expect_value(FPFwErrorRaise, error, (uint32_t)TX_QUEUE_ERROR);
+    expect_value(__wrap_crash_dump_bug_check, errorCode, (uint32_t)KNG_BGCHK_BUGCHECK);
 
-    if (!set_error_handler_return())
+    if (!bugcheck_mock_return())
     {
         ddr_manager_init(&ddr_service_context, &ddr_service_config, icc_ctx);
     }
@@ -129,9 +131,9 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
 
     // tx queue send DDR SMBIOS EVENT fails
     will_return(__wrap__txe_queue_send, TX_QUEUE_ERROR);
-    expect_value(FPFwErrorRaise, error, (uint32_t)TX_QUEUE_ERROR);
+    expect_value(__wrap_crash_dump_bug_check, errorCode, (uint32_t)KNG_BGCHK_BUGCHECK);
 
-    if (!set_error_handler_return())
+    if (!bugcheck_mock_return())
     {
         ddr_manager_init(&ddr_service_context, &ddr_service_config, icc_ctx);
     }
@@ -259,13 +261,15 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
 
 TEST_FUNCTION(ddr_timer_cb_success, NULL, NULL)
 {
-    ddr_service_context_t ddr_service_ctx = {};
 
-    expect_value(__wrap__txe_queue_send, queue_ptr, &ddr_service_ctx.work_queue);
-    expect_any_always(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+
+    ddr_manager_message_t msg_dimm_polling = {.message_type = DDR_POLL_DIMMS_I3C_EVENT};
+    expect_memory(__wrap__txe_queue_send, source_ptr, &msg_dimm_polling, sizeof(msg_dimm_polling));
     expect_value(__wrap__txe_queue_send, wait_option, TX_NO_WAIT);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
 
+    ddr_service_context_t ddr_service_ctx = {};
     ddr_timer_cb((ULONG)&ddr_service_ctx);
 }
 

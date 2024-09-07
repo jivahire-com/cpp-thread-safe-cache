@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include "ddr_manager.h"   // for (anonymous struct)::(anonymous), ddr_serv...
 #include "ddr_manager_i.h" // for ddr_create_bdat, ddr_create_memory_map
+#include "ddr_manager_temp_interrupts.h"
 
 #include <ErrorHandler.h> // for FPFwErrorRaise
 #include <bug_check.h>
@@ -28,13 +29,18 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+static ddr_service_context_t* s_ddr_service_ctx;
 
 /*-------------- Functions ---------------*/
+void ddr_manager_enqueue_event(ddr_manager_message_t* event)
+{
+    BUG_ASSERT(tx_queue_send(&s_ddr_service_ctx->work_queue, event, TX_NO_WAIT) == TX_SUCCESS);
+}
 
 void ddr_worker_thread_func(ULONG pddr_service_ctx)
 {
     ddr_service_context_t* ddr_service_ctx = (ddr_service_context_t*)pddr_service_ctx;
-    uint32_t received_message;
+    ddr_manager_message_t received_message;
     UINT status;
 
     printf("[DDR_MGR] worker thread begin\n");
@@ -51,9 +57,9 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
         {
             // Process received message
             // TODO: Task #1778297: Replace printf with debug level Event Trace Event
-            printf("[DDR_MGR] DDR Q Message received: %d\n", (int)received_message);
+            printf("[DDR_MGR] DDR Q Message received: %d\n", received_message.message_type);
 
-            switch ((DDR_MANAGER_MESSAGE_TYPE)received_message)
+            switch ((DDR_MANAGER_MESSAGE_TYPE)received_message.message_type)
             {
             case DDR_CREATE_MEMORY_MAP_EVENT:
                 ddr_create_memory_map();
@@ -71,8 +77,8 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
                 ddr_poll_dimms();
                 break;
 
-            case DDR_I3C_DATA_READY_EVENT:
-                // This should be triggered by an async. completion notification from the DDR I3C driver / dfwk
+            case DDR_TEMP_CHANGED_EVENT:
+                ddr_manager_temp_interrupts_process_changed_event(received_message.message_data);
                 break;
 
             default:
@@ -86,11 +92,11 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
 // Timer CB for DIMM temperature sensors & PMIC power register polling
 void ddr_timer_cb(ULONG pddr_service_ctx)
 {
-    ddr_service_context_t* ddr_service_ctx = (ddr_service_context_t*)pddr_service_ctx;
-    uint32_t msg_dimm_polling = DDR_POLL_DIMMS_I3C_EVENT;
+    UNUSED(pddr_service_ctx);
+    ddr_manager_message_t msg_dimm_polling = {.message_type = DDR_POLL_DIMMS_I3C_EVENT};
 
     printf("[DDR_MGR] Sending a message for test to DDR worker thread..\n");
-    tx_queue_send(&ddr_service_ctx->work_queue, &msg_dimm_polling, TX_NO_WAIT);
+    ddr_manager_enqueue_event(&msg_dimm_polling);
 }
 
 static void hsp_send_ddr_init_notify(fpfw_icc_base_ctx_t* icc_ctx)
@@ -131,7 +137,8 @@ static void hsp_send_ddr_init_notify(fpfw_icc_base_ctx_t* icc_ctx)
  */
 void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_config_t* pconfig, fpfw_icc_base_ctx_t* icc_ctx)
 {
-    uint32_t work_queue_msg = 0;
+    s_ddr_service_ctx = pddr_service_ctx;
+
     int status = tx_queue_create((TX_QUEUE*)&pddr_service_ctx->work_queue, /* TX_QUEUE *queue_ptr */
                                  (char*)DDR_WORK_QUEUE_NAME,               /* CHAR *name_ptr */
                                  pconfig->queue_config.msg_size, /* UINT message_size in 32-bit word */
@@ -144,30 +151,15 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
-    work_queue_msg = DDR_CREATE_MEMORY_MAP_EVENT;
-    status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
-    if (status != TX_SUCCESS)
-    {
-        printf("[DDR_MGR] tx_queue_send DDR_CREATE_MEMORY_MAP_EVENT err %d\n", status);
-        FPFwErrorRaise(status, 0, 0, 0, 0);
-    }
+    ddr_manager_message_t work_queue_msg = {};
+    work_queue_msg.message_type = DDR_CREATE_MEMORY_MAP_EVENT;
+    ddr_manager_enqueue_event(&work_queue_msg);
 
-    work_queue_msg = DDR_CREATE_BDAT_EVENT;
-    status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
+    work_queue_msg.message_type = DDR_CREATE_BDAT_EVENT;
+    ddr_manager_enqueue_event(&work_queue_msg);
 
-    if (status != TX_SUCCESS)
-    {
-        printf("[DDR_MGR] tx_queue_send DDR_CREATE_BDAT_EVENT err %d\n", status);
-        FPFwErrorRaise(status, 0, 0, 0, 0);
-    }
-
-    work_queue_msg = DDR_CREATE_SMBIOS_TABLES_EVENT;
-    status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
-    if (status != TX_SUCCESS)
-    {
-        printf("[DDR_MGR] tx_queue_send DDR_CREATE_SMBIOS_TABLES_EVENT err %d\n", status);
-        FPFwErrorRaise(status, 0, 0, 0, 0);
-    }
+    work_queue_msg.message_type = DDR_CREATE_SMBIOS_TABLES_EVENT;
+    ddr_manager_enqueue_event(&work_queue_msg);
 
     status = tx_thread_create((TX_THREAD*)&pddr_service_ctx->work_thread, /* TX_THREAD *thread_ptr */
                               (char*)DDR_WORK_THREAD_NAME,                /* CHAR *name_ptr */
@@ -201,7 +193,9 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     }
 
     ddr_manager_i3c_init();
+    ddr_manager_temp_interrupts_init();
     ddr_init_telemetry();
+
     if (system_info_is_hsp_present())
     {
         hsp_send_ddr_init_notify(icc_ctx);

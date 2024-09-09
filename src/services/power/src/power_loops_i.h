@@ -16,6 +16,7 @@
 #include <dvfs_struct.h> // for NUM_PSTATES
 #include <fpfw_status.h>       // for FPFW_STATUS_SUCCESS, FPFW_STATUS_INVA...
 #include <kng_error.h>
+#include <power_runconfig.h>
 #include <power_runconfig_i.h>
 #include <FpFwAssert.h>
 #include <stdbool.h>
@@ -29,10 +30,7 @@
 #define POWER_LOOP_STATE_SIGNAL_INTERVAL 1
 // retries 
 #define POWER_LOOP_RETRY_COUNT 10
-// number of throttling priorities 
-#define VM_THROT_COUNT 8
-// number of throttling priorities 
-#define VM_BOOST_COUNT 8
+
 
 /* Macros to convert between plimit and resource count */
 #define PLIMIT_TO_RESOURCES(x) (MAX_PLIMIT - (x))  // for now, these are 1:1, reversed
@@ -197,82 +195,6 @@ typedef enum _power_ctrl_loop_signal_t
     POWER_CTRL_LOOP_SIGNAL_MAX,
 } power_ctrl_loop_signal_t;
 
-/**
- * @brief Struct for per-core data
- */
-typedef struct _power_core_t {
-    uint16_t temperature_dC;           // current core temperature in 1/10 degrees C
-    uint8_t current_pstate;            // from last pstate reg 
-    uint8_t current_cstate;            // from last pstate reg
-    uint8_t current_throt_status;      // from last pstate reg
-    uint8_t current_throt_priority;    // current boost priority from update message
-    uint8_t current_boost_priority;    // current boost priority from update message 
-    uint8_t current_plimit;
-    uint8_t selected_plimit;
-    uint8_t desired_pstate;            // desired plimit; set by OS, delivered in success
-                                       // and fail messages
-    uint8_t min_plimit;                // for resource distribution
-    uint8_t desired_pstate_in_use;     // used with intervals_to_lower_plimit knob (this
-                                       // is the desired request we're working with)
-    uint8_t desired_pstate_for_count;  // used with intervals_to_lower_plimit
-                                       // knob (desired we're working towards)
-    uint8_t desired_pstate_count;      // used with intervals_to_lower_plimit knob
-                                       // (current count)
-} power_core_t;
-
-/**
- * @brief Struct for all-core data
- */
-typedef struct _power_cores_t {
-    power_core_t core[NUM_AP_CORES_PER_DIE];
-} power_cores_t;
-
-/**
- * @brief Struct for plimit selection stats
- */
-typedef struct _power_plimit_stats_t {
-    uint64_t acc[NUM_PSTATES];
-} power_plimit_selection_stats_t;
-
-/**
- *  @brief Struct for plimit send stats
- */
-typedef struct _power_loop_plimit_stats_t {
-    power_plimit_selection_stats_t selections[VM_THROT_COUNT];
-    uint64_t counter_start;
-    uint64_t counter_last_send;
-    uint32_t max_us;
-    uint32_t min_us;
-    uint32_t last_us;
-} power_loop_plimit_stats_t;
-
-/**
- *  @brief Struct for control loop state
- */
-typedef struct _power_ctrl_loop_detail_t {
-    power_latest_calcs_t local_power;
-    power_latest_calcs_t remote_power;
-    uint16_t current_vcpu;
-    uint16_t required_vcpu;
-    uint16_t max_resources;
-    uint16_t curr_resources;
-    corebits_t plimits_pending;
-    corebits_t plimits_successful;
-    corebits_t pstate_not_forced;
-    corebits_t plimit_valid[NUM_PSTATES];
-    corebits_t throttle_priority[VM_THROT_COUNT];
-    corebits_t boost_priority[VM_THROT_COUNT];
-    power_cores_t cores;
-    bool throttling;       // currently throttling 
-    bool throttle_query;   // same as throttling, but will remain true until queried
-    bool rack_limit;       // cached value of last rack_limit flag observed
-    bool loop_failure;     // is loop in a failure state
-    bool loop_fail_query;  // same as loop failure, but will remain true until queried
-    power_loop_plimit_stats_t plimit;
-
-} power_ctrl_loop_detail_t;
-
-
 // -----------------------------------
 // Telemetry Loop Specific Definitions
 // -----------------------------------
@@ -365,6 +287,7 @@ bool power_loops_retry_fail(power_loop_context_t *context, power_loop_retries_t 
 void power_loops_control_handle_event(power_ctrl_loop_signal_t event, const void* event_data); 
 void power_loops_vr_telem_handle_event(power_vr_telem_signal_t event, const void* event_data);
 void power_loops_pvt_telem_handle_event(power_pvt_telem_signal_t event, const void* event_data);
+power_ctrl_loop_detail_t* power_ctrl_loop_get();
 
 #ifdef __cplusplus
 }

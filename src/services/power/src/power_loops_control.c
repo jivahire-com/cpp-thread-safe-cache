@@ -633,17 +633,16 @@ static void hw_drain_sensor_fifo()
 static void hw_calculate_vcpu(power_runconfig_t* p_runconfig)
 {
     // calculate the necessary LDO input voltage
-    /* TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1505723/
+    // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1505723/
 
     // reminder that vcpu_calc needs to provide per-core current limit data used in loadline calculation (we need to save that calculation for setting of plimit later)
+    // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/create/Build%20Task
 
-    uint16_t ldo_in_mv     = power_vcpu_calc_max_core_voltage_mv() +
-    power_context.runconfig.fuses.v_ldo_dropout_mv; float loadline_drop_mv = power_vcpu_calc_peak_current_A()
-    * (float)p_runconfig->knobs.r_loadline_uohm / 1000.0f;  // r_loadline is uOhm - /1000 makes result mV
-    */
-    // temp values for now
-    uint16_t ldo_in_mv = 900;
-    float loadline_drop_mv = 10.0F;
+    uint16_t ldo_in_mv =
+        power_vcpu_calc_max_core_voltage_mv(p_runconfig, &s_ctrl_loop.cores) + p_runconfig->fuses.v_ldo_dropout_mv;
+    float loadline_drop_mv = power_vcpu_calc_peak_current_A(p_runconfig, &s_ctrl_loop) *
+                             (float)p_runconfig->knobs.r_loadline_vcpu0_uohm /
+                             1000.0F; // r_loadline is uOhm - /1000 makes result mV
 
     const uint16_t possible_loadline_drop_mV = (uint16_t)FLOAT_TO_UNSIGNED(loadline_drop_mv);
     const uint16_t vcpu_required_mV = ldo_in_mv + p_runconfig->fuses.vcpu_guardband_mv + p_runconfig->knobs.vcpu_offset_mv;
@@ -751,4 +750,9 @@ void power_loops_control_init()
     pid_init(&pid_config);
     // set an initial resource count
     pid_set_resources(s_ctrl_loop.curr_resources);
+}
+
+power_ctrl_loop_detail_t* power_ctrl_loop_get()
+{
+    return &s_ctrl_loop;
 }

@@ -12,6 +12,7 @@
 /*----------- Nested includes ------------*/
 #include <dvfs.h>
 #include <power_loops_i.h>
+#include <power_runconfig.h>
 #include <power_runconfig_i.h>
 #include <stdbool.h>
 #include <stdint.h>

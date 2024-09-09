@@ -49,6 +49,23 @@ static unsigned int s_context_index = 0;
 // Mocks
 //
 
+uint16_t __wrap_power_vcpu_calc_max_core_voltage_mv(power_runconfig_t* p_runconfig, power_cores_t* p_cores)
+{
+    FPFW_UNUSED(p_runconfig);
+    FPFW_UNUSED(p_cores);    
+    function_called();
+
+    return 0;
+}
+
+float __wrap_power_vcpu_calc_peak_current_A(power_runconfig_t* p_runconfig, power_ctrl_loop_detail_t* loop_config)
+{
+    FPFW_UNUSED(p_runconfig);
+    FPFW_UNUSED(loop_config);
+    function_called();
+    return 1.0F;
+}
+
 void __wrap_power_loops_init_loop(power_loop_context_t* p_context)
 {
     s_loop_context[s_context_index++] = p_context;
@@ -497,6 +514,9 @@ POWER_TEST(control_warmstart_handler__signal_entry, NULL, NULL)
     power_runconfig_t test_runconfig = {.p_sconfig = NULL};
     // expectations on entry
     will_return(__wrap_power_runconfig_get, &test_runconfig);
+    expect_function_call(__wrap_power_vcpu_calc_max_core_voltage_mv);
+    expect_function_call(__wrap_power_vcpu_calc_peak_current_A);
+
     // should change state to set VR before PLIMIT after handling fixed warmstart distribution
     setup_expectations_for_state_change(POWER_CONTROL_STATE_SET_VR_BEFORE_PLIMIT);
     
@@ -544,6 +564,9 @@ void setup_dist_available_signal_entry(bool new_cap, bool rack_limit)
         expect_value(__wrap_pid_calculate_resources, measured_value, (float)TEST_MEASURED_VCPU_POWER + (float)TEST_MEASURED_VCPU_POWER);
         will_return(__wrap_pid_calculate_resources, 0);
     }
+
+    expect_function_call(__wrap_power_vcpu_calc_max_core_voltage_mv);
+    expect_function_call(__wrap_power_vcpu_calc_peak_current_A);
 
     setup_expectations_for_state_change(POWER_CONTROL_STATE_SET_VR_BEFORE_PLIMIT);
 

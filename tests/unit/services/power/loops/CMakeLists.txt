@@ -91,6 +91,8 @@ mock_target(${TARGET}
     sensor_fifo_svc_add_soc_pvt_voltage
     sensor_fifo_svc_add_vr_temperature
     sensor_fifo_svc_add_vr_current
+    power_vcpu_calc_max_core_voltage_mv
+    power_vcpu_calc_peak_current_A
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

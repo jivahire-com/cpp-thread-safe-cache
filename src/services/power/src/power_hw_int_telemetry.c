@@ -11,8 +11,9 @@
 #include "power_hw_int_i.h" // for power_telcfg_t, power_telemetry...
 #include "power_loops_i.h"
 
-#include <FpFwAssert.h>              // for FPFW_RUNTIME_ASSERT
-#include <corebits.h>                // for corebits_set_bit
+#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
+#include <corebits.h>   // for corebits_set_bit
+#include <power_runconfig.h>
 #include <sensor_fifo_service.h>     // for sensor_fifo_api
 #include <stdint.h>                  // for uint32_t
 #include <telemetry_config_struct.h> // for telemetry_common_cfg_t

@@ -22,6 +22,7 @@ add_library(${TARGET}
         power_stub.c
         power_timer.c
         power_warmstart.c
+        power_vcpu_calc.c
 )
 
 target_include_directories(${TARGET}

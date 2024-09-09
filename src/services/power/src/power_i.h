@@ -10,11 +10,13 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
-#include <FpFwAssert.h>
-#include <DfwkDriver.h>
+#include "corebits.h"
 
+#include <DfwkDriver.h>
+#include <FpFwAssert.h>
 #include <fpfw_status.h>       // for FPFW_STATUS_SUCCESS, FPFW_STATUS_INVA...
 #include <kng_error.h>
+#include <power_runconfig.h>
 #include <power_runconfig_i.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -86,14 +88,7 @@ enum _power_cap_update_result_t
                                          */
 };
 
-// structure for storing local/remote power calculations
-typedef struct _power_latest_calcs
-{
-    float soc_power;    // most recent soc power measurement
-    float vcpu_power;   // most recent vcpu power measurement
-    uint16_t vcpu_avs_voltage; // most recent vcpu voltage
-    uint16_t vcpu_avs_current; // most recent vcpu current
-} power_latest_calcs_t;
+
 
 // structure for tracking latest v/c/t from AVS for each rail
 typedef struct _power_vrs_avs_latest
@@ -447,6 +442,69 @@ int power_cap_cancel(power_cap_completed_callback_t callback, bool source_is_cli
  */
 bool power_cap_is_capped();
 
+
+/**
+ * @brief Find maximum of all cores plimit voltage requirement
+ *
+ * \b Description:
+ *      This API should be called to determine the core voltage requirement related to LDO input voltage.  Input is the global power
+ * context.
+ * @param[in] p_runconfig - power runtime configuration
+ * @param[in] power_cores_t - all core configuration
+ * @return max voltage requirement (mV)
+ *
+ */
+uint16_t power_vcpu_calc_max_core_voltage_mv(power_runconfig_t* p_runconfig, power_cores_t* p_cores);
+/**
+ * @brief Calculate core leakage scaler for temperature
+ *
+ * \b Description:
+ *      This API will be called as part of peak current calculation; included here for test.
+ * 
+ * @param[in] p_runconfig - power runtime configuration
+ * @param[in] temp_C - Core temperature
+ *
+ * @return scaling factor
+ *
+ */
+float power_vcpu_calc_core_leakage_scaler(power_runconfig_t* p_runconfig, unsigned temp_dC);
+
+/**
+ * @brief Calculate Vcpu leakage peak current
+ *
+ * \b Description:
+ *      This API should be called to determine the Vcpu peak current requirement related to the selected plimits for all cores, current SOC
+ * temp, etc.  Input is the global power context.
+ * @param[in] p_runconfig - power runtime configuration
+ * @param[in] power_ctrl_loop_detail_t - control loop runtime configuration
+ * @return Current in amps
+ *
+ */
+float power_vcpu_calc_peak_current_A(power_runconfig_t* p_runconfig, power_ctrl_loop_detail_t* loop_config);
+
+/**
+ * @brief Calculate per-pstate dynamic and leakage current
+ *
+ * \b Description:
+ *      This API should be called after knob and fuse init to pre-calculate the dynamic and leakage current associated with VF points in all
+ * the VF curves.
+ * @param[in] p_runconfig - power runtime configuration
+ * @param[in] dvfs_config_t - dvfs runtime configuration 
+ * @return none
+ *
+ */
+void power_vcpu_precalculate_vf_currents(power_runconfig_t* p_runconfig, dvfs_config_t* p_dvfs_cfg);
+
+/**
+ * @brief Interpolate a value from given points
+ *
+ * \b Description:
+ *      Included only for test
+ *
+ * @return Current in amps
+ *
+ */
+uint32_t power_vcpu_interpolate_from_points(const power_vcpu_interp_t *points, unsigned points_count, uint16_t ldo_dac);
 
 #ifdef __cplusplus
 }

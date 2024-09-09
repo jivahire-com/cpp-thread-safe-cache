@@ -8,6 +8,7 @@ add_executable(${TARGET}
     power_knobs_test.cpp
     power_main_test.cpp
     power_pid_test.cpp
+    power_vcpu_cal_test.cpp
     ../mocks/mock_bug_check.c
 )
 
@@ -50,6 +51,7 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     FpFwAssert
+    
     DfwkDeviceInitialize
     DfwkQueueInitialize
     DfwkInterfaceInitialize

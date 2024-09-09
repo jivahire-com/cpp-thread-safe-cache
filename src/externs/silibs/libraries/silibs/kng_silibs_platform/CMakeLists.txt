@@ -10,6 +10,7 @@ target_include_directories(
         SYSTEM INTERFACE
             ${TARGET_DIR}/libraries/kng_silibs_platform/include
             ${TARGET_DIR}/soc_fw_shared/include
+            ${TARGET_DIR}/soc_fw_shared/include/memory_map
 
 )
 

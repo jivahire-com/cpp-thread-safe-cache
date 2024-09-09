@@ -121,8 +121,22 @@ void static_atu_config(uint8_t die_num)
         FPFW_RUNTIME_ASSERT(false);
     }
 
+    // Initialize MSCP ATU
     int status = atu_init(ATU_ID_MSCP, atu_static_global_map, atu_entry_num);
     BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, SILIBS_SUCCESS);
+
+    // Initialize SCP DMAC ATU
+    status = atu_init(ATU_ID_SCP_EXP, atu_static_global_map, atu_entry_num);
+    BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, SILIBS_SUCCESS);
+
+    // Initialize MCP DMAC ATU
+    /* SiLibs investigation task: FW Task 792282: ATU: atu_init fails for ATU_ID_MCP_EXP on SVP
+       Calling assert_fail_on_line: condition=(rgn_cnt > 0) && (rgn_cnt <= ATU_MAX_ENTRY_NUM), file=C:/src/kng/.externs/repo/silibs/li
+        braries/atu/src/atu_lib.c, line=199 --> Stub Function not implemented for emCPU (TODO)
+        Bug Check: [-2143748094] File [C:/src/kng/src/services/atu_service/src/atu_main.c:134] P1: [4294967285] P2: [0]
+    */
+    // status = atu_init(ATU_ID_MCP_EXP, atu_static_global_map, atu_entry_num);
+    // BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, SILIBS_SUCCESS);
 }
 
 void atu_svc_init(atu_service_t* atu_service, PDFWK_SCHEDULE schedule)

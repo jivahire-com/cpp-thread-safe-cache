@@ -26,6 +26,7 @@ add_library(${TARGET}
         ddrss_init.c
         debug_init.c
         dfwk_init.c
+        dma_init.c
         etc_etd_init.c
         exception_handler_init.c
         fuse_init.c
@@ -76,6 +77,7 @@ target_link_libraries(
         ms::build_data
         ms::lib::scp_avs
         ms::lib::scp_avs::cli
+        ms::driver::dma::scp
         ms::driver::gpio
         ms::driver::icc_mhu_trans
         ms::driver::pcie
@@ -217,6 +219,7 @@ target_link_libraries(
         fwlib.service.icc_dispatcher
         fwlib.service.iccBase
         ms::build_data
+        ms::driver::dma::mcp
         ms::driver::gpio
         ms::driver::sensor_fifo
         ms::driver::textio::pl011

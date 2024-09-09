@@ -38,6 +38,7 @@ typedef struct _ap_core_service_config_t
     uint32_t cluster_stride;                // number of bytes between each cluster
     const corebits_t* platform_cores_in_die; // platform cores
     unsigned int platform_die_core_count;    // platform core count
+    bool primary_boot_die;                   // primary boot die
 } ap_core_service_config_t, *pap_core_service_config_t;
 
 /*-- Declarations (Statics and globals) --*/

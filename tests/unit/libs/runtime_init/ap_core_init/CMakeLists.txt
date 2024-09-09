@@ -44,4 +44,5 @@ mock_target(${TARGET}
     fpfw_init_get_handle
     idsw_get_platform_sdv
     sos_register_ssi
+    idsw_get_die_id
 )

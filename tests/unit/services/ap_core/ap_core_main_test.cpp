@@ -174,17 +174,20 @@ bool __wrap_system_info_is_hsp_present()
 {
     return mock_type(bool);
 }
-
 } // extern "C"
 
-//
-// Tests
-//
-AP_CORE_TEST(init, NULL, NULL)
+static int setup(void** state)
 {
-    ap_core_service_t test_device;
-    ap_core_service_config_t test_config;
+    FPFW_UNUSED(state);
 
+    const corebits_t default_cores = (const corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFF, 0xFFFFFFFF, 0xF);
+
+    ap_core_service_t test_device;
+    static ap_core_service_config_t test_config = {
+        .platform_cores_in_die = &default_cores,
+        .primary_boot_die = true,
+    };
+    
     DFWK_SCHEDULE test_schedule;
 
     expect_value(__wrap_DfwkDeviceInitialize, Device, &test_device.header);
@@ -205,6 +208,15 @@ AP_CORE_TEST(init, NULL, NULL)
     expect_not_value(__wrap_FpFwAssert, expression, false);
 
     ap_core_init(&test_device, &test_schedule, (fpfw_icc_base_ctx_t*)&icc_hspmbx_ctx, &test_config);
+    return 0;
+}
+
+//
+// Tests
+//
+AP_CORE_TEST(init, setup, NULL)
+{
+    // nothing to do, setup stage will validate init function works
 }
 
 AP_CORE_TEST(interface_init, NULL, NULL)
@@ -246,7 +258,7 @@ AP_CORE_TEST(dispatch_default, NULL, NULL)
     s_dispatch_routine(&test_request, &test_device.header);
 }
 
-AP_CORE_TEST(dispatch_rvbar, NULL, NULL)
+AP_CORE_TEST(dispatch_rvbar, setup, NULL)
 {
 #define TEST_RVBARADDR 0x12345678
 
@@ -265,7 +277,7 @@ AP_CORE_TEST(dispatch_rvbar, NULL, NULL)
     s_dispatch_routine(&test_request.header, &test_device.header);
 }
 
-AP_CORE_TEST(dispatch_power_on_async, NULL, NULL)
+AP_CORE_TEST(dispatch_power_on_async, setup, NULL)
 {
     ap_core_asynchronous_request_t test_request;
     ap_core_service_t test_device;
@@ -283,7 +295,7 @@ AP_CORE_TEST(dispatch_power_on_async, NULL, NULL)
     s_dispatch_routine(&test_request.header, &test_device.header);
 }
 
-AP_CORE_TEST(dispatch_power_off_async, NULL, NULL)
+AP_CORE_TEST(dispatch_power_off_async, setup, NULL)
 {
     ap_core_asynchronous_request_t test_request;
     ap_core_service_t test_device;
@@ -301,7 +313,7 @@ AP_CORE_TEST(dispatch_power_off_async, NULL, NULL)
     s_dispatch_routine(&test_request.header, &test_device.header);
 }
 
-AP_CORE_TEST(dispatch_ap_core_boot, NULL, NULL)
+AP_CORE_TEST(dispatch_ap_core_boot, setup, NULL)
 {
 #define TEST_BOOT_CORE 5
     ssi_startup_notification_request_t test_request;
@@ -330,7 +342,7 @@ AP_CORE_TEST(dispatch_ap_core_boot, NULL, NULL)
     s_dispatch_routine(&test_request.header, &test_device.header);
 }
 
-AP_CORE_TEST(dispatch_cluster_core_init, NULL, NULL)
+AP_CORE_TEST(dispatch_cluster_core_init, setup, NULL)
 {
     ssi_startup_notification_request_t test_request;
     ap_core_service_t test_device;
@@ -388,7 +400,7 @@ AP_CORE_TEST(dispatch_shutdown, NULL, NULL)
     s_dispatch_routine(&test_request.header, &test_device.header);
 }
 
-AP_CORE_TEST(dispatch_bl31_load, NULL, NULL)
+AP_CORE_TEST(dispatch_bl31_load, setup, NULL)
 {
     // Set up pre-conditions
     ssi_startup_notification_request_t test_request;
@@ -423,7 +435,7 @@ AP_CORE_TEST(dispatch_bl31_load, NULL, NULL)
     fw_load_cb(NULL, 0, FPFW_STATUS_SUCCESS);
 }
 
-AP_CORE_TEST(dispatch_mcp_load, NULL, NULL)
+AP_CORE_TEST(dispatch_mcp_load, setup, NULL)
 {
     // Set up pre-conditions
     ssi_startup_notification_request_t test_request;
@@ -465,7 +477,7 @@ AP_CORE_TEST(dispatch_mcp_load, NULL, NULL)
     fw_load_cb(&icc_hspmbx_ctx, 0, FPFW_STATUS_SUCCESS);
 }
 
-AP_CORE_TEST(dispatch_stmm_load, NULL, NULL)
+AP_CORE_TEST(dispatch_stmm_load, setup, NULL)
 {
     // Set up pre-conditions
     ssi_startup_notification_request_t test_request;
@@ -500,7 +512,7 @@ AP_CORE_TEST(dispatch_stmm_load, NULL, NULL)
     fw_load_cb(NULL, 0, FPFW_STATUS_SUCCESS);
 }
 
-AP_CORE_TEST(dispatch_bl33_load, NULL, NULL)
+AP_CORE_TEST(dispatch_bl33_load, setup, NULL)
 {
     // Set up pre-conditions
     ssi_startup_notification_request_t test_request;
@@ -535,7 +547,7 @@ AP_CORE_TEST(dispatch_bl33_load, NULL, NULL)
     fw_load_cb(NULL, 0, FPFW_STATUS_SUCCESS);
 }
 
-AP_CORE_TEST(dispatch_hafnium_load, NULL, NULL)
+AP_CORE_TEST(dispatch_hafnium_load, setup, NULL)
 {
     // Set up pre-conditions
     ssi_startup_notification_request_t test_request;
@@ -570,7 +582,7 @@ AP_CORE_TEST(dispatch_hafnium_load, NULL, NULL)
     fw_load_cb(NULL, 0, FPFW_STATUS_SUCCESS);
 }
 
-AP_CORE_TEST(dispatch_rmm_load, NULL, NULL)
+AP_CORE_TEST(dispatch_rmm_load, setup, NULL)
 {
     // Set up pre-conditions
     ssi_startup_notification_request_t test_request;
@@ -605,7 +617,7 @@ AP_CORE_TEST(dispatch_rmm_load, NULL, NULL)
     fw_load_cb(NULL, 0, FPFW_STATUS_SUCCESS);
 }
 
-AP_CORE_TEST(dispatch_spmc_load, NULL, NULL)
+AP_CORE_TEST(dispatch_spmc_load, setup, NULL)
 {
     // Set up pre-conditions
     ssi_startup_notification_request_t test_request;

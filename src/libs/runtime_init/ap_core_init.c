@@ -57,6 +57,7 @@ FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "tower_cfg", "ic
     ap_core_config.cluster_pex_base = ATU_AP_CORE_CLUSTER_ADDRESS;
     ap_core_config.platform_cores_in_die = &platform_cores;
     ap_core_config.platform_die_core_count = NUM_AP_CORES_PER_DIE;
+    ap_core_config.primary_boot_die = (idsw_get_die_id() == DIE_0);
 
     // platform overrides
     switch (idsw_get_platform_sdv())
@@ -69,8 +70,13 @@ FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "tower_cfg", "ic
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
         ap_core_config.platform_cores_in_die = &fpga_platform_cores;
-        // put a loop to self at the rbvaraddr (FW load would replace this)
-        setup_ap_loop_to_self(ap_core_config.boot_core_rvbaraddr);
+        
+        if (ap_core_config.primary_boot_die)
+        {
+            // put a loop to self at the rbvaraddr (FW load would replace this)
+            setup_ap_loop_to_self(ap_core_config.boot_core_rvbaraddr);
+        }
+        
         break;
     default:
         break;

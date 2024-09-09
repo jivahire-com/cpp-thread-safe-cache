@@ -93,6 +93,12 @@ int32_t __wrap_sos_register_ssi(PDFWK_INTERFACE_HEADER p_interface,
     check_expected_ptr(p_ssi_interface);
     return mock_type(int32_t);
 }
+
+KNG_DIE_ID __wrap_idsw_get_die_id(void)
+{
+    return mock_type(KNG_DIE_ID);
+}
+
 }
 //
 // Tests
@@ -110,6 +116,7 @@ TEST_FUNCTION(ap_core_init_ap_core_svc, nullptr, nullptr)
     expect_value(__wrap_ap_core_init, p_schedule, &(test_host.Schedule));
 
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return(__wrap_idsw_get_die_id, DIE_0);
 
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_ap_core_svc.init_fn();
@@ -119,6 +126,7 @@ TEST_FUNCTION(ap_core_init_ap_core_svc, nullptr, nullptr)
     assert_non_null(result.associated_handle);
 
     assert_int_equal(s_saved_config.platform_die_core_count, NUM_AP_CORES_PER_DIE);
+    assert_true(s_saved_config.primary_boot_die);
 }
 
 TEST_FUNCTION(ap_core_init_ap_core_svc__svp, nullptr, nullptr)
@@ -133,6 +141,7 @@ TEST_FUNCTION(ap_core_init_ap_core_svc__svp, nullptr, nullptr)
     expect_value(__wrap_ap_core_init, p_schedule, &(test_host.Schedule));
 
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    will_return(__wrap_idsw_get_die_id, DIE_0);
 
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_ap_core_svc.init_fn();
@@ -142,6 +151,7 @@ TEST_FUNCTION(ap_core_init_ap_core_svc__svp, nullptr, nullptr)
     assert_non_null(result.associated_handle);
 
     assert_int_not_equal(s_saved_config.platform_die_core_count, NUM_AP_CORES_PER_DIE);
+    assert_true(s_saved_config.primary_boot_die);
 }
 
 TEST_FUNCTION(ap_core_init_ap_core_svc__bigfpga, nullptr, nullptr)
@@ -157,6 +167,7 @@ TEST_FUNCTION(ap_core_init_ap_core_svc__bigfpga, nullptr, nullptr)
     expect_value(__wrap_ap_core_init, p_schedule, &(test_host.Schedule));
 
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
+    will_return(__wrap_idsw_get_die_id, DIE_0);
 
     // on FPGA we also expect a call that will write forever loop; it uses atu_translate_address call
     expect_value(__wrap_atu_translate_address, atu_id, ATU_ID_MSCP);
@@ -176,6 +187,7 @@ TEST_FUNCTION(ap_core_init_ap_core_svc__bigfpga, nullptr, nullptr)
     // bigfpga has no core 0
     assert_false(corebits_is_bit_set(s_saved_config.platform_cores_in_die, 0));
     assert_int_equal(s_saved_config.platform_die_core_count, NUM_AP_CORES_PER_DIE);
+    assert_true(s_saved_config.primary_boot_die);
 }
 
 TEST_FUNCTION(ap_core_init_ap_core_int, nullptr, nullptr)

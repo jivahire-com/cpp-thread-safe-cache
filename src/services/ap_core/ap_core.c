@@ -132,84 +132,99 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
             ap_core_ssi_start_cluster_init(ssi_request);
             break;
         case STARTUP_PRIMARY_AP_CORE_BOOT:
-            // turn on primary AP core
-            ap_core_ssi_start_primary_ap_core_boot(ssi_request);
+            if (s_ap_core_ctx.p_config->primary_boot_die)
+            {
+                // Turn on primary AP core only on primary boot die
+                ap_core_ssi_start_primary_ap_core_boot(ssi_request);
+            }
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
+            
             break;
         case STARTUP_BL31_LOAD:
-            if (!system_info_is_hsp_present())
+            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())
             {
-                // if no HSP is present, just complete p_request
+                // Primary boot die && HSP present then request TFA firmware load (BL31)
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_BL31);
+            }
+            else
+            {
                 DfwkAsyncRequestComplete(p_request);
-                break;
             }
 
-            // request TFA firmware load (BL31)
-            ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_BL31);
             break;
         case STARTUP_STMM_LOAD:
-            if (!system_info_is_hsp_present())
+            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())
             {
-                // if no HSP is present, just complete p_request
+                // Primary boot die && HSP present then request STMM firmware load
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_STMM);
+            }
+            else
+            {
                 DfwkAsyncRequestComplete(p_request);
-                break;
             }
 
-            // request STMM firmware load
-            ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_STMM);
             break;
         case STARTUP_BL33_LOAD:
-            if (!system_info_is_hsp_present())
+            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())
             {
-                // if no HSP is present, just complete p_request
+                // Primary boot die && HSP present then request BL33 firmware load
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_BL33);
+            }
+            else
+            {
                 DfwkAsyncRequestComplete(p_request);
-                break;
             }
 
-            // request BL33 firmware load
-            ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_BL33);
             break;
         case STARTUP_HAFNIUM_LOAD:
-            if (!system_info_is_hsp_present())
+            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())
             {
-                // if no HSP is present, just complete p_request
+                // Primary boot die && HSP present then request Hafnium firmware load
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_HAFNIUM);
+            }
+            else
+            {
                 DfwkAsyncRequestComplete(p_request);
-                break;
             }
 
-            // request Hafnium firmware load
-            ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_HAFNIUM);
             break;
         case STARTUP_RMM_LOAD:
-            if (!system_info_is_hsp_present())
+            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())
             {
-                // if no HSP is present, just complete p_request
+                // Primary boot die && HSP present then request RMM firmware load
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_RMM);
+            }
+            else
+            {
                 DfwkAsyncRequestComplete(p_request);
-                break;
             }
 
-            // request RMM firmware load
-            ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_RMM);
             break;
         case STARTUP_SPMC_LOAD:
-            if (!system_info_is_hsp_present())
+            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())
             {
-                // if no HSP is present, just complete p_request
+                // Primary boot die && HSP present then request SPMC manifest load
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_SPMC);
+            }
+            else
+            {
                 DfwkAsyncRequestComplete(p_request);
-                break;
             }
 
-            // request SPMC manifest load
-            ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_SPMC);
             break;
         case STARTUP_MCP_LOAD:
-            if (!system_info_is_hsp_present())
+            if (system_info_is_hsp_present())
             {
-                // if no HSP is present, just complete p_request
-                DfwkAsyncRequestComplete(p_request);
-                break;
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_MCP);    
             }
-
-            ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_MCP);
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
+            
             break;
         default:
             // nothing to do for other types.

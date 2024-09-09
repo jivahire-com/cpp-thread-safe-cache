@@ -17,6 +17,7 @@
 #include <core_cluster_top_regs.h> // for CORE_CLUSTER_TOP_CORE_CLUSTER0_AD...
 #include <corebits.h>
 #include <fpfw_init.h> // for fpfw_init_get_handle, FPFW_INIT_S...
+#include <idhw.h>
 #include <idsw.h>      // for idsw_get_die_id
 #include <idsw_kng.h>
 #include <kng_soc_constants.h> // for NUM_AP_CORES_PER_DIE
@@ -31,7 +32,7 @@
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc", "gpio_lib"))
+FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc", "gpio_lib", "icc_d2dmbx"))
 {
 #define SVP_NUM_CORES_PER_DIE 4
     // fpga platform has an unusual set of available cores
@@ -83,6 +84,9 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc
     power_config.platform_soc_power_support = false;
     power_config.platform_core_power_support = false;
 
+    // is boot dual die?
+    power_config.platform_is_multi_die = (!idhw_is_single_die_boot_en());
+
     // platform overrides
     switch (idsw_get_platform_sdv())
     {
@@ -93,6 +97,7 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc
         power_config.platform_cores_in_die = &svp_cores;
         power_config.platform_soc_power_support = true;
         power_config.platform_core_power_support = true;
+        power_config.platform_is_multi_die = false;
         break;
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
@@ -103,6 +108,12 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc
         break;
     default:
         break;
+    }
+
+    // setup necessary config for dual die
+    if (power_config.platform_is_multi_die)
+    {
+        power_config.icc_d2d_ctx = fpfw_init_get_handle("icc_d2dmbx");
     }
 
     power_init(&power_service, fpfw_init_get_handle((void*)"dfwk"), &power_config);

@@ -333,14 +333,14 @@ typedef struct _power_knobs_t
     uint16_t r_loadline_vcpu0_uohm; // Loadline resistance used in VR setpoint (and power adjustment) calculation (uOhm)
     uint16_t r_loadline_vcpu1_uohm; // Loadline resistance used in VR setpoint (and power adjustment) calculation (uOhm)
     uint16_t vsys_r_loadline_uohm; // Loadline resistance used in VR power adjustment calculation (uOhm)
-    uint16_t soc_maximum_thermal_watts_limit;      // SOC maximum power limit,
-                                                   // specific to thermal (W)
+    uint16_t soc_maximum_thermal_watts_limit;            // SOC maximum power limit,
+                                                         // specific to thermal (W)
     uint16_t soc_maximum_electrical_current_limit_vcpu0; // Vcpu0 current maximum value (A)
-                                                   // which is used to determine the
-                                                   // maximum electrical power limit
+                                                         // which is used to determine the
+                                                         // maximum electrical power limit
     uint16_t soc_maximum_electrical_current_limit_vcpu1; // Vcpu1 current maximum value (A)
-    int16_t vcpu_offset_mv;                        // offset in mV to apply to Vcpu calculation
-    uint8_t force_pstate;                          // 32 to disable, 0-31 to force pstate
+    int16_t vcpu_offset_mv;                              // offset in mV to apply to Vcpu calculation
+    uint8_t force_pstate;                                // 32 to disable, 0-31 to force pstate
 
     uint8_t allowed_plimit_minimum; // limits control loop plimit selection - setting to nominal would disable turbo speeds
     uint8_t allowed_plimit_maximum;    // limits control loop plimit selection
@@ -352,7 +352,7 @@ typedef struct _power_knobs_t
                                        // below SCP calculated plimit -- TODO -
                                        // use desired perf from success message?
     uint8_t activity_factor_dhry_adjustment; // A default activity factor to use with peak CPU current calculation
-    bool power_enable_velocity_boost; // Enable velocity boost (prioritized turbo vs equal turbo)
+    bool power_enable_velocity_boost;        // Enable velocity boost (prioritized turbo vs equal turbo)
     bool allow_plimit_below_nominal; // Outside of power capping, drop plimit to OS desired perf even if below nominal
     bool c4_cores_limit_to_nominal; // true to limit cores in c4 c-state to nominal perf
     bool c3_cores_limit_to_nominal; // true to limit cores in c3 c-state to nominal perf
@@ -361,13 +361,13 @@ typedef struct _power_knobs_t
     bool calsm_enable;              // true to enable fgpll calibration
     bool c1_tel_enable;             // should C1 telemetry be enabled
 
-    bool soc_vm_overvolt_en; // enable SOC VM overvolt alarm
-    bool soc_vm_undervolt_en; // enable SOC VM undervolt alarm
-    bool tile_vm_overvolt_en; // enable Tile VM overvolt alarm
-    bool tile_vm_undervolt_en; // enable Tile VM undervolt alarm
-    bool soc_temp_hot_en; // enable SOC temp hot alarm
-    bool soc_temp_thermtrip_en; // enable SOC temp thermtrip alarm
-    bool tile_temp_hot_en; // enable Tile temp hot alarm
+    bool soc_vm_overvolt_en;     // enable SOC VM overvolt alarm
+    bool soc_vm_undervolt_en;    // enable SOC VM undervolt alarm
+    bool tile_vm_overvolt_en;    // enable Tile VM overvolt alarm
+    bool tile_vm_undervolt_en;   // enable Tile VM undervolt alarm
+    bool soc_temp_hot_en;        // enable SOC temp hot alarm
+    bool soc_temp_thermtrip_en;  // enable SOC temp thermtrip alarm
+    bool tile_temp_hot_en;       // enable Tile temp hot alarm
     bool tile_temp_thermtrip_en; // enable Tile temp thermtrip alarm
 
     uint8_t survivability_mode_pstate; // Pstate to boot to under survivability mode
@@ -521,8 +521,10 @@ typedef struct _power_service_config_t
     power_vm_detail_t tile_vm[NUM_TILE_VM];  // tile vm config detail
     const corebits_t* platform_cores_in_die; // platform cores
     unsigned int platform_die_core_count;    // platform core count
+    void* icc_d2d_ctx;                       // icc d2d context
     bool platform_soc_power_support;         // true if soc power supported on platform
     bool platform_core_power_support;        // true if tile/core power supported on platform
+    bool platform_is_multi_die;              // true if platform is multi-die
 } power_service_config_t, *ppower_service_config_t;
 
 /**
@@ -584,12 +586,13 @@ typedef struct _power_derived_config_t
 } power_derived_config_t;
 
 /* List of different command IDs that can be sent to the the power service */
-typedef enum {
-    POWER_IF_CMD_GET_RUNCONFIG_KNOBS, 
+typedef enum
+{
+    POWER_IF_CMD_GET_RUNCONFIG_KNOBS,
     POWER_IF_CMD_GET_RUNCONFIG_FUSES,
     POWER_IF_CMD_SET_CAP,
     POWER_IF_CMD_SET_DESIRED_PSTATE,
-    POWER_IF_CMD_SET_PLIMIT, 
+    POWER_IF_CMD_SET_PLIMIT,
     POWER_IF_CMD_SET_LOOP_DISABLES,
     POWER_IF_CMD_SET_RACK_LIMIT,
     POWER_IF_CMD_SET_MINUPDATE,

@@ -86,6 +86,12 @@ void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, u
     check_expected(p3);
     check_expected(p4);
 }
+
+bool __wrap_idhw_is_single_die_boot_en(void)
+{
+    return mock_type(bool);
+}
+
 }
 //
 // Tests
@@ -93,8 +99,13 @@ void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, u
 
 TEST_FUNCTION(power_init_pwr_svc, nullptr, nullptr)
 {
+#define TEST_HANDLE 0x1234
     //! Set up expectations
     DFWK_THREADX_HOST test_host = {};
+
+    // when single die boot is not enabled, there will be a call to get icc handle
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    will_return(__wrap_fpfw_init_get_handle, TEST_HANDLE);
 
     will_return(__wrap_fpfw_init_get_handle, &test_host); //! driver fmwk host handle
     expect_value(__wrap_power_init, p_schedule, &(test_host.Schedule));
@@ -109,6 +120,8 @@ TEST_FUNCTION(power_init_pwr_svc, nullptr, nullptr)
     assert_non_null(result.associated_handle);
 
     assert_int_equal(s_saved_config.platform_die_core_count, NUM_AP_CORES_PER_DIE);
+    assert_true(s_saved_config.platform_is_multi_die);
+    assert_int_equal(s_saved_config.icc_d2d_ctx, TEST_HANDLE);
 }
 
 TEST_FUNCTION(power_init_pwr_svc__svp, nullptr, nullptr)
@@ -120,6 +133,7 @@ TEST_FUNCTION(power_init_pwr_svc__svp, nullptr, nullptr)
     expect_value(__wrap_power_init, p_schedule, &(test_host.Schedule));
 
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
 
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_pwr_svc.init_fn();
@@ -140,6 +154,7 @@ TEST_FUNCTION(power_init_pwr_svc__bigfpga, nullptr, nullptr)
     expect_value(__wrap_power_init, p_schedule, &(test_host.Schedule));
 
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
 
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_pwr_svc.init_fn();
@@ -151,6 +166,7 @@ TEST_FUNCTION(power_init_pwr_svc__bigfpga, nullptr, nullptr)
     // bigfpga has no core 0
     assert_false(corebits_is_bit_set(s_saved_config.platform_cores_in_die, 0));
     assert_int_equal(s_saved_config.platform_die_core_count, NUM_AP_CORES_PER_DIE);
+    assert_false(s_saved_config.platform_is_multi_die);
 }
 
 TEST_FUNCTION(power_init_pwr_int, nullptr, nullptr)

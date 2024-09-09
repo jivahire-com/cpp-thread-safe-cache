@@ -5,6 +5,7 @@ add_executable(${TARGET}
     power_loops_control_test.cpp    
     power_loops_telemetry_test.cpp   
     power_loops_test.cpp
+    power_remote_die_test.cpp
     
     ../mocks/mock_dvfs.c
     ../mocks/mock_odcm.c
@@ -57,6 +58,9 @@ mock_target(${TARGET}
     _txe_thread_create
     FpFwAssert
     corebits_first
+    cortex_m7_atomic_or
+    fpfw_icc_base_recv
+    fpfw_icc_base_send
     pid_calculate_resources
     pid_init
     pid_reset
@@ -75,6 +79,10 @@ mock_target(${TARGET}
     power_loops_change_state
     power_loops_handle_event
     power_loops_retry_fail
+    power_remote_die_exchange_inputs
+    power_remote_die_exchange_complete
+    power_remote_die_idle_reset
+    power_remote_die_init
     power_runconfig_get
     power_set_plimit
     power_telemetry_message_poll

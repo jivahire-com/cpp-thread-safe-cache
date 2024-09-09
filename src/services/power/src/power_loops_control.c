@@ -15,6 +15,7 @@
 #include "power_hw_int_i.h"
 #include "power_i.h"
 #include "power_loops_i.h"
+#include "power_remote_die_i.h"
 #include "power_runconfig_i.h"
 #include "power_stub_i.h"
 
@@ -121,6 +122,8 @@ static void idle_handler(int event, const void* event_data)
             // clear HW signal
             power_hw_clear_force_pmin(PM_FW_PMIN_CONTROL);
         }
+        // clear remote die status
+        power_remote_die_idle_reset();
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
         // Leaving idle state
@@ -538,15 +541,21 @@ static void exchange_inputs_handler(int event, const void* event_data)
     case POWER_LOOP_STATE_SIGNAL_ENTRY:
         // Start state exchange inputs
         // Exchange inputs
-        // for now proceed to next state
+        power_remote_die_exchange_inputs(power_runconfig_get());
+        break;
+    case POWER_CTRL_LOOP_SIGNAL_EXCHANGE_INPUTS:
+        // exchange inputs done
         power_control_loop_change_state(POWER_CONTROL_STATE_DISTRIBUTE_AVAILABLE);
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
-        // error to receive any other event in this state
+        // retry on interval signal
         if (power_control_loop_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL))
         {
             power_control_loop_change_state(POWER_CONTROL_STATE_ERROR);
+            break;
         }
+        // otherwise, try again
+        power_remote_die_exchange_inputs(power_runconfig_get());
         break;
     default:
         // ignore anything else
@@ -563,14 +572,21 @@ static void exchange_completion_handler(int event, const void* event_data)
     case POWER_LOOP_STATE_SIGNAL_ENTRY:
         // Start state exchange completion
         // Exchange completion
+        power_remote_die_exchange_complete(power_runconfig_get());
+        break;
+    case POWER_CTRL_LOOP_SIGNAL_EXCHANGE_COMPLETE:
+        // exchange completion done
         power_control_loop_change_state(POWER_CONTROL_STATE_IDLE);
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
-        // error to receive any other event in this state
+        // retry on interval signal
         if (power_control_loop_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL))
         {
             power_control_loop_change_state(POWER_CONTROL_STATE_ERROR);
+            break;
         }
+        // otherwise, try again
+        power_remote_die_exchange_complete(power_runconfig_get());
         break;
     default:
         // ignore anything else
@@ -750,6 +766,9 @@ void power_loops_control_init()
     pid_init(&pid_config);
     // set an initial resource count
     pid_set_resources(s_ctrl_loop.curr_resources);
+
+    // initialize remote die sync
+    power_remote_die_init(p_runconfig);
 }
 
 power_ctrl_loop_detail_t* power_ctrl_loop_get()

@@ -14,7 +14,7 @@
 
 #include <DfwkDriver.h>
 #include <FpFwAssert.h>
-#include <fpfw_status.h>       // for FPFW_STATUS_SUCCESS, FPFW_STATUS_INVA...
+#include <fpfw_status.h> // for FPFW_STATUS_SUCCESS, FPFW_STATUS_INVA...
 #include <kng_error.h>
 #include <power_runconfig.h>
 #include <power_runconfig_i.h>
@@ -88,8 +88,6 @@ enum _power_cap_update_result_t
                                          */
 };
 
-
-
 // structure for tracking latest v/c/t from AVS for each rail
 typedef struct _power_vrs_avs_latest
 {
@@ -112,11 +110,11 @@ void power_ap_soc_init();
 
 /**
  * @brief Caps ldodac value to max value if it exceeds the limit
- * 
+ *
  * @param[in] freq          - Frequency provided from vf_curves in fuse structure
  * @param[in] ldodac        - LDODAC value to be set as input
  * @param[in] curve_idx     - Index of vf curve to use to obtain max cap value
- * 
+ *
  * @return pmm revision
  *
  */
@@ -143,13 +141,13 @@ uint8_t power_fuses_get_pmm_rev();
  *
  */
 int32_t power_fuses_get_dts_coeff(uint32_t k_offset,
-                                     uint32_t k_width,
-                                     uint32_t y_offset,
-                                     uint32_t y_width,
-                                     uint32_t fuse_elements,
-                                     uint32_t coeff_count,
-                                     uint32_t coeff_spacing,
-                                     dts_coeff_t* dts_coeff);
+                                  uint32_t k_width,
+                                  uint32_t y_offset,
+                                  uint32_t y_width,
+                                  uint32_t fuse_elements,
+                                  uint32_t coeff_count,
+                                  uint32_t coeff_spacing,
+                                  dts_coeff_t* dts_coeff);
 
 /**
  * @brief Reads entries of dvfs core memasst table fuses into structure
@@ -299,7 +297,7 @@ uint64_t power_timer_get_counter_ticks_us(uint16_t time_in_us);
  *      Use to get an equivalent duration in microseconds for an input in counter ticks
  *
  * @param[in] ticks - time in ticks to convert to microseconds
- * 
+ *
  * @return time in us
  *
  */
@@ -349,7 +347,6 @@ uint32_t power_vrs_get_recent_power_mw();
  */
 void power_vrs_write_vcpu_voltage(uint16_t voltage_mv);
 
-
 /**
  * @brief Initiates read of vcpu voltage, will lead to signal of voltage change pending/done
  *
@@ -365,8 +362,6 @@ void power_vrs_read_vcpu_voltage();
  *
  */
 void power_cap_init();
-
-
 
 /**
  * @brief Get VRcpu portion of power cap for use in control loop
@@ -385,7 +380,7 @@ void power_cap_init();
  * @return VRcpu portion of power cap
  *
  */
-float power_cap_get_vrcpu_cap(bool *p_new_cap, power_latest_calcs_t* p_local_power, power_latest_calcs_t* p_remote_power);
+float power_cap_get_vrcpu_cap(bool* p_new_cap, power_latest_calcs_t* p_local_power, power_latest_calcs_t* p_remote_power);
 
 /**
  * @brief Indicate that previous power cap has been finalized
@@ -442,13 +437,12 @@ int power_cap_cancel(power_cap_completed_callback_t callback, bool source_is_cli
  */
 bool power_cap_is_capped();
 
-
 /**
  * @brief Find maximum of all cores plimit voltage requirement
  *
  * \b Description:
- *      This API should be called to determine the core voltage requirement related to LDO input voltage.  Input is the global power
- * context.
+ *      This API should be called to determine the core voltage requirement related to LDO input voltage.
+ * Input is the global power context.
  * @param[in] p_runconfig - power runtime configuration
  * @param[in] power_cores_t - all core configuration
  * @return max voltage requirement (mV)
@@ -460,7 +454,7 @@ uint16_t power_vcpu_calc_max_core_voltage_mv(power_runconfig_t* p_runconfig, pow
  *
  * \b Description:
  *      This API will be called as part of peak current calculation; included here for test.
- * 
+ *
  * @param[in] p_runconfig - power runtime configuration
  * @param[in] temp_C - Core temperature
  *
@@ -473,8 +467,8 @@ float power_vcpu_calc_core_leakage_scaler(power_runconfig_t* p_runconfig, unsign
  * @brief Calculate Vcpu leakage peak current
  *
  * \b Description:
- *      This API should be called to determine the Vcpu peak current requirement related to the selected plimits for all cores, current SOC
- * temp, etc.  Input is the global power context.
+ *      This API should be called to determine the Vcpu peak current requirement related to the selected
+ * plimits for all cores, current SOC temp, etc.  Input is the global power context.
  * @param[in] p_runconfig - power runtime configuration
  * @param[in] power_ctrl_loop_detail_t - control loop runtime configuration
  * @return Current in amps
@@ -486,10 +480,10 @@ float power_vcpu_calc_peak_current_A(power_runconfig_t* p_runconfig, power_ctrl_
  * @brief Calculate per-pstate dynamic and leakage current
  *
  * \b Description:
- *      This API should be called after knob and fuse init to pre-calculate the dynamic and leakage current associated with VF points in all
- * the VF curves.
+ *      This API should be called after knob and fuse init to pre-calculate the dynamic and leakage current
+ * associated with VF points in all the VF curves.
  * @param[in] p_runconfig - power runtime configuration
- * @param[in] dvfs_config_t - dvfs runtime configuration 
+ * @param[in] dvfs_config_t - dvfs runtime configuration
  * @return none
  *
  */
@@ -504,7 +498,7 @@ void power_vcpu_precalculate_vf_currents(power_runconfig_t* p_runconfig, dvfs_co
  * @return Current in amps
  *
  */
-uint32_t power_vcpu_interpolate_from_points(const power_vcpu_interp_t *points, unsigned points_count, uint16_t ldo_dac);
+uint32_t power_vcpu_interpolate_from_points(const power_vcpu_interp_t* points, unsigned points_count, uint16_t ldo_dac);
 
 #ifdef __cplusplus
 }

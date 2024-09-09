@@ -14,6 +14,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.lib.utils
         fwlib.platform.dfwkhost.threadx
+        idhw
         ms::client_interface::startup_shutdown
         ms::cmocka::testrunner
         ms::lib::threadx
@@ -38,6 +39,7 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     crash_dump_bug_check
     fpfw_init_get_handle
+    idhw_is_single_die_boot_en
     idsw_get_platform_sdv
     power_init
     power_interface_init

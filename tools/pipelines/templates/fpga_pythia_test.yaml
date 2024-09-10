@@ -91,6 +91,7 @@ jobs:
 
     # Publish results as a pipeline artifact
     - task: PublishPipelineArtifact@1
+      condition: succeededOrFailed()
       inputs:
         targetPath: '$(Build.SourcesDirectory)\.testlogs\pythia'
         artifact: 'drop_${{ parameters.ArtifactName }}_FPGA_Pythia_Tests'

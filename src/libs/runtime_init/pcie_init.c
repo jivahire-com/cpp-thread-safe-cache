@@ -55,7 +55,7 @@ FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "v
     case PLATFORM_FPGA:
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
-        rpss_to_init = ((1 << RPSS1) | (1 << RPSS2) | (1 << RPSS5) | (1 << RPSS6));
+        rpss_to_init = ((1 << RPSS1) | (1 << RPSS2) | (1 << RPSS5));
         break;
 
     case PLATFORM_SVP_SIM:

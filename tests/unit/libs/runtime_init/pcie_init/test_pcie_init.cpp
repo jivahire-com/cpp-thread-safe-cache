@@ -90,7 +90,7 @@ TEST_FUNCTION(test_die1_fpga_init, NULL, NULL)
 {
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return(__wrap_idsw_get_die_id, DIE_1);
-    expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS5) | (1 << RPSS6)));
+    expect_value(__wrap_scp_pcie_initialize, rpss_to_init, (1 << RPSS5));
     _fpfw_component_pcie.init_fn();
 }
 

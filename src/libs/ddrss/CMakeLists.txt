@@ -23,6 +23,7 @@ target_link_libraries(${TARGET}
     silibs::platform
     kng_silibs_platform
     atu
+    silibs::idhw
     silibs::idsw
     silibs::idsw_kng
     silibs::ras_arm

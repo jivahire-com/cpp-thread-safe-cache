@@ -14,6 +14,7 @@
 #include <atu_lib.h>
 #include <ddrss.h>
 #include <ddrss_lib.h>
+#include <idhw.h> // for idhw_is_single_die_boot_en
 #include <idsw_kng.h>
 #include <interrupts.h>
 #include <silibs_ap_top_regs.h>
@@ -123,9 +124,20 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.ddrss_base_die[SOC_D0] = atu_map_struct[SOC_D0].mscp_start_address;
     ddrss_cfgs.ddrss_base_die[SOC_D1] = atu_map_struct[SOC_D1].mscp_start_address;
     ddrss_cfgs.debug_level = DDRSS_DEBUG_LEVEL_INFO;
-    ddrss_cfgs.numa_cfg = DDRSS_NUMA_CFG_UMA;
-    ddrss_cfgs.ext_knobs.ddrss_mask = 0x3F;
     ddrss_cfgs.ext_knobs.interleave_mc_cnt = 0;
+    //! for single die, the NUMA will fallback to UMA in DDRSS cfg check.
+    ddrss_cfgs.numa_cfg = DDRSS_NUMA_CFG_NUMA;
+    if (idhw_is_single_die_boot_en())
+    {
+        //! Set DDRSS mask for 1D boot (12 MCs)
+        ddrss_cfgs.ext_knobs.ddrss_mask = 0x3F;
+    }
+    else
+    {
+        //! Set DDRSS mask for 2D boot (24 MCs)
+        ddrss_cfgs.ext_knobs.ddrss_mask = 0xFFF;
+    }
+
     if (ddrss_platform_override != DDRSS_PLATFORM_UNKNOWN)
     {
         ddrss_cfgs.platform_type = ddrss_platform_override;

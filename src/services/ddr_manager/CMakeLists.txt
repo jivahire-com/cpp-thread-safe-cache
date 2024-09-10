@@ -12,7 +12,6 @@ add_library(${TARGET}
         ddr_manager_platform.c
         ddr_manager_polling.c
         ddr_manager_telemetry.c
-        ddr_manager_temp_interrupts.c
         ddr_manager_top.c
 )
 
@@ -36,7 +35,6 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.service.iccBase
         ms::lib::crash_dump::scp
-        ms::lib::ddrss_init
         ms::lib::error_codes
         ms::lib::hsp_firmware_headers
         ms::lib::i3c_controller

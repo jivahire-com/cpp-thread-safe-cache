@@ -12,7 +12,6 @@
 /*----------- Nested includes ------------*/
 #include <stdint.h>
 #include <tx_api.h>
-#include "ddr_manager.h"
 #include "ddr_manager_i3c.h"
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -84,9 +83,3 @@ void ddr_manager_set_thermal_trip_gpio();
  * @return true if polling is supported, false otherwise.
  */
 bool ddr_manager_platform_is_polling_supported();
-
-/**
- * Enqueues an event for the DDR manager to process.
- * 
- */
-void ddr_manager_enqueue_event(ddr_manager_message_t* event);

@@ -52,11 +52,7 @@
 #define tDRTUB 0xc0000u
 #define csr_ArcEccIndications_ADDR 0x82u
 /*-------------- Typedefs ----------------*/
-typedef struct
-{
-    KNG_DIE_ID die_id;
-    uint32_t ddrss_num;
-} ddrss_isr_params_t;
+
 /* Internal parameters calculated from configurations */
 
 /*-- Declarations (Statics and globals) --*/
@@ -70,10 +66,3 @@ uintptr_t ddrss_get_top_base(uint32_t mc);
 
 // in ddrss_ras.c
 int ddrss_probe_ras_agent(uint32_t mc, uint32_t ras_agent_entity_id);
-
-/**
- * @brief Register the DDR temperature interrupt callbacks
- * @param critical_cb Callback for critical temperature interrupt
- * @param changed_cb Callback for temperature changed interrupt
- */
-void ddrss_register_temp_interrupts(void (*critical_cb)(uint32_t mc), void (*changed_cb)(uint32_t mc));

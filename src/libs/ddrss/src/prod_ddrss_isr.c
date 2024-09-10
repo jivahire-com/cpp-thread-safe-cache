@@ -17,7 +17,6 @@
 
 #include <FpFwAssert.h>
 #include <arm_intrinsic.h>
-#include <bug_check.h>
 #include <ddrss.h>
 #include <ddrss_intu.h>
 #include <ddrss_lib.h>
@@ -35,8 +34,6 @@
 /*--------- Function Prototypes ----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static void (*s_critical_temp_cb)(uint32_t) = NULL;
-static void (*s_temp_changed_cb)(uint32_t) = NULL;
 
 /*-------------- Functions ---------------*/
 
@@ -49,7 +46,7 @@ static void (*s_temp_changed_cb)(uint32_t) = NULL;
  *
  * @todo printf statements don't belong in an ISR but are here for testing purposes
  *
- * @param context - Pointer to the local die ddrss number (0-5)
+ * @param context - Void pointer to a static array of ints 0-5 representing the DDR controller number the ISR is for
  *
  */
 void prod_ddrss_interrupt_handler(void* context)
@@ -57,10 +54,10 @@ void prod_ddrss_interrupt_handler(void* context)
     // Parameter passed to isr will be a DDRSS number [0-5] on the local die.
     // DDR base addresses are different between the dies and are numbered in
     // silicon libs as 0-11 as a result.
-    ddrss_isr_params_t params = *(ddrss_isr_params_t*)(context);
-    uint32_t local_ddrss = params.ddrss_num;
+    uint32_t local_ddrss = *(uint32_t*)(context);
+    KNG_DIE_ID die_num = idsw_get_die_id();
 
-    uint32_t ddrss = (params.die_id == DIE_1) ? local_ddrss + 6 : local_ddrss; // 0-11
+    uint32_t ddrss = (die_num == DIE_1) ? local_ddrss + 6 : local_ddrss; // 0-11
     uint32_t ddr_intu_err = 0;
     uint32_t mc = ddrss * 2;
     uint32_t ddr_intu_sts = 0;
@@ -389,9 +386,8 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
             mc_intu_err |= (1 << DDRSS_MC_INTR_EVT_REF_TEMP_CHANGED);
         }
         mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_MEDIAREFTEMPCHANGED);
-
-        // Handle the temperature change by sending to DDR_Manager queue: RAS - Temperature
-        s_temp_changed_cb(mc);
+        // TODO: BWL: Handle the temperature change by sending to DDR_Manager queue: RAS - Temperature
+        // ADO Feature#1140772, Task#1494090
     }
 
     if (mc_intu_sts & (1 << DDRSS_INTU_MC_MEDIAREFTEMPHIGH))
@@ -400,12 +396,11 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         sub_sts = ddrss_mc_event_clear_interrupt(mc, DDRSS_MC_INTR_EVT_REF_TEMP_HIGH);
         if (sub_sts != SILIBS_SUCCESS)
         {
-            mc_intu_err |= (1 << DDRSS_MC_INTR_EVT_REF_TEMP_HIGH);
+            mc_intu_err |= (1 << DDRSS_MC_INTR_EVT_REF_TEMP_CHANGED);
         }
         mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_MEDIAREFTEMPHIGH);
-
-        // Invoke the callback to handle critical temperature
-        s_critical_temp_cb(mc);
+        // TODO: BWL: Handle the temperature change by sending to DDR_Manager queue: RAS - Temperature
+        // ADO Feature#1140772, Task#1494090
     }
 
     if (mc_intu_sts & (1 << DDRSS_INTU_MC_PHYINLP3))
@@ -444,13 +439,4 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
     }
 
     return sts;
-}
-
-void ddrss_register_temp_interrupts(void (*critical_cb)(uint32_t), void (*changed_cb)(uint32_t))
-{
-    BUG_ASSERT(critical_cb != NULL);
-    BUG_ASSERT(changed_cb != NULL);
-
-    s_critical_temp_cb = critical_cb;
-    s_temp_changed_cb = changed_cb;
 }

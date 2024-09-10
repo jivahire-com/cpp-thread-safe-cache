@@ -37,6 +37,8 @@ static i3c_instance_t i3c0 = {0};
 static i3c_instance_t i3c1 = {0};
 i3c_instance_t* i3c_instance[NUM_I3C_INSTANCES] = {&i3c0, &i3c1};
 
+/*-- Declarations (Statics and globals) --*/
+
 /*------------- Functions ----------------*/
 /**
  * @brief I3C0 ISR handler
@@ -119,6 +121,9 @@ static void i3c_controller_notification_callback(uint8_t notification, void* con
 int i3c_controller(uint8_t die_num)
 {
     int status = 0;
+    const int MEANINGLESS_NUMBER = 10;
+    static int unused_parameter_not_null = MEANINGLESS_NUMBER;
+
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
     DEBUG_PRINT(MOD_NAME "%s Start, die_num: [%u]\n", __func__, die_num);
 
@@ -134,7 +139,6 @@ int i3c_controller(uint8_t die_num)
         uint8_t index_i3c1 = 0x0;
         uint32_t intr_status = 0;
         const dat_entry_t* i3c_dev_table = NULL;
-        i3c_isr_params_t params = {.die_id = die_num};
 
         if (die_num == 0)
         {
@@ -193,7 +197,7 @@ int i3c_controller(uint8_t die_num)
             // Register ISRs
             intr_status = FPFwCoreInterruptRegisterCallback(i3c_irqnums[i],
                                                             (FPFwCoreInterruptHandler)i3c_irq_handlers[i],
-                                                            (void*)&params);
+                                                            (void*)unused_parameter_not_null);
             intr_status |= FPFwCoreInterruptEnableVector(i3c_irqnums[i]);
             FPFW_RUNTIME_ASSERT(intr_status == 0);
 

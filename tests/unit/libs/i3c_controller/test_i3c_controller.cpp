@@ -41,6 +41,7 @@ extern "C" {
 int return_i3c_initialize = RETURN_I3C_SUCCESS;
 int return_i3c_master_dat_config = RETURN_I3C_SUCCESS;
 int return_i3c_master_set_aasa = RETURN_I3C_SUCCESS;
+static const int UNUSED_NON_ZERO_MAGIC_NUMBER = 10;
 
 /*------------- Functions ----------------*/
 //
@@ -137,7 +138,7 @@ nvic_status_t __wrap_nvic_irq_set_isr_with_param(uint32_t irq_num, isr_callback_
 {
     check_expected(irq_num);
     check_expected(isr);
-    check_expected(parameter);
+    check_expected_ptr(parameter);
     return (NVIC_STATUS_SUCCESS);
 }
 
@@ -192,7 +193,6 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_master_dat_config_fail, setup_s
     uint8_t die_num = 0;
     i3c_instance_t* instance_0 = get_i3c0();
     uint8_t index_i3c0 = 0x0;
-    i3c_isr_params_t params = {.die_id = die_num};
     index_i3c0 = KNG_SOC_DIE_0_I3C0;
     i3c_config_t i3c_config0 = {
         .register_base_addr = SCP_I3C0_CSR_ADDRESS,
@@ -224,7 +224,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_master_dat_config_fail, setup_s
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c0_isr);
-    expect_memory(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)&params, sizeof(params));
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, UNUSED_NON_ZERO_MAGIC_NUMBER);
 
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_0_INT);
@@ -247,7 +247,6 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_master_set_aasa_fail, setup_svp
     uint8_t die_num = 0;
     i3c_instance_t* instance_0 = get_i3c0();
     uint8_t index_i3c0 = 0x0;
-    i3c_isr_params_t params = {.die_id = die_num};
     index_i3c0 = KNG_SOC_DIE_0_I3C0;
     i3c_config_t i3c_config0 = {
         .register_base_addr = SCP_I3C0_CSR_ADDRESS,
@@ -279,7 +278,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_master_set_aasa_fail, setup_svp
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c0_isr);
-    expect_memory(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)&params, sizeof(params));
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, UNUSED_NON_ZERO_MAGIC_NUMBER);
 
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_0_INT);
@@ -310,7 +309,6 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0, setup_svp_platform, setup_undefined
     i3c_instance_t* instance_1 = get_i3c1();
     uint8_t index_i3c0 = 0x0;
     uint8_t index_i3c1 = 0x0;
-    i3c_isr_params_t params = {.die_id = die_num};
     index_i3c0 = KNG_SOC_DIE_0_I3C0;
     index_i3c1 = KNG_SOC_DIE_0_I3C1;
     i3c_config_t i3c_config0 = {
@@ -350,7 +348,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0, setup_svp_platform, setup_undefined
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c0_isr);
-    expect_memory(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)&params, sizeof(params));
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, UNUSED_NON_ZERO_MAGIC_NUMBER);
 
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_0_INT);
@@ -394,7 +392,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0, setup_svp_platform, setup_undefined
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_1_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c1_isr);
-    expect_memory(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)&params, sizeof(params));
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, UNUSED_NON_ZERO_MAGIC_NUMBER);
 
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_1_INT);
@@ -431,7 +429,6 @@ TEST_FUNCTION(test_i3c_controller_svp_die_1, setup_svp_platform, setup_undefined
     i3c_instance_t* instance_1 = get_i3c1();
     uint8_t index_i3c0 = 0x0;
     uint8_t index_i3c1 = 0x0;
-    i3c_isr_params_t params = {.die_id = die_num};
     index_i3c0 = KNG_SOC_DIE_1_I3C0;
     index_i3c1 = KNG_SOC_DIE_1_I3C1;
     i3c_config_t i3c_config0 = {
@@ -471,7 +468,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_1, setup_svp_platform, setup_undefined
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c0_isr);
-    expect_memory(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)&params, sizeof(params));
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, UNUSED_NON_ZERO_MAGIC_NUMBER);
 
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_0_INT);
@@ -515,7 +512,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_1, setup_svp_platform, setup_undefined
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_1_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c1_isr);
-    expect_memory(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)&params, sizeof(params));
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, UNUSED_NON_ZERO_MAGIC_NUMBER);
 
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_1_INT);

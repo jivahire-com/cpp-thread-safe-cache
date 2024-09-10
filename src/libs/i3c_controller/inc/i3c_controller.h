@@ -76,11 +76,6 @@ static const dat_entry_t i3c_dev_table_3_5[NUM_OF_SLAVE_DEVICES] = {
     {0x35, 0x35},  //  DDR DIMM-F OR DIMM-K I3C TS1
 };
 
-typedef struct
-{
-    uint8_t die_id;
-} i3c_isr_params_t;
-
 /*--------------- Includes ---------------*/
 /**
  * @brief I3C0 ISR handler

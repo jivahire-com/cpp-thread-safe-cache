@@ -38,6 +38,11 @@ bool g_mmio_read32_mocktype;
 //
 // Mocks
 //
+KNG_DIE_ID __wrap_idsw_get_die_id()
+{
+    return mock_type(KNG_DIE_ID);
+}
+
 int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
 {
     if (atu_id >= ATU_ID_MAX || atu_map_entry == NULL)
@@ -68,9 +73,12 @@ int __wrap_ddrss_init(ddrss_cfg_knobs_t* cfg_knobs)
 
 nvic_status_t __wrap_nvic_irq_set_isr_with_param(uint32_t irq_num, isr_callback_fn_with_params_t isr, void* parameter)
 {
+    uint32_t ddrss_num;
+    ddrss_num = *(uint32_t *)parameter;
+
     check_expected(irq_num);
     check_expected(isr);
-    check_expected(parameter);
+    check_expected(ddrss_num);
     return (NVIC_STATUS_SUCCESS);
 }
 

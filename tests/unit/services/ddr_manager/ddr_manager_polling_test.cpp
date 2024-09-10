@@ -17,7 +17,6 @@ extern "C" {
 #include <ddr_manager_bwl.h>
 #include <ddr_manager_i.h>   // for ddr_poll_dimms, ddr_worker_thread_func
 #include <idhw.h>
-#include "common_mocks.h"
 } // extern "C"
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -35,6 +34,11 @@ extern "C" {
 // Mocks
 //
 extern "C" {
+void __wrap_ddr_manager_set_thermal_trip_gpio()
+{
+    function_called();
+}
+
 bool __wrap_ddr_manager_platform_is_polling_supported()
 {
     return true;

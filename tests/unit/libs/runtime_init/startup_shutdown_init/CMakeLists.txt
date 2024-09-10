@@ -21,6 +21,8 @@ target_link_libraries(${TARGET}
         silibs::atu
         silibs::idsw_kng
         silibs::kng_silibs_platform
+        silibs::idhw
+        silibs::idsw
 )
 
 lint_target(${TARGET})
@@ -32,7 +34,6 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     DfwkAsyncRequestInitialize
     fpfw_init_get_handle
-    idsw_get_die_id
     sos_init
     sos_interface_init
     sos_register_ssi

@@ -6,6 +6,7 @@ add_executable(${TARGET}
     startup_shutdown_scp_test.cpp
     startup_shutdown_test.cpp
     startup_shutdown_thread_test.cpp
+    startup_shutdown_remote_sync_test.cpp
 )
 
 target_link_libraries(${TARGET}
@@ -20,6 +21,10 @@ target_link_libraries(${TARGET}
         fwlib.dfwk
         fwlib.lib.linkedlist
         fwlib.lib.utils
+        silibs::idhw
+        silibs::idsw
+        silibs::idsw_kng
+        silibs::kng_silibs_platform
  )
 
 # Get private includes for module under test
@@ -51,6 +56,7 @@ mock_target(${TARGET}
     sos_queue_shutdown
     sos_queue_start_phase
     sos_thread_init
+    remote_die_sync_init
     ssi_shutdown_quiesce
     ssi_startup_stage_complete
     ssi_startup_stage_start
@@ -60,6 +66,8 @@ mock_target(${TARGET}
     _txe_queue_create
     _txe_queue_send
     _txe_thread_create
+    idhw_is_single_die_boot_en
+    idsw_get_die_id
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

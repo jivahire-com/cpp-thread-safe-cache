@@ -89,6 +89,7 @@ void sos_core_shutdown_handler(ssi_shutdown_type_t shutdown_type);
 void sos_queue_start_phase(ssi_startup_type_t boot_type, ssi_startup_stage_t phase, PDFWK_ASYNC_REQUEST_HEADER p_request);
 void sos_queue_shutdown(ssi_shutdown_type_t shutdown_type, PDFWK_ASYNC_REQUEST_HEADER p_request);
 void sos_thread_init(psos_service_context_t p_context);
+void remote_die_sync_init();
 
 // internal interfaces - declared here for test
 int sos_queue_find_phase(ssi_startup_stage_t phase);
@@ -101,3 +102,4 @@ void sos_notify_ssi_boot_stage_and_wait(psos_service_context_t p_context,
                                         ssi_startup_type_t startup_type,
                                         bool start);
 
+bool wait_for_remote_die_boot_stage(startup_shutdown_boot_stage_t current_boot_stage, startup_shutdown_boot_stage_t desired_remote_boot);

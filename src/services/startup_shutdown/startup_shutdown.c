@@ -163,4 +163,5 @@ void sos_init(psos_device_t p_device, PDFWK_SCHEDULE p_schedule)
 
     // create thread, queue, and event flags for handling requests
     sos_thread_init(&s_sos_ctx);
+    remote_die_sync_init();
 }

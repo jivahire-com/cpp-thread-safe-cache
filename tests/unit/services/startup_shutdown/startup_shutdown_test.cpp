@@ -100,6 +100,10 @@ void __wrap_sos_thread_init(psos_service_context_t p_context)
     sp_sos_service_context = p_context;
 }
 
+void __wrap_remote_die_sync_init()
+{
+}
+
 int32_t __wrap_DfwkInterfaceOpen(PDFWK_INTERFACE_HEADER Interface, PDFWK_DEVICE_HEADER ClientDevice)
 {
     check_expected_ptr(Interface);

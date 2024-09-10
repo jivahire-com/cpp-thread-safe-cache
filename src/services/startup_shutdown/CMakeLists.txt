@@ -32,6 +32,7 @@ set(STARTUP_COMMON_SOURCE
     startup_shutdown.c
     startup_shutdown_ssi.c
     startup_shutdown_thread.c
+    startup_shutdown_remote_sync.c
 )
 
 set(STARTUP_COMMON_LIBS
@@ -42,6 +43,10 @@ set(STARTUP_COMMON_LIBS
     ms::lib::threadx
     ms::lib::debug
     ms::client_interface::startup_shutdown
+    silibs::idhw
+    silibs::idsw
+    silibs::idsw_kng
+    silibs::kng_silibs_platform
 )
 
 # scp

@@ -193,8 +193,12 @@ void sos_worker_thread_function(ULONG service_ctx)
                      sos_core_boot_stages()[stage_idx].phase == message.data.boot_phase.phase;
                      stage_idx++)
                 {
-                    // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1821528/
-                    //       call core-specific core/die sync handler if stage requires it; wait on sync complete
+                    // remote core sync if needed
+                    if (!wait_for_remote_die_boot_stage(sos_core_boot_stages()[stage_idx], sos_core_boot_stages()[stage_idx]))
+                    {
+                        SOS_LOG_WARN("Timeout occurred on remote stage sync (%d)\n",
+                                     sos_core_boot_stages()[stage_idx].stage);
+                    }
 
                     // notify stage entry
                     sos_notify_ssi_boot_stage_and_wait(p_sos_ctx,

@@ -12,7 +12,7 @@
 
 extern "C" {
 #include "accel_intr.h"      // for accel_intr_irq_init, ACCEL_INTR_RET_SUC...
-#include "accel_intr_priv.h" // for GET_ACCEL_TYPE_FROM_IRQ_NUMBER, SDMSS_I...
+#include "accel_intr_priv.h" // for accel_intr_get_accel_type_from_irq_num, SDMSS_I...
 #include "fpfw_status.h"     // for FPFW_STATUS_SUCCESS
 #include "mock.h"            // for mmio_set_mock_data...
 
@@ -92,7 +92,7 @@ TEST_FUNCTION(test_accel_intr_irq_init_pass_sdm, nullptr, nullptr)
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, SDMSS_IRQ_NUMBER);
     expect_value(__wrap_nvic_irq_enable, irq_num, SDMSS_IRQ_NUMBER);
 
-    assert_int_equal(accel_intr_irq_init(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(SDMSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
+    assert_int_equal(accel_intr_irq_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
 }
 
 /**
@@ -123,7 +123,7 @@ TEST_FUNCTION(test_accel_intr_irq_init_pass_cded, nullptr, nullptr)
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, CDEDSS_IRQ_NUMBER);
     expect_value(__wrap_nvic_irq_enable, irq_num, CDEDSS_IRQ_NUMBER);
 
-    assert_int_equal(accel_intr_irq_init(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(CDEDSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
+    assert_int_equal(accel_intr_irq_init(accel_intr_get_accel_type_from_irq_num(CDEDSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
 }
 
 /**
@@ -135,7 +135,7 @@ TEST_FUNCTION(test_accel_intr_irq_init_fail_timer_init, nullptr, nullptr)
     expect_any(__wrap_fpfw_timer_create, cb);
     will_return_always(__wrap_fpfw_timer_create, FPFW_STATUS_INVALID_ARGS);
 
-    assert_int_equal(accel_intr_irq_init(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(SDMSS_IRQ_NUMBER)),
+    assert_int_equal(accel_intr_irq_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER)),
                      ACCEL_INTR_RET_FAIL_TIMER_CREATE);
 }
 
@@ -163,7 +163,7 @@ TEST_FUNCTION(test_accel_intr_irq_init_fail_nvic_init, nullptr, nullptr)
     expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER);
     will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_ERROR);
 
-    assert_int_equal(accel_intr_irq_init(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(SDMSS_IRQ_NUMBER)), ACCEL_INTR_RET_FAIL_INTR_NVIC);
+    assert_int_equal(accel_intr_irq_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER)), ACCEL_INTR_RET_FAIL_INTR_NVIC);
 }
 
 /**
@@ -263,10 +263,6 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass, NULL, NULL)
     expect_any_always(__wrap_mmio_write32, addr);
     expect_any_always(__wrap_mmio_write32, data);
 
-    // FPFwCoreInterruptEnableVector
-    expect_value(__wrap_nvic_irq_clear_pending, irq_num, SDMSS_IRQ_NUMBER);
-    expect_value(__wrap_nvic_irq_enable, irq_num, SDMSS_IRQ_NUMBER);
-
     expect_any(__wrap_fpfw_timer_enable, timer);
     will_return_always(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
 
@@ -304,10 +300,6 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass_accel_emcpu_reset, NU
     expect_any_always(__wrap_mmio_write32, addr);
     expect_any_always(__wrap_mmio_write32, data);
 
-    // FPFwCoreInterruptEnableVector
-    expect_value(__wrap_nvic_irq_clear_pending, irq_num, CDEDSS_IRQ_NUMBER);
-    expect_value(__wrap_nvic_irq_enable, irq_num, CDEDSS_IRQ_NUMBER);
-
     expect_any(__wrap_fpfw_timer_enable, timer);
     will_return_always(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
 
@@ -344,10 +336,6 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass_no_level2_intr, NULL,
     expect_any_always(__wrap_mmio_read32, addr);
     expect_any_always(__wrap_mmio_write32, addr);
     expect_any_always(__wrap_mmio_write32, data);
-
-    // FPFwCoreInterruptEnableVector
-    expect_value_count(__wrap_nvic_irq_clear_pending, irq_num, SDMSS_IRQ_NUMBER, 2);
-    expect_value_count(__wrap_nvic_irq_enable, irq_num, SDMSS_IRQ_NUMBER, 2);
 
     expect_any(__wrap_fpfw_timer_enable, timer);
     will_return_always(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
@@ -387,10 +375,6 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass_no_interrupt, NULL, N
     expect_any_always(__wrap_mmio_update32, data);
     expect_any_always(__wrap_mmio_update32, mask);
 
-    // FPFwCoreInterruptEnableVector
-    expect_value(__wrap_nvic_irq_clear_pending, irq_num, SDMSS_IRQ_NUMBER);
-    expect_value(__wrap_nvic_irq_enable, irq_num, SDMSS_IRQ_NUMBER);
-
     accel_intr_handle_fatal_intr_recvd(SDMSS_IRQ_NUMBER);
 }
 
@@ -421,10 +405,6 @@ TEST_FUNCTION(test_accel_intr_handle_sdm_msg_recv_timeout_count_0, NULL, NULL)
     expect_any_always(__wrap_mmio_update32, addr);
     expect_any_always(__wrap_mmio_update32, data);
     expect_any_always(__wrap_mmio_update32, mask);
-
-    // FPFwCoreInterruptEnableVector
-    expect_value(__wrap_nvic_irq_clear_pending, irq_num, SDMSS_IRQ_NUMBER);
-    expect_value(__wrap_nvic_irq_enable, irq_num, SDMSS_IRQ_NUMBER);
 
     expect_any(__wrap_fpfw_timer_enable, timer);
     will_return_always(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);

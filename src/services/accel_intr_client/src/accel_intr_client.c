@@ -12,11 +12,12 @@
 
 #include "accel_intr_service_interface.h" // for accel_intr_service_cmd_con...
 
-#include <DfwkClient.h> // for DfwkAsyncRequestInitialize
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
-#include <FpFwUtils.h>  // for FPFW_UNUSED
-#include <accel_intr.h> // for accel_intr_handle_fatal_intr_recvd, accel_in...
-#include <stddef.h>     // for NULL
+#include <DfwkClient.h>     // for DfwkAsyncRequestInititalize
+#include <FPFwInterrupts.h> // for FPFwCoreInterruptEnableVector
+#include <FpFwAssert.h>     // for FPFW_RUNTIME_ASSERT
+#include <FpFwUtils.h>      // for FPFW_UNUSED
+#include <accel_intr.h>     // for
+#include <stddef.h>         // for NULL
 
 /*-- Symbolic Constant Macros (defines) --*/
 static accel_intr_service_cmd_context_t accel_intr_service_cmd_context;
@@ -28,43 +29,21 @@ static accel_intr_service_cmd_context_t accel_intr_service_cmd_context;
 /*--------- Function Prototypes ----------*/
 
 /*-------------- Functions ---------------*/
-/**
- * Moving actual interrupt ptocessing to the callback function here.
- * Keeping this before DfwkAsyncRequestComplete was causing a crash.
- * This needs to be reviewed and modifie if necessary.
- * TODO: Task 2000244: [SCP] Accel IP Fatal Interrupt DWFK Usage
- */
+
 static void accel_intr_async_request_complete(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_completion_context)
 {
     FPFW_UNUSED(p_completion_context);
 
-    switch (p_request->RequestType)
+    paccel_intr_service_request_t p_accel_intr_service_request = (paccel_intr_service_request_t)p_request;
+
+    /**
+     * Enable Interrupt was earlier being done as part of request handler.
+     * With that implementation there is a possibility that new interrupt can be triggered before first one is
+     * processed. As per DFWK recommendation, enabling only after complete processing is done.
+     */
+    if (p_request->RequestType == ACCEL_INTR_SERVICE_FATAL_INTR_RECVD)
     {
-    /**
-     * Handle Accel IP FATAL interrupt
-     */
-    case ACCEL_INTR_SERVICE_FATAL_INTR_RECVD: {
-        paccel_intr_service_request_t p_accel_intr_service_request = (paccel_intr_service_request_t)p_request;
-
-        // Call handler
-        accel_intr_handle_fatal_intr_recvd(p_accel_intr_service_request->IRQnum);
-    }
-    break;
-
-    /**
-     * Handle Accel IP SDM_MSG interrupt
-     */
-    case ACCEL_INTR_SERVICE_SDM_MSG_RECVD: {
-        paccel_intr_service_request_t p_accel_intr_service_request = (paccel_intr_service_request_t)p_request;
-
-        // Call handler
-        accel_intr_handle_sdm_msg_recvd(p_accel_intr_service_request->IRQnum);
-    }
-    break;
-
-    default:
-        FPFW_RUNTIME_ASSERT(false);
-        break;
+        FPFwCoreInterruptEnableVector(p_accel_intr_service_request->IRQnum);
     }
 }
 
@@ -72,13 +51,16 @@ static void dispatch_accel_intr_async_request(uint32_t IRQnum,
                                               e_accel_intr_service_command_id_t command,
                                               DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine)
 {
-    accel_intr_service_cmd_context.request.IRQnum = IRQnum;
+    int idx = ACCEL_INTR_SERVICE_GET_IDX_FROM_COMMAND(command);
+    eACCELERATOR_TYPE accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
 
-    accel_intr_service_cmd_context.request.header.RequestType = command;
+    accel_intr_service_cmd_context.requests[accel_type][idx].IRQnum = IRQnum;
 
-    DfwkAsyncRequestSetCompletionRoutine(&accel_intr_service_cmd_context.request.header, CompletionRoutine, NULL);
+    accel_intr_service_cmd_context.requests[accel_type][idx].header.RequestType = command;
+
+    DfwkAsyncRequestSetCompletionRoutine(&accel_intr_service_cmd_context.requests[accel_type][idx].header, CompletionRoutine, NULL);
     DfwkInterfaceSendAsync(&accel_intr_service_cmd_context.p_interface->header,
-                           &accel_intr_service_cmd_context.request.header);
+                           &accel_intr_service_cmd_context.requests[accel_type][idx].header);
 }
 
 void send_sdm_msg_async_request(uint32_t IRQnum)
@@ -98,6 +80,15 @@ void accel_intr_client_init(paccel_intr_service_interface_t p_interface)
 
     // Open Driver Framework Interface for Power CLI, initialize async requests
     DfwkClientInterfaceOpen(&accel_intr_service_cmd_context.p_interface->header);
-    DfwkAsyncRequestInitialize(&accel_intr_service_cmd_context.request.header,
-                               sizeof(accel_intr_service_cmd_context.request.header));
+
+    for (eACCELERATOR_TYPE accel_type = 0x0; accel_type < MAX_ACCELERATOR_TYPES; accel_type++)
+    {
+        for (int idx = ACCEL_INTR_SERVICE_GET_IDX_FROM_COMMAND(ACCEL_INTR_SERVICE_COMMANDS_START_ID);
+             idx < ACCEL_INTR_SERVICE_GET_IDX_FROM_COMMAND(ACCEL_INTR_SERVICE_MAX_COMMAND);
+             idx++)
+        {
+            DfwkAsyncRequestInitialize(&accel_intr_service_cmd_context.requests[accel_type][idx].header,
+                                        sizeof(accel_intr_service_cmd_context.requests[accel_type][idx].header));
+        }
+    }
 }

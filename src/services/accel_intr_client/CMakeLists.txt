@@ -28,6 +28,7 @@ target_link_libraries(${TARGET}
         ms::lib::cortex_m7::nvic
         ms::lib::error_codes
         ms::lib::event_trace::trace
+        ms::lib::interrupts
 )
 
 lint_target(${TARGET})

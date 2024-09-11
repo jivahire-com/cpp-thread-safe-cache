@@ -39,8 +39,6 @@ mock_target(${TARGET}
     DfwkInterfaceSendAsync
     DfwkAsyncRequestInitialize
     DfwkClientInterfaceOpen
-    accel_intr_handle_fatal_intr_recvd
-    accel_intr_handle_sdm_msg_recvd
     FpFwAssert
 )
 

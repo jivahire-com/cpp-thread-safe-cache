@@ -95,28 +95,6 @@ int32_t __wrap_DfwkClientInterfaceOpen(PDFWK_INTERFACE_HEADER Interface)
 }
 
 /**
- * @brief Mock function for accel_intr_handle_fatal_intr_recvd
- *
- * @param[in] IRQnum : IRQnum to identify between SDM / CDED Accel IP
- *
- */
-void __wrap_accel_intr_handle_fatal_intr_recvd(uint32_t IRQnum)
-{
-    check_expected(IRQnum);
-}
-
-/**
- * @brief Mock function for accel_intr_handle_sdm_msg_recvd
- *
- * @param[in] IRQnum : IRQnum to identify between SDM / CDED Accel IP
- *
- */
-void __wrap_accel_intr_handle_sdm_msg_recvd(uint32_t IRQnum)
-{
-    check_expected(IRQnum);
-}
-
-/**
  * @brief Mock function for FpFwAssert
  *
  * @param[in] expression : Expression to validate
@@ -143,10 +121,7 @@ TEST_FUNCTION(test_accel_intr_client, NULL, NULL)
     expect_value(__wrap_DfwkClientInterfaceOpen, Interface, &(accel_intr_interface.header));
     will_return(__wrap_DfwkClientInterfaceOpen, DFWK_SUCCESS);
 
-    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
-
-    expect_value(__wrap_accel_intr_handle_fatal_intr_recvd, IRQnum, 0x77);
-    expect_value(__wrap_accel_intr_handle_sdm_msg_recvd, IRQnum, 0x77);
+    expect_any_always(__wrap_DfwkAsyncRequestInitialize, Request);
 
     accel_intr_client_init(&accel_intr_interface);
 

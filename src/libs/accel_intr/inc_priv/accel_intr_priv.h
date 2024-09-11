@@ -36,26 +36,6 @@ typedef enum {
     ACCEL_INTR_MAX
 } eACCEL_INTR;
 
-/**
- * SDM and CDED IRQ Numbers
- * CDEDSS : 0x76 (118)
- * SDMSS  : 0x77 (119)
- */
-#define CDEDSS_IRQ_NUMBER           (0x76)
-#define SDMSS_IRQ_NUMBER            (0x77)
-
-/**
- * Get ACCEL Subsystem type from IRQ Number CDEDSS / SDMSS
- */
-#define GET_ACCEL_TYPE_FROM_IRQ_NUMBER(irq) \
-    ((irq == CDEDSS_IRQ_NUMBER) ? ACCELERATOR_CDEDSS : ACCELERATOR_SDMSS)
-
-/**
- * Get IRQ Number from ACCEL Subsystem type CDEDSS / SDMSS
- */
-#define GET_IRQ_NUMBER_FROM_ACCEL_TYPE(accel_type) \
-    ((accel_type == ACCELERATOR_CDEDSS) ?  CDEDSS_IRQ_NUMBER : SDMSS_IRQ_NUMBER)
-
 #define ACCEL_INTR_GET_DERIVED_ADDR(addr, ext_addr) \
     (addr + SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS + ext_addr)
 

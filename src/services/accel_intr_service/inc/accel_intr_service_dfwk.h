@@ -22,6 +22,7 @@ typedef enum {
     ACCEL_INTR_SERVICE_COMMANDS_START_ID = 0x1000,
     ACCEL_INTR_SERVICE_FATAL_INTR_RECVD,
     ACCEL_INTR_SERVICE_SDM_MSG_RECVD,
+    ACCEL_INTR_SERVICE_MAX_COMMAND
 } e_accel_intr_service_command_id_t;
 
 // struct for the Accel Interrupt service/device

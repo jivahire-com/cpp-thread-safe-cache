@@ -22,11 +22,39 @@ typedef enum {
     ACCEL_INTR_RET_SUCCESS = 0
 } eACCEL_INTR_RET_CODES;
 
+/**
+ * SDM and CDED IRQ Numbers
+ * CDEDSS : 0x76 (118)
+ * SDMSS  : 0x77 (119)
+ */
+#define CDEDSS_IRQ_NUMBER           (0x76)
+#define SDMSS_IRQ_NUMBER            (0x77)
+
 /*-------------------------------- Typedefs ---------------------------------*/
 
 /*------------------- Declarations (Statics and globals) --------------------*/
 
 /*--------------------------- Function Prototypes ---------------------------*/
+
+/**
+ * @brief Get IRQ Number based on accel_type
+ * 
+ * @param[in] accel_type: CDED / SDM accelerator_type
+ * 
+ * @retval
+ * IRQ Number : 119 (SDM) / 118 (CDED)
+ */
+uint32_t accel_intr_get_irq_num_from_accel_type(eACCELERATOR_TYPE accel_type);
+
+/**
+ * @brief Get accel_type based on IRQ number
+ * 
+ * @param[in] IRQnum: 119 (SDM) / 118 (CDED)
+ * 
+ * @retval
+ * accel_type : SDM / CDED
+ */
+eACCELERATOR_TYPE accel_intr_get_accel_type_from_irq_num(uint32_t IRQnum);
 
 /**
  * @brief Initialize ACCEL interrupts

@@ -41,6 +41,8 @@ mock_target(${TARGET}
     DfwkQueueInitialize
     DfwkAsyncRequestComplete
     FpFwAssert
+    accel_intr_handle_fatal_intr_recvd
+    accel_intr_handle_sdm_msg_recvd
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

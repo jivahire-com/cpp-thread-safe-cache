@@ -16,7 +16,6 @@
 
 #include <DfwkDriver.h>        // for DfwkInterfaceInitialize, DfwkQueueInitia...
 #include <DfwkHost.h>          // for DfwkDeviceInitialize
-#include <FPFwInterrupts.h>    // for FPFwCoreInterruptEnableVector
 #include <FpFwUtils.h>         // for FPFW_UNUSED
 #include <accelerator_ip.h>    // for ACCELERATOR_CDEDSS, ACCELERATOR_SDMSS
 #include <cortex_m7_atomics.h> // for cortex_m7_atomic_call_data_memory_barrier
@@ -93,7 +92,7 @@ static accel_intr_crash_dump_collection_timer_data_t accel_intr_crash_dump_colle
  */
 static void reset_timer(uint32_t IRQnum)
 {
-    eACCELERATOR_TYPE accel_type = GET_ACCEL_TYPE_FROM_IRQ_NUMBER(IRQnum);
+    eACCELERATOR_TYPE accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
 
     // Reset timeout count
     accel_intr_crash_dump_collection_timer_data[accel_type].timeout_count = ACCEL_INTR_CRASH_DUMP_COLLECT_FIRST_TIMEOUT;
@@ -143,7 +142,7 @@ static void accel_intr_handle_sdm_msg_send(eACCELERATOR_TYPE accel_type)
  */
 static void accel_intr_request_crash_dump_collection(uint32_t IRQnum, uint32_t timeout_count, bool is_soc_reset)
 {
-    eACCELERATOR_TYPE accel_type = GET_ACCEL_TYPE_FROM_IRQ_NUMBER(IRQnum);
+    eACCELERATOR_TYPE accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
 
     /**
      * timeout_count is 0 and is_collecting_crashdump is set, indicates
@@ -152,15 +151,17 @@ static void accel_intr_request_crash_dump_collection(uint32_t IRQnum, uint32_t t
      * 2. We will check if soc_reset is needed and will mark that in timer context
      * 3. We will enable NVIC interrupt incase it has been disabled as part of FATAL ISR handler
      */
+    /**
+     * Update this flow as per following ADO point 5
+     * TODO: Task 1982366: [SCP] Accel IP Fatal Interrupt Cleanup Tasks / Comments
+     * When one FATAL interrupt is received ->
+     * Halt the processor where it should be in WFI (waiting for interrupt) state ->
+     * Only handles Doorbell for crash sump collection
+     */
     if (timeout_count == ACCEL_INTR_CRASH_DUMP_COLLECT_FIRST_TIMEOUT &&
         accel_intr_crash_dump_collection_timer_data[accel_type].is_collecting_crashdump)
     {
         accel_intr_crash_dump_collection_timer_data[accel_type].is_soc_reset |= is_soc_reset;
-
-        // Clear and Enable IRQ
-        // Both functions always return SUCCESS
-        FPFwCoreInterruptEnableVector(IRQnum);
-
         return;
     }
 
@@ -174,10 +175,6 @@ static void accel_intr_request_crash_dump_collection(uint32_t IRQnum, uint32_t t
 
     // Enable SDM_MSG0_INTR
     accel_intr_single_level_irq_init(accelerator_ip_get_atu_mapped_cfg_address(accel_type), SDM_EXT_SDM_MSG0_INTR);
-
-    // Clear and Enable IRQ
-    // Both functions always return SUCCESS
-    FPFwCoreInterruptEnableVector(IRQnum);
 
     // Send message to Accel emCPU to collect crash dump
     accel_intr_handle_sdm_msg_send(accel_type);
@@ -204,7 +201,7 @@ static void accel_intr_clear_and_unmask_interrupts(uint32_t IRQnum)
         {
             // Call init function for that IRQ, always returns SUCCESS
             (void)accel_intr_irq_data[idx].accel_irq_init_fn(
-                accelerator_ip_get_atu_mapped_cfg_address(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(IRQnum)),
+                accelerator_ip_get_atu_mapped_cfg_address(accel_intr_get_accel_type_from_irq_num(IRQnum)),
                 accel_intr_irq_data[idx].accel_irq_bit);
         }
     }
@@ -291,7 +288,7 @@ uint32_t accel_intr_crash_dump_collection_timer_init(eACCELERATOR_TYPE accel_typ
 void accel_intr_handle_fatal_intr_recvd(uint32_t IRQnum)
 {
     // Based on ATU MAP get sdm_ext_cfg base address
-    uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(GET_ACCEL_TYPE_FROM_IRQ_NUMBER(IRQnum));
+    uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(accel_intr_get_accel_type_from_irq_num(IRQnum));
 
     /**
      * 1. Loop through all FATAL interrupts to note and log triggered interrupts.
@@ -331,17 +328,12 @@ void accel_intr_handle_fatal_intr_recvd(uint32_t IRQnum)
          * Level 2 registers are cleared as part of Accel emCPU boot up
          */
         accel_intr_clear_and_unmask_interrupts(IRQnum);
-
-        /**
-         * 2. Clear and Enable IRQ
-         */
-        FPFwCoreInterruptEnableVector(IRQnum);
     }
 }
 
 void accel_intr_handle_sdm_msg_recvd(uint32_t IRQnum)
 {
-    eACCELERATOR_TYPE accel_type = GET_ACCEL_TYPE_FROM_IRQ_NUMBER(IRQnum);
+    eACCELERATOR_TYPE accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
     /**
      * Check if this interrupt was expected.
      * Else ignore the interrupt

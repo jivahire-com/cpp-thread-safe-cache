@@ -68,7 +68,7 @@
  */
 static uint32_t accel_intr_nvic_init(eACCELERATOR_TYPE accel_type)
 {
-    uint32_t IRQnum = GET_IRQ_NUMBER_FROM_ACCEL_TYPE(accel_type);
+    uint32_t IRQnum = accel_intr_get_irq_num_from_accel_type(accel_type);
 
     // Register ISR
     nvic_status_t status =
@@ -87,6 +87,30 @@ static uint32_t accel_intr_nvic_init(eACCELERATOR_TYPE accel_type)
 }
 
 /*----------------------------- Global Functions ----------------------------*/
+
+uint32_t accel_intr_get_irq_num_from_accel_type(eACCELERATOR_TYPE accel_type)
+{
+    switch (accel_type)
+    {
+    case ACCELERATOR_CDEDSS:
+        return CDEDSS_IRQ_NUMBER;
+    case ACCELERATOR_SDMSS:
+    default:
+        return SDMSS_IRQ_NUMBER;
+    }
+}
+
+eACCELERATOR_TYPE accel_intr_get_accel_type_from_irq_num(uint32_t IRQnum)
+{
+    switch (IRQnum)
+    {
+    case CDEDSS_IRQ_NUMBER:
+        return ACCELERATOR_CDEDSS;
+    case SDMSS_IRQ_NUMBER:
+    default:
+        return ACCELERATOR_SDMSS;
+    }
+}
 
 void accel_intr_emcpu_wdt_control(uint32_t ext_cfg_addr, uint8_t enable)
 {

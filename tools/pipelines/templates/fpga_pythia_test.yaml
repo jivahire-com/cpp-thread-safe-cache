@@ -8,6 +8,9 @@ parameters:
 - name: Test_Suite_Path
   type: string
   default: 'tests\functional\pythia\test_suites'
+- name: Staging_Test_Suite_Path
+  type: string
+  default: 'tests\functional\pythia\staging_tests'
 - name: ArtifactName
   type: string
   default: 'bins'
@@ -69,6 +72,7 @@ jobs:
           flashscpfw ${{ parameters.TestAgent }}
 
           Invoke-Pythia -test ${{ parameters.Test_Suite_Path }} -platform fpga
+          Invoke-Pythia -test ${{ parameters.Staging_Test_Suite_Path }} -platform fpga
 
           # Remove intermediate output / output that contains system variables (ie: Azure credentials)
           Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\output.xml"

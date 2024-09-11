@@ -10,8 +10,26 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 
 /*-- Symbolic Constant Macros (defines) --*/
+
+#define NUMBER_OF_TILES_PER_DIE (34)
+#define NUMBER_OF_CORES_PER_DIE (NUMBER_OF_TILES_PER_DIE*2)
+#define NUMBER_OF_HNF_CHANNELS_PER_DIE (NUMBER_OF_TILES_PER_DIE*2)
+#define NUMBER_OF_PSTATES (32)
+#define NUMBER_OF_CSTATES (5)
+
+#define NUMBER_OF_THROTTLE_TYPES    (7)
+#define NUMBER_OF_RACK_PRIORITIES   (8)
+#define NUMBER_OF_HS_VOLTAGE_SCALES (17)
+#define NUMBER_OF_HS_TEMP_SCALES    (7)
+
+// TODO: These values are placeholders and need to be verified
+#define NUMBER_OF_DIMM_MODULES      (12)
+#define NUMBER_OF_DIMM_CHANNELS     (24)
+#define NUMBER_OF_MPAMS             (128)
+#define NUMBER_OF_AMU_COUNTERS      (7)
 
 /*-------------- Typedefs ----------------*/
 

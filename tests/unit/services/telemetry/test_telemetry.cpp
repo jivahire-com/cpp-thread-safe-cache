@@ -14,7 +14,6 @@ extern "C" {
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <data_proc_tlm_cmpnt.h>
-#include <pwr_telemetry_data.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
 #include <tlm_logger_i.h>
@@ -127,10 +126,10 @@ TEST_FUNCTION(test_tlm_logger_log_tile_voltage, test_setup, test_teardown)
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
 
     // Check core 0 and core 1 voltage
-    assert_int_equal(core[index].voltage.instantaneous, (uint16_t)(voltage_data.data.vcore0 * 1000));
-    assert_int_equal(core[index+1].voltage.instantaneous, (uint16_t)(voltage_data.data.vcore1 * 1000));
-    assert_int_equal(tile[index].vcpu.instantaneous , (uint16_t)(voltage_data.data.vcpu * 1000));
-    assert_int_equal(tile[index].vsys.instantaneous , (uint16_t)(voltage_data.data.vsys * 1000));
+    assert_int_equal(core[index].voltage.latest_value_mV, (uint16_t)(voltage_data.data.vcore0 * 1000));
+    assert_int_equal(core[index+1].voltage.latest_value_mV, (uint16_t)(voltage_data.data.vcore1 * 1000));
+    assert_int_equal(tile[index].vcpu.latest_value_mV , (uint16_t)(voltage_data.data.vcpu * 1000));
+    assert_int_equal(tile[index].vsys.latest_value_mV , (uint16_t)(voltage_data.data.vsys * 1000));
 
     //test index out of range
     index = NUMBER_OF_TILES_PER_DIE;
@@ -171,7 +170,7 @@ TEST_FUNCTION(test_tlm_logger_log_core_current, test_setup, test_teardown)
 
     // Check core 0 current
     assert_int_equal(core[index].current_pkt_timestamp, (current_data.timestamp ));
-    assert_int_equal(core[index].current.instantaneous, (uint16_t)(current_data.data.avg * CORE_CURRENT_CONVERSION_FACTOR ));
+    assert_int_equal(core[index].current.latest_value_mA, (uint16_t)(current_data.data.avg * CORE_CURRENT_CONVERSION_FACTOR ));
     assert_int_equal(core[index].ldo_voltage, (uint16_t)(current_data.data.volt ));
     assert_int_equal(core[index].current_tel_pstate, (current_data.data.pstate ));
     assert_int_equal(core[index].current_mpam_id, (current_data.data.mpam_id_low ));
@@ -255,7 +254,7 @@ TEST_FUNCTION(test_tlm_logger_log_vr_temp, test_setup, test_teardown)
     // Check VR Temp
     for(uint8_t index = 0; index < MAX_NUM_OF_VR_RAILS; index++)
     {
-        assert_int_equal(soc_info.rail[index].temperature.instantaneous, (vr_temperature.vr_temp[index]));
+        assert_int_equal(soc_info.rail[index].temperature.latest_value_dC, (vr_temperature.vr_temp[index]));
     }
 }
 
@@ -274,8 +273,8 @@ TEST_FUNCTION(test_tlm_logger_log_vr_current, test_setup, test_teardown)
       // Check VR Current and voltage
     for(uint8_t index = 0; index < MAX_NUM_OF_VR_RAILS; index++)
     {
-        assert_int_equal(soc_info.rail[index].current.instantaneous, (data.vr_current[index]));
-        assert_int_equal(soc_info.rail[index].voltage.instantaneous, (data.vr_voltage[index]));
+        assert_int_equal(soc_info.rail[index].current.latest_value_mA, (data.vr_current[index]));
+        assert_int_equal(soc_info.rail[index].voltage.latest_value_mV, (data.vr_voltage[index]));
     }
 }
 

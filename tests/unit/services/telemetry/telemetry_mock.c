@@ -12,9 +12,9 @@
 
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
-#include <pwr_telemetry_data.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
+#include <tlm_logger_i.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 

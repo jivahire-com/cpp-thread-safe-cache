@@ -3,7 +3,7 @@ set(TARGET kng.service.telemetry.cmpnt.in_band_tlm)
 add_library(${TARGET}
     STATIC
         in_band_tlm_cmpnt.c
-        schema_handling.c
+        event_schema.c
 )
 
 target_include_directories(${TARGET}
@@ -23,6 +23,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.status
         fwlib.lib.utils
         ms::lib::error_codes
+        ms::lib::event_trace::trace
 )
 
 lint_target(${TARGET})

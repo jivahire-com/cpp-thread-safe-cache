@@ -23,7 +23,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.status
         fwlib.lib.utils
         ms::lib::error_codes
-        ms::service::sensor_fifo
+        
 )
 
 lint_target(${TARGET})

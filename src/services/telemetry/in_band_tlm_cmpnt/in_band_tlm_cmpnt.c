@@ -10,6 +10,8 @@
 /*------------- Includes -----------------*/
 #include "in_band_tlm_cmpnt.h"
 
+#include "telemetry_package_defs.h"
+
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/

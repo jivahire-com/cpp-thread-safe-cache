@@ -12,7 +12,6 @@
 
 #include <assert.h>              // IWYU pragma: keep for static_assert
 #include <fpfw_status.h>         // for FPFW_STATUS_SUCCEEDED, fpf...
-#include <pwr_telemetry_data.h>  // for Power telemetry data structures
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdbool.h>             // for false, true
 #include <stddef.h>              // for size_t
@@ -95,17 +94,17 @@ fpfw_status_t tlm_logger_log_tile_temperature(tile_temp_t* temperature_data, uin
         int16_t inst_temp_0 = temperature_data->temp1.temp0;
         int16_t inst_temp_1 = temperature_data->temp1.temp1;
         int16_t inst_temp_2 = temperature_data->temp1.temp2;
-        core[core_id].temperature.instantaneous = find_hot_core_temp(inst_temp_0, inst_temp_1, inst_temp_2);
+        core[core_id].temperature.latest_value_dC = find_hot_core_temp(inst_temp_0, inst_temp_1, inst_temp_2);
 
         // Check between which is bigger to log for tile core1
         inst_temp_0 = temperature_data->temp1.temp3;
         inst_temp_1 = temperature_data->temp2.temp4;
         inst_temp_2 = temperature_data->temp2.temp5;
-        core[core_id + 1].temperature.instantaneous = find_hot_core_temp(inst_temp_0, inst_temp_1, inst_temp_2);
+        core[core_id + 1].temperature.latest_value_dC = find_hot_core_temp(inst_temp_0, inst_temp_1, inst_temp_2);
 
         // Log all the HNF Temperature
-        soc_info.hnf[core_id].temperature.instantaneous = temperature_data->temp2.temp6;
-        soc_info.hnf[core_id + 1].temperature.instantaneous = temperature_data->temp2.temp7;
+        soc_info.hnf[core_id].latest_value_dC = temperature_data->temp2.temp6;
+        soc_info.hnf[core_id + 1].latest_value_dC = temperature_data->temp2.temp7;
     }
 
     // Also store the Max tile temperatures and its ID
@@ -128,12 +127,12 @@ fpfw_status_t tlm_logger_log_tile_voltage(tile_voltage_t* voltage_data, uint8_t 
 
     // Since this is a tile voltage, log the core where the tile voltage belongs
     uint8_t core_id = tile_index * 2;
-    core[core_id].voltage.instantaneous = DOUT2MILLIVOLTS(voltage_data->data.vcore0);
-    core[core_id + 1].voltage.instantaneous = DOUT2MILLIVOLTS(voltage_data->data.vcore1);
+    core[core_id].voltage.latest_value_mV = DOUT2MILLIVOLTS(voltage_data->data.vcore0);
+    core[core_id + 1].voltage.latest_value_mV = DOUT2MILLIVOLTS(voltage_data->data.vcore1);
 
     // Log the tile vcpu and vsys
-    tile[tile_index].vcpu.instantaneous = DOUT2MILLIVOLTS(voltage_data->data.vcpu);
-    tile[tile_index].vsys.instantaneous = DOUT2MILLIVOLTS(voltage_data->data.vsys);
+    tile[tile_index].vcpu.latest_value_mV = DOUT2MILLIVOLTS(voltage_data->data.vcpu);
+    tile[tile_index].vsys.latest_value_mV = DOUT2MILLIVOLTS(voltage_data->data.vsys);
     return FPFW_STATUS_SUCCESS;
 }
 
@@ -155,20 +154,20 @@ fpfw_status_t tlm_logger_log_core_current(core_current_t* current_data, uint8_t 
     // Get the current conversions. Conversion factors for the currents needs to be fine tuned
     //   by the SVT and Silicon team.
     current_t current;
-    current.min = (uint16_t)(current_data->data.min * CORE_CURRENT_CONVERSION_FACTOR);
-    current.average = (uint16_t)(current_data->data.avg * CORE_CURRENT_CONVERSION_FACTOR);
-    current.max = (uint16_t)(current_data->data.max * CORE_CURRENT_CONVERSION_FACTOR);
+    current.min_mA = (uint16_t)(current_data->data.min * CORE_CURRENT_CONVERSION_FACTOR);
+    current.average_mA = (uint16_t)(current_data->data.avg * CORE_CURRENT_CONVERSION_FACTOR);
+    current.max_mA = (uint16_t)(current_data->data.max * CORE_CURRENT_CONVERSION_FACTOR);
 
     // check for Minimum currents, where the initial minimum is 0
-    if (core[core_id].current.min > current.min || core[core_id].current.min == 0)
+    if (core[core_id].current.min_mA > current.min_mA || core[core_id].current.min_mA == 0)
     {
-        core[core_id].current.min = current.min;
+        core[core_id].current.min_mA = current.min_mA;
     }
 
     // check for Maximum currents
-    if (core[core_id].current.max < current.max)
+    if (core[core_id].current.max_mA < current.max_mA)
     {
-        core[core_id].current.max = current.max;
+        core[core_id].current.max_mA = current.max_mA;
     }
 
     // Check for the change bit
@@ -209,7 +208,7 @@ fpfw_status_t tlm_logger_log_core_current(core_current_t* current_data, uint8_t 
     //   of measurement window (1mS) therefore, we will treat this as the
     //   instantaneous current @ 1mS
 
-    core[core_id].current.instantaneous = current.average;
+    core[core_id].current.latest_value_mA = current.average_mA;
 
     // Log the Ldo Voltage at this instant
     core[core_id].ldo_voltage = current_data->data.volt;
@@ -306,7 +305,7 @@ fpfw_status_t tlm_logger_log_core_pstate(pstate_telem_t* pstate_telemetry)
                     uint64_t timestamp_now = (pstate_telemetry->timestamp - core[core_id].throttle_timestamp) / 1000;
 
                     // This is the per core and per type throttling residency in uS
-                    core[core_id].throttle_info[prop_index - CURRENT_THROTTLE_END].residency += timestamp_now;
+                    core[core_id].throttle_info[prop_index - CURRENT_THROTTLE_END].residency_mS += timestamp_now;
 
                     // This throttling counter will be used by the MPAM for VM Throttling
                     core[core_id].throttling_counter += timestamp_now;
@@ -351,7 +350,7 @@ void tlm_logger_log_vr_temp(vr_temp_t* vr_temperature)
     // Extract VR Temperature entries for all VR Rails
     for (uint8_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
     {
-        soc_info.rail[vr_index].temperature.instantaneous = vr_temperature->vr_temp[vr_index];
+        soc_info.rail[vr_index].temperature.latest_value_dC = vr_temperature->vr_temp[vr_index];
     }
 }
 
@@ -361,8 +360,8 @@ void tlm_logger_log_vr_current(vr_current_t* vr_current)
     // Extract VR Current and voltage entries for all VR Rails
     for (uint8_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
     {
-        soc_info.rail[vr_index].current.instantaneous = vr_current->vr_current[vr_index];
-        soc_info.rail[vr_index].voltage.instantaneous = vr_current->vr_voltage[vr_index];
+        soc_info.rail[vr_index].current.latest_value_mA = vr_current->vr_current[vr_index];
+        soc_info.rail[vr_index].voltage.latest_value_mV = vr_current->vr_voltage[vr_index];
     }
 }
 

@@ -339,7 +339,7 @@ FPFW_INIT_COMPONENT(sensor_fifo, FPFW_INIT_DEPENDENCIES("dfwk","hw_ver","std_io"
     fpfw_init_component_id_t dfwk_id = "dfwk";
     PDFWK_THREADX_HOST drvfwk = (PDFWK_THREADX_HOST)fpfw_init_get_handle(dfwk_id);
 
-    /// TODO:  from fuse service get info for the following
+    /// TODO:  from fuse service get info for the following,   https://azurecsi.visualstudio.com/Dev/_workitems/edit/1485736
     s_scf_mhu_device_cfg.tile_mask = 0;
     s_scf_mhu_device_cfg.core_mask_lo = 0;
     s_scf_mhu_device_cfg.core_mask_hi = 0;

@@ -70,7 +70,7 @@
         .core_mask_lo                        = 0,                                                                                                                   \
         .core_mask_hi                        = 0,                                                                                                                   \
         .lossy_telem_cfg                     = SCF_LOSSY_CONFIG,                                                                                                    \
-        .set_sensor_bridge_enable            = false                                                                                                                \
+        .set_sensor_bridge_enable            = true                                                                                                                 \
     }
 
 // clang-format on

@@ -59,9 +59,11 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
 int __wrap_tower_sequence_configure_towers(tower_sequence_soc_init_params_t* tower_sequence_param)
 {
     check_expected(tower_sequence_param->tower_configure_fabric_apu);
+    check_expected(tower_sequence_param->tower_configure_fabric_fmu);
     check_expected(tower_sequence_param->tower_fabric_tower_resolved_addr);
 
     check_expected(tower_sequence_param->tower_configure_periph_apu);
+    check_expected(tower_sequence_param->tower_configure_periph_fmu);
     check_expected(tower_sequence_param->tower_periph_tower_resolved_addr);
 
     check_expected(tower_sequence_param->tower_configure_d2dss_apu);

@@ -40,16 +40,18 @@ TEST_FUNCTION(test_tower_sequence_init_die0_silicon, nullptr, nullptr)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_system_info_is_hsp_present, false);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
-    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
 
@@ -96,16 +98,18 @@ TEST_FUNCTION(test_tower_sequence_init_die1_silicon, nullptr, nullptr)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_system_info_is_hsp_present, false);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
-    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
 
@@ -152,16 +156,18 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_1d_8c, nullptr, nullptr)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_1D_8C);
     will_return_always(__wrap_system_info_is_hsp_present, false);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
-    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
 
@@ -208,16 +214,18 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_1d, nullptr, nullptr)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_1D);
     will_return_always(__wrap_system_info_is_hsp_present, false);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
-    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
 
@@ -264,16 +272,18 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_2d_8c, nullptr, nullptr)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_2D_8C);
     will_return_always(__wrap_system_info_is_hsp_present, false);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
-    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
 
@@ -320,16 +330,18 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_2d, nullptr, nullptr)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_2D);
     will_return_always(__wrap_system_info_is_hsp_present, false);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
-    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
 
@@ -376,16 +388,18 @@ TEST_FUNCTION(test_tower_sequence_init_die1_emu_2d, nullptr, nullptr)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_2D);
     will_return_always(__wrap_system_info_is_hsp_present, false);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
-    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
 
@@ -432,16 +446,18 @@ TEST_FUNCTION(test_tower_sequence_init_die1_emu_2d_8c, nullptr, nullptr)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_2D_8C);
     will_return_always(__wrap_system_info_is_hsp_present, false);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
-    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
 
@@ -488,16 +504,18 @@ TEST_FUNCTION(test_tower_sequence_init_die0_fpga, nullptr, nullptr)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return_always(__wrap_system_info_is_hsp_present, false);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
-    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
 
@@ -543,16 +561,18 @@ TEST_FUNCTION(test_tower_sequence_init_die1_fpga, nullptr, nullptr)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return_always(__wrap_system_info_is_hsp_present, false);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
-    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
 
@@ -596,18 +616,20 @@ TEST_FUNCTION(test_tower_sequence_init_die0_svp, nullptr, nullptr)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return_always(__wrap_system_info_is_hsp_present, false);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
-    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_fmu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_fmu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0x0);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0x0);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
@@ -652,18 +674,20 @@ TEST_FUNCTION(test_tower_sequence_init_die1_svp, nullptr, nullptr)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return_always(__wrap_system_info_is_hsp_present, false);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
-    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_fmu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_fmu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0x0);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0x0);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
@@ -705,16 +729,18 @@ TEST_FUNCTION(test_tower_sequence_init_die0_invalid_platform, nullptr, nullptr)
 
     will_return_always(__wrap_idsw_get_platform_sdv, 0x100);
     will_return_always(__wrap_system_info_is_hsp_present, false);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
-    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
 
@@ -758,14 +784,16 @@ TEST_FUNCTION(test_tower_sequence_init_die1_invalid_platform, nullptr, nullptr)
     will_return_always(__wrap_system_info_is_hsp_present, false);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_fmu, true);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
 
@@ -820,16 +848,18 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die0_svp, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_fmu, false);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_fmu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0x0);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0x0);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
@@ -886,17 +916,20 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die1_svp, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, sizeof(msg));
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
 
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_fabric_fmu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_fabric_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_apu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_periph_fmu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_periph_tower_resolved_addr, 0xffffffff);
 
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_d2dss_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0x0);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0x0);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg0_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_d2dss_cfg1_tower_resolved_addr, 0xffffffff);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);

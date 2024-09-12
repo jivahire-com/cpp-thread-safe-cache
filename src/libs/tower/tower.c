@@ -202,12 +202,14 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 
     // Fabric Tower
     tower_sequence_params.tower_configure_fabric_apu = true;
+    tower_sequence_params.tower_configure_fabric_fmu = true;
     atu_map_entry_t atu_fabric_tower_map = ATU_MAPPING_FABRIC_TOWER((die_num == 0 ? SOC_D0 : SOC_D1));
     FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_fabric_tower_map));
     tower_sequence_params.tower_fabric_tower_resolved_addr = atu_fabric_tower_map.mscp_start_address;
 
     // Peripheral Tower
     tower_sequence_params.tower_configure_periph_apu = true;
+    tower_sequence_params.tower_configure_periph_fmu = true;
     atu_map_entry_t atu_peripheral_tower_map = ATU_MAPPING_PERIPHERAL_TOWER((die_num == 0 ? SOC_D0 : SOC_D1));
     FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_peripheral_tower_map));
     tower_sequence_params.tower_periph_tower_resolved_addr = atu_peripheral_tower_map.mscp_start_address;
@@ -215,19 +217,14 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     // D2DSS towers
     atu_map_entry_t atu_d2d_cfg0_tower_map = ATU_MAPPING_D2DSS_CFG0_TOWER((die_num == 0 ? SOC_D0 : SOC_D1));
     atu_map_entry_t atu_d2d_cfg1_tower_map = ATU_MAPPING_D2DSS_CFG1_TOWER((die_num == 0 ? SOC_D0 : SOC_D1));
-    // TODO: WI 1947006 SVP doesn't model d2d tower registers
-    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
-    {
-        ASSERT_FAIL(!atu_map(ATU_ID_MSCP, &atu_d2d_cfg0_tower_map));
-        tower_sequence_params.tower_d2dss_cfg0_tower_resolved_addr = atu_d2d_cfg0_tower_map.mscp_start_address;
+    ASSERT_FAIL(!atu_map(ATU_ID_MSCP, &atu_d2d_cfg0_tower_map));
+    tower_sequence_params.tower_d2dss_cfg0_tower_resolved_addr = atu_d2d_cfg0_tower_map.mscp_start_address;
 
-        ASSERT_FAIL(!atu_map(ATU_ID_MSCP, &atu_d2d_cfg1_tower_map));
-        tower_sequence_params.tower_d2dss_cfg1_tower_resolved_addr = atu_d2d_cfg1_tower_map.mscp_start_address;
+    ASSERT_FAIL(!atu_map(ATU_ID_MSCP, &atu_d2d_cfg1_tower_map));
+    tower_sequence_params.tower_d2dss_cfg1_tower_resolved_addr = atu_d2d_cfg1_tower_map.mscp_start_address;
 
-        tower_sequence_params.tower_configure_d2dss_apu = true;
-        // TODO: WI:754849 D2D towers have known parity issues that are flagged once FMU is enabled
-        tower_sequence_params.tower_configure_d2dss_fmu = false;
-    }
+    tower_sequence_params.tower_configure_d2dss_apu = true;
+    tower_sequence_params.tower_configure_d2dss_fmu = true;
 
     // VAB Towers
     uint16_t vab_instances_to_init = tower_vab_instances_to_be_enabled(die_num);
@@ -251,11 +248,6 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         tower_sequence_params.tower_configure_vab_sam = true;
         tower_sequence_params.tower_configure_vab_apu = true;
         tower_sequence_params.tower_configure_vab_fmu = true;
-        // TODO: WI 1869184 FMU is not supported in SVP currently
-        if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
-        {
-            tower_sequence_params.tower_configure_vab_fmu = false;
-        }
     }
 
     // RPSS towers
@@ -277,11 +269,6 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         tower_sequence_params.tower_configure_rpss_sam = true;
         tower_sequence_params.tower_configure_rpss_apu = true;
         tower_sequence_params.tower_configure_rpss_fmu = true;
-        // TODO: WI 1869184 FMU is not supported in SVP currently
-        if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
-        {
-            tower_sequence_params.tower_configure_rpss_fmu = false;
-        }
     }
 
     // SDMSS tower
@@ -315,6 +302,16 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     tower_sequence_params.tower_configure_ioss_apu = true;
 
     tower_sequence_params.die_id = die_num;
+
+    // TODO: WI 1869184 FMU is not supported in SVP currently
+    if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
+    {
+        tower_sequence_params.tower_configure_d2dss_fmu = false;
+        tower_sequence_params.tower_configure_fabric_fmu = false;
+        tower_sequence_params.tower_configure_periph_fmu = false;
+        tower_sequence_params.tower_configure_vab_fmu = false;
+        tower_sequence_params.tower_configure_rpss_fmu = false;
+    }
 
     printf("Configure all towers\n");
     FPFW_RUNTIME_ASSERT(!tower_sequence_configure_towers(&tower_sequence_params));

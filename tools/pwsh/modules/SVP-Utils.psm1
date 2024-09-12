@@ -65,7 +65,7 @@ If -UseGUI specified it will setup and run the simulation with the GUI, otherwis
 Invoke-Virtualizer -SimConfig scp_mcp_chie_bins -UseGUI
 #>
 Function Invoke-Virtualizer(
-    [Parameter(Mandatory=$false)] [ValidateSet('scp_mcp_chie_bins','mcp_bl_embed_fw', 'hsp_bl_scp', 'scp_mcp_chie_bins_dual_die')] [string] $SimConfig = "scp_mcp_chie_bins",
+    [Parameter(Mandatory=$false)] [ValidateSet('scp_mcp_chie_bins', 'hsp_bl_scp', 'scp_mcp_chie_bins_dual_die')] [string] $SimConfig = "scp_mcp_chie_bins",
     [Parameter(Mandatory=$false)] [switch] $UseGUI
 )
 {
@@ -125,10 +125,6 @@ Function Invoke-Virtualizer(
     switch ($SimConfig) {
         "scp_mcp_chie_bins" {
             Write-Host "Using chie fw bins where applicable. SVP test bins are used for anything that is missing."
-            Break;
-        }
-        "mcp_bl_embed_fw" {
-            Write-Host "Using MCP Bootloader embed FW method for chie fw."
             Break;
         }
         "hsp_bl_scp" {

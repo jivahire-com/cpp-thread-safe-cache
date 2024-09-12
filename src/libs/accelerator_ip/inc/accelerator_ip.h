@@ -49,10 +49,10 @@ typedef enum {
 } eACCELERATOR_TYPE;
 
 typedef struct {
-    uintptr_t itcm_bin_addr;
-    uintptr_t itcm_bin_size;
-    uintptr_t dtcm_bin_addr;
-    uintptr_t dtcm_bin_size;
+    uintptr_t itcm_load_addr_low;
+    uintptr_t itcm_load_addr_high;
+    uintptr_t dtcm_load_addr_low;
+    uintptr_t dtcm_load_addr_high;
 } accelip_mem_info_t;
 
 typedef struct {

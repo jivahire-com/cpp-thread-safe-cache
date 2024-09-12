@@ -48,9 +48,11 @@ mock_target(${TARGET}
     atu_unmap
     configure_cdedss_hsp_system_addr_map
     configure_cdedss_vab_system_addr_map
+    crash_dump_bug_check
     FpFwAssert
     debug_print
     critical_print
+    fpfw_icc_base_send_recv_sync
     idsw_get_die_id
     idsw_get_platform_sdv
     pcr_rpss_configure_clock

@@ -48,3 +48,20 @@ cded_dtcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sd
 cded_itcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/cded/cded_fw_itcm.bin'}
 sdm_dtcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/sdm/sdm_fw_dtcm.bin'}
 sdm_itcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/sdm/sdm_fw_itcm.bin'}
+
+# Build this flavor with
+#  datwizard build --flavor "kingsgate.ifwi.fpga.debug.ap.baremetal"
+[dat."kingsgate.ifwi.fpga.debug.ap.baremetal"]
+extends = "kingsgate.ifwi.fpga.debug"
+build = true
+[dat."kingsgate.ifwi.fpga.debug.ap.baremetal".partition]
+
+mcp                        = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/mcp/mcp_boot_loader_embed_fw.bin'}
+pe_security_monitor        = { type='file', local='${REPO_APP_PATH_kingsgate.ap.baremetal}/build/bin/arm-aarch64-none/Debug/ap_test.elf'}
+rom_section                = { type='file', local='${REPO_APP_PATH_kingsgate.sprt.release}/release/sp1/sp1.img'}
+scp                        = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/scp/scp_boot_loader_embed_fw.bin'}
+sprt                       = { type='file', local='${REPO_APP_PATH_kingsgate.sprt.release}/release/sprt/sprt.bin'}
+cded_dtcm                  = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/cded/cded_fw_dtcm.bin'}
+cded_itcm                  = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/cded/cded_fw_itcm.bin'}
+sdm_dtcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/sdm/sdm_fw_dtcm.bin'}
+sdm_itcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/sdm/sdm_fw_itcm.bin'}

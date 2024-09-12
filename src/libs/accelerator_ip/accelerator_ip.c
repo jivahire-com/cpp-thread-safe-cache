@@ -9,11 +9,6 @@
  */
 
 /*-------------------------------- Features ---------------------------------*/
-/*
- * TODO: ADO 1831262: Remove the below flag and related code once HSP supports
- * initialization of CDEDSS Tower.
- */
-#define FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP
 
 /*-------------------------------- Includes ---------------------------------*/
 #include "accelerator_ip.h"
@@ -35,17 +30,14 @@
 #include <kng_soc_constants.h> // for DIE_INSTANCE
 #include <sdm_ext_cfg_regs.h>  // for SDM_EXT_CFG_EMCPU_TCM_ITCM_ADDRESS, SDM_EXT_CFG_EMCPU_TCM_ITCM_SIZE
 #include <sdmss_config_regs.h> // for SDMSS_CONFIG_SDM_EXT_CFG_ADDRESS
+#include <silibs_common.h>     // for ALIGN_UP
 #include <silibs_platform.h>   // for debug_print, MMIO_UPDATE32
 #include <silibs_status.h>     // for SILIBS_SUCCESS
 #include <stdint.h>            // for int32_t, uintptr_t, uint32_t
 #include <stdio.h>             // for printf, NULL
 #include <string.h>            // for memcpy
 #include <system_info.h>       // for is_hsp_present()
-
-#if defined(FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP)
-    #include <silibs_common.h> // for ALIGN_UP
-    #include <tower_cdedss.h>  // for configure_cdedss_hsp_system_addr_map()
-#endif                         /* FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP */
+#include <tower_cdedss.h>      // for configure_cdedss_hsp_system_addr_map()
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
@@ -54,9 +46,8 @@
 #define SLEEP_100_MS                                (100)
 #define MAX_RETRY_CNT_FOR_SMMU_CONFIGURE_GPBA_CHECK (50)
 
-#if defined(FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP)
-    #define HSSS_DFP_TOP_KD_CDEDSS_HSP_AXI_ADDRESS (0xffffff0000000U)
-#endif /* FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP */
+/* TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023639/ to revisit after boot chain stabilizes */
+#define HSSS_DFP_TOP_KD_CDEDSS_HSP_AXI_ADDRESS (0xffffff0000000U)
 
 #define ITCM_BIT_EN  0x1
 #define ITCM_BIT_DIS 0x0
@@ -79,13 +70,13 @@ typedef enum
 {
     EMCPU_ITCM_LOAD,
     EMCPU_DTCM_LOAD,
-    EMCPU_LOAD_MAX,
+    EMCPU_RELEASE_CPU_WAIT,
 } emcpu_fw_load_t;
 
 typedef struct _emcpu_mbox_buffs
 {
-    kng_hsp_mailbox_msg recv_buff;             // Buffer to hold HSP response for FW load
-    kng_hsp_mailbox_cmd_load_fw_req send_buff; // Buffer to hold HSP FW load command
+    kng_hsp_mailbox_msg recv_buff;                   // Buffer to hold HSP response for FW load
+    kng_hsp_mailbox_cmd_load_fw_64bit_req send_buff; // Buffer to hold HSP FW load command
 } emcpu_mbox_buffs_t;
 
 typedef struct _emcpu_mbox_struct
@@ -93,6 +84,7 @@ typedef struct _emcpu_mbox_struct
     fpfw_icc_base_recv_req_t recv_params;
     fpfw_icc_base_send_req_t send_params;
     emcpu_fw_load_t load_stage;
+    bool is_cold_boot;
 } emcpu_mbox_struct_t;
 
 typedef struct _emcpu_rst_struct
@@ -114,6 +106,7 @@ static uint32_t accel_intr_atu_map_address[MAX_ACCELERATOR_TYPES];
 // Forward declaring static function to allow for creation of struct
 static void request_accel_fw_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status);
 static void request_send_complete_cb(void* context, fpfw_status_t status);
+static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt);
 
 /*------------------- Declarations (Statics and globals) --------------------*/
 
@@ -121,17 +114,17 @@ static void request_send_complete_cb(void* context, fpfw_status_t status);
 static emcpu_mbox_buffs_t mbox_buffs[MAX_ACCELERATOR_TYPES] = {
     {.send_buff =
          {
-             .header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ, .context = 0},
+             .header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ, .context = 0},
          }},
     {.send_buff = {
-         .header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ, .context = 0},
+         .header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ, .context = 0},
      }}};
 
 static emcpu_rst_struct_t cpu_rst_info[MAX_ACCELERATOR_TYPES] = {
     {.mbox_params = {.recv_params = {.payload_buffer = &mbox_buffs[ACCELERATOR_SDMSS].recv_buff,
                                      .buffer_size = sizeof(mbox_buffs[ACCELERATOR_SDMSS].recv_buff),
                                      .cb = request_accel_fw_load_complete_notify,
-                                     .recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_RSP},
+                                     .recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP},
                      .send_params = {.payload_buffer = &mbox_buffs[ACCELERATOR_SDMSS].send_buff,
                                      .buffer_size = sizeof(mbox_buffs[ACCELERATOR_SDMSS].send_buff),
                                      .cb = request_send_complete_cb}},
@@ -139,7 +132,7 @@ static emcpu_rst_struct_t cpu_rst_info[MAX_ACCELERATOR_TYPES] = {
     {.mbox_params = {.recv_params = {.payload_buffer = &mbox_buffs[ACCELERATOR_CDEDSS].recv_buff,
                                      .buffer_size = sizeof(mbox_buffs[ACCELERATOR_CDEDSS].recv_buff),
                                      .cb = request_accel_fw_load_complete_notify,
-                                     .recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_RSP},
+                                     .recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP},
                      .send_params = {.payload_buffer = &mbox_buffs[ACCELERATOR_CDEDSS].send_buff,
                                      .buffer_size = sizeof(mbox_buffs[ACCELERATOR_CDEDSS].send_buff),
                                      .cb = request_send_complete_cb}},
@@ -148,7 +141,12 @@ static emcpu_rst_struct_t cpu_rst_info[MAX_ACCELERATOR_TYPES] = {
 /*--------------------------------- Externs ---------------------------------*/
 
 /*----------------------------- Static Functions ----------------------------*/
-#if defined(FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP)
+/*
+TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023639/ to revisitthe following functions after boot chain stabilizes:
+- init_hsp_cdedss_tower_atu_map
+- init_hsp_cdedss_tower_atu_unmap
+- init_hsp_cdedss_tower
+*/
 static int32_t init_hsp_cdedss_tower_atu_map(atu_map_entry_t* p_cdeedss_tower_atu_map_entry)
 {
     p_cdeedss_tower_atu_map_entry->mscp_start_address = 0;                                    // 0x78000000;
@@ -212,7 +210,6 @@ static int32_t init_hsp_cdedss_tower(atu_map_entry_t* p_cdeedss_tower_atu_map_en
 
     return ret;
 }
-#endif /* FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP */
 
 static eACCELERATOR_TYPE get_accelip_type(ACCELIP_SS_INSTANCE accel_type)
 {
@@ -232,6 +229,45 @@ static eACCELERATOR_TYPE get_accelip_type(ACCELIP_SS_INSTANCE accel_type)
     }
 }
 
+static void accel_fw_download(subsystem_ctxt_t* p_ss_ctxt, eACCELERATOR_TYPE accel_type)
+{
+    cpu_rst_info[accel_type].mbox_params.is_cold_boot = true;
+    cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_ITCM_LOAD;
+
+    /*
+    If HSP is not present on the platform simply return. Do not request an HSP download
+    TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023639/ to revisit after boot chain stabilizes
+    */
+    if (!system_info_is_hsp_present())
+    {
+        return;
+    }
+
+    /* CDED FW Download from HSP results in a Hard Fault. Bypassing invoke_hsp_accel_fw_download for SVP
+    Raised ADO here: https://azurecsi.visualstudio.com/1P-SoC-Modeling/_workitems/edit/2026582 */
+    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+    {
+        for (uint8_t dload_stage = 0; dload_stage <= EMCPU_RELEASE_CPU_WAIT; dload_stage++)
+        {
+            fpfw_status_t status = invoke_hsp_accel_fw_download(p_ss_ctxt);
+
+            if (status != FPFW_STATUS_SUCCESS)
+            {
+                debug_print("Firmware download failed with status: %d\n", status);
+                return;
+            }
+
+            // callback is explicitly invoked here because compiler incorrectly warns of a recursive call
+            // if the callback is invoked inside the download function
+            if (dload_stage != (EMCPU_RELEASE_CPU_WAIT))
+            {
+                // The last fw_download is to release cpuwait and cb should be skipped
+                request_accel_fw_load_complete_notify(p_ss_ctxt, 0x0, status); // The output size is unused and hence passed as 0
+            }
+        }
+    }
+}
+
 static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
 {
     int32_t ret = ACCEL_RET_SUCCESS;
@@ -245,14 +281,11 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
 
     if (accel_type == ACCELERATOR_CDEDSS)
     {
-
-#ifdef FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP
-        // NOTE: The SVP version must be updated to allow for a HSP that can program the tower
-        // This check is to allow boot to continue on SVP when HSP is not part of vpconfig
-        atu_map_entry_t cdeedss_tower_atu_map_entry = {0};
-
+        /* TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023639/ to revisit after boot chain stabilizes */
         if ((idsw_get_platform_sdv() == PLATFORM_SVP_SIM) && (!system_info_is_hsp_present()))
         {
+            atu_map_entry_t cdeedss_tower_atu_map_entry = {0};
+
             ret = init_hsp_cdedss_tower(&cdeedss_tower_atu_map_entry);
             if (ret != ACCEL_RET_SUCCESS)
             {
@@ -261,7 +294,6 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
             }
         }
         else
-#endif /* FEATURE_SVP_WA_INIT_CDEDSS_TOWER_ON_BEHALF_OF_HSP */
         {
             /*
              * The HSP FW now supports CDEDSS Tower configurations.
@@ -283,10 +315,9 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
 
     accel_intr_atu_map_address[get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type)] = atu_map_entry.mscp_start_address;
 
-    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+    // Disable fw_preload_enabled if running on any Hardware, and if HSP is not present on that hardware
+    if ((!system_info_is_hsp_present()) && (idsw_get_platform_sdv() != PLATFORM_SVP_SIM))
     {
-        // On FPGA, SDM and CDED Firmware are not preloaded in the respective ITCMs. (Hence setting to false for FPGA)
-        // This will enable silibs to load the spin loop firmware in the ITCM before releasing the cores from reset.
         p_ss_ctxt->p_init_params->fw_preload_enabled = false;
     }
 
@@ -297,6 +328,12 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
         return ACCEL_RET_FAIL_SS_INIT;
     }
 
+    /*
+    TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023638/
+    How do we handle SDM firmware download in SCP warm boot scenario?
+     */
+    info_print("%s: Invoking accel fw download\n", __func__);
+    accel_fw_download(p_ss_ctxt, accel_type);
 /**
  * TODO: Task 1982595: [SCP] Accel IP Move to Static ATU map
  */
@@ -393,53 +430,80 @@ static void request_send_complete_cb(void* context, fpfw_status_t status)
     FPFW_UNUSED(status);
 }
 
-static void invoke_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
+static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
 {
-    eACCELERATOR_TYPE accel_type = get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type);
+    fpfw_status_t status = FPFW_STATUS_SUCCESS;
+
     fpfw_icc_base_ctx_t* icc_ctx = fpfw_init_get_handle("icc_hspmbx");
+    if (icc_ctx == NULL)
+    {
+        return FPFW_STATUS_FAIL;
+    }
+
+    eACCELERATOR_TYPE accel_type = get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type);
+
     char accel_name[7];
     uint32_t ext_cfg_offset_addr = get_accel_name_and_offset_addr(accel_type, accel_name);
+    size_t recv_msg_size_bytes = 0x0;
 
     debug_print("%s: %s Accel CPU Boot Stage: %d\n",
                 __func__,
                 accel_name,
                 cpu_rst_info[accel_type].mbox_params.load_stage);
 
+    /* Form the packet to request HSP to load accelerator firmware.
+    Each accelerator (SDM/CDED-SDM) has 2 bins to be loaded; one each for ITCM and DTCM.
+    After both bins are requested, there's one more stage where the SCP releases the accelerator's CPU wait.
+    This function executes 3 times for each accelerator in case of cold boot */
+    mbox_buffs[accel_type].send_buff.header.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ;
     switch (cpu_rst_info[accel_type].mbox_params.load_stage)
     {
     case EMCPU_ITCM_LOAD:
         cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_DTCM_LOAD;
-        mbox_buffs[accel_type].send_buff.address = p_ss_ctxt->mem_info.itcm_bin_addr;
-        mbox_buffs[accel_type].send_buff.size = p_ss_ctxt->mem_info.itcm_bin_size;
         mbox_buffs[accel_type].send_buff.id =
-            accel_type == ACCELERATOR_SDMSS ? HSP_FIRMWARE_ID_SDM_ITCM : HSP_FIRMWARE_ID_CDED_ITCM;
+            (accel_type == ACCELERATOR_SDMSS) ? HSP_FIRMWARE_ID_SDM_ITCM : HSP_FIRMWARE_ID_CDED_ITCM;
+        mbox_buffs[accel_type].send_buff.load_addr_low = p_ss_ctxt->mem_info.itcm_load_addr_low;
+        mbox_buffs[accel_type].send_buff.load_addr_high = p_ss_ctxt->mem_info.itcm_load_addr_high;
+
         cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_ITCM_FW_LOAD_INVOKED;
         break;
     case EMCPU_DTCM_LOAD:
-        cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_LOAD_MAX;
-        mbox_buffs[accel_type].send_buff.address = p_ss_ctxt->mem_info.dtcm_bin_addr;
-        mbox_buffs[accel_type].send_buff.size = p_ss_ctxt->mem_info.dtcm_bin_size;
+        cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_RELEASE_CPU_WAIT;
         mbox_buffs[accel_type].send_buff.id =
-            accel_type == ACCELERATOR_SDMSS ? HSP_FIRMWARE_ID_SDM_DTCM : HSP_FIRMWARE_ID_CDED_DTCM;
+            (accel_type == ACCELERATOR_SDMSS) ? HSP_FIRMWARE_ID_SDM_DTCM : HSP_FIRMWARE_ID_CDED_DTCM;
+        mbox_buffs[accel_type].send_buff.load_addr_low = p_ss_ctxt->mem_info.dtcm_load_addr_low;
+        mbox_buffs[accel_type].send_buff.load_addr_high = p_ss_ctxt->mem_info.dtcm_load_addr_high;
+
         cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_DTCM_FW_LOAD_INVOKED;
         break;
-    case EMCPU_LOAD_MAX:
+    case EMCPU_RELEASE_CPU_WAIT:
         // Load complete, this is the final load callback hence returning
         sdm_init_disable_cpu_wait((accel_intr_atu_map_address[accel_type] + ext_cfg_offset_addr));
         debug_print("%s: %s Accel CPU is now running\n", __func__, accel_name);
         cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_CPU_RECOVERY_COMPLETE;
-        cpu_rst_info[accel_type].cb_fun(cpu_rst_info[accel_type].cb_ctx);
-        return;
+        // skip callback for cold boot
+        if (!cpu_rst_info[accel_type].mbox_params.is_cold_boot)
+        {
+            cpu_rst_info[accel_type].cb_fun(cpu_rst_info[accel_type].cb_ctx);
+        }
+        return status;
     default:
         BUG_ASSERT(false);
         break;
     }
 
-    fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &cpu_rst_info[accel_type].mbox_params.recv_params);
-    BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
-
-    status = fpfw_icc_base_send(icc_ctx, &cpu_rst_info[accel_type].mbox_params.send_params);
-    BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
+    if (cpu_rst_info[accel_type].mbox_params.is_cold_boot)
+    {
+        status = fpfw_icc_base_send_recv_sync(icc_ctx, &mbox_buffs[accel_type].send_buff, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
+    }
+    else
+    {
+        status = fpfw_icc_base_recv(icc_ctx, &cpu_rst_info[accel_type].mbox_params.recv_params);
+        BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
+        status = fpfw_icc_base_send(icc_ctx, &cpu_rst_info[accel_type].mbox_params.send_params);
+        BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
+    }
+    return status;
 }
 
 static void request_accel_fw_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -449,15 +513,20 @@ static void request_accel_fw_load_complete_notify(void* context, size_t output_s
 
     FPFW_UNUSED(context);
     FPFW_UNUSED(output_size_bytes);
-
     cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_MBOX_RSP_RXED;
-    debug_print("%s: Accel Load Complete RXed\n", __func__);
-
+    debug_print("%s: Accel Load Complete RXed(0x%x)\n", __func__, status);
     BUG_ASSERT(status == FPFW_STATUS_SUCCESS);
-    BUG_ASSERT(mbox_buffs[accel_type].recv_buff.header.cmd == HSP_MAILBOX_CMD_LOAD_FW_RSP);
-    BUG_ASSERT(mbox_buffs[accel_type].recv_buff.rsp.status == FPFW_STATUS_SUCCESS);
 
-    invoke_accel_fw_download(p_ss_ctxt);
+    if (!cpu_rst_info[accel_type].mbox_params.is_cold_boot)
+    {
+        BUG_ASSERT(mbox_buffs[accel_type].recv_buff.header.cmd == HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+        BUG_ASSERT(mbox_buffs[accel_type].recv_buff.rsp.status == FPFW_STATUS_SUCCESS);
+        invoke_hsp_accel_fw_download(p_ss_ctxt);
+    }
+    else
+    {
+        BUG_ASSERT(mbox_buffs[accel_type].send_buff.header.cmd == HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    }
 }
 
 static void emcpu_recovery_sequence(uintptr_t sdm_ext_cfg_base, subsystem_ctxt_t* p_ss_ctxt)
@@ -488,15 +557,9 @@ static void emcpu_recovery_sequence(uintptr_t sdm_ext_cfg_base, subsystem_ctxt_t
 
     debug_print("%s: M7 in CPUWAIT\n", __func__);
 
-    if (system_info_is_hsp_present())
-    {
-        cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_ITCM_LOAD;
-        // Invoke FW download command only if HSP is available
-        invoke_accel_fw_download(p_ss_ctxt);
-    }
-
     // TODO: ADO: 1984962 Temporary WAR to keep SDM in stable loop until HSP firmware download is enabled
     // This needs to be executed only when HSP is not present when FW download is implemented
+    // Reset programming moved here since cpuwait will directly be released for non hsp platforms
     volatile uint32_t* fw_dest_addr = (uint32_t*)(sdm_ext_cfg_base + SDM_EXT_CFG_EMCPU_TCM_ITCM_ADDRESS);
     volatile uint32_t* fw_src_addr = (uint32_t*)(p_ss_ctxt->p_init_params->sdm_emcpu_fw_image_start_addr);
     size_t fw_image_size = (size_t)(p_ss_ctxt->p_init_params->sdm_emcpu_fw_image_size);
@@ -504,6 +567,26 @@ static void emcpu_recovery_sequence(uintptr_t sdm_ext_cfg_base, subsystem_ctxt_t
     for (i = 0; i < fw_image_size; i += 4)
     {
         *fw_dest_addr++ = *fw_src_addr++;
+    }
+
+    /*
+    Invoke FW download command only if HSP is available
+    TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023639/ to revisit after boot chain stabilizes
+    */
+    if (system_info_is_hsp_present())
+    {
+        cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_ITCM_LOAD;
+        cpu_rst_info[accel_type].mbox_params.is_cold_boot = false;
+        invoke_hsp_accel_fw_download(p_ss_ctxt);
+    }
+    else
+    {
+        // Release SDM cpuwait and update stages and invoke callback
+        cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_RELEASE_CPU_WAIT;
+        sdm_init_disable_cpu_wait((sdm_ext_cfg_base));
+        debug_print("%s: Accel CPU is now running\n", __func__);
+        cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_CPU_RECOVERY_COMPLETE;
+        cpu_rst_info[accel_type].cb_fun(cpu_rst_info[accel_type].cb_ctx);
     }
 
     debug_print("%s: FW LOAD SENT\n", __func__);
@@ -589,7 +672,7 @@ int32_t scp_accelerators_isolation_control(void)
     }
     return ret;
 }
-
+/* TODO: Review use of BUG_ASSERT (vis a vis ASSERT) in accelIP init sequence https://azurecsi.visualstudio.com/Dev/_workitems/edit/2025877/ */
 void scp_accelerators_emcpu_reset(eACCELERATOR_TYPE accel_type, crash_dump_cb_t cb_fun, void* cb_ctx)
 {
     uint32_t accel_ctxt_size = 0x0;

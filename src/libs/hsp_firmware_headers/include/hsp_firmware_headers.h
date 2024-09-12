@@ -18,6 +18,7 @@
 /*-------------- Typedefs ----------------*/
 typedef union HSP_BOOT_METADATA HSP_BOOT_METADATA;
 typedef struct kng_hsp_mailbox_cmd_load_fw_req kng_hsp_mailbox_cmd_load_fw_req;
+typedef struct kng_hsp_mailbox_cmd_load_fw_64bit_req kng_hsp_mailbox_cmd_load_fw_64bit_req;
 
 typedef enum _HSP_MAILBOX_RSP_STATUS {
 	HSP_MAILBOX_RSP_STATUS_SUCCESS = 0,

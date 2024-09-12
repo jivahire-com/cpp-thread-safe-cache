@@ -1,5 +1,30 @@
 version = 1
 
+[lock.echofalls-pe_uefi."fpga.debug"."*"]
+file = "echofalls-pe_uefi"
+flavor = "fpga.debug"
+version = "1.10.0.102"
+
+[lock.echofalls-pe_management_mode."fpga.debug"."*"]
+file = "echofalls-pe_management_mode"
+flavor = "fpga.debug"
+version = "1.10.0.102"
+
+[lock.echofalls-pe_spm.debug."*"]
+file = "echofalls-pe_spm"
+flavor = "debug"
+version = "1.10.0.16"
+
+[lock.echofalls-rmm.debug."*"]
+file = "echofalls-rmm"
+flavor = "debug"
+version = "1.10.0.27"
+
+[lock.echofalls-spmc_manifest.debug."*"]
+file = "echofalls-spmc_manifest"
+flavor = "debug"
+version = "1.10.0.98"
+
 [lock."datwizard.preview".x86_64-pc-windows-msvc."*"]
 file = "datwizard.preview"
 flavor = "x86_64-pc-windows-msvc"

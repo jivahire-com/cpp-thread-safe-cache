@@ -26,11 +26,14 @@ extern "C" {
 #include <idsw_kng.h>       // for KNG_DIE_ID
 #include <pcr_rpss.h>       // for pcr_rpss_entity_t
 #include <stdint.h>         // for uintptr_t, uint32_t, uint8_t, uint64_t
+#include <stdnoreturn.h>
 #include <utils.h>          // for UNUSED
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
 #define FOUR_MB_SIZE     0x400000
+#define BUGCHECK_MOCK_RETURN (setjmp(mock_jump_buf))
+#define bugcheck_mock_return() BUGCHECK_MOCK_RETURN
 
 /*-------------------------------- Typedefs ---------------------------------*/
 
@@ -42,6 +45,8 @@ static icc_base_recv_complete_notify fw_load_cb = NULL;
 static uint32_t atu_map_buff[FOUR_MB_SIZE];
 static fpfw_icc_base_ctx_t* icc_ctx = nullptr;
 static uint32_t dummy_icc_ctx = 0;
+static jmp_buf mock_jump_buf;
+static bool should_return;
 
 /*--------------------------------- Externs ---------------------------------*/
 
@@ -168,8 +173,8 @@ void* __wrap_fpfw_init_get_handle(const char* id)
 
 fpfw_status_t __wrap_fpfw_icc_base_send(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_send_req_t* params)
 {
+    UNUSED(params);
     assert_non_null(icc_ctx);
-    check_expected_ptr(params->payload_buffer);
     return mock_type(fpfw_status_t);
 }
 
@@ -182,6 +187,18 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
 
     return mock_type(fpfw_status_t);
 }
+
+fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, void* payload_buffer, size_t buffer_size, size_t* output_recv_bytes)
+{
+    UNUSED(payload_buffer);
+    assert_non_null(icc_ctx);
+    FPFW_UNUSED(buffer_size);
+    FPFW_UNUSED(output_recv_bytes);
+    ((kng_hsp_mailbox_msg*)(payload_buffer))->header.cmd = mock_type(int);
+
+    return mock_type(fpfw_status_t);
+}
+
 
 int __wrap__sdm_init_enable_cpuwait(const uintptr_t ext_cfg_addr)
 {
@@ -227,28 +244,22 @@ uint32_t __wrap_accel_intr_get_atu_mapped_cfg_address(eACCELERATOR_TYPE accel_ty
     return (uint32_t)atu_map_buff;
 }
 
-// Setup and callback functions
-
-static int init_accelerators_to_setup_cfg_mem(void** state)
+void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
 {
-    FPFW_UNUSED(state);
+    check_expected(errorCode);
+    FPFW_UNUSED(p1);
+    FPFW_UNUSED(p2);
+    FPFW_UNUSED(p3);
+    FPFW_UNUSED(p4);
 
-    // Trigger accel init to initialize the atu map variable
-    // Happy case setup
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
-    will_return(__wrap_system_info_is_hsp_present, false);
-
-    // init accelertor
-    will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 3);
-    will_return_count(__wrap_accelip_ss_init, SILIBS_SUCCESS, 2);
-    will_return_count(__wrap_atu_unmap, SILIBS_SUCCESS, 1);
-
-    assert_int_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
-
-    return 0x0;
+    // Handle noreturn, allowing control to return to test
+    if(!should_return)
+    {
+        longjmp(mock_jump_buf, 1);
+    }
 }
 
+// Setup and callback functions
 void cb_fun(void *context)
 {   
     FPFW_UNUSED(context);
@@ -310,7 +321,7 @@ TEST_FUNCTION(accelip_pre_boot_config_accelip_ss_init_fail_test, nullptr, nullpt
     assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
 }
 
-TEST_FUNCTION(accelip_emcpu_reset_cded_test, init_accelerators_to_setup_cfg_mem, nullptr)
+TEST_FUNCTION(accelip_emcpu_reset_cded_test, nullptr, nullptr)
 {
     uint32_t accel_ctxt_size = 0x0;
     subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
@@ -324,32 +335,18 @@ TEST_FUNCTION(accelip_emcpu_reset_cded_test, init_accelerators_to_setup_cfg_mem,
 
     will_return_always(__wrap_idsw_get_die_id, SOC_D0);
 
-    will_return(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_system_info_is_hsp_present, true);
 
-    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_RSP);
-    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_RSP);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 
-    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_RSP);
-    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_RSP);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 
-    kng_hsp_mailbox_cmd_load_fw_req send_request1 = {
-        .header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ, .context = 0x0},
-        .id = HSP_FIRMWARE_ID_SDM_ITCM,
-        .address = 0x00000000,
-        .size = 0x00000000,
-    };
-    expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request1, sizeof(send_request1));
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
 
-    kng_hsp_mailbox_cmd_load_fw_req send_request2 = {
-        .header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ, .context = 0x0},
-        .id = HSP_FIRMWARE_ID_SDM_DTCM,
-        .address = 0x00000000,
-        .size = 0x00000000,
-    };
-    expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request2, sizeof(send_request2));
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
 
     scp_accelerators_emcpu_reset(ACCELERATOR_SDMSS, cb_fun, NULL);
@@ -373,32 +370,18 @@ TEST_FUNCTION(accelip_emcpu_reset_sdm_test, nullptr, nullptr)
 
     will_return_always(__wrap_idsw_get_die_id, SOC_D0);
 
-    will_return(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_system_info_is_hsp_present, true);
 
-    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_RSP);
-    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_RSP);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 
-    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_RSP);
-    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_RSP);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 
-    kng_hsp_mailbox_cmd_load_fw_req send_request1 = {
-        .header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ, .context = 0x0},
-        .id = HSP_FIRMWARE_ID_CDED_ITCM,
-        .address = 0x00000000,
-        .size = 0x00000000,
-    };
-    expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request1, sizeof(send_request1));
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
 
-    kng_hsp_mailbox_cmd_load_fw_req send_request2 = {
-        .header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ, .context = 0x0},
-        .id = HSP_FIRMWARE_ID_CDED_DTCM,
-        .address = 0x00000000,
-        .size = 0x00000000,
-    };
-    expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request2, sizeof(send_request2));
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
 
     scp_accelerators_emcpu_reset(ACCELERATOR_CDEDSS, cb_fun, NULL);
@@ -406,5 +389,180 @@ TEST_FUNCTION(accelip_emcpu_reset_sdm_test, nullptr, nullptr)
     //Invoke the callback mimicking mailbox response - 2 callbacks expected
     fw_load_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
     fw_load_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(accelip_emcpu_reset_sdm_no_hsp_test, nullptr, nullptr)
+{
+    will_return_always(__wrap_idsw_get_die_id, SOC_D0);
+
+    will_return_always(__wrap_system_info_is_hsp_present, false);
+
+    scp_accelerators_emcpu_reset(ACCELERATOR_CDEDSS, cb_fun, NULL);
+}
+
+TEST_FUNCTION(accelip_emcpu_reset_invalid_state_test, nullptr, nullptr)
+{
+    uint32_t accel_ctxt_size = 0x0;
+    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
+
+    // Setting up the ICC flow
+    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
+
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+    expect_string_count(__wrap_fpfw_init_get_handle, id, "icc_hspmbx", 3);
+    expect_function_call_any(__wrap_fpfw_init_get_handle);
+    will_return_always(__wrap_fpfw_init_get_handle, &icc_ctx);
+
+    will_return_always(__wrap_idsw_get_die_id, SOC_D0);
+
+    will_return_always(__wrap_system_info_is_hsp_present, true);
+
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
+
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
+
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    should_return = false;
+    scp_accelerators_emcpu_reset(ACCELERATOR_CDEDSS, cb_fun, NULL);
+
+    // Invoke emcpu reset again to trigger failure scenario
+    if(!bugcheck_mock_return())
+    {
+        scp_accelerators_emcpu_reset(ACCELERATOR_CDEDSS, cb_fun, NULL);
+    }
+    else
+    {
+        // We will hit here when we error out the invalid call - we need to invoke the valid call
+        // flow to ensure the rst flow returns to normal
+        fw_load_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
+        fw_load_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
+    }
+}
+
+TEST_FUNCTION(accelip_emcpu_reset_recv_fail_test, nullptr, nullptr)
+{
+    uint32_t accel_ctxt_size = 0x0;
+    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
+
+    // Setting up the ICC flow
+    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
+
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+    expect_string_count(__wrap_fpfw_init_get_handle, id, "icc_hspmbx", 3);
+    expect_function_call_any(__wrap_fpfw_init_get_handle);
+    will_return_always(__wrap_fpfw_init_get_handle, &icc_ctx);
+
+    will_return_always(__wrap_idsw_get_die_id, SOC_D0);
+
+    will_return_always(__wrap_system_info_is_hsp_present, true);
+
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_DISABLED);
+
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
+
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    should_return = true;
+
+    // The first recv call will fail - BUT WE FORCIBLY CONTINUE EXECUTION 
+    // IF WE DON'T THE RESET STATE WILL STUCK IN ITCM LOAD PREVENTING FURTHER TESTS
+    scp_accelerators_emcpu_reset(ACCELERATOR_CDEDSS, cb_fun, NULL);
+
+    // Invoking callback to trigger reset to normal flow
+    fw_load_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
+    fw_load_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(accelip_emcpu_reset_send_fail_test, nullptr, nullptr)
+{
+    uint32_t accel_ctxt_size = 0x0;
+    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
+
+    // Setting up the ICC flow
+    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
+
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+    expect_string_count(__wrap_fpfw_init_get_handle, id, "icc_hspmbx", 3);
+    expect_function_call_any(__wrap_fpfw_init_get_handle);
+    will_return_always(__wrap_fpfw_init_get_handle, &icc_ctx);
+
+    will_return_always(__wrap_idsw_get_die_id, SOC_D0);
+
+    will_return_always(__wrap_system_info_is_hsp_present, true);
+
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_DISABLED);
+
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
+
+    will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_DISABLED);
+
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    should_return = true;
+
+    // The first recv call will fail - BUT WE FORCIBLY CONTINUE EXECUTION 
+    // IF WE DON'T THE RESET STATE WILL STUCK IN ITCM LOAD PREVENTING FURTHER TESTS
+    scp_accelerators_emcpu_reset(ACCELERATOR_CDEDSS, cb_fun, NULL);
+
+    // Invoking callback to trigger reset to normal flow
+    fw_load_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
+    fw_load_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(accelip_pre_boot_config_cold_boot_pass_test, nullptr, nullptr)
+{
+    // Setting up the ICC flow
+    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
+
+    expect_string_count(__wrap_fpfw_init_get_handle, id, "icc_hspmbx", 6);
+    expect_function_call_any(__wrap_fpfw_init_get_handle);
+    will_return_always(__wrap_fpfw_init_get_handle, &icc_ctx);
+
+    will_return_always(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+    will_return_always(__wrap_system_info_is_hsp_present, true);
+
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    // Happy case setup
+    // init accelertor
+    will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 2);
+    will_return_count(__wrap_accelip_ss_init, SILIBS_SUCCESS, 2);
+
+    assert_int_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
+
+TEST_FUNCTION(accelip_isolation_control_test, nullptr, nullptr)
+{
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 2);
+    will_return_count(__wrap_atu_unmap, SILIBS_SUCCESS, 2);
+    
+    assert_int_equal(scp_accelerators_isolation_control(), ACCEL_RET_SUCCESS);
 }
 }

@@ -1,3 +1,11 @@
+#
+# Copyright (C) Microsoft Corporation. All rights reserved.
+#
+
+param (
+    [Parameter(Mandatory=$true)][string]$FileName
+)
+
 # Define the elf file and temp file paths
 $toolchain = $(Get-ChildItem -Path "Env:REPO_APP_PATH_gcc.arm.eabi.aarch-win64").Value
 $sizeTool = Join-Path -Path $toolchain -ChildPath 'bin\arm-none-eabi-size.exe'
@@ -15,7 +23,7 @@ elseif (-not (Test-Path $FileName)) {
     exit
 }
 else {
-    Write-Host "Processing: $FileName"
+    Write-Host "Binsize Processing: $FileName"
     $elfFile = $FileName
     $tempFile = Join-Path -Path $currentDirectory -ChildPath "$([System.IO.Path]::GetFileNameWithoutExtension($FileName)).sizes"
 }
@@ -90,8 +98,25 @@ try {
         }
     )
 
+    foreach ($size in $sizes) {
+        if ($size.Current -ne 0) {
+            $size.Current = "{0,10} B ({1,10} KB)" -f $size.Current, [math]::Round($size.Current / 1KB, 2)
+        }
+        if ($size.Previous -ne 0) {
+            $size.Previous = "{0,10} B ({1,10} KB)" -f $size.Previous, [math]::Round($size.Previous / 1KB, 2)
+        }
+        if ($size.Difference -ne 0) {
+            $size.Difference = "{0,10} B ({1,10} KB)" -f $size.Difference, [math]::Round($size.Difference / 1KB, 2)
+        }
+    }
     # Output the differences in a tabular format
-    $sizes | Format-Table -AutoSize
+    
+    $sizes | Format-Table -Property `
+             @{Label="Type";Expression={$_.Type};Align="Right"}, `
+             @{Label="Current";Expression={$_.Current};Align="Right"}, `
+             @{Label="Previous";Expression={$_.Previous};Align="Right"}, `
+             @{Label="Difference";Expression={$_.Difference};Align="Right"} `
+             -AutoSize
 
     # Store the current build sizes for the next run
     $currentBuildSizes | ConvertTo-Json | Set-Content $tempFile

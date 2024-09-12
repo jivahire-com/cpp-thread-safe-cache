@@ -557,32 +557,14 @@ Invoke-Buildsize
 #>
 Function Invoke-Buildsize()
 {
-    if ($env:TF_BUILD)
-    {
-        # Don't output sizes if building in the pipeline
-        return
-    }
-
-    # ElfBuildSizes is an environment variable that is set to "one" by start.ps1
-    # Any other value causes all .elf files in the build directory to be processed for section sizes
-    if ($env:ElfBuildSizes -eq "one") {
-       # Calling binsizes script without a filename argument defaults to only scp_fw.elf
-       & "$env:REPO_APP_TOOLS_DIR\pwsh\binsize\binsizes.ps1"
-       return
-    }
-
     # Set up the path to search for elf files
     $BuildDirectory = Join-Path -Path $(Get-ChildItem -Path "Env:REPO_APP_TARGET_BUILD_DIR").Value -ChildPath 'bin'
 
     # Use Get-ChildItem to find all files with .elf extension in the directory
-    $elfFiles = Get-ChildItem -Path $BuildDirectory -Filter *.elf
-    $currentDirectory = Get-Location
+    $elfFiles = Get-ChildItem -Path $BuildDirectory -Recurse -Filter *fw.elf
 
     # Iterate over each .elf file
     foreach ($file in $elfFiles) {
-        $FileName = $($file.FullName)
-        $tempFile = Join-Path -Path $currentDirectory -ChildPath "$([System.IO.Path]::GetFileNameWithoutExtension($FileName)).sizes"
-
         # Process each .elf file for sizes
         & "$env:REPO_APP_TOOLS_DIR\pwsh\binsize\binsizes.ps1" -FileName $file
     }

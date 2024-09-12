@@ -1,7 +1,10 @@
+#
+# Copyright (C) Microsoft Corporation. All rights reserved.
+#
+
 param (
     [string] $Toolchain = "arm-eabi-aarch",
     [string] $Configuration = "Debug",
-    [string] $ElfBuildSizes = "one",
     [boolean] $SkipEnv = $false,
     [boolean] $MSCP_vUART = $false
 )
@@ -17,9 +20,6 @@ foreach ($Module in $Modules) {
 if (-not $SkipEnv) {
     Set-RepoEnv -Toolchain $Toolchain -Configuration $Configuration -MSCP_vUART $MSCP_vUART
 }
-
-# Set environment variable to dictate if one/all .elf files are parsed for size
-$env:ElfBuildSizes = $ElfBuildSizes
 
 # Dump help block for SVP and FPGA Debug
 Get-SvpHelp

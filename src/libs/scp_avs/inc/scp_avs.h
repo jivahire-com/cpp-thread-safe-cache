@@ -17,11 +17,21 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
-#define AVS_ERROR_NONE          0x00
+// bits 21 and 22 = Target ACK
+// bits 16 - 20 = status response. (VDone bit 20, StatusAlert bit 19, AVS_Control bit 18, MfrSpec 17 and 16)
+
+#define AVS_ERROR_NONE                  0x00
+#define AVS_ERROR_CRC                   0x01  // Interrupt CRC error
+#define AVS_ERROR_ACK_NO_ACTION_BUSY    0x02  // TargetAck = 0x01 Good CRC, no action taken, resource busy
+#define AVS_ERROR_ACK_BAD_CRC_NO_ACTION 0x04  // TargetAck = 0x10 Bad CRC, no action taken
+#define AVS_ERROR_ACK_INVALID_NO_ACTION 0x08  // TargetAck = 0x11 Good CRC, invalid selector, data type or incorrect data. No action taken
+#define AVS_VDONE                       0x10  // VDone - bit
+#define AVS_ERROR_STATUS_ALERT          0x20  // StatusAlert bit 19 in response.
+#define AVS_NO_CONTROL                  0x40  // AVS_Ctrl StatusResponse bit (1 when controlling AVS output, 0 when not) set this bit when no control
+
 #define AVS_STATUS_MASK         0x01
 #define AVS_ERR_ACK_MASK        0x03
-#define AVS_VDONE               0x10  
-#define AVS_NO_CONTROL          0x40  
+
 #define AVS_ERROR_STATUS_ONLY (AVS_VDONE | AVS_NO_CONTROL)
 #define AVS_ANY_ERROR         (~AVS_ERROR_STATUS_ONLY)
 
@@ -132,9 +142,9 @@ typedef struct _scp_avs_vr_vct_t {
     uint16_t voltage_mV;      // 1LSB=1mV
     uint16_t current_cA;      // 1LSB=10mA
     uint16_t temperature_dC;  // 1LSB=0.1 Celsius
-    uint8_t error_voltage;
-    uint8_t error_current;
-    uint8_t error_temperature;
+    avs_error_t error_voltage;
+    avs_error_t error_current;
+    avs_error_t error_temperature;
 } scp_avs_vr_vct_t;
 
 typedef struct _scp_avs_error_count_t {
@@ -146,15 +156,18 @@ typedef struct _scp_avs_error_count_t {
 } scp_avs_error_count_t, *pscp_avs_error_count;
 
 /*--------- Function Prototypes ----------*/
-
-/*!
- * \brief Checks the data read for errors.
+/**
  *
- * \details bits 21 and 22 = Target ACK
- * bits 16 - 20 = status response. (VDone bit 20, StatusAlert bit 19, AVS_Control bit 18, MfrSpec 17 and 16)
+ *    Checks the data read for errors.
+ *
+ *    @param[in]  resp_data Data read from the AVSBus following a read/write.
  * 
+ *    @retval The error (i.e. AVS_ERROR_ACK_NO_ACTION_BUSY, AVS_ERROR_STATUS_ALERT, etc.)
+ * 
+ *    @brief The resp_data contains of the following: 
+ *              target ACK (bits 21 and 22), 
+ *              status response (bits 16 - 20), 
+ *              data read (bits 0 - 15)
  *
- * \param resp_data Data read from the AVSBus following a read/write.
- * \retval error (i.e. AVS_ERROR_ACK_NO_ACTION_BUSY, AVS_ERROR_STATUS_ALERT, etc.).
  */
-uint8_t scp_avs_status_error(uint32_t resp_data);
+avs_error_t scp_avs_status_error(uint32_t resp_data);

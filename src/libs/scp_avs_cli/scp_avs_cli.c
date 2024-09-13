@@ -29,6 +29,7 @@ static FPFW_CLI_STATUS scp_avs_write_data_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS scp_avs_read_vct_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS scp_avs_read_multi_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS scp_avs_write_multi_cli(int argc, const char** argv);
+static FPFW_CLI_STATUS scp_avs_get_error_count_cli(int argc, const char** argv);
 
 /*-- Declarations (Statics and globals) --*/
 static uint8_t max_num_avs_bus = 0;
@@ -47,7 +48,7 @@ static FPFW_CLI_COMMAND scp_avs_cli_list[] = {
     {NULL_LIST_ENTRY, "avs", "avs_read_all", scp_avs_read_vct_cli, "AVS read VCT", "Usage: avs_read_all <avs bus number> <rail number>"},
     {NULL_LIST_ENTRY, "avs", "avs_read_m", scp_avs_read_multi_cli, "AVS read multi", "Usage: avs_read_multi <avs bus number> <command count> <rail> <cmd> <rail> <cmd>... Max CLI cmds accepted = 6"},
     {NULL_LIST_ENTRY, "avs", "avs_write_m", scp_avs_write_multi_cli, "AVS write multi", "Usage: avs_write_multi <avs bus number> <data (rail 0)> <data (rail 1)>"},
-
+    {NULL_LIST_ENTRY, "avs", "avs_error_c", scp_avs_get_error_count_cli, "AVS error count", "Usage: avs_error_count"},
 };
 
 /*------------- Functions ----------------*/
@@ -83,8 +84,8 @@ void AVSCLIRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Completio
         FpFwCliPrint("\n AVS voltage read.\n AVSBus = %d\n rail = %d\n AVS volt. = %d.%03d\n",
                      cli_avs_bus,
                      cli_avs_request.request.avs_params.avs_cmd_info.rail_id,
-                     ((cli_avs_request.request.avs_response_single_resp) / 1000),
-                     ((cli_avs_request.request.avs_response_single_resp) % 1000));
+                     ((cli_avs_request.request.avs_response_single_resp.data) / 1000),
+                     ((cli_avs_request.request.avs_response_single_resp.data) % 1000));
         break;
 
     case AVS_REQUEST_READ_DATA:
@@ -94,16 +95,16 @@ void AVSCLIRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Completio
             FpFwCliPrint("\n AVS voltage read.\n AVSBus = %d\n rail = %d\n AVS volt. = %d.%03d\n",
                          cli_avs_bus,
                          cli_avs_request.request.avs_params.avs_cmd_info.rail_id,
-                         ((cli_avs_request.request.avs_response_single_resp) / 1000),
-                         ((cli_avs_request.request.avs_response_single_resp) % 1000));
+                         ((cli_avs_request.request.avs_response_single_resp.data) / 1000),
+                         ((cli_avs_request.request.avs_response_single_resp.data) % 1000));
             break;
 
         case AVS_CURRENT_READ:
             FpFwCliPrint("\n AVS current read.\n AVSBus = %d\n rail = %d\n AVS current = %d.%02d\n",
                          cli_avs_bus,
                          cli_avs_request.request.avs_params.avs_cmd_info.rail_id,
-                         ((cli_avs_request.request.avs_response_single_resp) / 100),
-                         ((cli_avs_request.request.avs_response_single_resp) % 100));
+                         ((cli_avs_request.request.avs_response_single_resp.data) / 100),
+                         ((cli_avs_request.request.avs_response_single_resp.data) % 100));
             break;
 
         case AVS_TEMPERATURE_READ:
@@ -111,8 +112,8 @@ void AVSCLIRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Completio
                 "\n AVS temperature read.\n AVSBus = %d\n rail = %d\n AVS temperature_dC = %d.%01d\n",
                 cli_avs_bus,
                 cli_avs_request.request.avs_params.avs_cmd_info.rail_id,
-                ((cli_avs_request.request.avs_response_single_resp) / 10),
-                ((cli_avs_request.request.avs_response_single_resp) % 10));
+                ((cli_avs_request.request.avs_response_single_resp.data) / 10),
+                ((cli_avs_request.request.avs_response_single_resp.data) % 10));
             break;
 
         default:
@@ -379,6 +380,29 @@ static FPFW_CLI_STATUS scp_avs_write_multi_cli(int argc, const char** argv)
         FpFwCliPrint(" AVS write multi CLI Help\n");
         FpFwCliPrint("Cmds: 3, <avs_bus> <vr_data (rail 0)> <vr_data (rail 1)> \n");
         return CLI_ERROR;
+    }
+    return CLI_SUCCESS;
+}
+
+static FPFW_CLI_STATUS scp_avs_get_error_count_cli(int argc, const char** argv)
+{
+    UNUSED(argv);
+    FpFwCliPrint("\nscp_avs_get_error_count_cli func call\n");
+
+    if (argc == 1)
+    {
+        scp_avs_error_count_t resp_error_count = {0};
+        avs_get_error_counts(&resp_error_count);
+        FpFwCliPrint(" AVS crc_error_count = %d \n", resp_error_count.crc_error_count);
+        FpFwCliPrint(" AVS ack_no_action_busy_error_count = %d \n", resp_error_count.ack_no_action_busy_error_count);
+        FpFwCliPrint(" AVS avs ack_bad_crc_no_action_error_count = %d \n", resp_error_count.ack_bad_crc_no_action_error_count);
+        FpFwCliPrint(" AVS avs ack_invalid_no_action_error_count = %d \n", resp_error_count.ack_invalid_no_action_error_count);
+        FpFwCliPrint(" AVS avs status_alert_error_count = %d \n", resp_error_count.status_alert_error_count);
+    }
+    else
+    {
+        FpFwCliPrint(" AVS get error count CLI Help\n");
+        FpFwCliPrint("Cmds: 0 \n");
     }
     return CLI_SUCCESS;
 }

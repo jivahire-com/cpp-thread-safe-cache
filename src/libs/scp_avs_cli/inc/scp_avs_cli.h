@@ -45,3 +45,14 @@ typedef struct _avs_client_context_t
  */
 void scp_avs_cli_initialize(pscp_avs_interface_t avs_array[]);
 
+/**
+ *
+ *    Retrieves the AVS error counts
+ * 
+ *    @note This function is not thread safe.  
+ *
+ *    @param[in]  error_count_resp
+ *
+ */
+void avs_get_error_counts(scp_avs_error_count_t *error_count_resp);
+

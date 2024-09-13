@@ -42,7 +42,7 @@ typedef enum _scp_avs_rail_count_t {
 
 typedef struct _scp_avs_response_data_t {
     uint16_t data;
-    uint8_t error;
+    avs_error_t error;
 } scp_avs_response_data_t;
 
 typedef struct _scp_avs_response_multi_t {
@@ -53,7 +53,7 @@ typedef struct _scp_avs_request_t {
     DFWK_ASYNC_REQUEST_HEADER Header;
     union {
         scp_avs_vr_vct_t avs_response_vct;  // Response structure (scp_avs_vr_vct_t) used when reading AVS VCT. Have the client provide a pointer to this.
-        int16_t avs_response_single_resp;   // Single read of voltage (1LSB=1mV), current (1LSB=10mA), or temperature(1LSB=0.1C).
+        scp_avs_response_data_t avs_response_single_resp;   // Single read of voltage (1LSB=1mV), current (1LSB=10mA), or temperature(1LSB=0.1C).
         scp_avs_response_multi_t avs_resp_multi;
     };
     int avs_response_status;
@@ -63,6 +63,7 @@ typedef struct _scp_avs_request_t {
 typedef struct _scp_avs_isr_request_t {
     DFWK_ASYNC_REQUEST_HEADER Header;
     pscp_avs_request outstanding_client_request;
+    bool avs_crc_error;
 } scp_avs_isr_request_t, *pscp_avs_isr_request;
 
 /* 
@@ -98,6 +99,7 @@ typedef enum _scp_avs_status_t {
     SCP_AVS_STATUS_READ_ALL_VCT_FAIL,
     SCP_AVS_STATUS_READ_MULTI_FAIL,
     SCP_AVS_STATUS_WRITE_MULTI_FAIL,
+    SCP_AVS_STATUS_CRC_ERROR,
 } scp_avs_status_t;
 
 /*--------- Function Prototypes ----------*/
@@ -149,13 +151,6 @@ static inline void scp_avs_client_write_multi(PDFWK_INTERFACE_HEADER Interface, 
     avs_write_multi_request->Header.RequestType = AVS_REQUEST_WRITE_MULTI;
     DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext); 
     DfwkInterfaceSendAsync(Interface, Request);
-}
-
-static inline void scp_avs_get_error_counts(PDFWK_INTERFACE_HEADER Interface)
-{
-    scp_avs_get_request_t request;
-    request.Header.RequestType = AVS_GET_ERROR_COUNTS;
-    DfwkInterfaceSendSync(Interface, &request.Header);
 }
 
 /**

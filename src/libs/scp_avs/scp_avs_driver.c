@@ -31,8 +31,62 @@
 /*--------- Function Prototypes ----------*/
 
 /*-- Declarations (Statics and globals) --*/
+scp_avs_error_count_t avs_error_count = {0};
 
-/*-------------- Functions ---------------*/
+avs_error_t scp_avs_status_error(uint32_t resp_data)
+{
+    // bits 21 and 22 = target ACK
+    // bits 16 - 20 = status response. (VDone bit 20, StatusAlert bit 19, AVS_Control bit 18, MfrSpec 17 and
+    // 16) bits 0 - 15 = read data
+
+    avs_error_t scp_avs_error = {.as_uint8 = AVS_ERROR_NONE};
+
+    // Check for VDone status. 0 when the rail is off, powering up, or ramping to target.  1 when when voltage has reached target.
+    if ((resp_data >> AVS_VDONE_SHIFT) & AVS_STATUS_MASK)
+    {
+        scp_avs_error.v_done = 1;
+    }
+    if ((resp_data >> AVS_ERR_STAT_ALERT_SHIFT) & AVS_STATUS_MASK)
+    { // Check for Status Alert
+        scp_avs_error.status_alert = 1;
+        avs_error_count.status_alert_error_count++;
+    }
+
+    if (((resp_data >> AVS_NO_CONTROL_SHIFT) & AVS_STATUS_MASK) == 0x00)
+    { // Check for AVS_Control - bit set to 0 when not controlling AVS output
+        scp_avs_error.no_control = 1;
+    }
+
+    // Check the target Ack
+    if (((resp_data >> AVS_ERR_ACK_SHIFT) & AVS_ERR_ACK_MASK) == 0x01)
+    { // Check for Good CRC, but no action taken due to busy
+        scp_avs_error.no_action_busy = 1;
+        avs_error_count.ack_no_action_busy_error_count++;
+    }
+
+    if (((resp_data >> AVS_ERR_ACK_SHIFT) & AVS_ERR_ACK_MASK) == 0x02)
+    { // Check for bad CRC, no action taken
+        scp_avs_error.bad_crc_no_action = 1;
+        avs_error_count.ack_bad_crc_no_action_error_count++;
+    }
+
+    if (((resp_data >> AVS_ERR_ACK_SHIFT) & AVS_ERR_ACK_MASK) == 0x03)
+    { // Check for 0x11 Good CRC, but invalid
+        scp_avs_error.invalid_no_action = 1;
+        avs_error_count.ack_invalid_no_action_error_count++;
+    }
+
+    AVS_LOG_TRACE("Status Error: 0x%0x", error);
+    return (scp_avs_error);
+}
+
+void avs_get_error_counts(scp_avs_error_count_t* error_count_resp)
+{
+    FPFW_RUNTIME_ASSERT(error_count_resp != NULL);
+
+    // for CLI - grab the error count
+    *error_count_resp = avs_error_count;
+}
 
 /*
  * An IRQ is triggered if the transaction has been completed successfully or
@@ -47,8 +101,6 @@ void scp_avs_isr(void* context)
      * 2. Clear the CMD DONE interrupt status (will clear it even if not set).
      * 3. If the CMD DONE interrupt status bit is set enqueue the request
      *
-     * TODO: Update status handling for possible statuses
-     *       ADO: (https://azurecsi.visualstudio.com/Dev/_workitems/edit/1484968)
      */
 
     uint32_t intr_status = 0;
@@ -57,6 +109,15 @@ void scp_avs_isr(void* context)
 
     status = avs_clear_interrupt_status(device->avs_bus_num, AVS_IRQ_CMD_DONE);
     FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
+
+    // Note - the AVS_IRQ_CMD_DONE is also set with the AVS_IRQ_SLV_STATUS_CRC_ERR.
+    if ((intr_status & (AVS_IRQ_SLV_STATUS_CRC_ERR)))
+    {
+        AVS_LOG_WARN("CRC error detected on AVS bus %d", device->avs_bus_num);
+        device->isr_request.avs_crc_error = true;
+        status = avs_clear_interrupt_status(device->avs_bus_num, AVS_IRQ_SLV_STATUS_CRC_ERR);
+        FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
+    }
 
     if ((intr_status & (AVS_IRQ_CMD_DONE)))
     {
@@ -181,6 +242,7 @@ void scp_avs_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
 void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
 {
     pscp_avs_request original_request = ((pscp_avs_isr_request)Request)->outstanding_client_request;
+    pscp_avs_isr_request avs_isr_request = (pscp_avs_isr_request)Request;
     pscp_avs_interface_t Interface = (pscp_avs_interface_t)original_request->Header.OwningInterface;
     pscp_avs_device device = Interface->Device; // Device associated with this request
 
@@ -188,10 +250,22 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
     AVS_LOG_TRACE("scp_avs_isr_dispatch, RequestType = %x", (uint8_t)Request->RequestType);
 
     int status = SILIBS_SUCCESS;
+
     original_request->avs_response_status = SCP_AVS_STATUS_SUCCESS; // this will be sent to the client
     uint32_t scp_avs_resp_buf[AVS_CMD_BUFF_SIZE];
     uint32_t scp_avs_resp_idx = 0; // index to read from the command response buffer
     uint32_t scp_avs_resp_num = 0; // count to read from the command response buffer
+
+    if (avs_isr_request->avs_crc_error)
+    {
+        // don't modify any data, return error
+        AVS_LOG_CRIT("AVS CRC error!");
+        avs_error_count.crc_error_count++;
+        original_request->avs_response_status = SCP_AVS_STATUS_CRC_ERROR;
+        avs_isr_request->avs_crc_error = false;
+        DfwkAsyncRequestComplete(&original_request->Header);
+        return;
+    }
 
     switch (original_request->Header.RequestType)
     {
@@ -207,8 +281,10 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         }
         else
         {
+            avs_error_t status_error = scp_avs_status_error(scp_avs_resp_buf[scp_avs_resp_idx]);
             // Populate the data to be sent to the client.
-            original_request->avs_response_single_resp = (int16_t)(scp_avs_resp_buf[scp_avs_resp_idx] & 0xFFFF);
+            original_request->avs_response_single_resp.error = status_error;
+            original_request->avs_response_single_resp.data = (int16_t)(scp_avs_resp_buf[scp_avs_resp_idx] & 0xFFFF);
             AVS_LOG_TRACE("Raw data read: 0x%0x", (int16_t)scp_avs_resp_buf[scp_avs_resp_idx]);
         }
         break;
@@ -225,10 +301,20 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         }
         else
         {
+            // scp_avs_resp_idx = 0 for write, 1 for read, so need to check for both write and read errors.
+            // update local status (all bits but AVS_DONE--we'll want the latest from the next response)
+            avs_error_t status_error_write = scp_avs_status_error(scp_avs_resp_buf[scp_avs_resp_idx]);
+            status_error_write.v_done = 0;
+
+            avs_error_t status_error_read = (scp_avs_status_error(scp_avs_resp_buf[scp_avs_resp_idx + 1]));
+            status_error_write.as_uint8 |= status_error_read.as_uint8;
+
             // Populate the data to be sent to the client. scp_avs_resp_buf[0] contains the write status.
             // scp_avs_resp_buf[1] contains the data from the read which was executed immediately after the write.
             // So scp_avs_resp_buf[(scp_avs_resp_idx + 1)] is sent to the client, which should match the value of the voltage written.
-            original_request->avs_response_single_resp = (int16_t)(scp_avs_resp_buf[(scp_avs_resp_idx + 1)] & 0xFFFF);
+            original_request->avs_response_single_resp.error = status_error_write;
+            original_request->avs_response_single_resp.data =
+                (int16_t)(scp_avs_resp_buf[(scp_avs_resp_idx + 1)] & 0xFFFF);
             AVS_LOG_TRACE("Raw data read after AVS write: 0x%0x", (int16_t)scp_avs_resp_buf[1]);
         }
         break;
@@ -245,8 +331,17 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         }
         else
         {
+            avs_error_t status_error = scp_avs_status_error(scp_avs_resp_buf[scp_avs_resp_idx]);
+            // Populate the data to be sent to the client.
+            original_request->avs_response_vct.error_voltage = status_error;
             original_request->avs_response_vct.voltage_mV = (int16_t)(scp_avs_resp_buf[scp_avs_resp_idx++] & 0xFFFF);
+
+            status_error = scp_avs_status_error(scp_avs_resp_buf[scp_avs_resp_idx]);
+            original_request->avs_response_vct.error_current = status_error;
             original_request->avs_response_vct.current_cA = (int16_t)(scp_avs_resp_buf[scp_avs_resp_idx++] & 0xFFFF);
+
+            status_error = scp_avs_status_error(scp_avs_resp_buf[scp_avs_resp_idx]);
+            original_request->avs_response_vct.error_temperature = status_error;
             original_request->avs_response_vct.temperature_dC = (int16_t)(scp_avs_resp_buf[scp_avs_resp_idx] & 0xFFFF);
             AVS_LOG_TRACE("Read raw data VCT. \n  Volt: 0x%0x, Cur: 0x%0x, Temp: 0x%0x",
                           (int16_t)scp_avs_resp_buf[0],
@@ -271,6 +366,9 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
             AVS_LOG_TRACE("Read multi, AVSBus = %d", device->avs_bus_num);
             for (scp_avs_resp_idx = 0; scp_avs_resp_idx < scp_avs_resp_num; scp_avs_resp_idx++)
             {
+                avs_error_t status_error = scp_avs_status_error(scp_avs_resp_buf[scp_avs_resp_idx]);
+                original_request->avs_resp_multi.avs_response_multi[scp_avs_resp_idx].error = status_error;
+
                 original_request->avs_resp_multi.avs_response_multi[scp_avs_resp_idx].data =
                     (int16_t)(scp_avs_resp_buf[scp_avs_resp_idx] & 0xFFFF);
                 AVS_LOG_TRACE("data[%d]: 0x%0x",
@@ -290,6 +388,16 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         {
             AVS_LOG_CRIT("avs_get_cmd_resp_data failure (Write multi)!");
             original_request->avs_response_status = SCP_AVS_STATUS_WRITE_MULTI_FAIL;
+        }
+        else
+        {
+            uint8_t rail;
+            avs_error_t status_error;
+            for (scp_avs_resp_idx = 0, rail = AVS_RAIL0; rail < MAX_AVS_RAILS; scp_avs_resp_idx++, rail++)
+            {
+                status_error = scp_avs_status_error(scp_avs_resp_buf[scp_avs_resp_idx]);
+                original_request->avs_resp_multi.avs_response_multi[scp_avs_resp_idx].error = status_error;
+            }
         }
         break;
 

@@ -53,7 +53,7 @@ target_link_libraries(${TARGET}
         ms::client_interface::startup_shutdown
         ms::lib::cortex_m7::atomics
         ms::lib::event_trace::trace
-        ms::lib::crash_dump::scp
+        ms::lib::crash_dump
         ms::lib::error_codes
         ms::lib::icc_platform_defines
         ms::lib::warm_start

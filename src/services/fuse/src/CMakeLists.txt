@@ -24,7 +24,7 @@ target_link_libraries(${TARGET}
     fwlib.lib.status
     fwlib.service.iccBase
     fwlib.service.cli
-    ms::lib::crash_dump::scp
+    ms::lib::crash_dump
     ms::lib::error_codes
     ms::boot_loader::interface
     ms::lib::error_codes

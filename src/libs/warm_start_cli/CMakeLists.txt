@@ -18,7 +18,7 @@ target_link_libraries(
         PRIVATE
             fwlib.service.cli
             ms::lib::warm_start
-            ms::lib::crash_dump::scp
+            ms::lib::crash_dump
             ms::lib::error_codes
         PUBLIC
             fwlib.lib.assert

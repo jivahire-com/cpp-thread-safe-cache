@@ -17,12 +17,15 @@
 #include <tx_api.h>                   // for TX_THREAD, ULONG
 
 extern "C" {
+#include <../src/crash_dump_gpio.h>      // for cd_gpio_assert_cd_available, cd_gpio_as...
 #include <../src/crash_dump_overrides.h> // for inMemoryOverride
 #include <../src/crash_dump_payload.h>   // for CD_THREADX_DATA, crash_dump_capture_threadx
+#include <cmsis_m7.h>                    // for SCB
 #include <crash_dump.h>                  // for crash_dump_init
 #include <crash_dump_memory.h>           // for CRASH_DUMP_FULL_SIZE
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define CD_DEFAULT_MEM_POOL_SIZE 1024
 
 /*------------- Typedefs -----------------*/
 
@@ -42,6 +45,16 @@ extern ULONG _tx_thread_created_count;
 extern ULONG _tx_thread_system_state;
 
 /*------------- Functions ----------------*/
+//
+// Mocks
+//
+bool in_memory(uintptr_t start_addr, uintptr_t end_addr)
+{
+    assert_true(start_addr <= end_addr);
+
+    return mock_type(bool);
+}
+
 //
 // Expectations
 //
@@ -171,6 +184,51 @@ void set_expectations_crash_dump_register_address32_ptr_array(FPFwCdDumpPriority
     expect_value(__wrap_CdRegisterAddress32PointerArray, pointerArray, pointerArray_exp);
     expect_value(__wrap_CdRegisterAddress32PointerArray, pointerArrayCount, pointerArrayCount_exp);
 }
+
+void set_expectations_gpio_set_output(crash_dump_config_t *config)
+{
+    will_return(__wrap_GetCrashDumpConfig, config);
+
+    if (config->core_index == CRASH_DUMP_CORE_MCP)
+    {
+        expect_function_call(__wrap_gpio_set_output);
+        expect_value(__wrap_gpio_set_output, gpio_pin_id, 0x0602); // MSCP_EXP_GPIO_6 | SAFE_MODE_REQ (2)
+        expect_value(__wrap_gpio_set_output, level, 1);
+    }
+}
+
+void set_expectations_crash_dump_register_default_registers(const core_register_mmio_t* mmio_registers, uint32_t mmio_register_count)
+{
+    for (uint32_t i = 0; i < mmio_register_count; i++)
+    {
+        expect_function_call(__wrap_CdRegisterMMIORegisterSet);
+        expect_value(__wrap_CdRegisterMMIORegisterSet, regAddress, mmio_registers[i].address);
+        expect_value(__wrap_CdRegisterMMIORegisterSet, regCount, mmio_registers[i].count);
+        expect_value(__wrap_CdRegisterMMIORegisterSet, priority, mmio_registers[i].priority);
+    }
+
+    // ToDo: Add more register checks for SCP_EXP, Watchdog and Power control registers
+    expect_function_call(__wrap_CdRegisterMMIORegisterSet); // SCB->MMFAR
+    expect_value(__wrap_CdRegisterMMIORegisterSet, regAddress, &SCB->MMFAR);
+    expect_value(__wrap_CdRegisterMMIORegisterSet, regCount, 1);
+    expect_value(__wrap_CdRegisterMMIORegisterSet, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+
+    expect_function_call(__wrap_CdRegisterMMIORegisterSet); // SCB->BFAR
+    expect_value(__wrap_CdRegisterMMIORegisterSet, regAddress, &SCB->BFAR);
+    expect_value(__wrap_CdRegisterMMIORegisterSet, regCount, 1);
+    expect_value(__wrap_CdRegisterMMIORegisterSet, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+
+    expect_function_call(__wrap_CdRegisterMMIORegisterSet); // SCB->HFSR
+    expect_value(__wrap_CdRegisterMMIORegisterSet, regAddress, &SCB->HFSR);
+    expect_value(__wrap_CdRegisterMMIORegisterSet, regCount, 1);
+    expect_value(__wrap_CdRegisterMMIORegisterSet, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+
+    expect_function_call(__wrap_CdRegisterMMIORegisterSet); // SCB->CFSR
+    expect_value(__wrap_CdRegisterMMIORegisterSet, regAddress, &SCB->CFSR);
+    expect_value(__wrap_CdRegisterMMIORegisterSet, regCount, 1);
+    expect_value(__wrap_CdRegisterMMIORegisterSet, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+}
+
 //
 // Tests
 //
@@ -180,8 +238,21 @@ void set_expectations_crash_dump_register_address32_ptr_array(FPFwCdDumpPriority
  */
 TEST_FUNCTION(test_crash_dump_init, init_crash_dump_context, nullptr)
 {
+    const core_register_mmio_t core_register_mmio[] = {
+        {(volatile void *)(0x12123434), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL},
+        {(volatile void *)(0xababcdcd), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL}
+    };
+
+    crash_dump_config_t config = {
+        .die_index = 0,
+        .core_index = CRASH_DUMP_CORE_SCP,
+        .mmio_register_count = 2,
+        .mmio_registers = core_register_mmio,
+        .in_memory = in_memory
+    };
+
     // Set up expectations
-    set_expectations_gpio_set_output();
+    set_expectations_gpio_set_output(&config);
 
     // init_mem_pool()
     set_expectations_init_mem_pool();
@@ -199,7 +270,7 @@ TEST_FUNCTION(test_crash_dump_init, init_crash_dump_context, nullptr)
     set_expectations_crash_dump_register_core_registers();
 
     // crash_dump_register_default_registers()
-    set_expectations_crash_dump_register_default_registers();
+    set_expectations_crash_dump_register_default_registers(core_register_mmio, 2);
 
     // crash_dump_register_core_stack()
     set_expectations_crash_dump_register_core_stack();
@@ -211,7 +282,7 @@ TEST_FUNCTION(test_crash_dump_init, init_crash_dump_context, nullptr)
     set_expectations_crash_dump_register_threadx();
 
     // Call API under test
-    crash_dump_init();
+    crash_dump_init(&config);
 }
 
 TEST_FUNCTION(test_crash_dump_capture_threadx, NULL, NULL)
@@ -301,6 +372,14 @@ TEST_FUNCTION(test_crash_dump_register_pre_dump_callback_valid, nullptr, nullptr
 
 TEST_FUNCTION(test_crash_dump_inMemoryOverride_validAddr, nullptr, nullptr)
 {
+    crash_dump_config_t config = {
+        .die_index = 0,
+        .core_index = CRASH_DUMP_CORE_SCP,
+        .in_memory = in_memory
+    };
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(in_memory, true);
+
     // Test valid address and size
     void* addr = (void*)0x40;
     uint32_t size = 8;
@@ -310,16 +389,107 @@ TEST_FUNCTION(test_crash_dump_inMemoryOverride_validAddr, nullptr, nullptr)
 
 TEST_FUNCTION(test_crash_dump_inMemoryOverride_inValidAddr, nullptr, nullptr)
 {
-    // Test invalid address
-    void* addr = (void*)0xFFFFFFF0;
+    // Test invalid address (overflow)
+    void* addr = (void*)0xFFFFFFFD;
     uint32_t size = 6;
 
     assert_false(inMemoryOverride(addr, size));
+}
 
-    // Test invalid size
-    addr = (void*)0x40;
-    size = 0x80000;
+TEST_FUNCTION(test_crash_dump_handler, nullptr, nullptr)
+{
+    uint32_t errorCode = 0x12345678;
+    uint32_t p1 = 0x87654321;
+    uint32_t p2 = 0x12348765;
+    uint32_t p3 = 0x87651234;
+    uint32_t p4 = 0x12348765;
 
-    assert_false(inMemoryOverride(addr, size));
+    // Set up expectations
+    crash_dump_config_t config = {
+        .die_index = 0,
+        .core_index = CRASH_DUMP_CORE_SCP,
+        .in_memory = in_memory
+    };
+
+    will_return(__wrap_GetCrashDumpConfig, &config);
+
+    expect_any(__wrap_FPFwCDCrashDumpHandler, ctx);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, coreInfo);
+
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Code, errorCode);
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[0], p1);
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[1], p2);
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[2], p3);
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[3], p4);
+
+    expect_function_call(__wrap_FPFwCDCrashDumpHandler);
+
+    crash_dump_handler(errorCode, p1, p2, p3, p4);
+}
+
+typedef struct _gpio_test_data_t
+{
+    bool input;
+    uint32_t expected_level;
+} gpio_test_data_t;
+
+TEST_FUNCTION(test_crash_dump_in_progress_assert, nullptr, nullptr)
+{
+    crash_dump_config_t config = {
+        .die_index = 0,
+        .core_index = CRASH_DUMP_CORE_MCP,
+        .in_memory = in_memory
+    };
+
+    gpio_test_data_t test_data[] = {{
+                                        .input = true,
+                                        .expected_level = 0,
+                                    },
+                                    {
+                                        .input = false,
+                                        .expected_level = 1,
+                                    }};
+
+    for (size_t i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++)
+    {
+        // Set up expectations
+        will_return(__wrap_GetCrashDumpConfig, &config);
+        expect_function_call(__wrap_gpio_set_output);
+        expect_value(__wrap_gpio_set_output, gpio_pin_id, 0x0602); // MSCP_EXP_GPIO_6 | SAFE_MODE_REQ (2)
+        expect_value(__wrap_gpio_set_output, level, test_data[i].expected_level);
+
+        // Call API under test
+        cd_gpio_assert_cd_in_progress(test_data[i].input);
+    }
+}
+
+TEST_FUNCTION(test_crash_dump_available_assert, nullptr, nullptr)
+{
+    crash_dump_config_t config = {
+        .die_index = 0,
+        .core_index = CRASH_DUMP_CORE_MCP,
+        .in_memory = in_memory
+    };
+
+    gpio_test_data_t test_data[] = {{
+                                        .input = true,
+                                        .expected_level = 0,
+                                    },
+                                    {
+                                        .input = false,
+                                        .expected_level = 1,
+                                    }};
+
+    for (size_t i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++)
+    {
+        // Set up expectations
+        will_return(__wrap_GetCrashDumpConfig, &config);
+        expect_function_call(__wrap_gpio_set_output);
+        expect_value(__wrap_gpio_set_output, gpio_pin_id, 0x0603); // MSCP_EXP_GPIO_6 | GPIO_CD_AVAILABLE (3)
+        expect_value(__wrap_gpio_set_output, level, test_data[i].expected_level);
+
+        // Call API under test
+        cd_gpio_assert_cd_available(test_data[i].input);
+    }
 }
 }

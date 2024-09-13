@@ -12,6 +12,7 @@
 
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <crash_dump.h> // for GetCrashDumpConfig
 #include <stdarg.h>     // for va_list, va_start, va_end
 #include <stdbool.h>    // for bool
 #include <stdint.h>     // for uint32_t, uint64_t
@@ -77,8 +78,9 @@ bool inMemoryOverride(void* addr, uint32_t size)
     {
         end_address += (size - 1);
     }
+
     // only return true if start and end addresses in valid memory space
-    return in_memory((uintptr_t)addr, end_address);
+    return (uintptr_t)addr <= end_address ? GetCrashDumpConfig()->in_memory((uintptr_t)addr, end_address) : false;
 }
 
 bool inGlobalMemoryOverride(uint64_t addr, uint32_t size)

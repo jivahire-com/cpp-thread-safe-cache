@@ -12,7 +12,7 @@ target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.init
         fwlib.service.cli
-        ms::lib::crash_dump::scp
+        ms::lib::crash_dump
         ms::cmocka::testrunner
 )
 

@@ -15,7 +15,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.utils
         ms::cmocka::testrunner
         ms::lib::cortex_m7::nvic
-        ms::lib::exception_handler::scp
+        ms::lib::exception_handler
         ms::lib::error_codes
         ms::lib::threadx
 )

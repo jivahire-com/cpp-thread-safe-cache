@@ -16,7 +16,7 @@ target_link_libraries(${TARGET}
     fwlib.lib.mboxPrimitives
     fwlib.service.iccBase
     silibs_platform
-    ms::lib::crash_dump::scp
+    ms::lib::crash_dump
     ms::lib::error_codes
     ms::lib::hsp_firmware_headers
     ms::lib::register_headers

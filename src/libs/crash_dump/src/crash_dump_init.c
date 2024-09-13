@@ -23,11 +23,13 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define CRASH_DUMP_NUM_DESCRIPTORS 128 // ToDo: Re-evaluate this number
+#define CD_DEFAULT_MEM_POOL_SIZE   1024
 
 /*-------------- Typedefs ----------------*/
 
 /*-------- Function Prototypes -----------*/
-static void init_mem_pool();
+static void get_crash_dump_mem_heap_pool(uint64_t* mem_pool_addr, uint32_t* size);
+static void init_mem_pool(uint64_t cd_mem_pool, uint32_t block_size);
 static void init_dump_desc();
 static void init_dump_file();
 static void init_dump_manager();
@@ -39,6 +41,7 @@ static FPFwCDDumpDescriptorCtx desc_ctx = {};
 static FPFwCDDumpFileCtx file_ctx = {};
 static FPFwCDDumpDescriptor desc_list[CRASH_DUMP_NUM_DESCRIPTORS] = {};
 static TX_MUTEX desc_mutex = {};
+static crash_dump_config_t* crash_dump_config = NULL;
 
 /*------------- Functions ----------------*/
 /**
@@ -52,26 +55,51 @@ FPFwCrashDumpCtx* GetCrashDumpContext()
 }
 
 /**
+ * @brief Get the Crash Dump Context object
+ *
+ * @return Pointer to static crash dump context.
+ */
+crash_dump_config_t* GetCrashDumpConfig()
+{
+    return crash_dump_config;
+}
+
+/**
  * @brief Start initialization of crash dump.
  *
+ * @param config Configuration for crash dump.
+ *
  */
-void crash_dump_init()
+void crash_dump_init(crash_dump_config_t* config)
 {
+    // Cache the configuration
+    crash_dump_config = config;
+
+    // Set Processor ID with DIE index (Upper 16 bits) and core index (Lower 16 bits).
+    crash_dump_ctx.prid = (config->die_index << 16) | (config->core_index & 0xFFFF);
+    crash_dump_ctx.isPrimaryCore = config->is_primary;
+
     // De-assert CD_IN_PROGRESS
     cd_gpio_assert_cd_in_progress(false);
 
     // Initialize crash dump framework
-    init_mem_pool();
+    uint64_t cd_mem_pool = config->mem_pool_addr;
+    uint32_t block_size = config->mem_pool_size;
+    if (cd_mem_pool == 0)
+    {
+        // Crash dump memory pool is not available. Use heap pool.
+        get_crash_dump_mem_heap_pool(&cd_mem_pool, &block_size);
+    }
+    init_mem_pool(cd_mem_pool, block_size);
     init_dump_desc();
     init_dump_file();
-
     init_dump_manager();
 
     // Register core built-in registers into crash dump
     crash_dump_register_core_registers();
 
     // Register error status registers and other diagnostic registers
-    crash_dump_register_default_registers();
+    crash_dump_register_default_registers(config->mmio_registers, config->mmio_register_count);
 
     // Register core stack
     crash_dump_register_core_stack();
@@ -79,23 +107,32 @@ void crash_dump_init()
     // Add capture information about the core and the firmware
     crash_dump_register_standard_info();
 
-    // Register ThreadX data
+    // Register ThreadX data registerer callback
     crash_dump_register_threadx();
+}
 
-    // ToDo: Enable Debug Monitor exception
+/**
+ * @brief Get crash dump memory heap pool.
+ *
+ * @param mem_pool_addr Memory pool address.
+ * @param size Size of the memory pool.
+ *
+ */
+static void get_crash_dump_mem_heap_pool(uint64_t* mem_pool_addr, uint32_t* size)
+{
+    *mem_pool_addr = (uint64_t)(uintptr_t)malloc(CD_DEFAULT_MEM_POOL_SIZE);
+    *size = CD_DEFAULT_MEM_POOL_SIZE;
 }
 
 /**
  * @brief Initialize crash dump memory pool.
  *
+ * @param cd_mem_pool Crash dump memory pool address.
+ * @param block_size Size of the memory pool.
+ *
  */
-static void init_mem_pool()
+static void init_mem_pool(uint64_t cd_mem_pool, uint32_t block_size)
 {
-    uint64_t cd_mem_pool = 0;
-    uint32_t block_size = 0;
-
-    get_crash_dump_mem_pool(&cd_mem_pool, &block_size);
-
     // Initialize crash dump memory pool
     FPFW_RUNTIME_ASSERT(FPFwCDInitMemoryPool(&mem_ctx, cd_mem_pool, block_size));
     (void)FPFwCDMemPoolOverrideCacheFlush(&mem_ctx, &cacheFlushOverride);

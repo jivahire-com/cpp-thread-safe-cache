@@ -10,6 +10,7 @@
 
 /*----------- Nested includes ------------*/
 #include <modules/CdDumpManager.h>
+#include <crash_dump.h>
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -21,14 +22,13 @@
 /*--------- Function Prototypes ----------*/
 extern "C" {
 
-void crash_dump_wait_forever();
-void set_expectations_gpio_set_output();
+void set_expectations_gpio_set_output(crash_dump_config_t *config);
 void set_expectations_init_mem_pool();
 void set_expectations_init_dump_desc();
 void set_expectations_init_dump_file();
 void set_expectations_init_dump_manager();
 void set_expectations_crash_dump_register_core_registers();
-void set_expectations_crash_dump_register_default_registers();
+void set_expectations_crash_dump_register_default_registers(const core_register_mmio_t* mmio_registers, uint32_t mmio_register_count);
 void set_expectations_crash_dump_register_core_stack();
 void set_expectations_crash_dump_register_standard_info();
 void set_expectations_crash_dump_register_threadx();

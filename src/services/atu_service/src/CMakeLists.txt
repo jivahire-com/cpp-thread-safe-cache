@@ -19,7 +19,7 @@ target_link_libraries(${TARGET}
         ms::lib::css
         ms::lib::register_headers
         ms::lib::error_codes
-        ms::lib::crash_dump::scp
+        ms::lib::crash_dump
         silibs::kng_silibs_platform
         silibs_platform
         silibs::atu

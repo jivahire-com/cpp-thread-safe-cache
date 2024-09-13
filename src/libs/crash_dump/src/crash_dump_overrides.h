@@ -21,7 +21,6 @@
 /*--------- Function Prototypes ----------*/
 
 /*------- Memory Pool Overrides -------*/
-void get_crash_dump_mem_pool(uint64_t *mem_pool_addr, uint32_t *size);
 void cacheFlushOverride(uint64_t addr, uint32_t size);
 void cacheInvalidateOverride(uint64_t addr, uint32_t size);
 
@@ -30,7 +29,6 @@ uint32_t mutexLockOverride(void *mutex_ctx);
 uint32_t mutexUnlockOverride(void *mutex_ctx);
 
 /*------- Dump File Overrides -------*/
-bool in_memory(uintptr_t start_addr, uintptr_t end_addr);
 bool inMemoryOverride(void *addr, uint32_t size);
 bool inGlobalMemoryOverride(uint64_t addr, uint32_t size);
 

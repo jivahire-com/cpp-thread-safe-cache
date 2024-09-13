@@ -8,6 +8,8 @@
  */
 
 /*--------------- Includes ---------------*/
+#include "crash_dump_gpio.h" // for cd_gpio_assert_cd_in_progress
+
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <cmsis_m7.h>   // for __WFI
 #include <crash_dump.h> // for crash_dump_handler
@@ -79,13 +81,19 @@ __attribute__((__weak__)) FPFW_NORETURN void crash_dump_wait_forever()
 
 void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
 {
-    // ToDo: Implement crash dump handler
-    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/1484988
-    FPFW_UNUSED(errorCode);
-    FPFW_UNUSED(p1);
-    FPFW_UNUSED(p2);
-    FPFW_UNUSED(p3);
-    FPFW_UNUSED(p4);
+    // Assert GPIO_CD_IN_PROGRESS
+    cd_gpio_assert_cd_in_progress(true);
+
+    FPFwCrashDumpCtx* crash_dump_context = GetCrashDumpContext();
+    FPFwCdBugCheckInfo bug_check_info = {};
+    bug_check_info.coreIndex = crash_dump_context->coreIndex;
+    bug_check_info.data.Code = errorCode;
+    bug_check_info.data.Parameter[0] = p1;
+    bug_check_info.data.Parameter[1] = p2;
+    bug_check_info.data.Parameter[2] = p3;
+    bug_check_info.data.Parameter[3] = p4;
+
+    FPFwCDCrashDumpHandler(crash_dump_context, &g_core_crash_context, &bug_check_info);
 }
 
 void crash_dump_register_mmio_register(volatile void* mmio_reg, uint32_t reg_count, FPFwCdDumpPriority priority)

@@ -1,18 +1,15 @@
 # SCP Crash dump
-set(TARGET kng.lib.crash_dump.scp)
+set(TARGET kng.lib.crash_dump)
 
 set (SOURCES 
         src/crash_dump.c
         src/crash_dump_cli.c
+        src/crash_dump_gpio.c
         src/crash_dump_init.c
         src/crash_dump_overrides.c
         src/crash_dump_payload_core.c
         src/crash_dump_payload_msft.c
         src/crash_dump_payload_threadx.c
-        src/scp/crash_dump_init_scp.c
-        src/scp/crash_dump_gpio.c
-        src/scp/crash_dump_overrides.c
-        src/scp/crash_dump_payload.c
 )
 
 if("$ENV{REPO_APP_TOOLCHAIN}" STREQUAL "i386-pc-windows-msvc")
@@ -33,62 +30,10 @@ target_link_libraries(${TARGET}
         fwlib.service.cli
         ms::build_data
         ms::cmsis::interface
-        silibs::kng_silibs_platform
         ms::lib::threadx
         ms::lib::error_codes
-)
-
-target_include_directories(${TARGET}
-    PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/inc
-)
-
-lint_target(${TARGET})
-format_target(${TARGET})
-coverage_target(${TARGET})
-
-add_library(ms::lib::crash_dump::scp ALIAS ${TARGET})
-
-
-# MCP Crash dump
-set(TARGET kng.lib.crash_dump.mcp)
-
-set (SOURCES 
-        src/crash_dump.c
-        src/crash_dump_cli.c
-        src/crash_dump_init.c
-        src/crash_dump_overrides.c
-        src/crash_dump_payload_core.c
-        src/crash_dump_payload_msft.c
-        src/crash_dump_payload_threadx.c
-        src/mcp/crash_dump_gpio.c
-        src/mcp/crash_dump_overrides.c
-        src/mcp/crash_dump_payload.c
-)
-
-if("$ENV{REPO_APP_TOOLCHAIN}" STREQUAL "i386-pc-windows-msvc")
-    set (SOURCES ${SOURCES} src/win32/crash_dump_dummy_symbols.c)
-endif()
-
-add_library(${TARGET}
-    STATIC
-        ${SOURCES}
-)
-
-target_link_libraries(${TARGET}
-    PUBLIC
-        fwlib.lib.crashDump
-        ms::lib::debug
-    PRIVATE
-        fwlib.lib.assert
-        fwlib.service.cli
-        ms::build_data
-        ms::cmsis::interface
-        silibs::kng_silibs_platform
-        ms::lib::threadx
         silibs::gpio
-        silibs_platform
-        ms::lib::error_codes
+        silibs::kng_silibs_platform
 )
 
 target_include_directories(${TARGET}
@@ -100,4 +45,4 @@ lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})
 
-add_library(ms::lib::crash_dump::mcp ALIAS ${TARGET})
+add_library(ms::lib::crash_dump ALIAS ${TARGET})

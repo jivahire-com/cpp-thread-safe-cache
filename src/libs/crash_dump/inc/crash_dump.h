@@ -11,12 +11,25 @@
 
 /*--------------- Includes ---------------*/
 #include <FpFwUtils.h>
+#include <modules/CdDumpDescriptor.h>
 #include <modules/CdDumpManager.h>
 #include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
+typedef enum
+{
+    CRASH_DUMP_CORE_MCP = 0,
+    CRASH_DUMP_CORE_SCP = 1,
+    CRASH_DUMP_CORE_HSP = 2,
+    CRASH_DUMP_CORE_NUM
+} crash_dump_core_t;
+
 typedef struct _CD_GUID {
     uint32_t Data1;
     uint16_t Data2;
@@ -42,6 +55,23 @@ typedef struct __attribute__((__packed__)) {
     uint32_t lr;
     uint32_t pc;
 } core_crash_context_t;
+
+typedef struct {
+    volatile void *address;
+    uint32_t count;
+    FPFwCdDumpPriority priority;
+} core_register_mmio_t;
+
+typedef struct {
+    uint32_t die_index;         // DIE index
+    uint32_t core_index;        // Core index
+    uint64_t mem_pool_addr;
+    uint32_t mem_pool_size;
+    uint32_t mmio_register_count;
+    const core_register_mmio_t *mmio_registers;
+    bool (*in_memory)(uintptr_t start_addr, uintptr_t end_addr);
+    bool is_primary;
+} crash_dump_config_t;
 
 /*-- Declarations (Statics and globals) --*/
 extern core_crash_context_t g_core_crash_context;
@@ -77,10 +107,17 @@ FPFW_NORETURN void crash_dump_wait_forever();
 FPFwCrashDumpCtx *GetCrashDumpContext();
 
 /**
+ * @brief Get the Crash Dump Config object
+ * 
+ * @return Pointer to static crash dump config.
+ */
+crash_dump_config_t *GetCrashDumpConfig();
+
+/**
  * @brief Initialize crash dump components
  * 
  */
-void crash_dump_init();
+void crash_dump_init(crash_dump_config_t *config);
 
 /**
  * @brief Crash dump handler handles failure exceptions and generates a crash dump
@@ -158,3 +195,6 @@ void crash_dump_register_address32_pointer_array(FPFwCdDumpPriority priority, ui
  * 
  */
 void crash_dump_cli_init(void);
+#ifdef __cplusplus
+}
+#endif

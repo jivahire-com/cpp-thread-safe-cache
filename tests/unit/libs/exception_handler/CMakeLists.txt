@@ -11,9 +11,9 @@ target_link_libraries(${TARGET}
     PRIVATE
         ms::cmocka::testrunner
         ms::lib::error_codes
-        ms::lib::exception_handler::scp
+        ms::lib::exception_handler
         ms::lib::threadx
-        ms::lib::crash_dump::scp
+        ms::lib::crash_dump
 )
 
 target_include_directories(${TARGET}

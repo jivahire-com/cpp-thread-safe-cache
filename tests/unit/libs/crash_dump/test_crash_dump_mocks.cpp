@@ -13,6 +13,7 @@
 extern "C" {
 #include <CrashDump.h>                // for FPFW_CD_DUMP_CALLBACK
 #include <FpFwUtils.h>                // for FPFW_UNUSED
+#include <crash_dump.h>               // for crash_dump_config_t, GetCrashDu...
 #include <modules/CdDumpDescriptor.h> // for FPFwCDDumpDescriptorCtx, FPFwC...
 #include <modules/CdDumpFile.h>       // for FPFwCDDumpFileCtx
 #include <modules/CdDumpManager.h>    // for FPFwCrashDumpCtx
@@ -66,6 +67,11 @@ int init_crash_dump_context(void** pContext)
     mock_desc_mutex = NULL;
 
     return 0;
+}
+
+crash_dump_config_t* __wrap_GetCrashDumpConfig()
+{
+    return mock_type(crash_dump_config_t*);
 }
 
 bool __wrap_FPFwCDInitMemoryPool(FPFwCDMemPoolCtx* ctx, uint64_t baseAddr, uint32_t poolSize)
@@ -380,5 +386,19 @@ int __wrap_gpio_set_output(uint32_t gpio_pin_id, uint32_t level)
     function_called();
 
     return 0;
+}
+
+void __wrap_FPFwCDCrashDumpHandler(FPFwCrashDumpCtx* ctx, const void* coreInfo, FPFwCdBugCheckInfo* CdBugCheckInfo)
+{
+    check_expected_ptr(ctx);
+    check_expected_ptr(coreInfo);
+
+    check_expected(CdBugCheckInfo->data.Code);
+    check_expected(CdBugCheckInfo->data.Parameter[0]);
+    check_expected(CdBugCheckInfo->data.Parameter[1]);
+    check_expected(CdBugCheckInfo->data.Parameter[2]);
+    check_expected(CdBugCheckInfo->data.Parameter[3]);
+
+    function_called();
 }
 } // extern "C"

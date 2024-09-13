@@ -9,8 +9,8 @@ target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.assert
     fwlib.service.iccBase
-    kng.lib.crash_dump.scp
     silibs_platform
+    ms::lib::crash_dump
     ms::lib::error_codes
     ms::lib::hsp_firmware_headers
     ms::lib::register_headers

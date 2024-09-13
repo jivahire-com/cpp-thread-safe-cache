@@ -24,7 +24,7 @@ target_link_libraries(${TARGET}
         ms::lib::threadx
         ms::service::sds_service
         ms::lib::error_codes
-        ms::lib::crash_dump::scp
+        ms::lib::crash_dump
         ms::service::atu_service
 )
 

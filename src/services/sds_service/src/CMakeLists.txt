@@ -24,7 +24,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.spinlock
         fwlib.lib.init
         ms::lib::error_codes
-        ms::lib::crash_dump::scp
+        ms::lib::crash_dump
         ms::service::atu_service
 )
 

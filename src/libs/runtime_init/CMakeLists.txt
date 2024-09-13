@@ -20,7 +20,6 @@ add_library(${TARGET}
         cli_ddr_init.c
         cli_power_init.c
         crash_dump_init.c
-        crash_dump_init_scp.c
         cli_crash_dump_init.c
         css_init.c
         ddrss_init.c
@@ -88,12 +87,12 @@ target_link_libraries(
         ms::lib::accelerator_ip
         ms::lib::cli_accel_int
         ms::lib::cortex_m7::mpu
-        ms::lib::crash_dump::scp
+        ms::lib::crash_dump
         ms::lib::css
         ms::lib::ddrss_init
         ms::lib::debug
         ms::lib::cortex_m7::nvic
-        ms::lib::exception_handler::scp
+        ms::lib::exception_handler
         ms::lib::gtimer
         ms::lib::hsp_firmware_headers
         ms::lib::i3c_controller
@@ -226,8 +225,8 @@ target_link_libraries(
         ms::driver::textio::pl011
         ms::lib::debug
         ms::lib::cortex_m7::nvic
-        ms::lib::crash_dump::mcp
-        ms::lib::exception_handler::mcp
+        ms::lib::crash_dump
+        ms::lib::exception_handler
         ms::lib::icc::cli
         ms::lib::icc_platform_defines
         ms::lib::interface::in_band_telemetry_ddr

@@ -4,14 +4,15 @@
 
 /**
  * @file crash_dump_gpio.c
- *    MCP Crash Dump GPIO functionality
+ * Crash Dump GPIO functionality
  */
 
 /*------------- Includes -----------------*/
-#include "../crash_dump_gpio.h" // for cd_gpio_assert_cd_available, cd_gpio_as...
+#include "crash_dump_gpio.h" // for cd_gpio_assert_cd_available, cd_gpio_as...
 
-#include <gpio_lib.h> // for gpio_set_output, GPIO_CTRL_PIN_ID, MSCP...
-#include <stdbool.h>  // for bool
+#include <crash_dump.h> // for CRASH_DUMP_CORE_MCP, GetCrashDumpConfig
+#include <gpio_lib.h>   // for gpio_set_output, GPIO_CTRL_PIN_ID, MSCP...
+#include <stdbool.h>    // for bool
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define SAFE_MODE_REQ       2
@@ -33,9 +34,12 @@
  */
 void cd_gpio_assert_cd_in_progress(bool in_progress)
 {
-    // NB: this presumes that the GPIO pin and pad have been correctly configured by SCP
-    // This signal is active-low
-    gpio_set_output(GPIO_CD_IN_PROGRESS, !in_progress);
+    if (GetCrashDumpConfig()->core_index == CRASH_DUMP_CORE_MCP)
+    {
+        // NB: this presumes that the GPIO pin and pad have been correctly configured by SCP
+        // This signal is active-low
+        gpio_set_output(GPIO_CD_IN_PROGRESS, !in_progress);
+    }
 }
 
 /**
@@ -45,7 +49,10 @@ void cd_gpio_assert_cd_in_progress(bool in_progress)
  */
 void cd_gpio_assert_cd_available(bool available)
 {
-    // NB: this presumes that the GPIO pin and pad have been correctly configured by SCP
-    // This signal is active-low
-    gpio_set_output(GPIO_CD_AVAILABLE, !available);
+    if (GetCrashDumpConfig()->core_index == CRASH_DUMP_CORE_MCP)
+    {
+        // NB: this presumes that the GPIO pin and pad have been correctly configured by SCP
+        // This signal is active-low
+        gpio_set_output(GPIO_CD_AVAILABLE, !available);
+    }
 }

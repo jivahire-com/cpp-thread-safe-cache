@@ -54,8 +54,10 @@ void crash_dump_register_core_registers();
 /**
  * @brief Captures default crash registers
  * 
+ * @param mmio_registers Array of core_register_mmio_t
+ * @param mmio_register_count Number of elements in mmio_registers
  */
-void crash_dump_register_default_registers();
+void crash_dump_register_default_registers(const core_register_mmio_t *mmio_registers, uint32_t mmio_register_count);
 
 /**
  * @brief Captures core stack

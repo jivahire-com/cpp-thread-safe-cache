@@ -37,7 +37,7 @@ target_link_libraries(
         fwlib.lib.init
         fwlib.service.icc_dispatcher
         fwlib.service.iccBase
-        kng.lib.crash_dump.scp
+        ms::lib::crash_dump
         ms::lib::debug
         ms::lib::error_codes
         ms::lib::hsp_firmware_headers

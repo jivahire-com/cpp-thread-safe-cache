@@ -57,6 +57,7 @@ mock_target(${TARGET}
     fpfw_timer_create
     fpfw_timer_enable
     fpfw_timer_reset
+    idsw_get_platform_sdv
     is_sdm_ext_int_mask_status_clear
     is_sdm_ext_int_status_set
     mmio_read32
@@ -71,7 +72,7 @@ mock_target(${TARGET}
     sdm_ext_int_mask_disable
     sdm_ext_int_mask_enable
     sdm_ext_int_mask_status_clear
-    send_sdm_msg_async_request
     send_fatal_intr_async_request
+    send_sdm_msg_async_request
     set_ext_int_sub_system
 )

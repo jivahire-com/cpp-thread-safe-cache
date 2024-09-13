@@ -16,6 +16,7 @@ extern "C" {
 #include "fpfw_status.h"     // for FPFW_STATUS_SUCCESS
 #include "mock.h"            // for mmio_set_mock_data...
 
+#include <idsw_kng.h>      // for KNG_PLAT_ID
 #include <nvic.h>          // for NVIC_STATUS_SUCCESS
 #include <silibs_status.h> // for SILIBS_SUCCESS
 #include <stdint.h>        // for uint32_t
@@ -60,6 +61,15 @@ void __wrap_send_sdm_msg_async_request(uint32_t IRQnum)
 void __wrap_send_fatal_intr_async_request(uint32_t IRQnum)
 {
     check_expected(IRQnum);
+}
+
+/**
+ * @brief : Mock function for idsw_get_platform_sdv
+ *
+ */
+KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
+{
+    return mock_type(KNG_PLAT_ID);
 }
 
 } // extern "c"
@@ -190,6 +200,8 @@ TEST_FUNCTION(test_accel_intr_isr_pass, nullptr, nullptr)
 
     expect_value(__wrap_nvic_irq_disable, irq_num, irq_num);
 
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+
     accel_intr_isr((void*)irq_num);
 }
 
@@ -215,6 +227,8 @@ TEST_FUNCTION(test_accel_intr_isr_pass_no_level2_intr, nullptr, nullptr)
     expect_value(__wrap_send_fatal_intr_async_request, IRQnum, irq_num);
 
     expect_value(__wrap_nvic_irq_disable, irq_num, irq_num);
+
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     accel_intr_isr((void*)irq_num);
 }
@@ -266,6 +280,8 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass, NULL, NULL)
     expect_any(__wrap_fpfw_timer_enable, timer);
     will_return_always(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
 
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+
     accel_intr_handle_fatal_intr_recvd(SDMSS_IRQ_NUMBER);
 
     expect_any(__wrap_fpfw_timer_reset, timer);
@@ -303,6 +319,8 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass_accel_emcpu_reset, NU
     expect_any(__wrap_fpfw_timer_enable, timer);
     will_return_always(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
 
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+
     accel_intr_handle_fatal_intr_recvd(CDEDSS_IRQ_NUMBER);
 
     expect_any(__wrap_fpfw_timer_reset, timer);
@@ -339,6 +357,8 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass_no_level2_intr, NULL,
 
     expect_any(__wrap_fpfw_timer_enable, timer);
     will_return_always(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
+
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     accel_intr_handle_fatal_intr_recvd(SDMSS_IRQ_NUMBER);
 
@@ -408,6 +428,8 @@ TEST_FUNCTION(test_accel_intr_handle_sdm_msg_recv_timeout_count_0, NULL, NULL)
 
     expect_any(__wrap_fpfw_timer_enable, timer);
     will_return_always(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
+
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     fpfw_timer_callback timer_cb = fpfw_mock_get_timer_cb();
 

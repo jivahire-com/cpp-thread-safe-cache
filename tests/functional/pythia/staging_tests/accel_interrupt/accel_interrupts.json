@@ -1,0 +1,225 @@
+{
+    "irq" :
+    {
+        "sdm"  : "0x77",
+        "cded" : "0x76"
+    },
+    "interrupts" : [
+        {
+            "name" : "EMCPU_WDT_ERR",
+            "enabled" : 1,
+            "triggers" : [
+                {
+                    "level" : 1,
+                    "cmds" : [
+                        {
+                            "core" : "scp",
+                            "mod"  : "accel_int",
+                            "cmd"  : "reg_set 0x152808",
+                            "bits" : "0"
+                        }
+                    ],
+                    "unexp_log" : "AccelIntr"
+                },
+                {
+                    "level" : 2,
+                    "cmds" : [
+                        {
+                            "core" : "scp",
+                            "mod"  : "accel_int",
+                            "cmd"  : "reg_set 0x100038",
+                            "bits" : "1"
+                        }
+                    ],
+                    "exp_log" : [
+                        "SCP_ACCEL::AccelIntr: Ticks \\(lu\\) IRQnum \\({irq_num}\\) irq_bit \\(0x0\\)",
+                        "SCP_ACCEL::AccelIntremCPUReset: Ticks \\(lu\\) IRQnum \\({irq_num}\\)"
+                    ]
+                }
+            ]
+        },
+        {
+            "name" : "UE_ECC_ERR",
+            "enabled" : 0,
+            "triggers" : [
+                {
+                    "level" : 1,
+                    "cmds" : [
+                        {
+                            "core" : "scp",
+                            "mod"  : "accel_int",
+                            "cmd"  : "reg_set 0x152808",
+                            "bits" : "14"
+                        }
+                    ],
+                    "unexp_log" : "AccelIntr"
+                },
+                {
+                    "level" : 2,
+                    "cmds" : [
+                        {
+                            "core" : "scp",
+                            "mod"  : "accel_int",
+                            "cmd"  : "reg_set 0x14014C",
+                            "bits" : "8-29"
+                        }
+                    ],
+                    "exp_log" : [
+                        "SCP_ACCEL::AccelIntrWithCategoryLevel2Bits: Ticks \\(lu\\) IRQnum \\({irq_num}\\) level1 \\(0xe\\) category \\(0x9\\) level2 \\({hex_bit}\\)",
+                        "SCP_ACCEL::AccelIntrSoCReset: Ticks \\(lu\\) IRQnum \\({irq_num}\\)"
+                    ]
+                }
+            ]
+        },
+        {
+            "name" : "CSR_PARITY_ERR",
+            "enabled" : 1,
+            "triggers" : [
+                {
+                    "level" : 1,
+                    "cmds" : [
+                        {
+                            "core" : "scp",
+                            "mod"  : "accel_int",
+                            "cmd"  : "reg_set 0x152808",
+                            "bits" : "16"
+                        }
+                    ],
+                    "exp_log" : [
+                        "SCP_ACCEL::AccelIntr: Ticks \\(lu\\) IRQnum \\({irq_num}\\) irq_bit \\(0x10\\)",
+                        "SCP_ACCEL::AccelIntrSoCReset: Ticks \\(lu\\) IRQnum \\({irq_num}\\)"
+                    ]
+                }
+            ]
+        },
+        {
+            "name" : "SDM_WDT_ERR",
+            "enabled" : 0,
+            "triggers" : [
+                {
+                    "level" : 1,
+                    "cmds" : [
+                        {
+                            "core" : "scp",
+                            "mod"  : "accel_int",
+                            "cmd"  : "reg_set 0x152808",
+                            "bits" : "18"
+                        }
+                    ],
+                    "unexp_log" : "AccelIntr"
+                },
+                {
+                    "level" : 2,
+                    "cmds" : [
+                        {
+                            "core" : "scp",
+                            "mod"  : "accel_int",
+                            "cmd"  : "reg_set 0x140140",
+                            "bits" : "0-2"
+                        }
+                    ],
+                    "exp_log" : [
+                        "SCP_ACCEL::AccelIntrWithLevel2Bits: Ticks \\(lu\\) IRQnum \\({irq_num}\\) irq_bit \\(0x12\\) intr_status \\({hex_bit}\\)",
+                        "SCP_ACCEL::AccelIntrSoCReset: Ticks \\(lu\\) IRQnum \\({irq_num}\\)"
+                    ]
+                }
+            ]
+        },
+        {
+            "name" : "FAB_WDT_ERR",
+            "enabled" : 0,
+            "triggers" : [
+                {
+                    "level" : 1,
+                    "cmds" : [
+                        {
+                            "core" : "scp",
+                            "mod"  : "accel_int",
+                            "cmd"  : "reg_set 0x152808",
+                            "bits" : "19"
+                        }
+                    ],
+                    "unexp_log" : "AccelIntr"
+                },
+                {
+                    "level" : 2,
+                    "cmds" : [
+                        {
+                            "core" : "scp",
+                            "mod"  : "accel_int",
+                            "cmd"  : "reg_set 0x140134",
+                            "bits" : "0-11"
+                        }
+                    ],
+                    "exp_log" : [
+                        "SCP_ACCEL::AccelIntrWithLevel2Bits: Ticks \\(lu\\) IRQnum \\({irq_num}\\) irq_bit \\(0x13\\) intr_status \\({hex_bit}\\)",
+                        "SCP_ACCEL::AccelIntrSoCReset: Ticks \\(lu\\) IRQnum \\({irq_num}\\)"
+                    ]
+                }
+            ]
+        },
+        {
+            "name" : "EMCPU_AXI_BURST_ERR",
+            "enabled" : 1,
+            "triggers" : [
+                {
+                    "level" : 1,
+                    "cmds" : [
+                        {
+                            "core" : "scp",
+                            "mod"  : "accel_int",
+                            "cmd"  : "reg_set 0x152808",
+                            "bits" : "21"
+                        }
+                    ],
+                    "exp_log" : [
+                        "SCP_ACCEL::AccelIntr: Ticks \\(lu\\) IRQnum \\({irq_num}\\) irq_bit \\(0x15\\)",
+                        "SCP_ACCEL::AccelIntrSoCReset: Ticks \\(lu\\) IRQnum \\({irq_num}\\)"
+                    ]
+                }
+            ]
+        },
+        {
+            "name" : "EMCPU_AXI_UNSUP_ERR",
+            "enabled" : 1,
+            "triggers" : [
+                {
+                    "level" : 1,
+                    "cmds" : [
+                        {
+                            "core" : "scp",
+                            "mod"  : "accel_int",
+                            "cmd"  : "reg_set 0x152808",
+                            "bits" : "23"
+                        }
+                    ],
+                    "exp_log" : [
+                        "SCP_ACCEL::AccelIntr: Ticks \\(lu\\) IRQnum \\({irq_num}\\) irq_bit \\(0x17\\)",
+                        "SCP_ACCEL::AccelIntrSoCReset: Ticks \\(lu\\) IRQnum \\({irq_num}\\)"
+                    ]
+                }
+            ]
+        },
+        {
+            "name" : "EMCPU_SYSRESETREQ_ERR",
+            "enabled" : 1,
+            "triggers" : [
+                {
+                    "level" : 1,
+                    "cmds" : [
+                        {
+                            "core" : "scp",
+                            "mod"  : "accel_int",
+                            "cmd"  : "reg_set 0x152808",
+                            "bits" : "24"
+                        }
+                    ],
+                    "exp_log" : [
+                        "SCP_ACCEL::AccelIntr: Ticks \\(lu\\) IRQnum \\({irq_num}\\) irq_bit \\(0x18\\)",
+                        "SCP_ACCEL::AccelIntrSoCReset: Ticks \\(lu\\) IRQnum \\({irq_num}\\)"
+                    ]
+                }
+            ]
+        }
+    ]
+}

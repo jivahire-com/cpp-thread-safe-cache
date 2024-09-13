@@ -21,8 +21,9 @@
 #include <cortex_m7_atomics.h> // for cortex_m7_atomic_call_data_memory_barrier
 #include <fpfw_timer.h>        // for fpfw_timer_create, fpfw_timer_enable...
 #include <fpfw_timer_port.h>   // for fpfw_timer_create, fpfw_timer_enable...
-#include <sdm_ext_cfg_regs.h>  // for _addressblock_0x100000_misc_sys_ext_intr2_msg_send_intr
-#include <stdbool.h>           // for true, false
+#include <idsw_kng.h>
+#include <sdm_ext_cfg_regs.h> // for _addressblock_0x100000_misc_sys_ext_intr2_msg_send_intr
+#include <stdbool.h>          // for true, false
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 /**
@@ -112,18 +113,29 @@ static void reset_timer(uint32_t IRQnum)
  */
 static void accel_intr_handle_sdm_msg_send(eACCELERATOR_TYPE accel_type)
 {
-    // Send interrupt to Accel emCPU
-    uint32_t intr2_msg_send_intr_addr =
-        ACCEL_INTR_GET_DERIVED_ADDR(_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_MSG_SEND_INTR_ADDRESS,
-                                    accelerator_ip_get_atu_mapped_cfg_address(accel_type));
+    /**
+     * TODO: Remove this check once SVP is fixed for Doorbell interrupt
+     * Task 2012978: [SCP] Accel IP Fatal Interrupt remove Doorbell Interrupt workaround
+     */
+    if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
+    {
+        accel_intr_handle_sdm_msg_recvd(accel_intr_get_irq_num_from_accel_type(accel_type));
+    }
+    else
+    {
+        // Send interrupt to Accel emCPU
+        uint32_t intr2_msg_send_intr_addr =
+            ACCEL_INTR_GET_DERIVED_ADDR(_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_MSG_SEND_INTR_ADDRESS,
+                                        accelerator_ip_get_atu_mapped_cfg_address(accel_type));
 
-    _addressblock_0x100000_misc_sys_ext_intr2_msg_send_intr misc_sys_ext_intr2_msg_send_intr;
-    misc_sys_ext_intr2_msg_send_intr.as_uint32 = 0x0;
-    misc_sys_ext_intr2_msg_send_intr.set0 = 0x1;
+        _addressblock_0x100000_misc_sys_ext_intr2_msg_send_intr misc_sys_ext_intr2_msg_send_intr;
+        misc_sys_ext_intr2_msg_send_intr.as_uint32 = 0x0;
+        misc_sys_ext_intr2_msg_send_intr.set0 = 0x1;
 
-    MMIO_WRITE32(intr2_msg_send_intr_addr, misc_sys_ext_intr2_msg_send_intr.as_uint32);
+        MMIO_WRITE32(intr2_msg_send_intr_addr, misc_sys_ext_intr2_msg_send_intr.as_uint32);
 
-    cortex_m7_atomic_call_data_memory_barrier();
+        cortex_m7_atomic_call_data_memory_barrier();
+    }
 }
 
 /**

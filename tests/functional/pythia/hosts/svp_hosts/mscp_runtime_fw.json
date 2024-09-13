@@ -48,6 +48,16 @@
                                 },
                                 "default": "telnet"
                             }
+                        },
+                        "sdm": {
+                            "channels": {
+                                "telnet": {
+                                    "host": "localhost",
+                                    "port": 4270,
+                                    "timeout_seconds": 60.0 
+                                },
+                                "default": "telnet"
+                            }
                         }
                     }
                 }
@@ -111,6 +121,8 @@
             "KingsgateSVP.DIE_0.RPSS3.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image":"${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}/firmware/release/nvme.elf",
             "KingsgateSVP.DIE_0.RPSS3.PCIe_EPs.NVMe_SSD_EP_BB_x16.Periphs.UART_PHY_EP.#SCML_PROPERTIES#TerminalAutoOpen":"false",
             "KingsgateSVP.DIE_0.SDMSS.SDM_EMCPU.ARM_FM_CORTEX_M7.#EXTRA_PROPERTIES#/ImageInfo/cpu0/initial_image":"${env:REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/sdm/sdm_fw.elf",
+            "KingsgateSVP.DIE_0.SDMSS.SDM_EMCPU.terminal_uart_sdm.#SCML_PROPERTIES#ENABLE_TCP_ON_PORT": "4270",
+            "KingsgateSVP.DIE_0.SDMSS.SDM_EMCPU.terminal_uart_sdm.#SCML_PROPERTIES#TerminalAutoOpen": "false",
             "KingsgateSVP.DIE_0.VABRPSS1.#EXTRA_PROPERTIES#runtime_disabled":"false",
             "KingsgateSVP.DIE_0.VABRPSS2.#EXTRA_PROPERTIES#runtime_disabled":"false",
             "KingsgateSVP.DIE_0.VABRPSS3.#EXTRA_PROPERTIES#runtime_disabled":"false",

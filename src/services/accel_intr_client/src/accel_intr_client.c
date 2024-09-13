@@ -75,10 +75,10 @@ void send_fatal_intr_async_request(uint32_t IRQnum)
 
 void accel_intr_client_init(paccel_intr_service_interface_t p_interface)
 {
-    // Cache the power interface pointer
+    // Cache the Accel Client interface pointer
     accel_intr_service_cmd_context.p_interface = p_interface;
 
-    // Open Driver Framework Interface for Power CLI, initialize async requests
+    // Open Driver Framework Interface for Accel Client, initialize async requests
     DfwkClientInterfaceOpen(&accel_intr_service_cmd_context.p_interface->header);
 
     for (eACCELERATOR_TYPE accel_type = 0x0; accel_type < MAX_ACCELERATOR_TYPES; accel_type++)

@@ -23,6 +23,7 @@ target_link_libraries(${TARGET}
         fwlib.platform.dfwkhost.threadx
         fwlib.service.cli
         silibs::icc_mhu
+        silibs::idhw
         silibs::mhuv3
         ms::lib::arm_intrinsic
         ms::lib::register_headers

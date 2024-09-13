@@ -10,6 +10,8 @@
 #pragma once
 
 /*--------------- Includes ---------------*/
+#include <icc_mhu_cfg.h>
+#include <idhw.h>
 #include <silibs_platform.h>
 
 /*--------- Macro Definitions ------------*/
@@ -99,10 +101,11 @@ int icc_mhu_trans_check_message_received(uint16_t mhu_interface_id);
 /**
  * @brief API to initialize everything about the transport primitive
  *
- * @param NONE
+ * @param configuration - pointer to the configuration table
+ * @param num_configs - number of configurations in the table
  * @return ICC_MHU_STATUS_SUCCESS when initialization was done
  */
-int icc_mhu_trans_init();
+int icc_mhu_trans_init(icc_mhu_configuration_t* configuration, uint8_t num_configs);
 
 /**
  * @brief API to support icc SCMI CLI - may need to deprecate later

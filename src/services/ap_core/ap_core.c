@@ -141,7 +141,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
             {
                 DfwkAsyncRequestComplete(p_request);
             }
-            
+
             break;
         case STARTUP_BL31_LOAD:
             if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())
@@ -218,13 +218,13 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
         case STARTUP_MCP_LOAD:
             if (system_info_is_hsp_present())
             {
-                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_MCP);    
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_MCP);
             }
             else
             {
                 DfwkAsyncRequestComplete(p_request);
             }
-            
+
             break;
         default:
             // nothing to do for other types.

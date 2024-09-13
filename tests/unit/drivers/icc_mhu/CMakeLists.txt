@@ -19,6 +19,7 @@ target_link_libraries(${TARGET}
     ms::lib::arm_intrinsic
     ms::lib::register_headers	
     silibs::icc_mhu
+    silibs::idhw
     silibs::mhuv3
     silibs::kng_silibs_platform
     silibs_platform

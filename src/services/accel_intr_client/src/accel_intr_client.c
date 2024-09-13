@@ -88,7 +88,7 @@ void accel_intr_client_init(paccel_intr_service_interface_t p_interface)
              idx++)
         {
             DfwkAsyncRequestInitialize(&accel_intr_service_cmd_context.requests[accel_type][idx].header,
-                                        sizeof(accel_intr_service_cmd_context.requests[accel_type][idx].header));
+                                       sizeof(accel_intr_service_cmd_context.requests[accel_type][idx].header));
         }
     }
 }

@@ -126,6 +126,7 @@ target_link_libraries(
         ms::service::sensor_fifo::cli
         silibs::avs
         silibs::common::lib_uart_pl011
+        silibs::icc_mhu
         silibs::idhw
         silibs::idsw
         silibs::idsw_kng

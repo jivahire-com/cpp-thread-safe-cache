@@ -44,7 +44,6 @@ int icc_mhu_trans_get_message(uint16_t mhu_interface_id, picc_msg_receive_t mess
 /**
  * @brief API to provide configuration address and number of configs
  *
- * @param properties
- * @return none
+ * @return icc_mhu_properties_t properties
  */
-void icc_mhu_trans_get_config_entries(icc_mhu_properties_t* properties);
+icc_mhu_properties_t* icc_mhu_trans_get_config_entries();

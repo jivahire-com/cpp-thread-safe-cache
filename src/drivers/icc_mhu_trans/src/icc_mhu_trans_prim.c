@@ -17,76 +17,14 @@
 #include <icc_mhu.h>
 #include <icc_mhu_cfg.h>
 #include <icc_mhu_trans_prim.h>
-#include <kng_icc_shared.h>
+#include <idhw.h>
 #include <kng_scmi_shared.h>
-#include <kng_scp_tfa_shared.h>
 #include <mhuv3.h>
-
-#ifndef MAILBOX_MSCP_OFFSET
-    #define MAILBOX_MSCP_OFFSET (0x60000000)
-#endif
 
 #define SMT_CHANNEL_FREE    1
 #define SIZE_OF_TEMP_BUFFER 64
 
-// TODO: Will have to move this once we have the DFWK Version up
-static icc_mhu_configuration_t icc_mhu_configuration[] = {
-    // SCP TO AP S Send Response -(TFA reponse)
-    {
-        .channel_id = MHU_INTERFACE_ID(SCP_LOCAL, AP_CORE_SEC),
-        .icc_channel_info =
-            {
-                .protocol_type = ICC_PROTOCOL_TYPE_SCMI_ON_ICC,
-                .direction = ICC_SEND_DIR,
-
-            },
-        .channel =
-            {
-                .type = MHU3_CHANNEL_TYPE_DBCH,
-                .address = MHU_SCP_AP_S_SEND_BASE_ADDRESS,
-                .characteristics = 0,
-                .dbch =
-                    {
-                        .pbx_channel = 0,
-                        .pbx_flag_pos = 0,
-                        .mbx_channel = 0,
-                        .mbx_flag_pos = 0,
-                    },
-            },
-        .mailbox_address = TFA_AP_2_SCP_RECEIVE_BASE + MAILBOX_MSCP_OFFSET,
-        .mailbox_size = TFA_AP_2_SCP_RECEIVE_SIZE,
-    },
-    // AP TO SCP S Receive Message Configuration
-    {
-        .channel_id = MHU_INTERFACE_ID(AP_CORE_SEC, SCP_LOCAL),
-        .icc_channel_info =
-            {
-                .protocol_type = ICC_PROTOCOL_TYPE_SCMI_ON_ICC,
-                .direction = ICC_RECEIVE_DIR,
-
-            },
-        .channel =
-            {
-                .type = MHU3_CHANNEL_TYPE_DBCH,
-                .address = MHU_SCP_AP_S_REC_BASE_ADDRESS,
-                .characteristics = 0,
-                .dbch =
-                    {
-                        .pbx_channel = 0,
-                        .pbx_flag_pos = 0,
-                        .mbx_channel = 0,
-                        .mbx_flag_pos = 0,
-                    },
-            },
-        .mailbox_address = (TFA_AP_2_SCP_SEND_BASE + MAILBOX_MSCP_OFFSET),
-        .mailbox_size = SCP_2_TFA_AP_RECEIVE_SIZE,
-    },
-};
-
-icc_mhu_properties_t properties = {
-    .pIcc_configuration_table = NULL,
-    .number_of_channel_cfg = 0,
-};
+icc_mhu_configuration_t* icc_mhu_configuration;
 
 /*------------- Functions Prototypes----------------*/
 // TODO - Put notes in this ADO to remove this on the next PR https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1573706
@@ -251,20 +189,14 @@ int icc_mhu_trans_enable_interrupts()
     return ICC_MHU_STATUS_SUCCESS;
 }
 
-/**
- * @brief API to load enable the interrupt status of each channel
- *
- * @param None
- * @return ICC_MHU_STATUS_SUCCESS
- */
-int icc_mhu_trans_init()
+int icc_mhu_trans_init(icc_mhu_configuration_t* configuration, uint8_t num_configs)
 {
     // Set the configurations
-    uint8_t index_total = sizeof(icc_mhu_configuration) / sizeof(icc_mhu_configuration_t);
-    icc_mhu_trans_set_configuration_table(icc_mhu_configuration, index_total);
+    icc_mhu_trans_set_configuration_table(configuration, num_configs);
+    icc_mhu_configuration = configuration;
 
     // Check for any SCMI receive configuration and make sure to set the channel to be free
-    for (uint8_t index = 0; index < index_total; index++)
+    for (uint8_t index = 0; index < num_configs; index++)
     {
         // Check if the channel is for SCMI
         if (icc_mhu_configuration[index].icc_channel_info.protocol_type == ICC_PROTOCOL_TYPE_SCMI_ON_ICC &&
@@ -272,7 +204,7 @@ int icc_mhu_trans_init()
         {
             // Since we are receiving a message from an SCMI ICC then we need to set the status SCMI Status flag
             picc_mhu_packet_t packet = (picc_mhu_packet_t)icc_mhu_configuration[index].mailbox_address;
-            scmi_icc_packet_t* scmi_packet = (scmi_icc_packet_t*)packet->payload;
+            volatile scmi_icc_packet_t* scmi_packet = (scmi_icc_packet_t*)packet->payload;
 
             // set the status bit so that the status is free
             scmi_packet->smt_header.status = SMT_CHANNEL_FREE;
@@ -290,23 +222,9 @@ int icc_mhu_trans_init()
  */
 void icc_mhu_trans_check_scmi_status_bit(uint16_t index)
 {
-
-    // Since we are receiving a message from an SCMI ICC then we need to set the status SCMI Status flag
     picc_mhu_packet_t packet = (picc_mhu_packet_t)icc_mhu_configuration[index].mailbox_address;
     scmi_icc_packet_t* scmi_packet = (scmi_icc_packet_t*)packet->payload;
 
     ICC_MHU_LOG_INFO("  SCMI Status[%d]: %d\n", (int)index, (int)scmi_packet->smt_header.status);
     ICC_MHU_LOG_INFO("          Address: %p\n", &(scmi_packet->smt_header.status));
-}
-
-/**
- * @brief API to provide configuration address and number of configs
- *
- * @param properties
- * @return none
- */
-void icc_mhu_trans_get_config_entries(icc_mhu_properties_t* properties)
-{
-    properties->pIcc_configuration_table = (picc_mhu_configuration_t)&icc_mhu_configuration;
-    properties->number_of_channel_cfg = sizeof(icc_mhu_configuration) / sizeof(icc_mhu_configuration_t);
 }

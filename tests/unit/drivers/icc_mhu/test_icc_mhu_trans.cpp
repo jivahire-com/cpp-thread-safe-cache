@@ -18,7 +18,9 @@ extern "C" {
 #include <icc_mhu_cfg.h>
 #include <icc_mhu_trans_prim.h> // for icc mhu
 #include <icc_mhu_trans_prim_i.h>
+#include <kng_icc_shared.h>
 #include <kng_scmi_shared.h>
+#include <kng_scp_tfa_shared.h>
 #include <stddef.h> // for NULL
 #include <stdint.h> // for uint32_t
 }
@@ -34,9 +36,60 @@ int __real_icc_mhu_trans_get_message(uint16_t mhu_interface_id, picc_msg_receive
 
 /*-- Declarations (Statics and globals) --*/
 
-icc_mhu_properties_t properties;
-uint8_t mailbox_0[SIZE_OF_MAILBOX_TEST];
-uint8_t mailbox_1[SIZE_OF_MAILBOX_TEST];
+static uint8_t mailbox_0[SIZE_OF_MAILBOX_TEST];
+static uint8_t mailbox_1[SIZE_OF_MAILBOX_TEST];
+static icc_mhu_configuration_t icc_mhu_configuration[] = {
+    // SCP TO AP S Send Response -(TFA reponse)
+    {
+        .channel_id = MHU_INTERFACE_ID(SCP_LOCAL, AP_CORE_SEC),
+        .icc_channel_info =
+            {
+                .protocol_type = ICC_PROTOCOL_TYPE_SCMI_ON_ICC,
+                .direction = ICC_SEND_DIR,
+
+            },
+        .channel =
+            {
+                .type = MHU3_CHANNEL_TYPE_DBCH,
+                .address = MHU_SCP_AP_S_SEND_BASE_ADDRESS,
+                .characteristics = 0,
+                .dbch =
+                    {
+                        .pbx_channel = 0,
+                        .pbx_flag_pos = 0,
+                        .mbx_channel = 0,
+                        .mbx_flag_pos = 0,
+                    },
+            },
+        .mailbox_address = (uintptr_t)mailbox_0,
+        .mailbox_size = SIZE_OF_MAILBOX_TEST,
+    },
+    // AP TO SCP S Receive Message Configuration
+    {
+        .channel_id = MHU_INTERFACE_ID(AP_CORE_SEC, SCP_LOCAL),
+        .icc_channel_info =
+            {
+                .protocol_type = ICC_PROTOCOL_TYPE_SCMI_ON_ICC,
+                .direction = ICC_RECEIVE_DIR,
+
+            },
+        .channel =
+            {
+                .type = MHU3_CHANNEL_TYPE_DBCH,
+                .address = MHU_SCP_AP_S_REC_BASE_ADDRESS,
+                .characteristics = 0,
+                .dbch =
+                    {
+                        .pbx_channel = 0,
+                        .pbx_flag_pos = 0,
+                        .mbx_channel = 0,
+                        .mbx_flag_pos = 0,
+                    },
+            },
+        .mailbox_address = (uintptr_t)mailbox_1,
+        .mailbox_size = SIZE_OF_MAILBOX_TEST,
+    },
+};
 
 typedef struct
 {
@@ -45,33 +98,17 @@ typedef struct
     uint8_t data[SIZE_OF_MSG_BUFFER];
 } transport_message_t;
 
-static int test_setup(void** pContext)
-{
-    FPFW_UNUSED(pContext);
-    icc_mhu_trans_get_config_entries(&properties);
-    icc_mhu_configuration_t* configuration = (icc_mhu_configuration_t*)properties.pIcc_configuration_table;
-    configuration[0].mailbox_address = (uintptr_t)mailbox_0;
-    configuration[1].mailbox_address = (uintptr_t)mailbox_1;
-    return 0;
-}
-
-static int test_teardown(void** pContext)
-{
-    FPFW_UNUSED(pContext);
-    return 0;
-}
-
 //
 // Tests
 //
-TEST_FUNCTION(test_icc_mhu_trans_init, test_setup, test_teardown)
+TEST_FUNCTION(test_icc_mhu_trans_init, NULL, NULL)
 {
     // Ensure that the MHU is initialized
-    int status = icc_mhu_trans_init();
+    int status = icc_mhu_trans_init(icc_mhu_configuration, 2);
     assert_int_equal(status, ICC_MHU_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(test_icc_mhu_trans_check_scmi_status_bit, test_setup, test_teardown)
+TEST_FUNCTION(test_icc_mhu_trans_check_scmi_status_bit, NULL, NULL)
 {
     icc_mhu_trans_check_scmi_status_bit(ICC_MSG_INDEX_SEND);
     icc_mhu_trans_check_scmi_status_bit(ICC_MSG_INDEX_RECEIVE);
@@ -82,27 +119,26 @@ TEST_FUNCTION(test_icc_mhu_trans_check_scmi_status_bit, test_setup, test_teardow
     assert_int_equal(scmi_packet->smt_header.status, 1);
 }
 
-TEST_FUNCTION(test_icc_mhu_trans_enable_interrupts, test_setup, test_teardown)
+TEST_FUNCTION(test_icc_mhu_trans_enable_interrupts, NULL, NULL)
 {
     // Simple interrupt test, may need to expand further
     int status = icc_mhu_trans_enable_interrupts();
     assert_int_equal(status, ICC_MHU_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(test_icc_mhu_trans_set_configuration_table, test_setup, test_teardown)
+TEST_FUNCTION(test_icc_mhu_trans_set_configuration_table, NULL, NULL)
 {
     // Ensure that the MHU is initialized
-    int status = icc_mhu_trans_set_configuration_table(NULL, properties.number_of_channel_cfg);
+    int status = icc_mhu_trans_set_configuration_table(NULL, 2);
     assert_int_equal(status, ICC_MHU_INVALID_PARAMETER);
-    status = icc_mhu_trans_set_configuration_table((icc_mhu_configuration_t*)properties.pIcc_configuration_table, 0);
+    status = icc_mhu_trans_set_configuration_table(icc_mhu_configuration, 0);
     assert_int_equal(status, ICC_MHU_INVALID_PARAMETER);
 
-    status = icc_mhu_trans_set_configuration_table((icc_mhu_configuration_t*)properties.pIcc_configuration_table,
-                                                   properties.number_of_channel_cfg);
+    status = icc_mhu_trans_set_configuration_table(icc_mhu_configuration, 2);
     assert_int_equal(status, ICC_MHU_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(test_icc_mhu_trans_send_message_idx, test_setup, test_teardown)
+TEST_FUNCTION(test_icc_mhu_trans_send_message_idx, NULL, NULL)
 {
     // data initialized, dummy data
     uint8_t data[] = {0, 1, 2};
@@ -119,7 +155,7 @@ TEST_FUNCTION(test_icc_mhu_trans_send_message_idx, test_setup, test_teardown)
     assert_int_equal(status, ICC_MHU_INTERFACE_BUSY);
 }
 
-TEST_FUNCTION(test_icc_mhu_trans_get_message, test_setup, test_teardown)
+TEST_FUNCTION(test_icc_mhu_trans_get_message, NULL, NULL)
 {
 
     icc_msg_receive_t message;
@@ -132,7 +168,7 @@ TEST_FUNCTION(test_icc_mhu_trans_get_message, test_setup, test_teardown)
     assert_int_equal(status, ICC_MHU_INVALID_PARAMETER);
 }
 
-TEST_FUNCTION(test_icc_mhu_trans_get_msg_from_index, test_setup, test_teardown)
+TEST_FUNCTION(test_icc_mhu_trans_get_msg_from_index, NULL, NULL)
 {
     // create an example command and buffer
     transport_message_t message;

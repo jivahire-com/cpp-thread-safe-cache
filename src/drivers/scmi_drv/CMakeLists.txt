@@ -19,6 +19,8 @@ target_link_libraries(${TARGET}
         fwlib.dfwk
         fwlib.lib.utils
         fwlib.service.cli
+        silibs::icc_mhu
+        silibs::idhw
         silibs::kng_silibs_platform
         ms::lib::register_headers		
         ms::driver::icc_mhu_trans	

@@ -27,19 +27,23 @@
 #define PWR_THREAD_PRIORITY          (10)
 #define PWR_THREAD_PREEMPT_THRESHOLD (10)
 
-#define PWR_STACK_SIZE    ((TX_MINIMUM_STACK) + ((1) * (FPFW_KB)))
-#define PWR_QUEUE_ENTRIES (15)
+#define PWR_STACK_SIZE         ((TX_MINIMUM_STACK) + ((1) * (FPFW_KB)))
+#define PWR_QUEUE_ENTRIES      (15)
+#define PWR_IDLE_QUEUE_ENTRIES (5)
 
-#define PWR_QUEUE_NAME  "Pwr Work Queue"
-#define PWR_THREAD_NAME "Pwr Worker"
+#define PWR_QUEUE_NAME      "Pwr Work Queue"
+#define PWR_IDLE_QUEUE_NAME "Pwr Idle Queue"
+#define PWR_THREAD_NAME     "Pwr Worker"
 
 /*------------- Typedefs -----------------*/
 typedef struct
 {
     uint8_t power_loops_stack[PWR_STACK_SIZE];
     power_loops_queue_entry_t power_loops_queue[PWR_QUEUE_ENTRIES];
+    power_loops_queue_entry_t power_idle_queue[PWR_IDLE_QUEUE_ENTRIES];
     TX_THREAD work_thread;
     TX_QUEUE work_queue;
+    TX_QUEUE idle_queue;
     uint32_t idle_tracker;
 } power_loops_thread_context_t;
 
@@ -69,6 +73,20 @@ static bool all_loops_idle()
     return (s_power_loops_thread_ctx.idle_tracker == 0);
 }
 
+static void process_idle_queue()
+{
+    power_loops_queue_entry_t message;
+
+    UINT status = tx_queue_receive(&s_power_loops_thread_ctx.idle_queue, &message, TX_NO_WAIT);
+    if (status == TX_SUCCESS)
+    {
+        // if we pulled item from idle queue, send it to front of work queue
+        int status = tx_queue_front_send(&s_power_loops_thread_ctx.work_queue, &message, TX_NO_WAIT);
+        // only expect this call when queue is empty, so should always succeed
+        BUG_ASSERT_PARAM(status == TX_SUCCESS, status, 0);
+    }
+}
+
 static void power_loops_worker_thread_function(ULONG service_ctx)
 {
     FPFW_UNUSED(service_ctx);
@@ -96,21 +114,27 @@ static void power_loops_worker_thread_function(ULONG service_ctx)
                                               message.data.state_signal.event_data);
         }
         break;
-        case LOOP_QUEUE_ENTRY_TYPE_EXEC_IN_IDLE: {
+        case LOOP_QUEUE_ENTRY_TYPE_EXEC_IN_IDLE:
+            FPFW_RUNTIME_ASSERT(message.data.exec_in_idle.p_handler != NULL);
+            message.data.exec_in_idle.p_handler(message.data.exec_in_idle.p_request, message.data.exec_in_idle.p_context);
+            break;
+        default:
+            break;
+        }
+
+        ULONG enqueued;
+
+        // check if queue is empty, and then process idle queue if all loops are idle
+        status = tx_queue_info_get(&s_power_loops_thread_ctx.work_queue, TX_NULL, &enqueued, TX_NULL, TX_NULL, TX_NULL, TX_NULL);
+        FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);
+
+        if (enqueued == 0)
+        {
+            // The work queue is empty; if we're also idle, process the idle queue (one entry at a time)
             if (all_loops_idle())
             {
-                FPFW_RUNTIME_ASSERT(message.data.exec_in_idle.p_handler != NULL);
-                message.data.exec_in_idle.p_handler(message.data.exec_in_idle.p_request,
-                                                    message.data.exec_in_idle.p_context);
+                process_idle_queue();
             }
-            else
-            {
-                // requeue the request if loops aren't idle
-                power_loops_exec_in_idle(message.data.exec_in_idle.p_handler,
-                                         message.data.exec_in_idle.p_request,
-                                         message.data.exec_in_idle.p_context);
-            }
-        }
         }
     }
 }
@@ -125,6 +149,13 @@ void power_loops_init()
                                  sizeof(power_loops_queue_entry_t) / sizeof(uint32_t), /* UINT message_size in 32b words */
                                  (void*)s_power_loops_thread_ctx.power_loops_queue,   /* VOID *queue_start */
                                  sizeof(s_power_loops_thread_ctx.power_loops_queue)); /* ULONG queue_size */
+    FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);
+
+    status = tx_queue_create(&s_power_loops_thread_ctx.idle_queue,                 /* TX_QUEUE *queue_ptr */
+                             PWR_IDLE_QUEUE_NAME,                                  /* CHAR *name_ptr */
+                             sizeof(power_loops_queue_entry_t) / sizeof(uint32_t), /* UINT message_size in 32b words */
+                             (void*)s_power_loops_thread_ctx.power_idle_queue,   /* VOID *queue_start */
+                             sizeof(s_power_loops_thread_ctx.power_idle_queue)); /* ULONG queue_size */
     FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);
 
     status = tx_thread_create(&s_power_loops_thread_ctx.work_thread, /* TX_THREAD *thread_ptr */
@@ -281,8 +312,13 @@ void power_loops_exec_in_idle(power_exec_in_idle_handler_t p_handler, PDFWK_ASYN
     message.data.exec_in_idle.p_request = p_request;
     message.data.exec_in_idle.p_context = p_context;
 
-    int status = tx_queue_send(&s_power_loops_thread_ctx.work_queue, &message, TX_NO_WAIT);
+    // idle requests are sent to the idle queue
+    int status = tx_queue_send(&s_power_loops_thread_ctx.idle_queue, &message, TX_NO_WAIT);
     BUG_ASSERT_PARAM(status == TX_SUCCESS, status, 0);
+
+    // ignore failure here; NOP is just to ensure something is in the work queue
+    message.type = LOOP_QUEUE_ENTRY_TYPE_NOP;
+    tx_queue_send(&s_power_loops_thread_ctx.work_queue, &message, TX_NO_WAIT);
 }
 
 bool power_loops_retry_fail(power_loop_context_t* p_context, power_loop_retries_t type)

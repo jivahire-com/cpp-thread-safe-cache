@@ -108,6 +108,16 @@ int32_t __wrap__txe_queue_send(TX_QUEUE* queue_ptr, VOID* source_ptr, ULONG wait
     return mock_type(int32_t);
 }
 
+int32_t __wrap__txe_queue_front_send(TX_QUEUE* queue_ptr, VOID* source_ptr, ULONG wait_option)
+{
+    check_expected_ptr(queue_ptr);
+    check_expected_ptr(source_ptr);
+    check_expected(wait_option);
+
+    memcpy(&s_queue_entry, source_ptr, sizeof(power_loops_queue_entry_t));
+    return mock_type(int32_t);
+}
+
 UINT __wrap__txe_queue_receive(TX_QUEUE* queue_ptr, VOID* destination_ptr, ULONG wait_option)
 {
     check_expected_ptr(queue_ptr);
@@ -121,6 +131,30 @@ UINT __wrap__txe_queue_receive(TX_QUEUE* queue_ptr, VOID* destination_ptr, ULONG
     }
     memcpy(destination_ptr, provided_entry, sizeof(power_loops_queue_entry_t));
 
+    return mock_type(UINT);
+}
+
+UINT __wrap__txe_queue_info_get(TX_QUEUE* queue_ptr,
+                                CHAR** name,
+                                ULONG* enqueued,
+                                ULONG* available_storage,
+                                TX_THREAD** first_suspended,
+                                ULONG* suspended_count,
+                                TX_QUEUE** next_queue)
+{
+    check_expected_ptr(queue_ptr);
+    check_expected_ptr(name);
+    check_expected_ptr(enqueued);
+    check_expected_ptr(available_storage);
+    check_expected_ptr(first_suspended);
+    check_expected_ptr(suspended_count);
+    check_expected_ptr(next_queue);
+    if (enqueued != NULL)
+    {
+        ULONG count = mock_type(ULONG);
+        printf("enqueued: %lu\n", count);
+        *enqueued = count;
+    }
     return mock_type(UINT);
 }
 
@@ -170,6 +204,14 @@ POWER_TEST(power_loops_init, NULL, NULL)
 #define THREAD_PREEMPT_THRESHOLD (10)
 
     // expectations for queue create API
+    // work queue
+    expect_not_value(__wrap__txe_queue_create, queue_ptr, NULL);
+    expect_any(__wrap__txe_queue_create, name_ptr);
+    expect_value(__wrap__txe_queue_create, message_size, sizeof(power_loops_queue_entry_t) / sizeof(uint32_t));
+    expect_not_value(__wrap__txe_queue_create, queue_start, NULL);
+    expect_not_value(__wrap__txe_queue_create, queue_size, 0);
+    will_return(__wrap__txe_queue_create, TX_SUCCESS);
+    // idle queue
     expect_not_value(__wrap__txe_queue_create, queue_ptr, NULL);
     expect_any(__wrap__txe_queue_create, name_ptr);
     expect_value(__wrap__txe_queue_create, message_size, sizeof(power_loops_queue_entry_t) / sizeof(uint32_t));
@@ -190,7 +232,7 @@ POWER_TEST(power_loops_init, NULL, NULL)
     expect_value(__wrap__txe_thread_create, auto_start, TX_AUTO_START);
     will_return(__wrap__txe_thread_create, TX_SUCCESS);
 
-    expect_value_count(__wrap_FpFwAssert, expression, true, 2);
+    expect_value_count(__wrap_FpFwAssert, expression, true, 3);
 
     // call the function
     power_loops_init();
@@ -199,8 +241,17 @@ POWER_TEST(power_loops_init, NULL, NULL)
 static void setup_expectations_for_exec_in_idle()
 {
     // expectations for queue send API
+    power_loops_queue_entry_type_t type = LOOP_QUEUE_ENTRY_TYPE_EXEC_IN_IDLE;
+    // work queue
     expect_not_value(__wrap__txe_queue_send, queue_ptr, NULL);
-    expect_not_value(__wrap__txe_queue_send, source_ptr, NULL);
+    expect_memory(__wrap__txe_queue_send, source_ptr, &type, sizeof(type)); // type is first field in entry
+    expect_value(__wrap__txe_queue_send, wait_option, TX_NO_WAIT);
+    will_return(__wrap__txe_queue_send, TX_SUCCESS);
+
+    // idle queue
+    type = LOOP_QUEUE_ENTRY_TYPE_NOP;
+    expect_not_value(__wrap__txe_queue_send, queue_ptr, NULL);
+    expect_memory(__wrap__txe_queue_send, source_ptr, &type, sizeof(type)); // type is first field in entry
     expect_value(__wrap__txe_queue_send, wait_option, TX_NO_WAIT);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
 }
@@ -208,7 +259,6 @@ static void setup_expectations_for_exec_in_idle()
 static void check_exec_in_idle(int handler, int request, int context)
 {
     // check the queue entry
-    assert_int_equal(s_queue_entry.type, LOOP_QUEUE_ENTRY_TYPE_EXEC_IN_IDLE);
     assert_int_equal(s_queue_entry.data.exec_in_idle.p_handler, handler);
     assert_int_equal(s_queue_entry.data.exec_in_idle.p_request, request);
     assert_int_equal(s_queue_entry.data.exec_in_idle.p_context, context);
@@ -359,7 +409,7 @@ POWER_TEST(power_loops_retry_fail__retries_exhausted, NULL, NULL)
     assert_int_equal(context.status.retries[POWER_LOOP_RETRY_TYPE_INTERVAL], POWER_LOOP_RETRY_COUNT);
 }
 
-static void setup_entry_function_to_queue_entry(power_loops_queue_entry_t* p_entry)
+static void setup_entry_function_to_queue_entry(power_loops_queue_entry_t* p_entry, bool idle_entry)
 {
     expect_not_value(__wrap__txe_queue_receive, queue_ptr, NULL);
     expect_not_value(__wrap__txe_queue_receive, destination_ptr, NULL);
@@ -368,6 +418,27 @@ static void setup_entry_function_to_queue_entry(power_loops_queue_entry_t* p_ent
     // provide a message from the queue
     will_return(__wrap__txe_queue_receive, p_entry);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    
+    if (idle_entry)
+    {
+        // if we want to test idle case, we need to setup an entry for the idle queue
+        // reusing the same entry from above
+        expect_not_value(__wrap__txe_queue_receive, queue_ptr, NULL);
+        expect_not_value(__wrap__txe_queue_receive, destination_ptr, NULL);
+        expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+
+        // provide a message from the queue
+        will_return(__wrap__txe_queue_receive, p_entry);
+        will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+        // now we expect that entry is going to be requeued to work queue
+        // idle queue value
+        expect_not_value(__wrap__txe_queue_front_send, queue_ptr, NULL);
+        expect_memory(__wrap__txe_queue_front_send, source_ptr, &p_entry->type, sizeof(p_entry->type)); // type is first field in entry
+        expect_value(__wrap__txe_queue_front_send, wait_option, TX_NO_WAIT);
+        will_return(__wrap__txe_queue_front_send, TX_SUCCESS);
+    }
 
     expect_not_value(__wrap__txe_queue_receive, queue_ptr, NULL);
     expect_not_value(__wrap__txe_queue_receive, destination_ptr, NULL);
@@ -388,6 +459,22 @@ static void call_entry_function()
     }
 }
 
+static void setup_expectation_for_queue_get_info(ULONG enqueue_count)
+{
+    // expectations for queue info get API
+    expect_not_value(__wrap__txe_queue_info_get, queue_ptr, NULL);
+    expect_value(__wrap__txe_queue_info_get, name, NULL);
+    expect_not_value(__wrap__txe_queue_info_get, enqueued, NULL);
+    expect_value(__wrap__txe_queue_info_get, available_storage, NULL);
+    expect_value(__wrap__txe_queue_info_get, first_suspended, NULL);
+    expect_value(__wrap__txe_queue_info_get, suspended_count, NULL);
+    expect_value(__wrap__txe_queue_info_get, next_queue, NULL);
+    will_return(__wrap__txe_queue_info_get, enqueue_count);
+    will_return(__wrap__txe_queue_info_get, TX_SUCCESS);
+
+    expect_value(__wrap_FpFwAssert, expression, true);
+}
+
 // test for internal change state
 POWER_TEST(power_loops_internal_change_state, NULL, NULL)
 {
@@ -397,7 +484,10 @@ POWER_TEST(power_loops_internal_change_state, NULL, NULL)
                                        .data.state_change = {.p_context = &s_mock_loop_context, .state = 0}};
 
     // setup expectations for s_entry_function
-    setup_entry_function_to_queue_entry(&entry);
+    setup_entry_function_to_queue_entry(&entry, false);
+
+    // setup expectation for queue_get_info
+    setup_expectation_for_queue_get_info(1);  // still have item enqueued
 
     // expectations for power_loops_internal_change_state
     expect_value_count(__wrap_FpFwAssert, expression, true, 7);
@@ -426,7 +516,10 @@ POWER_TEST(power_loops_internal_handle_event, NULL, NULL)
     s_mock_loop_context.status.interval_in_flight = true;
 
     // setup expectations for s_entry_function
-    setup_entry_function_to_queue_entry(&entry);
+    setup_entry_function_to_queue_entry(&entry, false);
+
+    // setup expectation for queue_get_info
+    setup_expectation_for_queue_get_info(1);  // still have item enqueued
 
     // expectations for power_loops_internal_handle_event
     expect_value_count(__wrap_FpFwAssert, expression, true, 4);
@@ -456,8 +549,34 @@ static void setup_exec_in_idle(power_loops_queue_entry_t* p_entry)
     p_entry->data.exec_in_idle.p_context = (void*)CONTEXT_PTR;
 }
 
+static void setup_nop(power_loops_queue_entry_t* p_entry)
+{
+    p_entry->type = LOOP_QUEUE_ENTRY_TYPE_NOP;
+}
+
 // test for exec in idle
 POWER_TEST(power_loops_internal_exec_in_idle, NULL, NULL)
+{
+    // -------------------
+    // put idle entry into queue / handle
+    // -------------------
+    power_loops_queue_entry_t entry = {};
+
+    setup_exec_in_idle(&entry);
+    // setup expectations for s_entry_function
+    setup_entry_function_to_queue_entry(&entry, false);
+    // setup expectation for queue_get_info
+    setup_expectation_for_queue_get_info(1);  // still have item enqueued
+    // checks that the idle callback is valid
+    expect_value_count(__wrap_FpFwAssert, expression, true, 1);
+    expect_value(mock_idle_callback, p_request, REQUEST_PTR);
+    expect_value(mock_idle_callback, p_context, CONTEXT_PTR);
+
+    call_entry_function();
+}
+
+// test for exec in idle
+POWER_TEST(power_loops_internal_exec_in_idle__setup, NULL, NULL)
 {
     // expectations for queue handling
 
@@ -469,27 +588,18 @@ POWER_TEST(power_loops_internal_exec_in_idle, NULL, NULL)
     setup_state_change(POWER_LOOP_IDLE_STATE_ID, &entry);
 
     // setup expectations for s_entry_function
-    setup_entry_function_to_queue_entry(&entry);
+    setup_entry_function_to_queue_entry(&entry, true);  // true to enable second / idle queue read
+
+    // setup expectation for queue_get_info
+    setup_expectation_for_queue_get_info(0);  // no items, enqueued!
 
     // expectations for power_loops_internal_change_state
     expect_value_count(__wrap_FpFwAssert, expression, true, 7);
     will_return(__wrap_power_timer_get_counter, 0);
-
+    
     // expect handler call
     expect_value(mock_handler0, event, POWER_LOOP_STATE_SIGNAL_ENTRY);
     expect_value(mock_handler0, event_data, NULL);
-
-    call_entry_function();
-    // -------------------
-    // should be idle
-    // -------------------
-    setup_exec_in_idle(&entry);
-    // setup expectations for s_entry_function
-    setup_entry_function_to_queue_entry(&entry);
-    // checks that the idle callback is valid
-    expect_value_count(__wrap_FpFwAssert, expression, true, 1);
-    expect_value(mock_idle_callback, p_request, REQUEST_PTR);
-    expect_value(mock_idle_callback, p_context, CONTEXT_PTR);
 
     call_entry_function();
 }
@@ -503,7 +613,10 @@ POWER_TEST(power_loops_internal_exec_in_idle__not_idle, NULL, NULL)
     setup_state_change(1, &entry);
 
     // setup expectations for s_entry_function
-    setup_entry_function_to_queue_entry(&entry);
+    setup_entry_function_to_queue_entry(&entry, false);
+
+    // setup expectation for queue_get_info
+    setup_expectation_for_queue_get_info(1);  // item enqueued
 
     // expectations for power_loops_internal_change_state
     expect_value_count(__wrap_FpFwAssert, expression, true, 7);
@@ -518,16 +631,15 @@ POWER_TEST(power_loops_internal_exec_in_idle__not_idle, NULL, NULL)
     // -------------------
     // should not be idle
     // -------------------
-    setup_exec_in_idle(&entry);
+    setup_nop(&entry);
+    
     // setup expectations for s_entry_function
-    setup_entry_function_to_queue_entry(&entry);
+    setup_entry_function_to_queue_entry(&entry, false);
 
-    // item will be requeued
-    setup_expectations_for_exec_in_idle();
+    // setup expectation for queue_get_info
+    setup_expectation_for_queue_get_info(0);  // no items enqueued, but not idle
 
     call_entry_function();
-
-    check_exec_in_idle((int)mock_idle_callback, REQUEST_PTR, CONTEXT_PTR);
 }
 
 // test for power_loops_init_loop

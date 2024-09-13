@@ -53,6 +53,8 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     _txe_queue_create
+    _txe_queue_front_send
+    _txe_queue_info_get
     _txe_queue_receive
     _txe_queue_send
     _txe_thread_create

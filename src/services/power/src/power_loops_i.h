@@ -44,6 +44,7 @@ typedef enum _power_loops_queue_entry_type_t
 {
     LOOP_QUEUE_ENTRY_TYPE_STATE_CHANGE,
     LOOP_QUEUE_ENTRY_TYPE_STATE_SIGNAL,
+    LOOP_QUEUE_ENTRY_TYPE_NOP,
     LOOP_QUEUE_ENTRY_TYPE_EXEC_IN_IDLE,
 } power_loops_queue_entry_type_t;
 

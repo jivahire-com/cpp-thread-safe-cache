@@ -83,11 +83,13 @@ int __wrap_tower_sequence_configure_towers(tower_sequence_soc_init_params_t* tow
 
     check_expected(tower_sequence_param->tower_configure_sdmss_sam);
     check_expected(tower_sequence_param->tower_configure_sdmss_apu);
+    check_expected(tower_sequence_param->tower_configure_sdmss_fmu);
     check_expected(tower_sequence_param->tower_sdmss_isolation_enabled);
     check_expected(tower_sequence_param->tower_sdmss_tower_resolved_addr);
 
     check_expected(tower_sequence_param->tower_configure_ioss_sam);
     check_expected(tower_sequence_param->tower_configure_ioss_apu);
+    check_expected(tower_sequence_param->tower_configure_ioss_fmu);
     check_expected(tower_sequence_param->tower_ioss_tower_resolved_addr);
 
     check_expected(tower_sequence_param->die_id);

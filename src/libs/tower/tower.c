@@ -278,6 +278,8 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     tower_sequence_params.tower_sdmss_tower_resolved_addr = sdmss_tower_map.mscp_start_address;
     tower_sequence_params.tower_configure_sdmss_sam = true;
     tower_sequence_params.tower_configure_sdmss_apu = true;
+    tower_sequence_params.tower_configure_sdmss_fmu = true;
+
     // TODO: Isolation information should be derived from fuse and knob values
     // For now, assume isolation is not enabled for now and configure the sdmss tower for isolation disabled
     printf("Configure SDMSS tower for isolation disabled, TODO: derive this from knobs & fuses\n");
@@ -300,6 +302,7 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     tower_sequence_params.tower_ioss_tower_resolved_addr = ioss_tower_map.mscp_start_address;
     tower_sequence_params.tower_configure_ioss_sam = true;
     tower_sequence_params.tower_configure_ioss_apu = true;
+    tower_sequence_params.tower_configure_ioss_fmu = true;
 
     tower_sequence_params.die_id = die_num;
 
@@ -311,6 +314,8 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         tower_sequence_params.tower_configure_periph_fmu = false;
         tower_sequence_params.tower_configure_vab_fmu = false;
         tower_sequence_params.tower_configure_rpss_fmu = false;
+        tower_sequence_params.tower_configure_sdmss_fmu = false;
+        tower_sequence_params.tower_configure_ioss_fmu = false;
     }
 
     printf("Configure all towers\n");

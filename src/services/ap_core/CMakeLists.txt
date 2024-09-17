@@ -54,6 +54,7 @@ target_link_libraries(${TARGET}
         ms::lib::system_info
         ms::lib::threadx
         ms::lib::debug
+        ms::service::sds_service
         ms::client_interface::ap_core
         ms::client_interface::startup_shutdown
         silibs::idsw

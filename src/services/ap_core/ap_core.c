@@ -17,10 +17,22 @@
 #include <DfwkHost.h>
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
+#include <bug_check.h>
 #include <corebits.h>
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_send, fpfw_icc_base...
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
 #include <inttypes.h>
+#include <kng_error.h>
+#define __NO_CSR_TYPEDEFS__
+#include <scp_exp_csr_regs.h>
+#include <scp_exp_top_regs.h>
+#include <scp_top_regs.h>
+#undef __NO_CSR_TYPEDEFS__
+#include <sds_api.h>
+#include <sds_configuration.h>
+#include <sds_init.h>
+#include <shared_sds_def.h>
+#include <silibs_platform.h>
 #include <startup_shutdown_ssi.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -38,6 +50,17 @@ static ap_core_service_context_t s_ap_core_ctx = {0};
 static fpfw_icc_base_ctx_t* s_icc_base_ctx = NULL;
 
 /*------------- Functions ----------------*/
+static void ap_core_die_config_handover()
+{
+    shared_scp_exp_csr_die_config die_config_val = {
+        .as_uint32 = MMIO_READ32(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_DIE_CONFIG_ADDRESS)};
+
+    int32_t result = sds_block_creation(SDS_DIE_CONFIG_STRUCT_ID, SDS_DIE_CONFIG_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
+    BUG_ASSERT(result == KNG_SUCCESS);
+
+    result = sds_block_write(SDS_DIE_CONFIG_STRUCT_ID, &die_config_val, SDS_DIE_CONFIG_SIZE);
+    BUG_ASSERT(result == KNG_SUCCESS);
+}
 
 // dispatcher function to handle set of rvbaraddr
 static void ap_core_dispatch_set_rvbaraddr(pap_core_asynchronous_request_t p_request)
@@ -95,6 +118,8 @@ static void ap_core_ssi_start_primary_ap_core_boot(pssi_startup_notification_req
 {
     unsigned int boot_core = ap_core_util_boot_core(&s_ap_core_ctx);
     APCORE_LOG_INFO("Primary AP core power on (%d)", boot_core);
+
+    ap_core_die_config_handover();
     ap_core_util_set_rvbaraddr(&s_ap_core_ctx, boot_core, s_ap_core_ctx.p_config->boot_core_rvbaraddr);
     ap_core_ppu_core_set_power_state(&s_ap_core_ctx, boot_core, true, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
     // for now, PPU is synchronous

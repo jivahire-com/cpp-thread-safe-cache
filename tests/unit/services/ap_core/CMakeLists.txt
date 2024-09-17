@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         ms::mocks::event_trace
         ms::mocks::threadx
         ms::service::ap_core
+        ms::service::sds_service
     PUBLIC
         fwlib.lib.assert
         fwlib.dfwk
@@ -60,6 +61,10 @@ mock_target(${TARGET}
 
     fpfw_icc_base_send
     fpfw_icc_base_recv
+
+    mmio_read32
+    sds_block_creation
+    sds_block_write
 
     ppu_v1_init
 

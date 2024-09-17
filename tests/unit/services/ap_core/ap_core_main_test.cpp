@@ -26,6 +26,15 @@ extern "C" {
 #include <mcp_top_regs.h>
 #undef __NO_CSR_TYPEDEFS__
 #include <mcp_exp_top_regs.h>
+#define __NO_CSR_TYPEDEFS__
+#include <scp_exp_csr_regs.h>
+#include <scp_exp_top_regs.h>
+#include <scp_top_regs.h>
+#undef __NO_CSR_TYPEDEFS__
+#include <sds_api.h>
+#include <sds_configuration.h>
+#include <sds_init.h>
+#include <shared_sds_def.h>
 #include <startup_shutdown_ssi.h>
 
 } // extern "C"
@@ -174,6 +183,31 @@ bool __wrap_system_info_is_hsp_present()
 {
     return mock_type(bool);
 }
+
+uint32_t __wrap_mmio_read32(volatile uint32_t* addr)
+{
+    check_expected(addr);
+    return (mock_type(uint32_t));
+}
+
+int32_t __wrap_sds_block_write(uint32_t sds_module_id, void* buffer, size_t buffer_size)
+{
+    check_expected(sds_module_id);
+    check_expected_ptr(buffer);
+    check_expected(buffer_size);
+
+    return 0;
+}
+
+int32_t __wrap_sds_block_creation(uint32_t sds_module_id, uint32_t request_size, uint32_t region_id)
+{
+    FPFW_UNUSED(sds_module_id);
+    FPFW_UNUSED(request_size);
+    FPFW_UNUSED(region_id);
+
+    return 0;
+}
+
 } // extern "C"
 
 static int setup(void** state)
@@ -324,6 +358,14 @@ AP_CORE_TEST(dispatch_ap_core_boot, setup, NULL)
     // expect a call to get boot_core
     expect_value(__wrap_ap_core_util_boot_core, p_context, s_ap_core_ctx);
     will_return(__wrap_ap_core_util_boot_core, TEST_BOOT_CORE);
+
+    // expect that die info is stored in SDS
+    shared_scp_exp_csr_die_config test_die_config = { .as_uint32 = 42};
+    expect_value(__wrap_mmio_read32, addr, SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_DIE_CONFIG_ADDRESS);
+    will_return(__wrap_mmio_read32, test_die_config.as_uint32);
+    expect_value(__wrap_sds_block_write, sds_module_id, SDS_DIE_CONFIG_STRUCT_ID);
+    expect_memory(__wrap_sds_block_write, buffer, &test_die_config, sizeof(test_die_config));
+    expect_value(__wrap_sds_block_write, buffer_size, sizeof(test_die_config));
 
     // expect a call to set_rvbaraddr
     expect_value(__wrap_ap_core_util_set_rvbaraddr, p_context, s_ap_core_ctx);

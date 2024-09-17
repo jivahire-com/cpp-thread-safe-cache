@@ -153,6 +153,7 @@ TEST_FUNCTION(test_pcie_rpss_init_success, test_setup, test_teardown)
 
     /* Setup silibs expectations */
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
@@ -195,6 +196,7 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
     mock_pcie_ent.rps[3].valid = true;
 
     /* Setup silibs expectations */
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);

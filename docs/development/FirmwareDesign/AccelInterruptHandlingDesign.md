@@ -52,7 +52,7 @@ These are the Accelerator IP FATAL interrupts that SCP handles. Please refer to 
 \
 SCP will also handle interrupt `SDM_MSG0_INTR` which will be used for handshaking between SCP and SDM. This will be a doorbell interrupt from ACCEL emCPU to SCP. 
 
-On SCP side, single IRQ pin is used for all the Accelerator IP interrupts. Please refer to **[Kingsgate SOC Interrupt Map r1p5 - SCP Interrupts](https://microsoft.sharepoint.com/:x:/r/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Architecture/SOC%20Top/Kingsgate%20SOC%20Interrupt%20Map%20r1p5.xlsx?d=w8cfb84a91ebb4ec5bea8ddb8fead52db&csf=1&web=1&e=DQwWuS&)nav=MTVfezFCMDA1Mjg3LTMyQTYtNDg4MS05NjU2LTNFMUVCNEMzQ0YzRX0)**
+On SCP side, single IRQ pin is used for all the Accelerator IP interrupts. Please refer to **[Kingsgate SOC Interrupt Map r1p5 - SCP Interrupts](https://microsoft.sharepoint.com/:x:/r/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Architecture/SOC%20Top/Kingsgate%20SOC%20Interrupt%20Map%20r1p5.xlsx?d=w8cfb84a91ebb4ec5bea8ddb8fead52db&csf=1&web=1&e=DQwWuS&)**
 
 1. CDEDSS IRQ Number is 118
 1. SDMSS IRQ Number is 119
@@ -128,6 +128,7 @@ We will use DriverFramework and FPFW timer for implementation and communication 
     * Open Interface for triggering Bottom-Half execution using `DfwkClientInterfaceOpen`
         * Same interface can be used for both FATAL and SYS_MSG communication.
     * Initialize Async Request using `DfwkAsyncRequestInitialize` : This will be used by ISR to kick off bottom-half execution.
+    * Same Request object can't be reused until first request completes. So total of 2 (ACCEL TYPES (SDM / CDED)) * 2 (Interrupt types (DOORBELL / FATAL)) = 4 requests will be initialized.
 
 ```mermaid
 sequenceDiagram
@@ -143,7 +144,7 @@ sequenceDiagram
     SCP_EMCPU_DFWK-->>-SCP_EMCPU_ACCEL_INTR_SERVICE: Interface init done
     SCP_EMCPU_ACCEL_INTR->>+SCP_EMCPU_DFWK: Open interface using DfwkClientInterfaceOpen
     SCP_EMCPU_DFWK-->>-SCP_EMCPU_ACCEL_INTR: Open interface done
-    SCP_EMCPU_ACCEL_INTR->>+SCP_EMCPU_DFWK: Async Request init using DfwkAsyncRequestInitialize
+    SCP_EMCPU_ACCEL_INTR->>+SCP_EMCPU_DFWK: Async Request init using DfwkAsyncRequestInitialize (4 times)
     SCP_EMCPU_DFWK-->>-SCP_EMCPU_ACCEL_INTR: Async Request init done
     Note over SCP_EMCPU_ACCEL_INTR: Register SCP_EMCPU_ACCELIP_ISR
 ```
@@ -151,16 +152,18 @@ sequenceDiagram
 #### 4.1.2 Top-half (ISR): ISR will act as Top-Half and will be responsible for doing only the most critical tasks.
 
 * ISR will record the Accelerator IP from which interrupt has been triggered (SDM / CDED).
-* ISR will also check if at least one valid FATAl interrupt exists / doorbell interrupt `SYS_MSG0_INTR` is raised.
-    * This will be done by checking both level 1 and level 2 registers of interrupts that are set until a valid FATAL or doorbell `SYS_MSG0_INTR` interrupt is found
+* ISR will also check if at least one valid FATAl interrupt exists and/or doorbell interrupt `SYS_MSG0_INTR` is raised.
+    * This will be done by checking both level 1 and level 2 registers of interrupts that are set until a valid FATAL interrupt is found. 
+    * Doorbell interrupt is checked and processed separately after FATAL interrupt checking is done.
     * If no such interrupt is found, the ISR returns after clearing the interrupt at level 1.
-* Based on the interrupt that is received, one of following actions will be taken
+* Based on the interrupt that is received, these actions will be taken
     * **FATAL Interrupts**
         * Disable ACCEL emCPU watchdog timer.
         * Disable the interrupt that has been raised using `nvic_irq_disable`.
         * Create async request for FATAL interrupt and trigger the request for Bottom-half to handle using `DfwkInterfaceSendAsync`.
     * **Doorbell Interrupt SYS_MSG0_INTR**: This indicates that ACCEL emCPU has successfully collected crash dump.
         * Clear doorbell interrupt `SYS_MSG0_INTR` from ACCEL IP Interrupt Tree
+        * Disable doorbell interrupt in Level 1 register to make sure we receive this interrupt only when expected. 
         * Create async request for SYS_MSG and trigger the request for Bottom-half to handle using `DfwkInterfaceSendAsync`.
 
 #### 4.1.3 Bottom-half: Bottom-half will be function calls that are called by Driver Framework when a ISR triggers the Async Request.
@@ -204,6 +207,15 @@ scp_emcpu_handle_fatal_interrupt_recv(...)
          */
         request_crash_dump_collection();
     }
+    else
+    {
+        /**
+         * This is a spurious interrupt so, 
+         * Re-init all interrupts routed from ACCEL IP and supported in SCP in level 1 registers
+         * Level 2 registers are cleared as part of Accel emCPU boot up
+         */
+        accel_intr_clear_and_unmask_interrupts();
+    }
 }
 
 // **** scp_emcpu_handle_doorbel_from_accel_ip_recv ****
@@ -213,6 +225,7 @@ scp_emcpu_handle_doorbel_from_accel_ip_recv(...)
      * 1. Reset the timer and inactivate it by calling fpfw_timer_reset
      * 2. Trigger ACCEL emCPU reset
      */
+    reset_timer();
     trigger_accel_emcpu_reset();
 }
 
@@ -228,7 +241,7 @@ scp_emcpu_handle_doorbel_from_accel_ip_recv_timeout(...)
          * 4. Create timer to wait on doorbell interrupt SDM_MSG0_INTR using fpfw_timer_create
          */
         trigger_accel_emcpu_reset();
-        clear_interrupts();
+        accel_intr_clear_and_unmask_interrupts();
         request_crash_dump_collection();
     }
     else
@@ -319,9 +332,26 @@ Note over ACCEL_IP: FATAL interrupt is triggered
     end
 ```
 ## 5 Unit Testing
-
-`TBD`
+| Testcase                                      | Description  |
+| --------------------------------------------- | ------------ |
+| accel_intr_irq_init_pass_sdm | Runs accel_intr_irq_init for SDMSS with all passing |
+| accel_intr_irq_init_pass_cded | Runs accel_intr_irq_init for CDEDSS with all passing |
+| accel_intr_irq_init_fail_timer_init | Runs accel_intr_irq_init for SDMSS with failure in timer init |
+| accel_intr_irq_init_fail_nvic_init | Runs accel_intr_irq_init for SDMSS with failure in nvic init |
+| accel_intr_isr_pass | Runs accel_intr_isr with all passing and valid fatal interrupt present|
+| accel_intr_isr_pass_no_level2_intr | Runs accel_intr_isr with only Level 1 interrupt set |
+| accel_intr_isr_pass_no_interrupt | Runs accel_intr_isr with with no valid interrupt |
+| accel_intr_handle_fatal_intr_recvd_pass | Runs accel_intr_handle_fatal_intr_recvd with all passing and valid fatal interrupt present |
+| accel_intr_handle_fatal_intr_recvd_pass_accel_emcpu_reset | Runs accel_intr_handle_fatal_intr_recvd with all passing and emCPU reset trigger |
+| accel_intr_handle_fatal_intr_recvd_pass_no_level2_intr | Runs accel_intr_handle_fatal_intr_recvd with only Level 1 interrupt set |
+| accel_intr_handle_fatal_intr_recvd_pass_no_interrupt | Runs accel_intr_handle_fatal_intr_recvd with no valid interrupt set |
+| accel_intr_handle_sdm_msg_recvd | Runs accel_intr_handle_sdm_msg_recvd with all passing  |
+| accel_intr_handle_sdm_msg_recv_timeout_count_0 | accel_intr_handle_sdm_msg_recvd_timeout for first timeout |
+| accel_intr_handle_sdm_msg_recv_timeout_count_1 | accel_intr_handle_sdm_msg_recvd for second timeout |
 
 ## 6 Functional Testing
 
-`TBD`
+* All interrupts are tested using single function test [`accel_interrupt`](./../../../tests/functional/pythia/staging_tests/accel_interrupt/accel_interrupt_test.robot).
+* It uses a corresponding json file [`accel_interrupts.json`](./../../../tests/functional/pythia/staging_tests/accel_interrupt/accel_interrupts.json) to loop through all interrupts and their triggers. 
+* It will compare the expected result mentioned in json to mark a particular interrupt checking pass / fail. 
+

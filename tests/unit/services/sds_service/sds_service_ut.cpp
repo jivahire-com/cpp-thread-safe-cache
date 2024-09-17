@@ -119,6 +119,17 @@ void __wrap_FPFwSpinLockInitialize(size_t* pLock)
 {
     FPFW_UNUSED(pLock);
 }
+
+void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
+{
+    FPFW_UNUSED(errorCode);
+    FPFW_UNUSED(p1);
+    FPFW_UNUSED(p2);
+    FPFW_UNUSED(p3);
+    FPFW_UNUSED(p4);
+    function_called();
+}
+
 }
 //
 // Tests
@@ -135,6 +146,24 @@ static int sds_region_setup(void** state)
     regions[SECURE_REGION].size = sizeof(sds_region_data_secure);
     regions[NON_SECURE_REGION].base = &sds_region_data_non_secure;
     regions[NON_SECURE_REGION].size = sizeof(sds_region_data_non_secure);
+
+    sds_config.region_count = END_OF_SDS_REGIONS;
+    sds_config.regions = regions;
+
+    return 0;
+}
+
+static int sds_invalid_region_setup(void** state)
+{
+    FPFW_UNUSED(state);
+
+    memset(sds_region_data_secure, 0, sizeof(sds_region_data_secure));
+    memset(sds_region_data_non_secure, 0, sizeof(sds_region_data_non_secure));
+
+    regions[SECURE_REGION].base = &sds_region_data_secure;
+    regions[SECURE_REGION].size = 0;
+    regions[NON_SECURE_REGION].base = &sds_region_data_non_secure;
+    regions[NON_SECURE_REGION].size = 0;
 
     sds_config.region_count = END_OF_SDS_REGIONS;
     sds_config.regions = regions;
@@ -178,6 +207,18 @@ TEST_FUNCTION(test_sds_region_creation, sds_region_setup, nullptr)
     assert_true(sds_non_secure_region_start_addr->signature == REGION_SIGNATURE);
     assert_true(sds_non_secure_region_start_addr->region_size == NON_SECURE_REGION_SIZE);
     assert_true(sds_non_secure_region_start_addr->block_count == 0);
+}
+
+TEST_FUNCTION(test_sds_region_invalid_creation, sds_invalid_region_setup, nullptr)
+{
+    // Expectation
+    sds_service_interface_t sdsInterface = {};
+    will_return_count(__wrap_retrieve_sds_config_info, &sds_config, -2);
+    will_return_count(__wrap_fpfw_init_get_handle, &sdsInterface, -2);
+    expect_function_calls(__wrap_crash_dump_bug_check, END_OF_SDS_REGIONS);
+
+    // Do the test
+    sds_init(nullptr, nullptr);
 }
 
 TEST_FUNCTION(test_sds_new_block_creation_on_same_region, sds_region_setup, nullptr)

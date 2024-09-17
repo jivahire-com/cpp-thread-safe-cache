@@ -51,7 +51,7 @@ int32_t sds_io_request(psds_service_interface_t p_interface, uint32_t sds_module
 
 int32_t sds_block_creation(uint32_t sds_module_id, uint32_t request_size, uint32_t region_id)
 {
-    if (request_size == 0 || request_size < SDS_MIN_REGION_SIZE)
+    if (request_size == 0)
     {
         return KNG_E_INVALIDARG;
     }

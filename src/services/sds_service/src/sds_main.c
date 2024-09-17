@@ -18,6 +18,7 @@
 #include <FpFwSpinLock.h>
 #include <FpFwUtils.h>
 #include <atu_api.h>
+#include <bug_check.h>
 #include <fpfw_status.h>
 #include <kng_error.h>
 #include <shared_sds_def.h>
@@ -155,6 +156,11 @@ int32_t create_sds_block_internal(psds_service_request_t sds_request)
 int32_t create_sds_region(const sds_region_desc_t* region_config, unsigned int region_idx)
 {
     volatile sds_region_header_t* region_desc = (volatile sds_region_header_t*)region_config->base;
+
+    if (region_config->size < SDS_MIN_REGION_SIZE)
+    {
+        return KNG_E_INVALIDARG;
+    }
 
     // Check if this is reinitialize request or not.
     if (region_desc->signature != REGION_SIGNATURE)
@@ -335,8 +341,10 @@ void sds_init(psds_service_t p_device, PDFWK_SCHEDULE p_schedule)
     FPFW_RUNTIME_ASSERT(sds_config != NULL);
     FPFW_RUNTIME_ASSERT(sds_config->region_count > 0);
 
+    int32_t status = KNG_SUCCESS;
     for (uint32_t region_idx = 0; region_idx < sds_config->region_count; region_idx++)
     {
-        create_sds_region(&(sds_config->regions[region_idx]), region_idx);
+        status = create_sds_region(&(sds_config->regions[region_idx]), region_idx);
+        BUG_ASSERT_PARAM(status == KNG_SUCCESS, status, KNG_SUCCESS);
     }
 }

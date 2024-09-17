@@ -41,4 +41,5 @@ mock_target(${TARGET}
     DfwkDeviceInitialize
     DfwkQueueInitialize
     FPFwSpinLockInitialize
+    crash_dump_bug_check
 )

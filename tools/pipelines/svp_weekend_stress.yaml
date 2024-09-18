@@ -1,0 +1,53 @@
+
+name: 0.1.0.$(rev:r)
+
+trigger: none
+
+resources:
+  pipelines:
+  - pipeline: CIPipeline
+    source: kingsgate.mscp.ci
+    branch: main  
+
+parameters:
+  - name: stress_test_iterations
+    type: string
+    default: "4"
+    values:
+      - "6"
+      - "40"
+variables:
+- group: ef-pipeline-config
+- name: OfficialBuild
+  value : $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+- name: BUILD_ID
+  value : $(resources.pipeline.CIPipeline.runID)
+#- name: runname
+#  value : $(resources.pipeline.CIPipeline.runname)
+- ${{ if variables['OfficialBuild'] }}:
+  - name: BuildVersion
+    value: $[ variables['Build.BuildNumber'] ]
+- ${{ else }}:
+  - name: BuildVersion
+    value:  $[format('{0}-dev', variables['Build.BuildNumber'])]
+
+# Build stage
+stages:
+- stage: SVP_Pythia_Tests
+  jobs:
+  - template: templates/svp_pythia_test.yaml
+    parameters:
+        ArtifactName: SVP_Pythia_Tests
+        stress_test_iterations: ${{parameters.stress_test_iterations}}
+        build_id: $(BUILD_ID)
+
+- stage: Publish
+  dependsOn: [SVP_Pythia_Tests]
+  condition: eq(variables['OfficialBuild'], 'true')
+  pool: 
+    name: 1pfw-kingsgate-windows
+  jobs:
+  - template: templates/publish.yaml
+    parameters:
+      Toolchain: [arm-eabi-aarch]
+      Version: $(BuildVersion)

@@ -12,7 +12,7 @@
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>  // for knowing how big 1k is
 #include <ap_core_init.h>
-#include <atu_api.h>               // for ATU_AP_CORE_CLUSTER_ADDRESS
+#include <atu_api.h>               // for MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR
 #include <atu_lib.h>               // for atu_map_entry_t, atu_entry_attr_t
 #include <core_cluster_top_regs.h> // for CORE_CLUSTER_TOP_CORE_CLUSTER0_AD...
 #include <corebits.h>
@@ -54,7 +54,7 @@ FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "tower_cfg", "ic
     };
 
     // platform defaults
-    ap_core_config.cluster_pex_base = ATU_AP_CORE_CLUSTER_ADDRESS;
+    ap_core_config.cluster_pex_base = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR;
     ap_core_config.platform_cores_in_die = &platform_cores;
     ap_core_config.platform_die_core_count = NUM_AP_CORES_PER_DIE;
     ap_core_config.primary_boot_die = (idsw_get_die_id() == DIE_0);

@@ -12,6 +12,7 @@
 
 /*----------- Nested includes ------------*/
 
+#include <assert.h>
 #include <memory_map/ddrss_reserved_regions.h>
 #include <stdint.h>
 #include <utils.h>
@@ -36,7 +37,8 @@
 #define IB_TELEMETRY_DDR_DIE_1_END_ADDR (IB_TELEMETRY_DDR_TOTAL_END_ADDR)
 #define IB_TELEMETRY_DDR_DIE_1_SIZE (IB_TELEMETRY_DDR_DIE_1_END_ADDR - IB_TELEMETRY_DDR_DIE_1_BASE_ADDR)
 
-static_assert(IB_TELEMETRY_DDR_TOTAL_SIZE == (IB_TELEMETRY_DDR_DIE_0_SIZE + IB_TELEMETRY_DDR_DIE_1_SIZE), "Die DDR sizes do not add up to total DDR size");
+static_assert(IB_TELEMETRY_DDR_DIE_0_SIZE == IB_TELEMETRY_DDR_DIE_1_SIZE, "IB Die DDR sizes are not the same");
+static_assert(IB_TELEMETRY_DDR_TOTAL_SIZE == (IB_TELEMETRY_DDR_DIE_0_SIZE + IB_TELEMETRY_DDR_DIE_1_SIZE), "IB Die DDR sizes do not add up to total DDR size");
 
 /**
  * Event Trace uses 16 MB of DDR per die, and starts at the base of each

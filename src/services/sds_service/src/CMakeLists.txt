@@ -26,6 +26,8 @@ target_link_libraries(${TARGET}
         ms::lib::error_codes
         ms::lib::crash_dump
         ms::service::atu_service
+        silibs::idsw
+        silibs::idsw_kng
 )
 
 lint_target(${TARGET})

@@ -186,6 +186,7 @@ set(TARGET kng.lib.scp.runtime_init.mcp)
 
 add_library(${TARGET}
     OBJECT
+        atu_init.c
         cli_init.c
         crash_dump_init.c
         cli_crash_dump_init.c
@@ -233,6 +234,7 @@ target_link_libraries(
         ms::lib::mcp_interrupts
         ms::lib::stdio_textio
         ms::lib::threadx
+        ms::service::atu_service
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
         ms::service::event_trace::relay
@@ -241,6 +243,7 @@ target_link_libraries(
         ms::service::telemetry
         ms::lib::cortex_m7::mpu
         ms::lib::system_info
+        silibs::atu
         silibs::common::lib_uart_pl011
         silibs::idhw
         silibs::idsw

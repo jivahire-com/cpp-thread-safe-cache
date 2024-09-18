@@ -6,6 +6,7 @@
 /*------------- Includes -----------------*/
 
 #include <FpFwAssert.h>
+#include <atu_api.h>
 #include <fpfw_init.h>               // for fpfw_init_get_handle, FPFW_INIT...
 #include <fpfw_status.h>             // for fpfw_status_t
 #include <icc_mhu.h>
@@ -51,7 +52,7 @@ static icc_mhu_configuration_t icc_mhu_configuration[] = {
                         .mbx_flag_pos = 0,
                     },
             },
-        .mailbox_address = TFA_AP_2_SCP_RECEIVE_BASE + MAILBOX_MSCP_OFFSET,
+        .mailbox_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(TFA_AP_2_SCP_RECEIVE_BASE),
         .mailbox_size = TFA_AP_2_SCP_RECEIVE_SIZE,
     },
     // AP TO SCP S Receive Message Configuration
@@ -76,7 +77,7 @@ static icc_mhu_configuration_t icc_mhu_configuration[] = {
                         .mbx_flag_pos = 0,
                     },
             },
-        .mailbox_address = (TFA_AP_2_SCP_SEND_BASE + MAILBOX_MSCP_OFFSET),
+        .mailbox_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(TFA_AP_2_SCP_SEND_BASE),
         .mailbox_size = SCP_2_TFA_AP_RECEIVE_SIZE,
     },
 };
@@ -104,7 +105,7 @@ static icc_mhu_configuration_t die1_icc_mhu_configuration[] = {
                         .mbx_flag_pos = 0,
                     },
             },
-        .mailbox_address = ARSM_GET_REGION_OFFSET(DIE1_TFA_AP_2_SCP_RECEIVE_BASE) + MAILBOX_MSCP_OFFSET,
+        .mailbox_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(DIE1_TFA_AP_2_SCP_RECEIVE_BASE),
         .mailbox_size = DIE1_TFA_AP_2_SCP_RECEIVE_SIZE,
     },
     // AP TO SCP S Receive Message Configuration
@@ -129,7 +130,7 @@ static icc_mhu_configuration_t die1_icc_mhu_configuration[] = {
                         .mbx_flag_pos = 0,
                     },
             },
-        .mailbox_address = ARSM_GET_REGION_OFFSET(DIE1_TFA_AP_2_SCP_SEND_BASE) + MAILBOX_MSCP_OFFSET,
+        .mailbox_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(DIE1_TFA_AP_2_SCP_SEND_BASE),
         .mailbox_size = DIE1_SCP_2_TFA_AP_RECEIVE_SIZE,
     },
 };
@@ -155,7 +156,7 @@ static uint32_t get_num_configs(KNG_DIE_ID die)
 }
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(icc_mhu_trans, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
+FPFW_INIT_COMPONENT(icc_mhu_trans, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc"))
 {
     // Initialize just the primitives for now
     KNG_DIE_ID die_num = idhw_get_die_id();

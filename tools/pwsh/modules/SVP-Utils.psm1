@@ -242,7 +242,6 @@ Function Invoke-Virtualizer(
         Write-Host "`tMCP UART telnet : localhost:4256"
         Write-Host "`tSCP UART telnet : localhost:4257"
 
-        # GDB setup on the headless mode is broken in this SVP release, overrides resolve this for now. Update once patched: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1624373
         Write-Host "`tMCP DIE 0 GDB   : localhost:12368"
         Write-Host "`tSCP DIE 0 GDB   : localhost:12369"
         Write-Host "`tMCP DIE 1 GDB   : localhost:12393"

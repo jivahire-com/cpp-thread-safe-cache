@@ -18,6 +18,7 @@
 #include <atu_lib.h>
 #include <bug_check.h>
 #include <css.h>
+#include <idhw.h>
 #include <idsw.h>
 #include <kng_soc_constants.h>
 #include <shared_sds_def.h>
@@ -34,39 +35,120 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-atu_map_entry_t atu_static_map_die0[] = {
-    // ARSM Section : Entire ARSM Space for MSCP
+
+// TODO: Should we only map the section of DIE 0's ARSM we need? We'd map up to where
+//       host services takes the rest of it.
+// TODO: Do we need to update the attributes to align with the security settings for host services?
+//       That would only be a subregion of the ARMS on DIE 0 (possibly DIE 1 as well).
+atu_map_entry_t atu_static_map_single_die_die0[] = {
+    // ARMS DIE 0
     {
         .ap_base_address = AP_TOP_D0_ARSM_SHARED_SRAM_ADDRESS,
-        .mscp_start_address = ATU_AP_ARSM_ADDRESS,
-        .mscp_end_address = ALIGN_UP(ATU_AP_ARSM_ADDRESS + AP_TOP_D0_ARSM_SHARED_SRAM_SIZE, ATU_PAGE_SIZE) - 1,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
     // CORE_CLUSTER on DIE0
     {
         .ap_base_address = AP_TOP_D0_CORE_CLUSTER_ADDRESS,
-        .mscp_start_address = ATU_AP_CORE_CLUSTER_ADDRESS,
-        .mscp_end_address = ALIGN_UP(ATU_AP_CORE_CLUSTER_ADDRESS + AP_TOP_D0_CORE_CLUSTER_SIZE, ATU_PAGE_SIZE) - 1,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_END_ADDR,
         .attribute = {{.axprot0 = ATU_BUS_ATTR_SET, .axprot1 = ATU_BUS_ATTR_CLR, .axnse = ATU_BUS_ATTR_SET}},
     },
-    {0}};
+    {
+        .ap_base_address = IB_TELEMETRY_DDR_DIE_0_BASE_ADDR,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    {0},
+};
 
-atu_map_entry_t atu_static_map_die1[] = {
-    // ARSM Section : Entire ARSM Space for MSCP
+atu_map_entry_t atu_static_map_dual_die_die0[] = {
+    // ARMS DIE 0
+    {
+        .ap_base_address = AP_TOP_D0_ARSM_SHARED_SRAM_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    // ARMS DIE 1
     {
         .ap_base_address = AP_TOP_D1_ARSM_SHARED_SRAM_ADDRESS,
-        .mscp_start_address = ATU_AP_ARSM_ADDRESS,
-        .mscp_end_address = ALIGN_UP(ATU_AP_ARSM_ADDRESS + AP_TOP_D1_ARSM_SHARED_SRAM_SIZE, ATU_PAGE_SIZE) - 1,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    // CORE_CLUSTER on DIE0
+    {
+        .ap_base_address = AP_TOP_D0_CORE_CLUSTER_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_END_ADDR,
+        .attribute = {{.axprot0 = ATU_BUS_ATTR_SET, .axprot1 = ATU_BUS_ATTR_CLR, .axnse = ATU_BUS_ATTR_SET}},
+    },
+    {
+        .ap_base_address = IB_TELEMETRY_DDR_DIE_0_BASE_ADDR,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    {0},
+};
+
+atu_map_entry_t atu_static_map_single_die_die1[] = {
+    // ARMS DIE 1
+    {
+        .ap_base_address = AP_TOP_D1_ARSM_SHARED_SRAM_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
     // CORE_CLUSTER on DIE1
     {
         .ap_base_address = AP_TOP_D1_CORE_CLUSTER_ADDRESS,
-        .mscp_start_address = ATU_AP_CORE_CLUSTER_ADDRESS,
-        .mscp_end_address = ALIGN_UP(ATU_AP_CORE_CLUSTER_ADDRESS + AP_TOP_D1_CORE_CLUSTER_SIZE, ATU_PAGE_SIZE) - 1,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_END_ADDR,
         .attribute = {{.axprot0 = ATU_BUS_ATTR_SET, .axprot1 = ATU_BUS_ATTR_CLR, .axnse = ATU_BUS_ATTR_SET}},
     },
-    {0}};
+    {
+        .ap_base_address = IB_TELEMETRY_DDR_DIE_1_BASE_ADDR,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    {0},
+};
+
+atu_map_entry_t atu_static_map_dual_die_die1[] = {
+    // ARMS DIE 0
+    {
+        .ap_base_address = AP_TOP_D0_ARSM_SHARED_SRAM_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    // ARMS DIE 1
+    {
+        .ap_base_address = AP_TOP_D1_ARSM_SHARED_SRAM_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    // CORE_CLUSTER on DIE1
+    {
+        .ap_base_address = AP_TOP_D1_CORE_CLUSTER_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_END_ADDR,
+        .attribute = {{.axprot0 = ATU_BUS_ATTR_SET, .axprot1 = ATU_BUS_ATTR_CLR, .axnse = ATU_BUS_ATTR_SET}},
+    },
+    {
+        .ap_base_address = IB_TELEMETRY_DDR_DIE_1_BASE_ADDR,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    {0},
+};
 
 /*------------- Functions ----------------*/
 
@@ -106,15 +188,33 @@ void static_atu_config(uint8_t die_num)
     atu_map_entry_t* atu_static_global_map = NULL;
     int atu_entry_num = 0;
 
+    bool single_die = idhw_is_single_die_boot_en();
+
     if (die_num == 0)
     {
-        atu_static_global_map = atu_static_map_die0;
-        atu_entry_num = ARRAY_SIZE(atu_static_map_die0);
+        if (single_die)
+        {
+            atu_static_global_map = atu_static_map_single_die_die0;
+            atu_entry_num = ARRAY_SIZE(atu_static_map_single_die_die0);
+        }
+        else
+        {
+            atu_static_global_map = atu_static_map_dual_die_die0;
+            atu_entry_num = ARRAY_SIZE(atu_static_map_dual_die_die0);
+        }
     }
     else if (die_num == 1)
     {
-        atu_static_global_map = atu_static_map_die1;
-        atu_entry_num = ARRAY_SIZE(atu_static_map_die1);
+        if (single_die)
+        {
+            atu_static_global_map = atu_static_map_single_die_die1;
+            atu_entry_num = ARRAY_SIZE(atu_static_map_single_die_die1);
+        }
+        else
+        {
+            atu_static_global_map = atu_static_map_dual_die_die1;
+            atu_entry_num = ARRAY_SIZE(atu_static_map_dual_die_die1);
+        }
     }
     else
     {
@@ -126,21 +226,21 @@ void static_atu_config(uint8_t die_num)
     BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, SILIBS_SUCCESS);
 
     // Initialize SCP DMAC ATU
-    status = atu_init(ATU_ID_SCP_EXP, atu_static_global_map, atu_entry_num);
-    BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, SILIBS_SUCCESS);
-
-    // Initialize MCP DMAC ATU
-    /* SiLibs investigation task: FW Task 792282: ATU: atu_init fails for ATU_ID_MCP_EXP on SVP
-       Calling assert_fail_on_line: condition=(rgn_cnt > 0) && (rgn_cnt <= ATU_MAX_ENTRY_NUM), file=C:/src/kng/.externs/repo/silibs/li
-        braries/atu/src/atu_lib.c, line=199 --> Stub Function not implemented for emCPU (TODO)
-        Bug Check: [-2143748094] File [C:/src/kng/src/services/atu_service/src/atu_main.c:134] P1: [4294967285] P2: [0]
-    */
-    // status = atu_init(ATU_ID_MCP_EXP, atu_static_global_map, atu_entry_num);
-    // BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, SILIBS_SUCCESS);
+    if (idsw_get_cpu_type() == CPU_SCP)
+    {
+        status = atu_init(ATU_ID_SCP_EXP, atu_static_global_map, atu_entry_num);
+        BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, SILIBS_SUCCESS);
+    }
+    else if (idsw_get_cpu_type() == CPU_MCP)
+    {
+        status = atu_init(ATU_ID_MCP_EXP, atu_static_global_map, atu_entry_num);
+        BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, SILIBS_SUCCESS);
+    }
 }
 
 void atu_svc_init(atu_service_t* atu_service, PDFWK_SCHEDULE schedule)
 {
+
     DfwkDeviceInitialize(&(atu_service->atu_device->header), schedule);
 
     DfwkQueueInitialize(&(atu_service->atu_device->default_queue),

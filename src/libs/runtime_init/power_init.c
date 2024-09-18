@@ -13,7 +13,7 @@
 #include "power_runconfig.h" // for VM_FLAGS_NONE, VM_FLAGS_DIV2, pow...
 
 #include <FpFwAssert.h>            // for FPFW_RUNTIME_ASSERT
-#include <atu_api.h>               // for ATU_AP_CORE_CLUSTER_ADDRESS
+#include <atu_api.h>               // for MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR
 #include <core_cluster_top_regs.h> // for CORE_CLUSTER_TOP_CORE_CLUSTER0_AD...
 #include <corebits.h>
 #include <fpfw_init.h> // for fpfw_init_get_handle, FPFW_INIT_S...
@@ -78,7 +78,7 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc
     };
 
     // platform defaults
-    power_config.cluster_pex_base = ATU_AP_CORE_CLUSTER_ADDRESS;
+    power_config.cluster_pex_base = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR;
     power_config.platform_cores_in_die = &platform_cores;
     power_config.platform_die_core_count = NUM_AP_CORES_PER_DIE;
     power_config.platform_soc_power_support = false;

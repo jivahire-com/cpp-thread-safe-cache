@@ -20,6 +20,7 @@
 #include <atu_api.h>
 #include <bug_check.h>
 #include <fpfw_status.h>
+#include <idsw.h>
 #include <kng_error.h>
 #include <shared_sds_def.h>
 #include <stdbool.h>
@@ -33,25 +34,28 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-#define ATU_AP_SDS_ADDRESS   (ATU_AP_ARSM_ADDRESS + SDS_AP_ADDRESS_BASE)
+
+#define ATU_AP_SDS_ADDRESS(die) \
+    (((die) == 0 ? MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR : MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR) + SDS_AP_ADDRESS_BASE)
 #define SDS_ALLOWED_MAX_SIZE (SDS_SIZE_MAX - sizeof(FPFW_SPINLOCK))
 
 static sds_current_context_t current_SDS_layout_context = {0};
-static volatile PFPFW_SPINLOCK sharedMemoryLock = (PFPFW_SPINLOCK)(ATU_AP_ARSM_ADDRESS + SDS_ALLOWED_MAX_SIZE);
+static volatile PFPFW_SPINLOCK sharedMemoryLock;
+static sds_region_desc_t sds_region_descriptor[PLATFORM_SDS_REGION_COUNT];
+static sds_config_t platform_sds_config;
+
 extern psds_service_interface_t sds_interface;
 
 /*------------- Functions ----------------*/
 sds_config_t* retrieve_sds_config_info()
 {
-    static sds_region_desc_t sds_region_descriptor[PLATFORM_SDS_REGION_COUNT] = {[PLATFORM_SDS_REGION_ARSM_DIE0] = {
-                                                                                     .base = (void*)ATU_AP_SDS_ADDRESS,
-                                                                                     .size = SDS_ALLOWED_MAX_SIZE,
-                                                                                 }};
+    uint8_t die_id = idsw_get_die_id();
 
-    static sds_config_t platform_sds_config = {
-        .regions = sds_region_descriptor,
-        .region_count = PLATFORM_SDS_REGION_COUNT,
-    };
+    sds_region_descriptor[PLATFORM_SDS_REGION_ARSM_DIE0].base = (void*)ATU_AP_SDS_ADDRESS(die_id);
+    sds_region_descriptor[PLATFORM_SDS_REGION_ARSM_DIE0].size = SDS_ALLOWED_MAX_SIZE;
+
+    platform_sds_config.regions = sds_region_descriptor;
+    platform_sds_config.region_count = PLATFORM_SDS_REGION_COUNT;
 
     return &platform_sds_config;
 }
@@ -330,6 +334,11 @@ void sds_interface_init(psds_service_t p_device, psds_service_interface_t p_inte
 
 void sds_init(psds_service_t p_device, PDFWK_SCHEDULE p_schedule)
 {
+    uint8_t die_id = idsw_get_die_id();
+    sharedMemoryLock = die_id == 0
+                           ? (PFPFW_SPINLOCK)(MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + SDS_ALLOWED_MAX_SIZE)
+                           : (PFPFW_SPINLOCK)(MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + SDS_ALLOWED_MAX_SIZE);
+
     FPFwSpinLockInitialize(sharedMemoryLock);
 
     DfwkDeviceInitialize(&p_device->header, p_schedule);

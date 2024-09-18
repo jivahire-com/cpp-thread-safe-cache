@@ -49,6 +49,11 @@ idsw_die_id_t __wrap_idsw_get_die_id(void)
     return mock_type(idsw_die_id_t);
 }
 
+bool __wrap_idhw_is_single_die_boot_en(void)
+{
+    return mock_type(bool);
+}
+
 int __wrap_atu_init(atu_id_t atu_id, const atu_map_entry_t* atu_map_config, uint32_t num)
 {
     function_called();
@@ -69,6 +74,7 @@ TEST_FUNCTION(test_atu_svc, nullptr, nullptr)
     DFWK_THREADX_HOST test_host = {};
 
     will_return(__wrap_fpfw_init_get_handle, &test_host);
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
     will_return(__wrap_idsw_get_die_id, 1);
     expect_function_call_any(__wrap_atu_init);
 

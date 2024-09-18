@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.linkedlist
         fwlib.lib.utils
         atu
+        silibs::idhw
         silibs::idsw
         silibs::idsw_kng
         ms::cmocka::testrunner
@@ -38,6 +39,7 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     fpfw_init_get_handle
+    idhw_is_single_die_boot_en
     idsw_get_die_id
     atu_init
 )

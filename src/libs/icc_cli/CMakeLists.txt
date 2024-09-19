@@ -1,7 +1,10 @@
 set(TARGET icc_cli)
 
 set(SRC
-    src/icc_mbox_cli.c
+    src/icc_cli.c
+    src/icc_hsp_mbox_cli.c
+    src/icc_rmss_d2d_mbox_cli.c
+    src/status_decoder.c
 )
 
 set(LIBS
@@ -13,6 +16,7 @@ set(LIBS
             fwlib.lib.utils
             ms::driver::icc_mhu_trans
             ms::lib::icc_platform_defines
+            kng.lib.hsp_firmware_headers
             silibs::kng_silibs_platform
             silibs::platform
             silibs::icc_mhu

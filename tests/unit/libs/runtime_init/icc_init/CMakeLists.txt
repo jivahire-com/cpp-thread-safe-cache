@@ -2,7 +2,8 @@ set(TARGET icc_init.test)
 
 set(SOURCES
     test_icc_init.cpp
-    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/icc_init.c
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/icc_hspmbx_init.c
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/icc_d2dmbx_init.c
 )
 
 set(LIBRARIES

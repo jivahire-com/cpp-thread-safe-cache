@@ -31,7 +31,8 @@ add_library(${TARGET}
         fuse_init.c
         gtimer_init.c
         hw_version_scp_init.c
-        icc_init.c
+        icc_hspmbx_init.c
+        icc_d2dmbx_init.c
         icc_cli_init.c
         icc_transport_init/scp_icc_mhu_trans_init.c
         mesh_init.c
@@ -197,7 +198,8 @@ add_library(${TARGET}
         exception_handler_init.c
         hw_version_mcp_init.c
         icc_cli_init.c
-        icc_init.c
+        icc_hspmbx_init.c
+        icc_d2dmbx_init.c
         mcp_mpu_init.c
         nvic_init.c
         system_info_init.c

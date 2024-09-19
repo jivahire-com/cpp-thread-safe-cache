@@ -186,6 +186,14 @@
                         "Event Trace Relay Service",
                         "service.event_trace.relay.test.exe"
                     ],
+                    [
+                        "Telemetry Service - Data Proc Cmpnt",
+                        "kng.service.telemetry.cmpnt.data_process.test"
+                    ],
+                    [
+                        "Telemetry Service - In Band Cmpnt",
+                        "kng.service.telemetry.cmpnt.in_band_tlm.test"
+                    ],
                 ],
             },
         },

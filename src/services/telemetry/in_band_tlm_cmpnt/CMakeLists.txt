@@ -2,8 +2,10 @@ set(TARGET kng.service.telemetry.cmpnt.in_band_tlm)
 
 add_library(${TARGET}
     STATIC
-        in_band_tlm_cmpnt.c
+        ddr_manager.c
         event_schema.c
+        in_band_tlm_cmpnt.c
+        package_creation.c
 )
 
 target_include_directories(${TARGET}
@@ -24,6 +26,8 @@ target_link_libraries(${TARGET}
         fwlib.lib.utils
         ms::lib::error_codes
         ms::lib::event_trace::trace
+        fwlib.lib.interface.platform.threadx
+
 )
 
 lint_target(${TARGET})

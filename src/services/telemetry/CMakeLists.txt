@@ -8,13 +8,13 @@ target_include_directories(tlm.service.cmpnt.interfaces
         ${CMAKE_CURRENT_SOURCE_DIR}/out_of_band_tlm_cmpnt/inc
 )
 
-# sensor fifo supplies most of the data telemetry
-# it has many platform specific defines, it also makes available a sifw header for others
-# add it here so telmetry can just include the sensor fifo header instead of redefining definitions
+# add dependencies that are common to all internal telemetry libs
 target_link_libraries(tlm.service.cmpnt.interfaces
     INTERFACE
         ms::service::sensor_fifo
         kng_silibs_platform
+        fwlib.lib.status
+        ms::lib::interface::in_band_telemetry_ddr
     )
 
 add_subdirectory(data_proc_tlm_cmpnt)
@@ -47,11 +47,13 @@ target_link_libraries(${TARGET}
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.interface.platform.threadx
         ms::lib::error_codes
+        ms::lib::interface::in_band_telemetry_ddr
         kng.service.telemetry.cmpnt.exec
         kng.service.telemetry.cmpnt.data_process
         kng.service.telemetry.cmpnt.in_band_tlm
         kng.service.telemetry.cmpnt.out_of_band_tlm
         ms::service::sensor_fifo
+        kng_silibs_platform
 
 )
 

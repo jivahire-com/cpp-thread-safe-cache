@@ -1,0 +1,41 @@
+set(TARGET  kng.service.telemetry.cmpnt.data_process.test)
+
+set(SOURCES
+    data_proc_mock.c
+    test_logging.cpp
+    test_pack_get_apis.cpp
+)
+
+add_executable(${TARGET} ${SOURCES})
+
+target_link_libraries(${TARGET}
+    PRIVATE
+    kng.service.telemetry.cmpnt.data_process
+    fwlib.lib.status
+    ms::cmocka::mocks
+    ms::cmocka::testrunner
+    ms::lib::error_handler
+    ms::service::sensor_fifo
+)
+
+# Defining platform APIs
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+
+# Get private includes for module under test
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.service.telemetry,INCLUDE_DIRECTORIES>)
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.service.telemetry.cmpnt.data_process,INCLUDE_DIRECTORIES>)
+
+lint_target(${TARGET})
+format_target(${TARGET})
+coverage_target(${TARGET})
+unit_test_target(${TARGET})
+
+mock_target(${TARGET}
+    sensor_fifo_svc_poll_tile_temperature
+    sensor_fifo_svc_poll_tile_voltage
+    sensor_fifo_svc_poll_core_current
+    sensor_fifo_svc_poll_core_pstate
+    sensor_fifo_svc_poll_vr_temperature
+    sensor_fifo_svc_poll_vr_current
+)

@@ -128,7 +128,7 @@ typedef struct {
 typedef struct {
     uint32_t soc_pc3_residency;
     uint32_t soc_pc4_residency;
-    pwr_soc_event_rail_t rail[MAX_NUM_OF_VR_RAILS];
+    pwr_soc_event_vr_rail_t rail[MAX_NUM_OF_VR_RAILS];
     pwr_soc_event_hnf_t hnf[NUMBER_OF_HNF_CHANNELS_PER_DIE];
 } soc_runtime_info_t;
 

@@ -99,6 +99,36 @@ Using asynchronous management of the external interfaces ensures all telemetry p
   - Similar operation to power telemetry but with performance data instead.
   - Faster rate than power
 
+#### Telemetry Power Package Scenario
+
+NOTE: Performance report generation works in a similar fashion
+
+:::mermaid
+sequenceDiagram
+    participant Exec as Executive Cmpnt
+    participant Dataproc as Data Processing Cmpnt
+    participant InBand as In Band Tlm Cmpnt
+    participant PkgCr as In Band Tlm Cmpnt.Package Creation
+    participant DdrMgr as In Band Tlm Cmpnt.DDR Manager
+    participant DcsMgr as In Band Tlm Cmpnt.DCS Manager
+
+    Exec->>Exec: Power Report Timer Expired
+    Exec->>InBand:in_band_tlm_cmpnt_generate_pwr_report()
+    InBand->>DdrMgr: ddr_manager_allocate_mem_for_pwr_report()
+    InBand->>PkgCr :package_create_power_report()
+    PkgCr->>PkgCr: Loop through all Power Records
+    loop All Power Records
+        alt [Pwr Event is enabled]
+            PkgCr->>Dataproc: Get Event Data for Record
+            Dataproc->>PkgCr: Data
+            PkgCr->>PkgCr: Add record to Package
+        else [Pwr Event is not enabled]
+            PkgCr->>PkgCr: Skip record
+        end
+    end
+    PkgCr->>DcsMgr: Notify Host about Package
+:::
+
 ### Out of Band Telemetry Component
 
 - Manages out of band communication.  (PLDM stack)

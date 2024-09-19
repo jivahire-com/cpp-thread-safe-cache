@@ -10,26 +10,11 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
-#include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
+#include <telemetry_package_defs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
-#define NUMBER_OF_TILES_PER_DIE (34)
-#define NUMBER_OF_CORES_PER_DIE (NUMBER_OF_TILES_PER_DIE*2)
-#define NUMBER_OF_HNF_CHANNELS_PER_DIE (NUMBER_OF_TILES_PER_DIE*2)
-#define NUMBER_OF_PSTATES (32)
-#define NUMBER_OF_CSTATES (5)
 
-#define NUMBER_OF_THROTTLE_TYPES    (7)
-#define NUMBER_OF_RACK_PRIORITIES   (8)
-#define NUMBER_OF_HS_VOLTAGE_SCALES (17)
-#define NUMBER_OF_HS_TEMP_SCALES    (7)
-
-// TODO: These values are placeholders and need to be verified
-#define NUMBER_OF_DIMM_MODULES      (12)
-#define NUMBER_OF_DIMM_CHANNELS     (24)
-#define NUMBER_OF_MPAMS             (128)
-#define NUMBER_OF_AMU_COUNTERS      (7)
 
 /*-------------- Typedefs ----------------*/
 
@@ -62,3 +47,212 @@ void data_proc_tlm_cmpnt_aggregate_perf_tlm_data(void);
  * @return None
  */
 void data_proc_tlm_cmpnt_aggregate_24hr_tlm_data(void);
+
+
+/**
+ * @brief Get the core pstate data for the specified core.
+ *
+ * @param[in] core_id - The core id to get the pstate data for.
+ * @param[out] pstate_array - Pointer to the array to store the pstate data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_event_pstate_t (*pstate_array)[NUMBER_OF_PSTATES]);
+
+/**
+ * @brief Get the core cstate data for the specified core.
+ *
+ * @param[in] core_id - The core id to get the cstate data for. 0 .. NUMBER_OF_CORES_PER_DIE-1
+ * @param[out] cstate_array - Pointer to the array to store the cstate data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_core_cstate_data(uint16_t core_id, pwr_core_event_cstate_t (*cstate_array)[NUMBER_OF_CSTATES]);
+
+/**
+ * @brief Get the core throttle data for the specified core.
+ *
+ * @param[in] core_id - The core id to get the throttle data for. 0 .. NUMBER_OF_CORES_PER_DIE-1
+ * @param[out] throttle_array - Pointer to the array to store the throttle data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id, pwr_core_event_throttle_t (*throttle_array)[NUMBER_OF_THROTTLE_TYPES]);
+
+/**
+ * @brief Get the core rack priority data for the specified core.
+ *
+ * @param[in] core_id - The core id to get the rack priority data for. 0 .. NUMBER_OF_CORES_PER_DIE-1
+ * @param[out] rack_priority_array - Pointer to the array to store the rack priority data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(uint16_t core_id, pwr_core_event_rack_priorities_t (*rack_priority_array)[NUMBER_OF_RACK_PRIORITIES]);
+
+/**
+ * @brief Get the core voltage data for the specified core.
+ *
+ * @param[in] core_id - The core id to get the voltage data for. 0 .. NUMBER_OF_CORES_PER_DIE-1
+ * @param[out] voltage_data - Pointer to the structure to store the voltage data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_core_voltage_data(uint16_t core_id, p_pwr_core_event_voltage_t voltage_data);
+
+/**
+ * @brief Get the core current data for the specified core.
+ *
+ * @param[in] core_id - The core id to get the current data for. 0 .. NUMBER_OF_CORES_PER_DIE-1
+ * @param[out] current_data - Pointer to the structure to store the current data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_core_current_data(uint16_t core_id, p_pwr_core_event_current_t current_data);
+
+/**
+ * @brief Get the core temperature data for the specified core.
+ *
+ * @param[in] core_id - The core id to get the temperature data for. 0 .. NUMBER_OF_CORES_PER_DIE-1
+ * @param[out] temperature_data - Pointer to the structure to store the temperature data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_core_temperature_data(uint16_t core_id, p_pwr_core_event_temperature_t temperature_data);
+
+/**
+ * @brief Get the core histogram data for the specified core.
+ *
+ * @param[in] core_id - The core id to get the histogram data for. 0 .. NUMBER_OF_CORES_PER_DIE-1
+ * @param[out] histogram_array - Pointer to the two dimensional array to store the histogram data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_core_histogram_data(uint16_t core_id, pwr_core_event_histogram_t (*histogram_array)[NUMBER_OF_HS_VOLTAGE_SCALES][NUMBER_OF_HS_TEMP_SCALES]);
+
+/**
+ * @brief Get the soc pc3 data for the specified soc.
+ *
+ * @param[out] soc_pc3_data - Pointer to the structure to store the soc pc3 data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_soc_pc3_data(p_pwr_soc_event_pc3_t soc_pc3_data);
+
+/**
+ * @brief Get the soc VR rail data for the specified rail.
+ *
+ * @param[in] rail_id - The rail id to get the VR rail data for. 0 .. MAX_NUM_OF_VR_RAILS-1
+ * @param[out] rail_data - Pointer to the structure to store the rail data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(uint16_t rail_id, p_pwr_soc_event_vr_rail_t rail_data);
+
+/**
+ * @brief Get the soc hnf data for the specified hnf channel.
+ *
+ * @param[in] hnf_channel - The hnf channel to get the hnf data for. 0 .. NUMBER_OF_HNF_CHANNELS_PER_DIE-1
+ * @param[out] hnf_data - Pointer to the structure to store the hnf data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(uint16_t hnf_channel, p_pwr_soc_event_hnf_t hnf_data);
+
+/**
+ * @brief Get the soc dimm data for the specified dimm channel.
+ *
+ * @param[in] dimm_channel - The dimm channel to get the dimm data for. 0 .. NUMBER_OF_DIMM_MODULES-1
+ * @param[out] dimm_data - Pointer to the structure to store the dimm data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_soc_dimm_data(uint16_t dimm_channel, p_pwr_soc_event_dimm_t dimm_data);
+
+/**
+ * @brief Get the soc sensor temperature data for the specified sensor.
+ *
+ * @param[in] sensor_id - The sensor id to get the sensor data for. 0 .. NUMBER_OF_SOC_TEMP_SENSORS-1
+ * @param[out] sensor_temp_data - Pointer to the structure to store the sensor temperature data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_soc_event_sensor_temp_t sensor_temp_data);
+
+/**
+ * @brief Get the mpam pstate data for the specified mpam.
+ *
+ * @param[in] mpam_id - The mpam_id to get the data for. 0 .. NUMBER_OF_MPAMS-1
+ * @param[out] mpam_pstate_array - Pointer to the array to store the mpam pstate data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data(uint16_t mpam_id, pwr_event_mpam_pstate_t (*mpam_pstate_array)[NUMBER_OF_PSTATES]);
+
+/**
+ * @brief Get the mpam thottle data for the specified mpam.
+ *
+ * @param[in] mpam_id - The mpam_id to get the data for. 0 .. NUMBER_OF_MPAMS-1
+ * @param[out] mpam_throttle_data - Pointer to the location to store the mpam throttle data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_event_mpam_throttle_t mpam_throttle_data);
+
+/**
+ * @brief Get the core summary performance data for the specified core.
+ *
+ * @param[in] core_id - The core id to get the data for. 0 .. NUMBER_OF_CORES_PER_DIE-1
+ * @param[out] core_summary_data - Pointer to the location to store the core summary data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_perf_soc_core_summary_data(uint16_t core_id, p_perf_core_event_summary_t core_summary_data);
+
+/**
+ * @brief Get the soc VR rail data for the specified rail.
+ *
+ * @param[in] rail_id - The rail id to get the data for. 0 .. MAX_NUM_OF_VR_RAILS-1
+ * @param[out] rail_data - Pointer to the location to store the rail data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_perf_soc_rail_data(uint16_t rail_id, p_perf_soc_event_rail_t rail_data);
+
+/**
+ * @brief Get the soc performance dimm data for the specified dimm channel.
+ *
+ * @param[in] dimm_module - The dimm module to get the data for. 0 .. NUMBER_OF_DIMM_MODULES-1
+ * @param[out] dimm_data - Pointer to the location to store the dimm data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_perf_soc_dimm_runtime_data(uint16_t dimm_module, p_perf_soc_event_dimm_runtime_t dimm_data);
+
+/**
+ * @brief Get the soc performance dimm config data.
+ *
+ * @param[out] dimm_cfg - Pointer to the location to store the dimm config data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_perf_soc_dimm_config_data(p_perf_soc_event_dimm_config_t dimm_cfg);
+
+/**
+ * @brief Get the soc performance sensor temperature data for the specified sensor.
+ *
+ * @param[in] sensor_id - The sensor id to get the data for. 0 .. NUMBER_OF_SOC_TEMP_SENSORS-1
+ * @param[out] sensor_data - Pointer to the location to store the sensor data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_perf_soc_snsr_temp_data(uint16_t sensor_id, p_perf_soc_event_sensor_temp_t sensor_temp_data);
+
+/**
+ * @brief Get the core performance AMU data for the specified core.
+ *
+ * @param[in] core_id - The core id to get the data for. 0 .. NUMBER_OF_CORES_PER_DIE-1
+ * @param[out] amu_data - Pointer to the location to store the AMU data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_perf_core_amu_data(uint16_t core_id, p_perf_core_event_amu_counters_t amu_data);

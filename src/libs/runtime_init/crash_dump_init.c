@@ -116,9 +116,6 @@ FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("hw_ver", "gpio_lib"))
         case CPU_MCP:
             config.core_index = CRASH_DUMP_CORE_MCP;
             config.is_primary = true;
-
-            config.die_index = 0; // hw_version_mcp_init.c does not set die id on idsw.
-                                  // ToDo: Add DIE index for MCP when it's available.
             break;
         default:
             FPFW_RUNTIME_ASSERT(false); // Unsupported CPU type

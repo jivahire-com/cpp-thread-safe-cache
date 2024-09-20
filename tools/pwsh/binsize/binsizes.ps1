@@ -3,29 +3,30 @@
 #
 
 param (
-    [Parameter(Mandatory=$true)][string]$FileName
+    [Parameter(Mandatory=$true)]$FileName
 )
 
 # Define the elf file and temp file paths
 $toolchain = $(Get-ChildItem -Path "Env:REPO_APP_PATH_gcc.arm.eabi.aarch-win64").Value
 $sizeTool = Join-Path -Path $toolchain -ChildPath 'bin\arm-none-eabi-size.exe'
 $currentDirectory = Get-Location
+$FullFileName = $FileName.FullName
 
 # Takes in FileName as a parameter if given - or defaults to scp_fw.elf
 # Test parameter given for FileName (elf file)
-if (-not $FileName) {
+if (-not $FullFileName) {
     Write-Host "No filename given, defaulting to scp_fw.elf in the build path"
     $elfFile = Join-Path -Path $(Get-ChildItem -Path "Env:REPO_APP_TARGET_BUILD_DIR").Value -ChildPath 'bin\scp\scp_fw.elf'
     $tempFile = "$currentDirectory/scp_fw.sizes"
 }
-elseif (-not (Test-Path $FileName)) {
+elseif (-not (Test-Path $FullFileName)) {
     Write-Host "elf file not found at path provided.  Exiting."
     exit
 }
 else {
-    Write-Host "Binsize Processing: $FileName"
-    $elfFile = $FileName
-    $tempFile = Join-Path -Path $currentDirectory -ChildPath "$([System.IO.Path]::GetFileNameWithoutExtension($FileName)).sizes"
+    Write-Host "Binsize Processing: $FullFileName"
+    $elfFile = $FullFileName
+    $tempFile = Join-Path -Path $currentDirectory -ChildPath "$([System.IO.Path]::GetFileNameWithoutExtension($FullFileName)).sizes"
 }
 
 try {

@@ -31,6 +31,7 @@
 /*-- Declarations (Statics and globals) --*/
 static const startup_shutdown_boot_stage_t scp_boot_stages[] = {
     {STARTUP_PHASE_MSCP_ASYNC, STARTUP_MCP_LOAD, DEFAULT_TIMEOUT_MS, false, false},
+    {STARTUP_PHASE_MSCP_ASYNC, STARTUP_KMP_LOAD, DEFAULT_TIMEOUT_MS, false, false},
     {STARTUP_PHASE_MSCP_ASYNC, STARTUP_CLUSTER_CORE_INIT, DEFAULT_TIMEOUT_MS, false, false},
     {STARTUP_PHASE_MSCP_ASYNC, STARTUP_AP_SOC_POWER_INIT, DEFAULT_TIMEOUT_MS, false, false},
     {STARTUP_PHASE_AP_ASYNC, STARTUP_BL31_LOAD, DEFAULT_TIMEOUT_MS, false, false},

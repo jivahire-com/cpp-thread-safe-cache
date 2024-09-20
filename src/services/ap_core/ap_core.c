@@ -251,6 +251,17 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
             }
 
             break;
+        case STARTUP_KMP_LOAD:
+            if (system_info_is_hsp_present())
+            {
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_KMP);
+            }
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
+
+            break;
         default:
             // nothing to do for other types.
             // complete p_request

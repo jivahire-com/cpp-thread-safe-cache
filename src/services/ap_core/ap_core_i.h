@@ -52,6 +52,7 @@ typedef enum {
     AP_FW_ID_RMM,
     AP_FW_ID_SPMC,
     AP_FW_ID_MCP,
+    AP_FW_ID_KMP,
     AP_FW_ID_MAX,
 } ap_fw_id_t;
 

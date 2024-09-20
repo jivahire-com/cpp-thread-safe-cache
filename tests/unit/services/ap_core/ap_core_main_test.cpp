@@ -20,6 +20,7 @@ extern "C" {
 #include <ap_core.h>
 #include <ap_core_i.h>
 #include <ap_core_init.h>
+#include <ap_fw_info.h>
 #include <corebits.h>
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
 #define __NO_CSR_TYPEDEFS__
@@ -457,7 +458,6 @@ AP_CORE_TEST(dispatch_bl31_load, setup, NULL)
     will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_RSP);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 
-#define TFA_FW_LOAD_ADDRESS 0x10000
     kng_hsp_mailbox_cmd_load_fw_req send_request = {
         .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
         .header.context = 0,
@@ -519,6 +519,50 @@ AP_CORE_TEST(dispatch_mcp_load, setup, NULL)
     fw_load_cb(&icc_hspmbx_ctx, 0, FPFW_STATUS_SUCCESS);
 }
 
+AP_CORE_TEST(dispatch_kmp_load, setup, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_KMP_LOAD; // unhandled stage
+
+    // Set up expectations
+    will_return(__wrap_system_info_is_hsp_present, true);
+
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
+
+#define KMP_LOAD_ADDRESS        0XFFFFFF0480000
+    kng_hsp_mailbox_cmd_load_fw_64bit_req send_request = {
+        .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ,
+        .header.context = 0,
+        .id = HSP_FIRMWARE_ID_KMP,
+        .load_addr_low = KMP_LOAD_ADDRESS & (uint32_t)0xFFFFFFFF,
+        .load_addr_high = KMP_LOAD_ADDRESS >> 32,
+    };
+    expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request, sizeof(send_request));
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    // Call API under test
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+
+#define KMP_START_ADDRESS       0x00080080
+    struct kng_hsp_mailbox_cmd_start_core_req kmp_start_req = {.header.cmd = HSP_MAILBOX_CMD_START_CORE_REQ,
+                                                               .id = HSP_FIRMWARE_ID_KMP,
+                                                               .address = KMP_START_ADDRESS};
+
+    // KMP reset release cb also sends a mailbox message
+    expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &kmp_start_req, sizeof(kmp_start_req));
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    // Call the callback to simulate the response
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+    fw_load_cb(&icc_hspmbx_ctx, 0, FPFW_STATUS_SUCCESS);
+}
+
 AP_CORE_TEST(dispatch_stmm_load, setup, NULL)
 {
     // Set up pre-conditions
@@ -534,7 +578,6 @@ AP_CORE_TEST(dispatch_stmm_load, setup, NULL)
     will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_RSP);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 
-#define STMM_FW_LOAD_ADDRESS 0xF9300000
     kng_hsp_mailbox_cmd_load_fw_req send_request = {
         .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
         .header.context = 0,
@@ -569,7 +612,6 @@ AP_CORE_TEST(dispatch_bl33_load, setup, NULL)
     will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_RSP);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 
-#define BL33_FW_LOAD_ADDRESS 0xE0000000
     kng_hsp_mailbox_cmd_load_fw_req send_request = {
         .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
         .header.context = 0,
@@ -604,7 +646,6 @@ AP_CORE_TEST(dispatch_hafnium_load, setup, NULL)
     will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_RSP);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 
-#define HAFNIUM_FW_LOAD_ADDRESS 0xF8FE0000
     kng_hsp_mailbox_cmd_load_fw_req send_request = {
         .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
         .header.context = 0,
@@ -639,7 +680,6 @@ AP_CORE_TEST(dispatch_rmm_load, setup, NULL)
     will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_RSP);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 
-#define RMM_FW_LOAD_ADDRESS 0xFD400000
     kng_hsp_mailbox_cmd_load_fw_req send_request = {
         .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
         .header.context = 0,
@@ -674,7 +714,6 @@ AP_CORE_TEST(dispatch_spmc_load, setup, NULL)
     will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_RSP);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 
-#define SPMC_FW_LOAD_ADDRESS 0XFD3DF000
     kng_hsp_mailbox_cmd_load_fw_req send_request = {
         .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
         .header.context = 0,

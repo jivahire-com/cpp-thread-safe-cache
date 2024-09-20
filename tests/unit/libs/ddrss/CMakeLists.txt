@@ -40,6 +40,7 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     atu_map
     atu_unmap
+    cmn800_generate_ddr_mc_map_from_cached_config
     ddrss_get_phy_interrupt_status
     ddrss_clear_phy_interrupt_status
     nvic_irq_set_isr_with_param
@@ -48,6 +49,7 @@ mock_target(${TARGET}
     mmio_read32
     mmio_write32
     ddrss_init
+    idhw_is_single_die_boot_en
     intu_get_interrupt_status
     ddrss_ddr_intu_get_interrupt_dest_enable
     ddrss_probe_ras_agent

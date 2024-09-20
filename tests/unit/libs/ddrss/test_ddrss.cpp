@@ -13,12 +13,13 @@
 extern "C" {
 #include <FPFwInterrupts.h>
 #include <FpFwUtils.h>
+#include <atu_lib.h>
+#include <cmn_config.h>
 #include <ddrss.h>
 #include <ddrss_intu.h>
 #include <ddrss_lib.h>
 #include <idsw_kng.h>
 #include <interrupts.h>
-#include <nvic.h>
 #include <silibs_ap_top_regs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -38,8 +39,6 @@ extern uint32_t g_phy_int_sts;
 extern uint32_t g_mc_intu_sts;
 extern uint32_t g_mc_intu_dest_enable;
 extern bool g_mmio_read32_mocktype;
-
-
 
 /*------------- Functions ----------------*/
 static int setup(void** state)
@@ -114,9 +113,18 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_skip, setup, teardown)
 
 TEST_FUNCTION(test_ddrss_lib_init_fpga, setup, teardown)
 {
-
+    cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
     KNG_DIE_ID test_die = (KNG_DIE_ID)1;
     int i=0;
+
+    // initialize the CFG
+    cmn800_snf_to_mc_config.is_numa_enabled = 1;
+    cmn800_snf_to_mc_config.map_size = 0;
+    memset(cmn800_snf_to_mc_config.ddr_mc_map, 0xff, sizeof(cmn800_snf_to_mc_config.ddr_mc_map));
+    cmn800_snf_to_mc_config.hash_select = 0;
+
+    // set up die id
+    idsw_set_die_id(test_die);
 
     // ddrss init is not skipped on the Big FPGA, and the
     // atu map is fixed so no atu map / un map calls
@@ -135,6 +143,87 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga, setup, teardown)
         expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
     }
 
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
+
+    prod_ddrss_lib_init(test_die);
+}
+
+TEST_FUNCTION(test_ddrss_lib_init_emu, setup, teardown)
+{
+    cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
+    KNG_DIE_ID test_die = (KNG_DIE_ID)0;
+    int i=0;
+
+    // initialize the CFG
+    cmn800_snf_to_mc_config.is_numa_enabled = 0;
+    cmn800_snf_to_mc_config.map_size = 0;
+    memset(cmn800_snf_to_mc_config.ddr_mc_map, 0xff, sizeof(cmn800_snf_to_mc_config.ddr_mc_map));
+    cmn800_snf_to_mc_config.hash_select = 0;
+
+    // set up die id
+    idsw_set_die_id(test_die);
+
+    // ddrss init is not skipped on the Big FPGA, and the
+    // atu map is fixed so no atu map / un map calls
+    idsw_set_platform_sdv(PLATFORM_EMU_1D);
+    for (int this_irq_num = HW_INT_DDRSS0; this_irq_num <= HW_INT_DDRSS5; this_irq_num++)
+    {
+        i = (this_irq_num - HW_INT_DDRSS0);
+
+        // FPFwCoreInterruptRegisterCallback
+        expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, isr, prod_ddrss_interrupt_handler);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, ddrss_num, ddrss_num[i]);
+
+        // FPFwCoreInterruptEnableVector
+        expect_value(__wrap_nvic_irq_clear_pending, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
+    }
+
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
+
+    prod_ddrss_lib_init(test_die);
+}
+
+TEST_FUNCTION(test_ddrss_lib_init_rvp, setup, teardown)
+{
+    cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
+    KNG_DIE_ID test_die = (KNG_DIE_ID)1;
+    int i=0;
+
+    // initialize the CFG
+    cmn800_snf_to_mc_config.is_numa_enabled = 1;
+    cmn800_snf_to_mc_config.map_size = 0;
+    memset(cmn800_snf_to_mc_config.ddr_mc_map, 0xff, sizeof(cmn800_snf_to_mc_config.ddr_mc_map));
+    cmn800_snf_to_mc_config.hash_select = 0;
+
+    // set up die id
+    idsw_set_die_id(test_die);
+    idsw_set_platform_sdv(PLATFORM_RVP_EVT_SILICON);
+    for (int this_irq_num = HW_INT_DDRSS0; this_irq_num <= HW_INT_DDRSS5; this_irq_num++)
+    {
+        i = (this_irq_num - HW_INT_DDRSS0);
+
+        // FPFwCoreInterruptRegisterCallback
+        expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, isr, prod_ddrss_interrupt_handler);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, ddrss_num, ddrss_num[i]);
+
+        // FPFwCoreInterruptEnableVector
+        expect_value(__wrap_nvic_irq_clear_pending, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
+    }
+
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
     will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);

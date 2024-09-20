@@ -14,6 +14,8 @@ endif()
 target_link_libraries(${TARGET}
     PUBLIC
     ms::lib::register_headers
+    silibs::cmn800
+    silibs::ddr_i3c
     silibs::ddrss
     silibs::intu
     PRIVATE

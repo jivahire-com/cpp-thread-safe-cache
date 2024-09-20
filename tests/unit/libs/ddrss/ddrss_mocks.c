@@ -11,6 +11,7 @@
 #include <FpFwCMocka.h> // IWYU pragma: keep
 #include <FpFwUtils.h>
 #include <atu_lib.h>
+#include <cmn800.h>
 #include <cmocka.h> // IWYU pragma: keep
 #include <ddrss.h>
 #include <ddrss_intu.h>
@@ -18,6 +19,7 @@
 #include <nvic.h>
 #include <silibs_status.h>
 #include <stddef.h>
+#include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -49,6 +51,7 @@ int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
     {
         return SILIBS_E_PARAM;
     }
+
     // Keep mscp base non-zero to allow checking base address in UTs
     atu_map_entry->mscp_start_address = 0xffffffff;
 
@@ -201,4 +204,14 @@ int __wrap_ddrss_mc_intu_get_interrupt_status(uint32_t mc, uint32_t* intr)
     FPFW_UNUSED(mc);
     *intr = g_mc_intu_sts;
     return (SILIBS_SUCCESS);
+}
+
+bool __wrap_idhw_is_single_die_boot_en(void)
+{
+    return mock_type(bool);
+}
+
+cmn800_snf_to_mc_config_t* __wrap_cmn800_generate_ddr_mc_map_from_cached_config(void)
+{
+    return mock_type(cmn800_snf_to_mc_config_t *);
 }

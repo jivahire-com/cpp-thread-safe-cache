@@ -42,8 +42,9 @@ static atu_map_entry_t atu_ioss_map[NUM_IOSS_INSTANCES] = {
 
 void usb_init(uint32_t usb_init_block)
 {
-    if ((usb_init_block != (USBSS_INIT_USB2_0 | USBSS_INIT_USB2_1)))
+    if (!(usb_init_block & (USBSS_INIT_USB2_0 | USBSS_INIT_USB2_1)))
     {
+        printf("Skip usb_init! Invalid init flags \n!");
         FPFW_RUNTIME_ASSERT(false);
     }
 
@@ -60,7 +61,7 @@ void usb_init(uint32_t usb_init_block)
     usbss_cfg.usbss_base_address = 0x01;
 
     // USB_0 settings
-    usbss_cfg.usb_cfg[0].sd_config.dis_u1u2timerscale = false;
+    usbss_cfg.usb_cfg[0].sd_config.dis_u1u2timerscale = true;
     usbss_cfg.usb_cfg[0].sd_config.sd_mode = DISABLE_ALL_SD;
     usbss_cfg.usb_cfg[0].sd_config.frmscldwn = FRM_SCLDWN_1024;
     usbss_cfg.usb_cfg[0].sd_config.pwrdnscale = 0x07;
@@ -68,7 +69,7 @@ void usb_init(uint32_t usb_init_block)
     usbss_cfg.usb_cfg[0].scrambling_disable = 0x0;
 
     // USB_1 settings
-    usbss_cfg.usb_cfg[1].sd_config.dis_u1u2timerscale = false;
+    usbss_cfg.usb_cfg[1].sd_config.dis_u1u2timerscale = true;
     usbss_cfg.usb_cfg[1].sd_config.sd_mode = DISABLE_ALL_SD;
     usbss_cfg.usb_cfg[1].sd_config.frmscldwn = FRM_SCLDWN_1024;
     usbss_cfg.usb_cfg[1].sd_config.pwrdnscale = 0x07;

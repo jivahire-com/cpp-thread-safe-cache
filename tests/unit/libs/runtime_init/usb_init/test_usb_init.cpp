@@ -75,17 +75,23 @@ TEST_FUNCTION(test_usb_init_svp, NULL, NULL)
     _fpfw_component_usb.init_fn();
 }
 
-TEST_FUNCTION(test_usb_init_bypass_fpga, NULL, NULL)
+TEST_FUNCTION(test_usb_init_fpga, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return_always(__wrap_idhw_get_die_id, test_die);
+    expect_function_call(__wrap_usb_init);
 
     // Call API under test
     _fpfw_component_usb.init_fn();
 }
 
-TEST_FUNCTION(test_usb_init_bypass_fpga_large, NULL, NULL)
+TEST_FUNCTION(test_usb_init_fpga_large, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return_always(__wrap_idhw_get_die_id, test_die);
+    expect_function_call(__wrap_usb_init);
 
     // Call API under test
     _fpfw_component_usb.init_fn();
@@ -94,6 +100,8 @@ TEST_FUNCTION(test_usb_init_bypass_fpga_large, NULL, NULL)
 TEST_FUNCTION(test_usb_init_bypass_fpga_tiny, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_TINY);
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return_always(__wrap_idhw_get_die_id, test_die);
 
     // Call API under test
     _fpfw_component_usb.init_fn();
@@ -102,14 +110,19 @@ TEST_FUNCTION(test_usb_init_bypass_fpga_tiny, NULL, NULL)
 TEST_FUNCTION(test_usb_init_bypass_fpga_small, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_SMALL);
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return_always(__wrap_idhw_get_die_id, test_die);
 
     // Call API under test
     _fpfw_component_usb.init_fn();
 }
 
-TEST_FUNCTION(test_usb_init_bypass_fpga_large_rvp, NULL, NULL)
+TEST_FUNCTION(test_usb_init_fpga_large_rvp, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE_RVP);
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return_always(__wrap_idhw_get_die_id, test_die);
+    expect_function_call(__wrap_usb_init);
 
     // Call API under test
     _fpfw_component_usb.init_fn();
@@ -118,6 +131,8 @@ TEST_FUNCTION(test_usb_init_bypass_fpga_large_rvp, NULL, NULL)
 TEST_FUNCTION(test_usb_init_bypass_zebu, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU);
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return_always(__wrap_idhw_get_die_id, test_die);
 
     // Call API under test
     _fpfw_component_usb.init_fn();
@@ -126,6 +141,8 @@ TEST_FUNCTION(test_usb_init_bypass_zebu, NULL, NULL)
 TEST_FUNCTION(test_usb_init_bypass_zebu_1D, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_1D);
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return_always(__wrap_idhw_get_die_id, test_die);
 
     // Call API under test
     _fpfw_component_usb.init_fn();
@@ -134,6 +151,8 @@ TEST_FUNCTION(test_usb_init_bypass_zebu_1D, NULL, NULL)
 TEST_FUNCTION(test_usb_init_bypass_zebu_2D, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_2D);
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return_always(__wrap_idhw_get_die_id, test_die);
 
     // Call API under test
     _fpfw_component_usb.init_fn();
@@ -142,6 +161,8 @@ TEST_FUNCTION(test_usb_init_bypass_zebu_2D, NULL, NULL)
 TEST_FUNCTION(test_usb_init_bypass_zebu_1D_8C, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_1D_8C);
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return_always(__wrap_idhw_get_die_id, test_die);
 
     // Call API under test
     _fpfw_component_usb.init_fn();
@@ -150,6 +171,8 @@ TEST_FUNCTION(test_usb_init_bypass_zebu_1D_8C, NULL, NULL)
 TEST_FUNCTION(test_usb_init_bypass_zebu_2D_8C, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_2D_8C);
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return_always(__wrap_idhw_get_die_id, test_die);
 
     // Call API under test
     _fpfw_component_usb.init_fn();
@@ -157,7 +180,6 @@ TEST_FUNCTION(test_usb_init_bypass_zebu_2D_8C, NULL, NULL)
 
 TEST_FUNCTION(test_usb_init_die1, NULL, NULL)
 {
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idhw_get_die_id, test_die);
 

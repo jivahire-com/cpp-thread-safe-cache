@@ -20,6 +20,7 @@
  */
 #define USBSS_INIT_USB2_0 (BIT0)
 #define USBSS_INIT_USB2_1 (BIT1)
+#define USBSS_INIT_INVALID_FLAG (BIT3)
 
 /*------------- Typedefs -----------------*/
 

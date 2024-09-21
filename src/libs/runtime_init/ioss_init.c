@@ -25,13 +25,6 @@
 /*------------- Functions ----------------*/
 FPFW_INIT_COMPONENT(ioss, FPFW_INIT_DEPENDENCIES("vab", "tower_cfg"))
 {
-    // TODO: ADO 1826681 Re-enable on FPGA once the vab sequence library has been integrated
-    if ((idsw_get_platform_sdv() == PLATFORM_FPGA) || (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE))
-    {
-        printf("%s: skip IOSS init on FPGA for now!\n", __func__);
-        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
-    }
-
     uint8_t die_num = (uint8_t)idhw_get_die_id();
     if (die_num == SOC_D0)
     {

@@ -25,27 +25,48 @@
 /*------------- Functions ----------------*/
 FPFW_INIT_COMPONENT(usb, FPFW_INIT_DEPENDENCIES("ioss"))
 {
-    // TODO: ADO 1826681 Re-enable on FPGA once the vab sequence library has been integrated
-    if (((idsw_get_platform_sdv() < PLATFORM_SVP_SIM) && (idsw_get_platform_sdv() >= PLATFORM_FPGA)) ||
-        ((idsw_get_platform_sdv() <= PLATFORM_EMU_2D_8C) && (idsw_get_platform_sdv() >= PLATFORM_EMU)))
-    {
-        printf("%s: skip USB init on FPGA and ZEBU for now!\n", __func__);
-        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
-    }
-
     uint8_t die_num = (uint8_t)idhw_get_die_id();
-    printf("USB init, die_num: [%u]\n", die_num);
-
-    // TODO: get usb_init_block from config knob ADO Task #1508422
-    // USB only used in DIE0
-    if (die_num == SOC_D0)
+    if (die_num == SOC_D1)
     {
-        usb_init(USBSS_INIT_USB2_0 | USBSS_INIT_USB2_1);
-    }
-    else
-    {
-        printf("USB not used on die: %u... Skipping USB init...\n", die_num);
+        printf("USB is not enabled on die 1! Skip USB initialization\n");
+        goto done;
     }
 
+    /* TODO:
+     * Obtain USB configuration information from the configuration manager
+     * instead of relying on SDV. ADO - 1508440
+     * https://azurecsi.visualstudio.com/Dev/_workitems/edit/1508440
+     */
+    KNG_PLAT_ID plat = idsw_get_platform_sdv();
+    uint32_t usb_init_flags = 0x00;
+    switch (plat)
+    {
+    // Note: FPGAs only support one controller subsytem - USB2_0
+    case PLATFORM_FPGA:
+    case PLATFORM_FPGA_LARGE:
+    case PLATFORM_FPGA_LARGE_RVP:
+        usb_init_flags = USBSS_INIT_USB2_0;
+        break;
+
+    case PLATFORM_SVP_SIM:
+    case PLATFORM_RVP_EVT_SILICON:
+        usb_init_flags = (USBSS_INIT_USB2_0 | USBSS_INIT_USB2_1);
+        break;
+
+    case PLATFORM_EMU_1D:
+    case PLATFORM_EMU_1D_8C:
+    case PLATFORM_EMU_2D:
+    case PLATFORM_EMU_2D_8C:
+    default:
+        printf("Skip USB init on platform id: %d\n", plat);
+        break;
+    }
+
+    if (usb_init_flags != 0x00)
+    {
+        usb_init(usb_init_flags);
+    }
+
+done:
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

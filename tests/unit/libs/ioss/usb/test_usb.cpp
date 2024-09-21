@@ -72,7 +72,7 @@ TEST_FUNCTION(test_invalid_usb_init_block, nullptr, nullptr)
     expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
     if (!set_error_handler_return())
     {
-        usb_init((USBSS_INIT_USB2_0));
+        usb_init((USBSS_INIT_INVALID_FLAG));
     }
 }
 

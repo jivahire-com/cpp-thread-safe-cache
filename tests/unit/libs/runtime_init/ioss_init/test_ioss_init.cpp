@@ -49,50 +49,10 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
 //
 // Tests
 //
-TEST_FUNCTION(test_ioss_init_silicon, nullptr, nullptr)
-{
-    // Set up expectations
-    const auto test_die = (KNG_DIE_ID)0;
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
-    will_return_always(__wrap_idhw_get_die_id, test_die);
-    expect_value(__wrap_ioss_init, die_num, test_die);
-
-    // Call API under test
-    _fpfw_component_ioss.init_fn();
-}
-
-TEST_FUNCTION(test_ioss_init_svp, NULL, NULL)
-{
-    // Set up expectations
-    const auto test_die = (KNG_DIE_ID)0;
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
-    will_return_always(__wrap_idhw_get_die_id, test_die);
-    expect_value(__wrap_ioss_init, die_num, test_die);
-
-    // Call API under test
-    _fpfw_component_ioss.init_fn();
-}
-
-TEST_FUNCTION(test_ioss_init_bypass_fpga, NULL, NULL)
-{
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
-
-    // Call API under test
-    _fpfw_component_ioss.init_fn();
-}
-
-TEST_FUNCTION(test_ioss_init_bypass_fpga_large, NULL, NULL)
-{
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
-
-    // Call API under test
-    _fpfw_component_ioss.init_fn();
-}
 
 TEST_FUNCTION(test_ioss_init_die1, NULL, NULL)
 {
     const auto test_die = (KNG_DIE_ID)1;
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idhw_get_die_id, test_die);
 
     // Call API under test

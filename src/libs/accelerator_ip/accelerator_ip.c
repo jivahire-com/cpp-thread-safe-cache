@@ -319,6 +319,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
     if ((!system_info_is_hsp_present()) && (idsw_get_platform_sdv() != PLATFORM_SVP_SIM))
     {
         p_ss_ctxt->p_init_params->fw_preload_enabled = false;
+        p_ss_ctxt->p_init_params->sdm_emcpu_init_cfg->release_m7_halt = true;
     }
 
     ret = accelip_ss_init(atu_map_entry.mscp_start_address, p_ss_ctxt->accelip_metadata.accel_type, p_ss_ctxt->p_init_params);

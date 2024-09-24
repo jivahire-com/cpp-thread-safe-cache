@@ -1,4 +1,5 @@
 KingsgateSVP.DIE_1.#EXTRA_PROPERTIES#runtime_disabled=true
+KingsgateSVP.#EXTRA_PROPERTIES#/multi_chip_mode=false
 KingsgateSVP.Platform_Flash.PlatformFlash.#EXTRA_PROPERTIES#/ImageInfo/EEPROM_Image=$(REPO_APP_BUILD_DIR)/$(REPO_APP_BUILD_CONFIG)/arm-eabi-aarch/bin/flash/kingsgate.ifwi.svp.debug.custom.dat
 KingsgateSVP.Platform_Flash.PlatformFlash.#SCML_PROPERTIES#EEPROM_Image=$(REPO_APP_BUILD_DIR)/$(REPO_APP_BUILD_CONFIG)/arm-eabi-aarch/bin/flash/kingsgate.ifwi.svp.debug.custom.dat
 KingsgateSVP.DIE_0.HSSS.HSP.HSP_E21_LT_PSP.#EXTRA_PROPERTIES#/ImageInfo/core0/cpu0/initial_image=$(REPO_APP_PATH_kingsgate.firmware.a0rom)/release/bin/sim/rom-sim.elf

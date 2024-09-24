@@ -25,7 +25,6 @@
 #include <system_info.h>
 
 /*------------- Defines -----------------*/
-bool dual_die_boot = false; // ADO: 1825901 Deprecate after ADO is implemented by SVP
 static fpfw_icc_base_ctx_t* s_mbx_icc_ctx;
 
 /*------------- Functions ----------------*/
@@ -66,14 +65,11 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     cmn800_sequence_param.D2D_INIT = 0;       // D2D_INIT_FRONTDOOR
     cmn800_sequence_param.USE_HW_TIMER = 0;
 
-    if (dual_die_boot == true) // ADO: 1825901 Deprecate after ADO is implemented by SVP
+    if (!idhw_is_single_die_boot_en()) // 2 Die
     {
-        if (!idhw_is_single_die_boot_en()) // 2 Die
-        {
-            printf("Dual Die Boot\n");
-            cmn800_sequence_param.cmn_config_enum = CONFIG_2D_NUMA_64HNS_HIER_3SN_enum; // 2 Die
-            cmn800_sequence_param.BOOT_2D_ENABLE = true;
-        }
+        printf("Dual Die Boot\n");
+        cmn800_sequence_param.cmn_config_enum = CONFIG_2D_NUMA_64HNS_HIER_3SN_enum; // 2 Die
+        cmn800_sequence_param.BOOT_2D_ENABLE = true;
     }
     if (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE || idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE_RVP)
     {

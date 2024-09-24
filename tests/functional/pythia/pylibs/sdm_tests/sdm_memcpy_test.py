@@ -89,7 +89,7 @@ class sdm_memcpy_test(EchoFallsBaseTest):
             test_result = KngPythiaTestIF.parse_log(self=self, log_lines=command_response[1], pass_logs=pass_logs, fail_logs=fail_logs)
 
         elif (self.dut.get_dut_type() == DeviceType.SVP):
-            command_response=KngPythiaTestIF.read_from_uart(self=self, connection=self.dut.mb.node_0.soc.primary_die.apns.channel_manager, num_lines=45)
+            command_response=KngPythiaTestIF.read_from_uart(self=self, connection=self.dut.mb.node_0.soc.primary_die.apns.channel_manager, num_lines=55)
             test_result=KngPythiaTestIF.parse_log(self=self, log_lines=command_response, pass_logs=pass_logs, fail_logs=fail_logs)
         
         else:

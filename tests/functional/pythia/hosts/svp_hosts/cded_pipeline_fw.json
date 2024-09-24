@@ -114,7 +114,8 @@
             "KingsgateSVP.DIE_0.VABRPSS1.#EXTRA_PROPERTIES#runtime_disabled":"false",
             "KingsgateSVP.DIE_0.VABRPSS2.#EXTRA_PROPERTIES#runtime_disabled":"false",
             "KingsgateSVP.DIE_0.VABRPSS3.#EXTRA_PROPERTIES#runtime_disabled":"false",
-            "KingsgateSVP.DIE_1.#EXTRA_PROPERTIES#runtime_disabled":"true"
+            "KingsgateSVP.DIE_1.#EXTRA_PROPERTIES#runtime_disabled":"true",
+            "KingsgateSVP.#EXTRA_PROPERTIES#/multi_chip_mode":"false"
         },
         "env_vars": {
             "ARMLMD_LICENSE_FILE": "40002@wanlic.svceng.com",

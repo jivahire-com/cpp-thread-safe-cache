@@ -15,6 +15,14 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install)
 # Steer SCP/MCP builds to use stdint data types when ingesting common headers shared with UEFI
 add_compile_definitions(SCP_CONFIG_VARIABLE_TYPE)
 
+# Verbosity levels for INFO, DEBUG and CRITICAL below
+# SILIBS_PRINT_VERBOSITY_LEVEL_NONE     0x0
+# SILIBS_PRINT_VERBOSITY_LEVEL_CRITICAL 0x1
+# SILIBS_PRINT_VERBOSITY_LEVEL_INFO     0x3
+# SILIBS_PRINT_VERBOSITY_LEVEL_DEBUG    0x7
+# SILIBS_PRINT_VERBOSITY_LEVEL_ALL      0xF
+add_compile_definitions(SILIBS_PRINT_VERBOSITY_LEVEL=0x1) # Set to Critical
+
 # Python3 executable path
 set (Python3_EXECUTABLE $ENV{REPO_APP_PATH_python.win64}/tools/python.exe)
 

@@ -30,7 +30,6 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 bool simulate_single_die = true;
-extern bool dual_die_boot; // ADO: 1825901 Deprecate after ADO is implemented by SVP
 static fpfw_icc_base_ctx_t *test_icc_base_hsp_mbx_ctx;
 
 /*------------- Functions ----------------*/
@@ -69,7 +68,6 @@ static int setup_svp_platform_dual_die(void** pContext)
     FPFW_UNUSED(pContext);
     idsw_set_platform_sdv(PLATFORM_SVP_SIM);
     simulate_single_die = false;
-    dual_die_boot = true; // ADO: 1825901 Deprecate after ADO is implemented by SVP
     return 0;
 }
 

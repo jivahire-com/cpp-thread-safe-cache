@@ -65,7 +65,7 @@ If -UseGUI specified it will setup and run the simulation with the GUI, otherwis
 Invoke-Virtualizer -SimConfig scp_mcp_chie_bins -UseGUI
 #>
 Function Invoke-Virtualizer(
-    [Parameter(Mandatory=$false)] [ValidateSet('scp_mcp_chie_bins', 'hsp_bl_scp', 'scp_mcp_chie_bins_dual_die')] [string] $SimConfig = "scp_mcp_chie_bins",
+    [Parameter(Mandatory=$false)] [ValidateSet('scp_mcp_chie_bins', 'hsp_bl_scp', 'scp_mcp_chie_bins_dual_die', 'chie_bins_dual_die_dat')] [string] $SimConfig = "scp_mcp_chie_bins",
     [Parameter(Mandatory=$false)] [switch] $UseGUI
 )
 {
@@ -133,6 +133,10 @@ Function Invoke-Virtualizer(
         }
         "scp_mcp_chie_bins_dual_die" {
             Write-Host "Using chie fw bins for both dies."
+            Break;
+        }
+        "chie_bins_dual_die_dat" {
+            Write-Host "Using chie fw bins for both dies with dat file."
             Break;
         }
         Default {

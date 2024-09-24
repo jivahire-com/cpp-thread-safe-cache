@@ -1,4 +1,5 @@
 KingsgateSVP.DIE_1.#EXTRA_PROPERTIES#runtime_disabled=true
+KingsgateSVP.#EXTRA_PROPERTIES#/multi_chip_mode=false
 KingsgateSVP.DIE_0.CDEDSS.KMP_EMCPU.terminal_uart_kmp.#EXTRA_PROPERTIES#runtime_disabled=true
 KingsgateSVP.DIE_0.CDEDSS.KMP_EMCPU.KMP_EMCPU_UART.#EXTRA_PROPERTIES#runtime_disabled=true
 KingsgateSVP.DIE_0.CDEDSS.SDM_EMCPU.terminal_uart_sdm.#EXTRA_PROPERTIES#runtime_disabled=true

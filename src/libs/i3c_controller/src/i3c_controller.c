@@ -104,6 +104,7 @@ static void i3c_controller_ibi_callback(uint8_t device_address, uint8_t ibi_type
 static void i3c_controller_notification_callback(uint8_t notification, void* context)
 {
     UNUSED(context);
+    UNUSED(notification);
 
     DEBUG_PRINT(MOD_NAME "%s - %d", __func__, (int)notification);
 }
@@ -212,6 +213,15 @@ int i3c_controller(uint8_t die_num)
             }
 
             // Send PMIC ON
+            // i3c_cmd_t s_i3c_cmd = {0};
+            // status = ddr_i3c_interface_power_up_pmic_on(i3c_instance[i], &s_i3c_cmd);
+            // if (status != SILIBS_SUCCESS)
+            // {
+            //     // Error in sending PMIC ON
+            //     DEBUG_PRINT(MOD_NAME "Error in sending PMIC ON\n");
+            //     // Error or BUGCHECK
+            //     goto exit;
+            // }
 
             // Set all addresses to static addresses
             status = i3c_master_set_aasa(i3c_instance[i], I3C_SPEED_I2C_FM, NULL, NULL);

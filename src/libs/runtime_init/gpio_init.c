@@ -26,12 +26,25 @@
 
 /*-- Declarations (Statics and globals) --*/
 static const gpio_config_entry_t fpga_config_gpio_table[] = {
-    // Override the default gpio configm for the FPGA, since one some systems, On GPIO Bank 6, 
+    // Override the default gpio config for the FPGA, since one some systems, On GPIO Bank 6, 
     // Pin 6 and Pin 7 are looped back. Hence, we will use these pins to check if GPIO is connected.
+    // Disable GPIO4_5 interrupt, since power code polls for VR_HOT_SOC
     {GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_4, 0xFF),
-    {.grp = {.grp_level = 0x1C, .grp_dir = 0x10, .grp_int_enable = 0x20, .grp_int_lvl_edge = 0x20}}},
+    {.grp = {.grp_level = 0x1C, .grp_dir = 0x10, .grp_int_enable = 0x00, .grp_int_lvl_edge = 0x20}}},
     {GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_6, 0xFF),
     {.grp = {.grp_level = 0x0F, .grp_dir = 0x4D, .grp_int_enable = 0x10, .grp_int_lvl_edge = 0x00}}},
+};
+
+static const gpio_config_entry_t def_gpio_config_table_grp[] = {
+    // Program a 8-pin group together, optimized for reducing register access.
+    // Each value is a 8 bit vector, and each bit control one GPIO in the group.
+    // Controller  pin_mask
+    // level 1:high 0:low | dir 1:out 0:in  | int_en 1:enable 0:disable | int_sense 1:low_level 0:rising_edge
+    // Disable GPIO4_5 interrupt, since power code polls for VR_HOT_SOC
+    {GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_4, 0xFF),
+     {.grp = {.grp_level = 0x1C, .grp_dir = 0x10, .grp_int_enable = 0x00, .grp_int_lvl_edge = 0x20}}},
+    {GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_6, 0xFF),
+     {.grp = {.grp_level = 0x0F, .grp_dir = 0x0D, .grp_int_enable = 0x10, .grp_int_lvl_edge = 0x00}}},
 };
 
 /*------------- Functions ----------------*/
@@ -48,7 +61,7 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver"))
     status = gpio_afm_init(NULL, 0);
     FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
 
-    if (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE)
+    if (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE || idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE_RVP)
     {
         printf("Programming FPGA specific GPIO Config table (Supporting loopback of pins 6 and 7 on GPIO Bank 6) . . .\n\r)");
         status = gpio_init(fpga_config_gpio_table, ARRAY_SIZE(fpga_config_gpio_table));
@@ -57,9 +70,9 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver"))
     }
     else 
     {
-        status = gpio_init(NULL, 0);
-        gpio_init_config.gpio_config_table = NULL;
-        gpio_init_config.table_size = 0;
+        status = gpio_init(def_gpio_config_table_grp, ARRAY_SIZE(def_gpio_config_table_grp));
+        gpio_init_config.gpio_config_table = def_gpio_config_table_grp;
+        gpio_init_config.table_size = ARRAY_SIZE(def_gpio_config_table_grp);
     }
     FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
 

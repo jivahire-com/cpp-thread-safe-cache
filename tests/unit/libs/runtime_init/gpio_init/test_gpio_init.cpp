@@ -137,9 +137,10 @@ TEST_FUNCTION(test_gpio_lib_init_SVP, nullptr, nullptr)
     // Set up expectations
     expect_function_call(__wrap_gpio_afm_init);
     expect_function_call(__wrap_idsw_get_platform_sdv);
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
-    expect_value(__wrap_gpio_init, gpio_cfg_tbl, NULL);
-    expect_value(__wrap_gpio_init, num, 0);
+    expect_function_call(__wrap_idsw_get_platform_sdv);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    expect_not_value(__wrap_gpio_init, gpio_cfg_tbl, NULL);
+    expect_value(__wrap_gpio_init, num, 2);
     expect_function_call(__wrap_gpio_init);
 
     // Check dependencies
@@ -156,7 +157,7 @@ TEST_FUNCTION(test_gpio_lib_init_FPGA, nullptr, nullptr)
     expect_function_call(__wrap_gpio_afm_init);
     expect_function_call(__wrap_idsw_get_platform_sdv);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
-    expect_any(__wrap_gpio_init, gpio_cfg_tbl);
+    expect_not_value(__wrap_gpio_init, gpio_cfg_tbl, NULL);
     expect_value(__wrap_gpio_init, num, 2);     // Custom configuration table has 2 entries for MSCP_EXP_GPIO_4 and MSCP_EXP_GPIO_6
     expect_function_call(__wrap_gpio_init);
 

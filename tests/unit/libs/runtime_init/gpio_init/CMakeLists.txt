@@ -16,10 +16,14 @@ target_include_directories(${TARGET}
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.init
+        fwlib.platform.dfwkhost.threadx
+        fwlib.service.cli
         ms::cmocka::testrunner
         ms::driver::gpio
         ms::lib::interrupts
         ms::lib::scp_interrupts
+        ms::lib::threadx
+        ms::service::gpio::cli
         silibs::idsw
         silibs::idsw_kng
 )
@@ -36,8 +40,10 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     fpfw_init_get_handle
+    FpFwCliRegisterTable
     gpio_afm_init
     gpio_init
     gpio_device_init
     gpio_interface_init
+    idsw_get_platform_sdv
 )

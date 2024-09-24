@@ -5,7 +5,6 @@ set(SOURCES
     fpfw_mock.cpp
     gpio_lib_mock.cpp
     nvic_mock.cpp
-    tx_mock.cpp
     test_gpio_driver.cpp
 )
 
@@ -39,8 +38,6 @@ unit_test_target(${TARGET})
 
 mock_target(${TARGET}
     fpfw_init_get_handle
-    FpFwLockAcquire
-    FpFwLockRelease
     DfwkDeviceInitialize
     DfwkQueueInitialize
     DfwkInterfaceInitialize
@@ -48,10 +45,9 @@ mock_target(${TARGET}
     DfwkQueueEnqueueRequest
     DfwkAsyncRequestComplete
     DfwkScheduleQueueDispatch
-    _txe_queue_create
-    _txe_thread_create
-    _txe_queue_receive
-    _txe_queue_send
+    DfwkAsyncRequestInitialize
+    DfwkAsyncRequestSetCompletionRoutine
+    DfwkInterfaceSendAsync
     nvic_irq_set_isr_with_param
     nvic_irq_clear_pending
     nvic_irq_enable
@@ -59,5 +55,4 @@ mock_target(${TARGET}
     gpio_get_interrupt_status
     gpio_get_input
     gpio_clear_interrupt_status
-    thread_loop
 )

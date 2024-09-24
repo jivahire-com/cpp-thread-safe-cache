@@ -142,6 +142,7 @@ target_link_libraries(
         ms::lib::warm_start::cli
         ms::service::atu_service
         ms::lib::system_info
+        ms::service::gpio::cli
 )
 
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)
@@ -255,6 +256,7 @@ target_link_libraries(
         silibs::sensor_ram_bridge
         silibs::spi_bridge
         register_headers
+        ms::service::gpio::cli
 )
 
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)

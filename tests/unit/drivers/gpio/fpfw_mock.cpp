@@ -33,21 +33,4 @@ void* __wrap_fpfw_init_get_handle(const char* id)
 
     return mock_ptr_type(void*);
 }
-
-FPFW_LOCK_STATE __wrap_FpFwLockAcquire(PFPFW_LOCK Lock)
-{
-    FPFW_UNUSED(Lock);
-    return 0;
-}
-
-void __wrap_FpFwLockRelease(PFPFW_LOCK Lock, FPFW_LOCK_STATE OldState)
-{
-    FPFW_UNUSED(Lock);
-    FPFW_UNUSED(OldState);
-}
-
-//
-// Tests
-//
-
 } // extern "C"

@@ -11,7 +11,7 @@
 
 /*----------- Nested includes ------------*/
 #include <DfwkDriver.h>
-#include <tx_api.h>
+#include <gpio_lib.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -22,20 +22,25 @@ typedef struct {
     uint32_t gpio_ctrl_id;  // GPIO controller ID.
 } gpio_irq_config_t;
 
+typedef struct {
+    const gpio_config_entry_t* gpio_config_table;   // GPIO configuration table.
+    uint32_t table_size;                            // Number of entries in the GPIO configuration table.
+} gpio_init_config_t, *pgpio_init_config_t;
+
 /**
  * @brief GPIO Device structure.
  * 
  */
 typedef struct {
     DFWK_DEVICE_HEADER Header;
-    gpio_irq_config_t* IrqConfig;   // GPIO IRQ configuration.
-    uint32_t IrqConfigCount;        // Number of GPIO IRQ configurations.
 
-    DFWK_QUEUE Queue;               // Queue for GPIO requests from clients.
-    DFWK_QUEUE IsrReqQueue;         // Manual Queue for GPIO ISR requests.
+    gpio_init_config_t* ConfigTable;    // GPIO configuration table.
 
-    TX_THREAD GpioIsrThread;        // Thread for GPIO ISR.
-    TX_QUEUE TxGpioIsrMessageQueue; // Queue for GPIO ISR messages.
+    gpio_irq_config_t* IrqConfig;       // GPIO IRQ configuration.
+    uint32_t IrqConfigCount;            // Number of GPIO IRQ configurations.
+
+    DFWK_QUEUE Queue;                   // Queue for GPIO requests from clients.
+    DFWK_QUEUE IsrReqQueue;             // Manual Queue for GPIO ISR requests.
 } gpio_device_t, *pgpio_device_t;
 
 /**
@@ -83,16 +88,20 @@ typedef struct
 void gpio_device_init(pgpio_device_t dev, PDFWK_SCHEDULE schedule);
 
 /**
- * @brief Initialize GPIO driver interface.
+ * @brief Initialize GPIO interface.
  * 
  * @param iface [out] GPIO interface.
- * @param dev [in] GPIO device.
  */
-void gpio_interface_init(pgpio_interface_t iface, pgpio_device_t dev);
+void gpio_interface_init(pgpio_interface_t iface);
 
 /**
- * @brief Send Async request to GPIO driver.
+ * @brief Register deferred GPIO ISR as completion callback.
  * 
+ * @param iface [in] GPIO interface.
  * @param request [in] GPIO request.
+ * @param gpio_ctrl_pin_id [in] GPIO controller pin ID.
+ * @param callback [in] Completion callback.
+ * @param context [in] Context for the completion callback.
  */
-uint32_t gpio_cmd_async(pgpio_request_t request);
+uint32_t gpio_register_deferred_isr(pgpio_interface_t iface, pgpio_request_t request, uint32_t gpio_ctrl_pin_id, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE callback, void* context);
+

@@ -49,8 +49,7 @@ mock_target(${TARGET}
     fuse_dist_get_exclusion_list
     fuse_get_exclude_list_fpga
     fpfw_init_get_handle
-    fpfw_icc_base_send
-    fpfw_icc_base_recv
+    fpfw_icc_base_send_recv_sync
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

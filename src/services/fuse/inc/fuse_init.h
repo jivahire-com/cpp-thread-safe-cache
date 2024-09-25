@@ -11,10 +11,16 @@
 
 /*----------- Nested includes ------------*/
 #include <fpfw_icc_base.h>
+#include <hsp_firmware_headers.h>
+#include <kingsgate_hsp_mailbox_commands.h>
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
-
+typedef union _kng_hsp_fuse_mailbox_msg {
+	struct kng_hsp_mailbox_msg_fuse_and_image_load_req fuse_req;	/**< incoming mailbox message from protocol to handler. */
+	struct kng_hsp_mailbox_msg_rsp rsp;	        /**< outgoing mailbox message from handler to protocol. */
+    uint32_t as_uint32[4];
+} kng_hsp_fuse_mailbox_msg;
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus
 extern "C" {

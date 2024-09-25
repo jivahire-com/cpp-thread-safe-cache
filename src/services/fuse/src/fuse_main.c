@@ -23,13 +23,15 @@
 #include <idsw_kng.h>
 #include <kingsgate_fuse_defines.h> // Test revision get
 #include <kng_soc_constants.h>      // for DIE_INSTANCE
-#include <silibs_mcp_top_regs.h>    // for MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
-#include <silibs_platform.h>        // silibs status and result
+#include <memory_map/mscp_exp_rmss_memory_map.h>
+#include <silibs_mcp_top_regs.h> // for MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
+#include <silibs_platform.h>     // silibs status and result
 #include <silibs_scp_exp_top_regs.h>
 #include <silibs_scp_top_regs.h> // for SCP_TOP_SCP2HSP_MAILBOX_ADDRESS
 #include <stdbool.h>             // for false, true
 #include <stdint.h>              // for uintptr_t
 #include <stdio.h>               // for NULL, printf
+#include <tx_api.h>              // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
 #include <utils.h>               // for sleep_ms()...
 /*-- Symbolic Constant Macros (defines) --*/
 /*------------- Typedefs -----------------*/
@@ -42,11 +44,12 @@
 static bool platform_requires_fuse_distribution();
 static int platform_fuse_copy_to_ram();
 static int read_override_from_spi();
-static void fuse_icc_base_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status);
-static void request_load_fuse_send_complete_cb(void* context, fpfw_status_t status);
+
+
+
+
 /*-- Declarations (Statics and globals) --*/
 
-static kng_hsp_mailbox_msg recv_payload_buffer;
 static fpfw_icc_base_ctx_t* icc_base_ctx_fuse;
 
 /*------------- Functions ----------------*/
@@ -75,52 +78,20 @@ static int platform_fuse_copy_to_ram()
 {
     return fuse_dma_copy_to_ram_blocking();
 }
-static void request_load_fuse_send_complete_cb(void* context, fpfw_status_t status)
-{
-    FPFW_UNUSED(context);
-    FPFW_UNUSED(status);
-}
 
-static void fuse_icc_base_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
-{
-    FPFW_UNUSED(context);
-    FPFW_UNUSED(output_size_bytes);
-    BUG_ASSERT(status == FPFW_STATUS_SUCCESS);
-    BUG_ASSERT(recv_payload_buffer.header.cmd == HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_RSP);
-    BUG_ASSERT(recv_payload_buffer.rsp.status == 0);
-    printf(FUSE_NAME "Request FW load received \n");
-    FUSE_ET_STATUS(FUSE_ET_TYPE_MAILBOX_REQUEST_OVERRIDES);
-}
+
 
 static int read_override_from_spi()
 {
-    static fpfw_icc_base_recv_req_t recv_params = {
-        .payload_buffer = &recv_payload_buffer,
-        .buffer_size = sizeof(recv_payload_buffer),
-        .recv_cmd_code = HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_RSP,
-        .cb = fuse_icc_base_recv_complete_notify,
-        .cb_ctx = NULL,
-    };
-    fpfw_status_t status = fpfw_icc_base_recv(icc_base_ctx_fuse, &recv_params);
-    BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
-    static kng_hsp_mailbox_cmd_load_fw_req send_request = {
-        .header.cmd = HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ,
-        .header.context = 0,
-        .id = HSP_FIRMWARE_ID_FUSE_OVERRIDE_DIE_0,
-        // Todo The HSP need to decide the address is
-        // https://azurecsi.visualstudio.com/Dev/_workitems/edit/1937493
-        .address = SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS,
-        .size = SCP_EXP_TOP_RAM1_SIZE,
-    };
-    static fpfw_icc_base_send_req_t send_params = {
-        .payload_buffer = &send_request,
-        .cb = request_load_fuse_send_complete_cb,
-        .cb_ctx = NULL,
-        .buffer_size = sizeof(send_request),
-    };
-    status = fpfw_icc_base_send(icc_base_ctx_fuse, &send_params);
-    BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
-    return status;
+    size_t recv_msg_size_bytes = 0;
+    kng_hsp_fuse_mailbox_msg fuse_fw_load = {};
+    fuse_fw_load.fuse_req.header.cmd = HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ;
+    fuse_fw_load.fuse_req.addr = SCP_EXP_FUSE_DATA_BASE;
+    fpfw_status_t icc_status =
+        fpfw_icc_base_send_recv_sync(icc_base_ctx_fuse, &fuse_fw_load, sizeof(kng_hsp_fuse_mailbox_msg), &recv_msg_size_bytes);
+
+      
+    return icc_status;
 }
 int platform_read_for_fuse(const uintptr_t fuse_store_addr, const uint64_t fuse_bit_offset, const uint32_t fuse_bit_size)
 {
@@ -134,8 +105,7 @@ int platform_read_for_fuse(const uintptr_t fuse_store_addr, const uint64_t fuse_
     // number of valid bytes to copy from fuse_data
     size_t fuse_size = ((fuse_bit_size + (BITS_PER_BYTE - 1)) / BITS_PER_BYTE);
     memcpy((void*)fuse_store_addr, (void*)&fuse_data, fuse_size);
-    // printf("[ingGate_FUSE] Success: Requested Fuse of byte size:%zu copied to 0x%llX \n", fuse_size,
-    // fuse_store_addr); Always return Success.
+    
     // TODO: check if the incoming request is before overrides have been applied.
     // ADO 948518
     // status = FPFW_INIT_STATUS_SUCCESS;
@@ -144,7 +114,7 @@ int platform_read_for_fuse(const uintptr_t fuse_store_addr, const uint64_t fuse_
 int platform_fuse_override()
 {
     int status = 0;
-    uint32_t Kingsgate_fuse_override_buffer_location = (uint32_t)(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS);
+    uint32_t Kingsgate_fuse_override_buffer_location = (uint32_t)(SCP_EXP_FUSE_DATA_BASE);
     DIE_INSTANCE die_id = (DIE_INSTANCE)idsw_get_die_id();
 
     // Skip for platforms that do not support fuses

@@ -18,8 +18,8 @@ target_include_directories(${TARGET}
 target_link_libraries(${TARGET}
     PRIVATE
     fwlib.dfwk
+    fwlib.platform.dfwkhost.threadx
     fwlib.lib.interface.platform.errorhandler
-    fwlib.lib.interface.platform.threadx
     fwlib.lib.init
     fwlib.lib.status
     fwlib.service.iccBase

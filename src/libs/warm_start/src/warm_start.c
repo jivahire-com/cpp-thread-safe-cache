@@ -29,6 +29,7 @@
 ws_data_list_t* p_ws_list = NULL;
 uint32_t ws_size;
 static TX_MUTEX ws_data_mutex = {};
+unsigned int tx_status = TX_SUCCESS; // Refer tx_api.h for addition api return values 
 
 /*------------- Functions ----------------*/
 
@@ -91,7 +92,9 @@ void* ws_data_get(mod_ws_data_id_t id, uint32_t* p_size)
     {
         WS_LOG_INFO("[WS] Data Get %d", (int)id);
 
-        tx_mutex_get(&ws_data_mutex, TX_WAIT_FOREVER);
+        tx_status = tx_mutex_get(&ws_data_mutex, TX_WAIT_FOREVER);
+        BUG_ASSERT(tx_status == TX_SUCCESS);
+
         *p_size = 0;
 
         if (p_ws_list->magic_id == WARM_START_MAGIC_ID)
@@ -109,7 +112,8 @@ void* ws_data_get(mod_ws_data_id_t id, uint32_t* p_size)
                 p_entry = p_entry->p_next;
             }
         }
-        tx_mutex_put(&ws_data_mutex);
+        tx_status = tx_mutex_put(&ws_data_mutex);
+        BUG_ASSERT(tx_status == TX_SUCCESS);
     }
 
     return p_data;
@@ -123,7 +127,8 @@ void* ws_data_put(mod_ws_data_id_t id, void* p_data, uint32_t size)
 
     WS_LOG_INFO("[WS] Data put %d", (int)id);
 
-    tx_mutex_get(&ws_data_mutex, TX_WAIT_FOREVER);
+    tx_status = tx_mutex_get(&ws_data_mutex, TX_WAIT_FOREVER);
+    BUG_ASSERT(tx_status == TX_SUCCESS);
 
     if (p_ws_list->magic_id != WARM_START_MAGIC_ID)
     {
@@ -201,7 +206,8 @@ void* ws_data_put(mod_ws_data_id_t id, void* p_data, uint32_t size)
         }
     }
 
-    tx_mutex_put(&ws_data_mutex);
+    tx_status = tx_mutex_put(&ws_data_mutex);
+    BUG_ASSERT(tx_status == TX_SUCCESS);
 
     // Check for error
     if (p_entry_data == NULL)

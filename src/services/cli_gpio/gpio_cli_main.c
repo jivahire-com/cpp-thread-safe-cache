@@ -19,6 +19,11 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
+typedef struct
+{
+    pgpio_interface_t gpio_iface;
+    bool isr_registered;
+} gpio_cli_isr_context_t, *pgpio_cli_isr_context_t;
 
 /*--------- Function Prototypes ----------*/
 static FPFW_CLI_STATUS gpio_cli_set_int_enable(int argc, const char** pp_argv);
@@ -284,13 +289,12 @@ static FPFW_CLI_STATUS gpio_cli_get_pin(int argc, const char** pp_argv)
 
 static void gpio_cli_isr_callback(PDFWK_ASYNC_REQUEST_HEADER request, void* completion_context)
 {
-    bool* isr_registered = (bool*)completion_context;
+    pgpio_cli_isr_context_t isr_context = (pgpio_cli_isr_context_t)completion_context;
 
     pgpio_request_t gpio_request = (pgpio_request_t)request;
-    gpio_interface_t* gpio_iface = (gpio_interface_t*)request->OwningInterface;
 
-    DfwkClientInterfaceClose(&gpio_iface->Header);
-    *isr_registered = false;
+    DfwkClientInterfaceClose(&isr_context->gpio_iface->Header);
+    isr_context->isr_registered = false;
 
     FpFwCliPrint("GPIO ISR Callback: Status: 0x%08x, CtrlID: %x, PinID: %x, Level: %d\n",
                  gpio_request->status,
@@ -301,7 +305,7 @@ static void gpio_cli_isr_callback(PDFWK_ASYNC_REQUEST_HEADER request, void* comp
 
 static FPFW_CLI_STATUS gpio_cli_register_isr(int argc, const char** pp_argv)
 {
-    static bool isr_registered = false;
+    static gpio_cli_isr_context_t isr_context = {.isr_registered = false};
     uint32_t gpio_ctrl_id = 0;
     uint32_t gpio_pin_id = 0;
 
@@ -316,7 +320,7 @@ static FPFW_CLI_STATUS gpio_cli_register_isr(int argc, const char** pp_argv)
         return CLI_ERROR;
     }
 
-    if (isr_registered)
+    if (isr_context.isr_registered)
     {
         FpFwCliPrint("Failed: ISR already registered\n");
         return CLI_ERROR;
@@ -325,12 +329,13 @@ static FPFW_CLI_STATUS gpio_cli_register_isr(int argc, const char** pp_argv)
     static gpio_request_t isr_request = {0};
 
     DfwkClientInterfaceOpen(&s_gpio_iface->Header);
+    isr_context.gpio_iface = s_gpio_iface;
 
     uint32_t status = gpio_register_deferred_isr(s_gpio_iface, // GPIO interface
                                                  &isr_request, // GPIO request to register callback
                                                  GPIO_CTRL_PIN_ID(gpio_ctrl_id, gpio_pin_id), // GPIO controller and pin ID
                                                  gpio_cli_isr_callback, // Callback function
-                                                 &isr_registered);      // Callback Context
+                                                 &isr_context);         // Callback Context
 
     if (KNG_FAILED(status))
     {
@@ -338,7 +343,7 @@ static FPFW_CLI_STATUS gpio_cli_register_isr(int argc, const char** pp_argv)
         return CLI_ERROR;
     }
 
-    isr_registered = true;
+    isr_context.isr_registered = true;
 
     return CLI_SUCCESS;
 }

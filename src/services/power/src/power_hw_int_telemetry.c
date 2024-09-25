@@ -79,7 +79,7 @@ void power_telemetry_enable()
     sensor_fifo_svc_set_global_hw_enable(true);
 }
 
-static void process_plimit_message(plimit_telem_msg_t* p_msg, power_cores_t* p_cores, corebits_t* p_success_bits)
+static void process_plimit_message(plimit_telem_msg_t* p_msg, power_hw_update_cb_t p_update_cb, power_hw_success_cb_t p_success_cb)
 {
     // process message
     const unsigned int core_id = p_msg->data.core_id;
@@ -95,42 +95,25 @@ static void process_plimit_message(plimit_telem_msg_t* p_msg, power_cores_t* p_c
     case PLIMIT_SUCCESS_TYPE:
         // a success message packet will be sent after evert PLIMIT register write
         // success messages will always include current CPPC desired perf value, so save it here
-        p_cores->core[core_id].desired_pstate = p_msg->data.s_desired_perf;
-        if (p_cores->core[core_id].selected_plimit == p_msg->data.plimit)
-        {
-            // on success, we update the current plimit and set the core success bit
-            p_cores->core[core_id].current_plimit = p_msg->data.plimit;
-            corebits_set_bit(p_success_bits, core_id);
-            POWER_LOG_TRACE("success message, core %d selected %d == success %d",
-                            core_id,
-                            p_cores->core[core_id].selected_plimit,
-                            p_msg->data.plimit);
-        }
-        else
-        {
-            // this is unexpected, but keep the print for early HW issues
-            // if it does happen, control loop will retry due to success bit not being set
-            POWER_LOG_WARN("plimit success core%d selected %d != success %d",
-                           core_id,
-                           p_cores->core[core_id].selected_plimit,
-                           p_msg->data.plimit);
-        }
+        p_success_cb(core_id, p_msg->data.plimit_success_msg.cppc_desired, p_msg->data.plimit);
         break;
     case PLIMIT_UPDATE_TYPE:
         // update message packets will be sent when a CPPC register is update in DVFS NON-SEC (OS write)
-        p_cores->core[core_id].desired_pstate = p_msg->data.cppc_update_msg.desired_perf;
-        p_cores->core[core_id].current_throt_priority = p_msg->data.cppc_update_msg.throttle_pri;
-        p_cores->core[core_id].current_boost_priority = p_msg->data.cppc_update_msg.boost_pri;
-        POWER_LOG_TRACE("update message, core %d", core_id);
+        // note that some fields in the definition are not named correctly.  The desired_perf in cppc_update_msg is actually the base pstate and pstate field is desired pstate in the update message (current pstate in success message)
+        p_update_cb(core_id,
+                    p_msg->data.pstate,                       // desired pstate
+                    p_msg->data.cppc_update_msg.desired_perf, // base pstate
+                    p_msg->data.cppc_update_msg.throttle_pri, // throttle priority
+                    p_msg->data.cppc_update_msg.boost_pri);   // boost priority
         break;
     }
 }
 
-void power_telemetry_message_poll(power_cores_t* p_cores, corebits_t* p_success_bits)
+void power_telemetry_message_poll(power_hw_update_cb_t p_update_cb, power_hw_success_cb_t p_success_cb)
 {
     // confirm the parameter isn't null
-    FPFW_RUNTIME_ASSERT(p_cores != NULL);
-    FPFW_RUNTIME_ASSERT(p_success_bits != NULL);
+    FPFW_RUNTIME_ASSERT(p_update_cb != NULL);
+    FPFW_RUNTIME_ASSERT(p_success_cb != NULL);
 
     // poll for messages from SCF
     sensor_ram_poll_status_t status = {.more_entries = true};
@@ -141,7 +124,7 @@ void power_telemetry_message_poll(power_cores_t* p_cores, corebits_t* p_success_
         if (status.curr_data_is_valid)
         {
             // process valid messages
-            process_plimit_message(&plimit_msg, p_cores, p_success_bits);
+            process_plimit_message(&plimit_msg, p_update_cb, p_success_cb);
         }
     }
 }

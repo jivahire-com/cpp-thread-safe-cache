@@ -87,6 +87,14 @@ int __wrap_dvfs_get_adclk_droop_count(const uintptr_t cluster_pex_base_addr, uin
     return mock_type(int);
 }
 
+void __wrap_dvfs_ns_set_cppc_desired(const uintptr_t cluster_pex_base_addr, uint8_t cppc_desired, uint8_t throttle_pri)
+{
+    check_expected(cluster_pex_base_addr);
+    check_expected(cppc_desired);
+    check_expected(throttle_pri);
+    return;
+}
+
 const dvfs_config_t* mock_dvfs_last_config()
 {
     return &s_dvfs_cfg;

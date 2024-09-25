@@ -52,6 +52,7 @@ mock_target(${TARGET}
     dvfs_config_plimit
     dvfs_get_adclk_droop_count
     dvfs_init
+    dvfs_ns_set_cppc_desired2
     dvfs_pll_dsm_toggle_start
     dvfs_pll_dsm_toggle_end
     dvfs_set_plimit

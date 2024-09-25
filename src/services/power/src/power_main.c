@@ -174,8 +174,14 @@ void power_ap_soc_init()
         power_init_ws_core(p_runconfig, &telemetry_config);
     }
 
+    // secondary init of control loop after core init
+    power_loops_control_post_core_init();
+
     // enable telemetry before we start loops
     power_telemetry_enable();
+
+    // TODO: add warm start state entry code here
+    // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2037273
 
     // start loop timers
     power_timer_start_loop_timers();

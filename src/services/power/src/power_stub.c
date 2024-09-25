@@ -11,10 +11,14 @@
 #include "power_runconfig_i.h" // for power_runconfig_t, power_runconfig_get
 
 #include <FpFwUtils.h>
+#include <dvfs.h>
+#include <dvfs_struct.h>
 #include <fpfw_status.h>            // for FPFW_STATUS_INVALID_ARGS, FPFW_STATUS_S...
 #include <kingsgate_fuse_defines.h> // for TEST_FLOW_CHECKS_PMM_REVISION_BIT_OFFSET
+#include <pex_regs.h>               // for PEX_DVFS_NON_ADDRESS, ptr_dvfs_nonsecure_reg
 #include <power_runconfig.h>        // for BITS_PER_BYTE, MAX_BITS_PER_FUSE
 #include <power_stub_i.h>           // for platform_read_fuse, power_fuses_is_powe...
+#include <silibs_platform.h>        // for DVFS
 #include <stdbool.h>                // for bool, true
 #include <stdint.h>                 // for uint32_t, int32_t, uint64_t
 #include <string.h>                 // for memcpy, size_t
@@ -83,4 +87,51 @@ int32_t platform_read_fuse(const uint32_t* target_addr, const uint32_t fuse_bit_
 
     // Always return Success.
     return FPFW_STATUS_SUCCESS;
+}
+
+// not really stubs, but place-holder for updates needed in DVFS lib
+// TODO: replace these alternative functions with update to silibs dvfs lib
+//       https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2058887
+
+void dvfs_ns_set_cppc_desired2(const uintptr_t cluster_pex_base_addr,
+                               uint8_t cppc_desired,
+                               uint8_t cppc_base_perf,
+                               uint8_t throttle_pri,
+                               uint8_t boost_pri)
+{
+    const uintptr_t dvfs_nsec_addr = cluster_pex_base_addr + PEX_DVFS_NON_ADDRESS;
+    ptr_dvfs_nonsecure_reg dvfs_ns_regs = (ptr_dvfs_nonsecure_reg)dvfs_nsec_addr;
+
+    dvfs_nonsecure_cppc_desired_perf cppc_desired_perf = {{
+        .cppc_value = cppc_desired,
+        .throttle_pri = throttle_pri,
+        .boost_pri = boost_pri,
+        .base_perf = cppc_base_perf,
+    }};
+    MMIO_WRITE32(&dvfs_ns_regs->cppc_desired_perf, cppc_desired_perf.as_uint32);
+}
+
+int dvfs_ns_get_cppc_desired2(const uintptr_t cluster_pex_base_addr,
+                              uint8_t* cppc_desired,
+                              uint8_t* cppc_base_perf,
+                              uint8_t* throttle_pri,
+                              uint8_t* boost_pri)
+{
+    const uintptr_t dvfs_nsec_addr = cluster_pex_base_addr + PEX_DVFS_NON_ADDRESS;
+    ptr_dvfs_nonsecure_reg dvfs_ns_regs = (ptr_dvfs_nonsecure_reg)dvfs_nsec_addr;
+
+    if ((cppc_desired == NULL) || (throttle_pri == NULL) || (boost_pri == NULL) || (cppc_base_perf == NULL))
+    {
+        return DVFS_NULL_PARAM;
+    }
+
+    dvfs_nonsecure_cppc_desired_perf cppc_desired_perf;
+    cppc_desired_perf.as_uint32 = MMIO_READ32(&dvfs_ns_regs->cppc_desired_perf);
+
+    *cppc_desired = cppc_desired_perf.cppc_value;
+    *throttle_pri = cppc_desired_perf.throttle_pri;
+    *boost_pri = cppc_desired_perf.boost_pri;
+    *cppc_base_perf = cppc_desired_perf.base_perf;
+
+    return DVFS_SUCCESS;
 }

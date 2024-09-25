@@ -51,7 +51,8 @@ void power_knobs_read(power_knobs_t* p_knobs)
     FPFW_RUNTIME_ASSERT(p_knobs != NULL);
 
     p_knobs->pid = (power_pid_config_t){.kpt = 15000UL, .kit = 2000000UL, .kdt = 0UL, .setpoint_offset = 5000UL}; // config_get_power_pid();
-    p_knobs->soc_maximum_thermal_watts_limit = 350; // config_get_power_soc_maximum_thermal_watts_limit();
+    p_knobs->soc_maximum_thermal_watts_limit =
+        350; // config_get_power_soc_maximum_thermal_watts_limit();  (should default to 0 once we have knob + fuse support)
 
     p_knobs->control_loop_interval = 10;  // config_get_power_control_loop_interval();
     p_knobs->pvt_loop_interval = 100;     // config_get_power_pvt_loop_interval();
@@ -217,7 +218,7 @@ void power_knobs_read(power_knobs_t* p_knobs)
                                                  .mask_fllcaltimeout = false,
                                                  .mask_locktimeout = false}; // config_get_power_plllock_cfg();
 
-    p_knobs->nominal_pstate = 28; // config_get_power_nominal_pstate();
+    p_knobs->nominal_pstate = 16; // config_get_power_nominal_pstate(); (should default to 0 once we have knob + fuse support)
 
     p_knobs->c1_tel_enable = false; // config_get_power_c1_telemetry_enable();
 

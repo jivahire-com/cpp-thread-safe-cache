@@ -26,6 +26,9 @@ add_library(${TARGET}
         power_vcpu_calc.c
 )
 
+# save this for enabling debug optimization
+# target_compile_options(${TARGET} PUBLIC "-Og")
+
 target_include_directories(${TARGET}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/../inc

@@ -15,10 +15,12 @@
 
 extern "C" {
 
+#include "power_hw_int_i.h"
 #include "power_i.h"           // for power_latest_calcs_t
+#include "power_loops_i.h"     // for power_loops_control_init
 #include "power_runconfig.h"   // for MIN_PLIMIT, power_service_config_t
 #include "power_runconfig_i.h" // for power_runconfig_t
-#include "power_hw_int_i.h"  
+
 #include <CMockaWrapper.h> // for CmockaWrapperTest, expect_value, will...
 #include <corebits.h>      // for corebits_set_bit
 #include <pid_resource.h>  // for pid_config_t
@@ -43,6 +45,8 @@ typedef VOID (*entry_function_t)(ULONG entry_input);
 static power_latest_calcs_t* s_local_power = NULL;
 static power_latest_calcs_t* s_remote_power = NULL;
 static power_loop_context_t* s_loop_context[LOOP_MAX] = {NULL, NULL};
+static power_hw_update_cb_t s_update_cb = NULL;
+static power_hw_success_cb_t s_success_cb = NULL;
 static unsigned int s_context_index = 0;
 /*------------- Functions ----------------*/
 //
@@ -52,7 +56,7 @@ static unsigned int s_context_index = 0;
 uint16_t __wrap_power_vcpu_calc_max_core_voltage_mv(power_runconfig_t* p_runconfig, power_cores_t* p_cores)
 {
     FPFW_UNUSED(p_runconfig);
-    FPFW_UNUSED(p_cores);    
+    FPFW_UNUSED(p_cores);
     function_called();
 
     return 0;
@@ -205,10 +209,12 @@ int __wrap_corebits_first(const corebits_t* corebits)
     return mock_type(int);
 }
 
-void __wrap_power_telemetry_message_poll(power_cores_t* p_cores, corebits_t* p_success_bits)
+void __wrap_power_telemetry_message_poll(power_hw_update_cb_t p_update_cb, power_hw_success_cb_t p_success_cb)
 {
-    check_expected_ptr(p_cores);
-    check_expected_ptr(p_success_bits);
+    check_expected(p_update_cb);
+    check_expected(p_success_cb);
+    s_success_cb = p_success_cb;
+    s_update_cb = p_update_cb;
 }
 
 void __wrap_power_distribution_distribute_resources(power_runconfig_t* p_runconfig, power_ctrl_loop_detail_t* p_ctrlloop)
@@ -217,7 +223,8 @@ void __wrap_power_distribution_distribute_resources(power_runconfig_t* p_runconf
     check_expected_ptr(p_ctrlloop);
 }
 
-void __wrap_power_distribution_distribute_warmstart_resources(power_runconfig_t* p_runconfig, power_ctrl_loop_detail_t* p_ctrlloop)
+void __wrap_power_distribution_distribute_warmstart_resources(power_runconfig_t* p_runconfig,
+                                                              power_ctrl_loop_detail_t* p_ctrlloop)
 {
     check_expected_ptr(p_runconfig);
     check_expected_ptr(p_ctrlloop);
@@ -255,6 +262,12 @@ void __wrap_power_remote_die_exchange_inputs(power_runconfig_t* p_runconfig)
 void __wrap_power_remote_die_exchange_complete(power_runconfig_t* p_runconfig)
 {
     check_expected_ptr(p_runconfig);
+}
+
+void __wrap_power_hw_capture_cppc_state(power_hw_update_cb_t p_update_cb)
+{
+    s_update_cb = p_update_cb;
+    function_called();
 }
 
 // End mocks
@@ -462,24 +475,41 @@ void set_expectations_for_get_core_state(power_runconfig_t* p_runconfig)
 
 void setup_message_poll()
 {
-    expect_not_value(__wrap_power_telemetry_message_poll, p_cores, NULL);
-    expect_not_value(__wrap_power_telemetry_message_poll, p_success_bits, NULL);
+    expect_not_value(__wrap_power_telemetry_message_poll, p_update_cb, NULL);
+    expect_not_value(__wrap_power_telemetry_message_poll, p_success_cb, NULL);
 }
 
 // tests for collect_inputs_handler
 POWER_TEST(control_collect_inputs_handler__signal_entry, NULL, NULL)
 {
 #define DEFAULT_MIN_PLIMIT 0x10
-#define DEFAULT_CORE_ZERO 0 // needs to be 0 for this test
+#define INVALID_COUNT_DATA 0x12
+#define DEFAULT_CORE_ZERO  0 // needs to be 0 for this test
+#define TEST_BOOST_PRI     1
 
     power_service_config_t sconfig = {};
-    power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
-    // expectations on entry
+    power_runconfig_t test_runconfig = {
+        .derived = {.pnominal = NOMINAL_PLIMIT},
+        .p_sconfig = &sconfig,
+    };
 
-    // expectations for get_current_state
     // set core 0 to valid for HW reads
     corebits_set_bit(&test_runconfig.fuses.valid_cores, DEFAULT_CORE_ZERO);
 
+    // get internal control loop data
+    power_ctrl_loop_detail_t* p_ctrl_loop = power_ctrl_loop_get();
+    assert_non_null(p_ctrl_loop);
+    // memset priority data
+    memset(&p_ctrl_loop->local.pri_counts, 0, sizeof(p_ctrl_loop->local.pri_counts));
+    // put a value into the boost count data to prove it get's cleared
+    p_ctrl_loop->local.pri_counts.required_for_boost[0][0] = INVALID_COUNT_DATA;
+    p_ctrl_loop->local.pri_counts.required_for_boost[NOMINAL_PLIMIT-1][VM_BOOST_COUNT-1] = INVALID_COUNT_DATA;
+
+    // define boost priority for core
+    p_ctrl_loop->cores.core[DEFAULT_CORE_ZERO].current_boost_priority = TEST_BOOST_PRI;
+    // expectations on entry
+
+    // expectations for get_current_state
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 
     set_expectations_for_get_core_state(&test_runconfig);
@@ -495,6 +525,22 @@ POWER_TEST(control_collect_inputs_handler__signal_entry, NULL, NULL)
     // call state handler
     call_handler(POWER_CONTROL_STATE_COLLECT_INPUTS, POWER_CTRL_LOOP_SIGNAL_ENTRY, NULL);
 
+    // check boost data generated
+    for (unsigned boost_idx = 0; boost_idx < VM_BOOST_COUNT; boost_idx++)
+    {
+        for (unsigned pstate_idx = 0; pstate_idx < NUM_PSTATES; pstate_idx++)
+        {
+            // we had one core, nothing should be limiting min_pstate, so in the test_boost_pri priority, we should have a count of 1 required for boost in all pstates < nominal
+            if ((boost_idx == TEST_BOOST_PRI) && (pstate_idx < NOMINAL_PLIMIT) && (pstate_idx >= DEFAULT_MIN_PLIMIT))
+            {
+                assert_int_equal(p_ctrl_loop->local.pri_counts.required_for_boost[pstate_idx][boost_idx], 1);
+            }
+            else
+            {
+                assert_int_equal(p_ctrl_loop->local.pri_counts.required_for_boost[pstate_idx][boost_idx], 0);
+            }
+        }
+    }
 }
 
 POWER_TEST(control_collect_inputs_handler__signal_vr_read, NULL, NULL)
@@ -545,11 +591,11 @@ POWER_TEST(control_warmstart_handler__signal_entry, NULL, NULL)
 
     // should change state to set VR before PLIMIT after handling fixed warmstart distribution
     setup_expectations_for_state_change(POWER_CONTROL_STATE_SET_VR_BEFORE_PLIMIT);
-    
+
     // setup expectations for warmstart distribution
     expect_value(__wrap_power_distribution_distribute_warmstart_resources, p_runconfig, &test_runconfig);
     expect_not_value(__wrap_power_distribution_distribute_warmstart_resources, p_ctrlloop, NULL);
-    
+
     // call state handler
     call_handler(POWER_CONTROL_STATE_WARMSTART_ENTRY, POWER_CTRL_LOOP_SIGNAL_ENTRY, NULL);
 }
@@ -953,7 +999,6 @@ POWER_TEST(control_exchange_completion_handler__signal_exchange_complete_done, N
     call_handler(POWER_CONTROL_STATE_EXCHANGE_COMPLETION, POWER_CTRL_LOOP_SIGNAL_EXCHANGE_COMPLETE, NULL);
 }
 
-
 POWER_TEST(control_exchange_completion_handler__signal_interval_error, NULL, NULL)
 {
     // expectations on entry
@@ -972,4 +1017,157 @@ POWER_TEST(control_exchange_completion_handler__signal_interval_retry, NULL, NUL
     expect_value(__wrap_power_remote_die_exchange_complete, p_runconfig, TEST_RUNCONFIG_FOR_EXCHANGE);
     // call state handler
     call_handler(POWER_CONTROL_STATE_EXCHANGE_COMPLETION, POWER_CTRL_LOOP_SIGNAL_INTERVAL, NULL);
+}
+
+POWER_TEST(control_post_core_init, NULL, NULL)
+{
+    // expectations on entry
+    expect_function_call(__wrap_power_hw_capture_cppc_state);
+
+    // call the function
+    power_loops_control_post_core_init();
+}
+
+static void create_nominal_count_data(power_ctrl_loop_detail_t* p_ctrl_loop, unsigned core, unsigned nominal, unsigned throt_pri, unsigned boost_pri)
+{
+    unsigned pnominal = NOMINAL_PLIMIT;
+    p_ctrl_loop->cores.core[core].current_boost_priority = boost_pri;
+    p_ctrl_loop->cores.core[core].current_throt_priority = throt_pri;
+
+    // nominal has to be pnominal or higher
+    nominal = (nominal > pnominal) ? nominal : pnominal;
+
+    p_ctrl_loop->cores.core[core].current_base_pstate = nominal;
+
+    p_ctrl_loop->local.pri_counts.throt_pri_count[throt_pri]++;
+    p_ctrl_loop->local.pri_counts.required_nominal_for_throttle[nominal][throt_pri]++;
+    p_ctrl_loop->local.pri_counts.required_for_boost[nominal][boost_pri]++;
+}
+
+POWER_TEST(control_update_message_cb, NULL, NULL)
+{
+#define TEST_CORE0           0
+#define TEST_CORE1           1
+#define TEST_CORE0_THROT_PRI 2
+#define TEST_CORE_BOOST_PRI  1
+#define TEST_CORE1_THROT_PRI 1
+#define TEST_BASE_PSTATE     (NOMINAL_PLIMIT + 2)
+#define TEST_DESIRED_PSTATE0 (NOMINAL_PLIMIT - 1)
+#define TEST_DESIRED_PSTATE1 (NOMINAL_PLIMIT - 2)
+
+    assert_non_null(s_update_cb);
+
+    power_ctrl_loop_detail_t* p_ctrl_loop = power_ctrl_loop_get();
+    assert_non_null(p_ctrl_loop);
+
+    // clear all of the internal priority counts, etc.
+    memset(p_ctrl_loop->local.pri_counts.required_nominal_for_throttle,
+           0,
+           sizeof(p_ctrl_loop->local.pri_counts.required_nominal_for_throttle));
+    memset(p_ctrl_loop->local.pri_counts.required_for_boost, 0, sizeof(p_ctrl_loop->local.pri_counts.required_for_boost));
+    memset(p_ctrl_loop->local.pri_counts.throt_pri_count, 0, sizeof(p_ctrl_loop->local.pri_counts.throt_pri_count));
+
+    // create some nominal count data
+    create_nominal_count_data(p_ctrl_loop, TEST_CORE0, NOMINAL_PLIMIT, 0, 0);
+    create_nominal_count_data(p_ctrl_loop, TEST_CORE1, NOMINAL_PLIMIT, 0, 0);
+
+    static power_runconfig_t test_runconfig = {
+        .knobs = {.capping_mode = power_capping_mode_t_PER_VM, .power_enable_velocity_boost = true},
+        .derived = {.pnominal = NOMINAL_PLIMIT}};
+
+    // expectations on entry
+    expect_value_count(__wrap_FpFwAssert, expression, true, 2);
+    will_return_count(__wrap_power_runconfig_get, &test_runconfig, 2);
+
+    s_update_cb(TEST_CORE0, TEST_DESIRED_PSTATE0, TEST_BASE_PSTATE, TEST_CORE0_THROT_PRI, TEST_CORE_BOOST_PRI);
+    s_update_cb(TEST_CORE1, TEST_DESIRED_PSTATE1, TEST_BASE_PSTATE, TEST_CORE1_THROT_PRI, TEST_CORE_BOOST_PRI);
+
+    assert_int_equal(p_ctrl_loop->cores.core[TEST_CORE0].current_base_pstate, TEST_BASE_PSTATE);
+    assert_int_equal(p_ctrl_loop->cores.core[TEST_CORE1].current_base_pstate, TEST_BASE_PSTATE);
+    assert_int_equal(p_ctrl_loop->cores.core[TEST_CORE0].current_throt_priority, TEST_CORE0_THROT_PRI);
+    assert_int_equal(p_ctrl_loop->cores.core[TEST_CORE1].current_throt_priority, TEST_CORE1_THROT_PRI);
+    assert_int_equal(p_ctrl_loop->cores.core[TEST_CORE0].current_boost_priority, TEST_CORE_BOOST_PRI);
+    assert_int_equal(p_ctrl_loop->cores.core[TEST_CORE1].current_boost_priority, TEST_CORE_BOOST_PRI);
+    assert_int_equal(p_ctrl_loop->cores.core[TEST_CORE0].desired_pstate, TEST_DESIRED_PSTATE0);
+    assert_int_equal(p_ctrl_loop->cores.core[TEST_CORE1].desired_pstate, TEST_DESIRED_PSTATE1);
+
+    for (unsigned int pri_idx = 0; pri_idx < VM_PRI_COUNT; pri_idx++)
+    {
+        for (unsigned int pstate_idx = 0; pstate_idx < NUM_PSTATES; pstate_idx++)
+        {
+            // we put one core in two different throttling priorities
+            if ((pstate_idx == TEST_BASE_PSTATE) && ((pri_idx == TEST_CORE0_THROT_PRI) || (pri_idx == TEST_CORE1_THROT_PRI)))
+            {
+                assert_int_equal(p_ctrl_loop->local.pri_counts.required_nominal_for_throttle[pstate_idx][pri_idx], 1);
+            }
+            else
+            {
+                assert_int_equal(p_ctrl_loop->local.pri_counts.required_nominal_for_throttle[pstate_idx][pri_idx], 0);
+            }
+            // we put two cores into the same boost priority
+            if ((pstate_idx == TEST_BASE_PSTATE) && (pri_idx == TEST_CORE_BOOST_PRI))
+            {
+                assert_int_equal(p_ctrl_loop->local.pri_counts.required_for_boost[pstate_idx][pri_idx], 2);
+            }
+            else
+            {
+                assert_int_equal(p_ctrl_loop->local.pri_counts.required_for_boost[pstate_idx][pri_idx], 0);
+            }
+        }
+    }
+
+    for (unsigned int idx = 0; idx < VM_PRI_COUNT; idx++)
+    {
+        // again, one core in two different throttling priorities
+        if ((idx != TEST_CORE0_THROT_PRI) && (idx != TEST_CORE1_THROT_PRI))
+        {
+            assert_int_equal(p_ctrl_loop->local.pri_counts.throt_pri_count[idx], 0);
+        }
+        else
+        {
+            assert_int_equal(p_ctrl_loop->local.pri_counts.throt_pri_count[idx], 1);
+        }
+    }
+}
+
+static void success_test(bool expected)
+{
+#define TEST_SELECTED_PSTATE 0x10
+#define TEST_DESIRED_PSTATE  0x11
+
+    assert_non_null(s_success_cb);
+
+    power_ctrl_loop_detail_t* p_ctrl_loop = power_ctrl_loop_get();
+    assert_non_null(p_ctrl_loop);
+
+    // clear plimits_successful
+    memset(&p_ctrl_loop->plimits_successful, 0, sizeof(p_ctrl_loop->plimits_successful));
+    // put different values into desired/current pstates
+    p_ctrl_loop->cores.core[TEST_CORE].desired_pstate = TEST_DESIRED_PSTATE + 1;
+    p_ctrl_loop->cores.core[TEST_CORE].current_plimit = TEST_SELECTED_PSTATE + 1;
+    // setup expected plimit
+    p_ctrl_loop->cores.core[TEST_CORE].selected_plimit = expected ? TEST_SELECTED_PSTATE : TEST_SELECTED_PSTATE + 1;
+
+    // expectations on entry
+    expect_value(__wrap_FpFwAssert, expression, true);
+
+    s_success_cb(TEST_CORE, TEST_DESIRED_PSTATE, TEST_SELECTED_PSTATE);
+
+    assert_int_equal(p_ctrl_loop->cores.core[TEST_CORE].desired_pstate, TEST_DESIRED_PSTATE);
+    assert_int_equal(p_ctrl_loop->cores.core[TEST_CORE].current_plimit,
+                     expected ? TEST_SELECTED_PSTATE : TEST_SELECTED_PSTATE + 1);
+    if (expected)
+    {
+        assert_true(corebits_is_bit_set(&p_ctrl_loop->plimits_successful, TEST_CORE));
+    }
+    else
+    {
+        assert_false(corebits_is_bit_set(&p_ctrl_loop->plimits_successful, TEST_CORE));
+    }
+}
+
+POWER_TEST(control_success_message_cb, NULL, NULL)
+{
+    success_test(true);
+    success_test(false);
 }

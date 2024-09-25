@@ -61,6 +61,10 @@ typedef enum _power_pmin_type_t
 } power_pmin_type_t;
 
 
+// Callback function pointer types for update/success message handling
+typedef void (*power_hw_update_cb_t)(unsigned int core, uint8_t desired_pstate, uint8_t base_pstate, uint8_t throttle_pri, uint8_t boost_pri);
+typedef void (*power_hw_success_cb_t)(unsigned int core, uint8_t desired_pstate, uint8_t current_pstate);
+
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus
 extern "C" {
@@ -208,6 +212,19 @@ uint8_t power_hw_pstate_from_freq(uint16_t freq_MHz);
 uint32_t power_hw_get_adclk_count(const power_runconfig_t* p_runconfig, unsigned int core);
 
 /**
+ * @brief Get collect cppc state from all cores
+ *
+ * \b Description:
+ *      Used to get the cppc state from all cores.
+ * 
+ * @param[in] p_update_cb - callback function to update cppc state
+ *
+ * @return none
+ *
+ */
+void power_hw_capture_cppc_state(power_hw_update_cb_t p_update_cb);
+
+/**
  * @brief Acquires telemetry config details
  *
  */
@@ -222,11 +239,11 @@ void power_telemetry_enable();
 /**
  * @brief Polls telemetry service for plimit success/update messages
  *
- * @param[in] p_cores - Core data to update
- * @param[in] p_success_bits - Core plimit success bits to update
+ * @param[in] p_update_cb - callback function to update cppc state
+ * @param[in] p_success_cb - callback function to update state after plimit success
  *
  */
-void power_telemetry_message_poll(power_cores_t *p_cores, corebits_t *p_success_bits);
+void power_telemetry_message_poll(power_hw_update_cb_t p_update_cb, power_hw_success_cb_t p_success_cb);
 
 
 // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1811925/

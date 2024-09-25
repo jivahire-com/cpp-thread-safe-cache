@@ -93,16 +93,15 @@ float power_vcpu_calc_peak_current_A(power_runconfig_t* p_runconfig, power_ctrl_
     const power_service_config_t* p_config = p_runconfig->p_sconfig;
     const unsigned int core_count = p_config->platform_die_core_count;
     const power_knobs_t* p_knobs = &p_runconfig->knobs;
+    const bool is_not_forced_pstate = (p_knobs->force_pstate >= NUM_PSTATES);
 
     // now accumulate precalculated core dynamic and leakage current
     for (unsigned core_idx = 0; core_idx < core_count; ++core_idx)
     {
         const power_core_t* core = &loop_config->cores.core[core_idx];
-        // determine plimit to use for this core's current calculation
-        const uint8_t selected_plimit = corebits_is_bit_set(&loop_config->pstate_not_forced, core_idx)
-                                            ? core->selected_plimit
-                                            :                      /* normal case */
-                                            p_knobs->force_pstate; /* forced pstate case */
+        // determine plimit to use for this core's current calculation (MAX_PLIMIT will be the selected plimit if pstate forced)
+        const uint8_t selected_plimit = is_not_forced_pstate ? core->selected_plimit : /* normal case */
+                                            p_knobs->force_pstate;                 /* forced pstate case */
         // only want to include valid cores
         if (corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core_idx))
         {
@@ -113,7 +112,7 @@ float power_vcpu_calc_peak_current_A(power_runconfig_t* p_runconfig, power_ctrl_
             // get the scaler value for max temp
             const float leakage_scaler =
                 power_vcpu_calc_core_leakage_scaler(p_runconfig, loop_config->cores.core->temperature_dC);
-            leakage_current_A += (precalc->dynamic_ldo * leakage_scaler);
+            leakage_current_A += (precalc->leakage * leakage_scaler);
         }
     }
 

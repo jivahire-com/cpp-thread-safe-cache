@@ -79,6 +79,7 @@ static int distribution_setup(void** state)
     s_runconfig.knobs.intervals_to_lower_plimit = 0;
     s_runconfig.knobs.max_plimit_step_size_down = MAX_PLIMIT;
     s_runconfig.knobs.max_plimit_step_size_up = MAX_PLIMIT;
+    s_runconfig.knobs.force_pstate = NUM_PSTATES;
     
     s_runconfig.derived.vfts[0].min_plimit = 0;
     s_runconfig.derived.pnominal = TEST_NOMINAL_PERF;
@@ -403,10 +404,7 @@ static int distribution_dist_setup(void **state)
     // anything specific to distribute here
     // clear any throttle priority detail
     memset(s_ctrl_loop_detail.throttle_priority, 0, sizeof(s_ctrl_loop_detail.throttle_priority));
-    // clear valid bits
-    memset((char *)s_ctrl_loop_detail.plimit_valid, 0, sizeof(s_ctrl_loop_detail.plimit_valid));
-    // clear core forced bits
-    corebits_clear(&s_ctrl_loop_detail.pstate_not_forced);
+    memset(s_ctrl_loop_detail.boost_priority, 0, sizeof(s_ctrl_loop_detail.boost_priority));
     // valid cores is an input
     corebits_clear(&s_runconfig.fuses.valid_cores);
     // plimits pending is an output
@@ -419,8 +417,6 @@ static int distribution_dist_setup(void **state)
         s_ctrl_loop_detail.cores.core[core_numbers[i]].current_plimit = INVALID_PERF;
         // selected plimit is an output
         s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit = INVALID_PERF;
-        // set pstate_not_forced bit
-        corebits_set_bit(&s_ctrl_loop_detail.pstate_not_forced, core_numbers[i]);
     }
     // clear selection counts
     for (int pri = 0; pri < VM_THROT_COUNT; ++pri) {
@@ -428,7 +424,8 @@ static int distribution_dist_setup(void **state)
             s_ctrl_loop_detail.plimit.selections[pri].acc[pstate] = 0;
         }
     }
-
+    // clear priority counts
+    memset(&s_ctrl_loop_detail.local.pri_counts, 0, sizeof(s_ctrl_loop_detail.local.pri_counts));
     return 0;
 }
 
@@ -448,25 +445,63 @@ void distribute_assert_expectations()
 
 static void complete_plimit_valid_data()
 {
+        const unsigned pnominal = s_runconfig.derived.pnominal;
     for (int i = 0; i < NUM_D_CORES; ++i) {
         const uint8_t min_plimit = s_ctrl_loop_detail.cores.core[core_numbers[i]].min_plimit;
-        corebits_set_bit(&s_ctrl_loop_detail.plimit_valid[min_plimit], core_numbers[i]);
+        const uint8_t boost_pri = s_ctrl_loop_detail.cores.core[core_numbers[i]].current_boost_priority;
+
+        if ((pnominal > 0) && (min_plimit < pnominal)) {
+        s_ctrl_loop_detail.local.pri_counts.required_for_boost[min_plimit][boost_pri]++;
+        }
     }
-    // complete plimit_valid data
-    for (int i = 0; i < MAX_PLIMIT; ++i) {
-        // if a plimit is valid in a higher perf, we'll automatically indicate
-        // it is valid in a lower perf
-        corebits_or(&s_ctrl_loop_detail.plimit_valid[i + 1], &s_ctrl_loop_detail.plimit_valid[i]);
+    
+    // complete core count data in the boost range
+    for (unsigned int plimit_idx = 1; plimit_idx < pnominal; ++plimit_idx)
+    {
+        for (int boost_pri_index = 0; boost_pri_index < VM_BOOST_COUNT; ++boost_pri_index)
+        {
+            // if a plimit is valid in a higher perf, we'll automatically indicate
+            // it is valid in a lower perf
+            s_ctrl_loop_detail.local.pri_counts.required_for_boost[plimit_idx][boost_pri_index] +=
+                s_ctrl_loop_detail.local.pri_counts.required_for_boost[plimit_idx - 1][boost_pri_index];
+        }
     }
+}
+
+static void create_nominal_count_data(unsigned core, unsigned nominal, unsigned throt_pri, unsigned boost_pri)
+{
+        unsigned pnominal = s_runconfig.derived.pnominal;
+        s_ctrl_loop_detail.cores.core[core].current_boost_priority = boost_pri;
+        s_ctrl_loop_detail.cores.core[core].current_throt_priority = throt_pri;
+
+        // nominal has to be pnominal or higher
+        nominal = (nominal > pnominal) ? nominal : pnominal;
+
+        s_ctrl_loop_detail.cores.core[core].current_base_pstate = nominal;
+
+        s_ctrl_loop_detail.local.pri_counts.throt_pri_count[throt_pri]++;
+        s_ctrl_loop_detail.local.pri_counts.required_nominal_for_throttle[nominal][throt_pri]++;
+        s_ctrl_loop_detail.local.pri_counts.required_for_boost[nominal][boost_pri]++;
+}
+
+static void setup_single_priority_alt(unsigned core, unsigned nominal)
+{
+    for (unsigned idx = 0; idx < NUM_D_CORES; ++idx) {
+        corebits_set_bit(&s_runconfig.fuses.valid_cores, core_numbers[idx]);
+        corebits_set_bit(&s_ctrl_loop_detail.throttle_priority[0], core_numbers[idx]);
+        corebits_set_bit(&s_ctrl_loop_detail.boost_priority[0], core_numbers[idx]);
+        if (core == idx) {
+            create_nominal_count_data(core_numbers[idx], nominal, 0, 0);
+        } else {
+            create_nominal_count_data(core_numbers[idx], TEST_NOMINAL_PERF, 0, 0);
+        }
+    }
+    complete_plimit_valid_data();
 }
 
 static void setup_single_priority()
 {
-    for (int i = 0; i < NUM_D_CORES; ++i) {
-        corebits_set_bit(&s_runconfig.fuses.valid_cores, core_numbers[i]);
-        corebits_set_bit(&s_ctrl_loop_detail.throttle_priority[0], core_numbers[i]);
-    }
-    complete_plimit_valid_data();
+    setup_single_priority_alt(NUM_D_CORES, 0);
 }
 
 static void setup_multi_priority()
@@ -475,6 +510,8 @@ static void setup_multi_priority()
         corebits_set_bit(&s_runconfig.fuses.valid_cores, core_numbers[i]);
         // one core in each priority level
         corebits_set_bit(&s_ctrl_loop_detail.throttle_priority[i], core_numbers[i]);
+        corebits_set_bit(&s_ctrl_loop_detail.boost_priority[i], core_numbers[i]);
+        create_nominal_count_data(core_numbers[i], TEST_NOMINAL_PERF, i, i);
     }
     complete_plimit_valid_data();
 }
@@ -492,6 +529,32 @@ POWER_TEST(distribution_distribute_resources__resources_for_nominal, distributio
         assert_true(corebits_is_bit_set(&s_ctrl_loop_detail.plimits_pending, core_numbers[i]));
     }
     assert_int_equal(s_ctrl_loop_detail.plimit.selections[0].acc[TEST_NOMINAL_PERF], 1);
+    assert_false(s_ctrl_loop_detail.throttling);
+}
+
+POWER_TEST(distribution_distribute_resources__resources_for_nominal__lower_base, distribution_dist_setup, distribution_dist_teardown)
+{
+    #define TEST_UPDATED_BASE_PERF (TEST_NOMINAL_PERF + 2)
+
+    // use the default setup to enable one core with a lower base perf than nominal
+    setup_single_priority_alt(NUM_D_CORES-1, TEST_UPDATED_BASE_PERF); 
+    distribute_assert_expectations();
+    uint32_t resource_difference =
+            (PLIMIT_TO_RESOURCES(TEST_NOMINAL_PERF) - PLIMIT_TO_RESOURCES(TEST_UPDATED_BASE_PERF));
+        s_ctrl_loop_detail.curr_resources -= resource_difference;
+    
+    power_distribution_distribute_resources(&s_runconfig, &s_ctrl_loop_detail);
+    // expect the core with the lower base perf to get the lower plimit
+    for (int i = 0; i < NUM_D_CORES; ++i) {
+        if (i == (NUM_D_CORES - 1)) {
+            assert_int_equal(s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit, TEST_UPDATED_BASE_PERF);
+        } else {
+            assert_int_equal(s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit, TEST_NOMINAL_PERF);
+        }
+        assert_true(corebits_is_bit_set(&s_ctrl_loop_detail.plimits_pending, core_numbers[i]));
+    }
+    assert_int_equal(s_ctrl_loop_detail.plimit.selections[0].acc[TEST_NOMINAL_PERF], 1);
+    // throttling should still be false
     assert_false(s_ctrl_loop_detail.throttling);
 }
 
@@ -515,15 +578,15 @@ POWER_TEST(distribution_distribute_resources__resources_for_nominal__pstate_forc
 
     // use the default setup to ensure all cores get nominal
     setup_single_priority();
-    // clear the not forced bit for the forced core
-    corebits_clear_bit(&s_ctrl_loop_detail.pstate_not_forced, core_numbers[FORCED_CORE]);
+    // set forced knob
+    s_runconfig.knobs.force_pstate = TEST_NOMINAL_PERF;
     // execute function being tested
     distribute_assert_expectations();
     power_distribution_distribute_resources(&s_runconfig, &s_ctrl_loop_detail);
     for (int i = 0; i < NUM_D_CORES; ++i) {
         // plimit should not have been touched on forced core
-        uint8_t expected_plimit = (i == FORCED_CORE) ? INVALID_PERF : TEST_NOMINAL_PERF;
-        bool expect_bit_set     = (i != FORCED_CORE);
+        uint8_t expected_plimit = INVALID_PERF;
+        bool expect_bit_set     = false;
         assert_int_equal(s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit, expected_plimit);
         assert_int_equal(corebits_is_bit_set(&s_ctrl_loop_detail.plimits_pending, core_numbers[i]), expect_bit_set);
     }
@@ -616,8 +679,6 @@ POWER_TEST(distribution_distribute_resources__min_perf_for_one_resources_for_nom
 
 POWER_TEST(distribution_distribute_resources__resources_for_1_turbo, distribution_dist_setup, distribution_dist_teardown)
 {
-    
-
     // use the default setup to ensure all cores get nominal
     setup_single_priority();
     for (int j = 0; j < NUM_D_CORES; ++j) {
@@ -692,8 +753,8 @@ POWER_TEST(distribution_distribute_resources__resources_for_max_turbo__pstate_fo
     
 
     setup_single_priority();
-    // clear the not forced bit for the forced core
-    corebits_clear_bit(&s_ctrl_loop_detail.pstate_not_forced, core_numbers[FORCED_CORE]);
+    // set forced knob
+    s_runconfig.knobs.force_pstate = TEST_NOMINAL_PERF;
     // setup enough resources for all cores to get max perf
     s_ctrl_loop_detail.curr_resources = PLIMIT_TO_RESOURCES(MAX_PERF) * NUM_D_CORES;
     distribute_assert_expectations();
@@ -701,8 +762,8 @@ POWER_TEST(distribution_distribute_resources__resources_for_max_turbo__pstate_fo
     // at the same priority, no cores will get nominal
     for (int i = 0; i < NUM_D_CORES; ++i) {
         // plimit should not have been touched on forced core
-        uint8_t expected_plimit = (i == FORCED_CORE) ? INVALID_PERF : MAX_PERF;
-        bool expect_bit_set     = (i != FORCED_CORE);
+        uint8_t expected_plimit = INVALID_PERF;
+        bool expect_bit_set     = false;
         assert_int_equal(s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit, expected_plimit);
         assert_int_equal(corebits_is_bit_set(&s_ctrl_loop_detail.plimits_pending, core_numbers[i]), expect_bit_set);
     }

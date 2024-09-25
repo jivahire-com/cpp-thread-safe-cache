@@ -19,6 +19,7 @@
 #include "power_i.h"         // for TEMP2DOUT_FUSED, BUG_CHECK
 #include "power_runconfig.h" // for power_knobs_t, dts_coeff_t, power_run...
 #include "power_runconfig_i.h"
+#include "power_stub_i.h"
 
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <bug_check.h>  // for BUG_CHECK
@@ -813,6 +814,13 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
                 POWER_LOG_CRIT("wait_for_FLLCalDone on core %d returned %d", core, return_value);
                 BUG_CHECK(KNG_SC_CORE_WAIT_FLL_CAL, core, return_value);
             }
+
+            // make desired CPPC request to match expected nominal perf and base perf
+            dvfs_ns_set_cppc_desired2(cluster_pex_base_addr,
+                                      dvfs_get_cppc_from_pstate(p_runconfig->derived.pnominal),
+                                      dvfs_get_cppc_from_pstate(p_runconfig->derived.pnominal),
+                                      0,
+                                      0);
         }
     }
 }
@@ -966,5 +974,40 @@ void power_hw_force_pmin(power_pmin_type_t type)
     case PM_PMIN_ALL:
     default:
         break;
+    }
+}
+
+// when the HW boots, this function can be used to capture initial state that would be delivered via update messages at runtime;
+// this is mainly for warmboot scenario where AP core is already running, but useful at cold boot, also
+void power_hw_capture_cppc_state(power_hw_update_cb_t p_update_cb)
+{
+    power_runconfig_t* p_runconfig = power_runconfig_get();
+
+    // confirm the parameter isn't null
+    FPFW_RUNTIME_ASSERT(p_update_cb != NULL);
+
+    // iterate over all cores
+    for (unsigned int core = 0; core < NUM_AP_CORES_PER_DIE; ++core)
+    {
+        // skip cores not present or disabled
+        if (!corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core))
+        {
+            continue;
+        }
+        // get the base address for the core
+        uintptr_t cluster_pex_base_addr =
+            (p_runconfig->p_sconfig->cluster_pex_base + (p_runconfig->p_sconfig->cluster_stride * core));
+
+        // get the current CPPC state
+        uint8_t cppc_desired_perf;
+        uint8_t cppc_base_perf;
+        uint8_t throttle_pri;
+        uint8_t boost_pri;
+        int status =
+            dvfs_ns_get_cppc_desired2(cluster_pex_base_addr, &cppc_desired_perf, &cppc_base_perf, &throttle_pri, &boost_pri);
+        // only real failure should be invalid pointers
+        BUG_ASSERT_PARAM(status == DVFS_SUCCESS, status, 0);
+        // call update callback with detail from this core's CPPC detail
+        p_update_cb(core, dvfs_get_pstate_from_cppc(cppc_desired_perf), dvfs_get_pstate_from_cppc(cppc_base_perf), throttle_pri, boost_pri);
     }
 }

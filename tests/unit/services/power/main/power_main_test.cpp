@@ -121,6 +121,12 @@ void __wrap_power_timer_start_loop_timers()
     function_called();
 }
 
+void __wrap_power_loops_control_post_core_init()
+{
+    // nothing to do
+    function_called();
+}
+
 void __wrap_power_telemetry_enable()
 {
     // nothing to do
@@ -335,6 +341,7 @@ POWER_TEST(init_ap_soc, NULL, NULL)
     will_return(__wrap_ws_data_put, &test_ws_stored);
     expect_function_call(__wrap_ws_data_put);
 
+    expect_function_call(__wrap_power_loops_control_post_core_init);
     expect_function_call(__wrap_power_telemetry_enable);
     expect_function_call(__wrap_power_timer_start_loop_timers);
     expect_function_call(__wrap_power_hw_clear_force_pmin);
@@ -361,6 +368,7 @@ POWER_TEST(init_ap_soc_ws, NULL, NULL)
     expect_function_call(__wrap_reset_tile_pvt_dts_vm);
     expect_function_call(__wrap_tile_pvt_sda_reconfig);
     expect_function_call(__wrap_tile_pvt_dma_config);
+    expect_function_call(__wrap_power_loops_control_post_core_init);
     expect_function_call(__wrap_power_telemetry_enable);
     expect_function_call(__wrap_power_timer_start_loop_timers);
     expect_function_call(__wrap_power_hw_clear_force_pmin);

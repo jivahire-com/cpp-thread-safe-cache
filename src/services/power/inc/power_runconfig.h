@@ -50,10 +50,11 @@
 /* number of power samples for averaging of soc power output */
 #define SOC_POWER_AVG_COUNT 5
 
-// number of throttling priorities 
-#define VM_THROT_COUNT 8
-// number of throttling priorities 
-#define VM_BOOST_COUNT 8
+#define VM_PRI_COUNT 8
+// number of throttling priorities
+#define VM_THROT_COUNT (VM_PRI_COUNT)
+// number of throttling priorities
+#define VM_BOOST_COUNT (VM_PRI_COUNT)
 
 /*-------------- Typedefs ----------------*/
 
@@ -93,7 +94,7 @@ typedef enum
     power_loops_minimum_plimit_t_MIN_16 = 5,           // Require 16 plimit requests
     power_loops_minimum_plimit_t_MIN_32 = 6,           // Require 32 plimit requests
     power_loops_minimum_plimit_t_MIN_64 = 7,           // Require 64 plimit requests
-    power_loops_minimum_plimit_t_MIN_128 = 8,           // Require max 128 plimit requests
+    power_loops_minimum_plimit_t_MIN_128 = 8,          // Require max 128 plimit requests
     _power_loops_minimum_plimit_t_PADDING = 0xffffffff // Force packing to int size
 } power_loops_minimum_plimit_t;
 
@@ -604,38 +605,41 @@ typedef enum
 /**
  * @brief Struct for per-core data
  */
-typedef struct _power_core_t {
-    uint16_t temperature_dC;           // current core temperature in 1/10 degrees C
-    uint8_t current_pstate;            // from last pstate reg 
-    uint8_t current_cstate;            // from last pstate reg
-    uint8_t current_throt_status;      // from last pstate reg
-    uint8_t current_throt_priority;    // current boost priority from update message
-    uint8_t current_boost_priority;    // current boost priority from update message 
+typedef struct _power_core_t
+{
+    uint16_t temperature_dC;        // current core temperature in 1/10 degrees C
+    uint8_t current_pstate;         // from last pstate reg
+    uint8_t current_cstate;         // from last pstate reg
+    uint8_t current_throt_status;   // from last pstate reg
+    uint8_t current_throt_priority; // current throttle priority from update message
+    uint8_t current_boost_priority; // current boost priority from update message
     uint8_t current_plimit;
     uint8_t selected_plimit;
-    uint8_t desired_pstate;            // desired plimit; set by OS, delivered in success
-                                       // and fail messages
-    uint8_t min_plimit;                // for resource distribution
-    uint8_t desired_pstate_in_use;     // used with intervals_to_lower_plimit knob (this
-                                       // is the desired request we're working with)
-    uint8_t desired_pstate_for_count;  // used with intervals_to_lower_plimit
-                                       // knob (desired we're working towards)
-    uint8_t desired_pstate_count;      // used with intervals_to_lower_plimit knob
-                                       // (current count)
+    uint8_t desired_pstate;           // desired plimit; set by OS, delivered in success
+    uint8_t current_base_pstate;      // this is the per-core nominal/base performance pstate
+                                      // and fail messages
+    uint8_t min_plimit;               // for resource distribution
+    uint8_t desired_pstate_in_use;    // used with intervals_to_lower_plimit knob (this
+                                      // is the desired request we're working with)
+    uint8_t desired_pstate_for_count; // used with intervals_to_lower_plimit
+                                      // knob (desired we're working towards)
+    uint8_t desired_pstate_count;     // used with intervals_to_lower_plimit knob
+                                      // (current count)
 } power_core_t;
 
 /**
  * @brief Struct for all-core data
  */
-typedef struct _power_cores_t {
+typedef struct _power_cores_t
+{
     power_core_t core[NUM_AP_CORES_PER_DIE];
 } power_cores_t;
 
 // structure for storing local/remote power calculations
 typedef struct _power_latest_calcs
 {
-    float soc_power;    // most recent soc power measurement
-    float vcpu_power;   // most recent vcpu power measurement
+    float soc_power;           // most recent soc power measurement
+    float vcpu_power;          // most recent vcpu power measurement
     uint16_t vcpu_avs_voltage; // most recent vcpu voltage
     uint16_t vcpu_avs_current; // most recent vcpu current
 } power_latest_calcs_t;
@@ -643,14 +647,16 @@ typedef struct _power_latest_calcs
 /**
  * @brief Struct for plimit selection stats
  */
-typedef struct _power_plimit_stats_t {
+typedef struct _power_plimit_stats_t
+{
     uint64_t acc[NUM_PSTATES];
 } power_plimit_selection_stats_t;
 
 /**
  *  @brief Struct for plimit send stats
  */
-typedef struct _power_loop_plimit_stats_t {
+typedef struct _power_loop_plimit_stats_t
+{
     power_plimit_selection_stats_t selections[VM_THROT_COUNT];
     uint64_t counter_start;
     uint64_t counter_last_send;
@@ -659,32 +665,52 @@ typedef struct _power_loop_plimit_stats_t {
     uint32_t last_us;
 } power_loop_plimit_stats_t;
 
+
+/**
+ *  @brief Struct for throttle/boost core count data used in resource distribution
+ */
+typedef struct _power_loop_pri_counts_t
+{
+    uint8_t throt_pri_count[VM_THROT_COUNT]; // how many cores have this throttle priority
+    uint8_t required_nominal_for_throttle[NUM_PSTATES][VM_PRI_COUNT]; // how many cores have this base perf in this priority bucket (nominal and below) or would require boost in this perf (above nominal)
+    uint8_t required_for_boost[NUM_PSTATES][VM_PRI_COUNT]; // how many cores have this base perf in this priority bucket (nominal and below) or would require boost in this perf (above nominal)
+} power_loop_pri_counts_t;
+
+
+/**
+ *  @brief Struct for data of which there are local and remote versions
+ */
+typedef struct _power_remote_data_t
+{
+    power_latest_calcs_t power;
+    power_loop_pri_counts_t pri_counts;
+    uint16_t max_resources;
+} power_remote_data_t;
+
 /**
  *  @brief Struct for control loop state
  */
-typedef struct _power_ctrl_loop_detail_t {
-    power_latest_calcs_t local_power;
-    power_latest_calcs_t remote_power;
+typedef struct _power_ctrl_loop_detail_t
+{
+    power_remote_data_t local;
+    power_remote_data_t remote;
     uint16_t current_vcpu;
     uint16_t required_vcpu;
     uint16_t max_resources;
     uint16_t curr_resources;
     corebits_t plimits_pending;
     corebits_t plimits_successful;
-    corebits_t pstate_not_forced;
-    corebits_t plimit_valid[NUM_PSTATES];
     corebits_t throttle_priority[VM_THROT_COUNT];
     corebits_t boost_priority[VM_THROT_COUNT];
     power_cores_t cores;
-    bool throttling;       // currently throttling 
-    bool throttle_query;   // same as throttling, but will remain true until queried
-    bool rack_limit;       // cached value of last rack_limit flag observed
-    bool loop_failure;     // is loop in a failure state
-    bool loop_fail_query;  // same as loop failure, but will remain true until queried
+    bool throttling;      // currently throttling
+    bool throttle_query;  // same as throttling, but will remain true until queried
+    bool rack_limit;      // cached value of last rack_limit flag observed
+    bool loop_failure;    // is loop in a failure state
+    bool loop_fail_query; // same as loop failure, but will remain true until queried
     power_loop_plimit_stats_t plimit;
 
 } power_ctrl_loop_detail_t;
-
 
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus

@@ -165,12 +165,12 @@ typedef struct
  */
 typedef enum _power_ctrl_loop_state_t
 {
-    POWER_CONTROL_STATE_IDLE = POWER_LOOP_IDLE_STATE_ID,
-    POWER_CONTROL_STATE_WARMSTART_ENTRY,
-    POWER_CONTROL_STATE_COLLECT_INPUTS,
-    POWER_CONTROL_STATE_EXCHANGE_INPUTS,
-    POWER_CONTROL_STATE_DISTRIBUTE_AVAILABLE,
-    POWER_CONTROL_STATE_SET_PLIMIT_BEFORE_VR,
+    POWER_CONTROL_STATE_IDLE = POWER_LOOP_IDLE_STATE_ID,  
+    POWER_CONTROL_STATE_WARMSTART_ENTRY,                    
+    POWER_CONTROL_STATE_COLLECT_INPUTS,         
+    POWER_CONTROL_STATE_EXCHANGE_INPUTS,        
+    POWER_CONTROL_STATE_DISTRIBUTE_AVAILABLE,   
+    POWER_CONTROL_STATE_SET_PLIMIT_BEFORE_VR,   
     POWER_CONTROL_STATE_SET_VR_AFTER_PLIMIT,
     POWER_CONTROL_STATE_WAIT_VR_AFTER_PLIMIT,
     POWER_CONTROL_STATE_SET_VR_BEFORE_PLIMIT,
@@ -279,6 +279,7 @@ extern "C" {
 
 void power_loops_init();
 void power_loops_control_init();
+void power_loops_control_post_core_init();
 void power_loops_telemetry_init();
 
 void power_loops_init_loop(power_loop_context_t * context);

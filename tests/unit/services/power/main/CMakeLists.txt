@@ -62,6 +62,7 @@ mock_target(${TARGET}
     power_fuses_is_power_hw_supported
     power_loops_init
     power_loops_control_init
+    power_loops_control_post_core_init
     power_loops_telemetry_init
     power_runconfig_get  
     power_runconfig_init

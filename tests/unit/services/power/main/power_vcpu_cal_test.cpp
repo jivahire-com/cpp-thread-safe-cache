@@ -90,7 +90,7 @@ POWER_TEST(vcpu_calc_peak_current_A, NULL, NULL)
 #define PEAK_TEST_C_DYN_PF                2000
 #define PEAK_TEST_ADJ_FACTOR              (1.0f / 100000000000.0f)
 #define PEAK_TEST_CALCULATED_VALUE        18.036f
-#define PEAK_TEST_CALCULATED_VALUE2       18.508f
+#define PEAK_TEST_CALCULATED_VALUE2       19.040f
 
 #define TEST_POLY_CONSTANT 5.0f
 
@@ -111,7 +111,6 @@ POWER_TEST(vcpu_calc_peak_current_A, NULL, NULL)
 
     for (unsigned bit_idx = 0; bit_idx < core_count; ++bit_idx) {
         loop_config.cores.core[bit_idx] = {.temperature_dC = 85};
-        corebits_set_bit(&loop_config.pstate_not_forced, bit_idx);
     }
 
     test_loop_config = &loop_config;
@@ -146,11 +145,8 @@ POWER_TEST(vcpu_calc_peak_current_A, NULL, NULL)
 
     assert_float_equal(power_vcpu_calc_peak_current_A(&test_runconfig, test_loop_config), PEAK_TEST_CALCULATED_VALUE, 0.01);
 
-    // valid cores were modulo 2 cores, so subtract 2 to find last one.. set it to a forced pstate matching the first core
-    corebits_clear_bit(&test_loop_config->pstate_not_forced, PEAK_TEST_CORE_COUNT - 2);
-
+    // all cores are forced to the same pstate (previous implementation allowed specific cores to be forced to different pstates)
     test_runconfig.knobs.force_pstate = FIRST_ASSIGNED_PSTATE;
-    test_loop_config->cores.core[PEAK_TEST_CORE_COUNT - 2].selected_plimit = MAX_PLIMIT;
 
     expect_value_count(__wrap_FpFwAssert, expression, true, 5);
     assert_float_equal(power_vcpu_calc_peak_current_A(&test_runconfig, test_loop_config), PEAK_TEST_CALCULATED_VALUE2, 0.01);

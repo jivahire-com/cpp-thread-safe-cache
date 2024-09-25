@@ -134,64 +134,44 @@ POWER_TEST(power_telemetry_enable, NULL, NULL)
 #define TEST_DESIRED  0x1B
 #define TEST_SELECTED 0x1E
 
-POWER_TEST(telemetry_message_poll__success, NULL, NULL)
+void message_update_callback(unsigned int core_id, uint8_t desired_pstate, uint8_t base_pstate, uint8_t throttle_pri, uint8_t boost_pri)
 {
-    power_cores_t cores;
-    corebits_t success_bits = COREBITS_INIT_UINT32(0, 0, 0);
-    memset(&cores, 0, sizeof(power_cores_t));
-
-    plimit_telem_msg_t plimit_msg;
-
-    plimit_msg.data.type = PLIMIT_SUCCESS_TYPE;
-    plimit_msg.data.s_desired_perf = TEST_DESIRED;
-    plimit_msg.data.plimit = TEST_SELECTED;
-    plimit_msg.data.core_id = TEST_CORE;
-
-    cores.core[TEST_CORE].selected_plimit = TEST_SELECTED;
-
-    will_return(__wrap_sensor_fifo_svc_poll_scp_message, true);  // valid data
-    will_return(__wrap_sensor_fifo_svc_poll_scp_message, false); // more entries
-    will_return(__wrap_sensor_fifo_svc_poll_scp_message, &plimit_msg);
-
-    power_telemetry_message_poll(&cores, &success_bits);
-
-    assert_int_equal(cores.core[TEST_CORE].current_plimit, TEST_SELECTED);
-    assert_int_equal(cores.core[TEST_CORE].desired_pstate, TEST_DESIRED);
-    assert_true(corebits_is_bit_set(&success_bits, TEST_CORE));
+    check_expected(core_id);
+    check_expected(desired_pstate);
+    check_expected(base_pstate);
+    check_expected(throttle_pri);
+    check_expected(boost_pri);
 }
 
-POWER_TEST(telemetry_message_poll__success_not_expected__plimit_mismatch, NULL, NULL)
+void message_success_callback(unsigned int core_id, uint8_t desired_pstate, uint8_t current_pstate)
 {
-    power_cores_t cores;
-    corebits_t success_bits = COREBITS_INIT_UINT32(0, 0, 0);
-    memset(&cores, 0, sizeof(power_cores_t));
+    check_expected(core_id);
+    check_expected(desired_pstate);
+    check_expected(current_pstate);
+}
 
+POWER_TEST(telemetry_message_poll__success, NULL, NULL)
+{
     plimit_telem_msg_t plimit_msg;
 
     plimit_msg.data.type = PLIMIT_SUCCESS_TYPE;
-    plimit_msg.data.s_desired_perf = TEST_DESIRED;
+    plimit_msg.data.plimit_success_msg.cppc_desired = TEST_DESIRED;
     plimit_msg.data.plimit = TEST_SELECTED;
     plimit_msg.data.core_id = TEST_CORE;
-
-    cores.core[TEST_CORE].selected_plimit = TEST_SELECTED - 1; // not the same as the message
 
     will_return(__wrap_sensor_fifo_svc_poll_scp_message, true);  // valid data
     will_return(__wrap_sensor_fifo_svc_poll_scp_message, false); // more entries
     will_return(__wrap_sensor_fifo_svc_poll_scp_message, &plimit_msg);
 
-    power_telemetry_message_poll(&cores, &success_bits);
-
-    assert_int_not_equal(cores.core[TEST_CORE].current_plimit, TEST_SELECTED);
-    assert_int_equal(cores.core[TEST_CORE].desired_pstate, TEST_DESIRED);
-    assert_false(corebits_is_bit_set(&success_bits, TEST_CORE));
+    expect_value(message_success_callback, core_id, TEST_CORE);
+    expect_value(message_success_callback, desired_pstate, TEST_DESIRED);
+    expect_value(message_success_callback, current_pstate, TEST_SELECTED);
+    
+    power_telemetry_message_poll(message_update_callback, message_success_callback);
 }
 
 POWER_TEST(telemetry_message_poll__success_not_expected__invalid_core, NULL, NULL)
 {
-    power_cores_t cores;
-    corebits_t success_bits = COREBITS_INIT_UINT32(0, 0, 0);
-    memset(&cores, 0, sizeof(power_cores_t));
-
     plimit_telem_msg_t plimit_msg;
 
     plimit_msg.data.core_id = NUM_AP_CORES_PER_DIE;
@@ -200,27 +180,21 @@ POWER_TEST(telemetry_message_poll__success_not_expected__invalid_core, NULL, NUL
     will_return(__wrap_sensor_fifo_svc_poll_scp_message, false); // more entries
     will_return(__wrap_sensor_fifo_svc_poll_scp_message, &plimit_msg);
 
-    power_telemetry_message_poll(&cores, &success_bits);
-
-    assert_int_not_equal(cores.core[TEST_CORE].current_plimit, TEST_SELECTED);
-    assert_int_not_equal(cores.core[TEST_CORE].desired_pstate, TEST_DESIRED);
-    assert_false(corebits_is_bit_set(&success_bits, TEST_CORE));
+    power_telemetry_message_poll(message_update_callback, message_success_callback);
 }
 
 POWER_TEST(telemetry_message_poll__update, NULL, NULL)
 {
 #define TEST_THROTTLE 0x5
 #define TEST_BOOST    0x7
-
-    power_cores_t cores;
-    corebits_t success_bits = COREBITS_INIT_UINT32(0, 0, 0);
-    memset(&cores, 0, sizeof(power_cores_t));
+#define TEST_BASE_PERF 0x11
 
     plimit_telem_msg_t plimit_msg;
 
     plimit_msg.data.type = PLIMIT_UPDATE_TYPE;
     plimit_msg.data.core_id = TEST_CORE;
-    plimit_msg.data.cppc_update_msg.desired_perf = TEST_DESIRED;
+    plimit_msg.data.pstate = TEST_DESIRED;
+    plimit_msg.data.cppc_update_msg.desired_perf = TEST_BASE_PERF;
     plimit_msg.data.cppc_update_msg.throttle_pri = TEST_THROTTLE;
     plimit_msg.data.cppc_update_msg.boost_pri = TEST_BOOST;
 
@@ -228,9 +202,11 @@ POWER_TEST(telemetry_message_poll__update, NULL, NULL)
     will_return(__wrap_sensor_fifo_svc_poll_scp_message, false); // more entries
     will_return(__wrap_sensor_fifo_svc_poll_scp_message, &plimit_msg);
 
-    power_telemetry_message_poll(&cores, &success_bits);
-
-    assert_int_equal(cores.core[TEST_CORE].current_throt_priority, TEST_THROTTLE);
-    assert_int_equal(cores.core[TEST_CORE].current_boost_priority, TEST_BOOST);
-    assert_int_equal(cores.core[TEST_CORE].desired_pstate, TEST_DESIRED);
+    expect_value(message_update_callback, core_id, TEST_CORE);
+    expect_value(message_update_callback, desired_pstate, TEST_DESIRED);
+    expect_value(message_update_callback, base_pstate, TEST_BASE_PERF);
+    expect_value(message_update_callback, throttle_pri, TEST_THROTTLE);
+    expect_value(message_update_callback, boost_pri, TEST_BOOST);
+    
+    power_telemetry_message_poll(message_update_callback, message_success_callback);
 }

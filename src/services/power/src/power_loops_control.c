@@ -52,7 +52,12 @@ static void hw_drain_sensor_fifo();
 static void hw_calculate_vcpu(power_runconfig_t* p_runconfig);
 static void hw_write_plimits(power_runconfig_t* p_runconfig);
 
+// functions to resolve throttling/boost priorities
+static uint8_t throt_pri_for_tracking(power_runconfig_t* p_runconfig, uint8_t priority);
+static uint8_t boost_pri_for_tracking(power_runconfig_t* p_runconfig, uint8_t priority);
+
 /*-- Declarations (Statics and globals) --*/
+#define DEFAULT_PRIORITY 0
 
 // Table of state handler functions for control loop
 static const power_state_handler_t control_loop_handler_table[POWER_CONTROL_STATE_MAX] = {
@@ -137,15 +142,12 @@ static void idle_handler(int event, const void* event_data)
 static void get_current_state()
 {
     power_runconfig_t* p_runconfig = power_runconfig_get();
+    const uint8_t pnominal = p_runconfig->derived.pnominal;
 
     // clear priority list
-    memset((char*)s_ctrl_loop.throttle_priority, 0, sizeof(s_ctrl_loop.throttle_priority));
-
-    // clear valid bits
-    memset((char*)s_ctrl_loop.plimit_valid, 0, sizeof(s_ctrl_loop.plimit_valid));
-
-    // read general state, temperature, etc
-    // hw_get_state();
+    // number of boost rows = value of pnominal
+    const size_t size_of_one_row = sizeof(s_ctrl_loop.local.pri_counts.required_for_boost[0]);
+    memset((char*)s_ctrl_loop.local.pri_counts.required_for_boost, 0, size_of_one_row * pnominal);
 
     // now read per core state
     for (unsigned core_idx = 0; core_idx < NUM_AP_CORES_PER_DIE; ++core_idx)
@@ -155,21 +157,9 @@ static void get_current_state()
         {
             power_core_t* core = &s_ctrl_loop.cores.core[core_idx];
             hw_get_core_state(p_runconfig, core_idx, core);
-            // basically - need to assign cores to their throttling priority,
-            // which is being kept per priority level in the throttle_priority
-            // array.  If we're in all-core power capping mode, then index into
-            // the throttle priority array is the same for all
-            // cores
-            unsigned index = 0; // default index for all-core mode
-            if (p_runconfig->knobs.capping_mode != power_capping_mode_t_ALL)
-            {
-                // as long as OS-requested priority is less than number of
-                // priorities we support, use OS priority
-                index = (core->current_throt_priority < VM_THROT_COUNT) ? core->current_throt_priority
-                                                                        : (VM_THROT_COUNT - 1);
-            }
-            // set bit for core in its throttle priority level
-            corebits_set_bit(&s_ctrl_loop.throttle_priority[index], core_idx);
+
+            // get the boost priority for this core
+            const unsigned boost_pri_index = core->current_boost_priority;
 
             // find the minimum (max performance) allowable plimit for this core
             // based on collected data
@@ -186,21 +176,53 @@ static void get_current_state()
                 core_min_plimit = MAX_PLIMIT;
             }
 
-            // set a bit in the plimit_valid bits for the minimum plimit of this
-            // core
-            corebits_set_bit(&s_ctrl_loop.plimit_valid[core_min_plimit], core_idx);
             // set value per core for eventual adjustment
             core->min_plimit = core_min_plimit;
+
+            // nominal has to be the middle point in our required table, and we only want to increment entries in boost perf levels
+            if ((pnominal > 0) && (core_min_plimit < pnominal))
+            {
+                // increment the count of cores that require this minimum plimit in the current priority level
+                s_ctrl_loop.local.pri_counts.required_for_boost[core_min_plimit][boost_pri_index]++;
+            }
         }
     }
 
-    // complete plimit_valid data
-    for (int plimit_idx = 0; plimit_idx < MAX_PLIMIT; ++plimit_idx)
+    // complete core count data in the boost range
+    for (int plimit_idx = 1; plimit_idx < pnominal; ++plimit_idx)
     {
-        // if a plimit is valid in a higher perf, we'll automatically indicate
-        // it is valid in a lower perf
-        corebits_or(&s_ctrl_loop.plimit_valid[plimit_idx + 1], &s_ctrl_loop.plimit_valid[plimit_idx]);
+        for (int boost_pri_index = 0; boost_pri_index < VM_BOOST_COUNT; ++boost_pri_index)
+        {
+            // if a plimit is valid in a higher perf, we'll automatically indicate
+            // it is valid in a lower perf
+            s_ctrl_loop.local.pri_counts.required_for_boost[plimit_idx][boost_pri_index] +=
+                s_ctrl_loop.local.pri_counts.required_for_boost[plimit_idx - 1][boost_pri_index];
+        }
     }
+}
+
+static uint8_t boost_pri_for_tracking(power_runconfig_t* p_runconfig, uint8_t priority)
+{
+    uint8_t boost_pri_index = 0;
+    if (p_runconfig->knobs.power_enable_velocity_boost)
+    {
+        // as long as OS-requested priority is less than number of
+        // priorities we support, use OS priority
+        boost_pri_index = (priority < VM_BOOST_COUNT) ? priority : (VM_BOOST_COUNT - 1);
+    }
+    return boost_pri_index;
+}
+
+static uint8_t throt_pri_for_tracking(power_runconfig_t* p_runconfig, uint8_t priority)
+{
+    unsigned throt_pri_index = 0; // default index for all-core mode
+    if (p_runconfig->knobs.capping_mode != power_capping_mode_t_ALL)
+    {
+        // as long as OS-requested priority is less than number of
+        // priorities we support, use OS priority
+        throt_pri_index = (priority < VM_THROT_COUNT) ? priority : (VM_THROT_COUNT - 1);
+    }
+    return throt_pri_index;
 }
 
 static void collect_inputs_handler(int event, const void* event_data)
@@ -215,13 +237,13 @@ static void collect_inputs_handler(int event, const void* event_data)
 
         // Drain Sensor FIFO
         hw_drain_sensor_fifo();
-        // Get max temperature, core state from SCF
+        // Get core state from SCF, update min plimit
         get_current_state();
         break;
     case POWER_CTRL_LOOP_SIGNAL_VR_READ:
         // state collection done?
         FPFW_RUNTIME_ASSERT(event_data != NULL);
-        s_ctrl_loop.local_power = *(power_latest_calcs_t*)event_data;
+        s_ctrl_loop.local.power = *(power_latest_calcs_t*)event_data;
         power_control_loop_change_state(POWER_CONTROL_STATE_EXCHANGE_INPUTS);
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
@@ -269,9 +291,21 @@ static void distribute_available_handler(int event, const void* event_data)
     {
     case POWER_LOOP_STATE_SIGNAL_ENTRY: {
         // Start state distribute available
-        // Calculate CPU power/cap
 
-        float temp = power_cap_get_vrcpu_cap(&new_rack_power_cap, &s_ctrl_loop.local_power, &s_ctrl_loop.remote_power);
+        // this update should really be a one-time thing, but we'll do it here to simplify synchronization
+        if (s_ctrl_loop.max_resources != (s_ctrl_loop.local.max_resources + s_ctrl_loop.remote.max_resources))
+        {
+            // update the pid config to include local + remote max resources
+            pid_config_t pidcfg;
+            s_ctrl_loop.max_resources = s_ctrl_loop.local.max_resources + s_ctrl_loop.remote.max_resources;
+            pid_get_config(&pidcfg);
+            pidcfg.max = s_ctrl_loop.max_resources;
+            pid_init(&pidcfg);
+        }
+
+        // Calculate CPU power/cap
+        float temp =
+            power_cap_get_vrcpu_cap(&new_rack_power_cap, &s_ctrl_loop.local.power, &s_ctrl_loop.remote.power);
         pid_update_setpoint(temp);
 
         // on new rack cap, reset PID integral / error accumulation
@@ -297,7 +331,7 @@ static void distribute_available_handler(int event, const void* event_data)
         {
             s_ctrl_loop.curr_resources =
                 pid_calculate_resources((float)p_runconfig->knobs.control_loop_interval / 1000,
-                                        (s_ctrl_loop.local_power.vcpu_power + s_ctrl_loop.remote_power.vcpu_power));
+                                        (s_ctrl_loop.local.power.vcpu_power + s_ctrl_loop.remote.power.vcpu_power));
         }
 
         /* TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1946116
@@ -640,10 +674,88 @@ static void hw_get_core_state(power_runconfig_t* p_runconfig, unsigned core, pow
         power_hw_dts_pvt_raw_to_temp_dC(last_state.temperature, p_runconfig->fuses.dts_coeff_tile[tile_num]);
 }
 
+// callback function for dvfs update messages
+void message_update_callback(unsigned int core_id, uint8_t desired_pstate, uint8_t base_pstate, uint8_t throttle_pri, uint8_t boost_pri)
+{
+    FPFW_RUNTIME_ASSERT(core_id < NUM_AP_CORES_PER_DIE);
+
+    power_runconfig_t* p_runconfig = power_runconfig_get();
+
+    // base pstate must be nominal or greater (less perf)
+    base_pstate = MAX(base_pstate, p_runconfig->derived.pnominal);
+    // qualify priorities with config, etc
+    throttle_pri = throt_pri_for_tracking(p_runconfig, throttle_pri);
+    boost_pri = boost_pri_for_tracking(p_runconfig, boost_pri);
+
+    // save old base and throttle priority
+    const uint8_t current_base_pstate = s_ctrl_loop.cores.core[core_id].current_base_pstate;
+    const uint8_t current_throt_priority = s_ctrl_loop.cores.core[core_id].current_throt_priority;
+    const uint8_t current_boost_priority = s_ctrl_loop.cores.core[core_id].current_boost_priority;
+
+    // update message packets will be sent when a CPPC register is update in DVFS NON-SEC (OS write)
+    s_ctrl_loop.cores.core[core_id].desired_pstate = desired_pstate;
+    s_ctrl_loop.cores.core[core_id].current_throt_priority = throttle_pri;
+    s_ctrl_loop.cores.core[core_id].current_boost_priority = boost_pri;
+    s_ctrl_loop.cores.core[core_id].current_base_pstate = base_pstate;
+
+    // if priority or pstate have changed
+    if ((current_throt_priority != throttle_pri) || (current_boost_priority != boost_pri) ||
+        (current_base_pstate != base_pstate))
+    {
+        // update the local count of cores using this perf level for nominal
+        s_ctrl_loop.local.pri_counts.required_nominal_for_throttle[current_base_pstate][current_throt_priority]--;
+        s_ctrl_loop.local.pri_counts.required_nominal_for_throttle[base_pstate][throttle_pri]++;
+
+        // update the local count of cores using this perf level for nominal with this boost priority
+        s_ctrl_loop.local.pri_counts.required_for_boost[current_base_pstate][current_boost_priority]--;
+        s_ctrl_loop.local.pri_counts.required_for_boost[base_pstate][boost_pri]++;
+
+        // update core count at priority level
+        s_ctrl_loop.local.pri_counts.throt_pri_count[current_throt_priority]--;
+        s_ctrl_loop.local.pri_counts.throt_pri_count[throttle_pri]++;
+
+        // update corebits for throttle priority level
+        corebits_clear_bit(&s_ctrl_loop.throttle_priority[current_throt_priority], core_id);
+        corebits_set_bit(&s_ctrl_loop.throttle_priority[throttle_pri], core_id);
+
+        // update corebits for boost priority level
+        corebits_clear_bit(&s_ctrl_loop.boost_priority[current_boost_priority], core_id);
+        corebits_set_bit(&s_ctrl_loop.boost_priority[boost_pri], core_id);
+    }
+
+    POWER_LOG_TRACE("update message, core %d", core_id);
+}
+
+// callback function for dvfs success messages
+void message_success_callback(unsigned int core_id, uint8_t desired_pstate, uint8_t current_pstate)
+{
+    FPFW_RUNTIME_ASSERT(core_id < NUM_AP_CORES_PER_DIE);
+
+    // a success message packet will be sent after evert PLIMIT register write
+    // success messages will always include current CPPC desired perf value, so save it here
+    s_ctrl_loop.cores.core[core_id].desired_pstate = desired_pstate;
+    if (s_ctrl_loop.cores.core[core_id].selected_plimit == current_pstate)
+    {
+        // on success, we update the current plimit and set the core success bit
+        s_ctrl_loop.cores.core[core_id].current_plimit = current_pstate;
+        corebits_set_bit(&s_ctrl_loop.plimits_successful, core_id);
+        POWER_LOG_TRACE("success message, core %d selected %d", core_id, current_pstate);
+    }
+    else
+    {
+        // this is unexpected, but keep the print for early HW issues
+        // if it does happen, control loop will retry due to success bit not being set
+        POWER_LOG_WARN("plimit success core%d selected %d != success %d",
+                       core_id,
+                       s_ctrl_loop.cores.core[core_id].selected_plimit,
+                       current_pstate);
+    }
+}
+
 static void hw_drain_sensor_fifo()
 {
     // call poll function, process success/fails
-    power_telemetry_message_poll(&s_ctrl_loop.cores, &s_ctrl_loop.plimits_successful);
+    power_telemetry_message_poll(message_update_callback, message_success_callback);
 }
 
 static void hw_calculate_vcpu(power_runconfig_t* p_runconfig)
@@ -721,6 +833,14 @@ static void hw_write_plimits(power_runconfig_t* p_runconfig)
     }
 }
 
+static void power_loops_priority_init(power_runconfig_t* p_runconfig, power_loop_pri_counts_t* counts)
+{
+    int core_count = corebits_count(&p_runconfig->fuses.valid_cores);
+    counts->throt_pri_count[DEFAULT_PRIORITY] = core_count;
+    counts->required_nominal_for_throttle[p_runconfig->derived.pnominal][DEFAULT_PRIORITY] = (uint8_t)core_count;
+    counts->required_for_boost[p_runconfig->derived.pnominal][DEFAULT_PRIORITY] = (uint8_t)core_count;
+}
+
 void power_loops_control_init()
 {
     const unsigned core_count = NUM_AP_CORES_PER_DIE;
@@ -732,7 +852,8 @@ void power_loops_control_init()
 
     // since we're distributing perf levels, max resources are the total number
     // of perf levels we'd need to raise every core to highest/max perf
-    s_ctrl_loop.max_resources = PLIMIT_TO_RESOURCES(MIN_PLIMIT) * corebits_count(&p_runconfig->fuses.valid_cores);
+    s_ctrl_loop.local.max_resources = PLIMIT_TO_RESOURCES(MIN_PLIMIT) * corebits_count(&p_runconfig->fuses.valid_cores);
+    s_ctrl_loop.max_resources = s_ctrl_loop.local.max_resources;
 
     // similarly, the number of levels we have to raise total to get all cores to nominal
     s_ctrl_loop.curr_resources =
@@ -753,7 +874,7 @@ void power_loops_control_init()
         .max = s_ctrl_loop.max_resources,
     };
 
-    // per-core initialization; currently only used for forced pstate
+    // forced pstate init
     if (p_runconfig->knobs.force_pstate < NUM_PSTATES)
     {
         for (unsigned int core = 0; core < core_count; ++core)
@@ -763,12 +884,38 @@ void power_loops_control_init()
         }
     }
 
+    // general per-core initialization
+    for (unsigned int core = 0; core < core_count; ++core)
+    {
+        // initialize core base perf and priorities 
+        s_ctrl_loop.cores.core[core].current_base_pstate = p_runconfig->derived.pnominal;
+        s_ctrl_loop.cores.core[core].current_throt_priority = DEFAULT_PRIORITY;
+        s_ctrl_loop.cores.core[core].current_boost_priority = DEFAULT_PRIORITY;
+        // if core is valid
+        if (corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core))
+        {
+            // set core bit only for valid cores
+			corebits_set_bit(&s_ctrl_loop.throttle_priority[DEFAULT_PRIORITY], core);
+            corebits_set_bit(&s_ctrl_loop.boost_priority[DEFAULT_PRIORITY], core);
+        }
+    }
+
+    // initialize the local priority counts
+    power_loops_priority_init(p_runconfig, &s_ctrl_loop.local.pri_counts);
+
     pid_init(&pid_config);
     // set an initial resource count
     pid_set_resources(s_ctrl_loop.curr_resources);
 
     // initialize remote die sync
     power_remote_die_init(p_runconfig);
+}
+
+// function should be called after core initialization in either cold or warm boot
+void power_loops_control_post_core_init()
+{
+    // we need to sync CPPC state from cores to control loop
+    power_hw_capture_cppc_state(message_update_callback);
 }
 
 power_ctrl_loop_detail_t* power_ctrl_loop_get()

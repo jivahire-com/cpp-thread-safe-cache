@@ -23,5 +23,8 @@
 	    <!-- MCP -->
         <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\bin\mcp\*" target="build\bin\arm-eabi-aarch\Debug\mcp\" />
 
+        <!-- Silibs Release Notes -->
+        <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\Release_Notes\*" target="Release_Notes\" />
+
     </files>
 </package>

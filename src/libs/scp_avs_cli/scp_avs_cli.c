@@ -154,6 +154,7 @@ void AVSCLIRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Completio
         FpFwCliPrint(" AVSCLIRequestCompletion default\n");
         break;
     }
+    FpFwCliPrint(" avs_cli_comp\n");
 }
 
 static FPFW_CLI_STATUS scp_avs_read_data_cli(int argc, const char** argv)

@@ -414,23 +414,24 @@ int get_mmap_size_bytes(ddrss_memory_region_t appended_mmap_64b[], size_t* num_b
  */
 void show_map(const ddrss_memory_region_t this_mmap[], int idx, bool show_all)
 {
+    (void)this_mmap;
     if (show_all)
     {
         for (int i = 0; i < idx; i++)
         {
-            printf("[DDR] Region: %d \n", i);
-            printf("[DDR] \tstart: 0x%llX \n", this_mmap[i].start_address);
-            printf("[DDR] \tend:   0x%llX \n", this_mmap[i].end_address);
-            printf("[DDR] \tflags.available_sysmem:     %d \n", (int)this_mmap[i].attr.available_sysmem);
-            printf("[DDR] \tflags.pas_mask:   0x%x \n", (int)this_mmap[i].attr.as_uint32 & 0xf);
+            DEBUG_PRINT("[DDR] Region: %d \n", i);
+            DEBUG_PRINT("[DDR] \tstart: 0x%lX \n", (uintptr_t)this_mmap[i].start_address);
+            DEBUG_PRINT("[DDR] \tend:   0x%lX \n", (uintptr_t)this_mmap[i].end_address);
+            DEBUG_PRINT("[DDR] \tflags.available_sysmem:     %d \n", (int)this_mmap[i].attr.available_sysmem);
+            DEBUG_PRINT("[DDR] \tflags.pas_mask:   0x%x \n", (int)this_mmap[i].attr.as_uint32 & 0xf);
         }
     }
     else
     {
-        printf("[DDR] Region: %d \n", idx);
-        printf("[DDR] \tstart: 0x%llX \n", this_mmap[idx].start_address);
-        printf("[DDR] \tend:   0x%llX \n", this_mmap[idx].end_address);
-        printf("[DDR] \tflags.available_sysmem:     %d \n", (int)this_mmap[idx].attr.available_sysmem);
-        printf("[DDR] \tflags.pas_mask:   0x%x \n", (int)this_mmap[idx].attr.as_uint32 & 0xf);
+        DEBUG_PRINT("[DDR] Region: %d \n", idx);
+        DEBUG_PRINT("[DDR] \tstart: 0x%lX \n", (uintptr_t)this_mmap[idx].start_address);
+        DEBUG_PRINT("[DDR] \tend:   0x%lX \n", (uintptr_t)this_mmap[idx].end_address);
+        DEBUG_PRINT("[DDR] \tflags.available_sysmem:     %d \n", (int)this_mmap[idx].attr.available_sysmem);
+        DEBUG_PRINT("[DDR] \tflags.pas_mask:   0x%x \n", (int)this_mmap[idx].attr.as_uint32 & 0xf);
     }
 }

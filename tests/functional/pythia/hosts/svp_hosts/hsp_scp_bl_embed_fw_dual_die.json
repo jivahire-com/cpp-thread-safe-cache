@@ -1,0 +1,160 @@
+{
+    "id": "DEBUG_HOST",
+    "ip": "127.0.0.1",
+    "connections": {
+        "mb": { 
+            "node_0": { 
+                "is_present": true, 
+                "soc": { 
+                    "is_present": true, 
+                    "primary_die": { 
+                        "is_present": true, 
+                        "scp": { 
+                            "channels": { 
+                                "telnet": { 
+                                    "host": "localhost", 
+                                    "port": 4257, 
+                                    "timeout_seconds": 180.0 
+                                }, 
+                                "default": "telnet" 
+                            } 
+                        },
+                        "mcp": { 
+                            "channels": { 
+                                "telnet": { 
+                                    "host": "localhost", 
+                                    "port": 4256, 
+                                    "timeout_seconds": 120.0 
+                                }, 
+                                "default": "telnet" 
+                            } 
+                        } 
+                    },
+                    "secondary_die": { 
+                        "is_present": true, 
+                        "scp": { 
+                            "channels": { 
+                                "telnet": { 
+                                    "host": "localhost", 
+                                    "port": 4357, 
+                                    "timeout_seconds": 180.0 
+                                }, 
+                                "default": "telnet" 
+                            } 
+                        },
+                        "mcp": { 
+                            "channels": { 
+                                "telnet": { 
+                                    "host": "localhost", 
+                                    "port": 4356, 
+                                    "timeout_seconds": 120.0 
+                                }, 
+                                "default": "telnet" 
+                            } 
+                        } 
+                    }
+                } 
+            } 
+        }
+    },
+    "svp_config": {
+        "exec_path": "${env:REPO_APP_PATH_microsoft.internal.windows.virtualizerruntime}/SLS/windows/tools/bin/vssh.exe",
+        "vdk_dir": "${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}",
+        "vdk_name": "KingsgateSVP",
+        "work_dir": ".svp_simulator",
+        "setup_script": "${env:REPO_APP_PATH_microsoft.internal.windows.virtualizerruntime}/SLS/windows/setup.bat",
+        "params": {
+            "KingsgateSVP.DIE_1.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.Platform_Flash.PlatformFlash.#EXTRA_PROPERTIES#/ImageInfo/EEPROM_Image": "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch/bin/flash/kingsgate.ifwi.svp.debug.custom.dat",
+            "KingsgateSVP.Platform_Flash.PlatformFlash.#SCML_PROPERTIES#EEPROM_Image": "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch/bin/flash/kingsgate.ifwi.svp.debug.custom.dat",
+            "KingsgateSVP.DIE_0.HSSS.HSP.HSP_E21_LT_PSP.#EXTRA_PROPERTIES#/ImageInfo/core0/cpu0/initial_image": "${env:REPO_APP_PATH_kingsgate.firmware.a0rom}/release/bin/sim/rom-sim.elf",
+            "KingsgateSVP.DIE_0.HSSS.HSP.Periphs.HSP_GFC.#SCML_PROPERTIES#FuseVhxFile": "${env:REPO_APP_PATH_kingsgate.firmware.a0rom}//release/test/fuses/kng_fuses_test.vhx",
+            "KingsgateSVP.DIE_0.HSSS.HSP.Periphs.HSP_UART_PHY.#SCML_PROPERTIES#ENABLE_TCP_ON_PORT": "0",
+            "KingsgateSVP.DIE_0.CDEDSS.KMP_EMCPU.KMP_EMCPU_UART.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_0.CDEDSS.KMP_EMCPU.terminal_uart_kmp.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_0.CDEDSS.SDM_EMCPU.SDM_EMCPU_UART.#EXTRA_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_0.CDEDSS.SDM_EMCPU.SDM_EMCPU_UART.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_0.CDEDSS.SDM_EMCPU.terminal_uart_sdm.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_0.CDEDSS.SDM_EMCPU.terminal_uart_sdm.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_0.HSSS.HSP.HSP_E21_LT_PSP.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.IOSS_BB.IOSS_UART.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.IOSS_BB.terminal_ioss_uart.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.RMSS.MCP.terminal_uart_mcp.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_0.RMSS.MSCP_EXP.HSP_vUART.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_0.RMSS.MSCP_EXP.SCP_vUART.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_0.RMSS.MSCP_EXP.MCP_vUART.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_0.RMSS.MSCP_EXP.terminal_vuart_hsp.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_0.RMSS.MSCP_EXP.terminal_vuart_mcp.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_0.RMSS.MSCP_EXP.terminal_vuart_scp.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_0.RMSS.SCP.terminal_uart_scp.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_0.SDMSS.SDM_EMCPU.SDM_EMCPU_UART.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_0.SDMSS.SDM_EMCPU.terminal_uart_sdm.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_0.RPSS0.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.VABRPSS0.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.RPSS0.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image": "${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}/firmware/release/nvme.elf",
+            "KingsgateSVP.DIE_0.RPSS0.PCIe_EPs.NVMe_SSD_EP_BB_x16.Periphs.UART_PHY_EP.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_0.RPSS1.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.VABRPSS1.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.RPSS1.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image": "${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}/firmware/release/nvme.elf",
+            "KingsgateSVP.DIE_0.RPSS1.PCIe_EPs.NVMe_SSD_EP_BB_x16.Periphs.UART_PHY_EP.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_0.RPSS2.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.VABRPSS2.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.RPSS2.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image": "${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}/firmware/release/nvme.elf",
+            "KingsgateSVP.DIE_0.RPSS2.PCIe_EPs.NVMe_SSD_EP_BB_x16.Periphs.UART_PHY_EP.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_0.RPSS3.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.VABRPSS3.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_0.RPSS3.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image": "${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}/firmware/release/nvme.elf",
+            "KingsgateSVP.DIE_0.RPSS3.PCIe_EPs.NVMe_SSD_EP_BB_x16.Periphs.UART_PHY_EP.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_0.HSSS.iBus|HSSS_PeerHspInitiatorSocket.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_0.HSSS.iBus|HSSS_PeerHspInitiatorSocket.BusSlave[0].#EXTRA_PROPERTIES#disabled_behavior": "WARN",
+            "KingsgateSVP.DIE_1.HSSS.HSP.HSP_E21_LT_PSP.#EXTRA_PROPERTIES#/ImageInfo/core0/cpu0/initial_image": "${env:REPO_APP_PATH_kingsgate.firmware.a0rom}/release/bin/sim/rom-sim.elf",
+            "KingsgateSVP.DIE_1.HSSS.HSP.Periphs.HSP_GFC.#SCML_PROPERTIES#FuseVhxFile": "${env:REPO_APP_PATH_kingsgate.firmware.a0rom}//release/test/fuses/kng_fuses_test.vhx",
+            "KingsgateSVP.DIE_1.HSSS.HSP.Periphs.HSP_UART_PHY.#SCML_PROPERTIES#ENABLE_TCP_ON_PORT": "0",
+            "KingsgateSVP.DIE_1.CDEDSS.KMP_EMCPU.KMP_EMCPU_UART.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_1.CDEDSS.KMP_EMCPU.terminal_uart_kmp.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_1.CDEDSS.SDM_EMCPU.SDM_EMCPU_UART.#EXTRA_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_1.CDEDSS.SDM_EMCPU.SDM_EMCPU_UART.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_1.CDEDSS.SDM_EMCPU.terminal_uart_sdm.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_1.CDEDSS.SDM_EMCPU.terminal_uart_sdm.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_1.HSSS.HSP.HSP_E21_LT_PSP.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_1.IOSS_BB.IOSS_UART.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_1.IOSS_BB.terminal_ioss_uart.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_1.RMSS.MCP.terminal_uart_mcp.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_1.RMSS.MSCP_EXP.HSP_vUART.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_1.RMSS.MSCP_EXP.SCP_vUART.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_1.RMSS.MSCP_EXP.MCP_vUART.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_1.RMSS.MSCP_EXP.terminal_vuart_hsp.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_1.RMSS.MSCP_EXP.terminal_vuart_mcp.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_1.RMSS.MSCP_EXP.terminal_vuart_scp.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_1.RMSS.SCP.terminal_uart_scp.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_1.SDMSS.SDM_EMCPU.SDM_EMCPU_UART.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_1.SDMSS.SDM_EMCPU.terminal_uart_sdm.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_1.RPSS0.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_1.VABRPSS0.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_1.RPSS0.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image": "${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}/firmware/release/nvme.elf",
+            "KingsgateSVP.DIE_1.RPSS0.PCIe_EPs.NVMe_SSD_EP_BB_x16.Periphs.UART_PHY_EP.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_1.RPSS1.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_1.VABRPSS1.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_1.RPSS1.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image": "${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}/firmware/release/nvme.elf",
+            "KingsgateSVP.DIE_1.RPSS1.PCIe_EPs.NVMe_SSD_EP_BB_x16.Periphs.UART_PHY_EP.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_1.RPSS2.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_1.VABRPSS2.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_1.RPSS2.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image": "${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}/firmware/release/nvme.elf",
+            "KingsgateSVP.DIE_1.RPSS2.PCIe_EPs.NVMe_SSD_EP_BB_x16.Periphs.UART_PHY_EP.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_1.RPSS3.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_1.VABRPSS3.#EXTRA_PROPERTIES#runtime_disabled": "false",
+            "KingsgateSVP.DIE_1.RPSS3.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image": "${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}/firmware/release/nvme.elf",
+            "KingsgateSVP.DIE_1.RPSS3.PCIe_EPs.NVMe_SSD_EP_BB_x16.Periphs.UART_PHY_EP.#SCML_PROPERTIES#TerminalAutoOpen": "false",
+            "KingsgateSVP.DIE_1.HSSS.iBus|HSSS_PeerHspInitiatorSocket.#EXTRA_PROPERTIES#runtime_disabled": "true",
+            "KingsgateSVP.DIE_1.HSSS.iBus|HSSS_PeerHspInitiatorSocket.BusSlave[0].#EXTRA_PROPERTIES#disabled_behavior": "WARN"
+        },
+        "env_vars": {
+            "ARMLMD_LICENSE_FILE": "40002@wanlic.svceng.com",
+            "SNPSLMD_LICENSE_FILE": "40003@gem-lic-01.svceng.com;40003@wanlic.svceng.com",
+            "SNPS_VPX_START_SIMULATION_TIMEOUT": "1200",
+            "SNPS_VPSESSION_LAUNCH_TIMEOUT_SEC": "1200",
+            "SNPS_VPX_DEFAULT_TIMEOUT": "1200",
+            "PYTHIA_DELAY_AFTER_SVP_LAUNCH": "180"
+        }
+    }
+}

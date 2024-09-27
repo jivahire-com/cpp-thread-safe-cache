@@ -101,7 +101,7 @@ float power_vcpu_calc_peak_current_A(power_runconfig_t* p_runconfig, power_ctrl_
         const power_core_t* core = &loop_config->cores.core[core_idx];
         // determine plimit to use for this core's current calculation (MAX_PLIMIT will be the selected plimit if pstate forced)
         const uint8_t selected_plimit = is_not_forced_pstate ? core->selected_plimit : /* normal case */
-                                            p_knobs->force_pstate;                 /* forced pstate case */
+                                            p_knobs->force_pstate; /* forced pstate case */
         // only want to include valid cores
         if (corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core_idx))
         {

@@ -887,7 +887,7 @@ void power_loops_control_init()
     // general per-core initialization
     for (unsigned int core = 0; core < core_count; ++core)
     {
-        // initialize core base perf and priorities 
+        // initialize core base perf and priorities
         s_ctrl_loop.cores.core[core].current_base_pstate = p_runconfig->derived.pnominal;
         s_ctrl_loop.cores.core[core].current_throt_priority = DEFAULT_PRIORITY;
         s_ctrl_loop.cores.core[core].current_boost_priority = DEFAULT_PRIORITY;
@@ -895,7 +895,7 @@ void power_loops_control_init()
         if (corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core))
         {
             // set core bit only for valid cores
-			corebits_set_bit(&s_ctrl_loop.throttle_priority[DEFAULT_PRIORITY], core);
+            corebits_set_bit(&s_ctrl_loop.throttle_priority[DEFAULT_PRIORITY], core);
             corebits_set_bit(&s_ctrl_loop.boost_priority[DEFAULT_PRIORITY], core);
         }
     }

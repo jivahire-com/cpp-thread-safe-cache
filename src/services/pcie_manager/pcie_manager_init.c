@@ -57,6 +57,12 @@ pcie_manager_context_t* scp_pcie_get_manager_context(uint8_t rpss_idx)
  */
 void scp_pcie_config_service_initialize(uint16_t rpss_to_init)
 {
+    if (!rpss_to_init)
+    {
+        printf("%s: No RPSS, not initializing PCIE config service\n", __func__);
+        return;
+    }
+
     int status = tx_event_flags_create(&event_ptr, "PCIe Config Set Event");
 
     pcie_cfg_mgr_ctx.event_ptr = &event_ptr;

@@ -45,9 +45,6 @@ static bool platform_requires_fuse_distribution();
 static int platform_fuse_copy_to_ram();
 static int read_override_from_spi();
 
-
-
-
 /*-- Declarations (Statics and globals) --*/
 
 static fpfw_icc_base_ctx_t* icc_base_ctx_fuse;
@@ -79,8 +76,6 @@ static int platform_fuse_copy_to_ram()
     return fuse_dma_copy_to_ram_blocking();
 }
 
-
-
 static int read_override_from_spi()
 {
     size_t recv_msg_size_bytes = 0;
@@ -90,7 +85,6 @@ static int read_override_from_spi()
     fpfw_status_t icc_status =
         fpfw_icc_base_send_recv_sync(icc_base_ctx_fuse, &fuse_fw_load, sizeof(kng_hsp_fuse_mailbox_msg), &recv_msg_size_bytes);
 
-      
     return icc_status;
 }
 int platform_read_for_fuse(const uintptr_t fuse_store_addr, const uint64_t fuse_bit_offset, const uint32_t fuse_bit_size)
@@ -105,7 +99,7 @@ int platform_read_for_fuse(const uintptr_t fuse_store_addr, const uint64_t fuse_
     // number of valid bytes to copy from fuse_data
     size_t fuse_size = ((fuse_bit_size + (BITS_PER_BYTE - 1)) / BITS_PER_BYTE);
     memcpy((void*)fuse_store_addr, (void*)&fuse_data, fuse_size);
-    
+
     // TODO: check if the incoming request is before overrides have been applied.
     // ADO 948518
     // status = FPFW_INIT_STATUS_SUCCESS;

@@ -12,8 +12,8 @@
 #include <pcie_rp_common.h>
 #include <pcie_rp_dbi.h>
 #include <pcie_rp_sii.h>
-#include <pcie_ss.h>
 #include <pcie_ss_common.h>
+#include <pciess.h>
 #include <rc4sx16_pf0_type1_hdr_regs.h>
 #include <silibs_status.h>
 #include <stdint.h>
@@ -36,7 +36,7 @@ static void get_rp_link_state(pcie_sync_request_t* r)
         r->status = SILIBS_E_PARAM;
         return;
     }
-    pcie_ss_entity_t* ss = pcie_ss_get_entity(r->rpss_index);
+    pcie_ss_entity_t* ss = pciess_get_entity(r->rpss_index);
     pcie_link_state_t** link_state = (pcie_link_state_t**)(r->p_requested_data);
     pcie_rp_dbi_check_link_state(&(ss->rps[r->rp_index]), false);
     *link_state = &(ss->rps[r->rp_index].current_state);
@@ -50,7 +50,7 @@ static void get_rp_ltssm_state(pcie_sync_request_t* r)
         r->status = SILIBS_E_PARAM;
         return;
     }
-    pcie_ss_entity_t* ss = pcie_ss_get_entity(r->rpss_index);
+    pcie_ss_entity_t* ss = pciess_get_entity(r->rpss_index);
     PCIE_LTSSM_STATE* ltssm_val = (PCIE_LTSSM_STATE*)(r->p_requested_data);
     *(ltssm_val) = (PCIE_LTSSM_STATE)pcie_rp_sii_get_link_state(&(ss->rps[r->rp_index]));
     r->status = SILIBS_SUCCESS;
@@ -63,7 +63,7 @@ static void get_rp_dbi_cfg_hdr(pcie_sync_request_t* r)
         r->status = SILIBS_E_PARAM;
         return;
     }
-    pcie_ss_entity_t* ss = pcie_ss_get_entity(r->rpss_index);
+    pcie_ss_entity_t* ss = pciess_get_entity(r->rpss_index);
     pcie_rp_entity_t* rp = &(ss->rps[r->rp_index]);
     rc4sx16_pf0_type1_hdr_reg** t1 = (rc4sx16_pf0_type1_hdr_reg**)(r->p_requested_data);
     *t1 = (rc4sx16_pf0_type1_hdr_reg*)(rp->bases.dbi_base_addr + rp->offsets.type1_hdr);

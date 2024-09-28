@@ -28,9 +28,9 @@ add_subdirectory(${TARGET_DIR_SILIBS_COMMON}/idsw ${LIB_OUTS_DIR}/idsw)
 add_subdirectory(${TARGET_DIR_SILIBS_COMMON}/idsw_kng ${LIB_OUTS_DIR}/idsw_kng)
 
 # Add the libraries where we either implement our own source or our own cmakes
-add_subdirectory(kng_silibs_platform)
-add_subdirectory(spi_bridge)
-
+add_subdirectory(kng_silibs_platform ${LIB_OUTS_DIR}/kng_silibs_platform)
+add_subdirectory(spi_bridge ${LIB_OUTS_DIR}/spi_bridge)
+add_subdirectory(rng ${LIB_OUTS_DIR}/rng)
 
 # Optimize for DDRSS silibs image size
 # DDRSS_PHY_TRAIN_FW_BUILTIN_ENABLE

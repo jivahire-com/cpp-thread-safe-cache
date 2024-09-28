@@ -57,6 +57,7 @@ add_library(${TARGET}
         warm_start_cli_init.c
         gpio_init.c
         i3c_controller_init.c
+        pex_rng_init.c
 )
 
 target_link_libraries(
@@ -111,6 +112,7 @@ target_link_libraries(
         ms::lib::ddr::cli
         ms::lib::tower
         ms::lib::build_info_cli
+        ms::lib::pex_rng
         ms::service::accel_intr_client
         ms::service::accel_intr_service
         ms::service::ap_core
@@ -135,6 +137,7 @@ target_link_libraries(
         silibs::kng_silibs_platform
         silibs::sensor_ram_bridge
         silibs::spi_bridge
+        silibs::crypto::rng
         ms::lib::power::cli
         ms::lib::register_headers
         ms::service::sds_service

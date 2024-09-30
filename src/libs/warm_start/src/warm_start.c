@@ -29,7 +29,7 @@
 ws_data_list_t* p_ws_list = NULL;
 uint32_t ws_size;
 static TX_MUTEX ws_data_mutex = {};
-unsigned int tx_status = TX_SUCCESS; // Refer tx_api.h for addition api return values 
+unsigned int tx_status = TX_SUCCESS; // Refer tx_api.h for addition api return values
 
 /*------------- Functions ----------------*/
 

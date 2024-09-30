@@ -59,37 +59,6 @@ void ap_core_ppu_init(ap_core_service_context_t* p_context)
     }
 }
 
-static int32_t ppu_v1_set_power_mode_with_timeout(uintptr_t ppu_v1_base_addr, PPU_V1_MODE ppu_mode, PPU_V1_OPMODE op_policy, uint32_t timeout_ms)
-{
-    int32_t status = KNG_SUCCESS;
-
-    if (timeout_ms == 0)
-    {
-        ppu_v1_set_power_mode(ppu_v1_base_addr, ppu_mode, op_policy);
-    }
-    else
-    {
-        ppu_v1_request_power_mode(ppu_v1_base_addr, ppu_mode, op_policy);
-
-        uint32_t elapsed_time = 0;
-        uint32_t interval = 3;
-
-        while (ppu_v1_get_power_mode(ppu_v1_base_addr) != ppu_mode)
-        {
-            if (elapsed_time >= timeout_ms)
-            {
-                status = KNG_E_TIMEOUT;
-                break;
-            }
-
-            sleep_ms(interval);
-            elapsed_time += interval;
-        }
-    }
-
-    return status;
-}
-
 // function to set the power state of a single cluster
 static void cluster_set_power_state(ap_core_service_context_t* p_context, unsigned cluster_idx, bool power_state_on, uint32_t timeout_ms)
 {

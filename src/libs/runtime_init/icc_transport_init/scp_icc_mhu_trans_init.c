@@ -52,8 +52,8 @@ static icc_mhu_configuration_t icc_mhu_configuration[] = {
                         .mbx_flag_pos = 0,
                     },
             },
-        .mailbox_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(TFA_AP_2_SCP_RECEIVE_BASE),
-        .mailbox_size = TFA_AP_2_SCP_RECEIVE_SIZE,
+        .mailbox_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_TFA_AP_2_SCP_RECEIVE_BASE),
+        .mailbox_size = D0_ARSM_TFA_AP_2_SCP_RECEIVE_SIZE,
     },
     // AP TO SCP S Receive Message Configuration
     {
@@ -77,8 +77,8 @@ static icc_mhu_configuration_t icc_mhu_configuration[] = {
                         .mbx_flag_pos = 0,
                     },
             },
-        .mailbox_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(TFA_AP_2_SCP_SEND_BASE),
-        .mailbox_size = SCP_2_TFA_AP_RECEIVE_SIZE,
+        .mailbox_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_TFA_AP_2_SCP_SEND_BASE),
+        .mailbox_size = D0_ARSM_TFA_AP_2_SCP_SEND_SIZE,
     },
 };
 
@@ -105,8 +105,8 @@ static icc_mhu_configuration_t die1_icc_mhu_configuration[] = {
                         .mbx_flag_pos = 0,
                     },
             },
-        .mailbox_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(DIE1_TFA_AP_2_SCP_RECEIVE_BASE),
-        .mailbox_size = DIE1_TFA_AP_2_SCP_RECEIVE_SIZE,
+        .mailbox_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_TFA_AP_2_SCP_RECEIVE_BASE),
+        .mailbox_size = D1_ARSM_TFA_AP_2_SCP_RECEIVE_SIZE,
     },
     // AP TO SCP S Receive Message Configuration
     {
@@ -130,8 +130,8 @@ static icc_mhu_configuration_t die1_icc_mhu_configuration[] = {
                         .mbx_flag_pos = 0,
                     },
             },
-        .mailbox_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(DIE1_TFA_AP_2_SCP_SEND_BASE),
-        .mailbox_size = DIE1_SCP_2_TFA_AP_RECEIVE_SIZE,
+        .mailbox_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_TFA_AP_2_SCP_SEND_BASE),
+        .mailbox_size = D1_ARSM_TFA_AP_2_SCP_SEND_SIZE,
     },
 };
 

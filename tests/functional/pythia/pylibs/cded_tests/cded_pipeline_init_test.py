@@ -9,12 +9,10 @@ import sys, os
 from pathlib import Path
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs'))
-
 from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
 
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
-
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
 # Class name must match file name for Robot Framework Library usage
@@ -54,7 +52,7 @@ class cded_pipeline_init_test(EchoFallsBaseTest):
         self.dut.setup()
 
         if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
-            KngPythiaTestSetup.reset_fpga_load_prodfw(self)
+            KngPythiaTestSetup.reset_fpga_sideload_testfw(self.dut, self.log)
             time.sleep(30)
             exp_num_lines=1400
         
@@ -71,7 +69,7 @@ class cded_pipeline_init_test(EchoFallsBaseTest):
             return False
 
         self.log.info("Reading CDED UART for required logs . . .")
-        cded_lines = ' '.join(KngPythiaTestIF.read_from_uart(self=self, connection=self.dut.mb.node_0.soc.primary_die.sdm_cded.channel_manager, num_lines=exp_num_lines))
+        cded_lines = ' '.join(KngPythiaTestIF.read_from_uart(self, connection=self.dut.mb.node_0.soc.primary_die.sdm_cded.channel_manager, num_lines=exp_num_lines))
 
         self.dut.mb.node_0.soc.primary_die.sdm_cded.channel_manager.get_current_channel().close()
 

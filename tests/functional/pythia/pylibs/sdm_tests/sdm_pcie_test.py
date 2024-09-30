@@ -9,12 +9,10 @@ import sys, os
 from pathlib import Path
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs'))
-
 from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
 
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
-
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
 class sdm_pcie_test(EchoFallsBaseTest):
@@ -62,36 +60,35 @@ class sdm_pcie_test(EchoFallsBaseTest):
             4. Teardown Test. 
         """
         self.log.info("Running SDM PCIE Test. . .")
+        
+        apns_connection = self.dut.mb.node_0.soc.primary_die.apns.channel_manager
+        assert apns_connection is not None
+
         self.dut.setup()
 
-        core_com_channel=self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel()
-
         if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
-            KngPythiaTestSetup.reset_fpga_load_prodfw(self)
+            KngPythiaTestSetup.reset_fpga_sideload_testfw(self.dut, self.log)
         
         elif (self.dut.get_dut_type() == DeviceType.SVP):
-            core_com_channel.open()
-            core_com_channel.is_open()
+            apns_connection.get_current_channel().open()
 
         else:
             self.log.error("Unsupported DUT type")
             self.dut.teardown()
             return False
 
-        self.log.info("Submitting ap_bm pcie_test command . . .") 
-        command_response=core_com_channel.execute_command(command="ap_bm pcie_test", command_args= "")
-        
-        if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
-            test_result = KngPythiaTestIF.parse_log(self=self, log_lines=command_response[1], pass_logs=pass_logs, fail_logs=fail_logs)
-
-        elif (self.dut.get_dut_type() == DeviceType.SVP):
-            command_response=KngPythiaTestIF.read_from_uart(self=self, connection=self.dut.mb.node_0.soc.primary_die.apns.channel_manager, num_lines=35)
-            test_result=KngPythiaTestIF.parse_log(self=self, log_lines=command_response, pass_logs=pass_logs, fail_logs=fail_logs)
-        
-        else:
-            self.log.error("Unsupported DUT type")
+        # If unable to reach apns_connection, then FPGA system has a conflcit booking or SVP failed to launch. So return fail
+        if not apns_connection.get_current_channel().is_open():
             self.dut.teardown()
             return False
+        
+        command="ap_bm pcie_test"
+        self.log.info(f"Submitting {command} command . . .")
+        apns_connection.get_current_channel().write_line(write_string=command)
 
+        command_response=apns_connection.get_current_channel().read_until(key="PCIe Test DONE", timeout_seconds=30)
+        test_result=KngPythiaTestIF.parse_log(pythia_log=self.log, uart_log=command_response, uart_pass_logs=pass_logs, uart_fail_logs=fail_logs)        
+            
         self.dut.teardown()
         return test_result
+

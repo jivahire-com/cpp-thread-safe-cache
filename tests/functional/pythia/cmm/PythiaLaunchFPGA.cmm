@@ -33,29 +33,18 @@
 // --------------------------------------------------------------------
 // Setup Script Execution Options
 // --------------------------------------------------------------------
-// Boot from flash: '1' = Boot from flash (No HSP init/SCP download in code)
-&BOOT_FROM_FLASH=1.
+// Sideload scp FW: '1' = hijack SCP as soon as reset is released and sideload test firmware
+&SIDELOAD_SCP_FW = 0.
 
-// Setting to initialize AP Cores: '1' = Init AP Cores
-&INIT_AP_CORES= 1.
+// Setting to sideload Accelerator (SDM/CDED) firmware: '1' = Sideload enabled.
+// This is only applicable if SIDELOAD_SCP_FW is set to 1.
+&SIDELOAD_ACCEL_PROD_FW = 1.
 
-// Setting to initialize SDM Cores: '1' = Init SDM and load with ProdFW
-&SDM_LOAD_PROD_FW= 1.
-
-// Setting to initialize CDED Cores: '1' = Init CDED and load with ProdFW
-&CDED_LOAD_PROD_FW= 1.
+// Setting to sideload AP firmware: '1' = Sideload enabled
+&SIDELOAD_AP_TEST_FIRMWARE = 1.
 
 // --------------------------------------------------------------------
-// Launch SCPInitFPGA
+// Launch HSPInitFPGA
 // --------------------------------------------------------------------
-
-IF (&BOOT_FROM_FLASH==1.)
-(
-    PRINT "Run this on HSP Trace32 . . ."
-    CD.DO &RUN_DIR/HSPInitFPGA.cmm
-)
-ELSE
-(
-    PRINT "Run this on SCP Trace32 . . ."
-    CD.DO &RUN_DIR/SCPInitFPGA.cmm
-)
+PRINT "Run this on HSP Trace32 . . ."
+CD.DO &RUN_DIR/HSPInitFPGA.cmm

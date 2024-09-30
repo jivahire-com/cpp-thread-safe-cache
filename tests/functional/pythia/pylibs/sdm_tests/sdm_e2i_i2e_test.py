@@ -9,13 +9,11 @@ import sys, os
 from pathlib import Path
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs'))
-
 from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
 
-from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
-
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
+from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
 class sdm_e2i_i2e_test(EchoFallsBaseTest):
 
@@ -62,36 +60,37 @@ class sdm_e2i_i2e_test(EchoFallsBaseTest):
             4. Teardown Test. 
         """
         self.log.info("Running sdm e2i_i2e Test. . .")
+        
+        apns_connection = self.dut.mb.node_0.soc.primary_die.apns.channel_manager
+        assert apns_connection is not None
+
         self.dut.setup()
 
-        core_com_channel=self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel()
-
         if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
-            KngPythiaTestSetup.reset_fpga_load_prodfw(self)
+            KngPythiaTestSetup.reset_fpga_sideload_testfw(self.dut, self.log)
         
         elif (self.dut.get_dut_type() == DeviceType.SVP):
-            core_com_channel.open()
-            core_com_channel.is_open()
+            apns_connection.get_current_channel().open()
+            if not apns_connection.get_current_channel().is_open():
+                self.dut.teardown()
+                return False
 
         else:
             self.log.error("Unsupported DUT type")
             self.dut.teardown()
             return False
-        
-        self.log.info("Submitting ap_bm user_def_loopback_test 0 0 command . . .")  
-        command_response=core_com_channel.execute_command(command="ap_bm user_def_loopback_test 0 0", command_args= "")
- 
-        if (self.dut.get_dut_type() == DeviceType.BIGFPGA): 
-            test_result = KngPythiaTestIF.parse_log(self=self, log_lines=command_response[1], pass_logs=pass_logs, fail_logs=fail_logs) 
- 
-        elif (self.dut.get_dut_type() == DeviceType.SVP): 
-            command_response=KngPythiaTestIF.read_from_uart(self=self, connection=self.dut.mb.node_0.soc.primary_die.apns.channel_manager, num_lines=35) 
-            test_result=KngPythiaTestIF.parse_log(self=self, log_lines=command_response, pass_logs=pass_logs, fail_logs=fail_logs) 
-         
-        else: 
-            self.log.error("Unsupported DUT type") 
-            self.dut.teardown() 
+
+        # If unable to reach apns_connection, then FPGA system has a conflcit booking or SVP failed to launch. So return fail
+        if not apns_connection.get_current_channel().is_open():
+            self.dut.teardown()
             return False
 
-        self.dut.teardown() 
+        command="ap_bm user_def_loopback_test 0 0"
+        self.log.info(f"Submitting {command} command . . .")
+        apns_connection.get_current_channel().write_line(write_string=command)
+
+        command_response=apns_connection.get_current_channel().read_until(key="User Defined Loopback Test End!", timeout_seconds=30)
+        test_result=KngPythiaTestIF.parse_log(pythia_log=self.log, uart_log=command_response, uart_pass_logs=pass_logs, uart_fail_logs=fail_logs)        
+            
+        self.dut.teardown()
         return test_result

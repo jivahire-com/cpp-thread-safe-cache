@@ -97,7 +97,7 @@ class accel_interrupt_test(EchoFallsBaseTest):
 
         # Open all needed connections
         if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
-            KngPythiaTestSetup.reset_fpga_load_prodfw(self)
+            KngPythiaTestSetup.reset_fpga_sideload_testfw(self.dut, self.log)
 
         elif (self.dut.get_dut_type() == DeviceType.SVP):
             self.channels["ap"].open()

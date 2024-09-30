@@ -9,12 +9,10 @@ import sys, os
 from pathlib import Path
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs'))
-
 from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
 
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
-
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
 # Class name must match file name for Robot Framework Library usage
@@ -65,49 +63,43 @@ class mscp_heart_beat(EchoFallsBaseTest):
         self.log.info("Running MSCP heartBeat test . . .")
         self.dut.setup()
 
-        if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
-            KngPythiaTestSetup.reset_fpga_load_prodfw(self)
-            time.sleep(30)
-        
-        elif (self.dut.get_dut_type() == DeviceType.SVP):
-            # Ensure the host config file used alongside this test has these connections defined.
-            assert self.dut.mb.node_0.soc.primary_die.scp.channel_manager is not None
-            self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel().open()
-            assert self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel().is_open()
+        scp_connection = self.dut.mb.node_0.soc.primary_die.scp.channel_manager
+        mcp_connection = self.dut.mb.node_0.soc.primary_die.mcp.channel_manager
 
-            assert self.dut.mb.node_0.soc.primary_die.mcp.channel_manager is not None
-            self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel().open()
-            assert self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel().is_open()
+        # Ensure the host config file used alongside this test has these connections defined.
+        assert scp_connection is not None
+        assert mcp_connection is not None
 
-        else:
-            self.log.error("Unsupported DUT type")
-            self.dut.teardown()
-            return False
+        if (self.dut.get_dut_type() == DeviceType.SVP):
+            scp_connection.get_current_channel().open()
+            assert scp_connection.get_current_channel().is_open()
+
+            mcp_connection.get_current_channel().open()
+            assert mcp_connection.get_current_channel().is_open()
 
 
         self.log.info("Reading SCP UART for HeartBeat . . .")
         try:
-            connection = self.dut.mb.node_0.soc.primary_die.scp.channel_manager
-            connection.get_current_channel().read_until(key="HeartBeat", timeout_seconds=900)
+            scp_connection.get_current_channel().read_until(key="HeartBeat", timeout_seconds=900)
         except Exception as e:
             self.log.error(f"Error reading SCP UART: {e}")
-            self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel().close()
+            scp_connection.get_current_channel().close()
             self.test_notify(step="HeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             return False
 
         self.log.info("Reading MCP UART for HeartBeat . . .")
         try:
-            connection = self.dut.mb.node_0.soc.primary_die.mcp.channel_manager
-            connection.get_current_channel().read_until(key="HeartBeat", timeout_seconds=900)
+            mcp_connection.get_current_channel().read_until(key="HeartBeat", timeout_seconds=900)
         except Exception as e:
             self.log.error(f"Error reading MCP UART: {e}")
-            self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel().close()
+            mcp_connection.get_current_channel().close()
             self.test_notify(step="HeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             return False
 
-        self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel().close()
+        scp_connection.get_current_channel().close()
+        mcp_connection.get_current_channel().close()
         self.test_notify(step="HeartBeat", msg="Test Done", _is_error=False)
         self.dut.teardown()
 

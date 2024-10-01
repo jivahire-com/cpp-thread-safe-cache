@@ -10,6 +10,7 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <fpfw_icc_base.h> // for FPFW_ICC_BASE
 #include <inttypes.h>     // for uint32_t
 #include <stdint.h>       // for uintptr_t
 
@@ -43,3 +44,10 @@
  * @return int32_t KNG_SUCCESS if attributes are valid, else KNG_E_INVALIDARG or KNG_E_NOTIMPL
  */
 int32_t variable_services_check_attribute(uint32_t attributes);
+
+/**
+ * @brief Get the icc base ctx object
+ * 
+ * @return fpfw_icc_base_ctx_t* if initialized else NULL
+ */
+fpfw_icc_base_ctx_t* get_icc_base_ctx(void);

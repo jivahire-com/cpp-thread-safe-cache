@@ -30,9 +30,7 @@
 
 /*------------- Functions ----------------*/
 
-void variable_service_sync_set_variable(fpfw_icc_base_ctx_t* hsp_icc_ctx,
-                                        var_service_shared_mem_t* mem_ctx,
-                                        var_service_req_params_t* req_params)
+void variable_service_sync_set_variable(var_service_shared_mem_t* mem_ctx, var_service_req_params_t* req_params)
 {
     if (!system_info_is_hsp_present())
     {
@@ -50,6 +48,9 @@ void variable_service_sync_set_variable(fpfw_icc_base_ctx_t* hsp_icc_ctx,
     BUG_ASSERT(req_params->variable_name_size != 0);
     BUG_ASSERT(req_params->data != NULL);
     BUG_ASSERT(req_params->data_size != 0);
+
+    //! get the icc base context object
+    fpfw_icc_base_ctx_t* hsp_icc_ctx = get_icc_base_ctx();
     BUG_ASSERT(hsp_icc_ctx != NULL);
 
     //! populate the mbox set variable structure
@@ -139,7 +140,7 @@ void variable_service_sync_set_variable(fpfw_icc_base_ctx_t* hsp_icc_ctx,
     DEBUG_PRINT("Response for variable set received, status [%" PRId32 "]\n", icc_status);
     DEBUG_PRINT("Response message size [%d] bytes\n", recv_msg_size_bytes);
     DEBUG_PRINT("HSP Mbox Rsp Mesg: Cmd[0x%x] Status[0x%" PRIx32 "] Status_ex[0x%" PRIx32 "]\n",
-                msg.header.cmd,
+                msg.rsp.header.cmd,
                 msg.as_uint32[1],
                 msg.as_uint32[2]);
     for (size_t i = 0; i < sizeof(msg.as_uint32) / sizeof(msg.as_uint32[0]); i++)
@@ -150,7 +151,7 @@ void variable_service_sync_set_variable(fpfw_icc_base_ctx_t* hsp_icc_ctx,
     //! Verify sync return status & response message
     BUG_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
     BUG_ASSERT(recv_msg_size_bytes > 0);
-    BUG_ASSERT(msg.header.cmd == HSP_MAILBOX_CMD_SET_VARIABLE_RSP);
+    BUG_ASSERT(msg.rsp.header.cmd == HSP_MAILBOX_CMD_SET_VARIABLE_RSP);
     BUG_ASSERT(msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
 
     //! The response data at this point is written over to the shared memory region supplied by the caller
@@ -162,9 +163,7 @@ void variable_service_sync_set_variable(fpfw_icc_base_ctx_t* hsp_icc_ctx,
     DEBUG_PRINT("----End of Sync Set Variable----\n");
 }
 
-void variable_service_sync_get_variable(fpfw_icc_base_ctx_t* hsp_icc_ctx,
-                                        var_service_shared_mem_t* mem_ctx,
-                                        var_service_req_params_t* req_params)
+void variable_service_sync_get_variable(var_service_shared_mem_t* mem_ctx, var_service_req_params_t* req_params)
 {
     if (!system_info_is_hsp_present())
     {
@@ -182,6 +181,9 @@ void variable_service_sync_get_variable(fpfw_icc_base_ctx_t* hsp_icc_ctx,
     BUG_ASSERT(req_params->variable_name_size != 0);
     BUG_ASSERT(req_params->data != NULL);
     BUG_ASSERT(req_params->data_size != 0);
+
+    //! get the icc base context object
+    fpfw_icc_base_ctx_t* hsp_icc_ctx = get_icc_base_ctx();
     BUG_ASSERT(hsp_icc_ctx != NULL);
 
     //! populate the mbox get variable structure
@@ -262,7 +264,7 @@ void variable_service_sync_get_variable(fpfw_icc_base_ctx_t* hsp_icc_ctx,
     DEBUG_PRINT("Response for variable get received, status [%" PRId32 "]\n", icc_status);
     DEBUG_PRINT("Response message size [%d] bytes\n", recv_msg_size_bytes);
     DEBUG_PRINT("HSP Mbox Rsp Mesg: Cmd[0x%x] Status[0x%" PRIx32 "] Status_ex[0x%" PRIx32 "]\n",
-                msg.header.cmd,
+                msg.rsp.header.cmd,
                 msg.as_uint32[1],
                 msg.as_uint32[2]);
     for (size_t i = 0; i < sizeof(msg.as_uint32) / sizeof(msg.as_uint32[0]); i++)
@@ -273,7 +275,7 @@ void variable_service_sync_get_variable(fpfw_icc_base_ctx_t* hsp_icc_ctx,
     //! Verify sync return status & response message
     BUG_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
     BUG_ASSERT(recv_msg_size_bytes > 0);
-    BUG_ASSERT(msg.header.cmd == HSP_MAILBOX_CMD_GET_VARIABLE_RSP);
+    BUG_ASSERT(msg.rsp.header.cmd == HSP_MAILBOX_CMD_GET_VARIABLE_RSP);
     BUG_ASSERT(msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
 
     //! The response data at this point is written over to the shared memory region supplied by the caller
@@ -284,6 +286,7 @@ void variable_service_sync_get_variable(fpfw_icc_base_ctx_t* hsp_icc_ctx,
     }
     DEBUG_PRINT("----End of Sync Get Variable----\n");
 
-    //! Copy data over from shared memory into the data buffer supplied in request params
+    //! Reset data buffer & opy data over from shared memory into the data buffer supplied in request params
+    memset(req_params->data, 0, req_params->data_size);
     memcpy((void*)req_params->data, (void*)mem_ctx->payload_base + data_offset, get_var.data_size);
 }

@@ -22,6 +22,8 @@ target_link_libraries(
 target_include_directories(${TARGET}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 lint_target(${TARGET})

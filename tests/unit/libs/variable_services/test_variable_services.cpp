@@ -15,6 +15,7 @@ extern "C" {
 #include <hsp_firmware_headers.h> // for kng_hsp_mailbox_msg, HSP_MAILBOX_RSP...
 #include <stdint.h>               // for int32_t, uint32_t
 #include <variable_services.h>    // for var_service_shared_mem_t, var_serv...
+#include <variable_services_helper.h> // for variable_services_sync_get_vari...
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define TEST_GUID {0x3363AE8A, 0xDAB5, 0x4DCA, {0xBF, 0x32, 0xDD, 0x0E, 0x65, 0x89, 0x95, 0xC5}}
@@ -30,6 +31,7 @@ static var_service_shared_mem_t shared_mem = {
     .payload_base = (uintptr_t)rmss_shared_ram_region,
     .max_payload_size = sizeof(rmss_shared_ram_region),
 };
+static uint32_t dummy_icc_base_ctx = 0;
 
 /*------------- Mock Functions ----------------*/
 fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t *icc_ctx, void *payload_buffer, size_t buffer_size, size_t *output_recv_bytes)
@@ -57,6 +59,12 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t *icc_ctx, 
     return FPFW_ICC_BASE_STATUS_SUCCESS;
 }
 
+fpfw_icc_base_ctx_t* __wrap_get_icc_base_ctx(void)
+{
+    //! dummy icc base ctx for test
+    return (fpfw_icc_base_ctx_t*)&dummy_icc_base_ctx;
+}
+
 bool __wrap_system_info_is_hsp_present()
 {
     return true;
@@ -74,10 +82,6 @@ static int teardown(void** pContext)
 /*------------- Test Cases ----------------*/
 TEST_FUNCTION(test_variable_services_sync_get_variable, nullptr, teardown)
 {
-    //! dummy icc base ctx for test
-    uint32_t dummy_icc_base_ctx = 0;
-    fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_base_ctx;
-
     //! client buffer to store the response data
     uint8_t client_buffer[5] = {0};
 
@@ -91,7 +95,7 @@ TEST_FUNCTION(test_variable_services_sync_get_variable, nullptr, teardown)
     };
 
     //! Invoke the FUT
-    variable_service_sync_get_variable(icc_ctx, &shared_mem, &get_var_req);
+    variable_service_sync_get_variable(&shared_mem, &get_var_req);
 
     //! verify the client buffer is updated with the test response data
     assert_memory_equal(client_buffer, test_rsp_data, sizeof(client_buffer));
@@ -99,10 +103,6 @@ TEST_FUNCTION(test_variable_services_sync_get_variable, nullptr, teardown)
 
 TEST_FUNCTION(test_variable_services_sync_set_variable, nullptr, teardown)
 {
-    //! dummy icc base ctx for test
-    uint32_t dummy_icc_base_ctx = 0;
-    fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_base_ctx;
-
     //! client's data to be written to the shared memory region
     uint8_t client_data[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
 
@@ -117,7 +117,7 @@ TEST_FUNCTION(test_variable_services_sync_set_variable, nullptr, teardown)
     };
 
     //! Invoke the FUT
-    variable_service_sync_set_variable(icc_ctx, &shared_mem, &set_var_req);
+    variable_service_sync_set_variable(&shared_mem, &set_var_req);
 
     //! verify the shared memory is updated with the client data
     uint32_t shared_mem_data_offset = sizeof(struct hsp_mbox_set_variable) + sizeof("TestSetVar");

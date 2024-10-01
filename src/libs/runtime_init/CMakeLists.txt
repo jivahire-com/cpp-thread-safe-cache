@@ -26,38 +26,39 @@ add_library(${TARGET}
         debug_init.c
         dfwk_init.c
         dma_init.c
+        ddr_manager_init.c
         etc_etd_init.c
         exception_handler_init.c
         fuse_init.c
+        gpio_init.c
         gtimer_init.c
         hw_version_scp_init.c
         icc_hspmbx_init.c
         icc_d2dmbx_init.c
         icc_cli_init.c
         icc_transport_init/scp_icc_mhu_trans_init.c
+        i3c_controller_init.c
         mesh_init.c
         mesh_scp_cli_init.c
         ioss_init.c
         nvic_init.c
         pcie_init.c
-        textio_init.c
-        vab_init.c
-        ddr_manager_init.c
+        pex_rng_init.c
         power_init.c
         scmi_init.c
+        sds_init.c
         scp_mpu_init.c
         sensor_fifo_init.c
         system_info_init.c
-        tower_init.c
         startup_shutdown_init.c
         scmi_cli_init.c
+        tower_init.c
+        textio_init.c
         usb_init.c
-        sds_init.c
+        vab_init.c
+        variable_services_init.c
         warm_start_init.c
-        warm_start_cli_init.c
-        gpio_init.c
-        i3c_controller_init.c
-        pex_rng_init.c
+        warm_start_cli_init.c    
 )
 
 target_link_libraries(
@@ -109,6 +110,7 @@ target_link_libraries(
         ms::lib::stdio_textio
         ms::lib::system_info
         ms::lib::threadx
+        ms::lib::variable_services
         ms::lib::ddr::cli
         ms::lib::tower
         ms::lib::build_info_cli
@@ -200,6 +202,7 @@ add_library(${TARGET}
         etc_etd_init.c
         etr_init.c
         exception_handler_init.c
+        gpio_init.c
         hw_version_mcp_init.c
         icc_cli_init.c
         icc_hspmbx_init.c
@@ -208,7 +211,6 @@ add_library(${TARGET}
         nvic_init.c
         system_info_init.c
         textio_init.c
-        gpio_init.c
 )
 
 target_link_libraries(

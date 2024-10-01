@@ -66,6 +66,14 @@ typedef struct _variable_service_req_params
 /*--------- Function Prototypes ----------*/
 
 /**
+ * @brief API to initialized variable services in runtime init
+ * Store icc base ctx used for subsequent variable service calls
+ * 
+ * @param icc_ctx Supplied in runtime init, hsp mbx icc base ctx
+ */
+void variable_service_init(fpfw_icc_base_ctx_t* icc_ctx);
+
+/**
  * @brief  Sync API to read a variable from HSP over Hsp Mbox. The response can be 
  * fetched from the shared memory region provided by the caller.
  * 
@@ -74,7 +82,7 @@ typedef struct _variable_service_req_params
  * @param mem_ctx  Shared memory context for the variable
  * @param req_params Request parameters for the variable
  */
-void variable_service_sync_get_variable(fpfw_icc_base_ctx_t* hsp_icc_ctx, var_service_shared_mem_t *mem_ctx, var_service_req_params_t *req_params);
+void variable_service_sync_get_variable(var_service_shared_mem_t *mem_ctx, var_service_req_params_t *req_params);
 
 /**
  * @brief  Sync API to write a variable & send to HSP over Hsp Mbox.
@@ -84,5 +92,4 @@ void variable_service_sync_get_variable(fpfw_icc_base_ctx_t* hsp_icc_ctx, var_se
  * @param mem_ctx  Shared memory context for the variable
  * @param req_params  Request parameters for the variable
  */
-void variable_service_sync_set_variable(fpfw_icc_base_ctx_t* hsp_icc_ctx, var_service_shared_mem_t *mem_ctx, var_service_req_params_t *req_params);
-
+void variable_service_sync_set_variable(var_service_shared_mem_t *mem_ctx, var_service_req_params_t *req_params);

@@ -25,6 +25,9 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+//! Since variable services is always over hsp mbox, we can use a static variable to store the ICC context
+//! instead of taking in ICC base crx as a param from user
+static fpfw_icc_base_ctx_t* hsp_icc_ctx = NULL;
 
 /*------------- Functions ----------------*/
 int32_t variable_services_check_attribute(uint32_t attributes)
@@ -78,4 +81,17 @@ int32_t variable_services_check_attribute(uint32_t attributes)
     }
 
     return KNG_SUCCESS;
+}
+
+fpfw_icc_base_ctx_t* get_icc_base_ctx(void)
+{
+    return hsp_icc_ctx;
+}
+
+void variable_service_init(fpfw_icc_base_ctx_t* icc_ctx)
+{
+    //! Initialize the ICC context
+    BUG_ASSERT(icc_ctx != NULL);
+    hsp_icc_ctx = icc_ctx;
+    //! What else needs to be done here?
 }

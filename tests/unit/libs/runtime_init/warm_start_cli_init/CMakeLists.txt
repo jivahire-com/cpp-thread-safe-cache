@@ -24,6 +24,8 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         ms::lib::warm_start::cli
         ms::cmocka::testrunner
+        ms::service::scp_startup_shutdown
+        fwlib.dfwk
 )
 
 lint_target(${TARGET})

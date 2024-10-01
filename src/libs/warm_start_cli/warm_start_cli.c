@@ -8,11 +8,14 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkClient.h> // for DfwkAsyncRequestInitialize, PDFWK_INTER...
+#include <DfwkCommon.h> // for DfwkAsyncRequestInitialize, PDFW...
 #include <FpFwCli.h>
 #include <FpFwLinkedList.h>
 #include <FpFwUtils.h>
 #include <bug_check.h> // for BUG_ASSERT
+#include <startup_shutdown.h>
+#include <startup_shutdown_init.h>
+#include <startup_shutdown_ssi.h> // for ssi_shutdown_type_t, ssi_startup_s...
 #include <stdint.h>
 #include <stdlib.h> // for atoi
 #include <string.h> // for strcmp
@@ -30,6 +33,8 @@
 static FPFW_CLI_STATUS ws_write_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS ws_read_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS ws_disp_cli(int argc, const char** argv);
+static FPFW_CLI_STATUS ws_reset(int argc, const char** argv);
+void boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -39,11 +44,14 @@ static FPFW_CLI_COMMAND warm_start_cli_list[] = {
     {NULL_LIST_ENTRY, "warm_start", "wsrd", ws_read_cli, "Warm Start Read Data", "syntax: wswr <id> <space separated bytes>\nWrites warm data\n"},
     {NULL_LIST_ENTRY, "warm_start", "wswr", ws_write_cli, "Warm Start Write Data", "syntax: wsrd <id> \nReads warm data\n"},
     {NULL_LIST_ENTRY, "warm_start", "wsdisp", ws_disp_cli, "Warm Start Display Data", "syntax: wsdisp \nDisplays information around the warm data mechanism\n"},
+    {NULL_LIST_ENTRY, "warm_start", "wsreset", ws_reset, "Warm Start Cli to perform Reset", "syntax: wsreset [cold, subsys, warm, shutdown]"},
 };
 
 char* ws_reason_strings[] = {"Reset Reason unknown\n", "Power On Reset\n", "Pre AP core boot Warm Reset\n", "Post AP core boot Warm Reset\n"};
 
 char* id_strings[] = WARM_START_ID_STRINGS;
+
+static sos_interface_t sos_interface;
 
 /*------------- Functions ----------------*/
 
@@ -238,8 +246,97 @@ static FPFW_CLI_STATUS ws_disp_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-void warm_start_cli_init()
+void cold_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
 {
+    FPFW_UNUSED(p_completion_context);
+    FPFW_UNUSED(request);
+    BUG_ASSERT(false);
+}
+
+void subsys_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+{
+    FPFW_UNUSED(p_completion_context);
+    printf("Request (%x)\n is completed", (uintptr_t)request);
+    printf("Subsys Boot Completed");
+}
+
+void shutdown_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+{
+    FPFW_UNUSED(p_completion_context);
+    FPFW_UNUSED(request);
+    BUG_ASSERT(false);
+}
+
+void warm_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+{
+    FPFW_UNUSED(p_completion_context);
+    printf("Request (%x)\n is completed", (uintptr_t)request);
+    printf("AP Warm Boot Completed");
+}
+
+/**
+ *  CLI command for performing a warm reset
+ *
+ *  @param argc
+ *      Number of arguments provided
+ *
+ *  @param argv
+ *      pointer array for the argument strings
+ *
+ *  @return
+ *      If reset is available on platform, this will never return
+ */
+static FPFW_CLI_STATUS ws_reset(int argc, const char** argv)
+{
+    // send synchronous and asynchronous startup stage start requests
+    static startup_shutdown_request_t shutdown_request;
+    DfwkAsyncRequestInitialize((void*)&shutdown_request.header, sizeof(shutdown_request));
+
+    WS_LOG_INFO("Attempting to perform %s reset", argv[1]);
+
+    /*NOTE: These CLIs will currently only print a cli message
+    as shutdown_handler is targeted to complete by 1.0_extended
+    https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1824038
+    */
+
+    // Detect which type of reset to perform
+    if (argc == 2)
+    {
+        if (strcmp(argv[1], "cold") == 0)
+        {
+            sos_shutdown((void*)&sos_interface, &shutdown_request, COLD_RESET, cold_boot_completion, NULL);
+        }
+        else if (strcmp(argv[1], "subsys") == 0)
+        {
+            sos_shutdown((void*)&sos_interface, &shutdown_request, MSCP_SUBSYS_RESET, subsys_boot_completion, NULL);
+        }
+        else if (strcmp(argv[1], "shutdown") == 0)
+        {
+            sos_shutdown((void*)&sos_interface, &shutdown_request, SHUTDOWN, shutdown_completion, NULL);
+        }
+        else if (strcmp(argv[1], "warm") == 0)
+        {
+            sos_shutdown((void*)&sos_interface, &shutdown_request, AP_WARM_RESET, warm_boot_completion, NULL);
+        }
+        else
+        {
+            WS_LOG_INFO("Invalid parameter %s\n", argv[1]);
+            return CLI_SUCCESS;
+        }
+    }
+    else
+    {
+        WS_LOG_INFO("Must provide input parameter\nOptions:\ncold, subsys, shutdown, and warm\n");
+        return CLI_SUCCESS;
+    }
+
+    return CLI_SUCCESS;
+}
+
+void warm_start_cli_init(psos_device_t p_device)
+{
+    sos_interface_init(p_device, &sos_interface, true);
+
     FpFwCliRegisterTable(warm_start_cli_list, FPFW_ARRAY_SIZE(warm_start_cli_list));
 
     FpFwCliPrint("Warm Start CLI Init Complete\n");

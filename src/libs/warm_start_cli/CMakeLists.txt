@@ -17,13 +17,14 @@ target_link_libraries(
     ${TARGET}
         PRIVATE
             fwlib.service.cli
+            fwlib.lib.init
             ms::lib::warm_start
             ms::lib::crash_dump
             ms::lib::error_codes
+            ms::service::scp_startup_shutdown
         PUBLIC
             fwlib.lib.assert
-            fwlib.platform.dfwkhost.threadx
-            fwlib.lib.interface.platform.threadx
+            fwlib.dfwk
             fwlib.lib.utils
 )
 

@@ -10,9 +10,10 @@
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h> // IWYU pragma: keep
 #include <cstdint>         // IWYU pragma: keep
-
+#include <startup_shutdown_init.h>
 extern "C" {
 #include <fpfw_init.h>
+#include <FpFwUtils.h> // for FPFW_UNUSED
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
@@ -26,8 +27,9 @@ extern fpfw_init_component_t _fpfw_component_ws_cli_init;
 //
 // Mocks
 //
-void __wrap_warm_start_cli_init()
+void __wrap_warm_start_cli_init(psos_device_t p_device)
 {
+    FPFW_UNUSED(p_device);
     function_called();
 }
 

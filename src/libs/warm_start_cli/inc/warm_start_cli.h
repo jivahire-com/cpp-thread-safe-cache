@@ -26,5 +26,5 @@
  *    @brief Called once for initialization
  *
  */
-void warm_start_cli_init();
+void warm_start_cli_init(psos_device_t p_device);
 

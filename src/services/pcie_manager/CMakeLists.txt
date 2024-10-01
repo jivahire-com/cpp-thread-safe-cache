@@ -19,11 +19,15 @@ target_link_libraries(
         ms::driver::pcie
         ms::lib::debug
         ms::lib::threadx
+        ms::lib::hsp_firmware_headers
+        ms::lib::variable_services
         silibs::idsw
         silibs::idsw_kng
         silibs::pciess
         silibs::pcie
         silibs_platform
+        fwlib.service.iccBase
+        fwlib.lib.init
 )
 
 target_include_directories(${TARGET}

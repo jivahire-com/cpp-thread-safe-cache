@@ -117,7 +117,7 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
 
         pcie_mgr_ctx[i].rpss_idx = (die_id == DIE_1) ? (i + PCIE_RPSS_PER_DIE) : i;
         pcie_mgr_ctx[i].dev = &(dev[i]);
-        pcie_mgr_ctx[i].dev->rb_configs = &rb_config_var.rootbridge_config[i];
+        pcie_mgr_ctx[i].dev->rb_configs = &rb_config_var.rootbridge_config[i * PCIESS_NUM_PORTS];
         pcie_mgr_ctx[i].iface = &(iface[i]);
         pcie_mgr_ctx[i].event_ptr = &event_ptr;
 

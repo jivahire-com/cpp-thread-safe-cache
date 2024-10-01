@@ -78,7 +78,7 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
                                  ARM_MPU_REGION_SIZE_512KB),
         },
         /**
-         * MPU Region 3 - MSCP_EXP SRAM
+         * MPU Region 3 - MSCP_EXP SRAM (RAM0 + RAM1)
          *                Normal Write-Back, Read and Write Allocate
          *                Priviledged R/W
          */
@@ -91,7 +91,7 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
                                  CACHEABLE,
                                  BUFFERABLE,
                                  DISABLE_SUBREGION,
-                                 ARM_MPU_REGION_SIZE_1MB),
+                                 ARM_MPU_REGION_SIZE_2MB),
         },
         /**
          * MPU Region 4 - MSCP_EXP SCF RAM

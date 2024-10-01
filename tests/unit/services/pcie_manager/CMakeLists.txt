@@ -60,4 +60,8 @@ mock_target(${TARGET}
     pciess_rp_get_link_train_done
     scp_pcie_get_manager_context
     send_sync_get_rpss_entity
+    memcpy
+    memset
+    fpfw_icc_base_send
+    fpfw_icc_base_recv
 )

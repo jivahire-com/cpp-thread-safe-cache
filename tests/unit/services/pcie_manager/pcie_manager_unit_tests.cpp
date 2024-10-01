@@ -19,6 +19,7 @@ extern "C" {
 #include <kng_soc_constants.h>     // for RPSS0
 #include <pcie_dfwk.h>             // for pciess_device_interface_t, pciess_dev...
 #include <pcie_manager_i.h>        // for rpss_req_completion_cb, send_start_li...
+#include "pcie_mocks.h"
 #include <pcie_rp_event_handler.h> // for process_wait_for_event_data
 #include <scp_pcie_manager.h>      // for scp_pcie_initialize, pcie_manager_con...
 #include <silibs_kng_soc.h>
@@ -38,7 +39,7 @@ static pciess_device_t dev;
 static pciess_device_interface_t iface;
 static pcie_manager_context_t ctx = {.rpss_idx = RPSS0, .dev = &dev, .iface = &iface};
 static pcie_ss_entity_t mock_pcie_ent;
-
+bool memcpy_mock = false;
 /*------------- Functions ----------------*/
 TEST_FUNCTION(pcie_service_init_fail, NULL, NULL)
 {
@@ -216,7 +217,9 @@ TEST_FUNCTION(config_service_thread_success_die0, NULL, NULL)
 
     if (!set_error_handler_return())
     {
+        memcpy_mock = true;
         config_variable_service_thread_fn((ULONG)&ctx);
+        memcpy_mock = false;
     }
 
     // Check that SDM/CDED config was set and is for DIE0
@@ -254,7 +257,9 @@ TEST_FUNCTION(config_service_thread_success_die1, NULL, NULL)
 
     if (!set_error_handler_return())
     {
+        memcpy_mock = true;
         config_variable_service_thread_fn((ULONG)&ctx);
+        memcpy_mock = false;
     }
 
     // Check that SDM/CDED config was set and is for DIE1

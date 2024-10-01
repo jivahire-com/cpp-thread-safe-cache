@@ -12,8 +12,11 @@ target_link_libraries(
     fwlib.dfwk
     fwlib.platform.dfwkhost.threadx
     fwlib.service.cli
+    fwlib.service.iccBase
+    fwlib.lib.init
     ms::driver::pcie
     ms::lib::threadx
+    ms::lib::hsp_firmware_headers
     silibs::kng_silibs_platform
     silibs::pcie
     silibs::pciess

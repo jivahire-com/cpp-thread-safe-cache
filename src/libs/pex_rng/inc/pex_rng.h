@@ -11,15 +11,16 @@
 
 /*--------------- Includes ---------------*/
 #include <stdint.h>  
-
+#include <corebits.h>
 
 /*--------------- Typedefs ---------------*/
 
 typedef struct _pex_rng_config_t
 {
-    uintptr_t cluster_pex_base;             // cluster pex base address
-    uint32_t cluster_stride;                // number of bytes between each cluster
-    unsigned int core_count;    // platform core count
+    uintptr_t cluster_pex_base;              // cluster pex base address
+    uint32_t cluster_stride;                 // number of bytes between each cluster
+    const corebits_t* platform_cores_in_die; // platform cores
+    unsigned int core_count;                 // platform core count
 } pex_rng_config_t, *ppex_rng_config_t;
 
 

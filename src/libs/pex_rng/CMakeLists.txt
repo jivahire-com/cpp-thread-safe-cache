@@ -8,7 +8,8 @@ add_library(${TARGET}
 target_link_libraries(${TARGET}
     PUBLIC
     silibs::atu
-
+    ms::lib::corebits
+    
     PRIVATE
     fwlib.lib.assert
     silibs_platform

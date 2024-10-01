@@ -8,7 +8,8 @@
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwAssert.h>        // for FPFW_RUNTIME_ASSERT
+#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
+#include <corebits.h>
 #include <idsw.h>              // for idsw_get_platform_sdv,
 #include <idsw_kng.h>          // for PLATFORM_FPGA_LARGE
 #include <kng_soc_constants.h> // for NUM_DIE
@@ -27,6 +28,11 @@ void init_pex_rng(pex_rng_config_t* rng_config)
     FPFW_RUNTIME_ASSERT(rng_config != NULL);
     for (unsigned int core = 0; core < rng_config->core_count; ++core)
     {
+        const corebits_t* enabled_cores = rng_config->platform_cores_in_die;
+        if (!corebits_is_bit_set(enabled_cores, core))
+        {
+            continue;
+        }
 
         const uintptr_t cluster_pex_base_addr = (rng_config->cluster_pex_base + (rng_config->cluster_stride * core));
         uint32_t ap_rng_base = cluster_pex_base_addr + PEX_RNG_ADDRESS;

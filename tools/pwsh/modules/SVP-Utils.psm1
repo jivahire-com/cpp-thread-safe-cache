@@ -65,7 +65,7 @@ If -UseGUI specified it will setup and run the simulation with the GUI, otherwis
 Invoke-Virtualizer -SimConfig scp_mcp_chie_bins -UseGUI
 #>
 Function Invoke-Virtualizer(
-    [Parameter(Mandatory=$false)] [ValidateSet('scp_mcp_chie_bins', 'hsp_bl_scp', 'scp_mcp_chie_bins_dual_die', 'chie_bins_dual_die_dat')] [string] $SimConfig = "scp_mcp_chie_bins",
+    [Parameter(Mandatory=$false)] [ValidateSet('sideloaded_chie_bins', 'chie_bins_single_die_dat', 'chie_bins_dual_die_dat')] [string] $SimConfig = "chie_bins_dual_die_dat",
     [Parameter(Mandatory=$false)] [switch] $UseGUI
 )
 {
@@ -123,16 +123,12 @@ Function Invoke-Virtualizer(
     # Additionally perform any any config specific setup as needed
     $svpcfg_param_file = "$env:REPO_APP_ROOT\tools\vpcfg\svpcfg-$SimConfig.txt"
     switch ($SimConfig) {
-        "scp_mcp_chie_bins" {
-            Write-Host "Using chie fw bins where applicable. SVP test bins are used for anything that is missing."
+        "sideloaded_chie_bins" {
+            Write-Host "Using sideloaded chie bins."
             Break;
         }
-        "hsp_bl_scp" {
-            Write-Host "Using HSP rom with SCP Bootloader embed FW method for chie fw."
-            Break;
-        }
-        "scp_mcp_chie_bins_dual_die" {
-            Write-Host "Using chie fw bins for both dies."
+        "chie_bins_single_die_dat" {
+            Write-Host "Using chie fw bins for a single die with dat file."
             Break;
         }
         "chie_bins_dual_die_dat" {

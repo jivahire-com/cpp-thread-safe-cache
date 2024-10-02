@@ -10,14 +10,18 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET}
     PRIVATE
     kng.driver.icc_mhu_trans
-
-    fwlib.dfwk
     fwlib.lib.assert
+    fwlib.dfwk
+    fwlib.lib.interface.platform.errorhandler
+    fwlib.driver.interface.iccTransport
+    fwlib.platform.dfwkhost.threadx
+    fwlib.lib.utils
     ms::cmocka::mocks
     ms::cmocka::testrunner
+    ms::lib::debug
     ms::lib::error_handler
     ms::lib::arm_intrinsic
-    ms::lib::register_headers	
+    ms::lib::register_headers
     silibs::icc_mhu
     silibs::idhw
     silibs::mhuv3
@@ -39,6 +43,7 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     icc_mhu_send_message
     icc_mhu_get_message
-	mhuv3_clr_mdbcw_status
-	icc_mhu_trans_get_message
+    mhuv3_clr_mdbcw_status
+    icc_mhu_trans_get_message
+    fpfw_icc_transport_try_send_sync_req
 )

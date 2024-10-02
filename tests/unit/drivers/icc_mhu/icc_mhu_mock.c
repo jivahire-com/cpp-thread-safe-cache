@@ -10,9 +10,10 @@
 /*------------- Includes -----------------*/
 #include "icc_mhu_trans_ut.h"
 
-#include <DfwkClient.h> // for PDFWK_DEVICE_HEADER, PDFWK_INTERFACE_HEADER
-#include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
-#include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <DfwkClient.h>  // for PDFWK_DEVICE_HEADER, PDFWK_INTERFACE_HEADER
+#include <FpFwCMocka.h>  // for check_expected_ptr, mock_type, function_called
+#include <FpFwUtils.h>   // for FPFW_UNUSED
+#include <fpfw_status.h> // for fpfw_status_t
 #include <icc_mhu.h>
 #include <icc_mhu_cfg.h>
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
@@ -24,6 +25,8 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+
+uint8_t data[] = {1,2,3,4};
 
 /*------------- Functions ----------------*/
 
@@ -54,6 +57,27 @@ int __wrap_icc_mhu_trans_get_message(uint16_t mhu_interface_id, picc_msg_receive
 {
     FPFW_UNUSED(mhu_interface_id);
     message->command = WRAPPER_ICC_COMMAND;
-    message->size = 0;
+    message->size = sizeof(data);
+    message->data = data;
+    return mock_type(int);
+}
+
+fpfw_status_t __wrap_fpfw_icc_transport_try_send_sync_req(PDFWK_INTERFACE_HEADER transport_interface, void* send_buffer, size_t buffer_size)
+{
+    FPFW_UNUSED(transport_interface);
+    FPFW_UNUSED(send_buffer);
+    FPFW_UNUSED(buffer_size);
+    return mock_type(int);
+}
+
+fpfw_status_t __wrap_fpfw_icc_transport_try_recv_sync_req(PDFWK_INTERFACE_HEADER transport_interface,
+                                                          void* recv_buffer,
+                                                          size_t buffer_size,
+                                                          size_t* output_recv_bytes)
+{
+    FPFW_UNUSED(transport_interface);
+    FPFW_UNUSED(recv_buffer);
+    FPFW_UNUSED(buffer_size);
+    FPFW_UNUSED(output_recv_bytes);
     return mock_type(int);
 }

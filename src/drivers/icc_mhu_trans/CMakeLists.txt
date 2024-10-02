@@ -2,6 +2,7 @@ set(TARGET kng.driver.icc_mhu_trans)
 
 add_library(${TARGET}
     STATIC
+    src/icc_mhu_trans_dfwk.c
     src/icc_mhu_trans_prim.c
 )
 

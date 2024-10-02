@@ -137,6 +137,7 @@ target_link_libraries(
         silibs::platform
         silibs::pcie
         silibs::kng_silibs_platform
+        silibs::mhuv3
         silibs::sensor_ram_bridge
         silibs::spi_bridge
         silibs::crypto::rng

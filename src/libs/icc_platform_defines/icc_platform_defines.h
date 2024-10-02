@@ -29,22 +29,26 @@
 #define KG_HSP_MBOX_POLL_INTERVAL_NS (20000000ULL)
 #define HSP_MBOX_MAX_CMD_CODE        (0xFFFFU)
 #define HSP_MBOX_MIN_CMD_CODE        (0x1U)
-#define HSP_MBOX_CMD_CODE_SIZE       (16U)
-#define HSP_MBOX_CMD_CODE_START_POS  (0U) //! 16th bit from lsb
+#define HSP_MBOX_CMD_CODE_SIZE       (16U) //! 16 bits
+#define HSP_MBOX_CMD_CODE_START_POS  (0U)  //! 16th bit from lsb
 #define HSP_MBOX_MAX_SEQ_NUM         (0xFFU)
 #define HSP_MBOX_MIN_SEQ_NUM         (0x0U)
-#define HSP_MBOX_SEQ_NUM_SIZE        (8U)
+#define HSP_MBOX_SEQ_NUM_SIZE        (8U)  //! 8 bits
 #define HSP_MBOX_SEQ_NUM_START_POS   (16U) //! 24th bit from lsb
+#define HSP_MBOX_FLAG_SIZE           (4U)  //! 4 bits
+#define HSP_MBOX_FLAG_START_POS      (28U) //! 4th bit from lsb
+#define HSP_MBOX_CONTEXT_SIZE        (4U)  //! 4 bits
+#define HSP_MBOX_CONTEXT_START_POS   (24U) //! 8th bit from lsb
 
 #define GET_HSP_MBOX_CMD_CODE(header)    (((header) >> HSP_MBOX_CMD_CODE_START_POS) & ((1U << HSP_MBOX_CMD_CODE_SIZE) - 1))
-#define GET_HSP_MBOX_SEQ_NUM(header)    (((header) >> HSP_MBOX_SEQ_NUM_START_POS) & ((1U << HSP_MBOX_SEQ_NUM_SIZE) - 1))
-#define GET_HSP_MBOX_CONTEXT(header)    (((header) >> 4) & 0x0F)
-#define GET_HSP_MBOX_FLAGS(header)    ((header) & 0x0F)
+#define GET_HSP_MBOX_SEQ_NUM(header)     (((header) >> HSP_MBOX_SEQ_NUM_START_POS) & ((1U << HSP_MBOX_SEQ_NUM_SIZE) - 1))
+#define GET_HSP_MBOX_CONTEXT(header)     (((header) >> HSP_MBOX_CONTEXT_START_POS) & ((1U << HSP_MBOX_CONTEXT_SIZE) - 1))
+#define GET_HSP_MBOX_FLAGS(header)       (((header) >> HSP_MBOX_FLAG_START_POS) & ((1U << HSP_MBOX_FLAG_SIZE) - 1))
 
 #define SET_HSP_MAILBOX_HEADER_ASUNIT32(cmd, ctx, flags) \
-    (((uint32_t)(flags) & 0xF) | \
-     (((uint32_t)(ctx) & 0xF) << 4) | \
-     (((uint32_t)(cmd) & 0xFFFF) << 16))
+    ((((uint32_t)(flags) & ((1U << HSP_MBOX_FLAG_SIZE) - 1)) << HSP_MBOX_FLAG_START_POS)  | \
+     (((uint32_t)(ctx) & ((1U << HSP_MBOX_CONTEXT_SIZE) - 1)) << HSP_MBOX_CONTEXT_START_POS) | \
+     (((uint32_t)(cmd) & ((1U << HSP_MBOX_CMD_CODE_SIZE) - 1)) << HSP_MBOX_CMD_CODE_START_POS))
 
 /**
  * D2D Mailbox Message Format (64 bytes): 4 bytes metadata + 60 bytes payload
@@ -64,16 +68,21 @@
 #define D2D_MBOX_MIN_SEQ_NUM         (0x0U)
 #define D2D_MBOX_SEQ_NUM_SIZE        (8U)
 #define D2D_MBOX_SEQ_NUM_START_POS   (16U) //! 24th bit from lsb
+#define D2D_MBOX_FLAG_SIZE           (4U)  //! 4 bits
+#define D2D_MBOX_FLAG_START_POS      (28U) //! 4th bit from lsb
+#define D2D_MBOX_CONTEXT_SIZE        (4U)  //! 4 bits
+#define D2D_MBOX_CONTEXT_START_POS   (24U) //! 8th bit from lsb
 
 #define GET_RMSS_D2D_MBOX_CMD_CODE(header)    (((header) >> D2D_MBOX_CMD_CODE_START_POS) & ((1U << D2D_MBOX_CMD_CODE_SIZE) - 1))
-#define GET_RMSS_D2D_MBOX_SEQ_NUM(header)    (((header) >> D2D_MBOX_SEQ_NUM_START_POS) & ((1U << D2D_MBOX_SEQ_NUM_SIZE) - 1))
-#define GET_RMSS_D2D_MBOX_CONTEXT(header)    (((header) >> 4) & 0x0F)
-#define GET_RMSS_D2D_MBOX_FLAGS(header)    ((header) & 0x0F)
+#define GET_RMSS_D2D_MBOX_SEQ_NUM(header)     (((header) >> D2D_MBOX_SEQ_NUM_START_POS) & ((1U << D2D_MBOX_SEQ_NUM_SIZE) - 1))
+#define GET_RMSS_D2D_MBOX_CONTEXT(header)     (((header) >> D2D_MBOX_CONTEXT_START_POS) & ((1U << D2D_MBOX_CONTEXT_SIZE) - 1))
+#define GET_RMSS_D2D_MBOX_FLAGS(header)       (((header) >> D2D_MBOX_FLAG_START_POS) & ((1U << D2D_MBOX_FLAG_SIZE) - 1))
 
 #define SET_RMSS_D2D_MAILBOX_HEADER_ASUNIT32(cmd, ctx, flags) \
-        (((uint32_t)(flags) & 0xF) | \
-         (((uint32_t)(ctx) & 0xF) << 4) | \
-         (((uint32_t)(cmd) & 0xFFFF) << 16))
+        ((((uint32_t)(flags) & ((1U << D2D_MBOX_FLAG_SIZE) - 1)) << D2D_MBOX_FLAG_START_POS)  | \
+     (((uint32_t)(ctx) & ((1U << D2D_MBOX_CONTEXT_SIZE) - 1)) << D2D_MBOX_CONTEXT_START_POS) | \
+     (((uint32_t)(cmd) & ((1U << D2D_MBOX_CMD_CODE_SIZE) - 1)) << D2D_MBOX_CMD_CODE_START_POS))
+
 /*------------- Typedefs -----------------*/
 /**
  * @brief  RMSS D2D Mailbox response status

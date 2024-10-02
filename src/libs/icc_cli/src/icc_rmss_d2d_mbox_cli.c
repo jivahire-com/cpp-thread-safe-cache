@@ -36,12 +36,7 @@ fpfw_icc_base_ctx_t* icc_base_rmss_d2d_mbx_ctx = NULL;
 //! rmss d2d mbox message buffers for send/recv/echo
 static rmss_d2d_mailbox_msg d2d_recv_msg;
 static rmss_d2d_mailbox_msg d2d_send_msg;
-static rmss_d2d_mailbox_msg d2d_echo_msg = {
-    .header.cmd = RMSS_D2D_MAILBOX_MSG_ECHO_REQ, //! dedicated command code for echo test
-    .header.seq = 0,
-    .header.context = 0,
-    .header.flags = 0,
-};
+static rmss_d2d_mailbox_msg d2d_echo_msg;
 
 //! icc base send, recv & send/recv params for rmss d2d mbox
 static fpfw_icc_base_send_recv_req_t d2d_send_recv_params;
@@ -93,18 +88,20 @@ FPFW_CLI_STATUS d2d_mbox_send(int argc, const char** argv)
         return cli_status;
     }
 
+    //! reset mbox packet
+    memset(&d2d_send_msg, 0, sizeof(d2d_send_msg));
+
     if (argc < 2)
     {
         FpFwCliPrint("D2D Send cmd: Insufficient Payload Args, Using default values\n");
         d2d_send_msg.as_uint32[0] = SET_RMSS_D2D_MAILBOX_HEADER_ASUNIT32(RMSS_D2D_MAILBOX_MSG_ECHO_REQ, 0, 0);
-        for (uint32_t i = 1; i < D2D_MBOX_FIFO_DEPTH; i++)
+        for (uint8_t i = 1; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
             d2d_send_msg.as_uint32[i] = D2D_MBOX_TEST_PAYLOAD * (i);
         }
     }
     else
     {
-        memset(&d2d_send_msg, 0, sizeof(d2d_send_msg));
         for (uint8_t i = 0; ((i < argc) && (i < D2D_MBOX_FIFO_DEPTH)); i++)
         {
             d2d_send_msg.as_uint32[i] = atoi(argv[i + 1]);
@@ -303,20 +300,25 @@ FPFW_CLI_STATUS d2d_mbox_echo(int argc, const char** argv)
         return cli_status;
     }
 
+    //! reset mbox packet
+    memset(&d2d_echo_msg, 0, sizeof(d2d_echo_msg));
+
+    //! Set the designated cmd code for echo
+    d2d_echo_msg.as_uint32[0] = SET_RMSS_D2D_MAILBOX_HEADER_ASUNIT32(RMSS_D2D_MAILBOX_MSG_ECHO_REQ, 0, 0);
+
     if (argc < 2)
     {
         FpFwCliPrint("D2D Echo cmd: Insufficient Payload Args, Using default values\n");
-        for (uint32_t i = 1; i < D2D_MBOX_FIFO_DEPTH; i++)
+        for (uint8_t i = 1; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
             d2d_echo_msg.as_uint32[i] = D2D_MBOX_TEST_PAYLOAD * (i);
         }
     }
     else
     {
-        memset(&d2d_echo_msg, 0, sizeof(d2d_echo_msg));
-        for (uint8_t i = 0; ((i < argc) && (i < D2D_MBOX_FIFO_DEPTH)); i++)
+        for (uint8_t i = 1; ((i < argc) && (i < D2D_MBOX_FIFO_DEPTH)); i++)
         {
-            d2d_echo_msg.as_uint32[i] = atoi(argv[i + 1]);
+            d2d_echo_msg.as_uint32[i] = atoi(argv[i]);
         }
     }
 

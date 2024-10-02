@@ -71,12 +71,7 @@ fpfw_icc_base_ctx_t* icc_base_hsp_mbx_ctx = NULL;
 //! hsp mbox message buffers for send/recv/echo
 static kng_hsp_mailbox_msg hsp_recv_msg;
 static kng_hsp_mailbox_msg hsp_send_msg;
-static kng_hsp_mailbox_msg hsp_echo_msg = {
-    .header.cmd = HSP_MAILBOX_CMD_TEST_ECHO_REQ, //! dedicated command code for echo test
-    .header.seq = 0,
-    .header.context = 0,
-    .header.flags = 0,
-};
+static kng_hsp_mailbox_msg hsp_echo_msg;
 
 //! icc base send, recv & send/recv params for hsp mbox
 static fpfw_icc_base_send_recv_req_t hsp_send_recv_params;
@@ -209,6 +204,12 @@ FPFW_CLI_STATUS hsp_mbox_echo(int argc, const char** argv)
         return cli_status;
     }
 
+    //! reset mbox packet
+    memset(&hsp_echo_msg, 0, sizeof(hsp_echo_msg));
+
+    //! Set the designated cmd code for echo
+    hsp_echo_msg.as_uint32[0] = SET_HSP_MAILBOX_HEADER_ASUNIT32(HSP_MAILBOX_CMD_TEST_ECHO_REQ, 0, 0);
+
     if (argc != 5)
     {
         FpFwCliPrint("Echo cmd: Insufficient Payload Args, Using default values\n");
@@ -292,6 +293,9 @@ FPFW_CLI_STATUS hsp_mbox_send(int argc, const char** argv)
         FpFwCliPrint("Send cmd: Test already active, please wait for completion\n");
         return cli_status;
     }
+
+    //! reset mbox packet
+    memset(&hsp_echo_msg, 0, sizeof(hsp_echo_msg));
 
     if (argc != 5)
     {

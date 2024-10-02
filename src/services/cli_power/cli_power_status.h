@@ -22,6 +22,19 @@
 /*--------- Function Prototypes ----------*/
 
 /**
+ *  @brief  Get the runconfig element ID for the sub-command. 
+ * This is used to trigger the appropriate set function in the power service.
+ * 
+ *  @param[in] sub_command
+ *     Pointer to the sub-command string
+ * 
+ *  @return
+ *      The runconfig element ID for the sub-command
+ */
+power_if_cmd_t cli_power_status_get_cmd_id(char* sub_command);
+
+
+/**
  * @brief Implementation of the power_status_completion CLI command.
  *
  * @param[in] p_request

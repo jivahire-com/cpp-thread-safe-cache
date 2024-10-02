@@ -11,8 +11,10 @@
 
 /*----------- Nested includes ------------*/
 
+#include <power_dfwk.h> // for (anonymous), ppower_service_cli_re...
 #include <power_runconfig.h>
 #include <assert.h>
+
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -26,6 +28,7 @@ typedef void (*power_service_setval)(char* p_string, void* p_set_data);
 /**
  * @brief Struct for runtime configuration data
  */
+
 typedef struct _power_runconfig_t
 {
     power_knobs_t knobs;
@@ -37,11 +40,13 @@ typedef struct _power_runconfig_t
     void* original_warmstart; // used to store a copy of calculated warmstart data before a warmstart recovery
 } power_runconfig_t, *ppower_runconfig_t;
 
+
 /* Definition of the dictionary entry of parameters that can be queried from the power runconfig structure */
 typedef struct {
     power_if_cmd_t id;
     void* p_runconfig_element;
 } power_runconfig_read_dictionary_element_t;
+
 
 /* Definition of the dictionary entry of parameters that can be set in the power runconfig from an external interface */
 typedef struct {
@@ -49,6 +54,7 @@ typedef struct {
     power_service_setval p_function;
     char* p_string;
 } power_runconfig_write_dictionary_element_t;
+
 
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus

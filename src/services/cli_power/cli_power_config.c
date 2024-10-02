@@ -505,7 +505,7 @@ void cli_power_config_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* co
 
     ppower_service_cli_request_t request = (ppower_service_cli_request_t)p_request;
 
-    if (request->p_requested_data == NULL)
+    if (request->fetch_data.p_requested_data == NULL)
     {
         printf("CLI Data Error\n");
         return;
@@ -516,7 +516,7 @@ void cli_power_config_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* co
         /* Compare the sub command string with the dictionary and call the appropriate print function */
         if (strcmp(request->sub_command, power_cli_config_sub_command_dictionary[index].sub_command) == 0)
         {
-            power_cli_config_sub_command_dictionary[index].fn(request->p_requested_data);
+            power_cli_config_sub_command_dictionary[index].fn(request->fetch_data.p_requested_data);
             return;
         }
     }

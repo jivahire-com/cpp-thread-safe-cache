@@ -50,11 +50,16 @@
 /* number of power samples for averaging of soc power output */
 #define SOC_POWER_AVG_COUNT 5
 
+
 #define VM_PRI_COUNT 8
-// number of throttling priorities
-#define VM_THROT_COUNT (VM_PRI_COUNT)
-// number of throttling priorities
-#define VM_BOOST_COUNT (VM_PRI_COUNT)
+// number of throttling priorities 
+#define VM_THROT_COUNT 8
+// number of throttling priorities 
+#define VM_BOOST_COUNT 8
+
+
+/* number of plimit update options */
+#define PLIMIT_UPDATE_MAX 8
 
 /*-------------- Typedefs ----------------*/
 
@@ -94,7 +99,7 @@ typedef enum
     power_loops_minimum_plimit_t_MIN_16 = 5,           // Require 16 plimit requests
     power_loops_minimum_plimit_t_MIN_32 = 6,           // Require 32 plimit requests
     power_loops_minimum_plimit_t_MIN_64 = 7,           // Require 64 plimit requests
-    power_loops_minimum_plimit_t_MIN_128 = 8,          // Require max 128 plimit requests
+    power_loops_minimum_plimit_t_MIN_128 = 8,           // Require max 128 plimit requests
     _power_loops_minimum_plimit_t_PADDING = 0xffffffff // Force packing to int size
 } power_loops_minimum_plimit_t;
 
@@ -593,26 +598,120 @@ typedef enum
     POWER_IF_CMD_GET_RUNCONFIG_FUSES,
     POWER_IF_CMD_SET_CAP,
     POWER_IF_CMD_SET_DESIRED_PSTATE,
-    POWER_IF_CMD_SET_PLIMIT,
+    POWER_IF_CMD_SET_PLIMIT, 
     POWER_IF_CMD_SET_LOOP_DISABLES,
     POWER_IF_CMD_SET_RACK_LIMIT,
     POWER_IF_CMD_SET_MINUPDATE,
     POWER_IF_CMD_SET_NOMINAL,
+    POWER_IF_CMD_STATUS_CL,
+    POWER_IF_CMD_STATUS_VRTL,
+    POWER_IF_CMD_SET_PVTTL,
 
     POWER_IF_CMD_UNKNOWN
 } power_if_cmd_t;
 
+typedef void (*power_state_handler_t)(int, const void *);  // state handler function pointer type
+
+#define POWER_LOOP_IDLE_STATE_ID 0
+/**
+ * @brief enum of control loop states
+ */
+
+typedef enum _power_ctrl_loop_state_t
+{
+    POWER_CONTROL_STATE_IDLE = POWER_LOOP_IDLE_STATE_ID,
+    POWER_CONTROL_STATE_WARMSTART_ENTRY,
+    POWER_CONTROL_STATE_COLLECT_INPUTS,
+    POWER_CONTROL_STATE_EXCHANGE_INPUTS,
+    POWER_CONTROL_STATE_DISTRIBUTE_AVAILABLE,
+    POWER_CONTROL_STATE_SET_PLIMIT_BEFORE_VR,
+    POWER_CONTROL_STATE_SET_VR_AFTER_PLIMIT,
+    POWER_CONTROL_STATE_WAIT_VR_AFTER_PLIMIT,
+    POWER_CONTROL_STATE_SET_VR_BEFORE_PLIMIT,
+    POWER_CONTROL_STATE_WAIT_VR_BEFORE_PLIMIT,
+    POWER_CONTROL_STATE_SET_PLIMIT_AFTER_VR,
+    POWER_CONTROL_STATE_EXCHANGE_COMPLETION,
+    POWER_CONTROL_STATE_ERROR,
+    POWER_CONTROL_STATE_MAX,
+} power_ctrl_loop_state_t;
+
+
+/**
+ * @brief enum for queue entry
+ */
+
+typedef enum _power_loops_queue_entry_type_t
+{
+    LOOP_QUEUE_ENTRY_TYPE_STATE_CHANGE,
+    LOOP_QUEUE_ENTRY_TYPE_STATE_SIGNAL,
+	LOOP_QUEUE_ENTRY_TYPE_NOP,
+    LOOP_QUEUE_ENTRY_TYPE_EXEC_IN_IDLE,
+} power_loops_queue_entry_type_t;
+
+
+/**
+ * @brief enum of loop state retry types
+ */
+typedef enum _power_loop_retries_t
+{
+    POWER_LOOP_RETRY_TYPE_INTERVAL,
+    POWER_LOOP_RETRY_TYPE_STATE,
+    POWER_LOOP_RETRY_TYPE_COUNT
+} power_loop_retries_t;
+
+/**
+ * @brief enum of loop IDs
+ */
+typedef enum _power_loop_id_t
+{
+    LOOP_ID_CONTROL,
+    LOOP_ID_VR_TELEM,
+    LOOP_ID_PVT_TELEM,
+    LOOP_ID_COUNT
+} power_loop_id_t;
+/**
+ *  @brief Structure for basic loop state
+ */
+typedef struct _power_loop_state_t {
+    int current_state;
+    int last_state;
+    int last_event;
+    bool interval_in_flight;
+    uint16_t retries[POWER_LOOP_RETRY_TYPE_COUNT];
+} power_loop_state_t;
+
+/**
+ *  @brief Structure for loop residency detail
+ */
+typedef struct _power_loop_residency_t {
+    uint64_t count;        // count of total state exits
+    uint64_t ticks;        // number of clock ticks in state
+    uint64_t last_entry;   // timestamp of last state entry
+    uint64_t retries;      // total retries for this state
+    uint16_t max_retries;  // max retries any transition
+} power_loop_residency_t;
+/**
+ * @brief Struct for loop context, passed to common loop functions
+ */
+
+typedef struct _power_loop_context_t {
+    unsigned int state_count;  // number of states in the loop
+    power_loop_state_t status; // current loop status
+    const power_state_handler_t *handlers; // state handler function pointer table
+    power_loop_residency_t *residency; // state residency tracking
+    power_loop_id_t id; // loop ID
+} power_loop_context_t;
+
 /**
  * @brief Struct for per-core data
  */
-typedef struct _power_core_t
-{
-    uint16_t temperature_dC;        // current core temperature in 1/10 degrees C
-    uint8_t current_pstate;         // from last pstate reg
-    uint8_t current_cstate;         // from last pstate reg
-    uint8_t current_throt_status;   // from last pstate reg
-    uint8_t current_throt_priority; // current throttle priority from update message
-    uint8_t current_boost_priority; // current boost priority from update message
+typedef struct _power_core_t {
+    uint16_t temperature_dC;           // current core temperature in 1/10 degrees C
+    uint8_t current_pstate;            // from last pstate reg 
+    uint8_t current_cstate;            // from last pstate reg
+    uint8_t current_throt_status;      // from last pstate reg
+    uint8_t current_throt_priority;    // current boost priority from update message
+    uint8_t current_boost_priority;    // current boost priority from update message 
     uint8_t current_plimit;
     uint8_t selected_plimit;
     uint8_t desired_pstate;           // desired plimit; set by OS, delivered in success
@@ -712,11 +811,105 @@ typedef struct _power_ctrl_loop_detail_t
 
 } power_ctrl_loop_detail_t;
 
+/**
+ *  @brief Enum of VR telemetry states
+ */
+
+typedef enum _power_vr_telem_state_t
+{
+    POWER_VR_TELEM_STATE_IDLE = POWER_LOOP_IDLE_STATE_ID,
+    POWER_VR_TELEM_STATE_CURRENT_TELEMETRY,
+    POWER_VR_TELEM_STATE_TEMP_TELEMETRY,
+    POWER_VR_TELEM_STATE_ERROR,
+    POWER_VR_TELEM_STATE_MAX,
+} power_vr_telem_state_t;
+
+
+/**
+ *  @brief Structure for PVT state
+ */
+
+typedef struct _power_telemetry_pvt_state_t {
+    uint64_t valid_samples;    // count of valid samples
+    uint16_t last_sample;      // last sample value (converted from raw)
+    uint16_t last_sample_raw;  // last sample value
+    uint16_t sample_hi;        // highest sample value (converted)
+    uint16_t sample_lo;        // lowest sample value (converted)
+} power_telemetry_pvt_state_t;
+
+
+// structure for tracking latest v/c/t from AVS for each rail
+typedef struct _power_vrs_avs_latest
+{
+    uint16_t voltage;     // Raw AVS value, 1LSB=1mV
+    uint16_t current;     // Raw AVS value, 1LSB=10mA
+    uint16_t temperature; // Raw AVS value, 1LSB=0.1 Celsius
+} power_vrs_avs_latest_t;
+/**
+ *  @brief Struct for telemetry loops state
+ */
+
+typedef struct _power_telem_loop_detail_t {
+    power_telemetry_pvt_state_t soc_top_temp_data[SOC_PVT_TOTAL_CHANNELS_DTS];
+    power_telemetry_pvt_state_t soc_top_voltage_data[SOC_PVT_TOTAL_CHANNELS_VM];
+    uint16_t soc_max_temp_dC;    // soc max temp in 0.1C
+    power_vrs_avs_latest_t* vr_data;
+} power_telem_loop_detail_t;
+
+enum _power_cap_update_result_t
+{
+    MP_POWER_CAP_SUCCESS = 0,
+    MP_POWER_CAP_PENDING,
+    MP_POWER_CAP_FAIL_PREVIOUS_UPDATED, /* Returned (via callback) when a
+                                           previous request fails due to new
+                                           request */
+    MP_POWER_CAP_FAIL_CLI_NOT_ALLOWED,  /* CLI not allowed if non-CLI in progress
+                                         */
+};
+
+
+/**
+ *  @brief Enum of PVT telemetry states
+ *
+ *  PVT loop is simpler; no events other than interval -- read_pvt does not
+ * require a signal/event to return to idle, so no chance for entry into an
+ * error state. Keeping the same basic structure to allow for timestamping, etc.
+ */
+typedef enum _power_pvt_telem_state_t
+{
+    POWER_PVT_TELEM_STATE_IDLE = POWER_LOOP_IDLE_STATE_ID,
+    POWER_PVT_TELEM_STATE_READ_PVT,
+    POWER_PVT_TELEM_STATE_MAX,
+} power_pvt_telem_state_t;
+
+typedef struct _pwr_intparams {
+    power_ctrl_loop_detail_t* p_pwrstatus_s_ctrl_loop;
+    power_loop_context_t* p_pwrstatus_s_ctrl_loop_context;
+    power_telem_loop_detail_t* p_pwrstatus_s_telem_loop;
+    power_loop_context_t* p_pwrstatus_s_vr_telem_loop_context;        
+    power_loop_context_t* p_pwrstatus_s_pvt_telem_loop_context; 
+
+    power_knobs_t* p_knobs;
+    power_fuse_data_t* p_fuses;    
+} pwr_intparams_t;   
+
+
+/**
+ * @brief Checks if HW has GPIO connected meaningfully
+ *
+ * @return true or false
+ *
+ */
+bool power_hw_gpio_connected();
+
+
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+
 #ifdef __cplusplus
 }
 #endif
+

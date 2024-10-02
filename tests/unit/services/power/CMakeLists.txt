@@ -1,3 +1,4 @@
+add_subdirectory(cli)
 add_subdirectory(hw_int)
 add_subdirectory(loops)
 add_subdirectory(main)

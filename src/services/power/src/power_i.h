@@ -72,30 +72,6 @@
 /* power cap */
 #define NO_POWER_CAP (UINT16_MAX)
 
-/* max number of minimum plimit update options */
-#define PLIMIT_UPDATE_MAX 8
-
-/*-------------- Typedefs ----------------*/
-// Enums for power cap result
-enum _power_cap_update_result_t
-{
-    MP_POWER_CAP_SUCCESS = 0,
-    MP_POWER_CAP_PENDING,
-    MP_POWER_CAP_FAIL_PREVIOUS_UPDATED, /* Returned (via callback) when a
-                                           previous request fails due to new
-                                           request */
-    MP_POWER_CAP_FAIL_CLI_NOT_ALLOWED,  /* CLI not allowed if non-CLI in progress
-                                         */
-};
-
-// structure for tracking latest v/c/t from AVS for each rail
-typedef struct _power_vrs_avs_latest
-{
-    uint16_t voltage;     // Raw AVS value, 1LSB=1mV
-    uint16_t current;     // Raw AVS value, 1LSB=10mA
-    uint16_t temperature; // Raw AVS value, 1LSB=0.1 Celsius
-} power_vrs_avs_latest_t;
-
 // Callback function pointer type for power cap
 typedef void (*power_cap_completed_callback_t)(int result, uint16_t current_cap, uint16_t previous_cap_watts);
 

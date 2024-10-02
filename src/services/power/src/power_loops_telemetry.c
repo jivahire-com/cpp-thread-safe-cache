@@ -452,3 +452,18 @@ static void hw_send_telemetry(power_telem_type_t type)
         break;
     }
 }
+
+power_loop_context_t* get_s_pvt_telem_loop_context(void)
+{
+    return &s_pvt_telem_loop_context;
+}
+
+power_loop_context_t* get_s_vr_telem_loop_context(void)
+{
+    return &s_vr_telem_loop_context;
+}
+
+power_telem_loop_detail_t* get_s_telem_loop(void)
+{
+    return &s_telem_loop;
+}

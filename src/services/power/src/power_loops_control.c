@@ -922,3 +922,13 @@ power_ctrl_loop_detail_t* power_ctrl_loop_get()
 {
     return &s_ctrl_loop;
 }
+
+power_loop_context_t* get_s_loop_context(void)
+{
+    return &s_control_loop_context;
+}
+
+power_ctrl_loop_detail_t* get_s_ctrl_loop(void)
+{
+    return &s_ctrl_loop;
+}

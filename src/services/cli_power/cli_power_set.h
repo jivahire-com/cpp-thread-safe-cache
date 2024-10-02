@@ -45,4 +45,4 @@ void cli_power_set_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* compl
  *  @return
  *      The runconfig element ID for the sub-command
  */
-power_if_cmd_t cli_power_set_get_cmd_id(char* sub_command);
+power_if_cmd_t cli_power_set_get_cmd_id(const char* sub_command);

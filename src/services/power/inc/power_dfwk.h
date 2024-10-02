@@ -41,6 +41,63 @@ typedef struct
     ppower_service_t p_device;
 } power_service_interface_t, *ppower_service_interface_t;
 
+/* Definition of the power set subcommand arguments */
+
+struct _desiredparams
+{
+   bool all;            // False - all , true - Core 
+   uint8_t core;      // 0-74      
+   uint8_t state;    // 0-31
+   uint8_t throttle; 	    // 0- 7	
+   uintptr_t cluster_pex_base_addr;
+   uint8_t core_count;
+};
+
+struct _plimitparams
+{
+   bool all;        // False - all , true - Core 
+   uint8_t core;      // 0-74       
+   uint8_t state;     // 0-31
+   uintptr_t cluster_pex_base_addr;  
+   uint8_t core_count; 
+};
+
+struct _nominalparams
+{
+    uint8_t current_val;                    // sets the nominal pstate used in loop (does not affect DVFS/ACPI)   
+    uint8_t previous_val;                    // previous value of nominal pstate used in loop    
+};
+
+typedef union 
+{
+	uint16_t     cap_val;                        // set the rack power cap (W)
+	struct      _desiredparams  desiredparams;   // sets OS desired pstate register
+	struct      _plimitparams  	plimitparams;         // sets plimit
+    uint16_t    loopdis_bits;                   // sets loop disable bits (1-ctrl, 2-vrtelem, 4-pvttelem)
+    uint16_t    minupdate_val;                  // sets the minimum plimit update per loop iteration, 0 disables    
+    struct      _nominalparams  nominalparams;  // sets the nominal pstate used in loop (does not affect DVFS/ACPI)
+    uint16_t    racklimit;                      // sets the rack limit gpio for simulated implementations  
+    
+} _pwrset_subcommand_args;
+
+typedef struct _pwr_icc_cap_complete_payload_t {
+    int result;
+    uint16_t current_cap;
+    uint16_t previous_cap;
+} pwr_icc_cap_complete_payload_t;
+
+typedef union 
+{
+    pwr_icc_cap_complete_payload_t pwr_icc_cap_result; // set the rack power cap (W)
+	struct      _desiredparams  desiredparams;   // sets OS desired pstate register
+	struct      _plimitparams  	plimitparams;         // sets plimit
+    uint16_t    loopdis_bits;                   // sets loop disable bits (1-ctrl, 2-vrtelem, 4-pvttelem)
+    uint16_t    minupdate_val;                  // sets the minimum plimit update per loop iteration, 0 disables    
+    struct      _nominalparams  nominalparams;  // sets the nominal pstate used in loop (does not affect DVFS/ACPI)
+    uint16_t    racklimit;                      // sets the rack limit gpio for simulated implementations  
+    
+} _pwrset_response_val;
+
 /* Structure for the async dfwk CLI request to the power interface */
 typedef struct {
     DFWK_ASYNC_REQUEST_HEADER header;
@@ -50,11 +107,26 @@ typedef struct {
     power_if_cmd_t power_ext_if_cmd_id;
 
     /* Structure elements for fetch data requests to power service*/
-    void* p_requested_data;
+//    void* p_requested_data;
+    union {
+        void* p_requested_data;  
+
+        _pwrset_response_val    pwrset_response_val;
+
+        pwr_intparams_t          pwr_intparams;         
+
+    } fetch_data;
 
     /* Structure elements for set data requests to power service*/
-    void* p_set_data;   // p_set_data is set as a void pointer at present. This will be replaced by a more specific structure based on the set requests.
+//    void* p_set_data;   // p_set_data is set as a void pointer at present. This will be replaced by a more specific structure based on the set requests.
+    union {
+        void* p_set_data;  
+        _pwrset_subcommand_args pwrset_sub_command_args;
+    } sub_command_args;
+
 } power_service_cli_request_t, *ppower_service_cli_request_t;
+
+
 
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus

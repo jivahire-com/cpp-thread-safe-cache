@@ -48,9 +48,21 @@ int vab_common_init(uint16_t vab_instances_to_init)
 {
     int status = SILIBS_SUCCESS;
 
-    /* Keep the default memory attributes */
+    /*
+     * Setup transaction attributes in GBPA.
+     *
+     * The mem_attr field is setup to describe memory type attributes.
+     * Setting it to the encoding below allows devices behind an SMMU
+     * to bus master reads/writes to/from system memory when the SMMUs
+     * are operating in global bypass mode.
+     *
+     * The mem_attr encoding used is -
+     * 0b1111: Normal memory, Inner Write-Back, Outer Write-Back.
+     */
     smmu_gbpa_cfg_t smmu_gbpa_cfg = {0};
     smmu_gbpa_cfg.sh_cfg = 1;
+    smmu_gbpa_cfg.mt_cfg = 1;
+    smmu_gbpa_cfg.mem_attr = 0b1111;
 
     vab_init_t vab_init_cfg = {.vab_smmu_gbpa_cfg = &smmu_gbpa_cfg};
 

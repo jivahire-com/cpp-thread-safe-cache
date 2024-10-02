@@ -72,6 +72,8 @@ TEST_FUNCTION(test_successful_init_all_vabs, NULL, NULL)
 
             expect_value(__wrap_vab_init, vab_init_params->security_state, SECURITY_STATE_NON_SECURE);
             expect_value(__wrap_vab_init, vab_init_params->vab_smmu_gbpa_cfg->sh_cfg, 1);
+            expect_value(__wrap_vab_init, vab_init_params->vab_smmu_gbpa_cfg->mt_cfg, 1);
+            expect_value(__wrap_vab_init, vab_init_params->vab_smmu_gbpa_cfg->mem_attr, 0b1111);
             expect_value(__wrap_vab_init, vab_init_params->system_counter_delay, 0);
             expect_value(__wrap_vab_init, vab_init_params->vab_resolved_base_addr, 0x0);
             expect_value(__wrap_vab_init, vab_init_params->vab_configure_intu, true);
@@ -111,6 +113,8 @@ TEST_FUNCTION(test_atu_unmap_fail, NULL, NULL)
 
             expect_value(__wrap_vab_init, vab_init_params->security_state, SECURITY_STATE_NON_SECURE);
             expect_value(__wrap_vab_init, vab_init_params->vab_smmu_gbpa_cfg->sh_cfg, 1);
+            expect_value(__wrap_vab_init, vab_init_params->vab_smmu_gbpa_cfg->mt_cfg, 1);
+            expect_value(__wrap_vab_init, vab_init_params->vab_smmu_gbpa_cfg->mem_attr, 0b1111);
             expect_value(__wrap_vab_init, vab_init_params->system_counter_delay, 0);
             expect_value(__wrap_vab_init, vab_init_params->vab_resolved_base_addr, 0x0);
             expect_value(__wrap_vab_init, vab_init_params->vab_configure_intu, true);

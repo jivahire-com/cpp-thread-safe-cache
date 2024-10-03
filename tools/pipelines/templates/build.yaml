@@ -47,24 +47,30 @@ jobs:
           Copy-Item -Path .\.build\${{ parameters.Configuration }}\**\bin\* -Recurse -Destination ./publish
           Copy-Item -Recurse ./publish $(Build.ArtifactStagingDirectory)
 
-    - task: PowerShell@2
-      displayName: Get release notes for Silibs
+    - task: Bash@3
+      displayName: Get release notes for Silibs (Bash)
       inputs:
         targetType: 'inline'
         script: |
-          pushd .externs\repo\silibs
+          pushd .externs/repo/silibs
           mkdir Release_Notes
-          git log -100 --pretty --decorate > Release_Notes\Release_Notes_silibs.txt
-          pushd libraries\common
-          git log -100 --pretty --decorate > ..\..\Release_Notes\Release_Notes_silibs_common.txt
+          git log -100 --pretty --decorate > Release_Notes/Release_Notes_silibs.txt
+          pushd libraries/common
+          git log -100 --pretty --decorate > ../../Release_Notes/Release_Notes_silibs_common.txt
           popd
-          pushd libraries\sdm
-          git log -100 --pretty --decorate > ..\..\Release_Notes\Release_Notes_sdm.txt
+          pushd libraries/sdm
+          git log -100 --pretty --decorate > ../../Release_Notes/Release_Notes_sdm.txt
           popd
-          pushd libraries\crypto
-          git log -100 --pretty --decorate > ..\..\Release_Notes\Release_Notes_crypto.txt
+          pushd libraries/crypto
+          git log -100 --pretty --decorate > ../../Release_Notes/Release_Notes_crypto.txt
           popd
           popd
+
+    - task: PowerShell@2
+      displayName: Get release notes for Silibs (PS)
+      inputs:
+        targetType: 'inline'
+        script: |
           Copy-Item -Path .externs\repo\silibs\Release_Notes -Recurse -Destination $(Build.SourcesDirectory)\.build\${{ parameters.Configuration }}\${{ parameters.Toolchain }}\Release_Notes
 
     - task: PublishSymbols@2

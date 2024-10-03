@@ -210,7 +210,7 @@ FPFW_CLI_STATUS hsp_mbox_echo(int argc, const char** argv)
     //! Set the designated cmd code for echo
     hsp_echo_msg.as_uint32[0] = SET_HSP_MAILBOX_HEADER_ASUNIT32(HSP_MAILBOX_CMD_TEST_ECHO_REQ, 0, 0);
 
-    if (argc != 5)
+    if (argc != 4)
     {
         FpFwCliPrint("Echo cmd: Insufficient Payload Args, Using default values\n");
         hsp_echo_msg.as_uint32[1] = HSP_MBOX_TEST_PAYLOAD_1;

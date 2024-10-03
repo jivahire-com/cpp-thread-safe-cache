@@ -91,7 +91,7 @@ FPFW_CLI_STATUS d2d_mbox_send(int argc, const char** argv)
     //! reset mbox packet
     memset(&d2d_send_msg, 0, sizeof(d2d_send_msg));
 
-    if (argc < 2)
+    if (argc < 17)
     {
         FpFwCliPrint("D2D Send cmd: Insufficient Payload Args, Using default values\n");
         d2d_send_msg.as_uint32[0] = SET_RMSS_D2D_MAILBOX_HEADER_ASUNIT32(RMSS_D2D_MAILBOX_MSG_ECHO_REQ, 0, 0);
@@ -306,7 +306,7 @@ FPFW_CLI_STATUS d2d_mbox_echo(int argc, const char** argv)
     //! Set the designated cmd code for echo
     d2d_echo_msg.as_uint32[0] = SET_RMSS_D2D_MAILBOX_HEADER_ASUNIT32(RMSS_D2D_MAILBOX_MSG_ECHO_REQ, 0, 0);
 
-    if (argc < 2)
+    if (argc < 17)
     {
         FpFwCliPrint("D2D Echo cmd: Insufficient Payload Args, Using default values\n");
         for (uint8_t i = 1; i < D2D_MBOX_FIFO_DEPTH; i++)

@@ -2,7 +2,7 @@
 
 """
 - Python based Pythia 2.0 Test.
-- Tests AVS reads Die0.
+- Tests AVS reads Die1.
 """
 import time
 import sys, os
@@ -10,14 +10,14 @@ from pathlib import Path
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs'))
 
-from kng_pythia_test_if import KngPythiaTestIF
+#from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 import re
 
 # Class name must match file name for Robot Framework Library usage
-class scp_avs_read_test(EchoFallsBaseTest):
+class scp_avs_read_test_die1(EchoFallsBaseTest):
 
     """
     :param name:                Name of the test case
@@ -31,7 +31,7 @@ class scp_avs_read_test(EchoFallsBaseTest):
     """
     def __init__(
         self,
-        name: str = "AVS_read_Die0",
+        name: str = "AVS_read_Die1",
         number: str = "NaN",
         workspace_config: Path | str = None,
         default_log_home: str = None,
@@ -53,14 +53,14 @@ class scp_avs_read_test(EchoFallsBaseTest):
             host_name,
         )
     
-    def avs_read_test(self):
+    def avs_read_test_die1(self):
         """
         AVS read test:
             1. Setup the Test.
             2. Executes AVS reads.
             3. Teardown Test.
         """
-        self.log.info("Running AVS read tests on Die0  . . .")
+        self.log.info("Running AVS read tests on Die1  . . .")
         self.dut.setup()
 
         if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
@@ -73,7 +73,7 @@ class scp_avs_read_test(EchoFallsBaseTest):
         
         elif (self.dut.get_dut_type() == DeviceType.SVP):
             print("SVP device")
-            core_com_channel=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
+            core_com_channel=self.dut.mb.node_0.soc.secondary_die.scp.channel_manager.get_current_channel()
             core_com_channel.open()
             core_com_channel.is_open()
             assert core_com_channel.is_open()
@@ -84,25 +84,26 @@ class scp_avs_read_test(EchoFallsBaseTest):
             return False
 
         try:
-            self.log.info(f"Reading from self.dut.mb.node_0.soc.primary_die.scp.channel_manager\n")
+            self.log.info(f"Reading from self.dut.mb.node_0.soc.secondary_die.scp.channel_manager\n")
             core_com_channel.read_until(key="HeartBeat", timeout_seconds=900)
         except Exception as e:
-            self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
+            self.log.error(f"Error reading self.dut.mb.node_0.soc.secondary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="HeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             return False
 
-        connection = self.dut.mb.node_0.soc.primary_die.scp.channel_manager
+        connection = self.dut.mb.node_0.soc.secondary_die.scp.channel_manager
 
-        commands = ["avs avs_read 0 0 0", "avs avs_read 0 1 0", "avs avs_read 1 0 0", "avs avs_read 1 1 0", "avs avs_read 2 0 0", "avs avs_read 2 1 0", "avs avs_read 3 0 0", "avs avs_read 3 1 0"]
+        self.log.info(f"Reading AVS volt. Die1 . . .\n")
+        commands = ["avs avs_read 0 0 0", "avs avs_read 0 1 0"]
         for command in commands:
-            self.log.info(f"Submitting {command}\n")
+            self.log.info(f"Submitting {command}\n") 
             core_com_channel.clear_buffer()
             core_com_channel.write_line(write_string=command)
             try:
                 command_response_cli=connection.get_current_channel().read_until(key="avs_cli_comp", timeout_seconds=30)
             except Exception as e:
-                self.log.error(f"Error reading AVS volt. Die0: {e}")
+                self.log.error(f"Error reading AVS volt. Die1: {e}")
                 self.test_notify(step="AVS Read volt.", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
                 return False 
@@ -116,34 +117,34 @@ class scp_avs_read_test(EchoFallsBaseTest):
             self.log.info(f"matches: {matches}")
             self.log.info(f"AVS voltage is: {val}")
 
-        self.log.info(f"Reading AVS current Die0 . . .\n")
-        commands = ["avs avs_read 0 0 2", "avs avs_read 0 1 2", "avs avs_read 1 0 2", "avs avs_read 1 1 2", "avs avs_read 2 0 2", "avs avs_read 2 1 2", "avs avs_read 3 0 2", "avs avs_read 3 1 2"]
+        self.log.info(f"Reading AVS current Die1 . . .\n")
+        commands = ["avs avs_read 0 0 2", "avs avs_read 0 1 2"]
         for command in commands:
-            self.log.info(f"Submitting {command}\n")
-            core_com_channel.clear_buffer() 
-            core_com_channel.write_line(write_string=command)
-            try:
-                command_response_cli=connection.get_current_channel().read_until(key="avs_cli_comp", timeout_seconds=30)
-            except Exception as e:
-                self.log.error(f"Error reading AVS current Die0: {e}")
-                self.test_notify(step="AVS Read current", msg="Test Fail", _is_error=True)
-                self.dut.teardown()
-                return False
-
-        self.log.info(f"Reading AVS temperature Die0 . . .\n")
-        commands = ["avs avs_read 0 0 3", "avs avs_read 0 1 3", "avs avs_read 1 0 3", "avs avs_read 1 1 3", "avs avs_read 2 0 3", "avs avs_read 2 1 3", "avs avs_read 3 0 3", "avs avs_read 3 1 3"]
-        for command in commands:
-            self.log.info(f"Submitting {command}\n")
+            self.log.info(f"Submitting {command}\n") 
             core_com_channel.clear_buffer()
             core_com_channel.write_line(write_string=command)
             try:
                 command_response_cli=connection.get_current_channel().read_until(key="avs_cli_comp", timeout_seconds=30)
             except Exception as e:
-                self.log.error(f"Error reading AVS temperature Die0: {e}")
-                self.test_notify(step="AVS Read temperature", msg="Test Fail", _is_error=True)
+                self.log.error(f"Error reading AVS current Die1: {e}")
+                self.test_notify(step="AVS Read current", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
                 return False
 
-        self.test_notify(step="AVS read Die0", msg="Test Done", _is_error=False)
+        self.log.info(f"Reading AVS temp. Die1 . . .\n")
+        commands = ["avs avs_read 0 0 3", "avs avs_read 0 1 3"]
+        for command in commands:
+            self.log.info(f"Submitting {command}\n") 
+            core_com_channel.clear_buffer()
+            core_com_channel.write_line(write_string=command)
+            try:
+                command_response_cli=connection.get_current_channel().read_until(key="avs_cli_comp", timeout_seconds=30)
+            except Exception as e:
+                self.log.error(f"Error reading AVS temperature Die1: {e}")
+                self.test_notify(step="AVS Read temperature", msg="Test Fail", _is_error=True)
+                self.dut.teardown()
+                return False
+            
+        self.test_notify(step="AVS read Die1", msg="Test Done", _is_error=False)
         self.dut.teardown()
         return True

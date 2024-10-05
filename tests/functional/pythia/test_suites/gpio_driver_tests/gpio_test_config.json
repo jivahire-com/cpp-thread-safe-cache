@@ -1,0 +1,80 @@
+{
+    "GPIO_Controllers" : [
+        {
+            "Name" : "MSCP_EXP_GPIO_4",
+            "ID" : 4,
+            "Pins" : [
+                {
+                    "Pin" : 0,
+                    "Name" : "MSCP_EXP_I2C0_ALERT_n",
+                    "Direction" : "GPIO_DIR_IN",
+                    "Interrupt" : "Disable"
+                },
+                {
+                    "Pin" : 2,
+                    "Name" : "DIE_MEM_HOT_n",
+                    "Direction" : "GPIO_DIR_OUT",
+                    "Interrupt" : "Disable"
+                },
+                {
+                    "Pin" : 3,
+                    "Name" : "DIE_HOT_n",
+                    "Direction" : "GPIO_DIR_OUT",
+                    "Interrupt" : "Disable"
+                },
+                {
+                    "Pin" : 4,
+                    "Name" : "SOC_SLEEP_S5_n",
+                    "Direction" : "GPIO_DIR_OUT",
+                    "Interrupt" : "Disable"
+                },
+                {
+                    "Pin" : 5,
+                    "Name" : "VR_HOT_SOC_n",
+                    "Direction" : "GPIO_DIR_IN",
+                    "Interrupt" : "Disable"
+                }
+            ]
+        },
+        {
+            "Name" : "MSCP_EXP_GPIO_6",
+            "ID" : 6,
+            "Pins" : [
+                {
+                    "Pin" : 0,
+                    "Name" : "SOC_FATAL_ERR_n",
+                    "Direction" : "GPIO_DIR_OUT",
+                    "Interrupt" : "Disable"
+                },
+                {
+                    "Pin" : 2,
+                    "Name" : "SAFE_MODE_REQUEST_n",
+                    "Direction" : "GPIO_DIR_OUT",
+                    "Interrupt" : "Disable"
+                },
+                {
+                    "Pin" : 3,
+                    "Name" : "CRASH_DUMP_AVAILABLE_n",
+                    "Direction" : "GPIO_DIR_OUT",
+                    "Interrupt" : "Disable"
+                },
+                {
+                    "Pin" : 4,
+                    "Name" : "BMC_CRASH_DUMP_REQ",
+                    "Direction" : "GPIO_DIR_IN",
+                    "Interrupt" : "Enable"
+                }
+            ]
+        }
+    ],
+    "ReservedForIsr" : {
+        "scp" : {
+            "Ctrl" : 4,
+            "Pin" : 7
+        },
+        "mcp" : {
+            "Ctrl" : 6,
+            "Pin" : 7
+        }
+    }
+}

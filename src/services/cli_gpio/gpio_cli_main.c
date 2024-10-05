@@ -106,7 +106,7 @@ static FPFW_CLI_STATUS gpio_cli_set_int_enable(int argc, const char** pp_argv)
     int slibs_ret = gpio_set_interrupt_enable(GPIO_CTRL_PIN_ID(gpio_ctrl_id, gpio_pin_id), enable);
     if (SILIBS_SUCCESS == slibs_ret)
     {
-        FpFwCliPrint("Set %x / %x GPIO interrupt: %s\n", gpio_ctrl_id, gpio_pin_id, enable ? "Enable" : "Disable");
+        FpFwCliPrint("Set %d / %d GPIO interrupt: %s\n", gpio_ctrl_id, gpio_pin_id, enable ? "Enable" : "Disable");
     }
     else
     {
@@ -137,7 +137,7 @@ static FPFW_CLI_STATUS gpio_cli_get_int_enable(int argc, const char** pp_argv)
     int slibs_ret = gpio_get_interrupt_enable(GPIO_CTRL_PIN_ID(gpio_ctrl_id, gpio_pin_id), &enable);
     if (SILIBS_SUCCESS == slibs_ret)
     {
-        FpFwCliPrint("Get %x / %x GPIO interrupt: %s\n", gpio_ctrl_id, gpio_pin_id, enable ? "Enable" : "Disable");
+        FpFwCliPrint("Get %d / %d GPIO interrupt: %s\n", gpio_ctrl_id, gpio_pin_id, enable ? "Enable" : "Disable");
     }
     else
     {
@@ -182,7 +182,7 @@ static FPFW_CLI_STATUS gpio_cli_set_dir(int argc, const char** pp_argv)
     int slibs_ret = gpio_set_dir(GPIO_CTRL_PIN_ID(gpio_ctrl_id, gpio_pin_id), dir);
     if (SILIBS_SUCCESS == slibs_ret)
     {
-        FpFwCliPrint("Set %x / %x GPIO Direction: %s\n", gpio_ctrl_id, gpio_pin_id, dir == 0 ? "GPIO_DIR_IN" : "GPIO_DIR_OUT");
+        FpFwCliPrint("Set %d / %d GPIO Direction: %s\n", gpio_ctrl_id, gpio_pin_id, dir == 0 ? "GPIO_DIR_IN" : "GPIO_DIR_OUT");
     }
     else
     {
@@ -213,7 +213,7 @@ static FPFW_CLI_STATUS gpio_cli_get_dir(int argc, const char** pp_argv)
     int slibs_ret = gpio_get_dir(GPIO_CTRL_PIN_ID(gpio_ctrl_id, gpio_pin_id), &dir);
     if (SILIBS_SUCCESS == slibs_ret)
     {
-        FpFwCliPrint("Get %x / %x GPIO Direction: %s\n", gpio_ctrl_id, gpio_pin_id, dir == 0 ? "GPIO_DIR_IN" : "GPIO_DIR_OUT");
+        FpFwCliPrint("Get %d / %d GPIO Direction: %s\n", gpio_ctrl_id, gpio_pin_id, dir == 0 ? "GPIO_DIR_IN" : "GPIO_DIR_OUT");
     }
     else
     {
@@ -245,7 +245,7 @@ static FPFW_CLI_STATUS gpio_cli_set_pin(int argc, const char** pp_argv)
     int slibs_ret = gpio_set_output(GPIO_CTRL_PIN_ID(gpio_ctrl_id, gpio_pin_id), level);
     if (SILIBS_SUCCESS == slibs_ret)
     {
-        FpFwCliPrint("Set %x / %x GPIO Output: %d\n", gpio_ctrl_id, gpio_pin_id, level);
+        FpFwCliPrint("Set %d / %d GPIO Output: %d\n", gpio_ctrl_id, gpio_pin_id, level);
     }
     else
     {
@@ -276,7 +276,7 @@ static FPFW_CLI_STATUS gpio_cli_get_pin(int argc, const char** pp_argv)
     int slibs_ret = gpio_get_input(GPIO_CTRL_PIN_ID(gpio_ctrl_id, gpio_pin_id), &level);
     if (SILIBS_SUCCESS == slibs_ret)
     {
-        FpFwCliPrint("Get %x / %x GPIO Input: %d\n", gpio_ctrl_id, gpio_pin_id, level);
+        FpFwCliPrint("Get %d / %d GPIO Input: %d\n", gpio_ctrl_id, gpio_pin_id, level);
     }
     else
     {
@@ -296,7 +296,7 @@ static void gpio_cli_isr_callback(PDFWK_ASYNC_REQUEST_HEADER request, void* comp
     DfwkClientInterfaceClose(&isr_context->gpio_iface->Header);
     isr_context->isr_registered = false;
 
-    FpFwCliPrint("GPIO ISR Callback: Status: 0x%08x, CtrlID: %x, PinID: %x, Level: %d\n",
+    FpFwCliPrint("GPIO ISR Callback: Status: 0x%08x, CtrlID: %d, PinID: %d, Level: %d\n",
                  gpio_request->status,
                  GET_GPIO_CTRL_ID(gpio_request->gpio_pin_id),
                  GET_GPIO_PIN_ID(gpio_request->gpio_pin_id),

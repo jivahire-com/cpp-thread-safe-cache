@@ -25,12 +25,15 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+
+// Define GPIO configuration table based onKingsgate RMSS HAS Chapter 15.11.2
+// https://microsoft.sharepoint.com/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Architecture/HAS%201.0/RMSS/KingsGateRMSS%20HAS%20v0p1.4.docx?web=1
 static const gpio_config_entry_t fpga_config_gpio_table[] = {
     // Override the default gpio config for the FPGA, since one some systems, On GPIO Bank 6, 
     // Pin 6 and Pin 7 are looped back. Hence, we will use these pins to check if GPIO is connected.
     // Disable GPIO4_5 interrupt, since power code polls for VR_HOT_SOC
     {GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_4, 0xFF),
-    {.grp = {.grp_level = 0x1C, .grp_dir = 0x10, .grp_int_enable = 0x00, .grp_int_lvl_edge = 0x20}}},
+    {.grp = {.grp_level = 0x1C, .grp_dir = 0x1C, .grp_int_enable = 0x00, .grp_int_lvl_edge = 0x20}}},
     {GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_6, 0xFF),
     {.grp = {.grp_level = 0x0F, .grp_dir = 0x4D, .grp_int_enable = 0x10, .grp_int_lvl_edge = 0x00}}},
 };
@@ -42,7 +45,7 @@ static const gpio_config_entry_t def_gpio_config_table_grp[] = {
     // level 1:high 0:low | dir 1:out 0:in  | int_en 1:enable 0:disable | int_sense 1:low_level 0:rising_edge
     // Disable GPIO4_5 interrupt, since power code polls for VR_HOT_SOC
     {GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_4, 0xFF),
-     {.grp = {.grp_level = 0x1C, .grp_dir = 0x10, .grp_int_enable = 0x00, .grp_int_lvl_edge = 0x20}}},
+     {.grp = {.grp_level = 0x1C, .grp_dir = 0x1C, .grp_int_enable = 0x00, .grp_int_lvl_edge = 0x20}}},
     {GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_6, 0xFF),
      {.grp = {.grp_level = 0x0F, .grp_dir = 0x0D, .grp_int_enable = 0x10, .grp_int_lvl_edge = 0x00}}},
 };
@@ -86,12 +89,15 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver"))
 FPFW_INIT_COMPONENT(gpio_dev, FPFW_INIT_DEPENDENCIES("gpio_lib", "dfwk", "nvic"))
 {
     static gpio_irq_config_t gpio_irq_config[] = {
+#if defined(SCP_RUNTIME_INIT)
         {.nvic_irq = HW_INT_GPIO_CTRL_4_INT, .gpio_ctrl_id = MSCP_EXP_GPIO_4},
+#elif defined(MCP_RUNTIME_INIT)
         {.nvic_irq = HW_INT_GPIO_CTRL_6_INT, .gpio_ctrl_id = MSCP_EXP_GPIO_6},
+#endif
     };
     static gpio_device_t gpio_device;
     gpio_device.IrqConfig = gpio_irq_config;
-    gpio_device.IrqConfigCount = sizeof(gpio_irq_config) / sizeof(gpio_irq_config[0]);
+    gpio_device.IrqConfigCount = ARRAY_SIZE(gpio_irq_config);
     gpio_device.ConfigTable = (gpio_init_config_t*)fpfw_init_get_handle("gpio_lib");
 
     DFWK_THREADX_HOST* dfwk_host = (DFWK_THREADX_HOST*)fpfw_init_get_handle("dfwk");

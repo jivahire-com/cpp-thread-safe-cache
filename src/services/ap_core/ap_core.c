@@ -114,15 +114,35 @@ static void ap_core_ssi_start_cluster_init(pssi_startup_notification_request_t p
 }
 
 // dispatcher function to handle boot stage for primary AP core boot
-static void ap_core_ssi_start_primary_ap_core_boot(pssi_startup_notification_request_t p_request)
+static void ap_core_ssi_start_primary_ap_core_boot(pssi_startup_notification_request_t p_request, ssi_startup_type_t boot_type)
 {
     unsigned int boot_core = ap_core_util_boot_core(&s_ap_core_ctx);
     APCORE_LOG_INFO("Primary AP core power on (%d)", boot_core);
 
     ap_core_die_config_handover();
     ap_core_util_set_rvbaraddr(&s_ap_core_ctx, boot_core, s_ap_core_ctx.p_config->boot_core_rvbaraddr);
+
+    if (boot_type != COLD_BOOT)
+    {
+        ap_core_ppu_clusters_on_if_needed(&s_ap_core_ctx, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
+    }
+    
     ap_core_ppu_core_set_power_state(&s_ap_core_ctx, boot_core, true, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
     // for now, PPU is synchronous
+    DfwkAsyncRequestComplete(&p_request->header);
+}
+
+// dispatcher function to handle shutdown scenario
+static void ap_core_ssi_shutdown_quiesce(pssi_shutdown_notification_request_t p_request)
+{
+    APCORE_LOG_TRACE("SSI shutdown, shutdown type %d", p_request->shutdown_type);
+
+    // turn off all cores
+    ap_core_ppu_cores_off(&s_ap_core_ctx, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
+
+    // turn off clusters
+    ap_core_ppu_clusters_off(&s_ap_core_ctx, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
+
     DfwkAsyncRequestComplete(&p_request->header);
 }
 
@@ -160,7 +180,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
             if (s_ap_core_ctx.p_config->primary_boot_die)
             {
                 // Turn on primary AP core only on primary boot die
-                ap_core_ssi_start_primary_ap_core_boot(ssi_request);
+                ap_core_ssi_start_primary_ap_core_boot(ssi_request, ssi_request->boot_type);
             }
             else
             {
@@ -169,7 +189,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 
             break;
         case STARTUP_BL31_LOAD:
-            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())
+            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present() && ssi_request->boot_type == COLD_BOOT)
             {
                 // Primary boot die && HSP present then request TFA firmware load (BL31)
                 ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_BL31);
@@ -181,7 +201,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 
             break;
         case STARTUP_STMM_LOAD:
-            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())
+            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present() && ssi_request->boot_type == COLD_BOOT)
             {
                 // Primary boot die && HSP present then request STMM firmware load
                 ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_STMM);
@@ -193,7 +213,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 
             break;
         case STARTUP_BL33_LOAD:
-            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())
+            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present() && ssi_request->boot_type == COLD_BOOT)
             {
                 // Primary boot die && HSP present then request BL33 firmware load
                 ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_BL33);
@@ -205,7 +225,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 
             break;
         case STARTUP_HAFNIUM_LOAD:
-            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())
+            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present() && ssi_request->boot_type == COLD_BOOT)
             {
                 // Primary boot die && HSP present then request Hafnium firmware load
                 ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_HAFNIUM);
@@ -217,7 +237,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 
             break;
         case STARTUP_RMM_LOAD:
-            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())
+            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present() && ssi_request->boot_type == COLD_BOOT)
             {
                 // Primary boot die && HSP present then request RMM firmware load
                 ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_RMM);
@@ -229,7 +249,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 
             break;
         case STARTUP_SPMC_LOAD:
-            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())
+            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present() && ssi_request->boot_type == COLD_BOOT)
             {
                 // Primary boot die && HSP present then request SPMC manifest load
                 ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_SPMC);
@@ -276,11 +296,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
         break;
     case SSI_SHUTDOWN_QUIESCE_ASYNC: {
         pssi_shutdown_notification_request_t ssi_request = (pssi_shutdown_notification_request_t)p_request;
-        FPFW_UNUSED(ssi_request)
-        // need to implement shutdown cases
-        APCORE_LOG_TRACE("SSI shutdown, shutdown type %d", ssi_request->shutdown_type);
-        // complete immediately, since nothing to do
-        DfwkAsyncRequestComplete(p_request);
+        ap_core_ssi_shutdown_quiesce(ssi_request);
     }
     break;
     default:

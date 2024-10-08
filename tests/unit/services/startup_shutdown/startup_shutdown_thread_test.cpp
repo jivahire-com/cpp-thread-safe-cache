@@ -283,23 +283,24 @@ SOS_TEST(sos_notify_ssi_boot_stage_complete, NULL, NULL)
 
 SOS_TEST(sos_notify_ssi_shutdown, NULL, NULL)
 {
-    ssi_shutdown_type_t test_shutdown = SHUTDOWN;
-
     setup_registrations();
 
     unsigned count = FPFW_ARRAY_SIZE(s_test_registrations);
 
-    for (unsigned i = 0; i < count; i++)
+    for (int current_shutdown = SHUTDOWN; current_shutdown <= AP_WARM_RESET; current_shutdown++)
     {
-        expect_value(__wrap_ssi_shutdown_quiesce, p_interface, (uintptr_t)(s_test_registrations[i].p_ssi_interface));
-        expect_value(__wrap_ssi_shutdown_quiesce, p_request, (uintptr_t)&s_test_registrations[i].ssi_request);
-        expect_value(__wrap_ssi_shutdown_quiesce, shutdown_type, test_shutdown);
-        expect_any(__wrap_ssi_shutdown_quiesce, completion_routine);
-        expect_value(__wrap_ssi_shutdown_quiesce, p_completion_context, s_test_registrations[i].interface_unique_flag);
-    }
+        for (unsigned i = 0; i < count; i++)
+        {
+            expect_value(__wrap_ssi_shutdown_quiesce, p_interface, (uintptr_t)(s_test_registrations[i].p_ssi_interface));
+            expect_value(__wrap_ssi_shutdown_quiesce, p_request, (uintptr_t)&s_test_registrations[i].ssi_request);
+            expect_value(__wrap_ssi_shutdown_quiesce, shutdown_type, (ssi_shutdown_type_t)current_shutdown);
+            expect_any(__wrap_ssi_shutdown_quiesce, completion_routine);
+            expect_value(__wrap_ssi_shutdown_quiesce, p_completion_context, s_test_registrations[i].interface_unique_flag);
+        }
 
-    // call the function
-    sos_notify_ssi_shutdown(&s_test_service_ctx, test_shutdown);
+        // call the function
+        sos_notify_ssi_shutdown(&s_test_service_ctx, (ssi_shutdown_type_t)current_shutdown);
+    }
 }
 
 void setup_wait_ssi_complete_expectations()

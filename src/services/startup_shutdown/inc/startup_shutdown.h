@@ -103,7 +103,8 @@ int32_t sos_reset_timeout(PDFWK_INTERFACE_HEADER p_interface, uint32_t timeout);
  *
  *  @param p_interface The interface to the startup service
  *  @param p_request A DFWK request with enough space for a startup_shutdown_request_t or NULL for synchronous
- *  @param shutdown_type The type of shutdown being requested
+ *  @param boot_type The type of boottype being requested
+ *  @param startup_stage The stage to start
  *  @param completion_routine A completion routine to call when the operation has completed or NULL for synchronous.
  *  @param p_completion_context A context that is supplied when the completion routine is called.
  */

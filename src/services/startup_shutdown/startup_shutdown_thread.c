@@ -224,20 +224,25 @@ void sos_worker_thread_function(ULONG service_ctx)
             break;
 
         case SOS_QUEUE_ENTRY_TYPE_SHUTDOWN:
-            SOS_LOG_INFO("SOS message: shutdown\n");
-            // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1821526/
-            //       start timer for shutdown timeout
+            SOS_LOG_INFO("SOS message: shutdown, (%d)\n", message.data.shutdown_type);
 
-            // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1821528/
-            //       call core-specific core/die sync handler
             // notify all registered interfaces
             sos_notify_ssi_shutdown(p_sos_ctx, message.data.shutdown_type);
+
             // wait for responses
             wait_ssi_complete();
-            // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1821528/
-            //       wait for core/die sync complete
-            // call core-specific handler
-            sos_core_shutdown_handler(message.data.shutdown_type);
+
+            if (message.data.shutdown_type != AP_WARM_RESET)
+            {
+                // Report HSP for shutdown_type completion
+                sos_core_shutdown_handler(message.data.shutdown_type);
+            }
+            else
+            {
+                // trigger warm reset operation
+                sos_start_phase(fpfw_init_get_handle("sos_int"), NULL, WARM_BOOT_POST_AP, STARTUP_PHASE_AP_ASYNC, NULL, NULL);
+            }
+
             break;
         }
 

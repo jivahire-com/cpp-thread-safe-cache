@@ -133,6 +133,20 @@ void __wrap_ap_core_ppu_clusters_on(ap_core_service_context_t* p_context)
     check_expected_ptr(p_context);
 }
 
+void __wrap_ap_core_ppu_clusters_off(ap_core_service_context_t* p_context, uint32_t timeout_ms)
+{
+    FPFW_UNUSED(p_context);
+    FPFW_UNUSED(timeout_ms);
+    function_called();
+}
+
+void __wrap_ap_core_ppu_cores_off(ap_core_service_context_t* p_context, uint32_t timeout_ms)
+{
+    FPFW_UNUSED(p_context);
+    FPFW_UNUSED(timeout_ms);
+    function_called();
+}
+
 void __wrap_ap_core_ppu_core_set_power_state(ap_core_service_context_t* p_context, unsigned core_idx, bool power_state_on)
 {
     assert_non_null(p_context);
@@ -355,6 +369,7 @@ AP_CORE_TEST(dispatch_ap_core_boot, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_PRIMARY_AP_CORE_BOOT;
+    test_request.boot_type = COLD_BOOT;
 
     // expect a call to get boot_core
     expect_value(__wrap_ap_core_util_boot_core, p_context, s_ap_core_ctx);
@@ -429,18 +444,23 @@ AP_CORE_TEST(dispatch_complete_default, NULL, NULL)
     s_dispatch_routine(&test_request.header, &test_device.header);
 }
 
-AP_CORE_TEST(dispatch_shutdown, NULL, NULL)
+AP_CORE_TEST(dispatch_shutdown, setup, NULL)
 {
-#define TEST_BOOT_CORE 5
-    ssi_startup_notification_request_t test_request;
+    ssi_shutdown_notification_request_t test_request;
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_SHUTDOWN_QUIESCE_ASYNC;
-
-    // nothing done today, just check that the request is completed
-    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
-
+    
     assert_non_null(s_dispatch_routine);
-    s_dispatch_routine(&test_request.header, &test_device.header);
+
+    for (int idx = SHUTDOWN; idx <= AP_WARM_RESET; idx++)
+    {
+        expect_function_call(__wrap_ap_core_ppu_cores_off);
+        expect_function_call(__wrap_ap_core_ppu_clusters_off);
+        expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+        
+        test_request.shutdown_type = (ssi_shutdown_type_t)idx;
+        s_dispatch_routine(&test_request.header, &test_device.header);
+    }
 }
 
 AP_CORE_TEST(dispatch_bl31_load, setup, NULL)
@@ -450,6 +470,7 @@ AP_CORE_TEST(dispatch_bl31_load, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_BL31_LOAD; // unhandled stage
+    test_request.boot_type = COLD_BOOT;
 
     // Set up expectations
     will_return(__wrap_system_info_is_hsp_present, true);
@@ -570,6 +591,7 @@ AP_CORE_TEST(dispatch_stmm_load, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_STMM_LOAD;
+    test_request.boot_type = COLD_BOOT;
 
     // Set up expectations
     will_return(__wrap_system_info_is_hsp_present, true);
@@ -604,6 +626,7 @@ AP_CORE_TEST(dispatch_bl33_load, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_BL33_LOAD;
+    test_request.boot_type = COLD_BOOT;
 
     // Set up expectations
     will_return(__wrap_system_info_is_hsp_present, true);
@@ -638,6 +661,7 @@ AP_CORE_TEST(dispatch_hafnium_load, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_HAFNIUM_LOAD;
+    test_request.boot_type = COLD_BOOT;
 
     // Set up expectations
     will_return(__wrap_system_info_is_hsp_present, true);
@@ -672,6 +696,7 @@ AP_CORE_TEST(dispatch_rmm_load, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_RMM_LOAD;
+    test_request.boot_type = COLD_BOOT;
 
     // Set up expectations
     will_return(__wrap_system_info_is_hsp_present, true);
@@ -706,6 +731,7 @@ AP_CORE_TEST(dispatch_spmc_load, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_SPMC_LOAD;
+    test_request.boot_type = COLD_BOOT;
 
     // Set up expectations
     will_return(__wrap_system_info_is_hsp_present, true);

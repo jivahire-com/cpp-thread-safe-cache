@@ -63,7 +63,7 @@ SOS_TEST(sos_core_boot_stages, NULL, NULL)
 SOS_TEST(sos_core_shutdown_handler, NULL, NULL)
 {
 #define TEST_SHUTDOWN_TYPE (MSCP_SUBSYS_RESET)
-    // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1824038/
-    //       provide a real test; currently the APi does nothing, so there are no expectations.
+    // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2066715/
+    //       Inform HSP of SCP shutdown completion once mailbox interface is available
     sos_core_shutdown_handler(TEST_SHUTDOWN_TYPE);
 }

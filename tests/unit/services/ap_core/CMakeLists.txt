@@ -51,6 +51,8 @@ mock_target(${TARGET}
     DfwkInterfaceInitialize
         
     ap_core_ppu_clusters_on
+    ap_core_ppu_clusters_off
+    ap_core_ppu_cores_off
     ap_core_ppu_core_set_power_state
     ap_core_ppu_init
 

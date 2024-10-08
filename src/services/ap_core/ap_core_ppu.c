@@ -82,9 +82,14 @@ static void cluster_set_power_state(ap_core_service_context_t* p_context, unsign
     }
     else
     {
-        // power cluster off
-        // determine proper cluster off sequence
-        FPFW_RUNTIME_ASSERT(false);
+        // TO DO : Support disable lock from Off state.
+        // https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/785784
+        int status = ppu_v1_set_power_mode_with_timeout(cluster_ppu_addr, PPU_V1_MODE_OFF, PPU_V1_OPMODE_00, timeout_ms);
+
+        if (KNG_FAILED(status))
+        {
+            BUG_CHECK(status, cluster_ppu_addr, power_state_on);
+        }
     }
 }
 
@@ -96,12 +101,62 @@ void ap_core_ppu_clusters_on(ap_core_service_context_t* p_context, uint32_t time
     for (unsigned int core_idx = 0; core_idx < p_context->p_config->platform_die_core_count; ++core_idx)
     {
         // only initialize cores that are enabled (present/fused)
-        if (!corebits_is_bit_set(&p_context->enabled_cores, core_idx))
+        if (corebits_is_bit_set(&p_context->enabled_cores, core_idx))
         {
-            continue;
+            cluster_set_power_state(p_context, core_idx, true, timeout_ms);
         }
+    }
+}
 
-        cluster_set_power_state(p_context, core_idx, true, timeout_ms);
+// function to turn all ppu clusters on if needed
+void ap_core_ppu_clusters_on_if_needed(ap_core_service_context_t* p_context, uint32_t timeout_ms)
+{
+    FPFW_RUNTIME_ASSERT(p_context != NULL);
+
+    for (unsigned int core_idx = 0; core_idx < p_context->p_config->platform_die_core_count; ++core_idx)
+    {
+        // only initialize cores that are enabled (present/fused)
+        if (corebits_is_bit_set(&p_context->enabled_cores, core_idx))
+        {
+            uintptr_t cluster_ppu_addr =
+                (p_context->p_config->cluster_pex_base + (core_idx * p_context->p_config->cluster_stride) +
+                CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS + VOYAGER_DSU_CLUSTER_CLUSTER_PPU_ADDRESS);
+
+            if (ppu_v1_get_power_mode(cluster_ppu_addr) != PPU_V1_MODE_ON)
+            {
+                cluster_set_power_state(p_context, core_idx, true, timeout_ms);
+            }
+        }
+    }
+}
+
+// function to turn all ppu clusters off
+void ap_core_ppu_clusters_off(ap_core_service_context_t* p_context, uint32_t timeout_ms)
+{
+    FPFW_RUNTIME_ASSERT(p_context != NULL);
+
+    for (unsigned int core_idx = 0; core_idx < p_context->p_config->platform_die_core_count; ++core_idx)
+    {
+        // only initialize cores that are enabled (present/fused)
+        if (corebits_is_bit_set(&p_context->enabled_cores, core_idx))
+        {
+            cluster_set_power_state(p_context, core_idx, false, timeout_ms);
+        }
+    }
+}
+
+// function to turn all core off
+void ap_core_ppu_cores_off(ap_core_service_context_t* p_context, uint32_t timeout_ms)
+{
+    FPFW_RUNTIME_ASSERT(p_context != NULL);
+
+    for (unsigned int core_idx = 0; core_idx < p_context->p_config->platform_die_core_count; ++core_idx)
+    {
+        // only initialize cores that are enabled (present/fused)
+        if (corebits_is_bit_set(&p_context->enabled_cores, core_idx))
+        {
+            ap_core_ppu_core_set_power_state(p_context, core_idx, false, timeout_ms);
+        }
     }
 }
 
@@ -112,9 +167,6 @@ void ap_core_ppu_core_set_power_state(ap_core_service_context_t* p_context, unsi
     // only act on cores that are enabled (present/fused)
     if (!corebits_is_bit_set(&p_context->enabled_cores, core_idx))
     {
-        // unexpected core index
-        // TODO: should likely return error to dfwk client (SCMI)
-        //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/1877178
         FPFW_RUNTIME_ASSERT(false);
     }
 
@@ -137,10 +189,14 @@ void ap_core_ppu_core_set_power_state(ap_core_service_context_t* p_context, unsi
     }
     else
     {
-        // power core off
-        // TODO : determine proper core off sequence
-        // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1824038/
+        // TO DO : Support disable lock from Off state.
+        // https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/785784
 
-        APCORE_LOG_INFO("AP Core Power off Requested, For now NOP to unblock SBSA testing");
+        int status = ppu_v1_set_power_mode_with_timeout(core_ppu_addr, PPU_V1_MODE_OFF, PPU_V1_OPMODE_00, timeout_ms);
+
+        if (KNG_FAILED(status))
+        {
+            BUG_CHECK(status, core_ppu_addr, power_state_on);
+        }
     }
 }

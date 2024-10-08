@@ -76,7 +76,7 @@ TEST_FUNCTION(test_die1_svp_init, NULL, NULL)
 {
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return(__wrap_idsw_get_die_id, DIE_1);
-    expect_value(__wrap_scp_pcie_initialize, rpss_to_init, 0);
+    expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS4) | (1 << RPSS5) | (1 << RPSS6) | (1 << RPSS7)));
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_1);
     _fpfw_component_pcie.init_fn();
 }

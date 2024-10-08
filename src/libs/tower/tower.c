@@ -36,7 +36,9 @@
 #define TOWER_DIE0_VAB_INSTANCES_ENABLED_ON_SVP                                                  \
     ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) | \
      (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS))
-#define TOWER_DIE1_VAB_INSTANCES_ENABLED_ON_SVP ((1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS))
+#define TOWER_DIE1_VAB_INSTANCES_ENABLED_ON_SVP                                                  \
+    ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3) | \
+     (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS))
 
 #define TOWER_DIE0_VAB_INSTANCES_ENABLED_ON_FPGA \
     ((1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS))
@@ -88,7 +90,8 @@ static uint16_t tower_vab_instances_to_be_enabled(uint8_t die_num)
 // Skip RPSS on SVP to avoid simulation slowdown
 #define TOWER_DIE0_RPSS_INSTANCES_ENABLED_ON_SVP \
     ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3))
-#define TOWER_DIE1_RPSS_INSTANCES_ENABLED_ON_SVP (0)
+#define TOWER_DIE1_RPSS_INSTANCES_ENABLED_ON_SVP \
+    ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3))
 
 #define TOWER_DIE0_RPSS_INSTANCES_ENABLED_ON_FPGA ((1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2))
 #define TOWER_DIE1_RPSS_INSTANCES_ENABLED_ON_FPGA ((1 << D1_VAB1_RPSS1))

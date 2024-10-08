@@ -36,9 +36,7 @@ FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "v
     KNG_DIE_ID die_id = (KNG_DIE_ID)idsw_get_die_id();
 
     uint16_t rpss_mask = 0;
-    // TODO: Enable this when die1 root ports are enabled on SVP
-    // ADO: 2001837
-    bool die1_rpss_enabled = (plat != PLATFORM_SVP_SIM); /* Will be fetched via config manager */
+    bool die1_rpss_enabled = true; /* Will be fetched via config manager */
     if (die_id == DIE_0)
     {
         rpss_mask = (1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3);

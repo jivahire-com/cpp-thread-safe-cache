@@ -179,7 +179,6 @@ void config_variable_service_thread_fn(ULONG thread_input)
                                                                        sizeof(vab_config_varname_die_0) +
                                                                        sizeof(kingsgate_pcie_vab_config),
                   "ERROR: PCIE VAB Variable payload size exceeded");
-
     int status = tx_event_flags_get(ctx->event_ptr, ctx->event_flags_mask, TX_AND, &event, TX_WAIT_FOREVER);
     if (status != TX_SUCCESS)
     {

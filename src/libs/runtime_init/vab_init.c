@@ -39,7 +39,8 @@ static uint16_t vab_instances_to_be_enabled(uint8_t die_num)
         }
         else
         {
-            vab_instances_to_init = ((1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS));
+            vab_instances_to_init = ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) |
+                                     (1 << D1_VAB3_RPSS3) | (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS));
         }
         break;
 

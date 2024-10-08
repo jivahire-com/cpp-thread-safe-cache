@@ -234,8 +234,6 @@ class accel_interrupt_test(EchoFallsBaseTest):
 
         self.channels[core].write_line(write_string="..")
 
-        result = self.channels[core].clear_buffer()
-
         self.log.info(f"accel_interrupt_execute_cmd: Output {result}")
 
         return result

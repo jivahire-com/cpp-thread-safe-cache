@@ -98,7 +98,6 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
         commands = ["avs avs_read 0 0 0", "avs avs_read 0 1 0"]
         for command in commands:
             self.log.info(f"Submitting {command}\n") 
-            core_com_channel.clear_buffer()
             core_com_channel.write_line(write_string=command)
             try:
                 command_response_cli=connection.get_current_channel().read_until(key="avs_cli_comp", timeout_seconds=30)
@@ -107,11 +106,11 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
                 self.test_notify(step="AVS Read volt.", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
                 return False 
-            matches = re.search(".+AVS volt\. = ([0-9|\.]+)\n", command_response_cli)
+            matches = re.search(".*AVS volt\. = ([0-9|\.]+)\n", command_response_cli)
             val = float(matches.group(1))
-            if val > 1.5:
-                self.log.error(f"AVS voltage is > 1.5V: {val}")
-                self.test_notify(step="AVS volt. > 1.5V", msg="Test Fail", _is_error=True)
+            if not (0.01 < val < 1.5):
+                self.log.error(f"AVS voltage not in range 0.01V - 1.5V: {val}")
+                self.test_notify(step="AVS volt. out of range", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
                 return False
             self.log.info(f"matches: {matches}")
@@ -121,7 +120,6 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
         commands = ["avs avs_read 0 0 2", "avs avs_read 0 1 2"]
         for command in commands:
             self.log.info(f"Submitting {command}\n") 
-            core_com_channel.clear_buffer()
             core_com_channel.write_line(write_string=command)
             try:
                 command_response_cli=connection.get_current_channel().read_until(key="avs_cli_comp", timeout_seconds=30)
@@ -135,7 +133,6 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
         commands = ["avs avs_read 0 0 3", "avs avs_read 0 1 3"]
         for command in commands:
             self.log.info(f"Submitting {command}\n") 
-            core_com_channel.clear_buffer()
             core_com_channel.write_line(write_string=command)
             try:
                 command_response_cli=connection.get_current_channel().read_until(key="avs_cli_comp", timeout_seconds=30)

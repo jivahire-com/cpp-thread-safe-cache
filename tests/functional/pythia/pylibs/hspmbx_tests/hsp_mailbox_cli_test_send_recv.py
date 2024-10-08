@@ -89,15 +89,15 @@ class hsp_mailbox_cli_test_send_recv(EchoFallsBaseTest):
 
         self.log.info("Submitting HSP Mailbox command . . .") 
         command="icc_hspmbx"
-        core_com_channel.execute_command(command=command, command_args= "")
+        core_com_channel.write_line(write_string=command)
 
         for attempt in range(2):
             command="recv 193"
             self.log.info(f"Submitting RECV command {command} . . .") 
-            core_com_channel.execute_command(command=command, command_args= "")
+            core_com_channel.write_line(write_string=command)
             command="send 192 A B C"
             self.log.info(f"Submitting SEND command {command} . . .") 
-            core_com_channel.execute_command(command=command, command_args= "")
+            core_com_channel.write_line(write_string=command)
 
             try:
                 core_com_channel.read_until(key="SCP->HSP Send Complete: Status[0x0]", timeout_seconds=900)

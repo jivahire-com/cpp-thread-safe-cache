@@ -124,9 +124,6 @@ class gpio_driver_test(EchoFallsBaseTest):
         time.sleep(10)
 
         for core, channel in self.channels.items():
-            # Clear channel buffer
-            channel.clear_buffer()
-
             # Check GPIO configurations
             for gpio_ctrl in self.gpio_config["GPIO_Controllers"] :
                 ctrl_name = gpio_ctrl["Name"]
@@ -168,7 +165,6 @@ class gpio_driver_test(EchoFallsBaseTest):
 
         # Check Direction
         expected = f"Get {ctrl_id} / {pin_id} GPIO Direction: {pin_direction}"
-        channel.clear_buffer()
         channel.write_line(write_string=f"get_dir {ctrl_id} {pin_id}")
         result = channel.read_until(key=expected, timeout_seconds=30)
         matched = re.findall(expected, result)
@@ -179,7 +175,6 @@ class gpio_driver_test(EchoFallsBaseTest):
 
         # Check Interrupt enable
         expected = f"Get {ctrl_id} / {pin_id} GPIO interrupt: {pin_interrupt}";
-        channel.clear_buffer()
         channel.write_line(write_string=f"get_int_enable {ctrl_id} {pin_id}")
         result = channel.read_until(key=expected, timeout_seconds=30)
         matched = re.findall(expected, result)
@@ -208,27 +203,20 @@ class gpio_driver_test(EchoFallsBaseTest):
         time.sleep(1)
 
         # Generate Interrupt
-        channel.clear_buffer()
         channel.write_line(write_string=f"set_pin {ctrl} {pin} 0")
         time.sleep(1)
 
         channel.write_line(write_string=f"set_pin {ctrl} {pin} 1")
         time.sleep(1)
 
-        # Check ISR callback result
-        result = channel.clear_buffer()
-
         expected = f"GPIO ISR Callback: Status: 0x00000000, CtrlID: {ctrl}, PinID: {pin}"
-        matched = re.findall(expected, result)
-        if matched:
-            self.log.info(f"ISR Callback for {ctrl} {pin}: Output {matched}")
-        else:
-            raise Exception(f"Failed to verify GPIO {ctrl} {pin} ISR Callback")
+        try:
+            channel.read_until(key=expected, timeout_seconds=3)
+            self.log.info(f"ISR Callback for {ctrl} {pin}")
+        except Exception as e:
+            raise Exception(f"Failed to verify GPIO {ctrl} {pin} ISR Callback") from e
 
         # Restore configuration
         channel.write_line(write_string="restore")
         time.sleep(1)
-        result = channel.clear_buffer()
-        self.log.info(f"gpio-restore: Output {result}")
-
         channel.write_line(write_string="..")

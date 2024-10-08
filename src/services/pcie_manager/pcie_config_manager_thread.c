@@ -43,7 +43,8 @@ static void set_hsp_variable(const guid_t* guid_ptr,
 static uint32_t rb_cb_ctx;
 static uint32_t vab_cb_ctx;
 static kng_hsp_mailbox_cmd_set_variable set_var_send_msg = {.header.cmd = HSP_MAILBOX_CMD_SET_VARIABLE_REQ,
-                                                            .set_variable_address = SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE};
+                                                            .set_variable_address =
+                                                                SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE};
 static kng_hsp_mailbox_msg set_var_recv_msg = {.header.cmd = HSP_MAILBOX_CMD_SET_VARIABLE_RSP};
 
 static fpfw_icc_base_send_req_t set_var_send_req = {.payload_buffer = &set_var_send_msg,
@@ -172,12 +173,12 @@ void config_variable_service_thread_fn(ULONG thread_input)
     static_assert(SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_SIZE > sizeof(struct hsp_mbox_set_variable) +
                                                                        sizeof(rb_config_varname_die_0) +
                                                                        sizeof(kingsgate_pcie_root_bridge_config),
-                                                                       "ERROR: PCIE RB Variable payload size exceeded");
+                  "ERROR: PCIE RB Variable payload size exceeded");
 
     static_assert(SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_SIZE > sizeof(struct hsp_mbox_set_variable) +
                                                                        sizeof(vab_config_varname_die_0) +
                                                                        sizeof(kingsgate_pcie_vab_config),
-                                                                       "ERROR: PCIE VAB Variable payload size exceeded");
+                  "ERROR: PCIE VAB Variable payload size exceeded");
 
     int status = tx_event_flags_get(ctx->event_ptr, ctx->event_flags_mask, TX_AND, &event, TX_WAIT_FOREVER);
     if (status != TX_SUCCESS)

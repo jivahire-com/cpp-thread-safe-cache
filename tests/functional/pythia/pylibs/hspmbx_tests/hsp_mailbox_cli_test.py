@@ -89,12 +89,12 @@ class hsp_mailbox_cli_test(EchoFallsBaseTest):
 
         self.log.info("Submitting MSP Mailbox ECHO command . . .") 
         command="icc_hspmbx"
-        core_com_channel.execute_command(command=command, command_args= "")
+        core_com_channel.write_line(write_string=command)
 
         for attempt in range(3):
             command="echo"
             self.log.info(f"Submitting ECHO command {command} . . .") 
-            core_com_channel.execute_command(command=command, command_args= "")
+            core_com_channel.write_line(write_string=command)
 
             try:
                 core_com_channel.read_until(key="SCP->HSP Send Initiated: Status[0x0]", timeout_seconds=900)

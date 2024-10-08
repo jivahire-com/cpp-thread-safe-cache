@@ -22,7 +22,8 @@
 #include <accelerator_ip_priv.h> // for get_accelerator_ctxt
 #include <ap_top_regs.h>
 #include <sdm_ext_cfg_regs.h>
-#include <sdm_init_knobs.h>      // for MSFT_VENDOR_ID, INT_PIN_A
+#include <sdm_init_knobs.h> // for MSFT_VENDOR_ID, INT_PIN_A
+#include <sdm_init_struct_defaults.h>
 #include <silibs_shared_knobs.h> // for ACCELIP_INIT_ECAM_ENABLED
 #include <stdbool.h>             // for false, true
 #include <stdint.h>              // for uint32_t
@@ -30,6 +31,9 @@
 #include <vab_sdm_top_regs.h>
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
+
+#define NUM_ACCEL_TYPE (2)
+
 #define HIGH_ADDR(x) (uintptr_t)((x >> 32) & 0xFFFFFFFF)
 #define LOW_ADDR(x)  (uintptr_t)(x & 0xFFFFFFFF)
 
@@ -75,404 +79,113 @@ static const uint32_t sdm_cded_spin_loop[] = {
     0x00000000, 0x00000000, 0x35012500, 0xBF00E7FD, // 0x80090 - 0x8009F
 };
 
+typedef struct
+{
+    ACCELIP_PCI_BASE_CLASS_CODE class_code;
+    ACCELIP_PCI_SUB_CLASS_CODE sub_class_code;
+    ACCELIP_PCI_DEVICE_ID pci_device_id;
+    ACCELIP_PCI_DEVICE_ID subsystem_id;
+} sdm_cded_class_code_t;
+
+/*Following structure contains the default values of SDM and CDED which needs to be
+overwritten from the default values provided in Silibs Knobs. More fields can be added
+later if required.*/
+static const sdm_cded_class_code_t sdm_cded_class_code_knobs_values[NUM_ACCEL_TYPE] = {
+    {
+        .class_code = SDM_BASE_CLASS_CODE,
+        .sub_class_code = SDM_SUB_CLASS_CODE,
+        .pci_device_id = SDM_PCI_DEVICE_ID,
+        .subsystem_id = SDM_PCI_DEVICE_ID,
+    },
+    {
+        .class_code = CDED_BASE_CLASS_CODE,
+        .sub_class_code = CDED_SUB_CLASS_CODE,
+        .pci_device_id = CDED_PCI_DEVICE_ID,
+        .subsystem_id = CDED_PCI_DEVICE_ID,
+    },
+};
+
+/*SDMSS Common structure initialization for the parameters required by sequence library API in
+Silibs*/
+static sdm_mem_init_cfg_t sdm_mem_init = DEFAULT_SDM_MEM_INIT_CFG_T;
+static sdm_ecc_dis_init_cfg_t sdm_ecc_dis_init = DEFAULT_SDM_ECC_DIS_INIT_CFG_T;
+static sdm_pre_pcie_cfg_t sdmss_pre_pcie_cfg = DEFAULT_SDM_PRE_PCIE_CFG_T;
+/* TODO: ECC to be enabled: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1738671 */
+static sdm_emcpu_init_cfg_t sdmss_sdm_emcpu_init_cfg = {.release_m7_halt = false,
+                                                        .initvtor_byte_addr = DIE0_SDMSS_INSTANCE0_INT_VECTOR,
+                                                        .enable_itcm_ecc = false,
+                                                        .enable_dtcm_ecc = false};
+
+static accelip_ss_init_knobs_t sdmss_ss_cfg = {.sys_counter_delay_value = 0, .isolation_enable = false};
+
+/*CDEDSS Common structure initialization for the parameters required by sequence library API in
+Silibs*/
+static sdm_pre_pcie_cfg_t cdedss_pre_pcie_cfg = DEFAULT_SDM_PRE_PCIE_CFG_T;
+
+static sdm_emcpu_init_cfg_t cdedss_sdm_emcpu_init_cfg = {.release_m7_halt = false,
+                                                         .initvtor_byte_addr = DIE0_CDEDSS_INSTANCE0_INT_VECTOR,
+                                                         .enable_itcm_ecc = false,
+                                                         .enable_dtcm_ecc = false};
+
+static accelip_ss_init_knobs_t cdedss_ss_cfg = {.sys_counter_delay_value = 0, .isolation_enable = false};
+
 /****** Die 0 SDMSS context data start ******/
 static const atu_map_entry_t die0_sdmss_atu_map = ATU_MAPPING_SDMSS_BASE(SOC_D0);
 
-/* TODO: ECC to be enabled: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1738671 */
-static sdm_emcpu_init_cfg_t die0_sdmss_sdm_emcpu_init_cfg = {.release_m7_halt = false,
-                                                             .initvtor_byte_addr = DIE0_SDMSS_INSTANCE0_INT_VECTOR,
-                                                             .enable_itcm_ecc = false,
-                                                             .enable_dtcm_ecc = false};
-static sdm_mem_init_t die0_sdmss_sdm_mem_init = {.lstrg = false, .itcm = false, .d0tcm = false, .d1tcm = false, .ecu = false};
-static accelip_ss_init_knobs_t die0_sdmss_ss_cfg = {.sys_counter_delay_value = 0, .isolation_enable = false};
-static sdm_pre_pcie_cfg_t die0_sdmss_pre_pcie_cfg = {
-    // PF RCiEP PCI T0 Cfg
-    {
-        .pci_t0_revision_id = 0,                       // Revision ID of the device
-        .pci_t0_base_class_code = SDM_BASE_CLASS_CODE, // Base class code of the device
-        .pci_t0_sub_class_code = SDM_SUB_CLASS_CODE,   // Sub class code of the device
-        .pci_t0_subsystem_id = SDM_PCI_DEVICE_ID,      // Subsystem ID of the device
-        .pci_t0_subsystem_vendor_id = MSFT_VENDOR_ID,  // Subsystem vendor ID of the device
-        .pci_t0_device_id = SDM_PCI_DEVICE_ID,         // PCI device ID
-        .pci_t0_vendor_id = MSFT_VENDOR_ID,            // PCI vendor ID
-        .pci_t0_int_pin = INT_PIN_A,                   // Legacy interrupt pin setting
-    },
-
-    // VF RCiEP PCI T0 Cfg
-    {
-        .pci_t0_revision_id = 0,                  // Revision ID of the device
-        .pci_t0_subsystem_id = SDM_PCI_DEVICE_ID, // Subsystem ID of the device
-    },
-
-    // RCEC PCI T0 Cfg
-    {
-        .pci_t0_revision_id = 0,                        // Revision ID of the device
-        .pci_t0_base_class_code = RCEC_BASE_CLASS_CODE, // Base class code of the device
-        .pci_t0_sub_class_code = RCEC_SUB_CLASS_CODE,   // Sub class code of the device
-        .pci_t0_subsystem_id = RCEC_PCI_DEVICE_ID,      // Subsystem ID of the device
-        .pci_t0_subsystem_vendor_id = MSFT_VENDOR_ID,   // Subsystem vendor ID of the device
-        .pci_t0_device_id = RCEC_PCI_DEVICE_ID,         // PCI device ID
-        .pci_t0_vendor_id = MSFT_VENDOR_ID,             // PCI vendor ID
-        .pci_t0_int_pin = INT_PIN_A,                    // Legacy interrupt pin setting
-    },
-
-    .dti_v3_protocol = DTI_ATS_V3, // DTI protocol to use (v2 or v3)
-
-    // Response to config access timeout
-    .pf_cfg_timeout_response = CRS_RESPONSE,
-    .vf_cfg_timeout_response = CRS_RESPONSE,
-
-    .tee_io_supp = true, // TODO: ADO 1885063: Enable TEE IO support capability
-
-    .gic_tid = BCFG_BOOT_CFG_TID_CTRL_GIC_TID,           // GIC TID
-    .smmu_dti_tid = BCFG_BOOT_CFG_TID_CTRL_SMMU_DTI_TID, // SMMU DTI TID
-
-    .gpa_pasid_en = false,     // Enable GPA PASID support for Rd/Wr address pointers
-    .cpl_gpa_pasid_en = false, // Enable GPA PASID support for completion address pointers
-
-    .tdisp_allow_t_cfg_wrt = false, // Allow Protected registers to be updated
-                                    // while in the TDISP RUN or CONFIG_LOCKED
-                                    // state and the register write has the T
-                                    // bit set
-    .tdisp_allow_t_cmd_sub = false, // Allow T bit enabled Command Submissions
-                                    // to a Work Queues while in the TDISP
-                                    // CONFIG_UNLOCKED state (T bit cleared)
-
-    .pf_global_invalidate_support = false, // Must be false/disabled for TDISP.
-                                           // Refer to PCIe Base Spec 10.5.1.2
-                                           // for details
-    .vf_global_invalidate_support = false, // Must be false/disabled for TDISP.
-                                           // Refer to PCIe Base Spec 10.5.1.2
-                                           // for details
-
-    .rciep_pf_bars_prefetch_enable = 0,    // 2-bit field. Bit0 enables prefetch
-                                           // for BAR0 (PF CFG) and Bit1 enables
-                                           // prefetch for BAR1 (PF Cmd Q).
-                                           // Expected to be set only for debug
-                                           // purposes.
-    .rciep_sriov_bars_prefetch_enable = 0, // 2-bit field. Bit0 enables prefetch
-                                           // for BAR0 (VF CFG) and Bit1 enables
-                                           // prefetch for BAR1 (VF Cmd Q).
-                                           // Expected to be set only for debug
-                                           // purposes.
-
-    .total_vfs = 32, // The number of VFs to report in the SRIOV capability
-                     // TotalVFs field for the device. Refer to PCIe Base
-                     // Spec 9.3.3.6 for details.
-
-    .sriov_vf_dev_id = SDM_PCI_DEVICE_ID, // The device ID for VFs. Refer to
-                                          // PCIe Base Spec 9.3.3.11 for details.
-};
-
 static accelip_ss_init_t die0_sdmss_init_params_ctxt = {
-    .sdm_emcpu_init_cfg = &die0_sdmss_sdm_emcpu_init_cfg,
+    .sdm_emcpu_init_cfg = &sdmss_sdm_emcpu_init_cfg,
     .fw_preload_enabled = true,
     .sdm_emcpu_fw_image_start_addr = (uintptr_t)&sdm_cded_spin_loop[0], // TODO : ADO (1728282)
     .sdm_emcpu_fw_image_size = sizeof(sdm_cded_spin_loop),              // TODO : ADO (1728282)
     .init_level = ACCELIP_INIT_ECAM_ENABLED,
-    .sdm_mem_init = &die0_sdmss_sdm_mem_init,
-    .pre_pcie_cfg = &die0_sdmss_pre_pcie_cfg,
-    .accelip_ss_cfg = &die0_sdmss_ss_cfg};
+    .sdm_mem_init = &sdm_mem_init,
+    .sdm_ecc_disable_init = &sdm_ecc_dis_init,
+    .pre_pcie_cfg = &sdmss_pre_pcie_cfg,
+    .accelip_ss_cfg = &sdmss_ss_cfg};
 /****** Die 0 SDMSS context data end ******/
 
 /****** Die 1 SDMSS context data start ******/
 static const atu_map_entry_t die1_sdmss_atu_map = ATU_MAPPING_SDMSS_BASE(SOC_D1);
 
-/* TODO: ECC to be enabled: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1738671 */
-static sdm_emcpu_init_cfg_t die1_sdmss_sdm_emcpu_init_cfg = {.release_m7_halt = false,
-                                                             .initvtor_byte_addr = DIE0_SDMSS_INSTANCE0_INT_VECTOR,
-                                                             .enable_itcm_ecc = false,
-                                                             .enable_dtcm_ecc = false};
-static sdm_mem_init_t die1_sdmss_sdm_mem_init = {.lstrg = false, .itcm = false, .d0tcm = false, .d1tcm = false, .ecu = false};
-static accelip_ss_init_knobs_t die1_sdmss_ss_cfg = {.sys_counter_delay_value = 0, .isolation_enable = false};
-static sdm_pre_pcie_cfg_t die1_sdmss_pre_pcie_cfg = {
-    // PF RCiEP PCI T0 Cfg
-    {
-        .pci_t0_revision_id = 0,                       // Revision ID of the device
-        .pci_t0_base_class_code = SDM_BASE_CLASS_CODE, // Base class code of the device
-        .pci_t0_sub_class_code = SDM_SUB_CLASS_CODE,   // Sub class code of the device
-        .pci_t0_subsystem_id = SDM_PCI_DEVICE_ID,      // Subsystem ID of the device
-        .pci_t0_subsystem_vendor_id = MSFT_VENDOR_ID,  // Subsystem vendor ID of the device
-        .pci_t0_device_id = SDM_PCI_DEVICE_ID,         // PCI device ID
-        .pci_t0_vendor_id = MSFT_VENDOR_ID,            // PCI vendor ID
-        .pci_t0_int_pin = INT_PIN_A,                   // Legacy interrupt pin setting
-    },
-
-    // VF RCiEP PCI T0 Cfg
-    {
-        .pci_t0_revision_id = 0,                  // Revision ID of the device
-        .pci_t0_subsystem_id = SDM_PCI_DEVICE_ID, // Subsystem ID of the device
-    },
-
-    // RCEC PCI T0 Cfg
-    {
-        .pci_t0_revision_id = 0,                        // Revision ID of the device
-        .pci_t0_base_class_code = RCEC_BASE_CLASS_CODE, // Base class code of the device
-        .pci_t0_sub_class_code = RCEC_SUB_CLASS_CODE,   // Sub class code of the device
-        .pci_t0_subsystem_id = RCEC_PCI_DEVICE_ID,      // Subsystem ID of the device
-        .pci_t0_subsystem_vendor_id = MSFT_VENDOR_ID,   // Subsystem vendor ID of the device
-        .pci_t0_device_id = RCEC_PCI_DEVICE_ID,         // PCI device ID
-        .pci_t0_vendor_id = MSFT_VENDOR_ID,             // PCI vendor ID
-        .pci_t0_int_pin = INT_PIN_A,                    // Legacy interrupt pin setting
-    },
-
-    .dti_v3_protocol = DTI_ATS_V3, // DTI protocol to use (v2 or v3)
-
-    // Response to config access timeout
-    .pf_cfg_timeout_response = CRS_RESPONSE,
-    .vf_cfg_timeout_response = CRS_RESPONSE,
-
-    .tee_io_supp = true, // TODO: ADO 1885063: Enable TEE IO support capability
-
-    .gic_tid = BCFG_BOOT_CFG_TID_CTRL_GIC_TID,           // GIC TID
-    .smmu_dti_tid = BCFG_BOOT_CFG_TID_CTRL_SMMU_DTI_TID, // SMMU DTI TID
-
-    .gpa_pasid_en = false,     // Enable GPA PASID support for Rd/Wr address pointers
-    .cpl_gpa_pasid_en = false, // Enable GPA PASID support for completion address pointers
-
-    .tdisp_allow_t_cfg_wrt = false, // Allow Protected registers to be updated
-                                    // while in the TDISP RUN or CONFIG_LOCKED
-                                    // state and the register write has the T
-                                    // bit set
-    .tdisp_allow_t_cmd_sub = false, // Allow T bit enabled Command Submissions
-                                    // to a Work Queues while in the TDISP
-                                    // CONFIG_UNLOCKED state (T bit cleared)
-
-    .pf_global_invalidate_support = false, // Must be false/disabled for TDISP.
-                                           // Refer to PCIe Base Spec 10.5.1.2
-                                           // for details
-    .vf_global_invalidate_support = false, // Must be false/disabled for TDISP.
-                                           // Refer to PCIe Base Spec 10.5.1.2
-                                           // for details
-
-    .rciep_pf_bars_prefetch_enable = 0,    // 2-bit field. Bit0 enables prefetch
-                                           // for BAR0 (PF CFG) and Bit1 enables
-                                           // prefetch for BAR1 (PF Cmd Q).
-                                           // Expected to be set only for debug
-                                           // purposes.
-    .rciep_sriov_bars_prefetch_enable = 0, // 2-bit field. Bit0 enables prefetch
-                                           // for BAR0 (VF CFG) and Bit1 enables
-                                           // prefetch for BAR1 (VF Cmd Q).
-                                           // Expected to be set only for debug
-                                           // purposes.
-
-    .total_vfs = 32, // The number of VFs to report in the SRIOV capability
-                     // TotalVFs field for the device. Refer to PCIe Base
-                     // Spec 9.3.3.6 for details.
-
-    .sriov_vf_dev_id = SDM_PCI_DEVICE_ID, // The device ID for VFs. Refer to
-                                          // PCIe Base Spec 9.3.3.11 for details.
-};
-
 static accelip_ss_init_t die1_sdmss_init_params_ctxt = {
-    .sdm_emcpu_init_cfg = &die1_sdmss_sdm_emcpu_init_cfg,
+    .sdm_emcpu_init_cfg = &sdmss_sdm_emcpu_init_cfg,
     .fw_preload_enabled = true,
     .sdm_emcpu_fw_image_start_addr = (uintptr_t)&sdm_cded_spin_loop[0], // TODO : ADO (1728282)
     .sdm_emcpu_fw_image_size = sizeof(sdm_cded_spin_loop),              // TODO : ADO (1728282)
     .init_level = ACCELIP_INIT_ECAM_ENABLED,
-    .sdm_mem_init = &die1_sdmss_sdm_mem_init,
-    .pre_pcie_cfg = &die1_sdmss_pre_pcie_cfg,
-    .accelip_ss_cfg = &die1_sdmss_ss_cfg};
+    .sdm_mem_init = &sdm_mem_init,
+    .sdm_ecc_disable_init = &sdm_ecc_dis_init,
+    .pre_pcie_cfg = &sdmss_pre_pcie_cfg,
+    .accelip_ss_cfg = &sdmss_ss_cfg};
 /****** Die 1 SDMSS context data end ******/
 
 /****** Die 0 CDEDSS context data start ******/
 static const atu_map_entry_t die0_cdedss_atu_map = ATU_MAPPING_CDEDSS_BASE(SOC_D0);
 
-/* TODO: ECC to be enabled: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1738671 */
-static sdm_emcpu_init_cfg_t die0_cdedss_sdm_emcpu_init_cfg = {.release_m7_halt = false,
-                                                              .initvtor_byte_addr = DIE0_CDEDSS_INSTANCE0_INT_VECTOR,
-                                                              .enable_itcm_ecc = false,
-                                                              .enable_dtcm_ecc = false};
-static sdm_mem_init_t die0_cdedss_sdm_mem_init = {.lstrg = false, .itcm = false, .d0tcm = false, .d1tcm = false, .ecu = false};
-static accelip_ss_init_knobs_t die0_cdedss_ss_cfg = {.sys_counter_delay_value = 0, .isolation_enable = false};
-static sdm_pre_pcie_cfg_t die0_cdedss_pre_pcie_cfg = {
-    // PF RCiEP PCI T0 Cfg
-    {
-        .pci_t0_revision_id = 0,                        // Revision ID of the device
-        .pci_t0_base_class_code = CDED_BASE_CLASS_CODE, // Base class code of the device
-        .pci_t0_sub_class_code = CDED_SUB_CLASS_CODE,   // Sub class code of the device
-        .pci_t0_subsystem_id = CDED_PCI_DEVICE_ID,      // Subsystem ID of the device
-        .pci_t0_subsystem_vendor_id = MSFT_VENDOR_ID,   // Subsystem vendor ID of the device
-        .pci_t0_device_id = CDED_PCI_DEVICE_ID,         // PCI device ID
-        .pci_t0_vendor_id = MSFT_VENDOR_ID,             // PCI vendor ID
-        .pci_t0_int_pin = INT_PIN_A,                    // Legacy interrupt pin setting
-    },
-
-    // VF RCiEP PCI T0 Cfg
-    {
-        .pci_t0_revision_id = 0,                   // Revision ID of the device
-        .pci_t0_subsystem_id = CDED_PCI_DEVICE_ID, // Subsystem ID of the device
-    },
-
-    // RCEC PCI T0 Cfg
-    {
-        .pci_t0_revision_id = 0,                        // Revision ID of the device
-        .pci_t0_base_class_code = RCEC_BASE_CLASS_CODE, // Base class code of the device
-        .pci_t0_sub_class_code = RCEC_SUB_CLASS_CODE,   // Sub class code of the device
-        .pci_t0_subsystem_id = RCEC_PCI_DEVICE_ID,      // Subsystem ID of the device
-        .pci_t0_subsystem_vendor_id = MSFT_VENDOR_ID,   // Subsystem vendor ID of the device
-        .pci_t0_device_id = RCEC_PCI_DEVICE_ID,         // PCI device ID
-        .pci_t0_vendor_id = MSFT_VENDOR_ID,             // PCI vendor ID
-        .pci_t0_int_pin = INT_PIN_A,                    // Legacy interrupt pin setting
-    },
-
-    .dti_v3_protocol = DTI_ATS_V3, // DTI protocol to use (v2 or v3)
-
-    // Response to config access timeout
-    .pf_cfg_timeout_response = CRS_RESPONSE,
-    .vf_cfg_timeout_response = CRS_RESPONSE,
-
-    .tee_io_supp = true, // TODO: ADO 1885063: Enable TEE IO support capability
-
-    .gic_tid = BCFG_BOOT_CFG_TID_CTRL_GIC_TID,           // GIC TID
-    .smmu_dti_tid = BCFG_BOOT_CFG_TID_CTRL_SMMU_DTI_TID, // SMMU DTI TID
-
-    .gpa_pasid_en = false,     // Enable GPA PASID support for Rd/Wr address pointers
-    .cpl_gpa_pasid_en = false, // Enable GPA PASID support for completion address pointers
-
-    .tdisp_allow_t_cfg_wrt = false, // Allow Protected registers to be updated
-                                    // while in the TDISP RUN or CONFIG_LOCKED
-                                    // state and the register write has the T
-                                    // bit set
-    .tdisp_allow_t_cmd_sub = false, // Allow T bit enabled Command Submissions
-                                    // to a Work Queues while in the TDISP
-                                    // CONFIG_UNLOCKED state (T bit cleared)
-
-    .pf_global_invalidate_support = false, // Must be false/disabled for TDISP.
-                                           // Refer to PCIe Base Spec 10.5.1.2
-                                           // for details
-    .vf_global_invalidate_support = false, // Must be false/disabled for TDISP.
-                                           // Refer to PCIe Base Spec 10.5.1.2
-                                           // for details
-
-    .rciep_pf_bars_prefetch_enable = 0,    // 2-bit field. Bit0 enables prefetch
-                                           // for BAR0 (PF CFG) and Bit1 enables
-                                           // prefetch for BAR1 (PF Cmd Q).
-                                           // Expected to be set only for debug
-                                           // purposes.
-    .rciep_sriov_bars_prefetch_enable = 0, // 2-bit field. Bit0 enables prefetch
-                                           // for BAR0 (VF CFG) and Bit1 enables
-                                           // prefetch for BAR1 (VF Cmd Q).
-                                           // Expected to be set only for debug
-                                           // purposes.
-
-    .total_vfs = 32, // The number of VFs to report in the SRIOV capability
-                     // TotalVFs field for the device. Refer to PCIe Base
-                     // Spec 9.3.3.6 for details.
-
-    .sriov_vf_dev_id = CDED_PCI_DEVICE_ID, // The device ID for VFs. Refer to
-                                           // PCIe Base Spec 9.3.3.11 for details.
-};
-
 static accelip_ss_init_t die0_cdedss_init_params_ctxt = {
-    .sdm_emcpu_init_cfg = &die0_cdedss_sdm_emcpu_init_cfg,
+    .sdm_emcpu_init_cfg = &cdedss_sdm_emcpu_init_cfg,
     .fw_preload_enabled = true,
     .sdm_emcpu_fw_image_start_addr = (uintptr_t)&sdm_cded_spin_loop[0], // TODO : ADO (1728282)
     .sdm_emcpu_fw_image_size = sizeof(sdm_cded_spin_loop),              // TODO : ADO (1728282)
     .init_level = ACCELIP_INIT_ECAM_ENABLED,
-    .sdm_mem_init = &die0_cdedss_sdm_mem_init,
-    .pre_pcie_cfg = &die0_cdedss_pre_pcie_cfg,
-    .accelip_ss_cfg = &die0_cdedss_ss_cfg};
+    .sdm_mem_init = &sdm_mem_init,
+    .sdm_ecc_disable_init = &sdm_ecc_dis_init,
+    .pre_pcie_cfg = &cdedss_pre_pcie_cfg,
+    .accelip_ss_cfg = &cdedss_ss_cfg};
 /****** Die 0 CDEDSS context data end ******/
 
 /****** Die 1 CDEDSS context data start ******/
 static const atu_map_entry_t die1_cdedss_atu_map = ATU_MAPPING_CDEDSS_BASE(SOC_D1);
-
-/* TODO: ECC to be enabled: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1738671 */
-static sdm_emcpu_init_cfg_t die1_cdedss_sdm_emcpu_init_cfg = {.release_m7_halt = false,
-                                                              .initvtor_byte_addr = DIE0_CDEDSS_INSTANCE0_INT_VECTOR,
-                                                              .enable_itcm_ecc = false,
-                                                              .enable_dtcm_ecc = false};
-static sdm_mem_init_t die1_cdedss_sdm_mem_init = {.lstrg = false, .itcm = false, .d0tcm = false, .d1tcm = false, .ecu = false};
-static accelip_ss_init_knobs_t die1_cdedss_ss_cfg = {.sys_counter_delay_value = 0, .isolation_enable = false};
-static sdm_pre_pcie_cfg_t die1_cdedss_pre_pcie_cfg = {
-    // PF RCiEP PCI T0 Cfg
-    {
-        .pci_t0_revision_id = 0,                        // Revision ID of the device
-        .pci_t0_base_class_code = CDED_BASE_CLASS_CODE, // Base class code of the device
-        .pci_t0_sub_class_code = CDED_SUB_CLASS_CODE,   // Sub class code of the device
-        .pci_t0_subsystem_id = CDED_PCI_DEVICE_ID,      // Subsystem ID of the device
-        .pci_t0_subsystem_vendor_id = MSFT_VENDOR_ID,   // Subsystem vendor ID of the device
-        .pci_t0_device_id = CDED_PCI_DEVICE_ID,         // PCI device ID
-        .pci_t0_vendor_id = MSFT_VENDOR_ID,             // PCI vendor ID
-        .pci_t0_int_pin = INT_PIN_A,                    // Legacy interrupt pin setting
-    },
-
-    // VF RCiEP PCI T0 Cfg
-    {
-        .pci_t0_revision_id = 0,                   // Revision ID of the device
-        .pci_t0_subsystem_id = CDED_PCI_DEVICE_ID, // Subsystem ID of the device
-    },
-
-    // RCEC PCI T0 Cfg
-    {
-        .pci_t0_revision_id = 0,                        // Revision ID of the device
-        .pci_t0_base_class_code = RCEC_BASE_CLASS_CODE, // Base class code of the device
-        .pci_t0_sub_class_code = RCEC_SUB_CLASS_CODE,   // Sub class code of the device
-        .pci_t0_subsystem_id = RCEC_PCI_DEVICE_ID,      // Subsystem ID of the device
-        .pci_t0_subsystem_vendor_id = MSFT_VENDOR_ID,   // Subsystem vendor ID of the device
-        .pci_t0_device_id = RCEC_PCI_DEVICE_ID,         // PCI device ID
-        .pci_t0_vendor_id = MSFT_VENDOR_ID,             // PCI vendor ID
-        .pci_t0_int_pin = INT_PIN_A,                    // Legacy interrupt pin setting
-    },
-
-    .dti_v3_protocol = DTI_ATS_V3, // DTI protocol to use (v2 or v3)
-
-    // Response to config access timeout
-    .pf_cfg_timeout_response = CRS_RESPONSE,
-    .vf_cfg_timeout_response = CRS_RESPONSE,
-
-    .tee_io_supp = true, // TODO: ADO 1885063: Enable TEE IO support capability
-
-    .gic_tid = BCFG_BOOT_CFG_TID_CTRL_GIC_TID,           // GIC TID
-    .smmu_dti_tid = BCFG_BOOT_CFG_TID_CTRL_SMMU_DTI_TID, // SMMU DTI TID
-
-    .gpa_pasid_en = false,     // Enable GPA PASID support for Rd/Wr address pointers
-    .cpl_gpa_pasid_en = false, // Enable GPA PASID support for completion address pointers
-
-    .tdisp_allow_t_cfg_wrt = false, // Allow Protected registers to be updated
-                                    // while in the TDISP RUN or CONFIG_LOCKED
-                                    // state and the register write has the T
-                                    // bit set
-    .tdisp_allow_t_cmd_sub = false, // Allow T bit enabled Command Submissions
-                                    // to a Work Queues while in the TDISP
-                                    // CONFIG_UNLOCKED state (T bit cleared)
-
-    .pf_global_invalidate_support = false, // Must be false/disabled for TDISP.
-                                           // Refer to PCIe Base Spec 10.5.1.2
-                                           // for details
-    .vf_global_invalidate_support = false, // Must be false/disabled for TDISP.
-                                           // Refer to PCIe Base Spec 10.5.1.2
-                                           // for details
-
-    .rciep_pf_bars_prefetch_enable = 0,    // 2-bit field. Bit0 enables prefetch
-                                           // for BAR0 (PF CFG) and Bit1 enables
-                                           // prefetch for BAR1 (PF Cmd Q).
-                                           // Expected to be set only for debug
-                                           // purposes.
-    .rciep_sriov_bars_prefetch_enable = 0, // 2-bit field. Bit0 enables prefetch
-                                           // for BAR0 (VF CFG) and Bit1 enables
-                                           // prefetch for BAR1 (VF Cmd Q).
-                                           // Expected to be set only for debug
-                                           // purposes.
-
-    .total_vfs = 32, // The number of VFs to report in the SRIOV capability
-                     // TotalVFs field for the device. Refer to PCIe Base
-                     // Spec 9.3.3.6 for details.
-
-    .sriov_vf_dev_id = CDED_PCI_DEVICE_ID, // The device ID for VFs. Refer to
-                                           // PCIe Base Spec 9.3.3.11 for details.
-};
-
 static accelip_ss_init_t die1_cdedss_init_params_ctxt = {
-    .sdm_emcpu_init_cfg = &die1_cdedss_sdm_emcpu_init_cfg,
+    .sdm_emcpu_init_cfg = &cdedss_sdm_emcpu_init_cfg,
     .fw_preload_enabled = true,
     .sdm_emcpu_fw_image_start_addr = (uintptr_t)&sdm_cded_spin_loop[0], // TODO : ADO (1728282)
     .sdm_emcpu_fw_image_size = sizeof(sdm_cded_spin_loop),              // TODO : ADO (1728282)
     .init_level = ACCELIP_INIT_ECAM_ENABLED,
-    .sdm_mem_init = &die1_cdedss_sdm_mem_init,
-    .pre_pcie_cfg = &die1_cdedss_pre_pcie_cfg,
-    .accelip_ss_cfg = &die1_cdedss_ss_cfg};
+    .sdm_mem_init = &sdm_mem_init,
+    .sdm_ecc_disable_init = &sdm_ecc_dis_init,
+    .pre_pcie_cfg = &cdedss_pre_pcie_cfg,
+    .accelip_ss_cfg = &cdedss_ss_cfg};
 /****** Die 1 CDEDSS context data end ******/
 
 /* ---- Sub-system Context data-structures across Die's --------------------- */
@@ -522,4 +235,25 @@ subsystem_ctxt_t* get_accelerator_ctxt(uint32_t* accel_instance_size)
 {
     *accel_instance_size = ARRAY_SIZE(ss_ctxts);
     return ss_ctxts;
+}
+
+void scp_accel_update_default_knobs(subsystem_ctxt_t* p_ss_ctxt)
+{
+    /*TODO: Use proper macros from SDM FW Libs instead of hardcoded
+    value
+    https://azurecsi.visualstudio.com/Dev/_workitems/edit/2090995*/
+    uint8_t index = 0;
+    if ((p_ss_ctxt->accelip_metadata.accel_type == D1_ACCELIP_CDEDSS) ||
+        (p_ss_ctxt->accelip_metadata.accel_type == D0_ACCELIP_CDEDSS))
+    {
+        index = 1;
+    }
+    p_ss_ctxt->p_init_params->pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_base_class_code =
+        sdm_cded_class_code_knobs_values[index].class_code;
+    p_ss_ctxt->p_init_params->pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_sub_class_code =
+        sdm_cded_class_code_knobs_values[index].sub_class_code;
+    p_ss_ctxt->p_init_params->pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_device_id =
+        sdm_cded_class_code_knobs_values[index].pci_device_id;
+    p_ss_ctxt->p_init_params->pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_subsystem_id =
+        sdm_cded_class_code_knobs_values[index].subsystem_id;
 }

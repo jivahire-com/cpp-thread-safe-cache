@@ -628,7 +628,7 @@ int32_t scp_accelerators_init(void)
                    p_ss_ctxt[index].accelip_metadata.die_instance,
                    p_ss_ctxt[index].accelip_metadata.accel_type,
                    p_ss_ctxt[index].accelip_metadata.accel_instance);
-
+            scp_accel_update_default_knobs(&p_ss_ctxt[index]);
             ret = init_accelerator(&p_ss_ctxt[index]);
 
             FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);

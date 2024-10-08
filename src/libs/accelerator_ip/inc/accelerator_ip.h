@@ -127,3 +127,17 @@ int32_t scp_accelerators_isolation_control(void);
  *  No return value
  */
 void scp_accelerators_emcpu_reset(eACCELERATOR_TYPE accel_type, crash_dump_cb_t cb_fun, void *cb_ctx);
+
+/**
+ * @brief Function to overwrite the default values of knobs provided by Silibs
+ *
+ * \b Description:
+ * This function is invoked before initializing the accelerator 
+ *
+ * @param[in] p_ss_ctxt - Pointer to the structure which holds the information required
+ * to initialize the particular accelerator 
+ * 
+ * @retval
+ *  No return value
+ */
+void scp_accel_update_default_knobs(subsystem_ctxt_t* p_ss_ctxt);

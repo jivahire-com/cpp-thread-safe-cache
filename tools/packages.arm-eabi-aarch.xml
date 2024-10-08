@@ -10,7 +10,7 @@
     </universal_packages>
 
     <nuget_packages>
-        <package name="kingsgate.ap.baremetal" version="0.0.1.28-dev" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/Kingsgate.SoCFW/nuget/v3/index.json"/>
+        <package name="kingsgate.ap.baremetal" version="0.0.1.30-dev" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/Kingsgate.SoCFW/nuget/v3/index.json"/>
         <package name="kingsgate.sdm.cded" version="0.1.0.60-dev" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/Kingsgate.SoCFW/nuget/v3/index.json"/>
         <package name="echofalls.atf.build" version="1.10.0.134" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="echofalls.rmm.build" version="1.10.0.31" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>

@@ -11,12 +11,16 @@ target_include_directories(
     ${TARGET}
         PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}/inc
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 target_link_libraries(
     ${TARGET}
         PUBLIC
         silibs::ddrss
+        ms::lib::ddrss_init
+        ms::service::ddr_manager
         PRIVATE
         fwlib.service.cli
         silibs::platform

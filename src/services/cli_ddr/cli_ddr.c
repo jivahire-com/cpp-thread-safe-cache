@@ -11,8 +11,11 @@
 #include <FpFwCli.h>        // for FPFW_CLI_STATUS, CLI_SUCCESS, FpFwCliReg...
 #include <FpFwLinkedList.h> // for NULL_LIST_ENTRY
 #include <FpFwUtils.h>      // for FPFW_UNUSED, FPFW_ARRAY_SIZE
+#include <ddr_err_inj.h>
+#include <ddr_memory_map.h>
 #include <ddrss_lib.h>
 #include <stdio.h> // for printf
+#include <stdlib.h>
 
 #ifdef UNIT_TEST
     #define STATIC
@@ -30,6 +33,7 @@
 STATIC FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char** Argv);
 STATIC FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv);
 STATIC FPFW_CLI_STATUS cmd_addr_parity_error_injection(int Argc, const char** Argv);
+STATIC FPFW_CLI_STATUS wrrtydat_ue_error_injection(int Argc, const char** Argv);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -39,29 +43,166 @@ STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
     {NULL_LIST_ENTRY, "ddr_err_inj", "ecc_ce_err", ecc_ce_error_injection, "ECC CE error injection", "Usage: ecc_ce_err <parameter list undefined>"},
     {NULL_LIST_ENTRY, "ddr_err_inj", "ecc_ue_err", ecc_ue_error_injection, "ECC UE error injection", "Usage: ecc_ue_err <parameter list undefined>"},
     {NULL_LIST_ENTRY, "ddr_err_inj", "capar_err", cmd_addr_parity_error_injection, "CAPAR (Cmd/Addr Parity) error", "Usage: caddr_parity_err <parameter list undefined>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "wrrtydat_ue_err", wrrtydat_ue_error_injection, "WRRTYDAT UE error injection", "Usage: wrrtydat_ue_err <parameter list undefined>"},
 };
 
-/*-------------- Functions ---------------*/
+// ecc_ce_err (mc) (phy_add) {error bit}
 STATIC FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char** Argv)
 {
-    FPFW_UNUSED(Argc);
-    FPFW_UNUSED(Argv);
+    uint32_t sts = CLI_SUCCESS;
+    int32_t die = 0;
+    uint32_t mc = 0;
+    uint64_t p_addr = 0;
+    uint16_t BIT_Value = 0;
+    bool check_null = false;
 
-    printf("Work in progress: ecc_ce_error_injection!!\n");
+    if (Argc == 1) // no argument passed
+    {
+        mc = 0;
+        p_addr = 0;
+        BIT_Value = BIT0;
+        check_null |= true;
+    }
+    else if (Argc == 2) // only mc is passed as argument
+    {
+        if (Argv[1] != NULL)
+        {
+            mc = (uint32_t)(strtoul(Argv[1], 0, 0));
+            check_null |= true;
+        }
+        p_addr = 0;
+        BIT_Value = BIT0;
+    }
+    else if (Argc == 3) // only mc & phy_addr is passed as argument
+    {
+        if ((Argv[1] != NULL) && (Argv[2] != NULL))
+        {
+            mc = (uint32_t)(strtoul(Argv[1], 0, 0));
+            p_addr = (uint64_t)(strtoul(Argv[2], 0, 0));
+            check_null |= true;
+        }
+        BIT_Value = BIT0;
+    }
+    else if (Argc == 4) // Mc, phy_addr & one bit is passed as argument.
+    {
+        if ((Argv[1] != NULL) && (Argv[2] != NULL) && (Argv[3] != NULL))
+        {
+            int bit;
+            mc = (uint32_t)(strtoul(Argv[1], 0, 0));
+            p_addr = (uint64_t)(strtoul(Argv[2], 0, 0));
+            bit = (uint16_t)(strtoul(Argv[3], 0, 0));
+            if (bit >= 0 && bit < 10)
+            {
+                BIT_Value |= 1 << bit;
+                check_null |= true;
+            }
+            else
+            {
+                check_null &= false;
+            }
+        }
+    }
+    else
+    {
+        FpFwCliPrint("Invalid Argument! Please provide necessary arguments!");
+        return CLI_ERROR;
+    }
 
-    return CLI_SUCCESS;
+    if ((check_null == false) || (!ddrss_ue_ce_err_inj_validation(mc, BIT_Value)))
+    {
+        FpFwCliPrint("Invalid Argument! Please provide necessary arguments!");
+        return CLI_ERROR;
+    }
+
+    sts = ddrss_ue_ce_error_injection(die, mc, p_addr, BIT_Value);
+    FpFwCliPrint("DDR: ecc_ce_error_injection - Done!!\n");
+    return sts;
 }
 
 STATIC FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv)
 {
-    FPFW_UNUSED(Argc);
-    FPFW_UNUSED(Argv);
+    uint32_t sts = CLI_SUCCESS;
+    int32_t die = 0;
+    uint32_t mc = 0;
+    uint64_t p_addr = 0;
+    uint16_t BIT_Value = 0;
+    bool check_null = false;
 
-    // TODO Silibs to provide APIs with exact arguments list
-    // https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/584974
-    printf("Work in progress: ecc_ue_error_injection!!\n");
+    if (Argc == 1) // no argument passed
+    {
+        mc = 0;
+        p_addr = 0;
+        BIT_Value = BIT0 | BIT1;
+        check_null |= true;
+    }
+    else if (Argc == 2) // only mc is passed as argument
+    {
+        if (Argv[1] != NULL)
+        {
+            mc = (uint32_t)(strtoul(Argv[1], 0, 0));
+            check_null |= true;
+        }
+        p_addr = 0;
+        BIT_Value = BIT0 | BIT1;
+    }
+    else if (Argc == 3) // only mc & phy_addr is passed as argument
+    {
+        if ((Argv[1] != NULL) && (Argv[2] != NULL))
+        {
+            mc = (uint32_t)(strtoul(Argv[1], 0, 0));
+            p_addr = (uint64_t)(strtoul(Argv[2], 0, 0));
+            check_null |= true;
+        }
+        BIT_Value = BIT0 | BIT1;
+    }
+    else if (Argc >= 5) // Mc, phy_addr & atleast two bit is passed as argument.
+    {
+        int i;
+        int bit;
+        if ((Argv[1] != NULL) && (Argv[2] != NULL))
+        {
+            mc = (uint32_t)(strtoul(Argv[1], 0, 0));
+            p_addr = (uint64_t)(strtoul(Argv[2], 0, 0));
+            check_null |= true;
+        }
+        for (i = 3; i < Argc; i++)
+        {
+            if (Argv[i] != NULL)
+            {
+                bit = (uint16_t)(strtoul(Argv[i], 0, 0));
+                if (bit >= 0 && bit < 10)
+                {
+                    BIT_Value |= 1 << bit;
+                    check_null |= true;
+                }
+                else
+                {
+                    check_null &= false;
+                    break;
+                }
+            }
+            else
+            {
+                check_null &= false;
+                break;
+            }
+        }
+    }
+    else
+    {
+        FpFwCliPrint("Invalid Argument! Please provide necessary arguments!");
+        return CLI_ERROR;
+    }
 
-    return CLI_SUCCESS;
+    if ((check_null == false) || (!ddrss_ue_ce_err_inj_validation(mc, BIT_Value)))
+    {
+        FpFwCliPrint("Invalid Argument! Please provide necessary arguments!");
+        return CLI_ERROR;
+    }
+
+    sts = ddrss_ue_ce_error_injection(die, mc, p_addr, BIT_Value);
+    FpFwCliPrint("DDR: ecc_ue_error_injection - Done!!\n");
+    return sts;
 }
 
 STATIC FPFW_CLI_STATUS cmd_addr_parity_error_injection(int Argc, const char** Argv)
@@ -71,7 +212,19 @@ STATIC FPFW_CLI_STATUS cmd_addr_parity_error_injection(int Argc, const char** Ar
 
     // TODO Silibs to provide APIs with exact arguments list
     // https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/584974
-    printf("Work in progress: cmd_addr_parity_error_injection!!\n");
+    FpFwCliPrint("Work in progress: cmd_addr_parity_error_injection!!\n");
+
+    return CLI_SUCCESS;
+}
+
+STATIC FPFW_CLI_STATUS wrrtydat_ue_error_injection(int Argc, const char** Argv)
+{
+    FPFW_UNUSED(Argc);
+    FPFW_UNUSED(Argv);
+
+    // TODO Silibs to provide APIs with exact arguments list
+    // https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/584974
+    FpFwCliPrint("Work in progress: wrrtydat_ue_error_injection!!\n");
 
     return CLI_SUCCESS;
 }

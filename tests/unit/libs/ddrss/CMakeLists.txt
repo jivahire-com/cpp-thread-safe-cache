@@ -3,6 +3,7 @@ set(TARGET ddrss.test)
 set(SOURCES
     ddrss_mocks.c
     test_ddrss.cpp
+    test_ddr_err_inj.cpp
 )
 
 # Compile test
@@ -22,6 +23,7 @@ target_link_libraries(${TARGET}
         ms::lib::ddrss_init
         ms::lib::register_headers
         ms::lib::scp_interrupts
+        ms::lib::ddrss_init
         silibs::atu
         silibs::ddrss
         silibs::idsw
@@ -61,4 +63,7 @@ mock_target(${TARGET}
     ras_arm_agent_probe
     ddrss_get_ras_agent
     ddrss_mc_intu_get_interrupt_status
+    ddrss_err_inj_atu_map
+    ddrss_err_inj_atu_unmap
+    ddrss_inject_media_data_err
 )

@@ -14,6 +14,7 @@
 #include <ddrmctop_regs.h>
 #include <idsw_kng.h>
 #include <silibs_platform.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -66,3 +67,4 @@ uintptr_t ddrss_get_top_base(uint32_t mc);
 
 // in ddrss_ras.c
 int ddrss_probe_ras_agent(uint32_t mc, uint32_t ras_agent_entity_id);
+

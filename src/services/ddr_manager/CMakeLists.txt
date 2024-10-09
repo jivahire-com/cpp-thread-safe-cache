@@ -20,6 +20,7 @@ target_include_directories(${TARGET}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
         ${REPO_ROOT_DIR}/.externs/repo/silibs/soc_fw_shared/include
+        ${REPO_ROOT_DIR}/.externs/repo/silibs/libraries/atu/include
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -42,6 +43,7 @@ target_link_libraries(${TARGET}
         ms::lib::system_info
         ms::service::sds_service
     PUBLIC
+        silibs::atu
         fwlib.platform.dfwkhost.threadx
         fwlib.dfwk
         fwlib.lib.interface.platform.errorhandler

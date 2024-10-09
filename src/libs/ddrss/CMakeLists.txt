@@ -4,6 +4,7 @@ add_library(${TARGET}
     STATIC
         src/ddrss.c
         src/prod_ddrss_isr.c
+        src/ddr_err_inj.c
 )
 
 if (i386-pc-windows-msvc)

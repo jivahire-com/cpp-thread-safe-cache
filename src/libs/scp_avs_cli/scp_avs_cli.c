@@ -18,7 +18,7 @@
 #include <scp_avs_driver.h> // for scp_avs_request_t
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define MAX_CLI_VOLTAGE         1000 // mV
+#define MAX_CLI_VOLTAGE         1200 // mV
 #define MAX_CLI_MULTI_READ_CMDS 6
 
 /*-------------- Typedefs ----------------*/

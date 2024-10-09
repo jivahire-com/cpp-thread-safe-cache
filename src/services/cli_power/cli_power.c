@@ -287,7 +287,8 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
 
     }
 
-   return CLI_SUCCESS;
+    FpFwCliPrint("pwr_cli_comp\n");
+    return CLI_SUCCESS;
 }      
   
 static FPFW_CLI_STATUS cli_power_set_command(int argc, const char** argv)

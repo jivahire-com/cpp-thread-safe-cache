@@ -61,3 +61,8 @@ typedef struct
 
 /*--------- Function Prototypes ----------*/
 void ddr_manager_init(ddr_service_context_t *pddr_service_ctx, ddr_service_config_t *pconfig, fpfw_icc_base_ctx_t *icc_ctx);
+
+/**
+ * Load PHY binary from flash to intermediate SRAM.
+ */
+void hsp_send_recv_load_fw_ddr_phy_req(fpfw_icc_base_ctx_t* icc_ctx);

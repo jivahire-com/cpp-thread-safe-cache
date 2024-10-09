@@ -64,3 +64,5 @@ mock_target(${TARGET}
     idhw_get_die_id
     system_info_is_hsp_present
 )
+
+target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

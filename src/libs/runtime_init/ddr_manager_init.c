@@ -51,6 +51,7 @@ FPFW_INIT_COMPONENT(ddrman, FPFW_INIT_DEPENDENCIES("ddr", "std_io", "mesh", "hw_
     };
 
     fpfw_icc_base_ctx_t* icc_ctx = fpfw_init_get_handle("icc_hspmbx");
+    hsp_send_recv_load_fw_ddr_phy_req(icc_ctx);
     ddr_manager_init(&ddr_service_ctx, &config, icc_ctx);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

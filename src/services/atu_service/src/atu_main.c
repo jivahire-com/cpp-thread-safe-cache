@@ -15,6 +15,7 @@
 #include <DfwkHost.h>
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
+#include <assert.h> // for static_assert
 #include <atu_lib.h>
 #include <bug_check.h>
 #include <css.h>
@@ -29,6 +30,22 @@
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+
+// total inband telemetry DDR size is split evenly between the two dies and the AP window is sized the same
+#define IB_TELEMETRY_DDR_PER_DIE_SIZE    (MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_SIZE)
+#define IB_TELEMETRY_DDR_TOTAL_AP_BASE_ADDR (IB_TELEMETRY_RESERVATION_BASE)
+#define IB_TELEMETRY_DDR_TOTAL_AP_END_ADDR  (IB_TELEMETRY_RESERVATION_END)
+#define IB_TELEMETRY_DDR_TOTAL_SIZE      (IB_TELEMETRY_DDR_TOTAL_AP_END_ADDR - IB_TELEMETRY_DDR_TOTAL_AP_BASE_ADDR)
+
+#define IB_TELEMETRY_DDR_DIE_0_AP_BASE_ADDR (IB_TELEMETRY_DDR_TOTAL_AP_BASE_ADDR)
+#define IB_TELEMETRY_DDR_DIE_0_AP_END_ADDR  (IB_TELEMETRY_DDR_TOTAL_AP_BASE_ADDR + IB_TELEMETRY_DDR_PER_DIE_SIZE)
+
+#define IB_TELEMETRY_DDR_DIE_1_AP_BASE_ADDR (IB_TELEMETRY_DDR_DIE_0_AP_END_ADDR)
+#define IB_TELEMETRY_DDR_DIE_1_AP_END_ADDR  (IB_TELEMETRY_DDR_TOTAL_AP_END_ADDR)
+
+static_assert((IB_TELEMETRY_DDR_TOTAL_SIZE) == ((IB_TELEMETRY_DDR_DIE_0_AP_END_ADDR - IB_TELEMETRY_DDR_DIE_0_AP_BASE_ADDR) +
+                                                (IB_TELEMETRY_DDR_DIE_1_AP_END_ADDR - IB_TELEMETRY_DDR_DIE_1_AP_BASE_ADDR)),
+              "IB Die DDR sizes do not add up to total DDR size");
 
 /*------------- Typedefs -----------------*/
 
@@ -56,7 +73,7 @@ atu_map_entry_t atu_static_map_single_die_die0[] = {
         .attribute = {{.axprot0 = ATU_BUS_ATTR_SET, .axprot1 = ATU_BUS_ATTR_CLR, .axnse = ATU_BUS_ATTR_SET}},
     },
     {
-        .ap_base_address = IB_TELEMETRY_DDR_DIE_0_BASE_ADDR,
+        .ap_base_address = IB_TELEMETRY_DDR_DIE_0_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
@@ -87,7 +104,7 @@ atu_map_entry_t atu_static_map_dual_die_die0[] = {
         .attribute = {{.axprot0 = ATU_BUS_ATTR_SET, .axprot1 = ATU_BUS_ATTR_CLR, .axnse = ATU_BUS_ATTR_SET}},
     },
     {
-        .ap_base_address = IB_TELEMETRY_DDR_DIE_0_BASE_ADDR,
+        .ap_base_address = IB_TELEMETRY_DDR_DIE_0_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
@@ -111,7 +128,7 @@ atu_map_entry_t atu_static_map_single_die_die1[] = {
         .attribute = {{.axprot0 = ATU_BUS_ATTR_SET, .axprot1 = ATU_BUS_ATTR_CLR, .axnse = ATU_BUS_ATTR_SET}},
     },
     {
-        .ap_base_address = IB_TELEMETRY_DDR_DIE_1_BASE_ADDR,
+        .ap_base_address = IB_TELEMETRY_DDR_DIE_1_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
@@ -142,7 +159,7 @@ atu_map_entry_t atu_static_map_dual_die_die1[] = {
         .attribute = {{.axprot0 = ATU_BUS_ATTR_SET, .axprot1 = ATU_BUS_ATTR_CLR, .axnse = ATU_BUS_ATTR_SET}},
     },
     {
-        .ap_base_address = IB_TELEMETRY_DDR_DIE_1_BASE_ADDR,
+        .ap_base_address = IB_TELEMETRY_DDR_DIE_1_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},

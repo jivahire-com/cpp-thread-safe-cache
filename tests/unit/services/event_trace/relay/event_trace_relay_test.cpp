@@ -16,6 +16,7 @@ extern "C" {
 #include <FpFwLock.h>
 #include <FpFwUtils.h>
 #include <IFpFwEventTracingStatus.h>
+#include <diag_decoder.h>
 #include <error_handler.h>
 #include <event_trace_relay.h>
 #include <event_trace_relay_i.h>
@@ -53,12 +54,12 @@ static etr_service_config_t s_test_config = {
                 .soc_id = 0,
                 .die_id = 0,
             },
-        .asic_ddr_config = 
+        .asic_ddr_config =
         {
             .base_addr = (uint64_t)&s_asic_ddr_memory[0],
             .size_bytes = sizeof(s_asic_ddr_memory),
         },
-        .hsp_ddr_config = 
+        .hsp_ddr_config =
         {
             .base_addr = (uint64_t)&s_hsp_ddr_memory[0],
             .size_bytes = sizeof(s_hsp_ddr_memory),
@@ -221,7 +222,7 @@ TEST_FUNCTION(test_etr_init_bad_ddr_config, nullptr, nullptr)
     }
 
     bad_config = s_test_config;
-    bad_config.asic_ddr_config.size_bytes = IB_TELEMETRY_DDR_DIE_TRACE_ASIC_SIZE + 1;
+    bad_config.asic_ddr_config.size_bytes = IB_TLM_DDR_ATU_AP_WIN_TRACE_ASIC_SIZE + 1;
 
     expect_value(FPFwErrorRaise, error, (uint32_t)-1);
     if(!set_error_handler_return())
@@ -230,7 +231,7 @@ TEST_FUNCTION(test_etr_init_bad_ddr_config, nullptr, nullptr)
     }
 
     bad_config = s_test_config;
-    bad_config.hsp_ddr_config.size_bytes = IB_TELEMETRY_DDR_DIE_TRACE_HSP_SIZE + 1;
+    bad_config.hsp_ddr_config.size_bytes = IB_TLM_DDR_ATU_AP_WIN_TRACE_HSP_SIZE + 1;
 
     expect_value(FPFwErrorRaise, error, (uint32_t)-1);
     if(!set_error_handler_return())
@@ -271,7 +272,7 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_available, test_setup, 
     memset(&fake_core_buffer[0], 0xAB, sizeof(fake_core_buffer));
     etr_service_request_t request = {
         .type = ETR_SERVICE_REQUEST_TYPE_COPY_BUFFER,
-        .request = 
+        .request =
             {
             .copy_buffer = {
                 .core_id = 0,
@@ -310,7 +311,7 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed, test_setup, test
 
     etr_service_request_t request = {
         .type = ETR_SERVICE_REQUEST_TYPE_COPY_BUFFER,
-        .request = 
+        .request =
             {
             .copy_buffer = {
                 .core_id = 0,
@@ -362,7 +363,7 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup, te
 
     etr_service_request_t request = {
         .type = ETR_SERVICE_REQUEST_TYPE_COPY_BUFFER,
-        .request = 
+        .request =
             {
             .copy_buffer = {
                 .core_id = 0,
@@ -395,7 +396,7 @@ TEST_FUNCTION(test_etr_process_request_host_read_bad_addr, test_setup, test_tear
 {
     etr_service_request_t request = {
         .type = ETR_SERVICE_REQUEST_TYPE_HOST_READ,
-        .request = 
+        .request =
             {
             .host_read = {
                 .die_id = 0,
@@ -419,7 +420,7 @@ TEST_FUNCTION(test_etr_process_request_host_read_good_addr, test_setup, test_tea
 
     etr_service_request_t request = {
         .type = ETR_SERVICE_REQUEST_TYPE_HOST_READ,
-        .request = 
+        .request =
             {
             .host_read = {
                 .die_id = 0,
@@ -443,7 +444,7 @@ TEST_FUNCTION(test_etr_process_request_host_read_good_addr_bad_state, test_setup
 
     etr_service_request_t request = {
         .type = ETR_SERVICE_REQUEST_TYPE_HOST_READ,
-        .request = 
+        .request =
             {
             .host_read = {
                 .die_id = 0,

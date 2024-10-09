@@ -40,15 +40,15 @@ FPFW_INIT_COMPONENT(etr, FPFW_INIT_DEPENDENCIES("etc"))
                 .die_id = 0,
                 .soc_id = 0,
             },
-        .asic_ddr_config = 
+        .asic_ddr_config =
         {
-            .base_addr = IB_TELEMETRY_DDR_DIE_TRACE_ASIC_BASE_ADDR(0),
-            .size_bytes = IB_TELEMETRY_DDR_DIE_TRACE_ASIC_SIZE,
+            .base_addr = IB_TLM_DDR_ATU_AP_WIN_TRACE_ASIC_BASE_ADDR,
+            .size_bytes = IB_TLM_DDR_ATU_AP_WIN_TRACE_ASIC_SIZE,
         },
-        .hsp_ddr_config = 
+        .hsp_ddr_config =
         {
-            .base_addr = IB_TELEMETRY_DDR_DIE_TRACE_HSP_BASE_ADDR(0),
-            .size_bytes = IB_TELEMETRY_DDR_DIE_TRACE_HSP_SIZE,
+            .base_addr = IB_TLM_DDR_ATU_AP_WIN_TRACE_HSP_BASE_ADDR,
+            .size_bytes = IB_TLM_DDR_ATU_AP_WIN_TRACE_HSP_SIZE,
         },
         .thread_config =
             {

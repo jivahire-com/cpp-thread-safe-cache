@@ -17,8 +17,8 @@ target_include_directories(${TARGET}
 target_link_libraries(${TARGET}
     PUBLIC
         ms::lib::register_headers
-        ms::lib::interface::in_band_telemetry_ddr
         silibs::kng_silibs_platform
+        fwlib.dfwk
     PRIVATE
         ms::lib::css
         ms::lib::register_headers
@@ -29,7 +29,6 @@ target_link_libraries(${TARGET}
         silibs::atu
         silibs::idhw
         silibs::idsw
-        fwlib.dfwk
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.interface.platform.threadx
 )

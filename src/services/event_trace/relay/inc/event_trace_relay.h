@@ -15,6 +15,7 @@
 #include <FpFwLock.h>
 #include <FpFwUtils.h>
 #include <IFpFwEventTracingBuffers.h>
+#include <diag_decoder.h>
 #include <in_band_telemetry_ddr.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -23,7 +24,7 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 /**
- * The Trace DDR Buffers in DDR are split into two types: ASIC and HSP. Each type contains the same 
+ * The Trace DDR Buffers in DDR are split into two types: ASIC and HSP. Each type contains the same
  * diagnostic decoder header, followed by type specific payloads.
 */
 
@@ -31,9 +32,9 @@
  * Sizing and capacity for ASIC Buffers
  * - How big, including the Diag Header and the ASIC Header, the ASIC Buffer Payload is.
  * - How many ASIC Buffers we can fit into DDR.
-*/ 
+*/
 #define ASIC_BUFFER_PAYLOAD_SIZE (64 * FPFW_KB)
-#define ASIC_BUFFER_DDR_CAPACITY_MAX (IB_TELEMETRY_DDR_DIE_TRACE_ASIC_SIZE / ASIC_BUFFER_PAYLOAD_SIZE)
+#define ASIC_BUFFER_DDR_CAPACITY_MAX (IB_TLM_DDR_ATU_AP_WIN_TRACE_ASIC_SIZE / ASIC_BUFFER_PAYLOAD_SIZE)
 
 /**
  * Sizing and capacity for HSP Buffers
@@ -43,7 +44,7 @@
  *          https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1506825
 */
 #define HSP_BUFFER_PAYLOAD_SIZE (16 * FPFW_KB)
-#define HSP_BUFFER_DDR_CAPACITY_MAX (IB_TELEMETRY_DDR_DIE_TRACE_HSP_SIZE / HSP_BUFFER_PAYLOAD_SIZE)
+#define HSP_BUFFER_DDR_CAPACITY_MAX (IB_TLM_DDR_ATU_AP_WIN_TRACE_HSP_SIZE / HSP_BUFFER_PAYLOAD_SIZE)
 
 #define ETR_CORE_BUFFERS_CAPACITY (8)
 #define ETR_DDR_BUFFERS_CAPACITY_MAX (ASIC_BUFFER_DDR_CAPACITY_MAX + HSP_BUFFER_DDR_CAPACITY_MAX)
@@ -56,7 +57,7 @@
 
 /*-------------- Typedefs ----------------*/
 
-typedef struct 
+typedef struct
 {
     uint64_t soc_id; // Wafer Lot Number and Wafer X/Y Coordinates
     uint32_t die_id;
@@ -133,7 +134,7 @@ typedef struct {
 // ETR Service Context and Configuration
 //
 
-typedef struct 
+typedef struct
 {
     soc_info_t soc_info;
     p_ddr_buffer_info_t p_active_asic_buffer;
@@ -189,13 +190,13 @@ typedef struct
 
 /**
  *  @brief  Initializes the Event Trace Relay service. Enabling core traces buffers to be copied to DDR.
- * 
+ *
  *  @param[in]  p_service    This is the service context where the internal state will be stored for the module
  *                           NOTE! The provided memory is used only for lifetime of the program
- * 
+ *
  *  @param[in]  p_config     This is the user configuration. Parameters are described in the documentation of the struct.
  *                           NOTE! The provided memory is used only for the lifetime of this function call.
- * 
+ *
  *  @retval     None. This will attempt to create the threadx resources, the module will raise an error if any of these fail.
 */
 void etr_initialize(etr_service_context_t* p_service, const etr_service_config_t* p_config);

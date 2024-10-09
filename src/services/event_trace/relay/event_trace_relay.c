@@ -328,9 +328,9 @@ void etr_initialize_ddr_buffers(etr_service_context_t* p_service, const etr_serv
     FPFW_RUNTIME_ASSERT(p_config->hsp_ddr_config.base_addr != 0);
 
     // Validate we can fit at least one buffer of each
-    FPFW_RUNTIME_ASSERT(p_config->asic_ddr_config.size_bytes <= IB_TELEMETRY_DDR_DIE_TRACE_ASIC_SIZE &&
+    FPFW_RUNTIME_ASSERT(p_config->asic_ddr_config.size_bytes <= IB_TLM_DDR_ATU_AP_WIN_TRACE_ASIC_SIZE &&
                         p_config->asic_ddr_config.size_bytes >= ASIC_BUFFER_PAYLOAD_SIZE);
-    FPFW_RUNTIME_ASSERT(p_config->hsp_ddr_config.size_bytes <= IB_TELEMETRY_DDR_DIE_TRACE_HSP_SIZE &&
+    FPFW_RUNTIME_ASSERT(p_config->hsp_ddr_config.size_bytes <= IB_TLM_DDR_ATU_AP_WIN_TRACE_HSP_SIZE &&
                         p_config->hsp_ddr_config.size_bytes >= HSP_BUFFER_PAYLOAD_SIZE);
 
     uint64_t asic_count = p_config->asic_ddr_config.size_bytes / ASIC_BUFFER_PAYLOAD_SIZE;

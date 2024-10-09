@@ -13,7 +13,7 @@
 #include "stdint.h"
 #include "common_types.h"
 
-#include <in_band_telemetry_ddr.h>
+#include <diag_decoder.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 
 /*-- Symbolic Constant Macros (defines) --*/

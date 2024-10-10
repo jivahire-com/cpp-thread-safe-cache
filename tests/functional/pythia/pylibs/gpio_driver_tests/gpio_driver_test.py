@@ -14,8 +14,6 @@ from kng_pythia_test_setup import KngPythiaTestSetup
 
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
-from pythia.tdk.echofalls.constants.dut_types import DeviceType
-
 class gpio_driver_test(EchoFallsBaseTest):
     """
     :param name:                Name of the test case
@@ -85,22 +83,11 @@ class gpio_driver_test(EchoFallsBaseTest):
         self.channels["scp"] = self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
         self.channels["mcp"] = self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel()
 
-        match self.dut.get_dut_type():
-            case DeviceType.BIGFPGA:
-                self.log.info("BigFPGA")
-                KngPythiaTestSetup.reset_fpga_load_prodfw(self)
-            case DeviceType.SVP:
-                self.log.info("SVP")
-                self.channels["scp"].open()
-                assert self.channels["scp"].is_open()
-                self.channels["mcp"].open()
-                assert self.channels["mcp"].is_open()
-            case _:
-                self.log.error("Unknown device type")
-                self.test_notify(step="InvalidDeviceType", msg="Test Fail", _is_error=True)
-                self.dut.teardown()
-                return False
-            
+        self.channels["scp"].open()
+        assert self.channels["scp"].is_open()
+        self.channels["mcp"].open()
+        assert self.channels["mcp"].is_open()
+
         # Wait until heartbeat is received
         self.log.info("Reading SCP UART for HeartBeat . . .")
         try:

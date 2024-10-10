@@ -38,7 +38,6 @@ stages:
   jobs:
   - template: templates/fpga_pythia_test.yaml
     parameters:
-      Platform: fpga
       ArtifactName: FPGA_Pythia_Tests
       stress_test_iterations: ${{parameters.stress_test_iterations}}
       Pool: 1pfw-kingsgate-big-fpga

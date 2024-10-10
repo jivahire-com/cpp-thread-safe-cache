@@ -71,17 +71,9 @@ class scp_avs_read_test(EchoFallsBaseTest):
             self.dut.teardown()
             return True
         
-        elif (self.dut.get_dut_type() == DeviceType.SVP):
-            print("SVP device")
-            core_com_channel=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
-            core_com_channel.open()
-            core_com_channel.is_open()
-            assert core_com_channel.is_open()
-
-        else:
-            self.log.error("Unsupported DUT type")
-            self.dut.teardown()
-            return False
+        core_com_channel=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
+        core_com_channel.open()
+        assert core_com_channel.is_open()
 
         try:
             self.log.info(f"Reading from self.dut.mb.node_0.soc.primary_die.scp.channel_manager\n")

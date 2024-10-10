@@ -70,17 +70,16 @@ class mscp_heart_beat(EchoFallsBaseTest):
         assert scp_connection is not None
         assert mcp_connection is not None
 
-        if (self.dut.get_dut_type() == DeviceType.SVP):
-            scp_connection.get_current_channel().open()
-            assert scp_connection.get_current_channel().is_open()
+        scp_connection.get_current_channel().open()
+        assert scp_connection.get_current_channel().is_open()
 
-            mcp_connection.get_current_channel().open()
-            assert mcp_connection.get_current_channel().is_open()
+        mcp_connection.get_current_channel().open()
+        assert mcp_connection.get_current_channel().is_open()
 
 
         self.log.info("Reading SCP UART for HeartBeat . . .")
         try:
-            scp_connection.get_current_channel().read_until(key="HeartBeat", timeout_seconds=900)
+            scp_connection.get_current_channel().read_until(key="HeartBeat", timeout_seconds=500)
         except Exception as e:
             self.log.error(f"Error reading SCP UART: {e}")
             scp_connection.get_current_channel().close()
@@ -90,7 +89,7 @@ class mscp_heart_beat(EchoFallsBaseTest):
 
         self.log.info("Reading MCP UART for HeartBeat . . .")
         try:
-            mcp_connection.get_current_channel().read_until(key="HeartBeat", timeout_seconds=900)
+            mcp_connection.get_current_channel().read_until(key="HeartBeat", timeout_seconds=500)
         except Exception as e:
             self.log.error(f"Error reading MCP UART: {e}")
             mcp_connection.get_current_channel().close()

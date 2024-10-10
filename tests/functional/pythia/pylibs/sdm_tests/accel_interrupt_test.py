@@ -99,18 +99,12 @@ class accel_interrupt_test(EchoFallsBaseTest):
         if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
             KngPythiaTestSetup.reset_fpga_sideload_testfw(self.dut, self.log)
 
-        elif (self.dut.get_dut_type() == DeviceType.SVP):
-            self.channels["ap"].open()
-            self.channels["ap"].is_open()
-            self.channels["scp"].open()
-            self.channels["scp"].is_open()
-            self.channels["sdm"].open()
-            self.channels["sdm"].is_open()
-
-        else:
-            self.log.error("Unsupported DUT type")
-            self.dut.teardown()
-            return False
+        self.channels["ap"].open()
+        assert self.channels["ap"].is_open()
+        self.channels["scp"].open()
+        assert self.channels["scp"].is_open()
+        self.channels["sdm"].open()
+        assert self.channels["sdm"].is_open()
 
         self.log.info("Reading SCP UART for HeartBeat . . .")
         try:

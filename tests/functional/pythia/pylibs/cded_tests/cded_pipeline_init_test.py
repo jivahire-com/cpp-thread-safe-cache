@@ -56,17 +56,11 @@ class cded_pipeline_init_test(EchoFallsBaseTest):
             time.sleep(30)
             exp_num_lines=1400
         
-        elif (self.dut.get_dut_type() == DeviceType.SVP):
-            # Ensure the host config file used alongside this test has these connections defined.
-            assert self.dut.mb.node_0.soc.primary_die.sdm_cded.channel_manager is not None
-            self.dut.mb.node_0.soc.primary_die.sdm_cded.channel_manager.get_current_channel().open()
-            assert self.dut.mb.node_0.soc.primary_die.sdm_cded.channel_manager.get_current_channel().is_open()
-            exp_num_lines=120
-
-        else:
-            self.log.error("Unsupported DUT type")
-            self.dut.teardown()
-            return False
+        # Ensure the host config file used alongside this test has these connections defined.
+        assert self.dut.mb.node_0.soc.primary_die.sdm_cded.channel_manager is not None
+        self.dut.mb.node_0.soc.primary_die.sdm_cded.channel_manager.get_current_channel().open()
+        assert self.dut.mb.node_0.soc.primary_die.sdm_cded.channel_manager.get_current_channel().is_open()
+        exp_num_lines=120
 
         self.log.info("Reading CDED UART for required logs . . .")
         cded_lines = ' '.join(KngPythiaTestIF.read_from_uart(self, connection=self.dut.mb.node_0.soc.primary_die.sdm_cded.channel_manager, num_lines=exp_num_lines))

@@ -29,6 +29,7 @@ parameters:
 
 jobs:
 - job: 'FPGA_Pythia_Tests'
+  timeoutInMinutes: 240
   displayName: FPGA Pythia Tests
   pool: 
     name: ${{ parameters.Pool }}

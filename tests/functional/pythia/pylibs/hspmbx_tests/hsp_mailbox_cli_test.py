@@ -13,8 +13,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs')
 from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
 
-from pythia.tdk.echofalls.constants.dut_types import DeviceType
-
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
 class hsp_mailbox_cli_test(EchoFallsBaseTest):
@@ -65,18 +63,8 @@ class hsp_mailbox_cli_test(EchoFallsBaseTest):
         self.dut.setup()
 
         core_com_channel=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
-
-        if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
-            KngPythiaTestSetup.reset_fpga_load_prodfw(self)
-        
-        elif (self.dut.get_dut_type() == DeviceType.SVP):
-            core_com_channel.open()
-            core_com_channel.is_open()
-
-        else:
-            self.log.error("Unsupported DUT type")
-            self.dut.teardown()
-            return False
+        core_com_channel.open()
+        assert core_com_channel.is_open()
         
         try:
             self.log.info("Waiting for Heartbeat Msg")

@@ -69,14 +69,7 @@ class sdm_pcie_test(EchoFallsBaseTest):
         if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
             KngPythiaTestSetup.reset_fpga_sideload_testfw(self.dut, self.log)
         
-        elif (self.dut.get_dut_type() == DeviceType.SVP):
-            apns_connection.get_current_channel().open()
-
-        else:
-            self.log.error("Unsupported DUT type")
-            self.dut.teardown()
-            return False
-
+        apns_connection.get_current_channel().open()
         # If unable to reach apns_connection, then FPGA system has a conflcit booking or SVP failed to launch. So return fail
         if not apns_connection.get_current_channel().is_open():
             self.dut.teardown()

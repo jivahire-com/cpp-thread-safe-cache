@@ -42,6 +42,7 @@ mock_target(${TARGET}
     DfwkAsyncRequestComplete
     FpFwAssert
     accel_intr_handle_fatal_intr_recvd
+    accel_intr_handle_mbox_recvd
     accel_intr_handle_sdm_msg_recvd
 )
 

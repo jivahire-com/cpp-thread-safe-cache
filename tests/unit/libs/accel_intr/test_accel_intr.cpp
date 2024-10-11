@@ -20,6 +20,7 @@ extern "C" {
 #include <nvic.h>          // for NVIC_STATUS_SUCCESS
 #include <silibs_status.h> // for SILIBS_SUCCESS
 #include <stdint.h>        // for uint32_t
+#include <stdio.h>
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
@@ -64,12 +65,28 @@ void __wrap_send_fatal_intr_async_request(uint32_t IRQnum)
 }
 
 /**
+ * @brief : Mock function for Mailbox request
+ *
+ * @param[in] IRQnum : IRQNum based on SDM / CDED
+ *
+ */
+void __wrap_send_mailbox_async_request(uint32_t IRQnum)
+{
+    check_expected(IRQnum);
+}
+
+/**
  * @brief : Mock function for idsw_get_platform_sdv
  *
  */
 KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
 {
     return mock_type(KNG_PLAT_ID);
+}
+
+void __wrap_accel_mbox_sw_intr_cb(void *ctx)
+{
+    check_expected(ctx);
 }
 
 } // extern "c"
@@ -196,6 +213,11 @@ TEST_FUNCTION(test_accel_intr_isr_pass, nullptr, nullptr)
     expect_any_always(__wrap_mmio_write32, data);
 
     expect_value(__wrap_send_sdm_msg_async_request, IRQnum, irq_num);
+
+    // accel_intr_mbox_isr()
+    will_return(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
+    expect_value(__wrap_send_mailbox_async_request, IRQnum, irq_num);
+
     expect_value(__wrap_send_fatal_intr_async_request, IRQnum, irq_num);
 
     expect_value(__wrap_nvic_irq_disable, irq_num, irq_num);
@@ -251,6 +273,10 @@ TEST_FUNCTION(test_accel_intr_isr_pass_no_interrupt, nullptr, nullptr)
     expect_any_always(__wrap_mmio_read32, addr);
 
     expect_value(__wrap_send_sdm_msg_async_request, IRQnum, irq_num);
+
+    // accel_intr_mbox_isr()
+    will_return(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
+    expect_value(__wrap_send_mailbox_async_request, IRQnum, irq_num);
 
     accel_intr_isr((void*)irq_num);
 }
@@ -450,4 +476,45 @@ TEST_FUNCTION(test_accel_intr_handle_sdm_msg_recv_timeout_count_1, NULL, NULL)
 
     assert_non_null(timer_cb);
     timer_cb(&accel_intr_crash_dump_collection_timer_data, 0x0);
+}
+
+TEST_FUNCTION(test_accel_intr_handle_mbox_recvd_sdm__pass, NULL, NULL)
+{
+    void *cb_ctx = (void *)0x12345678;
+
+    accel_intr_set_mbx_ctx(ACCELERATOR_SDMSS, (void *)cb_ctx);
+    expect_value(__wrap_accel_mbox_sw_intr_cb, ctx, cb_ctx);
+    will_return_always(__wrap_sdm_ext_int_mask_status_clear, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_ext_int_mask_enable, SILIBS_SUCCESS);
+
+    accel_intr_handle_mbox_recvd(SDMSS_IRQ_NUMBER);
+}
+
+TEST_FUNCTION(test_accel_intr_handle_mbox_recvd_sdm__fail1, NULL, NULL)
+{
+    accel_intr_set_mbx_ctx(ACCELERATOR_SDMSS, (void *)NULL);
+
+    accel_intr_handle_mbox_recvd(SDMSS_IRQ_NUMBER);
+}
+
+TEST_FUNCTION(test_accel_intr_init_sdm__pass, NULL, NULL)
+{
+    // FPFwCoreInterruptRegisterCallback
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER);
+    will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
+
+    assert_int_equal(accel_intr_init(ACCELERATOR_SDMSS), ACCEL_INTR_RET_SUCCESS);
+}
+
+TEST_FUNCTION(test_accel_intr_init_sdm__fail1, NULL, NULL)
+{
+    // FPFwCoreInterruptRegisterCallback
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER);
+    will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_ERROR);
+
+    assert_int_equal(accel_intr_init(ACCELERATOR_SDMSS), ACCEL_INTR_RET_FAIL_INTR_NVIC);
 }

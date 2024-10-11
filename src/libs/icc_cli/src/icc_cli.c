@@ -8,6 +8,7 @@
 
 /*------------- Includes -----------------*/
 #include "icc_hsp_mbox_cli.h" // for display_mbx_list, display_mbx_register_status, set_mbx_reg_val, hsp_mbox_echo, hsp_mbox_send, hsp_mbox_recv
+#include "icc_large_fifo_mbox_cli.h"
 #include "icc_rmss_d2d_mbox_cli.h" // for d2d_mbox_send, d2d_mbox_recv, d2d_sync_test, d2d_mbox_echo
 #include "status_decoder.h"        // for get_fpfw_status_code_string
 
@@ -83,6 +84,12 @@ static FPFW_CLI_COMMAND s_icc_mhu_cmd_list[] = {
     {NULL_LIST_ENTRY, "icc_mhu", "scmi_stat", scmi_stat, "Checks MHU SCMI Stat bit", "Usage: scmi_stat <index>"},
 };
 
+static FPFW_CLI_COMMAND s_icc_sdm_mbx_cmd_list[] = {
+    {NULL_LIST_ENTRY, "icc_sdm_mbx", "sdm_send", large_fifo_mbox_send, "Expects to recv mailbox mesg from SDM", "Usage: sdm_send <(cmd code)>"},
+    {NULL_LIST_ENTRY, "icc_sdm_mbx", "sdm_recv", large_fifo_mbox_recv, "Expects to send mailbox mesg to SDM", "Usage: sdm_recv <(cmd code)>"},
+    {NULL_LIST_ENTRY, "icc_sdm_mbx", "sdm_echo", large_fifo_mbox_echo, "Expects to send & receive mailbox mesg to SDM", "Usage: sdm_echo <(cmd code)>"},
+};
+
 //! @todo separate this out in a generic cli utils file
 static FPFW_CLI_COMMAND s_common_list[] = {
     {NULL_LIST_ENTRY, "common", "decode_err", print_error_string, "Print the error code string", "Usage: decode_err <numeric err code>"},
@@ -124,6 +131,11 @@ void icc_cli_init(icc_cli_init_params_t* params)
                 icc_base_rmss_d2d_mbx_ctx = (fpfw_icc_base_ctx_t*)icc_cli_ctx->icc_base_ctx[ICC_CLI_D2D_MBX];
                 //! register the icc_d2dmbx commands
                 FpFwCliRegisterTable(s_icc_d2d_rmss_mbx_cmd_list, FPFW_ARRAY_SIZE(s_icc_d2d_rmss_mbx_cmd_list));
+            }
+            else if (i == ICC_CLI_SDM_FIFO_MBX)
+            {
+                icc_base_sdm_mbx_ctx = (fpfw_icc_base_ctx_t*)icc_cli_ctx->icc_base_ctx[ICC_CLI_SDM_FIFO_MBX];
+                FpFwCliRegisterTable(s_icc_sdm_mbx_cmd_list, FPFW_ARRAY_SIZE(s_icc_sdm_mbx_cmd_list));
             }
         }
     }

@@ -51,3 +51,14 @@ void send_fatal_intr_async_request(uint32_t IRQnum);
  * void
  */
 void accel_intr_client_init(paccel_intr_service_interface_t p_interface);
+
+/**
+ * @brief Send mailbox Interrupt received notification to Accel Interrupt device
+ *
+ *
+ * @param[in] IRQnum : IRQnum on which interrupt is received
+ *
+ * @retval 
+ * void
+ */
+void send_mailbox_async_request(uint32_t IRQnum);

@@ -17,7 +17,8 @@
 #define HSP_MBOX_MAX_MESG_SIZE_BYTES            (16U)
 #define LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES     (128U)
 #define D2D_FIFO_MBOX_MAX_MESG_SIZE_BYTES       (64U)
-#define D2D_MBOX_FIFO_DEPTH        (16U)
+#define D2D_MBOX_FIFO_DEPTH        				(16U)
+#define MBOX_WORD_SIZE_BYTE                     (4)
 
 /**
  * HSP Mailbox Message Format (16 bytes):

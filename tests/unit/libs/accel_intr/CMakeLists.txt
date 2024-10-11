@@ -15,6 +15,7 @@ target_link_libraries(${TARGET}
     PRIVATE
         atu
         fwlib.lib.init
+        fwlib.lib.interface.platform.interrupts
         fwlib.lib.utils
         kng_silibs_platform
         ms::cmocka::mocks
@@ -54,6 +55,7 @@ unit_test_target(${TARGET})
 # Mock the functions needed
 mock_target(${TARGET}
     accel_intr_service_get_cfg_address
+    accel_mbox_sw_intr_cb
     fpfw_timer_create
     fpfw_timer_enable
     fpfw_timer_reset
@@ -73,6 +75,7 @@ mock_target(${TARGET}
     sdm_ext_int_mask_enable
     sdm_ext_int_mask_status_clear
     send_fatal_intr_async_request
+    send_mailbox_async_request
     send_sdm_msg_async_request
     set_ext_int_sub_system
 )

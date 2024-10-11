@@ -3,6 +3,7 @@ set(TARGET icc_cli)
 set(SRC
     src/icc_cli.c
     src/icc_hsp_mbox_cli.c
+    src/icc_large_fifo_mbox_cli.c
     src/icc_rmss_d2d_mbox_cli.c
     src/status_decoder.c
 )
@@ -14,9 +15,10 @@ set(LIBS
             fwlib.service.icc_dispatcher
             fwlib.service.cli
             fwlib.lib.utils
+            fwlib.lib.mboxPrimitives
             ms::driver::icc_mhu_trans
             ms::lib::icc_platform_defines
-            kng.lib.hsp_firmware_headers
+            ms::lib::hsp_firmware_headers
             silibs::kng_silibs_platform
             silibs::platform
             silibs::icc_mhu

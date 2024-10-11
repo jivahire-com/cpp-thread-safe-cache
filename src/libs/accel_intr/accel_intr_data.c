@@ -75,8 +75,8 @@ const accel_intr_irq_data_t accel_intr_irq_data[ACCEL_INTR_MAX] = {
     // ACCEL_INTR_AXI_BURST_ERR
     {
         .accel_irq_bit = SDM_EXT_AXI_BURST_ERR_INTR,
-        .accel_irq_init_fn = accel_intr_single_level_irq_init,
-        .accel_irq_fn = accel_intr_single_level_irq_fn
+        .accel_irq_init_fn = NULL,
+        .accel_irq_fn = NULL
     },
 
     // ACCEL_INTR_AXI_UNSUPP_INTR_STATUS
@@ -91,7 +91,14 @@ const accel_intr_irq_data_t accel_intr_irq_data[ACCEL_INTR_MAX] = {
         .accel_irq_bit = SDM_EXT_STYRESE_REQ_ERR_INTR,
         .accel_irq_init_fn = accel_intr_single_level_irq_init,
         .accel_irq_fn = accel_intr_single_level_irq_fn
-    }
+    },
+
+    // ACCEL_INTR_MBX_I2E
+    {
+        .accel_irq_bit = SDM_EXT_MBX_I2E_INTR,
+        .accel_irq_init_fn = accel_intr_single_level_irq_init,
+        .accel_irq_fn = NULL,
+    },
 };
 // clang-format on
 
@@ -123,6 +130,8 @@ eACCEL_INTR accel_intr_get_accel_intr_enum_from_irq_bit(SDM_EXT_INTERRUPT_NUMBER
         return ACCEL_INTR_AXI_UNSUPP_INTR_STATUS;
     case SDM_EXT_STYRESE_REQ_ERR_INTR:
         return ACCEL_INTR_STYRESE_REQ_ERR;
+    case SDM_EXT_MBX_I2E_INTR:
+        return ACCEL_INTR_MBX_I2E;
     default:
         return ACCEL_INTR_MAX;
     }

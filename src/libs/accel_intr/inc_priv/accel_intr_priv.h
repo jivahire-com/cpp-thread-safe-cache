@@ -33,6 +33,7 @@ typedef enum {
     ACCEL_INTR_AXI_BURST_ERR,           // Maps to SDM_EXT_AXI_BURST_ERR_INTR
     ACCEL_INTR_AXI_UNSUPP_INTR_STATUS,  // Maps to SDM_EXT_AXI_UNSUPP_INTR_STATUS_INTR
     ACCEL_INTR_STYRESE_REQ_ERR,         // Maps to SDM_EXT_STYRESE_REQ_ERR_INTR
+    ACCEL_INTR_MBX_I2E,                 // Maps to SDM_EXT_MBX_I2E_INTR
     ACCEL_INTR_MAX
 } eACCEL_INTR;
 
@@ -199,6 +200,17 @@ void accel_intr_clear_interrupt_level_1(uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT
  *
  */
 void accel_intr_mask_interrupt_level_1(uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index);
+
+/**
+ * @brief Unmask interrupt in level 1 register i.e. sdm_ext_cfg_regs.misc.sys_ext_intr2
+ *
+ * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
+ * @param[in] bit_index   : Bit in sdm_ext_cfg_regs.misc.sys_ext_intr2
+ *
+ * @retval void
+ *
+ */
+void accel_intr_unmask_interrupt_level_1(uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index);
 
 /*************************************************************************
  * IRQ Init functions

@@ -93,3 +93,37 @@ void accel_intr_handle_sdm_msg_recvd(uint32_t IRQnum);
  *
  */
 void accel_intr_handle_fatal_intr_recvd(uint32_t IRQnum);
+
+/**
+ * @brief Function called when ASYNC request for mailbox interrupt is received
+ *  
+ * @param[in] IRQnum : This will have IRQNum to identify if interrupt is received for CDED / SDM
+ *
+ * @retval void
+ *
+ */
+void accel_intr_handle_mbox_recvd(uint32_t IRQnum);
+
+/**
+ * @brief Setup interrupt context for Mailbox interrupts.
+ *  
+ * @param[in] accel : Accel device corresponding to the given context
+ * 
+ * @param[in] ctx : Mailbox interrupt context
+ *
+ * @retval void
+ *
+ */
+void accel_intr_set_mbx_ctx(eACCELERATOR_TYPE accel, void* ctx);
+
+/**
+ * @brief enable interrupt in NVIC
+ *
+ * @param[in] accel_type : CDED / SDM accelerator_type
+ *
+ * @retval int32_t
+ * On Success : ACCEL_INTR_RET_SUCCESS
+ * On Failure : ACCEL_INTR_RET_FAIL_INTR_NVIC
+ *
+ */
+int32_t accel_intr_init(eACCELERATOR_TYPE accel_type);

@@ -4,6 +4,7 @@ set(SOURCES
     test_icc_init.cpp
     ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/icc_hspmbx_init.c
     ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/icc_d2dmbx_init.c
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/icc_accel_mbx_init.c
 )
 
 set(LIBRARIES
@@ -20,6 +21,7 @@ set(LIBRARIES
     ms::lib::threadx
     ms::lib::scp_interrupts
     ms::lib::icc_platform_defines
+    ms::lib::accel_intr
     silibs::platform
     silibs::kng_silibs_platform
     silibs::idhw
@@ -48,12 +50,14 @@ target_compile_definitions(
     PRIVATE
        MSCP2HSP_MAILBOX_BASE_ADDRESS=1000
        HW_INT_HSP2MSCP_MBOX_INT=0
+       HW_INT_SDM_MBOX_INT=119
        MSCP_TOP_MSCP_EXP_ADDRESS=1000
        MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=1000
        MSCP_EXP_TOP_SPI_CTRL_ADDRESS=0
        MSCP_EXP_TOP_SPI_BRIDGE_ADDRESS=0
        # @todo remove after SVP updates it's HSP mbx intr number
        HW_INT_HSP2MSCP_MBOX_INT_SVP=0
+       SDM_MBOX_OFFSET_AFTER_0X100000=1000
 )
 
 lint_target(${TARGET})
@@ -63,6 +67,7 @@ unit_test_target(${TARGET})
 
 mock_target(${TARGET}
     DfwkDeviceInitialize
+    accel_intr_init
     fpfw_init_get_handle
     fpfw_mbox_icc_transport_dfwk_device_init
     fpfw_mbox_icc_transport_dfwk_interface_init

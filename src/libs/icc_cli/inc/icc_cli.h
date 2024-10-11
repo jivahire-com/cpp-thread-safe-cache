@@ -11,6 +11,8 @@
 
 /*----------- Nested includes ------------*/
 
+#include <stdint.h>
+
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/

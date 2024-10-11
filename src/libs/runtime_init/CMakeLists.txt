@@ -36,6 +36,7 @@ add_library(${TARGET}
         icc_hspmbx_init.c
         icc_d2dmbx_init.c
         icc_cli_init.c
+        icc_accel_mbx_init.c
         icc_transport_init/scp_icc_mhu_trans_init.c
         i3c_controller_init.c
         mesh_init.c
@@ -158,11 +159,13 @@ target_compile_definitions(
     PRIVATE
        MSCP2HSP_MAILBOX_BASE_ADDRESS=SCP_TOP_SCP2HSP_MAILBOX_ADDRESS
        HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2SCP_MB_SW_INT
+       HW_INT_SDM_MBOX_INT=HW_INT_SDM_INTR2_SCP_COMB_INT
        MSCP_TOP_MSCP_EXP_ADDRESS=SCP_TOP_SCP_EXP_ADDRESS
        MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=SCP_EXP_TOP_MSCP_MBOX_ADDRESS
        MSCP_EXP_TOP_SPI_CTRL_ADDRESS=SCP_EXP_TOP_SPI_CTRL_ADDRESS
        MSCP_EXP_TOP_SPI_BRIDGE_ADDRESS=SCP_EXP_TOP_SPI_BRIDGE_ADDRESS
        SCP_RUNTIME_INIT
+       SDM_MBOX_OFFSET_AFTER_0X100000=_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_MBX2_EXT_MBX_REGS_E2I_MBX_CTRL_ADDRESS
 )
 
 # Define base addresses during compile time for respective core fw
@@ -205,6 +208,7 @@ add_library(${TARGET}
         exception_handler_init.c
         gpio_init.c
         hw_version_mcp_init.c
+        icc_accel_mbx_mcp_init.c
         icc_cli_init.c
         icc_hspmbx_init.c
         icc_d2dmbx_init.c
@@ -233,6 +237,7 @@ target_link_libraries(
         ms::driver::gpio
         ms::driver::sensor_fifo
         ms::driver::textio::pl011
+        ms::lib::accel_intr
         ms::lib::debug
         ms::lib::cortex_m7::nvic
         ms::lib::crash_dump
@@ -272,11 +277,13 @@ target_compile_definitions(
     PRIVATE
        MSCP2HSP_MAILBOX_BASE_ADDRESS=MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
        HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2MCP_MB_SW_INT
+       HW_INT_SDM_MBOX_INT=HW_INT_SDM_INTR1_MCP_COMB_INT
        MSCP_TOP_MSCP_EXP_ADDRESS=MCP_TOP_MCP_EXP_ADDRESS
        MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=MCP_EXP_TOP_MSCP_MBOX_ADDRESS
        MSCP_EXP_TOP_SPI_CTRL_ADDRESS=0
        MSCP_EXP_TOP_SPI_BRIDGE_ADDRESS=0
        MCP_RUNTIME_INIT
+       SDM_MBOX_OFFSET_AFTER_0X100000=_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_MBX1_EXT_MBX_REGS_E2I_MBX_CTRL_ADDRESS
 )
 
 # Define base addresses during compile time for respective core fw

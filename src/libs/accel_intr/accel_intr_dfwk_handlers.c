@@ -14,9 +14,10 @@
 #include "accel_intr_events.h"
 #include "accel_intr_priv.h"
 
-#include <DfwkDriver.h>        // for DfwkInterfaceInitialize, DfwkQueueInitia...
-#include <DfwkHost.h>          // for DfwkDeviceInitialize
-#include <FpFwUtils.h>         // for FPFW_UNUSED
+#include <DfwkDriver.h> // for DfwkInterfaceInitialize, DfwkQueueInitia...
+#include <DfwkHost.h>   // for DfwkDeviceInitialize
+#include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <accel_mbox_icc_transport.h>
 #include <accelerator_ip.h>    // for ACCELERATOR_CDEDSS, ACCELERATOR_SDMSS
 #include <cortex_m7_atomics.h> // for cortex_m7_atomic_call_data_memory_barrier
 #include <fpfw_timer.h>        // for fpfw_timer_create, fpfw_timer_enable...
@@ -62,6 +63,13 @@ typedef enum
  * Timer structure per Accel type / IRQ number
  */
 static struct _fpfw_timer_t accel_intr_crash_dump_collection_timers[MAX_ACCELERATOR_TYPES];
+
+/**
+ * @brief accel_intr_mbox_ctx:
+ * Mailbox Interrupt callback context to pass to ICC stack
+ *
+ */
+static void* accel_intr_mbox_ctx[MAX_ACCELERATOR_TYPES] = {NULL};
 
 /**
  * Timer data structure per Accel type / IRQ number
@@ -384,4 +392,25 @@ void accel_intr_handle_sdm_msg_recvd(uint32_t IRQnum)
          * This is a spurious interrupt. Do nothing.
          */
     }
+}
+
+void accel_intr_set_mbx_ctx(eACCELERATOR_TYPE accel, void* ctx)
+{
+    accel_intr_mbox_ctx[accel] = ctx;
+}
+
+void accel_intr_handle_mbox_recvd(uint32_t IRQnum)
+{
+    eACCELERATOR_TYPE accel = accel_intr_get_accel_type_from_irq_num(IRQnum);
+    uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(accel);
+
+    if (accel_intr_mbox_ctx[accel] == NULL)
+    {
+        critical_print("Interrupt number %lu not support for mailbox\n", IRQnum);
+        return;
+    }
+
+    accel_mbox_sw_intr_cb(accel_intr_mbox_ctx[accel]);
+    accel_intr_clear_interrupt_level_1(ext_cfg_addr, SDM_EXT_MBX_I2E_INTR);
+    accel_intr_unmask_interrupt_level_1(ext_cfg_addr, SDM_EXT_MBX_I2E_INTR);
 }

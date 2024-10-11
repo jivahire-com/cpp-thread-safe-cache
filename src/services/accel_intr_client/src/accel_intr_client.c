@@ -73,6 +73,11 @@ void send_fatal_intr_async_request(uint32_t IRQnum)
     dispatch_accel_intr_async_request(IRQnum, ACCEL_INTR_SERVICE_FATAL_INTR_RECVD, accel_intr_async_request_complete);
 }
 
+void send_mailbox_async_request(uint32_t IRQnum)
+{
+    dispatch_accel_intr_async_request(IRQnum, ACCEL_INTR_SERVICE_MBOX_RECVD, accel_intr_async_request_complete);
+}
+
 void accel_intr_client_init(paccel_intr_service_interface_t p_interface)
 {
     // Cache the Accel Client interface pointer

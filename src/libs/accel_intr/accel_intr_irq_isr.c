@@ -119,6 +119,25 @@ static void accel_intr_sys_msg_isr(uint32_t IRQnum, uint32_t ext_cfg_addr)
     }
 }
 
+static void accel_intr_mbox_isr(uint32_t IRQnum, uint32_t ext_cfg_addr)
+{
+    // Mailbox interrupt is received.
+    bool irq_status = false;
+
+    (void)is_sdm_ext_int_status_set(ext_cfg_addr, SDM_EXT_MBX_I2E_INTR_VECTOR, &irq_status);
+
+    if (irq_status == true)
+    {
+        FPFW_ET_LOG(AccelIntr, IRQnum, SDM_EXT_MBX_I2E_INTR);
+
+        // Mask interrupt at level 1 to avoid re-trigger
+        accel_intr_mask_interrupt_level_1(ext_cfg_addr, SDM_EXT_MBX_I2E_INTR);
+
+        // Send ASYNC message that Mailbox interrupt is received
+        send_mailbox_async_request(IRQnum);
+    }
+}
+
 /*----------------------------- Global Functions ----------------------------*/
 
 uint32_t accel_intr_emcpu_wdt_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index, bool process_this_fatal_intr)
@@ -402,6 +421,8 @@ void accel_intr_isr(void* callback_param)
     // Check if SDM_MSG0_INTR i.e. doorbell interrupt is received.
     // Incase loop ends
     accel_intr_sys_msg_isr(IRQnum, ext_cfg_addr);
+
+    accel_intr_mbox_isr(IRQnum, ext_cfg_addr);
 
     if (ACCEL_INTR_IS_INTERRUPT_VALID_SET(validate_irq_status))
     {

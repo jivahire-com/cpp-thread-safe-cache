@@ -198,6 +198,16 @@ void accel_intr_mask_interrupt_level_1(uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_
     cortex_m7_atomic_call_data_memory_barrier();
 }
 
+void accel_intr_unmask_interrupt_level_1(uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index)
+{
+    uint32_t interrupt_mask = SL_GET_SINGLE_BIT_MASK(bit_index);
+
+    sdm_ext_int_mask_enable(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask);
+
+    // Add memory barrier to make sure interrupt is disabled before ISR / Handler returns
+    cortex_m7_atomic_call_data_memory_barrier();
+}
+
 int accel_intr_irq_init(eACCELERATOR_TYPE accel_type)
 {
     if (accel_type >= MAX_ACCELERATOR_TYPES)
@@ -354,6 +364,23 @@ uint32_t accel_intr_fab_wdt_err_init(uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NU
 
     accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_FABRIC_WATCHDOG, interrupt_mask, SDM_EXT_FAB_WDT_ERR_INTR_VECTOR);
     accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_FABRIC_WATCHDOG, interrupt_mask);
+
+    return ACCEL_INTR_RET_SUCCESS;
+}
+
+int32_t accel_intr_init(eACCELERATOR_TYPE accel_type)
+{
+    uint32_t IRQnum = accel_intr_get_irq_num_from_accel_type(accel_type);
+
+    // Register ISR
+    nvic_status_t status =
+        FPFwCoreInterruptRegisterCallback(IRQnum, (isr_callback_fn_with_params_t)accel_intr_isr, (void*)IRQnum);
+
+    if (status != NVIC_STATUS_SUCCESS)
+    {
+        critical_print("AccelIp Interrupt Init : NVIC Set ISR failed\n");
+        return ACCEL_INTR_RET_FAIL_INTR_NVIC;
+    }
 
     return ACCEL_INTR_RET_SUCCESS;
 }

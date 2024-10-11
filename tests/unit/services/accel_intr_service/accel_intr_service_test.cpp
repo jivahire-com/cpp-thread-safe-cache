@@ -144,6 +144,17 @@ void __wrap_accel_intr_handle_sdm_msg_recvd(uint32_t IRQnum)
     check_expected(IRQnum);
 }
 
+/**
+ * @brief Mock function for accel_intr_handle_mbox_recvd
+ *
+ * @param[in] IRQnum : IRQnum to identify between SDM / CDED Accel IP
+ *
+ */
+void __wrap_accel_intr_handle_mbox_recvd(uint32_t IRQnum)
+{
+    check_expected(IRQnum);
+}
+
 } // extern "C"
 
 /****************************
@@ -207,6 +218,24 @@ TEST_FUNCTION(test_accel_intr_service_dispatch_sdm_msg, NULL, NULL)
     accel_intr_service_request.IRQnum = 0x77;
 
     expect_value(__wrap_accel_intr_handle_sdm_msg_recvd, IRQnum, 0x77);
+
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &accel_intr_service_request.header);
+
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&(accel_intr_service_request.header), &accel_intr_service_device.header);
+}
+
+/**
+ * @brief Tests path for mailbox dispatch
+ */
+TEST_FUNCTION(test_accel_intr_service_dispatch_mbox, NULL, NULL)
+{
+    accel_intr_service_request_t accel_intr_service_request;
+    accel_intr_service_t accel_intr_service_device;
+    accel_intr_service_request.header.RequestType = ACCEL_INTR_SERVICE_MBOX_RECVD;
+    accel_intr_service_request.IRQnum = 0x77;
+
+    expect_value(__wrap_accel_intr_handle_mbox_recvd, IRQnum, 0x77);
 
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &accel_intr_service_request.header);
 

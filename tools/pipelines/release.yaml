@@ -13,7 +13,7 @@ variables:
     value: $[ variables['Build.BuildNumber'] ]
 - ${{ else }}:
   - name: BuildVersion
-    value:  $[format('{0}-dev', variables['Build.BuildNumber'])]
+    value:  $[format('{0}', variables['Build.BuildNumber'])]
 
 # Build stage
 stages:

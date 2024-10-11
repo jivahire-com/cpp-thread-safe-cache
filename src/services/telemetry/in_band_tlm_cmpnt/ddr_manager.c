@@ -15,6 +15,7 @@
 #include "telemetry_package_defs.h"
 
 #include <fpfw_status.h>
+#include <in_band_telemetry_ddr.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 

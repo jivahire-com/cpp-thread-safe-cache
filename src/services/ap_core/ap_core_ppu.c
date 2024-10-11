@@ -120,7 +120,7 @@ void ap_core_ppu_clusters_on_if_needed(ap_core_service_context_t* p_context, uin
         {
             uintptr_t cluster_ppu_addr =
                 (p_context->p_config->cluster_pex_base + (core_idx * p_context->p_config->cluster_stride) +
-                CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS + VOYAGER_DSU_CLUSTER_CLUSTER_PPU_ADDRESS);
+                 CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS + VOYAGER_DSU_CLUSTER_CLUSTER_PPU_ADDRESS);
 
             if (ppu_v1_get_power_mode(cluster_ppu_addr) != PPU_V1_MODE_ON)
             {

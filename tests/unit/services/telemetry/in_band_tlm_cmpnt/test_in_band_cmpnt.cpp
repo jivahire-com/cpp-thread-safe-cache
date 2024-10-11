@@ -20,7 +20,7 @@ extern "C" {
 
 }
 /*-- Symbolic Constant Macros (defines) --*/
-
+#define DIE_ID (0)
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -38,7 +38,7 @@ static int test_teardown(void** pContext)
 
 TEST_FUNCTION(test_in_band_cmpnt_init, test_setup, test_teardown)
 {
-    in_band_tlm_cmpnt_init();
+    in_band_tlm_cmpnt_init(DIE_ID);
 }
 
 TEST_FUNCTION(test_gen_perf_report, test_setup, test_teardown)

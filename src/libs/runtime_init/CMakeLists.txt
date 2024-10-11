@@ -59,7 +59,7 @@ add_library(${TARGET}
         vab_init.c
         variable_services_init.c
         warm_start_init.c
-        warm_start_cli_init.c    
+        warm_start_cli_init.c
 )
 
 target_link_libraries(
@@ -214,7 +214,9 @@ add_library(${TARGET}
         icc_d2dmbx_init.c
         mcp_mpu_init.c
         nvic_init.c
+        sensor_fifo_init.c
         system_info_init.c
+        telemetry_service_init.c
         textio_init.c
 )
 

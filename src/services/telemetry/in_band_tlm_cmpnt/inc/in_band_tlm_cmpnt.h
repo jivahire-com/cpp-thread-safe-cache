@@ -10,6 +10,7 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -20,8 +21,9 @@
 /*--------- Function Prototypes ----------*/
 /**
  * @brief Initialize the in band telemetry component.
+ * param[in] die_id The die id.
  */
-void in_band_tlm_cmpnt_init(void);
+void in_band_tlm_cmpnt_init(uint8_t die_id);
 
 /**
  * @brief Generate performance report.

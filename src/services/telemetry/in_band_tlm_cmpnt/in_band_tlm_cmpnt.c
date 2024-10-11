@@ -20,11 +20,13 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+static uint8_t s_die_id;
 
 /*------------- Functions ----------------*/
 
-void in_band_tlm_cmpnt_init(void)
+void in_band_tlm_cmpnt_init(uint8_t die_id)
 {
+    s_die_id = die_id;
 }
 
 void in_band_tlm_cmpnt_generate_perf_report(void)

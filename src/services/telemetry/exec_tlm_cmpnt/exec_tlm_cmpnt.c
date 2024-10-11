@@ -19,20 +19,17 @@
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define TICKS_PER_MINUTE (TX_TIMER_TICKS_PER_SECOND * 60)
-#define TICKS_PER_HOUR   (TICKS_PER_MINUTE * 60)
-#define TICKS_PER_24HR   (TICKS_PER_HOUR * 24)
+#define MS_TO_TX_TICKS(ms) (((ms)*TX_TIMER_TICKS_PER_SECOND) / 1000)
+#define TICKS_PER_MINUTE   (TX_TIMER_TICKS_PER_SECOND * 60)
+#define TICKS_PER_HOUR     (TICKS_PER_MINUTE * 60)
+#define TICKS_PER_24HR     (TICKS_PER_HOUR * 24)
 
 #define TLM_SVC_STACK_SIZE (TX_MINIMUM_STACK + 2048)
 
 #define PWR_AGGR_START_TICK    (TX_TIMER_TICKS_PER_SECOND / 2)
 #define PWR_AGGR_PERIODIC_TICK (1)
 
-#define PERF_RPT_START_TICK    (TX_TIMER_TICKS_PER_SECOND * 2)
-#define PERF_RPT_PERIODIC_TICK (TX_TIMER_TICKS_PER_SECOND)
-
-#define PWR_RPT_PERIODIC_TICK (TICKS_PER_MINUTE)
-
+#define PERF_RPT_START_TICK           (TX_TIMER_TICKS_PER_SECOND * 2)
 #define EVERY_24_HR_RPT_PERIODIC_TICK (TICKS_PER_24HR)
 
 #define ALL_EVENT_GROUP_BITS (0xFFFFFFFF)
@@ -64,7 +61,7 @@ static TX_TIMER s_24hr_rpt_tmr;
 static TX_EVENT_FLAGS_GROUP s_thread_control;
 
 /*------------- Functions ----------------*/
-void exec_tlm_cmpnt_init(void)
+void exec_tlm_cmpnt_init(uint32_t pwr_rpt_period_ms, uint32_t perf_rpt_period_ms)
 {
     UINT txStatus = tx_thread_create(&s_tlm_svc_thread,
                                      "tlm_service",          // Thread name
@@ -89,22 +86,22 @@ void exec_tlm_cmpnt_init(void)
                                TX_AUTO_ACTIVATE);      /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
-    txStatus = tx_timer_create(&s_perf_rpt_tmr,        /* TX_TIMER *timer_ptr */
-                               "tlm_svc_perf_rpt",     /* CHAR *name_ptr */
-                               perf_rpt_timer_cb,      /* VOID (*expiration_function)(ULONG input) */
-                               0,                      /* ULONG expiration_input */
-                               PERF_RPT_START_TICK,    /* ULONG initial_ticks >= 1 */
-                               PERF_RPT_PERIODIC_TICK, /* ULONG reschedule_ticks */
-                               TX_AUTO_ACTIVATE);      /* UINT auto_activate) */
+    txStatus = tx_timer_create(&s_perf_rpt_tmr,    /* TX_TIMER *timer_ptr */
+                               "tlm_svc_perf_rpt", /* CHAR *name_ptr */
+                               perf_rpt_timer_cb,  /* VOID (*expiration_function)(ULONG input) */
+                               0,                  /* ULONG expiration_input */
+                               MS_TO_TX_TICKS(perf_rpt_period_ms), /* ULONG initial_ticks >= 1 */
+                               MS_TO_TX_TICKS(perf_rpt_period_ms), /* ULONG reschedule_ticks */
+                               TX_NO_ACTIVATE);                    /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
-    txStatus = tx_timer_create(&s_power_rpt_tmr,      /* TX_TIMER *timer_ptr */
-                               "tlm_svc_pwr_rpt",     /* CHAR *name_ptr */
-                               pwr_rpt_timer_cb,      /* VOID (*expiration_function)(ULONG input) */
-                               0,                     /* ULONG expiration_input */
-                               PWR_RPT_PERIODIC_TICK, /* ULONG initial_ticks >= 1 */
-                               PWR_RPT_PERIODIC_TICK, /* ULONG reschedule_ticks */
-                               TX_AUTO_ACTIVATE);     /* UINT auto_activate) */
+    txStatus = tx_timer_create(&s_power_rpt_tmr,  /* TX_TIMER *timer_ptr */
+                               "tlm_svc_pwr_rpt", /* CHAR *name_ptr */
+                               pwr_rpt_timer_cb,  /* VOID (*expiration_function)(ULONG input) */
+                               0,                 /* ULONG expiration_input */
+                               MS_TO_TX_TICKS(pwr_rpt_period_ms), /* ULONG initial_ticks >= 1 */
+                               MS_TO_TX_TICKS(pwr_rpt_period_ms), /* ULONG reschedule_ticks */
+                               TX_AUTO_ACTIVATE);                 /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
     txStatus = tx_timer_create(&s_24hr_rpt_tmr,               /* TX_TIMER *timer_ptr */
@@ -113,7 +110,7 @@ void exec_tlm_cmpnt_init(void)
                                0,                             /* ULONG expiration_input */
                                EVERY_24_HR_RPT_PERIODIC_TICK, /* ULONG initial_ticks >= 1 */
                                EVERY_24_HR_RPT_PERIODIC_TICK, /* ULONG reschedule_ticks */
-                               TX_AUTO_ACTIVATE);             /* UINT auto_activate) */
+                               TX_NO_ACTIVATE);               /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
     txStatus = tx_event_flags_create(&s_thread_control, "Telemetry Service Event");

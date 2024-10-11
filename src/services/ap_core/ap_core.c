@@ -126,7 +126,7 @@ static void ap_core_ssi_start_primary_ap_core_boot(pssi_startup_notification_req
     {
         ap_core_ppu_clusters_on_if_needed(&s_ap_core_ctx, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
     }
-    
+
     ap_core_ppu_core_set_power_state(&s_ap_core_ctx, boot_core, true, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
     // for now, PPU is synchronous
     DfwkAsyncRequestComplete(&p_request->header);

@@ -180,7 +180,7 @@ Function Invoke-Virtualizer(
     }
     # Run in headless mode
     else {
-        
+
         Write-Host ""
         Write-Host "Starting simlulation [$SimConfig] as a background job. Job information displayed on creation."
         Write-Host ""
@@ -242,10 +242,10 @@ Function Invoke-Virtualizer(
         Write-Host "`tMCP UART telnet : localhost:4256"
         Write-Host "`tSCP UART telnet : localhost:4257"
 
-        Write-Host "`tMCP DIE 0 GDB   : localhost:12368"
-        Write-Host "`tSCP DIE 0 GDB   : localhost:12369"
-        Write-Host "`tMCP DIE 1 GDB   : localhost:12393"
-        Write-Host "`tSCP DIE 1 GDB   : localhost:12394"
+        Write-Host "`tMCP DIE 0 GDB   : localhost:12372"
+        Write-Host "`tSCP DIE 0 GDB   : localhost:12373"
+        Write-Host "`tMCP DIE 1 GDB   : localhost:12402"
+        Write-Host "`tSCP DIE 1 GDB   : localhost:12403"
         Write-Host "`tEnsure configuration matches symbols used!"
         Write-Host ""
 

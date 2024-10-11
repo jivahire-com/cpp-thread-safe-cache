@@ -24,9 +24,11 @@ target_link_libraries(${TARGET}
         fwlib.lib.assert
         fwlib.lib.status
         fwlib.lib.utils
+        fwlib.lib.interface.platform.threadx
         ms::lib::error_codes
         ms::lib::event_trace::trace
-        fwlib.lib.interface.platform.threadx
+        ms::lib::interface::in_band_telemetry_ddr
+
 
 )
 

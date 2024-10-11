@@ -23,12 +23,12 @@
 
 /*------------- Functions ----------------*/
 
-void telemetry_service_init(void)
+void telemetry_service_init(uint8_t die_id, uint32_t pwr_rpt_period_ms, uint32_t perf_rpt_period_ms)
 {
     // initialize runtime first
-    exec_tlm_cmpnt_init();
+    exec_tlm_cmpnt_init(pwr_rpt_period_ms, perf_rpt_period_ms);
 
     data_proc_tlm_cmpnt_init();
-    in_band_tlm_cmpnt_init();
+    in_band_tlm_cmpnt_init(die_id);
     out_of_band_tlm_cmpnt_init();
 }

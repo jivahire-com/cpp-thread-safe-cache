@@ -2,6 +2,7 @@ set(TARGET kng.lib.variable_services)
 
 set (SOURCES 
     variable_services_sync.c
+    variable_services_async.c
     variable_services_helper.c
 )
 add_library(${TARGET}  STATIC ${SOURCES})
@@ -12,11 +13,11 @@ target_link_libraries(
             fwlib.lib.status
         PRIVATE
             fwlib.service.iccBase
+            fwlib.lib.interface.platform.lock
             kng_silibs_platform
             ms::lib::crash_dump
             ms::lib::error_codes
             ms::lib::hsp_firmware_headers
-            ms::lib::system_info
 )
 
 target_include_directories(${TARGET}

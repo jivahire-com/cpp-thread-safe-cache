@@ -29,6 +29,8 @@ unit_test_target(${TARGET})
 # Mock the functions needed
 mock_target(${TARGET}
     fpfw_icc_base_send_recv_sync
-    system_info_is_hsp_present
+    fpfw_icc_base_send_recv
     get_icc_base_ctx
+    FpFwLockAcquire
+    FpFwLockRelease
 )

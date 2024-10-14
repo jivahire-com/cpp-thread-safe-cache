@@ -14,6 +14,7 @@
 #include <kingsgate_hsp_mailbox_commands.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define HSP_MBOX_FIFO_DEPTH						(4U)
 
 /*-------------- Typedefs ----------------*/
 typedef union HSP_BOOT_METADATA HSP_BOOT_METADATA;
@@ -35,7 +36,7 @@ typedef enum _HSP_MAILBOX_RSP_STATUS {
 typedef union _kng_hsp_mailbox_msg {
 	struct kng_hsp_mailbox_msg_header header;	/**< incoming mailbox message from protocol to handler. */
 	struct kng_hsp_mailbox_msg_rsp rsp;	        /**< outgoing mailbox message from handler to protocol. */
-    uint32_t as_uint32[4];
+    uint32_t as_uint32[HSP_MBOX_FIFO_DEPTH];
 } kng_hsp_mailbox_msg;
 
 /*--------- Function Prototypes ----------*/

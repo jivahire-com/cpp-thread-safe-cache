@@ -40,7 +40,7 @@ This document describes the Variable Service library, which enables multiple cli
 
 ## Requirements
 
-1. Provides consumers a way to synchronously to send variable service message (Get/Set/Query Variable cmds) from MSCP to HSP & recv resp during initialization.
+1. Provides consumers a way to synchronously send variable service message (Get/Set/Query Variable cmds) from MSCP to HSP & recv resp during initialization.
 2. Provides consumers a way to asynchronously send/recv variable sevice message from HSP during runtime.
 
 ## Dependencies
@@ -245,27 +245,92 @@ tbd
 void variable_service_init(fpfw_icc_base_ctx_t* icc_ctx);
 
 /**
+ * @brief  API to initialize the shared memory region for the variable service
+ * Called once per unique shared memory region for a variable.
+ * 
+ * @param var_serv_ctx  Variable service context
+ * @param mem_ctx  Shared memory context for the variable
+ * @return int32_t  KNG_SUCCESS if successful, else KNG_E_INVALIDARG
+ */
+int32_t variable_service_initialize_ctx(var_service_req_ctx_t *var_serv_ctx, var_service_shared_mem_t *mem_ctx);
+
+/**
  * @brief  Sync API to read a variable from HSP over Hsp Mbox. The response can be 
  * fetched from the shared memory region provided by the caller.
  * 
  * @note Blocking call, this API must be invoked only during the initialization. 
  * 
- * @param mem_ctx  Shared memory context for the variable
+ * @param var_serv_ctx  Variable service context
  * @param req_params Request parameters for the variable
  */
-void variable_service_sync_get_variable(var_service_shared_mem_t *mem_ctx, var_service_req_params_t *req_params);
+void variable_service_sync_get_variable(var_service_req_ctx_t *var_serv_ctx, var_service_req_params_t *req_params);
 
 /**
  * @brief  Sync API to write a variable & send to HSP over Hsp Mbox.
  * 
  * @note Blocking call, this API must be invoked only during the initialization.
  * 
- * @param mem_ctx  Shared memory context for the variable
+ * @param var_serv_ctx  Variable service context
  * @param req_params  Request parameters for the variable
  */
-void variable_service_sync_set_variable(var_service_shared_mem_t *mem_ctx, var_service_req_params_t *req_params);
+void variable_service_sync_set_variable(var_service_req_ctx_t *var_serv_ctx, var_service_req_params_t *req_params);
+
+/**
+ * @brief API to free the context allocated by the caller. 
+ * Applicable for both sync & async Get Variable requests
+ * 
+ * @param var_serv_ctx 
+ */
+void variable_service_unlock_get_var_ctx(var_service_req_ctx_t* var_serv_ctx);
+
+/**
+ * @brief Async API to read a variable from HSP over Hsp Mbox. The response can be
+ * fetched from the shared memory region provided by the caller. Pointer to the data is
+ * also provided in the callback registered by the caller.
+ * 
+ * @param var_serv_ctx  Variable service context
+ * @param req_params  Request parameters for the variable
+ * @param callback  Callback to notify the caller that the request is complete & the response is posted in the shared memory region
+ * @param context  Optional, Caller's Context to be passed to the callback
+ * @return int32_t  KNG_SUCCESS if successful, else KNG_E_INVALIDARG
+ */
+int32_t variable_service_async_get_variable(var_service_req_ctx_t *var_serv_ctx, var_service_req_params_t *req_params, variable_service_req_complete_notify callback, void* context);
+
+/**
+ * @brief  Async API to write a variable & send to HSP over Hsp Mbox. The response can be
+ * fetched from the shared memory region provided by the caller. Pointer to the data is
+ * also provided in the callback registered by the caller.
+ * 
+ * @param var_serv_ctx  Variable service context
+ * @param req_params  Request parameters for the variable
+ * @param callback  Callback to notify the caller that the request is complete & the response is posted in the shared memory region
+ * @param context  Optional, Caller's Context to be passed to the callback
+ * @return int32_t  KNG_SUCCESS if successful, else KNG_E_INVALIDARG
+ */
+int32_t variable_service_async_set_variable(var_service_req_ctx_t *var_serv_ctx, var_service_req_params_t *req_params, variable_service_req_complete_notify callback, void* context);
 ```
 
 ## Verification
 
 Implicitly, all APIs have been unit tested. Additionally we intend to have CLI to test it out on SVP & Bigfpga.
+
+Typical Unit Test Output :
+
+```txt
+PS X:\> .build\Debug\i386-pc-windows-msvc\bin\variable_services.test.exe
+[==========] Running 6 test(s).
+[ RUN      ] test_variable_services_sync_get_variable
+[       OK ] test_variable_services_sync_get_variable
+[ RUN      ] test_variable_services_sync_set_variable
+[       OK ] test_variable_services_sync_set_variable
+[ RUN      ] test_variable_service_initialize_ctx
+[       OK ] test_variable_service_initialize_ctx
+[ RUN      ] test_variable_service_unlock_get_var_ctx
+[       OK ] test_variable_service_unlock_get_var_ctx
+[ RUN      ] test_variable_services_async_get_variable
+[       OK ] test_variable_services_async_get_variable
+[ RUN      ] test_variable_services_async_set_variable
+[       OK ] test_variable_services_async_set_variable
+[==========] 6 test(s) run.
+[  PASSED  ] 6 test(s).
+```

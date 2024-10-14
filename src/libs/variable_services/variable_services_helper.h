@@ -10,6 +10,8 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include "variable_services.h"
+
 #include <fpfw_icc_base.h> // for FPFW_ICC_BASE
 #include <inttypes.h>     // for uint32_t
 #include <stdint.h>       // for uintptr_t
@@ -51,3 +53,23 @@ int32_t variable_services_check_attribute(uint32_t attributes);
  * @return fpfw_icc_base_ctx_t* if initialized else NULL
  */
 fpfw_icc_base_ctx_t* get_icc_base_ctx(void);
+
+/**
+ * @brief Sets the shared memory in use bit to true if not already set
+ */
+bool variable_service_set_shared_mem_in_use(var_service_req_ctx_t* var_serv_ctx);
+
+/**
+ * @brief 
+ * 
+ * @param var_serv_ctx 
+ */
+void debug_print_pre_mbox_send(var_service_req_ctx_t* var_serv_ctx);
+
+/**
+ * @brief 
+ * @param var_serv_ctx 
+ * @param output_size_bytes 
+ * @param status 
+ */
+void debug_print_post_mbox_recv(var_service_req_ctx_t* var_serv_ctx, size_t output_size_bytes, fpfw_status_t status);

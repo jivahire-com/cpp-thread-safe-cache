@@ -10,15 +10,15 @@
 /*------------- Includes -----------------*/
 #include "variable_services.h"
 #include "variable_services_helper.h"
+#include "variable_services_mem.h"
 
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <bug_check.h>
 #include <fpfw_icc_base.h> // for FPFW_ICC_BASE
 #include <hsp_firmware_headers.h>
-#include <kng_error.h>   // for KNG_E_INVALIDARG, KNG_E_NOTIMPL
-#include <stddef.h>      // for NULL
-#include <string.h>      // for memcpy
-#include <system_info.h> // for system_info_is_hsp_present()
+#include <kng_error.h> // for KNG_E_INVALIDARG, KNG_E_NOTIMPL
+#include <stddef.h>    // for NULL
+#include <string.h>    // for memcpy
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -27,155 +27,39 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+/**
+ * @brief  Common Handler for setting/getting variable synchronously
+ *
+ * @param type  type of operation to be performed
+ * @param var_serv_ctx  common var serv ctx
+ * @param req_params  request parameters
+ */
+static void variable_service_sync_common_handler(variable_service_operation_type_t type,
+                                                 var_service_req_ctx_t* var_serv_ctx,
+                                                 var_service_req_params_t* req_params);
 
-/*------------- Functions ----------------*/
-
-void variable_service_sync_set_variable(var_service_shared_mem_t* mem_ctx, var_service_req_params_t* req_params)
+/*------------------------------ Public Functions -------------------------*/
+void variable_service_sync_set_variable(var_service_req_ctx_t* var_serv_ctx, var_service_req_params_t* req_params)
 {
-    if (!system_info_is_hsp_present())
-    {
-        DEBUG_PRINT("HSP not present, skipping set variable\n");
-        return;
-    }
-
     DEBUG_PRINT("----Sync Set Variable----\n");
-    //! Null checks for input parameters
-    BUG_ASSERT(mem_ctx != NULL);
-    BUG_ASSERT(mem_ctx->payload_base != 0);
-    BUG_ASSERT(mem_ctx->max_payload_size != 0);
-    BUG_ASSERT(req_params != NULL);
-    BUG_ASSERT(req_params->variable_name_ptr != NULL);
-    BUG_ASSERT(req_params->variable_name_size != 0);
-    BUG_ASSERT(req_params->data != NULL);
-    BUG_ASSERT(req_params->data_size != 0);
-
-    //! get the icc base context object
-    fpfw_icc_base_ctx_t* hsp_icc_ctx = get_icc_base_ctx();
-    BUG_ASSERT(hsp_icc_ctx != NULL);
-
-    //! populate the mbox set variable structure
-    struct hsp_mbox_set_variable set_var = {};
-    set_var.variable_name_size = req_params->variable_name_size / sizeof(uint16_t); //! No of 16-bit characters
-    set_var.vendor_guid.guid.data1 = req_params->vendor_namespace_guid.guid1;
-    set_var.vendor_guid.guid.data2 = req_params->vendor_namespace_guid.guid2;
-    set_var.vendor_guid.guid.data3 = req_params->vendor_namespace_guid.guid3;
-    set_var.vendor_guid.guid.data4[0] = req_params->vendor_namespace_guid.guid4[0];
-    set_var.vendor_guid.guid.data4[1] = req_params->vendor_namespace_guid.guid4[1];
-    set_var.vendor_guid.guid.data4[2] = req_params->vendor_namespace_guid.guid4[2];
-    set_var.vendor_guid.guid.data4[3] = req_params->vendor_namespace_guid.guid4[3];
-    set_var.vendor_guid.guid.data4[4] = req_params->vendor_namespace_guid.guid4[4];
-    set_var.vendor_guid.guid.data4[5] = req_params->vendor_namespace_guid.guid4[5];
-    set_var.vendor_guid.guid.data4[6] = req_params->vendor_namespace_guid.guid4[6];
-    set_var.vendor_guid.guid.data4[7] = req_params->vendor_namespace_guid.guid4[7];
-
-    //! check for valid combination of attributes
-    BUG_ASSERT(variable_services_check_attribute(req_params->attributes) == KNG_SUCCESS);
-    set_var.attributes = req_params->attributes;
-    set_var.data_size = req_params->data_size;
-
-    //! Debug prints for testing
-    DEBUG_PRINT("Variable:          Name[%s] Size[%d]\n", (char*)req_params->variable_name_ptr, req_params->variable_name_size);
-    DEBUG_PRINT("Shared Mem:        Addr[0x%x] Size[%d] bytes\n", mem_ctx->payload_base, mem_ctx->max_payload_size);
-    DEBUG_PRINT("Vendor GUID:       GUID1[0x%" PRIx32
-                "] GUID2[0x%x] GUID3[0x%x] GUID4[0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x]\n",
-                set_var.vendor_guid.guid.data1,
-                set_var.vendor_guid.guid.data2,
-                set_var.vendor_guid.guid.data3,
-                set_var.vendor_guid.guid.data4[0],
-                set_var.vendor_guid.guid.data4[1],
-                set_var.vendor_guid.guid.data4[2],
-                set_var.vendor_guid.guid.data4[3],
-                set_var.vendor_guid.guid.data4[4],
-                set_var.vendor_guid.guid.data4[5],
-                set_var.vendor_guid.guid.data4[6],
-                set_var.vendor_guid.guid.data4[7]);
-    DEBUG_PRINT("Attributes:        [0x%" PRIx32 "]\n", set_var.attributes);
-    DEBUG_PRINT("Data Size:         [%" PRId32 "] bytes\n", set_var.data_size);
-    for (size_t i = 0; i < set_var.data_size; i++)
-    {
-        DEBUG_PRINT("Data byte [%zu]:   [0x%02x]\n", i, ((unsigned char*)req_params->data)[i]);
-    }
-    uint32_t total_size = sizeof(set_var) + req_params->variable_name_size + set_var.data_size;
-    DEBUG_PRINT("Total Size:        [%" PRId32 "] bytes\n", total_size);
-
-    //! Check if the total size of data to be copied is within the max payload size allocated in shared memory
-    BUG_ASSERT(total_size <= mem_ctx->max_payload_size);
-
-    //! copy over the set variable structure, variable name and data into the shared memory
-    memcpy((void*)mem_ctx->payload_base, (void*)&set_var, sizeof(set_var));
-    memcpy((void*)mem_ctx->payload_base + sizeof(set_var), (void*)req_params->variable_name_ptr, req_params->variable_name_size);
-    memcpy((void*)mem_ctx->payload_base + sizeof(set_var) + req_params->variable_name_size,
-           (void*)req_params->data,
-           set_var.data_size);
-
-    //! Debug prints for testing
-    DEBUG_PRINT("Shared Memory Offsets: set_var[0x0]   variable_name_ptr[0x%x]    data[0x%x]\n",
-                sizeof(set_var),
-                sizeof(set_var) + req_params->variable_name_size);
-    DEBUG_PRINT("Shared Memory Req Dump\n");
-    for (size_t i = 0; i < total_size; i++)
-    {
-        DEBUG_PRINT("Byte Index [%zu]: [0x%02x]\n", i, ((unsigned char*)mem_ctx->payload_base)[i]);
-    }
-
-    //! populate mbox request struct to send the set variable request to the HSP
-    kng_hsp_mailbox_msg msg = {};
-    msg.header.cmd = HSP_MAILBOX_CMD_SET_VARIABLE_REQ;
-    msg.as_uint32[1] = mem_ctx->payload_base; //! set_variable_address field
-    size_t recv_msg_size_bytes = 0;
-
-    //! Debug prints for testing
-    DEBUG_PRINT("Preparing to send set variable request to HSP\n");
-    DEBUG_PRINT("HSP Mbox Req Mesg: Cmd[0x%x] Addr[0x%" PRIx32 "]\n", msg.header.cmd, msg.as_uint32[1]);
-    for (size_t i = 0; i < sizeof(msg.as_uint32) / sizeof(msg.as_uint32[0]); i++)
-    {
-        DEBUG_PRINT("as_uint32[%zu]: [0x%" PRIx32 "]\n", i, msg.as_uint32[i]);
-    }
-
-    //! Send the set variable sync request to the HSP & get response, blocking call
-    fpfw_status_t icc_status =
-        fpfw_icc_base_send_recv_sync(hsp_icc_ctx, &msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
-
-    //! Debug prints for testing
-    DEBUG_PRINT("Response for variable set received, status [%" PRId32 "]\n", icc_status);
-    DEBUG_PRINT("Response message size [%d] bytes\n", recv_msg_size_bytes);
-    DEBUG_PRINT("HSP Mbox Rsp Mesg: Cmd[0x%x] Status[0x%" PRIx32 "] Status_ex[0x%" PRIx32 "]\n",
-                msg.rsp.header.cmd,
-                msg.as_uint32[1],
-                msg.as_uint32[2]);
-    for (size_t i = 0; i < sizeof(msg.as_uint32) / sizeof(msg.as_uint32[0]); i++)
-    {
-        DEBUG_PRINT("as_uint32[%zu]: [0x%" PRIx32 "]\n", i, msg.as_uint32[i]);
-    }
-
-    //! Verify sync return status & response message
-    BUG_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
-    BUG_ASSERT(recv_msg_size_bytes > 0);
-    BUG_ASSERT(msg.rsp.header.cmd == HSP_MAILBOX_CMD_SET_VARIABLE_RSP);
-    BUG_ASSERT(msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
-
-    //! The response data at this point is written over to the shared memory region supplied by the caller
-    DEBUG_PRINT("Shared Memory Response Dump\n");
-    for (size_t i = 0; i < total_size; i++)
-    {
-        DEBUG_PRINT("Byte Index [%zu]: [0x%02x]\n", i, ((unsigned char*)mem_ctx->payload_base)[i]);
-    }
+    variable_service_sync_common_handler(SYNC_SET_VARIABLE, var_serv_ctx, req_params);
     DEBUG_PRINT("----End of Sync Set Variable----\n");
 }
 
-void variable_service_sync_get_variable(var_service_shared_mem_t* mem_ctx, var_service_req_params_t* req_params)
+void variable_service_sync_get_variable(var_service_req_ctx_t* var_serv_ctx, var_service_req_params_t* req_params)
 {
-    if (!system_info_is_hsp_present())
-    {
-        DEBUG_PRINT("HSP not present, skipping set variable\n");
-        return;
-    }
-
     DEBUG_PRINT("----Sync Get Variable----\n");
+    variable_service_sync_common_handler(SYNC_GET_VARIABLE, var_serv_ctx, req_params);
+    DEBUG_PRINT("----End of Sync Get Variable----\n");
+}
+
+/*----------------------------Static Functions------------------------------*/
+static void variable_service_sync_common_handler(variable_service_operation_type_t type,
+                                                 var_service_req_ctx_t* var_serv_ctx,
+                                                 var_service_req_params_t* req_params)
+{
     //! Null checks for input parameters
-    BUG_ASSERT(mem_ctx != NULL);
-    BUG_ASSERT(mem_ctx->payload_base != 0);
-    BUG_ASSERT(mem_ctx->max_payload_size != 0);
+    BUG_ASSERT(var_serv_ctx != NULL);
     BUG_ASSERT(req_params != NULL);
     BUG_ASSERT(req_params->variable_name_ptr != NULL);
     BUG_ASSERT(req_params->variable_name_size != 0);
@@ -186,107 +70,82 @@ void variable_service_sync_get_variable(var_service_shared_mem_t* mem_ctx, var_s
     fpfw_icc_base_ctx_t* hsp_icc_ctx = get_icc_base_ctx();
     BUG_ASSERT(hsp_icc_ctx != NULL);
 
-    //! populate the mbox get variable structure
-    struct hsp_mbox_get_variable get_var = {};
-    get_var.variable_name_size = req_params->variable_name_size / sizeof(uint16_t); //! No of 16-bit characters
-    get_var.vendor_guid.guid.data1 = req_params->vendor_namespace_guid.guid1;
-    get_var.vendor_guid.guid.data2 = req_params->vendor_namespace_guid.guid2;
-    get_var.vendor_guid.guid.data3 = req_params->vendor_namespace_guid.guid3;
-    get_var.vendor_guid.guid.data4[0] = req_params->vendor_namespace_guid.guid4[0];
-    get_var.vendor_guid.guid.data4[1] = req_params->vendor_namespace_guid.guid4[1];
-    get_var.vendor_guid.guid.data4[2] = req_params->vendor_namespace_guid.guid4[2];
-    get_var.vendor_guid.guid.data4[3] = req_params->vendor_namespace_guid.guid4[3];
-    get_var.vendor_guid.guid.data4[4] = req_params->vendor_namespace_guid.guid4[4];
-    get_var.vendor_guid.guid.data4[5] = req_params->vendor_namespace_guid.guid4[5];
-    get_var.vendor_guid.guid.data4[6] = req_params->vendor_namespace_guid.guid4[6];
-    get_var.vendor_guid.guid.data4[7] = req_params->vendor_namespace_guid.guid4[7];
-    get_var.attributes_size = req_params->attributes_size;
-    get_var.data_size = req_params->data_size;
+    BUG_ASSERT(var_serv_ctx->is_initialized != false); //! Verify the ctx is initialized
+    BUG_ASSERT(variable_service_set_shared_mem_in_use(var_serv_ctx) != false) //! Verify if the shared memory is free to use, must be free!
 
-    //! Debug prints for testing
-    DEBUG_PRINT("Variable:          Name[%s] Size[%d]\n", (char*)req_params->variable_name_ptr, req_params->variable_name_size);
-    DEBUG_PRINT("Shared Mem:        Addr[0x%x] Size[%d] bytes\n", mem_ctx->payload_base, mem_ctx->max_payload_size);
-    DEBUG_PRINT("Vendor GUID:       GUID1[0x%" PRIx32
-                "] GUID2[0x%x] GUID3[0x%x] GUID4[0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x]\n",
-                get_var.vendor_guid.guid.data1,
-                get_var.vendor_guid.guid.data2,
-                get_var.vendor_guid.guid.data3,
-                get_var.vendor_guid.guid.data4[0],
-                get_var.vendor_guid.guid.data4[1],
-                get_var.vendor_guid.guid.data4[2],
-                get_var.vendor_guid.guid.data4[3],
-                get_var.vendor_guid.guid.data4[4],
-                get_var.vendor_guid.guid.data4[5],
-                get_var.vendor_guid.guid.data4[6],
-                get_var.vendor_guid.guid.data4[7]);
-    DEBUG_PRINT("Attributes Size:   [%" PRId32 "] bytes\n", get_var.attributes_size);
-    DEBUG_PRINT("Data Size:         [%" PRId32 "] bytes\n", get_var.data_size);
-    uint32_t total_size = sizeof(get_var) + req_params->variable_name_size + get_var.data_size;
-    DEBUG_PRINT("Projected Total Size:        [%" PRId32 "] bytes\n", total_size);
+    //! Calculate the total size of the payload to be copied into shared memory & verify it is within the max payload size
+    uint32_t total_size =
+        sizeof(variable_service_shared_mem_format_t) + req_params->variable_name_size + req_params->data_size;
+    uint32_t total_payload_size = total_size - sizeof(variable_service_mem_metadata_t);
+    BUG_ASSERT(total_size <= var_serv_ctx->shared_mem.max_payload_size);
 
-    //! Check if the total size of data to be copied is within the max payload size allocated in shared memory
-    BUG_ASSERT(total_size <= mem_ctx->max_payload_size);
+    //! Verify if the shared memory is free to use, must be free!
+    variable_service_shared_mem_format_t* shared_mem =
+        (variable_service_shared_mem_format_t*)var_serv_ctx->shared_mem.payload_base;
 
-    //! copy over the get variable structure, variable name into the shared memory
-    memcpy((void*)mem_ctx->payload_base, (void*)&get_var, sizeof(get_var));
-    memcpy((void*)mem_ctx->payload_base + sizeof(get_var), (void*)req_params->variable_name_ptr, req_params->variable_name_size);
-    uint32_t data_offset = sizeof(get_var) + req_params->variable_name_size;
-
-    //! Debug prints for testing
-    DEBUG_PRINT("Shared Memory Offsets: get_var[0x0]   variable_name_ptr[0x%x]    data[0x%" PRIx32 "]\n",
-                sizeof(get_var),
-                data_offset);
-    DEBUG_PRINT("Shared Memory Req Dump\n");
-    for (size_t i = 0; i < total_size; i++)
+    //! populate the metadata including the hsp mbox cmd request struct & the mbox get/set variable struct
+    //! to send the request to HSP
+    if (type == SYNC_GET_VARIABLE)
     {
-        DEBUG_PRINT("Byte Index [%zu]: [0x%02x]\n", i, ((unsigned char*)mem_ctx->payload_base)[i]);
+        shared_mem->metadata.msg.header.cmd = HSP_MAILBOX_CMD_GET_VARIABLE_REQ;
+        shared_mem->attributes_size = req_params->attributes_size;
+    }
+    else if (type == SYNC_SET_VARIABLE)
+    {
+        shared_mem->metadata.msg.header.cmd = HSP_MAILBOX_CMD_SET_VARIABLE_REQ;
+        BUG_ASSERT(variable_services_check_attribute(req_params->attributes.as_uint32) ==
+                   KNG_SUCCESS); //! check for valid combination of attributes
+        shared_mem->attributes = req_params->attributes.as_uint32;
+    }
+    shared_mem->metadata.msg.as_uint32[1] =
+        var_serv_ctx->shared_mem.payload_base + sizeof(variable_service_mem_metadata_t); //! get/set_variable_address field
+    shared_mem->metadata.actual_payload_size = total_payload_size;
+    shared_mem->variable_name_size = req_params->variable_name_size / sizeof(uint16_t); //! No of 16-bit characters
+    memcpy((void*)&shared_mem->vendor_namespace_guid, (void*)&req_params->vendor_namespace_guid, sizeof(guid_t));
+    shared_mem->data_size = req_params->data_size;
+
+    //! copy over the variable name into the shared memory
+    memcpy((void*)var_serv_ctx->shared_mem.payload_base + sizeof(variable_service_shared_mem_format_t),
+           (void*)req_params->variable_name_ptr,
+           req_params->variable_name_size);
+    if (type == SYNC_SET_VARIABLE)
+    {
+        //! copy over the data into the shared memory
+        memcpy((void*)var_serv_ctx->shared_mem.payload_base + sizeof(variable_service_shared_mem_format_t) +
+                   req_params->variable_name_size,
+               (void*)req_params->data,
+               req_params->data_size);
     }
 
-    //! populate mbox request struct to send the get variable request to the HSP
-    kng_hsp_mailbox_msg msg = {};
-    msg.header.cmd = HSP_MAILBOX_CMD_GET_VARIABLE_REQ;
-    msg.as_uint32[1] = mem_ctx->payload_base; //! get_variable_address field
+    //! Debug prints before mailbox communication testing
+    debug_print_pre_mbox_send(var_serv_ctx);
+
     size_t recv_msg_size_bytes = 0;
-
-    //! Debug prints for testing
-    DEBUG_PRINT("Preparing to send get variable request to HSP\n");
-    DEBUG_PRINT("HSP Mbox Req Mesg: Cmd[0x%x] Addr[0x%" PRIx32 "]\n", msg.header.cmd, msg.as_uint32[1]);
-    for (size_t i = 0; i < sizeof(msg.as_uint32) / sizeof(msg.as_uint32[0]); i++)
-    {
-        DEBUG_PRINT("as_uint32[%zu]: [0x%" PRIx32 "]\n", i, msg.as_uint32[i]);
-    }
-
     //! Send the get variable sync request to the HSP & get response, blocking call
     fpfw_status_t icc_status =
-        fpfw_icc_base_send_recv_sync(hsp_icc_ctx, &msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
+        fpfw_icc_base_send_recv_sync(hsp_icc_ctx, &shared_mem->metadata.msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
 
-    //! Debug prints for testing
-    DEBUG_PRINT("Response for variable get received, status [%" PRId32 "]\n", icc_status);
-    DEBUG_PRINT("Response message size [%d] bytes\n", recv_msg_size_bytes);
-    DEBUG_PRINT("HSP Mbox Rsp Mesg: Cmd[0x%x] Status[0x%" PRIx32 "] Status_ex[0x%" PRIx32 "]\n",
-                msg.rsp.header.cmd,
-                msg.as_uint32[1],
-                msg.as_uint32[2]);
-    for (size_t i = 0; i < sizeof(msg.as_uint32) / sizeof(msg.as_uint32[0]); i++)
-    {
-        DEBUG_PRINT("as_uint32[%zu]: [0x%" PRIx32 "]\n", i, msg.as_uint32[i]);
-    }
+    //! Debug prints post mailbox communication testing
+    debug_print_post_mbox_recv(var_serv_ctx, recv_msg_size_bytes, icc_status);
 
     //! Verify sync return status & response message
     BUG_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
     BUG_ASSERT(recv_msg_size_bytes > 0);
-    BUG_ASSERT(msg.rsp.header.cmd == HSP_MAILBOX_CMD_GET_VARIABLE_RSP);
-    BUG_ASSERT(msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
-
-    //! The response data at this point is written over to the shared memory region supplied by the caller
-    DEBUG_PRINT("Shared Memory Response Dump\n");
-    for (size_t i = 0; i < total_size; i++)
+    BUG_ASSERT(shared_mem->metadata.msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+    if (type == SYNC_SET_VARIABLE)
     {
-        DEBUG_PRINT("Byte Index [%zu]: [0x%02x]\n", i, ((unsigned char*)mem_ctx->payload_base)[i]);
+        BUG_ASSERT(shared_mem->metadata.msg.rsp.header.cmd == HSP_MAILBOX_CMD_SET_VARIABLE_RSP);
+        //! HSP has consumed the data, free up the ctx & shared memory for SET
+        variable_service_unlock_get_var_ctx(var_serv_ctx);
     }
-    DEBUG_PRINT("----End of Sync Get Variable----\n");
-
-    //! Reset data buffer & opy data over from shared memory into the data buffer supplied in request params
-    memset(req_params->data, 0, req_params->data_size);
-    memcpy((void*)req_params->data, (void*)mem_ctx->payload_base + data_offset, get_var.data_size);
+    else if (type == SYNC_GET_VARIABLE)
+    {
+        BUG_ASSERT(shared_mem->metadata.msg.rsp.header.cmd == HSP_MAILBOX_CMD_GET_VARIABLE_RSP);
+        //! Reset data buffer & copy data over from shared memory into the data buffer supplied in request params
+        memset(req_params->data, 0, req_params->data_size);
+        memcpy((void*)req_params->data,
+               (void*)var_serv_ctx->shared_mem.payload_base + sizeof(variable_service_shared_mem_format_t) +
+                   req_params->variable_name_size,
+               shared_mem->data_size);
+    }
 }

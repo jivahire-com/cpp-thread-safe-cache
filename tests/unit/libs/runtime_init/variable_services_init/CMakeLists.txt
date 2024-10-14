@@ -17,8 +17,17 @@ target_link_libraries(${TARGET}
     kng_silibs_platform
     ms::cmocka::testrunner
     ms::lib::variable_services
+    ms::lib::hsp_firmware_headers
     fwlib.service.iccBase
 )
+
+# Generic threadx lock port provided by fwlibs
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_LOCK "fwlib.lib.platform.impl.lock.threadx")
+
+# Generic ports implmented within this project
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_THREADX "ms::lib::threadx")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
 lint_target(${TARGET})
 format_target(${TARGET})

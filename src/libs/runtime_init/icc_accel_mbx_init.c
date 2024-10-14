@@ -65,7 +65,7 @@ FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel
             /* This is populated later in the code since it depends of ATU mapping base address */
             .MbxBaseAddr = 0,
         },
-        .timer_period = KG_HSP_MBOX_POLL_INTERVAL_NS,
+        .timer_period = KG_LARGE_FIFO_MBOX_POLL_INTERVAL_NS,
         .timer_handle = {
             &sdm_scp_mbx_timer[ICC_MBX_ASYNC_SEND],
             &sdm_scp_mbx_timer[ICC_MBX_ASYNC_RECV]
@@ -89,17 +89,17 @@ FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel
             .strategy = {
                 .cmd_code = {
                     .is_used = true,
-                    .start_pos = HSP_MBOX_CMD_CODE_START_POS,
-                    .size_bits = HSP_MBOX_CMD_CODE_SIZE,
-                    .valid_max = HSP_MBOX_MAX_CMD_CODE,
-                    .valid_min = HSP_MBOX_MIN_CMD_CODE,
+                    .start_pos = LARGE_FIFO_MBOX_CMD_CODE_START_POS,
+                    .size_bits = LARGE_FIFO_MBOX_CMD_CODE_SIZE,
+                    .valid_max = LARGE_FIFO_MBOX_MAX_CMD_CODE,
+                    .valid_min = LARGE_FIFO_MBOX_MIN_CMD_CODE,
                 },
                 .seq_num = {
                     .is_used = true,
-                    .start_pos = HSP_MBOX_SEQ_NUM_START_POS,
-                    .size_bits = HSP_MBOX_SEQ_NUM_SIZE,
-                    .valid_max = HSP_MBOX_MAX_SEQ_NUM,
-                    .valid_min = HSP_MBOX_MIN_SEQ_NUM,
+                    .start_pos = LARGE_FIFO_MBOX_SEQ_NUM_START_POS,
+                    .size_bits = LARGE_FIFO_MBOX_SEQ_NUM_SIZE,
+                    .valid_max = LARGE_FIFO_MBOX_MAX_SEQ_NUM,
+                    .valid_min = LARGE_FIFO_MBOX_MIN_SEQ_NUM,
                 },
             },
             .match_strategy_cb = NULL,
@@ -109,7 +109,7 @@ FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel
     };
 
     sdm_scp_mbx_cfg.mbox_dev_cfg.MbxBaseAddr = accelerator_ip_get_atu_mapped_cfg_address(ACCELERATOR_SDMSS) + SDM_MBOX_OFFSET;
-    //! Initialize hsp mailbox transport driver
+    //! Initialize large fifo mailbox transport driver
     fpfw_status_t status = fpfw_mbox_icc_transport_dfwk_device_init(&sdm_scp_mbx_dev, &sdm_scp_mbx_cfg);
     if (status != DFWK_SUCCESS)
     {
@@ -122,11 +122,11 @@ FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel
         return (fpfw_init_result_t){status, NULL};
     }
 
-    //! Initialize ICC base ctx for hsp mailbox transport driver
+    //! Initialize ICC base ctx for large fifo mailbox transport driver
     status = fpfw_icc_base_init(&s_sdm_scp_mbx_icc_base_ctx, &s_sdm_scp_mbx_icc_cfg);
     if (status == FPFW_STATUS_SUCCESS)
     {
-        //! start the dispatcher to receive data over hsp mailbox
+        //! start the dispatcher to receive data over large fifo mailbox
         status = fpfw_icc_dispatcher_start(&s_sdm_scp_mbx_icc_base_ctx.dispatch_ctx);
         if (status != FPFW_ICC_DISPATCH_STATUS_SUCCESS)
         {

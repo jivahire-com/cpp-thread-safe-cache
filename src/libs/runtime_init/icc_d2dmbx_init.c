@@ -138,17 +138,18 @@ FPFW_INIT_COMPONENT(icc_d2dmbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
         },
         .timer_period = KG_D2D_MBOX_POLL_INTERVAL_NS,
         .timer_handle = {&d2d_timer[ICC_MBX_ASYNC_SEND], &d2d_timer[ICC_MBX_ASYNC_RECV]},
-        // .mbx_irq_num = HW_INT_HSP2MSCP_MBOX_INT,
     };
 
-    //! Temporary workaround, HSP will be the one initializing the D2D mailbox.
     if  (idsw_get_cpu_type() == CPU_SCP)
     {
+        //! For SCP core, set the d2d mbox as interrupt based, intr only available for SCP
+        d2d_cfg.mbox_dev_cfg.MbxImplementation = MBX_IMPL_INTERRUPT; //! polling to begin with
+        d2d_cfg.mbx_irq_num = RMSS_D2D_SCP_MB_HW_INT; //! HW_INT_MSCP_PEER_SCP_MB_INT = 226
         //! set the SPI read/write APIs for d2d in mbox primitives config
         d2d_cfg.mbox_dev_cfg.RemoteRegWrite32 = SpiControllerWrite32;
         d2d_cfg.mbox_dev_cfg.RemoteRegRead32 = SpiControllerRead32;
 
-        //! Initialize SPI controller & bridge
+        //! Initialize SPI controller & bridge, HSP currently does this, should we remove this?
         int32_t status = SpiControllerBridgeInit(D2D_MBOX_SPI_CTRL_BASE_ADDR, D2D_MBOX_SPI_BRIDGE_BASE_ADDR, 10);
         if (status != DFWK_SUCCESS)
         {

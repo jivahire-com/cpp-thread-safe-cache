@@ -55,8 +55,7 @@ target_compile_definitions(
        MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=1000
        MSCP_EXP_TOP_SPI_CTRL_ADDRESS=0
        MSCP_EXP_TOP_SPI_BRIDGE_ADDRESS=0
-       # @todo remove after SVP updates it's HSP mbx intr number
-       HW_INT_HSP2MSCP_MBOX_INT_SVP=0
+       RMSS_D2D_SCP_MB_HW_INT=0
        SDM_MBOX_OFFSET_AFTER_0X100000=1000
 )
 

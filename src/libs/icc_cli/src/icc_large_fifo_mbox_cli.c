@@ -8,13 +8,11 @@
 
 #include "icc_cli.h"
 
-#include <DfwkStatus.h> // for DFWK_SUCCESS
-#include <FpFwCli.h>    // for FpFwCliPrint, FPFW_CLI_STATUS
-#include <FpFwUtils.h>  // for FPFW_UNUSED, FPFW_ARRAY_SIZE
-#include <MboxPrimitives.h>
-#include <fpfw_icc_base.h> // for fpfw_icc_base_recv_req_t
-#include <fpfw_status.h>   // for fpfw_status_t
-#include <hsp_firmware_headers.h>
+#include <DfwkStatus.h>           // for DFWK_SUCCESS
+#include <FpFwCli.h>              // for FpFwCliPrint, FPFW_CLI_STATUS
+#include <FpFwUtils.h>            // for FPFW_UNUSED, FPFW_ARRAY_SIZE
+#include <fpfw_icc_base.h>        // for fpfw_icc_base_recv_req_t
+#include <fpfw_status.h>          // for fpfw_status_t
 #include <icc_platform_defines.h> // for D2D_MBOX_FIFO_DEPTH, HSP_...
 #include <silibs_mcp_top_regs.h>  // for MCP_TOP_MCP2HSP_MAILBOX_AD...
 #include <silibs_scp_top_regs.h>  // for SCP_TOP_SCP2HSP_MAILBOX_AD...
@@ -24,6 +22,8 @@
 #include <string.h>               // for memset
 
 //*-- Symbolic Constant Macros (defines) --*/
+#define LARGE_FIFO_MSG_PAYLOAD_DEPTH \
+    ((sizeof(large_fifo_mailbox_msg) - sizeof(large_fifo_mailbox_msg_header)) / MBOX_WORD_SIZE_BYTE)
 
 /*-------------- Typedefs ----------------*/
 

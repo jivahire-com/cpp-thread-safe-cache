@@ -58,6 +58,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_silicon, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) |
@@ -66,6 +67,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_silicon, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3)));
@@ -118,6 +120,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_silicon, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3) |
@@ -126,6 +129,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_silicon, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3)));
@@ -178,6 +182,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_1d_8c, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) |
@@ -186,6 +191,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_1d_8c, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3)));
@@ -238,6 +244,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_1d, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) |
@@ -246,6 +253,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_1d, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3)));
@@ -298,6 +306,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_2d_8c, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) |
@@ -306,6 +315,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_2d_8c, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3)));
@@ -358,6 +368,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_2d, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) |
@@ -366,6 +377,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_2d, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3)));
@@ -418,6 +430,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_emu_2d, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3) |
@@ -426,6 +439,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_emu_2d, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3)));
@@ -478,6 +492,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_emu_2d_8c, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3) |
@@ -486,6 +501,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_emu_2d_8c, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3)));
@@ -538,6 +554,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_fpga, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS)));
@@ -545,6 +562,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_fpga, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2)));
@@ -597,6 +615,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_fpga, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D1_VAB1_RPSS1) | (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS)));
@@ -604,6 +623,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_fpga, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_instances_enabled, (1 << D1_VAB1_RPSS1));
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_sam, true);
@@ -654,6 +674,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) |
@@ -662,6 +683,7 @@ TEST_FUNCTION(test_tower_sequence_init_die0_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3)));
@@ -714,6 +736,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3) |
@@ -722,6 +745,7 @@ TEST_FUNCTION(test_tower_sequence_init_die1_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3)));
@@ -774,11 +798,13 @@ TEST_FUNCTION(test_tower_sequence_init_die0_invalid_platform, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_instances_enabled, 0);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_instances_enabled, 0);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_sam, true);
@@ -829,11 +855,13 @@ TEST_FUNCTION(test_tower_sequence_init_die1_invalid_platform, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_instances_enabled, 0);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_instances_enabled, 0);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_sam, true);
@@ -895,6 +923,7 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die0_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) |
@@ -903,6 +932,7 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die0_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3)));
@@ -967,6 +997,7 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die1_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3) |
@@ -975,6 +1006,7 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die1_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, false);
+    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3)));

@@ -251,6 +251,8 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         tower_sequence_params.tower_configure_vab_sam = true;
         tower_sequence_params.tower_configure_vab_apu = true;
         tower_sequence_params.tower_configure_vab_fmu = true;
+        // TODO: Remove the below hardocde if this would be configured with a knob (WI - 2101383)
+        tower_sequence_params.tower_vab_os_first_ras_err_handling = false;
     }
 
     // RPSS towers
@@ -272,6 +274,8 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         tower_sequence_params.tower_configure_rpss_sam = true;
         tower_sequence_params.tower_configure_rpss_apu = true;
         tower_sequence_params.tower_configure_rpss_fmu = true;
+        // TODO: Remove the below hardocde if this would be configured with a knob (WI - 2101383)
+        tower_sequence_params.tower_rpss_os_first_ras_err_handling = false;
     }
 
     // SDMSS tower

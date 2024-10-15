@@ -74,11 +74,13 @@ int __wrap_tower_sequence_configure_towers(tower_sequence_soc_init_params_t* tow
     check_expected(tower_sequence_param->tower_configure_vab_sam);
     check_expected(tower_sequence_param->tower_configure_vab_apu);
     check_expected(tower_sequence_param->tower_configure_vab_fmu);
+    check_expected(tower_sequence_param->tower_vab_os_first_ras_err_handling);
     check_expected(tower_sequence_param->tower_vab_instances_enabled);
 
     check_expected(tower_sequence_param->tower_configure_rpss_sam);
     check_expected(tower_sequence_param->tower_configure_rpss_apu);
     check_expected(tower_sequence_param->tower_configure_rpss_fmu);
+    check_expected(tower_sequence_param->tower_rpss_os_first_ras_err_handling);
     check_expected(tower_sequence_param->tower_rpss_instances_enabled);
 
     check_expected(tower_sequence_param->tower_configure_sdmss_sam);

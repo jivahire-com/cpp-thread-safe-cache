@@ -7,6 +7,9 @@
  * This tests the api's used to retrieve data for in band and out of band telemetry reporting.
  */
 
+// @SSI_Unit_Test
+// @SSI_Unit_Test:telemetry
+
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h> // for assert_int_equal, Cmock...
 

@@ -7,6 +7,9 @@
  * Test stub for ICC CLI initialization
  */
 
+// @SSI_Unit_Test
+// @SSI_Unit_Test:icc_cli_init
+
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h>
 

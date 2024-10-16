@@ -7,6 +7,9 @@
  * DFWK init tests
  */
 
+// @SSI_Unit_Test
+// @SSI_Unit_Test:dfwk
+
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h> // IWYU pragma: keep
 #include <cstdint>         // IWYU pragma: keep

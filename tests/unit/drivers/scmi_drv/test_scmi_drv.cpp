@@ -7,6 +7,9 @@
  *
  */
 
+// @SSI_Unit_Test
+// @SSI_Unit_Test:scmi_drv
+
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h> // for assert_int_equal, Cmock...
 

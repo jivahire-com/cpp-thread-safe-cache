@@ -7,6 +7,9 @@
  * Tests the init of the hw version component
  */
 
+// @SSI_Unit_Test
+// @SSI_Unit_Test:textio_init
+
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h> // for assert_int_equal, assert_non_null, expe...
 

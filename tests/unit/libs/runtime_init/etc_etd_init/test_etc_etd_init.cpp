@@ -7,6 +7,9 @@
  * ETC and ETD init test
  */
 
+// @SSI_Unit_Test
+// @SSI_Unit_Test:etc_etd_init
+
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h>
 

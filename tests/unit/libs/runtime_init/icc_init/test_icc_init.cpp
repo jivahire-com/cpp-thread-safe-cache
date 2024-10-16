@@ -3,6 +3,9 @@
  * Tests initialization of ICC transports for both SCP/MCP cores
  */
 
+// @SSI_Unit_Test
+// @SSI_Unit_Test:icc_init
+
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h> // for TEST_FUNCTION, mock_type, will_return
 #include <cstdint>         // for uint32_t

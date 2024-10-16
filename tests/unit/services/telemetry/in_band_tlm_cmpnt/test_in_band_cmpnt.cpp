@@ -7,6 +7,9 @@
  * Test entry into in band component
  */
 
+// @SSI_Unit_Test
+// @SSI_Unit_Test:telemetry
+
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h> // for assert_int_equal, Cmock...
 

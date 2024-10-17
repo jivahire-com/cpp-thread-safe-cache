@@ -5,9 +5,6 @@ parameters:
 - name: Configuration
   type: string
   default: 'Debug'
-- name: Test_Suite_Path
-  type: string
-  default: 'tests\functional\pythia\test_suites'
 - name: ArtifactName
   type: string
   default: 'bins'
@@ -90,9 +87,11 @@ jobs:
           $stressTestIterations = ${{ parameters.stress_test_iterations}}
 
           if ($stressTestIterations -gt 1){
-            Invoke-Pythia-Stress -test ${{ parameters.Test_Suite_Path }} -platform svp -stress_iteration ${{ parameters.stress_test_iterations}}
+            Invoke-Pythia-Stress -test .\tests\functional\pythia\test_suites\svp_fpga_single_die\ -platform svp -stress_iteration ${{ parameters.stress_test_iterations}}
+            Invoke-Pythia-Stress -test .\tests\functional\pythia\test_suites\svp_fpga_dual_die\ -platform svp -stress_iteration ${{ parameters.stress_test_iterations}}
           } else {
-            Invoke-Pythia -test ${{ parameters.Test_Suite_Path }} -platform svp
+            Invoke-Pythia -test .\tests\functional\pythia\test_suites\svp_fpga_single_die\ -platform svp
+            Invoke-Pythia -test .\tests\functional\pythia\test_suites\svp_fpga_dual_die\ -platform svp
           }
 
           # Remove intermediate output / output that contains system variables (ie: Azure credentials)

@@ -31,7 +31,7 @@ class mscp_heart_beat_dual_die(EchoFallsBaseTest):
     """
     def __init__(
         self,
-        name: str = None,
+        name: str = "MSCP_HeartBeat_DualDie",
         number: str = "NaN",
         workspace_config: Path | str = None,
         default_log_home: str = None,
@@ -62,30 +62,29 @@ class mscp_heart_beat_dual_die(EchoFallsBaseTest):
             3. Teardown Test.
         """
         self.log.info("Running MSCP heartBeat test . . .")
-        self.dut.setup()
-        connections = [{"entity": "scp_0", "channel": self.dut.mb.node_0.soc.primary_die.scp.channel_manager}, {"entity": "mcp_0", "channel": self.dut.mb.node_0.soc.primary_die.mcp.channel_manager},
-                       {"entity": "scp_1", "channel": self.dut.mb.node_0.soc.secondary_die.scp.channel_manager}, {"entity": "mcp_1", "channel": self.dut.mb.node_0.soc.secondary_die.mcp.channel_manager}]
 
-        if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
-            KngPythiaTestSetup.reset_fpga_load_prodfw(self)
-            time.sleep(30)
+        connections = [{"entity": "scp_0", "channel": self.dut.mb.node_0.soc.primary_die.scp.channel_manager}, {"entity": "scp_1", "channel": self.dut.mb.node_0.soc.secondary_die.scp.channel_manager},
+                        {"entity": "mcp_0", "channel": self.dut.mb.node_0.soc.primary_die.mcp.channel_manager}, {"entity": "mcp_1", "channel": self.dut.mb.node_0.soc.secondary_die.mcp.channel_manager}]
         
-        elif (self.dut.get_dut_type() == DeviceType.SVP):
-            # Ensure the host config file used alongside this test has these connections defined.
-            for connection in connections:
-                assert connection is not None
-                connection["channel"].get_current_channel().open()
-                assert connection["channel"].get_current_channel().is_open()
-
-        else:
-            self.log.error("Unsupported DUT type")
-            self.dut.teardown()
-            return False
-
+        # Ensure the host config file used alongside this test has these connections defined.
         for connection in connections:
+            assert connection is not None
+        
+        self.dut.setup()
+        
+        for connection in connections:
+            connection["channel"].get_current_channel().open()
+
+            # If connection does not open then SVP didn't launch or FPGA system has a conflict booking. So teardown and return fail
+            if not connection["channel"].get_current_channel().is_open():
+                self.dut.teardown()
+                return False
+
             try:
                 self.log.info(f"Reading from {connection['entity']}")
-                connection["channel"].get_current_channel().read_until(key="HeartBeat", timeout_seconds=900)
+
+                # Clear buffer and read until HeartBeat
+                connection["channel"].get_current_channel().read_until(key="HeartBeat", timeout_seconds=500)
             except Exception as e:
                 self.log.error(f"Error reading {connection['entity']} UART: {e}")
                 self.test_notify(step="HeartBeat", msg="Test Fail", _is_error=True)

@@ -30,7 +30,7 @@ class mscp_heart_beat(EchoFallsBaseTest):
     """
     def __init__(
         self,
-        name: str = None,
+        name: str = "MSCP_HeartBeat_Die0",
         number: str = "NaN",
         workspace_config: Path | str = None,
         default_log_home: str = None,
@@ -61,7 +61,6 @@ class mscp_heart_beat(EchoFallsBaseTest):
             3. Teardown Test.
         """
         self.log.info("Running MSCP heartBeat test . . .")
-        self.dut.setup()
 
         scp_connection = self.dut.mb.node_0.soc.primary_die.scp.channel_manager
         mcp_connection = self.dut.mb.node_0.soc.primary_die.mcp.channel_manager
@@ -70,14 +69,23 @@ class mscp_heart_beat(EchoFallsBaseTest):
         assert scp_connection is not None
         assert mcp_connection is not None
 
+        self.dut.setup()
+
         scp_connection.get_current_channel().open()
-        assert scp_connection.get_current_channel().is_open()
+        # If connection does not open then SVP didn't launch or FPGA system has a conflict booking. So teardown and return fail
+        if not scp_connection.get_current_channel().is_open():
+            self.dut.teardown()
+            return False
 
         mcp_connection.get_current_channel().open()
-        assert mcp_connection.get_current_channel().is_open()
+        # If connection does not open then SVP didn't launch or FPGA system has a conflict booking. So teardown and return fail
+        if not mcp_connection.get_current_channel().is_open():
+            self.dut.teardown()
+            return False
 
 
         self.log.info("Reading SCP UART for HeartBeat . . .")
+
         try:
             scp_connection.get_current_channel().read_until(key="HeartBeat", timeout_seconds=500)
         except Exception as e:
@@ -88,6 +96,7 @@ class mscp_heart_beat(EchoFallsBaseTest):
             return False
 
         self.log.info("Reading MCP UART for HeartBeat . . .")
+
         try:
             mcp_connection.get_current_channel().read_until(key="HeartBeat", timeout_seconds=500)
         except Exception as e:

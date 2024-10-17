@@ -1,6 +1,6 @@
 {
-    "id": "RDU-120015-DH3",
-    "ip": "RDU-120015-DH3",
+    "id": "TEST_HOST",
+    "ip": "localhost",
     "connections": {
         "mb": {
             "node_0": {
@@ -13,7 +13,10 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM4"
+                                    "serial_port": "COM4",
+                                    "line_separator": "\n",
+                                    "enable_warning_logs":"false",
+                                    "file_name":"hsp0_logs"
                                 },
                                 "default": "serial"
                             },
@@ -24,25 +27,8 @@
                                 "reset_script": "/Kingsgate/Kingsgate_TRACE32/Prep_R22/HSPresetSystem.cmm",
                                 "reset_args": "",
                                 "processor_type": "riscv",
-                                "node": "RDU-120015-DH3",
+                                "node": "localhost",
                                 "port": "30003"
-                            }
-                        },
-                        "mcp": {
-                            "channels": {
-                                "serial": {
-                                    "baud_rate": 115200,
-                                    "serial_port": "COM6"
-                                },
-                                "default": "serial"
-                            },
-                            "debugger": {
-                                "bins": "Kingsgate/T32/bin/windows64",
-                                "startup_script": "/Kingsgate/Kingsgate_TRACE32/Start/configUSB_MCP.t32",
-                                "startup_args": "/Kingsgate/Kingsgate_TRACE32/Start/work-settings.cmm",
-                                "processor_type": "arm",
-                                "node": "RDU-120015-DH3",
-                                "port": "30002"
                             }
                         },
                         "scp": {
@@ -50,7 +36,9 @@
                                 "serial": {
                                     "baud_rate": 115200,
                                     "serial_port": "COM5",
-                                    "line_separator": "\n"
+                                    "line_separator": "\n",
+                                    "enable_warning_logs":"false",
+                                    "file_name":"scp0_logs"
                                 },
                                 "default": "serial"
                             },
@@ -59,8 +47,28 @@
                                 "startup_script": "/Kingsgate/Kingsgate_TRACE32/Start/configUSB_SCP.t32",
                                 "startup_args": "/Kingsgate/Kingsgate_TRACE32/Start/work-settings.cmm",
                                 "processor_type": "arm",
-                                "node": "RDU-120015-DH3",
+                                "node": "localhost",
                                 "port": "30001"
+                            }
+                        },
+                        "mcp": {
+                            "channels": {
+                                "serial": {
+                                    "baud_rate": 115200,
+                                    "serial_port": "COM6",
+                                    "line_separator": "\n",
+                                    "enable_warning_logs":"false",
+                                    "file_name":"mcp0_logs"
+                                },
+                                "default": "serial"
+                            },
+                            "debugger": {
+                                "bins": "Kingsgate/T32/bin/windows64",
+                                "startup_script": "/Kingsgate/Kingsgate_TRACE32/Start/configUSB_MCP.t32",
+                                "startup_args": "/Kingsgate/Kingsgate_TRACE32/Start/work-settings.cmm",
+                                "processor_type": "arm",
+                                "node": "localhost",
+                                "port": "30002"
                             }
                         },
                         "sdm": {
@@ -68,7 +76,9 @@
                                 "serial": {
                                     "baud_rate": 115200,
                                     "serial_port": "COM6",
-                                    "line_separator": "\n"
+                                    "line_separator": "\n",
+                                    "enable_warning_logs":"false",
+                                    "file_name":"sdm0_logs"
                                 },
                                 "default": "serial"
                             },
@@ -77,7 +87,7 @@
                                 "startup_script": "/Kingsgate/Kingsgate_TRACE32/Start/configUSB_SDM.t32",
                                 "startup_args": "/Kingsgate/Kingsgate_TRACE32/Start/work-settings.cmm",
                                 "processor_type": "arm",
-                                "node": "RDU-120015-DH3",
+                                "node": "localhost",
                                 "port": "30005"
                             }
                         },
@@ -86,7 +96,9 @@
                                 "serial": {
                                     "baud_rate": 115200,
                                     "serial_port": "COM4",
-                                    "line_separator": "\n"
+                                    "line_separator": "\n",
+                                    "enable_warning_logs":"false",
+                                    "file_name":"cded_sdm0_logs"
                                 },
                                 "default": "serial"
                             },
@@ -95,7 +107,7 @@
                                 "startup_script": "/Kingsgate/Kingsgate_TRACE32/Start/configUSB_CDED_SDM.t32",
                                 "startup_args": "/Kingsgate/Kingsgate_TRACE32/Start/work-settings.cmm",
                                 "processor_type": "arm",
-                                "node": "RDU-120015-DH3",
+                                "node": "localhost",
                                 "port": "30007"
                             }
                         },
@@ -103,7 +115,10 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM7"
+                                    "serial_port": "COM7",
+                                    "line_separator": "\n",
+                                    "enable_warning_logs":"false",
+                                    "file_name":"apns0_logs"
                                 },
                                 "default": "serial"
                             },
@@ -112,7 +127,7 @@
                                 "startup_script": "/Kingsgate/Kingsgate_TRACE32/Start/configUSB_AP.t32",
                                 "startup_args": "/Kingsgate/Kingsgate_TRACE32/Start/work-settings.cmm",
                                 "processor_type": "arm",
-                                "node": "RDU-120015-DH3",
+                                "node": "localhost",
                                 "port": "30004"
                             }
                         }

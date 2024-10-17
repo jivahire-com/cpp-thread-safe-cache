@@ -21,7 +21,7 @@
                                 "bins": "Kingsgate/T32/bin/windows64",
                                 "startup_script": "/Kingsgate/Kingsgate_TRACE32/Start/configUSB_HSP.t32",
                                 "startup_args": "/Kingsgate/Kingsgate_TRACE32/Start/work-settings.cmm",
-                                "reset_script": "/Kingsgate/Kingsgate_TRACE32/Prep_R21/HSPresetSystem.cmm",
+                                "reset_script": "/Kingsgate/Kingsgate_TRACE32/Prep_R22/HSPresetSystem.cmm",
                                 "reset_args": "",
                                 "processor_type": "riscv",
                                 "node": "RDU-120015-DH3",

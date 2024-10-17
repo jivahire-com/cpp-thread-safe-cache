@@ -13,7 +13,8 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM4"
+                                    "serial_port": "COM10",
+                                    "file_name": "com10"
                                 },
                                 "default": "serial"
                             },
@@ -21,7 +22,7 @@
                                 "bins": "Kingsgate/T32/bin/windows64",
                                 "startup_script": "/Kingsgate/Kingsgate_TRACE32/Start/configUSB_HSP.t32",
                                 "startup_args": "/Kingsgate/Kingsgate_TRACE32/Start/work-settings.cmm",
-                                "reset_script": "/Kingsgate/Kingsgate_TRACE32/Prep_R21/HSPresetSystem.cmm",
+                                "reset_script": "/Kingsgate/Kingsgate_TRACE32/Prep_R22/HSPresetSystem.cmm",
                                 "reset_args": "",
                                 "processor_type": "riscv",
                                 "node": "RDU-120015-DH3",
@@ -32,7 +33,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM6"
+                                    "serial_port": "COM11"
                                 },
                                 "default": "serial"
                             },
@@ -50,7 +51,8 @@
                                 "serial": {
                                     "baud_rate": 115200,
                                     "serial_port": "COM5",
-                                    "line_separator": "\n"
+                                    "line_separator": "\n",
+                                    "file_name": "com5"
                                 },
                                 "default": "serial"
                             },
@@ -68,7 +70,8 @@
                                 "serial": {
                                     "baud_rate": 115200,
                                     "serial_port": "COM6",
-                                    "line_separator": "\n"
+                                    "line_separator": "\n",
+                                    "file_name": "com6"
                                 },
                                 "default": "serial"
                             },
@@ -86,7 +89,8 @@
                                 "serial": {
                                     "baud_rate": 115200,
                                     "serial_port": "COM4",
-                                    "line_separator": "\n"
+                                    "line_separator": "\n",
+                                    "file_name": "com4"
                                 },
                                 "default": "serial"
                             },
@@ -103,7 +107,8 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM7"
+                                    "serial_port": "COM7",
+                                    "file_name": "com7"
                                 },
                                 "default": "serial"
                             },

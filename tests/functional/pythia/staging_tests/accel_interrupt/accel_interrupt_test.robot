@@ -11,26 +11,23 @@ Documentation    Verifies the Accel Fatal Interrupts in SCP
 # Importing also calls __init__().
 Library     ${CURDIR}/../../pylibs
 Library     pylibs.sdm_tests.accel_interrupt_test
+...         name=accel_interrupt_test
 ...         workspace_config=${WORKSPACE_CONFIG}
 ...         default_log_home=${LOG_DIR}
 ...         fw_payload_path=${PAYLOAD_DIR}
-...         host_config=${HOST_CONFIG_DIR}/mscp_runtime_fw.json
+...         host_config=${HOST_CONFIG_DIR}/cded_pipeline_fw.json
 ...         interrupt_config_path=${CURDIR}/accel_interrupts.json
 ...         WITH NAME    accel_interrupt_test_lib
 
-*** Variables ***
-@{PASS_RESPONSE}    PASS
-@{FAIL_RESPONSE}    FAIL
-
 *** Test Cases ***
 Test Case - SCP: SDM PF Error Handling Test: FR [1423830]
-    [Documentation]     Test the Accel Fatal Interrupts.
+    [Documentation]     Test the Accel Fatal Interrupts from SCP.
 
     # Get an instance of the accel_interrupt_test_lib library
     ${test_lib} =       Get Library Instance      accel_interrupt_test_lib
 
     # Check for both failure and success strings in the output.
-    ${test_result} =        Call Method         ${test_lib}         accel_interrupt_test       ${PASS_RESPONSE}        ${FAIL_RESPONSE}
+    ${test_result} =        Call Method         ${test_lib}         accel_interrupt_test
 
     # Validate that parse_log returned test PASS or FAIL
     Should Be True      ${test_result}

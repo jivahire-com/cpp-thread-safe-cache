@@ -4,6 +4,9 @@
 """
 
 import re
+import time
+
+from pythia.tdk.common.connections.serial_connection import EmptySerialLinesError
 
 class KngPythiaTestIF():
 
@@ -73,3 +76,55 @@ class KngPythiaTestIF():
             return False  # Test fails if any success strings are missing
 
         return result
+
+    @staticmethod
+    def parse_logs_v2(logger, logs, pass_logs, fail_logs):
+        match_cnt = 0
+        temp_lst = list(pass_logs)
+        pass_log_len = len(pass_logs)
+
+        for line in logs.split("\n"):
+
+            for reg_str in fail_logs:
+                matches = re.findall(reg_str, line)
+                if(len(matches) != 0):
+                    logger.error(f"Found unexpected log {line}")
+                    return False
+
+            for i in range(len(temp_lst)):
+                reg_str = temp_lst[i]
+                matches = re.findall(reg_str, line)
+                if(len(matches) != 0):
+                    match_cnt += len(matches)
+                    logger.info(f"Regex Match: {reg_str}")
+                    # logger.debug(line)
+                    logger.info(f"Parse_log: Found {match_cnt} matches")
+                    del temp_lst[i]
+                    break
+
+        if(match_cnt != pass_log_len):
+            logger.error(f"Total Pass log matches: {match_cnt} less than expected {pass_log_len}")
+            logger.error(f"Expected_logs: {pass_logs}")
+            logger.error(f"Actual logs: {logs}")
+            return False
+        return True
+    
+    # TODO: ADO: 2109191 Regex support should ideally be provided by Pythia 
+    @staticmethod
+    def read_until_regex(proc_uart, regex_str, time_out = 10):
+        st = time.monotonic()
+        found = False
+        ret_lst = []
+
+        while((time.monotonic() - st) < time_out):
+            try:
+                ln = proc_uart.read_line()
+                ret_lst.append(ln)
+            except EmptySerialLinesError:
+                continue
+            matches = re.findall(regex_str, ln)
+            if(len(matches) != 0):
+                found = True
+                break
+        
+        return (found, "\n".join(ret_lst))

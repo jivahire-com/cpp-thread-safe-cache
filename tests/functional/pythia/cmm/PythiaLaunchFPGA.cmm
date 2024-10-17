@@ -28,7 +28,7 @@
 &AP_ELF_LOC="&REPO_PATH_AP_BAREMETAL_ELF\build\bin\arm-aarch64-none\Debug\ap_test.elf"
 
 // Update FPGA Version here
-&FPGA_REV="R21"
+&FPGA_REV="R22"
 
 // --------------------------------------------------------------------
 // Setup Script Execution Options

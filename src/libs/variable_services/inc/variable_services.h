@@ -14,7 +14,6 @@
 #include <stddef.h>       // for size_t
 #include <stdint.h>       // for uintptr_t
 #include <common_types.h>
-#include <hsp_firmware_headers.h>
 #include <fpfw_icc_base.h> // for FPFW_ICC_BASE
 
 /*-- Symbolic Constant Macros (defines) --*/

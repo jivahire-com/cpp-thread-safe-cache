@@ -58,6 +58,7 @@ add_library(${TARGET}
         usb_init.c
         vab_init.c
         variable_services_init.c
+        variable_services_cli_init.c
         warm_start_init.c
         warm_start_cli_init.c
 )
@@ -112,6 +113,7 @@ target_link_libraries(
         ms::lib::system_info
         ms::lib::threadx
         ms::lib::variable_services
+        ms::lib::variable_services::cli
         ms::lib::ddr::cli
         ms::lib::tower
         ms::lib::build_info_cli

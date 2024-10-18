@@ -77,6 +77,8 @@ int32_t variable_service_async_set_variable(var_service_req_ctx_t* var_serv_ctx,
                                             void* context)
 {
     DEBUG_PRINT("----Async Set Variable----\n");
+    BUG_ASSERT(req_params != NULL);
+    BUG_ASSERT(req_params->data != NULL);
     return variable_service_async_common_handler(ASYNC_SET_VARIABLE, var_serv_ctx, req_params, callback, context);
 }
 
@@ -91,7 +93,6 @@ static int32_t variable_service_async_common_handler(variable_service_operation_
     BUG_ASSERT(req_params != NULL);
     BUG_ASSERT(req_params->variable_name_ptr != NULL);
     BUG_ASSERT(req_params->variable_name_size != 0);
-    BUG_ASSERT(req_params->data != NULL);
     BUG_ASSERT(req_params->data_size != 0);
     //! Verify cb function is provided
     BUG_ASSERT(callback != NULL);

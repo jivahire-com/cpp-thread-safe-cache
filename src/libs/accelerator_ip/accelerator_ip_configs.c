@@ -93,13 +93,13 @@ later if required.*/
 static const sdm_cded_class_code_t sdm_cded_class_code_knobs_values[NUM_ACCEL_TYPE] = {
     {
         .class_code = SDM_BASE_CLASS_CODE,
-        .sub_class_code = SDM_SUB_CLASS_CODE,
+        .sub_class_code = SDM_CDED_SUB_CLASS_CODE,
         .pci_device_id = SDM_PCI_DEVICE_ID,
         .subsystem_id = SDM_PCI_DEVICE_ID,
     },
     {
         .class_code = CDED_BASE_CLASS_CODE,
-        .sub_class_code = CDED_SUB_CLASS_CODE,
+        .sub_class_code = SDM_CDED_SUB_CLASS_CODE,
         .pci_device_id = CDED_PCI_DEVICE_ID,
         .subsystem_id = CDED_PCI_DEVICE_ID,
     },

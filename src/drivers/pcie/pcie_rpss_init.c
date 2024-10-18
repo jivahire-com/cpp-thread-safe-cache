@@ -60,6 +60,7 @@ static uint64_t rpss_addrs[NUM_RPSS] = {
 };
 
 static pcie_cfg_t pcie_cfg_np = {
+    .pcie_ss_en = true,
     .pcie_cap_gen_speed = PCIE_GEN_5,
     .pcie_bifurcation_mode = PCIE_BIFURCATION_1X16,
     .pcie_cxl_support = false,
@@ -71,6 +72,41 @@ static pcie_cfg_t pcie_cfg_np = {
     .pcie_gen5_eq_disable = true,
     .pcie_eq_bypass_support = true,
     .pcie_no_eq_support = true,
+    .rp_cfgs =
+    {
+        {
+            .pcie_rp_en = true,
+            .pcie_rp_port_num = 0,
+            .pcie_rp_is_slot = false,
+            .pcie_rp_slot_num = 0,
+            .pcie_rp_hotplug_capable = false,
+            .pcie_rp_cap_en_rel_order = true,
+        },
+        {
+            .pcie_rp_en = false,
+            .pcie_rp_port_num = 0,
+            .pcie_rp_is_slot = false,
+            .pcie_rp_slot_num = 0,
+            .pcie_rp_hotplug_capable = false,
+            .pcie_rp_cap_en_rel_order = true,
+        },
+        {
+            .pcie_rp_en = false,
+            .pcie_rp_port_num = 0,
+            .pcie_rp_is_slot = false,
+            .pcie_rp_slot_num = 0,
+            .pcie_rp_hotplug_capable = false,
+            .pcie_rp_cap_en_rel_order = true,
+        },
+        {
+            .pcie_rp_en = false,
+            .pcie_rp_port_num = 0,
+            .pcie_rp_is_slot = false,
+            .pcie_rp_slot_num = 0,
+            .pcie_rp_hotplug_capable = false,
+            .pcie_rp_cap_en_rel_order = true,
+        },
+    }
 };
 
 /*------------- Functions ----------------*/

@@ -10,14 +10,14 @@ add_library(${TARGET}  STATIC ${SOURCES})
 target_link_libraries(
     ${TARGET}
         PUBLIC
-            fwlib.lib.status
-        PRIVATE
             fwlib.service.iccBase
+            ms::lib::hsp_firmware_headers
+        PRIVATE
+            fwlib.lib.status
             fwlib.lib.interface.platform.lock
             kng_silibs_platform
             ms::lib::crash_dump
             ms::lib::error_codes
-            ms::lib::hsp_firmware_headers
 )
 
 target_include_directories(${TARGET}

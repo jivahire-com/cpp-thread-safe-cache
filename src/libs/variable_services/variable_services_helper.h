@@ -60,14 +60,14 @@ fpfw_icc_base_ctx_t* get_icc_base_ctx(void);
 bool variable_service_set_shared_mem_in_use(var_service_req_ctx_t* var_serv_ctx);
 
 /**
- * @brief 
+ * @brief Debug print before sending the mbox request
  * 
  * @param var_serv_ctx 
  */
 void debug_print_pre_mbox_send(var_service_req_ctx_t* var_serv_ctx);
 
 /**
- * @brief 
+ * @brief Debug print after receiving the mbox response
  * @param var_serv_ctx 
  * @param output_size_bytes 
  * @param status 

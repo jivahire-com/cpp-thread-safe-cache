@@ -24,6 +24,6 @@
  *
  * @param[in] die_id The die id.
  * @param[in] pwr_rpt_period_ms The power report period in milliseconds.
- * @param[in] perf_rpt_period_ms The performance report period in milliseconds.
+ * @param[in] inst_rpt_period_ms The performance report period in milliseconds.
  */
-void telemetry_service_init(uint8_t die_id, uint32_t pwr_rpt_period_ms, uint32_t perf_rpt_period_ms);
+void telemetry_service_init(uint8_t die_id, uint32_t pwr_rpt_period_ms, uint32_t inst_rpt_period_ms);

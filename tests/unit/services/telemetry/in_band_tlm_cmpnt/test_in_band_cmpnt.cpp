@@ -44,19 +44,19 @@ TEST_FUNCTION(test_in_band_cmpnt_init, test_setup, test_teardown)
     in_band_tlm_cmpnt_init(DIE_ID);
 }
 
-TEST_FUNCTION(test_gen_perf_report, test_setup, test_teardown)
+TEST_FUNCTION(test_gen_inst_report, test_setup, test_teardown)
 {
-    for(uint16_t i = 0; i < PERFORMANCE_TELEMETRY_EVENT_ID_MAX; i++)
+    for(uint16_t i = 0; i < INST_TELEMETRY_ELEMENT_ID_MAX; i++)
     {
-        perf_report_event_enable[i] = false;
+        inst_report_event_enable[i] = false;
     }
 
-    in_band_tlm_cmpnt_generate_perf_report();
+    in_band_tlm_cmpnt_generate_inst_report();
 }
 
 TEST_FUNCTION(test_gen_pwr_report, test_setup, test_teardown)
 {
-    for(uint16_t i = 0; i < POWER_TELEMETRY_EVENT_ID_MAX; i++)
+    for(uint16_t i = 0; i < POWER_TELEMETRY_ELEMENT_ID_MAX; i++)
     {
         power_report_event_enable[i] = false;
     }

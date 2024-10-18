@@ -20,15 +20,15 @@
 /*-------------- Typedefs ----------------*/
 
 /*-- Declarations (Statics and globals) --*/
-extern bool power_report_event_enable[POWER_TELEMETRY_EVENT_ID_MAX];
-extern uint32_t power_report_record_number[POWER_TELEMETRY_EVENT_ID_MAX];
+extern bool power_report_event_enable[POWER_TELEMETRY_ELEMENT_ID_MAX];
+extern uint32_t power_report_record_number[POWER_TELEMETRY_ELEMENT_ID_MAX];
 
-extern bool perf_report_event_enable[PERFORMANCE_TELEMETRY_EVENT_ID_MAX];
-extern uint32_t perf_report_record_number[PERFORMANCE_TELEMETRY_EVENT_ID_MAX];
+extern bool inst_report_event_enable[INST_TELEMETRY_ELEMENT_ID_MAX];
+extern uint32_t inst_report_record_number[INST_TELEMETRY_ELEMENT_ID_MAX];
 
 /*--------- Function Prototypes ----------*/
-fpfw_status_t get_performance_record_include( size_t pkg_available_size, bool (*include_record)[PERFORMANCE_TELEMETRY_EVENT_ID_MAX]);
-fpfw_status_t get_power_record_include( size_t pkg_available_size, bool (*include_record)[POWER_TELEMETRY_EVENT_ID_MAX]);
+fpfw_status_t get_performance_record_include( size_t pkg_available_size, bool (*include_record)[INST_TELEMETRY_ELEMENT_ID_MAX]);
+fpfw_status_t get_power_record_include( size_t pkg_available_size, bool (*include_record)[POWER_TELEMETRY_ELEMENT_ID_MAX]);
 
 void create_pwr_core_pstate_record(p_pwr_core_record_pstate_t pstate_record);
 void create_pwr_core_cstate_record(p_pwr_core_record_cstate_t cstate_record);
@@ -45,9 +45,9 @@ void create_pwr_soc_dimm_record(p_pwr_soc_record_dimm_t dimm_record);
 void create_pwr_soc_sensor_temp_record(p_pwr_soc_record_sensor_temp_t snsr_temp_record);
 void create_pwr_mpam_pstate_record(p_pwr_record_mpam_pstate_t mpam_record);
 void create_pwr_mpam_throttle_record(p_pwr_record_mpam_throttle_t mpam_throttle_record);
-void create_perf_core_summary_record(p_perf_core_record_summary_t summary_record);
-void create_perf_soc_rail_record(p_perf_soc_record_rail_t rail_record);
-void create_perf_soc_dimm_runtime_record(p_perf_soc_record_dimm_runtime_t dimm_record);
-void create_perf_soc_dimm_config_record(p_perf_soc_record_dimm_config_t dimm_cfg_record);
-void create_perf_soc_sensor_temp_record(p_perf_soc_record_sensor_temp_t snsr_temp_record);
-void create_perf_core_amu_counters_record(p_perf_core_record_amu_counters_t amu_record);
+void create_inst_core_summary_record(p_inst_core_record_summary_t summary_record);
+void create_inst_soc_rail_record(p_inst_soc_record_rail_t rail_record);
+void create_inst_soc_dimm_runtime_record(p_inst_soc_record_dimm_runtime_t dimm_record);
+void create_inst_soc_dimm_config_record(p_inst_soc_record_dimm_config_t dimm_cfg_record);
+void create_inst_soc_sensor_temp_record(p_inst_soc_record_sensor_temp_t snsr_temp_record);
+void create_inst_core_amu_counters_record(p_inst_core_record_amu_counters_t amu_record);

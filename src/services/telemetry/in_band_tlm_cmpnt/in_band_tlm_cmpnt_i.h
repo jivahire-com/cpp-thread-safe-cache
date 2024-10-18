@@ -43,14 +43,14 @@ typedef struct
 typedef struct
 {
     telemetry_package_hdr_t package_header;
-    perf_core_record_summary_t summary_record;
-    perf_soc_record_rail_t rail_record;
-    perf_soc_record_dimm_runtime_t dimm_runtime_record;
-    perf_soc_record_dimm_config_t dimm_config_record;
-    perf_soc_record_sensor_temp_t sensor_temp_record;
-    perf_core_record_amu_counters_t amu_counters_record;
+    inst_core_record_summary_t summary_record;
+    inst_soc_record_rail_t rail_record;
+    inst_soc_record_dimm_runtime_t dimm_runtime_record;
+    inst_soc_record_dimm_config_t dimm_config_record;
+    inst_soc_record_sensor_temp_t sensor_temp_record;
+    inst_core_record_amu_counters_t amu_counters_record;
 
-} perf_report_full_package_t;
+} inst_report_full_package_t;
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -75,7 +75,7 @@ fpfw_status_t package_create_power_report(uintptr_t pkg_location, size_t pkg_ava
  * @retval fpfw_status_t - returns FPFW_STATUS_BUFFER_TOO_SMALL if not all of the data could fit
 * send this package and call again with a new package until FPFW_STATUS_SUCCESS is returned
  */
-fpfw_status_t package_create_perf_report(uintptr_t pkg_location, size_t pkg_available_size);
+fpfw_status_t package_create_inst_report(uintptr_t pkg_location, size_t pkg_available_size);
 
 /**
  * @brief Allocate memory for power report
@@ -93,4 +93,4 @@ fpfw_status_t ddr_manager_allocate_mem_for_pwr_report(uintptr_t *pkg_location, s
  * @param[out] available_size - size of the storage location
  * @retval fpfw_status_t
  */
-fpfw_status_t ddr_manager_allocate_mem_for_perf_report(uintptr_t *pkg_location, size_t* available_size);
+fpfw_status_t ddr_manager_allocate_mem_for_inst_report(uintptr_t *pkg_location, size_t* available_size);

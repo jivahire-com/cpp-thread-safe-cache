@@ -28,7 +28,7 @@ void in_band_tlm_cmpnt_init(uint8_t die_id);
 /**
  * @brief Generate performance report.
  */
-void in_band_tlm_cmpnt_generate_perf_report(void);
+void in_band_tlm_cmpnt_generate_inst_report(void);
 
 /**
  * @brief Generate power report.

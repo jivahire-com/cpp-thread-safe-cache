@@ -3,7 +3,7 @@ set(TARGET kng.service.telemetry.cmpnt.in_band_tlm)
 add_library(${TARGET}
     STATIC
         ddr_manager.c
-        event_schema.c
+        element_schema.c
         in_band_tlm_cmpnt.c
         package_creation.c
 )

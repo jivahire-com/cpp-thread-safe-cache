@@ -29,14 +29,14 @@
 #define PWR_AGGR_START_TICK    (TX_TIMER_TICKS_PER_SECOND / 2)
 #define PWR_AGGR_PERIODIC_TICK (1)
 
-#define PERF_RPT_START_TICK           (TX_TIMER_TICKS_PER_SECOND * 2)
+#define INST_RPT_START_TICK           (TX_TIMER_TICKS_PER_SECOND * 2)
 #define EVERY_24_HR_RPT_PERIODIC_TICK (TICKS_PER_24HR)
 
 #define ALL_EVENT_GROUP_BITS (0xFFFFFFFF)
 
 // event flags
 #define PWR_AGGR_TMR_EXPIRED       (1 << 0)
-#define PERF_RPT_TMR_EXPIRED       (1 << 1)
+#define INST_RPT_TMR_EXPIRED       (1 << 1)
 #define PWR_RPT_TMR_EXPIRED        (1 << 2)
 #define EVERY_24HR_RPT_TMR_EXPIRED (1 << 3)
 
@@ -45,7 +45,7 @@
 /*-------- Function Prototypes -----------*/
 static void tlm_svc_thread(ULONG thread_input);
 static void pwr_aggr_timer_cb(ULONG context);
-static void perf_rpt_timer_cb(ULONG context);
+static void inst_rpt_timer_cb(ULONG context);
 static void pwr_rpt_timer_cb(ULONG context);
 static void every_24hr_rpt_timer_cb(ULONG context);
 
@@ -54,14 +54,14 @@ static TX_THREAD s_tlm_svc_thread;
 static uint8_t s_tlm_svc_thread_stack[TLM_SVC_STACK_SIZE];
 
 static TX_TIMER s_pwr_aggr_tmr;
-static TX_TIMER s_perf_rpt_tmr;
+static TX_TIMER s_inst_rpt_tmr;
 static TX_TIMER s_power_rpt_tmr;
 static TX_TIMER s_24hr_rpt_tmr;
 
 static TX_EVENT_FLAGS_GROUP s_thread_control;
 
 /*------------- Functions ----------------*/
-void exec_tlm_cmpnt_init(uint32_t pwr_rpt_period_ms, uint32_t perf_rpt_period_ms)
+void exec_tlm_cmpnt_init(uint32_t pwr_rpt_period_ms, uint32_t inst_rpt_period_ms)
 {
     UINT txStatus = tx_thread_create(&s_tlm_svc_thread,
                                      "tlm_service",          // Thread name
@@ -86,12 +86,12 @@ void exec_tlm_cmpnt_init(uint32_t pwr_rpt_period_ms, uint32_t perf_rpt_period_ms
                                TX_AUTO_ACTIVATE);      /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
-    txStatus = tx_timer_create(&s_perf_rpt_tmr,    /* TX_TIMER *timer_ptr */
-                               "tlm_svc_perf_rpt", /* CHAR *name_ptr */
-                               perf_rpt_timer_cb,  /* VOID (*expiration_function)(ULONG input) */
+    txStatus = tx_timer_create(&s_inst_rpt_tmr,    /* TX_TIMER *timer_ptr */
+                               "tlm_svc_inst_rpt", /* CHAR *name_ptr */
+                               inst_rpt_timer_cb,  /* VOID (*expiration_function)(ULONG input) */
                                0,                  /* ULONG expiration_input */
-                               MS_TO_TX_TICKS(perf_rpt_period_ms), /* ULONG initial_ticks >= 1 */
-                               MS_TO_TX_TICKS(perf_rpt_period_ms), /* ULONG reschedule_ticks */
+                               MS_TO_TX_TICKS(inst_rpt_period_ms), /* ULONG initial_ticks >= 1 */
+                               MS_TO_TX_TICKS(inst_rpt_period_ms), /* ULONG reschedule_ticks */
                                TX_NO_ACTIVATE);                    /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
@@ -132,10 +132,10 @@ static void tlm_svc_thread(ULONG thread_input)
             data_proc_tlm_cmpnt_aggregate_pwr_tlm_data();
         }
 
-        if (current_bits & PERF_RPT_TMR_EXPIRED)
+        if (current_bits & INST_RPT_TMR_EXPIRED)
         {
-            data_proc_tlm_cmpnt_aggregate_perf_tlm_data();
-            in_band_tlm_cmpnt_generate_perf_report();
+            data_proc_tlm_cmpnt_aggregate_inst_tlm_data();
+            in_band_tlm_cmpnt_generate_inst_report();
         }
 
         if (current_bits & PWR_RPT_TMR_EXPIRED)
@@ -158,11 +158,11 @@ static void pwr_aggr_timer_cb(ULONG context)
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 
-static void perf_rpt_timer_cb(ULONG context)
+static void inst_rpt_timer_cb(ULONG context)
 {
     FPFW_UNUSED(context);
 
-    UINT txStatus = tx_event_flags_set(&s_thread_control, PERF_RPT_TMR_EXPIRED, TX_OR);
+    UINT txStatus = tx_event_flags_set(&s_thread_control, INST_RPT_TMR_EXPIRED, TX_OR);
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 

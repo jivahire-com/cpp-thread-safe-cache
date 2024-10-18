@@ -5,10 +5,10 @@
 /**
  * @file data_collection_protocol.h
  * Public header matching the Data Collection Protocol
- * 
+ *
  * See the specification for more details:
  *   https://microsoft.sharepoint.com/:f:/r/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Firmware/Telemetry/Data_Collection_Protocol?csf=1&web=1&e=g94MgL
- * 
+ *
  */
 
 #pragma once
@@ -39,7 +39,7 @@ typedef enum {
 
 typedef enum {
     DCP_CLIENT_ID_DCS            = 0,
-    DCP_CLIENT_ID_PWR_PERF_TELEM = 1,
+    DCP_CLIENT_ID_PWR_INST_TELEM = 1,
     DCP_CLIENT_ID_EVENT_TRACE    = 2,
     DCP_CLIENT_ID_MAX            = 3,
 } DCP_CLIENT_ID;

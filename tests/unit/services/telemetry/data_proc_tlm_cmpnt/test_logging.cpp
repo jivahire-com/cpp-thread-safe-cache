@@ -281,10 +281,10 @@ TEST_FUNCTION(test_tlm_logger_log_vr_current, test_setup, test_teardown)
     }
 }
 
-TEST_FUNCTION(test_data_proc_tlm_cmpnt_aggregate_perf_tlm_data, test_setup, test_teardown)
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_aggregate_inst_tlm_data, test_setup, test_teardown)
 {
     // expand unit test once implementation is available
-    data_proc_tlm_cmpnt_aggregate_perf_tlm_data();
+    data_proc_tlm_cmpnt_aggregate_inst_tlm_data();
 }
 
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_aggregate_24hr_tlm_data, test_setup, test_teardown)

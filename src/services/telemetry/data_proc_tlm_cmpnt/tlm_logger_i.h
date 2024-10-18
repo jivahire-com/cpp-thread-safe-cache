@@ -107,8 +107,8 @@ typedef struct {
     uint8_t power_index;
     pwr_pstate_t pstate[NUMBER_OF_PSTATES];
     pwr_cstate_t cstate[NUMBER_OF_CSTATES];
-    pwr_core_event_throttle_t throttle_info[NUMBER_OF_THROTTLE_TYPES];
-    pwr_core_event_rack_priorities_t priorities[NUMBER_OF_RACK_PRIORITIES];
+    pwr_core_element_throttle_t throttle_info[NUMBER_OF_THROTTLE_TYPES];
+    pwr_core_element_rack_priorities_t priorities[NUMBER_OF_RACK_PRIORITIES];
     voltage_t voltage;
     current_t current;
     temperature_t temperature;
@@ -128,8 +128,8 @@ typedef struct {
 typedef struct {
     uint32_t soc_pc3_residency;
     uint32_t soc_pc4_residency;
-    pwr_soc_event_vr_rail_t rail[MAX_NUM_OF_VR_RAILS];
-    pwr_soc_event_hnf_t hnf[NUMBER_OF_HNF_CHANNELS_PER_DIE];
+    pwr_soc_element_vr_rail_t rail[MAX_NUM_OF_VR_RAILS];
+    pwr_soc_element_hnf_t hnf[NUMBER_OF_HNF_CHANNELS_PER_DIE];
 } soc_runtime_info_t;
 
 /*--------- Function Prototypes ----------*/

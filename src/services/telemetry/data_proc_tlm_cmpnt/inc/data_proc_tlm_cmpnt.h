@@ -39,7 +39,7 @@ void data_proc_tlm_cmpnt_aggregate_pwr_tlm_data(void);
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_aggregate_perf_tlm_data(void);
+void data_proc_tlm_cmpnt_aggregate_inst_tlm_data(void);
 
 /**
  * @brief Primary 24 hour data collection entry point.  Read raw data from sensor fifo and/or registers and update telemetry aggregation structures.
@@ -57,7 +57,7 @@ void data_proc_tlm_cmpnt_aggregate_24hr_tlm_data(void);
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_event_pstate_t (*pstate_array)[NUMBER_OF_PSTATES]);
+void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_element_pstate_t (*pstate_array)[NUMBER_OF_PSTATES]);
 
 /**
  * @brief Get the core cstate data for the specified core.
@@ -67,7 +67,7 @@ void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_eve
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_core_cstate_data(uint16_t core_id, pwr_core_event_cstate_t (*cstate_array)[NUMBER_OF_CSTATES]);
+void data_proc_tlm_cmpnt_get_pwr_core_cstate_data(uint16_t core_id, pwr_core_element_cstate_t (*cstate_array)[NUMBER_OF_CSTATES]);
 
 /**
  * @brief Get the core throttle data for the specified core.
@@ -77,7 +77,7 @@ void data_proc_tlm_cmpnt_get_pwr_core_cstate_data(uint16_t core_id, pwr_core_eve
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id, pwr_core_event_throttle_t (*throttle_array)[NUMBER_OF_THROTTLE_TYPES]);
+void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id, pwr_core_element_throttle_t (*throttle_array)[NUMBER_OF_THROTTLE_TYPES]);
 
 /**
  * @brief Get the core rack priority data for the specified core.
@@ -87,7 +87,7 @@ void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id, pwr_core_e
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(uint16_t core_id, pwr_core_event_rack_priorities_t (*rack_priority_array)[NUMBER_OF_RACK_PRIORITIES]);
+void data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(uint16_t core_id, pwr_core_element_rack_priorities_t (*rack_priority_array)[NUMBER_OF_RACK_PRIORITIES]);
 
 /**
  * @brief Get the core voltage data for the specified core.
@@ -97,7 +97,7 @@ void data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(uint16_t core_id, pwr_c
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_core_voltage_data(uint16_t core_id, p_pwr_core_event_voltage_t voltage_data);
+void data_proc_tlm_cmpnt_get_pwr_core_voltage_data(uint16_t core_id, p_pwr_core_element_voltage_t voltage_data);
 
 /**
  * @brief Get the core current data for the specified core.
@@ -107,7 +107,7 @@ void data_proc_tlm_cmpnt_get_pwr_core_voltage_data(uint16_t core_id, p_pwr_core_
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_core_current_data(uint16_t core_id, p_pwr_core_event_current_t current_data);
+void data_proc_tlm_cmpnt_get_pwr_core_current_data(uint16_t core_id, p_pwr_core_element_current_t current_data);
 
 /**
  * @brief Get the core temperature data for the specified core.
@@ -117,7 +117,7 @@ void data_proc_tlm_cmpnt_get_pwr_core_current_data(uint16_t core_id, p_pwr_core_
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_core_temperature_data(uint16_t core_id, p_pwr_core_event_temperature_t temperature_data);
+void data_proc_tlm_cmpnt_get_pwr_core_temperature_data(uint16_t core_id, p_pwr_core_element_temperature_t temperature_data);
 
 /**
  * @brief Get the core histogram data for the specified core.
@@ -127,7 +127,7 @@ void data_proc_tlm_cmpnt_get_pwr_core_temperature_data(uint16_t core_id, p_pwr_c
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_core_histogram_data(uint16_t core_id, pwr_core_event_histogram_t (*histogram_array)[NUMBER_OF_HS_VOLTAGE_SCALES][NUMBER_OF_HS_TEMP_SCALES]);
+void data_proc_tlm_cmpnt_get_pwr_core_histogram_data(uint16_t core_id, pwr_core_element_histogram_t (*histogram_array)[NUMBER_OF_HS_VOLTAGE_SCALES][NUMBER_OF_HS_TEMP_SCALES]);
 
 /**
  * @brief Get the soc pc3 data for the specified soc.
@@ -136,7 +136,7 @@ void data_proc_tlm_cmpnt_get_pwr_core_histogram_data(uint16_t core_id, pwr_core_
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_soc_pc3_data(p_pwr_soc_event_pc3_t soc_pc3_data);
+void data_proc_tlm_cmpnt_get_pwr_soc_pc3_data(p_pwr_soc_element_pc3_t soc_pc3_data);
 
 /**
  * @brief Get the soc VR rail data for the specified rail.
@@ -146,7 +146,7 @@ void data_proc_tlm_cmpnt_get_pwr_soc_pc3_data(p_pwr_soc_event_pc3_t soc_pc3_data
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(uint16_t rail_id, p_pwr_soc_event_vr_rail_t rail_data);
+void data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(uint16_t rail_id, p_pwr_soc_element_vr_rail_t rail_data);
 
 /**
  * @brief Get the soc hnf data for the specified hnf channel.
@@ -156,7 +156,7 @@ void data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(uint16_t rail_id, p_pwr_soc_ev
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(uint16_t hnf_channel, p_pwr_soc_event_hnf_t hnf_data);
+void data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(uint16_t hnf_channel, p_pwr_soc_element_hnf_t hnf_data);
 
 /**
  * @brief Get the soc dimm data for the specified dimm channel.
@@ -166,7 +166,7 @@ void data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(uint16_t hnf_channel, p_pwr_soc_ev
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_soc_dimm_data(uint16_t dimm_channel, p_pwr_soc_event_dimm_t dimm_data);
+void data_proc_tlm_cmpnt_get_pwr_soc_dimm_data(uint16_t dimm_channel, p_pwr_soc_element_dimm_t dimm_data);
 
 /**
  * @brief Get the soc sensor temperature data for the specified sensor.
@@ -176,7 +176,7 @@ void data_proc_tlm_cmpnt_get_pwr_soc_dimm_data(uint16_t dimm_channel, p_pwr_soc_
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_soc_event_sensor_temp_t sensor_temp_data);
+void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_soc_element_sensor_temp_t sensor_temp_data);
 
 /**
  * @brief Get the mpam pstate data for the specified mpam.
@@ -186,7 +186,7 @@ void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_so
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data(uint16_t mpam_id, pwr_event_mpam_pstate_t (*mpam_pstate_array)[NUMBER_OF_PSTATES]);
+void data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data(uint16_t mpam_id, pwr_element_mpam_pstate_t (*mpam_pstate_array)[NUMBER_OF_PSTATES]);
 
 /**
  * @brief Get the mpam thottle data for the specified mpam.
@@ -196,7 +196,7 @@ void data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data(uint16_t mpam_id, pwr_event_mp
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_event_mpam_throttle_t mpam_throttle_data);
+void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_element_mpam_throttle_t mpam_throttle_data);
 
 /**
  * @brief Get the core summary performance data for the specified core.
@@ -206,7 +206,7 @@ void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_perf_soc_core_summary_data(uint16_t core_id, p_perf_core_event_summary_t core_summary_data);
+void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst_core_element_summary_t core_summary_data);
 
 /**
  * @brief Get the soc VR rail data for the specified rail.
@@ -216,7 +216,7 @@ void data_proc_tlm_cmpnt_get_perf_soc_core_summary_data(uint16_t core_id, p_perf
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_perf_soc_rail_data(uint16_t rail_id, p_perf_soc_event_rail_t rail_data);
+void data_proc_tlm_cmpnt_get_inst_soc_rail_data(uint16_t rail_id, p_inst_soc_element_rail_t rail_data);
 
 /**
  * @brief Get the soc performance dimm data for the specified dimm channel.
@@ -226,7 +226,7 @@ void data_proc_tlm_cmpnt_get_perf_soc_rail_data(uint16_t rail_id, p_perf_soc_eve
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_perf_soc_dimm_runtime_data(uint16_t dimm_module, p_perf_soc_event_dimm_runtime_t dimm_data);
+void data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(uint16_t dimm_module, p_inst_soc_element_dimm_runtime_t dimm_data);
 
 /**
  * @brief Get the soc performance dimm config data.
@@ -235,7 +235,7 @@ void data_proc_tlm_cmpnt_get_perf_soc_dimm_runtime_data(uint16_t dimm_module, p_
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_perf_soc_dimm_config_data(p_perf_soc_event_dimm_config_t dimm_cfg);
+void data_proc_tlm_cmpnt_get_inst_soc_dimm_config_data(p_inst_soc_element_dimm_config_t dimm_cfg);
 
 /**
  * @brief Get the soc performance sensor temperature data for the specified sensor.
@@ -245,7 +245,7 @@ void data_proc_tlm_cmpnt_get_perf_soc_dimm_config_data(p_perf_soc_event_dimm_con
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_perf_soc_snsr_temp_data(uint16_t sensor_id, p_perf_soc_event_sensor_temp_t sensor_temp_data);
+void data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(uint16_t sensor_id, p_inst_soc_element_sensor_temp_t sensor_temp_data);
 
 /**
  * @brief Get the core performance AMU data for the specified core.
@@ -255,4 +255,4 @@ void data_proc_tlm_cmpnt_get_perf_soc_snsr_temp_data(uint16_t sensor_id, p_perf_
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_perf_core_amu_data(uint16_t core_id, p_perf_core_event_amu_counters_t amu_data);
+void data_proc_tlm_cmpnt_get_inst_core_amu_data(uint16_t core_id, p_inst_core_element_amu_counters_t amu_data);

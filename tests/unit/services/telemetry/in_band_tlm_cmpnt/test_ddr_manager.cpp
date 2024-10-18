@@ -51,12 +51,12 @@ TEST_FUNCTION(test_ddr_mgr_allocate_mem_for_pwr_report, test_setup, test_teardow
     assert_int_not_equal(available_size,0);
 }
 
-TEST_FUNCTION(test_ddr_mgr_allocate_mem_for_perf_report, test_setup, test_teardown)
+TEST_FUNCTION(test_ddr_mgr_allocate_mem_for_inst_report, test_setup, test_teardown)
 {
     uintptr_t pkg_location = 0;
     size_t available_size = 0;
 
-    fpfw_status_t status = ddr_manager_allocate_mem_for_perf_report(&pkg_location, &available_size);
+    fpfw_status_t status = ddr_manager_allocate_mem_for_inst_report(&pkg_location, &available_size);
 
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
     assert_int_not_equal(pkg_location, 0);

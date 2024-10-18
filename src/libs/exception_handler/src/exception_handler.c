@@ -82,7 +82,6 @@ __attribute__((__weak__)) void save_crash_context(exception_stack_frame_t* stack
                      "str r9,  [r12, %[r9_offset]]   \n"
                      "str r10, [r12, %[r10_offset]]  \n"
                      "str r11, [r12, %[r11_offset]]  \n"
-                     "str sp,  [r12, %[sp_offset]]   \n"
                      : // No outputs
                      : // Inputs
                      [r4_offset] "i"(offsetof(core_crash_context_t, r4)),
@@ -92,8 +91,7 @@ __attribute__((__weak__)) void save_crash_context(exception_stack_frame_t* stack
                      [r8_offset] "i"(offsetof(core_crash_context_t, r8)),
                      [r9_offset] "i"(offsetof(core_crash_context_t, r9)),
                      [r10_offset] "i"(offsetof(core_crash_context_t, r10)),
-                     [r11_offset] "i"(offsetof(core_crash_context_t, r11)),
-                     [sp_offset] "i"(offsetof(core_crash_context_t, sp))
+                     [r11_offset] "i"(offsetof(core_crash_context_t, r11))
                      : // Clobbers
                      "r12");
 #endif
@@ -105,6 +103,7 @@ __attribute__((__weak__)) void save_crash_context(exception_stack_frame_t* stack
     g_core_crash_context.r12 = stack_frame->R12;
     g_core_crash_context.lr = stack_frame->LR;
     g_core_crash_context.pc = stack_frame->PC;
+    g_core_crash_context.sp = (uint32_t)(stack_frame) + sizeof(exception_stack_frame_t);
 }
 
 /**

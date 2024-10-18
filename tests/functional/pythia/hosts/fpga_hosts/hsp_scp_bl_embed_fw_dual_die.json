@@ -231,7 +231,7 @@
                                 "node": "localhost",
                                 "port": "30014"
                             }
-                        },
+                        }
                     }
                 },
                 "dcscm": {

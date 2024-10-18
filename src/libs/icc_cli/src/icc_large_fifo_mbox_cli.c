@@ -31,6 +31,7 @@
 
 //! externs populated by icc_cli_init
 fpfw_icc_base_ctx_t* icc_base_sdm_mbx_ctx = NULL;
+fpfw_icc_base_ctx_t* icc_base_cded_mbx_ctx = NULL;
 
 //! hsp mbox message buffers for send/recv/echo
 static large_fifo_mailbox_msg accel_recv_msg;
@@ -104,6 +105,10 @@ FPFW_CLI_STATUS large_fifo_mbox_echo(int argc, const char** argv)
     if (strcmp(argv[0], "sdm_echo") == 0)
     {
         icc_base = icc_base_sdm_mbx_ctx;
+    }
+    else if (strcmp(argv[0], "cded_echo") == 0)
+    {
+        icc_base = icc_base_cded_mbx_ctx;
     }
     else
     {
@@ -198,6 +203,10 @@ FPFW_CLI_STATUS large_fifo_mbox_send(int argc, const char** argv)
     {
         icc_base = icc_base_sdm_mbx_ctx;
     }
+    else if (strcmp(argv[0], "cded_send") == 0)
+    {
+        icc_base = icc_base_cded_mbx_ctx;
+    }
     else
     {
         FpFwCliPrint("Invalid CLI %s\n", argv[0]);
@@ -286,6 +295,10 @@ FPFW_CLI_STATUS large_fifo_mbox_recv(int argc, const char** argv)
     if (strcmp(argv[0], "sdm_recv") == 0)
     {
         icc_base = icc_base_sdm_mbx_ctx;
+    }
+    else if (strcmp(argv[0], "cded_recv") == 0)
+    {
+        icc_base = icc_base_cded_mbx_ctx;
     }
     else
     {

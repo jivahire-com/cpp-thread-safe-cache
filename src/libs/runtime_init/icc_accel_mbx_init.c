@@ -20,29 +20,45 @@
 #include <idsw.h>
 #include <idsw_kng.h>   
 #include <interrupts.h>
+#include <kng_soc_constants.h>
 #include <sdm_ext_cfg_regs.h>  
 #include <stddef.h>                     // for NULL
+#include <stdio.h>                      // for printf
 
 
 /*-------------- Macros ------------------*/
 
 /*------------- Typedefs -----------------*/
 
-#define SDM_MBOX_OFFSET      (SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS + SDM_MBOX_OFFSET_AFTER_0X100000)
+#define ACCEL_MBOX_OFFSET      (SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS + ACCEL_MBOX_OFFSET_AFTER_0X100000)
 
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+static struct _fpfw_timer_t accel_mbx_timer[MAX_ACCELERATOR_TYPES][ICC_MAX_ASYNC_REQ_TYPE] = {};
+static fpfw_mbox_icc_transport_config_t accel_mbx_cfg[MAX_ACCELERATOR_TYPES] = {};
 
-/*------------- Functions ----------------*/
+static fpfw_mbox_icc_transport_device_t accel_mbx_dev[MAX_ACCELERATOR_TYPES] = {};
+static fpfw_mbox_icc_transport_intrf_t accel_mbx_intf[MAX_ACCELERATOR_TYPES] = {};
+
+static uint8_t s_accel_mbx_dispatch_buff[MAX_ACCELERATOR_TYPES][LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES] = {};
+static fpfw_icc_base_ctx_t s_accel_mbx_icc_base_ctx[MAX_ACCELERATOR_TYPES] = {};
+static fpfw_icc_base_config s_accel_mbx_icc_cfg[MAX_ACCELERATOR_TYPES] = {};
+
+const uint32_t accel_irq_num[MAX_ACCELERATOR_TYPES] = {
+    [ACCELERATOR_SDMSS] = HW_INT_SDM_MBOX_INT,
+    [ACCELERATOR_CDEDSS] = HW_INT_CDED_MBOX_INT,
+};
+
+/*------------- Static Functions ----------------*/
 
 /**
  * @note ICC Support added for Large FIFO Mailbox
  *
- * Similarly add config for each icc transport interface
- * A single icc base ctx for every transport interface.
- * Transport driver interface is not directly exposed to the users
- * It's recommended all inter core communication goes thru icc base service
+ * Add config for each icc transport interface .A single icc base ctx for every
+ * transport interface. Transport driver interface is not directly exposed to
+ * the users. It's recommended all inter core communication goes thru icc base
+ * service
  *
  * Steps to initialize an instance of icc base context:
  * 1. Declare the correct configs required for the specific transport
@@ -51,108 +67,131 @@
  * 4. If the base init is successful, call fpfw_icc_dispatcher_start()
  * 5. Finally return the initialized icc base ctx to the user for invoking icc base APIs
  */
-FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel"))
+static fpfw_status_t accel_mbox_init(eACCELERATOR_TYPE accel_type)
 {
-    //! Statics declarations required for mailbox primitive
-    static struct _fpfw_timer_t sdm_scp_mbx_timer[ICC_MAX_ASYNC_REQ_TYPE] = {};
 
-    static fpfw_mbox_icc_transport_config_t sdm_scp_mbx_cfg = {
-        .mbox_dev_cfg = {
-            .MbxFifoDepth = LARGE_MBX_FIFO_DEPTH,
-            .MbxMesgHandlingType = MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME,
-            .MbxImplementation = MBX_IMPL_INTERRUPT,
-            .MsgSizeBytes = LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES,
-            /* This is populated later in the code since it depends of ATU mapping base address */
-            .MbxBaseAddr = 0,
-        },
-        .timer_period = KG_LARGE_FIFO_MBOX_POLL_INTERVAL_NS,
-        .timer_handle = {
-            &sdm_scp_mbx_timer[ICC_MBX_ASYNC_SEND],
-            &sdm_scp_mbx_timer[ICC_MBX_ASYNC_RECV]
-        },
-        .mbx_irq_num = HW_INT_SDM_MBOX_INT,
-    };
+    accel_mbx_cfg[accel_type].mbox_dev_cfg.MbxFifoDepth = LARGE_MBX_FIFO_DEPTH;
+    accel_mbx_cfg[accel_type].mbox_dev_cfg.MbxMesgHandlingType = MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME;
+    accel_mbx_cfg[accel_type].mbox_dev_cfg.MbxImplementation = MBX_IMPL_INTERRUPT;
+    accel_mbx_cfg[accel_type].mbox_dev_cfg.MsgSizeBytes = LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES;
+    accel_mbx_cfg[accel_type].mbox_dev_cfg.MbxBaseAddr = accelerator_ip_get_atu_mapped_cfg_address(accel_type) + ACCEL_MBOX_OFFSET;
+    accel_mbx_cfg[accel_type].timer_period = KG_LARGE_FIFO_MBOX_POLL_INTERVAL_NS;
+    accel_mbx_cfg[accel_type].timer_handle[ICC_MBX_ASYNC_SEND] = &accel_mbx_timer[accel_type][ICC_MBX_ASYNC_SEND];
+    accel_mbx_cfg[accel_type].timer_handle[ICC_MBX_ASYNC_RECV] = &accel_mbx_timer[accel_type][ICC_MBX_ASYNC_RECV];
+    accel_mbx_cfg[accel_type].mbx_irq_num = accel_irq_num[accel_type];
 
-    //! Statics declarations required for mailbox transport driver
-    static fpfw_mbox_icc_transport_device_t sdm_scp_mbx_dev = {};
-    static fpfw_mbox_icc_transport_intrf_t sdm_scp_mbx_intf = {};
+    s_accel_mbx_icc_cfg[accel_type].transport_interface = &accel_mbx_intf[accel_type].header;
+    s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.transport_interface = &accel_mbx_intf[accel_type];
+    s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.dispatcher_buffer = &s_accel_mbx_dispatch_buff[accel_type];
+    s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.dispatcher_buffer_size = sizeof(s_accel_mbx_dispatch_buff[accel_type]);
+    s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.strategy.cmd_code.is_used = true;
+    s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.strategy.cmd_code.start_pos = LARGE_FIFO_MBOX_CMD_CODE_START_POS;
+    s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.strategy.cmd_code.size_bits = LARGE_FIFO_MBOX_CMD_CODE_SIZE;
+    s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.strategy.cmd_code.valid_max = LARGE_FIFO_MBOX_MAX_CMD_CODE;
+    s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.strategy.cmd_code.valid_min = LARGE_FIFO_MBOX_MIN_CMD_CODE;
+    s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.strategy.seq_num.is_used = true;
+    s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.strategy.seq_num.start_pos = LARGE_FIFO_MBOX_SEQ_NUM_START_POS;
+    s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.strategy.seq_num.size_bits = LARGE_FIFO_MBOX_SEQ_NUM_SIZE;
+    s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.strategy.seq_num.valid_max = LARGE_FIFO_MBOX_MAX_SEQ_NUM;
+    s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.strategy.seq_num.valid_min = LARGE_FIFO_MBOX_MIN_SEQ_NUM;
+    s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.match_strategy_cb = NULL;
+    s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.match_strategy_ctx = NULL;
+    s_accel_mbx_icc_cfg[accel_type].ctx = NULL;
 
-    //! Statics declarations required for icc base service
-    static uint8_t s_sdm_scp_mbx_dispatch_buff[LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES] = {0};
-    static fpfw_icc_base_ctx_t s_sdm_scp_mbx_icc_base_ctx;
-    static fpfw_icc_base_config s_sdm_scp_mbx_icc_cfg = {
-        .transport_interface = &sdm_scp_mbx_intf.header,
-        .dispatch_cfg = {
-            .transport_interface = &sdm_scp_mbx_intf,
-            .dispatcher_buffer = &s_sdm_scp_mbx_dispatch_buff,
-            .dispatcher_buffer_size = sizeof(s_sdm_scp_mbx_dispatch_buff),
-            .strategy = {
-                .cmd_code = {
-                    .is_used = true,
-                    .start_pos = LARGE_FIFO_MBOX_CMD_CODE_START_POS,
-                    .size_bits = LARGE_FIFO_MBOX_CMD_CODE_SIZE,
-                    .valid_max = LARGE_FIFO_MBOX_MAX_CMD_CODE,
-                    .valid_min = LARGE_FIFO_MBOX_MIN_CMD_CODE,
-                },
-                .seq_num = {
-                    .is_used = true,
-                    .start_pos = LARGE_FIFO_MBOX_SEQ_NUM_START_POS,
-                    .size_bits = LARGE_FIFO_MBOX_SEQ_NUM_SIZE,
-                    .valid_max = LARGE_FIFO_MBOX_MAX_SEQ_NUM,
-                    .valid_min = LARGE_FIFO_MBOX_MIN_SEQ_NUM,
-                },
-            },
-            .match_strategy_cb = NULL,
-            .match_strategy_ctx = NULL,
-        },
-        .ctx = NULL,
-    };
-
-    sdm_scp_mbx_cfg.mbox_dev_cfg.MbxBaseAddr = accelerator_ip_get_atu_mapped_cfg_address(ACCELERATOR_SDMSS) + SDM_MBOX_OFFSET;
     //! Initialize large fifo mailbox transport driver
-    fpfw_status_t status = fpfw_mbox_icc_transport_dfwk_device_init(&sdm_scp_mbx_dev, &sdm_scp_mbx_cfg);
+    fpfw_status_t status = fpfw_mbox_icc_transport_dfwk_device_init(&accel_mbx_dev[accel_type], &accel_mbx_cfg[accel_type]);
     if (status != DFWK_SUCCESS)
     {
-        return (fpfw_init_result_t){status, NULL};
+        printf("fpfw_mbox_icc_transport_dfwk_device_init failed for accel %d with status %ld\n", accel_type, (long int)status);
+        return status;
     }
-    DfwkDeviceInitialize(&sdm_scp_mbx_dev.header, &((PDFWK_THREADX_HOST)fpfw_init_get_handle("dfwk"))->Schedule);
-    status = fpfw_mbox_icc_transport_dfwk_interface_init(&sdm_scp_mbx_dev, &sdm_scp_mbx_intf);
+
+    DfwkDeviceInitialize(&accel_mbx_dev[accel_type].header, &((PDFWK_THREADX_HOST)fpfw_init_get_handle("dfwk"))->Schedule);
+    status = fpfw_mbox_icc_transport_dfwk_interface_init(&accel_mbx_dev[accel_type], &accel_mbx_intf[accel_type]);
     if (status != DFWK_SUCCESS)
     {
-        return (fpfw_init_result_t){status, NULL};
+        printf("fpfw_mbox_icc_transport_dfwk_interface_init failed for accel %d with status %ld\n", accel_type, (long int)status);
+        return status;
     }
 
     //! Initialize ICC base ctx for large fifo mailbox transport driver
-    status = fpfw_icc_base_init(&s_sdm_scp_mbx_icc_base_ctx, &s_sdm_scp_mbx_icc_cfg);
-    if (status == FPFW_STATUS_SUCCESS)
+    status = fpfw_icc_base_init(&s_accel_mbx_icc_base_ctx[accel_type], &s_accel_mbx_icc_cfg[accel_type]);
+    if (status != FPFW_STATUS_SUCCESS)
     {
-        //! start the dispatcher to receive data over large fifo mailbox
-        status = fpfw_icc_dispatcher_start(&s_sdm_scp_mbx_icc_base_ctx.dispatch_ctx);
-        if (status != FPFW_ICC_DISPATCH_STATUS_SUCCESS)
-        {
-            return (fpfw_init_result_t){status, NULL};
-        }
-    } else {
-        return (fpfw_init_result_t){status, NULL};
+        printf("fpfw_icc_base_init failed for accel %d with status %ld\n", accel_type, (long int)status);
+        return status;
     }
 
+    //! start the dispatcher to receive data over large fifo mailbox
+    status = fpfw_icc_dispatcher_start(&s_accel_mbx_icc_base_ctx[accel_type].dispatch_ctx);
+    if (status != FPFW_ICC_DISPATCH_STATUS_SUCCESS)
+    {
+        printf("fpfw_icc_dispatcher_start failed for accel %d with status %ld\n", accel_type, (long int)status);
+        return status;
+    }
 
     /**
      * Setup callback context for this mailbox.
      * This context will be passed ICC stack interrupt handler
      */
-    accel_intr_set_mbx_ctx(ACCELERATOR_SDMSS, &sdm_scp_mbx_dev);
+    accel_intr_set_mbx_ctx(accel_type, &accel_mbx_dev[accel_type]);
+
     /**
      * ICC stack register's its own CB on the shared NVIC interrupt line
      * Overwrite that CB with accel_intr lib CB so that interrupt comes to
      * accel_intr lib and later it can be routed to ICC stack
+     * TODO: 2090607
      */
-    status = accel_intr_init(ACCELERATOR_SDMSS);
+    status = accel_intr_init(accel_type);
     if (status)
+    {
+        printf("accel_intr_init failed for accel %d with status %ld\n", accel_type, (long int)status);
+        return status;
+    }
+
+    return FPFW_INIT_STATUS_SUCCESS;
+}
+
+/*------------- Functions ----------------*/
+
+FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel"))
+{
+    eACCELERATOR_TYPE accel_type = ACCELERATOR_SDMSS;
+    DIE_INSTANCE curr_die = (DIE_INSTANCE)idsw_get_die_id();
+
+    // SDM Mailbox is not supported on Die 1
+    if (curr_die == SOC_D1)
+    {
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+
+    fpfw_status_t status = accel_mbox_init(accel_type);
+    if (status != FPFW_INIT_STATUS_SUCCESS)
     {
         return (fpfw_init_result_t){status, NULL};
     }
 
     //! pass in status & ref to ctx to the clients
-    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_sdm_scp_mbx_icc_base_ctx};
+    return (fpfw_init_result_t){status, &s_accel_mbx_icc_base_ctx[accel_type]};
+}
+
+FPFW_INIT_COMPONENT(icc_cded_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel"))
+{
+    eACCELERATOR_TYPE accel_type = ACCELERATOR_CDEDSS;
+    DIE_INSTANCE curr_die = (DIE_INSTANCE)idsw_get_die_id();
+
+    // CDED Mailbox is not supported on Die 1
+    if (curr_die == SOC_D1)
+    {
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+
+    fpfw_status_t status = accel_mbox_init(accel_type);
+    if (status != FPFW_INIT_STATUS_SUCCESS)
+    {
+        return (fpfw_init_result_t){status, NULL};
+    }
+
+    //! pass in status & ref to ctx to the clients
+    return (fpfw_init_result_t){status, &s_accel_mbx_icc_base_ctx[accel_type]};
 }

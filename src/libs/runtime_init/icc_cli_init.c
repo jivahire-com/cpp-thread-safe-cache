@@ -18,13 +18,13 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(icc_cli, FPFW_INIT_DEPENDENCIES("cli", "icc_hspmbx", "icc_d2dmbx", "icc_sdm_mbx"))
+FPFW_INIT_COMPONENT(icc_cli, FPFW_INIT_DEPENDENCIES("cli", "icc_hspmbx", "icc_d2dmbx", "icc_sdm_mbx", "icc_cded_mbx"))
 {
     static icc_cli_init_params_t icc_cli_params;
     //! set the available transport interfaces
     icc_cli_params.icc_base_ctx[ICC_CLI_HSP_MBX] = fpfw_init_get_handle("icc_hspmbx");
     icc_cli_params.icc_base_ctx[ICC_CLI_SDM_FIFO_MBX] = fpfw_init_get_handle("icc_sdm_mbx");
-    icc_cli_params.icc_base_ctx[ICC_CLI_CDED_FIFO_MBX] = NULL;
+    icc_cli_params.icc_base_ctx[ICC_CLI_CDED_FIFO_MBX] = fpfw_init_get_handle("icc_cded_mbx");
     icc_cli_params.icc_base_ctx[ICC_CLI_D2D_MBX] = fpfw_init_get_handle("icc_d2dmbx");
     icc_cli_params.icc_base_ctx[ICC_CLI_MSCP_MHU] = NULL;
     icc_cli_params.icc_base_ctx[ICC_CLI_AP_NS_MHU] = NULL;

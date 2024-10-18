@@ -57,3 +57,10 @@ FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
     //! This is just a placeholder for Accel <--> MCP mailbox
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
+
+FPFW_INIT_COMPONENT(icc_cded_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
+{
+
+    //! This is just a placeholder for Accel <--> MCP mailbox
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}

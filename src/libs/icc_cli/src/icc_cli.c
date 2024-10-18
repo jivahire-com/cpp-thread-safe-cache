@@ -84,10 +84,16 @@ static FPFW_CLI_COMMAND s_icc_mhu_cmd_list[] = {
     {NULL_LIST_ENTRY, "icc_mhu", "scmi_stat", scmi_stat, "Checks MHU SCMI Stat bit", "Usage: scmi_stat <index>"},
 };
 
-static FPFW_CLI_COMMAND s_icc_large_fifo_mbx_cmd_list[] = {
+static FPFW_CLI_COMMAND s_icc_sdm_large_fifo_mbx_cmd_list[] = {
     {NULL_LIST_ENTRY, "icc_largembx", "sdm_send", large_fifo_mbox_send, "Expects to recv mailbox mesg from SDM", "Usage: sdm_send <(cmd code)>"},
     {NULL_LIST_ENTRY, "icc_largembx", "sdm_recv", large_fifo_mbox_recv, "Expects to send mailbox mesg to SDM", "Usage: sdm_recv <(cmd code)>"},
     {NULL_LIST_ENTRY, "icc_largembx", "sdm_echo", large_fifo_mbox_echo, "Expects to send & receive mailbox mesg to SDM", "Usage: sdm_echo <(cmd code)>"},
+};
+
+static FPFW_CLI_COMMAND s_icc_cded_large_fifo_mbx_cmd_list[] = {
+    {NULL_LIST_ENTRY, "icc_largembx", "cded_send", large_fifo_mbox_send, "Expects to recv mailbox mesg from CDED", "Usage: cded_send <(cmd code)>"},
+    {NULL_LIST_ENTRY, "icc_largembx", "cded_recv", large_fifo_mbox_recv, "Expects to send mailbox mesg to CDED", "Usage: cded_recv <(cmd code)>"},
+    {NULL_LIST_ENTRY, "icc_largembx", "cded_echo", large_fifo_mbox_echo, "Expects to send & receive mailbox mesg to CDED", "Usage: cded_echo <(cmd code)>"},
 };
 
 //! @todo separate this out in a generic cli utils file
@@ -134,8 +140,16 @@ void icc_cli_init(icc_cli_init_params_t* params)
             }
             else if (i == ICC_CLI_SDM_FIFO_MBX)
             {
+                FpFwCliPrint("[ICC CLI] SCP<-->SDM registering mailbox commands\n");
                 icc_base_sdm_mbx_ctx = (fpfw_icc_base_ctx_t*)icc_cli_ctx->icc_base_ctx[ICC_CLI_SDM_FIFO_MBX];
-                FpFwCliRegisterTable(s_icc_large_fifo_mbx_cmd_list, FPFW_ARRAY_SIZE(s_icc_large_fifo_mbx_cmd_list));
+                FpFwCliRegisterTable(s_icc_sdm_large_fifo_mbx_cmd_list, FPFW_ARRAY_SIZE(s_icc_sdm_large_fifo_mbx_cmd_list));
+            }
+            else if (i == ICC_CLI_CDED_FIFO_MBX)
+            {
+                FpFwCliPrint("[ICC CLI] SCP<-->CDED registering mailbox commands\n");
+                icc_base_cded_mbx_ctx = (fpfw_icc_base_ctx_t*)icc_cli_ctx->icc_base_ctx[ICC_CLI_CDED_FIFO_MBX];
+                FpFwCliRegisterTable(s_icc_cded_large_fifo_mbx_cmd_list,
+                                     FPFW_ARRAY_SIZE(s_icc_cded_large_fifo_mbx_cmd_list));
             }
         }
     }

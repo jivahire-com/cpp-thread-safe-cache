@@ -18,6 +18,7 @@
 
 /*-------------Statics & Globals----------*/
 extern fpfw_icc_base_ctx_t *icc_base_sdm_mbx_ctx;
+extern fpfw_icc_base_ctx_t *icc_base_cded_mbx_ctx;
 
 /*--------- Function Prototypes ----------*/
 FPFW_CLI_STATUS large_fifo_mbox_echo(int argc, const char** argv);

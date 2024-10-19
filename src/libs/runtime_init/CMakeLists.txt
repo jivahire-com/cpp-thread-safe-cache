@@ -15,6 +15,7 @@ add_library(${TARGET}
         avs_scp_init.c
         avs_scp_cli_init.c
         build_info_cli_init.c
+        cfg_mgr_init.c
         cli_accel_intr_init.c
         cli_init.c
         cli_ddr_init.c
@@ -67,6 +68,7 @@ target_link_libraries(
     ${TARGET}
     PRIVATE
         fwlib.service.cli
+        fwlib.lib.cfg_mgr
         fwlib.lib.crashDump
         fwlib.dfwk
         fwlib.driver.interface.text_io
@@ -202,6 +204,7 @@ set(TARGET kng.lib.scp.runtime_init.mcp)
 add_library(${TARGET}
     OBJECT
         atu_init.c
+        cfg_mgr_init.c
         cli_init.c
         crash_dump_init.c
         cli_crash_dump_init.c
@@ -228,6 +231,7 @@ target_link_libraries(
     ${TARGET}
     PRIVATE
         fwlib.service.cli
+        fwlib.lib.cfg_mgr
         fwlib.lib.crashDump
         fwlib.dfwk
         fwlib.lib.init

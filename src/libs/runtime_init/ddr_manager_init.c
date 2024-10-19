@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include "ddr_manager.h"
 
+#include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h>
 #include <idhw.h>
 #include <stdio.h>
@@ -18,7 +19,7 @@
 #define UNUSED(x) (void)(x)
 #define KB        (1024)
 
-#define DDR_TIMER_RESCHEDULE_TICKS (6)  // 60ms
+#define MS_PER_TICK (10)  // Todo:  Revisit this if/when we change from ThreadX SW timer to gtimer  
 #define DDR_TIMER_INITIAL_TICKS    (18) // Let things settle down before starting the timer
 #define DDR_STACK_SIZE             ((TX_MINIMUM_STACK) + ((2) * (KB)))
 #define DDR_THREAD_PRIORITY        (15)
@@ -41,7 +42,7 @@ FPFW_INIT_COMPONENT(ddrman, FPFW_INIT_DEPENDENCIES("ddr", "std_io", "mesh", "hw_
         },
         .timer_config = {
             .initial_ticks = DDR_TIMER_INITIAL_TICKS,
-            .reschedule_ticks = DDR_TIMER_RESCHEDULE_TICKS,
+            .reschedule_ticks = config_get_ddrmanager_bwl_polling_period_ms() / MS_PER_TICK,
         },
         .queue_config = {
             .p_queue = ddr_queue_pool,

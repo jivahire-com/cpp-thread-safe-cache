@@ -16,6 +16,7 @@
 #include <ddr_i3c.h>
 #include <ddrss.h>
 #include <ddrss_lib.h>
+#include <fpfw_cfg_mgr.h>
 #include <idhw.h> // for idhw_is_single_die_boot_en
 #include <idsw_kng.h>
 #include <interrupts.h>
@@ -78,6 +79,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         // limitation. The actual DIMM size on FPGA is 64GB / 4 = 16GB.
         ddrss_cfgs.dimm_sku = DDR5_RDIMM_2Rx4_16Gb_64GB;
         // FPGA DDR runs at fixed frequency (support DDR6400 with DFI ratio 1:4)
+        printf("DDRSS - ddr_speed_grade locked to DDR6400 for FPGA\n");
         ddrss_cfgs.ext_knobs.ddr_speed_grade = DDRSS_SPEED_6400;
     }
     else if ((platform_id == PLATFORM_EMU) || (platform_id == PLATFORM_EMU_1D) || (platform_id == PLATFORM_EMU_2D) ||
@@ -87,6 +89,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         ddrss_cfgs.platform_type = DDRSS_PLATFORM_EMU;
         ddrss_cfgs.dimm_sku = DDR5_RDIMM_2Rx4_16Gb_64GB;
         // Emulation supports DDR7200 only.
+        printf("DDRSS - ddr_speed_grade locked to DDR7200 for EMU\n");
         ddrss_cfgs.ext_knobs.ddr_speed_grade = DDRSS_SPEED_7200;
     }
     else if (platform_id == PLATFORM_RVP_EVT_SILICON)
@@ -96,7 +99,8 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         // TBD: For RVP platform, after I3C DIMM SPD detection is added,
         //      the dimm_sku needs to be updated using detection results.
         ddrss_cfgs.dimm_sku = DDR5_RDIMM_2Rx4_16Gb_64GB;
-        ddrss_cfgs.ext_knobs.ddr_speed_grade = DDRSS_SPEED_7200;
+        ddrss_cfgs.ext_knobs.ddr_speed_grade =
+            config_get_ddr_speed_grade(); // TODO: Update default in Config XML? DDRSS_SPEED_7200;
     }
     else
     {

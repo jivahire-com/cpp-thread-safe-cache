@@ -11,10 +11,17 @@
 
 /*----------- Nested includes ------------*/
 #include <stdbool.h>
+#include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
+typedef struct
+{
+    uint16_t low;
+    uint16_t high;
+    uint16_t crit;
+} ddr_dimm_temp_thresholds_t;
 
 /*-- Declarations (Statics and globals) --*/
 

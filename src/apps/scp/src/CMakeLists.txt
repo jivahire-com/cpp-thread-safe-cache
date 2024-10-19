@@ -45,7 +45,6 @@ target_link_libraries(
             ms::driver::scmi_drv
             fwlib.lib.init
             fwlib.lib.utils
-
 )
 
 target_include_directories(

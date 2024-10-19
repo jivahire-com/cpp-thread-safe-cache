@@ -15,6 +15,7 @@
 // clang-format on
 #include <corebits.h>
 #include <dvfs_struct.h>
+#include <fpfw_cfg_mgr.h>
 #include <pvt_struct.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -69,12 +70,7 @@
 /* =========================== BEGIN COPY FROM GENERATED CONFIG */
 // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491012/
 // replace with actual config when available
-typedef enum
-{
-    power_capping_mode_t_ALL = 0,              // All core (no priority) capping
-    power_capping_mode_t_PER_VM = 1,           // Priority-based capping
-    _power_capping_mode_t_PADDING = 0xffffffff // Force packing to int size
-} power_capping_mode_t;
+
 
 typedef enum
 {
@@ -312,6 +308,11 @@ typedef struct _dts_coeff_t
 /**
  *  @brief Struct for power module configuration knobs
  */
+
+// Temporary - equate existing typedef with config manager generated typedef
+typedef POWER_CAPPING_MODE power_capping_mode_t;
+
+// TODO: Move this struct to kng_mscp_config_knobs.xml
 typedef struct _power_knobs_t
 {
     power_loops_disable_t loops_disable; // disabled loops (control, vr telem, pvt telem)

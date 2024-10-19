@@ -1,0 +1,139 @@
+<ConfigSchema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:noNamespaceSchemaLocation="configschema.xsd">
+
+  <!-- Enum values are declared separately from the knobs.
+       The same Enum can be used as the 'enumtype' of any number of EnumKnobs -->
+  <Enums>
+    <Enum name="OPTION_MODE" help="Modes of the option">
+      <Value name="FIRST" prettyname="First Mode" value="0" help="First mode" />
+      <Value name="SECOND" prettyname="Second Mode" value="1" help="Second mode" />
+      <Value name="THIRD" prettyname="Third Mode" value="2" help="Third mode" />
+    </Enum>
+    <Enum name="MODULE_MODE" help="Module modes">
+      <Value name="MODEA" prettyname="Mode A" value="0" help="Fast mode" />
+      <Value name="MODEB" prettyname="Mode B" value="1" help="Slow mode" />
+    </Enum>
+    <Enum name="POWER_CAPPING_MODE" help="Power capping mode">
+      <Value name="POWER_CAPPING_MODE_ALL" prettyname="All" value="0" help="All core (no priority) capping" />
+      <Value name="POWER_CAPPING_MODE_PER_VM" prettyname="Per VM" value="1" help="Per VM priority-based power capping" />
+    </Enum>
+  </Enums>
+
+  <Structs>
+    <Struct name="simple_t" help="Simple struct">
+      <Member name="value" count="2" type="uint32_t" />
+    </Struct>
+    <Struct name="child_t" prettyname="Child Struct"  help="Embedded struct">
+      <Member name="data" prettyname="child Data" type="uint8_t" count="5" help="Bytes" />
+      <Member name="mode" type="OPTION_MODE" />
+    </Struct>
+    <Struct name="sample_t" help="Sample struct">
+      <Member name="counter" type="uint32_t" help="Number value" />
+      <Member name="children" type="child_t" count="2" help="Child data" />
+    </Struct>
+  </Structs>
+
+  <!-- namespace indicates the GUID namespace the values are stored in -->
+  <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
+    <!-- Example and test knobs of different types -->
+    <!-- primative knobs -->
+    <Knob type="uint8_t" name="k_uint8_t"  />
+    <Knob type="uint8_t" name="k_uint8_t_d10"  default="10" />
+    <Knob type="uint8_t" name="k_uint8_t_d10_min5"  default="10" min="5" />
+    <Knob type="uint8_t" name="k_uint8_t_d10_max20"  default="10" max="20" />
+    <Knob type="uint8_t" name="k_uint8_t_d10_min5_max20"  default="10" min="5" max="20" />
+
+    <Knob type="int8_t" name="k_int8_t" />
+    <Knob type="int8_t" name="k_int8_t_d10" default="10" />
+    <Knob type="int8_t" name="k_int8_t_dn10" default="-10" />
+    <Knob type="int8_t" name="k_int8_t_d10_minn5" min="-5" default="10" />
+    <Knob type="int8_t" name="k_int8_t_d10_max20" max="20" default="10" />
+    <Knob type="int8_t" name="k_int8_t_d10_minn5_max20" min="-5" max="20" default="10" />
+
+    <Knob type="uint16_t" name="k_uint16_t" />
+    <Knob type="uint16_t" name="k_uint16_t_d1000" default="1000" />
+    <Knob type="uint16_t" name="k_uint16_t_d1000_min500" default="1000" min="500" />
+    <Knob type="uint16_t" name="k_uint16_t_d1000_max2000" default="1000" max="2000" />
+    <Knob type="uint16_t" name="k_uint16_t_d1000_min500_max2000" default="1000" min="500" max="2000" />
+
+    <Knob type="int16_t" name="k_int16_t" />
+    <Knob type="int16_t" name="k_int16_t_d1000" default="1000" />
+    <Knob type="int16_t" name="k_int16_t_dn1000" default="-1000" />
+    <Knob type="int16_t" name="k_int16_t_d1000_minn500" default="1000" min="-500" />
+    <Knob type="int16_t" name="k_int16_t_d1000_max2000" default="1000" max="2000" />
+    <Knob type="int16_t" name="k_int16_t_d1000_minn500_max2000" default="1000" min="-500" max="2000" />
+    
+    <Knob type="uint32_t" name="k_uint32_t" />
+    <Knob type="uint32_t" name="k_uint32_t_d1000000" default="1000000" />
+    <Knob type="uint32_t" name="k_uint32_t_d1000000_min500000" default="1000000" min="500000" />
+    <Knob type="uint32_t" name="k_uint32_t_d1000000_max2000000" default="1000000" max="2000000" />
+    <Knob type="uint32_t" name="k_uint32_t_d1000000_min500000_max2000000" default="1000000" min="500000" max="2000000" />
+    
+    <Knob type="int32_t" name="k_int32_t" />
+    <Knob type="int32_t" name="k_int32_t_d1000000" default="1000000" />
+    <Knob type="int32_t" name="k_int32_t_dn1000000" default="-1000000" />
+    <Knob type="int32_t" name="k_int32_t_d1000000_minn500000" default="1000000" min="-500000"/>
+    <Knob type="int32_t" name="k_int32_t_d1000000_max2000000" default="1000000" max="2000000"/>
+    <Knob type="int32_t" name="k_int32_t_d1000000_minn500000_max2000000" default="1000000" min="-500000" max="2000000"/>
+
+    <Knob type="uint64_t" name="k_uint64_t" />
+    <Knob type="uint64_t" name="k_uint64_t_d10000000000" default="10000000000" />
+    <Knob type="uint64_t" name="k_uint64_t_d10000000000_min5000000000" default="10000000000" min="5000000000" />
+    <Knob type="uint64_t" name="k_uint64_t_d10000000000_max20000000000" default="10000000000" max="20000000000" />
+    <Knob type="uint64_t" name="k_uint64_t_d10000000000_min5000000000_max20000000000" default="10000000000" min="5000000000" max="20000000000" />
+    
+    <Knob type="int64_t" name="k_int64_t" />
+    <Knob type="int64_t" name="k_int64_t_d10000000000" default="10000000000" />
+    <Knob type="int64_t" name="k_int64_t_dn10000000000" default="-10000000000" />
+    <Knob type="int64_t" name="k_int64_t_d10000000000_minn5000000000" default="10000000000" min="-5000000000" />
+    <Knob type="int64_t" name="k_int64_t_d10000000000_max20000000000" default="10000000000" max="20000000000" />
+    <Knob type="int64_t" name="k_int64_t_d10000000000_minn500000000_max20000000000" default="10000000000" min="-5000000000" max="20000000000" />
+
+    <Knob type="float" name="k_float" />
+    <Knob type="float" name="k_float_d10_5" default="10.5" />
+    <Knob type="float" name="k_float_dn10_5" default="-10.5" />
+    <Knob type="float" name="k_float_d10_5_minn5_5" default="10.5" min="-5.5" />
+    <Knob type="float" name="k_float_d10_5_max20_5" default="10.5" max="20.5" />
+    <Knob type="float" name="k_float_d10_5_minn5_5_max20_5" default="10.5" min="-5.5" max="20.5" />
+
+    <Knob type="double" name="k_double" />
+    <Knob type="double" name="k_double_d10_000005" default="10.000005" />
+    <Knob type="double" name="k_double_dn10_000005" default="-10.000005" />
+    <Knob type="double" name="k_double_d10_5_minn5_5" default="10.5" min="-5.5" />
+    <Knob type="double" name="k_double_d10_5_max20_5" default="10.5" max="20.5" />
+    <Knob type="double" name="k_double_d10_5_minn5_5_max20_5" default="10.5" min="-5.5" max="20.5" />
+
+    <Knob type="bool" name="k_bool" />
+    <Knob type="bool" name="k_bool_dtrue" default="true" />
+  
+    <Knob name="COMPLEX_ffKNOB1a" type="child_t" default="{{1,2,3, 4,5 },FIRST }" help="Complex knob" />
+    <Knob name="COMPLEX_KNOB1b" prettyname="Complex Knob 1b Struct" type="child_t" default="{{1,2,3, 4,5 },SECOND }" help="Complex type" />
+    <Knob name="COMPLEX_KNOB2" type="sample_t" default="{2,{{{1,2,3, 4,5 },FIRST },{{6,7,8, 9,10 },SECOND }}}" help="Complex type" />
+    <Knob name="COMPLEX_KNOB3b" type="child_t" default="{{2,2,2,2,2},SECOND}" help="Complex type" />
+    <Knob name="INTEGER_KNOB" type="uint32_t" default="100" help="Integer type" />
+    <Knob name="BOOLEAN_KNOB" prettyname="Boolean Knob"  type="bool" default="true" help="Boolean type" />
+    <Knob name="DOUBLE_KNOB" type="double" default="3.1415926" help="Double type" />
+    <Knob name="FLOAT_KNOB" type="float" default="1.414" help="Float type" />
+
+    <Knob name="INTEGER_KNOB2" type="uint32_t" default="89" help="Integer type" />
+    <Knob name="BOOLEAN_KNOB2" type="bool" default="true" help="Boolean type" />
+    <Knob name="DOUBLE_KNOB2" type="double" default="10.00281456" help="Double type" />
+    <Knob name="FLOAT_KNOB233" type="float" default="4.56" help="Float type" />
+
+    <!-- DDR Manager knobs -->
+    <Knob name="ddrmanager_bwl_en" type="bool" default="true" help="Enable/Disable bandwidth limiting (thermal throttling)" />
+    <Knob name="ddrmanager_bwl_polling_period_ms" type="uint32_t" default="60" help="Default DIMM temperature/power polling period in ms" />
+    <Knob name="ddrmanager_ecs_polling_en" type="bool" default="false" help="Debug flag to control ECS polling/telemetry" />
+    <Knob name="ddrmanager_dimm_temp_low" type="uint32_t" default="80" help="Integer value representing low temperature to disengage BWL (80°C)" />
+    <Knob name="ddrmanager_dimm_temp_high" type="uint32_t" default="85" help="Integer value representing high temperature to engage BWL (85°C)" />
+    <Knob name="ddrmanager_dimm_temp_crit" type="uint32_t" default="95" help="Integer value representing critical DIMM temperature where bad things happen (95°C)" />
+
+    <!-- DDRSS knobs -->
+    <Knob name="ddr_speed_grade" type="DDRSS_SPEED_GRADE" default="DDRSS_SPEED_6400" help="DDR Speed Grade" />
+    <Knob name="ecc_ce_th" type="uint16_t" default="0" help="ECC threshold count after which any per-rank CE counter creates an appropriate RAS error record. (0x0 ~ 0x7ff)" />
+
+    <!-- Others -->
+    <Knob name="power_capping_mode" type="POWER_CAPPING_MODE" default="POWER_CAPPING_MODE_PER_VM" help="Power capping mode" />
+  </Knobs>
+
+</ConfigSchema>

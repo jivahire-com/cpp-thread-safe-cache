@@ -34,6 +34,7 @@ target_link_libraries(${TARGET}
         silibs::platform
         silibs::ras_arm
         fwlib.dfwk
+        fwlib.lib.cfg_mgr
         fwlib.lib.init
         fwlib.service.iccBase
         ms::lib::crash_dump

@@ -13,11 +13,12 @@
 #include "power_runconfig_i.h" // for power_knobs_read, power_knobs_ws_update
 
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
+#include <fpfw_cfg_mgr.h>
 #include <idsw_kng.h>
 #include <kng_soc_constants.h> // for NUM_AP_CORES_PER_DIE
-#include <silibs_common.h>     // for ARRAY_SIZE
-#include <stdbool.h>           // for false, true
-#include <stddef.h>            // for NULL
+#include <silibs_common.h> // for ARRAY_SIZE
+#include <stdbool.h>       // for false, true
+#include <stddef.h>        // for NULL
 
 /*------------- Typedefs -----------------*/
 
@@ -70,15 +71,15 @@ void power_knobs_read(power_knobs_t* p_knobs)
 
     p_knobs->mpmm = (power_mpmm_config_t){.enable = false, .gear = 2}; // config_get_power_mpmm();
 
-    p_knobs->capping_mode = power_capping_mode_t_PER_VM; // config_get_power_capping_mode();
-    p_knobs->power_enable_velocity_boost = true;         // config_get_power_enable_velocity_boost();
-    p_knobs->c4_cores_limit_to_nominal = true;           // config_get_power_c3_cores_limit_to_nominal();
-    p_knobs->c3_cores_limit_to_nominal = true;           // config_get_power_c3_cores_limit_to_nominal();
-    p_knobs->c2_cores_limit_to_nominal = true;           // config_get_power_c2_cores_limit_to_nominal();
-    p_knobs->allow_plimit_below_nominal = false;         // config_get_power_allow_plimit_below_nominal();
-    p_knobs->intervals_to_lower_plimit = 0;              // config_get_power_intervals_to_lower_plimit();
-    p_knobs->allowed_plimit_minimum = 0;                 // config_get_power_allowed_plimit_minimum();
-    p_knobs->allowed_plimit_maximum = 31;                // config_get_power_allowed_plimit_maximum();
+    p_knobs->capping_mode = config_get_power_capping_mode();
+    p_knobs->power_enable_velocity_boost = true; // config_get_power_enable_velocity_boost();
+    p_knobs->c4_cores_limit_to_nominal = true;   // config_get_power_c3_cores_limit_to_nominal();
+    p_knobs->c3_cores_limit_to_nominal = true;   // config_get_power_c3_cores_limit_to_nominal();
+    p_knobs->c2_cores_limit_to_nominal = true;   // config_get_power_c2_cores_limit_to_nominal();
+    p_knobs->allow_plimit_below_nominal = false; // config_get_power_allow_plimit_below_nominal();
+    p_knobs->intervals_to_lower_plimit = 0;      // config_get_power_intervals_to_lower_plimit();
+    p_knobs->allowed_plimit_minimum = 0;         // config_get_power_allowed_plimit_minimum();
+    p_knobs->allowed_plimit_maximum = 31;        // config_get_power_allowed_plimit_maximum();
 
     p_knobs->max_plimit_step_size_up = 31;   // config_get_power_max_plimit_step_size_up();
     p_knobs->max_plimit_step_size_down = 31; // config_get_power_max_plimit_step_size_down();

@@ -31,6 +31,7 @@ target_link_libraries(${TARGET}
     silibs::idsw_kng
     silibs::ras_arm
     fwlib.dfwk
+    fwlib.lib.cfg_mgr
     fwlib.lib.utils
     fwlib.lib.assert
     fwlib.lib.interface.platform.interrupts

@@ -17,6 +17,7 @@
 #include "ddr_manager_i.h"
 #include "ddr_manager_i3c.h"
 
+#include <fpfw_cfg_mgr.h>
 #include <stdio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -24,7 +25,7 @@
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
-// Check DIMM temperatures against thresholds and engage BWL if necessary
+void init_thresholds(ddr_dimm_temp_thresholds_t* thresholds);
 void check_dimm_temp_thresholds();
 
 /*-- Declarations (Statics and globals) --*/
@@ -89,9 +90,14 @@ void ddr_poll_dimms()
 // Above 'crit' -> Blow things up
 void check_dimm_temp_thresholds()
 {
-    uint16_t temp_threshold_low = config_manager_get_ddr_dimm_temp_threshold_low();
-    uint16_t temp_threshold_high = config_manager_get_ddr_dimm_temp_threshold_high();
-    uint16_t temp_threshold_critical = config_manager_get_ddr_dimm_temp_threshold_critical();
+    static bool is_first_run = true;
+    static ddr_dimm_temp_thresholds_t thresholds = {};
+
+    if (is_first_run)
+    {
+        init_thresholds(&thresholds);
+        is_first_run = false;
+    }
 
     uint16_t max_dimm_temp = 0;
     for (int dimm_idx = 0; dimm_idx < NUM_DIMM; dimm_idx++)
@@ -114,8 +120,8 @@ void check_dimm_temp_thresholds()
             max_dimm_temp = 0;
         }
 
-        if ((ts0_temp.is_positive && ts0_temp.as_uint16 > temp_threshold_critical) ||
-            (ts0_temp.is_positive && ts1_temp.as_uint16 > temp_threshold_critical))
+        if ((ts0_temp.is_positive && ts0_temp.as_uint16 > thresholds.crit) ||
+            (ts1_temp.is_positive && ts1_temp.as_uint16 > thresholds.crit))
         {
             printf("DIMM %d has exceeded critical temperature threshold\n", dimm_idx);
 
@@ -127,14 +133,29 @@ void check_dimm_temp_thresholds()
     }
 
     // Engage BWL if the max DIMM temperature exceeds the high threshold
-    if (max_dimm_temp > temp_threshold_high)
+    if (max_dimm_temp > thresholds.high)
     {
-        ddr_manager_enable_bwl_i3c();
+        if (config_get_ddrmanager_bwl_en())
+        {
+            ddr_manager_enable_bwl_i3c();
+        }
+        else
+        {
+            // May want to do something else here, like log an event
+            printf("DIMM temperatures exceed high threshold, but BWL is disabled\n");
+        }
     }
 
     // Disengage BWL if the max DIMM temperature falls below the low threshold
-    if (max_dimm_temp < temp_threshold_low)
+    if (max_dimm_temp < thresholds.low)
     {
         ddr_manager_disable_bwl_i3c();
     }
+}
+
+void init_thresholds(ddr_dimm_temp_thresholds_t* thresholds)
+{
+    thresholds->low = config_manager_get_ddr_dimm_temp_threshold_low();
+    thresholds->high = config_manager_get_ddr_dimm_temp_threshold_high();
+    thresholds->crit = config_manager_get_ddr_dimm_temp_threshold_critical();
 }

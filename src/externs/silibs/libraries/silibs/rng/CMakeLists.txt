@@ -1,5 +1,5 @@
 message("----------------------------------")
-message("---- Adding Silibs Crypto RNG library ----")
+message("---- Adding Silibs Crypto RNG ----")
 
 set(TARGET extern.silibs.crypto.rng)
 

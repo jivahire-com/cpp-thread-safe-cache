@@ -181,32 +181,32 @@ const char* get_fpfw_status_code_string(fpfw_status_t errorCode)
         return "FPFW_RING_BUFFER_ELEMENT_SIZE_MISMATCH";
 
     // dw i3c
-    case FPFW_DW_I3C_SOFT_RESET_FAIL:
-        return "FPFW_DW_I3C_SOFT_RESET_FAIL";
-    case FPFW_DW_I3C_NOT_ENABLED:
-        return "FPFW_DW_I3C_NOT_ENABLED";
-    case FPFW_DW_I3C_BUSY:
-        return "FPFW_DW_I3C_BUSY";
-    case FPFW_DW_I3C_RX_BUFFER_TOO_SMALL:
-        return "FPFW_DW_I3C_RX_BUFFER_TOO_SMALL";
-    case FPFW_DW_I3C_SIR_NOT_ALLOWED:
-        return "FPFW_DW_I3C_SIR_NOT_ALLOWED";
-    case FPFW_DW_I3C_MR_NOT_ALLOWED:
-        return "FPFW_DW_I3C_MR_NOT_ALLOWED";
-    case FPFW_DW_I3C_UNSUPPORTED_IBI_TYPE:
-        return "FPFW_DW_I3C_UNSUPPORTED_IBI_TYPE";
-    case FPFW_DW_I3C_ERROR_CRC:
-        return "FPFW_DW_I3C_ERROR_CRC";
-    case FPFW_DW_I3C_ERROR_PARITY:
-        return "FPFW_DW_I3C_ERROR_PARITY";
-    case FPFW_DW_I3C_ERROR_FRAME:
-        return "FPFW_DW_I3C_ERROR_FRAME";
-    case FPFW_DW_I3C_ERROR_OVER_UNDER_FLOW:
-        return "FPFW_DW_I3C_ERROR_OVER_UNDER_FLOW";
-    case FPFW_DW_I3C_ERROR_EARLY_TERMINATION:
-        return "FPFW_DW_I3C_ERROR_EARLY_TERMINATION";
-    case FPFW_DW_I3C_ERROR_UNKNOWN_RESPONSE:
-        return "FPFW_DW_I3C_ERROR_UNKNOWN_RESPONSE";
+    case FPFW_I3C_SOFT_RESET_FAIL:
+        return "FPFW_I3C_SOFT_RESET_FAIL";
+    case FPFW_I3C_NOT_ENABLED:
+        return "FPFW_I3C_NOT_ENABLED";
+    case FPFW_I3C_BUSY:
+        return "FPFW_I3C_BUSY";
+    case FPFW_I3C_RX_BUFFER_TOO_SMALL:
+        return "FPFW_I3C_RX_BUFFER_TOO_SMALL";
+    case FPFW_I3C_SIR_NOT_ALLOWED:
+        return "FPFW_I3C_SIR_NOT_ALLOWED";
+    case FPFW_I3C_MR_NOT_ALLOWED:
+        return "FPFW_I3C_MR_NOT_ALLOWED";
+    case FPFW_I3C_UNSUPPORTED_IBI_TYPE:
+        return "FPFW_I3C_UNSUPPORTED_IBI_TYPE";
+    case FPFW_I3C_ERROR_CRC:
+        return "FPFW_I3C_ERROR_CRC";
+    case FPFW_I3C_ERROR_PARITY:
+        return "FPFW_I3C_ERROR_PARITY";
+    case FPFW_I3C_ERROR_FRAME:
+        return "FPFW_I3C_ERROR_FRAME";
+    case FPFW_I3C_ERROR_OVER_UNDER_FLOW:
+        return "FPFW_I3C_ERROR_OVER_UNDER_FLOW";
+    case FPFW_I3C_ERROR_EARLY_TERMINATION:
+        return "FPFW_I3C_ERROR_EARLY_TERMINATION";
+    case FPFW_I3C_ERROR_UNKNOWN_RESPONSE:
+        return "FPFW_I3C_ERROR_UNKNOWN_RESPONSE";
 
     default:
         return "Unknown error code";

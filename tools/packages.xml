@@ -16,7 +16,7 @@
 
     <git>
         <repo name="cmocka" url="https://azurecsi.visualstudio.com/DuvallFw/_git/mirror.cmocka" tag="promote_cmocka_1"/>
-        <repo name="1pfw_fwlibs" url="https://azurecsi.visualstudio.com/DuvallFw/_git/1pfw.fwlibs" tag="v2.0.482"/>
+        <repo name="1pfw_fwlibs" url="https://azurecsi.visualstudio.com/DuvallFw/_git/1pfw.fwlibs" tag="v2.0.511"/>
         <repo name="threadx" url="https://dev.azure.com/AzureCSI/DuvallFw/_git/mirror.threadx" tag="v6.4.1_rel"/>
         <repo name="silibs" url="https://ms-tsd@dev.azure.com/ms-tsd/Kingsgate/_git/silibs" tag="promote_silibs_1066"/>
         <!-- /// @todo: remove "silibs_common" https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/1838599 -->
@@ -31,6 +31,7 @@
         <package name="numpy" version="1.26.4" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/" />
         <package name="error-code-generator" version="0.1.*" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/" />
         <package name="init_graph_tool" version="1.1.*" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/" />
+        <package name="xmlschema" version="3.3.1" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/" />
     </pip_packages>
 
 </packages>

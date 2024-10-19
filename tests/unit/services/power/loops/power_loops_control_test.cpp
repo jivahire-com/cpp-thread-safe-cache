@@ -1072,7 +1072,7 @@ POWER_TEST(control_update_message_cb, NULL, NULL)
     create_nominal_count_data(p_ctrl_loop, TEST_CORE1, NOMINAL_PLIMIT, 0, 0);
 
     static power_runconfig_t test_runconfig = {
-        .knobs = {.capping_mode = power_capping_mode_t_PER_VM, .power_enable_velocity_boost = true},
+        .knobs = {.capping_mode = POWER_CAPPING_MODE_PER_VM, .power_enable_velocity_boost = true},
         .derived = {.pnominal = NOMINAL_PLIMIT}};
 
     // expectations on entry

@@ -12,7 +12,7 @@
     <files>
         <!-- Build Metadata-->
         <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\src\libs\build_data\build_data.h" target="build\bin\arm-eabi-aarch\Debug\scp\build_data\"/>
-	    <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\src\libs\build_data\build_data.h" target="build\bin\arm-eabi-aarch\Debug\mcp\build_data\"/>
+        <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\src\libs\build_data\build_data.h" target="build\bin\arm-eabi-aarch\Debug\mcp\build_data\"/>
 
         <!-- Event Trace Manifests -->
         <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\bin\man\*" target="build\bin\arm-eabi-aarch\Debug\man\" />
@@ -25,6 +25,9 @@
 
         <!-- Silibs Release Notes -->
         <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\Release_Notes\*" target="Release_Notes\" />
+
+        <!-- Combined Platform Config Knobs -->
+        <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\Config_Knobs\*.xml" target="Config_Knobs\Kingsgate_MSCP_Platform_Config_Knobs_test_unused.xml" />
 
     </files>
 </package>

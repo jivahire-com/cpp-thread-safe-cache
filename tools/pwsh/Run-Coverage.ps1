@@ -6,7 +6,7 @@ $ProfDataFile = "$LogPath/data.profdata"
 $LCovFile = "$LogPath/cov.lcov"
 
 # Regex match the paths to exclude
-$ExcludedPaths = @((".*\\\.externs\\.*"), (".*\\tests\\.*"), (".+\\power_stub.c"), (".+_cli.c"), (".+cli_.+.c"))
+$ExcludedPaths = @((".*\\\.externs\\.*"), (".*\\tests\\.*"), (".+\\power_stub.c"), (".+_cli.c"), (".+cli_.+.c"), (".+\\mu_public.h"), (".+\\mu_profile.h"), (".+\\mu_service.h"))
 $ExcludedPaths = $ExcludedPaths | %{"--ignore-filename-regex=`"" + $_ + "`""}
 
 # Set up the file modifier for the raw coverage

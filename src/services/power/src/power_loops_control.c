@@ -24,6 +24,7 @@
 #include <bug_check.h>
 #include <corebits.h>
 #include <debug.h>
+#include <fpfw_cfg_mgr.h>
 #include <inttypes.h>
 #include <scf_power.h>
 #include <stdint.h>
@@ -216,7 +217,7 @@ static uint8_t boost_pri_for_tracking(power_runconfig_t* p_runconfig, uint8_t pr
 static uint8_t throt_pri_for_tracking(power_runconfig_t* p_runconfig, uint8_t priority)
 {
     unsigned throt_pri_index = 0; // default index for all-core mode
-    if (p_runconfig->knobs.capping_mode != power_capping_mode_t_ALL)
+    if (p_runconfig->knobs.capping_mode != POWER_CAPPING_MODE_ALL)
     {
         // as long as OS-requested priority is less than number of
         // priorities we support, use OS priority

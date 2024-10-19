@@ -38,6 +38,7 @@ target_include_directories(${TARGET}
 
 target_link_libraries(${TARGET}
     PUBLIC
+        fwlib.lib.cfg_mgr
         ms::lib::corebits
         silibs::dvfs
         silibs::gpio

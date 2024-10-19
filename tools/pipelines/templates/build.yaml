@@ -73,6 +73,15 @@ jobs:
         script: |
           Copy-Item -Path .externs\repo\silibs\Release_Notes -Recurse -Destination $(Build.SourcesDirectory)\.build\${{ parameters.Configuration }}\${{ parameters.Toolchain }}\Release_Notes
 
+    - task: PowerShell@2
+      displayName: Publish Platform Config Knobs (PS)
+      inputs:
+        targetType: 'inline'
+        script: |
+          $destinationDir = "$(Build.SourcesDirectory)\.build\${{ parameters.Configuration }}\${{ parameters.Toolchain }}\Config_Knobs"
+          New-Item -ItemType Directory -Path $destinationDir
+          Copy-Item -Path .\.build\${{ parameters.Configuration }}\${{ parameters.Toolchain }}\src\externs\1pfw_fwlibs\include\*.xml -Destination $destinationDir\Kingsgate_MSCP_Platform_Config_Knobs.xml
+    
     - task: PublishSymbols@2
       displayName: Publish Symbol Files - Debug and Release
       condition: succeeded()

@@ -28,6 +28,7 @@
 #include <scp_exp_top_regs.h>
 #include <scp_top_regs.h>
 #undef __NO_CSR_TYPEDEFS__
+#include <pik_clock_lib.h>
 #include <sds_api.h>
 #include <sds_configuration.h>
 #include <sds_init.h>
@@ -349,6 +350,9 @@ void ap_core_init(pap_core_service_t p_device,
     ap_core_util_get_fuse_enabled_cores(&s_ap_core_ctx.enabled_cores);
     // limit enabled cores to those that are actually present
     corebits_and(&s_ap_core_ctx.enabled_cores, p_config->platform_cores_in_die);
+
+    // initialize pik cluster remap base
+    pik_clock_set_cluster_remapped_base(p_config->cluster_pex_base);
 
     ap_core_ppu_init(&s_ap_core_ctx);
 }

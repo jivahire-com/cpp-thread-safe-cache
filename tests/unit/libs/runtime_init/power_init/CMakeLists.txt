@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         ms::client_interface::startup_shutdown
         ms::cmocka::testrunner
         ms::lib::threadx
+        ms::lib::utils
         ms::service::power
         ms::service::atu_service
         silibs::idsw

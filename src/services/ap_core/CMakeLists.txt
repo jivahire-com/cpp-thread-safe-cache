@@ -58,6 +58,7 @@ target_link_libraries(${TARGET}
         ms::client_interface::ap_core
         ms::client_interface::startup_shutdown
         silibs::idsw
+        silibs::pik_clock
         silibs::platform
         silibs::ppu_v1
         silibs::kng_silibs_platform

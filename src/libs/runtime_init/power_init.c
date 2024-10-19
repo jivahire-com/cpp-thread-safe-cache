@@ -21,6 +21,7 @@
 #include <idsw.h>      // for idsw_get_die_id
 #include <idsw_kng.h>
 #include <kng_soc_constants.h> // for NUM_AP_CORES_PER_DIE
+#include <platform_core_config.h>
 #include <power_init.h>        // for power_init, power_interface_init
 #include <silibs_scp_exp_top_regs.h>
 #include <silibs_scp_top_regs.h>
@@ -34,12 +35,6 @@
 
 FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc", "gpio_lib", "icc_d2dmbx"))
 {
-#define SVP_NUM_CORES_PER_DIE 4
-    // fpga platform has an unusual set of available cores
-    static const corebits_t fpga_platform_cores = (corebits_t)COREBITS_INIT_UINT32(0x000c0300, 0x00c03000, 0);
-    static const corebits_t svp_cores = (corebits_t)COREBITS_INIT_UINT32(0xF, 0x0, 0x0);
-    static const corebits_t platform_cores = (corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFF, 0xFFFFFFFF, 0xF);
-
     static power_service_t power_service;
     static power_service_config_t power_config = {
         .soc_pvt_base = (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_PVT_ADDRESS),
@@ -105,6 +100,15 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc
         // FPGA r21 supports core and soc power management
         power_config.platform_soc_power_support = true;
         power_config.platform_core_power_support = true;
+        break;
+    case PLATFORM_EMU:
+    case PLATFORM_EMU_1D:
+    case PLATFORM_EMU_1D_8C:
+    case PLATFORM_EMU_2D:
+    case PLATFORM_EMU_2D_8C:
+        power_config.platform_cores_in_die = &zebu_cores;
+        power_config.platform_core_power_support = true;
+        power_config.platform_die_core_count = ZEBU_NUM_CORES_PER_DIE;
         break;
     default:
         break;

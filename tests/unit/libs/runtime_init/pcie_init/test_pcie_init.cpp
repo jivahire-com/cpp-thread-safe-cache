@@ -65,7 +65,7 @@ KNG_DIE_ID __wrap_idsw_get_die_id(void)
 
 TEST_FUNCTION(test_die0_svp_init, NULL, NULL)
 {
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return(__wrap_idsw_get_die_id, DIE_0);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3)));
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_0);
@@ -74,7 +74,7 @@ TEST_FUNCTION(test_die0_svp_init, NULL, NULL)
 
 TEST_FUNCTION(test_die1_svp_init, NULL, NULL)
 {
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return(__wrap_idsw_get_die_id, DIE_1);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS4) | (1 << RPSS5) | (1 << RPSS6) | (1 << RPSS7)));
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_1);
@@ -83,7 +83,7 @@ TEST_FUNCTION(test_die1_svp_init, NULL, NULL)
 
 TEST_FUNCTION(test_die0_fpga_init, NULL, NULL)
 {
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return(__wrap_idsw_get_die_id, DIE_0);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS1) | (1 << RPSS2)));
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_0);
@@ -92,7 +92,7 @@ TEST_FUNCTION(test_die0_fpga_init, NULL, NULL)
 
 TEST_FUNCTION(test_die1_fpga_init, NULL, NULL)
 {
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return(__wrap_idsw_get_die_id, DIE_1);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, (1 << RPSS5));
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_1);
@@ -101,7 +101,7 @@ TEST_FUNCTION(test_die1_fpga_init, NULL, NULL)
 
 TEST_FUNCTION(test_die0_silicon_init, NULL, NULL)
 {
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return(__wrap_idsw_get_die_id, DIE_0);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3)));
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_0);
@@ -110,7 +110,7 @@ TEST_FUNCTION(test_die0_silicon_init, NULL, NULL)
 
 TEST_FUNCTION(test_die1_silicon_init, NULL, NULL)
 {
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return(__wrap_idsw_get_die_id, DIE_1);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS4) | (1 << RPSS5) | (1 << RPSS6) | (1 << RPSS7)));
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_1);
@@ -119,7 +119,7 @@ TEST_FUNCTION(test_die1_silicon_init, NULL, NULL)
 
 TEST_FUNCTION(test_die0_unknown_plat_init, NULL, NULL)
 {
-    will_return(__wrap_idsw_get_platform_sdv, 0xFF);
+    will_return_always(__wrap_idsw_get_platform_sdv, 0xFF);
     will_return(__wrap_idsw_get_die_id, DIE_0);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, 0);
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_0);
@@ -128,5 +128,6 @@ TEST_FUNCTION(test_die0_unknown_plat_init, NULL, NULL)
 
 TEST_FUNCTION(test_cli_init, NULL, NULL)
 {
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     _fpfw_component_pcie_cli.init_fn();
 }

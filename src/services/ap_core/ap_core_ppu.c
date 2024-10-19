@@ -15,6 +15,7 @@
 #include <core_cluster_with_pvt_regs.h> // for CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS
 #include <corebits.h>
 #include <kng_error.h>
+#include <pik_clock_lib.h>
 #include <ppu_v1.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -62,13 +63,23 @@ void ap_core_ppu_init(ap_core_service_context_t* p_context)
 // function to set the power state of a single cluster
 static void cluster_set_power_state(ap_core_service_context_t* p_context, unsigned cluster_idx, bool power_state_on, uint32_t timeout_ms)
 {
+    // TODO: timeout_ms is now being interpreted as us - Need to update and also provide an appropriate timeout in us
     uintptr_t cluster_ppu_addr =
         (p_context->p_config->cluster_pex_base + (cluster_idx * p_context->p_config->cluster_stride) +
          CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS + VOYAGER_DSU_CLUSTER_CLUSTER_PPU_ADDRESS);
 
     if (power_state_on)
     {
+        // Configure cluster clocks
+        for (int clk_dev_id = PIK_DEV_ID_CLUS_CORECLK; clk_dev_id <= PIK_DEV_ID_CLUS_PPUCLK; clk_dev_id++)
+        {
+            /* Turn on cluster clocks to desired frequency */
+            int sts = pik_clock_power_transition(PIK_CLUS_PIK_DEV_ID(cluster_idx, clk_dev_id), MOD_PD_STATE_ON);
+            FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+        }
+
         // power cluster on
+
         int32_t status =
             ppu_v1_set_power_mode_with_timeout(cluster_ppu_addr, PPU_V1_MODE_ON, PPU_V1_OPMODE_00, timeout_ms);
 
@@ -84,6 +95,7 @@ static void cluster_set_power_state(ap_core_service_context_t* p_context, unsign
     {
         // TO DO : Support disable lock from Off state.
         // https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/785784
+
         int status = ppu_v1_set_power_mode_with_timeout(cluster_ppu_addr, PPU_V1_MODE_OFF, PPU_V1_OPMODE_00, timeout_ms);
 
         if (KNG_FAILED(status))
@@ -177,6 +189,7 @@ void ap_core_ppu_core_set_power_state(ap_core_service_context_t* p_context, unsi
     if (power_state_on)
     {
         // power core on
+
         int status = ppu_v1_set_power_mode_with_timeout(core_ppu_addr, PPU_V1_MODE_ON, PPU_V1_OPMODE_00, timeout_ms);
 
         if (KNG_FAILED(status))

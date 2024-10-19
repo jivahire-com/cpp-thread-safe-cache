@@ -20,6 +20,7 @@
 #include <idsw.h>               // for idsw_get_die_id
 #include <idsw_kng.h>           // for NUM_DIE
 #include <kng_soc_constants.h>  // for NUM_AP_CORES_PER_DIE
+#include <platform_core_config.h>
 #include <silibs_ap_top_regs.h> // for AP_TOP_D0_CORE_CLUSTER_SIZE, AP_T...
 #include <startup_shutdown.h>
 #include <stdint.h> // for uint32_t
@@ -42,11 +43,6 @@ static void setup_ap_loop_to_self(uint64_t rvbaraddr)
 
 FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "tower_cfg", "icc_hspmbx", "atu_svc", "sysinfo", "pex_rng"))
 {
-#define SVP_NUM_CORES_PER_DIE 4
-    // fpga platform has an unusual set of available cores
-    static const corebits_t fpga_platform_cores = (corebits_t)COREBITS_INIT_UINT32(0x000c0300, 0x00c03000, 0);
-    static const corebits_t platform_cores = (corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFF, 0xFFFFFFFF, 0xF);
-
     static ap_core_service_t ap_core_service;
     static ap_core_service_config_t ap_core_config = {
         .boot_core_rvbaraddr = DEFAULT_BOOT_CORE_RVBARADDR,
@@ -76,7 +72,14 @@ FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "tower_cfg", "ic
             // put a loop to self at the rbvaraddr (FW load would replace this)
             setup_ap_loop_to_self(ap_core_config.boot_core_rvbaraddr);
         }
-        
+        break;
+    case PLATFORM_EMU:
+    case PLATFORM_EMU_1D:
+    case PLATFORM_EMU_1D_8C:
+    case PLATFORM_EMU_2D:
+    case PLATFORM_EMU_2D_8C:
+        ap_core_config.platform_cores_in_die = &zebu_cores;
+        ap_core_config.platform_die_core_count = ZEBU_NUM_CORES_PER_DIE;
         break;
     default:
         break;

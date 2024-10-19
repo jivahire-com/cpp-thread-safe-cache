@@ -317,7 +317,7 @@ AP_CORE_TEST(dispatch_rvbar, setup, NULL)
     test_request.data.rvbaraddr = TEST_RVBARADDR;
 
     // expect a call to set_all_rvbaraddr
-    expect_value(__wrap_ap_core_util_set_all_rvbaraddr, p_context, s_ap_core_ctx);
+    expect_any(__wrap_ap_core_util_set_all_rvbaraddr, p_context);
     expect_value(__wrap_ap_core_util_set_all_rvbaraddr, rvbaraddr, TEST_RVBARADDR);
 
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);

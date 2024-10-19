@@ -20,17 +20,10 @@
 #include <idsw_kng.h>        
 #include <kng_soc_constants.h>  // for NUM_AP_CORES_PER_DIE
 #include <pex_rng.h>
-#include <silibs_ap_top_regs.h> // for AP_TOP_D0_CORE_CLUSTER_SIZE, AP_T...
-#include <stdint.h> // for uint32_t
+#include <platform_core_config.h>
 #define  __NO_CSR_TYPEDEFS__
 #include <scp_top_regs.h>
 #undef   __NO_CSR_TYPEDEFS__
-
-#define SVP_NUM_CORES_PER_DIE 4
-#define FPGA_NUM_CORES_PER_DIE 8
-
-static const corebits_t fpga_platform_cores = (corebits_t)COREBITS_INIT_UINT32(0x000c0300, 0x00c03000, 0);
-static const corebits_t platform_cores = (corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFF, 0xFFFFFFFF, 0xF);
 
 /*------------- Functions ----------------*/
 
@@ -52,6 +45,13 @@ FPFW_INIT_COMPONENT(pex_rng, FPFW_INIT_DEPENDENCIES("dfwk", "sysinfo", "mesh", "
     case PLATFORM_FPGA_LARGE_RVP:
         rng_config.platform_cores_in_die = &fpga_platform_cores;   
         break;
+    case PLATFORM_EMU:
+    case PLATFORM_EMU_1D:
+    case PLATFORM_EMU_1D_8C:
+    case PLATFORM_EMU_2D:
+    case PLATFORM_EMU_2D_8C:
+        rng_config.platform_cores_in_die = &zebu_cores;   
+        rng_config.core_count = ZEBU_NUM_CORES_PER_DIE;
     default:
         break;
     }

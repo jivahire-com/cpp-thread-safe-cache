@@ -59,55 +59,52 @@ static uint64_t rpss_addrs[NUM_RPSS] = {
     AP_TOP_D1_VAB_RPSS3_ADDRESS,
 };
 
-static pcie_cfg_t pcie_cfg_np = {
-    .pcie_ss_en = true,
-    .pcie_cap_gen_speed = PCIE_GEN_5,
-    .pcie_bifurcation_mode = PCIE_BIFURCATION_1X16,
-    .pcie_cxl_support = false,
-    .pcie_stagger_time = PCIE_STAGGER_NONE,
-    .pcie_clock_mode = PCIE_CLOCK_SRNS,
-    .pcie_fast_link_mode = true,
-    .pcie_gen3_eq_disable = true,
-    .pcie_gen4_eq_disable = true,
-    .pcie_gen5_eq_disable = true,
-    .pcie_eq_bypass_support = true,
-    .pcie_no_eq_support = true,
-    .rp_cfgs =
-    {
-        {
-            .pcie_rp_en = true,
-            .pcie_rp_port_num = 0,
-            .pcie_rp_is_slot = false,
-            .pcie_rp_slot_num = 0,
-            .pcie_rp_hotplug_capable = false,
-            .pcie_rp_cap_en_rel_order = true,
-        },
-        {
-            .pcie_rp_en = false,
-            .pcie_rp_port_num = 0,
-            .pcie_rp_is_slot = false,
-            .pcie_rp_slot_num = 0,
-            .pcie_rp_hotplug_capable = false,
-            .pcie_rp_cap_en_rel_order = true,
-        },
-        {
-            .pcie_rp_en = false,
-            .pcie_rp_port_num = 0,
-            .pcie_rp_is_slot = false,
-            .pcie_rp_slot_num = 0,
-            .pcie_rp_hotplug_capable = false,
-            .pcie_rp_cap_en_rel_order = true,
-        },
-        {
-            .pcie_rp_en = false,
-            .pcie_rp_port_num = 0,
-            .pcie_rp_is_slot = false,
-            .pcie_rp_slot_num = 0,
-            .pcie_rp_hotplug_capable = false,
-            .pcie_rp_cap_en_rel_order = true,
-        },
-    }
-};
+static pcie_cfg_t pcie_cfg_np = {.pcie_ss_en = true,
+                                 .pcie_cap_gen_speed = PCIE_GEN_5,
+                                 .pcie_bifurcation_mode = PCIE_BIFURCATION_1X16,
+                                 .pcie_cxl_support = false,
+                                 .pcie_stagger_time = PCIE_STAGGER_NONE,
+                                 .pcie_clock_mode = PCIE_CLOCK_SRNS,
+                                 .pcie_fast_link_mode = true,
+                                 .pcie_gen3_eq_disable = true,
+                                 .pcie_gen4_eq_disable = true,
+                                 .pcie_gen5_eq_disable = true,
+                                 .pcie_eq_bypass_support = true,
+                                 .pcie_no_eq_support = true,
+                                 .rp_cfgs = {
+                                     {
+                                         .pcie_rp_en = true,
+                                         .pcie_rp_port_num = 0,
+                                         .pcie_rp_is_slot = false,
+                                         .pcie_rp_slot_num = 0,
+                                         .pcie_rp_hotplug_capable = false,
+                                         .pcie_rp_cap_en_rel_order = true,
+                                     },
+                                     {
+                                         .pcie_rp_en = false,
+                                         .pcie_rp_port_num = 0,
+                                         .pcie_rp_is_slot = false,
+                                         .pcie_rp_slot_num = 0,
+                                         .pcie_rp_hotplug_capable = false,
+                                         .pcie_rp_cap_en_rel_order = true,
+                                     },
+                                     {
+                                         .pcie_rp_en = false,
+                                         .pcie_rp_port_num = 0,
+                                         .pcie_rp_is_slot = false,
+                                         .pcie_rp_slot_num = 0,
+                                         .pcie_rp_hotplug_capable = false,
+                                         .pcie_rp_cap_en_rel_order = true,
+                                     },
+                                     {
+                                         .pcie_rp_en = false,
+                                         .pcie_rp_port_num = 0,
+                                         .pcie_rp_is_slot = false,
+                                         .pcie_rp_slot_num = 0,
+                                         .pcie_rp_hotplug_capable = false,
+                                         .pcie_rp_cap_en_rel_order = true,
+                                     },
+                                 }};
 
 /*------------- Functions ----------------*/
 static void populate_rb_configs_from_rpss_entity(pcie_ss_entity_t* rpss, pcie_root_bridge_config* rb_configs)

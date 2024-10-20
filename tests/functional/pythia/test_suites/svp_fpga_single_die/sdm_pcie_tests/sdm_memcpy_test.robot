@@ -20,7 +20,7 @@ Library     pylibs.sdm_tests.sdm_memcpy_test
 *** Variables ***
 @{PASS_RESPONSE}        wait_for_cmd_completion-: INFO: RX: SUCCESS
 ...                     compare_data_buffer: INFO: SUCCESS
-...                     sdm_test-: ****  SDM Test DONE ****
+...                     sdm_memcpy_test-: ****  SDM MEMCPY Test on Die 0 DONE ****
 
 @{FAIL_RESPONSE}        FAIL
 

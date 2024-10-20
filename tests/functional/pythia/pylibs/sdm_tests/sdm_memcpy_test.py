@@ -55,7 +55,7 @@ class sdm_memcpy_test(EchoFallsBaseTest):
         """ 
         Test function: 
             1. Setup the Test. 
-            2. Wait for AP to be up. Send 'ap_bm sdm_test' command 
+            2. Wait for AP to be up. Send 'ap_bm sdm_memcpy_test' command 
             3. Read response and check if test passed or failed based on response
             4. Teardown Test. 
         """
@@ -75,11 +75,11 @@ class sdm_memcpy_test(EchoFallsBaseTest):
             self.dut.teardown()
             return False
 
-        command="ap_bm sdm_test"
+        command="ap_bm sdm_memcpy_test 0"
         self.log.info(f"Submitting {command} command . . .")
         apns_connection.get_current_channel().write_line(write_string=command)
 
-        command_response=apns_connection.get_current_channel().read_until(key="****  SDM Test DONE ****", timeout_seconds=30)
+        command_response=apns_connection.get_current_channel().read_until(key="****  SDM MEMCPY Test on Die 0 DONE ****", timeout_seconds=30)
         test_result=KngPythiaTestIF.parse_log(pythia_log=self.log, uart_log=command_response, uart_pass_logs=pass_logs, uart_fail_logs=fail_logs)        
             
         self.dut.teardown()

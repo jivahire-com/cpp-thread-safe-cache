@@ -76,11 +76,11 @@ class sdm_e2i_i2e_test(EchoFallsBaseTest):
             self.dut.teardown()
             return False
 
-        command="ap_bm user_def_loopback_test 0 0"
+        command="ap_bm user_def_loopback_test 0 0 0"
         self.log.info(f"Submitting {command} command . . .")
         apns_connection.get_current_channel().write_line(write_string=command)
 
-        command_response=apns_connection.get_current_channel().read_until(key="User Defined Loopback Test End!", timeout_seconds=30)
+        command_response=apns_connection.get_current_channel().read_until(key="User Defined Loopback Test on Die 0 End!", timeout_seconds=30)
         test_result=KngPythiaTestIF.parse_log(pythia_log=self.log, uart_log=command_response, uart_pass_logs=pass_logs, uart_fail_logs=fail_logs)        
             
         self.dut.teardown()

@@ -18,7 +18,7 @@ Library     pylibs.sdm_tests.sdm_e2i_i2e_test
 ...         WITH NAME    sdm_e2i_i2e_test_lib
 
 *** Variables ***
-@{PASS_RESPONSE}    User Defined Loopback Test End!
+@{PASS_RESPONSE}    User Defined Loopback Test on Die 0 End!
 @{FAIL_RESPONSE}    FAIL
 
 *** Test Cases ***

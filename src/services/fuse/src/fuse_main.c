@@ -31,15 +31,15 @@
 #include <stdbool.h>             // for false, true
 #include <stdint.h>              // for uintptr_t
 #include <stdio.h>               // for NULL, printf
-#include <tx_api.h>              // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
-#include <utils.h>               // for sleep_ms()...
+#include <system_info.h>
+#include <tx_api.h> // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
+#include <utils.h>  // for sleep_ms()...
 /*-- Symbolic Constant Macros (defines) --*/
 /*------------- Typedefs -----------------*/
 #define NUM_CSR_BACKED_CORE_FUSE_DESCRIPTORS (4)
 #define MAX_BYTES_PER_FUSE                   8
 #define MAX_BITS_PER_FUSE                    (MAX_BYTES_PER_FUSE * 8)
 #define BITS_PER_BYTE                        (8)
-#define FUSE_NAME                            "[KNG Fuse] "
 /*-------- Function Prototypes -----------*/
 static bool platform_requires_fuse_distribution();
 static int platform_fuse_copy_to_ram();
@@ -62,9 +62,17 @@ static bool platform_requires_fuse_distribution()
     // TODO: leave FPGA platforms here until tested working
     // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2002810
     case PLATFORM_RTL_SIM:
+        status = true;
+        break;
     case PLATFORM_FPGA:
+        status = true;
+        break;
     case PLATFORM_FPGA_LARGE:
+        status = true;
+        break;
     case PLATFORM_FPGA_LARGE_RVP:
+        status = true;
+        break;
     default:
         printf(FUSE_NAME "Fuse distribution not supported in FW for platform\n");
         break;
@@ -78,11 +86,23 @@ static int platform_fuse_copy_to_ram()
 
 static int read_override_from_spi()
 {
+    fpfw_status_t icc_status = 0;
+
     size_t recv_msg_size_bytes = 0;
+
     kng_hsp_fuse_mailbox_msg fuse_fw_load = {};
     fuse_fw_load.fuse_req.header.cmd = HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ;
-    fuse_fw_load.fuse_req.addr = SCP_EXP_FUSE_DATA_BASE;
-    fpfw_status_t icc_status =
+    if (idsw_get_die_id() == DIE_0)
+    {
+        fuse_fw_load.fuse_req.id = HSP_FIRMWARE_ID_FUSE_OVERRIDE_DIE_0;
+    }
+    else
+    {
+        fuse_fw_load.fuse_req.id = HSP_FIRMWARE_ID_FUSE_OVERRIDE_DIE_1;
+    }
+    fuse_fw_load.fuse_req.address = SCP_EXP_FUSE_DATA_BASE;
+    fuse_fw_load.fuse_req.size = SCP_EXP_FUSE_DATA_SIZE;
+    icc_status =
         fpfw_icc_base_send_recv_sync(icc_base_ctx_fuse, &fuse_fw_load, sizeof(kng_hsp_fuse_mailbox_msg), &recv_msg_size_bytes);
 
     return icc_status;
@@ -110,6 +130,7 @@ int platform_fuse_override()
     int status = 0;
     uint32_t Kingsgate_fuse_override_buffer_location = (uint32_t)(SCP_EXP_FUSE_DATA_BASE);
     DIE_INSTANCE die_id = (DIE_INSTANCE)idsw_get_die_id();
+    KNG_PLAT_ID plat_id = idsw_get_platform_sdv();
 
     // Skip for platforms that do not support fuses
     if (platform_requires_fuse_distribution())
@@ -117,18 +138,35 @@ int platform_fuse_override()
         // Cache base fuse data from efuse blocks into SoC RAM location
         status = platform_fuse_copy_to_ram();
         FUSE_ET_STATUS(FUSE_ET_TYPE_RAM_DMA_COPY);
+        printf(FUSE_NAME "copy_to_ram status=%d\n", status);
         BUG_ASSERT_PARAM((status == SILIBS_SUCCESS), status, SILIBS_SUCCESS);
 
         const bool is_fused_part =
             (read_fuse(SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH) != 0);
-        status = read_override_from_spi(); // Read override buffer from SPI Flash and apply to fuses if present
+        printf(FUSE_NAME "if fused part [%d] \n", is_fused_part);
+        // wait for the HSP Fuse for HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ so I will only pass for SVP
+        if (plat_id == PLATFORM_RVP_EVT_SILICON)
+        {
+            status = read_override_from_spi(); // Read override buffer from SPI Flash and apply to fuses if present
+        }
+        else
+        {
+            printf(FUSE_NAME "Non_support_mechine!\n");
+            status = SILIBS_E_SUPPORT;
+        }
 
         FUSE_ET_STATUS(FUSE_ET_TYPE_MAILBOX_REQUEST_OVERRIDES);
         const bool fuse_overrides_present = (status == SILIBS_SUCCESS);
         if (!is_fused_part && !fuse_overrides_present)
         {
             FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_NO_OVERRIDES);
-            BUG_ASSERT(false);
+            printf(FUSE_NAME "fuse no override\n");
+            if (status != SILIBS_SUCCESS)
+            {
+                printf(FUSE_NAME "Fuse no override!\n");
+                status = FUSE_NO_OVERRIDES;
+                return status;
+            }
         }
         else if (!is_fused_part && fuse_overrides_present)
         {
@@ -138,6 +176,8 @@ int platform_fuse_override()
             FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_IGNORE_VALIDS);
             if (status != SILIBS_SUCCESS)
             {
+                printf(FUSE_NAME "fuse_override_ignoring_valids fail!\n");
+                status = FUSE_ERROR_IGNORE_VALIDS;
                 return status;
             }
         }
@@ -150,8 +190,11 @@ int platform_fuse_override()
             printf(FUSE_NAME "Fused part with fuse overrides in SPI. Applying all valid overrides.\n");
             status = apply_fuse_override(die_id, Kingsgate_fuse_override_buffer_location);
             FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_WITH_OVERRIDES);
+
             if (status != SILIBS_SUCCESS)
             {
+                printf(FUSE_NAME "fuse_override fail!\n");
+                status = FUSE_ERROR_WITH_OVERRIDES;
                 return status;
             }
         }
@@ -173,16 +216,16 @@ int platform_fuse_distribution(int stage)
     switch (plat_id)
     {
     case PLATFORM_FPGA:
-        printf("[KingGate_FUSE] Platform is FPGA\n");
-        fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
+        printf(FUSE_NAME " Platform is FPGA\n");
+        status = fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
         break;
     case PLATFORM_FPGA_LARGE:
         printf(FUSE_NAME "Platform is FPGA_Large\n");
-        fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
+        status = fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
         break;
     case PLATFORM_FPGA_LARGE_RVP:
         printf(FUSE_NAME "Platform is FPGA_Large_RVP\n");
-        fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
+        status = fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
         break;
     case PLATFORM_RVP_EVT_SILICON:
         printf(FUSE_NAME "Platform is PLATFORM_RVP_EVT_SILICON\n");
@@ -192,6 +235,12 @@ int platform_fuse_distribution(int stage)
         return status;
     }
 
+    if (status != SILIBS_SUCCESS)
+    {
+        printf(FUSE_NAME " GET_EXCLUSION_LIST Fail\n");
+        status = FUSE_ERROR_GET_EXCLUSION_LIST;
+        return status;
+    }
     printf(FUSE_NAME "Fuse Distribution Start\n");
     FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_START);
     if (platform_requires_fuse_distribution())
@@ -202,6 +251,8 @@ int platform_fuse_distribution(int stage)
             FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR0);
             if (status != SILIBS_SUCCESS)
             {
+                printf(FUSE_NAME "DISTRIBUTION_PHASE_MAJOR3_MINOR0 Fail\n");
+                status = FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR3_MINOR0;
                 return status;
             }
             printf(FUSE_NAME "Phase 0 fuse distribution complete\n");
@@ -212,6 +263,8 @@ int platform_fuse_distribution(int stage)
             FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR1);
             if (status != SILIBS_SUCCESS)
             {
+                printf(FUSE_NAME "DISTRIBUTION_PHASE_MAJOR3_MINOR1 Fail\n");
+                status = FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR3_MINOR1;
                 return status;
             }
             printf(FUSE_NAME "Phase 1 fuse distribution complete\n");
@@ -220,6 +273,8 @@ int platform_fuse_distribution(int stage)
             FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR4_MINOR0);
             if (status != SILIBS_SUCCESS)
             {
+                printf(FUSE_NAME "DISTRIBUTION_PHASE_MAJOR4_MINOR0 Fail\n");
+                status = FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR4_MINOR0;
                 return status;
             }
             printf(FUSE_NAME "Phase 2 fuse distribution complete\n");
@@ -229,6 +284,8 @@ int platform_fuse_distribution(int stage)
 
             if (status != SILIBS_SUCCESS)
             {
+                status = FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR4_MINOR1;
+                printf(FUSE_NAME "DISTRIBUTION_PHASE_MAJOR4_MINOR1 Fail\n");
                 return status;
             }
             printf(FUSE_NAME "Phase 3 fuse distribution complete\n");

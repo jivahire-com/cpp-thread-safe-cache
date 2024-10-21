@@ -24,14 +24,15 @@ target_link_libraries(${TARGET}
     fwlib.lib.status
     fwlib.service.iccBase
     fwlib.service.cli
+    ms::boot_loader::interface
     ms::lib::crash_dump
     ms::lib::error_codes
-    ms::boot_loader::interface
     ms::lib::error_codes
     ms::lib::event_trace::trace
     ms::lib::debug
     ms::lib::hsp_firmware_headers
     ms::lib::register_headers
+    ms::lib::system_info
     ms::lib::threadx
     ms::lib::utils
     silibs::fuse

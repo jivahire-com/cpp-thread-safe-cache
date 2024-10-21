@@ -9,6 +9,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::mocks
         ms::cmocka::testrunner
         ms::lib::scp_interrupts
+        ms::lib::system_info
         ms::lib::threadx
         ms::mocks::event_trace
         ms::mocks::threadx

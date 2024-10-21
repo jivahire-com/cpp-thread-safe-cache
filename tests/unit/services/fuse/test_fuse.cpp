@@ -184,6 +184,8 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t *icc_ctx, 
     return mock_type(fpfw_status_t);
 }
 
+
+
 //
 // Tests
 //
@@ -196,10 +198,28 @@ TEST_FUNCTION(test_fuse_init, NULL, NULL)
 
 TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
 {
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RTL_SIM);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     
-    // TODO: reinstate with // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2002810
+    will_return_always(__wrap_fuse_dma_copy_to_ram_blocking, 0);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
+    will_return_always(__wrap_read_fuse, 1);
+    kng_hsp_fuse_mailbox_msg msg = {};
+    msg.fuse_req.header.cmd = HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ;
+    msg.fuse_req.header.flags = HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED;
+    size_t output_recv_bytes = 0;
+    expect_memory(__wrap_fpfw_icc_base_send_recv_sync, output_recv_bytes, &output_recv_bytes, sizeof(output_recv_bytes));
+    expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, sizeof(msg));
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    
+    // Expectation for apply_fuse_override
+    expect_value(__wrap_apply_fuse_override, die_id, DIE_0);
+    expect_value(__wrap_apply_fuse_override, override_buffer, (uintptr_t)(SCP_EXP_FUSE_DATA_BASE));
+    expect_function_call(__wrap_apply_fuse_override);
+
+    // Expectation for trigger_debugger_for_manual_overrides
+    expect_function_call(__wrap_trigger_debugger_for_manual_overrides);
    
     assert_int_equal(platform_fuse_override(), 0);
 }
@@ -264,7 +284,17 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_0, NULL, NULL)
     }
 
     // TODO: reinstate with // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2002810
-   
+    expect_any(__wrap_distribute_fuses, die_id);
+    expect_value(__wrap_distribute_fuses, phase_maj, POST_HSP_DIST_MAJOR);
+    expect_value(__wrap_distribute_fuses, phase_min, POST_HSP_DIST_MINOR);
+    expect_memory(__wrap_distribute_fuses, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_distribute_fuses, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_distribute_fuses);
+
+    printf("Before distribute_fuses: die_id=DIE_0, phase_maj=POST_HSP_DIST_MAJOR, "
+           "phase_min=POST_HSP_DIST_MINOR, exclude_list=%p, exclude_list_count=%u\n",
+           (void*)fuse_dist_exclude_list1,
+           exclude_list_count1);
 
     unsigned int status = platform_fuse_distribution(0);
     assert_int_equal(status, 0);
@@ -312,7 +342,41 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
     }
 
     // TODO: reinstate with // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2002810
-   
+    expect_value(__wrap_distribute_fuses, die_id, DIE_0);
+    expect_value(__wrap_distribute_fuses, phase_maj, POST_HSP_DIST_MAJOR);
+    expect_value(__wrap_distribute_fuses, phase_min, MESH_INIT_MINOR);
+    expect_memory(__wrap_distribute_fuses, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_distribute_fuses, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_distribute_fuses);
+
+    printf("Before distribute_fuses: die_id=DIE_0, phase_maj=POST_HSP_DIST_MAJOR, phase_min=MESH_INIT_MINOR, "
+           "exclude_list=%p, exclude_list_count=%u\n",
+           (void*)fuse_dist_exclude_list1,
+           exclude_list_count1);
+
+    expect_value(__wrap_distribute_fuses, die_id, DIE_0);
+    expect_value(__wrap_distribute_fuses, phase_maj, POST_MESH_INIT_MAJOR);
+    expect_value(__wrap_distribute_fuses, phase_min, POST_MESH_INIT_MINOR);
+    expect_memory(__wrap_distribute_fuses, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_distribute_fuses, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_distribute_fuses);
+
+    printf("Before distribute_fuses: die_id=DIE_0, phase_maj=POST_MESH_INIT_MAJOR, "
+           "phase_min=POST_MESH_INIT_MINOR, exclude_list=%p, exclude_list_count=%u\n",
+           (void*)fuse_dist_exclude_list1,
+           exclude_list_count1);
+
+    expect_value(__wrap_distribute_fuses, die_id, DIE_0);
+    expect_value(__wrap_distribute_fuses, phase_maj, POST_MESH_INIT_MAJOR);
+    expect_value(__wrap_distribute_fuses, phase_min, POST_BRIDGE_INIT_MINOR);
+    expect_memory(__wrap_distribute_fuses, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_distribute_fuses, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_distribute_fuses);
+
+    printf("Before distribute_fuses: die_id=DIE_0, phase_maj=POST_MESH_INIT_MAJOR, "
+           "phase_min=POST_BRIDGE_INIT_MINOR, exclude_list=%p, exclude_list_count=%u\n",
+           (void*)fuse_dist_exclude_list1,
+           exclude_list_count1);
 
     unsigned int status = platform_fuse_distribution(1);
     assert_int_equal(status, 0);
@@ -334,6 +398,7 @@ TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
     kng_hsp_fuse_mailbox_msg msg = {};
     msg.fuse_req.header.cmd = HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ;
     msg.fuse_req.header.flags = HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED;
+    
     size_t output_recv_bytes = 0;
     expect_memory(__wrap_fpfw_icc_base_send_recv_sync, output_recv_bytes, &output_recv_bytes, sizeof(output_recv_bytes));
     expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, sizeof(msg));

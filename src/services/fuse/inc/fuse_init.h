@@ -14,13 +14,26 @@
 #include <hsp_firmware_headers.h>
 #include <kingsgate_hsp_mailbox_commands.h>
 /*-- Symbolic Constant Macros (defines) --*/
+#define FUSE_NAME                            "[KNG Fuse] "
 
 /*-------------- Typedefs ----------------*/
+enum {
+    FUSE_NO_OVERRIDES                             =(-19),
+    FUSE_ERROR_IGNORE_VALIDS                      =(-20),
+    FUSE_ERROR_WITH_OVERRIDES                     =(-21),
+    FUSE_ERROR_GET_EXCLUSION_LIST                 =(-22),
+    FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR3_MINOR0   =(-23),
+    FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR3_MINOR1   =(-24),
+    FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR4_MINOR0   =(-25),
+    FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR4_MINOR1   =(-26)
+};
 typedef union _kng_hsp_fuse_mailbox_msg {
-	struct kng_hsp_mailbox_msg_fuse_and_image_load_req fuse_req;	/**< incoming mailbox message from protocol to handler. */
+	struct kng_hsp_mailbox_cmd_load_fw_req fuse_req;	/**< incoming mailbox message from protocol to handler. */
 	struct kng_hsp_mailbox_msg_rsp rsp;	        /**< outgoing mailbox message from handler to protocol. */
     uint32_t as_uint32[4];
 } kng_hsp_fuse_mailbox_msg;
+
+
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus
 extern "C" {

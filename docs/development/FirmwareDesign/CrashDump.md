@@ -77,6 +77,19 @@ BUG_CHECK will populate FpFwCrashDumpInfo and call into the framework's entrypoi
 The library registers built-in Cortex M7 registers, core stacks, ThreadX thread infos (Thread control blocks, internal ThreadX state), exception status registers, and registers outlined in this document:
 TBD
 
+#### Standard Information
+
+| Field               | Description                                        |
+| ------------------- | -------------------------------------------------- |
+| GUID                | Unique GUID {da166264-6f19-4647-bf3d-4f9b523f5d08} |
+| Id                  | Build metadata Id                                  |
+| Major               | Major version                                      |
+| Minor               | Minor version                                      |
+| Revision            | Revision                                           |
+| Build               | Build number                                       |
+| Version Info String | T.B.D                                              |
+| Elf_Build_Id        | GNU ELF Build ID                                   |
+
 #### M7 Core Registers
 
 | Registers |  Description |
@@ -107,6 +120,38 @@ TBD
 | BFAR | Bus Fault Address Register |
 | HFSR | Hard Fault Status Register |
 | CFSR | Configurable Fault Status Register |
+
+#### ThreadX context
+
+| Variable                    | Description                    |
+| --------------------------- | ------------------------------ |
+| _tx_thread_system_stack_ptr | System stack pointer           |
+| _tx_thread_current_ptr      | Currently executing thread     |
+| _tx_thread_execute_ptr      | The next thread to be executed |
+| _tx_thread_created_ptr      | The list of created threads    |
+| _tx_thread_created_count    | The count of created threads   |
+| _tx_thread_system_state     | The current state of thread    |
+
+For each created thread
+| Variable     | Description              |
+| ------------ | ------------------------ |
+| TX_THREAD    | ThreadX thread structure |
+| thread_stack | Stack of this thread     |
+| thread_name  | Name of this thread      |
+
+#### SCP Specific Registers
+T.B.D
+
+#### MCP Specific Registers
+T.B.D
+
+#### Watchdog Registers
+
+| Registers | Description                               |
+| --------- | ----------------------------------------- |
+| WDOGRIS   | Watchdog Raw Interrupt Status Register    |
+| WDOGMIS   | Watchdog Masked Interrupt Status Register |
+
 
 ### Exceptions
 

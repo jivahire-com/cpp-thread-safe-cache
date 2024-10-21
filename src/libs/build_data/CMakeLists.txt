@@ -6,16 +6,9 @@ message("Generating Build Metadata")
 if (DEFINED ENV{BUILD_BUILDNUMBER})
 
   string(REPLACE "." ";" VERSION_LIST $ENV{BUILD_BUILDNUMBER})
-  list(LENGTH VERSION_LIST VERSION_LIST_COUNT)
-  # Silibs pipeline utilizes a build number format denoted by X.Y
-  if(VERSION_LIST_COUNT GREATER 2)
-    set(BUILD_NUM_INDEX 3)
-  else()
-    set(BUILD_NUM_INDEX 1)
-  endif()
 
-  # message(STATUS "The number of items in VERSION_LIST is: ${BUILD_NUM_INDEX}")
-  list(GET VERSION_LIST ${BUILD_NUM_INDEX} BUILD)
+  message(STATUS "VERSION_LIST: ${VERSION_LIST}")
+  list(GET VERSION_LIST -1 BUILD)
 
   if (NOT DEFINED BUILD)
     set(BUILD ${PROJECT_VERSION_TWEAK})

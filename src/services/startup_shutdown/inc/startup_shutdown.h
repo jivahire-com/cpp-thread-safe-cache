@@ -32,6 +32,12 @@ enum STARTUP_SHUTDOWN_REQUEST_IDS
     STARTUP_REQUEST_START_PHASE_ASYNC,
 };
 
+typedef enum _sos_stage_category_t
+{
+    BOOT_STAGE,
+    SHUTDOWN_STAGE
+} sos_stage_category_t;
+
 typedef struct _startup_ssi_registration_t
 {
     FPFW_LIST_ENTRY list_entry;
@@ -46,10 +52,21 @@ typedef struct _startup_register_ssi_request
     pstartup_ssi_registration_t p_registration; // pointer to registration which should remain available after init (static)
 } startup_register_ssi_request, *pstartup_register_ssi_request;
 
+typedef struct _sos_stage_timeout_t
+{
+    sos_stage_category_t stage_category;
+    union
+    {
+        ssi_startup_stage_t boot;
+        ssi_shutdown_type_t shutdown;
+    } operation_stage;
+    uint32_t timeout_ms;
+} sos_stage_timeout_t;
+
 typedef struct _startup_reset_timeout_request_t
 {
     DFWK_SYNC_REQUEST_HEADER header;
-    uint32_t timeout_ms;
+    sos_stage_timeout_t timeout;
 } startup_reset_timeout_request_t, *pstartup_reset_timeout_request_t;
 
 typedef struct _startup_start_phase_request_t
@@ -87,16 +104,15 @@ int32_t sos_register_ssi(PDFWK_INTERFACE_HEADER p_interface,
                          PDFWK_INTERFACE_HEADER p_ssi_interface);
 
 /**
- *  Function to request reset of the current stage's timeout.   This can be useful for overriding
- *  a default timeout AND for resetting the timeout in the case of retry.  The service will only increase
- *  current timeout, so timeout's shorter than remaining will be ignored.
+ *  Function to request reset of the current stage's timeout.   
  *
  *  @param p_interface The interface to the startup service
+ *  @param stage stage that caller want to override
  *  @param timeout The updated timeout.
  *
  *  @return true if supported
  */
-int32_t sos_reset_timeout(PDFWK_INTERFACE_HEADER p_interface, uint32_t timeout);
+int32_t sos_reset_timeout(PDFWK_INTERFACE_HEADER p_interface, sos_stage_timeout_t timeout);
 
 /**
  *  Function to send a synchronous or asynchronous phase start request

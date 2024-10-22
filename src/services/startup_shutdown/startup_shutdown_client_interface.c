@@ -40,13 +40,12 @@ int32_t sos_register_ssi(PDFWK_INTERFACE_HEADER p_interface, pstartup_ssi_regist
     return DfwkInterfaceSendSync(p_interface, &request.header);
 }
 
-int32_t sos_reset_timeout(PDFWK_INTERFACE_HEADER p_interface, uint32_t timeout)
+int32_t sos_reset_timeout(PDFWK_INTERFACE_HEADER p_interface, sos_stage_timeout_t timeout)
 {
     FPFW_RUNTIME_ASSERT(p_interface != NULL);
     startup_reset_timeout_request_t request;
     request.header.RequestType = STARTUP_RESET_TIMEOUT_SYNC;
-    /* interface will default to true if this request is not handled/supported */
-    request.timeout_ms = timeout;
+    request.timeout = timeout;
     return DfwkInterfaceSendSync(p_interface, &request.header);
 }
 

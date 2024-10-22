@@ -16,6 +16,7 @@
 #include <DfwkHost.h>
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
+#include <bug_check.h>
 #include <debug.h>
 #include <fpfw_init.h>
 #include <stdint.h>
@@ -34,6 +35,7 @@
 #define SOS_EVENT_NAME  "SSI flags"
 
 #define PHASE_INDEX_NOT_FOUND (-1)
+#define MS_TO_TX_TICKS(ms)    (((ms)*TX_TIMER_TICKS_PER_SECOND) / 1000)
 /*------------- Typedefs -----------------*/
 typedef struct
 {
@@ -130,18 +132,32 @@ void sos_notify_ssi_shutdown(psos_service_context_t p_context, ssi_shutdown_type
     }
 }
 
-void wait_ssi_complete()
+void wait_ssi_complete(sos_stage_timeout_t current_stage)
 {
-    // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1821526/
-    //       implement timeout
     ULONG flags = 0;
-    // we want all flags to be set
+
+    if (current_stage.stage_category == BOOT_STAGE)
+    {
+        current_stage.timeout_ms = sos_boot_timeout(current_stage);
+    }
+    else if (current_stage.stage_category == SHUTDOWN_STAGE)
+    {
+        current_stage.timeout_ms = sos_shutdown_timeout(current_stage);
+    }
+    else
+    {
+        current_stage.timeout_ms = DEFAULT_SOS_TIMEOUT_MS;
+    }
 
     SOS_LOG_TRACE("SSI completion - Expected flags: %lx", s_sos_thread_ctx.expected_complete_flags);
-    int status =
-        tx_event_flags_get(&s_sos_thread_ctx.ssi_flags, s_sos_thread_ctx.expected_complete_flags, TX_AND_CLEAR, &flags, TX_WAIT_FOREVER);
+    int status = tx_event_flags_get(&s_sos_thread_ctx.ssi_flags,
+                                    s_sos_thread_ctx.expected_complete_flags,
+                                    TX_AND_CLEAR,
+                                    &flags,
+                                    MS_TO_TX_TICKS(current_stage.timeout_ms));
     SOS_LOG_TRACE("Received flags: %lx", flags);
-    FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);
+
+    BUG_ASSERT_PARAM((status == TX_SUCCESS), status, TX_SUCCESS);
 }
 
 void sos_notify_ssi_boot_stage_and_wait(psos_service_context_t p_context,
@@ -152,7 +168,9 @@ void sos_notify_ssi_boot_stage_and_wait(psos_service_context_t p_context,
     FPFW_RUNTIME_ASSERT(p_context != NULL);
 
     sos_notify_ssi_boot_stage(p_context, stage, startup_type, start);
-    wait_ssi_complete();
+
+    sos_stage_timeout_t current_stage = {.stage_category = BOOT_STAGE, .operation_stage.boot = stage};
+    wait_ssi_complete(current_stage);
 }
 
 void sos_worker_thread_function(ULONG service_ctx)
@@ -230,7 +248,9 @@ void sos_worker_thread_function(ULONG service_ctx)
             sos_notify_ssi_shutdown(p_sos_ctx, message.data.shutdown_type);
 
             // wait for responses
-            wait_ssi_complete();
+            sos_stage_timeout_t current_stage = {.stage_category = SHUTDOWN_STAGE,
+                                                 .operation_stage.shutdown = message.data.shutdown_type};
+            wait_ssi_complete(current_stage);
 
             if (message.data.shutdown_type != AP_WARM_RESET)
             {

@@ -115,13 +115,12 @@ int32_t sos_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER p_request)
     break;
     case STARTUP_RESET_TIMEOUT_SYNC: {
         pstartup_reset_timeout_request_t p_sos_request = (pstartup_reset_timeout_request_t)p_request;
-        SOS_LOG_INFO("SSI timeout reset received, %lums", (long unsigned int)p_sos_request->timeout_ms);
-        // TODO:  https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1821526/
-        // if timeout > current remaining timeout, update to value passed in.  useful for retries, etc.
+        sos_core_override_timeout(p_sos_request);
     }
     break;
-    /* Synchronous request to initiate a start phase (no callback when complete)*/
+
     case STARTUP_REQUEST_START_PHASE_SYNC: {
+        /* Synchronous request to initiate a start phase (no callback when complete)*/
         pstartup_start_phase_request_t p_startup_request = (pstartup_start_phase_request_t)p_request;
         sos_queue_start_phase(p_startup_request->boot_type, p_startup_request->stage, NULL);
     }

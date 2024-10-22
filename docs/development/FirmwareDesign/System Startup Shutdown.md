@@ -162,9 +162,20 @@ sequenceDiagram
     SS ->> SS: Reset
 ```
 
+### Timeout
+
+The default timeout for each stage in the Startup and Shutdown sequence is set to 120000ms. For a detailed review of all stages, please see [this](https://dev.azure.com/AzureCSI/Woodinville/_git/Kingsgate.MSCP?path=/src/services/startup_shutdown/startup_shutdown_scp.c&version=GBmain&line=32&lineEnd=43&lineStartColumn=1&lineEndColumn=94&lineStyle=plain&_a=contents). To modify the timeout value for individual stages, the sos_reset_timeout() API can be utilized. Below sample code shows how to override timeout value of STARTUP_AP_SOC_POWER_INIT stage on Boot phase from DEFAULT value to 60 sec.
+
+```c
+    // p_sos_interface is stored fpfw_init_get_handle("ssi_int") from component init
+    sos_stage_timeout_t override_stage = { .stage_category = BOOT_STAGE, .operation_stage.boot = STARTUP_AP_SOC_POWER_INIT, .timeout_ms = 60*1000 };
+    sos_reset_timeout((void*)p_sos_interface, override_stage);
+```
+
 ### Synchronization
 
 It is [TBD](https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1821528/) which boot phases or stages need to be synchronized with secondary cores and how this will be done.  It's entirely possible for a registered SSI to force the synchronization before completing a request as well as possible that the service could implement the synchronization with a remote copy of the service.
+
 
 ### Service Core-Specific Config
 
@@ -177,7 +188,7 @@ Two interfaces are defined.  One interface to be used to interact with the servi
 | Service DFWK API   | S/A | Description                                           |
 | -----------        | -- | ----------------------------------------------------- |
 | sos_register_ssi()  | Sync  | Used to register a participating driver's SSI             |
-| sos_reset_timeout() | Sync  | Used to reset the timeout timer on the current boot stage |
+| sos_reset_timeout() | Sync  | Used to reset/override timeout value on requested boot stage |
 | sos_start_phase()   | Sync or Async | Used to queue startup boot phases |
 | sos_shutdown()      | Async | Request a shutdown or reset                               |
 

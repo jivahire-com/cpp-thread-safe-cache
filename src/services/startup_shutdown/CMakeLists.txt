@@ -42,6 +42,8 @@ set(STARTUP_COMMON_LIBS
     ms::build_data
     ms::lib::threadx
     ms::lib::debug
+    ms::lib::error_codes
+    ms::lib::crash_dump
     ms::client_interface::startup_shutdown
     silibs::idhw
     silibs::idsw

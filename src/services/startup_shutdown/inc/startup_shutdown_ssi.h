@@ -51,7 +51,7 @@ typedef enum _ssi_startup_stage
     STARTUP_HAFNIUM_LOAD,
     STARTUP_RMM_LOAD,
     STARTUP_SPMC_LOAD,
-    STARTUP_PRIMARY_AP_CORE_BOOT,
+    STARTUP_PRIMARY_AP_CORE_BOOT
 } ssi_startup_stage_t;
 
 /**

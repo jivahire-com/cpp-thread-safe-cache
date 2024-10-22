@@ -114,13 +114,14 @@ SOS_TEST(sos_register_ssi, NULL, NULL)
 SOS_TEST(sos_reset_timeout, NULL, NULL)
 {
     sos_interface_t test_interface;
+    sos_stage_timeout_t test_timeout;
 
     expect_value(__wrap_DfwkInterfaceSendSync, Interface, &test_interface.header);
     expect_any(__wrap_DfwkInterfaceSendSync, Request);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
 
     // call the function
-    assert_int_equal(sos_reset_timeout(&test_interface.header, 0), DFWK_SUCCESS);
+    assert_int_equal(sos_reset_timeout(&test_interface.header, test_timeout), DFWK_SUCCESS);
 
     // check observable updates
     assert_int_equal(s_sync_header.RequestType, STARTUP_RESET_TIMEOUT_SYNC);

@@ -44,6 +44,7 @@ sos_service_context_t s_test_service_ctx = {};
 // Mocks
 //
 extern "C" {
+unsigned __real_sos_core_boot_stage_count();
 // mocks for ThreadX (tx) APIs
 int32_t __wrap__txe_thread_create(TX_THREAD* thread_ptr,
                                   CHAR* name_ptr,
@@ -178,9 +179,9 @@ extern void __real_FpFwListInsertTail(PFPFW_LIST_HANDLE list, PFPFW_LIST_ENTRY n
 
 #define TEST_STAGE_COUNT (3)
 startup_shutdown_boot_stage_t test_stages[TEST_STAGE_COUNT] = {
-    {(ssi_startup_stage_t)1, (ssi_startup_stage_t)1, 0, false, false},
-    {(ssi_startup_stage_t)2, (ssi_startup_stage_t)2, 0, false, false},
-    {(ssi_startup_stage_t)3, (ssi_startup_stage_t)3, 0, false, false}};
+    {(ssi_startup_stage_t)1, (ssi_startup_stage_t)1, 100, false, false},
+    {(ssi_startup_stage_t)2, (ssi_startup_stage_t)2, 100, false, false},
+    {(ssi_startup_stage_t)3, (ssi_startup_stage_t)3, 100, false, false}};
 
 // test for sos_queue_find_phase
 SOS_TEST(sos_queue_find_phase, NULL, NULL)
@@ -303,14 +304,20 @@ SOS_TEST(sos_notify_ssi_shutdown, NULL, NULL)
     }
 }
 
-void setup_wait_ssi_complete_expectations()
+void setup_wait_ssi_complete_expectations(ssi_startup_stage_t test_stage)
 {
+    #define MS_TO_TX_TICKS(ms)    (((ms)*TX_TIMER_TICKS_PER_SECOND) / 1000)
+
+    unsigned timeout = 0;
+
+    timeout = sos_boot_timeout(sos_stage_timeout_t{.stage_category = BOOT_STAGE, .operation_stage.boot = test_stage});
+
     // expectations for ThreadX APIs
     expect_not_value(__wrap__txe_event_flags_get, group_ptr, NULL);
     expect_any(__wrap__txe_event_flags_get, requested_flags);
     expect_value(__wrap__txe_event_flags_get, get_option, TX_AND_CLEAR);
     expect_not_value(__wrap__txe_event_flags_get, actual_flags_ptr, NULL);
-    expect_value(__wrap__txe_event_flags_get, wait_option, TX_WAIT_FOREVER);
+    expect_value(__wrap__txe_event_flags_get, wait_option, MS_TO_TX_TICKS(timeout));
     will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
 }
 
@@ -320,11 +327,16 @@ SOS_TEST(sos_notify_ssi_boot_stage_and_wait, NULL, NULL)
     ssi_startup_stage_t test_stage = STARTUP_MCP_LOAD;
     ssi_startup_type_t test_boot_type = COLD_BOOT;
 
+    will_return_always(__wrap_sos_core_boot_stage_count, __real_sos_core_boot_stage_count());
+
+    sos_stage_timeout_t timeout = { .stage_category = BOOT_STAGE, .operation_stage.boot = test_stage, .timeout_ms = 4321 };
+    sos_boot_timeout_override(timeout);
+
     // setup expectations for complete notification
     setup_expectations_for_boot_stage_complete(test_stage, test_boot_type);
 
     // setup expectations for wait
-    setup_wait_ssi_complete_expectations();
+    setup_wait_ssi_complete_expectations(test_stage);
 
     // call the function
     sos_notify_ssi_boot_stage_and_wait(&s_test_service_ctx, test_stage, test_boot_type, false);

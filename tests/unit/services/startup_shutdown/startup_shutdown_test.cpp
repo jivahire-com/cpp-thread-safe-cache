@@ -44,6 +44,10 @@ sos_service_context_t* sp_sos_service_context;
 // Mocks
 //
 extern "C" {
+
+unsigned __real_sos_core_boot_stage_count();
+const startup_shutdown_boot_stage_t* __real_sos_core_boot_stages();
+
 // wrapper function that checks expected values for the incoming parameters
 void __wrap_DfwkInterfaceInitialize(PDFWK_INTERFACE_HEADER Interface,
                                     PDFWK_DEVICE_HEADER Device,
@@ -306,12 +310,19 @@ SOS_TEST(dispatch_sync_STARTUP_REGISTER_SSI_SYNC, NULL, NULL)
 
 SOS_TEST(dispatch_sync_STARTUP_RESET_TIMEOUT_SYNC, NULL, NULL)
 {
-#define TEST_TIMEOUT 100
+#define TEST_TIMEOUT 1234
+
+    unsigned count = __real_sos_core_boot_stage_count();
+    will_return_always(__wrap_sos_core_boot_stage_count, count);
+
+    sos_stage_timeout_t test_timeout = { .stage_category = BOOT_STAGE,
+                                         .operation_stage.boot = STARTUP_MCP_LOAD,
+                                         .timeout_ms = TEST_TIMEOUT };
 
     startup_reset_timeout_request_t test_request = {};
     test_request.header.RequestType = STARTUP_RESET_TIMEOUT_SYNC;
-    test_request.timeout_ms = TEST_TIMEOUT;
-
+    test_request.timeout = test_timeout;
+    
     sos_interface_t test_interface = {};
     test_request.header.OwningInterface = &test_interface.header;
 
@@ -325,6 +336,15 @@ SOS_TEST(dispatch_sync_STARTUP_RESET_TIMEOUT_SYNC, NULL, NULL)
     if (s_dispatch_routine_sync)
     {
         s_dispatch_routine_sync(&test_request.header);
+    }
+
+    for (unsigned int idx = 0; idx < __real_sos_core_boot_stage_count(); idx++)
+    {
+        if (__real_sos_core_boot_stages()[idx].stage == test_request.timeout.operation_stage.boot)
+        {
+            assert_int_equal(__real_sos_core_boot_stages()[idx].timeout_ms, TEST_TIMEOUT);
+            break;
+        }
     }
 }
 

@@ -16,9 +16,9 @@
 #include <fpfw_cfg_mgr.h>
 #include <idsw_kng.h>
 #include <kng_soc_constants.h> // for NUM_AP_CORES_PER_DIE
-#include <silibs_common.h> // for ARRAY_SIZE
-#include <stdbool.h>       // for false, true
-#include <stddef.h>        // for NULL
+#include <silibs_common.h>     // for ARRAY_SIZE
+#include <stdbool.h>           // for false, true
+#include <stddef.h>            // for NULL
 
 /*------------- Typedefs -----------------*/
 

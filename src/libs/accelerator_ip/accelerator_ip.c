@@ -332,7 +332,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
     /*
     TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023638/
     How do we handle SDM firmware download in SCP warm boot scenario?
-     */
+    */
     info_print("%s: Invoking accel fw download\n", __func__);
     accel_fw_download(p_ss_ctxt, accel_type);
 /**

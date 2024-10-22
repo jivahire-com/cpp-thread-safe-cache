@@ -130,7 +130,7 @@ Function Write-FPGAFlash(
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
         Write-Host -ForegroundColor Blue "Programming SoC Flash . . ."
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-        echo "n" | plink -ssh $user@${ip} -pw $pw bios-updater -mode fwupdate -file $dest/$file
+        echo "n" | plink -ssh $user@${ip} -pw $pw bios-updater -mode fwupdate -file $dest/$file -index 0
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
     }
     # Skip if unknown config or SVP

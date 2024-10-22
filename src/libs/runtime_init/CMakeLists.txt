@@ -40,6 +40,7 @@ add_library(${TARGET}
         icc_accel_mbx_init.c
         icc_transport_init/scp_icc_mhu_trans_init.c
         i3c_controller_init.c
+        i3c_controller_scp_cli_init.c
         mesh_init.c
         mesh_scp_cli_init.c
         ioss_init.c
@@ -103,6 +104,7 @@ target_link_libraries(
         ms::lib::gtimer
         ms::lib::hsp_firmware_headers
         ms::lib::i3c_controller
+        ms::lib::i3c_controller::cli
         ms::lib::icc::cli
         ms::lib::icc_platform_defines
         ms::lib::mesh

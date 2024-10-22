@@ -1,7 +1,7 @@
 //
 // Copyright (c) Microsoft Corporation. All rights reserved.
 //
-
+// TODO: Rename the Header file to be ddr_manager_temp_conversion.h
 /**
  * @file ddr_manager_i3c.h
  * DDR Manager I3C APIs
@@ -75,9 +75,12 @@ typedef enum
  *  @return
  *      status - Return status
  */
+// TODO: Move below API to a Private API section
 int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manager_i3c_temperature_t* ts_scaled_celsius);
 
 /**
  *  API to initialize the DDR I3C interface
  */
 void ddr_manager_i3c_init();
+
+ddr_manager_i3c_temperature_t ts_convert_temperature(uint8_t ts_low, uint8_t ts_high);

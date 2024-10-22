@@ -48,4 +48,8 @@ mock_target(${TARGET}
     nvic_irq_set_isr_with_param
     nvic_irq_clear_pending
     nvic_irq_enable
+    ddr_i3c_interface_set_instance
+    ddr_i3c_interface_power_up_pmic_on
+    ddr_i3c_interface_read_dimms_detected
+    ddr_i3c_interface_read_dimm_capacity
 )

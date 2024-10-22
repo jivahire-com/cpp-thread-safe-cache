@@ -22,8 +22,9 @@
 #include <silibs_status.h>     // for SILIBS_SUCCESS
 #include <stdbool.h>           // for true
 #include <stdint.h>            // for uint8_t
-#include <stdio.h>             // for DEBUG_PRINT
+#include <stdio.h>             // for CRITICAL_PRINT
 #include <system_info.h>
+#include <tx_api.h>
 
 /*------------- Defines -----------------*/
 #define SCP_I3C0_CSR_ADDRESS (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_I3C_0_ADDRESS)
@@ -95,7 +96,7 @@ static void i3c_controller_ibi_callback(uint8_t device_address, uint8_t ibi_type
     UNUSED(device_address);
     UNUSED(ibi_type);
 
-    DEBUG_PRINT(MOD_NAME "%s - Begin", __func__);
+    CRITICAL_PRINT(MOD_NAME "%s - Begin", __func__);
 }
 
 /*
@@ -106,7 +107,26 @@ static void i3c_controller_notification_callback(uint8_t notification, void* con
     UNUSED(context);
     UNUSED(notification);
 
-    DEBUG_PRINT(MOD_NAME "%s - %d", __func__, (int)notification);
+    CRITICAL_PRINT(MOD_NAME "%s - %d", __func__, (int)notification);
+}
+
+bool is_i3c_supported()
+{
+    bool is_supported = false;
+    KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
+    switch (platform_id)
+    {
+    case PLATFORM_FPGA_LARGE:
+    case PLATFORM_FPGA_LARGE_RVP:
+    case PLATFORM_SVP_SIM:
+    case PLATFORM_RVP_EVT_SILICON:
+        is_supported = true;
+        break;
+    default:
+        is_supported = false;
+        break;
+    }
+    return is_supported;
 }
 
 /*
@@ -126,18 +146,15 @@ int i3c_controller(uint8_t die_num)
     static int unused_parameter_not_null = MEANINGLESS_NUMBER;
 
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
-    DEBUG_PRINT(MOD_NAME "%s Start, die_num: [%u]\n", __func__, die_num);
+    CRITICAL_PRINT(MOD_NAME "%s Start, die_num: [%u]\n", __func__, die_num);
 
     KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
-    if ((platform_id == PLATFORM_FPGA_LARGE) || (platform_id == PLATFORM_FPGA_LARGE_RVP))
-    {
-        DEBUG_PRINT(MOD_NAME "I3C Controller init for FPGA platform not supported yet\n");
-        goto exit;
-    }
-    else if (platform_id == PLATFORM_SVP_SIM)
+
+    if (is_i3c_supported())
     {
         uint8_t index_i3c0 = 0x0;
         uint8_t index_i3c1 = 0x0;
+        uint8_t plat_num_of_target_devices = NUM_OF_TARGET_DEVICES;
         uint32_t intr_status = 0;
         const dat_entry_t* i3c_dev_table = NULL;
 
@@ -153,9 +170,13 @@ int i3c_controller(uint8_t die_num)
             index_i3c1 = KNG_SOC_DIE_1_I3C1;
             i3c_dev_table = i3c_dev_table_0_2;
         }
-        FPFW_RUNTIME_ASSERT(i3c_dev_table != NULL);
 
-        // GPIO AFM Init
+        // Update only for FPGA and NOT FPGA_RVP
+        if (platform_id == PLATFORM_FPGA_LARGE)
+        {
+            i3c_dev_table = i3c_dev_table_0_2;
+        }
+        FPFW_RUNTIME_ASSERT(i3c_dev_table != NULL);
 
         // Initialize I3C Config Struct to Pass into I3C Library
         i3c_config_t i3c_config0 = {
@@ -187,7 +208,7 @@ int i3c_controller(uint8_t die_num)
             status = i3c_initialize(i3c_instance[i], &i3c_configs[i]);
             if (status != SILIBS_SUCCESS)
             {
-                DEBUG_PRINT(MOD_NAME "Error initializing I3C%d Master Controller\n", i);
+                CRITICAL_PRINT(MOD_NAME "Error initializing I3C%d Master Controller\n", i);
                 // Error or BUGCHECK
                 goto exit;
             }
@@ -203,32 +224,11 @@ int i3c_controller(uint8_t die_num)
             FPFW_RUNTIME_ASSERT(intr_status == 0);
 
             // Configure the Device Address Table (DAT)
-            status = i3c_master_dat_config(i3c_instance[i], i3c_dev_table, NUM_OF_SLAVE_DEVICES);
+            status = i3c_master_dat_config(i3c_instance[i], i3c_dev_table, plat_num_of_target_devices);
             if (status != SILIBS_SUCCESS)
             {
                 // Error in configuring DAT
-                DEBUG_PRINT(MOD_NAME "Error initializing I3C%d Device Address Table\n", i);
-                // Error or BUGCHECK
-                goto exit;
-            }
-
-            // Send PMIC ON
-            // i3c_cmd_t s_i3c_cmd = {0};
-            // status = ddr_i3c_interface_power_up_pmic_on(i3c_instance[i], &s_i3c_cmd);
-            // if (status != SILIBS_SUCCESS)
-            // {
-            //     // Error in sending PMIC ON
-            //     DEBUG_PRINT(MOD_NAME "Error in sending PMIC ON\n");
-            //     // Error or BUGCHECK
-            //     goto exit;
-            // }
-
-            // Set all addresses to static addresses
-            status = i3c_master_set_aasa(i3c_instance[i], I3C_SPEED_I2C_FM, NULL, NULL);
-            if (status != SILIBS_SUCCESS)
-            {
-                // Error in setting all addresses to static addresses
-                DEBUG_PRINT(MOD_NAME "Error in setting all addresses to static addresses\n");
+                CRITICAL_PRINT(MOD_NAME "Error initializing I3C%d Device Address Table\n", i);
                 // Error or BUGCHECK
                 goto exit;
             }
@@ -236,13 +236,75 @@ int i3c_controller(uint8_t die_num)
             // Register IBI handler
             i3c_master_register_ibi_handler(i3c_instance[i], i3c_controller_ibi_callback, NULL);
         }
+        uint8_t num_i3c_configs_platform = NUM_I3C_CONFIGS;
+        // Initialize I3C Interface
+        if (platform_id == PLATFORM_FPGA_LARGE)
+        {
+            ddr_i3c_interface_set_instance(get_i3c0(), NULL);
+            num_i3c_configs_platform = 1;
+        }
+        else
+        {
+            ddr_i3c_interface_set_instance(get_i3c0(), get_i3c1());
+        }
+
+        // Send PMIC ON
+        i3c_cmd_t s_i3c_cmd = {0};
+        for (uint8_t i = 0; i < num_i3c_configs_platform; i++)
+        {
+            status = ddr_i3c_interface_power_up_pmic_on(i3c_instance[i], &s_i3c_cmd);
+            if (status != SILIBS_SUCCESS)
+            {
+                // Error in sending PMIC ON
+                CRITICAL_PRINT(MOD_NAME "Error in sending PMIC ON, I3C 0x%x\n", i);
+                // Error or BUGCHECK
+                goto exit;
+            }
+            // Set all addresses to static addresses
+            status = i3c_master_set_aasa(i3c_instance[i], I3C_SPEED_I2C_FM, NULL, NULL);
+            if (status != SILIBS_SUCCESS)
+            {
+                // Error in setting all addresses to static addresses
+                CRITICAL_PRINT(MOD_NAME "Error in setting all addresses to static addresses, I3C 0x%x\n", i);
+                // Error or BUGCHECK
+                goto exit;
+            }
+        }
+        uint8_t dimm_cap_per_ch = 0x0;
+        uint8_t dimm_sku = 0x0;
+        uint32_t ddrss_en = 0;
+        i3c_cmd_t s_i3c_cmd_test = {0};
+
+        SLEEP_US(DELAY_10_MS);
+        // Layout of DDR-I3C Target on SVP is not supported
+        if (platform_id != PLATFORM_SVP_SIM)
+        {
+            status = ddr_i3c_interface_read_dimms_detected(&s_i3c_cmd_test, &ddrss_en);
+            if (status != SILIBS_SUCCESS)
+            {
+                CRITICAL_PRINT(MOD_NAME "Error in reading DDR DIMMs Detected, status 0x%x\n", status);
+                // Error or BUGCHECK
+                goto exit;
+            }
+            SLEEP_US(DELAY_10_MS);
+            CRITICAL_PRINT(MOD_NAME "DDR DIMM Detected: 0x%x\n", ddrss_en);
+            status = ddr_i3c_interface_read_dimm_capacity(&s_i3c_cmd_test, ddrss_en, &dimm_cap_per_ch, &dimm_sku);
+            if (status != SILIBS_SUCCESS)
+            {
+                CRITICAL_PRINT(MOD_NAME "Error in reading DDR DIMM Capacity and SKU, status 0x%x\n", status);
+                // Error or BUGCHECK
+                goto exit;
+            }
+            SLEEP_US(DELAY_10_MS);
+            CRITICAL_PRINT(MOD_NAME "DDR DIMM Capacity: 0x%x, SKU: 0x%x\n", dimm_cap_per_ch, dimm_sku);
+        }
     }
     else
     {
-        DEBUG_PRINT(MOD_NAME "I3C Controller init is not supported yet on the platform\n");
+        CRITICAL_PRINT(MOD_NAME "I3C Controller init is not supported yet on the platform\n");
     }
 
 exit:
-    DEBUG_PRINT(MOD_NAME "%s End, die_num: [%u], status 0x%x\n", __func__, die_num, status);
+    CRITICAL_PRINT(MOD_NAME "%s End, die_num: [%u], status 0x%x\n", __func__, die_num, status);
     return status;
 }

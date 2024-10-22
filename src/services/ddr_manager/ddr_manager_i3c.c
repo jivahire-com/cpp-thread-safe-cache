@@ -28,7 +28,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-static ddr_manager_i3c_temperature_t ts_convert_temperature(uint8_t ts_low, uint8_t ts_high)
+ddr_manager_i3c_temperature_t ts_convert_temperature(uint8_t ts_low, uint8_t ts_high)
 {
     uint8_t ts_integer = 0;
     uint8_t ts_fraction = 0;
@@ -130,8 +130,8 @@ int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manag
 
     i3c_instance_t* i3c_instance;
     KNG_DIE_ID die_num = idhw_get_die_id();
-    // DIE0.I3C0: DDRSS 1/3/5
-    // DIE0.I3C1: DDRSS 0/2/4
+    // DIE0.I3C0: DDRSS 1/5/3
+    // DIE0.I3C1: DDRSS 0/4/2
     // DIE1.I3C0: DDRSS 6/8/10
     // DIE1.I3C1: DDRSS 7/9/11
     if (die_num == DIE_0)

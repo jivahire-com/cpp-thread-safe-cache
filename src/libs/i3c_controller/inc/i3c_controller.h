@@ -17,7 +17,7 @@
 #define MASTER_DYNAMIC_ADDRESS_1    0x31
 
 #define I3C_CORE_CLOCK              200
-#define NUM_OF_SLAVE_DEVICES        15
+#define NUM_OF_TARGET_DEVICES        15
 
 #define NUM_I3C_CONFIGS             2
 #define NUM_I3C_INSTANCES           2
@@ -36,7 +36,7 @@ typedef enum {
 // The Schematic folder shows the addresses of the SPD I3C Targets in the DDR DIMM and the layout connections
 // The PMIC, RCD, TS0, and TS1 I3C Targets are derived from the JESD Spec
 // JESD Spec - https://www.jedec.org/standards-documents/docs/jesd251
-static const dat_entry_t i3c_dev_table_0_2[NUM_OF_SLAVE_DEVICES] = {
+static const dat_entry_t i3c_dev_table_0_2[NUM_OF_TARGET_DEVICES] = {
     {0x50, 0x50},  //  DDR DIMM-A OR DIMM-G I3C SPD Hub
     {0x48, 0x48},  //  DDR DIMM-A OR DIMM-G I3C PMIC
     {0x58, 0x58},  //  DDR DIMM-A OR DIMM-G I3C RCD
@@ -56,12 +56,12 @@ static const dat_entry_t i3c_dev_table_0_2[NUM_OF_SLAVE_DEVICES] = {
     {0x32, 0x32},  //  DDR DIMM-C OR DIMM-J I3C TS1
 };
 
-static const dat_entry_t i3c_dev_table_3_5[NUM_OF_SLAVE_DEVICES] = {
-    {0x53, 0x53},  //  DDR DIMM-D OR DIMM-M I3C SPD Hub
-    {0x4B, 0x4B},  //  DDR DIMM-D OR DIMM-M I3C PMIC
-    {0x5B, 0x5B},  //  DDR DIMM-D OR DIMM-M I3C RCD
-    {0x13, 0x13},  //  DDR DIMM-D OR DIMM-M I3C TS0
-    {0x33, 0x33},  //  DDR DIMM-D OR DIMM-M I3C TS1
+static const dat_entry_t i3c_dev_table_3_5[NUM_OF_TARGET_DEVICES] = {
+    {0x53, 0x53},  //  DDR DIMM-D OR DIMM-K I3C SPD Hub
+    {0x4B, 0x4B},  //  DDR DIMM-D OR DIMM-K I3C PMIC
+    {0x5B, 0x5B},  //  DDR DIMM-D OR DIMM-K I3C RCD
+    {0x13, 0x13},  //  DDR DIMM-D OR DIMM-K I3C TS0
+    {0x33, 0x33},  //  DDR DIMM-D OR DIMM-K I3C TS1
 
     {0x54, 0x54},  //  DDR DIMM-E OR DIMM-L I3C SPD Hub
     {0x4C, 0x4C},  //  DDR DIMM-E OR DIMM-L I3C PMIC
@@ -69,11 +69,11 @@ static const dat_entry_t i3c_dev_table_3_5[NUM_OF_SLAVE_DEVICES] = {
     {0x14, 0x14},  //  DDR DIMM-E OR DIMM-L I3C TS0
     {0x34, 0x34},  //  DDR DIMM-E OR DIMM-L I3C TS1
 
-    {0x55, 0x55},  //  DDR DIMM-F OR DIMM-K I3C SPD Hub
-    {0x4D, 0x4D},  //  DDR DIMM-F OR DIMM-K I3C PMIC
-    {0x5D, 0x5D},  //  DDR DIMM-F OR DIMM-K I3C RCD
-    {0x15, 0x15},  //  DDR DIMM-F OR DIMM-K I3C TS0
-    {0x35, 0x35},  //  DDR DIMM-F OR DIMM-K I3C TS1
+    {0x55, 0x55},  //  DDR DIMM-F OR DIMM-M I3C SPD Hub
+    {0x4D, 0x4D},  //  DDR DIMM-F OR DIMM-M I3C PMIC
+    {0x5D, 0x5D},  //  DDR DIMM-F OR DIMM-M I3C RCD
+    {0x15, 0x15},  //  DDR DIMM-F OR DIMM-M I3C TS0
+    {0x35, 0x35},  //  DDR DIMM-F OR DIMM-M I3C TS1
 };
 
 /*--------------- Includes ---------------*/
@@ -120,3 +120,10 @@ i3c_instance_t* get_i3c1();
  * @return int
  */
 int i3c_controller(uint8_t die_num);
+
+void ts_display_temperature(uint8_t ts_low, uint8_t ts_high, uint8_t* ts_integer, uint8_t* ts_fraction);
+
+i3c_instance_t* get_i3c0();
+i3c_instance_t* get_i3c1();
+
+

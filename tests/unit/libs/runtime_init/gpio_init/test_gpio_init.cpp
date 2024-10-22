@@ -89,8 +89,8 @@ void __wrap_FpFwCliRegisterTable(PFPFW_CLI_COMMAND pTable, size_t TableLength)
 
 int __wrap_gpio_afm_init(const gpio_afm_entry_t* gpio_afm_tbl, uint32_t num)
 {
-    assert_null(gpio_afm_tbl); // Expecting nullptr to use default configuration
-    assert_true(num == 0);     // Expecting 0 entries
+    assert_non_null(gpio_afm_tbl); // Expecting nullptr to use default configuration
+    assert_true(num > 0);     // Expecting 0 entries
 
     function_called();
 

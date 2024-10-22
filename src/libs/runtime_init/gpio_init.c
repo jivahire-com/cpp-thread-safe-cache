@@ -50,6 +50,18 @@ static const gpio_config_entry_t def_gpio_config_table_grp[] = {
      {.grp = {.grp_level = 0x0F, .grp_dir = 0x0D, .grp_int_enable = 0x10, .grp_int_lvl_edge = 0x00}}},
 };
 
+    // AFM Config for I3C
+static const gpio_afm_entry_t afmsel_gpio_table[] = {
+        {PADRING_SE_AFM_I3C0_SCL,
+        {{.pull_down = 0, .pull_up = 0, .drive_strength = 3, .slew_rate = 0, .schmitt_trigger = 0, .output_enable = 0, .afmsel = 1, .input_enable = 1}}},
+        {PADRING_SE_AFM_I3C0_SDA,
+        {{.pull_down = 0, .pull_up = 0, .drive_strength = 3, .slew_rate = 0, .schmitt_trigger = 0, .output_enable = 0, .afmsel = 1, .input_enable = 1}}},
+        {PADRING_SE_AFM_I3C1_SCL,
+        {{.pull_down = 0, .pull_up = 0, .drive_strength = 3, .slew_rate = 0, .schmitt_trigger = 0, .output_enable = 0, .afmsel = 1, .input_enable = 1}}},
+        {PADRING_SE_AFM_I3C1_SDA,
+        {{.pull_down = 0, .pull_up = 0, .drive_strength = 3, .slew_rate = 0, .schmitt_trigger = 0, .output_enable = 0, .afmsel = 1, .input_enable = 1}}},
+    };
+
 /*------------- Functions ----------------*/
 /**
  * @brief Initialize and configure GPIO registers.
@@ -61,12 +73,12 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver"))
     static gpio_init_config_t gpio_init_config;
 
     // Initialize GPIO
-    status = gpio_afm_init(NULL, 0);
+    status = gpio_afm_init(afmsel_gpio_table, ARRAY_SIZE(afmsel_gpio_table));
     FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
 
     if (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE || idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE_RVP)
     {
-        printf("Programming FPGA specific GPIO Config table (Supporting loopback of pins 6 and 7 on GPIO Bank 6) . . .\n\r)");
+        printf("Programming FPGA specific GPIO Config table (Supporting loopback of pins 6 and 7 on GPIO Bank 6) . . .\n");
         status = gpio_init(fpga_config_gpio_table, ARRAY_SIZE(fpga_config_gpio_table));
         gpio_init_config.gpio_config_table = fpga_config_gpio_table;
         gpio_init_config.table_size = ARRAY_SIZE(fpga_config_gpio_table);

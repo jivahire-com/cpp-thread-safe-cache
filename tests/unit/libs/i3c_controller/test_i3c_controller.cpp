@@ -154,6 +154,48 @@ nvic_status_t __wrap_nvic_irq_enable(uint32_t irq_num)
     return (NVIC_STATUS_SUCCESS);
 }
 
+void __wrap_ddr_i3c_interface_set_instance(i3c_instance_t *instance_0, i3c_instance_t *instance_1)
+{
+    check_expected_ptr(instance_0);
+    check_expected_ptr(instance_1);
+    function_called();
+}
+
+int32_t __wrap_ddr_i3c_interface_power_up_pmic(i3c_instance_t *instance, i3c_cmd_t *s_i3c_cmd)
+{
+    FPFW_UNUSED(s_i3c_cmd);
+    check_expected_ptr(instance);
+    function_called();
+    return 0;
+}
+
+int32_t __wrap_ddr_i3c_interface_power_up_pmic_on(i3c_instance_t *instance, i3c_cmd_t *s_i3c_cmd)
+{
+    FPFW_UNUSED(s_i3c_cmd);
+    check_expected_ptr(instance);
+    function_called();
+    return 0;
+}
+
+int32_t __wrap_ddr_i3c_interface_read_dimms_detected(i3c_cmd_t *s_i3c_cmd, uint32_t *ddrss_en)
+{
+    FPFW_UNUSED(s_i3c_cmd);
+    FPFW_UNUSED(ddrss_en);
+
+    function_called();
+    return 0;
+}
+
+int32_t __wrap_ddr_i3c_interface_read_dimm_capacity(i3c_cmd_t *s_i3c_cmd, uint8_t ddrss_index, uint8_t *data, uint8_t *dimm_sku)
+{
+    FPFW_UNUSED(s_i3c_cmd);
+    FPFW_UNUSED(ddrss_index);
+    FPFW_UNUSED(data);
+    FPFW_UNUSED(dimm_sku);
+    function_called();
+    return 0;
+}
+
 // Tests
 // Test when i3c_initialize fails for Instance 0
 TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_initialize_fail, setup_svp_platform, setup_undefined_platform)
@@ -233,7 +275,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_master_dat_config_fail, setup_s
     // i3c_master_dat_config
     return_i3c_master_dat_config = RETURN_I3C_FAIL;
     expect_value(__wrap_i3c_master_dat_config, instance, instance_0);
-    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_SLAVE_DEVICES);
+    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_TARGET_DEVICES);
     expect_function_call(__wrap_i3c_master_dat_config);
 
     // Call the function under test
@@ -246,13 +288,24 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_master_set_aasa_fail, setup_svp
 {
     uint8_t die_num = 0;
     i3c_instance_t* instance_0 = get_i3c0();
+    i3c_instance_t* instance_1 = get_i3c1();
     uint8_t index_i3c0 = 0x0;
+    uint8_t index_i3c1 = 0x0;
     index_i3c0 = KNG_SOC_DIE_0_I3C0;
+    index_i3c1 = KNG_SOC_DIE_0_I3C1;
     i3c_config_t i3c_config0 = {
         .register_base_addr = SCP_I3C0_CSR_ADDRESS,
         .instance_type = I3C_MASTER,
         .address = MASTER_DYNAMIC_ADDRESS_0,
         .index = index_i3c0,
+        .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
+        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+    };
+    i3c_config_t i3c_config1 = {
+        .register_base_addr = SCP_I3C1_CSR_ADDRESS,
+        .instance_type = I3C_MASTER,
+        .address = MASTER_DYNAMIC_ADDRESS_1,
+        .index = index_i3c1,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
         .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
     };
@@ -286,8 +339,60 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_master_set_aasa_fail, setup_svp
 
     // i3c_master_dat_config
     expect_value(__wrap_i3c_master_dat_config, instance, instance_0);
-    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_SLAVE_DEVICES);
+    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_TARGET_DEVICES);
     expect_function_call(__wrap_i3c_master_dat_config);
+
+    // i3c_master_register_ibi_handler
+    expect_value(__wrap_i3c_master_register_ibi_handler, instance, instance_0);
+    expect_any(__wrap_i3c_master_register_ibi_handler, callback);
+    expect_any(__wrap_i3c_master_register_ibi_handler, context);
+    expect_function_call(__wrap_i3c_master_register_ibi_handler);
+
+    // Instance 1
+    // i3c_initialize
+    expect_value(__wrap_i3c_initialize, instance, instance_1);
+    expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config1.register_base_addr);
+    expect_value(__wrap_i3c_initialize, i3c_config->instance_type, i3c_config1.instance_type);
+    expect_value(__wrap_i3c_initialize, i3c_config->address, i3c_config1.address);
+    expect_value(__wrap_i3c_initialize, i3c_config->index, i3c_config1.index);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_core_clk_freq_in_mhz, i3c_config1.i3c_core_clk_freq_in_mhz);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_speed_in_khz, i3c_config1.i3c_speed_in_khz);
+    expect_function_call(__wrap_i3c_initialize);
+
+    // i3c_register_notification_callback
+    expect_value(__wrap_i3c_register_notification_callback, instance, instance_1);
+    expect_any(__wrap_i3c_register_notification_callback, callback);
+    expect_any(__wrap_i3c_register_notification_callback, context);
+    expect_function_call(__wrap_i3c_register_notification_callback);
+
+    // FPFwCoreInterruptRegisterCallback
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_1_INT);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c1_isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, UNUSED_NON_ZERO_MAGIC_NUMBER);
+
+    // FPFwCoreInterruptEnableVector
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_1_INT);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_I3C_CTRL_1_INT);
+
+    // i3c_master_dat_config
+    expect_value(__wrap_i3c_master_dat_config, instance, instance_1);
+    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_TARGET_DEVICES);
+    expect_function_call(__wrap_i3c_master_dat_config);
+
+    // i3c_master_register_ibi_handler
+    expect_value(__wrap_i3c_master_register_ibi_handler, instance, instance_1);
+    expect_any(__wrap_i3c_master_register_ibi_handler, callback);
+    expect_any(__wrap_i3c_master_register_ibi_handler, context);
+    expect_function_call(__wrap_i3c_master_register_ibi_handler);
+
+    // ddr_i3c_interface_set_instance
+    expect_value(__wrap_ddr_i3c_interface_set_instance, instance_0, instance_0);
+    expect_value(__wrap_ddr_i3c_interface_set_instance, instance_1, instance_1);
+    expect_function_call(__wrap_ddr_i3c_interface_set_instance);
+
+    // ddr_i3c_interface_power_up_pmic_on
+    expect_value(__wrap_ddr_i3c_interface_power_up_pmic_on, instance, instance_0);
+    expect_function_call(__wrap_ddr_i3c_interface_power_up_pmic_on);
 
     return_i3c_master_set_aasa = RETURN_I3C_FAIL;
     expect_value(__wrap_i3c_master_set_aasa, instance, instance_0);
@@ -356,15 +461,8 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0, setup_svp_platform, setup_undefined
 
     // i3c_master_dat_config
     expect_value(__wrap_i3c_master_dat_config, instance, instance_0);
-    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_SLAVE_DEVICES);
+    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_TARGET_DEVICES);
     expect_function_call(__wrap_i3c_master_dat_config);
-
-    // i3c_master_set_aasa
-    expect_value(__wrap_i3c_master_set_aasa, instance, instance_0);
-    expect_value(__wrap_i3c_master_set_aasa, i3c_speed, I3C_SPEED_I2C_FM);
-    expect_any(__wrap_i3c_master_set_aasa, callback);
-    expect_any(__wrap_i3c_master_set_aasa, context);
-    expect_function_call(__wrap_i3c_master_set_aasa);
 
     // i3c_master_register_ibi_handler
     expect_value(__wrap_i3c_master_register_ibi_handler, instance, instance_0);
@@ -400,8 +498,34 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0, setup_svp_platform, setup_undefined
 
     // i3c_master_dat_config
     expect_value(__wrap_i3c_master_dat_config, instance, instance_1);
-    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_SLAVE_DEVICES);
+    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_TARGET_DEVICES);
     expect_function_call(__wrap_i3c_master_dat_config);
+
+    // i3c_master_register_ibi_handler
+    expect_value(__wrap_i3c_master_register_ibi_handler, instance, instance_1);
+    expect_any(__wrap_i3c_master_register_ibi_handler, callback);
+    expect_any(__wrap_i3c_master_register_ibi_handler, context);
+    expect_function_call(__wrap_i3c_master_register_ibi_handler);
+
+    // ddr_i3c_interface_set_instance
+    expect_value(__wrap_ddr_i3c_interface_set_instance, instance_0, instance_0);
+    expect_value(__wrap_ddr_i3c_interface_set_instance, instance_1, instance_1);
+    expect_function_call(__wrap_ddr_i3c_interface_set_instance);
+
+    // ddr_i3c_interface_power_up_pmic_on
+    expect_value(__wrap_ddr_i3c_interface_power_up_pmic_on, instance, instance_0);
+    expect_function_call(__wrap_ddr_i3c_interface_power_up_pmic_on);
+
+    // i3c_master_set_aasa
+    expect_value(__wrap_i3c_master_set_aasa, instance, instance_0);
+    expect_value(__wrap_i3c_master_set_aasa, i3c_speed, I3C_SPEED_I2C_FM);
+    expect_any(__wrap_i3c_master_set_aasa, callback);
+    expect_any(__wrap_i3c_master_set_aasa, context);
+    expect_function_call(__wrap_i3c_master_set_aasa);
+
+    // ddr_i3c_interface_power_up_pmic_on
+    expect_value(__wrap_ddr_i3c_interface_power_up_pmic_on, instance, instance_1);
+    expect_function_call(__wrap_ddr_i3c_interface_power_up_pmic_on);
 
     // i3c_master_set_aasa
     expect_value(__wrap_i3c_master_set_aasa, instance, instance_1);
@@ -409,12 +533,6 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0, setup_svp_platform, setup_undefined
     expect_any(__wrap_i3c_master_set_aasa, callback);
     expect_any(__wrap_i3c_master_set_aasa, context);
     expect_function_call(__wrap_i3c_master_set_aasa);
-
-    // i3c_master_register_ibi_handler
-    expect_value(__wrap_i3c_master_register_ibi_handler, instance, instance_1);
-    expect_any(__wrap_i3c_master_register_ibi_handler, callback);
-    expect_any(__wrap_i3c_master_register_ibi_handler, context);
-    expect_function_call(__wrap_i3c_master_register_ibi_handler);
 
     // Call the function under test
     int status = i3c_controller(die_num);
@@ -476,15 +594,8 @@ TEST_FUNCTION(test_i3c_controller_svp_die_1, setup_svp_platform, setup_undefined
 
     // i3c_master_dat_config
     expect_value(__wrap_i3c_master_dat_config, instance, instance_0);
-    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_SLAVE_DEVICES);
+    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_TARGET_DEVICES);
     expect_function_call(__wrap_i3c_master_dat_config);
-
-    // i3c_master_set_aasa
-    expect_value(__wrap_i3c_master_set_aasa, instance, instance_0);
-    expect_value(__wrap_i3c_master_set_aasa, i3c_speed, I3C_SPEED_I2C_FM);
-    expect_any(__wrap_i3c_master_set_aasa, callback);
-    expect_any(__wrap_i3c_master_set_aasa, context);
-    expect_function_call(__wrap_i3c_master_set_aasa);
 
     // i3c_master_register_ibi_handler
     expect_value(__wrap_i3c_master_register_ibi_handler, instance, instance_0);
@@ -520,8 +631,34 @@ TEST_FUNCTION(test_i3c_controller_svp_die_1, setup_svp_platform, setup_undefined
 
     // i3c_master_dat_config
     expect_value(__wrap_i3c_master_dat_config, instance, instance_1);
-    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_SLAVE_DEVICES);
+    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_TARGET_DEVICES);
     expect_function_call(__wrap_i3c_master_dat_config);
+
+    // i3c_master_register_ibi_handler
+    expect_value(__wrap_i3c_master_register_ibi_handler, instance, instance_1);
+    expect_any(__wrap_i3c_master_register_ibi_handler, callback);
+    expect_any(__wrap_i3c_master_register_ibi_handler, context);
+    expect_function_call(__wrap_i3c_master_register_ibi_handler);
+
+    // ddr_i3c_interface_set_instance
+    expect_value(__wrap_ddr_i3c_interface_set_instance, instance_0, instance_0);
+    expect_value(__wrap_ddr_i3c_interface_set_instance, instance_1, instance_1);
+    expect_function_call(__wrap_ddr_i3c_interface_set_instance);
+
+    // ddr_i3c_interface_power_up_pmic_on
+    expect_value(__wrap_ddr_i3c_interface_power_up_pmic_on, instance, instance_0);
+    expect_function_call(__wrap_ddr_i3c_interface_power_up_pmic_on);
+
+    // i3c_master_set_aasa
+    expect_value(__wrap_i3c_master_set_aasa, instance, instance_0);
+    expect_value(__wrap_i3c_master_set_aasa, i3c_speed, I3C_SPEED_I2C_FM);
+    expect_any(__wrap_i3c_master_set_aasa, callback);
+    expect_any(__wrap_i3c_master_set_aasa, context);
+    expect_function_call(__wrap_i3c_master_set_aasa);
+
+    // ddr_i3c_interface_power_up_pmic_on
+    expect_value(__wrap_ddr_i3c_interface_power_up_pmic_on, instance, instance_1);
+    expect_function_call(__wrap_ddr_i3c_interface_power_up_pmic_on);
 
     // i3c_master_set_aasa
     expect_value(__wrap_i3c_master_set_aasa, instance, instance_1);
@@ -529,12 +666,6 @@ TEST_FUNCTION(test_i3c_controller_svp_die_1, setup_svp_platform, setup_undefined
     expect_any(__wrap_i3c_master_set_aasa, callback);
     expect_any(__wrap_i3c_master_set_aasa, context);
     expect_function_call(__wrap_i3c_master_set_aasa);
-
-    // i3c_master_register_ibi_handler
-    expect_value(__wrap_i3c_master_register_ibi_handler, instance, instance_1);
-    expect_any(__wrap_i3c_master_register_ibi_handler, callback);
-    expect_any(__wrap_i3c_master_register_ibi_handler, context);
-    expect_function_call(__wrap_i3c_master_register_ibi_handler);
 
     // Call the function under test
     int status = i3c_controller(die_num);
@@ -545,7 +676,126 @@ TEST_FUNCTION(test_i3c_controller_svp_die_1, setup_svp_platform, setup_undefined
 TEST_FUNCTION(test_i3c_controller_fpga_die_0, setup_fpga_platform, setup_undefined_platform)
 {
     uint8_t die_num = 0;
+    i3c_instance_t* instance_0 = get_i3c0();
+    i3c_instance_t* instance_1 = get_i3c1();
+    uint8_t index_i3c0 = 0x0;
+    uint8_t index_i3c1 = 0x0;
+    index_i3c0 = KNG_SOC_DIE_0_I3C0;
+    index_i3c1 = KNG_SOC_DIE_0_I3C1;
+    i3c_config_t i3c_config0 = {
+        .register_base_addr = SCP_I3C0_CSR_ADDRESS,
+        .instance_type = I3C_MASTER,
+        .address = MASTER_DYNAMIC_ADDRESS_0,
+        .index = index_i3c0,
+        .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
+        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+    };
+    i3c_config_t i3c_config1 = {
+        .register_base_addr = SCP_I3C1_CSR_ADDRESS,
+        .instance_type = I3C_MASTER,
+        .address = MASTER_DYNAMIC_ADDRESS_1,
+        .index = index_i3c1,
+        .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
+        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+    };
+    // Set up expectations
+    // Instance 0
+    // i3c_initialize
+    expect_value(__wrap_i3c_initialize, instance, instance_0);
+    expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config0.register_base_addr);
+    expect_value(__wrap_i3c_initialize, i3c_config->instance_type, i3c_config0.instance_type);
+    expect_value(__wrap_i3c_initialize, i3c_config->address, i3c_config0.address);
+    expect_value(__wrap_i3c_initialize, i3c_config->index, i3c_config0.index);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_core_clk_freq_in_mhz, i3c_config0.i3c_core_clk_freq_in_mhz);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_speed_in_khz, i3c_config0.i3c_speed_in_khz);
+    expect_function_call(__wrap_i3c_initialize);
 
+    // i3c_register_notification_callback
+    expect_value(__wrap_i3c_register_notification_callback, instance, instance_0);
+    expect_any(__wrap_i3c_register_notification_callback, callback);
+    expect_any(__wrap_i3c_register_notification_callback, context);
+    expect_function_call(__wrap_i3c_register_notification_callback);
+
+    // FPFwCoreInterruptRegisterCallback
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_0_INT);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c0_isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, UNUSED_NON_ZERO_MAGIC_NUMBER);
+
+    // FPFwCoreInterruptEnableVector
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_0_INT);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_I3C_CTRL_0_INT);
+
+    // i3c_master_dat_config
+    expect_value(__wrap_i3c_master_dat_config, instance, instance_0);
+    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_TARGET_DEVICES);
+    expect_function_call(__wrap_i3c_master_dat_config);
+
+    // i3c_master_register_ibi_handler
+    expect_value(__wrap_i3c_master_register_ibi_handler, instance, instance_0);
+    expect_any(__wrap_i3c_master_register_ibi_handler, callback);
+    expect_any(__wrap_i3c_master_register_ibi_handler, context);
+    expect_function_call(__wrap_i3c_master_register_ibi_handler);
+
+    // Instance 1
+    // i3c_initialize
+    expect_value(__wrap_i3c_initialize, instance, instance_1);
+    expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config1.register_base_addr);
+    expect_value(__wrap_i3c_initialize, i3c_config->instance_type, i3c_config1.instance_type);
+    expect_value(__wrap_i3c_initialize, i3c_config->address, i3c_config1.address);
+    expect_value(__wrap_i3c_initialize, i3c_config->index, i3c_config1.index);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_core_clk_freq_in_mhz, i3c_config1.i3c_core_clk_freq_in_mhz);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_speed_in_khz, i3c_config1.i3c_speed_in_khz);
+    expect_function_call(__wrap_i3c_initialize);
+
+    // i3c_register_notification_callback
+    expect_value(__wrap_i3c_register_notification_callback, instance, instance_1);
+    expect_any(__wrap_i3c_register_notification_callback, callback);
+    expect_any(__wrap_i3c_register_notification_callback, context);
+    expect_function_call(__wrap_i3c_register_notification_callback);
+
+    // FPFwCoreInterruptRegisterCallback
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_1_INT);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c1_isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, UNUSED_NON_ZERO_MAGIC_NUMBER);
+
+    // FPFwCoreInterruptEnableVector
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_1_INT);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_I3C_CTRL_1_INT);
+
+    // i3c_master_dat_config
+    expect_value(__wrap_i3c_master_dat_config, instance, instance_1);
+    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_TARGET_DEVICES);
+    expect_function_call(__wrap_i3c_master_dat_config);
+
+    // i3c_master_register_ibi_handler
+    expect_value(__wrap_i3c_master_register_ibi_handler, instance, instance_1);
+    expect_any(__wrap_i3c_master_register_ibi_handler, callback);
+    expect_any(__wrap_i3c_master_register_ibi_handler, context);
+    expect_function_call(__wrap_i3c_master_register_ibi_handler);
+
+    // ddr_i3c_interface_set_instance
+    expect_value(__wrap_ddr_i3c_interface_set_instance, instance_0, instance_0);
+    expect_value(__wrap_ddr_i3c_interface_set_instance, instance_1, NULL);
+    expect_function_call(__wrap_ddr_i3c_interface_set_instance);
+
+    // ddr_i3c_interface_power_up_pmic_on
+    expect_value(__wrap_ddr_i3c_interface_power_up_pmic_on, instance, instance_0);
+    expect_function_call(__wrap_ddr_i3c_interface_power_up_pmic_on);
+
+    // i3c_master_set_aasa
+    expect_value(__wrap_i3c_master_set_aasa, instance, instance_0);
+    expect_value(__wrap_i3c_master_set_aasa, i3c_speed, I3C_SPEED_I2C_FM);
+    expect_any(__wrap_i3c_master_set_aasa, callback);
+    expect_any(__wrap_i3c_master_set_aasa, context);
+    expect_function_call(__wrap_i3c_master_set_aasa);
+
+    // ddr_i3c_interface_read_dimms_detected
+    expect_function_call(__wrap_ddr_i3c_interface_read_dimms_detected);
+
+    // ddr_i3c_interface_read_dimm_capacity
+    expect_function_call(__wrap_ddr_i3c_interface_read_dimm_capacity);
+
+    // Call the function under test
     int status = i3c_controller(die_num);
     assert_int_equal(status, SILIBS_SUCCESS);
 }
@@ -554,6 +804,135 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_0, setup_fpga_platform, setup_undefin
 TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_0, setup_fpga_rvp_platform, setup_undefined_platform)
 {
     uint8_t die_num = 0;
+    i3c_instance_t* instance_0 = get_i3c0();
+    i3c_instance_t* instance_1 = get_i3c1();
+    uint8_t index_i3c0 = 0x0;
+    uint8_t index_i3c1 = 0x0;
+    index_i3c0 = KNG_SOC_DIE_0_I3C0;
+    index_i3c1 = KNG_SOC_DIE_0_I3C1;
+    i3c_config_t i3c_config0 = {
+        .register_base_addr = SCP_I3C0_CSR_ADDRESS,
+        .instance_type = I3C_MASTER,
+        .address = MASTER_DYNAMIC_ADDRESS_0,
+        .index = index_i3c0,
+        .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
+        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+    };
+    i3c_config_t i3c_config1 = {
+        .register_base_addr = SCP_I3C1_CSR_ADDRESS,
+        .instance_type = I3C_MASTER,
+        .address = MASTER_DYNAMIC_ADDRESS_1,
+        .index = index_i3c1,
+        .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
+        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+    };
+    // Set up expectations
+    // Instance 0
+    // i3c_initialize
+    expect_value(__wrap_i3c_initialize, instance, instance_0);
+    expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config0.register_base_addr);
+    expect_value(__wrap_i3c_initialize, i3c_config->instance_type, i3c_config0.instance_type);
+    expect_value(__wrap_i3c_initialize, i3c_config->address, i3c_config0.address);
+    expect_value(__wrap_i3c_initialize, i3c_config->index, i3c_config0.index);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_core_clk_freq_in_mhz, i3c_config0.i3c_core_clk_freq_in_mhz);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_speed_in_khz, i3c_config0.i3c_speed_in_khz);
+    expect_function_call(__wrap_i3c_initialize);
+
+    // i3c_register_notification_callback
+    expect_value(__wrap_i3c_register_notification_callback, instance, instance_0);
+    expect_any(__wrap_i3c_register_notification_callback, callback);
+    expect_any(__wrap_i3c_register_notification_callback, context);
+    expect_function_call(__wrap_i3c_register_notification_callback);
+
+    // FPFwCoreInterruptRegisterCallback
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_0_INT);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c0_isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, UNUSED_NON_ZERO_MAGIC_NUMBER);
+
+    // FPFwCoreInterruptEnableVector
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_0_INT);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_I3C_CTRL_0_INT);
+
+    // i3c_master_dat_config
+    expect_value(__wrap_i3c_master_dat_config, instance, instance_0);
+    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_TARGET_DEVICES);
+    expect_function_call(__wrap_i3c_master_dat_config);
+
+    // i3c_master_register_ibi_handler
+    expect_value(__wrap_i3c_master_register_ibi_handler, instance, instance_0);
+    expect_any(__wrap_i3c_master_register_ibi_handler, callback);
+    expect_any(__wrap_i3c_master_register_ibi_handler, context);
+    expect_function_call(__wrap_i3c_master_register_ibi_handler);
+
+    // Instance 1
+    // i3c_initialize
+    expect_value(__wrap_i3c_initialize, instance, instance_1);
+    expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config1.register_base_addr);
+    expect_value(__wrap_i3c_initialize, i3c_config->instance_type, i3c_config1.instance_type);
+    expect_value(__wrap_i3c_initialize, i3c_config->address, i3c_config1.address);
+    expect_value(__wrap_i3c_initialize, i3c_config->index, i3c_config1.index);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_core_clk_freq_in_mhz, i3c_config1.i3c_core_clk_freq_in_mhz);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_speed_in_khz, i3c_config1.i3c_speed_in_khz);
+    expect_function_call(__wrap_i3c_initialize);
+
+    // i3c_register_notification_callback
+    expect_value(__wrap_i3c_register_notification_callback, instance, instance_1);
+    expect_any(__wrap_i3c_register_notification_callback, callback);
+    expect_any(__wrap_i3c_register_notification_callback, context);
+    expect_function_call(__wrap_i3c_register_notification_callback);
+
+    // FPFwCoreInterruptRegisterCallback
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_1_INT);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c1_isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, UNUSED_NON_ZERO_MAGIC_NUMBER);
+
+    // FPFwCoreInterruptEnableVector
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_1_INT);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_I3C_CTRL_1_INT);
+
+    // i3c_master_dat_config
+    expect_value(__wrap_i3c_master_dat_config, instance, instance_1);
+    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_TARGET_DEVICES);
+    expect_function_call(__wrap_i3c_master_dat_config);
+
+    // i3c_master_register_ibi_handler
+    expect_value(__wrap_i3c_master_register_ibi_handler, instance, instance_1);
+    expect_any(__wrap_i3c_master_register_ibi_handler, callback);
+    expect_any(__wrap_i3c_master_register_ibi_handler, context);
+    expect_function_call(__wrap_i3c_master_register_ibi_handler);
+
+    // ddr_i3c_interface_set_instance
+    expect_value(__wrap_ddr_i3c_interface_set_instance, instance_0, instance_0);
+    expect_value(__wrap_ddr_i3c_interface_set_instance, instance_1, instance_1);
+    expect_function_call(__wrap_ddr_i3c_interface_set_instance);
+
+    // ddr_i3c_interface_power_up_pmic_on
+    expect_value(__wrap_ddr_i3c_interface_power_up_pmic_on, instance, instance_0);
+    expect_function_call(__wrap_ddr_i3c_interface_power_up_pmic_on);
+
+    // i3c_master_set_aasa
+    expect_value(__wrap_i3c_master_set_aasa, instance, instance_0);
+    expect_value(__wrap_i3c_master_set_aasa, i3c_speed, I3C_SPEED_I2C_FM);
+    expect_any(__wrap_i3c_master_set_aasa, callback);
+    expect_any(__wrap_i3c_master_set_aasa, context);
+    expect_function_call(__wrap_i3c_master_set_aasa);
+
+    // ddr_i3c_interface_power_up_pmic_on
+    expect_value(__wrap_ddr_i3c_interface_power_up_pmic_on, instance, instance_1);
+    expect_function_call(__wrap_ddr_i3c_interface_power_up_pmic_on);
+
+    // i3c_master_set_aasa
+    expect_value(__wrap_i3c_master_set_aasa, instance, instance_1);
+    expect_value(__wrap_i3c_master_set_aasa, i3c_speed, I3C_SPEED_I2C_FM);
+    expect_any(__wrap_i3c_master_set_aasa, callback);
+    expect_any(__wrap_i3c_master_set_aasa, context);
+    expect_function_call(__wrap_i3c_master_set_aasa);
+
+    // ddr_i3c_interface_read_dimms_detected
+    expect_function_call(__wrap_ddr_i3c_interface_read_dimms_detected);
+
+    // ddr_i3c_interface_read_dimm_capacity
+    expect_function_call(__wrap_ddr_i3c_interface_read_dimm_capacity);
 
     int status = i3c_controller(die_num);
     assert_int_equal(status, SILIBS_SUCCESS);
@@ -563,6 +942,124 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_0, setup_fpga_rvp_platform, setup
 TEST_FUNCTION(test_i3c_controller_fpga_die_1, setup_fpga_platform, setup_undefined_platform)
 {
     uint8_t die_num = 1;
+    i3c_instance_t* instance_0 = get_i3c0();
+    i3c_instance_t* instance_1 = get_i3c1();
+    uint8_t index_i3c0 = 0x0;
+    uint8_t index_i3c1 = 0x0;
+    index_i3c0 = KNG_SOC_DIE_1_I3C0;
+    index_i3c1 = KNG_SOC_DIE_1_I3C1;
+    i3c_config_t i3c_config0 = {
+        .register_base_addr = SCP_I3C0_CSR_ADDRESS,
+        .instance_type = I3C_MASTER,
+        .address = MASTER_DYNAMIC_ADDRESS_0,
+        .index = index_i3c0,
+        .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
+        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+    };
+    i3c_config_t i3c_config1 = {
+        .register_base_addr = SCP_I3C1_CSR_ADDRESS,
+        .instance_type = I3C_MASTER,
+        .address = MASTER_DYNAMIC_ADDRESS_1,
+        .index = index_i3c1,
+        .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
+        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+    };
+    // Set up expectations
+    // Instance 0
+    // i3c_initialize
+    expect_value(__wrap_i3c_initialize, instance, instance_0);
+    expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config0.register_base_addr);
+    expect_value(__wrap_i3c_initialize, i3c_config->instance_type, i3c_config0.instance_type);
+    expect_value(__wrap_i3c_initialize, i3c_config->address, i3c_config0.address);
+    expect_value(__wrap_i3c_initialize, i3c_config->index, i3c_config0.index);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_core_clk_freq_in_mhz, i3c_config0.i3c_core_clk_freq_in_mhz);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_speed_in_khz, i3c_config0.i3c_speed_in_khz);
+    expect_function_call(__wrap_i3c_initialize);
+
+    // i3c_register_notification_callback
+    expect_value(__wrap_i3c_register_notification_callback, instance, instance_0);
+    expect_any(__wrap_i3c_register_notification_callback, callback);
+    expect_any(__wrap_i3c_register_notification_callback, context);
+    expect_function_call(__wrap_i3c_register_notification_callback);
+
+    // FPFwCoreInterruptRegisterCallback
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_0_INT);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c0_isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, UNUSED_NON_ZERO_MAGIC_NUMBER);
+
+    // FPFwCoreInterruptEnableVector
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_0_INT);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_I3C_CTRL_0_INT);
+
+    // i3c_master_dat_config
+    expect_value(__wrap_i3c_master_dat_config, instance, instance_0);
+    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_TARGET_DEVICES);
+    expect_function_call(__wrap_i3c_master_dat_config);
+
+    // i3c_master_register_ibi_handler
+    expect_value(__wrap_i3c_master_register_ibi_handler, instance, instance_0);
+    expect_any(__wrap_i3c_master_register_ibi_handler, callback);
+    expect_any(__wrap_i3c_master_register_ibi_handler, context);
+    expect_function_call(__wrap_i3c_master_register_ibi_handler);
+
+    // Instance 1
+    // i3c_initialize
+    expect_value(__wrap_i3c_initialize, instance, instance_1);
+    expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config1.register_base_addr);
+    expect_value(__wrap_i3c_initialize, i3c_config->instance_type, i3c_config1.instance_type);
+    expect_value(__wrap_i3c_initialize, i3c_config->address, i3c_config1.address);
+    expect_value(__wrap_i3c_initialize, i3c_config->index, i3c_config1.index);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_core_clk_freq_in_mhz, i3c_config1.i3c_core_clk_freq_in_mhz);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_speed_in_khz, i3c_config1.i3c_speed_in_khz);
+    expect_function_call(__wrap_i3c_initialize);
+
+    // i3c_register_notification_callback
+    expect_value(__wrap_i3c_register_notification_callback, instance, instance_1);
+    expect_any(__wrap_i3c_register_notification_callback, callback);
+    expect_any(__wrap_i3c_register_notification_callback, context);
+    expect_function_call(__wrap_i3c_register_notification_callback);
+
+    // FPFwCoreInterruptRegisterCallback
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_1_INT);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c1_isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, UNUSED_NON_ZERO_MAGIC_NUMBER);
+
+    // FPFwCoreInterruptEnableVector
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_1_INT);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_I3C_CTRL_1_INT);
+
+    // i3c_master_dat_config
+    expect_value(__wrap_i3c_master_dat_config, instance, instance_1);
+    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_TARGET_DEVICES);
+    expect_function_call(__wrap_i3c_master_dat_config);
+
+    // i3c_master_register_ibi_handler
+    expect_value(__wrap_i3c_master_register_ibi_handler, instance, instance_1);
+    expect_any(__wrap_i3c_master_register_ibi_handler, callback);
+    expect_any(__wrap_i3c_master_register_ibi_handler, context);
+    expect_function_call(__wrap_i3c_master_register_ibi_handler);
+
+    // ddr_i3c_interface_set_instance
+    expect_value(__wrap_ddr_i3c_interface_set_instance, instance_0, instance_0);
+    expect_value(__wrap_ddr_i3c_interface_set_instance, instance_1, NULL);
+    expect_function_call(__wrap_ddr_i3c_interface_set_instance);
+
+    // ddr_i3c_interface_power_up_pmic_on
+    expect_value(__wrap_ddr_i3c_interface_power_up_pmic_on, instance, instance_0);
+    expect_function_call(__wrap_ddr_i3c_interface_power_up_pmic_on);
+
+    // i3c_master_set_aasa
+    expect_value(__wrap_i3c_master_set_aasa, instance, instance_0);
+    expect_value(__wrap_i3c_master_set_aasa, i3c_speed, I3C_SPEED_I2C_FM);
+    expect_any(__wrap_i3c_master_set_aasa, callback);
+    expect_any(__wrap_i3c_master_set_aasa, context);
+    expect_function_call(__wrap_i3c_master_set_aasa);
+
+    // ddr_i3c_interface_read_dimms_detected
+    expect_function_call(__wrap_ddr_i3c_interface_read_dimms_detected);
+
+    // ddr_i3c_interface_read_dimm_capacity
+    expect_function_call(__wrap_ddr_i3c_interface_read_dimm_capacity);
 
     int status = i3c_controller(die_num);
     assert_int_equal(status, SILIBS_SUCCESS);
@@ -572,6 +1069,135 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_1, setup_fpga_platform, setup_undefin
 TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_1, setup_fpga_rvp_platform, setup_undefined_platform)
 {
     uint8_t die_num = 1;
+    i3c_instance_t* instance_0 = get_i3c0();
+    i3c_instance_t* instance_1 = get_i3c1();
+    uint8_t index_i3c0 = 0x0;
+    uint8_t index_i3c1 = 0x0;
+    index_i3c0 = KNG_SOC_DIE_1_I3C0;
+    index_i3c1 = KNG_SOC_DIE_1_I3C1;
+    i3c_config_t i3c_config0 = {
+        .register_base_addr = SCP_I3C0_CSR_ADDRESS,
+        .instance_type = I3C_MASTER,
+        .address = MASTER_DYNAMIC_ADDRESS_0,
+        .index = index_i3c0,
+        .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
+        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+    };
+    i3c_config_t i3c_config1 = {
+        .register_base_addr = SCP_I3C1_CSR_ADDRESS,
+        .instance_type = I3C_MASTER,
+        .address = MASTER_DYNAMIC_ADDRESS_1,
+        .index = index_i3c1,
+        .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
+        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+    };
+    // Set up expectations
+    // Instance 0
+    // i3c_initialize
+    expect_value(__wrap_i3c_initialize, instance, instance_0);
+    expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config0.register_base_addr);
+    expect_value(__wrap_i3c_initialize, i3c_config->instance_type, i3c_config0.instance_type);
+    expect_value(__wrap_i3c_initialize, i3c_config->address, i3c_config0.address);
+    expect_value(__wrap_i3c_initialize, i3c_config->index, i3c_config0.index);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_core_clk_freq_in_mhz, i3c_config0.i3c_core_clk_freq_in_mhz);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_speed_in_khz, i3c_config0.i3c_speed_in_khz);
+    expect_function_call(__wrap_i3c_initialize);
+
+    // i3c_register_notification_callback
+    expect_value(__wrap_i3c_register_notification_callback, instance, instance_0);
+    expect_any(__wrap_i3c_register_notification_callback, callback);
+    expect_any(__wrap_i3c_register_notification_callback, context);
+    expect_function_call(__wrap_i3c_register_notification_callback);
+
+    // FPFwCoreInterruptRegisterCallback
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_0_INT);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c0_isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, UNUSED_NON_ZERO_MAGIC_NUMBER);
+
+    // FPFwCoreInterruptEnableVector
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_0_INT);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_I3C_CTRL_0_INT);
+
+    // i3c_master_dat_config
+    expect_value(__wrap_i3c_master_dat_config, instance, instance_0);
+    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_TARGET_DEVICES);
+    expect_function_call(__wrap_i3c_master_dat_config);
+
+    // i3c_master_register_ibi_handler
+    expect_value(__wrap_i3c_master_register_ibi_handler, instance, instance_0);
+    expect_any(__wrap_i3c_master_register_ibi_handler, callback);
+    expect_any(__wrap_i3c_master_register_ibi_handler, context);
+    expect_function_call(__wrap_i3c_master_register_ibi_handler);
+
+    // Instance 1
+    // i3c_initialize
+    expect_value(__wrap_i3c_initialize, instance, instance_1);
+    expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config1.register_base_addr);
+    expect_value(__wrap_i3c_initialize, i3c_config->instance_type, i3c_config1.instance_type);
+    expect_value(__wrap_i3c_initialize, i3c_config->address, i3c_config1.address);
+    expect_value(__wrap_i3c_initialize, i3c_config->index, i3c_config1.index);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_core_clk_freq_in_mhz, i3c_config1.i3c_core_clk_freq_in_mhz);
+    expect_value(__wrap_i3c_initialize, i3c_config->i3c_speed_in_khz, i3c_config1.i3c_speed_in_khz);
+    expect_function_call(__wrap_i3c_initialize);
+
+    // i3c_register_notification_callback
+    expect_value(__wrap_i3c_register_notification_callback, instance, instance_1);
+    expect_any(__wrap_i3c_register_notification_callback, callback);
+    expect_any(__wrap_i3c_register_notification_callback, context);
+    expect_function_call(__wrap_i3c_register_notification_callback);
+
+    // FPFwCoreInterruptRegisterCallback
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_1_INT);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c1_isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, UNUSED_NON_ZERO_MAGIC_NUMBER);
+
+    // FPFwCoreInterruptEnableVector
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_1_INT);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_I3C_CTRL_1_INT);
+
+    // i3c_master_dat_config
+    expect_value(__wrap_i3c_master_dat_config, instance, instance_1);
+    expect_value(__wrap_i3c_master_dat_config, config_table_length, NUM_OF_TARGET_DEVICES);
+    expect_function_call(__wrap_i3c_master_dat_config);
+
+    // i3c_master_register_ibi_handler
+    expect_value(__wrap_i3c_master_register_ibi_handler, instance, instance_1);
+    expect_any(__wrap_i3c_master_register_ibi_handler, callback);
+    expect_any(__wrap_i3c_master_register_ibi_handler, context);
+    expect_function_call(__wrap_i3c_master_register_ibi_handler);
+
+    // ddr_i3c_interface_set_instance
+    expect_value(__wrap_ddr_i3c_interface_set_instance, instance_0, instance_0);
+    expect_value(__wrap_ddr_i3c_interface_set_instance, instance_1, instance_1);
+    expect_function_call(__wrap_ddr_i3c_interface_set_instance);
+
+    // ddr_i3c_interface_power_up_pmic_on
+    expect_value(__wrap_ddr_i3c_interface_power_up_pmic_on, instance, instance_0);
+    expect_function_call(__wrap_ddr_i3c_interface_power_up_pmic_on);
+
+    // i3c_master_set_aasa
+    expect_value(__wrap_i3c_master_set_aasa, instance, instance_0);
+    expect_value(__wrap_i3c_master_set_aasa, i3c_speed, I3C_SPEED_I2C_FM);
+    expect_any(__wrap_i3c_master_set_aasa, callback);
+    expect_any(__wrap_i3c_master_set_aasa, context);
+    expect_function_call(__wrap_i3c_master_set_aasa);
+
+    // ddr_i3c_interface_power_up_pmic_on
+    expect_value(__wrap_ddr_i3c_interface_power_up_pmic_on, instance, instance_1);
+    expect_function_call(__wrap_ddr_i3c_interface_power_up_pmic_on);
+
+    // i3c_master_set_aasa
+    expect_value(__wrap_i3c_master_set_aasa, instance, instance_1);
+    expect_value(__wrap_i3c_master_set_aasa, i3c_speed, I3C_SPEED_I2C_FM);
+    expect_any(__wrap_i3c_master_set_aasa, callback);
+    expect_any(__wrap_i3c_master_set_aasa, context);
+    expect_function_call(__wrap_i3c_master_set_aasa);
+
+    // ddr_i3c_interface_read_dimms_detected
+    expect_function_call(__wrap_ddr_i3c_interface_read_dimms_detected);
+
+    // ddr_i3c_interface_read_dimm_capacity
+    expect_function_call(__wrap_ddr_i3c_interface_read_dimm_capacity);
 
     int status = i3c_controller(die_num);
     assert_int_equal(status, SILIBS_SUCCESS);

@@ -27,7 +27,7 @@
 #define MCP_MSCP_EXP_SRAM0_ADDR     (MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM0_ADDRESS)
 #define MCP_MSCP_EXP_SRAM1_ADDR     (MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM1_ADDRESS)
 #define MCP_BOOT_RAM_BASE            MCP_MSCP_EXP_SRAM0_ADDR 
-#define MCP_MAX_IMAGE_SIZE          (800 * KB) // MSCP_EXP RAM each slot is 1MB and with ITCM/DTCM each 512KB, the compressed main image of FW could be this value
+#define MCP_MAX_IMAGE_SIZE          (450 * KB) // MSCP_EXP RAM each slot is 1MB and with ITCM/DTCM each 512KB, the compressed main image of FW could be this value
                                                // in combined elf with bootloader
 
 /*-------------- Typedefs ----------------*/

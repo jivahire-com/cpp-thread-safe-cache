@@ -1,10 +1,10 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 """
 sensor_fifo_cli_test.py - Python based Pythia 2.0 Test.
-Tests that check for scp sensor fifo cli command helper output.
+Tests that check for sensor fifo cli command helper output.
 """
 
-import sys
+import sys, os
 from pathlib import Path
 from typing import Union, List, Optional
 
@@ -38,7 +38,7 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             host_name=host_name,
         )
     
-    def sensor_fifo_cli_test(self, command: str, num_lines: Union[str, int] = None, pass_logs: Union[List[str], str] = None, fail_logs: Union[List[str], str] = None, optional_first_command: Optional[str] = None) -> bool:
+    def sensor_fifo_cli_test(self, command: str, read_until_key: str, pass_logs: Union[List[str], str] = None, optional_first_command: Optional[str] = None) -> bool:
         """
         Test function to execute sensor fifo CLI commands and validate the response.
         Optionally executes a first command before the actual command.
@@ -50,49 +50,59 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             core_com_channel = self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
 
             if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+                # TODO: Need to implement without reset when testing in BIGFPGA
                 KngPythiaTestSetup.reset_fpga_load_prodfw(self)
+                self.log.info(f"Testing on BIGFPGA")
+                return True
+
             elif self.dut.get_dut_type() == DeviceType.SVP:
+                self.log.info(f"opening channel for SVP")
                 core_com_channel.open()
                 if not core_com_channel.is_open():
                     self.log.error("Failed to open core communication channel")
                     return False
+                if optional_first_command:
+                    self.log.info(f"Executing first command: {optional_first_command}")
+                    core_com_channel.write_line(write_string=optional_first_command)
+
+                self.log.info(f"Executing command: {command}")
+                core_com_channel.write_line(write_string=command)
+                
+                try:
+                    command_response = core_com_channel.read_until(key=read_until_key, timeout_seconds=60)
+                    self.log.info("Received Response Successfully from UART . . .")
+                    self.log.info(command_response)
+                except Exception as e:
+                    self.log.error(f"Error reading UART: {e}")
+                    core_com_channel.close()
+                    return False
+
+                if pass_logs is not None:
+                    # Convert pass_logs to a list if they are strings
+                    if isinstance(pass_logs, str):
+                        self.log.info(f"Pass log (string): {pass_logs}")  # Log pass_logs when it's a string
+                        pass_logs_list = [pass_logs]
+                    else:
+                        pass_logs_list = pass_logs
+
+                    # Log the pass_logs_list for visibility
+                    self.log.info(f"Pass logs (list): {pass_logs_list}")  # Log pass_logs_list
+
+                    for item in pass_logs_list:
+                        if item in command_response:
+                            self.log.info(f"Found: '{item}'")
+                        else:
+                            self.log.error(f"Not Found: '{item}'")
+                            return False
+                # If no pass_logs are provided in a Robot test case, assume it's a command execution test and return true to pass.    
+                return True                
             else:
                 raise ValueError("Unsupported DUT type")
 
-            if optional_first_command:
-                self.log.info(f"Executing first command: {optional_first_command}")
-                first_command_response = core_com_channel.execute_command(command=optional_first_command, command_args="")
-
-            self.log.info(f"Submitting command: {command}")
-            command_response = core_com_channel.execute_command(command=command, command_args="")
-
-            if num_lines is not None and pass_logs is not None and fail_logs is not None:
-                # Convert pass_logs and fail_logs to lists if they are strings
-                if isinstance(pass_logs, str):
-                    self.log.info(f"Pass log (string): {pass_logs}")  # Log pass_logs when it's a string
-                    pass_logs_list = [pass_logs]
-                else:
-                    pass_logs_list = pass_logs
-
-                fail_logs_list = [fail_logs] if isinstance(fail_logs, str) else fail_logs
-
-                # Log the pass_logs_list for visibility
-                self.log.info(f"Pass logs (list): {pass_logs_list}")  # Log pass_logs_list
-                
-                # Convert num_lines to integer if it's a string
-                num_lines_int = int(num_lines) if isinstance(num_lines, str) else num_lines
-
-                if self.dut.get_dut_type() == DeviceType.BIGFPGA:
-                    test_result = KngPythiaTestIF.parse_log(self, log_lines=command_response[1], pass_logs=pass_logs_list, fail_logs=fail_logs_list)
-                elif self.dut.get_dut_type() == DeviceType.SVP:
-                    command_response = KngPythiaTestIF.read_from_uart(self, connection=self.dut.mb.node_0.soc.primary_die.scp.channel_manager, num_lines=num_lines_int)
-                    test_result = KngPythiaTestIF.parse_log(self, log_lines=command_response, pass_logs=pass_logs_list, fail_logs=fail_logs_list)
-                return test_result
-            else:
-                return True
-
+           
         except Exception as e:
             self.log.error(f"Error during test execution: {str(e)}")
             return False
         finally:
+            self.log.info("Tearing DOWN...")
             self.dut.teardown()

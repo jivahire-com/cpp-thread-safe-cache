@@ -131,6 +131,7 @@
     <!-- DDRSS knobs -->
     <Knob name="ddr_speed_grade" type="DDRSS_SPEED_GRADE" default="DDRSS_SPEED_6400" help="DDR Speed Grade" />
     <Knob name="ecc_ce_th" type="uint16_t" default="0" help="ECC threshold count after which any per-rank CE counter creates an appropriate RAS error record. (0x0 ~ 0x7ff)" />
+    <Knob name="phy_fw_diag_en" type="uint8_t" default="0" help="DDR PHY firmware diagnostic enable (DV debug only, FW halts after PHY init). 0 - Disable, 1 - Enable" />
 
     <!-- Others -->
     <Knob name="power_capping_mode" type="POWER_CAPPING_MODE" default="POWER_CAPPING_MODE_PER_VM" help="Power capping mode" />

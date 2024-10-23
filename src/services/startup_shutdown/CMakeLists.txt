@@ -37,6 +37,7 @@ set(STARTUP_COMMON_SOURCE
 
 set(STARTUP_COMMON_LIBS
     fwlib.dfwk
+    fwlib.lib.cfg_mgr
     fwlib.lib.interface.platform.errorhandler
     fwlib.lib.init
     ms::build_data

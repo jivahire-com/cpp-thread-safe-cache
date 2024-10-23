@@ -153,6 +153,13 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.hash_addr_bits_sel = mc_config->hash_select;
     memcpy(ddrss_cfgs.mc_mapping_order, mc_config->ddr_mc_map, sizeof(ddrss_cfgs.mc_mapping_order));
 
+    // Set DDRSS ext_knobs from config knobs
+    if (config_get_phy_fw_diag_en())
+    {
+        ddrss_cfgs.ext_knobs.phy_fw_diag_en = 1;
+        printf("DDRSS - phy_fw_diag_en enabled\n");
+    }
+
     // Run DDRSS init
     sts = ddrss_init(&ddrss_cfgs);
     FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);

@@ -18,6 +18,7 @@
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
 #include <debug.h>
+#include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h>
 #include <stdint.h>
 #include <stdio.h>

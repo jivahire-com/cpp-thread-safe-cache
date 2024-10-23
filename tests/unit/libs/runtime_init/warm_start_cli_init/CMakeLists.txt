@@ -28,6 +28,9 @@ target_link_libraries(${TARGET}
         fwlib.dfwk
 )
 
+# Generic ports implmented within this project
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+
 lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})

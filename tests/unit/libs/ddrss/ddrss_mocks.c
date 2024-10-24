@@ -186,11 +186,26 @@ int __wrap_ddrss_ddr_intu_clear_interrupt(uint32_t mc, uint32_t intr_mask)
 bool __wrap_ras_arm_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* record)
 {
     FPFW_UNUSED(agent);
-    FPFW_UNUSED(record);
+    record->handler = 0;
     function_called();
     return SILIBS_SUCCESS;
 }
-
+int __wrap_ddrss_convert_ras_rec_to_cper(uint32_t mc, ras_error_record_t *record, acpi_err_sec_memory_t *ddr_ras_cper,
+                                  acpi_err_sec_mem_vendor_err_info_t *ddr_vendor_cper)
+{
+    FPFW_UNUSED(mc);
+    FPFW_UNUSED(record);
+    FPFW_UNUSED(ddr_ras_cper);
+    FPFW_UNUSED(ddr_vendor_cper);
+    function_called();
+    return SILIBS_SUCCESS;
+}
+ int __wrap_ras_print_record(ras_error_record_t* record)
+ {
+    FPFW_UNUSED(record);
+    function_called();
+    return SILIBS_SUCCESS;
+ }
 int __wrap_ddrss_get_ras_agent(uint32_t mc, DDRSS_RAS_NODE_ID ras_agent_entity_id, ras_agent_entity_t** ras_agent)
 {
     FPFW_UNUSED(mc);

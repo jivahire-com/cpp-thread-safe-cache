@@ -61,7 +61,9 @@ mock_target(${TARGET}
     ddrss_ddr_intu_clear_interrupt
     ddrss_ddr_intu_clear_destination_interrupt
     ras_arm_agent_probe
+    ras_print_record
     ddrss_get_ras_agent
+    ddrss_convert_ras_rec_to_cper
     ddrss_mc_intu_get_interrupt_status
     ddrss_err_inj_atu_map
     ddrss_err_inj_atu_unmap

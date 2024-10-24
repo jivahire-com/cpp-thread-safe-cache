@@ -37,6 +37,38 @@
 
 /*-------------- Functions ---------------*/
 
+static int ddrss_get_and_probe_ras_agent(uint32_t mc,
+                                         DDRSS_RAS_NODE_ID ras_agent_entity_id,
+                                         ras_agent_entity_t** ras_agent,
+                                         ras_error_record_t* record)
+{
+    uint32_t sub_sts;
+    acpi_err_sec_memory_t ddr_ras_cper;
+    acpi_err_sec_mem_vendor_err_info_t ddr_vendor_cper;
+
+    sub_sts = ddrss_get_ras_agent(mc, ras_agent_entity_id, ras_agent);
+    if (sub_sts == SILIBS_SUCCESS)
+    {
+        ras_arm_agent_probe(*ras_agent, record);
+        ras_print_record(record);
+        sub_sts = ddrss_convert_ras_rec_to_cper(mc, record, &ddr_ras_cper, &ddr_vendor_cper);
+        // TODO: Uncomment below API when silibs PR is merged
+        // ddrss_print_cper(&ddr_ras_cper, &ddr_vendor_cper);
+        if (record->handler)
+        {
+            if (record->handler(record))
+            {
+                printf("Error encountered while handling record!\n");
+            }
+        }
+        else
+        {
+            printf("Record was marked invalid! No further handling will be done.\n");
+        }
+    }
+    return sub_sts;
+}
+
 /**
  * @brief TOP Level DDRSS interrupt handler
  *         The DDRSS library is written to assume that memory controllers are uniquely
@@ -70,7 +102,7 @@ void prod_ddrss_interrupt_handler(void* context)
     // Read DDRSS INTU status
     printf("DDRSS %d ISR Enter\n", (unsigned int)ddrss);
 
-    sts = ddrss_get_component_base(ddrss, DDRSS_COMP_ID_MC0_INTU, &ddrss_base);
+    sts = ddrss_get_component_base(ddrss, DDRSS_COMP_ID_DDRINTU, &ddrss_base);
     FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
 
     sts = intu_get_interrupt_status(ddrss_base, &ddr_intu_sts);
@@ -121,15 +153,10 @@ void prod_ddrss_interrupt_handler(void* context)
     if (ddr_intu_sts & int_mask)
     {
         printf("MC1 CRI int\n");
-        sub_sts = ddrss_get_ras_agent(mc + 1, DDRSS_RAS_NODE_ID_MC_ERG1, &ras_agent[1]);
+        sub_sts = ddrss_get_and_probe_ras_agent(mc + 1, DDRSS_RAS_NODE_ID_MC_ERG1, &ras_agent[1], &record);
         if (sub_sts != SILIBS_SUCCESS)
         {
             ddr_intu_err |= int_mask;
-        }
-        else
-        {
-            ras_arm_agent_probe(ras_agent[1], &record);
-            // TODO: Handle the record by sending to DDR_Manager queue ADO Task#1485473
         }
         ddr_intu_clr_sts |= int_mask;
     }
@@ -139,34 +166,26 @@ void prod_ddrss_interrupt_handler(void* context)
     if (ddr_intu_sts & sra_ras_int_msk)
     {
         printf("DDR ERI/FHI int\n");
+        sts = ddrss_get_component_base(ddrss, DDRSS_COMP_ID_MC0, &ddrss_base);
+        FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
         grp_sts = MMIO_READ32(PROD_DDRSS_MC0_RASERG_REG_ADDR(ddrss_base, errgsr_lo));
         if (grp_sts)
         {
-            sub_sts = ddrss_get_ras_agent(mc, DDRSS_RAS_NODE_ID_MC_ERG0, &ras_agent[0]);
+            sub_sts = ddrss_get_and_probe_ras_agent(mc, DDRSS_RAS_NODE_ID_MC_ERG0, &ras_agent[0], &record);
             if (sub_sts != SILIBS_SUCCESS)
             {
                 printf("Failed to get RAS agent for MC%d ERG0\n", (unsigned int)mc);
                 ddr_intu_err |= sra_ras_int_msk;
             }
-            else
-            {
-                ras_arm_agent_probe(ras_agent[0], &record);
-                // TODO: Handle the record by sending to DDR_Manager queue ADO Task#1485473
-            }
         }
         grp_sts = MMIO_READ32(PROD_DDRSS_MC1_RASERG_REG_ADDR(ddrss_base, errgsr_lo));
         if (grp_sts)
         {
-            // Each mc has two ERG0
-            sub_sts = ddrss_get_ras_agent(mc + 1, DDRSS_RAS_NODE_ID_MC_ERG0, &ras_agent[0]);
+            sub_sts = ddrss_get_and_probe_ras_agent(mc + 1, DDRSS_RAS_NODE_ID_MC_ERG0, &ras_agent[0], &record);
             if (sub_sts != SILIBS_SUCCESS)
             {
+                printf("Failed to get RAS agent for MC%d ERG0\n", (unsigned int)mc);
                 ddr_intu_err |= sra_ras_int_msk;
-            }
-            else
-            {
-                ras_arm_agent_probe(ras_agent[0], &record);
-                // TODO: Handle the record by sending to DDR_Manager queue. RAS / ADO Task#1485473
             }
         }
         ddr_intu_clr_sts |= (ddr_intu_sts & sra_ras_int_msk);

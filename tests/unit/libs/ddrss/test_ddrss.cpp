@@ -263,6 +263,8 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_MC1_CRI_INT, setup, teardown)
     g_intu_enable = 0xFFFFFFFF; // This is a mask
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
     expect_function_call(__wrap_ras_arm_agent_probe);
+    expect_function_call(__wrap_ras_print_record);
+    expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_MC1_CRI_INT));
     prod_ddrss_interrupt_handler((void*)&ddrss_num[5]);
 }
@@ -289,9 +291,13 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_ERI, setup, teard
     will_return(__wrap_mmio_read32, 1); // This is the (non-zero) mock return value for the MMIO_READ32
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
     expect_function_call(__wrap_ras_arm_agent_probe);
+    expect_function_call(__wrap_ras_print_record);
+    expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
     will_return(__wrap_mmio_read32, 1); // This is the (non-zero) mock return value for the second MMIO_READ32
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
     expect_function_call(__wrap_ras_arm_agent_probe);
+    expect_function_call(__wrap_ras_print_record);
+    expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_SRA_ERI));
     prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
 }

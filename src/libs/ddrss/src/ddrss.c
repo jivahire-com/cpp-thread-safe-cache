@@ -146,6 +146,8 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         ddrss_cfgs.ext_knobs.ddrss_mask = 0xFFF;
     }
 
+    ddrss_cfgs.ext_knobs.intu_init_en = 1;
+    ddrss_cfgs.ext_knobs.ras_init_en = 1;
     // Sync up with mesh config on NUMA, address hash and MC mapping cfgs
     cmn800_snf_to_mc_config_t* mc_config = cmn800_generate_ddr_mc_map_from_cached_config();
     FPFW_RUNTIME_ASSERT(mc_config != NULL);

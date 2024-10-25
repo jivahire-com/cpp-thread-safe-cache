@@ -27,7 +27,7 @@
         <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\Release_Notes\*" target="Release_Notes\" />
 
         <!-- Combined Platform Config Knobs -->
-        <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\Config_Knobs\*.xml" target="Config_Knobs\Kingsgate_MSCP_Platform_Config_Knobs_test_unused.xml" />
+        <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\Config_Knobs\*.xml" target="Config_Knobs\" />
 
     </files>
 </package>

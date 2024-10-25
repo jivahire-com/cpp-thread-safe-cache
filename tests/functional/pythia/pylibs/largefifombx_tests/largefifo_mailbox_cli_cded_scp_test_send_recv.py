@@ -97,14 +97,14 @@ class largefifo_mailbox_cli_cded_scp_test_send_recv(EchoFallsBaseTest):
         # Submit commands on CDED channel to receive request from SCP
         self._submit_command(scp_channel, "icc_largembx")
         self._submit_command(scp_channel, "cded_recv 2")
-        self._submit_command(cded_channel, "icc_largembx")
+        self._submit_command(cded_channel, "scp_mbx")
 
         try:
             self._send_and_receive_commands(cded_channel, scp_channel)
         except Exception as e:
             scp_channel.close()
             cded_channel.close()
-            self.test_notify(step="Large FIFO MBX SEND RECV Command", msg="Test Fail", is_error=True)
+            self.test_notify(step="Large FIFO MBX SEND RECV Command", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             return False
         
@@ -130,8 +130,8 @@ class largefifo_mailbox_cli_cded_scp_test_send_recv(EchoFallsBaseTest):
     def _send_and_receive_commands(self, send_channel, receive_channel):
         commands = ["scp_send 2"]
         for cmd in commands:
-            self.log.info(f"Submitting command '{command}'...")
-            send_channel.write_line(write_string=command)
+            self.log.info(f"Submitting command '{cmd}'...")
+            send_channel.write_line(write_string=cmd)
             try:
                 # Validate Send Complete message on SCP
                 send_channel.read_until(key="Send Complete", timeout_seconds=100)

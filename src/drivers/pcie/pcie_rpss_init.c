@@ -22,6 +22,7 @@
 #include <pcie_knobs.h>
 #include <pcie_platform_overrides_i.h>
 #include <pcie_ss_common.h>
+#include <pcie_struct_defaults.h>
 #include <pciess.h>
 #include <silibs_status.h>
 #include <stdbool.h>
@@ -59,54 +60,36 @@ static uint64_t rpss_addrs[NUM_RPSS] = {
     AP_TOP_D1_VAB_RPSS3_ADDRESS,
 };
 
-static pcie_cfg_t pcie_cfg_np = {.pcie_ss_en = true,
-                                 .pcie_cap_gen_speed = PCIE_GEN_5,
-                                 .pcie_bifurcation_mode = PCIE_BIFURCATION_1X16,
-                                 .pcie_cxl_support = false,
-                                 .pcie_stagger_time = PCIE_STAGGER_NONE,
-                                 .pcie_clock_mode = PCIE_CLOCK_SRNS,
-                                 .pcie_fast_link_mode = true,
-                                 .pcie_gen3_eq_disable = true,
-                                 .pcie_gen4_eq_disable = true,
-                                 .pcie_gen5_eq_disable = true,
-                                 .pcie_eq_bypass_support = true,
-                                 .pcie_no_eq_support = true,
-                                 .rp_cfgs = {
-                                     {
-                                         .pcie_rp_en = true,
-                                         .pcie_rp_port_num = 0,
-                                         .pcie_rp_is_slot = false,
-                                         .pcie_rp_slot_num = 0,
-                                         .pcie_rp_hotplug_capable = false,
-                                         .pcie_rp_cap_en_rel_order = true,
-                                     },
-                                     {
-                                         .pcie_rp_en = false,
-                                         .pcie_rp_port_num = 0,
-                                         .pcie_rp_is_slot = false,
-                                         .pcie_rp_slot_num = 0,
-                                         .pcie_rp_hotplug_capable = false,
-                                         .pcie_rp_cap_en_rel_order = true,
-                                     },
-                                     {
-                                         .pcie_rp_en = false,
-                                         .pcie_rp_port_num = 0,
-                                         .pcie_rp_is_slot = false,
-                                         .pcie_rp_slot_num = 0,
-                                         .pcie_rp_hotplug_capable = false,
-                                         .pcie_rp_cap_en_rel_order = true,
-                                     },
-                                     {
-                                         .pcie_rp_en = false,
-                                         .pcie_rp_port_num = 0,
-                                         .pcie_rp_is_slot = false,
-                                         .pcie_rp_slot_num = 0,
-                                         .pcie_rp_hotplug_capable = false,
-                                         .pcie_rp_cap_en_rel_order = true,
-                                     },
-                                 }};
+static pcie_cfg_t pcie_cfg_np = DEFAULT_PCIE_CFG_T;
 
 /*------------- Functions ----------------*/
+static void override_default_pcie_cfg(uint8_t rpss_id)
+{
+    // generic defaults
+    pcie_cfg_np.pcie_cap_gen_speed = PCIE_GEN_5;
+    pcie_cfg_np.pcie_bifurcation_mode = PCIE_BIFURCATION_1X16;
+    pcie_cfg_np.pcie_clock_mode = PCIE_CLOCK_SRNS;
+    pcie_cfg_np.pcie_fast_link_mode = true;
+    pcie_cfg_np.pcie_fast_link_mode = true;
+    pcie_cfg_np.pcie_gen3_eq_disable = true;
+    pcie_cfg_np.pcie_gen4_eq_disable = true;
+    pcie_cfg_np.pcie_gen5_eq_disable = true;
+    pcie_cfg_np.pcie_eq_bypass_support = true;
+    pcie_cfg_np.pcie_no_eq_support = true;
+
+    /* Root Port Defaults not set as in 1x16 Config they are
+       not going to be used. If 4x4 bifurcation is used and RP
+       are not being used, we have to explicitly set them to false */
+
+    if ((IS_PLATFORM_FPGA()) && rpss_id == RPSS5)
+    {
+        /* Hard Code Die 1 RPSS 1 (RPSS5) as CXL
+           A legacy PCIE device connected to this RP will still continue to function in
+           normal pcie mode. Alternate protocol should be negotiated by both the RP and EP */
+        printf("Enable CXL for Die 1  RPSS 5\n");
+        pcie_cfg_np.pcie_cxl_support = true;
+    }
+}
 static void populate_rb_configs_from_rpss_entity(pcie_ss_entity_t* rpss, pcie_root_bridge_config* rb_configs)
 {
     for (uint8_t i = 0; i < PCIESS_NUM_PORTS; i++)
@@ -148,6 +131,8 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
 
     pcie_ss_entity_t* rpss = pciess_get_entity(rpss_id);
     FPFW_RUNTIME_ASSERT(rpss != NULL);
+
+    override_default_pcie_cfg(rpss_id);
 
     sts = pciess_config_entity(rpss, resolved_subsystem_config_addr, ap_subsystem_config_addr, &pcie_cfg_np, true, true);
     FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);

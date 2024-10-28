@@ -1,6 +1,6 @@
 *** Settings ***
 Documentation     Verifies snsrfifo cli helper command output check.
-Resource          ${CURDIR}/../../../../commonResource/sensor_fifo_common.resource
+Resource          ${CURDIR}/../../../../../commonResource/sensor_fifo_common.resource
 
 *** Variables ***
 ${COMMAND}        snsrfifo ?

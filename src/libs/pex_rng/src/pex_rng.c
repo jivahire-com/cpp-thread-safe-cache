@@ -20,6 +20,7 @@
 #include <core_cluster_top_regs.h>
 #include <pex_regs.h>
 #include <rng.h>
+#include <stdio.h>
 
 /*------------- Functions ----------------*/
 
@@ -33,6 +34,7 @@ void init_pex_rng(pex_rng_config_t* rng_config)
         {
             continue;
         }
+        printf("Enabling RNG for core %d\n", core);
 
         const uintptr_t cluster_pex_base_addr = (rng_config->cluster_pex_base + (rng_config->cluster_stride * core));
         uint32_t ap_rng_base = cluster_pex_base_addr + PEX_RNG_ADDRESS;

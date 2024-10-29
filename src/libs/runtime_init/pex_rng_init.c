@@ -39,7 +39,7 @@ FPFW_INIT_COMPONENT(pex_rng, FPFW_INIT_DEPENDENCIES("dfwk", "sysinfo", "mesh", "
     switch (idsw_get_platform_sdv())
     {
     case PLATFORM_SVP_SIM:
-        rng_config.core_count = SVP_NUM_CORES_PER_DIE;
+        rng_config.platform_cores_in_die = &svp_cores;
         break;
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
@@ -51,12 +51,13 @@ FPFW_INIT_COMPONENT(pex_rng, FPFW_INIT_DEPENDENCIES("dfwk", "sysinfo", "mesh", "
     case PLATFORM_EMU_2D:
     case PLATFORM_EMU_2D_8C:
         rng_config.platform_cores_in_die = &zebu_cores;   
-        rng_config.core_count = ZEBU_NUM_CORES_PER_DIE;
     default:
         break;
     }
 
+    printf("RNG init start\n");
     init_pex_rng(&rng_config);
+    printf("RNG init done\n");
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 
 }

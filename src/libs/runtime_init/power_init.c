@@ -100,7 +100,6 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc
     case PLATFORM_SVP_SIM:
         // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1811925/
         // update based on https://azurecsi.visualstudio.com/Dev/_workitems/edit/1811919
-        power_config.platform_die_core_count = SVP_NUM_CORES_PER_DIE;
         power_config.platform_cores_in_die = &svp_cores;
         power_config.platform_soc_power_support = true;
         power_config.platform_core_power_support = true;
@@ -120,7 +119,6 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc
     case PLATFORM_EMU_2D_8C:
         power_config.platform_cores_in_die = &zebu_cores;
         power_config.platform_core_power_support = true;
-        power_config.platform_die_core_count = ZEBU_NUM_CORES_PER_DIE;
         break;
     default:
         break;

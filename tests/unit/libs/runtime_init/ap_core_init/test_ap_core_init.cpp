@@ -150,7 +150,7 @@ TEST_FUNCTION(ap_core_init_ap_core_svc__svp, nullptr, nullptr)
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
     assert_non_null(result.associated_handle);
 
-    assert_int_not_equal(s_saved_config.platform_die_core_count, NUM_AP_CORES_PER_DIE);
+    assert_int_equal(s_saved_config.platform_die_core_count, NUM_AP_CORES_PER_DIE);
     assert_true(s_saved_config.primary_boot_die);
 }
 

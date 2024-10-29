@@ -79,5 +79,5 @@ void ap_core_util_get_fuse_enabled_cores(corebits_t* enabled_cores)
     FPFW_RUNTIME_ASSERT(enabled_cores != NULL);
     // get the enabled cores from the fuses
     // temporary until we can read real fuses
-    *enabled_cores = (corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFF, 0xFFFFFFFF, 0xF);
+    *enabled_cores = (corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFF, 0xFFFFFFFF, 0x3);
 }

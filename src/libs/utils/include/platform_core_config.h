@@ -14,9 +14,6 @@
 
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
-#define SVP_NUM_CORES_PER_DIE 4
-#define ZEBU_NUM_CORES_PER_DIE 8
-#define FPGA_NUM_CORES_PER_DIE 8
 
 /*-------------------------------- Typedefs ---------------------------------*/
 

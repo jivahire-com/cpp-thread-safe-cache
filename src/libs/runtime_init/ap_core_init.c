@@ -59,9 +59,7 @@ FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "tower_cfg", "ic
     switch (idsw_get_platform_sdv())
     {
     case PLATFORM_SVP_SIM:
-        // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1811925/
-        // update based on https://azurecsi.visualstudio.com/Dev/_workitems/edit/1811919
-        ap_core_config.platform_die_core_count = SVP_NUM_CORES_PER_DIE;
+        ap_core_config.platform_cores_in_die = &svp_cores;
         break;
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
@@ -79,7 +77,6 @@ FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "tower_cfg", "ic
     case PLATFORM_EMU_2D:
     case PLATFORM_EMU_2D_8C:
         ap_core_config.platform_cores_in_die = &zebu_cores;
-        ap_core_config.platform_die_core_count = ZEBU_NUM_CORES_PER_DIE;
         break;
     default:
         break;

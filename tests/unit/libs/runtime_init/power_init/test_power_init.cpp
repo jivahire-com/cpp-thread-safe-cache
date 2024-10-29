@@ -186,7 +186,7 @@ TEST_FUNCTION(power_init_pwr_svc__svp, nullptr, nullptr)
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
     assert_non_null(result.associated_handle);
 
-    assert_int_not_equal(s_saved_config.platform_die_core_count, NUM_AP_CORES_PER_DIE);
+    assert_int_equal(s_saved_config.platform_die_core_count, NUM_AP_CORES_PER_DIE);
 }
 
 TEST_FUNCTION(power_init_pwr_svc__bigfpga, nullptr, nullptr)

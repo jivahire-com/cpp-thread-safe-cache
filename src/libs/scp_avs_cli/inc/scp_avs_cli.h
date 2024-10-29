@@ -18,7 +18,6 @@
 #include <stdbool.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define MAX_AVS_INST    4 // Die0 (AVS0 - AVS3), Die1 (AVS4 packaging pin, but is AVS0 on Die1)
 
 /*-------------- Typedefs ----------------*/
 

@@ -18,20 +18,22 @@
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define MODULE_NAME "[AVS] "
+#define MODULE_NAME_AVS "[AVS] "
 #define NEWLINE     "\n"
 
 // set to 1 for more verbose logs
 #define AVS_ENABLE_TRACE_LEVEL_LOG 0
 
 #if AVS_ENABLE_TRACE_LEVEL_LOG
-#define AVS_LOG_TRACE(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define AVS_LOG_TRACE(fmt, ...) printf(MODULE_NAME_AVS fmt NEWLINE, ##__VA_ARGS__)
 #else
 #define AVS_LOG_TRACE(fmt, ...) 
 #endif
-#define AVS_LOG_INFO(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
-#define AVS_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
-#define AVS_LOG_CRIT(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define AVS_LOG_INFO(fmt, ...) printf(MODULE_NAME_AVS fmt NEWLINE, ##__VA_ARGS__)
+#define AVS_LOG_WARN(fmt, ...) printf(MODULE_NAME_AVS fmt NEWLINE, ##__VA_ARGS__)
+#define AVS_LOG_CRIT(fmt, ...) printf(MODULE_NAME_AVS fmt NEWLINE, ##__VA_ARGS__)
+
+#define MAX_AVS_INST    4 // Die0 (AVS0 - AVS3), Die1 (AVS4 packaging pin, but is AVS0 on Die1)
 
 /*-------------- Typedefs ----------------*/
 typedef enum _scp_avs_rail_count_t {

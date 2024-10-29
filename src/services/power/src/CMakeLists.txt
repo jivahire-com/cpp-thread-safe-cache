@@ -40,6 +40,9 @@ target_link_libraries(${TARGET}
     PUBLIC
         fwlib.lib.cfg_mgr
         ms::lib::corebits
+        ms::lib::scp_avs
+        ms::lib::scp_avs::cli
+        silibs::avs
         silibs::dvfs
         silibs::gpio
         silibs::idsw

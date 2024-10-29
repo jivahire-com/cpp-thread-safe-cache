@@ -28,7 +28,6 @@ extern "C" {
 #include <odcm.h>                  // for _ODCM_RETCODE
 #include <odcm_struct.h>           // for ODCM_DEFAULT_CONFIG, odcm_config_t
 #include <pex_regs.h>              // for PEX_CORE_PLL_ADDRESS
-#include <power_hw_int_i.h> 
 #include <power_hw_int_i.h>        // for power_init_core, power_init_soc
 #include <power_i.h>               // for TEMP2DOUT_FUSED
 #include <power_runconfig.h>       // for power_knobs_t, power_fuse_data_t
@@ -80,6 +79,21 @@ void __wrap_dvfs_ns_set_cppc_desired2(const uintptr_t cluster_pex_base_addr, uin
     check_expected(cppc_base_perf);
     check_expected(throttle_pri);
     check_expected(boost_pri);
+    return;
+}
+
+void __wrap_power_vrs_write_vcpu_voltage_check(uint8_t bus_id, uint8_t rail_id, uint16_t voltage_mv)
+{
+    check_expected(bus_id);
+    check_expected(rail_id);
+    check_expected(voltage_mv);
+    function_called();
+    return;
+}
+void __wrap_power_loops_control_handle_event(power_ctrl_loop_signal_t event, const void* event_data)
+{
+    UNUSED(event);
+    UNUSED(event_data);
     return;
 }
 
@@ -1263,4 +1277,23 @@ POWER_TEST(power_hw_clear_force_pmin, setup, teardown)
     power_hw_clear_force_pmin(PM_LOCKUP_UE_RR);
     
     assert_int_equal(fake_reg.force_pmin_reg.lockup_ue_rr, expected_pmin_reg.lockup_ue_rr);
+}
+
+POWER_TEST(power_vrs_write_vcpu_voltage, setup, teardown)
+{
+    power_service_config_t sconfig = {};
+    power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
+
+    uint16_t test_volt_mv = 995;
+
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+    
+    uint8_t test_bus_id = test_runconfig.p_sconfig->avs_details->bus_id;
+    uint8_t test_rail_id = test_runconfig.p_sconfig->avs_details->rail_id; 
+    expect_value(__wrap_power_vrs_write_vcpu_voltage_check, bus_id, test_bus_id); 
+    expect_value(__wrap_power_vrs_write_vcpu_voltage_check, rail_id, test_rail_id);
+    expect_value(__wrap_power_vrs_write_vcpu_voltage_check, voltage_mv, test_volt_mv);
+
+    expect_function_call(__wrap_power_vrs_write_vcpu_voltage_check);
+    power_vrs_write_vcpu_voltage(test_volt_mv);
 }

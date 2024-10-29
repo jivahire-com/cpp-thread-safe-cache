@@ -12,11 +12,9 @@
 /*----------- Nested includes ------------*/
 
 #include <setjmp.h>
-#include <stdnoreturn.h>
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define NORETURN        noreturn
 #define BUG_CHECK_RETURN_VALUE 0x1
 
 extern jmp_buf cd_mock_jump_buf;
@@ -32,7 +30,7 @@ extern jmp_buf cd_mock_jump_buf;
 *   @return
 *      None (does not return)
 */
-noreturn void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4);
+_Noreturn void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4);
 
 /**
 *   Handles noreturn behaviour of CrashDumpBugCheck

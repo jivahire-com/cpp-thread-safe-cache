@@ -24,7 +24,7 @@
 jmp_buf cd_mock_jump_buf;
 
 /*------------- Functions ----------------*/
-noreturn void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
+_Noreturn void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
 {
     check_expected(errorCode);
     FPFW_UNUSED(p1);

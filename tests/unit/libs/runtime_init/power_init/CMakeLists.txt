@@ -45,4 +45,5 @@ mock_target(${TARGET}
     power_init
     power_interface_init
     sos_register_ssi
+    idsw_get_die_id
 )

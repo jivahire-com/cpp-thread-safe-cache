@@ -16,8 +16,6 @@
 #define POWER_TEST(fn, setup, teardown) \
     TEST_FUNCTION(power_svc__##fn, setup, teardown)
 
-#define UNUSED(a) ((void)a)
-
 /*-------------- Typedefs ----------------*/
 
 /*-- Declarations (Statics and globals) --*/

@@ -17,6 +17,7 @@
 #include <dvfs_struct.h>
 #include <fpfw_cfg_mgr.h>
 #include <pvt_struct.h>
+#include <scp_avs_driver.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -61,6 +62,8 @@
 
 /* number of plimit update options */
 #define PLIMIT_UPDATE_MAX 8
+
+/* Only Die0 has VSYS */
 
 /*-------------- Typedefs ----------------*/
 
@@ -514,6 +517,39 @@ typedef struct _power_vm_detail
 } power_vm_detail_t;
 
 /**
+ *  @brief Enums for voltage rails
+ */
+typedef enum _power_control_loop_vr_names_t
+{
+    NO_VSYS = (-1),     // VSYS is on Die0 only
+    MPCL_VR_VCPU = 0,   //Die0
+    MPCL_VR_VA0P85,
+    MPCL_VR_VSYS,
+    MPCL_VR_VDDQ1P1,
+    MPCL_VR_VSOC,
+    MPCL_VR_VD2D0P55,
+    MPCL_VR_VPLL1P2,
+    MPCL_VR_VGPIO1P2,
+    MPCL_VR_VCPU1,      //Die1
+    MPCL_VR_VD2D0P875,
+    MPCL_VR_COUNT,
+} power_control_loop_vr_names_t;
+
+/**
+ *  @brief Structure AVS bus, rail lookup
+ */
+typedef struct _power_avs_bus_rail_t {
+    uint8_t bus_id;   // index of bus for this rail
+    uint8_t rail_id;  // index of rail on this bus
+} power_avs_bus_rail_t, *ppower_avs_bus_rail_t;
+
+typedef struct _power_vr_idx_t {
+    power_control_loop_vr_names_t vcpu_idx;  // index for the AVS VCPU
+    power_control_loop_vr_names_t vsys_idx;  // index for the AVS VR VSYS (VSYS is on Die0 only)
+    power_control_loop_vr_names_t flattened_vr_start_idx; // flattened VR start. Die0 = 4 AVSBuses 2 rails (4*2 = 8) 0-7. Die1 = 1 AVSBus 2 rails (1*2 = 2) 8-9, so starts at 8
+} power_vr_idx_t;
+
+/**
  * @brief Power service config
  */
 typedef struct _power_service_config_t
@@ -526,8 +562,12 @@ typedef struct _power_service_config_t
     uint32_t cluster_stride;                 // number of bytes between each cluster
     power_vm_detail_t soc_vm[NUM_SOC_VM];    // soc vm config detail
     power_vm_detail_t tile_vm[NUM_TILE_VM];  // tile vm config detail
+    power_avs_bus_rail_t avs_details[MPCL_VR_COUNT];    // avs bus/rail details
+    pscp_avs_interface_t scp_avs_insts[MAX_AVS_INST]; // array of pointers to AVS driver client interfaces
     const corebits_t* platform_cores_in_die; // platform cores
     unsigned int platform_die_core_count;    // platform core count
+    uint8_t num_vr;                          // max number of VRs (8 VRs on Die0, 2 VRs on Die1)
+    power_vr_idx_t vr_idx_info;              // VR index    
     void* icc_d2d_ctx;                       // icc d2d context
     bool platform_soc_power_support;         // true if soc power supported on platform
     bool platform_core_power_support;        // true if tile/core power supported on platform

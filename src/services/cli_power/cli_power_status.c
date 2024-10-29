@@ -28,8 +28,7 @@
 
 #define PWR_MW 1000
 
-#define MAX_VR_PER_DIE 8
-#define VR_CPU_IDX     0
+#define VR_CPU_IDX 0
 
 /* helper for count of entries */
 #define dimof(x) (sizeof(x) / sizeof(x[0]))

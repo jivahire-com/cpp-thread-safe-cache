@@ -43,7 +43,7 @@ power_service_config_t s_saved_config = {};
 //
 void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
 {
-    FPFW_UNUSED(id);
+    check_expected_ptr(id);
     return mock_type(void*);
 }
 
@@ -92,6 +92,11 @@ bool __wrap_idhw_is_single_die_boot_en(void)
     return mock_type(bool);
 }
 
+KNG_DIE_ID __wrap_idsw_get_die_id(void)
+{
+    return mock_type(KNG_DIE_ID);
+}
+
 }
 //
 // Tests
@@ -102,15 +107,41 @@ TEST_FUNCTION(power_init_pwr_svc, nullptr, nullptr)
 #define TEST_HANDLE 0x1234
     //! Set up expectations
     DFWK_THREADX_HOST test_host = {};
+    const auto test_die = (KNG_DIE_ID)0;
+
+    scp_avs_interface_t* avs_test_array[4] = {0};
+    scp_avs_interface_t avs0_test_host = {};
+    scp_avs_interface_t avs1_test_host = {};
+    scp_avs_interface_t avs2_test_host = {};
+    scp_avs_interface_t avs3_test_host = {};
 
     // when single die boot is not enabled, there will be a call to get icc handle
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_fpfw_init_get_handle, TEST_HANDLE);
-
-    will_return(__wrap_fpfw_init_get_handle, &test_host); //! driver fmwk host handle
-    expect_value(__wrap_power_init, p_schedule, &(test_host.Schedule));
+    expect_any(__wrap_fpfw_init_get_handle, id);
 
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+
+    will_return_always(__wrap_idsw_get_die_id, test_die);
+
+    will_return(__wrap_fpfw_init_get_handle, &avs0_test_host);
+    will_return(__wrap_fpfw_init_get_handle, &avs1_test_host);
+    will_return(__wrap_fpfw_init_get_handle, &avs2_test_host);
+    will_return(__wrap_fpfw_init_get_handle, &avs3_test_host);
+
+    avs_test_array[0] = &avs0_test_host;
+    avs_test_array[1] = &avs1_test_host;
+    avs_test_array[2] = &avs2_test_host;
+    avs_test_array[3] = &avs3_test_host;
+
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    expect_any(__wrap_fpfw_init_get_handle, id);
+
+    will_return(__wrap_fpfw_init_get_handle, &test_host); //! driver fmwk host handle
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    expect_value(__wrap_power_init, p_schedule, &(test_host.Schedule));
 
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_pwr_svc.init_fn();
@@ -122,14 +153,27 @@ TEST_FUNCTION(power_init_pwr_svc, nullptr, nullptr)
     assert_int_equal(s_saved_config.platform_die_core_count, NUM_AP_CORES_PER_DIE);
     assert_true(s_saved_config.platform_is_multi_die);
     assert_int_equal(s_saved_config.icc_d2d_ctx, TEST_HANDLE);
-}
+ }
 
 TEST_FUNCTION(power_init_pwr_svc__svp, nullptr, nullptr)
 {
     //! Set up expectations
     DFWK_THREADX_HOST test_host = {};
+    const auto test_die = (KNG_DIE_ID)1;
+
+    scp_avs_interface_t* avs_test_array[4] = {0};
+    scp_avs_interface_t avs0_test_host = {};
+
+    will_return_always(__wrap_idsw_get_die_id, test_die);
+
+    will_return(__wrap_fpfw_init_get_handle, &avs0_test_host);
+
+    avs_test_array[0] = &avs0_test_host;
+
+    expect_any(__wrap_fpfw_init_get_handle, id);
 
     will_return(__wrap_fpfw_init_get_handle, &test_host); //! driver fmwk host handle
+    expect_any(__wrap_fpfw_init_get_handle, id);
     expect_value(__wrap_power_init, p_schedule, &(test_host.Schedule));
 
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
@@ -149,8 +193,33 @@ TEST_FUNCTION(power_init_pwr_svc__bigfpga, nullptr, nullptr)
 {
     //! Set up expectations
     DFWK_THREADX_HOST test_host = {};
+    const auto test_die = (KNG_DIE_ID)0;
+
+    scp_avs_interface_t* avs_test_array[4] = {0};
+    scp_avs_interface_t avs0_test_host = {};
+    scp_avs_interface_t avs1_test_host = {};
+    scp_avs_interface_t avs2_test_host = {};
+    scp_avs_interface_t avs3_test_host = {};
+
+    will_return_always(__wrap_idsw_get_die_id, test_die);
+
+    will_return(__wrap_fpfw_init_get_handle, &avs0_test_host);
+    will_return(__wrap_fpfw_init_get_handle, &avs1_test_host);
+    will_return(__wrap_fpfw_init_get_handle, &avs2_test_host);
+    will_return(__wrap_fpfw_init_get_handle, &avs3_test_host);
+
+    avs_test_array[0] = &avs0_test_host;
+    avs_test_array[1] = &avs1_test_host;
+    avs_test_array[2] = &avs2_test_host;
+    avs_test_array[3] = &avs3_test_host;
+
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    expect_any(__wrap_fpfw_init_get_handle, id);
 
     will_return(__wrap_fpfw_init_get_handle, &test_host); //! driver fmwk host handle
+    expect_any(__wrap_fpfw_init_get_handle, id);
     expect_value(__wrap_power_init, p_schedule, &(test_host.Schedule));
 
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
@@ -176,12 +245,15 @@ TEST_FUNCTION(power_init_pwr_int, nullptr, nullptr)
     DFWK_INTERFACE_HEADER ssi_interface = {};
 
     will_return(__wrap_fpfw_init_get_handle, &power_device);
+    expect_any(__wrap_fpfw_init_get_handle, id);
     expect_value(__wrap_power_interface_init, p_device, &power_device);
     // interface init is called twice
     will_return(__wrap_fpfw_init_get_handle, &power_device);
+    expect_any(__wrap_fpfw_init_get_handle, id);
     expect_value(__wrap_power_interface_init, p_device, &power_device);
 
     will_return(__wrap_fpfw_init_get_handle, &ssi_interface);
+    expect_any(__wrap_fpfw_init_get_handle, id);
     expect_value(__wrap_sos_register_ssi, p_interface, &ssi_interface);
     // p_registration and p_ssi_interface come from static allocations in the function
     expect_any(__wrap_sos_register_ssi, p_registration);

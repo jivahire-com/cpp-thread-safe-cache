@@ -446,7 +446,7 @@ void scp_avs_driver_initialize(pscp_avs_device Device)
     status = nvic_irq_enable(Device->config.avs_irq);
     FPFW_RUNTIME_ASSERT(status == NVIC_STATUS_SUCCESS);
 
-    // Configure the AVS HW to fire the ISR only on CMD ONE
+    // Configure the AVS HW to fire the ISR only on CMD DONE
     FPFW_RUNTIME_ASSERT(avs_enable_interrupt(Device->avs_bus_num, AVS_IRQ_CMD_DONE) == SILIBS_SUCCESS);
 }
 

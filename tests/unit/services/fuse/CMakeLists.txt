@@ -14,6 +14,7 @@ target_link_libraries(${TARGET}
         ms::mocks::event_trace
         ms::mocks::threadx
         ms::service::fuse
+        ms::service::sds_service
     PUBLIC
         fwlib.lib.assert
         silibs::fuse
@@ -51,6 +52,8 @@ mock_target(${TARGET}
     fuse_get_exclude_list_fpga
     fpfw_init_get_handle
     fpfw_icc_base_send_recv_sync
+    sds_block_creation
+    sds_block_write
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

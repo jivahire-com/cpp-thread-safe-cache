@@ -25,8 +25,10 @@ enum {
     FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR3_MINOR0   =(-23),
     FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR3_MINOR1   =(-24),
     FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR4_MINOR0   =(-25),
-    FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR4_MINOR1   =(-26)
+    FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR4_MINOR1   =(-26),
+    FUSE_ERROR_DISABLE_KNOB                       =(-27)
 };
+
 typedef union _kng_hsp_fuse_mailbox_msg {
 	struct kng_hsp_mailbox_cmd_load_fw_req fuse_req;	/**< incoming mailbox message from protocol to handler. */
 	struct kng_hsp_mailbox_msg_rsp rsp;	        /**< outgoing mailbox message from handler to protocol. */

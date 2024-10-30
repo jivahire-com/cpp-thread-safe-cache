@@ -24,6 +24,10 @@
 #include <kingsgate_fuse_defines.h> // Test revision get
 #include <kng_soc_constants.h>      // for DIE_INSTANCE
 #include <memory_map/mscp_exp_rmss_memory_map.h>
+#include <sds_api.h>
+#include <sds_configuration.h>
+#include <sds_init.h>
+#include <shared_sds_def.h>      //Fuse SDS block and struct id
 #include <silibs_mcp_top_regs.h> // for MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
 #include <silibs_platform.h>     // silibs status and result
 #include <silibs_scp_exp_top_regs.h>
@@ -44,10 +48,12 @@
 static bool platform_requires_fuse_distribution();
 static int platform_fuse_copy_to_ram();
 static int read_override_from_spi();
-
+static int read_core_disabled_fuses();
+static int write_fuse_info_to_ap();
 /*-- Declarations (Statics and globals) --*/
 
 static fpfw_icc_base_ctx_t* icc_base_ctx_fuse;
+kng_fuse_disable_core_t DIE0_fuse_disable, DIE1_fuse_disable;
 
 /*------------- Functions ----------------*/
 static bool platform_requires_fuse_distribution()
@@ -79,6 +85,7 @@ static bool platform_requires_fuse_distribution()
     }
     return status;
 }
+
 static int platform_fuse_copy_to_ram()
 {
     return fuse_dma_copy_to_ram_blocking();
@@ -107,6 +114,55 @@ static int read_override_from_spi()
 
     return icc_status;
 }
+
+static int read_core_disabled_fuses()
+{
+    kng_fuse_disable_core_t* p_fuse_disable;
+    int p_die_num;
+
+    if (idsw_get_die_id() == DIE_0)
+    {
+        p_fuse_disable = &DIE0_fuse_disable;
+        p_die_num = 0;
+    }
+    else
+    {
+        p_fuse_disable = &DIE1_fuse_disable;
+        p_die_num = 1;
+    }
+
+    p_fuse_disable->fuse_dis_core_0_31 =
+        read_fuse(CORE_DISABLE_CORE_DISABLE0_BIT_OFFSET, CORE_DISABLE_CORE_DISABLE0_WIDTH);
+    p_fuse_disable->fuse_dis_core_32_63 =
+        read_fuse(CORE_DISABLE_CORE_DISABLE1_BIT_OFFSET, CORE_DISABLE_CORE_DISABLE1_WIDTH);
+    p_fuse_disable->fuse_dis_core_64_65 =
+        read_fuse(CORE_DISABLE_CORE_DISABLE2_BIT_OFFSET, CORE_DISABLE_CORE_DISABLE2_WIDTH);
+
+    printf(FUSE_NAME "save disable knob in DIE%d done\n", p_die_num);
+
+    return SILIBS_SUCCESS;
+}
+
+static int write_fuse_info_to_ap()
+{
+    int32_t result = 0;
+    if (idsw_get_die_id() == DIE_0)
+    {
+        result = sds_block_creation(FUSE_DISABLE_CORE_DIE0_STRUCT_ID, FUSE_DISABLE_CORE_DIE0_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
+        BUG_ASSERT(result == KNG_SUCCESS);
+        result = sds_block_write(FUSE_DISABLE_CORE_DIE0_STRUCT_ID, &DIE0_fuse_disable, FUSE_DISABLE_CORE_DIE0_SIZE);
+        BUG_ASSERT(result == KNG_SUCCESS);
+    }
+    else
+    {
+        result = sds_block_creation(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, FUSE_DISABLE_CORE_DIE1_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
+        BUG_ASSERT(result == KNG_SUCCESS);
+        result = sds_block_write(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, &DIE1_fuse_disable, FUSE_DISABLE_CORE_DIE1_SIZE);
+        BUG_ASSERT(result == KNG_SUCCESS);
+    }
+    return result;
+}
+
 int platform_read_for_fuse(const uintptr_t fuse_store_addr, const uint64_t fuse_bit_offset, const uint32_t fuse_bit_size)
 {
     uint64_t fuse_data = 0;
@@ -125,6 +181,7 @@ int platform_read_for_fuse(const uintptr_t fuse_store_addr, const uint64_t fuse_
     // status = FPFW_INIT_STATUS_SUCCESS;
     return FPFW_INIT_STATUS_SUCCESS;
 }
+
 int platform_fuse_override()
 {
     int status = 0;
@@ -198,13 +255,24 @@ int platform_fuse_override()
                 return status;
             }
         }
+        status = read_core_disabled_fuses();
+        if (status != SILIBS_SUCCESS)
+        {
+            printf(FUSE_NAME "save disable knob failed\n");
+            status = FUSE_ERROR_DISABLE_KNOB;
+            return status;
+        }
+        // TODO: Fuse Service - Update core fusemap with disables from config knob
+        // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2015846/
         // Provide an opportunity for manual fuse override - debugger platforms should set a breakpoint on the
         // access implemented by this call
         trigger_debugger_for_manual_overrides();
     }
     FUSE_ET_STATUS(FUSE_ET_TYPE_OVERRIDE_COMPLETE);
+    printf(FUSE_NAME "Fuse Override complete\n");
     return status;
 }
+
 int platform_fuse_distribution(int stage)
 {
     int status = 0;
@@ -290,9 +358,7 @@ int platform_fuse_distribution(int stage)
             }
             printf(FUSE_NAME "Phase 3 fuse distribution complete\n");
 
-            // TODO Task: Integrate with ICC for HSP mailbox load of override
-            // https://azurecsi.visualstudio.com/Dev/_workitems/edit/1884658
-            // status = write_fuse_info_to_spi();
+            status = write_fuse_info_to_ap();
         }
         printf(FUSE_NAME "fuse distribution complete \n");
         FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_END);

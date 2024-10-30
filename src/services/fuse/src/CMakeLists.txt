@@ -35,6 +35,7 @@ target_link_libraries(${TARGET}
     ms::lib::system_info
     ms::lib::threadx
     ms::lib::utils
+    ms::service::sds_service
     silibs::fuse
     silibs::idsw
     silibs::idsw_kng

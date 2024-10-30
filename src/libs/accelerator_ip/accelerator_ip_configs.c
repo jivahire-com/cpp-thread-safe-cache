@@ -20,6 +20,7 @@
 #include "silibs_common.h"              // for ARRAY_SIZE
 
 #include <accelerator_ip_priv.h> // for get_accelerator_ctxt
+#include <accelip_id.h>          // NUM_VALID_ACCEL_ID, ACCEL_ID_SDM, ACCEL_ID_CDED
 #include <ap_top_regs.h>
 #include <sdm_ext_cfg_regs.h>
 #include <sdm_init_knobs.h> // for MSFT_VENDOR_ID, INT_PIN_A
@@ -90,19 +91,21 @@ typedef struct
 /*Following structure contains the default values of SDM and CDED which needs to be
 overwritten from the default values provided in Silibs Knobs. More fields can be added
 later if required.*/
-static const sdm_cded_class_code_t sdm_cded_class_code_knobs_values[NUM_ACCEL_TYPE] = {
-    {
-        .class_code = SDM_BASE_CLASS_CODE,
-        .sub_class_code = SDM_CDED_SUB_CLASS_CODE,
-        .pci_device_id = SDM_PCI_DEVICE_ID,
-        .subsystem_id = SDM_PCI_DEVICE_ID,
-    },
-    {
-        .class_code = CDED_BASE_CLASS_CODE,
-        .sub_class_code = SDM_CDED_SUB_CLASS_CODE,
-        .pci_device_id = CDED_PCI_DEVICE_ID,
-        .subsystem_id = CDED_PCI_DEVICE_ID,
-    },
+static const sdm_cded_class_code_t sdm_cded_class_code_knobs_values[NUM_VALID_ACCEL_ID] = {
+    [ACCEL_ID_SDM] =
+        {
+            .class_code = SDM_BASE_CLASS_CODE,
+            .sub_class_code = SDM_CDED_SUB_CLASS_CODE,
+            .pci_device_id = SDM_PCI_DEVICE_ID,
+            .subsystem_id = SDM_PCI_DEVICE_ID,
+        },
+    [ACCEL_ID_CDED] =
+        {
+            .class_code = CDED_BASE_CLASS_CODE,
+            .sub_class_code = SDM_CDED_SUB_CLASS_CODE,
+            .pci_device_id = CDED_PCI_DEVICE_ID,
+            .subsystem_id = CDED_PCI_DEVICE_ID,
+        },
 };
 
 /*SDMSS Common structure initialization for the parameters required by sequence library API in
@@ -239,21 +242,19 @@ subsystem_ctxt_t* get_accelerator_ctxt(uint32_t* accel_instance_size)
 
 void scp_accel_update_default_knobs(subsystem_ctxt_t* p_ss_ctxt)
 {
-    /*TODO: Use proper macros from SDM FW Libs instead of hardcoded
-    value
-    https://azurecsi.visualstudio.com/Dev/_workitems/edit/2090995*/
-    uint8_t index = 0;
-    if ((p_ss_ctxt->accelip_metadata.accel_type == D1_ACCELIP_CDEDSS) ||
-        (p_ss_ctxt->accelip_metadata.accel_type == D0_ACCELIP_CDEDSS))
+    ACCEL_ID accel_ip_id = ACCEL_ID_SDM;
+
+    if (p_ss_ctxt->accelip_metadata.accel_type == D1_ACCELIP_CDEDSS || p_ss_ctxt->accelip_metadata.accel_type == D0_ACCELIP_CDEDSS)
     {
-        index = 1;
+        accel_ip_id = ACCEL_ID_CDED;
     }
+
     p_ss_ctxt->p_init_params->pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_base_class_code =
-        sdm_cded_class_code_knobs_values[index].class_code;
+        sdm_cded_class_code_knobs_values[accel_ip_id].class_code;
     p_ss_ctxt->p_init_params->pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_sub_class_code =
-        sdm_cded_class_code_knobs_values[index].sub_class_code;
+        sdm_cded_class_code_knobs_values[accel_ip_id].sub_class_code;
     p_ss_ctxt->p_init_params->pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_device_id =
-        sdm_cded_class_code_knobs_values[index].pci_device_id;
+        sdm_cded_class_code_knobs_values[accel_ip_id].pci_device_id;
     p_ss_ctxt->p_init_params->pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_subsystem_id =
-        sdm_cded_class_code_knobs_values[index].subsystem_id;
+        sdm_cded_class_code_knobs_values[accel_ip_id].subsystem_id;
 }

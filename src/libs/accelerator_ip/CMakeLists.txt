@@ -48,6 +48,7 @@ target_link_libraries(
         silibs::idsw_kng
         silibs::pcr_vab
         silibs::pcr_rpss
+        silibs::sdm_command_desc
         silibs::smmu
         silibs::tower_cdedss # TODO: ADO 1831262: Remove me after completing the ADO
         silibs::tower_sdmss

@@ -16,8 +16,72 @@ add_compile_options(-I${TARGET_DIR}/libraries/common/silibs_platform/include
 # Disable warnings for shared libs
 add_compile_options(-w)
 
-# Use the `silibs_manifest` file next to this CMAKE to define which libraries to bring in
-file (STRINGS "silibs_manifest" SILIB_LIST)
+set(SILIB_LIST
+    accelip_ss_init
+    atu
+    avs
+    clocks_sequence
+    cml
+    cmn800
+    cmn800_ras_sequence
+    cmn800_sequence
+    cmn800_skus
+    cmsdk_wd
+    ddr_i3c
+    ddrss
+    dmac
+    dvfs
+    fuse
+    gpio
+    gtimer
+    i2c
+    icc_mhu
+    idhw
+    intu
+    ioss
+    lib_i3c
+    mhuv3
+    pcie
+    pciess
+    pcr_clock_config
+    pcr_css
+    pcr_d2dss
+    pcr_ddrss
+    pcr_ioss
+    pcr_msxp
+    pcr_periph
+    pcr_rpss
+    pcr_vab
+    pik_clock
+    ppu_v1
+    pvt
+    ras_arm
+    ras_framework
+    ras_mcp
+    ras_mscp
+    ras_scp
+    sdm_ext_interrupts
+    sdm_init
+    semaphore
+    sensor_ram_bridge
+    smmu
+    tower_cdedss
+    tower_d2dss
+    tower_ddrss
+    tower_fabric
+    tower_ioss
+    tower_mgmtap
+    tower_perip
+    tower_rpss
+    tower_sdmss
+    tower_sequence
+    tower_system_control
+    tower_utility
+    tower_vab
+    usb_init
+    vab_init
+    vab_pcr_init
+)
 
 foreach(SILIB ${SILIB_LIST})
   message("Adding silibs/${SILIB} ...")

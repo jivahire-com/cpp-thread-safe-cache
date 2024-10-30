@@ -49,7 +49,6 @@ STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
 // ecc_ce_err (mc) (phy_add) {error bit}
 STATIC FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char** Argv)
 {
-    uint32_t sts = CLI_SUCCESS;
     int32_t die = 0;
     uint32_t mc = 0;
     uint64_t p_addr = 0;
@@ -114,14 +113,13 @@ STATIC FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char** Argv)
         return CLI_ERROR;
     }
 
-    sts = ddrss_ue_ce_error_injection(die, mc, p_addr, BIT_Value);
+    ddrss_ue_ce_error_injection(die, mc, p_addr, BIT_Value);
     FpFwCliPrint("DDR: ecc_ce_error_injection - Done!!\n");
-    return sts;
+    return CLI_SUCCESS;
 }
 
 STATIC FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv)
 {
-    uint32_t sts = CLI_SUCCESS;
     int32_t die = 0;
     uint32_t mc = 0;
     uint64_t p_addr = 0;
@@ -200,9 +198,9 @@ STATIC FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv)
         return CLI_ERROR;
     }
 
-    sts = ddrss_ue_ce_error_injection(die, mc, p_addr, BIT_Value);
+    ddrss_ue_ce_error_injection(die, mc, p_addr, BIT_Value);
     FpFwCliPrint("DDR: ecc_ue_error_injection - Done!!\n");
-    return sts;
+    return CLI_SUCCESS;
 }
 
 STATIC FPFW_CLI_STATUS cmd_addr_parity_error_injection(int Argc, const char** Argv)

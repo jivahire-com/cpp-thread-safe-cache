@@ -83,9 +83,8 @@ bool ddrss_ue_ce_err_inj_validation(uint32_t mc, uint16_t BIT)
     return ret;
 }
 
-int ddrss_ue_ce_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, uint16_t Bit)
+void ddrss_ue_ce_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, uint16_t Bit)
 {
-    uint32_t ret = 0;
     uint32_t err_inj_mapped_addr;
     ddrss_media_data_err_inj_info_t media_data_err_inj = {0};
     ddrss_err_inj_atu_map(die_num);
@@ -95,7 +94,6 @@ int ddrss_ue_ce_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, u
     media_data_err_inj.err_inj_beat = 1;
     media_data_err_inj.err_inj_cnt = 1;
     DDR_ASSERT(!ddrss_inject_media_data_err(mc, &media_data_err_inj));
-    ret = MMIO_READ32(err_inj_mapped_addr);
+    MMIO_READ32(err_inj_mapped_addr);
     ddrss_err_inj_atu_unmap();
-    return ret;
 }

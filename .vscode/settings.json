@@ -6,7 +6,11 @@
         "system_error": "c",
         "regex": "c",
         "compare": "cpp",
-        "cstdint": "cpp"
+        "cstdint": "cpp",
+        "stacktrace": "c",
+        "queue": "c",
+        "random": "c",
+        "filesystem": "cpp"
     },
     "cmake.buildDirectory": "${env:REPO_APP_TARGET_BUILD_DIR}",
     "cmake.buildTask": true,

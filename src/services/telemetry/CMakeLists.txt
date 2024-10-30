@@ -2,6 +2,7 @@ add_library(tlm.service.cmpnt.interfaces INTERFACE)
 
 target_include_directories(tlm.service.cmpnt.interfaces
     INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/data_proc_tlm_cmpnt/inc
         ${CMAKE_CURRENT_SOURCE_DIR}/exec_tlm_cmpnt/inc
         ${CMAKE_CURRENT_SOURCE_DIR}/in_band_tlm_cmpnt/inc
@@ -12,11 +13,15 @@ target_include_directories(tlm.service.cmpnt.interfaces
 target_link_libraries(tlm.service.cmpnt.interfaces
     INTERFACE
         ms::service::sensor_fifo
+        ms::lib::threadx
         kng_silibs_platform
         fwlib.lib.status
+        fwlib.lib.assert
         ms::lib::interface::in_band_telemetry_ddr
+        kng.service.telemetry.cmpnt.event_trace
     )
 
+add_subdirectory(event_trace_cmpnt)
 add_subdirectory(data_proc_tlm_cmpnt)
 add_subdirectory(exec_tlm_cmpnt)
 add_subdirectory(in_band_tlm_cmpnt)

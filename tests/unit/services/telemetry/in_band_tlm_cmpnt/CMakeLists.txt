@@ -3,6 +3,7 @@ set(TARGET  kng.service.telemetry.cmpnt.in_band_tlm.test)
 set(SOURCES
     in_band_mocks.c
     test_create_package.cpp
+    test_dcs_manager.cpp
     test_ddr_manager.cpp
     test_in_band_cmpnt.cpp
 )
@@ -35,4 +36,9 @@ unit_test_target(${TARGET})
 
 mock_target(${TARGET}
     _tx_time_get
+    _txe_queue_create
+    _txe_queue_send
+    _txe_queue_receive
+    _txe_queue_flush
+    FpFwAssertWithArgs
 )

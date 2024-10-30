@@ -29,39 +29,38 @@
 #define PWR_AGGR_START_TICK    (TX_TIMER_TICKS_PER_SECOND / 2)
 #define PWR_AGGR_PERIODIC_TICK (1)
 
-#define INST_RPT_START_TICK           (TX_TIMER_TICKS_PER_SECOND * 2)
-#define EVERY_24_HR_RPT_PERIODIC_TICK (TICKS_PER_24HR)
+#define EVERY_24_HR_PKG_PERIODIC_TICK (TICKS_PER_24HR)
 
 #define ALL_EVENT_GROUP_BITS (0xFFFFFFFF)
 
 // event flags
 #define PWR_AGGR_TMR_EXPIRED       (1 << 0)
-#define INST_RPT_TMR_EXPIRED       (1 << 1)
-#define PWR_RPT_TMR_EXPIRED        (1 << 2)
-#define EVERY_24HR_RPT_TMR_EXPIRED (1 << 3)
+#define INST_PKG_TMR_EXPIRED       (1 << 1)
+#define PWR_PKG_TMR_EXPIRED        (1 << 2)
+#define EVERY_24HR_PKG_TMR_EXPIRED (1 << 3)
 
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
 static void tlm_svc_thread(ULONG thread_input);
 static void pwr_aggr_timer_cb(ULONG context);
-static void inst_rpt_timer_cb(ULONG context);
-static void pwr_rpt_timer_cb(ULONG context);
-static void every_24hr_rpt_timer_cb(ULONG context);
+static void inst_pkg_timer_cb(ULONG context);
+static void pwr_pkg_timer_cb(ULONG context);
+static void every_24hr_pkg_timer_cb(ULONG context);
 
 /*-- Declarations (Statics and globals) --*/
 static TX_THREAD s_tlm_svc_thread;
 static uint8_t s_tlm_svc_thread_stack[TLM_SVC_STACK_SIZE];
 
 static TX_TIMER s_pwr_aggr_tmr;
-static TX_TIMER s_inst_rpt_tmr;
-static TX_TIMER s_power_rpt_tmr;
-static TX_TIMER s_24hr_rpt_tmr;
+static TX_TIMER s_inst_pkg_tmr;
+static TX_TIMER s_power_pkg_tmr;
+static TX_TIMER s_24hr_pkg_tmr;
 
 static TX_EVENT_FLAGS_GROUP s_thread_control;
 
 /*------------- Functions ----------------*/
-void exec_tlm_cmpnt_init(uint32_t pwr_rpt_period_ms, uint32_t inst_rpt_period_ms)
+void exec_tlm_cmpnt_init(uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_period_ms)
 {
     UINT txStatus = tx_thread_create(&s_tlm_svc_thread,
                                      "tlm_service",          // Thread name
@@ -86,30 +85,30 @@ void exec_tlm_cmpnt_init(uint32_t pwr_rpt_period_ms, uint32_t inst_rpt_period_ms
                                TX_AUTO_ACTIVATE);      /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
-    txStatus = tx_timer_create(&s_inst_rpt_tmr,    /* TX_TIMER *timer_ptr */
-                               "tlm_svc_inst_rpt", /* CHAR *name_ptr */
-                               inst_rpt_timer_cb,  /* VOID (*expiration_function)(ULONG input) */
+    txStatus = tx_timer_create(&s_inst_pkg_tmr,    /* TX_TIMER *timer_ptr */
+                               "tlm_svc_inst_pkg", /* CHAR *name_ptr */
+                               inst_pkg_timer_cb,  /* VOID (*expiration_function)(ULONG input) */
                                0,                  /* ULONG expiration_input */
-                               MS_TO_TX_TICKS(inst_rpt_period_ms), /* ULONG initial_ticks >= 1 */
-                               MS_TO_TX_TICKS(inst_rpt_period_ms), /* ULONG reschedule_ticks */
-                               TX_NO_ACTIVATE);                    /* UINT auto_activate) */
+                               MS_TO_TX_TICKS(inst_pkg_sample_period_ms), /* ULONG initial_ticks >= 1 */
+                               MS_TO_TX_TICKS(inst_pkg_sample_period_ms), /* ULONG reschedule_ticks */
+                               TX_NO_ACTIVATE);                           /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
-    txStatus = tx_timer_create(&s_power_rpt_tmr,  /* TX_TIMER *timer_ptr */
-                               "tlm_svc_pwr_rpt", /* CHAR *name_ptr */
-                               pwr_rpt_timer_cb,  /* VOID (*expiration_function)(ULONG input) */
+    txStatus = tx_timer_create(&s_power_pkg_tmr,  /* TX_TIMER *timer_ptr */
+                               "tlm_svc_pwr_pkg", /* CHAR *name_ptr */
+                               pwr_pkg_timer_cb,  /* VOID (*expiration_function)(ULONG input) */
                                0,                 /* ULONG expiration_input */
-                               MS_TO_TX_TICKS(pwr_rpt_period_ms), /* ULONG initial_ticks >= 1 */
-                               MS_TO_TX_TICKS(pwr_rpt_period_ms), /* ULONG reschedule_ticks */
+                               MS_TO_TX_TICKS(pwr_pkg_period_ms), /* ULONG initial_ticks >= 1 */
+                               MS_TO_TX_TICKS(pwr_pkg_period_ms), /* ULONG reschedule_ticks */
                                TX_AUTO_ACTIVATE);                 /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
-    txStatus = tx_timer_create(&s_24hr_rpt_tmr,               /* TX_TIMER *timer_ptr */
-                               "tlm_svc_24hr_rpt",            /* CHAR *name_ptr */
-                               every_24hr_rpt_timer_cb,       /* VOID (*expiration_function)(ULONG input) */
+    txStatus = tx_timer_create(&s_24hr_pkg_tmr,               /* TX_TIMER *timer_ptr */
+                               "tlm_svc_24hr_pkg",            /* CHAR *name_ptr */
+                               every_24hr_pkg_timer_cb,       /* VOID (*expiration_function)(ULONG input) */
                                0,                             /* ULONG expiration_input */
-                               EVERY_24_HR_RPT_PERIODIC_TICK, /* ULONG initial_ticks >= 1 */
-                               EVERY_24_HR_RPT_PERIODIC_TICK, /* ULONG reschedule_ticks */
+                               EVERY_24_HR_PKG_PERIODIC_TICK, /* ULONG initial_ticks >= 1 */
+                               EVERY_24_HR_PKG_PERIODIC_TICK, /* ULONG reschedule_ticks */
                                TX_NO_ACTIVATE);               /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
@@ -132,18 +131,18 @@ static void tlm_svc_thread(ULONG thread_input)
             data_proc_tlm_cmpnt_aggregate_pwr_tlm_data();
         }
 
-        if (current_bits & INST_RPT_TMR_EXPIRED)
+        if (current_bits & INST_PKG_TMR_EXPIRED)
         {
             data_proc_tlm_cmpnt_aggregate_inst_tlm_data();
-            in_band_tlm_cmpnt_generate_inst_report();
+            in_band_tlm_cmpnt_generate_inst_pkg();
         }
 
-        if (current_bits & PWR_RPT_TMR_EXPIRED)
+        if (current_bits & PWR_PKG_TMR_EXPIRED)
         {
-            in_band_tlm_cmpnt_generate_pwr_report();
+            in_band_tlm_cmpnt_generate_pwr_pkg();
         }
 
-        if (current_bits & EVERY_24HR_RPT_TMR_EXPIRED)
+        if (current_bits & EVERY_24HR_PKG_TMR_EXPIRED)
         {
             data_proc_tlm_cmpnt_aggregate_24hr_tlm_data();
         }
@@ -158,26 +157,26 @@ static void pwr_aggr_timer_cb(ULONG context)
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 
-static void inst_rpt_timer_cb(ULONG context)
+static void inst_pkg_timer_cb(ULONG context)
 {
     FPFW_UNUSED(context);
 
-    UINT txStatus = tx_event_flags_set(&s_thread_control, INST_RPT_TMR_EXPIRED, TX_OR);
+    UINT txStatus = tx_event_flags_set(&s_thread_control, INST_PKG_TMR_EXPIRED, TX_OR);
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 
-static void pwr_rpt_timer_cb(ULONG context)
+static void pwr_pkg_timer_cb(ULONG context)
 {
     FPFW_UNUSED(context);
 
-    UINT txStatus = tx_event_flags_set(&s_thread_control, PWR_RPT_TMR_EXPIRED, TX_OR);
+    UINT txStatus = tx_event_flags_set(&s_thread_control, PWR_PKG_TMR_EXPIRED, TX_OR);
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 
-static void every_24hr_rpt_timer_cb(ULONG context)
+static void every_24hr_pkg_timer_cb(ULONG context)
 {
     FPFW_UNUSED(context);
 
-    UINT txStatus = tx_event_flags_set(&s_thread_control, EVERY_24HR_RPT_TMR_EXPIRED, TX_OR);
+    UINT txStatus = tx_event_flags_set(&s_thread_control, EVERY_24HR_PKG_TMR_EXPIRED, TX_OR);
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }

@@ -3,7 +3,7 @@
 //
 
 /**
- * @file sensor_fifo_events.c
+ * @file telemetry_events.c
  * Instantiates the actual event trace functions for the service.
  */
 
@@ -13,7 +13,7 @@
 #define FPFW_ET_IMPLEMENTATION
 #define FPFW_ET_METADATA
 
-#include <sensor_fifo_events_i.h> // IWYU pragma: keep
+#include <telemetry_events_i.h> // IWYU pragma: keep
 
 /*-- Symbolic Constant Macros (defines) --*/
 

@@ -103,28 +103,28 @@ typedef struct {
     uint16_t max_mV;
     uint16_t min_mV;
     uint16_t average_mV;
-    uint16_t latest_value_mV;  // defined as reserved for tlm reports
+    uint16_t latest_value_mV;  // defined as reserved for tlm packages
 } voltage_t;
 
 typedef struct {
     uint16_t max_dC;
     uint16_t min_dC;
     uint16_t average_dC;
-    uint16_t latest_value_dC; // defined as reserved for tlm reports
+    uint16_t latest_value_dC; // defined as reserved for tlm packages
 } temperature_t;
 
 typedef struct {
     uint16_t max_mA;
     uint16_t min_mA;
     uint16_t average_mA;
-    uint16_t latest_value_mA; // defined as reserved for tlm reports
+    uint16_t latest_value_mA; // defined as reserved for tlm packages
 } current_t;
 
 typedef struct {
     uint16_t max_uS;
     uint16_t min_uS;
     uint16_t average_uS;
-    uint16_t latest_value_uS; // defined as reserved for tlm reports
+    uint16_t latest_value_uS; // defined as reserved for tlm packages
 } latency_t;
 
 //----------------POWER_TELEMETRY_ELEMENT_CORE_PSTATE----------------

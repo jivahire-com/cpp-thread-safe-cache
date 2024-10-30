@@ -199,3 +199,57 @@ void data_proc_tlm_cmpnt_get_inst_core_amu_data(uint16_t core_id, p_inst_core_el
 
     function_called();
 }
+
+void __wrap_FpFwAssertWithArgs(int expression, uintptr_t arg0, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3)
+{
+    FPFW_UNUSED(expression);
+    FPFW_UNUSED(arg0);
+    FPFW_UNUSED(arg1);
+    FPFW_UNUSED(arg2);
+    FPFW_UNUSED(arg3);
+
+    function_called();
+}
+
+UINT __wrap__txe_queue_flush(TX_QUEUE *queue_ptr)
+{
+    check_expected_ptr(queue_ptr);
+
+    return mock_type(UINT);
+}
+
+UINT __wrap__txe_queue_create(TX_QUEUE* queue_ptr, CHAR* name_ptr, UINT message_size, VOID* queue_start, ULONG queue_size, UINT queue_control_block_size)
+{
+    check_expected_ptr(queue_ptr);
+    check_expected_ptr(name_ptr);
+    check_expected(message_size);
+    check_expected_ptr(queue_start);
+    check_expected(queue_size);
+    check_expected(queue_control_block_size);
+    return mock_type(UINT);
+}
+
+UINT __wrap__txe_queue_send(TX_QUEUE* queue_ptr, VOID* source_ptr, ULONG wait_option)
+{
+    check_expected_ptr(queue_ptr);
+    check_expected_ptr(source_ptr);
+    check_expected(wait_option);
+    return mock_type(UINT);
+}
+
+UINT __wrap__txe_queue_receive(TX_QUEUE* queue_ptr, VOID* destination_ptr, ULONG wait_option)
+{
+    check_expected_ptr(queue_ptr);
+    check_expected_ptr(destination_ptr);
+    check_expected(wait_option);
+
+    size_t mockSize = mock_type(size_t);
+    void* pMockData = mock_ptr_type(void*);
+
+    if (destination_ptr && pMockData)
+    {
+        memcpy(destination_ptr, pMockData, mockSize); // NOLINT memcpy ok for mock
+    }
+
+    return mock_type(UINT);
+}

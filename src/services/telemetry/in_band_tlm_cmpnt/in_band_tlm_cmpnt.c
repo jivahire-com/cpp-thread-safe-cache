@@ -10,7 +10,10 @@
 /*------------- Includes -----------------*/
 #include "in_band_tlm_cmpnt.h"
 
+#include "dcs_manager_i.h"
+#include "ddr_manager_i.h"
 #include "in_band_tlm_cmpnt_i.h"
+#include "package_creation_i.h"
 #include "telemetry_package_defs.h"
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -20,59 +23,84 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static uint8_t s_die_id;
+uint8_t inband_die_id;
+uint16_t inband_inst_samples_per_pkg;
 
 /*------------- Functions ----------------*/
 
-void in_band_tlm_cmpnt_init(uint8_t die_id)
+void in_band_tlm_cmpnt_init(uint8_t die_id, uint16_t inst_samples_per_pkg)
 {
-    s_die_id = die_id;
+    inband_die_id = die_id;
+    inband_inst_samples_per_pkg = inst_samples_per_pkg;
+    ddr_manager_init();
+    dcs_manager_init();
+
+    // TODO: temporary until DCS is supported
+    package_create_enable_pwr_record(POWER_TELEMETRY_ELEMENT_CORE_VOLTAGE);
+    package_create_enable_pwr_record(POWER_TELEMETRY_ELEMENT_CORE_CURRENT);
 }
 
-void in_band_tlm_cmpnt_generate_inst_report(void)
+void in_band_tlm_cmpnt_generate_inst_pkg(void)
 {
-    // TODOs will be handled by tasks
-    // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2023646
-    // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2025876
+    static uintptr_t pkg_location = 0;
+    static size_t pkg_used_size = 0;
+    static size_t pkg_available_size;
+    static uint16_t sample_count = 0;
 
-    uintptr_t pkg_location;
-    size_t pkg_available_size;
-    fpfw_status_t status = ddr_manager_allocate_mem_for_inst_report(&pkg_location, &pkg_available_size);
-
-    if (FPFW_STATUS_SUCCEEDED(status))
+    if (sample_count == 0)
     {
-        status = package_create_inst_report(pkg_location, pkg_available_size);
-        if (status == FPFW_STATUS_BUFFER_TOO_SMALL)
+        fpfw_status_t status = ddr_manager_allocate_mem_for_inst_pkg(&pkg_location, &pkg_available_size);
+
+        if (FPFW_STATUS_FAILED(status))
         {
-            // TODO: send this package allocate a new package and call again
+            // error already traced
+            return;
         }
+        pkg_used_size = sizeof(telemetry_package_hdr_t);
+        p_telemetry_package_hdr_t package_hdr = (p_telemetry_package_hdr_t)pkg_location;
+        package_hdr->client_header.timestamp =
+            (uint64_t)tx_time_get(); // TODO: replace with higher resolution timer when available
     }
-    else
+
+    p_telemetry_package_hdr_t package_hdr = (p_telemetry_package_hdr_t)pkg_location;
+
+    pkg_used_size +=
+        package_create_append_to_inst_pkg(pkg_location + pkg_used_size, pkg_available_size - pkg_used_size, package_hdr);
+
+    if (++sample_count == inband_inst_samples_per_pkg)
     {
-        // TODO:handle error
+        sample_count = 0;
+        package_hdr->client_header.package_payload_size = pkg_used_size - sizeof(telemetry_package_hdr_t);
+
+        if (pkg_used_size > sizeof(telemetry_package_hdr_t))
+        {
+            dcs_manager_queue_tlm_package(pkg_location, pkg_used_size);
+        }
+        else
+        {
+            // no enabled elements
+            ddr_manager_deallocate_mem(&pkg_location);
+        }
     }
 }
 
-void in_band_tlm_cmpnt_generate_pwr_report(void)
+void in_band_tlm_cmpnt_generate_pwr_pkg(void)
 {
-    // TODOs will be handled by tasks
-    // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2023646
-    // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2025876
-
     uintptr_t pkg_location;
     size_t pkg_available_size;
-    fpfw_status_t status = ddr_manager_allocate_mem_for_pwr_report(&pkg_location, &pkg_available_size);
+    uint32_t pkg_used_size;
+    fpfw_status_t status = ddr_manager_allocate_mem_for_pwr_pkg(&pkg_location, &pkg_available_size);
 
-    if (FPFW_STATUS_SUCCEEDED(status))
+    if (FPFW_STATUS_SUCCEEDED(status)) // failure already traced
     {
-        status = package_create_power_report(pkg_location, pkg_available_size);
-        if (status == FPFW_STATUS_BUFFER_TOO_SMALL)
+        pkg_used_size = package_create_power_pkg(pkg_location, pkg_available_size);
+        if (pkg_used_size > 0)
         {
-            // TODO: send this package allocate a new package and call again
+            dcs_manager_queue_tlm_package(pkg_location, pkg_used_size);
         }
-    }
-    else
-    {
-        // TODO:handle error
+        else
+        {
+            ddr_manager_deallocate_mem(&pkg_location);
+        }
     }
 }

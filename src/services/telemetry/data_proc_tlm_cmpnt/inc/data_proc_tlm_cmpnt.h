@@ -35,7 +35,7 @@ void data_proc_tlm_cmpnt_init(void);
 void data_proc_tlm_cmpnt_aggregate_pwr_tlm_data(void);
 
 /**
- * @brief Primary performance data collection entry point.  Read raw data from sensor fifo and/or registers and update telemetry aggregation structures.
+ * @brief Primary instantaneous data collection entry point.  Read raw data from sensor fifo and/or registers and update telemetry aggregation structures.
  *
  * @return None
  */
@@ -199,7 +199,7 @@ void data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data(uint16_t mpam_id, pwr_element_
 void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_element_mpam_throttle_t mpam_throttle_data);
 
 /**
- * @brief Get the core summary performance data for the specified core.
+ * @brief Get the core summary instantaneous data for the specified core.
  *
  * @param[in] core_id - The core id to get the data for. 0 .. NUMBER_OF_CORES_PER_DIE-1
  * @param[out] core_summary_data - Pointer to the location to store the core summary data in.
@@ -219,7 +219,7 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
 void data_proc_tlm_cmpnt_get_inst_soc_rail_data(uint16_t rail_id, p_inst_soc_element_rail_t rail_data);
 
 /**
- * @brief Get the soc performance dimm data for the specified dimm channel.
+ * @brief Get the soc instantaneous dimm data for the specified dimm channel.
  *
  * @param[in] dimm_module - The dimm module to get the data for. 0 .. NUMBER_OF_DIMM_MODULES-1
  * @param[out] dimm_data - Pointer to the location to store the dimm data in.
@@ -229,7 +229,7 @@ void data_proc_tlm_cmpnt_get_inst_soc_rail_data(uint16_t rail_id, p_inst_soc_ele
 void data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(uint16_t dimm_module, p_inst_soc_element_dimm_runtime_t dimm_data);
 
 /**
- * @brief Get the soc performance dimm config data.
+ * @brief Get the soc instantaneous dimm config data.
  *
  * @param[out] dimm_cfg - Pointer to the location to store the dimm config data in.
  *
@@ -238,7 +238,7 @@ void data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(uint16_t dimm_module, p_
 void data_proc_tlm_cmpnt_get_inst_soc_dimm_config_data(p_inst_soc_element_dimm_config_t dimm_cfg);
 
 /**
- * @brief Get the soc performance sensor temperature data for the specified sensor.
+ * @brief Get the soc instantaneous sensor temperature data for the specified sensor.
  *
  * @param[in] sensor_id - The sensor id to get the data for. 0 .. NUMBER_OF_SOC_TEMP_SENSORS-1
  * @param[out] sensor_data - Pointer to the location to store the sensor data in.
@@ -248,7 +248,7 @@ void data_proc_tlm_cmpnt_get_inst_soc_dimm_config_data(p_inst_soc_element_dimm_c
 void data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(uint16_t sensor_id, p_inst_soc_element_sensor_temp_t sensor_temp_data);
 
 /**
- * @brief Get the core performance AMU data for the specified core.
+ * @brief Get the core instantaneous AMU data for the specified core.
  *
  * @param[in] core_id - The core id to get the data for. 0 .. NUMBER_OF_CORES_PER_DIE-1
  * @param[out] amu_data - Pointer to the location to store the AMU data in.

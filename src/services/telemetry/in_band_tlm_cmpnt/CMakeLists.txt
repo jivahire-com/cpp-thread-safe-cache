@@ -2,6 +2,7 @@ set(TARGET kng.service.telemetry.cmpnt.in_band_tlm)
 
 add_library(${TARGET}
     STATIC
+        dcs_manager.c
         ddr_manager.c
         element_schema.c
         in_band_tlm_cmpnt.c

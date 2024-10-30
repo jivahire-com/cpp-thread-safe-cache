@@ -21,7 +21,7 @@
 
 /**
  * @brief Initialize the telemetry executive component.
- * param[in] pwr_rpt_period_ms The power report period in milliseconds.
- * param[in] inst_rpt_period_ms The performance report period in milliseconds.
+ * param[in] pwr_pkg_period_ms The power package period in milliseconds.
+ * param[in] inst_pkg_sample_period_ms The instantaneous package period in milliseconds.
  */
-void exec_tlm_cmpnt_init(uint32_t pwr_rpt_period_ms, uint32_t inst_rpt_period_ms);
+void exec_tlm_cmpnt_init(uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_period_ms);

@@ -49,6 +49,8 @@ static_assert((IB_TELEMETRY_DDR_TOTAL_SIZE) ==
                    (IB_TELEMETRY_DDR_DIE_1_AP_END_ADDR - IB_TELEMETRY_DDR_DIE_1_AP_BASE_ADDR)),
               "IB Die DDR sizes do not add up to total DDR size");
 
+static_assert(MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_END_ADDR <= IB_TELEMETRY_RESERVATION_END,
+              "alignment past end of physical memory");
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/

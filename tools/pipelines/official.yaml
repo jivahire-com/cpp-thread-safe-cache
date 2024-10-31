@@ -21,6 +21,8 @@ variables:
   value: ${{ parameters.debug }}
 - name: WindowsContainerImage
   value: 'onebranch.azurecr.io/windows/ltsc2019/vse2019:latest'
+- name: BuildVersion
+  value: $[ variables['Build.BuildNumber'] ]
 
 resources:
   repositories: 
@@ -46,14 +48,15 @@ extends:
         break: true # always break the build on binskim issues in addition to TSA upload
       policheck:
         break: true # always break the build on policheck issues. You can disable it by setting to 'false'
-      # suppression:
-      #   suppressionFile: $(Build.SourcesDirectory)\.gdn\global.gdnsuppress
+      baseline:
+        baselineFile: $(Build.SourcesDirectory)\tools\pipelines\baselines\.gdnbaselines
+      suppression:
+        suppressionFile: $(Build.SourcesDirectory)\tools\pipelines\baselines\.gdnsuppress
       codeql:
         compiled: 
           enabled: true
 
     stages:
-
     - stage: Build_x86_Debug
       dependsOn: []
       jobs:

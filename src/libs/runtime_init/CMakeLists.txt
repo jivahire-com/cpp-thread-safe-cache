@@ -77,6 +77,7 @@ target_link_libraries(
         fwlib.lib.mboxPrimitives
         fwlib.platform.dfwkhost.threadx
         fwlib.lib.platform.impl.timers.threadx
+        fwlib.lib.tmr_queue
         fwlib.lib.utils
         fwlib.driver.mboxIccTransport
         fwlib.service.icc_dispatcher

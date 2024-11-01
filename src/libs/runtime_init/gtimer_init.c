@@ -9,9 +9,10 @@
 
 /*------------- Includes -----------------*/
 #include <fpfw_init.h>
-#include <gtimer.h>
+#include <gtimer_prodfw.h>
 #include <idsw.h>
 #include <idsw_kng.h>
+#include <interrupts.h>
 #include <stdint.h>
 
 #define __NO_CSR_TYPEDEFS__
@@ -46,18 +47,23 @@ static_assert(FPGA_REFCLK_FREQUENCY * FPGA_SCALING_FACTOR == 10000000,
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_NULL_NODE)
+FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("std_io"))
 {
-    uint32_t frequency_hz = SOC_REFCLK_FREQUENCY_HZ;
-    uint8_t scaling_factor = SOC_REFCLK_SCALING_FACTOR;
+    gtimer_prodfw_init_config_t config;
+    config.counter_control_base = SCP_TOP_GEN_CNTR_CTRL_ADDRESS;
+    config.timer_control_base = SCP_TOP_SCP_TIMER_CTRL_ADDRESS;
+    config.timer_base_address = SCP_TOP_SCP_TIMER_BASE_ADDRESS;
+    config.frequency_hz = SOC_REFCLK_FREQUENCY_HZ;
+    config.scaling_factor = SOC_REFCLK_SCALING_FACTOR;
+    config.timer_irq = HW_INT_SCP_GENERIC_TIMER_INT;
 
     if (IS_PLATFORM_FPGA())
     {
-        frequency_hz = FPGA_REFCLK_FREQUENCY;
-        scaling_factor = FPGA_SCALING_FACTOR;
+        config.frequency_hz = FPGA_REFCLK_FREQUENCY;
+        config.scaling_factor = FPGA_SCALING_FACTOR;
     }
 
-    gtimer_init(SCP_TOP_GEN_CNTR_CTRL_ADDRESS, frequency_hz, scaling_factor);
+    gtimer_prodfw_init(&config);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

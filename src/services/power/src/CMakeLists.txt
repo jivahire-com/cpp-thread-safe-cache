@@ -56,12 +56,14 @@ target_link_libraries(${TARGET}
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.interface.platform.threadx
         fwlib.lib.status
+        fwlib.lib.tmr_queue
         fwlib.service.iccBase
         ms::client_interface::startup_shutdown
         ms::lib::cortex_m7::atomics
         ms::lib::event_trace::trace
         ms::lib::crash_dump
         ms::lib::error_codes
+        ms::lib::gtimer
         ms::lib::icc_platform_defines
         ms::lib::warm_start
         ms::service::sensor_fifo

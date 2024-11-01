@@ -7,7 +7,15 @@ add_library(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
+    fwlib.lib.status
+    fwlib.lib.tmr_queue
+    fwlib.lib.interface.platform.interrupts
+    ms::lib::crash_dump
+    ms::lib::error_codes
     ms::lib::register_headers
+    ms::lib::scp_interrupts
+    silibs::gtimer
+    silibs::platform
 )
 
 target_include_directories(${TARGET}

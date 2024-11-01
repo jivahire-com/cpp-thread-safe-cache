@@ -14,9 +14,10 @@
 
 extern "C" {
 #include <fpfw_init.h>
-#include <gtimer.h>
+#include <gtimer_prodfw.h>
 #include <idsw.h>
 #include <idsw_kng.h>
+#include <interrupts.h>
 #define __NO_CSR_TYPEDEFS__
 #include <scp_top_regs.h>
 #undef __NO_CSR_TYPEDEFS__
@@ -37,36 +38,43 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
     return mock_type(KNG_PLAT_ID);
 }
 
-void __wrap_gtimer_init(uintptr_t counter_control_base, uint32_t frequency_hz, uint8_t scaling_factor)
+void __wrap_gtimer_prodfw_init(gtimer_prodfw_init_config_t* config)
 {
-    check_expected(counter_control_base);
-    check_expected(frequency_hz);
-    check_expected(scaling_factor);
+    check_expected_ptr(config);
 }
 
 /* Tests */
 TEST_FUNCTION(test_gtimer_init_soc, NULL, NULL)
 {
+
+    gtimer_prodfw_init_config_t test_config = {
+        .counter_control_base = SCP_TOP_GEN_CNTR_CTRL_ADDRESS,
+        .timer_control_base = SCP_TOP_SCP_TIMER_CTRL_ADDRESS,
+        .timer_base_address = SCP_TOP_SCP_TIMER_BASE_ADDRESS,
+        .frequency_hz = (250 * 1000 * 1000),
+        .scaling_factor = 4,
+        .timer_irq = HW_INT_SCP_GENERIC_TIMER_INT,
+    };
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
-    expect_value(__wrap_gtimer_init, counter_control_base, SCP_TOP_GEN_CNTR_CTRL_ADDRESS);
-    /* Has to be 250 MHz */
-    expect_value(__wrap_gtimer_init, frequency_hz, (250 * 1000 * 1000));
-    /* Scaling factor must be 4 */
-    expect_value(__wrap_gtimer_init, scaling_factor, 4);
+    expect_memory(__wrap_gtimer_prodfw_init, config, &test_config, sizeof(gtimer_prodfw_init_config_t));
 
     _fpfw_component_gtimer.init_fn();
 }
 
 TEST_FUNCTION(test_gtimer_init_fpga, NULL, NULL)
 {
+    gtimer_prodfw_init_config_t test_config = {
+        .counter_control_base = SCP_TOP_GEN_CNTR_CTRL_ADDRESS,
+        .timer_control_base = SCP_TOP_SCP_TIMER_CTRL_ADDRESS,
+        .timer_base_address = SCP_TOP_SCP_TIMER_BASE_ADDRESS,
+        .frequency_hz = (10 * 1000 * 1000),
+        .scaling_factor = 1,
+        .timer_irq = HW_INT_SCP_GENERIC_TIMER_INT,
+    };
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
 
-    expect_value(__wrap_gtimer_init, counter_control_base, SCP_TOP_GEN_CNTR_CTRL_ADDRESS);
-    /* Has to be 10 MHz */
-    expect_value(__wrap_gtimer_init, frequency_hz, (10 * 1000 * 1000));
-    /* Scaling factor on FPGA is being set to 1 */
-    expect_value(__wrap_gtimer_init, scaling_factor, 1);
+    expect_memory(__wrap_gtimer_prodfw_init, config, &test_config, sizeof(gtimer_prodfw_init_config_t));
 
     _fpfw_component_gtimer.init_fn();
 }

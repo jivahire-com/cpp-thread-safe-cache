@@ -18,6 +18,7 @@
 #include <FpFwUtils.h>
 #include <bug_check.h>
 #include <debug.h>
+#include <gtimer_prodfw.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -28,8 +29,8 @@
 /*------------- Typedefs -----------------*/
 typedef struct _power_timer_context
 {
-    TX_TIMER control_loop_timer;
-    TX_TIMER pvt_telem_loop_timer;
+    fpfw_tmr_entry_t control_loop_timer;
+    fpfw_tmr_entry_t pvt_telem_loop_timer;
 } power_timer_context_t;
 
 /*-------- Function Prototypes -----------*/
@@ -59,9 +60,11 @@ uint64_t power_timer_get_us_from_counter(uint32_t ticks)
     return 0ULL;
 }
 
-void ctrl_loop_timer_cb(ULONG ctx)
+void ctrl_loop_timer_cb(void* ctx, uint64_t exp_tick, uint64_t now_tick)
 {
     FPFW_RUNTIME_ASSERT(ctx != 0);
+    UNUSED(exp_tick);
+    UNUSED(now_tick);
 
     power_runconfig_t* p_runconfig = (power_runconfig_t*)ctx;
     /* VR telemetry and the power control loop are driven by the
@@ -79,9 +82,11 @@ void ctrl_loop_timer_cb(ULONG ctx)
     }
 }
 
-void pvt_telem_loop_timer_cb(ULONG ctx)
+void pvt_telem_loop_timer_cb(void* ctx, uint64_t exp_tick, uint64_t now_tick)
 {
     FPFW_RUNTIME_ASSERT(ctx != 0);
+    UNUSED(exp_tick);
+    UNUSED(now_tick);
 
     power_runconfig_t* p_runconfig = (power_runconfig_t*)ctx;
     /* PVT telemetry driven by this pvt interval event */
@@ -94,21 +99,15 @@ void pvt_telem_loop_timer_cb(ULONG ctx)
 void power_timer_start_loop_timers()
 {
     power_runconfig_t* p_runconfig = power_runconfig_get();
-    // ticks appear to be 10ms; this is temporary until we have gtimer integration
-    uint32_t ticks = FPFW_MIN(p_runconfig->knobs.control_loop_interval / 10, 1);
 
-    int status =
-        tx_timer_create(&s_power_timer_ctx.control_loop_timer, PWR_CTRL_NAME, ctrl_loop_timer_cb, (ULONG)p_runconfig, ticks, ticks, TX_AUTO_ACTIVATE);
-    BUG_ASSERT_PARAM(status == TX_SUCCESS, status, 0);
+    const uint32_t ticks_per_ms = gtimer_prodfw_get_frequency() / 1000;
+    gtimer_add_periodic(&s_power_timer_ctx.control_loop_timer,
+                        p_runconfig->knobs.control_loop_interval * ticks_per_ms,
+                        ctrl_loop_timer_cb,
+                        p_runconfig);
 
-    // ticks appear to be 10ms; this is temporary until we have gtimer integration
-    ticks = FPFW_MIN(p_runconfig->knobs.pvt_loop_interval / 10, 1);
-    status = tx_timer_create(&s_power_timer_ctx.pvt_telem_loop_timer,
-                             PWR_CTRL_NAME,
-                             pvt_telem_loop_timer_cb,
-                             (ULONG)p_runconfig,
-                             ticks,
-                             ticks,
-                             TX_AUTO_ACTIVATE);
-    BUG_ASSERT_PARAM(status == TX_SUCCESS, status, 0);
+    gtimer_add_periodic(&s_power_timer_ctx.pvt_telem_loop_timer,
+                        p_runconfig->knobs.pvt_loop_interval * ticks_per_ms,
+                        pvt_telem_loop_timer_cb,
+                        p_runconfig);
 }

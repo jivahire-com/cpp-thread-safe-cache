@@ -51,7 +51,7 @@ class SensorFifoCliTest(EchoFallsBaseTest):
 
             if self.dut.get_dut_type() == DeviceType.BIGFPGA:
                 # TODO: Need to implement without reset when testing in BIGFPGA
-                KngPythiaTestSetup.reset_fpga_load_prodfw(self)
+                KngPythiaTestSetup.reset_fpga_sideload_testfw(self.dut, self.log)
                 self.log.info(f"Testing on BIGFPGA")
                 return True
 
@@ -94,8 +94,11 @@ class SensorFifoCliTest(EchoFallsBaseTest):
                         else:
                             self.log.error(f"Not Found: '{item}'")
                             return False
-                # If no pass_logs are provided in a Robot test case, assume it's a command execution test and return true to pass.    
-                return True                
+                # If no pass_logs are provided in a Robot test case, assume it's a command execution test and return command_response or true to pass.    
+                if command_response:
+                    return command_response
+                else:
+                    return True                
             else:
                 raise ValueError("Unsupported DUT type")
 
@@ -106,3 +109,10 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         finally:
             self.log.info("Tearing DOWN...")
             self.dut.teardown()
+
+    #Creating a separate keyword for validating test_result as the return value can be True or a string(Command response)
+    def validate_test_result(self, test_result):
+        if test_result is True or (isinstance(test_result, str) and test_result.strip()):
+            return True
+        else:
+            raise AssertionError("Test result is not True or a non-empty string.")

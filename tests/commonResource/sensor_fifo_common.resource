@@ -8,16 +8,22 @@ Library           pylibs.sensor_fifo_tests.sensor_fifo_cli_test.SensorFifoCliTes
 ...               WITH NAME    sensor_fifo_cli_test_lib
 
 *** Keywords ***
+Validate Test Result
+    [Arguments]    ${test_result}
+    ${test_lib}=    Get Library Instance    sensor_fifo_cli_test_lib
+    Call Method    ${test_lib}    validate_test_result    ${test_result}
+
 Run Sensor Fifo CLI Test
     [Arguments]    ${command}    ${read_until_key_string}    ${pass_response_list}
     ${test_lib}=    Get Library Instance    sensor_fifo_cli_test_lib
     ${test_result}=    Run Keyword And Continue On Failure    
     ...    Call Method    ${test_lib}    sensor_fifo_cli_test    ${command}    ${read_until_key_string}    ${pass_response_list}
-    Should Be True    ${test_result}
+    Validate Test Result    ${test_result}
 
 Run Sensor Fifo CLI Test with optional first command
     [Arguments]    ${command}    ${read_until_key_string}    ${pass_response_list}    ${optional_first_command} 
     ${test_lib}=    Get Library Instance    sensor_fifo_cli_test_lib
     ${test_result}=    Run Keyword And Continue On Failure    
     ...    Call Method    ${test_lib}    sensor_fifo_cli_test    ${command}    ${read_until_key_string}    ${pass_response_list}    ${optional_first_command}
-    Should Be True    ${test_result}
+    Validate Test Result    ${test_result}
+

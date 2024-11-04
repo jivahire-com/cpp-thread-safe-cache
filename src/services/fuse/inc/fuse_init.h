@@ -35,6 +35,13 @@ typedef union _kng_hsp_fuse_mailbox_msg {
     uint32_t as_uint32[4];
 } kng_hsp_fuse_mailbox_msg;
 
+typedef enum {
+    FUSE_DISTRIBUTION_STAGE_POST_HSP = 0,
+    FUSE_DISTRIBUTION_STAGE_POST_HSP_MESH_INIT = 1,
+    FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT = 2,
+    FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT_BRIDGE_INIT = 3
+} fuse_distribution_stage_t;
+
 
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus
@@ -63,7 +70,7 @@ int platform_fuse_override(void);
  * @return FPFW_INIT_STATUS_SUCCES on success
  *
  */
-int platform_fuse_distribution(int stage);
+int platform_fuse_distribution(fuse_distribution_stage_t stage);
 /**
  * Read fuse API
  *

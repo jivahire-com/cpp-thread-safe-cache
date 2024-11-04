@@ -83,8 +83,6 @@ TEST_FUNCTION(test_cli_fuse_init, NULL, NULL)
 {
     expect_function_call(__wrap_platform_fuse_init_cli);
     will_return(__wrap_platform_fuse_init_cli, CLI_SUCCESS);
-    expect_value(__wrap_platform_fuse_distribution,stage,1);
-    will_return(__wrap_platform_fuse_distribution, CLI_SUCCESS);
     _fpfw_component_cli_fuse.init_fn();
 }
 }

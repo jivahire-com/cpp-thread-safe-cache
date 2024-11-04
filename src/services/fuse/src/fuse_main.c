@@ -273,7 +273,7 @@ int platform_fuse_override()
     return status;
 }
 
-int platform_fuse_distribution(int stage)
+int platform_fuse_distribution(fuse_distribution_stage_t stage)
 {
     int status = 0;
     const fuse_dist_exclude_range_t* fuse_dist_exclude_list = NULL;
@@ -309,11 +309,12 @@ int platform_fuse_distribution(int stage)
         status = FUSE_ERROR_GET_EXCLUSION_LIST;
         return status;
     }
+
     printf(FUSE_NAME "Fuse Distribution Start\n");
     FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_START);
     if (platform_requires_fuse_distribution())
     {
-        if (stage == 0)
+        if (stage == FUSE_DISTRIBUTION_STAGE_POST_HSP)
         {
             status = distribute_fuses(die_id, POST_HSP_DIST_MAJOR, POST_HSP_DIST_MINOR, fuse_dist_exclude_list, exclude_list_count);
             FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR0);
@@ -323,9 +324,8 @@ int platform_fuse_distribution(int stage)
                 status = FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR3_MINOR0;
                 return status;
             }
-            printf(FUSE_NAME "Phase 0 fuse distribution complete\n");
         }
-        else if (stage == 1)
+        else if (stage == FUSE_DISTRIBUTION_STAGE_POST_HSP_MESH_INIT)
         {
             status = distribute_fuses(die_id, POST_HSP_DIST_MAJOR, MESH_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
             FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR1);
@@ -336,7 +336,9 @@ int platform_fuse_distribution(int stage)
                 return status;
             }
             printf(FUSE_NAME "Phase 1 fuse distribution complete\n");
-
+        }
+        else if (stage == FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT)
+        {
             status = distribute_fuses(die_id, POST_MESH_INIT_MAJOR, POST_MESH_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
             FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR4_MINOR0);
             if (status != SILIBS_SUCCESS)
@@ -346,10 +348,11 @@ int platform_fuse_distribution(int stage)
                 return status;
             }
             printf(FUSE_NAME "Phase 2 fuse distribution complete\n");
-
+        }
+        else if (stage == FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT_BRIDGE_INIT)
+        {
             status = distribute_fuses(die_id, POST_MESH_INIT_MAJOR, POST_BRIDGE_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
             FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR4_MINOR1);
-
             if (status != SILIBS_SUCCESS)
             {
                 status = FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR4_MINOR1;
@@ -360,12 +363,13 @@ int platform_fuse_distribution(int stage)
 
             status = write_fuse_info_to_ap();
         }
-        printf(FUSE_NAME "fuse distribution complete \n");
+
+        printf(FUSE_NAME "Phase [%d] fuse distribution complete\n", stage);
         FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_END);
     }
     return status;
 }
-// This placeholder here is to verify the Fuse event trace log
+
 void fuse_init(fpfw_icc_base_ctx_t* icc_base_ctx)
 {
     icc_base_ctx_fuse = icc_base_ctx;

@@ -269,7 +269,7 @@ TEST_FUNCTION(test_fuse_distribute_SIM_RTL, NULL, NULL)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RTL_SIM);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
-    int status = platform_fuse_distribution(0);
+    int status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_HSP);
     assert_int_equal(status, SILIBS_E_SUPPORT);
     // Debug prints
 }
@@ -325,7 +325,7 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_0, NULL, NULL)
            (void*)fuse_dist_exclude_list1,
            exclude_list_count1);
 
-    unsigned int status = platform_fuse_distribution(0);
+    unsigned int status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_HSP);
     assert_int_equal(status, 0);
     // Debug prints
     printf("Freed memory for fuse_dist_exclude_list1\n");
@@ -352,13 +352,17 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
     printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
 
     // Setup expectations for __wrap_fuse_dist_get_exclusion_list
-    expect_any(__wrap_fuse_dist_get_exclusion_list, die_id);
-    expect_any(__wrap_fuse_dist_get_exclusion_list, plat_id);
-    expect_any(__wrap_fuse_dist_get_exclusion_list, IP_exclude_list);
-    expect_any(__wrap_fuse_dist_get_exclusion_list, IP_exclude_count);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list, die_id);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list, plat_id);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list, IP_exclude_list);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list, IP_exclude_count);
     will_return(__wrap_fuse_dist_get_exclusion_list, fuse_dist_exclude_list1);
     will_return(__wrap_fuse_dist_get_exclusion_list, exclude_list_count1);
-    expect_function_call(__wrap_fuse_dist_get_exclusion_list);
+    will_return(__wrap_fuse_dist_get_exclusion_list, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list, exclude_list_count1);
+    will_return(__wrap_fuse_dist_get_exclusion_list, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list, exclude_list_count1);
+    expect_function_call_any(__wrap_fuse_dist_get_exclusion_list);
     // Debug prints
     printf("Setup expectations for __wrap_fuse_get_exclude_list_soc_nano\n");
 
@@ -411,7 +415,11 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
     expect_value(__wrap_sds_block_write, sds_module_id, FUSE_DISABLE_CORE_DIE0_STRUCT_ID);
     expect_memory(__wrap_sds_block_write,buffer,&(DIE0_fuse_disable),FUSE_DISABLE_CORE_DIE0_SIZE);
     expect_value(__wrap_sds_block_write, buffer_size, FUSE_DISABLE_CORE_DIE0_SIZE);
-    unsigned int status = platform_fuse_distribution(1);
+    unsigned int status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_HSP_MESH_INIT);
+    assert_int_equal(status, 0);
+    status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT);
+    assert_int_equal(status, 0);
+    status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT_BRIDGE_INIT);
     assert_int_equal(status, 0);
     // Debug prints
     printf("Freed memory for fuse_dist_exclude_list1\n");

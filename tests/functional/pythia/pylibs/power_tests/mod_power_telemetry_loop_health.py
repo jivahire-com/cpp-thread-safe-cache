@@ -77,6 +77,9 @@ class mod_power_telemetry_loop_health(EchoFallsBaseTest):
             self.dut.teardown()
             return False
         
+        self.log.info("Waiting for at least two telemetry iterations to complete . . .") 
+        time.sleep(30)
+
         self.log.info("Submitting power module pwr status <args> commands . . .") 
         commands = ["pwr status vrtl", "pwr status pvttl"]
         for command in commands:

@@ -31,12 +31,21 @@ stages:
       Configuration: Debug
       ArtifactName: Build_Arm_EABI_AARCH_Debug
 
-- stage: SVP_Pythia_Tests
+- stage: SVP_Pythia_Tests_SingleDie
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
   jobs:
   - template: templates/svp_pythia_test.yaml
     parameters:
-      ArtifactName: SVP_Pythia_Tests
+      ArtifactName: SVP_Pythia_Tests_SingleDie
+      TestFolder: .\tests\functional\pythia\test_suites\svp_fpga_single_die\
+
+- stage: SVP_Pythia_Tests_DualDie
+  dependsOn: [Build_Arm_EABI_AARCH_Debug]
+  jobs:
+  - template: templates/svp_pythia_test.yaml
+    parameters:
+      ArtifactName: SVP_Pythia_Tests_DualDie
+      TestFolder: .\tests\functional\pythia\test_suites\svp_fpga_dual_die\
 
 - stage: Unit_Test_x86
   dependsOn: [Build_x86_Debug, Build_Arm_EABI_AARCH_Debug]
@@ -52,7 +61,7 @@ stages:
 
 # Promote is to tag the merge commit so that it can be used by tag reference. This stage is configured to tag by BuildNumber after every PR closure.
 - stage: Promote
-  dependsOn: [Unit_Test_x86, Build_x86_Debug, Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests]
+  dependsOn: [Unit_Test_x86, Build_x86_Debug, Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests_SingleDie, SVP_Pythia_Tests_DualDie]
   # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
   condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
   pool: 

@@ -16,6 +16,9 @@ parameters:
 - name: build_id
   type: string
   default: ''
+- name: TestFolder
+  type: string
+  default: '.\tests\functional\pythia\test_suites\svp_fpga_single_die\'
 
 jobs:
 - job: 'SVP_Pythia_Tests'
@@ -86,13 +89,21 @@ jobs:
 
           $stressTestIterations = ${{ parameters.stress_test_iterations}}
 
-          if ($stressTestIterations -gt 1){
-            Invoke-Pythia-Stress -test .\tests\functional\pythia\test_suites\svp_fpga_single_die\ -platform svp -stress_iteration ${{ parameters.stress_test_iterations}}
-            Invoke-Pythia-Stress -test .\tests\functional\pythia\test_suites\svp_fpga_dual_die\ -platform svp -stress_iteration ${{ parameters.stress_test_iterations}}
+          if ($stressTestIterations -gt 1) {
+              Invoke-Pythia-Stress -test ${{ parameters.TestFolder }} -platform svp -stress_iteration ${{ parameters.stress_test_iterations }}
           } else {
-            Invoke-Pythia -test .\tests\functional\pythia\test_suites\svp_fpga_single_die\ -platform svp
-            Invoke-Pythia -test .\tests\functional\pythia\test_suites\svp_fpga_dual_die\ -platform svp
+              $artifactName = "${{ parameters.ArtifactName }}"
+              switch ($artifactName) { #To make sure all other pipelines run as designed till TestFolder is implemented across all.
+                  "SVP_Pythia_Tests" {
+                      Invoke-Pythia -test .\tests\functional\pythia\test_suites\svp_fpga_single_die\ -platform svp
+                      Invoke-Pythia -test .\tests\functional\pythia\test_suites\fpga_only_single_die\ -platform svp
+                  }
+                  default {
+                      Invoke-Pythia -test ${{ parameters.TestFolder }} -platform svp
+                  }
+              }
           }
+
 
           # Remove intermediate output / output that contains system variables (ie: Azure credentials)
           Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\output.xml"

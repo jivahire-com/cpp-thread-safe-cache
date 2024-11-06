@@ -96,7 +96,7 @@ jobs:
               switch ($artifactName) { #To make sure all other pipelines run as designed till TestFolder is implemented across all.
                   "SVP_Pythia_Tests" {
                       Invoke-Pythia -test .\tests\functional\pythia\test_suites\svp_fpga_single_die\ -platform svp
-                      Invoke-Pythia -test .\tests\functional\pythia\test_suites\fpga_only_single_die\ -platform svp
+                      Invoke-Pythia -test .\tests\functional\pythia\test_suites\svp_fpga_dual_die\ -platform svp
                   }
                   default {
                       Invoke-Pythia -test ${{ parameters.TestFolder }} -platform svp

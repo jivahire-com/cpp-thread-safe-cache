@@ -50,6 +50,7 @@ set(STARTUP_COMMON_LIBS
     silibs::idsw
     silibs::idsw_kng
     silibs::kng_silibs_platform
+    silibs::spi_bridge
 )
 
 # scp

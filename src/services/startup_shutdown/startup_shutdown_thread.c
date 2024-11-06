@@ -212,7 +212,7 @@ void sos_worker_thread_function(ULONG service_ctx)
                      stage_idx++)
                 {
                     // remote core sync if needed
-                    if (!wait_for_remote_die_boot_stage(sos_core_boot_stages()[stage_idx], sos_core_boot_stages()[stage_idx]))
+                    if (!wait_for_remote_die_boot_stage(sos_core_boot_stages()[stage_idx]))
                     {
                         SOS_LOG_WARN("Timeout occurred on remote stage sync (%d)\n",
                                      sos_core_boot_stages()[stage_idx].stage);

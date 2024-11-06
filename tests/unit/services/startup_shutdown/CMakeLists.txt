@@ -59,7 +59,6 @@ mock_target(${TARGET}
     sos_queue_shutdown
     sos_queue_start_phase
     sos_thread_init
-    remote_die_sync_init
     ssi_shutdown_quiesce
     ssi_startup_stage_complete
     ssi_startup_stage_start
@@ -71,6 +70,7 @@ mock_target(${TARGET}
     _txe_thread_create
     idhw_is_single_die_boot_en
     idsw_get_die_id
+    mscp_exp_spi_synchronize_dies
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

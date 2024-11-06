@@ -12,7 +12,7 @@ Library     pylibs.kng_pythia_libs.APBaremetalTests
 ...         host_config=${HOST_CONFIG_DIR}/mscp_runtime_fw.json
 ...         WITH NAME    APBaremetalTestsLib
 
-Suite Setup    Enviroment Setup
+Suite Setup       Environment Setup
 Suite Teardown    Test Teardown
 
 
@@ -42,7 +42,7 @@ Test Case - AP: CDED Single VF Encryption-Decryption Test: [1615866]
 
 
 *** Keywords ***
-Enviroment Setup
+Environment Setup
    ${test_lib}    Get Library Instance      APBaremetalTestsLib
    ${connection}    Test Setup
     

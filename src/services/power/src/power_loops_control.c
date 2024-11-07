@@ -933,12 +933,3 @@ power_ctrl_loop_detail_t* get_s_ctrl_loop(void)
 {
     return &s_ctrl_loop;
 }
-
-void power_vrs_write_vcpu_voltage_check(uint8_t bus_id, uint8_t rail_id, uint16_t voltage)
-{
-    UNUSED(voltage);
-    UNUSED(bus_id);
-    UNUSED(rail_id);
-    // Dummy stub function to be mocked for unit tests.
-    // Checks will be done to confirm correct voltage writes (bus ID, rail, voltage)
-}

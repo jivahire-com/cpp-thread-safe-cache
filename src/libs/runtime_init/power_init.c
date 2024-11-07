@@ -147,8 +147,8 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc
         power_config.vr_idx_info.vsys_idx = NO_VSYS;            // No VSYS on Die1
         power_config.num_vr = (MPCL_VR_COUNT - MPCL_VR_VCPU1);  // 2 VR's on Die1;
     }
-
     power_init(&power_service, fpfw_init_get_handle((void*)"dfwk"), &power_config);
+    pwr_avs_initialize(power_config.scp_avs_insts);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &power_service};
 }

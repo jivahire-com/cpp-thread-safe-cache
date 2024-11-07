@@ -110,50 +110,66 @@ typedef enum _scp_avs_status_t {
 extern "C" {
 #endif
 
-static inline void scp_avs_client_read(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext)
-{
-    pscp_avs_request avs_read_request = (pscp_avs_request) Request;
-    FPFW_RUNTIME_ASSERT(Request->AllocatedSize >= sizeof(scp_avs_request_t));
-    avs_read_request->Header.RequestType = AVS_REQUEST_READ_DATA;
-    DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext); 
-    DfwkInterfaceSendAsync(Interface, Request); 
-}
+/**
+ *
+ *    Reads data from the voltage rail  
+ *
+ *    @param[in]  Interface
+ *    @param[in]  Request
+ *    @param[in]  CompletionRoutine
+ *    @param[in]  CompletionContext
+ *
+ */
+void scp_avs_client_read(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext);
 
-static inline void scp_avs_client_write(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext)
-{
-    pscp_avs_request avs_write_request = (pscp_avs_request) Request;
-    FPFW_RUNTIME_ASSERT(Request->AllocatedSize >= sizeof(scp_avs_request_t));
-    avs_write_request->Header.RequestType = AVS_REQUEST_WRITE_DATA; 
-    DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext); 
-    DfwkInterfaceSendAsync(Interface, Request);  
-}
+/**
+ *
+ *    Writes data to the voltage rail  
+ *
+ *    @param[in]  Interface
+ *    @param[in]  Request
+ *    @param[in]  CompletionRoutine
+ *    @param[in]  CompletionContext
+ *
+ */
+void scp_avs_client_write(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext);
 
-static inline void scp_avs_client_read_all(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext)
-{
-    pscp_avs_request avs_read_all_request = (pscp_avs_request) Request;
-    FPFW_RUNTIME_ASSERT(Request->AllocatedSize >= sizeof(scp_avs_request_t));
-    avs_read_all_request->Header.RequestType = AVS_REQUEST_READ_ALL_VCT; 
-    DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext); 
-    DfwkInterfaceSendAsync(Interface, Request);  
-}
+/**
+ *
+ *    Read voltage, current, temperature from the voltage rails  
+ *
+ *    @param[in]  Interface
+ *    @param[in]  Request
+ *    @param[in]  CompletionRoutine
+ *    @param[in]  CompletionContext
+ *
+ */
+void scp_avs_client_read_all(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext);
 
-static inline void scp_avs_client_read_multi(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext, uint8_t count)
-{
-    pscp_avs_request avs_read_multi_request = (pscp_avs_request) Request;
-    FPFW_RUNTIME_ASSERT(Request->AllocatedSize >= sizeof(scp_avs_request_t));
-    avs_read_multi_request->Header.RequestType = AVS_REQUEST_READ_MULTI;
-    avs_read_multi_request->avs_params.cmd_count = count; 
-    DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext); 
-    DfwkInterfaceSendAsync(Interface, Request);
-}
-static inline void scp_avs_client_write_multi(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext)
-{
-    pscp_avs_request avs_write_multi_request = (pscp_avs_request) Request;
-    FPFW_RUNTIME_ASSERT(Request->AllocatedSize >= sizeof(scp_avs_request_t));
-    avs_write_multi_request->Header.RequestType = AVS_REQUEST_WRITE_MULTI;
-    DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext); 
-    DfwkInterfaceSendAsync(Interface, Request);
-}
+/**
+ *
+ *    Reads data from multiple client specified rails  
+ *
+ *    @param[in]  Interface
+ *    @param[in]  Request
+ *    @param[in]  CompletionRoutine
+ *    @param[in]  CompletionContext
+ *    @param[in]  count
+ *
+ */
+void scp_avs_client_read_multi(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext, uint8_t count);
+
+/**
+ *
+ *    Read voltage, current, temperature from the voltage rails  
+ *
+ *    @param[in]  Interface
+ *    @param[in]  Request
+ *    @param[in]  CompletionRoutine
+ *    @param[in]  CompletionContext
+ *
+ */
+void scp_avs_client_write_multi(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine, void *CompletionContext);
 
 /**
  *

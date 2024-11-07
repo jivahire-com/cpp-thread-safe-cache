@@ -145,7 +145,6 @@ void power_loops_init();
 void power_loops_control_init();
 void power_loops_control_post_core_init();
 void power_loops_telemetry_init();
-void power_vrs_write_vcpu_voltage_check(uint8_t bus_id, uint8_t rail_id, uint16_t voltage);
 
 void power_loops_init_loop(power_loop_context_t * context);
 void power_loops_exec_in_idle(power_exec_in_idle_handler_t p_handler, PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context);

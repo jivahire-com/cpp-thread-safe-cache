@@ -25,7 +25,14 @@
 #define MODULE_NAME "[PWRSVC] "
 #define NEWLINE     "\n"
 
+// set to 1 for more verbose logs
+#define PWR_ENABLE_TRACE_LEVEL_LOG 0
+
+#if PWR_ENABLE_TRACE_LEVEL_LOG
+#define POWER_LOG_TRACE(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#else
 #define POWER_LOG_TRACE(fmt, ...)
+#endif
 #define POWER_LOG_INFO(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define POWER_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define POWER_LOG_ERR(fmt, ...)  printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
@@ -475,6 +482,33 @@ void power_vcpu_precalculate_vf_currents(power_runconfig_t* p_runconfig, dvfs_co
  *
  */
 uint32_t power_vcpu_interpolate_from_points(const power_vcpu_interp_t* points, unsigned points_count, uint16_t ldo_dac);
+
+/**
+ * @brief AVS write callback function.
+ *
+ * \b Description:
+ *      Callback function for AVS power write request
+ * 
+ * @param[in] Request
+ * @param[in] CompletionContext
+ * @return none
+ *
+ */
+void AVSPwrWriteRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext);
+
+/**
+ * @brief AVS read callback function.
+ *
+ * \b Description:
+ *      Callback function for AVS power read request
+ * 
+ * @param[in] Request
+ * @param[in] CompletionContext
+ * @return none
+ *
+ */
+
+void AVSPwrReadRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext);
 
 #ifdef __cplusplus
 }

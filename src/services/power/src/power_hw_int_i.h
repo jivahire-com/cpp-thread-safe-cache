@@ -45,12 +45,16 @@ typedef struct _power_telcfg_t
     uint8_t temp_telem_entry_size;
     uint8_t volt_telem_entry_size;
 } power_telcfg_t;
+typedef struct _avs_pwr_request_context_t
+{
+    scp_avs_request_t request;
+    bool in_use;
+} avs_pwr_request_context_t;
 
 enum plimit_telem_msg_types {
     PLIMIT_SUCCESS_TYPE = 0,
     PLIMIT_UPDATE_TYPE = 1,
 }; 
-
 
 // Enum for pmin type used in hw interface function
 typedef enum _power_pmin_type_t
@@ -59,7 +63,6 @@ typedef enum _power_pmin_type_t
     PM_LOCKUP_UE_RR, //Lockup or UE Or ResetReq
     PM_FW_PMIN_CONTROL, //Firmware PMIN Control
 } power_pmin_type_t;
-
 
 // Callback function pointer types for update/success message handling
 typedef void (*power_hw_update_cb_t)(unsigned int core, uint8_t desired_pstate, uint8_t base_pstate, uint8_t throttle_pri, uint8_t boost_pri);
@@ -245,6 +248,7 @@ void power_telemetry_enable();
  */
 void power_telemetry_message_poll(power_hw_update_cb_t p_update_cb, power_hw_success_cb_t p_success_cb);
 
+bool all_requests_completed(avs_pwr_request_context_t* pwr_avs_request, uint8_t avs_bus);
 
 // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1811925/
 // remove temporary for test without system info

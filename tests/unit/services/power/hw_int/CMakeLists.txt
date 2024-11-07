@@ -71,8 +71,9 @@ mock_target(${TARGET}
     tile_pvt_sda_reconfig
     wait_for_FLLCalDone
     power_runconfig_get
-    power_vrs_write_vcpu_voltage_check
     power_loops_control_handle_event
+    scp_avs_client_write
+    all_requests_completed
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

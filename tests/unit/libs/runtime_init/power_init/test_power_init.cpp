@@ -97,11 +97,14 @@ KNG_DIE_ID __wrap_idsw_get_die_id(void)
     return mock_type(KNG_DIE_ID);
 }
 
+void __wrap_pwr_avs_initialize(pscp_avs_interface_t avs_array[])
+{
+    check_expected_ptr(avs_array);
 }
+
 //
 // Tests
 //
-
 TEST_FUNCTION(power_init_pwr_svc, nullptr, nullptr)
 {
 #define TEST_HANDLE 0x1234
@@ -143,6 +146,8 @@ TEST_FUNCTION(power_init_pwr_svc, nullptr, nullptr)
     expect_any(__wrap_fpfw_init_get_handle, id);
     expect_value(__wrap_power_init, p_schedule, &(test_host.Schedule));
 
+    expect_memory(__wrap_pwr_avs_initialize, avs_array, avs_test_array, sizeof(avs_test_array));
+
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_pwr_svc.init_fn();
 
@@ -178,6 +183,8 @@ TEST_FUNCTION(power_init_pwr_svc__svp, nullptr, nullptr)
 
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return(__wrap_idhw_is_single_die_boot_en, true);
+
+    expect_memory(__wrap_pwr_avs_initialize, avs_array, avs_test_array, sizeof(avs_test_array[0]));
 
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_pwr_svc.init_fn();
@@ -225,6 +232,8 @@ TEST_FUNCTION(power_init_pwr_svc__bigfpga, nullptr, nullptr)
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
     will_return(__wrap_idhw_is_single_die_boot_en, true);
 
+    expect_memory(__wrap_pwr_avs_initialize, avs_array, avs_test_array, sizeof(avs_test_array));
+
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_pwr_svc.init_fn();
 
@@ -266,4 +275,5 @@ TEST_FUNCTION(power_init_pwr_int, nullptr, nullptr)
     //! Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
     assert_non_null(result.associated_handle);
+}
 }

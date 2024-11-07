@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include "power_events.h"
+#include "power_hw_int_i.h"
 #include "power_i.h"
 #include "power_loops_i.h"
 #include "power_stub_i.h"
@@ -19,6 +20,7 @@
 #include <FpFwUtils.h>
 #include <bug_check.h>
 #include <debug.h>
+#include <idsw_kng.h>
 #include <inttypes.h>
 #include <sensor_fifo_service.h>
 #include <stdint.h>
@@ -64,8 +66,85 @@ static void calculate_soc_power();
 
 /*-- Declarations (Statics and globals) --*/
 static power_vrs_context_t s_power_vrs_ctx = {0};
+avs_pwr_request_context_t pwr_avs_request[MAX_AVS_INST] = {0};
+static pscp_avs_interface_t pwr_avs_interfaces[MAX_AVS_INST] = {0};
 
 /*------------- Functions ----------------*/
+void AVSPwrWriteRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext)
+{
+    FPFW_UNUSED(Request);
+    int pwr_avs_bus = (int)CompletionContext;
+
+    pwr_avs_request[pwr_avs_bus].in_use = false;
+
+    if (pwr_avs_request[pwr_avs_bus].request.avs_response_status != SCP_AVS_STATUS_SUCCESS)
+    {
+        POWER_LOG_ERR("\n AVS PWR status error = %x\n", pwr_avs_request[pwr_avs_bus].request.avs_response_status);
+        power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_SET_FAIL, NULL);
+        return;
+    }
+
+    switch (pwr_avs_request[pwr_avs_bus].request.Header.RequestType)
+    {
+    case AVS_REQUEST_WRITE_DATA:
+        if (pwr_avs_request[pwr_avs_bus].request.avs_response_single_resp.error.v_done == 1)
+        {
+            power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
+            POWER_LOG_TRACE("\n AVS PWR Write complete\n");
+        }
+        else
+        {
+            power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_PENDING, NULL);
+        }
+        break;
+
+    default:
+        // unexpected to receive any other event in this state,
+        POWER_LOG_ERR("\n AVSPwrWriteRequestCompletion, unexpected RequestType\n");
+        power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_SET_FAIL, NULL);
+        break;
+    }
+}
+
+void AVSPwrReadRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext)
+{
+    FPFW_UNUSED(Request);
+    int pwr_avs_bus = (int)CompletionContext;
+
+    pwr_avs_request[pwr_avs_bus].in_use = false;
+
+    if (pwr_avs_request[pwr_avs_bus].request.avs_response_status != SCP_AVS_STATUS_SUCCESS)
+    {
+        POWER_LOG_ERR("\n AVS PWR status error = %x\n", pwr_avs_request[pwr_avs_bus].request.avs_response_status);
+        power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_SET_FAIL, NULL);
+        return;
+    }
+
+    switch (pwr_avs_request[pwr_avs_bus].request.Header.RequestType)
+    {
+    case AVS_REQUEST_READ_DATA:
+        if (pwr_avs_request[pwr_avs_bus].request.avs_response_single_resp.error.v_done == 1)
+        {
+            POWER_LOG_TRACE("\n AVS voltage read.\n AVSBus = %d\n rail = %d\n AVS volt. = %d.%03d\n",
+                            pwr_avs_bus,
+                            pwr_avs_request[pwr_avs_bus].request.avs_params.avs_cmd_info.rail_id,
+                            ((pwr_avs_request[pwr_avs_bus].request.avs_response_single_resp.data) / 1000),
+                            ((pwr_avs_request[pwr_avs_bus].request.avs_response_single_resp.data) % 1000));
+            power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
+        }
+        else
+        {
+            power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_PENDING, NULL);
+        }
+        break;
+    // TODO: Add AVS_REQUEST_READ_MULTI case https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/2137515/?triage=true
+    default:
+        // unexpected to receive any other event in this state,
+        POWER_LOG_ERR("\n AVSPwrReadRequestCompletion, unexpected RequestType\n");
+        power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_SET_FAIL, NULL);
+        break;
+    }
+}
 
 // TODO: Below is temp implementation ahead of AVS integration (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491023/)
 void power_vrs_initiate_vr_reads()
@@ -127,19 +206,48 @@ void power_vrs_write_vcpu_voltage(uint16_t voltage_mv)
         voltage_mv = VR_VCPU_MIN_VOLTAGE_MV;
     }
 
-    uint8_t vcpu_bus_id = p_config->vr_idx_info.vcpu_idx / 2;
-    uint8_t vcpu_rail_id = p_config->vr_idx_info.vcpu_idx % 2;
-    power_vrs_write_vcpu_voltage_check(vcpu_bus_id, vcpu_rail_id, voltage_mv);
+    if (!all_requests_completed(pwr_avs_request, p_config->avs_details[vcpu_index].bus_id))
+    {
+        // can't send another request until the previous one is complete, just signal failure and wait for retry
+        power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_SET_FAIL, NULL);
+        return;
+    }
 
-    // can signal FAIL, PENDING or DONE based on AVS response
-    power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_PENDING, NULL);
+    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_response_single_resp.error.as_uint8 = AVS_ERROR_NONE;
+    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].in_use = true;
+    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_params.avs_cmd_info.rail_id =
+        p_config->avs_details[vcpu_index].rail_id;
+    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_params.avs_cmd_info.cmd_type = AVS_VOLTAGE_RW;
+    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_params.avs_data = (uint32_t)voltage_mv;
+
+    scp_avs_client_write(&pwr_avs_interfaces[p_config->avs_details[vcpu_index].bus_id]->Header,
+                         &pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.Header,
+                         AVSPwrWriteRequestCompletion,
+                         (void*)(uintptr_t)p_config->avs_details[vcpu_index].bus_id);
+
+    POWER_LOG_TRACE(" PWR AVS write compl. \n");
 }
 
 void power_vrs_read_vcpu_voltage()
 {
-    // read voltage.. temporarily just finish this
-    // we can update the vcpu voltage once we integrate with AVS, but the primary purpose of this function is to signal DONE or PENDING
-    power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
+    power_runconfig_t* p_runconfig = power_runconfig_get();
+    const power_service_config_t* p_config = p_runconfig->p_sconfig;
+
+    uint8_t vcpu_index;
+    vcpu_index = p_config->vr_idx_info.vcpu_idx;
+
+    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_response_single_resp.error.as_uint8 = AVS_ERROR_NONE;
+    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].in_use = true;
+    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_params.avs_cmd_info.rail_id =
+        p_config->avs_details->rail_id;
+    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_params.avs_cmd_info.cmd_type = AVS_VOLTAGE_RW;
+
+    scp_avs_client_read(&pwr_avs_interfaces[p_config->avs_details[vcpu_index].bus_id]->Header,
+                        &pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.Header,
+                        AVSPwrReadRequestCompletion,
+                        (void*)(uintptr_t)p_config->avs_details->bus_id);
+
+    POWER_LOG_TRACE(" PWR AVS read compl. \n");
 }
 
 static void calculate_soc_power()
@@ -206,4 +314,18 @@ uint32_t power_vrs_get_recent_power_mw()
         total += s_power_vrs_ctx.soc_power[meas_idx];
     }
     return (uint32_t)((total / SOC_POWER_AVG_COUNT) * PWR_MW);
+}
+
+void pwr_avs_initialize(pscp_avs_interface_t avs_array[])
+{
+    power_runconfig_t* p_runconfig = power_runconfig_get();
+    const power_service_config_t* p_config = p_runconfig->p_sconfig;
+
+    // Die 0 has 8 VRs, Die 1 has 2 VRs, so 4 AVSBus for Die 0 and 1 AVSBus for Die 1
+    for (uint8_t i = 0; i < (p_config->num_vr / 2); i++)
+    {
+        pwr_avs_interfaces[i] = avs_array[i];
+        DfwkAsyncRequestInitialize((PDFWK_ASYNC_REQUEST_HEADER)&pwr_avs_request[i].request.Header,
+                                   sizeof(pwr_avs_request[i].request));
+    }
 }

@@ -1011,3 +1011,12 @@ void power_hw_capture_cppc_state(power_hw_update_cb_t p_update_cb)
         p_update_cb(core, dvfs_get_pstate_from_cppc(cppc_desired_perf), dvfs_get_pstate_from_cppc(cppc_base_perf), throttle_pri, boost_pri);
     }
 }
+
+bool all_requests_completed(avs_pwr_request_context_t* pwr_avs_request, uint8_t avs_bus)
+{
+    if (pwr_avs_request[avs_bus].in_use)
+    {
+        return false;
+    }
+    return true;
+}

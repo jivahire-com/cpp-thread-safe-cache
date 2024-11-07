@@ -13,7 +13,6 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::a
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.dfwk
-        fwlib.lib.cfg_mgr
         fwlib.lib.init
         fwlib.platform.dfwkhost.threadx
         fwlib.lib.linkedlist
@@ -24,6 +23,9 @@ target_link_libraries(${TARGET}
         silibs_platform
         silibs::idsw_kng
         silibs::kng_silibs_platform
+        ms::lib::config_manager
+        ms::lib::config_manager::cli
+        ms::lib::variable_services
 )
 
 lint_target(${TARGET})
@@ -33,4 +35,6 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    cfg_mgr_init
+    cfg_mgr_cli_init
 )

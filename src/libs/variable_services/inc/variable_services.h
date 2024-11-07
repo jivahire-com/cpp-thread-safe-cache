@@ -129,6 +129,7 @@ typedef struct _variable_service_req_ctx
     variable_service_operation_type_t operation_type; //! GET/SET variable
     FPFW_LOCK var_serv_lock;                        //! lock to protect ctx
     bool is_initialized; //! 0: not initialized, 1: initialized
+    uint32_t async_req_result; //! result of the async request
 }var_service_req_ctx_t;
 
 /*--------- Function Prototypes ----------*/
@@ -159,8 +160,9 @@ int32_t variable_service_initialize_ctx(var_service_req_ctx_t *var_serv_ctx, var
  * 
  * @param var_serv_ctx  Variable service context
  * @param req_params Request parameters for the variable
+ * @return KNG_SUCCESS if successful, else KNG_E_NOT_FOUND if the variable is not found
  */
-void variable_service_sync_get_variable(var_service_req_ctx_t *var_serv_ctx, var_service_req_params_t *req_params);
+int32_t variable_service_sync_get_variable(var_service_req_ctx_t *var_serv_ctx, var_service_req_params_t *req_params);
 
 /**
  * @brief  Sync API to write a variable & send to HSP over Hsp Mbox.

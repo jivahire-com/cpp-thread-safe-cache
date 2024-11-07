@@ -262,8 +262,9 @@ int32_t variable_service_initialize_ctx(var_service_req_ctx_t *var_serv_ctx, var
  * 
  * @param var_serv_ctx  Variable service context
  * @param req_params Request parameters for the variable
+ * @return int32_t   KNG_SUCCESS if successful, else KNG_E_NOT_FOUND if the variable is not found
  */
-void variable_service_sync_get_variable(var_service_req_ctx_t *var_serv_ctx, var_service_req_params_t *req_params);
+int32_t variable_service_sync_get_variable(var_service_req_ctx_t *var_serv_ctx, var_service_req_params_t *req_params);
 
 /**
  * @brief  Sync API to write a variable & send to HSP over Hsp Mbox.

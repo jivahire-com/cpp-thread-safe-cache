@@ -123,6 +123,7 @@ static int32_t variable_service_async_common_handler(variable_service_operation_
     var_serv_ctx->icc_req.buffer_size = sizeof(kng_hsp_mailbox_msg);
     var_serv_ctx->icc_req.cb = variable_service_common_async_cb;
     var_serv_ctx->icc_req.cb_ctx = var_serv_ctx;
+    var_serv_ctx->async_req_result = KNG_SUCCESS;
 
     //! populate the metadata including the hsp mbox cmd request struct & the mbox get/set variable struct
     //! to send the request to HSP
@@ -186,16 +187,27 @@ static void variable_service_common_async_cb(void* context, size_t output_size_b
     BUG_ASSERT(output_size_bytes > sizeof(uint32_t));
     //! perform sanity check on shared memory & var service ctx, assert indicates memory corruption
     BUG_ASSERT(is_var_serv_ctx_in_use(var_serv_ctx) == true);
-    //! Verify expected response status
-    BUG_ASSERT(shared_mem->metadata.msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+
     //! Verify expected response cmd
     if (var_serv_ctx->operation_type == ASYNC_SET_VARIABLE)
     {
+        BUG_ASSERT(shared_mem->metadata.msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
         BUG_ASSERT(shared_mem->metadata.msg.rsp.header.cmd == HSP_MAILBOX_CMD_SET_VARIABLE_RSP);
     }
     else if (var_serv_ctx->operation_type == ASYNC_GET_VARIABLE)
     {
         BUG_ASSERT(shared_mem->metadata.msg.rsp.header.cmd == HSP_MAILBOX_CMD_GET_VARIABLE_RSP);
+
+        if (shared_mem->metadata.msg.rsp.status != HSP_MAILBOX_RSP_STATUS_NOT_FOUND)
+        {
+            BUG_ASSERT_PARAM(shared_mem->metadata.msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS,
+                             shared_mem->metadata.msg.rsp.status,
+                             HSP_MAILBOX_RSP_STATUS_SUCCESS);
+        }
+        else
+        {
+            var_serv_ctx->async_req_result = KNG_E_NOT_FOUND;
+        }
     }
 
     //! Call the caller provided callback function

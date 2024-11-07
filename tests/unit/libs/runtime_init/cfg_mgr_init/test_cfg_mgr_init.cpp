@@ -19,38 +19,59 @@ extern "C" {
 #include <fpfw_cfg_mgr_init.h>
 #include <fpfw_init.h>
 #include <idsw_kng.h>
+#include <variable_services.h>
+#include <mscp_exp_rmss_memory_map.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
-extern bool empty_read_knob_fn(const fpfw_cfg_mgr_guid_t* knob_namespace, const char* knob_name, uint8_t* data, size_t data_size, void* ctx);
-extern bool empty_write_knob_fn(const fpfw_cfg_mgr_guid_t* knob_namespace, const char* knob_name, const uint8_t* data, size_t data_size, void* ctx);
+
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_cfg_mgr;
+extern fpfw_init_component_t _fpfw_component_cfg_mgr_cli;
 
 /*------------- Functions ----------------*/
 //
 // Mocks
 //
+void __wrap_cfg_mgr_init(fpfw_cfg_mgr_config_t* cfg_mgr_config, var_service_shared_mem_t* var_svc_mem_ctx)
+{
+    assert_non_null(cfg_mgr_config->read_knob_fn);
+    assert_non_null(cfg_mgr_config->write_knob_fn);
+    assert_true(var_svc_mem_ctx->max_payload_size == SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE);
+    assert_true(var_svc_mem_ctx->payload_base == (uintptr_t)SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE);
+    function_called();
+}
 
+void __wrap_cfg_mgr_cli_init()
+{
+    function_called();
+}
 
 //
 // Tests
 //
-TEST_FUNCTION(test_cfg_mgr_init_success, nullptr, nullptr)
+TEST_FUNCTION(test_cfg_mgr_init, nullptr, nullptr)
 {
-    // Verify that the configuration manager can be initialized with a valid configuration
-    // and that the configuration manager can be initialized multiple times
-    fpfw_init_result_t result = _fpfw_component_cfg_mgr.init_fn();
-    assert_int_equal(FPFW_INIT_STATUS_SUCCESS, result.status);
+    // Set up expectations
+    expect_function_call(__wrap_cfg_mgr_init);
+    
+    // Call API under test
+    _fpfw_component_cfg_mgr.init_fn();
 }
 
-TEST_FUNCTION(add_blind_coverage_to_placeholder_functions, nullptr, nullptr)
+TEST_FUNCTION(test_cfg_mgr_cli_init, nullptr, nullptr)
 {
-    assert_int_equal(true, empty_read_knob_fn(nullptr, nullptr, nullptr, 0, nullptr));
-    assert_int_equal(true, empty_write_knob_fn(nullptr, nullptr, nullptr, 0, nullptr));
-}
+    // Set up expectations
+    expect_function_call(__wrap_cfg_mgr_cli_init);
 
+    // Check dependencies
+    assert_string_equal("cfg_mgr", _fpfw_component_cfg_mgr_cli.children[0]);
+    assert_string_equal("cli", _fpfw_component_cfg_mgr_cli.children[1]);
+
+    // Call API under test
+    _fpfw_component_cfg_mgr_cli.init_fn();
+}
 }

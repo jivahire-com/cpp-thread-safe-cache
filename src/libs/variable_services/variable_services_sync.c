@@ -34,9 +34,9 @@
  * @param var_serv_ctx  common var serv ctx
  * @param req_params  request parameters
  */
-static void variable_service_sync_common_handler(variable_service_operation_type_t type,
-                                                 var_service_req_ctx_t* var_serv_ctx,
-                                                 var_service_req_params_t* req_params);
+static int32_t variable_service_sync_common_handler(variable_service_operation_type_t type,
+                                                    var_service_req_ctx_t* var_serv_ctx,
+                                                    var_service_req_params_t* req_params);
 
 /*------------------------------ Public Functions -------------------------*/
 void variable_service_sync_set_variable(var_service_req_ctx_t* var_serv_ctx, var_service_req_params_t* req_params)
@@ -46,18 +46,22 @@ void variable_service_sync_set_variable(var_service_req_ctx_t* var_serv_ctx, var
     DEBUG_PRINT("----End of Sync Set Variable----\n");
 }
 
-void variable_service_sync_get_variable(var_service_req_ctx_t* var_serv_ctx, var_service_req_params_t* req_params)
+int32_t variable_service_sync_get_variable(var_service_req_ctx_t* var_serv_ctx, var_service_req_params_t* req_params)
 {
+    int32_t result = KNG_SUCCESS;
     DEBUG_PRINT("----Sync Get Variable----\n");
-    variable_service_sync_common_handler(SYNC_GET_VARIABLE, var_serv_ctx, req_params);
+    result = variable_service_sync_common_handler(SYNC_GET_VARIABLE, var_serv_ctx, req_params);
     DEBUG_PRINT("----End of Sync Get Variable----\n");
+
+    return result;
 }
 
 /*----------------------------Static Functions------------------------------*/
-static void variable_service_sync_common_handler(variable_service_operation_type_t type,
-                                                 var_service_req_ctx_t* var_serv_ctx,
-                                                 var_service_req_params_t* req_params)
+static int32_t variable_service_sync_common_handler(variable_service_operation_type_t type,
+                                                    var_service_req_ctx_t* var_serv_ctx,
+                                                    var_service_req_params_t* req_params)
 {
+    int32_t result = KNG_SUCCESS;
     //! Null checks for input parameters
     BUG_ASSERT(var_serv_ctx != NULL);
     BUG_ASSERT(req_params != NULL);
@@ -72,6 +76,7 @@ static void variable_service_sync_common_handler(variable_service_operation_type
 
     BUG_ASSERT(var_serv_ctx->is_initialized != false); //! Verify the ctx is initialized
     BUG_ASSERT(variable_service_set_shared_mem_in_use(var_serv_ctx) != false) //! Verify if the shared memory is free to use, must be free!
+    memcpy((void*)&var_serv_ctx->req_params, (void*)req_params, sizeof(var_service_req_params_t));
 
     //! Calculate the total size of the payload to be copied into shared memory & verify it is within the max payload size
     uint32_t total_size =
@@ -131,9 +136,10 @@ static void variable_service_sync_common_handler(variable_service_operation_type
     //! Verify sync return status & response message
     BUG_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
     BUG_ASSERT(recv_msg_size_bytes > 0);
-    BUG_ASSERT(shared_mem->metadata.msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+
     if (type == SYNC_SET_VARIABLE)
     {
+        BUG_ASSERT(shared_mem->metadata.msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
         BUG_ASSERT(shared_mem->metadata.msg.rsp.header.cmd == HSP_MAILBOX_CMD_SET_VARIABLE_RSP);
         //! HSP has consumed the data, free up the ctx & shared memory for SET
         variable_service_unlock_get_var_ctx(var_serv_ctx);
@@ -141,11 +147,23 @@ static void variable_service_sync_common_handler(variable_service_operation_type
     else if (type == SYNC_GET_VARIABLE)
     {
         BUG_ASSERT(shared_mem->metadata.msg.rsp.header.cmd == HSP_MAILBOX_CMD_GET_VARIABLE_RSP);
-        //! Reset data buffer & copy data over from shared memory into the data buffer supplied in request params
-        memset(req_params->data, 0, req_params->data_size);
-        memcpy((void*)req_params->data,
-               (void*)var_serv_ctx->shared_mem.payload_base + sizeof(variable_service_shared_mem_format_t) +
-                   req_params->variable_name_size,
-               shared_mem->data_size);
+
+        // ! bugcheck all failures  except record not found
+        if (shared_mem->metadata.msg.rsp.status == HSP_MAILBOX_RSP_STATUS_NOT_FOUND)
+        {
+            result = KNG_E_NOT_FOUND;
+        }
+        else
+        {
+            BUG_ASSERT(shared_mem->metadata.msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+            //! Reset data buffer & copy data over from shared memory into the data buffer supplied in request params
+            memset(req_params->data, 0, req_params->data_size);
+            memcpy((void*)req_params->data,
+                   (void*)var_serv_ctx->shared_mem.payload_base +
+                       sizeof(variable_service_shared_mem_format_t) + req_params->variable_name_size,
+                   shared_mem->data_size);
+        }
     }
+
+    return result;
 }

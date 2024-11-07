@@ -70,6 +70,7 @@ void test_variable_service_req_complete_notify(void* context,
     BUG_ASSERT(var_serv_ctx != NULL);   // NOLINT
     BUG_ASSERT(data_start_ptr != NULL); // NOLINT
     BUG_ASSERT(data_size > 0);
+
     if (var_serv_ctx->operation_type == ASYNC_GET_VARIABLE) // NOLINT
     {
         FpFwCliPrint("[var_serv] Async Get Variable Complete Notify\n");
@@ -79,11 +80,19 @@ void test_variable_service_req_complete_notify(void* context,
         BUG_ASSERT(data_size == TEST_VARIABLE_ASYNC_DATA_SIZE);
         FpFwCliPrint("[var_serv] Variable Name: %s\n", (char*)var_serv_ctx->req_params.variable_name_ptr); // NOLINT
         FpFwCliPrint("[var_serv] Data received (%ld bytes):\n", data_size); // NOLINT
-        for (size_t i = 0; i < data_size; ++i)
+
+        if (KNG_SUCCEEDED(var_serv_ctx->async_req_result))
         {
-            FpFwCliPrint("%02X ", data_start_ptr[i]); // NOLINT
+            for (size_t i = 0; i < data_size; ++i)
+            {
+                FpFwCliPrint("%02X ", data_start_ptr[i]); // NOLINT
+            }
+            FpFwCliPrint("\n");
         }
-        FpFwCliPrint("\n");
+        else
+        {
+            FpFwCliPrint("[var_serv] Variable Name: %s not found\n", (char*)var_serv_ctx->req_params.variable_name_ptr);
+        }
         //! User has an option to post an event/semaphore etc to process the contents of the shared memory
         //! For the purpose of this test, we are freeing up the shared memory here, so that we can invoke get_var again
         variable_service_unlock_get_var_ctx(var_serv_ctx);

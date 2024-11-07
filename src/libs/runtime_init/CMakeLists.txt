@@ -69,7 +69,6 @@ target_link_libraries(
     ${TARGET}
     PRIVATE
         fwlib.service.cli
-        fwlib.lib.cfg_mgr
         fwlib.lib.crashDump
         fwlib.dfwk
         fwlib.driver.interface.text_io
@@ -123,6 +122,8 @@ target_link_libraries(
         ms::lib::tower
         ms::lib::build_info_cli
         ms::lib::pex_rng
+        ms::lib::config_manager
+        ms::lib::config_manager::cli
         ms::service::accel_intr_client
         ms::service::accel_intr_service
         ms::service::ap_core
@@ -228,13 +229,13 @@ add_library(${TARGET}
         system_info_init.c
         telemetry_service_init.c
         textio_init.c
+        variable_services_init.c
 )
 
 target_link_libraries(
     ${TARGET}
     PRIVATE
         fwlib.service.cli
-        fwlib.lib.cfg_mgr
         fwlib.lib.crashDump
         fwlib.dfwk
         fwlib.lib.init
@@ -261,6 +262,7 @@ target_link_libraries(
         ms::lib::mcp_interrupts
         ms::lib::stdio_textio
         ms::lib::threadx
+        ms::lib::variable_services
         ms::service::atu_service
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
@@ -270,6 +272,8 @@ target_link_libraries(
         ms::service::telemetry
         ms::lib::cortex_m7::mpu
         ms::lib::system_info
+        ms::lib::config_manager
+        ms::lib::config_manager::cli
         silibs::atu
         silibs::common::lib_uart_pl011
         silibs::idhw

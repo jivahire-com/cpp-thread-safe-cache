@@ -188,22 +188,27 @@ void debug_print_post_mbox_recv(var_service_req_ctx_t* var_serv_ctx, size_t outp
     printf("Metadata:          InUse[0x%" PRIx32 "]\n", shared_mem->metadata.sync.as_uint32);
     printf("Response for variable get/set received, status [%" PRId32 "]\n", status);
     printf("Response message size [%" PRId32 "] bytes\n", (uint32_t)output_size_bytes);
+
     printf("HSP Mbox Rsp Mesg: Cmd[0x%x] Status[0x%" PRIx32 "] Status_ex[0x%" PRIx32 "]\n",
            shared_mem->metadata.msg.rsp.header.cmd,
            shared_mem->metadata.msg.rsp.status,
            shared_mem->metadata.msg.rsp.status_ex);
-    for (size_t i = 0; i < HSP_MBOX_FIFO_DEPTH; i++)
-    {
-        printf("as_uint32[%" PRId32 "]: [0x%" PRIx32 "]\n", (uint32_t)i, shared_mem->metadata.msg.as_uint32[i]);
-    }
 
-    //! The response data at this point is written over to the shared memory region supplied by the caller
-    printf("Shared Memory Response Dump\n");
-    for (size_t i = 0; i < total_size; i++)
+    if (shared_mem->metadata.msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS)
     {
-        printf("Byte Index [%" PRId32 "]: [0x%02x]\n",
-               (uint32_t)i,
-               ((unsigned char*)var_serv_ctx->shared_mem.payload_base)[i]);
+        for (size_t i = 0; i < HSP_MBOX_FIFO_DEPTH; i++)
+        {
+            printf("as_uint32[%" PRId32 "]: [0x%" PRIx32 "]\n", (uint32_t)i, shared_mem->metadata.msg.as_uint32[i]);
+        }
+
+        //! The response data at this point is written over to the shared memory region supplied by the caller
+        printf("Shared Memory Response Dump\n");
+        for (size_t i = 0; i < total_size; i++)
+        {
+            printf("Byte Index [%" PRId32 "]: [0x%02x]\n",
+                   (uint32_t)i,
+                   ((unsigned char*)var_serv_ctx->shared_mem.payload_base)[i]);
+        }
     }
 #endif
 }

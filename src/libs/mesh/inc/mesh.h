@@ -4,12 +4,17 @@
 
 /**
  *  @file mesh.h
- *  Calls the Mesh Sequence Library for KNG SOC 
+ *  Mesh Definitions
  */
 
 #pragma once
 
 /*--------------- Includes ---------------*/
+
+#define MESH_INFO(...) INFO_PRINT("[CMN800] " __VA_ARGS__)
+#define MESH_DBG(...) DEBUG_PRINT("[CMN800] " __VA_ARGS__)
+#define MESH_ERR(...)  CRITICAL_PRINT("[CMN800] " __VA_ARGS__)
+#define MESH_CRIT(...) CRITICAL_PRINT("[CMN800] " __VA_ARGS__)
 
 /**
  * @brief Initializes the mesh.

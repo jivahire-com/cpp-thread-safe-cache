@@ -37,6 +37,8 @@
 static i3c_instance_t i3c0 = {0};
 static i3c_instance_t i3c1 = {0};
 i3c_instance_t* i3c_instance[NUM_I3C_INSTANCES] = {&i3c0, &i3c1};
+const int MEANINGLESS_NUMBER_I3C = 10;
+static int unused_parameter_not_null = MEANINGLESS_NUMBER_I3C;
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -142,8 +144,6 @@ bool is_i3c_supported()
 int i3c_controller(uint8_t die_num)
 {
     int status = 0;
-    const int MEANINGLESS_NUMBER = 10;
-    static int unused_parameter_not_null = MEANINGLESS_NUMBER;
 
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
     CRITICAL_PRINT(MOD_NAME "%s Start, die_num: [%u]\n", __func__, die_num);
@@ -219,7 +219,7 @@ int i3c_controller(uint8_t die_num)
             // Register ISRs
             intr_status = FPFwCoreInterruptRegisterCallback(i3c_irqnums[i],
                                                             (FPFwCoreInterruptHandler)i3c_irq_handlers[i],
-                                                            (void*)unused_parameter_not_null);
+                                                            (void*)&unused_parameter_not_null);
             intr_status |= FPFwCoreInterruptEnableVector(i3c_irqnums[i]);
             FPFW_RUNTIME_ASSERT(intr_status == 0);
 

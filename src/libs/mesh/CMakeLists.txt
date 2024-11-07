@@ -3,21 +3,25 @@ set(TARGET kng.lib.mesh)
 add_library(${TARGET}
     STATIC
         src/mesh.c
+        src/mesh_error_handler.c
 )
 
 target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.assert
+    fwlib.lib.interface.platform.interrupts
     fwlib.service.iccBase
     silibs_platform
     ms::lib::crash_dump
     ms::lib::error_codes
     ms::lib::hsp_firmware_headers
     ms::lib::register_headers
+    ms::lib::scp_interrupts
     ms::lib::system_info
     silibs::cmn800
     silibs::cmn800_skus
     silibs::cmn800_sequence
+    silibs::cmn800_ras_sequence
     silibs::idhw
     silibs::idsw
     silibs::idsw_kng

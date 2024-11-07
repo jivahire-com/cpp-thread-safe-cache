@@ -17,6 +17,9 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
+#define MESH_CLI_ERROR_ISR_TYPE          0x0
+#define MESH_CLI_FAULT_ISR_TYPE          0x1
+
 /*-------------- Typedefs ----------------*/
 
 /*-- Declarations (Statics and globals) --*/

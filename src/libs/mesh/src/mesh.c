@@ -8,26 +8,34 @@
  */
 
 /*------------- Includes -----------------*/
+#include <FPFwInterrupts.h> // for FPFwCoreInterruptRegisterCallback, FPFwCoreInterruptHandler, FPFwCoreInterruptEnableVector
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <bug_check.h>
-#include <cmn800_sequence.h> // for cmn800_sequence, d2dss_sequence, cmn8...
-#include <cmn_config.h>      // for CMN800_CONFIG_CONFIG
-#include <fpfw_icc_base.h>   // for fpfw_icc_base_ctx_t
+#include <cmn800.h>
+#include <cmn800_error_handler.h> // for acpi_err_sec_generic_t
+#include <cmn800_sequence.h>      // for cmn800_sequence, d2dss_sequence, cmn8...
+#include <cmn_config.h>           // for CMN800_CONFIG_CONFIG
+#include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
 #include <hsp_firmware_headers.h>
-#include <idhw.h>              // for idhw_is_single_die_boot_en
-#include <idsw.h>              // for idsw_get_platform_sdv,
-#include <idsw_kng.h>          // for PLATFORM_FPGA_LARGE
+#include <idhw.h>     // for idhw_is_single_die_boot_en
+#include <idsw.h>     // for idsw_get_platform_sdv,
+#include <idsw_kng.h> // for PLATFORM_FPGA_LARGE
+#include <interrupts.h>
 #include <kng_soc_constants.h> // for NUM_DIE
 #include <mesh.h>              // for mesh_init
-#include <stdbool.h>           // for true
-#include <stdint.h>            // for uint8_t
-#include <stdio.h>             // for printf
+#include <mesh_error_handler.h>
+#include <stdbool.h> // for true
+#include <stdint.h>  // for uint8_t
+#include <stdio.h>   // for MESH_INFO
 #include <system_info.h>
 
 /*------------- Defines -----------------*/
 static fpfw_icc_base_ctx_t* s_mbx_icc_ctx;
+const int MEANINGLESS_NUMBER_MESH = 10;
+static int unused_parameter_not_null = MEANINGLESS_NUMBER_MESH;
 
 /*------------- Functions ----------------*/
+
 static void hsp_send_recv_enable_smmu()
 {
     size_t recv_msg_size_bytes = 0;
@@ -67,7 +75,7 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 
     if (!idhw_is_single_die_boot_en()) // 2 Die
     {
-        printf("Dual Die Boot\n");
+        MESH_INFO("Dual Die Boot\n");
         cmn800_sequence_param.cmn_config_enum = CONFIG_2D_NUMA_64HNS_HIER_3SN_enum; // 2 Die
         cmn800_sequence_param.BOOT_2D_ENABLE = true;
     }
@@ -83,32 +91,45 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
             cmn800_sequence_param.BOOT_2D_ENABLE = true;
         }
     }
-    printf("cmn800_sequence_param.cmn_config_enum 0x%x\n", (uint8_t)cmn800_sequence_param.cmn_config_enum);
+    MESH_INFO("cmn800_sequence_param.cmn_config_enum 0x%x\n", (uint8_t)cmn800_sequence_param.cmn_config_enum);
 
     sts = cmn800_sequence_svp_updates(cmn800_sequence_param);
-    printf("cmn800_sequence_svp_updates sts 0x%x\n", sts);
+    MESH_INFO("cmn800_sequence_svp_updates sts 0x%x\n", sts);
     FPFW_RUNTIME_ASSERT(sts == 0);
 
     sts = cmn800_sequence(cmn800_sequence_param);
-    printf("cmn800_sequence sts 0x%x\n", sts);
+    MESH_INFO("cmn800_sequence sts 0x%x\n", sts);
     FPFW_RUNTIME_ASSERT(sts == 0);
 
     if (system_info_is_hsp_present())
     {
-        printf("Send enable SMMU in bypass mode\n");
+        MESH_INFO("Send enable SMMU in bypass mode\n");
         hsp_send_recv_enable_smmu();
     }
 
     if (cmn800_sequence_param.BOOT_2D_ENABLE)
     {
         sts = d2dss_sequence(cmn800_sequence_param);
-        printf("d2dss_sequence sts 0x%x\n", sts);
+        MESH_INFO("d2dss_sequence sts 0x%x\n", sts);
         FPFW_RUNTIME_ASSERT(sts == 0);
     }
     else
     {
-        printf("Skip d2dss_sequence\n");
+        MESH_INFO("Skip d2dss_sequence\n");
     }
+
+    uint32_t intr_status = 0;
+    intr_status = FPFwCoreInterruptRegisterCallback(HW_INT_INTREQFAULTS,
+                                                    (FPFwCoreInterruptHandler)mesh_fault_isr,
+                                                    (void*)&unused_parameter_not_null);
+    intr_status |= FPFwCoreInterruptEnableVector(HW_INT_INTREQFAULTS);
+    FPFW_RUNTIME_ASSERT(intr_status == 0);
+
+    intr_status = FPFwCoreInterruptRegisterCallback(HW_INT_INTREQERRS,
+                                                    (FPFwCoreInterruptHandler)mesh_error_isr,
+                                                    (void*)&unused_parameter_not_null);
+    intr_status |= FPFwCoreInterruptEnableVector(HW_INT_INTREQERRS);
+    FPFW_RUNTIME_ASSERT(intr_status == 0);
 
     // ADO 1728673
     // Send HSP Mailbox message to confirm SCP is done with Mesh and D2D Init

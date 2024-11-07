@@ -7,7 +7,6 @@
 #include <DfwkClient.h>
 #include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
 #include <fpfw_init.h>
-#include <idhw.h>
 #include <mesh_cli.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -22,8 +21,6 @@
 
 FPFW_INIT_COMPONENT(mesh_cli, FPFW_INIT_DEPENDENCIES("hw_ver", "cli", "mesh"))
 {
-    uint8_t die_num = (uint8_t)idhw_get_die_id();
-    printf("Mesh init, die_num: [%u]\n", die_num);
 
     mesh_cli_initialize();
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

@@ -11,14 +11,18 @@ target_link_libraries(${TARGET}
     PRIVATE
         cmn800
         cmn800_sequence
+        cmn800_ras_sequence
         fwlib.lib.init
         fwlib.lib.utils
+        fwlib.lib.interface.platform.interrupts
         idhw
         silibs::idsw
         silibs::idsw_kng
         kng_silibs_platform
         ms::cmocka::testrunner
         ms::lib::mesh
+        ms::lib::cortex_m7::nvic
+        ms::lib::scp_interrupts
         silibs_platform
         ms::lib::hsp_firmware_headers
         fwlib.service.iccBase
@@ -41,8 +45,13 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     cmn800_sequence
     idhw_is_single_die_boot_en
+    idhw_get_die_id
+    nvic_irq_set_isr_with_param
+    nvic_irq_clear_pending
+    nvic_irq_enable
     d2dss_sequence
     cmn800_sequence_svp_updates
     fpfw_icc_base_send_recv_sync
     system_info_is_hsp_present
+    interrupt_handler_mesh_ras_error
 )

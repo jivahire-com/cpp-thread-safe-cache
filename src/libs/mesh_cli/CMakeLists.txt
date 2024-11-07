@@ -14,15 +14,20 @@ target_link_libraries(
     ${TARGET}
         PRIVATE
             fwlib.service.cli
-            fwlib.lib.mboxPrimitives
+            fwlib.lib.assert
+            fwlib.service.iccBase
             ms::lib::hsp_firmware_headers
+            silibs_platform
+            silibs::cmn800
+            silibs::cmn800_ras_sequence
+            silibs::kng_silibs_platform
+            silibs::idhw
 
         PUBLIC
             fwlib.lib.assert
             fwlib.platform.dfwkhost.threadx
             fwlib.lib.interface.platform.threadx
             fwlib.lib.utils
-            fwlib.lib.mboxPrimitives
             ms::lib::hsp_firmware_headers
             ms::lib::mesh
 )

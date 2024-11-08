@@ -9,6 +9,7 @@
 /*------------- Includes -----------------*/
 #include "icc_hsp_mbox_cli.h" // for display_mbx_list, display_mbx_register_status, set_mbx_reg_val, hsp_mbox_echo, hsp_mbox_send, hsp_mbox_recv
 #include "icc_large_fifo_mbox_cli.h"
+#include "icc_mhu_cli_i.h"
 #include "icc_rmss_d2d_mbox_cli.h" // for d2d_mbox_send, d2d_mbox_recv, d2d_sync_test, d2d_mbox_echo
 #include "status_decoder.h"        // for get_fpfw_status_code_string
 
@@ -30,11 +31,20 @@
 
 /*-------------- Typedefs ----------------*/
 
+//! Static string table mapping core type to its string
+static const char* core_type_strings[] = {
+    [CPU_MCP] = "MCP",
+    [CPU_SCP] = "SCP",
+};
+
+//! top level table of icc cli context
+static icc_cli_init_params_t* icc_cli_ctx = NULL;
+
 /**
  * @brief List of transport interface type strings
  *
  */
-static const char* icc_cli_interface_type_strings[ICC_CLI_MAX_TRANSPORT_TYPE] = {
+const char* icc_cli_interface_type_strings[ICC_CLI_MAX_TRANSPORT_TYPE] = {
     [ICC_CLI_HSP_MBX] = "ICC_CLI_HSP_MBX",
     [ICC_CLI_SDM_FIFO_MBX] = "ICC_CLI_SDM_FIFO_MBX",
     [ICC_CLI_CDED_FIFO_MBX] = "ICC_CLI_CDED_FIFO_MBX",
@@ -47,19 +57,7 @@ static const char* icc_cli_interface_type_strings[ICC_CLI_MAX_TRANSPORT_TYPE] = 
     [ICC_CLI_D2D_MHU] = "ICC_CLI_D2D_MHU",
 };
 
-//! Static string table mapping core type to its string
-static const char* core_type_strings[] = {
-    [CPU_MCP] = "MCP",
-    [CPU_SCP] = "SCP",
-};
-
-//! top level table of icc cli context
-static icc_cli_init_params_t* icc_cli_ctx = NULL;
-
 /*--------- Function Prototypes ----------*/
-
-static FPFW_CLI_STATUS mhu_send(int argc, const char** argv);
-static FPFW_CLI_STATUS scmi_stat(int argc, const char** argv);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -80,8 +78,10 @@ static FPFW_CLI_COMMAND s_icc_d2d_rmss_mbx_cmd_list[] = {
 };
 
 static FPFW_CLI_COMMAND s_icc_mhu_cmd_list[] = {
-    {NULL_LIST_ENTRY, "icc_mhu", "mhu_send", mhu_send, "Sends message via MHU", "Usage: mhu_send <index> <command> <size> <data0> ... <data 2>"},
-    {NULL_LIST_ENTRY, "icc_mhu", "scmi_stat", scmi_stat, "Checks MHU SCMI Stat bit", "Usage: scmi_stat <index>"},
+    {NULL_LIST_ENTRY, "icc_mhu", "list", mhu_list_indices, "Lists the MHU indices", "Usage: list_indices (no arguments)"},
+    {NULL_LIST_ENTRY, "icc_mhu", "recv", mhu_recv, "Receives a message via MHU", "Usage: recv <index> <command>"},
+    {NULL_LIST_ENTRY, "icc_mhu", "send", mhu_send, "Sends  message via MHU", "Usage: send <index> <command> <size> <data0> ... <data 2>"},
+    {NULL_LIST_ENTRY, "icc_mhu", "scmi_stat", mhu_scmi_stat, "Checks MHU SCMI Stat bit", "Usage: scmi_stat <index>"},
 };
 
 static FPFW_CLI_COMMAND s_icc_sdm_large_fifo_mbx_cmd_list[] = {
@@ -154,57 +154,10 @@ void icc_cli_init(icc_cli_init_params_t* params)
         }
     }
 
-    //! register the icc_mhu commands, not integrated with icc base yet
-    if (icc_cli_ctx->setup_info.current.core_id == CPU_SCP)
-    {
-        FpFwCliRegisterTable(s_icc_mhu_cmd_list, FPFW_ARRAY_SIZE(s_icc_mhu_cmd_list));
-    }
+    FpFwCliRegisterTable(s_icc_mhu_cmd_list, FPFW_ARRAY_SIZE(s_icc_mhu_cmd_list));
 }
 
-//! @todo move this to icc mhu cli src file when integrated with icc base
-static FPFW_CLI_STATUS mhu_send(int argc, const char** argv)
+icc_cli_init_params_t* get_icc_cli_ctx(void)
 {
-
-    if (argc < 4)
-    {
-        FpFwCliPrint("ERROR! Insufficient Args mhu_send\n");
-        FpFwCliPrint("Usage: mhu_send <index> <command> <size> <data0> ... <data 2>\n");
-        FpFwCliPrint("          up to 32 bytes of data can be sent\n");
-        return CLI_ERROR;
-    }
-
-    // Take the arguments
-    int index = atoi(argv[1]);
-    uint32_t command = atoi(argv[2]);
-    size_t size = atoi(argv[3]);
-    uint8_t data[32];
-
-    if (size != 0 && argc > 4 && (size <= (size_t)(argc - 4)))
-    {
-        for (uint8_t count = 0; count < size; count++)
-        {
-            data[count] = atoi(argv[4 + count]);
-        }
-    }
-
-    FpFwCliPrint("Sending data to MHU\n");
-    icc_mhu_trans_send_message_idx(index, command, data, size);
-
-    return CLI_SUCCESS;
-}
-
-static FPFW_CLI_STATUS scmi_stat(int argc, const char** argv)
-{
-
-    if (argc != 2)
-    {
-        FpFwCliPrint("ERROR! Insufficient Args mhu_dbs\n");
-        FpFwCliPrint("Usage: scmi_stat <index>\n");
-
-        return CLI_ERROR;
-    }
-    int index = atoi(argv[1]);
-    icc_mhu_trans_check_scmi_status_bit(index);
-    FpFwCliPrint("MHU SCMI status bit check\n");
-    return CLI_SUCCESS;
+    return icc_cli_ctx;
 }

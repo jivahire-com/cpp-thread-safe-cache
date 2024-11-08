@@ -75,7 +75,7 @@ TEST_FUNCTION(test_scmi_send_resp, test_setup, test_teardown)
     scmi_protocol_version_resp_t protocol_ver_resp;
     protocol_ver_resp.status = 0;
     protocol_ver_resp.status = PROTOCOL_VERSION;
-    will_return(__wrap_icc_mhu_trans_send_message_idx, ICC_MHU_STATUS_SUCCESS);
+    will_return(__wrap_icc_mhu_trans_send_message, ICC_MHU_STATUS_SUCCESS);
     int status =
         __real_scmi_send_resp(SCMI_PWR_DMN_PROTO_ID, SCMI_PROTO_VERSION_MSG, (uint8_t*)&protocol_ver_resp, sizeof(protocol_ver_resp));
     assert_int_equal(status, ICC_MHU_STATUS_SUCCESS);
@@ -84,7 +84,7 @@ TEST_FUNCTION(test_scmi_send_resp, test_setup, test_teardown)
 TEST_FUNCTION(test_scmi_poll_message, test_setup, test_teardown)
 {
 
-    will_return(__wrap_icc_mhu_trans_get_msg_from_index, ICC_MHU_TRANS_CMD_MESSAGE_AVAILABLE);
+    will_return(__wrap_icc_mhu_trans_get_cmd_msg_from_index, ICC_MHU_TRANS_CMD_MESSAGE_AVAILABLE);
     will_return(__wrap_scmi_check_message, SCMI_PROTOCOL_CMD_SUCCESS);
     int status = scmi_poll_message();
     assert_int_equal(status, ICC_MHU_TRANS_CMD_MESSAGE_AVAILABLE);

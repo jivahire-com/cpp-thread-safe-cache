@@ -45,8 +45,8 @@ mock_target(${TARGET}
     ap_core_core_power_off
     ap_core_core_power_on
     ap_core_set_rvbaraddr
-    icc_mhu_trans_get_msg_from_index
-    icc_mhu_trans_send_message_idx
+    icc_mhu_trans_get_cmd_msg_from_index
+    icc_mhu_trans_send_message
     scmi_send_resp
     scmi_check_message
     scmi_power_protocol_cmds

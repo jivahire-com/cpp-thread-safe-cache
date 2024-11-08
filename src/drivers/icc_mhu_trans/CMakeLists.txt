@@ -19,16 +19,21 @@ target_link_libraries(${TARGET}
         fwlib.lib.assert
         fwlib.dfwk
         fwlib.lib.interface.platform.errorhandler
+        fwlib.lib.interface.platform.interrupts
         fwlib.driver.interface.iccTransport
         fwlib.lib.utils
         fwlib.platform.dfwkhost.threadx
         fwlib.service.cli
+        fwlib.service.icc_dispatcher
         silibs::icc_mhu
         silibs::idhw
         silibs::mhuv3
         ms::lib::arm_intrinsic
+        ms::lib::crash_dump
+        ms::lib::error_codes
         ms::lib::register_headers
     PUBLIC
+        fwlib.lib.interface.platform.threadx
         ms::lib::debug
         silibs_platform
 )

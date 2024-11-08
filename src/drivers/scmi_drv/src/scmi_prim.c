@@ -24,6 +24,9 @@
 #include <stdint.h>
 #include <string.h>
 
+#define ICC_MHU_TRANS_SCMI_SEND_INDEX MHU_INTERFACE_ID(SCP_LOCAL, AP_CORE_SEC)
+#define ICC_MHU_TRANS_SCMI_RECV_INDEX MHU_INTERFACE_ID(AP_CORE_SEC, SCP_LOCAL)
+
 // Local data structures
 typedef struct
 {
@@ -34,8 +37,7 @@ typedef struct
 
 typedef struct
 {
-    uint32_t command;
-    uint16_t size;
+    icc_mhu_header_t header;
     uint8_t data[64];
 } scmi_transport_message_t;
 
@@ -357,20 +359,19 @@ int scmi_check_message(scmi_icc_packet_t* packet)
 
 int scmi_poll_message()
 {
-    scmi_message.command = ICC_SCMI_HOST_MODULE_SEND;
-    scmi_message.size = sizeof(scmi_message.data);
-    int status = icc_mhu_trans_get_msg_from_index(ICC_MHU_TRANS_SCMI_RECEIVE_INDEX,
-                                                  (icc_mhu_transport_message_t*)&scmi_message);
+    scmi_message.header.msg_header.command = ICC_SCMI_HOST_MODULE_SEND;
+    scmi_message.header.msg_header.payload_size = sizeof(scmi_message.data);
+    int status = icc_mhu_trans_get_cmd_msg_from_index(ICC_MHU_TRANS_SCMI_RECV_INDEX, (icc_mhu_request_t*)&scmi_message);
     if (status == ICC_MHU_TRANS_CMD_MESSAGE_AVAILABLE)
     {
         if ((scmi_debug & 2) != 0)
         {
-            SCMI_LOG_INFO("SCMI ICC Message: %x\n", (int)scmi_message.command);
-            SCMI_LOG_INFO("SCMI ICC Size: %x\n", (int)scmi_message.size);
+            SCMI_LOG_INFO("SCMI ICC Message: %x\n", (int)scmi_message.header.msg_header.command);
+            SCMI_LOG_INFO("SCMI ICC Size: %x\n", (int)scmi_message.header.msg_header.payload_size);
 
-            if (scmi_message.size != 0 && (scmi_debug & 8) != 0)
+            if (scmi_message.header.msg_header.payload_size != 0 && (scmi_debug & 8) != 0)
             {
-                for (uint8_t data_count = 0; data_count < scmi_message.size; data_count++)
+                for (uint8_t data_count = 0; data_count < scmi_message.header.msg_header.payload_size; data_count++)
                 {
                     SCMI_LOG_INFO("  scmi_message data[%d]: %x\n", data_count, scmi_message.data[data_count]);
                 }
@@ -378,7 +379,7 @@ int scmi_poll_message()
         }
 
         // Process the message
-        scmi_check_message((scmi_icc_packet_t*)scmi_message.data);
+        scmi_check_message((scmi_icc_packet_t*)&scmi_message.data);
     }
     return status;
 }
@@ -396,7 +397,7 @@ int scmi_send_resp(uint8_t protocol_id, uint8_t cmd_id, uint8_t* payload, size_t
 
     memcpy(local_packet.payload, payload, size);
     size_t icc_size = local_packet.smt_header.payload_size + sizeof(local_packet.smt_header);
-    return icc_mhu_trans_send_message_idx(ICC_MHU_TRANS_SCMI_RESP_INDEX, ICC_SCMI_CLIENT_MOD_RESP, (uint8_t*)&local_packet, icc_size);
+    return icc_mhu_trans_send_message(ICC_MHU_TRANS_SCMI_SEND_INDEX, ICC_SCMI_CLIENT_MOD_RESP, (uint8_t*)&local_packet, icc_size);
 }
 
 void scmi_set_apcore_interface(DFWK_INTERFACE_HEADER* p_interface)

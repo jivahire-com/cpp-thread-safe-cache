@@ -38,7 +38,7 @@ add_library(${TARGET}
         icc_d2dmbx_init.c
         icc_cli_init.c
         icc_accel_mbx_init.c
-        icc_transport_init/scp_icc_mhu_trans_init.c
+        icc_mhu_init.c
         i3c_controller_init.c
         i3c_controller_scp_cli_init.c
         mesh_init.c
@@ -169,6 +169,8 @@ target_compile_definitions(
        HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2SCP_MB_SW_INT
        HW_INT_SDM_MBOX_INT=HW_INT_SDM_INTR2_SCP_COMB_INT
        HW_INT_CDED_MBOX_INT=HW_INT_CDED_SDM_INTR2_SCP_COMB_INT
+       HW_INT_MSCP2MSCP_MHU_INT=HW_INT_MCP2SCP_MHU_INT
+       HW_INT_AP2MSCP_MHU_S_INT=HW_INT_AP2SCP_MHU_S_INT
        MSCP_TOP_MSCP_EXP_ADDRESS=SCP_TOP_SCP_EXP_ADDRESS
        MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=SCP_EXP_TOP_MSCP_MBOX_ADDRESS
        MSCP_EXP_TOP_SPI_CTRL_ADDRESS=SCP_EXP_TOP_SPI_CTRL_ADDRESS
@@ -223,6 +225,7 @@ add_library(${TARGET}
         icc_cli_init.c
         icc_hspmbx_init.c
         icc_d2dmbx_init.c
+        icc_mhu_init.c
         mcp_mpu_init.c
         nvic_init.c
         sensor_fifo_init.c
@@ -249,6 +252,7 @@ target_link_libraries(
         ms::build_data
         ms::driver::dma::mcp
         ms::driver::gpio
+        ms::driver::icc_mhu_trans
         ms::driver::sensor_fifo
         ms::driver::textio::pl011
         ms::lib::accel_intr
@@ -276,6 +280,7 @@ target_link_libraries(
         ms::lib::config_manager::cli
         silibs::atu
         silibs::common::lib_uart_pl011
+        silibs::icc_mhu
         silibs::idhw
         silibs::idsw
         silibs::idsw_kng
@@ -296,6 +301,8 @@ target_compile_definitions(
        HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2MCP_MB_SW_INT
        HW_INT_SDM_MBOX_INT=HW_INT_SDM_INTR1_MCP_COMB_INT
        HW_INT_CDED_MBOX_INT=HW_INT_CDED_SDM_INTR1_SCP_COMB_INT
+       HW_INT_MSCP2MSCP_MHU_INT=HW_INT_SCP2MCP_MHU_NS_INT
+       HW_INT_AP2MSCP_MHU_S_INT=HW_INT_AP2MCP_MHU_S_INT
        MSCP_TOP_MSCP_EXP_ADDRESS=MCP_TOP_MCP_EXP_ADDRESS
        MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=MCP_EXP_TOP_MSCP_MBOX_ADDRESS
        MSCP_EXP_TOP_SPI_CTRL_ADDRESS=0

@@ -20,7 +20,7 @@
 #define ICC_MHU_LOG_INFO(fmt, ...) printf(MODULE_NAME_ICC fmt NEWLINE, ##__VA_ARGS__)
 
 #define SMT_CHANNEL_FREE    1
-#define SIZE_OF_TEMP_BUFFER 256
+#define SIZE_OF_TEMP_BUFFER 512
 
 /*--------- Function Prototypes ----------*/
 
@@ -31,14 +31,6 @@
  * @return ICC_MHU_TRANS_STATUS
  */
 int icc_mhu_trans_set_configuration_table(icc_mhu_configuration_t* pConfig, uint8_t number_of_channel_cfg);
-
-/**
- * @brief API to load enable the interrupt status of each channel
- *
- * @param pConfig ipointer to the configuration table
- * @return ICC_MHU_STATUS_SUCCESS
- */
-int icc_mhu_trans_enable_interrupts();
 
 /**
  * @brief API to get message from MHU interface channel id.

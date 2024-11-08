@@ -29,16 +29,16 @@
 
 /*------------- Functions ----------------*/
 
-int __wrap_icc_mhu_trans_get_msg_from_index(uint8_t index, icc_mhu_transport_message_t* client_msg)
+int __wrap_icc_mhu_trans_get_cmd_msg_from_index(uint8_t index, icc_mhu_request_t* client_msg)
 {
     FPFW_UNUSED(index);
     FPFW_UNUSED(client_msg);
     return mock_type(int);
 }
 
-int __wrap_icc_mhu_trans_send_message_idx(uint16_t index, uint32_t command, uint8_t* data, size_t size)
+int __wrap_icc_mhu_trans_send_message(uint16_t mhu_interface_id, uint32_t command, uint8_t* data, size_t size)
 {
-    FPFW_UNUSED(index);
+    FPFW_UNUSED(mhu_interface_id);
     FPFW_UNUSED(command);
     FPFW_UNUSED(data);
     FPFW_UNUSED(size);

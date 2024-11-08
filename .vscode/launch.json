@@ -138,6 +138,26 @@
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
             "console": true
+        },
+        {
+            "name": "Debug Init Unit Test - Select",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin/${input:selectInitUnitTest}",
+            "symbolSearchPath": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
+            "console": true
+        },
+        {
+            "name": "Debug Init Unit Test - Last Selected",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin/${input:lastInitUnitTest}",
+            "symbolSearchPath": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
+            "console": true
         }
     ],
     "inputs": [
@@ -159,6 +179,14 @@
                         "Sensor Fifo Driver",
                         "kng.driver.sensor_fifo.test.exe"
                     ],
+                    [
+                        "ICC MHU Driver",
+                        "kng.driver.icc_mhu_trans.test.exe"
+                    ],
+                    [
+                        "SCMI Driver",
+                        "kng.driver.scmi_drv.test.exe"
+                    ]
                 ],
             },
         },
@@ -203,6 +231,29 @@
             "command": "extension.commandvariable.remember",
             "args": {
                 "key": "savedSvcUnitTest"
+            }
+        },
+        {
+            "id": "selectInitUnitTest",
+            "type": "command",
+            "command": "extension.commandvariable.pickStringRemember",
+            "args": {
+                "description": "Pick a init unit test to run",
+                "key": "savedInitUnitTest",
+                "options": [
+                    [
+                        "ICC Init",
+                        "icc_init.test.exe"
+                    ],
+                ],
+            },
+        },
+        {
+            "id": "lastInitUnitTest",
+            "type": "command",
+            "command": "extension.commandvariable.remember",
+            "args": {
+                "key": "savedInitUnitTest"
             }
         }
 

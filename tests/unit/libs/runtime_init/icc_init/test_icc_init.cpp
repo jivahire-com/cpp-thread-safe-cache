@@ -1,3 +1,7 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
 /**
  * @file test_mscp_hspmbx_init.cpp
  * Tests initialization of ICC transports for both SCP/MCP cores
@@ -21,9 +25,15 @@ extern "C" {
 #include <fpfw_init.h>               // for fpfw_init_component_id_t, fpfw_...
 #include <fpfw_mbox_icc_transport.h> // for fpfw_mbox_icc_transport_device_t
 #include <fpfw_status.h>             // for fpfw_status_t, FPFW_STATUS_SUCCESS
+#include <icc_mhu.h>
+#include <icc_mhu_cfg.h>
+#include <icc_mhu_trans_dfwk.h>
+#include <icc_mhu_trans_prim.h>
 #include <icc_platform_defines.h>
 #include <idsw.h>     // for KNG_DIE_ID, KNG_PLAT_ID
 #include <idsw_kng.h> // for KNG_DIE_ID, KNG_PLAT_ID
+#include <limits.h>
+#include <mscp_exp_rmss_memory_map.h>
 
 /*---------------Macros-------------------*/
 
@@ -36,6 +46,9 @@ extern fpfw_init_component_t _fpfw_component_icc_hspmbx;
 extern fpfw_init_component_t _fpfw_component_icc_d2dmbx;
 extern fpfw_init_component_t _fpfw_component_icc_sdm_mbx;
 extern fpfw_init_component_t _fpfw_component_icc_cded_mbx;
+extern fpfw_init_component_t _fpfw_component_mhu_trans;
+extern fpfw_init_component_t _fpfw_component_icc_mscp2tfa_if;
+extern fpfw_init_component_t _fpfw_component_icc_mscp2mscp;
 
 /*------------- Mock Functions ----------------*/
 
@@ -50,6 +63,11 @@ void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
 {
     FPFW_UNUSED(id);
     return mock_type(void*);
+}
+
+KNG_DIE_ID __wrap_idhw_get_die_id()
+{
+    return mock_type(KNG_DIE_ID);
 }
 
 KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
@@ -155,8 +173,8 @@ fpfw_status_t __wrap_fpfw_icc_base_init(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
     assert_non_null(icc_cfg->dispatch_cfg.transport_interface);
     assert_non_null(icc_cfg->dispatch_cfg.dispatcher_buffer);
     assert_true(icc_cfg->dispatch_cfg.strategy.cmd_code.is_used);
-    assert_true(icc_cfg->dispatch_cfg.strategy.seq_num.is_used);
 
+    check_expected(icc_cfg->dispatch_cfg.strategy.seq_num.is_used);
     check_expected(icc_cfg->dispatch_cfg.dispatcher_buffer_size);
     check_expected(icc_cfg->dispatch_cfg.strategy.cmd_code.size_bits);
     check_expected(icc_cfg->dispatch_cfg.strategy.seq_num.size_bits);
@@ -166,10 +184,10 @@ fpfw_status_t __wrap_fpfw_icc_base_init(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
     check_expected(icc_cfg->dispatch_cfg.strategy.seq_num.valid_max);
     check_expected(icc_cfg->dispatch_cfg.strategy.cmd_code.valid_min);
     check_expected(icc_cfg->dispatch_cfg.strategy.seq_num.valid_min);
+    check_expected(icc_cfg->dispatch_cfg.match_strategy_cb);
+    check_expected(icc_cfg->dispatch_cfg.match_strategy_ctx);
 
     assert_null(icc_cfg->ctx);
-    assert_null(icc_cfg->dispatch_cfg.match_strategy_cb);
-    assert_null(icc_cfg->dispatch_cfg.match_strategy_ctx);
     return mock_type(fpfw_status_t);
 }
 
@@ -185,6 +203,29 @@ uint32_t __wrap_accel_intr_init(eACCELERATOR_TYPE accel_type)
     return mock_type(uint32_t);
 }
 
+int __wrap_icc_mhu_trans_init(void* p_config_table, uint8_t table_size)
+{
+    FPFW_UNUSED(p_config_table);
+    FPFW_UNUSED(table_size);
+    return mock_type(int);
+}
+
+int32_t __wrap_icc_mhu_transport_dfwk_device_init(icc_mhu_transport_device_t* icc_mhu_dev, DFWK_SCHEDULE* schedule, icc_mhu_transport_config_t* config)
+{
+    FPFW_UNUSED(icc_mhu_dev);
+    FPFW_UNUSED(schedule);
+    FPFW_UNUSED(config);
+    return mock_type(int32_t);
+}
+
+int32_t __wrap_icc_mhu_trans_dfwk_interface_init(icc_mhu_transport_device_t* icc_mhu_dev, icc_mhu_transport_intrf_t* p_interface)
+{
+    FPFW_UNUSED(icc_mhu_dev);
+    FPFW_UNUSED(p_interface);
+    return mock_type(int32_t);
+}
+
+
 /*------------- Test cases ----------------*/
 
 TEST_FUNCTION(test_icc_hspmbx_init, nullptr, nullptr)
@@ -197,6 +238,7 @@ TEST_FUNCTION(test_icc_hspmbx_init, nullptr, nullptr)
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.is_used, true);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.dispatcher_buffer_size, HSP_MBOX_MAX_MESG_SIZE_BYTES);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.size_bits, HSP_MBOX_CMD_CODE_SIZE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.size_bits, HSP_MBOX_SEQ_NUM_SIZE);
@@ -207,6 +249,8 @@ TEST_FUNCTION(test_icc_hspmbx_init, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.valid_min, HSP_MBOX_MIN_CMD_CODE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_min, HSP_MBOX_MIN_SEQ_NUM);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_cb, NULL);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
 
     // Call the function under test
@@ -227,6 +271,7 @@ TEST_FUNCTION(test_icc_d2dmbx_init, nullptr, nullptr)
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.is_used, true);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.dispatcher_buffer_size, D2D_FIFO_MBOX_MAX_MESG_SIZE_BYTES);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.size_bits, D2D_MBOX_CMD_CODE_SIZE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.size_bits, D2D_MBOX_SEQ_NUM_SIZE);
@@ -236,6 +281,8 @@ TEST_FUNCTION(test_icc_d2dmbx_init, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_max, D2D_MBOX_MAX_SEQ_NUM);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.valid_min, D2D_MBOX_MIN_CMD_CODE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_min, D2D_MBOX_MIN_SEQ_NUM);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_cb, NULL);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
@@ -263,6 +310,7 @@ TEST_FUNCTION(test_icc_sdm_mbx_init, nullptr, nullptr)
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.is_used, true);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.dispatcher_buffer_size, LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.size_bits, LARGE_FIFO_MBOX_CMD_CODE_SIZE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.size_bits, LARGE_FIFO_MBOX_SEQ_NUM_SIZE);
@@ -272,6 +320,8 @@ TEST_FUNCTION(test_icc_sdm_mbx_init, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_max, LARGE_FIFO_MBOX_MAX_SEQ_NUM);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.valid_min, LARGE_FIFO_MBOX_MIN_CMD_CODE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_min, LARGE_FIFO_MBOX_MIN_SEQ_NUM);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_cb, NULL);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
     will_return(__wrap_accel_intr_init, ACCEL_INTR_RET_SUCCESS);
@@ -327,6 +377,7 @@ TEST_FUNCTION(test_icc_sdm_mbx_init__fail3, nullptr, nullptr)
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.is_used, true);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.dispatcher_buffer_size, LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.size_bits, LARGE_FIFO_MBOX_CMD_CODE_SIZE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.size_bits, LARGE_FIFO_MBOX_SEQ_NUM_SIZE);
@@ -336,6 +387,8 @@ TEST_FUNCTION(test_icc_sdm_mbx_init__fail3, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_max, LARGE_FIFO_MBOX_MAX_SEQ_NUM);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.valid_min, LARGE_FIFO_MBOX_MIN_CMD_CODE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_min, LARGE_FIFO_MBOX_MIN_SEQ_NUM);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_cb, NULL);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_FAIL);
 
     // Call the function under test
@@ -356,6 +409,7 @@ TEST_FUNCTION(test_icc_sdm_mbx_init__fail4, nullptr, nullptr)
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.is_used, true);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.dispatcher_buffer_size, LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.size_bits, LARGE_FIFO_MBOX_CMD_CODE_SIZE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.size_bits, LARGE_FIFO_MBOX_SEQ_NUM_SIZE);
@@ -365,6 +419,8 @@ TEST_FUNCTION(test_icc_sdm_mbx_init__fail4, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_max, LARGE_FIFO_MBOX_MAX_SEQ_NUM);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.valid_min, LARGE_FIFO_MBOX_MIN_CMD_CODE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_min, LARGE_FIFO_MBOX_MIN_SEQ_NUM);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_cb, NULL);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_STATUS_FAIL);
 
@@ -386,6 +442,7 @@ TEST_FUNCTION(test_icc_sdm_mbx_init__fail5, nullptr, nullptr)
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.is_used, true);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.dispatcher_buffer_size, LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.size_bits, LARGE_FIFO_MBOX_CMD_CODE_SIZE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.size_bits, LARGE_FIFO_MBOX_SEQ_NUM_SIZE);
@@ -395,6 +452,8 @@ TEST_FUNCTION(test_icc_sdm_mbx_init__fail5, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_max, LARGE_FIFO_MBOX_MAX_SEQ_NUM);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.valid_min, LARGE_FIFO_MBOX_MIN_CMD_CODE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_min, LARGE_FIFO_MBOX_MIN_SEQ_NUM);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_cb, NULL);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
     will_return(__wrap_accel_intr_init, ACCEL_INTR_RET_FAIL_INTR_NVIC);
@@ -417,6 +476,7 @@ TEST_FUNCTION(test_icc_cded_mbx_init, nullptr, nullptr)
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.is_used, true);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.dispatcher_buffer_size, LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.size_bits, LARGE_FIFO_MBOX_CMD_CODE_SIZE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.size_bits, LARGE_FIFO_MBOX_SEQ_NUM_SIZE);
@@ -426,6 +486,8 @@ TEST_FUNCTION(test_icc_cded_mbx_init, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_max, LARGE_FIFO_MBOX_MAX_SEQ_NUM);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.valid_min, LARGE_FIFO_MBOX_MIN_CMD_CODE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_min, LARGE_FIFO_MBOX_MIN_SEQ_NUM);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_cb, NULL);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
     will_return(__wrap_accel_intr_init, ACCEL_INTR_RET_SUCCESS);
@@ -481,6 +543,7 @@ TEST_FUNCTION(test_icc_cded_mbx_init__fail3, nullptr, nullptr)
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.is_used, true);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.dispatcher_buffer_size, LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.size_bits, LARGE_FIFO_MBOX_CMD_CODE_SIZE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.size_bits, LARGE_FIFO_MBOX_SEQ_NUM_SIZE);
@@ -490,6 +553,8 @@ TEST_FUNCTION(test_icc_cded_mbx_init__fail3, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_max, LARGE_FIFO_MBOX_MAX_SEQ_NUM);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.valid_min, LARGE_FIFO_MBOX_MIN_CMD_CODE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_min, LARGE_FIFO_MBOX_MIN_SEQ_NUM);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_cb, NULL);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_FAIL);
 
     // Call the function under test
@@ -510,6 +575,7 @@ TEST_FUNCTION(test_icc_cded_mbx_init__fail4, nullptr, nullptr)
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.is_used, true);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.dispatcher_buffer_size, LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.size_bits, LARGE_FIFO_MBOX_CMD_CODE_SIZE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.size_bits, LARGE_FIFO_MBOX_SEQ_NUM_SIZE);
@@ -519,6 +585,8 @@ TEST_FUNCTION(test_icc_cded_mbx_init__fail4, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_max, LARGE_FIFO_MBOX_MAX_SEQ_NUM);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.valid_min, LARGE_FIFO_MBOX_MIN_CMD_CODE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_min, LARGE_FIFO_MBOX_MIN_SEQ_NUM);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_cb, NULL);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_STATUS_FAIL);
 
@@ -540,6 +608,7 @@ TEST_FUNCTION(test_icc_cded_mbx_init__fail5, nullptr, nullptr)
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.is_used, true);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.dispatcher_buffer_size, LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.size_bits, LARGE_FIFO_MBOX_CMD_CODE_SIZE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.size_bits, LARGE_FIFO_MBOX_SEQ_NUM_SIZE);
@@ -549,6 +618,8 @@ TEST_FUNCTION(test_icc_cded_mbx_init__fail5, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_max, LARGE_FIFO_MBOX_MAX_SEQ_NUM);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.valid_min, LARGE_FIFO_MBOX_MIN_CMD_CODE);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_min, LARGE_FIFO_MBOX_MIN_SEQ_NUM);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_cb, NULL);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
     will_return(__wrap_accel_intr_init, ACCEL_INTR_RET_FAIL_INTR_NVIC);
@@ -561,5 +632,185 @@ TEST_FUNCTION(test_icc_cded_mbx_init__fail5, nullptr, nullptr)
     assert_null(result.associated_handle);
 }
 
-// Add more test cases if needed
+TEST_FUNCTION(test_icc_mhu_init_mhu_trans_die_0_scp, nullptr, nullptr)
+{
+    // Setup expectations
+    will_return(__wrap_idhw_get_die_id, (KNG_DIE_ID)0);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_icc_mhu_trans_init, ICC_MHU_STATUS_SUCCESS);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_mhu_trans.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+    assert_null(result.associated_handle);
+}
+
+TEST_FUNCTION(test_icc_mhu_init_mhu_trans_die_1_scp, nullptr, nullptr)
+{
+    // Setup expectations
+    will_return(__wrap_idhw_get_die_id, (KNG_DIE_ID)1);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_icc_mhu_trans_init, ICC_MHU_STATUS_SUCCESS);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_mhu_trans.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+    assert_null(result.associated_handle);
+}
+
+TEST_FUNCTION(test_icc_mhu_init_mhu_trans_die_0_mcp, nullptr, nullptr)
+{
+    // Setup expectations
+    will_return(__wrap_idhw_get_die_id, (KNG_DIE_ID)0);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_icc_mhu_trans_init, ICC_MHU_STATUS_SUCCESS);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_mhu_trans.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+    assert_null(result.associated_handle);
+}
+
+TEST_FUNCTION(test_icc_mhu_init_mhu_trans_die_1_mcp, nullptr, nullptr)
+{
+    // Setup expectations
+    will_return(__wrap_idhw_get_die_id, (KNG_DIE_ID)1);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_icc_mhu_trans_init, ICC_MHU_STATUS_SUCCESS);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_mhu_trans.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+    assert_null(result.associated_handle);
+}
+
+TEST_FUNCTION(test_icc_mhu_mscp2tfa_if_mcp, nullptr, nullptr)
+{
+    // Setup expectations
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_icc_mscp2tfa_if.init_fn();
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+    assert_null(result.associated_handle);
+}
+
+TEST_FUNCTION(test_icc_mhu_mscp2tfa_if_scp_failed_device, nullptr, nullptr)
+{
+    // Setup expectations
+    DFWK_THREADX_HOST test_host = {};
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_fpfw_init_get_handle, &test_host);
+    will_return(__wrap_icc_mhu_transport_dfwk_device_init, FPFW_ICC_TRANSPORT_STATUS_FAILED_ERR);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_icc_mscp2tfa_if.init_fn();
+    assert_true(result.status != FPFW_INIT_STATUS_SUCCESS);
+    assert_null(result.associated_handle);
+}
+
+TEST_FUNCTION(test_icc_mhu_mscp2tfa_if_scp_failed_interface, nullptr, nullptr)
+{
+    // Setup expectations
+    DFWK_THREADX_HOST test_host = {};
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_fpfw_init_get_handle, &test_host);
+    will_return(__wrap_icc_mhu_transport_dfwk_device_init, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
+    will_return(__wrap_icc_mhu_trans_dfwk_interface_init, FPFW_ICC_TRANSPORT_STATUS_FAILED_ERR);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_icc_mscp2tfa_if.init_fn();
+    assert_true(result.status != FPFW_INIT_STATUS_SUCCESS);
+    assert_null(result.associated_handle);
+}
+
+TEST_FUNCTION(test_icc_mhu_mscp2tfa_if_scp_success, nullptr, nullptr)
+{
+    // Setup expectations
+    DFWK_THREADX_HOST test_host = {};
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_fpfw_init_get_handle, &test_host);
+    will_return(__wrap_icc_mhu_transport_dfwk_device_init, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
+    will_return(__wrap_icc_mhu_trans_dfwk_interface_init, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
+    
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_icc_mscp2tfa_if.init_fn();
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+    assert_non_null(result.associated_handle);
+}
+
+TEST_FUNCTION(test_icc_mhu_mscp2mscp_failed_device, nullptr, nullptr)
+{
+    // Setup expectations
+    DFWK_THREADX_HOST test_host = {};
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_fpfw_init_get_handle, &test_host);
+    will_return(__wrap_icc_mhu_transport_dfwk_device_init, FPFW_ICC_TRANSPORT_STATUS_FAILED_ERR);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_icc_mscp2mscp.init_fn();
+    assert_true(result.status != FPFW_INIT_STATUS_SUCCESS);
+    assert_null(result.associated_handle);
+}
+
+TEST_FUNCTION(test_icc_mhu_mscp2mscp_failed_interface, nullptr, nullptr)
+{
+    // Setup expectations
+    DFWK_THREADX_HOST test_host = {};
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_fpfw_init_get_handle, &test_host);
+    will_return(__wrap_icc_mhu_transport_dfwk_device_init, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
+    will_return(__wrap_icc_mhu_trans_dfwk_interface_init, FPFW_ICC_TRANSPORT_STATUS_FAILED_ERR);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_icc_mscp2mscp.init_fn();
+    assert_true(result.status != FPFW_INIT_STATUS_SUCCESS);
+    assert_null(result.associated_handle);
+}
+
+TEST_FUNCTION(test_icc_mhu_mscp2mscp_success, nullptr, nullptr)
+{
+    // Setup expectations
+    DFWK_THREADX_HOST test_host = {};
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_fpfw_init_get_handle, &test_host);
+    will_return(__wrap_icc_mhu_transport_dfwk_device_init, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
+    will_return(__wrap_icc_mhu_trans_dfwk_interface_init, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
+
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.is_used, false);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.dispatcher_buffer_size, SCP_EXP_ICC_MHU_SCP_MCP_LOCAL_RECEIVE_SIZE);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.size_bits, ICC_MHU_CMD_SIZE_BITS - 1);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.size_bits, ICC_MHU_TOKEN_SIZE_BITS - 1);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.start_pos, ICC_MHU_CMD_BIT_OFFSET);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.start_pos, ICC_MHU_TOKEN_BIT_OFFSET);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.valid_max, UINT32_MAX / 2);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_max, UINT32_MAX / 2);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.cmd_code.valid_min, 0);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.valid_min, 0);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_cb, icc_mhu_trans_dwfk_icc_dispatcher_match_cb);
+    expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
+    will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_icc_mscp2mscp.init_fn();
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+    assert_non_null(result.associated_handle);
+
+}
+
 }

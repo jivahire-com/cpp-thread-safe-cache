@@ -4,6 +4,7 @@ set(SRC
     src/icc_cli.c
     src/icc_hsp_mbox_cli.c
     src/icc_large_fifo_mbox_cli.c
+    src/icc_mhu_cli.c
     src/icc_rmss_d2d_mbox_cli.c
     src/status_decoder.c
 )

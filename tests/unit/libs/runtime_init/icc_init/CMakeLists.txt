@@ -5,6 +5,7 @@ set(SOURCES
     ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/icc_hspmbx_init.c
     ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/icc_d2dmbx_init.c
     ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/icc_accel_mbx_init.c
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/icc_mhu_init.c
 )
 
 set(LIBRARIES
@@ -18,12 +19,15 @@ set(LIBRARIES
     fwlib.service.icc_dispatcher
     fwlib.service.iccBase
     ms::cmocka::testrunner
+    ms::driver::icc_mhu_trans
     ms::lib::threadx
     ms::lib::scp_interrupts
     ms::lib::icc_platform_defines
     ms::lib::accel_intr
+    ms::service::atu_service
     silibs::platform
     silibs::kng_silibs_platform
+    silibs::icc_mhu
     silibs::idhw
     silibs::idsw
     silibs::idsw_kng
@@ -52,6 +56,8 @@ target_compile_definitions(
        HW_INT_HSP2MSCP_MBOX_INT=0
        HW_INT_CDED_MBOX_INT=118
        HW_INT_SDM_MBOX_INT=119
+       HW_INT_MSCP2MSCP_MHU_INT=120
+       HW_INT_AP2MSCP_MHU_S_INT=121
        MSCP_TOP_MSCP_EXP_ADDRESS=1000
        MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=1000
        MSCP_EXP_TOP_SPI_CTRL_ADDRESS=0
@@ -73,6 +79,10 @@ mock_target(${TARGET}
     fpfw_mbox_icc_transport_dfwk_interface_init
     fpfw_icc_base_init
     fpfw_icc_dispatcher_start
+    icc_mhu_trans_init
+    icc_mhu_trans_dfwk_interface_init
+    icc_mhu_transport_dfwk_device_init
+    idhw_get_die_id
     idsw_get_platform_sdv
     idsw_get_cpu_type
     spi_bridge_init

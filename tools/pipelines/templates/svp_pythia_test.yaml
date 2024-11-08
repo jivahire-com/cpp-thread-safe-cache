@@ -11,14 +11,12 @@ parameters:
 - name: Pool
   type: string
   default: '1pfw-kingsgate-windows'   
-- name: stress_test_iterations
-  default: "1"
+- name: TestPlan
+  type: string
+  default: '.\tests\functional\pythia\test_plan\svp_single_die_ci_test_plan.args'
 - name: build_id
   type: string
-  default: ''
-- name: TestFolder
-  type: string
-  default: '.\tests\functional\pythia\test_suites\svp_fpga_single_die\'
+  default: '0'
 
 jobs:
 - job: 'SVP_Pythia_Tests'
@@ -40,15 +38,9 @@ jobs:
     # Dump agent information (useful for debugging)
     - template: agent_info.yaml
 
-    #print the count
-    - script: |
-       echo "stress_test_iterations count ${{ parameters.stress_test_iterations }}"
-       echo "stress_test_iterations count (var) $(stress_test_iterations)"
-      displayName: "Print stress_test_iterations value "
-
     # Download input artifact for CI & nightly run
     - task: DownloadPipelineArtifact@2
-      condition: and(succeeded(), eq('${{ parameters.stress_test_iterations }}', '1'))
+      condition: and(succeeded(), eq('${{ parameters.build_id }}', '0'))
       inputs:
           buildType: 'current'
           downloadType: 'single'
@@ -57,7 +49,7 @@ jobs:
 
     # Download input artifact for nightlystress and weekendstress
     - task: DownloadPipelineArtifact@2
-      condition: and(succeeded(), ne('${{ parameters.stress_test_iterations }}', '1'))
+      condition: and(succeeded(), ne('${{ parameters.build_id }}', '0'))
       inputs:
           buildType: 'specific'
           project: '2610da6a-0168-48f8-b34a-f1c882cb6660'  # Woodinville
@@ -77,7 +69,6 @@ jobs:
         AZURE_DEVOPS_EXT_PAT : $(System.AccessToken)
       inputs:
         workingDirectory: '$(Build.SourcesDirectory)'
-        #stress_test_iterations: $(stress_test_iterations)
         targetType: 'inline'
         showWarnings: true
         script: | 
@@ -87,23 +78,7 @@ jobs:
           $bin_dest_dir = "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch"
           Copy-Item $bin_src_dir $bin_dest_dir -Recurse -Force
 
-          $stressTestIterations = ${{ parameters.stress_test_iterations}}
-
-          if ($stressTestIterations -gt 1) {
-              Invoke-Pythia-Stress -test ${{ parameters.TestFolder }} -platform svp -stress_iteration ${{ parameters.stress_test_iterations }}
-          } else {
-              $artifactName = "${{ parameters.ArtifactName }}"
-              switch ($artifactName) { #To make sure all other pipelines run as designed till TestFolder is implemented across all.
-                  "SVP_Pythia_Tests" {
-                      Invoke-Pythia -test .\tests\functional\pythia\test_suites\svp_fpga_single_die\ -platform svp
-                      Invoke-Pythia -test .\tests\functional\pythia\test_suites\svp_fpga_dual_die\ -platform svp
-                  }
-                  default {
-                      Invoke-Pythia -test ${{ parameters.TestFolder }} -platform svp
-                  }
-              }
-          }
-
+          Invoke-Pythia -test ${{ parameters.TestPlan }} -platform svp
 
           # Remove intermediate output / output that contains system variables (ie: Azure credentials)
           Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\output.xml"

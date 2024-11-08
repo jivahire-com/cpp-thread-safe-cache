@@ -14,11 +14,12 @@ parameters:
 - name: TestAgent
   type: string
   default: 'DH3'
-- name: stress_test_iterations
-  default: "1"
+- name: TestPlan
+  type: string
+  default: '.\tests\functional\pythia\test_plan\fpga_single_die_test_plan.args'
 - name: build_id
   type: string
-  default: ''
+  default: '0'
 
 
 jobs:
@@ -42,24 +43,18 @@ jobs:
     # Dump agent information (useful for debugging)
     - template: agent_info.yaml
 
-    #print the count
-    - script: |
-       echo "stress_test_iterations count ${{ parameters.stress_test_iterations }}"
-       echo "stress_test_iterations count (var) $(stress_test_iterations)"
-      displayName: "Print stress_test_iterations value "
-
     # Download input artifact for CI & nightly run
     - task: DownloadPipelineArtifact@2
-      condition: and(succeeded(), eq('${{ parameters.stress_test_iterations }}', '1'))
+      condition: and(succeeded(), eq('${{ parameters.build_id }}', '0'))
       inputs:
           buildType: 'current'
           downloadType: 'single'
           artifactName: 'drop_Build_Arm_EABI_AARCH_Debug_Build'
           downloadPath: '$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug'
 
-    # Download input artifact for nightlystress and weekendstress
+    # Download input artifact for Nightly and Weekend Stress
     - task: DownloadPipelineArtifact@2
-      condition: and(succeeded(), ne('${{ parameters.stress_test_iterations }}', '1'))
+      condition: and(succeeded(), ne('${{ parameters.build_id }}', '0'))
       inputs:
           buildType: 'specific'
           project: '2610da6a-0168-48f8-b34a-f1c882cb6660'  # Woodinville
@@ -90,15 +85,7 @@ jobs:
 
           flashscpfw ${{ parameters.TestAgent }}
 
-          $stressTestIterations = ${{ parameters.stress_test_iterations}}
-
-          if ($stressTestIterations -gt 1){
-            Invoke-Pythia-Stress -test .\tests\functional\pythia\test_suites\svp_fpga_single_die\ -platform fpga -stress_iteration ${{ parameters.stress_test_iterations}}
-            Invoke-Pythia-Stress -test .\tests\functional\pythia\test_suites\fpga_only_single_die\ -platform fpga -stress_iteration ${{ parameters.stress_test_iterations}}
-          } else {
-            Invoke-Pythia -test .\tests\functional\pythia\test_suites\svp_fpga_single_die\ -platform fpga
-            Invoke-Pythia -test .\tests\functional\pythia\test_suites\fpga_only_single_die\ -platform fpga
-          }
+          Invoke-Pythia -test ${{ parameters.TestPlan }} -platform fpga
 
           # Remove intermediate output / output that contains system variables (ie: Azure credentials)
           Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\output.xml"

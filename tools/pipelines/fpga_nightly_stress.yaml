@@ -9,22 +9,12 @@ resources:
     source: kingsgate.mscp.ci
     branch: main  
 
-parameters:
-  - name: stress_test_iterations
-    type: string
-    default: "4"
-    values:
-      - "6"
-      - "40"
-
 variables:
 - group: ef-pipeline-config
 - name: OfficialBuild
   value : $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
 - name: BUILD_ID
   value : $(resources.pipeline.CIPipeline.runID)
-#- name: runname
-#  value : $(resources.pipeline.CIPipeline.runname)
 - ${{ if variables['OfficialBuild'] }}:
   - name: BuildVersion
     value: $[ variables['Build.BuildNumber'] ]
@@ -39,9 +29,9 @@ stages:
   - template: templates/fpga_pythia_test.yaml
     parameters:
       ArtifactName: FPGA_Pythia_Tests
-      stress_test_iterations: ${{parameters.stress_test_iterations}}
       Pool: 1pfw-kingsgate-big-fpga
       build_id: $(BUILD_ID)
+      TestPlan: .\tests\functional\pythia\test_plan\fpga_nightly_stress_test_plan.args
 
 # This is to tag the commits that pass nightly tests.
 - stage: Promote

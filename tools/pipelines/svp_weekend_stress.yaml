@@ -9,21 +9,12 @@ resources:
     source: kingsgate.mscp.ci
     branch: main  
 
-parameters:
-  - name: stress_test_iterations
-    type: string
-    default: "4"
-    values:
-      - "6"
-      - "40"
 variables:
 - group: ef-pipeline-config
 - name: OfficialBuild
   value : $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
 - name: BUILD_ID
   value : $(resources.pipeline.CIPipeline.runID)
-#- name: runname
-#  value : $(resources.pipeline.CIPipeline.runname)
 - ${{ if variables['OfficialBuild'] }}:
   - name: BuildVersion
     value: $[ variables['Build.BuildNumber'] ]
@@ -38,8 +29,8 @@ stages:
   - template: templates/svp_pythia_test.yaml
     parameters:
         ArtifactName: SVP_Pythia_Tests
-        stress_test_iterations: ${{parameters.stress_test_iterations}}
         build_id: $(BUILD_ID)
+        TestPlan: .\tests\functional\pythia\test_plan\svp_weekend_stress_test_plan.args
 
 - stage: Publish
   dependsOn: [SVP_Pythia_Tests]

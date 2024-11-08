@@ -1,0 +1,6 @@
+## Dual Die Heartbeat Tests
+./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot
+./../../../tests/functional/pythia/test_suites/heart_beat/fbc_sdm_cded_heart_beat_single_die.robot
+
+## Variable Service Tests
+./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_dd_test.robot

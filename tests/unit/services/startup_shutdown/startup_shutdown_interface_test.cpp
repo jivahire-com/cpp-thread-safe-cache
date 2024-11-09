@@ -130,7 +130,8 @@ SOS_TEST(sos_reset_timeout, NULL, NULL)
 SOS_TEST(sos_start_phase, NULL, NULL)
 {
     sos_interface_t test_interface;
-    startup_start_phase_request_t test_request;
+    startup_start_phase_request_t test_request = {};
+    test_request.header.async.AllocatedSize = sizeof(startup_start_phase_request_t);
 
     expect_value(__wrap_DfwkInterfaceSendAsync, Interface, &test_interface.header);
     expect_any(__wrap_DfwkInterfaceSendAsync, Request);
@@ -164,7 +165,8 @@ SOS_TEST(sos_start_phase_sync, NULL, NULL)
 SOS_TEST(sos_shutdown, NULL, NULL)
 {
     sos_interface_t test_interface;
-    startup_shutdown_request_t test_request;
+    startup_shutdown_request_t test_request = {};
+    test_request.header.AllocatedSize = sizeof(startup_shutdown_request_t);
 
     expect_value(__wrap_DfwkInterfaceSendAsync, Interface, &test_interface.header);
     expect_any(__wrap_DfwkInterfaceSendAsync, Request);
@@ -184,7 +186,8 @@ SOS_TEST(sos_shutdown, NULL, NULL)
 SOS_TEST(ssi_startup_stage_start, NULL, NULL)
 {
     DFWK_INTERFACE_HEADER test_interface;
-    ssi_request_t test_request;
+    ssi_request_t test_request = {};
+    test_request.startup_notification.header.AllocatedSize = sizeof(ssi_request_t);
 
     expect_value(__wrap_DfwkInterfaceSendAsync, Interface, &test_interface);
     expect_any(__wrap_DfwkInterfaceSendAsync, Request);
@@ -203,7 +206,8 @@ SOS_TEST(ssi_startup_stage_start, NULL, NULL)
 SOS_TEST(ssi_startup_stage_complete, NULL, NULL)
 {
     DFWK_INTERFACE_HEADER test_interface;
-    ssi_request_t test_request;
+    ssi_request_t test_request = {};
+    test_request.startup_notification.header.AllocatedSize = sizeof(ssi_request_t);
 
     expect_value(__wrap_DfwkInterfaceSendAsync, Interface, &test_interface);
     expect_any(__wrap_DfwkInterfaceSendAsync, Request);
@@ -222,7 +226,8 @@ SOS_TEST(ssi_startup_stage_complete, NULL, NULL)
 SOS_TEST(ssi_shutdown_quiesce, NULL, NULL)
 {
     DFWK_INTERFACE_HEADER test_interface;
-    ssi_request_t test_request;
+    ssi_request_t test_request = {};
+    test_request.shutdown_notification.header.AllocatedSize = sizeof(ssi_request_t);
 
     expect_value(__wrap_DfwkInterfaceSendAsync, Interface, &test_interface);
     expect_any(__wrap_DfwkInterfaceSendAsync, Request);

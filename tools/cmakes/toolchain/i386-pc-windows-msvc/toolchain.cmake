@@ -29,6 +29,13 @@ set(CMAKE_CXX_COMPILER_RANLIB "${CMAKE_RANLIB}")
 set(CMAKE_C_FLAGS "-g -m32 --target=${CLANG_TARGET_TRIPLE} -Wall -Wextra -Werror -Wno-missing-field-initializers")
 set(CMAKE_CXX_FLAGS "-g -m32 --target=${CLANG_TARGET_TRIPLE} -Wall -Wextra -Werror -Wno-missing-field-initializers")
 
+# Set compiler and linker options to fix BinSkim Error
+add_compile_options(-Xclang -cfguard)
+add_link_options(-Xlinker /guard:cf)
+
+# Set repo utilities
+set(REPO_CLANG_FORMAT $ENV{REPO_APP_PATH_llvm.win64}/bin/clang-format.exe)
+
 # Enable features
 option(REPO_ENABLE_TESTS "Compiles unit tests" ON)
 option(REPO_ENABLE_COVERAGE "Enables code coverage in compilation" ON)

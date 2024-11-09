@@ -114,10 +114,13 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc
         break;
     case PLATFORM_EMU:
     case PLATFORM_EMU_1D:
-    case PLATFORM_EMU_1D_8C:
     case PLATFORM_EMU_2D:
+        power_config.platform_cores_in_die = &platform_cores;
+        power_config.platform_core_power_support = true;
+        break;
+    case PLATFORM_EMU_1D_8C:
     case PLATFORM_EMU_2D_8C:
-        power_config.platform_cores_in_die = &zebu_cores;
+        power_config.platform_cores_in_die = &zebu_cores_8C_model;
         power_config.platform_core_power_support = true;
         break;
     default:

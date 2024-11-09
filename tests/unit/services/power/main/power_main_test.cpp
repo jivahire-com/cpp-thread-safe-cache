@@ -342,12 +342,17 @@ POWER_TEST(init_ap_soc, NULL, NULL)
     expect_function_call(__wrap_ws_data_put);
 
     expect_function_call(__wrap_power_loops_control_post_core_init);
+    power_ap_soc_init();
+}
+
+POWER_TEST(init_ap_soc_post_remote_sync, NULL, NULL)
+{
     expect_function_call(__wrap_power_telemetry_enable);
     expect_function_call(__wrap_power_timer_start_loop_timers);
     expect_function_call(__wrap_power_hw_clear_force_pmin);
     expect_value(__wrap_power_hw_clear_force_pmin, type, PM_PMIN_ALL);
 
-    power_ap_soc_init();
+    power_ap_soc_init_post_remote_sync();
 }
 
 POWER_TEST(init_ap_soc_ws, NULL, NULL)
@@ -369,11 +374,7 @@ POWER_TEST(init_ap_soc_ws, NULL, NULL)
     expect_function_call(__wrap_tile_pvt_sda_reconfig);
     expect_function_call(__wrap_tile_pvt_dma_config);
     expect_function_call(__wrap_power_loops_control_post_core_init);
-    expect_function_call(__wrap_power_telemetry_enable);
-    expect_function_call(__wrap_power_timer_start_loop_timers);
-    expect_function_call(__wrap_power_hw_clear_force_pmin);
-    expect_value(__wrap_power_hw_clear_force_pmin, type, PM_PMIN_ALL);
-
+    
     power_ap_soc_init();
 }
 

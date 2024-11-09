@@ -47,10 +47,13 @@ FPFW_INIT_COMPONENT(pex_rng, FPFW_INIT_DEPENDENCIES("dfwk", "sysinfo", "mesh", "
         break;
     case PLATFORM_EMU:
     case PLATFORM_EMU_1D:
-    case PLATFORM_EMU_1D_8C:
     case PLATFORM_EMU_2D:
+        rng_config.platform_cores_in_die = &platform_cores;   
+        break;
+    case PLATFORM_EMU_1D_8C:
     case PLATFORM_EMU_2D_8C:
-        rng_config.platform_cores_in_die = &zebu_cores;   
+        rng_config.platform_cores_in_die = &zebu_cores_8C_model;  
+        break; 
     default:
         break;
     }

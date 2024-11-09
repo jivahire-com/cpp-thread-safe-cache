@@ -101,6 +101,12 @@ void power_ap_soc_init();
  * @return pmm revision
  *
  */
+void power_ap_soc_init_post_remote_sync();
+
+/*
+* Wait until both die pvt init is complete before setting sensor trigger and telemetry config
+*/
+
 int32_t ldo_cap_to_max(uint32_t freq, uint32_t ldodac, uint32_t curve_idx);
 
 /**

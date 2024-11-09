@@ -73,10 +73,12 @@ FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "tower_cfg", "ic
         break;
     case PLATFORM_EMU:
     case PLATFORM_EMU_1D:
-    case PLATFORM_EMU_1D_8C:
     case PLATFORM_EMU_2D:
+        ap_core_config.platform_cores_in_die = &platform_cores;
+        break;   
+    case PLATFORM_EMU_1D_8C:
     case PLATFORM_EMU_2D_8C:
-        ap_core_config.platform_cores_in_die = &zebu_cores;
+        ap_core_config.platform_cores_in_die = &zebu_cores_8C_model;
         break;
     default:
         break;

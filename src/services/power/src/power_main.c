@@ -53,6 +53,9 @@ static void power_service_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER p_request, v
         case STARTUP_AP_SOC_POWER_INIT:
             power_ap_soc_init();
             break;
+        case STARTUP_AP_SOC_POWER_INIT_POST_SYNC:
+            power_ap_soc_init_post_remote_sync();
+            break;
         default:
             // nothing to do for other types.
             break;
@@ -176,7 +179,10 @@ void power_ap_soc_init()
 
     // secondary init of control loop after core init
     power_loops_control_post_core_init();
+}
 
+void power_ap_soc_init_post_remote_sync()
+{
     // enable telemetry before we start loops
     power_telemetry_enable();
 

@@ -18,7 +18,7 @@ jobs:
 
   variables:
     ob_outputDirectory: '$(Build.SourcesDirectory)/.build/${{ parameters.Configuration }}/${{ parameters.Toolchain }}/'
-    ob_sdl_codeSignValidation_excludes: -|**\*.test.*.exe; # Excluding unit tests
+    ob_sdl_codeSignValidation_excludes: -|**\*.test*.exe; # Excluding unit tests
 
   displayName: Build
   steps: 

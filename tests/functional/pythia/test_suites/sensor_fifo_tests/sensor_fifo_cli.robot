@@ -67,3 +67,25 @@ Test Case - verify fifoen command
         Enable FIFO    ${fifo_id}
         Verify FIFO State    ${fifo_id}    ${True}
     END
+
+Test Case - verify snsrfifo lprop command
+    [Documentation]    Verifies sensor FIFO lprop command functionality
+    [Tags]    ssi    ssi_sensor_fifo_lprop    TEST_CASE_ID:2143251
+    
+    # Test-specific variables
+    ${HELP_COMMAND}=    Set Variable    snsrfifo lprop
+    ${READ_UNTIL_KEY_STRING}=    Set Variable    Ok
+    @{HELP_RESPONSE_LIST}=    Create List
+    ...    Fifo ID = 0: Fifo Name = PSTATE Fifo
+    ...    Fifo ID = 1: Fifo Name = SCP Msg Fifo
+    ...    Fifo ID = 2: Fifo Name = Tile Temperature Fifo
+    ...    Fifo ID = 3: Fifo Name = Tile Voltage Fifo
+    ...    Fifo ID = 4: Fifo Name = Core Current Fifo
+    ...    Fifo ID = 5: Fifo Name = PVT Temperature Fifo
+    ...    Fifo ID = 6: Fifo Name = PVT Voltage Fifo
+    ...    Fifo ID = 7: Fifo Name = DIMM Fifo
+    ...    Fifo ID = 8: Fifo Name = VR Temp Fifo
+    ...    Fifo ID = 9: Fifo Name = VR Current Fifo
+    ...    Ok
+    
+    Run Sensor Fifo CLI Test    ${HELP_COMMAND}    ${READ_UNTIL_KEY_STRING}    ${HELP_RESPONSE_LIST}

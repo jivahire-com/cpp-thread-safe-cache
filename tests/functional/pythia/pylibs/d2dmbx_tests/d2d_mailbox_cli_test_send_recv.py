@@ -66,13 +66,6 @@ class d2d_mailbox_cli_test_send_recv(EchoFallsBaseTest):
 
         core_com_die0_channel=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
         core_com_die1_channel=self.dut.mb.node_0.soc.secondary_die.scp.channel_manager.get_current_channel()
-
-        if (self.dut.get_dut_type() == DeviceType.SVP):
-            # TODO:  Implement changes as per Karls changes
-            # https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2110452 
-            self.log.info("TODO SVP Send Recv Tests")
-            self.dut.teardown()
-            return True
         
         self._open_channels(core_com_die0_channel, core_com_die1_channel)
         

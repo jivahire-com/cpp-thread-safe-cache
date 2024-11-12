@@ -25,8 +25,9 @@ ${READ UNTIL}                **** PCIe VFs Test DONE ****
 
 
 *** Test Cases ***
-Test Case - AP: Test PCIe Enumeration Test: []
+Test Case - AP: Test PCIe Enumeration Test
     [Documentation]      Verifies the PCIe enumeration of SDM and CDED virtual functions from AP core 0.
+    [Tags]   1423960    1615866
     Send Test Command    ${PCIE_VF_CMD} 
     ${test_result}    Parse Test Output    ${READ UNTIL}    @{PASS_RESPONSE}    ${FAIL_RESPONSE}
     Should Be True      ${test_result}

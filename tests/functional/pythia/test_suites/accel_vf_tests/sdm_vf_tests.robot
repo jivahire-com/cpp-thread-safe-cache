@@ -28,14 +28,16 @@ ${READ UNTIL}                SDM MEMCPY Test on Die 0 DONE
 
 
 *** Test Cases ***
-Test Case - AP: SDM ALL VF memcpy using the virtual function On Die 0: []
+Test Case - AP: SDM single VF memcpy using the virtual function On Die 0
     [Documentation]     Test the SDM memcpy for virtual function.
+    [Tags]   1423960
     Send Test Command    ${SDM_MEMCPY_DIE0_VF_CMD}
     ${test_result}    Parse Test Output    ${READ UNTIL}     ${PASS_RESPONSE}       ${FAIL_RESPONSE}
     Should Be True      ${test_result}
 
-Test Case - AP: SDM ALL VF memcpy Test Using WQ And VF Parameters: [1423960]
+Test Case - AP: SDM ALL VF memcpy Test Using WQ And VF Parameters
     [Documentation]     Test the SDM for all 31 virtual function and all 3 wq memcpy on SDM from AP core 0.
+    [Tags]   1423960
     FOR    ${vf}    IN RANGE    0    32    
            FOR    ${wq}    IN RANGE    0    4 
                Send Test Command    ${SDM_MEMCPY_DIE0_VF_CMD} 0 ${wq} ${vf}

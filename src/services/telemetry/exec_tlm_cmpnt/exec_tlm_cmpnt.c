@@ -19,7 +19,7 @@
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define MS_TO_TX_TICKS(ms) (((ms)*TX_TIMER_TICKS_PER_SECOND) / 1000)
+#define MS_TO_TX_TICKS(ms) (((ms) * TX_TIMER_TICKS_PER_SECOND) / 1000)
 #define TICKS_PER_MINUTE   (TX_TIMER_TICKS_PER_SECOND * 60)
 #define TICKS_PER_HOUR     (TICKS_PER_MINUTE * 60)
 #define TICKS_PER_24HR     (TICKS_PER_HOUR * 24)

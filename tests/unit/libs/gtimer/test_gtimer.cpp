@@ -13,8 +13,8 @@
 extern "C" {
 #include <FPFwInterrupts.h>
 #include <FpFwUtils.h>
-#include <fpfw_status.h>                          // for FPFW_SUCCESS
-#include <gtimer_prodfw.h>                          // for gtimer_init
+#include <fpfw_status.h>                     // for FPFW_SUCCESS
+#include <gtimer_prodfw.h>                   // for gtimer_init
 #include <refclk_counter_cnt_control_regs.h> // for refclk_counter_cnt_cont...
 #include <stdint.h>                          // for uint32_t, uintptr_t
 
@@ -83,7 +83,12 @@ fpfw_status_t __wrap_fpfw_tmr_queue_add_oneshot(fpfw_tmr_queue_t* queue,
     return FPFW_STATUS_SUCCESS;
 }
 
-fpfw_status_t __wrap_fpfw_tmr_queue_add_periodic(fpfw_tmr_queue_t* queue, fpfw_tmr_entry_t* tmr, uint64_t init_tick, uint64_t tick_interval, void (*cb)(void*, uint64_t, uint64_t), void* ctx)
+fpfw_status_t __wrap_fpfw_tmr_queue_add_periodic(fpfw_tmr_queue_t* queue,
+                                                 fpfw_tmr_entry_t* tmr,
+                                                 uint64_t init_tick,
+                                                 uint64_t tick_interval,
+                                                 void (*cb)(void*, uint64_t, uint64_t),
+                                                 void* ctx)
 {
     assert_non_null(queue);
     check_expected_ptr(tmr);
@@ -117,7 +122,6 @@ uint64_t __wrap_gtimer_get_counter(const uintptr_t timer_base_addr)
 }
 }
 
-
 //
 // Tests
 //
@@ -148,7 +152,6 @@ TEST_FUNCTION(test_gtimer_init, nullptr, nullptr)
 
     // Call API under test
     gtimer_prodfw_init(&test_config);
-
 }
 
 TEST_FUNCTION(test_gtimer_add_oneshot, nullptr, nullptr)

@@ -8,14 +8,14 @@
  */
 
 /*------------- Includes -----------------*/
-#include <CMockaWrapper.h>          // for assert_int_equal, Cmock...
+#include <CMockaWrapper.h> // for assert_int_equal, Cmock...
 
 extern "C" {
 #include <crash_dump.h>
-#include <exception_handler.h>      // for exception_handler, threadx_stack_error_handler
-#include <exception_handler_i.h>    // for exception_stack_frame_t
-#include <kng_error.h>              // for KNG_CD_HARDFAULT_EXCEPTION
-#include <stdint.h>                 // for uint32_t, uintptr_t
+#include <exception_handler.h>   // for exception_handler, threadx_stack_error_handler
+#include <exception_handler_i.h> // for exception_stack_frame_t
+#include <kng_error.h>           // for KNG_CD_HARDFAULT_EXCEPTION
+#include <stdint.h>              // for uint32_t, uintptr_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -96,8 +96,8 @@ void test_exception_handler_params(int exception, uint32_t error_code)
     will_return(get_active_exception, exception);
 
     expect_value(__wrap_crash_dump_handler, errorCode, error_code);
-    expect_any(__wrap_crash_dump_handler, p1);  // __FILE__
-    expect_any(__wrap_crash_dump_handler, p2);  // __LINE__
+    expect_any(__wrap_crash_dump_handler, p1); // __FILE__
+    expect_any(__wrap_crash_dump_handler, p2); // __LINE__
     expect_value(__wrap_crash_dump_handler, p3, 0);
     expect_value(__wrap_crash_dump_handler, p4, 0);
     expect_function_call(__wrap_crash_dump_handler);
@@ -110,34 +110,34 @@ void test_exception_handler_params(int exception, uint32_t error_code)
 
 TEST_FUNCTION(test_exception_handler, nullptr, nullptr)
 {
-    test_exception_handler_params(-13, KNG_CD_HARDFAULT_EXCEPTION);         // HardFault_IRQn
-    test_exception_handler_params(-12, KNG_CD_MEMORYMANAGEMENT_EXCEPTION);  // MemoryManagement_IRQn
-    test_exception_handler_params(-11, KNG_CD_BUSFAULT_EXCEPTION);          // BusFault_IRQn
-    test_exception_handler_params(-10, KNG_CD_USAGEFAULT_EXCEPTION);        // UsageFault_IRQn
-    test_exception_handler_params(-14, KNG_CD_WDT_TIMEOUT);                 // NonMaskableInt_IRQn
-    test_exception_handler_params(  0, KNG_CD_DEFAULT_EXCEPTION);           // Default
+    test_exception_handler_params(-13, KNG_CD_HARDFAULT_EXCEPTION);        // HardFault_IRQn
+    test_exception_handler_params(-12, KNG_CD_MEMORYMANAGEMENT_EXCEPTION); // MemoryManagement_IRQn
+    test_exception_handler_params(-11, KNG_CD_BUSFAULT_EXCEPTION);         // BusFault_IRQn
+    test_exception_handler_params(-10, KNG_CD_USAGEFAULT_EXCEPTION);       // UsageFault_IRQn
+    test_exception_handler_params(-14, KNG_CD_WDT_TIMEOUT);                // NonMaskableInt_IRQn
+    test_exception_handler_params(0, KNG_CD_DEFAULT_EXCEPTION);            // Default
 }
 
 TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
 {
     exception_stack_frame_t stack_frame;
 
-    stack_frame.R0  = KNG_E_NOTIMPL;    // error_code
-    stack_frame.R1  = 1;                // p1
-    stack_frame.R2  = 2;                // p2
-    stack_frame.R3  = 3;                // p3
+    stack_frame.R0 = KNG_E_NOTIMPL; // error_code
+    stack_frame.R1 = 1;             // p1
+    stack_frame.R2 = 2;             // p2
+    stack_frame.R3 = 3;             // p3
     stack_frame.R12 = 12;
-    stack_frame.LR  = 14;
-    stack_frame.PC  = 15;
+    stack_frame.LR = 14;
+    stack_frame.PC = 15;
     stack_frame.PSR = 16;
-    g_core_crash_context.r4 = 4;        // p4
+    g_core_crash_context.r4 = 4; // p4
 
     // Set up expectations
     expect_value(save_crash_context, stack_frame, &stack_frame);
     expect_function_call(save_crash_context);
 
     expect_function_call(get_active_exception);
-    will_return(get_active_exception, -4);  // DebugMonitor_IRQn
+    will_return(get_active_exception, -4); // DebugMonitor_IRQn
 
     expect_function_call(__wrap_crash_dump_bug_check_initiated_dump);
     will_return(__wrap_crash_dump_bug_check_initiated_dump, true);
@@ -159,7 +159,7 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
     expect_function_call(save_crash_context);
 
     expect_function_call(get_active_exception);
-    will_return(get_active_exception, -4);  // DebugMonitor_IRQn
+    will_return(get_active_exception, -4); // DebugMonitor_IRQn
 
     expect_function_call(__wrap_crash_dump_bug_check_initiated_dump);
     will_return(__wrap_crash_dump_bug_check_initiated_dump, false);

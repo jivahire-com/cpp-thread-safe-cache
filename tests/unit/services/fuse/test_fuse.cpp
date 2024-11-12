@@ -32,8 +32,8 @@ extern "C" {
 #include <sds_api.h>
 #include <sds_configuration.h>
 #include <sds_init.h>
-#include <shared_sds_def.h>      //Fuse SDS block and struct id
 #include <setjmp.h>
+#include <shared_sds_def.h> //Fuse SDS block and struct id
 #include <silibs_platform.h>
 #include <silibs_scp_exp_top_regs.h>
 #include <silibs_scp_top_regs.h>
@@ -53,7 +53,6 @@ static jmp_buf cd_mock_jump_buf;
 static uint32_t icc_hspmbx_ctx;
 static kng_fuse_disable_core_t DIE0_fuse_disable = {0x01, 0x1000, 0x0};
 /*------------- Functions ----------------*/
-
 
 //
 // Mocks
@@ -171,14 +170,14 @@ fpfw_icc_base_ctx_t* __wrap_fpfw_init_get_handle(const char* name)
     function_called();
     return mock_ptr_type(fpfw_icc_base_ctx_t*);
 }
-fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t *icc_ctx, void *payload_buffer, size_t buffer_size, size_t *output_recv_bytes)
+fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, void* payload_buffer, size_t buffer_size, size_t* output_recv_bytes)
 {
     FPFW_UNUSED(icc_ctx);
     FPFW_UNUSED(payload_buffer);
     check_expected(buffer_size);
     check_expected_ptr(output_recv_bytes);
 
-    kng_hsp_fuse_mailbox_msg *recv_msg = (kng_hsp_fuse_mailbox_msg *)payload_buffer;
+    kng_hsp_fuse_mailbox_msg* recv_msg = (kng_hsp_fuse_mailbox_msg*)payload_buffer;
     recv_msg->fuse_req.header.cmd = HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_RSP;
     recv_msg->rsp.status = HSP_MAILBOX_RSP_STATUS_SUCCESS;
     *output_recv_bytes = sizeof(kng_hsp_fuse_mailbox_msg);
@@ -203,7 +202,6 @@ int32_t __wrap_sds_block_creation(uint32_t sds_module_id, uint32_t request_size,
     return 0;
 }
 
-
 //
 // Tests
 //
@@ -218,7 +216,7 @@ TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
-    
+
     will_return_always(__wrap_fuse_dma_copy_to_ram_blocking, 0);
     expect_value(__wrap_read_fuse, fuse_bit_offset, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET);
     expect_value(__wrap_read_fuse, fuse_bit_size, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
@@ -230,16 +228,16 @@ TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
     expect_memory(__wrap_fpfw_icc_base_send_recv_sync, output_recv_bytes, &output_recv_bytes, sizeof(output_recv_bytes));
     expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, sizeof(msg));
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-    
+
     // Expectation for apply_fuse_override
     expect_value(__wrap_apply_fuse_override, die_id, DIE_0);
     expect_value(__wrap_apply_fuse_override, override_buffer, (uintptr_t)(SCP_EXP_FUSE_DATA_BASE));
     expect_function_call(__wrap_apply_fuse_override);
-    
+
     expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DISABLE_CORE_DISABLE0_BIT_OFFSET);
     expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DISABLE_CORE_DISABLE0_WIDTH);
     will_return(__wrap_read_fuse, DIE0_fuse_disable.fuse_dis_core_0_31);
-    
+
     expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DISABLE_CORE_DISABLE1_BIT_OFFSET);
     expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DISABLE_CORE_DISABLE1_WIDTH);
     will_return(__wrap_read_fuse, DIE0_fuse_disable.fuse_dis_core_32_63);
@@ -249,7 +247,7 @@ TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
     will_return(__wrap_read_fuse, DIE0_fuse_disable.fuse_dis_core_64_65);
     // Expectation for trigger_debugger_for_manual_overrides
     expect_function_call(__wrap_trigger_debugger_for_manual_overrides);
-   
+
     assert_int_equal(platform_fuse_override(), 0);
 }
 
@@ -259,9 +257,7 @@ TEST_FUNCTION(test_read_fuse, NULL, NULL)
     expect_value(__wrap_read_fuse, fuse_bit_offset, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET);
     expect_value(__wrap_read_fuse, fuse_bit_size, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
     will_return_always(__wrap_read_fuse, 1);
-    platform_read_for_fuse((uintptr_t)&fuse_data,
-                           SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET,
-                           SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
+    platform_read_for_fuse((uintptr_t)&fuse_data, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
 }
 
 TEST_FUNCTION(test_fuse_distribute_SIM_RTL, NULL, NULL)
@@ -331,7 +327,6 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_0, NULL, NULL)
     printf("Freed memory for fuse_dist_exclude_list1\n");
 }
 
-
 TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
 {
     fuse_dist_exclude_range_t fuse_dist_exclude_list1[10] = {}; // Allocate memory
@@ -346,7 +341,7 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
-    
+
     // Debug prints
     // Debug prints
     printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
@@ -411,9 +406,9 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
            "phase_min=POST_BRIDGE_INIT_MINOR, exclude_list=%p, exclude_list_count=%u\n",
            (void*)fuse_dist_exclude_list1,
            exclude_list_count1);
-    //kng_fuse_disable_core_t _test_disable_core={};
+    // kng_fuse_disable_core_t _test_disable_core={};
     expect_value(__wrap_sds_block_write, sds_module_id, FUSE_DISABLE_CORE_DIE0_STRUCT_ID);
-    expect_memory(__wrap_sds_block_write,buffer,&(DIE0_fuse_disable),FUSE_DISABLE_CORE_DIE0_SIZE);
+    expect_memory(__wrap_sds_block_write, buffer, &(DIE0_fuse_disable), FUSE_DISABLE_CORE_DIE0_SIZE);
     expect_value(__wrap_sds_block_write, buffer_size, FUSE_DISABLE_CORE_DIE0_SIZE);
     unsigned int status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_HSP_MESH_INIT);
     assert_int_equal(status, 0);
@@ -440,22 +435,20 @@ TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
     kng_hsp_fuse_mailbox_msg msg = {};
     msg.fuse_req.header.cmd = HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ;
     msg.fuse_req.header.flags = HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED;
-    
+
     size_t output_recv_bytes = 0;
     expect_memory(__wrap_fpfw_icc_base_send_recv_sync, output_recv_bytes, &output_recv_bytes, sizeof(output_recv_bytes));
     expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, sizeof(msg));
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
     // Expectation for apply_fuse_override
     expect_value(__wrap_apply_fuse_override_ignoring_valids, die_id, DIE_0);
-    expect_value(__wrap_apply_fuse_override_ignoring_valids,
-                 override_buffer,
-                 (uintptr_t)(SCP_EXP_FUSE_DATA_BASE));
+    expect_value(__wrap_apply_fuse_override_ignoring_valids, override_buffer, (uintptr_t)(SCP_EXP_FUSE_DATA_BASE));
     expect_function_call(__wrap_apply_fuse_override_ignoring_valids);
-    
+
     expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DISABLE_CORE_DISABLE0_BIT_OFFSET);
     expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DISABLE_CORE_DISABLE0_WIDTH);
     will_return(__wrap_read_fuse, DIE0_fuse_disable.fuse_dis_core_0_31);
-    
+
     expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DISABLE_CORE_DISABLE1_BIT_OFFSET);
     expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DISABLE_CORE_DISABLE1_WIDTH);
     will_return(__wrap_read_fuse, DIE0_fuse_disable.fuse_dis_core_32_63);

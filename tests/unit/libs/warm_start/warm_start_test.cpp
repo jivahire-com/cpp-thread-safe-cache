@@ -223,7 +223,7 @@ TEST_FUNCTION(ws_data_expected_equal_value_for_cli_id, setup, teardown)
 {
     expect_function_call(__wrap__txe_mutex_get);
     expect_function_call(__wrap__txe_mutex_put);
-    
+
     ws_data_entry_t test_p_next = {.id = WARM_START_ID_LAST, .checksum = -255, .size = 0x1, .data = 0xFF};
     ws_data_list_t test_p_ws_list = {.magic_id = 0, .entry = {.p_next = &test_p_next}};
 
@@ -238,8 +238,6 @@ TEST_FUNCTION(ws_data_expected_equal_value_for_cli_id, setup, teardown)
     expect_function_call(__wrap__txe_mutex_get);
     expect_function_call(__wrap__txe_mutex_put);
 
-    assert_int_equal( *(int *)ws_data_get(WARM_START_ID_RESERVED_CLI_TEST, &size), data);
+    assert_int_equal(*(int*)ws_data_get(WARM_START_ID_RESERVED_CLI_TEST, &size), data);
 }
-
 }
-

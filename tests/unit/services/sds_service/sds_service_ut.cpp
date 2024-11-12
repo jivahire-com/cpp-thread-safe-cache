@@ -129,7 +129,6 @@ void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, u
     FPFW_UNUSED(p4);
     function_called();
 }
-
 }
 //
 // Tests

@@ -34,11 +34,11 @@ extern "C" {
 #include <power_runconfig_i.h>     // for power_runconfig_t
 #include <pvt.h>                   // for _PVT_RETCODE
 #include <pvt_struct.h>            // for VOLTS2DOUT, pvt_alarm_setting_con...
-#include <silibs_common.h>         // for ARRAY_SIZE, MAX
-#include <string.h>                // for memset
 #include <scp_exp_csr_regs.h>
+#include <silibs_common.h> // for ARRAY_SIZE, MAX
 #include <silibs_scp_exp_top_regs.h>
 #include <silibs_scp_top_regs.h>
+#include <string.h> // for memset
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -74,7 +74,11 @@ extern avs_pwr_request_context_t pwr_avs_request[MAX_AVS_INST];
 //
 // Mocks
 //
-void __wrap_dvfs_ns_set_cppc_desired2(const uintptr_t cluster_pex_base_addr, uint8_t cppc_desired, uint8_t cppc_base_perf, uint8_t throttle_pri, uint8_t boost_pri)
+void __wrap_dvfs_ns_set_cppc_desired2(const uintptr_t cluster_pex_base_addr,
+                                      uint8_t cppc_desired,
+                                      uint8_t cppc_base_perf,
+                                      uint8_t throttle_pri,
+                                      uint8_t boost_pri)
 {
     check_expected(cluster_pex_base_addr);
     check_expected(cppc_desired);
@@ -85,9 +89,10 @@ void __wrap_dvfs_ns_set_cppc_desired2(const uintptr_t cluster_pex_base_addr, uin
 }
 
 void __wrap_scp_avs_client_write(PDFWK_INTERFACE_HEADER Interface,
-                          PDFWK_ASYNC_REQUEST_HEADER Request,
-                          DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine,
-                          void* CompletionContext) {
+                                 PDFWK_ASYNC_REQUEST_HEADER Request,
+                                 DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine,
+                                 void* CompletionContext)
+{
     check_expected(Interface);
     check_expected(Request);
     check_expected(CompletionRoutine);
@@ -528,10 +533,16 @@ void init_core_base_expect()
 {
     expect_any_count(__wrap_wait_for_FLLCalDone, cluster_pex_base_addr, TEST_CORE_COUNT);
     will_return_always(__wrap_wait_for_FLLCalDone, DVFS_SUCCESS);
-    
+
     expect_any_count(__wrap_dvfs_ns_set_cppc_desired2, cluster_pex_base_addr, TEST_CORE_COUNT);
-    expect_value_count(__wrap_dvfs_ns_set_cppc_desired2, cppc_desired, dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL), TEST_CORE_COUNT);
-    expect_value_count(__wrap_dvfs_ns_set_cppc_desired2, cppc_base_perf, dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL), TEST_CORE_COUNT);
+    expect_value_count(__wrap_dvfs_ns_set_cppc_desired2,
+                       cppc_desired,
+                       dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL),
+                       TEST_CORE_COUNT);
+    expect_value_count(__wrap_dvfs_ns_set_cppc_desired2,
+                       cppc_base_perf,
+                       dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL),
+                       TEST_CORE_COUNT);
     expect_value_count(__wrap_dvfs_ns_set_cppc_desired2, throttle_pri, 0, TEST_CORE_COUNT);
     expect_value_count(__wrap_dvfs_ns_set_cppc_desired2, boost_pri, 0, TEST_CORE_COUNT);
 
@@ -927,8 +938,14 @@ POWER_TEST(hwi_init_core__disabled_core, setup, teardown)
     will_return_always(__wrap_wait_for_FLLCalDone, DVFS_SUCCESS);
 
     expect_any_count(__wrap_dvfs_ns_set_cppc_desired2, cluster_pex_base_addr, TEST_CORE_COUNT - 1);
-    expect_value_count(__wrap_dvfs_ns_set_cppc_desired2, cppc_desired, dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL), TEST_CORE_COUNT - 1);
-    expect_value_count(__wrap_dvfs_ns_set_cppc_desired2, cppc_base_perf, dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL), TEST_CORE_COUNT - 1);
+    expect_value_count(__wrap_dvfs_ns_set_cppc_desired2,
+                       cppc_desired,
+                       dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL),
+                       TEST_CORE_COUNT - 1);
+    expect_value_count(__wrap_dvfs_ns_set_cppc_desired2,
+                       cppc_base_perf,
+                       dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL),
+                       TEST_CORE_COUNT - 1);
     expect_value_count(__wrap_dvfs_ns_set_cppc_desired2, throttle_pri, 0, TEST_CORE_COUNT - 1);
     expect_value_count(__wrap_dvfs_ns_set_cppc_desired2, boost_pri, 0, TEST_CORE_COUNT - 1);
 
@@ -1250,7 +1267,7 @@ POWER_TEST(power_hw_force_pmin, setup, teardown)
 {
     scp_exp_csr_reg fake_reg = {{{0}}};
 
-    power_service_config_t sconfig = {.scp_exp_csr_base = (uintptr_t) &(fake_reg)};
+    power_service_config_t sconfig = {.scp_exp_csr_base = (uintptr_t) & (fake_reg)};
     power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
 
     scp_exp_csr_force_pmin_reg expected_pmin_reg = {{.fw_pmin_control = 1}};
@@ -1259,12 +1276,12 @@ POWER_TEST(power_hw_force_pmin, setup, teardown)
     power_hw_force_pmin(PM_FW_PMIN_CONTROL);
 
     assert_int_equal(fake_reg.force_pmin_reg.fw_pmin_control, expected_pmin_reg.fw_pmin_control);
-    
+
     expected_pmin_reg.lockup_ue_rr = 1;
 
     will_return(__wrap_power_runconfig_get, &test_runconfig);
     power_hw_force_pmin(PM_LOCKUP_UE_RR);
-    
+
     assert_int_equal(fake_reg.force_pmin_reg.lockup_ue_rr, expected_pmin_reg.lockup_ue_rr);
 }
 
@@ -1274,7 +1291,7 @@ POWER_TEST(power_hw_clear_force_pmin, setup, teardown)
     fake_reg.force_pmin_reg.fw_pmin_control = 1;
     fake_reg.force_pmin_reg.lockup_ue_rr = 1;
 
-    power_service_config_t sconfig = {.scp_exp_csr_base = (uintptr_t) &(fake_reg)};
+    power_service_config_t sconfig = {.scp_exp_csr_base = (uintptr_t) & (fake_reg)};
     power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
 
     scp_exp_csr_force_pmin_reg expected_pmin_reg = {{.fw_pmin_control = 0}};
@@ -1283,12 +1300,12 @@ POWER_TEST(power_hw_clear_force_pmin, setup, teardown)
     power_hw_clear_force_pmin(PM_FW_PMIN_CONTROL);
 
     assert_int_equal(fake_reg.force_pmin_reg.fw_pmin_control, expected_pmin_reg.fw_pmin_control);
-    
+
     expected_pmin_reg.lockup_ue_rr = 0;
 
     will_return(__wrap_power_runconfig_get, &test_runconfig);
     power_hw_clear_force_pmin(PM_LOCKUP_UE_RR);
-    
+
     assert_int_equal(fake_reg.force_pmin_reg.lockup_ue_rr, expected_pmin_reg.lockup_ue_rr);
 }
 
@@ -1311,10 +1328,10 @@ POWER_TEST(power_vrs_write_vcpu_voltage, setup, teardown)
     test_avs_Request.request.avs_params.avs_data = (uint32_t)test_volt_mv;
 
     sconfig.avs_details[vcpu_test_index].bus_id = vcpu_test_index;
-    sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;    
+    sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;
 
     will_return(__wrap_power_runconfig_get, &test_runconfig);
-    
+
     expect_function_call(__wrap_all_requests_completed);
     expect_value(__wrap_scp_avs_client_write, Interface, sconfig.avs_details[vcpu_test_index].bus_id);
     expect_memory(__wrap_scp_avs_client_write, Request, &test_avs_Request, sizeof(test_avs_Request));
@@ -1345,7 +1362,7 @@ POWER_TEST(power_vrs_write_vcpu_voltage_high_range, setup, teardown)
     test_avs_Request.request.avs_params.avs_data = (uint32_t)VR_VCPU_MAX_VOLTAGE_MV;
 
     sconfig.avs_details[vcpu_test_index].bus_id = vcpu_test_index;
-    sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;    
+    sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;
 
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 
@@ -1379,7 +1396,7 @@ POWER_TEST(power_vrs_write_vcpu_voltage_low_range, setup, teardown)
     test_avs_Request[test_avs_device.avs_bus_num].request.avs_params.avs_data = (uint32_t)VR_VCPU_MIN_VOLTAGE_MV;
 
     sconfig.avs_details[vcpu_test_index].bus_id = vcpu_test_index;
-    sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;    
+    sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;
 
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 

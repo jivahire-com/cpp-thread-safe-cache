@@ -29,10 +29,9 @@ extern "C" {
 /*-- Symbolic Constant Macros (defines) --*/
 
 #define TEST_ASIC_COUNT (10)
-#define TEST_HSP_COUNT (10)
+#define TEST_HSP_COUNT  (10)
 
 /*-------------- Typedefs ----------------*/
-
 
 /*--------- Function Prototypes ----------*/
 
@@ -49,29 +48,29 @@ uint8_t s_test_stack[1024] = {0};
 
 static etr_service_context_t s_test_context;
 static etr_service_config_t s_test_config = {
-        .soc_info =
-            {
-                .soc_id = 0,
-                .die_id = 0,
-            },
-        .asic_ddr_config =
+    .soc_info =
+        {
+            .soc_id = 0,
+            .die_id = 0,
+        },
+    .asic_ddr_config =
         {
             .base_addr = (uint64_t)&s_asic_ddr_memory[0],
             .size_bytes = sizeof(s_asic_ddr_memory),
         },
-        .hsp_ddr_config =
+    .hsp_ddr_config =
         {
             .base_addr = (uint64_t)&s_hsp_ddr_memory[0],
             .size_bytes = sizeof(s_hsp_ddr_memory),
         },
-        .thread_config =
-            {
-                .p_stack = s_test_stack,
-                .stack_size = sizeof(s_test_stack),
-                .priority = 10,
-                .time_slice_option = TX_NO_TIME_SLICE,
-            },
-    };
+    .thread_config =
+        {
+            .p_stack = s_test_stack,
+            .stack_size = sizeof(s_test_stack),
+            .priority = 10,
+            .time_slice_option = TX_NO_TIME_SLICE,
+        },
+};
 
 /*------------- Functions ----------------*/
 
@@ -87,8 +86,7 @@ void __wrap_FpFwLockRelease(PFPFW_LOCK Lock, FPFW_LOCK_STATE OldState)
     FPFW_UNUSED(OldState);
 }
 
-UINT __wrap__txe_block_pool_create(TX_BLOCK_POOL *pool_ptr, CHAR *name_ptr, ULONG block_size,
-                    VOID *pool_start, ULONG pool_size, UINT pool_control_block_size)
+UINT __wrap__txe_block_pool_create(TX_BLOCK_POOL* pool_ptr, CHAR* name_ptr, ULONG block_size, VOID* pool_start, ULONG pool_size, UINT pool_control_block_size)
 {
     check_expected_ptr(pool_ptr);
     check_expected_ptr(name_ptr);
@@ -100,13 +98,14 @@ UINT __wrap__txe_block_pool_create(TX_BLOCK_POOL *pool_ptr, CHAR *name_ptr, ULON
     return mock_type(UINT);
 }
 
-UINT __wrap__txe_block_release(VOID *block_ptr)
+UINT __wrap__txe_block_release(VOID* block_ptr)
 {
     check_expected_ptr(block_ptr);
-    return mock_type(UINT);;
+    return mock_type(UINT);
+    ;
 }
 
-UINT  __wrap__txe_queue_front_send(TX_QUEUE *queue_ptr, VOID *source_ptr, ULONG wait_option)
+UINT __wrap__txe_queue_front_send(TX_QUEUE* queue_ptr, VOID* source_ptr, ULONG wait_option)
 {
     check_expected_ptr(queue_ptr);
     check_expected_ptr(source_ptr);
@@ -171,13 +170,13 @@ int test_teardown(void** ppContext)
 TEST_FUNCTION(test_etr_init_null_param, nullptr, nullptr)
 {
     expect_value(FPFwErrorRaise, error, (uint32_t)FPFW_ET_E_INVALIDARG);
-    if(!set_error_handler_return())
+    if (!set_error_handler_return())
     {
         etr_initialize(nullptr, &s_test_config);
     }
 
     expect_value(FPFwErrorRaise, error, (uint32_t)FPFW_ET_E_INVALIDARG);
-    if(!set_error_handler_return())
+    if (!set_error_handler_return())
     {
         etr_initialize(&s_test_context, nullptr);
     }
@@ -189,7 +188,7 @@ TEST_FUNCTION(test_etr_init_bad_ddr_config, nullptr, nullptr)
     bad_config.hsp_ddr_config.base_addr = 0;
 
     expect_value(FPFwErrorRaise, error, (uint32_t)-1);
-    if(!set_error_handler_return())
+    if (!set_error_handler_return())
     {
         etr_initialize(&s_test_context, &bad_config);
     }
@@ -198,7 +197,7 @@ TEST_FUNCTION(test_etr_init_bad_ddr_config, nullptr, nullptr)
     bad_config.hsp_ddr_config.base_addr = 0;
 
     expect_value(FPFwErrorRaise, error, (uint32_t)-1);
-    if(!set_error_handler_return())
+    if (!set_error_handler_return())
     {
         etr_initialize(&s_test_context, &bad_config);
     }
@@ -207,7 +206,7 @@ TEST_FUNCTION(test_etr_init_bad_ddr_config, nullptr, nullptr)
     bad_config.asic_ddr_config.size_bytes = ASIC_BUFFER_PAYLOAD_SIZE - 1;
 
     expect_value(FPFwErrorRaise, error, (uint32_t)-1);
-    if(!set_error_handler_return())
+    if (!set_error_handler_return())
     {
         etr_initialize(&s_test_context, &bad_config);
     }
@@ -216,7 +215,7 @@ TEST_FUNCTION(test_etr_init_bad_ddr_config, nullptr, nullptr)
     bad_config.hsp_ddr_config.size_bytes = HSP_BUFFER_PAYLOAD_SIZE - 1;
 
     expect_value(FPFwErrorRaise, error, (uint32_t)-1);
-    if(!set_error_handler_return())
+    if (!set_error_handler_return())
     {
         etr_initialize(&s_test_context, &bad_config);
     }
@@ -225,7 +224,7 @@ TEST_FUNCTION(test_etr_init_bad_ddr_config, nullptr, nullptr)
     bad_config.asic_ddr_config.size_bytes = IB_TLM_DDR_ATU_AP_WIN_TRACE_ASIC_SIZE + 1;
 
     expect_value(FPFwErrorRaise, error, (uint32_t)-1);
-    if(!set_error_handler_return())
+    if (!set_error_handler_return())
     {
         etr_initialize(&s_test_context, &bad_config);
     }
@@ -234,11 +233,10 @@ TEST_FUNCTION(test_etr_init_bad_ddr_config, nullptr, nullptr)
     bad_config.hsp_ddr_config.size_bytes = IB_TLM_DDR_ATU_AP_WIN_TRACE_HSP_SIZE + 1;
 
     expect_value(FPFwErrorRaise, error, (uint32_t)-1);
-    if(!set_error_handler_return())
+    if (!set_error_handler_return())
     {
         etr_initialize(&s_test_context, &bad_config);
     }
-
 }
 
 TEST_FUNCTION(test_etr_init_nominal, test_setup, test_teardown)
@@ -257,7 +255,6 @@ TEST_FUNCTION(test_etr_init_nominal, test_setup, test_teardown)
         assert_int_equal(buffer->state, ETR_DDR_BUFFER_STATE_FREE);
         assert_int_equal(buffer->type, DIAGNOSTIC_DECODER_STRATEGY_ID_HSP_TRACE);
     }
-
 }
 
 // TEST PRIVATE HEADER ETR FUNCTIONS
@@ -272,16 +269,15 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_available, test_setup, 
     memset(&fake_core_buffer[0], 0xAB, sizeof(fake_core_buffer));
     etr_service_request_t request = {
         .type = ETR_SERVICE_REQUEST_TYPE_COPY_BUFFER,
-        .request =
-            {
-            .copy_buffer = {
-                .core_id = 0,
-                .buffer_addr = (uintptr_t)&fake_core_buffer[0],
-                .buffer_header = {
-                    .UsedBytes = sizeof(fake_core_buffer),
-                },
-            }
-        },
+        .request = {.copy_buffer =
+                        {
+                            .core_id = 0,
+                            .buffer_addr = (uintptr_t)&fake_core_buffer[0],
+                            .buffer_header =
+                                {
+                                    .UsedBytes = sizeof(fake_core_buffer),
+                                },
+                        }},
     };
 
     // Setup the expectations for the block pool
@@ -295,7 +291,8 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_available, test_setup, 
 
     assert_int_equal(pre_request_state, post_request_state);
     assert_true(pre_request_size < post_request_size);
-    void * asic_buffer_addr =  (void*)(s_test_context.p_active_asic_buffer->payload_management.base_addr + sizeof(asic_buffer_info_t));
+    void* asic_buffer_addr =
+        (void*)(s_test_context.p_active_asic_buffer->payload_management.base_addr + sizeof(asic_buffer_info_t));
     assert_memory_equal(&fake_core_buffer[0], asic_buffer_addr, sizeof(fake_core_buffer));
 }
 
@@ -311,16 +308,15 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed, test_setup, test
 
     etr_service_request_t request = {
         .type = ETR_SERVICE_REQUEST_TYPE_COPY_BUFFER,
-        .request =
-            {
-            .copy_buffer = {
-                .core_id = 0,
-                .buffer_addr = (uintptr_t)&fake_core_buffer[0],
-                .buffer_header = {
-                    .UsedBytes = sizeof(fake_core_buffer),
-                },
-            }
-        },
+        .request = {.copy_buffer =
+                        {
+                            .core_id = 0,
+                            .buffer_addr = (uintptr_t)&fake_core_buffer[0],
+                            .buffer_header =
+                                {
+                                    .UsedBytes = sizeof(fake_core_buffer),
+                                },
+                        }},
     };
 
     // Setup the expectations for the queue
@@ -349,7 +345,8 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup, te
     for (uint32_t i = 0; i < ASIC_BUFFER_DDR_CAPACITY_MAX; i++)
     {
         s_test_context.ddr_buffers[i].state = ETR_DDR_BUFFER_STATE_PENDING;
-        s_test_context.ddr_buffers[i].buffer.asic.asic_header.UsedBytes = ASIC_BUFFER_PAYLOAD_SIZE - sizeof(asic_buffer_info_t);
+        s_test_context.ddr_buffers[i].buffer.asic.asic_header.UsedBytes =
+            ASIC_BUFFER_PAYLOAD_SIZE - sizeof(asic_buffer_info_t);
     }
 
     // Setup the active buffer to be active
@@ -363,16 +360,15 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup, te
 
     etr_service_request_t request = {
         .type = ETR_SERVICE_REQUEST_TYPE_COPY_BUFFER,
-        .request =
-            {
-            .copy_buffer = {
-                .core_id = 0,
-                .buffer_addr = (uintptr_t)&fake_core_buffer[0],
-                .buffer_header = {
-                    .UsedBytes = sizeof(fake_core_buffer),
-                },
-            }
-        },
+        .request = {.copy_buffer =
+                        {
+                            .core_id = 0,
+                            .buffer_addr = (uintptr_t)&fake_core_buffer[0],
+                            .buffer_header =
+                                {
+                                    .UsedBytes = sizeof(fake_core_buffer),
+                                },
+                        }},
     };
 
     // Setup the expectations for the queue
@@ -396,19 +392,18 @@ TEST_FUNCTION(test_etr_process_request_host_read_bad_addr, test_setup, test_tear
 {
     etr_service_request_t request = {
         .type = ETR_SERVICE_REQUEST_TYPE_HOST_READ,
-        .request =
-            {
-            .host_read = {
-                .die_id = 0,
-                .payload_management = {
-                    .base_addr = 0xDEADBEEF,
-                },
-            }
-        },
+        .request = {.host_read =
+                        {
+                            .die_id = 0,
+                            .payload_management =
+                                {
+                                    .base_addr = 0xDEADBEEF,
+                                },
+                        }},
     };
 
     expect_value(FPFwErrorRaise, error, (uint32_t)FPFW_ET_E_INVALIDARG);
-    if(!set_error_handler_return())
+    if (!set_error_handler_return())
     {
         etr_process_request(&s_test_context, &request);
     }
@@ -420,15 +415,14 @@ TEST_FUNCTION(test_etr_process_request_host_read_good_addr, test_setup, test_tea
 
     etr_service_request_t request = {
         .type = ETR_SERVICE_REQUEST_TYPE_HOST_READ,
-        .request =
-            {
-            .host_read = {
-                .die_id = 0,
-                .payload_management = {
-                    .base_addr = s_test_context.p_active_asic_buffer->payload_management.base_addr,
-                },
-            }
-        },
+        .request = {.host_read =
+                        {
+                            .die_id = 0,
+                            .payload_management =
+                                {
+                                    .base_addr = s_test_context.p_active_asic_buffer->payload_management.base_addr,
+                                },
+                        }},
     };
 
     etr_process_request(&s_test_context, &request);
@@ -444,15 +438,14 @@ TEST_FUNCTION(test_etr_process_request_host_read_good_addr_bad_state, test_setup
 
     etr_service_request_t request = {
         .type = ETR_SERVICE_REQUEST_TYPE_HOST_READ,
-        .request =
-            {
-            .host_read = {
-                .die_id = 0,
-                .payload_management = {
-                    .base_addr = s_test_context.p_active_asic_buffer->payload_management.base_addr,
-                },
-            }
-        },
+        .request = {.host_read =
+                        {
+                            .die_id = 0,
+                            .payload_management =
+                                {
+                                    .base_addr = s_test_context.p_active_asic_buffer->payload_management.base_addr,
+                                },
+                        }},
     };
 
     etr_process_request(&s_test_context, &request);
@@ -467,7 +460,7 @@ TEST_FUNCTION(test_etr_process_request_bad_type, test_setup, test_teardown)
     };
 
     expect_value(FPFwErrorRaise, error, (uint32_t)FPFW_ET_E_INVALIDARG);
-    if(!set_error_handler_return())
+    if (!set_error_handler_return())
     {
         etr_process_request(&s_test_context, &request);
     }

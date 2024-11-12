@@ -45,7 +45,7 @@ static scp_avs_get_request_t test_avs_get_Request;
 static scp_avs_isr_request_t test_avs_isr_Request;
 
 extern "C" {
-    extern scp_avs_error_count_t avs_error_count;
+extern scp_avs_error_count_t avs_error_count;
 }
 /*----------- Mock Functions -------------*/
 
@@ -337,7 +337,7 @@ TEST_FUNCTION(scp_avs_dispatch_test_read_all, test_setup, test_cleanup)
 }
 
 TEST_FUNCTION(scp_avs_dispatch_test_read_multi, test_setup, test_cleanup)
-{    
+{
     test_avs_device.avs_bus_num = AVS_BUS0;
     test_avs_Request.avs_params.avs_cmd_array[0].rail_id = 0;
     test_avs_Request.avs_params.avs_cmd_array[0].cmd_type = AVS_VOLTAGE_RW;
@@ -367,7 +367,7 @@ TEST_FUNCTION(scp_avs_dispatch_test_read_multi, test_setup, test_cleanup)
     assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
 }
 
-TEST_FUNCTION(scp_avs_dispatch_test_write_multi, test_setup, test_cleanup) 
+TEST_FUNCTION(scp_avs_dispatch_test_write_multi, test_setup, test_cleanup)
 {
     test_avs_device.avs_bus_num = AVS_BUS0;
     test_avs_Request.avs_params.avs_cmd_array[0].rail_id = 0;
@@ -426,59 +426,59 @@ TEST_FUNCTION(scp_avs_isr_test, test_setup, test_cleanup)
     assert_int_equal(test_avs_isr_device.isr_request.outstanding_client_request, test_avs_isr_device.outstanding_request);
 }
 
- TEST_FUNCTION(scp_avs_get_error_counts_test, test_setup, test_cleanup)
- {
-     scp_avs_error_count_t error_count_test = {0};
-     avs_error_count = {0};
+TEST_FUNCTION(scp_avs_get_error_counts_test, test_setup, test_cleanup)
+{
+    scp_avs_error_count_t error_count_test = {0};
+    avs_error_count = {0};
 
-     avs_get_error_counts(&error_count_test);
+    avs_get_error_counts(&error_count_test);
 
-     assert_int_equal(error_count_test.ack_no_action_busy_error_count, 0);
-     assert_int_equal(error_count_test.ack_bad_crc_no_action_error_count, 0);
-     assert_int_equal(error_count_test.ack_invalid_no_action_error_count, 0);
-     assert_int_equal(error_count_test.status_alert_error_count, 0);
- }
+    assert_int_equal(error_count_test.ack_no_action_busy_error_count, 0);
+    assert_int_equal(error_count_test.ack_bad_crc_no_action_error_count, 0);
+    assert_int_equal(error_count_test.ack_invalid_no_action_error_count, 0);
+    assert_int_equal(error_count_test.status_alert_error_count, 0);
+}
 
- TEST_FUNCTION(scp_avs_status_error_test, test_setup, test_cleanup)
- {
-     scp_avs_error_count_t error_status_count = {0};
-     avs_error_count = {0};
+TEST_FUNCTION(scp_avs_status_error_test, test_setup, test_cleanup)
+{
+    scp_avs_error_count_t error_status_count = {0};
+    avs_error_count = {0};
 
-     uint32_t resp_error  = AVS_ERROR_NONE;
-     avs_error_t result_error = {.as_uint8 = AVS_ERROR_NONE};
+    uint32_t resp_error = AVS_ERROR_NONE;
+    avs_error_t result_error = {.as_uint8 = AVS_ERROR_NONE};
 
-     result_error = scp_avs_status_error(resp_error);
-     assert_int_equal(result_error.as_uint8, AVS_NO_CONTROL);
+    result_error = scp_avs_status_error(resp_error);
+    assert_int_equal(result_error.as_uint8, AVS_NO_CONTROL);
 
-     resp_error   = (AVS_STATUS_MASK << AVS_VDONE_SHIFT);
-     result_error = scp_avs_status_error(resp_error);
-     assert_int_equal(result_error.as_uint8, (AVS_VDONE | AVS_NO_CONTROL));
+    resp_error = (AVS_STATUS_MASK << AVS_VDONE_SHIFT);
+    result_error = scp_avs_status_error(resp_error);
+    assert_int_equal(result_error.as_uint8, (AVS_VDONE | AVS_NO_CONTROL));
 
-     resp_error   = (AVS_STATUS_MASK << AVS_ERR_STAT_ALERT_SHIFT);
-     result_error = scp_avs_status_error(resp_error);
-     assert_int_equal(result_error.as_uint8, (AVS_ERROR_STATUS_ALERT | AVS_NO_CONTROL));
-     avs_get_error_counts(&error_status_count);
-     assert_int_equal(error_status_count.status_alert_error_count, 1);
+    resp_error = (AVS_STATUS_MASK << AVS_ERR_STAT_ALERT_SHIFT);
+    result_error = scp_avs_status_error(resp_error);
+    assert_int_equal(result_error.as_uint8, (AVS_ERROR_STATUS_ALERT | AVS_NO_CONTROL));
+    avs_get_error_counts(&error_status_count);
+    assert_int_equal(error_status_count.status_alert_error_count, 1);
 
-     resp_error   = (0x1 << AVS_ERR_ACK_SHIFT);
-     result_error = scp_avs_status_error(resp_error);
-     assert_int_equal(result_error.as_uint8, (AVS_ERROR_ACK_NO_ACTION_BUSY | AVS_NO_CONTROL));
-     avs_get_error_counts(&error_status_count);
-     assert_int_equal(error_status_count.ack_no_action_busy_error_count, 1);
-     result_error = scp_avs_status_error(resp_error);  // inject the error again, to confirm count = 2
-     assert_int_equal(result_error.as_uint8, (AVS_ERROR_ACK_NO_ACTION_BUSY | AVS_NO_CONTROL));
-     avs_get_error_counts(&error_status_count);
-     assert_int_equal(error_status_count.ack_no_action_busy_error_count, 2);
+    resp_error = (0x1 << AVS_ERR_ACK_SHIFT);
+    result_error = scp_avs_status_error(resp_error);
+    assert_int_equal(result_error.as_uint8, (AVS_ERROR_ACK_NO_ACTION_BUSY | AVS_NO_CONTROL));
+    avs_get_error_counts(&error_status_count);
+    assert_int_equal(error_status_count.ack_no_action_busy_error_count, 1);
+    result_error = scp_avs_status_error(resp_error); // inject the error again, to confirm count = 2
+    assert_int_equal(result_error.as_uint8, (AVS_ERROR_ACK_NO_ACTION_BUSY | AVS_NO_CONTROL));
+    avs_get_error_counts(&error_status_count);
+    assert_int_equal(error_status_count.ack_no_action_busy_error_count, 2);
 
-     resp_error   = (0x2 << (AVS_ERR_ACK_SHIFT));
-     result_error = scp_avs_status_error(resp_error);
-     assert_int_equal(result_error.as_uint8, (AVS_ERROR_ACK_BAD_CRC_NO_ACTION | AVS_NO_CONTROL));
-     avs_get_error_counts(&error_status_count);
-     assert_int_equal(error_status_count.ack_bad_crc_no_action_error_count, 1);
+    resp_error = (0x2 << (AVS_ERR_ACK_SHIFT));
+    result_error = scp_avs_status_error(resp_error);
+    assert_int_equal(result_error.as_uint8, (AVS_ERROR_ACK_BAD_CRC_NO_ACTION | AVS_NO_CONTROL));
+    avs_get_error_counts(&error_status_count);
+    assert_int_equal(error_status_count.ack_bad_crc_no_action_error_count, 1);
 
-     resp_error   = (0x3 << (AVS_ERR_ACK_SHIFT));
-     result_error = scp_avs_status_error(resp_error);
-     assert_int_equal(result_error.as_uint8, (AVS_ERROR_ACK_INVALID_NO_ACTION | AVS_NO_CONTROL));
-     avs_get_error_counts(&error_status_count);
-     assert_int_equal(error_status_count.ack_invalid_no_action_error_count, 1);
- }
+    resp_error = (0x3 << (AVS_ERR_ACK_SHIFT));
+    result_error = scp_avs_status_error(resp_error);
+    assert_int_equal(result_error.as_uint8, (AVS_ERROR_ACK_INVALID_NO_ACTION | AVS_NO_CONTROL));
+    avs_get_error_counts(&error_status_count);
+    assert_int_equal(error_status_count.ack_invalid_no_action_error_count, 1);
+}

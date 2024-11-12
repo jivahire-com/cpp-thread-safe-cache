@@ -24,7 +24,7 @@ extern "C" {
 #include <silibs_ap_top_regs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define DMA_TEST_BASE_ADDR 0x12345678
+#define DMA_TEST_BASE_ADDR  0x12345678
 #define FPFW_LOCK_SIGNATURE 0xfeedf00d
 
 /*------------- Typedefs -----------------*/
@@ -93,7 +93,7 @@ TEST_FUNCTION(test_scp_dma_device_init_polling_pass, setup, teardown)
     // Assert
     assert_ptr_not_equal(device.config, NULL);
     assert_int_not_equal(device.config->base_address, DMA_TEST_BASE_ADDR); // Bogus value
-    assert_int_equal(device.config->base_address, DMAC_SCP_BASE_ADDR); // Defined by SiLibs
+    assert_int_equal(device.config->base_address, DMAC_SCP_BASE_ADDR);     // Defined by SiLibs
 }
 
 TEST_FUNCTION(test_scp_dma_device_init_interrupt_pass, setup, teardown)
@@ -131,7 +131,7 @@ TEST_FUNCTION(test_scp_dma_device_init_interrupt_pass, setup, teardown)
     // Assert
     assert_ptr_not_equal(device.config, NULL);
     assert_int_not_equal(device.config->base_address, DMA_TEST_BASE_ADDR); // Bogus value
-    assert_int_equal(device.config->base_address, DMAC_SCP_BASE_ADDR); // Defined by SiLibs
+    assert_int_equal(device.config->base_address, DMAC_SCP_BASE_ADDR);     // Defined by SiLibs
 }
 
 TEST_FUNCTION(test_dma_interface_init, setup, teardown)
@@ -162,7 +162,6 @@ TEST_FUNCTION(test_dma_lib_init, setup, teardown)
 
     // Assert nothing here - all functions within are mocked as they write to hardware
 }
-
 
 /* This tests move_request_to_channel_queue will update the channel's total outstanding byte count */
 TEST_FUNCTION(test_dma_move_request_to_channel_queue, setup, teardown)
@@ -436,7 +435,7 @@ TEST_FUNCTION(test_dma_isr_ch0, setup, teardown)
     device_interrupt_pair.device = &device;
     device_interrupt_pair.interrupt_id = DMAC_CH0_INT;
     will_return(__wrap_dmac_get_ch_interrupt_status, 0x1); // DMAC_CH0_INT is pending
-    dma_isr(static_cast<void *>(&device_interrupt_pair));
+    dma_isr(static_cast<void*>(&device_interrupt_pair));
 
     // Assert
     assert_ptr_equal(device.Channel[CH_0].current_request, NULL);
@@ -467,7 +466,7 @@ TEST_FUNCTION(test_dma_isr_ch1, setup, teardown)
     device_interrupt_pair.device = &device;
     device_interrupt_pair.interrupt_id = DMAC_CH1_INT;
     will_return(__wrap_dmac_get_ch_interrupt_status, 0x1); // DMAC_CH1_INT is pending
-    dma_isr(static_cast<void *>(&device_interrupt_pair));
+    dma_isr(static_cast<void*>(&device_interrupt_pair));
 
     // Assert
     assert_ptr_equal(device.Channel[CH_1].current_request, NULL);
@@ -496,7 +495,7 @@ TEST_FUNCTION(test_dma_isr_reg, setup, teardown)
     device_identifier_pair_t device_interrupt_pair;
     device_interrupt_pair.device = &device;
     device_interrupt_pair.interrupt_id = DMAC_REG_INT;
-    dma_isr(static_cast<void *>(&device_interrupt_pair));
+    dma_isr(static_cast<void*>(&device_interrupt_pair));
 
     // Assert
     assert_ptr_equal(device.Channel[CH_0].current_request, NULL);
@@ -530,7 +529,7 @@ TEST_FUNCTION(test_dma_update_channel_struct_subtract_remaining_bytes_pass, setu
     update_channel_struct_subtract_remaining_bytes(&device, &TestRequest);
 
     // Assert
-    assert_int_equal(device.Channel[CH_1].remaining_bytes_all_requests, 40);  // 50 - 10 = 40
+    assert_int_equal(device.Channel[CH_1].remaining_bytes_all_requests, 40); // 50 - 10 = 40
 }
 
 TEST_FUNCTION(test_dma_update_channel_struct_subtract_remaining_bytes_fail, setup, teardown)
@@ -557,14 +556,13 @@ TEST_FUNCTION(test_dma_update_channel_struct_subtract_remaining_bytes_fail, setu
     update_channel_struct_subtract_remaining_bytes(&device, &TestRequest);
 
     // Assert
-    assert_int_equal(device.Channel[CH_1].remaining_bytes_all_requests, 0);  // 10 - 10 = 0
+    assert_int_equal(device.Channel[CH_1].remaining_bytes_all_requests, 0); // 10 - 10 = 0
 
     // Act again - first_time is now false
     expect_value(FPFwErrorRaise, error, (uint32_t)FPFW_ERROR_DMA_REMAINING_BYTES_INVALID);
-    if(!set_error_handler_return())
+    if (!set_error_handler_return())
     {
         update_channel_struct_subtract_remaining_bytes(&device, &TestRequest);
     }
-
 }
 } // extern "C"

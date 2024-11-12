@@ -236,7 +236,7 @@ static int setup(void** state)
         .platform_cores_in_die = &default_cores,
         .primary_boot_die = true,
     };
-    
+
     DFWK_SCHEDULE test_schedule;
 
     expect_value(__wrap_DfwkDeviceInitialize, Device, &test_device.header);
@@ -376,7 +376,7 @@ AP_CORE_TEST(dispatch_ap_core_boot, setup, NULL)
     will_return(__wrap_ap_core_util_boot_core, TEST_BOOT_CORE);
 
     // expect that die info is stored in SDS
-    shared_scp_exp_csr_die_config test_die_config = { .as_uint32 = 42};
+    shared_scp_exp_csr_die_config test_die_config = {.as_uint32 = 42};
     expect_value(__wrap_mmio_read32, addr, SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_DIE_CONFIG_ADDRESS);
     will_return(__wrap_mmio_read32, test_die_config.as_uint32);
     expect_value(__wrap_sds_block_write, sds_module_id, SDS_DIE_CONFIG_STRUCT_ID);
@@ -449,7 +449,7 @@ AP_CORE_TEST(dispatch_shutdown, setup, NULL)
     ssi_shutdown_notification_request_t test_request;
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_SHUTDOWN_QUIESCE_ASYNC;
-    
+
     assert_non_null(s_dispatch_routine);
 
     for (int idx = SHUTDOWN; idx <= AP_WARM_RESET; idx++)
@@ -457,7 +457,7 @@ AP_CORE_TEST(dispatch_shutdown, setup, NULL)
         expect_function_call(__wrap_ap_core_ppu_cores_off);
         expect_function_call(__wrap_ap_core_ppu_clusters_off);
         expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
-        
+
         test_request.shutdown_type = (ssi_shutdown_type_t)idx;
         s_dispatch_routine(&test_request.header, &test_device.header);
     }
@@ -527,9 +527,10 @@ AP_CORE_TEST(dispatch_mcp_load, setup, NULL)
     assert_non_null(s_dispatch_routine);
     s_dispatch_routine(&test_request.header, &test_device.header);
 
-    struct kng_hsp_mailbox_cmd_start_core_req mcp_start_req = {.header.cmd = HSP_MAILBOX_CMD_START_CORE_REQ,
-                                                               .id = HSP_FIRMWARE_ID_MCP,
-                                                               .address = MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM0_ADDRESS + HSP_BOOT_RAM_META_DATA_SIZE};
+    struct kng_hsp_mailbox_cmd_start_core_req mcp_start_req = {
+        .header.cmd = HSP_MAILBOX_CMD_START_CORE_REQ,
+        .id = HSP_FIRMWARE_ID_MCP,
+        .address = MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM0_ADDRESS + HSP_BOOT_RAM_META_DATA_SIZE};
 
     // MCP reset release cb also sends a mailbox message
     expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &mcp_start_req, sizeof(mcp_start_req));
@@ -555,7 +556,7 @@ AP_CORE_TEST(dispatch_kmp_load, setup, NULL)
     will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 
-#define KMP_LOAD_ADDRESS        0XFFFFFF0480000
+#define KMP_LOAD_ADDRESS 0XFFFFFF0480000
     kng_hsp_mailbox_cmd_load_fw_64bit_req send_request = {
         .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ,
         .header.context = 0,
@@ -570,7 +571,7 @@ AP_CORE_TEST(dispatch_kmp_load, setup, NULL)
     assert_non_null(s_dispatch_routine);
     s_dispatch_routine(&test_request.header, &test_device.header);
 
-#define KMP_START_ADDRESS       0x00080080
+#define KMP_START_ADDRESS 0x00080080
     struct kng_hsp_mailbox_cmd_start_core_req kmp_start_req = {.header.cmd = HSP_MAILBOX_CMD_START_CORE_REQ,
                                                                .id = HSP_FIRMWARE_ID_KMP,
                                                                .address = KMP_START_ADDRESS};

@@ -306,7 +306,7 @@ SOS_TEST(sos_notify_ssi_shutdown, NULL, NULL)
 
 void setup_wait_ssi_complete_expectations(ssi_startup_stage_t test_stage)
 {
-    #define MS_TO_TX_TICKS(ms)    (((ms)*TX_TIMER_TICKS_PER_SECOND) / 1000)
+#define MS_TO_TX_TICKS(ms) (((ms) * TX_TIMER_TICKS_PER_SECOND) / 1000)
 
     unsigned timeout = 0;
 
@@ -329,7 +329,7 @@ SOS_TEST(sos_notify_ssi_boot_stage_and_wait, NULL, NULL)
 
     will_return_always(__wrap_sos_core_boot_stage_count, __real_sos_core_boot_stage_count());
 
-    sos_stage_timeout_t timeout = { .stage_category = BOOT_STAGE, .operation_stage.boot = test_stage, .timeout_ms = 4321 };
+    sos_stage_timeout_t timeout = {.stage_category = BOOT_STAGE, .operation_stage.boot = test_stage, .timeout_ms = 4321};
     sos_boot_timeout_override(timeout);
 
     // setup expectations for complete notification

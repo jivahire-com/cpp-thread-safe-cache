@@ -16,8 +16,8 @@
 #include <gpio_lib.h>        // for gpio_init
 #include <idsw.h>            // for idsw_get_platform_sdv, idsw...
 #include <idsw_kng.h>
-#include <interrupts.h>      // HW_INT_GPIO_CTRL_4_INT, HW_INT_GPIO_CTRL_6_INT
-#include <silibs_status.h>   // for SILIBS_SUCCESS
+#include <interrupts.h>    // HW_INT_GPIO_CTRL_4_INT, HW_INT_GPIO_CTRL_6_INT
+#include <silibs_status.h> // for SILIBS_SUCCESS
 #include <stdio.h>
 
 /*------------- Typedefs -----------------*/
@@ -29,13 +29,13 @@
 // Define GPIO configuration table based onKingsgate RMSS HAS Chapter 15.11.2
 // https://microsoft.sharepoint.com/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Architecture/HAS%201.0/RMSS/KingsGateRMSS%20HAS%20v0p1.4.docx?web=1
 static const gpio_config_entry_t fpga_config_gpio_table[] = {
-    // Override the default gpio config for the FPGA, since one some systems, On GPIO Bank 6, 
+    // Override the default gpio config for the FPGA, since one some systems, On GPIO Bank 6,
     // Pin 6 and Pin 7 are looped back. Hence, we will use these pins to check if GPIO is connected.
     // Disable GPIO4_5 interrupt, since power code polls for VR_HOT_SOC
     {GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_4, 0xFF),
-    {.grp = {.grp_level = 0x1C, .grp_dir = 0x1C, .grp_int_enable = 0x00, .grp_int_lvl_edge = 0x20}}},
+     {.grp = {.grp_level = 0x1C, .grp_dir = 0x1C, .grp_int_enable = 0x00, .grp_int_lvl_edge = 0x20}}},
     {GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_6, 0xFF),
-    {.grp = {.grp_level = 0x0F, .grp_dir = 0x4D, .grp_int_enable = 0x10, .grp_int_lvl_edge = 0x00}}},
+     {.grp = {.grp_level = 0x0F, .grp_dir = 0x4D, .grp_int_enable = 0x10, .grp_int_lvl_edge = 0x00}}},
 };
 
 static const gpio_config_entry_t def_gpio_config_table_grp[] = {
@@ -66,12 +66,13 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver"))
 
     if (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE || idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE_RVP)
     {
-        printf("Programming FPGA specific GPIO Config table (Supporting loopback of pins 6 and 7 on GPIO Bank 6) . . .\n");
+        printf("Programming FPGA specific GPIO Config table (Supporting loopback of pins 6 and 7 on GPIO "
+               "Bank 6) . . .\n");
         status = gpio_init(fpga_config_gpio_table, ARRAY_SIZE(fpga_config_gpio_table));
         gpio_init_config.gpio_config_table = fpga_config_gpio_table;
         gpio_init_config.table_size = ARRAY_SIZE(fpga_config_gpio_table);
     }
-    else 
+    else
     {
         status = gpio_init(def_gpio_config_table_grp, ARRAY_SIZE(def_gpio_config_table_grp));
         gpio_init_config.gpio_config_table = def_gpio_config_table_grp;

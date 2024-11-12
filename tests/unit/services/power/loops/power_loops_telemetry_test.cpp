@@ -10,11 +10,11 @@
 /*------------- Includes -----------------*/
 #include "power_test.h" // for POWER_TEST
 #include "power_test_loops.h"
-#include "power_hw_int_i.h"  
+
 #include <cstddef> // for NULL
 
 extern "C" {
-
+#include "power_hw_int_i.h"
 #include "power_i.h"           // for power_latest_calcs_t
 #include "power_runconfig.h"   // for MIN_PLIMIT, power_service_config_t
 #include "power_runconfig_i.h" // for power_runconfig_t

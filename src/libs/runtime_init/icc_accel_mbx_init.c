@@ -5,32 +5,31 @@
 
 /*------------- Includes -----------------*/
 
-#include <DfwkHost.h>                   // for DfwkDeviceInitialize
-#include <DfwkThreadXHost.h>            // for PDFWK_THREADX_HOST
+#include <DfwkHost.h>        // for DfwkDeviceInitialize
+#include <DfwkThreadXHost.h> // for PDFWK_THREADX_HOST
 #include <MboxPrimitives.h>
 #include <accel_intr.h>
 #include <accelerator_ip.h>
-#include <fpfw_icc_base.h>              // for fpfw_icc_base_ctx_t
+#include <fpfw_icc_base.h> // for fpfw_icc_base_ctx_t
 #include <fpfw_icc_base_i.h>
-#include <fpfw_init.h>                  // for FPFW_INIT_STATUS_E_INVALID_NODE
-#include <fpfw_mbox_icc_transport.h>    // for ICC_MAX_ASYNC_REQ_TYPE               
-#include <fpfw_timer.h>                 // for fpfw_timer_t
+#include <fpfw_init.h>               // for FPFW_INIT_STATUS_E_INVALID_NODE
+#include <fpfw_mbox_icc_transport.h> // for ICC_MAX_ASYNC_REQ_TYPE
+#include <fpfw_timer.h>              // for fpfw_timer_t
 #include <fpfw_timer_port.h>
 #include <icc_platform_defines.h>
 #include <idsw.h>
-#include <idsw_kng.h>   
+#include <idsw_kng.h>
 #include <interrupts.h>
 #include <kng_soc_constants.h>
-#include <sdm_ext_cfg_regs.h>  
-#include <stddef.h>                     // for NULL
-#include <stdio.h>                      // for printf
-
+#include <sdm_ext_cfg_regs.h>
+#include <stddef.h> // for NULL
+#include <stdio.h>  // for printf
 
 /*-------------- Macros ------------------*/
 
 /*------------- Typedefs -----------------*/
 
-#define ACCEL_MBOX_OFFSET      (SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS + ACCEL_MBOX_OFFSET_AFTER_0X100000)
+#define ACCEL_MBOX_OFFSET (SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS + ACCEL_MBOX_OFFSET_AFTER_0X100000)
 
 /*-------- Function Prototypes -----------*/
 
@@ -74,7 +73,8 @@ static fpfw_status_t accel_mbox_init(eACCELERATOR_TYPE accel_type)
     accel_mbx_cfg[accel_type].mbox_dev_cfg.MbxMesgHandlingType = MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME;
     accel_mbx_cfg[accel_type].mbox_dev_cfg.MbxImplementation = MBX_IMPL_INTERRUPT;
     accel_mbx_cfg[accel_type].mbox_dev_cfg.MsgSizeBytes = LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES;
-    accel_mbx_cfg[accel_type].mbox_dev_cfg.MbxBaseAddr = accelerator_ip_get_atu_mapped_cfg_address(accel_type) + ACCEL_MBOX_OFFSET;
+    accel_mbx_cfg[accel_type].mbox_dev_cfg.MbxBaseAddr =
+        accelerator_ip_get_atu_mapped_cfg_address(accel_type) + ACCEL_MBOX_OFFSET;
     accel_mbx_cfg[accel_type].timer_period = KG_LARGE_FIFO_MBOX_POLL_INTERVAL_NS;
     accel_mbx_cfg[accel_type].timer_handle[ICC_MBX_ASYNC_SEND] = &accel_mbx_timer[accel_type][ICC_MBX_ASYNC_SEND];
     accel_mbx_cfg[accel_type].timer_handle[ICC_MBX_ASYNC_RECV] = &accel_mbx_timer[accel_type][ICC_MBX_ASYNC_RECV];
@@ -99,14 +99,16 @@ static fpfw_status_t accel_mbox_init(eACCELERATOR_TYPE accel_type)
     s_accel_mbx_icc_cfg[accel_type].ctx = NULL;
 
     //! Initialize large fifo mailbox transport driver
-    fpfw_status_t status = fpfw_mbox_icc_transport_dfwk_device_init(&accel_mbx_dev[accel_type], &accel_mbx_cfg[accel_type]);
+    fpfw_status_t status =
+        fpfw_mbox_icc_transport_dfwk_device_init(&accel_mbx_dev[accel_type], &accel_mbx_cfg[accel_type]);
     if (status != DFWK_SUCCESS)
     {
         printf("fpfw_mbox_icc_transport_dfwk_device_init failed for accel %d with status %ld\n", accel_type, (long int)status);
         return status;
     }
 
-    DfwkDeviceInitialize(&accel_mbx_dev[accel_type].header, &((PDFWK_THREADX_HOST)fpfw_init_get_handle("dfwk"))->Schedule);
+    DfwkDeviceInitialize(&accel_mbx_dev[accel_type].header,
+                         &((PDFWK_THREADX_HOST)fpfw_init_get_handle("dfwk"))->Schedule);
     status = fpfw_mbox_icc_transport_dfwk_interface_init(&accel_mbx_dev[accel_type], &accel_mbx_intf[accel_type]);
     if (status != DFWK_SUCCESS)
     {

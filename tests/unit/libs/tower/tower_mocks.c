@@ -12,9 +12,9 @@
 #include <atu_lib.h>
 #include <cmocka.h> // IWYU pragma: keep
 #include <fpfw_icc_base.h>
+#include <hsp_firmware_headers.h> // for HSP_MAILBOX_CMD_BOOT_STATUS_NOTIFY, HspFirmwareIdScp...
 #include <idsw.h>
 #include <idsw_kng.h>
-#include <hsp_firmware_headers.h> // for HSP_MAILBOX_CMD_BOOT_STATUS_NOTIFY, HspFirmwareIdScp...
 #include <silibs_status.h>
 #include <stddef.h>
 #include <tower_sequence.h>
@@ -106,7 +106,7 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, 
     check_expected(buffer_size);
     check_expected_ptr(output_recv_bytes);
 
-    kng_hsp_mailbox_msg *recv_msg = (kng_hsp_mailbox_msg *)payload_buffer;
+    kng_hsp_mailbox_msg* recv_msg = (kng_hsp_mailbox_msg*)payload_buffer;
     recv_msg->header.cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_RSP;
     recv_msg->rsp.status = HSP_MAILBOX_RSP_STATUS_SUCCESS;
     *output_recv_bytes = sizeof(kng_hsp_mailbox_msg);

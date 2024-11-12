@@ -98,7 +98,6 @@ KNG_DIE_ID __wrap_idsw_get_die_id(void)
 {
     return mock_type(KNG_DIE_ID);
 }
-
 }
 //
 // Tests

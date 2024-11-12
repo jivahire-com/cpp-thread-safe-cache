@@ -19,8 +19,8 @@ extern "C" {
 #include <fpfw_cfg_mgr_init.h>
 #include <fpfw_init.h>
 #include <idsw_kng.h>
-#include <variable_services.h>
 #include <mscp_exp_rmss_memory_map.h>
+#include <variable_services.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -57,7 +57,7 @@ TEST_FUNCTION(test_cfg_mgr_init, nullptr, nullptr)
 {
     // Set up expectations
     expect_function_call(__wrap_cfg_mgr_init);
-    
+
     // Call API under test
     _fpfw_component_cfg_mgr.init_fn();
 }

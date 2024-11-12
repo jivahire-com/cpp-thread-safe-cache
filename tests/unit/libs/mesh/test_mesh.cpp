@@ -13,20 +13,20 @@
 
 extern "C" {
 #include <FPFwInterrupts.h>
-#include <FpFwUtils.h>            // for FPFW_UNUSED
+#include <FpFwUtils.h> // for FPFW_UNUSED
 #include <cmn800.h>
 #include <cmn800_error_handler.h> // for acpi_err_sec_generic_t
 #include <cmn800_sequence.h>      // for cmn800_sequence_params_t
 #include <cmn_config.h>           // for CMN800_CONFIG_CONFIG
-#include <fpfw_icc_base.h>             // for fpfw_icc_base_ctx_t
+#include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
 #include <fpfw_status.h>
 #include <hsp_firmware_headers.h> // for kng_hsp_mailbox_msg
 #include <idsw.h>                 // for idsw_set_platform_sdv, PLATFORM_UN...
 #include <idsw_kng.h>             // for KNG_DIE_ID, _KNG_PLAT_ID
 #include <interrupts.h>
-#include <mesh.h>                 // for mesh_init
+#include <mesh.h> // for mesh_init
 #include <mesh_error_handler.h>
-#include <stdint.h>               // for int32_t, uint32_t
+#include <stdint.h> // for int32_t, uint32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -37,11 +37,11 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 bool simulate_single_die = true;
 KNG_DIE_ID g_test_die = (KNG_DIE_ID)0;
-static fpfw_icc_base_ctx_t *test_icc_base_hsp_mbx_ctx;
+static fpfw_icc_base_ctx_t* test_icc_base_hsp_mbx_ctx;
 
 /*------------- Functions ----------------*/
 //! Mocks for mailbox primitives called inside hsp_send_recv_enable_smmu()
-fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t *icc_ctx, void *payload_buffer, size_t buffer_size, size_t *output_recv_bytes)
+fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, void* payload_buffer, size_t buffer_size, size_t* output_recv_bytes)
 {
     FPFW_UNUSED(icc_ctx);
     FPFW_UNUSED(buffer_size);
@@ -170,7 +170,7 @@ nvic_status_t __wrap_nvic_irq_enable(uint32_t irq_num)
     return (NVIC_STATUS_SUCCESS);
 }
 
-void __wrap_interrupt_handler_mesh_ras_error(acpi_err_sec_generic_t *mesh_cper, bool fault, bool non_secure, uint8_t die_num)
+void __wrap_interrupt_handler_mesh_ras_error(acpi_err_sec_generic_t* mesh_cper, bool fault, bool non_secure, uint8_t die_num)
 {
     assert_non_null(mesh_cper);
     check_expected(fault);

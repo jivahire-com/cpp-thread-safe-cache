@@ -17,8 +17,8 @@ extern "C" {
 #include "icc_mhu_trans_ut.h" // local defines
 
 #include <DfwkHost.h>
-#include <FpFwUtils.h>                    // for FPFW_UNUSED
 #include <FPFwInterrupts.h>
+#include <FpFwUtils.h>                    // for FPFW_UNUSED
 #include <fpfw_icc_transport_interface.h> // Leverage the transport library interrface
 #include <fpfw_status.h>                  // for fpfw_status_t
 #include <icc_mhu.h>
@@ -115,7 +115,7 @@ static icc_mhu_configuration_t d0_icc_mhu_config[] = {
 
 static uint8_t test_buffer[SIZE_OF_MAILBOX_TEST];
 
-static icc_mhu_request_t * test_request = (icc_mhu_request_t *)test_buffer;
+static icc_mhu_request_t* test_request = (icc_mhu_request_t*)test_buffer;
 
 static int test_setup(void** ctx)
 {
@@ -257,12 +257,10 @@ TEST_FUNCTION(test_icc_mhu_transport_driver_dispatch_async_send, test_setup, nul
     test_request->header.msg_header.command = 0x00010002;
     test_request->header.msg_header.payload_size = sizeof(test_buffer);
 
-    FPFW_ICC_TRANSPORT_ASYNC_SEND_REQUEST async_send_req = {
-        .Input = {
-            .PayloadBuffer = (uintptr_t)test_request,
-            .BufferSizeBytes = sizeof(test_buffer),
-        }
-    };
+    FPFW_ICC_TRANSPORT_ASYNC_SEND_REQUEST async_send_req = {.Input = {
+                                                                .PayloadBuffer = (uintptr_t)test_request,
+                                                                .BufferSizeBytes = sizeof(test_buffer),
+                                                            }};
 
     //
     // A request that successfully sends right away
@@ -294,18 +292,16 @@ TEST_FUNCTION(test_icc_mhu_transport_driver_dispatch_async_send, test_setup, nul
 TEST_FUNCTION(test_icc_mhu_transport_driver_dispatch_async_recv, test_setup, nullptr)
 {
 
-    FPFW_ICC_TRANSPORT_ASYNC_RECV_REQUEST async_recv_req = {
-        .Input = {
-            .PayloadBuffer = (uintptr_t)test_request,
-            .BufferSizeBytes = sizeof(test_buffer),
-        }
-    };
+    FPFW_ICC_TRANSPORT_ASYNC_RECV_REQUEST async_recv_req = {.Input = {
+                                                                .PayloadBuffer = (uintptr_t)test_request,
+                                                                .BufferSizeBytes = sizeof(test_buffer),
+                                                            }};
 
     // Setup a request
     expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, 1);
     will_return(__wrap_FPFwCoreInterruptEnableVector, 0);
     dispatch_async_recv((PDFWK_ASYNC_REQUEST_HEADER)&async_recv_req, &icc_mhu_trans_dev);
-    
+
     assert_ptr_equal(icc_mhu_trans_dev.async_recv_ctx.request_ref, &async_recv_req.Header);
 
     // Trigger the ISR
@@ -342,7 +338,7 @@ TEST_FUNCTION(test_icc_mhu_transport_driver_dispatch_sync, test_setup, nullptr)
     try_send_req.Input.PayloadBuffer = (uintptr_t)test_request;
     try_send_req.Input.BufferSizeBytes = sizeof(test_buffer);
 
-    PDFWK_SYNC_REQUEST_HEADER Request = (PDFWK_SYNC_REQUEST_HEADER) &try_send_req;
+    PDFWK_SYNC_REQUEST_HEADER Request = (PDFWK_SYNC_REQUEST_HEADER)&try_send_req;
     Request->OwningInterface = (PDFWK_INTERFACE_HEADER)&icc_mhu_inf;
     will_return(__wrap_icc_mhu_send_message, ICC_MHU_STATUS_SUCCESS);
     status = icc_mhu_transport_driver_dispatch_sync(Request);
@@ -354,7 +350,7 @@ TEST_FUNCTION(test_icc_mhu_transport_driver_dispatch_sync, test_setup, nullptr)
     try_recv_req.Input.PayloadBuffer = (uintptr_t)test_request;
     try_recv_req.Input.BufferSizeBytes = sizeof(test_buffer);
 
-    Request = (PDFWK_SYNC_REQUEST_HEADER) &try_recv_req;
+    Request = (PDFWK_SYNC_REQUEST_HEADER)&try_recv_req;
     Request->OwningInterface = (PDFWK_INTERFACE_HEADER)&icc_mhu_inf;
     will_return(__wrap_icc_mhu_trans_get_message, ICC_MHU_STATUS_SUCCESS);
     status = icc_mhu_transport_driver_dispatch_sync(Request);
@@ -362,7 +358,7 @@ TEST_FUNCTION(test_icc_mhu_transport_driver_dispatch_sync, test_setup, nullptr)
 
     FPFW_ICC_TRANSPORT_SYNC_GET_MAX_MESG_SIZE_REQUEST get_size_req;
     get_size_req.Header.RequestType = ICC_TRANSPORT_GET_MAX_MESG_SIZE_SYNC_REQUEST_ID;
-    Request = (PDFWK_SYNC_REQUEST_HEADER) &get_size_req;
+    Request = (PDFWK_SYNC_REQUEST_HEADER)&get_size_req;
     Request->OwningInterface = (PDFWK_INTERFACE_HEADER)&icc_mhu_inf;
     status = icc_mhu_transport_driver_dispatch_sync(Request);
     assert_int_equal(get_size_req.Output.MaxMesgSize, 256);

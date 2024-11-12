@@ -18,15 +18,15 @@ extern "C" {
 #include <CMockaWrapper.h> // for check_expected, check_expected_ptr
 #include <DfwkCommon.h>    // for DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE
 #include <FpFwLinkedList.h>
-#include <FpFwUtils.h>            // for FPFW_ARRAY_SIZE
-#include <startup_shutdown.h>     // for sos_queue_start_phase, sos_thread_...
-#include <startup_shutdown_i.h>   // for sos_queue_start_phase, sos_thread_...
-#include <startup_shutdown_ssi.h> // for _ssi_startup_stage, _startup_type
-#include <string.h>
+#include <FpFwUtils.h> // for FPFW_ARRAY_SIZE
 #include <idhw.h>
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <mscp_exp_spi_synchronize_dies.h>
+#include <startup_shutdown.h>     // for sos_queue_start_phase, sos_thread_...
+#include <startup_shutdown_i.h>   // for sos_queue_start_phase, sos_thread_...
+#include <startup_shutdown_ssi.h> // for _ssi_startup_stage, _startup_type
+#include <string.h>
 
 } // extern "C"
 
@@ -70,11 +70,10 @@ SOS_TEST(wait_for_remote_die_boot_stage_single_die, NULL, NULL)
 
     // call the function
     startup_shutdown_boot_stage_t test_stage = {STARTUP_MCP_LOAD, STARTUP_MCP_LOAD, 0, false, false};
-    
+
     status = wait_for_remote_die_boot_stage(test_stage);
 
     assert_true(status);
-
 }
 
 SOS_TEST(wait_for_remote_die_boot_stage_dual_die, NULL, NULL)

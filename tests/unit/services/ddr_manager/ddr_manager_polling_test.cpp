@@ -15,15 +15,15 @@
 extern "C" {
 #include <ddr_i3c.h>
 #include <ddr_manager_bwl.h>
-#include <ddr_manager_i.h>   // for ddr_poll_dimms, ddr_worker_thread_func
+#include <ddr_manager_i.h> // for ddr_poll_dimms, ddr_worker_thread_func
 #include <idhw.h>
 } // extern "C"
 
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
-#define NUM_SEN (6*2) // 6 DIMMs, 2 sensors each
-#define NUM_DIMM (6) // 6 DIMMs
+#define NUM_SEN  (6 * 2) // 6 DIMMs, 2 sensors each
+#define NUM_DIMM (6)     // 6 DIMMs
 
 /*-------- Function Prototypes -----------*/
 
@@ -43,7 +43,7 @@ bool __wrap_ddr_manager_platform_is_polling_supported()
 {
     return true;
 }
-}// extern "C"
+} // extern "C"
 
 //
 // Tests
@@ -56,7 +56,7 @@ TEST_FUNCTION(test_ddr_manager_poll_below_high_to_low_thresh, NULL, NULL)
     will_return_always(__wrap_idhw_get_die_id, DIE_0);
 
     // High temp
-    for(uint8_t sens_idx = 0; sens_idx < NUM_SEN; sens_idx++)
+    for (uint8_t sens_idx = 0; sens_idx < NUM_SEN; sens_idx++)
     {
         expect_any_count(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, dev_id, 2);
         expect_any_count(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, mr_reg, 2);
@@ -70,7 +70,7 @@ TEST_FUNCTION(test_ddr_manager_poll_below_high_to_low_thresh, NULL, NULL)
     }
 
     // Low temp
-    for(uint8_t sens_idx = 0; sens_idx < NUM_SEN; sens_idx++)
+    for (uint8_t sens_idx = 0; sens_idx < NUM_SEN; sens_idx++)
     {
         expect_any_count(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, dev_id, 2);
         expect_any_count(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, mr_reg, 2);
@@ -97,7 +97,7 @@ TEST_FUNCTION(test_ddr_manager_poll_crit_thresh, NULL, NULL)
     will_return_always(__wrap_idhw_get_die_id, DIE_0);
 
     // Crit temp
-    for(uint8_t sens_idx = 0; sens_idx < NUM_SEN; sens_idx++)
+    for (uint8_t sens_idx = 0; sens_idx < NUM_SEN; sens_idx++)
     {
         expect_any_count(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, dev_id, 2);
         expect_any_count(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, mr_reg, 2);
@@ -108,10 +108,9 @@ TEST_FUNCTION(test_ddr_manager_poll_crit_thresh, NULL, NULL)
 
         will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, (BIT0 | BIT1 | BIT2 | BIT3));
         will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
-
     }
 
-    for(uint8_t dimm_idx = 0; dimm_idx < NUM_DIMM; dimm_idx++)
+    for (uint8_t dimm_idx = 0; dimm_idx < NUM_DIMM; dimm_idx++)
     {
         expect_function_call(__wrap_ddr_manager_set_thermal_trip_gpio);
     }

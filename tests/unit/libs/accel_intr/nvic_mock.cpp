@@ -11,8 +11,8 @@
 #include <CMockaWrapper.h> // IWYU pragma: keep
 
 extern "C" {
-#include "accel_intr.h"      // for accel_intr_irq_init, ACCEL_INTR_RET_SUC...
-#include "fpfw_status.h"     // for FPFW_STATUS_SUCCESS
+#include "accel_intr.h"  // for accel_intr_irq_init, ACCEL_INTR_RET_SUC...
+#include "fpfw_status.h" // for FPFW_STATUS_SUCCESS
 
 #include <nvic.h>          // for NVIC_STATUS_SUCCESS
 #include <silibs_status.h> // for SILIBS_SUCCESS

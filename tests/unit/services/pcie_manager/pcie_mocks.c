@@ -9,6 +9,8 @@
  */
 
 /*------------- Includes -----------------*/
+#include "pcie_mocks.h"
+
 #include <DfwkCommon.h> // for PDFWK_ASYNC_REQUEST_HEADER, DFWK_ASYNC_REQUE...
 #include <FpFwCMocka.h> // for check_expected_ptr, assert_non_null, assert_...
 #include <fpfw_icc_base.h>
@@ -16,10 +18,8 @@
 #include <fpfw_status.h>
 #include <idsw_kng.h>
 #include <pcie_dfwk.h>      // for pcie_async_request_t, pciess_device_t
-#include "pcie_mocks.h"
 #include <pcie_ss_common.h> // pciess_entity
 #include <scp_pcie_manager.h>
-
 #include <stddef.h> // for size_t
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -84,26 +84,26 @@ pcie_ss_entity_t* __wrap_send_sync_get_rpss_entity(uint8_t rpss_idx)
 }
 
 /* Calls the actual memcpy when needed outside of tested code*/
-void* __real_memcpy(void *__a, const void *__b, size_t __c);
+void* __real_memcpy(void* __a, const void* __b, size_t __c);
 
-void* __wrap_memcpy(void *__a, const void *__b, size_t __c)
+void* __wrap_memcpy(void* __a, const void* __b, size_t __c)
 {
     if (memcpy_mock)
     {
         return NULL;
     }
-    return __real_memcpy(__a,__b,__c);
+    return __real_memcpy(__a, __b, __c);
 }
 
-void* __real_memset(void *str, int c, size_t n);
+void* __real_memset(void* str, int c, size_t n);
 
-void* __wrap_memset(void *str, int c, size_t n)
+void* __wrap_memset(void* str, int c, size_t n)
 {
     if (memcpy_mock)
     {
         return NULL;
     }
-    return __real_memset(str,c,n);
+    return __real_memset(str, c, n);
 }
 
 icc_base_recv_complete_notify recv_cb;
@@ -113,7 +113,6 @@ fpfw_status_t __wrap_fpfw_icc_base_send(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
     FPFW_UNUSED(icc_ctx);
     icc_base_send_complete_notify send_cb = params->cb;
 
-    
     send_cb(params->cb_ctx, FPFW_STATUS_SUCCESS);
 
     recv_cb(params->cb_ctx, 16, FPFW_STATUS_SUCCESS);

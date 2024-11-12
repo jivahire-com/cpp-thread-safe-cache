@@ -15,12 +15,12 @@ extern "C" {
 #include "DfwkPtrTypes.h" // for PDFWK_SCHEDULE
 
 #include <DfwkThreadXHost.h>
-#include <FpFwCli.h>       // for FPFW_CLI_COMMAND, FpFwCliRegisterTable
-#include <cstdint>         // for uint32_t
-#include <fpfw_init.h>     // for fpfw_init_component_t
-#include <gpio.h>          // for pgpio_device_t, gpio_device_t, pgpio_in...
-#include <gpio_lib.h>      // for gpio_afm_entry_t, gpio_config_entry_t
-#include <idsw.h>          // for idsw_get_platform_sdv, idsw...
+#include <FpFwCli.h>   // for FPFW_CLI_COMMAND, FpFwCliRegisterTable
+#include <cstdint>     // for uint32_t
+#include <fpfw_init.h> // for fpfw_init_component_t
+#include <gpio.h>      // for pgpio_device_t, gpio_device_t, pgpio_in...
+#include <gpio_lib.h>  // for gpio_afm_entry_t, gpio_config_entry_t
+#include <idsw.h>      // for idsw_get_platform_sdv, idsw...
 #include <idsw_kng.h>
 #include <silibs_status.h> // for SILIBS_SUCCESS
 #include <string.h>        // for strcmp
@@ -158,7 +158,7 @@ TEST_FUNCTION(test_gpio_lib_init_FPGA, nullptr, nullptr)
     expect_function_call(__wrap_idsw_get_platform_sdv);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
     expect_not_value(__wrap_gpio_init, gpio_cfg_tbl, NULL);
-    expect_value(__wrap_gpio_init, num, 2);     // Custom configuration table has 2 entries for MSCP_EXP_GPIO_4 and MSCP_EXP_GPIO_6
+    expect_value(__wrap_gpio_init, num, 2); // Custom configuration table has 2 entries for MSCP_EXP_GPIO_4 and MSCP_EXP_GPIO_6
     expect_function_call(__wrap_gpio_init);
 
     // Check dependencies

@@ -114,8 +114,9 @@ TEST_FUNCTION(test_hw_fifo_enable_disable, fw_fifo_setup, fw_fifo_teardown)
 TEST_FUNCTION(test_hw_fifo_get_stride_index, fw_fifo_setup, fw_fifo_teardown)
 {
     // entry size is the same as stride, so not used
-    uint16_t stride_index = hw_fifo_get_stride_index(DEVICE_FIFO_PSTATE_TLM_HW_PROD,
-                                                     (uint32_t)(fifo_mem.pstate_fifo + (2 * PSTATE_FIFO_ENTRY_SIZE_BYTES)));
+    uint16_t stride_index =
+        hw_fifo_get_stride_index(DEVICE_FIFO_PSTATE_TLM_HW_PROD,
+                                 (uint32_t)(fifo_mem.pstate_fifo + (2 * PSTATE_FIFO_ENTRY_SIZE_BYTES)));
     assert_int_equal(stride_index, STRIDE_INDEX_UNUSED);
 
     // TILE_TEMP_FIFO_STRIDE_SIZE_BYTES
@@ -132,8 +133,9 @@ TEST_FUNCTION(test_hw_fifo_get_stride_index, fw_fifo_setup, fw_fifo_teardown)
         (uint32_t)(fifo_mem.tile_temp_fifo + (2 * TILE_TEMP_FIFO_STRIDE_SIZE_BYTES) - TILE_TEMP_FIFO_ENTRY_SIZE_BYTES));
     assert_int_equal(stride_index, (TILE_TEMP_FIFO_STRIDE_SIZE_BYTES / TILE_TEMP_FIFO_ENTRY_SIZE_BYTES) - 1);
 
-    stride_index = hw_fifo_get_stride_index(DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD,
-                                            (uint32_t)(fifo_mem.tile_temp_fifo + (2 * TILE_TEMP_FIFO_STRIDE_SIZE_BYTES)));
+    stride_index =
+        hw_fifo_get_stride_index(DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD,
+                                 (uint32_t)(fifo_mem.tile_temp_fifo + (2 * TILE_TEMP_FIFO_STRIDE_SIZE_BYTES)));
     assert_int_equal(stride_index, 0);
 }
 
@@ -160,7 +162,8 @@ TEST_FUNCTION(test_hw_fifo_update_write_ptr_by_stride, fw_fifo_setup, fw_fifo_te
     }
 
     // test fifo wrap around to 1 entry past start
-    assert_int_equal(core_current_fifo_write_reg, (uint32_t)fifo_mem.core_current_fifo + FIFO_TIMESTAMP_SIZE + CORE_CURRENT_FIFO_STRIDE_SIZE_BYTES);
+    assert_int_equal(core_current_fifo_write_reg,
+                     (uint32_t)fifo_mem.core_current_fifo + FIFO_TIMESTAMP_SIZE + CORE_CURRENT_FIFO_STRIDE_SIZE_BYTES);
 }
 
 TEST_FUNCTION(test_hw_fifo_update_read_ptr_by_entry, fw_fifo_setup, fw_fifo_teardown)
@@ -185,7 +188,8 @@ TEST_FUNCTION(test_hw_fifo_update_read_ptr_by_entry, fw_fifo_setup, fw_fifo_tear
         assert_int_equal(dimm_temp_fifo_read_reg, expected_read_ptr);
     }
     // test fifo wrap around to 1 entry past start
-    assert_int_equal(dimm_temp_fifo_read_reg, (uint32_t)fifo_mem.dimm_temp_fifo + FIFO_TIMESTAMP_SIZE + DIMM_FIFO_ENTRY_SIZE_BYTES);
+    assert_int_equal(dimm_temp_fifo_read_reg,
+                     (uint32_t)fifo_mem.dimm_temp_fifo + FIFO_TIMESTAMP_SIZE + DIMM_FIFO_ENTRY_SIZE_BYTES);
 
     // test multiple wrap around
     initialize_mock_fifos();
@@ -199,45 +203,53 @@ TEST_FUNCTION(test_hw_fifo_update_write_ptr_by_size, fw_fifo_setup, fw_fifo_tear
 {
     // write_ptr > read_ptr after update, no overflow
     pstate_fifo_read_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + PSTATE_FIFO_ENTRY_SIZE_BYTES);
-    pstate_fifo_write_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + ((PSTATE_FIFO_NUM_ENTRIES - 1) * PSTATE_FIFO_ENTRY_SIZE_BYTES));
+    pstate_fifo_write_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE +
+                                       ((PSTATE_FIFO_NUM_ENTRIES - 1) * PSTATE_FIFO_ENTRY_SIZE_BYTES));
 
     hw_fifo_update_write_ptr_by_size(DEVICE_FIFO_PSTATE_TLM_HW_PROD, PSTATE_FIFO_ENTRY_SIZE_BYTES, 1);
 
-    assert_int_equal(pstate_fifo_read_reg, (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + PSTATE_FIFO_ENTRY_SIZE_BYTES)); // unchanged
+    assert_int_equal(pstate_fifo_read_reg,
+                     (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + PSTATE_FIFO_ENTRY_SIZE_BYTES)); // unchanged
     assert_int_equal(pstate_fifo_write_reg, (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE)); // wrap around, but not pass read ptr
 
     // write_ptr < read_ptr after update, write pointer moves to read pointer, read pointer advances
     test_hw_fifo_control[DEVICE_FIFO_PSTATE_TLM_HW_PROD].overflow_count = 2;
     pstate_fifo_read_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE);
-    pstate_fifo_write_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + ((PSTATE_FIFO_NUM_ENTRIES - 1) * PSTATE_FIFO_ENTRY_SIZE_BYTES));
+    pstate_fifo_write_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE +
+                                       ((PSTATE_FIFO_NUM_ENTRIES - 1) * PSTATE_FIFO_ENTRY_SIZE_BYTES));
 
     hw_fifo_update_write_ptr_by_size(DEVICE_FIFO_PSTATE_TLM_HW_PROD, PSTATE_FIFO_ENTRY_SIZE_BYTES, 1);
 
-    assert_int_equal(pstate_fifo_read_reg, (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + PSTATE_FIFO_ENTRY_SIZE_BYTES)); // moved forward
+    assert_int_equal(pstate_fifo_read_reg,
+                     (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + PSTATE_FIFO_ENTRY_SIZE_BYTES)); // moved forward
     assert_int_equal(pstate_fifo_write_reg, (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE)); // wrap around, less than read ptr
     assert_int_equal(test_hw_fifo_control[DEVICE_FIFO_PSTATE_TLM_HW_PROD].overflow_count, 3);
 
     // write_ptr > read_ptr , write pointer moves to read pointer, read pointer advances
     test_hw_fifo_control[DEVICE_FIFO_PSTATE_TLM_HW_PROD].overflow_count = 8;
     pstate_fifo_read_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + PSTATE_FIFO_ENTRY_SIZE_BYTES);
-    pstate_fifo_write_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + ((PSTATE_FIFO_NUM_ENTRIES - 1) * PSTATE_FIFO_ENTRY_SIZE_BYTES));
+    pstate_fifo_write_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE +
+                                       ((PSTATE_FIFO_NUM_ENTRIES - 1) * PSTATE_FIFO_ENTRY_SIZE_BYTES));
 
     hw_fifo_update_write_ptr_by_size(DEVICE_FIFO_PSTATE_TLM_HW_PROD, PSTATE_FIFO_ENTRY_SIZE_BYTES, PSTATE_FIFO_NUM_ENTRIES + 1);
 
-    assert_int_equal(pstate_fifo_read_reg, (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + PSTATE_FIFO_ENTRY_SIZE_BYTES)); // moved forward
+    assert_int_equal(pstate_fifo_read_reg,
+                     (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + PSTATE_FIFO_ENTRY_SIZE_BYTES)); // moved forward
     assert_int_equal(pstate_fifo_write_reg, (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE)); // wrap around, less than read ptr
     assert_int_equal(test_hw_fifo_control[DEVICE_FIFO_PSTATE_TLM_HW_PROD].overflow_count, 9);
 
     // write_ptr < read_ptr , write pointer moves to read pointer, read pointer advances and wraps around
     test_hw_fifo_control[DEVICE_FIFO_PSTATE_TLM_HW_PROD].overflow_count = 4;
-    pstate_fifo_read_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + ((PSTATE_FIFO_NUM_ENTRIES - 1) * PSTATE_FIFO_ENTRY_SIZE_BYTES));
+    pstate_fifo_read_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE +
+                                      ((PSTATE_FIFO_NUM_ENTRIES - 1) * PSTATE_FIFO_ENTRY_SIZE_BYTES));
     pstate_fifo_write_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE);
 
     hw_fifo_update_write_ptr_by_size(DEVICE_FIFO_PSTATE_TLM_HW_PROD, PSTATE_FIFO_ENTRY_SIZE_BYTES, PSTATE_FIFO_NUM_ENTRIES - 1);
 
     assert_int_equal(pstate_fifo_read_reg, (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE)); // moved forward and wrapped around
     assert_int_equal(pstate_fifo_write_reg,
-                     (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + ((PSTATE_FIFO_NUM_ENTRIES - 1) * PSTATE_FIFO_ENTRY_SIZE_BYTES))); // wrap around, less than read ptr
+                     (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE +
+                                ((PSTATE_FIFO_NUM_ENTRIES - 1) * PSTATE_FIFO_ENTRY_SIZE_BYTES))); // wrap around, less than read ptr
     assert_int_equal(test_hw_fifo_control[DEVICE_FIFO_PSTATE_TLM_HW_PROD].overflow_count, 5);
 }
 
@@ -246,7 +258,8 @@ TEST_FUNCTION(test_hw_fifo_empty, fw_fifo_setup, fw_fifo_teardown)
     hw_fifo_disable(DEVICE_FIFO_PSTATE_TLM_HW_PROD);
 
     pstate_fifo_read_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + PSTATE_FIFO_ENTRY_SIZE_BYTES);
-    pstate_fifo_write_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + ((PSTATE_FIFO_NUM_ENTRIES - 1) * PSTATE_FIFO_ENTRY_SIZE_BYTES));
+    pstate_fifo_write_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE +
+                                       ((PSTATE_FIFO_NUM_ENTRIES - 1) * PSTATE_FIFO_ENTRY_SIZE_BYTES));
 
     // empty because it's disabled
     assert_true(hw_fifo_is_empty(DEVICE_FIFO_PSTATE_TLM_HW_PROD));
@@ -256,7 +269,8 @@ TEST_FUNCTION(test_hw_fifo_empty, fw_fifo_setup, fw_fifo_teardown)
     assert_true(hw_fifo_is_empty(DEVICE_FIFO_PSTATE_TLM_HW_PROD));
 
     pstate_fifo_read_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + PSTATE_FIFO_ENTRY_SIZE_BYTES);
-    pstate_fifo_write_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + ((PSTATE_FIFO_NUM_ENTRIES - 1) * PSTATE_FIFO_ENTRY_SIZE_BYTES));
+    pstate_fifo_write_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE +
+                                       ((PSTATE_FIFO_NUM_ENTRIES - 1) * PSTATE_FIFO_ENTRY_SIZE_BYTES));
     assert_false(hw_fifo_is_empty(DEVICE_FIFO_PSTATE_TLM_HW_PROD));
 }
 
@@ -272,8 +286,10 @@ TEST_FUNCTION(test_hw_fifo_get_latched_entries, fw_fifo_setup, fw_fifo_teardown)
     latched_entries = hw_fifo_get_remaining_latched_entries(DEVICE_FIFO_PSTATE_TLM_HW_PROD);
     assert_int_equal(latched_entries, PSTATE_FIFO_NUM_ENTRIES - 1 - 1); // read ptr is at +1, write ptr is at PSTATE_FIFO_NUM_ENTRIES - 1
 
-    pstate_fifo_read_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE + ((PSTATE_FIFO_NUM_ENTRIES - 1) * PSTATE_FIFO_ENTRY_SIZE_BYTES));
-    test_hw_fifo_control[DEVICE_FIFO_PSTATE_TLM_HW_PROD].latched_write_address = (uint32_t)(fifo_mem.pstate_fifo) + FIFO_TIMESTAMP_SIZE;
+    pstate_fifo_read_reg = (uint32_t)(fifo_mem.pstate_fifo + FIFO_TIMESTAMP_SIZE +
+                                      ((PSTATE_FIFO_NUM_ENTRIES - 1) * PSTATE_FIFO_ENTRY_SIZE_BYTES));
+    test_hw_fifo_control[DEVICE_FIFO_PSTATE_TLM_HW_PROD].latched_write_address =
+        (uint32_t)(fifo_mem.pstate_fifo) + FIFO_TIMESTAMP_SIZE;
     latched_entries = hw_fifo_get_remaining_latched_entries(DEVICE_FIFO_PSTATE_TLM_HW_PROD);
     assert_int_equal(latched_entries, 1);
 }
@@ -397,10 +413,10 @@ TEST_FUNCTION(test_hw_fifo_write_multiple_entry_wrap_read_one, fw_fifo_setup, fw
     scf_config.scf_ram_buffer_size = sizeof(fifo_mem.pvt_temp_fifo);
     scf_set_working_config((uintptr_t)&scf_config);
 
-    pvt_temp_fifo_read_reg =
-        (uint32_t)(fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE + ((PVT_TEMP_FIFO_NUM_ENTRIES - 1) * PVT_TEMP_FIFO_ENTRY_SIZE_BYTES));
-    pvt_temp_fifo_write_reg =
-        (uint32_t)(fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE + ((PVT_TEMP_FIFO_NUM_ENTRIES - 1) * PVT_TEMP_FIFO_ENTRY_SIZE_BYTES));
+    pvt_temp_fifo_read_reg = (uint32_t)(fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE +
+                                        ((PVT_TEMP_FIFO_NUM_ENTRIES - 1) * PVT_TEMP_FIFO_ENTRY_SIZE_BYTES));
+    pvt_temp_fifo_write_reg = (uint32_t)(fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE +
+                                         ((PVT_TEMP_FIFO_NUM_ENTRIES - 1) * PVT_TEMP_FIFO_ENTRY_SIZE_BYTES));
 
     assert_true(hw_fifo_is_empty(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD));
 
@@ -475,8 +491,10 @@ TEST_FUNCTION(test_hw_fifo_write_stride, fw_fifo_setup, fw_fifo_teardown)
     scf_set_working_config((uintptr_t)&scf_config);
 
     // set the fifo as empty starting on the 2nd stride
-    tile_temp_fifo_read_reg = (uint32_t)(fifo_mem.tile_temp_fifo + FIFO_TIMESTAMP_SIZE + (TILE_TEMP_FIFO_STRIDE_SIZE_BYTES));
-    tile_temp_fifo_write_reg = (uint32_t)(fifo_mem.tile_temp_fifo + FIFO_TIMESTAMP_SIZE + (TILE_TEMP_FIFO_STRIDE_SIZE_BYTES));
+    tile_temp_fifo_read_reg =
+        (uint32_t)(fifo_mem.tile_temp_fifo + FIFO_TIMESTAMP_SIZE + (TILE_TEMP_FIFO_STRIDE_SIZE_BYTES));
+    tile_temp_fifo_write_reg =
+        (uint32_t)(fifo_mem.tile_temp_fifo + FIFO_TIMESTAMP_SIZE + (TILE_TEMP_FIFO_STRIDE_SIZE_BYTES));
 
     assert_true(hw_fifo_is_empty(DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD));
     expect_value_count(__wrap_FpFwAssert, expression, true, 5);
@@ -567,8 +585,10 @@ TEST_FUNCTION(test_hw_fifo_write_fail_cases, fw_fifo_setup, fw_fifo_teardown)
     scf_set_working_config((uintptr_t)&scf_config);
 
     // set the fifo as empty starting on the 2nd stride
-    tile_temp_fifo_read_reg = (uint32_t)(fifo_mem.tile_temp_fifo + FIFO_TIMESTAMP_SIZE + (TILE_TEMP_FIFO_STRIDE_SIZE_BYTES));
-    tile_temp_fifo_write_reg = (uint32_t)(fifo_mem.tile_temp_fifo + FIFO_TIMESTAMP_SIZE + (TILE_TEMP_FIFO_STRIDE_SIZE_BYTES));
+    tile_temp_fifo_read_reg =
+        (uint32_t)(fifo_mem.tile_temp_fifo + FIFO_TIMESTAMP_SIZE + (TILE_TEMP_FIFO_STRIDE_SIZE_BYTES));
+    tile_temp_fifo_write_reg =
+        (uint32_t)(fifo_mem.tile_temp_fifo + FIFO_TIMESTAMP_SIZE + (TILE_TEMP_FIFO_STRIDE_SIZE_BYTES));
 
     expect_value_count(__wrap_FpFwAssert, expression, true, 5);
 
@@ -623,7 +643,8 @@ TEST_FUNCTION(test_hw_fifo_read_fail, fw_fifo_setup, fw_fifo_teardown)
     scf_set_working_config((uintptr_t)&scf_config);
 
     pvt_temp_fifo_read_reg = (uint32_t)(fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE + PVT_TEMP_FIFO_ENTRY_SIZE_BYTES);
-    pvt_temp_fifo_write_reg = (uint32_t)(fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE + (PVT_TEMP_FIFO_ENTRY_SIZE_BYTES * 2));
+    pvt_temp_fifo_write_reg =
+        (uint32_t)(fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE + (PVT_TEMP_FIFO_ENTRY_SIZE_BYTES * 2));
 
     // test disabled
     hw_fifo_disable(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD);
@@ -668,7 +689,8 @@ TEST_FUNCTION(test_hw_fifo_read_fail, fw_fifo_setup, fw_fifo_teardown)
     scf_set_working_config((uintptr_t)&scf_config);
 
     pvt_temp_fifo_read_reg = (uint32_t)(fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE + PVT_TEMP_FIFO_ENTRY_SIZE_BYTES);
-    pvt_temp_fifo_write_reg = (uint32_t)(fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE + (PVT_TEMP_FIFO_ENTRY_SIZE_BYTES * 2));
+    pvt_temp_fifo_write_reg =
+        (uint32_t)(fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE + (PVT_TEMP_FIFO_ENTRY_SIZE_BYTES * 2));
 
     expect_value_count(__wrap_FpFwAssert, expression, true, 3);
     status = hw_fifo_read_entry(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD,

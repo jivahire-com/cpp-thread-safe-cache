@@ -118,7 +118,7 @@ TEST_FUNCTION(test_avs3_scp, nullptr, nullptr)
 
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)0;
-    will_return(__wrap_idsw_get_die_id, test_die); 
+    will_return(__wrap_idsw_get_die_id, test_die);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_value(__wrap_scp_avs_init, scheduler, &(test_host.Schedule));
     expect_memory(__wrap_fpfw_init_get_handle, id, dfwk_id, sizeof(fpfw_init_component_id_t));
@@ -145,7 +145,7 @@ TEST_FUNCTION(test_avs0_scp_init, nullptr, nullptr)
 
 TEST_FUNCTION(test_avs1_scp_init, nullptr, nullptr)
 {
-   // Set up expectations
+    // Set up expectations
     scp_avs_device_t test_avs_device = {
         .config = {},
     };

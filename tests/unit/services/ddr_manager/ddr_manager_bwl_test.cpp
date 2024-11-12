@@ -13,8 +13,8 @@
 #include <cstdint>         // IWYU pragma: keep
 
 extern "C" {
-#include <ddr_manager_bwl.h>
 #include <FpFwUtils.h>
+#include <ddr_manager_bwl.h>
 } // extern "C"
 
 /*-- Symbolic Constant Macros (defines) --*/

@@ -158,7 +158,7 @@ TEST_FUNCTION(power_init_pwr_svc, nullptr, nullptr)
     assert_int_equal(s_saved_config.platform_die_core_count, NUM_AP_CORES_PER_DIE);
     assert_true(s_saved_config.platform_is_multi_die);
     assert_int_equal(s_saved_config.icc_d2d_ctx, TEST_HANDLE);
- }
+}
 
 TEST_FUNCTION(power_init_pwr_svc__svp, nullptr, nullptr)
 {

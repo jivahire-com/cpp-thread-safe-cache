@@ -81,15 +81,17 @@ SOS_TEST(sos_core_shutdown_stages, NULL, NULL)
 // test for sos_boot_timeout
 SOS_TEST(sos_boot_timeout, NULL, NULL)
 {
-    unsigned int test_time_out = 100*1000;
-    sos_stage_timeout_t current_stage = { .stage_category = BOOT_STAGE, .operation_stage.boot = STARTUP_BL31_LOAD, .timeout_ms = test_time_out };
+    unsigned int test_time_out = 100 * 1000;
+    sos_stage_timeout_t current_stage = {.stage_category = BOOT_STAGE,
+                                         .operation_stage.boot = STARTUP_BL31_LOAD,
+                                         .timeout_ms = test_time_out};
 
     will_return_always(__wrap_sos_core_boot_stage_count, __real_sos_core_boot_stage_count());
 
     // call the function
     sos_boot_timeout_override(current_stage);
     unsigned int return_timeout = sos_boot_timeout(current_stage);
-    
+
     // check timeout get updated.
     assert_int_equal(return_timeout, test_time_out);
 }
@@ -97,13 +99,15 @@ SOS_TEST(sos_boot_timeout, NULL, NULL)
 // test for sos_shutdown_timeout
 SOS_TEST(sos_shutdown_timeout, NULL, NULL)
 {
-    unsigned int test_time_out = 100*1000;
-    sos_stage_timeout_t current_stage = { .stage_category = SHUTDOWN_STAGE, .operation_stage.shutdown = MSCP_SUBSYS_RESET, .timeout_ms = test_time_out };
+    unsigned int test_time_out = 100 * 1000;
+    sos_stage_timeout_t current_stage = {.stage_category = SHUTDOWN_STAGE,
+                                         .operation_stage.shutdown = MSCP_SUBSYS_RESET,
+                                         .timeout_ms = test_time_out};
 
     // call the function
     sos_shutdown_timeout_override(current_stage);
     unsigned int return_timeout = sos_shutdown_timeout(current_stage);
-    
+
     // check timeout get updated.
     assert_int_equal(return_timeout, test_time_out);
 }

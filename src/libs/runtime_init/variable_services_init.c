@@ -4,7 +4,7 @@
  */
 
 /*------------- Includes -----------------*/
-#include <fpfw_icc_base.h>   // for fpfw_icc_base_init, fpfw_icc_ba...
+#include <fpfw_icc_base.h> // for fpfw_icc_base_init, fpfw_icc_ba...
 #include <fpfw_init.h>
 #include <idhw.h>
 #include <stdint.h>

@@ -80,7 +80,7 @@ static int distribution_setup(void** state)
     s_runconfig.knobs.max_plimit_step_size_down = MAX_PLIMIT;
     s_runconfig.knobs.max_plimit_step_size_up = MAX_PLIMIT;
     s_runconfig.knobs.force_pstate = NUM_PSTATES;
-    
+
     s_runconfig.derived.vfts[0].min_plimit = 0;
     s_runconfig.derived.pnominal = TEST_NOMINAL_PERF;
 
@@ -114,7 +114,7 @@ POWER_TEST(distribution_get_minimum_plimit__vft_plimit_minimum, distribution_set
     get_minimum_plimit_assert_expectations();
 
     s_runconfig.knobs.allowed_plimit_minimum = ARBITRARY_LIMIT5; // just choosing an arbitrary limit > 0
-    s_runconfig.derived.vfts[0].min_plimit = TEST_NOMINAL_PERF; // VF curve only supports up to nominal
+    s_runconfig.derived.vfts[0].min_plimit = TEST_NOMINAL_PERF;  // VF curve only supports up to nominal
     uint8_t minp = power_distribution_get_minimum_plimit(&s_runconfig, &s_ctrl_loop_detail.cores, DEFAULT_CORE);
     assert_int_equal(minp, TEST_NOMINAL_PERF);
 }
@@ -178,7 +178,6 @@ POWER_TEST(distribution_get_minimum_plimit__c4_limit_to_nominal, distribution_se
     minp = power_distribution_get_minimum_plimit(&s_runconfig, &s_ctrl_loop_detail.cores, DEFAULT_CORE);
     assert_int_equal(minp, TEST_NOMINAL_PERF);
 }
-
 
 POWER_TEST(distribution_get_minimum_plimit__os_desired, distribution_setup, distribution_teardown)
 {
@@ -392,13 +391,13 @@ POWER_TEST(distribution_get_minimum_plimit__intervals_to_lower_with_increase_aft
     assert_int_equal(minp, MAX_PLIMIT - 1);
 }
 
-    #define INVALID_PERF (MAX_PERF - 1)
+#define INVALID_PERF (MAX_PERF - 1)
 // nothing particularly special, but 4 cores each in a different set of 32
-    #define NUM_D_CORES  4
-    #define FORCED_CORE  2
+#define NUM_D_CORES 4
+#define FORCED_CORE 2
 static const int core_numbers[NUM_D_CORES] = {12, 32, 37, 67};
 
-static int distribution_dist_setup(void **state)
+static int distribution_dist_setup(void** state)
 {
     distribution_setup(state);
     // anything specific to distribute here
@@ -411,7 +410,8 @@ static int distribution_dist_setup(void **state)
     corebits_clear(&s_ctrl_loop_detail.plimits_pending);
 
     s_ctrl_loop_detail.curr_resources = PLIMIT_TO_RESOURCES(TEST_NOMINAL_PERF) * NUM_D_CORES;
-    for (int i = 0; i < NUM_D_CORES; ++i) {
+    for (int i = 0; i < NUM_D_CORES; ++i)
+    {
         s_ctrl_loop_detail.cores.core[core_numbers[i]].min_plimit = MAX_PERF;
         // setup invalid values to ensure no matches
         s_ctrl_loop_detail.cores.core[core_numbers[i]].current_plimit = INVALID_PERF;
@@ -419,8 +419,10 @@ static int distribution_dist_setup(void **state)
         s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit = INVALID_PERF;
     }
     // clear selection counts
-    for (int pri = 0; pri < VM_THROT_COUNT; ++pri) {
-        for (int pstate = 0; pstate < NUM_PSTATES; ++pstate) {
+    for (int pri = 0; pri < VM_THROT_COUNT; ++pri)
+    {
+        for (int pstate = 0; pstate < NUM_PSTATES; ++pstate)
+        {
             s_ctrl_loop_detail.plimit.selections[pri].acc[pstate] = 0;
         }
     }
@@ -429,7 +431,7 @@ static int distribution_dist_setup(void **state)
     return 0;
 }
 
-static int distribution_dist_teardown(void **state)
+static int distribution_dist_teardown(void** state)
 {
     // any specific teardown
 
@@ -445,16 +447,18 @@ void distribute_assert_expectations()
 
 static void complete_plimit_valid_data()
 {
-        const unsigned pnominal = s_runconfig.derived.pnominal;
-    for (int i = 0; i < NUM_D_CORES; ++i) {
+    const unsigned pnominal = s_runconfig.derived.pnominal;
+    for (int i = 0; i < NUM_D_CORES; ++i)
+    {
         const uint8_t min_plimit = s_ctrl_loop_detail.cores.core[core_numbers[i]].min_plimit;
         const uint8_t boost_pri = s_ctrl_loop_detail.cores.core[core_numbers[i]].current_boost_priority;
 
-        if ((pnominal > 0) && (min_plimit < pnominal)) {
-        s_ctrl_loop_detail.local.pri_counts.required_for_boost[min_plimit][boost_pri]++;
+        if ((pnominal > 0) && (min_plimit < pnominal))
+        {
+            s_ctrl_loop_detail.local.pri_counts.required_for_boost[min_plimit][boost_pri]++;
         }
     }
-    
+
     // complete core count data in the boost range
     for (unsigned int plimit_idx = 1; plimit_idx < pnominal; ++plimit_idx)
     {
@@ -470,29 +474,33 @@ static void complete_plimit_valid_data()
 
 static void create_nominal_count_data(unsigned core, unsigned nominal, unsigned throt_pri, unsigned boost_pri)
 {
-        unsigned pnominal = s_runconfig.derived.pnominal;
-        s_ctrl_loop_detail.cores.core[core].current_boost_priority = boost_pri;
-        s_ctrl_loop_detail.cores.core[core].current_throt_priority = throt_pri;
+    unsigned pnominal = s_runconfig.derived.pnominal;
+    s_ctrl_loop_detail.cores.core[core].current_boost_priority = boost_pri;
+    s_ctrl_loop_detail.cores.core[core].current_throt_priority = throt_pri;
 
-        // nominal has to be pnominal or higher
-        nominal = (nominal > pnominal) ? nominal : pnominal;
+    // nominal has to be pnominal or higher
+    nominal = (nominal > pnominal) ? nominal : pnominal;
 
-        s_ctrl_loop_detail.cores.core[core].current_base_pstate = nominal;
+    s_ctrl_loop_detail.cores.core[core].current_base_pstate = nominal;
 
-        s_ctrl_loop_detail.local.pri_counts.throt_pri_count[throt_pri]++;
-        s_ctrl_loop_detail.local.pri_counts.required_nominal_for_throttle[nominal][throt_pri]++;
-        s_ctrl_loop_detail.local.pri_counts.required_for_boost[nominal][boost_pri]++;
+    s_ctrl_loop_detail.local.pri_counts.throt_pri_count[throt_pri]++;
+    s_ctrl_loop_detail.local.pri_counts.required_nominal_for_throttle[nominal][throt_pri]++;
+    s_ctrl_loop_detail.local.pri_counts.required_for_boost[nominal][boost_pri]++;
 }
 
 static void setup_single_priority_alt(unsigned core, unsigned nominal)
 {
-    for (unsigned idx = 0; idx < NUM_D_CORES; ++idx) {
+    for (unsigned idx = 0; idx < NUM_D_CORES; ++idx)
+    {
         corebits_set_bit(&s_runconfig.fuses.valid_cores, core_numbers[idx]);
         corebits_set_bit(&s_ctrl_loop_detail.throttle_priority[0], core_numbers[idx]);
         corebits_set_bit(&s_ctrl_loop_detail.boost_priority[0], core_numbers[idx]);
-        if (core == idx) {
+        if (core == idx)
+        {
             create_nominal_count_data(core_numbers[idx], nominal, 0, 0);
-        } else {
+        }
+        else
+        {
             create_nominal_count_data(core_numbers[idx], TEST_NOMINAL_PERF, 0, 0);
         }
     }
@@ -506,7 +514,8 @@ static void setup_single_priority()
 
 static void setup_multi_priority()
 {
-    for (int i = 0; i < NUM_D_CORES; ++i) {
+    for (int i = 0; i < NUM_D_CORES; ++i)
+    {
         corebits_set_bit(&s_runconfig.fuses.valid_cores, core_numbers[i]);
         // one core in each priority level
         corebits_set_bit(&s_ctrl_loop_detail.throttle_priority[i], core_numbers[i]);
@@ -518,13 +527,13 @@ static void setup_multi_priority()
 
 POWER_TEST(distribution_distribute_resources__resources_for_nominal, distribution_dist_setup, distribution_dist_teardown)
 {
-    
 
     // use the default setup to ensure all cores get nominal
     setup_single_priority();
     distribute_assert_expectations();
     power_distribution_distribute_resources(&s_runconfig, &s_ctrl_loop_detail);
-    for (int i = 0; i < NUM_D_CORES; ++i) {
+    for (int i = 0; i < NUM_D_CORES; ++i)
+    {
         assert_int_equal(s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit, TEST_NOMINAL_PERF);
         assert_true(corebits_is_bit_set(&s_ctrl_loop_detail.plimits_pending, core_numbers[i]));
     }
@@ -534,21 +543,25 @@ POWER_TEST(distribution_distribute_resources__resources_for_nominal, distributio
 
 POWER_TEST(distribution_distribute_resources__resources_for_nominal__lower_base, distribution_dist_setup, distribution_dist_teardown)
 {
-    #define TEST_UPDATED_BASE_PERF (TEST_NOMINAL_PERF + 2)
+#define TEST_UPDATED_BASE_PERF (TEST_NOMINAL_PERF + 2)
 
     // use the default setup to enable one core with a lower base perf than nominal
-    setup_single_priority_alt(NUM_D_CORES-1, TEST_UPDATED_BASE_PERF); 
+    setup_single_priority_alt(NUM_D_CORES - 1, TEST_UPDATED_BASE_PERF);
     distribute_assert_expectations();
     uint32_t resource_difference =
-            (PLIMIT_TO_RESOURCES(TEST_NOMINAL_PERF) - PLIMIT_TO_RESOURCES(TEST_UPDATED_BASE_PERF));
-        s_ctrl_loop_detail.curr_resources -= resource_difference;
-    
+        (PLIMIT_TO_RESOURCES(TEST_NOMINAL_PERF) - PLIMIT_TO_RESOURCES(TEST_UPDATED_BASE_PERF));
+    s_ctrl_loop_detail.curr_resources -= resource_difference;
+
     power_distribution_distribute_resources(&s_runconfig, &s_ctrl_loop_detail);
     // expect the core with the lower base perf to get the lower plimit
-    for (int i = 0; i < NUM_D_CORES; ++i) {
-        if (i == (NUM_D_CORES - 1)) {
+    for (int i = 0; i < NUM_D_CORES; ++i)
+    {
+        if (i == (NUM_D_CORES - 1))
+        {
             assert_int_equal(s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit, TEST_UPDATED_BASE_PERF);
-        } else {
+        }
+        else
+        {
             assert_int_equal(s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit, TEST_NOMINAL_PERF);
         }
         assert_true(corebits_is_bit_set(&s_ctrl_loop_detail.plimits_pending, core_numbers[i]));
@@ -560,13 +573,13 @@ POWER_TEST(distribution_distribute_resources__resources_for_nominal__lower_base,
 
 POWER_TEST(distribution_distribute_warmstart_resources, distribution_dist_setup, distribution_dist_teardown)
 {
-    
 
     // use the warmstart distribution
     distribute_assert_expectations();
     power_distribution_distribute_warmstart_resources(&s_runconfig, &s_ctrl_loop_detail);
     // verify selected plimit value and that plimits are marked pending
-    for (int core_idx = 0; core_idx < NUM_AP_CORES_PER_DIE; ++core_idx) {
+    for (int core_idx = 0; core_idx < NUM_AP_CORES_PER_DIE; ++core_idx)
+    {
         assert_int_equal(s_ctrl_loop_detail.cores.core[core_idx].selected_plimit, MAX_PLIMIT - 1);
         assert_true(corebits_is_bit_set(&s_ctrl_loop_detail.plimits_pending, core_idx));
     }
@@ -574,7 +587,6 @@ POWER_TEST(distribution_distribute_warmstart_resources, distribution_dist_setup,
 
 POWER_TEST(distribution_distribute_resources__resources_for_nominal__pstate_forced, distribution_dist_setup, distribution_dist_teardown)
 {
-    
 
     // use the default setup to ensure all cores get nominal
     setup_single_priority();
@@ -583,10 +595,11 @@ POWER_TEST(distribution_distribute_resources__resources_for_nominal__pstate_forc
     // execute function being tested
     distribute_assert_expectations();
     power_distribution_distribute_resources(&s_runconfig, &s_ctrl_loop_detail);
-    for (int i = 0; i < NUM_D_CORES; ++i) {
+    for (int i = 0; i < NUM_D_CORES; ++i)
+    {
         // plimit should not have been touched on forced core
         uint8_t expected_plimit = INVALID_PERF;
-        bool expect_bit_set     = false;
+        bool expect_bit_set = false;
         assert_int_equal(s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit, expected_plimit);
         assert_int_equal(corebits_is_bit_set(&s_ctrl_loop_detail.plimits_pending, core_numbers[i]), expect_bit_set);
     }
@@ -595,7 +608,6 @@ POWER_TEST(distribution_distribute_resources__resources_for_nominal__pstate_forc
 
 POWER_TEST(distribution_distribute_resources__one_too_few_resources_for_nominal, distribution_dist_setup, distribution_dist_teardown)
 {
-    
 
     // use the default setup to ensure all cores get nominal, but subtract one
     // count from resource
@@ -604,21 +616,18 @@ POWER_TEST(distribution_distribute_resources__one_too_few_resources_for_nominal,
     distribute_assert_expectations();
     power_distribution_distribute_resources(&s_runconfig, &s_ctrl_loop_detail);
     // at the same priority, no cores will get nominal
-    for (int i = 0; i < NUM_D_CORES; ++i) {
+    for (int i = 0; i < NUM_D_CORES; ++i)
+    {
         assert_int_equal(s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit, TEST_NOMINAL_PERF + 1);
         assert_true(corebits_is_bit_set(&s_ctrl_loop_detail.plimits_pending, core_numbers[i]));
     }
-    assert_int_equal(
-        s_ctrl_loop_detail.plimit.selections[0].acc[TEST_NOMINAL_PERF + 1], 1);           // one selection for nominal + 1
-    assert_int_equal(s_ctrl_loop_detail.plimit.selections[0].acc[TEST_NOMINAL_PERF], 0);  // no selections for nominal
+    assert_int_equal(s_ctrl_loop_detail.plimit.selections[0].acc[TEST_NOMINAL_PERF + 1], 1); // one selection for nominal + 1
+    assert_int_equal(s_ctrl_loop_detail.plimit.selections[0].acc[TEST_NOMINAL_PERF], 0); // no selections for nominal
     assert_true(s_ctrl_loop_detail.throttling);
 }
 
-POWER_TEST(distribution_distribute_resources__one_too_few_resources_for_nominal_throttling_pri,
-           distribution_dist_setup,
-           distribution_dist_teardown)
+POWER_TEST(distribution_distribute_resources__one_too_few_resources_for_nominal_throttling_pri, distribution_dist_setup, distribution_dist_teardown)
 {
-    
 
     // use the default setup to ensure all cores get nominal, but subtract one
     // count from resource
@@ -627,11 +636,15 @@ POWER_TEST(distribution_distribute_resources__one_too_few_resources_for_nominal_
     distribute_assert_expectations();
     power_distribution_distribute_resources(&s_runconfig, &s_ctrl_loop_detail);
     // at the same priority, no cores will get nominal
-    for (int i = 0; i < NUM_D_CORES; ++i) {
+    for (int i = 0; i < NUM_D_CORES; ++i)
+    {
         uint8_t expected_limit;
-        if (i == (NUM_D_CORES - 1)) {
+        if (i == (NUM_D_CORES - 1))
+        {
             expected_limit = TEST_NOMINAL_PERF + 1;
-        } else {
+        }
+        else
+        {
             expected_limit = TEST_NOMINAL_PERF;
         }
         assert_int_equal(s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit, expected_limit);
@@ -644,7 +657,6 @@ POWER_TEST(distribution_distribute_resources__min_perf_for_one_resources_for_nom
            distribution_dist_setup,
            distribution_dist_teardown)
 {
-    
 
     static_assert(NUM_D_CORES >= 2, "Unsafe use of NUM_D_CORES - 2 in this function");
     // use the default setup to ensure all cores get nominal, but subtract one +
@@ -656,15 +668,21 @@ POWER_TEST(distribution_distribute_resources__min_perf_for_one_resources_for_nom
     distribute_assert_expectations();
     power_distribution_distribute_resources(&s_runconfig, &s_ctrl_loop_detail);
     // at the same priority, no cores will get nominal
-    for (int i = 0; i < NUM_D_CORES; ++i) {
+    for (int i = 0; i < NUM_D_CORES; ++i)
+    {
         uint8_t expected_limit;
-        if (i == (NUM_D_CORES - 1)) {
+        if (i == (NUM_D_CORES - 1))
+        {
             // highest throttling priority will be max plimit
             expected_limit = MAX_PLIMIT;
-        } else if (i == (NUM_D_CORES - 2)) {
+        }
+        else if (i == (NUM_D_CORES - 2))
+        {
             // next highest throttling pri will be nominal + 1
             expected_limit = TEST_NOMINAL_PERF + 1;
-        } else {
+        }
+        else
+        {
             expected_limit = TEST_NOMINAL_PERF;
         }
         assert_int_equal(s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit, expected_limit);
@@ -681,18 +699,21 @@ POWER_TEST(distribution_distribute_resources__resources_for_1_turbo, distributio
 {
     // use the default setup to ensure all cores get nominal
     setup_single_priority();
-    for (int j = 0; j < NUM_D_CORES; ++j) {
+    for (int j = 0; j < NUM_D_CORES; ++j)
+    {
         uint32_t resource_to_raise_nominal =
             (PLIMIT_TO_RESOURCES(TEST_NOMINAL_PERF - 1) - PLIMIT_TO_RESOURCES(TEST_NOMINAL_PERF));
         s_ctrl_loop_detail.curr_resources += resource_to_raise_nominal;
         uint8_t expected_plimit = TEST_NOMINAL_PERF;
-        if (j == (NUM_D_CORES - 1)) {
+        if (j == (NUM_D_CORES - 1))
+        {
             // on
             expected_plimit -= 1;
         }
         distribute_assert_expectations();
         power_distribution_distribute_resources(&s_runconfig, &s_ctrl_loop_detail);
-        for (int i = 0; i < NUM_D_CORES; ++i) {
+        for (int i = 0; i < NUM_D_CORES; ++i)
+        {
             assert_int_equal(s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit, expected_plimit);
             assert_true(corebits_is_bit_set(&s_ctrl_loop_detail.plimits_pending, core_numbers[i]));
         }
@@ -702,27 +723,30 @@ POWER_TEST(distribution_distribute_resources__resources_for_1_turbo, distributio
 
 POWER_TEST(distribution_distribute_resources__resources_for_1_turbo__min_plimit, distribution_dist_setup, distribution_dist_teardown)
 {
-    
 
     // setup cores with min plimit less than where we expect the resource availability to allow us to go, but not at 0
-    for (int core = 0; core < NUM_D_CORES; ++core) {
+    for (int core = 0; core < NUM_D_CORES; ++core)
+    {
         s_ctrl_loop_detail.cores.core[core_numbers[core]].min_plimit = TEST_NOMINAL_PERF - 3;
     }
 
     // use the default setup to ensure all cores get nominal
     setup_single_priority();
-    for (int j = 0; j < NUM_D_CORES; ++j) {
+    for (int j = 0; j < NUM_D_CORES; ++j)
+    {
         uint32_t resource_to_raise_nominal =
             (PLIMIT_TO_RESOURCES(TEST_NOMINAL_PERF - 1) - PLIMIT_TO_RESOURCES(TEST_NOMINAL_PERF));
         s_ctrl_loop_detail.curr_resources += resource_to_raise_nominal;
         uint8_t expected_plimit = TEST_NOMINAL_PERF;
-        if (j == (NUM_D_CORES - 1)) {
+        if (j == (NUM_D_CORES - 1))
+        {
             // on
             expected_plimit -= 1;
         }
         distribute_assert_expectations();
         power_distribution_distribute_resources(&s_runconfig, &s_ctrl_loop_detail);
-        for (int i = 0; i < NUM_D_CORES; ++i) {
+        for (int i = 0; i < NUM_D_CORES; ++i)
+        {
             assert_int_equal(s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit, expected_plimit);
             assert_true(corebits_is_bit_set(&s_ctrl_loop_detail.plimits_pending, core_numbers[i]));
         }
@@ -732,7 +756,6 @@ POWER_TEST(distribution_distribute_resources__resources_for_1_turbo__min_plimit,
 
 POWER_TEST(distribution_distribute_resources__resources_for_max_turbo, distribution_dist_setup, distribution_dist_teardown)
 {
-    
 
     setup_single_priority();
     // setup enough resources for all cores to get max perf
@@ -740,7 +763,8 @@ POWER_TEST(distribution_distribute_resources__resources_for_max_turbo, distribut
     distribute_assert_expectations();
     power_distribution_distribute_resources(&s_runconfig, &s_ctrl_loop_detail);
     // at the same priority, no cores will get nominal
-    for (int i = 0; i < NUM_D_CORES; ++i) {
+    for (int i = 0; i < NUM_D_CORES; ++i)
+    {
         assert_int_equal(s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit, MAX_PERF);
         assert_true(corebits_is_bit_set(&s_ctrl_loop_detail.plimits_pending, core_numbers[i]));
     }
@@ -750,7 +774,6 @@ POWER_TEST(distribution_distribute_resources__resources_for_max_turbo, distribut
 
 POWER_TEST(distribution_distribute_resources__resources_for_max_turbo__pstate_forced, distribution_dist_setup, distribution_dist_teardown)
 {
-    
 
     setup_single_priority();
     // set forced knob
@@ -760,10 +783,11 @@ POWER_TEST(distribution_distribute_resources__resources_for_max_turbo__pstate_fo
     distribute_assert_expectations();
     power_distribution_distribute_resources(&s_runconfig, &s_ctrl_loop_detail);
     // at the same priority, no cores will get nominal
-    for (int i = 0; i < NUM_D_CORES; ++i) {
+    for (int i = 0; i < NUM_D_CORES; ++i)
+    {
         // plimit should not have been touched on forced core
         uint8_t expected_plimit = INVALID_PERF;
-        bool expect_bit_set     = false;
+        bool expect_bit_set = false;
         assert_int_equal(s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit, expected_plimit);
         assert_int_equal(corebits_is_bit_set(&s_ctrl_loop_detail.plimits_pending, core_numbers[i]), expect_bit_set);
     }
@@ -771,11 +795,8 @@ POWER_TEST(distribution_distribute_resources__resources_for_max_turbo__pstate_fo
     assert_false(s_ctrl_loop_detail.throttling);
 }
 
-POWER_TEST(distribution_distribute_resources__resources_for_max_turbo__cores_with_min_plimit,
-           distribution_dist_setup,
-           distribution_dist_teardown)
+POWER_TEST(distribution_distribute_resources__resources_for_max_turbo__cores_with_min_plimit, distribution_dist_setup, distribution_dist_teardown)
 {
-    
 
     // setup enough resources for all cores to get max perf
     s_ctrl_loop_detail.curr_resources = PLIMIT_TO_RESOURCES(MAX_PERF) * NUM_D_CORES;
@@ -783,22 +804,24 @@ POWER_TEST(distribution_distribute_resources__resources_for_max_turbo__cores_wit
     // setup two cores with min plimits
     s_ctrl_loop_detail.cores.core[core_numbers[0]].min_plimit = TEST_NOMINAL_PERF;
     // offset resources by amount of min_plimits.
-    s_ctrl_loop_detail.curr_resources -=
-        (PLIMIT_TO_RESOURCES(MAX_PERF) - PLIMIT_TO_RESOURCES(TEST_NOMINAL_PERF));
+    s_ctrl_loop_detail.curr_resources -= (PLIMIT_TO_RESOURCES(MAX_PERF) - PLIMIT_TO_RESOURCES(TEST_NOMINAL_PERF));
 
     s_ctrl_loop_detail.cores.core[core_numbers[1]].min_plimit = TEST_NOMINAL_PERF - 1;
-    s_ctrl_loop_detail.curr_resources -=
-        (PLIMIT_TO_RESOURCES(MAX_PERF) - PLIMIT_TO_RESOURCES(TEST_NOMINAL_PERF - 1));
+    s_ctrl_loop_detail.curr_resources -= (PLIMIT_TO_RESOURCES(MAX_PERF) - PLIMIT_TO_RESOURCES(TEST_NOMINAL_PERF - 1));
 
     setup_single_priority();
     distribute_assert_expectations();
     power_distribution_distribute_resources(&s_runconfig, &s_ctrl_loop_detail);
     // at the same priority, no cores will get nominal
-    for (int i = 0; i < NUM_D_CORES; ++i) {
+    for (int i = 0; i < NUM_D_CORES; ++i)
+    {
         uint8_t expected_plimit = MAX_PERF;
-        if (i == 0) {
+        if (i == 0)
+        {
             expected_plimit = TEST_NOMINAL_PERF;
-        } else if (i == 1) {
+        }
+        else if (i == 1)
+        {
             expected_plimit = TEST_NOMINAL_PERF - 1;
         }
         assert_int_equal(s_ctrl_loop_detail.cores.core[core_numbers[i]].selected_plimit, expected_plimit);
@@ -810,8 +833,8 @@ POWER_TEST(distribution_distribute_resources__resources_for_max_turbo__cores_wit
 
 POWER_TEST(distribution_minimum_plimit_updates__none, distribution_setup, distribution_teardown)
 {
-    
-    const corebits_t nobits                                        = {0};
+
+    const corebits_t nobits = {0};
     s_runconfig.knobs.minimum_plimit_updates = power_loops_minimum_plimit_t_NONE;
     corebits_clear(&s_ctrl_loop_detail.plimits_pending);
     distribute_assert_expectations();
@@ -821,20 +844,23 @@ POWER_TEST(distribution_minimum_plimit_updates__none, distribution_setup, distri
 
 POWER_TEST(distribution_minimum_plimit_updates, distribution_setup, distribution_teardown)
 {
-    
+
     corebits_t allbits = {0};
-    for (int i = 0; i < COREBITS_MAX_BITS; ++i) {
+    for (int i = 0; i < COREBITS_MAX_BITS; ++i)
+    {
         corebits_set_bit(&allbits, i);
     }
 
-    for (int min_plimit = power_loops_minimum_plimit_t_MIN_1; min_plimit <= power_loops_minimum_plimit_t_MIN_128; ++min_plimit) {
+    for (int min_plimit = power_loops_minimum_plimit_t_MIN_1; min_plimit <= power_loops_minimum_plimit_t_MIN_128; ++min_plimit)
+    {
         unsigned count_per_iteration = 1 << (min_plimit - 1); // minimum updates count is 2^(minimum-1)
-        unsigned necessary_iterations = ((NUM_AP_CORES_PER_DIE + count_per_iteration -1) / count_per_iteration);
+        unsigned necessary_iterations = ((NUM_AP_CORES_PER_DIE + count_per_iteration - 1) / count_per_iteration);
 
         s_runconfig.knobs.minimum_plimit_updates = (power_loops_minimum_plimit_t)min_plimit;
         corebits_clear(&s_ctrl_loop_detail.plimits_pending);
         printf("All plimits cycled in %d iterations", necessary_iterations);
-        for (unsigned iterations = 0; iterations < necessary_iterations; iterations++) {
+        for (unsigned iterations = 0; iterations < necessary_iterations; iterations++)
+        {
             assert_false(corebits_is_equal(&s_ctrl_loop_detail.plimits_pending, &allbits));
             distribute_assert_expectations();
             power_distribution_minimum_plimit_updates(&s_runconfig, &s_ctrl_loop_detail);

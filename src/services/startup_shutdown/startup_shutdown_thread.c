@@ -35,7 +35,7 @@
 #define SOS_EVENT_NAME  "SSI flags"
 
 #define PHASE_INDEX_NOT_FOUND (-1)
-#define MS_TO_TX_TICKS(ms)    (((ms)*TX_TIMER_TICKS_PER_SECOND) / 1000)
+#define MS_TO_TX_TICKS(ms)    (((ms) * TX_TIMER_TICKS_PER_SECOND) / 1000)
 /*------------- Typedefs -----------------*/
 typedef struct
 {

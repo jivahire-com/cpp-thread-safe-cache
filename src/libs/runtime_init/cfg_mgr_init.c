@@ -10,7 +10,7 @@
 /*------------- Includes -----------------*/
 #include <config_manager.h>
 #include <config_manager_cli.h>
-#include <fpfw_init.h>         
+#include <fpfw_init.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <variable_services.h>
 
@@ -21,13 +21,11 @@
 FPFW_INIT_COMPONENT(cfg_mgr, FPFW_INIT_DEPENDENCIES("std_io", "dfwk", "var_serv", "hw_ver", "sysinfo"))
 {
     // This struct is only used to initialize a fpfw_cfg_mgr_db_t struct
-    fpfw_cfg_mgr_config_t cfg_mgr_config = {
-        .mission_mode = false,
-        .profile_id = 0,
-        .read_knob_fn = read_knob_from_default_db_cb,
-        .write_knob_fn = update_knob_in_cached_db_cb,
-        .db_ctx = (void*)1
-    };
+    fpfw_cfg_mgr_config_t cfg_mgr_config = {.mission_mode = false,
+                                            .profile_id = 0,
+                                            .read_knob_fn = read_knob_from_default_db_cb,
+                                            .write_knob_fn = update_knob_in_cached_db_cb,
+                                            .db_ctx = (void*)1};
 
     // to do - https://dev.azure.com/ms-tsd/Kingsgate/_git/silibs/pullrequest/221563
     // until then, we will use the following test purpose memory

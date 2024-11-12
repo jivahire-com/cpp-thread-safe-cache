@@ -166,7 +166,7 @@ POWER_TEST(telemetry_message_poll__success, NULL, NULL)
     expect_value(message_success_callback, core_id, TEST_CORE);
     expect_value(message_success_callback, desired_pstate, TEST_DESIRED);
     expect_value(message_success_callback, current_pstate, TEST_SELECTED);
-    
+
     power_telemetry_message_poll(message_update_callback, message_success_callback);
 }
 
@@ -185,8 +185,8 @@ POWER_TEST(telemetry_message_poll__success_not_expected__invalid_core, NULL, NUL
 
 POWER_TEST(telemetry_message_poll__update, NULL, NULL)
 {
-#define TEST_THROTTLE 0x5
-#define TEST_BOOST    0x7
+#define TEST_THROTTLE  0x5
+#define TEST_BOOST     0x7
 #define TEST_BASE_PERF 0x11
 
     plimit_telem_msg_t plimit_msg;
@@ -207,6 +207,6 @@ POWER_TEST(telemetry_message_poll__update, NULL, NULL)
     expect_value(message_update_callback, base_pstate, TEST_BASE_PERF);
     expect_value(message_update_callback, throttle_pri, TEST_THROTTLE);
     expect_value(message_update_callback, boost_pri, TEST_BOOST);
-    
+
     power_telemetry_message_poll(message_update_callback, message_success_callback);
 }

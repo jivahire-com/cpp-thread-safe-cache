@@ -18,17 +18,17 @@ extern "C" {
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <data_proc_tlm_cmpnt.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
-#include <stdint.h> // for uint32_t, uint64_t, int32_t
+#include <stdint.h>              // for uint32_t, uint64_t, int32_t
 #include <tlm_logger_i.h>
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define TEST_SNSR_ID_0 (0)
-#define TEST_HNF_CHANN_ID_1 (1)
-#define TEST_RAIL_ID_2 (2)
+#define TEST_SNSR_ID_0       (0)
+#define TEST_HNF_CHANN_ID_1  (1)
+#define TEST_RAIL_ID_2       (2)
 #define TEST_DIMM_CHANN_ID_3 (3)
-#define TEST_MPAM_ID_4 (4)
-#define TEST_CORE_ID_5 (5)
+#define TEST_MPAM_ID_4       (4)
+#define TEST_CORE_ID_5       (5)
 
 /*------------- Typedefs -----------------*/
 

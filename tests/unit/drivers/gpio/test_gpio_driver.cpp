@@ -11,15 +11,15 @@
 #include <CMockaWrapper.h> // for assert_int_equal, Cmock...
 
 extern "C" {
-#include <DfwkCommon.h>     // for DfwkAsyncRequestInitialize, DfwkAsyncRe...
-#include <DfwkSchedule.h>   // for DFWK_SCHEDULE
-#include <FpFwUtils.h>      // for FPFW_UNUSED
-#include <gpio.h>           // for gpio_request_type_idx, gpio_request_t
-#include <gpio_lib.h>       // for MSCP_EXP_GPIO_4, MSCP_EXP_GPIO_6, GPIO_C...
-#include <interrupts.h>     // for _SCP_IRQn_t
-#include <kng_error.h>      // for KNG_E_INVALIDARG, KNG_STATUS, KNG_SUCCESS
-#include <stdint.h>         // for uint32_t
-#include <string.h>         // for NULL, memset, strcmp
+#include <DfwkCommon.h>   // for DfwkAsyncRequestInitialize, DfwkAsyncRe...
+#include <DfwkSchedule.h> // for DFWK_SCHEDULE
+#include <FpFwUtils.h>    // for FPFW_UNUSED
+#include <gpio.h>         // for gpio_request_type_idx, gpio_request_t
+#include <gpio_lib.h>     // for MSCP_EXP_GPIO_4, MSCP_EXP_GPIO_6, GPIO_C...
+#include <interrupts.h>   // for _SCP_IRQn_t
+#include <kng_error.h>    // for KNG_E_INVALIDARG, KNG_STATUS, KNG_SUCCESS
+#include <stdint.h>       // for uint32_t
+#include <string.h>       // for NULL, memset, strcmp
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -131,8 +131,10 @@ TEST_FUNCTION(test_gpio_isr, nullptr, nullptr)
     will_return(__wrap_gpio_get_input, interrupt_status);
     expect_function_call(__wrap_gpio_get_input);
 
-    gpio_request_t request_4_2 = {.Header = {.RequestType = GPIO_REQUEST_ISR_ASYNC}, .gpio_pin_id = GPIO_CTRL_PIN_ID(MSCP_EXP_GPIO_4, 2)};
-    gpio_request_t request_4_1 = {.Header = {.RequestType = GPIO_REQUEST_ISR_ASYNC}, .gpio_pin_id = GPIO_CTRL_PIN_ID(MSCP_EXP_GPIO_4, 1)};
+    gpio_request_t request_4_2 = {.Header = {.RequestType = GPIO_REQUEST_ISR_ASYNC},
+                                  .gpio_pin_id = GPIO_CTRL_PIN_ID(MSCP_EXP_GPIO_4, 2)};
+    gpio_request_t request_4_1 = {.Header = {.RequestType = GPIO_REQUEST_ISR_ASYNC},
+                                  .gpio_pin_id = GPIO_CTRL_PIN_ID(MSCP_EXP_GPIO_4, 1)};
     gpio_request_t request_null = {.Header = {.RequestType = GPIO_REQUEST_NULL}, .gpio_pin_id = 0};
 
     // Get GPIO4:2 request
@@ -197,7 +199,8 @@ TEST_FUNCTION(test_gpio_isr_mask, nullptr, nullptr)
     will_return(__wrap_gpio_get_input, interrupt_status);
     expect_function_call(__wrap_gpio_get_input);
 
-    gpio_request_t request_4_all = {.Header = {.RequestType = GPIO_REQUEST_ISR_ASYNC}, .gpio_pin_id = GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_4, 0xFF)};
+    gpio_request_t request_4_all = {.Header = {.RequestType = GPIO_REQUEST_ISR_ASYNC},
+                                    .gpio_pin_id = GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_4, 0xFF)};
 
     // Get GPIO4:1 request matching with interrupt status
     will_return(__wrap_DfwkQueueDequeueRequest, &request_4_all);
@@ -245,12 +248,14 @@ TEST_FUNCTION(test_gpio_register_deferred_isr, nullptr, nullptr)
     expect_value(__wrap_DfwkInterfaceSendAsync, Request, &gpio_isr_request.Header);
     expect_function_call(__wrap_DfwkInterfaceSendAsync);
 
-    uint32_t result = gpio_register_deferred_isr(&gpio_interface, &gpio_isr_request, GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_4, 1), gpio_isr_callback, &context);
+    uint32_t result =
+        gpio_register_deferred_isr(&gpio_interface, &gpio_isr_request, GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_4, 1), gpio_isr_callback, &context);
     assert_int_equal(result, (uint32_t)KNG_SUCCESS);
 
     // Invalid parameter tests
     gpio_interface.Device = NULL;
-    result = gpio_register_deferred_isr(&gpio_interface, &gpio_isr_request, GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_4, 1), gpio_isr_callback, &context);
+    result =
+        gpio_register_deferred_isr(&gpio_interface, &gpio_isr_request, GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_4, 1), gpio_isr_callback, &context);
     assert_int_equal(result, (uint32_t)KNG_E_HANDLE);
 
     result = gpio_register_deferred_isr(NULL, &gpio_isr_request, GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_4, 1), gpio_isr_callback, &context);
@@ -259,7 +264,8 @@ TEST_FUNCTION(test_gpio_register_deferred_isr, nullptr, nullptr)
     result = gpio_register_deferred_isr(&gpio_interface, NULL, GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_4, 1), gpio_isr_callback, &context);
     assert_int_equal(result, (uint32_t)KNG_E_INVALIDARG);
 
-    result = gpio_register_deferred_isr(&gpio_interface, &gpio_isr_request, GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_4, 1), NULL, &context);
+    result =
+        gpio_register_deferred_isr(&gpio_interface, &gpio_isr_request, GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_4, 1), NULL, &context);
     assert_int_equal(result, (uint32_t)KNG_E_INVALIDARG);
 
     gpio_interface.Device = &gpio_device;

@@ -15,10 +15,10 @@
 #include <cstdint>         // for uint32_t
 
 extern "C" {
-#include <DfwkHost.h>                // for PDFWK_DEVICE_HEADER, PDFWK_SCHE...
-#include <DfwkThreadXHost.h>         // for DFWK_THREADX_HOST
-#include <FpFwUtils.h>               // for FPFW_UNUSED
-#include <MboxPrimitives.h>          // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_I...
+#include <DfwkHost.h>        // for PDFWK_DEVICE_HEADER, PDFWK_SCHE...
+#include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
+#include <FpFwUtils.h>       // for FPFW_UNUSED
+#include <MboxPrimitives.h>  // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_I...
 #include <accel_intr.h>
 #include <fpfw_icc_base.h>           // for fpfw_icc_base_config, fpfw_icc_...
 #include <fpfw_icc_dispatcher.h>     // for fpfw_icc_dispatch_ctx
@@ -80,33 +80,33 @@ idsw_cpu_type_t __wrap_idsw_get_cpu_type(void)
     return mock_type(idsw_cpu_type_t);
 }
 
-int  __wrap_spi_controller_init(uintptr_t spi_master_reg, uint16_t clkDiv)
+int __wrap_spi_controller_init(uintptr_t spi_master_reg, uint16_t clkDiv)
 {
     FPFW_UNUSED(spi_master_reg);
     FPFW_UNUSED(clkDiv);
     return mock_type(int);
 }
 
-int  __wrap_spi_bridge_init(uintptr_t spi_bridge_reg, uint16_t clkDiv)
+int __wrap_spi_bridge_init(uintptr_t spi_bridge_reg, uint16_t clkDiv)
 {
     FPFW_UNUSED(spi_bridge_reg);
     FPFW_UNUSED(clkDiv);
     return mock_type(int);
 }
 
-int  __wrap_spi_controller_check_errors(uintptr_t spi_master_reg)
+int __wrap_spi_controller_check_errors(uintptr_t spi_master_reg)
 {
     FPFW_UNUSED(spi_master_reg);
     return mock_type(int);
 }
 
-int  __wrap_spi_bridge_check_errors(uintptr_t spi_bridge_reg)
+int __wrap_spi_bridge_check_errors(uintptr_t spi_bridge_reg)
 {
     FPFW_UNUSED(spi_bridge_reg);
     return mock_type(int);
 }
 
-int  __wrap_spi_bridge_clear_error_interrupts(uintptr_t spi_bridge_reg)
+int __wrap_spi_bridge_clear_error_interrupts(uintptr_t spi_bridge_reg)
 {
     FPFW_UNUSED(spi_bridge_reg);
     return mock_type(int);
@@ -117,7 +117,7 @@ fpfw_status_t __wrap_fpfw_mbox_icc_transport_dfwk_device_init(fpfw_mbox_icc_tran
 {
     assert_non_null(cfg);
     assert_non_null(dev);
-    
+
     assert_int_equal(cfg->mbox_dev_cfg.MbxMesgHandlingType, MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME);
     assert_int_equal(cfg->mbox_dev_cfg.MbxImplementation, MBX_IMPL_INTERRUPT);
 
@@ -153,7 +153,7 @@ fpfw_status_t __wrap_fpfw_mbox_icc_transport_dfwk_device_init(fpfw_mbox_icc_tran
     {
         assert_false(0);
     }
-    
+
     return mock_type(fpfw_status_t);
 }
 
@@ -210,7 +210,9 @@ int __wrap_icc_mhu_trans_init(void* p_config_table, uint8_t table_size)
     return mock_type(int);
 }
 
-int32_t __wrap_icc_mhu_transport_dfwk_device_init(icc_mhu_transport_device_t* icc_mhu_dev, DFWK_SCHEDULE* schedule, icc_mhu_transport_config_t* config)
+int32_t __wrap_icc_mhu_transport_dfwk_device_init(icc_mhu_transport_device_t* icc_mhu_dev,
+                                                  DFWK_SCHEDULE* schedule,
+                                                  icc_mhu_transport_config_t* config)
 {
     FPFW_UNUSED(icc_mhu_dev);
     FPFW_UNUSED(schedule);
@@ -224,7 +226,6 @@ int32_t __wrap_icc_mhu_trans_dfwk_interface_init(icc_mhu_transport_device_t* icc
     FPFW_UNUSED(p_interface);
     return mock_type(int32_t);
 }
-
 
 /*------------- Test cases ----------------*/
 
@@ -357,7 +358,6 @@ TEST_FUNCTION(test_icc_sdm_mbx_init__fail2, nullptr, nullptr)
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_FAIL);
-
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_sdm_mbx.init_fn();
@@ -523,7 +523,6 @@ TEST_FUNCTION(test_icc_cded_mbx_init__fail2, nullptr, nullptr)
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_FAIL);
-
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_cded_mbx.init_fn();
@@ -743,7 +742,7 @@ TEST_FUNCTION(test_icc_mhu_mscp2tfa_if_scp_success, nullptr, nullptr)
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     will_return(__wrap_icc_mhu_transport_dfwk_device_init, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
     will_return(__wrap_icc_mhu_trans_dfwk_interface_init, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
-    
+
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_mscp2tfa_if.init_fn();
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
@@ -810,7 +809,5 @@ TEST_FUNCTION(test_icc_mhu_mscp2mscp_success, nullptr, nullptr)
     fpfw_init_result_t result = _fpfw_component_icc_mscp2mscp.init_fn();
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
     assert_non_null(result.associated_handle);
-
 }
-
 }

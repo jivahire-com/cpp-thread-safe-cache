@@ -198,8 +198,8 @@ TEST_FUNCTION(test_request_dispatch_write_read_entry, fw_fifo_setup, fw_fifo_tea
     memset(src_data, ENTRY_VALUE, PVT_TEMP_FIFO_ENTRY_SIZE_BYTES);
     memset(fifo_mem.pvt_temp_fifo, 0x00, sizeof(fifo_mem.pvt_temp_fifo));
 
-    pvt_temp_fifo_read_reg = (uint32_t)(fifo_mem.pvt_temp_fifo  + FIFO_TIMESTAMP_SIZE + PVT_TEMP_FIFO_ENTRY_SIZE_BYTES);
-    pvt_temp_fifo_write_reg = (uint32_t)(fifo_mem.pvt_temp_fifo  + FIFO_TIMESTAMP_SIZE + PVT_TEMP_FIFO_ENTRY_SIZE_BYTES);
+    pvt_temp_fifo_read_reg = (uint32_t)(fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE + PVT_TEMP_FIFO_ENTRY_SIZE_BYTES);
+    pvt_temp_fifo_write_reg = (uint32_t)(fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE + PVT_TEMP_FIFO_ENTRY_SIZE_BYTES);
 
     assert_true(hw_fifo_is_empty(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD));
 

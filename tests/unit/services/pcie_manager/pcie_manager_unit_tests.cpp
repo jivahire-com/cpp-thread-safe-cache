@@ -13,13 +13,14 @@
 #include <cstdint>         // IWYU pragma: keep
 
 extern "C" {
+#include "pcie_mocks.h"
+
 #include <DfwkPtrTypes.h>          // for PDFWK_SCHEDULE
 #include <errno.h>                 // for EINVAL
 #include <error_handler.h>         // for set_error_handler_return
 #include <kng_soc_constants.h>     // for RPSS0
 #include <pcie_dfwk.h>             // for pciess_device_interface_t, pciess_dev...
 #include <pcie_manager_i.h>        // for rpss_req_completion_cb, send_start_li...
-#include "pcie_mocks.h"
 #include <pcie_rp_event_handler.h> // for process_wait_for_event_data
 #include <scp_pcie_manager.h>      // for scp_pcie_initialize, pcie_manager_con...
 #include <silibs_kng_soc.h>

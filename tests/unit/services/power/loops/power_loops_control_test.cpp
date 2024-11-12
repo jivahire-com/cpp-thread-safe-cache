@@ -503,7 +503,7 @@ POWER_TEST(control_collect_inputs_handler__signal_entry, NULL, NULL)
     memset(&p_ctrl_loop->local.pri_counts, 0, sizeof(p_ctrl_loop->local.pri_counts));
     // put a value into the boost count data to prove it get's cleared
     p_ctrl_loop->local.pri_counts.required_for_boost[0][0] = INVALID_COUNT_DATA;
-    p_ctrl_loop->local.pri_counts.required_for_boost[NOMINAL_PLIMIT-1][VM_BOOST_COUNT-1] = INVALID_COUNT_DATA;
+    p_ctrl_loop->local.pri_counts.required_for_boost[NOMINAL_PLIMIT - 1][VM_BOOST_COUNT - 1] = INVALID_COUNT_DATA;
 
     // define boost priority for core
     p_ctrl_loop->cores.core[DEFAULT_CORE_ZERO].current_boost_priority = TEST_BOOST_PRI;

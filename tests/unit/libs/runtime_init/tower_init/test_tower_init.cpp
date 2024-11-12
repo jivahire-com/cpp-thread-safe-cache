@@ -55,7 +55,7 @@ TEST_FUNCTION(test_tower_init, nullptr, nullptr)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
-    
+
     // Setting up the ICC flow
     icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
 

@@ -4,12 +4,12 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkHost.h>                // for DfwkDeviceInitialize
-#include <DfwkStatus.h>              // for DFWK_SUCCESS
-#include <DfwkThreadXHost.h>         // for PDFWK_THREADX_HOST
+#include <DfwkHost.h>        // for DfwkDeviceInitialize
+#include <DfwkStatus.h>      // for DFWK_SUCCESS
+#include <DfwkThreadXHost.h> // for PDFWK_THREADX_HOST
 #include <FpFwAssert.h>
 #include <MboxPrimitives.h>          // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_I...
-#include <MboxReg.h>          // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_I...
+#include <MboxReg.h>                 // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_I...
 #include <fpfw_icc_base.h>           // for fpfw_icc_base_init, fpfw_icc_ba...
 #include <fpfw_icc_base_i.h>         // for fpfw_icc_base_ctx_t
 #include <fpfw_icc_dispatcher.h>     // for fpfw_icc_dispatcher_start
@@ -18,7 +18,7 @@
 #include <fpfw_status.h>             // for FPFW_STATUS_SUCCESS, fpfw_status_t
 #include <fpfw_timer_port.h>         // for _fpfw_timer_t
 #include <icc_platform_defines.h>
-#include <idhw.h>                         // for idhw_is_single_die_boot_en
+#include <idhw.h> // for idhw_is_single_die_boot_en
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <interrupts.h>
@@ -31,7 +31,7 @@
 #include <stdbool.h> // for true
 #include <stddef.h>  // for NULL
 #include <stdint.h>  // for uint32_t, uint8_t
-#include <stdio.h>           // for printf, NULL
+#include <stdio.h>   // for printf, NULL
 
 /*-------------- Macros ------------------*/
 #define D2D_MBOX_SPI_CTRL_BASE_ADDR   (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_SPI_CTRL_ADDRESS)
@@ -47,13 +47,13 @@
 
 /**
  * @brief API for D2D mailbox to write to the outgoing mailbox over SPI
- * Current die is the SPI controller, remote die has SPI bridge that converts 
+ * Current die is the SPI controller, remote die has SPI bridge that converts
  * SPI transactions into AHB and deposits the data in remote die's incoming fifo.
  * Current die can only write to it's outgoing mbox registers or sender side mbox
  * registers over SPI but can directly access the incoming mbox data over APB.
- * 
+ *
  * @note typically the registers it writes to are d2d mbx recv push reg
- * 
+ *
  * @param baseAddr register block base address
  * @param regOffset offset of the desired register
  * @param value 2-bit data value to write
@@ -69,9 +69,9 @@ static void SpiControllerWrite32(uint32_t baseAddr, FPFW_MBX_REG_OFFSET regOffse
  * @brief API for D2D mailbox to read it's outgoing mailbox over SPI
  * Current die can only read it's outgoing mbox registers or sender side mbox
  * registers over SPI but can directly access the incoming mbox data over APB.
- * 
+ *
  * @note typically the registers it reads are the d2d mbx recv inst reg
- * 
+ *
  * @param baseAddr register block base address
  * @param regOffset offset of the desired register
  * @return uint32_t 2-bit data value read
@@ -80,18 +80,17 @@ static uint32_t SpiControllerRead32(uint32_t baseAddr, FPFW_MBX_REG_OFFSET regOf
 {
     uint32_t readData = 0;
     uint32_t mbx_reg_addr = baseAddr + regOffset;
-    int status = spi_controller_read_direct_instruction((uintptr_t)D2D_MBOX_SPI_CTRL_BASE_ADDR, mbx_reg_addr, 8,
-                                           &readData);
+    int status = spi_controller_read_direct_instruction((uintptr_t)D2D_MBOX_SPI_CTRL_BASE_ADDR, mbx_reg_addr, 8, &readData);
     FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
     return readData;
 }
 
 /**
- * @brief API to configure & verify spi controller & bridge 
- * 
+ * @brief API to configure & verify spi controller & bridge
+ *
  * @param spi_master_reg base addr of spi controller
- * @param clkDiv 
- * @return int32_t 
+ * @param clkDiv
+ * @return int32_t
  */
 static int32_t SpiControllerBridgeInit(uintptr_t spi_ctrl_addr, uintptr_t spi_bridge_addr, uint16_t clkDiv)
 {
@@ -101,7 +100,7 @@ static int32_t SpiControllerBridgeInit(uintptr_t spi_ctrl_addr, uintptr_t spi_br
     status = spi_bridge_check_errors(spi_bridge_addr);
     if (status != SILIBS_SUCCESS)
     {
-        printf("SPI bridge Init Error. Addr[0x%x]\n",spi_bridge_addr);
+        printf("SPI bridge Init Error. Addr[0x%x]\n", spi_bridge_addr);
         return status;
     }
     spi_bridge_clear_error_interrupts(spi_bridge_addr);
@@ -111,7 +110,7 @@ static int32_t SpiControllerBridgeInit(uintptr_t spi_ctrl_addr, uintptr_t spi_br
     status = spi_controller_check_errors(spi_ctrl_addr);
     if (status != SILIBS_SUCCESS)
     {
-        printf("SPI Controller Init Error. Addr[0x%x]\n",spi_ctrl_addr);
+        printf("SPI Controller Init Error. Addr[0x%x]\n", spi_ctrl_addr);
     }
     return status;
 }
@@ -127,24 +126,26 @@ FPFW_INIT_COMPONENT(icc_d2dmbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
     //! Statics declarations required for mailbox primitive
     static struct _fpfw_timer_t d2d_timer[ICC_MAX_ASYNC_REQ_TYPE] = {};
     static fpfw_mbox_icc_transport_config_t d2d_cfg = {
-        .mbox_dev_cfg = {.MbxFifoDepth = D2D_MBX_FIFO_DEPTH, //! 16
-                         .MbxMesgHandlingType = MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME,
-                         .MbxImplementation = MBX_IMPL_POLLING, //! polling to begin with
-                         .MsgSizeBytes = D2D_FIFO_MBOX_MAX_MESG_SIZE_BYTES, //! each message is 64 bytes as of now
-                         .MbxBaseAddr = MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_MBOX_ADDRESS,
-                         .MbxSendBaseAddr = MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_MBOX_ADDRESS,
-                         .MbxRecvBaseAddr = MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_MBOX_ADDRESS,
-                         .RemoteMbxInstRegAccessRW0Clear = true,
-        },
+        .mbox_dev_cfg =
+            {
+                .MbxFifoDepth = D2D_MBX_FIFO_DEPTH, //! 16
+                .MbxMesgHandlingType = MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME,
+                .MbxImplementation = MBX_IMPL_POLLING,             //! polling to begin with
+                .MsgSizeBytes = D2D_FIFO_MBOX_MAX_MESG_SIZE_BYTES, //! each message is 64 bytes as of now
+                .MbxBaseAddr = MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_MBOX_ADDRESS,
+                .MbxSendBaseAddr = MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_MBOX_ADDRESS,
+                .MbxRecvBaseAddr = MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_MBOX_ADDRESS,
+                .RemoteMbxInstRegAccessRW0Clear = true,
+            },
         .timer_period = KG_D2D_MBOX_POLL_INTERVAL_NS,
         .timer_handle = {&d2d_timer[ICC_MBX_ASYNC_SEND], &d2d_timer[ICC_MBX_ASYNC_RECV]},
     };
 
-    if  (idsw_get_cpu_type() == CPU_SCP)
+    if (idsw_get_cpu_type() == CPU_SCP)
     {
         //! For SCP core, set the d2d mbox as interrupt based, intr only available for SCP
         d2d_cfg.mbox_dev_cfg.MbxImplementation = MBX_IMPL_INTERRUPT; //! polling to begin with
-        d2d_cfg.mbx_irq_num = RMSS_D2D_SCP_MB_HW_INT; //! HW_INT_MSCP_PEER_SCP_MB_INT = 226
+        d2d_cfg.mbx_irq_num = RMSS_D2D_SCP_MB_HW_INT;                //! HW_INT_MSCP_PEER_SCP_MB_INT = 226
         //! set the SPI read/write APIs for d2d in mbox primitives config
         d2d_cfg.mbox_dev_cfg.RemoteRegWrite32 = SpiControllerWrite32;
         d2d_cfg.mbox_dev_cfg.RemoteRegRead32 = SpiControllerRead32;
@@ -156,7 +157,7 @@ FPFW_INIT_COMPONENT(icc_d2dmbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
             return (fpfw_init_result_t){status, NULL};
         }
     }
-    
+
     //! Statics declarations required for mailbox transport driver
     static fpfw_mbox_icc_transport_device_t d2d_mbx_dev = {};
     static fpfw_mbox_icc_transport_intrf_t d2d_mbx_intf = {};

@@ -8,20 +8,19 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkCommon.h>              // for PDFWK_DEVICE_HEADER, DFWK_ASYNC_REQUEST_HEADER, PDFWK_SCHEDULE
-#include <DfwkStatus.h>              // for DFWK_SUCCESS
-#include <FpFwCMocka.h>              // IWYU pragma: keep
+#include <DfwkCommon.h> // for PDFWK_DEVICE_HEADER, DFWK_ASYNC_REQUEST_HEADER, PDFWK_SCHEDULE
+#include <DfwkStatus.h> // for DFWK_SUCCESS
+#include <FpFwCMocka.h> // IWYU pragma: keep
 #include <FpFwUtils.h>
 #include <atu_lib.h>
-#include <cmocka.h>                  // IWYU pragma: keep
-#include <dmac.h>                    // for dmac_cfg_t
-#include <fpfw_init.h>               // for fpfw_init_component_t, fpfw_init_get_handle
-#include <idsw_kng.h>                // for idsw_get_cpu_type
+#include <cmocka.h>    // IWYU pragma: keep
+#include <dmac.h>      // for dmac_cfg_t
+#include <fpfw_init.h> // for fpfw_init_component_t, fpfw_init_get_handle
+#include <idsw_kng.h>  // for idsw_get_cpu_type
 #include <nvic.h>
 #include <silibs_status.h>
 #include <stddef.h>
-#include <tx_api.h>                  // for UINT, ULONG, TX_QUEUE, TX_SUCCESS
-
+#include <tx_api.h> // for UINT, ULONG, TX_QUEUE, TX_SUCCESS
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -43,7 +42,7 @@ DFWK_REQUEST_DISPATCH_SYNC s_dispatch_routine_sync = NULL;
 //
 // Mocks
 //
-int __wrap_atu_translate_address(atu_id_t atu_id, uint64_t ap_addr, uint32_t *mscp_addr)
+int __wrap_atu_translate_address(atu_id_t atu_id, uint64_t ap_addr, uint32_t* mscp_addr)
 {
     FPFW_UNUSED(atu_id);
     FPFW_UNUSED(ap_addr);
@@ -202,7 +201,7 @@ UINT __wrap__txe_timer_create(TX_TIMER* timer_ptr,
     return mock_type(UINT);
 }
 
-UINT  __wrap__txe_timer_activate(TX_TIMER *timer_ptr)
+UINT __wrap__txe_timer_activate(TX_TIMER* timer_ptr)
 {
     FPFW_UNUSED(timer_ptr);
     return mock_type(UINT);
@@ -248,7 +247,7 @@ void __wrap_set_dmac_cfg_reg(uintptr_t dmac_base_addr, uint64_t val)
 
 FPFW_LOCK_STATE __wrap_FpFwLockAcquire(PFPFW_LOCK Lock)
 {
-    if(g_FpFwLockAcquire_check_signature)
+    if (g_FpFwLockAcquire_check_signature)
     {
         check_expected(Lock->Signature);
     }
@@ -273,7 +272,7 @@ void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
     return mock_type(void*);
 }
 
-silibs_status_t __wrap_dmac_start_single_block_transfer(uintptr_t dmac_base_addr, dmac_cfg_t *cfg)
+silibs_status_t __wrap_dmac_start_single_block_transfer(uintptr_t dmac_base_addr, dmac_cfg_t* cfg)
 {
     check_expected(dmac_base_addr);
     check_expected(cfg->dmac_dest_tr_width);

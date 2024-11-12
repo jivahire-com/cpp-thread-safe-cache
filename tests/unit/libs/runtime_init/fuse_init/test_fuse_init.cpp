@@ -74,7 +74,7 @@ TEST_FUNCTION(test_fuse_svc_init, NULL, NULL)
     expect_function_call(__wrap_fpfw_init_get_handle);
     expect_value(__wrap_fuse_init, icc_base_ctx, dummy_icc_hspmbx_ctx);
     will_return(__wrap_platform_fuse_override, CLI_SUCCESS);
-    expect_value(__wrap_platform_fuse_distribution,stage,0);
+    expect_value(__wrap_platform_fuse_distribution, stage, 0);
     will_return(__wrap_platform_fuse_distribution, CLI_SUCCESS);
     _fpfw_component_fuse_svc.init_fn();
 }

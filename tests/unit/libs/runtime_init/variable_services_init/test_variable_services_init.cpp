@@ -11,8 +11,8 @@
 #include <CMockaWrapper.h> // for CmockaWrapperTest, TEST_FUNCTION, che...
 
 extern "C" {
-#include <FpFwUtils.h>               // for FPFW_UNUSED
-#include <fpfw_icc_base.h>   // for fpfw_icc_base_init, fpfw_icc_ba...
+#include <FpFwUtils.h>     // for FPFW_UNUSED
+#include <fpfw_icc_base.h> // for fpfw_icc_base_init, fpfw_icc_ba...
 #include <fpfw_init.h>
 #include <idhw.h>
 #include <stdint.h>

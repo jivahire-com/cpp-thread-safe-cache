@@ -12,8 +12,8 @@
 #include <cstdint>         // IWYU pragma: keep
 #include <startup_shutdown_init.h>
 extern "C" {
-#include <fpfw_init.h>
 #include <FpFwUtils.h> // for FPFW_UNUSED
+#include <fpfw_init.h>
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/

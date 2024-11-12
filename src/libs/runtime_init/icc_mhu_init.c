@@ -124,7 +124,7 @@ static icc_mhu_configuration_t d0_icc_mhu_scp_config[] = {
     },
     // MCP TO SCP (SCP Receive) Message Configuration
     {
-        .channel_id = MHU_INTERFACE_ID(MCP_LOCAL,SCP_LOCAL),
+        .channel_id = MHU_INTERFACE_ID(MCP_LOCAL, SCP_LOCAL),
         .icc_channel_info =
             {
                 .protocol_type = ICC_PROTOCOL_TYPE_STANDARD,
@@ -228,7 +228,7 @@ static icc_mhu_configuration_t d1_icc_mhu_scp_config[] = {
     },
     // MCP TO SCP (SCP Receive) Message Configuration
     {
-        .channel_id = MHU_INTERFACE_ID(MCP_LOCAL,SCP_LOCAL),
+        .channel_id = MHU_INTERFACE_ID(MCP_LOCAL, SCP_LOCAL),
         .icc_channel_info =
             {
                 .protocol_type = ICC_PROTOCOL_TYPE_STANDARD,
@@ -377,16 +377,19 @@ static icc_mhu_configuration_t* get_config_table(KNG_DIE_ID die, idsw_cpu_type_t
         {
             config = d0_icc_mhu_scp_config;
         }
-        else {
+        else
+        {
             config = d0_icc_mhu_mcp_config;
         }
     }
-    else {
+    else
+    {
         if (cpu == CPU_SCP)
         {
             config = d1_icc_mhu_scp_config;
         }
-        else {
+        else
+        {
             config = d1_icc_mhu_mcp_config;
         }
     }
@@ -403,16 +406,19 @@ static uint32_t get_num_configs(KNG_DIE_ID die, idsw_cpu_type_t cpu)
         {
             num_configs = sizeof(d0_icc_mhu_scp_config) / sizeof(icc_mhu_configuration_t);
         }
-        else {
+        else
+        {
             num_configs = sizeof(d0_icc_mhu_mcp_config) / sizeof(icc_mhu_configuration_t);
         }
     }
-    else {
+    else
+    {
         if (cpu == CPU_SCP)
         {
             num_configs = sizeof(d1_icc_mhu_scp_config) / sizeof(icc_mhu_configuration_t);
         }
-        else {
+        else
+        {
             num_configs = sizeof(d1_icc_mhu_mcp_config) / sizeof(icc_mhu_configuration_t);
         }
     }
@@ -421,12 +427,11 @@ static uint32_t get_num_configs(KNG_DIE_ID die, idsw_cpu_type_t cpu)
 
 /*------------- Functions ----------------*/
 
-
 /**
  * This is required due to dependencies in the shared ICC MHU library, that requires the
- * entire configuration to be setup. 
+ * entire configuration to be setup.
  * @TODO: Look into only needing to initialize the MHUs use at each device or interface
- *        initialization or open. 
+ *        initialization or open.
  */
 FPFW_INIT_COMPONENT(mhu_trans, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc"))
 {
@@ -440,7 +445,7 @@ FPFW_INIT_COMPONENT(mhu_trans, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc
 //
 // This section will initialize each MHU channel (sending and receiving combine) DFWK Device,
 // the Interface, and the ICC Base Context for each channel.
-// 
+//
 
 FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "mhu_trans"))
 {
@@ -461,7 +466,10 @@ FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "mhu_trans")
     };
 
     // Initialize the driver framework device
-    fpfw_status_t status = icc_mhu_transport_dfwk_device_init(&s_icc_mhu_dev_mscp_tfa, &((PDFWK_THREADX_HOST)fpfw_init_get_handle("dfwk"))->Schedule, &config);
+    fpfw_status_t status =
+        icc_mhu_transport_dfwk_device_init(&s_icc_mhu_dev_mscp_tfa,
+                                           &((PDFWK_THREADX_HOST)fpfw_init_get_handle("dfwk"))->Schedule,
+                                           &config);
     if (FPFW_STATUS_FAILED(status))
     {
         return (fpfw_init_result_t){status, NULL};
@@ -493,13 +501,17 @@ FPFW_INIT_COMPONENT(icc_mscp2mscp, FPFW_INIT_DEPENDENCIES("dfwk", "mhu_trans"))
         config.send_core_2_core_id = MHU_INTERFACE_ID(SCP_LOCAL, MCP_LOCAL);
         config.receive_core_2_core_id = MHU_INTERFACE_ID(MCP_LOCAL, SCP_LOCAL);
     }
-    else {
+    else
+    {
         config.send_core_2_core_id = MHU_INTERFACE_ID(MCP_LOCAL, SCP_LOCAL);
         config.receive_core_2_core_id = MHU_INTERFACE_ID(SCP_LOCAL, MCP_LOCAL);
     }
 
     // Initialize the driver framework device
-    fpfw_status_t status = icc_mhu_transport_dfwk_device_init(&s_icc_mhu_dev_mscp_mscp, &((PDFWK_THREADX_HOST)fpfw_init_get_handle("dfwk"))->Schedule, &config);
+    fpfw_status_t status =
+        icc_mhu_transport_dfwk_device_init(&s_icc_mhu_dev_mscp_mscp,
+                                           &((PDFWK_THREADX_HOST)fpfw_init_get_handle("dfwk"))->Schedule,
+                                           &config);
     if (FPFW_STATUS_FAILED(status))
     {
         return (fpfw_init_result_t){status, NULL};

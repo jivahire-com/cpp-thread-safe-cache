@@ -61,7 +61,6 @@ static void print_build_info()
     CRITICAL_PRINT("SDM tag " SDM_DESCRIBE "\n");
     CRITICAL_PRINT("SDM Commit " SDM_LAST_COMMIT_DESCRIBE "\n");
 
-
     CRITICAL_PRINT("----------------------------------------------------------------\n");
 }
 

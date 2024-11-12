@@ -36,7 +36,6 @@ bool snsr_fifo_mock_use_real_mmio = false;
 
 sensor_fifo_mem_t fifo_mem;
 
-
 sensor_fifo_device_properties_t test_fifo_properties[DEVICE_FIFO_MAX_ID] = {
     [DEVICE_FIFO_PSTATE_TLM_HW_PROD] =
         {
@@ -140,8 +139,6 @@ sensor_fifo_device_properties_t test_fifo_properties[DEVICE_FIFO_MAX_ID] = {
             .name = "VR Current Fifo",
         },
 };
-
-
 
 uint32_t pstate_fifo_ctrl_reg = 0;
 uint32_t msg_fifo_ctrl_reg = 0;

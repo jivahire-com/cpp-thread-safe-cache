@@ -4,12 +4,12 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkHost.h>                // for DfwkDeviceInitialize
-#include <DfwkStatus.h>              // for DFWK_SUCCESS
-#include <DfwkThreadXHost.h>         // for PDFWK_THREADX_HOST
+#include <DfwkHost.h>        // for DfwkDeviceInitialize
+#include <DfwkStatus.h>      // for DFWK_SUCCESS
+#include <DfwkThreadXHost.h> // for PDFWK_THREADX_HOST
 #include <FpFwAssert.h>
 #include <MboxPrimitives.h>          // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_I...
-#include <MboxReg.h>          // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_I...
+#include <MboxReg.h>                 // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_I...
 #include <fpfw_icc_base.h>           // for fpfw_icc_base_init, fpfw_icc_ba...
 #include <fpfw_icc_base_i.h>         // for fpfw_icc_base_ctx_t
 #include <fpfw_icc_dispatcher.h>     // for fpfw_icc_dispatcher_start
@@ -18,7 +18,7 @@
 #include <fpfw_status.h>             // for FPFW_STATUS_SUCCESS, fpfw_status_t
 #include <fpfw_timer_port.h>         // for _fpfw_timer_t
 #include <icc_platform_defines.h>
-#include <idhw.h>                         // for idhw_is_single_die_boot_en
+#include <idhw.h> // for idhw_is_single_die_boot_en
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <interrupts.h>
@@ -27,7 +27,7 @@
 #include <stdbool.h> // for true
 #include <stddef.h>  // for NULL
 #include <stdint.h>  // for uint32_t, uint8_t
-#include <stdio.h>           // for printf, NULL
+#include <stdio.h>   // for printf, NULL
 
 /*-------------- Macros ------------------*/
 

@@ -154,14 +154,14 @@ nvic_status_t __wrap_nvic_irq_enable(uint32_t irq_num)
     return (NVIC_STATUS_SUCCESS);
 }
 
-void __wrap_ddr_i3c_interface_set_instance(i3c_instance_t *instance_0, i3c_instance_t *instance_1)
+void __wrap_ddr_i3c_interface_set_instance(i3c_instance_t* instance_0, i3c_instance_t* instance_1)
 {
     check_expected_ptr(instance_0);
     check_expected_ptr(instance_1);
     function_called();
 }
 
-int32_t __wrap_ddr_i3c_interface_power_up_pmic(i3c_instance_t *instance, i3c_cmd_t *s_i3c_cmd)
+int32_t __wrap_ddr_i3c_interface_power_up_pmic(i3c_instance_t* instance, i3c_cmd_t* s_i3c_cmd)
 {
     FPFW_UNUSED(s_i3c_cmd);
     check_expected_ptr(instance);
@@ -169,7 +169,7 @@ int32_t __wrap_ddr_i3c_interface_power_up_pmic(i3c_instance_t *instance, i3c_cmd
     return 0;
 }
 
-int32_t __wrap_ddr_i3c_interface_power_up_pmic_on(i3c_instance_t *instance, i3c_cmd_t *s_i3c_cmd)
+int32_t __wrap_ddr_i3c_interface_power_up_pmic_on(i3c_instance_t* instance, i3c_cmd_t* s_i3c_cmd)
 {
     FPFW_UNUSED(s_i3c_cmd);
     check_expected_ptr(instance);
@@ -177,7 +177,7 @@ int32_t __wrap_ddr_i3c_interface_power_up_pmic_on(i3c_instance_t *instance, i3c_
     return 0;
 }
 
-int32_t __wrap_ddr_i3c_interface_read_dimms_detected(i3c_cmd_t *s_i3c_cmd, uint32_t *ddrss_en)
+int32_t __wrap_ddr_i3c_interface_read_dimms_detected(i3c_cmd_t* s_i3c_cmd, uint32_t* ddrss_en)
 {
     FPFW_UNUSED(s_i3c_cmd);
     FPFW_UNUSED(ddrss_en);
@@ -186,7 +186,7 @@ int32_t __wrap_ddr_i3c_interface_read_dimms_detected(i3c_cmd_t *s_i3c_cmd, uint3
     return 0;
 }
 
-int32_t __wrap_ddr_i3c_interface_read_dimm_capacity(i3c_cmd_t *s_i3c_cmd, uint8_t ddrss_index, uint8_t *data, uint8_t *dimm_sku)
+int32_t __wrap_ddr_i3c_interface_read_dimm_capacity(i3c_cmd_t* s_i3c_cmd, uint8_t ddrss_index, uint8_t* data, uint8_t* dimm_sku)
 {
     FPFW_UNUSED(s_i3c_cmd);
     FPFW_UNUSED(ddrss_index);
@@ -331,7 +331,6 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_master_set_aasa_fail, setup_svp
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c0_isr);
 
-
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_I3C_CTRL_0_INT);
@@ -367,7 +366,6 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_master_set_aasa_fail, setup_svp
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_1_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c1_isr);
-
 
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_1_INT);
@@ -453,7 +451,6 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0, setup_svp_platform, setup_undefined
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c0_isr);
 
-
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_I3C_CTRL_0_INT);
@@ -489,7 +486,6 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0, setup_svp_platform, setup_undefined
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_1_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c1_isr);
-
 
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_1_INT);
@@ -586,7 +582,6 @@ TEST_FUNCTION(test_i3c_controller_svp_die_1, setup_svp_platform, setup_undefined
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c0_isr);
 
-
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_I3C_CTRL_0_INT);
@@ -622,7 +617,6 @@ TEST_FUNCTION(test_i3c_controller_svp_die_1, setup_svp_platform, setup_undefined
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_1_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c1_isr);
-
 
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_1_INT);
@@ -719,7 +713,6 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_0, setup_fpga_platform, setup_undefin
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c0_isr);
 
-
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_I3C_CTRL_0_INT);
@@ -755,7 +748,6 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_0, setup_fpga_platform, setup_undefin
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_1_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c1_isr);
-
 
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_1_INT);
@@ -847,7 +839,6 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_0, setup_fpga_rvp_platform, setup
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c0_isr);
 
-
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_I3C_CTRL_0_INT);
@@ -883,7 +874,6 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_0, setup_fpga_rvp_platform, setup
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_1_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c1_isr);
-
 
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_1_INT);
@@ -985,7 +975,6 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_1, setup_fpga_platform, setup_undefin
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c0_isr);
 
-
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_I3C_CTRL_0_INT);
@@ -1021,7 +1010,6 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_1, setup_fpga_platform, setup_undefin
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_1_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c1_isr);
-
 
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_1_INT);
@@ -1112,7 +1100,6 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_1, setup_fpga_rvp_platform, setup
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c0_isr);
 
-
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_0_INT);
     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_I3C_CTRL_0_INT);
@@ -1148,7 +1135,6 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_1, setup_fpga_rvp_platform, setup
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_I3C_CTRL_1_INT);
     expect_value(__wrap_nvic_irq_set_isr_with_param, isr, (FPFwCoreInterruptHandler)i3c1_isr);
-
 
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_I3C_CTRL_1_INT);

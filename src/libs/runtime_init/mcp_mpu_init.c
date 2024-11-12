@@ -4,7 +4,7 @@
  */
 
 /*------------- Includes -----------------*/
-#include <fpfw_init.h>  // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
+#include <fpfw_init.h> // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
 #include <mpu.h>
 #include <silibs_mcp_exp_top_regs.h>
 #include <silibs_mcp_top_regs.h>

@@ -18,11 +18,11 @@
 #include <corebits.h>
 #include <fpfw_init.h> // for fpfw_init_get_handle, FPFW_INIT_S...
 #include <idhw.h>
-#include <idsw.h>      // for idsw_get_die_id
+#include <idsw.h> // for idsw_get_die_id
 #include <idsw_kng.h>
 #include <kng_soc_constants.h> // for NUM_AP_CORES_PER_DIE
 #include <platform_core_config.h>
-#include <power_init.h>        // for power_init, power_interface_init
+#include <power_init.h> // for power_init, power_interface_init
 #include <silibs_scp_exp_top_regs.h>
 #include <silibs_scp_top_regs.h>
 #include <startup_shutdown.h>
@@ -33,7 +33,9 @@
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc", "gpio_lib", "icc_d2dmbx", "avs0_int", "avs1_int", "avs2_int", "avs3_int", "hw_ver", "cfg_mgr"))
+FPFW_INIT_COMPONENT(
+    pwr_svc,
+    FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc", "gpio_lib", "icc_d2dmbx", "avs0_int", "avs1_int", "avs2_int", "avs3_int", "hw_ver", "cfg_mgr"))
 {
     static power_service_t power_service;
     static power_service_config_t power_config = {
@@ -70,19 +72,49 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc
                 {.flags = VM_FLAGS_DIV2}, /* Vcpu0  */
                 {.flags = VM_FLAGS_NONE}, /* Vsys   */
             },
-        .avs_details = 
-            {{.bus_id = 0, .rail_id = 0,}, // Die0
-                                      {.bus_id = 0, .rail_id = 1,},
-                                      {.bus_id = 1, .rail_id = 0,},
-                                      {.bus_id = 1, .rail_id = 1,},
-                                      {.bus_id = 2, .rail_id = 0,},
-                                      {.bus_id = 2, .rail_id = 1,},
-                                      {.bus_id = 3, .rail_id = 0,},
-                                      {.bus_id = 3, .rail_id = 1,},
-                                      {.bus_id = 0, .rail_id = 0,}, // Die1
-                                      {.bus_id = 0, .rail_id = 1,}},
+        .avs_details = {{
+                            .bus_id = 0,
+                            .rail_id = 0,
+                        }, // Die0
+                        {
+                            .bus_id = 0,
+                            .rail_id = 1,
+                        },
+                        {
+                            .bus_id = 1,
+                            .rail_id = 0,
+                        },
+                        {
+                            .bus_id = 1,
+                            .rail_id = 1,
+                        },
+                        {
+                            .bus_id = 2,
+                            .rail_id = 0,
+                        },
+                        {
+                            .bus_id = 2,
+                            .rail_id = 1,
+                        },
+                        {
+                            .bus_id = 3,
+                            .rail_id = 0,
+                        },
+                        {
+                            .bus_id = 3,
+                            .rail_id = 1,
+                        },
+                        {
+                            .bus_id = 0,
+                            .rail_id = 0,
+                        }, // Die1
+                        {
+                            .bus_id = 0,
+                            .rail_id = 1,
+                        }},
     };
-    static_assert(sizeof(power_config.avs_details) / sizeof(power_avs_bus_rail_t) == MPCL_VR_COUNT, "sizeof power_config.avs_details != MPCL_VR_COUNT");
+    static_assert(sizeof(power_config.avs_details) / sizeof(power_avs_bus_rail_t) == MPCL_VR_COUNT,
+                  "sizeof power_config.avs_details != MPCL_VR_COUNT");
 
     // platform defaults
     power_config.cluster_pex_base = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR;
@@ -132,7 +164,7 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc
     {
         power_config.icc_d2d_ctx = fpfw_init_get_handle("icc_d2dmbx");
     }
-   
+
     power_config.scp_avs_insts[AVS_BUS0] = (scp_avs_interface_t*)fpfw_init_get_handle("avs0_int");
     if (idsw_get_die_id() == DIE_0) // DIE_1 only has one AVSBus.
     {
@@ -141,14 +173,15 @@ FPFW_INIT_COMPONENT(pwr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc
         power_config.scp_avs_insts[AVS_BUS3] = (scp_avs_interface_t*)fpfw_init_get_handle("avs3_int");
         power_config.vr_idx_info.flattened_vr_start_idx = MPCL_VR_VCPU;
         power_config.vr_idx_info.vcpu_idx = MPCL_VR_VCPU;
-        power_config.vr_idx_info.vsys_idx = MPCL_VR_VSYS;       // VSYS is on AVSBus1, rail 0, so index 2 since 2 rails per AVSBus.
-        power_config.num_vr = (MPCL_VR_VCPU1 - MPCL_VR_VCPU);   // 8 VR's on Die0
+        power_config.vr_idx_info.vsys_idx = MPCL_VR_VSYS; // VSYS is on AVSBus1, rail 0, so index 2 since 2 rails per AVSBus.
+        power_config.num_vr = (MPCL_VR_VCPU1 - MPCL_VR_VCPU); // 8 VR's on Die0
     }
-    else {
+    else
+    {
         power_config.vr_idx_info.flattened_vr_start_idx = MPCL_VR_VCPU1;
         power_config.vr_idx_info.vcpu_idx = MPCL_VR_VCPU1;
-        power_config.vr_idx_info.vsys_idx = NO_VSYS;            // No VSYS on Die1
-        power_config.num_vr = (MPCL_VR_COUNT - MPCL_VR_VCPU1);  // 2 VR's on Die1;
+        power_config.vr_idx_info.vsys_idx = NO_VSYS;           // No VSYS on Die1
+        power_config.num_vr = (MPCL_VR_COUNT - MPCL_VR_VCPU1); // 2 VR's on Die1;
     }
     power_init(&power_service, fpfw_init_get_handle((void*)"dfwk"), &power_config);
     pwr_avs_initialize(power_config.scp_avs_insts);

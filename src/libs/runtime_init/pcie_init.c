@@ -76,9 +76,10 @@ FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "v
 
     rpss_to_init &= rpss_mask;
 
-    if ((idsw_get_platform_sdv() == PLATFORM_EMU_1D) || (idsw_get_platform_sdv() == PLATFORM_EMU_1D_8C) || (idsw_get_platform_sdv() == PLATFORM_EMU_2D) || (idsw_get_platform_sdv() == PLATFORM_EMU_2D_8C))
+    if ((idsw_get_platform_sdv() == PLATFORM_EMU_1D) || (idsw_get_platform_sdv() == PLATFORM_EMU_1D_8C) ||
+        (idsw_get_platform_sdv() == PLATFORM_EMU_2D) || (idsw_get_platform_sdv() == PLATFORM_EMU_2D_8C))
     {
-         return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};   
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
     }
     void* pcie_dev_handles = scp_pcie_initialize(&(host->Schedule), rpss_to_init, die_id);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, pcie_dev_handles};
@@ -88,10 +89,13 @@ FPFW_INIT_COMPONENT(pcie_cli, FPFW_INIT_DEPENDENCIES("pcie", "cli"))
 {
     fpfw_init_component_id_t pcie_id = "pcie";
     void* pcie_dev_handles = fpfw_init_get_handle(pcie_id);
-    if ((idsw_get_platform_sdv() == PLATFORM_EMU_1D) || (idsw_get_platform_sdv() == PLATFORM_EMU_1D_8C) || (idsw_get_platform_sdv() == PLATFORM_EMU_2D) || (idsw_get_platform_sdv() == PLATFORM_EMU_2D_8C))
+    if ((idsw_get_platform_sdv() == PLATFORM_EMU_1D) || (idsw_get_platform_sdv() == PLATFORM_EMU_1D_8C) ||
+        (idsw_get_platform_sdv() == PLATFORM_EMU_2D) || (idsw_get_platform_sdv() == PLATFORM_EMU_2D_8C))
     {
         printf("Skip PCIe CLI init on emulation");
-    } else {
+    }
+    else
+    {
         pcie_cli_init((pciess_device_t*)pcie_dev_handles);
     }
 

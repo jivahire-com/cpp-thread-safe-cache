@@ -18,7 +18,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(ws_cli_init, FPFW_INIT_DEPENDENCIES("cli", "ws_init","sos_int"))
+FPFW_INIT_COMPONENT(ws_cli_init, FPFW_INIT_DEPENDENCIES("cli", "ws_init", "sos_int"))
 {
     warm_start_cli_init(fpfw_init_get_handle("sos_int"));
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

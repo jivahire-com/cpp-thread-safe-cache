@@ -77,7 +77,7 @@ int __wrap_ddrss_init(ddrss_cfg_knobs_t* cfg_knobs)
 nvic_status_t __wrap_nvic_irq_set_isr_with_param(uint32_t irq_num, isr_callback_fn_with_params_t isr, void* parameter)
 {
     uint32_t ddrss_num;
-    ddrss_num = *(uint32_t *)parameter;
+    ddrss_num = *(uint32_t*)parameter;
 
     check_expected(irq_num);
     check_expected(isr);
@@ -190,8 +190,10 @@ bool __wrap_ras_arm_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* r
     function_called();
     return SILIBS_SUCCESS;
 }
-int __wrap_ddrss_convert_ras_rec_to_cper(uint32_t mc, ras_error_record_t *record, acpi_err_sec_memory_t *ddr_ras_cper,
-                                  acpi_err_sec_mem_vendor_err_info_t *ddr_vendor_cper)
+int __wrap_ddrss_convert_ras_rec_to_cper(uint32_t mc,
+                                         ras_error_record_t* record,
+                                         acpi_err_sec_memory_t* ddr_ras_cper,
+                                         acpi_err_sec_mem_vendor_err_info_t* ddr_vendor_cper)
 {
     FPFW_UNUSED(mc);
     FPFW_UNUSED(record);
@@ -200,12 +202,12 @@ int __wrap_ddrss_convert_ras_rec_to_cper(uint32_t mc, ras_error_record_t *record
     function_called();
     return SILIBS_SUCCESS;
 }
- int __wrap_ras_print_record(ras_error_record_t* record)
- {
+int __wrap_ras_print_record(ras_error_record_t* record)
+{
     FPFW_UNUSED(record);
     function_called();
     return SILIBS_SUCCESS;
- }
+}
 int __wrap_ddrss_get_ras_agent(uint32_t mc, DDRSS_RAS_NODE_ID ras_agent_entity_id, ras_agent_entity_t** ras_agent)
 {
     FPFW_UNUSED(mc);
@@ -228,5 +230,5 @@ bool __wrap_idhw_is_single_die_boot_en(void)
 
 cmn800_snf_to_mc_config_t* __wrap_cmn800_generate_ddr_mc_map_from_cached_config(void)
 {
-    return mock_type(cmn800_snf_to_mc_config_t *);
+    return mock_type(cmn800_snf_to_mc_config_t*);
 }

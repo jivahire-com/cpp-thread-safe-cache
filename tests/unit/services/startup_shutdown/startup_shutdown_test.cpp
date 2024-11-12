@@ -315,14 +315,14 @@ SOS_TEST(dispatch_sync_STARTUP_RESET_TIMEOUT_SYNC, NULL, NULL)
     unsigned count = __real_sos_core_boot_stage_count();
     will_return_always(__wrap_sos_core_boot_stage_count, count);
 
-    sos_stage_timeout_t test_timeout = { .stage_category = BOOT_STAGE,
-                                         .operation_stage.boot = STARTUP_MCP_LOAD,
-                                         .timeout_ms = TEST_TIMEOUT };
+    sos_stage_timeout_t test_timeout = {.stage_category = BOOT_STAGE,
+                                        .operation_stage.boot = STARTUP_MCP_LOAD,
+                                        .timeout_ms = TEST_TIMEOUT};
 
     startup_reset_timeout_request_t test_request = {};
     test_request.header.RequestType = STARTUP_RESET_TIMEOUT_SYNC;
     test_request.timeout = test_timeout;
-    
+
     sos_interface_t test_interface = {};
     test_request.header.OwningInterface = &test_interface.header;
 

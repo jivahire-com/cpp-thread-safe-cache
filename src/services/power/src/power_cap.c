@@ -24,8 +24,7 @@
 
 /*-- Declarations (Statics and globals) --*/
 static uint16_t s_local_soc_power_cap_watts = NO_POWER_CAP; /* tracks locally the power cap being used on last loop query */
-static uint16_t s_requested_soc_power_cap_watts =
-    NO_POWER_CAP;                           /* tracks locally the power cap being used on last loop query */
+static uint16_t s_requested_soc_power_cap_watts = NO_POWER_CAP; /* tracks locally the power cap being used on last loop query */
 static uint16_t s_previous_power_cap_watts; /* store previous cap when updating for diagnostic purpose */
 static power_cap_completed_callback_t s_power_cap_callback = NULL;
 

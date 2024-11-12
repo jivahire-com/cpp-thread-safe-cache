@@ -15,25 +15,19 @@
 
 extern "C" {
 
-#include <dcs_manager_i.h>
-#include <ddr_manager_i.h>
-
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <dcs_manager_i.h>
+#include <ddr_manager_i.h>
 #include <in_band_tlm_cmpnt_i.h>
 #include <package_creation_i.h>
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
-
-
-
 }
 /*-- Symbolic Constant Macros (defines) --*/
-
 
 /*------------- Typedefs -----------------*/
 
 /*-- Declarations (Statics and globals) --*/
-
 
 /*-------- Function Prototypes -----------*/
 
@@ -51,7 +45,7 @@ static int test_teardown(void** pContext)
 
 TEST_FUNCTION(test_dcs_manager_queue_tlm_package, test_setup, test_teardown)
 {
-    tlm_package_t tlm_pkg = {0xaabb,0xaabb};
+    tlm_package_t tlm_pkg = {0xaabb, 0xaabb};
 
     // no receive data, successfully queues in pending
     expect_value(__wrap__txe_queue_receive, queue_ptr, &dcs_pkg_pending_queue);

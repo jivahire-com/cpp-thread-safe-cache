@@ -11,16 +11,22 @@
 
 extern "C" {
 #include <FpFwUtils.h>            // for FPFW_UNUSED
-#include <fpfw_icc_base.h>             // for fpfw_icc_base_ctx_t, fpfw_icc_ba...
+#include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t, fpfw_icc_ba...
 #include <hsp_firmware_headers.h> // for kng_hsp_mailbox_msg, HSP_MAILBOX_RSP...
 #include <kng_error.h>
-#include <stdint.h>               // for int32_t, uint32_t
-#include <variable_services.h>    // for var_service_shared_mem_t, var_serv...
+#include <stdint.h>                   // for int32_t, uint32_t
+#include <variable_services.h>        // for var_service_shared_mem_t, var_serv...
 #include <variable_services_helper.h> // for variable_services_sync_get_vari...
-#include <variable_services_mem.h> // for variable_service_mem_metadata_t
+#include <variable_services_mem.h>    // for variable_service_mem_metadata_t
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define TEST_GUID {0x3363AE8A, 0xDAB5, 0x4DCA, {0xBF, 0x32, 0xDD, 0x0E, 0x65, 0x89, 0x95, 0xC5}}
+#define TEST_GUID                                          \
+    {                                                      \
+        0x3363AE8A, 0xDAB5, 0x4DCA,                        \
+        {                                                  \
+            0xBF, 0x32, 0xDD, 0x0E, 0x65, 0x89, 0x95, 0xC5 \
+        }                                                  \
+    }
 
 /*------------- Typedefs -----------------*/
 
@@ -37,11 +43,11 @@ static var_service_req_ctx_t req_ctx = {};
 static uint32_t dummy_icc_base_ctx = 0;
 
 /*------------- Mock Functions ----------------*/
-fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t *icc_ctx, void *payload_buffer, size_t buffer_size, size_t *output_recv_bytes)
+fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, void* payload_buffer, size_t buffer_size, size_t* output_recv_bytes)
 {
     FPFW_UNUSED(icc_ctx);
     FPFW_UNUSED(buffer_size);
-    
+
     //! prepare the hsp mbox response
     kng_hsp_mailbox_msg* msg = (kng_hsp_mailbox_msg*)payload_buffer;
     //! Update response status
@@ -54,7 +60,8 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t *icc_ctx, 
         uint32_t shared_mem_data_offset = sizeof(variable_service_shared_mem_format_t) + sizeof("TestGetVar");
         memcpy((void*)(rmss_shared_ram_region + shared_mem_data_offset), (void*)test_rsp_data, sizeof(test_rsp_data));
     }
-    else if (msg->header.cmd == HSP_MAILBOX_CMD_SET_VARIABLE_REQ){
+    else if (msg->header.cmd == HSP_MAILBOX_CMD_SET_VARIABLE_REQ)
+    {
         //! Update resp cmd code
         msg->header.cmd = HSP_MAILBOX_CMD_SET_VARIABLE_RSP;
     }
@@ -63,11 +70,11 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t *icc_ctx, 
     return FPFW_ICC_BASE_STATUS_SUCCESS;
 }
 
-fpfw_status_t __wrap_fpfw_icc_base_send_recv(fpfw_icc_base_ctx_t *icc_ctx, fpfw_icc_base_send_recv_req_t* icc_req)
+fpfw_status_t __wrap_fpfw_icc_base_send_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_send_recv_req_t* icc_req)
 {
     FPFW_UNUSED(icc_ctx);
     assert_non_null(icc_req);
-    
+
     //! prepare the hsp mbox response
     kng_hsp_mailbox_msg* msg = (kng_hsp_mailbox_msg*)icc_req->payload_buffer;
     //! Update response status
@@ -80,7 +87,8 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv(fpfw_icc_base_ctx_t *icc_ctx, fpfw_
         uint32_t shared_mem_data_offset = sizeof(variable_service_shared_mem_format_t) + sizeof("TestGetVar");
         memcpy((void*)(rmss_shared_ram_region + shared_mem_data_offset), (void*)test_rsp_data, sizeof(test_rsp_data));
     }
-    else if (msg->header.cmd == HSP_MAILBOX_CMD_SET_VARIABLE_REQ){
+    else if (msg->header.cmd == HSP_MAILBOX_CMD_SET_VARIABLE_REQ)
+    {
         //! Update resp cmd code
         msg->header.cmd = HSP_MAILBOX_CMD_SET_VARIABLE_RSP;
     }
@@ -166,9 +174,10 @@ TEST_FUNCTION(test_variable_services_sync_set_variable, setup, teardown)
         .vendor_namespace_guid = TEST_GUID,
         .data_size = sizeof(client_data),
         .data = client_data,
-        .attributes = {
-            .as_uint32 = EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS,
-        },
+        .attributes =
+            {
+                .as_uint32 = EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS,
+            },
     };
 
     //! Invoke the FUT
@@ -199,7 +208,9 @@ TEST_FUNCTION(test_variable_service_initialize_ctx, nullptr, nullptr)
     //! if different variables use different shared memory regions, then this API must be called for each variable
     assert_int_equal(variable_service_initialize_ctx(&dummy_req_ctx, &dummy_shared_mem), KNG_SUCCESS);
     assert_int_equal(dummy_req_ctx.shared_mem.max_payload_size, sizeof(shared_memory));
-    assert_memory_equal((void*)shared_memory, (void*)dummy_req_ctx.shared_mem.payload_base, dummy_req_ctx.shared_mem.max_payload_size);
+    assert_memory_equal((void*)shared_memory,
+                        (void*)dummy_req_ctx.shared_mem.payload_base,
+                        dummy_req_ctx.shared_mem.max_payload_size);
     variable_service_shared_mem_format_t* shared_mem =
         (variable_service_shared_mem_format_t*)dummy_req_ctx.shared_mem.payload_base;
     assert_true(shared_mem->metadata.sync.bitfield.is_in_use == 0);
@@ -214,10 +225,11 @@ TEST_FUNCTION(test_variable_service_unlock_get_var_ctx, nullptr, nullptr)
     uint8_t shared_memory[100];
     //! emulate initialized ctx
     var_service_req_ctx_t dummy_req_ctx = {
-        .shared_mem = {
-            .payload_base = (uintptr_t)shared_memory,
-            .max_payload_size = sizeof(shared_memory),
-        },
+        .shared_mem =
+            {
+                .payload_base = (uintptr_t)shared_memory,
+                .max_payload_size = sizeof(shared_memory),
+            },
         .is_initialized = true,
     };
     memset(shared_memory, 0xFFFFFFFF, sizeof(shared_memory));
@@ -226,14 +238,19 @@ TEST_FUNCTION(test_variable_service_unlock_get_var_ctx, nullptr, nullptr)
     variable_service_unlock_get_var_ctx(&dummy_req_ctx);
     //! verify ctx is reset with exception of shared memory mapping
     assert_int_equal(dummy_req_ctx.shared_mem.max_payload_size, sizeof(shared_memory));
-    assert_memory_equal((void*)shared_memory, (void*)dummy_req_ctx.shared_mem.payload_base, dummy_req_ctx.shared_mem.max_payload_size);
+    assert_memory_equal((void*)shared_memory,
+                        (void*)dummy_req_ctx.shared_mem.payload_base,
+                        dummy_req_ctx.shared_mem.max_payload_size);
     variable_service_shared_mem_format_t* shared_mem =
         (variable_service_shared_mem_format_t*)dummy_req_ctx.shared_mem.payload_base;
     assert_true(shared_mem->metadata.sync.bitfield.is_in_use == 0);
     assert_true(dummy_req_ctx.is_initialized);
 }
 
-void test_variable_service_req_complete_notify(void* context, struct _variable_service_req_ctx *var_serv_ctx, uint8_t* data_start_ptr, size_t data_size)
+void test_variable_service_req_complete_notify(void* context,
+                                               struct _variable_service_req_ctx* var_serv_ctx,
+                                               uint8_t* data_start_ptr,
+                                               size_t data_size)
 {
     FPFW_UNUSED(context);
     assert_non_null(var_serv_ctx);
@@ -260,7 +277,7 @@ void test_variable_service_req_complete_notify(void* context, struct _variable_s
 
 TEST_FUNCTION(test_variable_services_async_get_variable, setup, teardown)
 {
-    //! client buffer to store the response data, 
+    //! client buffer to store the response data,
     uint8_t client_buffer[5] = {0};
 
     //! prepare the get variable request
@@ -276,7 +293,8 @@ TEST_FUNCTION(test_variable_services_async_get_variable, setup, teardown)
     assert_true(req_ctx.is_initialized);
 
     //! Invoke the FUT with mocked icc base APIs, must pass
-    assert_int_equal(variable_service_async_get_variable(&req_ctx, &get_var_req, test_variable_service_req_complete_notify, NULL), KNG_SUCCESS);
+    assert_int_equal(variable_service_async_get_variable(&req_ctx, &get_var_req, test_variable_service_req_complete_notify, NULL),
+                     KNG_SUCCESS);
 
     //! Expect client's cb to be invoked
     expect_function_call(test_variable_service_req_complete_notify);
@@ -284,12 +302,13 @@ TEST_FUNCTION(test_variable_services_async_get_variable, setup, teardown)
     //! simulate icc internal cb invocation post dfwk request completion when HSP has responded
     req_ctx.icc_req.cb(req_ctx.icc_req.cb_ctx, sizeof(kng_hsp_mailbox_msg), FPFW_ICC_BASE_STATUS_SUCCESS);
 
-    //! Invoking the FUT will result in assert, Post cb verification, the shared memory is still not free, any subsequent request will ASSERT
-    //! for get variable request, shared memory should be freed by the client
+    //! Invoking the FUT will result in assert, Post cb verification, the shared memory is still not free, any
+    //! subsequent request will ASSERT for get variable request, shared memory should be freed by the client
     variable_service_unlock_get_var_ctx(&req_ctx);
 
     //! Invoke the FUT, must pass
-    assert_int_equal(variable_service_async_get_variable(&req_ctx, &get_var_req, test_variable_service_req_complete_notify, NULL), KNG_SUCCESS);
+    assert_int_equal(variable_service_async_get_variable(&req_ctx, &get_var_req, test_variable_service_req_complete_notify, NULL),
+                     KNG_SUCCESS);
 }
 
 TEST_FUNCTION(test_variable_services_async_set_variable, setup, teardown)
@@ -304,16 +323,18 @@ TEST_FUNCTION(test_variable_services_async_set_variable, setup, teardown)
         .vendor_namespace_guid = TEST_GUID,
         .data_size = sizeof(client_data),
         .data = client_data,
-        .attributes = {
-            .as_uint32 = EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS,
-        },
+        .attributes =
+            {
+                .as_uint32 = EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS,
+            },
     };
 
     //! Verify cb is initialized
     assert_true(req_ctx.is_initialized);
 
     //! Invoke the FUT with mocked icc base APIs, must pass
-    assert_int_equal(variable_service_async_set_variable(&req_ctx, &set_var_req, test_variable_service_req_complete_notify, NULL), KNG_SUCCESS);
+    assert_int_equal(variable_service_async_set_variable(&req_ctx, &set_var_req, test_variable_service_req_complete_notify, NULL),
+                     KNG_SUCCESS);
 
     //! Expect client's cb to be invoked
     expect_function_call(test_variable_service_req_complete_notify);
@@ -322,7 +343,7 @@ TEST_FUNCTION(test_variable_services_async_set_variable, setup, teardown)
     req_ctx.icc_req.cb(req_ctx.icc_req.cb_ctx, sizeof(kng_hsp_mailbox_msg), FPFW_ICC_BASE_STATUS_SUCCESS);
 
     //! Invoke the FUT, must pass, post cb, shared memory is freed by variable services, hence no need to free shared mem explicitly
-    assert_int_equal(variable_service_async_set_variable(&req_ctx, &set_var_req, test_variable_service_req_complete_notify, NULL), KNG_SUCCESS);
+    assert_int_equal(variable_service_async_set_variable(&req_ctx, &set_var_req, test_variable_service_req_complete_notify, NULL),
+                     KNG_SUCCESS);
 }
-
 }

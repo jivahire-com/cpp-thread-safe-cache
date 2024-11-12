@@ -12,8 +12,8 @@
 
 extern "C" {
 #include <fpfw_icc_base.h> // for fpfw_icc_base_ctx_t
-#include <idsw_kng.h>
 #include <hsp_firmware_headers.h>
+#include <idsw_kng.h>
 #include <kng_soc_constants.h>
 #include <silibs_status.h>
 #include <tower.h>
@@ -891,10 +891,8 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die0_svp, nullptr, nullptr)
     const auto test_die = (KNG_DIE_ID)0;
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-    kng_hsp_mailbox_msg msg = {.header = {
-        .cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ,
-        .flags = HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED
-    }};
+    kng_hsp_mailbox_msg msg = {.header = {.cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ,
+                                          .flags = HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED}};
     size_t output_recv_bytes = 0;
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
@@ -964,10 +962,8 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die1_svp, nullptr, nullptr)
     const auto test_die = (KNG_DIE_ID)1;
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-    kng_hsp_mailbox_msg msg = {.header = {
-        .cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ,
-        .flags = HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED
-    }};
+    kng_hsp_mailbox_msg msg = {.header = {.cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ,
+                                          .flags = HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED}};
     size_t output_recv_bytes = 0;
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);

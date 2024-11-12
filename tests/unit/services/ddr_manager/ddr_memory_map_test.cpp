@@ -13,7 +13,7 @@
 #include <cstdint>         // IWYU pragma: keep
 #include <ddrss_lib.h>
 extern "C" {
-#include "ddr_memory_map.h"   // for ddrss_get_memory_map
+#include "ddr_memory_map.h"              // for ddrss_get_memory_map
 #include "memory_map/ddrss_region_def.h" // for PAS_ROOT, PAS_SECURE, AVAILABLE_SYSMEM
 
 /*-- Symbolic Constant Macros (defines) --*/

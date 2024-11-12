@@ -20,10 +20,8 @@ extern "C" {
 #include <in_band_tlm_cmpnt_i.h>
 #include <package_creation_i.h>
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
-
 }
 /*-- Symbolic Constant Macros (defines) --*/
-
 
 /*------------- Typedefs -----------------*/
 
@@ -43,7 +41,6 @@ static int test_teardown(void** pContext)
     return 0;
 }
 
-
 TEST_FUNCTION(test_ddr_mgr_allocate_mem_for_pwr_report, test_setup, test_teardown)
 {
     uintptr_t pkg_location = 0;
@@ -52,7 +49,6 @@ TEST_FUNCTION(test_ddr_mgr_allocate_mem_for_pwr_report, test_setup, test_teardow
     expect_value(__wrap__txe_queue_receive, queue_ptr, &pwr_pkg_free_queue);
     expect_value(__wrap__txe_queue_receive, destination_ptr, &pkg_location);
     expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
-
 
     will_return(__wrap__txe_queue_receive, sizeof(uint32_t));
     will_return(__wrap__txe_queue_receive, max_package_mem);
@@ -98,7 +94,6 @@ TEST_FUNCTION(test_ddr_mgr_allocate_mem_for_inst_report, test_setup, test_teardo
     assert_true(FPFW_STATUS_SUCCEEDED(status));
     assert_int_equal(available_size, INST_POOL_BLOCK_SIZE);
 
-
     pkg_location = 0;
     available_size = 0;
 
@@ -121,17 +116,16 @@ TEST_FUNCTION(test_ddr_manager_deallocate_mem, test_setup, test_teardown)
     // valid pwr block
     expect_value(__wrap__txe_queue_send, queue_ptr, &pwr_pkg_free_queue);
     expect_any(__wrap__txe_queue_send, source_ptr);
-    expect_value(__wrap__txe_queue_send, wait_option,TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_send, wait_option, TX_NO_WAIT);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
 
     uintptr_t pkg_mem = POWER_POOL_MEM_START;
     ddr_manager_deallocate_mem(&pkg_mem);
 
-
     // valid inst block
     expect_value(__wrap__txe_queue_send, queue_ptr, &inst_pkg_free_queue);
     expect_any(__wrap__txe_queue_send, source_ptr);
-    expect_value(__wrap__txe_queue_send, wait_option,TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_send, wait_option, TX_NO_WAIT);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
 
     pkg_mem = INST_POOL_MEM_START;
@@ -141,14 +135,14 @@ TEST_FUNCTION(test_ddr_manager_deallocate_mem, test_setup, test_teardown)
     pkg_mem = POWER_POOL_MEM_START + POWER_POOL_TOTAL_SIZE;
     ddr_manager_deallocate_mem(&pkg_mem);
 
-       // invalid inst block
+    // invalid inst block
     pkg_mem = INST_POOL_MEM_START + INST_POOL_TOTAL_SIZE;
     ddr_manager_deallocate_mem(&pkg_mem);
 
     // fail to queue free block
     expect_value(__wrap__txe_queue_send, queue_ptr, &inst_pkg_free_queue);
     expect_any(__wrap__txe_queue_send, source_ptr);
-    expect_value(__wrap__txe_queue_send, wait_option,TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_send, wait_option, TX_NO_WAIT);
     will_return(__wrap__txe_queue_send, TX_QUEUE_ERROR);
 
     pkg_mem = INST_POOL_MEM_START;

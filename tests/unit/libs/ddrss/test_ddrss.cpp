@@ -31,7 +31,7 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 static const int HW_INT_DDRSS0(106);
 static const int HW_INT_DDRSS5(111);
-static uint32_t ddrss_num[6] = {0,1,2,3,4,5};
+static uint32_t ddrss_num[6] = {0, 1, 2, 3, 4, 5};
 
 extern uint32_t g_ddr_intu_sts;
 extern uint32_t g_intu_enable;
@@ -115,7 +115,7 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga, setup, teardown)
 {
     cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
     KNG_DIE_ID test_die = (KNG_DIE_ID)1;
-    int i=0;
+    int i = 0;
 
     // initialize the CFG
     cmn800_snf_to_mc_config.is_numa_enabled = 1;
@@ -156,7 +156,7 @@ TEST_FUNCTION(test_ddrss_lib_init_emu, setup, teardown)
 {
     cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
     KNG_DIE_ID test_die = (KNG_DIE_ID)0;
-    int i=0;
+    int i = 0;
 
     // initialize the CFG
     cmn800_snf_to_mc_config.is_numa_enabled = 0;
@@ -197,7 +197,7 @@ TEST_FUNCTION(test_ddrss_lib_init_rvp, setup, teardown)
 {
     cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
     KNG_DIE_ID test_die = (KNG_DIE_ID)1;
-    int i=0;
+    int i = 0;
 
     // initialize the CFG
     cmn800_snf_to_mc_config.is_numa_enabled = 1;
@@ -236,7 +236,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_unexpected_interrupt, setup, tea
     g_ddr_intu_sts = (1 << DDRSS_INTU_MC0_HSP_INT); // This is unexpected
     g_intu_enable = 0xFFFFFFFF;                     // This is a mask
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_MC0_HSP_INT));
-    prod_ddrss_interrupt_handler( (void*)&ddrss_num[1]);
+    prod_ddrss_interrupt_handler((void*)&ddrss_num[1]);
 }
 
 TEST_FUNCTION(test_prod_ddrss_interrupt_handler_MC0_CRI_INT, setup, teardown)

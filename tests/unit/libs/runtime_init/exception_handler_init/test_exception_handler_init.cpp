@@ -11,10 +11,10 @@
 #include <CMockaWrapper.h>
 
 extern "C" {
-#include <FpFwUtils.h>              // for FPFW_UNUSED
-#include <fpfw_init.h>              // for fpfw_init_component_t
-#include <nvic.h>                   // for nvic_status_t, nvic_set_isr_fault
-#include <tx_api.h>                 // for TX_SUCCESS, TX_THREAD
+#include <FpFwUtils.h> // for FPFW_UNUSED
+#include <fpfw_init.h> // for fpfw_init_component_t
+#include <nvic.h>      // for nvic_status_t, nvic_set_isr_fault
+#include <tx_api.h>    // for TX_SUCCESS, TX_THREAD
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -37,7 +37,7 @@ nvic_status_t __wrap_nvic_set_isr_fault(isr_callback_fn_sans_params_t isr)
     return mock_type(nvic_status_t);
 }
 
-UINT __wrap__tx_thread_stack_error_notify(VOID (*stack_error_handler)(TX_THREAD *thread_ptr))
+UINT __wrap__tx_thread_stack_error_notify(VOID (*stack_error_handler)(TX_THREAD* thread_ptr))
 {
     check_expected_ptr(stack_error_handler);
     function_called();
@@ -57,14 +57,14 @@ TEST_FUNCTION(test_exception_handler_init, NULL, NULL)
 
     // Set up expectations
     expect_any(__wrap_nvic_set_isr_fault, isr);
-    expect_function_call(__wrap_nvic_set_isr_fault);    // expect general exception handler to be set
+    expect_function_call(__wrap_nvic_set_isr_fault); // expect general exception handler to be set
     will_return(__wrap_nvic_set_isr_fault, NVIC_STATUS_SUCCESS);
 
     expect_any(NVIC_SetVector, isr);
-    expect_function_call(NVIC_SetVector);               // expect DebugMonitor_IRQn handler to be set
+    expect_function_call(NVIC_SetVector); // expect DebugMonitor_IRQn handler to be set
 
     expect_any(__wrap__tx_thread_stack_error_notify, stack_error_handler);
-    expect_function_call(__wrap__tx_thread_stack_error_notify);    // expect stack error handler to be set
+    expect_function_call(__wrap__tx_thread_stack_error_notify); // expect stack error handler to be set
     will_return(__wrap__tx_thread_stack_error_notify, TX_SUCCESS);
 
     // Call API under test

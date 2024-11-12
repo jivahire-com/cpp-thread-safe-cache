@@ -11,7 +11,7 @@
 #include <CMockaWrapper.h> // for expect_value, expect_function_...
 #include <cstdint>         // for uint32_t, uint64_t
 #ifdef _WIN32
-#include <excpt.h>
+    #include <excpt.h>
 #endif
 
 extern "C" {
@@ -27,7 +27,7 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static FPFW_CLI_COMMAND *s_cd_cmd_list = NULL;
+static FPFW_CLI_COMMAND* s_cd_cmd_list = NULL;
 static size_t s_cd_cmd_list_size = 0;
 extern jmp_buf cd_test_setjmp_context;
 
@@ -35,7 +35,7 @@ extern jmp_buf cd_test_setjmp_context;
 //
 // Utility functions
 //
-static CLI_COMMAND_FN get_command_handler(const char *command)
+static CLI_COMMAND_FN get_command_handler(const char* command)
 {
     assert_non_null(s_cd_cmd_list);
     assert_true(s_cd_cmd_list_size > 0);
@@ -60,7 +60,7 @@ static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
     expect_function_call(__wrap_FpFwCliRegisterTable);
-    crash_dump_cli_init();  // Register the crash dump commands
+    crash_dump_cli_init(); // Register the crash dump commands
 
     return 0;
 }
@@ -82,7 +82,7 @@ void __wrap_FpFwCliRegisterTable(PFPFW_CLI_COMMAND pTable, size_t TableLength)
     assert_non_null(pTable);
     assert_true(TableLength > 0);
 
-    for(size_t i = 0; i < TableLength; i++)
+    for (size_t i = 0; i < TableLength; i++)
     {
         assert_non_null(&pTable[i]);
         assert_non_null(pTable[i].MenuName);
@@ -128,7 +128,7 @@ TEST_FUNCTION(test_crash_dump_cli_init, nullptr, nullptr)
 TEST_FUNCTION(test_cli_cd_register_beef, test_setup, test_teardown)
 {
     int argc = 1;
-    const char *argv[] = { "cd_register_beef"};
+    const char* argv[] = {"cd_register_beef"};
     uint32_t dead_beef = 0xDEADBEEF;
     uint32_t beef_cafe = 0xBEEFCAFE;
 
@@ -152,7 +152,7 @@ TEST_FUNCTION(test_cli_cd_register_beef, test_setup, test_teardown)
 TEST_FUNCTION(test_cli_cd_register_string, test_setup, test_teardown)
 {
     int argc = 2;
-    const char *argv[] = { "cd_register_string", "test_string" };
+    const char* argv[] = {"cd_register_string", "test_string"};
 
     // Get CLI handler
     CLI_COMMAND_FN handler = get_command_handler("cd_register_string");
@@ -171,7 +171,7 @@ TEST_FUNCTION(test_cli_cd_register_string, test_setup, test_teardown)
 TEST_FUNCTION(test_cli_cd_bug_check, test_setup, test_teardown)
 {
     int argc = 2;
-    const char *argv[] = { "cd_bug_check", "0x80000000" };
+    const char* argv[] = {"cd_bug_check", "0x80000000"};
 
     // Get CLI handler
     CLI_COMMAND_FN handler = get_command_handler("cd_bug_check");
@@ -188,7 +188,7 @@ TEST_FUNCTION(test_cli_cd_bug_check, test_setup, test_teardown)
 TEST_FUNCTION(test_cli_cd_set_single_core_mode, test_setup, test_teardown)
 {
     int argc = 1;
-    const char *argv[] = { "cd_set_single_core_mode"};
+    const char* argv[] = {"cd_set_single_core_mode"};
 
     // Get CLI handler
     CLI_COMMAND_FN handler = get_command_handler("cd_set_single_core_mode");
@@ -203,7 +203,7 @@ TEST_FUNCTION(test_cli_cd_set_single_core_mode, test_setup, test_teardown)
 TEST_FUNCTION(test_cli_cd_trigger_exception, test_setup, test_teardown)
 {
     int argc = 1;
-    const char *argv[] = { "cd_trigger_exception"};
+    const char* argv[] = {"cd_trigger_exception"};
 
     // Get CLI handler
     CLI_COMMAND_FN handler = get_command_handler("cd_trigger_exception");
@@ -216,7 +216,7 @@ TEST_FUNCTION(test_cli_cd_trigger_exception, test_setup, test_teardown)
         handler(argc, argv);
         assert_true(false); // Should not reach here
     }
-    __except(EXCEPTION_EXECUTE_HANDLER)
+    __except (EXCEPTION_EXECUTE_HANDLER)
     {
         // Expected exception
         assert_true(GetExceptionCode() == 0xC0000005); // EXCEPTION_ACCESS_VIOLATION
@@ -228,7 +228,7 @@ TEST_FUNCTION(test_cli_cd_trigger_exception, test_setup, test_teardown)
 TEST_FUNCTION(test_cli_cd_stack_overflow, test_setup, test_teardown)
 {
     int argc = 1;
-    const char *argv[] = { "cd_stack_overflow"};
+    const char* argv[] = {"cd_stack_overflow"};
 
     // Get CLI handler
     CLI_COMMAND_FN handler = get_command_handler("cd_stack_overflow");
@@ -241,10 +241,10 @@ TEST_FUNCTION(test_cli_cd_stack_overflow, test_setup, test_teardown)
         handler(argc, argv);
         assert_true(false); // Should not reach here
     }
-    __except(EXCEPTION_EXECUTE_HANDLER)
+    __except (EXCEPTION_EXECUTE_HANDLER)
     {
         // Expected exception
-        //GetExceptionCode();
+        // GetExceptionCode();
         assert_true(GetExceptionCode() == 0xC00000fd); // EXCEPTION_STACK_OVERFLOW
         printf("Exception caught (0x%08lx)\n", GetExceptionCode());
     }

@@ -12,27 +12,26 @@
 
 extern "C" {
 #include "accel_intr.h" // for ACCEL_INTR_RET_FAIL_INTR_INIT, ACCEL_INTR_RET_SUCCESS
-#include <FpFwUtils.h>
-
 #include "accelip_ss_init.h"
 #include "atu_lib.h"           // for ATU_ID_MAX, atu_id_t, atu_map_entry_t
 #include "kng_soc_constants.h" // for SOC_D0, SDMSS_INSTANCE
 #include "silibs_status.h"     // for SILIBS_SUCCESS, SILIBS_E_PARAM
 
+#include <FpFwUtils.h>
 #include <accelerator_ip.h> // for scp_accelerators_init, ACCEL_RET_SUCCESS
+#include <fpfw_icc_base.h>
 #include <fpfw_status.h>
-#include <fpfw_icc_base.h> 
 #include <hsp_firmware_headers.h>
-#include <idsw_kng.h>       // for KNG_DIE_ID
-#include <pcr_rpss.h>       // for pcr_rpss_entity_t
-#include <stdint.h>         // for uintptr_t, uint32_t, uint8_t, uint64_t
+#include <idsw_kng.h> // for KNG_DIE_ID
+#include <pcr_rpss.h> // for pcr_rpss_entity_t
+#include <stdint.h>   // for uintptr_t, uint32_t, uint8_t, uint64_t
 #include <stdnoreturn.h>
-#include <utils.h>          // for UNUSED
+#include <utils.h> // for UNUSED
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
-#define FOUR_MB_SIZE     0x400000
-#define BUGCHECK_MOCK_RETURN (setjmp(mock_jump_buf))
+#define FOUR_MB_SIZE           0x400000
+#define BUGCHECK_MOCK_RETURN   (setjmp(mock_jump_buf))
 #define bugcheck_mock_return() BUGCHECK_MOCK_RETURN
 
 /*-------------------------------- Typedefs ---------------------------------*/
@@ -50,7 +49,7 @@ static bool should_return;
 
 /*--------------------------------- Externs ---------------------------------*/
 
-extern subsystem_ctxt_t *get_accelerator_ctxt(uint32_t* accel_instance_size); // Forward function declaration
+extern subsystem_ctxt_t* get_accelerator_ctxt(uint32_t* accel_instance_size); // Forward function declaration
 
 /*----------------------------- Static Functions ----------------------------*/
 
@@ -67,8 +66,8 @@ int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
         return SILIBS_E_PARAM;
     }
 
-    atu_map_entry->mscp_start_address = (uint32_t) atu_map_buff;
-    atu_map_entry->mscp_end_address = (uint32_t) (&atu_map_buff[FOUR_MB_SIZE]);
+    atu_map_entry->mscp_start_address = (uint32_t)atu_map_buff;
+    atu_map_entry->mscp_end_address = (uint32_t)(&atu_map_buff[FOUR_MB_SIZE]);
 
     return mock_type(int);
 }
@@ -199,7 +198,6 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, 
     return mock_type(fpfw_status_t);
 }
 
-
 int __wrap__sdm_init_enable_cpuwait(const uintptr_t ext_cfg_addr)
 {
     FPFW_UNUSED(ext_cfg_addr);
@@ -210,7 +208,7 @@ int __wrap_sdm_init_enable_fence(const uintptr_t ext_cfg_addr, const bool enable
 {
     FPFW_UNUSED(ext_cfg_addr);
     FPFW_UNUSED(enable);
-    return 0x0; 
+    return 0x0;
 }
 
 int __wrap__sdm_init_assert_nsysreset(const uintptr_t ext_cfg_addr)
@@ -253,15 +251,15 @@ void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, u
     FPFW_UNUSED(p4);
 
     // Handle noreturn, allowing control to return to test
-    if(!should_return)
+    if (!should_return)
     {
         longjmp(mock_jump_buf, 1);
     }
 }
 
 // Setup and callback functions
-void cb_fun(void *context)
-{   
+void cb_fun(void* context)
+{
     FPFW_UNUSED(context);
     printf("IN CALLBACK\n");
 }
@@ -351,7 +349,7 @@ TEST_FUNCTION(accelip_emcpu_reset_cded_test, nullptr, nullptr)
 
     scp_accelerators_emcpu_reset(ACCELERATOR_SDMSS, cb_fun, NULL);
 
-    //Invoke the callback mimicking mailbox response - 2 callbacks expected
+    // Invoke the callback mimicking mailbox response - 2 callbacks expected
     fw_load_cb(&p_ss_ctxt[0], 0, FPFW_STATUS_SUCCESS);
     fw_load_cb(&p_ss_ctxt[0], 0, FPFW_STATUS_SUCCESS);
 }
@@ -386,7 +384,7 @@ TEST_FUNCTION(accelip_emcpu_reset_sdm_test, nullptr, nullptr)
 
     scp_accelerators_emcpu_reset(ACCELERATOR_CDEDSS, cb_fun, NULL);
 
-    //Invoke the callback mimicking mailbox response - 2 callbacks expected
+    // Invoke the callback mimicking mailbox response - 2 callbacks expected
     fw_load_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
     fw_load_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
 }
@@ -433,7 +431,7 @@ TEST_FUNCTION(accelip_emcpu_reset_invalid_state_test, nullptr, nullptr)
     scp_accelerators_emcpu_reset(ACCELERATOR_CDEDSS, cb_fun, NULL);
 
     // Invoke emcpu reset again to trigger failure scenario
-    if(!bugcheck_mock_return())
+    if (!bugcheck_mock_return())
     {
         scp_accelerators_emcpu_reset(ACCELERATOR_CDEDSS, cb_fun, NULL);
     }
@@ -477,7 +475,7 @@ TEST_FUNCTION(accelip_emcpu_reset_recv_fail_test, nullptr, nullptr)
 
     should_return = true;
 
-    // The first recv call will fail - BUT WE FORCIBLY CONTINUE EXECUTION 
+    // The first recv call will fail - BUT WE FORCIBLY CONTINUE EXECUTION
     // IF WE DON'T THE RESET STATE WILL STUCK IN ITCM LOAD PREVENTING FURTHER TESTS
     scp_accelerators_emcpu_reset(ACCELERATOR_CDEDSS, cb_fun, NULL);
 
@@ -517,7 +515,7 @@ TEST_FUNCTION(accelip_emcpu_reset_send_fail_test, nullptr, nullptr)
 
     should_return = true;
 
-    // The first recv call will fail - BUT WE FORCIBLY CONTINUE EXECUTION 
+    // The first recv call will fail - BUT WE FORCIBLY CONTINUE EXECUTION
     // IF WE DON'T THE RESET STATE WILL STUCK IN ITCM LOAD PREVENTING FURTHER TESTS
     scp_accelerators_emcpu_reset(ACCELERATOR_CDEDSS, cb_fun, NULL);
 
@@ -562,7 +560,7 @@ TEST_FUNCTION(accelip_isolation_control_test, nullptr, nullptr)
     will_return(__wrap_idsw_get_die_id, SOC_D0);
     will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 2);
     will_return_count(__wrap_atu_unmap, SILIBS_SUCCESS, 2);
-    
+
     assert_int_equal(scp_accelerators_isolation_control(), ACCEL_RET_SUCCESS);
 }
 }

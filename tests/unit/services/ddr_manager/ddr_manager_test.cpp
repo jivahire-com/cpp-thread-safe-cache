@@ -13,16 +13,16 @@
 #include <cstdint>         // IWYU pragma: keep
 
 extern "C" {
+#include <FpFwUtils.h>     // for FPFW_UNUSED
 #include <ddr_manager.h>   // for ddr_manager_init, ddr_service_context_t
 #include <ddr_manager_i.h> // for ddr_poll_dimms, ddr_worker_thread_func
 #include <error_handler.h> // for set_error_handler_return
+#include <fpfw_icc_base.h>
 #include <hsp_firmware_headers.h>
 #include <idsw_kng.h>
-#include <tx_api.h>        // for TX_SUCCESS, ULONG, TX_NOT_DONE, TX_NO_MEMORY
-#include <fpfw_icc_base.h>
-#include <FpFwUtils.h>     // for FPFW_UNUSED
 #include <kingsgate_hsp_mailbox_commands.h>
 #include <mscp_exp_rmss_memory_map.h>
+#include <tx_api.h> // for TX_SUCCESS, ULONG, TX_NOT_DONE, TX_NO_MEMORY
 
 } // extern "C"
 
@@ -40,8 +40,7 @@ static fpfw_icc_base_ctx_t* icc_ctx;
 //
 // Mocks
 //
-extern "C"
-{
+extern "C" {
 UINT __wrap__txe_mutex_create(TX_MUTEX* mutex_ptr, CHAR* name_ptr, UINT inherit, UINT mutex_control_block_size)
 {
     assert_non_null(mutex_ptr); // Ensure the mutex pointer is not NULL
@@ -56,7 +55,7 @@ UINT __wrap__txe_mutex_create(TX_MUTEX* mutex_ptr, CHAR* name_ptr, UINT inherit,
 }
 
 //! Mocks for mailbox primitives called inside hsp_send_ddr_init_notify()
-fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t *icc_ctx, void *payload_buffer, size_t buffer_size, size_t *output_recv_bytes)
+fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, void* payload_buffer, size_t buffer_size, size_t* output_recv_bytes)
 {
     FPFW_UNUSED(icc_ctx);
     FPFW_UNUSED(buffer_size);
@@ -64,7 +63,7 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t *icc_ctx, 
     check_expected_ptr(output_recv_bytes);
 
     kng_hsp_mailbox_msg* msg = (kng_hsp_mailbox_msg*)payload_buffer;
-    if( msg->header.cmd == HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY)
+    if (msg->header.cmd == HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY)
     {
         msg->header.cmd = HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY_RSP;
         msg->rsp.status = HSP_MAILBOX_RSP_STATUS_SUCCESS;
@@ -72,11 +71,12 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t *icc_ctx, 
     }
 
     kng_hsp_cmd_load_fw_mailbox_msg* msg2 = (kng_hsp_cmd_load_fw_mailbox_msg*)payload_buffer;
-    if( msg2->load_fw_req.header.cmd == HSP_MAILBOX_CMD_LOAD_FW_REQ )
+    if (msg2->load_fw_req.header.cmd == HSP_MAILBOX_CMD_LOAD_FW_REQ)
     {
         msg2->load_fw_req.header.cmd = HSP_MAILBOX_CMD_LOAD_FW_RSP;
         msg2->rsp.status = HSP_MAILBOX_RSP_STATUS_SUCCESS;
-        *output_recv_bytes = sizeof(kng_hsp_cmd_load_fw_mailbox_msg);;
+        *output_recv_bytes = sizeof(kng_hsp_cmd_load_fw_mailbox_msg);
+        ;
     }
     return mock_type(fpfw_status_t);
 }
@@ -123,7 +123,7 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     expect_any_always(__wrap__txe_queue_create, queue_control_block_size);
     will_return(__wrap__txe_queue_create, TX_NO_MEMORY);
     expect_value(FPFwErrorRaise, error, (uint32_t)TX_NO_MEMORY);
-  
+
     if (!set_error_handler_return())
     {
         ddr_manager_init(&ddr_service_context, &ddr_service_config, icc_ctx);
@@ -274,10 +274,8 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     will_return(__wrap__txe_thread_create, TX_SUCCESS);
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
 
-    size_t output_recv_bytes = 0;    
-    kng_hsp_mailbox_msg msg = {.header = {
-    .cmd = HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY
-    }};
+    size_t output_recv_bytes = 0;
+    kng_hsp_mailbox_msg msg = {.header = {.cmd = HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY}};
 
     expect_memory(__wrap_fpfw_icc_base_send_recv_sync, payload_buffer, &msg, sizeof(msg));
     expect_memory(__wrap_fpfw_icc_base_send_recv_sync, output_recv_bytes, &output_recv_bytes, sizeof(output_recv_bytes));
@@ -331,7 +329,7 @@ TEST_FUNCTION(ddr_manager_load_PHY_bin, setup_rvp_platform, setup_undefined_plat
 {
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-    
+
     kng_hsp_cmd_load_fw_mailbox_msg msg = {
         .load_fw_req.header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
         .load_fw_req.id = HSP_FIRMWARE_ID_DDR_PHY,

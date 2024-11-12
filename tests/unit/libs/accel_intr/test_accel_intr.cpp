@@ -84,7 +84,7 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
     return mock_type(KNG_PLAT_ID);
 }
 
-void __wrap_accel_mbox_sw_intr_cb(void *ctx)
+void __wrap_accel_mbox_sw_intr_cb(void* ctx)
 {
     check_expected(ctx);
 }
@@ -190,7 +190,8 @@ TEST_FUNCTION(test_accel_intr_irq_init_fail_nvic_init, nullptr, nullptr)
     expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER);
     will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_ERROR);
 
-    assert_int_equal(accel_intr_irq_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER)), ACCEL_INTR_RET_FAIL_INTR_NVIC);
+    assert_int_equal(accel_intr_irq_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER)),
+                     ACCEL_INTR_RET_FAIL_INTR_NVIC);
 }
 
 /**
@@ -480,9 +481,9 @@ TEST_FUNCTION(test_accel_intr_handle_sdm_msg_recv_timeout_count_1, NULL, NULL)
 
 TEST_FUNCTION(test_accel_intr_handle_mbox_recvd_sdm__pass, NULL, NULL)
 {
-    void *cb_ctx = (void *)0x12345678;
+    void* cb_ctx = (void*)0x12345678;
 
-    accel_intr_set_mbx_ctx(ACCELERATOR_SDMSS, (void *)cb_ctx);
+    accel_intr_set_mbx_ctx(ACCELERATOR_SDMSS, (void*)cb_ctx);
     expect_value(__wrap_accel_mbox_sw_intr_cb, ctx, cb_ctx);
     will_return_always(__wrap_sdm_ext_int_mask_status_clear, SILIBS_SUCCESS);
     will_return(__wrap_sdm_ext_int_mask_enable, SILIBS_SUCCESS);
@@ -492,7 +493,7 @@ TEST_FUNCTION(test_accel_intr_handle_mbox_recvd_sdm__pass, NULL, NULL)
 
 TEST_FUNCTION(test_accel_intr_handle_mbox_recvd_sdm__fail1, NULL, NULL)
 {
-    accel_intr_set_mbx_ctx(ACCELERATOR_SDMSS, (void *)NULL);
+    accel_intr_set_mbx_ctx(ACCELERATOR_SDMSS, (void*)NULL);
 
     accel_intr_handle_mbox_recvd(SDMSS_IRQ_NUMBER);
 }

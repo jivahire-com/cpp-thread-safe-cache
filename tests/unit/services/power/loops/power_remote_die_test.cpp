@@ -16,13 +16,13 @@ extern "C" {
 #include "corebits.h"   // for corebits_t
 #include "power_test.h" // for POWER_TEST, UNUSED
 
-#include <CMockaWrapper.h>     // for expect_any_always, CmockaWrapperTest
-#include <assert.h>            // for assert
-#include <cstddef>             // for NULL, size_t
+#include <CMockaWrapper.h> // for expect_any_always, CmockaWrapperTest
+#include <assert.h>        // for assert
+#include <cstddef>         // for NULL, size_t
 #include <fpfw_icc_base.h>
-#include <fpfw_status.h>       // for FPFW_STATUS_NULL_POINTER, FPFW_STATUS...
-#include <mock_bug_check.h>    // for __wrap_crash_dump_bug_check
-#include <power_i.h>           // for power_fuses_get_dts_coeff, power_fuse...
+#include <fpfw_status.h>    // for FPFW_STATUS_NULL_POINTER, FPFW_STATUS...
+#include <mock_bug_check.h> // for __wrap_crash_dump_bug_check
+#include <power_i.h>        // for power_fuses_get_dts_coeff, power_fuse...
 #include <power_remote_die_i.h>
 #include <power_runconfig.h>   // for power_fuse_data_t, dts_coeff_t, power...
 #include <power_runconfig_i.h> // for power_fuses_read, power_fuses_get_cur...
@@ -43,7 +43,7 @@ void __real_power_remote_die_exchange_complete(power_runconfig_t* p_runconfig);
 
 static power_runconfig_t s_test_power_runconfig = {};
 static power_service_config_t s_test_power_service_config = {};
-static icc_base_recv_complete_notify s_stored_recv_cb = NULL;                   
+static icc_base_recv_complete_notify s_stored_recv_cb = NULL;
 static icc_base_send_complete_notify s_stored_send_cb = NULL;
 static void* s_stored_send_context = NULL;
 static void* s_stored_recv_context = NULL;
@@ -54,7 +54,7 @@ static uint32_t* s_stored_send_payload_buffer = NULL;
 // Mocks
 //
 
-fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t *icc_ctx, fpfw_icc_base_recv_req_t* params)
+fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_recv_req_t* params)
 {
     check_expected_ptr(icc_ctx);
     check_expected_ptr(params);
@@ -62,14 +62,15 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t *icc_ctx, fpfw_icc_b
     // save the passed in callback
     s_stored_recv_cb = params->cb;
     // only want to store the first one
-    if (s_stored_recv_context == NULL) {
+    if (s_stored_recv_context == NULL)
+    {
         s_stored_recv_context = params->cb_ctx;
     }
 
     return mock_type(fpfw_status_t);
 }
 
-fpfw_status_t __wrap_fpfw_icc_base_send(fpfw_icc_base_ctx_t *icc_ctx, fpfw_icc_base_send_req_t* params)
+fpfw_status_t __wrap_fpfw_icc_base_send(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_send_req_t* params)
 {
     check_expected_ptr(icc_ctx);
     check_expected_ptr(params);
@@ -114,14 +115,14 @@ static int teardown(void** state)
     return 0;
 }
 
-void set_expectations_for_recv_request(void *icc_ctx)
+void set_expectations_for_recv_request(void* icc_ctx)
 {
     expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, icc_ctx);
     expect_not_value(__wrap_fpfw_icc_base_recv, params, NULL);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 }
 
-void set_expectations_for_send_request(void *icc_ctx)
+void set_expectations_for_send_request(void* icc_ctx)
 {
     expect_value(__wrap_fpfw_icc_base_send, icc_ctx, icc_ctx);
     expect_not_value(__wrap_fpfw_icc_base_send, params, NULL);
@@ -154,9 +155,9 @@ void setup_multi_die()
 POWER_TEST(remote_die_init__dual_die, setup, teardown)
 {
     expect_value(__wrap_FpFwAssert, expression, true);
-    
+
     setup_multi_die();
-    
+
     // expect two calls to setup_recv_request
     set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
     set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
@@ -181,7 +182,7 @@ POWER_TEST(remote_die_exchange_inputs__single_die, setup, teardown)
 POWER_TEST(remote_die_exchange_inputs__multi_die, setup, teardown)
 {
     expect_value(__wrap_FpFwAssert, expression, true);
-    
+
     setup_multi_die();
 
     // expect a call to icc send
@@ -189,7 +190,7 @@ POWER_TEST(remote_die_exchange_inputs__multi_die, setup, teardown)
     // no immediate signal when we call the exchange function
     expect_function_call(__wrap_cortex_m7_atomic_or);
     __real_power_remote_die_exchange_inputs(&s_test_power_runconfig);
-    
+
     // expect we need a send callback
     expect_value(__wrap_FpFwAssert, expression, true);
     expect_function_call(__wrap_cortex_m7_atomic_or);
@@ -215,23 +216,22 @@ POWER_TEST(remote_die_exchange_inputs__multi_die__send_started, setup, teardown)
     expect_value(__wrap_FpFwAssert, expression, true);
     expect_function_call(__wrap_cortex_m7_atomic_or);
     __real_power_remote_die_exchange_inputs(&s_test_power_runconfig);
-    
+
     // if no send callback, then a later call to exchange inputs should not send again
     // no send_request, no atomic_or
     expect_value(__wrap_FpFwAssert, expression, true);
     __real_power_remote_die_exchange_inputs(&s_test_power_runconfig);
-    
+
     // send a callback to clear this condition (no other way to clear it)
     expect_value(__wrap_FpFwAssert, expression, true);
     expect_function_call(__wrap_cortex_m7_atomic_or);
     s_stored_send_cb(s_stored_send_context, FPFW_STATUS_SUCCESS);
-
 }
 
 POWER_TEST(remote_die_exchange_inputs__multi_die__recv_first, setup, teardown)
 {
     expect_value(__wrap_FpFwAssert, expression, true);
-    
+
     setup_multi_die();
 
     // recv callback called first will be called again
@@ -240,13 +240,13 @@ POWER_TEST(remote_die_exchange_inputs__multi_die__recv_first, setup, teardown)
 
     expect_value(__wrap_FpFwAssert, expression, true);
     s_stored_recv_cb(s_stored_recv_context, 0, FPFW_STATUS_SUCCESS);
-    
+
     // then exchange inputs call
     set_expectations_for_send_request((void*)TEST_ICC_D2D_CTX);
     // still no immediate signal when we call the exchange function
     expect_function_call(__wrap_cortex_m7_atomic_or);
     __real_power_remote_die_exchange_inputs(&s_test_power_runconfig);
-    
+
     // expect we need a send callback
     // signal will be sent after we set send callback
     set_expectations_for_send_complete_signal(POWER_CTRL_LOOP_SIGNAL_EXCHANGE_INPUTS);
@@ -254,9 +254,7 @@ POWER_TEST(remote_die_exchange_inputs__multi_die__recv_first, setup, teardown)
     expect_value(__wrap_FpFwAssert, expression, true);
     expect_function_call(__wrap_cortex_m7_atomic_or);
     s_stored_send_cb(s_stored_send_context, FPFW_STATUS_SUCCESS);
-    
 }
-
 
 POWER_TEST(remote_die_exchange_complete__single_die, setup, teardown)
 {

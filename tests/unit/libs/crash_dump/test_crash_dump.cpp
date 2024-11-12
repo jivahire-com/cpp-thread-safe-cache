@@ -185,7 +185,7 @@ void set_expectations_crash_dump_register_address32_ptr_array(FPFwCdDumpPriority
     expect_value(__wrap_CdRegisterAddress32PointerArray, pointerArrayCount, pointerArrayCount_exp);
 }
 
-void set_expectations_gpio_set_output(crash_dump_config_t *config)
+void set_expectations_gpio_set_output(crash_dump_config_t* config)
 {
     will_return(__wrap_GetCrashDumpConfig, config);
 
@@ -238,18 +238,14 @@ void set_expectations_crash_dump_register_default_registers(const core_register_
  */
 TEST_FUNCTION(test_crash_dump_init, init_crash_dump_context, nullptr)
 {
-    const core_register_mmio_t core_register_mmio[] = {
-        {(volatile void *)(0x12123434), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL},
-        {(volatile void *)(0xababcdcd), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL}
-    };
+    const core_register_mmio_t core_register_mmio[] = {{(volatile void*)(0x12123434), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL},
+                                                       {(volatile void*)(0xababcdcd), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL}};
 
-    crash_dump_config_t config = {
-        .die_index = 0,
-        .core_index = CRASH_DUMP_CORE_SCP,
-        .mmio_register_count = 2,
-        .mmio_registers = core_register_mmio,
-        .in_memory = in_memory
-    };
+    crash_dump_config_t config = {.die_index = 0,
+                                  .core_index = CRASH_DUMP_CORE_SCP,
+                                  .mmio_register_count = 2,
+                                  .mmio_registers = core_register_mmio,
+                                  .in_memory = in_memory};
 
     // Set up expectations
     set_expectations_gpio_set_output(&config);
@@ -372,11 +368,7 @@ TEST_FUNCTION(test_crash_dump_register_pre_dump_callback_valid, nullptr, nullptr
 
 TEST_FUNCTION(test_crash_dump_inMemoryOverride_validAddr, nullptr, nullptr)
 {
-    crash_dump_config_t config = {
-        .die_index = 0,
-        .core_index = CRASH_DUMP_CORE_SCP,
-        .in_memory = in_memory
-    };
+    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
     will_return(__wrap_GetCrashDumpConfig, &config);
     will_return(in_memory, true);
 
@@ -405,11 +397,7 @@ TEST_FUNCTION(test_crash_dump_handler, nullptr, nullptr)
     uint32_t p4 = 0x12348765;
 
     // Set up expectations
-    crash_dump_config_t config = {
-        .die_index = 0,
-        .core_index = CRASH_DUMP_CORE_SCP,
-        .in_memory = in_memory
-    };
+    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
 
     will_return(__wrap_GetCrashDumpConfig, &config);
 
@@ -435,11 +423,7 @@ typedef struct _gpio_test_data_t
 
 TEST_FUNCTION(test_crash_dump_in_progress_assert, nullptr, nullptr)
 {
-    crash_dump_config_t config = {
-        .die_index = 0,
-        .core_index = CRASH_DUMP_CORE_MCP,
-        .in_memory = in_memory
-    };
+    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_MCP, .in_memory = in_memory};
 
     gpio_test_data_t test_data[] = {{
                                         .input = true,
@@ -465,11 +449,7 @@ TEST_FUNCTION(test_crash_dump_in_progress_assert, nullptr, nullptr)
 
 TEST_FUNCTION(test_crash_dump_available_assert, nullptr, nullptr)
 {
-    crash_dump_config_t config = {
-        .die_index = 0,
-        .core_index = CRASH_DUMP_CORE_MCP,
-        .in_memory = in_memory
-    };
+    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_MCP, .in_memory = in_memory};
 
     gpio_test_data_t test_data[] = {{
                                         .input = true,

@@ -11,8 +11,8 @@
 #include <CMockaWrapper.h> // for assert_int_equal, Cmock...
 
 extern "C" {
-#include <FpFwUtils.h>        // for FPFW_UNUSED
-#include <gpio.h>             // for pgpio_request_t
+#include <FpFwUtils.h> // for FPFW_UNUSED
+#include <gpio.h>      // for pgpio_request_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -107,8 +107,8 @@ void __wrap_DfwkAsyncRequestInitialize(PDFWK_ASYNC_REQUEST_HEADER Request, size_
 }
 
 void __wrap_DfwkAsyncRequestSetCompletionRoutine(PDFWK_ASYNC_REQUEST_HEADER Request,
-                                          DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine,
-                                          void* CompletionContext)
+                                                 DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine,
+                                                 void* CompletionContext)
 {
     check_expected_ptr(Request);
     check_expected_ptr(CompletionRoutine);

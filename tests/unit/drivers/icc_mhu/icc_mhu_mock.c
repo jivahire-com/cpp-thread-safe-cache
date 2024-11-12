@@ -10,9 +10,9 @@
 /*------------- Includes -----------------*/
 #include "icc_mhu_trans_ut.h"
 
-#include <DfwkClient.h>  // for PDFWK_DEVICE_HEADER, PDFWK_INTERFACE_HEADER
-#include <FpFwCMocka.h>  // for check_expected_ptr, mock_type, function_called
+#include <DfwkClient.h> // for PDFWK_DEVICE_HEADER, PDFWK_INTERFACE_HEADER
 #include <FPFwInterrupts.h>
+#include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwLock.h>
 #include <FpFwUtils.h>   // for FPFW_UNUSED
 #include <fpfw_status.h> // for fpfw_status_t
@@ -29,7 +29,7 @@
 
 /*-- Declarations (Statics and globals) --*/
 
-uint8_t data[] = {1,2,3,4};
+uint8_t data[] = {1, 2, 3, 4};
 
 UINT timer_active_status = TX_FALSE;
 
@@ -93,7 +93,8 @@ fpfw_status_t __wrap_fpfw_icc_transport_try_recv_sync_req(PDFWK_INTERFACE_HEADER
     return mock_type(int);
 }
 
-uint32_t __wrap_FPFwCoreInterruptRegisterCallback(uint32_t irqnum, FPFwCoreInterruptHandler handler, void* arg){
+uint32_t __wrap_FPFwCoreInterruptRegisterCallback(uint32_t irqnum, FPFwCoreInterruptHandler handler, void* arg)
+{
     check_expected(irqnum);
     check_expected(handler);
     check_expected(arg);
@@ -124,8 +125,7 @@ void __wrap_FpFwLockRelease(PFPFW_LOCK Lock, FPFW_LOCK_STATE OldState)
     FPFW_UNUSED(OldState);
 }
 
-UINT __wrap__txe_timer_info_get(TX_TIMER *timer_ptr, CHAR **name, UINT *active, ULONG *remaining_ticks,
-                ULONG *reschedule_ticks, TX_TIMER **next_timer)
+UINT __wrap__txe_timer_info_get(TX_TIMER* timer_ptr, CHAR** name, UINT* active, ULONG* remaining_ticks, ULONG* reschedule_ticks, TX_TIMER** next_timer)
 {
     FPFW_UNUSED(timer_ptr);
     FPFW_UNUSED(name);

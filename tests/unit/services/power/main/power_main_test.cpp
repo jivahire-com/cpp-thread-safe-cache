@@ -8,19 +8,19 @@
  */
 
 /*------------- Includes -----------------*/
-#include "power_test.h"     // for POWER_TEST
+#include "power_test.h" // for POWER_TEST
 
-#include <cstddef>          // for NULL
-#include <cstdint>          // for uintptr_t
+#include <cstddef> // for NULL
+#include <cstdint> // for uintptr_t
 #include <silibs_common.h>
 
 extern "C" {
 
-#include <CMockaWrapper.h>     // for expect_value, check_expected_ptr, Cmo...
-#include <DfwkCommon.h>        // for PDFWK_DEVICE_HEADER, DFWK_ASYNC_REQUE...
-#include <odcm_struct.h>       // for odcm_telem_config_t
-#include <power_dfwk.h>        // for power_service_t, power_service_interf...
-#include <power_hw_int_i.h>   
+#include <CMockaWrapper.h> // for expect_value, check_expected_ptr, Cmo...
+#include <DfwkCommon.h>    // for PDFWK_DEVICE_HEADER, DFWK_ASYNC_REQUE...
+#include <odcm_struct.h>   // for odcm_telem_config_t
+#include <power_dfwk.h>    // for power_service_t, power_service_interf...
+#include <power_hw_int_i.h>
 #include <power_hw_int_i.h>    // for power_telcfg_t
 #include <power_i.h>           // for power_init, power_interface_init
 #include <power_init.h>        // for power_init, power_interface_init
@@ -191,7 +191,7 @@ int __wrap_tile_pvt_sda_reconfig(uintptr_t cluster_pex_base_addr, bool fw_sda_ip
     return 0;
 }
 
-void __wrap_odcm_telemetry_config(const uintptr_t cluster_pex_base_addr, const odcm_telem_config_t *telem_cfg)
+void __wrap_odcm_telemetry_config(const uintptr_t cluster_pex_base_addr, const odcm_telem_config_t* telem_cfg)
 {
     FPFW_UNUSED(cluster_pex_base_addr);
     FPFW_UNUSED(telem_cfg);
@@ -217,7 +217,7 @@ void __wrap_dvfs_set_plimit(const uintptr_t cluster_pex_base_addr, uint8_t plimi
     function_called();
 }
 
-void __wrap_tile_pvt_dma_config(uintptr_t cluster_pex_base_addr, const tile_pvt_telem_setting_config_t *pvt_telem_settings)
+void __wrap_tile_pvt_dma_config(uintptr_t cluster_pex_base_addr, const tile_pvt_telem_setting_config_t* pvt_telem_settings)
 {
     FPFW_UNUSED(cluster_pex_base_addr);
     FPFW_UNUSED(pvt_telem_settings);
@@ -276,7 +276,7 @@ POWER_TEST(init, NULL, NULL)
     expect_function_call(__wrap_power_loops_control_init);
     expect_function_call(__wrap_power_loops_telemetry_init);
     expect_function_call(__wrap_crash_dump_register_pre_dump_callback);
-    
+
     power_init(&test_device, &test_schedule, &test_config);
 }
 
@@ -284,17 +284,8 @@ POWER_TEST(init_ws, NULL, NULL)
 {
     power_service_t test_device;
     power_service_config_t test_config;
-    power_runconfig_t test_runconfig = {
-        .fuses = {
-            .ldodac_to_volt = {
-                .slope_uvolt = 2000,
-                .offset_uvolt = 2000
-            }
-        }
-    };
-    power_ws_fuse_t test_ws_stored = {
-        .version = 1
-    };
+    power_runconfig_t test_runconfig = {.fuses = {.ldodac_to_volt = {.slope_uvolt = 2000, .offset_uvolt = 2000}}};
+    power_ws_fuse_t test_ws_stored = {.version = 1};
 
     DFWK_SCHEDULE test_schedule;
 
@@ -310,7 +301,7 @@ POWER_TEST(init_ws, NULL, NULL)
     will_return(__wrap_power_hw_full_init_allowed, false);
     expect_value(__wrap_power_runconfig_init, p_config, &test_config);
     will_return(__wrap_power_runconfig_get, &test_runconfig);
-    expect_value_count(__wrap_FpFwAssert, expression, true, 5);  // power_ws_recover_fuse_init checks runconfig.
+    expect_value_count(__wrap_FpFwAssert, expression, true, 5); // power_ws_recover_fuse_init checks runconfig.
     expect_value(__wrap_ws_data_get, id, WARM_START_ID_POWER_FUSE);
     will_return(__wrap_ws_data_get, sizeof(test_ws_stored));
     will_return(__wrap_ws_data_get, &test_ws_stored);
@@ -332,9 +323,9 @@ POWER_TEST(init_ap_soc, NULL, NULL)
     will_return(__wrap_power_runconfig_get, &test_runconfig);
     expect_value(__wrap_power_init_soc, p_runconfig, &test_runconfig);
     expect_value(__wrap_power_init_core, p_runconfig, &test_runconfig);
-    expect_value(__wrap_FpFwAssert, expression, true);  // power_ws_save_fuse_init checks runconfig.
-    expect_value(__wrap_FpFwAssert, expression, true);  // power_ws_generate_fuse_data checks runconfig.
-    expect_value(__wrap_FpFwAssert, expression, true);  // power_ws_generate_fuse_data checks ws_fuse_data.
+    expect_value(__wrap_FpFwAssert, expression, true); // power_ws_save_fuse_init checks runconfig.
+    expect_value(__wrap_FpFwAssert, expression, true); // power_ws_generate_fuse_data checks runconfig.
+    expect_value(__wrap_FpFwAssert, expression, true); // power_ws_generate_fuse_data checks ws_fuse_data.
     expect_value(__wrap_ws_data_put, id, WARM_START_ID_POWER_FUSE);
     expect_any(__wrap_ws_data_put, p_data);
     expect_value(__wrap_ws_data_put, size, sizeof(test_ws_stored));
@@ -363,9 +354,7 @@ POWER_TEST(init_ap_soc_ws, NULL, NULL)
         .platform_die_core_count = 1,
         .platform_core_power_support = true,
     };
-    power_runconfig_t test_runconfig = {
-        .p_sconfig = &test_config
-    };
+    power_runconfig_t test_runconfig = {.p_sconfig = &test_config};
 
     will_return(__wrap_power_hw_full_init_allowed, false);
     will_return(__wrap_power_runconfig_get, &test_runconfig);
@@ -374,7 +363,7 @@ POWER_TEST(init_ap_soc_ws, NULL, NULL)
     expect_function_call(__wrap_tile_pvt_sda_reconfig);
     expect_function_call(__wrap_tile_pvt_dma_config);
     expect_function_call(__wrap_power_loops_control_post_core_init);
-    
+
     power_ap_soc_init();
 }
 

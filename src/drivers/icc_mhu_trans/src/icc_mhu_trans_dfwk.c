@@ -32,7 +32,7 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
-#define MS_TO_TX_TICKS(ms)       (((ms)*TX_TIMER_TICKS_PER_SECOND) / 1000)
+#define MS_TO_TX_TICKS(ms)       (((ms) * TX_TIMER_TICKS_PER_SECOND) / 1000)
 #define ASYNC_SEND_START_TICK    (TX_TIMER_TICKS_PER_SECOND / 2)
 #define ASYNC_SEND_PERIODIC_TICK (MS_TO_TX_TICKS(100))
 #define ASYNC_SEND_RETRY_COUNT   (5)

@@ -11,15 +11,15 @@
 #include <CMockaWrapper.h> // for assert_non_null, CmockaWrapperTest, TEST_...
 
 extern "C" {
+#include <FpFwUtils.h> // for FPFW_UNUSED, FPFW_ARRAY_SIZE
 #include <atu_lib.h>
 #include <ddr_err_inj.h>
 #include <ddrmctop_regs.h>
 #include <ddrss_lib.h>
-#include <FpFwUtils.h>      // for FPFW_UNUSED, FPFW_ARRAY_SIZE
 #include <kng_soc_constants.h>
 #include <silibs_ap_top_regs.h>
 #include <silibs_platform.h>
-#include <stddef.h>  // for NULL, size_t
+#include <stddef.h> // for NULL, size_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -40,10 +40,10 @@ int __wrap_ddrss_err_inj_atu_map(uint32_t die_num)
 
 void __wrap_ddrss_err_inj_atu_unmap()
 {
-   function_called();
+    function_called();
 }
 
-int __wrap_ddrss_inject_media_data_err(uint32_t mc,const ddrss_media_data_err_inj_info_t *media_err_inj)
+int __wrap_ddrss_inject_media_data_err(uint32_t mc, const ddrss_media_data_err_inj_info_t* media_err_inj)
 {
     check_expected(mc);
     check_expected_ptr(media_err_inj);
@@ -64,7 +64,7 @@ TEST_FUNCTION(test_ecc_ce_error_injection, NULL, NULL)
     const uint32_t expected_mc = 0;
     const int32_t expected_die_num = 0;
     ddrss_media_data_err_inj_info_t expected_err_inj_data = {};
-    expected_err_inj_data.err_rs_sym = Bit_Value;   // some_expected_value
+    expected_err_inj_data.err_rs_sym = Bit_Value; // some_expected_value
     expected_err_inj_data.err_inj_rw = 1;
     expected_err_inj_data.err_inj_beat = 1;
     expected_err_inj_data.err_inj_cnt = 1;
@@ -85,7 +85,7 @@ TEST_FUNCTION(test_ecc_ue_error_injection, NULL, NULL)
     const uint32_t expected_mc = 0;
     const int32_t expected_die_num = 0;
     ddrss_media_data_err_inj_info_t expected_err_inj_data = {};
-    expected_err_inj_data.err_rs_sym = Bit_Value;   // some_expected_value
+    expected_err_inj_data.err_rs_sym = Bit_Value; // some_expected_value
     expected_err_inj_data.err_inj_rw = 1;
     expected_err_inj_data.err_inj_beat = 1;
     expected_err_inj_data.err_inj_cnt = 1;

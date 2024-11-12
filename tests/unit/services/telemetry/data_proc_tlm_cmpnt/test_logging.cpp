@@ -18,7 +18,7 @@ extern "C" {
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <data_proc_tlm_cmpnt.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
-#include <stdint.h> // for uint32_t, uint64_t, int32_t
+#include <stdint.h>              // for uint32_t, uint64_t, int32_t
 #include <tlm_logger_i.h>
 }
 
@@ -49,12 +49,11 @@ static int test_teardown(void** pContext)
 // Tests
 //
 
-
 // Test for data_proc_tlm_cmpnt_aggregate_pwr_tlm_data
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_aggregate_pwr_tlm_data, test_setup, test_teardown)
 {
     // runtime information manager test
-    sensor_ram_poll_status_t status_expected = { .curr_data_is_valid = false, .more_entries = false };
+    sensor_ram_poll_status_t status_expected = {.curr_data_is_valid = false, .more_entries = false};
     will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, &status_expected);
     will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, &status_expected);
     will_return(__wrap_sensor_fifo_svc_poll_core_current, &status_expected);
@@ -67,30 +66,33 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_aggregate_pwr_tlm_data, test_setup, test_
 // Test for tlm_logger_log_tile_temperature
 TEST_FUNCTION(test_tlm_logger_log_tile_temperature, test_setup, test_teardown)
 {
-    fpfw_status_t  status;
+    fpfw_status_t status;
 
     // runtime information manager test
     tile_temp_t temperature_data = {
         .timestamp = 0,
-        .temp0 = {
-            .temp_valid = 1,
-            .max_id = 7,
-            .max_temp = 80,
-            .core0 = 40,
-            .core1 = 40,
-        },
-        .temp1 = {
-            .temp0 = 20,
-            .temp1 = 30,
-            .temp2 = 40,
-            .temp3 = 40,
-        },
-        .temp2 = {
-            .temp4 = 30,
-            .temp5 = 20,
-            .temp6 = 40,
-            .temp7 = 80,
-        },
+        .temp0 =
+            {
+                .temp_valid = 1,
+                .max_id = 7,
+                .max_temp = 80,
+                .core0 = 40,
+                .core1 = 40,
+            },
+        .temp1 =
+            {
+                .temp0 = 20,
+                .temp1 = 30,
+                .temp2 = 40,
+                .temp3 = 40,
+            },
+        .temp2 =
+            {
+                .temp4 = 30,
+                .temp5 = 20,
+                .temp6 = 40,
+                .temp7 = 80,
+            },
     };
 
     uint8_t index = 0;
@@ -102,7 +104,7 @@ TEST_FUNCTION(test_tlm_logger_log_tile_temperature, test_setup, test_teardown)
     status = tlm_logger_log_tile_temperature(&temperature_data, index);
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
 
-    //test index out of range
+    // test index out of range
     index = NUMBER_OF_TILES_PER_DIE;
     status = tlm_logger_log_tile_temperature(&temperature_data, index);
     assert_int_equal(status, FPFW_STATUS_INVALID_ARGS);
@@ -111,17 +113,18 @@ TEST_FUNCTION(test_tlm_logger_log_tile_temperature, test_setup, test_teardown)
 // Test for tlm_logger_log_tile_voltage
 TEST_FUNCTION(test_tlm_logger_log_tile_voltage, test_setup, test_teardown)
 {
-    fpfw_status_t  status;
+    fpfw_status_t status;
 
     // runtime information manager test
     tile_voltage_t voltage_data = {
         .timestamp = 0,
-        .data = {
-            .vcore0 = 5,
-            .vcore1 = 6,
-            .vcpu = 10,
-            .vsys = 80,
-        },
+        .data =
+            {
+                .vcore0 = 5,
+                .vcore1 = 6,
+                .vcpu = 10,
+                .vsys = 80,
+            },
     };
 
     uint8_t index = 0;
@@ -130,11 +133,11 @@ TEST_FUNCTION(test_tlm_logger_log_tile_voltage, test_setup, test_teardown)
 
     // Check core 0 and core 1 voltage
     assert_int_equal(core[index].voltage.latest_value_mV, (uint16_t)(voltage_data.data.vcore0 * 1000));
-    assert_int_equal(core[index+1].voltage.latest_value_mV, (uint16_t)(voltage_data.data.vcore1 * 1000));
-    assert_int_equal(tile[index].vcpu.latest_value_mV , (uint16_t)(voltage_data.data.vcpu * 1000));
-    assert_int_equal(tile[index].vsys.latest_value_mV , (uint16_t)(voltage_data.data.vsys * 1000));
+    assert_int_equal(core[index + 1].voltage.latest_value_mV, (uint16_t)(voltage_data.data.vcore1 * 1000));
+    assert_int_equal(tile[index].vcpu.latest_value_mV, (uint16_t)(voltage_data.data.vcpu * 1000));
+    assert_int_equal(tile[index].vsys.latest_value_mV, (uint16_t)(voltage_data.data.vsys * 1000));
 
-    //test index out of range
+    // test index out of range
     index = NUMBER_OF_TILES_PER_DIE;
     status = tlm_logger_log_tile_voltage(&voltage_data, index);
     assert_int_equal(status, FPFW_STATUS_INVALID_ARGS);
@@ -143,22 +146,23 @@ TEST_FUNCTION(test_tlm_logger_log_tile_voltage, test_setup, test_teardown)
 // Test for tlm_logger_log_core_current
 TEST_FUNCTION(test_tlm_logger_log_core_current, test_setup, test_teardown)
 {
-    fpfw_status_t  status;
+    fpfw_status_t status;
     // runtime information manager test
     core_current_t current_data = {
         .timestamp = 0,
-        .data = {
-            .avg = 100,
-            .min = 10,
-            .max = 150,
-            .volt = 100,
-            .pwr = 50,
-            .pstate = 12,
-            .change = 1,
-            .mpam_id_low = 0,
-            .mpam_id_high = 0,
-            .cstate = 0,
-        },
+        .data =
+            {
+                .avg = 100,
+                .min = 10,
+                .max = 150,
+                .volt = 100,
+                .pwr = 50,
+                .pstate = 12,
+                .change = 1,
+                .mpam_id_low = 0,
+                .mpam_id_high = 0,
+                .cstate = 0,
+            },
     };
 
     uint8_t index = 0;
@@ -172,13 +176,14 @@ TEST_FUNCTION(test_tlm_logger_log_core_current, test_setup, test_teardown)
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
 
     // Check core 0 current
-    assert_int_equal(core[index].current_pkt_timestamp, (current_data.timestamp ));
-    assert_int_equal(core[index].current.latest_value_mA, (uint16_t)(current_data.data.avg * CORE_CURRENT_CONVERSION_FACTOR ));
-    assert_int_equal(core[index].ldo_voltage, (uint16_t)(current_data.data.volt ));
-    assert_int_equal(core[index].current_tel_pstate, (current_data.data.pstate ));
-    assert_int_equal(core[index].current_mpam_id, (current_data.data.mpam_id_low ));
+    assert_int_equal(core[index].current_pkt_timestamp, (current_data.timestamp));
+    assert_int_equal(core[index].current.latest_value_mA,
+                     (uint16_t)(current_data.data.avg * CORE_CURRENT_CONVERSION_FACTOR));
+    assert_int_equal(core[index].ldo_voltage, (uint16_t)(current_data.data.volt));
+    assert_int_equal(core[index].current_tel_pstate, (current_data.data.pstate));
+    assert_int_equal(core[index].current_mpam_id, (current_data.data.mpam_id_low));
 
-     //test index out of range
+    // test index out of range
     index = NUMBER_OF_CORES_PER_DIE;
     status = tlm_logger_log_core_current(&current_data, index);
     assert_int_equal(status, FPFW_STATUS_INVALID_ARGS);
@@ -187,22 +192,23 @@ TEST_FUNCTION(test_tlm_logger_log_core_current, test_setup, test_teardown)
 // Test for tlm_logger_log_core_pstate
 TEST_FUNCTION(test_tlm_logger_log_core_pstate, test_setup, test_teardown)
 {
-    fpfw_status_t  status;
+    fpfw_status_t status;
     // runtime information manager test
     pstate_telem_t pstate_data = {
         .timestamp = 0,
-        .data = {
-            .pstate = 12,
-            .throttle_status = 0,
-            .vm_throttle_pri = 0,
-            .max_pstate = 0,
-            .cstate = 0,
-            .plimit = 5,
-            .core = 0,
-            .mpam_low = 0,
-            .mpam_high = 0,
-            .boost_priority = 0,
-        },
+        .data =
+            {
+                .pstate = 12,
+                .throttle_status = 0,
+                .vm_throttle_pri = 0,
+                .max_pstate = 0,
+                .cstate = 0,
+                .plimit = 5,
+                .core = 0,
+                .mpam_low = 0,
+                .mpam_high = 0,
+                .boost_priority = 0,
+            },
     };
 
     // Baseline log
@@ -215,13 +221,11 @@ TEST_FUNCTION(test_tlm_logger_log_core_pstate, test_setup, test_teardown)
     status = tlm_logger_log_core_pstate(&pstate_data);
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
 
-
     // Do Throttling start
     pstate_data.timestamp = 120;
     pstate_data.data.throttle_status = RACK_THROTTLE_START;
     status = tlm_logger_log_core_pstate(&pstate_data);
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
-
 
     // Do Throttling start
     pstate_data.timestamp = 500;
@@ -236,7 +240,7 @@ TEST_FUNCTION(test_tlm_logger_log_core_pstate, test_setup, test_teardown)
     status = tlm_logger_log_core_pstate(&pstate_data);
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
 
-     //test index out of range
+    // test index out of range
     pstate_data.data.core = NUMBER_OF_CORES_PER_DIE;
     status = tlm_logger_log_core_pstate(&pstate_data);
     assert_int_equal(status, FPFW_STATUS_INVALID_ARGS);
@@ -255,7 +259,7 @@ TEST_FUNCTION(test_tlm_logger_log_vr_temp, test_setup, test_teardown)
     tlm_logger_log_vr_temp(&vr_temperature);
 
     // Check VR Temp
-    for(uint8_t index = 0; index < MAX_NUM_OF_VR_RAILS; index++)
+    for (uint8_t index = 0; index < MAX_NUM_OF_VR_RAILS; index++)
     {
         assert_int_equal(soc_info.rail[index].temperature.latest_value_dC, (vr_temperature.vr_temp[index]));
     }
@@ -273,8 +277,8 @@ TEST_FUNCTION(test_tlm_logger_log_vr_current, test_setup, test_teardown)
 
     // Baseline log
     tlm_logger_log_vr_current(&data);
-      // Check VR Current and voltage
-    for(uint8_t index = 0; index < MAX_NUM_OF_VR_RAILS; index++)
+    // Check VR Current and voltage
+    for (uint8_t index = 0; index < MAX_NUM_OF_VR_RAILS; index++)
     {
         assert_int_equal(soc_info.rail[index].current.latest_value_mA, (data.vr_current[index]));
         assert_int_equal(soc_info.rail[index].voltage.latest_value_mV, (data.vr_voltage[index]));

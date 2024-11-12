@@ -8,29 +8,23 @@
  */
 
 /*------------- Includes -----------------*/
-#include <CMockaWrapper.h>            // for check_expected_ptr, expect_fun...
+#include <CMockaWrapper.h> // for check_expected_ptr, expect_fun...
 extern "C" {
 #include <fpfw_init.h>
 }
-#include <fpfw_cfg_mgr.h>
-#include <fpfw_cfg_mgr_init.h>
-
 #include <cfg_mgr.h>
-
-#include <fpfw_status.h>
-
 #include <cstddef> // for NULL, size_t
 #include <cstdint> // for uint8_t, uint32_t
 #include <cstdio>  // for printf
 #include <cstring>
-
+#include <fpfw_cfg_mgr.h>
+#include <fpfw_cfg_mgr_init.h>
+#include <fpfw_status.h>
 #include <map>
-#include <vector>
-
 #include <utility> // for pair
+#include <vector>
 #include <xstring> // for string, operator<
 #include <xtree>   // for _Tree_iterator, _Tree<>::iterator
-
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define PROFILE_COUNT 2

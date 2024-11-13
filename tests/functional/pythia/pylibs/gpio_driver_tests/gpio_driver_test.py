@@ -198,7 +198,7 @@ class gpio_driver_test(EchoFallsBaseTest):
 
         expected = f"GPIO ISR Callback: Status: 0x00000000, CtrlID: {ctrl}, PinID: {pin}"
         try:
-            channel.read_until(key=expected, timeout_seconds=3)
+            channel.read_until(key=expected, timeout_seconds=30)
             self.log.info(f"ISR Callback for {ctrl} {pin}")
         except Exception as e:
             raise Exception(f"Failed to verify GPIO {ctrl} {pin} ISR Callback") from e

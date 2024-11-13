@@ -131,7 +131,66 @@ static int test_setup(void** ctx)
 //
 // Tests
 //
-TEST_FUNCTION(test_icc_mhu_trans_init, NULL, NULL)
+
+TEST_FUNCTION(test_icc_mhu_trans_init_too_small, NULL, NULL)
+{
+    icc_mhu_configuration_t bad_config[] = {
+        // SCP TO AP S Send Response -(TFA reponse)
+        {
+            .channel_id = MHU_INTERFACE_ID(SCP_LOCAL, AP_CORE_SEC),
+            .icc_channel_info =
+                {
+                    .protocol_type = ICC_PROTOCOL_TYPE_SCMI_ON_ICC,
+                    .direction = ICC_SEND_DIR,
+
+                },
+            .channel =
+                {
+                    .type = MHU3_CHANNEL_TYPE_DBCH,
+                    .address = MHU_SCP_AP_S_SEND_BASE_ADDRESS,
+                    .characteristics = 0,
+                    .dbch =
+                        {
+                            .pbx_channel = 0,
+                            .pbx_flag_pos = 0,
+                            .mbx_channel = 0,
+                            .mbx_flag_pos = 0,
+                        },
+                },
+            .mailbox_address = (uintptr_t)mailbox_0,
+            .mailbox_size = SIZE_OF_MAILBOX_TEST,
+        },
+        // AP TO SCP S Receive Message Configuration
+        {
+            .channel_id = MHU_INTERFACE_ID(AP_CORE_SEC, SCP_LOCAL),
+            .icc_channel_info =
+                {
+                    .protocol_type = ICC_PROTOCOL_TYPE_SCMI_ON_ICC,
+                    .direction = ICC_RECEIVE_DIR,
+
+                },
+            .channel =
+                {
+                    .type = MHU3_CHANNEL_TYPE_DBCH,
+                    .address = MHU_SCP_AP_S_REC_BASE_ADDRESS,
+                    .characteristics = 0,
+                    .dbch =
+                        {
+                            .pbx_channel = 0,
+                            .pbx_flag_pos = 0,
+                            .mbx_channel = 0,
+                            .mbx_flag_pos = 0,
+                        },
+                },
+            .mailbox_address = sizeof(icc_mhu_header_t),
+            .mailbox_size = 1,
+        },
+    };
+    int status = icc_mhu_trans_init(bad_config, sizeof(bad_config) / sizeof(icc_mhu_configuration_t));
+    assert_int_equal(status, ICC_MHU_INVALID_PARAMETER);
+}
+
+TEST_FUNCTION(test_icc_mhu_trans_init_success, NULL, NULL)
 {
     // Ensure that the MHU is initialized
     int status = icc_mhu_trans_init(d0_icc_mhu_config, sizeof(d0_icc_mhu_config) / sizeof(icc_mhu_configuration_t));
@@ -362,5 +421,13 @@ TEST_FUNCTION(test_icc_mhu_transport_driver_dispatch_sync, test_setup, nullptr)
     Request->OwningInterface = (PDFWK_INTERFACE_HEADER)&icc_mhu_inf;
     status = icc_mhu_transport_driver_dispatch_sync(Request);
     assert_int_equal(get_size_req.Output.MaxMesgSize, 256);
+    assert_int_equal(status, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
+
+    FPFW_ICC_TRANSPORT_SYNC_GET_MIN_MESG_SIZE_REQUEST get_min_size_req;
+    get_min_size_req.Header.RequestType = ICC_TRANSPORT_GET_MIN_MESG_SIZE_SYNC_REQUEST_ID;
+    Request = (PDFWK_SYNC_REQUEST_HEADER)&get_min_size_req;
+    Request->OwningInterface = (PDFWK_INTERFACE_HEADER)&icc_mhu_inf;
+    status = icc_mhu_transport_driver_dispatch_sync(Request);
+    assert_int_equal(get_min_size_req.Output.MinMesgSize, sizeof(icc_mhu_header_t));
     assert_int_equal(status, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
 }

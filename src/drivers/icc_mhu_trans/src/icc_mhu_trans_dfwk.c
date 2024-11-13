@@ -252,7 +252,15 @@ fpfw_status_t icc_mhu_transport_driver_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER R
         max_size_req->Output.MaxMesgSize = size;
         return FPFW_ICC_TRANSPORT_STATUS_SUCCESS;
     }
+    case ICC_TRANSPORT_GET_MIN_MESG_SIZE_SYNC_REQUEST_ID: {
+        //! get the request
+        PFPFW_ICC_TRANSPORT_SYNC_GET_MIN_MESG_SIZE_REQUEST min_size_req =
+            (PFPFW_ICC_TRANSPORT_SYNC_GET_MIN_MESG_SIZE_REQUEST)Request;
 
+        // The minimum size is the size of the header
+        min_size_req->Output.MinMesgSize = sizeof(icc_mhu_header_t);
+        return FPFW_ICC_TRANSPORT_STATUS_SUCCESS;
+    }
     case ICC_TRANSPORT_TRY_RECV_SYNC_REQUEST_ID: {
         //! get the request
         PFPFW_ICC_TRANSPORT_SYNC_TRY_RECV_REQUEST recv_try_req = (PFPFW_ICC_TRANSPORT_SYNC_TRY_RECV_REQUEST)Request;

@@ -116,6 +116,21 @@ int icc_mhu_trans_init(void* p_config_table, uint8_t table_size)
         // Check for any SCMI receive configuration and make sure to set the channel to be free
         for (uint8_t index = 0; index < table_size; index++)
         {
+            // Validate the payload on either end of the channel is large enough to hold the header
+            if (icc_config[index].mailbox_size < sizeof(icc_mhu_header_t))
+            {
+                return ICC_MHU_INVALID_PARAMETER;
+            }
+
+            // If the channel is an SCMI channel validate that it has enough space for the mhu header and the scmi header
+            if (icc_config[index].icc_channel_info.protocol_type == ICC_PROTOCOL_TYPE_SCMI_ON_ICC)
+            {
+                if (icc_config[index].mailbox_size < sizeof(icc_mhu_header_t) + sizeof(scmi_icc_packet_t))
+                {
+                    return ICC_MHU_INVALID_PARAMETER;
+                }
+            }
+
             // Check if the channel is for SCMI
             if (icc_config[index].icc_channel_info.protocol_type == ICC_PROTOCOL_TYPE_SCMI_ON_ICC &&
                 icc_config[index].icc_channel_info.direction == ICC_RECEIVE_DIR)

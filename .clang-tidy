@@ -12,6 +12,13 @@ Checks: >
   llvm-include-order,
   -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
   -readability-magic-numbers,
-  -readability-non-const-parameter
+  -readability-non-const-parameter,
+  -misc-include-cleaner,
+  -modernize-macro-to-enum,
+  -readability-redundant-casting,
+  -readability-identifier-length,
+  -readability-avoid-nested-conditional-operator,
+  -readability-avoid-unconditional-preprocessor-if,
+  -misc-header-include-cycle,
+  -readability-suspicious-call-argument
 WarningsAsErrors: '*'
-AnalyzeTemporaryDtors: false

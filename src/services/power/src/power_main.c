@@ -9,7 +9,6 @@
 
 /*------------- Includes -----------------*/
 #include "crash_dump.h"
-#include "power_hw_int_i.h" // for force pmin
 #include "power_hw_int_i.h" // for power_init_core, power_init_soc
 #include "power_i.h"        // for POWER_LOG_INFO, power_ap_soc_init
 #include "power_loops_i.h"

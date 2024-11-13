@@ -14,7 +14,6 @@
 
 #include "dvfs_struct.h"     // for dvfs_config_t, dvfs_init_config_t
 #include "odcm_struct.h"     // for odcm_config_t, odcm_telem_config_t
-#include "power_hw_int_i.h"  // for force pmin
 #include "power_hw_int_i.h"  // for power_telcfg_t, power_hw_dts_pvt_raw_...
 #include "power_i.h"         // for TEMP2DOUT_FUSED, BUG_CHECK
 #include "power_runconfig.h" // for power_knobs_t, dts_coeff_t, power_run...

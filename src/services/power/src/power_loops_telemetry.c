@@ -10,7 +10,6 @@
 /*------------- Includes -----------------*/
 #include "pid_resource.h"
 #include "power_events.h"
-#include "power_hw_int_i.h" // for force pmin
 #include "power_hw_int_i.h"
 #include "power_i.h"
 #include "power_loops_i.h"

@@ -40,7 +40,7 @@ mock_target(${TARGET}
     system_info_is_hsp_present
     variable_service_initialize_ctx
     variable_service_sync_get_variable
-    variable_service_sync_set_variable
+    variable_service_async_set_variable
     variable_service_unlock_get_var_ctx
     update_knob_in_cached_db_cb
 )

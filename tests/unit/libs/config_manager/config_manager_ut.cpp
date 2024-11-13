@@ -75,7 +75,7 @@ int32_t __wrap_variable_service_sync_get_variable(var_service_req_ctx_t* var_ser
     return mock_type(int32_t);
 }
 
-void __wrap_variable_service_sync_set_variable(var_service_req_ctx_t* var_serv_ctx, var_service_req_params_t* req_params)
+void __wrap_variable_service_async_set_variable(var_service_req_ctx_t* var_serv_ctx, var_service_req_params_t* req_params)
 {
     FPFW_UNUSED(var_serv_ctx);
     FPFW_UNUSED(req_params);
@@ -161,7 +161,7 @@ TEST_FUNCTION(test_update_knob_data, nullptr, nullptr)
 {
     will_return_always(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
-    expect_function_call(__wrap_variable_service_sync_set_variable);
+    expect_function_call(__wrap_variable_service_async_set_variable);
 
     cfg_mgr_init(&config_manager_setting, &shared_mem);
 

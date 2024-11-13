@@ -50,6 +50,12 @@ void __wrap_cfg_mgr_cli_init()
     function_called();
 }
 
+
+KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
+{
+    return mock_type(KNG_PLAT_ID);
+}
+
 //
 // Tests
 //
@@ -57,6 +63,7 @@ TEST_FUNCTION(test_cfg_mgr_init, nullptr, nullptr)
 {
     // Set up expectations
     expect_function_call(__wrap_cfg_mgr_init);
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
 
     // Call API under test
     _fpfw_component_cfg_mgr.init_fn();

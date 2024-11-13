@@ -37,4 +37,5 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     cfg_mgr_init
     cfg_mgr_cli_init
+    idsw_get_platform_sdv
 )

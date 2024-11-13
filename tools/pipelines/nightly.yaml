@@ -19,12 +19,21 @@ stages:
       Configuration: Debug
       ArtifactName: Build_Arm_EABI_AARCH_Debug
 
-- stage: SVP_Pythia_Tests
+- stage: SVP_Pythia_Tests_SingleDie
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
   jobs:
   - template: templates/svp_pythia_test.yaml
     parameters:
-      ArtifactName: SVP_Pythia_Tests
+      ArtifactName: SVP_Pythia_Tests_SingleDie
+      TestPlan: .\tests\functional\pythia\test_plan\svp_single_die_ci_test_plan.args
+
+- stage: SVP_Pythia_Tests_DualDie
+  dependsOn: [Build_Arm_EABI_AARCH_Debug]
+  jobs:
+  - template: templates/svp_pythia_test.yaml
+    parameters:
+      ArtifactName: SVP_Pythia_Tests_DualDie
+      TestPlan: .\tests\functional\pythia\test_plan\svp_dual_die_ci_test_plan.args
 
 - stage: FPGA_Pythia_Tests
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
@@ -36,7 +45,7 @@ stages:
 
 # This is to tag the commits that pass nightly tests.
 - stage: Promote
-  dependsOn: [ Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests, FPGA_Pythia_Tests ]
+  dependsOn: [ Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests_SingleDie, SVP_Pythia_Tests_DualDie, FPGA_Pythia_Tests ]
   # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
   condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
   pool: 

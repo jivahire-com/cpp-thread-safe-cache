@@ -8,15 +8,17 @@
  */
 
 /*------------- Includes -----------------*/
+#include <arm_intrinsic.h> // for __DSB on Windows builds (empty define)
 #include <atu_lib.h>
 #include <ddr_err_inj.h>
 #include <ddrss.h>
 #include <ddrss_lib.h>
 #include <kng_soc_constants.h>
+#include <nvic.h> // Has nested include of cmsis_gcc_m.h for __DSB() intrinsic
 #include <silibs_ap_top_regs.h>
 #include <silibs_platform.h>
 #include <stdint.h>
-#include <stdio.h> // for printf
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -94,6 +96,8 @@ void ddrss_ue_ce_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, 
     media_data_err_inj.err_inj_beat = 1;
     media_data_err_inj.err_inj_cnt = 1;
     DDR_ASSERT(!ddrss_inject_media_data_err(mc, &media_data_err_inj));
+    __DSB();
+
     MMIO_READ32(err_inj_mapped_addr);
     ddrss_err_inj_atu_unmap();
 }

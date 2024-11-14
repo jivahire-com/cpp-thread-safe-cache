@@ -6,6 +6,7 @@ add_library(${TARGET}
     STATIC
         ddr_manager_acpi_smbios_tables.c
         ddr_manager_bwl.c
+        ddr_manager_events.c
         ddr_manager_gpio.c
         ddr_manager_i3c.c
         ddr_manager_load_phy.c
@@ -39,6 +40,7 @@ target_link_libraries(${TARGET}
         fwlib.service.iccBase
         ms::lib::crash_dump
         ms::lib::error_codes
+        ms::lib::event_trace::trace
         ms::lib::hsp_firmware_headers
         ms::lib::i3c_controller
         ms::lib::system_info

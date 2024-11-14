@@ -17,6 +17,7 @@
 #include "ddr_manager_i.h"
 #include "ddr_manager_i3c.h"
 
+#include <ddr_manager_events.h>
 #include <fpfw_cfg_mgr.h>
 #include <stdio.h>
 
@@ -53,6 +54,7 @@ void ddr_poll_dimms()
 {
     if (!ddr_manager_platform_is_polling_supported())
     {
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_PLATFORM_NOT_SUPPORTED, ET_NOPARAM);
         printf("DDR polling not supported on this platform, skipping\n");
         return;
     }
@@ -66,6 +68,7 @@ void ddr_poll_dimms()
         }
         else
         {
+            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_READ_TEMPERATURE_SENSOR_0, dimm_idx);
             printf("Failed to read temperature sensor 0 on DIMM %d\n", dimm_idx);
         }
 
@@ -76,6 +79,7 @@ void ddr_poll_dimms()
         }
         else
         {
+            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_READ_TEMPERATURE_SENSOR_1, dimm_idx);
             printf("Failed to read temperature sensor 1 on DIMM %d\n", dimm_idx);
         }
     }
@@ -123,6 +127,7 @@ void check_dimm_temp_thresholds()
         if ((ts0_temp.is_positive && ts0_temp.as_uint16 > thresholds.crit) ||
             (ts1_temp.is_positive && ts1_temp.as_uint16 > thresholds.crit))
         {
+            DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_DIMM_EXCEEDED_CRITICAL_TEMPERATURE_THRESHOLD, dimm_idx);
             printf("DIMM %d has exceeded critical temperature threshold\n", dimm_idx);
 
             // Blow things up
@@ -142,6 +147,7 @@ void check_dimm_temp_thresholds()
         else
         {
             // May want to do something else here, like log an event
+            DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_DIMM_TEMPERATURES_EXCEED_HIGH_THRESHOLD_BWL_DISABLE);
             printf("DIMM temperatures exceed high threshold, but BWL is disabled\n");
         }
     }

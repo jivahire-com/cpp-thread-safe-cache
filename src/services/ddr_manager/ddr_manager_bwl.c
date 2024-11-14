@@ -13,6 +13,7 @@
 
 #include "ddr_manager_i.h"
 
+#include <ddr_manager_events.h>
 #include <stdio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -74,6 +75,7 @@ void ddr_manager_enable_bwl_i3c()
     if (bwl_state == BWL_STATE_DISABLED)
     {
         ddr_manager_engage_bwl();
+        DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_ENABLED_BY_I3C);
         printf("BWL enabled by I3C polling\n");
     }
 
@@ -87,6 +89,7 @@ void ddr_manager_disable_bwl_i3c()
     if (bwl_state == BWL_STATE_DISABLED)
     {
         ddr_manager_disengage_bwl();
+        DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_DISABLED_BY_I3C);
         printf("BWL disabled by I3C polling\n");
     }
 }
@@ -96,6 +99,7 @@ void ddr_manager_enable_bwl_mr4()
     if (bwl_state == BWL_STATE_DISABLED)
     {
         ddr_manager_engage_bwl();
+        DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_ENABLED_BY_MR4);
         printf("BWL enabled by MR4 interrupt\n");
     }
 
@@ -109,6 +113,7 @@ void ddr_manager_disable_bwl_mr4()
     if (bwl_state == BWL_STATE_DISABLED)
     {
         ddr_manager_disengage_bwl();
+        DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_DISABLED_BY_MR4);
         printf("BWL disabled by MR4 interrupt\n");
     }
 }
@@ -118,6 +123,7 @@ void ddr_manager_enable_bwl_force()
     if (bwl_state == BWL_STATE_DISABLED)
     {
         ddr_manager_engage_bwl();
+        DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_FORCED_ENABLE);
         printf("BWL forced enabled\n");
     }
 
@@ -131,6 +137,7 @@ void ddr_manager_disable_bwl_force()
     if (bwl_state == BWL_STATE_DISABLED)
     {
         printf("BWL forced disabled\n");
+        DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_FORCED_DISABLE);
         ddr_manager_disengage_bwl();
     }
 }

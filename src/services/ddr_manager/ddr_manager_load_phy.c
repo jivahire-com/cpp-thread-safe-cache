@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include <FpFwUtils.h>
 #include <bug_check.h> // for BUG_ASSERT_PARAM, BUG_ASSERT
+#include <ddr_manager_events.h>
 #include <ddr_manager_i.h>
 #include <fpfw_icc_base.h> // for fpfw_icc_base_send, fpfw_icc_base...
 #include <fpfw_init.h>     // for fpfw_init_get_handle
@@ -40,6 +41,7 @@ void hsp_send_recv_load_fw_ddr_phy_req(fpfw_icc_base_ctx_t* icc_ctx)
 {
     if (icc_ctx == NULL)
     {
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_ICC_NULL_POINTER, ET_NOPARAM);
         DDR_LOG_INFO("Invalid icc_ctx: NULL pointer provided.");
         return;
     }
@@ -53,6 +55,7 @@ void hsp_send_recv_load_fw_ddr_phy_req(fpfw_icc_base_ctx_t* icc_ctx)
 
     if (system_info_is_hsp_present())
     {
+        DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_SEND_REQUEST_PHY_BIN);
         DDR_LOG_INFO("send request for DDR PHY bin");
         size_t recv_msg_size_bytes = 0;
         kng_hsp_cmd_load_fw_mailbox_msg msg = {
@@ -71,6 +74,7 @@ void hsp_send_recv_load_fw_ddr_phy_req(fpfw_icc_base_ctx_t* icc_ctx)
         BUG_ASSERT(msg.load_fw_req.header.cmd == HSP_MAILBOX_CMD_LOAD_FW_RSP);
         BUG_ASSERT(msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
 
+        DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_PHY_BIN_LOAD_COMPLETE);
         DDR_LOG_INFO("DDR PHY bin load complete");
     }
 }

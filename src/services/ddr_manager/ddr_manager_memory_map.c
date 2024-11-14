@@ -18,6 +18,7 @@
 #include "shared_sds_def.h"
 
 #include <ErrorHandler.h> // for FPFwErrorRaise
+#include <ddr_manager_events.h>
 #include <stdio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -71,12 +72,14 @@ void ddr_create_memory_map()
     // Walk the memory regions and insert reserved ranges.  Returns populated memory map as 3rd parameter
     if (ddrmap_add_reservations((*all_mem_regions).mem_regions, sorted_reservations, appended_mmap_tfa) != SILIBS_SUCCESS)
     {
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_ADD_RESERVED_RANGE_TO_MEMORY_MAP, ET_NOPARAM);
         printf("[DDR] Error adding reserved range to DDR memory map");
     }
 
     // Pass to TF-A in Shared SRAM via SDS structure service
     if (MemoryMapPassToTFA(appended_mmap_tfa) != DFWK_SUCCESS)
     {
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_USING_SDS_STRUCTURE, ET_NOPARAM);
         printf("[DDR] Error using SDS structure");
     }
 }
@@ -98,6 +101,7 @@ static uint32_t MemoryMapPassToTFA(ddrss_memory_region_t mmap_tfa[])
 
     if (get_mmap_size_bytes(mmap_tfa, &numbytes_new_mmap) != SILIBS_SUCCESS)
     {
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_READ_MEMORY_MAP_SIZE, ET_NOPARAM);
         printf("[DDR] Error reading DDR memory map size");
     }
 
@@ -122,6 +126,7 @@ void ddrss_get_memory_map(const ddrss_sys_mem_region_t** all_mem_regions)
     *all_mem_regions = ddrss_get_system_mem_region();
     printf("[DDR] Retrieving DDR Memory Info from library\n");
 
+    DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_NUMBER_OF_MEMORY_REGION, (unsigned long)(*all_mem_regions)->num_regions);
     printf("[DDR] Number of memory regions before adding reservations = %lu\n",
            (unsigned long)(*all_mem_regions)->num_regions);
 }
@@ -174,6 +179,7 @@ int sort_reserved_regions(const ddrss_memory_region_t reservations[], uint32_t n
         out_sorted[pre_idx + 1] = curr_region[rsvd_count];
     }
 
+    DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_SORTING_RESERVED_MEMORY_MAP, ET_NOPARAM);
     printf("[DDR] Error while sorting reserved memory map");
     return SILIBS_E_DATA;
 }
@@ -205,6 +211,7 @@ int check_reservation_order(const ddrss_memory_region_t reservations[])
 
         if (!(curr_start >= prev_end))
         {
+            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_UNEXPECTED_RESERVATION_OVERLAP, idx);
             printf("[DDR] Unexpected reservation overlap (0x%llx)\n", curr_start);
             return SILIBS_E_DATA;
         }
@@ -323,6 +330,7 @@ int ddrmap_add_reservations(const ddrss_memory_region_t in_mmap[],
         }
         in_idx++;
     }
+    DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_INSERTING_RESERVED_MEMORY_MAP, ET_NOPARAM);
     printf("[DDR] Error while inserting reserved memory ranges for MSCP");
     return SILIBS_E_DATA;
 }
@@ -367,7 +375,7 @@ int ddrmap_get_last_idx(const ddrss_memory_region_t ddr_mmap[])
         }
         mem_idx++;
     }
-
+    DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_RESERVED_ADDRESS_RANGE_NOT_TERMINATED, ET_NOPARAM);
     printf("[DDR] Error - Reserved DDR address range is not terminated by an empty record");
     return SILIBS_E_DATA;
 }
@@ -398,7 +406,7 @@ int get_mmap_size_bytes(ddrss_memory_region_t appended_mmap_64b[], size_t* num_b
         }
         mem_region_count++;
     }
-
+    DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_MEMORY_REGIONS_EXCEEDS_EXPECTED_SIZE, ET_NOPARAM);
     printf("[DDR] Discovered memory regions exceeds expected size");
     return SILIBS_E_DATA;
 }

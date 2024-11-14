@@ -13,6 +13,7 @@
 
 #include <bug_check.h>
 #include <ddr_i3c.h>
+#include <ddr_manager_events.h>
 #include <i3c_controller.h>
 #include <idhw.h>
 
@@ -156,6 +157,7 @@ int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manag
     int status = ddr_i3c_interface_read_temp_sensor_mr_reg(i3c_instance, &i3c_cmd, ts_idx, TS_MR49, &ts_low, &data_len);
     if (status != DDR_I3C_INTERFACE_SUCCESS)
     {
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TEMPERATURE_SENSOR_MR49_READ, status);
         printf("Temperature Sensor MR49 Read Failed\n");
         return DDR_MANAGER_I3C_TRANSACTION_ERROR;
     }
@@ -165,6 +167,7 @@ int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manag
     status = ddr_i3c_interface_read_temp_sensor_mr_reg(i3c_instance, &i3c_cmd, ts_idx, TS_MR50, &ts_high, &data_len);
     if (status != DDR_I3C_INTERFACE_SUCCESS)
     {
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TEMPERATURE_SENSOR_MR50_READ, status);
         printf("Temperature Sensor MR50 Read Failed\n");
         return DDR_MANAGER_I3C_TRANSACTION_ERROR;
     }

@@ -406,10 +406,7 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
            "phase_min=POST_BRIDGE_INIT_MINOR, exclude_list=%p, exclude_list_count=%u\n",
            (void*)fuse_dist_exclude_list1,
            exclude_list_count1);
-    // kng_fuse_disable_core_t _test_disable_core={};
-    expect_value(__wrap_sds_block_write, sds_module_id, FUSE_DISABLE_CORE_DIE0_STRUCT_ID);
-    expect_memory(__wrap_sds_block_write, buffer, &(DIE0_fuse_disable), FUSE_DISABLE_CORE_DIE0_SIZE);
-    expect_value(__wrap_sds_block_write, buffer_size, FUSE_DISABLE_CORE_DIE0_SIZE);
+   
     unsigned int status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_HSP_MESH_INIT);
     assert_int_equal(status, 0);
     status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT);
@@ -419,7 +416,15 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
     // Debug prints
     printf("Freed memory for fuse_dist_exclude_list1\n");
 }
-
+TEST_FUNCTION(test_fuse_core_to_ap, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    // kng_fuse_disable_core_t _test_disable_core={};
+    expect_value(__wrap_sds_block_write, sds_module_id, FUSE_DISABLE_CORE_DIE0_STRUCT_ID);
+    expect_memory(__wrap_sds_block_write, buffer, &(DIE0_fuse_disable), FUSE_DISABLE_CORE_DIE0_SIZE);
+    expect_value(__wrap_sds_block_write, buffer_size, FUSE_DISABLE_CORE_DIE0_SIZE);
+    write_fuse_info_to_ap();
+}
 TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);

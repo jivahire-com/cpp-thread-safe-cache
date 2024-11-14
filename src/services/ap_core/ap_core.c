@@ -19,7 +19,8 @@
 #include <FpFwUtils.h>
 #include <bug_check.h>
 #include <corebits.h>
-#include <fpfw_icc_base.h>        // for fpfw_icc_base_send, fpfw_icc_base...
+#include <fpfw_icc_base.h> // for fpfw_icc_base_send, fpfw_icc_base...
+#include <fuse_init.h>
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
 #include <inttypes.h>
 #include <kng_error.h>
@@ -61,6 +62,8 @@ static void ap_core_die_config_handover()
 
     result = sds_block_write(SDS_DIE_CONFIG_STRUCT_ID, &die_config_val, SDS_DIE_CONFIG_SIZE);
     BUG_ASSERT(result == KNG_SUCCESS);
+
+    write_fuse_info_to_ap();
 }
 
 // dispatcher function to handle set of rvbaraddr

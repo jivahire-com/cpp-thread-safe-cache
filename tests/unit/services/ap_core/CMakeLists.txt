@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         ms::mocks::event_trace
         ms::mocks::threadx
         ms::service::ap_core
+        ms::service::fuse
         ms::service::sds_service
     PUBLIC
         fwlib.lib.assert
@@ -69,6 +70,8 @@ mock_target(${TARGET}
     sds_block_write
 
     ppu_v1_init
+
+    write_fuse_info_to_ap
 
     system_info_is_hsp_present
 )

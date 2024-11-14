@@ -49,7 +49,7 @@ static bool platform_requires_fuse_distribution();
 static int platform_fuse_copy_to_ram();
 static int read_override_from_spi();
 static int read_core_disabled_fuses();
-static int write_fuse_info_to_ap();
+
 /*-- Declarations (Statics and globals) --*/
 
 static fpfw_icc_base_ctx_t* icc_base_ctx_fuse;
@@ -143,7 +143,7 @@ static int read_core_disabled_fuses()
     return SILIBS_SUCCESS;
 }
 
-static int write_fuse_info_to_ap()
+int write_fuse_info_to_ap()
 {
     int32_t result = 0;
     if (idsw_get_die_id() == DIE_0)
@@ -360,8 +360,6 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
                 return status;
             }
             printf(FUSE_NAME "Phase 3 fuse distribution complete\n");
-
-            status = write_fuse_info_to_ap();
         }
 
         printf(FUSE_NAME "Phase [%d] fuse distribution complete\n", stage);

@@ -14,6 +14,12 @@ from kng_pythia_test_setup import KngPythiaTestSetup
 
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
+class Core:
+    def __init__(self, channel=None, heartbeat_timeout=None, read_timeout=None):
+        self.channel = channel
+        self.heartbeat_timeout = heartbeat_timeout
+        self.read_timeout = read_timeout
+
 class gpio_driver_test(EchoFallsBaseTest):
     """
     :param name:                Name of the test case
@@ -78,20 +84,23 @@ class gpio_driver_test(EchoFallsBaseTest):
         #
         # Test GPIO driver
         #
-        self.channels = {}
+        self.cores = {
+            "scp": Core(self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel(), 900, 30),
+            # Increase the timeout for MCP as it takes longer than SCP to unblock pipeline
+            # Decrease the timeout once the MCP performance issue is resolved
+            # https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/2181713
+            "mcp": Core(self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel(), 3600, 3600)
+        }
 
-        self.channels["scp"] = self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
-        self.channels["mcp"] = self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel()
-
-        self.channels["scp"].open()
-        assert self.channels["scp"].is_open()
-        self.channels["mcp"].open()
-        assert self.channels["mcp"].is_open()
+        self.cores["scp"].channel.open()
+        assert self.cores["scp"].channel.is_open()
+        self.cores["mcp"].channel.open()
+        assert self.cores["mcp"].channel.is_open()
 
         # Wait until heartbeat is received
         self.log.info("Reading SCP UART for HeartBeat . . .")
         try:
-            self.channels["scp"].read_until(key="ScpHeartBeat", timeout_seconds=900)
+            self.cores["scp"].channel.read_until(key="ScpHeartBeat", timeout_seconds=self.cores["scp"].heartbeat_timeout)
         except Exception as e:
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
@@ -100,7 +109,7 @@ class gpio_driver_test(EchoFallsBaseTest):
 
         self.log.info("Reading MCP UART for HeartBeat . . .")
         try:
-            self.channels["mcp"].read_until(key="McpHeartBeat", timeout_seconds=900)
+            self.cores["mcp"].channel.read_until(key="McpHeartBeat", timeout_seconds=self.cores["mcp"].heartbeat_timeout)
         except Exception as e:
             self.log.error(f"Error reading MCP UART: {e}")
             self.test_notify(step="McpHeartBeat", msg="Test Fail", _is_error=True)
@@ -110,7 +119,7 @@ class gpio_driver_test(EchoFallsBaseTest):
         # Wait for the system to stabilize
         time.sleep(10)
 
-        for core, channel in self.channels.items():
+        for core_name, core in self.cores.items():
             # Check GPIO configurations
             for gpio_ctrl in self.gpio_config["GPIO_Controllers"] :
                 ctrl_name = gpio_ctrl["Name"]
@@ -121,21 +130,21 @@ class gpio_driver_test(EchoFallsBaseTest):
                     pin_name = gpio_pin["Name"]
                     pin_direction = gpio_pin["Direction"]
                     pin_interrupt = gpio_pin["Interrupt"]
-                    self.log.info(f"{core} GPIO {ctrl_name} Pin: Name: {pin_name} : ID: {pin_id} : Direction: {pin_direction} : Interrupt: {pin_interrupt}")
+                    self.log.info(f"{core_name} GPIO {ctrl_name} Pin: Name: {pin_name} : ID: {pin_id} : Direction: {pin_direction} : Interrupt: {pin_interrupt}")
                     try:
-                        self.test_pin_configuration(channel, ctrl_Id, pin_id, pin_direction, pin_interrupt)
+                        self.test_pin_configuration(core, ctrl_Id, pin_id, pin_direction, pin_interrupt)
                     except Exception as e:
                         self.log.error(f"{e}")
-                        self.test_notify(step=f"{core}_PinConfig", msg="Test Fail", _is_error=True)
+                        self.test_notify(step=f"{core_name}_PinConfig", msg="Test Fail", _is_error=True)
                         self.dut.teardown()
                         return False
 
             # Test GPIO ISR to test GPIO driver ISR functionality with reserved Pins
             try:
-                self.test_GPIO_isr(channel, self.gpio_config["ReservedForIsr"][core])
+                self.test_GPIO_isr(core, self.gpio_config["ReservedForIsr"][core_name])
             except Exception as e:
                 self.log.error(f"{e}")
-                self.test_notify(step=f"{core}_GPIO_ISR", msg="Test Fail", _is_error=True)
+                self.test_notify(step=f"{core_name}_GPIO_ISR", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
                 return False
 
@@ -147,13 +156,13 @@ class gpio_driver_test(EchoFallsBaseTest):
         self.dut.teardown()
         return True
 
-    def test_pin_configuration(self, channel, ctrl_id, pin_id, pin_direction, pin_interrupt):
-        channel.write_line(write_string="gpio")
+    def test_pin_configuration(self, core, ctrl_id, pin_id, pin_direction, pin_interrupt):
+        core.channel.write_line(write_string="gpio")
 
         # Check Direction
         expected = f"Get {ctrl_id} / {pin_id} GPIO Direction: {pin_direction}"
-        channel.write_line(write_string=f"get_dir {ctrl_id} {pin_id}")
-        result = channel.read_until(key=expected, timeout_seconds=30)
+        core.channel.write_line(write_string=f"get_dir {ctrl_id} {pin_id}")
+        result = core.channel.read_until(key=expected, timeout_seconds=core.read_timeout)
         matched = re.findall(expected, result)
         if matched:
             self.log.info(f"gpio-get_dir {ctrl_id} {pin_id}: Output {matched}")
@@ -162,48 +171,48 @@ class gpio_driver_test(EchoFallsBaseTest):
 
         # Check Interrupt enable
         expected = f"Get {ctrl_id} / {pin_id} GPIO interrupt: {pin_interrupt}";
-        channel.write_line(write_string=f"get_int_enable {ctrl_id} {pin_id}")
-        result = channel.read_until(key=expected, timeout_seconds=30)
+        core.channel.write_line(write_string=f"get_int_enable {ctrl_id} {pin_id}")
+        result = core.channel.read_until(key=expected, timeout_seconds=core.read_timeout)
         matched = re.findall(expected, result)
         if matched:
             self.log.info(f"gpio-get_int_enable {ctrl_id} {pin_id}: Output {matched}")
         else:
             raise Exception(f"Failed to verify GPIO {ctrl_id} {pin_id} Interrupt")
 
-        channel.write_line(write_string="..")
+        core.channel.write_line(write_string="..")
         
-    def test_GPIO_isr(self, channel, config):
-        channel.write_line(write_string="gpio")
+    def test_GPIO_isr(self, core, config):
+        core.channel.write_line(write_string="gpio")
         ctrl = config["Ctrl"]
         pin = config["Pin"]
 
         # Set direction to output to generate interrupt
-        channel.write_line(write_string=f"set_dir {ctrl} {pin} 1")
+        core.channel.write_line(write_string=f"set_dir {ctrl} {pin} 1")
         time.sleep(1)
 
         # Enable Interrupt
-        channel.write_line(write_string=f"set_int_enable {ctrl} {pin} 1")
+        core.channel.write_line(write_string=f"set_int_enable {ctrl} {pin} 1")
         time.sleep(1)
 
         # Register ISR
-        channel.write_line(write_string=f"register_isr {ctrl} {pin}")
+        core.channel.write_line(write_string=f"register_isr {ctrl} {pin}")
         time.sleep(1)
 
         # Generate Interrupt
-        channel.write_line(write_string=f"set_pin {ctrl} {pin} 0")
+        core.channel.write_line(write_string=f"set_pin {ctrl} {pin} 0")
         time.sleep(1)
 
-        channel.write_line(write_string=f"set_pin {ctrl} {pin} 1")
+        core.channel.write_line(write_string=f"set_pin {ctrl} {pin} 1")
         time.sleep(1)
 
         expected = f"GPIO ISR Callback: Status: 0x00000000, CtrlID: {ctrl}, PinID: {pin}"
         try:
-            channel.read_until(key=expected, timeout_seconds=30)
+            core.channel.read_until(key=expected, timeout_seconds=core.read_timeout)
             self.log.info(f"ISR Callback for {ctrl} {pin}")
         except Exception as e:
             raise Exception(f"Failed to verify GPIO {ctrl} {pin} ISR Callback") from e
 
         # Restore configuration
-        channel.write_line(write_string="restore")
+        core.channel.write_line(write_string="restore")
         time.sleep(1)
-        channel.write_line(write_string="..")
+        core.channel.write_line(write_string="..")

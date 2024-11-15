@@ -13,6 +13,7 @@
 #include <bug_check.h>
 #include <config_manager.h>
 #include <config_manager_i.h>
+#include <idsw_kng.h>
 #include <memory.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -65,7 +66,7 @@ bool update_knob_data(cached_knob_data_t* current_entry, const uint8_t* data, si
     current_entry->overridden = true;
     FPFwSpinLockRelease(&lock);
 
-    if (permanent)
+    if (permanent && (idsw_get_die_id() == DIE_0))
     {
         if (system_info_is_hsp_present())
         {
@@ -104,6 +105,12 @@ bool update_knob_in_cached_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespace,
 
 void apply_override_knob_from_hsp()
 {
+    // Disable knob update from HSP on secondary die
+    if (idsw_get_die_id() != DIE_0)
+    {
+        return;
+    }
+
     for (uint32_t idx = 0; idx < cached_knob_data_size(); idx++)
     {
         FPFwSpinLockAcquire(&lock);

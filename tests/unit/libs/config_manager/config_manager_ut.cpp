@@ -14,6 +14,7 @@ extern "C" {
 #include <FpFwUtils.h>
 #include <config_manager.h>
 #include <config_manager_i.h>
+#include <idsw_kng.h>
 #include <kng_error.h>
 #include <mscp_exp_rmss_memory_map.h>
 
@@ -96,6 +97,11 @@ bool __wrap_update_knob_in_cached_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespac
     assert_true(test_data == *((uint32_t*)data));
     return true;
 }
+
+KNG_DIE_ID __wrap_idsw_get_die_id()
+{
+    return mock_type(KNG_DIE_ID);
+}
 }
 
 //
@@ -115,6 +121,7 @@ TEST_FUNCTION(test_cfg_mgr_init_hsp_override, nullptr, nullptr)
 {
     hsp_variable_svc_invoke_count = 0;
     will_return(__wrap_system_info_is_hsp_present, true);
+    will_return(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_SUCCESS);
 
     cfg_mgr_init(&config_manager_setting, &shared_mem);
@@ -133,6 +140,7 @@ TEST_FUNCTION(test_cfg_mgr_init_hsp_no_override, nullptr, nullptr)
 {
     hsp_variable_svc_invoke_count = 0;
     will_return(__wrap_system_info_is_hsp_present, true);
+    will_return(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
 
     cfg_mgr_init(&config_manager_setting, &shared_mem);
@@ -149,6 +157,7 @@ TEST_FUNCTION(test_cfg_mgr_init_hsp_no_override, nullptr, nullptr)
 
 TEST_FUNCTION(test_update_knob_in_cached_db_cb, nullptr, nullptr)
 {
+    will_return(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
 
@@ -159,6 +168,7 @@ TEST_FUNCTION(test_update_knob_in_cached_db_cb, nullptr, nullptr)
 
 TEST_FUNCTION(test_update_knob_data, nullptr, nullptr)
 {
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
     expect_function_call(__wrap_variable_service_async_set_variable);

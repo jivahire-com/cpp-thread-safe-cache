@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TSA xmlns="http://TSAWeb/Api">
+    <CodeBase name="AzureCSI.Woodinville.Kingsgate.MSCP"
+        notification="EFSoCFW@microsoft.com"
+        codebase-admins="redmond\\stglenne"
+        quarantine-limit="10000"
+        notify-always="1"
+        tfs.template="AzCsiWoodinvilleWITemplate"
+        tfs.branch-name="main"
+        tfs.instance-url="https://azurecsi.visualstudio.com"
+        tfs.project-name="Dev"
+        tfs.area-path="WorkItemCodeQL"
+        tfs.iteration-path="Dev\\Future"
+        tfs.iteration-path-pattern=""
+        tfs.build-project-name=""
+    />
+</TSA>

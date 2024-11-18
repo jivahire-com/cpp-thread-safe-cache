@@ -1,0 +1,101 @@
+<TFSTemplate Name="AzCsiWoodinvilleWITemplate" AccountType="AAD">
+    <OnboardingDescription>
+        <![CDATA[ <p style="FONT-FAMILY: '[[Style-Font-Family]]'; COLOR: [[Style-Color-Info]]; FONT-SIZE: 11pt;"> Help can be found at the <a href="https://aka.ms/tsa/">TSA Wiki</a> for general TSA questions and details of how to change template settings. </p> ]]>
+    </OnboardingDescription>
+    <TFSIssueStateCollection>
+        <TFSIssueState Priority="1" TFSState="Closed" TSAState="Closed"/>
+        <TFSIssueState Priority="1" TFSState="Resolved" TSAState="Resolved"/>
+        <TFSIssueState Priority="1" TFSState="Active" TSAState="Active"/>
+        <TFSIssueState Priority="2" TSAState="Active"/>
+        <TFSIssueState Priority="3" TFSReason="Fixed and verified" TSAReason="Fixed"/>
+        <TFSIssueState Priority="3" TFSReason="Verified" TSAReason="Fixed"/>
+        <TFSIssueState Priority="3" TFSReason="Fixed" TSAReason="Fixed"/>
+        <TFSIssueState Priority="3" TFSReason="Cannot Reproduce" TSAReason="NotRepro"/>
+        <TFSIssueState Priority="3" TFSReason="Duplicate" TSAReason="Duplicate"/>
+        <TFSIssueState Priority="3" TFSReason="As Designed" TSAReason="ByDesign"/>
+        <TFSIssueState Priority="3" TFSReason="Obsolete" TSAReason="ByDesign"/>
+        <TFSIssueState Priority="3" TFSReason="Deferred" TSAReason="External"/>
+        <TFSIssueState Priority="3" TFSReason="Copied to Backlog" TSAReason="WontFix"/>
+        <TFSIssueState Priority="4" TSAReason="External"/>
+    </TFSIssueStateCollection>
+    <TFSWorkItemTemplate WorkItemType="Bug">
+        <Owner>
+            <TFSField Name="Closed By" DefaultValue=""/>
+        </Owner>
+        <State>
+            <TFSField Name="State" DefaultValue="New"/>
+        </State>
+        <Reason>
+            <TFSField Name="Reason" DefaultValue="Cannot Reproduce"/>
+        </Reason>
+        <Notice>
+            <TFSField Name="Discussion" DefaultValue="Created by TSA"/>
+        </Notice>
+        <Guidance>
+            <TFSField Name="History" DefaultValue="TSA Issue Detail Hisatory"/>
+        </Guidance>
+        <Detail>
+            <TFSField Name="ReproSteps" DefaultValue="TSA Repro Steps"/>
+        </Detail>
+        <AssignedTo>
+            <TFSField Name="AssignedTo" DefaultValue="parthdave@microsoft.com"/>
+        </AssignedTo>
+        <NewFields>
+            <TFSFieldCollection>
+                <TFSField Name="Found In" Value="BuildNumber"/>
+                <TFSField Name="Severity" Value="Severity" DefaultValue="1 - Critical" EqualTo="1"/>
+                <TFSField Name="Severity" Value="Severity" DefaultValue="2 - High" EqualTo="2"/>
+                <TFSField Name="Severity" Value="Severity" DefaultValue="3 - Medium" EqualTo="3"/>
+                <TFSField Name="Severity" Value="Severity" DefaultValue="4 - Low" EqualTo="4"/>
+            </TFSFieldCollection>
+        </NewFields>
+        <ResolvedFields>
+            <TFSFieldCollection>
+                <TFSField Name="Reason" Value="TSAReason"/>
+            </TFSFieldCollection>
+        </ResolvedFields>
+        <ClosedFields>
+            <TFSFieldCollection/>
+        </ClosedFields>
+        <SecurityFields>
+            <TFSFieldCollection>
+                <TFSField Name="Security Rating" Value="Severity" DefaultValue="Important" EqualTo="1"/>
+                <TFSField Name="Security Rating" Value="Severity" DefaultValue="Important" EqualTo="2"/>
+                <TFSField Name="Security Rating" Value="Severity" DefaultValue="Moderate" EqualTo="3"/>
+                <TFSField Name="Security Rating" Value="Severity" DefaultValue="Low" EqualTo="4"/>
+                <TFSField Name="Security Rating" Value="ScanTool" DefaultValue="Important" EqualTo="BinScope7"/>
+                <TFSField Name="Security Rating" Value="DefectType" DefaultValue="Important" EqualTo="SecretinFile"/>
+                <TFSField Name="Security Rating" Value="DefectType" DefaultValue="Important" EqualTo="SecretFileType"/>
+                <TFSField Name="Security Rating" Value="DefectType" DefaultValue="Not A Security Bug" EqualTo="SuppressedMatchSecretinFile"/>
+                <TFSField Name="Security Rating" Value="ScanTool" DefaultValue="Not A Security Bug" EqualTo="FxCop"/>
+            </TFSFieldCollection>
+        </SecurityFields>
+        <ComplianceFields>
+            <TFSFieldCollection/>
+        </ComplianceFields>
+        <RegressionFields>
+            <TFSFieldCollection/>
+        </RegressionFields>
+    </TFSWorkItemTemplate>
+    <TemplateCodebase_GetAll>
+    <![CDATA[ SELECT ID,Severity,State,Title FROM WorkItem WHERE Tags Contains'{{ Key }}' ]]>
+    </TemplateCodebase_GetAll>
+    <TemplateCodebase_GetByDebt>
+    <![CDATA[ SELECT ID,Severity,State,[Assigned To],Title FROM WorkItem WHERE Tags Contains'{{ Key }}'AND State NOT IN('Closed') ]]>
+    </TemplateCodebase_GetByDebt>
+    <TemplateCodebase_GetByDebtCustom>
+    <![CDATA[ SELECT ID,Severity,State,[Assigned To],Title FROM WorkItem WHERE (Tags Contains'{{ Key1 }}' OR Tags Contains'{{ Key2 }}')AND State NOT IN('Closed'){{Expression}} ]]>
+    </TemplateCodebase_GetByDebtCustom>
+    <TemplateCodebase_GetByFixed>
+    <![CDATA[ SELECT ID,Severity,[Resolved Reason],Title FROM WorkItem WHERE Tags Contains'{{ Key }}'AND State IN('Closed','Resolved')AND ([Resolved Reason]='Fixed and Verified' OR [Resolved Reason]='Fixed') ]]>
+    </TemplateCodebase_GetByFixed>
+    <TemplateCodebase_GetByNoise>
+    <![CDATA[ SELECT ID,Severity,[Resolved Reason],Title FROM WorkItem WHERE Tags Contains'{{ Key }}'AND State IN('Closed','Resolved')AND [Resolved Reason]<>'Fixed' AND [Resolved Reason]<>'Fixed and Verified' ]]>
+    </TemplateCodebase_GetByNoise>
+    <TemplateCodebase_GetSync>
+    <![CDATA[ SELECT ID,State,[Changed Date],[Assigned To],[Resolved Reason],[Resolved By],[Closed By],[Created Date] FROM WorkItem WHERE (Tags Contains '{{ Key }}' {{ Page }} AND [Changed Date] >= '{{ Bookmark }}') AsOf '{{ AsOf }}' ]]>
+    </TemplateCodebase_GetSync>
+    <TemplateInstance_GetByTool>
+    <![CDATA[ SELECT ID,Severity,State,[Assigned To],Title FROM WorkItem WHERE Tags Contains'{{ Key }}' ]]>
+    </TemplateInstance_GetByTool>
+</TFSTemplate>

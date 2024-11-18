@@ -1,0 +1,17 @@
+{
+    "instanceUrl"        : "https://azurecsi.visualstudio.com/",
+    "projectName"        : "Dev",
+    "areaPath"           : "Dev\\1PSFW\\Cascade Range\\Echo Falls\\SoC FW\\CodeQL",
+    "iterationPath"      : "Dev\\Future",
+    "ppe"                : "false",
+    "template"           : "AzCsiWoodinvilleWITemplate",
+    "allTools"           : true,
+    "codebaseName"       : "AzureCSI.Woodinville.Kingsgate.MSCP",
+    "notificationAliases": [
+                              "EFSoCFW@microsoft.com"
+                           ],
+    "tools"              : [
+                            "BinSkim",
+                            "CredScan"
+                           ]
+ }

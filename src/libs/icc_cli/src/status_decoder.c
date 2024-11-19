@@ -162,6 +162,8 @@ const char* get_fpfw_status_code_string(fpfw_status_t errorCode)
         return "FPFW_ICC_BASE_STATUS_SYNC_SEND_REQ_ERR";
     case FPFW_ICC_BASE_STATUS_SYNC_RECV_REQ_ERR:
         return "FPFW_ICC_BASE_STATUS_SYNC_RECV_REQ_ERR";
+    case FPFW_ICC_BASE_STATUS_SYNC_TIMEOUT_ERR:
+        return "FPFW_ICC_BASE_STATUS_SYNC_TIMEOUT_ERR";
 
         // Event Trace Decoder
 

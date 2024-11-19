@@ -17,6 +17,7 @@ set(LIBS
             fwlib.service.cli
             fwlib.lib.utils
             fwlib.lib.mboxPrimitives
+            fwlib.lib.interface.platform.interrupts
             ms::driver::icc_mhu_trans
             ms::lib::icc_platform_defines
             ms::lib::hsp_firmware_headers

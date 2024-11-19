@@ -6,6 +6,8 @@
 /*------------- Includes -----------------*/
 #include "icc_hsp_mbox_cli.h"
 
+#include "icc_cli_i.h"
+
 #include <DfwkStatus.h>    // for DFWK_SUCCESS
 #include <FpFwCli.h>       // for FpFwCliPrint, FPFW_CLI_STATUS
 #include <FpFwUtils.h>     // for FPFW_UNUSED, FPFW_ARRAY_SIZE
@@ -13,6 +15,7 @@
 #include <fpfw_status.h>   // for fpfw_status_t
 #include <hsp_firmware_headers.h>
 #include <icc_platform_defines.h> // for D2D_MBOX_FIFO_DEPTH, HSP_...
+#include <idsw_kng.h>             // for PLATFORM_FPGA_LARGE
 #include <silibs_mcp_top_regs.h>  // for MCP_TOP_MCP2HSP_MAILBOX_AD...
 #include <silibs_scp_top_regs.h>  // for SCP_TOP_SCP2HSP_MAILBOX_AD...
 #include <stdbool.h>              // for false, bool, true
@@ -28,6 +31,16 @@
 #define HSP_MBOX_TEST_PAYLOAD_3 0xCCCCCCCCUL
 
 /*-------------- Typedefs ----------------*/
+/**
+ * @brief HSP mbx instances covered for testing
+ *
+ */
+typedef enum _hsp_mbx_inst
+{
+    HSP_MBOX_INST_SCP,
+    HSP_MBOX_INST_MCP
+} hsp_mbx_inst;
+
 /**
  * @brief  ICC mailbox context for displaying mbx registers
  *
@@ -45,8 +58,8 @@ typedef struct _icc_mbx_ctx_t
  *
  */
 static icc_mbx_ctx_t s_mbx_types[MAX_ICC_MAILBOXES_INST] = {
-    {SCP_TOP_SCP2HSP_MAILBOX_ADDRESS, "SCP2HSP"},
-    {MCP_TOP_MCP2HSP_MAILBOX_ADDRESS, "MCP2HSP"},
+    [HSP_MBOX_INST_SCP] = {SCP_TOP_SCP2HSP_MAILBOX_ADDRESS, "SCP2HSP"},
+    [HSP_MBOX_INST_MCP] = {MCP_TOP_MCP2HSP_MAILBOX_ADDRESS, "MCP2HSP"},
 };
 
 /**
@@ -87,32 +100,30 @@ static bool is_recv_test_active = false;
 FPFW_CLI_STATUS display_mbx_list(int argc, const char** argv)
 {
     FPFW_UNUSED(argv);
-    if (argc != 1)
+    FPFW_UNUSED(argc);
+
+    int inst_id = HSP_MBOX_INST_SCP;
+    icc_cli_init_params_t* cli_params = get_icc_cli_ctx();
+    if (cli_params->setup_info.current.core_id != CPU_SCP)
     {
-        return CLI_ERROR;
+        inst_id = HSP_MBOX_INST_MCP;
     }
 
-    FpFwCliPrint("ICC Mailbox instances:\n");
-    for (uint32_t i = 0; i < MAX_ICC_MAILBOXES_INST; i++)
-    {
-        FpFwCliPrint("  %d: %s (Address: 0x%08x)\n", i, s_mbx_types[i].mbx_name, s_mbx_types[i].mbx_base_address);
-    }
+    FpFwCliPrint("  %d: %s (Address: 0x%08x)\n", inst_id, s_mbx_types[inst_id].mbx_name, s_mbx_types[inst_id].mbx_base_address);
+
     return CLI_SUCCESS;
 }
 
 FPFW_CLI_STATUS display_mbx_register_status(int argc, const char** argv)
 {
     FPFW_UNUSED(argv);
-    if (argc != 2)
+    FPFW_UNUSED(argc);
+
+    int inst_id = HSP_MBOX_INST_SCP;
+    icc_cli_init_params_t* cli_params = get_icc_cli_ctx();
+    if (cli_params->setup_info.current.core_id != CPU_SCP)
     {
-        FpFwCliPrint("ERROR! Insufficient Args\n");
-        return CLI_ERROR;
-    }
-    int inst_id = atoi(argv[1]);
-    if (inst_id < 0 || inst_id >= MAX_ICC_MAILBOXES_INST)
-    {
-        FpFwCliPrint("ERROR! Invalid Arg\n");
-        return CLI_ERROR;
+        inst_id = HSP_MBOX_INST_MCP;
     }
 
     uint32_t* mbx_address = (uint32_t*)s_mbx_types[inst_id].mbx_base_address; // NO LINT
@@ -136,19 +147,26 @@ FPFW_CLI_STATUS set_mbx_reg_val(int argc, const char** argv)
     uint32_t new_value = 0;
 
     FPFW_UNUSED(argv);
-    if (argc != 4)
+    if (argc != 3)
     {
         FpFwCliPrint("ERROR! Insufficient Args\n");
-        FpFwCliPrint("Usage: mbx_reg_set <inst_id (SCP=0, MCP=1)> <reg_id(0 to 7)> <val(uint32_t)>\n");
+        FpFwCliPrint("Usage: mbx_reg_set <reg_id(0 to 7)> <val(uint32_t)>\n");
         return CLI_ERROR;
     }
-    int inst_id = atoi(argv[1]);
-    int reg_id = atoi(argv[2]);
-    int value = atoi(argv[3]);
-    if (inst_id < 0 || inst_id >= MAX_ICC_MAILBOXES_INST || reg_id < 0 || reg_id >= MAX_ICC_MAILBOX_REGS)
+
+    int reg_id = atoi(argv[1]);
+    int value = atoi(argv[2]);
+    int inst_id = HSP_MBOX_INST_SCP;
+    icc_cli_init_params_t* cli_params = get_icc_cli_ctx();
+    if (cli_params->setup_info.current.core_id != CPU_SCP)
+    {
+        inst_id = HSP_MBOX_INST_MCP;
+    }
+
+    if (reg_id < 0 || reg_id >= MAX_ICC_MAILBOX_REGS)
     {
         FpFwCliPrint("ERROR! Invalid Arg\n");
-        FpFwCliPrint("Usage: mbx_reg_set <inst_id (SCP=0, MCP=1)> <reg_id(0 to 7)> <val(uint32_t)>\n");
+        FpFwCliPrint("Usage: mbx_reg_set <reg_id(0 to 7)> <val(uint32_t)>\n");
         return CLI_ERROR;
     }
 

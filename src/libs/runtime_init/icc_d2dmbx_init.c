@@ -36,7 +36,7 @@
 /*-------------- Macros ------------------*/
 #define D2D_MBOX_SPI_CTRL_BASE_ADDR   (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_SPI_CTRL_ADDRESS)
 #define D2D_MBOX_SPI_BRIDGE_BASE_ADDR (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_SPI_BRIDGE_ADDRESS)
-
+#define D2D_MBOX_SYNC_OPERATION_LOOP_MAX    0x200000UL
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -139,6 +139,7 @@ FPFW_INIT_COMPONENT(icc_d2dmbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
             },
         .timer_period = KG_D2D_MBOX_POLL_INTERVAL_NS,
         .timer_handle = {&d2d_timer[ICC_MBX_ASYNC_SEND], &d2d_timer[ICC_MBX_ASYNC_RECV]},
+        .min_mesg_size = sizeof(rmss_d2d_mailbox_msg_header),
     };
 
     if (idsw_get_cpu_type() == CPU_SCP)
@@ -195,6 +196,7 @@ FPFW_INIT_COMPONENT(icc_d2dmbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
                 .match_strategy_ctx = NULL,
             },
         .ctx = NULL,
+        .sync_loop_count = D2D_MBOX_SYNC_OPERATION_LOOP_MAX,
     };
 
     //! Initialize d2d mailbox transport driver

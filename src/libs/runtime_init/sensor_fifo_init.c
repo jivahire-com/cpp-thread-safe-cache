@@ -15,6 +15,9 @@
 #include <fpfw_init.h>           // for FPFW_INIT_STATUS_SUCCESS, fpfw_init_get...
 #include <idsw.h>                // for idsw_get_die_id
 #include <idsw_kng.h>
+#include <inttypes.h>
+#include <kng_soc_constants.h>  // for NUM_AP_CORES_PER_DIE
+#include <platform_core_config.h>
 #include <scf_mhu_device.h>
 #include <sensor_fifo_cli_service.h>
 #include <sensor_fifo_driver_interface.h>
@@ -25,6 +28,8 @@
 #include <silibs_scp_exp_top_regs.h> // IWYU pragma: keep
 #include <silibs_scp_top_regs.h>     // IWYU pragma: keep
 #include <stddef.h>              // for NULL
+#include <stdint.h>
+#include <stdio.h>
 #include <telemetry_defines.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -183,6 +188,7 @@ static scf_mhu_device_config_t s_scf_mhu_device_cfg =
     .is_scp                   = IS_SCP
 };
 
+const corebits_t  *platform_cores_config = NULL; // platform cores
 /**
  * @brief Needs to be present life of device as the entires are actively used during operation
  *
@@ -281,12 +287,91 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
                                                 },
 };
 
+static void sensor_fifo_get_tile_mask(uint64_t *tile_mask_p)
+{
+  uint32_t tile_mask[2] = {0};
+  uint8_t tile_id = 0;
+  uint64_t tile_lo = 0ULL;
+  const corebits_t* enabled_cores = platform_cores_config;
+
+  for (unsigned int core = 0; core < NUM_AP_CORES_PER_DIE; core += 2)
+  {
+    /* if both core are disabled on a tile , disable tile*/
+    if (!corebits_is_bit_set(enabled_cores, core) && !corebits_is_bit_set(enabled_cores, core+1))
+    {
+      ++tile_id;
+      continue;
+    }
+          
+    if(core < 64) 
+    {
+      tile_mask[0] |= (1 << tile_id);
+    } else if( core > 63 ) 
+    {
+      tile_mask[1] |= (1 << (tile_id - 32));
+    } 
+          
+      ++tile_id; 
+  }
+      
+  tile_lo = ((uint64_t)tile_mask[1] << 32) | tile_mask[0];
+  /* 0=unmasked, 1=masked */
+  *tile_mask_p = ~tile_lo; 
+    
+}
+
+static void sensor_fifo_get_core_mask(uint64_t *core_mask_lo, uint64_t *core_mask_hi)
+{
+  uint32_t core_mask[4] = {0};
+  uint64_t core_lo = 0ULL;
+  uint64_t core_hi = 0ULL;
+
+  const corebits_t* enabled_cores = platform_cores_config;
+
+  for (unsigned int core = 0; core < NUM_AP_CORES_PER_DIE; ++core)
+  {  
+    if (!corebits_is_bit_set(enabled_cores, core))
+    {
+      continue;
+    }
+    if(core < 32) 
+    {
+      core_mask[0] |= (1 << core);  
+    } else if( core > 31 && core < 64) 
+    {
+      core_mask[1] |= (1 << (core - 32));  
+    } else 
+    {
+      core_mask[2] |= (1 << (core - 64));
+    }
+  }
+      
+    core_lo = ((uint64_t)core_mask[1] << 32) | core_mask[0];
+    /* 0=unmasked, 1=masked */
+    *core_mask_lo = ~core_lo;
+
+    core_hi = ((uint64_t)core_mask[3] << 32) | core_mask[2];
+    /* 0=unmasked, 1=masked */
+    *core_mask_hi = ~core_hi;   
+}
 
 /*------------- Functions ----------------*/
 FPFW_INIT_COMPONENT(sensor_fifo, FPFW_INIT_DEPENDENCIES("dfwk","hw_ver","std_io"))
 {
     switch (idsw_get_platform_sdv())
     {
+    case PLATFORM_SVP_SIM:
+      platform_cores_config = &svp_cores;
+      break;
+    case PLATFORM_EMU:
+    case PLATFORM_EMU_1D:
+    case PLATFORM_EMU_2D:
+      platform_cores_config = &platform_cores;
+      break;
+    case PLATFORM_EMU_1D_8C:
+    case PLATFORM_EMU_2D_8C:
+      platform_cores_config = &zebu_cores_8C_model;
+      break;
         // fall-thru intended
     case PLATFORM_FPGA:
     case PLATFORM_FPGA_TINY:
@@ -330,7 +415,7 @@ FPFW_INIT_COMPONENT(sensor_fifo, FPFW_INIT_DEPENDENCIES("dfwk","hw_ver","std_io"
         s_fifo_properties[SENSOR_FIFO_VR_CURRENT_FW].end_address_excl = FPGA_VR_CURRENT_FIFO_END_ADDR;
 
         s_scf_mhu_device_cfg.scf_ram_buffer_size = FPGA_SCF_RAM_BUFFER_SIZE_BYTES;
-
+        platform_cores_config = &fpga_platform_cores;
     default:
         break;
     }
@@ -339,10 +424,9 @@ FPFW_INIT_COMPONENT(sensor_fifo, FPFW_INIT_DEPENDENCIES("dfwk","hw_ver","std_io"
     fpfw_init_component_id_t dfwk_id = "dfwk";
     PDFWK_THREADX_HOST drvfwk = (PDFWK_THREADX_HOST)fpfw_init_get_handle(dfwk_id);
 
-    /// TODO:  from fuse service get info for the following,   https://azurecsi.visualstudio.com/Dev/_workitems/edit/1485736
-    s_scf_mhu_device_cfg.tile_mask = 0;
-    s_scf_mhu_device_cfg.core_mask_lo = 0;
-    s_scf_mhu_device_cfg.core_mask_hi = 0;
+    /* 0=unmasked, 1=masked */
+    sensor_fifo_get_core_mask(&s_scf_mhu_device_cfg.core_mask_lo, &s_scf_mhu_device_cfg.core_mask_hi);
+    sensor_fifo_get_tile_mask(&s_scf_mhu_device_cfg.tile_mask);
 
     static scf_mhu_device_t scf_mhu_device = {0};
     scf_mhu_device_initialize(&scf_mhu_device, &drvfwk->Schedule, s_fifo_properties, ARRAY_SIZE(s_fifo_properties), &s_scf_mhu_device_cfg);

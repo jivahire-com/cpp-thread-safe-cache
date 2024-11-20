@@ -6,7 +6,6 @@ add_library(${TARGET} INTERFACE)
 set(LIBS
     ${GENERATED_PUBLIC_PATH}
     ${TARGET_DIR_SILIBS}/libraries
-    ${TARGET_DIR_SILIBS}/libraries/sdm/libraries
     ${TARGET_DIR_SILIBS_PLATFORM}
 )
 
@@ -27,16 +26,12 @@ set(EXPLICIT_PATH_MERGE_KNOBS_SCRIPT ${TARGET_DIR_SILIBS_COMMON}/knobs/${MERGE_K
 set(SILIBS_KNOBS_XML_FILENAME "silibs_knobs.xml")
 set(EXPLICIT_PATH_SILIBS_KNOBS ${TARGET_DIR_SILIBS}/libraries/${SILIBS_KNOBS_XML_FILENAME})
 
-# Find SDM-FW Libs top-level XML ---------------------------------------------------------------------------------
-set(SDM_FW_LIBS_KNOBS_XML_FILENAME "sdm_knobs.xml")
-set(EXPLICIT_PATH_SDM_FW_LIBS_KNOBS ${TARGET_DIR_SILIBS}/libraries/sdm/libraries/${SDM_FW_LIBS_KNOBS_XML_FILENAME})
-
 # Find Production FW config knob XML ------------------------------------------------------------------------
 set(PROD_FW_KNOBS_XML_FILENAME "kng_mscp_config_knobs.xml")
 set(EXPLICIT_PATH_PROD_FW_KNOBS ${CMAKE_SOURCE_DIR}/tools/config_knobs/${PROD_FW_KNOBS_XML_FILENAME})
 
 # Merge all XMLs into one TOP level XML ---------------------------------------------------------------------
-set(MERGE_COMMAND ${Python3_EXECUTABLE} ${EXPLICIT_PATH_MERGE_KNOBS_SCRIPT} -t ${EXPLICIT_PATH_SILIBS_KNOBS} ${EXPLICIT_PATH_SDM_FW_LIBS_KNOBS} ${EXPLICIT_PATH_PROD_FW_KNOBS} -p ${PROD_FW_COMBINED_GENERATED_KNOBS})
+set(MERGE_COMMAND ${Python3_EXECUTABLE} ${EXPLICIT_PATH_MERGE_KNOBS_SCRIPT} -t ${EXPLICIT_PATH_SILIBS_KNOBS} ${EXPLICIT_PATH_PROD_FW_KNOBS} -p ${PROD_FW_COMBINED_GENERATED_KNOBS})
 add_custom_command(
     OUTPUT ${PROD_FW_COMBINED_GENERATED_KNOBS}
     COMMAND ${MERGE_COMMAND}

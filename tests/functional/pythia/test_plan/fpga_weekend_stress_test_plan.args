@@ -1,0 +1,121 @@
+
+## Accelerator Interrupt Tests
+./../../../tests/functional/pythia/test_suites/accel_interrupt/accel_interrupt_test.robot
+./../../../tests/functional/pythia/test_suites/accel_interrupt/accel_interrupt_test.robot
+./../../../tests/functional/pythia/test_suites/accel_interrupt/accel_interrupt_test.robot
+./../../../tests/functional/pythia/test_suites/accel_interrupt/accel_interrupt_test.robot
+
+## AVS Die 0 Tests
+./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die1.robot
+./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die1.robot
+./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die1.robot
+./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die1.robot
+./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die1.robot
+./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die1.robot
+./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die1.robot
+./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die1.robot
+
+## CDED PCIE Tests
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_gcm_encr_decr_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_xts_encr_decr_pt_en_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_xts_encr_decr_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_pt_dis_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_pt_en_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_decomp_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_gcm_encr_decr_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_xts_encr_decr_pt_en_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_xts_encr_decr_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_pt_dis_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_pt_en_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_decomp_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_gcm_encr_decr_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_xts_encr_decr_pt_en_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_xts_encr_decr_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_pt_dis_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_pt_en_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_decomp_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_gcm_encr_decr_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_xts_encr_decr_pt_en_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_xts_encr_decr_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_pt_dis_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_pt_en_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_decomp_test.robot
+
+## GPIO Driver Tests
+./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot
+./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot
+./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot
+./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot
+
+## Single Die Heartbeat Tests
+./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot
+./../../../tests/functional/pythia/test_suites/heart_beat/fbc_sdm_cded_heart_beat_single_die.robot
+./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot
+./../../../tests/functional/pythia/test_suites/heart_beat/fbc_sdm_cded_heart_beat_single_die.robot
+./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot
+./../../../tests/functional/pythia/test_suites/heart_beat/fbc_sdm_cded_heart_beat_single_die.robot
+./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot
+./../../../tests/functional/pythia/test_suites/heart_beat/fbc_sdm_cded_heart_beat_single_die.robot
+
+## HSP Mailbox Tests
+./../../../tests/functional/pythia/test_suites/hspmbx_tests/hsp_mailbox_cli_test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/hspmbx_tests/hsp_mailbox_cli_test.robot
+./../../../tests/functional/pythia/test_suites/hspmbx_tests/hsp_mailbox_cli_test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/hspmbx_tests/hsp_mailbox_cli_test.robot
+./../../../tests/functional/pythia/test_suites/hspmbx_tests/hsp_mailbox_cli_test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/hspmbx_tests/hsp_mailbox_cli_test.robot
+./../../../tests/functional/pythia/test_suites/hspmbx_tests/hsp_mailbox_cli_test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/hspmbx_tests/hsp_mailbox_cli_test.robot
+
+## Large FIFO Mailbox Tests
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_cded_scp__test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_scp_cded__test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_sdm_scp__test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_cded_scp__test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_scp_cded__test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_sdm_scp__test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_cded_scp__test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_scp_cded__test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_sdm_scp__test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_cded_scp__test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_scp_cded__test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_sdm_scp__test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_test_send_recv.robot
+
+## SDM PCIE Tests
+./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/pcie_enumeration_test.robot
+./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_e2i_i2e_test.robot
+./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_memcpy_test.robot
+./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/pcie_enumeration_test.robot
+./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_e2i_i2e_test.robot
+./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_memcpy_test.robot
+./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/pcie_enumeration_test.robot
+./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_e2i_i2e_test.robot
+./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_memcpy_test.robot
+./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/pcie_enumeration_test.robot
+./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_e2i_i2e_test.robot
+./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_memcpy_test.robot
+
+## Sensor FIFO Tests
+./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+
+## Variable Service Tests
+./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
+./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
+./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
+./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
+
+## Accelerator VF tests
+./../../../tests/functional/pythia/test_suites/accel_vf_tests/pcie_vf_tests.robot
+./../../../tests/functional/pythia/test_suites/accel_vf_tests/sdm_vf_tests.robot
+./../../../tests/functional/pythia/test_suites/accel_vf_tests/cded_vf_tests.robot

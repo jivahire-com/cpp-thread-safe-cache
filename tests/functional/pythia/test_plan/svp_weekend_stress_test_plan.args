@@ -6,13 +6,18 @@
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die0.robot
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die0.robot
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die0.robot
+./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die0.robot
+./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die0.robot
 
 ## GPIO Driver Tests
 ./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot
 ./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot
 ./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot
+./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot
 
-## Dual Die Heartbeat Tests
+## Single Die Heartbeat Tests
+./../../../tests/functional/pythia/test_suites/heart_beat/fbc_sdm_cded_heart_beat_single_die.robot
+./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot
 ./../../../tests/functional/pythia/test_suites/heart_beat/fbc_sdm_cded_heart_beat_single_die.robot
 ./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot
 ./../../../tests/functional/pythia/test_suites/heart_beat/fbc_sdm_cded_heart_beat_single_die.robot
@@ -21,6 +26,8 @@
 ./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot
 
 ## HSP Mailbox Tests
+./../../../tests/functional/pythia/test_suites/hspmbx_tests/hsp_mailbox_cli_test.robot
+./../../../tests/functional/pythia/test_suites/hspmbx_tests/hsp_mailbox_cli_test_send_recv.robot
 ./../../../tests/functional/pythia/test_suites/hspmbx_tests/hsp_mailbox_cli_test.robot
 ./../../../tests/functional/pythia/test_suites/hspmbx_tests/hsp_mailbox_cli_test_send_recv.robot
 ./../../../tests/functional/pythia/test_suites/hspmbx_tests/hsp_mailbox_cli_test.robot
@@ -41,35 +48,31 @@
 ./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_scp_cded__test_send_recv.robot
 ./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_sdm_scp__test_send_recv.robot
 ./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_cded_scp__test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_scp_cded__test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_sdm_scp__test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_test_send_recv.robot
 
 ## SDM PCIE Tests
 ./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/pcie_enumeration_test.robot
 ./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_e2i_i2e_test.robot
 ./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_memcpy_test.robot
-./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/pcie_enumeration_test.robot
-./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_e2i_i2e_test.robot
-./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_memcpy_test.robot
-./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/pcie_enumeration_test.robot
-./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_e2i_i2e_test.robot
-./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_memcpy_test.robot
 
 ## Sensor FIFO Tests
-./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli_helper_test.robot
-./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_enable_then_check_enabled.robot
-./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli_helper_test.robot
-./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_enable_then_check_enabled.robot
-./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli_helper_test.robot
-./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_enable_then_check_enabled.robot
+./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
 
 ## Variable Service Tests
 ./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
 ./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
 ./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
-./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_dd_test.robot
-./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_dd_test.robot
-./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_dd_test.robot
+./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
 
 ## AVS Die 1 Tests
+./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die1.robot
+./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die1.robot
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die1.robot
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die1.robot
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die1.robot
@@ -81,8 +84,10 @@
 ./../../../tests/functional/pythia/test_suites/d2dmbx_tests/d2d_mailbox_cli_test_send_recv.robot
 ./../../../tests/functional/pythia/test_suites/d2dmbx_tests/d2d_mailbox_cli_test_send_recv.robot
 ./../../../tests/functional/pythia/test_suites/d2dmbx_tests/d2d_mailbox_cli_test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/d2dmbx_tests/d2d_mailbox_cli_test_send_recv.robot
 
 ## Dual Die Heartbeat Tests
+./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot_dual_die.robot
 ./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot_dual_die.robot
 ./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot_dual_die.robot
 ./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot_dual_die.robot
@@ -100,3 +105,13 @@
 ./../../../tests/functional/pythia/test_suites/power_tests/mod_power_ft.robot
 ./../../../tests/functional/pythia/test_suites/power_tests/mod_power_pstate_transition.robot
 ./../../../tests/functional/pythia/test_suites/power_tests/mod_power_telemetry_loop_health.robot
+./../../../tests/functional/pythia/test_suites/power_tests/mod_power_control_loop_health.robot
+./../../../tests/functional/pythia/test_suites/power_tests/mod_power_ft.robot
+./../../../tests/functional/pythia/test_suites/power_tests/mod_power_pstate_transition.robot
+./../../../tests/functional/pythia/test_suites/power_tests/mod_power_telemetry_loop_health.robot
+
+## Variable Service Tests
+./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_dd_test.robot
+./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_dd_test.robot
+./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_dd_test.robot
+./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_dd_test.robot

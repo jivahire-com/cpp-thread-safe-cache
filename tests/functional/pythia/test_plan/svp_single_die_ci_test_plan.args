@@ -10,7 +10,7 @@
 ## GPIO Driver Tests
 ./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot
 
-## Dual Die Heartbeat Tests
+## Single Die Heartbeat Tests
 ./../../../tests/functional/pythia/test_suites/heart_beat/fbc_sdm_cded_heart_beat_single_die.robot
 ./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot
 

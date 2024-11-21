@@ -6,6 +6,10 @@
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die1.robot
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die1.robot
 
+## CONFIG MANAGER Tests
+./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_cli_test.robot
+./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_dump_cli_test.robot
+
 ## CDED PCIE Tests
 ./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_gcm_encr_decr_test.robot
 ./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_xts_encr_decr_pt_en_test.robot

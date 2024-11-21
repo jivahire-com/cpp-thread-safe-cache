@@ -3,6 +3,10 @@
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die0.robot
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die0.robot
 
+## CONFIG MANAGER Tests
+./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_cli_test.robot
+./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_dump_cli_test.robot
+
 ## GPIO Driver Tests
 ./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot
 

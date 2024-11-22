@@ -20,6 +20,7 @@
 #include <FpFwUtils.h>
 #include <bug_check.h>
 #include <debug.h>
+#include <idsw.h> // for idsw_get_platform_sdv, idsw...
 #include <idsw_kng.h>
 #include <inttypes.h>
 #include <sensor_fifo_service.h>
@@ -220,10 +221,19 @@ void power_vrs_write_vcpu_voltage(uint16_t voltage_mv)
     pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_params.avs_cmd_info.cmd_type = AVS_VOLTAGE_RW;
     pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_params.avs_data = (uint32_t)voltage_mv;
 
-    scp_avs_client_write(&pwr_avs_interfaces[p_config->avs_details[vcpu_index].bus_id]->Header,
-                         &pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.Header,
-                         AVSPwrWriteRequestCompletion,
-                         (void*)(uintptr_t)p_config->avs_details[vcpu_index].bus_id);
+    // Temporary work around here to prevent SVP 12 from crashing: Task 2194174: Unblock IFWI by working around SVP 12 AVS bug
+    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+    {
+        scp_avs_client_write(&pwr_avs_interfaces[p_config->avs_details[vcpu_index].bus_id]->Header,
+                             &pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.Header,
+                             AVSPwrWriteRequestCompletion,
+                             (void*)(uintptr_t)p_config->avs_details[vcpu_index].bus_id);
+    }
+    else
+    {
+        pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].in_use = false;
+        power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
+    }
 
     POWER_LOG_TRACE(" PWR AVS write compl. \n");
 }
@@ -242,10 +252,19 @@ void power_vrs_read_vcpu_voltage()
         p_config->avs_details->rail_id;
     pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_params.avs_cmd_info.cmd_type = AVS_VOLTAGE_RW;
 
-    scp_avs_client_read(&pwr_avs_interfaces[p_config->avs_details[vcpu_index].bus_id]->Header,
-                        &pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.Header,
-                        AVSPwrReadRequestCompletion,
-                        (void*)(uintptr_t)p_config->avs_details->bus_id);
+    // Temporary work around here to prevent SVP 12 from crashing: Task 2194174: Unblock IFWI by working around SVP 12 AVS bug
+    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+    {
+        scp_avs_client_read(&pwr_avs_interfaces[p_config->avs_details[vcpu_index].bus_id]->Header,
+                            &pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.Header,
+                            AVSPwrReadRequestCompletion,
+                            (void*)(uintptr_t)p_config->avs_details->bus_id);
+    }
+    else
+    {
+        pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].in_use = false;
+        power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
+    }
 
     POWER_LOG_TRACE(" PWR AVS read compl. \n");
 }
@@ -322,10 +341,11 @@ void pwr_avs_initialize(pscp_avs_interface_t avs_array[])
     const power_service_config_t* p_config = p_runconfig->p_sconfig;
 
     // Die 0 has 8 VRs, Die 1 has 2 VRs, so 4 AVSBus for Die 0 and 1 AVSBus for Die 1
-    for (uint8_t i = 0; i < (p_config->num_vr / 2); i++)
+    for (uint8_t i = 0; i < (p_config->num_vr / MAX_AVS_RAILS); i++)
     {
         pwr_avs_interfaces[i] = avs_array[i];
         DfwkAsyncRequestInitialize((PDFWK_ASYNC_REQUEST_HEADER)&pwr_avs_request[i].request.Header,
                                    sizeof(pwr_avs_request[i].request));
+        pwr_avs_request[i].in_use = false;
     }
 }

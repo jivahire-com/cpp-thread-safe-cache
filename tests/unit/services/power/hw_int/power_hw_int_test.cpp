@@ -24,12 +24,14 @@ extern "C" {
 #include <dvfs.h>                  // for dvfs_get_cppc_from_pstate, _DVFS_...
 #include <dvfs_struct.h>           // for DVFS_DEF_PLIMIT_INDEX_NOMINAL
 #include <fgpll_regs.h>            // for (anonymous), fgpll_reg, ptr_fgpll...
+#include <idsw_kng.h>              // for KNG_PLAT_ID
 #include <mock_bug_check.h>        // for __wrap_crash_dump_bug_check
 #include <odcm.h>                  // for _ODCM_RETCODE
 #include <odcm_struct.h>           // for ODCM_DEFAULT_CONFIG, odcm_config_t
 #include <pex_regs.h>              // for PEX_CORE_PLL_ADDRESS
 #include <power_hw_int_i.h>        // for power_init_core, power_init_soc
 #include <power_i.h>               // for TEMP2DOUT_FUSED
+#include <power_init.h>            // for power_init
 #include <power_runconfig.h>       // for power_knobs_t, power_fuse_data_t
 #include <power_runconfig_i.h>     // for power_runconfig_t
 #include <pvt.h>                   // for _PVT_RETCODE
@@ -65,6 +67,7 @@ static power_telcfg_t s_telcfg = {0};
 static _power_service_config_t s_config = {
     .cluster_pex_base = (uintptr_t)cluster_mem,
     .cluster_stride = CLUSTER_STRIDE,
+    .num_vr = 8,
 };
 static power_runconfig_t s_runconfig = {.p_sconfig = &s_config};
 
@@ -114,6 +117,11 @@ void __wrap_power_loops_control_handle_event(power_ctrl_loop_signal_t event, con
     UNUSED(event);
     UNUSED(event_data);
     return;
+}
+
+KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
+{
+    return mock_type(KNG_PLAT_ID);
 }
 
 /*-------- Function Prototypes -----------*/
@@ -517,7 +525,7 @@ static int setup(void** state)
     s_config.platform_core_power_support = true;
     s_config.platform_cores_in_die = &default_cores;
     s_config.platform_die_core_count = TEST_CORE_COUNT;
-
+    s_config.num_vr = 8;
     return 0;
 }
 
@@ -1331,6 +1339,7 @@ POWER_TEST(power_vrs_write_vcpu_voltage, setup, teardown)
     sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;
 
     will_return(__wrap_power_runconfig_get, &test_runconfig);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     expect_function_call(__wrap_all_requests_completed);
     expect_value(__wrap_scp_avs_client_write, Interface, sconfig.avs_details[vcpu_test_index].bus_id);
@@ -1366,6 +1375,7 @@ POWER_TEST(power_vrs_write_vcpu_voltage_high_range, setup, teardown)
 
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     expect_function_call(__wrap_all_requests_completed);
     expect_value(__wrap_scp_avs_client_write, Interface, sconfig.avs_details[vcpu_test_index].bus_id);
     expect_memory(__wrap_scp_avs_client_write, Request, &test_avs_Request, sizeof(test_avs_Request));
@@ -1399,6 +1409,7 @@ POWER_TEST(power_vrs_write_vcpu_voltage_low_range, setup, teardown)
     sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;
 
     will_return(__wrap_power_runconfig_get, &test_runconfig);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     expect_function_call(__wrap_all_requests_completed);
     expect_value(__wrap_scp_avs_client_write, Interface, sconfig.avs_details[vcpu_test_index].bus_id);
@@ -1475,4 +1486,32 @@ POWER_TEST(power_vrs_read_vcpu_voltage_callback_error, setup, teardown)
 
     AVSPwrReadRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
     assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num].in_use, 0);
+}
+
+POWER_TEST(power_avs_initialize, setup, teardown)
+{
+    power_service_config_t sconfig = {};
+    sconfig.num_vr = 8;
+    power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
+
+    scp_avs_device_t test_avs_device = {
+        .avs_bus_num = AVS_BUS0,
+    };
+
+    for (int i = 0; i < MAX_AVS_INST; i++)
+    {
+        pwr_avs_request[test_avs_device.avs_bus_num + i].in_use = 1;
+    }
+
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+
+    pscp_avs_interface_t avs_array[MAX_AVS_INST] = {0};
+
+    // Call the function under test
+    pwr_avs_initialize(avs_array);
+
+    for (int i = 0; i < MAX_AVS_INST; i++)
+    {
+        assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num + i].in_use, 0);
+    }
 }

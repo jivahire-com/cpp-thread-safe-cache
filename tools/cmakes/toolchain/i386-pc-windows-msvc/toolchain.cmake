@@ -31,7 +31,7 @@ set(CMAKE_CXX_FLAGS "-g -m32 --target=${CLANG_TARGET_TRIPLE} -Wall -Wextra -Werr
 
 # Set compiler and linker options to fix BinSkim Error
 add_compile_options(-Xclang -cfguard)
-add_link_options(-Xlinker /guard:cf)
+add_link_options("LINKER:/guard:cf,/CETCOMPAT")
 
 # Set repo utilities
 set(REPO_CLANG_FORMAT $ENV{REPO_APP_PATH_llvm.win64}/bin/clang-format.exe)

@@ -13,7 +13,7 @@
 #include "accel_intr_service_dfwk.h"
 #include "accel_intr_service.h"
 
-#include <accelerator_ip.h>
+#include <accelip_id.h>         // for ACCEL_ID_CDED, ACCEL_ID_SDM
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define ACCEL_INTR_SERVICE_GET_IDX_FROM_COMMAND(command)    (command - ACCEL_INTR_SERVICE_COMMANDS_START_ID)
@@ -23,7 +23,7 @@
 typedef struct
 {
     paccel_intr_service_interface_t p_interface;
-    accel_intr_service_request_t requests[MAX_ACCELERATOR_TYPES][ACCEL_INTR_SERVICE_GET_IDX_FROM_COMMAND(ACCEL_INTR_SERVICE_MAX_COMMAND)];
+    accel_intr_service_request_t requests[NUM_VALID_ACCEL_ID][ACCEL_INTR_SERVICE_GET_IDX_FROM_COMMAND(ACCEL_INTR_SERVICE_MAX_COMMAND)];
     e_accel_intr_service_command_id_t command_id;
 } accel_intr_service_cmd_context_t, *paccel_intr_service_cmd_context_t;
 

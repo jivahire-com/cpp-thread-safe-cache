@@ -20,6 +20,7 @@ extern "C" {
 #include <FpFwUtils.h>       // for FPFW_UNUSED
 #include <MboxPrimitives.h>  // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_I...
 #include <accel_intr.h>
+#include <accelip_id.h>
 #include <fpfw_icc_base.h>           // for fpfw_icc_base_config, fpfw_icc_...
 #include <fpfw_icc_dispatcher.h>     // for fpfw_icc_dispatch_ctx
 #include <fpfw_init.h>               // for fpfw_init_component_id_t, fpfw_...
@@ -197,7 +198,7 @@ fpfw_status_t __wrap_fpfw_icc_dispatcher_start(fpfw_icc_dispatch_ctx* p_dispatch
     return mock_type(fpfw_status_t);
 }
 
-uint32_t __wrap_accel_intr_init(eACCELERATOR_TYPE accel_type)
+uint32_t __wrap_accel_intr_init(ACCEL_ID accel_type)
 {
     FPFW_UNUSED(accel_type);
     return mock_type(uint32_t);

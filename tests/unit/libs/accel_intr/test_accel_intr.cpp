@@ -16,6 +16,7 @@ extern "C" {
 #include "fpfw_status.h"     // for FPFW_STATUS_SUCCESS
 #include "mock.h"            // for mmio_set_mock_data...
 
+#include <accelip_id.h>    // for ACCEL_ID_CDED, ACCEL_ID_SDM
 #include <idsw_kng.h>      // for KNG_PLAT_ID
 #include <nvic.h>          // for NVIC_STATUS_SUCCESS
 #include <silibs_status.h> // for SILIBS_SUCCESS
@@ -483,7 +484,7 @@ TEST_FUNCTION(test_accel_intr_handle_mbox_recvd_sdm__pass, NULL, NULL)
 {
     void* cb_ctx = (void*)0x12345678;
 
-    accel_intr_set_mbx_ctx(ACCELERATOR_SDMSS, (void*)cb_ctx);
+    accel_intr_set_mbx_ctx(ACCEL_ID_SDM, (void *)cb_ctx);
     expect_value(__wrap_accel_mbox_sw_intr_cb, ctx, cb_ctx);
     will_return_always(__wrap_sdm_ext_int_mask_status_clear, SILIBS_SUCCESS);
     will_return(__wrap_sdm_ext_int_mask_enable, SILIBS_SUCCESS);
@@ -493,7 +494,7 @@ TEST_FUNCTION(test_accel_intr_handle_mbox_recvd_sdm__pass, NULL, NULL)
 
 TEST_FUNCTION(test_accel_intr_handle_mbox_recvd_sdm__fail1, NULL, NULL)
 {
-    accel_intr_set_mbx_ctx(ACCELERATOR_SDMSS, (void*)NULL);
+    accel_intr_set_mbx_ctx(ACCEL_ID_SDM, (void *)NULL);
 
     accel_intr_handle_mbox_recvd(SDMSS_IRQ_NUMBER);
 }
@@ -506,7 +507,7 @@ TEST_FUNCTION(test_accel_intr_init_sdm__pass, NULL, NULL)
     expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER);
     will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
-    assert_int_equal(accel_intr_init(ACCELERATOR_SDMSS), ACCEL_INTR_RET_SUCCESS);
+    assert_int_equal(accel_intr_init(ACCEL_ID_SDM), ACCEL_INTR_RET_SUCCESS);
 }
 
 TEST_FUNCTION(test_accel_intr_init_sdm__fail1, NULL, NULL)
@@ -517,5 +518,5 @@ TEST_FUNCTION(test_accel_intr_init_sdm__fail1, NULL, NULL)
     expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER);
     will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_ERROR);
 
-    assert_int_equal(accel_intr_init(ACCELERATOR_SDMSS), ACCEL_INTR_RET_FAIL_INTR_NVIC);
+    assert_int_equal(accel_intr_init(ACCEL_ID_SDM), ACCEL_INTR_RET_FAIL_INTR_NVIC);
 }

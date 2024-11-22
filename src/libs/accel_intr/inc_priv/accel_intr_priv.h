@@ -12,7 +12,7 @@
 /*----------------------------- Nested includes -----------------------------*/
 #include "accel_intr.h"
 
-#include <accelerator_ip.h>
+#include <accelip_id.h>              // for ACCEL_ID_CDED, ACCEL_ID_SDM
 #include <bitops.h>
 #include <fpfw_timer_port.h>         // for _fpfw_timer_t
 #include <sdm_ext_interrupts.h>
@@ -436,4 +436,4 @@ void accel_intr_isr(void* callback_param);
  * ACCEL_INTR_RET_FAIL_TIMER_CREATE : On Failure
  *
  */
-uint32_t accel_intr_crash_dump_collection_timer_init(eACCELERATOR_TYPE accel_type);
+uint32_t accel_intr_crash_dump_collection_timer_init(ACCEL_ID accel_type);

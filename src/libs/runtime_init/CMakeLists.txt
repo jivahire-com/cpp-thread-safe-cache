@@ -147,6 +147,7 @@ target_link_libraries(
         silibs::pcie
         silibs::kng_silibs_platform
         silibs::mhuv3
+        silibs::sdm_command_desc
         silibs::sensor_ram_bridge
         silibs::spi_bridge
         silibs::crypto::rng
@@ -286,6 +287,7 @@ target_link_libraries(
         silibs::idsw_kng
         silibs::platform
         silibs::kng_silibs_platform
+        silibs::sdm_command_desc
         silibs::sensor_ram_bridge
         silibs::spi_bridge
         register_headers

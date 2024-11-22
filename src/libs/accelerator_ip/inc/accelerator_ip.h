@@ -10,6 +10,7 @@
 #pragma once
 
 /*----------------------------- Nested includes -----------------------------*/
+#include <accelip_id.h>                   // for ACCEL_ID_CDED, ACCEL_ID_SDM
 #include <atu_lib.h>                      // for atu_id_t, atu_map_entry_t
 #include <kng_soc_constants.h>            // for DIE_INSTANCE
 #include <stdint.h>                       // for int32_t, uint64_t, uint8_t
@@ -41,12 +42,6 @@ typedef enum {
     ACCEL_RET_FAIL_INTR_INIT,
     ACCEL_RET_SUCCESS = 0
 } eACCEL_RET_CODES;
-
-typedef enum {
-    ACCELERATOR_SDMSS = 0,
-    ACCELERATOR_CDEDSS,
-    MAX_ACCELERATOR_TYPES
-} eACCELERATOR_TYPE;
 
 typedef struct {
     uintptr_t itcm_load_addr_low;
@@ -81,7 +76,7 @@ typedef void (*crash_dump_cb_t)(void *);
  *
  * @retval ATU mapped Accel Ext Cfg address
  */
-uint32_t accelerator_ip_get_atu_mapped_cfg_address(eACCELERATOR_TYPE accel_type);
+uint32_t accelerator_ip_get_atu_mapped_cfg_address(ACCEL_ID accel_type);
 
 /**
  * @brief Initialize Accelerator
@@ -126,7 +121,7 @@ int32_t scp_accelerators_isolation_control(void);
  * @retval
  *  No return value
  */
-void scp_accelerators_emcpu_reset(eACCELERATOR_TYPE accel_type, crash_dump_cb_t cb_fun, void *cb_ctx);
+void scp_accelerators_emcpu_reset(ACCEL_ID accel_type, crash_dump_cb_t cb_fun, void *cb_ctx);
 
 /**
  * @brief Function to overwrite the default values of knobs provided by Silibs
@@ -141,3 +136,16 @@ void scp_accelerators_emcpu_reset(eACCELERATOR_TYPE accel_type, crash_dump_cb_t 
  *  No return value
  */
 void scp_accel_update_default_knobs(subsystem_ctxt_t* p_ss_ctxt);
+
+/**
+ * @brief Converts the accel instance to accel id
+ *
+ * \b Description:
+ * This function converts the accel instance to accel id
+ *
+ * @param[in] accel_type - Accel instance
+ *
+ * @retval
+ *  Corresponding accel id for the provided accel type
+ */
+ACCEL_ID get_accelip_type(ACCELIP_SS_INSTANCE accel_type);

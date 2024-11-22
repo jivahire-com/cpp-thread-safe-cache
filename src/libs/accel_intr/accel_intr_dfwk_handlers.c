@@ -18,7 +18,8 @@
 #include <DfwkHost.h>   // for DfwkDeviceInitialize
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <accel_mbox_icc_transport.h>
-#include <accelerator_ip.h>    // for ACCELERATOR_CDEDSS, ACCELERATOR_SDMSS
+#include <accelerator_ip.h>    // for accelerator_ip_get_atu_mapped_cfg_address
+#include <accelip_id.h>        // for ACCEL_ID_CDED, ACCEL_ID_SDM
 #include <cortex_m7_atomics.h> // for cortex_m7_atomic_call_data_memory_barrier
 #include <fpfw_timer.h>        // for fpfw_timer_create, fpfw_timer_enable...
 #include <fpfw_timer_port.h>   // for fpfw_timer_create, fpfw_timer_enable...
@@ -62,26 +63,26 @@ typedef enum
 /**
  * Timer structure per Accel type / IRQ number
  */
-static struct _fpfw_timer_t accel_intr_crash_dump_collection_timers[MAX_ACCELERATOR_TYPES];
+static struct _fpfw_timer_t accel_intr_crash_dump_collection_timers[NUM_VALID_ACCEL_ID];
 
 /**
  * @brief accel_intr_mbox_ctx:
  * Mailbox Interrupt callback context to pass to ICC stack
  *
  */
-static void* accel_intr_mbox_ctx[MAX_ACCELERATOR_TYPES] = {NULL};
+static void* accel_intr_mbox_ctx[NUM_VALID_ACCEL_ID] = {NULL};
 
 /**
  * Timer data structure per Accel type / IRQ number
  */
-static accel_intr_crash_dump_collection_timer_data_t accel_intr_crash_dump_collection_timer_data[MAX_ACCELERATOR_TYPES] = {
-    // ACCELERATOR_SDMSS
+static accel_intr_crash_dump_collection_timer_data_t accel_intr_crash_dump_collection_timer_data[NUM_VALID_ACCEL_ID] = {
+    // ACCEL_ID_SDM
     {.IRQnum = SDMSS_IRQ_NUMBER,
      .timeout_count = ACCEL_INTR_CRASH_DUMP_COLLECT_FIRST_TIMEOUT,
      .is_soc_reset = false,
      .is_collecting_crashdump = false},
 
-    // ACCELERATOR_CDEDSS
+    // ACCEL_ID_CDED
     {.IRQnum = CDEDSS_IRQ_NUMBER,
      .timeout_count = ACCEL_INTR_CRASH_DUMP_COLLECT_FIRST_TIMEOUT,
      .is_soc_reset = false,
@@ -101,7 +102,7 @@ static accel_intr_crash_dump_collection_timer_data_t accel_intr_crash_dump_colle
  */
 static void reset_timer(uint32_t IRQnum)
 {
-    eACCELERATOR_TYPE accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
+    ACCEL_ID accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
 
     // Reset timeout count
     accel_intr_crash_dump_collection_timer_data[accel_type].timeout_count = ACCEL_INTR_CRASH_DUMP_COLLECT_FIRST_TIMEOUT;
@@ -119,7 +120,7 @@ static void reset_timer(uint32_t IRQnum)
  * @retval void
  *
  */
-static void accel_intr_handle_sdm_msg_send(eACCELERATOR_TYPE accel_type)
+static void accel_intr_handle_sdm_msg_send(ACCEL_ID accel_type)
 {
     /**
      * TODO: Remove this check once SVP is fixed for Doorbell interrupt
@@ -162,7 +163,7 @@ static void accel_intr_handle_sdm_msg_send(eACCELERATOR_TYPE accel_type)
  */
 static void accel_intr_request_crash_dump_collection(uint32_t IRQnum, uint32_t timeout_count, bool is_soc_reset)
 {
-    eACCELERATOR_TYPE accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
+    ACCEL_ID accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
 
     /**
      * timeout_count is 0 and is_collecting_crashdump is set, indicates
@@ -288,7 +289,7 @@ static void accel_intr_handle_sdm_msg_recv_timeout(void* ctx, fpfw_dur_t latency
 
 /*----------------------------- Global Functions ----------------------------*/
 
-uint32_t accel_intr_crash_dump_collection_timer_init(eACCELERATOR_TYPE accel_type)
+uint32_t accel_intr_crash_dump_collection_timer_init(ACCEL_ID accel_type)
 {
     fpfw_status_t status = fpfw_timer_create(&accel_intr_crash_dump_collection_timers[accel_type],
                                              FPFW_TIMER_ONESHOT,
@@ -353,7 +354,7 @@ void accel_intr_handle_fatal_intr_recvd(uint32_t IRQnum)
 
 void accel_intr_handle_sdm_msg_recvd(uint32_t IRQnum)
 {
-    eACCELERATOR_TYPE accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
+    ACCEL_ID accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
     /**
      * Check if this interrupt was expected.
      * Else ignore the interrupt
@@ -394,14 +395,14 @@ void accel_intr_handle_sdm_msg_recvd(uint32_t IRQnum)
     }
 }
 
-void accel_intr_set_mbx_ctx(eACCELERATOR_TYPE accel, void* ctx)
+void accel_intr_set_mbx_ctx(ACCEL_ID accel, void* ctx)
 {
     accel_intr_mbox_ctx[accel] = ctx;
 }
 
 void accel_intr_handle_mbox_recvd(uint32_t IRQnum)
 {
-    eACCELERATOR_TYPE accel = accel_intr_get_accel_type_from_irq_num(IRQnum);
+    ACCEL_ID accel = accel_intr_get_accel_type_from_irq_num(IRQnum);
     uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(accel);
 
     if (accel_intr_mbox_ctx[accel] == NULL)

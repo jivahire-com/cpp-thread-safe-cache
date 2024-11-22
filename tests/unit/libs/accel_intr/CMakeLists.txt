@@ -26,12 +26,12 @@ target_link_libraries(${TARGET}
         ms::lib::register_headers
         ms::lib::scp_interrupts
         ms::lib::utils
-        pcr_rpss
-        sdm_init
+        silibs::pcr_rpss
+        silibs::sdm_init
+        silibs::smmu
+        silibs::tower_vab
         silibs::idsw
         silibs::idsw_kng
-        smmu
-        tower_vab
 )
 
 # Get private includes for module under test

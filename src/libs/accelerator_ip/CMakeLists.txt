@@ -30,6 +30,7 @@ target_link_libraries(
         silibs::accelip_ss_init
         silibs::atu
         silibs::kng_silibs_platform
+        silibs::sdm_command_desc
         silibs::sdm_init
     PRIVATE
         fwlib.lib.assert
@@ -48,7 +49,6 @@ target_link_libraries(
         silibs::idsw_kng
         silibs::pcr_vab
         silibs::pcr_rpss
-        silibs::sdm_command_desc
         silibs::smmu
         silibs::tower_cdedss # TODO: ADO 1831262: Remove me after completing the ADO
         silibs::tower_sdmss

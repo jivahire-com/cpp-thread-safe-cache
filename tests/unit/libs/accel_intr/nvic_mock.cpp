@@ -14,9 +14,8 @@ extern "C" {
 #include "accel_intr.h"  // for accel_intr_irq_init, ACCEL_INTR_RET_SUC...
 #include "fpfw_status.h" // for FPFW_STATUS_SUCCESS
 
-#include <nvic.h>          // for NVIC_STATUS_SUCCESS
-#include <silibs_status.h> // for SILIBS_SUCCESS
-#include <stdint.h>        // for uint32_t
+#include <nvic.h>   // for NVIC_STATUS_SUCCESS
+#include <stdint.h> // for uint32_t
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 

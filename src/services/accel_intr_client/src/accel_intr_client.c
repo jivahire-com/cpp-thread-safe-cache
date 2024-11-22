@@ -52,7 +52,7 @@ static void dispatch_accel_intr_async_request(uint32_t IRQnum,
                                               DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine)
 {
     int idx = ACCEL_INTR_SERVICE_GET_IDX_FROM_COMMAND(command);
-    eACCELERATOR_TYPE accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
+    ACCEL_ID accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
 
     accel_intr_service_cmd_context.requests[accel_type][idx].IRQnum = IRQnum;
 
@@ -86,7 +86,7 @@ void accel_intr_client_init(paccel_intr_service_interface_t p_interface)
     // Open Driver Framework Interface for Accel Client, initialize async requests
     DfwkClientInterfaceOpen(&accel_intr_service_cmd_context.p_interface->header);
 
-    for (eACCELERATOR_TYPE accel_type = 0x0; accel_type < MAX_ACCELERATOR_TYPES; accel_type++)
+    for (ACCEL_ID accel_type = 0x0; accel_type < NUM_VALID_ACCEL_ID; accel_type++)
     {
         for (int idx = ACCEL_INTR_SERVICE_GET_IDX_FROM_COMMAND(ACCEL_INTR_SERVICE_COMMANDS_START_ID);
              idx < ACCEL_INTR_SERVICE_GET_IDX_FROM_COMMAND(ACCEL_INTR_SERVICE_MAX_COMMAND);

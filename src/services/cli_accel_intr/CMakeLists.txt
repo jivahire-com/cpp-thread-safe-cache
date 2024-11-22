@@ -31,6 +31,7 @@ target_link_libraries(
             silibs::accelip_ss_init
             silibs::kng_silibs_platform
             silibs::platform
+            silibs::sdm_command_desc
             silibs::sdm_init
         PUBLIC
             silibs::atu

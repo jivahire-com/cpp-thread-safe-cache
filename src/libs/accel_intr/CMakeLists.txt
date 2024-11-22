@@ -24,6 +24,7 @@ target_link_libraries(${TARGET}
         silibs::idsw_kng
         silibs::kng_silibs_platform
         silibs::sdm_em_ext_interrupts
+        silibs::sdm_command_desc
         ms::service::accel_intr_service
         ms::service::accel_intr_client
     PRIVATE

@@ -31,6 +31,7 @@ set(LIBRARIES
     silibs::idhw
     silibs::idsw
     silibs::idsw_kng
+    silibs::sdm_command_desc
     silibs::spi_bridge
 )
 

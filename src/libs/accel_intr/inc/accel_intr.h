@@ -11,7 +11,7 @@
 
 /*----------------------------- Nested includes -----------------------------*/
 
-#include <accelerator_ip.h> // for ACCELERATOR_CDEDSS, ACCELERATOR_SDMSS
+#include <accelip_id.h>             // for ACCEL_ID_CDED, ACCEL_ID_SDM
 #include <stdint.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
@@ -44,7 +44,7 @@ typedef enum {
  * @retval
  * IRQ Number : 119 (SDM) / 118 (CDED)
  */
-uint32_t accel_intr_get_irq_num_from_accel_type(eACCELERATOR_TYPE accel_type);
+uint32_t accel_intr_get_irq_num_from_accel_type(ACCEL_ID accel_type);
 
 /**
  * @brief Get accel_type based on IRQ number
@@ -54,7 +54,7 @@ uint32_t accel_intr_get_irq_num_from_accel_type(eACCELERATOR_TYPE accel_type);
  * @retval
  * accel_type : SDM / CDED
  */
-eACCELERATOR_TYPE accel_intr_get_accel_type_from_irq_num(uint32_t IRQnum);
+ACCEL_ID accel_intr_get_accel_type_from_irq_num(uint32_t IRQnum);
 
 /**
  * @brief Initialize ACCEL interrupts
@@ -72,7 +72,7 @@ eACCELERATOR_TYPE accel_intr_get_accel_type_from_irq_num(uint32_t IRQnum);
  *  On success, ACCEL_INTR_RET_SUCCESS
  *  On failure, ACCEL_INTR_RET_FAIL_*
  */
-int accel_intr_irq_init(eACCELERATOR_TYPE accel_type);
+int accel_intr_irq_init(ACCEL_ID accel_type);
 
 /**
  * @brief Function called when ASYNC request for SDM_MSG0_INTR is  received
@@ -114,7 +114,7 @@ void accel_intr_handle_mbox_recvd(uint32_t IRQnum);
  * @retval void
  *
  */
-void accel_intr_set_mbx_ctx(eACCELERATOR_TYPE accel, void* ctx);
+void accel_intr_set_mbx_ctx(ACCEL_ID accel, void* ctx);
 
 /**
  * @brief enable interrupt in NVIC
@@ -126,4 +126,4 @@ void accel_intr_set_mbx_ctx(eACCELERATOR_TYPE accel, void* ctx);
  * On Failure : ACCEL_INTR_RET_FAIL_INTR_NVIC
  *
  */
-int32_t accel_intr_init(eACCELERATOR_TYPE accel_type);
+int32_t accel_intr_init(ACCEL_ID accel_type);

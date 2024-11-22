@@ -20,7 +20,8 @@
 #include <FPFwInterrupts.h> // for FPFwCoreInterruptEnableVector,...
 #include <FpFwUtils.h>      // for FPFW_UNUSED
 #include <accel_intr_service.h>
-#include <accelerator_ip.h> // for ACCELERATOR_CDEDSS, ACCELERATOR_SDMSS
+#include <accelerator_ip.h> // for accelerator_ip_get_atu_mapped_cfg_address
+#include <accelip_id.h>     // for ACCEL_ID_CDED, ACCEL_ID_SDM
 #include <bitops.h>
 #include <cortex_m7_atomics.h> // for cortex_m7_atomic_call_data_memory_barrier
 #include <idsw_kng.h>
@@ -66,7 +67,7 @@
  * On Failure : ACCEL_INTR_RET_FAIL_INTR_NVIC
  *
  */
-static uint32_t accel_intr_nvic_init(eACCELERATOR_TYPE accel_type)
+static uint32_t accel_intr_nvic_init(ACCEL_ID accel_type)
 {
     uint32_t IRQnum = accel_intr_get_irq_num_from_accel_type(accel_type);
 
@@ -88,27 +89,27 @@ static uint32_t accel_intr_nvic_init(eACCELERATOR_TYPE accel_type)
 
 /*----------------------------- Global Functions ----------------------------*/
 
-uint32_t accel_intr_get_irq_num_from_accel_type(eACCELERATOR_TYPE accel_type)
+uint32_t accel_intr_get_irq_num_from_accel_type(ACCEL_ID accel_type)
 {
     switch (accel_type)
     {
-    case ACCELERATOR_CDEDSS:
+    case ACCEL_ID_CDED:
         return CDEDSS_IRQ_NUMBER;
-    case ACCELERATOR_SDMSS:
+    case ACCEL_ID_SDM:
     default:
         return SDMSS_IRQ_NUMBER;
     }
 }
 
-eACCELERATOR_TYPE accel_intr_get_accel_type_from_irq_num(uint32_t IRQnum)
+ACCEL_ID accel_intr_get_accel_type_from_irq_num(uint32_t IRQnum)
 {
     switch (IRQnum)
     {
     case CDEDSS_IRQ_NUMBER:
-        return ACCELERATOR_CDEDSS;
+        return ACCEL_ID_CDED;
     case SDMSS_IRQ_NUMBER:
     default:
-        return ACCELERATOR_SDMSS;
+        return ACCEL_ID_SDM;
     }
 }
 
@@ -208,9 +209,9 @@ void accel_intr_unmask_interrupt_level_1(uint32_t ext_cfg_addr, SDM_EXT_INTERRUP
     cortex_m7_atomic_call_data_memory_barrier();
 }
 
-int accel_intr_irq_init(eACCELERATOR_TYPE accel_type)
+int accel_intr_irq_init(ACCEL_ID accel_type)
 {
-    if (accel_type >= MAX_ACCELERATOR_TYPES)
+    if (accel_type >= NUM_VALID_ACCEL_ID)
     {
         critical_print("Accelerator type out of bounds : %d\n", accel_type);
         return ACCEL_INTR_RET_FAIL_INTR_INIT;
@@ -368,7 +369,7 @@ uint32_t accel_intr_fab_wdt_err_init(uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NU
     return ACCEL_INTR_RET_SUCCESS;
 }
 
-int32_t accel_intr_init(eACCELERATOR_TYPE accel_type)
+int32_t accel_intr_init(ACCEL_ID accel_type)
 {
     uint32_t IRQnum = accel_intr_get_irq_num_from_accel_type(accel_type);
 

@@ -10,7 +10,8 @@
 #include <MboxPrimitives.h>
 #include <accel_intr.h>
 #include <accelerator_ip.h>
-#include <fpfw_icc_base.h> // for fpfw_icc_base_ctx_t
+#include <accelip_id.h>                 // for ACCEL_ID_CDED, ACCEL_ID_SDM
+#include <fpfw_icc_base.h>              // for fpfw_icc_base_ctx_t
 #include <fpfw_icc_base_i.h>
 #include <fpfw_init.h>               // for FPFW_INIT_STATUS_E_INVALID_NODE
 #include <fpfw_mbox_icc_transport.h> // for ICC_MAX_ASYNC_REQ_TYPE
@@ -34,19 +35,19 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static struct _fpfw_timer_t accel_mbx_timer[MAX_ACCELERATOR_TYPES][ICC_MAX_ASYNC_REQ_TYPE] = {};
-static fpfw_mbox_icc_transport_config_t accel_mbx_cfg[MAX_ACCELERATOR_TYPES] = {};
+static struct _fpfw_timer_t accel_mbx_timer[NUM_VALID_ACCEL_ID][ICC_MAX_ASYNC_REQ_TYPE] = {};
+static fpfw_mbox_icc_transport_config_t accel_mbx_cfg[NUM_VALID_ACCEL_ID] = {};
 
-static fpfw_mbox_icc_transport_device_t accel_mbx_dev[MAX_ACCELERATOR_TYPES] = {};
-static fpfw_mbox_icc_transport_intrf_t accel_mbx_intf[MAX_ACCELERATOR_TYPES] = {};
+static fpfw_mbox_icc_transport_device_t accel_mbx_dev[NUM_VALID_ACCEL_ID] = {};
+static fpfw_mbox_icc_transport_intrf_t accel_mbx_intf[NUM_VALID_ACCEL_ID] = {};
 
-static uint8_t s_accel_mbx_dispatch_buff[MAX_ACCELERATOR_TYPES][LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES] = {};
-static fpfw_icc_base_ctx_t s_accel_mbx_icc_base_ctx[MAX_ACCELERATOR_TYPES] = {};
-static fpfw_icc_base_config s_accel_mbx_icc_cfg[MAX_ACCELERATOR_TYPES] = {};
+static uint8_t s_accel_mbx_dispatch_buff[NUM_VALID_ACCEL_ID][LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES] = {};
+static fpfw_icc_base_ctx_t s_accel_mbx_icc_base_ctx[NUM_VALID_ACCEL_ID] = {};
+static fpfw_icc_base_config s_accel_mbx_icc_cfg[NUM_VALID_ACCEL_ID] = {};
 
-const uint32_t accel_irq_num[MAX_ACCELERATOR_TYPES] = {
-    [ACCELERATOR_SDMSS] = HW_INT_SDM_MBOX_INT,
-    [ACCELERATOR_CDEDSS] = HW_INT_CDED_MBOX_INT,
+const uint32_t accel_irq_num[NUM_VALID_ACCEL_ID] = {
+    [ACCEL_ID_SDM] = HW_INT_SDM_MBOX_INT,
+    [ACCEL_ID_CDED] = HW_INT_CDED_MBOX_INT,
 };
 
 /*------------- Static Functions ----------------*/
@@ -66,7 +67,7 @@ const uint32_t accel_irq_num[MAX_ACCELERATOR_TYPES] = {
  * 4. If the base init is successful, call fpfw_icc_dispatcher_start()
  * 5. Finally return the initialized icc base ctx to the user for invoking icc base APIs
  */
-static fpfw_status_t accel_mbox_init(eACCELERATOR_TYPE accel_type)
+static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
 {
 
     accel_mbx_cfg[accel_type].mbox_dev_cfg.MbxFifoDepth = LARGE_MBX_FIFO_DEPTH;
@@ -158,7 +159,7 @@ static fpfw_status_t accel_mbox_init(eACCELERATOR_TYPE accel_type)
 
 FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel"))
 {
-    eACCELERATOR_TYPE accel_type = ACCELERATOR_SDMSS;
+    ACCEL_ID accel_type = ACCEL_ID_SDM;
     DIE_INSTANCE curr_die = (DIE_INSTANCE)idsw_get_die_id();
 
     // SDM Mailbox is not supported on Die 1
@@ -179,7 +180,7 @@ FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel
 
 FPFW_INIT_COMPONENT(icc_cded_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel"))
 {
-    eACCELERATOR_TYPE accel_type = ACCELERATOR_CDEDSS;
+    ACCEL_ID accel_type = ACCEL_ID_CDED;
     DIE_INSTANCE curr_die = (DIE_INSTANCE)idsw_get_die_id();
 
     // CDED Mailbox is not supported on Die 1

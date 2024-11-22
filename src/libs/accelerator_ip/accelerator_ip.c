@@ -17,6 +17,7 @@
 #include <_addressblock_0x100000_regs.h>
 #include <accel_intr.h>          // for accel_intr_irq_init
 #include <accelerator_ip_priv.h> // for get_accelerator_ctxt
+#include <accelip_id.h>          // NUM_VALID_ACCEL_ID, ACCEL_ID_SDM, ACCEL_ID_CDED
 #include <atu_lib.h>             // for atu_map, atu_unmap, atu_map...
 #include <bug_check.h>           // for BUG_ASSERT
 #include <cdedss_config_regs.h>  // for CDEDSS_CONFIG_SDM_EXT_CFG_ADDRESS
@@ -101,7 +102,7 @@ typedef struct _emcpu_rst_struct
 /**
  * Store ATU mapped address
  */
-static uint32_t accel_intr_atu_map_address[MAX_ACCELERATOR_TYPES];
+static uint32_t accel_intr_atu_map_address[NUM_VALID_ACCEL_ID];
 
 // Forward declaring static function to allow for creation of struct
 static void request_accel_fw_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status);
@@ -111,7 +112,7 @@ static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt);
 /*------------------- Declarations (Statics and globals) --------------------*/
 
 // TODO ADO: 1994002
-static emcpu_mbox_buffs_t mbox_buffs[MAX_ACCELERATOR_TYPES] = {
+static emcpu_mbox_buffs_t mbox_buffs[NUM_VALID_ACCEL_ID] = {
     {.send_buff =
          {
              .header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ, .context = 0},
@@ -120,21 +121,21 @@ static emcpu_mbox_buffs_t mbox_buffs[MAX_ACCELERATOR_TYPES] = {
          .header = {.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ, .context = 0},
      }}};
 
-static emcpu_rst_struct_t cpu_rst_info[MAX_ACCELERATOR_TYPES] = {
-    {.mbox_params = {.recv_params = {.payload_buffer = &mbox_buffs[ACCELERATOR_SDMSS].recv_buff,
-                                     .buffer_size = sizeof(mbox_buffs[ACCELERATOR_SDMSS].recv_buff),
+static emcpu_rst_struct_t cpu_rst_info[NUM_VALID_ACCEL_ID] = {
+    {.mbox_params = {.recv_params = {.payload_buffer = &mbox_buffs[ACCEL_ID_SDM].recv_buff,
+                                     .buffer_size = sizeof(mbox_buffs[ACCEL_ID_SDM].recv_buff),
                                      .cb = request_accel_fw_load_complete_notify,
                                      .recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP},
-                     .send_params = {.payload_buffer = &mbox_buffs[ACCELERATOR_SDMSS].send_buff,
-                                     .buffer_size = sizeof(mbox_buffs[ACCELERATOR_SDMSS].send_buff),
+                     .send_params = {.payload_buffer = &mbox_buffs[ACCEL_ID_SDM].send_buff,
+                                     .buffer_size = sizeof(mbox_buffs[ACCEL_ID_SDM].send_buff),
                                      .cb = request_send_complete_cb}},
      .cpu_rst_stage = EMCPU_CPU_RECOVERY_COMPLETE},
-    {.mbox_params = {.recv_params = {.payload_buffer = &mbox_buffs[ACCELERATOR_CDEDSS].recv_buff,
-                                     .buffer_size = sizeof(mbox_buffs[ACCELERATOR_CDEDSS].recv_buff),
+    {.mbox_params = {.recv_params = {.payload_buffer = &mbox_buffs[ACCEL_ID_CDED].recv_buff,
+                                     .buffer_size = sizeof(mbox_buffs[ACCEL_ID_CDED].recv_buff),
                                      .cb = request_accel_fw_load_complete_notify,
                                      .recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP},
-                     .send_params = {.payload_buffer = &mbox_buffs[ACCELERATOR_CDEDSS].send_buff,
-                                     .buffer_size = sizeof(mbox_buffs[ACCELERATOR_CDEDSS].send_buff),
+                     .send_params = {.payload_buffer = &mbox_buffs[ACCEL_ID_CDED].send_buff,
+                                     .buffer_size = sizeof(mbox_buffs[ACCEL_ID_CDED].send_buff),
                                      .cb = request_send_complete_cb}},
      .cpu_rst_stage = EMCPU_CPU_RECOVERY_COMPLETE}};
 
@@ -211,25 +212,7 @@ static int32_t init_hsp_cdedss_tower(atu_map_entry_t* p_cdeedss_tower_atu_map_en
     return ret;
 }
 
-static eACCELERATOR_TYPE get_accelip_type(ACCELIP_SS_INSTANCE accel_type)
-{
-    switch (accel_type)
-    {
-    case D0_ACCELIP_SDMSS:
-    case D1_ACCELIP_SDMSS: {
-        return ACCELERATOR_SDMSS;
-    }
-    case D0_ACCELIP_CDEDSS:
-    case D1_ACCELIP_CDEDSS: {
-        return ACCELERATOR_CDEDSS;
-    }
-    default: {
-        return MAX_ACCELERATOR_TYPES;
-    }
-    }
-}
-
-static void accel_fw_download(subsystem_ctxt_t* p_ss_ctxt, eACCELERATOR_TYPE accel_type)
+static void accel_fw_download(subsystem_ctxt_t* p_ss_ctxt, ACCEL_ID accel_type)
 {
     cpu_rst_info[accel_type].mbox_params.is_cold_boot = true;
     cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_ITCM_LOAD;
@@ -271,15 +254,15 @@ static void accel_fw_download(subsystem_ctxt_t* p_ss_ctxt, eACCELERATOR_TYPE acc
 static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
 {
     int32_t ret = ACCEL_RET_SUCCESS;
-    eACCELERATOR_TYPE accel_type = get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type);
+    ACCEL_ID accel_type = get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type);
 
-    if (accel_type == MAX_ACCELERATOR_TYPES)
+    if (accel_type == NUM_VALID_ACCEL_ID)
     {
         debug_print("accel_lib: Invalid accel type\n");
         return ACCEL_RET_FAIL_INVALID_PARAMS;
     }
 
-    if (accel_type == ACCELERATOR_CDEDSS)
+    if (accel_type == ACCEL_ID_CDED)
     {
         /* TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023639/ to revisit after boot chain stabilizes */
         if ((idsw_get_platform_sdv() == PLATFORM_SVP_SIM) && (!system_info_is_hsp_present()))
@@ -412,15 +395,15 @@ static void _sdm_init_itcm_enable_trigger_seq(const uintptr_t ext_cfg_addr)
                _ADDRESSBLOCK_0X100000_EMCPU_CFG_TCM_CTRL_ITCM_EN_MASK));
 }
 
-static uint32_t get_accel_name_and_offset_addr(eACCELERATOR_TYPE accel_type, char* accel_name)
+static uint32_t get_accel_name_and_offset_addr(ACCEL_ID accel_type, char* accel_name)
 {
     switch (accel_type)
     {
-    case ACCELERATOR_SDMSS:
+    case ACCEL_ID_SDM:
         memcpy(accel_name, "SDMSS", strlen("SDMSS") + 1);
         return SDMSS_CONFIG_SDM_EXT_CFG_ADDRESS;
         break;
-    case ACCELERATOR_CDEDSS:
+    case ACCEL_ID_CDED:
         memcpy(accel_name, "CDEDSS", strlen("CDEDSS") + 1);
         return CDEDSS_CONFIG_SDM_EXT_CFG_ADDRESS;
         break;
@@ -447,7 +430,7 @@ static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
         return FPFW_STATUS_FAIL;
     }
 
-    eACCELERATOR_TYPE accel_type = get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type);
+    ACCEL_ID accel_type = get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type);
 
     char accel_name[7];
     uint32_t ext_cfg_offset_addr = get_accel_name_and_offset_addr(accel_type, accel_name);
@@ -468,7 +451,7 @@ static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
     case EMCPU_ITCM_LOAD:
         cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_DTCM_LOAD;
         mbox_buffs[accel_type].send_buff.id =
-            (accel_type == ACCELERATOR_SDMSS) ? HSP_FIRMWARE_ID_SDM_ITCM : HSP_FIRMWARE_ID_CDED_ITCM;
+            (accel_type == ACCEL_ID_SDM) ? HSP_FIRMWARE_ID_SDM_ITCM : HSP_FIRMWARE_ID_CDED_ITCM;
         mbox_buffs[accel_type].send_buff.load_addr_low = p_ss_ctxt->mem_info.itcm_load_addr_low;
         mbox_buffs[accel_type].send_buff.load_addr_high = p_ss_ctxt->mem_info.itcm_load_addr_high;
 
@@ -477,7 +460,7 @@ static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
     case EMCPU_DTCM_LOAD:
         cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_RELEASE_CPU_WAIT;
         mbox_buffs[accel_type].send_buff.id =
-            (accel_type == ACCELERATOR_SDMSS) ? HSP_FIRMWARE_ID_SDM_DTCM : HSP_FIRMWARE_ID_CDED_DTCM;
+            (accel_type == ACCEL_ID_SDM) ? HSP_FIRMWARE_ID_SDM_DTCM : HSP_FIRMWARE_ID_CDED_DTCM;
         mbox_buffs[accel_type].send_buff.load_addr_low = p_ss_ctxt->mem_info.dtcm_load_addr_low;
         mbox_buffs[accel_type].send_buff.load_addr_high = p_ss_ctxt->mem_info.dtcm_load_addr_high;
 
@@ -516,7 +499,7 @@ static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
 static void request_accel_fw_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     subsystem_ctxt_t* p_ss_ctxt = (subsystem_ctxt_t*)context;
-    eACCELERATOR_TYPE accel_type = get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type);
+    ACCEL_ID accel_type = get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type);
 
     FPFW_UNUSED(context);
     FPFW_UNUSED(output_size_bytes);
@@ -549,7 +532,7 @@ static void emcpu_recovery_sequence(uintptr_t sdm_ext_cfg_base, subsystem_ctxt_t
      * FENCE_EN     = 0
      * NSYSRESET    = 1
      */
-    eACCELERATOR_TYPE accel_type = get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type);
+    ACCEL_ID accel_type = get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type);
 
     cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_RESET_SEQ_START;
     // TODO: ADO: 1982366 Replace implicit SDM INIT API implementations with proper SILIBS API once they're merged
@@ -601,7 +584,24 @@ static void emcpu_recovery_sequence(uintptr_t sdm_ext_cfg_base, subsystem_ctxt_t
 
 /*----------------------------- Global Functions ----------------------------*/
 
-uint32_t accelerator_ip_get_atu_mapped_cfg_address(eACCELERATOR_TYPE accel_type)
+ACCEL_ID get_accelip_type(ACCELIP_SS_INSTANCE accel_type)
+{
+    switch (accel_type)
+    {
+    case D0_ACCELIP_SDMSS:
+        /* FALLTHROUGH */
+    case D1_ACCELIP_SDMSS:
+        return ACCEL_ID_SDM;
+    case D0_ACCELIP_CDEDSS:
+        /* FALLTHROUGH */
+    case D1_ACCELIP_CDEDSS:
+        return ACCEL_ID_CDED;
+    default:
+        return NUM_VALID_ACCEL_ID;
+    }
+}
+
+uint32_t accelerator_ip_get_atu_mapped_cfg_address(ACCEL_ID accel_type)
 {
     return accel_intr_atu_map_address[accel_type];
 }
@@ -680,7 +680,7 @@ int32_t scp_accelerators_isolation_control(void)
     return ret;
 }
 /* TODO: Review use of BUG_ASSERT (vis a vis ASSERT) in accelIP init sequence https://azurecsi.visualstudio.com/Dev/_workitems/edit/2025877/ */
-void scp_accelerators_emcpu_reset(eACCELERATOR_TYPE accel_type, crash_dump_cb_t cb_fun, void* cb_ctx)
+void scp_accelerators_emcpu_reset(ACCEL_ID accel_type, crash_dump_cb_t cb_fun, void* cb_ctx)
 {
     uint32_t accel_ctxt_size = 0x0;
     subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
@@ -688,7 +688,7 @@ void scp_accelerators_emcpu_reset(eACCELERATOR_TYPE accel_type, crash_dump_cb_t 
     char accel_name[7];
     uint32_t ext_cfg_offset_addr = get_accel_name_and_offset_addr(accel_type, accel_name);
 
-    BUG_ASSERT(accel_type < MAX_ACCELERATOR_TYPES);
+    BUG_ASSERT(accel_type < NUM_VALID_ACCEL_ID);
     BUG_ASSERT(cb_fun != NULL);
 
     if (cpu_rst_info[accel_type].cpu_rst_stage != EMCPU_CPU_RECOVERY_COMPLETE)

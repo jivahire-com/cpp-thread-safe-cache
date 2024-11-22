@@ -13,10 +13,11 @@ target_link_libraries(${TARGET}
         fwlib.service.iccBase
         silibs::idsw
         silibs::idsw_kng
-        smmu
-        pcr_rpss
-        sdm_init
-        tower_vab
+        silibs::sdm_command_desc
+        silibs::pcr_rpss
+        silibs::sdm_init
+        silibs::smmu
+        silibs::tower_vab
         ms::lib::accelerator_ip
         ms::lib::hsp_firmware_headers
         ms::lib::system_info

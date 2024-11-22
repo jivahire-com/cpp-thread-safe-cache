@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         ms::lib::utils
         ms::lib::accelerator_ip
         silibs::kng_silibs_platform
+        silibs::sdm_command_desc
     PRIVATE
         fwlib.dfwk
         fwlib.lib.interface.platform.errorhandler

@@ -40,6 +40,7 @@ extern "C" {
 typedef VOID (*entry_function_t)(ULONG entry_input);
 
 /*-------- Function Prototypes -----------*/
+void __real_power_vrs_initiate_vr_reads();
 
 /*-- Declarations (Statics and globals) --*/
 static power_latest_calcs_t* s_local_power = NULL;
@@ -140,6 +141,7 @@ void __wrap_power_hw_clear_force_pmin(power_pmin_type_t type)
 void __wrap_power_vrs_initiate_vr_reads()
 {
     function_called();
+    __real_power_vrs_initiate_vr_reads();
 }
 
 int __wrap_scf_get_core_state(uint32_t core_num, uintptr_t scf_mhu_base_addr, bool mpam, SCF_CORE_POWER_STATE_T* power_state)
@@ -1072,7 +1074,7 @@ POWER_TEST(control_update_message_cb, NULL, NULL)
     create_nominal_count_data(p_ctrl_loop, TEST_CORE1, NOMINAL_PLIMIT, 0, 0);
 
     static power_runconfig_t test_runconfig = {
-        .knobs = {.capping_mode = POWER_CAPPING_MODE_PER_VM, .power_enable_velocity_boost = true},
+        .knobs = {.capping_mode = power_capping_mode_t_PER_VM, .power_enable_velocity_boost = true},
         .derived = {.pnominal = NOMINAL_PLIMIT}};
 
     // expectations on entry

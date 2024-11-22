@@ -27,7 +27,7 @@ extern "C" {
 #include <xtree>   // for _Tree_iterator, _Tree<>::iterator
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define PROFILE_COUNT 2
+#define PROFILE_COUNT 3
 #define DATA_A                       \
     {                                \
         0x11, 0x22, 0x33, 0x44, 0x55 \
@@ -177,7 +177,7 @@ static int init_setup_b(void** state)
 // any internal limits behave correctly. We do not attempt to verify all possible nexted combinations.
 //
 
-TEST_FUNCTION(cmtests_basic_defaults, NULL, NULL)
+TEST_FUNCTION(cmtests_basic_defaults, NULL, clean)
 {
     // For each basic type
     //   * Verify knobs without a "default" specified return 0
@@ -252,7 +252,7 @@ TEST_FUNCTION(cmtests_basic_defaults, NULL, NULL)
     assert_true(true == config_get_k_bool_dtrue());
 }
 
-TEST_FUNCTION(runtime_init_check_success, NULL, NULL)
+TEST_FUNCTION(runtime_init_check_success, NULL, clean)
 {
     // Verify that the configuration manager can be initialized with a valid configuration
     // and that the configuration manager can be initialized multiple times
@@ -296,7 +296,7 @@ TEST_FUNCTION(test_init_invalid_db_ctx, NULL, NULL)
     assert_int_equal(FPFW_STATUS_NULL_POINTER, status);
 }
 
-TEST_FUNCTION(test_init_success, NULL, NULL)
+TEST_FUNCTION(test_init_success, NULL, clean)
 {
     fpfw_cfg_mgr_config_t cfg = {.mission_mode = false,
                                  .profile_id = 0,

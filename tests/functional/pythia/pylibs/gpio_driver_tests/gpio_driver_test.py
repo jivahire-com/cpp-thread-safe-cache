@@ -116,9 +116,6 @@ class gpio_driver_test(EchoFallsBaseTest):
             self.dut.teardown()
             return False
         
-        # Wait for the system to stabilize
-        time.sleep(10)
-
         for core_name, core in self.cores.items():
             # Check GPIO configurations
             for gpio_ctrl in self.gpio_config["GPIO_Controllers"] :
@@ -188,22 +185,17 @@ class gpio_driver_test(EchoFallsBaseTest):
 
         # Set direction to output to generate interrupt
         core.channel.write_line(write_string=f"set_dir {ctrl} {pin} 1")
-        time.sleep(1)
 
         # Enable Interrupt
         core.channel.write_line(write_string=f"set_int_enable {ctrl} {pin} 1")
-        time.sleep(1)
 
         # Register ISR
         core.channel.write_line(write_string=f"register_isr {ctrl} {pin}")
-        time.sleep(1)
 
         # Generate Interrupt
         core.channel.write_line(write_string=f"set_pin {ctrl} {pin} 0")
-        time.sleep(1)
 
         core.channel.write_line(write_string=f"set_pin {ctrl} {pin} 1")
-        time.sleep(1)
 
         expected = f"GPIO ISR Callback: Status: 0x00000000, CtrlID: {ctrl}, PinID: {pin}"
         try:
@@ -214,5 +206,4 @@ class gpio_driver_test(EchoFallsBaseTest):
 
         # Restore configuration
         core.channel.write_line(write_string="restore")
-        time.sleep(1)
         core.channel.write_line(write_string="..")

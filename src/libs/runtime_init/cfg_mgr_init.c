@@ -10,10 +10,40 @@
 /*------------- Includes -----------------*/
 #include <config_manager.h>
 #include <config_manager_cli.h>
-#include <fpfw_init.h>         
-#include <idsw_kng.h> 
+#include <fpfw_init.h>
+#include <idsw_kng.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <variable_services.h>
+
+/*-- Symbolic Constant Macros (defines) --*/
+// Config profile IDs are defined by the order of FPFW_CFG_MGR_PROFILES
+#define MSCP_CONFIG_PROFILE_PLATFORM 0
+#define MSCP_CONFIG_PROFILE_FPGA     1
+#define MSCP_CONFIG_PROFILE_SVP      2
+
+/*-- Declarations (Statics and globals) --*/
+
+/*-------------- Typedefs ----------------*/
+
+/*--------- Function Prototypes ----------*/
+
+/*-------------- Functions ---------------*/
+static uint8_t get_profile_id()
+{
+    switch (idsw_get_platform_sdv())
+    {
+    case PLATFORM_FPGA:
+    case PLATFORM_FPGA_LARGE:
+    case PLATFORM_FPGA_LARGE_RVP:
+        return MSCP_CONFIG_PROFILE_FPGA;
+    case PLATFORM_SVP_SIM:
+        return MSCP_CONFIG_PROFILE_SVP;
+    default:
+        break;
+    }
+
+    return MSCP_CONFIG_PROFILE_PLATFORM;
+}
 
 /**
  * @brief Initialize cfg_mgr.
@@ -22,28 +52,11 @@
 FPFW_INIT_COMPONENT(cfg_mgr, FPFW_INIT_DEPENDENCIES("std_io", "dfwk", "var_serv", "hw_ver", "sysinfo"))
 {
     // This struct is only used to initialize a fpfw_cfg_mgr_db_t struct
-    fpfw_cfg_mgr_config_t cfg_mgr_config = {
-        .mission_mode = false,
-        .profile_id = 0,
-        .read_knob_fn = read_knob_from_default_db_cb,
-        .write_knob_fn = update_knob_in_cached_db_cb,
-        .db_ctx = (void*)1
-    };
-
-    switch (idsw_get_platform_sdv())
-    {
-    case PLATFORM_SVP_SIM:
-    case PLATFORM_FPGA_LARGE:
-    case PLATFORM_FPGA_LARGE_RVP:
-    case PLATFORM_EMU:
-    case PLATFORM_EMU_1D:
-    case PLATFORM_EMU_1D_8C:
-    case PLATFORM_EMU_2D:
-    case PLATFORM_EMU_2D_8C:
-    default:
-        cfg_mgr_config.profile_id = 0;
-        break;
-    }
+    fpfw_cfg_mgr_config_t cfg_mgr_config = {.mission_mode = false,
+                                            .profile_id = get_profile_id(),
+                                            .read_knob_fn = read_knob_from_default_db_cb,
+                                            .write_knob_fn = update_knob_in_cached_db_cb,
+                                            .db_ctx = (void*)1};
 
     var_service_shared_mem_t var_svc_mem_ctx = {
         .payload_base = (uintptr_t)SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE,

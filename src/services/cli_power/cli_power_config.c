@@ -305,7 +305,7 @@ static void print_power_config_loopcfg(power_knobs_t* knobs)
 {
     printf("\nCtrl loop configuration\n");
     printf("-----------------------\n");
-    printf("Power capping mode  : %s\n", knobs->capping_mode == POWER_CAPPING_MODE_ALL ? "all" : "per VM");
+    printf("Power capping mode  : %s\n", knobs->capping_mode == power_capping_mode_t_ALL ? "all" : "per VM");
     printf("C2 limits to nominal: %s\n", knobs->c2_cores_limit_to_nominal ? s_true_str : s_false_str);
     printf("C3 limits to nominal: %s\n", knobs->c3_cores_limit_to_nominal ? s_true_str : s_false_str);
     printf("Allow plimit<nominal: %s\n", knobs->allow_plimit_below_nominal ? s_true_str : s_false_str);

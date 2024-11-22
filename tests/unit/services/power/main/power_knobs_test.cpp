@@ -40,8 +40,6 @@ POWER_TEST(read_knobs, NULL, NULL)
 {
     power_knobs_t test_knobs = {};
 
-    // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491012/
-    // placeholder - implement test with actual knob implementation
     expect_any_always(__wrap_FpFwAssert, expression);
 
     power_knobs_read(&test_knobs);

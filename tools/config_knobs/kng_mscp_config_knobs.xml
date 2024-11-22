@@ -13,9 +13,30 @@
       <Value name="MODEA" prettyname="Mode A" value="0" help="Fast mode" />
       <Value name="MODEB" prettyname="Mode B" value="1" help="Slow mode" />
     </Enum>
-    <Enum name="POWER_CAPPING_MODE" help="Power capping mode">
-      <Value name="POWER_CAPPING_MODE_ALL" prettyname="All" value="0" help="All core (no priority) capping" />
-      <Value name="POWER_CAPPING_MODE_PER_VM" prettyname="Per VM" value="1" help="Per VM priority-based power capping" />
+    <Enum name="power_capping_mode_t" help="Power capping mode">
+      <Value name="power_capping_mode_t_ALL" prettyname="All" value="0" help="All core (no priority) capping" />
+      <Value name="power_capping_mode_t_PER_VM" prettyname="Per VM" value="1" help="Per VM priority-based power capping" />
+    </Enum>
+    <Enum name="power_loops_disable_t" help="">
+      <Value name="power_loops_disable_t_NONE" prettyname="None" value="0" help="All power module loops enabled" />
+      <Value name="power_loops_disable_t_CTRL_LOOP" prettyname="Ctrl Loop" value="1" help="Power control loop disabled" />
+      <Value name="power_loops_disable_t_VR_TELEM_LOOP" prettyname="VR Telemetry Loop" value="2" help="Power VR telemetry loop disabled" />
+      <Value name="power_loops_disable_t_CTRL_VR_LOOP" prettyname="Ctrl VR Loop" value="3" help="Power control and VR telemetry loops disabled" />
+      <Value name="power_loops_disable_t_PVT_TELEM_LOOP" prettyname="PVT Telemetry Loop" value="4" help="Power PVT telemetry loop disabled" />
+      <Value name="power_loops_disable_t_CTRL_PVT_LOOP" prettyname="Ctrl PVT Loop" value="5" help="Power control and PVT telemetry loops disabled" />
+      <Value name="power_loops_disable_t_VR_PVT_LOOP" prettyname="VR PVT Loop" value="6" help="Power VR and PVT telemetry loop disabled" />
+      <Value name="power_loops_disable_t_ALL" prettyname="All" value="7" help="Power control, VR and PVT telemetry loops disabled" />
+    </Enum>
+    <Enum name="power_loops_minimum_plimit_t" help="">
+      <Value name="power_loops_minimum_plimit_t_NONE" prettyname="None" value="0" help="No required plimit requests per loop iteration" />
+      <Value name="power_loops_minimum_plimit_t_MIN_1" prettyname="MIN 1" value="1" help="Require 1 plimit request" />
+      <Value name="power_loops_minimum_plimit_t_MIN_2" prettyname="MIN 2" value="2" help="Require 2 plimit requests" />
+      <Value name="power_loops_minimum_plimit_t_MIN_4" prettyname="MIN 4" value="3" help="Require 4 plimit requests" />
+      <Value name="power_loops_minimum_plimit_t_MIN_8" prettyname="MIN 8" value="4" help="Require 8 plimit requests" />
+      <Value name="power_loops_minimum_plimit_t_MIN_16" prettyname="MIN 16" value="5" help="Require 16 plimit requests" />
+      <Value name="power_loops_minimum_plimit_t_MIN_32" prettyname="MIN 32" value="6" help="Require 32 plimit requests" />
+      <Value name="power_loops_minimum_plimit_t_MIN_64" prettyname="MIN 64" value="7" help="Require 64 plimit requests" />
+      <Value name="power_loops_minimum_plimit_t_MIN_128" prettyname="MIN 128" value="8" help="Require max 128 plimit requests" />
     </Enum>
   </Enums>
 
@@ -30,6 +51,163 @@
     <Struct name="sample_t" help="Sample struct">
       <Member name="counter" type="uint32_t" help="Number value" />
       <Member name="children" type="child_t" count="2" help="Child data" />
+    </Struct>
+    <!-- power service knob data types-->
+    <Struct name="power_pid_config_t" help="">
+      <Member name="kpt" type="uint32_t" help="proportional coefficient *1000" />
+      <Member name="kit" type="uint32_t" help="integral coefficient *1000" />
+      <Member name="kdt" type="uint32_t" help="derivative coefficient *1000" />
+      <Member name="setpoint_offset" type="uint32_t" help="offset in mW" />
+    </Struct>
+    <Struct name="power_mpmm_config_t" help="">
+      <Member name="enable" type="bool" help="Enable MPMM" />
+      <Member name="gear" type="uint8_t" help="MPMM Gear" />
+    </Struct>
+    <Struct name="power_currthrot_cfg_t" help="">
+      <Member name="rolling_window_count" type="uint8_t" help="max 7" />
+      <Member name="telemetry_epoch_count" type="uint8_t" help="10-20 is valid" />
+      <Member name="inc_ctr" type="uint8_t" help="0x0-0x1f, 512-16384 clocks" />
+      <Member name="dec_ctr" type="uint8_t" help="0x0-0x1f, 512-16384 clocks" />
+      <Member name="inc_amt" type="uint8_t" help="0-3, 1-4 steps" />
+      <Member name="dec_amt0" type="uint8_t" help="0-3, 1-4 steps" />
+      <Member name="dec_amt1" type="uint8_t" help="0-7, 1-8 steps" />
+    </Struct>
+    <Struct name="power_currthrot_threshold_cfg_t" help="">
+      <Member name="iref_to_max_percent" type="uint8_t" help="up to 100" />
+      <Member name="t1_percent" type="uint8_t" />
+      <Member name="t2_percent" type="uint8_t" />
+      <Member name="t3_percent" type="uint8_t" />
+    </Struct>
+    <Struct name="power_adclk_cfg_t" help="">
+      <Member name="enable" type="bool" help="enable adaptive clocking/throttling" />
+      <Member name="telemetry_interval" type="uint16_t" help="Telemetry interval in milliseconds, 0 disables" />
+      <Member name="inc_ctr" type="uint8_t" help="0x0-0x1f, 512-16384 clocks" />
+      <Member name="dec_ctr" type="uint8_t" help="0x0-0x1f, 512-16384 clocks" />
+      <Member name="inc_amt" type="uint8_t" help="0-3, 1-4 steps" />
+      <Member name="dec_amt" type="uint8_t" help="0-3, 1-4 steps" />
+      <Member name="resp_option" type="uint8_t" help="Select 0: Synchronous, 1: Asynchronous response option (see ADCLK_CR1)" />
+      <Member name="recovery_step_wait" type="uint8_t" help="Number of PLL output cycles to wait before recovery step (see ADCLK_CR1)" />
+      <Member name="recovery_step" type="uint8_t" help="Size of code jump on recovery step (see ADCLK_CR1)" />
+      <Member name="resp_wait" type="uint8_t" help="Number of PLL output cycles to wait before recovering back to nominal (see ADCLK_CR1)" />
+      <Member name="resp_code" type="uint8_t" help="Code for synchronous droop response (see ADCLK_CR1)" />
+      <Member name="adclk_comp_config" type="uint8_t" help="Comparator configuration (see ADCLK_CR2)" />
+      <Member name="throttle_threshold" type="uint8_t" help="Number of droop events seen within throttle window before throttle request is asserted (see ADCLK_CR2)" />
+      <Member name="throttle_window_count" type="uint8_t" help="Window for counting droop events before triggering throttle request (see ADCLK_CR2)" />
+    </Struct>
+    <Struct name="power_adclk_offset_cfg_t" help="">
+      <Member name="enable" type="bool" help="enable adaptive clocking offset writes" />
+      <Member name="offset_value" type="uint8_t" count="68" help="0-63, Per-core value added/subtracted to/from the ldoDacIn[8:0] value driven by DVFS" />
+    </Struct>
+    <Struct name="power_pvt_threshold_config_dts_t" help="">
+      <Member name="hyst_threshold" type="uint16_t" help="value in 0.1C" />
+      <Member name="alarm_threshold" type="uint16_t" help="value in 0.1C" />
+    </Struct>
+    <Struct name="power_tile_tempthrot_cfg_t" help="">
+      <Member name="hot" type="power_pvt_threshold_config_dts_t" help="hot thresholds" />
+      <Member name="thermtrip" type="power_pvt_threshold_config_dts_t" help="thermtrip thresholds" /> 
+      <Member name="inc_ctr" type="uint8_t" help="0x0-0xf, 262144-4194304 clocks" />
+      <Member name="dec_ctr" type="uint8_t" help="0x0-0xf, 262144-4194304 clocks" />
+      <Member name="inc_amt" type="uint8_t" help="0-3, 1-4 steps" />
+      <Member name="dec_amt" type="uint8_t" help="0-3, 1-4 steps" />
+    </Struct>
+    <Struct name="power_pvt_threshold_config_vm_t" help="">
+      <Member name="hyst_threshold" type="uint16_t" help="value in mV" />
+      <Member name="alarm_threshold" type="uint16_t" help="value in mV" />
+    </Struct>
+    <Struct name="power_pvt_vm_cfg_t" help="">
+      <Member name="overvolt" type="power_pvt_threshold_config_vm_t" help="overvolt thresholds"/>
+      <Member name="undervolt" type="power_pvt_threshold_config_vm_t" help="undervolt thresholds" />
+    </Struct>
+    <Struct name="power_pvt_tile_vm_cfg_t" help="">
+      <Member name="thresholds" type="power_pvt_vm_cfg_t" count="4" help="Tile VM thresholds (Vcore0-disable, Vcore1-disable, Vcpu0, Vsys)"/>
+    </Struct>
+    <Struct name="power_soc_temp_cfg_t" help="">
+      <Member name="hot" type="power_pvt_threshold_config_dts_t" help="hot thresholds" />
+      <Member name="thermtrip" type="power_pvt_threshold_config_dts_t" help="thermtrip thresholds" />
+    </Struct>
+    <Struct name="power_pvt_soc_vm_cfg_t" help="">
+      <Member type="power_pvt_vm_cfg_t" name="thresholds" count="18" help="SOC VM thresholds (vddq from DDR10, Vsoc in MSCP, Va0p85 in PCIe0, Vsoc northwest PCM, Vsys northwest PCM, Vddq from DDR1, Va0p85 in PCIe2, Vsys southeast PCM)"/>
+    </Struct>
+    <Struct name="power_fllcal_pstate_bounds_t" help="">
+      <Member name="pstate_min" type="uint8_t" help="" />
+      <Member name="pstate_max" type="uint8_t" help="" />
+    </Struct>
+    <Struct name="power_force_vrs_t" help="">
+      <Member name="vr" type="uint16_t" count="10" help="0 to disable, Voltage in mV to write to voltage regulator at boot" />
+    </Struct>
+    <Struct name="power_leakage_poly_t" help="">
+      <Member name="a" type="float" help="x^3 coefficient" />
+      <Member name="b" type="float" help="x^2 coefficient" />
+      <Member name="c" type="float" help="x coefficient" />
+      <Member name="d" type="float" help="constant" />
+    </Struct>
+    <Struct name="power_leakage_temp_scaler_t" help="">
+      <Member name="poly_coefficients" type="power_leakage_poly_t" count="4" help="Polynomial for temperature scaling of leakage - indexed to process corner 0-SS, 1-TT, 2-FF, 3-unknown" />
+    </Struct>
+    <Struct name="power_plllock_cfg_t" help="">
+      <Member name="enable_error" type="bool" help="enable fatal error handling" />
+      <Member name="lckcntsel" type="uint8_t" help="0x0-0x3, Programmable count value for FLL frequency lock counter (dco1_lckcntsel)" />
+      <Member name="mask_plllockraw" type="bool" help="Mask plllockraw errors" />
+      <Member name="mask_freqchangetimeout" type="bool" help="Mask freqchangetimeout errors" />
+      <Member name="mask_fllcaltimeout" type="bool" help="Mask fllcaltimeout errors" />
+      <Member name="mask_locktimeout" type="bool" help="Mask locktimeout errors" />
+      <Member name="mask_freqerror" type="bool" help="Mask freq error" />
+    </Struct>
+    <Struct name="power_knobs_t" help="Struct for power module configuration knobs">
+      <Member name="loops_disable" type="power_loops_disable_t" help="disabled loops (control, vr telem, pvt telem)" />
+      <Member name="capping_mode" type="power_capping_mode_t" />
+      <Member name="soc_temp" type="power_soc_temp_cfg_t" help="configuration for soc thermal alarms that feed into soc_hot and thermtrip" />
+      <Member name="soc_vm" type="power_pvt_soc_vm_cfg_t" help="config for soc vm alarm" />
+      <Member name="tile_vm" type="power_pvt_tile_vm_cfg_t" help="config for tile vm alarm" />
+      <Member name="current_throt" type="power_currthrot_cfg_t" help="configuration for odcm and dvfs current throttling" />
+      <Member name="current_threshold" type="power_currthrot_threshold_cfg_t" help="current threshold percentages for per-pstate generation" />
+      <Member name="tile_temp_throt" type="power_tile_tempthrot_cfg_t" help="configuration for tile temperature thresholds and related throttling" />
+      <Member name="adclk_throt" type="power_adclk_cfg_t" help="configuration for adaptive clock throttling" />
+      <Member name="adclk_offset" type="power_adclk_offset_cfg_t" help="configuration for adaptive clock offset (one per die; pick the right one during knob init)" />
+      <Member name="pid" type="power_pid_config_t" help="pid configuration" />
+      <Member name="mpmm" type="power_mpmm_config_t" help="mpmm configuration" />
+      <Member name="forced_vrs" type="power_force_vrs_t" help="0 or voltage_in mv for each VR" />
+      <Member name="leakage_temp_scaler" type="power_leakage_temp_scaler_t" help="polynomial coefficients for temperature scaling of leakage" />
+      <Member name="fllcal_pstate_bounds" type="power_fllcal_pstate_bounds_t" help="bounds to limit ftable frequency calibration" />
+      <Member name="minimum_plimit_updates" type="power_loops_minimum_plimit_t" help="minimum number of pstate updates per loop iteration - 0 -> 8 (0 is none, number of updates is 2^(x-1))" />
+      <Member name="plllock_cfg" type="power_plllock_cfg_t" help="core pll lock config" />
+      <Member name="static_rail_power_watts" type="float" help="static/constant adder to account for other SoC power rails" />
+      <Member name="control_loop_interval" type="uint16_t" help="Power control loop timer interval (ms)" />
+      <Member name="pvt_loop_interval" type="uint16_t" help="PVT telemetry loop timer interval (ms)" />
+      <Member name="temp_telemetry_divider" type="uint16_t" help="Number of control loop intervals per 1 VR temperature telemetry" />
+      <Member name="r_loadline_vcpu0_uohm" type="uint16_t" help="Loadline resistance used in VR setpoint (and power adjustment) calculation (uOhm)" />
+      <Member name="r_loadline_vcpu1_uohm" type="uint16_t" help="Loadline resistance used in VR setpoint (and power adjustment) calculation (uOhm)" />
+      <Member name="vsys_r_loadline_uohm" type="uint16_t" help="Loadline resistance used in VR power adjustment calculation (uOhm)" />
+      <Member name="soc_maximum_thermal_watts_limit" type="uint16_t" help="SOC maximum power limit, specific to thermal (W)" />
+      <Member name="soc_maximum_electrical_current_limit_vcpu0" type="uint16_t" help="Vcpu0 current maximum value (A) which is used to determine the maximum electrical power limit" />
+      <Member name="soc_maximum_electrical_current_limit_vcpu1" type="uint16_t" help="Vcpu1 current maximum value (A)" />
+      <Member name="vcpu_offset_mv" type="int16_t" help="offset in mV to apply to Vcpu calculation" />
+      <Member name="force_pstate" type="uint8_t" help="32 to disable, 0-31 to force pstate" />
+      <Member name="allowed_plimit_minimum" type="uint8_t" help="limits control loop plimit selection - setting to nominal would disable turbo speeds" />
+      <Member name="allowed_plimit_maximum" type="uint8_t" help="limits control loop plimit selection" />
+      <Member name="max_plimit_step_size_up" type="uint8_t" help="limits control loop plimit selection - max number of steps up" />
+      <Member name="max_plimit_step_size_down" type="uint8_t" help="limits control loop plimit selection - max number of steps down" />
+      <Member name="intervals_to_lower_plimit" type="uint8_t" help="Control loop intervals over which to sample last PSTATE (with no throttling) before lowering plimit below SCP calculated plimit" />
+      <Member name="activity_factor_dhry_adjustment" type="uint8_t" help="A default activity factor to use with peak CPU current calculation" />
+      <Member name="power_enable_velocity_boost" type="bool" help="Enable velocity boost (prioritized turbo vs equal turbo)" />
+      <Member name="allow_plimit_below_nominal" type="bool" help="Outside of power capping, drop plimit to OS desired perf even if below nominal" />
+      <Member name="c4_cores_limit_to_nominal" type="bool" help="true to limit cores in c4 c-state to nominal perf" />
+      <Member name="c3_cores_limit_to_nominal" type="bool" help="true to limit cores in c3 c-state to nominal perf" />
+      <Member name="c2_cores_limit_to_nominal" type="bool" help="true to limit cores in c2 c-state to nominal perf" />
+      <Member name="enable_survivability_mode" type="bool" help="true to init DVFS in SW control mode and safe settings" />
+      <Member name="calsm_enable" type="bool" help="true to enable fgpll calibration" />
+      <Member name="c1_tel_enable" type="bool" help="should C1 telemetry be enabled" />
+      <Member name="soc_vm_overvolt_en" type="bool" help="enable SOC VM overvolt alarm" />
+      <Member name="soc_vm_undervolt_en" type="bool" help="enable SOC VM undervolt alarm" />
+      <Member name="tile_vm_overvolt_en" type="bool" help="enable Tile VM overvolt alarm" />
+      <Member name="tile_vm_undervolt_en" type="bool" help="enable Tile VM undervolt alarm" />
+      <Member name="soc_temp_hot_en" type="bool" help="enable SOC temp hot alarm" />
+      <Member name="soc_temp_thermtrip_en" type="bool" help="enable SOC temp thermtrip alarm" />
+      <Member name="tile_temp_hot_en" type="bool" help="enable Tile temp hot alarm" />
+      <Member name="tile_temp_thermtrip_en" type="bool" help="enable Tile temp thermtrip alarm" />
+      <Member name="survivability_mode_pstate" type="uint8_t" help="Pstate to boot to under survivability mode" />
+      <Member name="nominal_pstate" type="uint8_t" help="Pstate to use for nominal" />
+      <Member name="ldo_offset" type="int8_t" help="ldo dac code offset" />
     </Struct>
   </Structs>
 
@@ -133,8 +311,97 @@
     <Knob name="ecc_ce_th" type="uint16_t" default="0" help="ECC threshold count after which any per-rank CE counter creates an appropriate RAS error record. (0x0 ~ 0x7ff)" />
     <Knob name="phy_fw_diag_en" type="uint8_t" default="0" help="DDR PHY firmware diagnostic enable (DV debug only, FW halts after PHY init). 0 - Disable, 1 - Enable" />
 
-    <!-- Others -->
-    <Knob name="power_capping_mode" type="POWER_CAPPING_MODE" default="POWER_CAPPING_MODE_PER_VM" help="Power capping mode" />
+    <!-- Power knobs -->
+    <Knob name="power_control_loop_interval" type="uint16_t" default="1" help="Control loop interval in milliseconds" />
+    <Knob name="power_pvt_loop_interval" type="uint16_t" default="10" help="PVT telemetry loop interval in milliseconds" />
+    <Knob name="power_temp_telemetry_divider" type="uint16_t" default="10" help="Number of control loop intervals per 1 VR temperature telemetry" />
+    <Knob name="power_pid" type="power_pid_config_t" default="{15000, 2000000, 0, 5000}" help="Power PID configuration" />
+    <Knob name="power_soc_maximum_thermal_watts_limit" type="uint16_t" default="0" help="SOC maximum power limit specific to thermal (W). Defaults to fused value if set to 0" />
+    <Knob name="power_soc_maximum_electrical_current_limit_vcpu0" type="uint16_t" default="500" help="Vcpu0 current maximum value (A) used to determine the maximum electrical power limit." />
+    <Knob name="power_soc_maximum_electrical_current_limit_vcpu1" type="uint16_t" default="500" help="Vcpu1 current maximum value (A) used to determine the maximum electrical power limit." />
+    <Knob name="power_r_loadline_vcpu0" type="uint16_t" default="400" help="Loadline resistance (uOhm - used in Vcpu calculation)" />
+    <Knob name="power_r_loadline_vcpu1" type="uint16_t" default="400" help="Loadline resistance (uOhm - used in Vcpu calculation)" />
+    <Knob name="power_vsys_r_loadline" type="uint16_t" default="300" help="Loadline resistance (uOhm - used in Vsys power calculation)" />
+
+    <!-- Double Check default values (Different between code and doc) -->
+    <Knob name="power_activity_factor_mpmm_enabled" type="uint8_t" default="80" help="Activity factor adjustment against dhrystone when MPMM enabled (percentage, used in Vcpu/dynamic current calculation)" />
+    <Knob name="power_activity_factor_mpmm_disabled" type="uint8_t" default="100" help="Activity factor adjustment against dhrystone when MPMM disabled (percentage, used in Vcpu/dynamic current calculation)" />
+    <Knob name="power_activity_factor_dhry_adjustment" type="uint8_t" default="100" help="Activity factor with mpmm disabled" />
+
+    <Knob name="power_capping_mode" type="power_capping_mode_t" default="power_capping_mode_t_PER_VM" help="Power capping mode" />
+    <Knob name="power_enable_velocity_boost" type="bool" default="true" help="Enable for velocity boost (priority-based turbo). Disabling leaves turbo enabled, without priority" />
+    <Knob name="power_c4_cores_limit_to_nominal" type="bool" default="true" help="True to limit cores in C4 c-state to nominal performance" />
+    <Knob name="power_c3_cores_limit_to_nominal" type="bool" default="true" help="True to limit cores in C3 c-state to nominal performance" />
+    <Knob name="power_c2_cores_limit_to_nominal" type="bool" default="true" help="True to limit cores in C2 c-state to nominal performance" />
+    <Knob name="power_allow_plimit_below_nominal" type="bool" default="false" help="Outside of power capping, drop plimit to OS desired performance even if below nominal (POR=false)" />
+    <Knob name="power_intervals_to_lower_plimit" type="uint8_t" default="0" help="Control loop intervals over which to sample last PSTATE (with no throttling) before lowering plimit below SCP calculated plimit" />
+    <Knob name="power_allowed_plimit_minimum" type="uint8_t" default="0" min="0" max="31" help="Limits control loop plimit selection" />
+    <Knob name="power_allowed_plimit_maximum" type="uint8_t" default="31" help="Limits control loop plimit selection" />
+    <Knob name="power_max_plimit_step_size_up" type="uint8_t" default="31" min="0" max="31" help="Limits control loop plimit selection. Max number of steps up" />
+    <Knob name="power_max_plimit_step_size_down" type="uint8_t" default="31" min="0" max="31" help="Limits control loop plimit selection. Max number of steps down" />
+    <Knob name="power_force_pstate" type="uint8_t" default="32" help="Limits plimit to forced pstate and rewrites pll/vma tables for lower performance states to prevent HW throttle" />
+    <Knob name="power_mpmm" type="power_mpmm_config_t" default="{false, 2}" help="Enable Configuration for power mpmm enable/gear" />
+
+    <!-- Document only
+    <Knob name="power_current_throttling_cfg" type="" default="" help="Current threshold percentages per P-state" />
+    -->
+  
+    <Knob name="power_current_throt" type="power_currthrot_cfg_t" default="{5, 10, 31, 31, 0, 1, 2}" help="Configuration for core current throttling" />
+
+    <Knob name="power_tile_temp_throt" type="power_tile_tempthrot_cfg_t" default="{{930, 950}, {1130, 1150}, 15, 15, 0, 1}" help="Configuration for tile temperature throttling" />
+    <Knob name="power_tile_vms" type="power_pvt_tile_vm_cfg_t" default="{{{{1050, 1100}, {0, 0}}, {{1050, 1100}, {0, 0}}, {{1383, 1433}, {680, 630}}, {{1006, 1056}, {775, 725}}}}" help="Configuration for tile voltage monitor thresholds" />
+
+    <!-- Document only
+    <Knob name="power_adclk_throt_vcpu0" type="" default="" help="FGPLL and DVFS config for adaptive clocking" />
+    <Knob name="power_adclk_throt_vcpu1" type="" default="" help="FGPLL and DVFS config for adaptive clocking" />
+    <Knob name="power_adclk_vcpu0_offset_cfg" type="" default="Disabled" help="Override for per-core value added/subtracted to/from the ldoDacIn[8:0] value driven by DVFS" />
+    <Knob name="power_adclk_vcpu1_offset_cfg" type="" default="Disabled" help="Override for per-core value added/subtracted to/from the ldoDacIn[8:0] value driven by DVFS" />
+    -->
+    <!-- Undocumented -->
+    <Knob name="power_adclk_throt" type="power_adclk_cfg_t" default="{false, 0, 31, 31, 0, 1, 0, 0, 2, 16, 16, 0, 10, 50}" help="configuration for adaptive clocking/throttling" />
+    <Knob name="power_adclk_offset_cfg" type="power_adclk_offset_cfg_t" default="{false, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}" />
+
+    <Knob name="power_soc_temp" type="power_soc_temp_cfg_t" default="{{930, 950}, {1130, 1150}}" help="Configuration for SOC temperature thresholds" />
+    <Knob name="power_soc_vms" type="power_pvt_soc_vm_cfg_t" default="{{{{1281, 1331}, {941, 891}}, {{858, 908}, {689, 639}}, {{933, 983}, {777, 727}}, {{858, 908}, {689, 639}}, {{1006, 1056}, {775, 725}}, {{1281, 1331}, {941, 891}}, {{933, 983}, {777, 727}}, {{1006, 1056}, {775, 725}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}}}" help="Configuration for SOC voltage monitor thresholds" />
+
+    <!-- Document only
+    <Knob name="power_vcpu0_offset" type="" default="0" help="Offset in mV to add to final Vcpu calculation" />
+    <Knob name="power_vcpu1_offset" type="" default="0" help="Offset in mV to add to final Vcpu calculation" />
+    -->
+    <!-- Undocumented -->
+    <Knob name="power_vcpu_offset" type="uint16_t" default="0" help="offset in mV to add to final vcpu calculation" />
+
+    <Knob name="power_force_vrs" type="power_force_vrs_t" default="{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}" help="Can be used to override SOC voltage regulator settings during boot" />
+    <Knob name="power_enable_survivability_mode" type="bool" default="false" help="True to initialize DVFS in SW control mode and safe settings" />
+    <Knob name="power_survivability_mode_pstate" type="uint8_t" default="31" min="0" max="31" help="Survivability mode pstate used to configure the core PLL in this mode" />
+    <Knob name="power_disable_loops" type="power_loops_disable_t" default="power_loops_disable_t_NONE" help="Can be used to disable power control and telemetry loops" />
+    <Knob name="power_minimum_plimit_updates" type="power_loops_minimum_plimit_t" default="power_loops_minimum_plimit_t_MIN_64" help="Guarantees all core plimits requested regularly by having minimum requirements per loop iteration" />
+    <Knob name="power_ldo_offset" type="int8_t" default="0" min="-50" max="50" help="Can be used to universally offset VF table LDODAC codes (offset in LDODAC code - not an mV offset)" />
+    <Knob name="power_leakage_temperature_polynomials" type="power_leakage_temp_scaler_t" default="{{{0.000003, -0.0003, 0.0141, -0.1239}, {0.000003, -0.0003, 0.0141, -0.1239}, {0.000003, -0.0003, 0.0141, -0.1239}, {0.000003, -0.0003, 0.0141, -0.1239}}}" help="Coefficients to scale reference leakage to temperature" />
+    <Knob name="power_enable_fgpll_calsm" type="bool" default="true" help="True to enable FGPLL calibration" />
+    <Knob name="power_fllcal_pstate_bounds" type="power_fllcal_pstate_bounds_t" default="{0, 31}" help="Start and end of fll calibration" />
+    <Knob name="power_plllock_cfg" type="power_plllock_cfg_t" default="{true, 2, true, false, false, false, false}" help="Use to configure core PLL lock interrupt settings" />
+    <Knob name="power_nominal_pstate" type="uint8_t" default="16" help="Nominal pstate number, 0 uses SOC fused default" />
+    <Knob name="power_c1_telemetry_enable" type="bool" default="false" help="Enable C1 telemetry in DVFS" />
+    <Knob name="power_soc_static_rails" type="uint16_t" default="0" help="Static power in mW to add to SOC power calculations" />
+
+    <!-- Document Only
+    <Knob name="power_itd_cfg" type="" default="" help="Inverse Temperature Dependence enable, configuration" />
+    <Knob name="power_aging_telemetry" type="" default="" help="Configuration details for aging sensor telemetry collection" />
+    <Knob name="power_remote_poll_interval" type="uint16_T" default="250" help="Remote (MCP) polling interval in milliseconds for power state" />
+    -->
+
+    <!-- Undocumented -->
+    <Knob name="power_plimit_current_thresholds" type="power_currthrot_threshold_cfg_t" default="{80, 90, 95, 100}" />
+    <Knob name="power_soc_vm_overvolt_en" type="bool" default="true" />
+    <Knob name="power_soc_vm_undervolt_en" type="bool" default="true" />
+    <Knob name="power_tile_vm_overvolt_en" type="bool" default="true" />
+    <Knob name="power_tile_vm_undervolt_en" type="bool" default="true" />
+    <Knob name="power_soc_hot_en" type="bool" default="true" />
+    <Knob name="power_soc_thermtrip_en" type="bool" default="true" />
+    <Knob name="power_tile_hot_en" type="bool" default="true" />
+    <Knob name="power_tile_thermtrip_en" type="bool" default="true" />
+
   </Knobs>
 
 </ConfigSchema>

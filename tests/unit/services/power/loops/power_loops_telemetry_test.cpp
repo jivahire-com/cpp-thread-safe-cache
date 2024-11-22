@@ -263,7 +263,16 @@ POWER_TEST(vr_telem_current_telemetry_handler__signal_entry, NULL, NULL)
     // expectations on entry
     expect_function_call(__wrap_power_vrs_initiate_vr_reads);
 
-    will_return(__wrap_power_runconfig_get, &test_runconfig);
+    will_return_always(__wrap_power_runconfig_get, &test_runconfig);
+
+    // expectations for power_loops_handle_event
+    expect_not_value(__wrap_power_loops_handle_event, context, NULL);
+    expect_value(__wrap_power_loops_handle_event, event, POWER_CTRL_LOOP_SIGNAL_VR_READ);
+    expect_any(__wrap_power_loops_handle_event, event_data);
+
+    expect_not_value(__wrap_power_loops_handle_event, context, NULL);
+    expect_value(__wrap_power_loops_handle_event, event, POWER_VR_TELEM_SIGNAL_VR_CURRENT);
+    expect_any(__wrap_power_loops_handle_event, event_data);
 
     // call state handler
     call_handler(POWER_VR_TELEM_STATE_CURRENT_TELEMETRY, POWER_VR_TELEM_SIGNAL_ENTRY, NULL);

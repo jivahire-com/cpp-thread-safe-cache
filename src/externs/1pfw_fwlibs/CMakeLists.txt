@@ -32,7 +32,9 @@ if (${FPFW_CFG_MGR_ENABLE})
     ###############################################################################################
 
     set(PROD_FW_KNOBS_PATH    ${CMAKE_SOURCE_DIR}/tools/config_knobs)
-    set(FPFW_CFG_MGR_PROFILES ${PROD_FW_KNOBS_PATH}/kng_mscp_config_platform_profile_override.csv)
+    set(FPFW_CFG_MGR_PROFILES ${PROD_FW_KNOBS_PATH}/kng_mscp_config_platform.csv
+                              ${PROD_FW_KNOBS_PATH}/kng_mscp_config_fpga.csv
+                              ${PROD_FW_KNOBS_PATH}/kng_mscp_config_svp.csv)
     set(KNOB_SVC_OPTIONS  -nc)
 
 endif()

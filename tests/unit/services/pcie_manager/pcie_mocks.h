@@ -4,3 +4,6 @@
 #include <stdbool.h>
 
 extern bool memcpy_mock;
+
+/*--------- Function Prototypes ----------*/
+

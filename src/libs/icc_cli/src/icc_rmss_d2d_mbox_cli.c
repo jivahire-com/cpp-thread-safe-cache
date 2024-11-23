@@ -134,12 +134,13 @@ void my_d2d_icc_base_send_resp_complete_notify(void* context, fpfw_status_t stat
         uint32_t* send_payload = (uint32_t*)req_params->send_payload_buffer;
         uint32_t cmd_code = GET_RMSS_D2D_MBOX_CMD_CODE(send_payload[0]);
         //! verify success & print status
-        FpFwCliPrint("[%s][ASYNC]   SCP[%d]->SCP[%d] Send Resp Complete: Status[0x%x] CmdCode [0x%x] Payload[",
-                     d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
-                     current_die_id,
-                     remote_die_id,
-                     status,
-                     cmd_code);
+        FpFwCliPrint(
+            "[%s][ASYNC]   SCP[%d]->SCP[%d] Send Resp Complete: Status[0x%x] CmdCode [0x%x] Payload[",
+            d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
+            current_die_id,
+            remote_die_id,
+            status,
+            cmd_code);
         for (uint32_t i = 0; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
             FpFwCliPrint("0x%x ", send_payload[i]);
@@ -285,10 +286,11 @@ void my_d2d_icc_base_send_recv_complete_notify(void* context, size_t output_size
         }
         else
         {
-            FpFwCliPrint("[%s][ASYNC]   SCP[%d]->SCP[%d] Echo Test Failed: Received data does not match sent data\n",
-                         d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
-                         current_die_id,
-                         remote_die_id);
+            FpFwCliPrint(
+                "[%s][ASYNC]   SCP[%d]->SCP[%d] Echo Test Failed: Received data does not match sent data\n",
+                d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
+                current_die_id,
+                remote_die_id);
 
             FpFwCliPrint("Received Payload: ");
             for (uint32_t i = 0; i < D2D_MBOX_FIFO_DEPTH; i++)

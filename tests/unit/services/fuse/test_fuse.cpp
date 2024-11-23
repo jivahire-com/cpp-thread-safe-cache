@@ -406,7 +406,7 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
            "phase_min=POST_BRIDGE_INIT_MINOR, exclude_list=%p, exclude_list_count=%u\n",
            (void*)fuse_dist_exclude_list1,
            exclude_list_count1);
-   
+
     unsigned int status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_HSP_MESH_INIT);
     assert_int_equal(status, 0);
     status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT);

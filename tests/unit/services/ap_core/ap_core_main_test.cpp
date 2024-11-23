@@ -387,7 +387,7 @@ AP_CORE_TEST(dispatch_ap_core_boot, setup, NULL)
     expect_value(__wrap_sds_block_write, sds_module_id, SDS_DIE_CONFIG_STRUCT_ID);
     expect_memory(__wrap_sds_block_write, buffer, &test_die_config, sizeof(test_die_config));
     expect_value(__wrap_sds_block_write, buffer_size, sizeof(test_die_config));
-    will_return(__wrap_write_fuse_info_to_ap,0);
+    will_return(__wrap_write_fuse_info_to_ap, 0);
 
     // expect a call to set_rvbaraddr
     expect_value(__wrap_ap_core_util_set_rvbaraddr, p_context, s_ap_core_ctx);

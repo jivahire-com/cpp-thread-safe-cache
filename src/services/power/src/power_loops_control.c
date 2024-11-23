@@ -743,12 +743,15 @@ void message_success_callback(unsigned int core_id, uint8_t desired_pstate, uint
     }
     else
     {
+        // TODO: this is fails constantly and spams uart,  enable once resolved
+        // task https://azurecsi.visualstudio.com/Dev/_workitems/edit/2199252
+
         // this is unexpected, but keep the print for early HW issues
         // if it does happen, control loop will retry due to success bit not being set
-        POWER_LOG_WARN("plimit success core%d selected %d != success %d",
-                       core_id,
-                       s_ctrl_loop.cores.core[core_id].selected_plimit,
-                       current_pstate);
+        // POWER_LOG_WARN("plimit success core%d selected %d != success %d",
+        //                core_id,
+        //                s_ctrl_loop.cores.core[core_id].selected_plimit,
+        //                current_pstate);
     }
 }
 

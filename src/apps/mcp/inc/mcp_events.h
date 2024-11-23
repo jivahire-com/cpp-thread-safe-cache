@@ -37,7 +37,7 @@ FPFW_ET_DEFINE_EVENT(
     MCP_MAIN_EVENT_ID_HEARTBEAT,
     McpHeartBeat,
     FPFW_ET_LEVEL_INFO,
-    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, count)
+    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, rtos_ticks)
 )
 
 /*-------------- Typedefs ----------------*/

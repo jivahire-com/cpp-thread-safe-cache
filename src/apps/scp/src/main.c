@@ -22,7 +22,7 @@
 #define STACK_MEM_POOL_SIZE (32 * KB)
 #define MAIN_STACK_SIZE     (4 * KB)
 #define DFWK_STACK_SIZE     (4 * KB)
-
+#define SLEEP_TICKS         (2)
 /*--------- Typedefs ----------*/
 
 /*--------- Function Prototypes ----------*/
@@ -103,12 +103,16 @@ void main_thread(ULONG thread_input)
     printf("\nHello World - SCP!\n");
 
     // Do nothing
-    uint32_t count = 0;
+    uint32_t rtos_ticks = 0;
     while (true)
     {
-        tx_thread_sleep(2);
-        FPFW_ET_LOG(ScpHeartBeat, count++);
-
+        if (rtos_ticks % 100 == 0)
+        {
+            // reduce print frequency
+            FPFW_ET_LOG(ScpHeartBeat, rtos_ticks);
+        }
+        tx_thread_sleep(SLEEP_TICKS);
+        rtos_ticks += SLEEP_TICKS;
         // **TODO will have to remove this once the SCMI Driver framework gets implemented
         // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1903038
         scmi_poll_message();

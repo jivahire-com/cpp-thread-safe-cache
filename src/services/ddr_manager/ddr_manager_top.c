@@ -38,23 +38,19 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
     uint32_t received_message;
     UINT status;
 
-    printf("[DDR_MGR] worker thread begin\n");
-
     while (1)
     {
         status = tx_queue_receive(&ddr_service_ctx->work_queue, &received_message, TX_WAIT_FOREVER);
         if (status != TX_SUCCESS)
         {
             DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TX_QUEUE_RECEIVE, status);
-            printf("[DDR_MGR] worker: Error with tx_queue_receive\n");
             FPFwErrorRaise(status, 0, 0, 0, 0);
         }
         else
         {
             // Process received message
             // TODO: Task #1778297: Replace printf with debug level Event Trace Event
-            DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_Q_MESSAGE_RECEIVED, (int)received_message);
-            printf("[DDR_MGR] DDR Q Message received: %d\n", (int)received_message);
+            // DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_Q_MESSAGE_RECEIVED, (int)received_message);
 
             switch ((DDR_MANAGER_MESSAGE_TYPE)received_message)
             {
@@ -80,7 +76,6 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
 
             default:
                 DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_UNKNOWN_MESSAGE_TYPE, (int)received_message);
-                printf("[DDR_MGR] Unknown message type\n");
                 break;
             }
         }
@@ -93,7 +88,6 @@ void ddr_timer_cb(ULONG pddr_service_ctx)
     ddr_service_context_t* ddr_service_ctx = (ddr_service_context_t*)pddr_service_ctx;
     uint32_t msg_dimm_polling = DDR_POLL_DIMMS_I3C_EVENT;
 
-    printf("[DDR_MGR] Sending a message for test to DDR worker thread..\n");
     tx_queue_send(&ddr_service_ctx->work_queue, &msg_dimm_polling, TX_NO_WAIT);
 }
 
@@ -105,7 +99,7 @@ static void hsp_send_ddr_init_notify(fpfw_icc_base_ctx_t* icc_ctx)
     };
     //! Send the message to HSP & get response, blocking call
     DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_SENDING_DDR_MESSAGE_TO_HSP);
-    printf("[DDR_MGR] Sending DDR message to HSP\n");
+
     fpfw_status_t icc_status =
         fpfw_icc_base_send_recv_sync(icc_ctx, &msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
 
@@ -115,7 +109,6 @@ static void hsp_send_ddr_init_notify(fpfw_icc_base_ctx_t* icc_ctx)
     BUG_ASSERT(msg.header.cmd == HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY_RSP);
     BUG_ASSERT(msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
     DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_DDR_MESSAGE_TO_HSP_SENT);
-    printf("[DDR_MGR] DDR message to HSP sent\n");
 }
 
 /**
@@ -147,7 +140,6 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     if (status != TX_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TX_QUEUE_CRATE, status);
-        printf("[DDR_MGR] tx_queue_create err %d\n", status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -156,7 +148,6 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     if (status != TX_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_CREATE_MEMORY_MAP, status);
-        printf("[DDR_MGR] tx_queue_send DDR_CREATE_MEMORY_MAP_EVENT err %d\n", status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -166,7 +157,6 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     if (status != TX_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_CREATE_BDAT, status);
-        printf("[DDR_MGR] tx_queue_send DDR_CREATE_BDAT_EVENT err %d\n", status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -175,7 +165,6 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     if (status != TX_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_CREATE_SMBIOS_TABLES, status);
-        printf("[DDR_MGR] tx_queue_send DDR_CREATE_SMBIOS_TABLES_EVENT err %d\n", status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -193,7 +182,6 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     if (status != TX_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_CREATE_TIMER, status);
-        printf("[DDR_MGR] thread create err\n");
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -208,7 +196,6 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     if (status != TX_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_CREATE_THREAD, status);
-        printf("[DDR_MGR] timer create err %d\n", status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -221,6 +208,5 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     else
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_NO_HSP_DETECT, ET_NOPARAM);
-        printf("[DDR_MGR] No HSP detected\n");
     }
 }

@@ -22,7 +22,7 @@
 #define STACK_MEM_POOL_SIZE (32 * KB)
 #define MAIN_STACK_SIZE     (4 * KB)
 #define DFWK_STACK_SIZE     (4 * KB)
-
+#define SLEEP_TICKS         (200)
 /*--------- Typedefs ----------*/
 
 /*--------- Function Prototypes ----------*/
@@ -102,10 +102,11 @@ void main_thread(ULONG thread_input)
     printf("\nHello World - MCP!\n");
 
     // Do nothing
-    uint32_t count = 0;
+    uint32_t rtos_ticks = 0;
     while (true)
     {
-        tx_thread_sleep(2);
-        FPFW_ET_LOG(McpHeartBeat, count++);
+        FPFW_ET_LOG(McpHeartBeat, rtos_ticks);
+        tx_thread_sleep(SLEEP_TICKS);
+        rtos_ticks += SLEEP_TICKS;
     }
 }

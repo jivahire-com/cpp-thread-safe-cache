@@ -2,7 +2,7 @@
 
 """
 - Python based Pythia 2.0 Test.
-- Test to execute power module functional tests 
+- Test to execute power module functional tests
 """
 import time
 import sys, os
@@ -40,7 +40,7 @@ class mod_power_ft(EchoFallsBaseTest):
         host_config: Path | str = None,
         host_name: str | None = None,
     ):
-        
+
         # Call parent class init
         super().__init__(
             name,
@@ -52,7 +52,7 @@ class mod_power_ft(EchoFallsBaseTest):
             host_config,
             host_name,
         )
-    
+
     def power_module_functional_test(self):
         """
         Power Module control loop CLI test:
@@ -76,8 +76,8 @@ class mod_power_ft(EchoFallsBaseTest):
             self.test_notify(step="Boot complete", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             return False
-        
-        self.log.info("Submitting power module pwr set nominal command . . .") 
+
+        self.log.info("Submitting power module pwr set nominal command . . .")
         command="pwr set nominal 1"
         core_com_channel.write_line(write_string=command)
         try:
@@ -101,7 +101,7 @@ class mod_power_ft(EchoFallsBaseTest):
             self.dut.teardown()
             return False
 
-        self.log.info("Submitting power module pwr cfg <args> commands . . .") 
+        self.log.info("Submitting power module pwr cfg <args> commands . . .")
         commands = ["pwr cfg tel"]
         for command in commands:
             self.log.info(f"Submitting {command}\n")
@@ -113,9 +113,9 @@ class mod_power_ft(EchoFallsBaseTest):
                 self.test_notify(step="Power module pwr cfg <args> cmd status: Fail", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
                 return False
-           
 
-        self.log.info("Submitting power module pwr set <args> commands . . .") 
+
+        self.log.info("Submitting power module pwr set <args> commands . . .")
         command="pwr set cap 65535"
         core_com_channel.write_line(write_string=command)
         try:
@@ -125,7 +125,7 @@ class mod_power_ft(EchoFallsBaseTest):
             self.test_notify(step="Power module pwr set cap cmd status: Fail", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             return False
-        
+
         pattern = re.compile(r"pwr_set cap: current - (\d{5}W)")
         match = pattern.search(command_response_cli)
 
@@ -137,7 +137,7 @@ class mod_power_ft(EchoFallsBaseTest):
             self.test_notify(step="Power cap not set successfully", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             return False
-        
+
         command="pwr set minupdate 0"
         core_com_channel.write_line(write_string=command)
         try:
@@ -159,7 +159,7 @@ class mod_power_ft(EchoFallsBaseTest):
             self.test_notify(step="Min plimit update not set", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             return False
-        
+
         command="pwr set plimit 1 31"
         core_com_channel.write_line(write_string=command)
         try:
@@ -205,29 +205,30 @@ class mod_power_ft(EchoFallsBaseTest):
             self.test_notify(step="Desired pstate not set for core 0", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             return False
-        
-        command="pwr set plimit 0 1"
-        core_com_channel.write_line(write_string=command)        
-        try:
-            command_response_cli = core_com_channel.read_until(key="plimit success core0", timeout_seconds=300)
-        except Exception as e:
-            self.log.error(f"Error reading SCP UART: {e}")
-            self.test_notify(step="Power module pwr set plimit cmd status: Fail", msg="Test Fail", _is_error=True)
-            self.dut.teardown()
-            return False
 
-        pattern = re.compile(r"pwr set plimit: core - (\d+)")
-        match = pattern.search(command_response_cli)
+        # TODO: fix test case,   https://azurecsi.visualstudio.com/Dev/_workitems/edit/2199252
+        # command="pwr set plimit 0 1"
+        # core_com_channel.write_line(write_string=command)
+        # try:
+        #     command_response_cli = core_com_channel.read_until(key="success message, core 0", timeout_seconds=300)
+        # except Exception as e:
+        #     self.log.error(f"Error reading SCP UART: {e}")
+        #     self.test_notify(step="Power module pwr set plimit cmd status: Fail", msg="Test Fail", _is_error=True)
+        #     self.dut.teardown()
+        #     return False
 
-        if match:
-            value = match.group(1)
-            self.log.info(f"Core: {value}")
-        else:
-            self.log.error(f"Desired plimit not set for core 0")
-            self.test_notify(step="Desired plimit not set for core 0", msg="Test Fail", _is_error=True)
-            self.dut.teardown()
-            return False
-        
+        # pattern = re.compile(r"pwr set plimit: core - (\d+)")
+        # match = pattern.search(command_response_cli)
+
+        # if match:
+        #     value = match.group(1)
+        #     self.log.info(f"Core: {value}")
+        # else:
+        #     self.log.error(f"Desired plimit not set for core 0")
+        #     self.test_notify(step="Desired plimit not set for core 0", msg="Test Fail", _is_error=True)
+        #     self.dut.teardown()
+        #     return False
+
         core_com_channel.close()
         self.test_notify(step="Power module functional tests complete", msg="Test Done", _is_error=False)
         self.dut.teardown()

@@ -4,6 +4,7 @@ set(SOURCES
     ddrss_mocks.c
     test_ddrss.cpp
     test_ddr_err_inj.cpp
+    test_ddr_atu_map.cpp
 )
 
 # Compile test
@@ -12,6 +13,8 @@ add_executable(${TARGET} ${SOURCES})
 # Generic ports implmented within this project
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
+
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.lib.ddrss_init,INCLUDE_DIRECTORIES>)
 
 target_link_libraries(${TARGET}
     PRIVATE
@@ -65,7 +68,7 @@ mock_target(${TARGET}
     ddrss_get_ras_agent
     ddrss_convert_ras_rec_to_cper
     ddrss_mc_intu_get_interrupt_status
-    ddrss_err_inj_atu_map
-    ddrss_err_inj_atu_unmap
+    ddrss_atu_map
+    ddrss_atu_unmap
     ddrss_inject_media_data_err
 )

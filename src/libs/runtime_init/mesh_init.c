@@ -18,7 +18,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(mesh, FPFW_INIT_DEPENDENCIES("i3c_controller", "icc_hspmbx", "sysinfo", "icc_d2dmbx"))
+FPFW_INIT_COMPONENT(mesh, FPFW_INIT_DEPENDENCIES("i3c_controller", "icc_hspmbx", "sysinfo", "icc_d2dmbx", "fuse_pre_mesh"))
 {
     uint8_t die_num = (uint8_t)idhw_get_die_id();
     printf("Mesh init, die_num: [%u]\n", die_num);

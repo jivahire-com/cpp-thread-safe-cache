@@ -3,6 +3,7 @@ set(TARGET kng.lib.ddrss_init)
 add_library(${TARGET}
     STATIC
         src/ddrss.c
+        src/ddr_atu_map.c
         src/prod_ddrss_isr.c
         src/ddr_err_inj.c
 )
@@ -29,6 +30,7 @@ target_link_libraries(${TARGET}
     silibs::idhw
     silibs::idsw
     silibs::idsw_kng
+    silibs::pcr_ddrss
     silibs::ras_arm
     fwlib.dfwk
     fwlib.lib.cfg_mgr
@@ -42,6 +44,8 @@ target_link_libraries(${TARGET}
 target_include_directories(${TARGET}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 lint_target(${TARGET})

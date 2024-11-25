@@ -65,6 +65,13 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc);
 void prod_ddrss_interrupt_handler(void *context);
 uintptr_t ddrss_get_top_base(uint32_t mc);
 
+/**
+ * @brief Function to initialize DDRSS PCR
+ * 
+ * @param die_num - die number
+ */
+void prod_ddrss_pcr_init(KNG_DIE_ID die_num);
+
 // in ddrss_ras.c
 int ddrss_probe_ras_agent(uint32_t mc, uint32_t ras_agent_entity_id);
 

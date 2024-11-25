@@ -17,6 +17,7 @@ target_link_libraries(${TARGET}
         ms::lib::threadx
         ms::mocks::event_trace
         ms::mocks::threadx
+        ms::service::atu_service
         ms::service::fuse
     PUBLIC
         fwlib.lib.assert
@@ -26,7 +27,9 @@ target_link_libraries(${TARGET}
         fwlib.service.cli
         fwlib.service.iccBase
         fwlib.service.icc_dispatcher
+        silibs::atu
         silibs::fuse
+        silibs::idhw
         silibs::idsw
         silibs::idsw_kng  
         silibs::kng_silibs_platform

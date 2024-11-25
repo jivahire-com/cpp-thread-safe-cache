@@ -35,7 +35,7 @@
 
 FPFW_INIT_COMPONENT(
     pwr_svc,
-    FPFW_INIT_DEPENDENCIES("dfwk", "fuse_svc", "atu_svc", "gpio_lib", "icc_d2dmbx", "avs0_int", "avs1_int", "avs2_int", "avs3_int", "hw_ver", "cfg_mgr"))
+    FPFW_INIT_DEPENDENCIES("dfwk", "fuse_post_mesh", "atu_svc", "gpio_lib", "icc_d2dmbx", "avs0_int", "avs1_int", "avs2_int", "avs3_int", "hw_ver", "cfg_mgr"))
 {
     static power_service_t power_service;
     static power_service_config_t power_config = {

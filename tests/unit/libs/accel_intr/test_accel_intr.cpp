@@ -484,7 +484,7 @@ TEST_FUNCTION(test_accel_intr_handle_mbox_recvd_sdm__pass, NULL, NULL)
 {
     void* cb_ctx = (void*)0x12345678;
 
-    accel_intr_set_mbx_ctx(ACCEL_ID_SDM, (void *)cb_ctx);
+    accel_intr_set_mbx_ctx(ACCEL_ID_SDM, (void*)cb_ctx);
     expect_value(__wrap_accel_mbox_sw_intr_cb, ctx, cb_ctx);
     will_return_always(__wrap_sdm_ext_int_mask_status_clear, SILIBS_SUCCESS);
     will_return(__wrap_sdm_ext_int_mask_enable, SILIBS_SUCCESS);
@@ -494,7 +494,7 @@ TEST_FUNCTION(test_accel_intr_handle_mbox_recvd_sdm__pass, NULL, NULL)
 
 TEST_FUNCTION(test_accel_intr_handle_mbox_recvd_sdm__fail1, NULL, NULL)
 {
-    accel_intr_set_mbx_ctx(ACCEL_ID_SDM, (void *)NULL);
+    accel_intr_set_mbx_ctx(ACCEL_ID_SDM, (void*)NULL);
 
     accel_intr_handle_mbox_recvd(SDMSS_IRQ_NUMBER);
 }

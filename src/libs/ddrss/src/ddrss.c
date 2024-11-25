@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include "ddr_atu_map.h"
 
 #include <FPFwInterrupts.h>
 #include <FpFwAssert.h>
@@ -20,6 +21,7 @@
 #include <idhw.h> // for idhw_is_single_die_boot_en
 #include <idsw_kng.h>
 #include <interrupts.h>
+#include <pcr_ddrss.h>
 #include <silibs_ap_top_regs.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -34,7 +36,6 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     int sts = SILIBS_SUCCESS;
     ddrss_cfg_knobs_t ddrss_cfgs;
     KNG_PLAT_ID platform_id;
-    atu_map_entry_t atu_map_struct[NUM_DIE];
     uint32_t interrupt_idx;
 
     // 1 DDRSS contains 2 memory controllers
@@ -110,29 +111,16 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
 
     printf("DDRSS init for %s\n", platform_str);
 
-    atu_entry_attr_t atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT};
-    // DDRSS init flow needs communication between 2 dies.
-    // Both dies need to have access to local and remote cfg spaces.
-    atu_map_struct[SOC_D0].ap_base_address = AP_TOP_D0_DDRSS_0_ADDRESS;
-    atu_map_struct[SOC_D0].mscp_start_address = 0;
-    atu_map_struct[SOC_D0].mscp_end_address =
-        (AP_TOP_D0_DDRSS_1_ADDRESS - AP_TOP_D0_DDRSS_0_ADDRESS) * (DDRSS_MAX_SS_NUM / 2) - 1;
-    atu_map_struct[SOC_D0].attribute.as_uint32 = atu_root_attr.as_uint32;
-
     // Map both DDRSS DIE0 and DIE1 cfg space through ATU
-    memcpy(&atu_map_struct[SOC_D1], &atu_map_struct[SOC_D0], sizeof(atu_map_entry_t));
+    uint32_t d0_start = ddrss_atu_map(SOC_D0);
+    uint32_t d1_start = ddrss_atu_map(SOC_D1);
 
-    sts = atu_map(ATU_ID_MSCP, &atu_map_struct[SOC_D0]);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
-
-    atu_map_struct[SOC_D1].ap_base_address = AP_TOP_D1_DDRSS_0_ADDRESS;
-    sts = atu_map(ATU_ID_MSCP, &atu_map_struct[SOC_D1]);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    FPFW_RUNTIME_ASSERT(ddrss_set_die_base(die_num, die_num == DIE_0 ? d0_start : d1_start) == SILIBS_SUCCESS);
 
     // Update DDRSS cfgs to match actual platform cfg
     ddrss_cfgs.die_id = (DIE_INSTANCE)die_num;
-    ddrss_cfgs.ddrss_base_die[SOC_D0] = atu_map_struct[SOC_D0].mscp_start_address;
-    ddrss_cfgs.ddrss_base_die[SOC_D1] = atu_map_struct[SOC_D1].mscp_start_address;
+    ddrss_cfgs.ddrss_base_die[SOC_D0] = d0_start;
+    ddrss_cfgs.ddrss_base_die[SOC_D1] = d1_start;
     ddrss_cfgs.debug_level = DDRSS_DEBUG_LEVEL_INFO;
     ddrss_cfgs.ext_knobs.interleave_mc_cnt = 0;
     if (idhw_is_single_die_boot_en())
@@ -169,14 +157,23 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     // Unmap previous ATU mapping for other DIE
     if (die_num == DIE_0)
     {
-        sts = atu_unmap(ATU_ID_MSCP, &atu_map_struct[SOC_D1]);
-        FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+        ddrss_atu_unmap(SOC_D1);
     }
     else
     {
-        sts = atu_unmap(ATU_ID_MSCP, &atu_map_struct[SOC_D0]);
-        FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+        ddrss_atu_unmap(SOC_D0);
     }
 
     printf("DDRSS init exit\n");
+}
+
+void prod_ddrss_pcr_init(KNG_DIE_ID die_num)
+{
+    // Set DDRSS mask for 1D boot (12 MCs) or 2D boot (24 MCs)
+    uint32_t ddrss_mask = idhw_is_single_die_boot_en() ? 0x03F : 0xFFF;
+
+    uintptr_t start_addr = ddrss_atu_map(die_num);
+    FPFW_RUNTIME_ASSERT(ddrss_set_die_base(die_num, start_addr) == SILIBS_SUCCESS);
+    pcr_ddrss_configure_clock_and_pcr_reset(ddrss_mask, die_num);
+    ddrss_atu_unmap(die_num);
 }

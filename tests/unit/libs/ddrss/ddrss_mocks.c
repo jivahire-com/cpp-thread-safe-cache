@@ -53,7 +53,7 @@ int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
     }
 
     // Keep mscp base non-zero to allow checking base address in UTs
-    atu_map_entry->mscp_start_address = 0xffffffff;
+    atu_map_entry->mscp_start_address = mock_type(uint32_t);
 
     return mock_type(int);
 }
@@ -231,4 +231,15 @@ bool __wrap_idhw_is_single_die_boot_en(void)
 cmn800_snf_to_mc_config_t* __wrap_cmn800_generate_ddr_mc_map_from_cached_config(void)
 {
     return mock_type(cmn800_snf_to_mc_config_t*);
+}
+
+uintptr_t __wrap_ddrss_atu_map(uint32_t die_num)
+{
+    check_expected(die_num);
+    return mock_type(uintptr_t);
+}
+
+void __wrap_ddrss_atu_unmap(uint32_t die_num)
+{
+    check_expected(die_num);
 }

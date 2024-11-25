@@ -17,11 +17,20 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(ddr, FPFW_INIT_DEPENDENCIES("css_pome", "atu_svc"))
+FPFW_INIT_COMPONENT(ddr, FPFW_INIT_DEPENDENCIES("css_pome", "atu_svc", "fuse_post_mesh"))
 {
     KNG_DIE_ID die_num = idsw_get_die_id();
     printf("DDR init, die_num: [%u]\n", die_num);
 
     prod_ddrss_lib_init(die_num);
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
+FPFW_INIT_COMPONENT(ddr_pcr, FPFW_INIT_DEPENDENCIES("css_pome", "atu_svc", "hw_ver"))
+{
+    KNG_DIE_ID die_num = idsw_get_die_id();
+    printf("DDR PCR init, die_num: [%u]\n", die_num);
+
+    prod_ddrss_pcr_init(die_num);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

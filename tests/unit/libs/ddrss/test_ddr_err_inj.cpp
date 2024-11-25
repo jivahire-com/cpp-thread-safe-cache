@@ -12,7 +12,6 @@
 
 extern "C" {
 #include <FpFwUtils.h> // for FPFW_UNUSED, FPFW_ARRAY_SIZE
-#include <atu_lib.h>
 #include <ddr_err_inj.h>
 #include <ddrmctop_regs.h>
 #include <ddrss_lib.h>
@@ -32,17 +31,6 @@ extern "C" {
 //
 // Mocks
 //
-int __wrap_ddrss_err_inj_atu_map(uint32_t die_num)
-{
-    check_expected(die_num);
-    return SILIBS_SUCCESS;
-}
-
-void __wrap_ddrss_err_inj_atu_unmap()
-{
-    function_called();
-}
-
 int __wrap_ddrss_inject_media_data_err(uint32_t mc, const ddrss_media_data_err_inj_info_t* media_err_inj)
 {
     check_expected(mc);
@@ -68,10 +56,11 @@ TEST_FUNCTION(test_ecc_ce_error_injection, NULL, NULL)
     expected_err_inj_data.err_inj_rw = 1;
     expected_err_inj_data.err_inj_beat = 1;
     expected_err_inj_data.err_inj_cnt = 1;
-    expect_value(__wrap_ddrss_err_inj_atu_map, die_num, expected_die_num);
+    expect_value(__wrap_ddrss_atu_map, die_num, expected_die_num);
+    will_return(__wrap_ddrss_atu_map, 0x12345678);
     expect_value(__wrap_ddrss_inject_media_data_err, mc, expected_mc);
     expect_memory(__wrap_ddrss_inject_media_data_err, media_err_inj, &expected_err_inj_data, sizeof(expected_err_inj_data));
-    expect_function_call(__wrap_ddrss_err_inj_atu_unmap);
+    expect_value(__wrap_ddrss_atu_unmap, die_num, expected_die_num);
 
     // Call the function under test
     ddrss_ue_ce_error_injection(expected_die_num, expected_mc, p_addr, Bit_Value);
@@ -89,10 +78,11 @@ TEST_FUNCTION(test_ecc_ue_error_injection, NULL, NULL)
     expected_err_inj_data.err_inj_rw = 1;
     expected_err_inj_data.err_inj_beat = 1;
     expected_err_inj_data.err_inj_cnt = 1;
-    expect_value(__wrap_ddrss_err_inj_atu_map, die_num, expected_die_num);
+    expect_value(__wrap_ddrss_atu_map, die_num, expected_die_num);
+    will_return(__wrap_ddrss_atu_map, 0x12345678);
     expect_value(__wrap_ddrss_inject_media_data_err, mc, expected_mc);
     expect_memory(__wrap_ddrss_inject_media_data_err, media_err_inj, &expected_err_inj_data, sizeof(expected_err_inj_data));
-    expect_function_call(__wrap_ddrss_err_inj_atu_unmap);
+    expect_value(__wrap_ddrss_atu_unmap, die_num, expected_die_num);
 
     // Call the function under test
     ddrss_ue_ce_error_injection(expected_die_num, expected_mc, p_addr, Bit_Value);

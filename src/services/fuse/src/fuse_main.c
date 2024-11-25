@@ -335,7 +335,6 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
                 status = FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR3_MINOR1;
                 return status;
             }
-            printf(FUSE_NAME "Phase 1 fuse distribution complete\n");
         }
         else if (stage == FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT)
         {
@@ -347,7 +346,6 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
                 status = FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR4_MINOR0;
                 return status;
             }
-            printf(FUSE_NAME "Phase 2 fuse distribution complete\n");
         }
         else if (stage == FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT_BRIDGE_INIT)
         {

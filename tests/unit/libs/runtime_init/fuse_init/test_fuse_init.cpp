@@ -28,8 +28,10 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-extern fpfw_init_component_t _fpfw_component_fuse_svc;
+extern fpfw_init_component_t _fpfw_component_fuse_pre_mesh;
+extern fpfw_init_component_t _fpfw_component_fuse_post_mesh;
 extern fpfw_init_component_t _fpfw_component_cli_fuse;
+
 /*------------- Functions ----------------*/
 //
 // Mocks
@@ -65,7 +67,7 @@ FPFW_CLI_STATUS __wrap_platform_fuse_init_cli(void)
 
 /* Tests */
 
-TEST_FUNCTION(test_fuse_svc_init, NULL, NULL)
+TEST_FUNCTION(test_fuse_pre_mesh, NULL, NULL)
 {
     fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(1);
     // Mock ICC context initialization
@@ -74,9 +76,21 @@ TEST_FUNCTION(test_fuse_svc_init, NULL, NULL)
     expect_function_call(__wrap_fpfw_init_get_handle);
     expect_value(__wrap_fuse_init, icc_base_ctx, dummy_icc_hspmbx_ctx);
     will_return(__wrap_platform_fuse_override, CLI_SUCCESS);
-    expect_value(__wrap_platform_fuse_distribution, stage, 0);
-    will_return(__wrap_platform_fuse_distribution, CLI_SUCCESS);
-    _fpfw_component_fuse_svc.init_fn();
+    expect_value(__wrap_platform_fuse_distribution, stage, FUSE_DISTRIBUTION_STAGE_POST_HSP);
+    will_return(__wrap_platform_fuse_distribution, 0);
+    expect_value(__wrap_platform_fuse_distribution, stage, FUSE_DISTRIBUTION_STAGE_POST_HSP_MESH_INIT);
+    will_return(__wrap_platform_fuse_distribution, 0);
+    _fpfw_component_fuse_pre_mesh.init_fn();
+}
+
+TEST_FUNCTION(test_fuse_post_mesh, NULL, NULL)
+{
+    // Mock ICC context initialization
+    expect_value(__wrap_platform_fuse_distribution, stage, FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT);
+    will_return(__wrap_platform_fuse_distribution, 0);
+    expect_value(__wrap_platform_fuse_distribution, stage, FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT_BRIDGE_INIT);
+    will_return(__wrap_platform_fuse_distribution, 0);
+    _fpfw_component_fuse_post_mesh.init_fn();
 }
 
 TEST_FUNCTION(test_cli_fuse_init, NULL, NULL)

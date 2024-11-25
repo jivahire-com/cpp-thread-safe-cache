@@ -19,8 +19,8 @@ extern "C" {
 
 #include <FpFwUtils.h>
 #include <accelerator_ip.h> // for scp_accelerators_init, ACCEL_RET_SUCCESS
-#include <fpfw_icc_base.h>
 #include <accelip_id.h>
+#include <fpfw_icc_base.h>
 #include <fpfw_status.h>
 #include <hsp_firmware_headers.h>
 #include <idsw_kng.h> // for KNG_DIE_ID

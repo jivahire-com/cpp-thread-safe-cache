@@ -9,9 +9,13 @@
 
 /*------------- Includes -----------------*/
 
+#include "exec_tlm_cmpnt.h"
+
 #include "data_proc_tlm_cmpnt.h"
+#include "exec_tlm_cmpnt_i.h"
 #include "in_band_tlm_cmpnt.h"
 #include "out_of_band_tlm_cmpnt.h"
+#include "telemetry_events_i.h"
 
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>
@@ -27,41 +31,44 @@
 #define TLM_SVC_STACK_SIZE (TX_MINIMUM_STACK + 2048)
 
 #define PWR_AGGR_START_TICK    (TX_TIMER_TICKS_PER_SECOND / 2)
-#define PWR_AGGR_PERIODIC_TICK (1)
+#define PWR_AGGR_PKG_PERIOD_MS (10)
 
 #define EVERY_24_HR_PKG_PERIODIC_TICK (TICKS_PER_24HR)
 
 #define ALL_EVENT_GROUP_BITS (0xFFFFFFFF)
 
-// event flags
-#define PWR_AGGR_TMR_EXPIRED       (1 << 0)
-#define INST_PKG_TMR_EXPIRED       (1 << 1)
-#define PWR_PKG_TMR_EXPIRED        (1 << 2)
-#define EVERY_24HR_PKG_TMR_EXPIRED (1 << 3)
-
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
-static void tlm_svc_thread(ULONG thread_input);
-static void pwr_aggr_timer_cb(ULONG context);
-static void inst_pkg_timer_cb(ULONG context);
-static void pwr_pkg_timer_cb(ULONG context);
-static void every_24hr_pkg_timer_cb(ULONG context);
 
 /*-- Declarations (Statics and globals) --*/
 static TX_THREAD s_tlm_svc_thread;
 static uint8_t s_tlm_svc_thread_stack[TLM_SVC_STACK_SIZE];
 
-static TX_TIMER s_pwr_aggr_tmr;
-static TX_TIMER s_inst_pkg_tmr;
-static TX_TIMER s_power_pkg_tmr;
-static TX_TIMER s_24hr_pkg_tmr;
+TX_TIMER pwr_aggr_tmr;
+TX_TIMER inst_sample_tmr;
+TX_TIMER power_pkg_tmr;
+TX_TIMER _24hr_pkg_tmr;
 
-static TX_EVENT_FLAGS_GROUP s_thread_control;
+TX_EVENT_FLAGS_GROUP s_thread_control;
+
+telemetry_executive_status_t tlm_executive_status = {
+    .op_mode = TLM_OP_MODE_NOMINAL,
+    .pwr_pkg_period_ms = 0,
+    .inst_pkg_sample_period_ms = 0,
+    .pwr_aggr_period_ms = PWR_AGGR_PKG_PERIOD_MS,
+    .pwr_pkg_timer_active = false,
+    .inst_sample_timer_active = false,
+    .pwr_aggr_timer_active = false,
+    .twenty_four_hr_pkg_timer_active = false,
+};
 
 /*------------- Functions ----------------*/
 void exec_tlm_cmpnt_init(uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_period_ms)
 {
+    tlm_executive_status.pwr_pkg_period_ms = pwr_pkg_period_ms;
+    tlm_executive_status.inst_pkg_sample_period_ms = inst_pkg_sample_period_ms;
+
     UINT txStatus = tx_thread_create(&s_tlm_svc_thread,
                                      "tlm_service",          // Thread name
                                      tlm_svc_thread,         // Thread entry
@@ -76,25 +83,25 @@ void exec_tlm_cmpnt_init(uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_pe
 
     // note, telemetry sampling needs a faster timer than the minimum rtos tick rate.
     // this timer will be updated at a later time
-    txStatus = tx_timer_create(&s_pwr_aggr_tmr,        /* TX_TIMER *timer_ptr */
-                               "tlm_svc_pwr_aggr",     /* CHAR *name_ptr */
-                               pwr_aggr_timer_cb,      /* VOID (*expiration_function)(ULONG input) */
-                               0,                      /* ULONG expiration_input */
-                               PWR_AGGR_START_TICK,    /* ULONG initial_ticks >= 1 */
-                               PWR_AGGR_PERIODIC_TICK, /* ULONG reschedule_ticks */
-                               TX_AUTO_ACTIVATE);      /* UINT auto_activate) */
+    txStatus = tx_timer_create(&pwr_aggr_tmr,       /* TX_TIMER *timer_ptr */
+                               "tlm_svc_pwr_aggr",  /* CHAR *name_ptr */
+                               pwr_aggr_timer_cb,   /* VOID (*expiration_function)(ULONG input) */
+                               0,                   /* ULONG expiration_input */
+                               PWR_AGGR_START_TICK, /* ULONG initial_ticks >= 1 */
+                               MS_TO_TX_TICKS(PWR_AGGR_PKG_PERIOD_MS), /* ULONG reschedule_ticks */
+                               TX_AUTO_ACTIVATE);                      /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
-    txStatus = tx_timer_create(&s_inst_pkg_tmr,    /* TX_TIMER *timer_ptr */
-                               "tlm_svc_inst_pkg", /* CHAR *name_ptr */
-                               inst_pkg_timer_cb,  /* VOID (*expiration_function)(ULONG input) */
-                               0,                  /* ULONG expiration_input */
+    txStatus = tx_timer_create(&inst_sample_tmr,      /* TX_TIMER *timer_ptr */
+                               "tlm_svc_inst_sample", /* CHAR *name_ptr */
+                               inst_sample_timer_cb,  /* VOID (*expiration_function)(ULONG input) */
+                               0,                     /* ULONG expiration_input */
                                MS_TO_TX_TICKS(inst_pkg_sample_period_ms), /* ULONG initial_ticks >= 1 */
                                MS_TO_TX_TICKS(inst_pkg_sample_period_ms), /* ULONG reschedule_ticks */
                                TX_NO_ACTIVATE);                           /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
-    txStatus = tx_timer_create(&s_power_pkg_tmr,  /* TX_TIMER *timer_ptr */
+    txStatus = tx_timer_create(&power_pkg_tmr,    /* TX_TIMER *timer_ptr */
                                "tlm_svc_pwr_pkg", /* CHAR *name_ptr */
                                pwr_pkg_timer_cb,  /* VOID (*expiration_function)(ULONG input) */
                                0,                 /* ULONG expiration_input */
@@ -103,12 +110,12 @@ void exec_tlm_cmpnt_init(uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_pe
                                TX_AUTO_ACTIVATE);                 /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
-    txStatus = tx_timer_create(&s_24hr_pkg_tmr,               /* TX_TIMER *timer_ptr */
+    txStatus = tx_timer_create(&_24hr_pkg_tmr,                /* TX_TIMER *timer_ptr */
                                "tlm_svc_24hr_pkg",            /* CHAR *name_ptr */
-                               every_24hr_pkg_timer_cb,       /* VOID (*expiration_function)(ULONG input) */
+                               every_24hr_pkg_timer_cb,       /* VOID (*expiration_function)(ULONG input)*/
                                0,                             /* ULONG expiration_input */
                                EVERY_24_HR_PKG_PERIODIC_TICK, /* ULONG initial_ticks >= 1 */
-                               EVERY_24_HR_PKG_PERIODIC_TICK, /* ULONG reschedule_ticks */
+                               EVERY_24_HR_PKG_PERIODIC_TICK, /* ULONG  reschedule_ticks */
                                TX_NO_ACTIVATE);               /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
@@ -116,7 +123,7 @@ void exec_tlm_cmpnt_init(uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_pe
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 
-static void tlm_svc_thread(ULONG thread_input)
+void tlm_svc_thread(ULONG thread_input)
 {
     FPFW_UNUSED(thread_input);
     static ULONG current_bits;
@@ -131,10 +138,10 @@ static void tlm_svc_thread(ULONG thread_input)
             data_proc_tlm_cmpnt_aggregate_pwr_tlm_data();
         }
 
-        if (current_bits & INST_PKG_TMR_EXPIRED)
+        if (current_bits & INST_SAMPLE_TMR_EXPIRED)
         {
             data_proc_tlm_cmpnt_aggregate_inst_tlm_data();
-            in_band_tlm_cmpnt_generate_inst_pkg();
+            in_band_tlm_cmpnt_add_inst_sample();
         }
 
         if (current_bits & PWR_PKG_TMR_EXPIRED)
@@ -149,7 +156,7 @@ static void tlm_svc_thread(ULONG thread_input)
     }
 }
 
-static void pwr_aggr_timer_cb(ULONG context)
+void pwr_aggr_timer_cb(ULONG context)
 {
     FPFW_UNUSED(context);
 
@@ -157,15 +164,15 @@ static void pwr_aggr_timer_cb(ULONG context)
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 
-static void inst_pkg_timer_cb(ULONG context)
+void inst_sample_timer_cb(ULONG context)
 {
     FPFW_UNUSED(context);
 
-    UINT txStatus = tx_event_flags_set(&s_thread_control, INST_PKG_TMR_EXPIRED, TX_OR);
+    UINT txStatus = tx_event_flags_set(&s_thread_control, INST_SAMPLE_TMR_EXPIRED, TX_OR);
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 
-static void pwr_pkg_timer_cb(ULONG context)
+void pwr_pkg_timer_cb(ULONG context)
 {
     FPFW_UNUSED(context);
 
@@ -173,10 +180,41 @@ static void pwr_pkg_timer_cb(ULONG context)
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 
-static void every_24hr_pkg_timer_cb(ULONG context)
+void every_24hr_pkg_timer_cb(ULONG context)
 {
     FPFW_UNUSED(context);
 
     UINT txStatus = tx_event_flags_set(&s_thread_control, EVERY_24HR_PKG_TMR_EXPIRED, TX_OR);
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
+}
+
+void exec_tlm_cmpnt_disable_data_collection(void)
+{
+    tlm_executive_status.op_mode = TLM_OP_MODE_DISABLED;
+
+    tx_timer_deactivate(&pwr_aggr_tmr);
+    tx_timer_deactivate(&inst_sample_tmr);
+    tx_timer_deactivate(&power_pkg_tmr);
+    tx_timer_deactivate(&_24hr_pkg_tmr);
+
+    FPFW_ET_LOG(DataCollectionDisabled);
+}
+
+void exec_tlm_cmpnt_get_status(telemetry_executive_status_t* status)
+{
+    UINT active;
+
+    tx_timer_info_get(&pwr_aggr_tmr, TX_NULL, &active, TX_NULL, TX_NULL, TX_NULL);
+    tlm_executive_status.pwr_aggr_timer_active = (active == TX_TRUE) ? true : false;
+
+    tx_timer_info_get(&inst_sample_tmr, TX_NULL, &active, TX_NULL, TX_NULL, TX_NULL);
+    tlm_executive_status.inst_sample_timer_active = (active == TX_TRUE) ? true : false;
+
+    tx_timer_info_get(&power_pkg_tmr, TX_NULL, &active, TX_NULL, TX_NULL, TX_NULL);
+    tlm_executive_status.pwr_pkg_timer_active = (active == TX_TRUE) ? true : false;
+
+    tx_timer_info_get(&_24hr_pkg_tmr, TX_NULL, &active, TX_NULL, TX_NULL, TX_NULL);
+    tlm_executive_status.twenty_four_hr_pkg_timer_active = (active == TX_TRUE) ? true : false;
+
+    *status = tlm_executive_status;
 }

@@ -256,3 +256,10 @@ void data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(uint16_t sensor_id, p_inst_
  * @return None
  */
 void data_proc_tlm_cmpnt_get_inst_core_amu_data(uint16_t core_id, p_inst_core_element_amu_counters_t amu_data);
+
+/**
+ * @brief Clear the power telemetry data. Used for testing purposes.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_clear_pwr_tlm_data(void);

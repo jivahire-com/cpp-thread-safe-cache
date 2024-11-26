@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include "telemetry_events_i.h"
 #include "tlm_logger_i.h" // internal APIs
 
 #include <FpFwAssert.h>
@@ -17,6 +18,7 @@
 #include <stdbool.h>             // for false, true
 #include <stddef.h>              // for size_t
 #include <stdint.h>              // for uint8_t, uint16_t
+#include <string.h>              // for memset
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -57,6 +59,14 @@ static throttling_properties_t throttling_prop[] = {
 };
 
 /*------------- Functions ----------------*/
+void data_proc_tlm_cmpnt_clear_pwr_tlm_data(void)
+{
+    memset(core, 0, sizeof(core));
+    memset(tile, 0, sizeof(tile));
+    memset(&soc_info, 0, sizeof(soc_info));
+
+    FPFW_ET_LOG(TelemetryDataCleared);
+}
 
 // Based on the HAS, there are 3 temperature sensors for each Core in each tile
 int16_t find_hot_core_temp(int16_t temp0, int16_t temp1, int16_t temp2)

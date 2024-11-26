@@ -40,7 +40,7 @@ void in_band_tlm_cmpnt_init(uint8_t die_id, uint16_t inst_samples_per_pkg)
     package_create_enable_pwr_record(POWER_TELEMETRY_ELEMENT_CORE_CURRENT);
 }
 
-void in_band_tlm_cmpnt_generate_inst_pkg(void)
+void in_band_tlm_cmpnt_add_inst_sample(void)
 {
     static uintptr_t pkg_location = 0;
     static size_t pkg_used_size = 0;

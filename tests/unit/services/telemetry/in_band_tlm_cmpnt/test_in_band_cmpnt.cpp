@@ -104,7 +104,7 @@ TEST_FUNCTION(test_gen_inst_report, test_setup, test_teardown)
 
     for (uint16_t sample_count = 0; sample_count < inband_inst_samples_per_pkg; sample_count++)
     {
-        in_band_tlm_cmpnt_generate_inst_pkg();
+        in_band_tlm_cmpnt_add_inst_sample();
     }
 
     for (uint16_t i = 0; i < INST_TELEMETRY_ELEMENT_ID_MAX; i++)
@@ -126,7 +126,7 @@ TEST_FUNCTION(test_gen_inst_report, test_setup, test_teardown)
 
     for (uint16_t sample_count = 0; sample_count < inband_inst_samples_per_pkg; sample_count++)
     {
-        in_band_tlm_cmpnt_generate_inst_pkg();
+        in_band_tlm_cmpnt_add_inst_sample();
     }
 }
 

@@ -14,9 +14,9 @@ target_include_directories(${TARGET}
 
 target_link_libraries(${TARGET}
     PUBLIC
-
-    PRIVATE
         ms::lib::event_trace::trace
+    PRIVATE
+
 )
 
 lint_target(${TARGET})

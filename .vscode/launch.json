@@ -219,6 +219,10 @@
                         "kng.service.telemetry.cmpnt.data_process.test"
                     ],
                     [
+                        "Telemetry Service - Exec Cmpnt",
+                        "kng.service.telemetry.cmpnt.exec.test"
+                    ],
+                    [
                         "Telemetry Service - In Band Cmpnt",
                         "kng.service.telemetry.cmpnt.in_band_tlm.test"
                     ],

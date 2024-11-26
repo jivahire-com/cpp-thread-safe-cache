@@ -24,8 +24,8 @@ extern "C" {
 
 /*-- Symbolic Constant Macros (defines) --*/
 extern "C" {
-extern core_runtime_info_t core[];
-extern tile_runtime_info_t tile[];
+extern core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
+extern tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
 extern soc_runtime_info_t soc_info;
 }
 
@@ -48,6 +48,23 @@ static int test_teardown(void** pContext)
 //
 // Tests
 //
+
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_clear_pwr_tlm_data, test_setup, test_teardown)
+{
+    core_runtime_info_t zero_core[NUMBER_OF_CORES_PER_DIE] = {{{0}}};
+    tile_runtime_info_t zero_tile[NUMBER_OF_TILES_PER_DIE] = {{0}};
+    soc_runtime_info_t zero_soc_info = {0};
+
+    memset(core, 0xFF, sizeof(core));
+    memset(tile, 0xFF, sizeof(tile));
+    memset(&soc_info, 0xFF, sizeof(soc_info));
+
+    data_proc_tlm_cmpnt_clear_pwr_tlm_data();
+
+    assert_memory_equal(&core, &zero_core, sizeof(zero_core));
+    assert_memory_equal(&tile, &zero_tile, sizeof(zero_tile));
+    assert_memory_equal(&soc_info, &zero_soc_info, sizeof(zero_soc_info));
+}
 
 // Test for data_proc_tlm_cmpnt_aggregate_pwr_tlm_data
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_aggregate_pwr_tlm_data, test_setup, test_teardown)

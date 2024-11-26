@@ -29,7 +29,7 @@ void in_band_tlm_cmpnt_init(uint8_t die_id, uint16_t inst_samples_per_pkg);
 /**
  * @brief Generate instantaneous package.
  */
-void in_band_tlm_cmpnt_generate_inst_pkg(void);
+void in_band_tlm_cmpnt_add_inst_sample(void);
 
 /**
  * @brief Generate power package.

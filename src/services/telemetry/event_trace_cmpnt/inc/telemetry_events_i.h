@@ -74,4 +74,15 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, pkg_available_size))
 
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                     18,
+                     DataCollectionDisabled,
+                     FPFW_ET_LEVEL_INFO)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                     19,
+                     TelemetryDataCleared,
+                     FPFW_ET_LEVEL_INFO)
+
+
 /*--------- Function Prototypes ----------*/

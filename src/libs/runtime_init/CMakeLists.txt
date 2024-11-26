@@ -275,6 +275,7 @@ target_link_libraries(
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
         ms::service::telemetry
+        ms::service::telemetry::cli
         ms::lib::cortex_m7::mpu
         ms::lib::system_info
         ms::lib::config_manager

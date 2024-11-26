@@ -30,7 +30,7 @@ set(CMAKE_C_FLAGS "-g -m32 --target=${CLANG_TARGET_TRIPLE} -Wall -Wextra -Werror
 set(CMAKE_CXX_FLAGS "-g -m32 --target=${CLANG_TARGET_TRIPLE} -Wall -Wextra -Werror -Wno-missing-field-initializers")
 
 # Set compiler and linker options to fix BinSkim Error
-add_compile_options(-Xclang -cfguard)
+add_compile_options(-Xclang -cfguard -fstack-protector)
 add_link_options("LINKER:/guard:cf,/CETCOMPAT")
 
 # Set repo utilities

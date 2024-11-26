@@ -22,12 +22,11 @@ variables:
   - name: BuildVersion
     value:  $[format('{0}-dev', variables['Build.BuildNumber'])]
 
-# Build stage
 stages:
 - stage: SVP_Pythia_Nightly_Stress_Tests
-  dependsOn: [Build_Arm_EABI_AARCH_Debug]
   jobs:
   - template: templates/svp_pythia_test.yaml
     parameters:
       ArtifactName: SVP_Pythia_Nightly_Stress_Tests
+      build_id: $(BUILD_ID)
       TestPlan: .\tests\functional\pythia\test_plan\svp_nightly_stress_test_plan.args

@@ -240,7 +240,7 @@ fpfw_status_t update_core_pstate_timestamps(uint8_t core_id, uint8_t pstate, uin
     {
         //  obtain the time stamp difference @ uS
         uint64_t timestamp_diff = (timestamp - core[core_id].pstate_timestamp) / 1000;
-        core[core_id].pstate[pstate].residency += timestamp_diff;
+        core[core_id].pstate[pstate].residency_mS += timestamp_diff;
         pstate_accum[core_id][pstate] += timestamp_diff;
     }
 
@@ -474,7 +474,7 @@ void data_proc_tlm_cmpnt_aggregate_24hr_tlm_data(void)
 
 void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_element_pstate_t (*pstate_array)[NUMBER_OF_PSTATES])
 {
-    // all of the following getter api's are just stubbed out now and will be resolved by
+    // all of the following getter api's are just stubbed out now and will be resolved by the below task
     // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
 
     FPFW_UNUSED(core_id);

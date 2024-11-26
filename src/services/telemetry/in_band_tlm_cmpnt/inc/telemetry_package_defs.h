@@ -71,7 +71,7 @@ typedef enum
 #pragma pack(push, 1)
 typedef struct {
     guid_t manifest_id;
-    uint64_t timestamp;
+    uint64_t timestamp;  /* Timestamp when the package was created  */
     uint32_t package_number;
     uint32_t number_of_records;
     uint32_t package_payload_size;
@@ -92,12 +92,11 @@ typedef struct {
     uint32_t collection_payload_size;   // minus the collection header size
 } telemetry_collection_hdr_t, *p_telemetry_collection_hdr_t;
 typedef struct {
-    uint64_t timestamp;
+    uint64_t timestamp; /* Timestamp when the record was created  */
     uint32_t record_number;
     uint32_t number_of_collections;
     uint32_t record_payload_size;  //  minus the record header size
 } telemetry_record_hdr_t, *p_telemetry_record_hdr_t;
-
 
 typedef struct {
     uint16_t max_mV;
@@ -256,8 +255,8 @@ typedef struct {
 //----------------POWER_TELEMETRY_ELEMENT_CORE_HISTOGRAM----------------
 
 typedef struct {
-    uint8_t voltage_band;
-    uint8_t temperature_band;
+    uint8_t voltage_band; /* voltage band, it will hold and index */
+    uint8_t temperature_band; /* it's a temperature band, will hold an index*/
     uint32_t counter;
 } pwr_core_element_histogram_t, *p_pwr_core_element_histogram_t;
 
@@ -374,10 +373,10 @@ typedef struct {
 //----------------POWER_TELEMETRY_ELEMENT_MPAM_THROTTLE----------------
 
 typedef struct {
-    uint16_t nominal_frequency;
-    uint16_t max_pstate_frequency;
-    uint16_t avg_throttle_frequency;
-    uint16_t throttle_extent;
+    uint16_t nominal_frequency_Mhz;
+    uint16_t max_pstate_frequency_Mhz;
+    uint16_t avg_throttle_frequency_Mhz;
+    uint16_t throttle_extent_pct; /*mpam throttle in % we did,  w.r.t the nominal frequency (nominal_frequency_Mhz;).*/
     uint32_t throttle_duration_mS;
 } pwr_element_mpam_throttle_t, *p_pwr_element_mpam_throttle_t;
 
@@ -393,6 +392,7 @@ typedef struct {
 
 //----------------INST_TELEMETRY_ELEMENT_CORE----------------
 
+//Latency in micro sec and residency in miliseconds. 
 typedef struct {
     uint8_t pstate_id;
     uint8_t cstate_id;
@@ -401,14 +401,15 @@ typedef struct {
     uint16_t frequency_Mhz;
     uint16_t power_mW;
     uint16_t cstate_plimit;
-    uint16_t cstate_entry_latency_mS;
-    uint16_t cstate_exit_latency_mS;
+    uint16_t cstate_entry_latency_uS;
+    uint16_t cstate_exit_latency_uS;
 } inst_core_pcstate_info_t;
 
 typedef struct {
-    uint8_t throttle_type_priority_id;
-    uint8_t throttle_type_residency;
-    uint8_t throttle_priority_residency;
+    uint8_t throttle_type_priority_id;/* Priority ID represent  the Priority, there are 8 Priority Levels (0 to 7) */
+    uint8_t throttle_type_residency_mS; /* Duration of such Throttling Type in mS : for throttle_type Current, Temp, VR Hot, Adaptive, Current Overrun, Aclk Overrun */
+    /* Throttling Priorities are only for the Rack Throttling type: This residency indicate the duration of such a Priority Level in mS*/
+    uint8_t throttle_priority_residency_mS;
     uint8_t throttle_start_stop_id;
 } inst_core_throttle_info_t;
 

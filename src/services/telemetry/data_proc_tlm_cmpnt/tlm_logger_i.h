@@ -59,21 +59,21 @@ typedef enum
 
 typedef struct {
     uint8_t pstate_id;
-    uint32_t residency;
+    uint32_t residency_mS;
     uint32_t entry_count;
-    uint16_t frequency;
-    uint16_t max_power;
-    uint16_t min_power;
-    uint16_t avg_power;
+    uint16_t frequency_Mhz;
+    uint16_t max_power_mW;
+    uint16_t min_power_mW;
+    uint16_t avg_power_mW;
 } pwr_pstate_t;
 
 typedef struct {
     uint8_t cstate_id;
-    uint32_t residency;
+    uint32_t residency_mS;
     uint32_t entry_count;
-    uint16_t max_power;
-    uint16_t min_power;
-    uint16_t avg_power;
+    uint16_t max_power_mW;
+    uint16_t min_power_mW;
+    uint16_t avg_power_mW;
 } pwr_cstate_t;
 
 typedef struct {
@@ -103,7 +103,7 @@ typedef struct {
     uint8_t throttle_source;
     uint8_t throttling_priority_id;
     uint8_t current_tel_pstate;
-    uint8_t current_power;
+    uint8_t current_power_mW;
     uint8_t power_index;
     pwr_pstate_t pstate[NUMBER_OF_PSTATES];
     pwr_cstate_t cstate[NUMBER_OF_CSTATES];
@@ -126,8 +126,8 @@ typedef struct {
 } tile_runtime_info_t;
 
 typedef struct {
-    uint32_t soc_pc3_residency;
-    uint32_t soc_pc4_residency;
+    uint32_t soc_pc3_residency_mS;
+    uint32_t soc_pc4_residency_mS;
     pwr_soc_element_vr_rail_t rail[MAX_NUM_OF_VR_RAILS];
     pwr_soc_element_hnf_t hnf[NUMBER_OF_HNF_CHANNELS_PER_DIE];
 } soc_runtime_info_t;

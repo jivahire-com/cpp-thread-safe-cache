@@ -25,6 +25,14 @@
 ./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_test.robot
 ./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_decomp_test.robot
 
+## CONFIG MANAGER Tests
+./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_cli_test.robot
+./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_dump_cli_test.robot
+./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_set_cli_test.robot
+./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_cli_test.robot
+./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_dump_cli_test.robot
+./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_set_cli_test.robot
+
 ## GPIO Driver Tests
 ./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot
 ./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot

@@ -8,6 +8,7 @@ add_library(${TARGET}
 target_link_libraries(${TARGET}
     PUBLIC
     silibs::lib_i3c
+    silibs::spi_bridge
 
     PRIVATE
     fwlib.driver.mboxIccTransport
@@ -30,6 +31,7 @@ target_link_libraries(${TARGET}
     silibs::idsw_kng
     silibs::kng_silibs_platform
     silibs::ppu_v1
+    silibs::spi_bridge
 )
 
 target_include_directories(${TARGET}

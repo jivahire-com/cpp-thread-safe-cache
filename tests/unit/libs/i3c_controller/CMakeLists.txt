@@ -52,4 +52,10 @@ mock_target(${TARGET}
     ddr_i3c_interface_power_up_pmic_on
     ddr_i3c_interface_read_dimms_detected
     ddr_i3c_interface_read_dimm_capacity
+    mscp_exp_spi_invalidate_region
+    mscp_exp_spi_write_d0_to_d1_data
+    mscp_exp_spi_read_d1_to_d0_data
+    mscp_exp_spi_write_d1_to_d0_data
+    mscp_exp_spi_read_d0_to_d1_data
+    idhw_is_single_die_boot_en
 )

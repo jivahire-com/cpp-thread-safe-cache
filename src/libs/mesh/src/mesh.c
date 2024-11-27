@@ -17,6 +17,7 @@
 #include <cmn_config.h>           // for CMN800_CONFIG_CONFIG
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
 #include <hsp_firmware_headers.h>
+#include <i3c_controller.h>
 #include <idhw.h>     // for idhw_is_single_die_boot_en
 #include <idsw.h>     // for idsw_get_platform_sdv,
 #include <idsw_kng.h> // for PLATFORM_FPGA_LARGE
@@ -90,6 +91,18 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
             cmn800_sequence_param.cmn_config_enum = CONFIG_2D_NUMA_8HNS_HIER_3SN_enum; // 2 Die FPGA
             cmn800_sequence_param.BOOT_2D_ENABLE = true;
         }
+    }
+    if (is_i3c_supported())
+    {
+        uint8_t dram_size = get_i3c_dimm_cap_per_ch();
+        MESH_INFO("dram_size 0x%x\n", dram_size);
+        uint8_t dimm_sku = get_i3c_dimm_sku();
+        MESH_INFO("dimm_sku 0x%x\n", dimm_sku);
+        uint32_t ddrss_en = get_i3c_dimm_detected();
+        MESH_INFO("ddrss_en 0x%x\n", (unsigned int)ddrss_en);
+        UNUSED(dram_size);
+        UNUSED(dimm_sku);
+        UNUSED(ddrss_en);
     }
     MESH_INFO("cmn800_sequence_param.cmn_config_enum 0x%x\n", (uint8_t)cmn800_sequence_param.cmn_config_enum);
 

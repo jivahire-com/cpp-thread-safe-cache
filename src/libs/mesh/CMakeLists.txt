@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
     ms::lib::register_headers
     ms::lib::scp_interrupts
     ms::lib::system_info
+    ms::lib::i3c_controller
     silibs::cmn800
     silibs::cmn800_skus
     silibs::cmn800_sequence

@@ -19,10 +19,12 @@
 #include <idsw_kng.h> // for PLATFORM_FPGA_LARGE
 #include <interrupts.h>
 #include <kng_soc_constants.h> // for NUM_DIE
-#include <silibs_status.h>     // for SILIBS_SUCCESS
-#include <stdbool.h>           // for true
-#include <stdint.h>            // for uint8_t
-#include <stdio.h>             // for CRITICAL_PRINT
+#include <mscp_exp_spi_synchronize_dies.h>
+#include <silibs_status.h> // for SILIBS_SUCCESS
+#include <spi_bridge.h>
+#include <stdbool.h> // for true
+#include <stdint.h>  // for uint8_t
+#include <stdio.h>   // for CRITICAL_PRINT
 #include <system_info.h>
 #include <tx_api.h>
 
@@ -41,6 +43,9 @@ const int MEANINGLESS_NUMBER_I3C = 10;
 static int unused_parameter_not_null = MEANINGLESS_NUMBER_I3C;
 
 /*-- Declarations (Statics and globals) --*/
+static uint32_t g_ddrss_en = 0x0;
+static uint8_t g_dimm_cap_per_ch = 0x0;
+static uint8_t g_dimm_sku = 0x0;
 
 /*------------- Functions ----------------*/
 /**
@@ -129,6 +134,21 @@ bool is_i3c_supported()
         break;
     }
     return is_supported;
+}
+
+uint32_t get_i3c_dimm_detected(void)
+{
+    return g_ddrss_en;
+}
+
+uint8_t get_i3c_dimm_cap_per_ch(void)
+{
+    return g_dimm_cap_per_ch;
+}
+
+uint8_t get_i3c_dimm_sku(void)
+{
+    return g_dimm_sku;
 }
 
 /*
@@ -297,6 +317,46 @@ int i3c_controller(uint8_t die_num)
             }
             SLEEP_US(DELAY_10_MS);
             CRITICAL_PRINT(MOD_NAME "DDR DIMM Capacity: 0x%x, SKU: 0x%x\n", dimm_cap_per_ch, dimm_sku);
+            g_dimm_cap_per_ch = dimm_cap_per_ch;
+            g_dimm_sku = dimm_sku;
+        }
+        else
+        {
+            g_dimm_cap_per_ch = DIMM_40_BIT_CH_32GB;
+            g_dimm_sku = DDR5_RDIMM_2Rx4_16Gb_64GB;
+            ddrss_en = (die_num == SOC_D0) ? (0x3F) : (0xFC0);
+        }
+
+        // I3C Sync point with Remote Die on a 2-Die Config
+        if (!idhw_is_single_die_boot_en()) // 2 Die
+        {
+            CRITICAL_PRINT("I3C Sync with Remote Die\n");
+            mscp_exp_spi_invalidate_region(die_num);
+
+            if (die_num == SOC_D0)
+            {
+                i3c_test_sync.data_d0_to_d1_data = ddrss_en;
+                i3c_test_sync.data_ack_d0_to_d1_data = SPI_SYNC_DATA_VALID;
+                ASSERT_FAIL(mscp_exp_spi_write_d0_to_d1_data(&i3c_test_sync, die_num) == SILIBS_SUCCESS);
+                DEBUG_PRINT("Data written to D1 0x%x\n", i3c_test_sync.data_d0_to_d1_data);
+                ASSERT_FAIL(mscp_exp_spi_read_d1_to_d0_data(&i3c_test_sync, die_num) == SILIBS_SUCCESS);
+                DEBUG_PRINT("Data from D1 0x%x\n", i3c_test_sync.data_d1_to_d0_data);
+                g_ddrss_en = (ddrss_en | i3c_test_sync.data_d1_to_d0_data);
+            }
+            else
+            {
+                i3c_test_sync.data_d1_to_d0_data = ddrss_en;
+                i3c_test_sync.data_ack_d1_to_d0_data = SPI_SYNC_DATA_VALID;
+                ASSERT_FAIL(mscp_exp_spi_write_d1_to_d0_data(&i3c_test_sync, die_num) == SILIBS_SUCCESS);
+                DEBUG_PRINT("Data written to D0 0x%x\n", i3c_test_sync.data_d1_to_d0_data);
+                ASSERT_FAIL(mscp_exp_spi_read_d0_to_d1_data(&i3c_test_sync, die_num) == SILIBS_SUCCESS);
+                DEBUG_PRINT("Data from D0 0x%x\n", i3c_test_sync.data_d0_to_d1_data);
+                g_ddrss_en = (ddrss_en | i3c_test_sync.data_d0_to_d1_data);
+            }
+        }
+        else
+        {
+            g_ddrss_en = ddrss_en;
         }
     }
     else

@@ -126,4 +126,7 @@ void ts_display_temperature(uint8_t ts_low, uint8_t ts_high, uint8_t* ts_integer
 i3c_instance_t* get_i3c0();
 i3c_instance_t* get_i3c1();
 
-
+uint32_t get_i3c_dimm_detected(void);
+uint8_t get_i3c_dimm_cap_per_ch(void);
+uint8_t get_i3c_dimm_sku(void);
+bool is_i3c_supported();

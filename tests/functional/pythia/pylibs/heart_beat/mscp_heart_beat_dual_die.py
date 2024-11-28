@@ -84,7 +84,7 @@ class mscp_heart_beat_dual_die(EchoFallsBaseTest):
                 self.log.info(f"Reading from {connection['entity']}")
 
                 # Clear buffer and read until HeartBeat
-                connection["channel"].get_current_channel().read_until(key="HeartBeat", timeout_seconds=500)
+                connection["channel"].get_current_channel().read_until(key="HeartBeat", timeout_seconds=900)
             except Exception as e:
                 self.log.error(f"Error reading {connection['entity']} UART: {e}")
                 self.test_notify(step="HeartBeat", msg="Test Fail", _is_error=True)

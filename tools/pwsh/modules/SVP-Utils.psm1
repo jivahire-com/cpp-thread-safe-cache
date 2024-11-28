@@ -65,7 +65,7 @@ If -UseGUI specified it will setup and run the simulation with the GUI, otherwis
 Invoke-Virtualizer -SimConfig scp_mcp_chie_bins -UseGUI
 #>
 Function Invoke-Virtualizer(
-    [Parameter(Mandatory=$false)] [ValidateSet('sideloaded_chie_bins', 'chie_bins_single_die_dat', 'chie_bins_dual_die_dat')] [string] $SimConfig = "chie_bins_dual_die_dat",
+    [Parameter(Mandatory=$false)] [ValidateSet('sideloaded_chie_bins', 'chie_bins_single_die_dat', 'chie_bins_dual_die_dat', 'ap_baremetal_dual_die_dat')] [string] $SimConfig = "ap_baremetal_dual_die_dat",
     [Parameter(Mandatory=$false)] [switch] $UseGUI
 )
 {
@@ -84,7 +84,7 @@ Function Invoke-Virtualizer(
     $env:SNPS_VPSESSION_LAUNCH_TIMEOUT_SEC = 600
     $env:SNPS_VPX_DEFAULT_TIMEOUT = 600
 
-    $env:SNPS_VS_VDK_SEARCH_PATHS=(Resolve-Path $svp_sim_dir\win\release\*\*\*\).toString()
+    $env:SNPS_VS_VDK_SEARCH_PATHS=(Resolve-Path $svp_sim_dir\win\release\KingsgateSVP\*\*\).toString()
 
     # Cleanup any SVP Setup that may be running. Do this before cleaning anything else up.
     Write-Host ""
@@ -110,8 +110,16 @@ Function Invoke-Virtualizer(
     # Dump the parameters used for invoking SVP
     Write-Host ""
     Write-Host "Invoking SVP - Using Config:"
-    Write-Host "`t-svp_sim_dir     : $svp_sim_dir"
-    Write-Host "`t-svp_runtime_dir : $svp_runtime_dir"
+    Write-Host "`t-svp_sim_dir    : $svp_sim_dir"
+    Write-Host "`t-svp_runtime_dir: $svp_runtime_dir"
+    Write-Host ""
+    Write-Host "Using Settings:"
+    Write-Host "`t-ARMLMD_LICENSE_FILE               : $env:ARMLMD_LICENSE_FILE"
+    Write-Host "`t-SNPSLMD_LICENSE_FILE              : $env:SNPSLMD_LICENSE_FILE"
+    Write-Host "`t-SNPS_VPX_START_SIMULATION_TIMEOUT : $env:SNPS_VPX_START_SIMULATION_TIMEOUT"
+    Write-Host "`t-SNPS_VPSESSION_LAUNCH_TIMEOUT_SEC : $env:SNPS_VPSESSION_LAUNCH_TIMEOUT_SEC"
+    Write-Host "`t-SNPS_VPX_DEFAULT_TIMEOUT          : $env:SNPS_VPX_DEFAULT_TIMEOUT"
+    Write-Host "`t-SNPS_VS_VDK_SEARCH_PATHS          : $env:SNPS_VS_VDK_SEARCH_PATHS"
     Write-Host ""
     Write-Host "Using Parameters:"
     Write-Host "`t-SimConfig    : $SimConfig"
@@ -122,23 +130,6 @@ Function Invoke-Virtualizer(
     # Select the config file based on SimConfig. These configurations are stored under tools/vpcfg.
     # Additionally perform any any config specific setup as needed
     $svpcfg_param_file = "$env:REPO_APP_ROOT\tools\vpcfg\svpcfg-$SimConfig.txt"
-    switch ($SimConfig) {
-        "sideloaded_chie_bins" {
-            Write-Host "Using sideloaded chie bins."
-            Break;
-        }
-        "chie_bins_single_die_dat" {
-            Write-Host "Using chie fw bins for a single die with dat file."
-            Break;
-        }
-        "chie_bins_dual_die_dat" {
-            Write-Host "Using chie fw bins for both dies with dat file."
-            Break;
-        }
-        Default {
-            Throw "$SimConfig not implemented yet!"
-        }
-    }
 
     # Build the additional simulation parameters to pass to the `run_fixed_vdk.py`, as a array of arguements.
     # This is uncurled in the call to the executable.

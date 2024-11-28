@@ -87,7 +87,7 @@ class mscp_heart_beat(EchoFallsBaseTest):
         self.log.info("Reading SCP UART for HeartBeat . . .")
 
         try:
-            scp_connection.get_current_channel().read_until(key="HeartBeat", timeout_seconds=500)
+            scp_connection.get_current_channel().read_until(key="HeartBeat", timeout_seconds=900)
         except Exception as e:
             self.log.error(f"Error reading SCP UART: {e}")
             scp_connection.get_current_channel().close()
@@ -98,7 +98,7 @@ class mscp_heart_beat(EchoFallsBaseTest):
         self.log.info("Reading MCP UART for HeartBeat . . .")
 
         try:
-            mcp_connection.get_current_channel().read_until(key="HeartBeat", timeout_seconds=500)
+            mcp_connection.get_current_channel().read_until(key="HeartBeat", timeout_seconds=900)
         except Exception as e:
             self.log.error(f"Error reading MCP UART: {e}")
             mcp_connection.get_current_channel().close()

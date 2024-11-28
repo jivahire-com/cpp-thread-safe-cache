@@ -147,30 +147,55 @@ Function Write-FPGAFlash(
 Queries the users logged in on a remote FPGA machine
 
 .EXAMPLE
-Check-UserLogin -user atiru
+Check-UserLogin -pc DH7 -user atiru
 Check-UserLogin
 #>
 Function Check-UserLogin(
-    [Parameter(Mandatory=$true)] [string] $user = "all"
+    [Parameter(Mandatory=$false)] [string] $user = "all",
+    [Parameter(Mandatory=$false)] [string] $pc = "all"
 )
 {
     if ($user -ne "all") {
-        Write-Host "Checking if user $user is logged in on FPGA systems. If this command returns nothing, please check that you are on VPN!!!"
-        Write-Host ""
-        foreach($System in $SystemList) {
-            $PCName = $System."PC Name"
-            Write-Host "Querying user $user on system: RDU-120015-$PCName"
-            query user /SERVER:RDU-120015-$PCName | Select-String -Pattern $user
+        if ($pc -ne "all") {
+            $systemExists = $SystemList | Where-Object { $_."PC Name" -eq $pc }
+            if (-not $systemExists) {
+                Write-Host -ForegroundColor Red "System $pc not found in the system list."
+                return
+            }
+            Write-Host -ForegroundColor Blue "Checking user $user on system: RDU-120015-$pc"
+            query user /SERVER:RDU-120015-$pc | Select-String -Pattern $user
+        } else {
+            Write-Host -ForegroundColor Blue "Checking if user $user is logged in on any FPGA system"
+            Write-Host ""
+            
+            foreach($System in $SystemList) {
+                $PCName = $System."PC Name"
+                Write-Host -ForegroundColor Blue "Checking user $user on system: RDU-120015-$PCName"
+                query user /SERVER:RDU-120015-$PCName | Select-String -Pattern $user
+            }
         }
     } else {
-        Write-Host "Checking users logged in on FPGA systems. If this command returns nothing, please check that you are on VPN!!!"
-        Write-Host ""
-        foreach($System in $SystemList) {
-            $PCName = $System."PC Name"
-            Write-Host "Querying users on system: RDU-120015-$PCName"
-            query user /SERVER:RDU-120015-$PCName
+        if ($pc -ne "all") {
+            $systemExists = $SystemList | Where-Object { $_."PC Name" -eq $pc }
+            if (-not $systemExists) {
+                Write-Host -ForegroundColor Red "System $pc not found in the system list."
+                return
+            }
+
+            Write-Host -ForegroundColor Blue "Checking all users logged in on system: RDU-120015-$pc"
+            query user /SERVER:RDU-120015-$pc
+        } else {
+            Write-Host -ForegroundColor Blue "Checking users logged in on all FPGA systems"
+            Write-Host ""
+            foreach($System in $SystemList) {
+                $PCName = $System."PC Name"
+                Write-Host "Querying users on system: RDU-120015-$PCName"
+                query user /SERVER:RDU-120015-$PCName
+            }
         }
     }
+
+    Write-Host  -ForegroundColor Blue "If the command returned nothing, please check your VPN. . ."
     Write-Host ""
 }
 

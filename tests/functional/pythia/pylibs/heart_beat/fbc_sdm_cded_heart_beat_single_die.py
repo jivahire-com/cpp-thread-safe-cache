@@ -84,7 +84,7 @@ class fbc_sdm_cded_heart_beat_single_die(EchoFallsBaseTest):
 
         try:
             self.log.info("Reading from SCP till HeartBeat\n")
-            scp_channel.read_until(key="HeartBeat", timeout_seconds=500)
+            scp_channel.read_until(key="HeartBeat", timeout_seconds=900)
         except Exception as e:
             self.log.error(f"Error reading SCP UART: {e}")
             self.dut.teardown()

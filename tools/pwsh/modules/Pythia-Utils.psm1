@@ -110,7 +110,7 @@ Function Invoke-Pythia(
 
     # This can also be set via the host configuration json for pythia, however that requires absolute paths.
     # Resolving the paths allows us to update the version and not have to update the paths.
-    $env:SNPS_VS_VDK_SEARCH_PATHS=(Resolve-Path ${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}\win\release\*\*\*\).toString()
+    $env:SNPS_VS_VDK_SEARCH_PATHS=(Resolve-Path ${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}\win\release\KingsgateSVP\*\*\).toString()
 
     # Move to the test directory. Pythia will use relative paths once executed, moving into the test
     # dir will put any any folders that get created there (for things we can't configure atm, ex: SVP output dir).

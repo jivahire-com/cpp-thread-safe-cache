@@ -110,7 +110,8 @@ static const sdm_cded_class_code_t sdm_cded_class_code_knobs_values[NUM_VALID_AC
 
 /*SDMSS Common structure initialization for the parameters required by sequence library API in
 Silibs*/
-static sdm_mem_init_cfg_t sdm_mem_init = DEFAULT_SDM_MEM_INIT_CFG_T;
+static sdm_mem_init_cfg_t sdm_mem_init = {.lstrg = true, .itcm = true, .d0tcm = true, .d1tcm = true, .ecu = true};
+
 static sdm_ecc_dis_init_cfg_t sdm_ecc_dis_init = DEFAULT_SDM_ECC_DIS_INIT_CFG_T;
 static sdm_pre_pcie_cfg_t sdmss_pre_pcie_cfg = DEFAULT_SDM_PRE_PCIE_CFG_T;
 /* TODO: ECC to be enabled: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1738671 */

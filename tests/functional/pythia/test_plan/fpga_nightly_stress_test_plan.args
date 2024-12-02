@@ -10,20 +10,8 @@
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die1.robot
 
 ## CDED PCIE Tests
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_gcm_encr_decr_test.robot
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_xts_encr_decr_pt_en_test.robot
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_xts_encr_decr_test.robot
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_pt_dis_test.robot
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_pt_en_test.robot
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_test.robot
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_decomp_test.robot
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_gcm_encr_decr_test.robot
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_xts_encr_decr_pt_en_test.robot
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_aes_xts_encr_decr_test.robot
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_pt_dis_test.robot
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_pt_en_test.robot
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_comp_decomp_test.robot
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_decomp_test.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_pcie_tests
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_pcie_tests
 
 ## CONFIG MANAGER Tests
 ./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_cli_test.robot
@@ -60,12 +48,8 @@
 ./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_test_send_recv.robot
 
 ## SDM PCIE Tests
-./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/pcie_enumeration_test.robot
-./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_e2i_i2e_test.robot
-./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_memcpy_test.robot
-./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/pcie_enumeration_test.robot
-./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_e2i_i2e_test.robot
-./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_memcpy_test.robot
+./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_pcie_tests.robot
+./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_pcie_tests.robot
 
 ## Sensor FIFO Tests
 ./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot

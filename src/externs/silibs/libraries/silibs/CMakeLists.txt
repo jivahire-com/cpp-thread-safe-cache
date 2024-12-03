@@ -27,6 +27,7 @@ set(SILIB_LIST
     cmn800_sequence
     cmn800_skus
     cmsdk_wd
+    d2d_counter_sync
     ddr_i3c
     ddrss
     dmac

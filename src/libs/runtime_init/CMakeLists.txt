@@ -23,6 +23,7 @@ add_library(${TARGET}
         crash_dump_init.c
         cli_crash_dump_init.c
         css_init.c
+        d2d_cntr_sync_init.c
         ddrss_init.c
         debug_init.c
         dfwk_init.c
@@ -97,6 +98,7 @@ target_link_libraries(
         ms::lib::cortex_m7::mpu
         ms::lib::crash_dump
         ms::lib::css
+        ms::lib::d2d_cntr_sync
         ms::lib::ddrss_init
         ms::lib::debug
         ms::lib::cortex_m7::nvic

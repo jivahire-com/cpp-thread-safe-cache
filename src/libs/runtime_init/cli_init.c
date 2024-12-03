@@ -15,7 +15,7 @@
 #include <textio_pl011.h> // for textio_pl011_device_interface_initialize
 
 /*------- Symbolic Constant Macros (defines) ----------*/
-#define CLI_COMMAND_LENGTH       (128)
+#define CLI_COMMAND_LENGTH       (160)
 #define CLI_COMMAND_HISTORY_LEN  (4)
 #define CLI_COMMAND_HISTORY_SIZE (CLI_COMMAND_LENGTH * CLI_COMMAND_HISTORY_LEN)
 

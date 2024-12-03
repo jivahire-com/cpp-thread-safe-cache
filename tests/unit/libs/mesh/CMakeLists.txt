@@ -26,6 +26,8 @@ target_link_libraries(${TARGET}
         silibs_platform
         ms::lib::hsp_firmware_headers
         fwlib.service.iccBase
+        ras_arm
+        atu
 )
 
 # @todo remove after completing task https://azurecsi.visualstudio.com/Dev/_workitems/edit/1933312/
@@ -54,4 +56,16 @@ mock_target(${TARGET}
     fpfw_icc_base_send_recv_sync
     system_info_is_hsp_present
     interrupt_handler_mesh_ras_error
+    ras_arm_agent_setup_entity
+    ras_arm_agent_init
+    ras_arm_agent_enable_signaling_by_type
+    ras_arm_agent_enable_fhi
+    ras_arm_agent_enable_logging
+    ras_arm_agent_set_base
+    ras_arm_agent_probe
+    ras_print_record
+    ras_arm_agent_trigger_by_type
+    atu_translate_address
+    atu_map
+    atu_unmap
 )

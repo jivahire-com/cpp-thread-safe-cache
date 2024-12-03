@@ -59,6 +59,12 @@ MSB of Mesh Node ID
 #define MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_2 (2)  // Error Index Offset
 #define MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_3 (3)  // Error Index Address
 
+#define NUM_OF_CCG_WITH_D2D 8
+
+#define D2DSS_TEST_RAS_DUMMY_ADDRESS            (0x20080001234ULL)
+#define D2DSS_TEST_RAS_INJ_COUNTER              (0xFFFFF)
+#define D2DSS_TEST_RAS_ERROR_INF                (0x102000)
+
 /**
  * Mesh Fault ISR
  * This function is called when a Mesh Fault ISR is triggered by the hardware INT
@@ -74,3 +80,28 @@ void mesh_fault_isr(void* context);
  * @return void
  **/
 void mesh_error_isr(void* context);
+
+/**
+ * D2D Error ISR
+ * This function is called when a D2D Error ISR is triggered by the hardware INT
+ * @param context
+ * @return void
+ **/
+void d2d_error_isr(void* context);
+
+/**
+ * D2D RAS Initialization
+ * This function initializes the D2D RAS Agents
+ * @param void
+ * @return void
+ **/
+void d2d_ras_init(void);
+
+/**
+ * API to inject error in D2D subsystem
+ * @param d2d_subsystem D2D subsystem number
+ * @param err_inj Error injection value
+ * @param err_cnt_down Error count down value
+ * @return void
+ **/
+void d2d_ras_error_inj(uint8_t d2d_subsystem, uint32_t err_inj, uint32_t err_cnt_down);

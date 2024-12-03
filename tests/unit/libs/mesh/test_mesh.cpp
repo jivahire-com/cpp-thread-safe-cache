@@ -14,6 +14,7 @@
 extern "C" {
 #include <FPFwInterrupts.h>
 #include <FpFwUtils.h> // for FPFW_UNUSED
+#include <atu_lib.h>
 #include <cmn800.h>
 #include <cmn800_error_handler.h> // for acpi_err_sec_generic_t
 #include <cmn800_sequence.h>      // for cmn800_sequence_params_t
@@ -26,6 +27,7 @@ extern "C" {
 #include <interrupts.h>
 #include <mesh.h> // for mesh_init
 #include <mesh_error_handler.h>
+#include <ras_arm.h>
 #include <stdint.h> // for int32_t, uint32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -38,6 +40,8 @@ extern "C" {
 bool simulate_single_die = true;
 KNG_DIE_ID g_test_die = (KNG_DIE_ID)0;
 static fpfw_icc_base_ctx_t* test_icc_base_hsp_mbx_ctx;
+extern ras_agent_entity_t d2dss2_agent[NUM_OF_CCG_WITH_D2D];
+silibs_status_t g_ras_arm_agent_set_base = SILIBS_SUCCESS;
 
 /*------------- Functions ----------------*/
 //! Mocks for mailbox primitives called inside hsp_send_recv_enable_smmu()
@@ -100,12 +104,49 @@ static int setup_undefined_platform(void** pContext)
     idsw_set_platform_sdv(PLATFORM_UNDEFINED);
     simulate_single_die = true;
     g_test_die = (KNG_DIE_ID)0;
+    g_ras_arm_agent_set_base = SILIBS_SUCCESS;
     return 0;
 }
 
 //
 // Mocks
 //
+int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    if (atu_id >= ATU_ID_MAX || atu_map_entry == NULL)
+    {
+        return SILIBS_E_PARAM;
+    }
+
+    // Keep mscp base non-zero to allow checking base address in UTs
+    atu_map_entry->mscp_start_address = 0xffffffff;
+
+    return 0;
+}
+
+int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    if (atu_id >= ATU_ID_MAX || atu_map_entry == NULL)
+    {
+        return SILIBS_E_PARAM;
+    }
+
+    return 0;
+}
+
+int __wrap_atu_translate_address(atu_id_t atu_id, uint64_t ap_addr, uint32_t* mscp_addr)
+{
+    if (atu_id >= ATU_ID_MAX)
+    {
+        return SILIBS_E_PARAM;
+    }
+    assert_non_null(mscp_addr);
+    FPFW_UNUSED(ap_addr);
+
+    *mscp_addr = 0xffffffff;
+    return 0;
+}
+
 int __wrap_cmn800_sequence(cmn800_sequence_params_t cmn800_sequence_param)
 {
     check_expected(cmn800_sequence_param.die_num);
@@ -177,6 +218,74 @@ void __wrap_interrupt_handler_mesh_ras_error(acpi_err_sec_generic_t* mesh_cper, 
     check_expected(non_secure);
     check_expected(die_num);
     function_called();
+}
+
+void __wrap_ras_arm_agent_setup_entity(ras_agent_entity_t* agent)
+{
+    check_expected(agent);
+    function_called();
+}
+
+silibs_status_t __wrap_ras_arm_agent_init(ras_agent_entity_t* agent, uintptr_t base, const char* name)
+{
+    check_expected(agent);
+    assert_non_null(base);
+    assert_non_null(name);
+    function_called();
+    return SILIBS_SUCCESS;
+}
+
+silibs_status_t __wrap_ras_arm_agent_enable_signaling_by_type(ras_agent_entity_t* agent, uint64_t types)
+{
+    check_expected(agent);
+    FPFW_UNUSED(types);
+    function_called();
+    return SILIBS_SUCCESS;
+}
+
+silibs_status_t __wrap_ras_arm_agent_enable_fhi(ras_agent_entity_t* agent)
+{
+    check_expected(agent);
+    function_called();
+    return SILIBS_SUCCESS;
+}
+
+silibs_status_t __wrap_ras_arm_agent_enable_logging(ras_agent_entity_t* agent)
+{
+    check_expected(agent);
+    function_called();
+    return SILIBS_SUCCESS;
+}
+
+silibs_status_t __wrap_ras_arm_agent_set_base(ras_agent_entity_t* agent, uintptr_t base)
+{
+    check_expected(agent);
+    assert_non_null(base);
+    function_called();
+    return g_ras_arm_agent_set_base;
+}
+
+bool __wrap_ras_arm_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* record)
+{
+    check_expected(agent);
+    assert_non_null(record);
+    record->handler = 0;
+    function_called();
+    return true;
+}
+
+int __wrap_ras_print_record(ras_error_record_t* record)
+{
+    FPFW_UNUSED(record);
+    function_called();
+    return SILIBS_SUCCESS;
+}
+silibs_status_t __wrap_ras_arm_agent_trigger_by_type(ras_agent_entity_t* agent, uint32_t types)
+{
+    check_expected(agent);
+    FPFW_UNUSED(types);
+    function_called();
+    return SILIBS_SUCCESS;
 }
 
 //
@@ -374,6 +483,21 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_0_SVP, setup_svp_platform_dual_di
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_INTREQERRS);
     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_INTREQERRS);
 
+    // d2d_ras_init
+    for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
+    {
+        expect_value(__wrap_ras_arm_agent_setup_entity, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_setup_entity);
+        expect_value(__wrap_ras_arm_agent_init, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_init);
+        expect_value(__wrap_ras_arm_agent_enable_signaling_by_type, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_signaling_by_type);
+        expect_value(__wrap_ras_arm_agent_enable_fhi, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_fhi);
+        expect_value(__wrap_ras_arm_agent_enable_logging, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_logging);
+    }
+
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
 }
@@ -419,6 +543,21 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_SVP, setup_svp_platform_dual_di
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_INTREQERRS);
     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_INTREQERRS);
+
+    // d2d_ras_init
+    for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
+    {
+        expect_value(__wrap_ras_arm_agent_setup_entity, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_setup_entity);
+        expect_value(__wrap_ras_arm_agent_init, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_init);
+        expect_value(__wrap_ras_arm_agent_enable_signaling_by_type, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_signaling_by_type);
+        expect_value(__wrap_ras_arm_agent_enable_fhi, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_fhi);
+        expect_value(__wrap_ras_arm_agent_enable_logging, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_logging);
+    }
 
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
@@ -466,6 +605,21 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_0_FPGA, setup_fpga_platform_dual_
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_INTREQERRS);
     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_INTREQERRS);
 
+    // d2d_ras_init
+    for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
+    {
+        expect_value(__wrap_ras_arm_agent_setup_entity, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_setup_entity);
+        expect_value(__wrap_ras_arm_agent_init, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_init);
+        expect_value(__wrap_ras_arm_agent_enable_signaling_by_type, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_signaling_by_type);
+        expect_value(__wrap_ras_arm_agent_enable_fhi, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_fhi);
+        expect_value(__wrap_ras_arm_agent_enable_logging, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_logging);
+    }
+
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
 }
@@ -511,6 +665,21 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_FPGA, setup_fpga_platform_dual_
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_INTREQERRS);
     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_INTREQERRS);
+
+    // d2d_ras_init
+    for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
+    {
+        expect_value(__wrap_ras_arm_agent_setup_entity, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_setup_entity);
+        expect_value(__wrap_ras_arm_agent_init, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_init);
+        expect_value(__wrap_ras_arm_agent_enable_signaling_by_type, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_signaling_by_type);
+        expect_value(__wrap_ras_arm_agent_enable_fhi, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_fhi);
+        expect_value(__wrap_ras_arm_agent_enable_logging, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_logging);
+    }
 
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
@@ -576,5 +745,94 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_fault_isr_Die_1_SVP, setup_svp_platfo
 
     // Call API under test
     mesh_fault_isr(NULL);
+}
+
+// D2D RAS Error Inj
+TEST_FUNCTION(test_mesh_error_handler_d2d_ras_error_inj, setup_svp_platform, setup_undefined_platform)
+{
+    uint32_t err_inj = D2DSS_TEST_RAS_ERROR_INF;
+    uint32_t err_cnt_down = D2DSS_TEST_RAS_INJ_COUNTER;
+
+    // Set up expectations
+    for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
+    {
+        expect_value(__wrap_ras_arm_agent_set_base, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_set_base);
+        expect_value(__wrap_ras_arm_agent_trigger_by_type, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_trigger_by_type);
+
+        // Call API under test
+        d2d_ras_error_inj(d2d_subsystem, err_inj, err_cnt_down);
+    }
+}
+
+// D2D RAS Error Inj 2
+TEST_FUNCTION(test_mesh_error_handler_d2d_ras_error_inj_2, setup_svp_platform, setup_undefined_platform)
+{
+    uint32_t err_inj = D2DSS_TEST_RAS_ERROR_INF;
+    uint32_t err_cnt_down = D2DSS_TEST_RAS_INJ_COUNTER;
+
+    // Set up expectations
+    g_ras_arm_agent_set_base = SILIBS_E_PARAM;
+    for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
+    {
+        expect_value(__wrap_ras_arm_agent_set_base, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_set_base);
+
+        // Call API under test
+        d2d_ras_error_inj(d2d_subsystem, err_inj, err_cnt_down);
+    }
+}
+
+// D2D RAS Error Inj 3 - Bad D2D Subsystem
+TEST_FUNCTION(test_mesh_error_handler_d2d_ras_error_inj_3, setup_svp_platform, setup_undefined_platform)
+{
+    uint32_t err_inj = D2DSS_TEST_RAS_ERROR_INF;
+    uint32_t err_cnt_down = D2DSS_TEST_RAS_INJ_COUNTER;
+
+    // Set up expectations
+    uint8_t d2d_subsystem = NUM_OF_CCG_WITH_D2D;
+
+    // Call API under test
+    d2d_ras_error_inj(d2d_subsystem, err_inj, err_cnt_down);
+}
+
+// D2D RAS Error ISR
+TEST_FUNCTION(test_mesh_error_handler_d2d_ras_error_isr, setup_svp_platform, setup_undefined_platform)
+{
+    // Set up expectations
+    for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
+    {
+        expect_value(__wrap_ras_arm_agent_set_base, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_set_base);
+        expect_value(__wrap_ras_arm_agent_probe, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_probe);
+        expect_function_call(__wrap_ras_print_record);
+    }
+    // Call API under test
+    d2d_error_isr(NULL);
+}
+
+// D2D RAS Init for Die 1
+TEST_FUNCTION(test_mesh_error_handler_d2d_ras_init_Die_1, setup_svp_platform, setup_undefined_platform)
+{
+    const auto test_die = (KNG_DIE_ID)1;
+    g_test_die = test_die;
+    // d2d_ras_init
+    for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
+    {
+        expect_value(__wrap_ras_arm_agent_setup_entity, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_setup_entity);
+        expect_value(__wrap_ras_arm_agent_init, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_init);
+        expect_value(__wrap_ras_arm_agent_enable_signaling_by_type, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_signaling_by_type);
+        expect_value(__wrap_ras_arm_agent_enable_fhi, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_fhi);
+        expect_value(__wrap_ras_arm_agent_enable_logging, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_logging);
+    }
+    // Call API under test
+    d2d_ras_init();
 }
 }

@@ -125,6 +125,8 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         sts = d2dss_sequence(cmn800_sequence_param);
         MESH_INFO("d2dss_sequence sts 0x%x\n", sts);
         FPFW_RUNTIME_ASSERT(sts == 0);
+        // Setup the D2D RAS Agents for Interrupt Handling
+        d2d_ras_init();
     }
     else
     {
@@ -143,6 +145,8 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
                                                     (void*)&unused_parameter_not_null);
     intr_status |= FPFwCoreInterruptEnableVector(HW_INT_INTREQERRS);
     FPFW_RUNTIME_ASSERT(intr_status == 0);
+
+    // ADO 1513835: The INT HW_INT_VAB4_COMBINED_SCP_INT ISR and Vector needs to be enabled as part of INTU combined
 
     // ADO 1728673
     // Send HSP Mailbox message to confirm SCP is done with Mesh and D2D Init

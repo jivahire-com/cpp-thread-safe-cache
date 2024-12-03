@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
     ms::lib::register_headers
     ms::lib::scp_interrupts
     ms::lib::system_info
+    silibs::atu
     ms::lib::i3c_controller
     silibs::cmn800
     silibs::cmn800_skus
@@ -28,6 +29,7 @@ target_link_libraries(${TARGET}
     silibs::idsw_kng
     silibs::kng_silibs_platform
     silibs::ppu_v1
+    silibs::ras_arm
 )
 
 target_include_directories(${TARGET}

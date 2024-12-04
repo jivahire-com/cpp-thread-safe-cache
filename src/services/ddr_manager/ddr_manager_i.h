@@ -87,9 +87,19 @@ uint16_t config_manager_get_ddr_dimm_temp_threshold_high();
 uint16_t config_manager_get_ddr_dimm_temp_threshold_critical();
 
 /**
- * Sets the thermal trip GPIO for the DDR manager.
+ * Sets bit 2 in MSCP EXP THERMAL_IO Register to assert THERMAL_TRIP GPIO
  */
 void ddr_manager_set_thermal_trip_gpio();
+
+/**
+ * Sets bit 1 in MSCP EXP THERMAL_IO Register to assert MEMORY_HOT GPIO
+ */
+void ddr_manager_set_memhot_gpio();
+
+/**
+ * Clears bit 1 in MSCP EXP THERMAL_IO Register to de-assert MEMORY_HOT GPIO
+ */
+void ddr_manager_clear_memhot_gpio();
 
 /**
  * Checks if polling is supported on the platform for the DDR manager.

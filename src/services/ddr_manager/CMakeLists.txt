@@ -38,6 +38,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.cfg_mgr
         fwlib.lib.init
         fwlib.service.iccBase
+        ms::lib::atomics
         ms::lib::crash_dump
         ms::lib::error_codes
         ms::lib::event_trace::trace

@@ -6,6 +6,7 @@ set(SOURCES
     ddr_manager_polling_test.cpp
     ddr_manager_test.cpp
     ddr_memory_map_test.cpp
+    ddr_mocks.cpp
 )
 
 set(LIBS
@@ -57,12 +58,13 @@ mock_target(${TARGET}
     _txe_queue_receive
     _txe_timer_create
     ddr_i3c_interface_read_temp_sensor_mr_reg
-    ddr_manager_set_thermal_trip_gpio
     ddr_i3c_interface_get_instance
     ddr_manager_platform_is_polling_supported
     fpfw_icc_base_send_recv_sync
     idhw_get_die_id
     system_info_is_hsp_present
+    mmio_read32
+    mmio_write32
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

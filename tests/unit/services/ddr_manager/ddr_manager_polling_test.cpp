@@ -13,6 +13,7 @@
 #include <cstdint>         // IWYU pragma: keep
 
 extern "C" {
+#include <FpFwUtils.h>
 #include <ddr_i3c.h>
 #include <ddr_manager_bwl.h>
 #include <ddr_manager_i.h> // for ddr_poll_dimms, ddr_worker_thread_func
@@ -28,29 +29,39 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+bool in_setup_teardown = false;
 
 /*------------- Functions ----------------*/
 //
-// Mocks
+// Fixtures
 //
-extern "C" {
-void __wrap_ddr_manager_set_thermal_trip_gpio()
+static int setup_disengaged_all(void** state)
 {
-    function_called();
-}
+    in_setup_teardown = true;
+    FPFW_UNUSED(state);
 
-bool __wrap_ddr_manager_platform_is_polling_supported()
-{
-    return true;
+    ddr_manager_disable_bwl_i3c();
+    ddr_manager_disable_bwl_force();
+    ddr_manager_disable_bwl_mr4();
+
+    in_setup_teardown = false;
+    return 0;
 }
-} // extern "C"
 
 //
 // Tests
 //
-TEST_FUNCTION(test_ddr_manager_poll_below_high_to_low_thresh, NULL, NULL)
+TEST_FUNCTION(test_ddr_manager_poll_below_high_to_low_thresh, setup_disengaged_all, setup_disengaged_all)
 {
-    // Arrange
+    // Arrange enable_bwl_i3c()
+    expect_function_call(__wrap_mmio_read32);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_write32);
+
+    // Arrange disable_bwl_i3c()
+    expect_function_call(__wrap_mmio_read32);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_write32);
 
     // Set up the expected calls
     will_return_always(__wrap_idhw_get_die_id, DIE_0);
@@ -112,8 +123,15 @@ TEST_FUNCTION(test_ddr_manager_poll_crit_thresh, NULL, NULL)
 
     for (uint8_t dimm_idx = 0; dimm_idx < NUM_DIMM; dimm_idx++)
     {
-        expect_function_call(__wrap_ddr_manager_set_thermal_trip_gpio);
+        expect_function_call(__wrap_mmio_read32);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_write32);
     }
+
+    // Expect another set of GPIO Read/Writes for ddr_manager_enable_bwl_i3c(); after the critical temp is met
+    expect_function_call(__wrap_mmio_read32);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_write32);
 
     // Act
     ddr_poll_dimms();

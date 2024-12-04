@@ -80,12 +80,11 @@ mock_target(${TARGET}
     fpfw_mbox_icc_transport_dfwk_interface_init
     fpfw_icc_base_init
     fpfw_icc_dispatcher_start
-    icc_mhu_trans_init
-    icc_mhu_trans_dfwk_interface_init
-    icc_mhu_transport_dfwk_device_init
     idhw_get_die_id
     idsw_get_platform_sdv
     idsw_get_cpu_type
+    mhu_icc_transport_device_init
+    mhu_icc_transport_interface_init
     spi_bridge_init
     spi_bridge_check_errors
     spi_bridge_clear_error_interrupts

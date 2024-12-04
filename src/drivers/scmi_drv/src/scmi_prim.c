@@ -15,17 +15,24 @@
 #include <FpFwAssert.h>
 #include <FpFwCli.h> // for SCMI_LOG_INFO, _FPFW_CLI_STATUS, FPF...
 #include <ap_core.h>
+#include <arm_intrinsic.h>
+#include <atu_api.h>
+#include <cmsis_m7.h>
 #include <debug.h>
-#include <icc_mhu_trans_prim.h>
+#include <fpfw_icc_transport_interface.h>
+#include <fpfw_init.h>
+#include <fpfw_status.h>
+#include <icc_mhu.h>
 #include <inttypes.h>
 #include <kng_icc_shared.h>
 #include <kng_scmi_shared.h>
+#include <kng_scp_tfa_shared.h>
+#include <mhu_icc_transport.h>
 #include <scmi_prim.h>
 #include <stdint.h>
 #include <string.h>
 
-#define ICC_MHU_TRANS_SCMI_SEND_INDEX MHU_INTERFACE_ID(SCP_LOCAL, AP_CORE_SEC)
-#define ICC_MHU_TRANS_SCMI_RECV_INDEX MHU_INTERFACE_ID(AP_CORE_SEC, SCP_LOCAL)
+#define SMT_CHANNEL_FREE (1)
 
 // Local data structures
 typedef struct
@@ -41,10 +48,14 @@ typedef struct
     uint8_t data[64];
 } scmi_transport_message_t;
 
-static scmi_transport_message_t scmi_message;
 static DFWK_INTERFACE_HEADER* p_apcore_interface = NULL;
 static ap_core_asynchronous_request_t apcore_request;
 static uint8_t scmi_debug = 0;
+
+static mhu_icc_transport_intrf_t* s_icc_mscp2tfa = NULL;
+static volatile scmi_transport_message_t* scmi_recv_message;
+static volatile scmi_transport_message_t* scmi_send_message;
+
 void scmi_set_debug_mode(uint8_t mode)
 {
     scmi_debug = mode;
@@ -357,47 +368,76 @@ int scmi_check_message(scmi_icc_packet_t* packet)
     return status;
 }
 
+void scmi_init()
+{
+    s_icc_mscp2tfa = (mhu_icc_transport_intrf_t*)fpfw_init_get_handle("icc_mscp2tfa_if");
+    FPFW_RUNTIME_ASSERT(s_icc_mscp2tfa != NULL);
+
+    scmi_recv_message = (volatile scmi_transport_message_t*)s_icc_mscp2tfa->device->recv_channel.ch_shared_mem_addr;
+    scmi_send_message = (volatile scmi_transport_message_t*)s_icc_mscp2tfa->device->send_channel.ch_shared_mem_addr;
+}
+
 int scmi_poll_message()
 {
-    scmi_message.header.msg_header.command = ICC_SCMI_HOST_MODULE_SEND;
-    scmi_message.header.msg_header.payload_size = sizeof(scmi_message.data);
-    int status = icc_mhu_trans_get_cmd_msg_from_index(ICC_MHU_TRANS_SCMI_RECV_INDEX, (icc_mhu_request_t*)&scmi_message);
-    if (status == ICC_MHU_TRANS_CMD_MESSAGE_AVAILABLE)
+    // Update the scmi status bit
+    scmi_local_packet_t* local_packet = (scmi_local_packet_t*)scmi_recv_message->data;
+    local_packet->smt_header.status = SMT_CHANNEL_FREE;
+    __DSB();
+
+    // Get the interface and issue a synchronous recv request
+    size_t out_bytes = 0;
+    fpfw_status_t status = fpfw_icc_transport_try_recv_sync_req(&(s_icc_mscp2tfa->base_interface),
+                                                                (void*)scmi_recv_message,
+                                                                sizeof(scmi_transport_message_t),
+                                                                &out_bytes);
+
+    if (FPFW_STATUS_SUCCEEDED(status) && scmi_recv_message->header.msg_header.command == ICC_SCMI_HOST_MODULE_SEND)
     {
+        // Update the scmi status bit
+        // scmi_local_packet_t* local_packet = (scmi_local_packet_t*)scmi_recv_message->data;
+        local_packet->smt_header.status = SMT_CHANNEL_FREE;
+        __DSB();
+
         if ((scmi_debug & 2) != 0)
         {
-            SCMI_LOG_INFO("SCMI ICC Message: %x\n", (int)scmi_message.header.msg_header.command);
-            SCMI_LOG_INFO("SCMI ICC Size: %x\n", (int)scmi_message.header.msg_header.payload_size);
+            SCMI_LOG_INFO("SCMI ICC Message: %x\n", (int)scmi_recv_message->header.msg_header.command);
+            SCMI_LOG_INFO("SCMI ICC Size: %x\n", (int)scmi_recv_message->header.msg_header.payload_size);
 
-            if (scmi_message.header.msg_header.payload_size != 0 && (scmi_debug & 8) != 0)
+            if (scmi_recv_message->header.msg_header.payload_size != 0 && (scmi_debug & 8) != 0)
             {
-                for (uint8_t data_count = 0; data_count < scmi_message.header.msg_header.payload_size; data_count++)
+                for (uint8_t data_count = 0; data_count < scmi_recv_message->header.msg_header.payload_size; data_count++)
                 {
-                    SCMI_LOG_INFO("  scmi_message data[%d]: %x\n", data_count, scmi_message.data[data_count]);
+                    SCMI_LOG_INFO("  scmi_message data[%d]: %x\n", data_count, scmi_recv_message->data[data_count]);
                 }
             }
         }
 
         // Process the message
-        scmi_check_message((scmi_icc_packet_t*)&scmi_message.data);
+        scmi_check_message((scmi_icc_packet_t*)&(scmi_recv_message->data));
     }
     return status;
 }
 
 int scmi_send_resp(uint8_t protocol_id, uint8_t cmd_id, uint8_t* payload, size_t size)
 {
-
+    scmi_send_message->header.msg_header.command = ICC_SCMI_CLIENT_MOD_RESP;
+    scmi_send_message->header.msg_header.payload_size = sizeof(scmi_local_packet_t);
     // Send the SCMI Response
-    static scmi_local_packet_t local_packet;
-    local_packet.smt_header.flags = 1;
-    local_packet.smt_header.status = 1;
-    local_packet.smt_header.payload_size = size + sizeof(local_packet.header);
-    local_packet.header.protocol_id = protocol_id;
-    local_packet.header.msg_type = cmd_id;
+    scmi_local_packet_t* local_packet = (scmi_local_packet_t*)scmi_send_message->data;
+    local_packet->smt_header.flags = 1;
+    local_packet->smt_header.status = 1;
+    local_packet->smt_header.payload_size = size + sizeof(local_packet->header);
+    local_packet->header.protocol_id = protocol_id;
+    local_packet->header.msg_type = cmd_id;
 
-    memcpy(local_packet.payload, payload, size);
-    size_t icc_size = local_packet.smt_header.payload_size + sizeof(local_packet.smt_header);
-    return icc_mhu_trans_send_message(ICC_MHU_TRANS_SCMI_SEND_INDEX, ICC_SCMI_CLIENT_MOD_RESP, (uint8_t*)&local_packet, icc_size);
+    memcpy(local_packet->payload, payload, size);
+    __DSB();
+
+    fpfw_status_t status = fpfw_icc_transport_try_send_sync_req(&(s_icc_mscp2tfa->base_interface),
+                                                                (void*)scmi_send_message,
+                                                                sizeof(scmi_transport_message_t));
+
+    return status;
 }
 
 void scmi_set_apcore_interface(DFWK_INTERFACE_HEADER* p_interface)

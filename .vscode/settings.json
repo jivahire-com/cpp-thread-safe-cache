@@ -10,7 +10,12 @@
         "stacktrace": "c",
         "queue": "c",
         "random": "c",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "type_traits": "c",
+        "chrono": "c",
+        "codecvt": "c",
+        "xlocale": "c",
+        "functional": "c"
     },
     "cmake.buildDirectory": "${env:REPO_APP_TARGET_BUILD_DIR}",
     "cmake.buildTask": true,

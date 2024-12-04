@@ -9,12 +9,25 @@
 
 /*------------- Includes -----------------*/
 
-#include <DfwkClient.h>         // for PDFWK_DEVICE_HEADER, PDFWK_INTERFACE_HEADER
-#include <FpFwCMocka.h>         // for check_expected_ptr, mock_type, function_called
-#include <FpFwUtils.h>          // for FPFW_UNUSED
-#include <ap_core.h>            // for pap_core_asynchronous_request_t
-#include <icc_mhu_trans_prim.h> // for icc mhu
-#include <kng_scmi_shared.h>    // for SCMI Data structures and functions
+//
+// extern C helper macros
+//
+#ifdef __cplusplus
+    #define BEGIN_EXTERN_C extern "C" {
+    #define END_EXTERN_C   }
+#else // __cplusplus
+    #define BEGIN_EXTERN_C
+    #define END_EXTERN_C
+#endif // __cplusplus
+
+#include <DfwkClient.h> // for PDFWK_DEVICE_HEADER, PDFWK_INTERFACE_HEADER
+#include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
+#include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <ap_core.h>    // for pap_core_asynchronous_request_t
+#include <fpfw_init.h>
+#include <fpfw_status.h>     // for fpfw_status_t
+#include <kng_scmi_shared.h> // for SCMI Data structures and functions
+#include <mhu_icc_transport.h>
 #include <scmi_prim.h>
 #include <scmi_prim_i.h>
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
@@ -29,20 +42,30 @@
 
 /*------------- Functions ----------------*/
 
-int __wrap_icc_mhu_trans_get_cmd_msg_from_index(uint8_t index, icc_mhu_request_t* client_msg)
+void* __wrap_fpfw_init_get_handle(const char* id)
 {
-    FPFW_UNUSED(index);
-    FPFW_UNUSED(client_msg);
-    return mock_type(int);
+    FPFW_UNUSED(id);
+    return mock_ptr_type(void*);
 }
 
-int __wrap_icc_mhu_trans_send_message(uint16_t mhu_interface_id, uint32_t command, uint8_t* data, size_t size)
+fpfw_status_t __wrap_fpfw_icc_transport_try_recv_sync_req(PDFWK_INTERFACE_HEADER transport_interface,
+                                                          void* recv_buffer,
+                                                          size_t buffer_size,
+                                                          size_t* output_recv_bytes)
 {
-    FPFW_UNUSED(mhu_interface_id);
-    FPFW_UNUSED(command);
-    FPFW_UNUSED(data);
-    FPFW_UNUSED(size);
-    return mock_type(int);
+    FPFW_UNUSED(transport_interface);
+    FPFW_UNUSED(recv_buffer);
+    FPFW_UNUSED(buffer_size);
+    FPFW_UNUSED(output_recv_bytes);
+    return mock_type(fpfw_status_t);
+}
+
+fpfw_status_t __wrap_fpfw_icc_transport_try_send_sync_req(PDFWK_INTERFACE_HEADER transport_interface, void* send_buffer, size_t buffer_size)
+{
+    FPFW_UNUSED(transport_interface);
+    FPFW_UNUSED(send_buffer);
+    FPFW_UNUSED(buffer_size);
+    return mock_type(fpfw_status_t);
 }
 
 int __wrap_scmi_send_resp(uint8_t protocol_id, uint8_t command, uint8_t* payload, size_t size)

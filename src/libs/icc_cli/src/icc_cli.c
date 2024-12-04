@@ -13,19 +13,18 @@
 #include "icc_rmss_d2d_mbox_cli.h" // for d2d_mbox_send, d2d_mbox_recv, d2d_sync_test, d2d_mbox_echo
 #include "status_decoder.h"        // for get_fpfw_status_code_string
 
-#include <DfwkStatus.h>         // for DFWK_SUCCESS
-#include <FpFwAssert.h>         // for FPFW_RUNTIME_ASSERT
-#include <FpFwCli.h>            // for FpFwCliPrint, FPFW_CLI_STATUS
-#include <FpFwLinkedList.h>     // for NULL_LIST_ENTRY
-#include <FpFwUtils.h>          // for FPFW_UNUSED, FPFW_ARRAY_SIZE
-#include <fpfw_icc_base.h>      // for fpfw_icc_base_recv_req_t
-#include <icc_cli.h>            // for ICC_CLI_HSP_MBX, icc_cli_i...
-#include <icc_mhu_trans_prim.h> // for icc_mhu primitives
-#include <idhw.h>               // for idhw_is_single_die_boot_en
-#include <idsw.h>               // for idsw_get_platform_sdv,
-#include <idsw_kng.h>           // for PLATFORM_FPGA_LARGE
-#include <stdint.h>             // for uint32_t, uint8_t
-#include <stdlib.h>             // for atoi, NULL, size_t
+#include <DfwkStatus.h>     // for DFWK_SUCCESS
+#include <FpFwAssert.h>     // for FPFW_RUNTIME_ASSERT
+#include <FpFwCli.h>        // for FpFwCliPrint, FPFW_CLI_STATUS
+#include <FpFwLinkedList.h> // for NULL_LIST_ENTRY
+#include <FpFwUtils.h>      // for FPFW_UNUSED, FPFW_ARRAY_SIZE
+#include <fpfw_icc_base.h>  // for fpfw_icc_base_recv_req_t
+#include <icc_cli.h>        // for ICC_CLI_HSP_MBX, icc_cli_i...
+#include <idhw.h>           // for idhw_is_single_die_boot_en
+#include <idsw.h>           // for idsw_get_platform_sdv,
+#include <idsw_kng.h>       // for PLATFORM_FPGA_LARGE
+#include <stdint.h>         // for uint32_t, uint8_t
+#include <stdlib.h>         // for atoi, NULL, size_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -99,8 +98,8 @@ static FPFW_CLI_COMMAND s_icc_d2d_rmss_mbx_cmd_list[] = {
 static FPFW_CLI_COMMAND s_icc_mhu_cmd_list[] = {
     {NULL_LIST_ENTRY, "icc_mhu", "list", mhu_list_indices, "Lists the MHU indices", "Usage: list_indices (no arguments)"},
     {NULL_LIST_ENTRY, "icc_mhu", "recv", mhu_recv, "Receives a message via MHU", "Usage: recv <index> <command>"},
-    {NULL_LIST_ENTRY, "icc_mhu", "send", mhu_send, "Sends  message via MHU", "Usage: send <index> <command> <size> <data0> ... <data 2>"},
-    {NULL_LIST_ENTRY, "icc_mhu", "scmi_stat", mhu_scmi_stat, "Checks MHU SCMI Stat bit", "Usage: scmi_stat <index>"},
+    {NULL_LIST_ENTRY, "icc_mhu", "send", mhu_send, "Sends message via MHU", "Usage: send <index> <command> <size> <data0> ... <data 2>"},
+    {NULL_LIST_ENTRY, "icc_mhu", "clear", mhu_clear, "clears all pending cli messages", "Usage: clear"},
 };
 
 static FPFW_CLI_COMMAND s_icc_sdm_large_fifo_mbx_cmd_list[] = {

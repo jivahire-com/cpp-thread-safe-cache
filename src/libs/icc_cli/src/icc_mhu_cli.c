@@ -17,8 +17,7 @@
 #include <fpfw_icc_base.h>
 #include <icc_cli.h>
 #include <icc_mhu.h>
-#include <icc_mhu_trans_dfwk.h>
-#include <icc_mhu_trans_prim.h>
+#include <mhu_icc_transport.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,12 +50,13 @@ static void mhu_icc_base_send_complete_notify(void* context, fpfw_status_t statu
 {
     FpFwCliPrint("ICC CLI MHU Send Complete CB - status: 0x%08x\n", status);
 
-    icc_mhu_request_t* req = (icc_mhu_request_t*)context;
+    icc_mhu_packet_t* req = (icc_mhu_packet_t*)context;
     FpFwCliPrint("ICC CLI MHU Send Complete CB - command: 0x%08x\n", req->header.msg_header.command);
     FpFwCliPrint("ICC CLI MHU Send Complete CB - payload size: %d\n", req->header.msg_header.payload_size);
+    uint8_t* payload = (uint8_t*)req->payload;
     for (int i = 0; i < req->header.msg_header.payload_size; i++)
     {
-        FpFwCliPrint("ICC CLI MHU Send Complete CB - payload [%d] == 0x%x \n", i, req->payload[i]);
+        FpFwCliPrint("ICC CLI MHU Send Complete CB - payload [%d] == 0x%x \n", i, payload[i]);
     }
 
     s_pending_send_request = false;
@@ -67,12 +67,13 @@ static void mhu_icc_base_recv_complete_notify(void* context, size_t output_size_
     FPFW_UNUSED(output_size_bytes);
     FpFwCliPrint("ICC CLI MHU Recv Complete CB - status: 0x%08x\n", status);
 
-    icc_mhu_request_t* req = (icc_mhu_request_t*)context;
+    icc_mhu_packet_t* req = (icc_mhu_packet_t*)context;
     FpFwCliPrint("ICC CLI MHU Recv Complete CB - command: 0x%08x\n", req->header.msg_header.command);
     FpFwCliPrint("ICC CLI MHU Recv Complete CB - payload size: %d\n", req->header.msg_header.payload_size);
+    uint8_t* payload = (uint8_t*)req->payload;
     for (int i = 0; i < req->header.msg_header.payload_size; i++)
     {
-        FpFwCliPrint("ICC CLI MHU Recv Complete CB - payload [%d] == 0x%x \n", i, req->payload[i]);
+        FpFwCliPrint("ICC CLI MHU Recv Complete CB - payload [%d] == 0x%x \n", i, payload[i]);
     }
 
     s_pending_recv_request = false;
@@ -170,7 +171,7 @@ FPFW_CLI_STATUS mhu_send(int argc, const char** argv)
      */
 
     // expected arguments: send <index> <command> <size> <data 0> ... <data n-1>
-    if (argc < 5)
+    if (argc < 3)
     {
         FpFwCliPrint("ERROR! Insufficient Args: send\n");
         FpFwCliPrint("Usage: send <index> <command> <size> <data0> ... <data n-1>. Max size %d\n", MAX_CLI_MHU_PAYLOAD_SIZE);
@@ -201,30 +202,34 @@ FPFW_CLI_STATUS mhu_send(int argc, const char** argv)
         return CLI_ERROR;
     }
 
-    // Check if the size is <= MAX_CLI_MHU_PAYLOAD_SIZE
-    int size = strtoul(argv[3], NULL, 0);
-    if (size > MAX_CLI_MHU_PAYLOAD_SIZE)
+    int size = 0;
+    if (argc > 3)
     {
-        FpFwCliPrint("ERROR! Size %d exceeds max payload size %d\n", size, MAX_CLI_MHU_PAYLOAD_SIZE);
-        return CLI_ERROR;
-    }
+        // Check if the size is <= MAX_CLI_MHU_PAYLOAD_SIZE
+        size = strtoul(argv[3], NULL, 0);
+        if (size > MAX_CLI_MHU_PAYLOAD_SIZE)
+        {
+            FpFwCliPrint("ERROR! Size %d exceeds max payload size %d\n", size, MAX_CLI_MHU_PAYLOAD_SIZE);
+            return CLI_ERROR;
+        }
 
-    if (argc != (4 + size))
-    {
-        FpFwCliPrint("ERROR! Insufficient data arguments\n");
-        FpFwCliPrint("Usage: send <index> <command> <size> <data0> ... <data n-1>. Max size %d\n", MAX_CLI_MHU_PAYLOAD_SIZE);
-        return CLI_ERROR;
-    }
+        if (argc != (4 + size))
+        {
+            FpFwCliPrint("ERROR! Insufficient data arguments\n");
+            FpFwCliPrint("Usage: send <index> <command> <size> <data0> ... <data n-1>. Max size %d\n", MAX_CLI_MHU_PAYLOAD_SIZE);
+            return CLI_ERROR;
+        }
 
-    // Update the payload with the data from the arguments
-    memset(s_icc_mhu_send_payload, 0, MAX_CLI_MHU_PAYLOAD_SIZE);
-    for (int i = 0; i < size; i++)
-    {
-        s_icc_mhu_send_payload[sizeof(icc_mhu_header_t) + i] = strtoul(argv[4 + i], NULL, 0);
+        // Update the payload with the data from the arguments
+        memset(s_icc_mhu_send_payload, 0, MAX_CLI_MHU_PAYLOAD_SIZE);
+        for (int i = 0; i < size; i++)
+        {
+            s_icc_mhu_send_payload[sizeof(icc_mhu_header_t) + i] = strtoul(argv[4 + i], NULL, 0);
+        }
     }
 
     // Build the request to send
-    icc_mhu_request_t* p_send_req = (icc_mhu_request_t*)s_icc_mhu_send_payload;
+    icc_mhu_packet_t* p_send_req = (icc_mhu_packet_t*)s_icc_mhu_send_payload;
     p_send_req->header.msg_header.command = strtoul(argv[2], NULL, 0);
     p_send_req->header.msg_header.payload_size = size;
 
@@ -242,18 +247,18 @@ FPFW_CLI_STATUS mhu_send(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-FPFW_CLI_STATUS mhu_scmi_stat(int argc, const char** argv)
+FPFW_CLI_STATUS mhu_clear(int argc, const char** argv)
 {
+    FPFW_UNUSED(argc);
+    FPFW_UNUSED(argv);
 
-    if (argc != 2)
-    {
-        FpFwCliPrint("ERROR! Insufficient Args: scmi_stat\n");
-        FpFwCliPrint("Usage: scmi_stat <index>\n");
+    memset(s_icc_mhu_recv_payload, 0, sizeof(s_icc_mhu_recv_payload));
+    memset(&s_icc_base_recv_params, 0, sizeof(s_icc_base_recv_params));
+    s_pending_recv_request = false;
 
-        return CLI_ERROR;
-    }
-    int index = atoi(argv[1]);
-    icc_mhu_trans_check_scmi_status_bit(index);
+    memset(s_icc_mhu_send_payload, 0, sizeof(s_icc_mhu_recv_payload));
+    memset(&s_icc_base_send_params, 0, sizeof(s_icc_base_recv_params));
+    s_pending_send_request = false;
 
     return CLI_SUCCESS;
 }

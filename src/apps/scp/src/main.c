@@ -102,6 +102,7 @@ void main_thread(ULONG thread_input)
 
     printf("\nHello World - SCP!\n");
 
+    scmi_init();
     // Do nothing
     uint32_t rtos_ticks = 0;
     while (true)
@@ -115,6 +116,6 @@ void main_thread(ULONG thread_input)
         rtos_ticks += SLEEP_TICKS;
         // **TODO will have to remove this once the SCMI Driver framework gets implemented
         // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1903038
-        scmi_poll_message();
+        (void)scmi_poll_message();
     }
 }

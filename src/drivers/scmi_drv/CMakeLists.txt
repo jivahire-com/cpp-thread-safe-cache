@@ -17,15 +17,22 @@ target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.assert
         fwlib.dfwk
+        fwlib.lib.init
         fwlib.lib.utils
+        fwlib.lib.status
         fwlib.service.cli
         silibs::icc_mhu
         silibs::idhw
+        silibs::idsw
+        silibs::idsw_kng
         silibs::kng_silibs_platform
-        ms::lib::register_headers		
-        ms::driver::icc_mhu_trans	
-        ms::service::ap_core	
-	PUBLIC
+        ms::lib::arm_intrinsic
+        ms::lib::register_headers
+        ms::driver::icc_mhu_trans
+        ms::service::ap_core
+        ms::service::atu_service
+    PUBLIC
+        ms::cmsis::interface
         ms::lib::debug
         silibs_platform
 )

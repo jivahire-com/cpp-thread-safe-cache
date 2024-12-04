@@ -2,8 +2,7 @@ set(TARGET kng.driver.icc_mhu_trans)
 
 add_library(${TARGET}
     STATIC
-    src/icc_mhu_trans_dfwk.c
-    src/icc_mhu_trans_prim.c
+    src/mhu_icc_transport.c
 )
 
 
@@ -16,26 +15,20 @@ target_include_directories(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
-        fwlib.lib.assert
         fwlib.dfwk
-        fwlib.lib.interface.platform.errorhandler
-        fwlib.lib.interface.platform.interrupts
-        fwlib.driver.interface.iccTransport
+        fwlib.lib.assert
         fwlib.lib.utils
-        fwlib.platform.dfwkhost.threadx
-        fwlib.service.cli
-        fwlib.service.icc_dispatcher
-        silibs::icc_mhu
-        silibs::idhw
-        silibs::mhuv3
         ms::lib::arm_intrinsic
         ms::lib::crash_dump
-        ms::lib::error_codes
-        ms::lib::register_headers
-    PUBLIC
-        fwlib.lib.interface.platform.threadx
         ms::lib::debug
         silibs_platform
+    PUBLIC
+        fwlib.lib.interface.platform.interrupts
+        fwlib.lib.interface.platform.timers
+        fwlib.lib.interface.platform.threadx
+        fwlib.driver.interface.iccTransport
+        fwlib.service.icc_dispatcher
+        silibs::icc_mhu
 )
 
 

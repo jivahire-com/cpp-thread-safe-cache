@@ -14,6 +14,7 @@ target_link_libraries(${TARGET}
 
     fwlib.dfwk
     fwlib.lib.assert
+    fwlib.lib.init
     ms::cmocka::mocks
     ms::cmocka::testrunner
     ms::lib::error_handler
@@ -45,8 +46,9 @@ mock_target(${TARGET}
     ap_core_core_power_off
     ap_core_core_power_on
     ap_core_set_rvbaraddr
-    icc_mhu_trans_get_cmd_msg_from_index
-    icc_mhu_trans_send_message
+    fpfw_icc_transport_try_recv_sync_req
+    fpfw_icc_transport_try_send_sync_req
+    fpfw_init_get_handle
     scmi_send_resp
     scmi_check_message
     scmi_power_protocol_cmds

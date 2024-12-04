@@ -52,11 +52,11 @@ FPFW_CLI_STATUS mhu_recv(int argc, const char** argv);
 FPFW_CLI_STATUS mhu_send(int argc, const char** argv);
 
 /**
- * @brief API to check the status bit field of SCMI based on index provided. Index is the channel config from the config table.
+ * @brief API to clear all pending messages.
  * 
  * @param[in] argc number of arguments
  * @param[in] argv arguments
  * 
  * @return FPFW_CLI_STATUS CLI status
  */
-FPFW_CLI_STATUS mhu_scmi_stat(int argc, const char** argv);
+FPFW_CLI_STATUS mhu_clear(int argc, const char** argv);

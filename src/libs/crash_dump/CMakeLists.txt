@@ -25,13 +25,13 @@ target_link_libraries(${TARGET}
     PUBLIC
         fwlib.lib.crashDump
         ms::lib::debug
+        ms::lib::error_codes
     PRIVATE
         fwlib.lib.assert
         fwlib.service.cli
         ms::build_data
         ms::cmsis::interface
         ms::lib::threadx
-        ms::lib::error_codes
         silibs::gpio
         silibs::kng_silibs_platform
 )

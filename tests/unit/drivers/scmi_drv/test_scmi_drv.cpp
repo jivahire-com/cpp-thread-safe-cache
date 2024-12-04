@@ -18,8 +18,8 @@ extern "C" {
 #include <ap_core.h>
 #include <icc_mhu.h> // for icc mhu
 #include <icc_mhu_cfg.h>
-#include <icc_mhu_trans_prim.h>
 #include <kng_scmi_shared.h> // for SCMI Data structures and functions
+#include <mhu_icc_transport.h>
 #include <scmi_init.h>
 #include <scmi_prim.h>
 #include <scmi_prim_i.h>
@@ -44,12 +44,33 @@ int __real_scmi_ap_core_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t
 
 /*-- Declarations (Statics and globals) --*/
 
+static uint8_t s_test_mscp2_tfa_recv_data[256];
+static uint8_t s_test_mscp2_tfa_send_data[256];
+
+static mhu_icc_transport_device_t s_test_mscp2_tfa_dev = {
+    .recv_channel =
+        {
+            .ch_shared_mem_addr = (uintptr_t)s_test_mscp2_tfa_recv_data,
+            .ch_shared_mem_size = sizeof(s_test_mscp2_tfa_recv_data),
+        },
+    .send_channel =
+        {
+            .ch_shared_mem_addr = (uintptr_t)s_test_mscp2_tfa_send_data,
+            .ch_shared_mem_size = sizeof(s_test_mscp2_tfa_send_data),
+        },
+};
+static mhu_icc_transport_intrf_t s_test_mscp2_tfa_if = {
+    .device = &s_test_mscp2_tfa_dev,
+};
+
 static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
 
     // Just invoke making sure nothing breaking
     scmi_set_debug_mode(15);
+    will_return(__wrap_fpfw_init_get_handle, (void*)&s_test_mscp2_tfa_if);
+    scmi_init();
     return 0;
 }
 
@@ -75,19 +96,17 @@ TEST_FUNCTION(test_scmi_send_resp, test_setup, test_teardown)
     scmi_protocol_version_resp_t protocol_ver_resp;
     protocol_ver_resp.status = 0;
     protocol_ver_resp.status = PROTOCOL_VERSION;
-    will_return(__wrap_icc_mhu_trans_send_message, ICC_MHU_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_icc_transport_try_send_sync_req, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
     int status =
         __real_scmi_send_resp(SCMI_PWR_DMN_PROTO_ID, SCMI_PROTO_VERSION_MSG, (uint8_t*)&protocol_ver_resp, sizeof(protocol_ver_resp));
-    assert_int_equal(status, ICC_MHU_STATUS_SUCCESS);
+    assert_int_equal(status, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
 }
 
 TEST_FUNCTION(test_scmi_poll_message, test_setup, test_teardown)
 {
-
-    will_return(__wrap_icc_mhu_trans_get_cmd_msg_from_index, ICC_MHU_TRANS_CMD_MESSAGE_AVAILABLE);
-    will_return(__wrap_scmi_check_message, SCMI_PROTOCOL_CMD_SUCCESS);
+    will_return(__wrap_fpfw_icc_transport_try_recv_sync_req, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
     int status = scmi_poll_message();
-    assert_int_equal(status, ICC_MHU_TRANS_CMD_MESSAGE_AVAILABLE);
+    assert_int_equal(status, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
 }
 
 TEST_FUNCTION(test_scmi_check_message, test_setup, test_teardown)

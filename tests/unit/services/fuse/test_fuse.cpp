@@ -51,7 +51,7 @@ extern "C" {
 
 static jmp_buf cd_mock_jump_buf;
 static uint32_t icc_hspmbx_ctx;
-static kng_fuse_disable_core_t DIE0_fuse_disable = {0x01, 0x1000, 0x0};
+static kng_fuse_disable_core_t DIE0_fuse_disable = {0x01, 0x1000, 0x0, 0xFFFFFFFF};
 /*------------- Functions ----------------*/
 
 //
@@ -244,7 +244,7 @@ TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
 
     expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DISABLE_CORE_DISABLE2_BIT_OFFSET);
     expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DISABLE_CORE_DISABLE2_WIDTH);
-    will_return(__wrap_read_fuse, DIE0_fuse_disable.fuse_dis_core_64_65);
+    will_return(__wrap_read_fuse, DIE0_fuse_disable.fuse_dis_core_64_95);
     // Expectation for trigger_debugger_for_manual_overrides
     expect_function_call(__wrap_trigger_debugger_for_manual_overrides);
 
@@ -460,7 +460,7 @@ TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
 
     expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DISABLE_CORE_DISABLE2_BIT_OFFSET);
     expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DISABLE_CORE_DISABLE2_WIDTH);
-    will_return(__wrap_read_fuse, DIE0_fuse_disable.fuse_dis_core_64_65);
+    will_return(__wrap_read_fuse, DIE0_fuse_disable.fuse_dis_core_64_95);
     // Expectation for trigger_debugger_for_manual_overrides
     expect_function_call(__wrap_trigger_debugger_for_manual_overrides);
     if (!BUGCHECK_MOCK_RETURN())

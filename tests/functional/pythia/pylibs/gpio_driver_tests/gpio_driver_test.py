@@ -85,7 +85,7 @@ class gpio_driver_test(EchoFallsBaseTest):
         # Test GPIO driver
         #
         self.cores = {
-            "scp": Core(self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel(), 900, 30),
+            "scp": Core(self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel(), 1800, 500),
             # Increase the timeout for MCP as it takes longer than SCP to unblock pipeline
             # Decrease the timeout once the MCP performance issue is resolved
             # https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/2181713

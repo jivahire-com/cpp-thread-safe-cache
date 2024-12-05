@@ -109,6 +109,7 @@ target_link_libraries(
         ms::lib::i3c_controller::cli
         ms::lib::icc::cli
         ms::lib::icc_platform_defines
+        ms::lib::interface::mhu_icc_payloads
         ms::lib::mesh
         ms::lib::mesh::cli
         ms::lib::ioss_init
@@ -266,6 +267,7 @@ target_link_libraries(
         ms::lib::icc::cli
         ms::lib::icc_platform_defines
         ms::lib::interface::in_band_telemetry_ddr
+        ms::lib::interface::mhu_icc_payloads
         ms::lib::mcp_interrupts
         ms::lib::stdio_textio
         ms::lib::threadx

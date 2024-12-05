@@ -76,10 +76,18 @@ atu_map_entry_t atu_static_map_single_die_die0[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_END_ADDR,
         .attribute = {{.axprot0 = ATU_BUS_ATTR_SET, .axprot1 = ATU_BUS_ATTR_CLR, .axnse = ATU_BUS_ATTR_SET}},
     },
+    // In Band Telemetry Payloads
     {
         .ap_base_address = IB_TELEMETRY_DDR_DIE_0_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    // ICC via MHU Payloads
+    {
+        .ap_base_address = ICC_MHU_PAYLOADS_RESERVATION_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ICC_MHU_PAYLOAD_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ICC_MHU_PAYLOAD_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
     {0},
@@ -107,10 +115,18 @@ atu_map_entry_t atu_static_map_dual_die_die0[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_END_ADDR,
         .attribute = {{.axprot0 = ATU_BUS_ATTR_SET, .axprot1 = ATU_BUS_ATTR_CLR, .axnse = ATU_BUS_ATTR_SET}},
     },
+    // In Band Telemetry Payloads
     {
         .ap_base_address = IB_TELEMETRY_DDR_DIE_0_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    // ICC via MHU Payloads
+    {
+        .ap_base_address = ICC_MHU_PAYLOADS_RESERVATION_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ICC_MHU_PAYLOAD_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ICC_MHU_PAYLOAD_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
     {0},
@@ -131,10 +147,18 @@ atu_map_entry_t atu_static_map_single_die_die1[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_END_ADDR,
         .attribute = {{.axprot0 = ATU_BUS_ATTR_SET, .axprot1 = ATU_BUS_ATTR_CLR, .axnse = ATU_BUS_ATTR_SET}},
     },
+    // In Band Telemetry Payloads
     {
         .ap_base_address = IB_TELEMETRY_DDR_DIE_1_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    // ICC via MHU Payloads
+    {
+        .ap_base_address = ICC_MHU_PAYLOADS_RESERVATION_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ICC_MHU_PAYLOAD_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ICC_MHU_PAYLOAD_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
     {0},
@@ -162,10 +186,18 @@ atu_map_entry_t atu_static_map_dual_die_die1[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_END_ADDR,
         .attribute = {{.axprot0 = ATU_BUS_ATTR_SET, .axprot1 = ATU_BUS_ATTR_CLR, .axnse = ATU_BUS_ATTR_SET}},
     },
+    // In Band Telemetry Payloads
     {
         .ap_base_address = IB_TELEMETRY_DDR_DIE_1_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    // ICC via MHU Payloads
+    {
+        .ap_base_address = ICC_MHU_PAYLOADS_RESERVATION_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ICC_MHU_PAYLOAD_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ICC_MHU_PAYLOAD_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
     {0},

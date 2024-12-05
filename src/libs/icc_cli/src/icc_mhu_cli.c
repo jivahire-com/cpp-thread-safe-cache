@@ -15,8 +15,10 @@
 #include <FpFwCli.h>
 #include <FpFwUtils.h>
 #include <fpfw_icc_base.h>
+#include <fpfw_icc_base_i.h>
 #include <icc_cli.h>
 #include <icc_mhu.h>
+#include <mhu_icc_payloads.h>
 #include <mhu_icc_transport.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -259,6 +261,42 @@ FPFW_CLI_STATUS mhu_clear(int argc, const char** argv)
     memset(s_icc_mhu_send_payload, 0, sizeof(s_icc_mhu_recv_payload));
     memset(&s_icc_base_send_params, 0, sizeof(s_icc_base_recv_params));
     s_pending_send_request = false;
+
+    return CLI_SUCCESS;
+}
+
+FPFW_CLI_STATUS mhu_props(int argc, const char** argv)
+{
+    FPFW_UNUSED(argc);
+    FPFW_UNUSED(argv);
+
+    icc_cli_init_params_t* cli_ctx = get_icc_cli_ctx();
+
+    FpFwCliPrint("Listing the MHU properties -- START\n");
+    for (icc_cli_interface_type i = ICC_CLI_MSCP_MHU; i < ICC_CLI_MAX_TRANSPORT_TYPE; i++)
+    {
+        if (cli_ctx->icc_base_ctx[i] != NULL)
+        {
+            fpfw_icc_base_ctx_t* icc_base_ctx = cli_ctx->icc_base_ctx[i];
+            mhu_icc_transport_intrf_t* mhu_icc_transport = (mhu_icc_transport_intrf_t*)icc_base_ctx->icc_cfg.transport_interface;
+
+            uint64_t recv_addr = mhu_icc_transport->device->recv_channel.ch_shared_mem_addr;
+            uint64_t send_addr = mhu_icc_transport->device->send_channel.ch_shared_mem_addr;
+
+            FpFwCliPrint("Name: [%17ss]\n", icc_cli_interface_type_strings[i]);
+            FpFwCliPrint("\tRecv Channel: Payload address: [0x%x%x] Payload Size: [0x%x] DB Status: [%d]\n",
+                         (uint32_t)(recv_addr >> 32),
+                         (uint32_t)recv_addr,
+                         mhu_icc_transport->device->recv_channel.ch_shared_mem_size,
+                         icc_mhu_check_packet_pending(&mhu_icc_transport->device->recv_channel));
+            FpFwCliPrint("\tSend Channel: Payload address: [0x%x%x] Payload Size: [0x%x] DB Status: [%d]\n",
+                         (uint32_t)(send_addr >> 32),
+                         (uint32_t)send_addr,
+                         mhu_icc_transport->device->send_channel.ch_shared_mem_size,
+                         icc_mhu_check_packet_pending(&mhu_icc_transport->device->send_channel));
+        }
+    }
+    FpFwCliPrint("Listing the MHU properties -- END\n");
 
     return CLI_SUCCESS;
 }

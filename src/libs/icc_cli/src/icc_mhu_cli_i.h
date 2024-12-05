@@ -60,3 +60,14 @@ FPFW_CLI_STATUS mhu_send(int argc, const char** argv);
  * @return FPFW_CLI_STATUS CLI status
  */
 FPFW_CLI_STATUS mhu_clear(int argc, const char** argv);
+
+
+/**
+ * @brief API to list icc mhu properties.
+ * 
+ * @param[in] argc number of arguments
+ * @param[in] argv arguments
+ * 
+ * @return FPFW_CLI_STATUS CLI status
+ */
+FPFW_CLI_STATUS mhu_props(int argc, const char** argv);

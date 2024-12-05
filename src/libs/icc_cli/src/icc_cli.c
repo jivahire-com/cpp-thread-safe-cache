@@ -100,6 +100,7 @@ static FPFW_CLI_COMMAND s_icc_mhu_cmd_list[] = {
     {NULL_LIST_ENTRY, "icc_mhu", "recv", mhu_recv, "Receives a message via MHU", "Usage: recv <index> <command>"},
     {NULL_LIST_ENTRY, "icc_mhu", "send", mhu_send, "Sends message via MHU", "Usage: send <index> <command> <size> <data0> ... <data 2>"},
     {NULL_LIST_ENTRY, "icc_mhu", "clear", mhu_clear, "clears all pending cli messages", "Usage: clear"},
+    {NULL_LIST_ENTRY, "icc_mhu", "props", mhu_props, "Lists each channels properties", "Usage: props"},
 };
 
 static FPFW_CLI_COMMAND s_icc_sdm_large_fifo_mbx_cmd_list[] = {

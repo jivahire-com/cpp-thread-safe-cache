@@ -207,6 +207,10 @@
                 "key": "savedSvcUnitTest",
                 "options": [
                     [
+                        "Data Collection Service",
+                        "kng.service.dcs.test.exe"
+                    ],
+                    [
                         "Sensor Fifo Service",
                         "service.sensor_fifo.test.exe"
                     ],

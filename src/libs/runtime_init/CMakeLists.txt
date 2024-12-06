@@ -17,91 +17,94 @@ add_library(${TARGET}
         build_info_cli_init.c
         cfg_mgr_init.c
         cli_accel_intr_init.c
-        cli_init.c
+        cli_crash_dump_init.c
         cli_ddr_init.c
+        cli_init.c
         cli_power_init.c
         crash_dump_init.c
-        cli_crash_dump_init.c
         css_init.c
         d2d_cntr_sync_init.c
+        ddr_manager_init.c
         ddrss_init.c
         debug_init.c
         dfwk_init.c
         dma_init.c
-        ddr_manager_init.c
         etc_etd_init.c
         exception_handler_init.c
         fuse_init.c
         gpio_init.c
         gtimer_init.c
         hw_version_scp_init.c
-        icc_hspmbx_init.c
-        icc_d2dmbx_init.c
-        icc_cli_init.c
-        icc_accel_mbx_init.c
-        icc_mhu_init.c
         i3c_controller_init.c
         i3c_controller_scp_cli_init.c
+        icc_accel_mbx_init.c
+        icc_cli_init.c
+        icc_d2dmbx_init.c
+        icc_hspmbx_init.c
+        icc_mhu_init.c
+        ioss_init.c
         mesh_init.c
         mesh_scp_cli_init.c
-        ioss_init.c
         nvic_init.c
         pcie_init.c
         pex_rng_init.c
         power_init.c
         scmi_init.c
-        sds_init.c
-        scp_mpu_init.c
-        sensor_fifo_init.c
-        system_info_init.c
-        startup_shutdown_init.c
         scmi_cli_init.c
-        tower_init.c
+        scp_mpu_init.c
+        sds_init.c
+        sensor_fifo_init.c
+        startup_shutdown_init.c
+        system_info_init.c
         textio_init.c
+        tower_init.c
         usb_init.c
         vab_init.c
         variable_services_init.c
         variable_services_cli_init.c
-        warm_start_init.c
         warm_start_cli_init.c
+        warm_start_init.c
+
 )
 
 target_link_libraries(
     ${TARGET}
     PRIVATE
-        fwlib.service.cli
-        fwlib.lib.crashDump
         fwlib.dfwk
         fwlib.driver.interface.text_io
+        fwlib.driver.mboxIccTransport
+        fwlib.lib.crashDump
         fwlib.lib.init
         fwlib.lib.mboxPrimitives
-        fwlib.platform.dfwkhost.threadx
         fwlib.lib.platform.impl.timers.threadx
         fwlib.lib.tmr_queue
         fwlib.lib.utils
-        fwlib.driver.mboxIccTransport
+        fwlib.platform.dfwkhost.threadx
+        fwlib.service.cli
         fwlib.service.icc_dispatcher
         fwlib.service.iccBase
         ms::build_data
-        ms::lib::scp_avs
-        ms::lib::scp_avs::cli
         ms::driver::dma::scp
         ms::driver::gpio
         ms::driver::icc_mhu_trans
         ms::driver::pcie
         ms::driver::sensor_fifo
         ms::driver::scmi_drv
-        ms::driver::vab
         ms::driver::textio::pl011
+        ms::driver::vab
         ms::lib::accelerator_ip
+        ms::lib::build_info_cli
         ms::lib::cli_accel_int
+        ms::lib::config_manager
+        ms::lib::config_manager::cli
         ms::lib::cortex_m7::mpu
+        ms::lib::cortex_m7::nvic
         ms::lib::crash_dump
         ms::lib::css
         ms::lib::d2d_cntr_sync
+        ms::lib::ddr::cli
         ms::lib::ddrss_init
         ms::lib::debug
-        ms::lib::cortex_m7::nvic
         ms::lib::exception_handler
         ms::lib::gtimer
         ms::lib::hsp_firmware_headers
@@ -110,58 +113,56 @@ target_link_libraries(
         ms::lib::icc::cli
         ms::lib::icc_platform_defines
         ms::lib::interface::mhu_icc_payloads
-        ms::lib::mesh
-        ms::lib::mesh::cli
         ms::lib::ioss_init
         ms::lib::ioss::usb
+        ms::lib::mesh
+        ms::lib::mesh::cli
+        ms::lib::pex_rng
+        ms::lib::power::cli
+        ms::lib::register_headers
         ms::lib::scmi::cli
+        ms::lib::scp_avs
+        ms::lib::scp_avs::cli
         ms::lib::scp_interrupts
         ms::lib::stdio_textio
         ms::lib::system_info
         ms::lib::threadx
+        ms::lib::tower
         ms::lib::variable_services
         ms::lib::variable_services::cli
-        ms::lib::ddr::cli
-        ms::lib::tower
-        ms::lib::build_info_cli
-        ms::lib::pex_rng
-        ms::lib::config_manager
-        ms::lib::config_manager::cli
+        ms::lib::warm_start
+        ms::lib::warm_start::cli
         ms::service::accel_intr_client
         ms::service::accel_intr_service
         ms::service::ap_core
+        ms::service::atu_service
         ms::service::ddr_manager
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
         ms::service::fuse
+        ms::service::gpio::cli
         ms::service::pcie_manager
         ms::service::pcie_manager::cli
         ms::service::power
         ms::service::scp_startup_shutdown
+        ms::service::sds_service
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
         silibs::avs
         silibs::common::lib_uart_pl011
+        silibs::crypto::rng
         silibs::icc_mhu
         silibs::idhw
         silibs::idsw
         silibs::idsw_kng
-        silibs::platform
-        silibs::pcie
         silibs::kng_silibs_platform
         silibs::mhuv3
+        silibs::pcie
+        silibs::platform
         silibs::sdm_command_desc
         silibs::sensor_ram_bridge
         silibs::spi_bridge
-        silibs::crypto::rng
-        ms::lib::power::cli
-        ms::lib::register_headers
-        ms::service::sds_service
-        ms::lib::warm_start
-        ms::lib::warm_start::cli
-        ms::service::atu_service
-        ms::lib::system_info
-        ms::service::gpio::cli
+
 )
 
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)
@@ -215,9 +216,10 @@ add_library(${TARGET}
     OBJECT
         atu_init.c
         cfg_mgr_init.c
+        cli_crash_dump_init.c
         cli_init.c
         crash_dump_init.c
-        cli_crash_dump_init.c
+        dcs_init.c
         debug_init.c
         dfwk_init.c
         etc_etd_init.c
@@ -227,8 +229,8 @@ add_library(${TARGET}
         hw_version_mcp_init.c
         icc_accel_mbx_mcp_init.c
         icc_cli_init.c
-        icc_hspmbx_init.c
         icc_d2dmbx_init.c
+        icc_hspmbx_init.c
         icc_mhu_init.c
         mcp_mpu_init.c
         nvic_init.c
@@ -242,17 +244,17 @@ add_library(${TARGET}
 target_link_libraries(
     ${TARGET}
     PRIVATE
-        fwlib.service.cli
-        fwlib.lib.crashDump
         fwlib.dfwk
+        fwlib.driver.mboxIccTransport
+        fwlib.lib.crashDump
         fwlib.lib.init
         fwlib.lib.mboxPrimitives
-        fwlib.platform.dfwkhost.threadx
         fwlib.lib.platform.impl.timers.threadx
         fwlib.lib.utils
-        fwlib.driver.mboxIccTransport
-        fwlib.service.icc_dispatcher
+        fwlib.platform.dfwkhost.threadx
+        fwlib.service.cli
         fwlib.service.iccBase
+        fwlib.service.icc_dispatcher
         ms::build_data
         ms::driver::dma::mcp
         ms::driver::gpio
@@ -260,43 +262,44 @@ target_link_libraries(
         ms::driver::sensor_fifo
         ms::driver::textio::pl011
         ms::lib::accel_intr
-        ms::lib::debug
+        ms::lib::config_manager
+        ms::lib::config_manager::cli
         ms::lib::cortex_m7::nvic
+        ms::lib::cortex_m7::mpu
         ms::lib::crash_dump
+        ms::lib::debug
         ms::lib::exception_handler
         ms::lib::icc::cli
         ms::lib::icc_platform_defines
         ms::lib::interface::in_band_telemetry_ddr
         ms::lib::interface::mhu_icc_payloads
         ms::lib::mcp_interrupts
+        ms::lib::register_headers
         ms::lib::stdio_textio
+        ms::lib::system_info
         ms::lib::threadx
         ms::lib::variable_services
         ms::service::atu_service
+        ms::service::dcs
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
         ms::service::event_trace::relay
+        ms::service::gpio::cli
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
         ms::service::telemetry
         ms::service::telemetry::cli
-        ms::lib::cortex_m7::mpu
-        ms::lib::system_info
-        ms::lib::config_manager
-        ms::lib::config_manager::cli
         silibs::atu
         silibs::common::lib_uart_pl011
         silibs::icc_mhu
         silibs::idhw
         silibs::idsw
         silibs::idsw_kng
-        silibs::platform
         silibs::kng_silibs_platform
+        silibs::platform
         silibs::sdm_command_desc
         silibs::sensor_ram_bridge
         silibs::spi_bridge
-        register_headers
-        ms::service::gpio::cli
 )
 
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)

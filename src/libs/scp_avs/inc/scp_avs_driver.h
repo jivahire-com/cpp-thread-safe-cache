@@ -34,6 +34,8 @@
 #define AVS_LOG_CRIT(fmt, ...) printf(MODULE_NAME_AVS fmt NEWLINE, ##__VA_ARGS__)
 
 #define MAX_AVS_INST    4 // Die0 (AVS0 - AVS3), Die1 (AVS4 packaging pin, but is AVS0 on Die1)
+// Hardware can support 16 commands.  But there are only 2 VRs per AVSBus. With 3 commands (VCT) sent to each VR, 6 is the max commands sent per AVSBus.
+#define MAX_AVS_MULTI_READ_CMDS 6
 
 /*-------------- Typedefs ----------------*/
 typedef enum _scp_avs_rail_count_t {

@@ -74,7 +74,8 @@ mock_target(${TARGET}
     power_loops_control_handle_event
     scp_avs_client_write
     all_requests_completed
-    idsw_get_platform_sdv
+    scp_avs_client_read
+    scp_avs_client_read_multi
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

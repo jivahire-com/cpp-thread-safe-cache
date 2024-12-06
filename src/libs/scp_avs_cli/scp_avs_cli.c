@@ -18,8 +18,7 @@
 #include <scp_avs_driver.h> // for scp_avs_request_t
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define MAX_CLI_VOLTAGE         1200 // mV
-#define MAX_CLI_MULTI_READ_CMDS 6
+#define MAX_CLI_VOLTAGE 1200 // mV
 
 /*-------------- Typedefs ----------------*/
 
@@ -295,7 +294,7 @@ static FPFW_CLI_STATUS scp_avs_read_multi_cli(int argc, const char** argv)
         }
 
         int command_count = atoi(argv[2]);
-        if (command_count > MAX_CLI_MULTI_READ_CMDS || command_count < 1)
+        if (command_count > MAX_AVS_MULTI_READ_CMDS || command_count < 1)
         {
             FpFwCliPrint("ERROR! Invalid Arg (command_count range is 1 - 6) \n");
             return CLI_ERROR;

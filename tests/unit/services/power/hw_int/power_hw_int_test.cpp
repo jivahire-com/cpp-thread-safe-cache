@@ -24,7 +24,6 @@ extern "C" {
 #include <dvfs.h>                  // for dvfs_get_cppc_from_pstate, _DVFS_...
 #include <dvfs_struct.h>           // for DVFS_DEF_PLIMIT_INDEX_NOMINAL
 #include <fgpll_regs.h>            // for (anonymous), fgpll_reg, ptr_fgpll...
-#include <idsw_kng.h>              // for KNG_PLAT_ID
 #include <mock_bug_check.h>        // for __wrap_crash_dump_bug_check
 #include <odcm.h>                  // for _ODCM_RETCODE
 #include <odcm_struct.h>           // for ODCM_DEFAULT_CONFIG, odcm_config_t
@@ -104,6 +103,33 @@ void __wrap_scp_avs_client_write(PDFWK_INTERFACE_HEADER Interface,
     return;
 }
 
+void __wrap_scp_avs_client_read(PDFWK_INTERFACE_HEADER Interface,
+                                PDFWK_ASYNC_REQUEST_HEADER Request,
+                                DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine,
+                                void* CompletionContext)
+{
+    check_expected(Interface);
+    check_expected(Request);
+    check_expected(CompletionRoutine);
+    check_expected(CompletionContext);
+    function_called();
+    return;
+}
+
+void __wrap_scp_avs_client_read_multi(PDFWK_INTERFACE_HEADER Interface,
+                                      PDFWK_ASYNC_REQUEST_HEADER Request,
+                                      DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine,
+                                      void* CompletionContext,
+                                      uint8_t count)
+{
+    check_expected(Interface);
+    check_expected(Request);
+    check_expected(CompletionRoutine);
+    check_expected(CompletionContext);
+    check_expected(count);
+    function_called();
+}
+
 bool __wrap_all_requests_completed(avs_pwr_request_context_t* pwr_avs_request, uint8_t avs_bus)
 {
     UNUSED(pwr_avs_request);
@@ -116,12 +142,8 @@ void __wrap_power_loops_control_handle_event(power_ctrl_loop_signal_t event, con
 {
     UNUSED(event);
     UNUSED(event_data);
+    function_called();
     return;
-}
-
-KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
-{
-    return mock_type(KNG_PLAT_ID);
 }
 
 /*-------- Function Prototypes -----------*/
@@ -1339,7 +1361,6 @@ POWER_TEST(power_vrs_write_vcpu_voltage, setup, teardown)
     sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;
 
     will_return(__wrap_power_runconfig_get, &test_runconfig);
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     expect_function_call(__wrap_all_requests_completed);
     expect_value(__wrap_scp_avs_client_write, Interface, sconfig.avs_details[vcpu_test_index].bus_id);
@@ -1375,11 +1396,10 @@ POWER_TEST(power_vrs_write_vcpu_voltage_high_range, setup, teardown)
 
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     expect_function_call(__wrap_all_requests_completed);
     expect_value(__wrap_scp_avs_client_write, Interface, sconfig.avs_details[vcpu_test_index].bus_id);
     expect_memory(__wrap_scp_avs_client_write, Request, &test_avs_Request, sizeof(test_avs_Request));
-    expect_any(__wrap_scp_avs_client_write, CompletionRoutine);
+    expect_value(__wrap_scp_avs_client_write, CompletionRoutine, AVSPwrWriteRequestCompletion);
     expect_any(__wrap_scp_avs_client_write, CompletionContext);
     expect_function_call(__wrap_scp_avs_client_write);
 
@@ -1409,12 +1429,11 @@ POWER_TEST(power_vrs_write_vcpu_voltage_low_range, setup, teardown)
     sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;
 
     will_return(__wrap_power_runconfig_get, &test_runconfig);
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     expect_function_call(__wrap_all_requests_completed);
     expect_value(__wrap_scp_avs_client_write, Interface, sconfig.avs_details[vcpu_test_index].bus_id);
     expect_memory(__wrap_scp_avs_client_write, Request, &test_avs_Request, sizeof(test_avs_Request));
-    expect_any(__wrap_scp_avs_client_write, CompletionRoutine);
+    expect_value(__wrap_scp_avs_client_write, CompletionRoutine, AVSPwrWriteRequestCompletion);
     expect_any(__wrap_scp_avs_client_write, CompletionContext);
     expect_function_call(__wrap_scp_avs_client_write);
 
@@ -1437,6 +1456,7 @@ POWER_TEST(power_vrs_write_vcpu_voltage_callback, setup, teardown)
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].rail_id = 0;
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].cmd_type = AVS_VOLTAGE_RW;
 
+    expect_function_call(__wrap_power_loops_control_handle_event);
     AVSPwrWriteRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
     assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
     assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num].in_use, 0);
@@ -1451,7 +1471,36 @@ POWER_TEST(power_vrs_write_vcpu_voltage_callback_error, setup, teardown)
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_status = SCP_AVS_STATUS_WRITE_FAIL;
     pwr_avs_request[test_avs_device.avs_bus_num].in_use = 1;
 
+    expect_function_call(__wrap_power_loops_control_handle_event);
     AVSPwrWriteRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
+    assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num].in_use, 0);
+}
+
+POWER_TEST(power_vrs_read_vcpu_voltage_callback_vdone, setup, teardown)
+{
+    PDFWK_ASYNC_REQUEST_HEADER request = NULL;
+    scp_avs_device_t test_avs_device = {
+        .avs_bus_num = AVS_BUS0,
+    };
+
+    power_service_config_t sconfig = {};
+    power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
+    uint8_t vcpu_test_index = 0;
+    sconfig.avs_details[vcpu_test_index].bus_id = vcpu_test_index;
+    sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;
+
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_single_resp.error.as_uint8 = AVS_ERROR_NONE;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_single_resp.error.v_done = 1;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_status = SCP_AVS_STATUS_SUCCESS;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.Header.RequestType = AVS_REQUEST_READ_DATA;
+    pwr_avs_request[test_avs_device.avs_bus_num].in_use = 1;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].rail_id = 0;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].cmd_type = AVS_VOLTAGE_RW;
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+
+    expect_function_call(__wrap_power_loops_control_handle_event);
+    AVSPwrReadRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
     assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num].in_use, 0);
 }
 
@@ -1462,17 +1511,26 @@ POWER_TEST(power_vrs_read_vcpu_voltage_callback, setup, teardown)
         .avs_bus_num = AVS_BUS0,
     };
 
+    power_service_config_t sconfig = {};
+    power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
+    uint8_t vcpu_test_index = 0;
+    sconfig.avs_details[vcpu_test_index].bus_id = vcpu_test_index;
+    sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;
+
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_single_resp.error.as_uint8 = AVS_ERROR_NONE;
-    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_single_resp.error.v_done = 1;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_single_resp.error.v_done = 0;
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_status = SCP_AVS_STATUS_SUCCESS;
     pwr_avs_request[test_avs_device.avs_bus_num].request.Header.RequestType = AVS_REQUEST_READ_DATA;
     pwr_avs_request[test_avs_device.avs_bus_num].in_use = 1;
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].rail_id = 0;
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].cmd_type = AVS_VOLTAGE_RW;
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+    expect_function_call(__wrap_power_loops_control_handle_event);
 
     AVSPwrReadRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
     assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
     assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num].in_use, 0);
+    assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_single_resp.error.v_done, 0);
 }
 
 POWER_TEST(power_vrs_read_vcpu_voltage_callback_error, setup, teardown)
@@ -1481,11 +1539,55 @@ POWER_TEST(power_vrs_read_vcpu_voltage_callback_error, setup, teardown)
     scp_avs_device_t test_avs_device = {
         .avs_bus_num = AVS_BUS0,
     };
+
+    power_service_config_t sconfig = {};
+    power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
+    uint8_t vcpu_test_index = 0;
+    sconfig.avs_details[vcpu_test_index].bus_id = vcpu_test_index;
+    sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;
+
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_status = SCP_AVS_STATUS_WRITE_FAIL;
     pwr_avs_request[test_avs_device.avs_bus_num].in_use = 1;
 
+    expect_function_call(__wrap_power_loops_control_handle_event);
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
     AVSPwrReadRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
     assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num].in_use, 0);
+}
+
+POWER_TEST(power_vrs_initiate_vr_reads, setup, teardown)
+{
+    power_service_config_t sconfig = {};
+    sconfig.num_vr = 2;
+    power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
+
+    scp_avs_device_t test_avs_device = {
+        .avs_bus_num = AVS_BUS0,
+    };
+
+    uint8_t vcpu_test_index = 0;
+
+    sconfig.avs_details[vcpu_test_index].bus_id = vcpu_test_index;
+    sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;
+
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_status = SCP_AVS_STATUS_SUCCESS;
+    pwr_avs_request[test_avs_device.avs_bus_num].in_use = 0;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.Header.RequestType = AVS_REQUEST_READ_DATA;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].rail_id = 0;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].cmd_type = AVS_VOLTAGE_RW;
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+
+    expect_function_call(__wrap_all_requests_completed);
+    expect_any(__wrap_scp_avs_client_read_multi, Interface);
+    expect_any(__wrap_scp_avs_client_read_multi, Request);
+    expect_value(__wrap_scp_avs_client_read_multi, CompletionRoutine, AVSPwrReadRequestCompletion);
+    expect_any(__wrap_scp_avs_client_read_multi, CompletionContext);
+    expect_any(__wrap_scp_avs_client_read_multi, count);
+    expect_function_call(__wrap_scp_avs_client_read_multi);
+
+    power_vrs_initiate_vr_reads();
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
+    assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num].in_use, 1);
 }
 
 POWER_TEST(power_avs_initialize, setup, teardown)
@@ -1514,4 +1616,38 @@ POWER_TEST(power_avs_initialize, setup, teardown)
     {
         assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num + i].in_use, 0);
     }
+}
+
+POWER_TEST(power_vrs_read_vcpu_voltage, setup, teardown)
+{
+
+    scp_avs_device_t test_avs_device = {
+        .avs_bus_num = AVS_BUS0,
+    };
+    static avs_pwr_request_context_t test_avs_Request;
+
+    power_service_config_t sconfig = {};
+    power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
+    uint8_t vcpu_test_index = 0;
+
+    sconfig.avs_details[vcpu_test_index].bus_id = vcpu_test_index;
+    sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;
+
+    test_avs_Request.request.avs_response_single_resp.error.as_uint8 = AVS_ERROR_NONE;
+    test_avs_Request.in_use = 1;
+    test_avs_Request.request.avs_params.avs_cmd_array[0].rail_id = 0;
+    test_avs_Request.request.avs_params.avs_cmd_array[0].cmd_type = AVS_VOLTAGE_RW;
+
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+
+    expect_function_call(__wrap_all_requests_completed);
+    expect_value(__wrap_scp_avs_client_read, Interface, sconfig.avs_details[vcpu_test_index].bus_id);
+
+    expect_any(__wrap_scp_avs_client_read, Request);
+    expect_value(__wrap_scp_avs_client_read, CompletionRoutine, AVSPwrReadRequestCompletion);
+    expect_any(__wrap_scp_avs_client_read, CompletionContext);
+    expect_function_call(__wrap_scp_avs_client_read);
+
+    power_vrs_read_vcpu_voltage();
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
 }

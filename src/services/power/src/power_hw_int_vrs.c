@@ -12,6 +12,7 @@
 #include "power_hw_int_i.h"
 #include "power_i.h"
 #include "power_loops_i.h"
+#include "power_runconfig.h"
 #include "power_stub_i.h"
 
 #include <DfwkDriver.h>
@@ -81,6 +82,7 @@ void AVSPwrWriteRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Comp
     if (pwr_avs_request[pwr_avs_bus].request.avs_response_status != SCP_AVS_STATUS_SUCCESS)
     {
         POWER_LOG_ERR("\n AVS PWR status error = %x\n", pwr_avs_request[pwr_avs_bus].request.avs_response_status);
+        pwr_avs_request[pwr_avs_bus].error = true;
         power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_SET_FAIL, NULL);
         return;
     }
@@ -112,11 +114,15 @@ void AVSPwrReadRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Compl
     FPFW_UNUSED(Request);
     int pwr_avs_bus = (int)CompletionContext;
 
+    power_runconfig_t* p_runconfig = power_runconfig_get();
+    const power_service_config_t* p_config = p_runconfig->p_sconfig;
+
     pwr_avs_request[pwr_avs_bus].in_use = false;
 
     if (pwr_avs_request[pwr_avs_bus].request.avs_response_status != SCP_AVS_STATUS_SUCCESS)
     {
         POWER_LOG_ERR("\n AVS PWR status error = %x\n", pwr_avs_request[pwr_avs_bus].request.avs_response_status);
+        pwr_avs_request[pwr_avs_bus].error = true;
         power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_SET_FAIL, NULL);
         return;
     }
@@ -138,7 +144,53 @@ void AVSPwrReadRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Compl
             power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_PENDING, NULL);
         }
         break;
-    // TODO: Add AVS_REQUEST_READ_MULTI case https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/2137515/?triage=true
+
+    case AVS_REQUEST_READ_MULTI:
+        int temp_vr_index;
+        int resp_idx = 0;
+        temp_vr_index = (pwr_avs_bus * MAX_AVS_RAILS); // index of the first VR in the AVS bus, since vr_inputs is a flattened array.
+        //  voltage is the first, current is the 2nd, and temperature the 3rd in the multi-read
+        BUG_ASSERT(temp_vr_index < MAX_VR_PER_DIE);
+
+        for (int i = 0; i < MAX_AVS_RAILS; i++, temp_vr_index++)
+        {
+            s_power_vrs_ctx.vr_inputs[temp_vr_index].voltage =
+                pwr_avs_request[pwr_avs_bus].request.avs_resp_multi.avs_response_multi[resp_idx++].data;
+            s_power_vrs_ctx.vr_inputs[temp_vr_index].current =
+                pwr_avs_request[pwr_avs_bus].request.avs_resp_multi.avs_response_multi[resp_idx++].data;
+            s_power_vrs_ctx.vr_inputs[temp_vr_index].temperature =
+                pwr_avs_request[pwr_avs_bus].request.avs_resp_multi.avs_response_multi[resp_idx++].data;
+            POWER_LOG_TRACE("voltage[%d] = %d\n", temp_vr_index, s_power_vrs_ctx.vr_inputs[temp_vr_index].voltage); // !!! printing for debugging!!!!
+            POWER_LOG_TRACE("current[%d] = %d\n", temp_vr_index, s_power_vrs_ctx.vr_inputs[temp_vr_index].current);
+            POWER_LOG_TRACE("temperature[%d] = %d\n", temp_vr_index, s_power_vrs_ctx.vr_inputs[temp_vr_index].temperature);
+        }
+
+        if ((all_requests_completed(pwr_avs_request, (p_config->num_vr / MAX_AVS_RAILS))) &&
+            (no_errors(pwr_avs_request, (p_config->num_vr / MAX_AVS_RAILS))))
+        {
+            // calculate local soc power and send response
+            calculate_soc_power();
+
+            // // store for control loop
+            s_power_vrs_ctx.latest_power.soc_power = s_power_vrs_ctx.soc_power[0]; // most recent soc power measurement
+            s_power_vrs_ctx.latest_power.vcpu_power = s_power_vrs_ctx.vcpu_power_log[0]; // most recent vcpu power measurement
+            // voltage is the first ,current is the 2nd response, and temperature the 3rd in the multi-read;
+            // 0 = voltage rail 0, 1 = current rail 0, 3 = temperature rail 0
+            s_power_vrs_ctx.latest_power.vcpu_avs_voltage =
+                s_power_vrs_ctx.vr_inputs[p_config->vr_idx_info.vcpu_idx].voltage;
+
+            s_power_vrs_ctx.latest_power.vcpu_avs_current =
+                s_power_vrs_ctx.vr_inputs[p_config->vr_idx_info.vcpu_idx].current;
+
+            power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VR_READ, &s_power_vrs_ctx.latest_power);
+            power_loops_vr_telem_handle_event(POWER_VR_TELEM_SIGNAL_VR_CURRENT, s_power_vrs_ctx.vr_inputs);
+        }
+        else if (all_requests_completed(pwr_avs_request, (p_config->num_vr / MAX_AVS_RAILS))) // if all requests are completed but there are errors
+        {
+            power_loops_vr_telem_handle_event(POWER_VR_TELEM_SIGNAL_VR_CURRENT_FAIL, NULL);
+        }
+        break;
+
     default:
         // unexpected to receive any other event in this state,
         POWER_LOG_ERR("\n AVSPwrReadRequestCompletion, unexpected RequestType\n");
@@ -147,9 +199,9 @@ void AVSPwrReadRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Compl
     }
 }
 
-// TODO: Below is temp implementation ahead of AVS integration (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491023/)
 void power_vrs_initiate_vr_reads()
 {
+    // setup read requests based on AVS config
     power_runconfig_t* p_runconfig = power_runconfig_get();
     const power_service_config_t* p_config = p_runconfig->p_sconfig;
 
@@ -157,20 +209,78 @@ void power_vrs_initiate_vr_reads()
     vr_vcpu_idx = (p_config->vr_idx_info.vcpu_idx - p_config->vr_idx_info.flattened_vr_start_idx);
     BUG_ASSERT(vr_vcpu_idx <= MAX_VR_PER_DIE);
 
-    // temp, somewhat valid-looking data
-    s_power_vrs_ctx.vr_inputs[vr_vcpu_idx].voltage = 1000;
-    s_power_vrs_ctx.vr_inputs[vr_vcpu_idx].current = 20000;
+    if (!all_requests_completed(pwr_avs_request, (p_config->num_vr / MAX_AVS_RAILS)))
+    {
+        // can't send another request if current ones not completed, just signal failure and wait for retry
+        power_loops_vr_telem_handle_event(POWER_VR_TELEM_SIGNAL_VR_CURRENT_FAIL, NULL);
+        return;
+    }
 
-    calculate_soc_power();
+    reset_errors(pwr_avs_request, (p_config->num_vr / MAX_AVS_RAILS));
+    memset(pwr_avs_request[0].request.avs_resp_multi.avs_response_multi,
+           0,
+           sizeof(pwr_avs_request[0].request.avs_resp_multi.avs_response_multi[0]) * MAX_AVS_MULTI_READ_CMDS);
+    for (int i = 0; i < MAX_AVS_INST; i++)
+    {
+        pwr_avs_request[i].in_use =
+            true; // need to set all to 'true', since these won't be processed in the callback until all AVSBus reads are completed
+    }
 
-    // store for control loop
-    s_power_vrs_ctx.latest_power.soc_power = s_power_vrs_ctx.soc_power[0]; // most recent soc power measurement
-    s_power_vrs_ctx.latest_power.vcpu_power = s_power_vrs_ctx.vcpu_power_log[0]; // most recent vcpu power measurement
-    s_power_vrs_ctx.latest_power.vcpu_avs_voltage = s_power_vrs_ctx.vr_inputs[vr_vcpu_idx].voltage;
-    s_power_vrs_ctx.latest_power.vcpu_avs_current = s_power_vrs_ctx.vr_inputs[vr_vcpu_idx].current;
+    int avs_bus;
+    uint8_t index;
+    uint8_t vr_index;
+    for (avs_bus = 0, vr_index = vr_vcpu_idx; avs_bus < (p_config->num_vr / MAX_AVS_RAILS); avs_bus++, vr_index++)
+    {
+        index = 0;
+        pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_params.avs_cmd_array[index].rail_id =
+            p_config->avs_details[vr_index].rail_id;
+        pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_params.avs_cmd_array[index].cmd_type =
+            AVS_VOLTAGE_RW;
+        index++;
+        BUG_ASSERT(index < AVS_CMD_BUFF_SIZE);
 
-    power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VR_READ, &s_power_vrs_ctx.latest_power);
-    power_loops_vr_telem_handle_event(POWER_VR_TELEM_SIGNAL_VR_CURRENT, s_power_vrs_ctx.vr_inputs);
+        pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_params.avs_cmd_array[index].rail_id =
+            p_config->avs_details[vr_index].rail_id;
+        pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_params.avs_cmd_array[index].cmd_type =
+            AVS_CURRENT_READ;
+        index++;
+        BUG_ASSERT(index < AVS_CMD_BUFF_SIZE);
+
+        pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_params.avs_cmd_array[index].rail_id =
+            p_config->avs_details[vr_index].rail_id;
+        pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_params.avs_cmd_array[index].cmd_type =
+            AVS_TEMPERATURE_READ;
+        index++;
+        BUG_ASSERT(index < AVS_CMD_BUFF_SIZE);
+
+        vr_index++; // read next VR on the same AVSBus
+        pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_params.avs_cmd_array[index].rail_id =
+            p_config->avs_details[vr_index].rail_id;
+        pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_params.avs_cmd_array[index].cmd_type =
+            AVS_VOLTAGE_RW;
+        index++;
+        BUG_ASSERT(index < AVS_CMD_BUFF_SIZE);
+
+        pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_params.avs_cmd_array[index].rail_id =
+            p_config->avs_details[vr_index].rail_id;
+        pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_params.avs_cmd_array[index].cmd_type =
+            AVS_CURRENT_READ;
+        index++;
+        BUG_ASSERT(index < AVS_CMD_BUFF_SIZE);
+
+        pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_params.avs_cmd_array[index].rail_id =
+            p_config->avs_details[vr_index].rail_id;
+        pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_params.avs_cmd_array[index].cmd_type =
+            AVS_TEMPERATURE_READ;
+        index++;
+        BUG_ASSERT(index < AVS_CMD_BUFF_SIZE);
+
+        scp_avs_client_read_multi(&pwr_avs_interfaces[avs_bus]->Header,
+                                  &pwr_avs_request[avs_bus].request.Header,
+                                  AVSPwrReadRequestCompletion,
+                                  (void*)avs_bus,
+                                  (uint8_t)MAX_AVS_MULTI_READ_CMDS);
+    }
 }
 
 void power_vrs_write_vcpu_voltage(uint16_t voltage_mv)
@@ -179,9 +289,6 @@ void power_vrs_write_vcpu_voltage(uint16_t voltage_mv)
     const power_service_config_t* p_config = p_runconfig->p_sconfig;
 
     // any boot VR request changes should have completed
-
-    // TODO: update cpu_idx, since forced index will be difference on die1
-    // (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491058/) skip updating VCPU if forced VCPU was set
 
     uint8_t vcpu_index;
     vcpu_index = p_config->vr_idx_info.vcpu_idx;
@@ -206,8 +313,7 @@ void power_vrs_write_vcpu_voltage(uint16_t voltage_mv)
         DO_ONLY_ONCE(POWER_LOG_WARN(" vcpu %dmV < %dmV", voltage_mv, VR_VCPU_MIN_VOLTAGE_MV));
         voltage_mv = VR_VCPU_MIN_VOLTAGE_MV;
     }
-
-    if (!all_requests_completed(pwr_avs_request, p_config->avs_details[vcpu_index].bus_id))
+    if (!(all_requests_completed(pwr_avs_request, (p_config->num_vr / MAX_AVS_RAILS))))
     {
         // can't send another request until the previous one is complete, just signal failure and wait for retry
         power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_SET_FAIL, NULL);
@@ -221,20 +327,12 @@ void power_vrs_write_vcpu_voltage(uint16_t voltage_mv)
     pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_params.avs_cmd_info.cmd_type = AVS_VOLTAGE_RW;
     pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_params.avs_data = (uint32_t)voltage_mv;
 
-    // Temporary work around here to prevent SVP 12 from crashing: Task 2194174: Unblock IFWI by working around SVP 12 AVS bug
-    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
-    {
-        scp_avs_client_write(&pwr_avs_interfaces[p_config->avs_details[vcpu_index].bus_id]->Header,
-                             &pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.Header,
-                             AVSPwrWriteRequestCompletion,
-                             (void*)(uintptr_t)p_config->avs_details[vcpu_index].bus_id);
-    }
-    else
-    {
-        pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].in_use = false;
-        power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
-    }
+    reset_errors(pwr_avs_request, (p_config->num_vr / MAX_AVS_RAILS));
 
+    scp_avs_client_write(&pwr_avs_interfaces[p_config->avs_details[vcpu_index].bus_id]->Header,
+                         &pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.Header,
+                         AVSPwrWriteRequestCompletion,
+                         (void*)(uintptr_t)p_config->avs_details[vcpu_index].bus_id);
     POWER_LOG_TRACE(" PWR AVS write compl. \n");
 }
 
@@ -252,19 +350,19 @@ void power_vrs_read_vcpu_voltage()
         p_config->avs_details->rail_id;
     pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_params.avs_cmd_info.cmd_type = AVS_VOLTAGE_RW;
 
-    // Temporary work around here to prevent SVP 12 from crashing: Task 2194174: Unblock IFWI by working around SVP 12 AVS bug
-    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+    if (!(all_requests_completed(pwr_avs_request, (p_config->num_vr / MAX_AVS_RAILS))))
     {
-        scp_avs_client_read(&pwr_avs_interfaces[p_config->avs_details[vcpu_index].bus_id]->Header,
-                            &pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.Header,
-                            AVSPwrReadRequestCompletion,
-                            (void*)(uintptr_t)p_config->avs_details->bus_id);
+        // can't send another request until the previous one is complete, just signal failure and wait for retry
+        power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_SET_FAIL, NULL);
+        return;
     }
-    else
-    {
-        pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].in_use = false;
-        power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
-    }
+
+    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].error = false;
+
+    scp_avs_client_read(&pwr_avs_interfaces[p_config->avs_details[vcpu_index].bus_id]->Header,
+                        &pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.Header,
+                        AVSPwrReadRequestCompletion,
+                        (void*)(uintptr_t)p_config->avs_details->bus_id);
 
     POWER_LOG_TRACE(" PWR AVS read compl. \n");
 }
@@ -348,4 +446,5 @@ void pwr_avs_initialize(pscp_avs_interface_t avs_array[])
                                    sizeof(pwr_avs_request[i].request));
         pwr_avs_request[i].in_use = false;
     }
+    reset_errors(pwr_avs_request, (p_config->num_vr / MAX_AVS_RAILS));
 }

@@ -1011,11 +1011,37 @@ void power_hw_capture_cppc_state(power_hw_update_cb_t p_update_cb)
     }
 }
 
-bool all_requests_completed(avs_pwr_request_context_t* pwr_avs_request, uint8_t avs_bus)
+bool all_requests_completed(avs_pwr_request_context_t* pwr_avs_request, uint8_t max_avs_bus)
 {
-    if (pwr_avs_request[avs_bus].in_use)
+    BUG_ASSERT(max_avs_bus <= MAX_AVS_INST);
+    for (int i = 0; i < max_avs_bus; i++)
     {
-        return false;
+        if (pwr_avs_request[i].in_use)
+        {
+            return false;
+        }
     }
     return true;
+}
+
+bool no_errors(avs_pwr_request_context_t* pwr_avs_request, uint8_t max_avs_bus)
+{
+    BUG_ASSERT(max_avs_bus <= MAX_AVS_INST);
+    for (int i = 0; i < max_avs_bus; i++)
+    {
+        if (pwr_avs_request[i].error)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+void reset_errors(avs_pwr_request_context_t* pwr_avs_request, uint8_t max_avs_bus)
+{
+    BUG_ASSERT(max_avs_bus <= MAX_AVS_INST);
+    for (int i = 0; i < max_avs_bus; i++)
+    {
+        pwr_avs_request[i].error = false;
+    }
 }

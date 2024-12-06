@@ -88,7 +88,7 @@ class d2d_mailbox_cli_test_echo_serverasync_clientsync(EchoFallsBaseTest):
             return False
 
         
-        self._receive_command(core_com_die0_channel, core_com_die1_channel, "icc_d2dmbx")
+        self._submit_d2dmbx_command(core_com_die0_channel, core_com_die1_channel)
 
         try:
             self._server_command(core_com_die0_channel)
@@ -123,32 +123,28 @@ class d2d_mailbox_cli_test_echo_serverasync_clientsync(EchoFallsBaseTest):
             channel.open()
             assert channel.is_open()
 
-    def _receive_command(self, channel1, channel2, command):
-        self.log.info(f"Submitting command '{command}' on Die0...")
-        channel1.write_line(write_string=command)
-        self.log.info(f"Submitting command '{command}' on Die1...")
-        channel2.write_line(write_string=command)
+    def _submit_d2dmbx_command(self, channel1, channel2):
+        self.log.info(f"Submitting command-icc_d2dmbx on Die0...")
+        channel1.write_line(write_string="icc_d2dmbx")
+        self.log.info(f"Submitting command-icc_d2dmbx on Die1...")
+        channel2.write_line(write_string="icc_d2dmbx")
 
     def _server_command(self, channel1):
-        commands = ["echo_serv"]
-        for cmd in commands:
-            channel1.write_line(write_string=cmd)
-            try:
-                self.log.info("Reading server message")
-                channel1.read_until(key="Recv Initiated: Status[0x0]", timeout_seconds=300)
-                self.log.info("Request SENT Successfully from One Die to Another...")
-            except Exception as e:
-                self.log.error(f"Error reading SCP UART: {e}")
-                raise
+        channel1.write_line(write_string="echo_serv")
+        try:
+            self.log.info("Reading server message")
+            channel1.read_until(key="Recv Initiated: Status[0x0]", timeout_seconds=300)
+            self.log.info("Request SENT Successfully from One Die to Another...")
+        except Exception as e:
+            self.log.error(f"Error reading SCP UART: {e}")
+            raise
 
     def _client_command(self, channel2):
-        commands = ["echo_client_sync"]
-        for cmd in commands:
-            channel2.write_line(write_string=cmd)
-            try:
-                self.log.info("Reading client message")
-                channel2.read_until(key="Echo Test Passed", timeout_seconds=300)
-                self.log.info("Request SENT Successfully from One Die to Another...")
-            except Exception as e:
-                self.log.error(f"Error reading SCP UART: {e}")
-                raise
+        channel2.write_line(write_string="echo_client_sync")
+        try:
+            self.log.info("Reading client message")
+            channel2.read_until(key="Echo Test Passed", timeout_seconds=300)
+            self.log.info("Request SENT Successfully from One Die to Another...")
+        except Exception as e:
+            self.log.error(f"Error reading SCP UART: {e}")
+            raise

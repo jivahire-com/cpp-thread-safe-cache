@@ -70,35 +70,49 @@ class d2d_mailbox_cli_test_send_recv(EchoFallsBaseTest):
         self._open_channels(core_com_die0_channel, core_com_die1_channel)
         
         try:
-            self.log.info("Waiting for Heartbeat Msg")
-            core_com_die0_channel.read_until(key="ScpHeartBeat", timeout_seconds=500)
+            self.log.info("Waiting for Die 0 Heartbeat Msg")
+            core_com_die0_channel.read_until(key="ScpHeartBeat", timeout_seconds=900)
         except Exception as e:
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             return False
-
         
-        self._receive_command(core_com_die0_channel, core_com_die1_channel, "icc_d2dmbx")
-        self._receive_command(core_com_die0_channel, core_com_die1_channel, "recv")
-
         try:
-            self._send_and_receive_commands(core_com_die0_channel, core_com_die1_channel)
+            self.log.info("Waiting for Die 1 Heartbeat Msg")
+            core_com_die1_channel.read_until(key="ScpHeartBeat", timeout_seconds=900)
         except Exception as e:
-            core_com_die0_channel.close()
-            core_com_die1_channel.close()
-            self.test_notify(step="D2DMBX SEND RECV Command", msg="Test Fail", is_error=True)
+            self.log.error(f"Error reading self.dut.mb.node_0.soc.secondary_die.scp.channel_manager UART: {e}")
+            self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             return False
-    
-        self._receive_command(core_com_die0_channel, core_com_die1_channel, "recv")
 
-        try:                                 
-            self._send_and_receive_commands(core_com_die1_channel, core_com_die0_channel)
+        core_com_die0_channel.write_line(write_string="icc_d2dmbx")
+        core_com_die1_channel.write_line(write_string="icc_d2dmbx")
+        try:
+            self._set_up_receive_command(core_com_die0_channel, core_com_die1_channel)
         except Exception as e:
             core_com_die0_channel.close()
             core_com_die1_channel.close()
-            self.test_notify(step="D2DMBX SEND RECV Command", msg="Test Fail", is_error=True)
+            self.test_notify(step="D2DMBX SEND RECV Command", msg="Test Fail", _is_error=True)
+            self.dut.teardown()
+            return False
+
+        try:
+            self._validate_send_and_receive(core_com_die0_channel, core_com_die1_channel)
+        except Exception as e:
+            core_com_die0_channel.close()
+            core_com_die1_channel.close()
+            self.test_notify(step="D2DMBX SEND RECV Command", msg="Test Fail", _is_error=True)
+            self.dut.teardown()
+            return False
+
+        try:                                
+            self._validate_send_and_receive(core_com_die1_channel, core_com_die0_channel)
+        except Exception as e:
+            core_com_die0_channel.close()
+            core_com_die1_channel.close()
+            self.test_notify(step="D2DMBX SEND RECV Command", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             return False
             
@@ -113,20 +127,23 @@ class d2d_mailbox_cli_test_send_recv(EchoFallsBaseTest):
             channel.open()
             assert channel.is_open()
 
-    def _receive_command(self, channel1, channel2, command):
-        self.log.info(f"Submitting command '{command}' on Die0...")
-        channel1.write_line(write_string=command)
-        self.log.info(f"Submitting command '{command}' on Die1...")
-        channel2.write_line(write_string=command)
+    def _set_up_receive_command(self, channel1, channel2):
+        """Issues recv on both dies and waits for their completions"""
+        try:
+            self.log.info(f"Submitting recv on Die0...")
+            channel1.write_line(write_string="recv")
+            channel1.read_until(key="Recv Initiated: Status[0x0]", timeout_seconds=300)
 
-    def _send_and_receive_commands(self, channel1, channel2):
-        commands = ["send"]
-        for cmd in commands:
-            self._submit_command(channel1, channel2, cmd)
+            self.log.info(f"Submitting recv on Die1...")
+            channel2.write_line(write_string="recv")
+            channel2.read_until(key="Recv Initiated: Status[0x0]", timeout_seconds=300)
+        except Exception as e:
+            self.log.error(f"Error reading SCP UART: {e}")
+            raise
 
-    def _submit_command(self, channel1, channel2, command):
-        self.log.info(f"Submitting command '{command}'...")
-        channel1.write_line(write_string=command)
+    def _validate_send_and_receive(self, channel1, channel2):
+        self.log.info(f"Submitting command-send...")
+        channel1.write_line(write_string="send")
         try:
             channel1.read_until(key="Send Complete: Status[0x0]", timeout_seconds=500)
             self.log.info("Request SENT Successfully from One Die to Another...")

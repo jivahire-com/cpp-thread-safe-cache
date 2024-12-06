@@ -79,7 +79,8 @@ class mscp_heart_beat_dual_die(EchoFallsBaseTest):
             if not connection["channel"].get_current_channel().is_open():
                 self.dut.teardown()
                 return False
-
+        
+        for connection in connections:
             try:
                 self.log.info(f"Reading from {connection['entity']}")
 

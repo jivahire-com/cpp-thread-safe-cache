@@ -8,6 +8,7 @@ target_link_libraries(${TARGET}
     PRIVATE
         ms::cmocka::mocks
         ms::cmocka::testrunner
+        ms::lib::fuse_artifacts_lib
         ms::lib::scp_interrupts
         ms::lib::system_info
         ms::lib::threadx

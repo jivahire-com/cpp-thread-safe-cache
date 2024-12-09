@@ -63,6 +63,7 @@ target_link_libraries(${TARGET}
         ms::lib::event_trace::trace
         ms::lib::crash_dump
         ms::lib::error_codes
+        ms::lib::fuse_artifacts_lib
         ms::lib::gtimer
         ms::lib::icc_platform_defines
         ms::lib::warm_start

@@ -131,12 +131,20 @@ static int read_core_disabled_fuses()
         p_die_num = 1;
     }
 
-    p_fuse_disable->fuse_dis_core_0_31 =
-        read_fuse(CORE_DISABLE_CORE_DISABLE0_BIT_OFFSET, CORE_DISABLE_CORE_DISABLE0_WIDTH);
-    p_fuse_disable->fuse_dis_core_32_63 =
-        read_fuse(CORE_DISABLE_CORE_DISABLE1_BIT_OFFSET, CORE_DISABLE_CORE_DISABLE1_WIDTH);
-    p_fuse_disable->fuse_dis_core_64_95 =
-        read_fuse(CORE_DISABLE_CORE_DISABLE2_BIT_OFFSET, CORE_DISABLE_CORE_DISABLE2_WIDTH);
+    p_fuse_disable->fuse_dis_core_0_31 = read_fuse(CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_BIT_OFFSET,
+                                                   CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_WIDTH);
+    p_fuse_disable->fuse_dis_core_0_31 |= read_fuse(CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_31_0_BIT_OFFSET,
+                                                    CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_31_0_WIDTH);
+
+    p_fuse_disable->fuse_dis_core_32_63 = read_fuse(CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_63_32_BIT_OFFSET,
+                                                    CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_63_32_WIDTH);
+    p_fuse_disable->fuse_dis_core_32_63 |= read_fuse(CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_63_32_BIT_OFFSET,
+                                                     CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_63_32_WIDTH);
+
+    p_fuse_disable->fuse_dis_core_64_95 = read_fuse(CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_67_64_BIT_OFFSET,
+                                                    CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_67_64_WIDTH);
+    p_fuse_disable->fuse_dis_core_64_95 |= read_fuse(CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_67_64_BIT_OFFSET,
+                                                     CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_67_64_WIDTH);
 
     printf(FUSE_NAME "save disable knob in DIE%d done\n", p_die_num);
 
@@ -148,21 +156,20 @@ int write_fuse_info_to_ap()
     int32_t result = 0;
     if (idsw_get_die_id() == DIE_0)
     {
-        DIE0_fuse_disable.fuse_dis_core_96_127 = 0xFFFFFFFF;
         result = sds_block_creation(FUSE_DISABLE_CORE_DIE0_STRUCT_ID, FUSE_DISABLE_CORE_DIE0_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
         BUG_ASSERT(result == KNG_SUCCESS);
+        DIE0_fuse_disable.fuse_dis_core_96_127 = 0xFFFFFFFF;
         result = sds_block_write(FUSE_DISABLE_CORE_DIE0_STRUCT_ID, &DIE0_fuse_disable, FUSE_DISABLE_CORE_DIE0_SIZE);
         BUG_ASSERT(result == KNG_SUCCESS);
     }
     else
     {
-        DIE1_fuse_disable.fuse_dis_core_96_127 = 0xFFFFFFFF;
         result = sds_block_creation(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, FUSE_DISABLE_CORE_DIE1_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
         BUG_ASSERT(result == KNG_SUCCESS);
+        DIE1_fuse_disable.fuse_dis_core_96_127 = 0xFFFFFFFF;
         result = sds_block_write(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, &DIE1_fuse_disable, FUSE_DISABLE_CORE_DIE1_SIZE);
         BUG_ASSERT(result == KNG_SUCCESS);
     }
-    printf(FUSE_NAME "Write fuse disable core info to AP successfully!\n");
     return result;
 }
 

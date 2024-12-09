@@ -182,7 +182,7 @@ POWER_TEST(read_fuse_power_hw_supported_core_enabled, set_run_config_core_enable
 
     will_return(__wrap_power_runconfig_get, &test_power_runconfig);
     will_return(__wrap_power_fuses_is_power_hw_supported, true);
-    will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 296);
+    will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, -1);
 
     power_fuses_read(&test_fuses);
 }
@@ -210,7 +210,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_read_memasst will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 3);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 6);
         will_return(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER);
         power_fuses_read(&test_fuses);
     }
@@ -218,7 +218,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_read_memasst will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 101);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 104);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 9);
         power_fuses_read(&test_fuses);
     }
@@ -226,7 +226,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_get_ldodac_to_voltage will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 147);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 150);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
@@ -234,7 +234,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_get_dts_coeff_tile will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 149);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 152);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
@@ -242,7 +242,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_get_dts_coeff_soctop will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 218);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 221);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
@@ -250,7 +250,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_get_ldo_headroom will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 248);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 251);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
@@ -258,7 +258,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_get_vcpu_guardband will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 249);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 252);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
@@ -266,7 +266,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_vcpu_leakage will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 250);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 253);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 4);
         power_fuses_read(&test_fuses);
     }
@@ -274,7 +274,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_ldo_dyn will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 278);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 281);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 4);
         power_fuses_read(&test_fuses);
     }
@@ -282,7 +282,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_core_cdyn will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 286);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 289);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 2);
         power_fuses_read(&test_fuses);
     }
@@ -290,7 +290,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_process_id will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 292);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 295);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
@@ -298,7 +298,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_get_tdp_config will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 294);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 297);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }

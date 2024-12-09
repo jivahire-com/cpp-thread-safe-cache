@@ -44,13 +44,19 @@
 /*-- Declarations (Statics and globals) --*/
 
 // core disables
-static const uint32_t core_disables_fuse_offsets[] = {CORE_DISABLE_CORE_DISABLE0_BIT_OFFSET,
-                                                      CORE_DISABLE_CORE_DISABLE1_BIT_OFFSET,
-                                                      CORE_DISABLE_CORE_DISABLE2_BIT_OFFSET};
+static const uint32_t core_disables_fuse_offsets[] = {CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_BIT_OFFSET,
+                                                      CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_31_0_BIT_OFFSET,
+                                                      CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_63_32_BIT_OFFSET,
+                                                      CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_63_32_BIT_OFFSET,
+                                                      CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_67_64_BIT_OFFSET,
+                                                      CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_67_64_BIT_OFFSET};
 
-static const uint32_t core_disables_fuse_widths[] = {CORE_DISABLE_CORE_DISABLE0_WIDTH,
-                                                     CORE_DISABLE_CORE_DISABLE1_WIDTH,
-                                                     CORE_DISABLE_CORE_DISABLE2_WIDTH};
+static const uint32_t core_disables_fuse_widths[] = {CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_WIDTH,
+                                                     CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_31_0_WIDTH,
+                                                     CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_63_32_WIDTH,
+                                                     CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_63_32_WIDTH,
+                                                     CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_67_64_WIDTH,
+                                                     CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_67_64_WIDTH};
 
 // core memasst
 #define COREMEMASST(number, field, type) DVFS_CORE_MEM_ASST_TRIMS_##number##_BOUND_##field##_##type
@@ -318,29 +324,40 @@ int32_t power_fuses_read_memasst(dvfs_core_memasst_entries_t* memasst_entries)
 int32_t power_fuses_clear_core_valid_bits(corebits_t* valid_bits)
 {
     uint32_t corebit = 0;
+    uint32_t fuse_core_disable_st;
     if (!valid_bits)
     {
         return FPFW_STATUS_NULL_POINTER;
     }
 
     // iterate over fuses
-    for (uint32_t fuse_idx = 0; fuse_idx < DIMOF(core_disables_fuse_offsets); ++fuse_idx)
+    for (uint32_t fuse_idx = 0; fuse_idx < DIMOF(core_disables_fuse_offsets) / 2; ++fuse_idx)
     {
         uint64_t fuse_data = 0;
 
         // read fuse at index into temp fuse data
         int32_t status = platform_read_fuse((uint32_t*)&fuse_data,
-                                            core_disables_fuse_offsets[fuse_idx],
-                                            core_disables_fuse_widths[fuse_idx]);
+                                            core_disables_fuse_offsets[2 * fuse_idx],
+                                            core_disables_fuse_widths[2 * fuse_idx]);
+        if (status != FPFW_STATUS_SUCCESS)
+        {
+            return status;
+        }
+        fuse_core_disable_st = fuse_data;
+        status = platform_read_fuse((uint32_t*)&fuse_data,
+                                    core_disables_fuse_offsets[2 * fuse_idx + 1],
+                                    core_disables_fuse_widths[2 * fuse_idx + 1]);
         if (status != FPFW_STATUS_SUCCESS)
         {
             return status;
         }
 
+        fuse_core_disable_st |= fuse_data;
+
         // iterate over each bit in fuse data (based on fuse width)
-        for (uint32_t core_idx = 0; core_idx < core_disables_fuse_widths[fuse_idx]; ++core_idx)
+        for (uint32_t core_idx = 0; core_idx < core_disables_fuse_widths[2 * fuse_idx]; ++core_idx)
         {
-            if ((fuse_data >> core_idx) & 0x1)
+            if ((fuse_core_disable_st >> core_idx) & 0x1)
             {
                 // core is disabled, clear valid
                 corebits_clear_bit(valid_bits, corebit);

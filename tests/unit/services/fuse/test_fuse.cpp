@@ -214,6 +214,8 @@ TEST_FUNCTION(test_fuse_init, NULL, NULL)
 
 TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
 {
+    kng_fuse_disable_core_t tmp_IFT_disable_cores = {0x01, 0x1000, 0x0, 0xFFFFFFFF};
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
@@ -234,17 +236,26 @@ TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
     expect_value(__wrap_apply_fuse_override, override_buffer, (uintptr_t)(SCP_EXP_FUSE_DATA_BASE));
     expect_function_call(__wrap_apply_fuse_override);
 
-    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DISABLE_CORE_DISABLE0_BIT_OFFSET);
-    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DISABLE_CORE_DISABLE0_WIDTH);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_WIDTH);
     will_return(__wrap_read_fuse, DIE0_fuse_disable.fuse_dis_core_0_31);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_31_0_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_31_0_WIDTH);
+    will_return(__wrap_read_fuse, tmp_IFT_disable_cores.fuse_dis_core_0_31);
 
-    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DISABLE_CORE_DISABLE1_BIT_OFFSET);
-    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DISABLE_CORE_DISABLE1_WIDTH);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_63_32_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_63_32_WIDTH);
     will_return(__wrap_read_fuse, DIE0_fuse_disable.fuse_dis_core_32_63);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_63_32_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_63_32_WIDTH);
+    will_return(__wrap_read_fuse, tmp_IFT_disable_cores.fuse_dis_core_32_63);
 
-    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DISABLE_CORE_DISABLE2_BIT_OFFSET);
-    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DISABLE_CORE_DISABLE2_WIDTH);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_67_64_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_67_64_WIDTH);
     will_return(__wrap_read_fuse, DIE0_fuse_disable.fuse_dis_core_64_95);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_67_64_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_67_64_WIDTH);
+    will_return(__wrap_read_fuse, tmp_IFT_disable_cores.fuse_dis_core_64_95);
     // Expectation for trigger_debugger_for_manual_overrides
     expect_function_call(__wrap_trigger_debugger_for_manual_overrides);
 
@@ -427,6 +438,7 @@ TEST_FUNCTION(test_fuse_core_to_ap, NULL, NULL)
 }
 TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
 {
+    kng_fuse_disable_core_t tmp_IFT_disable_cores = {0x01, 0x1000, 0x0, 0xFFFFFFFF};
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
@@ -450,17 +462,26 @@ TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
     expect_value(__wrap_apply_fuse_override_ignoring_valids, override_buffer, (uintptr_t)(SCP_EXP_FUSE_DATA_BASE));
     expect_function_call(__wrap_apply_fuse_override_ignoring_valids);
 
-    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DISABLE_CORE_DISABLE0_BIT_OFFSET);
-    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DISABLE_CORE_DISABLE0_WIDTH);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_WIDTH);
     will_return(__wrap_read_fuse, DIE0_fuse_disable.fuse_dis_core_0_31);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_31_0_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_31_0_WIDTH);
+    will_return(__wrap_read_fuse, tmp_IFT_disable_cores.fuse_dis_core_0_31);
 
-    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DISABLE_CORE_DISABLE1_BIT_OFFSET);
-    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DISABLE_CORE_DISABLE1_WIDTH);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_63_32_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_63_32_WIDTH);
     will_return(__wrap_read_fuse, DIE0_fuse_disable.fuse_dis_core_32_63);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_63_32_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_63_32_WIDTH);
+    will_return(__wrap_read_fuse, tmp_IFT_disable_cores.fuse_dis_core_32_63);
 
-    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DISABLE_CORE_DISABLE2_BIT_OFFSET);
-    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DISABLE_CORE_DISABLE2_WIDTH);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_67_64_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_67_64_WIDTH);
     will_return(__wrap_read_fuse, DIE0_fuse_disable.fuse_dis_core_64_95);
+    expect_value(__wrap_read_fuse, fuse_bit_offset, CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_67_64_BIT_OFFSET);
+    expect_value(__wrap_read_fuse, fuse_bit_size, CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_67_64_WIDTH);
+    will_return(__wrap_read_fuse, tmp_IFT_disable_cores.fuse_dis_core_64_95);
     // Expectation for trigger_debugger_for_manual_overrides
     expect_function_call(__wrap_trigger_debugger_for_manual_overrides);
     if (!BUGCHECK_MOCK_RETURN())

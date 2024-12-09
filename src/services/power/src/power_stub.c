@@ -66,7 +66,8 @@ int32_t platform_read_fuse(const uint32_t* target_addr, const uint32_t fuse_bit_
 
     if ((fuse_bit_offset == TEST_FLOW_CHECKS_PMM_REVISION_BIT_OFFSET) ||
         (fuse_bit_offset >= VF_CORE_ANCHOR_SEL_BIT_OFFSET && fuse_bit_size == VF_CORE_ANCHOR_SEL_WIDTH) ||
-        (fuse_bit_offset >= CORE_DISABLE_CORE_DISABLE0_BIT_OFFSET && fuse_bit_offset <= CORE_DISABLE_CORE_DISABLE2_BIT_OFFSET))
+        (fuse_bit_offset >= CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_BIT_OFFSET &&
+         fuse_bit_offset <= CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_67_64_BIT_OFFSET))
     {
         fuse_data = 0;
     }

@@ -74,7 +74,7 @@ static power_if_cmd_t cli_power_get_cmd_id(e_cli_power_command_id_t command, cha
     }
 }
 
-static FPFW_CLI_STATUS dispatch_power_cli_async_request(uint8_t die, e_cli_power_command_id_t command, char* subcommand, void* p_set_data, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine )
+static FPFW_CLI_STATUS dispatch_power_cli_async_request(uint8_t die, e_cli_power_command_id_t command, char* subcommand, _pwrset_subcommand_args* p_set_data, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine )
 {
     
         power_cli_cmd_context.request.die = die;
@@ -84,7 +84,7 @@ static FPFW_CLI_STATUS dispatch_power_cli_async_request(uint8_t die, e_cli_power
 
         power_cli_cmd_context.request.fetch_data.p_requested_data = NULL;
         if (p_set_data) {
-            power_cli_cmd_context.request.sub_command_args.p_set_data = p_set_data;
+            power_cli_cmd_context.request.pwrset_sub_command_args = *p_set_data;
         }
 
         power_cli_cmd_context.request.power_ext_if_cmd_id = cli_power_get_cmd_id(command, subcommand);
@@ -223,7 +223,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
             }        
 
             all = (unsigned char)(strcmp(argv[2], "all") == 0);
-            core = (all  ? 0 : (unsigned)strtoul(argv[2], 0, 10));
+            core = (all  ? 0 : (unsigned)strtoul(argv[2], 0, 68));
             desired = (uint8_t)(strtoul(argv[3], 0, 0) & 0x1F);
             p_pwrset_sub_command_args->plimitparams.all = all;
             p_pwrset_sub_command_args->plimitparams.core = core; 
@@ -299,14 +299,10 @@ static FPFW_CLI_STATUS cli_power_set_command(int argc, const char** argv)
         return CLI_ERROR;
     }
 
-   /* Die - 0 (Default), Cmd ID - CLI_COMMANDS_POWER_CONFIG, subcommand - argv[1], setval - None (Unused), callback - cli_power_set_async_print */
-    _pwrset_subcommand_args* p_pwrset_sub_command_args = &power_cli_cmd_context.request.sub_command_args.pwrset_sub_command_args;
+    _pwrset_subcommand_args pwrset_sub_command_args = {};
  
-    if (cli_power_set_cmd_param_conversion(argc,argv,p_pwrset_sub_command_args) == 0) {
-
-
-        return dispatch_power_cli_async_request(0, CLI_COMMANDS_POWER_SET, (char*)argv[1], NULL, cli_power_set_async_print);
-
+    if (cli_power_set_cmd_param_conversion(argc,argv, &pwrset_sub_command_args) == 0) {
+        return dispatch_power_cli_async_request(0, CLI_COMMANDS_POWER_SET, (char*)argv[1], &pwrset_sub_command_args, cli_power_set_async_print);
     }
 
     return CLI_ERROR;

@@ -116,7 +116,7 @@ void cli_power_set_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* compl
 
         case POWER_IF_CMD_SET_PLIMIT:
 
-            printf("\npwr set plimit: core - %d (0x%08x) desired - 0x%x \n", 
+            printf("\npwr set plimit: core - %d (0x%08x) plimit - 0x%x \n", 
                     p_cli_request->fetch_data.pwrset_response_val.plimitparams.core,
                     p_cli_request->fetch_data.pwrset_response_val.plimitparams.cluster_pex_base_addr,
                     p_cli_request->fetch_data.pwrset_response_val.plimitparams.state);

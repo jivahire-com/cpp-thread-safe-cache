@@ -170,13 +170,18 @@ class mod_power_ft(EchoFallsBaseTest):
             self.dut.teardown()
             return False
 
-        pattern = re.compile(r"pwr set plimit: core - (\d+) \(0x([0-9A-Fa-f]+)\) desired - 0x([0-9A-Fa-f]+)")
+        pattern = re.compile(r"pwr set plimit: core - (\d+) \(0x([0-9A-Fa-f]+)\) plimit - 0x([0-9A-Fa-f]+)")
         match = pattern.search(command_response_cli)
 
         if match:
             core = match.group(1)
             core_addr = match.group(2)
             desired_val = match.group(3)
+            if not (core == "1" and core_addr == "60400000" and desired_val == "1f"):
+                self.log.error(f"Core: {core}, Addr: 0x{core_addr}, Desired value: 0x{desired_val}")
+                self.test_notify(step="plimit not set", msg="Test Fail", _is_error=True)
+                self.dut.teardown()
+                return False
             print(f"Core: {core}, Addr: 0x{core_addr}, Desired value: 0x{desired_val}")
         else:
             self.log.error(f"plimit update not set")

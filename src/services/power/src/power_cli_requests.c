@@ -109,7 +109,7 @@ static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, vo
         {
         case POWER_IF_CMD_SET_CAP:
             // use the data in the union
-            power_set_cap(p_cli_request->sub_command_args.pwrset_sub_command_args.cap_val, p_cli_request);
+            power_set_cap(p_cli_request->pwrset_sub_command_args.cap_val, p_cli_request);
             // will complete request in callback
 
             break;
@@ -118,11 +118,10 @@ static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, vo
 
             // use the data in the union
 
-            all = p_cli_request->sub_command_args.pwrset_sub_command_args.desiredparams.all;
-            core = p_cli_request->sub_command_args.pwrset_sub_command_args.desiredparams.core;
-            throttle = p_cli_request->sub_command_args.pwrset_sub_command_args.desiredparams.throttle;
-            desired = dvfs_get_cppc_from_pstate(
-                p_cli_request->sub_command_args.pwrset_sub_command_args.desiredparams.state);
+            all = p_cli_request->pwrset_sub_command_args.desiredparams.all;
+            core = p_cli_request->pwrset_sub_command_args.desiredparams.core;
+            throttle = p_cli_request->pwrset_sub_command_args.desiredparams.throttle;
+            desired = dvfs_get_cppc_from_pstate(p_cli_request->pwrset_sub_command_args.desiredparams.state);
 
             do
             {
@@ -151,9 +150,9 @@ static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, vo
 
         case POWER_IF_CMD_SET_PLIMIT:
             // use the data in the union
-            all = p_cli_request->sub_command_args.pwrset_sub_command_args.plimitparams.all;
-            core = p_cli_request->sub_command_args.pwrset_sub_command_args.plimitparams.core;
-            desired = p_cli_request->sub_command_args.pwrset_sub_command_args.plimitparams.state;
+            all = p_cli_request->pwrset_sub_command_args.plimitparams.all;
+            core = p_cli_request->pwrset_sub_command_args.plimitparams.core;
+            desired = p_cli_request->pwrset_sub_command_args.plimitparams.state;
 
             do
             {
@@ -191,7 +190,7 @@ static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, vo
 
         case POWER_IF_CMD_SET_LOOP_DISABLES:
 
-            value = p_runconfig->knobs.loops_disable = p_cli_request->sub_command_args.pwrset_sub_command_args.loopdis_bits;
+            value = p_runconfig->knobs.loops_disable = p_cli_request->pwrset_sub_command_args.loopdis_bits;
 
             p_cli_request->fetch_data.pwrset_response_val.loopdis_bits = value;
             DfwkAsyncRequestComplete(p_request);
@@ -199,10 +198,10 @@ static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, vo
 
         case POWER_IF_CMD_SET_MINUPDATE:
 
-            power_set_minupdate(p_runconfig, p_cli_request->sub_command_args.pwrset_sub_command_args.minupdate_val);
+            power_set_minupdate(p_runconfig, p_cli_request->pwrset_sub_command_args.minupdate_val);
 
             p_cli_request->fetch_data.pwrset_response_val.minupdate_val =
-                p_cli_request->sub_command_args.pwrset_sub_command_args.minupdate_val;
+                p_cli_request->pwrset_sub_command_args.minupdate_val;
 
             DfwkAsyncRequestComplete(p_request);
             break;
@@ -211,8 +210,7 @@ static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, vo
 
             previous = p_runconfig->derived.pnominal;
 
-            p_runconfig->derived.pnominal =
-                p_cli_request->sub_command_args.pwrset_sub_command_args.nominalparams.current_val;
+            p_runconfig->derived.pnominal = p_cli_request->pwrset_sub_command_args.nominalparams.current_val;
             p_runconfig->derived.pnominal = MAX(p_runconfig->derived.pnominal, NOMINAL_PSTATE_MIN);
             p_runconfig->derived.pnominal = MIN(p_runconfig->derived.pnominal, NOMINAL_PSTATE_MAX);
 
@@ -224,7 +222,7 @@ static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, vo
 
         case POWER_IF_CMD_SET_RACK_LIMIT:
 
-            s_ctrl_loop->rack_limit = (p_cli_request->sub_command_args.pwrset_sub_command_args.racklimit != 0);
+            s_ctrl_loop->rack_limit = (p_cli_request->pwrset_sub_command_args.racklimit != 0);
             p_cli_request->fetch_data.pwrset_response_val.racklimit = s_ctrl_loop->rack_limit;
 
             DfwkAsyncRequestComplete(p_request);

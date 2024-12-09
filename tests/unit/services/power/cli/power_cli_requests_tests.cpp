@@ -105,7 +105,7 @@ POWER_TEST(handler_power_set_cap, NULL, NULL)
     power_service_cli_request_t request = {.header = {.RequestType = CLI_COMMANDS_POWER_SET}};
 
     request.power_ext_if_cmd_id = POWER_IF_CMD_SET_CAP;
-    request.sub_command_args.pwrset_sub_command_args.cap_val = CAP_VALUE;
+    request.pwrset_sub_command_args.cap_val = CAP_VALUE;
 
     expect_value(__wrap_power_cap_update, new_power_cap, CAP_VALUE);
     expect_value(__wrap_power_cap_update, source_is_cli, CLI_BOOL);

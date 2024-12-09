@@ -107,7 +107,6 @@ typedef struct {
     power_if_cmd_t power_ext_if_cmd_id;
 
     /* Structure elements for fetch data requests to power service*/
-//    void* p_requested_data;
     union {
         void* p_requested_data;  
 
@@ -118,11 +117,7 @@ typedef struct {
     } fetch_data;
 
     /* Structure elements for set data requests to power service*/
-//    void* p_set_data;   // p_set_data is set as a void pointer at present. This will be replaced by a more specific structure based on the set requests.
-    union {
-        void* p_set_data;  
-        _pwrset_subcommand_args pwrset_sub_command_args;
-    } sub_command_args;
+    _pwrset_subcommand_args pwrset_sub_command_args;
 
 } power_service_cli_request_t, *ppower_service_cli_request_t;
 

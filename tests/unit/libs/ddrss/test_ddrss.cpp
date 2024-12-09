@@ -90,6 +90,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_skip, setup, teardown)
         expect_value(__wrap_nvic_irq_clear_pending, irq_num, this_irq_num);
         expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
     }
+    will_return_always(__wrap_idhw_is_single_die_boot_en, true);
     prod_ddrss_lib_init(test_die);
 
     // ddrss init is skipped if not on an FPGA, therefore no expectations

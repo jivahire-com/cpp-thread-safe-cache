@@ -63,6 +63,43 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     sts = ddrss_get_config(&ddrss_cfgs);
     FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
 
+    if (idhw_is_single_die_boot_en())
+    {
+        // Set DDRSS mask for 1-die boot (12 MCs) - This will be overridden by I3C detect on RVP
+        ddrss_cfgs.ext_knobs.ddrss_mask = 0x03F;
+    }
+    else
+    {
+        // Set DDRSS mask for 2-die boot (24 MCs) - This will be overridden by I3C detect on RVP
+        ddrss_cfgs.ext_knobs.ddrss_mask = 0xFFF;
+    }
+
+    // Update DDRSS cfgs to match actual platform cfg
+    ddrss_cfgs.die_id = (DIE_INSTANCE)die_num;
+    ddrss_cfgs.debug_level = DDRSS_DEBUG_LEVEL_INFO;
+    ddrss_cfgs.ext_knobs.interleave_mc_cnt = 0;
+    ddrss_cfgs.ext_knobs.intu_init_en = 1;
+    ddrss_cfgs.ext_knobs.ras_init_en = 1;
+
+    // Load other config knobs - Up to date for Pre-TO requirements
+    ddrss_cfgs.ext_knobs.address_hashing_mode = config_get_address_hashing_mode();
+    ddrss_cfgs.ext_knobs.address_map_mode = config_get_address_map_mode();
+    ddrss_cfgs.ext_knobs.cmd_merge_en = config_get_cmd_merge_en();
+    ddrss_cfgs.ext_knobs.dram_power_down_entry_delay = config_get_dram_power_down_entry_delay();
+    ddrss_cfgs.ext_knobs.dram_refresh_mode = config_get_dram_refresh_mode();
+    ddrss_cfgs.ext_knobs.ecc_ce_th = config_get_ecc_ce_th();
+    ddrss_cfgs.ext_knobs.dram_power_down_entry_delay = config_get_dram_power_down_entry_delay();
+    ddrss_cfgs.ext_knobs.erhm_en = config_get_erhm_en();
+    ddrss_cfgs.ext_knobs.media_ecc_mode = config_get_media_ecc_mode();
+    ddrss_cfgs.ext_knobs.media_scrub_en = config_get_media_scrub_en();
+    ddrss_cfgs.ext_knobs.page_open_timer = config_get_page_open_timer();
+    ddrss_cfgs.ext_knobs.phy_hdt_ctrl = config_get_phy_hdt_ctrl();
+    ddrss_cfgs.ext_knobs.phy_margin_th = config_get_phy_margin_th();
+    ddrss_cfgs.ext_knobs.ref_temp_changed = config_get_ref_temp_changed();
+    ddrss_cfgs.ext_knobs.ref_temp_high = config_get_ref_temp_high();
+    ddrss_cfgs.ext_knobs.sbr_en = config_get_sbr_en();
+    ddrss_cfgs.ext_knobs.sub_bank_hashing_mode = config_get_sub_bank_hashing_mode();
+
     platform_id = idsw_get_platform_sdv();
     if (platform_id == PLATFORM_SVP_SIM)
     {
@@ -82,6 +119,10 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         // FPGA DDR runs at fixed frequency (support DDR6400 with DFI ratio 1:4)
         printf("DDRSS - ddr_speed_grade locked to DDR6400 for FPGA\n");
         ddrss_cfgs.ext_knobs.ddr_speed_grade = DDRSS_SPEED_6400;
+
+        printf("Disabling UE scrub/demand poison enable for FPGA\n");
+        ddrss_cfgs.ext_knobs.ue_scrub_poison_en = 0;
+        ddrss_cfgs.ext_knobs.ue_demand_poison_en = 0;
     }
     else if ((platform_id == PLATFORM_EMU) || (platform_id == PLATFORM_EMU_1D) || (platform_id == PLATFORM_EMU_2D) ||
              (platform_id == PLATFORM_EMU_1D_8C) || (platform_id == PLATFORM_EMU_2D_8C))
@@ -97,11 +138,12 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     {
         platform_str = "RVP";
         ddrss_cfgs.platform_type = DDRSS_PLATFORM_SILICON;
-        // TBD: For RVP platform, after I3C DIMM SPD detection is added,
-        //      the dimm_sku needs to be updated using detection results.
+        // TODO: For RVP platform, after I3C DIMM SPD detection is added,
+        //      the dimm_sku and ddrss_mask needs to be updated using detection results.
+        // ddrss_cfgs.ext_knobs.ddrss_mask = get_i3c_dimm_detected(); // Will enable on separate PR..
+
         ddrss_cfgs.dimm_sku = DDR5_RDIMM_2Rx4_16Gb_64GB;
-        ddrss_cfgs.ext_knobs.ddr_speed_grade =
-            config_get_ddr_speed_grade(); // TODO: Update default in Config XML? DDRSS_SPEED_7200;
+        ddrss_cfgs.ext_knobs.ddr_speed_grade = config_get_ddr_speed_grade();
     }
     else
     {
@@ -114,28 +156,11 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     // Map both DDRSS DIE0 and DIE1 cfg space through ATU
     uint32_t d0_start = ddrss_atu_map(SOC_D0);
     uint32_t d1_start = ddrss_atu_map(SOC_D1);
+    ddrss_cfgs.ddrss_base_die[SOC_D0] = d0_start;
+    ddrss_cfgs.ddrss_base_die[SOC_D1] = d1_start;
 
     FPFW_RUNTIME_ASSERT(ddrss_set_die_base(die_num, die_num == DIE_0 ? d0_start : d1_start) == SILIBS_SUCCESS);
 
-    // Update DDRSS cfgs to match actual platform cfg
-    ddrss_cfgs.die_id = (DIE_INSTANCE)die_num;
-    ddrss_cfgs.ddrss_base_die[SOC_D0] = d0_start;
-    ddrss_cfgs.ddrss_base_die[SOC_D1] = d1_start;
-    ddrss_cfgs.debug_level = DDRSS_DEBUG_LEVEL_INFO;
-    ddrss_cfgs.ext_knobs.interleave_mc_cnt = 0;
-    if (idhw_is_single_die_boot_en())
-    {
-        // Set DDRSS mask for 1D boot (12 MCs)
-        ddrss_cfgs.ext_knobs.ddrss_mask = 0x03F;
-    }
-    else
-    {
-        // Set DDRSS mask for 2D boot (24 MCs)
-        ddrss_cfgs.ext_knobs.ddrss_mask = 0xFFF;
-    }
-
-    ddrss_cfgs.ext_knobs.intu_init_en = 1;
-    ddrss_cfgs.ext_knobs.ras_init_en = 1;
     // Sync up with mesh config on NUMA, address hash and MC mapping cfgs
     cmn800_snf_to_mc_config_t* mc_config = cmn800_generate_ddr_mc_map_from_cached_config();
     FPFW_RUNTIME_ASSERT(mc_config != NULL);

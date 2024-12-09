@@ -307,9 +307,24 @@
     <Knob name="ddrmanager_dimm_temp_crit" type="uint32_t" default="95" help="Integer value representing critical DIMM temperature where bad things happen (95°C)" />
 
     <!-- DDRSS knobs -->
+    <Knob name="address_hashing_mode" type="DDRSS_ADDR_HASHING_MODE" default="DDRSS_ADDR_HASHING_MODE_DISABLED" help="Enable Physical Bank hashing on bus/semi address." />
+    <Knob name="address_map_mode" type="uint8_t" default="3" help="DDR media address map mode. (0 - 4)" />
+    <Knob name="cmd_merge_en" type="uint8_t" default="2" help="Command merge enable config. 2'b00: When a command completes it invalidates. No data sharing is permitted. All prefetch commands shall be dropped. 2'b01: When a command other that prefetch completes, it is invalidated. 2'b10: When permitted, a newer comamnd may reuse data from an older command. All merges are allowed. (0 ~ 3)" />
     <Knob name="ddr_speed_grade" type="DDRSS_SPEED_GRADE" default="DDRSS_SPEED_6400" help="DDR Speed Grade" />
+    <Knob name="dram_power_down_entry_delay" type="uint8_t" default="16" help="Delay time for entering DRAM power down mode after entry conditions are satisfied. In multiple-of-8 memory controller cycles. (0 ~ 255)" />
+    <Knob name="dram_refresh_mode" type="DDRSS_DRAM_REFRESH_MODE" default="DDRSS_DRAM_REFRESH_MODE_FINE_GRANULARITY" help="DRAM refersh mode." />
     <Knob name="ecc_ce_th" type="uint16_t" default="0" help="ECC threshold count after which any per-rank CE counter creates an appropriate RAS error record. (0x0 ~ 0x7ff)" />
+    <Knob name="erhm_en" type="uint8_t" default="0x0" help="Enable Enhanced Row Hammer mitigation logic 0 - Disable, 1 - Enable, 2 - AUTO (Enable if DIMM requests)" />
+    <Knob name="media_ecc_mode" type="DDRSS_MEDIA_ECC_MODE" default="DDRSS_MEDIA_ECC_MODE_REED_SOLOMON" help="Media ECC mode." />
+    <Knob name="media_scrub_en" type="uint8_t" default="0" help="Enable media patrol scrubbing. 0 - Disable, 1 - Enable" />
+    <Knob name="page_open_timer" type="uint8_t" default="0" help="Number of cycles to wait after there are no cmds to Physical bank in FE before issuing a PRCHG to BE.  (0 ~ 255)" />
     <Knob name="phy_fw_diag_en" type="uint8_t" default="0" help="DDR PHY firmware diagnostic enable (DV debug only, FW halts after PHY init). 0 - Disable, 1 - Enable" />
+    <Knob name="phy_hdt_ctrl" type="uint8_t" default="0xC8" help="Controls the total number of debug messages.  0x04 - Maximal debug messages; 0x05 - Detailed debug messages; 0x0A - Coarse debug messages; 0xC8 - Stage completion; 0xC9 - Assertion messages; 0xFF - Firmware completion messages only; Invalid for all other values." />
+    <Knob name="phy_margin_th" type="uint8_t" default="10" help="Minimum margin threshold to pass training. (0 ~ 255)" />
+    <Knob name="ref_temp_changed" type="uint8_t" default="0xf0" help="Refresh rates and temperatures at which the mediaRefTempChanged interrupt is generated. All bits combinations are legal. (0x00 ~ 0x3F) BIT1 - 1x Refresh Rate, below 80C nominal. BIT2 - 1x Refresh Rate, 80-85C nominal. BIT3 - 2x Refresh Rate, 85-90C nominal. BIT4 - 2x Refresh Rate, 90-95C nominal. BIT5 - 2x Refresh Rate, above 95C nominal." />
+    <Knob name="ref_temp_high" type="uint8_t" default="0x05" help="Refresh rate and temperature at which the mediaRefTempHigh interrupt is generated. (1 ~ 5) 1 - 1x Refresh Rate, below 80C nominal. 2 - 1x Refresh Rate, 80-85C nominal. 3 - 2x Refresh Rate, 85-90C nominal. 4 - 2x Refresh Rate, 90-95C nominal. 5 - 2x Refresh Rate, above 95C nominal." />
+    <Knob name="sbr_en" type="uint8_t" default="1" help="DRAM same bank refersh enable. 0 - Disable, 1 - Enable" />
+    <Knob name="sub_bank_hashing_mode" type="DDRSS_SUB_BANK_HASHING_MODE" default="DDRSS_SUB_BANK_HASHING_MODE_DISABLED" help="Enable Row Sub-Bank Hashing for row-hammer mitigation." />
 
     <!-- Power knobs -->
     <Knob name="power_control_loop_interval" type="uint16_t" default="1" help="Control loop interval in milliseconds" />

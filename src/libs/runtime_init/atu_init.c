@@ -15,7 +15,7 @@
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(atu_svc, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
+FPFW_INIT_COMPONENT(atu_svc, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "std_io"))
 {
     static atu_device_t atu_device;
     static atu_service_t atu_service;

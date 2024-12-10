@@ -20,6 +20,7 @@
 /*-------------------------------- Typedefs ---------------------------------*/
 
 /*-- Declarations (Statics and globals) --*/
+extern knob_data_t g_knob_data[];
 static var_service_req_ctx_t var_svc_ctx = {};
 
 /*-------------- Functions ---------------*/
@@ -37,7 +38,7 @@ void write_knob_completion_routine(void* context, struct _variable_service_req_c
     BUG_ASSERT_PARAM(KNG_SUCCEEDED(var_serv_ctx->async_req_result), var_serv_ctx->async_req_result, var_serv_ctx);
 }
 
-void read_knob_from_hsp(cached_knob_data_t* current_entry)
+void read_knob_from_hsp(cached_knob_data_t* current_entry, uint32_t current_knob_index)
 {
     // Retrieve the knob from HSP during init phase. make sure we update knobs before init phase completed.
     var_service_req_params_t var_svc_req = {};
@@ -51,7 +52,18 @@ void read_knob_from_hsp(cached_knob_data_t* current_entry)
 
     if (KNG_SUCCEEDED(result))
     {
-        current_entry->overridden = true;
+        if (memcmp(current_entry->data, g_knob_data[current_knob_index].default_value_address, current_entry->size) != 0)
+        {
+            current_entry->overridden = true;
+        }
+        else
+        {
+            current_entry->overridden = false;
+        }
+    }
+    else
+    {
+        current_entry->overridden = false;
     }
 
     variable_service_unlock_get_var_ctx(&var_svc_ctx);

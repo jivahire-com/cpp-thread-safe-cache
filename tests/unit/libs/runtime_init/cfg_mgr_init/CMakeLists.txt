@@ -26,6 +26,15 @@ target_link_libraries(${TARGET}
         ms::lib::config_manager
         ms::lib::config_manager::cli
         ms::lib::variable_services
+        ms::service::atu_service
+)
+
+# Provide compile time definition
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+        MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE=MSCP_ATU_AP_WINDOW_VAR_SVC_BASE_ADDR
+        MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE=MSCP_ATU_AP_WINDOW_VAR_SVC_DIE_SIZE
 )
 
 lint_target(${TARGET})

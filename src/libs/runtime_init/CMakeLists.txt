@@ -183,6 +183,8 @@ target_compile_definitions(
        RMSS_D2D_SCP_MB_HW_INT=HW_INT_MSCP_PEER_SCP_MB_INT
        SCP_RUNTIME_INIT
        ACCEL_MBOX_OFFSET_AFTER_0X100000=_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_MBX2_EXT_MBX_REGS_E2I_MBX_CTRL_ADDRESS
+       MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE=SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE
+       MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE=SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE
 )
 
 # Define base addresses during compile time for respective core fw
@@ -239,6 +241,7 @@ add_library(${TARGET}
         telemetry_service_init.c
         textio_init.c
         variable_services_init.c
+        variable_services_cli_init.c
 )
 
 target_link_libraries(
@@ -279,6 +282,7 @@ target_link_libraries(
         ms::lib::system_info
         ms::lib::threadx
         ms::lib::variable_services
+        ms::lib::variable_services::cli
         ms::service::atu_service
         ms::service::dcs
         ms::service::event_trace::collector
@@ -320,6 +324,8 @@ target_compile_definitions(
        RMSS_D2D_SCP_MB_HW_INT=4294967295 #Unused on MCP
        MCP_RUNTIME_INIT
        ACCEL_MBOX_OFFSET_AFTER_0X100000=_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_MBX1_EXT_MBX_REGS_E2I_MBX_CTRL_ADDRESS
+       MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE=MSCP_ATU_AP_WINDOW_VAR_SVC_BASE_ADDR
+       MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE=MSCP_ATU_AP_WINDOW_VAR_SVC_DIE_SIZE
 )
 
 # Define base addresses during compile time for respective core fw

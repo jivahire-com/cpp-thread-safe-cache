@@ -15,6 +15,7 @@ extern "C" {
 
 #include <DfwkDriver.h>
 #include <DfwkThreadXHost.h>
+#include <atu_api.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_cfg_mgr_init.h>
 #include <fpfw_init.h>
@@ -40,8 +41,8 @@ void __wrap_cfg_mgr_init(fpfw_cfg_mgr_config_t* cfg_mgr_config, var_service_shar
 {
     assert_non_null(cfg_mgr_config->read_knob_fn);
     assert_non_null(cfg_mgr_config->write_knob_fn);
-    assert_true(var_svc_mem_ctx->max_payload_size == SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE);
-    assert_true(var_svc_mem_ctx->payload_base == (uintptr_t)SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE);
+    assert_true(var_svc_mem_ctx->max_payload_size == MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE);
+    assert_true(var_svc_mem_ctx->payload_base == (uintptr_t)MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE);
 
     check_expected(cfg_mgr_config->profile_id);
 

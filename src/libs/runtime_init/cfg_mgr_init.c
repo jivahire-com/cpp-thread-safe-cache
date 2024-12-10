@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <atu_api.h>
 #include <config_manager.h>
 #include <config_manager_cli.h>
 #include <fpfw_init.h>
@@ -49,7 +50,7 @@ static uint8_t get_profile_id()
  * @brief Initialize cfg_mgr.
  *
  */
-FPFW_INIT_COMPONENT(cfg_mgr, FPFW_INIT_DEPENDENCIES("std_io", "dfwk", "var_serv", "hw_ver", "sysinfo"))
+FPFW_INIT_COMPONENT(cfg_mgr, FPFW_INIT_DEPENDENCIES("std_io", "dfwk", "atu_svc", "var_serv", "hw_ver", "sysinfo"))
 {
     // This struct is only used to initialize a fpfw_cfg_mgr_db_t struct
     fpfw_cfg_mgr_config_t cfg_mgr_config = {.mission_mode = false,
@@ -59,8 +60,8 @@ FPFW_INIT_COMPONENT(cfg_mgr, FPFW_INIT_DEPENDENCIES("std_io", "dfwk", "var_serv"
                                             .db_ctx = (void*)1};
 
     var_service_shared_mem_t var_svc_mem_ctx = {
-        .payload_base = (uintptr_t)SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE,
-        .max_payload_size = SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE,
+        .payload_base = (uintptr_t)MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE,
+        .max_payload_size = MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE,
     };
 
     cfg_mgr_init(&cfg_mgr_config, &var_svc_mem_ctx);

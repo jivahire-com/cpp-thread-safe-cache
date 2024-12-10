@@ -12,7 +12,10 @@ target_link_libraries(${TARGET}
     PRIVATE
     kng_silibs_platform
     silibs::platform
+    silibs::idhw
+    silibs::idsw
     silibs::idsw_kng
+    silibs::spi_bridge
     fwlib.lib.status
     fwlib.lib.utils
     fwlib.lib.spinlock

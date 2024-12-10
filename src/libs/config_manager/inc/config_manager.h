@@ -15,7 +15,12 @@
 #include <variable_services.h>
 
 /*-------------- Typedefs ----------------*/
-typedef struct _cached_knob_data_t{
+#define CFG_INFO(...) INFO_PRINT("[CFG_MGR] " __VA_ARGS__)
+#define CFG_DBG(...) DEBUG_PRINT("[CFG_MGR] " __VA_ARGS__)
+#define CFG_ERR(...)  CRITICAL_PRINT("[CFG_MGR] " __VA_ARGS__)
+#define CFG_CRIT(...) CRITICAL_PRINT("[CFG_MGR] " __VA_ARGS__)
+
+typedef struct _cached_knob_data_t {
     knob_t index;
     const fpfw_cfg_mgr_guid_t* knob_namespace;
     const char* name;

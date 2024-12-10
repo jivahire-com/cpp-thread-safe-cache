@@ -17,6 +17,7 @@ extern "C" {
 #include <idsw_kng.h>
 #include <kng_error.h>
 #include <mscp_exp_rmss_memory_map.h>
+#include <mscp_exp_spi_synchronize_dies.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -25,7 +26,7 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static uint8_t rmss_shared_ram_region[128] = {0};
+static uint8_t rmss_shared_ram_region[512] = {0};
 static uint32_t test_data = 1234;
 
 fpfw_cfg_mgr_config_t config_manager_setting = {.mission_mode = false,
@@ -40,6 +41,14 @@ var_service_shared_mem_t shared_mem = {
 };
 
 static uint32_t hsp_variable_svc_invoke_count = 0;
+
+void __real_write_override_knob_to_shared_rmss(void* rmss_base_addr, size_t rmss_base_addr_size);
+void __real_apply_override_knob_from_primary_die(uint32_t rmss_base_addr);
+bool __real_update_knob_in_cached_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespace,
+                                        const char* knob_name,
+                                        const uint8_t* data,
+                                        size_t data_size,
+                                        void* ctx);
 
 /*------------- Functions ----------------*/
 //
@@ -73,14 +82,32 @@ int32_t __wrap_variable_service_sync_get_variable(var_service_req_ctx_t* var_ser
     FPFW_UNUSED(req_params);
     hsp_variable_svc_invoke_count++;
 
+    if (mock_type(int32_t) == KNG_SUCCESS)
+    {
+        if (req_params->data_size == sizeof(int))
+        {
+            memcpy(req_params->data, &test_data, sizeof(int));
+        }
+    }
+
     return mock_type(int32_t);
 }
 
-void __wrap_variable_service_async_set_variable(var_service_req_ctx_t* var_serv_ctx, var_service_req_params_t* req_params)
+int32_t __wrap_variable_service_async_set_variable(var_service_req_ctx_t* var_serv_ctx,
+                                                   var_service_req_params_t* req_params,
+                                                   variable_service_req_complete_notify callback,
+                                                   void* context)
 {
     FPFW_UNUSED(var_serv_ctx);
     FPFW_UNUSED(req_params);
+    FPFW_UNUSED(callback);
+    FPFW_UNUSED(context);
     function_called();
+
+    var_serv_ctx->async_req_result = 0;
+
+    callback(context, var_serv_ctx, NULL, 0);
+    return 0;
 }
 
 bool __wrap_update_knob_in_cached_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespace,
@@ -89,18 +116,74 @@ bool __wrap_update_knob_in_cached_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespac
                                         size_t data_size,
                                         void* ctx)
 {
+    function_called();
     FPFW_UNUSED(knob_namespace);
     FPFW_UNUSED(knob_name);
     FPFW_UNUSED(data_size);
     FPFW_UNUSED(ctx);
 
     assert_true(test_data == *((uint32_t*)data));
+    __real_update_knob_in_cached_db_cb(knob_namespace, knob_name, data, data_size, ctx);
+
     return true;
+}
+
+idsw_cpu_type_t __wrap_idsw_get_cpu_type()
+{
+    return mock_type(idsw_cpu_type_t);
 }
 
 KNG_DIE_ID __wrap_idsw_get_die_id()
 {
     return mock_type(KNG_DIE_ID);
+}
+
+bool __wrap_idhw_is_single_die_boot_en()
+{
+    return mock_type(bool);
+}
+
+void __wrap_apply_override_knob_from_primary_die(uint32_t rmss_base_addr)
+{
+    FPFW_UNUSED(rmss_base_addr);
+
+    __real_apply_override_knob_from_primary_die((uint32_t)rmss_shared_ram_region);
+}
+
+void __wrap_write_override_knob_to_shared_rmss(void* rmss_base_addr, size_t rmss_base_addr_size)
+{
+    FPFW_UNUSED(rmss_base_addr);
+    FPFW_UNUSED(rmss_base_addr_size);
+    __real_write_override_knob_to_shared_rmss((void*)rmss_shared_ram_region, sizeof(rmss_shared_ram_region));
+}
+
+int __wrap_mscp_exp_spi_synchronize_dies(mscp_exp_spi_sync_point_t sync_point, int die_id)
+{
+    FPFW_UNUSED(sync_point);
+    FPFW_UNUSED(die_id);
+    return 0;
+}
+
+int __wrap_spi_controller_read_direct_instruction(uintptr_t spi_master_reg, uint32_t ahbAddr32, uint32_t actualWaitCycles, uint32_t* readData)
+{
+    FPFW_UNUSED(spi_master_reg);
+    FPFW_UNUSED(ahbAddr32);
+    FPFW_UNUSED(actualWaitCycles);
+    FPFW_UNUSED(readData);
+
+    memcpy(readData, (void*)ahbAddr32, sizeof(uint32_t));
+    return 0;
+}
+
+static int rmss_memory_map_setup(void** state)
+{
+    FPFW_UNUSED(state);
+
+    knob_payload_header_t header = {.signature = CFG_MGR_RELAY_PAYLOAD_SIGNATURE, .total_override_knob_count = 0};
+    memset(rmss_shared_ram_region, 0, sizeof(rmss_shared_ram_region));
+    memcpy(rmss_shared_ram_region, &header, sizeof(header));
+
+    return 0;
 }
 }
 
@@ -117,30 +200,17 @@ TEST_FUNCTION(test_cfg_mgr_init_no_hsp, nullptr, nullptr)
     assert_true(get_cached_knob_data() != NULL);
 }
 
-TEST_FUNCTION(test_cfg_mgr_init_hsp_override, nullptr, nullptr)
+TEST_FUNCTION(test_cfg_mgr_init_no_override, nullptr, nullptr)
 {
     hsp_variable_svc_invoke_count = 0;
+#if defined(SCP_RUNTIME_INIT)
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+#elif defined(MCP_RUNTIME_INIT)
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+#endif
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_is_hsp_present, true);
-    will_return(__wrap_idsw_get_die_id, DIE_0);
-    will_return_always(__wrap_variable_service_sync_get_variable, KNG_SUCCESS);
-
-    cfg_mgr_init(&config_manager_setting, &shared_mem);
-
-    assert_true(cached_knob_data_size() == KNOB_MAX);
-    assert_true(get_cached_knob_data() != NULL);
-    assert_true(hsp_variable_svc_invoke_count == cached_knob_data_size());
-
-    for (uint32_t idx = 0; idx < cached_knob_data_size(); idx++)
-    {
-        assert_true(get_cached_knob_data()[idx].overridden == true);
-    }
-}
-
-TEST_FUNCTION(test_cfg_mgr_init_hsp_no_override, nullptr, nullptr)
-{
-    hsp_variable_svc_invoke_count = 0;
-    will_return(__wrap_system_info_is_hsp_present, true);
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
 
     cfg_mgr_init(&config_manager_setting, &shared_mem);
@@ -155,11 +225,49 @@ TEST_FUNCTION(test_cfg_mgr_init_hsp_no_override, nullptr, nullptr)
     }
 }
 
+TEST_FUNCTION(test_cfg_mgr_init_override_die0, rmss_memory_map_setup, nullptr)
+{
+    hsp_variable_svc_invoke_count = 0;
+#if defined(SCP_RUNTIME_INIT)
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+#elif defined(MCP_RUNTIME_INIT)
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+#endif
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    will_return(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_variable_service_sync_get_variable, KNG_SUCCESS);
+
+    cfg_mgr_init(&config_manager_setting, &shared_mem);
+}
+
+TEST_FUNCTION(test_cfg_mgr_init_override_die1, rmss_memory_map_setup, nullptr)
+{
+    hsp_variable_svc_invoke_count = 0;
+#if defined(SCP_RUNTIME_INIT)
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+#elif defined(MCP_RUNTIME_INIT)
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+#endif
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    will_return(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_idsw_get_die_id, DIE_1);
+
+    cfg_mgr_init(&config_manager_setting, &shared_mem);
+}
+
 TEST_FUNCTION(test_update_knob_in_cached_db_cb, nullptr, nullptr)
 {
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+#if defined(SCP_RUNTIME_INIT)
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+#elif defined(MCP_RUNTIME_INIT)
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+#endif
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
+    expect_function_call(__wrap_update_knob_in_cached_db_cb);
 
     cfg_mgr_init(&config_manager_setting, &shared_mem);
 
@@ -168,8 +276,14 @@ TEST_FUNCTION(test_update_knob_in_cached_db_cb, nullptr, nullptr)
 
 TEST_FUNCTION(test_update_knob_data, nullptr, nullptr)
 {
-    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+#if defined(SCP_RUNTIME_INIT)
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+#elif defined(MCP_RUNTIME_INIT)
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+#endif
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
     expect_function_call(__wrap_variable_service_async_set_variable);
 

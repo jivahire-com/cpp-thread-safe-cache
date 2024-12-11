@@ -32,17 +32,19 @@ This document describes the init sequence for the accelerators on Kingsgate. Thi
 | SDM Architecture Specification            | [Link](<https://microsoft.sharepoint.com/teams/BlueridgeNon-implementing/Shared Documents/General/Architecture/SDM/SDM HAS WIP.docx?web=1>)                                                               |
 | SDM Micro-Architecture Specification      | [Link](<https://microsoft.sharepoint.com/:w:/t/EchoFalls/EUecIS3gZcBFkCpug0veDgABZ4D8j1o27YixqpzqqApogA?e=w2MAtz>)                                                                                        |
 | SDM Configuration Registers               | [Link](<https://microsoft.sharepoint.com/:u:/t/ses-ipteamsdm/EWdni6ZYb8BLlvfjNJJgUkEBt4LMZ1jAhF1Uyim2IwfVng?e=RkeF1B>)                                                                                    |
+| SDM CDED Firmware Architecture Specification   | [Link](<https://microsoft.sharepoint.com/:w:/r/teams/Kingsgate/Shared%20Documents/Firmware/Production%20Firmware/IDC/SDM%20%26%20CDED/Firmware%20Architecture%20Spec/SDM_CDED_FAS_WIP.docx?d=wa454e38edb314c53b87c3419e84dc61c&csf=1&web=1&e=ieCod2>) |
 
 ## Requirements
 
 - Prior to bringing up the accelerators, the SCP shall initialize all the IPs required for the accelerators to boot up. The only exception to this is the initialization of the CDEDSS Tower, which shall be initialized by the HSP. This includes, but is not limited to:
   - Enable and configure System NI Tower
   - Enable and configure Mesh.
-  - Enable and configuring the towers for VABSDMSS and VABCDEDSS.
-  - Configure isolation control on VABSDMSS and VABCDEDSS towers.
-  - Enable and configure VABSDMSS, VABCDEDSS.
-  - Initializing the Towers inside SDM and CDED IPs.
+  - Enable and configuring VABSDMSS and VABCDEDSS and everything inside.
+  - Configure isolation control on SDMSS and CDEDSS.
+  - Enable and configure SDMSS, CDEDSS.
   - Initializing the config registers inside the accelerator IPs.
+
+  For a full description of this configuration flow, please refer section 11.2 of the SDM CDED FAS (Firmware Architecture Specification) Document.
 
 - Once all pre-initialization is done, the accelerator bringup sequence shall initialize the accelerator firmware by requesting HSP to download firmware to the respective TCMs.
 - In runtime, the same module shall also be responsible for reset management of the accelerators.
@@ -92,7 +94,7 @@ The reset sequence uses various elements of the init sequence. The reset sequenc
 
 For the reset sequence, there is a request for silibs to expose some internal functions as public APIs. Till such time as that is completed, these functions are copied over to the SCP Production FW repo.
 
-The following is the reset sequence:
+The following is broadly the reset sequence:
 
 - Assert cpu_wait to halt emCPU operation.
 - Enable Fence.
@@ -102,6 +104,8 @@ The following is the reset sequence:
 - De-assert reset.
 - Request HSP to download firmware to the accelerator. This is a 2 step request, first to load the ITCM and second to load the DTCM. Wait until HSP acknowledges that firmware download is complete for both TCMs.
 - De-assert cpu_wait to resume emCPU operation.
+
+For a full description of this flow, please refer the SDM CDED FAS (Firmware Architecture Specification) Document.
 
 ## API
 

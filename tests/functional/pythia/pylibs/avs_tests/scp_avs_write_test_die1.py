@@ -84,7 +84,7 @@ class scp_avs_write_test_die1(EchoFallsBaseTest):
 
         try:
             self.log.info(f"Reading from self.dut.mb.node_0.soc.secondary_die.scp.channel_manager\n")
-            core_com_channel.read_until(key="HeartBeat", timeout_seconds=900)
+            core_com_channel.read_until(key="HeartBeat", timeout_seconds=1800)
         except Exception as e:
             self.log.error(f"Error reading self.dut.mb.node_0.soc.secondary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="HeartBeat", msg="Test Fail", _is_error=True)

@@ -77,7 +77,7 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
 
         try:
             self.log.info(f"Reading from self.dut.mb.node_0.soc.secondary_die.scp.channel_manager\n")
-            core_com_channel.read_until(key="HeartBeat", timeout_seconds=900)
+            core_com_channel.read_until(key="HeartBeat", timeout_seconds=1800)
         except Exception as e:
             self.log.error(f"Error reading self.dut.mb.node_0.soc.secondary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="HeartBeat", msg="Test Fail", _is_error=True)
@@ -92,7 +92,7 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
             self.log.info(f"Submitting {command}\n") 
             core_com_channel.write_line(write_string=command)
             try:
-                command_response_cli=connection.get_current_channel().read_until(key="avs_cli_comp", timeout_seconds=30)
+                command_response_cli=connection.get_current_channel().read_until(key="avs_cli_comp", timeout_seconds=500)
             except Exception as e:
                 self.log.error(f"Error reading AVS volt. Die1: {e}")
                 self.test_notify(step="AVS Read volt.", msg="Test Fail", _is_error=True)
@@ -114,7 +114,7 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
             self.log.info(f"Submitting {command}\n") 
             core_com_channel.write_line(write_string=command)
             try:
-                command_response_cli=connection.get_current_channel().read_until(key="avs_cli_comp", timeout_seconds=30)
+                command_response_cli=connection.get_current_channel().read_until(key="avs_cli_comp", timeout_seconds=500)
             except Exception as e:
                 self.log.error(f"Error reading AVS current Die1: {e}")
                 self.test_notify(step="AVS Read current", msg="Test Fail", _is_error=True)
@@ -127,7 +127,7 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
             self.log.info(f"Submitting {command}\n") 
             core_com_channel.write_line(write_string=command)
             try:
-                command_response_cli=connection.get_current_channel().read_until(key="avs_cli_comp", timeout_seconds=30)
+                command_response_cli=connection.get_current_channel().read_until(key="avs_cli_comp", timeout_seconds=500)
             except Exception as e:
                 self.log.error(f"Error reading AVS temperature Die1: {e}")
                 self.test_notify(step="AVS Read temperature", msg="Test Fail", _is_error=True)

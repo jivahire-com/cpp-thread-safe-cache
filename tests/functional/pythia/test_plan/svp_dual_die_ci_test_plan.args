@@ -18,4 +18,5 @@
 ./../../../tests/functional/pythia/test_suites/power_tests/mod_power_telemetry_loop_health.robot
 
 ## Variable Service Tests
+# TODO - Reenable the variable test once HSP is able to access RMSS memory on HSP1
 #./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_dd_test.robot

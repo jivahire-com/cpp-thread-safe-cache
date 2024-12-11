@@ -7,7 +7,7 @@ set(TARGET kng.lib.scp.runtime_init.scp)
 
 add_library(${TARGET}
     OBJECT
-        accelerator_ip_init.c
+        accelerator_ip_scp_init.c
         accel_intr_client_init.c
         accel_intr_service_init.c
         ap_core_init.c
@@ -216,6 +216,9 @@ set(TARGET kng.lib.scp.runtime_init.mcp)
 
 add_library(${TARGET}
     OBJECT
+        accelerator_ip_mcp_init.c
+        accel_intr_client_init.c
+        accel_intr_service_init.c
         atu_init.c
         cfg_mgr_init.c
         cli_crash_dump_init.c
@@ -229,7 +232,7 @@ add_library(${TARGET}
         exception_handler_init.c
         gpio_init.c
         hw_version_mcp_init.c
-        icc_accel_mbx_mcp_init.c
+        icc_accel_mbx_init.c
         icc_cli_init.c
         icc_d2dmbx_init.c
         icc_hspmbx_init.c
@@ -265,6 +268,7 @@ target_link_libraries(
         ms::driver::sensor_fifo
         ms::driver::textio::pl011
         ms::lib::accel_intr
+        ms::lib::accelerator_ip
         ms::lib::config_manager
         ms::lib::config_manager::cli
         ms::lib::cortex_m7::nvic
@@ -314,7 +318,7 @@ target_compile_definitions(
        MSCP2HSP_MAILBOX_BASE_ADDRESS=MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
        HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2MCP_MB_SW_INT
        HW_INT_SDM_MBOX_INT=HW_INT_SDM_INTR1_MCP_COMB_INT
-       HW_INT_CDED_MBOX_INT=HW_INT_CDED_SDM_INTR1_SCP_COMB_INT
+       HW_INT_CDED_MBOX_INT=HW_INT_CDED_SDM_INTR1_MCP_COMB_INT
        HW_INT_MSCP2MSCP_MHU_INT=HW_INT_SCP2MCP_MHU_NS_INT
        HW_INT_AP2MSCP_MHU_S_INT=HW_INT_AP2MCP_MHU_S_INT
        MSCP_TOP_MSCP_EXP_ADDRESS=MCP_TOP_MCP_EXP_ADDRESS

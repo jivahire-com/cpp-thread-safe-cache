@@ -68,6 +68,7 @@ typedef struct
  */
 typedef struct {
     DFWK_DEVICE_HEADER header;
+    size_t min_mesg_size; //! min message size supported by the transport. eg size of metadata
     uint32_t mbx_irq_num; //! irq number for the mailbox
     size_t ref_count; 
     DFWK_QUEUE default_queue; //! default dispatch queue that gets all requests initially
@@ -75,7 +76,6 @@ typedef struct {
     FPFW_MBX_REG_CONFIG mbox_dev_cfg; //! mbox driver config
     fpfw_mbox_icc_transport_async_req_ctx_t async[ICC_MAX_ASYNC_REQ_TYPE]; //! Only applicable for async
 } fpfw_mbox_icc_transport_device_t;
-
 
 /*--------- Function Prototypes ----------*/
 

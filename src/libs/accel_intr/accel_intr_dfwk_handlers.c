@@ -215,15 +215,15 @@ static void accel_intr_request_crash_dump_collection(uint32_t IRQnum, uint32_t t
 static void accel_intr_clear_and_unmask_interrupts(uint32_t IRQnum)
 {
     // For each individual interrupt, re initialise them
-    for (eACCEL_INTR idx = ACCEL_INTR_EMCPU_WDT_ERR; idx < ACCEL_INTR_MAX; idx++)
+    for (eACCEL_SCP_INTR idx = ACCEL_SCP_INTR_EMCPU_WDT_ERR; idx < ACCEL_SCP_INTR_MAX; idx++)
     {
         // We are using this check to ensure that we are enabling only supported interrupts
-        if (accel_intr_irq_data[idx].accel_irq_init_fn != NULL)
+        if (accel_irq_scp_data[idx].accel_irq_init_fn != NULL)
         {
             // Call init function for that IRQ, always returns SUCCESS
-            (void)accel_intr_irq_data[idx].accel_irq_init_fn(
+            (void)accel_irq_scp_data[idx].accel_irq_init_fn(
                 accelerator_ip_get_atu_mapped_cfg_address(accel_intr_get_accel_type_from_irq_num(IRQnum)),
-                accel_intr_irq_data[idx].accel_irq_bit);
+                accel_irq_scp_data[idx].accel_irq_bit);
         }
     }
 

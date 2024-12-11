@@ -139,7 +139,7 @@ void __wrap_configure_cdedss_hsp_system_addr_map(const uint64_t hsp_base_addr, u
 
 void __wrap_FpFwAssert(int expression)
 {
-    UNUSED(expression);
+    check_expected(expression);
 }
 
 void __wrap_configure_cdedss_vab_system_addr_map(CDEDSS_INSTANCE cdedss_id, uintptr_t tower_base_addr)
@@ -148,7 +148,17 @@ void __wrap_configure_cdedss_vab_system_addr_map(CDEDSS_INSTANCE cdedss_id, uint
     UNUSED(tower_base_addr);
 }
 
-int __wrap_accel_intr_irq_init(ACCEL_ID accel_type)
+int __wrap_accel_mcp_intr_init(ACCEL_ID accel_type)
+{
+    if (accel_type >= NUM_VALID_ACCEL_ID)
+    {
+        return ACCEL_INTR_RET_FAIL_INTR_INIT;
+    }
+
+    return mock_type(int);
+}
+
+int __wrap_accel_scp_intr_init(ACCEL_ID accel_type)
 {
     if (accel_type >= NUM_VALID_ACCEL_ID)
     {
@@ -264,11 +274,13 @@ void cb_fun(void* context)
     FPFW_UNUSED(context);
     printf("IN CALLBACK\n");
 }
+}
 
 TEST_FUNCTION(accelip_pre_boot_config_pass_test, nullptr, nullptr)
 {
     // Happy case setup
     will_return(__wrap_idsw_get_die_id, SOC_D0);
+    expect_any_always(__wrap_FpFwAssert, expression);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return_always(__wrap_system_info_is_hsp_present, false);
 
@@ -284,6 +296,7 @@ TEST_FUNCTION(accelip_pre_boot_config_atu_map_fail_test, nullptr, nullptr)
 {
     // ATU MAP fail
     will_return(__wrap_idsw_get_die_id, SOC_D0);
+    expect_any_always(__wrap_FpFwAssert, expression);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return_always(__wrap_system_info_is_hsp_present, false);
 
@@ -296,6 +309,7 @@ TEST_FUNCTION(accelip_pre_boot_config_atu_unmap_fail_test, nullptr, nullptr)
 {
     // ATU UNMAP fail
     will_return(__wrap_idsw_get_die_id, SOC_D0);
+    expect_any_always(__wrap_FpFwAssert, expression);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return_always(__wrap_system_info_is_hsp_present, false);
 
@@ -310,6 +324,7 @@ TEST_FUNCTION(accelip_pre_boot_config_accelip_ss_init_fail_test, nullptr, nullpt
 {
     // Accelip ss init fail
     will_return(__wrap_idsw_get_die_id, SOC_D0);
+    expect_any_always(__wrap_FpFwAssert, expression);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return_always(__wrap_system_info_is_hsp_present, false);
 
@@ -535,6 +550,7 @@ TEST_FUNCTION(accelip_pre_boot_config_cold_boot_pass_test, nullptr, nullptr)
     will_return_always(__wrap_fpfw_init_get_handle, &icc_ctx);
 
     will_return_always(__wrap_idsw_get_die_id, SOC_D0);
+    expect_any_always(__wrap_FpFwAssert, expression);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return_always(__wrap_system_info_is_hsp_present, true);
 
@@ -559,9 +575,114 @@ TEST_FUNCTION(accelip_pre_boot_config_cold_boot_pass_test, nullptr, nullptr)
 TEST_FUNCTION(accelip_isolation_control_test, nullptr, nullptr)
 {
     will_return(__wrap_idsw_get_die_id, SOC_D0);
+    expect_any_always(__wrap_FpFwAssert, expression);
     will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 2);
     will_return_count(__wrap_atu_unmap, SILIBS_SUCCESS, 2);
 
     assert_int_equal(scp_accelerators_isolation_control(), ACCEL_RET_SUCCESS);
 }
+
+TEST_FUNCTION(mcp_accelerators_init_test_fpga_pass, nullptr, nullptr)
+{
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    expect_value(__wrap_FpFwAssert, expression, true);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+
+    // init accelertor
+    will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 2);
+    will_return_count(__wrap_accel_mcp_intr_init, ACCEL_INTR_RET_SUCCESS, 2);
+    expect_value_count(__wrap_FpFwAssert, expression, true, 2);
+
+    assert_int_equal(mcp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
+
+TEST_FUNCTION(mcp_accelerators_init_test_svp_pass, nullptr, nullptr)
+{
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    expect_value(__wrap_FpFwAssert, expression, true);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+
+    // init accelertor
+    will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 2);
+    expect_value_count(__wrap_FpFwAssert, expression, true, 2);
+
+    assert_int_equal(mcp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
+
+TEST_FUNCTION(mcp_accelerators_init_test_svp_pass2, nullptr, nullptr)
+{
+    will_return(__wrap_idsw_get_die_id, SOC_D1);
+    expect_value(__wrap_FpFwAssert, expression, true);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+
+    // init accelertor
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value_count(__wrap_FpFwAssert, expression, true, 2);
+
+    assert_int_equal(mcp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
+
+TEST_FUNCTION(mcp_accelerators_init_test_fail1, nullptr, nullptr)
+{
+
+    uint32_t accel_ctxt_size = 0x0;
+    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
+    ACCELIP_SS_INSTANCE og_val0, og_val1;
+
+    og_val0 = p_ss_ctxt[0].accelip_metadata.accel_type;
+    og_val1 = p_ss_ctxt[1].accelip_metadata.accel_type;
+    p_ss_ctxt[0].accelip_metadata.accel_type = NUM_ACCELIP_SS_INSTANCES;
+    p_ss_ctxt[1].accelip_metadata.accel_type = NUM_ACCELIP_SS_INSTANCES;
+
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    expect_value(__wrap_FpFwAssert, expression, true);
+
+    expect_value(__wrap_FpFwAssert, expression, false);
+    expect_value(__wrap_FpFwAssert, expression, false);
+
+    assert_int_equal(mcp_accelerators_init(), ACCEL_RET_FAIL_INVALID_PARAMS);
+
+    p_ss_ctxt[0].accelip_metadata.accel_type = og_val0;
+    p_ss_ctxt[1].accelip_metadata.accel_type = og_val1;
+}
+
+TEST_FUNCTION(mcp_accelerators_init_test_fail2, nullptr, nullptr)
+{
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    expect_value(__wrap_FpFwAssert, expression, true);
+
+    // init accelertor
+    will_return_count(__wrap_atu_map, SILIBS_E_PARAM, 2);
+    expect_value_count(__wrap_FpFwAssert, expression, false, 2);
+
+    assert_int_equal(mcp_accelerators_init(), ACCEL_RET_FAIL_ACCEL_IP);
+}
+
+TEST_FUNCTION(mcp_accelerators_init_test_fail3, nullptr, nullptr)
+{
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    expect_value(__wrap_FpFwAssert, expression, true);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
+
+    // init accelertor
+    will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 2);
+    will_return_count(__wrap_accel_mcp_intr_init, ACCEL_INTR_RET_FAIL_INTR_INIT, 2);
+    expect_value_count(__wrap_FpFwAssert, expression, false, 2);
+
+    assert_int_equal(mcp_accelerators_init(), ACCEL_RET_FAIL_INTR_INIT);
+}
+
+TEST_FUNCTION(mcp_accelerators_init_test_fail4, nullptr, nullptr)
+{
+    expect_value(__wrap_FpFwAssert, expression, true);
+
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE_RVP);
+
+    // init accelertor
+    will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 2);
+    will_return_count(__wrap_accel_mcp_intr_init, ACCEL_INTR_RET_FAIL_INTR_INIT, 2);
+    expect_value_count(__wrap_FpFwAssert, expression, false, 2);
+
+    assert_int_equal(mcp_accelerators_init(), ACCEL_RET_FAIL_INTR_INIT);
 }

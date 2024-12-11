@@ -21,7 +21,8 @@
 
 /*-------------------------------- Typedefs ---------------------------------*/
 typedef enum {
-    ACCEL_RET_FAIL_SS_INIT = (-19), // Total number of error types
+    ACCEL_RET_FAIL_INVALID_CPU_TYPE = (-20), // Total number of error types
+    ACCEL_RET_FAIL_SS_INIT,
     ACCEL_RET_FAIL_SS_NA,
     ACCEL_RET_FAIL_DBG,
     ACCEL_RET_FAIL_CSR,
@@ -79,7 +80,7 @@ typedef void (*crash_dump_cb_t)(void *);
 uint32_t accelerator_ip_get_atu_mapped_cfg_address(ACCEL_ID accel_type);
 
 /**
- * @brief Initialize Accelerator
+ * @brief Initialize Accelerator on SCP core
  *
  * \b Description:
  * Read fuse and based on enabled bit init respective accelerator instances
@@ -91,6 +92,20 @@ uint32_t accelerator_ip_get_atu_mapped_cfg_address(ACCEL_ID accel_type);
  *  On failure, failure code
  */
 int32_t scp_accelerators_init(void);
+
+/**
+ * @brief Initialize accel devices on MCP core
+ *
+ * \b Description:
+ * Initializes all the accel device instances available.
+ * Accel device AP address space is mapped into ATU
+ * Interrupts received from accel device is also initialized
+ *
+ * @retval
+ *  On success, ACCEL_RET_SUCCESS
+ *  On failure, failure code
+ */
+int32_t mcp_accelerators_init(void);
 
 /**
  * @brief Accelerator isolation control

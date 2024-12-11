@@ -1,0 +1,118 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+/**
+ * @file accelerator_ip_mcp.c
+ * This file provides APIs specific to MCP to engage with Accelerator devices
+ */
+
+/* TODO 2228988: Create separate Lib for SCP & MCP specific functionalities */
+
+/*-------------------------------- Features ---------------------------------*/
+
+/*-------------------------------- Includes ---------------------------------*/
+
+#include "accelerator_ip.h"
+#include "accelerator_ip_priv.h"
+
+#include <FpFwAssert.h>    // for FPFW_RUNTIME_ASSERT
+#include <accel_intr.h>    // for accel_intr_mcp_init
+#include <accelip_id.h>    // NUM_VALID_ACCEL_ID, ACCEL_ID_SDM, ACCEL_ID_CDED
+#include <atu_lib.h>       // for atu_map, atu_unmap, atu_map...
+#include <idsw.h>          // for idsw_get_die_id
+#include <idsw_kng.h>      // for IS_PLATFORM_FPGA
+#include <silibs_status.h> // for SILIBS_SUCCESS
+#include <stdint.h>        // for int32_t, uintptr_t, uint32_t
+#include <stdio.h>         // for printf, NULL
+#include <string.h>        // for memcpy
+
+/*-------------------- Symbolic Constant Macros (defines) -------------------*/
+
+/*-------------------------------- Typedefs ---------------------------------*/
+
+/*--------------------------- Function Prototypes ---------------------------*/
+
+/*------------------- Declarations (Statics and globals) --------------------*/
+
+/*--------------------------------- Externs ---------------------------------*/
+
+extern uint32_t accel_intr_atu_map_address[NUM_VALID_ACCEL_ID];
+
+/*----------------------------- Static Functions ----------------------------*/
+
+static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
+{
+    int32_t ret = ACCEL_RET_SUCCESS;
+    ACCEL_ID accel_type = get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type);
+
+    if (accel_type == NUM_VALID_ACCEL_ID)
+    {
+        debug_print("accel_lib: Invalid accel type\n");
+        return ACCEL_RET_FAIL_INVALID_PARAMS;
+    }
+
+    atu_map_entry_t atu_map_entry;
+    memcpy((void*)&atu_map_entry, (void*)p_ss_ctxt->p_accelip_atu_map, sizeof(atu_map_entry_t));
+
+    ret = atu_map(ATU_ID_MSCP, &atu_map_entry);
+    if (ret != SILIBS_SUCCESS)
+    {
+        critical_print("Accel IP: init_accelerator: ATU MAP failed.\n");
+        return ACCEL_RET_FAIL_ACCEL_IP;
+    }
+
+    debug_print("atu mapped for accel ip\n");
+
+    accel_intr_atu_map_address[accel_type] = atu_map_entry.mscp_start_address;
+
+    if (IS_PLATFORM_FPGA())
+    {
+        printf("accel lib: Initialize accel interrupt\n");
+
+        ret = accel_mcp_intr_init(accel_type);
+        if (ret != ACCEL_INTR_RET_SUCCESS)
+        {
+            critical_print("Accel IP: init_accelerator: Accel Interrupt init failed.\n");
+            return ACCEL_RET_FAIL_INTR_INIT;
+        }
+    }
+    else
+    {
+        printf("accel lib: Skipping Accel Interrupt init for SVP\n");
+    }
+
+    return ACCEL_RET_SUCCESS;
+}
+
+/*----------------------------- Global Functions ----------------------------*/
+
+int32_t mcp_accelerators_init(void)
+{
+    idsw_die_id_t current_die_instance = idsw_get_die_id();
+    int ret = ACCEL_RET_SUCCESS;
+    uint32_t accel_ctxt_size = 0;
+
+    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
+
+    FPFW_RUNTIME_ASSERT(p_ss_ctxt != NULL);
+
+    printf("Number of Accelerator instances present: %d\n", (int)accel_ctxt_size);
+
+    // Init all available Accelerator instances
+    for (uint32_t index = 0; index < accel_ctxt_size; index++)
+    {
+        // TODO (ADO 1728772) : init any particular accelerator instance only if that is enabled in fuse
+        if (p_ss_ctxt[index].accelip_metadata.die_instance == current_die_instance)
+        {
+            printf("accel lib: Initializing for die_id = %d, accel_type = %d, accel_instance = %d\n",
+                   p_ss_ctxt[index].accelip_metadata.die_instance,
+                   p_ss_ctxt[index].accelip_metadata.accel_type,
+                   p_ss_ctxt[index].accelip_metadata.accel_instance);
+            ret = init_accelerator(&p_ss_ctxt[index]);
+            FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
+        }
+    }
+
+    return ret;
+}

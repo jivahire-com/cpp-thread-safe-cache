@@ -59,6 +59,7 @@ mock_target(${TARGET}
     fpfw_timer_create
     fpfw_timer_enable
     fpfw_timer_reset
+    idsw_get_cpu_type
     idsw_get_platform_sdv
     is_sdm_ext_int_mask_status_clear
     is_sdm_ext_int_status_set

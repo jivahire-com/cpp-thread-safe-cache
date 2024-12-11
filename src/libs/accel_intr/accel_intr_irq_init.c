@@ -24,6 +24,7 @@
 #include <accelip_id.h>     // for ACCEL_ID_CDED, ACCEL_ID_SDM
 #include <bitops.h>
 #include <cortex_m7_atomics.h> // for cortex_m7_atomic_call_data_memory_barrier
+#include <idsw.h>
 #include <idsw_kng.h>
 #include <kng_atu_mappings.h> // for ATU_MAPPING_CDEDSS_BASE, ATU...
 #include <nvic.h>
@@ -67,13 +68,22 @@
  * On Failure : ACCEL_INTR_RET_FAIL_INTR_NVIC
  *
  */
-static uint32_t accel_intr_nvic_init(ACCEL_ID accel_type)
+static uint32_t accel_intr_nvic_init(idsw_cpu_type_t cpu_type, ACCEL_ID accel_type)
 {
     uint32_t IRQnum = accel_intr_get_irq_num_from_accel_type(accel_type);
+    isr_callback_fn_with_params_t isr_cb;
+
+    if (cpu_type == CPU_SCP)
+    {
+        isr_cb = accel_intr_isr_scp;
+    }
+    else /* CPU_MCP */
+    {
+        isr_cb = accel_intr_isr_mcp;
+    }
 
     // Register ISR
-    nvic_status_t status =
-        FPFwCoreInterruptRegisterCallback(IRQnum, (isr_callback_fn_with_params_t)accel_intr_isr, (void*)IRQnum);
+    nvic_status_t status = FPFwCoreInterruptRegisterCallback(IRQnum, isr_cb, (void*)IRQnum);
 
     if (status != NVIC_STATUS_SUCCESS)
     {
@@ -209,7 +219,7 @@ void accel_intr_unmask_interrupt_level_1(uint32_t ext_cfg_addr, SDM_EXT_INTERRUP
     cortex_m7_atomic_call_data_memory_barrier();
 }
 
-int accel_intr_irq_init(ACCEL_ID accel_type)
+int32_t accel_scp_intr_init(ACCEL_ID accel_type)
 {
     if (accel_type >= NUM_VALID_ACCEL_ID)
     {
@@ -241,19 +251,64 @@ int accel_intr_irq_init(ACCEL_ID accel_type)
     sdm_ext_int_mask_disable(accelerator_ip_get_atu_mapped_cfg_address(accel_type), SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask);
 
     // For each individual interrupt, clear and unmask at level 1 and level 2
-    for (eACCEL_INTR idx = ACCEL_INTR_EMCPU_WDT_ERR; idx < ACCEL_INTR_MAX; idx++)
+    for (eACCEL_SCP_INTR idx = ACCEL_SCP_INTR_EMCPU_WDT_ERR; idx < ACCEL_SCP_INTR_MAX; idx++)
     {
-        if (accel_intr_irq_data[idx].accel_irq_init_fn != NULL)
+        if (accel_irq_scp_data[idx].accel_irq_init_fn != NULL)
         {
             // Call init function for that IRQ, always returns SUCCESS
-            (void)accel_intr_irq_data[idx].accel_irq_init_fn(accelerator_ip_get_atu_mapped_cfg_address(accel_type),
-                                                             accel_intr_irq_data[idx].accel_irq_bit);
+            (void)accel_irq_scp_data[idx].accel_irq_init_fn(accelerator_ip_get_atu_mapped_cfg_address(accel_type),
+                                                            accel_irq_scp_data[idx].accel_irq_bit);
         }
     }
 
     // Register ISR for handling the interrupt
     // Clear and Enable interrupt in NVIC
-    ret = accel_intr_nvic_init(accel_type);
+    ret = accel_intr_nvic_init(CPU_SCP, accel_type);
+
+    if (ret != ACCEL_INTR_RET_SUCCESS)
+    {
+        critical_print("AccelIp Interrupt NVIC init failed\n");
+        return ret;
+    }
+
+    return ACCEL_INTR_RET_SUCCESS;
+}
+
+/* TODO 2228988: Create separate Lib for SCP & MCP specific functionalities */
+
+int32_t accel_mcp_intr_init(ACCEL_ID accel_type)
+{
+    uint32_t ret = ACCEL_INTR_RET_SUCCESS;
+
+    if (accel_type >= NUM_VALID_ACCEL_ID)
+    {
+        critical_print("Accelerator type out of bounds : %d\n", accel_type);
+        return ACCEL_INTR_RET_FAIL_INTR_INIT;
+    }
+
+    /**
+     * Set subsystem in sdm_ext_interrupts.
+     * This is later used to select between misc.sys_ext_intr0/1/2
+     */
+    (void)set_ext_int_sub_system(SDM_EXT_MCP_SUBSYSTEM);
+
+    // Mask all interrupts in Level 1 register first
+    uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(accel_type);
+    sdm_ext_int_mask_disable(ext_cfg_addr,
+                             SDM_EXT_CATEGORY_ID_EXT_INTR,
+                             SL_GET_BIT_MASK_RANGE(SDM_EXT_EMCPU_WDT_ERR_INTR, SDM_EXT_SDM_MSG3_INTR));
+
+    for (eACCEL_MCP_INTR idx = ACCEL_MCP_INTR_FIRST; idx < ACCEL_MCP_INTR_MAX; idx++)
+    {
+        if (accel_irq_mcp_data[idx].accel_irq_init_fn != NULL)
+        {
+            (void)accel_irq_mcp_data[idx].accel_irq_init_fn(ext_cfg_addr, accel_irq_mcp_data[idx].accel_irq_bit);
+        }
+    }
+
+    // Register ISR for handling the interrupt
+    // Clear and Enable interrupt in NVIC
+    ret = accel_intr_nvic_init(CPU_MCP, accel_type);
 
     if (ret != ACCEL_INTR_RET_SUCCESS)
     {
@@ -372,10 +427,20 @@ uint32_t accel_intr_fab_wdt_err_init(uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NU
 int32_t accel_intr_init(ACCEL_ID accel_type)
 {
     uint32_t IRQnum = accel_intr_get_irq_num_from_accel_type(accel_type);
+    isr_callback_fn_with_params_t isr_cb;
+    idsw_cpu_type_t cpu_type = idsw_get_cpu_type();
+
+    if (cpu_type == CPU_SCP)
+    {
+        isr_cb = accel_intr_isr_scp;
+    }
+    else /* CPU_MCP */
+    {
+        isr_cb = accel_intr_isr_mcp;
+    }
 
     // Register ISR
-    nvic_status_t status =
-        FPFwCoreInterruptRegisterCallback(IRQnum, (isr_callback_fn_with_params_t)accel_intr_isr, (void*)IRQnum);
+    nvic_status_t status = FPFwCoreInterruptRegisterCallback(IRQnum, isr_cb, (void*)IRQnum);
 
     if (status != NVIC_STATUS_SUCCESS)
     {

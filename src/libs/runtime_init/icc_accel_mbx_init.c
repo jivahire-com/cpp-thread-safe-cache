@@ -69,13 +69,13 @@ const uint32_t accel_irq_num[NUM_VALID_ACCEL_ID] = {
  */
 static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
 {
+    uint32_t mbox_base_addr = accelerator_ip_get_atu_mapped_cfg_address(accel_type);
 
     accel_mbx_cfg[accel_type].mbox_dev_cfg.MbxFifoDepth = LARGE_MBX_FIFO_DEPTH;
     accel_mbx_cfg[accel_type].mbox_dev_cfg.MbxMesgHandlingType = MBX_MESG_HANDLING_SINGLE_MESG_AT_A_TIME;
     accel_mbx_cfg[accel_type].mbox_dev_cfg.MbxImplementation = MBX_IMPL_INTERRUPT;
     accel_mbx_cfg[accel_type].mbox_dev_cfg.MsgSizeBytes = LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES;
-    accel_mbx_cfg[accel_type].mbox_dev_cfg.MbxBaseAddr =
-        accelerator_ip_get_atu_mapped_cfg_address(accel_type) + ACCEL_MBOX_OFFSET;
+    accel_mbx_cfg[accel_type].mbox_dev_cfg.MbxBaseAddr = mbox_base_addr + ACCEL_MBOX_OFFSET;
     accel_mbx_cfg[accel_type].timer_period = KG_LARGE_FIFO_MBOX_POLL_INTERVAL_NS;
     accel_mbx_cfg[accel_type].timer_handle[ICC_MBX_ASYNC_SEND] = &accel_mbx_timer[accel_type][ICC_MBX_ASYNC_SEND];
     accel_mbx_cfg[accel_type].timer_handle[ICC_MBX_ASYNC_RECV] = &accel_mbx_timer[accel_type][ICC_MBX_ASYNC_RECV];

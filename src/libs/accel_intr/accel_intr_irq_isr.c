@@ -393,12 +393,12 @@ uint32_t accel_intr_process_fatal_interrupts(uint32_t IRQnum, uint32_t ext_cfg_a
         // Get bit that is set
         uint32_t bit_index = GET_LOWEST_SET_BIT_INDEX(interrupt_reg_value);
 
-        eACCEL_INTR accel_intr = accel_intr_get_accel_intr_enum_from_irq_bit(bit_index);
+        eACCEL_SCP_INTR accel_intr = accel_scp_get_intr_enum(bit_index);
 
-        if (accel_intr < ACCEL_INTR_MAX && accel_intr_irq_data[accel_intr].accel_irq_fn != NULL)
+        if (accel_intr < ACCEL_SCP_INTR_MAX && accel_irq_scp_data[accel_intr].accel_irq_fn != NULL)
         {
             validate_irq_status |=
-                accel_intr_irq_data[accel_intr].accel_irq_fn(IRQnum, ext_cfg_addr, bit_index, process_this_fatal_intr);
+                accel_irq_scp_data[accel_intr].accel_irq_fn(IRQnum, ext_cfg_addr, bit_index, process_this_fatal_intr);
         }
 
         // Clear interrupt_reg_value bit
@@ -408,7 +408,7 @@ uint32_t accel_intr_process_fatal_interrupts(uint32_t IRQnum, uint32_t ext_cfg_a
     return validate_irq_status;
 }
 
-void accel_intr_isr(void* callback_param)
+void accel_intr_isr_scp(void* callback_param)
 {
     uint32_t IRQnum = (uint32_t)callback_param;
 
@@ -437,4 +437,14 @@ void accel_intr_isr(void* callback_param)
      * TODO: Task 1982366: [SCP] Accel IP Fatal Interrupt Cleanup Tasks / Comments
      * Get interrupts raised using single call and then use switch statements to handle the interrupt
      */
+}
+
+void accel_intr_isr_mcp(void* callback_param)
+{
+    uint32_t IRQnum = (uint32_t)callback_param;
+
+    // Based on ATU MAP get sdm_ext_cfg base address
+    uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(accel_intr_get_accel_type_from_irq_num(IRQnum));
+
+    accel_intr_mbox_isr(IRQnum, ext_cfg_addr);
 }

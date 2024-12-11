@@ -11,7 +11,7 @@
 #include <CMockaWrapper.h> // IWYU pragma: keep
 
 extern "C" {
-#include "accel_intr.h"      // for accel_intr_irq_init, ACCEL_INTR_RET_SUC...
+#include "accel_intr.h"      // for accel_scp_intr_init, ACCEL_INTR_RET_SUC...
 #include "accel_intr_priv.h" // for accel_intr_get_accel_type_from_irq_num, SDMSS_I...
 #include "fpfw_status.h"     // for FPFW_STATUS_SUCCESS
 #include "mock.h"            // for mmio_set_mock_data...
@@ -90,12 +90,17 @@ void __wrap_accel_mbox_sw_intr_cb(void* ctx)
     check_expected(ctx);
 }
 
+idsw_cpu_type_t __wrap_idsw_get_cpu_type(void)
+{
+    return mock_type(idsw_cpu_type_t);
+}
+
 } // extern "c"
 
 /**
- * @brief : Tests accel_intr_irq_init with all passing on SDM
+ * @brief : Tests accel_scp_intr_init with all passing on SDM
  */
-TEST_FUNCTION(test_accel_intr_irq_init_pass_sdm, nullptr, nullptr)
+TEST_FUNCTION(test_accel_scp_intr_init_pass_sdm, nullptr, nullptr)
 {
     expect_any(__wrap_fpfw_timer_create, timer);
     expect_any(__wrap_fpfw_timer_create, cb);
@@ -112,7 +117,7 @@ TEST_FUNCTION(test_accel_intr_irq_init_pass_sdm, nullptr, nullptr)
 
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER);
-    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr_scp);
     expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER);
     will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
@@ -120,13 +125,13 @@ TEST_FUNCTION(test_accel_intr_irq_init_pass_sdm, nullptr, nullptr)
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, SDMSS_IRQ_NUMBER);
     expect_value(__wrap_nvic_irq_enable, irq_num, SDMSS_IRQ_NUMBER);
 
-    assert_int_equal(accel_intr_irq_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
+    assert_int_equal(accel_scp_intr_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
 }
 
 /**
- * @brief : Tests accel_intr_irq_init with all passing on CDED
+ * @brief : Tests accel_scp_intr_init with all passing on CDED
  */
-TEST_FUNCTION(test_accel_intr_irq_init_pass_cded, nullptr, nullptr)
+TEST_FUNCTION(test_accel_scp_intr_init_pass_cded, nullptr, nullptr)
 {
     expect_any(__wrap_fpfw_timer_create, timer);
     expect_any(__wrap_fpfw_timer_create, cb);
@@ -143,7 +148,7 @@ TEST_FUNCTION(test_accel_intr_irq_init_pass_cded, nullptr, nullptr)
 
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, CDEDSS_IRQ_NUMBER);
-    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr_scp);
     expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER);
     will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
@@ -151,26 +156,72 @@ TEST_FUNCTION(test_accel_intr_irq_init_pass_cded, nullptr, nullptr)
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, CDEDSS_IRQ_NUMBER);
     expect_value(__wrap_nvic_irq_enable, irq_num, CDEDSS_IRQ_NUMBER);
 
-    assert_int_equal(accel_intr_irq_init(accel_intr_get_accel_type_from_irq_num(CDEDSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
+    assert_int_equal(accel_scp_intr_init(accel_intr_get_accel_type_from_irq_num(CDEDSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
 }
 
 /**
- * @brief : Tests accel_intr_irq_init with failure in timer init
+ * @brief : Tests accel_mcp_intr_init with all passing on SDM
  */
-TEST_FUNCTION(test_accel_intr_irq_init_fail_timer_init, nullptr, nullptr)
+TEST_FUNCTION(test_accel_mcp_intr_init_pass_sdm, nullptr, nullptr)
+{
+    will_return_always(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
+    will_return_always(__wrap_sdm_ext_int_mask_enable, SILIBS_SUCCESS);
+    will_return_always(__wrap_sdm_ext_int_mask_status_clear, SILIBS_SUCCESS);
+    will_return_always(__wrap_set_ext_int_sub_system, SILIBS_SUCCESS);
+
+    // FPFwCoreInterruptRegisterCallback
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr_mcp);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER);
+    will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
+
+    // FPFwCoreInterruptEnableVector
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, SDMSS_IRQ_NUMBER);
+    expect_value(__wrap_nvic_irq_enable, irq_num, SDMSS_IRQ_NUMBER);
+
+    assert_int_equal(accel_mcp_intr_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
+}
+
+/**
+ * @brief : Tests accel_mcp_intr_init with all passing on CDED
+ */
+TEST_FUNCTION(test_accel_mcp_intr_init_pass_cded, nullptr, nullptr)
+{
+    will_return_always(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
+    will_return_always(__wrap_sdm_ext_int_mask_enable, SILIBS_SUCCESS);
+    will_return_always(__wrap_sdm_ext_int_mask_status_clear, SILIBS_SUCCESS);
+    will_return_always(__wrap_set_ext_int_sub_system, SILIBS_SUCCESS);
+
+    // FPFwCoreInterruptRegisterCallback
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, CDEDSS_IRQ_NUMBER);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr_mcp);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER);
+    will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
+
+    // FPFwCoreInterruptEnableVector
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, CDEDSS_IRQ_NUMBER);
+    expect_value(__wrap_nvic_irq_enable, irq_num, CDEDSS_IRQ_NUMBER);
+
+    assert_int_equal(accel_mcp_intr_init(accel_intr_get_accel_type_from_irq_num(CDEDSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
+}
+
+/**
+ * @brief : Tests accel_scp_intr_init with failure in timer init
+ */
+TEST_FUNCTION(test_accel_scp_intr_init_fail_timer_init, nullptr, nullptr)
 {
     expect_any(__wrap_fpfw_timer_create, timer);
     expect_any(__wrap_fpfw_timer_create, cb);
     will_return_always(__wrap_fpfw_timer_create, FPFW_STATUS_INVALID_ARGS);
 
-    assert_int_equal(accel_intr_irq_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER)),
+    assert_int_equal(accel_scp_intr_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER)),
                      ACCEL_INTR_RET_FAIL_TIMER_CREATE);
 }
 
 /**
- * @brief : Tests accel_intr_irq_init with failure in nvic init
+ * @brief : Tests accel_scp_intr_init with failure in nvic init
  */
-TEST_FUNCTION(test_accel_intr_irq_init_fail_nvic_init, nullptr, nullptr)
+TEST_FUNCTION(test_accel_scp_intr_init_fail_nvic_init, nullptr, nullptr)
 {
     expect_any(__wrap_fpfw_timer_create, timer);
     expect_any(__wrap_fpfw_timer_create, cb);
@@ -187,18 +238,54 @@ TEST_FUNCTION(test_accel_intr_irq_init_fail_nvic_init, nullptr, nullptr)
 
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER);
-    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr_scp);
     expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER);
     will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_ERROR);
 
-    assert_int_equal(accel_intr_irq_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER)),
+    assert_int_equal(accel_scp_intr_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER)),
                      ACCEL_INTR_RET_FAIL_INTR_NVIC);
 }
 
 /**
- * @brief : Tests accel_intr_isr_pass with all passing and both FATAL and SDM_MSG interrupt present
+ * @brief : Tests accel_scp_intr_init with failure in timer init
  */
-TEST_FUNCTION(test_accel_intr_isr_pass, nullptr, nullptr)
+TEST_FUNCTION(test_accel_scp_intr_init_fail_invalid_arg1, nullptr, nullptr)
+{
+    assert_int_equal(accel_scp_intr_init(NUM_VALID_ACCEL_ID), ACCEL_INTR_RET_FAIL_INTR_INIT);
+}
+
+/**
+ * @brief : Tests accel_mcp_intr_init with failure in timer init
+ */
+TEST_FUNCTION(test_accel_mcp_intr_init_fail_invalid_arg1, nullptr, nullptr)
+{
+    assert_int_equal(accel_mcp_intr_init(NUM_VALID_ACCEL_ID), ACCEL_INTR_RET_FAIL_INTR_INIT);
+}
+
+/**
+ * @brief : Tests accel_mcp_intr_init with failure in nvic init
+ */
+TEST_FUNCTION(test_accel_mcp_intr_init_fail_nvic_init, nullptr, nullptr)
+{
+    will_return_always(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
+    will_return_always(__wrap_sdm_ext_int_mask_enable, SILIBS_SUCCESS);
+    will_return_always(__wrap_sdm_ext_int_mask_status_clear, SILIBS_SUCCESS);
+    will_return_always(__wrap_set_ext_int_sub_system, SILIBS_SUCCESS);
+
+    // FPFwCoreInterruptRegisterCallback
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr_mcp);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER);
+    will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_ERROR);
+
+    assert_int_equal(accel_mcp_intr_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER)),
+                     ACCEL_INTR_RET_FAIL_INTR_NVIC);
+}
+
+/**
+ * @brief : Tests accel_intr_isr_scp_pass with all passing and both FATAL and SDM_MSG interrupt present
+ */
+TEST_FUNCTION(test_accel_intr_isr_scp_pass, nullptr, nullptr)
 {
     mmio_set_mock_data(0x12345678, 0xFFFFFFFF);
     mmio_set_mock_data(0xABCDEF12, 0x0);
@@ -226,13 +313,13 @@ TEST_FUNCTION(test_accel_intr_isr_pass, nullptr, nullptr)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
-    accel_intr_isr((void*)irq_num);
+    accel_intr_isr_scp((void*)irq_num);
 }
 
 /**
- * @brief : Tests accel_intr_isr_pass with all passing but no interrupt at level 2
+ * @brief : Tests accel_intr_isr_scp_pass with all passing but no interrupt at level 2
  */
-TEST_FUNCTION(test_accel_intr_isr_pass_no_level2_intr, nullptr, nullptr)
+TEST_FUNCTION(test_accel_intr_isr_scp_pass_no_level2_intr, nullptr, nullptr)
 {
     mmio_set_mock_data(0x12345678, 0xFFFFFFFF);
     mmio_set_mock_data(0xABCDEF12, 0x0);
@@ -254,13 +341,13 @@ TEST_FUNCTION(test_accel_intr_isr_pass_no_level2_intr, nullptr, nullptr)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
-    accel_intr_isr((void*)irq_num);
+    accel_intr_isr_scp((void*)irq_num);
 }
 
 /**
- * @brief : Tests accel_intr_isr_pass with all passing but no valid interrupt
+ * @brief : Tests accel_intr_isr_scp_pass with all passing but no valid interrupt
  */
-TEST_FUNCTION(test_accel_intr_isr_pass_no_interrupt, nullptr, nullptr)
+TEST_FUNCTION(test_accel_intr_isr_scp_pass_no_interrupt, nullptr, nullptr)
 {
     mmio_set_mock_data(0x12345678, 0x0);
     mmio_set_mock_data(0xABCDEF12, 0xFFFFFFFF);
@@ -280,7 +367,7 @@ TEST_FUNCTION(test_accel_intr_isr_pass_no_interrupt, nullptr, nullptr)
     will_return(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
     expect_value(__wrap_send_mailbox_async_request, IRQnum, irq_num);
 
-    accel_intr_isr((void*)irq_num);
+    accel_intr_isr_scp((void*)irq_num);
 }
 
 /**
@@ -499,22 +586,52 @@ TEST_FUNCTION(test_accel_intr_handle_mbox_recvd_sdm__fail1, NULL, NULL)
     accel_intr_handle_mbox_recvd(SDMSS_IRQ_NUMBER);
 }
 
-TEST_FUNCTION(test_accel_intr_init_sdm__pass, NULL, NULL)
+TEST_FUNCTION(test_accel_intr_init_sdm_scp__pass, NULL, NULL)
 {
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER);
-    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr_scp);
     expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER);
     will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
     assert_int_equal(accel_intr_init(ACCEL_ID_SDM), ACCEL_INTR_RET_SUCCESS);
 }
 
-TEST_FUNCTION(test_accel_intr_init_sdm__fail1, NULL, NULL)
+TEST_FUNCTION(test_accel_intr_init_sdm_mcp__pass, NULL, NULL)
 {
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+
     // FPFwCoreInterruptRegisterCallback
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER);
-    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr_mcp);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER);
+    will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
+
+    assert_int_equal(accel_intr_init(ACCEL_ID_SDM), ACCEL_INTR_RET_SUCCESS);
+}
+
+TEST_FUNCTION(test_accel_intr_init_sdm_scp__fail1, NULL, NULL)
+{
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+
+    // FPFwCoreInterruptRegisterCallback
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr_scp);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER);
+    will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_ERROR);
+
+    assert_int_equal(accel_intr_init(ACCEL_ID_SDM), ACCEL_INTR_RET_FAIL_INTR_NVIC);
+}
+
+TEST_FUNCTION(test_accel_intr_init_sdm_mcp__fail1, NULL, NULL)
+{
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+
+    // FPFwCoreInterruptRegisterCallback
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, isr, accel_intr_isr_mcp);
     expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER);
     will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_ERROR);
 

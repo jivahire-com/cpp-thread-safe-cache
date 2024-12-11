@@ -66,13 +66,29 @@ ACCEL_ID accel_intr_get_accel_type_from_irq_num(uint32_t IRQnum);
  * 3. Enable in NVIC
  *
  * @param[in] accel_type : CDED / SDM accelerator_type
- * @param[in] atu_mapped_address : Address used to calculate Accel Ip register addresses
  * 
  * @retval
  *  On success, ACCEL_INTR_RET_SUCCESS
  *  On failure, ACCEL_INTR_RET_FAIL_*
  */
-int accel_intr_irq_init(ACCEL_ID accel_type);
+int32_t accel_scp_intr_init(ACCEL_ID accel_type);
+
+/**
+ * @brief Initialize ACCEL interrupts
+ *
+ * \b Description:
+ * This will Initialize all supported ACCEL Interrupts handled in MCP
+ * 1. Unmask at Level1 and Level 2
+ * 2. Register ISR
+ * 3. Enable in NVIC
+ *
+ * @param[in] accel_type : CDED / SDM accelerator_type
+ * 
+ * @retval
+ *  On success, ACCEL_INTR_RET_SUCCESS
+ *  On failure, ACCEL_INTR_RET_FAIL_*
+ */
+int32_t accel_mcp_intr_init(ACCEL_ID accel_type);
 
 /**
  * @brief Function called when ASYNC request for SDM_MSG0_INTR is  received

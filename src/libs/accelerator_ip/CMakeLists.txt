@@ -7,6 +7,7 @@ add_library(
     ${TARGET}
         STATIC
             accelerator_ip_configs.c
+            accelerator_ip_mcp.c
             accelerator_ip.c
 )
 

@@ -24,18 +24,27 @@
  * List of sdm_ext interrupts that are handled in SCP
  */
 typedef enum {
-    ACCEL_INTR_EMCPU_WDT_ERR = 0x0,     // Maps to SDM_EXT_EMCPU_WDT_ERR_INTR
-    ACCEL_INTR_CP_FATAL_ERR,            // Maps to SDM_EXT_CP_FATAL_ERR_INTR
-    ACCEL_INTR_UE_ECC_ERR,              // Maps to SDM_EXT_UE_ECC_ERR_INTR
-    ACCEL_INTR_CSR_PARITY_ERR,          // Maps to SDM_EXT_CSR_PARITY_ERR_INTR
-    ACCEL_INTR_SDM_WDT_ERR,             // Maps to SDM_EXT_SDM_WDT_ERR_INTR
-    ACCEL_INTR_FAB_WDT_ERR,             // Maps to SDM_EXT_FAB_WDT_ERR_INTR
-    ACCEL_INTR_AXI_BURST_ERR,           // Maps to SDM_EXT_AXI_BURST_ERR_INTR
-    ACCEL_INTR_AXI_UNSUPP_INTR_STATUS,  // Maps to SDM_EXT_AXI_UNSUPP_INTR_STATUS_INTR
-    ACCEL_INTR_STYRESE_REQ_ERR,         // Maps to SDM_EXT_STYRESE_REQ_ERR_INTR
-    ACCEL_INTR_MBX_I2E,                 // Maps to SDM_EXT_MBX_I2E_INTR
-    ACCEL_INTR_MAX
-} eACCEL_INTR;
+    ACCEL_SCP_INTR_EMCPU_WDT_ERR = 0x0,     // Maps to SDM_EXT_EMCPU_WDT_ERR_INTR
+    ACCEL_SCP_INTR_CP_FATAL_ERR,            // Maps to SDM_EXT_CP_FATAL_ERR_INTR
+    ACCEL_SCP_INTR_UE_ECC_ERR,              // Maps to SDM_EXT_UE_ECC_ERR_INTR
+    ACCEL_SCP_INTR_CSR_PARITY_ERR,          // Maps to SDM_EXT_CSR_PARITY_ERR_INTR
+    ACCEL_SCP_INTR_SDM_WDT_ERR,             // Maps to SDM_EXT_SDM_WDT_ERR_INTR
+    ACCEL_SCP_INTR_FAB_WDT_ERR,             // Maps to SDM_EXT_FAB_WDT_ERR_INTR
+    ACCEL_SCP_INTR_AXI_BURST_ERR,           // Maps to SDM_EXT_AXI_BURST_ERR_INTR
+    ACCEL_SCP_INTR_AXI_UNSUPP_INTR_STATUS,  // Maps to SDM_EXT_AXI_UNSUPP_INTR_STATUS_INTR
+    ACCEL_SCP_INTR_STYRESE_REQ_ERR,         // Maps to SDM_EXT_STYRESE_REQ_ERR_INTR
+    ACCEL_SCP_INTR_MBX_I2E,                 // Maps to SDM_EXT_MBX_I2E_INTR
+    ACCEL_SCP_INTR_MAX
+} eACCEL_SCP_INTR;
+
+/**
+ * List of sdm_ext interrupts that are handled in MCP
+ */
+typedef enum {
+    ACCEL_MCP_INTR_FIRST,
+    ACCEL_MCP_INTR_MBX_I2E = ACCEL_MCP_INTR_FIRST,      // Maps to SDM_EXT_MBX_I2E_INTR
+    ACCEL_MCP_INTR_MAX,
+} eACCEL_MCP_INTR;
 
 #define ACCEL_INTR_GET_DERIVED_ADDR(addr, ext_addr) \
     (addr + SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS + ext_addr)
@@ -100,23 +109,25 @@ typedef struct
  * accel_irq_init_fn : Init function for this bit of interrupt 
  * accel_irq_fn : Validate the IRQ in SDM IP interrupt tree or process if specified by parameter
  */
-extern const accel_intr_irq_data_t accel_intr_irq_data[ACCEL_INTR_MAX];
+extern const accel_intr_irq_data_t accel_irq_scp_data[ACCEL_SCP_INTR_MAX];
+extern const accel_intr_irq_data_t accel_irq_mcp_data[ACCEL_MCP_INTR_MAX];
+
 
 /*--------------------------- Function Prototypes ---------------------------*/
 /**
- * @brief Helper function to get eACCEL_INTR enum 
+ * @brief Helper function to get eACCEL_SCP_INTR enum 
  *
  * \b Description:
- * This function will have mapping of eACCEL_INTR to sdm_ext_cfg_regs.misc.sys_ext_intr2 bit
- * Based on input bit index eACCEL_INTR will be returned
+ * This function will have mapping of eACCEL_SCP_INTR to sdm_ext_cfg_regs.misc.sys_ext_intr2 bit
+ * Based on input bit index eACCEL_SCP_INTR will be returned
  *
  * @param[in] irq_bit : sdm_ext_cfg_regs.misc.sys_ext_intr2 bit
  *
  * @retval
- *  On success, ACCEL_INTR_*
- *  On failure, ACCEL_INTR_MAX
+ *  On success, ACCEL_SCP_INTR_*
+ *  On failure, ACCEL_SCP_INTR_MAX
  */
-eACCEL_INTR accel_intr_get_accel_intr_enum_from_irq_bit(SDM_EXT_INTERRUPT_NUMBER irq_bit);
+eACCEL_SCP_INTR accel_scp_get_intr_enum(SDM_EXT_INTERRUPT_NUMBER irq_bit);
 
 /*************************************************************************
  * Misc Functions
@@ -413,14 +424,24 @@ uint32_t accel_intr_fab_wdt_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_E
 uint32_t accel_intr_process_fatal_interrupts(uint32_t IRQnum, uint32_t ext_cfg_addr, bool process_this_fatal_intr);
 
 /**
- * @brief ISR function for ACCEL IP interrupt 
+ * @brief ISR function for ACCEL IP interrupt on SCP core
  * 
  * @param[in] callback_param : This will have IRQNum to identify if interrupt is received for CDED / SDM
  *
  * @retval void
  *
  */
-void accel_intr_isr(void* callback_param);
+void accel_intr_isr_scp(void* callback_param);
+
+/**
+ * @brief ISR function for ACCEL IP interrupt on MCP core
+ *
+ * @param[in] callback_param : This will have IRQNum to identify if interrupt is received for CDED / SDM
+ *
+ * @retval void
+ *
+ */
+void accel_intr_isr_mcp(void* callback_param);
 
 /*************************************************************************
  * IRQ DFWK Handler functions

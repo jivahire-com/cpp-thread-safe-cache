@@ -61,7 +61,8 @@ mock_target(${TARGET}
     pcr_rpss_init_entity
     system_info_is_hsp_present
     accelip_ss_init
-    accel_intr_irq_init
+    accel_mcp_intr_init
+    accel_scp_intr_init
     fpfw_icc_base_send
     fpfw_icc_base_recv
     fpfw_init_get_handle

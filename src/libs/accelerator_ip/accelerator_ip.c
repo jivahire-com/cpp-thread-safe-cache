@@ -102,7 +102,7 @@ typedef struct _emcpu_rst_struct
 /**
  * Store ATU mapped address
  */
-static uint32_t accel_intr_atu_map_address[NUM_VALID_ACCEL_ID];
+uint32_t accel_intr_atu_map_address[NUM_VALID_ACCEL_ID] = {0};
 
 // Forward declaring static function to allow for creation of struct
 static void request_accel_fw_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status);
@@ -296,7 +296,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
     }
     debug_print("atu mapped for accel ip\n");
 
-    accel_intr_atu_map_address[get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type)] = atu_map_entry.mscp_start_address;
+    accel_intr_atu_map_address[accel_type] = atu_map_entry.mscp_start_address;
 
     // Disable fw_preload_enabled if running on any Hardware, and if HSP is not present on that hardware
     if ((!system_info_is_hsp_present()) && (idsw_get_platform_sdv() != PLATFORM_SVP_SIM))
@@ -337,7 +337,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
          */
         printf("accel lib: Initialize accel interrupt\n");
 
-        ret = accel_intr_irq_init(get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type));
+        ret = accel_scp_intr_init(get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type));
         if (ret != ACCEL_INTR_RET_SUCCESS)
         {
             critical_print("Accel IP: init_accelerator: Accel Interrupt init failed.\n");

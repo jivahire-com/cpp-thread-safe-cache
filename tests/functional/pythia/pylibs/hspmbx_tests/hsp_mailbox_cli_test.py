@@ -29,7 +29,7 @@ class hsp_mailbox_cli_test(EchoFallsBaseTest):
     """
     def __init__(
         self,
-        name: str = None,
+        name: str = "HSPMBX_Echo_test",
         number: str = "NaN",
         workspace_config: Path | str = None,
         default_log_home: str = None,

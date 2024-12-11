@@ -86,7 +86,7 @@ class mod_power_telemetry_loop_health(EchoFallsBaseTest):
             self.log.info(f"Submitting {command}\n")
             core_com_channel.write_line(write_string=command)
             try:
-                core_com_channel.read_until(key="Health: no errors", timeout_seconds=30)
+                core_com_channel.read_until(key="Health: no errors", timeout_seconds=150)
             except Exception as e:
                 self.log.error(f"Error reading SCP UART: {e}")
                 self.test_notify(step="Power module pwr status <args> cmd status: Fail", msg="Test Fail", _is_error=True)

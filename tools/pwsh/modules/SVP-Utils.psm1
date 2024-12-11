@@ -84,7 +84,7 @@ Function Invoke-Virtualizer(
     $env:SNPS_VPSESSION_LAUNCH_TIMEOUT_SEC = 600
     $env:SNPS_VPX_DEFAULT_TIMEOUT = 600
 
-    $env:SNPS_VS_VDK_SEARCH_PATHS=(Resolve-Path $svp_sim_dir\win\release\KingsgateSVP\*\*\).toString()
+    $env:SNPS_VS_VDK_SEARCH_PATHS=(Resolve-Path ${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}\win\release\KingsgateSVP\*\*\).toString()
 
     # Cleanup any SVP Setup that may be running. Do this before cleaning anything else up.
     Write-Host ""

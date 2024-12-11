@@ -17,11 +17,11 @@
         <package name="echofalls.svp.stmm.build" version="1.10.0.181" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="echofalls.fpga.uefi.build" version="1.10.0.181" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="echofalls.fpga.stmm.build" version="1.10.0.181" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
-        <package name="1pfw.datwizard-preview-x86_64-pc-windows-msvc" version="0.2.0-20241029.2" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/nuget/v3/index.json"/>
+        <package name="1pfw.datwizard-preview-x86_64-pc-windows-msvc" version="0.2.0-20241121.3" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/nuget/v3/index.json"/>
     </nuget_packages>
 
     <pip_packages>
-        <package name="pythia-tdk-rrm" version="0.1.56" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
+        <package name="pythia-tdk-rrm" version="0.1.58" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
         <package name="pythia-tdk-echofalls" version="1.0.12" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
         <package name="diagtool" version="1.0.184" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
     </pip_packages>

@@ -83,7 +83,7 @@ jobs:
           $bin_dest_dir = "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch"
           Copy-Item $bin_src_dir $bin_dest_dir -Recurse -Force
 
-          flashscpfw ${{ parameters.TestAgent }}
+          flashscpfw ${{ parameters.TestAgent }} -file kingsgate.ifwi.ap.baremetal.debug.dat
 
           Invoke-Pythia -test ${{ parameters.TestPlan }} -platform fpga
 

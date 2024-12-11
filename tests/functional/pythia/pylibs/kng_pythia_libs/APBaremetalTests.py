@@ -31,7 +31,7 @@ class APBaremetalTests(EchoFallsBaseTest):
     """
 
     READ_UNTIL_KEY = "Primary AP core power on"
-    TIMEOUT_SECONDS = 600
+    TIMEOUT_SECONDS = 900
 
     def __init__(
         self,

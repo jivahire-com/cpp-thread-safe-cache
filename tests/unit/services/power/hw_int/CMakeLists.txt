@@ -76,6 +76,7 @@ mock_target(${TARGET}
     all_requests_completed
     scp_avs_client_read
     scp_avs_client_read_multi
+    scp_avs_client_write_multi
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

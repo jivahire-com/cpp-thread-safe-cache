@@ -516,6 +516,20 @@ void AVSPwrWriteRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Comp
 
 void AVSPwrReadRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext);
 
+/**
+ * @brief AVS write VR knob callback function.
+ *
+ * \b Description:
+ *      Callback function for AVS power init write knob request.  
+ *      If a knob is non zero, then the value is written to the voltage regulator.
+ * 
+ * @param[in] Request
+ * @param[in] CompletionContext
+ * @return none
+ *
+ */
+void AVSPwrKnobWriteRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext);
+
 #ifdef __cplusplus
 }
 #endif

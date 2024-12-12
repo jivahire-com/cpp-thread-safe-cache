@@ -109,6 +109,32 @@ void AVSPwrWriteRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Comp
     }
 }
 
+void AVSPwrKnobWriteRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext)
+{
+    FPFW_UNUSED(Request);
+    int pwr_avs_bus = (int)CompletionContext;
+
+    pwr_avs_request[pwr_avs_bus].in_use = false;
+
+    BUG_ASSERT(pwr_avs_request[pwr_avs_bus].request.avs_response_status == SCP_AVS_STATUS_SUCCESS);
+
+    switch (pwr_avs_request[pwr_avs_bus].request.Header.RequestType)
+    {
+    case AVS_REQUEST_WRITE_DATA:
+    case AVS_REQUEST_WRITE_MULTI:
+        if (pwr_avs_request[pwr_avs_bus].request.avs_response_single_resp.error.v_done == 1)
+        {
+            POWER_LOG_TRACE("\n AVS PWR knob init Write complete\n");
+        }
+        break;
+
+    default:
+        // unexpected to receive any other event in this state,
+        POWER_LOG_ERR("\n AVSPwrKnobWriteRequestCompletion, unexpected RequestType\n");
+        break;
+    }
+}
+
 void AVSPwrReadRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext)
 {
     FPFW_UNUSED(Request);
@@ -160,7 +186,7 @@ void AVSPwrReadRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Compl
                 pwr_avs_request[pwr_avs_bus].request.avs_resp_multi.avs_response_multi[resp_idx++].data;
             s_power_vrs_ctx.vr_inputs[temp_vr_index].temperature =
                 pwr_avs_request[pwr_avs_bus].request.avs_resp_multi.avs_response_multi[resp_idx++].data;
-            POWER_LOG_TRACE("voltage[%d] = %d\n", temp_vr_index, s_power_vrs_ctx.vr_inputs[temp_vr_index].voltage); // !!! printing for debugging!!!!
+            POWER_LOG_TRACE("voltage[%d] = %d\n", temp_vr_index, s_power_vrs_ctx.vr_inputs[temp_vr_index].voltage);
             POWER_LOG_TRACE("current[%d] = %d\n", temp_vr_index, s_power_vrs_ctx.vr_inputs[temp_vr_index].current);
             POWER_LOG_TRACE("temperature[%d] = %d\n", temp_vr_index, s_power_vrs_ctx.vr_inputs[temp_vr_index].temperature);
         }
@@ -197,6 +223,89 @@ void AVSPwrReadRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Compl
         power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_SET_FAIL, NULL);
         break;
     }
+}
+
+void pwr_hw_vrs_init(void)
+{
+    power_runconfig_t* p_runconfig = power_runconfig_get();
+    const power_service_config_t* p_config = p_runconfig->p_sconfig;
+
+    uint8_t vr_start_index;
+    vr_start_index = p_config->vr_idx_info.flattened_vr_start_idx;
+
+    BUG_ASSERT(vr_start_index < DIMOF(p_runconfig->knobs.forced_vrs.vr));
+
+    int avs_bus;
+    uint8_t vr_index;
+    for (avs_bus = 0, vr_index = vr_start_index; avs_bus < (p_config->num_vr / MAX_AVS_RAILS); avs_bus++, vr_index++)
+    {
+        // Check to see if both VRs are forced to a value.  If so then write both VRs on the same AVSBus (scp_avs_client_write_multi)
+        if ((p_runconfig->knobs.forced_vrs.vr[vr_index] != 0) && (p_runconfig->knobs.forced_vrs.vr[vr_index + 1] != 0))
+        {
+            POWER_LOG_TRACE(" Both PWR AVS knobs not zero, vr_index = %d, knob = %d, knob 2 = %d \n",
+                            vr_index,
+                            p_runconfig->knobs.forced_vrs.vr[vr_index],
+                            p_runconfig->knobs.forced_vrs.vr[vr_index + 1]);
+
+            pwr_avs_request[p_config->avs_details[vr_index].bus_id].in_use = true;
+            pwr_avs_request[p_config->avs_details[vr_index].bus_id]
+                .request.avs_resp_multi.avs_response_multi[AVS_RAIL0]
+                .data = p_runconfig->knobs.forced_vrs.vr[vr_index];
+            pwr_avs_request[p_config->avs_details[vr_index].bus_id]
+                .request.avs_resp_multi.avs_response_multi[AVS_RAIL0]
+                .error.as_uint8 = AVS_ERROR_NONE;
+
+            vr_index++; // write second VR on the same AVSBus
+            pwr_avs_request[p_config->avs_details[vr_index].bus_id].in_use = true;
+            pwr_avs_request[p_config->avs_details[vr_index].bus_id]
+                .request.avs_resp_multi.avs_response_multi[AVS_RAIL1]
+                .data = p_runconfig->knobs.forced_vrs.vr[vr_index];
+            pwr_avs_request[p_config->avs_details[vr_index].bus_id]
+                .request.avs_resp_multi.avs_response_multi[AVS_RAIL1]
+                .error.as_uint8 = AVS_ERROR_NONE;
+
+            scp_avs_client_write_multi(&pwr_avs_interfaces[avs_bus]->Header,
+                                       &pwr_avs_request[avs_bus].request.Header,
+                                       AVSPwrKnobWriteRequestCompletion,
+                                       (void*)avs_bus);
+        }
+        else if ((p_runconfig->knobs.forced_vrs.vr[vr_index] != 0) ||
+                 (p_runconfig->knobs.forced_vrs.vr[vr_index + 1] != 0))
+        {
+            // Only one VR is forced to a value, write the single VR on the AVSBus (scp_avs_client_write)
+            bool index_incremented = false;
+            if (p_runconfig->knobs.forced_vrs.vr[vr_index + 1] != 0)
+            {
+                vr_index++; // pre-incremented to write the second VR on the same AVSBus
+                index_incremented = true;
+            }
+            POWER_LOG_TRACE(" PWR AVS one knob not zero, vr_index = %d, knob = %d, avs_bus = %d \n",
+                            vr_index,
+                            p_runconfig->knobs.forced_vrs.vr[vr_index],
+                            avs_bus);
+
+            pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_response_single_resp.error.as_uint8 =
+                AVS_ERROR_NONE;
+            pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_params.avs_cmd_info.rail_id =
+                p_config->avs_details[vr_index].rail_id;
+            pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_params.avs_data =
+                p_runconfig->knobs.forced_vrs.vr[vr_index];
+            pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_params.avs_cmd_info.cmd_type = AVS_VOLTAGE_RW;
+            pwr_avs_request[p_config->avs_details[vr_index].bus_id].in_use = true;
+
+            scp_avs_client_write(&pwr_avs_interfaces[p_config->avs_details[vr_index].bus_id]->Header,
+                                 &pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.Header,
+                                 AVSPwrKnobWriteRequestCompletion,
+                                 (void*)(uintptr_t)p_config->avs_details[vr_index].bus_id);
+
+            if (!index_incremented)
+            {
+                vr_index++; // post increment to skip over the second VR
+            }
+        }
+    }
+
+    POWER_LOG_TRACE(" PWR AVS init VRs (knobs) complete \n");
 }
 
 void power_vrs_initiate_vr_reads()
@@ -293,7 +402,7 @@ void power_vrs_write_vcpu_voltage(uint16_t voltage_mv)
     uint8_t vcpu_index;
     vcpu_index = p_config->vr_idx_info.vcpu_idx;
 
-    assert(vcpu_index < DIMOF(p_runconfig->knobs.forced_vrs.vr));
+    BUG_ASSERT(vcpu_index < DIMOF(p_runconfig->knobs.forced_vrs.vr));
     if (p_runconfig->knobs.forced_vrs.vr[vcpu_index] != 0)
     {
         power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
@@ -447,4 +556,5 @@ void pwr_avs_initialize(pscp_avs_interface_t avs_array[])
         pwr_avs_request[i].in_use = false;
     }
     reset_errors(pwr_avs_request, (p_config->num_vr / MAX_AVS_RAILS));
+    pwr_hw_vrs_init();
 }

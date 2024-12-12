@@ -68,7 +68,9 @@ static _power_service_config_t s_config = {
     .cluster_stride = CLUSTER_STRIDE,
     .num_vr = 8,
 };
-static power_runconfig_t s_runconfig = {.p_sconfig = &s_config};
+static power_runconfig_t s_runconfig = {
+    .p_sconfig = &s_config,
+};
 
 extern avs_pwr_request_context_t pwr_avs_request[MAX_AVS_INST];
 
@@ -127,6 +129,18 @@ void __wrap_scp_avs_client_read_multi(PDFWK_INTERFACE_HEADER Interface,
     check_expected(CompletionRoutine);
     check_expected(CompletionContext);
     check_expected(count);
+    function_called();
+}
+
+void __wrap_scp_avs_client_write_multi(PDFWK_INTERFACE_HEADER Interface,
+                                       PDFWK_ASYNC_REQUEST_HEADER Request,
+                                       DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine,
+                                       void* CompletionContext)
+{
+    check_expected(Interface);
+    check_expected(Request);
+    check_expected(CompletionRoutine);
+    check_expected(CompletionContext);
     function_called();
 }
 
@@ -548,6 +562,9 @@ static int setup(void** state)
     s_config.platform_cores_in_die = &default_cores;
     s_config.platform_die_core_count = TEST_CORE_COUNT;
     s_config.num_vr = 8;
+
+    memset(pwr_avs_request, 0, sizeof(pwr_avs_request));
+
     return 0;
 }
 
@@ -1427,7 +1444,6 @@ POWER_TEST(power_vrs_write_vcpu_voltage_low_range, setup, teardown)
 
     sconfig.avs_details[vcpu_test_index].bus_id = vcpu_test_index;
     sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;
-
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 
     expect_function_call(__wrap_all_requests_completed);
@@ -1606,6 +1622,7 @@ POWER_TEST(power_avs_initialize, setup, teardown)
     }
 
     will_return(__wrap_power_runconfig_get, &test_runconfig);
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
 
     pscp_avs_interface_t avs_array[MAX_AVS_INST] = {0};
 
@@ -1650,4 +1667,77 @@ POWER_TEST(power_vrs_read_vcpu_voltage, setup, teardown)
 
     power_vrs_read_vcpu_voltage();
     assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
+}
+
+POWER_TEST(power_vrs_write_knob_voltage_callback, setup, teardown)
+{
+    PDFWK_ASYNC_REQUEST_HEADER request = NULL;
+    scp_avs_device_t test_avs_device = {
+        .avs_bus_num = AVS_BUS0,
+    };
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_status = AVS_ERROR_NONE;
+    pwr_avs_request[test_avs_device.avs_bus_num].in_use = 1;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.Header.RequestType = AVS_REQUEST_WRITE_DATA;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_single_resp.error.v_done = 1;
+
+    AVSPwrKnobWriteRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
+    assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num].in_use, 0);
+}
+
+POWER_TEST(power_hw_vrs_initialize, setup, teardown)
+{
+    scp_avs_device_t test_avs_device = {
+        .avs_bus_num = AVS_BUS0,
+    };
+    static avs_pwr_request_context_t test_avs_Request_multi = {};
+    static avs_pwr_request_context_t test_avs_Request = {};
+
+    power_service_config_t sconfig = {};
+    sconfig.num_vr = 4; // 4 VRs for testing.
+    power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
+
+    sconfig.avs_details[0].bus_id = 0;
+    sconfig.avs_details[0].rail_id = 0;
+    sconfig.avs_details[1].bus_id = 0;
+    sconfig.avs_details[1].rail_id = 1;
+    sconfig.avs_details[2].bus_id = 1;
+    sconfig.avs_details[2].rail_id = 0;
+
+    test_runconfig.knobs.forced_vrs.vr[10] = {0};
+
+    test_runconfig.knobs.forced_vrs.vr[0] = 888; // This along with the line below will force a multi write.
+    test_runconfig.knobs.forced_vrs.vr[1] = 909;
+    test_runconfig.knobs.forced_vrs.vr[2] = 870; // This will force a single write.
+    test_runconfig.knobs.forced_vrs.vr[3] = 0;
+
+    test_avs_Request_multi.in_use = true;
+    test_avs_Request_multi.request.avs_resp_multi.avs_response_multi[0].data = test_runconfig.knobs.forced_vrs.vr[0];
+    test_avs_Request_multi.request.avs_resp_multi.avs_response_multi[0].error.as_uint8 = AVS_ERROR_NONE;
+    test_avs_Request_multi.request.avs_resp_multi.avs_response_multi[1].data = test_runconfig.knobs.forced_vrs.vr[1];
+    test_avs_Request_multi.request.avs_resp_multi.avs_response_multi[1].error.as_uint8 = AVS_ERROR_NONE;
+
+    test_avs_device.avs_bus_num = AVS_BUS1;
+
+    test_avs_Request.request.avs_response_single_resp.error.as_uint8 = AVS_ERROR_NONE;
+    test_avs_Request.in_use = true;
+    test_avs_Request.request.avs_params.avs_cmd_info.rail_id = 0;
+    test_avs_Request.request.avs_params.avs_cmd_info.cmd_type = AVS_VOLTAGE_RW;
+    test_avs_Request.request.avs_params.avs_data = test_runconfig.knobs.forced_vrs.vr[2];
+
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+
+    expect_any(__wrap_scp_avs_client_write_multi, Interface);
+    expect_memory(__wrap_scp_avs_client_write_multi, Request, &test_avs_Request_multi, sizeof(test_avs_Request_multi));
+    expect_value(__wrap_scp_avs_client_write_multi, CompletionRoutine, AVSPwrKnobWriteRequestCompletion);
+    expect_any(__wrap_scp_avs_client_write_multi, CompletionContext);
+    expect_function_call(__wrap_scp_avs_client_write_multi);
+
+    expect_any(__wrap_scp_avs_client_write, Interface);
+    expect_memory(__wrap_scp_avs_client_write, Request, &test_avs_Request, sizeof(test_avs_Request));
+    expect_value(__wrap_scp_avs_client_write, CompletionRoutine, AVSPwrKnobWriteRequestCompletion);
+    expect_any(__wrap_scp_avs_client_write, CompletionContext);
+    expect_function_call(__wrap_scp_avs_client_write);
+
+    // Call the function under test
+    pwr_hw_vrs_init();
 }

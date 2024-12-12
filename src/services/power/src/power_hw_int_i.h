@@ -249,6 +249,14 @@ void power_telemetry_enable();
  */
 void power_telemetry_message_poll(power_hw_update_cb_t p_update_cb, power_hw_success_cb_t p_success_cb);
 
+/**
+ * @brief Checks the config knob voltage regulators during initialization. 
+
+ * \b Description: If not zero, then the write that value to the voltage regulator.
+ *
+ */
+void pwr_hw_vrs_init(void);
+
 bool all_requests_completed(avs_pwr_request_context_t* pwr_avs_request, uint8_t max_avs_bus);
 bool no_errors(avs_pwr_request_context_t* pwr_avs_request, uint8_t max_avs_bus);
 void reset_errors(avs_pwr_request_context_t* pwr_avs_request, uint8_t max_avs_bus);

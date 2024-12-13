@@ -6,12 +6,14 @@ set(SOURCES
 
 # Compile test
 add_executable(${TARGET} ${SOURCES})
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
 target_link_libraries(${TARGET}
     PRIVATE
         atu
         clocks_sequence
         fwlib.lib.init
+        fwlib.lib.cfg_mgr
         idhw
         silibs::idsw
         silibs::idsw_kng
@@ -31,4 +33,5 @@ unit_test_target(${TARGET})
 # Mock the functions needed
 mock_target(${TARGET}
     clocks_sequence_css_pre_mesh_init
+    config_get_intclk_knobs
 )

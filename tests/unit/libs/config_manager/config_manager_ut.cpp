@@ -185,6 +185,25 @@ static int rmss_memory_map_setup(void** state)
 
     return 0;
 }
+
+size_t __wrap_fpfw_cfg_mgr_get_cached_knob_values_size()
+{
+    return mock_type(size_t);
+}
+
+fpfw_status_t __wrap_fpfw_cfg_mgr_get_cached_knob_values(void* dest_addr, size_t dest_size)
+{
+    check_expected(dest_addr);
+    check_expected(dest_size);
+    return mock_type(fpfw_status_t);
+}
+
+fpfw_status_t __wrap_fpfw_cfg_mgr_set_cached_knob_values(void* src_addr, size_t src_size)
+{
+    check_expected(src_addr);
+    check_expected(src_size);
+    return mock_type(fpfw_status_t);
+}
 }
 
 //
@@ -200,6 +219,19 @@ TEST_FUNCTION(test_cfg_mgr_init_no_hsp, nullptr, nullptr)
     assert_true(get_cached_knob_data() != NULL);
 }
 
+TEST_FUNCTION(test_cfg_mgr_init_mcp, nullptr, nullptr)
+{
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+
+    will_return(__wrap_system_info_is_hsp_present, true);
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
+    will_return(__wrap_fpfw_cfg_mgr_set_cached_knob_values, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_cfg_mgr_set_cached_knob_values, src_addr, SCP_EXP_CONFIG_KNOB_CACHE_BASE);
+    expect_value(__wrap_fpfw_cfg_mgr_set_cached_knob_values, src_size, KNOB_MAX);
+
+    cfg_mgr_init(&config_manager_setting, &shared_mem);
+}
+
 TEST_FUNCTION(test_cfg_mgr_init_no_override, nullptr, nullptr)
 {
     hsp_variable_svc_invoke_count = 0;
@@ -212,6 +244,11 @@ TEST_FUNCTION(test_cfg_mgr_init_no_override, nullptr, nullptr)
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
+
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_addr, SCP_EXP_CONFIG_KNOB_CACHE_BASE);
+    expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_size, KNOB_MAX);
 
     cfg_mgr_init(&config_manager_setting, &shared_mem);
 
@@ -238,6 +275,11 @@ TEST_FUNCTION(test_cfg_mgr_init_override_die0, rmss_memory_map_setup, nullptr)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_SUCCESS);
 
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
+    expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_addr, SCP_EXP_CONFIG_KNOB_CACHE_BASE);
+    expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_size, KNOB_MAX);
+
     cfg_mgr_init(&config_manager_setting, &shared_mem);
 }
 
@@ -252,6 +294,11 @@ TEST_FUNCTION(test_cfg_mgr_init_override_die1, rmss_memory_map_setup, nullptr)
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_1);
+
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_addr, SCP_EXP_CONFIG_KNOB_CACHE_BASE);
+    expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_size, KNOB_MAX);
 
     cfg_mgr_init(&config_manager_setting, &shared_mem);
 }
@@ -268,6 +315,11 @@ TEST_FUNCTION(test_update_knob_in_cached_db_cb, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
     expect_function_call(__wrap_update_knob_in_cached_db_cb);
+
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_addr, SCP_EXP_CONFIG_KNOB_CACHE_BASE);
+    expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_size, KNOB_MAX);
 
     cfg_mgr_init(&config_manager_setting, &shared_mem);
 
@@ -286,6 +338,11 @@ TEST_FUNCTION(test_update_knob_data, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
     expect_function_call(__wrap_variable_service_async_set_variable);
+
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_addr, SCP_EXP_CONFIG_KNOB_CACHE_BASE);
+    expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_size, KNOB_MAX);
 
     cfg_mgr_init(&config_manager_setting, &shared_mem);
 

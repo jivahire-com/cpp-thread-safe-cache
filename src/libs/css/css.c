@@ -12,7 +12,9 @@
 #include <FpFwAssert.h>
 #include <atu_lib.h>
 #include <clocks_sequence.h>
+#include <clocks_sequence_knobs.h>
 #include <css.h>
+#include <fpfw_cfg_mgr.h>
 #include <kng_soc_constants.h>
 #include <ppu_v1.h>
 #include <silibs_ap_top_regs.h>
@@ -51,12 +53,15 @@ void css_pre_mesh_init(uint8_t die_num)
 {
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
 
+    intclk_cfg_t intclk_knobs = config_get_intclk_knobs();
+
     clocks_sequence_css_pre_mesh_init_t scp_clocks_pre_mesh_param = {};
     scp_clocks_pre_mesh_param.system_ppu_opmode = PPU_V1_OPMODE_01;
     scp_clocks_pre_mesh_param.skip_css_pcr_init = false;
     scp_clocks_pre_mesh_param.skip_msxp_pcr_init = false;
     scp_clocks_pre_mesh_param.system_smmu_gpt_enabled = false;
     scp_clocks_pre_mesh_param.system_smmu_l0gptsz = 0;
+    scp_clocks_pre_mesh_param.intclk_cfg = &intclk_knobs;
     int sts = clocks_sequence_css_pre_mesh_init(&scp_clocks_pre_mesh_param);
     FPFW_RUNTIME_ASSERT(sts == 0);
 }

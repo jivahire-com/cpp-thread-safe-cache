@@ -45,6 +45,9 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    fpfw_cfg_mgr_get_cached_knob_values_size
+    fpfw_cfg_mgr_get_cached_knob_values
+    fpfw_cfg_mgr_set_cached_knob_values
     system_info_is_hsp_present
     variable_service_initialize_ctx
     variable_service_sync_get_variable

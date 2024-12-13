@@ -417,6 +417,9 @@
     <Knob name="power_tile_hot_en" type="bool" default="true" />
     <Knob name="power_tile_thermtrip_en" type="bool" default="true" />
 
+
+    <Knob name="intclk_knobs" type="intclk_cfg_t" help="INT-CLK knobs for programming non-POR frequency" />
+
   </Knobs>
 
 </ConfigSchema>

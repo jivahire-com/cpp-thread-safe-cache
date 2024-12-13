@@ -13,6 +13,8 @@
 #include <bug_check.h>
 #include <config_manager.h>
 #include <config_manager_i.h>
+#include <fpfw_cfg_mgr.h>
+#include <fpfw_status.h>
 #include <idhw.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -247,24 +249,33 @@ void cfg_mgr_init(fpfw_cfg_mgr_config_t* cfg_mgr_config, var_service_shared_mem_
                 }
 
                 d2d_sync_point.value = CFG_MGR_RELAY_PAYLOAD_SIGNATURE;
-                mscp_exp_spi_synchronize_dies(d2d_sync_point, idsw_get_die_id());
+                int d2d_sync_status = mscp_exp_spi_synchronize_dies(d2d_sync_point, idsw_get_die_id());
+                BUG_ASSERT_PARAM(d2d_sync_status == SILIBS_SUCCESS, d2d_sync_status, SILIBS_SUCCESS);
 
                 if (idsw_get_die_id() != DIE_0)
                 {
                     apply_override_knob_from_primary_die(SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE);
                 }
+
+                // Copy all cached knob values, including the ones now that got overridden
+                // to the shared RAM for MCP to read.
+                size_t knob_values_size = fpfw_cfg_mgr_get_cached_knob_values_size();
+                BUG_ASSERT_PARAM(knob_values_size <= SCP_EXP_CONFIG_KNOB_CACHE_SIZE, knob_values_size, SCP_EXP_CONFIG_KNOB_CACHE_SIZE);
+
+                fpfw_status_t status =
+                    fpfw_cfg_mgr_get_cached_knob_values((void*)SCP_EXP_CONFIG_KNOB_CACHE_BASE, knob_values_size);
+                BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(status), status, knob_values_size);
             }
         }
         else
         {
-            // Temporary workaround on MCP not allow getting override knob value from HSP.
-            // To do - https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/849213/
+            // Copy all knob values updated by the SCP into the MCP
+            size_t knob_values_size = fpfw_cfg_mgr_get_cached_knob_values_size();
+            BUG_ASSERT_PARAM(knob_values_size <= SCP_EXP_CONFIG_KNOB_CACHE_SIZE, knob_values_size, SCP_EXP_CONFIG_KNOB_CACHE_SIZE);
 
-            /*
-            // on MCP, both DIEs will use DDR space for variable service payload.
-            hsp_variable_service_initialize(var_svc_mem_ctx);
-            apply_override_knob_from_hsp();
-            */
+            fpfw_status_t status =
+                fpfw_cfg_mgr_set_cached_knob_values((void*)SCP_EXP_CONFIG_KNOB_CACHE_BASE, knob_values_size);
+            BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(status), status, knob_values_size);
         }
     }
 }

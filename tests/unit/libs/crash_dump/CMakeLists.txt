@@ -26,6 +26,7 @@ target_link_libraries(${TARGET}
     ms::cmocka::testrunner
     ms::cmsis::interface
     ms::lib::crash_dump
+    ms::lib::icc_platform_defines
     ms::lib::threadx
     silibs::kng_silibs_platform
     silibs::gpio
@@ -65,6 +66,8 @@ mock_target(${TARGET}
     CdRegisterAddress32PointerArray
     CdRegisterCallback
     CdRegisterRegisterSet
+    fpfw_icc_base_recv
+    fpfw_icc_base_send_sync
     _txe_mutex_create
     _tx_mutex_get
     _tx_mutex_put

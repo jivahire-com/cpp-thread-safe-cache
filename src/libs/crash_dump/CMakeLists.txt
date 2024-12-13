@@ -5,6 +5,7 @@ set (SOURCES
         src/crash_dump.c
         src/crash_dump_cli.c
         src/crash_dump_gpio.c
+        src/crash_dump_icc.c
         src/crash_dump_init.c
         src/crash_dump_overrides.c
         src/crash_dump_payload_core.c
@@ -24,15 +25,21 @@ add_library(${TARGET}
 target_link_libraries(${TARGET}
     PUBLIC
         fwlib.lib.crashDump
+        fwlib.service.iccBase
         ms::lib::debug
         ms::lib::error_codes
     PRIVATE
         fwlib.lib.assert
         fwlib.service.cli
+        kng.lib.hsp_firmware_headers
         ms::build_data
         ms::cmsis::interface
+        ms::lib::cortex_m7::nvic
+        ms::lib::icc_platform_defines
         ms::lib::threadx
         silibs::gpio
+        silibs::icc_mhu
+        silibs::idhw
         silibs::kng_silibs_platform
 )
 

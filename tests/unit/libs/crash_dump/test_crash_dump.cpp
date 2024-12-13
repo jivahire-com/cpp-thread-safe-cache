@@ -10,11 +10,13 @@
 /*------------- Includes -----------------*/
 #include "test_crash_dump_expect.h" // for __wrap_CdRegisterAddress32, __wrap_CdRegisterCallback...
 
-#include <CMockaWrapper.h>            // for check_expected_ptr, expect_fun...
-#include <cstdint>                    // for uint32_t, uint64_t
+#include <CMockaWrapper.h> // for check_expected_ptr, expect_fun...
+#include <cstdint>         // for uint32_t, uint64_t
+#include <icc_platform_defines.h>
 #include <modules/CdDumpDescriptor.h> // for _FPFwCdDumpPriority
-#include <stddef.h>                   // for NULL
-#include <tx_api.h>                   // for TX_THREAD, ULONG
+#include <silibs_common.h>
+#include <stddef.h> // for NULL
+#include <tx_api.h> // for TX_THREAD, ULONG
 
 extern "C" {
 #include <../src/crash_dump_gpio.h>      // for cd_gpio_assert_cd_available, cd_gpio_as...
@@ -23,6 +25,7 @@ extern "C" {
 #include <cmsis_m7.h>                    // for SCB
 #include <crash_dump.h>                  // for crash_dump_init
 #include <crash_dump_memory.h>           // for CRASH_DUMP_FULL_SIZE
+#include <kng_icc_shared.h>              // for ICC_SIGNAL_CRASH_DUMP_COLLECT
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define CD_DEFAULT_MEM_POOL_SIZE 1024
@@ -281,6 +284,67 @@ TEST_FUNCTION(test_crash_dump_init, init_crash_dump_context, nullptr)
     crash_dump_init(&config);
 }
 
+TEST_FUNCTION(test_crash_dump_config_icc_mhu_local, NULL, NULL)
+{
+    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
+    will_return(__wrap_GetCrashDumpConfig, &config);
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
+    expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, 512);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, ICC_SIGNAL_CRASH_DUMP_COLLECT);
+
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_recv);
+
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_MHU_LOCAL, (fpfw_icc_base_ctx_t*)0x12345678);
+
+    assert_true(config.icc_mhu_local_core_ctx == (fpfw_icc_base_ctx_t*)0x12345678);
+}
+
+TEST_FUNCTION(test_crash_dump_config_icc_mhu_remote, NULL, NULL)
+{
+    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
+    will_return(__wrap_GetCrashDumpConfig, &config);
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
+    expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, 512);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, ICC_SIGNAL_CRASH_DUMP_COLLECT);
+
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_recv);
+
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_MHU_REMOTE, (fpfw_icc_base_ctx_t*)0x12345678);
+
+    assert_true(config.icc_mhu_remote_core_ctx == (fpfw_icc_base_ctx_t*)0x12345678);
+}
+
+TEST_FUNCTION(test_crash_dump_config_icc_spi_remote, NULL, NULL)
+{
+    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
+    will_return(__wrap_GetCrashDumpConfig, &config);
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
+    expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, sizeof(rmss_d2d_mailbox_msg));
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, RMSS_D2D_MAILBOX_MSG_CRASHDUMP_SIGNAL_REQ);
+
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_recv);
+
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_SPI_REMOTE, (fpfw_icc_base_ctx_t*)0x12345678);
+
+    assert_true(config.icc_spi_remote_core_ctx == (fpfw_icc_base_ctx_t*)0x12345678);
+}
+
+TEST_FUNCTION(test_crash_dump_config_icc_hsp, NULL, NULL)
+{
+    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
+    will_return(__wrap_GetCrashDumpConfig, &config);
+
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_HSP, (fpfw_icc_base_ctx_t*)0x12345678);
+
+    assert_true(config.icc_hsp_ctx == (fpfw_icc_base_ctx_t*)0x12345678);
+}
+
 TEST_FUNCTION(test_crash_dump_capture_threadx, NULL, NULL)
 {
     // Set up test data
@@ -397,9 +461,32 @@ TEST_FUNCTION(test_crash_dump_handler, nullptr, nullptr)
     uint32_t p4 = 0x12348765;
 
     // Set up expectations
-    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
+    crash_dump_config_t config = {
+        .die_index = 0,
+        .core_index = CRASH_DUMP_CORE_SCP,
+        .in_memory = in_memory,
+        .icc_mhu_local_core_ctx = (fpfw_icc_base_ctx_t*)0x00000001,  // Non-null ICC HSP Context,
+        .icc_mhu_remote_core_ctx = (fpfw_icc_base_ctx_t*)0x00000002, // Non-null ICC HSP Context
+        .icc_spi_remote_core_ctx = (fpfw_icc_base_ctx_t*)0x00000003, // Non-null ICC HSP Context
+        .icc_hsp_ctx = (fpfw_icc_base_ctx_t*)0x00000004              // Non-null ICC HSP Context
+    };
 
-    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return_always(__wrap_GetCrashDumpConfig, &config);
+
+    // Expect ICC local notification
+    expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, config.icc_mhu_local_core_ctx);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_send_sync);
+
+    // Expect ICC remote notification
+    expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, config.icc_mhu_remote_core_ctx);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_send_sync);
+
+    // Expect ICC HSP notification
+    expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, config.icc_hsp_ctx);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_send_sync);
 
     expect_any(__wrap_FPFwCDCrashDumpHandler, ctx);
     expect_any(__wrap_FPFwCDCrashDumpHandler, coreInfo);

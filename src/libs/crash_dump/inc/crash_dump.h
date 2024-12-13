@@ -11,6 +11,7 @@
 
 /*--------------- Includes ---------------*/
 #include <FpFwUtils.h>
+#include <fpfw_icc_base.h>
 #include <modules/CdDumpDescriptor.h>
 #include <modules/CdDumpManager.h>
 #include <stdint.h>
@@ -29,6 +30,14 @@ typedef enum
     CRASH_DUMP_CORE_HSP = 2,
     CRASH_DUMP_CORE_NUM
 } crash_dump_core_t;
+
+typedef enum
+{
+    CRASH_DUMP_ICC_CONFIG_MHU_LOCAL = 0,
+    CRASH_DUMP_ICC_CONFIG_MHU_REMOTE = 1,
+    CRASH_DUMP_ICC_CONFIG_SPI_REMOTE = 2,
+    CRASH_DUMP_ICC_CONFIG_HSP = 3
+} crash_dump_icc_config_t;
 
 typedef struct _CD_GUID {
     uint32_t Data1;
@@ -70,6 +79,10 @@ typedef struct {
     uint32_t mmio_register_count;
     const core_register_mmio_t *mmio_registers;
     bool (*in_memory)(uintptr_t start_addr, uintptr_t end_addr);
+    fpfw_icc_base_ctx_t *icc_mhu_local_core_ctx;
+    fpfw_icc_base_ctx_t *icc_mhu_remote_core_ctx;
+    fpfw_icc_base_ctx_t *icc_spi_remote_core_ctx;
+    fpfw_icc_base_ctx_t *icc_hsp_ctx;
     bool is_primary;
 } crash_dump_config_t;
 
@@ -86,6 +99,11 @@ extern core_crash_context_t g_core_crash_context;
  *  User defined parameter data stored with the crash dump bug check details
  */
 FPFW_NORETURN void crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4);
+
+/**
+ * @brief Initiates a crash dump creation signalled by external core.
+ */
+FPFW_NORETURN void crash_dump_bug_check_external();
 
 /**
  * @brief Check if a bug check has been initiated
@@ -118,6 +136,14 @@ crash_dump_config_t *GetCrashDumpConfig();
  * 
  */
 void crash_dump_init(crash_dump_config_t *config);
+
+/**
+ * @brief Configure ICC context for crash dump
+ * 
+ * @param type ICC configuration type
+ * @param icc_ctx ICC context
+ */
+void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t *icc_ctx);
 
 /**
  * @brief Crash dump handler handles failure exceptions and generates a crash dump

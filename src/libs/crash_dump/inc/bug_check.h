@@ -36,6 +36,13 @@
     crash_dump_bug_check((errorCode), (uint32_t)__FILE__, __LINE__, (uint32_t)(p1), (uint32_t)(p2))
 
 /**
+ * The BUG_CHECK_EXTERNAL() macro will hang the software and
+ * generate a crash dump by external core signal.
+ * 
+ */
+#define BUG_CHECK_EXTERNAL()    crash_dump_bug_check_external();
+
+/**
  * The BUG_ASSERT() macro will generate a bug check if the condition parameter
  * evaluates to false.
  *

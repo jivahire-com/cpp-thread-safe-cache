@@ -401,4 +401,29 @@ void __wrap_FPFwCDCrashDumpHandler(FPFwCrashDumpCtx* ctx, const void* coreInfo, 
 
     function_called();
 }
+
+fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_recv_req_t* params)
+{
+    check_expected(icc_ctx);
+    assert_non_null(params);
+    check_expected(params->buffer_size);
+    check_expected(params->recv_cmd_code);
+    assert_non_null(params->cb);
+    assert_null(params->cb_ctx);
+
+    function_called();
+
+    return mock_type(fpfw_status_t);
+}
+
+fpfw_status_t __wrap_fpfw_icc_base_send_sync(fpfw_icc_base_ctx_t* icc_ctx, void* payload_buffer, size_t buffer_size)
+{
+    check_expected(icc_ctx);
+    assert_non_null(payload_buffer);
+    assert_true(buffer_size > 0);
+
+    function_called();
+
+    return mock_type(fpfw_status_t);
+}
 } // extern "C"

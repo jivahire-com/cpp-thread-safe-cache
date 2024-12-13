@@ -25,6 +25,7 @@
 #include <fpfw_timer_port.h>
 #include <fpfw_timer_types.h>
 #include <icc_mhu.h>
+#include <kng_icc_shared.h>
 #include <mhu_icc_transport.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -222,9 +223,9 @@ fpfw_status_t mhu_icc_transport_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER Request)
         // Process the request
         uint32_t icc_packet_status = icc_mhu_send_packet(&(device->send_channel), p_mhu_packet);
 
-        if (icc_packet_status == ICC_MHU_STATUS_S_SUCCESS)
+        if (icc_packet_status == ICC_MHU_STATUS_S_SUCCESS && p_mhu_packet->header.msg_header.command != ICC_SIGNAL_CRASH_DUMP_COLLECT)
         {
-            // Wait for the message to be read by the receiving side
+            // Wait for the message to be read by the receiving side unless it's a crash dump collect signal
             while (icc_mhu_check_packet_pending(&(device->send_channel)))
             {
             }
@@ -323,6 +324,13 @@ void mhu_icc_transport_isr(void* context)
     p_req->Output.ReceivedBytes = 0;
     if (icc_packet_status == ICC_MHU_STATUS_S_SUCCESS)
     {
+        if (p_mhu_req->header.msg_header.command == ICC_SIGNAL_CRASH_DUMP_COLLECT)
+        {
+            // Crash dump collect signal received from the other core.
+            // Trigger an external bug check
+            BUG_CHECK_EXTERNAL();
+        }
+
         p_req->Output.ReceivedBytes = p_mhu_req->header.msg_header.payload_size + sizeof(icc_mhu_header_t);
     }
     p_req->Output.Status = icc_packet_status_to_icc_transport_status(icc_packet_status);

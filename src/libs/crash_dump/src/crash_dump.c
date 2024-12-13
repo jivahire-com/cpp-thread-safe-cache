@@ -9,10 +9,12 @@
 
 /*--------------- Includes ---------------*/
 #include "crash_dump_gpio.h" // for cd_gpio_assert_cd_in_progress
+#include "crash_dump_icc.h"
 
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <cmsis_m7.h>   // for __WFI
 #include <crash_dump.h> // for crash_dump_handler
+#include <nvic.h>       // for nvic_get_current_irq
 #include <stdint.h>     // for uint32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -68,6 +70,25 @@ FPFW_NORETURN void crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_
     crash_dump_wait_forever();
 }
 
+FPFW_NORETURN void crash_dump_bug_check_external()
+{
+    uint32_t nvic_irq_num = 0;
+    nvic_status_t nvic_status = nvic_get_current_irq(&nvic_irq_num);
+
+    if (nvic_status == NVIC_STATUS_SUCCESS)
+    {
+        // Lower the interrupt priority to 1 if it is called by the other ISR.
+        // This is to ensure DebugMonitor_IRQn interrupt, otherwise HardFault will occur.
+        NVIC_SetPriority(nvic_irq_num, 1);
+    }
+#ifndef _WIN32
+    __asm__ volatile("bkpt\n");
+#endif
+
+    // The exception handler will hang the core, but this is needed to respect the noreturn attribute
+    crash_dump_wait_forever();
+}
+
 /**
  * Hangs the core by WFI indefinitely
  */
@@ -83,6 +104,9 @@ void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p
 {
     // Assert GPIO_CD_IN_PROGRESS
     cd_gpio_assert_cd_in_progress(true);
+
+    // Trigger remote entities to indicate this core has crashed if needed
+    crash_dump_remote_trigger();
 
     FPFwCrashDumpCtx* crash_dump_context = GetCrashDumpContext();
     FPFwCdBugCheckInfo bug_check_info = {};

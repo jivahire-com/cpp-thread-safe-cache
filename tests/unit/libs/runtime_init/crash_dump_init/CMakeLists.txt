@@ -24,6 +24,8 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::cmsis::interface
         ms::lib::crash_dump
+        silibs::icc_mhu
+        silibs::idhw
         silibs::idsw
         silibs::idsw_kng
         silibs::platform
@@ -76,6 +78,8 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::cmsis::interface
         ms::lib::crash_dump
+        silibs::icc_mhu
+        silibs::idhw
         silibs::idsw
         silibs::idsw_kng
         silibs::platform

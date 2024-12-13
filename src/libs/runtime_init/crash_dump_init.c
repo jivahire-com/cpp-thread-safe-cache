@@ -11,6 +11,7 @@
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <crash_dump.h> // for crash_dump_init
 #include <fpfw_init.h>  // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
+#include <idhw.h>
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <stddef.h> // for NULL
@@ -134,3 +135,44 @@ FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("hw_ver", "gpio_lib"))
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
+
+FPFW_INIT_COMPONENT(cd_mhu_loc, FPFW_INIT_DEPENDENCIES("cd_init", "icc_mscp2mscp"))
+{
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_MHU_LOCAL, fpfw_init_get_handle("icc_mscp2mscp"));
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
+#ifdef SCP_RUNTIME_INIT
+/* Todo: Initialize Crash dump ICC MHU remote once MHU transport ICC for D2D available
+         https://azurecsi.visualstudio.com/Dev/_queries/query/7b903ea9-33d9-4830-898e-528d8fb03df7/
+FPFW_INIT_COMPONENT(cd_mhu_rem, FPFW_INIT_DEPENDENCIES("cd_init", "icc_tbd", "hw_ver"))
+{
+    if (!idhw_is_single_die_boot_en())
+    {
+        // MHU transport D2D mailbox context.
+        crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_MHU_REMOTE, fpfw_init_get_handle("icc_tbd"));
+    }
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+*/
+
+FPFW_INIT_COMPONENT(cd_spi_rem, FPFW_INIT_DEPENDENCIES("cd_init", "icc_d2dmbx", "hw_ver"))
+{
+    if (!idhw_is_single_die_boot_en())
+    {
+        // SPI transport D2D mailbox context.
+        crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_SPI_REMOTE, fpfw_init_get_handle("icc_d2dmbx"));
+    }
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
+FPFW_INIT_COMPONENT(cd_hsp, FPFW_INIT_DEPENDENCIES("cd_init", "icc_hspmbx"))
+{
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_HSP, fpfw_init_get_handle("icc_hspmbx"));
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+#endif

@@ -61,4 +61,6 @@ mock_target(${TARGET}
     apply_override_knob_from_primary_die
     spi_controller_read_direct_instruction
     idsw_get_cpu_type
+    idsw_get_platform_sdv
+
 )

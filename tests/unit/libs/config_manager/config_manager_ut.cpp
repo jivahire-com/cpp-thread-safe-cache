@@ -175,6 +175,11 @@ int __wrap_spi_controller_read_direct_instruction(uintptr_t spi_master_reg, uint
     return 0;
 }
 
+KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
+{
+    return mock_type(KNG_PLAT_ID);
+}
+
 static int rmss_memory_map_setup(void** state)
 {
     FPFW_UNUSED(state);
@@ -243,6 +248,7 @@ TEST_FUNCTION(test_cfg_mgr_init_no_override, nullptr, nullptr)
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
 
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
@@ -274,6 +280,7 @@ TEST_FUNCTION(test_cfg_mgr_init_override_die0, rmss_memory_map_setup, nullptr)
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_SUCCESS);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
@@ -315,6 +322,7 @@ TEST_FUNCTION(test_update_knob_in_cached_db_cb, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
     expect_function_call(__wrap_update_knob_in_cached_db_cb);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
@@ -338,6 +346,7 @@ TEST_FUNCTION(test_update_knob_data, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
     expect_function_call(__wrap_variable_service_async_set_variable);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);

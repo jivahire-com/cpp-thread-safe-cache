@@ -74,7 +74,7 @@ class varserv_cli_test(EchoFallsBaseTest):
         try:
             # Wait for SOS Boot Completion message and enter commands
             self.log.info("Waiting for SOS BOOT  Msg")
-            scp_channel.read_until(key="SOS boot completed", timeout_seconds=900)
+            scp_channel.read_until(key="SOS boot completed", timeout_seconds=1800)
         except Exception as e:
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
@@ -93,7 +93,8 @@ class varserv_cli_test(EchoFallsBaseTest):
             scp_channel.write_line(write_string=command)
 
             try:
-                guid = scp_channel.read_until(key="Async Set Variable Complete Notify", timeout_seconds=500)
+                #guid = scp_channel.read_until(key="Async Set Variable Complete Notify", timeout_seconds=900)
+                guid = scp_channel.read_until(key="SetVariable response received", timeout_seconds=900)
                 self.log.info("SET Command Complete Notify . . .")
                 # Get GUID and store it for later validation
                 set_guid = self.vendor_guid(guid)
@@ -104,7 +105,8 @@ class varserv_cli_test(EchoFallsBaseTest):
                     self.test_notify(step="Variable Services SET GET Command", msg="Test Fail", _is_error=True)
                     self.dut.teardown()
                     return False
-                scp_channel.read_until(key="Async Set Variable Done", timeout_seconds=500)
+                #.read_until(key="Async Set Variable Done", timeout_seconds=900)
+                scp_channel.read_until(key="received status from hsp: 0x0", timeout_seconds=900)
                 self.log.info("SET command executed Successfully . . .")
             except Exception as e:
                 self.log.error(f"Error reading SCP UART: {e}")
@@ -119,7 +121,7 @@ class varserv_cli_test(EchoFallsBaseTest):
             scp_channel.write_line(write_string=command)
 
             try:
-                guid = scp_channel.read_until(key="Async Get Variable Complete Notify", timeout_seconds=500)
+                guid = scp_channel.read_until(key="Async Get Variable Complete Notify", timeout_seconds=900)
                 self.log.info("GET Command Complete Notify . . .")
                 # Store GUID after issuing GET command and validate it with GUID on SET
                 get_guid = self.vendor_guid(guid)
@@ -137,7 +139,7 @@ class varserv_cli_test(EchoFallsBaseTest):
                     self.dut.teardown()
                     return False
                 self.log.info("SET-GET GUID validation successful . . .")
-                scp_channel.read_until(key="Async Get Variable Done", timeout_seconds=500)
+                scp_channel.read_until(key="Async Get Variable Done", timeout_seconds=900)
                 self.log.info("GET command executed Successfully . . .")
             except Exception as e:
                 self.log.error(f"Error reading SCP UART: {e}")

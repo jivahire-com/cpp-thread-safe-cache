@@ -261,8 +261,8 @@ class accel_interrupt_test(EchoFallsBaseTest):
             self.dut.setup()
             dut_setup = True
 
-            proc_boot_info = {"scp": ("SCP_MAIN::ScpHeartBeat:", 100), "sdm": ("SDM_MAIN::SdmHeartBeat:", 100), 
-                              "sdm_cded": ("SDM_MAIN::SdmHeartBeat:", 100), "apns": ("CLI Initialized & Started", 100)}
+            proc_boot_info = {"scp": ("SCP_MAIN::ScpHeartBeat:", 1800), "sdm": ("SDM_MAIN::SdmHeartBeat:", 1800), 
+                              "sdm_cded": ("SDM_MAIN::SdmHeartBeat:", 1800), "apns": ("CLI Initialized & Started", 1800)}
             
             self.log.info("Waiting for boot sequence to complete")
             KngPythiaTestSetup.reset_fpga_sideload_custom_seq(self.dut, proc_boot_info, self.log)

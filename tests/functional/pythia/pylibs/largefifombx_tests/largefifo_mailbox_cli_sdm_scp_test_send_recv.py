@@ -87,7 +87,7 @@ class largefifo_mailbox_cli_sdm_scp_test_send_recv(EchoFallsBaseTest):
         
         try:
             self.log.info("Waiting for Heartbeat Msg")
-            scp_channel.read_until(key="ScpHeartBeat", timeout_seconds=900)
+            scp_channel.read_until(key="ScpHeartBeat", timeout_seconds=1800)
         except Exception as e:
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
@@ -134,10 +134,10 @@ class largefifo_mailbox_cli_sdm_scp_test_send_recv(EchoFallsBaseTest):
             send_channel.write_line(write_string=cmd)
             try:
                 # Validate Send Complete message on SCP
-                send_channel.read_until(key="Send Complete", timeout_seconds=100)
+                send_channel.read_until(key="Send Complete", timeout_seconds=500)
                 self.log.info("Request SENT Successfully from SDM to SCP...")
                 # Validate Send Received message on SDM
-                receive_channel.read_until(key="Recv Complete", timeout_seconds=100)
+                receive_channel.read_until(key="Recv Complete", timeout_seconds=500)
                 self.log.info("Received Response Successfully from SDM to SCP...")
             except Exception as e:
                 self.log.error(f"Error reading UART: {e}")

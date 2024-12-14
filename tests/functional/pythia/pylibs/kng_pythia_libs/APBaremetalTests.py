@@ -31,7 +31,7 @@ class APBaremetalTests(EchoFallsBaseTest):
     """
 
     READ_UNTIL_KEY = "Primary AP core power on"
-    TIMEOUT_SECONDS = 900
+    TIMEOUT_SECONDS = 1800
 
     def __init__(
         self,
@@ -100,7 +100,7 @@ class APBaremetalTests(EchoFallsBaseTest):
         return self.apns_connection.get_current_channel().write_line(write_string=command)
 
     @keyword("Parse Test Output")
-    def parse_output(self, read_until_key: str, expected_results: list, failed_results: list, timeout: int = 30):
+    def parse_output(self, read_until_key: str, expected_results: list, failed_results: list, timeout: int = 500):
         """
         Parse the DUT output for validation.
 

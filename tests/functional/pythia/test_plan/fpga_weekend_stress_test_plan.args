@@ -86,10 +86,11 @@
 ./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_pcie_tests.robot
 
 ## Sensor FIFO Tests
-./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
-./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
-./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
-./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+#TODO - FPGA implementation to be done soon by Hara
+#./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+#./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+#./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+#./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
 
 ## Variable Service Tests
 ./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot

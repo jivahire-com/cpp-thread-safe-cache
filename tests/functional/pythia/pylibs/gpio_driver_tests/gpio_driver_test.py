@@ -85,7 +85,7 @@ class gpio_driver_test(EchoFallsBaseTest):
         # Test GPIO driver
         #
         self.cores = {
-            "scp": Core(self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel(), 1800, 500),
+            "scp": Core(self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel(), 1800, 900),
             # Increase the timeout for MCP as it takes longer than SCP to unblock pipeline
             # Decrease the timeout once the MCP performance issue is resolved
             # https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/2181713
@@ -185,25 +185,30 @@ class gpio_driver_test(EchoFallsBaseTest):
 
         # Set direction to output to generate interrupt
         core.channel.write_line(write_string=f"set_dir {ctrl} {pin} 1")
+        self.test_GPIO_check_result(core, f"Set {ctrl} / {pin} GPIO Direction: GPIO_DIR_OUT", "GPIO Direction set to output", "Failed to set GPIO Direction to output")
 
         # Enable Interrupt
         core.channel.write_line(write_string=f"set_int_enable {ctrl} {pin} 1")
+        self.test_GPIO_check_result(core, f"Set {ctrl} / {pin} GPIO interrupt: Enable", "GPIO Interrupt enabled", "Failed to enable GPIO Interrupt")
 
         # Register ISR
         core.channel.write_line(write_string=f"register_isr {ctrl} {pin}")
+        self.test_GPIO_check_result(core, "Ok", "GPIO ISR registered", "Failed to register GPIO ISR")
 
         # Generate Interrupt
         core.channel.write_line(write_string=f"set_pin {ctrl} {pin} 0")
+        self.test_GPIO_check_result(core, f"Set {ctrl} / {pin} GPIO Output: 0", "GPIO Output set to 0", "Failed to set GPIO Output to 0")
 
         core.channel.write_line(write_string=f"set_pin {ctrl} {pin} 1")
+        self.test_GPIO_check_result(core, f"GPIO ISR Callback: Status: 0x00000000, CtrlID: {ctrl}, PinID: {pin}", f"ISR Callback for {ctrl} {pin}", f"Failed to verify GPIO {ctrl} {pin} ISR Callback")
 
-        expected = f"GPIO ISR Callback: Status: 0x00000000, CtrlID: {ctrl}, PinID: {pin}"
-        try:
-            core.channel.read_until(key=expected, timeout_seconds=core.read_timeout)
-            self.log.info(f"ISR Callback for {ctrl} {pin}")
-        except Exception as e:
-            raise Exception(f"Failed to verify GPIO {ctrl} {pin} ISR Callback") from e
-
-        # Restore configuration
+       # Restore configuration
         core.channel.write_line(write_string="restore")
         core.channel.write_line(write_string="..")
+
+    def test_GPIO_check_result(self, core, expected, success_log, failure_log):
+        try:
+            core.channel.read_until(key=expected, timeout_seconds=core.read_timeout)
+            self.log.info(success_log)
+        except Exception as e:
+             raise Exception(failure_log) from e

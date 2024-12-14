@@ -271,6 +271,14 @@ int32_t __wrap_ddr_i3c_interface_read_dimm_capacity(i3c_cmd_t* s_i3c_cmd, uint8_
     return 0;
 }
 
+void __wrap_i3c_master_set_cfg_knobs(lib_i3c_cfg_t* p_lib_i3c_cfg)
+{
+    check_expected(p_lib_i3c_cfg->i3c_speed);
+    check_expected(p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing);
+    check_expected(p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing);
+    function_called();
+}
+
 // Tests
 // Test when i3c_initialize fails for Instance 0
 TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_initialize_fail, setup_svp_platform, setup_undefined_platform)
@@ -285,8 +293,13 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_initialize_fail, setup_svp_plat
         .address = MASTER_DYNAMIC_ADDRESS_0,
         .index = index_i3c0,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
+
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    expect_function_call(__wrap_i3c_master_set_cfg_knobs);
 
     // Set up expectations
     return_i3c_initialize = RETURN_I3C_FAIL;
@@ -317,8 +330,13 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_master_dat_config_fail, setup_s
         .address = MASTER_DYNAMIC_ADDRESS_0,
         .index = index_i3c0,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
+
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    expect_function_call(__wrap_i3c_master_set_cfg_knobs);
 
     // Set up expectations
     // Instance 0
@@ -373,7 +391,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_master_set_aasa_fail, setup_svp
         .address = MASTER_DYNAMIC_ADDRESS_0,
         .index = index_i3c0,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     i3c_config_t i3c_config1 = {
         .register_base_addr = SCP_I3C1_CSR_ADDRESS,
@@ -381,11 +399,16 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_master_set_aasa_fail, setup_svp
         .address = MASTER_DYNAMIC_ADDRESS_1,
         .index = index_i3c1,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
 
     // Set up expectations
     // Instance 0
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    expect_function_call(__wrap_i3c_master_set_cfg_knobs);
+
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
     expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config0.register_base_addr);
@@ -494,7 +517,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_single_die, setup_svp_platform, setu
         .address = MASTER_DYNAMIC_ADDRESS_0,
         .index = index_i3c0,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     i3c_config_t i3c_config1 = {
         .register_base_addr = SCP_I3C1_CSR_ADDRESS,
@@ -502,10 +525,14 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_single_die, setup_svp_platform, setu
         .address = MASTER_DYNAMIC_ADDRESS_1,
         .index = index_i3c1,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     // Set up expectations
     // Instance 0
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
     expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config0.register_base_addr);
@@ -628,7 +655,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_dual_die, setup_svp_platform_dual_di
         .address = MASTER_DYNAMIC_ADDRESS_0,
         .index = index_i3c0,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     i3c_config_t i3c_config1 = {
         .register_base_addr = SCP_I3C1_CSR_ADDRESS,
@@ -636,10 +663,14 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_dual_die, setup_svp_platform_dual_di
         .address = MASTER_DYNAMIC_ADDRESS_1,
         .index = index_i3c1,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     // Set up expectations
     // Instance 0
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
     expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config0.register_base_addr);
@@ -778,7 +809,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_1, setup_svp_platform_dual_die, setup_
         .address = MASTER_DYNAMIC_ADDRESS_0,
         .index = index_i3c0,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     i3c_config_t i3c_config1 = {
         .register_base_addr = SCP_I3C1_CSR_ADDRESS,
@@ -786,10 +817,14 @@ TEST_FUNCTION(test_i3c_controller_svp_die_1, setup_svp_platform_dual_die, setup_
         .address = MASTER_DYNAMIC_ADDRESS_1,
         .index = index_i3c1,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     // Set up expectations
     // Instance 0
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
     expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config0.register_base_addr);
@@ -928,7 +963,7 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_0_single_die, setup_fpga_platform, se
         .address = MASTER_DYNAMIC_ADDRESS_0,
         .index = index_i3c0,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     i3c_config_t i3c_config1 = {
         .register_base_addr = SCP_I3C1_CSR_ADDRESS,
@@ -936,10 +971,14 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_0_single_die, setup_fpga_platform, se
         .address = MASTER_DYNAMIC_ADDRESS_1,
         .index = index_i3c1,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     // Set up expectations
     // Instance 0
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
     expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config0.register_base_addr);
@@ -1057,7 +1096,7 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_0_dual_die, setup_fpga_platform_dual_
         .address = MASTER_DYNAMIC_ADDRESS_0,
         .index = index_i3c0,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     i3c_config_t i3c_config1 = {
         .register_base_addr = SCP_I3C1_CSR_ADDRESS,
@@ -1065,10 +1104,14 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_0_dual_die, setup_fpga_platform_dual_
         .address = MASTER_DYNAMIC_ADDRESS_1,
         .index = index_i3c1,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     // Set up expectations
     // Instance 0
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
     expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config0.register_base_addr);
@@ -1202,7 +1245,7 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_1_dual_die, setup_fpga_platform_dual_
         .address = MASTER_DYNAMIC_ADDRESS_0,
         .index = index_i3c0,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     i3c_config_t i3c_config1 = {
         .register_base_addr = SCP_I3C1_CSR_ADDRESS,
@@ -1210,10 +1253,14 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_1_dual_die, setup_fpga_platform_dual_
         .address = MASTER_DYNAMIC_ADDRESS_1,
         .index = index_i3c1,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     // Set up expectations
     // Instance 0
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
     expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config0.register_base_addr);
@@ -1347,7 +1394,7 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_0_single_die, setup_fpga_rvp_plat
         .address = MASTER_DYNAMIC_ADDRESS_0,
         .index = index_i3c0,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     i3c_config_t i3c_config1 = {
         .register_base_addr = SCP_I3C1_CSR_ADDRESS,
@@ -1355,10 +1402,14 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_0_single_die, setup_fpga_rvp_plat
         .address = MASTER_DYNAMIC_ADDRESS_1,
         .index = index_i3c1,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     // Set up expectations
     // Instance 0
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
     expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config0.register_base_addr);
@@ -1486,7 +1537,7 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_0_dual_die, setup_fpga_rvp_platfo
         .address = MASTER_DYNAMIC_ADDRESS_0,
         .index = index_i3c0,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     i3c_config_t i3c_config1 = {
         .register_base_addr = SCP_I3C1_CSR_ADDRESS,
@@ -1494,10 +1545,14 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_0_dual_die, setup_fpga_rvp_platfo
         .address = MASTER_DYNAMIC_ADDRESS_1,
         .index = index_i3c1,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     // Set up expectations
     // Instance 0
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
     expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config0.register_base_addr);
@@ -1641,7 +1696,7 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_1, setup_fpga_platform, setup_undefin
         .address = MASTER_DYNAMIC_ADDRESS_0,
         .index = index_i3c0,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     i3c_config_t i3c_config1 = {
         .register_base_addr = SCP_I3C1_CSR_ADDRESS,
@@ -1649,10 +1704,14 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_1, setup_fpga_platform, setup_undefin
         .address = MASTER_DYNAMIC_ADDRESS_1,
         .index = index_i3c1,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     // Set up expectations
     // Instance 0
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
     expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config0.register_base_addr);
@@ -1769,7 +1828,7 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_1, setup_fpga_rvp_platform, setup
         .address = MASTER_DYNAMIC_ADDRESS_0,
         .index = index_i3c0,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     i3c_config_t i3c_config1 = {
         .register_base_addr = SCP_I3C1_CSR_ADDRESS,
@@ -1777,10 +1836,14 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_1, setup_fpga_rvp_platform, setup
         .address = MASTER_DYNAMIC_ADDRESS_1,
         .index = index_i3c1,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     // Set up expectations
     // Instance 0
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
     expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config0.register_base_addr);
@@ -1908,7 +1971,7 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_1_dual_die, setup_fpga_rvp_platfo
         .address = MASTER_DYNAMIC_ADDRESS_0,
         .index = index_i3c0,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     i3c_config_t i3c_config1 = {
         .register_base_addr = SCP_I3C1_CSR_ADDRESS,
@@ -1916,10 +1979,14 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_1_dual_die, setup_fpga_rvp_platfo
         .address = MASTER_DYNAMIC_ADDRESS_1,
         .index = index_i3c1,
         .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-        .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+        .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
     // Set up expectations
     // Instance 0
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
     expect_value(__wrap_i3c_initialize, i3c_config->register_base_addr, i3c_config0.register_base_addr);

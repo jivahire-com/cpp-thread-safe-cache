@@ -209,6 +209,24 @@
       <Member name="nominal_pstate" type="uint8_t" help="Pstate to use for nominal" />
       <Member name="ldo_offset" type="int8_t" help="ldo dac code offset" />
     </Struct>
+    <Struct name="mesh_hni_cfg_ctl_t" help="">
+      <Member name="mesh_hni_cfg_ctl" type="uint64_t" count="6" help="Set HN-I Config CTL value"/>
+    </Struct>
+    <Struct name="mesh_hni_aux_ctl_t" help="">
+      <Member name="mesh_hni_aux_ctl" type="uint64_t" count="6" help="Set HN-I AUX ctl value"/>
+    </Struct>
+    <Struct name="mesh_rni_cfg_ctl_t" help="">
+      <Member name="mesh_rni_cfg_ctl" type="uint64_t" count="8" help="Set RN-I config control value(chip_id field will be ignored)"/>
+    </Struct>
+    <Struct name="mesh_rni_aux_ctl_t" help="">
+      <Member name="mesh_rni_aux_ctl" type="uint64_t" count="8" help="Set RN-I auxiliary control value"/>
+    </Struct>
+    <Struct name="mesh_rnd_cfg_ctl_t" help="">
+      <Member name="mesh_rnd_cfg_ctl" type="uint64_t" count="7" help="Set RN-D config control value(chip_id field will be ignored)e"/>
+    </Struct>
+    <Struct name="mesh_rnd_aux_ctl_t" help="">
+      <Member name="mesh_rnd_aux_ctl" type="uint64_t" count="7" help="Set RN-D auxiliary control value"/>
+    </Struct>
   </Structs>
 
   <!-- namespace indicates the GUID namespace the values are stored in -->
@@ -417,6 +435,66 @@
     <Knob name="power_tile_hot_en" type="bool" default="true" />
     <Knob name="power_tile_thermtrip_en" type="bool" default="true" />
 
+    <!-- Mesh Sequence -->
+    <Knob name="mesh_d2d_override" type="bool" default="false" help="Enable and Use the Mesh D2D Knobs listed" />
+    <Knob name="cmn_sam_config" type="CMN_SAM_CONFIG_TYPE" default="CMN_SAM_CONFIG_1D_UMA_64HNS_HIER_3SN" help="Select Mesh config" />
+    <Knob name="cmn_cxl_interleave" type="uint8_t" default="0" help="Selct CXL intearleave value 0,3 or 4" />
+    <Knob name="cmn_cxl_device_interleave_size" type="uint8_t" default="2" help="This field controls the interleave size across all aggregated CXSA/CXLSA Devices 4'h0: 64B Interleaved 4'h1: 128B Interleaved 4'h2: 256B Interleaved 4'h3: 512B Interleaved 4'h4: 1KB Interleaved 4'h5: 2KB Interleaved 4'h6: 4KB Interleaved 4'h7: 8KB Interleaved 4'h8: 16KB" />
+    <Knob name="cmn_uma_arsm_htg_wa_disabled" type="uint8_t" default="0" help="Set value for UMA ARSM HTG CFG" />
+
+    <!-- Mesh -->
+    <Knob name="mesh_hnf_cbusy_limit_ctl" type="uint64_t" default="0x302010" help="Cbusy threshold limits for POCQ entries"/>
+    <Knob name="mesh_hnf_cbusy_resp_ctl" type="uint64_t" default="0x180400800040000" help="Contols the responses sent from HNS to RNF"/>
+    <Knob name="mesh_hnf_cbusy_sn_ctl" type="uint64_t" default="0x100001000200040" help="Controls the SN-F cbusy thresholds."/>
+    <Knob name="mesh_hnf_cbusy_write_limit_ctl" type="uint64_t" default="0x302010" help="Cbusy threshold limits for POCQ write entries."/>
+    <Knob name="mesh_hnf_cbusy_mode_ctl" type="uint64_t" default="0x3000" help="Control register for additional CBusy controls"/>
+    <Knob name="mesh_hnf_aux_ctl" type="uint64_t" default="0x2000001000200002" help="Auxiliary control register for HNF. Default val 0x2000_0010_0020_0002"/>
+    <Knob name="mesh_hnf_r2_aux_ctl" type="uint64_t" default="0x3001005A900" help="Set value for por_hnf_aux_ctl_1"/>
+    <Knob name="mesh_hnf_cfg_ctl" type="uint64_t" default="0x2000C017389A3000" help="Set value for por_hnf_cfg_ctl"/>
+    <Knob name="mesh_hnf_lbt_cfg_ctl" type="uint64_t" default="0x7F7F00" help="Functions as the configuration control register for HN-F. Only applicable to LBT transactions"/>
+    <Knob name="mesh_hnf_lbt_aux_ctl" type="uint64_t" default="0x440000000000006" help="Functions as the auxiliary control register for HN-F. Only applicable to LBT transactions"/>
+    <Knob name="mesh_hnf_lbt_cbusy_ctl" type="uint64_t" default="0x0" help="Controls the CBusy response for LCN Bound Transactions"/>
+    <Knob name="mesh_hni_cfg_ctl_knob" type="mesh_hni_cfg_ctl_t" default="{{0x1,0x1,0x1,0x1,0x1,0x1}}" help="Set HN-I Config CTL value"/>
+    <Knob name="mesh_hni_aux_ctl_knob" type="mesh_hni_aux_ctl_t" default="{{0x1000,0x1000,0x1000,0x1000,0x1000,0x1000}}" help="Set HN-I AUX ctl value"/>
+    <Knob name="mesh_hnt_dn_domain_cxra" type="uint64_t" default="0" help="Set value for cxra per HNT (There are 4 HNTs)"/>
+    <Knob name="mesh_rni_cfg_ctl_knob" type="mesh_rni_cfg_ctl_t" default="{{0xd000802001c21,0xd000802001c21,0xd000802001c21,0xd000802001c21,0xd004200401c41,0xd000802001c71,0xd000802001c71,0xd000802001c71}}" help="Set RN-I config control value(chip_id field will be ignored)"/>
+    <Knob name="mesh_rni_aux_ctl_knob" type="mesh_rni_aux_ctl_t" default="{{0x4004002,0x4004002,0x4004002,0x4004002,0x4004002,0x4004002,0x4004002,0x4004002}}" help="Set RN-I auxiliary control value"/>
+    <Knob name="mesh_rnd_cfg_ctl_knob" type="mesh_rnd_cfg_ctl_t" default="{{0xd000802001c21,0xd000802001c01,0xd000802001c21,0xd000802001c21,0xd000802001c21,0xd000200401c01,0xd000802001c01}}" help="Set RN-D config control value(chip_id field will be ignored)"/>
+    <Knob name="mesh_rnd_aux_ctl_knob" type="mesh_rnd_aux_ctl_t" default="{{0x4004012,0x4004012,0x4004012,0x4004012,0x4004012,0x4004012,0x4004012}}" help="Set RN-D auxiliary control value"/>
+
+    <!-- Mesh RAS -->
+    <Knob name="mesh_RAS_Error_Detection_Disable" type="bool" default="0" help="If true, disable Mesh RAS Error Detection in the Mesh RAS Control registers. Default: false."/>
+    <Knob name="mesh_RAS_Error_Deferment_Disable" type="bool" default="0" help="If true, disable Mesh RAS Error Deferment in the Mesh RAS Control registers. Default: false."/>
+    <Knob name="mesh_RAS_Uncorrected_Error_Int_Disable" type="bool" default="0" help="If true, disable Mesh RAS Uncorrected Error Interrupt in the Mesh RAS Control registers. Default: false."/>
+    <Knob name="mesh_RAS_Fault_Handling_Int_Disable" type="bool" default="0" help="If true, disable Mesh RAS Fault Handling Interrupt in the Mesh RAS Control registers. Default: false."/>
+    <Knob name="mesh_RAS_Corrected_Error_Int_Disable" type="bool" default="1" help="If true, disable Mesh RAS Corrected Error Interrupt in the Mesh RAS Control registers. Default: true."/>
+    <Knob name="mesh_RAS_Parity_Error_Disable" type="bool" default="1" help="If true, disable External Logging Parity Errors in the Mesh RAS Control registers. Default: false."/>
+
+    <!-- Mesh CCG -->
+    <Knob name="por_ccg_ha_aux_ctl" type="uint64_t" default="0x3C0008" help="CCG HA aux control"/>
+    <Knob name="por_ccg_ha_cfg_ctl" type="uint64_t" default="0x40040" help="CCG HA config control"/>
+    <Knob name="por_ccg_ha_cxprtcl_link0_ctl" type="uint64_t" default="0x1C0000" help="CCG HA config control 1"/>
+    <Knob name="por_ccg_ra_cfg_ctl" type="uint64_t" default="0x7C1007" help="CCG RA config control"/>
+    <Knob name="por_ccg_ra_aux_ctl" type="uint64_t" default="0x1B1F343CC3846" help="CCG RA aux control"/>
+    <Knob name="por_ccg_ra_ccprtcl_link0_ctl" type="uint64_t" default="0x2C00000" help="CCG RA config control 1"/>
+    <Knob name="por_ccg_ra_cbusy_limit_ctl" type="uint64_t" default="0x181008" help="CCG RA config control 2"/>
+    <Knob name="por_ccla_aux_ctl" type="uint64_t" default="0x1220000000004" help="CCLA aux control"/>
+
+    <!-- Mesh D2D -->
+    <Knob name="d2d_pll_divder" type="uint8_t" default="2" help="txdiv field in d2dConfig2"/>
+    <Knob name="d2d_ref_divder" type="uint8_t" default="2" help="Reference clock value(1-15)"/>
+    <Knob name="d2d_pll_fb_devider" type="uint8_t" default="0x14" help="feedback clock devide value (1-127)"/>
+    <Knob name="d2d_ecc_cfg" type="uint8_t" default="0" help="Configure Bit 9 and 10 of D2D Config to enable or disable RX/TX ECC "/>
+    <Knob name="d2d_tx_interface_clk_alignment" type="uint32_t" default="0" help="run calibration to center TX interface"/>
+    <Knob name="d2d_ras_enable" type="uint8_t" default="0" help="Enable RAS"/>
+    <Knob name="d2d_sleep_cfg" type="uint8_t" default="1" help="Sleep configuration 1: enable 0:disable"/>
+    <Knob name="d2d_sleep_cfg_entry" type="uint32_t" default="0" help="Sleep configuration entry: Idle entry time, Number of clock cycle the channel must be Idle"/>
+    <Knob name="d2d_rxcal_find_goodlanes_skip" type="bool" default="1"/>
+
+    <!-- I3C -->
+    <Knob name="i3c_speed" type="i3c_speed_t" default="I3C_SPEED_SDR4_2MHz" help="Desired I3C Speed for I3C0 and I3C1" />
+    <Knob name="reg_scl_ext_termn_lcnt_timing" type="uint32_t" default="0xF" help="Set value for REG_SCL_EXT_TERMN_LCNT_TIMING" />
+    <Knob name="reg_sda_hold_switch_dly_timing" type="uint32_t" default="0x50000" help="Set value for REG_SDA_HOLD_SWITCH_DLY_TIMING" />
 
     <Knob name="intclk_knobs" type="intclk_cfg_t" help="INT-CLK knobs for programming non-POR frequency" />
 

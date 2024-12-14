@@ -15,11 +15,13 @@ extern "C" {
 #include <FPFwInterrupts.h>
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <atu_lib.h>
+#include <cml.h>
 #include <cmn800.h>
 #include <cmn800_error_handler.h> // for acpi_err_sec_generic_t
 #include <cmn800_sequence.h>      // for cmn800_sequence_params_t
 #include <cmn_config.h>           // for CMN800_CONFIG_CONFIG
-#include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
+#include <fpfw_cfg_mgr.h>
+#include <fpfw_icc_base.h> // for fpfw_icc_base_ctx_t
 #include <fpfw_status.h>
 #include <hsp_firmware_headers.h> // for kng_hsp_mailbox_msg
 #include <idsw.h>                 // for idsw_set_platform_sdv, PLATFORM_UN...
@@ -30,6 +32,8 @@ extern "C" {
 #include <ras_arm.h>
 #include <stdint.h> // for int32_t, uint32_t
 
+extern void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_param);
+
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
@@ -38,10 +42,32 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 bool simulate_single_die = true;
+bool g_test_mesh_d2d_override = false;
 KNG_DIE_ID g_test_die = (KNG_DIE_ID)0;
 static fpfw_icc_base_ctx_t* test_icc_base_hsp_mbx_ctx;
 extern ras_agent_entity_t d2dss2_agent[NUM_OF_CCG_WITH_D2D];
 silibs_status_t g_ras_arm_agent_set_base = SILIBS_SUCCESS;
+
+d2d_cfg_t unit_test_default_d2d_cfg = {
+    .d2d_pll_divder = 0x2,
+    .d2d_ref_divder = 0x2,
+    .d2d_pll_fb_devider = 0x14,
+    .d2d_ecc_cfg = 0,
+    .d2d_tx_interface_clk_alignment = 0,
+    .d2d_ras_enable = 0,
+    .d2d_sleep_cfg = 1,
+    .d2d_sleep_cfg_entry = 0,
+    .d2d_rxcal_find_goodlanes_skip = 1,
+};
+
+ccg_cfg_t unit_test_default_ccg_cfg = {.por_ccg_ha_aux_ctl = 0x3C0008ULL,
+                                       .por_ccg_ha_cfg_ctl = 0x40040ULL,
+                                       .por_ccg_ha_cxprtcl_link0_ctl = 0x1C0000ULL,
+                                       .por_ccg_ra_cfg_ctl = 0x7C1007ULL,
+                                       .por_ccg_ra_aux_ctl = 0x1B1F343CC3846ULL,
+                                       .por_ccg_ra_ccprtcl_link0_ctl = 0x2C00000ULL,
+                                       .por_ccg_ra_cbusy_limit_ctl = 0x181008ULL,
+                                       .por_ccla_aux_ctl = 0x1220000000004ULL};
 
 /*------------- Functions ----------------*/
 //! Mocks for mailbox primitives called inside hsp_send_recv_enable_smmu()
@@ -105,6 +131,7 @@ static int setup_undefined_platform(void** pContext)
     simulate_single_die = true;
     g_test_die = (KNG_DIE_ID)0;
     g_ras_arm_agent_set_base = SILIBS_SUCCESS;
+    g_test_mesh_d2d_override = false;
     return 0;
 }
 
@@ -288,6 +315,34 @@ silibs_status_t __wrap_ras_arm_agent_trigger_by_type(ras_agent_entity_t* agent, 
     return SILIBS_SUCCESS;
 }
 
+bool __wrap_config_get_mesh_d2d_override(void)
+{
+    return g_test_mesh_d2d_override;
+}
+
+cmn800_sam_cfg_t* __wrap_cmn800_get_mesh_sam_cfg_knob(void)
+{
+    function_called();
+    return &default_sam_cfg_knb; // This is in SiLibs
+}
+
+cmn800_ras_cfg_t* __wrap_cmn800_get_mesh_ras_cfg_knob(void)
+{
+    function_called();
+    return &default_mesh_ras_cfg_knb; // This is in SiLibs
+}
+
+ccg_cfg_t* __wrap_get_ccg_knob_defaults(void)
+{
+    function_called();
+    return &unit_test_default_ccg_cfg;
+}
+
+d2d_cfg_t* __wrap_get_default_d2d_cfg(void)
+{
+    function_called();
+    return &unit_test_default_d2d_cfg;
+}
 //
 // Tests
 //
@@ -333,6 +388,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_SVP, setup_svp_platform, setu
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
+    g_test_die = test_die;
 
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
@@ -407,6 +463,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_FPGA, setup_fpga_platform, se
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
+    g_test_die = test_die;
 
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
@@ -506,6 +563,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_SVP, setup_svp_platform_dual_di
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
+    g_test_die = test_die;
 
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
@@ -628,6 +686,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_FPGA, setup_fpga_platform_dual_
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
+    g_test_die = test_die;
 
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
@@ -834,5 +893,146 @@ TEST_FUNCTION(test_mesh_error_handler_d2d_ras_init_Die_1, setup_svp_platform, se
     }
     // Call API under test
     d2d_ras_init();
+}
+
+void verify_mesh_config_knobs(void)
+{
+    // Mesh Config Knobs
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_cbusy_limit_ctl, 0x302010);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_cbusy_resp_ctl, 0x180400800040000);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_cbusy_sn_ctl, 0x100001000200040);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_cbusy_write_limit_ctl, 0x302010);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_cbusy_mode_ctl, 0x3000);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl, 0x2000001000200002);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_r2_aux_ctl, 0x3001005A900);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_cfg_ctl, 0x2000C017389A3000);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cfg_ctl, 0x7F7F00);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_aux_ctl, 0x440000000000006);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cbusy_ctl, 0x0);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_hni_cfg_ctl[0], 0x1);
+    assert_int_equal(default_sam_cfg_knb.mesh_hni_cfg_ctl[1], 0x1);
+    assert_int_equal(default_sam_cfg_knb.mesh_hni_cfg_ctl[2], 0x1);
+    assert_int_equal(default_sam_cfg_knb.mesh_hni_cfg_ctl[3], 0x1);
+    assert_int_equal(default_sam_cfg_knb.mesh_hni_cfg_ctl[4], 0x1);
+    assert_int_equal(default_sam_cfg_knb.mesh_hni_cfg_ctl[5], 0x1);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_hni_aux_ctl[0], 0x1000);
+    assert_int_equal(default_sam_cfg_knb.mesh_hni_aux_ctl[1], 0x1000);
+    assert_int_equal(default_sam_cfg_knb.mesh_hni_aux_ctl[2], 0x1000);
+    assert_int_equal(default_sam_cfg_knb.mesh_hni_aux_ctl[3], 0x1000);
+    assert_int_equal(default_sam_cfg_knb.mesh_hni_aux_ctl[4], 0x1000);
+    assert_int_equal(default_sam_cfg_knb.mesh_hni_aux_ctl[5], 0x1000);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_hnt_dn_domain_cxra, 0x0);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_cfg_ctl[0], 0xd000802001c21);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_cfg_ctl[1], 0xd000802001c21);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_cfg_ctl[2], 0xd000802001c21);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_cfg_ctl[3], 0xd000802001c21);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_cfg_ctl[4], 0xd004200401c41);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_cfg_ctl[5], 0xd000802001c71);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_cfg_ctl[6], 0xd000802001c71);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_cfg_ctl[7], 0xd000802001c71);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_aux_ctl[0], 0x4004002);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_aux_ctl[1], 0x4004002);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_aux_ctl[2], 0x4004002);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_aux_ctl[3], 0x4004002);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_aux_ctl[4], 0x4004002);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_aux_ctl[5], 0x4004002);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_aux_ctl[6], 0x4004002);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_aux_ctl[7], 0x4004002);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_cfg_ctl[0], 0xd000802001c21);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_cfg_ctl[1], 0xd000802001c01);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_cfg_ctl[2], 0xd000802001c21);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_cfg_ctl[3], 0xd000802001c21);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_cfg_ctl[4], 0xd000802001c21);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_cfg_ctl[5], 0xd000200401c01);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_cfg_ctl[6], 0xd000802001c01);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_aux_ctl[0], 0x4004012);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_aux_ctl[1], 0x4004012);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_aux_ctl[2], 0x4004012);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_aux_ctl[3], 0x4004012);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_aux_ctl[4], 0x4004012);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_aux_ctl[5], 0x4004012);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_aux_ctl[6], 0x4004012);
+}
+
+void verify_mesh_ras_config_knobs(void)
+{
+    // Mesh RAS Config Knobs
+    assert_int_equal(default_mesh_ras_cfg_knb.mesh_RAS_Error_Detection_Disable, false);
+    assert_int_equal(default_mesh_ras_cfg_knb.mesh_RAS_Error_Deferment_Disable, false);
+    assert_int_equal(default_mesh_ras_cfg_knb.mesh_RAS_Uncorrected_Error_Int_Disable, false);
+    assert_int_equal(default_mesh_ras_cfg_knb.mesh_RAS_Fault_Handling_Int_Disable, false);
+    assert_int_equal(default_mesh_ras_cfg_knb.mesh_RAS_Corrected_Error_Int_Disable, true);
+    assert_int_equal(default_mesh_ras_cfg_knb.mesh_RAS_Parity_Error_Disable, true);
+}
+
+void verify_ccg_config_knobs(void)
+{
+    // Mesh CCG Config Knobs
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_aux_ctl, 0x3C0008);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_cfg_ctl, 0x40040);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_cxprtcl_link0_ctl, 0x1C0000);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cfg_ctl, 0x7C1007);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_aux_ctl, 0x1B1F343CC3846);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_ccprtcl_link0_ctl, 0x2C00000);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cbusy_limit_ctl, 0x181008);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccla_aux_ctl, 0x1220000000004);
+}
+
+void verify_d2d_config_knobs(void)
+{
+    // Mesh D2D Config Knobs
+    assert_int_equal(unit_test_default_d2d_cfg.d2d_pll_divder, 2);
+    assert_int_equal(unit_test_default_d2d_cfg.d2d_ref_divder, 2);
+    assert_int_equal(unit_test_default_d2d_cfg.d2d_pll_fb_devider, 0x14);
+    assert_int_equal(unit_test_default_d2d_cfg.d2d_ecc_cfg, 0);
+    assert_int_equal(unit_test_default_d2d_cfg.d2d_tx_interface_clk_alignment, 0);
+    assert_int_equal(unit_test_default_d2d_cfg.d2d_ras_enable, 0);
+    assert_int_equal(unit_test_default_d2d_cfg.d2d_sleep_cfg, 1);
+    assert_int_equal(unit_test_default_d2d_cfg.d2d_sleep_cfg_entry, 0);
+    assert_int_equal(unit_test_default_d2d_cfg.d2d_rxcal_find_goodlanes_skip, 1);
+}
+
+// Test Mesh, CML, D2D Config Knobs
+TEST_FUNCTION(test_mesh_config_knobs_single_die, setup_svp_platform, setup_undefined_platform)
+{
+    cmn800_sequence_params_t cmn800_sequence_param = {};
+
+    // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+    g_test_mesh_d2d_override = true;
+
+    // The function reading and updating is calling this
+    expect_function_call(__wrap_cmn800_get_mesh_sam_cfg_knob);
+    expect_function_call(__wrap_cmn800_get_mesh_ras_cfg_knob);
+    expect_function_call(__wrap_get_ccg_knob_defaults);
+    expect_function_call(__wrap_get_default_d2d_cfg);
+
+    // Print Function is calling this
+    expect_function_call(__wrap_cmn800_get_mesh_sam_cfg_knob);
+    expect_function_call(__wrap_cmn800_get_mesh_ras_cfg_knob);
+    expect_function_call(__wrap_get_ccg_knob_defaults);
+    expect_function_call(__wrap_get_default_d2d_cfg);
+
+    // Call API under test
+    mesh_read_cfg_knobs_from_spi(&cmn800_sequence_param);
+
+    // Check the kng_mscp_config_knobs.xml file for the values
+    // Check if the defaults are set into mocked Silibs functions
+    verify_mesh_config_knobs();
+
+    verify_mesh_ras_config_knobs();
+
+    verify_ccg_config_knobs();
+
+    verify_d2d_config_knobs();
 }
 }

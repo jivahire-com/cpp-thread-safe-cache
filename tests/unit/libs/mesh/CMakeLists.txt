@@ -9,9 +9,11 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
+        cml
         cmn800
         cmn800_sequence
         cmn800_ras_sequence
+        fwlib.lib.cfg_mgr
         fwlib.lib.init
         fwlib.lib.utils
         fwlib.lib.interface.platform.interrupts
@@ -68,4 +70,9 @@ mock_target(${TARGET}
     atu_translate_address
     atu_map
     atu_unmap
+    config_get_mesh_d2d_override
+    cmn800_get_mesh_sam_cfg_knob
+    cmn800_get_mesh_ras_cfg_knob
+    get_ccg_knob_defaults
+    get_default_d2d_cfg
 )

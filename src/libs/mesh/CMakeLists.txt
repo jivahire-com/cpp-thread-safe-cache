@@ -8,6 +8,7 @@ add_library(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
+    fwlib.lib.cfg_mgr
     fwlib.lib.assert
     fwlib.lib.interface.platform.interrupts
     fwlib.service.iccBase
@@ -20,6 +21,7 @@ target_link_libraries(${TARGET}
     ms::lib::system_info
     silibs::atu
     ms::lib::i3c_controller
+    silibs::cml
     silibs::cmn800
     silibs::cmn800_skus
     silibs::cmn800_sequence

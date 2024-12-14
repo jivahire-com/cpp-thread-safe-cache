@@ -13,6 +13,7 @@
 #include <MboxPrimitives.h> // for FPFW_MBX_PAYLOAD, FpFwMailbox...
 #include <bug_check.h>
 #include <ddr_i3c.h>
+#include <fpfw_cfg_mgr.h>
 #include <i3c_controller.h>
 #include <idhw.h>     // for idhw_is_single_die_boot_en
 #include <idsw.h>     // for idsw_get_platform_sdv,
@@ -151,6 +152,21 @@ uint8_t get_i3c_dimm_sku(void)
     return g_dimm_sku;
 }
 
+void i3c_controller_read_cfg_knobs_from_spi(void)
+{
+    // Read the Config Knobs from SPI
+    lib_i3c_cfg_t temp_lib_i3c_cfg = {0};
+    temp_lib_i3c_cfg.i3c_speed = config_get_i3c_speed();
+    temp_lib_i3c_cfg.reg_scl_ext_termn_lcnt_timing = config_get_reg_scl_ext_termn_lcnt_timing();
+    temp_lib_i3c_cfg.reg_sda_hold_switch_dly_timing = config_get_reg_sda_hold_switch_dly_timing();
+
+    CRITICAL_PRINT("i3c_speed 0x%x\n", temp_lib_i3c_cfg.i3c_speed);
+    CRITICAL_PRINT("reg_scl_ext_termn_lcnt_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_ext_termn_lcnt_timing);
+    CRITICAL_PRINT("reg_sda_hold_switch_dly_timing 0x%x\n", temp_lib_i3c_cfg.reg_sda_hold_switch_dly_timing);
+
+    // Set the Config Knobs in lib_i3c
+    i3c_master_set_cfg_knobs(&temp_lib_i3c_cfg);
+}
 /*
  * @brief I3C Controller initialization
  *
@@ -172,6 +188,10 @@ int i3c_controller(uint8_t die_num)
 
     if (is_i3c_supported())
     {
+        i3c_controller_read_cfg_knobs_from_spi();
+        i3c_speed_t i3c_speed = config_get_i3c_speed();
+        CRITICAL_PRINT("i3c_speed 0x%x\n", i3c_speed);
+        uint16_t user_i3c_speed_in_khz = fnc_decode_i3c_speed_to_khz(i3c_speed);
         uint8_t index_i3c0 = 0x0;
         uint8_t index_i3c1 = 0x0;
         uint8_t plat_num_of_target_devices = NUM_OF_TARGET_DEVICES;
@@ -205,7 +225,7 @@ int i3c_controller(uint8_t die_num)
             .address = MASTER_DYNAMIC_ADDRESS_0,
             .index = index_i3c0,
             .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-            .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+            .i3c_speed_in_khz = user_i3c_speed_in_khz,
         };
         i3c_config_t i3c_config1 = {
             .register_base_addr = SCP_I3C1_CSR_ADDRESS,
@@ -213,7 +233,7 @@ int i3c_controller(uint8_t die_num)
             .address = MASTER_DYNAMIC_ADDRESS_1,
             .index = index_i3c1,
             .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
-            .i3c_speed_in_khz = I3C_SPEED_FMP_KHZ,
+            .i3c_speed_in_khz = user_i3c_speed_in_khz,
         };
         i3c_config_t i3c_configs[NUM_I3C_CONFIGS] = {i3c_config0, i3c_config1};
 

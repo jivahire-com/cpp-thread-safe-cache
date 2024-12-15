@@ -1,6 +1,6 @@
 
 ## Accelerator Interrupt Tests
-./../../../tests/functional/p
+./../../../tests/functional/pythia/test_suites/accel_interrupt/accel_interrupt_test.robot
 
 ## AVS Die 0 Tests
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die1.robot

@@ -48,6 +48,7 @@ add_library(${TARGET}
         nvic_init.c
         pcie_init.c
         pex_rng_init.c
+        power_fuse_init.c
         power_init.c
         scmi_init.c
         scmi_cli_init.c
@@ -130,6 +131,13 @@ target_link_libraries(
         ms::lib::tower
         ms::lib::variable_services
         ms::lib::variable_services::cli
+        ms::lib::ddr::cli
+        ms::lib::tower
+        ms::lib::build_info_cli
+        ms::lib::pex_rng
+        ms::lib::power_fuse
+        ms::lib::config_manager
+        ms::lib::config_manager::cli
         ms::lib::warm_start
         ms::lib::warm_start::cli
         ms::service::accel_intr_client
@@ -239,6 +247,7 @@ add_library(${TARGET}
         icc_mhu_init.c
         mcp_mpu_init.c
         nvic_init.c
+        power_fuse_init.c
         sensor_fifo_init.c
         system_info_init.c
         telemetry_service_init.c
@@ -281,6 +290,7 @@ target_link_libraries(
         ms::lib::interface::in_band_telemetry_ddr
         ms::lib::interface::mhu_icc_payloads
         ms::lib::mcp_interrupts
+        ms::lib::power_fuse
         ms::lib::register_headers
         ms::lib::stdio_textio
         ms::lib::system_info

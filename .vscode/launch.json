@@ -207,6 +207,11 @@
                 "key": "savedSvcUnitTest",
                 "options": [
                     [
+                        "Power Fuse",
+                        "power_fuse.test.exe"
+                    ],
+                    [
+
                         "Data Collection Service",
                         "kng.service.dcs.test.exe"
                     ],

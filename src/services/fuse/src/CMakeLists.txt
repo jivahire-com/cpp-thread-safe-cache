@@ -19,6 +19,7 @@ target_link_libraries(${TARGET}
     PRIVATE
     fwlib.dfwk
     fwlib.platform.dfwkhost.threadx
+    fwlib.lib.cfg_mgr
     fwlib.lib.interface.platform.errorhandler
     fwlib.lib.init
     fwlib.lib.status

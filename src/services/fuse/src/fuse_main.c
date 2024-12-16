@@ -8,7 +8,8 @@
 
 /*------------- Includes -----------------*/
 
-#include <bug_check.h>     // for BUG_ASSERT_PARAM, BUG_ASSERT
+#include <bug_check.h> // for BUG_ASSERT_PARAM, BUG_ASSERT
+#include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h> // for fpfw_icc_base_send_recv_req_t, fpfw...
 #include <fpfw_init.h>     // for fpfw_init_get_handle, FPFW_INIT_C...
 #include <fpfw_status.h>   // for fpfw_status_t
@@ -16,6 +17,7 @@
 #include <fuse_dma.h>      // apply copy fuse to ram
 #include <fuse_events.h>   // apply event trace for fuse
 #include <fuse_init.h>     // fuse service API interface
+// #include <fuse_knobs.h>
 #include <fuse_struct.h>
 #include <fuses_top_regs.h>
 #include <hsp_firmware_headers.h>
@@ -54,6 +56,9 @@ static int read_core_disabled_fuses();
 
 static fpfw_icc_base_ctx_t* icc_base_ctx_fuse;
 kng_fuse_disable_core_t DIE0_fuse_disable, DIE1_fuse_disable;
+static uint32_t config_knob_0_31 = 0;
+static uint32_t config_knob_32_63 = 0;
+static uint32_t config_knob_64_95 = 0;
 
 /*------------- Functions ----------------*/
 static bool platform_requires_fuse_distribution()
@@ -118,6 +123,8 @@ static int read_override_from_spi()
 static int read_core_disabled_fuses()
 {
     kng_fuse_disable_core_t* p_fuse_disable;
+
+    uint32_t status = 0;
     int p_die_num;
 
     if (idsw_get_die_id() == DIE_0)
@@ -131,20 +138,18 @@ static int read_core_disabled_fuses()
         p_die_num = 1;
     }
 
-    p_fuse_disable->fuse_dis_core_0_31 = read_fuse(CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_BIT_OFFSET,
-                                                   CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_WIDTH);
-    p_fuse_disable->fuse_dis_core_0_31 |= read_fuse(CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_31_0_BIT_OFFSET,
-                                                    CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_31_0_WIDTH);
+    status = read_core_defect_fuses(&(p_fuse_disable->fuse_dis_core_64_95),
+                                    &(p_fuse_disable->fuse_dis_core_32_63),
+                                    &(p_fuse_disable->fuse_dis_core_0_31));
+    if (status != SILIBS_SUCCESS)
+    {
+        printf(FUSE_NAME "get the defect knob fail\n");
+        return status;
+    }
 
-    p_fuse_disable->fuse_dis_core_32_63 = read_fuse(CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_63_32_BIT_OFFSET,
-                                                    CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_63_32_WIDTH);
-    p_fuse_disable->fuse_dis_core_32_63 |= read_fuse(CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_63_32_BIT_OFFSET,
-                                                     CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_63_32_WIDTH);
-
-    p_fuse_disable->fuse_dis_core_64_95 = read_fuse(CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_67_64_BIT_OFFSET,
-                                                    CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_67_64_WIDTH);
-    p_fuse_disable->fuse_dis_core_64_95 |= read_fuse(CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_67_64_BIT_OFFSET,
-                                                     CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_67_64_WIDTH);
+    p_fuse_disable->fuse_dis_core_0_31 |= config_knob_0_31;
+    p_fuse_disable->fuse_dis_core_32_63 |= config_knob_32_63;
+    p_fuse_disable->fuse_dis_core_64_95 |= (config_knob_64_95 & 0x0F);
 
     printf(FUSE_NAME "save disable knob in DIE%d done\n", p_die_num);
 
@@ -170,6 +175,7 @@ int write_fuse_info_to_ap()
         result = sds_block_write(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, &DIE1_fuse_disable, FUSE_DISABLE_CORE_DIE1_SIZE);
         BUG_ASSERT(result == KNG_SUCCESS);
     }
+    printf(FUSE_NAME "DIE%d fuse info to ap successfully!\n", idsw_get_die_id());
     return result;
 }
 
@@ -265,17 +271,17 @@ int platform_fuse_override()
                 return status;
             }
         }
-        status = read_core_disabled_fuses();
-        if (status != SILIBS_SUCCESS)
+        if (!system_info_is_warm_start())
         {
-            printf(FUSE_NAME "save disable knob failed\n");
-            status = FUSE_ERROR_DISABLE_KNOB;
-            return status;
+            status = read_core_disabled_fuses();
+            if (status != SILIBS_SUCCESS)
+            {
+                printf(FUSE_NAME "save disable knob failed\n");
+                status = FUSE_ERROR_DISABLE_KNOB;
+                return status;
+            }
         }
-        // TODO: Fuse Service - Update core fusemap with disables from config knob
-        // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2015846/
-        // Provide an opportunity for manual fuse override - debugger platforms should set a breakpoint on the
-        // access implemented by this call
+
         trigger_debugger_for_manual_overrides();
     }
     FUSE_ET_STATUS(FUSE_ET_TYPE_OVERRIDE_COMPLETE);
@@ -379,5 +385,8 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
 void fuse_init(fpfw_icc_base_ctx_t* icc_base_ctx)
 {
     icc_base_ctx_fuse = icc_base_ctx;
+    config_knob_0_31 = config_get_fuse_disable_value_0_31();
+    config_knob_32_63 = config_get_fuse_disable_value_32_63();
+    config_knob_64_95 = config_get_fuse_disable_value_64_95();
     FUSE_ET_STATUS(FUSE_ET_TYPE_SVC_START);
 }

@@ -23,6 +23,7 @@
  * @return true if the HSP is present, false otherwise.
  */
 bool system_info_is_hsp_present();
+bool system_info_is_warm_start();
 
 /**
  * @brief Caches the system information.

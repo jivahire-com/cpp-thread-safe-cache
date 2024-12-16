@@ -18,6 +18,10 @@ target_link_libraries(${TARGET}
         ms::service::sds_service
     PUBLIC
         fwlib.lib.assert
+        fwlib.dfwk
+        fwlib.lib.cfg_mgr
+        fwlib.lib.linkedlist
+        fwlib.lib.utils
         silibs::fuse
         silibs::idsw
         silibs::idsw_kng
@@ -27,8 +31,12 @@ target_link_libraries(${TARGET}
  )
 
 
-
-target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:ms::service::fuse,INCLUDE_DIRECTORIES>)
+target_include_directories(${TARGET} 
+    PRIVATE 
+        $<TARGET_PROPERTY:fwlib.lib.cfg_mgr,INCLUDE_DIRECTORIES>
+        $<TARGET_PROPERTY:ms::lib::config_manager,INCLUDE_DIRECTORIES>
+        $<TARGET_PROPERTY:ms::service::fuse,INCLUDE_DIRECTORIES>
+)
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
@@ -45,6 +53,7 @@ mock_target(${TARGET}
     idsw_get_die_id
     fuse_dma_copy_to_ram_blocking
     read_fuse
+    read_core_defect_fuses
     apply_fuse_override
     distribute_fuses
     trigger_debugger_for_manual_overrides
@@ -55,6 +64,7 @@ mock_target(${TARGET}
     fpfw_icc_base_send_recv_sync
     sds_block_creation
     sds_block_write
+    system_info_is_warm_start
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

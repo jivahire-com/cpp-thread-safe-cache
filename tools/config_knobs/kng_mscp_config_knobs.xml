@@ -423,19 +423,7 @@
     <Knob name="power_aging_telemetry" type="" default="" help="Configuration details for aging sensor telemetry collection" />
     <Knob name="power_remote_poll_interval" type="uint16_T" default="250" help="Remote (MCP) polling interval in milliseconds for power state" />
     -->
-
-    <!-- Undocumented -->
-    <Knob name="power_plimit_current_thresholds" type="power_currthrot_threshold_cfg_t" default="{80, 90, 95, 100}" />
-    <Knob name="power_soc_vm_overvolt_en" type="bool" default="true" />
-    <Knob name="power_soc_vm_undervolt_en" type="bool" default="true" />
-    <Knob name="power_tile_vm_overvolt_en" type="bool" default="true" />
-    <Knob name="power_tile_vm_undervolt_en" type="bool" default="true" />
-    <Knob name="power_soc_hot_en" type="bool" default="true" />
-    <Knob name="power_soc_thermtrip_en" type="bool" default="true" />
-    <Knob name="power_tile_hot_en" type="bool" default="true" />
-    <Knob name="power_tile_thermtrip_en" type="bool" default="true" />
-
-    <!-- Mesh Sequence -->
+        <!-- Mesh Sequence -->
     <Knob name="mesh_d2d_override" type="bool" default="false" help="Enable and Use the Mesh D2D Knobs listed" />
     <Knob name="cmn_sam_config" type="CMN_SAM_CONFIG_TYPE" default="CMN_SAM_CONFIG_1D_UMA_64HNS_HIER_3SN" help="Select Mesh config" />
     <Knob name="cmn_cxl_interleave" type="uint8_t" default="0" help="Selct CXL intearleave value 0,3 or 4" />
@@ -495,9 +483,20 @@
     <Knob name="i3c_speed" type="i3c_speed_t" default="I3C_SPEED_SDR4_2MHz" help="Desired I3C Speed for I3C0 and I3C1" />
     <Knob name="reg_scl_ext_termn_lcnt_timing" type="uint32_t" default="0xF" help="Set value for REG_SCL_EXT_TERMN_LCNT_TIMING" />
     <Knob name="reg_sda_hold_switch_dly_timing" type="uint32_t" default="0x50000" help="Set value for REG_SDA_HOLD_SWITCH_DLY_TIMING" />
-
+    <!-- Undocumented -->
+    <Knob name="power_plimit_current_thresholds" type="power_currthrot_threshold_cfg_t" default="{80, 90, 95, 100}" />
+    <Knob name="power_soc_vm_overvolt_en" type="bool" default="true" />
+    <Knob name="power_soc_vm_undervolt_en" type="bool" default="true" />
+    <Knob name="power_tile_vm_overvolt_en" type="bool" default="true" />
+    <Knob name="power_tile_vm_undervolt_en" type="bool" default="true" />
+    <Knob name="power_soc_hot_en" type="bool" default="true" />
+    <Knob name="power_soc_thermtrip_en" type="bool" default="true" />
+    <Knob name="power_tile_hot_en" type="bool" default="true" />
+    <Knob name="power_tile_thermtrip_en" type="bool" default="true" />
     <Knob name="intclk_knobs" type="intclk_cfg_t" help="INT-CLK knobs for programming non-POR frequency" />
-
+    <Knob name="fuse_disable_value_0_31" type="uint32_t" default="0" />
+    <Knob name="fuse_disable_value_32_63" type="uint32_t" default="0" />
+    <Knob name="fuse_disable_value_64_95" type="uint32_t" default="0" />
   </Knobs>
 
 </ConfigSchema>

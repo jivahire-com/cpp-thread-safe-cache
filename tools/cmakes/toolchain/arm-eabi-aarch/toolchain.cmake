@@ -17,6 +17,14 @@ set(CMAKE_CXX_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -nostartfiles -L${C
 set(CMAKE_ASM_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -nostartfiles -L${CMAKE_CURRENT_LIST_DIR}/ld")
 set(CMAKE_EXE_LINKER_FLAGS_INIT "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -L${CMAKE_CURRENT_LIST_DIR}/ld -Wl,--gc-sections")
 
+# Enable Floating Point Unit (FPU)
+option(ENABLE_FPU "Enable hardware floating-point unit for Cortex-M7" ON)
+if(ENABLE_FPU)
+    add_compile_definitions(__FPU_PRESENT=1)
+    message(STATUS "Hardware Floating Point Unit (FPU) is enabled")
+    string(APPEND CMAKE_C_FLAGS_INIT "-mfloat-abi=hard -mfpu=fpv5-sp-d16 ")
+endif()
+
 set(CMAKE_EXECUTABLE_SUFFIX_C ".elf")
 set(CMAKE_EXECUTABLE_SUFFIX_CXX ".elf")
 

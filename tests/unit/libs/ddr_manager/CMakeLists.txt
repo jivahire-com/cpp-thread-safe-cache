@@ -12,8 +12,8 @@ set(SOURCES
 set(LIBS
     PRIVATE
         idhw
-        ms::service::ddr_manager
         ms::cmocka::testrunner
+        ms::lib::ddr_manager
         ms::lib::error_handler
         ms::lib::hsp_firmware_headers
         ms::lib::threadx
@@ -36,7 +36,7 @@ target_link_libraries(${TARGET}
 )
 
 # Get private includes for module under test
-target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:ms::service::ddr_manager,INCLUDE_DIRECTORIES>)
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:ms::lib::ddr_manager,INCLUDE_DIRECTORIES>)
 
 # Defining platform APIs
 # set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")
@@ -62,6 +62,7 @@ mock_target(${TARGET}
     ddr_manager_platform_is_polling_supported
     fpfw_icc_base_send_recv_sync
     idhw_get_die_id
+    prod_ddrss_lib_init
     system_info_is_hsp_present
     mmio_read32
     mmio_write32

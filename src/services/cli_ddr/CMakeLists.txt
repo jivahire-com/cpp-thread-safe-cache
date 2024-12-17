@@ -19,8 +19,8 @@ target_link_libraries(
     ${TARGET}
         PUBLIC
         silibs::ddrss
+        ms::lib::ddr_manager
         ms::lib::ddrss_init
-        ms::service::ddr_manager
         PRIVATE
         fwlib.service.cli
         silibs::platform

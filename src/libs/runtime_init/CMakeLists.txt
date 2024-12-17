@@ -24,7 +24,6 @@ add_library(${TARGET}
         crash_dump_init.c
         css_init.c
         d2d_cntr_sync_init.c
-        ddr_manager_init.c
         ddrss_init.c
         debug_init.c
         dfwk_init.c
@@ -104,6 +103,7 @@ target_link_libraries(
         ms::lib::css
         ms::lib::d2d_cntr_sync
         ms::lib::ddr::cli
+        ms::lib::ddr_manager
         ms::lib::ddrss_init
         ms::lib::debug
         ms::lib::exception_handler
@@ -144,7 +144,6 @@ target_link_libraries(
         ms::service::accel_intr_service
         ms::service::ap_core
         ms::service::atu_service
-        ms::service::ddr_manager
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
         ms::service::fuse

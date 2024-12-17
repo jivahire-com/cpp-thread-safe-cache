@@ -1,4 +1,4 @@
-set(TARGET ddr_manager_service)
+set(TARGET ddr_manager_library)
 set(LIBS PUBLIC fwlib.dfwk fwlib.lib.assert)
 
 # Add target for the service
@@ -35,11 +35,10 @@ target_link_libraries(${TARGET}
         silibs::platform
         silibs::ras_arm
         fwlib.dfwk
-        fwlib.lib.cfg_mgr
         fwlib.lib.init
-        fwlib.service.iccBase
         ms::lib::atomics
         ms::lib::crash_dump
+        ms::lib::ddrss_init
         ms::lib::error_codes
         ms::lib::event_trace::trace
         ms::lib::hsp_firmware_headers
@@ -49,13 +48,15 @@ target_link_libraries(${TARGET}
     PUBLIC
         silibs::atu
         fwlib.platform.dfwkhost.threadx
+        fwlib.lib.cfg_mgr
         fwlib.dfwk
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.interface.platform.threadx
+        fwlib.service.iccBase
 )
 
 lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})
 
-add_library(ms::service::ddr_manager ALIAS ${TARGET})
+add_library(ms::lib::ddr_manager ALIAS ${TARGET})

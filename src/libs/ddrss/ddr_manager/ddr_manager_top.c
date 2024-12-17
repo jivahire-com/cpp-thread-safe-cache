@@ -14,6 +14,7 @@
 #include <ErrorHandler.h> // for FPFwErrorRaise
 #include <bug_check.h>
 #include <ddr_manager_events.h>   // for DDR_MANAGER_ET_FATAL, DDR_MANAGER_ET_TYPE_CURVE_H...
+#include <ddrss.h>                // for ddr_manager_init
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
 #include <hsp_firmware_headers.h> // for mbox command codes
 #include <stdint.h>               // for uint32_t
@@ -177,7 +178,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
                               pconfig->thread_config.priority,            /* UINT priority */
                               pconfig->thread_config.priority,            /* UINT preempt_threshold */
                               pconfig->thread_config.time_slice_option,   /* ULONG time_slice */
-                              TX_AUTO_START);                             /* UINT auto_start */
+                              TX_DONT_START);                             /* UINT auto_start */
 
     if (status != TX_SUCCESS)
     {
@@ -191,7 +192,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
                              (ULONG)pddr_service_ctx, /* ULONG expiration_input */
                              pconfig->timer_config.initial_ticks,    /* ULONG initial_ticks >= 1 */
                              pconfig->timer_config.reschedule_ticks, /* ULONG reschedule_ticks */
-                             TX_AUTO_ACTIVATE);                      /* UINT auto_activate) */
+                             TX_NO_ACTIVATE);                        /* UINT auto_activate) */
 
     if (status != TX_SUCCESS)
     {
@@ -200,6 +201,10 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     }
 
     ddr_manager_i3c_init();
+
+    printf("DDR init, die_num: [%u]\n", pconfig->thread_config.die_number);
+    prod_ddrss_lib_init(pconfig->thread_config.die_number);
+
     ddr_init_telemetry();
     if (system_info_is_hsp_present())
     {
@@ -209,4 +214,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_NO_HSP_DETECT, ET_NOPARAM);
     }
+
+    tx_thread_resume((TX_THREAD*)&pddr_service_ctx->work_thread);
+    tx_timer_activate((TX_TIMER*)&pddr_service_ctx->ddr_polling_timer);
 }

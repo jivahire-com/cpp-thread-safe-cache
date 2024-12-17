@@ -13,6 +13,7 @@
 #include <CMockaWrapper.h>
 #include <FpFwUtils.h>
 #include <ddrss_lib.h>
+#include <idsw_kng.h>
 #include <silibs_status.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -63,5 +64,11 @@ void __wrap_mmio_write32(void* addr, uint32_t data)
 bool __wrap_ddr_manager_platform_is_polling_supported()
 {
     return true;
+}
+
+void __wrap_prod_ddrss_lib_init(KNG_DIE_ID die_num)
+{
+    FPFW_UNUSED(die_num);
+    return;
 }
 } // extern "C"

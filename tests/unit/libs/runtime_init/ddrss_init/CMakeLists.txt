@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         idhw
         ms::cmocka::testrunner
+        ms::lib::ddr_manager
         ms::lib::ddrss_init
         silibs_platform
 )
@@ -29,6 +30,10 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    prod_ddrss_lib_init
+    FPFwCoreInterruptEnableVector
+    FPFwCoreInterruptRegisterCallback
+    ddr_manager_init
+    idhw_get_die_id
     idsw_get_die_id
+    idhw_is_single_die_boot_en
 )

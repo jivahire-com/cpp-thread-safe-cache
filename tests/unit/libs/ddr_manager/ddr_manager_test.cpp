@@ -269,9 +269,10 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     expect_value(__wrap__txe_thread_create, priority, config.thread_config.priority);
     expect_value(__wrap__txe_thread_create, preempt_threshold, config.thread_config.priority);
     expect_value(__wrap__txe_thread_create, time_slice, config.thread_config.time_slice_option);
-    expect_value(__wrap__txe_thread_create, auto_start, TX_AUTO_START);
+    expect_value(__wrap__txe_thread_create, auto_start, TX_DONT_START);
     expect_any(__wrap__txe_thread_create, thread_control_block_size);
     will_return(__wrap__txe_thread_create, TX_SUCCESS);
+
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
 
     size_t output_recv_bytes = 0;

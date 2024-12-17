@@ -23,7 +23,7 @@ target_link_libraries(
             fwlib.lib.interface.platform.threadx
             fwlib.lib.utils
             fwlib.lib.mboxPrimitives
-            ms::service::ddr_manager
+            ms::lib::ddr_manager
             ms::lib::hsp_firmware_headers
             ms::lib::i3c_controller
             silibs::lib_i3c

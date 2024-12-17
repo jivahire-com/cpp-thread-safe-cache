@@ -17,7 +17,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(cli_ddr, FPFW_INIT_DEPENDENCIES("cli", "ddrman"))
+FPFW_INIT_COMPONENT(cli_ddr, FPFW_INIT_DEPENDENCIES("cli", "ddr"))
 {
     cli_ddr_init();
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

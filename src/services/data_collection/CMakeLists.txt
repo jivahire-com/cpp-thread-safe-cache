@@ -20,9 +20,11 @@ target_link_libraries(
           ms::lib::debug
           ms::lib::event_trace::trace
           silibs::kng_silibs_platform
+          silibs::icc_mhu
           silibs::idhw
           silibs::idsw
           silibs::idsw_kng
+
 
 )
 target_include_directories(${TARGET}

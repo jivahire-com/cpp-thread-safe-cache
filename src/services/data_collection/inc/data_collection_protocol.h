@@ -20,7 +20,7 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 // DCP Messages are 32-bit values with the following format: 0x0606_<msg_id>
-#define DCP_GEN_MSG_ID(x) (0x06060000 | (x))
+#define DCP_GEN_MSG_ID(x) (0xC000 | (x))
 
 /*-------------- Typedefs ----------------*/
 
@@ -71,6 +71,7 @@ typedef struct {
     uint16_t msg_id;        // dcp_msg_id_t
     uint16_t seq_num;
     uint16_t msg_status;    // dcp_status_t
+    uint16_t payload_size;
 } dcp_msg_hdr_t;
 
 /* CLIENT_GET_CAPABILITIES */

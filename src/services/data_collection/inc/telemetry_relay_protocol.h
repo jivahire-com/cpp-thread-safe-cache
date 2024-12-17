@@ -18,7 +18,7 @@
 /*-- Symbolic Constant Macros (defines) --*/
 #define ENDPOINT_NAME_MAX_LENGTH (20)
 /*-------------- Typedefs ----------------*/
-#define TRP_GEN_MSG_ID(x) (0xDD00 | (x))
+#define TRP_GEN_MSG_ID(x) (0xD000 | (x))
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
@@ -31,6 +31,10 @@ typedef enum {
 typedef enum {
     TRP_STATUS_SUCCESS              = 0,
     TRP_STATUS_E_SIZE               = -1,
+    TRP_STATUS_E_PARAM              = -2,
+    TRP_STATUS_E_UNK_MSG            = -3,
+    TRP_STATUS_E_UNK_CLIENT         = -4,
+    TRP_STATUS_E_INCOMPLETE_HANDLER = -5,
 } trp_status_t;
 
 typedef enum {
@@ -53,7 +57,8 @@ typedef struct {
     uint16_t trp_msg_id;        // trp_msg_id_t
     uint16_t trp_msg_status;    // trp_status_t
     uint16_t source_seq_num;
-} trp_hdr_t, *p_trp_hdr_t;
+    uint16_t payload_size;
+} trp_msg_hdr_t, *p_trp_msg_hdr_t;
 
 typedef struct {
     uint32_t rd_data_ddr_addr_offset; // offset from beginning of telemetry mapped DDR
@@ -61,7 +66,7 @@ typedef struct {
 } trp_msg_read_data_t;
 
 typedef struct{
-    trp_hdr_t hdr;
+    trp_msg_hdr_t hdr;
     union {
         dcp_msg_t                       dcp_msg;  // TRP_MSG_ID_DCP_FORWARD
         trp_msg_read_data_t             read_package; // TRP_MSG_ID_READ_PACKAGE

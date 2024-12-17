@@ -25,6 +25,7 @@
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
 #include <fpfw_status.h>
+#include <icc_mhu.h>
 #include <idsw_kng.h>
 #include <kng_icc_shared.h>
 #include <stdio.h>
@@ -75,12 +76,14 @@ void tlm_relay_icc_recv_complete_notify_from_drv_frmwk(void* context, size_t out
     p_trp_icc_endpoint_t icc_endpoint = (p_trp_icc_endpoint_t)context;
     fpfw_icc_base_recv_req_t* recv_context = &icc_endpoint->async_recv_req;
 
+    uint16_t size_of_transport_hdr = sizeof(icc_mhu_header_t);
+
     if (FPFW_STATUS_SUCCEEDED(status))
     {
         if (recv_context->recv_cmd_code == ICC_COMMAND_DCP_MSG)
         {
             // only one DCP endpoint(asserted at init), which is on die 0, AP core
-            p_dcp_msg_t dcp_msg = (p_dcp_msg_t)recv_context->payload_buffer;
+            p_dcp_msg_t dcp_msg = (p_dcp_msg_t)(recv_context->payload_buffer + size_of_transport_hdr);
 
             trp_msg_t trp_msg = {
                 .hdr =
@@ -93,6 +96,7 @@ void tlm_relay_icc_recv_complete_notify_from_drv_frmwk(void* context, size_t out
                         .trp_msg_id = TRP_MSG_ID_DCP_FORWARD,
                         .trp_msg_status = TRP_STATUS_SUCCESS,
                         .source_seq_num = dcp_msg->hdr.seq_num,
+                        .payload_size = dcp_msg->hdr.payload_size + sizeof(dcp_msg_hdr_t),
                     },
                 .payload.dcp_msg = *dcp_msg,
             };
@@ -102,8 +106,17 @@ void tlm_relay_icc_recv_complete_notify_from_drv_frmwk(void* context, size_t out
         else if (recv_context->recv_cmd_code == ICC_COMMAND_TRP_MSG)
         {
             // all inter-core messages are TRP messages
-            p_trp_msg_t trp_msg = (p_trp_msg_t)recv_context->payload_buffer;
-            dcs_forward_trp_msg_to_client_from_drv_frmwk(trp_msg);
+            p_trp_msg_t trp_msg = (p_trp_msg_t)(recv_context->payload_buffer + size_of_transport_hdr);
+
+            if ((trp_msg->hdr.dest_die_id == s_trp_icc_config->this_die_id) &&
+                (trp_msg->hdr.dest_cpu_id == s_trp_icc_config->this_cpu_id))
+            {
+                dcs_forward_trp_msg_to_client_from_drv_frmwk(trp_msg);
+            }
+            else
+            {
+                dcs_queue_for_outbound_from_drv_frmwk(trp_msg, false);
+            }
         }
         else
         {
@@ -137,4 +150,40 @@ void tlm_relay_icc_recv_complete_notify_from_drv_frmwk(void* context, size_t out
     }
 
     FPFW_ET_LOG(TrpIccInvalidCallbackEndpoint, (uint32_t)icc_endpoint);
+}
+
+void tlm_relay_send_outgoing_msg(p_trp_msg_t trp_msg)
+{
+    for (uint16_t route = 0; route < s_trp_icc_config->number_of_routes; route++)
+    {
+        p_trp_route_t trp_route = &s_trp_icc_config->routing_table[route];
+        if (trp_route->dest.die_id == trp_msg->hdr.dest_die_id && trp_route->dest.cpu_id == trp_msg->hdr.dest_cpu_id)
+        {
+            icc_msg_t icc_msg;
+            if (trp_msg->hdr.trp_msg_id == TRP_MSG_ID_DCP_FORWARD)
+            {
+                icc_msg.header.msg_header.command = ICC_COMMAND_DCP_MSG;
+                icc_msg.header.msg_header.payload_size = trp_msg->payload.dcp_msg.hdr.payload_size + sizeof(dcp_msg_hdr_t);
+                icc_msg.dcp_msg = trp_msg->payload.dcp_msg;
+            }
+            else
+            {
+                icc_msg.header.msg_header.command = ICC_COMMAND_TRP_MSG;
+                icc_msg.header.msg_header.payload_size = trp_msg->hdr.payload_size + sizeof(trp_msg_hdr_t);
+                icc_msg.trp_msg = *trp_msg;
+            }
+
+            fpfw_status_t status =
+                fpfw_icc_base_send_sync(trp_route->icc_endpoint->icc_base_ctx,
+                                        &icc_msg,
+                                        icc_msg.header.msg_header.payload_size + sizeof(icc_mhu_header_t));
+            if (FPFW_STATUS_FAILED(status))
+            {
+                FPFW_ET_LOG(TrpIccSendFail, status, (uint32_t)trp_route->icc_endpoint);
+            }
+            return;
+        }
+    }
+
+    FPFW_ET_LOG(TrpIccNoRoute, trp_msg->hdr.dest_die_id, trp_msg->hdr.dest_cpu_id);
 }

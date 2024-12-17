@@ -21,8 +21,20 @@
 /*--------- Function Prototypes ----------*/
 
 /**
- * @brief Handle a TRP message
+ * @brief Initialize the DCP service client
  *
- * @param msg Pointer to the TRP message
  */
-void dcp_svc_client_handle_trp_msg(p_trp_msg_t msg);
+void dcp_svc_client_init(void);
+
+/**
+ * @brief Handle an incoming TRP message
+ *
+ */
+void dcp_svc_client_handle_incoming_msgs(void);
+
+/**
+ * @brief Handle a DCP message
+ *
+ * @param[in] trp_msg The TRP message containing the DCP message
+ */
+void dcp_svc_client_handle_dcp_msg(p_trp_msg_t trp_msg);

@@ -58,4 +58,57 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_DCS_SERVICE,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, endpoint))
 
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_DCS_SERVICE,
+                     15,
+                     DcsInvalidClientId,
+                     FPFW_ET_LEVEL_WARNING,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, client_id))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_DCS_SERVICE,
+                     16,
+                     DcsMultipleRegistrationNotAllowed,
+                     FPFW_ET_LEVEL_WARNING,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, client_id))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_DCS_SERVICE,
+                     17,
+                     DcsSvcClientFreeFail,
+                     FPFW_ET_LEVEL_WARNING,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, block_addr),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, tx_status))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_DCS_SERVICE,
+                     18,
+                     DcsSvcClientQueueFail,
+                     FPFW_ET_LEVEL_WARNING,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, queue),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, tx_status))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_DCS_SERVICE,
+                     19,
+                     DcsSvcClientUnexpectedMsg,
+                     FPFW_ET_LEVEL_WARNING,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, msg_id))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_DCS_SERVICE,
+                     20,
+                     DcsSvcClientAllocateFail,
+                     FPFW_ET_LEVEL_WARNING,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, pool),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, tx_status))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_DCS_SERVICE,
+                     21,
+                     TrpIccSendFail,
+                     FPFW_ET_LEVEL_WARNING,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, icc_endpoint))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_DCS_SERVICE,
+                     22,
+                     TrpIccNoRoute,
+                     FPFW_ET_LEVEL_WARNING,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, dest_die_id),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, dest_cpu_id))
+
 /*--------- Function Prototypes ----------*/

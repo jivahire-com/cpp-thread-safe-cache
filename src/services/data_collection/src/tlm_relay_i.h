@@ -11,11 +11,21 @@
 
 /*----------- Nested includes ------------*/
 #include "telemetry_relay_protocol.h"
-
+#include <icc_mhu.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
+// ICC Base api's require the transport header
+typedef struct
+{
+    icc_mhu_header_t header;
+    union
+    {
+        dcp_msg_t dcp_msg;
+        trp_msg_t trp_msg;
+    };
+} icc_msg_t, *p_icc_msg_t;
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -58,8 +68,14 @@ fpfw_status_t tlm_relay_send_trp_msg(const p_trp_msg_t trp_msg);
 /**
  * @brief Callback for when a message is received from the driver framework for icc
  *
- * @param context - p_trp_icc_endpoint_t
- * @param output_size_bytes not used
- * @param status Status from ICC base
+ * @param[in] context - p_trp_icc_endpoint_t
+ * @param[in] output_size_bytes not used
+ * @param[in] status Status from ICC base
  */
 void tlm_relay_icc_recv_complete_notify_from_drv_frmwk(void* context, size_t output_size_bytes, fpfw_status_t status);
+
+/*
+ * @brief  Look up destination in routing table and send out message
+ * @param[in] trp_msg
+ */
+void tlm_relay_send_outgoing_msg(p_trp_msg_t trp_msg);

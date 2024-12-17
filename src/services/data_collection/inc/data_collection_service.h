@@ -24,10 +24,9 @@ typedef void (*rx_msg_notification)(void);
 
 
 typedef struct {
-    dcp_client_id_t id;
     TX_BLOCK_POOL rx_pool;  // block size must be > sizeof(trp_msg_t)
     TX_QUEUE rx_queue; // Queue of pointers to messages in the pool
-    rx_msg_notification notify; // called from driver framework thread
+    rx_msg_notification notify_from_drv_frmwk; // called from driver framework thread
 } dcs_client_t, *p_dcs_client_t;
 
 typedef struct
@@ -64,12 +63,14 @@ void dcs_init(p_dcs_config_t config);
  * @brief Registers a client to receive DCS commands
  *
  * @note Thread and ISR Safe
+ * @note Client must ensure rx_pool block size is > sizeof(trp_msg_t)
  *
- * @param[in]  client Client to register. Memory copied to internal storage.
+ * @param[in]  id Client ID to register
+ * @param[in]  client Client to register. Client must ensure statically allocated for lifetime
  *
  * @return FPFW_STATUS_SUCCESS on success or an error code on failure
  */
-fpfw_status_t dcs_register_client(dcs_client_t client);
+fpfw_status_t dcs_register_client(dcp_client_id_t id, p_dcs_client_t client);
 
 /**
  * @brief Send a message to the AP. Can be a request or a response.

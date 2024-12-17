@@ -3,7 +3,7 @@
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="gcc.arm.eabi.aarch-win64" version="13.2.20201009"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="gdb.arm.eabi.aarch-win64" version="8.3.201903"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="microsoft.internal.windows.virtualizerruntime" version="2023.3.2"/>
-        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="microsoft.internal.virtualized.kingsgate.svp" version="12.0.5645"/>
+        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="microsoft.internal.virtualized.kingsgate.svp" version="12.1.581"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="kingsgate.fw.scripts" version="0.0.3"/>
     </universal_packages>
 
@@ -17,12 +17,12 @@
         <package name="echofalls.svp.stmm.build" version="1.10.0.181" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="echofalls.fpga.uefi.build" version="1.10.0.181" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="echofalls.fpga.stmm.build" version="1.10.0.181" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
-        <package name="1pfw.datwizard-preview-x86_64-pc-windows-msvc" version="0.2.0-20241205.6" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/nuget/v3/index.json"/>
+        <package name="1pfw.datwizard-preview-x86_64-pc-windows-msvc" version="0.2.0-20241211.2" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/nuget/v3/index.json"/>
     </nuget_packages>
 
     <pip_packages>
         <package name="pythia-tdk-rrm" version="0.1.58" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
-        <package name="pythia-tdk-echofalls" version="1.0.12" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
+        <package name="pythia-tdk-echofalls" version="1.0.14" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
         <package name="diagtool" version="1.0.184" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
     </pip_packages>
 

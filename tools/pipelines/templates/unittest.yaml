@@ -87,7 +87,7 @@ jobs:
     #   .\.testlogs\<TestRun_#>\Coverage\Cobertura.xml
     # the summary file exposes branch and line coverage rates which are checked against a target
     # the target coverages are provided to this template as parameters and are clipped between 0.0 and 1.0
-    - task: PublishCodeCoverageResults@1
+    - task: PublishCodeCoverageResults@2
       displayName: Publish Code Coverage
       condition: succeededOrFailed()
       inputs:

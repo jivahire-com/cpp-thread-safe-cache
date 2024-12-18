@@ -75,10 +75,10 @@ Write-FPGAFlash -ip <dc-scm IP> -loc <location of the image> -file <image file> 
 Function Write-FPGAFlash(
     [Parameter(Mandatory=$true)] [string] $system,
     [Parameter(Mandatory=$false)] [string] $loc = ".build/Debug/arm-eabi-aarch/bin/flash",
-    [Parameter(Mandatory=$false)] [string] $file = "kingsgate.ifwi.fpga.debug.custom.dat",
+    [Parameter(Mandatory=$false)] [string] $file = "kingsgate.ifwi.ap.baremetal.debug.dat",
     [Parameter(Mandatory=$false)] [string] $user = "admin",
     [Parameter(Mandatory=$false)] [string] $pw = "admin",
-    [Parameter(Mandatory=$false)] [string] $dest = "/tmp"
+    [Parameter(Mandatory=$false)] [string] $dest = "/var/wcs/home"
 )
 {
 

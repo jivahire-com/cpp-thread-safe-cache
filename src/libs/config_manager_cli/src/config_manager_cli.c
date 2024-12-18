@@ -25,13 +25,16 @@
 static FPFW_CLI_STATUS cfg_mgr_knob_list_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS cfg_mgr_knob_data_dump_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS cfg_mgr_set_knob_cli(int argc, const char** argv);
+static FPFW_CLI_STATUS cfg_mgr_reset_knob_cli(int argc, const char** argv);
 
 /*-- Declarations (Statics and globals) --*/
+extern knob_data_t g_knob_data[];
 
 static FPFW_CLI_COMMAND cfg_mgr_cli_list[] = {
     {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_list", cfg_mgr_knob_list_cli, "show knobs list", "Usage: cfg_mgr_list"},
     {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_dump", cfg_mgr_knob_data_dump_cli, "show all knobs data or by name, index", "Usage: cfg_mgr_dump <<name or index>>"},
-    {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_set", cfg_mgr_set_knob_cli, "overwrites the value of the specified knob", "Usage: cfg_mgr_set <<name or index>> <data bytes>"}};
+    {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_set", cfg_mgr_set_knob_cli, "overwrites the value of the specified knob", "Usage: cfg_mgr_set <<name or index>> <data bytes>"},
+    {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_reset", cfg_mgr_reset_knob_cli, "reset the value of the specified knob", "Usage: cfg_mgr_reset <<name or index>>"}};
 
 /*------------- Functions ----------------*/
 static cached_knob_data_t* get_knob_data_by(const char* argument, uint32_t* knob_idx)
@@ -52,14 +55,16 @@ static cached_knob_data_t* get_knob_data_by(const char* argument, uint32_t* knob
             current_entry = &get_cached_knob_data()[*knob_idx];
         }
     }
-
-    for (uint32_t idx = 0; idx < cached_knob_data_size(); idx++)
+    else
     {
-        cached_knob_data_t* current = &(get_cached_knob_data()[idx]);
-        if (0 == strcmp(current->name, argument))
+        for (uint32_t idx = 0; idx < cached_knob_data_size(); idx++)
         {
-            *knob_idx = idx;
-            current_entry = current;
+            cached_knob_data_t* current = &(get_cached_knob_data()[idx]);
+            if (0 == strcmp(current->name, argument))
+            {
+                *knob_idx = idx;
+                current_entry = current;
+            }
         }
     }
 
@@ -226,6 +231,52 @@ static FPFW_CLI_STATUS cfg_mgr_set_knob_cli(int argc, const char** argv)
     dump_knob_data(current_entry, knob_idx);
 
     FpFwCliPrint("\n--Knob configuration update completed--\n");
+
+    return CLI_SUCCESS;
+}
+
+static FPFW_CLI_STATUS cfg_mgr_reset_knob_cli(int argc, const char** argv)
+{
+    uint32_t knob_idx = 0;
+    cached_knob_data_t* current_entry = NULL;
+
+    if (argc < 2)
+    {
+        FpFwCliPrint("Incorrect Parameters\n");
+        FpFwCliPrint("Syntax: cfg_mgr_reset <<name or index>>\n");
+        return CLI_ERROR;
+    }
+
+    current_entry = get_knob_data_by(argv[1], &knob_idx);
+
+    if (current_entry == NULL)
+    {
+        FpFwCliPrint("Failed: Check Index is valid or Knob name\n");
+        return CLI_ERROR;
+    }
+
+    FpFwCliPrint("--knob data dump before reset\n");
+    dump_knob_data(current_entry, knob_idx);
+
+    if (current_entry->overridden)
+    {
+        bool result =
+            update_knob_data(current_entry, g_knob_data[knob_idx].default_value_address, current_entry->size, true);
+
+        if (!result)
+        {
+            FpFwCliPrint("Knob update into HSP get failed as HSP not present\n");
+            FpFwCliPrint("Knob update data will not be permanent\n");
+        }
+        current_entry->overridden = false;
+    }
+    else
+    {
+        FpFwCliPrint("Knob is not overridden, nothing to reset\n");
+    }
+
+    FpFwCliPrint("--knob data dump after reset\n");
+    dump_knob_data(current_entry, knob_idx);
 
     return CLI_SUCCESS;
 }

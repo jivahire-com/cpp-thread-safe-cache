@@ -49,8 +49,8 @@ static FPFW_CLI_COMMAND mesh_cli_list[] = {
     {NULL_LIST_ENTRY, "mesh", "mesh_echo", mesh_echo_cli, "mesh echo data", "Usage: mesh_echo <32-bit address(in Hex)> <32-bit data(in Hex)>"},
     {NULL_LIST_ENTRY, "mesh", "mesh_isr", mesh_isr_cli, "mesh isr process", "Usage: mesh_isr <Error(0x0) or Fault(0x1)>"},
     {NULL_LIST_ENTRY, "mesh", "mesh_error_inj", mesh_error_inj, "mesh error injection", "Usage: mesh_error_inj <node_type> <node_id> <node_control_reg> <err_inj> <byte_par_err_inj>"},
-    {NULL_LIST_ENTRY, "mesh", "mesh_pseudo_error_inj", mesh_pseudo_error_inj, "mesh pseudo fault injection", "Usage: mesh_pseudo_error_inj <node_type> <node_id> <node_control_reg> <err_inj> <err_cnt_down>"},
-    {NULL_LIST_ENTRY, "mesh", "mesh_pseudo_error_test_suite", mesh_pseudo_error_inj_test_suite, "mesh pseudo fault injection test suite", "Usage: mesh_pseudo_error_inj <node_type> <node_id_start> <node_id_end> <node_control_reg> <err_inj> <err_cnt_down>"},
+    {NULL_LIST_ENTRY, "mesh", "mesh_pseudo_error_inj", mesh_pseudo_error_inj, "mesh pseudo fault injection", "Usage: mesh_pseudo_error_inj <secure/non_secure> <node_type> <node_id> <node_control_reg> <err_inj> <err_cnt_down>"},
+    {NULL_LIST_ENTRY, "mesh", "mesh_pseudo_error_test_suite", mesh_pseudo_error_inj_test_suite, "mesh pseudo fault injection test suite", "Usage: mesh_pseudo_error_test_suite <secure/non_secure> <node_type> <node_id_start> <node_id_end> <node_control_reg> <err_inj> <err_cnt_down>"},
     {NULL_LIST_ENTRY, "mesh", "d2d_pseudo_error_inj", d2d_pseudo_error_inj, "d2d pseudo fault injection", "Usage: d2d_pseudo_error_inj <node_id> <err_inj> <err_cnt_down>"},
 
 };
@@ -188,9 +188,14 @@ static FPFW_CLI_STATUS mesh_pseudo_error_inj(int argc, const char** argv)
     FpFwCliPrint("mesh_pseudo_error_inj func. call\n\n");
 
     uint8_t current_arg = 0x0;
-    if (argc == 6)
+    if (argc == 7)
     {
         char* endptr;
+        uint8_t non_secure = strtoul(argv[++current_arg], &endptr, 16);
+        if (*endptr != '\0')
+        {
+            goto exit_error1;
+        }
         uint8_t node_type = strtoul(argv[++current_arg], &endptr, 16);
         if (*endptr != '\0')
         {
@@ -217,17 +222,24 @@ static FPFW_CLI_STATUS mesh_pseudo_error_inj(int argc, const char** argv)
             goto exit_error1;
         }
 
-        FpFwCliPrint("cmn800_pseudo_error_injection Start\n");
-        FpFwCliPrint("node_type: 0x%x, node_id: 0x%x, node_control_reg: 0x%x, err_inj: 0x%x, "
+        FpFwCliPrint("cmn800_pseudo_fault_error_injection Start\n");
+        FpFwCliPrint("%s node_type: 0x%x, node_id: 0x%x, node_control_reg: 0x%x, err_inj: 0x%x, "
                      "err_cnt_down: 0x%x, die_num: %d\n",
+                     (non_secure == 0x0) ? "Secure" : "Non-Secure",
                      node_type,
                      node_id,
                      node_control_reg,
                      err_inj,
                      err_cnt_down,
                      (uint8_t)idhw_get_die_id());
-        cmn800_pseudo_error_injection(node_type, node_id, node_control_reg, err_inj, err_cnt_down, (uint8_t)idhw_get_die_id());
-        FpFwCliPrint("cmn800_pseudo_error_injection End\n");
+        cmn800_pseudo_fault_error_injection(node_type,
+                                            node_id,
+                                            node_control_reg,
+                                            err_inj,
+                                            err_cnt_down,
+                                            (uint8_t)idhw_get_die_id(),
+                                            (bool)non_secure);
+        FpFwCliPrint("cmn800_pseudo_fault_error_injection End\n");
     }
     else
     {
@@ -239,9 +251,10 @@ exit_error1:
     FpFwCliPrint("Arg %s is Invalid Hex value\n", argv[current_arg]);
 exit_error:
     FpFwCliPrint(" Mesh Pseudo Fault Error Injection CLI Help\n");
-    FpFwCliPrint("Cmds: 5, <node_type> <node_id> <node_control_reg> <err_inj> <err_cnt_down>\n");
-    FpFwCliPrint("HNS Ex: mesh_pseudo_error_inj 0x1 0xC 0x401 0x80000A20 0x1000\n");
-    FpFwCliPrint("HNI Ex: mesh_pseudo_error_inj 0x3 0x0 0x401 0x80000A20 0x1000\n");
+    FpFwCliPrint(
+        "Cmds: 6, <secure/non_secure> <node_type> <node_id> <node_control_reg> <err_inj> <err_cnt_down>\n");
+    FpFwCliPrint("HNS Ex: mesh_pseudo_error_inj 0x0 0x1 0xC 0x401 0x80000A20 0x1000\n");
+    FpFwCliPrint("HNI Ex: mesh_pseudo_error_inj 0x1 0x3 0x0 0x401 0x80000A20 0x1000\n");
     return CLI_ERROR;
 }
 
@@ -250,9 +263,14 @@ static FPFW_CLI_STATUS mesh_pseudo_error_inj_test_suite(int argc, const char** a
     FpFwCliPrint("mesh_pseudo_error_inj_test_suite func. call\n\n");
 
     uint8_t current_arg = 0x0;
-    if (argc == 7)
+    if (argc == 8)
     {
         char* endptr;
+        uint8_t non_secure = strtoul(argv[++current_arg], &endptr, 16);
+        if (*endptr != '\0')
+        {
+            goto exit_error1;
+        }
         uint8_t node_type = strtoul(argv[++current_arg], &endptr, 16);
         if (*endptr != '\0')
         {
@@ -284,26 +302,33 @@ static FPFW_CLI_STATUS mesh_pseudo_error_inj_test_suite(int argc, const char** a
             goto exit_error1;
         }
 
-        FpFwCliPrint("cmn800_pseudo_error_injection Start\n");
-        FpFwCliPrint(
-            "node_type: 0x%x, node_id_start: 0x%x, node_id_end: 0x%x, node_control_reg: 0x%x, err_inj: 0x%x, "
-            "err_cnt_down: 0x%x, die_num: %d\n",
-            node_type,
-            node_id_start,
-            node_id_end,
-            node_control_reg,
-            err_inj,
-            err_cnt_down,
-            (uint8_t)idhw_get_die_id());
+        FpFwCliPrint("cmn800_pseudo_fault_error_injection Start\n");
+        FpFwCliPrint("%s node_type: 0x%x, node_id_start: 0x%x, node_id_end: 0x%x, node_control_reg: 0x%x, "
+                     "err_inj: 0x%x, "
+                     "err_cnt_down: 0x%x, die_num: %d\n",
+                     (non_secure == 0x0) ? "Secure" : "Non-Secure",
+                     node_type,
+                     node_id_start,
+                     node_id_end,
+                     node_control_reg,
+                     err_inj,
+                     err_cnt_down,
+                     (uint8_t)idhw_get_die_id());
 
         for (uint8_t node_id = node_id_start; node_id < node_id_end; node_id++)
         {
             /* code */
-            cmn800_pseudo_error_injection(node_type, node_id, node_control_reg, err_inj, err_cnt_down, (uint8_t)idhw_get_die_id());
+            cmn800_pseudo_fault_error_injection(node_type,
+                                                node_id,
+                                                node_control_reg,
+                                                err_inj,
+                                                err_cnt_down,
+                                                (uint8_t)idhw_get_die_id(),
+                                                (bool)non_secure);
             tx_thread_sleep(3);
         }
 
-        FpFwCliPrint("cmn800_pseudo_error_injection End\n");
+        FpFwCliPrint("cmn800_pseudo_fault_error_injection End\n");
     }
     else
     {
@@ -315,10 +340,10 @@ exit_error1:
     FpFwCliPrint("Arg %s is Invalid Hex value\n", argv[current_arg]);
 exit_error:
     FpFwCliPrint(" Mesh Pseudo Fault Error Injection CLI Help\n");
-    FpFwCliPrint(
-        "Cmds: 6, <node_type> <node_id_start> <node_id_end> <node_control_reg> <err_inj> <err_cnt_down>\n");
-    FpFwCliPrint("HNI Ex: mesh_pseudo_error_test_suite 0x3 0x0 0x10 0x401 0x80000A20 0x1000\n");
-    FpFwCliPrint("MXP Ex: mesh_pseudo_error_test_suite 0x2 0x0 0x40 0x401 0x80000A20 0x1000\n");
+    FpFwCliPrint("Cmds: 7,  <secure/non_secure> <node_type> <node_id_start> <node_id_end> <node_control_reg> "
+                 "<err_inj> <err_cnt_down>\n");
+    FpFwCliPrint("HNI Ex: mesh_pseudo_error_test_suite 0x0 0x3 0x0 0x10 0x401 0x80000A20 0x1000\n");
+    FpFwCliPrint("MXP Ex: mesh_pseudo_error_test_suite 0x1 0x2 0x0 0x40 0x401 0x80000A20 0x1000\n");
     return CLI_ERROR;
 }
 

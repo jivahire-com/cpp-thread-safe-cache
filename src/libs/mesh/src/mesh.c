@@ -42,22 +42,32 @@ static int unused_parameter_not_null = MEANINGLESS_NUMBER_MESH;
 
 /*------------- Functions ----------------*/
 
-static void hsp_send_recv_enable_smmu()
+static void hsp_send_recv_progress_msg(uint16_t req_msg, uint16_t rsp_msg)
 {
     size_t recv_msg_size_bytes = 0;
     kng_hsp_mailbox_msg msg = {
-        .header.cmd = HSP_MAILBOX_CMD_ENABLE_SMMU_ACCESS_REQ,
+        .header.cmd = req_msg,
     };
 
-    //! Send the message to HSP & get response, blocking call
-    fpfw_status_t icc_status =
-        fpfw_icc_base_send_recv_sync(s_mbx_icc_ctx, &msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
+    // if rsp_msg == HSP_MAILBOX_CMD_MAX, then we don't expect a return from HSP
+    if (rsp_msg != HSP_MAILBOX_CMD_MAX)
+    {
+        //! Send the message to HSP & get response, blocking call
+        fpfw_status_t icc_status =
+            fpfw_icc_base_send_recv_sync(s_mbx_icc_ctx, &msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
 
-    //! Verify sync return status & response message
-    BUG_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
-    BUG_ASSERT(recv_msg_size_bytes > 0);
-    BUG_ASSERT(msg.header.cmd == HSP_MAILBOX_CMD_ENABLE_SMMU_ACCESS_RSP);
-    BUG_ASSERT(msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+        //! Verify sync return status & response message
+        BUG_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
+        BUG_ASSERT(recv_msg_size_bytes > 0);
+        BUG_ASSERT(msg.header.cmd == rsp_msg);
+        BUG_ASSERT(msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+    }
+    else
+    {
+        fpfw_status_t icc_status = fpfw_icc_base_send_sync(s_mbx_icc_ctx, &msg, sizeof(kng_hsp_mailbox_msg));
+        //! Verify sync return status & response message
+        BUG_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
+    }
 }
 
 void print_mesh_d2d_knob_values(void)
@@ -324,7 +334,7 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     if (system_info_is_hsp_present())
     {
         MESH_INFO("Send enable SMMU in bypass mode\n");
-        hsp_send_recv_enable_smmu();
+        hsp_send_recv_progress_msg(HSP_MAILBOX_CMD_ENABLE_SMMU_ACCESS_REQ, HSP_MAILBOX_CMD_ENABLE_SMMU_ACCESS_RSP);
     }
 
     if (cmn800_sequence_param.BOOT_2D_ENABLE)
@@ -353,22 +363,26 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     intr_status |= FPFwCoreInterruptEnableVector(HW_INT_INTREQERRS);
     FPFW_RUNTIME_ASSERT(intr_status == 0);
 
+    intr_status = FPFwCoreInterruptRegisterCallback(HW_INT_INTREQFAULTNS,
+                                                    (FPFwCoreInterruptHandler)mesh_ns_fault_isr,
+                                                    (void*)&unused_parameter_not_null);
+    intr_status |= FPFwCoreInterruptEnableVector(HW_INT_INTREQFAULTNS);
+    FPFW_RUNTIME_ASSERT(intr_status == 0);
+
+    intr_status = FPFwCoreInterruptRegisterCallback(HW_INT_INTREQERRNS,
+                                                    (FPFwCoreInterruptHandler)mesh_ns_error_isr,
+                                                    (void*)&unused_parameter_not_null);
+    intr_status |= FPFwCoreInterruptEnableVector(HW_INT_INTREQERRNS);
+    FPFW_RUNTIME_ASSERT(intr_status == 0);
+
     MESH_CRIT("Mesh Init Done\n");
 
     // ADO 1513835: The INT HW_INT_VAB4_COMBINED_SCP_INT ISR and Vector needs to be enabled as part of INTU combined
 
-    // ADO 1728673
-    // Send HSP Mailbox message to confirm SCP is done with Mesh and D2D Init
-    // {
-    //     hw_debug("// sending scp done to HSP\n");
-    //     HSP_MAILBOX_MSG mbx_msg = {.Cmd = HspMailboxCmdCmlReady};
-    //     while (!sp_mbx_send(SCP_HSP_MBX_ADDRESS, (uint32_t *)&mbx_msg, 0x4))
-    //         ;
-    //     // hold the SCP until the HSP is done
-    //     while (!sp_mbx_receive(SCP_HSP_MBX_ADDRESS, (uint32_t *)&mbx_msg, 0x4))
-    //         ;
-    //     hw_assert(mbx_msg.Cmd == HspMailboxCmdCmlReady);
-    //     hw_assert(SP_SUCCEEDED(mbx_msg.ReturnStatus.Status));
-    //     hw_debug("// HSP acks\n");
-    // }
+    if (system_info_is_hsp_present())
+    {
+        MESH_INFO("Send CML Ready Notify\n");
+        hsp_send_recv_progress_msg(HSP_MAILBOX_CMD_CML_READY_NOTIFY, HSP_MAILBOX_CMD_MAX);
+        MESH_INFO("Send CML Ready Notify Done\n");
+    }
 }

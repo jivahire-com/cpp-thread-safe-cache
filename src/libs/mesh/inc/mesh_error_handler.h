@@ -82,6 +82,22 @@ void mesh_fault_isr(void* context);
 void mesh_error_isr(void* context);
 
 /**
+ * Mesh Non-Secure Fault ISR
+ * This function is called when a Mesh Non-Secure Fault ISR is triggered by the hardware INT
+ * @param context
+ * @return void
+ **/
+void mesh_ns_fault_isr(void* context);
+
+/**
+ * Mesh Non-Secure Error ISR
+ * This function is called when a Mesh Non-Secure Error ISR is triggered by the hardware INT
+ * @param context
+ * @return void
+ **/
+void mesh_ns_error_isr(void* context);
+
+/**
  * D2D Error ISR
  * This function is called when a D2D Error ISR is triggered by the hardware INT
  * @param context

@@ -56,6 +56,7 @@ mock_target(${TARGET}
     d2dss_sequence
     cmn800_sequence_svp_updates
     fpfw_icc_base_send_recv_sync
+    fpfw_icc_base_send_sync
     system_info_is_hsp_present
     interrupt_handler_mesh_ras_error
     ras_arm_agent_setup_entity

@@ -200,6 +200,54 @@ void mesh_error_isr(void* context)
     mesh_error_print(false);
 }
 
+/**
+ * Mesh Non-Secure Fault ISR
+ * This function is called when a Mesh Non-Secure Fault ISR is triggered by the hardware INT
+ * @param context
+ * @return void
+ **/
+void mesh_ns_fault_isr(void* context)
+{
+    UNUSED(context);
+
+    MESH_CRIT("Mesh NS Fault ISR\n");
+
+    // Clear mesh_cper
+    mesh_cper = (acpi_err_sec_generic_t){0x0};
+
+    mesh_error_print(true);
+
+    interrupt_handler_mesh_ras_error(&mesh_cper, true, true, (uint8_t)idhw_get_die_id());
+
+    print_mesh_cper(&mesh_cper);
+
+    mesh_error_print(false);
+}
+
+/**
+ * Mesh Non-Secure Error ISR
+ * This function is called when a Mesh Non-Secure Error ISR is triggered by the hardware INT
+ * @param context
+ * @return void
+ **/
+void mesh_ns_error_isr(void* context)
+{
+    UNUSED(context);
+
+    MESH_CRIT("Mesh NS Error ISR\n");
+
+    // Clear mesh_cper
+    mesh_cper = (acpi_err_sec_generic_t){0x0};
+
+    mesh_error_print(true);
+
+    interrupt_handler_mesh_ras_error(&mesh_cper, false, true, (uint8_t)idhw_get_die_id());
+
+    print_mesh_cper(&mesh_cper);
+
+    mesh_error_print(false);
+}
+
 uint32_t d2d_set_atu_map(uint8_t d2d_subsystem)
 {
     uint32_t translated_addr_ras2 = 0x0;

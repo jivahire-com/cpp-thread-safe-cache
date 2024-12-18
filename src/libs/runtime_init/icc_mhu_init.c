@@ -27,6 +27,7 @@
 #include <kng_scp_tfa_shared.h>
 #include <kng_soc_constants.h>
 #include <limits.h>
+#include <mhu_icc_payloads.h>
 #include <mhu_icc_transport.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <silibs_mcp_top_regs.h>
@@ -54,7 +55,11 @@
 // the Interface, and the ICC Base Context for each channel.
 //
 
+#ifdef SCP_RUNTIME_INIT
+FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "hw_ver", "mesh"))
+#else
 FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "hw_ver"))
+#endif
 {
 
     KNG_CPU_TYPE cpu_id = idsw_get_cpu_type();
@@ -243,14 +248,14 @@ FPFW_INIT_COMPONENT(icc_mscp2mscp, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
         .ctx = NULL,
     };
 
-    // Initialize ICC base ctx for hsp mailbox transport driver
+    // Initialize ICC base ctx
     status = fpfw_icc_base_init(&s_icc_base_mscp_mscp_ctx, &s_icc_base_mscp_mscp_cfg);
     if (FPFW_STATUS_FAILED(status))
     {
         return (fpfw_init_result_t){status, NULL};
     }
 
-    // start the dispatcher to receive data over hsp mailbox
+    // start the dispatcher to receive data
     status = fpfw_icc_dispatcher_start(&s_icc_base_mscp_mscp_ctx.dispatch_ctx);
     if (FPFW_STATUS_FAILED(status))
     {
@@ -258,4 +263,142 @@ FPFW_INIT_COMPONENT(icc_mscp2mscp, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
     }
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_icc_base_mscp_mscp_ctx};
+}
+
+#ifdef SCP_RUNTIME_INIT
+FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "mesh"))
+#else
+FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc"))
+#endif
+{
+    KNG_CPU_TYPE cpu_id = idsw_get_cpu_type();
+    idsw_die_id_t die_id = idsw_get_die_id();
+
+    static mhu_icc_transport_device_t s_icc_mscp_2_ap_ns_dev = {};
+
+    uintptr_t recv_payload_address = (ICC_MHU_PAYLOADS_D0_AP_NS_TO_SCP_AP_WINDOW_BASE);
+    uintptr_t send_payload_address = (ICC_MHU_PAYLOADS_D0_SCP_TO_AP_NS_AP_WINDOW_BASE);
+    uintptr_t recv_mhu_addr = SCP_TOP_AP2SCP_MHU_REC_NS_ADDRESS;
+    uintptr_t send_mhu_addr = SCP_TOP_SCP2AP_MHU_SND_NS_ADDRESS;
+    uint32_t recv_ch_id = MHU_INTERFACE_ID(AP_CORE_NSEC, SCP_LOCAL);
+    uint32_t send_ch_id = MHU_INTERFACE_ID(SCP_LOCAL, AP_CORE_NSEC);
+
+    if (die_id == DIE_1)
+    {
+        recv_payload_address = (ICC_MHU_PAYLOADS_D1_AP_NS_TO_SCP_AP_WINDOW_BASE);
+        send_payload_address = (ICC_MHU_PAYLOADS_D1_SCP_TO_AP_NS_AP_WINDOW_BASE);
+    }
+    if (cpu_id == CPU_MCP)
+    {
+        recv_payload_address = (ICC_MHU_PAYLOADS_D0_AP_NS_TO_MCP_AP_WINDOW_BASE);
+        send_payload_address = (ICC_MHU_PAYLOADS_D0_MCP_TO_AP_NS_AP_WINDOW_BASE);
+        recv_mhu_addr = MCP_TOP_MCP2AP_MHU_REC_NS_ADDRESS;
+        send_mhu_addr = MCP_TOP_MCP2AP_MHU_SND_NS_ADDRESS;
+        recv_ch_id = MHU_INTERFACE_ID(AP_CORE_NSEC, MCP_LOCAL);
+        send_ch_id = MHU_INTERFACE_ID(MCP_LOCAL, AP_CORE_NSEC);
+        if (die_id == DIE_1)
+        {
+            recv_payload_address = (ICC_MHU_PAYLOADS_D1_AP_NS_TO_MCP_AP_WINDOW_BASE);
+            send_payload_address = (ICC_MHU_PAYLOADS_D1_MCP_TO_AP_NS_AP_WINDOW_BASE);
+        }
+    }
+
+    mhu_icc_transport_device_config_t dev_config = {
+        .recv_irq_num = HW_INT_MSCP2AP_NS_MHU_INT,
+        .recv_channel =
+            {
+                .mhu_addr = recv_mhu_addr,
+                .ch_id = recv_ch_id,
+                .ch_shared_mem_size = ICC_MHU_DDR_PAYLOAD_SIZE,
+                .ch_shared_mem_addr = recv_payload_address,
+                .ch_db_config =
+                    {
+                        .channel_num = 0,
+                        .flag_num = 0,
+                    },
+            },
+        .send_channel =
+            {
+                .mhu_addr = send_mhu_addr,
+                .ch_id = send_ch_id,
+                .ch_shared_mem_size = ICC_MHU_DDR_PAYLOAD_SIZE,
+                .ch_shared_mem_addr = send_payload_address,
+                .ch_db_config =
+                    {
+                        .channel_num = 0,
+                        .flag_num = 0,
+                    },
+            },
+        .async_send_retry_period = ASYNC_SEND_RETRY_PERIOD_NS,
+        .async_send_retry_max = ASYNC_SEND_RETRY_MAX,
+    };
+
+    // Initialize the driver framework device
+    fpfw_status_t status = mhu_icc_transport_device_init(&s_icc_mscp_2_ap_ns_dev,
+                                                         &((PDFWK_THREADX_HOST)fpfw_init_get_handle("dfwk"))->Schedule,
+                                                         &dev_config);
+    if (FPFW_STATUS_FAILED(status))
+    {
+        return (fpfw_init_result_t){status, NULL};
+    }
+
+    /* Setup the Interface */
+    static mhu_icc_transport_intrf_t s_icc_mscp_2_ap_ns_if = {};
+
+    status = mhu_icc_transport_interface_init(&s_icc_mscp_2_ap_ns_dev, &s_icc_mscp_2_ap_ns_if);
+    if (FPFW_STATUS_FAILED(status))
+    {
+        return (fpfw_init_result_t){status, NULL};
+    }
+
+    /* Setup the ICC Base Context */
+    static uint8_t s_icc_dispatch_buf_mscp_ap_ns[ICC_MHU_DDR_PAYLOAD_SIZE] = {0};
+    static fpfw_icc_base_ctx_t s_icc_base_mscp_ap_ns_ctx;
+    static fpfw_icc_base_config s_icc_base_mscp_ap_ns_cfg = {
+        .transport_interface = &s_icc_mscp_2_ap_ns_if.base_interface,
+        .dispatch_cfg =
+            {
+                .transport_interface = &s_icc_mscp_2_ap_ns_if,
+                .dispatcher_buffer = &s_icc_dispatch_buf_mscp_ap_ns,
+                .dispatcher_buffer_size = sizeof(s_icc_dispatch_buf_mscp_ap_ns),
+                .strategy =
+                    {
+                        .cmd_code =
+                            {
+                                .is_used = true,
+                                .start_pos = ICC_MHU_CMD_BIT_OFFSET,
+                                .size_bits = ICC_MHU_CMD_SIZE_BITS - 1,
+                                .valid_max = UINT32_MAX >> 1,
+                                .valid_min = 0,
+                            },
+                        .seq_num =
+                            {
+                                .is_used = true,
+                                .start_pos = ICC_MHU_TOKEN_BIT_OFFSET,
+                                .size_bits = ICC_MHU_TOKEN_SIZE_BITS - 1,
+                                .valid_max = UINT32_MAX >> 1,
+                                .valid_min = 0,
+                            },
+                    },
+                .match_strategy_cb = mhu_icc_transport_dispatcher_match_cb,
+                .match_strategy_ctx = NULL,
+            },
+        .ctx = NULL,
+    };
+
+    // Initialize ICC base ctx
+    status = fpfw_icc_base_init(&s_icc_base_mscp_ap_ns_ctx, &s_icc_base_mscp_ap_ns_cfg);
+    if (FPFW_STATUS_FAILED(status))
+    {
+        return (fpfw_init_result_t){status, NULL};
+    }
+
+    // start the dispatcher to receive data
+    status = fpfw_icc_dispatcher_start(&s_icc_base_mscp_ap_ns_ctx.dispatch_ctx);
+    if (FPFW_STATUS_FAILED(status))
+    {
+        return (fpfw_init_result_t){status, NULL};
+    }
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_icc_base_mscp_ap_ns_ctx};
 }

@@ -23,6 +23,7 @@ set(LIBRARIES
     ms::lib::threadx
     ms::lib::scp_interrupts
     ms::lib::icc_platform_defines
+    ms::lib::interface::mhu_icc_payloads
     ms::lib::accel_intr
     ms::service::atu_service
     silibs::platform
@@ -59,6 +60,7 @@ target_compile_definitions(
        HW_INT_SDM_MBOX_INT=119
        HW_INT_MSCP2MSCP_MHU_INT=120
        HW_INT_AP2MSCP_MHU_S_INT=121
+       HW_INT_MSCP2AP_NS_MHU_INT=122
        MSCP_TOP_MSCP_EXP_ADDRESS=1000
        MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=1000
        MSCP_EXP_TOP_SPI_CTRL_ADDRESS=0
@@ -82,6 +84,7 @@ mock_target(${TARGET}
     fpfw_icc_dispatcher_start
     idhw_get_die_id
     idsw_get_platform_sdv
+    idsw_get_die_id
     idsw_get_cpu_type
     mhu_icc_transport_device_init
     mhu_icc_transport_interface_init

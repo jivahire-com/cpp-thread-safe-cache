@@ -35,6 +35,7 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 static fpfw_icc_base_ctx_t* icc_ctx;
+static bool g_should_wrap_idsw_get_platform_sdv = false;
 
 /*------------- Functions ----------------*/
 //
@@ -88,7 +89,14 @@ bool __wrap_system_info_is_hsp_present()
 
 KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
 {
-    return mock_type(KNG_PLAT_ID);
+    if (g_should_wrap_idsw_get_platform_sdv)
+    {
+        return mock_type(KNG_PLAT_ID);
+    }
+    else
+    {
+        return PLATFORM_RVP_EVT_SILICON;
+    }
 }
 
 static int setup_rvp_platform(void** pContext)
@@ -345,4 +353,47 @@ TEST_FUNCTION(ddr_manager_load_PHY_bin, setup_rvp_platform, setup_undefined_plat
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
 
     hsp_send_recv_load_fw_ddr_phy_req(icc_ctx);
+}
+
+TEST_FUNCTION(ddr_manager_platform_supports_phy_bin_loading_test, NULL, NULL)
+{
+    g_should_wrap_idsw_get_platform_sdv = true;
+
+    // PLATFORM_FPGA
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+    assert_false(platform_supports_phy_bin_loading());
+
+    // PLATFORM_FPGA_LARGE
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
+    assert_true(platform_supports_phy_bin_loading());
+
+    // PLATFORM_FPGA_LARGE_RVP
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE_RVP);
+    assert_true(platform_supports_phy_bin_loading());
+
+    // PLATFORM_RVP_EVT_SILICON
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    assert_true(platform_supports_phy_bin_loading());
+
+    // PLATFORM_UNDEFINED
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_UNDEFINED);
+    assert_false(platform_supports_phy_bin_loading());
+
+    // PLATFORM_SVP_SIM
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    assert_false(platform_supports_phy_bin_loading());
+
+    // PLATFORM_EMU_1D
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_1D);
+    assert_false(platform_supports_phy_bin_loading());
+
+    // PLATFORM_EMU_2D
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_2D);
+    assert_false(platform_supports_phy_bin_loading());
+
+    // PLATFORM_RTL_SIM
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RTL_SIM);
+    assert_false(platform_supports_phy_bin_loading());
+
+    g_should_wrap_idsw_get_platform_sdv = false;
 }

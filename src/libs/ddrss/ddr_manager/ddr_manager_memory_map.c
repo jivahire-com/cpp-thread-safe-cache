@@ -55,7 +55,7 @@ void ddr_create_memory_map()
     ddrss_memory_region_t sorted_reservations[ARRAY_OF_RSVD_REGIONS_COUNT] = {};
     int status;
 
-    printf("Creating DDR Memory Map\n");
+    DDR_MANAGER_ET_DEBUG(DDR_MANAGER_ET_TYPE_CREATE_MMAP);
 
     // Update ptr to memory info table from ddrss library or from static table defined in ddr_memory_map.h
     ddrss_get_memory_map(&all_mem_regions);
@@ -66,6 +66,7 @@ void ddr_create_memory_map()
     status = check_reservation_order(sorted_reservations);
     if (status != SILIBS_SUCCESS)
     {
+        DDR_LOG_CRIT("Error checking memory reservations order");
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
     // Add reserved regions
@@ -73,14 +74,14 @@ void ddr_create_memory_map()
     if (ddrmap_add_reservations((*all_mem_regions).mem_regions, sorted_reservations, appended_mmap_tfa) != SILIBS_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_ADD_RESERVED_RANGE_TO_MEMORY_MAP, ET_NOPARAM);
-        printf("[DDR] Error adding reserved range to DDR memory map");
+        DDR_LOG_CRIT("Error adding reserved range to DDR memory map");
     }
 
     // Pass to TF-A in Shared SRAM via SDS structure service
     if (MemoryMapPassToTFA(appended_mmap_tfa) != DFWK_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_USING_SDS_STRUCTURE, ET_NOPARAM);
-        printf("[DDR] Error using SDS structure");
+        DDR_LOG_CRIT("Error using SDS structure");
     }
 }
 
@@ -102,7 +103,7 @@ static uint32_t MemoryMapPassToTFA(ddrss_memory_region_t mmap_tfa[])
     if (get_mmap_size_bytes(mmap_tfa, &numbytes_new_mmap) != SILIBS_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_READ_MEMORY_MAP_SIZE, ET_NOPARAM);
-        printf("[DDR] Error reading DDR memory map size");
+        DDR_LOG_CRIT("Error reading DDR memory map size");
     }
 
     int result = sds_block_write(SDS_MEMORY_MAP_STRUCT_ID, mmap_tfa, numbytes_new_mmap);
@@ -124,11 +125,8 @@ static uint32_t MemoryMapPassToTFA(ddrss_memory_region_t mmap_tfa[])
 void ddrss_get_memory_map(const ddrss_sys_mem_region_t** all_mem_regions)
 {
     *all_mem_regions = ddrss_get_system_mem_region();
-    printf("[DDR] Retrieving DDR Memory Info from library\n");
-
-    DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_NUMBER_OF_MEMORY_REGION, (unsigned long)(*all_mem_regions)->num_regions);
-    printf("[DDR] Number of memory regions before adding reservations = %lu\n",
-           (unsigned long)(*all_mem_regions)->num_regions);
+    DDR_MANAGER_ET_VERBOSE_PARAM(DDR_MANAGER_ET_TYPE_NUMBER_OF_MEMORY_REGION,
+                                 (unsigned long)(*all_mem_regions)->num_regions);
 }
 
 /**
@@ -212,7 +210,7 @@ int check_reservation_order(const ddrss_memory_region_t reservations[])
         if (!(curr_start >= prev_end))
         {
             DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_UNEXPECTED_RESERVATION_OVERLAP, idx);
-            printf("[DDR] Unexpected reservation overlap (0x%llx)\n", curr_start);
+            DDR_LOG_CRIT("Unexpected reservation overlap (0x%llx)\n", curr_start);
             return SILIBS_E_DATA;
         }
         idx++;
@@ -331,7 +329,7 @@ int ddrmap_add_reservations(const ddrss_memory_region_t in_mmap[],
         in_idx++;
     }
     DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_INSERTING_RESERVED_MEMORY_MAP, ET_NOPARAM);
-    printf("[DDR] Error while inserting reserved memory ranges for MSCP");
+    DDR_LOG_CRIT("Error while inserting reserved memory ranges for MSCP");
     return SILIBS_E_DATA;
 }
 
@@ -376,7 +374,7 @@ int ddrmap_get_last_idx(const ddrss_memory_region_t ddr_mmap[])
         mem_idx++;
     }
     DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_RESERVED_ADDRESS_RANGE_NOT_TERMINATED, ET_NOPARAM);
-    printf("[DDR] Error - Reserved DDR address range is not terminated by an empty record");
+    DDR_LOG_CRIT("Error - Reserved DDR address range is not terminated by an empty record");
     return SILIBS_E_DATA;
 }
 
@@ -407,7 +405,7 @@ int get_mmap_size_bytes(ddrss_memory_region_t appended_mmap_64b[], size_t* num_b
         mem_region_count++;
     }
     DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_MEMORY_REGIONS_EXCEEDS_EXPECTED_SIZE, ET_NOPARAM);
-    printf("[DDR] Discovered memory regions exceeds expected size");
+    DDR_LOG_CRIT("Discovered memory regions exceeds expected size");
     return SILIBS_E_DATA;
 }
 

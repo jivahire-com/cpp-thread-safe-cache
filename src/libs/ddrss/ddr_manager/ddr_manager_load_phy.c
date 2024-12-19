@@ -30,6 +30,20 @@
 /*------------- Functions ----------------*/
 
 /**
+ *  Check if platform supports PHY binary loading
+ *
+ *  @return
+ *      true if platform supports PHY binary loading, false otherwise
+ */
+bool platform_supports_phy_bin_loading()
+{
+    // True if platform is PLATFORM_FPGA, PLATFORM_FPGA_LARGE, PLATFORM_FPGA_LARGE_RVP, PLATFORM_RVP_EVT_SILICON
+
+    int platform = idsw_get_platform_sdv();
+    return (platform == PLATFORM_FPGA_LARGE || platform == PLATFORM_FPGA_LARGE_RVP || platform == PLATFORM_RVP_EVT_SILICON);
+}
+
+/**
  *  Send HSP Mailbox cmd to load PHY binaries stored in flash in a single slot
  *  @param
  *      icc_hspmbx_ctx - Pointer to icc base context structure
@@ -42,21 +56,20 @@ void hsp_send_recv_load_fw_ddr_phy_req(fpfw_icc_base_ctx_t* icc_ctx)
     if (icc_ctx == NULL)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_ICC_NULL_POINTER, ET_NOPARAM);
-        DDR_LOG_INFO("Invalid icc_ctx: NULL pointer provided.");
+        DDR_LOG_CRIT("Invalid icc_ctx: NULL pointer provided.");
         return;
     }
 
-    if (idsw_get_platform_sdv() != PLATFORM_RVP_EVT_SILICON)
+    if (!platform_supports_phy_bin_loading())
     {
         // does not support, skip it.
-        DDR_LOG_INFO("PHY load bin is skipped\n");
+        DDR_LOG_WARN("PHY load bin is skipped\n");
         return;
     }
 
     if (system_info_is_hsp_present())
     {
         DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_SEND_REQUEST_PHY_BIN);
-        DDR_LOG_INFO("send request for DDR PHY bin");
         size_t recv_msg_size_bytes = 0;
         kng_hsp_cmd_load_fw_mailbox_msg msg = {
             .load_fw_req.header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
@@ -75,6 +88,5 @@ void hsp_send_recv_load_fw_ddr_phy_req(fpfw_icc_base_ctx_t* icc_ctx)
         BUG_ASSERT(msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
 
         DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_PHY_BIN_LOAD_COMPLETE);
-        DDR_LOG_INFO("DDR PHY bin load complete");
     }
 }

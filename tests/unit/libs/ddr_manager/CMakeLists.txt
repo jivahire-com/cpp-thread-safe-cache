@@ -62,6 +62,7 @@ mock_target(${TARGET}
     ddr_manager_platform_is_polling_supported
     fpfw_icc_base_send_recv_sync
     idhw_get_die_id
+    idsw_get_platform_sdv
     prod_ddrss_lib_init
     system_info_is_hsp_present
     mmio_read32

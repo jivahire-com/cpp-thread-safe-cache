@@ -26,7 +26,7 @@
 
 #define MODULE_NAME "[DDR] "
 #define NEWLINE     "\n"
-#define DDR_LOG_INFO(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+
 #define DDR_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define DDR_LOG_CRIT(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 
@@ -107,3 +107,10 @@ void ddr_manager_clear_memhot_gpio();
  * @return true if polling is supported, false otherwise.
  */
 bool ddr_manager_platform_is_polling_supported();
+
+/**
+ * Check if platform supports PHY binary loading
+ *
+ * @return true if platform supports PHY binary loading, false otherwise
+ */
+bool platform_supports_phy_bin_loading();

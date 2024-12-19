@@ -158,7 +158,6 @@ int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manag
     if (status != DDR_I3C_INTERFACE_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TEMPERATURE_SENSOR_MR49_READ, status);
-        printf("Temperature Sensor MR49 Read Failed\n");
         return DDR_MANAGER_I3C_TRANSACTION_ERROR;
     }
 
@@ -168,7 +167,6 @@ int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manag
     if (status != DDR_I3C_INTERFACE_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TEMPERATURE_SENSOR_MR50_READ, status);
-        printf("Temperature Sensor MR50 Read Failed\n");
         return DDR_MANAGER_I3C_TRANSACTION_ERROR;
     }
 

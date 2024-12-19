@@ -50,8 +50,7 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
         else
         {
             // Process received message
-            // TODO: Task #1778297: Replace printf with debug level Event Trace Event
-            // DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_Q_MESSAGE_RECEIVED, (int)received_message);
+            DDR_MANAGER_ET_DEBUG_PARAM(DDR_MANAGER_ET_TYPE_Q_MESSAGE_RECEIVED, (int)received_message);
 
             switch ((DDR_MANAGER_MESSAGE_TYPE)received_message)
             {
@@ -140,7 +139,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
 
     if (status != TX_SUCCESS)
     {
-        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TX_QUEUE_CRATE, status);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_CREATE_ERROR, status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -148,7 +147,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
     if (status != TX_SUCCESS)
     {
-        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_CREATE_MEMORY_MAP, status);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_SEND_ERROR_CREATE_MMAP, status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -157,7 +156,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
 
     if (status != TX_SUCCESS)
     {
-        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_CREATE_BDAT, status);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_SEND_ERROR_CREATE_BDAT, status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -165,7 +164,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
     if (status != TX_SUCCESS)
     {
-        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_CREATE_SMBIOS_TABLES, status);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_SEND_ERROR_CREATE_SMBIOS_TABLES, status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -182,7 +181,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
 
     if (status != TX_SUCCESS)
     {
-        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_CREATE_TIMER, status);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_THREAD_CREATE_ERROR, status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -196,13 +195,13 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
 
     if (status != TX_SUCCESS)
     {
-        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_CREATE_THREAD, status);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TIMER_CREATE_ERROR, status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
     ddr_manager_i3c_init();
 
-    printf("DDR init, die_num: [%u]\n", pconfig->thread_config.die_number);
+    DDR_LOG_CRIT("DDR init, die_num: [%u]\n", pconfig->thread_config.die_number);
     prod_ddrss_lib_init(pconfig->thread_config.die_number);
 
     ddr_init_telemetry();
@@ -212,9 +211,16 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     }
     else
     {
-        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_NO_HSP_DETECT, ET_NOPARAM);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_NO_HSP_DETECTED, ET_NOPARAM);
     }
 
     tx_thread_resume((TX_THREAD*)&pddr_service_ctx->work_thread);
     tx_timer_activate((TX_TIMER*)&pddr_service_ctx->ddr_polling_timer);
+
+    // For development - if platform doesn't support I3C DIMM polling, disable the timer
+    if (!ddr_manager_platform_is_polling_supported())
+    {
+        tx_timer_deactivate((TX_TIMER*)&pddr_service_ctx->ddr_polling_timer);
+        DDR_MANAGER_ET_WARN(DDR_MANAGER_ET_TYPE_PLATFORM_NOT_SUPPORT_I3C_POLLING, ET_NOPARAM);
+    }
 }

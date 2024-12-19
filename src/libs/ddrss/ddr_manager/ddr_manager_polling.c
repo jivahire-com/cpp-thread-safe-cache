@@ -17,6 +17,7 @@
 #include "ddr_manager_i.h"
 #include "ddr_manager_i3c.h"
 
+#include <bug_check.h>
 #include <ddr_manager_events.h>
 #include <fpfw_cfg_mgr.h>
 #include <stdio.h>
@@ -54,10 +55,9 @@ void ddr_poll_dimms()
 {
     if (!ddr_manager_platform_is_polling_supported())
     {
-        // TODO: spam on SVP
-        //  task https://azurecsi.visualstudio.com/Dev/_workitems/edit/2199194
-        // DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_PLATFORM_NOT_SUPPORTED, ET_NOPARAM);
-        return;
+        DDR_LOG_CRIT("i3c polling timer should have been disabled during init on this platform");
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_PLATFORM_NOT_SUPPORT_I3C_POLLING, ET_NOPARAM);
+        BUG_ASSERT(false);
     }
 
     for (int dimm_idx = 0; dimm_idx < NUM_DIMM; dimm_idx++)

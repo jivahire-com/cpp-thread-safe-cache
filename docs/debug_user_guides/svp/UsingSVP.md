@@ -44,7 +44,7 @@ Below table points to the team based links to get the above details needed to re
 | Team | Link |
 | - | - |
 | SDM\CDED Team Page | [DevBox Request Details](https://woodinvillewiki.com/display/1PSOCFW/Developer+Onboarding#DeveloperOnboarding-VirtualDevBox/DevBox(neededforSVP)) |
- 
+
 
 Once you get the approval email for your DevBox, you can access your setup from Web Browser at this [Microsoft DevBox Link](https://devbox.microsoft.com/).
 
@@ -66,136 +66,69 @@ You can also access the DevBox by installing Remote Desktop Application on your 
 
 ## SVP Versions
 
-SVP releases pre version 6 did not use the Synopsys Virtualizer Virtual Prototyping Suite, which needs a the runtime from Synopsys and a simulation config from our SVP Team. If using v6 or greater you are using the `Virtualizer` version. This guide will focus on versions v6 and greater.
+The version of SVP used for simulations is determined by these entries in packages.arm-eabi-aarch.xml
+
+```C
+    <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="microsoft.internal.windows.virtualizerruntime" version="2023.3.2"/>
+    <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="microsoft.internal.virtualized.kingsgate.svp" version="12.0.5645"/>
+```
 
 ## SVP Simulation Parameters
 
 Each version released by the SVP team may or may not have different parameters. They do follow semantic versioning and we can use that to identify the breaking changes. We also can generate and save the list of parameters each simulation version takes. See [here](./parameters/).
 
-### Example Parameter Usage
+## SVP Modes
 
-The below is an example of passing in simulation parameters to a simulation released by the SVP Team. Anything between the `--pyargs` and the `--pyargs_end` that matches the `--parameter <param>=<value>` format is a parameter to the simulation. All passed parameters must be available in the executed version, the simulation will fail with an `Unknown Parameter` error, calling out the invalid parameter. Paths are examples only.
+SVP may be launched in a headless mode for regression testing which does not launch the GUI.  It is run via the command
 
-```powershell
-    vssh.exe `
-    -d "<workspace_dir>" `
-    -s "<svp_sim_drop_dir>\win\release\run_fixed_vdk.py" `
-    --force-debug off `
-    --pyargs `
-    --output_dir "<repo_root_dir>\.svp_simulator\" `
-    --template_name KingsgateSVP `
-    --parameter KingsgateSVP.DIE_0.CSS.HndBaseElement.AP_NS_UART0_PHY.#SCML_PROPERTIES#TerminalAutoOpen=false `
-    --parameter KingsgateSVP.DIE_0.CDEDSS.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.DIE_0.HSSS.HSP.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.DIE_0.HSSS.HSSS_POR.#SCML_PROPERTIES#css_rstn_init_value=0 `
-    --parameter KingsgateSVP.DIE_0.HSSS.HSSS_POR.#SCML_PROPERTIES#mcp_init_vector_param=0 `
-    --parameter KingsgateSVP.DIE_0.HSSS.HSSS_POR.#SCML_PROPERTIES#mcp_rstn_init_value=0 `
-    --parameter KingsgateSVP.DIE_0.HSSS.HSSS_POR.#SCML_PROPERTIES#scp_init_vector_param=0 `
-    --parameter KingsgateSVP.DIE_0.HSSS.HSSS_POR.#SCML_PROPERTIES#scp_rstn_init_value=0 `
-    --parameter KingsgateSVP.DIE_0.RPSS0.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.DIE_0.RPSS1.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.DIE_0.RPSS2.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.DIE_0.RPSS3.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.DIE_0.SDMSS.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.DIE_0.VABRPSS0.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.DIE_0.VABRPSS1.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.DIE_0.VABRPSS2.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.DIE_0.VABRPSS3.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.DIE_1.#EXTRA_PROPERTIES#runtime_disabled=true `
-    --parameter KingsgateSVP.DIE_0.RMSS.MCP.MCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/ImageInfo/cpu0/initial_image=$(REPO_APP_BUILD_DIR)/$(REPO_APP_BUILD_CONFIG)/arm-eabi-aarch/bin/mcp_fw.elf `
-    --parameter KingsgateSVP.DIE_0.RMSS.MCP.terminal_uart_mcp.#SCML_PROPERTIES#TerminalAutoOpen=false `
-    --parameter KingsgateSVP.DIE_0.RMSS.SCP.SCP_ARM_CORTEX_M7.#EXTRA_PROPERTIES#/ImageInfo/cpu0/initial_image=$(REPO_APP_BUILD_DIR)/$(REPO_APP_BUILD_CONFIG)/arm-eabi-aarch/bin/scp_fw.elf `
-    --parameter KingsgateSVP.DIE_0.RMSS.SCP.terminal_uart_scp.#SCML_PROPERTIES#TerminalAutoOpen=false `
-    --pyargs_end
+```C
+runsvp -SimConfig xzy
 ```
 
-You can also create a parameters txt file and pass it to the script. Anything between the `--pyargs` and the `--pyargs_end` that matches the `--paramsfile <filename>` format is a parameter config file to the simulation. The format of this config file is similar to the parameters. Refer [svpcfg-scp_mcp_chie_bins.txt](./../../tools/vpcfg/svpcfg-scp_mcp_chie_bins.txt) for an example.
+For developers, the Synopsys Virtualizer Gui can be launched for interactive manual checkout and debugging.
+
+```C
+runsvpgui -SimConfig xzy
+```
+
+### Simulation Configurations
+
+The Kingsgate SVP model has numerous parameters that can be set to tailor the simulation for specific needs.
+The actual file passed to the simulation is an xyz.vpcfg file.  The .vpcfg files are generated by the powershell scripts
+from text files that specify the parameters for each configuration.
+The parameter configurations are located in:   ../../../tools/vpcfg
+
+Single die config:
+[svpcfg-chie_bins_single_die_dat.txt](../../../tools/vpcfg/svpcfg-chie_bins_single_die_dat.txt)
+
+Note: The simulation configurations are used for both headless and gui modes.
 
 ## How to use it
 
-The following powershell module provides wrapped startup and shutdown functions for SVP: [SVP-Utils.psm1](../../tools/pwsh/modules/SVP-Utils.psm1). It's designed to start a simulation, running in the background, with set input parameters. The available set of input parameter configurations is expected to grow, however in the below example we'll use one that sideloads the scp, sdm, cded-sdm and ap images (feel free to look at the parameters in this example to see the configuration used).
+The following powershell module provides wrapped startup and shutdown functions for headless SVP: [SVP-Utils.psm1](../../../tools/pwsh/modules/SVP-Utils.psm1).
+
+Gui Mode SVP functions are located in: [SVP-GUI-Utils.psm1](../../../tools/pwsh/modules/SVP-GUI-Utils.psm1).
 
 1. Ensure your shell environment is up to date for your repo enlistment: > `.\start.ps1`.
 
 1. Ensure your toolchain and configuration has build artifacts:
 
-    - Set your toolchain and configuration: `> setenv -Toolchain arm-eabi-aarch -Configuration Debug`
+    - Set your toolchain and configuration: `> setenv -Toolchain arm-eabi-aarch`
 
     - Generate the build artifacts: `> build`
 
-1. Run the SVP helper powershell function, with the scp_mcp_chie_bins configuration: `> runsvp -SimConfig scp_mcp_chie_bins 1`. Example Output:
-
-```powershell
-
-PS D:\repos\kng_mscp> runsvp scp_mcp_chie_bins 1
-Stopping the current simulation (if there is one).
-        Stopping Simulator background job: ID == 1
-Invoking SVP - Using Config:
-        -svp_sim_dir     : D:/repos/kng_mscp/.externs/azpkg/microsoft.internal.virtualized.kingsgate.svp.7.1.1-commit258
-        -svp_runtime_dir : D:/repos/kng_mscp/.externs/azpkg/microsoft.internal.windows.virtualizerruntime.2023.3.2
-Using Parameters:
-        -SimConfig    : scp_mcp_chie_bins
-        -WorkspaceDir : D:\repos\kng_mscp\.svp_simulator\workspace
-        -UseGUI       : True
-Using chie fw bins where applicable. SVP test bins are used for anything that is missing.
-Starting simulation [scp_mcp_chie_bins] in GUI Mode.
-Please wait for the 'sim.exe' to launch via the below job:
-        Job Details:
-                Id    : 3
-                Name  : Job3
-                State : Running
-        Simulation Started. Time to Start: 120 seconds
-        The Simulation can be attached to with the GUI: vs.exe -d D:\repos\kng_mscp\.svp_simulator\workspace
-Expected Simulation Connectivity:
-        MCP UART telnet : localhost:4256
-        SCP UART telnet : localhost:4257
-        MCP DIE 0 GDB   : localhost:12350
-        SCP DIE 0 GDB   : localhost:12351
-        Ensure configuration matches symbols used!
-Run the following to stop the simulation background job: stopsvp
-```
-
-> **_NOTE:_**
-
-- This example runs in the GUI mode.
-- On your first run you may be prompted to allow access to the executables and runtime(s) used.
-
-1. You can now use your program of choice to connect to the telnet session to see the UART. You can also use GDB to connect to the core.
-
-1. To stop the simulation either kill the `sim.exe` executable that is started OR run `> stopsvp`.
-
 ### Launching SVP
-
-The default configuration, `scp_mcp_chie_bins`, will utilize the locally built binaries in your repo.
 
 #### Headless
 
-The following are all equivalent
-
 ```powershell
-runsvp
-runsvp -SimConfig scp_mcp_chie_bins
-runsvp scp_mcp_chie_bins
+runsvp -SimConfig chie_bins_dual_die_dat
 ```
 
 #### With the GUI
 
-These are also equivalent
-
 ```powershell
-runsvp -UseGui
-runsvp -SimConfig scp_mcp_chie_bins -UseGui
-```
-
-### With kingsgate hsp scp ifwi flash
-
-Building FW automatically creates a test IFWI with the locally built SCP and MCP FW (and the dependencies specified in packages.xml)
-This is used with the hsp_bl_scp SVP config.
-Launch the SVP with the hsp bl scp config.
-
-```powershell
-tools\pwsh\Create-ScpIfwi.ps1
-Invoke-Virtualizer -SimConfig hsp_bl_scp -UseGUI
+runsvpgui -SimConfig chie_bins_single_die_dat
 ```
 
 ### Using the Synopsys GUI
@@ -210,25 +143,19 @@ Invoke-Virtualizer -SimConfig hsp_bl_scp -UseGUI
 
 ### Creating and Using Configurations
 
-1. To create a configuration, refer [svpcfg-scp_mcp_chie_bins.txt](./../../tools/vpcfg/svpcfg-scp_mcp_chie_bins.txt) for an example. It is a list of parameter overrides on the default config in the format `<parameter>=<value>`. The SVP launch script decodes these to apply to the project.
+1. To create a configuration, refer to [svpcfg-chie_bins_single_die_dat.txt](../../../tools/vpcfg/svpcfg-chie_bins_single_die_dat.txt) for an example. It is a list of parameter overrides on the default config in the format `<parameter>=<value>`. The SVP launch script decodes these to apply to the project.
 
 1. Use the [parameters](./Parameters/) files to check which parameters you'd like to override and create a new configuration. Name it `svpcfg-<configuration-name>.txt`.
 
 1. Next, go to SVP-Utils.psm1, in `Invoke-Virtualizer` and edit ValidateSet() for the parameter `$Simconfig` and add your `<configuration-name>`.
 
-1. Now you can call your template with the call `> runsvp -SimConfig <configuration-name>`
+1. Next, go to SVP-GUI-Utils.psm1, in `Start-SimGui` and edit ValidateSet() for the parameter `$Simconfig` and add your `<configuration-name>`.
 
-#### Loading custom FW binary to SVP
-
-For a temporary solution, the configuration file above can be locally edited to specify a different firmware binary. Otherwise if needed long term, another configuration file may be created.
+1. Now you can call your configuration with the call `> runsvp -SimConfig <configuration-name>` or  `> runsvpgui -SimConfig <configuration-name>`
 
 ## Stopping SVP GUI Simulation
 
-1. You can click the red-colored stop button icon as shown below (`Stop current simulation (Ctrl + F2)`):
-
-    [![svp-vs_code-gdb-9](./../../.img/svp-vs_code-gdb-9.jpg)](./../../.img/svp-vs_code-gdb-9.jpg)
-
-1. To expedite the process, you can open the `Windows Task Manager` as shown in the above snapshot, and search for `sim` process. Right-click and select the `End task`.
+1. The most reliable way is to run this from the powershell window that launched SVP, `> stopsvpgui`
 
 ## Restart SVP GUI Simulation
 

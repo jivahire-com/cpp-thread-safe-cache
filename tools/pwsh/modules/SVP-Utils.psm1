@@ -56,20 +56,17 @@ Function Stop-Virtualizer()
 Starts a SVP Virtualizer Simulation, running in a background job.
 
 .PARAMETER SimConfig
-What defualt simulation parameters to launch with. Default: scp_mcp_chie_bins
+What default simulation parameters to launch with. Default: scp_mcp_chie_bins
 
-.PARAMETER UseGUI
-If -UseGUI specified it will setup and run the simulation with the GUI, otherwise will run with no GUI.
 
 .EXAMPLE
-Invoke-Virtualizer -SimConfig scp_mcp_chie_bins -UseGUI
+Invoke-Virtualizer -SimConfig chie_bins_single_die_dat
 #>
 Function Invoke-Virtualizer(
-    [Parameter(Mandatory=$false)] [ValidateSet('sideloaded_chie_bins', 'chie_bins_single_die_dat', 'chie_bins_dual_die_dat', 'ap_baremetal_dual_die_dat')] [string] $SimConfig = "ap_baremetal_dual_die_dat",
-    [Parameter(Mandatory=$false)] [switch] $UseGUI
+    [Parameter(Mandatory=$false)] [ValidateSet('sideloaded_chie_bins', 'chie_bins_single_die_dat', 'chie_bins_dual_die_dat', 'ap_baremetal_dual_die_dat')] [string] $SimConfig = "ap_baremetal_dual_die_dat"
 )
 {
-    # Setup the workspace for the virtulizer
+    # Setup the workspace for the virtualizer
     $workspace_dir = "$env:REPO_APP_ROOT.svp_simulator\workspace"
     $workspace_dir = "$workspace_dir".replace("/", "\")
 
@@ -124,7 +121,6 @@ Function Invoke-Virtualizer(
     Write-Host "Using Parameters:"
     Write-Host "`t-SimConfig    : $SimConfig"
     Write-Host "`t-WorkspaceDir : $workspace_dir"
-    Write-Host "`t-UseGUI       : $UseGUI"
     Write-Host "`t-MSCP vUART   : $env:REPO_APP_MSCP_VUART"
 
     # Select the config file based on SimConfig. These configurations are stored under tools/vpcfg.
@@ -137,63 +133,33 @@ Function Invoke-Virtualizer(
 
     # The difference between running with `tve` and `tvrb` is that the license server used changes. When using `tvrb` the regression
     # licenses are used, which we have a lot more of. This pool however does not allow for the GUI to attach to a simulation running
-    # the regression license. For our developer use case we will run with `tve`, enabling a developer to run in headless mode AND
-    # attach to that simulation with the Virtualizer Studio if desired.
-    Invoke-CmdScript "$svp_runtime_dir\SLS\windows\setup.bat" tve
-
-    # Regression example
-    # Invoke-CmdScript "$svp_runtime_dir\SLS\windows\setup.bat" tvrb
+    # the regression license. Since this is run in headless mode, we will run with `tvrb` to use the regression licenses.
+    Invoke-CmdScript "$svp_runtime_dir\SLS\windows\setup.bat" tvrb
 
     $job = $null
-    # Run with the GUI
-    if ($UseGUI)
-    {
-        Write-Host ""
-        Write-Host "Starting simlulation [$SimConfig] in GUI Mode."
-        Write-Host ""
 
-        $job = Start-job -ScriptBlock {
+    Write-Host ""
+    Write-Host "Starting simulation [$SimConfig] as a background job. Job information displayed on creation."
+    Write-Host ""
 
-            try{
-                vs.exe  `
-                -d $using:workspace_dir  `
-                -s $using:svp_sim_dir/win/release/run_fixed_vdk.py  `
-                --pyargs  `
-                --template_name KingsgateSVP  `
-                --vpconfig $using:SimConfig  `
-                --output_dir $using:env:REPO_APP_ROOT/.svp_simulator/  `
-                $using:input_parameters  `
-                --pyargs_end
-            } catch {
-                Write-Error $_.Exception.Message
-            }
+    $job = Start-job -ScriptBlock {
+        try {
+            vssh.exe `
+            -d $using:workspace_dir `
+            -s $using:svp_sim_dir\win\release\run_fixed_vdk.py `
+            --pyargs `
+            --debug `
+            --template_name KingsgateSVP `
+            --vpconfig $using:SimConfig `
+            --output_dir $using:env:REPO_APP_ROOT\.svp_simulator\ `
+            $using:input_parameters `
+            --pyargs_end
+        }
+        catch {
+            Write-Error $_.Exception.Message
         }
     }
-    # Run in headless mode
-    else {
 
-        Write-Host ""
-        Write-Host "Starting simlulation [$SimConfig] as a background job. Job information displayed on creation."
-        Write-Host ""
-
-        $job = Start-job -ScriptBlock {
-            try {
-                vssh.exe `
-                -d $using:workspace_dir `
-                -s $using:svp_sim_dir\win\release\run_fixed_vdk.py `
-                --pyargs `
-                --debug `
-                --template_name KingsgateSVP `
-                --vpconfig $using:SimConfig `
-                --output_dir $using:env:REPO_APP_ROOT\.svp_simulator\ `
-                $using:input_parameters `
-                --pyargs_end
-            }
-            catch {
-                Write-Error $_.Exception.Message
-            }
-        }
-    }
 
     # Both cases launch sim.exe, so we can validate that it started to ensure setup is correct.
     if ($null -ne $job)

@@ -23,4 +23,5 @@ if (-not $SkipEnv) {
 
 # Dump help block for SVP and FPGA Debug
 Get-SvpHelp
+Get-SvpGuiHelp
 Get-FPGAHelp

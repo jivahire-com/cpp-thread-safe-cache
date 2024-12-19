@@ -285,7 +285,7 @@ static void power_init_update_dvfs_cfg_common(const power_runconfig_t* p_runconf
     p_dvfs_cfg->init_cfg.c1_telem_en = p_knobs->c1_tel_enable;
     // TODO: enable ITD (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491054/)
     // (fix force_pstate vmat copy, full VFT generation before enabling)
-    p_dvfs_cfg->init_cfg.pex_features.itd_en = 0;
+    p_dvfs_cfg->init_cfg.pex_features.itd_en = p_knobs->itd_cfg;
 }
 
 static unsigned find_lowest_nonlin_pstate_idx(const power_runconfig_t* p_runconfig, const power_core_vft_t* p_vft)

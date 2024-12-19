@@ -208,6 +208,7 @@
       <Member name="survivability_mode_pstate" type="uint8_t" help="Pstate to boot to under survivability mode" />
       <Member name="nominal_pstate" type="uint8_t" help="Pstate to use for nominal" />
       <Member name="ldo_offset" type="int8_t" help="ldo dac code offset" />
+      <Member name="itd_cfg" type="bool" help="Controls whether ITD is enabled or disabled" />
     </Struct>
     <Struct name="mesh_hni_cfg_ctl_t" help="">
       <Member name="mesh_hni_cfg_ctl" type="uint64_t" count="6" help="Set HN-I Config CTL value"/>
@@ -374,6 +375,7 @@
     <Knob name="power_max_plimit_step_size_down" type="uint8_t" default="31" min="0" max="31" help="Limits control loop plimit selection. Max number of steps down" />
     <Knob name="power_force_pstate" type="uint8_t" default="32" help="Limits plimit to forced pstate and rewrites pll/vma tables for lower performance states to prevent HW throttle" />
     <Knob name="power_mpmm" type="power_mpmm_config_t" default="{false, 2}" help="Enable Configuration for power mpmm enable/gear" />
+    <Knob name="power_itd_cfg" type="bool" default="false" help="Controls whether ITD is enabled or disabled" />
 
     <!-- Document only
     <Knob name="power_current_throttling_cfg" type="" default="" help="Current threshold percentages per P-state" />

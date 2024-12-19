@@ -273,6 +273,7 @@ void base_config()
     knobs->soc_temp_thermtrip_en = true;
     knobs->tile_temp_hot_en = true;
     knobs->tile_temp_thermtrip_en = true;
+    knobs->itd_cfg = true;
 }
 
 // converts knob settings to expected config values in our global config
@@ -519,7 +520,7 @@ void validate_dvfs_cfg(unsigned int core)
 
     // TODO: enable ITD (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491054/)
     // (fix force_pstate vmat copy, full VFT generation before enabling)
-    dvfs_cfg.init_cfg.pex_features.itd_en = 0;
+    dvfs_cfg.init_cfg.pex_features.itd_en = knobs->itd_cfg;
 
     // adclk offset
     if (knobs->adclk_offset.enable)

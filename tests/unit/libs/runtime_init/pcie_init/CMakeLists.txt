@@ -11,6 +11,7 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET}
     PRIVATE
     fwlib.dfwk
+    fwlib.lib.cfg_mgr
     fwlib.lib.init
     fwlib.platform.dfwkhost.threadx
     ms::cmocka::testrunner

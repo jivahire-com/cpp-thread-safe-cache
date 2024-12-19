@@ -14,6 +14,7 @@ target_link_libraries(${TARGET}
     fwlib.lib.utils
     fwlib.dfwk
     fwlib.platform.dfwkhost.threadx
+    fwlib.lib.cfg_mgr
     ms::cmocka::mocks
     ms::cmocka::testrunner
     ms::lib::error_handler

@@ -228,6 +228,40 @@
     <Struct name="mesh_rnd_aux_ctl_t" help="">
       <Member name="mesh_rnd_aux_ctl" type="uint64_t" count="7" help="Set RN-D auxiliary control value"/>
     </Struct>
+    <Struct name="pcie_prod_cfg_t" help="Available knobs to configure the RPSS in prod FW">
+      <Member name="pcie_ss_en" type="bool" default="true" help="Set to false to force disable the pciess block" />
+      <Member name="pcie_bifurcation_mode" type="PCIE_BIFURCATION_MODE" default="PCIE_BIFURCATION_1X16" help="Bifurcation Mode config for PCIeSS" />
+      <Member name="pcie_clock_mode" type="PCIE_CLOCK_MODE" default="PCIE_CLOCK_SRIS" help="Link Clock Mode config for PCIeSS" />
+      <Member name="pcie_stagger_time" type="PCIE_STAGGER_TIME" default="PCIE_STAGGER_NONE" help="Lane Stagger Time config for PCIeSS" />
+      <Member name="pcie_aspm_support" type="PCIE_ASPM_SUPPORT" default="PCIE_L1_SUPPORT" help="Feature support mode for PCIe ASPM" />
+      <Member name="pcie_ltr_support" type="bool" default="true" help="LTR Support for PCIeSS" />
+      <Member name="pcie_l1_exit_latency" type="PCIE_L1_EXIT_LATENCY" default="PCIE_L1_LATENCY_32_TO_64_US" help="L1 Exit Latency for PCIeSS" />
+      <Member name="pcie_l0s_exit_latency" type="PCIE_L0S_EXIT_LATENCY" default="PCIE_L0S_LATENCY_2_TO_4_US" help="L0s Exit Latency for PCIeSS" />
+      <Member name="pcie_loopback_mode" type="PCIE_LOOPBACK_MODE" default="PCIE_LOOPBACK_NONE" help="Loopback operation mode for PCIeSS" />
+      <Member name="pcie_cap_gen_speed" type="PCIE_GEN_SPEED" default="PCIE_GEN_1" help="Maximum supported PCIe Gen speed for PCIeSS" />
+      <Member name="pcie_cap_mps" type="PCIE_MAX_PAYLOAD_SIZE" default="PCIE_MAX_128B_SIZE" help="Maximum supported Payload Size (MPS) for PCIeSS" />
+      <Member name="pcie_rcb_mode" type="PCIE_RCB_MODE" default="PCIE_RP_RCB_64B" help="Read Completion Boundary (RCB) config for PCIeSS" />
+      <Member name="pcie_ras_mode" type="PCIE_RAS_MODE" default="PCIE_RAS_MODE_EN" help="RAS Operation Mode for PCIeSS" />
+      <Member name="pcie_fast_link_mode" type="bool" default="false" help="Enable fast-link-mode for PCIeSS" />
+      <Member name="pcie_gen3_eq_disable" type="bool" default="false" help="Disable Gen3 Equalization Phase for PCIeSS" />
+      <Member name="pcie_gen4_eq_disable" type="bool" default="false" help="Disable Gen4 Equalization Phase for PCIeSS" />
+      <Member name="pcie_gen5_eq_disable" type="bool" default="false" help="Disable Gen5 Equalization Phase for PCIeSS" />
+      <Member name="pcie_eq_bypass_support" type="bool" default="false" help="Equalization Bypass Support for PCIeSS" />
+      <Member name="pcie_no_eq_support" type="bool" default="false" help="No-Equalization Support for PCIeSS" />
+      <Member name="pcie_cxl_support" type="bool" default="false" help="CXL Support for PCIeSS" />
+      <Member name="pcie_cxl_sync_header_bypass" type="bool" default="false" help="Sync header bypass for CXL Flex Bus" />
+      <Member name="pcie_ide_support" type="bool" default="false" help="IDE Support for PCIeSS" />
+      <Member name="pcie_tee_support" type="bool" default="false" help="TEE Support for PCIeSS. Setting this will implicitly set 'pcie_ide_support'" />
+      <Member name="pcie_fips_test" type="PCIE_FIPS_TEST" default="PCIE_FIPS_NO_TEST" help="When TEE Support is enabled, this knob controls the behavior of FIPS testing." />
+      <Member name="pcie_ide_rekey_support" type="bool" default="false" help="IDE Rekeying Support for PCIeSS" />
+      <Member name="pcie_ide_sync_msg_threshold" type="uint16_t" default="251" help="IDE Sync Message Threshold for PCIeSS" />
+      <Member name="pcie_msi_ext_data_support" type="bool" default="true" help="MSI Extended Data Support for PCIeSS" />
+      <Member name="pcie_msi_64bit_support" type="bool" default="true" help="64-bit MSI Address Support for PCIeSS" />
+      <Member name="pcie_system_counter_delay" type="uint32_t" default="0" help="System counter delay for various RPSS instances" />
+      <Member name="pcie_aer_ecrc_gen_support" type="bool" default="true" help="AER ECRC Generation Support for PCIeSS" />
+      <Member name="pcie_aer_ecrc_check_support" type="bool" default="true" help="AER ECRC Check Support for PCIeSS" />
+      <Member name="pcie_aer_multiple_header_support" type="bool" default="true" help="AER Muliple-Header Support for PCIeSS" />
+    </Struct>
   </Structs>
 
   <!-- namespace indicates the GUID namespace the values are stored in -->
@@ -499,6 +533,57 @@
     <Knob name="fuse_disable_value_0_31" type="uint32_t" default="0" />
     <Knob name="fuse_disable_value_32_63" type="uint32_t" default="0" />
     <Knob name="fuse_disable_value_64_95" type="uint32_t" default="0" />
+
+    <!-- PCIe -->
+    <Knob name="die1_rpss_enabled" type="bool" default="true" help="Set to false to disable die1 RPSS instances"/>
+    <Knob name="pcie_rpss0_cfg" type="pcie_prod_cfg_t" />
+    <Knob name="pcie_rpss0_rp0_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss0_rp1_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss0_rp2_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss0_rp3_cfg" type="pcie_rp_cfg_t" />
+
+    <Knob name="pcie_rpss1_cfg" type="pcie_prod_cfg_t" />
+    <Knob name="pcie_rpss1_rp0_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss1_rp1_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss1_rp2_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss1_rp3_cfg" type="pcie_rp_cfg_t" />
+
+    <Knob name="pcie_rpss2_cfg" type="pcie_prod_cfg_t" />
+    <Knob name="pcie_rpss2_rp0_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss2_rp1_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss2_rp2_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss2_rp3_cfg" type="pcie_rp_cfg_t" />
+
+    <Knob name="pcie_rpss3_cfg" type="pcie_prod_cfg_t" />
+    <Knob name="pcie_rpss3_rp0_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss3_rp1_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss3_rp2_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss3_rp3_cfg" type="pcie_rp_cfg_t" />
+
+    <Knob name="pcie_rpss4_cfg" type="pcie_prod_cfg_t" />
+    <Knob name="pcie_rpss4_rp0_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss4_rp1_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss4_rp2_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss4_rp3_cfg" type="pcie_rp_cfg_t" />
+
+    <Knob name="pcie_rpss5_cfg" type="pcie_prod_cfg_t" />
+    <Knob name="pcie_rpss5_rp0_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss5_rp1_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss5_rp2_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss5_rp3_cfg" type="pcie_rp_cfg_t" />
+
+    <Knob name="pcie_rpss6_cfg" type="pcie_prod_cfg_t" />
+    <Knob name="pcie_rpss6_rp0_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss6_rp1_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss6_rp2_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss6_rp3_cfg" type="pcie_rp_cfg_t" />
+
+    <Knob name="pcie_rpss7_cfg" type="pcie_prod_cfg_t" />
+    <Knob name="pcie_rpss7_rp0_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss7_rp1_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss7_rp2_cfg" type="pcie_rp_cfg_t" />
+    <Knob name="pcie_rpss7_rp3_cfg" type="pcie_rp_cfg_t" />
+
   </Knobs>
 
 </ConfigSchema>

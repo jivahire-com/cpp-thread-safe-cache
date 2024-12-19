@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include <DfwkPtrTypes.h>
 #include <DfwkThreadXHost.h>
+#include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -27,7 +28,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "vab"))
+FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "vab", "cfg_mgr"))
 {
     fpfw_init_component_id_t dfwk_id = "dfwk";
     PDFWK_THREADX_HOST host = fpfw_init_get_handle(dfwk_id);
@@ -36,7 +37,7 @@ FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "v
     KNG_DIE_ID die_id = (KNG_DIE_ID)idsw_get_die_id();
 
     uint16_t rpss_mask = 0;
-    bool die1_rpss_enabled = true; /* Will be fetched via config manager */
+    bool die1_rpss_enabled = config_get_die1_rpss_enabled(); /* Will be fetched via config manager */
     if (die_id == DIE_0)
     {
         rpss_mask = (1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3);

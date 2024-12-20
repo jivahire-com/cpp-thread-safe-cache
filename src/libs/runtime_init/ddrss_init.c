@@ -43,24 +43,26 @@ FPFW_INIT_COMPONENT(ddr, FPFW_INIT_DEPENDENCIES("std_io", "ddr_pcr", "mesh", "hw
     static uint32_t ddr_queue_pool[10];
     static ddr_service_context_t ddr_service_ctx = {0};
 
-    ddr_service_config_t config = {.thread_config =
-                                       {
-                                           .p_stack = ddr_stack,
-                                           .stack_size = sizeof(ddr_stack),
-                                           .priority = DDR_THREAD_PRIORITY,
-                                           .time_slice_option = TX_NO_TIME_SLICE,
-                                           .die_number = idhw_get_die_id(),
-                                       },
-                                   .timer_config =
-                                       {
-                                           .initial_ticks = DDR_TIMER_INITIAL_TICKS,
-                                           .reschedule_ticks = config_get_ddrmanager_bwl_polling_period_ms() / MS_PER_TICK,
-                                       },
-                                   .queue_config = {
-                                       .p_queue = ddr_queue_pool,
-                                       .msg_size = sizeof(ddr_queue_pool[0]) / sizeof(uint32_t),
-                                       .queue_num_words = sizeof(ddr_queue_pool) / sizeof(uint32_t),
-                                   }};
+    ddr_service_config_t config = {
+        .thread_config =
+            {
+                .p_stack = ddr_stack,
+                .stack_size = sizeof(ddr_stack),
+                .priority = DDR_THREAD_PRIORITY,
+                .time_slice_option = TX_NO_TIME_SLICE,
+                .die_number = idhw_get_die_id(),
+            },
+        .timer_config =
+            {
+                .initial_ticks = DDR_TIMER_INITIAL_TICKS,
+                .reschedule_ticks = config_get_ddrmanager_bwl_polling_period_ms() / MS_PER_TICK,
+            },
+        .queue_config = {
+            .p_queue = ddr_queue_pool,
+            .msg_size = sizeof(ddr_queue_pool[0]) / sizeof(uint32_t),
+            .queue_num_words = sizeof(ddr_queue_pool) / sizeof(uint32_t),
+        }
+    };
 
     // Load PHY binaries
     fpfw_icc_base_ctx_t* icc_ctx = fpfw_init_get_handle("icc_hspmbx");
@@ -68,7 +70,6 @@ FPFW_INIT_COMPONENT(ddr, FPFW_INIT_DEPENDENCIES("std_io", "ddr_pcr", "mesh", "hw
     {
         return (fpfw_init_result_t){FPFW_INIT_STATUS_E_POINTER, "Failed to get icc_hspmbx handle - Cannot init ddrss"};
     }
-
     hsp_send_recv_load_fw_ddr_phy_req(icc_ctx);
 
     // Initialize DDR Manager - prod_ddrss_lib_init is moved to inside this init

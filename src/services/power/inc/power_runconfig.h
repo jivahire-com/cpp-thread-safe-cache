@@ -63,6 +63,26 @@
 /* number of plimit update options */
 #define PLIMIT_UPDATE_MAX 8
 
+// Helpers for DTS Coefficient values taken from fuses:
+// temp as these should go in pvt_struct.h; use only if not already defined
+#define DTS_K_COEFF_FUSED_TEMP(fused_k) (-1.0F * (float)fused_k)
+#define DTS_Y_COEFF_FUSED_TEMP(fused_y) ((float)fused_y)
+
+/**
+ * @brief To obtain the temperature value, the following equation should be applied to the dout output of the DTS.
+ * Temperature = ( 𝒅𝒐𝒖𝒕 /16378 ) ∗ 𝒀+𝑲 [℃] 
+ * Reference : Synopsys Cores Sensors  Distributed Thermal Sensor (Series 2)  section 6.2
+ */
+
+#ifndef TEMP2DOUT_FUSED
+    #define TEMP2DOUT_FUSED(t, fused_k, fused_y) \
+        (uint32_t)(16384.0F * (t - DTS_K_COEFF_FUSED_TEMP(fused_k)) / DTS_Y_COEFF_FUSED_TEMP(fused_y))
+#endif
+#ifndef DOUT2TEMP_FUSED
+    #define DOUT2TEMP_FUSED(dout, fused_k, fused_y) \
+        (dout / 16384.0F * DTS_Y_COEFF_FUSED_TEMP(fused_y) + DTS_K_COEFF_FUSED_TEMP(fused_k))
+#endif
+
 /* Only Die0 has VSYS */
 
 /*-------------- Typedefs ----------------*/

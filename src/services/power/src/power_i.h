@@ -51,19 +51,6 @@
 /* other helper macros */
 #define FLOAT_TO_UNSIGNED(x) ((unsigned)(x + 0.5f))
 
-// Helpers for DTS Coefficient values taken from fuses:
-// temp as these should go in pvt_struct.h; use only if not already defined
-#define DTS_K_COEFF_FUSED_TEMP(fused_k) (-1.0F * (float)fused_k)
-#define DTS_Y_COEFF_FUSED_TEMP(fused_y) ((float)fused_y)
-#ifndef TEMP2DOUT_FUSED
-    #define TEMP2DOUT_FUSED(t, fused_k, fused_y) \
-        (uint32_t)(16384.0F * (t - DTS_K_COEFF_FUSED_TEMP(fused_k)) / DTS_Y_COEFF_FUSED_TEMP(fused_y))
-#endif
-#ifndef DOUT2TEMP_FUSED
-    #define DOUT2TEMP_FUSED(dout, fused_k, fused_y) \
-        (dout / 16384.0F * DTS_Y_COEFF_FUSED_TEMP(fused_y) + DTS_K_COEFF_FUSED_TEMP(fused_k))
-#endif
-
 /* Macros to convert AVS uint16_t to float */
 #define AVS_TEMPERATURE_FLOAT(x) (((float)x) / 10)
 #define AVS_CURRENT_FLOAT(x)     (((float)x) / 100)

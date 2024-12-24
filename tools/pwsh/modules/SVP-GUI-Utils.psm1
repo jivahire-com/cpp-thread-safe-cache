@@ -217,6 +217,7 @@ Function New-VPconfig(
 
     Write-Host "== Create VPconfig $SimConfig =="
     Write-Host "_> vssh.exe $SimArgs ... --pyargs_end"
+
     # Was part of conflict, Adding ExpandEnvironmentVariables was added as part of running Simulation using same config in pythia and also locally
     $SimArgs += $ConfigParams["$SimConfig"] | ForEach-Object { @("--parameter", [System.Environment]::ExpandEnvironmentVariables($_)) }
     $SimArgs += "--pyargs_end"
@@ -252,6 +253,7 @@ Function Start-SimGui(
     # with New-VPconfig if deleted as part of mismatch check
     Test-And-Delete-Workspace -workspaceJsonFilePath $WorkspaceDirJsonPath -svpPackageFilePath $svpPackageFilePath
 
+    Initialize-SimEnv
 
     $CfgDir = "$env:REPO_APP_ROOT.svp_simulator\workspace_gui\KingsgateSVP\vpconfigs\$SimConfig"
     if (-not (Test-Path $CfgDir))
@@ -263,8 +265,6 @@ Function Start-SimGui(
     $ConfigXml = Join-Path -Path $CfgDir -ChildPath "$SimConfig.vpcfg"
     $WorkspaceDir = "$env:REPO_APP_ROOT.svp_simulator\workspace_gui"
     $SimArgs = @("-d", $WorkspaceDir, "-r", $ConfigXml)
-
-    Initialize-SimEnv
 
     Write-Host ""
     Write-Host "== Launch $SimConfig =="

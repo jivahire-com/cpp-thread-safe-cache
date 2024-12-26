@@ -21,6 +21,7 @@
 
 #include <accelerator_ip_priv.h> // for get_accelerator_ctxt
 #include <accelip_id.h>          // NUM_VALID_ACCEL_ID, ACCEL_ID_SDM, ACCEL_ID_CDED
+#include <accelip_ss_init_struct_defaults.h>
 #include <ap_top_regs.h>
 #include <sdm_ext_cfg_regs.h>
 #include <sdm_init_knobs.h> // for MSFT_VENDOR_ID, INT_PIN_A
@@ -88,29 +89,9 @@ typedef struct
     ACCELIP_PCI_DEVICE_ID subsystem_id;
 } sdm_cded_class_code_t;
 
-/*Following structure contains the default values of SDM and CDED which needs to be
-overwritten from the default values provided in Silibs Knobs. More fields can be added
-later if required.*/
-static const sdm_cded_class_code_t sdm_cded_class_code_knobs_values[NUM_VALID_ACCEL_ID] = {
-    [ACCEL_ID_SDM] =
-        {
-            .class_code = SDM_BASE_CLASS_CODE,
-            .sub_class_code = SDM_CDED_SUB_CLASS_CODE,
-            .pci_device_id = SDM_PCI_DEVICE_ID,
-            .subsystem_id = SDM_PCI_DEVICE_ID,
-        },
-    [ACCEL_ID_CDED] =
-        {
-            .class_code = CDED_BASE_CLASS_CODE,
-            .sub_class_code = SDM_CDED_SUB_CLASS_CODE,
-            .pci_device_id = CDED_PCI_DEVICE_ID,
-            .subsystem_id = CDED_PCI_DEVICE_ID,
-        },
-};
-
 /*SDMSS Common structure initialization for the parameters required by sequence library API in
 Silibs*/
-static sdm_mem_init_cfg_t sdm_mem_init = {.lstrg = true, .itcm = true, .d0tcm = true, .d1tcm = true, .ecu = true};
+static DEFAULT_INSTANCE_SDM_MEM_INIT_CFG_T(sdm_mem_init);
 
 static sdm_ecc_dis_init_cfg_t sdm_ecc_dis_init = DEFAULT_SDM_ECC_DIS_INIT_CFG_T;
 static sdm_pre_pcie_cfg_t sdmss_pre_pcie_cfg = DEFAULT_SDM_PRE_PCIE_CFG_T;
@@ -120,7 +101,7 @@ static sdm_emcpu_init_cfg_t sdmss_sdm_emcpu_init_cfg = {.release_m7_halt = false
                                                         .enable_itcm_ecc = false,
                                                         .enable_dtcm_ecc = false};
 
-static accelip_ss_init_knobs_t sdmss_ss_cfg = {.sys_counter_delay_value = 0, .isolation_enable = false};
+static sdmss_init_knobs_t sdmss_ss_cfg = DEFAULT_SDMSS_INIT_KNOBS_T;
 
 /*CDEDSS Common structure initialization for the parameters required by sequence library API in
 Silibs*/
@@ -131,7 +112,7 @@ static sdm_emcpu_init_cfg_t cdedss_sdm_emcpu_init_cfg = {.release_m7_halt = fals
                                                          .enable_itcm_ecc = false,
                                                          .enable_dtcm_ecc = false};
 
-static accelip_ss_init_knobs_t cdedss_ss_cfg = {.sys_counter_delay_value = 0, .isolation_enable = false};
+static cdedss_init_knobs_t cdedss_ss_cfg = DEFAULT_CDEDSS_INIT_KNOBS_T;
 
 /****** Die 0 SDMSS context data start ******/
 static const atu_map_entry_t die0_sdmss_atu_map = ATU_MAPPING_SDMSS_BASE(SOC_D0);
@@ -145,7 +126,7 @@ static accelip_ss_init_t die0_sdmss_init_params_ctxt = {
     .sdm_mem_init = &sdm_mem_init,
     .sdm_ecc_disable_init = &sdm_ecc_dis_init,
     .pre_pcie_cfg = &sdmss_pre_pcie_cfg,
-    .accelip_ss_cfg = &sdmss_ss_cfg};
+    .accelip_ss_cfg = &sdmss_ss_cfg.sdmss_init_cfg[D0_SDMSS]};
 /****** Die 0 SDMSS context data end ******/
 
 /****** Die 1 SDMSS context data start ******/
@@ -160,7 +141,7 @@ static accelip_ss_init_t die1_sdmss_init_params_ctxt = {
     .sdm_mem_init = &sdm_mem_init,
     .sdm_ecc_disable_init = &sdm_ecc_dis_init,
     .pre_pcie_cfg = &sdmss_pre_pcie_cfg,
-    .accelip_ss_cfg = &sdmss_ss_cfg};
+    .accelip_ss_cfg = &sdmss_ss_cfg.sdmss_init_cfg[D1_SDMSS]};
 /****** Die 1 SDMSS context data end ******/
 
 /****** Die 0 CDEDSS context data start ******/
@@ -175,7 +156,7 @@ static accelip_ss_init_t die0_cdedss_init_params_ctxt = {
     .sdm_mem_init = &sdm_mem_init,
     .sdm_ecc_disable_init = &sdm_ecc_dis_init,
     .pre_pcie_cfg = &cdedss_pre_pcie_cfg,
-    .accelip_ss_cfg = &cdedss_ss_cfg};
+    .accelip_ss_cfg = &cdedss_ss_cfg.cdedss_init_cfg[D0_CDEDSS]};
 /****** Die 0 CDEDSS context data end ******/
 
 /****** Die 1 CDEDSS context data start ******/
@@ -189,7 +170,7 @@ static accelip_ss_init_t die1_cdedss_init_params_ctxt = {
     .sdm_mem_init = &sdm_mem_init,
     .sdm_ecc_disable_init = &sdm_ecc_dis_init,
     .pre_pcie_cfg = &cdedss_pre_pcie_cfg,
-    .accelip_ss_cfg = &cdedss_ss_cfg};
+    .accelip_ss_cfg = &cdedss_ss_cfg.cdedss_init_cfg[D1_CDEDSS]};
 /****** Die 1 CDEDSS context data end ******/
 
 /* ---- Sub-system Context data-structures across Die's --------------------- */
@@ -239,23 +220,4 @@ subsystem_ctxt_t* get_accelerator_ctxt(uint32_t* accel_instance_size)
 {
     *accel_instance_size = ARRAY_SIZE(ss_ctxts);
     return ss_ctxts;
-}
-
-void scp_accel_update_default_knobs(subsystem_ctxt_t* p_ss_ctxt)
-{
-    ACCEL_ID accel_ip_id = ACCEL_ID_SDM;
-
-    if (p_ss_ctxt->accelip_metadata.accel_type == D1_ACCELIP_CDEDSS || p_ss_ctxt->accelip_metadata.accel_type == D0_ACCELIP_CDEDSS)
-    {
-        accel_ip_id = ACCEL_ID_CDED;
-    }
-
-    p_ss_ctxt->p_init_params->pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_base_class_code =
-        sdm_cded_class_code_knobs_values[accel_ip_id].class_code;
-    p_ss_ctxt->p_init_params->pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_sub_class_code =
-        sdm_cded_class_code_knobs_values[accel_ip_id].sub_class_code;
-    p_ss_ctxt->p_init_params->pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_device_id =
-        sdm_cded_class_code_knobs_values[accel_ip_id].pci_device_id;
-    p_ss_ctxt->p_init_params->pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_subsystem_id =
-        sdm_cded_class_code_knobs_values[accel_ip_id].subsystem_id;
 }

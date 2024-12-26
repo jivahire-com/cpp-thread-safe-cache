@@ -36,6 +36,7 @@ target_link_libraries(
     PRIVATE
         fwlib.lib.assert
         fwlib.driver.mboxIccTransport
+        fwlib.lib.cfg_mgr
         fwlib.lib.init
         fwlib.service.icc_dispatcher
         fwlib.service.iccBase

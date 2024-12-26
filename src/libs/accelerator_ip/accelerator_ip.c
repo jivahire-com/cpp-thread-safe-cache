@@ -21,8 +21,9 @@
 #include <atu_lib.h>             // for atu_map, atu_unmap, atu_map...
 #include <bug_check.h>           // for BUG_ASSERT
 #include <cdedss_config_regs.h>  // for CDEDSS_CONFIG_SDM_EXT_CFG_ADDRESS
-#include <fpfw_icc_base.h>       // for fpfw_icc_base_init, fpfw_icc_ba...
-#include <fpfw_icc_base_i.h>     // for fpfw_icc_base_ctx_t
+#include <fpfw_cfg_mgr.h>
+#include <fpfw_icc_base.h>   // for fpfw_icc_base_init, fpfw_icc_ba...
+#include <fpfw_icc_base_i.h> // for fpfw_icc_base_ctx_t
 #include <fpfw_init.h>
 #include <fpfw_mbox_icc_transport.h> // for ICC_MBX_ASYNC_RECV, ICC_MBX_ASY...
 #include <hsp_firmware_headers.h>
@@ -582,6 +583,87 @@ static void emcpu_recovery_sequence(uintptr_t sdm_ext_cfg_base, subsystem_ctxt_t
     debug_print("%s: FW LOAD SENT\n", __func__);
 }
 
+static void update_accel_ctxt_from_knobs(subsystem_ctxt_t* p_ss_ctxt)
+{
+    DIE_INSTANCE die_id = p_ss_ctxt->accelip_metadata.die_instance;
+    sdm_pre_pcie_cfg_t* pre_pcie_cfg = p_ss_ctxt->p_init_params->pre_pcie_cfg;
+    accelip_ss_init_knobs_t* ss_cfg = p_ss_ctxt->p_init_params->accelip_ss_cfg;
+
+    if (p_ss_ctxt->accelip_metadata.accel_type == D0_ACCELIP_SDMSS || p_ss_ctxt->accelip_metadata.accel_type == D1_ACCELIP_SDMSS)
+    {
+        pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_base_class_code =
+            config_get_sdm_base_class_code().pf_pci_t0_base_class_code[die_id];
+        pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_subsystem_id =
+            config_get_sdm_pf_subsystem_id().pf_pci_t0_subsystem_id[die_id];
+        pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_device_id = config_get_sdm_pf_device_id().pf_pci_t0_device_id[die_id];
+        pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_int_pin = config_get_sdm_pf_int_pin().pf_pci_t0_int_pin[die_id];
+        pre_pcie_cfg->rcec_pci_t0_cfg.pci_t0_int_pin = config_get_sdm_rcec_int_pin().rcec_pci_t0_int_pin[die_id];
+        pre_pcie_cfg->tee_io_supp = config_get_sdm_tee_io_supp().tee_io_supp[die_id];
+        pre_pcie_cfg->dis_pri = config_get_sdm_dis_pri().dis_pri[die_id];
+        pre_pcie_cfg->allow_gpa = config_get_sdm_allow_gpa().allow_gpa[die_id];
+        pre_pcie_cfg->allow_va = config_get_sdm_allow_va().allow_va[die_id];
+        pre_pcie_cfg->allow_cpl_gpa = config_get_sdm_allow_cpl_gpa().allow_cpl_gpa[die_id];
+        pre_pcie_cfg->allow_cpl_va = config_get_sdm_allow_cpl_va().allow_cpl_va[die_id];
+        pre_pcie_cfg->allow_priv = config_get_sdm_allow_priv().allow_priv[die_id];
+        pre_pcie_cfg->allow_nonpriv = config_get_sdm_allow_nonpriv().allow_nonpriv[die_id];
+        pre_pcie_cfg->allow_posted = config_get_sdm_allow_posted().allow_posted[die_id];
+        pre_pcie_cfg->allow_nonposted = config_get_sdm_allow_nonposted().allow_nonposted[die_id];
+        pre_pcie_cfg->gpa_pasid_en = config_get_sdm_gpa_pasid_en().gpa_pasid_en[die_id];
+        pre_pcie_cfg->cpl_gpa_pasid_en = config_get_sdm_cpl_gpa_pasid_en().cpl_gpa_pasid_en[die_id];
+        pre_pcie_cfg->pf_crs_resp_data = config_get_sdm_pf_crs_resp_data().pf_crs_resp_data[die_id];
+        pre_pcie_cfg->vf_crs_resp_data = config_get_sdm_vf_crs_resp_data().vf_crs_resp_data[die_id];
+        pre_pcie_cfg->total_vfs = config_get_sdm_total_vfs().total_vfs[die_id];
+        pre_pcie_cfg->dti_lim_trans_cnt = config_get_sdm_dti_lim_trans_cnt().dti_lim_trans_cnt[die_id];
+        pre_pcie_cfg->dti_inv_lim_trans_cnt = config_get_sdm_dti_inv_lim_trans_cnt().dti_inv_lim_trans_cnt[die_id];
+        pre_pcie_cfg->lti_lim_trans_cnt = config_get_sdm_lti_lim_trans_cnt().lti_lim_trans_cnt[die_id];
+        pre_pcie_cfg->tot_dwq_num_entries_avail =
+            config_get_sdm_tot_dwq_num_entries_avail().tot_dwq_num_entries_avail[die_id];
+        pre_pcie_cfg->rd_lim_cnt = config_get_sdm_rd_lim_cnt().rd_lim_cnt[die_id];
+        pre_pcie_cfg->wr_lim_cnt = config_get_sdm_wr_lim_cnt().wr_lim_cnt[die_id];
+
+        ss_cfg->isolation_enable = config_get_sdm_isolation_enable().isolation_enable[die_id];
+        ss_cfg->emm_resp_code = config_get_sdm_emm_resp_code().emm_resp_code[die_id];
+    }
+    else
+    {
+        pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_base_class_code =
+            config_get_cded_base_class_code().pf_pci_t0_base_class_code[die_id];
+        pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_subsystem_id =
+            config_get_cded_pf_subsystem_id().pf_pci_t0_subsystem_id[die_id];
+        pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_device_id = config_get_cded_pf_device_id().pf_pci_t0_device_id[die_id];
+        pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_int_pin = config_get_cded_pf_int_pin().pf_pci_t0_int_pin[die_id];
+        pre_pcie_cfg->rcec_pci_t0_cfg.pci_t0_int_pin = config_get_cded_rcec_int_pin().rcec_pci_t0_int_pin[die_id];
+        /*Overwriting the CDED VF device ID*/
+        pre_pcie_cfg->sriov_vf_dev_id = CDED_PCI_DEVICE_ID;
+        pre_pcie_cfg->tee_io_supp = config_get_cded_tee_io_supp().tee_io_supp[die_id];
+        pre_pcie_cfg->dis_wrt_buff_cont = config_get_cded_dis_wrt_buff_cont().dis_wrt_buff_cont[die_id];
+        pre_pcie_cfg->dis_pri = config_get_cded_dis_pri().dis_pri[die_id];
+        pre_pcie_cfg->allow_gpa = config_get_cded_allow_gpa().allow_gpa[die_id];
+        pre_pcie_cfg->allow_va = config_get_cded_allow_va().allow_va[die_id];
+        pre_pcie_cfg->allow_cpl_gpa = config_get_cded_allow_cpl_gpa().allow_cpl_gpa[die_id];
+        pre_pcie_cfg->allow_cpl_va = config_get_cded_allow_cpl_va().allow_cpl_va[die_id];
+        pre_pcie_cfg->allow_priv = config_get_cded_allow_priv().allow_priv[die_id];
+        pre_pcie_cfg->allow_nonpriv = config_get_cded_allow_nonpriv().allow_nonpriv[die_id];
+        pre_pcie_cfg->allow_posted = config_get_cded_allow_posted().allow_posted[die_id];
+        pre_pcie_cfg->allow_nonposted = config_get_cded_allow_nonposted().allow_nonposted[die_id];
+        pre_pcie_cfg->gpa_pasid_en = config_get_cded_gpa_pasid_en().gpa_pasid_en[die_id];
+        pre_pcie_cfg->cpl_gpa_pasid_en = config_get_cded_cpl_gpa_pasid_en().cpl_gpa_pasid_en[die_id];
+        pre_pcie_cfg->pf_crs_resp_data = config_get_cded_pf_crs_resp_data().pf_crs_resp_data[die_id];
+        pre_pcie_cfg->vf_crs_resp_data = config_get_cded_vf_crs_resp_data().vf_crs_resp_data[die_id];
+        pre_pcie_cfg->total_vfs = config_get_cded_total_vfs().total_vfs[die_id];
+        pre_pcie_cfg->dti_lim_trans_cnt = config_get_cded_dti_lim_trans_cnt().dti_lim_trans_cnt[die_id];
+        pre_pcie_cfg->dti_inv_lim_trans_cnt = config_get_cded_dti_inv_lim_trans_cnt().dti_inv_lim_trans_cnt[die_id];
+        pre_pcie_cfg->lti_lim_trans_cnt = config_get_cded_lti_lim_trans_cnt().lti_lim_trans_cnt[die_id];
+        pre_pcie_cfg->tot_dwq_num_entries_avail =
+            config_get_cded_tot_dwq_num_entries_avail().tot_dwq_num_entries_avail[die_id];
+        pre_pcie_cfg->rd_lim_cnt = config_get_cded_rd_lim_cnt().rd_lim_cnt[die_id];
+        pre_pcie_cfg->wr_lim_cnt = config_get_cded_wr_lim_cnt().wr_lim_cnt[die_id];
+
+        ss_cfg->isolation_enable = config_get_cded_isolation_enable().isolation_enable[die_id];
+        ss_cfg->emm_resp_code = config_get_cded_emm_resp_code().emm_resp_code[die_id];
+    }
+}
+
 /*----------------------------- Global Functions ----------------------------*/
 
 ACCEL_ID get_accelip_type(ACCELIP_SS_INSTANCE accel_type)
@@ -628,7 +710,7 @@ int32_t scp_accelerators_init(void)
                    p_ss_ctxt[index].accelip_metadata.die_instance,
                    p_ss_ctxt[index].accelip_metadata.accel_type,
                    p_ss_ctxt[index].accelip_metadata.accel_instance);
-            scp_accel_update_default_knobs(&p_ss_ctxt[index]);
+            update_accel_ctxt_from_knobs(&p_ss_ctxt[index]);
             ret = init_accelerator(&p_ss_ctxt[index]);
 
             FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);

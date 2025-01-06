@@ -111,4 +111,10 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_DCS_SERVICE,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, dest_die_id),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, dest_cpu_id))
 
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_DCS_SERVICE,
+                     23,
+                     TrpInvalidBroadcastType,
+                     FPFW_ET_LEVEL_WARNING,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, broadcast_type))
+
 /*--------- Function Prototypes ----------*/

@@ -72,7 +72,20 @@ void dcs_init(p_dcs_config_t config)
 
     tlm_relay_init(&config->trp_icc_config);
 
-    dcp_svc_client_init();
+    dcp_svc_client_init(&config->ifwi_version);
+}
+
+void dcs_unregister_clients(void)
+{
+    for (uint16_t id = 0; id < DCP_CLIENT_ID_MAX; id++)
+    {
+        s_dcs_context.clients[id] = NULL;
+    }
+}
+
+bool dcs_is_primary_instance(void)
+{
+    return tlm_relay_is_primary_instance();
 }
 
 fpfw_status_t dcs_register_client(dcp_client_id_t id, p_dcs_client_t client)
@@ -203,6 +216,35 @@ void dcs_forward_trp_msg_to_client_from_drv_frmwk(p_trp_msg_t trp_msg)
         // to reply with error message need to swap source and dest
         dcs_queue_for_outbound_from_drv_frmwk(trp_msg, true);
     }
+}
+
+void dcs_forward_trp_msg_to_all_non_dcp_svc_clients(p_trp_msg_t trp_msg)
+{
+    for (uint16_t id = DCP_CLIENT_ID_PWR_INST_TELEM; id < DCP_CLIENT_ID_MAX; id++)
+    {
+        if (s_dcs_context.clients[id] != NULL)
+        {
+            // have a handler for this client
+            trp_msg->hdr.dcp_client_id = id;
+            trp_msg->payload.dcp_msg.hdr.client_id = id;
+
+            fpfw_status_t status = dcs_queue_msg_from_drv_frmwk(&s_dcs_context.clients[id]->rx_pool,
+                                                                &s_dcs_context.clients[id]->rx_queue,
+                                                                trp_msg);
+
+            if (FPFW_STATUS_SUCCEEDED(status))
+            {
+                if (s_dcs_context.clients[id]->notify_from_drv_frmwk != NULL)
+                {
+                    s_dcs_context.clients[id]->notify_from_drv_frmwk();
+                }
+            }
+        }
+    }
+
+    // restore client id's to DCS client to send response message
+    trp_msg->hdr.dcp_client_id = DCP_CLIENT_ID_DCS;
+    trp_msg->payload.dcp_msg.hdr.client_id = DCP_CLIENT_ID_DCS;
 }
 
 bool dcs_is_valid_dcp_msg_from_drv_frmwk(p_dcp_msg_t dcp_msg)
@@ -382,4 +424,44 @@ void dcs_queue_for_outbound_from_drv_frmwk(p_trp_msg_t trp_msg, bool swap_source
     // errors have already been logged in dcs_queue_msg_from_drv_frmwk
     UINT txStatus = tx_event_flags_set(&s_dcs_context.thread_ctrl, NEW_OUTBOUND_MSG, TX_OR);
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
+}
+
+void dcs_send_outgoing_msg(p_trp_msg_t trp_msg, bool swap_source_dest)
+{
+    if (swap_source_dest)
+    {
+        uint8_t temp = trp_msg->hdr.source_die_id;
+        trp_msg->hdr.source_die_id = trp_msg->hdr.dest_die_id;
+        trp_msg->hdr.dest_die_id = temp;
+
+        temp = trp_msg->hdr.source_cpu_id;
+        trp_msg->hdr.source_cpu_id = trp_msg->hdr.dest_cpu_id;
+        trp_msg->hdr.dest_cpu_id = temp;
+    }
+
+    tlm_relay_send_outgoing_msg(trp_msg);
+}
+
+void dcs_flush_outgoing_queue(void)
+{
+    p_trp_msg_t trp_msg = NULL;
+    UINT queue_status = 0;
+
+    // may be multiple messages in the queue
+    do
+    {
+        queue_status = tx_queue_receive(&s_dcs_context.trp_outbound_queue.queue, &trp_msg, TX_NO_WAIT);
+        if ((queue_status == TX_SUCCESS) && (trp_msg != NULL))
+        {
+            UINT block_status = tx_block_release(trp_msg);
+            if (block_status != TX_SUCCESS)
+            {
+                FPFW_ET_LOG(DcsSvcClientFreeFail, (uintptr_t)trp_msg, block_status);
+            }
+        }
+        else if (queue_status != TX_QUEUE_EMPTY)
+        {
+            FPFW_ET_LOG(DcsSvcClientQueueFail, (uintptr_t)&s_dcs_context.trp_outbound_queue.queue, queue_status);
+        }
+    } while (queue_status == TX_SUCCESS);
 }

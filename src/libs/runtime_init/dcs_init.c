@@ -59,6 +59,14 @@ FPFW_INIT_COMPONENT(dcs_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_ms
                 //.this_die_id assigned below
                 //.this_cpu_id assigned below
             },
+        .ifwi_version =
+            {
+                // TODO:  get ifwi version when available, https://azurecsi.visualstudio.com/Dev/_workitems/edit/2249128
+                .ifwi_ver_major = 0,
+                .ifwi_ver_minor = 0,
+                .ifwi_ver_patch = 0,
+                .ifwi_ver_rev = 0,
+            },
     };
 
     uint16_t number_of_routes = 0;

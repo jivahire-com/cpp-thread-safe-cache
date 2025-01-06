@@ -28,6 +28,7 @@ typedef struct
 } icc_msg_t, *p_icc_msg_t;
 
 /*-- Declarations (Statics and globals) --*/
+extern p_trp_icc_config_t trp_icc_config;
 
 /*--------- Function Prototypes ----------*/
 
@@ -37,6 +38,15 @@ typedef struct
  * @param icc_config Configuration for the ICC endpoints
  */
 void tlm_relay_init(p_trp_icc_config_t icc_config);
+
+/**
+ * @brief The primary instance is the MCP on Die 0, as that is the core that interfaces directly
+ * with the Host. Behavior may differ based on whether it is the primary instance.
+ *
+ *
+ * @return true if this is the primary instance
+ */
+bool tlm_relay_is_primary_instance(void);
 
 /**
  * @brief Send a DCP message to the Host.
@@ -50,7 +60,6 @@ void tlm_relay_init(p_trp_icc_config_t icc_config);
  * @return FPFW_STATUS_SUCCESS on success or an error code on failure
  */
 fpfw_status_t tlm_relay_send_dcp_msg(const p_dcp_msg_t dcp_msg);
-
 
 /**
  * @brief Send a message to the die and core specified in the trp header.
@@ -79,3 +88,21 @@ void tlm_relay_icc_recv_complete_notify_from_drv_frmwk(void* context, size_t out
  * @param[in] trp_msg
  */
 void tlm_relay_send_outgoing_msg(p_trp_msg_t trp_msg);
+
+/**
+ * @brief Check if the message should be broadcast to this route
+ *
+ * @param[in] trp_msg The TRP message to check
+ * @param[in] trp_route The route to check
+ *
+ * @return true if the message should be broadcast to this route
+ */
+bool tlm_relay_should_broadcast_to_this_route(p_trp_msg_t trp_msg, p_trp_route_t trp_route);
+
+/**
+ * @brief Send a TRP message to the specified ICC endpoint
+ *
+ * @param[in] trp_msg The TRP message to send
+ * @param[in] icc_endpoint The ICC endpoint to send the message to
+ */
+void tlm_relay_send_trp_via_icc(p_trp_msg_t trp_msg, p_trp_icc_endpoint_t icc_endpoint);

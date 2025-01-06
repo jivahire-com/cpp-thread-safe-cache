@@ -41,6 +41,7 @@ typedef struct {
 
     dcs_thread_config_t thread_config;
     trp_icc_config_t trp_icc_config;
+    dcp_msg_ifwi_version_t ifwi_version;
 } dcs_config_t, *p_dcs_config_t;
 
 /*-- Declarations (Statics and globals) --*/
@@ -53,11 +54,22 @@ typedef struct {
  * @note Not Thread Safe
  * @note Not ISR Safe
  *
- * @param config Pointer to the configuration to use
+ * @param config Pointer to the configuration to use. config must be statically allocated for lifetime
  *
  * @return None
  */
 void dcs_init(p_dcs_config_t config);
+
+/**
+ * @brief The primary instance is the MCP on Die 0, as that is the core that interfaces directly
+ * with the Host. Client behavior may differ based on whether it is the primary instance. 
+ *
+ * @note Thread Safe
+ *
+ *
+ * @return true if this is the primary instance
+ */
+bool dcs_is_primary_instance(void);
 
 /**
  * @brief Registers a client to receive DCS commands
@@ -112,3 +124,4 @@ fpfw_status_t dcs_client_send_trp_msg(const p_trp_msg_t trp_msg, trp_broadcast_t
  * @return FPFW_STATUS_SUCCESS on success or an error code on failure
  */
 fpfw_status_t dcs_client_send_trp_response(const p_trp_msg_t trp_msg);
+

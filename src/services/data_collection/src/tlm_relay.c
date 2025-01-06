@@ -37,17 +37,17 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static p_trp_icc_config_t s_trp_icc_config;
+p_trp_icc_config_t trp_icc_config;
 
 /*------------- Functions ----------------*/
 void tlm_relay_init(p_trp_icc_config_t icc_config)
 {
-    s_trp_icc_config = icc_config;
+    trp_icc_config = icc_config;
     bool found_dcp_endpoint = false;
 
-    for (uint16_t index = 0; index < s_trp_icc_config->number_of_endpoints; index++)
+    for (uint16_t index = 0; index < trp_icc_config->number_of_endpoints; index++)
     {
-        p_trp_icc_endpoint_t icc_endpoint = &s_trp_icc_config->endpoint_table[index];
+        p_trp_icc_endpoint_t icc_endpoint = &trp_icc_config->endpoint_table[index];
         if (icc_endpoint->icc_payload_protocol == ICC_COMMAND_DCP_MSG)
         {
             FPFW_RUNTIME_ASSERT_EXT(!found_dcp_endpoint, (uintptr_t)icc_endpoint, 0, 0, 0);
@@ -65,6 +65,11 @@ void tlm_relay_init(p_trp_icc_config_t icc_config)
         FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCEEDED(status), status, (uintptr_t)icc_endpoint, 0, 0);
         // printf("Endpoint %s ICC Receive status: 0x%04lx\n", icc_endpoint->name, (uint32_t)status);
     }
+}
+
+bool tlm_relay_is_primary_instance(void)
+{
+    return (trp_icc_config->this_die_id == DIE_0) && (trp_icc_config->this_cpu_id == CPU_MCP);
 }
 
 // called from the driver framework thread
@@ -90,12 +95,14 @@ void tlm_relay_icc_recv_complete_notify_from_drv_frmwk(void* context, size_t out
                     {
                         .source_die_id = DIE_0,
                         .source_cpu_id = CPU_AP,
-                        .dest_die_id = s_trp_icc_config->this_die_id,
-                        .dest_cpu_id = s_trp_icc_config->this_cpu_id,
+                        .dest_die_id = trp_icc_config->this_die_id,
+                        .dest_cpu_id = trp_icc_config->this_cpu_id,
                         .dcp_client_id = dcp_msg->hdr.client_id,
                         .trp_msg_id = TRP_MSG_ID_DCP_FORWARD,
                         .trp_msg_status = TRP_STATUS_SUCCESS,
                         .source_seq_num = dcp_msg->hdr.seq_num,
+                        .incoming_endpt = icc_endpoint,
+                        .broadcast_type = TRP_BROADCAST_NONE,
                         .payload_size = dcp_msg->hdr.payload_size + sizeof(dcp_msg_hdr_t),
                     },
                 .payload.dcp_msg = *dcp_msg,
@@ -107,9 +114,10 @@ void tlm_relay_icc_recv_complete_notify_from_drv_frmwk(void* context, size_t out
         {
             // all inter-core messages are TRP messages
             p_trp_msg_t trp_msg = (p_trp_msg_t)(recv_context->payload_buffer + size_of_transport_hdr);
+            trp_msg->hdr.incoming_endpt = icc_endpoint; // prevent broadcasting back to the same endpoint
 
-            if ((trp_msg->hdr.dest_die_id == s_trp_icc_config->this_die_id) &&
-                (trp_msg->hdr.dest_cpu_id == s_trp_icc_config->this_cpu_id))
+            if ((trp_msg->hdr.dest_die_id == trp_icc_config->this_die_id) &&
+                (trp_msg->hdr.dest_cpu_id == trp_icc_config->this_cpu_id))
             {
                 dcs_forward_trp_msg_to_client_from_drv_frmwk(trp_msg);
             }
@@ -130,11 +138,11 @@ void tlm_relay_icc_recv_complete_notify_from_drv_frmwk(void* context, size_t out
         FPFW_ET_LOG(TrpIccReceiveFail, status);
     }
 
-    for (uint16_t index = 0; index < s_trp_icc_config->number_of_endpoints; index++)
+    for (uint16_t index = 0; index < trp_icc_config->number_of_endpoints; index++)
     {
         // validate that the endpoint passed into this completion is a valid endpoint
         // if so, re-register the endpoint for the next receive
-        p_trp_icc_endpoint_t registered_icc_endpoint = &s_trp_icc_config->endpoint_table[index];
+        p_trp_icc_endpoint_t registered_icc_endpoint = &trp_icc_config->endpoint_table[index];
         if (icc_endpoint == registered_icc_endpoint)
         {
             fpfw_status_t status = fpfw_icc_base_recv(icc_endpoint->icc_base_ctx, &icc_endpoint->async_recv_req);
@@ -154,36 +162,124 @@ void tlm_relay_icc_recv_complete_notify_from_drv_frmwk(void* context, size_t out
 
 void tlm_relay_send_outgoing_msg(p_trp_msg_t trp_msg)
 {
-    for (uint16_t route = 0; route < s_trp_icc_config->number_of_routes; route++)
-    {
-        p_trp_route_t trp_route = &s_trp_icc_config->routing_table[route];
-        if (trp_route->dest.die_id == trp_msg->hdr.dest_die_id && trp_route->dest.cpu_id == trp_msg->hdr.dest_cpu_id)
-        {
-            icc_msg_t icc_msg;
-            if (trp_msg->hdr.trp_msg_id == TRP_MSG_ID_DCP_FORWARD)
-            {
-                icc_msg.header.msg_header.command = ICC_COMMAND_DCP_MSG;
-                icc_msg.header.msg_header.payload_size = trp_msg->payload.dcp_msg.hdr.payload_size + sizeof(dcp_msg_hdr_t);
-                icc_msg.dcp_msg = trp_msg->payload.dcp_msg;
-            }
-            else
-            {
-                icc_msg.header.msg_header.command = ICC_COMMAND_TRP_MSG;
-                icc_msg.header.msg_header.payload_size = trp_msg->hdr.payload_size + sizeof(trp_msg_hdr_t);
-                icc_msg.trp_msg = *trp_msg;
-            }
+    bool log_route_error = false;
 
-            fpfw_status_t status =
-                fpfw_icc_base_send_sync(trp_route->icc_endpoint->icc_base_ctx,
-                                        &icc_msg,
-                                        icc_msg.header.msg_header.payload_size + sizeof(icc_mhu_header_t));
-            if (FPFW_STATUS_FAILED(status))
+    // will be overriding the destination for broadcast messages
+    // save and restore after sending to all routes
+    uint8_t orig_dest_die_id = trp_msg->hdr.dest_die_id;
+    uint8_t orig_dest_cpu_id = trp_msg->hdr.dest_cpu_id;
+
+    for (uint16_t route = 0; route < trp_icc_config->number_of_routes; route++)
+    {
+        p_trp_route_t trp_route = &trp_icc_config->routing_table[route];
+
+        if (trp_msg->hdr.broadcast_type == TRP_BROADCAST_NONE)
+        {
+            log_route_error = true;
+            if ((trp_route->dest.die_id == trp_msg->hdr.dest_die_id) &&
+                (trp_route->dest.cpu_id == trp_msg->hdr.dest_cpu_id))
             {
-                FPFW_ET_LOG(TrpIccSendFail, status, (uint32_t)trp_route->icc_endpoint);
+                tlm_relay_send_trp_via_icc(trp_msg, trp_route->icc_endpoint);
+                return;
             }
-            return;
+        }
+        else if (tlm_relay_should_broadcast_to_this_route(trp_msg, trp_route))
+        {
+            trp_msg->hdr.dest_die_id = trp_route->dest.die_id;
+            trp_msg->hdr.dest_cpu_id = trp_route->dest.cpu_id;
+
+            // there may be no endpoints to broadcast to, so will not log error if route not found
+            tlm_relay_send_trp_via_icc(trp_msg, trp_route->icc_endpoint);
         }
     }
 
-    FPFW_ET_LOG(TrpIccNoRoute, trp_msg->hdr.dest_die_id, trp_msg->hdr.dest_cpu_id);
+    trp_msg->hdr.dest_die_id = orig_dest_die_id;
+    trp_msg->hdr.dest_cpu_id = orig_dest_cpu_id;
+
+    if (log_route_error)
+    {
+        FPFW_ET_LOG(TrpIccNoRoute, trp_msg->hdr.dest_die_id, trp_msg->hdr.dest_cpu_id);
+    }
+}
+
+bool tlm_relay_should_broadcast_to_this_route(p_trp_msg_t trp_msg, p_trp_route_t trp_route)
+{
+    if (trp_msg->hdr.incoming_endpt == trp_route->icc_endpoint)
+    {
+        // never broadcast back to the sender
+        return false;
+    }
+
+    bool broadcast = false;
+
+    switch (trp_msg->hdr.broadcast_type)
+    {
+    case TRP_BROADCAST_PRIM_MCP_TO_SEC_MCP_ONLY:
+        if (dcs_is_primary_instance() && (trp_route->dest.cpu_id == CPU_MCP))
+        {
+            broadcast = true;
+        }
+        break;
+
+    case TRP_BROADCAST_TO_SEC_MCP_THEN_TO_SCP:
+        if (dcs_is_primary_instance())
+        {
+            if (trp_route->dest.cpu_id == CPU_MCP)
+            {
+                // primary MCP broadcast to secondary MCP
+                broadcast = true;
+            }
+
+            if (trp_route->dest.cpu_id == CPU_SCP)
+            {
+                // primary MCP broadcast to local SCP
+                broadcast = true;
+            }
+        }
+        else
+        {
+            if (trp_icc_config->this_cpu_id == CPU_MCP)
+            {
+                // this is a secondary MCP, broadcast to SCP if on this die
+                if ((trp_route->dest.cpu_id == CPU_SCP) && (trp_route->dest.die_id == trp_icc_config->this_die_id))
+                {
+                    broadcast = true;
+                }
+            }
+        }
+        break;
+
+    default:
+        FPFW_ET_LOG(TrpInvalidBroadcastType, trp_msg->hdr.broadcast_type);
+        break;
+    }
+
+    return broadcast;
+}
+
+void tlm_relay_send_trp_via_icc(p_trp_msg_t trp_msg, p_trp_icc_endpoint_t icc_endpoint)
+{
+    icc_msg_t icc_msg;
+    if ((trp_msg->hdr.trp_msg_id == TRP_MSG_ID_DCP_FORWARD) && (trp_msg->hdr.dest_cpu_id == CPU_AP) &&
+        (trp_msg->hdr.dest_die_id == trp_icc_config->this_die_id))
+    {
+        // sending DCP message to AP cpu on this die needs dcp messaging
+        icc_msg.header.msg_header.command = ICC_COMMAND_DCP_MSG;
+        icc_msg.header.msg_header.payload_size = trp_msg->payload.dcp_msg.hdr.payload_size + sizeof(dcp_msg_hdr_t);
+        icc_msg.dcp_msg = trp_msg->payload.dcp_msg;
+    }
+    else
+    {
+        icc_msg.header.msg_header.command = ICC_COMMAND_TRP_MSG;
+        icc_msg.header.msg_header.payload_size = trp_msg->hdr.payload_size + sizeof(trp_msg_hdr_t);
+        icc_msg.trp_msg = *trp_msg;
+    }
+
+    fpfw_status_t status = fpfw_icc_base_send_sync(icc_endpoint->icc_base_ctx,
+                                                   &icc_msg,
+                                                   icc_msg.header.msg_header.payload_size + sizeof(icc_mhu_header_t));
+    if (FPFW_STATUS_FAILED(status))
+    {
+        FPFW_ET_LOG(TrpIccSendFail, status, (uint32_t)icc_endpoint);
+    }
 }

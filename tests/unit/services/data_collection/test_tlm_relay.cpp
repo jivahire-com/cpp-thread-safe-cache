@@ -26,6 +26,7 @@ extern "C" {
 #include <data_collection_service.h>
 #include <data_collection_service_i.h>
 #include <fpfw_status.h> // for FPFW_STATUS_SUCCESS, FPFW_...
+#include <idsw_kng.h>
 #include <kng_icc_shared.h>
 #include <stdint.h> // for uint8_t
 #include <telemetry_relay_protocol.h>
@@ -70,6 +71,7 @@ static int test_setup(void** pContext)
 
     dcp_msg.hdr.client_id = 1;
     dcp_msg.hdr.seq_num = 4;
+    trp_msg.hdr.broadcast_type = TRP_BROADCAST_NONE;
 
     sprintf(icc_endpoint[DCP_ENDPOINT].name, "DCP EP!");
     icc_endpoint[DCP_ENDPOINT].icc_payload_protocol = ICC_COMMAND_DCP_MSG;
@@ -169,7 +171,7 @@ TEST_FUNCTION(test_tlm_relay_init, nullptr, nullptr)
     tlm_relay_init(&s_config.trp_icc_config);
 }
 
-TEST_FUNCTION(test_tlm_relay_send_outgoing_msg_valid_dcp, test_setup, nullptr)
+TEST_FUNCTION(test_tlm_relay_send_outgoing_msg_valid_dcp_broadcast_none, test_setup, nullptr)
 {
     trp_msg.hdr.dest_die_id = DCP_OUTGOING_DIE_ID;
     trp_msg.hdr.dest_cpu_id = DCP_OUTGOING_CPU_ID;
@@ -182,6 +184,25 @@ TEST_FUNCTION(test_tlm_relay_send_outgoing_msg_valid_dcp, test_setup, nullptr)
     trp_msg.hdr.dest_die_id = TRP_OUTGOING_DIE_ID;
     trp_msg.hdr.dest_cpu_id = TRP_OUTGOING_CPU_ID;
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE;
+
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_STATUS_SUCCESS);
+
+    tlm_relay_send_outgoing_msg(&trp_msg);
+}
+
+TEST_FUNCTION(test_tlm_relay_send_outgoing_msg_valid_dcp_broadcast, test_setup, nullptr)
+{
+    trp_msg.hdr.dest_die_id = DCP_OUTGOING_DIE_ID;
+    trp_msg.hdr.dest_cpu_id = CPU_MCP;
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
+    trp_msg.hdr.broadcast_type = TRP_BROADCAST_PRIM_MCP_TO_SEC_MCP_ONLY;
+
+    trp_routing_table[0].dest.die_id = DIE_1;
+    trp_routing_table[0].dest.cpu_id = CPU_MCP;
+
+    // primary instance
+    trp_icc_config->this_die_id = DIE_0;
+    trp_icc_config->this_cpu_id = CPU_MCP;
 
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_STATUS_SUCCESS);
 
@@ -297,7 +318,6 @@ TEST_FUNCTION(test_tlm_relay_icc_recv_complete_notify_from_drv_frmwk_fail, test_
 
 TEST_FUNCTION(test_tlm_relay_icc_recv_complete_notify_from_drv_frmwk_trp_foward, test_setup, nullptr)
 {
-
     // send invalid payload size trp message
     // it fails validation and then gets a block allocated, queues the response and sends an event to the dcs thread
     incoming_icc_msg.trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_PACKAGE_COMPLETE;
@@ -323,4 +343,132 @@ TEST_FUNCTION(test_tlm_relay_icc_recv_complete_notify_from_drv_frmwk_trp_foward,
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 
     tlm_relay_icc_recv_complete_notify_from_drv_frmwk(&icc_endpoint[TRP_ENDPOINT], 0, FPFW_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_tlm_relay_should_broadcast_to_this_route, test_setup, nullptr)
+{
+    trp_msg_t trp_msg;
+    bool should_broadcast = false;
+
+    trp_route_t fake_trp_route = trp_routing_table[1];
+
+    // test don't broadcast back to the sender
+    trp_msg.hdr.incoming_endpt = &icc_endpoint[TRP_ENDPOINT];
+    should_broadcast = tlm_relay_should_broadcast_to_this_route(&trp_msg, &trp_routing_table[1]);
+    assert_false(should_broadcast);
+
+    // TRP_BROADCAST_PRIM_MCP_TO_SEC_MCP_ONLY should broadcast
+    trp_msg.hdr.broadcast_type = TRP_BROADCAST_PRIM_MCP_TO_SEC_MCP_ONLY;
+
+    trp_msg.hdr.incoming_endpt = &icc_endpoint[DCP_ENDPOINT];
+
+    // primary instance
+    trp_icc_config->this_die_id = DIE_0;
+    trp_icc_config->this_cpu_id = CPU_MCP;
+
+    fake_trp_route.dest.cpu_id = CPU_MCP;
+
+    should_broadcast = tlm_relay_should_broadcast_to_this_route(&trp_msg, &fake_trp_route);
+    assert_true(should_broadcast);
+
+    // TRP_BROADCAST_PRIM_MCP_TO_SEC_MCP_ONLY should not broadcast if not primary mcp
+    trp_msg.hdr.broadcast_type = TRP_BROADCAST_PRIM_MCP_TO_SEC_MCP_ONLY;
+
+    trp_msg.hdr.incoming_endpt = &icc_endpoint[DCP_ENDPOINT];
+
+    // not primary instance
+    trp_icc_config->this_die_id = DIE_1;
+    trp_icc_config->this_cpu_id = CPU_MCP;
+
+    fake_trp_route.dest.cpu_id = CPU_MCP;
+
+    should_broadcast = tlm_relay_should_broadcast_to_this_route(&trp_msg, &fake_trp_route);
+    assert_false(should_broadcast);
+
+    // TRP_BROADCAST_PRIM_MCP_TO_SEC_MCP_ONLY should not broadcast if dest not MCP
+    trp_msg.hdr.broadcast_type = TRP_BROADCAST_PRIM_MCP_TO_SEC_MCP_ONLY;
+
+    trp_msg.hdr.incoming_endpt = &icc_endpoint[DCP_ENDPOINT];
+
+    // primary instance
+    trp_icc_config->this_die_id = DIE_0;
+    trp_icc_config->this_cpu_id = CPU_MCP;
+
+    fake_trp_route.dest.cpu_id = CPU_SCP;
+
+    should_broadcast = tlm_relay_should_broadcast_to_this_route(&trp_msg, &fake_trp_route);
+    assert_false(should_broadcast);
+
+    // invalid broadcast type
+    trp_msg.hdr.broadcast_type = 0xFFFF;
+    should_broadcast = tlm_relay_should_broadcast_to_this_route(&trp_msg, &fake_trp_route);
+    assert_false(should_broadcast);
+}
+
+TEST_FUNCTION(_test_tlm_relay_should_broadcast_to_this_route_2, test_setup, nullptr)
+{
+    trp_msg_t trp_msg;
+    bool should_broadcast = false;
+
+    trp_route_t fake_trp_route = trp_routing_table[1];
+
+    // TRP_BROADCAST_TO_SEC_MCP_THEN_TO_SCP should broadcast primary to secondary MCP
+    trp_msg.hdr.broadcast_type = TRP_BROADCAST_TO_SEC_MCP_THEN_TO_SCP;
+
+    trp_msg.hdr.incoming_endpt = &icc_endpoint[DCP_ENDPOINT];
+
+    // primary instance
+    trp_icc_config->this_die_id = DIE_0;
+    trp_icc_config->this_cpu_id = CPU_MCP;
+
+    fake_trp_route.dest.cpu_id = CPU_MCP;
+
+    should_broadcast = tlm_relay_should_broadcast_to_this_route(&trp_msg, &fake_trp_route);
+    assert_true(should_broadcast);
+
+    // TRP_BROADCAST_TO_SEC_MCP_THEN_TO_SCP should broadcast primary to local SCP
+    fake_trp_route.dest.cpu_id = CPU_SCP;
+    should_broadcast = tlm_relay_should_broadcast_to_this_route(&trp_msg, &fake_trp_route);
+    assert_true(should_broadcast);
+
+    // TRP_BROADCAST_TO_SEC_MCP_THEN_TO_SCP  this is a secondary MCP, broadcast to SCP if on this die
+    // secondary MCP instance
+    trp_icc_config->this_die_id = DIE_1;
+    trp_icc_config->this_cpu_id = CPU_MCP;
+
+    fake_trp_route.dest.cpu_id = CPU_SCP;
+    fake_trp_route.dest.die_id = DIE_1;
+
+    should_broadcast = tlm_relay_should_broadcast_to_this_route(&trp_msg, &fake_trp_route);
+    assert_true(should_broadcast);
+
+    // TRP_BROADCAST_TO_SEC_MCP_THEN_TO_SCP  this is a secondary SCP, no broadcast
+    trp_icc_config->this_die_id = DIE_1;
+    trp_icc_config->this_cpu_id = CPU_SCP;
+
+    fake_trp_route.dest.cpu_id = CPU_MCP;
+    fake_trp_route.dest.die_id = DIE_1;
+
+    should_broadcast = tlm_relay_should_broadcast_to_this_route(&trp_msg, &fake_trp_route);
+    assert_false(should_broadcast);
+
+    // TRP_BROADCAST_TO_SEC_MCP_THEN_TO_SCP  this is a secondary MCP, no broadcast to non SCP
+    trp_icc_config->this_die_id = DIE_1;
+    trp_icc_config->this_cpu_id = CPU_MCP;
+
+    fake_trp_route.dest.cpu_id = CPU_AP;
+    fake_trp_route.dest.die_id = DIE_1;
+
+    should_broadcast = tlm_relay_should_broadcast_to_this_route(&trp_msg, &fake_trp_route);
+    assert_false(should_broadcast);
+
+    // TRP_BROADCAST_TO_SEC_MCP_THEN_TO_SCP  this is a secondary MCP, no broadcast to SCP on different die
+    trp_icc_config->this_die_id = DIE_1;
+    trp_icc_config->this_cpu_id = CPU_MCP;
+
+    fake_trp_route.dest.cpu_id = CPU_SCP;
+    fake_trp_route.dest.die_id = 4;
+
+    should_broadcast = tlm_relay_should_broadcast_to_this_route(&trp_msg, &fake_trp_route);
+    assert_false(should_broadcast);
 }

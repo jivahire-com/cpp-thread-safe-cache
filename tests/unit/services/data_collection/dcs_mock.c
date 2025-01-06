@@ -190,3 +190,12 @@ UINT __wrap__txe_event_flags_create(TX_EVENT_FLAGS_GROUP* group_ptr, CHAR* name_
     check_expected(event_control_block_size);
     return mock_type(UINT);
 }
+
+UINT __wrap__tx_thread_sleep(ULONG timer_ticks)
+{
+    FPFW_UNUSED(timer_ticks);
+
+    function_called();
+
+    return TX_SUCCESS;
+}

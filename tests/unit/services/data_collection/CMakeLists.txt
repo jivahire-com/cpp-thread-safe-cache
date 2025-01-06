@@ -45,6 +45,7 @@ mock_target(${TARGET}
     _txe_block_pool_create
     _txe_block_allocate
     _txe_block_release
+    _tx_thread_sleep
     fpfw_icc_base_recv
     fpfw_icc_base_send_sync
 )

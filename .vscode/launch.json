@@ -176,16 +176,16 @@
                 "key": "savedDriverUnitTest",
                 "options": [
                     [
-                        "Sensor Fifo Driver",
-                        "kng.driver.sensor_fifo.test.exe"
-                    ],
-                    [
                         "ICC MHU Driver",
                         "kng.driver.icc_mhu_trans.test.exe"
                     ],
                     [
                         "SCMI Driver",
                         "kng.driver.scmi_drv.test.exe"
+                    ],
+                    [
+                        "Sensor Fifo Driver",
+                        "kng.driver.sensor_fifo.test.exe"
                     ]
                 ],
             },
@@ -207,21 +207,21 @@
                 "key": "savedSvcUnitTest",
                 "options": [
                     [
-                        "Power Fuse",
-                        "power_fuse.test.exe"
-                    ],
-                    [
 
                         "Data Collection Service",
                         "kng.service.dcs.test.exe"
                     ],
                     [
-                        "Sensor Fifo Service",
-                        "service.sensor_fifo.test.exe"
-                    ],
-                    [
                         "Event Trace Relay Service",
                         "service.event_trace.relay.test.exe"
+                    ],
+                    [
+                        "Power Fuse",
+                        "power_fuse.test.exe"
+                    ],
+                    [
+                        "Sensor Fifo Service",
+                        "service.sensor_fifo.test.exe"
                     ],
                     [
                         "Telemetry Service - Data Proc Cmpnt",

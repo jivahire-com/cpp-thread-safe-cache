@@ -17,10 +17,13 @@ extern "C" {
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <data_collection_protocol.h>
 #include <data_collection_service.h>
+#include <data_collection_service_i.h>
 #include <dcp_service_client_i.h>
 #include <fpfw_status.h> // for FPFW_STATUS_SUCCESS, FPFW_...
-#include <stdint.h>      // for uint8_t
+#include <idsw_kng.h>
+#include <stdint.h> // for uint8_t
 #include <telemetry_relay_protocol.h>
+#include <tlm_relay_i.h>
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -324,9 +327,19 @@ TEST_FUNCTION(test_dcp_svc_client_handle_events_reset_msg, test_setup, nullptr)
     trp_msg_t trp_msg = {{0}};
     p_trp_msg_t p_trp_msg = &trp_msg;
 
+    // setup so tlm_relay_is_primary_instance() returns true
+    trp_icc_config_t icc_config = {0};
+    icc_config.this_die_id = 0;
+    icc_config.this_cpu_id = 3;
+    icc_config.number_of_endpoints = 0;
+    tlm_relay_init(&icc_config);
+
+    dcs_unregister_clients();
+
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
     trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_RESET;
 
+    // dcp_svc_client_handle_incoming_msgs() - setup reset message in the queue
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
     expect_any_always(__wrap__txe_queue_receive, wait_option);
@@ -335,9 +348,24 @@ TEST_FUNCTION(test_dcp_svc_client_handle_events_reset_msg, test_setup, nullptr)
     will_return(__wrap__txe_queue_receive, &p_trp_msg);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
+    // dcp_svc_client_handle_dcp_msg() - wait for clients to process
+    expect_function_calls(__wrap__tx_thread_sleep, 1);
+
+    // dcp_svc_client_handle_incoming_msgs() - block release
     expect_function_calls(__wrap__txe_block_release, 1);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    // dcp_svc_client_flush_incoming_queue() - no messages
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg_t));
+    will_return(__wrap__txe_queue_receive, &p_trp_msg);
+    will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
+
+    // dcs_flush_outgoing_queue()- no more messages
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg_t));
+    will_return(__wrap__txe_queue_receive, &p_trp_msg);
+    will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
+
+    // dcp_svc_client_handle_incoming_msgs()- no more messages
     will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg_t));
     will_return(__wrap__txe_queue_receive, &p_trp_msg);
     will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
@@ -421,4 +449,86 @@ TEST_FUNCTION(test_dcp_svc_client_handle_invalid_msg, test_setup, nullptr)
     will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
 
     dcp_svc_client_handle_incoming_msgs();
+}
+
+TEST_FUNCTION(test_dcp_svc_client_handle_dcp_msg, test_setup, nullptr)
+{
+    trp_msg_t trp_msg = {{0}};
+
+    // setup so tlm_relay_is_primary_instance() returns true
+    trp_icc_config->this_die_id = DIE_0;
+    trp_icc_config->this_cpu_id = CPU_MCP;
+
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
+    trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_CAPABILITIES;
+    trp_msg.payload.dcp_msg.hdr.msg_status = DCP_STATUS_E_BUSY;
+    trp_icc_config->number_of_routes = 0;
+
+    expect_function_calls(__wrap__txe_block_release, 1);
+    will_return(__wrap__txe_block_release, TX_POOL_ERROR);
+
+    dcp_svc_client_handle_dcp_msg(&trp_msg);
+}
+
+TEST_FUNCTION(test_dcp_svc_client_flush_incoming_queue, test_setup, nullptr)
+{
+    trp_msg_t trp_msg = {{0}};
+    // will cause tlm_relay_send_outgoing_msg to fail since no route set up in this test
+    trp_msg.hdr.dest_die_id = 0xAA;
+    trp_msg.hdr.dest_cpu_id = 0xbb;
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
+
+    p_trp_msg_t p_trp_msg = &trp_msg;
+
+    // valid path
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_any_always(__wrap__txe_queue_receive, wait_option);
+
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg));
+    will_return(__wrap__txe_queue_receive, &p_trp_msg);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    expect_function_calls(__wrap__txe_block_release, 1);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg));
+    will_return(__wrap__txe_queue_receive, &p_trp_msg);
+    will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
+
+    dcp_svc_client_flush_incoming_queue();
+
+    // trp_msg is nullptr
+
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg));
+    will_return(__wrap__txe_queue_receive, nullptr);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg));
+    will_return(__wrap__txe_queue_receive, &p_trp_msg);
+    will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
+
+    dcp_svc_client_flush_incoming_queue();
+
+    // tx_queue_receive has error
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg));
+    will_return(__wrap__txe_queue_receive, &p_trp_msg);
+    will_return(__wrap__txe_queue_receive, TX_QUEUE_ERROR);
+
+    dcp_svc_client_flush_incoming_queue();
+
+    // block release fails
+
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg));
+    will_return(__wrap__txe_queue_receive, &p_trp_msg);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    expect_function_calls(__wrap__txe_block_release, 1);
+    will_return(__wrap__txe_block_release, TX_POOL_ERROR);
+
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg));
+    will_return(__wrap__txe_queue_receive, &p_trp_msg);
+    will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
+
+    dcp_svc_client_flush_incoming_queue();
 }

@@ -86,6 +86,15 @@ void dcs_service_client_notification_from_drv_frmwk(void);
 void dcs_forward_trp_msg_to_client_from_drv_frmwk(p_trp_msg_t trp_msg);
 
 /**
+ * @brief   Forward TRP messages to all non DCP service clients. This is used when messages are sent to the DCS service
+ *         client and need to be routed to all of the active clients.
+ *
+ * @param[in] trp_msg - Pointer to the incoming TRP message
+ *
+ */
+void dcs_forward_trp_msg_to_all_non_dcp_svc_clients(p_trp_msg_t trp_msg);
+
+/**
  * @brief Allocate a block from the clients pool, queue the block and notify the client
  *
  * @param[in]  client_block_pool The block pool to allocate from
@@ -125,8 +134,33 @@ bool dcs_is_valid_trp_msg_from_drv_frmwk(p_trp_msg_t trp_msg);
 void dcs_queue_for_outbound_from_drv_frmwk(p_trp_msg_t trp_msg, bool swap_source_dest);
 
 /**
+ * @brief This api is called from the DCS thread and will block to send the message.
+ *
+ * @param[in] trp_msg The TRP message to send
+ * @param[in] swap_source_dest Swap the source and destination fields of the trp header
+ *
+ * @return none
+ */
+void dcs_send_outgoing_msg(p_trp_msg_t trp_msg, bool swap_source_dest);
+
+/**
  * @brief Empty the outbound queue and send the messages via ICC
  *
  * @return none
  */
 void dcs_handle_outbound_msgs(void);
+
+/**
+ * @brief Flush active messages for reset command
+ *
+ * @return none
+ */
+void dcs_flush_outgoing_queue(void);
+
+/**
+ * @brief UnRegister all DCS clients
+ *  Primarily a test api.
+ *
+ * @return none
+ */
+void dcs_unregister_clients(void);

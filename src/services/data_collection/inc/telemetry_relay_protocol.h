@@ -23,9 +23,17 @@
 
 /*--------- Function Prototypes ----------*/
 
+
 typedef enum {
-    TRP_BROADCAST_NONE                    = 0,
-    TRP_BROADCAST_ALL_DIES_MATCH_DEST_CPU = 1,
+    TRP_BROADCAST_NONE                         = 0,
+    // for broadcast to work correctly, the primary MCP instance
+    // must have routes defined for all secondary MCP instances
+    // The secondary MCP does not broadcast further
+    TRP_BROADCAST_PRIM_MCP_TO_SEC_MCP_ONLY     = 1,
+
+    // broadcast to secondary MCP and then to SCP on the same die
+    // if broadcast from the primary MCP, the message is also sent to the primary SCP
+    TRP_BROADCAST_TO_SEC_MCP_THEN_TO_SCP       = 2,
 } trp_broadcast_t;
 
 typedef enum {
@@ -35,6 +43,7 @@ typedef enum {
     TRP_STATUS_E_UNK_MSG            = -3,
     TRP_STATUS_E_UNK_CLIENT         = -4,
     TRP_STATUS_E_INCOMPLETE_HANDLER = -5,
+    TRP_STATUS_E_DCP_ERROR          = -6,
 } trp_status_t;
 
 typedef enum {
@@ -49,34 +58,6 @@ typedef enum {
 } trp_msg_id_t;
 
 typedef struct {
-    uint8_t source_die_id;      // KNG_DIE_ID
-    uint8_t source_cpu_id;      // KNG_CPU_TYPE
-    uint8_t dest_die_id;        // KNG_DIE_ID
-    uint8_t dest_cpu_id;        // KNG_CPU_TYPE
-    uint16_t dcp_client_id;     // dcp_client_id_t
-    uint16_t trp_msg_id;        // trp_msg_id_t
-    uint16_t trp_msg_status;    // trp_status_t
-    uint16_t source_seq_num;
-    uint16_t payload_size;
-} trp_msg_hdr_t, *p_trp_msg_hdr_t;
-
-typedef struct {
-    uint32_t rd_data_ddr_addr_offset; // offset from beginning of telemetry mapped DDR
-    uint32_t rd_data_size;
-} trp_msg_read_data_t;
-
-typedef struct{
-    trp_msg_hdr_t hdr;
-    union {
-        dcp_msg_t                       dcp_msg;  // TRP_MSG_ID_DCP_FORWARD
-        trp_msg_read_data_t             read_package; // TRP_MSG_ID_READ_PACKAGE
-        trp_msg_read_data_t             read_package_complete; // TRP_MSG_ID_READ_PACKAGE_COMPLETE
-        trp_msg_read_data_t             read_intercore_block_rsp; // TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE
-        trp_msg_read_data_t             read_intercore_block_complete; // TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE
-    } payload;
-} trp_msg_t, *p_trp_msg_t;
-
-typedef struct {
     fpfw_icc_base_ctx_t*   icc_base_ctx;
     fpfw_icc_base_recv_req_t async_recv_req; // allocation for control to receive messages, no need to initialize
     void* async_recv_buffer;        // buffer for actual icc message
@@ -85,7 +66,37 @@ typedef struct {
     uint32_t icc_payload_protocol;
 } trp_icc_endpoint_t, *p_trp_icc_endpoint_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
+    uint8_t source_die_id;              // KNG_DIE_ID
+    uint8_t source_cpu_id;              // KNG_CPU_TYPE
+    uint8_t dest_die_id;                // KNG_DIE_ID
+    uint8_t dest_cpu_id;                // KNG_CPU_TYPE
+    uint16_t dcp_client_id;             // dcp_client_id_t
+    uint16_t trp_msg_id;                // trp_msg_id_t
+    int16_t trp_msg_status;             // trp_status_t
+    uint16_t source_seq_num;
+    p_trp_icc_endpoint_t incoming_endpt;// needed for broadcast
+    uint16_t broadcast_type;            // trp_broadcast_t
+    uint16_t payload_size;
+} trp_msg_hdr_t, *p_trp_msg_hdr_t;
+
+typedef struct __attribute__((packed)) {
+    uint32_t rd_data_ddr_addr_offset; // offset from beginning of telemetry mapped DDR
+    uint32_t rd_data_size;
+} trp_msg_read_data_t;
+
+typedef struct __attribute__((packed)) {
+    trp_msg_hdr_t hdr;
+    union __attribute__((packed)) {
+        dcp_msg_t                       dcp_msg;  // TRP_MSG_ID_DCP_FORWARD
+        trp_msg_read_data_t             read_package; // TRP_MSG_ID_READ_PACKAGE
+        trp_msg_read_data_t             read_package_complete; // TRP_MSG_ID_READ_PACKAGE_COMPLETE
+        trp_msg_read_data_t             read_intercore_block_rsp; // TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE
+        trp_msg_read_data_t             read_intercore_block_complete; // TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE
+    } payload;
+} trp_msg_t, *p_trp_msg_t;
+
+typedef struct __attribute__((packed)) {
     uint8_t die_id; // KNG_DIE_ID
     uint8_t cpu_id; // KNG_CPU_TYPE
 } trp_dest_t, *p_trp_dest_t;

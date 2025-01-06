@@ -114,7 +114,7 @@ TEST_FUNCTION(test_dcs_register_client_bad_client, nullptr, nullptr)
 TEST_FUNCTION(test_dcs_queue_msg_from_drv_frmwk_sunny, test_setup, nullptr)
 {
     trp_msg_t src_trp_msg;
-    src_trp_msg.hdr.trp_msg_status = 0xABCD;
+    src_trp_msg.hdr.trp_msg_status = (int16_t)0xABCD;
 
     trp_msg_t dest_trp_msg = {{0}};
 
@@ -131,13 +131,13 @@ TEST_FUNCTION(test_dcs_queue_msg_from_drv_frmwk_sunny, test_setup, nullptr)
 
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
     // verifies source was copied to the allocated destination block
-    assert_int_equal(dest_trp_msg.hdr.trp_msg_status, 0xABCD);
+    assert_int_equal(dest_trp_msg.hdr.trp_msg_status, (int16_t)0xABCD);
 }
 
 TEST_FUNCTION(test_dcs_queue_msg_from_drv_frmwk_out_of_mem, test_setup, nullptr)
 {
     trp_msg_t src_trp_msg;
-    src_trp_msg.hdr.trp_msg_status = 0xABCD;
+    src_trp_msg.hdr.trp_msg_status = (int16_t)0xABCD;
 
     trp_msg_t dest_trp_msg = {{0}};
 
@@ -161,7 +161,7 @@ TEST_FUNCTION(test_dcs_queue_msg_from_drv_frmwk_out_of_mem, test_setup, nullptr)
 TEST_FUNCTION(test_dcs_queue_msg_from_drv_frmwk_queue_fail, test_setup, nullptr)
 {
     trp_msg_t src_trp_msg;
-    src_trp_msg.hdr.trp_msg_status = 0xABCD;
+    src_trp_msg.hdr.trp_msg_status = (int16_t)0xABCD;
 
     trp_msg_t dest_trp_msg = {{0}};
 
@@ -265,7 +265,7 @@ TEST_FUNCTION(test_dcs_is_valid_trp_msg_from_drv_frmwk_valid, test_setup, nullpt
     bool valid = dcs_is_valid_trp_msg_from_drv_frmwk(&trp_msg);
 
     assert_int_equal(valid, true);
-    assert_int_equal(trp_msg.hdr.trp_msg_status, (uint16_t)TRP_STATUS_SUCCESS);
+    assert_int_equal(trp_msg.hdr.trp_msg_status, (int16_t)TRP_STATUS_SUCCESS);
 
     trp_msg.hdr.dcp_client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_PACKAGE_COMPLETE;
@@ -274,7 +274,7 @@ TEST_FUNCTION(test_dcs_is_valid_trp_msg_from_drv_frmwk_valid, test_setup, nullpt
     valid = dcs_is_valid_trp_msg_from_drv_frmwk(&trp_msg);
 
     assert_int_equal(valid, true);
-    assert_int_equal(trp_msg.hdr.trp_msg_status, (uint16_t)TRP_STATUS_SUCCESS);
+    assert_int_equal(trp_msg.hdr.trp_msg_status, (int16_t)TRP_STATUS_SUCCESS);
 
     trp_msg.hdr.dcp_client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_INTERCORE_BLOCK;
@@ -283,7 +283,7 @@ TEST_FUNCTION(test_dcs_is_valid_trp_msg_from_drv_frmwk_valid, test_setup, nullpt
     valid = dcs_is_valid_trp_msg_from_drv_frmwk(&trp_msg);
 
     assert_int_equal(valid, true);
-    assert_int_equal(trp_msg.hdr.trp_msg_status, (uint16_t)TRP_STATUS_SUCCESS);
+    assert_int_equal(trp_msg.hdr.trp_msg_status, (int16_t)TRP_STATUS_SUCCESS);
 
     trp_msg.hdr.dcp_client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE;
@@ -292,7 +292,7 @@ TEST_FUNCTION(test_dcs_is_valid_trp_msg_from_drv_frmwk_valid, test_setup, nullpt
     valid = dcs_is_valid_trp_msg_from_drv_frmwk(&trp_msg);
 
     assert_int_equal(valid, true);
-    assert_int_equal(trp_msg.hdr.trp_msg_status, (uint16_t)TRP_STATUS_SUCCESS);
+    assert_int_equal(trp_msg.hdr.trp_msg_status, (int16_t)TRP_STATUS_SUCCESS);
 
     trp_msg.hdr.dcp_client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE;
@@ -301,7 +301,7 @@ TEST_FUNCTION(test_dcs_is_valid_trp_msg_from_drv_frmwk_valid, test_setup, nullpt
     valid = dcs_is_valid_trp_msg_from_drv_frmwk(&trp_msg);
 
     assert_int_equal(valid, true);
-    assert_int_equal(trp_msg.hdr.trp_msg_status, (uint16_t)TRP_STATUS_SUCCESS);
+    assert_int_equal(trp_msg.hdr.trp_msg_status, (int16_t)TRP_STATUS_SUCCESS);
 }
 
 TEST_FUNCTION(test_dcs_is_valid_trp_msg_from_drv_frmwk_notvalid, test_setup, nullptr)
@@ -316,7 +316,7 @@ TEST_FUNCTION(test_dcs_is_valid_trp_msg_from_drv_frmwk_notvalid, test_setup, nul
     bool valid = dcs_is_valid_trp_msg_from_drv_frmwk(&trp_msg);
 
     assert_int_equal(valid, false);
-    assert_int_equal(trp_msg.hdr.trp_msg_status, (uint16_t)TRP_STATUS_E_SIZE);
+    assert_int_equal(trp_msg.hdr.trp_msg_status, (int16_t)TRP_STATUS_E_SIZE);
 
     // test unknown client
     trp_msg.hdr.dcp_client_id = DCP_CLIENT_ID_MAX;
@@ -326,7 +326,7 @@ TEST_FUNCTION(test_dcs_is_valid_trp_msg_from_drv_frmwk_notvalid, test_setup, nul
     valid = dcs_is_valid_trp_msg_from_drv_frmwk(&trp_msg);
 
     assert_int_equal(valid, false);
-    assert_int_equal(trp_msg.hdr.trp_msg_status, (uint16_t)TRP_STATUS_E_UNK_CLIENT);
+    assert_int_equal(trp_msg.hdr.trp_msg_status, (int16_t)TRP_STATUS_E_UNK_CLIENT);
 
     // test unregistered client
     trp_msg.hdr.dcp_client_id = DCP_CLIENT_ID_EVENT_TRACE;
@@ -336,7 +336,7 @@ TEST_FUNCTION(test_dcs_is_valid_trp_msg_from_drv_frmwk_notvalid, test_setup, nul
     valid = dcs_is_valid_trp_msg_from_drv_frmwk(&trp_msg);
 
     assert_int_equal(valid, false);
-    assert_int_equal(trp_msg.hdr.trp_msg_status, (uint16_t)TRP_STATUS_E_UNK_CLIENT);
+    assert_int_equal(trp_msg.hdr.trp_msg_status, (int16_t)TRP_STATUS_E_UNK_CLIENT);
 
     // test unknown message
     trp_msg.hdr.dcp_client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
@@ -346,7 +346,7 @@ TEST_FUNCTION(test_dcs_is_valid_trp_msg_from_drv_frmwk_notvalid, test_setup, nul
     valid = dcs_is_valid_trp_msg_from_drv_frmwk(&trp_msg);
 
     assert_int_equal(valid, false);
-    assert_int_equal(trp_msg.hdr.trp_msg_status, (uint16_t)TRP_STATUS_E_UNK_MSG);
+    assert_int_equal(trp_msg.hdr.trp_msg_status, (int16_t)TRP_STATUS_E_UNK_MSG);
 }
 
 TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_valid, test_setup, nullptr)
@@ -360,7 +360,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_valid, test_setup, nullpt
 
     bool valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, true);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_SUCCESS);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_SUCCESS);
 
     // DCP_MSG_ID_GET_STATE
     dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
@@ -369,7 +369,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_valid, test_setup, nullpt
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, true);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_SUCCESS);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_SUCCESS);
 
     // DCP_MSG_ID_GET_SCHEMA
     dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
@@ -378,7 +378,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_valid, test_setup, nullpt
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, true);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_SUCCESS);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_SUCCESS);
 
     // DCP_MSG_ID_READ_DATA
     dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
@@ -387,7 +387,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_valid, test_setup, nullpt
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, true);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_SUCCESS);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_SUCCESS);
 
     // DCP_MSG_ID_RESET
     dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
@@ -396,7 +396,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_valid, test_setup, nullpt
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, true);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_SUCCESS);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_SUCCESS);
 
     // DCP_MSG_ID_GET_PLAT_INFO
     dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
@@ -405,7 +405,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_valid, test_setup, nullpt
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, true);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_SUCCESS);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_SUCCESS);
 
     // DCP_MSG_ID_EVENTS_ENABLE_DISABLE
     //  events are 4 bytes per event, and number of events is 2 bytes
@@ -416,7 +416,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_valid, test_setup, nullpt
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, true);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_SUCCESS);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_SUCCESS);
 
     // DCP_MSG_ID_START_STOP
     dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
@@ -425,7 +425,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_valid, test_setup, nullpt
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, true);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_SUCCESS);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_SUCCESS);
 
     // DCP_MSG_ID_READ_DATA_COMPLETE
     dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
@@ -434,7 +434,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_valid, test_setup, nullpt
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, true);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_SUCCESS);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_SUCCESS);
 }
 
 TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_invalid, test_setup, nullptr)
@@ -448,7 +448,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_invalid, test_setup, null
 
     bool valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, false);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_E_UNK_CLIENT);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_E_UNK_CLIENT);
 
     // unregistered client
     dcp_msg.hdr.client_id = DCP_CLIENT_ID_EVENT_TRACE;
@@ -457,7 +457,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_invalid, test_setup, null
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, false);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_E_UNK_CLIENT);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_E_UNK_CLIENT);
 
     // DCP_MSG_ID_GET_CAPABILITIES bad size
     dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
@@ -466,7 +466,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_invalid, test_setup, null
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, false);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_E_SIZE);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_E_SIZE);
 
     // DCP_MSG_ID_EVENTS_ENABLE_DISABLE bad size
     dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
@@ -476,7 +476,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_invalid, test_setup, null
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, false);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_E_SIZE);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_E_SIZE);
 
     // DCP_MSG_ID_START_STOP bad size
     dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
@@ -485,7 +485,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_invalid, test_setup, null
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, false);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_E_SIZE);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_E_SIZE);
 
     // DCP_MSG_ID_READ_DATA_COMPLETE bad size
     dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
@@ -494,7 +494,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_invalid, test_setup, null
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, false);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_E_SIZE);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_E_SIZE);
 }
 
 TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_deprecated, test_setup, nullptr)
@@ -508,7 +508,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_deprecated, test_setup, n
 
     bool valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, false);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_E_DEPRECATED_MSG);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_E_DEPRECATED_MSG);
 
     // DCP_MSG_ID_STOP
     dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
@@ -517,7 +517,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_deprecated, test_setup, n
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, false);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_E_DEPRECATED_MSG);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_E_DEPRECATED_MSG);
 
     // DCP_MSG_ID_UTC_SYNC
     dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
@@ -526,7 +526,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_deprecated, test_setup, n
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, false);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_E_DEPRECATED_MSG);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_E_DEPRECATED_MSG);
 
     // unknown message
     dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
@@ -535,7 +535,7 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_deprecated, test_setup, n
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);
     assert_int_equal(valid, false);
-    assert_int_equal(dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_E_UNK_MSG);
+    assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_E_UNK_MSG);
 }
 
 TEST_FUNCTION(test_dcs_service_client_notification_from_drv_frmwk, test_setup, nullptr)
@@ -658,8 +658,8 @@ TEST_FUNCTION(test_dcs_forward_trp_msg_to_client_from_drv_frmwk_dcp_incomplete, 
 
     dcs_forward_trp_msg_to_client_from_drv_frmwk(&trp_msg);
 
-    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, (uint16_t)DCP_STATUS_E_INCOMPLETE_HANDLER);
-    assert_int_equal(trp_msg.hdr.trp_msg_status, (uint16_t)TRP_STATUS_E_INCOMPLETE_HANDLER);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_E_INCOMPLETE_HANDLER);
+    assert_int_equal(trp_msg.hdr.trp_msg_status, (int16_t)TRP_STATUS_E_INCOMPLETE_HANDLER);
 
     // does swap on failure
     assert_int_equal(trp_msg.hdr.source_die_id, 0xDD);
@@ -768,4 +768,99 @@ TEST_FUNCTION(test_dcs_handle_outbound_msgs_queue_null_fail, test_setup, nullptr
     will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
 
     dcs_handle_outbound_msgs();
+}
+
+TEST_FUNCTION(test_dcs_forward_trp_msg_to_all_non_dcp_svc_clients, test_setup, nullptr)
+{
+    trp_msg_t trp_msg = {{0}};
+    trp_msg.hdr.source_die_id = 0xAA;
+    trp_msg.hdr.source_cpu_id = 0xA2;
+    trp_msg.hdr.dest_die_id = 0xDD;
+    trp_msg.hdr.dest_cpu_id = 0xD2;
+
+    trp_msg_t dest_trp_msg = {{0}};
+
+    // fail to queue message
+    expect_function_calls(__wrap__txe_block_allocate, 1);
+    will_return(__wrap__txe_block_allocate, nullptr); // mocks the block allocate location
+    will_return(__wrap__txe_block_allocate, TX_POOL_ERROR);
+
+    dcs_forward_trp_msg_to_all_non_dcp_svc_clients(&trp_msg);
+
+    // queue message successful
+    expect_function_calls(__wrap__txe_block_allocate, 1);
+    will_return(__wrap__txe_block_allocate, &dest_trp_msg); // mocks the block allocate location
+    will_return(__wrap__txe_block_allocate, TX_SUCCESS);
+
+    expect_any_always(__wrap__txe_queue_send, queue_ptr);
+    expect_any_always(__wrap__txe_queue_send, source_ptr);
+    expect_value(__wrap__txe_queue_send, wait_option, TX_NO_WAIT);
+    will_return(__wrap__txe_queue_send, TX_SUCCESS);
+
+    expect_function_calls(notify_dcs_client_from_drv_frmwk, 1);
+
+    dcs_forward_trp_msg_to_all_non_dcp_svc_clients(&trp_msg);
+}
+
+TEST_FUNCTION(test_dcs_flush_outgoing_queue, test_setup, nullptr)
+{
+    trp_msg_t trp_msg = {{0}};
+    // will cause tlm_relay_send_outgoing_msg to fail since no route set up in this test
+    trp_msg.hdr.dest_die_id = 0xAA;
+    trp_msg.hdr.dest_cpu_id = 0xbb;
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
+
+    p_trp_msg_t p_trp_msg = &trp_msg;
+
+    // valid path
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_any_always(__wrap__txe_queue_receive, wait_option);
+
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg));
+    will_return(__wrap__txe_queue_receive, &p_trp_msg);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    expect_function_calls(__wrap__txe_block_release, 1);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg));
+    will_return(__wrap__txe_queue_receive, &p_trp_msg);
+    will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
+
+    dcs_flush_outgoing_queue();
+
+    // trp_msg is nullptr
+
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg));
+    will_return(__wrap__txe_queue_receive, nullptr);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg));
+    will_return(__wrap__txe_queue_receive, &p_trp_msg);
+    will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
+
+    dcs_flush_outgoing_queue();
+
+    // tx_queue_receive has error
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg));
+    will_return(__wrap__txe_queue_receive, &p_trp_msg);
+    will_return(__wrap__txe_queue_receive, TX_QUEUE_ERROR);
+
+    dcs_flush_outgoing_queue();
+
+    // block release fails
+
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg));
+    will_return(__wrap__txe_queue_receive, &p_trp_msg);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    expect_function_calls(__wrap__txe_block_release, 1);
+    will_return(__wrap__txe_block_release, TX_POOL_ERROR);
+
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg));
+    will_return(__wrap__txe_queue_receive, &p_trp_msg);
+    will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
+
+    dcs_flush_outgoing_queue();
 }

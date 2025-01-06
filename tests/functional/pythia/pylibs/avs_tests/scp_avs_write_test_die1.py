@@ -69,6 +69,7 @@ class scp_avs_write_test_die1(EchoFallsBaseTest):
             #        time.sleep(30)
             self.log.info("TODO BIGFPGA/RVP AVS tests")
             self.dut.teardown()
+            time.sleep(30)
             return True
         
         elif (self.dut.get_dut_type() == DeviceType.SVP):
@@ -80,6 +81,7 @@ class scp_avs_write_test_die1(EchoFallsBaseTest):
         else:
             self.log.error("Unsupported DUT type")
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         try:
@@ -89,6 +91,7 @@ class scp_avs_write_test_die1(EchoFallsBaseTest):
             self.log.error(f"Error reading self.dut.mb.node_0.soc.secondary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="HeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
        
         #Turn off the power loops for AVS read!!!
@@ -101,6 +104,7 @@ class scp_avs_write_test_die1(EchoFallsBaseTest):
             self.log.error(f"Error writing power loop disable: {e}")
             self.test_notify(step="Power loop disable", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         command_entries = [{"bus_rail_cmd": "0 0 0", "voltage_mv": 877}, {"bus_rail_cmd": "0 1 0", "voltage_mv": 1001}]
@@ -115,6 +119,7 @@ class scp_avs_write_test_die1(EchoFallsBaseTest):
                 self.log.error(f"Error writing AVS volt. Die1: {e}")
                 self.test_notify(step="AVS Write volt.", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
+                time.sleep(30)
                 return False 
             matches = re.search(".*AVS volt\. = ([0-9|\.]+)\n", command_response_cli)            
             val = float(matches.group(1))
@@ -122,6 +127,7 @@ class scp_avs_write_test_die1(EchoFallsBaseTest):
                 self.log.error(f"AVS voltage not in range 0.01V - 1.5V: {val}")
                 self.test_notify(step="AVS volt. out of range", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
+                time.sleep(30)
                 return False
             self.log.info(f"matches: {matches}")
             self.log.info(f"AVS voltage is: {val}")
@@ -132,8 +138,10 @@ class scp_avs_write_test_die1(EchoFallsBaseTest):
                 self.log.error(f"AVS voltage is not equal to {volt}. {volt} != {val}")
                 self.test_notify(step=f"AVS voltage is not equal to {volt}", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
+                time.sleep(30)
                 return False
 
         self.test_notify(step="AVS write Die1", msg="Test Done", _is_error=False)
         self.dut.teardown()
+        time.sleep(30)
         return True

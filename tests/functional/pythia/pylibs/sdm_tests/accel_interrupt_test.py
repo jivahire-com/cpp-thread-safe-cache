@@ -345,6 +345,7 @@ class accel_interrupt_test(EchoFallsBaseTest):
                     f.write(f"{pt}")
             if(dut_setup):
                 self.dut.teardown()
+                time.sleep(30)
 
     def get_start_end_bits(self, bits):
         """

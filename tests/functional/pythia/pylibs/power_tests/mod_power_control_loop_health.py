@@ -75,6 +75,7 @@ class mod_power_control_loop_health(EchoFallsBaseTest):
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         self.log.info("Submitting power control loop health status command . . .") 
@@ -87,9 +88,11 @@ class mod_power_control_loop_health(EchoFallsBaseTest):
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power control loop health status: Fail", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
             
         self.test_notify(step="Power control loop health status", msg="Test Done", _is_error=False)
         self.dut.teardown()
+        time.sleep(30)
 
         return True

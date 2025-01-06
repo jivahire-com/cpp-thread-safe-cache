@@ -3,7 +3,7 @@
 sensor_fifo_cli_test.py - Python based Pythia 2.0 Test.
 Tests that check for sensor fifo cli command helper output.
 """
-
+import time
 import sys, os
 from pathlib import Path
 from typing import Union, List, Dict, Optional
@@ -341,6 +341,7 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         try:
             self.log.info("Tearing down DUT...")
             self.dut.teardown()
+            time.sleep(30)
             return True
         except Exception as e:
             self.log.error(f"Error during DUT teardown: {str(e)}")

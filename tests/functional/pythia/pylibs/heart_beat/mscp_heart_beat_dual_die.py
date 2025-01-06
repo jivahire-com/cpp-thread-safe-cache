@@ -78,6 +78,7 @@ class mscp_heart_beat_dual_die(EchoFallsBaseTest):
             # If connection does not open then SVP didn't launch or FPGA system has a conflict booking. So teardown and return fail
             if not connection["channel"].get_current_channel().is_open():
                 self.dut.teardown()
+                time.sleep(30)
                 return False
         
         for connection in connections:
@@ -90,9 +91,11 @@ class mscp_heart_beat_dual_die(EchoFallsBaseTest):
                 self.log.error(f"Error reading {connection['entity']} UART: {e}")
                 self.test_notify(step="HeartBeat", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
+                time.sleep(30)
                 return False
 
         self.test_notify(step="HeartBeat", msg="Test Done", _is_error=False)
         self.dut.teardown()
+        time.sleep(30)
 
         return True

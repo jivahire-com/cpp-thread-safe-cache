@@ -75,6 +75,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="Boot complete", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
         
         self.log.info("Submitting power module pwr set cap command . . .") 
@@ -86,6 +87,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr set cap cmd status: Fail", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
         
         pattern = re.compile(r"pwr_set cap: current - (\d{1}W)")
@@ -98,6 +100,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             self.log.error(f"Power cap set to: {val}W")
             self.test_notify(step="Power cap not set successfully", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
         
         time.sleep(20)
@@ -111,6 +114,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr set nominal cmd status: Fail", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
                 
         pattern = re.compile(r"nominal pstate: (\w+) \(previous (\w+)\)")
@@ -124,6 +128,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             self.log.error(f"pstate set to: {current_pstate}")
             self.test_notify(step="Nominal pstate not set successfully", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         self.log.info("Submitting power module pwr set cap command . . .") 
@@ -135,6 +140,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr set cap cmd status: Fail", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
         
         pattern = re.compile(r"pwr_set cap: current - (\d{1}W)")
@@ -147,6 +153,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             self.log.error(f"Power cap set to: {val}W")
             self.test_notify(step="Power cap not set successfully", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
         
 
@@ -161,6 +168,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr cfg allowed_max_plimit cmd status: Fail", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         self.log.info("Submitting power module pwr cfg knobs ctrlloop command . . .") 
@@ -172,6 +180,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr cfg knobs ctrlloop cmd status: Fail", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
         
         self.log.info("Submitting power module pwr set cap command . . .") 
@@ -183,6 +192,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr set cap cmd status: Fail", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
         
         pattern = re.compile(r"pwr_set cap: current - (\d{5}W)")
@@ -195,6 +205,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             self.log.error(f"Power cap set to: {val}W")
             self.test_notify(step="Power cap not set successfully", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
         
         command="pwr set desired 0 5 0"
@@ -205,6 +216,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr set desired cmd status: Fail", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         pattern = re.compile(r"pwr set desired: core - (\d+)")
@@ -217,10 +229,12 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             self.log.error(f"Desired pstate not set for core 0")
             self.test_notify(step="Desired pstate not set for core 0", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
         
         core_com_channel.close()
         self.test_notify(step="Power module functional tests complete", msg="Test Done", _is_error=False)
         self.dut.teardown()
+        time.sleep(30)
 
         return True

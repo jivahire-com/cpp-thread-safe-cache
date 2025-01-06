@@ -4,7 +4,7 @@
 - Python based Pythia 2.0 Test.
 - Test that checks for Large FIFO Mailbox SDM SCP SEND RECV Command.
 """
-
+import time
 import sys, os
 from pathlib import Path
 
@@ -71,6 +71,7 @@ class largefifo_mailbox_cli_sdm_scp_test_send_recv(EchoFallsBaseTest):
             # TODO:  No Support. Pranjal to update status and its ADO reference
             self.log.info("TODO SVP Send Recv Tests")
             self.dut.teardown()
+            time.sleep(30)
             return True
          
         scp_channel = scp_connection.get_current_channel()
@@ -83,6 +84,7 @@ class largefifo_mailbox_cli_sdm_scp_test_send_recv(EchoFallsBaseTest):
             sdm_channel.close()
             self.test_notify(step="Open_Channels", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
         
         try:
@@ -92,6 +94,7 @@ class largefifo_mailbox_cli_sdm_scp_test_send_recv(EchoFallsBaseTest):
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         # Submit commands on SDM channel to receive request from SCP
@@ -106,6 +109,7 @@ class largefifo_mailbox_cli_sdm_scp_test_send_recv(EchoFallsBaseTest):
             sdm_channel.close()
             self.test_notify(step="Large FIFO MBX SEND RECV Command", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
         
         # Close channels after completion
@@ -113,6 +117,7 @@ class largefifo_mailbox_cli_sdm_scp_test_send_recv(EchoFallsBaseTest):
         sdm_channel.close()
         self.test_notify(step="Large FIFO MBX SEND RECV Command", msg="Test Done", _is_error=False)
         self.dut.teardown()
+        time.sleep(30)
         return True
     
     def _open_channels(self, *channels):

@@ -80,6 +80,7 @@ class fbc_sdm_cded_heart_beat_single_die(EchoFallsBaseTest):
         scp_channel.open()
         if not scp_channel.is_open():
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         try:
@@ -88,6 +89,7 @@ class fbc_sdm_cded_heart_beat_single_die(EchoFallsBaseTest):
         except Exception as e:
             self.log.error(f"Error reading SCP UART: {e}")
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         # Execute AFM scripts to map SDM and CDED-SDM connections
@@ -99,6 +101,7 @@ class fbc_sdm_cded_heart_beat_single_die(EchoFallsBaseTest):
         sdm_channel.open()
         if not sdm_channel.is_open():
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         # Open CDED-SDM connection
@@ -106,6 +109,7 @@ class fbc_sdm_cded_heart_beat_single_die(EchoFallsBaseTest):
         sdm_cded_channel.open()
         if not sdm_cded_channel.is_open():
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         self.log.info("Reading SDM UART for HeartBeat . . .")
@@ -116,6 +120,7 @@ class fbc_sdm_cded_heart_beat_single_die(EchoFallsBaseTest):
             sdm_channel.close()
             self.test_notify(step="HeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         self.log.info("Reading CDED-SDM UART for HeartBeat . . .")
@@ -126,6 +131,7 @@ class fbc_sdm_cded_heart_beat_single_die(EchoFallsBaseTest):
             sdm_cded_channel.close()
             self.test_notify(step="HeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         # Close all channels after reading heartbeats
@@ -134,5 +140,6 @@ class fbc_sdm_cded_heart_beat_single_die(EchoFallsBaseTest):
         scp_channel.close()
         self.test_notify(step="HeartBeat", msg="Test Done", _is_error=False)
         self.dut.teardown()
+        time.sleep(30)
 
         return True

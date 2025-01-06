@@ -75,12 +75,14 @@ class mscp_heart_beat(EchoFallsBaseTest):
         # If connection does not open then SVP didn't launch or FPGA system has a conflict booking. So teardown and return fail
         if not scp_connection.get_current_channel().is_open():
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         mcp_connection.get_current_channel().open()
         # If connection does not open then SVP didn't launch or FPGA system has a conflict booking. So teardown and return fail
         if not mcp_connection.get_current_channel().is_open():
             self.dut.teardown()
+            time.sleep(30)
             return False
 
 
@@ -93,6 +95,7 @@ class mscp_heart_beat(EchoFallsBaseTest):
             scp_connection.get_current_channel().close()
             self.test_notify(step="HeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         self.log.info("Reading MCP UART for HeartBeat . . .")
@@ -104,11 +107,13 @@ class mscp_heart_beat(EchoFallsBaseTest):
             mcp_connection.get_current_channel().close()
             self.test_notify(step="HeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         scp_connection.get_current_channel().close()
         mcp_connection.get_current_channel().close()
         self.test_notify(step="HeartBeat", msg="Test Done", _is_error=False)
         self.dut.teardown()
+        time.sleep(30)
 
         return True

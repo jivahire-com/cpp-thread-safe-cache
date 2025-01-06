@@ -4,6 +4,7 @@
 - Python based Pythia 2.0 Test.
 - Test that checks the GPIO driver functionalities in MSCP.
 """
+import time
 import sys, os, re, json, time
 from pathlib import Path
 
@@ -79,6 +80,7 @@ class gpio_driver_test(EchoFallsBaseTest):
             self.log.error("GPIO configuration not loaded")
             self.test_notify(step="InvalidTestConfig", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         #
@@ -105,6 +107,7 @@ class gpio_driver_test(EchoFallsBaseTest):
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         self.log.info("Reading MCP UART for HeartBeat . . .")
@@ -114,6 +117,7 @@ class gpio_driver_test(EchoFallsBaseTest):
             self.log.error(f"Error reading MCP UART: {e}")
             self.test_notify(step="McpHeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
         
         for core_name, core in self.cores.items():
@@ -134,6 +138,7 @@ class gpio_driver_test(EchoFallsBaseTest):
                         self.log.error(f"{e}")
                         self.test_notify(step=f"{core_name}_PinConfig", msg="Test Fail", _is_error=True)
                         self.dut.teardown()
+                        time.sleep(30)
                         return False
 
             # Test GPIO ISR to test GPIO driver ISR functionality with reserved Pins
@@ -143,6 +148,7 @@ class gpio_driver_test(EchoFallsBaseTest):
                 self.log.error(f"{e}")
                 self.test_notify(step=f"{core_name}_GPIO_ISR", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
+                time.sleep(30)
                 return False
 
         self.log.info("Test passed")
@@ -151,6 +157,7 @@ class gpio_driver_test(EchoFallsBaseTest):
         self.test_notify(step="GPIO Driver test", msg="Test Done", _is_error=False)
         # Call the DUT teardown
         self.dut.teardown()
+        time.sleep(30)
         return True
 
     def test_pin_configuration(self, core, ctrl_id, pin_id, pin_direction, pin_interrupt):

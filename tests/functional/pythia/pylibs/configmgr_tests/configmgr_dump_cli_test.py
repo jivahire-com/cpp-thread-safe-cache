@@ -4,7 +4,7 @@
 - Python based Pythia 2.0 Test.
 - Test that checks for Config Manager CLI Dump Command.
 """
-
+import time
 import sys, os
 from pathlib import Path
 
@@ -73,6 +73,7 @@ class configmgr_dump_cli_test(EchoFallsBaseTest):
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         self.log.info("Submitting Config Manager Dump command . . .")
@@ -87,6 +88,7 @@ class configmgr_dump_cli_test(EchoFallsBaseTest):
         core_com_channel.close()
         self.test_notify(step="Config Manager DUMP Command", msg="Test Done", _is_error=False)
         self.dut.teardown()
+        time.sleep(30)
 
         return True
     
@@ -102,5 +104,6 @@ class configmgr_dump_cli_test(EchoFallsBaseTest):
             core_com_channel.close()
             self.test_notify(step="Config Manager DUMP Command", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
         return True

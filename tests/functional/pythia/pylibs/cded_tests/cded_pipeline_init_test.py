@@ -79,5 +79,6 @@ class cded_pipeline_init_test(EchoFallsBaseTest):
 
         self.test_notify(step="CDED PORT Virtual Pipeline configuration(s) Init test", msg="Test Done", _is_error=not(test_result))
         self.dut.teardown()
+        time.sleep(30)
 
         return test_result

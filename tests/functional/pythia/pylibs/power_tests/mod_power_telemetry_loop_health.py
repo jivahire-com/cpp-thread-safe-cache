@@ -75,6 +75,7 @@ class mod_power_telemetry_loop_health(EchoFallsBaseTest):
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="Boot complete", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
         
         self.log.info("Waiting for at least two telemetry iterations to complete . . .") 
@@ -91,10 +92,12 @@ class mod_power_telemetry_loop_health(EchoFallsBaseTest):
                 self.log.error(f"Error reading SCP UART: {e}")
                 self.test_notify(step="Power module pwr status <args> cmd status: Fail", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
+                time.sleep(30)
                 return False
         
         core_com_channel.close()
         self.test_notify(step="Power module functional tests complete", msg="Test Done", _is_error=False)
         self.dut.teardown()
+        time.sleep(30)
 
         return True

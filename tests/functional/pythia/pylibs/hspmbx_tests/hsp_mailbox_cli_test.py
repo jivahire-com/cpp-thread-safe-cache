@@ -4,7 +4,7 @@
 - Python based Pythia 2.0 Test.
 - Test that checks for HSP Mailbox ECHO Command.
 """
-
+import time
 import sys, os
 from pathlib import Path
 
@@ -73,6 +73,7 @@ class hsp_mailbox_cli_test(EchoFallsBaseTest):
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         self.log.info("Submitting MSP Mailbox ECHO command . . .") 
@@ -94,10 +95,12 @@ class hsp_mailbox_cli_test(EchoFallsBaseTest):
                 core_com_channel.close()
                 self.test_notify(step="HSPMBX ECHO Command", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
+                time.sleep(30)
                 return False
             
         core_com_channel.close()
         self.test_notify(step="HSPMBX ECHO Command", msg="Test Done", _is_error=False)
         self.dut.teardown()
+        time.sleep(30)
 
         return True

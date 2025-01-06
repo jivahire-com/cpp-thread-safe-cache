@@ -69,6 +69,7 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
             #        time.sleep(30)
             self.log.info("TODO BIGFPGA/RVP AVS tests")
             self.dut.teardown()
+            time.sleep(30)
             return True
         
         core_com_channel=self.dut.mb.node_0.soc.secondary_die.scp.channel_manager.get_current_channel()
@@ -82,6 +83,7 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
             self.log.error(f"Error reading self.dut.mb.node_0.soc.secondary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="HeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         connection = self.dut.mb.node_0.soc.secondary_die.scp.channel_manager
@@ -97,6 +99,7 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
                 self.log.error(f"Error reading AVS volt. Die1: {e}")
                 self.test_notify(step="AVS Read volt.", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
+                time.sleep(30)
                 return False 
             matches = re.search(".*AVS volt\. = ([0-9|\.]+)\n", command_response_cli)
             val = float(matches.group(1))
@@ -104,6 +107,7 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
                 self.log.error(f"AVS voltage not in range 0.01V - 1.5V: {val}")
                 self.test_notify(step="AVS volt. out of range", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
+                time.sleep(30)
                 return False
             self.log.info(f"matches: {matches}")
             self.log.info(f"AVS voltage is: {val}")
@@ -119,6 +123,7 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
                 self.log.error(f"Error reading AVS current Die1: {e}")
                 self.test_notify(step="AVS Read current", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
+                time.sleep(30)
                 return False
 
         self.log.info(f"Reading AVS temp. Die1 . . .\n")
@@ -132,8 +137,10 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
                 self.log.error(f"Error reading AVS temperature Die1: {e}")
                 self.test_notify(step="AVS Read temperature", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
+                time.sleep(30)
                 return False
             
         self.test_notify(step="AVS read Die1", msg="Test Done", _is_error=False)
         self.dut.teardown()
+        time.sleep(30)
         return True

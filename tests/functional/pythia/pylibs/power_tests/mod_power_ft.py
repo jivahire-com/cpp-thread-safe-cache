@@ -75,6 +75,7 @@ class mod_power_ft(EchoFallsBaseTest):
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="Boot complete", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         self.log.info("Submitting power module pwr set nominal command . . .")
@@ -86,6 +87,7 @@ class mod_power_ft(EchoFallsBaseTest):
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr set nominal cmd status: Fail", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         pattern = re.compile(r"nominal pstate: (\w+) \(previous (\w+)\)")
@@ -99,6 +101,7 @@ class mod_power_ft(EchoFallsBaseTest):
             self.log.error(f"pstate set to: {current_pstate}")
             self.test_notify(step="Nominal pstate not set successfully", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         self.log.info("Submitting power module pwr cfg <args> commands . . .")
@@ -112,6 +115,7 @@ class mod_power_ft(EchoFallsBaseTest):
                 self.log.error(f"Error reading SCP UART: {e}")
                 self.test_notify(step="Power module pwr cfg <args> cmd status: Fail", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
+                time.sleep(30)
                 return False
 
 
@@ -124,6 +128,7 @@ class mod_power_ft(EchoFallsBaseTest):
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr set cap cmd status: Fail", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         pattern = re.compile(r"pwr_set cap: current - (\d{5}W)")
@@ -136,6 +141,7 @@ class mod_power_ft(EchoFallsBaseTest):
             self.log.error(f"Power cap set to: {val}W")
             self.test_notify(step="Power cap not set successfully", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         command="pwr set minupdate 0"
@@ -146,6 +152,7 @@ class mod_power_ft(EchoFallsBaseTest):
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr set desired cmd status: Fail", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         pattern = re.compile(r"min_plimit_update: (\d+)")
@@ -158,6 +165,7 @@ class mod_power_ft(EchoFallsBaseTest):
             self.log.error(f"Min plimit update not set")
             self.test_notify(step="Min plimit update not set", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         command="pwr set plimit 1 31"
@@ -168,6 +176,7 @@ class mod_power_ft(EchoFallsBaseTest):
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr set plimit cmd status: Fail", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         pattern = re.compile(r"pwr set plimit: core - (\d+) \(0x([0-9A-Fa-f]+)\) plimit - 0x([0-9A-Fa-f]+)")
@@ -181,12 +190,14 @@ class mod_power_ft(EchoFallsBaseTest):
                 self.log.error(f"Core: {core}, Addr: 0x{core_addr}, Desired value: 0x{desired_val}")
                 self.test_notify(step="plimit not set", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
+                time.sleep(30)
                 return False
             print(f"Core: {core}, Addr: 0x{core_addr}, Desired value: 0x{desired_val}")
         else:
             self.log.error(f"plimit update not set")
             self.test_notify(step="plimit update not set", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         command="pwr set desired 0 0 1"
@@ -197,6 +208,7 @@ class mod_power_ft(EchoFallsBaseTest):
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr set desired cmd status: Fail", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         pattern = re.compile(r"pwr set desired: core - (\d+)")
@@ -209,6 +221,7 @@ class mod_power_ft(EchoFallsBaseTest):
             self.log.error(f"Desired pstate not set for core 0")
             self.test_notify(step="Desired pstate not set for core 0", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         # TODO: fix test case,   https://azurecsi.visualstudio.com/Dev/_workitems/edit/2199252
@@ -237,5 +250,6 @@ class mod_power_ft(EchoFallsBaseTest):
         core_com_channel.close()
         self.test_notify(step="Power module functional tests complete", msg="Test Done", _is_error=False)
         self.dut.teardown()
+        time.sleep(30)
 
         return True

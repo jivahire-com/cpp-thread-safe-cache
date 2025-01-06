@@ -4,7 +4,7 @@
 - Python based Pythia 2.0 Test.
 - Test that checks for D2D Mailbox SEND RECV Command.
 """
-
+import time
 import sys, os
 from pathlib import Path
 
@@ -76,6 +76,7 @@ class d2d_mailbox_cli_test_send_recv(EchoFallsBaseTest):
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
         
         try:
@@ -85,6 +86,7 @@ class d2d_mailbox_cli_test_send_recv(EchoFallsBaseTest):
             self.log.error(f"Error reading self.dut.mb.node_0.soc.secondary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         core_com_die0_channel.write_line(write_string="icc_d2dmbx")
@@ -96,6 +98,7 @@ class d2d_mailbox_cli_test_send_recv(EchoFallsBaseTest):
             core_com_die1_channel.close()
             self.test_notify(step="D2DMBX SEND RECV Command", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         try:
@@ -106,6 +109,7 @@ class d2d_mailbox_cli_test_send_recv(EchoFallsBaseTest):
             self.test_notify(step="D2DMBX SEND RECV Command", msg="Test Fail", _is_error=True)
             self.test_notify(step="D2DMBX SEND RECV Command", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         try:                                
@@ -115,12 +119,14 @@ class d2d_mailbox_cli_test_send_recv(EchoFallsBaseTest):
             core_com_die1_channel.close()
             self.test_notify(step="D2DMBX SEND RECV Command", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
             
         core_com_die0_channel.close()
         core_com_die1_channel.close()
         self.test_notify(step="D2DMBX SEND RECV Command", msg="Test Done", _is_error=False)
         self.dut.teardown()
+        time.sleep(30)
         return True
     
     def _open_channels(self, *channels):

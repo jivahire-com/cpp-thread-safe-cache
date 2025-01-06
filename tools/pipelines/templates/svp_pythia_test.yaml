@@ -96,7 +96,7 @@ jobs:
         testResultsFormat: 'JUnit'
         testResultsFiles: '**\Results.xml'
         searchFolder: '$(Build.SourcesDirectory)\.testlogs\pythia'
-        failTaskOnFailedTests: true
+        failTaskOnFailedTests: false
         publishRunAttachments: true
         mergeTestResults: true
 

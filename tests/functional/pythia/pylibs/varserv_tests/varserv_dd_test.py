@@ -4,7 +4,7 @@
 - Python based Pythia 2.0 Test.
 - Test that checks for Variable Services SET GET Command.
 """
-
+import time
 import sys, os
 from pathlib import Path
 
@@ -69,6 +69,7 @@ class varserv_dd_test(EchoFallsBaseTest):
             scp_channel.close()
             self.test_notify(step="Open_Channels", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
         
         try:
@@ -79,6 +80,7 @@ class varserv_dd_test(EchoFallsBaseTest):
             self.log.error(f"Error reading self.dut.mb.node_0.soc.secondary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
+            time.sleep(30)
             return False
 
         # Submit Variable Services commands
@@ -103,6 +105,7 @@ class varserv_dd_test(EchoFallsBaseTest):
                     scp_channel.close()
                     self.test_notify(step="Variable Services SET GET Command", msg="Test Fail", _is_error=True)
                     self.dut.teardown()
+                    time.sleep(30)
                     return False
                 set_data = self.vendor_data(guid)
                 self.log.info(f"Submitting {set_data}\n")
@@ -111,6 +114,7 @@ class varserv_dd_test(EchoFallsBaseTest):
                     scp_channel.close()
                     self.test_notify(step="Variable Services SET GET Command", msg="Test Fail", _is_error=True)
                     self.dut.teardown()
+                    time.sleep(30)
                     return False
                 scp_channel.read_until(key="Async Set Variable Done", timeout_seconds=500)
                 self.log.info("SET command executed Successfully . . .")
@@ -119,6 +123,7 @@ class varserv_dd_test(EchoFallsBaseTest):
                 scp_channel.close()
                 self.test_notify(step="Variable Services SET GET Command", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
+                time.sleep(30)
                 return False
             
             # Submit GET command
@@ -137,12 +142,14 @@ class varserv_dd_test(EchoFallsBaseTest):
                     scp_channel.close()
                     self.test_notify(step="Variable Services SET GET Command", msg="Test Fail", _is_error=True)
                     self.dut.teardown()
+                    time.sleep(30)
                     return False
                 if get_guid != set_guid:
                     self.log.info("GUID for Set and GET is NOT SUCCESSFUL")
                     scp_channel.close()
                     self.test_notify(step="Variable Services SET GET Command", msg="Test Fail", _is_error=True)
                     self.dut.teardown()
+                    time.sleep(30)
                     return False
                 self.log.info("SET-GET GUID validation successful . . .")
                 guid_data = scp_channel.read_until(key="Get Variable Ctx Freed", timeout_seconds=500)
@@ -155,12 +162,14 @@ class varserv_dd_test(EchoFallsBaseTest):
                     scp_channel.close()
                     self.test_notify(step="Variable Services SET GET Command", msg="Test Fail", _is_error=True)
                     self.dut.teardown()
+                    time.sleep(30)
                     return False
                 if get_data != set_data:
                     self.log.info("GUID for Set and GET is NOT SUCCESSFUL")
                     scp_channel.close()
                     self.test_notify(step="Variable Services SET GET Command", msg="Test Fail", _is_error=True)
                     self.dut.teardown()
+                    time.sleep(30)
                     return False
                 self.log.info("SET-GET DATA validation successful . . .")
                 scp_channel.read_until(key="Async Get Variable Done", timeout_seconds=500)
@@ -170,12 +179,14 @@ class varserv_dd_test(EchoFallsBaseTest):
                 scp_channel.close()
                 self.test_notify(step="Variable Services SET GET Command", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
+                time.sleep(30)
                 return False
         
         # Close connection to SCP
         scp_channel.close()
         self.test_notify(step="Variable Services SET GET Command", msg="Test Done", _is_error=False)
         self.dut.teardown()
+        time.sleep(30)
 
         return True
     

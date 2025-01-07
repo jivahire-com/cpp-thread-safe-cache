@@ -20,7 +20,7 @@ parameters:
 
 jobs:
 - job: 'SVP_Pythia_Tests'
-  timeoutInMinutes: 360
+  timeoutInMinutes: 240
   displayName: SVP Pythia Tests
   pool: 
     name: ${{ parameters.Pool }}
@@ -65,7 +65,6 @@ jobs:
     # Logs will be under $(Build.SourcesDirectory)\.testlogs\pythia
     - task: PowerShell@2
       displayName: Run Test Suites
-      retryCountOnTaskFailure: 3
       env:
         AZURE_DEVOPS_EXT_PAT : $(System.AccessToken)
       inputs:

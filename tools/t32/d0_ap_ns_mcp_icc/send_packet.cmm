@@ -1,0 +1,123 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+// 
+// @brief: Send a mhu packet + payload.
+//
+// @param[in]: Required - command: Required - Command to use for the transaction, must be in hex.
+// @param[in]: Optional - payload: String representing payload data, byte by byte, separated by spaces, must be in hex. Defaults to empty.
+//
+// @return: 0 on success, -1 on failure.
+//
+
+//
+// See below stack overflow for dynamic args in scripts. Ends up as parsing a string.
+// https://stackoverflow.com/questions/64155395/trace32-practice-script-iterating-over-a-list-of-variables
+//
+
+ENTRY &command %LINE &payload
+
+if ("&command"=="")
+(
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Usage: send_packet.cmm <command> [payload_byte_0 payload_byte_1 ... payload_byte_N-1]"
+    print  %COLOR.RED "ERROR"
+    ENDDO -1
+)
+
+// Get the status of the send channel mailbox, don't bother sending the payload
+// if pending.
+DO check_packet_pending.cmm send
+
+// Using ENTRY after calling another script will use the output of the script as the input
+ENTRY &pending_status
+
+if (&pending_status!=0)
+(
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Pending message, must be cleared before a new one can be sent!"
+    print  %COLOR.RED "ERROR"
+    ENDDO -1
+)
+
+// cleanup the payload bytes and count em up
+&payload=STRing.Trim("&payload")
+&payload=STRing.Replace("&payload",".","",0)
+
+// Count the spaces, plus one for a single byte
+// Cleanup if payload empty
+&payload_size=format.Decimal(1,STRing.COUNT("&payload"," ")+1)
+if ((&payload_size==1)&&("&payload"==""))
+(
+    &payload_size = 0
+)
+
+print "Command ["+"&command"+"] Payload Size ["+"&payload_size"+"]"
+print "Payload ["+"&payload"+"]"
+
+//
+// With the icc mhu payload address and the offsets, update the shared memory before triggering the mhu ip block
+//
+
+//
+// This address is determined by the DDR region mapped for ICC via MHU Payloads, with this
+// specific address being a sub-range of the total region. Use `icc_mhu props` from the MCP
+// CLI to see the AP Payload regions. The AP Send payload is the MCP's Recv Payload.
+//
+// See the total DDR region here: https://dev.azure.com/ms-tsd/Kingsgate/_git/silibs?path=/soc_fw_shared/include/memory_map/ddrss_reserved_regions.h&version=GBmaster&line=174&lineEnd=184&lineStartColumn=1&lineEndColumn=60&lineStyle=plain&_a=contents
+// See the breakdown of that region here (includes size): https://dev.azure.com/ms-tsd/Kingsgate/_git/silibs?path=/soc_fw_shared/include/memory_map/mscp_uefi_shared_ddrss.h
+// See MCP ICC MHU CLI here: https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.MSCP?path=/src/libs/icc_cli/src/icc_mhu_cli.c
+//
+&send_payload_size = 0x200
+&send_payload_addr = 0x20128000E00
+
+// Grab the MHU Packet details
+// See https://dev.azure.com/ms-tsd/Kingsgate/_git/silibs?path=/libraries/icc_mhu/include/icc_mhu.h&version=GBmaster&line=47&lineEnd=75&lineStartColumn=1&lineEndColumn=40&lineStyle=plain&_a=contents
+
+&version_offset= 0x0
+&token_offset= 0x4
+&id_offset= 0x6
+&command_offset= 0x8
+&payload_size_offset= 0xC
+&status_offset= 0xE
+&payload_offset=0x10
+
+// Update the ICC + Message Header
+// The command is already in hex, so simply write it.
+data.set (EOAXI:&send_payload_addr+&command_offset) %long &command
+// The payload size is in Decimal, so use the '.' at the end to ensure
+// it is converted to hex when being set.
+data.set (EOAXI:&send_payload_addr+&payload_size_offset) %long &payload_size.
+
+// Update the User Payload. Iterate over the payload, inserting each byte
+&index=0
+WHILE (&index<&payload_size)
+(
+    &value=STRing.SPLIT("&payload"," ",&index)
+    data.set (EOAXI:&send_payload_addr+&payload_offset+&index) %byte &value
+    &index=&index+1
+)
+
+Data.dump EOAXI:&send_payload_addr
+
+//
+// !!! If reproducing these scripts in firmware or software issue a Data Synchronization Barrier before writing to the MHU IP !!!
+//
+
+//
+// Toggle the SET register on the Send MHU Frame, triggers the Recv Frame interrupt
+//
+
+// Send Frame - https://kingsgatedocs.azurewebsites.net/static/csrs/v1.6.0/ap_addr_map/html/D0_AP2MCP_MHU_SND_NS.html
+&mhu_address=0x00002AA00000
+
+// Channels start after the control block in the MHU IP
+// MHUV3_F0_DB1_FCH0_FCHGRP0_PBX_INT_1_MBX_INT_1_PBX_PDBCW_PAGE_ADDRESS
+&channels_offset=0x1000
+&channel_set_offset=0xC
+
+// Set the channels set register to trigger the interrupt
+data.set (EOAXI:&mhu_address+&channels_offset+&channel_set_offset) %long 0x1
+
+ENDDO 0

@@ -1,0 +1,62 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+//
+// @brief: Check the D0 AP NS MHU Frames for the mailbox status bit.
+// 
+// @param[in]: Optional - channel_direction: recv OR send. Defaults to recv.
+//
+// @return: 1 if packet pending, 0 if not, -1 on failure.
+//
+
+ENTRY &channel_direction
+
+// Default the channel address to the AP NS RECV MHU
+if ("&channel_direction"=="")
+(
+    &channel_direction="recv"
+)
+
+//
+// See AP Address Map for more details on address ranges.
+// Find that here: https://microsoft.sharepoint.com/:x:/r/teams/EchoFalls/_layouts/15/Doc.aspx?sourcedoc=%7B9F15D1CD-19F6-4551-A78D-6016D8D9AA6E%7D&file=Kingsgate%20SOC%20Address%20Map%20r1p12.xlsx&action=default&mobileredirect=true
+// Mason Generated CSRs: 
+// Send Frame - https://kingsgatedocs.azurewebsites.net/static/csrs/v1.6.0/ap_addr_map/html/D0_AP2MCP_MHU_SND_NS.html
+// Recv Frame - https://kingsgatedocs.azurewebsites.net/static/csrs/v1.6.0/ap_addr_map/html/D0_MCP2AP_MHU_REC_NS.html
+//
+if ("&channel_direction"=="recv")
+(
+    // AP_TOP_D0_MCP2AP_MHU_REC_NS_ADDRESS
+    &mhu_address=0x00002AA10000
+)
+else if ("&channel_direction"=="send")
+(
+    // AP_TOP_D0_AP2MCP_MHU_SND_NS_ADDRESS
+    &mhu_address=0x00002AA00000
+)
+else
+(
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Usage: 'cd.do check_packet_pending.cmm'      Check RECV Frame"
+    print  %COLOR.RED "Usage: 'cd.do check_packet_pending.cmm recv' Check RECV Frame"
+    print  %COLOR.RED "Usage: 'cd.do check_packet_pending.cmm send' Check SEND Frame"
+    print  %COLOR.RED "ERROR"
+    ENDDO -1
+)
+
+// Channels start after the control block in the MHU IP
+// https://kingsgatedocs.azurewebsites.net/static/csrs/v1.6.0/ap_addr_map/html/D0_AP2MCP_MHU_SND_NS-PDBCW_page_Registers.html
+&channels_offset=0x1000
+&channel_status_offset=0x0
+
+// We only use channel 0 and flag 0 per MHU Frame
+// We can use the Post Box Register for either a Recv or Send frame due to the IP being monolithic and the Recv and Send frames have the same offsets for channels
+// The channel status register offset: https://kingsgatedocs.azurewebsites.net/static/csrs/v1.6.0/ap_addr_map/html/D0_AP2MCP_MHU_SND_NS-PDBCW_page_Registers.html#PDBCW0_ST
+&ch_0_flag_0pb_address = &mhu_address+&channels_offset+&channel_status_offset
+&ch_0_flag_0_pb_status = data.long(EOAXI:&ch_0_flag_0pb_address)
+
+print "PB - Addr [0x"+format.hex(8.,&ch_0_flag_0pb_address)+"] Status ["+format.hex(1.,&ch_0_flag_0_pb_status)+"]"
+
+// ENDO needed if called from cd.do. RETURN needed if from a subroutine
+ENDDO &ch_0_flag_0_pb_status

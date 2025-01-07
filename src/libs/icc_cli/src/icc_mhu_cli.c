@@ -277,20 +277,40 @@ FPFW_CLI_STATUS mhu_props(int argc, const char** argv)
     {
         if (cli_ctx->icc_base_ctx[i] != NULL)
         {
+            FpFwCliPrint("Name: [%17ss]\n", icc_cli_interface_type_strings[i]);
+
             fpfw_icc_base_ctx_t* icc_base_ctx = cli_ctx->icc_base_ctx[i];
             mhu_icc_transport_intrf_t* mhu_icc_transport = (mhu_icc_transport_intrf_t*)icc_base_ctx->icc_cfg.transport_interface;
 
             uint64_t recv_addr = mhu_icc_transport->device->recv_channel.ch_shared_mem_addr;
             uint64_t send_addr = mhu_icc_transport->device->send_channel.ch_shared_mem_addr;
 
-            FpFwCliPrint("Name: [%17ss]\n", icc_cli_interface_type_strings[i]);
+            FpFwCliPrint("\tRecv Channel: ");
+            FpFwCliPrint("MSCP Payload address: [0x%x%x] ", (uint32_t)(recv_addr >> 32), (uint32_t)recv_addr);
 
-            FpFwCliPrint("\tRecv Channel: Payload address: [0x%x%x] ", (uint32_t)(recv_addr >> 32), (uint32_t)recv_addr);
+            // If the payload is in DDR also dump the AP Address
+            if (recv_addr >= MSCP_ATU_AP_WINDOW_ICC_MHU_PAYLOAD_BASE_ADDR && recv_addr <= MSCP_ATU_AP_WINDOW_ICC_MHU_PAYLOAD_END_ADDR)
+            {
+                uint64_t ap_address = ICC_MHU_PAYLOADS_RESERVATION_BASE +
+                                      (recv_addr - MSCP_ATU_AP_WINDOW_ICC_MHU_PAYLOAD_BASE_ADDR);
+                FpFwCliPrint("AP Payload address: [0x%x%x] ", (uint32_t)(ap_address >> 32), (uint32_t)ap_address);
+            }
+
             FpFwCliPrint("Payload Size: [0x%x] ", mhu_icc_transport->device->recv_channel.ch_shared_mem_size);
             FpFwCliPrint("MHU Address: [0x%x] ", mhu_icc_transport->device->recv_channel.mhu_addr);
             FpFwCliPrint("DB Status: [%d]\n", icc_mhu_check_packet_pending(&mhu_icc_transport->device->recv_channel));
 
-            FpFwCliPrint("\tSend Channel: Payload address: [0x%x%x] ", (uint32_t)(send_addr >> 32), (uint32_t)send_addr);
+            FpFwCliPrint("\tSend Channel: ");
+            FpFwCliPrint("MSCP Payload address: [0x%x%x] ", (uint32_t)(send_addr >> 32), (uint32_t)send_addr);
+
+            // If the payload is in DDR also dump the AP Address
+            if (send_addr >= MSCP_ATU_AP_WINDOW_ICC_MHU_PAYLOAD_BASE_ADDR && send_addr <= MSCP_ATU_AP_WINDOW_ICC_MHU_PAYLOAD_END_ADDR)
+            {
+                uint64_t ap_address = ICC_MHU_PAYLOADS_RESERVATION_BASE +
+                                      (send_addr - MSCP_ATU_AP_WINDOW_ICC_MHU_PAYLOAD_BASE_ADDR);
+                FpFwCliPrint("AP Payload address: [0x%x%x] ", (uint32_t)(ap_address >> 32), (uint32_t)ap_address);
+            }
+
             FpFwCliPrint("Payload Size: [0x%x] ", mhu_icc_transport->device->send_channel.ch_shared_mem_size);
             FpFwCliPrint("MHU Address: [0x%x] ", mhu_icc_transport->device->send_channel.mhu_addr);
             FpFwCliPrint("DB Status: [%d]\n", icc_mhu_check_packet_pending(&mhu_icc_transport->device->send_channel));

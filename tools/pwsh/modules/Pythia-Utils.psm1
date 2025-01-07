@@ -126,6 +126,7 @@ Function Invoke-Pythia(
         --variable HOST_CONFIG_DIR:"$test_results_dir" `
         --debugfile rlog.txt  `
         --outputdir $test_results_dir `
+        --listener "${env:REPO_APP_PATH_python.win64}\tools\Lib\site-packages\pythia\tdk\rrm\listener\listener_verbosity.py;Debug"  `
         -K on `
         -L TRACE `
         -W 120 `
@@ -139,6 +140,7 @@ Function Invoke-Pythia(
         --variable HOST_CONFIG_DIR:"$test_results_dir" `
         --debugfile rlog.txt  `
         --outputdir $test_results_dir `
+        --listener "${env:REPO_APP_PATH_python.win64}\tools\Lib\site-packages\pythia\tdk\rrm\listener\listener_verbosity.py;Debug"  `
         -K on `
         -L TRACE `
         -W 120 `

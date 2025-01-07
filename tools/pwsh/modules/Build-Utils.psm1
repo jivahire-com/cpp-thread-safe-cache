@@ -279,6 +279,9 @@ Function Get-NugetPackages($PackageFile, $TargetDir)
 
     $TargetDir = (Get-Item $TargetDir).FullName
 
+    # Set the nuget packages directory to a local directory (Prevents NuGet from using the user's profile directory)
+    $env:NUGET_PACKAGES = "$TargetDir/temp"
+
     [Xml]$PackageConfig = Get-Content $PackageFile
 
     foreach($Package in $PackageConfig.packages.nuget_packages.ChildNodes)

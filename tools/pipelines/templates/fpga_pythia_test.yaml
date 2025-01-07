@@ -93,6 +93,9 @@ jobs:
           Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\generated" -Recurse -Force
           Remove-Item .externs -Force -Recurse
 
+          # Cleanup pip cache
+          pip cache purge
+
     # Publish the results of the test suite
     - task: PublishTestResults@2
       displayName: Publish FPGA Pythia Tests Results

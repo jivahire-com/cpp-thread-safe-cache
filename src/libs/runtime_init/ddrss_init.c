@@ -62,13 +62,11 @@ FPFW_INIT_COMPONENT(ddr, FPFW_INIT_DEPENDENCIES("std_io", "ddr_pcr", "mesh", "hw
                                        .queue_num_words = sizeof(ddr_queue_pool) / sizeof(uint32_t),
                                    }};
 
-    // Load PHY binaries
     fpfw_icc_base_ctx_t* icc_ctx = fpfw_init_get_handle("icc_hspmbx");
     if (icc_ctx == NULL)
     {
         return (fpfw_init_result_t){FPFW_INIT_STATUS_E_POINTER, "Failed to get icc_hspmbx handle - Cannot init ddrss"};
     }
-    hsp_send_recv_load_fw_ddr_phy_req(icc_ctx);
 
     // Initialize DDR Manager - prod_ddrss_lib_init is moved to inside this init
     ddr_manager_init(&ddr_service_ctx, &config, icc_ctx);

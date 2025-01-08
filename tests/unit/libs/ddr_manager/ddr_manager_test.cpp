@@ -99,19 +99,6 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
     }
 }
 
-static int setup_rvp_platform(void** pContext)
-{
-    FPFW_UNUSED(pContext);
-    idsw_set_platform_sdv(PLATFORM_RVP_EVT_SILICON);
-    return 0;
-}
-static int setup_undefined_platform(void** pContext)
-{
-    FPFW_UNUSED(pContext);
-    idsw_set_platform_sdv(PLATFORM_UNDEFINED);
-    return 0;
-}
-
 } // extern "C"
 
 //
@@ -332,68 +319,4 @@ TEST_FUNCTION(ddr_worker_thread_func_test_message_types, NULL, NULL)
 {
     ddr_create_bdat();
     ddr_create_smbios_tables();
-}
-
-TEST_FUNCTION(ddr_manager_load_PHY_bin, setup_rvp_platform, setup_undefined_platform)
-{
-    uint32_t dummy_icc_ctx = 0;
-    fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-
-    kng_hsp_cmd_load_fw_mailbox_msg msg = {
-        .load_fw_req.header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
-        .load_fw_req.id = HSP_FIRMWARE_ID_DDR_PHY,
-        .load_fw_req.address = SCP_EXP_DDR_PHY_DATA_BASE,
-        .load_fw_req.size = SCP_EXP_DDR_PHY_DATA_SIZE,
-    };
-
-    size_t output_recv_bytes = 0;
-    expect_memory(__wrap_fpfw_icc_base_send_recv_sync, payload_buffer, &msg, sizeof(msg));
-    expect_memory(__wrap_fpfw_icc_base_send_recv_sync, output_recv_bytes, &output_recv_bytes, sizeof(output_recv_bytes));
-
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-
-    hsp_send_recv_load_fw_ddr_phy_req(icc_ctx);
-}
-
-TEST_FUNCTION(ddr_manager_platform_supports_phy_bin_loading_test, NULL, NULL)
-{
-    g_should_wrap_idsw_get_platform_sdv = true;
-
-    // PLATFORM_FPGA
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
-    assert_false(platform_supports_phy_bin_loading());
-
-    // PLATFORM_FPGA_LARGE
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
-    assert_true(platform_supports_phy_bin_loading());
-
-    // PLATFORM_FPGA_LARGE_RVP
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE_RVP);
-    assert_true(platform_supports_phy_bin_loading());
-
-    // PLATFORM_RVP_EVT_SILICON
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
-    assert_true(platform_supports_phy_bin_loading());
-
-    // PLATFORM_UNDEFINED
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_UNDEFINED);
-    assert_false(platform_supports_phy_bin_loading());
-
-    // PLATFORM_SVP_SIM
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
-    assert_false(platform_supports_phy_bin_loading());
-
-    // PLATFORM_EMU_1D
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_1D);
-    assert_false(platform_supports_phy_bin_loading());
-
-    // PLATFORM_EMU_2D
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_2D);
-    assert_false(platform_supports_phy_bin_loading());
-
-    // PLATFORM_RTL_SIM
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RTL_SIM);
-    assert_false(platform_supports_phy_bin_loading());
-
-    g_should_wrap_idsw_get_platform_sdv = false;
 }

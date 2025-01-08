@@ -9,7 +9,6 @@ add_library(${TARGET}
         ddr_manager_events.c
         ddr_manager_gpio.c
         ddr_manager_i3c.c
-        ddr_manager_load_phy.c
         ddr_manager_memory_map.c
         ddr_manager_platform.c
         ddr_manager_polling.c

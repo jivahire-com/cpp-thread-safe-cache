@@ -10,6 +10,9 @@
 /*------------- Includes -----------------*/
 #include "data_proc_tlm_cmpnt.h"
 
+#include "tlm_logger_i.h" // internal APIs
+
+#include <telemetry_events_i.h>
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
@@ -22,4 +25,10 @@
 
 void data_proc_tlm_cmpnt_init(void)
 {
+    /* initialize dts coeff data at startup */
+    fpfw_status_t status = tlm_logger_init_fuse_dts_coeff_data();
+    if (FPFW_STATUS_FAILED(status))
+    {
+        FPFW_ET_LOG(DTSCoefficientReadFailedInit, status);
+    }
 }

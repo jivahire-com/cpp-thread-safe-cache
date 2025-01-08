@@ -9,14 +9,9 @@
 /*------------- Includes -----------------*/
 #include "power_fuse_events_i.h"
 
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
-#include <bug_check.h>
-#include <fpfw_init.h>   // for fpfw_init_get_handle, FPFW_INIT_C...
 #include <fpfw_status.h> // for fpfw_status_t
 #include <fuse.h>        // fuse library functions
-#include <fuse_dma.h>    // apply copy fuse to ram
 #include <fuses_top_regs.h>
-#include <idsw.h> // SW platform id
 #include <idsw_kng.h>
 #include <kingsgate_fuse_defines.h> // Test revision get
 #include <kng_soc_constants.h>      // for DIE_INSTANCE
@@ -133,6 +128,25 @@ static fpfw_status_t platform_power_fuse_read(const uintptr_t fuse_store_addr,
     return FPFW_STATUS_SUCCESS;
 }
 
+/**
+ * @brief fill default values for y and k coefficient.
+ * @param[out] dts_coeff array
+ * @param[in] tile_index - tile index
+ * @param[in] coeff_count - size of the array, where we are reading dts coeff.
+ * @return none
+ */
+static void platform_power_fuses_fill_default_dts_coeff(int tile_index, uint32_t coeff_count, dts_tlm_coeff_t* dts_coeff)
+{
+    for (uint32_t coeff_idx = tile_index; coeff_idx < coeff_count; ++coeff_idx)
+    {
+        /* In case of a dts fuse read fail , assigning default value to 16384, to log raw temperature value
+                 A y_val of 16384 will allow the temerature equeation to log raw value:
+                 [ Temperature = ( 𝒅𝒐𝒖𝒕 /𝟏𝟔𝟑𝟖4) ∗ 𝒀+𝑲 [℃]  */
+        dts_coeff[coeff_idx].y_val = 16384;
+        dts_coeff[coeff_idx].k_val = 0;
+    }
+}
+
 static fpfw_status_t platform_power_fuses_get_dts_coeff(unsigned int k_offset,
                                                         uint32_t k_width,
                                                         unsigned int y_offset,
@@ -159,15 +173,15 @@ static fpfw_status_t platform_power_fuses_get_dts_coeff(unsigned int k_offset,
         if (FPFW_STATUS_FAILED(status))
         {
             FPFW_ET_LOG(PowerFuseReadFailedY_offset, status);
+            platform_power_fuses_fill_default_dts_coeff(coeff_idx, coeff_count, dts_coeff);
             return status;
         }
         // a value of 0 for Y is invalid; would cause a divide by 0
         if (fuse_data_y == 0)
         {
             FPFW_ET_LOG(DTScoeffyValIsZeroAt, y_offset);
-            /* DTS Y coefficient is 0 (would cause div by 0) hence assign default to 1 */
-            fuse_data_y = 1;
-            return FPFW_STATUS_UNEXPECTED;
+            /* DTS Y coefficient is 0 (would cause div by 0) hence assign default to 16384 for logging raw data from sensor fifo */
+            fuse_data_y = 16384;
         }
 
         // read DTS K value
@@ -175,6 +189,7 @@ static fpfw_status_t platform_power_fuses_get_dts_coeff(unsigned int k_offset,
         if (FPFW_STATUS_FAILED(status))
         {
             FPFW_ET_LOG(PowerFuseReadFailedK_offset, status);
+            platform_power_fuses_fill_default_dts_coeff(coeff_idx, coeff_count, dts_coeff);
             return status;
         }
 
@@ -192,7 +207,6 @@ static fpfw_status_t platform_power_fuses_get_dts_coeff(unsigned int k_offset,
 fpfw_status_t platform_power_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dts_coeff, uint32_t count)
 {
     fpfw_status_t status = FPFW_STATUS_SUCCESS;
-    uint32_t i = 0;
 
     // only read fuses on silicon platform
     if (platform_power_fuses_is_power_hw_supported() && isFuseServiceUp)
@@ -212,12 +226,7 @@ fpfw_status_t platform_power_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dts_coeff
     }
     else
     {
-
-        for (i = 0; i < count; i++)
-        {
-            dts_coeff[i].y_val = 1; // dummy
-            dts_coeff[i].k_val = 1;
-        }
+        platform_power_fuses_fill_default_dts_coeff(0, count, dts_coeff);
         status = FPFW_STATUS_UNEXPECTED;
         FPFW_ET_LOG(PowerFuseReadTileCoeffDeafultValues, status);
     }
@@ -228,8 +237,8 @@ fpfw_status_t platform_power_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dts_coeff
 fpfw_status_t platform_power_fuses_get_dts_coeff_soctop(dts_tlm_coeff_t* dts_coeff, uint32_t count)
 {
     fpfw_status_t status = FPFW_STATUS_SUCCESS;
-    uint32_t i = 0;
-    // only read fuses on silicon platform
+    // uint32_t i = 0;
+    //  only read fuses on silicon platform
     if (platform_power_fuses_is_power_hw_supported() && isFuseServiceUp)
     {
         status = platform_power_fuses_get_dts_coeff(TOP_THERMALS_SENSOR_K_BIT_OFFSET,
@@ -247,11 +256,7 @@ fpfw_status_t platform_power_fuses_get_dts_coeff_soctop(dts_tlm_coeff_t* dts_coe
     }
     else
     {
-        for (i = 0; i < count; i++)
-        {
-            dts_coeff[i].y_val = 1;
-            dts_coeff[i].k_val = 1;
-        }
+        platform_power_fuses_fill_default_dts_coeff(0, count, dts_coeff);
         status = FPFW_STATUS_UNEXPECTED;
         FPFW_ET_LOG(PowerFuseReadSoCTopCoeffDeafultValues, status);
     }

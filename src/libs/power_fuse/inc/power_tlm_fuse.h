@@ -17,7 +17,6 @@
 
 /*--------------- Includes ---------------*/
 #include <stdint.h> 
-#include <corebits.h>
 #include <fpfw_status.h> // for fpfw_status_t
 /*-- Symbolic Constant Macros (defines) --*/
 /* DTS coeff spacing  */
@@ -27,7 +26,7 @@
 /**
  * @brief Struct for holding dts coefficient data from fuses
  */
-typedef struct _dts_coeff_t
+typedef struct _dts_tlm_coeff_t
 {
     uint16_t k_val;
     uint16_t y_val;

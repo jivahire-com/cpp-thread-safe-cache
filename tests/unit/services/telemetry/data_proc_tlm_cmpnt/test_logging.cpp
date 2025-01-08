@@ -17,6 +17,7 @@ extern "C" {
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <data_proc_tlm_cmpnt.h>
+#include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdint.h>              // for uint32_t, uint64_t, int32_t
 #include <tlm_logger_i.h>
@@ -27,6 +28,7 @@ extern "C" {
 extern core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
 extern soc_runtime_info_t soc_info;
+extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
 }
 
 /*------------- Typedefs -----------------*/
@@ -78,6 +80,32 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_aggregate_pwr_tlm_data, test_setup, test_
     will_return(__wrap_sensor_fifo_svc_poll_vr_temperature, &status_expected);
     will_return(__wrap_sensor_fifo_svc_poll_vr_current, &status_expected);
     data_proc_tlm_cmpnt_aggregate_pwr_tlm_data();
+}
+// Test for tlm_logger to init dts coefficient structures
+TEST_FUNCTION(test_tlm_logger_init_fuse_dts_coeff_data, test_setup, test_teardown)
+{
+    fpfw_status_t status;
+    expect_value(__wrap_platform_power_fuses_get_dts_coeff_tile, dts_coeff, tileDtsCoefficients);
+    expect_value(__wrap_platform_power_fuses_get_dts_coeff_tile,
+                 count,
+                 sizeof(tileDtsCoefficients) / sizeof(tileDtsCoefficients[0]));
+
+    will_return(__wrap_platform_power_fuses_get_dts_coeff_tile, FPFW_STATUS_SUCCESS);
+    status = tlm_logger_init_fuse_dts_coeff_data();
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_tlm_logger_init_fuse_dts_coeff_data_fail, test_setup, test_teardown)
+{
+    fpfw_status_t status;
+    expect_value(__wrap_platform_power_fuses_get_dts_coeff_tile, dts_coeff, tileDtsCoefficients);
+    expect_value(__wrap_platform_power_fuses_get_dts_coeff_tile,
+                 count,
+                 sizeof(tileDtsCoefficients) / sizeof(tileDtsCoefficients[0]));
+
+    will_return(__wrap_platform_power_fuses_get_dts_coeff_tile, FPFW_STATUS_UNEXPECTED);
+    status = tlm_logger_init_fuse_dts_coeff_data();
+    assert_int_equal(status, FPFW_STATUS_UNEXPECTED);
 }
 
 // Test for tlm_logger_log_tile_temperature

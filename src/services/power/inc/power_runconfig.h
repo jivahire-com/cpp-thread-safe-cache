@@ -70,7 +70,7 @@
 
 /**
  * @brief To obtain the temperature value, the following equation should be applied to the dout output of the DTS.
- * Temperature = ( 𝒅𝒐𝒖𝒕 /16378 ) ∗ 𝒀+𝑲 [℃] 
+ * Temperature = ( 𝒅𝒐𝒖𝒕 /16384 ) ∗ 𝒀+𝑲 [℃] 
  * Reference : Synopsys Cores Sensors  Distributed Thermal Sensor (Series 2)  section 6.2
  */
 

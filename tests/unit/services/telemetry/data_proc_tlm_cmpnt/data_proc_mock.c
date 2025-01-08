@@ -10,8 +10,9 @@
 /*------------- Includes -----------------*/
 #include "telemetry_ut.h"
 
-#include <FpFwCMocka.h>          // for check_expected_ptr, mock_type, function_called
-#include <FpFwUtils.h>           // for FPFW_UNUSED
+#include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
+#include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdint.h>              // for uint32_t, uint64_t, int32_t
 #include <tlm_logger_i.h>
@@ -63,4 +64,11 @@ sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_vr_current(vr_current_t* vr
 {
     FPFW_UNUSED(vr_current);
     return *(sensor_ram_poll_status_t*)mock();
+}
+
+fpfw_status_t __wrap_platform_power_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dts_coeff, uint32_t count)
+{
+    check_expected(count);
+    check_expected_ptr(dts_coeff);
+    return mock_type(int32_t);
 }

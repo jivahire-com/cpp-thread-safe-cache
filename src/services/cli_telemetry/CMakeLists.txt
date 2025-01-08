@@ -9,6 +9,8 @@ target_link_libraries(
     ${TARGET}
         PRIVATE
         fwlib.service.cli
+        ms::lib::error_codes
+        ms::lib::power_fuse 
         ms::service::telemetry
         tlm.service.cmpnt.interfaces #give cli access to internal component headers
 )
@@ -16,8 +18,6 @@ target_link_libraries(
 target_include_directories(${TARGET}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 add_library(ms::service::telemetry::cli ALIAS ${TARGET})

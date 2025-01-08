@@ -12,8 +12,9 @@
 #include "tlm_logger_i.h" // internal APIs
 
 #include <FpFwAssert.h>
-#include <assert.h>              // IWYU pragma: keep for static_assert
-#include <fpfw_status.h>         // for FPFW_STATUS_SUCCEEDED, fpf...
+#include <assert.h>      // IWYU pragma: keep for static_assert
+#include <fpfw_status.h> // for FPFW_STATUS_SUCCEEDED, fpf...
+#include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdbool.h>             // for false, true
 #include <stddef.h>              // for size_t
@@ -39,6 +40,7 @@ typedef struct
 core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
 tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
 soc_runtime_info_t soc_info;
+dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE] = {0};
 
 uint16_t core_pwr_sample[NUMBER_OF_CORES_PER_DIE] = {0};
 uint32_t pstate_accum[NUMBER_OF_CORES_PER_DIE][NUMBER_OF_PSTATES] = {0};
@@ -66,6 +68,18 @@ void data_proc_tlm_cmpnt_clear_pwr_tlm_data(void)
     memset(&soc_info, 0, sizeof(soc_info));
 
     FPFW_ET_LOG(TelemetryDataCleared);
+}
+
+fpfw_status_t tlm_logger_init_fuse_dts_coeff_data(void)
+{
+    fpfw_status_t status =
+        platform_power_fuses_get_dts_coeff_tile(tileDtsCoefficients,
+                                                sizeof(tileDtsCoefficients) / sizeof(tileDtsCoefficients[0]));
+    if (FPFW_STATUS_FAILED(status))
+    {
+        return status;
+    }
+    return FPFW_STATUS_SUCCESS;
 }
 
 // Based on the HAS, there are 3 temperature sensors for each Core in each tile

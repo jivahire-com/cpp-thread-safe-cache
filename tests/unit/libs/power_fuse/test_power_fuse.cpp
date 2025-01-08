@@ -16,7 +16,6 @@
 
 extern "C" {
 #include <FpFwUtils.h>   // for FPFW_UNUSED
-#include <fpfw_init.h>   // for fpfw_init_get_handle, FPFW_INIT_C...
 #include <fpfw_status.h> // for fpfw_status_t
 #include <fuse.h>
 #include <fuse_dist_platform_exclusions.h>
@@ -34,7 +33,6 @@ extern "C" {
 #include <silibs_scp_exp_top_regs.h>
 #include <silibs_scp_top_regs.h>
 #include <stdnoreturn.h>
-#include <utils.h> // for UNUSED
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -76,7 +74,7 @@ uint64_t __wrap_read_fuse(const unsigned int fuse_bit_offset, const unsigned int
 
 static int set_power_fuse_parameters_tile(void** state)
 {
-    UNUSED(state);
+    FPFW_UNUSED(state);
 
     y_offset = TILE_THERMALS_SENSOR_Y_BIT_OFFSET;
     y_width = TILE_THERMALS_SENSOR_Y_WIDTH;
@@ -87,15 +85,15 @@ static int set_power_fuse_parameters_tile(void** state)
 
     for (uint32_t i = 0; i < count; i++)
     {
-        dts_coeff[i].y_val = 1;
-        dts_coeff[i].k_val = 1;
+        dts_coeff[i].y_val = 16384;
+        dts_coeff[i].k_val = 0;
     }
     return 0;
 }
 
 static int set_power_fuse_parameters_soctop(void** state)
 {
-    UNUSED(state);
+    FPFW_UNUSED(state);
     y_offset = TOP_THERMALS_SENSOR_Y_BIT_OFFSET;
     y_width = TOP_THERMALS_SENSOR_Y_WIDTH;
 
@@ -104,8 +102,8 @@ static int set_power_fuse_parameters_soctop(void** state)
     coeff_spacing = 1;
     for (uint32_t i = 0; i < count; i++)
     {
-        dts_coeff[i].y_val = 1;
-        dts_coeff[i].k_val = 1;
+        dts_coeff[i].y_val = 16384;
+        dts_coeff[i].k_val = 0;
     }
     return 0;
 }
@@ -152,8 +150,8 @@ TEST_FUNCTION(test_platform_power_fuses_get_dts_coeff_tile_unsupported, set_powe
     platform_power_fuses_get_dts_coeff_tile(dts_coeff, count);
     for (uint32_t i = 0; i < count; i++)
     {
-        assert_int_equal(dts_coeff[i].y_val, 1);
-        assert_int_equal(dts_coeff[i].k_val, 1);
+        assert_int_equal(dts_coeff[i].y_val, 16384);
+        assert_int_equal(dts_coeff[i].k_val, 0);
     }
 }
 
@@ -191,7 +189,7 @@ TEST_FUNCTION(test_platform_power_fuses_get_dts_coeff_soctop_unsupported, set_po
     platform_power_fuses_get_dts_coeff_soctop(dts_coeff, count);
     for (uint32_t i = 0; i < count; i++)
     {
-        assert_int_equal(dts_coeff[i].y_val, 1);
-        assert_int_equal(dts_coeff[i].k_val, 1);
+        assert_int_equal(dts_coeff[i].y_val, 16384);
+        assert_int_equal(dts_coeff[i].k_val, 0);
     }
 }

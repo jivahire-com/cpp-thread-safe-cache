@@ -10,6 +10,7 @@ target_link_libraries(${TARGET}
     fwlib.lib.status
     fwlib.lib.tmr_queue
     fwlib.lib.interface.platform.interrupts
+    silibs_platform
     ms::lib::crash_dump
     ms::lib::error_codes
     ms::lib::register_headers

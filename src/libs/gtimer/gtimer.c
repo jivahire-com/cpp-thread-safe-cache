@@ -14,6 +14,7 @@
 #include <fpfw_tmr_queue.h>
 #include <gtimer.h>
 #include <gtimer_prodfw.h>
+#include <prodfw_fnc_pointers.h>
 #include <stdint.h>
 
 /*------------- Typedefs -----------------*/
@@ -26,7 +27,12 @@ static uintptr_t s_timer_base_address;
 static int s_timer_irq;
 
 /*------------- Functions ----------------*/
-static uint64_t gtimer_prodfw_get_counter()
+/**
+ * Get the current counter value of the gtimer
+ *
+ * @return  current counter value of the gtimer
+ */
+uint64_t gtimer_prodfw_get_counter()
 {
     return gtimer_get_counter(s_timer_base_address);
 }
@@ -77,6 +83,7 @@ void gtimer_prodfw_init(gtimer_prodfw_init_config_t* config)
 
     intr_init_status = FPFwCoreInterruptEnableVector(s_timer_irq);
     BUG_ASSERT(intr_init_status == FPFW_STATUS_SUCCESS);
+    silibs_platform_set_fnc_pointer(gtimer_prodfw_get_frequency, gtimer_prodfw_get_counter);
 }
 
 void gtimer_add_oneshot(fpfw_tmr_entry_t* tmr, uint64_t tick_interval, void (*cb)(void*, uint64_t, uint64_t), void* ctx)
@@ -101,6 +108,11 @@ void gtimer_remove(fpfw_tmr_entry_t* tmr)
     timer_rearm();
 }
 
+/**
+ * Get the frequency of the gtimer
+ *
+ * @return  frequency of the gtimer
+ */
 uint32_t gtimer_prodfw_get_frequency()
 {
     return gtimer_get_frequency(s_timer_base_address);

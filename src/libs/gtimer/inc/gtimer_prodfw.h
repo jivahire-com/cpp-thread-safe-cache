@@ -81,3 +81,10 @@ void gtimer_remove(fpfw_tmr_entry_t* tmr);
  * @return  frequency of the gtimer
  */
 uint32_t gtimer_prodfw_get_frequency();
+
+/**
+ * Get the current counter value of the gtimer
+ * 
+ * @return  current counter value of the gtimer
+ */
+uint64_t gtimer_prodfw_get_counter();

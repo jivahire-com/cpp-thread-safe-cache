@@ -1,3 +1,2 @@
 Guid,Knob,Value,Help
-FE3ED49F-B173-41ED-9076-356661D46A42,BOOLEAN_KNOB,false,"override boolean knob"
 FE3ED49F-B173-41ED-9076-356661D46A42,power_soc_maximum_thermal_watts_limit,350,"Temp override until fuse value is verified"

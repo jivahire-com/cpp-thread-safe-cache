@@ -23,13 +23,13 @@ if (${FPFW_CFG_MGR_ENABLE})
 
     set(FPFW_CFG_MGR_PYTHON   ${Python3_EXECUTABLE})
     set(FPFW_CFG_MGR_SCHEMA   ${PROD_FW_COMBINED_GENERATED_KNOBS})
-    set(MU_SCRIPT_PATH        ${TARGET_DIR_SILIBS_COMMON}/mu_feature_config/SetupDataPkg/Tools)
 
-
-    #### Revert this line when silibs common incorporates a local mirror of mu_feature_config #####
+    #### Uncomment these lines when silibs common incorporates a local mirror of mu_feature_config #####
     # set(FPFW_CFG_MGR_SCRIPT   ${MU_SCRIPT_PATH}/KnobService.py)
+    # set(MU_SCRIPT_PATH        ${TARGET_DIR_SILIBS_COMMON}/mu_feature_config/SetupDataPkg/Tools)
+    #### Remove this line when silibs common incorporates a local mirror of mu_feature_config ##########
     set(FPFW_CFG_MGR_SCRIPT   ${CMAKE_CURRENT_SOURCE_DIR}/temp_copies_of_mu_scripts/KnobService.py)
-    ###############################################################################################
+    ####################################################################################################
 
     set(PROD_FW_KNOBS_PATH    ${CMAKE_SOURCE_DIR}/tools/config_knobs)
     set(FPFW_CFG_MGR_PROFILES ${PROD_FW_KNOBS_PATH}/kng_mscp_config_platform.csv

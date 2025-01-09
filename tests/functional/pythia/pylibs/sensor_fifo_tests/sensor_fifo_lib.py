@@ -93,7 +93,7 @@ class SensorDataCreator:
         if not (0 <= max_pstate <= 31): raise ValueError("max_pstate must be 0-31")
         if not (0 <= cstate <= 7): raise ValueError("cstate must be 0-7")
         if not (0 <= plimit <= 31): raise ValueError("plimit must be 0-31")
-        if not (0 <= core <= 127): raise ValueError("core must be 0-127")
+        if not (0 <= core <= 135): raise ValueError("core must be 0-135")
         if not (0 <= mpam_low <= 255): raise ValueError("mpam_low must be 0-255")
         if not (0 <= mpam_high <= 15): raise ValueError("mpam_high must be 0-15")
         if not (0 <= boost_priority <= 15): raise ValueError("boost_priority must be 0-15")
@@ -149,7 +149,7 @@ class SensorDataCreator:
         if cppc_desired is not None and not (0 <= cppc_desired <= 31):
             raise ValueError("cppc_desired must be 0-31")
         if not (0 <= plimit <= 31): raise ValueError("plimit must be 0-31")
-        if not (0 <= core_id <= 127): raise ValueError("core_id must be 0-127")
+        if not (0 <= core_id <= 135): raise ValueError("core_id must be 0-135")
         if not (0 <= mpam_low <= 255): raise ValueError("mpam_low must be 0-255")
         if not (0 <= s_desired_perf <= 31): raise ValueError("s_desired_perf must be 0-31")
 

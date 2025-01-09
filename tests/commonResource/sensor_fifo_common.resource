@@ -7,6 +7,9 @@ Library           pylibs.sensor_fifo_tests.sensor_fifo_cli_test.SensorFifoCliTes
 ...               host_config=${HOST_CONFIG_DIR}/mscp_runtime_fw.json
 ...               WITH NAME    sensor_fifo_cli_test_lib
 
+Library           ${CURDIR}/../functional/pythia/pylibs/sensor_fifo_tests/sensor_fifo_lib.py
+Library           ${CURDIR}/../functional/pythia/pylibs/sensor_fifo_tests/sensor_data_generator.py
+
 *** Keywords ***
 Validate Test Result
     [Arguments]    ${test_result}
@@ -49,10 +52,10 @@ Teardown Test Environment
     ${teardown_result}=    Call Method    ${test_lib}    teardown_dut
     Should Be True    ${teardown_result}    Failed to teardown DUT
 
-Run Command
+Run Command On SCP
     [Arguments]    ${command}    ${read_until_key}
     ${test_lib}=    Get Library Instance    sensor_fifo_cli_test_lib
-    ${result}=    Call Method    ${test_lib}    run_command    ${command}    ${read_until_key}
+    ${result}=    Call Method    ${test_lib}    run_command_on_scp    ${command}    ${read_until_key}
     [Return]    ${result}
 
 Enable FIFO

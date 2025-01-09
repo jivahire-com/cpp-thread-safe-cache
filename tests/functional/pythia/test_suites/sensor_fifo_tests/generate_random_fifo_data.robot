@@ -4,7 +4,7 @@ Library           ${CURDIR}/../../pylibs/sensor_fifo_tests/sensor_fifo_lib.py
 Library           ${CURDIR}/../../pylibs/sensor_fifo_tests/sensor_data_generator.py
 
 *** Variables ***
-${RANDOM_SEED}    ${52}    # More explicit seed value
+${RANDOM_SEED}    ${80}    # More explicit seed value
 ${NUM_ENTRIES}    ${5}       # Number of entries to generate per FIFO
 
 *** Keywords ***

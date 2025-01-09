@@ -38,7 +38,8 @@ class SensorDataGenerator:
                 'vcore': (750, 950),    # mV
                 'vcpu': (900, 1100),    # mV
                 'vsys': (1100, 1300),   # mV
-                'ldo': (0, 511)         # Raw value
+                'ldo': (0, 511),        # Raw value
+                'pvt': (0, 0xFFFF)      # 0-65535 for PVT_VOLTAGE values
             },
             'current': (50, 200),       # mA
             'power': (10, 100),         # W
@@ -74,14 +75,23 @@ class SensorDataGenerator:
             }
         }
 
+    def get_valid_core_id(self) -> int:
+        """Get a valid core_id value within the range 0-135.
+        
+        Returns:
+            int: A core_id value between 0 and 135
+        """
+        return random.randint(0, 135)  # Direct generation within valid range
+    
     def generate_random_data(self, fifo_id: Union[SensorFifoId, int], num_entries: int) -> List[List[str]]:
         """Generate specified number of random entries for given FIFO type"""
         fifo_id = SensorFifoId(fifo_id)
         entries = []
         
-        base_offset = fifo_id.value * 1_000_000_000
+        timestamp_base = random.randint(0, 3600) * int(1e9)  # Random base within 24 hours
+        
         for entry_num in range(num_entries):
-            timestamp_offset = base_offset + (entry_num * 100_000_000)
+            timestamp_offset = timestamp_base + (entry_num * random.randint(1000000, 999999999))
             if fifo_id == SensorFifoId.PSTATE_TELEMETRY_HW:
                 entry = create_sensor_data(
                     fifo_id,
@@ -93,7 +103,7 @@ class SensorDataGenerator:
                     max_pstate=random.randint(*self.ranges['pstate']['value']),
                     cstate=random.randint(*self.ranges['pstate']['cstate']),
                     plimit=random.randint(*self.ranges['pstate']['plimit']),
-                    core=random.randint(*self.ranges['pstate']['core']),
+                    core=self.get_valid_core_id(),  # Use clamped core_id
                     overflow=random.choice([True, False]),
                     mpam_low=random.randint(*self.ranges['pstate']['mpam_low']),
                     mpam_high=random.randint(*self.ranges['pstate']['mpam_high']),
@@ -102,23 +112,29 @@ class SensorDataGenerator:
                 
             elif fifo_id == SensorFifoId.SCP_MSG_TELEMETRY_HW:
                 msg_type = random.randint(*self.ranges['scp_msg']['msg_type'])
-                entry = create_sensor_data(
-                    fifo_id,
-                    timestamp_offset_ns=timestamp_offset,
-                    msg_type=msg_type,
-                    mpam_high=random.randint(*self.ranges['pstate']['mpam_high']),
-                    pstate=random.randint(*self.ranges['pstate']['value']),
-                    ldo_voltage=random.randint(*self.ranges['voltage']['ldo']) if msg_type == 0 else None,
-                    cppc_desired=random.randint(*self.ranges['scp_msg']['cppc_desired']) if msg_type == 0 else None,
-                    throttle_pri=random.randint(*self.ranges['scp_msg']['throttle_pri']) if msg_type != 0 else None,
-                    boost_pri=random.randint(*self.ranges['scp_msg']['boost_pri']) if msg_type != 0 else None,
-                    desired_perf=random.randint(*self.ranges['scp_msg']['desired_perf']) if msg_type != 0 else None,
-                    plimit=random.randint(*self.ranges['pstate']['plimit']),
-                    core_id=random.randint(*self.ranges['pstate']['core']),
-                    overflow=random.choice([True, False]),
-                    mpam_low=random.randint(*self.ranges['pstate']['mpam_low']),
-                    s_desired_perf=random.randint(*self.ranges['scp_msg']['s_desired_perf'])
-                )
+                valid_core_id = self.get_valid_core_id()  # Get valid core_id before creating data
+                
+                try:
+                    entry = create_sensor_data(
+                        fifo_id,
+                        timestamp_offset_ns=timestamp_offset,
+                        msg_type=msg_type,
+                        mpam_high=random.randint(*self.ranges['pstate']['mpam_high']),
+                        pstate=random.randint(*self.ranges['pstate']['value']),
+                        ldo_voltage=random.randint(*self.ranges['voltage']['ldo']) if msg_type == 0 else None,
+                        cppc_desired=random.randint(*self.ranges['scp_msg']['cppc_desired']) if msg_type == 0 else None,
+                        throttle_pri=random.randint(*self.ranges['scp_msg']['throttle_pri']) if msg_type != 0 else None,
+                        boost_pri=random.randint(*self.ranges['scp_msg']['boost_pri']) if msg_type != 0 else None,
+                        desired_perf=random.randint(*self.ranges['scp_msg']['desired_perf']) if msg_type != 0 else None,
+                        plimit=random.randint(*self.ranges['pstate']['plimit']),
+                        core_id=valid_core_id,  # Use pre-validated core_id
+                        overflow=random.choice([True, False]),
+                        mpam_low=random.randint(*self.ranges['pstate']['mpam_low']),
+                        s_desired_perf=random.randint(*self.ranges['scp_msg']['s_desired_perf'])
+                    )
+                except ValueError as e:
+                    print(f"Debug - core_id: {valid_core_id}, msg_type: {msg_type}")  # Debug info
+                    raise e
                 
             elif fifo_id == SensorFifoId.TILE_TEMPERATURE_TELEMETRY_HW:
                 entry = create_sensor_data(
@@ -146,8 +162,6 @@ class SensorDataGenerator:
                 current = random.randint(*self.ranges['current'])
                 voltage_mv = random.randint(*self.ranges['voltage']['vcore'])
                 voltage_scaled = min(255, int(voltage_mv / 4))  # Scale down voltage to 0-255 range
-                min_current = max(current - 10, self.ranges['current'][0])
-                max_current = min(current + 10, self.ranges['current'][1])
                 entry = create_sensor_data(
                     fifo_id,
                     timestamp_offset_ns=timestamp_offset,
@@ -167,13 +181,15 @@ class SensorDataGenerator:
             elif fifo_id == SensorFifoId.PVT_TEMP_FW:
                 entry = create_sensor_data(
                     fifo_id,
+                    timestamp_offset_ns=timestamp_offset,
                     temperatures=[random.randint(*self.ranges['temperature']) 
                                 for _ in range(NUMBER_OF_SOC_TEMP_SENSORS)]
                 )
-                
+
             elif fifo_id == SensorFifoId.PVT_VOLTAGE_FW:
                 entry = create_sensor_data(
                     fifo_id,
+                    timestamp_offset_ns=timestamp_offset,  # Use unique timestamp
                     voltages=[random.randint(*self.ranges['voltage']['vcore']) 
                              for _ in range(NUMBER_OF_SOC_VOLT_MON_SENSORS)]
                 )
@@ -228,6 +244,7 @@ class SensorDataGenerator:
             random.seed(seed)
             
         fifo_id = self.FIFO_NAME_TO_ID[fifo_name]
+                   
         return self.generate_random_data(fifo_id, num_entries)
 
     def generate_all_sensor_fifo_data(self, num_entries: int = 1, seed: Optional[int] = None) -> Dict[str, List[List[str]]]:
@@ -261,8 +278,16 @@ if __name__ == "__main__":
         print(f"\nEntry {i}:")
         for qword in entry:
             print(f"  {qword}")
+    
+    # Example 2: Test PVT_VOLTAGE specifically
+    pvt_voltage_data = generator.generate_sensor_fifo_data("PVT_VOLTAGE", num_entries=2)
+    print("\n=== PVT_VOLTAGE Data ===")
+    for i, entry in enumerate(pvt_voltage_data, 1):
+        print(f"\nEntry {i}:")
+        for j, qword in enumerate(entry):
+            print(f"  Buffer[{j}]: {qword}")
             
-    # Example 2: Generate all FIFO types
+    # Example 3: Generate all FIFO types
     print("\n=== Generating All FIFO Types ===")
     all_data = generator.generate_all_sensor_fifo_data(num_entries=4)
     for fifo_name, entries in all_data.items():

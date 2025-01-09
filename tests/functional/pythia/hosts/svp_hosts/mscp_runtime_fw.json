@@ -72,8 +72,8 @@
         "setup_script": "${env:REPO_APP_PATH_microsoft.internal.windows.virtualizerruntime}/SLS/windows/setup.bat",
         "params": {
             "KingsgateSVP.DIE_0.CDEDSS.SDM_EMCPU.ARM_FM_CORTEX_M7.#EXTRA_PROPERTIES#/ImageInfo/cpu0/initial_image": "${env:REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/cded/cded_fw.elf",
-            "KingsgateSVP.DIE_0.CDEDSS.KMP_EMCPU.KMP_EMCPU_UART.#EXTRA_PROPERTIES#runtime_disabled":"true",
-            "KingsgateSVP.DIE_0.CDEDSS.KMP_EMCPU.terminal_uart_kmp.#EXTRA_PROPERTIES#runtime_disabled":"true",
+            "KingsgateSVP.DIE_0.CDEDSS.KMP_EMCPU.KMP_EMCPU_UART.#EXTRA_PROPERTIES#runtime_disabled":"false",
+            "KingsgateSVP.DIE_0.CDEDSS.KMP_EMCPU.terminal_uart_kmp.#EXTRA_PROPERTIES#runtime_disabled":"false",
             "KingsgateSVP.DIE_0.CDEDSS.SDM_EMCPU.SDM_EMCPU_UART.#EXTRA_PROPERTIES#TerminalAutoOpen":"false",
             "KingsgateSVP.DIE_0.CDEDSS.SDM_EMCPU.SDM_EMCPU_UART.#EXTRA_PROPERTIES#runtime_disabled":"false",
             "KingsgateSVP.DIE_0.CDEDSS.SDM_EMCPU.terminal_uart_sdm.#SCML_PROPERTIES#ENABLE_TCP_ON_PORT": "4271",

@@ -258,6 +258,10 @@
                         "ICC Init",
                         "icc_init.test.exe"
                     ],
+                    [
+                        "ARSM Init",
+                        "arsm_init.test.exe"
+                    ],
                 ],
             },
         },

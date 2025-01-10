@@ -1,0 +1,36 @@
+set(TARGET arsm_init.test)
+
+set(SOURCES
+    test_arsm_init.cpp
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/arsm_init.c
+)
+
+# Compile test
+add_executable(${TARGET} ${SOURCES})
+
+target_link_libraries(${TARGET}
+    PRIVATE
+        fwlib.lib.init
+        fwlib.lib.utils
+        ms::cmocka::testrunner
+        ms::lib::system_info
+        ms::service::atu_service
+        silibs_platform
+        silibs::idsw
+        silibs::idsw_kng
+)
+
+# Platform ports
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+
+lint_target(${TARGET})
+format_target(${TARGET})
+coverage_target(${TARGET})
+unit_test_target(${TARGET})
+
+#mock the functions needed
+mock_target(${TARGET}
+    system_info_is_warm_start
+    idsw_get_die_id
+    memset
+)

@@ -429,6 +429,7 @@ int scmi_send_resp(uint8_t protocol_id, uint8_t cmd_id, uint8_t* payload, size_t
     local_packet->smt_header.payload_size = size + sizeof(local_packet->header);
     local_packet->header.protocol_id = protocol_id;
     local_packet->header.msg_type = cmd_id;
+    local_packet->header.token = 0;
 
     memcpy(local_packet->payload, payload, size);
     __DSB();

@@ -66,16 +66,16 @@ TEST_FUNCTION(test_record_enable_disable, test_setup, test_teardown)
         inst_pkg_element_enable[i] = false;
     }
 
-    package_create_enable_pwr_record(POWER_TELEMETRY_ELEMENT_SOC_PC3);
+    package_create_enable_disable_pwr_record(POWER_TELEMETRY_ELEMENT_SOC_PC3, true);
     assert_true(power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_PC3]);
 
-    package_create_disable_pwr_record(POWER_TELEMETRY_ELEMENT_SOC_PC3);
+    package_create_enable_disable_pwr_record(POWER_TELEMETRY_ELEMENT_SOC_PC3, false);
     assert_false(power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_PC3]);
 
-    package_create_enable_inst_record(INST_TELEMETRY_ELEMENT_CORE);
+    package_create_enable_disable_inst_record(INST_TELEMETRY_ELEMENT_CORE, true);
     assert_true(inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_CORE]);
 
-    package_create_disable_inst_record(INST_TELEMETRY_ELEMENT_CORE);
+    package_create_enable_disable_inst_record(INST_TELEMETRY_ELEMENT_CORE, false);
     assert_false(inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_CORE]);
 }
 

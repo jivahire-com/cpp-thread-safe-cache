@@ -48,12 +48,24 @@ void data_proc_tlm_cmpnt_aggregate_24hr_tlm_data(void)
     function_called();
 }
 
+void data_proc_tlm_cmpnt_enable_disable_transition(bool enable)
+{
+    FPFW_UNUSED(enable);
+
+    function_called();
+}
+
 void in_band_tlm_cmpnt_add_inst_sample(void)
 {
     function_called();
 }
 
 void in_band_tlm_cmpnt_generate_pwr_pkg(void)
+{
+    function_called();
+}
+
+void in_band_tlm_cmpnt_handle_incoming_dcs_msgs(void)
 {
     function_called();
 }

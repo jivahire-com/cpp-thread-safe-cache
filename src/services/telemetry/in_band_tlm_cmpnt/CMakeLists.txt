@@ -29,6 +29,7 @@ target_link_libraries(${TARGET}
         ms::lib::error_codes
         ms::lib::event_trace::trace
         ms::lib::interface::in_band_telemetry_ddr
+        ms::service::dcs
 
 
 )

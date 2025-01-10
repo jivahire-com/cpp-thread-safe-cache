@@ -47,11 +47,19 @@ typedef struct
 void exec_tlm_cmpnt_init(uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_period_ms);
 
 /**
- * @brief Disable power telemetry data collection. Used for testing purposes.
+ * @brief Check if the telemetry collection is enabled.
+ *
+ * @return true if enabled, false if disabled.
+ */
+bool exec_tlm_cmpnt_is_telemetry_enabled(void);
+
+/**
+ * @brief Enable or Disable power telemetry data collection.
+ * param[in] enable true to enable, false to disable.
  *
  * @return None
  */
-void exec_tlm_cmpnt_disable_data_collection(void);
+void exec_tlm_cmpnt_enable_disable_telemetry(bool enable);
 
 /**
  * @brief Get the status of the telemetry executive component.
@@ -61,3 +69,10 @@ void exec_tlm_cmpnt_disable_data_collection(void);
  * @return None
  */
 void exec_tlm_cmpnt_get_status(telemetry_executive_status_t *status);
+
+/**
+ * @brief Notify the telemetry executive component that a new in-band DCS message has been received.
+ *
+ * @return None
+ */
+void exec_tlm_cmpnt_notify_new_in_band_dcs_message(void);

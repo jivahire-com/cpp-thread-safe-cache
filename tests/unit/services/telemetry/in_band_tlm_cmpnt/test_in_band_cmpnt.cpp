@@ -45,6 +45,7 @@ static int test_teardown(void** pContext)
 
 TEST_FUNCTION(test_in_band_cmpnt_init, test_setup, test_teardown)
 {
+    // ddr_manager_init
     expect_any_always(__wrap__txe_queue_create, queue_ptr);
     expect_any_always(__wrap__txe_queue_create, name_ptr);
     expect_any_always(__wrap__txe_queue_create, message_size);
@@ -62,6 +63,13 @@ TEST_FUNCTION(test_in_band_cmpnt_init, test_setup, test_teardown)
     will_return_always(__wrap__txe_queue_send, TX_SUCCESS);
 
     expect_function_calls(__wrap_FpFwAssertWithArgs, NUM_POWER_POOL_BLOCKS + NUM_INST_POOL_BLOCKS + 5);
+
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+
+    will_return_always(__wrap__txe_block_pool_create, TX_SUCCESS);
+    expect_function_calls(__wrap__txe_block_pool_create, 1);
+
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 2);
 
     in_band_tlm_cmpnt_init(DIE_ID, 3);
 }

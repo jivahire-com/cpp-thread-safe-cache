@@ -39,5 +39,12 @@ mock_target(${TARGET}
     _txe_queue_send
     _txe_queue_receive
     _txe_queue_flush
+    _txe_block_pool_create
+    _txe_block_release
+    dcs_client_register
+    dcs_is_primary_instance
+    dcs_client_send_trp_msg
+    dcs_client_send_trp_response
+    dcs_client_flush_incoming_queue
     FpFwAssertWithArgs
 )

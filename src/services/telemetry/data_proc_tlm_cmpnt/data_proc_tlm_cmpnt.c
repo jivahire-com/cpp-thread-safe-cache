@@ -12,6 +12,7 @@
 
 #include "tlm_logger_i.h" // internal APIs
 
+#include <FpFwUtils.h>
 #include <telemetry_events_i.h>
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -31,4 +32,9 @@ void data_proc_tlm_cmpnt_init(void)
     {
         FPFW_ET_LOG(DTSCoefficientReadFailedInit, status);
     }
+}
+
+void data_proc_tlm_cmpnt_enable_disable_transition(bool enable)
+{
+    FPFW_UNUSED(enable);
 }

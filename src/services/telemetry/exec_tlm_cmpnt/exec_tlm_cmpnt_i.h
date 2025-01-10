@@ -21,6 +21,7 @@
 #define INST_SAMPLE_TMR_EXPIRED    (1 << 1)
 #define PWR_PKG_TMR_EXPIRED        (1 << 2)
 #define EVERY_24HR_PKG_TMR_EXPIRED (1 << 3)
+#define NEW_INBAND_DCS_MESSAGE     (1 << 4)
 
 /*-------------- Typedefs ----------------*/
 

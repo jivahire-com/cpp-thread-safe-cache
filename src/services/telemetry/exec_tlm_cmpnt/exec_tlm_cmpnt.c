@@ -153,6 +153,11 @@ void tlm_svc_thread(ULONG thread_input)
         {
             data_proc_tlm_cmpnt_aggregate_24hr_tlm_data();
         }
+
+        if (current_bits & NEW_INBAND_DCS_MESSAGE)
+        {
+            in_band_tlm_cmpnt_handle_incoming_dcs_msgs();
+        }
     }
 }
 
@@ -188,16 +193,48 @@ void every_24hr_pkg_timer_cb(ULONG context)
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 
-void exec_tlm_cmpnt_disable_data_collection(void)
+void exec_tlm_cmpnt_notify_new_in_band_dcs_message(void)
 {
-    tlm_executive_status.op_mode = TLM_OP_MODE_DISABLED;
+    UINT txStatus = tx_event_flags_set(&s_thread_control, NEW_INBAND_DCS_MESSAGE, TX_OR);
+    FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
+}
 
-    tx_timer_deactivate(&pwr_aggr_tmr);
-    tx_timer_deactivate(&inst_sample_tmr);
-    tx_timer_deactivate(&power_pkg_tmr);
-    tx_timer_deactivate(&_24hr_pkg_tmr);
+bool exec_tlm_cmpnt_is_telemetry_enabled(void)
+{
+    return tlm_executive_status.op_mode == TLM_OP_MODE_NOMINAL;
+}
 
-    FPFW_ET_LOG(DataCollectionDisabled);
+void exec_tlm_cmpnt_enable_disable_telemetry(bool enable)
+{
+    data_proc_tlm_cmpnt_enable_disable_transition(enable);
+
+    if (enable)
+    {
+        tx_timer_activate(&pwr_aggr_tmr);
+
+        if (tlm_executive_status.inst_pkg_sample_period_ms > 0)
+        {
+            tx_timer_activate(&inst_sample_tmr);
+        }
+        tx_timer_activate(&inst_sample_tmr);
+        tx_timer_activate(&power_pkg_tmr);
+        tx_timer_activate(&_24hr_pkg_tmr);
+
+        tlm_executive_status.op_mode = TLM_OP_MODE_NOMINAL;
+
+        FPFW_ET_LOG(DataCollectionEnabled);
+    }
+    else
+    {
+        tlm_executive_status.op_mode = TLM_OP_MODE_DISABLED;
+
+        tx_timer_deactivate(&pwr_aggr_tmr);
+        tx_timer_deactivate(&inst_sample_tmr);
+        tx_timer_deactivate(&power_pkg_tmr);
+        tx_timer_deactivate(&_24hr_pkg_tmr);
+
+        FPFW_ET_LOG(DataCollectionDisabled);
+    }
 }
 
 void exec_tlm_cmpnt_get_status(telemetry_executive_status_t* status)

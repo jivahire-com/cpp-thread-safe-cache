@@ -36,8 +36,8 @@ void in_band_tlm_cmpnt_init(uint8_t die_id, uint16_t inst_samples_per_pkg)
     dcs_manager_init();
 
     // TODO: temporary until DCS is supported
-    package_create_enable_pwr_record(POWER_TELEMETRY_ELEMENT_CORE_VOLTAGE);
-    package_create_enable_pwr_record(POWER_TELEMETRY_ELEMENT_CORE_CURRENT);
+    package_create_enable_disable_pwr_record(POWER_TELEMETRY_ELEMENT_CORE_VOLTAGE, true);
+    package_create_enable_disable_pwr_record(POWER_TELEMETRY_ELEMENT_CORE_CURRENT, true);
 }
 
 void in_band_tlm_cmpnt_add_inst_sample(void)

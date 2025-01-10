@@ -88,7 +88,22 @@ bool dcs_is_primary_instance(void)
     return tlm_relay_is_primary_instance();
 }
 
-fpfw_status_t dcs_register_client(dcp_client_id_t id, p_dcs_client_t client)
+bool dcs_is_this_device(uint8_t die_id, uint8_t cpu_id)
+{
+    return tlm_relay_is_this_device(die_id, cpu_id);
+}
+
+uint8_t dcs_get_this_die_id(void)
+{
+    return tlm_relay_get_this_die_id();
+}
+
+uint8_t dcs_get_this_cpu_id(void)
+{
+    return tlm_relay_get_this_cpu_id();
+}
+
+fpfw_status_t dcs_client_register(dcp_client_id_t id, p_dcs_client_t client)
 {
     if (id >= DCP_CLIENT_ID_MAX)
     {
@@ -126,6 +141,20 @@ static void dcs_thread(ULONG thread_input)
             dcp_svc_client_handle_incoming_msgs();
         }
     }
+}
+
+void dcs_client_send_trp_msg(p_trp_msg_t trp_msg, trp_broadcast_t broadcast_option)
+{
+    trp_msg->hdr.broadcast_type = broadcast_option;
+    // called from clients thread but can use the same api called from driver framework
+    dcs_queue_for_outbound_from_drv_frmwk(trp_msg, false);
+    trp_msg->hdr.broadcast_type = TRP_BROADCAST_NONE;
+}
+
+void dcs_client_send_trp_response(p_trp_msg_t trp_msg)
+{
+    // called from clients thread but can use the same api called from driver framework
+    dcs_queue_for_outbound_from_drv_frmwk(trp_msg, true);
 }
 
 void dcs_handle_outbound_msgs(void)
@@ -341,11 +370,35 @@ bool dcs_is_valid_trp_msg_from_drv_frmwk(p_trp_msg_t trp_msg)
         switch (trp_msg->hdr.trp_msg_id)
         {
         case TRP_MSG_ID_READ_PACKAGE:
+            if (trp_msg->hdr.payload_size != 0)
+            {
+                trp_msg->hdr.trp_msg_status = TRP_STATUS_E_SIZE;
+                valid = false;
+            }
+            break;
+
+        case TRP_MSG_ID_PACKAGE_NOTIFICATION:
+        case TRP_MSG_ID_READ_PACKAGE_RESPONSE:
         case TRP_MSG_ID_READ_PACKAGE_COMPLETE:
-        case TRP_MSG_ID_READ_INTERCORE_BLOCK:
+            if (trp_msg->hdr.payload_size != sizeof(trp_msg_read_pkg_rsp_t))
+            {
+                trp_msg->hdr.trp_msg_status = TRP_STATUS_E_SIZE;
+                valid = false;
+            }
+            break;
+
+        case TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION:
         case TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE:
         case TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE:
-            if (trp_msg->hdr.payload_size != sizeof(trp_msg_read_data_t))
+            if (trp_msg->hdr.payload_size != sizeof(trp_msg_read_block_rsp_t))
+            {
+                trp_msg->hdr.trp_msg_status = TRP_STATUS_E_SIZE;
+                valid = false;
+            }
+            break;
+
+        case TRP_MSG_ID_READ_INTERCORE_BLOCK:
+            if (trp_msg->hdr.payload_size != sizeof(trp_block_read_req_t))
             {
                 trp_msg->hdr.trp_msg_status = TRP_STATUS_E_SIZE;
                 valid = false;
@@ -462,6 +515,38 @@ void dcs_flush_outgoing_queue(void)
         else if (queue_status != TX_QUEUE_EMPTY)
         {
             FPFW_ET_LOG(DcsSvcClientQueueFail, (uintptr_t)&s_dcs_context.trp_outbound_queue.queue, queue_status);
+        }
+    } while (queue_status == TX_SUCCESS);
+}
+
+void dcs_client_flush_incoming_queue(dcp_client_id_t id)
+{
+    p_trp_msg_t trp_msg = NULL;
+    UINT queue_status = 0;
+
+    if ((id >= DCP_CLIENT_ID_MAX) || (s_dcs_context.clients[id] == NULL))
+    {
+        FPFW_ET_LOG(DcsInvalidClientId, id);
+        return;
+    }
+
+    TX_QUEUE* p_queue = &s_dcs_context.clients[id]->rx_queue;
+
+    do
+    {
+        queue_status = tx_queue_receive(p_queue, &trp_msg, TX_NO_WAIT);
+        if ((queue_status == TX_SUCCESS) && (trp_msg != NULL))
+        {
+
+            UINT block_status = tx_block_release(trp_msg);
+            if (block_status != TX_SUCCESS)
+            {
+                FPFW_ET_LOG(DcsSvcClientFreeFail, (uintptr_t)trp_msg, block_status);
+            }
+        }
+        else if (queue_status != TX_QUEUE_EMPTY)
+        {
+            FPFW_ET_LOG(DcsSvcClientQueueFail, (uintptr_t)p_queue, queue_status);
         }
     } while (queue_status == TX_SUCCESS);
 }

@@ -143,7 +143,7 @@ static FPFW_CLI_STATUS disable_collection(int Argc, const char** Argv)
     FPFW_UNUSED(Argc);
     FPFW_UNUSED(Argv);
 
-    exec_tlm_cmpnt_disable_data_collection();
+    exec_tlm_cmpnt_enable_disable_telemetry(false);
 
     FpFwCliPrint("\nPower Telemetry Disabled!\n");
     return CLI_SUCCESS;

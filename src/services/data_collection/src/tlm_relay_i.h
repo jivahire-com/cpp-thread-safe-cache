@@ -48,6 +48,33 @@ void tlm_relay_init(p_trp_icc_config_t icc_config);
  */
 bool tlm_relay_is_primary_instance(void);
 
+/** @brief Check if the device is the one specified by the die and cpu id
+ *
+ * @note Thread Safe
+ *
+ * @param[in] die_id Die ID to check
+ * @param[in] cpu_id Cpu ID to check
+ *
+ * @return true if this is the device specified by the die and cpu id
+ */
+bool tlm_relay_is_this_device(uint8_t die_id, uint8_t cpu_id);
+
+/** @brief Get the die id of this device
+ *
+ * @note Thread Safe
+ *
+ * @return Die ID of this device
+ */
+uint8_t tlm_relay_get_this_die_id(void);
+
+/** @brief Get the cpu id of this device
+ *
+ * @note Thread Safe
+ *
+ * @return Cpu ID of this device
+ */
+uint8_t tlm_relay_get_this_cpu_id(void);
+
 /**
  * @brief Send a DCP message to the Host.
  *

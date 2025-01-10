@@ -30,36 +30,22 @@ extern uint32_t inst_pkg_record_number[INST_TELEMETRY_ELEMENT_ID_MAX];
 /*--------- Function Prototypes ----------*/
 
 /**
- * @brief enable a power record for packaging
+ * @brief enable/disable a power record for packaging
  *
  * @param[in] element_id - record to enable
+ * @param[in] enable_record - true to enable, false to disable
  * @retval none
  */
-void package_create_enable_pwr_record(pwr_telemetry_element_id_t element_id);
+void package_create_enable_disable_pwr_record(pwr_telemetry_element_id_t element_id, bool enable_record);
 
 /**
- * @brief disable a power record for packaging
- *
- * @param[in] element_id - record to disable
- * @retval none
- */
-void package_create_disable_pwr_record(pwr_telemetry_element_id_t element_id);
-
-/**
- * @brief enable a instantaneous record for packaging
+ * @brief enable/disable a instantaneous record for packaging
  *
  * @param[in] element_id - record to enable
+ * @param[in] enable_record - true to enable, false to disable
  * @retval none
  */
-void package_create_enable_inst_record(instantaneous_telemetry_element_id_t element_id);
-
-/**
- * @brief disable a instantaneous record for packaging
- *
- * @param[in] element_id - record to disable
- * @retval none
- */
-void package_create_disable_inst_record(instantaneous_telemetry_element_id_t element_id);
+void package_create_enable_disable_inst_record(instantaneous_telemetry_element_id_t element_id,  bool enable_record);
 
 /**
  * @brief Create a power package

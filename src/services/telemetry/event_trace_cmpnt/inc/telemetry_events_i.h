@@ -76,16 +76,47 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      18,
-                     DataCollectionDisabled,
+                     DataCollectionEnabled,
                      FPFW_ET_LEVEL_INFO)
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      19,
-                     TelemetryDataCleared,
+                     DataCollectionDisabled,
                      FPFW_ET_LEVEL_INFO)
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      20,
+                     TelemetryDataCleared,
+                     FPFW_ET_LEVEL_INFO)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                     21,
+                     DcsMgrClientFreeFail,
+                     FPFW_ET_LEVEL_WARNING,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, block_addr),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, tx_status))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                     22,
+                     DcsMgrClientQueueFail,
+                     FPFW_ET_LEVEL_WARNING,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, queue),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, tx_status))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                     23,
+                     DcsMgrClientUnexpectedMsg,
+                     FPFW_ET_LEVEL_WARNING,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, msg_id))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                     24,
+                     DcsMgrInvalidEventEnableDisable,
+                     FPFW_ET_LEVEL_WARNING,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, provider_id),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, event_id))
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                     25,
                      DTSCoefficientReadFailedInit,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))

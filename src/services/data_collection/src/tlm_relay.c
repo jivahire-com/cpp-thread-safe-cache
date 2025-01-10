@@ -72,6 +72,21 @@ bool tlm_relay_is_primary_instance(void)
     return (trp_icc_config->this_die_id == DIE_0) && (trp_icc_config->this_cpu_id == CPU_MCP);
 }
 
+bool tlm_relay_is_this_device(uint8_t die_id, uint8_t cpu_id)
+{
+    return (trp_icc_config->this_die_id == die_id) && (trp_icc_config->this_cpu_id == cpu_id);
+}
+
+uint8_t tlm_relay_get_this_die_id(void)
+{
+    return trp_icc_config->this_die_id;
+}
+
+uint8_t tlm_relay_get_this_cpu_id(void)
+{
+    return trp_icc_config->this_cpu_id;
+}
+
 // called from the driver framework thread
 void tlm_relay_icc_recv_complete_notify_from_drv_frmwk(void* context, size_t output_size_bytes, fpfw_status_t status)
 {

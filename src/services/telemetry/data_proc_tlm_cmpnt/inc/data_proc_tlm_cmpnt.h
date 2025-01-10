@@ -28,6 +28,15 @@
 void data_proc_tlm_cmpnt_init(void);
 
 /**
+ * @brief Notification on telemetry collection transitioning to disabled or enabled.
+ *
+ * @param[in] enable true if enabled, false if disabled.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_enable_disable_transition(bool enable);
+
+/**
  * @brief Primary power data collection entry point.  Read raw data from sensor fifo and update telemetry aggregation structures.
  *
  * @return None

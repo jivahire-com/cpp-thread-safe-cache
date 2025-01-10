@@ -27,6 +27,8 @@
 #define DCP_PLATFORM_COBALT_100 (1)
 #define DCP_PLATFORM_COBALT_200 (2)
 
+#define DCP_MAX_ENABLE_DISABLE_EVENTS (64)
+
 /*-------------- Typedefs ----------------*/
 
 // clang-format off
@@ -136,9 +138,10 @@ typedef enum {
 typedef struct __attribute__((packed)) {
     uint16_t number_of_events;
     struct __attribute__((packed)) {
+        uint16_t provider_id;
         uint16_t event_id;
         uint16_t state; // dcp_events_enable_state_t
-    } events[64];       // max events per message
+    } events[DCP_MAX_ENABLE_DISABLE_EVENTS];       // max events per message
 } dcp_msg_events_enable_disable_t, *p_dcp_msg_events_enable_disable_t;
 
 /* CLIENT_START_STOP */

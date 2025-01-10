@@ -39,9 +39,3 @@ void dcp_svc_client_handle_incoming_msgs(void);
  * @param[in] trp_msg The TRP message containing the DCP message
  */
 void dcp_svc_client_handle_dcp_msg(p_trp_msg_t trp_msg);
-
-/**
- * @brief Flush the incoming dcp svc client queue
- *
- */
-void dcp_svc_client_flush_incoming_queue(void);

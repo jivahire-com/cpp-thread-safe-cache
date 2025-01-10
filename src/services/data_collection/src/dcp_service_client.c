@@ -32,7 +32,7 @@
 
 /*-------- Function Prototypes -----------*/
 
-trp_msg_t* dcs_svc_client_queue_mem[DCS_MAX_DCS_SVC_ClIENT_MESSAGES];
+p_trp_msg_t dcs_svc_client_queue_mem[DCS_MAX_DCS_SVC_ClIENT_MESSAGES];
 uint8_t dcs_svc_client_pool_mem[DCS_SVC_CLIENT_BLOCK_POOL_SIZE];
 
 /*-- Declarations (Statics and globals) --*/
@@ -62,7 +62,7 @@ void dcp_svc_client_init(p_dcp_msg_ifwi_version_t ifwi_version)
                                      sizeof(dcs_svc_client_pool_mem)); // pool_size
     FPFW_RUNTIME_ASSERT_EXT(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_dcs_client.rx_pool, 0, 0);
 
-    dcs_register_client(DCP_CLIENT_ID_DCS, &s_dcs_client);
+    dcs_client_register(DCP_CLIENT_ID_DCS, &s_dcs_client);
 }
 
 void dcp_svc_client_handle_incoming_msgs(void)
@@ -135,7 +135,10 @@ void dcp_svc_client_handle_dcp_msg(p_trp_msg_t trp_msg)
         // delay to allow clients to process the reset message
         tx_thread_sleep(DCP_RESET_CMD_DELAY_MS);
 
-        dcp_svc_client_flush_incoming_queue();
+        // flushing the queue is going to loop through the queue and free the blocks in the queue
+        // the block that this message is in has already been popped off the queue and will be freed below
+        // after sending the response
+        dcs_client_flush_incoming_queue(DCP_CLIENT_ID_DCS);
         dcs_flush_outgoing_queue();
 
         // setup reply back to host
@@ -193,28 +196,4 @@ void dcp_svc_client_handle_dcp_msg(p_trp_msg_t trp_msg)
     {
         FPFW_ET_LOG(DcsSvcClientFreeFail, (uintptr_t)trp_msg, block_status);
     }
-}
-
-void dcp_svc_client_flush_incoming_queue(void)
-{
-    p_trp_msg_t trp_msg = NULL;
-    UINT queue_status = 0;
-
-    do
-    {
-        queue_status = tx_queue_receive(&s_dcs_client.rx_queue, &trp_msg, TX_NO_WAIT);
-        if ((queue_status == TX_SUCCESS) && (trp_msg != NULL))
-        {
-
-            UINT block_status = tx_block_release(trp_msg);
-            if (block_status != TX_SUCCESS)
-            {
-                FPFW_ET_LOG(DcsSvcClientFreeFail, (uintptr_t)trp_msg, block_status);
-            }
-        }
-        else if (queue_status != TX_QUEUE_EMPTY)
-        {
-            FPFW_ET_LOG(DcsSvcClientQueueFail, (uintptr_t)&s_dcs_client.rx_queue, queue_status);
-        }
-    } while (queue_status == TX_SUCCESS);
 }

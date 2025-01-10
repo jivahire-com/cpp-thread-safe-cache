@@ -32,8 +32,6 @@
 // Max number of messages to be queued for forwarding trp messages
 #define DCS_MAX_TRP_FORWARDING_MESSAGES (DCP_MSG_ID_MAX * 2)
 
-#define ROUND_UP_TO_4_BYTE_ALIGN(x) (((x) + 3) & ~3)
-#define DCS_TRP_MSG_BLOCK_SIZE ROUND_UP_TO_4_BYTE_ALIGN(sizeof(trp_msg_t))
 // threadx allocated 4 bytes per block to manage pool
 #define DCS_BLOCK_POOL_SIZE ((sizeof(uint32_t) + DCS_TRP_MSG_BLOCK_SIZE) * (DCS_MAX_TRP_FORWARDING_MESSAGES))
 

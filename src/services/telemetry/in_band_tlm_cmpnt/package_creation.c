@@ -43,24 +43,28 @@ uint32_t power_pkg_record_number[POWER_TELEMETRY_ELEMENT_ID_MAX];
 uint32_t inst_pkg_record_number[INST_TELEMETRY_ELEMENT_ID_MAX];
 
 /*------------- Functions ----------------*/
-void package_create_enable_pwr_record(pwr_telemetry_element_id_t element_id)
+void package_create_enable_disable_pwr_record(pwr_telemetry_element_id_t element_id, bool enable_record)
 {
-    power_pkg_element_enable[element_id] = true;
+    if (element_id >= POWER_TELEMETRY_ELEMENT_ID_MAX)
+    {
+        FPFW_ET_LOG(DcsMgrInvalidEventEnableDisable, EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA, element_id);
+    }
+    else
+    {
+        power_pkg_element_enable[element_id] = enable_record;
+    }
 }
 
-void package_create_disable_pwr_record(pwr_telemetry_element_id_t element_id)
+void package_create_enable_disable_inst_record(instantaneous_telemetry_element_id_t element_id, bool enable_record)
 {
-    power_pkg_element_enable[element_id] = false;
-}
-
-void package_create_enable_inst_record(instantaneous_telemetry_element_id_t element_id)
-{
-    inst_pkg_element_enable[element_id] = true;
-}
-
-void package_create_disable_inst_record(instantaneous_telemetry_element_id_t element_id)
-{
-    inst_pkg_element_enable[element_id] = false;
+    if (element_id >= INST_TELEMETRY_ELEMENT_ID_MAX)
+    {
+        FPFW_ET_LOG(DcsMgrInvalidEventEnableDisable, EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA, element_id);
+    }
+    else
+    {
+        inst_pkg_element_enable[element_id] = enable_record;
+    }
 }
 
 uint32_t package_create_power_pkg(uintptr_t pkg_location, size_t pkg_available_size)

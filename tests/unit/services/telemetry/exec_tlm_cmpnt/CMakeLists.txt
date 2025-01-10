@@ -38,5 +38,6 @@ mock_target(${TARGET}
     _txe_event_flags_create
     _txe_event_flags_set
     _txe_timer_deactivate
+    _txe_timer_activate
     _txe_timer_info_get
 )

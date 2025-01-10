@@ -15,6 +15,7 @@
 #include <FpFwAssert.h>
 #include <fpfw_status.h>
 #include <stdint.h>
+#include <telemetry_relay_protocol.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -38,9 +39,30 @@ extern TX_QUEUE dcs_pkg_pending_queue;
 void dcs_manager_init(void);
 
 /**
+ * @brief Handle a DCP message from the data collection service.
+ *
+ * @param[in] trp_msg - Pointer to the incoming TRP message
+ */
+void dcs_manager_handle_dcp_msg(p_trp_msg_t trp_msg);
+
+/**
+ * @brief Handle a TRP message from the data collection service.
+ *
+ * @param[in] trp_msg - Pointer to the incoming TRP message
+ */
+void dcs_manager_handle_trp_msg(p_trp_msg_t trp_msg);
+
+/**
  * @brief Queue a telemetry package for eventual transmission to the host.
  *
  * @param[in] pkg_location - location of the package
  * @param[in] pkg_size - size of the package
  */
 void dcs_manager_queue_tlm_package(uintptr_t pkg_location, size_t pkg_size);
+
+/**
+ * @brief Handle a record enable/disable message from the data collection service.
+ *
+ * @param[in] trp_msg - Pointer to the incoming TRP message
+ */
+void dcs_manager_handle_record_enable_disable(p_trp_msg_t trp_msg);

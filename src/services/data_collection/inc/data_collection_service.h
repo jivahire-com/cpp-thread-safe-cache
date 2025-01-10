@@ -62,7 +62,7 @@ void dcs_init(p_dcs_config_t config);
 
 /**
  * @brief The primary instance is the MCP on Die 0, as that is the core that interfaces directly
- * with the Host. Client behavior may differ based on whether it is the primary instance. 
+ * with the Host. Client behavior may differ based on whether it is the primary instance.
  *
  * @note Thread Safe
  *
@@ -70,6 +70,34 @@ void dcs_init(p_dcs_config_t config);
  * @return true if this is the primary instance
  */
 bool dcs_is_primary_instance(void);
+
+/**
+ * @brief Check if the die and core id match this device
+ *
+ * @note Thread Safe
+ *
+ * @param die_id Die ID to check
+ * @param cpu_id Cpu ID to check
+ *
+ * @return true if the die and cpu id match this device
+ */
+bool dcs_is_this_device(uint8_t die_id, uint8_t cpu_id);
+
+/** @brief Get the die id of this device
+ *
+ * @note Thread Safe
+ *
+ * @return Die ID of this device
+ */
+uint8_t dcs_get_this_die_id(void);
+
+/** @brief Get the cpu id of this device
+ *
+ * @note Thread Safe
+ *
+ * @return Cpu ID of this device
+ */
+uint8_t dcs_get_this_cpu_id(void);
 
 /**
  * @brief Registers a client to receive DCS commands
@@ -82,46 +110,39 @@ bool dcs_is_primary_instance(void);
  *
  * @return FPFW_STATUS_SUCCESS on success or an error code on failure
  */
-fpfw_status_t dcs_register_client(dcp_client_id_t id, p_dcs_client_t client);
+fpfw_status_t dcs_client_register(dcp_client_id_t id, p_dcs_client_t client);
 
 /**
- * @brief Send a message to the AP. Can be a request or a response.
- *
- * @note The message will use the synchronous icc functionality, and will block until the message is sent.
+ * @brief Send a message to the die and core specified in the trp header. Use for initial request or for broadcast forwarding.
+ * @note The message be copied and queued for the DCS thread to handle. The caller may free the message after this function returns.
  * @note Thread Safe
  * @note Not ISR Safe
  *
- * @param[in] dcp_msg Message to send
+ * @param[in,out] trp_msg Message to send. The header broadcast_type field is set to TRP_BROADCAST_NONE prior to returning
+ * @param[in] broadcast_option Option to broadcast to all dies that match the destination core.
  *
- * @return FPFW_STATUS_SUCCESS on success or an error code on failure
+ * @return none
  */
-fpfw_status_t dcs_client_send_dcp_msg(const p_dcp_msg_t dcp_msg);
-
-
-/**
- * @brief Send a message to the die and core specified in the trp header. Use for initial request.
- * @note The message will use the synchronous icc functionality, and will block until the message is sent.
- * @note Thread Safe
- * @note Not ISR Safe
- *
- * @param[in] trp_msg Message to send
- * @param[in] broadcast_option Option to broadcast to all dies that match the destination core
- *
- * @return FPFW_STATUS_SUCCESS on success or an error code on failure
- */
-fpfw_status_t dcs_client_send_trp_msg(const p_trp_msg_t trp_msg, trp_broadcast_t broadcast_option);
+void dcs_client_send_trp_msg(p_trp_msg_t trp_msg, trp_broadcast_t broadcast_option);
 
 /**
  * @brief Send a response to a TRP message received from the remote core.
  *   Consumer only needs to update payload.  This function will swap the source and destination fields in the header.
  *
- * @note The message will use the synchronous icc functionality, and will block until the message is sent.
+ * @note The message be copied and queued for the DCS thread to handle. The caller may free the message after this function returns.
  * @note Thread Safe
  * @note Not ISR Safe
  *
  * @param[in] trp_msg Message to send
  *
- * @return FPFW_STATUS_SUCCESS on success or an error code on failure
+ * @return none
  */
-fpfw_status_t dcs_client_send_trp_response(const p_trp_msg_t trp_msg);
+void dcs_client_send_trp_response(p_trp_msg_t trp_msg);
+
+/**
+ * @brief Loop through the clients queue, pop the block and free it
+ * @note Helper function for all clients to use. If a client has a specific need, it should implement its own version.
+ *
+ */
+void dcs_client_flush_incoming_queue(dcp_client_id_t id);
 

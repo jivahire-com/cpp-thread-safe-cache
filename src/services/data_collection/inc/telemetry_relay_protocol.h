@@ -17,8 +17,13 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define ENDPOINT_NAME_MAX_LENGTH (20)
+
+#define ROUND_UP_TO_4_BYTE_ALIGN(x) (((x) + 3) & ~3)
+#define DCS_TRP_MSG_BLOCK_SIZE ROUND_UP_TO_4_BYTE_ALIGN(sizeof(trp_msg_t))
+
 /*-------------- Typedefs ----------------*/
 #define TRP_GEN_MSG_ID(x) (0xD000 | (x))
+
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
@@ -37,6 +42,9 @@ typedef enum {
 } trp_broadcast_t;
 
 typedef enum {
+    TRP_STATUS_RD_DATA_VALID_MORE   = 3,
+    TRP_STATUS_RD_DATA_VALID_LAST   = 2,
+    TRP_STATUS_RD_DATA_NONE         = 1,
     TRP_STATUS_SUCCESS              = 0,
     TRP_STATUS_E_SIZE               = -1,
     TRP_STATUS_E_PARAM              = -2,
@@ -48,13 +56,16 @@ typedef enum {
 
 typedef enum {
     TRP_MSG_ID_DCP_FORWARD                      = TRP_GEN_MSG_ID(0x0),
-    TRP_MSG_ID_READ_PACKAGE                     = TRP_GEN_MSG_ID(0x1),
-    TRP_MSG_ID_READ_PACKAGE_COMPLETE            = TRP_GEN_MSG_ID(0x2),
-    TRP_MSG_ID_READ_INTERCORE_BLOCK             = TRP_GEN_MSG_ID(0x3), // polling, header only
-    TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE    = TRP_GEN_MSG_ID(0x4),
-    TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE    = TRP_GEN_MSG_ID(0x5),
+    TRP_MSG_ID_PACKAGE_NOTIFICATION             = TRP_GEN_MSG_ID(0x1),
+    TRP_MSG_ID_READ_PACKAGE                     = TRP_GEN_MSG_ID(0x2), // command only
+    TRP_MSG_ID_READ_PACKAGE_RESPONSE            = TRP_GEN_MSG_ID(0x3),
+    TRP_MSG_ID_READ_PACKAGE_COMPLETE            = TRP_GEN_MSG_ID(0x4),
+    TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION     = TRP_GEN_MSG_ID(0x5),
+    TRP_MSG_ID_READ_INTERCORE_BLOCK             = TRP_GEN_MSG_ID(0x6),
+    TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE    = TRP_GEN_MSG_ID(0x7),
+    TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE    = TRP_GEN_MSG_ID(0x8),
 
-    TRP_MSG_ID_MAX                              = (0x6),
+    TRP_MSG_ID_MAX                              = (0x9),
 } trp_msg_id_t;
 
 typedef struct {
@@ -81,22 +92,36 @@ typedef struct __attribute__((packed)) {
 } trp_msg_hdr_t, *p_trp_msg_hdr_t;
 
 typedef struct __attribute__((packed)) {
-    uint32_t rd_data_ddr_addr_offset; // offset from beginning of telemetry mapped DDR
+    uint16_t block_id; // dcp client specific
+} trp_block_read_req_t;
+
+typedef struct __attribute__((packed)) {
+    uint32_t rd_data_ddr_addr_offset; // offset from beginning of telemetry mapped memory
     uint32_t rd_data_size;
-} trp_msg_read_data_t;
+} trp_msg_read_pkg_rsp_t;
+
+typedef struct __attribute__((packed)) {
+    uint16_t block_id; // dcp client specific
+    uint16_t block_version;
+    uint32_t rd_data_ddr_addr_offset; // offset from beginning of telemetry mapped memory
+    uint32_t rd_data_size;
+} trp_msg_read_block_rsp_t;
 
 typedef struct __attribute__((packed)) {
     trp_msg_hdr_t hdr;
     union __attribute__((packed)) {
-        dcp_msg_t                       dcp_msg;  // TRP_MSG_ID_DCP_FORWARD
-        trp_msg_read_data_t             read_package; // TRP_MSG_ID_READ_PACKAGE
-        trp_msg_read_data_t             read_package_complete; // TRP_MSG_ID_READ_PACKAGE_COMPLETE
-        trp_msg_read_data_t             read_intercore_block_rsp; // TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE
-        trp_msg_read_data_t             read_intercore_block_complete; // TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE
+        dcp_msg_t                       dcp_msg;                        // TRP_MSG_ID_DCP_FORWARD
+        trp_msg_read_pkg_rsp_t          package_notification;           // TRP_MSG_ID_PACKAGE_NOTIFICATION
+        trp_msg_read_pkg_rsp_t          read_package_response;          // TRP_MSG_ID_READ_PACKAGE_RESPONSE
+        trp_msg_read_pkg_rsp_t          read_package_complete;          // TRP_MSG_ID_READ_PACKAGE_COMPLETE
+        trp_msg_read_block_rsp_t        intercore_block_notification;   // TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION
+        trp_block_read_req_t            read_intercore_block;           // TRP_MSG_ID_READ_INTERCORE_BLOCK
+        trp_msg_read_block_rsp_t        read_intercore_block_rsp;       // TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE
+        trp_msg_read_block_rsp_t        read_intercore_block_complete;  // TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE
     } payload;
 } trp_msg_t, *p_trp_msg_t;
 
-typedef struct __attribute__((packed)) {
+typedef struct {
     uint8_t die_id; // KNG_DIE_ID
     uint8_t cpu_id; // KNG_CPU_TYPE
 } trp_dest_t, *p_trp_dest_t;

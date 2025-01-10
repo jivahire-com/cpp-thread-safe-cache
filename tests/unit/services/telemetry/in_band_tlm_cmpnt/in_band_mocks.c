@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <data_collection_service.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <in_band_tlm_cmpnt_i.h>
 #include <tx_api.h>
@@ -27,6 +28,24 @@ ULONG __wrap__tx_time_get(VOID)
 {
     static ULONG time = 1;
     return time++;
+}
+
+bool __wrap_dcs_is_primary_instance(void)
+{
+    return mock_type(bool);
+}
+
+void __wrap_dcs_client_send_trp_msg(p_trp_msg_t trp_msg, trp_broadcast_t broadcast_option)
+{
+    FPFW_UNUSED(trp_msg);
+    FPFW_UNUSED(broadcast_option);
+    function_called();
+}
+
+void __wrap_dcs_client_send_trp_response(p_trp_msg_t trp_msg)
+{
+    FPFW_UNUSED(trp_msg);
+    function_called();
 }
 
 void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_element_pstate_t (*pstate_array)[NUMBER_OF_PSTATES])
@@ -200,6 +219,29 @@ void data_proc_tlm_cmpnt_get_inst_core_amu_data(uint16_t core_id, p_inst_core_el
     function_called();
 }
 
+bool exec_tlm_cmpnt_is_telemetry_enabled(void)
+{
+    return mock_type(bool);
+}
+
+void exec_tlm_cmpnt_enable_disable_telemetry(bool enable)
+{
+    FPFW_UNUSED(enable);
+
+    function_called();
+}
+
+void exec_tlm_cmpnt_notify_new_in_band_dcs_message(void)
+{
+    function_called();
+}
+
+void __wrap_dcs_client_flush_incoming_queue(dcp_client_id_t id)
+{
+    FPFW_UNUSED(id);
+    function_called();
+}
+
 void __wrap_FpFwAssertWithArgs(int expression, uintptr_t arg0, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3)
 {
     FPFW_UNUSED(expression);
@@ -252,4 +294,34 @@ UINT __wrap__txe_queue_receive(TX_QUEUE* queue_ptr, VOID* destination_ptr, ULONG
     }
 
     return mock_type(UINT);
+}
+
+UINT __wrap__txe_block_pool_create(TX_BLOCK_POOL* pool_ptr, CHAR* name_ptr, ULONG block_size, VOID* pool_start, ULONG pool_size, UINT pool_control_block_size)
+{
+    FPFW_UNUSED(pool_ptr);
+    FPFW_UNUSED(name_ptr);
+    FPFW_UNUSED(block_size);
+    FPFW_UNUSED(pool_start);
+    FPFW_UNUSED(pool_size);
+    FPFW_UNUSED(pool_control_block_size);
+
+    function_called();
+
+    return mock_type(UINT);
+}
+
+UINT __wrap__txe_block_release(VOID* block_ptr)
+{
+    FPFW_UNUSED(block_ptr);
+    function_called();
+
+    return mock_type(UINT);
+}
+
+fpfw_status_t __wrap_dcs_client_register(dcp_client_id_t id, p_dcs_client_t client)
+{
+    FPFW_UNUSED(id);
+    FPFW_UNUSED(client);
+
+    return FPFW_STATUS_SUCCESS;
 }

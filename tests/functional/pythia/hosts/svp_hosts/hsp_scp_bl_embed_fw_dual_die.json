@@ -67,6 +67,8 @@
             "KingsgateSVP.DIE_1.#EXTRA_PROPERTIES#runtime_disabled": "false",
             "KingsgateSVP.Platform_Flash.PlatformFlash.#EXTRA_PROPERTIES#/ImageInfo/EEPROM_Image": "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch/bin/flash/kingsgate.ifwi.svp.debug.custom.dat",
             "KingsgateSVP.Platform_Flash.PlatformFlash.#SCML_PROPERTIES#EEPROM_Image": "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch/bin/flash/kingsgate.ifwi.svp.debug.custom.dat",
+            "KingsgateSVP.Platform_Flash.PlatformFlashSecondary.#EXTRA_PROPERTIES#/ImageInfo/EEPROM_Image": "${env:REPO_APP_PATH_kingsgate_hsp_clean_variable_store}/clean_var_store.dat",
+            "KingsgateSVP.Platform_Flash.PlatformFlashSecondary.#SCML_PROPERTIES#EEPROM_Image": "${env:REPO_APP_PATH_kingsgate_hsp_clean_variable_store}/clean_var_store.dat",
             "KingsgateSVP.DIE_0.HSSS.HSP.HSP_E21_LT_PSP.#EXTRA_PROPERTIES#/ImageInfo/core0/cpu0/initial_image": "${env:REPO_APP_PATH_kingsgate.firmware.a0rom}/release/bin/sim/rom-sim.elf",
             "KingsgateSVP.DIE_0.HSSS.HSP.Periphs.HSP_GFC.#SCML_PROPERTIES#FuseVhxFile": "${env:REPO_APP_PATH_kingsgate.firmware.a0rom}//release/test/fuses/kng_fuses_test.vhx",
             "KingsgateSVP.DIE_0.HSSS.HSP.Periphs.HSP_UART_PHY.#SCML_PROPERTIES#ENABLE_TCP_ON_PORT": "0",

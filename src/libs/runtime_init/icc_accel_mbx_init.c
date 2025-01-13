@@ -160,10 +160,12 @@ static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
 FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel"))
 {
     ACCEL_ID accel_type = ACCEL_ID_SDM;
-    DIE_INSTANCE curr_die = (DIE_INSTANCE)idsw_get_die_id();
 
-    // SDM Mailbox is not supported on Die 1
-    if (curr_die == SOC_D1)
+    /** 
+     * Accel device are blocked on DIE 1 SVP 
+     * Enable when https://azurecsi.visualstudio.com/Dev/_workitems/edit/2213514 is resolved
+     */
+    if ((DIE_INSTANCE)idsw_get_die_id() == SOC_D1 && !IS_PLATFORM_FPGA())
     {
         return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
     }
@@ -181,10 +183,12 @@ FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel
 FPFW_INIT_COMPONENT(icc_cded_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel"))
 {
     ACCEL_ID accel_type = ACCEL_ID_CDED;
-    DIE_INSTANCE curr_die = (DIE_INSTANCE)idsw_get_die_id();
 
-    // CDED Mailbox is not supported on Die 1
-    if (curr_die == SOC_D1)
+    /** 
+     * Accel device are blocked on DIE 1 SVP 
+     * Enable when https://azurecsi.visualstudio.com/Dev/_workitems/edit/2213514 is resolved
+     */
+    if ((DIE_INSTANCE)idsw_get_die_id() == SOC_D1 && !IS_PLATFORM_FPGA())
     {
         return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
     }

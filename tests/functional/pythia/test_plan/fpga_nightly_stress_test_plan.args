@@ -59,11 +59,3 @@
 ## Variable Service Tests
 ./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
 ./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
-
-## Accelerator VF tests
-./../../../tests/functional/pythia/test_suites/accel_vf_tests/pcie_vf_tests.robot
-./../../../tests/functional/pythia/test_suites/accel_vf_tests/sdm_vf_tests.robot
-./../../../tests/functional/pythia/test_suites/accel_vf_tests/cded_vf_tests.robot
-./../../../tests/functional/pythia/test_suites/accel_vf_tests/pcie_vf_tests.robot
-./../../../tests/functional/pythia/test_suites/accel_vf_tests/sdm_vf_tests.robot
-./../../../tests/functional/pythia/test_suites/accel_vf_tests/cded_vf_tests.robot

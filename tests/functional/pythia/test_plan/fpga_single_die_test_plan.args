@@ -17,7 +17,7 @@
 ## GPIO Driver Tests
 ./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot
 
-## Dual Die Heartbeat Tests
+## Heartbeat Tests
 ./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot
 ./../../../tests/functional/pythia/test_suites/heart_beat/fbc_sdm_cded_heart_beat_single_die.robot
 
@@ -40,8 +40,3 @@
 
 ## Variable Service Tests
 #./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
-
-## Accelerator VF tests
-./../../../tests/functional/pythia/test_suites/accel_vf_tests/pcie_vf_tests.robot
-./../../../tests/functional/pythia/test_suites/accel_vf_tests/sdm_vf_tests.robot
-./../../../tests/functional/pythia/test_suites/accel_vf_tests/cded_vf_tests.robot

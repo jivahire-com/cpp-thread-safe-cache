@@ -9,15 +9,14 @@
  */
 
 /*-------------------------------- Includes ---------------------------------*/
-#include "accelerator_ip.h"             // for subsystem_ctxt_t
-#include "accelerator_ip_bcfg_params.h" // for BCFG_BOOT_CFG_TID_CTRL_GIC_TID
-#include "accelip_ss_init.h"            // for D0_ACCELIP_CDEDSS, D0_ACCELI...
-#include "accelip_ss_init_knobs.h"      // for accelip_ss_init_knobs_t
-#include "atu_lib.h"                    // for atu_map_entry_t
-#include "kng_atu_mappings.h"           // for ATU_MAPPING_CDEDSS_BASE, ATU...
-#include "kng_soc_constants.h"          // for SOC_D0
-#include "sdm_init.h"                   // for sdm_mem_init_t
-#include "silibs_common.h"              // for ARRAY_SIZE
+#include "accelerator_ip.h"        // for subsystem_ctxt_t
+#include "accelip_ss_init.h"       // for D0_ACCELIP_CDEDSS, D0_ACCELI...
+#include "accelip_ss_init_knobs.h" // for accelip_ss_init_knobs_t
+#include "atu_lib.h"               // for atu_map_entry_t
+#include "kng_atu_mappings.h"      // for ATU_MAPPING_CDEDSS_BASE, ATU...
+#include "kng_soc_constants.h"     // for SOC_D0
+#include "sdm_init.h"              // for sdm_mem_init_t
+#include "silibs_common.h"         // for ARRAY_SIZE
 
 #include <accelerator_ip_priv.h> // for get_accelerator_ctxt
 #include <accelip_id.h>          // NUM_VALID_ACCEL_ID, ACCEL_ID_SDM, ACCEL_ID_CDED
@@ -58,6 +57,13 @@
     (AP_TOP_D1_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_CDEDSS_ADDRESS + SDM_EXT_CFG_EMCPU_TCM_ITCM_ADDRESS)
 #define SOC_D1_CDED_SDM_EMCPU_DTCM_ADDR \
     (AP_TOP_D1_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_CDEDSS_ADDRESS + SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS)
+
+/*
+ * Boot vector for emCPU - to be programmed in initvtor prior to M7 reset
+ * deassertion.
+ */
+#define DIE0_SDMSS_INSTANCE0_INT_VECTOR  (0x80000)
+#define DIE0_CDEDSS_INSTANCE0_INT_VECTOR (0x80000)
 
 /*-------------------------------- Typedefs ---------------------------------*/
 

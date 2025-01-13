@@ -28,6 +28,36 @@
                                 }, 
                                 "default": "telnet" 
                             } 
+                        },
+                        "sdm_cded": {
+                            "channels": {
+                                "telnet": {
+                                    "host": "localhost",
+                                    "port": 4271,
+                                    "timeout_seconds": 60.0
+                                },
+                                "default": "telnet"
+                            }
+                        },
+                        "sdm": {
+                            "channels": {
+                                "telnet": {
+                                    "host": "localhost",
+                                    "port": 4272,
+                                    "timeout_seconds": 60.0
+                                },
+                                "default": "telnet"
+                            }
+                        },
+                        "apns": {
+                            "channels": {
+                                "telnet": {
+                                    "host": "localhost",
+                                    "port": 4258,
+                                    "timeout_seconds": 60.0 
+                                },
+                                "default":"telnet"
+                            }
                         } 
                     } 
                 } 
@@ -68,8 +98,8 @@
             "KingsgateSVP.DIE_0.VABRPSS2.#EXTRA_PROPERTIES#runtime_disabled": "false",
             "KingsgateSVP.DIE_0.VABRPSS3.#EXTRA_PROPERTIES#runtime_disabled": "false",
             "KingsgateSVP.DIE_1.#EXTRA_PROPERTIES#runtime_disabled": "true",
-            "KingsgateSVP.Platform_Flash.PlatformFlash.#EXTRA_PROPERTIES#/ImageInfo/EEPROM_Image":"${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch/bin/flash/kingsgate.ifwi.svp.debug.custom.dat",
-            "KingsgateSVP.Platform_Flash.PlatformFlash.#SCML_PROPERTIES#EEPROM_Image":"${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch/bin/flash/kingsgate.ifwi.svp.debug.custom.dat"
+            "KingsgateSVP.Platform_Flash.PlatformFlash.#EXTRA_PROPERTIES#/ImageInfo/EEPROM_Image": "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch/bin/flash/kingsgate.ifwi.ap.baremetal.debug.dat",
+            "KingsgateSVP.Platform_Flash.PlatformFlash.#SCML_PROPERTIES#EEPROM_Image": "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch/bin/flash/kingsgate.ifwi.ap.baremetal.debug.dat"
         },
         "env_vars": {
             "ARMLMD_LICENSE_FILE": "40002@wanlic.svceng.com",

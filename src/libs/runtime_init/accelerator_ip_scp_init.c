@@ -41,12 +41,10 @@ FPFW_INIT_COMPONENT(accel_iso_cfg, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "t
 {
     uint8_t die_num = (uint8_t)idsw_get_die_id();
     printf("Disable accelerator tower isolation, TODO: decide based on fuse & knobs, die_num [%d]\n", die_num);
-    // TODO: WI 1943858 SVP doesn't implement iso csrs
+    
     int32_t ret = FPFW_INIT_STATUS_SUCCESS;
-    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
-    {
-        ret = scp_accelerators_isolation_control();
-        printf("Accelerators isolation disabled\n");
-    }
+    ret = scp_accelerators_isolation_control();
+    printf("Accelerators isolation disabled\n");
+
     return (fpfw_init_result_t){ret, NULL};
 }

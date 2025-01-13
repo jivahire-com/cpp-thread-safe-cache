@@ -28,7 +28,37 @@
                                 }, 
                                 "default": "telnet" 
                             } 
-                        } 
+                        },
+                        "sdm_cded": {
+                            "channels": {
+                                "telnet": {
+                                    "host": "localhost",
+                                    "port": 4271,
+                                    "timeout_seconds": 60.0
+                                },
+                                "default": "telnet"
+                            }
+                        },
+                        "sdm": {
+                            "channels": {
+                                "telnet": {
+                                    "host": "localhost",
+                                    "port": 4272,
+                                    "timeout_seconds": 60.0
+                                },
+                                "default": "telnet"
+                            }
+                        },
+                        "apns": {
+                            "channels": {
+                                "telnet": {
+                                    "host": "localhost",
+                                    "port": 4258,
+                                    "timeout_seconds": 60.0 
+                                },
+                                "default": "telnet"
+                            }
+                        }
                     },
                     "secondary_die": { 
                         "is_present": true, 
@@ -51,7 +81,27 @@
                                 }, 
                                 "default": "telnet" 
                             } 
-                        } 
+                        },
+                        "sdm_cded": {
+                            "channels": {
+                                "telnet": {
+                                    "host": "localhost",
+                                    "port": 4371,
+                                    "timeout_seconds": 60.0
+                                },
+                                "default": "telnet"
+                            }
+                        },
+                        "sdm": {
+                            "channels": {
+                                "telnet": {
+                                    "host": "localhost",
+                                    "port": 4372,
+                                    "timeout_seconds": 60.0
+                                },
+                                "default": "telnet"
+                            }
+                        }
                     }
                 } 
             } 
@@ -84,6 +134,7 @@
             "KingsgateSVP.DIE_0.RPSS3.#EXTRA_PROPERTIES#runtime_disabled":"false",
             "KingsgateSVP.DIE_0.RPSS3.PCIe_EPs.NVMe_SSD_EP_BB_x16.CPU_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image":"{${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}/firmware/release/nvme.elf,,,image+symbols,}",
             "KingsgateSVP.DIE_0.SDMSS.SDM_EMCPU.terminal_uart_sdm.#SCML_PROPERTIES#ENABLE_TCP_ON_PORT":"4272",
+            "KingsgateSVP.DIE_0.VABRPSS0.#EXTRA_PROPERTIES#runtime_disabled":"false",
             "KingsgateSVP.DIE_0.VABRPSS1.#EXTRA_PROPERTIES#runtime_disabled":"false",
             "KingsgateSVP.DIE_0.VABRPSS2.#EXTRA_PROPERTIES#runtime_disabled":"false",
             "KingsgateSVP.DIE_0.VABRPSS3.#EXTRA_PROPERTIES#runtime_disabled":"false",
@@ -111,8 +162,8 @@
             "KingsgateSVP.DIE_1.VABRPSS1.#EXTRA_PROPERTIES#runtime_disabled":"false",
             "KingsgateSVP.DIE_1.VABRPSS2.#EXTRA_PROPERTIES#runtime_disabled":"false",
             "KingsgateSVP.DIE_1.VABRPSS3.#EXTRA_PROPERTIES#runtime_disabled":"false",
-            "KingsgateSVP.Platform_Flash.PlatformFlash.#EXTRA_PROPERTIES#/ImageInfo/EEPROM_Image":"${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch/bin/flash/kingsgate.ifwi.svp.debug.custom.dat",
-            "KingsgateSVP.Platform_Flash.PlatformFlash.#SCML_PROPERTIES#EEPROM_Image":"${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch/bin/flash/kingsgate.ifwi.svp.debug.custom.dat",
+            "KingsgateSVP.Platform_Flash.PlatformFlash.#EXTRA_PROPERTIES#/ImageInfo/EEPROM_Image":"${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch/bin/flash/kingsgate.ifwi.ap.baremetal.debug.dat",
+            "KingsgateSVP.Platform_Flash.PlatformFlash.#SCML_PROPERTIES#EEPROM_Image":"${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch/bin/flash/kingsgate.ifwi.ap.baremetal.debug.dat",
             "KingsgateSVP.Platform_Flash.PlatformFlashSecondary.#EXTRA_PROPERTIES#/ImageInfo/EEPROM_Image": "${env:REPO_APP_PATH_kingsgate_hsp_clean_variable_store}/clean_var_store.dat",
             "KingsgateSVP.Platform_Flash.PlatformFlashSecondary.#SCML_PROPERTIES#EEPROM_Image": "${env:REPO_APP_PATH_kingsgate_hsp_clean_variable_store}/clean_var_store.dat"
         },

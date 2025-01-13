@@ -3,7 +3,7 @@
 //
 
 /**
- * @file accelerator_ip.c
+ * @file accelerator_ip_init.c
  * This file provides interface to initializes the Accelerator IP(s) available
  * on the SoC.
  */
@@ -37,22 +37,10 @@
 #include <silibs_status.h>     // for SILIBS_SUCCESS
 #include <stdint.h>            // for int32_t, uintptr_t, uint32_t
 #include <stdio.h>             // for printf, NULL
-#include <string.h>            // for memcpy
-#include <system_info.h>       // for is_hsp_present()
-#include <tower_cdedss.h>      // for configure_cdedss_hsp_system_addr_map()
+#include <string.h>            // for memcpy, strlen
+#include <system_info.h>       // for system_info_is_hsp_present
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
-
-#define ACCEL_PCR_CONFIG_TIMEOUT (10)
-
-#define SLEEP_100_MS                                (100)
-#define MAX_RETRY_CNT_FOR_SMMU_CONFIGURE_GPBA_CHECK (50)
-
-/* TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023639/ to revisit after boot chain stabilizes */
-#define HSSS_DFP_TOP_KD_CDEDSS_HSP_AXI_ADDRESS (0xffffff0000000U)
-
-#define ITCM_BIT_EN  0x1
-#define ITCM_BIT_DIS 0x0
 
 /*-------------------------------- Typedefs ---------------------------------*/
 
@@ -108,7 +96,6 @@ uint32_t accel_intr_atu_map_address[NUM_VALID_ACCEL_ID] = {0};
 // Forward declaring static function to allow for creation of struct
 static void request_accel_fw_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status);
 static void request_send_complete_cb(void* context, fpfw_status_t status);
-static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt);
 
 /*------------------- Declarations (Statics and globals) --------------------*/
 
@@ -143,258 +130,6 @@ static emcpu_rst_struct_t cpu_rst_info[NUM_VALID_ACCEL_ID] = {
 /*--------------------------------- Externs ---------------------------------*/
 
 /*----------------------------- Static Functions ----------------------------*/
-/*
-TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023639/ to revisitthe following functions after boot chain stabilizes:
-- init_hsp_cdedss_tower_atu_map
-- init_hsp_cdedss_tower_atu_unmap
-- init_hsp_cdedss_tower
-*/
-static int32_t init_hsp_cdedss_tower_atu_map(atu_map_entry_t* p_cdeedss_tower_atu_map_entry)
-{
-    p_cdeedss_tower_atu_map_entry->mscp_start_address = 0;                                    // 0x78000000;
-    p_cdeedss_tower_atu_map_entry->mscp_end_address = ALIGN_UP(0x8000000, ATU_PAGE_SIZE) - 1; // 0x7fffffff;
-
-    p_cdeedss_tower_atu_map_entry->attribute.axprot0 = 0x3;
-    p_cdeedss_tower_atu_map_entry->attribute.axprot1 = 0x2;
-    p_cdeedss_tower_atu_map_entry->attribute.axnse = 0x3;
-
-    int32_t ret = atu_map(ATU_ID_MSCP, p_cdeedss_tower_atu_map_entry);
-    if (ret != SILIBS_SUCCESS)
-    {
-        debug_print("accel_lib: WA: CDEDSS Tower ATU Mapping failed\n");
-        return ACCEL_RET_FAIL_ATU_MAP;
-    }
-
-    return ACCEL_RET_SUCCESS;
-}
-
-static int32_t init_hsp_cdedss_tower_atu_unmap(atu_map_entry_t* p_cdeedss_tower_atu_map_entry)
-{
-    // TODO: WA until HSP configures CDEDSS Tower
-    int32_t ret = atu_unmap(ATU_ID_MSCP, p_cdeedss_tower_atu_map_entry);
-    if (ret != SILIBS_SUCCESS)
-    {
-        debug_print("Accel IP CDEDSS Tower ATU Unmapping failed\n");
-        return ACCEL_RET_FAIL_ATU_UNMAP;
-    }
-
-    return ACCEL_RET_SUCCESS;
-}
-
-static int32_t init_hsp_cdedss_tower(atu_map_entry_t* p_cdeedss_tower_atu_map_entry)
-{
-    // Create ATU Mapping (SCP View) for the CDEDSS Tower
-    p_cdeedss_tower_atu_map_entry->ap_base_address = (uint64_t)HSSS_DFP_TOP_KD_CDEDSS_HSP_AXI_ADDRESS;
-
-    // Create ATU Mapping (SCP View) for the Accel IP CDEDSS Tower
-    int32_t ret = init_hsp_cdedss_tower_atu_map(p_cdeedss_tower_atu_map_entry);
-    if (ret != ACCEL_RET_SUCCESS)
-    {
-        return ret;
-    }
-
-    uint32_t cdedss_tower_atu_mapped_addr = p_cdeedss_tower_atu_map_entry->mscp_start_address;
-    CDEDSS_INSTANCE cdedss_id = 0;
-
-    debug_print("accel_lib: WA: Initializing CDEDSS Tower\n");
-
-    configure_cdedss_hsp_system_addr_map(HSSS_DFP_TOP_KD_CDEDSS_HSP_AXI_ADDRESS, cdedss_tower_atu_mapped_addr);
-    configure_cdedss_vab_system_addr_map(cdedss_id, cdedss_tower_atu_mapped_addr);
-
-    // Destroy ATU mapping
-    ret = init_hsp_cdedss_tower_atu_unmap(p_cdeedss_tower_atu_map_entry);
-    if (ret != ACCEL_RET_SUCCESS)
-    {
-        return ret;
-    }
-
-    debug_print("accel_lib: WA: CDEDSS Tower initialization complete.\n");
-
-    return ret;
-}
-
-static void accel_fw_download(subsystem_ctxt_t* p_ss_ctxt, ACCEL_ID accel_type)
-{
-    cpu_rst_info[accel_type].mbox_params.is_cold_boot = true;
-    cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_ITCM_LOAD;
-
-    /*
-    If HSP is not present on the platform simply return. Do not request an HSP download
-    TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023639/ to revisit after boot chain stabilizes
-    */
-    if (!system_info_is_hsp_present())
-    {
-        return;
-    }
-
-    /* CDED FW Download from HSP results in a Hard Fault. Bypassing invoke_hsp_accel_fw_download for SVP
-    Raised ADO here: https://azurecsi.visualstudio.com/1P-SoC-Modeling/_workitems/edit/2026582 */
-    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
-    {
-        for (uint8_t dload_stage = 0; dload_stage <= EMCPU_RELEASE_CPU_WAIT; dload_stage++)
-        {
-            fpfw_status_t status = invoke_hsp_accel_fw_download(p_ss_ctxt);
-
-            if (status != FPFW_STATUS_SUCCESS)
-            {
-                debug_print("Firmware download failed with status: %d\n", status);
-                return;
-            }
-
-            // callback is explicitly invoked here because compiler incorrectly warns of a recursive call
-            // if the callback is invoked inside the download function
-            if (dload_stage != (EMCPU_RELEASE_CPU_WAIT))
-            {
-                // The last fw_download is to release cpuwait and cb should be skipped
-                request_accel_fw_load_complete_notify(p_ss_ctxt, 0x0, status); // The output size is unused and hence passed as 0
-            }
-        }
-    }
-}
-
-static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
-{
-    int32_t ret = ACCEL_RET_SUCCESS;
-    ACCEL_ID accel_type = get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type);
-
-    if (accel_type == NUM_VALID_ACCEL_ID)
-    {
-        debug_print("accel_lib: Invalid accel type\n");
-        return ACCEL_RET_FAIL_INVALID_PARAMS;
-    }
-
-    if (accel_type == ACCEL_ID_CDED)
-    {
-        /* TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023639/ to revisit after boot chain stabilizes */
-        if ((idsw_get_platform_sdv() == PLATFORM_SVP_SIM) && (!system_info_is_hsp_present()))
-        {
-            atu_map_entry_t cdeedss_tower_atu_map_entry = {0};
-
-            ret = init_hsp_cdedss_tower(&cdeedss_tower_atu_map_entry);
-            if (ret != ACCEL_RET_SUCCESS)
-            {
-                debug_print("accel_lib: WA: CDEDSS Tower Init failed\n");
-                return ret;
-            }
-        }
-        else
-        {
-            /*
-             * The HSP FW now supports CDEDSS Tower configurations.
-             * The logic to trigger the configuration is being invoked from hsp_send_recv_post_scp_init_tower_config from tower.c
-             */
-        }
-    }
-
-    atu_map_entry_t atu_map_entry;
-    memcpy((void*)&atu_map_entry, (void*)p_ss_ctxt->p_accelip_atu_map, sizeof(atu_map_entry_t));
-
-    ret = atu_map(ATU_ID_MSCP, &atu_map_entry);
-    if (ret != SILIBS_SUCCESS)
-    {
-        critical_print("Accel IP: init_accelerator: ATU MAP failed.\n");
-        return ACCEL_RET_FAIL_ACCEL_IP;
-    }
-    debug_print("atu mapped for accel ip\n");
-
-    accel_intr_atu_map_address[accel_type] = atu_map_entry.mscp_start_address;
-
-    // Disable fw_preload_enabled if running on any Hardware, and if HSP is not present on that hardware
-    if ((!system_info_is_hsp_present()) && (idsw_get_platform_sdv() != PLATFORM_SVP_SIM))
-    {
-        p_ss_ctxt->p_init_params->fw_preload_enabled = false;
-        p_ss_ctxt->p_init_params->sdm_emcpu_init_cfg->release_m7_halt = true;
-    }
-
-    ret = accelip_ss_init(atu_map_entry.mscp_start_address, p_ss_ctxt->accelip_metadata.accel_type, p_ss_ctxt->p_init_params);
-    if (ret != SILIBS_SUCCESS)
-    {
-        critical_print("Accel IP: init_accelerator: accelip ss init failed.\n");
-        return ACCEL_RET_FAIL_SS_INIT;
-    }
-
-    /*
-    TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023638/
-    How do we handle SDM firmware download in SCP warm boot scenario?
-    */
-    info_print("%s: Invoking accel fw download\n", __func__);
-    accel_fw_download(p_ss_ctxt, accel_type);
-/**
- * TODO: Task 1982595: [SCP] Accel IP Move to Static ATU map
- */
-#if 0
-    ret = atu_unmap(ATU_ID_MSCP, &atu_map_entry);
-    if (ret != SILIBS_SUCCESS)
-    {
-        critical_print("Accel IP: init_accelerator: ATU UNMAP failed.\n");
-        return ACCEL_RET_FAIL_ACCEL_IP;
-    }
-    debug_print("atu unmapped for accel ip\n");
-#endif
-    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
-    {
-        /**
-         * TODO: Task 1973445: [SCP] Move Accel Intr init in SCP after mailbox communication
-         */
-        printf("accel lib: Initialize accel interrupt\n");
-
-        ret = accel_scp_intr_init(get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type));
-        if (ret != ACCEL_INTR_RET_SUCCESS)
-        {
-            critical_print("Accel IP: init_accelerator: Accel Interrupt init failed.\n");
-            return ACCEL_RET_FAIL_INTR_INIT;
-        }
-    }
-    else
-    {
-        printf("accel lib: Skipping Accel Interrupt init for SVP\n");
-    }
-
-    return ACCEL_RET_SUCCESS;
-}
-
-// Need to replace with silibs APIs once implemented
-// TODO: ADO: 1984231
-static int _sdm_init_enable_cpuwait(const uintptr_t ext_cfg_addr)
-{
-    volatile ptr__addressblock_0x100000_reg reg_addr =
-        (ptr__addressblock_0x100000_reg)(ext_cfg_addr + SDM_EXT_CFG_EMCPU_TCM_ITCM_SIZE + SDM_EXT_CFG_EMCPU_TCM_DTCM_SIZE);
-    MMIO_UPDATE32(&reg_addr->emcpu_cfg_cpuwait,
-                  _ADDRESSBLOCK_0X100000_EMCPU_CFG_CPUWAIT_EN_MASK,
-                  _ADDRESSBLOCK_0X100000_EMCPU_CFG_CPUWAIT_EN_MASK);
-
-    return SILIBS_SUCCESS;
-}
-
-// Need to replace with silibs APIs once implemented
-// TODO: ADO: 1984231
-static int _sdm_init_assert_nsysreset(const uintptr_t ext_cfg_addr)
-{
-    volatile ptr__addressblock_0x100000_reg reg_addr =
-        (ptr__addressblock_0x100000_reg)(ext_cfg_addr + SDM_EXT_CFG_EMCPU_TCM_ITCM_SIZE + SDM_EXT_CFG_EMCPU_TCM_DTCM_SIZE);
-    MMIO_UPDATE32(&reg_addr->emcpu_cfg_rst_ctrl, 0x0, _ADDRESSBLOCK_0X100000_EMCPU_CFG_RST_CTRL_NSYSRESET_MASK);
-
-    return SILIBS_SUCCESS;
-}
-
-// API toggles ITCM enable -> 0 -> 1
-static void _sdm_init_itcm_enable_trigger_seq(const uintptr_t ext_cfg_addr)
-{
-    volatile ptr__addressblock_0x100000_reg reg_addr =
-        (ptr__addressblock_0x100000_reg)(ext_cfg_addr + SDM_EXT_CFG_EMCPU_TCM_ITCM_SIZE + SDM_EXT_CFG_EMCPU_TCM_DTCM_SIZE);
-    MMIO_UPDATE32(&reg_addr->emcpu_cfg_tcm_ctrl, ITCM_BIT_DIS, _ADDRESSBLOCK_0X100000_EMCPU_CFG_TCM_CTRL_ITCM_EN_MASK);
-    do
-    {
-        // Wait for ITCM EN to become 0
-    } while ((MMIO_READ32(&reg_addr->emcpu_cfg_tcm_ctrl) >> _ADDRESSBLOCK_0X100000_EMCPU_CFG_TCM_CTRL_ITCM_EN_MSB) &
-             _ADDRESSBLOCK_0X100000_EMCPU_CFG_TCM_CTRL_ITCM_EN_MASK);
-    MMIO_UPDATE32(&reg_addr->emcpu_cfg_tcm_ctrl, ITCM_BIT_EN, _ADDRESSBLOCK_0X100000_EMCPU_CFG_TCM_CTRL_ITCM_EN_MASK);
-    do
-    {
-        // Wait for ITCM EN to become 1
-    } while (!((MMIO_READ32(&reg_addr->emcpu_cfg_tcm_ctrl) >> _ADDRESSBLOCK_0X100000_EMCPU_CFG_TCM_CTRL_ITCM_EN_MSB) &
-               _ADDRESSBLOCK_0X100000_EMCPU_CFG_TCM_CTRL_ITCM_EN_MASK));
-}
 
 static uint32_t get_accel_name_and_offset_addr(ACCEL_ID accel_type, char* accel_name)
 {
@@ -413,12 +148,6 @@ static uint32_t get_accel_name_and_offset_addr(ACCEL_ID accel_type, char* accel_
         break;
     }
     return SDMSS_CONFIG_SDM_EXT_CFG_ADDRESS; // To satisfy x86 compiler
-}
-
-static void request_send_complete_cb(void* context, fpfw_status_t status)
-{
-    FPFW_UNUSED(context);
-    FPFW_UNUSED(status);
 }
 
 static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
@@ -447,6 +176,7 @@ static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
     After both bins are requested, there's one more stage where the SCP releases the accelerator's CPU wait.
     This function executes 3 times for each accelerator in case of cold boot */
     mbox_buffs[accel_type].send_buff.header.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ;
+
     switch (cpu_rst_info[accel_type].mbox_params.load_stage)
     {
     case EMCPU_ITCM_LOAD:
@@ -455,18 +185,18 @@ static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
             (accel_type == ACCEL_ID_SDM) ? HSP_FIRMWARE_ID_SDM_ITCM : HSP_FIRMWARE_ID_CDED_ITCM;
         mbox_buffs[accel_type].send_buff.load_addr_low = p_ss_ctxt->mem_info.itcm_load_addr_low;
         mbox_buffs[accel_type].send_buff.load_addr_high = p_ss_ctxt->mem_info.itcm_load_addr_high;
-
         cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_ITCM_FW_LOAD_INVOKED;
         break;
+
     case EMCPU_DTCM_LOAD:
         cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_RELEASE_CPU_WAIT;
         mbox_buffs[accel_type].send_buff.id =
             (accel_type == ACCEL_ID_SDM) ? HSP_FIRMWARE_ID_SDM_DTCM : HSP_FIRMWARE_ID_CDED_DTCM;
         mbox_buffs[accel_type].send_buff.load_addr_low = p_ss_ctxt->mem_info.dtcm_load_addr_low;
         mbox_buffs[accel_type].send_buff.load_addr_high = p_ss_ctxt->mem_info.dtcm_load_addr_high;
-
         cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_DTCM_FW_LOAD_INVOKED;
         break;
+
     case EMCPU_RELEASE_CPU_WAIT:
         // Load complete, this is the final load callback hence returning
         sdm_init_disable_cpu_wait((accel_intr_atu_map_address[accel_type] + ext_cfg_offset_addr));
@@ -478,23 +208,86 @@ static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
             cpu_rst_info[accel_type].cb_fun(cpu_rst_info[accel_type].cb_ctx);
         }
         return status;
+
     default:
         BUG_ASSERT(false);
         break;
     }
 
-    if (cpu_rst_info[accel_type].mbox_params.is_cold_boot)
+    if (system_info_is_hsp_present())
     {
-        status = fpfw_icc_base_send_recv_sync(icc_ctx, &mbox_buffs[accel_type].send_buff, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
+        if (cpu_rst_info[accel_type].mbox_params.is_cold_boot)
+        {
+            status = fpfw_icc_base_send_recv_sync(icc_ctx,
+                                                  &mbox_buffs[accel_type].send_buff,
+                                                  sizeof(kng_hsp_mailbox_msg),
+                                                  &recv_msg_size_bytes);
+        }
+        else
+        {
+            status = fpfw_icc_base_recv(icc_ctx, &cpu_rst_info[accel_type].mbox_params.recv_params);
+            BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
+            status = fpfw_icc_base_send(icc_ctx, &cpu_rst_info[accel_type].mbox_params.send_params);
+            BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
+        }
     }
-    else
-    {
-        status = fpfw_icc_base_recv(icc_ctx, &cpu_rst_info[accel_type].mbox_params.recv_params);
-        BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
-        status = fpfw_icc_base_send(icc_ctx, &cpu_rst_info[accel_type].mbox_params.send_params);
-        BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
-    }
+
     return status;
+}
+
+static void accel_fw_download(subsystem_ctxt_t* p_ss_ctxt, ACCEL_ID accel_type)
+{
+    cpu_rst_info[accel_type].mbox_params.is_cold_boot = true;
+    cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_ITCM_LOAD;
+
+    for (uint8_t dload_stage = 0; dload_stage <= EMCPU_RELEASE_CPU_WAIT; dload_stage++)
+    {
+        fpfw_status_t status = invoke_hsp_accel_fw_download(p_ss_ctxt);
+
+        if (status != FPFW_STATUS_SUCCESS)
+        {
+            debug_print("Firmware download failed with status: %d\n", status);
+            return;
+        }
+
+        // callback is explicitly invoked here because compiler incorrectly warns of a recursive call
+        // if the callback is invoked inside the download function
+        if (dload_stage != (EMCPU_RELEASE_CPU_WAIT))
+        {
+            if (system_info_is_hsp_present())
+            {
+                // The last fw_download is to release cpuwait and cb should be skipped
+                request_accel_fw_load_complete_notify(p_ss_ctxt, 0x0, status); // The output size is unused and hence passed as 0
+            }
+        }
+    }
+}
+
+// API toggles ITCM enable -> 0 -> 1
+static void sdm_init_itcm_toggle(const uintptr_t ext_cfg_addr)
+{
+    volatile ptr__addressblock_0x100000_reg reg_addr =
+        (ptr__addressblock_0x100000_reg)(ext_cfg_addr + SDM_EXT_CFG_EMCPU_TCM_ITCM_SIZE + SDM_EXT_CFG_EMCPU_TCM_DTCM_SIZE);
+
+    sdm_init_itcm_enable(ext_cfg_addr, false);
+    do
+    {
+        // Wait for ITCM EN to become 0
+    } while ((MMIO_READ32(&reg_addr->emcpu_cfg_tcm_ctrl) >> _ADDRESSBLOCK_0X100000_EMCPU_CFG_TCM_CTRL_ITCM_EN_MSB) &
+             _ADDRESSBLOCK_0X100000_EMCPU_CFG_TCM_CTRL_ITCM_EN_MASK);
+
+    sdm_init_itcm_enable(ext_cfg_addr, true);
+    do
+    {
+        // Wait for ITCM EN to become 1
+    } while (!((MMIO_READ32(&reg_addr->emcpu_cfg_tcm_ctrl) >> _ADDRESSBLOCK_0X100000_EMCPU_CFG_TCM_CTRL_ITCM_EN_MSB) &
+               _ADDRESSBLOCK_0X100000_EMCPU_CFG_TCM_CTRL_ITCM_EN_MASK));
+}
+
+static void request_send_complete_cb(void* context, fpfw_status_t status)
+{
+    FPFW_UNUSED(context);
+    FPFW_UNUSED(status);
 }
 
 static void request_accel_fw_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -536,51 +329,103 @@ static void emcpu_recovery_sequence(uintptr_t sdm_ext_cfg_base, subsystem_ctxt_t
     ACCEL_ID accel_type = get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type);
 
     cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_RESET_SEQ_START;
-    // TODO: ADO: 1982366 Replace implicit SDM INIT API implementations with proper SILIBS API once they're merged
-    _sdm_init_enable_cpuwait(sdm_ext_cfg_base);
+
+    sdm_init_enable_cpuwait(sdm_ext_cfg_base);
     sdm_init_enable_fence(sdm_ext_cfg_base, true);
-    _sdm_init_assert_nsysreset(sdm_ext_cfg_base);
+    sdm_init_assert_nsysreset(sdm_ext_cfg_base);
+
     // Currently only directly disabling/enabling ITCM EN
-    _sdm_init_itcm_enable_trigger_seq(sdm_ext_cfg_base);
+    sdm_init_itcm_toggle(sdm_ext_cfg_base);
+
     sdm_init_enable_fence(sdm_ext_cfg_base, false);
     sdm_init_deassert_nsysreset(sdm_ext_cfg_base);
     cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_RESET_SEQ_COMPLETE;
 
     debug_print("%s: M7 in CPUWAIT\n", __func__);
 
-    // TODO: ADO: 1984962 Temporary WAR to keep SDM in stable loop until HSP firmware download is enabled
-    // This needs to be executed only when HSP is not present when FW download is implemented
-    // Reset programming moved here since cpuwait will directly be released for non hsp platforms
-    volatile uint32_t* fw_dest_addr = (uint32_t*)(sdm_ext_cfg_base + SDM_EXT_CFG_EMCPU_TCM_ITCM_ADDRESS);
-    volatile uint32_t* fw_src_addr = (uint32_t*)(p_ss_ctxt->p_init_params->sdm_emcpu_fw_image_start_addr);
-    size_t fw_image_size = (size_t)(p_ss_ctxt->p_init_params->sdm_emcpu_fw_image_size);
-    size_t i;
-    for (i = 0; i < fw_image_size; i += 4)
+    cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_ITCM_LOAD;
+    cpu_rst_info[accel_type].mbox_params.is_cold_boot = false;
+    invoke_hsp_accel_fw_download(p_ss_ctxt);
+
+    debug_print("%s: FW LOAD SENT\n", __func__);
+}
+
+static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
+{
+    int32_t ret = ACCEL_RET_SUCCESS;
+    ACCEL_ID accel_type = get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type);
+
+    if (accel_type == NUM_VALID_ACCEL_ID)
     {
-        *fw_dest_addr++ = *fw_src_addr++;
+        debug_print("accel_lib: Invalid accel type\n");
+        return ACCEL_RET_FAIL_INVALID_PARAMS;
+    }
+
+    atu_map_entry_t atu_map_entry;
+    memcpy((void*)&atu_map_entry, (void*)p_ss_ctxt->p_accelip_atu_map, sizeof(atu_map_entry_t));
+
+    ret = atu_map(ATU_ID_MSCP, &atu_map_entry);
+    if (ret != SILIBS_SUCCESS)
+    {
+        critical_print("Accel IP: init_accelerator: ATU MAP failed.\n");
+        return ACCEL_RET_FAIL_ACCEL_IP;
+    }
+    debug_print("atu mapped for accel ip\n");
+
+    accel_intr_atu_map_address[accel_type] = atu_map_entry.mscp_start_address;
+
+    if (!system_info_is_hsp_present())
+    {
+        printf("accel lib: FPGA without HSP: Loading Reset Loop\n");
+        p_ss_ctxt->p_init_params->fw_preload_enabled = false;
+    }
+
+    ret = accelip_ss_init(atu_map_entry.mscp_start_address, p_ss_ctxt->accelip_metadata.accel_type, p_ss_ctxt->p_init_params);
+    if (ret != SILIBS_SUCCESS)
+    {
+        critical_print("Accel IP: init_accelerator: accelip_ss_init failed.\n");
+        return ACCEL_RET_FAIL_SS_INIT;
     }
 
     /*
-    Invoke FW download command only if HSP is available
-    TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023639/ to revisit after boot chain stabilizes
-    */
-    if (system_info_is_hsp_present())
+     * TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023638/
+     * How do we handle SDM firmware download in SCP warm boot scenario?
+     */
+    info_print("%s: Invoking accel fw download\n", __func__);
+    accel_fw_download(p_ss_ctxt, accel_type);
+
+/**
+ * TODO: Task 1982595: [SCP] Accel IP Move to Static ATU map
+ */
+#if 0
+    ret = atu_unmap(ATU_ID_MSCP, &atu_map_entry);
+    if (ret != SILIBS_SUCCESS)
     {
-        cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_ITCM_LOAD;
-        cpu_rst_info[accel_type].mbox_params.is_cold_boot = false;
-        invoke_hsp_accel_fw_download(p_ss_ctxt);
+        critical_print("Accel IP: init_accelerator: ATU UNMAP failed.\n");
+        return ACCEL_RET_FAIL_ACCEL_IP;
+    }
+    debug_print("atu unmapped for accel ip\n");
+#endif
+    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+    {
+        /**
+         * TODO: Task 1973445: [SCP] Move Accel Intr init in SCP after mailbox communication
+         */
+        printf("accel lib: Initialize accel interrupt\n");
+
+        ret = accel_scp_intr_init(accel_type);
+        if (ret != ACCEL_INTR_RET_SUCCESS)
+        {
+            critical_print("Accel IP: init_accelerator: Accel Interrupt init failed.\n");
+            return ACCEL_RET_FAIL_INTR_INIT;
+        }
     }
     else
     {
-        // Release SDM cpuwait and update stages and invoke callback
-        cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_RELEASE_CPU_WAIT;
-        sdm_init_disable_cpu_wait((sdm_ext_cfg_base));
-        debug_print("%s: Accel CPU is now running\n", __func__);
-        cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_CPU_RECOVERY_COMPLETE;
-        cpu_rst_info[accel_type].cb_fun(cpu_rst_info[accel_type].cb_ctx);
+        printf("accel lib: Skipping Accel Interrupt init for SVP\n");
     }
 
-    debug_print("%s: FW LOAD SENT\n", __func__);
+    return ACCEL_RET_SUCCESS;
 }
 
 static void update_accel_ctxt_from_knobs(subsystem_ctxt_t* p_ss_ctxt)
@@ -720,47 +565,6 @@ int32_t scp_accelerators_init(void)
     return ret;
 }
 
-int32_t scp_accelerators_isolation_control(void)
-{
-    // TODO: read the knob (and fuse if implemented).  For now we are hardcoding to de-isolate
-    DIE_INSTANCE current_die_instance = (DIE_INSTANCE)idsw_get_die_id();
-    int32_t ret = ACCEL_RET_SUCCESS;
-    uint32_t accel_ctxt_size = 0;
-
-    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
-
-    FPFW_RUNTIME_ASSERT(p_ss_ctxt != NULL);
-
-    printf("Number of Accelerator instances present: %d\n", (int)accel_ctxt_size);
-
-    // Init all available Accelerator instances
-    for (uint32_t index = 0; index < accel_ctxt_size; index++)
-    {
-        // TODO (ADO 1728772) : init any particular accelerator instance only if that is enabled in fuse
-        if (p_ss_ctxt[index].accelip_metadata.die_instance == current_die_instance)
-        {
-            debug_print("accel lib: Initializing for die_id = %d, accel_type = %d, accel_instance = %d\n",
-                        p_ss_ctxt[index].accelip_metadata.die_instance,
-                        p_ss_ctxt[index].accelip_metadata.accel_type,
-                        p_ss_ctxt[index].accelip_metadata.accel_instance);
-
-            atu_map_entry_t atu_map_entry;
-            memcpy((void*)&atu_map_entry, (void*)p_ss_ctxt[index].p_accelip_atu_map, sizeof(atu_map_entry_t));
-
-            ret = atu_map(ATU_ID_MSCP, &atu_map_entry);
-            FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
-
-            ret = accelip_ss_enable_ip_isolation(atu_map_entry.mscp_start_address,
-                                                 p_ss_ctxt[index].accelip_metadata.accel_type,
-                                                 p_ss_ctxt[index].p_init_params->accelip_ss_cfg->isolation_enable);
-            FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
-
-            ret = atu_unmap(ATU_ID_MSCP, &atu_map_entry);
-            FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
-        }
-    }
-    return ret;
-}
 /* TODO: Review use of BUG_ASSERT (vis a vis ASSERT) in accelIP init sequence https://azurecsi.visualstudio.com/Dev/_workitems/edit/2025877/ */
 void scp_accelerators_emcpu_reset(ACCEL_ID accel_type, crash_dump_cb_t cb_fun, void* cb_ctx)
 {

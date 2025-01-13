@@ -15,7 +15,7 @@ Library     pylibs.kng_pythia_libs.APBaremetalTests
 ...         workspace_config=${WORKSPACE_CONFIG}
 ...         default_log_home=${LOG_DIR}
 ...         fw_payload_path=${PAYLOAD_DIR}
-...         host_config=${HOST_CONFIG_DIR}/cded_pipeline_fw.json
+...         host_config=${HOST_CONFIG_DIR}/ap_baremetal_embed_fw_single_die.json
 ...         WITH NAME    APBaremetalTestsLib
 
 Suite Setup       Dut Setup

@@ -63,7 +63,7 @@ What default simulation parameters to launch with. Default: scp_mcp_chie_bins
 Invoke-Virtualizer -SimConfig chie_bins_single_die_dat
 #>
 Function Invoke-Virtualizer(
-    [Parameter(Mandatory=$false)] [ValidateSet('sideloaded_chie_bins', 'chie_bins_single_die_dat', 'chie_bins_dual_die_dat', 'ap_baremetal_dual_die_dat')] [string] $SimConfig = "ap_baremetal_dual_die_dat"
+    [Parameter(Mandatory=$false)] [ValidateSet('sideloaded_chie_bins', 'chie_bins_single_die_dat', 'chie_bins_dual_die_dat', 'ap_baremetal_dual_die_dat', 'ap_baremetal_single_die_dat')] [string] $SimConfig = "ap_baremetal_single_die_dat"
 )
 {
     # Setup the workspace for the virtualizer

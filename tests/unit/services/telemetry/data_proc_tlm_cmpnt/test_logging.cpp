@@ -297,7 +297,7 @@ TEST_FUNCTION(test_tlm_logger_log_vr_temp, test_setup, test_teardown)
     // runtime information manager test
     vr_temp_t vr_temperature = {
         .timestamp = 0,
-        .vr_temp = {15, 25, 35, 45, 55, 65, 75, 85},
+        .vr_temp_dC = {15, 25, 35, 45, 55, 65, 75, 85},
     };
 
     // Baseline log
@@ -306,7 +306,7 @@ TEST_FUNCTION(test_tlm_logger_log_vr_temp, test_setup, test_teardown)
     // Check VR Temp
     for (uint8_t index = 0; index < MAX_NUM_OF_VR_RAILS; index++)
     {
-        assert_int_equal(soc_info.rail[index].temperature.latest_value_dC, (vr_temperature.vr_temp[index]));
+        assert_int_equal(soc_info.rail[index].temperature.latest_value_dC, (vr_temperature.vr_temp_dC[index]));
     }
 }
 
@@ -316,8 +316,8 @@ TEST_FUNCTION(test_tlm_logger_log_vr_current, test_setup, test_teardown)
     // runtime information manager test
     vr_current_t data = {
         .timestamp = 0,
-        .vr_current = {10, 20, 30, 40, 50, 60, 70, 80},
-        .vr_voltage = {1000, 900, 800, 700, 600, 700, 800, 900},
+        .vr_current_mA = {10, 20, 30, 40, 50, 60, 70, 80},
+        .vr_voltage_mV = {1000, 900, 800, 700, 600, 700, 800, 900},
     };
 
     // Baseline log
@@ -325,8 +325,8 @@ TEST_FUNCTION(test_tlm_logger_log_vr_current, test_setup, test_teardown)
     // Check VR Current and voltage
     for (uint8_t index = 0; index < MAX_NUM_OF_VR_RAILS; index++)
     {
-        assert_int_equal(soc_info.rail[index].current.latest_value_mA, (data.vr_current[index]));
-        assert_int_equal(soc_info.rail[index].voltage.latest_value_mV, (data.vr_voltage[index]));
+        assert_int_equal(soc_info.rail[index].current.latest_value_mA, (data.vr_current_mA[index]));
+        assert_int_equal(soc_info.rail[index].voltage.latest_value_mV, (data.vr_voltage_mV[index]));
     }
 }
 

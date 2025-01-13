@@ -86,7 +86,7 @@ void __wrap_sensor_fifo_svc_add_soc_pvt_temperature(soc_pvt_temp_t* pvt_temperat
 
     for (int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_DTS; ++pvt_idx)
     {
-        assert_true(pvt_temperature->sensor_temp[pvt_idx] == s_pvt_teamp[pvt_idx]);
+        assert_true(pvt_temperature->sensor_temp_dC[pvt_idx] == s_pvt_teamp[pvt_idx]);
     }
 
     function_called();
@@ -99,7 +99,7 @@ void __wrap_sensor_fifo_svc_add_soc_pvt_voltage(soc_pvt_voltage_t* pvt_voltage)
 
     for (int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_VM; ++pvt_idx)
     {
-        assert_true(pvt_voltage->sensor_voltage[pvt_idx] == s_pvt_voltage[pvt_idx]);
+        assert_true(pvt_voltage->sensor_voltage_mV[pvt_idx] == s_pvt_voltage[pvt_idx]);
     }
 
     function_called();
@@ -112,7 +112,7 @@ void __wrap_sensor_fifo_svc_add_vr_temperature(vr_temp_t* vr_temperature)
 
     for (int vr_idx = 0; vr_idx < MAX_NUM_OF_VR_RAILS; ++vr_idx)
     {
-        assert_true(vr_temperature->vr_temp[vr_idx] == s_vr_inputs[vr_idx].temperature);
+        assert_true(vr_temperature->vr_temp_dC[vr_idx] == s_vr_inputs[vr_idx].temperature);
     }
 
     function_called();
@@ -125,8 +125,8 @@ void __wrap_sensor_fifo_svc_add_vr_current(vr_current_t* vr_current)
 
     for (int vr_idx = 0; vr_idx < MAX_NUM_OF_VR_RAILS; ++vr_idx)
     {
-        assert_true(vr_current->vr_current[vr_idx] == s_vr_inputs[vr_idx].current);
-        assert_true(vr_current->vr_voltage[vr_idx] == s_vr_inputs[vr_idx].voltage);
+        assert_true(vr_current->vr_current_mA[vr_idx] == s_vr_inputs[vr_idx].current);
+        assert_true(vr_current->vr_voltage_mV[vr_idx] == s_vr_inputs[vr_idx].voltage);
     }
 
     function_called();

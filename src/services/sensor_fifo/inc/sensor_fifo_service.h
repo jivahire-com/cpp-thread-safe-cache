@@ -103,7 +103,7 @@ typedef struct
  */
 typedef struct __attribute__((packed)) {
     uint64_t timestamp;
-    uint16_t sensor_temp[NUMBER_OF_SOC_TEMP_SENSORS];
+    uint16_t sensor_temp_dC[NUMBER_OF_SOC_TEMP_SENSORS];
     uint8_t  padding[2]; // needs to be multiple of QUADWORD_SIZE
 } soc_pvt_temp_t;
 
@@ -113,7 +113,7 @@ typedef struct __attribute__((packed)) {
  */
 typedef struct __attribute__((packed)) {
     uint64_t timestamp;
-    uint16_t sensor_voltage[NUMBER_OF_SOC_VOLT_MON_SENSORS];
+    uint16_t sensor_voltage_mV[NUMBER_OF_SOC_VOLT_MON_SENSORS];
     uint8_t  padding[4]; // needs to be multiple of QUADWORD_SIZE
 } soc_pvt_voltage_t;
 
@@ -123,7 +123,7 @@ typedef struct __attribute__((packed)) {
  */
 typedef struct __attribute__((packed)) {
     uint64_t timestamp;
-    uint16_t vr_temp[MAX_NUM_OF_VR_RAILS];
+    uint16_t vr_temp_dC[MAX_NUM_OF_VR_RAILS];
 } vr_temp_t;
 
 /**
@@ -132,8 +132,8 @@ typedef struct __attribute__((packed)) {
  */
 typedef struct __attribute__((packed)) {
     uint64_t timestamp;
-    uint16_t vr_current[MAX_NUM_OF_VR_RAILS];
-    uint16_t vr_voltage[MAX_NUM_OF_VR_RAILS];
+    uint16_t vr_current_mA[MAX_NUM_OF_VR_RAILS];
+    uint16_t vr_voltage_mV[MAX_NUM_OF_VR_RAILS];
 } vr_current_t;
 
 /**
@@ -142,16 +142,13 @@ typedef struct __attribute__((packed)) {
  */
 typedef struct __attribute__((packed)) {
     uint64_t timestamp;
+    uint16_t dimm_temp_s0_dC;
+    uint16_t dimm_temp_s1_dC;
+    uint16_t dimm_power_mW;
     uint8_t dimm_id;
-    uint8_t dimm_throttling;
+    uint8_t dimm_throttling; //1- throttle  0-not throttle
     uint8_t dimm_memory_frequency_id;
-    uint8_t dimm_info_type;
-    uint16_t dimm_temp_s0;
-    uint16_t dimm_temp_s1;
-    uint16_t dimm_power;
-    uint16_t temp_threshold_low;
-    uint16_t temp_threshold_high;
-    uint16_t temp_threshold_critical;
+    uint8_t  padding[7]; // needs to be multiple of QUADWORD_SIZE
 } sensor_ram_dimm_info_t;
 
 /**

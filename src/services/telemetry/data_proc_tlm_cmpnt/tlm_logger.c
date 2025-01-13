@@ -375,7 +375,7 @@ void tlm_logger_log_vr_temp(vr_temp_t* vr_temperature)
     // Extract VR Temperature entries for all VR Rails
     for (uint8_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
     {
-        soc_info.rail[vr_index].temperature.latest_value_dC = vr_temperature->vr_temp[vr_index];
+        soc_info.rail[vr_index].temperature.latest_value_dC = vr_temperature->vr_temp_dC[vr_index];
     }
 }
 
@@ -385,8 +385,8 @@ void tlm_logger_log_vr_current(vr_current_t* vr_current)
     // Extract VR Current and voltage entries for all VR Rails
     for (uint8_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
     {
-        soc_info.rail[vr_index].current.latest_value_mA = vr_current->vr_current[vr_index];
-        soc_info.rail[vr_index].voltage.latest_value_mV = vr_current->vr_voltage[vr_index];
+        soc_info.rail[vr_index].current.latest_value_mA = vr_current->vr_current_mA[vr_index];
+        soc_info.rail[vr_index].voltage.latest_value_mV = vr_current->vr_voltage_mV[vr_index];
     }
 }
 

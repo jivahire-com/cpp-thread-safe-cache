@@ -398,7 +398,7 @@ static void hw_send_telemetry(power_telem_type_t type)
                       "SOC_PVT_TOTAL_CHANNELS_DTS != NUMBER_OF_SOC_TEMP_SENSORS");
         for (int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_DTS; ++pvt_idx)
         {
-            data.sensor_temp[pvt_idx] = s_telem_loop.soc_top_temp_data[pvt_idx].last_sample;
+            data.sensor_temp_dC[pvt_idx] = s_telem_loop.soc_top_temp_data[pvt_idx].last_sample;
         }
 
         sensor_fifo_svc_add_soc_pvt_temperature(&data);
@@ -412,7 +412,7 @@ static void hw_send_telemetry(power_telem_type_t type)
 
         for (int pvt_idx = 0; pvt_idx < SOC_PVT_TOTAL_CHANNELS_VM; ++pvt_idx)
         {
-            data.sensor_voltage[pvt_idx] = s_telem_loop.soc_top_voltage_data[pvt_idx].last_sample;
+            data.sensor_voltage_mV[pvt_idx] = s_telem_loop.soc_top_voltage_data[pvt_idx].last_sample;
         }
 
         sensor_fifo_svc_add_soc_pvt_voltage(&data);
@@ -426,7 +426,7 @@ static void hw_send_telemetry(power_telem_type_t type)
 
         for (int vr_idx = 0; vr_idx < MAX_NUM_OF_VR_RAILS; ++vr_idx)
         {
-            data.vr_temp[vr_idx] = s_telem_loop.vr_data[vr_idx].temperature;
+            data.vr_temp_dC[vr_idx] = s_telem_loop.vr_data[vr_idx].temperature;
         }
 
         sensor_fifo_svc_add_vr_temperature(&data);
@@ -440,8 +440,8 @@ static void hw_send_telemetry(power_telem_type_t type)
 
         for (int vr_idx = 0; vr_idx < MAX_NUM_OF_VR_RAILS; ++vr_idx)
         {
-            data.vr_current[vr_idx] = s_telem_loop.vr_data[vr_idx].current;
-            data.vr_voltage[vr_idx] = s_telem_loop.vr_data[vr_idx].voltage;
+            data.vr_current_mA[vr_idx] = s_telem_loop.vr_data[vr_idx].current;
+            data.vr_voltage_mV[vr_idx] = s_telem_loop.vr_data[vr_idx].voltage;
         }
 
         sensor_fifo_svc_add_vr_current(&data);

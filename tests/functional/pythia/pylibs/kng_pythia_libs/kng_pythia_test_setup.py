@@ -18,19 +18,19 @@ SDM_UART_INDEX = 2
 class KngPythiaTestSetup():
 
     @staticmethod
-    def reset_fpga_sideload_testfw(dut, log):
+    def reset_fpga(dut, log):
 
-        script_path = path_to_fpga_launch_scripts = os.path.join(os.getcwd().split('.testlogs')[0],"tests/functional/pythia/cmm/")
-        script_name = "PythiaLaunchFPGA.cmm"
+        script_path = "R:/Kingsgate/Kingsgate_TRACE32/Prep_R22/"
+        script_name = "HSPresetSystem.cmm"
         script = Path(r"{}".format(os.path.join(script_path, script_name)))
 
-        log.info("Resetting FPGA and sideloading Test Firmware . . .")
-        log.info(f"Calling HSP CMM Script to reset and load ProdFW: {script}")
+        log.info("Resetting FPGA additionally (outside dut.setup()) . . .")
+        log.info(f"Calling HSP CMM Script to reset SoC: {script}")
         hsp = dut.mb.node_0.soc.primary_die.get_core("hsp")
         hsp.debugger.execute_script(script)
         
         boot_time=90
-        log.info(f"Waiting {boot_time} seconds for FPGA to boot . . .")
+        log.info(f"Waiting for FPGA to boot . . .")
         time.sleep(boot_time)
 
         log.info("Resetting FPGA and launching ProdFW Done!")

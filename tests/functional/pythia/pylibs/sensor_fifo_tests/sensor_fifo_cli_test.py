@@ -67,7 +67,7 @@ class SensorFifoCliTest(EchoFallsBaseTest):
 
             if self.dut.get_dut_type() == DeviceType.BIGFPGA:
                 # TODO: Need to implement without reset when testing in BIGFPGA
-                KngPythiaTestSetup.reset_fpga_sideload_testfw(self.dut, self.log)
+                KngPythiaTestSetup.reset_fpga(self.dut, self.log)
                 self.log.info(f"Testing on BIGFPGA")
                 return True
 
@@ -427,7 +427,7 @@ class SensorFifoCliTest(EchoFallsBaseTest):
 
             if self.dut.get_dut_type() == DeviceType.BIGFPGA:
                 # TODO: Need to implement without reset when testing in BIGFPGA
-                KngPythiaTestSetup.reset_fpga_sideload_testfw(self.dut, self.log)
+                KngPythiaTestSetup.reset_fpga(self.dut, self.log)
                 self.log.info(f"Testing on BIGFPGA")
                 return True
 

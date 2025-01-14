@@ -51,7 +51,7 @@ TEST_FUNCTION(test_gtimer_init_soc, NULL, NULL)
         .counter_control_base = SCP_TOP_GEN_CNTR_CTRL_ADDRESS,
         .timer_control_base = SCP_TOP_SCP_TIMER_CTRL_ADDRESS,
         .timer_base_address = SCP_TOP_SCP_TIMER_BASE_ADDRESS,
-        .frequency_hz = (250 * 1000 * 1000),
+        .frequency_hz = (1000 * 1000 * 1000),
         .scaling_factor = 4,
         .timer_irq = HW_INT_SCP_GENERIC_TIMER_INT,
     };

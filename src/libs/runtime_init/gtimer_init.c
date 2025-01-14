@@ -26,8 +26,9 @@
  * requirements.
  * Base frequency = 250 MHz
  */
-#define SOC_REFCLK_FREQUENCY_HZ   250000000ULL
-#define SOC_REFCLK_SCALING_FACTOR 4ULL
+#define SOC_REFCLK_FREQUENCY_HZ        250000000ULL
+#define SOC_GTIMER_TARGET_FREQUENCY_HZ 1000000000ULL
+#define SOC_REFCLK_SCALING_FACTOR      ((SOC_GTIMER_TARGET_FREQUENCY_HZ) / (SOC_REFCLK_FREQUENCY_HZ))
 static_assert(SOC_REFCLK_FREQUENCY_HZ * SOC_REFCLK_SCALING_FACTOR == 1000000000,
               "SOC_REFCLK_FREQUENCY_HZ * SOC_REFCLK_SCALING_FACTOR must equal 1GHz");
 
@@ -53,7 +54,7 @@ FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("std_io"))
     config.counter_control_base = SCP_TOP_GEN_CNTR_CTRL_ADDRESS;
     config.timer_control_base = SCP_TOP_SCP_TIMER_CTRL_ADDRESS;
     config.timer_base_address = SCP_TOP_SCP_TIMER_BASE_ADDRESS;
-    config.frequency_hz = SOC_REFCLK_FREQUENCY_HZ;
+    config.frequency_hz = SOC_GTIMER_TARGET_FREQUENCY_HZ;
     config.scaling_factor = SOC_REFCLK_SCALING_FACTOR;
     config.timer_irq = HW_INT_SCP_GENERIC_TIMER_INT;
 

@@ -135,7 +135,7 @@ TEST_FUNCTION(test_gtimer_init, nullptr, nullptr)
         .counter_control_base = 42,
         .timer_control_base = 43,
         .timer_base_address = 44,
-        .frequency_hz = REFCLK_FREQUENCY_HZ,
+        .frequency_hz = REFCLK_FREQUENCY_HZ * REFCLK_SCALING_FACTOR,
         .scaling_factor = REFCLK_SCALING_FACTOR,
         .timer_irq = 45,
     };

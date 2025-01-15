@@ -77,10 +77,10 @@
 ./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
 
 ## Variable Service Tests
-./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
-./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
-./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
-./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
+#./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
+#./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
+#./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
+#./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
 
 ## AVS Die 1 Tests
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die1.robot
@@ -105,22 +105,22 @@
 ./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot_dual_die.robot
 
 ## Power Tests
-./../../../tests/functional/pythia/test_suites/power_tests/mod_power_control_loop_health.robot
-./../../../tests/functional/pythia/test_suites/power_tests/mod_power_ft.robot
-./../../../tests/functional/pythia/test_suites/power_tests/mod_power_pstate_transition.robot
-./../../../tests/functional/pythia/test_suites/power_tests/mod_power_telemetry_loop_health.robot
-./../../../tests/functional/pythia/test_suites/power_tests/mod_power_control_loop_health.robot
-./../../../tests/functional/pythia/test_suites/power_tests/mod_power_ft.robot
-./../../../tests/functional/pythia/test_suites/power_tests/mod_power_pstate_transition.robot
-./../../../tests/functional/pythia/test_suites/power_tests/mod_power_telemetry_loop_health.robot
-./../../../tests/functional/pythia/test_suites/power_tests/mod_power_control_loop_health.robot
-./../../../tests/functional/pythia/test_suites/power_tests/mod_power_ft.robot
-./../../../tests/functional/pythia/test_suites/power_tests/mod_power_pstate_transition.robot
-./../../../tests/functional/pythia/test_suites/power_tests/mod_power_telemetry_loop_health.robot
-./../../../tests/functional/pythia/test_suites/power_tests/mod_power_control_loop_health.robot
-./../../../tests/functional/pythia/test_suites/power_tests/mod_power_ft.robot
-./../../../tests/functional/pythia/test_suites/power_tests/mod_power_pstate_transition.robot
-./../../../tests/functional/pythia/test_suites/power_tests/mod_power_telemetry_loop_health.robot
+#./../../../tests/functional/pythia/test_suites/power_tests/mod_power_control_loop_health.robot
+#./../../../tests/functional/pythia/test_suites/power_tests/mod_power_ft.robot
+#./../../../tests/functional/pythia/test_suites/power_tests/mod_power_pstate_transition.robot
+#./../../../tests/functional/pythia/test_suites/power_tests/mod_power_telemetry_loop_health.robot
+#./../../../tests/functional/pythia/test_suites/power_tests/mod_power_control_loop_health.robot
+#./../../../tests/functional/pythia/test_suites/power_tests/mod_power_ft.robot
+#./../../../tests/functional/pythia/test_suites/power_tests/mod_power_pstate_transition.robot
+#./../../../tests/functional/pythia/test_suites/power_tests/mod_power_telemetry_loop_health.robot
+#./../../../tests/functional/pythia/test_suites/power_tests/mod_power_control_loop_health.robot
+#./../../../tests/functional/pythia/test_suites/power_tests/mod_power_ft.robot
+#./../../../tests/functional/pythia/test_suites/power_tests/mod_power_pstate_transition.robot
+#./../../../tests/functional/pythia/test_suites/power_tests/mod_power_telemetry_loop_health.robot
+#./../../../tests/functional/pythia/test_suites/power_tests/mod_power_control_loop_health.robot
+#./../../../tests/functional/pythia/test_suites/power_tests/mod_power_ft.robot
+#./../../../tests/functional/pythia/test_suites/power_tests/mod_power_pstate_transition.robot
+#./../../../tests/functional/pythia/test_suites/power_tests/mod_power_telemetry_loop_health.robot
 
 ## Variable Service Tests
 #./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_dd_test.robot

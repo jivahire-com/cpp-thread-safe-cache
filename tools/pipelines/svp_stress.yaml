@@ -22,23 +22,23 @@ variables:
   - name: BuildVersion
     value:  $[format('{0}-dev', variables['Build.BuildNumber'])]
 
-# Build stage
 stages:
-- stage: SVP_Pythia_Tests
+- stage: SVP_Pythia_Nightly_Stress_Tests
   jobs:
   - template: templates/svp_pythia_test.yaml
     parameters:
-        ArtifactName: SVP_Pythia_Tests
-        build_id: $(BUILD_ID)
-        TestPlan: .\tests\functional\pythia\test_plan\svp_weekend_stress_test_plan.args
+      ArtifactName: SVP_Pythia_Nightly_Stress_Tests
+      build_id: $(BUILD_ID)
+      TestPlan: $(Test_Plan)
 
-- stage: Publish
-  dependsOn: [SVP_Pythia_Tests]
-  condition: eq(variables['OfficialBuild'], 'true')
+# This is to tag the commits that pass nightly tests.
+- stage: Promote
+  dependsOn: [ SVP_Pythia_Nightly_Stress_Tests ]
+  # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
+  condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
   pool: 
     name: 1pfw-kingsgate-windows
   jobs:
-  - template: templates/publish.yaml
+  - template: templates/promote.yaml
     parameters:
-      Toolchain: [arm-eabi-aarch]
-      Version: $(BuildVersion)
+      ArtifactName: kingsgate_mscp_$(RunSchedule)_stress

@@ -31,7 +31,7 @@ stages:
       ArtifactName: FPGA_Pythia_Tests
       Pool: 1pfw-kingsgate-big-fpga
       build_id: $(BUILD_ID)
-      TestPlan: .\tests\functional\pythia\test_plan\fpga_weekend_stress_test_plan.args
+      TestPlan: $(Test_Plan)
 
 # This is to tag the commits that pass weekend stress tests.
 - stage: Promote
@@ -43,4 +43,4 @@ stages:
   jobs:
   - template: templates/promote.yaml
     parameters:
-      ArtifactName: kingsgate_mscp_weekend_stress
+      ArtifactName: kingsgate_mscp_$(RunSchedule)_stress

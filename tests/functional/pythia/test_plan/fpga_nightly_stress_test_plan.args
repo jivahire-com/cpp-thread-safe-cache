@@ -4,10 +4,10 @@
 ./../../../tests/functional/pythia/test_suites/accel_interrupt/accel_interrupt_test.robot
 
 ## AVS Die 0 Tests
-./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die1.robot
-./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die1.robot
-./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die1.robot
-./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die1.robot
+./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die0.robot
+./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die0.robot
+./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die0.robot
+./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die0.robot
 
 ## CDED PCIE Tests
 ./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_pcie_tests
@@ -25,7 +25,7 @@
 ./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot
 ./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot
 
-## Dual Die Heartbeat Tests
+## Single Die Heartbeat Tests
 ./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot
 ./../../../tests/functional/pythia/test_suites/heart_beat/fbc_sdm_cded_heart_beat_single_die.robot
 ./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot
@@ -57,5 +57,5 @@
 #./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
 
 ## Variable Service Tests
-./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
-./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
+#./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
+#./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot

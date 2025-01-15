@@ -111,23 +111,33 @@ fpfw_status_t tlm_logger_log_tile_temperature(tile_temp_t* temperature_data, uin
     // we must read the max id and max tile temp
     if (temperature_data->temp0.temp_valid == 1)
     {
-
-        // **TODO, modify this logging solution to account for the coefficients from the fuses
-        // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1978733
-
         // Check between which is bigger to log for tile core0
-        int16_t inst_temp_0 = temperature_data->temp1.temp0;
-        int16_t inst_temp_1 = temperature_data->temp1.temp1;
-        int16_t inst_temp_2 = temperature_data->temp1.temp2;
-        core[core_id].temperature.latest_value_dC = find_hot_core_temp(inst_temp_0, inst_temp_1, inst_temp_2);
+        int16_t inst_temp_0_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp1.temp0,
+                                                            tileDtsCoefficients[tile_index].k_val,
+                                                            tileDtsCoefficients[tile_index].y_val);
+        int16_t inst_temp_1_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp1.temp1,
+                                                            tileDtsCoefficients[tile_index].k_val,
+                                                            tileDtsCoefficients[tile_index].y_val);
+        int16_t inst_temp_2_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp1.temp2,
+                                                            tileDtsCoefficients[tile_index].k_val,
+                                                            tileDtsCoefficients[tile_index].y_val);
+
+        core[core_id].temperature.latest_value_dC = find_hot_core_temp(inst_temp_0_dC, inst_temp_1_dC, inst_temp_2_dC);
 
         // Check between which is bigger to log for tile core1
-        inst_temp_0 = temperature_data->temp1.temp3;
-        inst_temp_1 = temperature_data->temp2.temp4;
-        inst_temp_2 = temperature_data->temp2.temp5;
-        core[core_id + 1].temperature.latest_value_dC = find_hot_core_temp(inst_temp_0, inst_temp_1, inst_temp_2);
+        inst_temp_0_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp1.temp3,
+                                                    tileDtsCoefficients[tile_index].k_val,
+                                                    tileDtsCoefficients[tile_index].y_val);
+        inst_temp_1_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp2.temp4,
+                                                    tileDtsCoefficients[tile_index].k_val,
+                                                    tileDtsCoefficients[tile_index].y_val);
+        inst_temp_2_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp2.temp5,
+                                                    tileDtsCoefficients[tile_index].k_val,
+                                                    tileDtsCoefficients[tile_index].y_val);
+        core[core_id + 1].temperature.latest_value_dC = find_hot_core_temp(inst_temp_0_dC, inst_temp_1_dC, inst_temp_2_dC);
 
-        // Log all the HNF Temperature
+        // Log all the HNF Temperature, review raw HNF data for units.
+        // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2289685
         soc_info.hnf[core_id].latest_value_dC = temperature_data->temp2.temp6;
         soc_info.hnf[core_id + 1].latest_value_dC = temperature_data->temp2.temp7;
     }
@@ -277,7 +287,6 @@ fpfw_status_t tlm_logger_log_core_pstate(pstate_telem_t* pstate_telemetry)
 
     // Check for throttling indication first. If System is throttling, do not
     // take snapshots of Pstates and Cstates
-
     if (pstate_telemetry->data.throttle_status == NO_THROTTLE)
     {
         // check to log the Core Pstate if there are changes
@@ -390,6 +399,34 @@ void tlm_logger_log_vr_current(vr_current_t* vr_current)
     }
 }
 
+void tlm_logger_log_soc_pvt_temp(soc_pvt_temp_t* pvt_temperature)
+{
+    for (uint8_t pvt_index = 0; pvt_index < NUMBER_OF_SOC_TEMP_SENSORS; pvt_index++)
+    {
+        soc_info.sensor_temp[pvt_index].latest_value_dC = pvt_temperature->sensor_temp_dC[pvt_index];
+    }
+}
+
+fpfw_status_t telmain_log_dimm_info(sensor_ram_dimm_info_t* dimm_info)
+{
+    // DIMM(Dual inline memory module)- Convert Sensor Data into DIMM Entries
+    // Check for which DIMM channel is this entry, do not process anything beyond the valid DIMM index
+    if (dimm_info->dimm_id < NUMBER_OF_DIMM_MODULES)
+    {
+        soc_info.dimm[dimm_info->dimm_id].s0.latest_value_dC = dimm_info->dimm_temp_s0_dC;
+        soc_info.dimm[dimm_info->dimm_id].s1.latest_value_dC = dimm_info->dimm_temp_s1_dC;
+        soc_info.dimm[dimm_info->dimm_id].dimm_throttling = dimm_info->dimm_throttling;
+        soc_info.dimm[dimm_info->dimm_id].dimm_memory_frequency_id = dimm_info->dimm_memory_frequency_id;
+        soc_info.dimm[dimm_info->dimm_id].dimm_power_mW = dimm_info->dimm_power_mW;
+    }
+    else
+    {
+        FPFW_ET_LOG(DIMMInfoInvalidDimmId, FPFW_STATUS_INVALID_ARGS);
+        return FPFW_STATUS_INVALID_ARGS;
+    }
+    return FPFW_STATUS_SUCCESS;
+}
+
 void data_proc_tlm_cmpnt_aggregate_pwr_tlm_data(void)
 {
     // Allocate enough buffer for 8 strides from sensor fifo. Please review this if the sensor fifo may have more entries, optimize when less
@@ -474,6 +511,28 @@ void data_proc_tlm_cmpnt_aggregate_pwr_tlm_data(void)
         {
             // process the tile voltage
             tlm_logger_log_vr_current(vr_current);
+        }
+    } while (status.more_entries == true);
+
+    do
+    {
+        soc_pvt_temp_t* pvt_temperature = (soc_pvt_temp_t*)buffer_data;
+        status = sensor_fifo_svc_poll_soc_pvt_temperature(pvt_temperature);
+        if (status.curr_data_is_valid == true)
+        {
+            // process the soc PVT temperature
+            tlm_logger_log_soc_pvt_temp(pvt_temperature);
+        }
+    } while (status.more_entries == true);
+
+    /*For soc PVT voltage, no requirement as per the Telemetry spec */
+    do
+    {
+        sensor_ram_dimm_info_t* dimm_info = (sensor_ram_dimm_info_t*)buffer_data;
+        status = sensor_fifo_svc_poll_dimm_info(dimm_info);
+        if (status.curr_data_is_valid == true)
+        {
+            telmain_log_dimm_info(dimm_info);
         }
     } while (status.more_entries == true);
 }

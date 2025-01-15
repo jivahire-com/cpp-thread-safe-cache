@@ -130,6 +130,8 @@ typedef struct {
     uint32_t soc_pc4_residency_mS;
     pwr_soc_element_vr_rail_t rail[MAX_NUM_OF_VR_RAILS];
     pwr_soc_element_hnf_t hnf[NUMBER_OF_HNF_CHANNELS_PER_DIE];
+    pwr_soc_element_sensor_temp_t sensor_temp[NUMBER_OF_SOC_TEMP_SENSORS];
+    pwr_soc_element_dimm_t      dimm[NUMBER_OF_DIMM_MODULES];
 } soc_runtime_info_t;
 
 /*--------- Function Prototypes ----------*/
@@ -198,7 +200,22 @@ void tlm_logger_log_vr_temp(vr_temp_t* vr_temperature);
  * @return None
  */
 void tlm_logger_log_vr_current(vr_current_t* vr_current);
-
+/**
+ * @brief Internal API to log soc pvt temperature (SOC_TOP_TEMP) 
+ *
+ * @param soc_pvt_temp_t - SCF RAM formatted resource for soc_pvt_temp
+ *
+ * @return None
+ */
+void tlm_logger_log_soc_pvt_temp(soc_pvt_temp_t* pvt_temperature);
+/**
+ * @brief Internal API to log soc dimm information (DIMM) 
+ *
+ * @param sensor_ram_dimm_info_t - SCF RAM formatted resource for dimm
+ *
+ * @return fpfw_status_t
+ */
+fpfw_status_t telmain_log_dimm_info(sensor_ram_dimm_info_t* dimm_info);
 /**
  * @brief Internal API to log pstate telemetry packets, for pstate, cstate and throttling info
  *

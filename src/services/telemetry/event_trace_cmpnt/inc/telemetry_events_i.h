@@ -120,6 +120,11 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      DTSCoefficientReadFailedInit,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                     26,
+                     DIMMInfoInvalidDimmId,
+                     FPFW_ET_LEVEL_ERROR,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
 
 
 /*--------- Function Prototypes ----------*/

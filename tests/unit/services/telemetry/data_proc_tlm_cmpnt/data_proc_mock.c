@@ -66,6 +66,18 @@ sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_vr_current(vr_current_t* vr
     return *(sensor_ram_poll_status_t*)mock();
 }
 
+sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_soc_pvt_temperature(soc_pvt_temp_t* pvt_temperature)
+{
+    FPFW_UNUSED(pvt_temperature);
+    return *(sensor_ram_poll_status_t*)mock();
+}
+
+sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_dimm_info(sensor_ram_dimm_info_t* dimm_info)
+{
+    FPFW_UNUSED(dimm_info);
+    return *(sensor_ram_poll_status_t*)mock();
+}
+
 fpfw_status_t __wrap_platform_power_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dts_coeff, uint32_t count)
 {
     check_expected(count);

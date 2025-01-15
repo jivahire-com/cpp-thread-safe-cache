@@ -38,6 +38,8 @@ mock_target(${TARGET}
     sensor_fifo_svc_poll_core_pstate
     sensor_fifo_svc_poll_vr_temperature
     sensor_fifo_svc_poll_vr_current
+    sensor_fifo_svc_poll_soc_pvt_temperature
+    sensor_fifo_svc_poll_dimm_info
     platform_power_fuses_get_dts_coeff_tile
 
 )

@@ -79,6 +79,9 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_aggregate_pwr_tlm_data, test_setup, test_
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &status_expected);
     will_return(__wrap_sensor_fifo_svc_poll_vr_temperature, &status_expected);
     will_return(__wrap_sensor_fifo_svc_poll_vr_current, &status_expected);
+    will_return(__wrap_sensor_fifo_svc_poll_soc_pvt_temperature, &status_expected);
+    will_return(__wrap_sensor_fifo_svc_poll_dimm_info, &status_expected);
+
     data_proc_tlm_cmpnt_aggregate_pwr_tlm_data();
 }
 // Test for tlm_logger to init dts coefficient structures
@@ -308,6 +311,52 @@ TEST_FUNCTION(test_tlm_logger_log_vr_temp, test_setup, test_teardown)
     {
         assert_int_equal(soc_info.rail[index].temperature.latest_value_dC, (vr_temperature.vr_temp_dC[index]));
     }
+}
+
+// Test for tlm_logger_log_pvt_soc_temp
+TEST_FUNCTION(test_tlm_logger_log_pvt_soc_temp, test_setup, test_teardown)
+{
+    soc_pvt_temp_t pvt_temperature = {
+        .timestamp = 0,
+        .sensor_temp_dC = {20, 30, 40, 50, 60, 26, 27, 21, 12, 21, 31, 13, 41, 14},
+
+    };
+    tlm_logger_log_soc_pvt_temp(&pvt_temperature);
+
+    for (uint8_t pvt_index = 0; pvt_index < NUMBER_OF_SOC_TEMP_SENSORS; pvt_index++)
+    {
+        assert_int_equal(soc_info.sensor_temp[pvt_index].latest_value_dC, (pvt_temperature.sensor_temp_dC[pvt_index]));
+    }
+}
+
+// Test for tlm_logger_log_dimm_infromation
+TEST_FUNCTION(test_tlm_logger_log_dimm_information, test_setup, test_teardown)
+{
+    fpfw_status_t status;
+    sensor_ram_dimm_info_t dimm_info = {
+        .timestamp = 0,
+        .dimm_temp_s0_dC = 26,
+        .dimm_temp_s1_dC = 28,
+        .dimm_power_mW = 100,
+        .dimm_id = 0,
+        .dimm_throttling = 0,
+        .dimm_memory_frequency_id = 0,
+    };
+    // Baseline log
+    status = telmain_log_dimm_info(&dimm_info);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+
+    // Check DIMM information
+    assert_int_equal(soc_info.dimm[dimm_info.dimm_id].s0.latest_value_dC, (dimm_info.dimm_temp_s0_dC));
+    assert_int_equal(soc_info.dimm[dimm_info.dimm_id].s1.latest_value_dC, (dimm_info.dimm_temp_s1_dC));
+    assert_int_equal(soc_info.dimm[dimm_info.dimm_id].dimm_power_mW, (dimm_info.dimm_power_mW));
+    assert_int_equal(soc_info.dimm[dimm_info.dimm_id].dimm_throttling, (dimm_info.dimm_throttling));
+    assert_int_equal(soc_info.dimm[dimm_info.dimm_id].dimm_memory_frequency_id, (dimm_info.dimm_memory_frequency_id));
+
+    // invalid DIMM id.
+    dimm_info.dimm_id = 17;
+    status = telmain_log_dimm_info(&dimm_info);
+    assert_int_equal(status, FPFW_STATUS_INVALID_ARGS);
 }
 
 // Test for tlm_logger_log_vr_current

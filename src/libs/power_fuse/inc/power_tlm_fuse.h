@@ -19,6 +19,22 @@
 #include <stdint.h> 
 #include <fpfw_status.h> // for fpfw_status_t
 /*-- Symbolic Constant Macros (defines) --*/
+
+// Helpers for DTS Coefficient values taken from fuses:
+#define PWR_TLM_DTS_K_COEFF_FUSED_TEMP(fused_k) (-1.0F * (float)fused_k)
+#define PWR_TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y) ((float)fused_y)
+
+/**
+ * @brief To obtain the temperature value, the following equation should be applied to the dout output of the DTS.
+ * Temperature = ( 𝒅𝒐𝒖𝒕 /16384 ) ∗ 𝒀+𝑲 [℃] 
+ * Reference : Synopsys Cores Sensors  Distributed Thermal Sensor (Series 2)  section 6.2
+ */
+
+#ifndef PWR_TLM_DOUT2TEMP_FUSED_DC
+    #define PWR_TLM_DOUT2TEMP_FUSED_DC(dout, fused_k, fused_y) \
+        (dout / 16384.0F * PWR_TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y) + PWR_TLM_DTS_K_COEFF_FUSED_TEMP(fused_k))
+#endif
+
 /* DTS coeff spacing  */
 #define TILE_PVT_NUM_CHANNELS_DTS 8
 /*--------------- Typedefs ---------------*/

@@ -322,6 +322,9 @@ typedef struct {
 typedef struct {
     temperature_t s0;
     temperature_t s1;
+    uint8_t dimm_throttling;
+    uint8_t dimm_memory_frequency_id;
+    uint16_t dimm_power_mW;
 } pwr_soc_element_dimm_t, *p_pwr_soc_element_dimm_t;
 
 typedef struct {

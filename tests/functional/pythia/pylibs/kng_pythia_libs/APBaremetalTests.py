@@ -69,9 +69,9 @@ class APBaremetalTests(EchoFallsBaseTest):
 
             self.dut.setup()
 
-            # Additionally call an FPGA reset if DUT is FPGA. Bug: https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/2282596/
+            # Additionally call an FPGA reset if DUT is FPGA. Bug: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2284576
             if self.dut.get_dut_type() == DeviceType.BIGFPGA:
-                KngPythiaTestSetup.reset_fpga()
+                KngPythiaTestSetup.reset_fpga(self.dut, self.log)
 
             # Open connections
             self.scp_connection.get_current_channel().open()

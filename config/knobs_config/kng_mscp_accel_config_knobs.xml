@@ -1,0 +1,164 @@
+<ConfigSchema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:noNamespaceSchemaLocation="configschema.xsd">
+
+  <!-- Enum values are declared separately from the knobs.
+  The same Enum can be used as the 'enumtype' of any number of EnumKnobs -->
+  <Enums>
+  </Enums>
+
+  <Structs>
+    <!-- Accel Structs -->
+    <Struct name="accel_base_class_code_t">
+      <Member name="pf_pci_t0_base_class_code" type="ACCELIP_PCI_BASE_CLASS_CODE" count="2" help="Base class code of the device"/>
+    </Struct>
+    <Struct name="accel_pf_subsystem_id_t">
+      <Member name="pf_pci_t0_subsystem_id" type="ACCELIP_PCI_DEVICE_ID" count="2" help="Subsystem ID of the device."/>
+    </Struct>
+    <Struct name="accel_pf_device_id_t">
+      <Member name="pf_pci_t0_device_id" type="ACCELIP_PCI_DEVICE_ID" count="2" help="PCI device ID"/>
+    </Struct>
+    <Struct name="accel_pf_int_pin_t">
+      <Member name="pf_pci_t0_int_pin" type="ACCELIP_PCI_INT_PIN" count="2" default="{INT_PIN_A, INT_PIN_A}" help="Legacy interrupt pin setting"/>
+    </Struct>
+    <Struct name="accel_rcec_int_pin_t">
+      <Member name="rcec_pci_t0_int_pin" type="ACCELIP_PCI_INT_PIN" count="2" default="{INT_PIN_A, INT_PIN_A}" help="Legacy interrupt pin setting"/>
+    </Struct>
+    <Struct name="accel_tee_io_supp_t">
+      <Member name="tee_io_supp" type="bool" count="2" default="{true, true}" help="TEE IO Support Capability Field"/>
+    </Struct>
+    <Struct name="cded_dis_wrt_buff_cont_t">
+      <Member name="dis_wrt_buff_cont" type="bool" count="2" default="{false, false}" help="Disable execution of Write Buffer Continuation commands. Only supported for an SDM with a Co-Processor (e.g. CDED)."/>
+    </Struct>
+    <Struct name="accel_dis_pri_t">
+      <Member name="dis_pri" type="bool" count="2" default="{false, false}" help="Disable the Page Request Interface (PRI) capability."/>
+    </Struct>
+    <Struct name="accel_allow_gpa_t">
+      <Member name="allow_gpa" type="bool" count="2" default="{true, true}" help="Allow Guest Physical Address's (GPA) for Non-Completion Address's in the Command by asserting the GPA field within the Command. The command is dropped and an error will be reported if the command execution violates this setting."/>
+    </Struct>
+    <Struct name="accel_allow_va_t">
+      <Member name="allow_va" type="bool" count="2" default="{true, true}" help="Allow Virtual Address's (VA) for Non-Completion Address's in the Command by de-asserting the GPA field within the Command. The command is dropped and an error will be reported if the command execution violates this setting."/>
+    </Struct>
+    <Struct name="accel_allow_cpl_gpa_t">
+      <Member name="allow_cpl_gpa" type="bool" count="2" default="{true, true}" help="Allow Guest Physical Address's (GPA) for Completion Address's in the Command by asserting the GPA field within the Command. The command is dropped and an error will be reported if the command execution violates this setting.."/>
+    </Struct>
+    <Struct name="accel_allow_cpl_va_t">
+      <Member name="allow_cpl_va" type="bool" count="2" default="{true, true}" help="Allow Virtual Address's (VA) for Completion Address's in the Command by de-asserting the GPA field within the Command. The command is dropped and an error will be reported if the command execution violates this setting.."/>
+    </Struct>
+    <Struct name="accel_allow_priv_t">
+      <Member name="allow_priv" type="bool" count="2" default="{true, true}" help="Allow Privileged Command execution, the Priv field within the Command is allowed to be asserted. The command is dropped and an error will be reported if the command execution violates this setting."/>
+    </Struct>
+    <Struct name="accel_allow_nonpriv_t">
+      <Member name="allow_nonpriv" type="bool" count="2" default="{true, true}" help="Allow Non-Privileged Command execution, the Priv field within the Command is allowed to be de-asserted. The command is dropped and an error will be reported if the command execution violates this setting.."/>
+    </Struct>
+    <Struct name="accel_allow_posted_t">
+      <Member name="allow_posted" type="bool" count="2" default="{true, true}" help="Allow Posted Command submissions. The command is dropped and an error will be reported if the command submission violates this setting."/>
+    </Struct>
+    <Struct name="accel_allow_nonposted_t">
+      <Member name="allow_nonposted" type="bool" count="2" default="{true, true}" help="Allow Non-Posted Command submissions. The command is dropped and an error will be reported if the command submission violates this setting."/>
+    </Struct>
+    <Struct name="accel_gpa_pasid_en_t">
+      <Member name="gpa_pasid_en" type="bool" count="2" default="{false, false}" help="Enable the Process Address Space ID (PASID) field for Source/Destionation Command Pointers with the GPA field set in the command."/>
+    </Struct>
+    <Struct name="accel_cpl_gpa_pasid_en_t">
+      <Member name="cpl_gpa_pasid_en" type="bool" count="2" default="{false, false}" help="Enable the Process Address Space ID (PASID) field for the Completion Command Pointer with the CPL_GPA field set in the command."/>
+    </Struct>
+    <Struct name="accel_pf_crs_resp_data_t">
+      <Member name="pf_crs_resp_data" type="ACCELIP_CONFIG_TIMEOUT_RESPONSE" count="2" default="{CRS_RESPONSE, CRS_RESPONSE}" help="Physical Function Configuration Response Status (CRS) data response when reading the Vendor Register and the accel is not ready. 1'b0 = Return 0xFFFF0001, 1'b1 = Return 0xFFFFFFFF"/>
+    </Struct>
+    <Struct name="accel_vf_crs_resp_data_t">
+      <Member name="vf_crs_resp_data" type="ACCELIP_CONFIG_TIMEOUT_RESPONSE" count="2" default="{CRS_RESPONSE, CRS_RESPONSE}" help="Virtual Function Configuration Response Status (CRS) data response when reading the Vendor Register and the accel is not ready. 1'b0 = Return 0xFFFF0001, 1'b1 = Return 0xFFFFFFFF"/>
+    </Struct>
+    <Struct name="accel_total_vfs_t">
+      <Member name="total_vfs" type="uint8_t" count="2" default="{32, 32}" max="{32, 32}" help="The number of VFs to report in the SRIOV capability TotalVFs field for the device. Refer to PCIe Base Spec 9.3.3.6 for details."/>
+    </Struct>
+    <Struct name="accel_dti_lim_trans_cnt_t">
+      <Member name="dti_lim_trans_cnt" type="uint8_t" count="2" default="{0xff, 0xff}" max="{0xff, 0xff}" help="The maximum amount of outstanding requests allowed on the DTI interface. The field setting is incremented by 1 for amount of outstanding requests."/>
+    </Struct>
+    <Struct name="accel_dti_inv_lim_trans_cnt_t">
+      <Member name="dti_inv_lim_trans_cnt" type="uint8_t" count="2" default="{0x0f, 0x0f}" max="{0x0f, 0x0f}" help="The maximum amount of outstanding ATS Invalidate commands allowed on the DTI interface. The field setting is incremented by 1 for amount of outstanding requests"/>
+    </Struct>
+    <Struct name="accel_lti_lim_trans_cnt_t">
+      <Member name="lti_lim_trans_cnt" type="uint16_t" count="2" default="{0xfff, 0xfff}" max="{0xfff, 0xfff}" help="The maximum amount of outstanding requests allowed on the LTI interface. The field setting is incremented by 1 for amount of outstanding requests."/>
+    </Struct>
+    <Struct name="accel_tot_dwq_num_entries_avail_t">
+      <Member name="tot_dwq_num_entries_avail" type="uint32_t" count="2" default="{0xfff, 0xfff}" max="{0xfff, 0xfff}" help="The maximum number of commands the Descriptor Command Buffer supports. The field setting is incremented by 1 for the maximum number of commands supported.."/>
+    </Struct>
+    <Struct name="accel_rd_lim_cnt_t">
+      <Member name="rd_lim_cnt" type="uint16_t" count="2" default="{0xfff, 0xfff}" max="{0xfff, 0xfff}" help="Max outstanding read requests on ACE-Lite interface. Allowed is encoding + 1."/>
+    </Struct>
+    <Struct name="accel_wr_lim_cnt_t">
+      <Member name="wr_lim_cnt" type="uint16_t" count="2" default="{0xfff, 0xfff}" max="{0xfff, 0xfff}" help="Max outstanding write requests on ACE-Lite interface. Allowed is encoding + 1."/>
+    </Struct>
+    <Struct name="accel_isolation_enable_t">
+      <Member name="isolation_enable" type="bool" count="2" default="{false, false}" help="Isolation control over an entire accelerator instance."/>
+    </Struct>
+    <Struct name="accel_emm_resp_code_t">
+      <Member name="emm_resp_code" type="uint8_t" count="2" default="{0, 0}" max="{31, 31}" help="EMM response code. Refer to PCR MAS for details. Valid values are 0 (EMM disabled) and 1 through 31 where higher values represent higher freq output clock."/>
+    </Struct>
+  </Structs>
+
+  <!-- namespace indicates the GUID namespace the values are stored in -->
+  <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
+    <!-- SDM knobs -->
+    <Knob name="sdm_base_class_code" type="accel_base_class_code_t" default="{{SDM_BASE_CLASS_CODE, SDM_BASE_CLASS_CODE}}"/>
+    <Knob name="sdm_pf_subsystem_id" type="accel_pf_subsystem_id_t" default="{{SDM_PCI_DEVICE_ID, SDM_PCI_DEVICE_ID}}"/>
+    <Knob name="sdm_pf_device_id" type="accel_pf_device_id_t" default="{{SDM_PCI_DEVICE_ID, SDM_PCI_DEVICE_ID}}"/>
+    <Knob name="sdm_pf_int_pin" type="accel_pf_int_pin_t"/>
+    <Knob name="sdm_rcec_int_pin" type="accel_rcec_int_pin_t"/>
+    <Knob name="sdm_tee_io_supp" type="accel_tee_io_supp_t"/>
+    <Knob name="sdm_dis_pri" type="accel_dis_pri_t"/>
+    <Knob name="sdm_allow_gpa" type="accel_allow_gpa_t"/>
+    <Knob name="sdm_allow_va" type="accel_allow_va_t"/>
+    <Knob name="sdm_allow_cpl_gpa" type="accel_allow_cpl_gpa_t"/>
+    <Knob name="sdm_allow_cpl_va" type="accel_allow_cpl_va_t"/>
+    <Knob name="sdm_allow_priv" type="accel_allow_priv_t"/>
+    <Knob name="sdm_allow_nonpriv" type="accel_allow_nonpriv_t"/>
+    <Knob name="sdm_allow_posted" type="accel_allow_posted_t"/>
+    <Knob name="sdm_allow_nonposted" type="accel_allow_nonposted_t"/>
+    <Knob name="sdm_gpa_pasid_en" type="accel_gpa_pasid_en_t"/>
+    <Knob name="sdm_cpl_gpa_pasid_en" type="accel_cpl_gpa_pasid_en_t"/>
+    <Knob name="sdm_pf_crs_resp_data" type="accel_pf_crs_resp_data_t"/>
+    <Knob name="sdm_vf_crs_resp_data" type="accel_vf_crs_resp_data_t"/>
+    <Knob name="sdm_total_vfs" type="accel_total_vfs_t"/>
+    <Knob name="sdm_dti_lim_trans_cnt" type="accel_dti_lim_trans_cnt_t"/>
+    <Knob name="sdm_dti_inv_lim_trans_cnt" type="accel_dti_inv_lim_trans_cnt_t"/>
+    <Knob name="sdm_lti_lim_trans_cnt" type="accel_lti_lim_trans_cnt_t"/>
+    <Knob name="sdm_tot_dwq_num_entries_avail" type="accel_tot_dwq_num_entries_avail_t"/>
+    <Knob name="sdm_rd_lim_cnt" type="accel_rd_lim_cnt_t"/>
+    <Knob name="sdm_wr_lim_cnt" type="accel_wr_lim_cnt_t"/>
+    <Knob name="sdm_isolation_enable" type="accel_isolation_enable_t"/>
+    <Knob name="sdm_emm_resp_code" type="accel_emm_resp_code_t"/>
+
+    <!-- CDED knobs -->
+    <Knob name="cded_base_class_code" type="accel_base_class_code_t" default="{{CDED_BASE_CLASS_CODE, CDED_BASE_CLASS_CODE}}"/>
+    <Knob name="cded_pf_subsystem_id" type="accel_pf_subsystem_id_t" default="{{CDED_PCI_DEVICE_ID, CDED_PCI_DEVICE_ID}}"/>
+    <Knob name="cded_pf_device_id" type="accel_pf_device_id_t" default="{{CDED_PCI_DEVICE_ID, CDED_PCI_DEVICE_ID}}"/>
+    <Knob name="cded_pf_int_pin" type="accel_pf_int_pin_t"/>
+    <Knob name="cded_rcec_int_pin" type="accel_rcec_int_pin_t"/>
+    <Knob name="cded_tee_io_supp" type="accel_tee_io_supp_t"/>
+    <Knob name="cded_dis_wrt_buff_cont" type="cded_dis_wrt_buff_cont_t"/>
+    <Knob name="cded_dis_pri" type="accel_dis_pri_t"/>
+    <Knob name="cded_allow_gpa" type="accel_allow_gpa_t"/>
+    <Knob name="cded_allow_va" type="accel_allow_va_t"/>
+    <Knob name="cded_allow_cpl_gpa" type="accel_allow_cpl_gpa_t"/>
+    <Knob name="cded_allow_cpl_va" type="accel_allow_cpl_va_t"/>
+    <Knob name="cded_allow_priv" type="accel_allow_priv_t"/>
+    <Knob name="cded_allow_nonpriv" type="accel_allow_nonpriv_t"/>
+    <Knob name="cded_allow_posted" type="accel_allow_posted_t"/>
+    <Knob name="cded_allow_nonposted" type="accel_allow_nonposted_t"/>
+    <Knob name="cded_gpa_pasid_en" type="accel_gpa_pasid_en_t"/>
+    <Knob name="cded_cpl_gpa_pasid_en" type="accel_cpl_gpa_pasid_en_t"/>
+    <Knob name="cded_pf_crs_resp_data" type="accel_pf_crs_resp_data_t"/>
+    <Knob name="cded_vf_crs_resp_data" type="accel_vf_crs_resp_data_t"/>
+    <Knob name="cded_total_vfs" type="accel_total_vfs_t"/>
+    <Knob name="cded_dti_lim_trans_cnt" type="accel_dti_lim_trans_cnt_t"/>
+    <Knob name="cded_dti_inv_lim_trans_cnt" type="accel_dti_inv_lim_trans_cnt_t"/>
+    <Knob name="cded_lti_lim_trans_cnt" type="accel_lti_lim_trans_cnt_t"/>
+    <Knob name="cded_tot_dwq_num_entries_avail" type="accel_tot_dwq_num_entries_avail_t"/>
+    <Knob name="cded_rd_lim_cnt" type="accel_rd_lim_cnt_t"/>
+    <Knob name="cded_wr_lim_cnt" type="accel_wr_lim_cnt_t"/>
+    <Knob name="cded_isolation_enable" type="accel_isolation_enable_t"/>
+    <Knob name="cded_emm_resp_code" type="accel_emm_resp_code_t"/>
+  </Knobs>
+
+</ConfigSchema>

@@ -1,0 +1,20 @@
+<ConfigSchema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:noNamespaceSchemaLocation="configschema.xsd">
+
+  <!-- Enum values are declared separately from the knobs.
+       The same Enum can be used as the 'enumtype' of any number of EnumKnobs -->
+  <Enums>
+  </Enums>
+
+  <Structs>
+  </Structs>
+
+  <!-- namespace indicates the GUID namespace the values are stored in -->
+  <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
+    <!-- I3C -->
+    <Knob name="i3c_speed" type="i3c_speed_t" default="I3C_SPEED_SDR4_2MHz" help="Desired I3C Speed for I3C0 and I3C1" />
+    <Knob name="reg_scl_ext_termn_lcnt_timing" type="uint32_t" default="0xF" help="Set value for REG_SCL_EXT_TERMN_LCNT_TIMING" />
+    <Knob name="reg_sda_hold_switch_dly_timing" type="uint32_t" default="0x50000" help="Set value for REG_SDA_HOLD_SWITCH_DLY_TIMING" />
+  </Knobs>
+
+</ConfigSchema>

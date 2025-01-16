@@ -81,7 +81,7 @@ class configmgr_set_cli_test(EchoFallsBaseTest):
         command="cfg_mgr"
         core_com_channel.write_line(write_string=command)
 
-        command="cfg_mgr_set 8 5"
+        command="cfg_mgr_set uint8_test_knob 3"
         self.log.info(f"Submitting SET command {command} . . .") 
         core_com_channel.write_line(write_string=command)
 
@@ -105,7 +105,7 @@ class configmgr_set_cli_test(EchoFallsBaseTest):
             time.sleep(30)
             return False
         
-        command="cfg_mgr_dump 8"
+        command="cfg_mgr_dump uint8_test_knob"
         self.log.info(f"Submitting DUMP command {command} . . .") 
         core_com_channel.write_line(write_string=command)
 

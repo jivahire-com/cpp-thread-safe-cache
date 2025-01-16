@@ -161,8 +161,8 @@ FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel
 {
     ACCEL_ID accel_type = ACCEL_ID_SDM;
 
-    /** 
-     * Accel device are blocked on DIE 1 SVP 
+    /**
+     * Accel device are blocked on DIE 1 SVP
      * Enable when https://azurecsi.visualstudio.com/Dev/_workitems/edit/2213514 is resolved
      */
     if ((DIE_INSTANCE)idsw_get_die_id() == SOC_D1 && !IS_PLATFORM_FPGA())
@@ -184,8 +184,8 @@ FPFW_INIT_COMPONENT(icc_cded_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "acce
 {
     ACCEL_ID accel_type = ACCEL_ID_CDED;
 
-    /** 
-     * Accel device are blocked on DIE 1 SVP 
+    /**
+     * Accel device are blocked on DIE 1 SVP
      * Enable when https://azurecsi.visualstudio.com/Dev/_workitems/edit/2213514 is resolved
      */
     if ((DIE_INSTANCE)idsw_get_die_id() == SOC_D1 && !IS_PLATFORM_FPGA())

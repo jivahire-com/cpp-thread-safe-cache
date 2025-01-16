@@ -27,13 +27,44 @@ set(SILIBS_KNOBS_XML_FILENAME "silibs_knobs.xml")
 set(EXPLICIT_PATH_SILIBS_KNOBS ${TARGET_DIR_SILIBS}/libraries/${SILIBS_KNOBS_XML_FILENAME})
 
 # Find Production FW config knob XML ------------------------------------------------------------------------
-set(PROD_FW_KNOBS_XML_FILENAME "kng_mscp_config_knobs.xml")
-set(EXPLICIT_PATH_PROD_FW_KNOBS ${CMAKE_SOURCE_DIR}/tools/config_knobs/${PROD_FW_KNOBS_XML_FILENAME})
+set(EXPLICIT_PATH_PROD_FW_DDRSS_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_ddrss_config_knobs.xml)
+set(EXPLICIT_PATH_PROD_FW_I3C_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_i3c_config_knobs.xml)
+set(EXPLICIT_PATH_PROD_FW_MESH_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_mesh_config_knobs.xml)
+set(EXPLICIT_PATH_PROD_FW_PCIE_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_pcie_config_knobs.xml)
+set(EXPLICIT_PATH_PROD_FW_POWER_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_power_config_knobs.xml)
+set(EXPLICIT_PATH_PROD_FW_ACCEL_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_accel_config_knobs.xml)
+set(EXPLICIT_PATH_PROD_FW_FUNC_TEST_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_func_test_config_knobs.xml)
+set(EXPLICIT_PATH_PROD_FW_UNIT_TEST_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_unit_test_config_knobs.xml)
 
 set(PROD_FW_KNOBS_NAMESPACE "FE3ED49F-B173-41ED-9076-356661D46A42")
 
 # Merge all XMLs into one TOP level XML ---------------------------------------------------------------------
-set(MERGE_COMMAND ${Python3_EXECUTABLE} ${EXPLICIT_PATH_MERGE_KNOBS_SCRIPT} -t ${EXPLICIT_PATH_SILIBS_KNOBS} ${EXPLICIT_PATH_PROD_FW_KNOBS} -p ${PROD_FW_COMBINED_GENERATED_KNOBS} -n ${PROD_FW_KNOBS_NAMESPACE})
+if (i386-pc-windows-msvc)
+    set(MERGE_COMMAND ${Python3_EXECUTABLE} ${EXPLICIT_PATH_MERGE_KNOBS_SCRIPT} 
+                -t ${EXPLICIT_PATH_SILIBS_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_DDRSS_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_I3C_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_MESH_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_PCIE_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_POWER_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_ACCEL_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_UNIT_TEST_KNOBS} 
+                -p ${PROD_FW_COMBINED_GENERATED_KNOBS} -n ${PROD_FW_KNOBS_NAMESPACE}
+    )
+else()
+    set(MERGE_COMMAND ${Python3_EXECUTABLE} ${EXPLICIT_PATH_MERGE_KNOBS_SCRIPT} 
+                -t ${EXPLICIT_PATH_SILIBS_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_DDRSS_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_I3C_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_MESH_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_PCIE_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_POWER_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_ACCEL_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_FUNC_TEST_KNOBS} 
+                -p ${PROD_FW_COMBINED_GENERATED_KNOBS} -n ${PROD_FW_KNOBS_NAMESPACE}
+    )
+endif()
+
 add_custom_command(
     OUTPUT ${PROD_FW_COMBINED_GENERATED_KNOBS}
     COMMAND ${MERGE_COMMAND}

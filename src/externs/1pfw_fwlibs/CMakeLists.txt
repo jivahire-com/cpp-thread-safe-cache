@@ -31,7 +31,7 @@ if (${FPFW_CFG_MGR_ENABLE})
     set(FPFW_CFG_MGR_SCRIPT   ${CMAKE_CURRENT_SOURCE_DIR}/temp_copies_of_mu_scripts/KnobService.py)
     ####################################################################################################
 
-    set(PROD_FW_KNOBS_PATH    ${CMAKE_SOURCE_DIR}/tools/config_knobs)
+    set(PROD_FW_KNOBS_PATH    ${CMAKE_SOURCE_DIR}/config/knobs_config)
     set(FPFW_CFG_MGR_PROFILES ${PROD_FW_KNOBS_PATH}/kng_mscp_config_platform.csv
                               ${PROD_FW_KNOBS_PATH}/kng_mscp_config_fpga.csv
                               ${PROD_FW_KNOBS_PATH}/kng_mscp_config_svp.csv)

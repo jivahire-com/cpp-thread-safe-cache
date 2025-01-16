@@ -25,8 +25,9 @@
 ./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_sdm_scp__test_send_recv.robot
 ./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_test_send_recv.robot
 
-## SDM PCIE Tests
-#./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_pcie_tests.robot
+## SDM and CDED PCIE Tests
+./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_pcie_tests.robot
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_pcie_tests.robot
 
 ## Sensor FIFO Tests
 # To be uncommented or moved to nightly based on discussion with SSI team

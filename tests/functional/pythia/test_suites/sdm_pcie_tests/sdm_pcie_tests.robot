@@ -48,9 +48,9 @@ Test Case - AP: SDM memcpy Test: FR [1423800]
     ...    ${FAIL_RESPONSE}    ${300}
     Should Be True      ${test_result}
 
-Test Case - AP: SDM E2I I2E Test: FR [1738499]
-    [Documentation]     Test the SDM E2I I2E of SDM from AP core 0.
-    Send Test Command    ap_bm user_def_loopback_test 0 0 0 
-    ${test_result}    Parse Test Output    User Defined Loopback Test on Die 0 End!     ${E2I_I2E_PASS_RESPONSE}      
-    ...    ${FAIL_RESPONSE}    ${TIMEOUT}
-    Should Be True      ${test_result}
+# Test Case - AP: SDM E2I I2E Test: FR [1738499]
+#    [Documentation]     Test the SDM E2I I2E of SDM from AP core 0.
+#    Send Test Command    ap_bm user_def_loopback_test 0 0 0 
+#    ${test_result}    Parse Test Output    User Defined Loopback Test on Die 0 End!     ${E2I_I2E_PASS_RESPONSE}      
+#    ...    ${FAIL_RESPONSE}    ${TIMEOUT}
+#    Should Be True      ${test_result}

@@ -21,6 +21,9 @@ target_link_libraries(${TARGET}
 # Get private includes for module under test
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:ms::lib::variable_services,INCLUDE_DIRECTORIES>)
 
+# Generic ports implmented within this project
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+
 lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})

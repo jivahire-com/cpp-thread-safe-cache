@@ -111,15 +111,20 @@ static int32_t variable_service_async_common_handler(variable_service_operation_
     uint32_t total_payload_size = total_size - sizeof(variable_service_mem_metadata_t);
     BUG_ASSERT(total_size <= var_serv_ctx->shared_mem.max_payload_size);
 
-    variable_service_shared_mem_format_t* shared_mem =
-        (variable_service_shared_mem_format_t*)var_serv_ctx->shared_mem.payload_base;
+    //! Assumption, this shared memory address is accessible by MSCP
+    volatile variable_service_shared_mem_format_t* shared_mem =
+        (volatile variable_service_shared_mem_format_t*)var_serv_ctx->shared_mem.payload_base;
+
+    //! Fetch the address where the variable serv payload (starting with `variable_name_size`field) is stored in shared memory.
+    uint64_t variable_address = get_variable_serv_payload_address(var_serv_ctx->shared_mem.payload_base);
 
     //! populate the var service ctx
     memcpy((void*)&var_serv_ctx->req_params, (void*)req_params, sizeof(var_service_req_params_t));
-    var_serv_ctx->callback = callback;                                //! caller provided cb function
-    var_serv_ctx->context = context;                                  //! caller provided ctx
-    var_serv_ctx->operation_type = type;                              //! get/set variable type
-    var_serv_ctx->icc_req.payload_buffer = &shared_mem->metadata.msg; //! only holds the inband payload from the mailbox fifo
+    var_serv_ctx->callback = callback;   //! caller provided cb function
+    var_serv_ctx->context = context;     //! caller provided ctx
+    var_serv_ctx->operation_type = type; //! get/set variable type
+    var_serv_ctx->icc_req.payload_buffer =
+        (void*)&shared_mem->metadata.msg; //! only holds the inband payload from the mailbox fifo
     var_serv_ctx->icc_req.buffer_size = sizeof(kng_hsp_mailbox_msg);
     var_serv_ctx->icc_req.cb = variable_service_common_async_cb;
     var_serv_ctx->icc_req.cb_ctx = var_serv_ctx;
@@ -130,7 +135,8 @@ static int32_t variable_service_async_common_handler(variable_service_operation_
     if (type == ASYNC_GET_VARIABLE)
     {
         shared_mem->metadata.msg.header.cmd = HSP_MAILBOX_CMD_GET_VARIABLE_REQ;
-        shared_mem->attributes_size = req_params->attributes_size;
+        //! MSCP doesn't require attributes size to be populated, we will explicitly set this to 0 to avoid any confusion
+        shared_mem->attributes_size = 0UL;
     }
     else if (type == ASYNC_SET_VARIABLE)
     {
@@ -139,8 +145,11 @@ static int32_t variable_service_async_common_handler(variable_service_operation_
                    KNG_SUCCESS); //! check for valid combination of attributes
         shared_mem->attributes = req_params->attributes.as_uint32;
     }
-    shared_mem->metadata.msg.as_uint32[1] =
-        var_serv_ctx->shared_mem.payload_base + sizeof(variable_service_mem_metadata_t); //! get/set_variable_address field
+    //! populate lower 32 bits of the variable payload address in the 1st word of the hsp mbox message struct, get/set_variable_address field
+    shared_mem->metadata.msg.as_uint32[1] = (uint32_t)(variable_address & 0xFFFFFFFFUL);
+    //! populate upper 32 bits of the variable payload address in the 2nd word of the hsp mbox message struct, get/set_variable_address_high field
+    shared_mem->metadata.msg.as_uint32[2] = (uint32_t)((variable_address >> 32U) & 0xFFFFFFFFUL);
+    //! populate the rest of the metadata
     shared_mem->metadata.actual_payload_size = total_payload_size;
     shared_mem->variable_name_size = req_params->variable_name_size / sizeof(uint16_t); //! No of 16-bit characters
     memcpy((void*)&shared_mem->vendor_namespace_guid, (void*)&req_params->vendor_namespace_guid, sizeof(guid_t));
@@ -173,8 +182,8 @@ static int32_t variable_service_async_common_handler(variable_service_operation_
 static void variable_service_common_async_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     var_service_req_ctx_t* var_serv_ctx = (var_service_req_ctx_t*)context; // NOLINT
-    variable_service_shared_mem_format_t* shared_mem =
-        (variable_service_shared_mem_format_t*)var_serv_ctx->shared_mem.payload_base;
+    volatile variable_service_shared_mem_format_t* shared_mem =
+        (volatile variable_service_shared_mem_format_t*)var_serv_ctx->shared_mem.payload_base;
 
     DEBUG_PRINT("----Async %s Variable Callback Raised----\n",
                 var_serv_ctx->operation_type == ASYNC_SET_VARIABLE ? "Set" : "Get");
@@ -217,11 +226,14 @@ static void variable_service_common_async_cb(void* context, size_t output_size_b
                            shared_mem->data_size);
     if (var_serv_ctx->operation_type == ASYNC_SET_VARIABLE)
     {
+        DEBUG_PRINT("----Async Set Variable Request Complete----\n");
         //! HSP has consumed the data, free up the ctx & shared memory for SET
         variable_service_unlock_get_var_ctx(var_serv_ctx);
     }
-    DEBUG_PRINT("----Async %s Variable Request Complete----\n",
-                var_serv_ctx->operation_type == ASYNC_SET_VARIABLE ? "Set" : "Get");
+    else
+    {
+        DEBUG_PRINT("----Async Get Variable Request Complete----\n");
+    }
 }
 
 static bool is_var_serv_ctx_in_use(var_service_req_ctx_t* var_serv_ctx)
@@ -229,8 +241,8 @@ static bool is_var_serv_ctx_in_use(var_service_req_ctx_t* var_serv_ctx)
     bool flag = false;
     //! Null checks for input parameters
     BUG_ASSERT(var_serv_ctx != NULL);
-    variable_service_shared_mem_format_t* shared_mem =
-        (variable_service_shared_mem_format_t*)var_serv_ctx->shared_mem.payload_base;
+    volatile variable_service_shared_mem_format_t* shared_mem =
+        (volatile variable_service_shared_mem_format_t*)var_serv_ctx->shared_mem.payload_base;
     //! critical section start, get the shared memory object & check if it's free
     FPFW_LOCK_STATE oldState = FpFwLockAcquire(&var_serv_ctx->var_serv_lock);
     flag = shared_mem->metadata.sync.bitfield.is_in_use;

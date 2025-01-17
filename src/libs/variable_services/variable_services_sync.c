@@ -84,16 +84,20 @@ static int32_t variable_service_sync_common_handler(variable_service_operation_t
     uint32_t total_payload_size = total_size - sizeof(variable_service_mem_metadata_t);
     BUG_ASSERT(total_size <= var_serv_ctx->shared_mem.max_payload_size);
 
-    //! Verify if the shared memory is free to use, must be free!
-    variable_service_shared_mem_format_t* shared_mem =
-        (variable_service_shared_mem_format_t*)var_serv_ctx->shared_mem.payload_base;
+    //! Assumption, this shared memory address is accessible by MSCP
+    volatile variable_service_shared_mem_format_t* shared_mem =
+        (volatile variable_service_shared_mem_format_t*)var_serv_ctx->shared_mem.payload_base;
+
+    //! Fetch the address where the variable serv payload (starting with `variable_name_size` field) is stored in shared memory.
+    uint64_t variable_address = get_variable_serv_payload_address(var_serv_ctx->shared_mem.payload_base);
 
     //! populate the metadata including the hsp mbox cmd request struct & the mbox get/set variable struct
     //! to send the request to HSP
     if (type == SYNC_GET_VARIABLE)
     {
         shared_mem->metadata.msg.header.cmd = HSP_MAILBOX_CMD_GET_VARIABLE_REQ;
-        shared_mem->attributes_size = req_params->attributes_size;
+        //! MSCP doesn't require attributes size to be populated, we will explicitly set this to 0 to avoid any confusion
+        shared_mem->attributes_size = 0UL;
     }
     else if (type == SYNC_SET_VARIABLE)
     {
@@ -102,9 +106,12 @@ static int32_t variable_service_sync_common_handler(variable_service_operation_t
                    KNG_SUCCESS); //! check for valid combination of attributes
         shared_mem->attributes = req_params->attributes.as_uint32;
     }
-    shared_mem->metadata.msg.as_uint32[1] =
-        var_serv_ctx->shared_mem.payload_base + sizeof(variable_service_mem_metadata_t); //! get/set_variable_address field
-    shared_mem->metadata.actual_payload_size = total_payload_size;
+    //! populate lower 32 bits of the variable payload address in the 1st word of the hsp mbox message struct, get/set_variable_address field
+    shared_mem->metadata.msg.as_uint32[1] = (uint32_t)(variable_address & 0xFFFFFFFFUL);
+    //! populate upper 32 bits of the variable payload address in the 2nd word of the hsp mbox message struct, get/set_variable_address_high field
+    shared_mem->metadata.msg.as_uint32[2] = (uint32_t)((variable_address >> 32U) & 0xFFFFFFFFUL);
+    //! populate the rest of the metadata
+    shared_mem->metadata.actual_payload_size = total_payload_size; //! this is the size of the payload excluding the metadata
     shared_mem->variable_name_size = req_params->variable_name_size / sizeof(uint16_t); //! No of 16-bit characters
     memcpy((void*)&shared_mem->vendor_namespace_guid, (void*)&req_params->vendor_namespace_guid, sizeof(guid_t));
     shared_mem->data_size = req_params->data_size;
@@ -128,7 +135,7 @@ static int32_t variable_service_sync_common_handler(variable_service_operation_t
     size_t recv_msg_size_bytes = 0;
     //! Send the get variable sync request to the HSP & get response, blocking call
     fpfw_status_t icc_status =
-        fpfw_icc_base_send_recv_sync(hsp_icc_ctx, &shared_mem->metadata.msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
+        fpfw_icc_base_send_recv_sync(hsp_icc_ctx, (void*)&shared_mem->metadata.msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
 
     //! Debug prints post mailbox communication testing
     debug_print_post_mbox_recv(var_serv_ctx, recv_msg_size_bytes, icc_status);

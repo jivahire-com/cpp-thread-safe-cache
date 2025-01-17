@@ -18,6 +18,8 @@ target_link_libraries(
             kng_silibs_platform
             ms::lib::crash_dump
             ms::lib::error_codes
+            ms::service::atu_service
+            silibs::idsw_kng
 )
 
 target_include_directories(${TARGET}

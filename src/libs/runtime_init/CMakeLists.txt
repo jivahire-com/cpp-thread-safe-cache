@@ -254,7 +254,6 @@ add_library(${TARGET}
         telemetry_service_init.c
         textio_init.c
         variable_services_init.c
-        variable_services_cli_init.c
 )
 
 target_link_libraries(
@@ -297,7 +296,6 @@ target_link_libraries(
         ms::lib::system_info
         ms::lib::threadx
         ms::lib::variable_services
-        ms::lib::variable_services::cli
         ms::service::atu_service
         ms::service::dcs
         ms::service::event_trace::collector

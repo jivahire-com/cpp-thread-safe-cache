@@ -69,8 +69,8 @@ typedef union _variable_service_attributes
  */
 typedef struct _variable_service_shared_mem
 {
-    uintptr_t payload_base; //! starting address of the shared memory region for the variable
-    size_t max_payload_size; //! size of the shared memory region for the variable
+    uintptr_t payload_base; //! mandatory, starting address of the shared memory region for the variable, 32 bits, accessible by MSCP (atu mapped if applicable)
+    size_t max_payload_size; //! mandatory, size of the shared memory region for the variable
 } var_service_shared_mem_t;
 
 /**

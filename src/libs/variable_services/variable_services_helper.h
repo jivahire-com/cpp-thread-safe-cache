@@ -60,6 +60,16 @@ fpfw_icc_base_ctx_t* get_icc_base_ctx(void);
 bool variable_service_set_shared_mem_in_use(var_service_req_ctx_t* var_serv_ctx);
 
 /**
+ * @brief Get the variable service payload address from the base address provided
+ * in variable_service_shared_mem_t structure.
+ * This address will be sent to HSP via mbox
+ * 
+ * @param payload_base shared memory base address
+ * @return uint64_t variable service payload address
+ */
+uint64_t get_variable_serv_payload_address(uintptr_t payload_base);
+
+/**
  * @brief Debug print before sending the mbox request
  * 
  * @param var_serv_ctx 

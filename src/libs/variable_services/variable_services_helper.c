@@ -13,7 +13,9 @@
 #include "variable_services_mem.h"
 
 #include <FpFwLock.h>
+#include <atu_api.h>
 #include <bug_check.h>
+#include <idsw_kng.h>
 #include <kng_error.h> // for KNG_E_INVALIDARG, KNG_E_NOTIMPL
 #include <string.h>    // for memcpy
 
@@ -121,9 +123,12 @@ void debug_print_pre_mbox_send(var_service_req_ctx_t* var_serv_ctx)
                           var_serv_ctx->req_params.variable_name_size + var_serv_ctx->req_params.data_size;
 
     printf("Metadata:          InUse[0x%" PRIx32 "]\n", shared_mem->metadata.sync.as_uint32);
-    printf("Variable:          Name[%s] Size[%d]\n",
-           (char*)var_serv_ctx->req_params.variable_name_ptr,
-           var_serv_ctx->req_params.variable_name_size);
+    printf("Variable:          Name[");
+    for (size_t i = 0; i < var_serv_ctx->req_params.variable_name_size / sizeof(uint16_t); ++i)
+    {
+        printf("%c", var_serv_ctx->req_params.variable_name_ptr[i]);
+    }
+    printf("] Size[%d]\n", var_serv_ctx->req_params.variable_name_size);
     printf("Shared Mem:        Addr[0x%x] Size[%d] bytes\n",
            var_serv_ctx->shared_mem.payload_base,
            var_serv_ctx->shared_mem.max_payload_size);
@@ -163,9 +168,10 @@ void debug_print_pre_mbox_send(var_service_req_ctx_t* var_serv_ctx)
                ((unsigned char*)var_serv_ctx->shared_mem.payload_base)[i]);
     }
     printf("Preparing to send get/set variable request to HSP\n");
-    printf("HSP Mbox Req Mesg: Cmd[0x%x] Addr[0x%" PRIx32 "]\n",
+    printf("HSP Mbox Req Mesg: Cmd[0x%x] Addr_low[0x%" PRIx32 "] Addr_hi[0x%" PRIx32 "]\n",
            shared_mem->metadata.msg.header.cmd,
-           shared_mem->metadata.msg.as_uint32[1]);
+           shared_mem->metadata.msg.as_uint32[1],
+           shared_mem->metadata.msg.as_uint32[2]);
     for (size_t i = 0; i < HSP_MBOX_FIFO_DEPTH; i++)
     {
         printf("as_uint32[%" PRId32 "]: [0x%" PRIx32 "]\n", (uint32_t)i, shared_mem->metadata.msg.as_uint32[i]);
@@ -281,4 +287,29 @@ int32_t variable_service_initialize_ctx(var_service_req_ctx_t* var_serv_ctx, var
 
     var_serv_ctx->is_initialized = true;
     return KNG_SUCCESS;
+}
+
+uint64_t get_variable_serv_payload_address(uintptr_t payload_base)
+{
+    //! payload_base is provided in var_service_shared_mem_t struct & set by the called via variable_service_initialize_ctx
+    uint64_t var_svc_base_addr = 0x0ULL;
+    //! fetch the die id to determine the ap base address for the var svc payload
+    uint64_t var_svc_ddr_ap_base_address =
+        idsw_get_die_id() == DIE_0 ? MSCP_VAR_SVC_PAYLOADS_RESERVATION_BASE
+                                   : (MSCP_VAR_SVC_PAYLOADS_RESERVATION_BASE + MSCP_ATU_AP_WINDOW_VAR_SVC_DIE_SIZE);
+    //! check if payload base is ATU mapped address
+    if ((payload_base >= MSCP_ATU_AP_WINDOW_VAR_SVC_BASE_ADDR) && (payload_base <= MSCP_ATU_AP_WINDOW_VAR_SVC_END_ADDR))
+    {
+        //! Calculate delta between payload base & atu var service base & add this to var_svc_ddr_ap_base_address
+        var_svc_base_addr = var_svc_ddr_ap_base_address + (payload_base - MSCP_ATU_AP_WINDOW_VAR_SVC_BASE_ADDR);
+    }
+    else
+    {
+        //! The payload is not ATU mapped, return the same address
+        var_svc_base_addr = payload_base;
+    }
+    //! Add the metadata size offset to the payload base
+    //! now the payload base point to the memory location that starts with `variable_name_size` field
+    var_svc_base_addr += sizeof(variable_service_mem_metadata_t);
+    return var_svc_base_addr;
 }

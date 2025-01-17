@@ -28,7 +28,6 @@
         }                                                  \
     }
 #define TEST_VARIABLE_ASYNC_DATA_SIZE 64
-#define TEST_VARIABLE_NAME            "TestVarAsync"
 /*-------------- Typedefs ----------------*/
 
 /*-- Declarations (Statics and globals) --*/
@@ -36,6 +35,7 @@ static var_service_req_ctx_t s_req_ctx = {};
 static const guid_t vendor_guid[] = {TEST_GUID};
 static uint8_t set_var_data_buffer[TEST_VARIABLE_ASYNC_DATA_SIZE] = {0};
 static uint8_t set_var_test_counter = 0;
+static const uint16_t test_variable_name[] = {'T', 'e', 's', 't', 'V', 'a', 'r', 'A', 's', 'y', 'n', 'c', 0x00};
 /*-- Static function declarations --*/
 static FPFW_CLI_STATUS var_serv_async_get_var(int argc, const char** argv);
 static FPFW_CLI_STATUS var_serv_async_set_var(int argc, const char** argv);
@@ -71,14 +71,19 @@ void test_variable_service_req_complete_notify(void* context,
     BUG_ASSERT(data_start_ptr != NULL); // NOLINT
     BUG_ASSERT(data_size > 0);
 
-    if (var_serv_ctx->operation_type == ASYNC_GET_VARIABLE) // NOLINT
+    const char* operation_str = (var_serv_ctx->operation_type == ASYNC_GET_VARIABLE) ? "Get" : "Set";
+    FpFwCliPrint("[var_serv] Async %s Variable Complete Notify\n", operation_str);
+    BUG_ASSERT(var_serv_ctx->req_params.variable_name_size == sizeof(test_variable_name));
+    FpFwCliPrint("[var_serv] Variable Name: ");
+    for (size_t i = 0; i < var_serv_ctx->req_params.variable_name_size / sizeof(uint16_t); ++i)
     {
-        FpFwCliPrint("[var_serv] Async Get Variable Complete Notify\n");
-        //! for get variable, user gets the response data in the shared memory region thru data_start_ptr & data_size
-        //! This cb serves as an indication that the data has been posted by HSP for consumption by SCP
-        BUG_ASSERT(var_serv_ctx->req_params.variable_name_size == sizeof(TEST_VARIABLE_NAME));
+        FpFwCliPrint("%c", var_serv_ctx->req_params.variable_name_ptr[i]);
+    }
+    FpFwCliPrint("\n");
+
+    if (var_serv_ctx->operation_type == ASYNC_GET_VARIABLE)
+    {
         BUG_ASSERT(data_size == TEST_VARIABLE_ASYNC_DATA_SIZE);
-        FpFwCliPrint("[var_serv] Variable Name: %s\n", (char*)var_serv_ctx->req_params.variable_name_ptr); // NOLINT
         FpFwCliPrint("[var_serv] Data received (%ld bytes):\n", data_size); // NOLINT
 
         if (KNG_SUCCEEDED(var_serv_ctx->async_req_result))
@@ -91,28 +96,12 @@ void test_variable_service_req_complete_notify(void* context,
         }
         else
         {
-            FpFwCliPrint("[var_serv] Variable Name: %s not found\n", (char*)var_serv_ctx->req_params.variable_name_ptr);
+            FpFwCliPrint("[var_serv] Err! Variable Name not found\n");
         }
-        //! User has an option to post an event/semaphore etc to process the contents of the shared memory
-        //! For the purpose of this test, we are freeing up the shared memory here, so that we can invoke get_var again
         variable_service_unlock_get_var_ctx(var_serv_ctx);
         FpFwCliPrint("[var_serv] Get Variable Ctx Freed!\n");
-        FpFwCliPrint("[var_serv] Async Get Variable Done\n");
     }
-    else if (var_serv_ctx->operation_type == ASYNC_SET_VARIABLE)
-    {
-        FpFwCliPrint("[var_serv] Async Set Variable Complete Notify\n");
-        //! for set variable, user can verify the data written to the shared memory region thru data_start_ptr
-        //! & data_size immediately post the request completion, the shared memory is freed by variable
-        //! services for set variable this cb serves as an indication that the data has been consumed by HSP
-        BUG_ASSERT(var_serv_ctx->req_params.variable_name_size == sizeof(TEST_VARIABLE_NAME));
-        FpFwCliPrint("[var_serv] Variable Name: %s\n", (char*)var_serv_ctx->req_params.variable_name_ptr); // NOLINT
-        FpFwCliPrint("[var_serv] Async Set Variable Done\n");
-    }
-    else
-    {
-        BUG_ASSERT(false);
-    } // NOLINT
+    FpFwCliPrint("[var_serv] Async %s Variable Done\n", operation_str);
 }
 
 static FPFW_CLI_STATUS var_serv_async_get_var(int argc, const char** argv)
@@ -125,16 +114,20 @@ static FPFW_CLI_STATUS var_serv_async_get_var(int argc, const char** argv)
     //! variable_name_ptr, variable_name_size & vendor guid are mandatory
     //! data_size & attributes_size are optional
     //! data is an optional output parameter for get variable, ignored
-    var_service_req_params_t s_get_var_req;
-    s_get_var_req.variable_name_ptr = (uint16_t*)TEST_VARIABLE_NAME;
-    s_get_var_req.variable_name_size = sizeof(TEST_VARIABLE_NAME);
+    var_service_req_params_t s_get_var_req = {0};
+    s_get_var_req.variable_name_ptr = (uint16_t*)test_variable_name;
+    s_get_var_req.variable_name_size = sizeof(test_variable_name);
     memcpy(&s_get_var_req.vendor_namespace_guid, vendor_guid, sizeof(s_get_var_req.vendor_namespace_guid));
     s_get_var_req.data_size = TEST_VARIABLE_ASYNC_DATA_SIZE;
+    s_get_var_req.attributes_size = 0;
 
     FpFwCliPrint("[var_serv] Using default params:\n");
-    FpFwCliPrint("[var_serv] Variable Name: %s  Size: %u\n",
-                 (char*)s_get_var_req.variable_name_ptr,
-                 s_get_var_req.variable_name_size);
+    FpFwCliPrint("[var_serv] Variable Name: ");
+    for (size_t i = 0; i < s_get_var_req.variable_name_size / sizeof(uint16_t); ++i)
+    {
+        FpFwCliPrint("%c", s_get_var_req.variable_name_ptr[i]);
+    }
+    FpFwCliPrint(" Size: %u\n", s_get_var_req.variable_name_size);
     FpFwCliPrint("[var_serv] Vendor Guid: ");
     for (size_t i = 0; i < sizeof(s_get_var_req.vendor_namespace_guid); ++i)
     {
@@ -163,9 +156,9 @@ static FPFW_CLI_STATUS var_serv_async_set_var(int argc, const char** argv)
 
     //! Populate the set variable request params,
     //! variable_name_ptr, variable_name_size, vendor guid, attributes & data size are mandatory
-    var_service_req_params_t s_set_var_req;
-    s_set_var_req.variable_name_ptr = (uint16_t*)TEST_VARIABLE_NAME;
-    s_set_var_req.variable_name_size = sizeof(TEST_VARIABLE_NAME);
+    var_service_req_params_t s_set_var_req = {0};
+    s_set_var_req.variable_name_ptr = (uint16_t*)test_variable_name;
+    s_set_var_req.variable_name_size = sizeof(test_variable_name);
     memcpy(&s_set_var_req.vendor_namespace_guid, vendor_guid, sizeof(s_set_var_req.vendor_namespace_guid));
     //! populate set_var_data_buffer with fake data
     for (size_t i = 0; i < sizeof(set_var_data_buffer); ++i)
@@ -176,12 +169,14 @@ static FPFW_CLI_STATUS var_serv_async_set_var(int argc, const char** argv)
     s_set_var_req.data_size = sizeof(set_var_data_buffer);
     s_set_var_req.attributes.as_uint32 =
         EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS;
-    ;
 
     FpFwCliPrint("[var_serv] Using default params:\n");
-    FpFwCliPrint("[var_serv] Variable Name: %s  Size: %u\n",
-                 (char*)s_set_var_req.variable_name_ptr,
-                 s_set_var_req.variable_name_size);
+    FpFwCliPrint("[var_serv] Variable Name: ");
+    for (size_t i = 0; i < s_set_var_req.variable_name_size / sizeof(uint16_t); ++i)
+    {
+        FpFwCliPrint("%c", s_set_var_req.variable_name_ptr[i]);
+    }
+    FpFwCliPrint(" Size: %u\n", s_set_var_req.variable_name_size);
     FpFwCliPrint("[var_serv] Vendor Guid: ");
     for (size_t i = 0; i < sizeof(s_set_var_req.vendor_namespace_guid); ++i)
     {

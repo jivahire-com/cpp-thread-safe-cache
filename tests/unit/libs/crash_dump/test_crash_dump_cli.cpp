@@ -15,10 +15,12 @@
 #endif
 
 extern "C" {
-#include <FpFwCli.h>    // for FPFW_CLI_COMMAND, FpFwCliRegisterTable
-#include <crash_dump.h> // for crash_dump_cli_init
-#include <stdarg.h>     // for va_list, va_start, va_end
-#include <stdio.h>      // for printf
+#include <../src/crash_dump_overrides.h> // for inMemoryOverride
+#include <FpFwCli.h>                     // for FPFW_CLI_COMMAND, FpFwCliRegisterTable
+#include <crash_dump.h>                  // for crash_dump_cli_init
+#include <crash_dump_memory.h>           // for CRASH_DUMP_MINI_HEADER_ADDR, CRASH_DUMP_MINI_HEADER_SIZE...
+#include <stdarg.h>                      // for va_list, va_start, va_end
+#include <stdio.h>                       // for printf
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -118,6 +120,69 @@ bool __wrap_FPFwCDRegisterAddress32(void* address, uint32_t size)
 //
 // Tests
 //
+void set_expectations_crash_dump_enable_full_dump_cli(crash_dump_config_t* config, crash_dump_status_t* status, uint64_t addr, uint32_t size)
+{
+    // For enable full crash dump
+    will_return(__wrap_GetCrashDumpConfig, config);
+    will_return(__wrap_GetCrashDumpConfig, status);
+
+    // For disable current crash dump state
+    will_return(__wrap_GetCrashDumpConfig, config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    // For initializing crash dump status lock
+    will_return(__wrap_GetCrashDumpConfig, config);
+    will_return(__wrap_GetCrashDumpConfig, status);
+    expect_function_call(__wrap_FPFwSpinLockInitialize);
+
+    // For enabling new crash dump state
+    expect_function_call(__wrap_FPFwSpinLockAcquire);
+    will_return(__wrap_GetCrashDumpConfig, config);
+    will_return(__wrap_GetCrashDumpConfig, status);
+    expect_function_call(__wrap_FPFwSpinLockRelease);
+
+    // init_mem_pool
+    expect_function_call(__wrap_FPFwCDInitMemoryPool);
+    expect_value(__wrap_FPFwCDInitMemoryPool, baseAddr, addr);
+    expect_value(__wrap_FPFwCDInitMemoryPool, poolSize, size);
+
+    expect_function_call(__wrap_FPFwCDMemPoolOverrideCacheFlush);
+    expect_value(__wrap_FPFwCDMemPoolOverrideCacheFlush, cacheFlush, &cacheFlushOverride);
+
+    expect_function_call(__wrap_FPFwCDMemPoolOverrideCacheInvalidate);
+    expect_value(__wrap_FPFwCDMemPoolOverrideCacheInvalidate, cacheInvalidate, &cacheInvalidateOverride);
+
+    // init_dump_file
+    expect_function_call(__wrap_FPFwCDInitDumpFile);
+
+    expect_function_call(__wrap_FPFwCDDumpFileOverrideInValidMemory);
+    expect_value(__wrap_FPFwCDDumpFileOverrideInValidMemory, inValidMemory, &inMemoryOverride);
+
+    expect_function_call(__wrap_FPFwCDDumpFileOverrideInValidCsrMemory);
+    expect_value(__wrap_FPFwCDDumpFileOverrideInValidCsrMemory, inValidCsrMemory, &inMemoryOverride);
+
+    expect_function_call(__wrap_FPFwCDDumpFileOverrideInValidGlobalMemory);
+    expect_value(__wrap_FPFwCDDumpFileOverrideInValidGlobalMemory, inValidGlobalMemory, &inGlobalMemoryOverride);
+
+    // init_dump_manager
+    expect_function_call(__wrap_FPFwCDInitDumpManager);
+    expect_value(__wrap_FPFwCDInitDumpManager, totalDumpSize, size);
+
+    expect_function_call(__wrap_FPFwCDOverridePrintf);
+    expect_value(__wrap_FPFwCDOverridePrintf, printOverride, &crash_dump_printf);
+
+    expect_function_call(__wrap_FPFwCDDumpManagerSetPreDumpCallback);
+    expect_value(__wrap_FPFwCDDumpManagerSetPreDumpCallback, preDumpCallback, &preDumpCallbackOverride);
+    expect_value(__wrap_FPFwCDDumpManagerSetPreDumpCallback, preDumpCtx, NULL);
+
+    expect_function_call(__wrap_FPFwCDDumpManagerSetPostDumpCallback);
+    expect_value(__wrap_FPFwCDDumpManagerSetPostDumpCallback, postDumpCallback, &postDumpCallbackOverride);
+    expect_value(__wrap_FPFwCDDumpManagerSetPostDumpCallback, postDumpCtx, NULL);
+
+    expect_function_call(__wrap_FPFwCDDumpManagerOverrideGetCurTime);
+    expect_value(__wrap_FPFwCDDumpManagerOverrideGetCurTime, getCurTime, &getCurTimeDefault);
+}
+
 TEST_FUNCTION(test_crash_dump_cli_init, nullptr, nullptr)
 {
     expect_function_call(__wrap_FpFwCliRegisterTable);
@@ -249,4 +314,42 @@ TEST_FUNCTION(test_cli_cd_stack_overflow, test_setup, test_teardown)
         printf("Exception caught (0x%08lx)\n", GetExceptionCode());
     }
 #endif
+}
+
+TEST_FUNCTION(test_cli_cd_full_dump, test_setup, test_teardown)
+{
+    int argc = 1;
+    const char* argv[] = {"cd_full_dump"};
+    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP};
+    crash_dump_status_t dump_status = {};
+
+    // Get CLI handler
+    CLI_COMMAND_FN handler = get_command_handler("cd_full_dump");
+    assert_non_null(handler);
+
+    // crash_dump_enable_full_dump();
+    set_expectations_crash_dump_enable_full_dump_cli(&config, &dump_status, CRASH_DUMP_FULL_SCP_ADDR, CRASH_DUMP_FULL_SCP_SIZE);
+
+    // Call the CLI handler
+    FPFW_CLI_STATUS status = handler(argc, argv);
+    assert_true(status == CLI_SUCCESS);
+}
+
+TEST_FUNCTION(test_cli_cd_mini_dump, test_setup, test_teardown)
+{
+    int argc = 1;
+    const char* argv[] = {"cd_mini_dump"};
+    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP};
+    crash_dump_status_t dump_status = {};
+
+    // Get CLI handler
+    CLI_COMMAND_FN handler = get_command_handler("cd_mini_dump");
+    assert_non_null(handler);
+
+    // Set mock expectations of crash_dump_enable_full_dump()
+    set_expectations_crash_dump_enable_full_dump_cli(&config, &dump_status, CRASH_DUMP_MINI_SCP_ADDR, CRASH_DUMP_MINI_SCP_SIZE);
+
+    // Call the CLI handler
+    FPFW_CLI_STATUS status = handler(argc, argv);
+    assert_true(status == CLI_SUCCESS);
 }

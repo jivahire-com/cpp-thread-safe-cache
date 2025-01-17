@@ -277,28 +277,80 @@ Thus cores will store a mini-dump in MSCP_EXP scratch RAM[TBD]
 
 ### Memory Layout
 
-TBD is reserved for total crash dump storage in DDR for the full dump
-TBD is reserved for total crash dump storage in MSCP_EXP scratch RAM[TBD] for the mini dump
+8KB header and 8MB payload are reserved for total crash dump storage in DDR for the full dump
+16byte header and 20KB payload are reserved for total crash dump storage in MSCP_EXP scratch RAM[TBD] for the mini dump
 
 The memory is laid out as follows, in either DDR and scratch RAM:
 ```
 /*
- * Reserved memory in RAM for crash dump
-+---------+--------------+---------------+---------------+---------------+---------------+---------------+--
-|         |              |               |               |               |               |               |  
-|         |              |               |               |               |               |               |  
-| Core    |   MCP0 Dump  |    SCP0 Dump  |    HSP0 Dump  |    MCP1 Dump  |    SCP1 Dump  |    HSP1 Dump  |  
-| States  |              |               |               |               |               |               |  
-|         |              |               |               |               |               |               |  
-|         |              |               |               |               |               |               |  
-|         |              |               |               |               |               |               |  
-+---------+--------------+---------------+---------------+---------------+---------------+---------------+--
-|                                                                                                        |
-Crash Dump Base                                                                                   Base + Reservation size
+Reserved memory in DIE0 SRAM for crash mini dump
++---------+------------+------------+--
+|         |            |            |
+|         |            |            |
+| Core    | SCP0 Dump  | HSP0 Dump  |
+| States  |            |            |
+|         |            |            |
+|         |            |            |
+|         |            |            |
++---------+------------+------------+
+|                                   |
+Crash Dump Base           Base + Reservation size
+
+Reserved memory in DIE1 SRAM for crash mini dump
++---------+------------+------------+--
+|         |            |            |
+|         |            |            |
+| Core    | SCP1 Dump  | HSP1 Dump  |
+| States  |            |            |
+|         |            |            |
+|         |            |            |
+|         |            |            |
++---------+------------+------------+
+|                                   |
+Crash Dump Base           Base + Reservation size
+*/
+
+
+/*
+ * Reserved memory in DDR RAM for crash full dump
++---------+------------+------------+------------+------------+------------+------------+------------+------------+------------+------------+--
+|         |            |            |            |            |            |            |            |            |            |            |
+|         |            |            |            |            |            |            |            |            |            |            |
+| Core    | MCP0 Dump  | SCP0 Dump  | HSP0 Dump  | CDED0 Dump | SDM0 Dump  | MCP1 Dump  | SCP1 Dump  | HSP1 Dump  | CDED1 Dump | SDM1 Dump  |
+| States  |            |            |            |            |            |            |            |            |            |            |
+|         |            |            |            |            |            |            |            |            |            |            |
+|         |            |            |            |            |            |            |            |            |            |            |
+|         |            |            |            |            |            |            |            |            |            |            |
++---------+------------+------------+------------+------------+------------+------------+------------+------------+------------+------------+--
+|                                                                                                                                           |
+Crash Dump Base                                                                                                              Base + Reservation size
 */
 ```
 
 Where each core equally divides the (reserved size - sizeof(core state)) for core-specific crash dump.
+
+Core states (16 byte header) located in first part of crash dump regions to indicate dump progress.
+```c
+enum
+{
+    CRASH_DUMP_STATE_IDLE = 0,
+    CRASH_DUMP_STATE_IN_PROGRESS = 1,
+    CRASH_DUMP_STATE_COMPLETED = 2
+};
+
+/**
+ * @brief Crash dump status header
+ * 
+ * lock: Spinlock to protect the status
+ * cd_status: Crash dump status (Lower 8 bits: DIE0, Upper 8 bits: DIE1 - 0: In progress, 1: Completed for each core)
+ * 
+ */
+typedef struct {
+    FPFW_SPINLOCK lock;
+    uint16_t cd_status; // 0: Not in use, 1: In Use
+    volatile uint8_t cores[CRASH_DUMP_CORE_NUM * 2];
+} crash_dump_status_t;
+```
 
 ### Dump Flows
 #### Post-boot crash

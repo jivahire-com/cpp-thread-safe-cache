@@ -223,7 +223,10 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
 
     override_default_pcie_cfg(rpss_id);
 
-    sts = pciess_config_entity(rpss, resolved_subsystem_config_addr, ap_subsystem_config_addr, &(pcie_cfg_np[rpss_id]), true, true);
+    // TODO: this API will crash on SVP and FPGA to program phy registers.
+    // Renable once SVP supports phy registers (program_phy_regs = true)
+    // ADO: https://dev.azure.com/ms-tsd/Kingsgate/_workitems/edit/896966
+    sts = pciess_config_entity(rpss, resolved_subsystem_config_addr, ap_subsystem_config_addr, &(pcie_cfg_np[rpss_id]), false, true);
     FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
 
     /* Override settings based on the platform we are running on */

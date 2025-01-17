@@ -33,6 +33,9 @@ target_link_libraries(${TARGET}
     silibs_platform
 )
 
+# Defining platform APIs
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+
 lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})
@@ -60,6 +63,9 @@ mock_target(${TARGET}
     FpFwCliPrint
     FPFwCDRegisterAddress32
     FPFwCDCrashDumpHandler
+    FPFwSpinLockInitialize
+    FPFwSpinLockAcquire
+    FPFwSpinLockRelease
     CdRegisterMMIORegisterSet
     CdRegisterAddress32
     CdRegisterAddress64

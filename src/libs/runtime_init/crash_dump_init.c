@@ -8,13 +8,16 @@
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
-#include <crash_dump.h> // for crash_dump_init
-#include <fpfw_init.h>  // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
+#include <FpFwAssert.h>        // for FPFW_RUNTIME_ASSERT
+#include <bug_check.h>         // for BUG_CHECK
+#include <crash_dump.h>        // for crash_dump_init
+#include <exception_handler.h> // for exception_handler_init
+#include <fpfw_init.h>         // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
 #include <idhw.h>
 #include <idsw.h>
 #include <idsw_kng.h>
-#include <stddef.h> // for NULL
+#include <kng_error.h> // for KNG_SUCCESS
+#include <stddef.h>    // for NULL
 #if defined(SCP_RUNTIME_INIT)
     #include <addressblock0_regs.h>      // for ADDRESSBLOCK0_WDOGLOAD_ADDRESS, ADDRESSBLOCK0_WDOGRIS_ADDRESS
     #include <silibs_scp_exp_top_regs.h> // for SCP_EXP_TOP_SCF_RAM_ADDRESS, SCP_EXP_TOP_SCF_RAM_SIZE
@@ -103,7 +106,8 @@ bool in_memory(uintptr_t start_addr, uintptr_t end_addr)
 
 FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("hw_ver", "gpio_lib"))
 {
-    static crash_dump_config_t config = {.mmio_register_count =
+    static crash_dump_config_t config = {.dump_type = FPFW_CD_DUMP_TYPE_NONE,
+                                         .mmio_register_count =
                                              sizeof(core_register_mmio) / sizeof(core_register_mmio[0]),
                                          .mmio_registers = core_register_mmio,
                                          .in_memory = in_memory};
@@ -127,11 +131,12 @@ FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("hw_ver", "gpio_lib"))
         break;
     }
 
-    // ToDo: Add platform specific initialization using idsw_get_platform_sdv()
-    config.mem_pool_addr = 0; // Use heap pool
-    config.mem_pool_size = 0;
-
     crash_dump_init(&config);
+
+    int32_t status = exception_handler_init();
+    FPFW_RUNTIME_ASSERT(status == KNG_SUCCESS);
+
+    //    BUG_CHECK(4545, 0, 0);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
@@ -172,6 +177,13 @@ FPFW_INIT_COMPONENT(cd_spi_rem, FPFW_INIT_DEPENDENCIES("cd_init", "icc_d2dmbx", 
 FPFW_INIT_COMPONENT(cd_hsp, FPFW_INIT_DEPENDENCIES("cd_init", "icc_hspmbx"))
 {
     crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_HSP, fpfw_init_get_handle("icc_hspmbx"));
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
+FPFW_INIT_COMPONENT(cd_pomesh, FPFW_INIT_DEPENDENCIES("cd_init", "ddr"))
+{
+    crash_dump_enable_full_dump(true);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

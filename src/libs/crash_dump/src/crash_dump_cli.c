@@ -27,6 +27,8 @@ static FPFW_CLI_STATUS cd_bug_check(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS cd_trigger_exception(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS cd_set_single_core_mode(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS cd_stack_overflow(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS cd_full_dump(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS cd_mini_dump(int argc, const char** pp_argv);
 
 /*-- Declarations (Statics and globals) --*/
 static FPFW_CLI_COMMAND s_cd_cmd_list[] = {
@@ -36,6 +38,8 @@ static FPFW_CLI_COMMAND s_cd_cmd_list[] = {
     {NULL_LIST_ENTRY, "crashdump", "cd_set_single_core_mode", cd_set_single_core_mode, "Generates single core crash dump", "Usage: cd_set_single_core_mode (no arguments)"},
     {NULL_LIST_ENTRY, "crashdump", "cd_trigger_exception", cd_trigger_exception, "Triggers an exception, causing a fault handler to execute", "Usage: cd_trigger_exception (no arguments)"},
     {NULL_LIST_ENTRY, "crashdump", "cd_stack_overflow", cd_stack_overflow, "Causes stack overflow to test crash dump behavior", "Usage: cd_stack_overflow <suspend time tick>"},
+    {NULL_LIST_ENTRY, "crashdump", "cd_full_dump", cd_full_dump, "Configure dump mode to full crash dump", "Usage: cd_full_dump (no arguments)"},
+    {NULL_LIST_ENTRY, "crashdump", "cd_mini_dump", cd_mini_dump, "Configure dump mode to mini crash dump", "Usage: cd_mini_dump (no arguments)"},
 };
 
 static uint32_t dead_beef = 0xDEADBEEF;
@@ -174,4 +178,28 @@ static FPFW_CLI_STATUS cd_stack_overflow(int argc, const char** pp_argv)
     overflow_recurse(suspend_time);
 
     return CLI_SUCCESS;
+}
+
+static FPFW_CLI_STATUS cd_full_dump(int argc, const char** pp_argv)
+{
+    FPFW_UNUSED(argc);
+    FPFW_UNUSED(pp_argv);
+
+    bool ret = crash_dump_enable_full_dump(true);
+
+    FpFwCliPrint("Set full crash dump mode %s\n", ret ? "succeeded" : "failed");
+
+    return ret ? CLI_SUCCESS : CLI_ERROR;
+}
+
+static FPFW_CLI_STATUS cd_mini_dump(int argc, const char** pp_argv)
+{
+    FPFW_UNUSED(argc);
+    FPFW_UNUSED(pp_argv);
+
+    bool ret = crash_dump_enable_full_dump(false);
+
+    FpFwCliPrint("Set mini crash dump mode %s\n", ret ? "succeeded" : "failed");
+
+    return ret ? CLI_SUCCESS : CLI_ERROR;
 }

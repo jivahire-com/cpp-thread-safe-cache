@@ -37,11 +37,7 @@ FPFwCDDumpDescriptorCtx* mock_descCtx;
 FPFwCDDumpFileCtx* mock_fileCtx;
 FPFwCDStateManagerCtx* mock_stateCtx;
 
-// FPFwCDDumpDescriptor desc_list[];
 TX_MUTEX* mock_desc_mutex;
-
-// CD_MSFT_VERSION_INFO cdMsftVersionInfo;
-// CD_THREADX_DATA cdThreadXData;
 
 jmp_buf cd_test_setjmp_context;
 
@@ -71,16 +67,18 @@ int init_crash_dump_context(void** pContext)
 
 crash_dump_config_t* __wrap_GetCrashDumpConfig()
 {
-    return mock_type(crash_dump_config_t*);
+    crash_dump_config_t* config = mock_type(crash_dump_config_t*);
+    config->cd_status = mock_type(crash_dump_status_t*);
+
+    return config;
 }
 
 bool __wrap_FPFwCDInitMemoryPool(FPFwCDMemPoolCtx* ctx, uint64_t baseAddr, uint32_t poolSize)
 {
-    assert_null(mock_memPoolCtx); // Ensure this function is called first time
-    assert_non_null(ctx);         // Ensure the context is not NULL
-    mock_memPoolCtx = ctx;        // Save the context
+    assert_non_null(ctx);  // Ensure the context is not NULL
+    mock_memPoolCtx = ctx; // Save the context
 
-    check_expected_ptr(baseAddr);
+    check_expected(baseAddr);
     check_expected(poolSize);
 
     function_called();
@@ -155,9 +153,8 @@ bool __wrap_FPFwCDDumpDescriptorOverrideMutexUnlock(FPFwCDDumpDescriptorCtx* dum
 
 bool __wrap_FPFwCDInitDumpFile(FPFwCDDumpFileCtx* ctx)
 {
-    assert_null(mock_fileCtx); // Ensure this function is called first time
-    assert_non_null(ctx);      // Ensure the context is not NULL
-    mock_fileCtx = ctx;        // Save the context
+    assert_non_null(ctx); // Ensure the context is not NULL
+    mock_fileCtx = ctx;   // Save the context
 
     function_called();
 
@@ -204,9 +201,8 @@ bool __wrap_FPFwCDInitDumpManager(FPFwCrashDumpCtx* ctx,
                                   FPFwCDStateManagerCtx* stateCtx,
                                   uint64_t totalDumpSize)
 {
-    assert_null(mock_crash_dump_ctx); // Ensure this function is called first time
-    assert_non_null(ctx);             // Ensure the context is not NULL
-    mock_crash_dump_ctx = ctx;        // Save the context
+    assert_non_null(ctx);      // Ensure the context is not NULL
+    mock_crash_dump_ctx = ctx; // Save the context
 
     assert_ptr_equal(mock_memPoolCtx, memPoolCtx); // Ensure the memory pool context is the same as the one initialized
     assert_ptr_equal(mock_descCtx, descCtx); // Ensure the descriptor context is the same as the one initialized
@@ -426,4 +422,23 @@ fpfw_status_t __wrap_fpfw_icc_base_send_sync(fpfw_icc_base_ctx_t* icc_ctx, void*
 
     return mock_type(fpfw_status_t);
 }
+
+void __wrap_FPFwSpinLockInitialize(PFPFW_SPINLOCK pLock)
+{
+    assert_non_null(pLock);
+    function_called();
+}
+
+void __wrap_FPFwSpinLockAcquire(PFPFW_SPINLOCK pLock)
+{
+    assert_non_null(pLock);
+    function_called();
+}
+
+void __wrap_FPFwSpinLockRelease(PFPFW_SPINLOCK pLock)
+{
+    assert_non_null(pLock);
+    function_called();
+}
+
 } // extern "C"

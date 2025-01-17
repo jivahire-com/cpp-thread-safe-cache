@@ -158,7 +158,10 @@ TEST_FUNCTION(test_pcie_rpss_init_success, test_setup, test_teardown)
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
-    expect_value(__wrap_pciess_config_entity, program_phy_regs, true);
+    // TODO: this API will crash on SVP to program phy registers.
+    // Renable once SVP supports phy registers
+    // ADO: https://dev.azure.com/ms-tsd/Kingsgate/_workitems/edit/896966
+    expect_value(__wrap_pciess_config_entity, program_phy_regs, false);
     expect_value(__wrap_pciess_config_entity, enable_apu, true);
     will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
     will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
@@ -201,7 +204,10 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
-    expect_value(__wrap_pciess_config_entity, program_phy_regs, true);
+    // TODO: this API will crash on SVP to program phy registers.
+    // Renable once SVP supports phy registers
+    // ADO: https://dev.azure.com/ms-tsd/Kingsgate/_workitems/edit/896966
+    expect_value(__wrap_pciess_config_entity, program_phy_regs, false);
     expect_value(__wrap_pciess_config_entity, enable_apu, true);
     will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
     will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);

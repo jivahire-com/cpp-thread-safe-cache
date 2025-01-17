@@ -6,13 +6,81 @@
  * @file crash_dump_memory.h
  * Specifies memory regions used for crash dump
  */
-
 #pragma once
+#include <assert.h>
+#include <atu_api.h>
+#include <crash_dump.h>
+#include <mscp_exp_rmss_memory_map.h>
 
 /*----------- Nested includes ------------*/
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define CRASH_DUMP_FULL_SIZE    256
+// Alignment macros
+#ifndef DUMP_ALIGNMENT
+#define DUMP_ALIGNMENT (8)
+#endif
+
+#define CD_ALIGN_BY(VALUE, INTERVAL) (((VALUE) + (INTERVAL)-1) & ~((INTERVAL)-1))
+#define CD_ALIGN_DOWN(VALUE, INTERVAL) ((VALUE) / (INTERVAL) * (INTERVAL))
+
+// Mini dump is not supported for MCP and Accelerators because they are booted up after DDR is up and running.
+// DIE0                         DIE1
+// +-------------------------+  +-------------------------+ CRASH_DUMP_MINI_HEADER_ADDR (CRASH_DUMP_MINI_HEADER_SIZE)
+// |  Crash Dump Header      |  |  Crash Dump Header      |
+// +-------------------------+  +-------------------------+ CRASH_DUMP_MINI_SCP_ADDR (CRASH_DUMP_MINI_SCP_SIZE)
+// |  DIE0 SCP Crash Dump    |  |  DIE1 SCP Crash Dump    |
+// +-------------------------+  +-------------------------+ CRASH_DUMP_MINI_HSP_ADDR (CRASH_DUMP_MINI_HSP_SIZE)
+// |  DIE0 HSP Crash Dump    |  |  DIE1 HSP Crash Dump    |
+// +-------------------------+  +-------------------------+
+#define CRASH_DUMP_MINI_SIZE_PER_CORE   CD_ALIGN_DOWN(SCP_EXP_CRASHDUMP_MINI_MAX_SIZE / 2, DUMP_ALIGNMENT)
+
+#define CRASH_DUMP_MINI_HEADER_ADDR SCP_EXP_CRASHDUMP_HEADER_BASE
+#define CRASH_DUMP_MINI_HEADER_SIZE CD_ALIGN_BY(SCP_EXP_CRASHDUMP_HEADER_SIZE, DUMP_ALIGNMENT)
+static_assert(sizeof(crash_dump_status_t) <= CRASH_DUMP_MINI_HEADER_SIZE, "crash_dump_status_t size is larger than CRASH_DUMP_MINI_HEADER_SIZE");
+
+#define CRASH_DUMP_MINI_SCP_ADDR    CD_ALIGN_BY(SCP_EXP_CRASHDUMP_MINI_BASE, DUMP_ALIGNMENT)
+#define CRASH_DUMP_MINI_SCP_SIZE    CD_ALIGN_DOWN(CRASH_DUMP_MINI_SIZE_PER_CORE, DUMP_ALIGNMENT)
+
+#define CRASH_DUMP_MINI_HSP_ADDR    CD_ALIGN_BY(CRASH_DUMP_MINI_SCP_ADDR + CRASH_DUMP_MINI_SCP_SIZE, DUMP_ALIGNMENT)
+#define CRASH_DUMP_MINI_HSP_SIZE    CD_ALIGN_DOWN(CRASH_DUMP_MINI_SIZE_PER_CORE, DUMP_ALIGNMENT)
+static_assert(CRASH_DUMP_MINI_HSP_ADDR + CRASH_DUMP_MINI_HSP_SIZE - 1 <= SCP_EXP_CRASHDUMP_MINI_END, "Mini crash dump memory region exceeds SCP_EXP_CRASHDUMP_MINI_END");
+
+// +-------------------------+                              CRASH_DUMP_FULL_STATUS_ADDR (CRASH_DUMP_STATUS_SIZE)
+// |  Crash Dump Header      |
+// +-------------------------+ +-------------------------+  CRASH_DUMP_FULL_MCP_ADDR (CRASH_DUMP_FULL_MCP_SIZE)
+// |  DIE0 MCP Crash Dump    | |  DIE1 MCP Crash Dump    |
+// +-------------------------+ +-------------------------+  CRASH_DUMP_FULL_SCP_ADDR (CRASH_DUMP_FULL_SCP_SIZE)
+// |  DIE0 SCP Crash Dump    | |  DIE1 SCP Crash Dump    |
+// +-------------------------+ +-------------------------+  CRASH_DUMP_FULL_HSP_ADDR (CRASH_DUMP_FULL_HSP_SIZE)
+// |  DIE0 HSP Crash Dump    | |  DIE1 HSP Crash Dump    |
+// +-------------------------+ +-------------------------+  CRASH_DUMP_FULL_CDED_ADDR (CRASH_DUMP_FULL_CDED_SIZE)
+// |  DIE0 CDED Crash Dump   | |  DIE1 CDED Crash Dump   |
+// +-------------------------+ +-------------------------+  CRASH_DUMP_FULL_SDM_ADDR (CRASH_DUMP_FULL_SDM_SIZE)
+// |  DIE0 SDM Crash Dump    | |  DIE1 SDM Crash Dump    |
+// +-------------------------+ +-------------------------+
+#define CRASH_DUMP_FULL_SIZE_PER_DIE    MSCP_ATU_AP_WINDOW_CRASH_DUMP_DIE_SIZE
+#define CRASH_DUMP_FULL_SIZE_PER_CORE   CD_ALIGN_DOWN(CRASH_DUMP_FULL_SIZE_PER_DIE / CRASH_DUMP_CORE_NUM, DUMP_ALIGNMENT)
+
+// Full crash dump address is ATU translated address
+#define CRASH_DUMP_FULL_HEADER_ADDR MSCP_ATU_AP_WINDOW_CRASH_DUMP_HEADER_BASE_ADDR
+#define CRASH_DUMP_FULL_HEADER_SIZE CD_ALIGN_BY(MSCP_ATU_AP_WINDOW_CRASH_DUMP_HEADER_SIZE, DUMP_ALIGNMENT)
+static_assert(sizeof(crash_dump_status_t) <= CRASH_DUMP_FULL_HEADER_SIZE, "crash_dump_status_t size is larger than CRASH_DUMP_FULL_HEADER_SIZE");
+
+#define CRASH_DUMP_FULL_MCP_ADDR    CD_ALIGN_BY(MSCP_ATU_AP_WINDOW_CRASH_DUMP_BASE_ADDR, DUMP_ALIGNMENT)
+#define CRASH_DUMP_FULL_MCP_SIZE    CRASH_DUMP_FULL_SIZE_PER_CORE
+
+#define CRASH_DUMP_FULL_SCP_ADDR    CD_ALIGN_BY(CRASH_DUMP_FULL_MCP_ADDR + CRASH_DUMP_FULL_MCP_SIZE, DUMP_ALIGNMENT)
+#define CRASH_DUMP_FULL_SCP_SIZE    CRASH_DUMP_FULL_SIZE_PER_CORE
+
+#define CRASH_DUMP_FULL_HSP_ADDR    CD_ALIGN_BY(CRASH_DUMP_FULL_SCP_ADDR + CRASH_DUMP_FULL_SCP_SIZE, DUMP_ALIGNMENT)
+#define CRASH_DUMP_FULL_HSP_SIZE    CRASH_DUMP_FULL_SIZE_PER_CORE
+
+#define CRASH_DUMP_FULL_CDED_ADDR   CD_ALIGN_BY(CRASH_DUMP_FULL_HSP_ADDR + CRASH_DUMP_FULL_HSP_SIZE, DUMP_ALIGNMENT)
+#define CRASH_DUMP_FULL_CDED_SIZE   CRASH_DUMP_FULL_SIZE_PER_CORE
+
+#define CRASH_DUMP_FULL_SDM_ADDR    CD_ALIGN_BY(CRASH_DUMP_FULL_CDED_ADDR + CRASH_DUMP_FULL_CDED_SIZE, DUMP_ALIGNMENT)
+#define CRASH_DUMP_FULL_SDM_SIZE    CRASH_DUMP_FULL_SIZE_PER_CORE
+static_assert(CRASH_DUMP_FULL_SDM_ADDR + CRASH_DUMP_FULL_SDM_SIZE - 1 <= MSCP_ATU_AP_WINDOW_CRASH_DUMP_END_ADDR, "Full crash dump memory region exceeds MSCP_ATU_AP_WINDOW_CRASH_DUMP_END_ADDR");
 
 /*-------------- Typedefs ----------------*/
 

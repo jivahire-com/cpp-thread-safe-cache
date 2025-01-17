@@ -11,6 +11,7 @@ set (SOURCES
         src/crash_dump_payload_core.c
         src/crash_dump_payload_msft.c
         src/crash_dump_payload_threadx.c
+        src/crash_dump_status.c
 )
 
 if("$ENV{REPO_APP_TOOLCHAIN}" STREQUAL "i386-pc-windows-msvc")
@@ -25,9 +26,11 @@ add_library(${TARGET}
 target_link_libraries(${TARGET}
     PUBLIC
         fwlib.lib.crashDump
+        fwlib.lib.spinlock
         fwlib.service.iccBase
         ms::lib::debug
         ms::lib::error_codes
+        ms::service::atu_service
     PRIVATE
         fwlib.lib.assert
         fwlib.service.cli

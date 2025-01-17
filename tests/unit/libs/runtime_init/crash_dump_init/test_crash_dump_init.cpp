@@ -16,6 +16,7 @@ extern "C" {
 #include <fpfw_init.h>
 #include <idsw.h>
 #include <idsw_kng.h>
+#include <kng_error.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -62,6 +63,13 @@ idsw_plat_id_t __wrap_idsw_get_platform_sdv(void)
     return mock_type(idsw_plat_id_t);
 }
 
+int32_t __wrap_exception_handler_init(void)
+{
+    function_called();
+
+    return mock_type(int32_t);
+}
+
 //
 // Tests
 //
@@ -100,6 +108,9 @@ TEST_FUNCTION(test_crash_dump_init, nullptr, nullptr)
 #endif
 
     expect_function_call(__wrap_crash_dump_init);
+
+    will_return(__wrap_exception_handler_init, KNG_SUCCESS);
+    expect_function_call(__wrap_exception_handler_init);
 
     // Check dependencies
     assert_string_equal("hw_ver", _fpfw_component_cd_init.children[0]);

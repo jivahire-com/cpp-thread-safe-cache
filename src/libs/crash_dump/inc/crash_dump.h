@@ -10,6 +10,7 @@
 #pragma once
 
 /*--------------- Includes ---------------*/
+#include <FpFwSpinLock.h>
 #include <FpFwUtils.h>
 #include <fpfw_icc_base.h>
 #include <modules/CdDumpDescriptor.h>
@@ -28,8 +29,23 @@ typedef enum
     CRASH_DUMP_CORE_MCP = 0,
     CRASH_DUMP_CORE_SCP = 1,
     CRASH_DUMP_CORE_HSP = 2,
+    CRASH_DUMP_CORE_CDED = 3,
+    CRASH_DUMP_CORE_SDM = 4,
     CRASH_DUMP_CORE_NUM
 } crash_dump_core_t;
+
+typedef enum : uint16_t
+{
+    CRASH_DUMP_NOT_IN_USE = 0,
+    CRASH_DUMP_IN_USE = 1
+} crash_dump_state_t;
+
+typedef enum : uint8_t
+{
+    CRASH_DUMP_STATE_IDLE = 0,
+    CRASH_DUMP_STATE_IN_PROGRESS = 1,
+    CRASH_DUMP_STATE_COMPLETED = 2
+} crash_dump_core_state_t;
 
 typedef enum
 {
@@ -71,11 +87,23 @@ typedef struct {
     FPFwCdDumpPriority priority;
 } core_register_mmio_t;
 
+/**
+ * @brief Crash dump status header
+ * 
+ * lock: Spinlock to protect the status
+ * cd_status: Crash dump status (Lower 8 bits: DIE0, Upper 8 bits: DIE1 - 0: In progress, 1: Completed for each core)
+ * 
+ */
+typedef struct {
+    FPFW_SPINLOCK lock;
+    uint16_t cd_status; // 0: Not in use, 1: In Use
+    volatile uint8_t cores[CRASH_DUMP_CORE_NUM * 2];
+} crash_dump_status_t;
+
 typedef struct {
     uint32_t die_index;         // DIE index
     uint32_t core_index;        // Core index
-    uint64_t mem_pool_addr;
-    uint32_t mem_pool_size;
+    FPFW_CD_DUMP_TYPE dump_type;
     uint32_t mmio_register_count;
     const core_register_mmio_t *mmio_registers;
     bool (*in_memory)(uintptr_t start_addr, uintptr_t end_addr);
@@ -84,6 +112,7 @@ typedef struct {
     fpfw_icc_base_ctx_t *icc_spi_remote_core_ctx;
     fpfw_icc_base_ctx_t *icc_hsp_ctx;
     bool is_primary;
+    crash_dump_status_t *cd_status; // Crash dump status header
 } crash_dump_config_t;
 
 /*-- Declarations (Statics and globals) --*/
@@ -144,6 +173,15 @@ void crash_dump_init(crash_dump_config_t *config);
  * @param icc_ctx ICC context
  */
 void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t *icc_ctx);
+
+/**
+ * @brief Enable or disable full crash dump
+ * 
+ * @param enable true to enable full crash dump, false to disable (mini dump only)
+ * 
+ * @return true if successful, false otherwise
+ */
+bool crash_dump_enable_full_dump(bool enable);
 
 /**
  * @brief Crash dump handler handles failure exceptions and generates a crash dump

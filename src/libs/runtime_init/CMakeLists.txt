@@ -30,7 +30,6 @@ add_library(${TARGET}
         dfwk_init.c
         dma_init.c
         etc_etd_init.c
-        exception_handler_init.c
         fuse_init.c
         gpio_init.c
         gtimer_init.c
@@ -238,7 +237,6 @@ add_library(${TARGET}
         dfwk_init.c
         etc_etd_init.c
         etr_init.c
-        exception_handler_init.c
         gpio_init.c
         hw_version_mcp_init.c
         icc_accel_mbx_init.c

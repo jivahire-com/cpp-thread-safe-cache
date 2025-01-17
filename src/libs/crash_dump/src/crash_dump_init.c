@@ -11,10 +11,11 @@
 #include "crash_dump_gpio.h"      // for cd_gpio_assert_cd_in_progress
 #include "crash_dump_overrides.h" // for cacheFlushOverride, cacheInvalidateOverride
 #include "crash_dump_payload.h"   // for crash_dump_register_core_registers
+#include "crash_dump_status.h"    // for crash_dump_update_state, crash_dump_update_core_state
 
 #include <FpFwAssert.h>               // for FPFW_RUNTIME_ASSERT
 #include <crash_dump.h>               // for crash_dump_init
-#include <crash_dump_memory.h>        // for CRASH_DUMP_FULL_SIZE
+#include <crash_dump_memory.h>        // for CRASH_DUMP_MINI_HEADER_ADDR, CRASH_DUMP_MINI_HEADER_SIZE...
 #include <modules/CdDumpDescriptor.h> // for FPFwCDInitDumpDescriptor
 #include <modules/CdMemoryPool.h>     // for FPFwCDInintMemoryPool
 #include <stdbool.h>                  // for false
@@ -23,16 +24,14 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define CRASH_DUMP_NUM_DESCRIPTORS 128 // ToDo: Re-evaluate this number
-#define CD_DEFAULT_MEM_POOL_SIZE   1024
 
 /*-------------- Typedefs ----------------*/
 
 /*-------- Function Prototypes -----------*/
-static void get_crash_dump_mem_heap_pool(uint64_t* mem_pool_addr, uint32_t* size);
 static void init_mem_pool(uint64_t cd_mem_pool, uint32_t block_size);
 static void init_dump_desc();
 static void init_dump_file();
-static void init_dump_manager();
+static void init_dump_manager(uint64_t totalDumpSize);
 
 /*-- Declarations (Statics and globals) --*/
 static FPFwCrashDumpCtx crash_dump_ctx = {};
@@ -83,17 +82,8 @@ void crash_dump_init(crash_dump_config_t* config)
     cd_gpio_assert_cd_in_progress(false);
 
     // Initialize crash dump framework
-    uint64_t cd_mem_pool = config->mem_pool_addr;
-    uint32_t block_size = config->mem_pool_size;
-    if (cd_mem_pool == 0)
-    {
-        // Crash dump memory pool is not available. Use heap pool.
-        get_crash_dump_mem_heap_pool(&cd_mem_pool, &block_size);
-    }
-    init_mem_pool(cd_mem_pool, block_size);
     init_dump_desc();
-    init_dump_file();
-    init_dump_manager();
+    crash_dump_enable_full_dump(config->core_index == CRASH_DUMP_CORE_SCP ? false : true);
 
     // Register core built-in registers into crash dump
     crash_dump_register_core_registers();
@@ -112,16 +102,87 @@ void crash_dump_init(crash_dump_config_t* config)
 }
 
 /**
- * @brief Get crash dump memory heap pool.
+ * @brief Enable or disable full crash dump
  *
- * @param mem_pool_addr Memory pool address.
- * @param size Size of the memory pool.
+ * @param enable true to enable full crash dump, false to disable (mini dump only)
  *
+ * @return true if successful, false otherwise
  */
-static void get_crash_dump_mem_heap_pool(uint64_t* mem_pool_addr, uint32_t* size)
+bool crash_dump_enable_full_dump(bool enable)
 {
-    *mem_pool_addr = (uint64_t)(uintptr_t)malloc(CD_DEFAULT_MEM_POOL_SIZE);
-    *size = CD_DEFAULT_MEM_POOL_SIZE;
+    uint64_t mem_pool_addr = 0;
+    uint32_t mem_pool_size = 0;
+    crash_dump_status_t* status = NULL;
+    crash_dump_config_t* config = GetCrashDumpConfig();
+
+    if (config == NULL)
+    {
+        FPFwCDPrintf("Crash dump configuration is not available\n");
+        return false;
+    }
+
+    if ((config->dump_type == FPFW_CD_DUMP_TYPE_FULL && enable) || (config->dump_type == FPFW_CD_DUMP_TYPE_MINI && !enable))
+    {
+        // Already in the desired state
+        return true;
+    }
+
+    if (enable)
+    {
+        // Configure full dump memory pool.
+        switch (config->core_index)
+        {
+        case CRASH_DUMP_CORE_MCP:
+            status = (crash_dump_status_t*)CRASH_DUMP_FULL_HEADER_ADDR;
+            mem_pool_addr = CRASH_DUMP_FULL_MCP_ADDR;
+            mem_pool_size = CRASH_DUMP_FULL_MCP_SIZE;
+            break;
+        case CRASH_DUMP_CORE_SCP:
+            status = (crash_dump_status_t*)CRASH_DUMP_FULL_HEADER_ADDR;
+            mem_pool_addr = CRASH_DUMP_FULL_SCP_ADDR;
+            mem_pool_size = CRASH_DUMP_FULL_SCP_SIZE;
+            break;
+        default:
+            // MSCP only supports MCP and SCP cores.
+            return false;
+        }
+
+        config->dump_type = FPFW_CD_DUMP_TYPE_FULL;
+    }
+    else
+    {
+        // Configure mini dump memory pool.
+        switch (config->core_index)
+        {
+        case CRASH_DUMP_CORE_SCP:
+            status = (crash_dump_status_t*)CRASH_DUMP_MINI_HEADER_ADDR;
+            mem_pool_addr = CRASH_DUMP_MINI_SCP_ADDR;
+            mem_pool_size = CRASH_DUMP_MINI_SCP_SIZE;
+            break;
+        default:
+            // Only SCP and HSP support mini dump.
+            return false;
+        }
+
+        config->dump_type = FPFW_CD_DUMP_TYPE_MINI;
+    }
+
+    // If the status is already set, clear it.
+    crash_dump_update_state(CRASH_DUMP_NOT_IN_USE);
+
+    // Update new crash dump status buffer.
+    config->cd_status = status;
+
+    // Initialize crash dump header spin lock.
+    FPFwSpinLockInitialize(&(GetCrashDumpConfig()->cd_status->lock));
+    crash_dump_update_state(CRASH_DUMP_IN_USE);
+
+    // Initialize FPFW crash dump memory pool, file and manager
+    init_mem_pool(mem_pool_addr, mem_pool_size);
+    init_dump_file();
+    init_dump_manager(mem_pool_size);
+
+    return true;
 }
 
 /**
@@ -173,9 +234,9 @@ static void init_dump_file()
  * @brief Initialize crash dump manager.
  *
  */
-static void init_dump_manager()
+static void init_dump_manager(uint64_t totalDumpSize)
 {
-    FPFW_RUNTIME_ASSERT(FPFwCDInitDumpManager(&crash_dump_ctx, &mem_ctx, &desc_ctx, &file_ctx, NULL, CRASH_DUMP_FULL_SIZE)); // No state manager.
+    FPFW_RUNTIME_ASSERT(FPFwCDInitDumpManager(&crash_dump_ctx, &mem_ctx, &desc_ctx, &file_ctx, NULL, totalDumpSize)); // No state manager.
     FPFwCDOverridePrintf(&crash_dump_printf);
     (void)FPFwCDDumpManagerSetPreDumpCallback(&crash_dump_ctx, &preDumpCallbackOverride, NULL);
     (void)FPFwCDDumpManagerSetPostDumpCallback(&crash_dump_ctx, &postDumpCallbackOverride, NULL);

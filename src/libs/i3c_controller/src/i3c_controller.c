@@ -235,7 +235,7 @@ int i3c_controller(uint8_t die_num)
             .i3c_core_clk_freq_in_mhz = I3C_CORE_CLOCK,
             .i3c_speed_in_khz = user_i3c_speed_in_khz,
         };
-        i3c_config_t i3c_configs[NUM_I3C_CONFIGS] = {i3c_config0, i3c_config1};
+        i3c_config_t* i3c_configs[NUM_I3C_CONFIGS] = {&i3c_config0, &i3c_config1};
 
         uint32_t i3c_irqnums[NUM_I3C_IRQNUMS] = {HW_INT_I3C_CTRL_0_INT, HW_INT_I3C_CTRL_1_INT};
 
@@ -245,7 +245,7 @@ int i3c_controller(uint8_t die_num)
         // Master init
         for (uint8_t i = 0; i < NUM_I3C_CONFIGS; i++)
         {
-            status = i3c_initialize(i3c_instance[i], &i3c_configs[i]);
+            status = i3c_initialize(i3c_instance[i], i3c_configs[i]);
             if (status != SILIBS_SUCCESS)
             {
                 CRITICAL_PRINT(MOD_NAME "Error initializing I3C%d Master Controller\n", i);

@@ -24,7 +24,7 @@ extern "C" {
 #include <../src/crash_dump_payload.h>   // for CD_THREADX_DATA, crash_dump_capture_threadx
 #include <cmsis_m7.h>                    // for SCB
 #include <crash_dump.h>                  // for crash_dump_init
-#include <crash_dump_memory.h>           // for CRASH_DUMP_FULL_SIZE
+#include <crash_dump_memory.h>           // for CRASH_DUMP_MINI_SCP_ADDR, CRASH_DUMP_MINI_SCP_SIZE...
 #include <kng_icc_shared.h>              // for ICC_SIGNAL_CRASH_DUMP_COLLECT
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -61,11 +61,33 @@ bool in_memory(uintptr_t start_addr, uintptr_t end_addr)
 //
 // Expectations
 //
-void set_expectations_init_mem_pool()
+void set_expectations_crash_dump_enable_full_dump(crash_dump_config_t* config, crash_dump_status_t* status)
+{
+    // For enable full crash dump
+    will_return(__wrap_GetCrashDumpConfig, config);
+    will_return(__wrap_GetCrashDumpConfig, status);
+
+    // For disable current crash dump state
+    will_return(__wrap_GetCrashDumpConfig, config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    // For initializing crash dump status lock
+    will_return(__wrap_GetCrashDumpConfig, config);
+    will_return(__wrap_GetCrashDumpConfig, status);
+    expect_function_call(__wrap_FPFwSpinLockInitialize);
+
+    // For enabling new crash dump state
+    expect_function_call(__wrap_FPFwSpinLockAcquire);
+    will_return(__wrap_GetCrashDumpConfig, config);
+    will_return(__wrap_GetCrashDumpConfig, status);
+    expect_function_call(__wrap_FPFwSpinLockRelease);
+}
+
+void set_expectations_init_mem_pool(uint64_t addr, uint32_t size)
 {
     expect_function_call(__wrap_FPFwCDInitMemoryPool);
-    expect_any(__wrap_FPFwCDInitMemoryPool, baseAddr);
-    expect_any(__wrap_FPFwCDInitMemoryPool, poolSize);
+    expect_value(__wrap_FPFwCDInitMemoryPool, baseAddr, addr);
+    expect_value(__wrap_FPFwCDInitMemoryPool, poolSize, size);
 
     expect_function_call(__wrap_FPFwCDMemPoolOverrideCacheFlush);
     expect_value(__wrap_FPFwCDMemPoolOverrideCacheFlush, cacheFlush, &cacheFlushOverride);
@@ -105,10 +127,10 @@ void set_expectations_init_dump_file()
     expect_value(__wrap_FPFwCDDumpFileOverrideInValidGlobalMemory, inValidGlobalMemory, &inGlobalMemoryOverride);
 }
 
-void set_expectations_init_dump_manager()
+void set_expectations_init_dump_manager(uint32_t expectDumpSize)
 {
     expect_function_call(__wrap_FPFwCDInitDumpManager);
-    expect_value(__wrap_FPFwCDInitDumpManager, totalDumpSize, CRASH_DUMP_FULL_SIZE);
+    expect_value(__wrap_FPFwCDInitDumpManager, totalDumpSize, expectDumpSize);
 
     expect_function_call(__wrap_FPFwCDOverridePrintf);
     expect_value(__wrap_FPFwCDOverridePrintf, printOverride, &crash_dump_printf);
@@ -191,6 +213,7 @@ void set_expectations_crash_dump_register_address32_ptr_array(FPFwCdDumpPriority
 void set_expectations_gpio_set_output(crash_dump_config_t* config)
 {
     will_return(__wrap_GetCrashDumpConfig, config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
 
     if (config->core_index == CRASH_DUMP_CORE_MCP)
     {
@@ -249,21 +272,25 @@ TEST_FUNCTION(test_crash_dump_init, init_crash_dump_context, nullptr)
                                   .mmio_register_count = 2,
                                   .mmio_registers = core_register_mmio,
                                   .in_memory = in_memory};
+    crash_dump_status_t status = {};
 
     // Set up expectations
     set_expectations_gpio_set_output(&config);
 
-    // init_mem_pool()
-    set_expectations_init_mem_pool();
-
     // init_dump_desc()
     set_expectations_init_dump_desc();
+
+    // crash_dump_enable_full_dump()
+    set_expectations_crash_dump_enable_full_dump(&config, &status);
+
+    // init_mem_pool()
+    set_expectations_init_mem_pool(CRASH_DUMP_MINI_SCP_ADDR, CRASH_DUMP_MINI_SCP_SIZE);
 
     // init_dump_file()
     set_expectations_init_dump_file();
 
     // init_dump_manager()
-    set_expectations_init_dump_manager();
+    set_expectations_init_dump_manager(CRASH_DUMP_MINI_SCP_SIZE);
 
     // crash_dump_register_core_registers()
     set_expectations_crash_dump_register_core_registers();
@@ -288,6 +315,7 @@ TEST_FUNCTION(test_crash_dump_config_icc_mhu_local, NULL, NULL)
 {
     crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
     will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
 
     expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
     expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, 512);
@@ -305,6 +333,7 @@ TEST_FUNCTION(test_crash_dump_config_icc_mhu_remote, NULL, NULL)
 {
     crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
     will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
 
     expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
     expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, 512);
@@ -322,6 +351,7 @@ TEST_FUNCTION(test_crash_dump_config_icc_spi_remote, NULL, NULL)
 {
     crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
     will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
 
     expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
     expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, sizeof(rmss_d2d_mailbox_msg));
@@ -339,6 +369,7 @@ TEST_FUNCTION(test_crash_dump_config_icc_hsp, NULL, NULL)
 {
     crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
     will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
 
     crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_HSP, (fpfw_icc_base_ctx_t*)0x12345678);
 
@@ -434,6 +465,7 @@ TEST_FUNCTION(test_crash_dump_inMemoryOverride_validAddr, nullptr, nullptr)
 {
     crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
     will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
     will_return(in_memory, true);
 
     // Test valid address and size
@@ -470,10 +502,23 @@ TEST_FUNCTION(test_crash_dump_handler, nullptr, nullptr)
         .icc_spi_remote_core_ctx = (fpfw_icc_base_ctx_t*)0x00000003, // Non-null ICC HSP Context
         .icc_hsp_ctx = (fpfw_icc_base_ctx_t*)0x00000004              // Non-null ICC HSP Context
     };
+    crash_dump_status_t status = {};
 
-    will_return_always(__wrap_GetCrashDumpConfig, &config);
+    // Set core state to in-progress
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+    expect_function_call(__wrap_FPFwSpinLockAcquire);
+    expect_function_call(__wrap_FPFwSpinLockRelease);
+
+    // for cd_gpio_assert_cd_in_progress()
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
 
     // Expect ICC local notification
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
     expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, config.icc_mhu_local_core_ctx);
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_icc_base_send_sync);
@@ -484,6 +529,8 @@ TEST_FUNCTION(test_crash_dump_handler, nullptr, nullptr)
     expect_function_call(__wrap_fpfw_icc_base_send_sync);
 
     // Expect ICC HSP notification
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
     expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, config.icc_hsp_ctx);
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_icc_base_send_sync);
@@ -498,6 +545,14 @@ TEST_FUNCTION(test_crash_dump_handler, nullptr, nullptr)
     expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[3], p4);
 
     expect_function_call(__wrap_FPFwCDCrashDumpHandler);
+
+    // Set core state to completed
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+    expect_function_call(__wrap_FPFwSpinLockAcquire);
+    expect_function_call(__wrap_FPFwSpinLockRelease);
 
     crash_dump_handler(errorCode, p1, p2, p3, p4);
 }
@@ -525,6 +580,8 @@ TEST_FUNCTION(test_crash_dump_in_progress_assert, nullptr, nullptr)
     {
         // Set up expectations
         will_return(__wrap_GetCrashDumpConfig, &config);
+        will_return(__wrap_GetCrashDumpConfig, NULL);
+
         expect_function_call(__wrap_gpio_set_output);
         expect_value(__wrap_gpio_set_output, gpio_pin_id, 0x0602); // MSCP_EXP_GPIO_6 | SAFE_MODE_REQ (2)
         expect_value(__wrap_gpio_set_output, level, test_data[i].expected_level);
@@ -551,6 +608,7 @@ TEST_FUNCTION(test_crash_dump_available_assert, nullptr, nullptr)
     {
         // Set up expectations
         will_return(__wrap_GetCrashDumpConfig, &config);
+        will_return(__wrap_GetCrashDumpConfig, NULL);
         expect_function_call(__wrap_gpio_set_output);
         expect_value(__wrap_gpio_set_output, gpio_pin_id, 0x0603); // MSCP_EXP_GPIO_6 | GPIO_CD_AVAILABLE (3)
         expect_value(__wrap_gpio_set_output, level, test_data[i].expected_level);

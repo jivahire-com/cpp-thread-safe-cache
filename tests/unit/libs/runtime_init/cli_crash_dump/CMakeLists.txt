@@ -16,6 +16,9 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
 )
 
+# Defining platform APIs
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+
 lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})

@@ -10,12 +10,14 @@
 /*--------------- Includes ---------------*/
 #include "crash_dump_gpio.h" // for cd_gpio_assert_cd_in_progress
 #include "crash_dump_icc.h"
+#include "crash_dump_status.h" // for crash_dump_update_core_state
 
-#include <FpFwUtils.h>  // for FPFW_UNUSED
-#include <cmsis_m7.h>   // for __WFI
-#include <crash_dump.h> // for crash_dump_handler
-#include <nvic.h>       // for nvic_get_current_irq
-#include <stdint.h>     // for uint32_t
+#include <FpFwSpinLock.h> // for FPFwSpinLockAcquire, FPFwSpinLockRelease
+#include <FpFwUtils.h>    // for FPFW_UNUSED
+#include <cmsis_m7.h>     // for __WFI
+#include <crash_dump.h>   // for crash_dump_handler
+#include <nvic.h>         // for nvic_get_current_irq
+#include <stdint.h>       // for uint32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -102,6 +104,9 @@ __attribute__((__weak__)) FPFW_NORETURN void crash_dump_wait_forever()
 
 void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
 {
+    // Update the crash dump state
+    crash_dump_update_core_state(CRASH_DUMP_STATE_IN_PROGRESS);
+
     // Assert GPIO_CD_IN_PROGRESS
     cd_gpio_assert_cd_in_progress(true);
 
@@ -118,6 +123,9 @@ void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p
     bug_check_info.data.Parameter[3] = p4;
 
     FPFwCDCrashDumpHandler(crash_dump_context, &g_core_crash_context, &bug_check_info);
+
+    // Update the crash dump state
+    crash_dump_update_core_state(CRASH_DUMP_STATE_COMPLETED);
 }
 
 void crash_dump_register_mmio_register(volatile void* mmio_reg, uint32_t reg_count, FPFwCdDumpPriority priority)

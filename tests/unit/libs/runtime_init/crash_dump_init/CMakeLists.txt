@@ -24,6 +24,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::cmsis::interface
         ms::lib::crash_dump
+        ms::lib::exception_handler
         silibs::icc_mhu
         silibs::idhw
         silibs::idsw
@@ -38,6 +39,9 @@ target_compile_definitions(
        SCP_RUNTIME_INIT
 )
 
+# Defining platform APIs
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+
 lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})
@@ -47,6 +51,7 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     crash_dump_init
     crash_dump_init_post_mesh
+    exception_handler_init
     idsw_get_die_id
     idsw_get_cpu_type
     idsw_get_platform_sdv
@@ -78,6 +83,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::cmsis::interface
         ms::lib::crash_dump
+        ms::lib::exception_handler
         silibs::icc_mhu
         silibs::idhw
         silibs::idsw
@@ -92,6 +98,9 @@ target_compile_definitions(
        MCP_RUNTIME_INIT
 )
 
+# Defining platform APIs
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+
 lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})
@@ -101,6 +110,7 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     crash_dump_init
     crash_dump_init_post_mesh
+    exception_handler_init
     idsw_get_die_id
     idsw_get_cpu_type
     idsw_get_platform_sdv

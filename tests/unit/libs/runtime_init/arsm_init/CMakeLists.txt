@@ -32,5 +32,6 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     system_info_is_warm_start
     idsw_get_die_id
+    idsw_get_platform_sdv
     memset
 )

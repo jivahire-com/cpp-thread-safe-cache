@@ -8,6 +8,8 @@
  */
 
 /*------------- Includes -----------------*/
+#include "idsw.h"
+
 #include <CMockaWrapper.h>
 #include <cstdint>
 
@@ -36,6 +38,11 @@ static bool s_test_enabled = false;
 //
 // Mocks
 //
+
+idsw_plat_id_t __wrap_idsw_get_platform_sdv(void)
+{
+    return mock_type(idsw_plat_id_t);
+}
 
 idsw_die_id_t __wrap_idsw_get_die_id(void)
 {
@@ -86,6 +93,7 @@ TEST_FUNCTION(test_arsm_init_warm_boot, test_setup, test_teardown)
 {
     // Set up expectations
     will_return(__wrap_system_info_is_warm_start, true);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_arsm.init_fn();
@@ -100,6 +108,7 @@ TEST_FUNCTION(test_arsm_init_cold_boot_d0, test_setup, test_teardown)
     // Set up expectations
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_value(__wrap_memset, __a, (void*)MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR);
     expect_value(__wrap_memset, __b, 0);
     expect_value(__wrap_memset, __c, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_SIZE);
@@ -117,9 +126,23 @@ TEST_FUNCTION(test_arsm_init_cold_boot_d1, test_setup, test_teardown)
     // Set up expectations
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_idsw_get_die_id, DIE_1);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_value(__wrap_memset, __a, (void*)MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR);
     expect_value(__wrap_memset, __b, 0);
     expect_value(__wrap_memset, __c, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_SIZE);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_arsm.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+    assert_null(result.associated_handle);
+}
+
+TEST_FUNCTION(test_arsm_init_svp_bypass, test_setup, test_teardown)
+{
+    // Set up expectations
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_arsm.init_fn();

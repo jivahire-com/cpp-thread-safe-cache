@@ -22,6 +22,20 @@
 
 FPFW_INIT_COMPONENT(arsm, FPFW_INIT_DEPENDENCIES("atu_svc", "hw_ver", "sysinfo"))
 {
+    if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
+    {
+        /*
+         * SVP always starts from a clean state for every sim run so ARSM is
+         * guaranteed to be zeroed out on it.
+         *
+         * More so, SVP offers a pre-loading feature to load code/data on
+         * the ARSM at simulation start time. SCP should not clobber ARSM state
+         * to allow using this feature.
+         */
+        printf("Skip arsm_init on SVP to avoid clobbering pre-loaded arsm state!\n");
+        goto done;
+    }
+
     // Only clear the ARSM on a cold boot
     if (!system_info_is_warm_start())
     {
@@ -35,5 +49,6 @@ FPFW_INIT_COMPONENT(arsm, FPFW_INIT_DEPENDENCIES("atu_svc", "hw_ver", "sysinfo")
         memset((void*)arsm_base, 0, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_SIZE);
     }
 
+done:
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

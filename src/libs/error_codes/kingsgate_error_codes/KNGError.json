@@ -85,6 +85,11 @@
           "Name": "KNG_E_NOT_READY",
           "Value": 15,
           "Description": "Device or module is not ready"
+        },
+        {
+          "Name": "KNG_E_SPURIOUS_INTR",
+          "Value": 16,
+          "Description": "Unexpected interrupt received"
         }
       ]
     },

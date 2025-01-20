@@ -37,9 +37,11 @@ target_link_libraries(${TARGET}
         ms::lib::accel_mbox_icc_transport
         ms::lib::cortex_m7::atomics
         ms::lib::cortex_m7::nvic
+        ms::lib::crash_dump
         ms::lib::error_codes
         ms::lib::event_trace::trace
         ms::lib::interrupts
+        silibs::cded_interrupts
 )
 
 lint_target(${TARGET})

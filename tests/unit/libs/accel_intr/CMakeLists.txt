@@ -1,6 +1,7 @@
 set(TARGET accel_intr.test)
 
 set(SOURCES
+    cded_interrupts_mock.cpp
     fpfw_mock.cpp
     nvic_mock.cpp
     sdm_ext_interrupts_mock.cpp
@@ -56,6 +57,11 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     accel_intr_service_get_cfg_address
     accel_mbox_sw_intr_cb
+    cded_clear_trigger_int_mask
+    cded_int_mask_enable
+    cded_int_mask_disable
+    cded_int_mask_status_clear
+    crash_dump_bug_check
     fpfw_timer_create
     fpfw_timer_enable
     fpfw_timer_reset

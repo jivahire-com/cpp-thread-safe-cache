@@ -22,6 +22,12 @@ add_compile_definitions(SCP_CONFIG_VARIABLE_TYPE)
 # SILIBS_PRINT_VERBOSITY_LEVEL_ALL      0xF
 add_compile_definitions(SILIBS_PRINT_VERBOSITY_LEVEL=0x1) # Set to Critical
 
+# Suppress strncpy() is deprecated warnings in Unit test windows setup.
+# strncpy() is used in Event trace
+if("$ENV{REPO_APP_TOOLCHAIN}" STREQUAL "i386-pc-windows-msvc")
+    add_definitions( -D_CRT_SECURE_NO_WARNINGS)
+endif()
+
 # Python3 executable path
 set (Python3_EXECUTABLE $ENV{REPO_APP_PATH_python.win64}/tools/python.exe)
 

@@ -221,9 +221,8 @@ static void accel_intr_clear_and_unmask_interrupts(uint32_t IRQnum)
         if (accel_irq_scp_data[idx].accel_irq_init_fn != NULL)
         {
             // Call init function for that IRQ, always returns SUCCESS
-            (void)accel_irq_scp_data[idx].accel_irq_init_fn(
-                accelerator_ip_get_atu_mapped_cfg_address(accel_intr_get_accel_type_from_irq_num(IRQnum)),
-                accel_irq_scp_data[idx].accel_irq_bit);
+            (void)accel_irq_scp_data[idx].accel_irq_init_fn(accel_intr_get_accel_type_from_irq_num(IRQnum),
+                                                            accel_irq_scp_data[idx].accel_irq_bit);
         }
     }
 
@@ -317,7 +316,6 @@ void accel_intr_handle_fatal_intr_recvd(uint32_t IRQnum)
      */
     uint32_t irq_status =
         accel_intr_process_fatal_interrupts(IRQnum, ext_cfg_addr, ACCEL_INTR_PROCESS_INTR_IN_BOTTOM_HALF);
-
     /**
      * TODO: Task 1973334: [SCP] Read and dump Accel IP registers from SCP
      */

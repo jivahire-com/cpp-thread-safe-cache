@@ -1,5 +1,6 @@
 set(TARGET_DIR ${REPO_ROOT_DIR}/.externs/repo/silibs)
 set(TARGET_DIR_SILIBS_COMMON ${REPO_ROOT_DIR}/.externs/repo/silibs/libraries/common)
+set(TARGET_DIR_SILIBS_SDM_LIBS ${REPO_ROOT_DIR}/.externs/repo/silibs/libraries/sdm/libraries/)
 set(LIB_OUTS_DIR ${CMAKE_BINARY_DIR}/src/externs/silibs/libraries)
 
 message("----------------------------------")
@@ -11,6 +12,7 @@ add_compile_options(-DMSCP_SILIBS_COMPILATION)
 
 add_compile_options(-I${TARGET_DIR}/libraries/common/silibs_platform/include
                     -I${TARGET_DIR}/registerheader_overrides
+                    -I$ENV{REPO_APP_PATH_cded_register_header}
 )
 
 # Disable warnings for shared libs
@@ -84,9 +86,19 @@ set(SILIB_LIST
     vab_pcr_init
 )
 
+set(SILIB_SDM_LIST
+  cded_fw_libs_platform
+  cded_interrupts
+)
+
 foreach(SILIB ${SILIB_LIST})
   message("Adding silibs/${SILIB} ...")
   add_subdirectory(${TARGET_DIR}/libraries/${SILIB} ${LIB_OUTS_DIR}/${SILIB})
+endforeach()
+
+foreach(SILIB_SDM ${SILIB_SDM_LIST})
+  message("Adding silibs/${SILIB_SDM} ...")
+  add_subdirectory(${TARGET_DIR_SILIBS_SDM_LIBS}/${SILIB_SDM} ${LIB_OUTS_DIR}/${SILIB_SDM})
 endforeach()
 
 add_subdirectory(${TARGET_DIR_SILIBS_COMMON}/idsw ${LIB_OUTS_DIR}/idsw)

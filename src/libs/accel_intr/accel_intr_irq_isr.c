@@ -24,11 +24,16 @@
 #include <accel_intr_service.h>
 #include <accelerator_ip.h> // for ACCELERATOR_CDEDSS, ACCELERATOR_SDMSS
 #include <bitops.h>
+#include <bug_check.h> // for BUG_CHECK
+#include <cded_interrupts.h>
+#include <cded_regs_regs_regs.h>
+#include <cdedss_config_regs.h>
 #include <cortex_m7_atomics.h> // for cortex_m7_atomic_call_data_memory_barrier
+#include <kng_error.h>         // for KNG_E_SPURIOUS_INTR
 #include <nvic.h>
 #include <sdm_ext_cfg_regs.h>
 #include <stdbool.h> // for false
-#include <string.h>  // for memset
+#include <stdint.h>
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
@@ -138,6 +143,156 @@ static void accel_intr_mbox_isr(uint32_t IRQnum, uint32_t ext_cfg_addr)
     }
 }
 
+/**
+ * @brief Handle level 3 CDED CP fatal interrupt and log it
+ *
+ * @param[in] coproc_apb_addr: Base address of the coproc APB region
+ * @param[in] cded_cp_l2_irq_data: Data of a specific Level 2 interrupt node
+ *
+ * @retval bool
+ * True: ISRs at Level 3 suggest that this interrupt is spurious
+ * False: ISRs at Level 3 suggest that this interrupt is not spurious
+ */
+static bool handle_cded_cp_level3_intr(uintptr_t coproc_apb_addr, const cded_cp_l2_irq_data_t* cded_cp_l2_irq_data)
+{
+    cded_cp_l3_isr_data_t cded_cp_l3_isr_data = {};
+    uint32_t* isr = (void*)&cded_cp_l3_isr_data;
+    const CDED_INT_CATEGORY* cat_id;
+    bool spurious = true;
+    uint8_t bit_index;
+    int i;
+
+    // No level 3 for this intr
+    if (cded_cp_l2_irq_data->l3_irq_data == NULL)
+    {
+        return false;
+    }
+
+    bit_index = cded_cp_l2_irq_data->bit_index;
+    cat_id = cded_cp_l2_irq_data->l3_irq_data;
+
+    // Read all ISRs at level 3
+    for (i = 0; i < cded_cp_l2_irq_data->l3_irq_data_count; i++)
+    {
+        isr[i] = MMIO_READ32(coproc_apb_addr + cded_int_get_category_status_reg_addr(cat_id[i], coproc_apb_addr));
+        if (isr[i])
+        {
+            // Non-zero ISR which means that this ISR is not spurious
+            spurious = false;
+        }
+    }
+
+    // Log all ISRs at level 3
+    if (bit_index == CCMP_FATAL_INT)
+    {
+        if (spurious)
+        {
+            FPFW_ET_LOG(AccelSpurIntrWithLevel3CCMP,
+                        bit_index,
+                        cded_cp_l3_isr_data.ccmp_isr[0],
+                        cded_cp_l3_isr_data.ccmp_isr[1]);
+        }
+        else
+        {
+            FPFW_ET_LOG(AccelIntrWithLevel3CCMP,
+                        bit_index,
+                        cded_cp_l3_isr_data.ccmp_isr[0],
+                        cded_cp_l3_isr_data.ccmp_isr[1]);
+        }
+    }
+    else if (bit_index == DCMP_FATAL_INT)
+    {
+        if (spurious)
+        {
+            FPFW_ET_LOG(AccelSpurIntrWithLevel3DCMP,
+                        bit_index,
+                        cded_cp_l3_isr_data.dcmp_isr[0],
+                        cded_cp_l3_isr_data.dcmp_isr[1],
+                        cded_cp_l3_isr_data.dcmp_isr[2],
+                        cded_cp_l3_isr_data.dcmp_isr[3],
+                        cded_cp_l3_isr_data.dcmp_isr[4],
+                        cded_cp_l3_isr_data.dcmp_isr[5],
+                        cded_cp_l3_isr_data.dcmp_isr[6],
+                        cded_cp_l3_isr_data.dcmp_isr[7]);
+        }
+        else
+        {
+            FPFW_ET_LOG(AccelIntrWithLevel3DCMP,
+                        bit_index,
+                        cded_cp_l3_isr_data.dcmp_isr[0],
+                        cded_cp_l3_isr_data.dcmp_isr[1],
+                        cded_cp_l3_isr_data.dcmp_isr[2],
+                        cded_cp_l3_isr_data.dcmp_isr[3],
+                        cded_cp_l3_isr_data.dcmp_isr[4],
+                        cded_cp_l3_isr_data.dcmp_isr[5],
+                        cded_cp_l3_isr_data.dcmp_isr[6],
+                        cded_cp_l3_isr_data.dcmp_isr[7]);
+        }
+    }
+    else if (bit_index == AES_FATAL_INT)
+    {
+        if (spurious)
+        {
+            FPFW_ET_LOG(AccelSpurIntrWithLevel3AES, bit_index, cded_cp_l3_isr_data.aes_isr[0]);
+        }
+        else
+        {
+            FPFW_ET_LOG(AccelIntrWithLevel3AES, bit_index, cded_cp_l3_isr_data.aes_isr[0]);
+        }
+    }
+
+    return spurious;
+}
+
+/**
+ * @brief Handle level 2 CDED CP fatal interrupt
+ *
+ * @param[in] coproc_apb_addr: Base address of the coproc APB region
+ * @param[in] IRQnum: IRQnum on which is intr is received. Used for logging
+ * @param[in] status_reg: Level 2 interrupt status register(ISR) value
+ *
+ * @retval bool
+ * True: ISRs at Level 2 or below suggest that this interrupt is spurious
+ * False: ISRs at Level 2 or below suggest that this interrupt is not spurious
+ */
+static bool handle_cded_cp_level2_intr(uintptr_t coproc_apb_addr, uint32_t IRQnum, uint32_t status_reg)
+{
+    bool spurious = true;
+    bool l3_spurious;
+    uint32_t bit_mask;
+    int i;
+
+    // Iterate over all possible CDED CP fatal interrupt
+    for (i = 0; cded_cp_fatal_intr[i].bit_index != CDED_CFG_MAX_INTERRUPT; i++)
+    {
+        bit_mask = 1 << cded_cp_fatal_intr[i].bit_index;
+        if (status_reg & bit_mask)
+        {
+            // Disable this Level 2 interrupt
+            cded_int_mask_disable(coproc_apb_addr, CDED_CATEGORY_ID_CDED_CFG_FATAL, bit_mask);
+
+            // Log Level 2 interrupt
+            FPFW_ET_LOG(AccelIntrWithLevel2CPCDED, IRQnum, status_reg, cded_cp_fatal_intr[i].brief);
+
+            l3_spurious = handle_cded_cp_level3_intr(coproc_apb_addr, &cded_cp_fatal_intr[i]);
+            if (l3_spurious)
+            {
+                cded_clear_trigger_int_mask(coproc_apb_addr, CDED_CATEGORY_ID_CDED_CFG_FATAL, bit_mask);
+                cded_int_mask_status_clear(coproc_apb_addr, CDED_CATEGORY_ID_CDED_CFG_FATAL, bit_mask);
+                cded_int_mask_enable(coproc_apb_addr, CDED_CATEGORY_ID_CDED_CFG_FATAL, bit_mask);
+            }
+            spurious = spurious && l3_spurious;
+        }
+    }
+
+    if (spurious)
+    {
+        FPFW_ET_LOG(AccelSpurIntrWithLevel2CPCDED, IRQnum, status_reg);
+    }
+
+    return spurious;
+}
+
 /*----------------------------- Global Functions ----------------------------*/
 
 uint32_t accel_intr_emcpu_wdt_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index, bool process_this_fatal_intr)
@@ -187,6 +342,60 @@ uint32_t accel_intr_single_level_irq_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, 
 
         // Mask interrupt at level 1 to avoid re-trigger
         accel_intr_mask_interrupt_level_1(ext_cfg_addr, bit_index);
+    }
+
+    ret_val = ACCEL_INTR_SET_INTERRUPT_VALID(ret_val);
+
+    return ret_val;
+}
+
+uint32_t accel_intr_cded_cp_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index, bool process_this_fatal_intr)
+{
+    uintptr_t coproc_apb_addr = (uintptr_t)(ext_cfg_addr + CDEDSS_CONFIG_CDED_REGS_REGS_ADDRESS);
+    ACCEL_ID accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
+    uint32_t ret_val = 0x0;
+    uint32_t l2_status_reg;
+    bool spurious = true;
+
+    /* CDED CP fatal intr is only support on CDEDSS. This should never happen. */
+    if (accel_type == ACCEL_ID_SDM)
+    {
+        BUG_CHECK(KNG_E_SPURIOUS_INTR, IRQnum, bit_index);
+        return ret_val;
+    }
+
+    if (process_this_fatal_intr == true)
+    {
+        // Mask interrupt at level 1 to avoid re-trigger
+        accel_intr_mask_interrupt_level_1(ext_cfg_addr, bit_index);
+        // Log Level 1 interrupt bit
+        FPFW_ET_LOG(AccelIntr, IRQnum, bit_index);
+
+        l2_status_reg = MMIO_READ32(coproc_apb_addr + cded_int_get_category_status_reg_addr(CDED_CATEGORY_ID_CDED_CFG_FATAL,
+                                                                                            coproc_apb_addr));
+
+        // Check if level 2 interrupt status register suggests spurious interrupt
+        if (l2_status_reg)
+        {
+            spurious = handle_cded_cp_level2_intr(coproc_apb_addr, IRQnum, l2_status_reg);
+            // Check status registers down the hierarchy suggest  that this is a spurious
+            if (!spurious)
+            {
+                // Set to reset SoC
+                ret_val = ACCEL_INTR_SET_RESET_SOC(ret_val);
+            }
+            else
+            {
+                accel_intr_clear_interrupt_level_1(ext_cfg_addr, bit_index);
+                accel_intr_unmask_interrupt_level_1(ext_cfg_addr, bit_index);
+            }
+        }
+        else
+        {
+            accel_intr_unmask_interrupt_level_1(ext_cfg_addr, bit_index);
+            // Log Level 2 spurious interrupt status registers
+            FPFW_ET_LOG(AccelSpurIntrWithLevel2CPCDED, IRQnum, l2_status_reg);
+        }
     }
 
     ret_val = ACCEL_INTR_SET_INTERRUPT_VALID(ret_val);

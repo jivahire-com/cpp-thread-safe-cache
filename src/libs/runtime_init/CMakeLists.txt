@@ -55,6 +55,7 @@ add_library(${TARGET}
         sds_init.c
         sensor_fifo_init.c
         startup_shutdown_init.c
+        system_info_cli_init.c
         system_info_init.c
         textio_init.c
         tower_init.c
@@ -155,6 +156,7 @@ target_link_libraries(
         ms::service::sds_service
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
+        ms::service::sys_info::cli
         silibs::avs
         silibs::common::lib_uart_pl011
         silibs::crypto::rng
@@ -302,6 +304,7 @@ target_link_libraries(
         ms::service::gpio::cli
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
+        ms::service::sys_info::cli
         ms::service::telemetry
         ms::service::telemetry::cli
         silibs::atu

@@ -63,26 +63,9 @@ class scp_avs_write_test_die1(EchoFallsBaseTest):
         self.log.info("Running AVS write voltage tests on Die1  . . .")
         self.dut.setup()
 
-        if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
-            # TODO: Task 2061245: AVS Write Functional Tests for RVP, with error checking for out of range values.
-            #        KngPythiaTestSetup.reset_fpga_load_prodfw(self)
-            #        time.sleep(30)
-            self.log.info("TODO BIGFPGA/RVP AVS tests")
-            self.dut.teardown()
-            time.sleep(30)
-            return True
-        
-        elif (self.dut.get_dut_type() == DeviceType.SVP):
-            print("SVP device")
-            core_com_channel=self.dut.mb.node_0.soc.secondary_die.scp.channel_manager.get_current_channel()
-            core_com_channel.open()
-            assert core_com_channel.is_open()
-
-        else:
-            self.log.error("Unsupported DUT type")
-            self.dut.teardown()
-            time.sleep(30)
-            return False
+        core_com_channel=self.dut.mb.node_0.soc.secondary_die.scp.channel_manager.get_current_channel()
+        core_com_channel.open()
+        assert core_com_channel.is_open()
 
         try:
             self.log.info(f"Reading from self.dut.mb.node_0.soc.secondary_die.scp.channel_manager\n")
@@ -93,6 +76,31 @@ class scp_avs_write_test_die1(EchoFallsBaseTest):
             self.dut.teardown()
             time.sleep(30)
             return False
+        
+        connection = self.dut.mb.node_0.soc.secondary_die.scp.channel_manager
+        
+        if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
+            command = "sys plat_id"
+            self.log.info(f"Submitting {command}\n")
+            core_com_channel.write_line(write_string=command)
+            try:
+                command_response_cli=connection.get_current_channel().read_until(key="get_plat_id_comp", timeout_seconds=30)
+            except Exception as e:
+                self.log.error(f"Error reading Platform ID: {e}")
+                self.test_notify(step="AVS Write volt.", msg="Test Fail", _is_error=True)
+                self.dut.teardown()
+                time.sleep(30)
+                return False 
+            matches = re.search("Platform ID: PLATFORM_RVP_EVT_SILICON\n", command_response_cli)
+            matches2 = re.search("Platform ID: PLATFORM_FPGA_LARGE_RVP\n", command_response_cli)
+            self.log.info(f"matches: {matches}\n")
+            if not matches:
+                if not matches2:
+                    self.log.warning(f"Platform ID not RVP_EVT_SILICON or PLATFORM_FPGA_LARGE_RVP: {command_response_cli}")
+                    self.test_notify(step="Platform ID not RVP_EVT_SILICON or PLATFORM_FPGA_LARGE_RVP - no VRs", msg="", _is_error=False)
+                    self.dut.teardown()
+                    time.sleep(30)
+                    return True        
        
         #Turn off the power loops for AVS read!!!
         command="pwr set loopdis 1"
@@ -107,10 +115,13 @@ class scp_avs_write_test_die1(EchoFallsBaseTest):
             time.sleep(30)
             return False
 
-        command_entries = [{"bus_rail_cmd": "0 0 0", "voltage_mv": 877}, {"bus_rail_cmd": "0 1 0", "voltage_mv": 1001}]
+        # On the FPGA's for Die1 only rail 0 can be written to, so simply executing 2 writes to the same rail.
+        if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
+            command_entries = [{"bus_rail_cmd": "0 0 0", "voltage_mv": 877}, {"bus_rail_cmd": "0 0 0", "voltage_mv": 1001}]
+        else: command_entries = [{"bus_rail_cmd": "0 0 0", "voltage_mv": 877}, {"bus_rail_cmd": "0 1 0", "voltage_mv": 1001}]
+        
         for command in command_entries:
             command_str = f"avs avs_write {command['bus_rail_cmd']} {command['voltage_mv']}"
-
             self.log.info(f"Submitting {command_str}\n")  
             core_com_channel.write_line(write_string=command_str)
             try:

@@ -7,8 +7,14 @@ add_library(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
-    ms::lib::register_headers
-    ms::lib::hsp_firmware_headers
+        fwlib.dfwk
+        ms::lib::register_headers
+        ms::lib::hsp_firmware_headers
+        silibs::kng_silibs_platform
+        silibs::platform
+    PUBLIC
+        silibs::idsw_kng
+        silibs::platform
 )
 
 target_include_directories(${TARGET}

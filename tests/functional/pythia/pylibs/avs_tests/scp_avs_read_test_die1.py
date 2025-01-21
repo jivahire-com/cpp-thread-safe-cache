@@ -62,16 +62,7 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
         """
         self.log.info("Running AVS read tests on Die1  . . .")
         self.dut.setup()
-
-        if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
-            # TODO: Task 2061224: AVS Read Functional Tests for RVP, with error checking for out of range values.
-            #        KngPythiaTestSetup.reset_fpga_load_prodfw(self)
-            #        time.sleep(30)
-            self.log.info("TODO BIGFPGA/RVP AVS tests")
-            self.dut.teardown()
-            time.sleep(30)
-            return True
-        
+      
         core_com_channel=self.dut.mb.node_0.soc.secondary_die.scp.channel_manager.get_current_channel()
         core_com_channel.open()
         assert core_com_channel.is_open()
@@ -87,6 +78,29 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
             return False
 
         connection = self.dut.mb.node_0.soc.secondary_die.scp.channel_manager
+
+        if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
+            command = "sys plat_id"
+            self.log.info(f"Submitting {command}\n")
+            core_com_channel.write_line(write_string=command)
+            try:
+                command_response_cli=connection.get_current_channel().read_until(key="get_plat_id_comp", timeout_seconds=30)
+            except Exception as e:
+                self.log.error(f"Error reading Platform ID: {e}")
+                self.test_notify(step="AVS Read volt.", msg="Test Fail", _is_error=True)
+                self.dut.teardown()
+                time.sleep(30)
+                return False 
+            matches = re.search("Platform ID: PLATFORM_RVP_EVT_SILICON\n", command_response_cli)
+            matches2 = re.search("Platform ID: PLATFORM_FPGA_LARGE_RVP\n", command_response_cli)
+            self.log.info(f"matches: {matches}\n")
+            if not matches:
+                if not matches2:
+                    self.log.warning(f"Platform ID not RVP_EVT_SILICON or PLATFORM_FPGA_LARGE_RVP: {command_response_cli}")
+                    self.test_notify(step="Platform ID not RVP_EVT_SILICON or PLATFORM_FPGA_LARGE_RVP - no VRs", msg="", _is_error=False)
+                    self.dut.teardown()
+                    time.sleep(30)
+                    return True        
 
         self.log.info(f"Reading AVS volt. Die1 . . .\n")
         commands = ["avs avs_read 0 0 0", "avs avs_read 0 1 0"]
@@ -125,6 +139,16 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
                 self.dut.teardown()
                 time.sleep(30)
                 return False
+            matches = re.search(".*AVS current = ([0-9|\.]+)\n", command_response_cli)
+            val = float(matches.group(1))
+            if (val > 497):
+                self.log.error(f"AVS current greater than max of 497A {val}")
+                self.test_notify(step="AVS curr. out of range", msg="Test Fail", _is_error=True)
+                self.dut.teardown()
+                time.sleep(30)
+                return False
+            self.log.info(f"matches: {matches}")
+            self.log.info(f"AVS current is: {val}")
 
         self.log.info(f"Reading AVS temp. Die1 . . .\n")
         commands = ["avs avs_read 0 0 3", "avs avs_read 0 1 3"]
@@ -139,6 +163,16 @@ class scp_avs_read_test_die1(EchoFallsBaseTest):
                 self.dut.teardown()
                 time.sleep(30)
                 return False
+            matches = re.search(".*AVS temperature_dC = ([0-9|\.]+)\n", command_response_cli)
+            val = float(matches.group(1))
+            if (val > 115):
+                self.log.error(f"AVS temperature > max of 115C {val}")
+                self.test_notify(step="AVS temperature out of range", msg="Test Fail", _is_error=True)
+                self.dut.teardown()
+                time.sleep(30)
+                return False
+            self.log.info(f"matches: {matches}")
+            self.log.info(f"AVS temperature is: {val}")
             
         self.test_notify(step="AVS read Die1", msg="Test Done", _is_error=False)
         self.dut.teardown()

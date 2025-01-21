@@ -9,6 +9,8 @@
 
 /*------------- Includes -----------------*/
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
+#include <idsw.h>                 // for idsw_get_platform_sdv
+#include <idsw_kng.h>             // for idsw_get_platform_sdv
 #define __NO_CSR_TYPEDEFS__
 #include <scp_exp_top_regs.h>
 #include <scp_top_regs.h>
@@ -47,4 +49,10 @@ void system_info_init()
     {
         is_warm_start = true;
     }
+}
+
+KNG_PLAT_ID system_info_get_platform(void)
+{
+    KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
+    return platform_id;
 }

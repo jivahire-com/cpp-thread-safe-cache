@@ -10,6 +10,8 @@
 #pragma once
 
 /*--------------- Includes ---------------*/
+#include <idsw.h>       // for idsw_get_platform_sdv,
+#include <idsw_kng.h>   // for idsw_get_platform_sdv,
 #include <stdbool.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -30,3 +32,9 @@ bool system_info_is_warm_start();
  * 
  */
 void system_info_init();
+
+/**
+ * @brief Retrieves the platform ID.
+ * 
+ */
+KNG_PLAT_ID system_info_get_platform(void);

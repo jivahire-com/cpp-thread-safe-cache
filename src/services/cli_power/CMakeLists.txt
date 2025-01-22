@@ -23,8 +23,10 @@ target_link_libraries(
     ${TARGET}
         PRIVATE
             ms::build_data
+            ms::lib::corebits
             ms::lib::threadx
             ms::service::power
+            silibs::kng_silibs_platform
             fwlib.dfwk
             fwlib.service.cli
             fwlib.lib.assert

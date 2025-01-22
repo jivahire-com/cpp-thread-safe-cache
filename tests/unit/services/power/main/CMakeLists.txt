@@ -9,6 +9,7 @@ add_executable(${TARGET}
     power_main_test.cpp
     power_pid_test.cpp
     power_vcpu_cal_test.cpp
+    power_log_test.cpp
     ../mocks/mock_bug_check.c
 )
 
@@ -79,6 +80,7 @@ mock_target(${TARGET}
     dvfs_telemetry_config
     dvfs_set_plimit
     tile_pvt_dma_config
+    crash_dump_register_address32
     crash_dump_register_pre_dump_callback
     power_hw_clear_force_pmin
 )

@@ -68,7 +68,9 @@ static power_if_cmd_t cli_power_get_cmd_id(e_cli_power_command_id_t command, cha
         case CLI_COMMANDS_POWER_SET:
             return cli_power_set_get_cmd_id(subcommand);
         case CLI_COMMANDS_POWER_STATUS:
-            return cli_power_status_get_cmd_id(subcommand);            
+            return cli_power_status_get_cmd_id(subcommand);
+        case CLI_COMMANDS_POWER_LOG :
+            return cli_power_log_get_cmd_id(subcommand);
         default: 
             return POWER_IF_CMD_UNKNOWN;
     }
@@ -136,7 +138,12 @@ static uint8_t cli_power_set_get_arg_count(int subcommand_id)
         case POWER_IF_CMD_SET_NOMINAL:
             expected_argc = 3;
             break;  
-
+        case POWER_IF_CMD_LOG_DDR:
+            expected_argc = 3;
+            break;
+        case POWER_IF_CMD_LOG_MASK:
+            expected_argc = 3;
+            break;
         default:
             break; 
 
@@ -166,7 +173,8 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
 
             return CLI_ERROR;
         }
-    }    
+    }  
+      
 
     unsigned char all = 0;
     unsigned char core = 0;
@@ -282,8 +290,30 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
             p_pwrset_sub_command_args->nominalparams.current_val = (uint16_t)strtoul(argv[2],NULL,0);      
                                              
             break;
-        default:
+
+        case POWER_IF_CMD_LOG_DDR :
+            if(argc != cli_power_set_get_arg_count(subcommand_id))
+            {
+                printf("%-72s%s", "Usage: pwr log set nominal <0-1>", "- sets the power log DDR enable\n");
+                return CLI_ERROR;
+            }
+            p_pwrset_sub_command_args->minupdate_val = (uint16_t)strtoul(argv[2],0,0);  
+
+            break;
+
+        case POWER_IF_CMD_LOG_MASK :
+            if(argc != cli_power_set_get_arg_count(subcommand_id))
+            {
+                printf("%-72s%s", "Usage: pwr log set nominal <0-1>", "- sets the power log MASK enable\n");
+                return CLI_ERROR;
+            }
+            p_pwrset_sub_command_args->minupdate_val = (uint16_t)strtoul(argv[2],0,0); 
+            
             break; 
+
+        default:
+        
+            break;
 
     }
 

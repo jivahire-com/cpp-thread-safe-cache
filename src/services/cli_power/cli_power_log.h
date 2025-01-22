@@ -19,6 +19,17 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
+/**
+ *  @brief  Get the runlog element ID for the sub-command. 
+ * This is used to trigger the appropriate set function in the power service.
+ * 
+ *  @param[in] sub_command
+ *     Pointer to the sub-command string
+ * 
+ *  @return
+ *      The runlog element ID for the sub-command
+ */
+power_if_cmd_t cli_power_log_get_cmd_id(char* sub_command);
 
 /**
  *  @brief Implementation of the power_log_clear CLI command processor.

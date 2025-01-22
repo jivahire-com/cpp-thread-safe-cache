@@ -11,6 +11,7 @@
 #include "crash_dump.h"
 #include "power_hw_int_i.h" // for power_init_core, power_init_soc
 #include "power_i.h"        // for POWER_LOG_INFO, power_ap_soc_init
+#include "power_log.h"      //power log
 #include "power_loops_i.h"
 #include "power_runconfig.h"   // for power_service_config_t
 #include "power_runconfig_i.h" // for power_runconfig_get_element, power...
@@ -149,6 +150,7 @@ void power_init(ppower_service_t p_device, PDFWK_SCHEDULE p_schedule, const powe
     // initialize individual power loops
     power_loops_control_init();
     power_loops_telemetry_init();
+    power_log_init();
     crash_dump_register_pre_dump_callback(crash_dump_predump_cb, NULL);
 }
 

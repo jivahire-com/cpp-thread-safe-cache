@@ -18,8 +18,9 @@ extern "C" {
 
 #include <CMockaWrapper.h> // for expect_value, check_expected_ptr, Cmo...
 #include <DfwkCommon.h>    // for PDFWK_DEVICE_HEADER, DFWK_ASYNC_REQUE...
-#include <odcm_struct.h>   // for odcm_telem_config_t
-#include <power_dfwk.h>    // for power_service_t, power_service_interf...
+#include <modules/CdDumpDescriptor.h>
+#include <odcm_struct.h> // for odcm_telem_config_t
+#include <power_dfwk.h>  // for power_service_t, power_service_interf...
 #include <power_hw_int_i.h>
 #include <power_hw_int_i.h>    // for power_telcfg_t
 #include <power_i.h>           // for power_init, power_interface_init
@@ -241,6 +242,14 @@ void __wrap_power_loops_telemetry_init()
     function_called();
 }
 
+void __wrap_crash_dump_register_address32(void* address_exp, uint32_t size_exp, FPFwCdDumpPriority priority_exp)
+{
+    FPFW_UNUSED(address_exp);
+    FPFW_UNUSED(size_exp);
+    FPFW_UNUSED(priority_exp);
+    function_called();
+}
+
 void __wrap_crash_dump_register_pre_dump_callback(void cb(void*), void* ctx)
 {
     FPFW_UNUSED(ctx);
@@ -275,8 +284,8 @@ POWER_TEST(init, NULL, NULL)
     expect_function_call(__wrap_power_loops_init);
     expect_function_call(__wrap_power_loops_control_init);
     expect_function_call(__wrap_power_loops_telemetry_init);
+    expect_function_call(__wrap_crash_dump_register_address32);
     expect_function_call(__wrap_crash_dump_register_pre_dump_callback);
-
     power_init(&test_device, &test_schedule, &test_config);
 }
 
@@ -309,6 +318,7 @@ POWER_TEST(init_ws, NULL, NULL)
     expect_function_call(__wrap_power_loops_init);
     expect_function_call(__wrap_power_loops_control_init);
     expect_function_call(__wrap_power_loops_telemetry_init);
+    expect_function_call(__wrap_crash_dump_register_address32);
     expect_function_call(__wrap_crash_dump_register_pre_dump_callback);
 
     power_init(&test_device, &test_schedule, &test_config);

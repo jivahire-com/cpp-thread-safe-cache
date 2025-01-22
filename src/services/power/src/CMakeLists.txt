@@ -14,6 +14,7 @@ add_library(${TARGET}
         power_hw_int_telemetry.c
         power_hw_int_vrs.c
         power_knobs.c
+        power_log.c
         power_loops.c
         power_loops_control.c
         power_loops_telemetry.c

@@ -74,10 +74,13 @@ static FPFW_CLI_STATUS cli_get_platform_id(int argc, const char** argv)
         case PLATFORM_SVP_SIM:
             FpFwCliPrint("Platform ID: PLATFORM_SVP_SIM\n");
             break;
-        case PLATFORM_QMU_SIM:  
+        case PLATFORM_SVP_MIN_CONFIG_SIM:
+            FpFwCliPrint("Platform ID: PLATFORM_SVP_MIN_CONFIG_SIM\n");
+            break;
+        case PLATFORM_QMU_SIM:
             FpFwCliPrint("Platform ID: PLATFORM_QMU_SIM\n");
             break;
-        case PLATFORM_OTUT_SIM: 
+        case PLATFORM_OTUT_SIM:
             FpFwCliPrint("Platform ID: PLATFORM_OTUT_SIM\n");
             break;
         case PLATFORM_EMU:
@@ -92,10 +95,10 @@ static FPFW_CLI_STATUS cli_get_platform_id(int argc, const char** argv)
         case PLATFORM_EMU_1D_8C:
             FpFwCliPrint("Platform ID: PLATFORM_EMU_1D_8C\n");
             break;
-        case PLATFORM_EMU_2D_8C:    
+        case PLATFORM_EMU_2D_8C:
             FpFwCliPrint("Platform ID: PLATFORM_EMU_2D_8C\n");
             break;
-        case PLATFORM_RVP_EVT_SILICON:  
+        case PLATFORM_RVP_EVT_SILICON:
             FpFwCliPrint("Platform ID: PLATFORM_RVP_EVT_SILICON\n");
             break;
         default:

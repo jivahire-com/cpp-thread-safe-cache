@@ -22,7 +22,7 @@
 
 FPFW_INIT_COMPONENT(arsm, FPFW_INIT_DEPENDENCIES("atu_svc", "hw_ver", "sysinfo"))
 {
-    if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
+    if (IS_PLATFORM_SVP())
     {
         /*
          * SVP always starts from a clean state for every sim run so ARSM is

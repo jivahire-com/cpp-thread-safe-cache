@@ -79,7 +79,7 @@ void plat_overrides_pre_pciess_config_ss_for_bifur(pcie_ss_entity_t* rpss)
 {
     KNG_PLAT_ID plat = (KNG_PLAT_ID)idsw_get_platform_sdv();
 
-    if (plat == PLATFORM_SVP_SIM)
+    if (plat == PLATFORM_SVP_SIM || plat == PLATFORM_SVP_MIN_CONFIG_SIM)
     {
         override_port_logic_for_svp(rpss);
     }

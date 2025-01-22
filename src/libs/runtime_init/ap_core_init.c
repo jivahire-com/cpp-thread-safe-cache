@@ -61,6 +61,9 @@ FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "tower_cfg", "ic
     case PLATFORM_SVP_SIM:
         ap_core_config.platform_cores_in_die = &svp_cores;
         break;
+    case PLATFORM_SVP_MIN_CONFIG_SIM:
+        ap_core_config.platform_cores_in_die = &svp_min_config_cores;
+        break;
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
         ap_core_config.platform_cores_in_die = &fpga_platform_cores;

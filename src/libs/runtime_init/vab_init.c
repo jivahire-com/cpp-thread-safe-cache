@@ -44,6 +44,17 @@ static uint16_t vab_instances_to_be_enabled(uint8_t die_num)
         }
         break;
 
+    case PLATFORM_SVP_MIN_CONFIG_SIM:
+        if (die_num == 0)
+        {
+            vab_instances_to_init = ((1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS));
+        }
+        else
+        {
+            vab_instances_to_init = 0x00;
+        }
+        break;
+
     case PLATFORM_FPGA:
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:

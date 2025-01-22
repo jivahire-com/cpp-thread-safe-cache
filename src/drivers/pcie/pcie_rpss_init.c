@@ -236,7 +236,7 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
     // Renable once silibs skips RAS init on SVP
     // ADO: https://dev.azure.com/ms-tsd/Kingsgate/_workitems/edit/797391/
     sts = pciess_config_ss_for_bifur(rpss);
-    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+    if (!IS_PLATFORM_SVP())
     {
         FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
     }

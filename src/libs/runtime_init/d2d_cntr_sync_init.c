@@ -20,7 +20,7 @@
 FPFW_INIT_COMPONENT(d2d_cntr_sync, FPFW_INIT_DEPENDENCIES("hw_ver", "std_io", "mesh", "gtimer"))
 {
     //! d2d sync counters are not supported on SVP currently
-    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+    if (!(IS_PLATFORM_SVP()))
     {
         KNG_DIE_ID die_num = idsw_get_die_id();
         d2d_cntr_sync_init(die_num);

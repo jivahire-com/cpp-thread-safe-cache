@@ -127,6 +127,7 @@ bool is_i3c_supported()
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
     case PLATFORM_SVP_SIM:
+    case PLATFORM_SVP_MIN_CONFIG_SIM:
     case PLATFORM_RVP_EVT_SILICON:
         is_supported = true;
         break;
@@ -317,7 +318,7 @@ int i3c_controller(uint8_t die_num)
 
         SLEEP_US(DELAY_10_MS);
         // Layout of DDR-I3C Target on SVP is not supported
-        if (platform_id != PLATFORM_SVP_SIM)
+        if (!(IS_PLATFORM_SVP()))
         {
             status = ddr_i3c_interface_read_dimms_detected(&s_i3c_cmd_test, &ddrss_en);
             if (status != SILIBS_SUCCESS)

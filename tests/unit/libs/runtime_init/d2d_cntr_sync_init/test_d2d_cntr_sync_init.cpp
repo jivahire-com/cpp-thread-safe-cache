@@ -54,7 +54,7 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
 TEST_FUNCTION(test_d2d_cntr_sync_init, nullptr, nullptr)
 {
     // Set up expectations
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return(__wrap_idsw_get_die_id, DIE_0);
     expect_value(__wrap_d2d_cntr_sync_init, die_num, DIE_0);
 

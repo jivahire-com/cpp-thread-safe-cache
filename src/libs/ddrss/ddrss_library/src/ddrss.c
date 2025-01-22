@@ -101,7 +101,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.ext_knobs.sub_bank_hashing_mode = config_get_sub_bank_hashing_mode();
 
     platform_id = idsw_get_platform_sdv();
-    if (platform_id == PLATFORM_SVP_SIM)
+    if (platform_id == PLATFORM_SVP_SIM || platform_id == PLATFORM_SVP_MIN_CONFIG_SIM)
     {
         // SVP does not support full DDR model, skip it.
         printf("DDRSS init is skipped for SVP\n");

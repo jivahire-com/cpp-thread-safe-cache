@@ -34,7 +34,8 @@ if (${FPFW_CFG_MGR_ENABLE})
     set(PROD_FW_KNOBS_PATH    ${CMAKE_SOURCE_DIR}/config/knobs_config)
     set(FPFW_CFG_MGR_PROFILES ${PROD_FW_KNOBS_PATH}/kng_mscp_config_platform.csv
                               ${PROD_FW_KNOBS_PATH}/kng_mscp_config_fpga.csv
-                              ${PROD_FW_KNOBS_PATH}/kng_mscp_config_svp.csv)
+                              ${PROD_FW_KNOBS_PATH}/kng_mscp_config_svp.csv
+                              ${PROD_FW_KNOBS_PATH}/kng_mscp_config_svp_min.csv)
     set(KNOB_SVC_OPTIONS  -nc)
 
 endif()

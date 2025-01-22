@@ -363,6 +363,9 @@ FPFW_INIT_COMPONENT(sensor_fifo, FPFW_INIT_DEPENDENCIES("dfwk","hw_ver","std_io"
     case PLATFORM_SVP_SIM:
       platform_cores_config = &svp_cores;
       break;
+    case PLATFORM_SVP_MIN_CONFIG_SIM:
+      platform_cores_config = &svp_min_config_cores;
+      break;
     case PLATFORM_EMU:
     case PLATFORM_EMU_1D:
     case PLATFORM_EMU_2D:

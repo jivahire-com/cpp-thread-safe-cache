@@ -41,6 +41,9 @@ FPFW_INIT_COMPONENT(pex_rng, FPFW_INIT_DEPENDENCIES("dfwk", "sysinfo", "mesh", "
     case PLATFORM_SVP_SIM:
         rng_config.platform_cores_in_die = &svp_cores;
         break;
+    case PLATFORM_SVP_MIN_CONFIG_SIM:
+        rng_config.platform_cores_in_die = &svp_min_config_cores;
+        break;
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
         rng_config.platform_cores_in_die = &fpga_platform_cores;   

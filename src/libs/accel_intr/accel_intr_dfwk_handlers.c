@@ -126,7 +126,7 @@ static void accel_intr_handle_sdm_msg_send(ACCEL_ID accel_type)
      * TODO: Remove this check once SVP is fixed for Doorbell interrupt
      * Task 2012978: [SCP] Accel IP Fatal Interrupt remove Doorbell Interrupt workaround
      */
-    if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
+    if (IS_PLATFORM_SVP())
     {
         accel_intr_handle_sdm_msg_recvd(accel_intr_get_irq_num_from_accel_type(accel_type));
     }

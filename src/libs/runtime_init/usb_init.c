@@ -49,6 +49,7 @@ FPFW_INIT_COMPONENT(usb, FPFW_INIT_DEPENDENCIES("ioss"))
         break;
 
     case PLATFORM_SVP_SIM:
+    case PLATFORM_SVP_MIN_CONFIG_SIM:
     case PLATFORM_RVP_EVT_SILICON:
         usb_init_flags = (USBSS_INIT_USB2_0 | USBSS_INIT_USB2_1);
         break;

@@ -70,6 +70,10 @@ FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "v
                         (1 << RPSS5) | (1 << RPSS6) | (1 << RPSS7));
         break;
 
+    case PLATFORM_SVP_MIN_CONFIG_SIM:
+        printf("Skip RPSS init on SVP min config!\n");
+        break;
+
     default:
         printf("Skip RPSS init on unknown platform id: %d\n", plat);
         break;

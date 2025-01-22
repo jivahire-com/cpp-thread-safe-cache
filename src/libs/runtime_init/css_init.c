@@ -28,7 +28,7 @@ FPFW_INIT_COMPONENT(css_prme, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_sv
 
     // TODO: System tower should be configured by HSP, until then configure here for SVP
     // ADO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1725718
-    if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
+    if (IS_PLATFORM_SVP())
     {
         printf("Initializing System Control Tower\n");
         css_configure_system_tower(die_num);

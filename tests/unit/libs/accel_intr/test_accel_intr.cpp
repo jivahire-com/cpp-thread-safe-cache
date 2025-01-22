@@ -714,7 +714,7 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__pass2, NULL, NULL)
     will_return(__wrap_sdm_ext_int_mask_status_clear, SILIBS_SUCCESS);
     will_return(__wrap_sdm_ext_int_mask_enable, SILIBS_SUCCESS);
     //      accel_intr_handle_sdm_msg_send()
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     expect_any_always(__wrap_mmio_write32, addr);
     expect_any_always(__wrap_mmio_write32, data);
 

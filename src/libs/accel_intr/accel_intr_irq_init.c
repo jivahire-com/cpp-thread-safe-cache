@@ -125,7 +125,7 @@ ACCEL_ID accel_intr_get_accel_type_from_irq_num(uint32_t IRQnum)
 
 void accel_intr_emcpu_wdt_control(uint32_t ext_cfg_addr, uint8_t enable)
 {
-    if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
+    if (IS_PLATFORM_SVP())
     {
         // Watchdog interrupt is not supported in SVP yet so return in case of SVP
         // TODO: ADO 2013017: Remove this when SVP support WDT interrupt.

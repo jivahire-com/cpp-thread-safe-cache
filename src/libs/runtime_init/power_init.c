@@ -137,6 +137,12 @@ FPFW_INIT_COMPONENT(
         power_config.platform_core_power_support = true;
         power_config.platform_is_multi_die = false;
         break;
+    case PLATFORM_SVP_MIN_CONFIG_SIM:
+        power_config.platform_cores_in_die = &svp_min_config_cores;
+        power_config.platform_soc_power_support = true;
+        power_config.platform_core_power_support = true;
+        power_config.platform_is_multi_die = false;
+        break;
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
         power_config.platform_cores_in_die = &fpga_platform_cores;

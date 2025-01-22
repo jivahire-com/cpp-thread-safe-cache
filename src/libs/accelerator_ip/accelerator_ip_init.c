@@ -406,7 +406,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
     }
     debug_print("atu unmapped for accel ip\n");
 #endif
-    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+    if (!(IS_PLATFORM_SVP()))
     {
         /**
          * TODO: Task 1973445: [SCP] Move Accel Intr init in SCP after mailbox communication

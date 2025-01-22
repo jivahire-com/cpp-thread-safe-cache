@@ -18,9 +18,10 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 // Config profile IDs are defined by the order of FPFW_CFG_MGR_PROFILES
-#define MSCP_CONFIG_PROFILE_PLATFORM 0
-#define MSCP_CONFIG_PROFILE_FPGA     1
-#define MSCP_CONFIG_PROFILE_SVP      2
+#define MSCP_CONFIG_PROFILE_PLATFORM       0
+#define MSCP_CONFIG_PROFILE_FPGA           1
+#define MSCP_CONFIG_PROFILE_SVP            2
+#define MSCP_CONFIG_PROFILE_SVP_MIN_CONFIG 3
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -39,6 +40,8 @@ static uint8_t get_profile_id()
         return MSCP_CONFIG_PROFILE_FPGA;
     case PLATFORM_SVP_SIM:
         return MSCP_CONFIG_PROFILE_SVP;
+    case PLATFORM_SVP_MIN_CONFIG_SIM:
+        return MSCP_CONFIG_PROFILE_SVP_MIN_CONFIG;
     default:
         break;
     }

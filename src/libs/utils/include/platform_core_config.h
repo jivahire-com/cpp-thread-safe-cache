@@ -24,5 +24,6 @@ extern const corebits_t fpga_platform_cores;
 extern const corebits_t platform_cores;
 extern const corebits_t zebu_cores_8C_model;
 extern const corebits_t svp_cores;
+extern const corebits_t svp_min_config_cores;
 
 /*--------------------------- Function Prototypes ---------------------------*/

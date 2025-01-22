@@ -40,6 +40,8 @@
     ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3) | \
      (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS))
 
+#define TOWER_DIE0_VAB_INSTANCES_ENABLED_ON_SVP_MIN_CONFIG ((1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS))
+
 #define TOWER_DIE0_VAB_INSTANCES_ENABLED_ON_FPGA \
     ((1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS))
 #define TOWER_DIE1_VAB_INSTANCES_ENABLED_ON_FPGA \
@@ -63,6 +65,12 @@ static uint16_t tower_vab_instances_to_be_enabled(uint8_t die_num)
         vab_instances_to_init =
             (die_num == 0) ? TOWER_DIE0_VAB_INSTANCES_ENABLED_ON_SVP : TOWER_DIE1_VAB_INSTANCES_ENABLED_ON_SVP;
         break;
+
+    case PLATFORM_SVP_MIN_CONFIG_SIM:
+        /* SVP min config is only a single die configuration with SDM/CDED VABs */
+        vab_instances_to_init = (die_num == 0) ? TOWER_DIE0_VAB_INSTANCES_ENABLED_ON_SVP_MIN_CONFIG : 0x00;
+        break;
+
     case PLATFORM_FPGA:
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
@@ -87,7 +95,6 @@ static uint16_t tower_vab_instances_to_be_enabled(uint8_t die_num)
     return vab_instances_to_init;
 }
 
-// Skip RPSS on SVP to avoid simulation slowdown
 #define TOWER_DIE0_RPSS_INSTANCES_ENABLED_ON_SVP \
     ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3))
 #define TOWER_DIE1_RPSS_INSTANCES_ENABLED_ON_SVP \
@@ -111,6 +118,11 @@ static uint16_t tower_rpss_instances_to_be_enabled(uint8_t die_num)
     case PLATFORM_SVP_SIM:
         rpss_instances_to_init = (die_num == 0) ? TOWER_DIE0_RPSS_INSTANCES_ENABLED_ON_SVP
                                                 : TOWER_DIE1_RPSS_INSTANCES_ENABLED_ON_SVP;
+        break;
+
+    case PLATFORM_SVP_MIN_CONFIG_SIM:
+        /* SVP min config does not have any PCIe root port subsystems */
+        rpss_instances_to_init = 0x00;
         break;
 
     case PLATFORM_FPGA:
@@ -314,7 +326,7 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     tower_sequence_params.die_id = die_num;
 
     // TODO: WI 1869184 FMU is not supported in SVP currently
-    if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
+    if (IS_PLATFORM_SVP())
     {
         tower_sequence_params.tower_configure_d2dss_fmu = false;
         tower_sequence_params.tower_configure_fabric_fmu = false;
@@ -334,7 +346,7 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_peripheral_tower_map));
     FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_fabric_tower_map));
 
-    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+    if (!(IS_PLATFORM_SVP()))
     {
         FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_d2d_cfg0_tower_map));
         FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_d2d_cfg1_tower_map));

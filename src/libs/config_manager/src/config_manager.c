@@ -209,7 +209,7 @@ bool update_knob_in_cached_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespace,
 
 void apply_override_knob_from_hsp()
 {
-    if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+    if (!(IS_PLATFORM_SVP()))
     {
         for (uint32_t idx = 0; idx < cached_knob_data_size(); idx++)
         {

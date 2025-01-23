@@ -64,7 +64,7 @@ jobs:
           buildId: ${{ parameters.build_id}}
           artifactName: 'drop_Build_Arm_EABI_AARCH_Debug_Build'
           downloadPath: '$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug'
-
+ 
     # 1. Setup the environment
     # 2. Build the FW
     # 3. Invoke Pythia
@@ -79,6 +79,9 @@ jobs:
         showWarnings: true
         script: | 
           ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
+          
+          # Kick all users out
+          kickuser -pc ${{ parameters.TestAgent }} -user 'all'
 
           $bin_src_dir = "$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug/bin"
           $bin_dest_dir = "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch"

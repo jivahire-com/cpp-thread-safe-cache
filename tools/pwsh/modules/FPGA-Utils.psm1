@@ -2,6 +2,9 @@
 # Copyright (C) Microsoft Corporation. All rights reserved.
 #
 
+# Define the RDU Prefix globally
+$Global:RDUPrefix = "RDU-120015"
+
 # Define a global array of hashtables with PC Name and DC-SCM IP
 $Global:SystemList = @(
     @{ "PC Name" = "DE3";  "DC-SCM IP" = "172.29.232.21" },
@@ -117,7 +120,7 @@ Function Write-FPGAFlash(
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
         Write-Host -ForegroundColor Blue "Downloading Primary Flash Image via BMC . . ."
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-        Write-Host -ForegroundColor Blue "System: RDU-120015-$system"
+        Write-Host -ForegroundColor Blue "System: $Global:RDUPrefix-$system"
         Write-Host -ForegroundColor Blue "IP    : $ip"
         Write-Host -ForegroundColor Blue "File  : $filepath"
         Write-Host -ForegroundColor Blue "Dest  : ${ip}:${dest}"
@@ -140,7 +143,7 @@ Function Write-FPGAFlash(
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
         Write-Host -ForegroundColor Blue "Downloading Secondary Flash Image via BMC . . ."
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-        Write-Host -ForegroundColor Blue "System: RDU-120015-$system"
+        Write-Host -ForegroundColor Blue "System: $Global:RDUPrefix-$system"
         Write-Host -ForegroundColor Blue "IP    : $ip"
         Write-Host -ForegroundColor Blue "File  : $filepath"
         Write-Host -ForegroundColor Blue "Dest  : ${ip}:${dest}"
@@ -185,16 +188,16 @@ Function Check-UserLogin(
                 Write-Host -ForegroundColor Red "System $pc not found in the system list."
                 return
             }
-            Write-Host -ForegroundColor Blue "Checking user $user on system: RDU-120015-$pc"
-            query user /SERVER:RDU-120015-$pc | Select-String -Pattern $user
+            Write-Host -ForegroundColor Blue "Checking user $user on system: $Global:RDUPrefix-$pc"
+            query user /SERVER:$Global:RDUPrefix-$pc | Select-String -Pattern $user
         } else {
             Write-Host -ForegroundColor Blue "Checking if user $user is logged in on any FPGA system"
             Write-Host ""
             
             foreach($System in $SystemList) {
                 $PCName = $System."PC Name"
-                Write-Host -ForegroundColor Blue "Checking user $user on system: RDU-120015-$PCName"
-                query user /SERVER:RDU-120015-$PCName | Select-String -Pattern $user
+                Write-Host -ForegroundColor Blue "Checking user $user on system: $Global:RDUPrefix-$PCName"
+                query user /SERVER:$Global:RDUPrefix-$PCName | Select-String -Pattern $user
             }
         }
     } else {
@@ -205,15 +208,15 @@ Function Check-UserLogin(
                 return
             }
 
-            Write-Host -ForegroundColor Blue "Checking all users logged in on system: RDU-120015-$pc"
-            query user /SERVER:RDU-120015-$pc
+            Write-Host -ForegroundColor Blue "Checking all users logged in on system: $Global:RDUPrefix-$pc"
+            query user /SERVER:$Global:RDUPrefix-$pc
         } else {
             Write-Host -ForegroundColor Blue "Checking users logged in on all FPGA systems"
             Write-Host ""
             foreach($System in $SystemList) {
                 $PCName = $System."PC Name"
-                Write-Host "Querying users on system: RDU-120015-$PCName"
-                query user /SERVER:RDU-120015-$PCName
+                Write-Host "Querying users on system: $Global:RDUPrefix-$PCName"
+                query user /SERVER:$Global:RDUPrefix-$PCName
             }
         }
     }
@@ -227,45 +230,96 @@ Function Check-UserLogin(
 Logs out a user from a remote FPGA system.
 
 .EXAMPLE
-Logout-User -pc 'DH6' -user 'atiru'
+1. Log out all users from a specific PC :- kickuser -pc 'DH3' -user 'all'
+2. Log out a specific user (v-ybertuskag) from a specific PC (DH3):- kickuser -pc 'DH3' -user 'v-ybertuskag'
+3. Log out a specific user from all PCs : kickuser -pc 'all' -user 'v-ybertuskag'
 #>
 Function Logout-User(
     [Parameter(Mandatory=$false)] [string] $pc = "all",
     [Parameter(Mandatory=$true)] [string] $user
 )
 {
-    if ($pc -ne "all") {
-
+    if ($user -eq "all") {
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-        Write-Host -ForegroundColor Blue "Logging out user $user from system RDU-120015-$pc"
-        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-
-        $sessionId = ((query user /SERVER:RDU-120015-$pc | Where-Object { $_ -match $user }) -split ' +')[2]
-        if ($sessionId -eq $null) {
-            Write-Host -ForegroundColor Red "User $user is not logged in on system RDU-120015-$pc"
-            return
-        }
-
-        logoff $sessionId /SERVER:RDU-120015-$pc
-        Write-Host -ForegroundColor Blue "User $user logged out from system RDU-120015-$pc"
-
-    } else {
-        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-        Write-Host -ForegroundColor Blue "Logging out user $user from all systems"
+        Write-Host -ForegroundColor Blue "Logging out all users from system(s)"
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
         
-        foreach($System in $SystemList) {
-            $PCName = $System."PC Name"
-            Write-Host -ForegroundColor Blue "Logging out user $user from system RDU-120015-$PCName"
-            $sessionId = ((query user /SERVER:RDU-120015-$PCName | Where-Object { $_ -match $user }) -split ' +')[2]
-            if ($sessionId -eq $null) {
-                Write-Host -ForegroundColor Red "User $user is not logged in on system RDU-120015-$PCName"
-            } else {
-                logoff $sessionId /SERVER:RDU-120015-$PCName
-                Write-Host -ForegroundColor Blue "User $user logged out from system RDU-120015-$PCName"
+        if ($pc -eq "all") {
+            foreach($System in $SystemList) {
+                $PCName = $System."PC Name"
+                Write-Host -ForegroundColor Blue "Logging out users from system $Global:RDUPrefix-$PCName"
+                $users = query user /SERVER:$Global:RDUPrefix-$PCName
+                
+                # Capture both "Active" and "Disc" users (Disc refers to Disconnected)
+                $userSessions = $users | Where-Object { $_ -match 'Active|Disc' }
+
+                foreach ($userSession in $userSessions) {
+                    # Extracting the user name and session ID properly
+                    $fields = $userSession -split '\s+'
+                    $sessionId = $fields[2]  # Session ID is the third field
+
+                    if ($sessionId -ne $null -and $sessionId -ne "") {
+                        Write-Host -ForegroundColor Blue "Logging out user with Session ID: $sessionId from system $Global:RDUPrefix-$PCName"
+                        logoff $sessionId /SERVER:$Global:RDUPrefix-$PCName
+                        Write-Host -ForegroundColor Blue "User with Session ID: $sessionId logged out from system $Global:RDUPrefix-$PCName"
+                    } else {
+                        Write-Host -ForegroundColor Red "Failed to identify  Session ID on system $PCName"
+                    }
+                }
+            }
+        } else {
+            # If a specific PC is selected
+            Write-Host -ForegroundColor Blue "Logging out all users from system $Global:RDUPrefix-$pc"
+            $users = query user /SERVER:$Global:RDUPrefix-$pc
+            # Capture both "Active" and "Disc" users (Correctly parse the output)
+            $userSessions = $users | Where-Object { $_ -match 'Active|Disc' }
+
+            foreach ($userSession in $userSessions) {
+                # Extracting the user name and session ID properly
+                $fields = $userSession -split '\s+'
+                $sessionId = $fields[2]  # Session ID is the third field
+
+                if ($sessionId -ne $null -and $sessionId -ne "") {
+                    Write-Host -ForegroundColor Blue "Logging out Session ID: $sessionId from system $Global:RDUPrefix-$pc"
+                    logoff $sessionId /SERVER:$Global:RDUPrefix-$pc
+                    Write-Host -ForegroundColor Blue "User with Session ID: $sessionId is logged out from system $Global:RDUPrefix-$pc"
+                } else {
+                    Write-Host -ForegroundColor Red "Failed to identify session ID on system $pc"
+                }
             }
         }
-        
+    } else {
+        # If a specific user is passed, log out that user on the specific or all systems
+        if ($pc -ne "all") {
+            Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+            Write-Host -ForegroundColor Blue "Logging out user $user from system $Global:RDUPrefix-$pc"
+            Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+
+            $sessionId = ((query user /SERVER:$Global:RDUPrefix-$pc | Where-Object { $_ -match $user }) -split ' +')[2]
+            if ($sessionId -eq $null -or $sessionId -eq "") {
+                Write-Host -ForegroundColor Red "User $user is not logged in on system $Global:RDUPrefix-$pc"
+                return
+            }
+
+            logoff $sessionId /SERVER:$Global:RDUPrefix-$pc
+            Write-Host -ForegroundColor Blue "User $user logged out from system $Global:RDUPrefix-$pc"
+        } else {
+            Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+            Write-Host -ForegroundColor Blue "Logging out user $user from all systems"
+            Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
+
+            foreach($System in $SystemList) {
+                $PCName = $System."PC Name"
+                Write-Host -ForegroundColor Blue "Logging out user $user from system $Global:RDUPrefix-$PCName"
+                $sessionId = ((query user /SERVER:$Global:RDUPrefix-$PCName | Where-Object { $_ -match $user }) -split ' +')[2]
+                if ($sessionId -eq $null -or $sessionId -eq "") {
+                    Write-Host -ForegroundColor Red "User $user is not logged in on system $Global:RDUPrefix-$PCName"
+                } else { 	
+                    logoff $sessionId /SERVER:$Global:RDUPrefix-$PCName
+                    Write-Host -ForegroundColor Blue "User $user logged out from system $Global:RDUPrefix-$PCName"
+                }
+            }
+        }
     }
     Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
 }

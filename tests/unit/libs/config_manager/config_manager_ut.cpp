@@ -313,9 +313,9 @@ TEST_FUNCTION(test_cfg_mgr_init_override_die1, rmss_memory_map_setup, nullptr)
 TEST_FUNCTION(test_update_knob_in_cached_db_cb, nullptr, nullptr)
 {
 #if defined(SCP_RUNTIME_INIT)
-    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
 #elif defined(MCP_RUNTIME_INIT)
-    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return_always(__wrap_idsw_get_cpu_type, CPU_MCP);
 #endif
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_is_hsp_present, true);
@@ -337,9 +337,9 @@ TEST_FUNCTION(test_update_knob_in_cached_db_cb, nullptr, nullptr)
 TEST_FUNCTION(test_update_knob_data, nullptr, nullptr)
 {
 #if defined(SCP_RUNTIME_INIT)
-    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
 #elif defined(MCP_RUNTIME_INIT)
-    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return_always(__wrap_idsw_get_cpu_type, CPU_MCP);
 #endif
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_system_info_is_hsp_present, true);

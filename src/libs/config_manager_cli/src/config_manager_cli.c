@@ -13,6 +13,8 @@
 #include <FpFwUtils.h>
 #include <config_manager.h>
 #include <config_manager_cli.h>
+#include <idsw.h>
+#include <idsw_kng.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -223,8 +225,19 @@ static FPFW_CLI_STATUS cfg_mgr_set_knob_cli(int argc, const char** argv)
 
     if (!result)
     {
-        FpFwCliPrint("Knob update into HSP get failed as HSP not present\n");
-        FpFwCliPrint("Knob update data will not be permanent\n");
+        if (idsw_get_cpu_type() != CPU_SCP || idsw_get_die_id() != DIE_0)
+        {
+            FpFwCliPrint("Override Knob only allowed on SCP, Primary Die, Current CPU %d, DIE%d\n",
+                         idsw_get_cpu_type(),
+                         idsw_get_die_id());
+        }
+        else
+        {
+            FpFwCliPrint("Knob update into HSP get failed as HSP not present\n");
+            FpFwCliPrint("Knob update data will not be permanent\n");
+        }
+
+        return CLI_ERROR;
     }
 
     FpFwCliPrint("--New knob data dump\n");

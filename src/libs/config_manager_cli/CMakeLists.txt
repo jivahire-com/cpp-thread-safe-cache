@@ -13,6 +13,9 @@ target_include_directories(${TARGET}
 target_link_libraries(
     ${TARGET}
         PRIVATE
+            silibs::idhw
+            silibs::idsw
+            silibs::idsw_kng
             fwlib.service.cli
             fwlib.lib.assert
             fwlib.lib.utils

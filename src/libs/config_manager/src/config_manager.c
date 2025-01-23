@@ -165,6 +165,12 @@ bool update_knob_data(cached_knob_data_t* current_entry, const uint8_t* data, si
         return false;
     }
 
+    // check this is primary scp. If not, return false
+    if (idsw_get_cpu_type() != CPU_SCP || idsw_get_die_id() != DIE_0)
+    {
+        return false;
+    }
+
     FPFwSpinLockAcquire(&lock);
     memcpy(current_entry->data, data, data_size);
     current_entry->overridden = true;

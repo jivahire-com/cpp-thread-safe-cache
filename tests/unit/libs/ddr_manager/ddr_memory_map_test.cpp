@@ -12,8 +12,11 @@
 #include <cstddef>         // IWYU pragma: keep
 #include <cstdint>         // IWYU pragma: keep
 #include <ddrss_lib.h>
+#include <fpfw_cfg_mgr.h>
 extern "C" {
-#include "ddr_memory_map.h"              // for ddrss_get_memory_map
+#include "ddr_manager_i.h"  // for ddr_create_memory_map
+#include "ddr_memory_map.h" // for ddrss_get_memory_map
+#include "ddr_mocks.h"
 #include "memory_map/ddrss_region_def.h" // for PAS_ROOT, PAS_SECURE, AVAILABLE_SYSMEM
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -21,6 +24,7 @@ extern "C" {
 #define MAX_REGIONS        12
 #define RSVD_REGIONS_COUNT (sizeof(unsort_regions) / sizeof(ddrss_memory_region_t))
 
+extern ddrss_memory_region_t _dram_rsvd_regions[];
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -67,6 +71,14 @@ static ddrss_memory_region_t ddr_test_map[] = {
     {
         .start_address = 0x8400000000U,
         .end_address = 0xB000000000U,
+        .attr =
+            {
+                .as_uint32 = PAS_ROOT | AVAILABLE_SYSMEM,
+            },
+    },
+    {
+        .start_address = 0x20000000000U,
+        .end_address = 0xF0000000000U,
         .attr =
             {
                 .as_uint32 = PAS_ROOT | AVAILABLE_SYSMEM,
@@ -176,8 +188,9 @@ static ddrss_sys_mem_region_t ddrss_sys_test_map = {
             ddr_test_map[2],
             ddr_test_map[3],
             ddr_test_map[4],
+            ddr_test_map[5],
         },
-    .num_regions = 5,
+    .num_regions = 6,
 };
 
 // (I=incoming range, R=Reserved range, OI=Expected output- incoming, OR=Expected output - reserved)
@@ -347,7 +360,17 @@ TEST_FUNCTION(test_ddrss_get_memory_map, NULL, NULL)
     ddrss_sys_mem_region_t all_mem = {{}, 0};
     const ddrss_sys_mem_region_t* pAllMemRegions = &all_mem;
 
+    will_return(__wrap_ddrss_get_system_mem_region, &ddrss_sys_test_map);
+
     ddrss_get_memory_map(&pAllMemRegions);
+}
+
+TEST_FUNCTION(test_ddr_create_memory_map_no_borgens, NULL, NULL)
+{
+    will_return(__wrap_config_get_borgens_1gb_ddr_reserve_enable, true);
+    will_return(__wrap_ddrss_get_system_mem_region, &ddrss_sys_test_map);
+
+    ddr_create_memory_map();
 }
 
 TEST_FUNCTION(test_sort_reserved_regions, NULL, NULL)
@@ -482,10 +505,15 @@ TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
     assert_int_equal(result_map_64[8].attr.available_sysmem, 1);
     assert_int_equal(result_map_64[8].attr.as_uint32 & 0xf, PAS_ROOT);
 
-    assert_int_equal(result_map_64[9].start_address, 0);
-    assert_int_equal(result_map_64[9].end_address, 0);
-    assert_int_equal(result_map_64[9].attr.available_sysmem, 0);
-    assert_int_equal(result_map_64[9].attr.as_uint32 & 0xf, 0);
+    assert_int_equal(result_map_64[9].start_address, 0x20000000000);
+    assert_int_equal(result_map_64[9].end_address, 0xF0000000000);
+    assert_int_equal(result_map_64[9].attr.available_sysmem, 1);
+    assert_int_equal(result_map_64[9].attr.as_uint32 & 0xf, PAS_ROOT);
+
+    assert_int_equal(result_map_64[10].start_address, 0);
+    assert_int_equal(result_map_64[10].end_address, 0);
+    assert_int_equal(result_map_64[10].attr.available_sysmem, 0);
+    assert_int_equal(result_map_64[10].attr.as_uint32 & 0xf, 0);
 
     /**** Test 3 - test_map_reservations_noncontiguous_non_aligned ****/
     ddrmap_add_reservations((*test_map).mem_regions, test_map_reservations_noncontiguous_non_aligned, result_map_64);
@@ -537,10 +565,15 @@ TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
     assert_int_equal(result_map_64[8].attr.as_uint32 & 0xf, PAS_ROOT);
     // ------------------------------------------------------------
 
-    assert_int_equal(result_map_64[9].start_address, 0);
-    assert_int_equal(result_map_64[9].end_address, 0);
-    assert_int_equal(result_map_64[9].attr.available_sysmem, 0);
-    assert_int_equal(result_map_64[9].attr.as_uint32 & 0xf, 0);
+    assert_int_equal(result_map_64[9].start_address, 0x20000000000);
+    assert_int_equal(result_map_64[9].end_address, 0xF0000000000);
+    assert_int_equal(result_map_64[9].attr.available_sysmem, 1);
+    assert_int_equal(result_map_64[9].attr.as_uint32 & 0xf, PAS_ROOT);
+
+    assert_int_equal(result_map_64[10].start_address, 0);
+    assert_int_equal(result_map_64[10].end_address, 0);
+    assert_int_equal(result_map_64[10].attr.available_sysmem, 0);
+    assert_int_equal(result_map_64[10].attr.as_uint32 & 0xf, 0);
 
     /**** test_map_reservations_starts_ends_out_of_range ****/
     ddrmap_add_reservations((*test_map).mem_regions, test_map_reservations_starts_ends_out_of_range, result_map_64);
@@ -583,10 +616,15 @@ TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
     assert_int_equal(result_map_64[4].attr.available_sysmem, 1);
     assert_int_equal(result_map_64[4].attr.as_uint32 & 0xf, PAS_ROOT);
 
-    assert_int_equal(result_map_64[5].start_address, 0);
-    assert_int_equal(result_map_64[5].end_address, 0);
-    assert_int_equal(result_map_64[5].attr.available_sysmem, 0);
-    assert_int_equal(result_map_64[5].attr.as_uint32 & 0xf, 0);
+    assert_int_equal(result_map_64[5].start_address, 0x20000000000);
+    assert_int_equal(result_map_64[5].end_address, 0xF0000000000);
+    assert_int_equal(result_map_64[5].attr.available_sysmem, 1);
+    assert_int_equal(result_map_64[5].attr.as_uint32 & 0xf, PAS_ROOT);
+
+    assert_int_equal(result_map_64[6].start_address, 0);
+    assert_int_equal(result_map_64[6].end_address, 0);
+    assert_int_equal(result_map_64[6].attr.available_sysmem, 0);
+    assert_int_equal(result_map_64[6].attr.as_uint32 & 0xf, 0);
 
     /**** test_map_reservations_verify_security_flag_per_requirement ****/
     ddrmap_add_reservations((*test_map).mem_regions, test_map_reservations_verify_security_flag_per_requirement, result_map_64);
@@ -628,3 +666,10 @@ TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
     assert_int_equal(result_map_64[6].attr.available_sysmem, 1);
     assert_int_equal(result_map_64[6].attr.as_uint32 & 0xf, PAS_ROOT);
 }
+
+// TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
+// {
+//     will_return(__wrap_config_get_borgens_1gb_ddr_reserve_enable, false);
+
+//     ddrss_memory_region_t result_map_64[MAX_REGIONS] = {};
+//     const ddrss_sys_mem_region_t* test_map = &ddrss_sys_test_map;

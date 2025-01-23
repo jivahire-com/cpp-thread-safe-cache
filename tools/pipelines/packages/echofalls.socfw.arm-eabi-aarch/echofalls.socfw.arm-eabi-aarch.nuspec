@@ -28,6 +28,7 @@
 
         <!-- Combined Platform Config Knobs -->
         <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\Config_Knobs\*.xml" target="Config_Knobs\" />
+        <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\start_of_borgens_range.txt" target="Config_Knobs\" />
 
     </files>
 </package>

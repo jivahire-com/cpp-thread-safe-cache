@@ -82,7 +82,8 @@ jobs:
           $destinationDir = "$(Build.SourcesDirectory)\.build\${{ parameters.Configuration }}\${{ parameters.Toolchain }}\Config_Knobs"
           New-Item -ItemType Directory -Path $destinationDir
           Copy-Item -Path .\.build\${{ parameters.Configuration }}\${{ parameters.Toolchain }}\src\externs\1pfw_fwlibs\include\*.xml -Destination $destinationDir\Kingsgate_MSCP_Platform_Config_Knobs.xml
-    
+          Copy-Item -Path .\.build\${{ parameters.Configuration }}\${{ parameters.Toolchain }}\start_of_borgens_range.txt -Destination $destinationDir\SVT_1GB_Reserved_DDR_Start_Address.txt
+
     - task: PublishSymbols@2
       displayName: Publish Symbol Files - Debug and Release
       condition: succeeded()

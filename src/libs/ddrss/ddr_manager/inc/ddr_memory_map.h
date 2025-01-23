@@ -27,6 +27,8 @@ int ddrmap_add_reservations(const ddrss_memory_region_t in_mmap[],
                             const ddrss_memory_region_t reservations[],
                             ddrss_memory_region_t out_mmap[]);
 int ddrmap_get_last_idx(const ddrss_memory_region_t ddr_mmap[]);
+uint64_t get_start_address(const ddrss_memory_region_t mmap[], int idx);
+uint64_t get_end_address(const ddrss_memory_region_t mmap[], int idx);
 void ddrss_get_memory_map(const ddrss_sys_mem_region_t **mem_regions);
 int get_mmap_size_bytes(ddrss_memory_region_t appended_mmap_64b[], size_t *num_bytes);
 /*

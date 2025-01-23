@@ -19,6 +19,7 @@
 
 #include <ErrorHandler.h> // for FPFwErrorRaise
 #include <ddr_manager_events.h>
+#include <fpfw_cfg_mgr.h>
 #include <stdio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -52,16 +53,47 @@ ddrss_memory_region_t appended_mmap_tfa[MAX_MEMORY_REGIONS] = {0};
 void ddr_create_memory_map()
 {
     const ddrss_sys_mem_region_t* all_mem_regions = NULL;
-    ddrss_memory_region_t sorted_reservations[ARRAY_OF_RSVD_REGIONS_COUNT] = {};
     int status;
+    int num_reserved_regions = ARRAY_OF_RSVD_REGIONS_COUNT;
 
+    // Check the Borgens config knob to see if we need to insert an additional 1GB reserved range
+    bool add_1gb_reservation = config_get_borgens_1gb_ddr_reserve_enable();
+
+    if (add_1gb_reservation == true)
+    {
+        DDR_LOG_WARN("Adding 1GB reserved range to DDR memory map - Borgens knob enabled");
+        num_reserved_regions += 1;
+    }
+
+    ddrss_memory_region_t sorted_reservations[num_reserved_regions] = {};
+    // Zero initialize sorted_reservations
+    for (int i = 0; i < num_reserved_regions; i++)
+    {
+        sorted_reservations[i].start_address = 0;
+        sorted_reservations[i].end_address = 0;
+        sorted_reservations[i].attr.as_uint32 = 0;
+    }
+
+    // This macro is defined in silibs/soc_fw_shared/include/memory_map/ddrss_reserved_regions.h.
+    // It will expand to something like: ddrss_memory_region_t _dram_rsvd_regions[] = { ... };
     DDR_MANAGER_ET_DEBUG(DDR_MANAGER_ET_TYPE_CREATE_MMAP);
 
     // Update ptr to memory info table from ddrss library or from static table defined in ddr_memory_map.h
     ddrss_get_memory_map(&all_mem_regions);
 
-    // Check & sort the reserved region array into ascending order before splicing with the incoming memory map.
-    sort_reserved_regions(_dram_rsvd_regions, ARRAY_OF_RSVD_REGIONS_COUNT, sorted_reservations);
+    // Check & sort the reserved region array into ascending order before splicing with the incoming memory
+    sort_reserved_regions(_dram_rsvd_regions, num_reserved_regions, sorted_reservations);
+
+    if (add_1gb_reservation == true)
+    {
+        int terminating_array_idx = ddrmap_get_last_idx(sorted_reservations);
+        const uint64_t ONE_GB = 0x40000000;
+        uint64_t start_of_1gb_reservation = get_end_address(sorted_reservations, terminating_array_idx - 1);
+        uint64_t end_of_1gb_reservation = start_of_1gb_reservation + ONE_GB;
+
+        insert_range(sorted_reservations, terminating_array_idx, start_of_1gb_reservation, end_of_1gb_reservation, NOT_AVAILABLE_SYSMEM, DRAM_ACCESS_ANY);
+        insert_range(sorted_reservations, terminating_array_idx + 1, 0, 0, NOT_AVAILABLE_SYSMEM, DRAM_ACCESS_ANY);
+    }
 
     status = check_reservation_order(sorted_reservations);
     if (status != SILIBS_SUCCESS)
@@ -69,6 +101,7 @@ void ddr_create_memory_map()
         DDR_LOG_CRIT("Error checking memory reservations order");
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
+
     // Add reserved regions
     // Walk the memory regions and insert reserved ranges.  Returns populated memory map as 3rd parameter
     if (ddrmap_add_reservations((*all_mem_regions).mem_regions, sorted_reservations, appended_mmap_tfa) != SILIBS_SUCCESS)
@@ -353,13 +386,13 @@ void insert_range(ddrss_memory_region_t mmap[], int idx, uint64_t start, uint64_
 };
 
 /**
- *  Get array index of last non-zero record in a ddrss_memory_region_t array
+ *  Get array index of last record in a ddrss_memory_region_t array - which should be all 0
  *      Helper function for helper functions
  *  @param
  *      IN  - Pointer to array of ddrss_memory_region_t structs
  *            The intention is that this is used as a helper for managing the reserved memory ranges
  *  @return
- *      int  Index of last valid ddrss_memory_region_t in the passed-in memory map
+ *      int  Index of last element in the array (start == end == 0)
  */
 int ddrmap_get_last_idx(const ddrss_memory_region_t ddr_mmap[])
 {
@@ -376,6 +409,32 @@ int ddrmap_get_last_idx(const ddrss_memory_region_t ddr_mmap[])
     DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_RESERVED_ADDRESS_RANGE_NOT_TERMINATED, ET_NOPARAM);
     DDR_LOG_CRIT("Error - Reserved DDR address range is not terminated by an empty record");
     return SILIBS_E_DATA;
+}
+
+/**
+ *  Get start address of a memory map
+ *  @param
+ *     IN  - Pointer to array of ddrss_memory_region_t structs
+ *     IN  - Index of the memory region
+ * @return
+ *    uint64_t  Start address of the memory region
+ */
+uint64_t get_start_address(const ddrss_memory_region_t mmap[], int idx)
+{
+    return mmap[idx].start_address;
+}
+
+/**
+ *  Get end address of a memory map
+ *  @param
+ *     IN  - Pointer to array of ddrss_memory_region_t structs
+ *     IN  - Index of the memory region
+ * @return
+ *    uint64_t  End address of the memory region
+ */
+uint64_t get_end_address(const ddrss_memory_region_t mmap[], int idx)
+{
+    return mmap[idx].end_address;
 }
 
 /**
@@ -425,19 +484,27 @@ void show_map(const ddrss_memory_region_t this_mmap[], int idx, bool show_all)
     {
         for (int i = 0; i < idx; i++)
         {
-            DEBUG_PRINT("[DDR] Region: %d \n", i);
-            DEBUG_PRINT("[DDR] \tstart: 0x%lX \n", (uintptr_t)this_mmap[i].start_address);
-            DEBUG_PRINT("[DDR] \tend:   0x%lX \n", (uintptr_t)this_mmap[i].end_address);
-            DEBUG_PRINT("[DDR] \tflags.available_sysmem:     %d \n", (int)this_mmap[i].attr.available_sysmem);
-            DEBUG_PRINT("[DDR] \tflags.pas_mask:   0x%x \n", (int)this_mmap[i].attr.as_uint32 & 0xf);
+            printf("[DDR] Region: %d \n", i);
+            printf("[DDR] \tstart: 0x%08lX%08lX \n",
+                   (unsigned long)(this_mmap[i].start_address >> 32),
+                   (unsigned long)(this_mmap[i].start_address & 0xFFFFFFFF));
+            printf("[DDR] \tend:   0x%08lX%08lX \n",
+                   (unsigned long)(this_mmap[i].end_address >> 32),
+                   (unsigned long)(this_mmap[i].end_address & 0xFFFFFFFF));
+            printf("[DDR] \tflags.available_sysmem:     %d \n", (int)this_mmap[i].attr.available_sysmem);
+            printf("[DDR] \tflags.pas_mask:           0x%X \n", (int)this_mmap[i].attr.as_uint32 & 0xf);
         }
     }
     else
     {
-        DEBUG_PRINT("[DDR] Region: %d \n", idx);
-        DEBUG_PRINT("[DDR] \tstart: 0x%lX \n", (uintptr_t)this_mmap[idx].start_address);
-        DEBUG_PRINT("[DDR] \tend:   0x%lX \n", (uintptr_t)this_mmap[idx].end_address);
-        DEBUG_PRINT("[DDR] \tflags.available_sysmem:     %d \n", (int)this_mmap[idx].attr.available_sysmem);
-        DEBUG_PRINT("[DDR] \tflags.pas_mask:   0x%x \n", (int)this_mmap[idx].attr.as_uint32 & 0xf);
+        printf("[DDR] Region: %d \n", idx);
+        printf("[DDR] \tstart: 0x%08lX%08lX \n",
+               (unsigned long)(this_mmap[idx].start_address >> 32),
+               (unsigned long)(this_mmap[idx].start_address & 0xFFFFFFFF));
+        printf("[DDR] \tend:   0x%08lX%08lX \n",
+               (unsigned long)(this_mmap[idx].end_address >> 32),
+               (unsigned long)(this_mmap[idx].end_address & 0xFFFFFFFF));
+        printf("[DDR] \tflags.available_sysmem:     %d \n", (int)this_mmap[idx].attr.available_sysmem);
+        printf("[DDR] \tflags.pas_mask:           0x%X \n", (int)this_mmap[idx].attr.as_uint32 & 0xf);
     }
 }

@@ -58,4 +58,24 @@ lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})
 
+###### Extract all starting/ending reserved ranges to a separate file #######
+# Define the path to the .h file
+set(HEADER_FILE_PATH "${REPO_ROOT_DIR}/.externs/repo/silibs/soc_fw_shared/include/memory_map/ddrss_reserved_regions.h")
+
+# Read the contents of the .h file
+file(READ ${HEADER_FILE_PATH} HEADER_CONTENTS)
+
+# Apply the regex to extract the last instance of *_RESERVATION_END 0xHEXNUMBER
+string(REGEX MATCHALL "(_RESERVATION_END 0x[0-9A-Fa-f]+)" MATCHES ${HEADER_CONTENTS})
+
+# Get the last match from the list of matches
+list(GET MATCHES -1 LAST_RESERVATION_END)
+
+# Strip "_RESERVATION_END " from the front
+string(REGEX REPLACE "_RESERVATION_END " "" LAST_RESERVATION_END ${LAST_RESERVATION_END})
+
+# Write the results to a file in the build directory
+file(WRITE "${CMAKE_BINARY_DIR}/start_of_borgens_range.txt" "${LAST_RESERVATION_END}")
+#############################################################################
+
 add_library(ms::lib::ddr_manager ALIAS ${TARGET})

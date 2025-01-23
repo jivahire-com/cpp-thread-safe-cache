@@ -18,6 +18,7 @@ set(LIBS
         ms::lib::hsp_firmware_headers
         ms::lib::threadx
         ms::mocks::threadx
+        ms::lib::config_manager
         ms::lib::stdio_textio
         ms::driver::textio::pl011
         silibs::ddr_i3c
@@ -57,9 +58,11 @@ mock_target(${TARGET}
     _txe_queue_send
     _txe_queue_receive
     _txe_timer_create
+    config_get_borgens_1gb_ddr_reserve_enable
     ddr_i3c_interface_read_temp_sensor_mr_reg
     ddr_i3c_interface_get_instance
     ddr_manager_platform_is_polling_supported
+    ddrss_get_system_mem_region
     fpfw_icc_base_send_recv_sync
     idhw_get_die_id
     idsw_get_platform_sdv

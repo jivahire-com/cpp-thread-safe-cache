@@ -71,4 +71,15 @@ void __wrap_prod_ddrss_lib_init(KNG_DIE_ID die_num)
     FPFW_UNUSED(die_num);
     return;
 }
+
+bool __wrap_config_get_borgens_1gb_ddr_reserve_enable()
+{
+    return mock_type(bool);
+}
+
+const ddrss_sys_mem_region_t* __wrap_ddrss_get_system_mem_region(void)
+{
+    return mock_type(const ddrss_sys_mem_region_t*);
+}
+
 } // extern "C"

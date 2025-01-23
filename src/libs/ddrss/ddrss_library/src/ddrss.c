@@ -21,6 +21,7 @@
 #include <idhw.h> // for idhw_is_single_die_boot_en
 #include <idsw_kng.h>
 #include <interrupts.h>
+#include <memory_map/mscp_exp_rmss_memory_map.h>
 #include <pcr_ddrss.h>
 #include <silibs_ap_top_regs.h>
 #include <stdint.h>
@@ -144,6 +145,12 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
 
         ddrss_cfgs.dimm_sku = DDR5_RDIMM_2Rx4_16Gb_64GB;
         ddrss_cfgs.ext_knobs.ddr_speed_grade = config_get_ddr_speed_grade();
+        
+        // DDR Phy FW Load info
+        ddrss_cfgs.phy_type = DDRSS_PHY_TYPE_REAL;
+        ddrss_cfgs.phy_fw_type = DDRSS_PHY_FW_TRAINING;
+        ddrss_cfgs.phy_fw_img_info.fimg_base = SCP_EXP_DDR_PHY_DATA_BASE;
+        ddrss_cfgs.phy_fw_img_info.fimg_check = 1;
     }
     else
     {

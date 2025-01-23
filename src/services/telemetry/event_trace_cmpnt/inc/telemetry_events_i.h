@@ -125,6 +125,16 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      DIMMInfoInvalidDimmId,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                     27,
+                     DataPackagePWRrecordError,
+                     FPFW_ET_LEVEL_ERROR,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, element_id))
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                     28,
+                     DataPackageInstRecordError,
+                     FPFW_ET_LEVEL_ERROR,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, element_id))
 
 
 /*--------- Function Prototypes ----------*/

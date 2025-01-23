@@ -17,9 +17,19 @@ extern "C" {
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <data_proc_tlm_cmpnt.h>
+#include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdint.h>              // for uint32_t, uint64_t, int32_t
+#include <string.h>              // for memcmp
 #include <tlm_logger_i.h>
+}
+
+/*-- Symbolic Constant Macros (defines) --*/
+extern "C" {
+extern core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
+extern tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
+extern soc_runtime_info_t soc_info;
+extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -38,7 +48,6 @@ static int test_setup(void** pContext)
     FPFW_UNUSED(pContext);
     return 0;
 }
-
 static int test_teardown(void** pContext)
 {
     FPFW_UNUSED(pContext);
@@ -51,10 +60,52 @@ static int test_teardown(void** pContext)
 
 TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     pwr_core_element_pstate_t pstate_array[NUMBER_OF_PSTATES] = {{0}};
+    uint8_t avg_power = 30;
+    for (uint16_t pstate_index = 0; pstate_index < NUMBER_OF_PSTATES; pstate_index++)
+    {
+        core[TEST_CORE_ID_5].pstate[pstate_index].pstate_id = pstate_index;
+        core[TEST_CORE_ID_5].pstate[pstate_index].avg_power_mW = avg_power;
+        core[TEST_CORE_ID_5].pstate[pstate_index].max_power_mW = 40;
+        core[TEST_CORE_ID_5].pstate[pstate_index].min_power_mW = 10;
+        core[TEST_CORE_ID_5].pstate[pstate_index].frequency_Mhz = 150;
+        core[TEST_CORE_ID_5].pstate[pstate_index].residency_mS = 10;
+        core[TEST_CORE_ID_5].pstate[pstate_index].entry_count = 10;
+        // increment avg power for every pstate by 1
+        avg_power++;
+    }
     data_proc_tlm_cmpnt_get_pwr_core_pstate_data(TEST_CORE_ID_5, &pstate_array);
+    // check for valid data into full pstate_array .
+    // Every core will have NUMBER_OF_PSTATES, and each pstate elemenet have , it's own data
+    for (uint16_t pstate_index = 0; pstate_index < NUMBER_OF_PSTATES; pstate_index++)
+    {
+        assert_int_equal(pstate_array[pstate_index].pstate_id, core[TEST_CORE_ID_5].pstate[pstate_index].pstate_id);
+        assert_int_equal(pstate_array[pstate_index].avg_power_mW, core[TEST_CORE_ID_5].pstate[pstate_index].avg_power_mW);
+        assert_int_equal(pstate_array[pstate_index].min_power_mW, core[TEST_CORE_ID_5].pstate[pstate_index].min_power_mW);
+        assert_int_equal(pstate_array[pstate_index].max_power_mW, core[TEST_CORE_ID_5].pstate[pstate_index].max_power_mW);
+        assert_int_equal(pstate_array[pstate_index].frequency_Mhz, core[TEST_CORE_ID_5].pstate[pstate_index].frequency_Mhz);
+        assert_int_equal(pstate_array[pstate_index].residency_mS, core[TEST_CORE_ID_5].pstate[pstate_index].residency_mS);
+        assert_int_equal(pstate_array[pstate_index].entry_count, core[TEST_CORE_ID_5].pstate[pstate_index].entry_count);
+    }
+    // setup for failure case, change pstate 0 element data.
+    uint8_t index = 0;
+    core[TEST_CORE_ID_5].pstate[index].pstate_id = 0;
+    core[TEST_CORE_ID_5].pstate[index].avg_power_mW = 41;
+    core[TEST_CORE_ID_5].pstate[index].max_power_mW = 50;
+    core[TEST_CORE_ID_5].pstate[index].min_power_mW = 15;
+    core[TEST_CORE_ID_5].pstate[index].frequency_Mhz = 155;
+    core[TEST_CORE_ID_5].pstate[index].residency_mS = 15;
+    core[TEST_CORE_ID_5].pstate[index].entry_count = 20;
+    data_proc_tlm_cmpnt_get_pwr_core_pstate_data(NUMBER_OF_CORES_PER_DIE, &pstate_array);
+
+    // verify for pstate 0
+    assert_int_equal(pstate_array[index].pstate_id, core[TEST_CORE_ID_5].pstate[index].pstate_id);
+    assert_int_not_equal(pstate_array[index].avg_power_mW, core[TEST_CORE_ID_5].pstate[index].avg_power_mW);
+    assert_int_not_equal(pstate_array[index].min_power_mW, core[TEST_CORE_ID_5].pstate[index].min_power_mW);
+    assert_int_not_equal(pstate_array[index].max_power_mW, core[TEST_CORE_ID_5].pstate[index].max_power_mW);
+    assert_int_not_equal(pstate_array[index].frequency_Mhz, core[TEST_CORE_ID_5].pstate[index].frequency_Mhz);
+    assert_int_not_equal(pstate_array[index].residency_mS, core[TEST_CORE_ID_5].pstate[index].residency_mS);
+    assert_int_not_equal(pstate_array[index].entry_count, core[TEST_CORE_ID_5].pstate[index].entry_count);
 }
 
 TEST_FUNCTION(test_get_pwr_core_cstate_data, test_setup, test_teardown)
@@ -67,42 +118,222 @@ TEST_FUNCTION(test_get_pwr_core_cstate_data, test_setup, test_teardown)
 
 TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     pwr_core_element_throttle_t throttle_array[NUMBER_OF_THROTTLE_TYPES] = {{0}};
+    uint8_t throttle_index = 0;
+    for (throttle_index = 0; throttle_index < NUMBER_OF_THROTTLE_TYPES; throttle_index++)
+    {
+        core[TEST_CORE_ID_5].throttle_info[throttle_index].avg_pstate = 5;
+        core[TEST_CORE_ID_5].throttle_info[throttle_index].entry_count = 10;
+        core[TEST_CORE_ID_5].throttle_info[throttle_index].exit_count = 10;
+        core[TEST_CORE_ID_5].throttle_info[throttle_index].max_pstate = 26;
+        core[TEST_CORE_ID_5].throttle_info[throttle_index].reserved = 0;
+        core[TEST_CORE_ID_5].throttle_info[throttle_index].residency_mS = 100;
+        core[TEST_CORE_ID_5].throttle_info[throttle_index].type_id = THROTTLE_SOURCE_TEMPERATURE;
+    }
     data_proc_tlm_cmpnt_get_pwr_core_throttle_data(TEST_CORE_ID_5, &throttle_array);
+    for (throttle_index = 0; throttle_index < NUMBER_OF_THROTTLE_TYPES; throttle_index++)
+    {
+        assert_int_equal(throttle_array[throttle_index].avg_pstate,
+                         core[TEST_CORE_ID_5].throttle_info[throttle_index].avg_pstate);
+        assert_int_equal(throttle_array[throttle_index].entry_count,
+                         core[TEST_CORE_ID_5].throttle_info[throttle_index].entry_count);
+        assert_int_equal(throttle_array[throttle_index].exit_count,
+                         core[TEST_CORE_ID_5].throttle_info[throttle_index].exit_count);
+        assert_int_equal(throttle_array[throttle_index].max_pstate,
+                         core[TEST_CORE_ID_5].throttle_info[throttle_index].max_pstate);
+        assert_int_equal(throttle_array[throttle_index].reserved,
+                         core[TEST_CORE_ID_5].throttle_info[throttle_index].reserved);
+        assert_int_equal(throttle_array[throttle_index].residency_mS,
+                         core[TEST_CORE_ID_5].throttle_info[throttle_index].residency_mS);
+        assert_int_equal(throttle_array[throttle_index].type_id,
+                         core[TEST_CORE_ID_5].throttle_info[throttle_index].type_id);
+    }
+
+    // setup for failure case.
+    uint8_t index = 0; // test for one of the throttle type.
+    core[TEST_CORE_ID_5].throttle_info[index].avg_pstate = 6;
+    core[TEST_CORE_ID_5].throttle_info[index].entry_count = 12;
+    core[TEST_CORE_ID_5].throttle_info[index].exit_count = 12;
+    core[TEST_CORE_ID_5].throttle_info[index].max_pstate = 28;
+    core[TEST_CORE_ID_5].throttle_info[index].reserved = 0;
+    core[TEST_CORE_ID_5].throttle_info[index].residency_mS = 110;
+    core[TEST_CORE_ID_5].throttle_info[index].type_id = THROTTLE_SOURCE_TEMPERATURE;
+    data_proc_tlm_cmpnt_get_pwr_core_throttle_data(NUMBER_OF_CORES_PER_DIE, &throttle_array);
+
+    throttle_index = 0;
+
+    assert_int_not_equal(throttle_array[throttle_index].avg_pstate,
+                         core[TEST_CORE_ID_5].throttle_info[throttle_index].avg_pstate);
+    assert_int_not_equal(throttle_array[throttle_index].entry_count,
+                         core[TEST_CORE_ID_5].throttle_info[throttle_index].entry_count);
+    assert_int_not_equal(throttle_array[throttle_index].exit_count,
+                         core[TEST_CORE_ID_5].throttle_info[throttle_index].exit_count);
+    assert_int_not_equal(throttle_array[throttle_index].max_pstate,
+                         core[TEST_CORE_ID_5].throttle_info[throttle_index].max_pstate);
+    assert_int_equal(throttle_array[throttle_index].reserved,
+                     core[TEST_CORE_ID_5].throttle_info[throttle_index].reserved);
+    assert_int_not_equal(throttle_array[throttle_index].residency_mS,
+                         core[TEST_CORE_ID_5].throttle_info[throttle_index].residency_mS);
+    assert_int_equal(throttle_array[throttle_index].type_id,
+                     core[TEST_CORE_ID_5].throttle_info[throttle_index].type_id);
 }
 
 TEST_FUNCTION(test_get_pwr_core_rack_priority_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     pwr_core_element_rack_priorities_t rack_priority_array[NUMBER_OF_RACK_PRIORITIES] = {{0}};
+    uint8_t rack_index = 0;
+    // test setup
+    // Throttling Priorities are only for the Rack Throttling type and Rack Priorities are
+    // only populated when the throttling type is the Rack Throttling.
+    for (rack_index = 0; rack_index < NUMBER_OF_RACK_PRIORITIES; rack_index++)
+    {
+        // ID representing the Priority, there are 8 Priority Levels (0 to 7)
+        core[TEST_CORE_ID_5].priorities[rack_index].priority_id = rack_index;
+        core[TEST_CORE_ID_5].priorities[rack_index].avg_pstate = 5;
+        core[TEST_CORE_ID_5].priorities[rack_index].entry_count = 1;
+        core[TEST_CORE_ID_5].priorities[rack_index].exit_count = 0;
+        core[TEST_CORE_ID_5].priorities[rack_index].max_pstate = 28;
+        core[TEST_CORE_ID_5].priorities[rack_index].reserved = 0;
+        core[TEST_CORE_ID_5].priorities[rack_index].residency_mS = 100;
+    }
+
     data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(TEST_CORE_ID_5, &rack_priority_array);
+
+    for (rack_index = 0; rack_index < NUMBER_OF_RACK_PRIORITIES; rack_index++)
+    {
+        assert_int_equal(rack_priority_array[rack_index].priority_id,
+                         core[TEST_CORE_ID_5].priorities[rack_index].priority_id);
+        assert_int_equal(rack_priority_array[rack_index].avg_pstate,
+                         core[TEST_CORE_ID_5].priorities[rack_index].avg_pstate);
+        assert_int_equal(rack_priority_array[rack_index].entry_count,
+                         core[TEST_CORE_ID_5].priorities[rack_index].entry_count);
+        assert_int_equal(rack_priority_array[rack_index].exit_count,
+                         core[TEST_CORE_ID_5].priorities[rack_index].exit_count);
+        assert_int_equal(rack_priority_array[rack_index].max_pstate,
+                         core[TEST_CORE_ID_5].priorities[rack_index].max_pstate);
+        assert_int_equal(rack_priority_array[rack_index].reserved, core[TEST_CORE_ID_5].priorities[rack_index].reserved);
+        assert_int_equal(rack_priority_array[rack_index].residency_mS,
+                         core[TEST_CORE_ID_5].priorities[rack_index].residency_mS);
+    }
+    rack_index = 0;
+    // test for failure case .
+    // change data in core data structure for rack priority 0 only.
+    core[TEST_CORE_ID_5].priorities[rack_index].avg_pstate = 15;
+    core[TEST_CORE_ID_5].priorities[rack_index].entry_count = 2;
+    core[TEST_CORE_ID_5].priorities[rack_index].exit_count = 1;
+    core[TEST_CORE_ID_5].priorities[rack_index].max_pstate = 29;
+    core[TEST_CORE_ID_5].priorities[rack_index].reserved = 1;
+    core[TEST_CORE_ID_5].priorities[rack_index].residency_mS = 110;
+
+    data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(NUMBER_OF_CORES_PER_DIE, &rack_priority_array);
+
+    assert_int_equal(rack_priority_array[rack_index].priority_id, core[TEST_CORE_ID_5].priorities[rack_index].priority_id);
+    assert_int_not_equal(rack_priority_array[rack_index].avg_pstate,
+                         core[TEST_CORE_ID_5].priorities[rack_index].avg_pstate);
+    assert_int_not_equal(rack_priority_array[rack_index].entry_count,
+                         core[TEST_CORE_ID_5].priorities[rack_index].entry_count);
+    assert_int_not_equal(rack_priority_array[rack_index].exit_count,
+                         core[TEST_CORE_ID_5].priorities[rack_index].exit_count);
+    assert_int_not_equal(rack_priority_array[rack_index].max_pstate,
+                         core[TEST_CORE_ID_5].priorities[rack_index].max_pstate);
+    assert_int_not_equal(rack_priority_array[rack_index].reserved, core[TEST_CORE_ID_5].priorities[rack_index].reserved);
+    assert_int_not_equal(rack_priority_array[rack_index].residency_mS,
+                         core[TEST_CORE_ID_5].priorities[rack_index].residency_mS);
 }
 
 TEST_FUNCTION(test_get_pwr_core_voltage_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
-    pwr_core_element_voltage_t voltage_data = {0};
-    data_proc_tlm_cmpnt_get_pwr_core_voltage_data(TEST_CORE_ID_5, &voltage_data);
+
+    fpfw_status_t status;
+
+    // runtime information manager test
+    tile_voltage_t voltage_data = {
+        .timestamp = 0,
+        .data =
+            {
+                .vcore0 = 5,
+                .vcore1 = 6,
+                .vcpu = 10,
+                .vsys = 80,
+            },
+    };
+
+    uint8_t index = 0;
+    status = tlm_logger_log_tile_voltage(&voltage_data, index);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+
+    // Check core 0 and core 1 voltage
+    pwr_core_element_voltage_t voltage_get_data = {0};
+    data_proc_tlm_cmpnt_get_pwr_core_voltage_data(index, &voltage_get_data);
+    assert_int_equal(voltage_get_data.latest_value_mV, voltage_data.data.vcore0 * 1000);
+
+    // test index out of range
+
+    voltage_data.data.vcore0 = 6; // update voltage
+    status = tlm_logger_log_tile_voltage(&voltage_data, index);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+    // updated index to out of range: enter in fail case.
+    index = NUMBER_OF_CORES_PER_DIE;
+    data_proc_tlm_cmpnt_get_pwr_core_voltage_data(index, &voltage_get_data);
+    assert_int_not_equal(voltage_get_data.latest_value_mV, voltage_data.data.vcore0 * 1000);
 }
 
 TEST_FUNCTION(test_get_pwr_core_current_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
-    pwr_core_element_current_t current_data = {0};
-    data_proc_tlm_cmpnt_get_pwr_core_current_data(TEST_CORE_ID_5, &current_data);
+    pwr_core_element_current_t current_get_data = {0};
+
+    fpfw_status_t status;
+    core_current_t current_data = {
+        .timestamp = 3, // should not be zero for logging to move forward.
+        .data =
+            {
+                .avg = 100,
+                .min = 10,
+                .max = 150,
+                .volt = 100,
+                .pwr = 50,
+                .pstate = 12,
+                .change = 1,
+                .mpam_id_low = 0,
+                .mpam_id_high = 0,
+                .cstate = 0,
+            },
+    };
+
+    uint8_t index = 0;
+    status = tlm_logger_log_core_current(&current_data, index);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+
+    data_proc_tlm_cmpnt_get_pwr_core_current_data(index, &current_get_data);
+    // Check core 0 current
+    assert_int_equal(current_get_data.latest_value_mA, (uint16_t)(current_data.data.avg * CORE_CURRENT_CONVERSION_FACTOR));
+    assert_int_equal(current_get_data.max_mA, (uint16_t)(current_data.data.max * CORE_CURRENT_CONVERSION_FACTOR));
+    assert_int_equal(current_get_data.min_mA, (uint16_t)(current_data.data.min * CORE_CURRENT_CONVERSION_FACTOR));
+    assert_int_equal(current_get_data.average_mA, (uint16_t)(current_data.data.avg * CORE_CURRENT_CONVERSION_FACTOR));
 }
 
 TEST_FUNCTION(test_get_pwr_core_temperature_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     pwr_core_element_temperature_t temp_data = {0};
+
+    core[TEST_CORE_ID_5].temperature.latest_value_dC = 30;
+    core[TEST_CORE_ID_5].temperature.average_dC = 30;
+    core[TEST_CORE_ID_5].temperature.max_dC = 40;
+    core[TEST_CORE_ID_5].temperature.min_dC = 20;
+
     data_proc_tlm_cmpnt_get_pwr_core_temperature_data(TEST_CORE_ID_5, &temp_data);
+    // check for valid data into full temperaure array.
+    assert_int_equal(memcmp(&temp_data, &core[TEST_CORE_ID_5].temperature, sizeof(core[TEST_CORE_ID_5].temperature)), 0);
+
+    // setup for fail case .
+    core[TEST_CORE_ID_5].temperature.latest_value_dC = 0;
+    core[TEST_CORE_ID_5].temperature.average_dC = 0;
+    core[TEST_CORE_ID_5].temperature.max_dC = 0;
+    core[TEST_CORE_ID_5].temperature.min_dC = 0;
+
+    data_proc_tlm_cmpnt_get_pwr_core_temperature_data(NUMBER_OF_CORES_PER_DIE, &temp_data);
+    // check for valid data into full temperaure array.
+    assert_int_not_equal(memcmp(&temp_data, &core[TEST_CORE_ID_5].temperature, sizeof(core[TEST_CORE_ID_5].temperature)), 0);
 }
 
 TEST_FUNCTION(test_get_pwr_core_histogram_data, test_setup, test_teardown)
@@ -123,34 +354,166 @@ TEST_FUNCTION(test_get_pwr_soc_pc3_data, test_setup, test_teardown)
 
 TEST_FUNCTION(test_get_pwr_soc_vr_rail_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     pwr_soc_element_vr_rail_t vr_rail_data = {{0}};
+    vr_current_t data = {
+        .timestamp = 0,
+        .vr_current_mA = {10, 20, 30, 40, 50, 60, 70, 80},
+        .vr_voltage_mV = {1000, 900, 800, 700, 600, 700, 800, 900},
+    };
+    vr_temp_t vr_temperature = {
+        .timestamp = 0,
+        .vr_temp_dC = {15, 25, 35, 45, 55, 65, 75, 85},
+    };
+    // Baseline log for vr current and voltage
+    tlm_logger_log_vr_current(&data);
+    // Baseline log for vr temperature
+    tlm_logger_log_vr_temp(&vr_temperature);
+
     data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(TEST_RAIL_ID_2, &vr_rail_data);
+    // Check VR Current and voltage for packaging api.
+    assert_int_equal(vr_rail_data.current.latest_value_mA, (data.vr_current_mA[TEST_RAIL_ID_2]));
+    assert_int_equal(vr_rail_data.voltage.latest_value_mV, (data.vr_voltage_mV[TEST_RAIL_ID_2]));
+    assert_int_equal(vr_rail_data.temperature.latest_value_dC, (vr_temperature.vr_temp_dC[TEST_RAIL_ID_2]));
+
+    // fail case for current, voltage and temperature.
+    data.vr_current_mA[TEST_RAIL_ID_2] = 35;
+    data.vr_voltage_mV[TEST_RAIL_ID_2] = 810;
+    // Log again with new values and compare new valuse.
+    tlm_logger_log_vr_current(&data);
+    vr_temperature.vr_temp_dC[TEST_RAIL_ID_2] = 45;
+    tlm_logger_log_vr_temp(&vr_temperature);
+
+    data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(MAX_NUM_OF_VR_RAILS, &vr_rail_data);
+    assert_int_not_equal(vr_rail_data.current.latest_value_mA, (data.vr_current_mA[TEST_RAIL_ID_2]));
+    assert_int_not_equal(vr_rail_data.voltage.latest_value_mV, (data.vr_voltage_mV[TEST_RAIL_ID_2]));
+    assert_int_not_equal(vr_rail_data.temperature.latest_value_dC, (vr_temperature.vr_temp_dC[TEST_RAIL_ID_2]));
 }
 
 TEST_FUNCTION(test_get_pwr_soc_hnf_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     pwr_soc_element_hnf_t hnf_data = {0};
-    data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(TEST_HNF_CHANN_ID_1, &hnf_data);
+    fpfw_status_t status;
+    uint8_t hnf_channel_id = 0;
+    // to log the data .
+    tile_temp_t temperature_data = {
+        .timestamp = 7485463, // non -zero to run the calculation in logger.
+        .temp0 =
+            {
+                .temp_valid = 1,
+                .max_id = 7,
+                .max_temp = 80,
+                .core0 = 40,
+                .core1 = 40,
+            },
+        .temp1 =
+            {
+                .temp0 = 20,
+                .temp1 = 30,
+                .temp2 = 40,
+                .temp3 = 40,
+            },
+        .temp2 =
+            {
+                .temp4 = 30,
+                .temp5 = 20,
+                .temp6 = 40,
+                .temp7 = 80,
+            },
+    };
+
+    uint8_t index = 0;
+    status = tlm_logger_log_tile_temperature(&temperature_data, index);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+
+    // for hnf channel id 0
+    data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(hnf_channel_id, &hnf_data);
+    assert_int_equal(hnf_data.latest_value_dC, (temperature_data.temp2.temp6));
+    hnf_channel_id = TEST_HNF_CHANN_ID_1;
+    data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(hnf_channel_id, &hnf_data);
+    assert_int_equal(hnf_data.latest_value_dC, (temperature_data.temp2.temp7));
+
+    // Fail case : update hnf data from logger on previously loggged data for HNF and test via packaging api.
+    hnf_channel_id = 0;
+    temperature_data.temp2.temp6 = 60; // First HNF on the tile.
+    temperature_data.temp2.temp7 = 70; // Second HNF on the tile.
+    status = tlm_logger_log_tile_temperature(&temperature_data, hnf_channel_id);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+
+    hnf_channel_id = NUMBER_OF_HNF_CHANNELS_PER_DIE; // max range should fail to get updated data.
+    data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(hnf_channel_id, &hnf_data);
+    // last read value in hnf_data was temp7(second sensor on the tile)so compare with that.
+    assert_int_not_equal(hnf_data.latest_value_dC, (temperature_data.temp2.temp7));
+
+    // Check fail case for first sensor on tile :temp6.
+    hnf_data = {0};
+    hnf_channel_id = NUMBER_OF_HNF_CHANNELS_PER_DIE; // max range should fail to get updated data.
+    data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(hnf_channel_id, &hnf_data);
+    assert_int_not_equal(hnf_data.latest_value_dC, (temperature_data.temp2.temp7));
 }
 
 TEST_FUNCTION(test_get_pwr_soc_dimm_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     pwr_soc_element_dimm_t dimm_data = {{0}};
+    fpfw_status_t status;
+    sensor_ram_dimm_info_t dimm_info = {
+        .timestamp = 0,
+        .dimm_temp_s0_dC = 26,
+        .dimm_temp_s1_dC = 28,
+        .dimm_power_mW = 100,
+        .dimm_id = TEST_DIMM_CHANN_ID_3,
+        .dimm_throttling = 0,
+        .dimm_memory_frequency_id = 0,
+    };
+    // Baseline log
+    status = telmain_log_dimm_info(&dimm_info);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+
+    // Check DIMM information
     data_proc_tlm_cmpnt_get_pwr_soc_dimm_data(TEST_DIMM_CHANN_ID_3, &dimm_data);
+    assert_int_equal(dimm_data.s0.latest_value_dC, (dimm_info.dimm_temp_s0_dC));
+    assert_int_equal(dimm_data.s1.latest_value_dC, (dimm_info.dimm_temp_s1_dC));
+    assert_int_equal(dimm_data.dimm_power_mW, (dimm_info.dimm_power_mW));
+    assert_int_equal(dimm_data.dimm_throttling, (dimm_info.dimm_throttling));
+    assert_int_equal(dimm_data.dimm_memory_frequency_id, (dimm_info.dimm_memory_frequency_id));
+
+    // setup and test for fail case.
+    dimm_info.dimm_temp_s0_dC = 27;
+    dimm_info.dimm_temp_s1_dC = 40;
+    dimm_info.dimm_power_mW = 200;
+    dimm_info.dimm_throttling = 1;
+    dimm_info.dimm_memory_frequency_id = 100;
+
+    status = telmain_log_dimm_info(&dimm_info);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+    data_proc_tlm_cmpnt_get_pwr_soc_dimm_data(NUMBER_OF_DIMM_MODULES, &dimm_data);
+    assert_int_not_equal(dimm_data.s0.latest_value_dC, (dimm_info.dimm_temp_s0_dC));
+    assert_int_not_equal(dimm_data.s1.latest_value_dC, (dimm_info.dimm_temp_s1_dC));
+    assert_int_not_equal(dimm_data.dimm_power_mW, (dimm_info.dimm_power_mW));
+    assert_int_not_equal(dimm_data.dimm_throttling, (dimm_info.dimm_throttling));
+    assert_int_not_equal(dimm_data.dimm_memory_frequency_id, (dimm_info.dimm_memory_frequency_id));
 }
 
 TEST_FUNCTION(test_get_pwr_soc_snsr_temp_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     pwr_soc_element_sensor_temp_t snsr_temp_data = {0};
+
+    soc_pvt_temp_t pvt_temperature = {
+        .timestamp = 0,
+        .sensor_temp_dC = {20, 30, 40, 50, 60, 26, 27, 21, 12, 21, 31, 13, 41, 14},
+    };
+    tlm_logger_log_soc_pvt_temp(&pvt_temperature);
+
     data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(TEST_SNSR_ID_0, &snsr_temp_data);
+    // assert_int_equal(pvt_temperature.sensor_temp_dC[TEST_SNSR_ID_0], snsr_temp_data.latest_value_dC);
+    assert_int_equal(memcmp(&snsr_temp_data.latest_value_dC,
+                            &pvt_temperature.sensor_temp_dC[TEST_SNSR_ID_0],
+                            sizeof(pvt_temperature.sensor_temp_dC[TEST_SNSR_ID_0])),
+                     0);
+
+    // Fail case, fill data with zero
+    snsr_temp_data = {0};
+    data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(NUMBER_OF_SOC_TEMP_SENSORS, &snsr_temp_data);
+    assert_int_not_equal(pvt_temperature.sensor_temp_dC[TEST_SNSR_ID_0], snsr_temp_data.latest_value_dC);
 }
 
 TEST_FUNCTION(test_get_pwr_mpam_pstate_data, test_setup, test_teardown)

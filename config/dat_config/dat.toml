@@ -28,6 +28,28 @@ sdm_dtcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm
 sdm_itcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/sdm/sdm_fw_itcm.bin'}
 
 # Build this flavor with
+#  datwizard build --flavor "kingsgate.ifwi.soc.debug.custom"
+[dat."kingsgate.ifwi.soc.debug.custom"]
+extends = "kingsgate.ifwi.soc.debug"
+build = true
+[dat."kingsgate.ifwi.soc.debug.custom".partition]
+
+mcp                        = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/mcp/mcp_boot_loader_embed_fw.bin'}
+pe_management_mode         = { type='file', local='${REPO_APP_PATH_echofalls.soc.stmm.build}/build/DEBUG/stmm.pkg'}
+pe_security_monitor        = { type='file', local='${REPO_APP_PATH_echofalls.atf.build}/build/echofalls/debug/bl31.bin'}
+pe_spm                     = { type='file', local='${REPO_APP_PATH_echofalls.hafnium.build}/build/kingsgate/debug/echofalls_clang/hafnium.bin'}
+pe_uefi                    = { type='file', local='${REPO_APP_PATH_echofalls.soc.uefi.build}/build/DEBUG/BL33_AP_UEFI.fd'}
+rmm                        = { type='file', local='${REPO_APP_PATH_echofalls.rmm.build}/build/echofalls/debug/rmm.img'}
+rom_section                = { type='file', local='${REPO_APP_PATH_kingsgate.sprt.release}/release/sp1/sp1.img'}
+scp                        = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/scp/scp_boot_loader_embed_fw.bin'}
+spmc_manifest              = { type='file', local='${REPO_APP_PATH_echofalls.atf.build}/build/echofalls/debug/fdts/echofalls_soc_spmc_sp_manifest.dtb'}
+sprt                       = { type='file', local='${REPO_APP_PATH_kingsgate.sprt.release}/release/sprt/sprt.bin'}
+cded_dtcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/cded/cded_fw_dtcm.bin'}
+cded_itcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/cded/cded_fw_itcm.bin'}
+sdm_dtcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/sdm/sdm_fw_dtcm.bin'}
+sdm_itcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/sdm/sdm_fw_itcm.bin'}
+
+# Build this flavor with
 #  datwizard build --flavor "kingsgate.ifwi.fpga.debug.custom"
 [dat."kingsgate.ifwi.fpga.debug.custom"]
 extends = "kingsgate.ifwi.fpga.debug"

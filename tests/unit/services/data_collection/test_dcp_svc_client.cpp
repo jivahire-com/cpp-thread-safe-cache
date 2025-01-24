@@ -39,6 +39,9 @@ static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
 
+    static trp_icc_config_t test_trp_icc_config = {0};
+    trp_icc_config = &test_trp_icc_config;
+
     return 0;
 }
 

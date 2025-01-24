@@ -97,6 +97,7 @@ static int test_setup(void** pContext)
     config.trp_icc_config.endpoint_table = icc_endpoint;
     config.trp_icc_config.this_die_id = THIS_DIE_ID;
     config.trp_icc_config.this_cpu_id = THIS_CPU_ID;
+    config.trp_icc_config.is_dual_die = false;
 
     expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
 
@@ -212,6 +213,7 @@ TEST_FUNCTION(test_tlm_relay_send_outgoing_msg_valid_dcp_broadcast, test_setup, 
 TEST_FUNCTION(test_tlm_relay_send_outgoing_msg_invalid_dcp, test_setup, nullptr)
 {
     // dest die id doesn't match
+    trp_icc_config->is_dual_die = true;
     trp_msg.hdr.dest_die_id = 0xFF;
     trp_msg.hdr.dest_cpu_id = DCP_OUTGOING_CPU_ID;
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
@@ -219,6 +221,7 @@ TEST_FUNCTION(test_tlm_relay_send_outgoing_msg_invalid_dcp, test_setup, nullptr)
     tlm_relay_send_outgoing_msg(&trp_msg);
 
     // dest cpu id doesn't match
+    trp_icc_config->is_dual_die = true;
     trp_msg.hdr.dest_die_id = DCP_OUTGOING_DIE_ID;
     trp_msg.hdr.dest_cpu_id = 0xFF;
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
@@ -226,6 +229,7 @@ TEST_FUNCTION(test_tlm_relay_send_outgoing_msg_invalid_dcp, test_setup, nullptr)
     tlm_relay_send_outgoing_msg(&trp_msg);
 
     // icc send failure
+    trp_icc_config->is_dual_die = false;
     trp_msg.hdr.dest_die_id = DCP_OUTGOING_DIE_ID;
     trp_msg.hdr.dest_cpu_id = DCP_OUTGOING_CPU_ID;
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
@@ -471,4 +475,44 @@ TEST_FUNCTION(_test_tlm_relay_should_broadcast_to_this_route_2, test_setup, null
 
     should_broadcast = tlm_relay_should_broadcast_to_this_route(&trp_msg, &fake_trp_route);
     assert_false(should_broadcast);
+}
+
+TEST_FUNCTION(test_tlm_relay_send_trp_via_icc, test_setup, nullptr)
+{
+    icc_endpoint[DCP_ENDPOINT].seq_number.as_uint16 = 40;
+    icc_endpoint[TRP_ENDPOINT].seq_number.as_uint16 = 100;
+
+    // send a DCP message to the host, endpoint is null, verify seq number is incremented
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
+    trp_msg.hdr.dest_die_id = 0;
+    trp_msg.hdr.dest_cpu_id = CPU_AP;
+    config.trp_icc_config.this_die_id = 0;
+
+    trp_msg.payload.dcp_msg.hdr.seq_num = 18;
+    trp_msg.hdr.incoming_endpt = nullptr;
+
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_STATUS_SUCCESS);
+
+    tlm_relay_send_trp_via_icc(&trp_msg, &icc_endpoint[DCP_ENDPOINT]);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.seq_num, 41);
+
+    // forward a TRP message if the destination AP is on another die
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
+    trp_msg.hdr.dest_die_id = 0;
+    trp_msg.hdr.dest_cpu_id = CPU_AP;
+    trp_msg.hdr.source_seq_num.as_uint16 = 30;
+    config.trp_icc_config.this_die_id = 1;
+
+    trp_msg.payload.dcp_msg.hdr.seq_num = 18;
+    trp_msg.hdr.incoming_endpt = (p_trp_icc_endpoint_t)0x3456;
+
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_STATUS_SUCCESS);
+
+    tlm_relay_send_trp_via_icc(&trp_msg, &icc_endpoint[DCP_ENDPOINT]);
+
+    // dcp header seq not changed
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.seq_num, 18);
+
+    // trp header seq not changed either since forwarding incoming
+    assert_int_equal(trp_msg.hdr.source_seq_num.as_uint16, 30);
 }

@@ -68,13 +68,32 @@ typedef enum {
     TRP_MSG_ID_MAX                              = (0x9),
 } trp_msg_id_t;
 
+typedef enum {
+    TRP_TRANSPORT_TYPE_MHU = 1,
+    TRP_TRANSPORT_TYPE_LARGE_MBOX = 2,
+} trp_transport_type_t;
+
+// make sequence numbers unique for each originating CPU
+typedef union
+{
+    struct {
+        uint16_t number     : 10;
+        uint16_t cpu_id     : 4;
+        uint16_t die_id     : 2;
+    };
+    uint16_t as_uint16;
+} trp_seq_number_t, *p_trp_seq_number_t;
+
 typedef struct {
     fpfw_icc_base_ctx_t*   icc_base_ctx;
     fpfw_icc_base_recv_req_t async_recv_req; // allocation for control to receive messages, no need to initialize
     void* async_recv_buffer;        // buffer for actual icc message
     size_t async_recv_buffer_size;  // size of  async_recv_buffer, must be large enough for max message size
     char name[ENDPOINT_NAME_MAX_LENGTH]; // name of the endpoint
-    uint32_t icc_payload_protocol;
+    uint32_t icc_payload_protocol;  // ICC_COMMAND_DCP_MSG or ICC_COMMAND_TRP_MSG
+    trp_seq_number_t seq_number;
+    trp_transport_type_t transport_type; 
+
 } trp_icc_endpoint_t, *p_trp_icc_endpoint_t;
 
 typedef struct __attribute__((packed)) {
@@ -85,7 +104,7 @@ typedef struct __attribute__((packed)) {
     uint16_t dcp_client_id;             // dcp_client_id_t
     uint16_t trp_msg_id;                // trp_msg_id_t
     int16_t trp_msg_status;             // trp_status_t
-    uint16_t source_seq_num;
+    trp_seq_number_t source_seq_num;
     p_trp_icc_endpoint_t incoming_endpt;// needed for broadcast
     uint16_t broadcast_type;            // trp_broadcast_t
     uint16_t payload_size;
@@ -96,15 +115,24 @@ typedef struct __attribute__((packed)) {
 } trp_block_read_req_t;
 
 typedef struct __attribute__((packed)) {
-    uint32_t rd_data_ddr_addr_offset; // offset from beginning of telemetry mapped memory
-    uint32_t rd_data_size;
+    uint8_t source_die_id;
+    uint8_t source_cpu_id;
+    uint16_t reserved;
+    uintptr_t atu_mapped_location; // specific to source die and cpu
+    uint32_t ddr_addr_offset; // offset from beginning of client DDR region
+    size_t pkg_size;
+    uint32_t crc; //fpfw_crc32
 } trp_msg_read_pkg_rsp_t;
 
 typedef struct __attribute__((packed)) {
     uint16_t block_id; // dcp client specific
     uint16_t block_version;
-    uint32_t rd_data_ddr_addr_offset; // offset from beginning of telemetry mapped memory
-    uint32_t rd_data_size;
+    uint8_t source_die_id;
+    uint8_t source_cpu_id;
+    uint16_t reserved;
+    uint32_t addr_offset; // offset from beginning of client mapped block region
+    uint32_t block_size;
+    uint32_t crc; //fpfw_crc32
 } trp_msg_read_block_rsp_t;
 
 typedef struct __attribute__((packed)) {
@@ -139,4 +167,5 @@ typedef struct
     uint16_t number_of_endpoints;
     uint8_t this_die_id; // KNG_DIE_ID
     uint8_t this_cpu_id; // KNG_CPU_TYPE
+    uint8_t is_dual_die;
 } trp_icc_config_t, *p_trp_icc_config_t;

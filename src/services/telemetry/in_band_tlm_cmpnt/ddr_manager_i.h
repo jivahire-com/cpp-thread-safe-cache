@@ -11,7 +11,7 @@
 
 /*----------- Nested includes ------------*/
 
-
+#include <atu_api.h>
 #include <fpfw_status.h>
 #include <in_band_telemetry_ddr.h>
 #include <tx_api.h>
@@ -30,7 +30,7 @@
 #define MIN_INST_SAMPLE_INTERVAL_MS        (5)
 #define MAX_INST_NOTIFICATION_INTERVAL_MS  (100)
 #define MAX_INST_SAMPLES_PER_PACKAGE       (MAX_INST_NOTIFICATION_INTERVAL_MS / MIN_INST_SAMPLE_INTERVAL_MS)
-#define MAX_PENDING_PACKAGES               (2000 / MAX_INST_NOTIFICATION_INTERVAL_MS)
+#define MAX_PENDING_PACKAGES               ((2000 / MAX_INST_NOTIFICATION_INTERVAL_MS) * 2)
 
 #define POWER_PKG_MAX_SIZE (sizeof(power_full_package_t) + sizeof(telemetry_package_hdr_t))
 #define INST_PKG_MIN_SIZE  (sizeof(inst_full_package_t) + sizeof(telemetry_package_hdr_t))
@@ -57,6 +57,9 @@
 
 #define IN_POWER_RANGE(address) IN_RANGE(address, POWER_POOL_MEM_START, POWER_POOL_TOTAL_SIZE)
 #define IN_INST_RANGE(address)  IN_RANGE(address, INST_POOL_MEM_START, INST_POOL_TOTAL_SIZE)
+
+#define TELEMETRY_PHYSICAL_BASE_ADDRESS (IB_TELEMETRY_RESERVATION_BASE)
+#define TELEMETRY_GET_DDR_OFFSET(die_id, atu_mapped_location) ((die_id * IB_TELEMETRY_DDR_PER_DIE_SIZE) + (atu_mapped_location - MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR))
 
 /*-------------- Typedefs ----------------*/
 

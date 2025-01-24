@@ -83,6 +83,7 @@ void exec_tlm_cmpnt_init(uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_pe
 
     // note, telemetry sampling needs a faster timer than the minimum rtos tick rate.
     // this timer will be updated at a later time
+    // auto activate to pull data from sensor fifos, even if tlm package reporting is not enabled
     txStatus = tx_timer_create(&pwr_aggr_tmr,       /* TX_TIMER *timer_ptr */
                                "tlm_svc_pwr_aggr",  /* CHAR *name_ptr */
                                pwr_aggr_timer_cb,   /* VOID (*expiration_function)(ULONG input) */
@@ -107,7 +108,7 @@ void exec_tlm_cmpnt_init(uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_pe
                                0,                 /* ULONG expiration_input */
                                MS_TO_TX_TICKS(pwr_pkg_period_ms), /* ULONG initial_ticks >= 1 */
                                MS_TO_TX_TICKS(pwr_pkg_period_ms), /* ULONG reschedule_ticks */
-                               TX_AUTO_ACTIVATE);                 /* UINT auto_activate) */
+                               TX_NO_ACTIVATE);                   /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
     txStatus = tx_timer_create(&_24hr_pkg_tmr,                /* TX_TIMER *timer_ptr */
@@ -123,10 +124,25 @@ void exec_tlm_cmpnt_init(uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_pe
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 
+void developer_test()
+{
+#define PWR_DEV_SAMPLING_PERIOD_MS (20)
+    tx_timer_change(&power_pkg_tmr, MS_TO_TX_TICKS(PWR_DEV_SAMPLING_PERIOD_MS), MS_TO_TX_TICKS(PWR_DEV_SAMPLING_PERIOD_MS));
+
+#define INST_DEV_SAMPLING_PERIOD_MS (10)
+    tx_timer_change(&inst_sample_tmr, MS_TO_TX_TICKS(INST_DEV_SAMPLING_PERIOD_MS), MS_TO_TX_TICKS(INST_DEV_SAMPLING_PERIOD_MS));
+    tlm_executive_status.inst_pkg_sample_period_ms = PWR_DEV_SAMPLING_PERIOD_MS;
+
+    exec_tlm_cmpnt_enable_disable_telemetry(true);
+}
+
 void tlm_svc_thread(ULONG thread_input)
 {
     FPFW_UNUSED(thread_input);
     static ULONG current_bits;
+
+    // uncomment below for developer testing
+    // developer_test();
 
     while (true)
     {

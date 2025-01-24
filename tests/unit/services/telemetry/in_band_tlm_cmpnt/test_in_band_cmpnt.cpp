@@ -34,6 +34,19 @@ uint8_t ib_max_package_mem[POWER_PKG_MAX_SIZE] = {0};
 static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
+
+    FpFwListInitialize(&pkg_free_list);
+    for (size_t i = 0; i < MAX_PENDING_PACKAGES; i++)
+    {
+        FpFwListEntryInitialize(&dcs_active_pkg_buffer[i].list_entry);
+        FpFwListInsertTail(&pkg_free_list, &dcs_active_pkg_buffer[i].list_entry);
+    }
+    FpFwListInitialize(&pkg_active_list);
+
+    // make active list no empty for these tests
+    PFPFW_LIST_ENTRY entry = FpFwListRemoveHead(&pkg_free_list);
+    FpFwListInsertTail(&pkg_active_list, entry);
+
     return 0;
 }
 
@@ -63,8 +76,6 @@ TEST_FUNCTION(test_in_band_cmpnt_init, test_setup, test_teardown)
     will_return_always(__wrap__txe_queue_send, TX_SUCCESS);
 
     expect_function_calls(__wrap_FpFwAssertWithArgs, NUM_POWER_POOL_BLOCKS + NUM_INST_POOL_BLOCKS + 5);
-
-    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
 
     will_return_always(__wrap__txe_block_pool_create, TX_SUCCESS);
     expect_function_calls(__wrap__txe_block_pool_create, 1);
@@ -96,19 +107,7 @@ TEST_FUNCTION(test_gen_inst_report, test_setup, test_teardown)
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     // last time will dcs_manager_queue_tlm_package
-    tlm_package_t tlm_pkg = {0xaabb, 0xaabb};
-    expect_value(__wrap__txe_queue_receive, queue_ptr, &dcs_pkg_pending_queue);
-    expect_any(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
-
-    will_return(__wrap__txe_queue_receive, sizeof(tlm_package_t));
-    will_return(__wrap__txe_queue_receive, &tlm_pkg);
-    will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
-
-    expect_any(__wrap__txe_queue_send, queue_ptr);
-    expect_any(__wrap__txe_queue_send, source_ptr);
-    expect_any(__wrap__txe_queue_send, wait_option);
-    will_return(__wrap__txe_queue_send, TX_SUCCESS);
+    will_return(__wrap_dcs_is_primary_instance, true);
 
     for (uint16_t sample_count = 0; sample_count < inband_inst_samples_per_pkg; sample_count++)
     {
@@ -172,21 +171,8 @@ TEST_FUNCTION(test_gen_pwr_report_some_records, test_setup, test_teardown)
     will_return(__wrap__txe_queue_receive, &mock_data);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
-    // for dcs_manager_queue_tlm_package
-    expect_value(__wrap__txe_queue_receive, queue_ptr, &dcs_pkg_pending_queue);
-    expect_any(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
-
-    mock_data = (uint32_t*)ib_max_package_mem;
-    will_return(__wrap__txe_queue_receive, sizeof(uint32_t));
-    will_return(__wrap__txe_queue_receive, &mock_data);
-    will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
-
-    // for dcs_manager_queue_tlm_package
-    expect_any(__wrap__txe_queue_send, queue_ptr);
-    expect_any(__wrap__txe_queue_send, source_ptr);
-    expect_any(__wrap__txe_queue_send, wait_option);
-    will_return(__wrap__txe_queue_send, TX_SUCCESS);
+    // for  dcs_manager_queue_tlm_package
+    will_return(__wrap_dcs_is_primary_instance, true);
 
     in_band_tlm_cmpnt_generate_pwr_pkg();
 }

@@ -76,6 +76,15 @@ uint8_t tlm_relay_get_this_die_id(void);
 uint8_t tlm_relay_get_this_cpu_id(void);
 
 /**
+ * @brief Get the next endpoint sequence number
+ * @note Thread Safe because only called from the data collection thread
+ *
+ * @param[in] icc_endpoint The endpoint to get the sequence number for
+ * @return The next sequence number
+ */
+uint16_t tlm_relay_get_next_seq_num(p_trp_icc_endpoint_t icc_endpoint);
+
+/**
  * @brief Send a DCP message to the Host.
  *
  * @note The message will use synchronous icc functionality, and will block until the message is sent.

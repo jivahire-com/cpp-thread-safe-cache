@@ -56,6 +56,11 @@ idsw_cpu_type_t __wrap_idsw_get_cpu_type(void)
     return mock_type(idsw_cpu_type_t);
 }
 
+bool __wrap_idhw_is_single_die_boot_en(void)
+{
+    return mock_type(bool);
+}
+
 //
 // Tests
 //
@@ -66,6 +71,7 @@ TEST_FUNCTION(test_dcs_init, nullptr, nullptr)
     will_return_always(__wrap_fpfw_init_get_handle, &handle);
     will_return(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
     expect_function_call(__wrap_dcs_init);
 
     // Call the function under test
@@ -83,6 +89,7 @@ TEST_FUNCTION(test_dcs_init_die1_scp, nullptr, nullptr)
     will_return_always(__wrap_fpfw_init_get_handle, &handle);
     will_return(__wrap_idsw_get_die_id, DIE_1);
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
     expect_function_call(__wrap_dcs_init);
 
     // Call the function under test
@@ -100,6 +107,7 @@ TEST_FUNCTION(test_dcs_init_die0_scp, nullptr, nullptr)
     will_return_always(__wrap_fpfw_init_get_handle, &handle);
     will_return(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
     expect_function_call(__wrap_dcs_init);
 
     // Call the function under test

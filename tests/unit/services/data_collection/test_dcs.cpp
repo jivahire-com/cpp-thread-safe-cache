@@ -55,6 +55,9 @@ static int test_setup(void** pContext)
 
     dcs_client_register(DCP_CLIENT_ID_PWR_INST_TELEM, &client);
 
+    static trp_icc_config_t test_trp_icc_config = {0};
+    trp_icc_config = &test_trp_icc_config;
+
     return 0;
 }
 
@@ -257,7 +260,7 @@ TEST_FUNCTION(test_dcs_queue_for_outbound_from_drv_frmwk, test_setup, nullptr)
     assert_int_equal(trp_msg.hdr.dest_cpu_id, 0xD2);
 }
 
-TEST_FUNCTION(test_dcs_client_send_trp_msg, test_setup, nullptr)
+TEST_FUNCTION(test_dcs_client_forward_trp_msg, test_setup, nullptr)
 {
     trp_msg_t trp_msg = {{0}};
     trp_msg.hdr.source_die_id = 0xAA;
@@ -278,7 +281,7 @@ TEST_FUNCTION(test_dcs_client_send_trp_msg, test_setup, nullptr)
 
     expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
 
-    dcs_client_send_trp_msg(&trp_msg, TRP_BROADCAST_PRIM_MCP_TO_SEC_MCP_ONLY);
+    dcs_client_forward_trp_msg(&trp_msg, TRP_BROADCAST_PRIM_MCP_TO_SEC_MCP_ONLY);
 
     assert_int_equal(trp_msg.hdr.broadcast_type, TRP_BROADCAST_NONE);
 }
@@ -1036,10 +1039,13 @@ TEST_FUNCTION(test_dcs_client_flush_incoming_queue, test_setup, nullptr)
 
 TEST_FUNCTION(test_dcs_helpers, test_setup, nullptr)
 {
+    bool primary;
+    bool this_device;
+
     trp_icc_config->this_die_id = DIE_0;
     trp_icc_config->this_cpu_id = CPU_MCP;
 
-    bool primary = dcs_is_primary_instance();
+    primary = dcs_is_primary_instance();
     assert_true(primary);
 
     trp_icc_config->this_die_id = DIE_1;
@@ -1056,7 +1062,7 @@ TEST_FUNCTION(test_dcs_helpers, test_setup, nullptr)
 
     trp_icc_config->this_die_id = DIE_0;
     trp_icc_config->this_cpu_id = CPU_SCP;
-    bool this_device = dcs_is_this_device(DIE_0, CPU_SCP);
+    this_device = dcs_is_this_device(DIE_0, CPU_SCP);
     assert_true(this_device);
 
     trp_icc_config->this_die_id = DIE_0;
@@ -1076,4 +1082,47 @@ TEST_FUNCTION(test_dcs_helpers, test_setup, nullptr)
     trp_icc_config->this_cpu_id = CPU_MCP;
     uint8_t cpu_id = dcs_get_this_cpu_id();
     assert_int_equal(cpu_id, CPU_MCP);
+}
+
+TEST_FUNCTION(test_dcs_client_send_new_trp_msg, test_setup, nullptr)
+{
+    trp_msg_t trp_msg = {{0}};
+    trp_msg.hdr.source_die_id = 0xAA;
+    trp_msg.hdr.source_cpu_id = 0xA2;
+    trp_msg.hdr.dest_die_id = 0xDD;
+    trp_msg.hdr.dest_cpu_id = 0xD2;
+    trp_msg.hdr.incoming_endpt = (p_trp_icc_endpoint_t)0x6789;
+
+    // bypass most of dcs_queue_msg_from_drv_frmwk() since it's already tested
+    expect_function_calls(__wrap__txe_block_allocate, 1);
+    will_return(__wrap__txe_block_allocate, nullptr); // mocks the block allocate location
+    will_return(__wrap__txe_block_allocate, TX_POOL_ERROR);
+
+    expect_any(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, NEW_OUTBOUND_MSG);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+
+    dcs_client_send_new_trp_msg(&trp_msg);
+
+    assert_int_equal(trp_msg.hdr.incoming_endpt, nullptr);
+}
+
+TEST_FUNCTION(test_dcs_client_send_dcp_notification, test_setup, nullptr)
+{
+    // bypass most of dcs_queue_msg_from_drv_frmwk() since it's already tested
+    expect_function_calls(__wrap__txe_block_allocate, 1);
+    will_return(__wrap__txe_block_allocate, nullptr); // mocks the block allocate location
+    will_return(__wrap__txe_block_allocate, TX_POOL_ERROR);
+
+    expect_any(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, NEW_OUTBOUND_MSG);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+
+    dcs_client_send_dcp_notification(DCP_CLIENT_ID_PWR_INST_TELEM, DCP_NOTIFICATION_TYPE_DATA_AVAILABLE);
 }

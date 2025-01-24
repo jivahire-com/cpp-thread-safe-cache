@@ -36,5 +36,6 @@ mock_target(${TARGET}
     fpfw_init_get_handle
     idsw_get_cpu_type
     idsw_get_die_id
+    idhw_is_single_die_boot_en
     dcs_init
 )

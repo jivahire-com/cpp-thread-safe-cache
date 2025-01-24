@@ -125,6 +125,11 @@ static void dcs_thread(ULONG thread_input)
     FPFW_UNUSED(thread_input);
     static ULONG current_bits;
 
+    if (dcs_is_primary_instance() == true)
+    {
+        dcs_client_send_dcp_notification(DCP_CLIENT_ID_DCS, DCP_NOTIFICATION_TYPE_FW_RESET);
+    }
+
     while (1)
     {
         UINT txStatus =
@@ -143,7 +148,16 @@ static void dcs_thread(ULONG thread_input)
     }
 }
 
-void dcs_client_send_trp_msg(p_trp_msg_t trp_msg, trp_broadcast_t broadcast_option)
+void dcs_client_send_new_trp_msg(p_trp_msg_t trp_msg)
+{
+    // ensures a new sequence number will get assigned
+    trp_msg->hdr.incoming_endpt = NULL;
+
+    // called from clients thread but can use the same api called from driver framework
+    dcs_queue_for_outbound_from_drv_frmwk(trp_msg, false);
+}
+
+void dcs_client_forward_trp_msg(p_trp_msg_t trp_msg, trp_broadcast_t broadcast_option)
 {
     trp_msg->hdr.broadcast_type = broadcast_option;
     // called from clients thread but can use the same api called from driver framework
@@ -155,6 +169,30 @@ void dcs_client_send_trp_response(p_trp_msg_t trp_msg)
 {
     // called from clients thread but can use the same api called from driver framework
     dcs_queue_for_outbound_from_drv_frmwk(trp_msg, true);
+}
+
+void dcs_client_send_dcp_notification(dcp_client_id_t client_id, dcp_notification_type_t notification)
+{
+    trp_msg_t trp_msg = {0};
+
+    trp_msg.payload.dcp_msg.hdr.client_id = client_id;
+    trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_NOTIFICATION;
+    trp_msg.payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
+    trp_msg.payload.dcp_msg.hdr.payload_size = sizeof(dcp_msg_notification_t);
+    trp_msg.payload.dcp_msg.payload.notification.type = notification;
+
+    trp_msg.hdr.source_die_id = dcs_get_this_die_id();
+    trp_msg.hdr.source_cpu_id = dcs_get_this_cpu_id();
+    trp_msg.hdr.dest_die_id = DIE_0;
+    trp_msg.hdr.dest_cpu_id = CPU_AP;
+    trp_msg.hdr.dcp_client_id = client_id;
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
+    trp_msg.hdr.trp_msg_status = TRP_STATUS_SUCCESS;
+    trp_msg.hdr.broadcast_type = TRP_BROADCAST_NONE;
+    trp_msg.hdr.payload_size = sizeof(dcp_msg_hdr_t) + trp_msg.payload.dcp_msg.hdr.payload_size;
+
+    // api copies message, ok to use stack memory
+    dcs_client_send_new_trp_msg(&trp_msg);
 }
 
 void dcs_handle_outbound_msgs(void)
@@ -191,21 +229,26 @@ void dcs_service_client_notification_from_drv_frmwk(void)
 
 void dcs_forward_trp_msg_to_client_from_drv_frmwk(p_trp_msg_t trp_msg)
 {
-    // leave for debugging
-    // printf("dcs svc client source_die_id: %d, source_cpu_id: %d, dest_die_id: %d, dest_cpu_id:%d, "
-    //        "dcp_client_id: %d, "
-    //        "trp_msg_id: %d\n",
-    //        trp_msg->hdr.source_die_id,
-    //        trp_msg->hdr.source_cpu_id,
-    //        trp_msg->hdr.dest_die_id,
-    //        trp_msg->hdr.dest_cpu_id,
-    //        trp_msg->hdr.dcp_client_id,
-    //        trp_msg->hdr.trp_msg_id);
+    // debug level trace
+    FPFW_ET_LOG(DcsDebugIncomingTrpMsg,
+                trp_msg->hdr.source_die_id,
+                trp_msg->hdr.source_cpu_id,
+                trp_msg->hdr.dest_die_id,
+                trp_msg->hdr.dest_cpu_id,
+                trp_msg->hdr.dcp_client_id,
+                trp_msg->hdr.trp_msg_id,
+                trp_msg->hdr.source_seq_num.as_uint16);
 
     bool forward_to_client = true;
 
     if (trp_msg->hdr.trp_msg_id == TRP_MSG_ID_DCP_FORWARD)
     {
+        // debug level trace
+        FPFW_ET_LOG(DcsDebugIncomingDcpMsg,
+                    trp_msg->payload.dcp_msg.hdr.client_id,
+                    trp_msg->payload.dcp_msg.hdr.msg_id,
+                    trp_msg->payload.dcp_msg.hdr.seq_num);
+
         forward_to_client = dcs_is_valid_dcp_msg_from_drv_frmwk(&trp_msg->payload.dcp_msg);
     }
     else

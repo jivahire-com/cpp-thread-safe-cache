@@ -13,6 +13,7 @@ target_link_libraries(
         PUBLIC
           fwlib.service.iccBase
           ms::lib::threadx
+          silibs::idsw_kng
         PRIVATE
           fwlib.dfwk
           fwlib.platform.dfwkhost.threadx
@@ -23,8 +24,6 @@ target_link_libraries(
           silibs::icc_mhu
           silibs::idhw
           silibs::idsw
-          silibs::idsw_kng
-
 
 )
 target_include_directories(${TARGET}

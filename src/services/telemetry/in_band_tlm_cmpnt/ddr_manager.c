@@ -82,6 +82,7 @@ fpfw_status_t ddr_manager_allocate_mem_for_pwr_pkg(uintptr_t* pkg_location, size
     if (FPFW_STATUS_SUCCEEDED(status))
     {
         *available_size = POWER_POOL_BLOCK_SIZE;
+        FPFW_ET_LOG(DdrMgrDbgAllocatePwrPkgMem, *pkg_location);
     }
     else
     {
@@ -95,6 +96,7 @@ fpfw_status_t ddr_manager_allocate_mem_for_inst_pkg(uintptr_t* pkg_location, siz
     fpfw_status_t status = TX_STATUS_TO_FPFW_STATUS(tx_queue_receive(&inst_pkg_free_queue, pkg_location, TX_NO_WAIT));
     if (FPFW_STATUS_SUCCEEDED(status))
     {
+        FPFW_ET_LOG(DdrMgrDbgAllocateInstPkgMem, *pkg_location);
         *available_size = INST_POOL_BLOCK_SIZE;
     }
     else
@@ -123,6 +125,8 @@ void ddr_manager_deallocate_mem(uintptr_t* pkg_location)
         FPFW_ET_LOG(DeAllocateInvalidLocation, location);
         return;
     }
+
+    FPFW_ET_LOG(DdrMgrDbgFreePkgMem, location);
 
     tx_status = tx_queue_send(free_queue, pkg_location, TX_NO_WAIT);
     if (FPFW_STATUS_FAILED(TX_STATUS_TO_FPFW_STATUS(tx_status)))

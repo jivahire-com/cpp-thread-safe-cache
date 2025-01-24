@@ -35,7 +35,7 @@ bool __wrap_dcs_is_primary_instance(void)
     return mock_type(bool);
 }
 
-void __wrap_dcs_client_send_trp_msg(p_trp_msg_t trp_msg, trp_broadcast_t broadcast_option)
+void __wrap_dcs_client_forward_trp_msg(p_trp_msg_t trp_msg, trp_broadcast_t broadcast_option)
 {
     FPFW_UNUSED(trp_msg);
     FPFW_UNUSED(broadcast_option);
@@ -46,6 +46,29 @@ void __wrap_dcs_client_send_trp_response(p_trp_msg_t trp_msg)
 {
     FPFW_UNUSED(trp_msg);
     function_called();
+}
+
+void __wrap_dcs_client_send_new_trp_msg(p_trp_msg_t trp_msg)
+{
+    FPFW_UNUSED(trp_msg);
+    function_called();
+}
+
+void __wrap_dcs_client_send_dcp_notification(dcp_client_id_t client_id, dcp_notification_type_t notification)
+{
+    FPFW_UNUSED(client_id);
+    FPFW_UNUSED(notification);
+    function_called();
+}
+
+uint8_t __wrap_dcs_get_this_die_id(void)
+{
+    return 0;
+}
+
+uint8_t __wrap_dcs_get_this_cpu_id(void)
+{
+    return 2;
 }
 
 void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_element_pstate_t (*pstate_array)[NUMBER_OF_PSTATES])

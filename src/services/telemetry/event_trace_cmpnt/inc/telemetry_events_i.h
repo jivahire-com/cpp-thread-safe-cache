@@ -105,7 +105,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      23,
-                     DcsMgrClientUnexpectedMsg,
+                     DcsMgrClientUnexpectedDcpMsg,
                      FPFW_ET_LEVEL_WARNING,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, msg_id))
 
@@ -115,6 +115,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      FPFW_ET_LEVEL_WARNING,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, provider_id),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, event_id))
+
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      25,
                      DTSCoefficientReadFailedInit,
@@ -136,5 +137,114 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, element_id))
 
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                     29,
+                     DcsMgrPkgFreeListEmpty,
+                     FPFW_ET_LEVEL_ERROR)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    30,
+                    TlmSvcDebugIncomingDcpMsg,
+                    FPFW_ET_LEVEL_DEBUG,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, client_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, msg_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, seq_num))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    31,
+                    TlmSvcDebugOutgoingDcpMsg,
+                    FPFW_ET_LEVEL_DEBUG,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, client_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, msg_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, seq_num))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    32,
+                    TlmSvcDebugIncomingTrpMsg,
+                    FPFW_ET_LEVEL_DEBUG,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_die_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_cpu_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, dest_die_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, dest_cpu_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, dcp_client_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, trp_msg_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_seq_num))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    33,
+                    TlmSvcDebugOutgoingTrpMsg,
+                    FPFW_ET_LEVEL_DEBUG,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_die_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_cpu_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, dest_die_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, dest_cpu_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, dcp_client_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, trp_msg_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_seq_num))
+
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    34,
+                    DcsMgrNoMatchPkgComplete,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, atu_mapped_location),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, ddr_addr_offset))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    35,
+                    DcsMgrClientUnexpectedTrpMsg,
+                    FPFW_ET_LEVEL_WARNING,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, trp_msg_id))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    36,
+                    DcsMgrUnexpectedCallOnPrimary,
+                    FPFW_ET_LEVEL_WARNING)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    37,
+                    DcsMgrUnexpectedCallOnSecondary,
+                    FPFW_ET_LEVEL_WARNING)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    38,
+                    DdrMgrDbgAllocatePwrPkgMem,
+                    FPFW_ET_LEVEL_DEBUG,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, mem_location))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    39,
+                    DdrMgrDbgAllocateInstPkgMem,
+                    FPFW_ET_LEVEL_DEBUG,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, mem_location))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    40,
+                    DdrMgrDbgFreePkgMem,
+                    FPFW_ET_LEVEL_DEBUG,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, mem_location))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    41,
+                    DcsMgrDbgAllocatePkg,
+                    FPFW_ET_LEVEL_DEBUG,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, atu_mapped_location),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_die_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_cpu_id))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    42,
+                    DcsMgrDbgFreePkg,
+                    FPFW_ET_LEVEL_DEBUG,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, atu_mapped_location),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_die_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_cpu_id))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    43,
+                    DcsMgrResetMsgReceived,
+                    FPFW_ET_LEVEL_INFO)
+
 
 /*--------- Function Prototypes ----------*/
+

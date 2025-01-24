@@ -61,6 +61,11 @@ void tlm_relay_init(p_trp_icc_config_t icc_config)
         icc_endpoint->async_recv_req.cb = tlm_relay_icc_recv_complete_notify_from_drv_frmwk;
         icc_endpoint->async_recv_req.cb_ctx = icc_endpoint;
 
+        icc_endpoint->seq_number.as_uint16 = 0;
+        icc_endpoint->seq_number.die_id = (icc_config->this_die_id > 0) ? 1 : 0;
+        icc_endpoint->seq_number.cpu_id = icc_config->this_cpu_id;
+        icc_endpoint->seq_number.number = 1 << icc_config->this_cpu_id;
+
         fpfw_status_t status = fpfw_icc_base_recv(icc_endpoint->icc_base_ctx, &icc_endpoint->async_recv_req);
         FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCEEDED(status), status, (uintptr_t)icc_endpoint, 0, 0);
         // printf("Endpoint %s ICC Receive status: 0x%04lx\n", icc_endpoint->name, (uint32_t)status);
@@ -115,7 +120,7 @@ void tlm_relay_icc_recv_complete_notify_from_drv_frmwk(void* context, size_t out
                         .dcp_client_id = dcp_msg->hdr.client_id,
                         .trp_msg_id = TRP_MSG_ID_DCP_FORWARD,
                         .trp_msg_status = TRP_STATUS_SUCCESS,
-                        .source_seq_num = dcp_msg->hdr.seq_num,
+                        .source_seq_num.as_uint16 = dcp_msg->hdr.seq_num,
                         .incoming_endpt = icc_endpoint,
                         .broadcast_type = TRP_BROADCAST_NONE,
                         .payload_size = dcp_msg->hdr.payload_size + sizeof(dcp_msg_hdr_t),
@@ -213,7 +218,12 @@ void tlm_relay_send_outgoing_msg(p_trp_msg_t trp_msg)
 
     if (log_route_error)
     {
-        FPFW_ET_LOG(TrpIccNoRoute, trp_msg->hdr.dest_die_id, trp_msg->hdr.dest_cpu_id);
+        // if running single die for development, there isn't any error, the route isn't found and the message is dropped.
+        // however suppress the error logging if single die and the destination is not the local die
+        if ((trp_icc_config->is_dual_die) || (trp_msg->hdr.dest_die_id == trp_icc_config->this_die_id))
+        {
+            FPFW_ET_LOG(TrpIccNoRoute, trp_msg->hdr.dest_die_id, trp_msg->hdr.dest_cpu_id);
+        }
     }
 }
 
@@ -279,15 +289,46 @@ void tlm_relay_send_trp_via_icc(p_trp_msg_t trp_msg, p_trp_icc_endpoint_t icc_en
         (trp_msg->hdr.dest_die_id == trp_icc_config->this_die_id))
     {
         // sending DCP message to AP cpu on this die needs dcp messaging
+
+        // if incoming is NULL, then new message requires a new sequence number
+        // if not NULL, then reply or forward with the incoming sequence number
+        if (trp_msg->hdr.incoming_endpt == NULL)
+        {
+            trp_msg->payload.dcp_msg.hdr.seq_num = tlm_relay_get_next_seq_num(icc_endpoint);
+        }
+
         icc_msg.header.msg_header.command = ICC_COMMAND_DCP_MSG;
         icc_msg.header.msg_header.payload_size = trp_msg->payload.dcp_msg.hdr.payload_size + sizeof(dcp_msg_hdr_t);
         icc_msg.dcp_msg = trp_msg->payload.dcp_msg;
+
+        // debug level trace
+        FPFW_ET_LOG(DcsDebugOutgoingDcpMsg,
+                    trp_msg->payload.dcp_msg.hdr.client_id,
+                    trp_msg->payload.dcp_msg.hdr.msg_id,
+                    trp_msg->payload.dcp_msg.hdr.seq_num);
     }
     else
     {
+        // if incoming is NULL, then new message requires a new sequence number
+        // if not NULL, then reply or forward with the incoming sequence number
+        if (trp_msg->hdr.incoming_endpt == NULL)
+        {
+            trp_msg->hdr.source_seq_num.as_uint16 = tlm_relay_get_next_seq_num(icc_endpoint);
+        }
+
         icc_msg.header.msg_header.command = ICC_COMMAND_TRP_MSG;
         icc_msg.header.msg_header.payload_size = trp_msg->hdr.payload_size + sizeof(trp_msg_hdr_t);
         icc_msg.trp_msg = *trp_msg;
+
+        // debug level trace
+        FPFW_ET_LOG(DcsDebugOutgoingTrpMsg,
+                    trp_msg->hdr.source_die_id,
+                    trp_msg->hdr.source_cpu_id,
+                    trp_msg->hdr.dest_die_id,
+                    trp_msg->hdr.dest_cpu_id,
+                    trp_msg->hdr.dcp_client_id,
+                    trp_msg->hdr.trp_msg_id,
+                    trp_msg->hdr.source_seq_num.as_uint16);
     }
 
     fpfw_status_t status = fpfw_icc_base_send_sync(icc_endpoint->icc_base_ctx,
@@ -297,4 +338,10 @@ void tlm_relay_send_trp_via_icc(p_trp_msg_t trp_msg, p_trp_icc_endpoint_t icc_en
     {
         FPFW_ET_LOG(TrpIccSendFail, status, (uint32_t)icc_endpoint);
     }
+}
+
+uint16_t tlm_relay_get_next_seq_num(p_trp_icc_endpoint_t icc_endpoint)
+{
+    icc_endpoint->seq_number.number++;
+    return icc_endpoint->seq_number.as_uint16;
 }

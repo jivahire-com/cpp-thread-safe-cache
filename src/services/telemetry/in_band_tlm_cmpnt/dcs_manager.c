@@ -12,6 +12,7 @@
 #include "ddr_manager_i.h"
 #include "package_creation_i.h"
 
+#include <FpFwUtils.h>
 #include <data_collection_protocol.h>
 #include <data_collection_service.h>
 #include <exec_tlm_cmpnt.h>
@@ -29,9 +30,21 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-tlm_package_t dcs_pkg_pending_buffer[MAX_PENDING_PACKAGES];
-TX_QUEUE dcs_pkg_pending_queue;
+tlm_package_t dcs_active_pkg_buffer[MAX_PENDING_PACKAGES];
 
+// Lists are only modified from telemetry service thread, so thread safety is not a concern.
+// list of free tlm_package_t to allocate for a new package
+FPFW_LIST_HANDLE pkg_free_list;
+
+// list usage depends on which die tlm service is running on.
+// On Die 0 MCP, this list will contain active packages from local as well as secondary MCP's.
+// On Die 1 MCP, this list will contain active packages from local MCP only. Packages are immediately sent
+// to Die 0, but the list is maintained on the local MCP to clear all packages on a DCP reset command.
+FPFW_LIST_HANDLE pkg_active_list;
+
+p_tlm_package_t in_flight_tlm_pkg;
+
+// for dcs client subscription
 p_trp_msg_t pwr_tlm_client_queue_mem[PWR_TLM_MAX_TRP_MESSAGES];
 uint8_t pwr_tlm_client_pool_mem[PWR_TLM_CLIENT_BLOCK_POOL_SIZE];
 
@@ -44,19 +57,20 @@ static dcs_client_t s_pwr_tlm_dcs_client = {
 
 void dcs_manager_init(void)
 {
-    UINT tx_status = tx_queue_create(&dcs_pkg_pending_queue,
-                                     "dcs_pkg_pending_queue",
-                                     (sizeof(tlm_package_t) + 3) / sizeof(uint32_t), // number of uint32_t elements
-                                     dcs_pkg_pending_buffer,
-                                     sizeof(dcs_pkg_pending_buffer));
+    // create a list of free packages
+    FpFwListInitialize(&pkg_free_list);
+    for (size_t i = 0; i < MAX_PENDING_PACKAGES; i++)
+    {
+        FpFwListEntryInitialize(&dcs_active_pkg_buffer[i].list_entry);
+        FpFwListInsertTail(&pkg_free_list, &dcs_active_pkg_buffer[i].list_entry);
+    }
+    FpFwListInitialize(&pkg_active_list);
 
-    FpFwAssertWithArgs(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&dcs_pkg_pending_queue, 0, 0);
-
-    tx_status = tx_queue_create(&s_pwr_tlm_dcs_client.rx_queue,
-                                "Pwr Tlm DCS client queue",
-                                1, // number of uint32_t elements
-                                pwr_tlm_client_queue_mem,
-                                sizeof(pwr_tlm_client_queue_mem));
+    UINT tx_status = tx_queue_create(&s_pwr_tlm_dcs_client.rx_queue,
+                                     "Pwr Tlm DCS client queue",
+                                     1, // number of uint32_t elements
+                                     pwr_tlm_client_queue_mem,
+                                     sizeof(pwr_tlm_client_queue_mem));
     FPFW_RUNTIME_ASSERT_EXT(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_pwr_tlm_dcs_client.rx_queue, 0, 0);
 
     tx_status = tx_block_pool_create(&s_pwr_tlm_dcs_client.rx_pool,    // pool_ptr
@@ -81,8 +95,24 @@ void in_band_tlm_cmpnt_handle_incoming_dcs_msgs(void)
         queue_status = tx_queue_receive(&s_pwr_tlm_dcs_client.rx_queue, &trp_msg, TX_NO_WAIT);
         if ((queue_status == TX_SUCCESS) && (trp_msg != NULL))
         {
+            // debug level trace
+            FPFW_ET_LOG(TlmSvcDebugIncomingTrpMsg,
+                        trp_msg->hdr.source_die_id,
+                        trp_msg->hdr.source_cpu_id,
+                        trp_msg->hdr.dest_die_id,
+                        trp_msg->hdr.dest_cpu_id,
+                        trp_msg->hdr.dcp_client_id,
+                        trp_msg->hdr.trp_msg_id,
+                        trp_msg->hdr.source_seq_num.as_uint16);
+
             if (trp_msg->hdr.trp_msg_id == TRP_MSG_ID_DCP_FORWARD)
             {
+                // debug level trace
+                FPFW_ET_LOG(TlmSvcDebugIncomingDcpMsg,
+                            trp_msg->payload.dcp_msg.hdr.client_id,
+                            trp_msg->payload.dcp_msg.hdr.msg_id,
+                            trp_msg->payload.dcp_msg.hdr.seq_num);
+
                 dcs_manager_handle_dcp_msg(trp_msg);
             }
             else
@@ -110,17 +140,6 @@ void dcs_manager_handle_dcp_msg(p_trp_msg_t trp_msg)
     // Status requests only need to be replied from the Primary MCP since the secondary MCP tracks the state
     // of the system. DCP reads are only handled by the primary MCP, so those also are not forwarded.
     bool forward = false;
-
-    // uncomment for debug
-    // printf("pwrt tlm client source_die_id: %d, source_cpu_id: %d, dest_die_id: %d, dest_cpu_id:%d, "
-    //        "dcp_client_id: %d, "
-    //        "trp_msg_id: %d\n",
-    //        trp_msg->hdr.source_die_id,
-    //        trp_msg->hdr.source_cpu_id,
-    //        trp_msg->hdr.dest_die_id,
-    //        trp_msg->hdr.dest_cpu_id,
-    //        trp_msg->hdr.dcp_client_id,
-    //        trp_msg->hdr.trp_msg_id);
 
     switch (trp_msg->payload.dcp_msg.hdr.msg_id)
     {
@@ -151,33 +170,25 @@ void dcs_manager_handle_dcp_msg(p_trp_msg_t trp_msg)
         break;
 
     case DCP_MSG_ID_READ_DATA:
-        trp_msg->payload.dcp_msg.hdr.payload_size = 0;
-        trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_E_INCOMPLETE_HANDLER;
-
+        // header for response is handled in the function
+        dcs_manager_handle_read_msg(trp_msg);
         break;
 
     case DCP_MSG_ID_READ_DATA_COMPLETE:
-        trp_msg->payload.dcp_msg.hdr.payload_size = 0;
-        trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_E_INCOMPLETE_HANDLER;
+        // header for response is handled in the function
+        dcs_manager_handle_read_complete_msg(trp_msg);
         break;
 
     case DCP_MSG_ID_RESET:
 
-        trp_msg->payload.dcp_msg.hdr.payload_size = 0;
-        trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_E_INCOMPLETE_HANDLER;
+        forward = true;
 
-        // forward = true;
-        // // flushing the queue is going to loop through the queue and free the blocks in the queue
-        // // the block that this message is in has already been popped off the queue and will be freed below
-        // // after sending the response
-        // dcs_client_flush_incoming_queue(DCP_CLIENT_ID_PWR_INST_TELEM);
-
-        // trp_msg->payload.dcp_msg.hdr.payload_size = 0;
-        // trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
+        // header for response is handled in the function
+        dcs_manager_handle_reset_msg(trp_msg);
         break;
 
     default:
-        FPFW_ET_LOG(DcsMgrClientUnexpectedMsg, trp_msg->payload.dcp_msg.hdr.msg_id);
+        FPFW_ET_LOG(DcsMgrClientUnexpectedDcpMsg, trp_msg->payload.dcp_msg.hdr.msg_id);
 
         trp_msg->payload.dcp_msg.hdr.payload_size = 0;
         trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_E_UNSUPPORTED_MSG;
@@ -197,7 +208,7 @@ void dcs_manager_handle_dcp_msg(p_trp_msg_t trp_msg)
             if (forward)
             {
                 // forward to secondary MCP
-                dcs_client_send_trp_msg(trp_msg, TRP_BROADCAST_PRIM_MCP_TO_SEC_MCP_ONLY);
+                dcs_client_forward_trp_msg(trp_msg, TRP_BROADCAST_PRIM_MCP_TO_SEC_MCP_ONLY);
             }
         }
 
@@ -209,46 +220,127 @@ void dcs_manager_handle_dcp_msg(p_trp_msg_t trp_msg)
 
 void dcs_manager_handle_trp_msg(p_trp_msg_t trp_msg)
 {
-    FPFW_UNUSED(trp_msg);
+    switch (trp_msg->hdr.trp_msg_id)
+    {
+    case TRP_MSG_ID_PACKAGE_NOTIFICATION: {
+        p_tlm_package_t tlm_pkg = dcs_manager_get_pkg_from_free_list();
+        if (tlm_pkg == NULL)
+        {
+            // unable to store, send complete back to sender to free memory
+            tlm_package_t rsp_pkg;
+            rsp_pkg.pkg = trp_msg->payload.package_notification;
+            dcs_manager_send_trp_read_complete(&rsp_pkg);
+        }
+        else
+        {
+            tlm_pkg->pkg = trp_msg->payload.package_notification;
+            dcs_manager_add_tlm_package_to_active_list(tlm_pkg);
+        }
+        break;
+    }
 
-    // uncomment for debug
-    // printf("pwrt tlm client source_die_id: %d, source_cpu_id: %d, dest_die_id: %d, dest_cpu_id:%d, "
-    //        "dcp_client_id: %d, "
-    //        "trp_msg_id: %d\n",
-    //        trp_msg->hdr.source_die_id,
-    //        trp_msg->hdr.source_cpu_id,
-    //        trp_msg->hdr.dest_die_id,
-    //        trp_msg->hdr.dest_cpu_id,
-    //        trp_msg->hdr.dcp_client_id,
-    //        trp_msg->hdr.trp_msg_id);
+    case TRP_MSG_ID_READ_PACKAGE_COMPLETE: {
+        tlm_package_t remove_pkg;
+        remove_pkg.pkg = trp_msg->payload.package_notification;
+        dcs_manager_free_tlm_package_from_secondary_mcp(&remove_pkg);
+        break;
+    }
+
+    default:
+        FPFW_ET_LOG(DcsMgrClientUnexpectedTrpMsg, trp_msg->hdr.trp_msg_id);
+        break;
+    }
 }
 
-void dcs_manager_queue_tlm_package(uintptr_t pkg_location, size_t pkg_size)
+void dcs_manager_queue_tlm_package(uintptr_t atu_mapped_location, size_t pkg_size)
 {
-    tlm_package_t tlm_pkg;
-    UINT tx_status;
+    p_tlm_package_t tlm_pkg = dcs_manager_get_pkg_from_free_list();
 
-    // TODO: dcs manager will be implemented in future task
-    // //https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2023646 this temporary implementation just adds
-    // the package to the pending queue, and next time around all packages are free'd
-    do
+    if (tlm_pkg == NULL)
     {
-        tx_status = tx_queue_receive(&dcs_pkg_pending_queue, &tlm_pkg, TX_NO_WAIT);
-        if (tx_status == TX_SUCCESS)
-        {
-            ddr_manager_deallocate_mem(&tlm_pkg.pkg_location);
-        }
-    } while (tx_status == TX_SUCCESS);
-
-    tlm_pkg.pkg_location = pkg_location;
-    tlm_pkg.pkg_size = pkg_size;
-
-    tx_status = tx_queue_send(&dcs_pkg_pending_queue, &tlm_pkg, TX_NO_WAIT);
-    if (tx_status != TX_SUCCESS)
-    {
-        // failed to pend, deallocate the memory
-        ddr_manager_deallocate_mem(&tlm_pkg.pkg_location);
+        ddr_manager_deallocate_mem(&atu_mapped_location);
+        return;
     }
+
+    uint8_t die_id = dcs_get_this_die_id();
+    tlm_pkg->pkg.source_die_id = die_id;
+    tlm_pkg->pkg.source_cpu_id = dcs_get_this_cpu_id();
+
+    tlm_pkg->pkg.atu_mapped_location = atu_mapped_location;
+    tlm_pkg->pkg.ddr_addr_offset = TELEMETRY_GET_DDR_OFFSET(die_id, atu_mapped_location);
+    tlm_pkg->pkg.pkg_size = pkg_size;
+    tlm_pkg->pkg.crc = fpfw_crc32(0, (void*)atu_mapped_location, pkg_size);
+
+    dcs_manager_add_tlm_package_to_active_list(tlm_pkg);
+}
+
+void dcs_manager_add_tlm_package_to_active_list(p_tlm_package_t tlm_pkg)
+{
+    bool notify_host = false;
+    if (dcs_is_primary_instance() == true)
+    {
+        if (FpFwListIsEmpty(&pkg_active_list))
+        {
+            notify_host = true;
+        }
+    }
+    else
+    {
+        // send to primary MCP
+        dcs_manager_send_trp_pkg_notification_to_primary(tlm_pkg);
+    }
+
+    FPFW_ET_LOG(DcsMgrDbgAllocatePkg,
+                tlm_pkg->pkg.atu_mapped_location,
+                tlm_pkg->pkg.source_die_id,
+                tlm_pkg->pkg.source_cpu_id);
+    FpFwListInsertTail(&pkg_active_list, &tlm_pkg->list_entry);
+
+    if (notify_host)
+    {
+        dcs_client_send_dcp_notification(DCP_CLIENT_ID_PWR_INST_TELEM, DCP_NOTIFICATION_TYPE_DATA_AVAILABLE);
+    }
+}
+
+void dcs_manager_send_trp_pkg_notification_to_primary(p_tlm_package_t tlm_pkg)
+{
+    dcs_manager_send_trp_package_helper(tlm_pkg, TRP_MSG_ID_PACKAGE_NOTIFICATION, DIE_0, CPU_MCP);
+}
+
+void dcs_manager_send_trp_read_complete(p_tlm_package_t tlm_pkg)
+{
+    dcs_manager_send_trp_package_helper(tlm_pkg,
+                                        TRP_MSG_ID_READ_PACKAGE_COMPLETE,
+                                        tlm_pkg->pkg.source_die_id,
+                                        tlm_pkg->pkg.source_cpu_id);
+}
+
+void dcs_manager_send_trp_package_helper(p_tlm_package_t tlm_pkg, trp_msg_id_t msg_id, uint8_t dest_die_id, uint8_t dest_cpu_id)
+{
+    trp_msg_t trp_msg = {0};
+    trp_msg.hdr.source_die_id = dcs_get_this_die_id();
+    trp_msg.hdr.source_cpu_id = dcs_get_this_cpu_id();
+    trp_msg.hdr.dest_die_id = dest_die_id;
+    trp_msg.hdr.dest_cpu_id = dest_cpu_id;
+    trp_msg.hdr.dcp_client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
+    trp_msg.hdr.trp_msg_id = msg_id;
+    trp_msg.hdr.trp_msg_status = TRP_STATUS_SUCCESS;
+    trp_msg.hdr.broadcast_type = TRP_BROADCAST_NONE;
+    trp_msg.hdr.payload_size = sizeof(trp_msg_read_pkg_rsp_t);
+    trp_msg.payload.package_notification = tlm_pkg->pkg;
+
+    // debug level trace
+    FPFW_ET_LOG(TlmSvcDebugOutgoingTrpMsg,
+                trp_msg.hdr.source_die_id,
+                trp_msg.hdr.source_cpu_id,
+                trp_msg.hdr.dest_die_id,
+                trp_msg.hdr.dest_cpu_id,
+                trp_msg.hdr.dcp_client_id,
+                trp_msg.hdr.trp_msg_id,
+                trp_msg.hdr.source_seq_num.as_uint16);
+
+    // api copies message, ok to use stack memory
+    dcs_client_send_new_trp_msg(&trp_msg);
 }
 
 void dcs_manager_handle_record_enable_disable(p_trp_msg_t trp_msg)
@@ -309,4 +401,224 @@ void dcs_manager_handle_record_enable_disable(p_trp_msg_t trp_msg)
             package_create_enable_disable_inst_record(event_id, enable_record);
         }
     }
+}
+
+void dcs_manager_handle_read_msg(p_trp_msg_t trp_msg)
+{
+    trp_msg->payload.dcp_msg.hdr.payload_size = 0;
+    trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
+
+    if (FpFwListIsEmpty(&pkg_active_list))
+    {
+        trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_RD_DATA_NONE;
+        return;
+    }
+
+    if (in_flight_tlm_pkg != NULL)
+    {
+        // already processing a read, return busy
+        trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_E_BUSY;
+        return;
+    }
+
+    PFPFW_LIST_ENTRY entry = FpFwListRemoveHead(&pkg_active_list);
+    in_flight_tlm_pkg = CONTAINING_RECORD(entry, tlm_package_t, list_entry);
+
+    trp_msg->payload.dcp_msg.payload.read_data.physical_start_addr = IB_TELEMETRY_DDR_TOTAL_AP_BASE_ADDR;
+    trp_msg->payload.dcp_msg.payload.read_data.physical_buffer_size = IB_TELEMETRY_DDR_TOTAL_SIZE;
+    trp_msg->payload.dcp_msg.payload.read_data.rd_data_addr_offset = in_flight_tlm_pkg->pkg.ddr_addr_offset;
+    trp_msg->payload.dcp_msg.payload.read_data.rd_data_size = in_flight_tlm_pkg->pkg.pkg_size;
+    trp_msg->payload.dcp_msg.payload.read_data.crc = in_flight_tlm_pkg->pkg.crc;
+
+    trp_msg->payload.dcp_msg.hdr.payload_size = sizeof(dcp_msg_read_data_t);
+
+    if (FpFwListIsEmpty(&pkg_active_list))
+    {
+        trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_RD_DATA_VALID_LAST;
+    }
+    else
+    {
+        trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_RD_DATA_VALID_MORE;
+    }
+}
+
+void dcs_manager_handle_read_complete_msg(p_trp_msg_t trp_msg)
+{
+    trp_msg->payload.dcp_msg.hdr.payload_size = 0;
+
+    if (in_flight_tlm_pkg == NULL)
+    {
+        // no package to complete
+        trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_E_BUFFER_DISCARD;
+        return;
+    }
+
+    if (trp_msg->payload.dcp_msg.payload.read_data_complete.rd_data_addr_offset != in_flight_tlm_pkg->pkg.ddr_addr_offset)
+    {
+        // doesn't match the package in flight
+        trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_E_PARAM;
+        return;
+    }
+
+    dcs_manager_free_tlm_package_from_primary_mcp(in_flight_tlm_pkg);
+    in_flight_tlm_pkg = NULL;
+
+    if (FpFwListIsEmpty(&pkg_active_list))
+    {
+        trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_RD_DATA_NONE;
+    }
+    else
+    {
+        trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_RD_DATA_VALID_MORE;
+    }
+}
+
+void dcs_manager_free_tlm_package_from_primary_mcp(p_tlm_package_t tlm_pkg)
+{
+    FPFW_ET_LOG(DcsMgrDbgFreePkg, tlm_pkg->pkg.atu_mapped_location, tlm_pkg->pkg.source_die_id, tlm_pkg->pkg.source_cpu_id);
+
+    if (tlm_pkg->pkg.source_die_id == dcs_get_this_die_id() && tlm_pkg->pkg.source_cpu_id == dcs_get_this_cpu_id())
+    {
+        uintptr_t atu_mapped_location = tlm_pkg->pkg.atu_mapped_location;
+        ddr_manager_deallocate_mem(&atu_mapped_location);
+    }
+    else
+    {
+        // send to secondary MCP
+        dcs_manager_send_trp_read_complete(tlm_pkg);
+    }
+
+    FpFwListInsertTail(&pkg_free_list, &tlm_pkg->list_entry);
+}
+
+void dcs_manager_free_tlm_package_from_secondary_mcp(p_tlm_package_t tlm_pkg)
+{
+    PFPFW_LIST_ENTRY iterator = NULL;
+    PFPFW_LIST_ENTRY iteratorNext = NULL;
+    p_tlm_package_t curr_pkg = NULL;
+    bool match = false;
+
+    // likely first entry but will search the list to allow for out of order completion
+    FpFwListForEach(pkg_active_list, iterator, iteratorNext)
+    {
+        curr_pkg = CONTAINING_RECORD(iterator, tlm_package_t, list_entry);
+
+        if (memcmp(&curr_pkg->pkg, &tlm_pkg->pkg, sizeof(trp_msg_read_pkg_rsp_t)) == 0)
+        {
+            match = true;
+            break;
+        }
+    }
+
+    if (match)
+    {
+        FPFW_ET_LOG(DcsMgrDbgFreePkg,
+                    tlm_pkg->pkg.atu_mapped_location,
+                    tlm_pkg->pkg.source_die_id,
+                    tlm_pkg->pkg.source_cpu_id);
+
+        FpFwListRemoveEntry(iterator);
+        uintptr_t atu_mapped_location = tlm_pkg->pkg.atu_mapped_location;
+        ddr_manager_deallocate_mem(&atu_mapped_location);
+
+        FpFwListInsertTail(&pkg_free_list, iterator);
+    }
+    else
+    {
+        FPFW_ET_LOG(DcsMgrNoMatchPkgComplete, tlm_pkg->pkg.atu_mapped_location, tlm_pkg->pkg.ddr_addr_offset);
+    }
+}
+
+p_tlm_package_t dcs_manager_get_pkg_from_free_list(void)
+{
+    p_tlm_package_t ret_val = NULL;
+    PFPFW_LIST_ENTRY entry = NULL;
+
+    if (FpFwListIsEmpty(&pkg_free_list))
+    {
+        FPFW_ET_LOG(DcsMgrPkgFreeListEmpty);
+
+        if (dcs_is_primary_instance() && !FpFwListIsEmpty(&pkg_active_list))
+        {
+            entry = FpFwListRemoveHead(&pkg_active_list);
+            p_tlm_package_t oldest_pkg = CONTAINING_RECORD(entry, tlm_package_t, list_entry);
+
+            // note: this api will add the package to the free list
+            dcs_manager_free_tlm_package_from_primary_mcp(oldest_pkg);
+        }
+        else
+        {
+            return ret_val;
+        }
+        // the secondary MCP has sent its packages to the primary MCP, so it can not free the oldest package.
+        // needs to be freed by the primary MCP.
+    }
+
+    entry = FpFwListRemoveHead(&pkg_free_list);
+    ret_val = CONTAINING_RECORD(entry, tlm_package_t, list_entry);
+
+    return ret_val;
+}
+
+void dcs_manager_handle_reset_msg(p_trp_msg_t trp_msg)
+{
+    trp_msg->payload.dcp_msg.hdr.payload_size = 0;
+    trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
+
+    // flushing the queue is going to loop through the queue and free the blocks in the queue
+    // the block that this message is in has already been popped off the queue and will be freed when
+    // this function returns
+    dcs_client_flush_incoming_queue(DCP_CLIENT_ID_PWR_INST_TELEM);
+
+    if (dcs_is_primary_instance())
+    {
+        if (in_flight_tlm_pkg != NULL)
+        {
+            uintptr_t atu_mapped_location = in_flight_tlm_pkg->pkg.atu_mapped_location;
+            ddr_manager_deallocate_mem(&atu_mapped_location);
+
+            in_flight_tlm_pkg = NULL;
+        }
+
+        // free all active packages
+        PFPFW_LIST_ENTRY iterator = NULL;
+        PFPFW_LIST_ENTRY iteratorNext = NULL;
+        p_tlm_package_t curr_pkg = NULL;
+
+        FpFwListForEach(pkg_active_list, iterator, iteratorNext)
+        {
+            curr_pkg = CONTAINING_RECORD(iterator, tlm_package_t, list_entry);
+
+            // only free packages that are from this MCP, the secondary MCP will free its own packages
+            // without having to send trp messages for each package
+            if (curr_pkg->pkg.source_die_id == dcs_get_this_die_id() && curr_pkg->pkg.source_cpu_id == dcs_get_this_cpu_id())
+            {
+                dcs_manager_free_tlm_package_from_primary_mcp(curr_pkg);
+            }
+        }
+    }
+    else
+    {
+        // free all active packages
+        PFPFW_LIST_ENTRY iterator = NULL;
+        PFPFW_LIST_ENTRY iteratorNext = NULL;
+        p_tlm_package_t curr_pkg = NULL;
+
+        FpFwListForEach(pkg_active_list, iterator, iteratorNext)
+        {
+            curr_pkg = CONTAINING_RECORD(iterator, tlm_package_t, list_entry);
+            dcs_manager_free_tlm_package_from_secondary_mcp(curr_pkg);
+        }
+    }
+
+    // re-init the lists to recover any lost packages
+    FpFwListInitialize(&pkg_free_list);
+    for (size_t i = 0; i < MAX_PENDING_PACKAGES; i++)
+    {
+        FpFwListEntryInitialize(&dcs_active_pkg_buffer[i].list_entry);
+        FpFwListInsertTail(&pkg_free_list, &dcs_active_pkg_buffer[i].list_entry);
+    }
+    FpFwListInitialize(&pkg_active_list);
+
+    FPFW_ET_LOG(DcsMgrResetMsgReceived);
 }

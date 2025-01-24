@@ -15,6 +15,7 @@
 #include "telemetry_relay_protocol.h"
 #include <fpfw_icc_base.h>
 #include <fpfw_status.h>
+#include <idsw_kng.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -112,9 +113,22 @@ uint8_t dcs_get_this_cpu_id(void);
  */
 fpfw_status_t dcs_client_register(dcp_client_id_t id, p_dcs_client_t client);
 
+
 /**
- * @brief Send a message to the die and core specified in the trp header. Use for initial request or for broadcast forwarding.
- * @note The message be copied and queued for the DCS thread to handle. The caller may free the message after this function returns.
+ * @brief Send a new message.
+ * @note The message will be copied and queued for the DCS thread to handle. The caller may free the message after this function returns.
+ * @note Thread Safe
+ * @note Not ISR Safe
+ *
+ * @param[in,out] trp_msg Message to send.
+ *
+ * @return none
+ */
+void dcs_client_send_new_trp_msg(p_trp_msg_t trp_msg);
+
+/**
+ * @brief Forward an existing message to the die and core specified in the trp header. Use for forwarding incoming messages.
+ * @note The message will be copied and queued for the DCS thread to handle. The caller may free the message after this function returns.
  * @note Thread Safe
  * @note Not ISR Safe
  *
@@ -123,13 +137,13 @@ fpfw_status_t dcs_client_register(dcp_client_id_t id, p_dcs_client_t client);
  *
  * @return none
  */
-void dcs_client_send_trp_msg(p_trp_msg_t trp_msg, trp_broadcast_t broadcast_option);
+void dcs_client_forward_trp_msg(p_trp_msg_t trp_msg, trp_broadcast_t broadcast_option);
 
 /**
  * @brief Send a response to a TRP message received from the remote core.
  *   Consumer only needs to update payload.  This function will swap the source and destination fields in the header.
  *
- * @note The message be copied and queued for the DCS thread to handle. The caller may free the message after this function returns.
+ * @note The message will be copied and queued for the DCS thread to handle. The caller may free the message after this function returns.
  * @note Thread Safe
  * @note Not ISR Safe
  *
@@ -138,6 +152,14 @@ void dcs_client_send_trp_msg(p_trp_msg_t trp_msg, trp_broadcast_t broadcast_opti
  * @return none
  */
 void dcs_client_send_trp_response(p_trp_msg_t trp_msg);
+
+/**
+ * @brief Send a DCP notification message to the host.
+ *
+ * @param[in] client_id - The client ID send from
+ * @param[in] notification - The notification type
+ */
+void dcs_client_send_dcp_notification(dcp_client_id_t client_id, dcp_notification_type_t notification);
 
 /**
  * @brief Loop through the clients queue, pop the block and free it

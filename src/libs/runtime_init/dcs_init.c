@@ -13,6 +13,7 @@
 #include <data_collection_service.h>
 #include <fpfw_init.h>
 #include <icc_mhu.h>
+#include <idhw.h> // for idhw_is_single_die_boot_en
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <kng_icc_shared.h>
@@ -58,6 +59,7 @@ FPFW_INIT_COMPONENT(dcs_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_ms
                 .number_of_endpoints = 0,
                 //.this_die_id assigned below
                 //.this_cpu_id assigned below
+                //.is_dual_die assigned below
             },
         .ifwi_version =
             {
@@ -74,6 +76,7 @@ FPFW_INIT_COMPONENT(dcs_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_ms
 
     s_config.trp_icc_config.this_die_id = idsw_get_die_id();
     s_config.trp_icc_config.this_cpu_id = idsw_get_cpu_type();
+    s_config.trp_icc_config.is_dual_die = !idhw_is_single_die_boot_en();
 
     // add AP dcp endpoint
     if ((s_config.trp_icc_config.this_die_id == DIE_0) && (s_config.trp_icc_config.this_cpu_id == CPU_MCP))
@@ -84,6 +87,7 @@ FPFW_INIT_COMPONENT(dcs_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_ms
         s_trp_icc_endpoint_table[number_of_endpoints].async_recv_buffer = s_ap_icc_endpt_rx_buffer;
         s_trp_icc_endpoint_table[number_of_endpoints].async_recv_buffer_size = sizeof(s_ap_icc_endpt_rx_buffer);
         s_trp_icc_endpoint_table[number_of_endpoints].icc_payload_protocol = ICC_COMMAND_DCP_MSG;
+        s_trp_icc_endpoint_table[number_of_endpoints].transport_type = TRP_TRANSPORT_TYPE_MHU;
         sprintf(s_trp_icc_endpoint_table[number_of_endpoints].name, "%s", "DIE_0_AP_DCP"); // no sprintf_s, keep length to ENDPOINT_NAME_MAX_LENGTH
 
         s_trp_routing_table[number_of_routes].dest.die_id = DIE_0;
@@ -103,6 +107,7 @@ FPFW_INIT_COMPONENT(dcs_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_ms
     s_trp_icc_endpoint_table[number_of_endpoints].async_recv_buffer = s_local_mscp_icc_endpt_rx_buffer;
     s_trp_icc_endpoint_table[number_of_endpoints].async_recv_buffer_size = sizeof(s_local_mscp_icc_endpt_rx_buffer);
     s_trp_icc_endpoint_table[number_of_endpoints].icc_payload_protocol = ICC_COMMAND_TRP_MSG;
+    s_trp_icc_endpoint_table[number_of_endpoints].transport_type = TRP_TRANSPORT_TYPE_MHU;
     // no sprintf_s, keep length to ENDPOINT_NAME_MAX_LENGTH
     sprintf(s_trp_icc_endpoint_table[number_of_endpoints].name,
             "DIE_%d_%s_TRP",

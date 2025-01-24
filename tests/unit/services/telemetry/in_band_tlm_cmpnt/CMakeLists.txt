@@ -43,8 +43,12 @@ mock_target(${TARGET}
     _txe_block_release
     dcs_client_register
     dcs_is_primary_instance
-    dcs_client_send_trp_msg
+    dcs_client_send_new_trp_msg
+    dcs_client_forward_trp_msg
     dcs_client_send_trp_response
     dcs_client_flush_incoming_queue
+    dcs_client_send_dcp_notification
+    dcs_get_this_die_id
+    dcs_get_this_cpu_id
     FpFwAssertWithArgs
 )

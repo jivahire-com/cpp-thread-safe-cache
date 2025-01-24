@@ -23,6 +23,8 @@ variables:
   value: 'onebranch.azurecr.io/windows/ltsc2019/vse2019:latest'
 - name: BuildVersion
   value: $[ variables['Build.BuildNumber'] ]
+- name: OfficialBuild
+  value : $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
 
 resources:
   repositories: 

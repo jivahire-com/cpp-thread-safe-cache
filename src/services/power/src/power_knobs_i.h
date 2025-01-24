@@ -30,8 +30,8 @@
 #define POWER_KNOB_STEP_SIZE_MAX        31
 #define POWER_KNOB_FORCE_PSTATE_DISABLE 32
 #define POWER_KNOB_PLIMIT_MAX           31
-// VR CPU max voltage in survivability mode
-#define POWER_KNOB_VR_FORCED_VCPU_SURVIVABILITY 1050
+// VR CPU max voltage (mV) in survivability mode
+#define POWER_KNOB_VR_FORCED_VCPU_SURVIVABILITY 963
 // power control loop interval for emulation platforms
 #define POWER_KNOB_CTRL_LOOP_INTERVAL_PVT_MODEL 50
 /*-------------- Typedefs ----------------*/

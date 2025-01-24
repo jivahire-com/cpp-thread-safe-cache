@@ -145,7 +145,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
 
         ddrss_cfgs.dimm_sku = DDR5_RDIMM_2Rx4_16Gb_64GB;
         ddrss_cfgs.ext_knobs.ddr_speed_grade = config_get_ddr_speed_grade();
-        
+
         // DDR Phy FW Load info
         ddrss_cfgs.phy_type = DDRSS_PHY_TYPE_REAL;
         ddrss_cfgs.phy_fw_type = DDRSS_PHY_FW_TRAINING;

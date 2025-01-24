@@ -16,6 +16,7 @@
 #include <fpfw_cfg_mgr.h>
 #include <idsw_kng.h>
 #include <kng_soc_constants.h> // for NUM_AP_CORES_PER_DIE
+#include <power_i.h>           // for POWER_LOG
 #include <silibs_common.h>     // for ARRAY_SIZE
 #include <stdbool.h>           // for false, true
 #include <stddef.h>            // for NULL
@@ -120,11 +121,30 @@ void power_knobs_read(power_knobs_t* p_knobs)
 
     if (p_knobs->enable_survivability_mode)
     {
-        // TODO: complete survivability mode: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1809001
         // ensure maximum VCPU not exceeded in survivability mode (LDO bypass requirement)
-
-        // temporarily, just disable control loop
-        p_knobs->loops_disable |= power_loops_disable_t_CTRL_LOOP;
+        if (p_knobs->forced_vrs.vr[MPCL_VR_VCPU] > POWER_KNOB_VR_FORCED_VCPU_SURVIVABILITY)
+        {
+            POWER_LOG_WARN(MODULE_NAME "Survivability mode, VCPU0 limited to %d (original %d)",
+                           POWER_KNOB_VR_FORCED_VCPU_SURVIVABILITY,
+                           p_knobs->forced_vrs.vr[MPCL_VR_VCPU]);
+            p_knobs->forced_vrs.vr[MPCL_VR_VCPU] = POWER_KNOB_VR_FORCED_VCPU_SURVIVABILITY;
+        }
+        if (p_knobs->forced_vrs.vr[MPCL_VR_VCPU1] > POWER_KNOB_VR_FORCED_VCPU_SURVIVABILITY)
+        {
+            POWER_LOG_WARN(MODULE_NAME "Survivability mode, VCPU1 limited to %d (original %d)",
+                           POWER_KNOB_VR_FORCED_VCPU_SURVIVABILITY,
+                           p_knobs->forced_vrs.vr[MPCL_VR_VCPU1]);
+            p_knobs->forced_vrs.vr[MPCL_VR_VCPU1] = POWER_KNOB_VR_FORCED_VCPU_SURVIVABILITY;
+        }
+        // If survivabilty mode is enabled, we should either disable the control loop or override VCPU
+        if (((p_knobs->forced_vrs.vr[MPCL_VR_VCPU] == 0) || (p_knobs->forced_vrs.vr[MPCL_VR_VCPU1] == 0)) &&
+            (p_knobs->loops_disable != power_loops_disable_t_CTRL_LOOP))
+        {
+            // disable control loop
+            POWER_LOG_WARN(MODULE_NAME
+                           "Survivability mode, consider forcing value of Vcpu. Disabling control loop.");
+            p_knobs->loops_disable = power_loops_disable_t_CTRL_LOOP;
+        }
     }
 
     p_knobs->minimum_plimit_updates = config_get_power_minimum_plimit_updates();

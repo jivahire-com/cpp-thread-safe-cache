@@ -4,7 +4,7 @@ Library           pylibs.sensor_fifo_tests.sensor_fifo_cli_test.SensorFifoCliTes
 ...               workspace_config=${WORKSPACE_CONFIG}
 ...               default_log_home=${LOG_DIR}
 ...               fw_payload_path=${PAYLOAD_DIR}
-...               host_config=${HOST_CONFIG_DIR}/mscp_runtime_fw.json
+...               host_config=${HOST_CONFIG_DIR}/hsp_scp_bl_embed_fw.json
 ...               WITH NAME    sensor_fifo_cli_test_lib
 
 Library           ${CURDIR}/../functional/pythia/pylibs/sensor_fifo_tests/sensor_fifo_lib.py

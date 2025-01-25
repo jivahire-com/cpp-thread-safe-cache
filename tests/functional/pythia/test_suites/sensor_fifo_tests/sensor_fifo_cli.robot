@@ -4,8 +4,16 @@ Documentation     Tests for sensor FIFO CLI commands
 
 Resource          ${CURDIR}/../../../../commonResource/sensor_fifo_common.resource
 
-Suite Setup       Setup Test Environment
+Suite Setup       Run Keywords
+...               Setup Test Environment    AND
+...               Setup FIFO Prerequisites
 Suite Teardown    Teardown Test Environment
+
+*** Keywords ***
+Setup FIFO Prerequisites
+    ${test_lib}=    Get Library Instance    sensor_fifo_cli_test_lib
+    ${prereq_status}=    Call Method    ${test_lib}    setup_fifo_prerequisites
+    IF    not ${prereq_status}    Fail    Failed to set up FIFO test prerequisites
 
 *** Test Cases ***
 Test Case - verify snsrfifo help command

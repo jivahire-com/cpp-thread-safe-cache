@@ -33,6 +33,9 @@ except ImportError:
 
 
 class SensorFifoCliTest(EchoFallsBaseTest):
+    # Initialize class-level flag
+    _scp_mcp_heartbeat_received = False
+
     def __init__(
         self,
         workspace_config: Path | str = None,
@@ -54,7 +57,49 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             host_config=host_config,
             host_name=host_name,
         )
-    
+
+    def wait_for_scp_mcp_heartbeat(self) -> bool:
+        """Wait for both SCP and MCP heartbeat messages"""
+        try:
+            # Setup channels
+            scp_channel = self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
+            mcp_channel = self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel()
+            
+            # Open channels
+            scp_channel.open()
+            mcp_channel.open()
+            
+            # Wait for SCP heartbeat
+            self.log.info("Waiting for initial SCP Heartbeat Message...")
+            try:
+                scp_channel.read_until(key="ScpHeartBeat", timeout_seconds=1800)
+                self.log.info("SCP Heartbeat received successfully")
+            except Exception as e:
+                self.log.error(f"Failed to receive SCP heartbeat: {str(e)}")
+                return False
+                
+            # Wait for MCP heartbeat
+            self.log.info("Waiting for initial MCP Heartbeat Message...")
+            try:
+                mcp_channel.read_until(key="McpHeartBeat", timeout_seconds=3600)
+                self.log.info("MCP Heartbeat received successfully")
+            except Exception as e:
+                self.log.error(f"Failed to receive MCP heartbeat: {str(e)}")
+                return False
+                
+            self.__class__._scp_mcp_heartbeat_received = True
+            return True
+            
+        except Exception as e:
+            self.log.error(f"Error during heartbeat check: {str(e)}")
+            return False
+        finally:
+            # Close channels
+            if 'scp_channel' in locals() and scp_channel.is_open():
+                scp_channel.close()
+            if 'mcp_channel' in locals() and mcp_channel.is_open():
+                mcp_channel.close()    
+
     def sensor_fifo_cli_test(self, command: str, read_until_key: str, pass_logs: Union[List[str], str] = None, optional_first_command: Optional[str] = None) -> bool:
         """
         Test function to execute sensor fifo CLI commands and validate the response.
@@ -395,6 +440,11 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         try:
             self.log.info("Setting up DUT...")
             self.dut.setup()
+                 
+            # Wait for SCP heartbeat during initial setup
+            if not self.wait_for_scp_mcp_heartbeat():
+                self.log.error("Failed to receive initial SCP-MCP heartbeat during setup")
+                return False
             return True
         except Exception as e:
             self.log.error(f"Error during DUT setup: {str(e)}")
@@ -404,9 +454,14 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         """Teardown the DUT after testing"""
         try:
             self.log.info("Tearing down DUT...")
+
+            # Reset the heartbeat flag since SVP is being terminated
+            self.__class__._scp_mcp_heartbeat_received = False
+
             self.dut.teardown()
             time.sleep(30)
             return True
+        
         except Exception as e:
             self.log.error(f"Error during DUT teardown: {str(e)}")
             return False
@@ -466,8 +521,26 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         Returns:
             bool: True if prerequisites were set successfully, False otherwise
         """
+
         try:
             self.log.info("Setting up prerequisites for FIFO testing")
+
+            # Wait for SCP heartbeat
+            if not self.wait_for_scp_mcp_heartbeat():
+                self.log.error("Failed to receive SCP MCP heartbeat")
+                return False
+        
+            # Wait for SVP initialization
+            time.sleep(5)  # Short delay for SVP to settle
+
+            # Ensure UART is ready by checking channel
+            core_com_channel = self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
+            if not core_com_channel.is_open():
+                self.log.info("Opening UART channel")
+                core_com_channel.open()
+                if not core_com_channel.is_open():
+                    self.log.error("Failed to open UART channel")
+                    return False
 
             # Set power loop disable
             pwr_loop_result = self.sensor_fifo_cli_test(
@@ -481,15 +554,14 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             
             # pwrtlm disable on MCP <MCP not getting loaded when sideloaded...
             # In ADO might not work but have the code as it might be needed when we have to test in real hardware. 
-            # pwrtlm_result = self.run_command_on_mcp(
-            #     command="pwrtlm disable",
-            #     read_until_key="Ok",
-            #     pass_logs="Power Telemetry Disabled!"
-            # )
-            # time.sleep(5)
-            # if not self.validate_test_result(pwrtlm_result):
-            #     self.log.error("❌ Failed to disable power telemetry on MCP")
-            #     return False
+            pwrtlm_result = self.run_command_on_mcp(
+                command="pwrtlm disable",
+                read_until_key="Ok",
+                pass_logs="Power Telemetry Disabled!"
+            )
+            if not self.validate_test_result(pwrtlm_result):
+                self.log.error("❌ Failed to disable power telemetry on MCP")
+                return False
 
             # Reset all FIFOs
             reset_result = self.sensor_fifo_cli_test(

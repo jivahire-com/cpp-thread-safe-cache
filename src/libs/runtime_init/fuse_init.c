@@ -46,21 +46,6 @@ FPFW_INIT_COMPONENT(fuse_post_mesh,
     platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT);
     platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT_BRIDGE_INIT);
 
-    // TODO: The fuse distribution erroneously unmaps the ATU mapping
-    // MSCP_START_ADDRESS: 60200000    MSCP_END_ADDRESS: 689B1FFF   AP_ADDRESS: 000200000000
-    // Restore that mapping
-    // ADO: 2199711
-    uint64_t ap_base_address = idsw_get_die_id() == DIE_0 ? AP_TOP_D0_CORE_CLUSTER_ADDRESS : AP_TOP_D1_CORE_CLUSTER_ADDRESS;
-    atu_map_entry_t atu_entry = {
-        .ap_base_address = ap_base_address + 0x4000,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_END_ADDR,
-        .attribute = {{.axprot0 = ATU_BUS_ATTR_SET, .axprot1 = ATU_BUS_ATTR_CLR, .axnse = ATU_BUS_ATTR_SET}},
-    };
-    atu_unmap(ATU_ID_MSCP, &atu_entry);
-    atu_entry.ap_base_address = idsw_get_die_id() == DIE_0 ? AP_TOP_D0_CORE_CLUSTER_ADDRESS : AP_TOP_D1_CORE_CLUSTER_ADDRESS;
-    atu_map(ATU_ID_MSCP, &atu_entry);
-
     printf(FUSE_NAME "SVC post-mesh init successfully\n");
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

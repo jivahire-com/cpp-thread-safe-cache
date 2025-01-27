@@ -95,8 +95,7 @@ class varserv_cli_test(EchoFallsBaseTest):
             scp_channel.write_line(write_string=command)
 
             try:
-                #guid = scp_channel.read_until(key="Async Set Variable Complete Notify", timeout_seconds=900)
-                guid = scp_channel.read_until(key="SetVariable response received", timeout_seconds=900)
+                guid = scp_channel.read_until(key="Async Set Variable Complete Notify", timeout_seconds=500)
                 self.log.info("SET Command Complete Notify . . .")
                 # Get GUID and store it for later validation
                 set_guid = self.vendor_guid(guid)
@@ -108,8 +107,16 @@ class varserv_cli_test(EchoFallsBaseTest):
                     self.dut.teardown()
                     time.sleep(30)
                     return False
-                #.read_until(key="Async Set Variable Done", timeout_seconds=900)
-                scp_channel.read_until(key="received status from hsp: 0x0", timeout_seconds=900)
+                set_data = self.vendor_data(guid)
+                self.log.info(f"Submitting {set_data}\n")
+                if set_data is None:
+                    self.log.info("Data for Set is NOT SUCCESSFUL")
+                    scp_channel.close()
+                    self.test_notify(step="Variable Services SET GET Command", msg="Test Fail", _is_error=True)
+                    self.dut.teardown()
+                    time.sleep(30)
+                    return False
+                scp_channel.read_until(key="Async Set Variable Done", timeout_seconds=500)
                 self.log.info("SET command executed Successfully . . .")
             except Exception as e:
                 self.log.error(f"Error reading SCP UART: {e}")
@@ -125,7 +132,7 @@ class varserv_cli_test(EchoFallsBaseTest):
             scp_channel.write_line(write_string=command)
 
             try:
-                guid = scp_channel.read_until(key="Async Get Variable Complete Notify", timeout_seconds=900)
+                guid = scp_channel.read_until(key="Async Get Variable Complete Notify", timeout_seconds=500)
                 self.log.info("GET Command Complete Notify . . .")
                 # Store GUID after issuing GET command and validate it with GUID on SET
                 get_guid = self.vendor_guid(guid)
@@ -145,7 +152,27 @@ class varserv_cli_test(EchoFallsBaseTest):
                     time.sleep(30)
                     return False
                 self.log.info("SET-GET GUID validation successful . . .")
-                scp_channel.read_until(key="Async Get Variable Done", timeout_seconds=900)
+                guid_data = scp_channel.read_until(key="Get Variable Ctx Freed", timeout_seconds=500)
+                self.log.info("GET Command Variable CTX Freed . . .")
+                # Store DATA after issuing GET command and validate it with DATA on SET
+                get_data = self.vendor_data_get(guid_data)
+                self.log.info(f"Submitting {get_data}\n")
+                if get_data is None:
+                    self.log.info("GUID for Get is NOT SUCCESSFUL")
+                    scp_channel.close()
+                    self.test_notify(step="Variable Services SET GET Command", msg="Test Fail", _is_error=True)
+                    self.dut.teardown()
+                    time.sleep(30)
+                    return False
+                if get_data != set_data:
+                    self.log.info("GUID for Set and GET is NOT SUCCESSFUL")
+                    scp_channel.close()
+                    self.test_notify(step="Variable Services SET GET Command", msg="Test Fail", _is_error=True)
+                    self.dut.teardown()
+                    time.sleep(30)
+                    return False
+                self.log.info("SET-GET DATA validation successful . . .")
+                scp_channel.read_until(key="Async Get Variable Done", timeout_seconds=500)
                 self.log.info("GET command executed Successfully . . .")
             except Exception as e:
                 self.log.error(f"Error reading SCP UART: {e}")
@@ -170,4 +197,30 @@ class varserv_cli_test(EchoFallsBaseTest):
                 value = line.split("Vendor Guid")[-1].strip()
                 return value
         self.log.info("Vendor GUID NOT found . . .")
+        return None
+    
+    #Parse Data information from SCP messages
+    def vendor_data(self, guid):
+        for line in guid.splitlines():
+            if "Data:" in line:
+                value = line.split("Data:")[-1].strip()
+                return value
+        self.log.info("Vendor Data NOT found . . .")
+        return None
+    
+    #Parse Data GET information from SCP messages
+    def vendor_data_get(self, guid):
+        data_received = False
+        data_lines = []
+        for line in guid.splitlines():
+            if "Data received" in line:
+                data_received = True
+            elif data_received:
+                if line.startswith("[var_serv]"):
+                    break
+                data_lines.append(line.strip())
+        if data_lines:
+            data = " ".join(data_lines)
+            return data
+        self.log.info("Vendor Data NOT found . . .")
         return None

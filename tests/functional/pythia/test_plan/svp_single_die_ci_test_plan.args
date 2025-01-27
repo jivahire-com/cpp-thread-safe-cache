@@ -49,4 +49,4 @@
 
 
 ## Variable Service Tests
-#./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot
+./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_cli_test.robot

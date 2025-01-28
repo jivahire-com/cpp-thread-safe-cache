@@ -42,8 +42,8 @@ mock_target(${TARGET}
     atu_map
     atu_unmap
     idsw_get_platform_sdv
-    intu_clear_interrupt_status
-    intu_get_interrupt_status
+    vabss_intu_probe
+    vabss_intu_clear
     nvic_irq_set_isr_with_param
     nvic_irq_clear_pending
     nvic_irq_enable

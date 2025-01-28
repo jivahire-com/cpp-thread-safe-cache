@@ -15,6 +15,7 @@
 #include <idsw.h>
 #include <nvic.h>
 #include <vab_init.h>
+#include <vab_intu.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -50,18 +51,29 @@ nvic_status_t __wrap_nvic_irq_enable(uint32_t irq_num)
     return (NVIC_STATUS_SUCCESS);
 }
 
-int __wrap_intu_clear_interrupt_status(uintptr_t intu_base_addr, uint32_t intr_pin_mask)
+silibs_status_t __wrap_vabss_intu_probe(uintptr_t vab_base, vabss_int_probe_t* probe, INTU_DEST_PIN dest)
 {
-    check_expected(intu_base_addr);
-    check_expected(intr_pin_mask);
-    return 0;
+    check_expected(vab_base);
+    assert_non_null(probe);
+    check_expected(dest);
+
+    uint8_t intu0_pin = mock();
+    bool intu0_value = mock();
+    uint8_t intu1_pin = mock();
+    bool intu1_value = mock();
+    probe->intu0[intu0_pin].asserted = intu0_value;
+    probe->intu1[intu1_pin].asserted = intu1_value;
+
+    return mock_type(silibs_status_t);
 }
 
-int __wrap_intu_get_interrupt_status(uintptr_t intu_base_addr, uint32_t* intr)
+silibs_status_t __wrap_vabss_intu_clear(uintptr_t vab_base, vabss_int_probe_t* probe, INTU_DEST_PIN dest)
 {
-    check_expected(intu_base_addr);
-    assert_non_null(intr);
-    return 0;
+    check_expected(vab_base);
+    assert_non_null(probe);
+    check_expected(dest);
+
+    return mock_type(silibs_status_t);
 }
 
 void __wrap_rpss_irq_callback(uint32_t irq_num)

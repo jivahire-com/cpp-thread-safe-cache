@@ -67,6 +67,7 @@ set(SILIB_LIST
     sdm_init
     semaphore
     sensor_ram_bridge
+    spi_bridge
     smmu
     tower_cdedss
     tower_d2dss
@@ -106,7 +107,6 @@ add_subdirectory(${TARGET_DIR_SILIBS_COMMON}/idsw_kng ${LIB_OUTS_DIR}/idsw_kng)
 
 # Add the libraries where we either implement our own source or our own cmakes
 add_subdirectory(kng_silibs_platform ${LIB_OUTS_DIR}/kng_silibs_platform)
-add_subdirectory(spi_bridge ${LIB_OUTS_DIR}/spi_bridge)
 add_subdirectory(rng ${LIB_OUTS_DIR}/rng)
 
 # Optimize for DDRSS silibs image size

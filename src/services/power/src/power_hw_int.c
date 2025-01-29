@@ -132,14 +132,24 @@ static void setup_forced_pstate(uintptr_t cluster_pex_base_addr, dvfs_config_t* 
     // copy vft settings to lower perf pstates
     for (unsigned pstate_idx = pstate + 1; pstate_idx < NUM_PSTATES; ++pstate_idx)
     {
-        temp_vft->vmat_info[0].ldo_dac_in[pstate_idx] = temp_vft->vmat_info[0].ldo_dac_in[pstate];
-        temp_vft->vmat_info[0].memasst_hd_ema[pstate_idx] = temp_vft->vmat_info[0].memasst_hd_ema[pstate];
-        temp_vft->vmat_info[0].memasst_hd_rawlm[pstate_idx] = temp_vft->vmat_info[0].memasst_hd_rawlm[pstate];
-        temp_vft->vmat_info[0].memasst_hshc_ema[pstate_idx] = temp_vft->vmat_info[0].memasst_hshc_ema[pstate];
-        temp_vft->vmat_info[0].memasst_hshc_rawlm[pstate_idx] = temp_vft->vmat_info[0].memasst_hshc_rawlm[pstate];
-        temp_vft->vmat_info[0].memasst_tp_emaa[pstate_idx] = temp_vft->vmat_info[0].memasst_tp_emaa[pstate];
-        temp_vft->vmat_info[0].memasst_tp_emab[pstate_idx] = temp_vft->vmat_info[0].memasst_tp_emab[pstate];
-        temp_vft->vmat_info[0].memasst_hd_emaw[pstate_idx] = temp_vft->vmat_info[0].memasst_hd_emaw[pstate];
+        for (unsigned col_num = 0; col_num < NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS; ++col_num)
+        {
+            temp_vft->vmat_info[col_num].ldo_dac_in[pstate_idx] = temp_vft->vmat_info[col_num].ldo_dac_in[pstate];
+            temp_vft->vmat_info[col_num].memasst_hd_ema[pstate_idx] =
+                temp_vft->vmat_info[col_num].memasst_hd_ema[pstate];
+            temp_vft->vmat_info[col_num].memasst_hd_rawlm[pstate_idx] =
+                temp_vft->vmat_info[col_num].memasst_hd_rawlm[pstate];
+            temp_vft->vmat_info[col_num].memasst_hshc_ema[pstate_idx] =
+                temp_vft->vmat_info[col_num].memasst_hshc_ema[pstate];
+            temp_vft->vmat_info[col_num].memasst_hshc_rawlm[pstate_idx] =
+                temp_vft->vmat_info[col_num].memasst_hshc_rawlm[pstate];
+            temp_vft->vmat_info[col_num].memasst_tp_emaa[pstate_idx] =
+                temp_vft->vmat_info[col_num].memasst_tp_emaa[pstate];
+            temp_vft->vmat_info[col_num].memasst_tp_emab[pstate_idx] =
+                temp_vft->vmat_info[col_num].memasst_tp_emab[pstate];
+            temp_vft->vmat_info[col_num].memasst_hd_emaw[pstate_idx] =
+                temp_vft->vmat_info[col_num].memasst_hd_emaw[pstate];
+        }
     }
 }
 

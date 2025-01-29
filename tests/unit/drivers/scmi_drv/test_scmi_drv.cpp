@@ -69,8 +69,10 @@ static int test_setup(void** pContext)
 
     // Just invoke making sure nothing breaking
     scmi_set_debug_mode(15);
-    will_return(__wrap_fpfw_init_get_handle, (void*)&s_test_mscp2_tfa_if);
-    scmi_init();
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(FPFW_ICC_TRANSPORT_ASYNC_RECV_REQUEST));
+    will_return(__wrap_fpfw_icc_transport_recv_async_req, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
+    scmi_drv_init((DFWK_INTERFACE_HEADER*)&s_test_mscp2_tfa_if);
     return 0;
 }
 
@@ -83,6 +85,14 @@ static int test_teardown(void** pContext)
 //
 // Tests
 //
+TEST_FUNCTION(test_scmi_drv_init, nullptr, test_teardown)
+{
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(FPFW_ICC_TRANSPORT_ASYNC_RECV_REQUEST));
+    will_return(__wrap_fpfw_icc_transport_recv_async_req, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
+    scmi_drv_init((DFWK_INTERFACE_HEADER*)&s_test_mscp2_tfa_if);
+}
+
 TEST_FUNCTION(test_scmi_set_apcore_interface, test_setup, test_teardown)
 {
 #define APCORE_INTERFACE 0x12345678
@@ -99,13 +109,6 @@ TEST_FUNCTION(test_scmi_send_resp, test_setup, test_teardown)
     will_return(__wrap_fpfw_icc_transport_try_send_sync_req, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
     int status =
         __real_scmi_send_resp(SCMI_PWR_DMN_PROTO_ID, SCMI_PROTO_VERSION_MSG, (uint8_t*)&protocol_ver_resp, sizeof(protocol_ver_resp));
-    assert_int_equal(status, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
-}
-
-TEST_FUNCTION(test_scmi_poll_message, test_setup, test_teardown)
-{
-    will_return(__wrap_fpfw_icc_transport_try_recv_sync_req, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
-    int status = scmi_poll_message();
     assert_int_equal(status, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
 }
 

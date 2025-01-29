@@ -21,23 +21,6 @@
 /*--------------- Structures ---------------*/
 
 /**
- * @brief Init the scmi primitive module
- * 
- * @param[in] die_id - die id
- * 
- * @return None
- */
-void scmi_init();
-
-/**
- * @brief API for polling a message - this is a temporary API for SCMI bring up purposes
- *
- * @param None
- * @return ICC_MHU_TRANS_CMD_MESSAGE_AVAILABLE - when message is available
- */
-int scmi_poll_message();
-
-/**
  * @brief API sets debug mode to spew payloads on ICC transactions
  *
  * @param mode value for debugging

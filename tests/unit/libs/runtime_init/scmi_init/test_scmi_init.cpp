@@ -14,6 +14,7 @@ extern "C" {
 #include <DfwkDriver.h> // for DFWK_SCHEDULE
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <fpfw_init.h>  // for fpfw_init_result_t, fpfw_init_component_t
+#include <scmi_init.h>  // for scmi_drv_init, scmi_set_apcore_interface
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -38,6 +39,11 @@ void __wrap_scmi_set_apcore_interface(DFWK_INTERFACE_HEADER* p_interface)
 {
     check_expected_ptr(p_interface);
 }
+
+void __wrap_scmi_drv_init(DFWK_INTERFACE_HEADER* p_scp_tfa_interface)
+{
+    check_expected_ptr(p_scp_tfa_interface);
+}
 }
 //
 // Tests
@@ -48,8 +54,9 @@ TEST_FUNCTION(scmi_init, nullptr, nullptr)
 #define TEST_INTERFACE 0x23456780
     //! Set up expectations
 
-    will_return(__wrap_fpfw_init_get_handle, (void*)TEST_INTERFACE); //! driver fmwk host handle
+    will_return_count(__wrap_fpfw_init_get_handle, (void*)TEST_INTERFACE, 2); //! driver fmwk host handle
     expect_value(__wrap_scmi_set_apcore_interface, p_interface, TEST_INTERFACE);
+    expect_value(__wrap_scmi_drv_init, p_scp_tfa_interface, TEST_INTERFACE);
 
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_scmi_drv.init_fn();

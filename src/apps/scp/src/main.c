@@ -10,7 +10,6 @@
 /*------------- Includes -----------------*/
 #include <FpFwUtils.h>
 #include <fpfw_init.h>
-#include <scmi_prim.h>
 #include <scp_events.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -102,8 +101,6 @@ void main_thread(ULONG thread_input)
 
     printf("\nHello World - SCP!\n");
 
-    scmi_init();
-    // Do nothing
     uint32_t rtos_ticks = 0;
     while (true)
     {
@@ -114,8 +111,5 @@ void main_thread(ULONG thread_input)
         }
         tx_thread_sleep(SLEEP_TICKS);
         rtos_ticks += SLEEP_TICKS;
-        // **TODO will have to remove this once the SCMI Driver framework gets implemented
-        // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1903038
-        (void)scmi_poll_message();
     }
 }

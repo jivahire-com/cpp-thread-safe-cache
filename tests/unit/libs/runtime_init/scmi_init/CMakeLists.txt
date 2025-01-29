@@ -37,4 +37,5 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     fpfw_init_get_handle
     scmi_set_apcore_interface
+    scmi_drv_init
 )

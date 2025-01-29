@@ -42,21 +42,19 @@
 
 /*------------- Functions ----------------*/
 
-void* __wrap_fpfw_init_get_handle(const char* id)
-{
-    FPFW_UNUSED(id);
-    return mock_ptr_type(void*);
-}
-
-fpfw_status_t __wrap_fpfw_icc_transport_try_recv_sync_req(PDFWK_INTERFACE_HEADER transport_interface,
-                                                          void* recv_buffer,
-                                                          size_t buffer_size,
-                                                          size_t* output_recv_bytes)
+fpfw_status_t __wrap_fpfw_icc_transport_recv_async_req(PDFWK_INTERFACE_HEADER transport_interface,
+                                                       PDFWK_ASYNC_REQUEST_HEADER request,
+                                                       void* recv_buffer,
+                                                       size_t buffer_size,
+                                                       DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE comp_routine,
+                                                       void* comp_ctx)
 {
     FPFW_UNUSED(transport_interface);
+    FPFW_UNUSED(request);
     FPFW_UNUSED(recv_buffer);
     FPFW_UNUSED(buffer_size);
-    FPFW_UNUSED(output_recv_bytes);
+    FPFW_UNUSED(comp_routine);
+    FPFW_UNUSED(comp_ctx);
     return mock_type(fpfw_status_t);
 }
 

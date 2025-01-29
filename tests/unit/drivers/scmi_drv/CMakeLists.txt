@@ -46,9 +46,8 @@ mock_target(${TARGET}
     ap_core_core_power_off
     ap_core_core_power_on
     ap_core_set_rvbaraddr
-    fpfw_icc_transport_try_recv_sync_req
+    fpfw_icc_transport_recv_async_req
     fpfw_icc_transport_try_send_sync_req
-    fpfw_init_get_handle
     scmi_send_resp
     scmi_check_message
     scmi_power_protocol_cmds

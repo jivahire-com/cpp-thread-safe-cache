@@ -15,6 +15,14 @@
 
 
 /*--------------- Structures ---------------*/
+/**
+ * @brief Init the scmi primitive module
+ * 
+ * @param[in] p_scp_tfa_interface: scp tfa mhu transport interface
+ * 
+ * @return None
+ */
+void scmi_drv_init(DFWK_INTERFACE_HEADER* p_scp_tfa_interface);
 
 /**
  * @brief Initialization API to provide an apcore interface to SCMI

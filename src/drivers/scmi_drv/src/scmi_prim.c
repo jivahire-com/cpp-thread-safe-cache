@@ -32,7 +32,12 @@
 #include <stdint.h>
 #include <string.h>
 
-#define SMT_CHANNEL_FREE (1)
+#define BIT_32(nr) (((uint32_t)(1U)) << (nr))
+#define SMT_CHANNEL_FREE \
+    BIT_32(0) //! Set 0th bit of status to indicate channel is free ie when SMT does not contain pending message
+
+#define SET_SCMI_SMT_CHANNEL_FREE(status) ((status) |= BIT_32(0))
+#define SCMI_SMT_IS_CHANNEL_FREE(status)  ((status) & BIT_32(0))
 
 // Local data structures
 typedef struct
@@ -50,11 +55,12 @@ typedef struct
 
 static DFWK_INTERFACE_HEADER* p_apcore_interface = NULL;
 static ap_core_asynchronous_request_t apcore_request;
-static uint8_t scmi_debug = 0;
+static uint8_t scmi_debug = 0x0;
 
 static mhu_icc_transport_intrf_t* s_icc_mscp2tfa = NULL;
 static volatile scmi_transport_message_t* scmi_recv_message;
 static volatile scmi_transport_message_t* scmi_send_message;
+static FPFW_ICC_TRANSPORT_ASYNC_RECV_REQUEST recv_request;
 
 void scmi_set_debug_mode(uint8_t mode)
 {
@@ -132,6 +138,7 @@ int scmi_power_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
         {
         // supported messages here
         case SCMI_PWR_STATE_SET_MSG:
+            SCMI_LOG_INFO("SCMI_PWR_STATE_SET_MSG\n");
             break;
         // everything else is unsupported
         default:
@@ -368,56 +375,6 @@ int scmi_check_message(scmi_icc_packet_t* packet)
     return status;
 }
 
-void scmi_init()
-{
-    s_icc_mscp2tfa = (mhu_icc_transport_intrf_t*)fpfw_init_get_handle("icc_mscp2tfa_if");
-    FPFW_RUNTIME_ASSERT(s_icc_mscp2tfa != NULL);
-
-    scmi_recv_message = (volatile scmi_transport_message_t*)s_icc_mscp2tfa->device->recv_channel.ch_shared_mem_addr;
-    scmi_send_message = (volatile scmi_transport_message_t*)s_icc_mscp2tfa->device->send_channel.ch_shared_mem_addr;
-}
-
-int scmi_poll_message()
-{
-    // Update the scmi status bit
-    scmi_local_packet_t* local_packet = (scmi_local_packet_t*)scmi_recv_message->data;
-    local_packet->smt_header.status = SMT_CHANNEL_FREE;
-    __DSB();
-
-    // Get the interface and issue a synchronous recv request
-    size_t out_bytes = 0;
-    fpfw_status_t status = fpfw_icc_transport_try_recv_sync_req(&(s_icc_mscp2tfa->base_interface),
-                                                                (void*)scmi_recv_message,
-                                                                sizeof(scmi_transport_message_t),
-                                                                &out_bytes);
-
-    if (FPFW_STATUS_SUCCEEDED(status) && scmi_recv_message->header.msg_header.command == ICC_SCMI_HOST_MODULE_SEND)
-    {
-        // Update the scmi status bit
-        // scmi_local_packet_t* local_packet = (scmi_local_packet_t*)scmi_recv_message->data;
-        local_packet->smt_header.status = SMT_CHANNEL_FREE;
-        __DSB();
-
-        if ((scmi_debug & 2) != 0)
-        {
-            SCMI_LOG_INFO("SCMI ICC Message: %x\n", (int)scmi_recv_message->header.msg_header.command);
-            SCMI_LOG_INFO("SCMI ICC Size: %x\n", (int)scmi_recv_message->header.msg_header.payload_size);
-
-            if (scmi_recv_message->header.msg_header.payload_size != 0 && (scmi_debug & 8) != 0)
-            {
-                for (uint8_t data_count = 0; data_count < scmi_recv_message->header.msg_header.payload_size; data_count++)
-                {
-                    SCMI_LOG_INFO("  scmi_message data[%d]: %x\n", data_count, scmi_recv_message->data[data_count]);
-                }
-            }
-        }
-
-        // Process the message
-        scmi_check_message((scmi_icc_packet_t*)&(scmi_recv_message->data));
-    }
-    return status;
-}
-
 int scmi_send_resp(uint8_t protocol_id, uint8_t cmd_id, uint8_t* payload, size_t size)
 {
     scmi_send_message->header.msg_header.command = ICC_SCMI_CLIENT_MOD_RESP;
@@ -446,4 +403,94 @@ void scmi_set_apcore_interface(DFWK_INTERFACE_HEADER* p_interface)
     // save the interface off for later use
     p_apcore_interface = p_interface;
     DfwkClientInterfaceOpen(p_interface);
+}
+
+static void scmi_async_recv_completion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
+{
+    FPFW_UNUSED(Context);
+    FPFW_RUNTIME_ASSERT(NULL != Request);
+
+    PFPFW_ICC_TRANSPORT_ASYNC_RECV_REQUEST request = (PFPFW_ICC_TRANSPORT_ASYNC_RECV_REQUEST)Request;
+    volatile scmi_transport_message_t* recv_msg = (volatile scmi_transport_message_t*)request->Input.PayloadBuffer;
+    volatile scmi_local_packet_t* local_packet = (volatile scmi_local_packet_t*)recv_msg->data;
+
+    SCMI_LOG_INFO("SCMI Async Recv Completion Raised!\n");
+    //! Ensure that the channel is busy here, tfa marks the scmi channel busy
+    //! before it sends icc message to scp
+    FPFW_RUNTIME_ASSERT(!SCMI_SMT_IS_CHANNEL_FREE(local_packet->smt_header.status));
+
+    //! Check if the request was successful & received some bytes
+    if ((request->Output.Status == FPFW_ICC_TRANSPORT_STATUS_SUCCESS) && (request->Output.ReceivedBytes > 0))
+    {
+        //! Check if the message is a SCMI message
+        if (recv_msg->header.msg_header.command == ICC_SCMI_HOST_MODULE_SEND)
+        {
+            //! Update the scmi status bit to free channel, pseudo ack to the tfa
+            //! tfa will spin until the channel is free before it proceeds to loop until mesg received
+            SET_SCMI_SMT_CHANNEL_FREE(local_packet->smt_header.status);
+            __DSB();
+
+            //! spew the messages if debug is enabled
+            if ((scmi_debug & 2) != 0)
+            {
+                SCMI_LOG_INFO("SCMI ICC Message: %x\n", (int)scmi_recv_message->header.msg_header.command);
+                SCMI_LOG_INFO("SCMI ICC Size: %x\n", (int)scmi_recv_message->header.msg_header.payload_size);
+
+                if (scmi_recv_message->header.msg_header.payload_size != 0 && (scmi_debug & 8) != 0)
+                {
+                    for (uint8_t data_count = 0; data_count < scmi_recv_message->header.msg_header.payload_size; data_count++)
+                    {
+                        SCMI_LOG_INFO("  scmi_message data[%d]: %x\n", data_count, scmi_recv_message->data[data_count]);
+                    }
+                }
+            }
+            //! Parse the message as per SCMI protocol
+            scmi_check_message((scmi_icc_packet_t*)&(recv_msg->data));
+        }
+        else
+        {
+            //! Unexpected! Only SCMI message command expected on scp tfa icc interface!
+            FPFW_RUNTIME_ASSERT(0);
+        }
+    }
+    else
+    {
+        //! Unexpected! Status failed or no bytes received
+        FPFW_RUNTIME_ASSERT(0);
+    }
+
+    //! respawn a new async recv request, always keep an async recv request alive
+    fpfw_status_t status = fpfw_icc_transport_recv_async_req(&(s_icc_mscp2tfa->base_interface),
+                                                             &recv_request.Header,
+                                                             (void*)scmi_recv_message,
+                                                             sizeof(scmi_transport_message_t),
+                                                             scmi_async_recv_completion,
+                                                             NULL);
+    FPFW_RUNTIME_ASSERT(status == FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
+}
+
+void scmi_drv_init(DFWK_INTERFACE_HEADER* p_scp_tfa_interface)
+{
+    //! Initialize the scp_tfa interface & scmi send/recv buffer
+    FPFW_RUNTIME_ASSERT(p_scp_tfa_interface != NULL);
+    s_icc_mscp2tfa = (mhu_icc_transport_intrf_t*)p_scp_tfa_interface;
+    scmi_recv_message = (volatile scmi_transport_message_t*)s_icc_mscp2tfa->device->recv_channel.ch_shared_mem_addr;
+    scmi_send_message = (volatile scmi_transport_message_t*)s_icc_mscp2tfa->device->send_channel.ch_shared_mem_addr;
+
+    //! Initialize a request to be sent to the mbox icc transport interface
+    DfwkAsyncRequestInitialize(&recv_request.Header, sizeof(FPFW_ICC_TRANSPORT_ASYNC_RECV_REQUEST));
+
+    //! Set the recv channel status bit to reflect channel is free (set to 1), required to recv the very 1st message
+    volatile scmi_local_packet_t* local_packet = (volatile scmi_local_packet_t*)scmi_recv_message->data;
+    SET_SCMI_SMT_CHANNEL_FREE(local_packet->smt_header.status);
+    __DSB();
+
+    //! Spawn the 1st async recv request to receive messages over scp_tfa interface
+    fpfw_status_t status = fpfw_icc_transport_recv_async_req(&(s_icc_mscp2tfa->base_interface),
+                                                             &recv_request.Header,
+                                                             (void*)scmi_recv_message,
+                                                             sizeof(scmi_transport_message_t),
+                                                             scmi_async_recv_completion,
+                                                             NULL);
+    FPFW_RUNTIME_ASSERT(status == FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
 }

@@ -19,7 +19,8 @@
 
 ## Heartbeat Tests
 ./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot
-./../../../tests/functional/pythia/test_suites/heart_beat/fbc_sdm_cded_heart_beat_single_die.robot
+# Removing SDM heartbeat test due to issue with silibs
+#./../../../tests/functional/pythia/test_suites/heart_beat/fbc_sdm_cded_heart_beat_single_die.robot
 
 ## HSP Mailbox Tests
 ./../../../tests/functional/pythia/test_suites/hspmbx_tests/hsp_mailbox_cli_test_send_recv.robot

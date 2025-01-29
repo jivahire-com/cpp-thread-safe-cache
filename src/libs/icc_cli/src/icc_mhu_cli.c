@@ -91,7 +91,7 @@ FPFW_CLI_STATUS mhu_list_indices(int argc, const char** argv)
     FpFwCliPrint("Listing the MHU indices -- START\n");
     for (icc_cli_interface_type i = ICC_CLI_MSCP_MHU; i < ICC_CLI_MAX_TRANSPORT_TYPE; i++)
     {
-        FpFwCliPrint("Name: [%17ss] Index: [%02d] Initialized: [%d]\n",
+        FpFwCliPrint("Name: [%17s] Index: [%02d] Initialized: [%d]\n",
                      icc_cli_interface_type_strings[i],
                      i,
                      cli_ctx->icc_base_ctx[i] != NULL);
@@ -277,7 +277,7 @@ FPFW_CLI_STATUS mhu_props(int argc, const char** argv)
     {
         if (cli_ctx->icc_base_ctx[i] != NULL)
         {
-            FpFwCliPrint("Name: [%17ss]\n", icc_cli_interface_type_strings[i]);
+            FpFwCliPrint("Name: [%17s] Index: [%02d]\n", icc_cli_interface_type_strings[i], i);
 
             fpfw_icc_base_ctx_t* icc_base_ctx = cli_ctx->icc_base_ctx[i];
             mhu_icc_transport_intrf_t* mhu_icc_transport = (mhu_icc_transport_intrf_t*)icc_base_ctx->icc_cfg.transport_interface;

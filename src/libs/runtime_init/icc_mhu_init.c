@@ -19,6 +19,7 @@
 #include <fpfw_icc_base_i.h>
 #include <fpfw_init.h>
 #include <fpfw_status.h>
+#include <idhw.h>
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <interrupts.h>
@@ -401,4 +402,150 @@ FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu
     }
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_icc_base_mscp_ap_ns_ctx};
+}
+
+#ifdef SCP_RUNTIME_INIT
+FPFW_INIT_COMPONENT(icc_die2die, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "mesh"))
+#else
+FPFW_INIT_COMPONENT(icc_die2die, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc"))
+#endif
+{
+    bool single_die = idhw_is_single_die_boot_en();
+
+    // We don't have these channels on single die systems
+    if (single_die)
+    {
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+
+    KNG_CPU_TYPE cpu_id = idsw_get_cpu_type();
+    idsw_die_id_t die_id = idsw_get_die_id();
+
+    static mhu_icc_transport_device_t s_icc_die_2_die_dev = {};
+
+    uintptr_t recv_payload_address = (ICC_MHU_PAYLOADS_D1_SCP_TO_D0_SCP_AP_WINDOW_BASE);
+    uintptr_t send_payload_address = (ICC_MHU_PAYLOADS_D0_SCP_TO_D1_SCP_AP_WINDOW_BASE);
+    uintptr_t recv_mhu_addr = SCP_TOP_REM_SCP2LOC_SCP_MHU_REC_ADDRESS;
+    uintptr_t send_mhu_addr = MSCP_ATU_AP_WINDOW_ICC_MHU_SCP2SCP_SEND_FRAME_BASE_ADDR;
+    uint32_t recv_ch_id = MHU_INTERFACE_ID(SCP_REMOTE, SCP_LOCAL);
+    uint32_t send_ch_id = MHU_INTERFACE_ID(SCP_LOCAL, SCP_REMOTE);
+
+    if (die_id == DIE_1)
+    {
+        recv_payload_address = (ICC_MHU_PAYLOADS_D0_SCP_TO_D1_SCP_AP_WINDOW_BASE);
+        send_payload_address = (ICC_MHU_PAYLOADS_D1_SCP_TO_D0_SCP_AP_WINDOW_BASE);
+    }
+    if (cpu_id == CPU_MCP)
+    {
+        recv_payload_address = (ICC_MHU_PAYLOADS_D1_MCP_TO_D0_MCP_AP_WINDOW_BASE);
+        send_payload_address = (ICC_MHU_PAYLOADS_D0_MCP_TO_D1_MCP_AP_WINDOW_BASE);
+        recv_mhu_addr = MCP_TOP_REM_MCP2LOC_MCP_MHU_RCV_ADDRESS;
+        send_mhu_addr = MSCP_ATU_AP_WINDOW_ICC_MHU_MCP2MCP_SEND_FRAME_BASE_ADDR;
+        recv_ch_id = MHU_INTERFACE_ID(MCP_REMOTE, MCP_LOCAL);
+        send_ch_id = MHU_INTERFACE_ID(MCP_LOCAL, MCP_REMOTE);
+        if (die_id == DIE_1)
+        {
+            recv_payload_address = (ICC_MHU_PAYLOADS_D0_MCP_TO_D1_MCP_AP_WINDOW_BASE);
+            send_payload_address = (ICC_MHU_PAYLOADS_D1_MCP_TO_D0_MCP_AP_WINDOW_BASE);
+        }
+    }
+
+    mhu_icc_transport_device_config_t dev_config = {
+        .recv_irq_num = HW_INT_D2D_NS_INT,
+        .recv_channel =
+            {
+                .mhu_addr = recv_mhu_addr,
+                .ch_id = recv_ch_id,
+                .ch_shared_mem_size = ICC_MHU_DDR_PAYLOAD_SIZE,
+                .ch_shared_mem_addr = recv_payload_address,
+                .ch_db_config =
+                    {
+                        .channel_num = 0,
+                        .flag_num = 0,
+                    },
+            },
+        .send_channel =
+            {
+                .mhu_addr = send_mhu_addr,
+                .ch_id = send_ch_id,
+                .ch_shared_mem_size = ICC_MHU_DDR_PAYLOAD_SIZE,
+                .ch_shared_mem_addr = send_payload_address,
+                .ch_db_config =
+                    {
+                        .channel_num = 0,
+                        .flag_num = 0,
+                    },
+            },
+        .async_send_retry_period = ASYNC_SEND_RETRY_PERIOD_NS,
+        .async_send_retry_max = ASYNC_SEND_RETRY_MAX,
+    };
+
+    // Initialize the driver framework device
+    fpfw_status_t status = mhu_icc_transport_device_init(&s_icc_die_2_die_dev,
+                                                         &((PDFWK_THREADX_HOST)fpfw_init_get_handle("dfwk"))->Schedule,
+                                                         &dev_config);
+    if (FPFW_STATUS_FAILED(status))
+    {
+        return (fpfw_init_result_t){status, NULL};
+    }
+
+    /* Setup the Interface */
+    static mhu_icc_transport_intrf_t s_icc_die_2_die_if = {};
+
+    status = mhu_icc_transport_interface_init(&s_icc_die_2_die_dev, &s_icc_die_2_die_if);
+    if (FPFW_STATUS_FAILED(status))
+    {
+        return (fpfw_init_result_t){status, NULL};
+    }
+
+    /* Setup the ICC Base Context */
+    static uint8_t s_icc_dispatch_buf_die_2_die[ICC_MHU_DDR_PAYLOAD_SIZE] = {0};
+    static fpfw_icc_base_ctx_t s_icc_base_die_2_die_ctx;
+    static fpfw_icc_base_config s_icc_base_die_2_die_cfg = {
+        .transport_interface = &s_icc_die_2_die_if.base_interface,
+        .dispatch_cfg =
+            {
+                .transport_interface = &s_icc_die_2_die_if,
+                .dispatcher_buffer = &s_icc_dispatch_buf_die_2_die,
+                .dispatcher_buffer_size = sizeof(s_icc_dispatch_buf_die_2_die),
+                .strategy =
+                    {
+                        .cmd_code =
+                            {
+                                .is_used = true,
+                                .start_pos = ICC_MHU_CMD_BIT_OFFSET,
+                                .size_bits = ICC_MHU_CMD_SIZE_BITS - 1,
+                                .valid_max = UINT32_MAX >> 1,
+                                .valid_min = 0,
+                            },
+                        .seq_num =
+                            {
+                                .is_used = true,
+                                .start_pos = ICC_MHU_TOKEN_BIT_OFFSET,
+                                .size_bits = ICC_MHU_TOKEN_SIZE_BITS - 1,
+                                .valid_max = UINT32_MAX >> 1,
+                                .valid_min = 0,
+                            },
+                    },
+                .match_strategy_cb = mhu_icc_transport_dispatcher_match_cb,
+                .match_strategy_ctx = NULL,
+            },
+        .ctx = NULL,
+    };
+
+    // Initialize ICC base ctx for hsp mailbox transport driver
+    status = fpfw_icc_base_init(&s_icc_base_die_2_die_ctx, &s_icc_base_die_2_die_cfg);
+    if (FPFW_STATUS_FAILED(status))
+    {
+        return (fpfw_init_result_t){status, NULL};
+    }
+
+    // start the dispatcher to receive data over hsp mailbox
+    status = fpfw_icc_dispatcher_start(&s_icc_base_die_2_die_ctx.dispatch_ctx);
+    if (FPFW_STATUS_FAILED(status))
+    {
+        return (fpfw_init_result_t){status, NULL};
+    }
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_icc_base_die_2_die_ctx};
 }

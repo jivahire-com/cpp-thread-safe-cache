@@ -191,6 +191,24 @@ atu_map_entry_t atu_static_map_dual_die_die0[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
+    /**
+     * For the D2D send frames, we need to map the send frame on the other die.
+     * RMSS HAS section 25.1.1.
+     */
+    // SCP<->SCP Send Frame
+    {
+        .ap_base_address = AP_TOP_D1_SCP1R2SCP_MHU_SND_NS_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ICC_MHU_SCP2SCP_SEND_FRAME_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ICC_MHU_SCP2SCP_SEND_FRAME_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
+    },
+    // MCP<->MCP Send Frame
+    {
+        .ap_base_address = AP_TOP_D1_MCP1R2MCP_MHU_SND_NS_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ICC_MHU_MCP2MCP_SEND_FRAME_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ICC_MHU_MCP2MCP_SEND_FRAME_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
+    },
     {0},
 };
 
@@ -303,6 +321,24 @@ atu_map_entry_t atu_static_map_dual_die_die1[] = {
         .mscp_start_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
+    },
+    /**
+     * For the D2D send frames, we need to map the send frame on the other die.
+     * RMSS HAS section 25.1.1.
+     */
+    // SCP<->SCP Send Frame
+    {
+        .ap_base_address = AP_TOP_D0_SCP1R2SCP_MHU_SND_NS_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ICC_MHU_SCP2SCP_SEND_FRAME_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ICC_MHU_SCP2SCP_SEND_FRAME_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
+    },
+    // MCP<->MCP Send Frame
+    {
+        .ap_base_address = AP_TOP_D0_MCP3R2MCP_MHU_SND_NS_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ICC_MHU_MCP2MCP_SEND_FRAME_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ICC_MHU_MCP2MCP_SEND_FRAME_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
     },
     {0},
 };

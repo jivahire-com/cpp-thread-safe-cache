@@ -61,6 +61,7 @@ target_compile_definitions(
        HW_INT_MSCP2MSCP_MHU_INT=120
        HW_INT_AP2MSCP_MHU_S_INT=121
        HW_INT_MSCP2AP_NS_MHU_INT=122
+       HW_INT_D2D_NS_INT=123
        MSCP_TOP_MSCP_EXP_ADDRESS=1000
        MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=1000
        MSCP_EXP_TOP_SPI_CTRL_ADDRESS=0
@@ -83,6 +84,7 @@ mock_target(${TARGET}
     fpfw_icc_base_init
     fpfw_icc_dispatcher_start
     idhw_get_die_id
+    idhw_is_single_die_boot_en
     idsw_get_platform_sdv
     idsw_get_die_id
     idsw_get_cpu_type

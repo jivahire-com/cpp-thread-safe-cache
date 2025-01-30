@@ -27,7 +27,7 @@ extern "C" {
 #include <xtree>   // for _Tree_iterator, _Tree<>::iterator
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define PROFILE_COUNT 4
+#define PROFILE_COUNT 5
 #define DATA_A                       \
     {                                \
         0x11, 0x22, 0x33, 0x44, 0x55 \

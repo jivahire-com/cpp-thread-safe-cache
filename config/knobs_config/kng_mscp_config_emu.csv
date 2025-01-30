@@ -1,0 +1,3 @@
+Guid,Knob,Value,Help
+FE3ED49F-B173-41ED-9076-356661D46A42,usb_cfg.power_on_port0,false,"override for emu"
+FE3ED49F-B173-41ED-9076-356661D46A42,usb_cfg.power_on_port1,false,"override for emu"

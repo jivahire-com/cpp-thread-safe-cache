@@ -22,6 +22,7 @@
 #define MSCP_CONFIG_PROFILE_FPGA           1
 #define MSCP_CONFIG_PROFILE_SVP            2
 #define MSCP_CONFIG_PROFILE_SVP_MIN_CONFIG 3
+#define MSCP_CONFIG_PROFILE_EMU            4
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -42,6 +43,11 @@ static uint8_t get_profile_id()
         return MSCP_CONFIG_PROFILE_SVP;
     case PLATFORM_SVP_MIN_CONFIG_SIM:
         return MSCP_CONFIG_PROFILE_SVP_MIN_CONFIG;
+    case PLATFORM_EMU_1D:
+    case PLATFORM_EMU_1D_8C:
+    case PLATFORM_EMU_2D:
+    case PLATFORM_EMU_2D_8C:
+        return MSCP_CONFIG_PROFILE_EMU;
     default:
         break;
     }

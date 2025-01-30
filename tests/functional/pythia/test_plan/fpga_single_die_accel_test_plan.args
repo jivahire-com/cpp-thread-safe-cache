@@ -1,0 +1,9 @@
+
+## Accelerator Interrupt Tests
+./../../../tests/functional/pythia/test_suites/accel_interrupt/accel_interrupt_test.robot
+
+## CDED PCIE Tests
+./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_pcie_tests.robot
+
+## SDM PCIE Tests
+./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_pcie_tests.robot

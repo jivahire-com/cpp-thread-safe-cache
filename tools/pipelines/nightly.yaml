@@ -1,3 +1,6 @@
+#
+# Copyright (C) Microsoft Corporation. All rights reserved.
+#
 
 name: 0.1.0.$(rev:r)
 
@@ -35,17 +38,27 @@ stages:
       ArtifactName: SVP_Pythia_Tests_DualDie
       TestPlan: .\tests\functional\pythia\test_plan\svp_dual_die_ci_test_plan.args
 
-- stage: FPGA_Pythia_Tests
+- stage: ACCEL_FPGA_Pythia_Tests
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
   jobs:
   - template: templates/fpga_pythia_test.yaml
     parameters:
-      ArtifactName: FPGA_Pythia_Tests
+      ArtifactName: ACCEL
+      TestAgent: 'DH3'
+      dat_file: kingsgate.ifwi.ap.baremetal.debug.dat
+      TestPlan: .\tests\functional\pythia\test_plan\fpga_single_die_accel_test_plan.args
+  
+- stage: MSCP_FPGA_Pythia_Tests
+  dependsOn: [Build_Arm_EABI_AARCH_Debug]
+  jobs:
+  - template: templates/fpga_pythia_test.yaml
+    parameters:
+      ArtifactName: MSCP
       TestAgent: 'DH3'
 
 # This is to tag the commits that pass nightly tests.
 - stage: Promote
-  dependsOn: [ Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests_SingleDie, SVP_Pythia_Tests_DualDie, FPGA_Pythia_Tests ]
+  dependsOn: [ Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests_SingleDie, SVP_Pythia_Tests_DualDie, MSCP_FPGA_Pythia_Tests, ACCEL_FPGA_Pythia_Tests]
   # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
   condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
   pool: 

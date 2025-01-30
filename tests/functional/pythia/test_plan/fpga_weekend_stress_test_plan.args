@@ -1,10 +1,4 @@
 
-## Accelerator Interrupt Tests
-./../../../tests/functional/pythia/test_suites/accel_interrupt/accel_interrupt_test.robot
-./../../../tests/functional/pythia/test_suites/accel_interrupt/accel_interrupt_test.robot
-./../../../tests/functional/pythia/test_suites/accel_interrupt/accel_interrupt_test.robot
-./../../../tests/functional/pythia/test_suites/accel_interrupt/accel_interrupt_test.robot
-
 ## AVS Die 0 Tests
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die0.robot
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die0.robot
@@ -14,12 +8,6 @@
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die0.robot
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die0.robot
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die0.robot
-
-## CDED PCIE Tests
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_pcie_tests
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_pcie_tests
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_pcie_tests
-./../../../tests/functional/pythia/test_suites/cded_pcie_tests/cded_pcie_tests
 
 ## CONFIG MANAGER Tests
 ./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_cli_test.robot
@@ -78,12 +66,6 @@
 ./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_scp_cded__test_send_recv.robot
 ./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_sdm_scp__test_send_recv.robot
 ./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_test_send_recv.robot
-
-## SDM PCIE Tests
-./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_pcie_tests.robot
-./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_pcie_tests.robot
-./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_pcie_tests.robot
-./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_pcie_tests.robot
 
 ## Sensor FIFO Tests
 #TODO - FPGA implementation to be done soon by Hara

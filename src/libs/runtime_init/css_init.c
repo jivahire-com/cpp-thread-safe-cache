@@ -43,5 +43,6 @@ FPFW_INIT_COMPONENT(css_pome, FPFW_INIT_DEPENDENCIES("std_io", "accel_iso_cfg"))
     printf("CSS Post Mesh init\n");
 
     css_post_mesh_init();
+    printf("CSS Post Mesh init done\n");
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

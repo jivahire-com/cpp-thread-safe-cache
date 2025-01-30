@@ -388,6 +388,14 @@ d2d_cfg_t* __wrap_get_default_d2d_cfg(void)
     return &unit_test_default_d2d_cfg;
 }
 
+int __wrap_process_mesh_binary_from_spi(uintptr_t pMeshBinHeader, uint32_t config_enum)
+{
+    assert_non_null(pMeshBinHeader);
+    FPFW_UNUSED(config_enum);
+    function_called();
+    return 0;
+}
+
 //
 // Tests
 //
@@ -397,6 +405,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_0_SVP, setup_svp_platform, setu
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)0;
 
+    expect_function_call(__wrap_process_mesh_binary_from_spi);
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -422,6 +431,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_SVP, setup_svp_platform, setu
     const auto test_die = (KNG_DIE_ID)1;
     g_test_die = test_die;
 
+    expect_function_call(__wrap_process_mesh_binary_from_spi);
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -446,6 +456,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_0_FPGA, setup_fpga_platform, se
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)0;
 
+    expect_function_call(__wrap_process_mesh_binary_from_spi);
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -471,6 +482,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_FPGA, setup_fpga_platform, se
     const auto test_die = (KNG_DIE_ID)1;
     g_test_die = test_die;
 
+    expect_function_call(__wrap_process_mesh_binary_from_spi);
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -496,6 +508,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_0_SVP, setup_svp_platform_dual_di
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)0;
 
+    expect_function_call(__wrap_process_mesh_binary_from_spi);
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -545,6 +558,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_SVP, setup_svp_platform_dual_di
     const auto test_die = (KNG_DIE_ID)1;
     g_test_die = test_die;
 
+    expect_function_call(__wrap_process_mesh_binary_from_spi);
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -593,6 +607,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_0_FPGA, setup_fpga_platform_dual_
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)0;
 
+    expect_function_call(__wrap_process_mesh_binary_from_spi);
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -642,6 +657,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_FPGA, setup_fpga_platform_dual_
     const auto test_die = (KNG_DIE_ID)1;
     g_test_die = test_die;
 
+    expect_function_call(__wrap_process_mesh_binary_from_spi);
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 

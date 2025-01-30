@@ -76,4 +76,5 @@ mock_target(${TARGET}
     cmn800_get_mesh_ras_cfg_knob
     get_ccg_knob_defaults
     get_default_d2d_cfg
+    process_mesh_binary_from_spi
 )

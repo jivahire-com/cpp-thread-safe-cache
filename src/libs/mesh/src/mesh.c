@@ -30,6 +30,7 @@
 #include <kng_soc_constants.h> // for NUM_DIE
 #include <mesh.h>              // for mesh_init
 #include <mesh_error_handler.h>
+#include <mscp_exp_rmss_memory_map.h>
 #include <stdbool.h> // for true
 #include <stdint.h>  // for uint8_t
 #include <stdio.h>   // for MESH_INFO
@@ -296,6 +297,25 @@ void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_para
     }
 }
 
+int mesh_read_binary_table_from_rmss(uint8_t die_num, uint32_t cmn_config_enum)
+{
+    int sts = SILIBS_SUCCESS;
+    // Read the Binary Table from SPI
+    MESH_CRIT("Mesh Binary Table Read from RMSS Start, die_num %d, CMN Config 0x%x\n", die_num, cmn_config_enum);
+    MESH_DBG("SCP_EXP_MESH_BIN_DATA_BASE 0x%x\n", SCP_EXP_MESH_BIN_DATA_BASE);
+    MESH_DBG("SCP_EXP_MESH_BIN_DATA_SIZE 0x%x\n", SCP_EXP_MESH_BIN_DATA_SIZE);
+
+    uintptr_t mesh_binary_base = SCP_EXP_MESH_BIN_DATA_BASE;
+
+    sts = process_mesh_binary_from_spi(mesh_binary_base, cmn_config_enum);
+    if (sts != SILIBS_SUCCESS)
+    {
+        MESH_CRIT("process_mesh_binary_from_spi failed sts 0x%x\n", sts);
+    }
+    MESH_CRIT("Mesh Binary Table Read from RMSS End sts 0x%x\n", sts);
+    return sts;
+}
+
 void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 {
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
@@ -322,6 +342,12 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     }
 
     MESH_INFO("cmn800_sequence_param.cmn_config_enum 0x%x\n", (uint8_t)cmn800_sequence_param.cmn_config_enum);
+
+    sts = mesh_read_binary_table_from_rmss(die_num, cmn800_sequence_param.cmn_config_enum);
+    if (sts != 0)
+    {
+        MESH_CRIT("mesh_read_binary_table_from_rmss failed sts 0x%x\n", sts);
+    }
 
     sts = cmn800_sequence_svp_updates(cmn800_sequence_param);
     MESH_INFO("cmn800_sequence_svp_updates sts 0x%x\n", sts);

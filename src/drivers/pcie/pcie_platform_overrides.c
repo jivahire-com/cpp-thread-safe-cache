@@ -75,6 +75,22 @@ static void program_all_rp_fuses_good(pcie_ss_entity_t* rpss)
     MMIO_WRITE32(&regs->rp_fuse, reg.as_uint32);
 }
 
+bool plat_get_phy_programming_support()
+{
+    /*
+     * Only actual silicon has PCIe PHYs on each RPSS.
+     *
+     * Emulation and big FPGA do not support PHY programming.
+     *
+     * SVP stubs out PHY register space but due to this being done
+     * partially, it is disabled here.
+     * This will be fixed once the bug below is fixed and an SVP
+     * release is integrated:
+     * https://azurecsi.visualstudio.com/1P-SoC-Modeling/_workitems/edit/2292635
+     */
+    return ((idsw_get_platform_sdv() >= PLATFORM_RVP_EVT_SILICON) ? true : false);
+}
+
 void plat_overrides_pre_pciess_config_ss_for_bifur(pcie_ss_entity_t* rpss)
 {
     KNG_PLAT_ID plat = (KNG_PLAT_ID)idsw_get_platform_sdv();

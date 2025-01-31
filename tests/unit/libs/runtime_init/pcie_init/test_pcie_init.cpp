@@ -81,6 +81,24 @@ TEST_FUNCTION(test_die1_svp_init, NULL, NULL)
     _fpfw_component_pcie.init_fn();
 }
 
+TEST_FUNCTION(test_die0_emu_init, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_1D);
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3)));
+    expect_value(__wrap_scp_pcie_initialize, die_id, DIE_0);
+    _fpfw_component_pcie.init_fn();
+}
+
+TEST_FUNCTION(test_die1_emu_init, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_2D);
+    will_return(__wrap_idsw_get_die_id, DIE_1);
+    expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS4) | (1 << RPSS5) | (1 << RPSS6) | (1 << RPSS7)));
+    expect_value(__wrap_scp_pcie_initialize, die_id, DIE_1);
+    _fpfw_component_pcie.init_fn();
+}
+
 TEST_FUNCTION(test_die0_fpga_init, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
@@ -128,6 +146,5 @@ TEST_FUNCTION(test_die0_unknown_plat_init, NULL, NULL)
 
 TEST_FUNCTION(test_cli_init, NULL, NULL)
 {
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     _fpfw_component_pcie_cli.init_fn();
 }

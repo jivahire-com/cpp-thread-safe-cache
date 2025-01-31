@@ -35,8 +35,8 @@
 void plat_overrides_pre_pciess_config_ss_for_bifur(pcie_ss_entity_t* rpss);
 
 /**
- *  @brief Overrides : 
- *          1. Program the GIC Comparator in the RPSS to enable MSI 
+ *  @brief Overrides :
+ *          1. Program the GIC Comparator in the RPSS to enable MSI
  *
  *  @param[in] rpss
  *             Instance of the pcie rpss being configured.
@@ -45,3 +45,12 @@ void plat_overrides_pre_pciess_config_ss_for_bifur(pcie_ss_entity_t* rpss);
  *          the pcie rpss.
  */
 void plat_overrides_post_rp_ready(pcie_ss_entity_t* rpss);
+
+/**
+ *  @brief Choose phy programming settings based on platform type.
+ *
+ *  @param[in] None
+ *
+ * @return Boolean value to enable/disable phy programming using silibs.
+ */
+bool plat_get_phy_programming_support();

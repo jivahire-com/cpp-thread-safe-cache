@@ -177,6 +177,7 @@ static void override_default_pcie_cfg(uint8_t rpss_id)
        not going to be used. If 4x4 bifurcation is used and RP
        are not being used, we have to explicitly set them to false */
 }
+
 static void populate_rb_configs_from_rpss_entity(pcie_ss_entity_t* rpss, pcie_root_bridge_config* rb_configs)
 {
     pcie_cfg_t* pcie_cfg = &pcie_cfg_np[rpss->id];
@@ -223,10 +224,12 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
 
     override_default_pcie_cfg(rpss_id);
 
-    // TODO: this API will crash on SVP and FPGA to program phy registers.
-    // Renable once SVP supports phy registers (program_phy_regs = true)
-    // ADO: https://dev.azure.com/ms-tsd/Kingsgate/_workitems/edit/896966
-    sts = pciess_config_entity(rpss, resolved_subsystem_config_addr, ap_subsystem_config_addr, &(pcie_cfg_np[rpss_id]), false, true);
+    sts = pciess_config_entity(rpss,
+                               resolved_subsystem_config_addr,
+                               ap_subsystem_config_addr,
+                               &(pcie_cfg_np[rpss_id]),
+                               plat_get_phy_programming_support(),
+                               true);
     FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
 
     /* Override settings based on the platform we are running on */
@@ -259,7 +262,7 @@ int begin_rpss_pre_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
     FPFW_RUNTIME_ASSERT(rpss != NULL);
 
-    if (!(IS_PLATFORM_FPGA()))
+    if (plat_get_phy_programming_support() == true)
     {
         sts = pciess_phys_sram_init_done(rpss);
         FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);

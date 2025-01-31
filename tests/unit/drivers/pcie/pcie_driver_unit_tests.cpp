@@ -153,15 +153,12 @@ TEST_FUNCTION(test_pcie_rpss_init_success, test_setup, test_teardown)
 
     /* Setup silibs expectations */
     /* Will always is used because IS_PLATFORM_FPGA() uses 3 calls to idsw_get_platform_sdv */
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
-    // TODO: this API will crash on SVP to program phy registers.
-    // Renable once SVP supports phy registers
-    // ADO: https://dev.azure.com/ms-tsd/Kingsgate/_workitems/edit/896966
-    expect_value(__wrap_pciess_config_entity, program_phy_regs, false);
+    expect_value(__wrap_pciess_config_entity, program_phy_regs, true);
     expect_value(__wrap_pciess_config_entity, enable_apu, true);
     will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
     will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
@@ -204,9 +201,6 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
-    // TODO: this API will crash on SVP to program phy registers.
-    // Renable once SVP supports phy registers
-    // ADO: https://dev.azure.com/ms-tsd/Kingsgate/_workitems/edit/896966
     expect_value(__wrap_pciess_config_entity, program_phy_regs, false);
     expect_value(__wrap_pciess_config_entity, enable_apu, true);
     will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
@@ -252,6 +246,26 @@ TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success, test_setup, test_teardow
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return(__wrap_pciess_phys_sram_init_done, SILIBS_SUCCESS);
+    will_return(__wrap_pciess_rps_pre_rp_ready_init, SILIBS_SUCCESS);
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success_sram_bypass, test_setup, test_teardown)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    r.header.RequestType = PRE_RP_INIT_REQUEST;
+    r.req_type = PRE_RP_INIT_REQUEST;
+    r.rpss_index = RPSS2;
+    r.rp_index = 0;
+
+    mock_pcie_ent.id = r.rpss_index;
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return(__wrap_pciess_rps_pre_rp_ready_init, SILIBS_SUCCESS);
     int32_t ret = pcie_sched_sync_op(&(r.header));
     assert_int_equal(ret, 0);

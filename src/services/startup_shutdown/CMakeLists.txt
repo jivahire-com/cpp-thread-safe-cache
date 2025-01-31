@@ -45,6 +45,7 @@ set(STARTUP_COMMON_LIBS
     ms::lib::debug
     ms::lib::error_codes
     ms::lib::crash_dump
+    ms::lib::icc_platform_defines
     ms::client_interface::startup_shutdown
     silibs::idhw
     silibs::idsw

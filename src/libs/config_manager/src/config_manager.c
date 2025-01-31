@@ -15,6 +15,7 @@
 #include <config_manager_i.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_status.h>
+#include <icc_platform_defines.h>
 #include <idhw.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -257,7 +258,7 @@ void cfg_mgr_init(fpfw_cfg_mgr_config_t* cfg_mgr_config, var_service_shared_mem_
                                                        SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE);
                 }
 
-                d2d_sync_point.value = CFG_MGR_RELAY_PAYLOAD_SIGNATURE;
+                d2d_sync_point.value = RMSS_D2D_CFG_MGR_RELAY_SYNC_POINT;
                 int d2d_sync_status = mscp_exp_spi_synchronize_dies(d2d_sync_point, idsw_get_die_id());
                 BUG_ASSERT_PARAM(d2d_sync_status == SILIBS_SUCCESS, d2d_sync_status, SILIBS_SUCCESS);
 

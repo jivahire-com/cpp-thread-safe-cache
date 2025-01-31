@@ -145,6 +145,19 @@ typedef enum _rmss_d2d_mailbox_msg_command_code {
 }rmss_d2d_mailbox_msg_command_code;
 
 /**
+ * @brief  Prod.FW local copy of enum of different sync points that can be used to synchronize dies
+ *          Supersedes SiLibs copy at libraries/spi_bridge/include/mscp_exp_spi_synchronize_dies.h
+ *
+ */
+typedef enum RMSS_SPI_Sync_enum
+{
+    RMSS_D2D_SPI_SYNC_ENUM_START = 0x1000,
+    RMSS_D2D_STARTUP_SHUTDOWN_LAST_RESERVED = 0x1110,
+    RMSS_D2D_CFG_MGR_RELAY_SYNC_POINT,
+    RMSS_D2D_SPI_SYNC_ENUM_MAX,
+} _RMSS_SPI_Sync_enum;
+
+/**
  * Generic struct used to parse incoming messages for the header elements (command code, sequence,context,flags)
  * Specialized commands will append to this structure.
  */

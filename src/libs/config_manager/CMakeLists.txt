@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
     fwlib.lib.spinlock
     ms::lib::error_codes
     ms::lib::crash_dump
+    ms::lib::icc_platform_defines
     ms::lib::variable_services
     ms::lib::system_info
 )

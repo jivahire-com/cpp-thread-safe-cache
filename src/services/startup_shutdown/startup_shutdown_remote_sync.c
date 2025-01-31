@@ -15,6 +15,7 @@
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
 #include <fpfw_init.h>
+#include <icc_platform_defines.h>
 #include <idhw.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -40,7 +41,7 @@ bool wait_for_remote_die_boot_stage(startup_shutdown_boot_stage_t current_boot_s
             //! Synchronize with the remote die at this point
             //! D0 writes data to remote SRAM at offset 0x0 & polls for D1 to write to it's own local SRAM at offset 0x4
             //! D1 writes to local SRAM at offset 0x4 & polls for D0 to write to it's local SRAM at offset 0x0
-            d2d_sync_point.value = current_boot_stage.stage;
+            d2d_sync_point.value = (RMSS_D2D_SPI_SYNC_ENUM_START | current_boot_stage.stage);
             status = mscp_exp_spi_synchronize_dies(d2d_sync_point, idsw_get_die_id());
         }
     }

@@ -12,14 +12,14 @@ target_link_libraries(${TARGET}
     PRIVATE
         ms::cmocka::testrunner
         ms::cmocka::mocks
-        ms::lib::ioss_init
+        ms::lib::ioss_ini
         ms::lib::error_handler
         silibs_platform
         silibs::kng_silibs_platform
+        silibs::ioss_init
         fwlib.lib.assert
         ppu_v1
         atu
-        pcr_ioss
         fwlib.lib.utils
 )
 
@@ -31,9 +31,6 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     atu_map
-    tower_configure_ioss_apu
-    configure_ioss_system_addr_map
-    program_ioss_pcr_usb_reset
-    program_ioss_pcr_clock_mux
+    ioss_init
     atu_unmap
 )

@@ -60,7 +60,6 @@ add_library(${TARGET}
         system_info_init.c
         textio_init.c
         tower_init.c
-        usb_init.c
         vab_init.c
         variable_services_init.c
         variable_services_cli_init.c
@@ -117,8 +116,7 @@ target_link_libraries(
         ms::lib::icc::cli
         ms::lib::icc_platform_defines
         ms::lib::interface::mhu_icc_payloads
-        ms::lib::ioss_init
-        ms::lib::ioss::usb
+        ms::lib::ioss_ini
         ms::lib::mesh
         ms::lib::mesh::cli
         ms::lib::pex_rng

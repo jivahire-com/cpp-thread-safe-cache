@@ -4,7 +4,7 @@
  */
 
 /*------------- Includes -----------------*/
-#include "ioss_init.h" // for ioss_init
+#include "ioss_ini.h" // for ioss_init
 
 #include <fpfw_init.h> // for FPFW_INIT_STATUS_SUCCESS, fpfw_init_r...
 #include <idhw.h>      // for idhw_get_die_id
@@ -25,16 +25,16 @@
 /*------------- Functions ----------------*/
 FPFW_INIT_COMPONENT(ioss, FPFW_INIT_DEPENDENCIES("vab", "tower_cfg"))
 {
-    uint8_t die_num = (uint8_t)idhw_get_die_id();
-    if (die_num == SOC_D0)
-    {
-        printf("IOSS init, die_num: [%u]\n", die_num);
-        ioss_init(die_num);
-    }
-    else
-    {
-        printf("IOSS not used on die: %u... Skipping IOSS init...\n", die_num);
-    }
 
+    if (idsw_get_die_id() == SOC_D1)
+    {
+        printf("Skip IOSS init on die - 1!\n");
+        goto exit;
+    }
+    printf("IOSS init\n");
+    ioss_ini();
+    printf("IOSS init complete\n");
+
+exit:
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

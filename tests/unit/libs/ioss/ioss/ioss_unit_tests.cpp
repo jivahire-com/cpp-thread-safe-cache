@@ -21,7 +21,7 @@
 
 extern "C" {
 #include <error_handler.h>
-#include <ioss_init.h> // for ioss_init
+#include <ioss_ini.h> // for ioss_ini
 }
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -34,70 +34,32 @@ extern "C" {
 //
 // Tests
 //
-TEST_FUNCTION(test_invalid_die_num, NULL, NULL)
-{
-    int die_num = 2;
-    expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
-    if (!set_error_handler_return())
-    {
-        ioss_init(die_num);
-    }
-}
-
 TEST_FUNCTION(test_valid_die_0, NULL, NULL)
 {
-    int die_num = 0;
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_value(__wrap_program_ioss_pcr_usb_reset, pcr_base_addr, IOSS_TOP_IOSS_PCR_ADDRESS);
-    will_return(__wrap_program_ioss_pcr_clock_mux, SILIBS_SUCCESS);
+    expect_function_call(__wrap_ioss_init);
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
-    ioss_init(die_num);
-}
-
-TEST_FUNCTION(test_valid_die_1, NULL, NULL)
-{
-    int die_num = 1;
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_value(__wrap_program_ioss_pcr_usb_reset, pcr_base_addr, IOSS_TOP_IOSS_PCR_ADDRESS);
-    will_return(__wrap_program_ioss_pcr_clock_mux, SILIBS_SUCCESS);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
-    ioss_init(die_num);
+    ioss_ini();
 }
 
 TEST_FUNCTION(test_atu_map_fail, NULL, NULL)
 {
-    int die_num = 0;
     will_return(__wrap_atu_map, SILIBS_E_INIT);
     expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
     if (!set_error_handler_return())
     {
-        ioss_init(die_num);
-    }
-}
-
-TEST_FUNCTION(test_program_ioss_pcr_clock_fail, NULL, NULL)
-{
-    int die_num = 0;
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_value(__wrap_program_ioss_pcr_usb_reset, pcr_base_addr, IOSS_TOP_IOSS_PCR_ADDRESS);
-    will_return(__wrap_program_ioss_pcr_clock_mux, SILIBS_E_PARAM);
-    expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
-    if (!set_error_handler_return())
-    {
-        ioss_init(die_num);
+        ioss_ini();
     }
 }
 
 TEST_FUNCTION(test_atu_unmap_fail, NULL, NULL)
 {
-    int die_num = 0;
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_value(__wrap_program_ioss_pcr_usb_reset, pcr_base_addr, IOSS_TOP_IOSS_PCR_ADDRESS);
-    will_return(__wrap_program_ioss_pcr_clock_mux, SILIBS_SUCCESS);
+    expect_function_call(__wrap_ioss_init);
     will_return(__wrap_atu_unmap, SILIBS_E_INIT);
     expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
     if (!set_error_handler_return())
     {
-        ioss_init(die_num);
+        ioss_ini();
     }
 }

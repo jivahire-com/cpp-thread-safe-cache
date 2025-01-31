@@ -1,7 +1,7 @@
 set(TARGET ioss_init.test)
 
 set(SOURCES
-    test_ioss_init.cpp
+    test_ioss_ini.cpp
     ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/ioss_init.c
 )
 
@@ -17,7 +17,7 @@ target_link_libraries(${TARGET}
         silibs::idsw
         silibs::idsw_kng
         ms::cmocka::testrunner
-        ms::lib::ioss_init
+        ms::lib::ioss_ini
         silibs_platform
         kng_silibs_platform
         fwlib.lib.assert
@@ -33,7 +33,6 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    ioss_init
-    idhw_get_die_id
-    idsw_get_platform_sdv
+    ioss_ini
+    idsw_get_die_id
 )

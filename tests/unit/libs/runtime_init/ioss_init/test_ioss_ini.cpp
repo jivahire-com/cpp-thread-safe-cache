@@ -1,0 +1,54 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+/**
+ * @file test_ioss_init.cpp
+ * IOSS init tests
+ */
+
+/*------------- Includes -----------------*/
+#include <CMockaWrapper.h>
+#include <cstdint>
+
+extern "C" {
+#include <FpFwUtils.h> // for FPFW_UNUSED
+#include <fpfw_init.h> // for fpfw_init_component_t
+#include <idsw_kng.h>  // for KNG_DIE_ID, KNG_PLAT_ID
+
+/*-- Symbolic Constant Macros (defines) --*/
+
+/*------------- Typedefs -----------------*/
+
+/*-------- Function Prototypes -----------*/
+
+/*-- Declarations (Statics and globals) --*/
+extern fpfw_init_component_t _fpfw_component_ioss;
+
+/*------------- Functions ----------------*/
+//
+// Mocks
+//
+void __wrap_ioss_ini()
+{
+    function_called();
+}
+
+KNG_DIE_ID __wrap_idsw_get_die_id()
+{
+    return mock_type(KNG_DIE_ID);
+}
+
+//
+// Tests
+//
+TEST_FUNCTION(test_ioss_ini_die0, NULL, NULL)
+{
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return_always(__wrap_idsw_get_die_id, test_die);
+    expect_function_call(__wrap_ioss_ini);
+
+    // Call API under test
+    _fpfw_component_ioss.init_fn();
+}
+}

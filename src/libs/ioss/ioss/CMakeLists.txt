@@ -1,8 +1,8 @@
-set(TARGET kng.lib.ioss_init)
+set(TARGET kng.lib.ioss_ini)
 
 add_library(${TARGET}
     STATIC
-        ioss_init.c
+        ioss_ini.c
 )
 
 target_link_libraries(${TARGET}
@@ -15,6 +15,8 @@ target_link_libraries(${TARGET}
         pcr_ioss
         silibs::idsw
         silibs::idsw_kng
+        silibs::ioss_init
+        silibs::usb_init
 )
 
 target_include_directories(${TARGET}
@@ -26,4 +28,4 @@ lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})
 
-add_library(ms::lib::ioss_init ALIAS ${TARGET})
+add_library(ms::lib::ioss_ini ALIAS ${TARGET})

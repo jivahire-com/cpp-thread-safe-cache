@@ -42,6 +42,7 @@ set(SILIB_LIST
     idhw
     intu
     ioss
+    ioss_init
     lib_i3c
     mhuv3
     pcie

@@ -14,6 +14,7 @@ extern "C" {
 #include <CrashDump.h>                // for FPFW_CD_DUMP_CALLBACK
 #include <FpFwUtils.h>                // for FPFW_UNUSED
 #include <crash_dump.h>               // for crash_dump_config_t, GetCrashDu...
+#include <idsw.h>                     // for idsw_plat_id_t
 #include <modules/CdDumpDescriptor.h> // for FPFwCDDumpDescriptorCtx, FPFwC...
 #include <modules/CdDumpFile.h>       // for FPFwCDDumpFileCtx
 #include <modules/CdDumpManager.h>    // for FPFwCrashDumpCtx
@@ -423,22 +424,37 @@ fpfw_status_t __wrap_fpfw_icc_base_send_sync(fpfw_icc_base_ctx_t* icc_ctx, void*
     return mock_type(fpfw_status_t);
 }
 
-void __wrap_FPFwSpinLockInitialize(PFPFW_SPINLOCK pLock)
+void __wrap_initialize_semaphore(SEMAPHORE_ID id)
 {
-    assert_non_null(pLock);
+    check_expected(id);
+
     function_called();
 }
 
-void __wrap_FPFwSpinLockAcquire(PFPFW_SPINLOCK pLock)
+void __wrap_wait_for_semaphore(SEMAPHORE_ID id, uint32_t key)
 {
-    assert_non_null(pLock);
+    check_expected(id);
+    check_expected(key);
+
     function_called();
 }
 
-void __wrap_FPFwSpinLockRelease(PFPFW_SPINLOCK pLock)
+void __wrap_release_semaphore(SEMAPHORE_ID id)
 {
-    assert_non_null(pLock);
+    check_expected(id);
+
     function_called();
 }
 
+bool __wrap_idhw_is_single_die_boot_en(void)
+{
+    function_called();
+
+    return mock_type(bool);
+}
+
+idsw_plat_id_t __wrap_idsw_get_platform_sdv(void)
+{
+    return mock_type(idsw_plat_id_t);
+}
 } // extern "C"

@@ -79,35 +79,35 @@ void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t* ic
         return;
     }
 
-    if (icc_ctx != NULL)
+    if (icc_ctx != NULL && config->icc_ctx[type] == NULL)
     {
+        bool callback_registered = false;
+
         switch (type)
         {
         case CRASH_DUMP_ICC_CONFIG_MHU_LOCAL:
-            if (icc_register_mhu_callback(icc_ctx))
-            {
-                config->icc_mhu_local_core_ctx = icc_ctx;
-            }
-            break;
         case CRASH_DUMP_ICC_CONFIG_MHU_REMOTE:
-            if (icc_register_mhu_callback(icc_ctx))
-            {
-                config->icc_mhu_remote_core_ctx = icc_ctx;
-            }
+            callback_registered = icc_register_mhu_callback(icc_ctx);
             break;
         case CRASH_DUMP_ICC_CONFIG_SPI_REMOTE:
-            if (icc_register_spi_callback(icc_ctx))
-            {
-                config->icc_spi_remote_core_ctx = icc_ctx;
-            }
+            callback_registered = icc_register_spi_callback(icc_ctx);
             break;
         case CRASH_DUMP_ICC_CONFIG_HSP:
             // No need to register HSP context for receiving crash dump notification
-            config->icc_hsp_ctx = icc_ctx;
+            callback_registered = true;
             break;
         default:
             break;
         }
+
+        if (callback_registered)
+        {
+            config->icc_ctx[type] = icc_ctx;
+        }
+    }
+    else
+    {
+        FPFwCDPrintf("ICC context is NULL for %d ICC or ICC context is already set %p\n", type, config->icc_ctx[type]);
     }
 }
 
@@ -124,14 +124,15 @@ void crash_dump_notify_hsp()
         return;
     }
 
-    if (config->icc_hsp_ctx != NULL)
+    if (config->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP] != NULL)
     {
         kng_hsp_mailbox_msg hsp_crash_dump_msg;
 
         hsp_crash_dump_msg.as_uint32[0] = SET_HSP_MAILBOX_HEADER_ASUNIT32(HSP_MAILBOX_CMD_CRASHDUMP_REQ, 0, 0);
 
-        fpfw_status_t status =
-            fpfw_icc_base_send_sync(config->icc_hsp_ctx, &hsp_crash_dump_msg, sizeof(hsp_crash_dump_msg));
+        fpfw_status_t status = fpfw_icc_base_send_sync(config->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP],
+                                                       &hsp_crash_dump_msg,
+                                                       sizeof(hsp_crash_dump_msg));
 
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
@@ -166,18 +167,18 @@ void crash_dump_notify_cores()
         return;
     }
 
-    if (config->icc_mhu_local_core_ctx != NULL)
+    if (config->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL] != NULL)
     {
-        status = icc_mhu_send_cd_sync(config->icc_mhu_local_core_ctx);
+        status = icc_mhu_send_cd_sync(config->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL]);
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send Crash dump signal to local core : status = 0x%08lx\n", status);
         }
     }
 
-    if (config->icc_mhu_remote_core_ctx)
+    if (config->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_REMOTE] != NULL)
     {
-        status = icc_mhu_send_cd_sync(config->icc_mhu_remote_core_ctx);
+        status = icc_mhu_send_cd_sync(config->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_REMOTE]);
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send Crash dump signal to remote core : status = 0x%08lx\n", status);
@@ -188,12 +189,14 @@ void crash_dump_notify_cores()
         }
     }
 
-    if (config->icc_spi_remote_core_ctx && !remote_notified)
+    if (config->icc_ctx[CRASH_DUMP_ICC_CONFIG_SPI_REMOTE] != NULL && !remote_notified)
     {
         // Try with SPI transport ICC if MHU transport fore remote is not available.
         static rmss_d2d_mailbox_msg remote_core_cd_msg = {.header.cmd = RMSS_D2D_MAILBOX_MSG_CRASHDUMP_SIGNAL_REQ};
 
-        status = fpfw_icc_base_send_sync(config->icc_spi_remote_core_ctx, &remote_core_cd_msg, sizeof(rmss_d2d_mailbox_msg));
+        status = fpfw_icc_base_send_sync(config->icc_ctx[CRASH_DUMP_ICC_CONFIG_SPI_REMOTE],
+                                         &remote_core_cd_msg,
+                                         sizeof(rmss_d2d_mailbox_msg));
 
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {

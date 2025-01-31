@@ -277,65 +277,89 @@ Thus cores will store a mini-dump in MSCP_EXP scratch RAM[TBD]
 
 ### Memory Layout
 
-8KB header and 8MB payload are reserved for total crash dump storage in DDR for the full dump
+8KB header and 12MB payload are reserved for total crash dump storage in DDR for the full dump
 16byte header and 20KB payload are reserved for total crash dump storage in MSCP_EXP scratch RAM[TBD] for the mini dump
 
 The memory is laid out as follows, in either DDR and scratch RAM:
 ```
 /*
 Reserved memory in DIE0 SRAM for crash mini dump
-+---------+------------+------------+--
-|         |            |            |
-|         |            |            |
-| Core    | SCP0 Dump  | HSP0 Dump  |
-| States  |            |            |
-|         |            |            |
-|         |            |            |
-|         |            |            |
-+---------+------------+------------+
-|                                   |
++---------+---------------+---------------+--
+|         |               |               |
+|         |               |               |
+| Core    | SCP0 Dump     | SCP1 Dump     |
+| States  |               | (Copy buffer) |
+|         |               |               |
+|         |               |               |
+|         |               |               |
++---------+---------------+---------------+
+|                                         |
 Crash Dump Base           Base + Reservation size
 
 Reserved memory in DIE1 SRAM for crash mini dump
-+---------+------------+------------+--
-|         |            |            |
-|         |            |            |
-| Core    | SCP1 Dump  | HSP1 Dump  |
-| States  |            |            |
-|         |            |            |
-|         |            |            |
-|         |            |            |
-+---------+------------+------------+
-|                                   |
++---------+---------------+---------------+--
+|         |               |               |
+|         |               |               |
+| Core    | SCP1 Dump     | Reserved      |
+| States  |               |               |
+|         |               |               |
+|         |               |               |
+|         |               |               |
++---------+---------------+---------------+
+|                                         |
 Crash Dump Base           Base + Reservation size
 */
 
 
 /*
  * Reserved memory in DDR RAM for crash full dump
-+---------+------------+------------+------------+------------+------------+------------+------------+------------+------------+------------+--
-|         |            |            |            |            |            |            |            |            |            |            |
-|         |            |            |            |            |            |            |            |            |            |            |
-| Core    | MCP0 Dump  | SCP0 Dump  | HSP0 Dump  | CDED0 Dump | SDM0 Dump  | MCP1 Dump  | SCP1 Dump  | HSP1 Dump  | CDED1 Dump | SDM1 Dump  |
-| States  |            |            |            |            |            |            |            |            |            |            |
-|         |            |            |            |            |            |            |            |            |            |            |
-|         |            |            |            |            |            |            |            |            |            |            |
-|         |            |            |            |            |            |            |            |            |            |            |
-+---------+------------+------------+------------+------------+------------+------------+------------+------------+------------+------------+--
-|                                                                                                                                           |
-Crash Dump Base                                                                                                              Base + Reservation size
++---------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--
+|         |       |       |       |       |       |       |       |       |       |       |       |       |
+|         |       |       |       |       |       |       |       |       |       |       |       |       |
+| Core    | MCP0  | SCP0  | HSP0  | CDED0 | SDM0  | KMP0  | MCP1  | SCP1  | HSP1  | CDED1 | SDM1  | KMP1  |
+| States  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  |
+|         |       |       |       |       |       |       |       |       |       |       |       |       |
+|         |       |       |       |       |       |       |       |       |       |       |       |       |
++---------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--
+|                                                                                                         |
+Crash Dump Base                                                                       Base + Reservation size
 */
 ```
 
 Where each core equally divides the (reserved size - sizeof(core state)) for core-specific crash dump.
 
+#### Crash dump header access
 Core states (16 byte header) located in first part of crash dump regions to indicate dump progress.
+Mini dump header is located in MSCP EXP RAM for each die.
+Full dump header is located in DDR.
+
+To access mini dump header, HW semaphore SEM_ID_MSCP_EXP_0 should be acquired.
+To access full dump header, HW semaphore SEM_ID_DIE0_IOSS_0 should be acquired.
+
+Semaphore key is defined as combination of die id, core id. But because key value 0 is reserved for released state, it will be defined as "((die_id << 16) | (core_id & 0xFFFF)) + 1".
+
+```c
+typedef enum
+{
+    CRASH_DUMP_CORE_MCP = 0,
+    CRASH_DUMP_CORE_SCP = 1,
+    CRASH_DUMP_CORE_HSP = 2,
+    CRASH_DUMP_CORE_CDED = 3,
+    CRASH_DUMP_CORE_SDM = 4,
+    CRASH_DUMP_CORE_KDM = 5,
+    CRASH_DUMP_CORE_NUM
+} crash_dump_core_t;
+```
+
+SEM_ID_MSCP_EXP_0 and SEM_ID_DIE0_IOSS_0 should be initialized by HSP before other cores are booted.
+
 ```c
 enum
 {
-    CRASH_DUMP_STATE_IDLE = 0,
-    CRASH_DUMP_STATE_IN_PROGRESS = 1,
-    CRASH_DUMP_STATE_COMPLETED = 2
+    CRASH_DUMP_STATE_NOT_AVAILABLE = 0,
+    CRASH_DUMP_STATE_READY = 1,
+    CRASH_DUMP_STATE_IN_PROGRESS = 2,
+    CRASH_DUMP_STATE_COMPLETED = 3
 };
 
 /**
@@ -346,7 +370,6 @@ enum
  * 
  */
 typedef struct {
-    FPFW_SPINLOCK lock;
     uint16_t cd_status; // 0: Not in use, 1: In Use
     volatile uint8_t cores[CRASH_DUMP_CORE_NUM * 2];
 } crash_dump_status_t;
@@ -499,6 +522,18 @@ D-- No --> E{Has dump timeout exceeded?}
 E-- No --> C
 D-- Yes --> F(Perform Warm Reset)
 E-- Yes --> F
+```
+
+#### HSP Read other core dump states
+```mermaid
+graph TD
+A[Check mini dump header cd_state under SEM_ID_MSCP_EXP_0]
+A --> B{Is in use?}
+B-- Yes --> C(Check core mini dump states under SEM_ID_MSCP_EXP_0)
+B-- No --> D(Check full dump header cd_state under SEM_ID_DIE0_IOSS_0)
+D --> E{Is in use?}
+E-- Yes --> F(Check core full dump states under SEM_ID_DIE0_IOSS_0)
+E-- No --> G(No dumps available)
 ```
 
 ## Public APIs

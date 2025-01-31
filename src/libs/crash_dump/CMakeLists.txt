@@ -26,11 +26,11 @@ add_library(${TARGET}
 target_link_libraries(${TARGET}
     PUBLIC
         fwlib.lib.crashDump
-        fwlib.lib.spinlock
         fwlib.service.iccBase
         ms::lib::debug
         ms::lib::error_codes
         ms::service::atu_service
+        silibs::semaphore
     PRIVATE
         fwlib.lib.assert
         fwlib.service.cli

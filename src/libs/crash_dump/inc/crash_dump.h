@@ -10,11 +10,11 @@
 #pragma once
 
 /*--------------- Includes ---------------*/
-#include <FpFwSpinLock.h>
 #include <FpFwUtils.h>
 #include <fpfw_icc_base.h>
 #include <modules/CdDumpDescriptor.h>
 #include <modules/CdDumpManager.h>
+#include <semaphore_lib.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -22,6 +22,7 @@ extern "C" {
 #endif
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define CRASH_DUMP_PROCESSOR_ID(d, c)   (((d) << 16) | ((c) & 0xFFFF))
 
 /*-------------- Typedefs ----------------*/
 typedef enum
@@ -42,9 +43,10 @@ typedef enum : uint16_t
 
 typedef enum : uint8_t
 {
-    CRASH_DUMP_STATE_IDLE = 0,
-    CRASH_DUMP_STATE_IN_PROGRESS = 1,
-    CRASH_DUMP_STATE_COMPLETED = 2
+    CRASH_DUMP_STATE_NOT_AVAILABLE = 0,
+    CRASH_DUMP_STATE_READY = 1,
+    CRASH_DUMP_STATE_IN_PROGRESS = 2,
+    CRASH_DUMP_STATE_COMPLETED = 3
 } crash_dump_core_state_t;
 
 typedef enum
@@ -52,7 +54,8 @@ typedef enum
     CRASH_DUMP_ICC_CONFIG_MHU_LOCAL = 0,
     CRASH_DUMP_ICC_CONFIG_MHU_REMOTE = 1,
     CRASH_DUMP_ICC_CONFIG_SPI_REMOTE = 2,
-    CRASH_DUMP_ICC_CONFIG_HSP = 3
+    CRASH_DUMP_ICC_CONFIG_HSP = 3,
+    CRASH_DUMP_ICC_CONFIG_MAX
 } crash_dump_icc_config_t;
 
 typedef struct _CD_GUID {
@@ -90,15 +93,22 @@ typedef struct {
 /**
  * @brief Crash dump status header
  * 
- * lock: Spinlock to protect the status
  * cd_status: Crash dump status (Lower 8 bits: DIE0, Upper 8 bits: DIE1 - 0: In progress, 1: Completed for each core)
  * 
  */
 typedef struct {
-    FPFW_SPINLOCK lock;
     uint16_t cd_status; // 0: Not in use, 1: In Use
     volatile uint8_t cores[CRASH_DUMP_CORE_NUM * 2];
 } crash_dump_status_t;
+
+/**
+ * @brief HW semaphore configuration
+ * 
+ */
+typedef struct {
+    SEMAPHORE_ID semaphore_id;
+    uint32_t semaphore_key;
+} crash_dump_semaphore_t;
 
 typedef struct {
     uint32_t die_index;         // DIE index
@@ -107,11 +117,9 @@ typedef struct {
     uint32_t mmio_register_count;
     const core_register_mmio_t *mmio_registers;
     bool (*in_memory)(uintptr_t start_addr, uintptr_t end_addr);
-    fpfw_icc_base_ctx_t *icc_mhu_local_core_ctx;
-    fpfw_icc_base_ctx_t *icc_mhu_remote_core_ctx;
-    fpfw_icc_base_ctx_t *icc_spi_remote_core_ctx;
-    fpfw_icc_base_ctx_t *icc_hsp_ctx;
+    fpfw_icc_base_ctx_t *icc_ctx[CRASH_DUMP_ICC_CONFIG_MAX];
     bool is_primary;
+    crash_dump_semaphore_t cd_semaphore;
     crash_dump_status_t *cd_status; // Crash dump status header
 } crash_dump_config_t;
 

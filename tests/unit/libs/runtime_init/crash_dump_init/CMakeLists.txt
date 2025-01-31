@@ -5,7 +5,7 @@ set(TARGET crash_dump_init.scp.test)
 
 set(SOURCES
     test_crash_dump_init.cpp
-    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/crash_dump_init.c
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/scp_crash_dump_init.c
 )
 
 # Compile test
@@ -52,6 +52,7 @@ mock_target(${TARGET}
     crash_dump_init
     crash_dump_init_post_mesh
     exception_handler_init
+    idhw_is_single_die_boot_en
     idsw_get_die_id
     idsw_get_cpu_type
     idsw_get_platform_sdv
@@ -64,7 +65,7 @@ set(TARGET crash_dump_init.mcp.test)
 
 set(SOURCES
     test_crash_dump_init.cpp
-    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/crash_dump_init.c
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/mcp_crash_dump_init.c
 )
 
 # Compile test

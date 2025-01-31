@@ -28,6 +28,7 @@ target_link_libraries(${TARGET}
     ms::lib::crash_dump
     ms::lib::icc_platform_defines
     ms::lib::threadx
+    silibs::idhw
     silibs::kng_silibs_platform
     silibs::gpio
     silibs_platform
@@ -63,9 +64,6 @@ mock_target(${TARGET}
     FpFwCliPrint
     FPFwCDRegisterAddress32
     FPFwCDCrashDumpHandler
-    FPFwSpinLockInitialize
-    FPFwSpinLockAcquire
-    FPFwSpinLockRelease
     CdRegisterMMIORegisterSet
     CdRegisterAddress32
     CdRegisterAddress64
@@ -79,4 +77,9 @@ mock_target(${TARGET}
     _tx_mutex_put
     gpio_set_output
     GetCrashDumpConfig
+    initialize_semaphore
+    wait_for_semaphore
+    release_semaphore
+    idhw_is_single_die_boot_en
+    idsw_get_platform_sdv
 )

@@ -48,6 +48,13 @@ void __wrap_crash_dump_init_post_mesh()
     function_called();
 }
 
+bool __wrap_idhw_is_single_die_boot_en(void)
+{
+    function_called();
+
+    return mock_type(bool);
+}
+
 idsw_die_id_t __wrap_idsw_get_die_id(void)
 {
     return mock_type(idsw_die_id_t);
@@ -111,6 +118,12 @@ TEST_FUNCTION(test_crash_dump_init, nullptr, nullptr)
 
     will_return(__wrap_exception_handler_init, KNG_SUCCESS);
     expect_function_call(__wrap_exception_handler_init);
+
+#if defined(SCP_RUNTIME_INIT)
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    expect_function_call(__wrap_idhw_is_single_die_boot_en);
+#elif defined(MCP_RUNTIME_INIT)
+#endif
 
     // Check dependencies
     assert_string_equal("hw_ver", _fpfw_component_cd_init.children[0]);

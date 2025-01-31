@@ -16,6 +16,8 @@
 #include <FpFwAssert.h>               // for FPFW_RUNTIME_ASSERT
 #include <crash_dump.h>               // for crash_dump_init
 #include <crash_dump_memory.h>        // for CRASH_DUMP_MINI_HEADER_ADDR, CRASH_DUMP_MINI_HEADER_SIZE...
+#include <idhw.h>                     // for idhw_is_single_die_boot_en
+#include <idsw_kng.h>                 // for DIE_0, DIE_1
 #include <modules/CdDumpDescriptor.h> // for FPFwCDInitDumpDescriptor
 #include <modules/CdMemoryPool.h>     // for FPFwCDInintMemoryPool
 #include <stdbool.h>                  // for false
@@ -75,7 +77,7 @@ void crash_dump_init(crash_dump_config_t* config)
     crash_dump_config = config;
 
     // Set Processor ID with DIE index (Upper 16 bits) and core index (Lower 16 bits).
-    crash_dump_ctx.prid = (config->die_index << 16) | (config->core_index & 0xFFFF);
+    crash_dump_ctx.prid = CRASH_DUMP_PROCESSOR_ID(config->die_index, config->core_index);
     crash_dump_ctx.isPrimaryCore = config->is_primary;
 
     // De-assert CD_IN_PROGRESS
@@ -129,6 +131,18 @@ bool crash_dump_enable_full_dump(bool enable)
 
     if (enable)
     {
+        if (IS_PLATFORM_SVP())
+        {
+            // If initializing a mini crash dump OR on SVP use a local semaphore within the MSCP EXP Block.
+            //   - See SVP Bug SVP bug https://azurecsi.visualstudio.com/1P-SoC-Modeling/_workitems/edit/2327121
+            // If initializing a full crash dump use a semaphore within the IOSS block.
+            config->cd_semaphore.semaphore_id = SEM_ID_MSCP_EXP_0;
+        }
+        else
+        {
+            config->cd_semaphore.semaphore_id = SEM_ID_DIE0_IOSS_0;
+        }
+
         // Configure full dump memory pool.
         switch (config->core_index)
         {
@@ -146,11 +160,12 @@ bool crash_dump_enable_full_dump(bool enable)
             // MSCP only supports MCP and SCP cores.
             return false;
         }
-
-        config->dump_type = FPFW_CD_DUMP_TYPE_FULL;
     }
     else
     {
+        // Configure hw semaphore to use MSCP_EXP_0 for mini dump.
+        config->cd_semaphore.semaphore_id = SEM_ID_MSCP_EXP_0;
+
         // Configure mini dump memory pool.
         switch (config->core_index)
         {
@@ -163,18 +178,19 @@ bool crash_dump_enable_full_dump(bool enable)
             // Only SCP and HSP support mini dump.
             return false;
         }
-
-        config->dump_type = FPFW_CD_DUMP_TYPE_MINI;
     }
 
     // If the status is already set, clear it.
     crash_dump_update_state(CRASH_DUMP_NOT_IN_USE);
 
     // Update new crash dump status buffer.
+    config->dump_type = enable ? FPFW_CD_DUMP_TYPE_FULL : FPFW_CD_DUMP_TYPE_MINI;
     config->cd_status = status;
 
-    // Initialize crash dump header spin lock.
-    FPFwSpinLockInitialize(&(GetCrashDumpConfig()->cd_status->lock));
+    // Initialize crash dump header lock (hw semaphore) for Die0 SCP.
+    // ToDo: This must be moved to HSP.
+    initialize_crash_dump_header_lock(config);
+
     crash_dump_update_state(CRASH_DUMP_IN_USE);
 
     // Initialize FPFW crash dump memory pool, file and manager

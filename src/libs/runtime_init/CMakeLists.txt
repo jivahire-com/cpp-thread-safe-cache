@@ -22,7 +22,6 @@ add_library(${TARGET}
         cli_ddr_init.c
         cli_init.c
         cli_power_init.c
-        crash_dump_init.c
         css_init.c
         d2d_cntr_sync_init.c
         ddrss_init.c
@@ -33,6 +32,7 @@ add_library(${TARGET}
         fuse_init.c
         gpio_init.c
         gtimer_init.c
+        hw_semaphore_init.c
         hw_version_scp_init.c
         i3c_controller_init.c
         i3c_controller_scp_cli_init.c
@@ -51,6 +51,7 @@ add_library(${TARGET}
         power_init.c
         scmi_init.c
         scmi_cli_init.c
+        scp_crash_dump_init.c
         scp_mpu_init.c
         sds_init.c
         sensor_fifo_init.c
@@ -110,6 +111,7 @@ target_link_libraries(
         ms::lib::exception_handler
         ms::lib::gtimer
         ms::lib::hsp_firmware_headers
+        ms::lib::hw_semaphore
         ms::lib::i3c_controller
         ms::lib::i3c_controller::cli
         ms::lib::icc::cli
@@ -234,19 +236,20 @@ add_library(${TARGET}
         cfg_mgr_init.c
         cli_crash_dump_init.c
         cli_init.c
-        crash_dump_init.c
         dcs_init.c
         debug_init.c
         dfwk_init.c
         etc_etd_init.c
         etr_init.c
         gpio_init.c
+        hw_semaphore_init.c
         hw_version_mcp_init.c
         icc_accel_mbx_init.c
         icc_cli_init.c
         icc_d2dmbx_init.c
         icc_hspmbx_init.c
         icc_mhu_init.c
+        mcp_crash_dump_init.c
         mcp_mpu_init.c
         nvic_init.c
         power_fuse_init.c
@@ -286,6 +289,7 @@ target_link_libraries(
         ms::lib::crash_dump
         ms::lib::debug
         ms::lib::exception_handler
+        ms::lib::hw_semaphore
         ms::lib::icc::cli
         ms::lib::icc_platform_defines
         ms::lib::interface::in_band_telemetry_ddr

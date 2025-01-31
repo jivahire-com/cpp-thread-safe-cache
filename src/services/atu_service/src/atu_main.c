@@ -28,6 +28,7 @@
 #include <silibs_status.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <vab_cded_ioss_top_regs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -131,6 +132,13 @@ atu_map_entry_t atu_static_map_single_die_die0[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
+    // HW Semaphore region on DIE0
+    {
+        .ap_base_address = AP_TOP_D0_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS + IOSS_TOP_IOSS_CSR_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
+    },
     {0},
 };
 
@@ -209,6 +217,20 @@ atu_map_entry_t atu_static_map_dual_die_die0[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_ICC_MHU_MCP2MCP_SEND_FRAME_END_ADDR,
         .attribute = {ATU_BUS_ATTR_ROOT},
     },
+    // HW Semaphore region on DIE0
+    {
+        .ap_base_address = AP_TOP_D0_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS + IOSS_TOP_IOSS_CSR_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
+    },
+    // HW Semaphore region on DIE1
+    {
+        .ap_base_address = AP_TOP_D1_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS + IOSS_TOP_IOSS_CSR_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE1_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE1_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
+    },
     {0},
 };
 
@@ -248,7 +270,7 @@ atu_map_entry_t atu_static_map_single_die_die1[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_VAR_SVC_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
-    // Crash dump status header on DIE0
+    // Crash dump status header on DIE1
     {
         .ap_base_address = CRASH_DUMP_DDR_HEADER_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_HEADER_BASE_ADDR,
@@ -261,6 +283,13 @@ atu_map_entry_t atu_static_map_single_die_die1[] = {
         .mscp_start_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
+    },
+    // HW Semaphore region on DIE1
+    {
+        .ap_base_address = AP_TOP_D1_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS + IOSS_TOP_IOSS_CSR_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
     },
     {0},
 };
@@ -308,7 +337,7 @@ atu_map_entry_t atu_static_map_dual_die_die1[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_VAR_SVC_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
-    // Crash dump status header on DIE0
+    // Crash dump status header on DIE1
     {
         .ap_base_address = CRASH_DUMP_DDR_HEADER_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_HEADER_BASE_ADDR,
@@ -338,6 +367,20 @@ atu_map_entry_t atu_static_map_dual_die_die1[] = {
         .ap_base_address = AP_TOP_D0_MCP3R2MCP_MHU_SND_NS_ADDRESS,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_ICC_MHU_MCP2MCP_SEND_FRAME_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_ICC_MHU_MCP2MCP_SEND_FRAME_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
+    },
+    // HW Semaphore region on DIE0
+    {
+        .ap_base_address = AP_TOP_D0_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS + IOSS_TOP_IOSS_CSR_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
+    },
+    // HW Semaphore region on DIE1
+    {
+        .ap_base_address = AP_TOP_D1_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS + IOSS_TOP_IOSS_CSR_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE1_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE1_END_ADDR,
         .attribute = {ATU_BUS_ATTR_ROOT},
     },
     {0},

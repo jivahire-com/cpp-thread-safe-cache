@@ -120,26 +120,40 @@ bool __wrap_FPFwCDRegisterAddress32(void* address, uint32_t size)
 //
 // Tests
 //
-void set_expectations_crash_dump_enable_full_dump_cli(crash_dump_config_t* config, crash_dump_status_t* status, uint64_t addr, uint32_t size)
+void set_expectations_crash_dump_enable_full_dump_cli(crash_dump_config_t* config,
+                                                      crash_dump_status_t* status,
+                                                      uint64_t addr,
+                                                      uint32_t size,
+                                                      bool fulldump)
 {
+    SEMAPHORE_ID expected_semaphore_id = fulldump ? SEM_ID_DIE0_IOSS_0 : SEM_ID_MSCP_EXP_0;
+
     // For enable full crash dump
     will_return(__wrap_GetCrashDumpConfig, config);
     will_return(__wrap_GetCrashDumpConfig, status);
+
+    if (fulldump)
+    {
+        // For configuring crash dump semaphore
+        will_return_always(__wrap_idsw_get_platform_sdv, 0x30); // PLATFORM_FPGA
+    }
 
     // For disable current crash dump state
     will_return(__wrap_GetCrashDumpConfig, config);
     will_return(__wrap_GetCrashDumpConfig, NULL);
 
     // For initializing crash dump status lock
-    will_return(__wrap_GetCrashDumpConfig, config);
-    will_return(__wrap_GetCrashDumpConfig, status);
-    expect_function_call(__wrap_FPFwSpinLockInitialize);
+    expect_value(__wrap_initialize_semaphore, id, expected_semaphore_id);
+    expect_function_call(__wrap_initialize_semaphore);
 
     // For enabling new crash dump state
-    expect_function_call(__wrap_FPFwSpinLockAcquire);
     will_return(__wrap_GetCrashDumpConfig, config);
     will_return(__wrap_GetCrashDumpConfig, status);
-    expect_function_call(__wrap_FPFwSpinLockRelease);
+    expect_value(__wrap_wait_for_semaphore, id, expected_semaphore_id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_value(__wrap_release_semaphore, id, expected_semaphore_id);
+    expect_function_call(__wrap_release_semaphore);
 
     // init_mem_pool
     expect_function_call(__wrap_FPFwCDInitMemoryPool);
@@ -328,7 +342,7 @@ TEST_FUNCTION(test_cli_cd_full_dump, test_setup, test_teardown)
     assert_non_null(handler);
 
     // crash_dump_enable_full_dump();
-    set_expectations_crash_dump_enable_full_dump_cli(&config, &dump_status, CRASH_DUMP_FULL_SCP_ADDR, CRASH_DUMP_FULL_SCP_SIZE);
+    set_expectations_crash_dump_enable_full_dump_cli(&config, &dump_status, CRASH_DUMP_FULL_SCP_ADDR, CRASH_DUMP_FULL_SCP_SIZE, true);
 
     // Call the CLI handler
     FPFW_CLI_STATUS status = handler(argc, argv);
@@ -347,7 +361,7 @@ TEST_FUNCTION(test_cli_cd_mini_dump, test_setup, test_teardown)
     assert_non_null(handler);
 
     // Set mock expectations of crash_dump_enable_full_dump()
-    set_expectations_crash_dump_enable_full_dump_cli(&config, &dump_status, CRASH_DUMP_MINI_SCP_ADDR, CRASH_DUMP_MINI_SCP_SIZE);
+    set_expectations_crash_dump_enable_full_dump_cli(&config, &dump_status, CRASH_DUMP_MINI_SCP_ADDR, CRASH_DUMP_MINI_SCP_SIZE, false);
 
     // Call the CLI handler
     FPFW_CLI_STATUS status = handler(argc, argv);

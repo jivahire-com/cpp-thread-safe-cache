@@ -12,12 +12,11 @@
 #include "crash_dump_icc.h"
 #include "crash_dump_status.h" // for crash_dump_update_core_state
 
-#include <FpFwSpinLock.h> // for FPFwSpinLockAcquire, FPFwSpinLockRelease
-#include <FpFwUtils.h>    // for FPFW_UNUSED
-#include <cmsis_m7.h>     // for __WFI
-#include <crash_dump.h>   // for crash_dump_handler
-#include <nvic.h>         // for nvic_get_current_irq
-#include <stdint.h>       // for uint32_t
+#include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <cmsis_m7.h>   // for __WFI
+#include <crash_dump.h> // for crash_dump_handler
+#include <nvic.h>       // for nvic_get_current_irq
+#include <stdint.h>     // for uint32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 

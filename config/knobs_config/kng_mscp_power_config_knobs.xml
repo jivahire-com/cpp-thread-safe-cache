@@ -12,8 +12,9 @@
       <Value name="power_loops_disable_t_NONE" prettyname="None" value="0" help="All power module loops enabled" />
       <Value name="power_loops_disable_t_CTRL_LOOP" prettyname="Ctrl Loop" value="1" help="Power control loop disabled" />
       <Value name="power_loops_disable_t_VR_TELEM_LOOP" prettyname="VR Telemetry Loop" value="2" help="Power VR telemetry loop disabled" />
-      <Value name="power_loops_disable_t_CTRL_VR_LOOP" prettyname="Ctrl VR Loop" value="3" help="Power control and VR telemetry loops disabled" />
       <Value name="power_loops_disable_t_PVT_TELEM_LOOP" prettyname="PVT Telemetry Loop" value="4" help="Power PVT telemetry loop disabled" />
+      <!-- Above is one-hot enconding flag, below are combinations. -->
+      <Value name="power_loops_disable_t_CTRL_VR_LOOP" prettyname="Ctrl VR Loop" value="3" help="Power control and VR telemetry loops disabled" />
       <Value name="power_loops_disable_t_CTRL_PVT_LOOP" prettyname="Ctrl PVT Loop" value="5" help="Power control and PVT telemetry loops disabled" />
       <Value name="power_loops_disable_t_VR_PVT_LOOP" prettyname="VR PVT Loop" value="6" help="Power VR and PVT telemetry loop disabled" />
       <Value name="power_loops_disable_t_ALL" prettyname="All" value="7" help="Power control, VR and PVT telemetry loops disabled" />

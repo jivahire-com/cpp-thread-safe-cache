@@ -83,6 +83,7 @@ mock_target(${TARGET}
     crash_dump_register_address32
     crash_dump_register_pre_dump_callback
     power_hw_clear_force_pmin
+    config_get_power_enable_survivability_mode
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

@@ -136,14 +136,14 @@ void power_knobs_read(power_knobs_t* p_knobs)
                            p_knobs->forced_vrs.vr[MPCL_VR_VCPU1]);
             p_knobs->forced_vrs.vr[MPCL_VR_VCPU1] = POWER_KNOB_VR_FORCED_VCPU_SURVIVABILITY;
         }
-        // If survivabilty mode is enabled, we should either disable the control loop or override VCPU
+        // If survivabilty mode is enabled, we should disable the control loop
         if (((p_knobs->forced_vrs.vr[MPCL_VR_VCPU] == 0) || (p_knobs->forced_vrs.vr[MPCL_VR_VCPU1] == 0)) &&
-            (p_knobs->loops_disable != power_loops_disable_t_CTRL_LOOP))
+            ((p_knobs->loops_disable & power_loops_disable_t_CTRL_LOOP) != power_loops_disable_t_CTRL_LOOP))
         {
             // disable control loop
             POWER_LOG_WARN(MODULE_NAME
                            "Survivability mode, consider forcing value of Vcpu. Disabling control loop.");
-            p_knobs->loops_disable = power_loops_disable_t_CTRL_LOOP;
+            p_knobs->loops_disable |= power_loops_disable_t_CTRL_LOOP;
         }
     }
 

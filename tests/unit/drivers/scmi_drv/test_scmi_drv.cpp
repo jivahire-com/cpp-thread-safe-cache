@@ -206,6 +206,7 @@ TEST_FUNCTION(test_scmi_power_protocol_cmds, test_setup, test_teardown)
 
     // test core power off
     power_set.power_state = SCMI_PD_CORE_STATE_OFF;
+    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
     expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
     expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(ap_core_asynchronous_request_t));
     expect_value(__wrap_ap_core_core_power_off, core_id, TEST_CORE_NUM);

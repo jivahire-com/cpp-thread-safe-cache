@@ -67,7 +67,7 @@ void scmi_set_debug_mode(uint8_t mode)
     scmi_debug = mode;
 }
 
-void ap_core_power_complete(int32_t status)
+void ap_core_power_response(int32_t status)
 {
     scmi_pd_power_state_notify_p2a_t resp;
     resp.status = status;
@@ -77,9 +77,20 @@ void ap_core_power_complete(int32_t status)
 
 void ap_core_power_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
 {
-    FPFW_UNUSED(request);
     FPFW_UNUSED(p_completion_context);
-    ap_core_power_complete(SCMI_STATUS_SUCCESS);
+    FPFW_RUNTIME_ASSERT(request != NULL);
+
+    if (request->RequestType == APCORE_CORE_POWER_ON_ASYNC)
+    {
+        //! Only send scmi response for power on request
+        ap_core_power_response(SCMI_STATUS_SUCCESS);
+        SCMI_LOG_INFO("Apcore Power On Request Completed!\n");
+    }
+    else
+    {
+        //! response for power off request was already send before initiating the power off sequence
+        SCMI_LOG_INFO("Apcore Power Off Request Completed!\n");
+    }
 }
 
 void ap_core_power(uint32_t power_domain, uint32_t power_state)
@@ -90,6 +101,13 @@ void ap_core_power(uint32_t power_domain, uint32_t power_state)
     DfwkAsyncRequestInitialize(&apcore_request.header, sizeof(apcore_request));
     if ((power_state & SCMI_PD_CORE_STATE_MASK) == (SCMI_PD_CORE_STATE_OFF))
     {
+        //! Received power off request from AP core over SCMI ap core protocol
+        //! SCP must send scmi resp 1st, as AP core is waiting for response (before it proceeds set the power state & call wfi)
+        ap_core_power_response(SCMI_STATUS_SUCCESS);
+        SCMI_LOG_INFO("Apcore Power Off SCMI Response Sent!\n");
+        //! SCP then programs the PPU registers with power off state & operating mode policy (via the `APCORE_CORE_POWER_OFF_ASYNC` req below)
+        //! SCP then waits for the PPU status reg to be updated with a timeout before completing the async request
+        //! Concurrently, AP will then Set the power state (which updates the PPU status register) & call wfi, concluding the power off sequence
         ap_core_core_power_off(p_apcore_interface, &apcore_request, power_domain, ap_core_power_completion, NULL);
     }
     else if ((power_state & SCMI_PD_CORE_STATE_MASK) == (SCMI_PD_CORE_STATE_ON))
@@ -99,7 +117,7 @@ void ap_core_power(uint32_t power_domain, uint32_t power_state)
     else
     {
         SCMI_LOG_INFO("Invalid Power State: %" PRIx32 "\n", power_state);
-        ap_core_power_complete(SCMI_STATUS_INVALID_PARAMETERS);
+        ap_core_power_response(SCMI_STATUS_INVALID_PARAMETERS);
     }
 }
 
@@ -151,6 +169,7 @@ int scmi_power_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
     }
     case SCMI_PWR_STATE_SET_MSG: {
         SCMI_LOG_INFO("SCMI_PWR_STATE_SET_MSG: %x\n", cmd_code);
+        //! Do we not care about flags?
         scmi_pd_power_state_set_a2p_t power_state;
         // because alignment :(
         memcpy(&power_state, payload, sizeof(power_state));

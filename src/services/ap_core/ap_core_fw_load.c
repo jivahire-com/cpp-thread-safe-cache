@@ -14,6 +14,8 @@
 #include <DfwkHost.h>
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
+#include <accelerator_ip.h>
+#include <accelip_id.h>
 #include <ap_fw_info.h>
 #include <assert.h>
 #include <bug_check.h>
@@ -134,6 +136,40 @@ static void request_kmp_load_complete_notify(void* context, size_t output_size_b
     APCORE_LOG_INFO("KMP FW load completed - Requesting load core now");
 }
 
+static void request_accel_itcm_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    FPFW_UNUSED(context);
+    FPFW_UNUSED(output_size_bytes);
+
+    BUG_ASSERT(status == FPFW_STATUS_SUCCESS);
+    BUG_ASSERT(recv_payload_buffer.header.cmd == HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    BUG_ASSERT(recv_payload_buffer.rsp.status == 0);
+
+    ACCEL_ID accel_type = (ACCEL_ID)context;
+
+    DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
+
+    APCORE_LOG_INFO("Accel[%d] ITCM FW load completed", accel_type);
+}
+
+static void request_accel_dtcm_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    FPFW_UNUSED(context);
+    FPFW_UNUSED(output_size_bytes);
+
+    BUG_ASSERT(status == FPFW_STATUS_SUCCESS);
+    BUG_ASSERT(recv_payload_buffer.header.cmd == HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    BUG_ASSERT(recv_payload_buffer.rsp.status == 0);
+
+    ACCEL_ID accel_type = (ACCEL_ID)context;
+
+    accel_disable_cpu_wait(accel_type);
+
+    DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
+
+    APCORE_LOG_INFO("Accel[%d] DTCM FW load completed", accel_type);
+}
+
 void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t fw_id)
 {
     // Listen for the response
@@ -158,6 +194,18 @@ void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t 
         recv_params.recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP;
         recv_params.cb = request_kmp_load_complete_notify;
         recv_params.cb_ctx = icc_hspmbx_ctx;
+    }
+    else if (fw_id == AP_FW_ID_SDM_ITCM || fw_id == AP_FW_ID_CDED_ITCM)
+    {
+        recv_params.recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP;
+        recv_params.cb = request_accel_itcm_load_complete_notify;
+        recv_params.cb_ctx = (void*)(fw_id == AP_FW_ID_SDM_ITCM ? ACCEL_ID_SDM : ACCEL_ID_CDED);
+    }
+    else if (fw_id == AP_FW_ID_SDM_DTCM || fw_id == AP_FW_ID_CDED_DTCM)
+    {
+        recv_params.recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP;
+        recv_params.cb = request_accel_dtcm_load_complete_notify;
+        recv_params.cb_ctx = (void*)(fw_id == AP_FW_ID_SDM_DTCM ? ACCEL_ID_SDM : ACCEL_ID_CDED);
     }
 
     fpfw_status_t status = fpfw_icc_base_recv(icc_hspmbx_ctx, &recv_params);
@@ -203,6 +251,34 @@ void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t 
     case AP_FW_ID_MCP:
         send_request.load_fw_req.id = HSP_FIRMWARE_ID_MCP;
         send_request.load_fw_req.address = MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM0_ADDRESS;
+        break;
+    case AP_FW_ID_SDM_ITCM:
+        send_request.load_fw_64bit_req.id = HSP_FIRMWARE_ID_SDM_ITCM;
+        send_request.load_fw_64bit_req.header.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ;
+        accel_get_itcm_addr(ACCEL_ID_SDM,
+                            &send_request.load_fw_64bit_req.load_addr_low,
+                            &send_request.load_fw_64bit_req.load_addr_high);
+        break;
+    case AP_FW_ID_SDM_DTCM:
+        send_request.load_fw_64bit_req.id = HSP_FIRMWARE_ID_SDM_DTCM;
+        send_request.load_fw_64bit_req.header.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ;
+        accel_get_dtcm_addr(ACCEL_ID_SDM,
+                            &send_request.load_fw_64bit_req.load_addr_low,
+                            &send_request.load_fw_64bit_req.load_addr_high);
+        break;
+    case AP_FW_ID_CDED_ITCM:
+        send_request.load_fw_64bit_req.id = HSP_FIRMWARE_ID_CDED_ITCM;
+        send_request.load_fw_64bit_req.header.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ;
+        accel_get_itcm_addr(ACCEL_ID_CDED,
+                            &send_request.load_fw_64bit_req.load_addr_low,
+                            &send_request.load_fw_64bit_req.load_addr_high);
+        break;
+    case AP_FW_ID_CDED_DTCM:
+        send_request.load_fw_64bit_req.id = HSP_FIRMWARE_ID_CDED_DTCM;
+        send_request.load_fw_64bit_req.header.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ;
+        accel_get_dtcm_addr(ACCEL_ID_CDED,
+                            &send_request.load_fw_64bit_req.load_addr_low,
+                            &send_request.load_fw_64bit_req.load_addr_high);
         break;
     case AP_FW_ID_KMP:
         send_request.load_fw_64bit_req.id = HSP_FIRMWARE_ID_KMP;

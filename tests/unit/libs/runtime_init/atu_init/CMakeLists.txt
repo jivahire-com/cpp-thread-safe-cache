@@ -42,4 +42,5 @@ mock_target(${TARGET}
     idhw_is_single_die_boot_en
     idsw_get_die_id
     atu_init
+    atu_map
 )

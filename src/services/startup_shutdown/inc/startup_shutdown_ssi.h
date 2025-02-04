@@ -41,6 +41,10 @@ typedef enum _ssi_startup_stage
 {
     STARTUP_PHASE_MSCP_ASYNC = 0x0, /* Phase included in cold boot and MSCP subsystem reset */
     STARTUP_MCP_LOAD,
+    STARTUP_SDM_ITCM_LOAD,
+    STARTUP_SDM_DTCM_LOAD,
+    STARTUP_CDED_ITCM_LOAD,
+    STARTUP_CDED_DTCM_LOAD,
     STARTUP_KMP_LOAD,
     STARTUP_CLUSTER_CORE_INIT,
     STARTUP_AP_SOC_POWER_INIT,

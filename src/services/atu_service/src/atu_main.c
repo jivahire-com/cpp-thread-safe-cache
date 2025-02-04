@@ -15,12 +15,14 @@
 #include <DfwkHost.h>
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
+#include <accelip_id.h>
 #include <assert.h> // for static_assert
 #include <atu_lib.h>
 #include <bug_check.h>
 #include <css.h>
 #include <idhw.h>
 #include <idsw.h>
+#include <kng_atu_mappings.h>
 #include <kng_soc_constants.h>
 #include <shared_sds_def.h>
 #include <silibs_ap_top_regs.h>
@@ -234,6 +236,13 @@ atu_map_entry_t atu_static_map_dual_die_die0[] = {
     {0},
 };
 
+atu_map_entry_t atu_map_accel_die0[NUM_VALID_ACCEL_ID] = {
+    // SDMSS on DIE0
+    [ACCEL_ID_SDM] = ATU_MAPPING_SDMSS_BASE(SOC_D0),
+    // CDEDSS on DIE0
+    [ACCEL_ID_CDED] = ATU_MAPPING_CDEDSS_BASE(SOC_D0),
+};
+
 atu_map_entry_t atu_static_map_single_die_die1[] = {
     // ARMS DIE 1
     {
@@ -386,6 +395,13 @@ atu_map_entry_t atu_static_map_dual_die_die1[] = {
     {0},
 };
 
+atu_map_entry_t atu_map_accel_die1[NUM_VALID_ACCEL_ID] = {
+    // SDMSS on DIE1
+    [ACCEL_ID_SDM] = ATU_MAPPING_SDMSS_BASE(SOC_D1),
+    // CDEDSS on DIE1
+    [ACCEL_ID_CDED] = ATU_MAPPING_CDEDSS_BASE(SOC_D1),
+};
+
 /*------------- Functions ----------------*/
 
 static void atu_service_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
@@ -474,6 +490,34 @@ void static_atu_config(uint8_t die_num)
     }
 }
 
+void accel_atu_config()
+{
+    uint8_t die_num = (uint8_t)idsw_get_die_id();
+    atu_map_entry_t* atu_accel_map = NULL;
+    int i;
+
+    if (die_num == 0)
+    {
+        atu_accel_map = atu_map_accel_die0;
+    }
+    else if (die_num == 1)
+    {
+        atu_accel_map = atu_map_accel_die1;
+    }
+    else
+    {
+        FPFW_RUNTIME_ASSERT(false);
+        return;
+    }
+
+    // Initialize SDM/CDED ATU
+    for (i = 0; i < NUM_VALID_ACCEL_ID; i++)
+    {
+        int status = atu_map(ATU_ID_MSCP, &atu_accel_map[i]);
+        BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, SILIBS_SUCCESS);
+    }
+}
+
 void atu_svc_init(atu_service_t* atu_service, PDFWK_SCHEDULE schedule)
 {
 
@@ -492,4 +536,32 @@ void atu_svc_init(atu_service_t* atu_service, PDFWK_SCHEDULE schedule)
 
     uint8_t die_num = (uint8_t)idsw_get_die_id();
     static_atu_config(die_num);
+}
+
+uint32_t atu_svc_accel_atu_addr(ACCEL_ID accel_id)
+{
+    atu_map_entry_t* atu_accel_map;
+    uint8_t die_num = (uint8_t)idsw_get_die_id();
+
+    if (accel_id >= NUM_VALID_ACCEL_ID)
+    {
+        FPFW_RUNTIME_ASSERT(false);
+        return 0;
+    }
+
+    if (die_num == 0)
+    {
+        atu_accel_map = atu_map_accel_die0;
+    }
+    else if (die_num == 1)
+    {
+        atu_accel_map = atu_map_accel_die1;
+    }
+    else
+    {
+        FPFW_RUNTIME_ASSERT(false);
+        return 0;
+    }
+
+    return atu_accel_map[accel_id].mscp_start_address;
 }

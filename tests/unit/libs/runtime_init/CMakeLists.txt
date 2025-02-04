@@ -1,3 +1,4 @@
+add_subdirectory(accel_atu_init)
 add_subdirectory(accel_intr_client_init)
 add_subdirectory(accel_intr_service_init)
 add_subdirectory(ap_core_init)

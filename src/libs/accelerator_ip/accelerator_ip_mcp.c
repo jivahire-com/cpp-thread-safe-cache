@@ -19,6 +19,7 @@
 #include <FpFwAssert.h>    // for FPFW_RUNTIME_ASSERT
 #include <accel_intr.h>    // for accel_intr_mcp_init
 #include <accelip_id.h>    // NUM_VALID_ACCEL_ID, ACCEL_ID_SDM, ACCEL_ID_CDED
+#include <atu_init.h>      // for atu_svc_accel_atu_addr
 #include <atu_lib.h>       // for atu_map, atu_unmap, atu_map...
 #include <idsw.h>          // for idsw_get_die_id
 #include <idsw_kng.h>      // for IS_PLATFORM_FPGA
@@ -52,19 +53,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
         return ACCEL_RET_FAIL_INVALID_PARAMS;
     }
 
-    atu_map_entry_t atu_map_entry;
-    memcpy((void*)&atu_map_entry, (void*)p_ss_ctxt->p_accelip_atu_map, sizeof(atu_map_entry_t));
-
-    ret = atu_map(ATU_ID_MSCP, &atu_map_entry);
-    if (ret != SILIBS_SUCCESS)
-    {
-        critical_print("Accel IP: init_accelerator: ATU MAP failed.\n");
-        return ACCEL_RET_FAIL_ACCEL_IP;
-    }
-
-    debug_print("atu mapped for accel ip\n");
-
-    accel_intr_atu_map_address[accel_type] = atu_map_entry.mscp_start_address;
+    accel_intr_atu_map_address[accel_type] = atu_svc_accel_atu_addr(accel_type);
 
     if (IS_PLATFORM_FPGA())
     {

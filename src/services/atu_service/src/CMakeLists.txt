@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
     PUBLIC
         ms::lib::register_headers
         silibs::kng_silibs_platform
+        silibs::sdm_command_desc
         fwlib.dfwk
     PRIVATE
         ms::lib::css

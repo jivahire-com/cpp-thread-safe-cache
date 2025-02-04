@@ -17,6 +17,7 @@ extern "C" {
 
 #include <CMockaWrapper.h> // for expect_value, check_expected_ptr, Cmo...
 #include <DfwkCommon.h>    // for PDFWK_DEVICE_HEADER, DFWK_ASYNC_REQUE...
+#include <accelip_id.h>
 #include <ap_core.h>
 #include <ap_core_i.h>
 #include <ap_core_init.h>
@@ -54,6 +55,7 @@ static DFWK_REQUEST_DISPATCH_SYNC s_dispatch_routine_sync = NULL;
 static pap_core_service_context_t s_ap_core_ctx = NULL;
 static icc_base_recv_complete_notify fw_load_cb = NULL;
 static uint32_t icc_hspmbx_ctx;
+static void* cb_ctx = NULL;
 
 /*------------- Functions ----------------*/
 //
@@ -189,6 +191,7 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
     assert_non_null(icc_ctx);
     check_expected(params->recv_cmd_code);
     fw_load_cb = params->cb;
+    cb_ctx = params->cb_ctx;
     ((kng_hsp_mailbox_msg*)(params->payload_buffer))->header.cmd = mock_type(int);
 
     return mock_type(fpfw_status_t);
@@ -226,6 +229,28 @@ int32_t __wrap_sds_block_creation(uint32_t sds_module_id, uint32_t request_size,
     FPFW_UNUSED(region_id);
 
     return 0;
+}
+
+void __wrap_accel_get_itcm_addr(ACCEL_ID accel_type, uint32_t* low_addr, uint32_t* high_addr)
+{
+    FPFW_UNUSED(low_addr);
+    FPFW_UNUSED(high_addr);
+
+    check_expected(accel_type);
+    function_called();
+}
+void __wrap_accel_get_dtcm_addr(ACCEL_ID accel_type, uint32_t* low_addr, uint32_t* high_addr)
+{
+    FPFW_UNUSED(low_addr);
+    FPFW_UNUSED(high_addr);
+
+    check_expected(accel_type);
+    function_called();
+}
+void __wrap_accel_disable_cpu_wait(ACCEL_ID accel_type)
+{
+    check_expected(accel_type);
+    function_called();
 }
 
 } // extern "C"
@@ -545,6 +570,190 @@ AP_CORE_TEST(dispatch_mcp_load, setup, NULL)
     // Call the callback to simulate the response
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
     fw_load_cb(&icc_hspmbx_ctx, 0, FPFW_STATUS_SUCCESS);
+}
+
+AP_CORE_TEST(dispatch_sdm_itcm_load, setup, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_SDM_ITCM_LOAD;
+
+    // Set up expectations
+    // In ap_core_dispatch()
+    will_return(__wrap_system_info_is_hsp_present, true);
+
+    // In ap_core_request_load_ap_fw()
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_accel_get_itcm_addr, accel_type, ACCEL_ID_SDM);
+    expect_function_call(__wrap_accel_get_itcm_addr);
+    expect_any(__wrap_fpfw_icc_base_send, params->payload_buffer);
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    // Call API under test
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+
+    // Call the callback to simulate the response
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+    fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
+}
+
+AP_CORE_TEST(dispatch_sdm_itcm_load_hsp_not_present, setup, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_SDM_ITCM_LOAD;
+
+    // Set up expectations
+    // In ap_core_dispatch()
+    will_return(__wrap_system_info_is_hsp_present, false);
+    expect_any(__wrap_DfwkAsyncRequestComplete, Request);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+}
+
+AP_CORE_TEST(dispatch_sdm_dtcm_load, setup, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_SDM_DTCM_LOAD;
+
+    // Set up expectations
+    // In ap_core_dispatch()
+    will_return(__wrap_system_info_is_hsp_present, true);
+
+    // In ap_core_request_load_ap_fw()
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_accel_get_dtcm_addr, accel_type, ACCEL_ID_SDM);
+    expect_function_call(__wrap_accel_get_dtcm_addr);
+    expect_any(__wrap_fpfw_icc_base_send, params->payload_buffer);
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    // Call API under test
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+
+    // Call the callback to simulate the response
+    expect_value(__wrap_accel_disable_cpu_wait, accel_type, ACCEL_ID_SDM);
+    expect_function_call(__wrap_accel_disable_cpu_wait);
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+    fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
+}
+
+AP_CORE_TEST(dispatch_sdm_dtcm_load_hsp_not_present, setup, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_SDM_DTCM_LOAD;
+
+    // Set up expectations
+    // In ap_core_dispatch()
+    will_return(__wrap_system_info_is_hsp_present, false);
+    expect_any(__wrap_DfwkAsyncRequestComplete, Request);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+}
+
+AP_CORE_TEST(dispatch_cded_itcm_load, setup, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_CDED_ITCM_LOAD;
+
+    // Set up expectations
+    // In ap_core_dispatch()
+    will_return(__wrap_system_info_is_hsp_present, true);
+
+    // In ap_core_request_load_ap_fw()
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_accel_get_itcm_addr, accel_type, ACCEL_ID_CDED);
+    expect_function_call(__wrap_accel_get_itcm_addr);
+    expect_any(__wrap_fpfw_icc_base_send, params->payload_buffer);
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    // Call API under test
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+
+    // Call the callback to simulate the response
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+    fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
+}
+
+AP_CORE_TEST(dispatch_cded_itcm_load_hsp_not_present, setup, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_CDED_ITCM_LOAD;
+
+    // Set up expectations
+    // In ap_core_dispatch()
+    will_return(__wrap_system_info_is_hsp_present, false);
+    expect_any(__wrap_DfwkAsyncRequestComplete, Request);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+}
+
+AP_CORE_TEST(dispatch_cded_dtcm_load, setup, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_CDED_DTCM_LOAD;
+
+    // Set up expectations
+    // In ap_core_dispatch()
+    will_return(__wrap_system_info_is_hsp_present, true);
+
+    // In ap_core_request_load_ap_fw()
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_accel_get_dtcm_addr, accel_type, ACCEL_ID_CDED);
+    expect_function_call(__wrap_accel_get_dtcm_addr);
+    expect_any(__wrap_fpfw_icc_base_send, params->payload_buffer);
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    // Call API under test
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+
+    // Call the callback to simulate the response
+    expect_value(__wrap_accel_disable_cpu_wait, accel_type, ACCEL_ID_CDED);
+    expect_function_call(__wrap_accel_disable_cpu_wait);
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+    fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
+}
+
+AP_CORE_TEST(dispatch_cded_dtcm_load_hsp_not_present, setup, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_CDED_DTCM_LOAD;
+
+    // Set up expectations
+    // In ap_core_dispatch()
+    will_return(__wrap_system_info_is_hsp_present, false);
+    expect_any(__wrap_DfwkAsyncRequestComplete, Request);
+    s_dispatch_routine(&test_request.header, &test_device.header);
 }
 
 AP_CORE_TEST(dispatch_kmp_load, setup, NULL)

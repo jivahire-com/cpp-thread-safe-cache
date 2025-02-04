@@ -48,6 +48,7 @@ target_link_libraries(
         ms::lib::register_headers
         ms::lib::utils
         ms::lib::system_info
+        ms::service::atu_service
         silibs::idsw
         silibs::idsw_kng
         silibs::pcr_vab

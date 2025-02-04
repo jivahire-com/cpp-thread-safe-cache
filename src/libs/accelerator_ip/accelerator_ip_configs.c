@@ -18,10 +18,13 @@
 #include "sdm_init.h"              // for sdm_mem_init_t
 #include "silibs_common.h"         // for ARRAY_SIZE
 
+#include <FpFwUtils.h>           // for FPFW_ARRAY_SIZE
 #include <accelerator_ip_priv.h> // for get_accelerator_ctxt
 #include <accelip_id.h>          // NUM_VALID_ACCEL_ID, ACCEL_ID_SDM, ACCEL_ID_CDED
 #include <accelip_ss_init_struct_defaults.h>
 #include <ap_top_regs.h>
+#include <bug_check.h>
+#include <idsw.h> // for idsw_get_die_id
 #include <sdm_ext_cfg_regs.h>
 #include <sdm_init_knobs.h> // for MSFT_VENDOR_ID, INT_PIN_A
 #include <sdm_init_struct_defaults.h>
@@ -224,6 +227,46 @@ static subsystem_ctxt_t ss_ctxts[] = {
 /*----------------------------- Global Functions ----------------------------*/
 subsystem_ctxt_t* get_accelerator_ctxt(uint32_t* accel_instance_size)
 {
-    *accel_instance_size = ARRAY_SIZE(ss_ctxts);
+    *accel_instance_size = FPFW_ARRAY_SIZE(ss_ctxts);
     return ss_ctxts;
+}
+
+void accel_get_itcm_addr(ACCEL_ID accel_type, uint32_t* p_low_addr, uint32_t* p_high_addr)
+{
+    idsw_die_id_t current_die_instance = idsw_get_die_id();
+
+    BUG_ASSERT(current_die_instance < NUM_DIE);
+    BUG_ASSERT(accel_type < NUM_VALID_ACCEL_ID);
+    BUG_ASSERT(p_low_addr != NULL);
+    BUG_ASSERT(p_high_addr != NULL);
+
+    for (uint32_t i = 0; i < FPFW_ARRAY_SIZE(ss_ctxts); i++)
+    {
+        if (current_die_instance == ss_ctxts[i].accelip_metadata.die_instance &&
+            accel_type == get_accelip_type(ss_ctxts[i].accelip_metadata.accel_type))
+        {
+            *p_low_addr = ss_ctxts[i].mem_info.itcm_load_addr_low;
+            *p_high_addr = ss_ctxts[i].mem_info.itcm_load_addr_high;
+        }
+    }
+}
+
+void accel_get_dtcm_addr(ACCEL_ID accel_type, uint32_t* p_low_addr, uint32_t* p_high_addr)
+{
+    idsw_die_id_t current_die_instance = idsw_get_die_id();
+
+    BUG_ASSERT(current_die_instance < NUM_DIE);
+    BUG_ASSERT(accel_type < NUM_VALID_ACCEL_ID);
+    BUG_ASSERT(p_low_addr != NULL);
+    BUG_ASSERT(p_high_addr != NULL);
+
+    for (uint32_t i = 0; i < FPFW_ARRAY_SIZE(ss_ctxts); i++)
+    {
+        if (current_die_instance == ss_ctxts[i].accelip_metadata.die_instance &&
+            accel_type == get_accelip_type(ss_ctxts[i].accelip_metadata.accel_type))
+        {
+            *p_low_addr = ss_ctxts[i].mem_info.dtcm_load_addr_low;
+            *p_high_addr = ss_ctxts[i].mem_info.dtcm_load_addr_high;
+        }
+    }
 }

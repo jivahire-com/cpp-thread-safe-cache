@@ -76,6 +76,8 @@ typedef void (*crash_dump_cb_t)(void *);
  * @param[in] accel_type : Accelerator type : SDM / CDED
  *
  * @retval ATU mapped Accel Ext Cfg address
+ * 
+ * @deprecated This API is deprecated. Please use atu_svc_accel_atu_addr()
  */
 uint32_t accelerator_ip_get_atu_mapped_cfg_address(ACCEL_ID accel_type);
 
@@ -164,3 +166,28 @@ void scp_accel_update_default_knobs(subsystem_ctxt_t* p_ss_ctxt);
  *  Corresponding accel id for the provided accel type
  */
 ACCEL_ID get_accelip_type(ACCELIP_SS_INSTANCE accel_type);
+
+/**
+ * @brief Populates ITCM low and high address in input arguments
+ * 
+ * @param[in] accel_type Accel instance
+ * @param[out] low_addr Output low 32-bit ITCM address
+ * @param[out] high_addr Output high 32-bit ITCM address
+ */
+void accel_get_itcm_addr(ACCEL_ID accel_type, uint32_t *low_addr, uint32_t *high_addr);
+
+/**
+ * @brief Populates DTCM low and high address in input arguments
+ * 
+ * @param[in] accel_type Accel instance
+ * @param[out] low_addr Output low 32-bit DTCM address
+ * @param[out] high_addr Output high 32-bit DTCM address
+ */
+void accel_get_dtcm_addr(ACCEL_ID accel_type, uint32_t *low_addr, uint32_t *high_addr);
+
+/**
+ * @brief Disables accel device CPU wait
+ * 
+ * @param accel_type Accel instance
+ */
+void accel_disable_cpu_wait(ACCEL_ID accel_type);

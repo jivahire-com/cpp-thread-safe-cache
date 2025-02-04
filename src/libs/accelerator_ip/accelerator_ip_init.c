@@ -18,6 +18,7 @@
 #include <accel_intr.h>          // for accel_intr_irq_init
 #include <accelerator_ip_priv.h> // for get_accelerator_ctxt
 #include <accelip_id.h>          // NUM_VALID_ACCEL_ID, ACCEL_ID_SDM, ACCEL_ID_CDED
+#include <atu_init.h>            // for atu_svc_accel_atu_addr
 #include <atu_lib.h>             // for atu_map, atu_unmap, atu_map...
 #include <bug_check.h>           // for BUG_ASSERT
 #include <cdedss_config_regs.h>  // for CDEDSS_CONFIG_SDM_EXT_CFG_ADDRESS
@@ -41,6 +42,8 @@
 #include <system_info.h>       // for system_info_is_hsp_present
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
+
+#define ACCEL_NAME_LEN 8
 
 /*-------------------------------- Typedefs ---------------------------------*/
 
@@ -138,15 +141,14 @@ static uint32_t get_accel_name_and_offset_addr(ACCEL_ID accel_type, char* accel_
     case ACCEL_ID_SDM:
         memcpy(accel_name, "SDMSS", strlen("SDMSS") + 1);
         return SDMSS_CONFIG_SDM_EXT_CFG_ADDRESS;
-        break;
     case ACCEL_ID_CDED:
         memcpy(accel_name, "CDEDSS", strlen("CDEDSS") + 1);
         return CDEDSS_CONFIG_SDM_EXT_CFG_ADDRESS;
-        break;
     default:
         BUG_ASSERT(false);
         break;
     }
+
     return SDMSS_CONFIG_SDM_EXT_CFG_ADDRESS; // To satisfy x86 compiler
 }
 
@@ -162,7 +164,7 @@ static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
 
     ACCEL_ID accel_type = get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type);
 
-    char accel_name[7];
+    char accel_name[ACCEL_NAME_LEN];
     uint32_t ext_cfg_offset_addr = get_accel_name_and_offset_addr(accel_type, accel_name);
     size_t recv_msg_size_bytes = 0x0;
 
@@ -233,34 +235,6 @@ static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
     }
 
     return status;
-}
-
-static void accel_fw_download(subsystem_ctxt_t* p_ss_ctxt, ACCEL_ID accel_type)
-{
-    cpu_rst_info[accel_type].mbox_params.is_cold_boot = true;
-    cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_ITCM_LOAD;
-
-    for (uint8_t dload_stage = 0; dload_stage <= EMCPU_RELEASE_CPU_WAIT; dload_stage++)
-    {
-        fpfw_status_t status = invoke_hsp_accel_fw_download(p_ss_ctxt);
-
-        if (status != FPFW_STATUS_SUCCESS)
-        {
-            debug_print("Firmware download failed with status: %d\n", status);
-            return;
-        }
-
-        // callback is explicitly invoked here because compiler incorrectly warns of a recursive call
-        // if the callback is invoked inside the download function
-        if (dload_stage != (EMCPU_RELEASE_CPU_WAIT))
-        {
-            if (system_info_is_hsp_present())
-            {
-                // The last fw_download is to release cpuwait and cb should be skipped
-                request_accel_fw_load_complete_notify(p_ss_ctxt, 0x0, status); // The output size is unused and hence passed as 0
-            }
-        }
-    }
 }
 
 // API toggles ITCM enable -> 0 -> 1
@@ -361,18 +335,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
         return ACCEL_RET_FAIL_INVALID_PARAMS;
     }
 
-    atu_map_entry_t atu_map_entry;
-    memcpy((void*)&atu_map_entry, (void*)p_ss_ctxt->p_accelip_atu_map, sizeof(atu_map_entry_t));
-
-    ret = atu_map(ATU_ID_MSCP, &atu_map_entry);
-    if (ret != SILIBS_SUCCESS)
-    {
-        critical_print("Accel IP: init_accelerator: ATU MAP failed.\n");
-        return ACCEL_RET_FAIL_ACCEL_IP;
-    }
-    debug_print("atu mapped for accel ip\n");
-
-    accel_intr_atu_map_address[accel_type] = atu_map_entry.mscp_start_address;
+    accel_intr_atu_map_address[accel_type] = atu_svc_accel_atu_addr(accel_type);
 
     if (!system_info_is_hsp_present())
     {
@@ -380,7 +343,9 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
         p_ss_ctxt->p_init_params->fw_preload_enabled = false;
     }
 
-    ret = accelip_ss_init(atu_map_entry.mscp_start_address, p_ss_ctxt->accelip_metadata.accel_type, p_ss_ctxt->p_init_params);
+    ret = accelip_ss_init(accel_intr_atu_map_address[accel_type],
+                          p_ss_ctxt->accelip_metadata.accel_type,
+                          p_ss_ctxt->p_init_params);
     if (ret != SILIBS_SUCCESS)
     {
         critical_print("Accel IP: init_accelerator: accelip_ss_init failed.\n");
@@ -391,8 +356,6 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
      * TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023638/
      * How do we handle SDM firmware download in SCP warm boot scenario?
      */
-    info_print("%s: Invoking accel fw download\n", __func__);
-    accel_fw_download(p_ss_ctxt, accel_type);
 
 /**
  * TODO: Task 1982595: [SCP] Accel IP Move to Static ATU map
@@ -533,6 +496,14 @@ uint32_t accelerator_ip_get_atu_mapped_cfg_address(ACCEL_ID accel_type)
     return accel_intr_atu_map_address[accel_type];
 }
 
+void accel_disable_cpu_wait(ACCEL_ID accel_type)
+{
+    char accel_name[ACCEL_NAME_LEN];
+    uint32_t ext_cfg_offset_addr = get_accel_name_and_offset_addr(accel_type, accel_name);
+
+    sdm_init_disable_cpu_wait((accel_intr_atu_map_address[accel_type] + ext_cfg_offset_addr));
+}
+
 int32_t scp_accelerators_init(void)
 {
     DIE_INSTANCE current_die_instance = (DIE_INSTANCE)idsw_get_die_id();
@@ -571,7 +542,7 @@ void scp_accelerators_emcpu_reset(ACCEL_ID accel_type, crash_dump_cb_t cb_fun, v
     uint32_t accel_ctxt_size = 0x0;
     subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
     DIE_INSTANCE current_die_instance = (DIE_INSTANCE)idsw_get_die_id();
-    char accel_name[7];
+    char accel_name[ACCEL_NAME_LEN];
     uint32_t ext_cfg_offset_addr = get_accel_name_and_offset_addr(accel_type, accel_name);
 
     BUG_ASSERT(accel_type < NUM_VALID_ACCEL_ID);

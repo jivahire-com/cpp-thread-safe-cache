@@ -63,6 +63,14 @@ int __wrap_atu_init(atu_id_t atu_id, const atu_map_entry_t* atu_map_config, uint
 
     return SILIBS_SUCCESS;
 }
+
+int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    FPFW_UNUSED(atu_id);
+    FPFW_UNUSED(atu_map_entry);
+
+    return mock_type(int);
+}
 }
 
 //

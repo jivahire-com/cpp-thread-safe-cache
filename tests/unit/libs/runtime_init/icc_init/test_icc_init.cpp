@@ -314,7 +314,7 @@ TEST_FUNCTION(test_icc_sdm_mbx_init, nullptr, nullptr)
     //! Verify wrapped APIs are invoked in order
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_function_call(__wrap_DfwkDeviceInitialize);
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_interface_init, FPFW_STATUS_SUCCESS);
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.strategy.seq_num.is_used, true);
@@ -344,7 +344,7 @@ TEST_FUNCTION(test_icc_sdm_mbx_init, nullptr, nullptr)
 TEST_FUNCTION(test_icc_sdm_mbx_init__fail1, nullptr, nullptr)
 {
     //! Verify wrapped APIs are invoked in order
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_FAIL);
 
     // Call the function under test
@@ -361,7 +361,7 @@ TEST_FUNCTION(test_icc_sdm_mbx_init__fail2, nullptr, nullptr)
     DFWK_THREADX_HOST test_host = {};
 
     //! Verify wrapped APIs are invoked in order
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
@@ -381,7 +381,7 @@ TEST_FUNCTION(test_icc_sdm_mbx_init__fail3, nullptr, nullptr)
     DFWK_THREADX_HOST test_host = {};
 
     //! Verify wrapped APIs are invoked in order
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
@@ -414,7 +414,7 @@ TEST_FUNCTION(test_icc_sdm_mbx_init__fail4, nullptr, nullptr)
     DFWK_THREADX_HOST test_host = {};
 
     //! Verify wrapped APIs are invoked in order
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
@@ -448,7 +448,7 @@ TEST_FUNCTION(test_icc_sdm_mbx_init__fail5, nullptr, nullptr)
     DFWK_THREADX_HOST test_host = {};
 
     //! Verify wrapped APIs are invoked in order
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
@@ -497,7 +497,7 @@ TEST_FUNCTION(test_icc_cded_mbx_init, nullptr, nullptr)
     DFWK_THREADX_HOST test_host = {};
 
     //! Verify wrapped APIs are invoked in order
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
@@ -529,7 +529,7 @@ TEST_FUNCTION(test_icc_cded_mbx_init, nullptr, nullptr)
 TEST_FUNCTION(test_icc_cded_mbx_init__fail1, nullptr, nullptr)
 {
     //! Verify wrapped APIs are invoked in order
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_FAIL);
 
     // Call the function under test
@@ -546,7 +546,7 @@ TEST_FUNCTION(test_icc_cded_mbx_init__fail2, nullptr, nullptr)
     DFWK_THREADX_HOST test_host = {};
 
     //! Verify wrapped APIs are invoked in order
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
@@ -566,7 +566,7 @@ TEST_FUNCTION(test_icc_cded_mbx_init__fail3, nullptr, nullptr)
     DFWK_THREADX_HOST test_host = {};
 
     //! Verify wrapped APIs are invoked in order
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
@@ -599,7 +599,7 @@ TEST_FUNCTION(test_icc_cded_mbx_init__fail4, nullptr, nullptr)
     DFWK_THREADX_HOST test_host = {};
 
     //! Verify wrapped APIs are invoked in order
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);
@@ -633,7 +633,7 @@ TEST_FUNCTION(test_icc_cded_mbx_init__fail5, nullptr, nullptr)
     DFWK_THREADX_HOST test_host = {};
 
     //! Verify wrapped APIs are invoked in order
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_function_call(__wrap_DfwkDeviceInitialize);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_SUCCESS);

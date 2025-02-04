@@ -275,6 +275,50 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
             }
 
             break;
+        case STARTUP_SDM_ITCM_LOAD:
+            if (system_info_is_hsp_present())
+            {
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_SDM_ITCM);
+            }
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
+
+            break;
+        case STARTUP_SDM_DTCM_LOAD:
+            if (system_info_is_hsp_present())
+            {
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_SDM_DTCM);
+            }
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
+
+            break;
+        case STARTUP_CDED_ITCM_LOAD:
+            if (system_info_is_hsp_present())
+            {
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_CDED_ITCM);
+            }
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
+
+            break;
+        case STARTUP_CDED_DTCM_LOAD:
+            if (system_info_is_hsp_present())
+            {
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_CDED_DTCM);
+            }
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
+
+            break;
         case STARTUP_KMP_LOAD:
             if (system_info_is_hsp_present())
             {

@@ -47,6 +47,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.service.iccBase
         ms::build_data
+        ms::lib::accelerator_ip
         ms::lib::utils
         ms::lib::crash_dump
         ms::lib::hsp_firmware_headers

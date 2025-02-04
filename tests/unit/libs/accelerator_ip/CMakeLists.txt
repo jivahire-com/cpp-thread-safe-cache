@@ -46,6 +46,7 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     accel_intr_get_atu_mapped_cfg_address
     atu_map
+    atu_svc_accel_atu_addr
     atu_unmap
     configure_cdedss_hsp_system_addr_map
     configure_cdedss_vab_system_addr_map
@@ -53,6 +54,8 @@ mock_target(${TARGET}
     FpFwAssert
     debug_print
     critical_print
+    mmio_read32
+    mmio_update32
     fpfw_icc_base_send_recv_sync
     idsw_get_die_id
     idsw_get_platform_sdv
@@ -66,8 +69,11 @@ mock_target(${TARGET}
     fpfw_icc_base_send
     fpfw_icc_base_recv
     fpfw_init_get_handle
-    sdm_init_disable_cpu_wait
-    sdm_init_enable_fence
+    sdm_init_assert_nsysreset
     sdm_init_deassert_nsysreset
+    sdm_init_enable_cpuwait
+    sdm_init_enable_fence
+    sdm_init_itcm_enable
+    sdm_init_disable_cpu_wait
     system_info_is_hsp_present
 )

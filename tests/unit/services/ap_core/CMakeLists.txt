@@ -25,6 +25,7 @@ target_link_libraries(${TARGET}
         fwlib.dfwk
         fwlib.lib.linkedlist
         fwlib.lib.utils
+        silibs::sdm_command_desc
  )
 
 # Get private includes for module under test
@@ -37,6 +38,7 @@ target_include_directories(${TARGET}
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_THREADX "extern.threadx.win32")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
 lint_target(${TARGET})
 format_target(${TARGET})
@@ -74,6 +76,10 @@ mock_target(${TARGET}
     write_fuse_info_to_ap
 
     system_info_is_hsp_present
+
+    accel_disable_cpu_wait
+    accel_get_itcm_addr
+    accel_get_dtcm_addr
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

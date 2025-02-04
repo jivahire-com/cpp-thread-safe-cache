@@ -22,6 +22,11 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+BUILD_ELF_SECTION_BINARY_METADATA g_BuildMetadata; // Per build version information
+uint8_t _ProviderMetadata_et_msdata_start;         // Pointer to the start of the .ProviderMetadata section
+uint8_t _ProviderMetadata_et_msdata_end;           // Pointer to the end   of the .ProviderMetadata section
+uint8_t _EventMetadata_et_msdata_start;            // Pointer to the start of the .EventMetadata section
+uint8_t _EventMetadata_et_msdata_end; // Pointer to the end   of the .EventMetadata memory section
 
 /*------------- Functions ----------------*/
 ULONG __wrap__tx_time_get(VOID)

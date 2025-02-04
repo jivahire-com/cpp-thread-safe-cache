@@ -19,50 +19,7 @@
 #include "telemetry_package_defs.h"
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define ALIGN_TO_4KB(size)   (((size) + 4095) & ~4095)
-#define ALIGN_TO_256KB(size) (((size) + 262143) & ~262143)
-
-#define POWER_POOL_BLOCK_ALIGN(size) ALIGN_TO_256KB(size)
-#define INST_POOL_BLOCK_ALIGN(size)  ALIGN_TO_4KB(size)
-
-#define POOL_SEPARATION_SIZE (4096)
-
-#define MIN_INST_SAMPLE_INTERVAL_MS        (5)
-#define MAX_INST_NOTIFICATION_INTERVAL_MS  (100)
-#define MAX_INST_SAMPLES_PER_PACKAGE       (MAX_INST_NOTIFICATION_INTERVAL_MS / MIN_INST_SAMPLE_INTERVAL_MS)
-#define MAX_PENDING_PACKAGES               ((2000 / MAX_INST_NOTIFICATION_INTERVAL_MS) * 2)
-
-#define POWER_PKG_MAX_SIZE (sizeof(power_full_package_t) + sizeof(telemetry_package_hdr_t))
-#define INST_PKG_MIN_SIZE  (sizeof(inst_full_package_t) + sizeof(telemetry_package_hdr_t))
-#define INST_PKG_MAX_SIZE \
-    ((MAX_INST_SAMPLES_PER_PACKAGE * sizeof(inst_full_package_t)) + sizeof(telemetry_package_hdr_t))
-
-#define POWER_POOL_BLOCK_SIZE (POWER_POOL_BLOCK_ALIGN(POWER_PKG_MAX_SIZE))
-#define INST_POOL_BLOCK_SIZE  (INST_POOL_BLOCK_ALIGN(INST_PKG_MAX_SIZE))
-
-// power blocks are reported on the order of minutes, so only need two in flight
-#define NUM_POWER_POOL_BLOCKS (2)
-#define POWER_POOL_TOTAL_SIZE  (POWER_POOL_BLOCK_SIZE * NUM_POWER_POOL_BLOCKS)
-
-// 24 hr packages aren't fully defined, likely will fit within an instantaneous block, if not will adjust
-#define INST_MEM_AVAILABLE_SIZE (IB_TLM_DDR_ATU_AP_WIN_PWR_TLM_SIZE - POWER_POOL_TOTAL_SIZE - POOL_SEPARATION_SIZE)
-#define NUM_INST_POOL_BLOCKS     (INST_MEM_AVAILABLE_SIZE / INST_POOL_BLOCK_SIZE)
-#define INST_POOL_TOTAL_SIZE      (INST_POOL_BLOCK_SIZE * NUM_INST_POOL_BLOCKS)
-
-#define POWER_POOL_MEM_START (IB_TLM_DDR_ATU_AP_WIN_PWR_TLM_BASE_ADDR)
-#define INST_POOL_MEM_START  (POWER_POOL_MEM_START + POWER_POOL_TOTAL_SIZE + POOL_SEPARATION_SIZE)
-
-#define IN_RANGE(address, range_start, range_size) \
-    (((address) >= (range_start)) && ((address) < ((range_start) + (range_size))) ? 1 : 0)
-
-#define IN_POWER_RANGE(address) IN_RANGE(address, POWER_POOL_MEM_START, POWER_POOL_TOTAL_SIZE)
-#define IN_INST_RANGE(address)  IN_RANGE(address, INST_POOL_MEM_START, INST_POOL_TOTAL_SIZE)
-
-#define TELEMETRY_PHYSICAL_BASE_ADDRESS (IB_TELEMETRY_RESERVATION_BASE)
-#define TELEMETRY_GET_DDR_OFFSET(die_id, atu_mapped_location) ((die_id * IB_TELEMETRY_DDR_PER_DIE_SIZE) + (atu_mapped_location - MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR))
-
-/*-------------- Typedefs ----------------*/
-
+// these structs declared here as they are used to size the memory pools definitions below
 typedef struct
 {
     pwr_core_record_pstate_t pstate_record;
@@ -92,6 +49,64 @@ typedef struct
     inst_core_record_amu_counters_t amu_counters_record;
 } inst_full_package_t;
 
+
+#define ALIGN_TO_4KB(size)   (((size) + 4095) & ~4095)
+#define ALIGN_TO_256KB(size) (((size) + 262143) & ~262143)
+
+#define POWER_POOL_BLOCK_ALIGN(size) ALIGN_TO_256KB(size)
+#define INST_POOL_BLOCK_ALIGN(size)  ALIGN_TO_4KB(size)
+
+#define POOL_SEPARATION_SIZE (4096)
+
+#define MIN_INST_SAMPLE_INTERVAL_MS        (5)
+#define MAX_INST_NOTIFICATION_INTERVAL_MS  (100)
+#define MAX_INST_SAMPLES_PER_PACKAGE       (MAX_INST_NOTIFICATION_INTERVAL_MS / MIN_INST_SAMPLE_INTERVAL_MS)
+#define MAX_PENDING_PACKAGES               ((2000 / MAX_INST_NOTIFICATION_INTERVAL_MS) * 2)
+
+#define POWER_PKG_MAX_SIZE (sizeof(power_full_package_t) + sizeof(telemetry_package_hdr_t))
+#define INST_PKG_MIN_SIZE  (sizeof(inst_full_package_t) + sizeof(telemetry_package_hdr_t))
+#define INST_PKG_MAX_SIZE \
+    ((MAX_INST_SAMPLES_PER_PACKAGE * sizeof(inst_full_package_t)) + sizeof(telemetry_package_hdr_t))
+
+#define POWER_POOL_BLOCK_SIZE (POWER_POOL_BLOCK_ALIGN(POWER_PKG_MAX_SIZE))
+#define INST_POOL_BLOCK_SIZE  (INST_POOL_BLOCK_ALIGN(INST_PKG_MAX_SIZE))
+
+// power blocks are reported on the order of minutes, so only need two in flight
+#define NUM_POWER_POOL_BLOCKS (2)
+#define POWER_POOL_TOTAL_SIZE  (POWER_POOL_BLOCK_SIZE * NUM_POWER_POOL_BLOCKS)
+
+// 24 hr packages aren't fully defined, likely will fit within an instantaneous block, if not will adjust
+#define INST_MEM_AVAILABLE_SIZE (IB_TLM_DDR_ATU_AP_WIN_PWR_TLM_SIZE - POWER_POOL_TOTAL_SIZE - POOL_SEPARATION_SIZE)
+
+// this is not preferred but unit testing forces this
+// in the device a 64 bit DDR memory region is used, and NUM_INST_POOL_BLOCKS is calculated dynamically based on the remaining size
+// The code writes inline to those DDR addresses. This can't be done in unit testing, so the base address points to the
+// address of a buffer in the unit test environment. however, an address of a variable cannot be used in C to declare
+// the size of an array
+#ifndef IB_TLM_DDR_TEST_OVERRIDE
+#define NUM_INST_POOL_BLOCKS     (INST_MEM_AVAILABLE_SIZE / INST_POOL_BLOCK_SIZE)
+#else
+#define NUM_INST_POOL_BLOCKS     (10)
+#endif
+
+#define INST_POOL_TOTAL_SIZE      (INST_POOL_BLOCK_SIZE * NUM_INST_POOL_BLOCKS)
+
+
+#define POWER_POOL_MEM_START (IB_TLM_DDR_ATU_AP_WIN_PWR_TLM_BASE_ADDR)
+#define INST_POOL_MEM_START  (POWER_POOL_MEM_START + POWER_POOL_TOTAL_SIZE + POOL_SEPARATION_SIZE)
+
+#define IN_RANGE(address, range_start, range_size) \
+    (((address) >= (range_start)) && ((address) < ((range_start) + (range_size))) ? 1 : 0)
+
+#define IN_POWER_RANGE(address) IN_RANGE(address, POWER_POOL_MEM_START, POWER_POOL_TOTAL_SIZE)
+#define IN_INST_RANGE(address)  IN_RANGE(address, INST_POOL_MEM_START, INST_POOL_TOTAL_SIZE)
+
+#define TELEMETRY_PHYSICAL_BASE_ADDRESS (IB_TELEMETRY_RESERVATION_BASE)
+#define TELEMETRY_GET_DDR_OFFSET(die_id, atu_mapped_location) ((die_id * IB_TELEMETRY_DDR_PER_DIE_SIZE) + (atu_mapped_location - MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR))
+
+/*-------------- Typedefs ----------------*/
+
+
 /*-- Declarations (Statics and globals) --*/
 
 extern uintptr_t pwr_pkg_buffer[NUM_POWER_POOL_BLOCKS];
@@ -100,6 +115,8 @@ extern TX_QUEUE pwr_pkg_free_queue;
 extern uintptr_t inst_pkg_buffer[NUM_INST_POOL_BLOCKS];
 extern TX_QUEUE inst_pkg_free_queue;
 /*--------- Function Prototypes ----------*/
+
+
 /**
  * @brief Initialize the ddr manager
  */

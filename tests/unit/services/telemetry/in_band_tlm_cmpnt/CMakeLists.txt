@@ -13,6 +13,7 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET}
     PRIVATE
     kng.service.telemetry.cmpnt.in_band_tlm
+    ms::lib::interface::in_band_telemetry_ddr
     fwlib.lib.status
     ms::cmocka::mocks
     ms::cmocka::testrunner

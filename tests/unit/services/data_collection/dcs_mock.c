@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include <FpFwCMocka.h> // for check_expected, check_expected_ptr, mock_type
 #include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <build_data.h> // for BUILD_ELF_SECTION_BINARY_METADATA
 #include <fpfw_icc_base.h>
 #include <fpfw_status.h> // for FPFW_STATUS_SUCCEEDED, fpf...
 #include <stddef.h>      // for size_t
@@ -23,6 +24,11 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+BUILD_ELF_SECTION_BINARY_METADATA g_BuildMetadata; // Per build version information
+uint8_t _ProviderMetadata_et_msdata_start;         // Pointer to the start of the .ProviderMetadata section
+uint8_t _ProviderMetadata_et_msdata_end;           // Pointer to the end   of the .ProviderMetadata section
+uint8_t _EventMetadata_et_msdata_start;            // Pointer to the start of the .EventMetadata section
+uint8_t _EventMetadata_et_msdata_end; // Pointer to the end   of the .EventMetadata memory section
 
 /*------------- Functions ----------------*/
 void __wrap_FpFwAssertWithArgs(int expression, uintptr_t arg0, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3)

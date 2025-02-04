@@ -13,6 +13,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.lib.utils
         kng.service.dcs
+        ms::lib::interface::in_band_telemetry_ddr
         ms::cmocka::testrunner
         silibs::icc_mhu
         silibs::idhw

@@ -157,4 +157,10 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_DCS_SERVICE,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, trp_msg_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_seq_num))
 
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_DCS_SERVICE,
+                    28,
+                    DcsManifestCreateFail,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, cpu_id))
+
 /*--------- Function Prototypes ----------*/

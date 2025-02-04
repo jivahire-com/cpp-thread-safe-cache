@@ -90,7 +90,7 @@ typedef struct {
 } hsp_buffer_info_t, *p_hsp_buffer_info_t;
 
 typedef struct {
-    diag_decoder_strategy_id_t type;
+    diag_payload_parser_type_t type;
     etr_ddr_buffer_state_t state;
     payload_management_t payload_management;
     union

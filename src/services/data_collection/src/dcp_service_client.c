@@ -12,6 +12,7 @@
 #include "data_collection_service_i.h"
 #include "dcp_service_client_i.h"
 #include "dcs_events_i.h"
+#include "dcs_manifest_i.h"
 
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
@@ -116,9 +117,22 @@ void dcp_svc_client_handle_dcp_msg(p_trp_msg_t trp_msg)
         break;
     }
 
-    case DCP_MSG_ID_GET_SCHEMA:
-        // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2145303
+    case DCP_MSG_ID_GET_SCHEMA: {
+        uint64_t start_addr_offset = 0;
+        uint64_t total_size = 0;
+
+        if (FPFW_STATUS_SUCCEEDED(dcs_get_manifest_info(&start_addr_offset, &total_size)))
+        {
+            trp_msg->payload.dcp_msg.payload.get_schema.start_addr_offset = start_addr_offset;
+            trp_msg->payload.dcp_msg.payload.get_schema.total_size = total_size;
+            trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
+        }
+        else
+        {
+            trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_E_INCOMPLETE_HANDLER;
+        }
         break;
+    }
 
     case DCP_MSG_ID_RESET: {
         if (dcs_is_primary_instance())

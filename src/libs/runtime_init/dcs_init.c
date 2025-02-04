@@ -16,6 +16,7 @@
 #include <idhw.h> // for idhw_is_single_die_boot_en
 #include <idsw.h>
 #include <idsw_kng.h>
+#include <in_band_telemetry_ddr.h>
 #include <kng_icc_shared.h>
 #include <mscp_uefi_shared_ddrss.h>
 #include <stdio.h>
@@ -130,3 +131,34 @@ FPFW_INIT_COMPONENT(dcs_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_ms
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
+
+#ifdef SCP_RUNTIME_INIT
+FPFW_INIT_COMPONENT(dcs_scp_startup, FPFW_INIT_DEPENDENCIES("dcs_svc"))
+{
+    // once HSP supports copying metadata from flash, update to use HSP mailbox here
+    // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2145384
+    // for now, just copy scp metata from flash to staging DDR.  MCP builds in place.
+
+    if (idsw_get_die_id() == DIE_0)
+    {
+        dcs_create_manifest_from_elf(IB_TLM_DDR_ATU_AP_MSCP_STAGING_MANIFEST_BASE_ADDR,
+                                     IB_TLM_DDR_ATU_AP_CORE_STAGING_MANIFEST_SIZE);
+    }
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+#endif
+
+#ifdef MCP_RUNTIME_INIT
+FPFW_INIT_COMPONENT(dcs_ncp_startup, FPFW_INIT_DEPENDENCIES("dcs_svc"))
+{
+    // once HSP supports copying metadata from flash, update to use HSP mailbox here
+    // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2145384
+    // for now, just copy scp metata from flash to staging DDR.  MCP builds in place.
+
+    if (idsw_get_die_id() == DIE_0)
+    {
+        dcs_build_diag_decoder_full_manifest();
+    }
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+#endif

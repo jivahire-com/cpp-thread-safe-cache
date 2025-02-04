@@ -24,6 +24,7 @@ add_library(${TARGET}
         cli_power_init.c
         css_init.c
         d2d_cntr_sync_init.c
+        dcs_init.c
         ddrss_init.c
         debug_init.c
         dfwk_init.c
@@ -93,6 +94,7 @@ target_link_libraries(
         ms::driver::scmi_drv
         ms::driver::textio::pl011
         ms::driver::vab
+        ms::lib::interface::in_band_telemetry_ddr
         ms::lib::accelerator_ip
         ms::lib::build_info_cli
         ms::lib::cli_accel_int
@@ -145,6 +147,7 @@ target_link_libraries(
         ms::service::accel_intr_service
         ms::service::ap_core
         ms::service::atu_service
+        ms::service::dcs
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
         ms::service::fuse
@@ -278,6 +281,7 @@ target_link_libraries(
         ms::driver::icc_mhu_trans
         ms::driver::sensor_fifo
         ms::driver::textio::pl011
+        ms::lib::interface::in_band_telemetry_ddr
         ms::lib::accel_intr
         ms::lib::accelerator_ip
         ms::lib::config_manager

@@ -19,8 +19,11 @@ extern "C" {
 #include <data_collection_service.h>
 #include <data_collection_service_i.h>
 #include <dcp_service_client_i.h>
+#include <dcs_manifest_i.h>
+#include <diag_decoder.h>
 #include <fpfw_status.h> // for FPFW_STATUS_SUCCESS, FPFW_...
 #include <idsw_kng.h>
+#include <in_band_telemetry_ddr.h>
 #include <stdint.h> // for uint8_t
 #include <telemetry_relay_protocol.h>
 #include <tlm_relay_i.h>
@@ -218,7 +221,28 @@ TEST_FUNCTION(test_dcp_svc_client_handle_get_schema_msg, test_setup, nullptr)
     will_return(__wrap__txe_queue_receive, &p_trp_msg);
     will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
 
+    diag_manifest_set_v2_header_t* set_header = (diag_manifest_set_v2_header_t*)IB_TLM_DDR_ATU_AP_FULL_MANIFEST_BASE_ADDR;
+    set_header->sentinel = DIAG_METADATA_SENTINEL;
+    set_header->manifest_set_size = 0xAABB;
+
     dcp_svc_client_handle_incoming_msgs();
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
+
+    set_header->sentinel = 0x24;
+
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg_t));
+    will_return(__wrap__txe_queue_receive, &p_trp_msg);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    expect_function_calls(__wrap__txe_block_release, 1);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    will_return(__wrap__txe_queue_receive, sizeof(p_trp_msg_t));
+    will_return(__wrap__txe_queue_receive, &p_trp_msg);
+    will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
+
+    dcp_svc_client_handle_incoming_msgs();
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_E_INCOMPLETE_HANDLER);
 }
 
 TEST_FUNCTION(test_dcp_svc_client_handle_events_en_dis_msg, test_setup, nullptr)

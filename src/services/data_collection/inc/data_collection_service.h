@@ -55,11 +55,34 @@ typedef struct {
  * @note Not Thread Safe
  * @note Not ISR Safe
  *
- * @param config Pointer to the configuration to use. config must be statically allocated for lifetime
+ * @param[in] config Pointer to the configuration to use. config must be statically allocated for lifetime
  *
  * @return None
  */
 void dcs_init(p_dcs_config_t config);
+
+/**
+ * @brief Copy metadata for this core to staging area
+ *
+ * @note Not Thread Safe
+ * @note Not ISR Safe
+ *
+ * @param[in] atu_base_addr Base address of the ATU mapped area to copy metadata to
+ * @param[in] max_size Maximum size of the area to copy metadata to
+ *
+ * @return None
+ */
+void dcs_create_manifest_from_elf(uintptr_t atu_base_addr, size_t max_size);
+
+/**
+ * @brief Build the diagnostic decoder schema
+ *
+ * @note Not Thread Safe
+ * @note Not ISR Safe
+ *
+ * @return None
+ */
+void dcs_build_diag_decoder_full_manifest(void);
 
 /**
  * @brief The primary instance is the MCP on Die 0, as that is the core that interfaces directly
@@ -77,8 +100,8 @@ bool dcs_is_primary_instance(void);
  *
  * @note Thread Safe
  *
- * @param die_id Die ID to check
- * @param cpu_id Cpu ID to check
+ * @param[in] die_id Die ID to check
+ * @param[in] cpu_id Cpu ID to check
  *
  * @return true if the die and cpu id match this device
  */

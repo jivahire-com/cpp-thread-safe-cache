@@ -246,14 +246,14 @@ TEST_FUNCTION(test_etr_init_nominal, test_setup, test_teardown)
     {
         ddr_buffer_info_t* buffer = &s_test_context.ddr_buffers[i];
         assert_int_equal(buffer->state, ETR_DDR_BUFFER_STATE_FREE);
-        assert_int_equal(buffer->type, DIAGNOSTIC_DECODER_STRATEGY_ID_TRACE_DEVICE);
+        assert_int_equal(buffer->type, DIAG_PAYLOAD_PARSER_TRACE_DEVICE);
     }
 
     for (size_t i = ASIC_BUFFER_DDR_CAPACITY_MAX; i < ASIC_BUFFER_DDR_CAPACITY_MAX + TEST_HSP_COUNT; i++)
     {
         ddr_buffer_info_t* buffer = &s_test_context.ddr_buffers[i];
         assert_int_equal(buffer->state, ETR_DDR_BUFFER_STATE_FREE);
-        assert_int_equal(buffer->type, DIAGNOSTIC_DECODER_STRATEGY_ID_HSP_TRACE);
+        assert_int_equal(buffer->type, DIAG_PAYLOAD_PARSER_HSP_TRACE);
     }
 }
 

@@ -109,7 +109,7 @@ static void etr_get_new_asic_buffer(etr_service_context_t* p_service)
     for (uint32_t i = 0; i < ASIC_BUFFER_DDR_CAPACITY_MAX; i++)
     {
         if (p_service->ddr_buffers[i].state == ETR_DDR_BUFFER_STATE_FREE &&
-            p_service->ddr_buffers[i].type == DIAGNOSTIC_DECODER_STRATEGY_ID_TRACE_DEVICE)
+            p_service->ddr_buffers[i].type == DIAG_PAYLOAD_PARSER_TRACE_DEVICE)
         {
             free_buffer_found = true;
             p_service->p_active_asic_buffer = &p_service->ddr_buffers[i];
@@ -123,7 +123,7 @@ static void etr_get_new_asic_buffer(etr_service_context_t* p_service)
         for (uint32_t i = 0; i < ASIC_BUFFER_DDR_CAPACITY_MAX; i++)
         {
             if (p_service->ddr_buffers[i].state == ETR_DDR_BUFFER_STATE_PENDING &&
-                p_service->ddr_buffers[i].type == DIAGNOSTIC_DECODER_STRATEGY_ID_TRACE_DEVICE)
+                p_service->ddr_buffers[i].type == DIAG_PAYLOAD_PARSER_TRACE_DEVICE)
             {
                 p_service->p_active_asic_buffer = &p_service->ddr_buffers[i];
                 p_service->health_stats.asic_buffers_reused++;
@@ -344,7 +344,7 @@ void etr_initialize_ddr_buffers(etr_service_context_t* p_service, const etr_serv
         // Update the buffer context
         p_service->ddr_buffers[i] = (ddr_buffer_info_t){
             .state = ETR_DDR_BUFFER_STATE_FREE,
-            .type = DIAGNOSTIC_DECODER_STRATEGY_ID_TRACE_DEVICE,
+            .type = DIAG_PAYLOAD_PARSER_TRACE_DEVICE,
             .payload_management =
                 {
                     .base_addr = p_config->asic_ddr_config.base_addr + (i * ASIC_BUFFER_PAYLOAD_SIZE),
@@ -354,8 +354,8 @@ void etr_initialize_ddr_buffers(etr_service_context_t* p_service, const etr_serv
                 {
                     .diag_header =
                         {
-                            .encoder_version = TRACE_ENCODER_VERSION_DEVICE_PAYLOAD,
-                            .strategy_id = DIAGNOSTIC_DECODER_STRATEGY_ID_TRACE_DEVICE,
+                            .payload_parser_version = DIAG_TRACE_PAYLOAD_PARSER_VERSION_DEVICE_PAYLOAD,
+                            .payload_parser_type = DIAG_PAYLOAD_PARSER_TRACE_DEVICE,
                         },
                     .asic_header =
                         {
@@ -376,7 +376,7 @@ void etr_initialize_ddr_buffers(etr_service_context_t* p_service, const etr_serv
 
         // Update the buffer context
         p_service->ddr_buffers[buffer_index] = (ddr_buffer_info_t){
-            .type = DIAGNOSTIC_DECODER_STRATEGY_ID_HSP_TRACE,
+            .type = DIAG_PAYLOAD_PARSER_HSP_TRACE,
             .state = ETR_DDR_BUFFER_STATE_FREE,
             .payload_management =
                 {
@@ -387,8 +387,8 @@ void etr_initialize_ddr_buffers(etr_service_context_t* p_service, const etr_serv
                 {
                     .diag_header =
                         {
-                            .encoder_version = HSP_ENCODER_VERSION,
-                            .strategy_id = DIAGNOSTIC_DECODER_STRATEGY_ID_HSP_TRACE,
+                            .payload_parser_version = DIAG_HSP_PAYLOAD_PARSER_VERSION,
+                            .payload_parser_type = DIAG_PAYLOAD_PARSER_HSP_TRACE,
                         },
                 },
         };

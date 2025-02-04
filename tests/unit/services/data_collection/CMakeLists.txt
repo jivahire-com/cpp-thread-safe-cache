@@ -3,6 +3,7 @@ set(TARGET kng.service.dcs.test)
 set(SOURCES
     test_dcs.cpp
     test_dcp_svc_client.cpp
+    test_dcs_manifest.cpp
     test_tlm_relay.cpp
     dcs_mock.c
 )
@@ -11,6 +12,7 @@ set(SOURCES
 set(LIBS
     PRIVATE
         kng.service.dcs
+        ms::lib::interface::in_band_telemetry_ddr
         ms::cmocka::mocks
         ms::cmocka::testrunner
         silibs::icc_mhu

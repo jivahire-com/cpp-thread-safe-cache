@@ -5,6 +5,7 @@ add_library(${TARGET}
         src/data_collection_events.c
         src/data_collection_service.c
         src/dcp_service_client.c
+        src/dcs_manifest.c
         src/tlm_relay.c
 )
 
@@ -18,6 +19,8 @@ target_link_libraries(
           fwlib.dfwk
           fwlib.platform.dfwkhost.threadx
           fwlib.lib.interface.platform.errorhandler
+          ms::build_data
+          ms::lib::interface::in_band_telemetry_ddr
           ms::lib::debug
           ms::lib::event_trace::trace
           silibs::kng_silibs_platform

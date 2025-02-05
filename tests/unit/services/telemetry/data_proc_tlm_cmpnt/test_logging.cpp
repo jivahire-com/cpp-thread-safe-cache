@@ -29,6 +29,8 @@ extern core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
 extern soc_runtime_info_t soc_info;
 extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
+extern uint16_t core_pwr_sample[NUMBER_OF_CORES_PER_DIE];
+extern uint32_t pstate_accum_uS[NUMBER_OF_CORES_PER_DIE][NUMBER_OF_PSTATES]; // /* used only for MPAM*/
 }
 
 /*------------- Typedefs -----------------*/
@@ -228,8 +230,8 @@ TEST_FUNCTION(test_tlm_logger_log_core_current, test_setup, test_teardown)
     assert_int_equal(core[index].current.latest_value_mA,
                      (uint16_t)(current_data.data.avg * CORE_CURRENT_CONVERSION_FACTOR));
     assert_int_equal(core[index].ldo_voltage, (uint16_t)(current_data.data.volt));
-    assert_int_equal(core[index].current_tel_pstate, (current_data.data.pstate));
-    assert_int_equal(core[index].current_mpam_id, (current_data.data.mpam_id_low));
+    assert_int_equal(core[index].pstate_from_current_pkt, (current_data.data.pstate));
+    assert_int_equal(core[index].active_sample_mpam_id, (current_data.data.mpam_id_low));
 
     // test index out of range
     index = NUMBER_OF_CORES_PER_DIE;
@@ -389,4 +391,589 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_aggregate_24hr_tlm_data, test_setup, test
 {
     // expand unit test once implementation is available
     data_proc_tlm_cmpnt_aggregate_24hr_tlm_data();
+}
+TEST_FUNCTION(test_tlm_get_timestamp_microseconds, test_setup, test_teardown)
+{
+    uint64_t timestamp = 0;
+    // Set up mock return values
+    will_return(__wrap__tx_time_get, 5);
+    // Call the function to be tested
+    timestamp = tlm_get_timestamp_microseconds();
+
+    // Add assertions to verify the expected behavior
+    assert_int_equal(timestamp, 5);
+}
+
+TEST_FUNCTION(test_tlm_average_power_sample, test_setup, test_teardown)
+{
+    uint8_t core_id = 0;
+    // Test case: No power samples
+    core[core_id].power_index = 0;
+    tlm_average_power_sample(core_id);
+    assert_int_equal(core[core_id].average_pwr_samples_value, 0);
+
+    // Test case: With power samples
+    core[core_id].power_index = 5;
+    core_pwr_sample[core_id] = 110; // Example power sample value
+    tlm_average_power_sample(core_id);
+    assert_int_equal(core[core_id].average_pwr_samples_value, 22); // 110 / 5 = 22
+    // update index
+
+    core[core_id].average_pwr_samples_value = 0;
+    core[core_id].power_index = 6;
+    core_pwr_sample[core_id] = 600; // Example power sample value
+    tlm_average_power_sample(core_id);
+    assert_int_equal(core[core_id].average_pwr_samples_value, 100);
+}
+
+// Unit test for tlm_calculate_mma_res
+TEST_FUNCTION(test_tlm_calculate_mma_res, test_setup, test_teardown)
+{
+
+    uint16_t mma_min = 0;
+    uint16_t mma_max = 0;
+    uint16_t mma_average = 0;
+    uint16_t mma_latest_value = 50;
+    uint32_t time_diff_uS = 100;
+    uint32_t residency_uS = 200;
+
+    // Test case: Valid parameters
+    tlm_calculate_mma_res(&mma_min, &mma_max, &mma_average, &mma_latest_value, time_diff_uS, residency_uS);
+    assert_int_equal(mma_min, 50);
+    assert_int_equal(mma_max, 50);
+    assert_int_equal(mma_average, 50);
+
+    // Test case: Update with new latest value
+    mma_latest_value = 100;
+    tlm_calculate_mma_res(&mma_min, &mma_max, &mma_average, &mma_latest_value, time_diff_uS, residency_uS);
+    assert_int_equal(mma_min, 50);
+    assert_int_equal(mma_max, 100);
+    assert_int_equal(mma_average, 75); // Weighted average calculation
+
+    // Test case: Update with lower latest value
+    mma_latest_value = 30;
+    tlm_calculate_mma_res(&mma_min, &mma_max, &mma_average, &mma_latest_value, time_diff_uS, residency_uS);
+    assert_int_equal(mma_min, 30);
+    assert_int_equal(mma_max, 100);
+    assert_int_equal(mma_average, 52); // Weighted average calculation
+
+    // Test case: Zero latest value
+    mma_latest_value = 0;
+    tlm_calculate_mma_res(&mma_min, &mma_max, &mma_average, &mma_latest_value, time_diff_uS, residency_uS);
+    assert_int_equal(mma_min, 30);
+    assert_int_equal(mma_max, 100);
+    assert_int_equal(mma_average, 52); // No change in average
+
+    // Test case: Invalid parameters (time_diff_uS = 0)
+    time_diff_uS = 0;
+    tlm_calculate_mma_res(&mma_min, &mma_max, &mma_average, &mma_latest_value, time_diff_uS, residency_uS);
+    // No change in values as the function should handle invalid parameters gracefully
+    assert_int_equal(mma_min, 30);
+    assert_int_equal(mma_max, 100);
+    assert_int_equal(mma_average, 52);
+}
+
+// Unit test for tlm_update_cstate
+TEST_FUNCTION(test_tlm_update_cstate, test_setup, test_teardown)
+{
+    uint8_t core_id = 0;
+    uint64_t time_stamp_uS = 1000;
+
+    // Test case: No cstate change and valid timestamp
+    core[core_id].cstate_from_pstate_pkt = 1;
+    uint8_t cstate_index = core[core_id].cstate_from_pstate_pkt;
+    core[core_id].cstate_timestamp_uS = 500;
+    core[core_id].flags.cstate_change = 0;
+
+    tlm_update_cstate(core_id, time_stamp_uS);
+    assert_int_equal(core[core_id].cstate[cstate_index].residency_uS, 500); // 1000 - 500
+    assert_int_equal(core[core_id].cstate_timestamp_uS, time_stamp_uS);
+
+    // Test case: No cstate change and zero previous timestamp
+    core[core_id].cstate_from_pstate_pkt = 2;
+    cstate_index = core[core_id].cstate_from_pstate_pkt;
+    core[core_id].cstate_timestamp_uS = 0;
+    core[core_id].flags.cstate_change = 0;
+    tlm_update_cstate(core_id, time_stamp_uS);
+    assert_int_equal(core[core_id].cstate[cstate_index].residency_uS, 0); // No change in residency
+    assert_int_equal(core[core_id].cstate_timestamp_uS, time_stamp_uS);
+
+    // Test case: Cstate change indicator set
+    core[core_id].cstate_from_pstate_pkt = 3;
+    cstate_index = core[core_id].cstate_from_pstate_pkt;
+    core[core_id].cstate_timestamp_uS = 500;
+    core[core_id].flags.cstate_change = 1;
+    tlm_update_cstate(core_id, time_stamp_uS);
+    assert_int_equal(core[core_id].cstate[cstate_index].residency_uS, 0); // No change in residency
+    assert_int_equal(core[core_id].flags.cstate_change, 0);               // Indicator cleared
+    assert_int_equal(core[core_id].cstate_timestamp_uS, time_stamp_uS);
+}
+
+// Unit test for tlm_update_core_current
+TEST_FUNCTION(test_tlm_update_core_current, test_setup, test_teardown)
+{
+
+    uint8_t core_id = 0;
+    uint32_t time_diff_uS = 100;
+    uint32_t residency_uS = 200;
+
+    // Test case: Initial values
+    core[core_id].current.min_mA = 0;
+    core[core_id].current.max_mA = 0;
+    core[core_id].current.average_mA = 0;
+    core[core_id].current.latest_value_mA = 50;
+
+    tlm_update_core_current(core_id, time_diff_uS, residency_uS);
+    assert_int_equal(core[core_id].current.min_mA, 50);
+    assert_int_equal(core[core_id].current.max_mA, 50);
+    assert_int_equal(core[core_id].current.average_mA, 50); // init avg is 0 so avg will be assigned to 50
+
+    // Test case: Update with new latest value
+    core[core_id].current.latest_value_mA = 100;
+    tlm_update_core_current(core_id, time_diff_uS, residency_uS);
+    assert_int_equal(core[core_id].current.min_mA, 50);
+    assert_int_equal(core[core_id].current.max_mA, 100);
+    assert_int_equal(core[core_id].current.average_mA, 75); // (50 + 100) / 2
+
+    // Test case: Update with lower latest value
+    core[core_id].current.latest_value_mA = 30;
+    tlm_update_core_current(core_id, time_diff_uS, residency_uS);
+    assert_int_equal(core[core_id].current.min_mA, 30);
+    assert_int_equal(core[core_id].current.max_mA, 100);
+    assert_int_equal(core[core_id].current.average_mA, 52); // (75 + 30) / 2
+}
+
+// Unit test for tlm_update_core_voltage
+TEST_FUNCTION(test_tlm_update_core_voltage, test_setup, test_teardown)
+{
+    uint8_t core_id = 0;
+    uint32_t time_diff_uS = 100;
+    uint32_t residency_uS = 200;
+
+    // Test case: Initial values
+    core[core_id].voltage.min_mV = 0;
+    core[core_id].voltage.max_mV = 0;
+    core[core_id].voltage.average_mV = 0;
+    core[core_id].voltage.latest_value_mV = 1200;
+    tlm_update_core_voltage(core_id, time_diff_uS, residency_uS);
+    assert_int_equal(core[core_id].voltage.min_mV, 1200);
+    assert_int_equal(core[core_id].voltage.max_mV, 1200);
+    assert_int_equal(core[core_id].voltage.average_mV, 1200); // First time no average value to we assign 1200.
+
+    // Test case: Update with new latest value
+    core[core_id].voltage.latest_value_mV = 1300;
+    tlm_update_core_voltage(core_id, time_diff_uS, residency_uS);
+    assert_int_equal(core[core_id].voltage.min_mV, 1200);
+    assert_int_equal(core[core_id].voltage.max_mV, 1300);
+    assert_int_equal(core[core_id].voltage.average_mV, 1250); // (1200 + 1300) / 2
+
+    // Test case: Update with lower latest value
+    core[core_id].voltage.latest_value_mV = 1100;
+    tlm_update_core_voltage(core_id, time_diff_uS, residency_uS);
+    assert_int_equal(core[core_id].voltage.min_mV, 1100);
+    assert_int_equal(core[core_id].voltage.max_mV, 1300);
+    assert_int_equal(core[core_id].voltage.average_mV, 1175); // (1250 + 1100) / 2
+}
+
+// Unit test for tlm_update_core_temperature
+TEST_FUNCTION(test_tlm_update_core_temperature, test_setup, test_teardown)
+{
+    uint8_t core_id = 0;
+    uint32_t time_diff_uS = 100;
+    uint32_t residency_uS = 200;
+
+    // Test case: Initial values
+    core[core_id].temperature.min_dC = 0;
+    core[core_id].temperature.max_dC = 0;
+    core[core_id].temperature.average_dC = 0;
+    core[core_id].temperature.latest_value_dC = 500;
+
+    tlm_update_core_temperature(core_id, time_diff_uS, residency_uS);
+
+    assert_int_equal(core[core_id].temperature.min_dC, 500);
+    assert_int_equal(core[core_id].temperature.max_dC, 500);
+    assert_int_equal(core[core_id].temperature.average_dC, 500); // first time we keep it 500
+
+    // Test case: Update with new latest value
+    core[core_id].temperature.latest_value_dC = 600;
+    tlm_update_core_temperature(core_id, time_diff_uS, residency_uS);
+    assert_int_equal(core[core_id].temperature.min_dC, 500);
+    assert_int_equal(core[core_id].temperature.max_dC, 600);
+    assert_int_equal(core[core_id].temperature.average_dC, 550); // (500 + 600) / 2
+
+    // Test case: Update with lower latest value
+    core[core_id].temperature.latest_value_dC = 400;
+    tlm_update_core_temperature(core_id, time_diff_uS, residency_uS);
+    assert_int_equal(core[core_id].temperature.min_dC, 400);
+    assert_int_equal(core[core_id].temperature.max_dC, 600);
+    assert_int_equal(core[core_id].temperature.average_dC, 475); // (550 + 400) / 2
+}
+// Unit test for tlm_update_tile_vcpu
+TEST_FUNCTION(test_tlm_update_tile_vcpu, test_setup, test_teardown)
+{
+    uint8_t tile_id = 0;
+    uint32_t time_diff_uS = 100;
+    uint32_t residency_uS = 200;
+
+    // Test case: Initial values
+    tile[tile_id].vcpu.min_mV = 0;
+    tile[tile_id].vcpu.max_mV = 0;
+    tile[tile_id].vcpu.average_mV = 0;
+    tile[tile_id].vcpu.latest_value_mV = 1200;
+    tlm_update_tile_vcpu(tile_id, time_diff_uS, residency_uS);
+    assert_int_equal(tile[tile_id].vcpu.min_mV, 1200);
+    assert_int_equal(tile[tile_id].vcpu.max_mV, 1200);
+    assert_int_equal(tile[tile_id].vcpu.average_mV, 1200); // first value will be 1200
+
+    // Test case: Update with new latest value
+    tile[tile_id].vcpu.latest_value_mV = 1300;
+    tlm_update_tile_vcpu(tile_id, time_diff_uS, residency_uS);
+    assert_int_equal(tile[tile_id].vcpu.min_mV, 1200);
+    assert_int_equal(tile[tile_id].vcpu.max_mV, 1300);
+    assert_int_equal(tile[tile_id].vcpu.average_mV, 1250); // (1200 + 1300) / 2
+
+    // Test case: Update with lower latest value
+    tile[tile_id].vcpu.latest_value_mV = 1100;
+    tlm_update_tile_vcpu(tile_id, time_diff_uS, residency_uS);
+    assert_int_equal(tile[tile_id].vcpu.min_mV, 1100);
+    assert_int_equal(tile[tile_id].vcpu.max_mV, 1300);
+    assert_int_equal(tile[tile_id].vcpu.average_mV, 1175); // (1250 + 1100) / 2
+}
+// Unit test for tlm_update_tile_vsys
+TEST_FUNCTION(test_tlm_update_tile_vsys, test_setup, test_teardown)
+{
+    uint8_t tile_id = 0;
+    uint32_t time_diff_uS = 100;
+    uint32_t residency_uS = 200;
+
+    // Test case: Initial values
+    tile[tile_id].vsys.min_mV = 0;
+    tile[tile_id].vsys.max_mV = 0;
+    tile[tile_id].vsys.average_mV = 0;
+    tile[tile_id].vsys.latest_value_mV = 1200;
+    tlm_update_tile_vsys(tile_id, time_diff_uS, residency_uS);
+    assert_int_equal(tile[tile_id].vsys.min_mV, 1200);
+    assert_int_equal(tile[tile_id].vsys.max_mV, 1200);
+    assert_int_equal(tile[tile_id].vsys.average_mV, 1200); // Init value to 1200
+
+    // Test case: Update with new latest value
+    tile[tile_id].vsys.latest_value_mV = 1300;
+    tlm_update_tile_vsys(tile_id, time_diff_uS, residency_uS);
+    assert_int_equal(tile[tile_id].vsys.min_mV, 1200);
+    assert_int_equal(tile[tile_id].vsys.max_mV, 1300);
+    assert_int_equal(tile[tile_id].vsys.average_mV, 1250); // (1200 + 1300) / 2
+
+    // Test case: Update with lower latest value
+    tile[tile_id].vsys.latest_value_mV = 1100;
+    tlm_update_tile_vsys(tile_id, time_diff_uS, residency_uS);
+    assert_int_equal(tile[tile_id].vsys.min_mV, 1100);
+    assert_int_equal(tile[tile_id].vsys.max_mV, 1300);
+    assert_int_equal(tile[tile_id].vsys.average_mV, 1175); // (1250 + 1100) / 2
+}
+
+TEST_FUNCTION(test_tlm_update_soc_rails_voltage, test_setup, test_teardown)
+{
+
+    uint8_t vr_index = 2;
+    uint32_t time_diff_uS = 100;
+    uint32_t residency_uS = 200;
+
+    // Initialize soc_info with some values
+    soc_info.rail[vr_index].voltage.min_mV = 1000;
+    soc_info.rail[vr_index].voltage.max_mV = 2000;
+    soc_info.rail[vr_index].voltage.average_mV = 1500;
+    soc_info.rail[vr_index].voltage.latest_value_mV = 1800;
+
+    // Call the function to be tested
+    tlm_update_soc_rails_voltage(vr_index, time_diff_uS, residency_uS);
+
+    // Add assertions to verify the expected behavior
+    assert_int_equal(soc_info.rail[vr_index].voltage.min_mV, 1000);
+    assert_int_equal(soc_info.rail[vr_index].voltage.max_mV, 2000);
+    assert_int_equal(soc_info.rail[vr_index].voltage.average_mV, 1650);
+    assert_int_equal(soc_info.rail[vr_index].voltage.latest_value_mV, 1800);
+}
+
+TEST_FUNCTION(test_tlm_update_soc_rails_current, test_setup, test_teardown)
+{
+    uint8_t vr_index = 2;
+    uint32_t time_diff_uS = 100;
+    uint32_t residency_uS = 200;
+
+    // Initialize soc_info with some values
+    soc_info.rail[vr_index].current.min_mA = 500;
+    soc_info.rail[vr_index].current.max_mA = 1000;
+    soc_info.rail[vr_index].current.average_mA = 750;
+    soc_info.rail[vr_index].current.latest_value_mA = 900;
+
+    // Call the function to be tested
+    tlm_update_soc_rails_current(vr_index, time_diff_uS, residency_uS);
+
+    // Add assertions to verify the expected behavior
+    assert_int_equal(soc_info.rail[vr_index].current.min_mA, 500);
+    assert_int_equal(soc_info.rail[vr_index].current.max_mA, 1000);
+    assert_int_equal(soc_info.rail[vr_index].current.average_mA, 825);
+    assert_int_equal(soc_info.rail[vr_index].current.latest_value_mA, 900);
+}
+
+TEST_FUNCTION(test_tlm_update_soc_hnf_temperature, test_setup, test_teardown)
+{
+    uint8_t hnf_index = 2;
+    uint32_t time_diff_uS = 100;
+    uint32_t residency_uS = 200;
+
+    // Initialize soc_info with some values
+    soc_info.hnf[hnf_index].min_dC = 30;
+    soc_info.hnf[hnf_index].max_dC = 70;
+    soc_info.hnf[hnf_index].average_dC = 50;
+    soc_info.hnf[hnf_index].latest_value_dC = 60;
+
+    // Call the function to be tested
+    tlm_update_soc_hnf_temperature(hnf_index, time_diff_uS, residency_uS);
+
+    // Add assertions to verify the expected behavior
+    assert_int_equal(soc_info.hnf[hnf_index].min_dC, 30);
+    assert_int_equal(soc_info.hnf[hnf_index].max_dC, 70);
+    assert_int_equal(soc_info.hnf[hnf_index].average_dC, 55);
+    assert_int_equal(soc_info.hnf[hnf_index].latest_value_dC, 60);
+}
+TEST_FUNCTION(test_tlm_update_soc_pvt_temperature, test_setup, test_teardown)
+{
+    uint8_t pvt_index = 2;
+    uint32_t time_diff_uS = 100;
+    uint32_t residency_uS = 200;
+
+    // Initialize soc_info with some values
+    soc_info.sensor_temp[pvt_index].min_dC = 25;
+    soc_info.sensor_temp[pvt_index].max_dC = 75;
+    soc_info.sensor_temp[pvt_index].average_dC = 50;
+    soc_info.sensor_temp[pvt_index].latest_value_dC = 65;
+
+    // Call the function to be tested
+    tlm_update_soc_pvt_temperature(pvt_index, time_diff_uS, residency_uS);
+
+    // Add assertions to verify the expected behavior
+    assert_int_equal(soc_info.sensor_temp[pvt_index].min_dC, 25);
+    assert_int_equal(soc_info.sensor_temp[pvt_index].max_dC, 75);
+    assert_int_equal(soc_info.sensor_temp[pvt_index].average_dC, 57);
+    assert_int_equal(soc_info.sensor_temp[pvt_index].latest_value_dC, 65);
+}
+TEST_FUNCTION(test_tlm_update_soc_dimm_info, test_setup, test_teardown)
+{
+    uint8_t dimm_module_index = 0;
+    uint32_t time_diff_uS = 100;
+    uint32_t residency_uS = 200;
+
+    // Initialize soc_info with some test values
+    soc_info.dimm[dimm_module_index].s0.min_dC = 0;
+    soc_info.dimm[dimm_module_index].s0.max_dC = 0;
+    soc_info.dimm[dimm_module_index].s0.average_dC = 0;
+    soc_info.dimm[dimm_module_index].s0.latest_value_dC = 10;
+
+    soc_info.dimm[dimm_module_index].s1.min_dC = 0;
+    soc_info.dimm[dimm_module_index].s1.max_dC = 0;
+    soc_info.dimm[dimm_module_index].s1.average_dC = 0;
+    soc_info.dimm[dimm_module_index].s1.latest_value_dC = 20;
+
+    // Call the function to be tested
+    tlm_update_soc_dimm_info(dimm_module_index, time_diff_uS, residency_uS);
+
+    // Add assertions to verify the expected behavior
+    assert_int_equal(soc_info.dimm[dimm_module_index].s0.min_dC, 10);
+    assert_int_equal(soc_info.dimm[dimm_module_index].s0.max_dC, 10);
+    assert_int_equal(soc_info.dimm[dimm_module_index].s0.average_dC, 10);
+    assert_int_equal(soc_info.dimm[dimm_module_index].s0.latest_value_dC, 10);
+    assert_int_equal(soc_info.dimm[dimm_module_index].s1.min_dC, 20);
+    assert_int_equal(soc_info.dimm[dimm_module_index].s1.max_dC, 20);
+    assert_int_equal(soc_info.dimm[dimm_module_index].s1.average_dC, 20);
+    assert_int_equal(soc_info.dimm[dimm_module_index].s1.latest_value_dC, 20);
+}
+
+TEST_FUNCTION(test_tlm_update_pstate, test_setup, test_teardown)
+{
+    uint8_t core_id = 0;
+    uint64_t time_stamp_uS = 1000;
+
+    // Test case: No throttling, no id_change_bit, no pstate_change
+    core[core_id].throttling_status = NO_THROTTLE;
+    core[core_id].pstate_timestamp_uS = 500;
+
+    core[core_id].pstate_from_pstate_pkt = 1;
+    int pstate_index = core[core_id].pstate_from_pstate_pkt;
+    core[core_id].power_index = 5;
+    core[core_id].flags.id_change_bit = 0;
+    core[core_id].flags.pstate_change = 0;
+    core_pwr_sample[core_id] = 50;
+    core[core_id].pstate[pstate_index].residency_uS = 200;
+
+    tlm_update_pstate(core_id, time_stamp_uS);
+
+    assert_int_equal(core[core_id].pstate[pstate_index].latest_value_mW, 220); // 22 * 5
+    assert_int_equal(core[core_id].pstate[pstate_index].min_power_mW, 220);
+    assert_int_equal(core[core_id].pstate[pstate_index].max_power_mW, 220);
+    assert_int_equal(core[core_id].pstate[pstate_index].avg_power_mW, 220); // (0 + 110) / 2
+
+    // Test case: Throttling, no id_change_bit, no pstate_change
+    core[core_id].throttling_status = TEMP_THROTTLE_START;
+    core[core_id].pstate_from_current_pkt = 2;
+    pstate_index = core[core_id].pstate_from_current_pkt;
+    core[core_id].flags.id_change_bit = 0;
+    core[core_id].flags.pstate_change = 0;
+    core[core_id].power_index = 12;
+    core_pwr_sample[core_id] = 60;
+    core[core_id].pstate[pstate_index].residency_uS = 300;
+
+    tlm_update_pstate(core_id, time_stamp_uS);
+
+    assert_int_equal(core[core_id].pstate[pstate_index].latest_value_mW, 110); // 22 * 5
+    assert_int_equal(core[core_id].pstate[pstate_index].min_power_mW, 110);
+    assert_int_equal(core[core_id].pstate[pstate_index].max_power_mW, 110);
+    assert_int_equal(core[core_id].pstate[pstate_index].avg_power_mW, 110); // (0 + 110) / 2
+
+    // Test case: id_change_bit set
+    core[core_id].flags.id_change_bit = 1;
+    core[core_id].flags.pstate_change = 0;
+
+    tlm_update_pstate(core_id, time_stamp_uS);
+
+    assert_int_equal(core[core_id].flags.id_change_bit, 0);
+    assert_int_equal(core[core_id].flags.pstate_change, 0);
+    assert_int_equal(pstate_accum_uS[core_id][pstate_index], 0);
+
+    // Test case: pstate_change set
+    core[core_id].flags.id_change_bit = 0;
+    core[core_id].flags.pstate_change = 1;
+
+    tlm_update_pstate(core_id, time_stamp_uS);
+
+    assert_int_equal(core[core_id].flags.id_change_bit, 0);
+    assert_int_equal(core[core_id].flags.pstate_change, 0);
+    assert_int_equal(pstate_accum_uS[core_id][pstate_index], 0);
+}
+// Unit test function
+TEST_FUNCTION(test_tlm_update_throttling, test_setup, test_teardown)
+{
+    uint8_t core_id = 0;
+    uint64_t time_stamp_uS = 1000;
+    // Call the function to be tested TODO:: update when implemented
+    tlm_update_throttling(core_id, time_stamp_uS);
+    // Add assertions to verify the expected behavior
+    // Since the function does nothing for now, there is nothing to assert
+}
+TEST_FUNCTION(test_tlm_update_core_histogram, test_setup, test_teardown)
+{
+    uint8_t core_id = 0;
+    // Call the function to be tested TODO:: update when implemented
+    tlm_update_core_histogram(core_id);
+    // Add assertions to verify the expected behavior
+    // Since the function does nothing for now, there is nothing to assert
+}
+
+TEST_FUNCTION(test_tlm_soc_component_update, test_setup, test_teardown)
+{
+    // Initialize soc_info
+    soc_info.time_counter_uS = 0;
+    // Set up mock return values
+    will_return(__wrap__tx_time_get, 5);
+
+    // Call the function to be tested
+    tlm_soc_component_update();
+    //  Add assertions to verify the expected behavior
+    assert_int_equal(soc_info.time_counter_uS, 0);
+
+    // here soc_info.time_counter_uS will be 5 ;
+    // Test :updated previous timestamp on next update.
+
+    will_return(__wrap__tx_time_get, 10);
+    tlm_soc_component_update();
+    //  Add assertions to verify the expected behavior
+    assert_int_equal(soc_info.time_counter_uS, 5); // 10-5 =5
+
+    // Test :update again.
+    will_return(__wrap__tx_time_get, 15);
+    tlm_soc_component_update();
+    //  Add assertions to verify the expected behavior
+    assert_int_equal(soc_info.time_counter_uS, 10); // 15-5 =5
+}
+
+TEST_FUNCTION(test_tlm_core_component_update, test_setup, test_teardown)
+{
+    // Initialize core data for testing
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        core[core_id].time_counter_uS = 0;
+        core[core_id].current_pkt_timestamp = 1000; // Non-zero to trigger updates
+    }
+
+    // Set up mock return values for tlm_get_timestamp_microseconds
+    will_return(__wrap__tx_time_get, 5);
+
+    // Call the function to be tested
+    tlm_core_component_update();
+
+    // Add assertions to verify the expected behavior
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        assert_int_equal(core[core_id].time_counter_uS, 0);
+    }
+
+    // Test to updae : core[core_id].time_counter_uS in all core by time diff
+    //  Set up mock return values for tlm_get_timestamp_microseconds
+    will_return(__wrap__tx_time_get, 10);
+
+    // Call the function to be tested
+    tlm_core_component_update();
+
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        assert_int_equal(core[core_id].time_counter_uS, 5);
+    }
+}
+// Unit test function
+TEST_FUNCTION(test_tlm_tile_component_update, test_setup, test_teardown)
+{
+    // Initialize tile data for testing
+    for (uint8_t tile_id = 0; tile_id < NUMBER_OF_TILES_PER_DIE; tile_id++)
+    {
+        tile[tile_id].time_counter_uS = 0;
+        tile[tile_id].active_sample_max_temperature_dC = 50;
+        tile[tile_id].max_tile_temperature_dC = 40;
+        tile[tile_id].active_sample_max_id = 1;
+        tile[tile_id].max_tile_id = 0;
+    }
+    // Set up mock return values for tlm_get_timestamp_microseconds
+    will_return(__wrap__tx_time_get, 5);
+
+    tlm_tile_component_update();
+
+    for (uint8_t tile_id = 0; tile_id < NUMBER_OF_TILES_PER_DIE; tile_id++)
+    {
+        assert_int_equal(tile[tile_id].time_counter_uS, 0);
+        assert_int_equal(tile[tile_id].max_tile_temperature_dC, 50);
+        assert_int_equal(tile[tile_id].max_tile_id, 1);
+    }
+
+    uint8_t temp_active_sample_max_temperature_dC = 60;
+    for (uint8_t tile_id = 0; tile_id < NUMBER_OF_TILES_PER_DIE; tile_id++)
+    {
+
+        tile[tile_id].active_sample_max_temperature_dC = temp_active_sample_max_temperature_dC;
+        temp_active_sample_max_temperature_dC++;
+        tile[tile_id].max_tile_temperature_dC = 40;
+        tile[tile_id].active_sample_max_id = 1;
+        tile[tile_id].max_tile_id = 0;
+    }
+
+    //  Set up mock return values for tlm_get_timestamp_microseconds
+    will_return(__wrap__tx_time_get, 10);
+
+    tlm_tile_component_update();
+    temp_active_sample_max_temperature_dC = 60;
+    for (uint8_t tile_id = 0; tile_id < NUMBER_OF_TILES_PER_DIE; tile_id++)
+    {
+        assert_int_equal(tile[tile_id].time_counter_uS, 5);
+        assert_int_equal(tile[tile_id].max_tile_temperature_dC, temp_active_sample_max_temperature_dC);
+        temp_active_sample_max_temperature_dC++;
+        assert_int_equal(tile[tile_id].max_tile_id, 1);
+    }
 }

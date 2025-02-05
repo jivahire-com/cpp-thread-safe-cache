@@ -16,7 +16,7 @@ target_link_libraries(${TARGET}
     ms::cmocka::testrunner
     ms::lib::error_handler
     ms::lib::power_fuse
-    ms::service::sensor_fifo
+    ms::service::sensor_fifo 
 )
 
 # Defining platform APIs
@@ -41,5 +41,6 @@ mock_target(${TARGET}
     sensor_fifo_svc_poll_soc_pvt_temperature
     sensor_fifo_svc_poll_dimm_info
     platform_power_fuses_get_dts_coeff_tile
-
+    data_proc_tlm_cmpnt_aggregate_update_mgr
+    _tx_time_get
 )

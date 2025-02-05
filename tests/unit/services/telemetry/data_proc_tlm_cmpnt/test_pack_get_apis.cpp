@@ -69,7 +69,7 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
         core[TEST_CORE_ID_5].pstate[pstate_index].max_power_mW = 40;
         core[TEST_CORE_ID_5].pstate[pstate_index].min_power_mW = 10;
         core[TEST_CORE_ID_5].pstate[pstate_index].frequency_Mhz = 150;
-        core[TEST_CORE_ID_5].pstate[pstate_index].residency_mS = 10;
+        core[TEST_CORE_ID_5].pstate[pstate_index].residency_uS = 10000;
         core[TEST_CORE_ID_5].pstate[pstate_index].entry_count = 10;
         // increment avg power for every pstate by 1
         avg_power++;
@@ -84,7 +84,8 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
         assert_int_equal(pstate_array[pstate_index].min_power_mW, core[TEST_CORE_ID_5].pstate[pstate_index].min_power_mW);
         assert_int_equal(pstate_array[pstate_index].max_power_mW, core[TEST_CORE_ID_5].pstate[pstate_index].max_power_mW);
         assert_int_equal(pstate_array[pstate_index].frequency_Mhz, core[TEST_CORE_ID_5].pstate[pstate_index].frequency_Mhz);
-        assert_int_equal(pstate_array[pstate_index].residency_mS, core[TEST_CORE_ID_5].pstate[pstate_index].residency_mS);
+        assert_int_equal(pstate_array[pstate_index].residency_mS,
+                         core[TEST_CORE_ID_5].pstate[pstate_index].residency_uS / 1000);
         assert_int_equal(pstate_array[pstate_index].entry_count, core[TEST_CORE_ID_5].pstate[pstate_index].entry_count);
     }
     // setup for failure case, change pstate 0 element data.
@@ -94,7 +95,7 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
     core[TEST_CORE_ID_5].pstate[index].max_power_mW = 50;
     core[TEST_CORE_ID_5].pstate[index].min_power_mW = 15;
     core[TEST_CORE_ID_5].pstate[index].frequency_Mhz = 155;
-    core[TEST_CORE_ID_5].pstate[index].residency_mS = 15;
+    core[TEST_CORE_ID_5].pstate[index].residency_uS = 15;
     core[TEST_CORE_ID_5].pstate[index].entry_count = 20;
     data_proc_tlm_cmpnt_get_pwr_core_pstate_data(NUMBER_OF_CORES_PER_DIE, &pstate_array);
 
@@ -104,7 +105,7 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
     assert_int_not_equal(pstate_array[index].min_power_mW, core[TEST_CORE_ID_5].pstate[index].min_power_mW);
     assert_int_not_equal(pstate_array[index].max_power_mW, core[TEST_CORE_ID_5].pstate[index].max_power_mW);
     assert_int_not_equal(pstate_array[index].frequency_Mhz, core[TEST_CORE_ID_5].pstate[index].frequency_Mhz);
-    assert_int_not_equal(pstate_array[index].residency_mS, core[TEST_CORE_ID_5].pstate[index].residency_mS);
+    assert_int_not_equal(pstate_array[index].residency_mS, core[TEST_CORE_ID_5].pstate[index].residency_uS);
     assert_int_not_equal(pstate_array[index].entry_count, core[TEST_CORE_ID_5].pstate[index].entry_count);
 }
 
@@ -281,35 +282,26 @@ TEST_FUNCTION(test_get_pwr_core_voltage_data, test_setup, test_teardown)
 TEST_FUNCTION(test_get_pwr_core_current_data, test_setup, test_teardown)
 {
     pwr_core_element_current_t current_get_data = {0};
+    uint8_t index = TEST_CORE_ID_5;
 
-    fpfw_status_t status;
-    core_current_t current_data = {
-        .timestamp = 3, // should not be zero for logging to move forward.
-        .data =
-            {
-                .avg = 100,
-                .min = 10,
-                .max = 150,
-                .volt = 100,
-                .pwr = 50,
-                .pstate = 12,
-                .change = 1,
-                .mpam_id_low = 0,
-                .mpam_id_high = 0,
-                .cstate = 0,
-            },
-    };
-
-    uint8_t index = 0;
-    status = tlm_logger_log_core_current(&current_data, index);
-    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+    core[index].current.latest_value_mA = 30;
+    core[index].current.average_mA = 30;
+    core[index].current.max_mA = 40;
+    core[index].current.min_mA = 20;
 
     data_proc_tlm_cmpnt_get_pwr_core_current_data(index, &current_get_data);
     // Check core 0 current
-    assert_int_equal(current_get_data.latest_value_mA, (uint16_t)(current_data.data.avg * CORE_CURRENT_CONVERSION_FACTOR));
-    assert_int_equal(current_get_data.max_mA, (uint16_t)(current_data.data.max * CORE_CURRENT_CONVERSION_FACTOR));
-    assert_int_equal(current_get_data.min_mA, (uint16_t)(current_data.data.min * CORE_CURRENT_CONVERSION_FACTOR));
-    assert_int_equal(current_get_data.average_mA, (uint16_t)(current_data.data.avg * CORE_CURRENT_CONVERSION_FACTOR));
+    // check for valid data into full current  array.
+    assert_int_equal(memcmp(&current_get_data, &core[TEST_CORE_ID_5].current, sizeof(core[TEST_CORE_ID_5].current)), 0);
+    // setup for fail case .
+    core[index].current.latest_value_mA = 0;
+    core[index].current.average_mA = 0;
+    core[index].current.max_mA = 0;
+    core[index].current.min_mA = 0;
+    data_proc_tlm_cmpnt_get_pwr_core_current_data(NUMBER_OF_CORES_PER_DIE, &current_get_data);
+    // check for valid data into full current array.
+
+    assert_int_not_equal(memcmp(&current_get_data, &core[TEST_CORE_ID_5].current, sizeof(core[TEST_CORE_ID_5].current)), 0);
 }
 
 TEST_FUNCTION(test_get_pwr_core_temperature_data, test_setup, test_teardown)

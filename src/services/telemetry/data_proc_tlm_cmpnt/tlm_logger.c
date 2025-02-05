@@ -12,15 +12,15 @@
 #include "tlm_logger_i.h" // internal APIs
 
 #include <FpFwAssert.h>
-#include <assert.h>      // IWYU pragma: keep for static_assert
-#include <fpfw_status.h> // for FPFW_STATUS_SUCCEEDED, fpf...
-#include <power_tlm_fuse.h>
+#include <assert.h>              // IWYU pragma: keep for static_assert
+#include <fpfw_status.h>         // for FPFW_STATUS_SUCCEEDED, fpf...
+#include <power_tlm_fuse.h>      //for power fuse
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdbool.h>             // for false, true
 #include <stddef.h>              // for size_t
 #include <stdint.h>              // for uint8_t, uint16_t
 #include <string.h>              // for memset
-
+#include <tx_api.h>
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
@@ -41,9 +41,11 @@ core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
 tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
 soc_runtime_info_t soc_info;
 dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE] = {0};
-
-uint16_t core_pwr_sample[NUMBER_OF_CORES_PER_DIE] = {0};
-uint32_t pstate_accum[NUMBER_OF_CORES_PER_DIE][NUMBER_OF_PSTATES] = {0};
+/* per core power samples's averaged value,  used for averaging , sample need to be averaged and multiplied
+by a fator(22 , CORE_POWER_MW_PER_BIT) to get in mW, investigate if we can add units on task https://azurecsi.visualstudio.com/Dev/_workitems/edit/2330778/*/
+uint32_t core_pwr_sample[NUMBER_OF_CORES_PER_DIE] = {0}; // power sample values not in mW .
+/* used only for MPAM*/
+uint32_t pstate_accum_uS[NUMBER_OF_CORES_PER_DIE][NUMBER_OF_PSTATES] = {0};
 
 static throttling_properties_t throttling_prop[] = {
     // throttle             transition event              // Status from HAS Document index value
@@ -143,8 +145,8 @@ fpfw_status_t tlm_logger_log_tile_temperature(tile_temp_t* temperature_data, uin
     }
 
     // Also store the Max tile temperatures and its ID
-    tile[tile_index].current_max_temperature = temperature_data->temp0.max_temp;
-    tile[tile_index].current_max_id = temperature_data->temp0.max_id;
+    tile[tile_index].active_sample_max_temperature_dC = temperature_data->temp0.max_temp;
+    tile[tile_index].active_sample_max_id = temperature_data->temp0.max_id;
 
     return FPFW_STATUS_SUCCESS;
 }
@@ -211,7 +213,7 @@ fpfw_status_t tlm_logger_log_core_current(core_current_t* current_data, uint8_t 
         core[core_id].flags.id_change_bit = 1;
         core[core_id].power_index = 0;
         core_pwr_sample[core_id] = 0;
-        core[core_id].pstate_timestamp = current_data->timestamp;
+        core[core_id].pstate_timestamp_uS = current_data->timestamp;
     }
     else
     {
@@ -232,17 +234,17 @@ fpfw_status_t tlm_logger_log_core_current(core_current_t* current_data, uint8_t 
         //   indicate a change on pstate first. - We may revisit this after the real silicon for
         //   KNG comes in https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1753817
         //
-        if (core[core_id].current_tel_pstate != current_data->data.pstate)
+        if (core[core_id].pstate_from_current_pkt != current_data->data.pstate)
         {
             core[core_id].flags.pstate_change = 1;
-            core[core_id].pstate_timestamp = current_data->timestamp;
+            core[core_id].pstate_timestamp_uS = current_data->timestamp;
         }
     }
 
     // The average current reported from SCF is the average of the span of time
-    //   of measurement window (1mS) therefore, we will treat this as the
-    //   instantaneous current @ 1mS
-
+    //   of measurement window therefore, we will treat this as the
+    //   instantaneous current @ "x" mS, depend  on the sampling rate, which will be in the range of 3 ~ 5mS.
+    // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2330778
     core[core_id].current.latest_value_mA = current.average_mA;
     // Log average
     core[core_id].current.average_mA = current.average_mA;
@@ -251,26 +253,26 @@ fpfw_status_t tlm_logger_log_core_current(core_current_t* current_data, uint8_t 
     core[core_id].ldo_voltage = current_data->data.volt;
 
     // Got the current telemetry pstate
-    core[core_id].current_tel_pstate = current_data->data.pstate;
+    core[core_id].pstate_from_current_pkt = current_data->data.pstate;
 
     // Log the average power of the core in this instant
-    core[core_id].current_mpam_id = current_data->data.mpam_id_low;
+    core[core_id].active_sample_mpam_id = current_data->data.mpam_id_low;
 
     return FPFW_STATUS_SUCCESS;
 }
 
-fpfw_status_t update_core_pstate_timestamps(uint8_t core_id, uint8_t pstate, uint64_t timestamp)
+fpfw_status_t update_core_pstate_timestamps(uint8_t core_id, uint8_t pstate, uint64_t timestamp_uS)
 {
     // Update the residency of the previous pstate
-    if (core[core_id].pstate_timestamp != 0 && core[core_id].pstate_timestamp < timestamp)
+    if (core[core_id].pstate_timestamp_uS != 0 && core[core_id].pstate_timestamp_uS < timestamp_uS)
     {
         //  obtain the time stamp difference @ uS
-        uint64_t timestamp_diff = (timestamp - core[core_id].pstate_timestamp) / 1000;
-        core[core_id].pstate[pstate].residency_mS += timestamp_diff;
-        pstate_accum[core_id][pstate] += timestamp_diff;
+        uint64_t timestamp_diff_uS = timestamp_uS - core[core_id].pstate_timestamp_uS;
+        core[core_id].pstate[pstate].residency_uS += timestamp_diff_uS;
+        pstate_accum_uS[core_id][pstate] += timestamp_diff_uS; // for MPAM only .
     }
 
-    core[core_id].pstate_timestamp = timestamp;
+    core[core_id].pstate_timestamp_uS = timestamp_uS;
     return FPFW_STATUS_SUCCESS;
 }
 
@@ -292,11 +294,11 @@ fpfw_status_t tlm_logger_log_core_pstate(pstate_telem_t* pstate_telemetry)
     if (pstate_telemetry->data.throttle_status == NO_THROTTLE)
     {
         // check to log the Core Pstate if there are changes
-        if (pstate_telemetry->data.pstate != core[core_id].current_pstate)
+        if (pstate_telemetry->data.pstate != core[core_id].pstate_from_pstate_pkt)
         {
-            core[core_id].current_pstate = pstate_telemetry->data.pstate;
+            core[core_id].pstate_from_pstate_pkt = pstate_telemetry->data.pstate;
             core[core_id].pstate[pstate_telemetry->data.pstate].entry_count++;
-            core[core_id].pstate_timestamp = pstate_telemetry->timestamp;
+            core[core_id].pstate_timestamp_uS = pstate_telemetry->timestamp;
         }
 
         // Process other task only if we are not throttling
@@ -314,7 +316,7 @@ fpfw_status_t tlm_logger_log_core_pstate(pstate_telem_t* pstate_telemetry)
         }
 
         // Save the current plimit
-        core[core_id].current_plimit = pstate_telemetry->data.plimit;
+        core[core_id].active_sample_plimit = pstate_telemetry->data.plimit;
     }
     else
     {
@@ -335,10 +337,10 @@ fpfw_status_t tlm_logger_log_core_pstate(pstate_telem_t* pstate_telemetry)
             //    3. Store the latest core max pstate and average pstate during throttling.
             if (prop_index >= CURRENT_THROTTLE_END)
             {
-                if (core[core_id].throttle_timestamp != 0 && pstate_telemetry->timestamp > core[core_id].throttle_timestamp)
+                if (core[core_id].throttle_timestamp_uS != 0 && pstate_telemetry->timestamp > core[core_id].throttle_timestamp_uS)
                 {
                     // Get the Throttling time stamp now and subtract from previous
-                    uint64_t timestamp_now = (pstate_telemetry->timestamp - core[core_id].throttle_timestamp) / 1000;
+                    uint64_t timestamp_now = (pstate_telemetry->timestamp - core[core_id].throttle_timestamp_uS) / 1000;
 
                     // This is the per core and per type throttling residency in uS
                     core[core_id].throttle_info[prop_index - CURRENT_THROTTLE_END].residency_mS += timestamp_now;
@@ -349,7 +351,7 @@ fpfw_status_t tlm_logger_log_core_pstate(pstate_telem_t* pstate_telemetry)
                 core[core_id].throttle_info[prop_index - CURRENT_THROTTLE_END].exit_count++;
 
                 // Record the current pstate
-                core[core_id].current_pstate = pstate_telemetry->data.pstate;
+                core[core_id].pstate_from_pstate_pkt = pstate_telemetry->data.pstate;
 
                 // Indicate that the throttling have at least ended once
                 core[core_id].flags.throttling_end_occurred = 1;
@@ -361,7 +363,7 @@ fpfw_status_t tlm_logger_log_core_pstate(pstate_telem_t* pstate_telemetry)
 
                 // Indicate that the throttling start
                 core[core_id].flags.throttling_start_occurred = 1;
-                core[core_id].throttle_timestamp = pstate_telemetry->timestamp;
+                core[core_id].throttle_timestamp_uS = pstate_telemetry->timestamp;
             }
         }
 
@@ -538,6 +540,9 @@ void data_proc_tlm_cmpnt_aggregate_pwr_tlm_data(void)
             telmain_log_dimm_info(dimm_info);
         }
     } while (status.more_entries == true);
+
+    // run algorithms to update the aggregated telemetry data, used to generate packaged telemetry events.
+    data_proc_tlm_cmpnt_aggregate_update_mgr();
 }
 
 void data_proc_tlm_cmpnt_aggregate_inst_tlm_data(void)
@@ -564,7 +569,8 @@ void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_ele
             (*pstate_array)[pstate_index].min_power_mW = core[core_id].pstate[pstate_index].min_power_mW;
             (*pstate_array)[pstate_index].max_power_mW = core[core_id].pstate[pstate_index].max_power_mW;
             (*pstate_array)[pstate_index].frequency_Mhz = core[core_id].pstate[pstate_index].frequency_Mhz;
-            (*pstate_array)[pstate_index].residency_mS = core[core_id].pstate[pstate_index].residency_mS;
+            (*pstate_array)[pstate_index].residency_mS =
+                ROUND_USEC_TO_MSEC(core[core_id].pstate[pstate_index].residency_uS);
             (*pstate_array)[pstate_index].entry_count = core[core_id].pstate[pstate_index].entry_count;
         }
     }
@@ -788,9 +794,9 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
         // Pstate and Cstate(TODO)
         core_summary_data->pc_state_info.pstate_id = core[core_id].pstate->pstate_id;
         core_summary_data->pc_state_info.frequency_Mhz = core[core_id].pstate->frequency_Mhz;
-        core_summary_data->pc_state_info.power_mW = core[core_id].current_power_mW;
-        core_summary_data->pc_state_info.pstate_residency_mS = core[core_id].pstate->residency_mS;
-        core_summary_data->pc_state_info.cstate_plimit = core[core_id].current_plimit;
+        core_summary_data->pc_state_info.power_mW = CORE_POWER_MW_PER_BIT * core[core_id].average_pwr_samples_value; // multiple by  22
+        core_summary_data->pc_state_info.pstate_residency_mS = core[core_id].pstate->residency_uS;
+        core_summary_data->pc_state_info.cstate_plimit = core[core_id].active_sample_plimit;
         // force latency to zero.
         core_summary_data->pc_state_info.cstate_entry_latency_uS = 0;
         core_summary_data->pc_state_info.cstate_exit_latency_uS = 0;
@@ -869,4 +875,435 @@ void data_proc_tlm_cmpnt_get_inst_core_amu_data(uint16_t core_id, p_inst_core_el
 {
     FPFW_UNUSED(core_id);
     FPFW_UNUSED(amu_data);
+}
+
+//----------------Power telemetry update manager  ----------------
+
+uint64_t tlm_get_timestamp_microseconds(void)
+{
+    // TODO: replace with higher resolution timer when available
+    // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2314719
+    uint64_t timestamp_us = (uint64_t)tx_time_get();
+    return timestamp_us;
+}
+
+void tlm_average_power_sample(uint8_t core_id)
+{
+    // Check if there are power samples for this core
+    if (core[core_id].power_index > 0)
+    {
+        /* report avergare of all the sample reported so  far
+          To convert each sample into mW so you multiply the power reading from sensor ram by 22
+        */
+        core[core_id].average_pwr_samples_value = (core_pwr_sample[core_id] / core[core_id].power_index);
+    }
+}
+
+void tlm_update_mpam_residency(uint8_t core_id, uint16_t mpam_id, uint8_t pstate)
+{
+
+    FPFW_UNUSED(core_id);
+    FPFW_UNUSED(mpam_id);
+    FPFW_UNUSED(pstate);
+    // Update the core - mpam - pstate instantaneous power
+    // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2319779
+}
+
+void tlm_calculate_mma_res(uint16_t* mma_min, uint16_t* mma_max, uint16_t* mma_average, uint16_t* mma_latest_value, uint32_t time_diff_uS, uint32_t residency_uS)
+{
+    // Check parameter bounds
+    if (time_diff_uS == 0 || time_diff_uS > UINT32_MAX || residency_uS > UINT32_MAX)
+    {
+        FPFW_ET_LOG(DataUpdateMMAWrongInValidTimeStamp);
+    }
+    // Calculate the average
+    if (*mma_latest_value != 0)
+    {
+        // Check for maximum
+        if (*mma_latest_value > *mma_max)
+        {
+            *mma_max = *mma_latest_value;
+        }
+        // Check for minimum
+        if ((*mma_latest_value < *mma_min || *mma_min == 0))
+        {
+            *mma_min = *mma_latest_value;
+        }
+        // Check to calculate average
+        if ((residency_uS > time_diff_uS) && (residency_uS != 0) && (*mma_average != 0))
+        {
+            uint32_t weighted_previous_average = (uint32_t)*mma_average * (residency_uS - time_diff_uS);
+            uint32_t weighted_latest_value = (uint32_t)*mma_latest_value * time_diff_uS;
+            uint32_t average = (weighted_previous_average + weighted_latest_value) / residency_uS;
+            // Ensure the calculated average does not exceed UINT16_MAX
+            if (average > UINT16_MAX)
+            {
+                average = UINT16_MAX;
+                FPFW_ET_LOG(DataUpdateMMAvgOverflow);
+            }
+            // Check if the calculated average goes lower but not lower than the new value
+            if (!((*mma_average > (uint16_t)average) && (uint16_t)average < *mma_latest_value))
+            {
+                *mma_average = (uint16_t)average;
+            }
+        }
+        else
+        {
+            *mma_average = *mma_latest_value;
+        }
+    }
+}
+
+void tlm_update_cstate(uint8_t core_id, uint64_t time_stamp_uS)
+{
+    uint8_t cstate_index = core[core_id].cstate_from_pstate_pkt;
+    if (core[core_id].flags.cstate_change == 0)
+    {
+        uint64_t cstate_time_diff_uS = 0;
+        // Update the cstate residency, cstate power not needed for kingsgate.
+        if (core[core_id].cstate_timestamp_uS != 0 && (time_stamp_uS > core[core_id].cstate_timestamp_uS))
+        {
+            cstate_time_diff_uS = time_stamp_uS - core[core_id].cstate_timestamp_uS;
+            core[core_id].cstate[cstate_index].residency_uS += cstate_time_diff_uS;
+        }
+    }
+    else
+    {
+        // Clear the cstate change indicator for this core
+        core[core_id].flags.cstate_change = 0;
+    }
+    core[core_id].cstate_timestamp_uS = time_stamp_uS;
+}
+
+void tlm_update_core_current(uint8_t core_id, uint32_t time_diff_uS, uint32_t residency_uS)
+{
+    /* For core current :min, max avg calculation*/
+    // Update the core current min, max average.
+    tlm_calculate_mma_res(&core[core_id].current.min_mA,
+                          &core[core_id].current.max_mA,
+                          &core[core_id].current.average_mA,
+                          &core[core_id].current.latest_value_mA,
+                          time_diff_uS,
+                          residency_uS);
+}
+void tlm_update_core_voltage(uint8_t core_id, uint32_t time_diff_uS, uint32_t residency_uS)
+{
+    /* For core voltage :min, max avg calculation*/
+    tlm_calculate_mma_res(&core[core_id].voltage.min_mV,
+                          &core[core_id].voltage.max_mV,
+                          &core[core_id].voltage.average_mV,
+                          &core[core_id].voltage.latest_value_mV,
+                          time_diff_uS,
+                          residency_uS);
+}
+
+void tlm_update_core_temperature(uint8_t core_id, uint32_t time_diff_uS, uint32_t residency_uS)
+{
+    /* For core temperature :min, max avg calculation*/
+    tlm_calculate_mma_res(&core[core_id].temperature.min_dC,
+                          &core[core_id].temperature.max_dC,
+                          &core[core_id].temperature.average_dC,
+                          &core[core_id].temperature.latest_value_dC,
+                          time_diff_uS,
+                          residency_uS);
+}
+
+void tlm_update_tile_vcpu(uint8_t tile_id, uint32_t time_diff_uS, uint32_t residency_uS)
+{
+    /* For tile vcpu :min, max avg calculation*/
+    // Update the vcpu voltage  min, max average
+    tlm_calculate_mma_res(&tile[tile_id].vcpu.min_mV,
+                          &tile[tile_id].vcpu.max_mV,
+                          &tile[tile_id].vcpu.average_mV,
+                          &tile[tile_id].vcpu.latest_value_mV,
+                          time_diff_uS,
+                          residency_uS);
+}
+
+void tlm_update_tile_vsys(uint8_t tile_id, uint32_t time_diff_uS, uint32_t residency_uS)
+{
+    /* For tile vsys :min, max avg calculation*/
+    // Update the vsys voltage min, max average
+    tlm_calculate_mma_res(&tile[tile_id].vsys.min_mV,
+                          &tile[tile_id].vsys.max_mV,
+                          &tile[tile_id].vsys.average_mV,
+                          &tile[tile_id].vsys.latest_value_mV,
+                          time_diff_uS,
+                          residency_uS);
+}
+
+/* SOC VR rails update */
+void tlm_update_soc_rails_voltage(uint8_t vr_index, uint32_t time_diff_uS, uint32_t residency_uS)
+{
+    /* For soc vr rail voltage :min, max avg calculation*/
+    // Update the rail voltage min, max average
+    tlm_calculate_mma_res(&soc_info.rail[vr_index].voltage.min_mV,
+                          &soc_info.rail[vr_index].voltage.max_mV,
+                          &soc_info.rail[vr_index].voltage.average_mV,
+                          &soc_info.rail[vr_index].voltage.latest_value_mV,
+                          time_diff_uS,
+                          residency_uS);
+}
+
+void tlm_update_soc_rails_current(uint8_t vr_index, uint32_t time_diff_uS, uint32_t residency_uS)
+{
+    /* For soc vr rail current:min, max avg calculation*/
+    // Update the rail current min, max average
+    tlm_calculate_mma_res(&soc_info.rail[vr_index].current.min_mA,
+                          &soc_info.rail[vr_index].current.max_mA,
+                          &soc_info.rail[vr_index].current.average_mA,
+                          &soc_info.rail[vr_index].current.latest_value_mA,
+                          time_diff_uS,
+                          residency_uS);
+}
+
+void tlm_update_soc_rails_temperature(uint8_t vr_index, uint32_t time_diff_uS, uint32_t residency_uS)
+{
+    /* For soc vr rail temperature:min, max avg calculation*/
+    // Update the vr rails temperature min, max average
+    tlm_calculate_mma_res(&soc_info.rail[vr_index].temperature.min_dC,
+                          &soc_info.rail[vr_index].temperature.max_dC,
+                          &soc_info.rail[vr_index].temperature.average_dC,
+                          &soc_info.rail[vr_index].temperature.latest_value_dC,
+                          time_diff_uS,
+                          residency_uS);
+}
+
+void tlm_update_soc_hnf_temperature(uint8_t hnf_index, uint32_t time_diff_uS, uint32_t residency_uS)
+{
+    /* For soc hnf temperature :min, max avg calculation*/
+    // Update the hnf temp min, max average
+    tlm_calculate_mma_res(&soc_info.hnf[hnf_index].min_dC,
+                          &soc_info.hnf[hnf_index].max_dC,
+                          &soc_info.hnf[hnf_index].average_dC,
+                          &soc_info.hnf[hnf_index].latest_value_dC,
+                          time_diff_uS,
+                          residency_uS);
+}
+
+void tlm_update_soc_pvt_temperature(uint8_t pvt_index, uint32_t time_diff_uS, uint32_t residency_uS)
+{
+    /* For soc pvt temperature :min, max avg calculation*/
+    // Update the soc pvt temp min, max average
+    // Store new values
+    tlm_calculate_mma_res(&soc_info.sensor_temp[pvt_index].min_dC,
+                          &soc_info.sensor_temp[pvt_index].max_dC,
+                          &soc_info.sensor_temp[pvt_index].average_dC,
+                          &soc_info.sensor_temp[pvt_index].latest_value_dC,
+                          time_diff_uS,
+                          residency_uS);
+}
+
+void tlm_update_soc_dimm_info(uint8_t dimm_module_index, uint32_t time_diff_uS, uint32_t residency_uS)
+{
+    /* For soc dimm info :min, max avg calculation :Update each temperature data for S0 and S1*/
+    // Update the soc dimm info min, max average
+    tlm_calculate_mma_res(&soc_info.dimm[dimm_module_index].s0.min_dC,
+                          &soc_info.dimm[dimm_module_index].s0.max_dC,
+                          &soc_info.dimm[dimm_module_index].s0.average_dC,
+                          &soc_info.dimm[dimm_module_index].s0.latest_value_dC,
+                          time_diff_uS,
+                          residency_uS);
+    // Update each temperature data for S1
+    tlm_calculate_mma_res(&soc_info.dimm[dimm_module_index].s1.min_dC,
+                          &soc_info.dimm[dimm_module_index].s1.max_dC,
+                          &soc_info.dimm[dimm_module_index].s1.average_dC,
+                          &soc_info.dimm[dimm_module_index].s1.latest_value_dC,
+                          time_diff_uS,
+                          residency_uS);
+}
+
+void tlm_update_pstate(uint8_t core_id, uint64_t time_stamp_uS)
+{
+    // Check if the current core has a pstate update
+    // Update the PState Residency
+    uint8_t pstate_index;
+    // Check first if we are throttling
+    if (core[core_id].throttling_status == NO_THROTTLE)
+    {
+        /* get pstate from pstate packet/pstate fifo */
+        pstate_index = core[core_id].pstate_from_pstate_pkt;
+    }
+    else
+    {
+        /* in case of throttle pstate is not reported by pstate packet, get from current telemetry packet*/
+        pstate_index = core[core_id].pstate_from_current_pkt;
+    }
+
+    if (core[core_id].flags.id_change_bit == 0 && core[core_id].flags.pstate_change == 0)
+    {
+        /*Update the current pstate residencies*/
+        update_core_pstate_timestamps(core_id, pstate_index, time_stamp_uS);
+        tlm_average_power_sample(core_id);
+
+        /* core[core_id].average_power_samples_value has running average of the power samples, update latest_value_mW */
+        core[core_id].pstate[pstate_index].latest_value_mW = CORE_POWER_MW_PER_BIT * core[core_id].average_pwr_samples_value;
+        tlm_calculate_mma_res(&core[core_id].pstate[pstate_index].min_power_mW,
+                              &core[core_id].pstate[pstate_index].max_power_mW,
+                              &core[core_id].pstate[pstate_index].avg_power_mW,
+                              &core[core_id].pstate[pstate_index].latest_value_mW,
+                              core_pwr_sample[core_id], // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2330778/ align fucntions parameters
+                              core[core_id].pstate[pstate_index].residency_uS);
+
+        // Update the core - mpam - pstate instantaneous power
+        tlm_update_mpam_residency(core_id, core[core_id].active_sample_mpam_id, pstate_index);
+    }
+    else
+    {
+        // Clear the pstate change indicator for this core
+        core[core_id].flags.id_change_bit = 0;
+        core[core_id].flags.pstate_change = 0;
+        pstate_accum_uS[core_id][pstate_index] = 0;
+    }
+}
+
+void tlm_update_throttling(uint8_t core_id, uint64_t time_stamp_uS)
+{
+    FPFW_UNUSED(core_id);
+    FPFW_UNUSED(time_stamp_uS);
+    /* TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2319985 */
+}
+
+void tlm_update_core_histogram(uint8_t core_id)
+{
+    FPFW_UNUSED(core_id);
+    // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2319991
+}
+
+static uint64_t tlm_calculate_time_diff(uint64_t* previous_timestamp_uS, uint64_t* time_stamp_uS, pwr_tlm_update_t update_type)
+{
+    uint64_t temp_stamp_uS = tlm_get_timestamp_microseconds();
+    uint64_t time_diff_uS = 0;
+
+    // Calculate the general residency for the core
+    if (*previous_timestamp_uS != 0 && (temp_stamp_uS > *previous_timestamp_uS))
+    {
+        time_diff_uS = temp_stamp_uS - *previous_timestamp_uS;
+
+        if (update_type == PWR_TLM_SOC_UPDATE)
+        {
+            soc_info.time_counter_uS += time_diff_uS;
+        }
+    }
+
+    *previous_timestamp_uS = temp_stamp_uS;
+    *time_stamp_uS = temp_stamp_uS;
+
+    return time_diff_uS;
+}
+
+void tlm_soc_component_update(void)
+{
+    static uint64_t previous_soc_timestamp_uS = 0;
+    uint64_t time_stamp_uS = 0;
+
+    // calculate the timestamp and time difference
+    uint64_t time_diff_uS = tlm_calculate_time_diff(&previous_soc_timestamp_uS, &time_stamp_uS, PWR_TLM_SOC_UPDATE);
+
+    // Update the Rail information
+    for (uint8_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
+    {
+        tlm_update_soc_rails_voltage(vr_index, time_diff_uS, soc_info.time_counter_uS);
+        tlm_update_soc_rails_current(vr_index, time_diff_uS, soc_info.time_counter_uS);
+        tlm_update_soc_rails_temperature(vr_index, time_diff_uS, soc_info.time_counter_uS);
+    }
+
+    // Update the HNF Temperature information'
+    for (uint8_t hnf_index = 0; hnf_index < NUMBER_OF_HNF_CHANNELS_PER_DIE; hnf_index++)
+    {
+        tlm_update_soc_hnf_temperature(hnf_index, time_diff_uS, soc_info.time_counter_uS);
+    }
+
+    // Update the PVT Sensor information'
+    for (uint8_t pvt_index = 0; pvt_index < NUMBER_OF_SOC_TEMP_SENSORS; pvt_index++)
+    {
+        tlm_update_soc_pvt_temperature(pvt_index, time_diff_uS, soc_info.time_counter_uS);
+    }
+
+    // Update for DIMM temperature
+    for (uint8_t dimm_module_index = 0; dimm_module_index < NUMBER_OF_DIMM_MODULES; dimm_module_index++)
+    {
+        // Update each temperature data for S0 and S1.
+        tlm_update_soc_dimm_info(dimm_module_index, time_diff_uS, soc_info.time_counter_uS);
+    }
+
+    // Check current cstate for all cores
+    // only if ALL cores are in pc3, increment residency
+    // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023433
+}
+
+void tlm_core_component_update(void)
+{
+    static uint64_t previous_core_timestamp_uS = 0;
+    uint64_t time_stamp_uS = 0;
+    // calculate the timestamp and time difference
+    uint64_t time_diff_uS = tlm_calculate_time_diff(&previous_core_timestamp_uS, &time_stamp_uS, PWR_TLM_CORE_UPDATE);
+
+    // Go over all cores
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        /* Calculate  the general residency for the core*/
+        core[core_id].time_counter_uS += time_diff_uS;
+
+        /* Do not do any update for this core if the current packet timestamp is zero */
+        if (core[core_id].current_pkt_timestamp != 0)
+        {
+            /* update pstate residency and power */
+            tlm_update_pstate(core_id, time_stamp_uS);
+
+            /* update cstate residency only, power not required for KNG.*/
+            tlm_update_cstate(core_id, time_stamp_uS);
+
+            // Check to update throttling and priorities
+            tlm_update_throttling(core_id, time_stamp_uS);
+
+            /* update Core current*/
+            tlm_update_core_current(core_id, time_diff_uS, core[core_id].time_counter_uS);
+        }
+
+        /* Note that even if a core is disabled, voltage and temperature sensors
+            are still running on those disabled cores */
+
+        // Check to update Core Voltage
+        tlm_update_core_voltage(core_id, time_diff_uS, core[core_id].time_counter_uS);
+
+        // Check to update Core temperature
+        tlm_update_core_temperature(core_id, time_diff_uS, core[core_id].time_counter_uS);
+
+        // update residency to generate volt/temp histogram
+        tlm_update_core_histogram(core_id);
+    }
+}
+
+void tlm_tile_component_update(void)
+{
+    static uint64_t previous_tile_timestamp_uS = 0;
+    uint64_t time_stamp_uS = 0;
+
+    uint64_t time_diff_uS = tlm_calculate_time_diff(&previous_tile_timestamp_uS, &time_stamp_uS, PWR_TLM_TILE_UPDATE);
+
+    // Go over all tiles
+    for (uint8_t tile_id = 0; tile_id < NUMBER_OF_TILES_PER_DIE; tile_id++)
+    {
+        // update the time counter
+
+        tile[tile_id].time_counter_uS += time_diff_uS;
+        if (tile[tile_id].active_sample_max_temperature_dC > tile[tile_id].max_tile_temperature_dC)
+        {
+            // Update the new Max tile temperature
+            tile[tile_id].max_tile_temperature_dC = tile[tile_id].active_sample_max_temperature_dC;
+            tile[tile_id].max_tile_id = tile[tile_id].active_sample_max_id;
+        }
+
+        // Update the tile Vcpu and Vsys MMA
+        tlm_update_tile_vcpu(tile_id, time_diff_uS, tile[tile_id].time_counter_uS);
+        tlm_update_tile_vsys(tile_id, time_diff_uS, tile[tile_id].time_counter_uS);
+    }
+}
+
+void data_proc_tlm_cmpnt_aggregate_update_mgr(void)
+{
+    tlm_core_component_update();
+    tlm_tile_component_update();
+    tlm_soc_component_update();
 }

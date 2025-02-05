@@ -23,7 +23,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.status
         fwlib.lib.utils
         ms::lib::error_codes
-        ms::lib::power_fuse
+        ms::lib::power_fuse   
         
 )
 

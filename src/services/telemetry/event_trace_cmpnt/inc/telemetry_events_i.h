@@ -121,21 +121,33 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      DTSCoefficientReadFailedInit,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
+
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      26,
                      DIMMInfoInvalidDimmId,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
+
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      27,
                      DataPackagePWRrecordError,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, element_id))
+
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      28,
                      DataPackageInstRecordError,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, element_id))
+                    
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                     44,
+                     DataUpdateMMAvgOverflow,
+                     FPFW_ET_LEVEL_ERROR)
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                     45,
+                     DataUpdateMMAWrongInValidTimeStamp,
+                     FPFW_ET_LEVEL_ERROR)
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      29,

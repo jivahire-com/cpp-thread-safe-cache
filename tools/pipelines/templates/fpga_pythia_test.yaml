@@ -72,6 +72,43 @@ jobs:
           artifactName: 'drop_Build_Arm_EABI_AARCH_Debug_Build'
           downloadPath: '$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug'
  
+    # Setup the FPGA
+    # TODO: Run OOB Reset
+    - task: PowerShell@2
+      displayName: 'Pre Test: Prepare FPGA for pipeline'
+      env:
+        AZURE_DEVOPS_EXT_PAT : $(System.AccessToken)
+      inputs:
+        workingDirectory: '$(Build.SourcesDirectory)'
+        targetType: 'inline'
+        showWarnings: true
+        script: | 
+
+          # Cleanup pip cache
+          pip cache purge
+
+          # Init Env
+          ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
+          
+          # Kill all Trace32 Sessions
+          killt32
+
+          # Kill all Putty Sessions 
+          killputty
+
+          # Reset all COM ports
+          python .\tests\functional\pythia\pylibs\kng_pythia_libs\fpga_reset_com_ports.py
+          
+          # Kick all users out
+          kickuser -pc ${{ parameters.TestAgent }} -user 'all'
+
+          # Flash Firmware
+          flashscpfw ${{ parameters.TestAgent }} -file ${{ parameters.dat_file }}
+
+          # Reset FPGA ROM and Fuse Data
+          Invoke-Pythia -test .\tests\functional\pythia\test_suites\fpga_init\fpga_init.robot -platform fpga
+
+ 
     # 1. Setup the environment
     # 2. Build the FW
     # 3. Invoke Pythia
@@ -86,25 +123,19 @@ jobs:
         showWarnings: true
         script: | 
           ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
-          
-          # Kick all users out
-          kickuser -pc ${{ parameters.TestAgent }} -user 'all'
-
           $bin_src_dir = "$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug/bin"
           $bin_dest_dir = "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch"
           Copy-Item $bin_src_dir $bin_dest_dir -Recurse -Force
-
-          flashscpfw ${{ parameters.TestAgent }} -file ${{ parameters.dat_file }}
-
+          
           Invoke-Pythia -test ${{ parameters.TestPlan }} -platform fpga
 
-          # Remove intermediate output / output that contains system variables (ie: Azure credentials)
+        # Remove intermediate output / output that contains system variables (ie: Azure credentials)
           Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\output.xml"
           Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\rlog.txt"
           Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\generated" -Recurse -Force
           Remove-Item .externs -Force -Recurse
 
-          # Cleanup pip cache
+        # Cleanup pip cache
           pip cache purge
 
     # Publish the results of the test suite

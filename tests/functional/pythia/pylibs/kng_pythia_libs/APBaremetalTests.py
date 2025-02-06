@@ -55,6 +55,40 @@ class APBaremetalTests(EchoFallsBaseTest):
             host_name,
         )
 
+    @keyword("FPGA Force Reset")
+    def reset_fpga(self):
+
+        script_path = "R:/Kingsgate/Kingsgate_TRACE32/Prep_R22/"
+        script_name = "HSPresetSystem.cmm"
+        script = Path(r"{}".format(os.path.join(script_path, script_name)))
+
+        self.log.info("Forcefully resetting FPGA . . .")
+        self.log.info(f"Calling HSP CMM Script to reset SoC: {script}")
+        hsp = self.dut.mb.node_0.soc.primary_die.get_core("hsp")
+        hsp.debugger.execute_script(script)
+        
+        # Wait 5 seconds for the script to run. This is the worst case delay for the script to complete
+        time.sleep(5)
+
+        self.log.info("Resetting FPGA Done!!!")
+
+    @keyword("FPGA Reset ROM+Fuses")
+    def reset_fpga_fuses(self):
+
+        script_path = "R:/Kingsgate/Kingsgate_TRACE32/Prep_R22/"
+        script_name = "HSPprepHSP.cmm"
+        script = Path(r"{}".format(os.path.join(script_path, script_name)))
+
+        self.log.info("Restoring FPGA ROM and Fuses . . .")
+        self.log.info(f"Calling HSP CMM Script to restore ROM and Fuses: {script}")
+        hsp = self.dut.mb.node_0.soc.primary_die.get_core("hsp")
+        hsp.debugger.execute_script(script)
+        
+        # Wait 20 seconds for the script to run. This is the worst case delay for the script to complete
+        time.sleep(20)
+
+        self.log.info("Restoring FPGA ROM and Fuses Done!!!")
+        
     @keyword("Dut Setup")
     def dut_test_setup(self):
         """Set up the DUT and verify the required connections."""

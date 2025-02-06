@@ -364,6 +364,37 @@ Function Copy-DatFiles(
     Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
 }
 
+
+<#
+.SYNOPSIS
+Runs the R:\Kingsgate\Kingsgate_TRACE32\Start\TRACE32_USB_KILL.bat script to kill all trace32 sessions
+
+.EXAMPLE
+Kill-Trace32
+#>
+Function Kill-Trace32()
+{
+    Write-Host ""  
+    Write-Host "Running TRACE32_USB_KILL.bat"
+    & \\lakshmi.svceng.com\rdu_lab\Kingsgate\Kingsgate_TRACE32\Start\TRACE32_USB_KILL.bat
+}
+
+<#
+.SYNOPSIS
+Kills all running Putty processes.
+.EXAMPLE
+Kill-Putty
+#>
+# Kill all Putty and Plink processes (including UART)
+function Kill-Putty {
+    foreach ($proc in Get-Process) {
+        if ($proc.Name -like "*putty*") {
+            Write-Host "Killing Putty process with PID $($proc.Id)"
+            Stop-Process -Id $proc.Id -Force
+        }
+    }
+}
+
 <#
 .SYNOPSIS
 Gets the help information of the commands available for debugging on FPGA.
@@ -394,5 +425,7 @@ New-Alias -Name flashscpfw -Value Write-FPGAFlash -Force
 New-Alias -Name helpfpga -Value Get-FPGAHelp -Force
 New-Alias -Name checkuser -Value Check-UserLogin -Force
 New-Alias -Name kickuser -Value Logout-User -Force
+New-Alias -Name killt32 -Value Kill-Trace32 -Force
+New-Alias -Name killputty -Value Kill-Putty -Force
 
 Export-ModuleMember -Alias * -Function *

@@ -64,4 +64,5 @@ mock_target(${TARGET}
     memset
     fpfw_icc_base_send
     fpfw_icc_base_recv
+    variable_serv_copy_to_rmss_ram
 )

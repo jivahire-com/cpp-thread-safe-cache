@@ -177,7 +177,8 @@ static void icc_get_var_recv_complete_cb(void* context, size_t output_size_bytes
 
 static void get_hsp_variable(guid_t* guid_ptr, uint16_t* variable_name_ptr, size_t variable_name_size, size_t data_size, uint32_t* cb_ctx)
 {
-    uintptr_t target_addr = (uintptr_t)(SCP_EXP_SCP_VARIABLE_SERVICE_PAYLOAD_BASE);
+    volatile uint8_t* target_addr = (volatile uint8_t*)(SCP_EXP_SCP_VARIABLE_SERVICE_PAYLOAD_BASE);
+    volatile uint8_t data_byte = 0;
 
     struct hsp_mbox_get_variable get_var;
     get_var.variable_name_size = variable_name_size / sizeof(uint16_t);
@@ -195,10 +196,26 @@ static void get_hsp_variable(guid_t* guid_ptr, uint16_t* variable_name_ptr, size
     get_var.attributes_size = 0;
     get_var.data_size = data_size;
 
-    memcpy((void*)target_addr, (void*)&get_var, sizeof(get_var));
+    //! Copy over the get var hsp mbox packet to the shared memory
+    for (size_t i = 0; i < sizeof(get_var); i++)
+    {
+        data_byte = *(((volatile uint8_t*)&get_var) + i); // NOLINT
+        do
+        {
+            target_addr[i] = data_byte;
+        } while (target_addr[i] != data_byte);
+    }
     target_addr += sizeof(get_var);
 
-    memcpy((void*)target_addr, (void*)variable_name_ptr, variable_name_size);
+    //! Next copy over the variable name following the mbox packet
+    for (size_t i = 0; i < variable_name_size; i++)
+    {
+        data_byte = *(((volatile uint8_t*)variable_name_ptr) + i); // NOLINT
+        do
+        {
+            target_addr[i] = data_byte;
+        } while (target_addr[i] != data_byte);
+    }
     target_addr += variable_name_size;
 
     get_rb_config = (kingsgate_pcie_root_bridge_config*)target_addr;

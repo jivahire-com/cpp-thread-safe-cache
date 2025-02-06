@@ -154,6 +154,15 @@ void debug_print_pre_mbox_send(var_service_req_ctx_t* var_serv_ctx)
         printf("Attributes Size:   [%" PRId32 "] bytes\n", var_serv_ctx->req_params.attributes_size);
     }
     printf("Data Size:         [%d] bytes\n", var_serv_ctx->req_params.data_size);
+    if ((var_serv_ctx->operation_type == ASYNC_SET_VARIABLE) || (var_serv_ctx->operation_type == SYNC_SET_VARIABLE))
+    {
+        printf("User Data Dump:    [");
+        for (size_t i = 0; i < var_serv_ctx->req_params.data_size; ++i)
+        {
+            printf("0x%02x ", var_serv_ctx->req_params.data[i]);
+        }
+        printf("]\n");
+    }
     printf("Projected Total Size:        [%" PRId32 "] bytes\n", total_size);
     printf("Shared Memory Offsets: get/set var[0x%" PRIx32 "]   variable_name_ptr[0x%" PRIx32
            "]    data[0x%" PRIx32 "]\n",
@@ -163,7 +172,8 @@ void debug_print_pre_mbox_send(var_service_req_ctx_t* var_serv_ctx)
     printf("Shared Memory Req Dump\n");
     for (size_t i = 0; i < total_size; i++)
     {
-        printf("Byte Index [%" PRId32 "]: [0x%02x]\n",
+        printf("[0x%" PRIxPTR "] Byte Index [%" PRId32 "]: [0x%02x]\n",
+               (uintptr_t) & ((unsigned char*)var_serv_ctx->shared_mem.payload_base)[i],
                (uint32_t)i,
                ((unsigned char*)var_serv_ctx->shared_mem.payload_base)[i]);
     }
@@ -211,7 +221,8 @@ void debug_print_post_mbox_recv(var_service_req_ctx_t* var_serv_ctx, size_t outp
         printf("Shared Memory Response Dump\n");
         for (size_t i = 0; i < total_size; i++)
         {
-            printf("Byte Index [%" PRId32 "]: [0x%02x]\n",
+            printf("[0x%" PRIxPTR "] Byte Index [%" PRId32 "]: [0x%02x]\n",
+                   (uintptr_t) & ((unsigned char*)var_serv_ctx->shared_mem.payload_base)[i],
                    (uint32_t)i,
                    ((unsigned char*)var_serv_ctx->shared_mem.payload_base)[i]);
         }

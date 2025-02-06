@@ -113,20 +113,33 @@ static int32_t variable_service_sync_common_handler(variable_service_operation_t
     //! populate the rest of the metadata
     shared_mem->metadata.actual_payload_size = total_payload_size; //! this is the size of the payload excluding the metadata
     shared_mem->variable_name_size = req_params->variable_name_size / sizeof(uint16_t); //! No of 16-bit characters
-    memcpy((void*)&shared_mem->vendor_namespace_guid, (void*)&req_params->vendor_namespace_guid, sizeof(guid_t));
+    //! copy over the vendor namespace guid into the shared memory
+    for (uint32_t i = 0; i < sizeof(guid_t) / sizeof(uint32_t); i++)
+    {
+        ((volatile uint32_t*)&shared_mem->vendor_namespace_guid)[i] =
+            ((volatile uint32_t*)&req_params->vendor_namespace_guid)[i];
+    }
     shared_mem->data_size = req_params->data_size;
 
-    //! copy over the variable name into the shared memory
-    memcpy((void*)var_serv_ctx->shared_mem.payload_base + sizeof(variable_service_shared_mem_format_t),
-           (void*)req_params->variable_name_ptr,
-           req_params->variable_name_size);
+    //! copy over the variable name into the shared memory byte by byte
+    for (uint32_t i = 0; i < req_params->variable_name_size; i++)
+    {
+        shared_mem->variable_name_and_data[i] = ((volatile uint8_t*)req_params->variable_name_ptr)[i];
+    }
+
+    //! copy over the data into the shared memory for set variable byte by byte
     if (type == SYNC_SET_VARIABLE)
     {
-        //! copy over the data into the shared memory
-        memcpy((void*)var_serv_ctx->shared_mem.payload_base + sizeof(variable_service_shared_mem_format_t) +
-                   req_params->variable_name_size,
-               (void*)req_params->data,
-               req_params->data_size);
+        volatile uint8_t data_byte = 0;
+        for (uint32_t i = 0; i < req_params->data_size; i++)
+        {
+            data_byte = ((volatile uint8_t*)req_params->data)[i];
+            do
+            {
+                //! Copy & Verify data has been copied correctly
+                shared_mem->variable_name_and_data[req_params->variable_name_size + i] = data_byte;
+            } while (shared_mem->variable_name_and_data[req_params->variable_name_size + i] != data_byte);
+        }
     }
 
     //! Debug prints before mailbox communication testing

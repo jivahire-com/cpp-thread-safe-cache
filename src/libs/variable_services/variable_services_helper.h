@@ -25,7 +25,7 @@
     #define DEBUG_PRINT(fmt, args...) \
         do                            \
         {                             \
-            printf(fmt, ##args);      \
+            printf(fmt, ## args);     \
         } while (0)
 #else
     #define DEBUG_PRINT(fmt, args...) \

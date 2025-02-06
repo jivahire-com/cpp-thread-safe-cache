@@ -136,3 +136,10 @@ void __wrap_end_async_wait_for_event(pcie_manager_context_t* ctx, uint8_t rp_idx
     (void)(num_event);
 
 }*/
+
+void __wrap_variable_serv_copy_to_rmss_ram(volatile uint8_t* target_addr, const void* source_ptr, size_t size)
+{
+    FPFW_UNUSED(target_addr);
+    FPFW_UNUSED(source_ptr);
+    FPFW_UNUSED(size);
+}

@@ -83,3 +83,12 @@ pcie_ss_entity_t* send_sync_get_rpss_entity(uint8_t rpss_idx);
  *  @return     Pcie Manager Context
  */
 pcie_manager_context_t* scp_pcie_get_manager_context(uint8_t rpss_idx);
+
+/**
+ * @brief Copies variable service data to RMSS RAM
+ * 
+ * @param target_addr RMSS ram address
+ * @param source_ptr ptr to data to copy
+ * @param size size of data
+ */
+void variable_serv_copy_to_rmss_ram(volatile uint8_t* target_addr, const void* source_ptr, size_t size);

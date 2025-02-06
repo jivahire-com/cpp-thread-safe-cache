@@ -123,9 +123,22 @@ static void icc_var_recv_complete_cb(void* context, size_t output_size_bytes, fp
     }
 }
 
+void variable_serv_copy_to_rmss_ram(volatile uint8_t* target_addr, const void* source_ptr, size_t size)
+{
+    volatile uint8_t data_byte = 0;
+    for (size_t i = 0; i < size; i++)
+    {
+        data_byte = *(((volatile uint8_t*)source_ptr) + i); // NOLINT
+        do
+        {
+            target_addr[i] = data_byte;
+        } while (target_addr[i] != data_byte);
+    }
+}
+
 static void set_hsp_variable(const guid_t* guid_ptr, const uint16_t* variable_name_ptr, size_t variable_name_size, void* data_ptr, size_t data_size)
 {
-    uintptr_t target_addr = (uintptr_t)(SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
+    volatile uint8_t* target_addr = (volatile uint8_t*)(SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
 
     struct hsp_mbox_set_variable set_var;
     set_var.variable_name_size = variable_name_size / sizeof(uint16_t);
@@ -143,13 +156,16 @@ static void set_hsp_variable(const guid_t* guid_ptr, const uint16_t* variable_na
     set_var.attributes = EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS;
     set_var.data_size = data_size;
 
-    memcpy((void*)target_addr, (void*)&set_var, sizeof(set_var));
+    //! Copy over the set var hsp mbox packet to the shared memory
+    variable_serv_copy_to_rmss_ram(target_addr, &set_var, sizeof(set_var));
     target_addr += sizeof(set_var);
 
-    memcpy((void*)target_addr, (void*)variable_name_ptr, variable_name_size);
+    //! Next copy over the variable name following the mbox packet
+    variable_serv_copy_to_rmss_ram(target_addr, variable_name_ptr, variable_name_size);
     target_addr += variable_name_size;
 
-    memcpy((void*)target_addr, data_ptr, data_size);
+    //! Finally copy the data & verify shared memory is updated
+    variable_serv_copy_to_rmss_ram(target_addr, data_ptr, data_size);
     target_addr += data_size;
 
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)fpfw_init_get_handle("icc_hspmbx");
@@ -160,7 +176,7 @@ static void set_hsp_variable(const guid_t* guid_ptr, const uint16_t* variable_na
     fpfw_status_t send_status = fpfw_icc_base_send(icc_ctx, &set_var_send_req);
     printf("SetVariable request: got status %x\n", (int)send_status);
 
-    FpFwAssert(target_addr <= SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_END);
+    FpFwAssert((uint32_t)target_addr <= SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_END);
 }
 
 void config_variable_service_thread_fn(ULONG thread_input)

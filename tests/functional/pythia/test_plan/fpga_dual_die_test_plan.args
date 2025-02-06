@@ -12,5 +12,4 @@
 ./../../../tests/functional/pythia/test_suites/d2dmbx_tests/d2d_mailbox_cli_test_echo_serverasync_clientsync.robot
 
 ## Variable Service Tests
-# TODO - Reenable the variable test once HSP is able to access RMSS memory on HSP1
-#./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_dd_test.robot
+./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_dd_test.robot

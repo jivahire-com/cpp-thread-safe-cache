@@ -68,5 +68,5 @@
 #./../../../tests/functional/pythia/test_suites/power_tests/mod_power_telemetry_loop_health.robot
 
 ## Variable Service Tests
-#./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_dd_test.robot
-#./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_dd_test.robot
+./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_dd_test.robot
+./../../../tests/functional/pythia/test_suites/varserv_tests/varserv_dd_test.robot

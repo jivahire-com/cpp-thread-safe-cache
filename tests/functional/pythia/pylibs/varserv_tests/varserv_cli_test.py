@@ -155,11 +155,6 @@ class varserv_cli_test(EchoFallsBaseTest):
                 self.log.info("SET-GET GUID validation successful . . .")
                 guid_data = scp_channel.read_until(key="Get Variable Ctx Freed", timeout_seconds=500)
                 self.log.info("GET Command Variable CTX Freed . . .")
-                if self.dut.get_dut_type() == DeviceType.BIGFPGA:
-                    self.log.warning("Bypassing DATA validation: Not Supported on BIGFPGA.")
-                    scp_channel.read_until(key="Async Get Variable Done", timeout_seconds=500)
-                    self.log.info("GET command executed Successfully . . .")
-                    return True  # Bug 2215937 - memcpy into MSCP EXP RAM is leaving holes - https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2215937
                 # Store DATA after issuing GET command and validate it with DATA on SET
                 get_data = self.vendor_data_get(guid_data)
                 self.log.info(f"Submitting {get_data}\n")

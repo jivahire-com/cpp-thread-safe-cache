@@ -268,11 +268,13 @@ fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
         read_req->output.value = MMIO_READ32(read_req->input.address);
         break;
     }
+
     case SENSOR_FIFO_SYNC_REQUEST_WRITE_REG: {
         psensor_fifo_drv_inf_write_reg_request write_req = (psensor_fifo_drv_inf_write_reg_request)request;
         MMIO_WRITE32(write_req->input.address, write_req->input.value);
         break;
     }
+
     case SENSOR_FIFO_SYNC_SET_GLOBAL_HW_ENABLE: {
         psensor_fifo_drv_inf_global_enable global_en_req = (psensor_fifo_drv_inf_global_enable)request;
         if (global_en_req->input.enable)
@@ -285,6 +287,7 @@ fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
         }
         break;
     }
+
     case SENSOR_FIFO_SYNC_WRITE_ENTRY: {
         psensor_fifo_drv_inf_write_entry write_entry_req = (psensor_fifo_drv_inf_write_entry)request;
         FPFW_RUNTIME_ASSERT(write_entry_req->input.fifo_id <
@@ -296,6 +299,7 @@ fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
                                      write_entry_req->input.stride_index);
         break;
     }
+
     case SENSOR_FIFO_SYNC_READ_ENTRY: {
         psensor_fifo_drv_inf_read_entry read_entry_req = (psensor_fifo_drv_inf_read_entry)request;
         FPFW_RUNTIME_ASSERT(read_entry_req->input.fifo_id < DEVICE_FIFO_MAX_ID); // check here on entry, not necessary to repeat on static functions
@@ -307,6 +311,7 @@ fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
                                     read_entry_req->output.stride_index);
         break;
     }
+
     case SENSOR_FIFO_SYNC_SET_FIFO_ENABLE: {
         psensor_fifo_drv_inf_fifo_enable fifo_enable_req = (psensor_fifo_drv_inf_fifo_enable)request;
         FPFW_RUNTIME_ASSERT(fifo_enable_req->input.fifo_id <
@@ -319,15 +324,44 @@ fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
         {
             hw_fifo_disable(fifo_enable_req->input.fifo_id);
         }
+
+        // return the current status up the stack
+        for (DEVICE_FIFO_ID fifo_id = 0; fifo_id < DEVICE_FIFO_MAX_ID; fifo_id++)
+        {
+            (*fifo_enable_req->output.is_enabled)[fifo_id] = hw_fifo_is_enabled(fifo_id);
+        }
+        break;
     }
-    break;
+
+    case SENSOR_FIFO_SYNC_SYNCHRONIZE_FIFO_ENABLES: {
+        psensor_fifo_drv_inf_sync_fifo_enables fifo_enable_req = (psensor_fifo_drv_inf_sync_fifo_enables)request;
+
+        // the hardware fifo's enabled are controlled by hardware, just update the shadow copy from the registers directly
+        hw_fifo_get_enabled_from_hw();
+
+        for (DEVICE_FIFO_ID fifo_id = FIRST_FW_PROD_FIFO_ID; fifo_id < DEVICE_FIFO_MAX_ID; fifo_id++)
+        {
+            if ((*fifo_enable_req->input.is_enabled)[fifo_id])
+            {
+                hw_fifo_enable(fifo_id);
+            }
+            else
+            {
+                hw_fifo_disable(fifo_id);
+            }
+        }
+
+        break;
+    }
+
     case SENSOR_FIFO_SYNC_UPDATE_WRITE_PTR: {
         psensor_fifo_drv_inf_update_write_stride update_stride_req = (psensor_fifo_drv_inf_update_write_stride)request;
         FPFW_RUNTIME_ASSERT(update_stride_req->input.fifo_id <
                             DEVICE_FIFO_MAX_ID); // check here on entry, not necessary to repeat on static functions
         hw_fifo_update_write_ptr_by_stride_size(update_stride_req->input.fifo_id);
+        break;
     }
-    break;
+
     case SENSOR_FIFO_SYNC_QUERY_IS_ENABLED: {
         psensor_fifo_drv_inf_fifo_is_enabled is_enabled_req = (psensor_fifo_drv_inf_fifo_is_enabled)request;
         hw_fifo_get_enabled_from_hw();
@@ -335,8 +369,9 @@ fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
         {
             (*is_enabled_req->output.is_enabled)[fifo_id] = hw_fifo_is_enabled(fifo_id);
         }
+        break;
     }
-    break;
+
     case SENSOR_FIFO_SYNC_QUERY_IS_EMPTY: {
         psensor_fifo_drv_inf_fifo_is_empty is_empty_req = (psensor_fifo_drv_inf_fifo_is_empty)request;
 
@@ -344,12 +379,13 @@ fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
         {
             (*is_empty_req->output.is_empty)[fifo_id] = hw_fifo_is_empty(fifo_id);
         }
+        break;
     }
-    break;
+
     case SENSOR_FIFO_SYNC_RESET: {
         reset_fifos();
+        break;
     }
-    break;
 
     default:
         // No other types of requests are supported

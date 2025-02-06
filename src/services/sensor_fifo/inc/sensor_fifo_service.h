@@ -15,13 +15,16 @@
 
 // hardware telemetry entry definitions
 // NOTE:  details for these structures can be found in the RMSS HAS document
-#ifndef BEGIN_EXTERN_C
-#define BEGIN_EXTERN_C
-#endif
-#ifndef END_EXTERN_C
-#define END_EXTERN_C
-#endif
+#ifdef __cplusplus
+    #define BEGIN_EXTERN_C extern "C" {
+    #define END_EXTERN_C   }
+#else // __cplusplus
+    #define BEGIN_EXTERN_C
+    #define END_EXTERN_C
+#endif // __cplusplus
 #include <telemetry_data_struct.h> // IWYU pragma: keep
+
+
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define NUMBER_OF_SOC_TEMP_SENSORS  (15)

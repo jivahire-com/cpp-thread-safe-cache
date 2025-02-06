@@ -25,6 +25,7 @@ typedef enum SENSOR_FIFO_REQUEST_ID
     SENSOR_FIFO_SYNC_REQUEST_WRITE_REG,
     SENSOR_FIFO_SYNC_SET_GLOBAL_HW_ENABLE,
     SENSOR_FIFO_SYNC_SET_FIFO_ENABLE,
+    SENSOR_FIFO_SYNC_SYNCHRONIZE_FIFO_ENABLES,
     SENSOR_FIFO_SYNC_UPDATE_WRITE_PTR,
     SENSOR_FIFO_SYNC_QUERY_IS_ENABLED,
     SENSOR_FIFO_SYNC_QUERY_IS_EMPTY,
@@ -102,7 +103,25 @@ typedef struct
         DEVICE_FIFO_ID fifo_id;
         bool enable;
     } input;
+    struct
+    {
+        bool (*is_enabled)[DEVICE_FIFO_MAX_ID];
+    } output;
 } sensor_fifo_drv_inf_fifo_enable, *psensor_fifo_drv_inf_fifo_enable;
+
+/**
+ * @brief Structure synchronizing all fifo enables
+ *
+ */
+typedef struct
+{
+    DFWK_SYNC_REQUEST_HEADER header;
+    struct
+    {
+        bool (*is_enabled)[DEVICE_FIFO_MAX_ID];
+    } input;
+} sensor_fifo_drv_inf_sync_fifo_enables, *psensor_fifo_drv_inf_sync_fifo_enables;
+
 
 /**
  * @brief Structure for querying if fifo is enabled

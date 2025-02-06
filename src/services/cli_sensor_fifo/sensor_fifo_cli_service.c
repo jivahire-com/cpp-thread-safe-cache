@@ -169,12 +169,18 @@ static FPFW_CLI_STATUS fifo_enable(int Argc, const char** Argv)
         uint32_t fifo_id = strtoul(Argv[1], NULL, 10);
         bool enable = strtoul(Argv[2], NULL, 10);
 
-        fpfw_status_t status = sensor_fifo_driver_inf_set_fifo_enable(sp_sensor_fifo_driver_inf, fifo_id, enable);
-        if (FPFW_STATUS_SUCCEEDED(status))
+        FpFwCliPrint("\nFifo %d Enable set to %s\n", fifo_id, enable ? "enable" : "disable");
+
+        if (enable)
         {
-            FpFwCliPrint("\nFifo %d Enable set to %s\n", fifo_id, enable ? "enable" : "disable");
-            return CLI_SUCCESS;
+            sensor_fifo_svc_enable_fifo(fifo_id);
         }
+        else
+        {
+            sensor_fifo_svc_disable_fifo(fifo_id);
+        }
+
+        return CLI_SUCCESS;
     }
 
     FpFwCliPrint("\nERROR:: %s\n", cli_sensor_fifo_commands[5].Usage);

@@ -273,6 +273,42 @@ TEST_FUNCTION(test_request_dispatch_set_fifo_enable, fw_fifo_setup, fw_fifo_tear
     assert_false(hw_fifo_is_enabled(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD));
 }
 
+TEST_FUNCTION(test_request_dispatch_sync_fifo_enables, fw_fifo_setup, fw_fifo_teardown)
+{
+    bool is_enabled[DEVICE_FIFO_MAX_ID] = {0};
+
+    for (uint32_t id = 0; id < DEVICE_FIFO_MAX_ID; id++)
+    {
+        hw_fifo_disable((DEVICE_FIFO_ID)id);
+    }
+
+    // enable a couple of hardware fifo's to validate the enables are read from hw on the sync
+    hw_fifo_enable(DEVICE_FIFO_SCP_MSG_TLM_HW_PROD);
+    hw_fifo_enable(DEVICE_FIFO_CORE_CURRENT_TLM_HW_PROD);
+
+    // validate that the fw enables are sync'd
+    is_enabled[DEVICE_FIFO_PVT_VOLT_TLM_FW_PROD] = true;
+    is_enabled[DEVICE_FIFO_VR_CURRENT_TLM_FW_PROD] = true;
+
+    sensor_fifo_drv_inf_sync_fifo_enables fifo_sync_enable_req;
+    fifo_sync_enable_req.header.RequestType = SENSOR_FIFO_SYNC_SYNCHRONIZE_FIFO_ENABLES;
+    fifo_sync_enable_req.input.is_enabled = &is_enabled;
+
+    fpfw_status_t status = scf_mhu_request_dispatch_sync((PDFWK_SYNC_REQUEST_HEADER)&fifo_sync_enable_req);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+
+    assert_false(hw_fifo_is_enabled(DEVICE_FIFO_PSTATE_TLM_HW_PROD));
+    assert_true(hw_fifo_is_enabled(DEVICE_FIFO_SCP_MSG_TLM_HW_PROD));
+    assert_false(hw_fifo_is_enabled(DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD));
+    assert_false(hw_fifo_is_enabled(DEVICE_FIFO_TILE_VOLT_TLM_HW_PROD));
+    assert_true(hw_fifo_is_enabled(DEVICE_FIFO_CORE_CURRENT_TLM_HW_PROD));
+    assert_false(hw_fifo_is_enabled(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD));
+    assert_true(hw_fifo_is_enabled(DEVICE_FIFO_PVT_VOLT_TLM_FW_PROD));
+    assert_false(hw_fifo_is_enabled(DEVICE_FIFO_DIMM_TEMP_TLM_FW_PROD));
+    assert_false(hw_fifo_is_enabled(DEVICE_FIFO_VR_TEMP_TLM_FW_PROD));
+    assert_true(hw_fifo_is_enabled(DEVICE_FIFO_VR_CURRENT_TLM_FW_PROD));
+}
+
 TEST_FUNCTION(test_request_dispatch_update_write_ptr, fw_fifo_setup, fw_fifo_teardown)
 {
     sensor_fifo_drv_inf_update_write_stride update_stride_req;
@@ -510,30 +546,45 @@ TEST_FUNCTION(test_driver_inf_global_hw_enable_fail, nullptr, nullptr)
 TEST_FUNCTION(test_driver_inf_set_fifo_enable, nullptr, nullptr)
 {
     sensor_fifo_driver_interface_t driver_inf;
+    bool fifo_enabled_status[DEVICE_FIFO_MAX_ID] = {0};
 
     expect_value(__wrap_DfwkInterfaceSendSync, Interface, &driver_inf);
     expect_any(__wrap_DfwkInterfaceSendSync, Request);
     will_return(__wrap_DfwkInterfaceSendSync, FPFW_STATUS_SUCCESS);
 
     fpfw_status_t status =
-        sensor_fifo_driver_inf_set_fifo_enable(&driver_inf, DEVICE_FIFO_CORE_CURRENT_TLM_HW_PROD, false);
+        sensor_fifo_driver_inf_set_fifo_enable(&driver_inf, DEVICE_FIFO_CORE_CURRENT_TLM_HW_PROD, false, &fifo_enabled_status);
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
 }
 
 TEST_FUNCTION(test_driver_inf_set_fifo_enable_fail, nullptr, nullptr)
 {
     sensor_fifo_driver_interface_t driver_inf;
+    bool fifo_enabled_status[DEVICE_FIFO_MAX_ID] = {0};
 
     expect_value(__wrap_DfwkInterfaceSendSync, Interface, &driver_inf);
     expect_any(__wrap_DfwkInterfaceSendSync, Request);
     will_return(__wrap_DfwkInterfaceSendSync, FPFW_STATUS_FAIL);
 
     fpfw_status_t status =
-        sensor_fifo_driver_inf_set_fifo_enable(&driver_inf, DEVICE_FIFO_CORE_CURRENT_TLM_HW_PROD, false);
+        sensor_fifo_driver_inf_set_fifo_enable(&driver_inf, DEVICE_FIFO_CORE_CURRENT_TLM_HW_PROD, false, &fifo_enabled_status);
     assert_int_equal(status, FPFW_STATUS_FAIL);
 
-    status = sensor_fifo_driver_inf_set_fifo_enable(NULL, DEVICE_FIFO_CORE_CURRENT_TLM_HW_PROD, true);
+    status = sensor_fifo_driver_inf_set_fifo_enable(NULL, DEVICE_FIFO_CORE_CURRENT_TLM_HW_PROD, true, &fifo_enabled_status);
     assert_int_equal(status, FPFW_STATUS_INVALID_ARGS);
+}
+
+TEST_FUNCTION(test_driver_inf_sync_fifo_enables, nullptr, nullptr)
+{
+    sensor_fifo_driver_interface_t driver_inf;
+    bool fifo_enables[DEVICE_FIFO_MAX_ID] = {0};
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Interface, &driver_inf);
+    expect_any(__wrap_DfwkInterfaceSendSync, Request);
+    will_return(__wrap_DfwkInterfaceSendSync, FPFW_STATUS_SUCCESS);
+
+    fpfw_status_t status = sensor_fifo_driver_inf_sync_fifo_enables(&driver_inf, &fifo_enables);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
 }
 
 TEST_FUNCTION(test_driver_inf_update_write_stride, nullptr, nullptr)

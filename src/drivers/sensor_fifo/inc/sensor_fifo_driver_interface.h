@@ -94,9 +94,21 @@ fpfw_status_t sensor_fifo_driver_inf_set_global_hw_enable(sensor_fifo_driver_int
  * @param[in] driver_interface - driver instance
  * @param[in] fifo_id - fifo identifier
  * @param[in] enable - true - data may be added to fifo, false, data is not added to fifo
+ * @param[out] is_enabled[DEVICE_FIFO_MAX_ID] - array of bool status of all fifos after the update
  * @retval fpfw_status_t
  */
-fpfw_status_t sensor_fifo_driver_inf_set_fifo_enable(sensor_fifo_driver_interface_t* driver_interface, DEVICE_FIFO_ID fifo_id, bool enable);
+fpfw_status_t sensor_fifo_driver_inf_set_fifo_enable(sensor_fifo_driver_interface_t* driver_interface, DEVICE_FIFO_ID fifo_id, bool enable,  bool (*is_enabled)[DEVICE_FIFO_MAX_ID]);
+
+/**
+ * @brief Synchronize fifo enables.  This API is very specific for SCP to send it's fifo enable state to the MCP.
+ * @note This API is not intended for general use. The hardware fifos are controlled in hardware registers so those value will just be read
+ * by the MCP. The firmware fifos will be synchronized by this api.
+ *
+ * @param[in] driver_interface - driver instance
+ * @param[in] is_enabled[DEVICE_FIFO_MAX_ID] - array of bool bool values
+ * @retval fpfw_status_t
+ */
+fpfw_status_t sensor_fifo_driver_inf_sync_fifo_enables(sensor_fifo_driver_interface_t* driver_interface, bool (*is_enabled)[DEVICE_FIFO_MAX_ID]);
 
 /**
  * @brief If a fifo's stride size is > entry size, then the write pointer is incremented by the stride size

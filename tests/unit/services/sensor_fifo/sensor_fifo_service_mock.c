@@ -12,6 +12,7 @@
 #include <FpFwCMocka.h> // for check_expected, check_expected_ptr, mock_type
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <device_fifo_id.h>
+#include <fpfw_icc_base.h>
 #include <fpfw_status.h> // for FPFW_STATUS_SUCCEEDED, fpf...
 #include <sensor_fifo_driver_interface.h>
 #include <stddef.h> // for size_t
@@ -104,6 +105,44 @@ fpfw_status_t __wrap_sensor_fifo_driver_read_entry(sensor_fifo_driver_interface_
     *num_entries_read = mock_type(uint16_t);
     *num_entries_remaining = mock_type(uint16_t);
     *stride_index = mock_type(uint16_t);
+
+    return mock_type(fpfw_status_t);
+}
+
+fpfw_status_t __wrap_fpfw_icc_base_send_sync(fpfw_icc_base_ctx_t* icc_ctx, void* payload_buffer, size_t buffer_size)
+{
+    FPFW_UNUSED(icc_ctx);
+    FPFW_UNUSED(payload_buffer);
+    FPFW_UNUSED(buffer_size);
+
+    return mock_type(fpfw_status_t);
+}
+
+fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_recv_req_t* params)
+{
+    FPFW_UNUSED(icc_ctx);
+    FPFW_UNUSED(params);
+
+    return mock_type(fpfw_status_t);
+}
+
+FPFW_LOCK_STATE __wrap_FpFwLockAcquire(PFPFW_LOCK Lock)
+{
+    FPFW_UNUSED(Lock);
+    return ((FPFW_LOCK_STATE)0);
+}
+
+void __wrap_FpFwLockRelease(PFPFW_LOCK Lock, FPFW_LOCK_STATE OldState)
+{
+    FPFW_UNUSED(Lock);
+    FPFW_UNUSED(OldState);
+}
+
+fpfw_status_t __wrap_sensor_fifo_driver_inf_sync_fifo_enables(sensor_fifo_driver_interface_t* driver_interface,
+                                                              bool (*is_enabled)[DEVICE_FIFO_MAX_ID])
+{
+    FPFW_UNUSED(driver_interface);
+    FPFW_UNUSED(is_enabled);
 
     return mock_type(fpfw_status_t);
 }

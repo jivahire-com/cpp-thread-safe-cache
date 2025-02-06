@@ -94,7 +94,8 @@ fpfw_status_t sensor_fifo_driver_inf_set_global_hw_enable(sensor_fifo_driver_int
 
 fpfw_status_t sensor_fifo_driver_inf_set_fifo_enable(sensor_fifo_driver_interface_t* driver_interface,
                                                      DEVICE_FIFO_ID fifo_id,
-                                                     bool enable)
+                                                     bool enable,
+                                                     bool (*is_enabled)[DEVICE_FIFO_MAX_ID])
 {
     if (NULL == driver_interface)
     {
@@ -105,8 +106,26 @@ fpfw_status_t sensor_fifo_driver_inf_set_fifo_enable(sensor_fifo_driver_interfac
     fifo_enable_req.header.RequestType = SENSOR_FIFO_SYNC_SET_FIFO_ENABLE;
     fifo_enable_req.input.fifo_id = fifo_id;
     fifo_enable_req.input.enable = enable;
+    fifo_enable_req.output.is_enabled = is_enabled;
 
     fpfw_status_t status = DfwkInterfaceSendSync(&driver_interface->base_interface, &fifo_enable_req.header);
+
+    return status;
+}
+
+fpfw_status_t sensor_fifo_driver_inf_sync_fifo_enables(sensor_fifo_driver_interface_t* driver_interface,
+                                                       bool (*is_enabled)[DEVICE_FIFO_MAX_ID])
+{
+    if (NULL == driver_interface)
+    {
+        return FPFW_STATUS_INVALID_ARGS;
+    }
+    sensor_fifo_drv_inf_sync_fifo_enables fifo_sync_enable_req;
+
+    fifo_sync_enable_req.header.RequestType = SENSOR_FIFO_SYNC_SYNCHRONIZE_FIFO_ENABLES;
+    fifo_sync_enable_req.input.is_enabled = is_enabled;
+
+    fpfw_status_t status = DfwkInterfaceSendSync(&driver_interface->base_interface, &fifo_sync_enable_req.header);
 
     return status;
 }

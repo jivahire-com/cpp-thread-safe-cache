@@ -13,10 +13,13 @@ target_link_libraries(
           fwlib.dfwk
           fwlib.platform.dfwkhost.threadx
           fwlib.lib.interface.platform.errorhandler
+          fwlib.service.iccBase
           ms::lib::debug
           ms::lib::threadx
           ms::lib::event_trace::trace
+          ms::driver::icc_mhu_trans
           ms::driver::sensor_fifo
+          silibs::kng_silibs_platform
 
 )
 

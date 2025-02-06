@@ -302,22 +302,22 @@ static void sensor_fifo_get_tile_mask(uint64_t *tile_mask_p)
       ++tile_id;
       continue;
     }
-          
-    if(core < 64) 
+
+    if(core < 64)
     {
       tile_mask[0] |= (1 << tile_id);
-    } else if( core > 63 ) 
+    } else if( core > 63 )
     {
       tile_mask[1] |= (1 << (tile_id - 32));
-    } 
-          
-      ++tile_id; 
+    }
+
+      ++tile_id;
   }
-      
+
   tile_lo = ((uint64_t)tile_mask[1] << 32) | tile_mask[0];
   /* 0=unmasked, 1=masked */
-  *tile_mask_p = ~tile_lo; 
-    
+  *tile_mask_p = ~tile_lo;
+
 }
 
 static void sensor_fifo_get_core_mask(uint64_t *core_mask_lo, uint64_t *core_mask_hi)
@@ -329,34 +329,34 @@ static void sensor_fifo_get_core_mask(uint64_t *core_mask_lo, uint64_t *core_mas
   const corebits_t* enabled_cores = platform_cores_config;
 
   for (unsigned int core = 0; core < NUM_AP_CORES_PER_DIE; ++core)
-  {  
+  {
     if (!corebits_is_bit_set(enabled_cores, core))
     {
       continue;
     }
-    if(core < 32) 
+    if(core < 32)
     {
-      core_mask[0] |= (1 << core);  
-    } else if( core > 31 && core < 64) 
+      core_mask[0] |= (1 << core);
+    } else if( core > 31 && core < 64)
     {
-      core_mask[1] |= (1 << (core - 32));  
-    } else 
+      core_mask[1] |= (1 << (core - 32));
+    } else
     {
       core_mask[2] |= (1 << (core - 64));
     }
   }
-      
+
     core_lo = ((uint64_t)core_mask[1] << 32) | core_mask[0];
     /* 0=unmasked, 1=masked */
     *core_mask_lo = ~core_lo;
 
     core_hi = ((uint64_t)core_mask[3] << 32) | core_mask[2];
     /* 0=unmasked, 1=masked */
-    *core_mask_hi = ~core_hi;   
+    *core_mask_hi = ~core_hi;
 }
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(sensor_fifo, FPFW_INIT_DEPENDENCIES("dfwk","hw_ver","std_io"))
+FPFW_INIT_COMPONENT(sensor_fifo, FPFW_INIT_DEPENDENCIES("dfwk","hw_ver","std_io","icc_mscp2mscp"))
 {
     switch (idsw_get_platform_sdv())
     {
@@ -437,7 +437,11 @@ FPFW_INIT_COMPONENT(sensor_fifo, FPFW_INIT_DEPENDENCIES("dfwk","hw_ver","std_io"
     static sensor_fifo_driver_interface_t sensor_fifo_driver_interface;
     sensor_fifo_driver_inf_init(&sensor_fifo_driver_interface, (sensor_fifo_device_t*)&scf_mhu_device);
 
-    sensor_fifo_svc_initialize(&sensor_fifo_driver_interface);
+    static sensor_fifo_svc_config_t snsr_fifo_svc_config;
+    snsr_fifo_svc_config.mscp_icc_base_ctx = fpfw_init_get_handle("icc_mscp2mscp");
+    snsr_fifo_svc_config.is_scp = IS_SCP;
+
+    sensor_fifo_svc_initialize(&sensor_fifo_driver_interface, &snsr_fifo_svc_config);
 
     sensor_fifo_cli_svc_initialize(&sensor_fifo_driver_interface);
 

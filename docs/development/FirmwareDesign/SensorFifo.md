@@ -273,6 +273,12 @@ sequenceDiagram
 
 ## Design Notes / Alternate Considerations
 
+- Fifo enable/disable status is synchronized between SCP and MCP. SCP is responsible for enabling fifo production so whenever it changes the status
+  of a fifo, that is forwarded to the MCP to keep a shadow copy.  The enable status is used to ensure garbage data is not read from the fifo.
+  Hardware fifo enable is contained in hardware registers. Therefore for the hardware fifo's, the MCP will just update it's shadow copy of the
+  fifo enables from hardware when notified from SCP.  This is to prevent race conditions for starting and stopping the hardware fifos.
+  For the firmware fifo's, it will update based on the values sent from SCP.
+
 - Analog values do not contain units and are platform specific.  Since the consumers need to perform data calculations on the data anyway, a system partitioning decision was made to let the consumer perform platform specific conversion factors on the data to convert to specific units.  That allows sensor fifo to just manage the data to and from the individual fifos.
 
 - Hardware fifo's do have watermark interrupt capability. The firmware fifo's do not and will always require polling. Also due to the different producer data rates, servicing interrupts for each of the HW fifos can result in more context switching of the RTOS and be a net loss in terms of run-time efficiency.  However, interrupt support could easily be added. Since it is undesirable to do much processing in the interrupt handler, an api would be added to add a simple notification handler, which would wake up the consumer and call the same polling API's.  In this case, due to the high priority of handling the data, it is preferable to not utilize the Driver Framework thread.

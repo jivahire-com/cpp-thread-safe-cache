@@ -26,9 +26,11 @@ Designed to run against any change before that change is merged into a productio
 
 A variable group is used to maintain the needed PATs: [ef-pipeline-config](https://azurecsi.visualstudio.com/Woodinville/_library?itemType=VariableGroups&view=VariableGroupView&variableGroupId=127&path=ef-pipeline-config).
 
+New Variable Group for AzureCSI PATs: https://azurecsi.visualstudio.com/Woodinville/_library?itemType=VariableGroups&view=VariableGroupView&variableGroupId=951&path=ef-pipeline-config-azurekv (1pfw-code-read-autorotated, fpfw-token-autorotated)
+
 | Item | Resource | Justification |
 | - | - | - |
-| [1pfw_code_read ](https://azurecsi.visualstudio.com/_usersSettings/tokens) | Code (read); Packaging (read) | Access to source code for cloning shared fpfw libraries. |
+| [1pfw-code-read-autorotated](https://azurecsi.visualstudio.com/_usersSettings/tokens) | Code (read); Packaging (read) | Access to source code for cloning shared fpfw libraries. |
 | [ms_tsd_code_read](https://dev.azure.com/ms-tsd/_usersSettings/tokens) | Code (read); Packaging (read) | Access to source code for cloning silibs repos. |
 | [xware_code_read](https://expresslogic.visualstudio.com/_usersSettings/tokens) | Code (read); Packaging (read) | Access to source code for cloning ThreadX. |
 

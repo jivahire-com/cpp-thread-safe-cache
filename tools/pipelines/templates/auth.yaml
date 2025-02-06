@@ -7,7 +7,9 @@ steps:
       
       # Variable Group: https://dev.azure.com/AzureCSI/Woodinville/_library?itemType=VariableGroups&view=VariableGroupView&variableGroupId=127&path=ef-pipeline-config
       $SilibsAuthToken = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$(ms_tsd_code_read)"))
-      $DuvallFWAuthToken = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$(1pfw_code_read)"))
+      
+      # New Variable Group for AzureCSI PATs 1pfw-code-read-autorotated
+      $DuvallFWAuthToken = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$(1pfw-code-read-autorotated)"))
 
       #
       # set up git config 

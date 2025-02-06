@@ -7,7 +7,7 @@ trigger:
     - main    # Auto trigger pipeline every time there is a PR completion to main, enables promoting (tagging) for official builds
 
 variables:
-- group: ef-pipeline-config
+- group: ef-pipeline-config-azurekv
 - name: OfficialBuild
   value : $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
 

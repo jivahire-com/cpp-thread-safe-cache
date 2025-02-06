@@ -15,7 +15,7 @@ parameters:
   default: false
 
 variables:
-- group: ef-pipeline-config
+- group: ef-pipeline-config-azurekv
 # One Branch Variables
 - name: system.debug
   value: ${{ parameters.debug }}

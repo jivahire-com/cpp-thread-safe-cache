@@ -11,7 +11,9 @@ parameters:
   default: false
 
 variables:
-- group: ef-pipeline-config
+- group: ef-pipeline-config-azurekv    # New library group for AzureCSI PAT's (1pfw-code-read-autorotated and fpfw-token-autorotated)
+- group: ef-pipeline-config            # Old library group for mstsd PATs
+
 # One Branch Variables
 - name: system.debug
   value: ${{ parameters.debug }}
@@ -97,5 +99,3 @@ extends:
           BranchCoverage: $(branch_coverage)
           LineCoverage: $(line_coverage)
           ArtifactName: Unit_Test_x86
-
-

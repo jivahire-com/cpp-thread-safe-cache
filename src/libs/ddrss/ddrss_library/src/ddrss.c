@@ -100,6 +100,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.ext_knobs.ref_temp_high = config_get_ref_temp_high();
     ddrss_cfgs.ext_knobs.sbr_en = config_get_sbr_en();
     ddrss_cfgs.ext_knobs.sub_bank_hashing_mode = config_get_sub_bank_hashing_mode();
+    ddrss_cfgs.ext_knobs.pas_encryption_en_mask = config_get_pas_encryption_en_mask();
 
     platform_id = idsw_get_platform_sdv();
     if (platform_id == PLATFORM_SVP_SIM || platform_id == PLATFORM_SVP_MIN_CONFIG_SIM)

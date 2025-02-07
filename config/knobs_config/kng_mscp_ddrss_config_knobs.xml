@@ -38,6 +38,7 @@
     <Knob name="ref_temp_high" type="uint8_t" default="0x05" help="Refresh rate and temperature at which the mediaRefTempHigh interrupt is generated. (1 ~ 5) 1 - 1x Refresh Rate, below 80C nominal. 2 - 1x Refresh Rate, 80-85C nominal. 3 - 2x Refresh Rate, 85-90C nominal. 4 - 2x Refresh Rate, 90-95C nominal. 5 - 2x Refresh Rate, above 95C nominal." />
     <Knob name="sbr_en" type="uint8_t" default="1" help="DRAM same bank refersh enable. 0 - Disable, 1 - Enable" />
     <Knob name="sub_bank_hashing_mode" type="DDRSS_SUB_BANK_HASHING_MODE" default="DDRSS_SUB_BANK_HASHING_MODE_DISABLED" help="Enable Row Sub-Bank Hashing for row-hammer mitigation." />
+    <Knob name="pas_encryption_en_mask" type="uint8_t" default="0" help="PAS encryption enabling mask, each bit indicates the encryption enabling state for each PAS (BIT0:S BIT1:NS  BIT2:ROOT  BIT3:REALM)." />
 
     <!-- Validation ONLY knobs -->
     <Knob name="borgens_1gb_ddr_reserve_enable" type="bool" default="false" />

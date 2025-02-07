@@ -48,9 +48,12 @@ SECTIONS
          *(.dtors)
         __dtors_end__ = ALIGN(4);
 
-        *(.rodata*)
-
         KEEP(*(.eh_frame*))
+    } > CODE
+
+    .rodata :
+    {
+         *(.rodata*)
     } > CODE
 
     .ARM.extab : 
@@ -113,10 +116,12 @@ SECTIONS
         KEEP(*(.data.fpfw_init))
         . = ALIGN (4);
         _data_fpfw_init_end = ABSOLUTE(.);
-    } > CODE
+    } > DATA
 
     .data : 
     {
+        /* TODO: These shouldn't be needed by the entry point, since bootloader already copies DTCM to DTCM RAM */
+        /* ADO: 2349367 */
         __data_load_start__ = LOADADDR(.data);
         __data_start__ = ABSOLUTE(.);
 

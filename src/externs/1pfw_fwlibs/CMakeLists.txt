@@ -70,4 +70,4 @@ include($ENV{REPO_APP_CMAKE_TOOLCHAIN_DIR}/cmake/format.cmake)
 include($ENV{REPO_APP_CMAKE_TOOLCHAIN_DIR}/cmake/coverage.cmake)
 include($ENV{REPO_APP_CMAKE_TOOLCHAIN_DIR}/cmake/mock.cmake)
 
-target_compile_options(fwlib.lib.crashDump PRIVATE "-O2")
+target_compile_options(fwlib.lib.crashDump PRIVATE "-Os")

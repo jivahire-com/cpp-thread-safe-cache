@@ -11,7 +11,6 @@
 #include "icc_large_fifo_mbox_cli.h"
 #include "icc_mhu_cli_i.h"
 #include "icc_rmss_d2d_mbox_cli.h" // for d2d_mbox_send, d2d_mbox_recv, d2d_sync_test, d2d_mbox_echo
-#include "status_decoder.h"        // for get_fpfw_status_code_string
 
 #include <DfwkStatus.h>     // for DFWK_SUCCESS
 #include <FpFwAssert.h>     // for FPFW_RUNTIME_ASSERT
@@ -115,10 +114,6 @@ static FPFW_CLI_COMMAND s_icc_cded_large_fifo_mbx_cmd_list[] = {
     {NULL_LIST_ENTRY, "icc_largembx", "cded_echo", large_fifo_mbox_echo, "Expects to send & receive mailbox mesg to CDED", "Usage: cded_echo <(cmd code)>"},
 };
 
-//! @todo separate this out in a generic cli utils file
-static FPFW_CLI_COMMAND s_common_list[] = {
-    {NULL_LIST_ENTRY, "common", "decode_err", print_error_string, "Print the error code string", "Usage: decode_err <numeric err code>"},
-};
 /*------------- Functions ----------------*/
 
 void icc_cli_init(icc_cli_init_params_t* params)
@@ -131,9 +126,6 @@ void icc_cli_init(icc_cli_init_params_t* params)
 
     //! Set the current core string
     current_core_str = core_type_strings[icc_cli_ctx->setup_info.current.core_id];
-
-    //! @todo separate this out in a generic cli utils file
-    FpFwCliRegisterTable(s_common_list, FPFW_ARRAY_SIZE(s_common_list));
 
     //! open interface for all the supported transports
     for (icc_cli_interface_type i = ICC_CLI_HSP_MBX; i < ICC_CLI_MAX_TRANSPORT_TYPE; i++)

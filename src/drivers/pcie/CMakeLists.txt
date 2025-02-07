@@ -47,4 +47,4 @@ lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})
 
-target_compile_options(kng.driver.scp_pcie_manager PRIVATE "-O2")
+target_compile_options(kng.driver.scp_pcie_manager PRIVATE "-Os")

@@ -61,24 +61,13 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
         ARGS -O binary 
             --only-section .vectors 
             --only-section .text 
+            --only-section .rodata
             --only-section .BuildBinaryVersion
-            --only-section .ARM.exidx
             --only-section .EventMetadata.et.msdata
             --only-section .ProviderMetadata.et.msdata
             --only-section .ProviderMetadata.Test.et.msdata
             --only-section .EventMetadata.Test.et.msdata
             --only-section .note.gnu.build-id
-            --only-section .data.fpfw_init
-            --only-section .debug_info
-            --only-section .debug_abbrev
-            --only-section .debug_aranges
-            --only-section .debug_line
-            --only-section .debug_str
-            --only-section .comment
-            --only-section .ARM.attributes
-            --only-section .debug_frame
-            --only-section .debug_line_str
-            --only-section .debug_rnglists
             "${FW_IMAGE_PATH}"
             "${ITCM_BIN_PATH}"
         DEPENDS "${FW_IMAGE_PATH}"
@@ -90,6 +79,7 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
         COMMAND ${OBJCOPY}
         ARGS -O binary 
             --only-section .data
+            --only-section .data.fpfw_init
             --only-section .bss
             --only-section .heap
             --only-section .stack

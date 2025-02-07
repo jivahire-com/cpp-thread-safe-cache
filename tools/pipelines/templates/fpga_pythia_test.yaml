@@ -108,7 +108,6 @@ jobs:
           # Reset FPGA ROM and Fuse Data
           Invoke-Pythia -test .\tests\functional\pythia\test_suites\fpga_init\fpga_init.robot -platform fpga
 
- 
     # 1. Setup the environment
     # 2. Build the FW
     # 3. Invoke Pythia
@@ -123,20 +122,22 @@ jobs:
         showWarnings: true
         script: | 
           ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
+
           $bin_src_dir = "$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug/bin"
           $bin_dest_dir = "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch"
           Copy-Item $bin_src_dir $bin_dest_dir -Recurse -Force
-          
+
           Invoke-Pythia -test ${{ parameters.TestPlan }} -platform fpga
 
-        # Remove intermediate output / output that contains system variables (ie: Azure credentials)
+          # Remove intermediate output / output that contains system variables (ie: Azure credentials)
           Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\output.xml"
           Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\rlog.txt"
           Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\generated" -Recurse -Force
           Remove-Item .externs -Force -Recurse
 
-        # Cleanup pip cache
+          # Cleanup pip cache
           pip cache purge
+ 
 
     # Publish the results of the test suite
     - task: PublishTestResults@2

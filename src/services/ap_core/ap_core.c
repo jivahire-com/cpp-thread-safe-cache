@@ -264,6 +264,30 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
             }
 
             break;
+        case STARTUP_RP_EXE_LOAD:
+            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present() && ssi_request->boot_type == COLD_BOOT)
+            {
+                // Primary boot die && HSP present then request RP_EXE firmware load
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_RP_EXE);
+            }
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
+
+            break;
+        case STARTUP_RP_DATA_LOAD:
+            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present() && ssi_request->boot_type == COLD_BOOT)
+            {
+                // Primary boot die && HSP present then request RP_DATA firmware load
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_RP_DATA);
+            }
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
+
+            break;
         case STARTUP_MCP_LOAD:
             if (system_info_is_hsp_present())
             {

@@ -45,7 +45,9 @@ static startup_shutdown_boot_stage_t scp_boot_stages[] = {
     {STARTUP_PHASE_AP_ASYNC, STARTUP_HAFNIUM_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
     {STARTUP_PHASE_AP_ASYNC, STARTUP_RMM_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
     {STARTUP_PHASE_AP_ASYNC, STARTUP_SPMC_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
-    {STARTUP_PHASE_AP_ASYNC, STARTUP_PRIMARY_AP_CORE_BOOT, DEFAULT_SOS_TIMEOUT_MS, false, true}};
+    {STARTUP_PHASE_AP_ASYNC, STARTUP_PRIMARY_AP_CORE_BOOT, DEFAULT_SOS_TIMEOUT_MS, false, true},
+    {STARTUP_PHASE_AP_ASYNC, STARTUP_RP_DATA_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
+    {STARTUP_PHASE_AP_ASYNC, STARTUP_RP_EXE_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false}};
 
 static startup_shutdown_shutdown_stage_t scp_shutdown_stages[] = {{SHUTDOWN, DEFAULT_SOS_TIMEOUT_MS, false},
                                                                   {COLD_RESET, DEFAULT_SOS_TIMEOUT_MS, false},

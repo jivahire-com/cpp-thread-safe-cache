@@ -51,6 +51,8 @@ typedef enum {
     AP_FW_ID_HAFNIUM,
     AP_FW_ID_RMM,
     AP_FW_ID_SPMC,
+    AP_FW_ID_RP_EXE,
+    AP_FW_ID_RP_DATA,
     AP_FW_ID_MCP,
     AP_FW_ID_SDM_ITCM,
     AP_FW_ID_SDM_DTCM,

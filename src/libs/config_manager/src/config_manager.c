@@ -161,33 +161,34 @@ bool read_knob_from_default_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespace,
 
 bool update_knob_data(cached_knob_data_t* current_entry, const uint8_t* data, size_t data_size, bool permanent)
 {
+    // report something wrong.
     if (data_size != current_entry->size)
     {
         return false;
     }
 
-    // check this is primary scp. If not, return false
-    if (idsw_get_cpu_type() != CPU_SCP || idsw_get_die_id() != DIE_0)
+    // if the data is same as the current data, return true
+    if (memcmp(current_entry->data, data, data_size) == 0)
     {
-        return false;
+        return true;
+    }
+
+    if (permanent)
+    {
+        // update variable store.
+        // only primary scp will write to HSP
+        if (idsw_get_cpu_type() != CPU_SCP || idsw_get_die_id() != DIE_0 || !system_info_is_hsp_present())
+        {
+            return false;
+        }
+
+        write_knob_to_hsp(current_entry);
     }
 
     FPFwSpinLockAcquire(&lock);
     memcpy(current_entry->data, data, data_size);
     current_entry->overridden = true;
     FPFwSpinLockRelease(&lock);
-
-    if (permanent && (idsw_get_die_id() == DIE_0))
-    {
-        if (system_info_is_hsp_present())
-        {
-            write_knob_to_hsp(current_entry);
-        }
-        else
-        {
-            return false;
-        }
-    }
 
     return true;
 }

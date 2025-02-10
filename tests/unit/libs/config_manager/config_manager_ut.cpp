@@ -356,7 +356,7 @@ TEST_FUNCTION(test_update_knob_data, nullptr, nullptr)
     cfg_mgr_init(&config_manager_setting, &shared_mem);
 
     update_knob_data(&get_cached_knob_data()[0],
-                     (uint8_t*)get_cached_knob_data()[0].data,
+                     (uint8_t*)get_cached_knob_data()[1].data,
                      get_cached_knob_data()[0].size,
                      true);
 }

@@ -1,0 +1,29 @@
+name: 0.1.0.$(rev:r)
+
+trigger: none
+
+variables:
+  - group: ef-pipeline-config
+  - name: OfficialBuild
+    value: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+
+# Build stage
+stages:
+  - stage: Build_Arm_EABI_AARCH_Debug
+    dependsOn: []
+    jobs:
+      - template: templates/build.yaml
+        parameters:
+          Toolchain: arm-eabi-aarch
+          Configuration: Debug
+          ArtifactName: Build_Arm_EABI_AARCH_Debug
+
+  - stage: FPGA_Pythia_DualDie_Tests
+    dependsOn: [Build_Arm_EABI_AARCH_Debug]
+    jobs:
+      - template: templates/fpga_pythia_test.yaml
+        parameters:
+          ArtifactName: FPGA_Pythia_Tests
+          Pool: "1pfw-kingsgate-big-fpga"
+          TestAgent: "DF11"
+          TestPlan: .\tests\functional\pythia\test_plan\fpga_dual_die_test_plan.args

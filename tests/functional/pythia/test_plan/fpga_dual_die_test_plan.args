@@ -4,7 +4,6 @@
 
 ## Dual Die Heartbeat Tests
 ./../../../tests/functional/pythia/test_suites/heart_beat/mscp_heartbeat_hsp_boot_dual_die.robot
-./../../../tests/functional/pythia/test_suites/heart_beat/fbc_sdm_cded_heart_beat_single_die.robot
 
 ## D2D Mailbox Tests
 ./../../../tests/functional/pythia/test_suites/d2dmbx_tests/d2d_mailbox_cli_test_send_recv.robot

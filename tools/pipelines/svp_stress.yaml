@@ -10,7 +10,8 @@ resources:
     branch: main  
 
 variables:
-- group: ef-pipeline-config
+- group: ef-pipeline-config-azurekv    # New library group for AzureCSI PAT's (1pfw-code-read-autorotated and fpfw-token-autorotated)
+- group: ef-pipeline-config            # Old library group for mstsd PATs
 - name: OfficialBuild
   value : $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
 - name: BUILD_ID

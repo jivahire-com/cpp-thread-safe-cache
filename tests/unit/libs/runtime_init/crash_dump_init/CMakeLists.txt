@@ -31,6 +31,7 @@ target_link_libraries(${TARGET}
         silibs::idsw_kng
         silibs::platform
         silibs::kng_silibs_platform
+        silibs::sdm_command_desc
 )
 
 target_compile_definitions(
@@ -49,6 +50,8 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    CdRegisterMMIORegisterSet
+    atu_svc_accel_atu_addr
     crash_dump_init
     crash_dump_init_post_mesh
     exception_handler_init

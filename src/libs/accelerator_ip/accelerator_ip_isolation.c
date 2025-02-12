@@ -51,19 +51,12 @@ int32_t scp_accelerators_isolation_control(void)
 
     FPFW_RUNTIME_ASSERT(p_ss_ctxt != NULL);
 
-    debug_print("Number of Accelerator instances present: %d\n", (int)accel_ctxt_size);
-
     // Init all available Accelerator instances
     for (uint32_t index = 0; index < accel_ctxt_size; index++)
     {
         // TODO (ADO 1728772) : init any particular accelerator instance only if that is enabled in fuses
         if (p_ss_ctxt[index].accelip_metadata.die_instance == current_die_instance)
         {
-            debug_print("accel lib: Initializing for die_id = %d, accel_type = %d, accel_instance = %d\n",
-                        p_ss_ctxt[index].accelip_metadata.die_instance,
-                        p_ss_ctxt[index].accelip_metadata.accel_type,
-                        p_ss_ctxt[index].accelip_metadata.accel_instance);
-
             atu_map_entry_t atu_map_entry;
             memcpy((void*)&atu_map_entry, (void*)p_ss_ctxt[index].p_accelip_atu_map, sizeof(atu_map_entry_t));
 

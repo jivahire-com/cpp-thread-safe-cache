@@ -20,7 +20,8 @@
 #include <tx_api.h>     // for tx_mutex_get, tx_mutex_put
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define PRE_DUMP_CB_MAX 16
+#define PRE_DUMP_CB_MAX  16
+#define POST_DUMP_CB_MAX 8
 
 /*------------- Typedefs -----------------*/
 typedef struct
@@ -35,6 +36,9 @@ typedef struct
 static dump_callback_t pre_dump_callbacks[PRE_DUMP_CB_MAX];
 static uint32_t pre_dump_cb_count = 0;
 
+static dump_callback_t post_dump_callbacks[POST_DUMP_CB_MAX];
+static uint32_t post_dump_cb_count = 0;
+
 /*------------- Functions ----------------*/
 void crash_dump_register_pre_dump_callback(void cb(void*), void* ctx)
 {
@@ -44,6 +48,16 @@ void crash_dump_register_pre_dump_callback(void cb(void*), void* ctx)
     pre_dump_callbacks[pre_dump_cb_count].callback_fn = cb;
     pre_dump_callbacks[pre_dump_cb_count].callback_ctx = ctx;
     pre_dump_cb_count++;
+}
+
+void crash_dump_register_post_dump_callback(void cb(void*), void* ctx)
+{
+    FPFW_RUNTIME_ASSERT(post_dump_cb_count < POST_DUMP_CB_MAX - 1);
+    FPFW_RUNTIME_ASSERT(cb != NULL);
+
+    post_dump_callbacks[post_dump_cb_count].callback_fn = cb;
+    post_dump_callbacks[post_dump_cb_count].callback_ctx = ctx;
+    post_dump_cb_count++;
 }
 
 /*------- Memory Pool Overrides -------*/
@@ -119,6 +133,12 @@ bool preDumpCallbackOverride(void* preDumpCtx)
 bool postDumpCallbackOverride(void* postDumpCtx)
 {
     FPFW_UNUSED(postDumpCtx);
+
+    for (uint32_t i = 0; i < post_dump_cb_count; i++)
+    {
+        post_dump_callbacks[i].callback_fn(post_dump_callbacks[i].callback_ctx);
+    }
+
     return true;
 }
 

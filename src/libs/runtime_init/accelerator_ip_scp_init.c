@@ -30,9 +30,7 @@
 FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("vab", "hw_ver", "accel_iso_cfg", "accel_intr_clnt", "nvic", "ddr", "accel_atu"))
 {
     // Initialize the Accelerators
-    printf("Accelerator init start!!!\n");
     scp_accelerators_init();
-    printf("Accelerator init complete!!!\n");
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
@@ -40,9 +38,7 @@ FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("vab", "hw_ver", "accel_iso_cf
 FPFW_INIT_COMPONENT(accel_atu, FPFW_INIT_DEPENDENCIES("vab", "hw_ver", "atu_svc", "nvic", "ddr"))
 {
     // Initialize the Accelerators
-    printf("Accelerator init atu start!!!\n");
     accel_atu_config();
-    printf("Accelerator init atu complete!!!\n");
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
@@ -50,12 +46,7 @@ FPFW_INIT_COMPONENT(accel_atu, FPFW_INIT_DEPENDENCIES("vab", "hw_ver", "atu_svc"
 // TODO: WI 1728772 Prior to this read the fuses to know if accelerators should be isolated or not
 FPFW_INIT_COMPONENT(accel_iso_cfg, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "tower_cfg"))
 {
-    uint8_t die_num = (uint8_t)idsw_get_die_id();
-    printf("Disable accelerator tower isolation, TODO: decide based on fuse & knobs, die_num [%d]\n", die_num);
-
-    int32_t ret = FPFW_INIT_STATUS_SUCCESS;
-    ret = scp_accelerators_isolation_control();
-    printf("Accelerators isolation disabled\n");
+    int32_t ret = scp_accelerators_isolation_control();
 
     return (fpfw_init_result_t){ret, NULL};
 }

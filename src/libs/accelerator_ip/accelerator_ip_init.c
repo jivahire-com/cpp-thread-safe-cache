@@ -168,11 +168,6 @@ static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
     uint32_t ext_cfg_offset_addr = get_accel_name_and_offset_addr(accel_type, accel_name);
     size_t recv_msg_size_bytes = 0x0;
 
-    debug_print("%s: %s Accel CPU Boot Stage: %d\n",
-                __func__,
-                accel_name,
-                cpu_rst_info[accel_type].mbox_params.load_stage);
-
     /* Form the packet to request HSP to load accelerator firmware.
     Each accelerator (SDM/CDED-SDM) has 2 bins to be loaded; one each for ITCM and DTCM.
     After both bins are requested, there's one more stage where the SCP releases the accelerator's CPU wait.
@@ -202,7 +197,6 @@ static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
     case EMCPU_RELEASE_CPU_WAIT:
         // Load complete, this is the final load callback hence returning
         sdm_init_disable_cpu_wait((accel_intr_atu_map_address[accel_type] + ext_cfg_offset_addr));
-        debug_print("%s: %s Accel CPU is now running\n", __func__, accel_name);
         cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_CPU_RECOVERY_COMPLETE;
         // skip callback for cold boot
         if (!cpu_rst_info[accel_type].mbox_params.is_cold_boot)
@@ -315,12 +309,9 @@ static void emcpu_recovery_sequence(uintptr_t sdm_ext_cfg_base, subsystem_ctxt_t
     sdm_init_deassert_nsysreset(sdm_ext_cfg_base);
     cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_RESET_SEQ_COMPLETE;
 
-    debug_print("%s: M7 in CPUWAIT\n", __func__);
-
     cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_ITCM_LOAD;
     cpu_rst_info[accel_type].mbox_params.is_cold_boot = false;
     invoke_hsp_accel_fw_download(p_ss_ctxt);
-
     debug_print("%s: FW LOAD SENT\n", __func__);
 }
 
@@ -331,7 +322,6 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
 
     if (accel_type == NUM_VALID_ACCEL_ID)
     {
-        debug_print("accel_lib: Invalid accel type\n");
         return ACCEL_RET_FAIL_INVALID_PARAMS;
     }
 
@@ -339,7 +329,6 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
 
     if (!system_info_is_hsp_present())
     {
-        printf("accel lib: FPGA without HSP: Loading Reset Loop\n");
         p_ss_ctxt->p_init_params->fw_preload_enabled = false;
     }
 
@@ -367,25 +356,18 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
         critical_print("Accel IP: init_accelerator: ATU UNMAP failed.\n");
         return ACCEL_RET_FAIL_ACCEL_IP;
     }
-    debug_print("atu unmapped for accel ip\n");
 #endif
     if (!(IS_PLATFORM_SVP()))
     {
         /**
          * TODO: Task 1973445: [SCP] Move Accel Intr init in SCP after mailbox communication
          */
-        printf("accel lib: Initialize accel interrupt\n");
-
         ret = accel_scp_intr_init(accel_type);
         if (ret != ACCEL_INTR_RET_SUCCESS)
         {
             critical_print("Accel IP: init_accelerator: Accel Interrupt init failed.\n");
             return ACCEL_RET_FAIL_INTR_INIT;
         }
-    }
-    else
-    {
-        printf("accel lib: Skipping Accel Interrupt init for SVP\n");
     }
 
     return ACCEL_RET_SUCCESS;
@@ -514,21 +496,19 @@ int32_t scp_accelerators_init(void)
 
     FPFW_RUNTIME_ASSERT(p_ss_ctxt != NULL);
 
-    printf("Number of Accelerator instances present: %d\n", (int)accel_ctxt_size);
-
     // Init all available Accelerator instances
     for (uint32_t index = 0; index < accel_ctxt_size; index++)
     {
         // TODO (ADO 1728772) : init any particular accelerator instance only if that is enabled in fuse
         if (p_ss_ctxt[index].accelip_metadata.die_instance == current_die_instance)
         {
-            printf("accel lib: Initializing for die_id = %d, accel_type = %d, accel_instance = %d\n",
-                   p_ss_ctxt[index].accelip_metadata.die_instance,
-                   p_ss_ctxt[index].accelip_metadata.accel_type,
-                   p_ss_ctxt[index].accelip_metadata.accel_instance);
             update_accel_ctxt_from_knobs(&p_ss_ctxt[index]);
             ret = init_accelerator(&p_ss_ctxt[index]);
-
+            printf("accel lib: Die %d type %d instance %d stat %d\n",
+                   p_ss_ctxt[index].accelip_metadata.die_instance,
+                   p_ss_ctxt[index].accelip_metadata.accel_type,
+                   p_ss_ctxt[index].accelip_metadata.accel_instance,
+                   ret);
             FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
         }
     }
@@ -570,6 +550,5 @@ void scp_accelerators_emcpu_reset(ACCEL_ID accel_type, crash_dump_cb_t cb_fun, v
     cpu_rst_info[accel_type].cb_ctx = cb_ctx;
     cpu_rst_info[accel_type].mbox_params.recv_params.cb_ctx = (void*)p_ss_ctxt;
 
-    debug_print("%s: %s Accel Invoking cpu recovery\n", __func__, accel_name);
     emcpu_recovery_sequence((ext_cfg_offset_addr + accel_intr_atu_map_address[accel_type]), p_ss_ctxt);
 }

@@ -26,9 +26,7 @@ FPFW_INIT_COMPONENT(accel_intr_clnt, FPFW_INIT_DEPENDENCIES("accel_intr_inf"))
 
     accel_intr_service_interface = (accel_intr_service_interface_t*)fpfw_init_get_handle("accel_intr_inf");
 
-    printf("accel_intr_clnt : Init start\n");
     accel_intr_client_init(accel_intr_service_interface);
-    printf("accel_intr_clnt : Init end\n");
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

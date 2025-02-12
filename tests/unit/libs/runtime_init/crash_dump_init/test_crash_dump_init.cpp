@@ -12,6 +12,8 @@
 #include <cstdint>         // IWYU pragma: keep
 
 extern "C" {
+#include <FpFwUtils.h>
+#include <accelip_id.h>
 #include <crash_dump.h>
 #include <fpfw_init.h>
 #include <idsw.h>
@@ -28,6 +30,7 @@ extern bool in_memory(uintptr_t start_addr, uintptr_t end_addr);
 
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_cd_init;
+extern fpfw_init_component_t _fpfw_component_cd_accel;
 
 /*------------- Functions ----------------*/
 //
@@ -75,6 +78,25 @@ int32_t __wrap_exception_handler_init(void)
     function_called();
 
     return mock_type(int32_t);
+}
+
+uint32_t __wrap_atu_svc_accel_atu_addr(ACCEL_ID accel_id)
+{
+    FPFW_UNUSED(accel_id);
+
+    return mock_type(uint32_t);
+}
+
+bool __wrap_CdRegisterMMIORegisterSet(FPFwCrashDumpCtx* ctx, uint32_t regAddress, uint32_t regCount, uint32_t priority)
+{
+    assert_non_null(ctx);
+    check_expected(regAddress);
+    check_expected(regCount);
+    check_expected(priority);
+
+    function_called();
+
+    return true;
 }
 
 //
@@ -132,4 +154,17 @@ TEST_FUNCTION(test_crash_dump_init, nullptr, nullptr)
     // Call API under test
     _fpfw_component_cd_init.init_fn();
 }
+
+#if defined(SCP_RUNTIME_INIT)
+TEST_FUNCTION(test_cd_accel, nullptr, nullptr)
+{
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0x12345678);
+    expect_function_call_any(__wrap_CdRegisterMMIORegisterSet);
+    expect_any_always(__wrap_CdRegisterMMIORegisterSet, regAddress);
+    expect_any_always(__wrap_CdRegisterMMIORegisterSet, regCount);
+    expect_any_always(__wrap_CdRegisterMMIORegisterSet, priority);
+    // Call API under test
+    _fpfw_component_cd_accel.init_fn();
+}
+#endif // SCP_RUNTIME_INIT
 }

@@ -13,6 +13,9 @@
 
 /*--------------- Includes ---------------*/
 
+#include <accelip_id.h>             // for ACCEL_ID
+#include <fpfw_icc_base.h>          // for fpfw_icc_base_recv_req_t
+
 /*---------------- Macros ----------------*/
 #define HSP_MBOX_MAX_MESG_SIZE_BYTES            (16U)
 #define LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES     (128U)
@@ -209,6 +212,8 @@ typedef enum _large_fifo_mailbox_msg_command_code {
     LARGE_FIFO_MAILBOX_MSG_ECHO_RSP,
 	LARGE_FIFO_MAILBOX_MSG_TEST_REQ,							
     LARGE_FIFO_MAILBOX_MSG_TEST_RSP,							
+	LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_REQ,
+	LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_ADDR_REQ,
     LARGE_FIFO_MAILBOX_MSG_MAX
 }large_fifo_mailbox_msg_command_code;
 
@@ -243,3 +248,24 @@ typedef union _large_fifo_mailbox_msg {
 	};
 	uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
 } large_fifo_mailbox_msg;
+
+/**
+ * @brief CD metadata Large Fifo Mailbox message
+ * 
+ */
+typedef union _accel_cd_msg {
+	struct {
+		large_fifo_mailbox_msg_header hdr;
+		uint32_t dtcm_offset;
+	};
+	uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
+} accel_cd_addr_msg;
+
+/**
+ * @brief Accel CD send message request
+ * 
+ */
+typedef struct _accel_cd_params {
+	fpfw_icc_base_recv_req_t params;
+	ACCEL_ID accel_type;
+} accel_cd_params;

@@ -14,15 +14,18 @@ extern "C" {
 #include <CrashDump.h>                // for FPFW_CD_DUMP_CALLBACK
 #include <FpFwUtils.h>                // for FPFW_UNUSED
 #include <crash_dump.h>               // for crash_dump_config_t, GetCrashDu...
+#include <fpfw_icc_base.h>            // for icc_base_recv_complete_notify
 #include <idsw.h>                     // for idsw_plat_id_t
 #include <modules/CdDumpDescriptor.h> // for FPFwCDDumpDescriptorCtx, FPFwC...
 #include <modules/CdDumpFile.h>       // for FPFwCDDumpFileCtx
 #include <modules/CdDumpManager.h>    // for FPFwCrashDumpCtx
 #include <modules/CdMemoryPool.h>     // for FPFwCDMemPoolCtx
 #include <modules/CdStateManager.h>   // for FPFwCDStateManagerCtx
+#include <nvic.h>                     // for nvic_status_t
 #include <setjmp.h>                   // for longjmp, jmp_buf
 #include <stddef.h>                   // for NULL
 #include <stdint.h>                   // for uint32_t, uint64_t, uint8_t
+#include <string.h>                   // for memcpy
 #include <tx_api.h>                   // for UINT, TX_MUTEX, CHAR, ULONG
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -30,6 +33,8 @@ extern "C" {
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
+
+void* __real_memcpy(void* __a, const void* __b, size_t __c);
 
 /*-- Declarations (Statics and globals) --*/
 FPFwCrashDumpCtx* mock_crash_dump_ctx;
@@ -41,6 +46,10 @@ FPFwCDStateManagerCtx* mock_stateCtx;
 TX_MUTEX* mock_desc_mutex;
 
 jmp_buf cd_test_setjmp_context;
+
+icc_base_recv_complete_notify fw_load_cb = NULL;
+void* cb_ctx = NULL;
+bool memcpy_mock = false;
 
 /*------------- Functions ----------------*/
 //
@@ -69,7 +78,10 @@ int init_crash_dump_context(void** pContext)
 crash_dump_config_t* __wrap_GetCrashDumpConfig()
 {
     crash_dump_config_t* config = mock_type(crash_dump_config_t*);
-    config->cd_status = mock_type(crash_dump_status_t*);
+    if (config != NULL)
+    {
+        config->cd_status = mock_type(crash_dump_status_t*);
+    }
 
     return config;
 }
@@ -406,7 +418,8 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
     check_expected(params->buffer_size);
     check_expected(params->recv_cmd_code);
     assert_non_null(params->cb);
-    assert_null(params->cb_ctx);
+    fw_load_cb = params->cb;
+    cb_ctx = params->cb_ctx;
 
     function_called();
 
@@ -457,4 +470,28 @@ idsw_plat_id_t __wrap_idsw_get_platform_sdv(void)
 {
     return mock_type(idsw_plat_id_t);
 }
+
+uint32_t __wrap_atu_svc_accel_atu_addr(ACCEL_ID accel_id)
+{
+    FPFW_UNUSED(accel_id);
+
+    return mock_type(uint32_t);
+}
+
+void* __wrap_memcpy(void* __a, const void* __b, size_t __c)
+{
+    if (memcpy_mock)
+    {
+        return NULL;
+    }
+    return __real_memcpy(__a, __b, __c);
+}
+
+nvic_status_t __wrap_nvic_get_current_irq(uint32_t* irq_num)
+{
+    FPFW_UNUSED(irq_num);
+
+    return mock_type(nvic_status_t);
+}
+
 } // extern "C"

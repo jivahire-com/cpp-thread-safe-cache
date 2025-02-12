@@ -153,3 +153,12 @@ FPFW_INIT_COMPONENT(cd_pomesh, FPFW_INIT_DEPENDENCIES("cd_init", "ddr", "hw_sem"
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
+
+FPFW_INIT_COMPONENT(cd_accel, FPFW_INIT_DEPENDENCIES("cd_init", "cd_pomesh", "icc_sdm_mbx", "icc_cded_mbx"))
+{
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_SDM, fpfw_init_get_handle("icc_sdm_mbx"));
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_CDED, fpfw_init_get_handle("icc_cded_mbx"));
+    crash_dump_register_accel_ext_mmio();
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}

@@ -19,13 +19,16 @@
 #include <tx_api.h> // for TX_THREAD, ULONG
 
 extern "C" {
+#include <../src/crash_dump_accel.h>     // for crash_dump_copy_accel_cd_file
 #include <../src/crash_dump_gpio.h>      // for cd_gpio_assert_cd_available, cd_gpio_as...
 #include <../src/crash_dump_overrides.h> // for inMemoryOverride
 #include <../src/crash_dump_payload.h>   // for CD_THREADX_DATA, crash_dump_capture_threadx
 #include <cmsis_m7.h>                    // for SCB
 #include <crash_dump.h>                  // for crash_dump_init
 #include <crash_dump_memory.h>           // for CRASH_DUMP_MINI_SCP_ADDR, CRASH_DUMP_MINI_SCP_SIZE...
+#include <icc_platform_defines.h>        // for accel_cd_addr_msg
 #include <kng_icc_shared.h>              // for ICC_SIGNAL_CRASH_DUMP_COLLECT
+#include <nvic.h>                        // for NVIC_STATUS_SUCCESS
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define CD_DEFAULT_MEM_POOL_SIZE 1024
@@ -46,6 +49,11 @@ extern TX_THREAD* _tx_thread_execute_ptr;
 extern TX_THREAD* _tx_thread_created_ptr;
 extern ULONG _tx_thread_created_count;
 extern ULONG _tx_thread_system_state;
+
+extern icc_base_recv_complete_notify fw_load_cb;
+extern void* cb_ctx;
+extern bool memcpy_mock;
+extern jmp_buf cd_test_setjmp_context;
 
 /*------------- Functions ----------------*/
 //
@@ -335,9 +343,16 @@ TEST_FUNCTION(test_crash_dump_config_icc_mhu_local, NULL, NULL)
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_icc_base_recv);
 
-    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_MHU_LOCAL, (fpfw_icc_base_ctx_t*)0x12345678);
+    will_return_always(__wrap_nvic_get_current_irq, NVIC_STATUS_SUCCESS);
+    expect_function_call_any(NVIC_SetPriority);
 
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_MHU_LOCAL, (fpfw_icc_base_ctx_t*)0x12345678);
     assert_true(config.icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL] == (fpfw_icc_base_ctx_t*)0x12345678);
+
+    if (!setjmp(cd_test_setjmp_context))
+    {
+        fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
+    }
 }
 
 TEST_FUNCTION(test_crash_dump_config_icc_mhu_remote, NULL, NULL)
@@ -353,9 +368,16 @@ TEST_FUNCTION(test_crash_dump_config_icc_mhu_remote, NULL, NULL)
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_icc_base_recv);
 
+    will_return_always(__wrap_nvic_get_current_irq, NVIC_STATUS_ERROR);
+
     crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_MHU_REMOTE, (fpfw_icc_base_ctx_t*)0x12345678);
 
     assert_true(config.icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_REMOTE] == (fpfw_icc_base_ctx_t*)0x12345678);
+
+    if (!setjmp(cd_test_setjmp_context))
+    {
+        fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
+    }
 }
 
 TEST_FUNCTION(test_crash_dump_config_icc_spi_remote, NULL, NULL)
@@ -385,6 +407,147 @@ TEST_FUNCTION(test_crash_dump_config_icc_hsp, NULL, NULL)
     crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_HSP, (fpfw_icc_base_ctx_t*)0x12345678);
 
     assert_true(config.icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP] == (fpfw_icc_base_ctx_t*)0x12345678);
+}
+
+TEST_FUNCTION(test_crash_dump_config_icc_sdm, NULL, NULL)
+{
+    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    // for icc_register_accel_addr_callback()
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
+    expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, sizeof(accel_cd_addr_msg));
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_ADDR_REQ);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_recv);
+
+    // Recv ICC CB
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_SDM, (fpfw_icc_base_ctx_t*)0x12345678);
+
+    assert_true(config.icc_ctx[CRASH_DUMP_ICC_CONFIG_SDM] == (fpfw_icc_base_ctx_t*)0x12345678);
+    fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_crash_dump_config_icc_sdm_recv_fail, NULL, NULL)
+{
+    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    // for icc_register_accel_addr_callback()
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
+    expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, sizeof(accel_cd_addr_msg));
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_ADDR_REQ);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_INVALID_ARG_ERR);
+    expect_function_call(__wrap_fpfw_icc_base_recv);
+
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_SDM, (fpfw_icc_base_ctx_t*)0x12345678);
+
+    assert_true(config.icc_ctx[CRASH_DUMP_ICC_CONFIG_SDM] == (fpfw_icc_base_ctx_t*)0x0);
+}
+
+TEST_FUNCTION(test_crash_dump_config_icc_cded, NULL, NULL)
+{
+    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    // for icc_register_accel_addr_callback()
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
+    expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, sizeof(accel_cd_addr_msg));
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_ADDR_REQ);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_recv);
+
+    // Recv ICC CB
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_CDED, (fpfw_icc_base_ctx_t*)0x12345678);
+
+    assert_true(config.icc_ctx[CRASH_DUMP_ICC_CONFIG_CDED] == (fpfw_icc_base_ctx_t*)0x12345678);
+    fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_crash_dump_config_icc_cded_recv_fail, NULL, NULL)
+{
+    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    // for icc_register_accel_addr_callback()
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
+    expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, sizeof(accel_cd_addr_msg));
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_ADDR_REQ);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_INVALID_ARG_ERR);
+    expect_function_call(__wrap_fpfw_icc_base_recv);
+
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_CDED, (fpfw_icc_base_ctx_t*)0x12345678);
+
+    assert_true(config.icc_ctx[CRASH_DUMP_ICC_CONFIG_CDED] == (fpfw_icc_base_ctx_t*)0x0);
+}
+
+TEST_FUNCTION(test_crash_dump_config_icc_null_config, NULL, NULL)
+{
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_CDED, (fpfw_icc_base_ctx_t*)0x12345678);
+}
+
+TEST_FUNCTION(test_crash_dump_config_icc_invalid_icc_config_enum, NULL, NULL)
+{
+    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_MAX, (fpfw_icc_base_ctx_t*)0x12345678);
+
+    assert_true(config.icc_ctx[CRASH_DUMP_ICC_CONFIG_CDED] == (fpfw_icc_base_ctx_t*)0x0);
+}
+
+TEST_FUNCTION(test_crash_dump_config_icc_null_icc_ctx, NULL, NULL)
+{
+    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_MAX, (fpfw_icc_base_ctx_t*)0x0);
+
+    assert_true(config.icc_ctx[CRASH_DUMP_ICC_CONFIG_CDED] == (fpfw_icc_base_ctx_t*)0x0);
+}
+
+TEST_FUNCTION(test_crash_dump_config_icc_invalid_icc_ctx, NULL, NULL)
+{
+    crash_dump_config_t config = {
+        .die_index = 0,
+        .core_index = CRASH_DUMP_CORE_SCP,
+        .in_memory = in_memory,
+    };
+
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    config.icc_ctx[CRASH_DUMP_ICC_CONFIG_CDED] = (fpfw_icc_base_ctx_t*)0xABCD1234;
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_MAX, (fpfw_icc_base_ctx_t*)0x12345678);
+}
+
+TEST_FUNCTION(test_crash_dump_config_icc_invalid_icc_ctx2, NULL, NULL)
+{
+    crash_dump_config_t config = {
+        .die_index = 0,
+        .core_index = CRASH_DUMP_CORE_SCP,
+        .in_memory = in_memory,
+    };
+
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    config.icc_ctx[CRASH_DUMP_ICC_CONFIG_CDED] = (fpfw_icc_base_ctx_t*)0xABCD1234;
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_MAX, (fpfw_icc_base_ctx_t*)0x0);
 }
 
 TEST_FUNCTION(test_crash_dump_capture_threadx, NULL, NULL)
@@ -511,7 +674,9 @@ TEST_FUNCTION(test_crash_dump_handler, nullptr, nullptr)
                                       (fpfw_icc_base_ctx_t*)0x00000001, // Non-null ICC MHU MSCP local Context,
                                       (fpfw_icc_base_ctx_t*)0x00000002, // Non-null ICC MHU SCP remote Context
                                       (fpfw_icc_base_ctx_t*)0x00000003, // Non-null ICC SPI SCP remote Context
-                                      (fpfw_icc_base_ctx_t*)0x00000004  // Non-null ICC HSP Context
+                                      (fpfw_icc_base_ctx_t*)0x00000004, // Non-null ICC HSP Context
+                                      (fpfw_icc_base_ctx_t*)0x00000005, // Non-null ICC SDM Context
+                                      (fpfw_icc_base_ctx_t*)0x00000006, // Non-null ICC CDED Context
                                   }};
     crash_dump_status_t status = {};
 
@@ -546,6 +711,245 @@ TEST_FUNCTION(test_crash_dump_handler, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, config.icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP]);
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_icc_base_send_sync);
+
+    // Send ICC Accel notification
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+    expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, config.icc_ctx[CRASH_DUMP_ICC_CONFIG_SDM]);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_send_sync);
+    expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, config.icc_ctx[CRASH_DUMP_ICC_CONFIG_CDED]);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_send_sync);
+
+    expect_any(__wrap_FPFwCDCrashDumpHandler, ctx);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, coreInfo);
+
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Code, errorCode);
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[0], p1);
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[1], p2);
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[2], p3);
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[3], p4);
+
+    expect_function_call(__wrap_FPFwCDCrashDumpHandler);
+
+    // Set core state to completed
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
+
+    crash_dump_handler(errorCode, p1, p2, p3, p4);
+}
+
+TEST_FUNCTION(test_crash_dump_handler_icc_ctx_null, nullptr, nullptr)
+{
+    uint32_t errorCode = 0x12345678;
+    uint32_t p1 = 0x87654321;
+    uint32_t p2 = 0x12348765;
+    uint32_t p3 = 0x87651234;
+    uint32_t p4 = 0x12348765;
+
+    // Set up expectations
+    crash_dump_config_t config = {.die_index = 0,
+                                  .core_index = CRASH_DUMP_CORE_SCP,
+                                  .in_memory = in_memory,
+                                  .icc_ctx = {
+                                      (fpfw_icc_base_ctx_t*)0x0, // NULL ICC MHU MSCP local Context,
+                                      (fpfw_icc_base_ctx_t*)0x0, // NULL ICC MHU SCP remote Context
+                                      (fpfw_icc_base_ctx_t*)0x0, // NULL ICC SPI SCP remote Context
+                                      (fpfw_icc_base_ctx_t*)0x0, // NULL ICC HSP Context
+                                      (fpfw_icc_base_ctx_t*)0x0, // NULL ICC SDM Context
+                                      (fpfw_icc_base_ctx_t*)0x0, // NULL ICC CDED Context
+                                  }};
+    crash_dump_status_t status = {};
+
+    // Set core state to in-progress
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
+
+    // for cd_gpio_assert_cd_in_progress()
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+
+    // Expect ICC local notification
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+
+    // Expect ICC HSP notification
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+
+    // Send ICC Accel notification
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+
+    expect_any(__wrap_FPFwCDCrashDumpHandler, ctx);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, coreInfo);
+
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Code, errorCode);
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[0], p1);
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[1], p2);
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[2], p3);
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[3], p4);
+
+    expect_function_call(__wrap_FPFwCDCrashDumpHandler);
+
+    // Set core state to completed
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
+
+    crash_dump_handler(errorCode, p1, p2, p3, p4);
+}
+
+TEST_FUNCTION(test_crash_dump_handler_send_sync_fail, nullptr, nullptr)
+{
+    uint32_t errorCode = 0x12345678;
+    uint32_t p1 = 0x87654321;
+    uint32_t p2 = 0x12348765;
+    uint32_t p3 = 0x87651234;
+    uint32_t p4 = 0x12348765;
+
+    // Set up expectations
+    crash_dump_config_t config = {.die_index = 0,
+                                  .core_index = CRASH_DUMP_CORE_SCP,
+                                  .in_memory = in_memory,
+                                  .icc_ctx = {
+                                      (fpfw_icc_base_ctx_t*)0x00000001, // Non-null ICC MHU MSCP local Context,
+                                      (fpfw_icc_base_ctx_t*)0x00000002, // Non-null ICC MHU SCP remote Context
+                                      (fpfw_icc_base_ctx_t*)0x00000003, // Non-null ICC SPI SCP remote Context
+                                      (fpfw_icc_base_ctx_t*)0x00000004, // Non-null ICC HSP Context
+                                      (fpfw_icc_base_ctx_t*)0x00000005, // Non-null ICC SDM Context
+                                      (fpfw_icc_base_ctx_t*)0x00000006, // Non-null ICC CDED Context
+                                  }};
+    crash_dump_status_t status = {};
+
+    // Set core state to in-progress
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
+
+    // for cd_gpio_assert_cd_in_progress()
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+
+    // Expect ICC local notification
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+    expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, config.icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL]);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_NULL_ARG_ERR);
+    expect_function_call(__wrap_fpfw_icc_base_send_sync);
+
+    // Expect ICC remote notification
+    expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, config.icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_REMOTE]);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_NULL_ARG_ERR);
+    expect_function_call(__wrap_fpfw_icc_base_send_sync);
+
+    // Expect ICC SPI notification
+    expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, config.icc_ctx[CRASH_DUMP_ICC_CONFIG_SPI_REMOTE]);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_NULL_ARG_ERR);
+    expect_function_call(__wrap_fpfw_icc_base_send_sync);
+
+    // Expect ICC HSP notification
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+    expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, config.icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP]);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_NULL_ARG_ERR);
+    expect_function_call(__wrap_fpfw_icc_base_send_sync);
+
+    // Send ICC Accel notification
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+    expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, config.icc_ctx[CRASH_DUMP_ICC_CONFIG_SDM]);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_NULL_ARG_ERR);
+    expect_function_call(__wrap_fpfw_icc_base_send_sync);
+    expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, config.icc_ctx[CRASH_DUMP_ICC_CONFIG_CDED]);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_NULL_ARG_ERR);
+    expect_function_call(__wrap_fpfw_icc_base_send_sync);
+
+    expect_any(__wrap_FPFwCDCrashDumpHandler, ctx);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, coreInfo);
+
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Code, errorCode);
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[0], p1);
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[1], p2);
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[2], p3);
+    expect_value(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[3], p4);
+
+    expect_function_call(__wrap_FPFwCDCrashDumpHandler);
+
+    // Set core state to completed
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
+
+    crash_dump_handler(errorCode, p1, p2, p3, p4);
+}
+
+TEST_FUNCTION(test_crash_dump_handler_null_config, nullptr, nullptr)
+{
+    uint32_t errorCode = 0x12345678;
+    uint32_t p1 = 0x87654321;
+    uint32_t p2 = 0x12348765;
+    uint32_t p3 = 0x87651234;
+    uint32_t p4 = 0x12348765;
+
+    // Set up expectations
+    crash_dump_config_t config = {.die_index = 0,
+                                  .core_index = CRASH_DUMP_CORE_SCP,
+                                  .in_memory = in_memory,
+                                  .icc_ctx = {
+                                      (fpfw_icc_base_ctx_t*)0x00000001, // Non-null ICC MHU MSCP local Context,
+                                      (fpfw_icc_base_ctx_t*)0x00000002, // Non-null ICC MHU SCP remote Context
+                                      (fpfw_icc_base_ctx_t*)0x00000003, // Non-null ICC SPI SCP remote Context
+                                      (fpfw_icc_base_ctx_t*)0x00000004, // Non-null ICC HSP Context
+                                      (fpfw_icc_base_ctx_t*)0x00000005, // Non-null ICC SDM Context
+                                      (fpfw_icc_base_ctx_t*)0x00000006, // Non-null ICC CDED Context
+                                  }};
+    crash_dump_status_t status = {};
+
+    // Set core state to in-progress
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
+
+    // for cd_gpio_assert_cd_in_progress()
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, &status);
+
+    // Expect ICC local notification
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    // Expect ICC HSP notification
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    // Send ICC Accel notification
+    will_return(__wrap_GetCrashDumpConfig, NULL);
 
     expect_any(__wrap_FPFwCDCrashDumpHandler, ctx);
     expect_any(__wrap_FPFwCDCrashDumpHandler, coreInfo);
@@ -629,5 +1033,66 @@ TEST_FUNCTION(test_crash_dump_available_assert, nullptr, nullptr)
         // Call API under test
         cd_gpio_assert_cd_available(test_data[i].input);
     }
+}
+
+TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_sdm, nullptr, nullptr)
+{
+    crash_dump_config_t config = {};
+    ACCEL_ID accel_type = ACCEL_ID_SDM;
+
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+    will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADCAFE);
+
+    config.accel_cd_dtcm_offset[accel_type] = 0x1234DEAD;
+    memcpy_mock = true;
+    crash_dump_copy_accel_cd_file((void*)accel_type);
+    memcpy_mock = false;
+}
+
+TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_cded, nullptr, nullptr)
+{
+    crash_dump_config_t config = {};
+    ACCEL_ID accel_type = ACCEL_ID_CDED;
+
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+    will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADCAFE);
+
+    config.accel_cd_dtcm_offset[accel_type] = 0x1234DEAD;
+    memcpy_mock = true;
+    crash_dump_copy_accel_cd_file((void*)accel_type);
+    memcpy_mock = false;
+}
+
+TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_null_config, nullptr, nullptr)
+{
+    ACCEL_ID accel_type = ACCEL_ID_SDM;
+
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    crash_dump_copy_accel_cd_file((void*)accel_type);
+}
+
+TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_invalid_accel, nullptr, nullptr)
+{
+    crash_dump_config_t config = {};
+    ACCEL_ID accel_type = NUM_VALID_ACCEL_ID;
+
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    crash_dump_copy_accel_cd_file((void*)accel_type);
+}
+
+TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_null_dtcm, nullptr, nullptr)
+{
+    crash_dump_config_t config = {};
+    ACCEL_ID accel_type = ACCEL_ID_SDM;
+
+    will_return(__wrap_GetCrashDumpConfig, &config);
+    will_return(__wrap_GetCrashDumpConfig, NULL);
+
+    crash_dump_copy_accel_cd_file((void*)accel_type);
 }
 }

@@ -3,6 +3,7 @@ set(TARGET kng.lib.crash_dump)
 
 set (SOURCES 
         src/crash_dump.c
+        src/crash_dump_accel.c
         src/crash_dump_cli.c
         src/crash_dump_gpio.c
         src/crash_dump_icc.c
@@ -30,6 +31,7 @@ target_link_libraries(${TARGET}
         ms::lib::debug
         ms::lib::error_codes
         ms::service::atu_service
+        silibs::sdm_command_desc
         silibs::semaphore
     PRIVATE
         fwlib.lib.assert
@@ -39,6 +41,7 @@ target_link_libraries(${TARGET}
         ms::cmsis::interface
         ms::lib::cortex_m7::nvic
         ms::lib::icc_platform_defines
+        ms::lib::register_headers
         ms::lib::threadx
         silibs::gpio
         silibs::icc_mhu

@@ -25,6 +25,7 @@ target_link_libraries(${TARGET}
     ms::build_data
     ms::cmocka::testrunner
     ms::cmsis::interface
+    ms::lib::cortex_m7::nvic
     ms::lib::crash_dump
     ms::lib::icc_platform_defines
     ms::lib::threadx
@@ -44,6 +45,7 @@ unit_test_target(${TARGET})
 
 # Mock the functions needed
 mock_target(${TARGET}
+    __NVIC_SetPriority
     FPFwCDInitMemoryPool
     FPFwCDMemPoolOverrideCacheFlush
     FPFwCDMemPoolOverrideCacheInvalidate
@@ -70,6 +72,7 @@ mock_target(${TARGET}
     CdRegisterAddress32PointerArray
     CdRegisterCallback
     CdRegisterRegisterSet
+    atu_svc_accel_atu_addr
     fpfw_icc_base_recv
     fpfw_icc_base_send_sync
     _txe_mutex_create
@@ -78,6 +81,8 @@ mock_target(${TARGET}
     gpio_set_output
     GetCrashDumpConfig
     initialize_semaphore
+    memcpy
+    nvic_get_current_irq
     wait_for_semaphore
     release_semaphore
     idhw_is_single_die_boot_en

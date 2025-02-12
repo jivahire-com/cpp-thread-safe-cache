@@ -10,7 +10,10 @@
 /*------------- Includes -----------------*/
 #include "crash_dump_icc.h"
 
+#include "crash_dump_accel.h"
+
 #include <FpFwUtils.h>            // for FPFW_UNUSED
+#include <accelip_id.h>           // for ACCEL_ID_SDM, ACCEL_ID_CDED
 #include <bug_check.h>            // for BUG_CHECK_EXTERNAL
 #include <crash_dump.h>           // for GetCrashDumpConfig
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
@@ -35,6 +38,21 @@ static void icc_base_recv_complete_notify_cb(void* context, size_t output_size_b
     FPFW_UNUSED(status);
 
     BUG_CHECK_EXTERNAL();
+}
+
+static void cd_accel_recv_addr_notify_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    FPFW_UNUSED(output_size_bytes);
+    FPFW_UNUSED(status);
+
+    accel_cd_params* accel_params = context;
+    ACCEL_ID accel_type = accel_params->accel_type;
+    accel_cd_addr_msg* msg = accel_params->params.payload_buffer;
+    crash_dump_config_t* config = GetCrashDumpConfig();
+
+    config->accel_cd_dtcm_offset[accel_type] = msg->dtcm_offset;
+    crash_dump_register_post_dump_callback(crash_dump_copy_accel_cd_file, (void*)accel_type);
+    FPFwCDPrintf("CD[Accel %u]: DTCM offset 0x%lx\n", accel_type, msg->dtcm_offset);
 }
 
 static bool icc_register_mhu_callback(fpfw_icc_base_ctx_t* icc_ctx)
@@ -69,6 +87,23 @@ static bool icc_register_spi_callback(fpfw_icc_base_ctx_t* icc_ctx)
     return status == FPFW_ICC_BASE_STATUS_SUCCESS ? true : false;
 }
 
+static bool icc_register_accel_addr_callback(fpfw_icc_base_ctx_t* icc_ctx, ACCEL_ID accel_type)
+{
+    static accel_cd_params accel_params[NUM_VALID_ACCEL_ID];
+    static accel_cd_addr_msg msg[NUM_VALID_ACCEL_ID];
+
+    accel_params[accel_type].accel_type = accel_type;
+    accel_params[accel_type].params.payload_buffer = &msg[accel_type];
+    accel_params[accel_type].params.buffer_size = sizeof(msg[accel_type]);
+    accel_params[accel_type].params.recv_cmd_code = LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_ADDR_REQ;
+    accel_params[accel_type].params.cb = cd_accel_recv_addr_notify_cb;
+    accel_params[accel_type].params.cb_ctx = &accel_params[accel_type].params;
+
+    fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &accel_params[accel_type].params);
+
+    return status == FPFW_ICC_BASE_STATUS_SUCCESS ? true : false;
+}
+
 void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t* icc_ctx)
 {
     crash_dump_config_t* config = GetCrashDumpConfig();
@@ -95,6 +130,12 @@ void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t* ic
         case CRASH_DUMP_ICC_CONFIG_HSP:
             // No need to register HSP context for receiving crash dump notification
             callback_registered = true;
+            break;
+        case CRASH_DUMP_ICC_CONFIG_SDM:
+            callback_registered = icc_register_accel_addr_callback(icc_ctx, ACCEL_ID_SDM);
+            break;
+        case CRASH_DUMP_ICC_CONFIG_CDED:
+            callback_registered = icc_register_accel_addr_callback(icc_ctx, ACCEL_ID_CDED);
             break;
         default:
             break;
@@ -137,6 +178,52 @@ void crash_dump_notify_hsp()
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send Crashdump request to HSP: status = 0x%08lx\n", status);
+        }
+    }
+}
+
+/**
+ * Notify Accel devices that this core has crashed by using Largefifo mailbox sync send.
+ */
+void crash_dump_notify_accelerators()
+{
+    crash_dump_config_t* config = GetCrashDumpConfig();
+
+    if (config == NULL)
+    {
+        FPFwCDPrintf("Crash dump config is not set to notify HSP\n");
+        return;
+    }
+
+    for (ACCEL_ID accel_type = ACCEL_ID_SDM; accel_type < NUM_VALID_ACCEL_ID; accel_type++)
+    {
+        crash_dump_icc_config_t icc_config_type;
+        if (accel_type == ACCEL_ID_SDM)
+        {
+            icc_config_type = CRASH_DUMP_ICC_CONFIG_SDM;
+        }
+        else
+        {
+            icc_config_type = CRASH_DUMP_ICC_CONFIG_CDED;
+        }
+
+        fpfw_icc_base_ctx_t* icc_ctx = config->icc_ctx[icc_config_type];
+        large_fifo_mailbox_msg largefifo_crash_dump_msg;
+
+        if (icc_ctx == NULL)
+        {
+            continue;
+        }
+
+        largefifo_crash_dump_msg.as_uint32[0] =
+            SET_LARGE_FIFO_MAILBOX_HEADER_ASUNIT32(LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_REQ, 0, 0);
+
+        fpfw_status_t status =
+            fpfw_icc_base_send_sync(icc_ctx, &largefifo_crash_dump_msg, sizeof(largefifo_crash_dump_msg));
+
+        if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
+        {
+            FPFwCDPrintf("Fail to send CD req to %u: status = 0x%08lx\n", accel_type, status);
         }
     }
 }
@@ -212,4 +299,7 @@ void crash_dump_remote_trigger()
 
     // Notify to HSP
     crash_dump_notify_hsp();
+
+    // Notify Accel devices SDM and CDED
+    crash_dump_notify_accelerators();
 }

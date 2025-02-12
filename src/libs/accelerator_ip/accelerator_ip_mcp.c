@@ -49,7 +49,6 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
 
     if (accel_type == NUM_VALID_ACCEL_ID)
     {
-        debug_print("accel_lib: Invalid accel type\n");
         return ACCEL_RET_FAIL_INVALID_PARAMS;
     }
 
@@ -57,7 +56,6 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
 
     if (IS_PLATFORM_FPGA())
     {
-        printf("accel lib: Initialize accel interrupt\n");
 
         ret = accel_mcp_intr_init(accel_type);
         if (ret != ACCEL_INTR_RET_SUCCESS)
@@ -65,10 +63,6 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
             critical_print("Accel IP: init_accelerator: Accel Interrupt init failed.\n");
             return ACCEL_RET_FAIL_INTR_INIT;
         }
-    }
-    else
-    {
-        printf("accel lib: Skipping Accel Interrupt init for SVP\n");
     }
 
     return ACCEL_RET_SUCCESS;
@@ -86,19 +80,18 @@ int32_t mcp_accelerators_init(void)
 
     FPFW_RUNTIME_ASSERT(p_ss_ctxt != NULL);
 
-    printf("Number of Accelerator instances present: %d\n", (int)accel_ctxt_size);
-
     // Init all available Accelerator instances
     for (uint32_t index = 0; index < accel_ctxt_size; index++)
     {
         // TODO (ADO 1728772) : init any particular accelerator instance only if that is enabled in fuse
         if (p_ss_ctxt[index].accelip_metadata.die_instance == current_die_instance)
         {
-            printf("accel lib: Initializing for die_id = %d, accel_type = %d, accel_instance = %d\n",
+            ret = init_accelerator(&p_ss_ctxt[index]);
+            printf("accel lib: Die %d type %d instance %d stat %d\n",
                    p_ss_ctxt[index].accelip_metadata.die_instance,
                    p_ss_ctxt[index].accelip_metadata.accel_type,
-                   p_ss_ctxt[index].accelip_metadata.accel_instance);
-            ret = init_accelerator(&p_ss_ctxt[index]);
+                   p_ss_ctxt[index].accelip_metadata.accel_instance,
+                   ret);
             FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
         }
     }

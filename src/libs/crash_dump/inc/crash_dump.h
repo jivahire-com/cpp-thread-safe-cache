@@ -11,6 +11,7 @@
 
 /*--------------- Includes ---------------*/
 #include <FpFwUtils.h>
+#include <accelip_id.h>
 #include <fpfw_icc_base.h>
 #include <modules/CdDumpDescriptor.h>
 #include <modules/CdDumpManager.h>
@@ -30,8 +31,8 @@ typedef enum
     CRASH_DUMP_CORE_MCP = 0,
     CRASH_DUMP_CORE_SCP = 1,
     CRASH_DUMP_CORE_HSP = 2,
-    CRASH_DUMP_CORE_CDED = 3,
-    CRASH_DUMP_CORE_SDM = 4,
+    CRASH_DUMP_CORE_SDM = 3,
+    CRASH_DUMP_CORE_CDED = 4,
     CRASH_DUMP_CORE_NUM
 } crash_dump_core_t;
 
@@ -55,6 +56,8 @@ typedef enum
     CRASH_DUMP_ICC_CONFIG_MHU_REMOTE = 1,
     CRASH_DUMP_ICC_CONFIG_SPI_REMOTE = 2,
     CRASH_DUMP_ICC_CONFIG_HSP = 3,
+    CRASH_DUMP_ICC_CONFIG_SDM = 4,
+    CRASH_DUMP_ICC_CONFIG_CDED = 5,
     CRASH_DUMP_ICC_CONFIG_MAX
 } crash_dump_icc_config_t;
 
@@ -121,6 +124,7 @@ typedef struct {
     bool is_primary;
     crash_dump_semaphore_t cd_semaphore;
     crash_dump_status_t *cd_status; // Crash dump status header
+    uint32_t accel_cd_dtcm_offset[NUM_VALID_ACCEL_ID];
 } crash_dump_config_t;
 
 /*-- Declarations (Statics and globals) --*/
@@ -213,6 +217,16 @@ void crash_dump_register_pre_dump_callback(void cb(void *), void *ctx);
 
 /**
  *
+ * @brief a callback to be run after crash dump is collected
+ *
+ * @param cb User defined callback function
+ *
+ * @param ctx User defined callback function context (supplied to callback when called)
+ */
+void crash_dump_register_post_dump_callback(void cb(void*), void* ctx);
+
+/**
+ *
  * @brief Registers a set of MMIO registers to be recorded in the crash dump
  *
  * @param mmio_reg MMIO register address
@@ -267,6 +281,13 @@ void crash_dump_register_address32_pointer_array(FPFwCdDumpPriority priority, ui
  * 
  */
 void crash_dump_cli_init(void);
+
+/**
+ * @brief Captures Accel device externally accessible registers
+ * 
+ */
+void crash_dump_register_accel_ext_mmio();
+
 #ifdef __cplusplus
 }
 #endif

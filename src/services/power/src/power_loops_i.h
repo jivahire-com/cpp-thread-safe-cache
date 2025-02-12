@@ -135,6 +135,15 @@ typedef enum _power_pvt_telem_signal_t
     POWER_PVT_TELEM_SIGNAL_MAX,
 } power_pvt_telem_signal_t;
 
+/**
+ *  @brief Enum of adclk telemetry signals
+ */
+typedef enum _power_adclk_telem_signal_t
+{
+    POWER_ADCLK_TELEM_SIGNAL_ENTRY = POWER_LOOP_STATE_SIGNAL_ENTRY,  // initial entry into state
+    POWER_ADCLK_TELEM_SIGNAL_INTERVAL = POWER_LOOP_STATE_SIGNAL_INTERVAL,
+    POWER_ADCLK_TELEM_SIGNAL_MAX,
+} power_adclk_telem_signal_t;
 
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus
@@ -155,6 +164,7 @@ bool power_loops_retry_fail(power_loop_context_t *context, power_loop_retries_t 
 void power_loops_control_handle_event(power_ctrl_loop_signal_t event, const void* event_data); 
 void power_loops_vr_telem_handle_event(power_vr_telem_signal_t event, const void* event_data);
 void power_loops_pvt_telem_handle_event(power_pvt_telem_signal_t event, const void* event_data);
+void power_loops_adclk_telem_handle_event(power_adclk_telem_signal_t event, const void* event_data);
 
 power_ctrl_loop_detail_t* power_ctrl_loop_get();
 

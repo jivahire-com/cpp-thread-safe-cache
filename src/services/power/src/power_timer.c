@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include "power_hw_int_i.h"
 #include "power_i.h"
 #include "power_loops_i.h"
 #include "power_stub_i.h"
@@ -31,6 +32,7 @@ typedef struct _power_timer_context
 {
     fpfw_tmr_entry_t control_loop_timer;
     fpfw_tmr_entry_t pvt_telem_loop_timer;
+    fpfw_tmr_entry_t adclk_telem_timer;
 } power_timer_context_t;
 
 /*-------- Function Prototypes -----------*/
@@ -96,6 +98,27 @@ void pvt_telem_loop_timer_cb(void* ctx, uint64_t exp_tick, uint64_t now_tick)
     }
 }
 
+void adclk_telem_timer_cb(void* ctx, uint64_t exp_tick, uint64_t now_tick)
+{
+    /* The adclk telemetry timer callback function, managed within the power
+     * module, accumulates the adclk droop count at shorter intervals
+     * (adclk_throt.telemetry_interval) to prevent overflow. The telemetry
+     * service is expected to retrieve the accumulated results over a longer
+     * period, such as 24 hours. Once retrieved, the droop count should be
+     * reset to zero. */
+    /// @todo: Need to revisit this once Task 2338766 is completed.
+    ///        Need to review where telemetry service to call power_get_adclk_telem and power_reset_adclk_telem.
+    FPFW_RUNTIME_ASSERT(ctx != 0);
+    UNUSED(exp_tick);
+    UNUSED(now_tick);
+
+    power_runconfig_t* p_runconfig = (power_runconfig_t*)ctx;
+    if ((p_runconfig->knobs.adclk_throt.enable) && (p_runconfig->knobs.adclk_throt.telemetry_interval > 0))
+    {
+        power_loops_adclk_telem_handle_event(POWER_ADCLK_TELEM_SIGNAL_INTERVAL, NULL);
+    }
+}
+
 void power_timer_start_loop_timers()
 {
     power_runconfig_t* p_runconfig = power_runconfig_get();
@@ -110,4 +133,12 @@ void power_timer_start_loop_timers()
                         p_runconfig->knobs.pvt_loop_interval * ticks_per_ms,
                         pvt_telem_loop_timer_cb,
                         p_runconfig);
+
+    if ((p_runconfig->knobs.adclk_throt.enable) && (p_runconfig->knobs.adclk_throt.telemetry_interval > 0))
+    {
+        gtimer_add_periodic(&s_power_timer_ctx.adclk_telem_timer,
+                            p_runconfig->knobs.adclk_throt.telemetry_interval * ticks_per_ms,
+                            adclk_telem_timer_cb,
+                            p_runconfig);
+    }
 }

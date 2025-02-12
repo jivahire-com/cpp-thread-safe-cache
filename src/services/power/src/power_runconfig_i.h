@@ -75,6 +75,11 @@ void power_knobs_ws_update(power_knobs_t* p_knobs);
 void power_fuses_read(power_fuse_data_t* p_fuses);
 int32_t power_fuses_get_curve_assignment(uint32_t core, uint32_t* curve_assignment);
 
+/* Adclk droop count telemetry APIs */
+void power_adclk_tel_mutex_lock();
+void power_adclk_tel_mutex_unlock();
+power_adclk_tel_t* power_get_adclk_telem_ptr();
+
 #ifdef __cplusplus
 }
 #endif

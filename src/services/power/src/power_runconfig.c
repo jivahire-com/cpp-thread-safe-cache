@@ -42,6 +42,8 @@ void dummy_set_function(char* p_string, void* p_set_data);
 /*-- Declarations (Statics and globals) --*/
 
 static power_runconfig_t power_runconfig = {};
+static power_adclk_tel_t adclk_tel = {};
+static TX_MUTEX adclk_tel_mutex;
 
 power_runconfig_read_dictionary_element_t power_runconfig_read_dictionary[] = {
     {POWER_IF_CMD_GET_RUNCONFIG_FUSES, &power_runconfig.fuses},
@@ -72,6 +74,42 @@ const uint32_t length_power_runconfig_set_dictionary =
 power_runconfig_t* power_runconfig_get()
 {
     return &power_runconfig;
+}
+
+/*------------- Functions ----------------*/
+void power_init_adclk_tel_mutex()
+{
+    BUG_ASSERT(tx_mutex_create(&adclk_tel_mutex, "adclk_tel_mutex", TX_INHERIT) == TX_SUCCESS);
+}
+
+void power_adclk_tel_mutex_lock()
+{
+    tx_mutex_get(&adclk_tel_mutex, TX_WAIT_FOREVER);
+}
+
+void power_adclk_tel_mutex_unlock()
+{
+    tx_mutex_put(&adclk_tel_mutex);
+}
+
+void power_get_adclk_telem(power_adclk_tel_t* dest_adclk_tel)
+{
+    FPFW_RUNTIME_ASSERT(dest_adclk_tel != 0);
+    power_adclk_tel_mutex_lock();
+    memcpy(dest_adclk_tel, &adclk_tel, sizeof(power_adclk_tel_t));
+    power_adclk_tel_mutex_unlock();
+}
+
+power_adclk_tel_t* power_get_adclk_telem_ptr()
+{
+    return &adclk_tel;
+}
+
+void power_reset_adclk_telem()
+{
+    power_adclk_tel_mutex_lock();
+    memset(&adclk_tel, 0, sizeof(power_adclk_tel_t));
+    power_adclk_tel_mutex_unlock();
 }
 
 void* power_runconfig_get_element(power_if_cmd_t id)
@@ -242,6 +280,10 @@ void power_runconfig_init(const power_service_config_t* p_config)
 {
     // ensure the structure is zeroed - this is important to be done this way for the derived data during test
     memset(&power_runconfig, 0, sizeof(power_runconfig_t));
+
+    // reset the adclk telemetry counter during initialization.
+    power_init_adclk_tel_mutex();
+    power_reset_adclk_telem();
 
     // store the config pointer
     power_runconfig.p_sconfig = p_config;

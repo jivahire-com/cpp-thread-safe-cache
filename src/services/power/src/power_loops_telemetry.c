@@ -58,6 +58,11 @@ static void vr_telem_error_handler(int event, const void* event_data);
 // Following are function prototypes for state handlers (PVT telemetry loop)
 static void pvt_telem_idle_handler(int event, const void* event_data);
 static void pvt_telem_pvt_telemetry_handler(int event, const void* event_data);
+
+// Following are function prototypes for state handlers (ADCLK telemetry loop)
+static void adclk_telem_idle_handler(int event, const void* event_data);
+static void adclk_telem_adclk_telemetry_handler(int event, const void* event_data);
+
 /*-- Declarations (Statics and globals) --*/
 
 // Table of state handler functions for VR telemetry loop
@@ -74,9 +79,16 @@ static const power_state_handler_t pvt_telem_loop_handler_table[POWER_PVT_TELEM_
     [POWER_PVT_TELEM_STATE_READ_PVT] = pvt_telem_pvt_telemetry_handler,
 };
 
+// Table of state handler functions for ADCLK telemetry loop
+static const power_state_handler_t adclk_telem_loop_handler_table[POWER_ADCLK_TELEM_STATE_MAX] = {
+    [POWER_ADCLK_TELEM_STATE_IDLE] = adclk_telem_idle_handler,
+    [POWER_ADCLK_TELEM_STATE_READ_ADCLK] = adclk_telem_adclk_telemetry_handler,
+};
+
 // residency data for telemetry loops
 static power_loop_residency_t pvt_telemetry_loop_handler_residency[POWER_PVT_TELEM_STATE_MAX] = {0};
 static power_loop_residency_t vr_telemetry_loop_handler_residency[POWER_VR_TELEM_STATE_MAX] = {0};
+static power_loop_residency_t adclk_telemetry_loop_handler_residency[POWER_ADCLK_TELEM_STATE_MAX] = {0};
 
 // loop context for telemetry loops
 static power_loop_context_t s_pvt_telem_loop_context = {.state_count = POWER_PVT_TELEM_STATE_MAX,
@@ -88,6 +100,11 @@ static power_loop_context_t s_vr_telem_loop_context = {.state_count = POWER_VR_T
                                                        .handlers = vr_telem_loop_handler_table,
                                                        .residency = vr_telemetry_loop_handler_residency,
                                                        .id = LOOP_ID_VR_TELEM};
+
+static power_loop_context_t s_adclk_telem_loop_context = {.state_count = POWER_ADCLK_TELEM_STATE_MAX,
+                                                          .handlers = adclk_telem_loop_handler_table,
+                                                          .residency = adclk_telemetry_loop_handler_residency,
+                                                          .id = LOOP_ID_ADCLK_TELEM};
 
 static power_telem_loop_detail_t s_telem_loop = {0};
 
@@ -122,6 +139,19 @@ void power_loops_pvt_telem_handle_event(power_pvt_telem_signal_t event, const vo
 {
     // call the common function with detail for pvt telemetry loop
     power_loops_handle_event(&s_pvt_telem_loop_context, (int)event, event_data);
+}
+
+static void power_adclk_telem_loop_change_state(power_adclk_telem_state_t state)
+{
+    FPFW_RUNTIME_ASSERT(state < POWER_ADCLK_TELEM_STATE_MAX);
+    // call the common function with detail for the adclk telemetry
+    return power_loops_change_state(&s_adclk_telem_loop_context, (int)state);
+}
+
+void power_loops_adclk_telem_handle_event(power_adclk_telem_signal_t event, const void* event_data)
+{
+    // call the common function with detail for the adclk telemetry
+    power_loops_handle_event(&s_adclk_telem_loop_context, (int)event, event_data);
 }
 
 /*-- VR telemetry loop state handlers --*/
@@ -277,11 +307,52 @@ static void pvt_telem_pvt_telemetry_handler(int event, const void* event_data)
     power_pvt_telem_loop_change_state(POWER_PVT_TELEM_STATE_IDLE);
 }
 
+/*-- ADCLK telemetry state handlers --*/
+
+static void adclk_telem_idle_handler(int event, const void* event_data)
+{
+    UNUSED(event_data);
+
+    switch (event)
+    {
+    case POWER_LOOP_STATE_SIGNAL_ENTRY:
+        // Returning to idle state
+        POWER_LOG_TRACE("ADCLK telemetry idle");
+        break;
+    case POWER_ADCLK_TELEM_SIGNAL_INTERVAL:
+        // Leaving idle state
+        power_adclk_telem_loop_change_state(POWER_ADCLK_TELEM_STATE_READ_ADCLK);
+        break;
+    default:
+        break;
+    }
+}
+
+static void adclk_telem_adclk_telemetry_handler(int event, const void* event_data)
+{
+    UNUSED(event);
+    UNUSED(event_data);
+
+    power_runconfig_t* p_runconfig = power_runconfig_get();
+
+    // Collect adclk droop count
+    power_adclk_tel_t* adclk_tel;
+    adclk_tel = power_get_adclk_telem_ptr();
+    power_adclk_tel_mutex_lock();
+    for (unsigned int core = 0; core < NUM_AP_CORES_PER_DIE; ++core)
+    {
+        adclk_tel->droop_count[core] += power_hw_get_adclk_count(p_runconfig, core);
+    }
+    power_adclk_tel_mutex_unlock();
+    power_adclk_telem_loop_change_state(POWER_ADCLK_TELEM_STATE_IDLE);
+}
+
 void power_loops_telemetry_init()
 {
     // initialize the loop context
     power_loops_init_loop(&s_vr_telem_loop_context);
     power_loops_init_loop(&s_pvt_telem_loop_context);
+    power_loops_init_loop(&s_adclk_telem_loop_context);
 }
 
 /* function to update one DTS or VM channel's sample data */

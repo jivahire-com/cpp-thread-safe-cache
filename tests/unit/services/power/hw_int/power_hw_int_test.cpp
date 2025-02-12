@@ -1311,6 +1311,31 @@ POWER_TEST(power_hw_get_adclk_count, setup, teardown)
     assert_int_equal(power_hw_get_adclk_count(&s_runconfig, 0), TEST_DROOP_COUNT);
 }
 
+POWER_TEST(adclk_telem_update, setup, teardown)
+{
+#define TEST_DROOP_COUNT 12345
+#define ITER_COUNT       32768
+    unsigned int core, iter;
+    power_adclk_tel_t* adclk_tel_ptr;
+    power_adclk_tel_t adclk_tel_check;
+
+    power_reset_adclk_telem();
+    adclk_tel_ptr = power_get_adclk_telem_ptr();
+    for (iter = 0; iter < ITER_COUNT; ++iter)
+    {
+        for (unsigned int core = 0; core < NUM_AP_CORES_PER_DIE; ++core)
+        {
+            adclk_tel_ptr->droop_count[core] += TEST_DROOP_COUNT;
+        }
+    }
+
+    power_get_adclk_telem(&adclk_tel_check);
+    for (core = 0; core < NUM_AP_CORES_PER_DIE; ++core)
+    {
+        assert_int_equal(adclk_tel_check.droop_count[core], TEST_DROOP_COUNT * ITER_COUNT);
+    }
+}
+
 POWER_TEST(power_hw_force_pmin, setup, teardown)
 {
     scp_exp_csr_reg fake_reg = {{{0}}};

@@ -176,6 +176,8 @@ POWER_TEST(power_loops_telemetry_init, NULL, NULL)
     expect_not_value(__wrap_power_loops_init_loop, p_context, NULL);
     // this (below wrapper) also captures the context pointer when init function is called
     expect_not_value(__wrap_power_loops_init_loop, p_context, NULL);
+    // this (below wrapper) also captures the context pointer when init function is called
+    expect_not_value(__wrap_power_loops_init_loop, p_context, NULL);
 
     // call the function
     power_loops_telemetry_init();

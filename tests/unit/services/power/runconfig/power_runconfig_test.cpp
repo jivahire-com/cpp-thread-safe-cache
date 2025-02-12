@@ -58,6 +58,33 @@ static power_service_config_t s_test_config = {.platform_cores_in_die = &platfor
 //
 // Mocks
 //
+UINT __wrap__txe_mutex_create(TX_MUTEX* mutex_ptr, CHAR* name_ptr, UINT inherit, UINT mutex_control_block_size)
+{
+    assert_non_null(mutex_ptr); // Ensure the mutex pointer is not NULL
+
+    assert_non_null(name_ptr);
+    FPFW_UNUSED(inherit);
+    FPFW_UNUSED(mutex_control_block_size);
+
+    return 0;
+}
+
+UINT __wrap__tx_mutex_get(TX_MUTEX* mutex_ptr, ULONG wait_option)
+{
+    assert_non_null(mutex_ptr); // Ensure the mutex pointer is not NULL
+
+    FPFW_UNUSED(wait_option);
+
+    return 0;
+}
+
+UINT __wrap__tx_mutex_put(TX_MUTEX* mutex_ptr)
+{
+    assert_non_null(mutex_ptr); // Ensure the mutex pointer is not NULL
+
+    return 0;
+}
+
 void __wrap_power_knobs_read(power_knobs_t* p_knobs)
 {
     memcpy_s(p_knobs, sizeof(power_knobs_t), mock_ptr_type(power_knobs_t*), sizeof(power_knobs_t));

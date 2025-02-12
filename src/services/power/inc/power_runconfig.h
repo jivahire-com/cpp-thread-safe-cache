@@ -96,6 +96,13 @@ typedef struct _dts_coeff_t
 } dts_coeff_t;
 
 /**
+ * @brief Struct for holding adclk telemetry counts
+ */
+typedef struct _power_adclk_tel_t {
+    uint64_t droop_count[NUM_AP_CORES_PER_DIE];
+} power_adclk_tel_t;
+
+/**
  * @brief Struct for holding vcpu ldo_dac -> leakage/dynamic current values from fuses
  */
 typedef struct _power_fuse_vcpu_current_t
@@ -421,6 +428,7 @@ typedef enum _power_loop_id_t
     LOOP_ID_CONTROL,
     LOOP_ID_VR_TELEM,
     LOOP_ID_PVT_TELEM,
+    LOOP_ID_ADCLK_TELEM,
     LOOP_ID_COUNT
 } power_loop_id_t;
 /**
@@ -636,6 +644,20 @@ typedef enum _power_pvt_telem_state_t
     POWER_PVT_TELEM_STATE_MAX,
 } power_pvt_telem_state_t;
 
+/**
+ *  @brief Enum of ADCLK telemetry states
+ *
+ * No events other than interval, it does not
+ * require a signal/event to return to idle, so no chance for entry into an
+ * error state. Keeping the same basic structure to allow for timestamping, etc.
+ */
+typedef enum _power_adclk_telem_state_t
+{
+    POWER_ADCLK_TELEM_STATE_IDLE = POWER_LOOP_IDLE_STATE_ID,
+    POWER_ADCLK_TELEM_STATE_READ_ADCLK,
+    POWER_ADCLK_TELEM_STATE_MAX,
+} power_adclk_telem_state_t;
+
 typedef struct _pwr_intparams {
     power_ctrl_loop_detail_t* p_pwrstatus_s_ctrl_loop;
     power_loop_context_t* p_pwrstatus_s_ctrl_loop_context;
@@ -656,6 +678,25 @@ typedef struct _pwr_intparams {
  */
 bool power_hw_gpio_connected();
 
+/**
+ * @brief Get the adclk droop count telemetry.
+ *
+ * \b Description:
+ *      Retrieves the adaptive clocking droop count for all cores within a die from the power module and copies the telemetry data to the caller-provided address.
+ * 
+ * @param[in] adclk_tel address of the destination telemetry, provided by the caller as a pointer.
+ *
+ */
+void power_get_adclk_telem(power_adclk_tel_t* adclk_tel);
+
+/**
+ * @brief Reset the adclk droop count telemetry.
+ *
+ * \b Description:
+ *      Used to reset the adaptive clocking droop count to 0 for all cores within a die. Should be called once the telemetry service received the telemetry.
+ *
+ */
+void power_reset_adclk_telem();
 
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus

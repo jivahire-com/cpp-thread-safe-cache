@@ -45,6 +45,9 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    _txe_mutex_create
+    _tx_mutex_get
+    _tx_mutex_put
     dvfs_vft_from_fuse_data_per_itd
     power_fuses_read
     power_knobs_read

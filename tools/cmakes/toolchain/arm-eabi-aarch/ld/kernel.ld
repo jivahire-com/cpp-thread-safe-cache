@@ -8,6 +8,9 @@
    These should be derived from the global memory map for the target controller
 */
 
+   /* see NOTE_GNU_BUILD_ID */
+_EXPECTED_BUILD_ID_SIZE = 0x24;
+
 ENTRY(reset_handler)
 
 MEMORY
@@ -18,7 +21,7 @@ MEMORY
 
 SECTIONS
 {
-    .vectors : 
+    .vectors :
     {
         KEEP(*(.vectors .vectors.*))
     } > CODE
@@ -56,7 +59,7 @@ SECTIONS
          *(.rodata*)
     } > CODE
 
-    .ARM.extab : 
+    .ARM.extab :
     {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
     } > CODE
@@ -104,11 +107,14 @@ SECTIONS
 
     .note.gnu.build-id (READONLY): ALIGN(4)
     {
+        PROVIDE(g_note_gnu_build_id = .);
         _build_id_msdata_start = ABSOLUTE(.);
         *(.note.gnu.build-id)
         . = ALIGN (4);
         _build_id_msdata_end = ABSOLUTE(.);
     } > CODE
+
+    ASSERT((_build_id_msdata_end - _build_id_msdata_start) == _EXPECTED_BUILD_ID_SIZE, "Error: build id size not expected!")
 
     .data.fpfw_init (READONLY): ALIGN(4)
     {
@@ -118,7 +124,7 @@ SECTIONS
         _data_fpfw_init_end = ABSOLUTE(.);
     } > DATA
 
-    .data : 
+    .data :
     {
         /* TODO: These shouldn't be needed by the entry point, since bootloader already copies DTCM to DTCM RAM */
         /* ADO: 2349367 */

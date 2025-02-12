@@ -10,6 +10,7 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <IFpFwEventTracingBuffers.h>
 #include <build_data.h>
 #include <stdint.h>
 
@@ -94,7 +95,7 @@ typedef struct {
 
 typedef struct
 {
-    BUILD_PRODUCT_GUID build_guid;
+    FPFW_ET_MANIFEST_ID manifest_id;
     uint32_t provider_metadata_size;
     uint32_t event_metadata_size;
     uint8_t payload[0];

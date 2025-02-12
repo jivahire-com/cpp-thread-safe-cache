@@ -12,6 +12,7 @@
 
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
+#include <assert.h>
 #include <build_data.h> // for BUILD_ELF_SECTION_BINARY_METADATA
 #include <data_collection_service.h>
 #include <dcs_events_i.h>
@@ -26,7 +27,6 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-extern BUILD_ELF_SECTION_BINARY_METADATA g_BuildMetadata; // Per build version information
 extern uint8_t _ProviderMetadata_et_msdata_start; // Pointer to the start of the .ProviderMetadata section
 extern uint8_t _ProviderMetadata_et_msdata_end;   // Pointer to the end   of the .ProviderMetadata section
 extern uint8_t _EventMetadata_et_msdata_start;    // Pointer to the start of the .EventMetadata section
@@ -34,16 +34,22 @@ extern uint8_t _EventMetadata_et_msdata_end;      // Pointer to the end   of the
 
 /*------------- Functions ----------------*/
 
+static_assert(sizeof(((diag_packed_manifest_header_t*)0)->manifest_id) <= sizeof(g_note_gnu_build_id.BuildId),
+              "Source ID is too small");
+
 void dcs_create_manifest_from_elf(uintptr_t atu_base_addr, size_t max_size)
 {
     // once HSP supports copying manifests from flash, this function will be removed
     // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2145384
 
     diag_packed_manifest_header_t pkd_manifest_hdr = {
-        .build_guid = g_BuildMetadata.Id,
         .provider_metadata_size = (uintptr_t)&_ProviderMetadata_et_msdata_end - (uintptr_t)&_ProviderMetadata_et_msdata_start,
         .event_metadata_size = (uintptr_t)&_EventMetadata_et_msdata_end - (uintptr_t)&_EventMetadata_et_msdata_start,
     };
+
+    // the gnu build id is unique per core.  Use the first 16 bytes for the manifest id which needs to be
+    // unique for the diagnostic decoder tool to decode the data
+    memcpy((void*)&pkd_manifest_hdr.manifest_id, (void*)g_note_gnu_build_id.BuildId, sizeof(pkd_manifest_hdr.manifest_id));
 
     diag_manifest_header_t manifest_hdr = {
         .manifest_parser_type = DIAG_MANIFEST_PARSER_PACKED,
@@ -75,20 +81,11 @@ void dcs_build_diag_decoder_full_manifest(void)
     //
     diag_manifest_header_t* scp_staging_manifest_hdr =
         (diag_manifest_header_t*)IB_TLM_DDR_ATU_AP_MSCP_STAGING_MANIFEST_BASE_ADDR;
-    diag_packed_manifest_header_t* scp_staging_packed_manifest_hdr =
-        (diag_packed_manifest_header_t*)scp_staging_manifest_hdr->payload;
 
     // use printf because event trace needs manifest for decode
     if (scp_staging_manifest_hdr->manifest_parser_type != DIAG_MANIFEST_PARSER_PACKED)
     {
         printf("DCS: SCP Manifest Parser Type is not Packed\n");
-        FPFW_ET_LOG(DcsManifestCreateFail, CPU_SCP);
-        return;
-    }
-
-    if (memcmp(&scp_staging_packed_manifest_hdr->build_guid, &g_BuildMetadata.Id, sizeof(g_BuildMetadata.Id)) != 0)
-    {
-        printf("DCS: SCP Build GUID does not match\n");
         FPFW_ET_LOG(DcsManifestCreateFail, CPU_SCP);
         return;
     }

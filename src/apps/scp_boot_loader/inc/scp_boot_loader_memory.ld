@@ -4,7 +4,7 @@
 */
 
 /*
- * The combined binary containing boot loader + firmware is placed in MSCP_EXP RAM0 with 128 bytes left at the start for boot info. 
+ * The combined binary containing boot loader + firmware is placed in MSCP_EXP RAM0 with 128 bytes left at the start for boot info.
  * The boot loader data is expected to be placed in the lower 32KB of the DTCM hence the address is calculated by subtracting 32KB from end of DTCM
  * See the address map: https://microsoft.sharepoint.com/:x:/r/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Architecture/SOC%20Top/Kingsgate%20SOC%20Address%20Map%20r1p04.xlsx?d=w1dbe548890594d609964d4ae084eee3a&csf=1&web=1&e=MXoeEK
 */
@@ -13,7 +13,7 @@ __EXP_RAM0_END__     = 0x12FFFFF;
 __DTCMSTART__        = 0x20078000;
 __DTCMEND__          = 0x2007FFFF;
 
-/* 
+/*
  * CODE and DATA sizes map directly to the sizes of the respective TCM (plus one for size).
  * The STACKSIZE is set to 4KB, the stack is expected to be used as part of the decompression code
  *
@@ -37,7 +37,7 @@ MEMORY
 
 SECTIONS
 {
-    .vectors : 
+    .vectors :
     {
         KEEP(*(.vectors .vectors.*))
     } > CODE
@@ -54,7 +54,7 @@ SECTIONS
         KEEP(*(.eh_frame*))
     } > CODE
 
-    .ARM.extab : 
+    .ARM.extab :
     {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
     } > CODE
@@ -68,6 +68,7 @@ SECTIONS
 
    .note.gnu.build-id (READONLY): ALIGN(4)
     {
+        PROVIDE(g_note_gnu_build_id = .);
         _build_id_msdata_start = ABSOLUTE(.);
         *(.note.gnu.build-id)
         . = ALIGN (4);
@@ -80,9 +81,9 @@ SECTIONS
         _mainimage_s = .;
         KEEP(*(.mainimage))
         _mainimage_e = .;
-    } > CODE    
+    } > CODE
 
-    .data : 
+    .data :
     {
         __data_load_start__ = LOADADDR(.data);
         __data_start__ = ABSOLUTE(.);

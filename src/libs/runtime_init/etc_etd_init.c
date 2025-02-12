@@ -58,7 +58,6 @@ static uint8_t s_etc_stack[ETC_STACK_SIZE];
 static uint8_t s_etc_trace_buffer[ETC_CORE_BUFFERS_MEMORY_SIZE];
 static etc_service_context_t s_etc_service_ctx = {0};
 
-extern BUILD_ELF_SECTION_BINARY_METADATA g_BuildMetadata; // Per build version information
 extern uint8_t _data_etproviderfilter_start; // Pointer to the start of the .ProviderFilter section
 extern uint8_t _data_etproviderfilter_end;   // Pointer to the end   of the .ProviderFilter section
 
@@ -87,13 +86,14 @@ FPFW_INIT_COMPONENT(etd, FPFW_INIT_DEPENDENCIES("std_io"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_etd_service_ctx};
 }
 
+static_assert(sizeof(((etc_service_config_t*)0)->manifest_id) <= sizeof(g_note_gnu_build_id.BuildId), "Source ID is too small");
+
 FPFW_INIT_COMPONENT(etc, FPFW_INIT_DEPENDENCIES("etd"))
 {
 
     etc_service_config_t config = {
         .mode = ETC_SERVICE_MODE_STDIO,
         .core_id = 0,
-        .manifest_id = *(PFPFW_ET_MANIFEST_ID)&g_BuildMetadata.Id.Byte,
         .p_decoder_service = &s_etd_service_ctx,
         .trace_buffer_memory = {.p_pool = s_etc_trace_buffer, .byte_count = sizeof(s_etc_trace_buffer)},
         .thread_config =
@@ -107,6 +107,10 @@ FPFW_INIT_COMPONENT(etc, FPFW_INIT_DEPENDENCIES("etd"))
             .start = (PFPFW_ET_PROVIDER_EVENT_FILTER)&_data_etproviderfilter_start,
             .end = (PFPFW_ET_PROVIDER_EVENT_FILTER)&_data_etproviderfilter_end,
         }};
+
+    // the gnu build id is unique per core.  Use the first 16 bytes for the manifest id which needs to be
+    // unique for the diagnostic decoder tool to decode the data
+    memcpy((void*)&config.manifest_id, (void*)g_note_gnu_build_id.BuildId, sizeof(config.manifest_id));
 
     // Use the default request processing. Implement as needed.
     etc_initialize(&s_etc_service_ctx, &config);

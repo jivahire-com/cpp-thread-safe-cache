@@ -19,6 +19,5 @@
 /*-- Declarations (Statics and globals) --*/
 uint32_t __stack_start__;
 uint32_t __stack_end__;
-uint8_t _build_id_msdata_start[sizeof(GNU_BUILD_ID)];
 
 /*------------- Functions ----------------*/

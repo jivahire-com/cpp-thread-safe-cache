@@ -42,8 +42,8 @@ execute_process(
 
 # Fetch Build PC Name
 execute_process(
-  COMMAND hostname 
-  OUTPUT_VARIABLE BUILD_PC 
+  COMMAND hostname
+  OUTPUT_VARIABLE BUILD_PC
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
@@ -99,11 +99,6 @@ execute_process(
 
 message("SDM_LAST_COMMIT_DESCRIBE ${SDM_LAST_COMMIT_DESCRIBE}")
 
-string(RANDOM LENGTH 8 ALPHABET "0123456789ABCDEF" SYS_GUID_32BYTES_0)
-string(RANDOM LENGTH 8 ALPHABET "0123456789ABCDEF" SYS_GUID_32BYTES_1)
-string(RANDOM LENGTH 8 ALPHABET "0123456789ABCDEF" SYS_GUID_32BYTES_2)
-string(RANDOM LENGTH 8 ALPHABET "0123456789ABCDEF" SYS_GUID_32BYTES_3)
-
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/build_data.h.in
   ${CMAKE_CURRENT_BINARY_DIR}/build_data.h
@@ -124,6 +119,11 @@ add_library(
     STATIC
       ${CMAKE_CURRENT_BINARY_DIR}/build_data.c
 )
+
+if (i386-pc-windows-msvc)
+    # mock g_note_gnu_build_id which is built into the ELF binary for the ARM build
+    target_sources(${TARGET} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/win32/build_data_dummy.c)
+endif()
 
 # Configured files are put into the binary dir, ensure it gets included
 target_include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})

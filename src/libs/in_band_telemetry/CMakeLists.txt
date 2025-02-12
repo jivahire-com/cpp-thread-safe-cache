@@ -12,6 +12,7 @@ if (i386-pc-windows-msvc)
 
     target_link_libraries(${TARGET}
         PUBLIC
+            IFPFW.EventTracing
             ms::build_data
             ms::lib::utils
             ms::service::atu_service
@@ -28,6 +29,7 @@ else()
 
     target_link_libraries(${TARGET}
         INTERFACE
+            IFPFW.EventTracing
             ms::build_data
             ms::lib::utils
             ms::service::atu_service

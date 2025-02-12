@@ -35,16 +35,10 @@
 /*-- Declarations (Statics and globals) --*/
 CD_MSFT_VERSION_INFO cdMsftVersionInfo;
 
-extern uint8_t _build_id_msdata_start[sizeof(GNU_BUILD_ID)];
-extern BUILD_ELF_SECTION_BINARY_METADATA g_BuildMetadata; // Per build version information
-
 /*------------- Functions ----------------*/
 void crash_dump_register_standard_info()
 {
-    GNU_BUILD_ID* gnuBuildId = (GNU_BUILD_ID*)&_build_id_msdata_start;
-
     cdMsftVersionInfo.guid = (CD_GUID)CD_MSFT_VERSION_INFO_GUID;
-    cdMsftVersionInfo.versionInfo.Id = g_BuildMetadata.Id;
     cdMsftVersionInfo.versionInfo.Major = g_BuildMetadata.Major;
     cdMsftVersionInfo.versionInfo.Minor = g_BuildMetadata.Minor;
     cdMsftVersionInfo.versionInfo.Revision = g_BuildMetadata.Revision;
@@ -52,7 +46,7 @@ void crash_dump_register_standard_info()
     memcpy((void*)(cdMsftVersionInfo.versionInfo.String), // Can be modified to have Symbol and Product information.
            (void*)(g_BuildMetadata.String),
            BUILD_ELF_BINARY_METADATA_STR_SIZE);
-    memcpy((void*)(cdMsftVersionInfo.elf_build_id), (void*)(gnuBuildId->buildId), SHA1_GNU_ELF_BUILD_ID_SIZE__bytes);
+    memcpy((void*)(cdMsftVersionInfo.elf_build_id), (void*)(g_note_gnu_build_id.BuildId), SHA1_GNU_ELF_BUILD_ID_SIZE__bytes);
 
     crash_dump_register_address32((void*)&cdMsftVersionInfo, sizeof(cdMsftVersionInfo), FPFW_CD_DUMP_PRIORITY_CRITICAL);
 }

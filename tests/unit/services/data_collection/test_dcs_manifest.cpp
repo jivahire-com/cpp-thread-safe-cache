@@ -22,8 +22,6 @@ extern "C" {
 #include <fpfw_status.h> // for FPFW_STATUS_SUCCESS, FPFW_...
 #include <in_band_telemetry_ddr.h>
 #include <stdint.h> // for uint8_t
-
-extern BUILD_ELF_SECTION_BINARY_METADATA g_BuildMetadata;
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -97,8 +95,7 @@ TEST_FUNCTION(test_dcs_build_diag_decoder_full_manifest, test_setup, nullptr)
 
     scp_staging_manifest_hdr->manifest_parser_type = DIAG_MANIFEST_PARSER_PACKED;
     scp_staging_manifest_hdr->manifest_size = 0;
-    memset(&scp_staging_packed_manifest_hdr->build_guid, 0xAA, sizeof(scp_staging_packed_manifest_hdr->build_guid));
-    memset(&g_BuildMetadata.Id, 0xAA, sizeof(g_BuildMetadata.Id));
+    memset(&scp_staging_packed_manifest_hdr->manifest_id, 0xAA, sizeof(scp_staging_packed_manifest_hdr->manifest_id));
 
     expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
 
@@ -114,20 +111,9 @@ TEST_FUNCTION(test_dcs_build_diag_decoder_full_manifest_validate, test_setup, nu
 
     diag_manifest_header_t* scp_staging_manifest_hdr =
         (diag_manifest_header_t*)IB_TLM_DDR_ATU_AP_MSCP_STAGING_MANIFEST_BASE_ADDR;
-    diag_packed_manifest_header_t* scp_staging_packed_manifest_hdr =
-        (diag_packed_manifest_header_t*)scp_staging_manifest_hdr->payload;
 
     // validate wrong parser type
     scp_staging_manifest_hdr->manifest_parser_type = 0x48;
-    dcs_build_diag_decoder_full_manifest();
-
-    assert_int_equal(set_header->manifest_set_size, 0);
-    assert_int_equal(set_header->manifest_count, 0);
-
-    // validate wrong build id
-    scp_staging_manifest_hdr->manifest_parser_type = DIAG_MANIFEST_PARSER_PACKED;
-    memset(&scp_staging_packed_manifest_hdr->build_guid, 0xAA, sizeof(scp_staging_packed_manifest_hdr->build_guid));
-    memset(&g_BuildMetadata.Id, 0xBB, sizeof(g_BuildMetadata.Id));
     dcs_build_diag_decoder_full_manifest();
 
     assert_int_equal(set_header->manifest_set_size, 0);

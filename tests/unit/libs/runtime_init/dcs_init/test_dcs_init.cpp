@@ -31,11 +31,10 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_dcs_svc;
 
-BUILD_ELF_SECTION_BINARY_METADATA g_BuildMetadata; // Per build version information
-uint8_t _ProviderMetadata_et_msdata_start;         // Pointer to the start of the .ProviderMetadata section
-uint8_t _ProviderMetadata_et_msdata_end;           // Pointer to the end   of the .ProviderMetadata section
-uint8_t _EventMetadata_et_msdata_start;            // Pointer to the start of the .EventMetadata section
-uint8_t _EventMetadata_et_msdata_end; // Pointer to the end   of the .EventMetadata memory section
+uint8_t _ProviderMetadata_et_msdata_start; // Pointer to the start of the .ProviderMetadata section
+uint8_t _ProviderMetadata_et_msdata_end;   // Pointer to the end   of the .ProviderMetadata section
+uint8_t _EventMetadata_et_msdata_start;    // Pointer to the start of the .EventMetadata section
+uint8_t _EventMetadata_et_msdata_end;      // Pointer to the end   of the .EventMetadata memory section
 
 /*------------- Functions ----------------*/
 //

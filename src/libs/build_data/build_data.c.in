@@ -18,6 +18,8 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
+#define _EXPECTED_BUILD_ID_SIZE (0x24)
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -28,7 +30,6 @@ static_assert(sizeof("@SYS_PRODUCTVERSION_STR@") < BUILD_ELF_BINARY_METADATA_STR
 
 __attribute__((section(BUILD_ELF_SECTION_BINARY_METADATA_NAME))) __attribute__((used)) const BUILD_ELF_SECTION_BINARY_METADATA g_BuildMetadata =
 {
-    { .Guid32 = {0x@SYS_GUID_32BYTES_0@, 0x@SYS_GUID_32BYTES_1@, 0x@SYS_GUID_32BYTES_2@, 0x@SYS_GUID_32BYTES_3@} },
     MAJOR_VERSION,
     MINOR_VERSION,
     PATCH_VERSION,
@@ -37,3 +38,5 @@ __attribute__((section(BUILD_ELF_SECTION_BINARY_METADATA_NAME))) __attribute__((
 };
 
 /*------------- Functions ----------------*/
+// see _EXPECTED_BUILD_ID_SIZE in linker script
+static_assert(sizeof(NOTE_GNU_BUILD_ID) == _EXPECTED_BUILD_ID_SIZE, "Size of NOTE_GNU_BUILD_ID structure is not as expected.");

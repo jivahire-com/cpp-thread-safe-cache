@@ -14,7 +14,6 @@
 #include <tx_api.h>     // for ULONG, TX_THREAD
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define SHA1_GNU_ELF_BUILD_ID_SIZE__bytes 20
 
 /*------------- Typedefs -----------------*/
 typedef struct _CD_THREADX_DATA
@@ -28,15 +27,6 @@ typedef struct _CD_THREADX_DATA
     ULONG _tx_thread_system_state;
 } CD_THREADX_DATA;
 
-typedef struct _GNU_BUILD_ID
-{
-    uint32_t nameSize;
-    uint32_t buildIdSize;
-    uint32_t type;
-    uint32_t name;
-    uint8_t buildId[SHA1_GNU_ELF_BUILD_ID_SIZE__bytes];
-} GNU_BUILD_ID;
-
 typedef struct _CD_MSFT_VERSION_INFO
 {
     CD_GUID guid;
@@ -47,13 +37,13 @@ typedef struct _CD_MSFT_VERSION_INFO
 /*-------- Function Prototypes -----------*/
 /**
  * @brief Captures built-in Cortex M7 registers
- * 
+ *
  */
 void crash_dump_register_core_registers();
 
 /**
  * @brief Captures default crash registers
- * 
+ *
  * @param mmio_registers Array of core_register_mmio_t
  * @param mmio_register_count Number of elements in mmio_registers
  */
@@ -61,13 +51,13 @@ void crash_dump_register_default_registers(const core_register_mmio_t *mmio_regi
 
 /**
  * @brief Captures core stack
- * 
+ *
  */
 void crash_dump_register_core_stack();
 
 /**
  * @brief Captures standard information
- * 
+ *
  */
 void crash_dump_register_standard_info();
 
@@ -79,7 +69,7 @@ void crash_dump_register_threadx();
 
 /**
  * @brief Captures threadX data
- * 
+ *
  * @param context callback context
  */
 void crash_dump_capture_threadx(void* context);

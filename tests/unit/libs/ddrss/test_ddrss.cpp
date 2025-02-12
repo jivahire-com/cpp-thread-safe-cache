@@ -146,11 +146,11 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga, setup, teardown)
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
-    expect_value(__wrap_ddrss_atu_map, die_num, DIE_0);
-    expect_value(__wrap_ddrss_atu_map, die_num, DIE_1);
-    will_return_always(__wrap_ddrss_atu_map, 0x12345678);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
+    will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
-    expect_value(__wrap_ddrss_atu_unmap, die_num, DIE_0);
+    expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
 
     prod_ddrss_lib_init(test_die);
 }
@@ -189,11 +189,11 @@ TEST_FUNCTION(test_ddrss_lib_init_emu, setup, teardown)
 
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
-    expect_value(__wrap_ddrss_atu_map, die_num, DIE_0);
-    expect_value(__wrap_ddrss_atu_map, die_num, DIE_1);
-    will_return_always(__wrap_ddrss_atu_map, 0x12345678);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
+    will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
-    expect_value(__wrap_ddrss_atu_unmap, die_num, DIE_1);
+    expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_1);
 
     prod_ddrss_lib_init(test_die);
 }
@@ -229,11 +229,11 @@ TEST_FUNCTION(test_ddrss_lib_init_rvp, setup, teardown)
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
-    expect_value(__wrap_ddrss_atu_map, die_num, DIE_0);
-    expect_value(__wrap_ddrss_atu_map, die_num, DIE_1);
-    will_return_always(__wrap_ddrss_atu_map, 0x12345678);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
+    will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
-    expect_value(__wrap_ddrss_atu_unmap, die_num, DIE_0);
+    expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
 
     prod_ddrss_lib_init(test_die);
 }

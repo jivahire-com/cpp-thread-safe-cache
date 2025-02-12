@@ -22,8 +22,8 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-uintptr_t __real_ddrss_atu_map(uint32_t die_num);
-void __real_ddrss_atu_unmap(uint32_t die_num);
+uintptr_t __real_ddrss_atu_map_cfg_space(uint32_t die_num);
+void __real_ddrss_atu_unmap_cfg_space(uint32_t die_num);
 
 /*------------- Functions ----------------*/
 //
@@ -36,7 +36,7 @@ TEST_FUNCTION(test_ddr_atu_map, NULL, NULL)
     will_return(__wrap_atu_map, 0);
 
     // Execute the function under test
-    uintptr_t mapped_addr = __real_ddrss_atu_map(0);
+    uintptr_t mapped_addr = __real_ddrss_atu_map_cfg_space(0);
 
     // Verify the results
     assert_int_equal(mapped_addr, 0x12345678);
@@ -48,7 +48,7 @@ TEST_FUNCTION(test_ddr_atu_unmap, NULL, NULL)
     will_return(__wrap_atu_unmap, 0);
 
     // Execute the function under test
-    __real_ddrss_atu_unmap(0);
+    __real_ddrss_atu_unmap_cfg_space(0);
 }
 
 } // extern "C"

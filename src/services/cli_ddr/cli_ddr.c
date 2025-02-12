@@ -49,72 +49,59 @@ STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
 // ecc_ce_err (mc) (phy_add) {error bit}
 STATIC FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char** Argv)
 {
-    int32_t die = 0;
+    uint32_t die = 0;
     uint32_t mc = 0;
-    uint64_t p_addr = 0;
-    uint16_t BIT_Value = 0;
-    bool check_null = false;
+    uint64_t p_addr = 0x20080000000ULL;
+    uint8_t bit = 0;
+    uint16_t BIT_Value;
+    bool check_null = true;
 
-    if (Argc == 1) // no argument passed
+    if (Argc > 4)
     {
-        mc = 0;
-        p_addr = 0;
-        BIT_Value = BIT0;
-        check_null |= true;
+        FpFwCliPrint("Invalid Argument! Please provide necessary arguments!");
+        return CLI_ERROR;
     }
-    else if (Argc == 2) // only mc is passed as argument
+
+    if (Argc > 1) // only mc is passed as argument
     {
-        if (Argv[1] != NULL)
-        {
-            mc = (uint32_t)(strtoul(Argv[1], 0, 0));
-            check_null |= true;
-        }
-        p_addr = 0;
-        BIT_Value = BIT0;
+        mc = (uint32_t)(strtoul(Argv[1], 0, 0));
     }
-    else if (Argc == 3) // only mc & phy_addr is passed as argument
+
+    if (Argc > 2) // only mc & phy_addr is passed as argument
     {
-        if ((Argv[1] != NULL) && (Argv[2] != NULL))
-        {
-            mc = (uint32_t)(strtoul(Argv[1], 0, 0));
-            p_addr = (uint64_t)(strtoul(Argv[2], 0, 0));
-            check_null |= true;
-        }
-        BIT_Value = BIT0;
+        p_addr = (uint64_t)(strtoull(Argv[2], 0, 0));
     }
-    else if (Argc == 4) // Mc, phy_addr & one bit is passed as argument.
+
+    if (Argc > 3) // Mc, phy_addr & one bit is passed as argument.
     {
-        if ((Argv[1] != NULL) && (Argv[2] != NULL) && (Argv[3] != NULL))
-        {
-            int bit;
-            mc = (uint32_t)(strtoul(Argv[1], 0, 0));
-            p_addr = (uint64_t)(strtoul(Argv[2], 0, 0));
-            bit = (uint16_t)(strtoul(Argv[3], 0, 0));
-            if (bit >= 0 && bit < 10)
-            {
-                BIT_Value |= 1 << bit;
-                check_null |= true;
-            }
-            else
-            {
-                check_null &= false;
-            }
-        }
+        bit = (uint8_t)(strtoul(Argv[3], 0, 0));
+    }
+
+    if (bit >= 10)
+    {
+        check_null = false;
+        BIT_Value = 1;
     }
     else
     {
-        FpFwCliPrint("Invalid Argument! Please provide necessary arguments!");
-        return CLI_ERROR;
+        BIT_Value = (1 << bit);
     }
 
-    if ((check_null == false) || (!ddrss_ue_ce_err_inj_validation(mc, BIT_Value)))
+    if (!ddrss_ue_ce_err_inj_validation(mc, BIT_Value))
+    {
+        check_null = false;
+    }
+
+    if (check_null == false)
     {
         FpFwCliPrint("Invalid Argument! Please provide necessary arguments!");
         return CLI_ERROR;
     }
 
+    die = 0;
     ddrss_ue_ce_error_injection(die, mc, p_addr, BIT_Value);
     FpFwCliPrint("DDR: ecc_ce_error_injection - Done!!\n");
+
     return CLI_SUCCESS;
 }
 

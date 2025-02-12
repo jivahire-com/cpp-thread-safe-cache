@@ -68,7 +68,8 @@ mock_target(${TARGET}
     ddrss_get_ras_agent
     ddrss_convert_ras_rec_to_cper
     ddrss_mc_intu_get_interrupt_status
-    ddrss_atu_map
-    ddrss_atu_unmap
+    ddrss_atu_map_cfg_space
+    ddrss_atu_unmap_cfg_space
     ddrss_inject_media_data_err
+    ddrss_physical_to_media_addr
 )

@@ -233,13 +233,21 @@ cmn800_snf_to_mc_config_t* __wrap_cmn800_generate_ddr_mc_map_from_cached_config(
     return mock_type(cmn800_snf_to_mc_config_t*);
 }
 
-uintptr_t __wrap_ddrss_atu_map(uint32_t die_num)
+uintptr_t __wrap_ddrss_atu_map_cfg_space(uint32_t die_num)
 {
     check_expected(die_num);
     return mock_type(uintptr_t);
 }
 
-void __wrap_ddrss_atu_unmap(uint32_t die_num)
+void __wrap_ddrss_atu_unmap_cfg_space(uint32_t die_num)
 {
     check_expected(die_num);
+}
+
+int __wrap_ddrss_physical_to_media_addr(uint64_t pa, ddrss_media_addr_t* ma, uint32_t* mc)
+{
+    FPFW_UNUSED(pa);
+    FPFW_UNUSED(ma);
+    FPFW_UNUSED(mc);
+    return (SILIBS_SUCCESS);
 }

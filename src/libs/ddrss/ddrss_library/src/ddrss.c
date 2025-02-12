@@ -162,8 +162,8 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     printf("DDRSS init for %s\n", platform_str);
 
     // Map both DDRSS DIE0 and DIE1 cfg space through ATU
-    uint32_t d0_start = ddrss_atu_map(SOC_D0);
-    uint32_t d1_start = ddrss_atu_map(SOC_D1);
+    uint32_t d0_start = ddrss_atu_map_cfg_space(SOC_D0);
+    uint32_t d1_start = ddrss_atu_map_cfg_space(SOC_D1);
     ddrss_cfgs.ddrss_base_die[SOC_D0] = d0_start;
     ddrss_cfgs.ddrss_base_die[SOC_D1] = d1_start;
 
@@ -190,11 +190,11 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     // Unmap previous ATU mapping for other DIE
     if (die_num == DIE_0)
     {
-        ddrss_atu_unmap(SOC_D1);
+        ddrss_atu_unmap_cfg_space(SOC_D1);
     }
     else
     {
-        ddrss_atu_unmap(SOC_D0);
+        ddrss_atu_unmap_cfg_space(SOC_D0);
     }
 
     printf("DDRSS init exit\n");
@@ -205,8 +205,8 @@ void prod_ddrss_pcr_init(KNG_DIE_ID die_num)
     // Set DDRSS mask for 1D boot (12 MCs) or 2D boot (24 MCs)
     uint32_t ddrss_mask = idhw_is_single_die_boot_en() ? 0x03F : 0xFFF;
 
-    uintptr_t start_addr = ddrss_atu_map(die_num);
+    uintptr_t start_addr = ddrss_atu_map_cfg_space(die_num);
     FPFW_RUNTIME_ASSERT(ddrss_set_die_base(die_num, start_addr) == SILIBS_SUCCESS);
     pcr_ddrss_configure_clock_and_pcr_reset(ddrss_mask, die_num);
-    ddrss_atu_unmap(die_num);
+    ddrss_atu_unmap_cfg_space(die_num);
 }

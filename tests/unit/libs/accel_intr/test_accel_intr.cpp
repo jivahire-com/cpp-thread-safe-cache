@@ -322,8 +322,6 @@ TEST_FUNCTION(test_accel_intr_isr_scp_pass, nullptr, nullptr)
 
     expect_value(__wrap_nvic_irq_disable, irq_num, irq_num);
 
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
-
     accel_intr_isr_scp((void*)irq_num);
 }
 
@@ -351,8 +349,6 @@ TEST_FUNCTION(test_sdm_intr_isr_scp_pass_no_level2_intr, nullptr, nullptr)
     expect_value(__wrap_send_fatal_intr_async_request, IRQnum, irq_num);
 
     expect_value(__wrap_nvic_irq_disable, irq_num, irq_num);
-
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     accel_intr_isr_scp((void*)irq_num);
 }

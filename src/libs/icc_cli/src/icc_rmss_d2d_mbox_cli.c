@@ -10,6 +10,8 @@
 /*------------- Includes -----------------*/
 #include "icc_rmss_d2d_mbox_cli.h"
 
+#include "icc_cli_i.h"
+
 #include <DfwkStatus.h> // for DFWK_SUCCESS
 #include <FPFwInterrupts.h>
 #include <FpFwAssert.h>           // for FPFW_RUNTIME_ASSERT
@@ -29,6 +31,7 @@
 /*-- Symbolic Constant Macros (defines) --*/
 #define D2D_MBOX_TEST_PAYLOAD      0x11111111UL
 #define D2D_RMSS_RMBOX_SCP_IRQ_NUM 226
+
 /*------------- Typedefs -----------------*/
 /**
  * @brief List of d2d tests
@@ -74,7 +77,7 @@ static bool is_d2d_recv_test_active = false;
  * @brief  List of test type names
  */
 static const char* d2d_test_identifier_str[MAX_TEST_ID] =
-    {[SEND_TEST_ID] = "D2D SEND TEST", [RECV_TEST_ID] = "D2D RECV TEST", [ECHO_SERVER_TEST_ID] = "D2D ECHO SERVER TEST", [ECHO_CLIENT_TEST_ID] = "D2D ECHO CLIENT TEST", [SYNC_TEST_ID] = "D2D SYNC TEST"};
+    {[SEND_TEST_ID] = "D2D SEND", [RECV_TEST_ID] = "D2D RECV", [ECHO_SERVER_TEST_ID] = "D2D ECHO SERV", [ECHO_CLIENT_TEST_ID] = "D2D ECHO CLIENT", [SYNC_TEST_ID] = "D2D SYNC"};
 
 /*----------------------------------------------- Callback Functions -------------------------------------------*/
 /**
@@ -86,29 +89,30 @@ void my_d2d_icc_base_send_complete_notify(void* context, fpfw_status_t status)
     fpfw_icc_base_send_req_t* req_params = (fpfw_icc_base_send_req_t*)context; // NOLINT
     if (status != DFWK_SUCCESS)
     {
-        FpFwCliPrint("[%s]   SCP[%d]->SCP[%d] Send Failed: Status[0x%x] Internal Status[0x%x]\n",
-                     d2d_test_identifier_str[SEND_TEST_ID],
-                     current_die_id,
-                     remote_die_id,
-                     status,
-                     req_params->send_req.Output.Status);
+        FPFW_CLI_LOG_ERR("[%s][%d]->[%d]Send Failed: Status[0x%x] Internal Status[0x%x]\n",
+                         d2d_test_identifier_str[SEND_TEST_ID],
+                         current_die_id,
+                         remote_die_id,
+                         status,
+                         req_params->send_req.Output.Status);
     }
     else
     {
         uint32_t* send_payload = (uint32_t*)req_params->payload_buffer;
         uint32_t cmd_code = GET_RMSS_D2D_MBOX_CMD_CODE(send_payload[0]);
         //! verify success, output status
-        FpFwCliPrint("[%s]   SCP[%d]->SCP[%d] Send Complete: Status[0x%x] CmdCode [0x%x] Payload[",
-                     d2d_test_identifier_str[SEND_TEST_ID],
-                     current_die_id,
-                     remote_die_id,
-                     status,
-                     cmd_code);
+        FPFW_CLI_LOG_INFO("[%s][%d]->[%d]Send Complete: Status[0x%x] CmdCode[0x%x]\n",
+                          d2d_test_identifier_str[SEND_TEST_ID],
+                          current_die_id,
+                          remote_die_id,
+                          status,
+                          cmd_code);
+        FPFW_CLI_LOG_DEBUG("Payload[");
         for (uint32_t i = 0; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
-            FpFwCliPrint("0x%x ", send_payload[i]);
+            FPFW_CLI_LOG_DEBUG("0x%x ", send_payload[i]);
         }
-        FpFwCliPrint("]\n");
+        FPFW_CLI_LOG_DEBUG("]\n");
     }
     is_d2d_send_test_active = false;
 }
@@ -122,30 +126,31 @@ void my_d2d_icc_base_send_resp_complete_notify(void* context, fpfw_status_t stat
     fpfw_icc_base_send_rsp_t* req_params = (fpfw_icc_base_send_rsp_t*)context; // NOLINT
     if (status != DFWK_SUCCESS)
     {
-        FpFwCliPrint("[%s][ASYNC]   SCP[%d]->SCP[%d] Send Resp Failed: Status[0x%x] Internal Status[0x%x]\n",
-                     d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
-                     current_die_id,
-                     remote_die_id,
-                     status,
-                     req_params->send_req.Output.Status);
+        FPFW_CLI_LOG_ERR("[%s][ASYNC][%d]->[%d]Send Resp Failed: Status[0x%x] Internal Status[0x%x]\n",
+                         d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
+                         current_die_id,
+                         remote_die_id,
+                         status,
+                         req_params->send_req.Output.Status);
     }
     else
     {
         uint32_t* send_payload = (uint32_t*)req_params->send_payload_buffer;
         uint32_t cmd_code = GET_RMSS_D2D_MBOX_CMD_CODE(send_payload[0]);
         //! verify success & print status
-        FpFwCliPrint(
-            "[%s][ASYNC]   SCP[%d]->SCP[%d] Send Resp Complete: Status[0x%x] CmdCode [0x%x] Payload[",
-            d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
-            current_die_id,
-            remote_die_id,
-            status,
-            cmd_code);
+        FPFW_CLI_LOG_INFO("[%s][ASYNC][%d]->[%d]Send Resp Complete: Status[0x%x] CmdCode[0x%x]\n",
+                          d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
+                          current_die_id,
+                          remote_die_id,
+                          status,
+                          cmd_code);
+
+        FPFW_CLI_LOG_DEBUG("Payload[");
         for (uint32_t i = 0; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
-            FpFwCliPrint("0x%x ", send_payload[i]);
+            FPFW_CLI_LOG_DEBUG("0x%x ", send_payload[i]);
         }
-        FpFwCliPrint("]\n");
+        FPFW_CLI_LOG_DEBUG("]\n");
         is_d2d_echo_serv_test_active = false;
     }
 }
@@ -163,12 +168,12 @@ void my_d2d_icc_base_recv_complete_notify(void* context, size_t output_size_byte
     //! Verify success & print
     if (status != DFWK_SUCCESS)
     {
-        FpFwCliPrint("[%s]   SCP[%d]->SCP[%d] Recv Failed: Status[0x%x] CmdCode[0x%x]\n",
-                     d2d_test_identifier_str[test_id],
-                     current_die_id,
-                     remote_die_id,
-                     status,
-                     recv_cmd_code);
+        FPFW_CLI_LOG_ERR("[%s][%d]->[%d]Recv Failed: Status[0x%x] CmdCode[0x%x]\n",
+                         d2d_test_identifier_str[test_id],
+                         current_die_id,
+                         remote_die_id,
+                         status,
+                         recv_cmd_code);
 
         if (test_id == RECV_TEST_ID)
         {
@@ -182,19 +187,20 @@ void my_d2d_icc_base_recv_complete_notify(void* context, size_t output_size_byte
     }
 
     uint32_t* recv_payload = (uint32_t*)req_params->payload_buffer; // NOLINT
-    FpFwCliPrint("[%s]   SCP[%d]->SCP[%d] Recv Complete: Status[0x%x] ReceivedBytes[%d] "
-                 "CmdCode[0x%x] Payload[",
-                 d2d_test_identifier_str[test_id],
-                 current_die_id,
-                 remote_die_id,
-                 status,
-                 output_size_bytes,
-                 recv_cmd_code);
+    FPFW_CLI_LOG_INFO("[%s][%d]->[%d]Recv Complete: Status[0x%x] RecvBytes[%d] CmdCode[0x%x]\n",
+                      d2d_test_identifier_str[test_id],
+                      current_die_id,
+                      remote_die_id,
+                      status,
+                      output_size_bytes,
+                      recv_cmd_code);
+
+    FPFW_CLI_LOG_DEBUG("Payload[");
     for (uint32_t i = 0; i < D2D_MBOX_FIFO_DEPTH; i++)
     {
-        FpFwCliPrint("0x%x ", recv_payload[i]);
+        FPFW_CLI_LOG_DEBUG("0x%x ", recv_payload[i]);
     }
-    FpFwCliPrint("]\n");
+    FPFW_CLI_LOG_DEBUG("]\n");
 
     //! Specific actions as per the current test
     if (test_id == RECV_TEST_ID)
@@ -224,25 +230,27 @@ void my_d2d_icc_base_recv_complete_notify(void* context, size_t output_size_byte
     //! print status message
     if (send_status != DFWK_SUCCESS)
     {
-        FpFwCliPrint("[%s][ASYNC]   SCP[%d]->SCP[%d] Send Resp Failed: Status[0x%x]\n",
-                     d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
-                     current_die_id,
-                     remote_die_id,
-                     send_status);
+        FPFW_CLI_LOG_ERR("[%s][ASYNC][%d]->[%d]Send Resp Failed: Status[0x%x]\n",
+                         d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
+                         current_die_id,
+                         remote_die_id,
+                         send_status);
     }
     else
     {
         //! verify success, output status
-        FpFwCliPrint("[%s][ASYNC]   SCP[%d]->SCP[%d] Send Resp Initiated: Status[0x%x] Payload[",
-                     d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
-                     current_die_id,
-                     remote_die_id,
-                     send_status);
+        FPFW_CLI_LOG_INFO("[%s][ASYNC][%d]->[%d]Send Resp Initiated: Status[0x%x]\n",
+                          d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
+                          current_die_id,
+                          remote_die_id,
+                          send_status);
+
+        FPFW_CLI_LOG_DEBUG("Payload[");
         for (uint32_t i = 0; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
-            FpFwCliPrint("0x%x ", d2d_serv_echo_send_rsp_msg.as_uint32[i]);
+            FPFW_CLI_LOG_DEBUG("0x%x ", d2d_serv_echo_send_rsp_msg.as_uint32[i]);
         }
-        FpFwCliPrint("]\n");
+        FPFW_CLI_LOG_DEBUG("]\n");
     }
 }
 
@@ -252,52 +260,54 @@ void my_d2d_icc_base_send_recv_complete_notify(void* context, size_t output_size
     fpfw_icc_base_send_recv_req_t* req_params = (fpfw_icc_base_send_recv_req_t*)context; // NOLINT
     if (status != DFWK_SUCCESS)
     {
-        FpFwCliPrint("[%s][ASYNC]   SCP[%d]->SCP[%d] Recv Failed: Status[0x%x]\n",
-                     d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
-                     current_die_id,
-                     remote_die_id,
-                     status);
+        FPFW_CLI_LOG_ERR("[%s][ASYNC][%d]->[%d]Recv Failed: Status[0x%x]\n",
+                         d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
+                         current_die_id,
+                         remote_die_id,
+                         status);
     }
     else
     {
         uint32_t* recv_payload = (uint32_t*)req_params->recv_entry.payload_buffer; // NOLINT
         //! verify success, output status
-        FpFwCliPrint("[%s][ASYNC]   SCP[%d]->SCP[%d] Recv Complete: Status[0x%x] ReceivedBytes[%d] "
-                     "CmdCode[0x%x] Payload[",
-                     d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
-                     current_die_id,
-                     remote_die_id,
-                     status,
-                     output_size_bytes,
-                     GET_RMSS_D2D_MBOX_CMD_CODE(recv_payload[0]));
+        FPFW_CLI_LOG_INFO("[%s][ASYNC][%d]->[%d]Recv Complete: Status[0x%x] RecvBytes[%d] CmdCode[0x%x]\n",
+                          d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
+                          current_die_id,
+                          remote_die_id,
+                          status,
+                          output_size_bytes,
+                          GET_RMSS_D2D_MBOX_CMD_CODE(recv_payload[0]));
+
+        FPFW_CLI_LOG_DEBUG("Payload[");
         for (uint32_t i = 0; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
-            FpFwCliPrint("0x%x ", recv_payload[i]);
+            FPFW_CLI_LOG_DEBUG("0x%x ", recv_payload[i]);
         }
-        FpFwCliPrint("]\n");
+        FPFW_CLI_LOG_DEBUG("]\n");
 
         //! Compare the received payload with the sent payload, excluding the header
         if (memcmp(&d2d_client_echo_msg.as_uint32[1], &recv_payload[1], sizeof(rmss_d2d_mailbox_msg) - 4) == 0)
         {
-            FpFwCliPrint("[%s][ASYNC]   SCP[%d]->SCP[%d] Echo Test Passed: Received data matches sent data\n",
-                         d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
-                         current_die_id,
-                         remote_die_id);
+            //! Received data matches sent data
+            FPFW_CLI_LOG_INFO("[%s][ASYNC][%d]->[%d]Echo Test Passed\n",
+                              d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
+                              current_die_id,
+                              remote_die_id);
         }
         else
         {
-            FpFwCliPrint(
-                "[%s][ASYNC]   SCP[%d]->SCP[%d] Echo Test Failed: Received data does not match sent data\n",
-                d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
-                current_die_id,
-                remote_die_id);
+            //! Data mismatch
+            FPFW_CLI_LOG_ERR("[%s][ASYNC][%d]->[%d] Echo Test Failed\n",
+                             d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
+                             current_die_id,
+                             remote_die_id);
 
-            FpFwCliPrint("Received Payload: ");
+            FPFW_CLI_LOG_DEBUG("Received Payload: ");
             for (uint32_t i = 0; i < D2D_MBOX_FIFO_DEPTH; i++)
             {
-                FpFwCliPrint("0x%x ", d2d_client_echo_msg.as_uint32[i]);
+                FPFW_CLI_LOG_DEBUG("0x%x ", d2d_client_echo_msg.as_uint32[i]);
             }
-            FpFwCliPrint("\n");
+            FPFW_CLI_LOG_DEBUG("\n");
         }
     }
     is_d2d_echo_client_test_active = false;
@@ -320,14 +330,13 @@ fpfw_status_t d2d_mbox_recv_common(fpfw_icc_base_recv_req_t* recv_param, rmss_d2
     fpfw_status_t status = fpfw_icc_base_recv(icc_base_rmss_d2d_mbx_ctx, recv_param);
 
     //! Print the status message
-    FpFwCliPrint("[%s]   SCP[%d]->SCP[%d] Recv %s: Status[0x%x] CmdCode[0x%x]\n",
-                 d2d_test_identifier_str[type],
-                 current_die_id,
-                 remote_die_id,
-                 (status == DFWK_SUCCESS ? "Initiated" : "Failed"),
-                 status,
-                 recv_cmd_code);
-
+    FPFW_CLI_LOG_INFO("[%s][%d]->[%d]Recv %s: Status[0x%x] CmdCode[0x%x]\n",
+                      d2d_test_identifier_str[type],
+                      current_die_id,
+                      remote_die_id,
+                      (status == DFWK_SUCCESS ? "Initiated" : "Failed"),
+                      status,
+                      recv_cmd_code);
     return status;
 }
 
@@ -339,7 +348,8 @@ FPFW_CLI_STATUS d2d_mbox_send(int argc, const char** argv)
     //! Prevent overwriting of the send payload buffer
     if (is_d2d_send_test_active)
     {
-        FpFwCliPrint("[%s]: Test already active, please wait for completion\n", d2d_test_identifier_str[SEND_TEST_ID]);
+        //! Prevent overlapping of send operations, Must wait for completion
+        FPFW_CLI_LOG_ERR("[%s]: Test already active\n", d2d_test_identifier_str[SEND_TEST_ID]);
         return cli_status;
     }
 
@@ -348,7 +358,7 @@ FPFW_CLI_STATUS d2d_mbox_send(int argc, const char** argv)
 
     if (argc < 17)
     {
-        FpFwCliPrint("[%s]: Insufficient Payload Args, Using default values\n", d2d_test_identifier_str[SEND_TEST_ID]);
+        FPFW_CLI_LOG_ERR("[%s]: Insufficient Payload Args, Using default values\n", d2d_test_identifier_str[SEND_TEST_ID]);
         d2d_send_msg.as_uint32[0] = SET_RMSS_D2D_MAILBOX_HEADER_ASUNIT32(RMSS_D2D_MAILBOX_MSG_TEST_REQ, 0, 0);
         for (uint8_t i = 1; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
@@ -375,25 +385,27 @@ FPFW_CLI_STATUS d2d_mbox_send(int argc, const char** argv)
     //! print status message
     if (status != DFWK_SUCCESS)
     {
-        FpFwCliPrint("[%s]   SCP[%d]->SCP[%d] Send Failed: Status[0x%x]\n",
-                     d2d_test_identifier_str[SEND_TEST_ID],
-                     current_die_id,
-                     remote_die_id,
-                     status);
+        FPFW_CLI_LOG_ERR("[%s][%d]->[%d]Send Failed: Status[0x%x]\n",
+                         d2d_test_identifier_str[SEND_TEST_ID],
+                         current_die_id,
+                         remote_die_id,
+                         status);
     }
     else
     {
         //! verify success, output status
-        FpFwCliPrint("[%s]   SCP[%d]->SCP[%d] Send Initiated: Status[0x%x] Payload[",
-                     d2d_test_identifier_str[SEND_TEST_ID],
-                     current_die_id,
-                     remote_die_id,
-                     status);
+        FPFW_CLI_LOG_INFO("[%s][%d]->[%d]Send Initiated: Status[0x%x]\n",
+                          d2d_test_identifier_str[SEND_TEST_ID],
+                          current_die_id,
+                          remote_die_id,
+                          status);
+
+        FPFW_CLI_LOG_DEBUG("Payload[");
         for (uint32_t i = 0; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
-            FpFwCliPrint("0x%x ", d2d_send_msg.as_uint32[i]);
+            FPFW_CLI_LOG_DEBUG("0x%x ", d2d_send_msg.as_uint32[i]);
         }
-        FpFwCliPrint("]\n");
+        FPFW_CLI_LOG_DEBUG("]\n");
 
         is_d2d_send_test_active = true;
         cli_status = CLI_SUCCESS;
@@ -408,15 +420,16 @@ FPFW_CLI_STATUS d2d_mbox_recv(int argc, const char** argv)
 
     if (is_d2d_recv_test_active)
     {
-        FpFwCliPrint("[%s]: Test already active, please wait for completion\n", d2d_test_identifier_str[RECV_TEST_ID]);
+        //! Prevent overlapping of recv operations, Must wait for completion
+        FPFW_CLI_LOG_ERR("[%s]: Test already active\n", d2d_test_identifier_str[RECV_TEST_ID]);
         return cli_status;
     }
 
     if ((argc < 2) || (atoi(argv[1]) < RMSS_D2D_MAILBOX_MSG_ECHO_RSP))
     {
-        FpFwCliPrint("[%s]: Insufficient Args or Invalid cmd code, Using default Command code 0x2 -> "
-                     "RMSS_D2D_MAILBOX_MSG_TEST_REQ\n",
-                     d2d_test_identifier_str[RECV_TEST_ID]);
+        FPFW_CLI_LOG_ERR("[%s]: Insufficient Args or Invalid cmd code, Using default Command code 0x2 -> "
+                         "RMSS_D2D_MAILBOX_MSG_TEST_REQ\n",
+                         d2d_test_identifier_str[RECV_TEST_ID]);
         recv_cmd_code = RMSS_D2D_MAILBOX_MSG_TEST_REQ;
     }
     else
@@ -444,8 +457,8 @@ FPFW_CLI_STATUS d2d_mbox_echo_server(int argc, const char** argv)
 
     if (is_d2d_echo_serv_test_active)
     {
-        FpFwCliPrint("[%s][ASYNC]: Test already active, please wait for completion\n",
-                     d2d_test_identifier_str[ECHO_SERVER_TEST_ID]);
+        FPFW_CLI_LOG_ERR("[%s][ASYNC]: Test already active, please wait for completion\n",
+                         d2d_test_identifier_str[ECHO_SERVER_TEST_ID]);
         return cli_status;
     }
 
@@ -469,8 +482,8 @@ FPFW_CLI_STATUS d2d_mbox_echo_client(int argc, const char** argv)
     //! Prevent overwriting of the payload buffer
     if (is_d2d_echo_client_test_active)
     {
-        FpFwCliPrint("[%s][ASYNC]: Client Side Test already active, please wait for completion\n",
-                     d2d_test_identifier_str[ECHO_CLIENT_TEST_ID]);
+        //! Prevent overlapping of send/recv operations, Must wait for completion
+        FPFW_CLI_LOG_ERR("[%s][ASYNC]: Client Side Test already active\n", d2d_test_identifier_str[ECHO_CLIENT_TEST_ID]);
         return cli_status;
     }
 
@@ -482,8 +495,8 @@ FPFW_CLI_STATUS d2d_mbox_echo_client(int argc, const char** argv)
 
     if (argc < 17)
     {
-        FpFwCliPrint("[%s][ASYNC]: Insufficient Payload Args, Using default values\n",
-                     d2d_test_identifier_str[ECHO_CLIENT_TEST_ID]);
+        FPFW_CLI_LOG_ERR("[%s][ASYNC]: Insufficient Payload Args, Using default values\n",
+                         d2d_test_identifier_str[ECHO_CLIENT_TEST_ID]);
         for (uint8_t i = 1; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
             d2d_client_echo_msg.as_uint32[i] = D2D_MBOX_TEST_PAYLOAD * (i);
@@ -509,26 +522,28 @@ FPFW_CLI_STATUS d2d_mbox_echo_client(int argc, const char** argv)
     //! Print the status message
     if (status != DFWK_SUCCESS)
     {
-        FpFwCliPrint("[%s][ASYNC]   SCP[%d]->SCP[%d] Send Failed: Status[0x%x]\n",
-                     d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
-                     current_die_id,
-                     remote_die_id,
-                     status);
+        FPFW_CLI_LOG_ERR("[%s][ASYNC][%d]->[%d]Send Failed: Status[0x%x]\n",
+                         d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
+                         current_die_id,
+                         remote_die_id,
+                         status);
     }
     else
     {
         //! verify success, output status
-        FpFwCliPrint("[%s][ASYNC]   SCP[%d]->SCP[%d] Send Initiated: Status[0x%x] CmdCode [0x%x] Payload[",
-                     d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
-                     current_die_id,
-                     remote_die_id,
-                     status,
-                     GET_RMSS_D2D_MBOX_CMD_CODE(d2d_client_echo_msg.as_uint32[0]));
+        FPFW_CLI_LOG_INFO("[%s][ASYNC][%d]->[%d]Send Initiated: Status[0x%x] CmdCode[0x%x]\n",
+                          d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
+                          current_die_id,
+                          remote_die_id,
+                          status,
+                          GET_RMSS_D2D_MBOX_CMD_CODE(d2d_client_echo_msg.as_uint32[0]));
+
+        FPFW_CLI_LOG_DEBUG("Payload[");
         for (uint32_t i = 0; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
-            FpFwCliPrint("0x%x ", d2d_client_echo_msg.as_uint32[i]);
+            FPFW_CLI_LOG_DEBUG("0x%x ", d2d_client_echo_msg.as_uint32[i]);
         }
-        FpFwCliPrint("]\n");
+        FPFW_CLI_LOG_DEBUG("]\n");
 
         is_d2d_echo_client_test_active = true;
         cli_status = CLI_SUCCESS;
@@ -563,27 +578,27 @@ FPFW_CLI_STATUS d2d_sync_test(int argc, const char** argv)
 {
     if (argc != 4)
     {
-        FpFwCliPrint("[%s]: No args provided, Using Defaults:\n", d2d_test_identifier_str[SYNC_TEST_ID]);
+        FPFW_CLI_LOG_ERR("[%s]: No args provided, Using Defaults:\n", d2d_test_identifier_str[SYNC_TEST_ID]);
         my_d2d_sync_point.local_write_addr = d2d_sync_point.local_write_addr;
         my_d2d_sync_point.remote_write_addr = d2d_sync_point.remote_write_addr;
         my_d2d_sync_point.value = d2d_sync_point.value;
     }
     else
     {
-        FpFwCliPrint("[%s]: Override Defaults:\n", d2d_test_identifier_str[SYNC_TEST_ID]);
+        FPFW_CLI_LOG_INFO("[%s]: Override Defaults:\n", d2d_test_identifier_str[SYNC_TEST_ID]);
         my_d2d_sync_point.local_write_addr = (uintptr_t)atoi(argv[1]);
         my_d2d_sync_point.remote_write_addr = (uintptr_t)atoi(argv[2]);
         my_d2d_sync_point.value = (uint32_t)atoi(argv[3]);
     }
-    FpFwCliPrint("[%s]  Die[%d] Local Write Addr [0x%x]\nRemote Write Addr [0x%x]\nValue [0x%x]\n",
-                 d2d_test_identifier_str[SYNC_TEST_ID],
-                 current_die_id,
-                 my_d2d_sync_point.local_write_addr,
-                 my_d2d_sync_point.remote_write_addr,
-                 my_d2d_sync_point.value);
+    FPFW_CLI_LOG_INFO("[%s] Die[%d] Local Write Addr [0x%x]\nRemote Write Addr [0x%x]\nValue [0x%x]\n",
+                      d2d_test_identifier_str[SYNC_TEST_ID],
+                      current_die_id,
+                      my_d2d_sync_point.local_write_addr,
+                      my_d2d_sync_point.remote_write_addr,
+                      my_d2d_sync_point.value);
 
     int status = mscp_exp_spi_synchronize_dies(my_d2d_sync_point, current_die_id);
-    FpFwCliPrint("[%s] %s\n", d2d_test_identifier_str[SYNC_TEST_ID], (status != 0 ? "Failed" : "Passed"));
+    FPFW_CLI_LOG_INFO("[%s] %s\n", d2d_test_identifier_str[SYNC_TEST_ID], (status != 0 ? "Failed" : "Passed"));
     return status;
 }
 
@@ -605,14 +620,14 @@ FPFW_CLI_STATUS d2d_reset_test(int argc, const char** argv)
         is_d2d_echo_serv_test_active = false;
         is_d2d_send_test_active = false;
         is_d2d_recv_test_active = false;
-        FpFwCliPrint("No arg, by default all tests were Reset\n");
+        FPFW_CLI_LOG_ERR("No arg, by default all tests were Reset\n");
     }
     else
     {
         d2d_mbx_test_type test_id = atoi(argv[1]);
         if (test_id >= MAX_TEST_ID)
         {
-            FpFwCliPrint("Invalid test ID, No tests were Reset\n");
+            FPFW_CLI_LOG_ERR("Invalid test ID, No tests were Reset\n");
             return CLI_ERROR;
         }
         switch (test_id)
@@ -630,10 +645,10 @@ FPFW_CLI_STATUS d2d_reset_test(int argc, const char** argv)
             is_d2d_echo_client_test_active = false;
             break;
         default:
-            FpFwCliPrint("Unsupported Arg, No tests were Reset\n");
+            FPFW_CLI_LOG_ERR("Unsupported Arg, No tests were Reset\n");
             return CLI_ERROR;
         }
-        FpFwCliPrint("%s Reset Successfully\n", d2d_test_identifier_str[test_id]);
+        FPFW_CLI_LOG_INFO("%s Reset Successfully\n", d2d_test_identifier_str[test_id]);
     }
     return CLI_SUCCESS;
 }
@@ -652,10 +667,10 @@ FPFW_CLI_STATUS d2d_mbox_echo_server_sync(int argc, const char** argv)
     rmss_d2d_mailbox_msg client_echo_rsp_msg = {0};
 
     //! block until recv sync completes
-    FpFwCliPrint("[%s][SYNC]: SCP[%d]->SCP[%d] Wait Until Command Received\n",
-                 d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
-                 remote_die_id,
-                 current_die_id);
+    FPFW_CLI_LOG_INFO("[%s][SYNC]: SCP[%d]->SCP[%d] Wait Until Command Received\n",
+                      d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
+                      remote_die_id,
+                      current_die_id);
 
     //! Dispatcher is actively listening for recv requests at runtime, disable the recv interrupt for sync operation
     FPFwCoreInterruptDisableVector(D2D_RMSS_RMBOX_SCP_IRQ_NUM);
@@ -665,29 +680,29 @@ FPFW_CLI_STATUS d2d_mbox_echo_server_sync(int argc, const char** argv)
 
     if (icc_status != DFWK_SUCCESS)
     {
-        FpFwCliPrint("[%s][SYNC]   SCP[%d]->SCP[%d] Recv Req Failed: Status[0x%x] CmdCode[0x%x]\n",
-                     d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
-                     remote_die_id,
-                     current_die_id,
-                     icc_status,
-                     client_echo_msg.header.cmd);
+        FPFW_CLI_LOG_ERR("[%s][SYNC][%d]->[%d]Recv Req Failed: Status[0x%x] CmdCode[0x%x]\n",
+                         d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
+                         remote_die_id,
+                         current_die_id,
+                         icc_status,
+                         client_echo_msg.header.cmd);
 
         return cli_status;
     }
 
-    FpFwCliPrint("[%s][SYNC]   SCP[%d]->SCP[%d] Command Received : ReceivedBytes[%d] "
-                 "CmdCode[0x%x] Payload[",
+    FpFwCliPrint("[%s][SYNC][%d]->[%d]Command Received : RecvBytes[%d] CmdCode[0x%x]\n",
                  d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
                  remote_die_id,
                  current_die_id,
                  recv_msg_size_bytes,
                  client_echo_msg.rsp.header.cmd);
 
+    FPFW_CLI_LOG_DEBUG("Payload[");
     for (uint32_t i = 0; i < D2D_MBOX_FIFO_DEPTH; i++)
     {
-        FpFwCliPrint("0x%x ", client_echo_msg.as_uint32[i]);
+        FPFW_CLI_LOG_DEBUG("0x%x ", client_echo_msg.as_uint32[i]);
     }
-    FpFwCliPrint("]\n");
+    FPFW_CLI_LOG_DEBUG("]\n");
 
     //! copy over recv payload into send resp payload to echo back
     memcpy(&client_echo_rsp_msg, &client_echo_msg, sizeof(rmss_d2d_mailbox_msg));
@@ -707,25 +722,27 @@ FPFW_CLI_STATUS d2d_mbox_echo_server_sync(int argc, const char** argv)
                                               sizeof(rmss_d2d_mailbox_msg));
     if (icc_status != DFWK_SUCCESS)
     {
-        FpFwCliPrint("[%s][SYNC]   SCP[%d]->SCP[%d] Send Resp Failed: Status[0x%x]\n",
-                     d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
-                     current_die_id,
-                     remote_die_id,
-                     icc_status);
+        FPFW_CLI_LOG_ERR("[%s][SYNC][%d]->[%d]Send Resp Failed: Status[0x%x]\n",
+                         d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
+                         current_die_id,
+                         remote_die_id,
+                         icc_status);
     }
     else
     {
         //! verify success & print status
-        FpFwCliPrint("[%s][SYNC]   SCP[%d]->SCP[%d] Send Resp Complete: CmdCode [0x%x] Payload[",
+        FpFwCliPrint("[%s][SYNC][%d]->[%d]Send Resp Complete: CmdCode[0x%x]\n",
                      d2d_test_identifier_str[ECHO_SERVER_TEST_ID],
                      current_die_id,
                      remote_die_id,
                      client_echo_rsp_msg.header.cmd);
+
+        FPFW_CLI_LOG_DEBUG("Payload[");
         for (uint32_t i = 0; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
-            FpFwCliPrint("0x%x ", client_echo_rsp_msg.as_uint32[i]);
+            FPFW_CLI_LOG_DEBUG("0x%x ", client_echo_rsp_msg.as_uint32[i]);
         }
-        FpFwCliPrint("]\n");
+        FPFW_CLI_LOG_DEBUG("]\n");
         cli_status = CLI_SUCCESS;
     }
     return cli_status;
@@ -743,8 +760,8 @@ FPFW_CLI_STATUS d2d_mbox_echo_client_sync(int argc, const char** argv)
 
     if (argc < 17)
     {
-        FpFwCliPrint("[%s][SYNC]: Insufficient Payload Args, Using default values\n",
-                     d2d_test_identifier_str[ECHO_CLIENT_TEST_ID]);
+        FPFW_CLI_LOG_ERR("[%s][SYNC]: Insufficient Payload Args, Using default values\n",
+                         d2d_test_identifier_str[ECHO_CLIENT_TEST_ID]);
         for (uint8_t i = 1; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
             client_echo_msg.as_uint32[i] = D2D_MBOX_TEST_PAYLOAD * (i);
@@ -759,17 +776,18 @@ FPFW_CLI_STATUS d2d_mbox_echo_client_sync(int argc, const char** argv)
     }
 
     //! Send the message to remote & get response, blocking call
-    FpFwCliPrint(
-        "[%s][SYNC]   SCP[%d]->SCP[%d] Send Mesg & Block Until Resp Received: CmdCode [0x%x] Payload[",
-        d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
-        current_die_id,
-        remote_die_id,
-        client_echo_msg.header.cmd);
+    FPFW_CLI_LOG_INFO("[%s][SYNC][%d]->[%d]Send Mesg & Block Until Resp Received: CmdCode[0x%x]\n",
+                      d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
+                      current_die_id,
+                      remote_die_id,
+                      client_echo_msg.header.cmd);
+
+    FPFW_CLI_LOG_DEBUG("Payload[");
     for (uint32_t i = 0; i < D2D_MBOX_FIFO_DEPTH; i++)
     {
-        FpFwCliPrint("0x%x ", client_echo_msg.as_uint32[i]);
+        FPFW_CLI_LOG_DEBUG("0x%x ", client_echo_msg.as_uint32[i]);
     }
-    FpFwCliPrint("]\n");
+    FPFW_CLI_LOG_DEBUG("]\n");
 
     //! store a copy of the mesg into temp buffer
     memcpy(&compare_buffer, &client_echo_msg, sizeof(rmss_d2d_mailbox_msg));
@@ -783,46 +801,43 @@ FPFW_CLI_STATUS d2d_mbox_echo_client_sync(int argc, const char** argv)
 
     if (icc_status != DFWK_SUCCESS)
     {
-        FpFwCliPrint("[%s][SYNC]   SCP[%d]->SCP[%d] Send/Recv Failed: Status[0x%x] CmdCode[0x%x]\n",
-                     d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
-                     current_die_id,
-                     remote_die_id,
-                     icc_status,
-                     client_echo_msg.header.cmd);
+        FPFW_CLI_LOG_ERR("[%s][SYNC][%d]->[%d]Send/Recv Failed: Status[0x%x] CmdCode[0x%x]\n",
+                         d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
+                         current_die_id,
+                         remote_die_id,
+                         icc_status,
+                         client_echo_msg.header.cmd);
     }
     else
     {
-        FpFwCliPrint("[%s][SYNC]   SCP[%d]->SCP[%d] Resp Received : ReceivedBytes[%d] "
-                     "CmdCode[0x%x] Payload[",
-                     d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
-                     current_die_id,
-                     remote_die_id,
-                     recv_msg_size_bytes,
-                     client_echo_msg.rsp.header.cmd);
+        FPFW_CLI_LOG_INFO("[%s][SYNC][%d]->[%d]Resp Received : RecvBytes[%d] CmdCode[0x%x]\n",
+                          d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
+                          current_die_id,
+                          remote_die_id,
+                          recv_msg_size_bytes,
+                          client_echo_msg.rsp.header.cmd);
 
+        FPFW_CLI_LOG_DEBUG("Payload[");
         for (uint32_t i = 0; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
-            FpFwCliPrint("0x%x ", client_echo_msg.as_uint32[i]);
+            FPFW_CLI_LOG_DEBUG("0x%x ", client_echo_msg.as_uint32[i]);
         }
-        FpFwCliPrint("]\n");
+        FPFW_CLI_LOG_DEBUG("]\n");
         cli_status = CLI_SUCCESS;
     }
 
     //! compare the received payload data with the send payload data in the temp buffer, excluding the metadata
     if (memcmp(&client_echo_msg.as_uint32[1], &compare_buffer.as_uint32[1], sizeof(rmss_d2d_mailbox_msg) - 4) == 0)
     {
-        FpFwCliPrint("[%s][SYNC]   SCP[%d]->SCP[%d] Echo Test Passed: Received data matches sent data\n",
-                     d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
-                     current_die_id,
-                     remote_die_id);
+        //! Received data matches sent data
+        FPFW_CLI_LOG_INFO("[%s][SYNC][%d]->[%d]Echo Test Passed\n",
+                          d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
+                          current_die_id,
+                          remote_die_id);
     }
     else
     {
-        FpFwCliPrint(
-            "[%s][SYNC]   SCP[%d]->SCP[%d] Echo Test Failed: Received data does not match sent data\n",
-            d2d_test_identifier_str[ECHO_CLIENT_TEST_ID],
-            current_die_id,
-            remote_die_id);
+        FPFW_CLI_LOG_ERR("[%s][SYNC][%d]->[%d]Echo Test Failed\n", d2d_test_identifier_str[ECHO_CLIENT_TEST_ID], current_die_id, remote_die_id);
         cli_status = CLI_ERROR;
     }
     return cli_status;

@@ -14,7 +14,15 @@
 #include <icc_cli.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define ICC_CLI_LOG_LEVEL          1
 
+#define FPFW_CLI_LOG_ERR(fmt, ...) FpFwCliPrint(fmt "\n", ##__VA_ARGS__)
+#define FPFW_CLI_LOG_INFO(fmt, ...) \
+    if (ICC_CLI_LOG_LEVEL >= 1)     \
+    FpFwCliPrint(fmt "\n", ##__VA_ARGS__)
+#define FPFW_CLI_LOG_DEBUG(fmt, ...) \
+    if (ICC_CLI_LOG_LEVEL >= 2)      \
+    FpFwCliPrint(fmt "\n", ##__VA_ARGS__)
 /*-------------- Typedefs ----------------*/
 
 /*-- Declarations (Statics and globals) --*/

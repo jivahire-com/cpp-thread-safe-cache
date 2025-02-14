@@ -13,6 +13,7 @@
 #include <DfwkDriver.h>
 #include <DfwkTypes.h>
 #include <DfwkCommon.h>
+#include <assert.h>
 #include <kng_soc_constants.h>
 #include <memory_map/ddrss_reserved_regions.h>
 #include <silibs_ap_top_regs.h>
@@ -23,6 +24,7 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
+#define IS_ALIGNED(addr, size) (((uintptr_t)(addr) & ((size) - 1)) == 0)
 
 /**
  * 1. All addresses, including the addresses in the AP Space, must be aligned to the ATU page size.
@@ -37,6 +39,11 @@
  * 4. The below mappings into the AP Window are the final static mappings applied for the MSCP. Any
  *    mappings initialized before the ATU Service will be overridden by these mappings, therefore any
  *    runtime dependencies on ATU mappings should depend on the ATU Service, and utilize these maps.
+ * 
+ * 5. For mappings that need MPU regions applied remember, the AP Window is a 2 GB window, starting at 
+ *    an address that is not 2 GB Aligned. MPU Regions need start addresses to be aligned to the region
+ *    size. Therefore, any region here that needs a MPU region must align it's start address within this
+ *    window to the MPU region size. This can result in gaps in the overall window. 
  */
 
 // The SCP and MCP have the same start address for the AP Window, so we can use the SCP's address
@@ -61,8 +68,9 @@
 // Each die has a unique DDR range for IB Telemetry, but window location is the same for both dies
 // the inband telemetry reserved memory is evenly split between the two dies
 #define MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_SIZE ((IB_TELEMETRY_RESERVATION_END - IB_TELEMETRY_RESERVATION_BASE) / 2)
-#define MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR (MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_END_ADDR + 1)
+#define MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR ALIGN_UP((MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_END_ADDR + 1), MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_SIZE)
 #define MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_END_ADDR ALIGN_UP(MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR + MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_SIZE, ATU_PAGE_SIZE) - 1
+static_assert(IS_ALIGNED(MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR, 128*SL_1MB), "MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR not aligned to 128 MB! Required for MPU!");
 
 // Due to resource constraints some of the payloads for ICC via MHU reside within DDR. We map the
 // entire range (even the other dies payload regions).

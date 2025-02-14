@@ -114,7 +114,17 @@ add_subdirectory(rng ${LIB_OUTS_DIR}/rng)
 # DDRSS_PHY_TRAIN_FW_BUILTIN_ENABLE
 #   0: Store the PHY training FW in the external RAM/FLASH
 #   1: Built-in the PHY training FW as part of the SCP image
-target_compile_options (ddrss PRIVATE "-Os" "-DDDRSS_COMPILE_DEBUG_LEVEL=DDRSS_DEBUG_LEVEL_CRITICAL" "-DDDRSS_PHY_TRAIN_FW_BUILTIN_ENABLE=0")
+# DDRSS_PHY_PIE_CODE_DATA_BUILTIN_ENABLE
+#   0: Store the PHY PIE code and data in the external RAM/FLASH
+#   1: Built-in the PHY PIE code and data as part of the SCP image
+target_compile_options (
+  ddrss PRIVATE
+    "-Os"
+    "-DDDRSS_COMPILE_DEBUG_LEVEL=DDRSS_DEBUG_LEVEL_CRITICAL"
+    "-DDDRSS_PHY_TRAIN_FW_BUILTIN_ENABLE=0"
+    "-DDDRSS_PHY_PIE_CODE_DATA_BUILTIN_ENABLE=0"
+)
+
 target_compile_options (pciess PRIVATE "-Os")
 target_compile_options (pcie PRIVATE "-Os")
 

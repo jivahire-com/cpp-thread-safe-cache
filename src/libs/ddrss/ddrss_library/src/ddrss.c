@@ -21,6 +21,7 @@
 #include <idhw.h> // for idhw_is_single_die_boot_en
 #include <idsw_kng.h>
 #include <interrupts.h>
+#include <memory_map/ddrss_reserved_regions.h>
 #include <memory_map/mscp_exp_rmss_memory_map.h>
 #include <pcr_ddrss.h>
 #include <silibs_ap_top_regs.h>
@@ -100,6 +101,10 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.ext_knobs.ref_temp_high = config_get_ref_temp_high();
     ddrss_cfgs.ext_knobs.sbr_en = config_get_sbr_en();
     ddrss_cfgs.ext_knobs.sub_bank_hashing_mode = config_get_sub_bank_hashing_mode();
+
+    GENERATE_ARRAY_OF_RSVD_REGIONS
+    DDRSS_PAS_REGIONS
+    ddrss_cfgs.pas_range_list = (uintptr_t)&_mem_region_list;
     ddrss_cfgs.ext_knobs.pas_encryption_en_mask = config_get_pas_encryption_en_mask();
 
     platform_id = idsw_get_platform_sdv();

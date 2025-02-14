@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <FpFwCli.h>
 #include <FpFwUtils.h>
 #include <cli_power_common.h>
 #include <cli_power_config.h>
@@ -95,7 +96,7 @@ static void print_padding(uint32_t decimal, unsigned places)
         value *= 10;
         if (decimal < value)
         {
-            printf(" ");
+            FpFwCliPrint(" ");
         }
     }
 }
@@ -104,14 +105,14 @@ static void print_padding(uint32_t decimal, unsigned places)
 /* -------------------------------------- */
 static void print_power_config_fuse(power_fuse_data_t* fuses)
 {
-    printf("\nMisc Fuse configurations\n");
-    printf("-----------------------\n");
-    printf("TDP cores  : %d\n", fuses->tdp_config.num_cores);
-    printf("TDP power  : %d A\n", fuses->tdp_config.power_A);
-    printf("TDP freq   : %d MHz\n", fuses->tdp_config.freq_MHz);
-    printf("Valid cores: " COREBITS_FMT_STR "\n", COREBITS_FMT_DATA(fuses->valid_cores));
+    FpFwCliPrint("\nMisc Fuse configs\n");
+    FpFwCliPrint("-----------------\n");
+    FpFwCliPrint("TDP cores  : %d\n", fuses->tdp_config.num_cores);
+    FpFwCliPrint("TDP power  : %d A\n", fuses->tdp_config.power_A);
+    FpFwCliPrint("TDP freq   : %d MHz\n", fuses->tdp_config.freq_MHz);
+    FpFwCliPrint("Valid cores: " COREBITS_FMT_STR "\n", COREBITS_FMT_DATA(fuses->valid_cores));
 
-    printf("\n");
+    FpFwCliPrint("\n");
 }
 /* -------------------------------------- */
 
@@ -120,38 +121,38 @@ static void print_dts_coeffs(dts_coeff_t* coeff, unsigned count)
 {
     for (unsigned int idx = 0; idx < count; ++idx)
     {
-        printf(" %02d y: %d k: %d\n", idx, coeff[idx].y_val, coeff[idx].k_val);
+        FpFwCliPrint(" %02d y: %d k: %d\n", idx, coeff[idx].y_val, coeff[idx].k_val);
     }
 }
 
 static void print_power_config_dts(power_fuse_data_t* fuses)
 {
-    printf("\nDTS Coefficients\n");
-    printf("----------------\n");
-    printf("\nTile\n");
+    FpFwCliPrint("\nDTS Coefficients\n");
+    FpFwCliPrint("----------------\n");
+    FpFwCliPrint("\nTile\n");
     print_dts_coeffs(fuses->dts_coeff_tile, ARRAY_SIZE(fuses->dts_coeff_tile));
-    printf("\nSoCTOP\n");
+    FpFwCliPrint("\nSoCTOP\n");
     print_dts_coeffs(fuses->dts_coeff_soctop, ARRAY_SIZE(fuses->dts_coeff_soctop));
-    printf("\n");
+    FpFwCliPrint("\n");
 }
 /* -------------------------------------- */
 
 /* -------------------------------------- */
 static void print_power_config_memasst(power_fuse_data_t* fuses)
 {
-    printf("\n");
-    printf("  ldo   hdrawlm hdema hshcrawlm hshscema tpemaa tpemab hd_emaw\n");
+    FpFwCliPrint("\n");
+    FpFwCliPrint("  ldo   hdrawlm hdema hshcrawlm hshscema tpemaa tpemab hd_emaw\n");
     for (unsigned r_idx = 0; r_idx < DFVS_FUSED_COREMEMASST_COUNT; ++r_idx)
     {
-        printf(" ");
+        FpFwCliPrint(" ");
         if (!fuses->memasst.entry[r_idx].valid_boundary)
         {
-            printf("---\n");
+            FpFwCliPrint("---\n");
             continue;
         }
         unsigned ldo = fuses->memasst.entry[r_idx].ldo_dac_in;
         print_padding(ldo, 2);
-        printf("%d    %d    %d    %d    %d    %d    %d    %d\n",
+        FpFwCliPrint("%d    %d    %d      %d      %d     %d     %d    %d\n",
                ldo,
                fuses->memasst.entry[r_idx].hd_rawlm,
                fuses->memasst.entry[r_idx].hd_ema,
@@ -161,67 +162,67 @@ static void print_power_config_memasst(power_fuse_data_t* fuses)
                fuses->memasst.entry[r_idx].tp_emab,
                fuses->memasst.entry[r_idx].hd_emaw);
     }
-    printf("\n");
+    FpFwCliPrint("\n");
 }
 /* -------------------------------------- */
 
 /* -------------------------------------- */
 static void print_power_config_interval(power_knobs_t* knobs)
 {
-    printf("\nConfigured Loop Intervals\n");
-    printf("-------------------------\n");
-    printf("Control loop    Temp telemetry divider    PVT loop\n");
-    print_padding(knobs->control_loop_interval, 9);
-    printf("%ums    ", knobs->control_loop_interval);
-    print_padding(knobs->temp_telemetry_divider, 9);
-    printf("%u ", knobs->temp_telemetry_divider);
+    FpFwCliPrint("\nConfigured Loop Intervals\n");
+    FpFwCliPrint("-------------------------\n");
+    FpFwCliPrint("Cntrl. loop    Temp telem. divider    PVT loop\n");
+    print_padding(knobs->control_loop_interval, 6);
+    FpFwCliPrint("%ums    ", knobs->control_loop_interval);
+    print_padding(knobs->temp_telemetry_divider, 6);
+    FpFwCliPrint("%u ", knobs->temp_telemetry_divider);
     print_padding(knobs->temp_telemetry_divider * knobs->control_loop_interval, 6);
-    printf("(%ums)    ", knobs->temp_telemetry_divider * knobs->control_loop_interval);
+    FpFwCliPrint("(%ums)    ", knobs->temp_telemetry_divider * knobs->control_loop_interval);
     print_padding(knobs->pvt_loop_interval, 5);
-    printf("%ums\n", knobs->pvt_loop_interval);
-    printf("\n");
+    FpFwCliPrint("%ums\n", knobs->pvt_loop_interval);
+    FpFwCliPrint("\n");
 }
 /* -------------------------------------- */
 
 /* -------------------------------------- */
 static void print_power_config_limits(power_knobs_t* knobs)
 {
-    printf("\nConfigured Control Loop Limits\n");
-    printf("---------------------------------------------\n");
-    printf("Thermal/watt    Vcpu0 current   Vcpu1 current\n");
-    print_padding(knobs->soc_maximum_thermal_watts_limit, 10);
-    printf("%uW     ", knobs->soc_maximum_thermal_watts_limit);
-    print_padding(knobs->soc_maximum_electrical_current_limit_vcpu0, 10);
-    printf("%uA    ", knobs->soc_maximum_electrical_current_limit_vcpu0);
-    print_padding(knobs->soc_maximum_electrical_current_limit_vcpu1, 10);
-    printf("%uA", knobs->soc_maximum_electrical_current_limit_vcpu1);
-    printf("\n");
+    FpFwCliPrint("\nConfigured Control Loop Limits\n");
+    FpFwCliPrint("------------------------------\n");
+    FpFwCliPrint("Thermal/watt    Vcpu0 current   Vcpu1 current\n");
+    print_padding(knobs->soc_maximum_thermal_watts_limit, 6);
+    FpFwCliPrint("%uW     ", knobs->soc_maximum_thermal_watts_limit);
+    print_padding(knobs->soc_maximum_electrical_current_limit_vcpu0, 7);
+    FpFwCliPrint("%uA    ", knobs->soc_maximum_electrical_current_limit_vcpu0);
+    print_padding(knobs->soc_maximum_electrical_current_limit_vcpu1, 8);
+    FpFwCliPrint("%uA", knobs->soc_maximum_electrical_current_limit_vcpu1);
+    FpFwCliPrint("\n");
 }
 /* -------------------------------------- */
 
 /* -------------------------------------- */
 static void print_power_config_mpmm(power_knobs_t* knobs)
 {
-    printf("\nMPMM configuration\n");
-    printf("------------------\n");
-    printf("Enabled : %s\n", knobs->mpmm.enable ? s_true_str : s_false_str);
-    printf("Gear    : %u\n", knobs->mpmm.gear);
-    printf("\n");
+    FpFwCliPrint("\nMPMM config.\n");
+    FpFwCliPrint("------------\n");
+    FpFwCliPrint("Enabled : %s\n", knobs->mpmm.enable ? s_true_str : s_false_str);
+    FpFwCliPrint("Gear    : %u\n", knobs->mpmm.gear);
+    FpFwCliPrint("\n");
 }
 /* -------------------------------------- */
 
 /* -------------------------------------- */
 static void print_power_config_pidcfg(power_knobs_t* knobs)
 {
-    printf("\nCtrl loop PID configuration\n");
-    printf("-----------------------\n");
-    printf("Kp             : (%u.%03u)\n", (unsigned int)knobs->pid.kpt / 1000, (unsigned int)knobs->pid.kpt % 1000);
-    printf("Ki             : (%u.%03u)\n", (unsigned int)knobs->pid.kit / 1000, (unsigned int)knobs->pid.kit % 1000);
-    printf("Kd             : (%u.%03u)\n", (unsigned int)knobs->pid.kdt / 1000, (unsigned int)knobs->pid.kdt % 1000);
-    printf("Setpoint offset: %umW\n", (unsigned int)knobs->pid.setpoint_offset);
+    FpFwCliPrint("\nCtrl loop PID config.\n");
+    FpFwCliPrint("--------------------\n");
+    FpFwCliPrint("Kp : (%u.%03u)\n", (unsigned int)knobs->pid.kpt / 1000, (unsigned int)knobs->pid.kpt % 1000);
+    FpFwCliPrint("Ki : (%u.%03u)\n", (unsigned int)knobs->pid.kit / 1000, (unsigned int)knobs->pid.kit % 1000);
+    FpFwCliPrint("Kd : (%u.%03u)\n", (unsigned int)knobs->pid.kdt / 1000, (unsigned int)knobs->pid.kdt % 1000);
+    FpFwCliPrint("Setpoint offset : %umW\n", (unsigned int)knobs->pid.setpoint_offset);
     /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
-    // printf("Resource max   : %u\n", knobs->pid.resource_max);
-    printf("\n");
+    // FpFwCliPrint("Resource max   : %u\n", knobs->pid.resource_max);
+    FpFwCliPrint("\n");
 }
 /* -------------------------------------- */
 
@@ -230,7 +231,7 @@ static void print_power_config_pidcfg(power_knobs_t* knobs)
 static void print_voltage(uint16_t voltage)
 {
     print_padding(voltage, 4);
-    printf("%dmV", voltage);
+    FpFwCliPrint("%dmV", voltage);
 }
 
 static void print_temp(uint16_t temp)
@@ -238,211 +239,211 @@ static void print_temp(uint16_t temp)
     uint16_t tenths = temp % 10;
     temp = temp / 10;
     print_padding(temp, 3);
-    printf("%d.%dC", temp, tenths);
+    FpFwCliPrint("%d.%dC", temp, tenths);
 }
 
 static void print_power_config_thresholds(power_knobs_t* knobs)
 {
-    printf("\nPVT Thresholds\n");
-    printf("--------------\n");
-    printf("Tile\n");
-    printf("  Hot (hyst/alarm)      : ");
+    FpFwCliPrint("\nPVT Thresholds\n");
+    FpFwCliPrint("--------------\n");
+    FpFwCliPrint("Tile\n");
+    FpFwCliPrint("  Hot (hyst/alarm)      : ");
     print_temp(knobs->tile_temp_throt.hot.hyst_threshold);
-    printf(" / ");
+    FpFwCliPrint(" / ");
     print_temp(knobs->tile_temp_throt.hot.alarm_threshold);
-    printf("\n");
-    printf("  Thermtrip (hyst/alarm): ");
+    FpFwCliPrint("\n");
+    FpFwCliPrint("  Thermtrip (hyst/alarm): ");
     print_temp(knobs->tile_temp_throt.thermtrip.hyst_threshold);
-    printf(" / ");
+    FpFwCliPrint(" / ");
     print_temp(knobs->tile_temp_throt.thermtrip.alarm_threshold);
-    printf("\n");
+    FpFwCliPrint("\n");
 
     for (int vm_idx = 0; vm_idx < TILE_PVT_NUM_CHANNELS_VM; ++vm_idx)
     {
-        printf("  VM%d OV    (hyst/alarm): ", vm_idx);
+        FpFwCliPrint("  VM%d OV    (hyst/alarm): ", vm_idx);
         print_voltage(knobs->tile_vm.thresholds[vm_idx].overvolt.hyst_threshold);
-        printf(" / ");
+        FpFwCliPrint(" / ");
         print_voltage(knobs->tile_vm.thresholds[vm_idx].overvolt.alarm_threshold);
-        printf("\n");
-        printf("  VM%d UV    (hyst/alarm): ", vm_idx);
+        FpFwCliPrint("\n");
+        FpFwCliPrint("  VM%d UV    (hyst/alarm): ", vm_idx);
         print_voltage(knobs->tile_vm.thresholds[vm_idx].undervolt.hyst_threshold);
-        printf(" / ");
+        FpFwCliPrint(" / ");
         print_voltage(knobs->tile_vm.thresholds[vm_idx].undervolt.alarm_threshold);
-        printf("\n");
+        FpFwCliPrint("\n");
     }
 
-    printf("SOC\n");
-    printf("  Hot (hyst/alarm)      : ");
+    FpFwCliPrint("SOC\n");
+    FpFwCliPrint("  Hot (hyst/alarm)      : ");
     print_temp(knobs->soc_temp.hot.hyst_threshold);
-    printf(" / ");
+    FpFwCliPrint(" / ");
     print_temp(knobs->soc_temp.hot.alarm_threshold);
-    printf("\n");
-    printf("  Thermtrip (hyst/alarm): ");
+    FpFwCliPrint("\n");
+    FpFwCliPrint("  Thermtrip (hyst/alarm): ");
     print_temp(knobs->soc_temp.thermtrip.hyst_threshold);
-    printf(" / ");
+    FpFwCliPrint(" / ");
     print_temp(knobs->soc_temp.thermtrip.alarm_threshold);
-    printf("\n");
+    FpFwCliPrint("\n");
 
     for (int vm_idx = 0; vm_idx < SOC_PVT_TOTAL_CHANNELS_VM; ++vm_idx)
     {
-        printf("  VM%d OV    (hyst/alarm): ", vm_idx);
+        FpFwCliPrint("  VM%d OV    (hyst/alarm): ", vm_idx);
         print_voltage(knobs->soc_vm.thresholds[vm_idx].overvolt.hyst_threshold);
-        printf(" / ");
+        FpFwCliPrint(" / ");
         print_voltage(knobs->soc_vm.thresholds[vm_idx].overvolt.alarm_threshold);
-        printf("\n");
-        printf("  VM%d UV    (hyst/alarm): ", vm_idx);
+        FpFwCliPrint("\n");
+        FpFwCliPrint("  VM%d UV    (hyst/alarm): ", vm_idx);
         print_voltage(knobs->soc_vm.thresholds[vm_idx].undervolt.hyst_threshold);
-        printf(" / ");
+        FpFwCliPrint(" / ");
         print_voltage(knobs->soc_vm.thresholds[vm_idx].undervolt.alarm_threshold);
-        printf("\n");
+        FpFwCliPrint("\n");
     }
-    printf("\n");
+    FpFwCliPrint("\n");
 }
 /* -------------------------------------- */
 
 /* -------------------------------------- */
 static void print_power_config_loopcfg(power_knobs_t* knobs)
 {
-    printf("\nCtrl loop configuration\n");
-    printf("-----------------------\n");
-    printf("Power capping mode  : %s\n", knobs->capping_mode == power_capping_mode_t_ALL ? "all" : "per VM");
-    printf("C2 limits to nominal: %s\n", knobs->c2_cores_limit_to_nominal ? s_true_str : s_false_str);
-    printf("C3 limits to nominal: %s\n", knobs->c3_cores_limit_to_nominal ? s_true_str : s_false_str);
-    printf("Allow plimit<nominal: %s\n", knobs->allow_plimit_below_nominal ? s_true_str : s_false_str);
+    FpFwCliPrint("\nCtrl loop configs\n");
+    FpFwCliPrint("-----------------\n");
+    FpFwCliPrint("Pwr capping mode  : %s\n", knobs->capping_mode == power_capping_mode_t_ALL ? "all" : "per VM");
+    FpFwCliPrint("C2 limits to nom.: %s\n", knobs->c2_cores_limit_to_nominal ? s_true_str : s_false_str);
+    FpFwCliPrint("C3 limits to nom.: %s\n", knobs->c3_cores_limit_to_nominal ? s_true_str : s_false_str);
+    FpFwCliPrint("Allow plimit<nom.: %s\n", knobs->allow_plimit_below_nominal ? s_true_str : s_false_str);
     /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
-    // printf("Minimal turbo pri   : %s\n", knobs->allow_minimal_turbo_prioritization ? s_true_str : s_false_str);
-    printf("Intervals to lower  : %u\n", knobs->intervals_to_lower_plimit);
-    printf("Allwd plimit minimum: %u\n", knobs->allowed_plimit_minimum);
-    printf("Allwd plimit maximum: %u\n", knobs->allowed_plimit_maximum);
-    printf("Step size up maximum: %u\n", knobs->max_plimit_step_size_up);
-    printf("Step size dn maximum: %u\n", knobs->max_plimit_step_size_down);
-    printf("Min plimit upds/loop: ");
+    // FpFwCliPrint("Minimal turbo pri   : %s\n", knobs->allow_minimal_turbo_prioritization ? s_true_str : s_false_str);
+    FpFwCliPrint("Intervals to lwr : %u\n", knobs->intervals_to_lower_plimit);
+    FpFwCliPrint("Allwd plimit min.: %u\n", knobs->allowed_plimit_minimum);
+    FpFwCliPrint("Allwd plimit max.: %u\n", knobs->allowed_plimit_maximum);
+    FpFwCliPrint("Step size up max.: %u\n", knobs->max_plimit_step_size_up);
+    FpFwCliPrint("Step size dn max.: %u\n", knobs->max_plimit_step_size_down);
+    FpFwCliPrint("Min plimit upds/loop: ");
     
     /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
     // print_minupdate(knobs->minimum_plimit_updates);
-    // printf("\n");
-    // printf("Nominal pstate      : ");
+    // FpFwCliPrint("\n");
+    // FpFwCliPrint("Nominal pstate      : ");
     // if (knobs->nominal_pstate == 0) {
-    //     printf("fused default (P%d)\n", power_context.runconfig.pnominal);
+    //     FpFwCliPrint("fused default (P%d)\n", power_context.runconfig.pnominal);
     // } else {
-    //     printf("P%d\n", knobs->nominal_pstate);
+    //     FpFwCliPrint("P%d\n", knobs->nominal_pstate);
     // }
-    // printf("\nForced pstates\n");
+    // FpFwCliPrint("\nForced pstates\n");
     // for (int count = 0; count < ST_COUNT; ++count)
     // {
-    //     printf("Core:Pxx ");
+    //     FpFwCliPrint("Core:Pxx ");
     // }
-    // printf("\n");
+    // FpFwCliPrint("\n");
     // for (int count = 0; count < ST_COUNT; ++count)
     // {
-    //     printf("=========");
+    //     FpFwCliPrint("=========");
     // }
-    // printf("\n");
+    // FpFwCliPrint("\n");
     // for (unsigned core_idx = 0; core_idx < power_context.core_count; ++core_idx) {
     //     if (knobs->force_pstate[core_idx] == POWER_KNOB_FORCE_PSTATE_DISABLE) {
-    //         printf("%04d:--- ", core_idx);
+    //         FpFwCliPrint("%04d:--- ", core_idx);
     //     } else {
-    //         printf("%04d:P%02d ", core_idx, knobs->force_pstate[core_idx]);
+    //         FpFwCliPrint("%04d:P%02d ", core_idx, knobs->force_pstate[core_idx]);
     //     }
     //
     //     if (core_idx % ST_COUNT == ST_COUNT - 1) {
-    //         printf("\n");
+    //         FpFwCliPrint("\n");
     //     }
     // }
     //
-    printf("\n");
+    FpFwCliPrint("\n");
 }
 /* -------------------------------------- */
 
 /* -------------------------------------- */
 static void print_power_config_survivability_mode(power_knobs_t* knobs)
 {
-    printf("\nSurvivability Mode\n");
-    printf("--------------\n");
-    printf("Enabled : %s\n", knobs->enable_survivability_mode ? s_true_str : s_false_str);
-    printf("P-State : %d", knobs->survivability_mode_pstate);
-    printf(" / ");
+    FpFwCliPrint("\nSurvivability Mode\n");
+    FpFwCliPrint("------------------\n");
+    FpFwCliPrint("Enabled : %s\n", knobs->enable_survivability_mode ? s_true_str : s_false_str);
+    FpFwCliPrint("P-State : %d", knobs->survivability_mode_pstate);
+    FpFwCliPrint(" / ");
     /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
-    // printf("%d MHz", dvfs_get_freq_from_plimit(knobs->survivability_mode_pstate));
-    printf("\n");
+    // FpFwCliPrint("%d MHz", dvfs_get_freq_from_plimit(knobs->survivability_mode_pstate));
+    FpFwCliPrint("\n");
 }
 /* -------------------------------------- */
 
 /* -------------------------------------- */
 static void print_power_config_static_rails(power_knobs_t* knobs)
 {
-    printf("\nStatic rails\n");
-    printf("--------------\n");
+    FpFwCliPrint("\nStatic rails\n");
+    FpFwCliPrint("------------\n");
     char tempstr[20];
     snprintf(tempstr, sizeof(tempstr), "%f", knobs->static_rail_power_watts);
-    printf("Static rail power: %sW\n", tempstr);
-    printf("\n");
+    FpFwCliPrint("Static rail pwr: %sW\n", tempstr);
+    FpFwCliPrint("\n");
 }
 /* -------------------------------------- */
 
 /* -------------------------------------- */
 static void print_power_config_tel(power_knobs_t* knobs)
 {
-    printf("\nTelemetry configuration\n");
-    printf("-----------------------\n");
-    printf("C1 telemetry enabled : %s\n", knobs->c1_tel_enable ? s_true_str : s_false_str);
-    printf("\n");
+    FpFwCliPrint("\nTelemetry config\n");
+    FpFwCliPrint("----------------\n");
+    FpFwCliPrint("C1 telem. enabled : %s\n", knobs->c1_tel_enable ? s_true_str : s_false_str);
+    FpFwCliPrint("\n");
 }
 /* -------------------------------------- */
 
 /* -------------------------------------- */
 static void print_power_config_throttling(power_knobs_t* knobs)
 {
-    printf("\nThrottle configuration\n");
-    printf("----------------------\n");
-    printf("Current throttling\n");
+    FpFwCliPrint("\nThrottle config.\n");
+    FpFwCliPrint("----------------\n");
+    FpFwCliPrint("Current throttling\n");
     /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
-    // printf("  Lower threshold   : %u\n", knobs->current_throt.lower_threshold_percent);
-    // printf("  Upper threshold   : %u\n", knobs->current_throt.upper_threshold_percent);
-    // printf("  Peak threshold    : %u\n", knobs->current_throt.peak_threshold_percent);
-    printf("  Rolling window cnt: %u\n", knobs->current_throt.rolling_window_count);
-    printf("  Telem epoch count : %u\n", knobs->current_throt.telemetry_epoch_count);
-    printf("  Inc Counter       : %u\n", knobs->current_throt.inc_ctr);
-    printf("  Dec Counter       : %u\n", knobs->current_throt.dec_ctr);
-    printf("  Inc Amount        : %u\n", knobs->current_throt.inc_amt);
-    printf("  Dec Amount0       : %u\n", knobs->current_throt.dec_amt0);
-    printf("  Dec Amount1       : %u\n", knobs->current_throt.dec_amt1);
-    printf("Tile temperature throttling\n");
-    printf("  Inc Counter       : %u\n", knobs->tile_temp_throt.inc_ctr);
-    printf("  Dec Counter       : %u\n", knobs->tile_temp_throt.dec_ctr);
-    printf("  Inc Amount        : %u\n", knobs->tile_temp_throt.inc_amt);
-    printf("  Dec Amount        : %u\n", knobs->tile_temp_throt.dec_amt);
-    printf("Adaptive clocking throttling\n");
-    printf("  Enabled           : %s\n", knobs->adclk_throt.enable ? s_true_str : s_false_str);
-    printf("  Inc Counter       : %u\n", knobs->adclk_throt.inc_ctr);
-    printf("  Dec Counter       : %u\n", knobs->adclk_throt.dec_ctr);
-    printf("  Inc Amount        : %u\n", knobs->adclk_throt.inc_amt);
-    printf("  Dec Amount        : %u\n", knobs->adclk_throt.dec_amt);
-    printf("  Response Option   : %u\n", knobs->adclk_throt.resp_option);
-    printf("  Recovery Step Wait: %u\n", knobs->adclk_throt.recovery_step_wait);
-    printf("  Recover Step      : %u\n", knobs->adclk_throt.recovery_step);
-    printf("  Response Wait     : %u\n", knobs->adclk_throt.resp_wait);
-    printf("  Response Code     : %u\n", knobs->adclk_throt.resp_code);
-    printf("  Comparator Config : %u\n", knobs->adclk_throt.adclk_comp_config);
-    printf("  Throttle Threshold: %u\n", knobs->adclk_throt.throttle_threshold);
-    printf("  Thrttl Windw Count: %u\n", knobs->adclk_throt.throttle_window_count);
-    printf("\n");
+    // FpFwCliPrint("  Lower threshold   : %u\n", knobs->current_throt.lower_threshold_percent);
+    // FpFwCliPrint("  Upper threshold   : %u\n", knobs->current_throt.upper_threshold_percent);
+    // FpFwCliPrint("  Peak threshold    : %u\n", knobs->current_throt.peak_threshold_percent);
+    FpFwCliPrint(" Rolling windw cnt: %u\n", knobs->current_throt.rolling_window_count);
+    FpFwCliPrint(" Telem epoch count: %u\n", knobs->current_throt.telemetry_epoch_count);
+    FpFwCliPrint(" Inc Counter  : %u\n", knobs->current_throt.inc_ctr);
+    FpFwCliPrint(" Dec Counter  : %u\n", knobs->current_throt.dec_ctr);
+    FpFwCliPrint(" Inc Amount   : %u\n", knobs->current_throt.inc_amt);
+    FpFwCliPrint(" Dec Amount0  : %u\n", knobs->current_throt.dec_amt0);
+    FpFwCliPrint(" Dec Amount1  : %u\n", knobs->current_throt.dec_amt1);
+    FpFwCliPrint("Tile temp. throttling\n");
+    FpFwCliPrint(" Inc Counter  : %u\n", knobs->tile_temp_throt.inc_ctr);
+    FpFwCliPrint(" Dec Counter  : %u\n", knobs->tile_temp_throt.dec_ctr);
+    FpFwCliPrint(" Inc Amount   : %u\n", knobs->tile_temp_throt.inc_amt);
+    FpFwCliPrint(" Dec Amount   : %u\n", knobs->tile_temp_throt.dec_amt);
+    FpFwCliPrint("Adaptive clocking throttling\n");
+    FpFwCliPrint(" Enabled      : %s\n", knobs->adclk_throt.enable ? s_true_str : s_false_str);
+    FpFwCliPrint(" Inc Counter  : %u\n", knobs->adclk_throt.inc_ctr);
+    FpFwCliPrint(" Dec Counter  : %u\n", knobs->adclk_throt.dec_ctr);
+    FpFwCliPrint(" Inc Amount   : %u\n", knobs->adclk_throt.inc_amt);
+    FpFwCliPrint(" Dec Amount   : %u\n", knobs->adclk_throt.dec_amt);
+    FpFwCliPrint(" Response Option : %u\n", knobs->adclk_throt.resp_option);
+    FpFwCliPrint(" Recovery Step Wait: %u\n", knobs->adclk_throt.recovery_step_wait);
+    FpFwCliPrint(" Recover Step : %u\n", knobs->adclk_throt.recovery_step);
+    FpFwCliPrint(" Response Wait: %u\n", knobs->adclk_throt.resp_wait);
+    FpFwCliPrint(" Response Code: %u\n", knobs->adclk_throt.resp_code);
+    FpFwCliPrint(" Comparator Config: %u\n", knobs->adclk_throt.adclk_comp_config);
+    FpFwCliPrint(" Throttle Threshold: %u\n", knobs->adclk_throt.throttle_threshold);
+    FpFwCliPrint(" Thrttl Windw Count: %u\n", knobs->adclk_throt.throttle_window_count);
+    FpFwCliPrint("\n");
 }
 /* -------------------------------------- */
 
 /* -------------------------------------- */
 static void print_power_config_fgpll(power_knobs_t* knobs)
 {
-    printf("\nFGPLL Config\n");
-    printf("--------------\n");
-    printf("Cal Enabled : %s\n", knobs->calsm_enable ? s_true_str : s_false_str);
+    FpFwCliPrint("\nFGPLL Config\n");
+    FpFwCliPrint("------------\n");
+    FpFwCliPrint("Cal Enabled : %s\n", knobs->calsm_enable ? s_true_str : s_false_str);
     /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
-    // printf("P-State Cap : %d", knobs->ftable_pstate_cap);
-    // printf(" / ");
-    // printf("%d MHz", dvfs_get_freq_from_plimit(knobs->ftable_pstate_cap));
-    printf("\n");
-    printf("ErrDetect   : %s\n", knobs->plllock_cfg.enable_error ? s_true_str : s_false_str);
-    printf("LckCntSel   : %d\n", knobs->plllock_cfg.lckcntsel);
+    // FpFwCliPrint("P-State Cap : %d", knobs->ftable_pstate_cap);
+    // FpFwCliPrint(" / ");
+    // FpFwCliPrint("%d MHz", dvfs_get_freq_from_plimit(knobs->ftable_pstate_cap));
+    FpFwCliPrint("\n");
+    FpFwCliPrint("ErrDetect : %s\n", knobs->plllock_cfg.enable_error ? s_true_str : s_false_str);
+    FpFwCliPrint("LckCntSel : %d\n", knobs->plllock_cfg.lckcntsel);
 }
 /* -------------------------------------- */
 
@@ -467,14 +468,14 @@ static void print_power_config_knobs(power_knobs_t* knobs)
 /* -------------------------------------- */
 static void print_power_config_max_allowed_plimit(power_knobs_t* knobs)
 {
-    printf("Allowed plimit maximum: %u\n", (unsigned int)knobs->allowed_plimit_maximum);
+    FpFwCliPrint("Allowed plimit max.: %u\n", (unsigned int)knobs->allowed_plimit_maximum);
 }
 /* -------------------------------------- */
 
 /* -------------------------------------- */
 static void print_power_config_min_allowed_plimit(power_knobs_t* knobs)
 {
-    printf("Allowed plimit minimum: %u\n", (unsigned int)knobs->allowed_plimit_minimum);
+    FpFwCliPrint("Allowed plimit min.: %u\n", (unsigned int)knobs->allowed_plimit_minimum);
 }
 /* -------------------------------------- */
 
@@ -507,7 +508,7 @@ void cli_power_config_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* co
 
     if (request->fetch_data.p_requested_data == NULL)
     {
-        printf("CLI Data Error\n");
+        FpFwCliPrint("CLI Data Error\n");
         return;
     }
 
@@ -521,6 +522,6 @@ void cli_power_config_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* co
         }
     }
 
-    printf("Invalid sub command\n");
+    FpFwCliPrint("Invalid sub cmd.\n");
 }
 /* -------------------------------------- */

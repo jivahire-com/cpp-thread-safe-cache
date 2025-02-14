@@ -22,7 +22,7 @@
 #include <power_dfwk.h>          // for power_service_cli_request_t, (anony...
 #include <power_runconfig.h>     // for POWER_IF_CMD_UNKNOWN, power_if_cmd_t
 #include <stdint.h>              // for uint8_t
-#include <stdio.h>               // for printf, NULL
+#include <stdio.h>               // for NULL
 #include <stdlib.h>
 #include <string.h>
 
@@ -52,10 +52,10 @@ Option 2 is preferred as it will allow for a single set of commands to be used f
 
 // clang-format off
 static FPFW_CLI_COMMAND cli_power_commands[] = {
-    {NULL_LIST_ENTRY, "pwr", "cfg",    cli_power_config_command, "Pwr CLI cmd to display module config (knobs/fuses)",  "Usage: pwr cfg <sub_command>"   },
-    {NULL_LIST_ENTRY, "pwr", "set",    cli_power_set_command,    "Pwr CLI cmd to set specific internal values",         "Usage: pwr set <sub_command>"   },
-    {NULL_LIST_ENTRY, "pwr", "status", cli_power_status_command, "Pwr CLI cmd to display module status",                "Usage: pwr status <sub_command>"},
-    {NULL_LIST_ENTRY, "pwr", "log",    cli_power_log_command,    "Pwr CLI cmd to access power log",                     "Usage: pwr log <sub_command>"   },
+    {NULL_LIST_ENTRY, "pwr", "cfg",    cli_power_config_command, "Display module config (knobs/fuses)",  "Usage: pwr cfg <sub_command>"   },
+    {NULL_LIST_ENTRY, "pwr", "set",    cli_power_set_command,    "Set specific internal values",         "Usage: pwr set <sub_command>"   },
+    {NULL_LIST_ENTRY, "pwr", "status", cli_power_status_command, "Display module status",                "Usage: pwr status <sub_command>"},
+    {NULL_LIST_ENTRY, "pwr", "log",    cli_power_log_command,    "Access power log",                     "Usage: pwr log <sub_command>"   },
     };      
 //clang-format on
 
@@ -93,7 +93,7 @@ static FPFW_CLI_STATUS dispatch_power_cli_async_request(uint8_t die, e_cli_power
 
         if (power_cli_cmd_context.request.power_ext_if_cmd_id == POWER_IF_CMD_UNKNOWN)
         {
-            printf("Sub-command unsupported!!\n");
+            FpFwCliPrint("Sub-command unsupported!!\n");
             return CLI_ERROR;
         }
 
@@ -106,7 +106,7 @@ static FPFW_CLI_STATUS dispatch_power_cli_async_request(uint8_t die, e_cli_power
 static FPFW_CLI_STATUS cli_power_config_command(int argc, const char** argv)
 {
     if (argc < 2) {
-        printf("Usage: pwr cfg <sub_cmd>\n");
+        FpFwCliPrint("Usage: pwr cfg <sub_cmd>\n");
         return CLI_ERROR;
     }
 
@@ -155,26 +155,36 @@ static uint8_t cli_power_set_get_arg_count(int subcommand_id)
 
 static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char** argv, _pwrset_subcommand_args* p_pwrset_sub_command_args)
 { 
+    char* pwr_strings[] = {
+        "", // intentional empty string to align with enum
+        "", // intentional empty string to align with enum
+        "- set rack power cap (W)\n",
+        "- sets OS desired pstate register\n",
+        "- sets plimit\n",
+        "- sets loop disable bits (1-ctrl, 2-vrtelem, 4-pvttelem)\n",
+        "- sets rack limit gpio for simulated implementations\n",
+        "- sets min. plimit update per loop iteration, 0 disables\n",
+        "- sets nominal pstate used in loop (does not affect DVFS/ACPI)\n",
+    };
 
     if (argc == 2)
     {
         if( (strcmp(argv[1], "??") == 0) )        
         {
-            printf("\n");
-            printf("%-72s%s", "Usage: pwr set ??", "- help menu\n");
-            printf("%-72s%s", "Usage: pwr set cap <value>", "- set the rack power cap (W)\n");
-            printf("%-72s%s", "Usage: pwr set desired <core/all> <desired_0-31> <throttle_pri_0-7>", "- sets OS desired pstate register\n");
-            printf("%-72s%s", "Usage: pwr set plimit <core/all> <plimit_0-31>", "- sets plimit\n");
-            printf("%-72s%s", "Usage: pwr set loopdis <disable bits>", "- sets loop disable bits (1-ctrl, 2-vrtelem, 4-pvttelem)\n");
-            printf("%-72s%s", "Usage: pwr set racklimit <0/1>", "- sets the rack limit gpio for simulated implementations\n");
-            printf("%-72s%s", "Usage: pwr set minupdate <0-8>", "- sets the minimum plimit update per loop iteration, 0 disables\n");
-            printf("%-72s%s", "Usage: pwr set nominal <1-31>", "- sets the nominal pstate used in loop (does not affect DVFS/ACPI)\n");
-            printf("\n");
+            FpFwCliPrint("\n");
+            FpFwCliPrint("%-72s%s", "Usage: pwr set ??", "- help menu\n");
+            FpFwCliPrint("%-72s%s", "Usage: pwr set cap <value>", pwr_strings[POWER_IF_CMD_SET_CAP]);
+            FpFwCliPrint("%-72s%s", "Usage: pwr set desired <core/all> <desired_0-31> <throttle_pri_0-7>", pwr_strings[POWER_IF_CMD_SET_DESIRED_PSTATE]);
+            FpFwCliPrint("%-72s%s", "Usage: pwr set plimit <core/all> <plimit_0-31>", pwr_strings[POWER_IF_CMD_SET_PLIMIT]);
+            FpFwCliPrint("%-72s%s", "Usage: pwr set loopdis <disable bits>", pwr_strings[POWER_IF_CMD_SET_LOOP_DISABLES]);
+            FpFwCliPrint("%-72s%s", "Usage: pwr set racklimit <0/1>", pwr_strings[POWER_IF_CMD_SET_RACK_LIMIT]);
+            FpFwCliPrint("%-72s%s", "Usage: pwr set minupdate <0-8>", pwr_strings[POWER_IF_CMD_SET_MINUPDATE]);
+            FpFwCliPrint("%-72s%s", "Usage: pwr set nominal <1-31>", pwr_strings[POWER_IF_CMD_SET_NOMINAL]);
+            FpFwCliPrint("\n");
 
             return CLI_ERROR;
         }
-    }  
-      
+    }      
 
     unsigned char all = 0;
     unsigned char core = 0;
@@ -189,7 +199,8 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
 
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
-                printf("%-72s%s", "Usage: pwr set cap <value>", "- set the rack power cap (W)\n");
+                FpFwCliPrint("%-72s%s", "Usage: pwr set cap <value>", pwr_strings[POWER_IF_CMD_SET_CAP]);
+                
                 return CLI_ERROR;
             }
 
@@ -200,7 +211,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
 
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
-                printf("%-72s%s", "Usage: pwr set desired <core/all> <desired_0-31> <throttle_pri_0-7>", "- sets OS desired pstate register\n");
+                FpFwCliPrint("%-72s%s", "Usage: pwr set desired <core/all> <desired_0-31> <throttle_pri_0-7>", pwr_strings[POWER_IF_CMD_SET_DESIRED_PSTATE]);
                 return CLI_ERROR;
             }
 
@@ -217,8 +228,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
             p_pwrset_sub_command_args->desiredparams.all = all; 
             p_pwrset_sub_command_args->desiredparams.core = core; 
             p_pwrset_sub_command_args->desiredparams.state = desired;    
-            p_pwrset_sub_command_args->desiredparams.throttle = throttle;    
-
+            p_pwrset_sub_command_args->desiredparams.throttle = throttle;
 
             break;        
 
@@ -226,7 +236,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
 
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
-                printf("%-72s%s", "Usage: pwr set plimit <core/all> <plimit_0-31>", "- sets plimit\n");
+                FpFwCliPrint("%-72s%s", "Usage: pwr set plimit <core/all> <plimit_0-31>", pwr_strings[POWER_IF_CMD_SET_PLIMIT]);
                 return CLI_ERROR;
             }        
 
@@ -243,7 +253,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
 
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
-                printf("%-72s%s", "Usage: pwr set loopdis <disable bits>", "- sets loop disable bits (1-ctrl, 2-vrtelem, 4-pvttelem)\n");
+                FpFwCliPrint("%-72s%s", "Usage: pwr set loopdis <disable bits>", pwr_strings[POWER_IF_CMD_SET_LOOP_DISABLES]);
                 return CLI_ERROR;
             }  
 
@@ -255,14 +265,14 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
 
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
-                printf("%-72s%s", "Usage: pwr set racklimit <0/1>", "- sets the rack limit gpio for simulated implementations\n");
+                FpFwCliPrint("%-72s%s", "Usage: pwr set racklimit <0/1>", pwr_strings[POWER_IF_CMD_SET_RACK_LIMIT]);
                 return CLI_ERROR;
             }  
 
             p_pwrset_sub_command_args->racklimit = (uint16_t)strtoul(argv[2],NULL,0);  
             
             if (power_hw_gpio_connected()) {
-                printf("\n  pwr set racklimit does not work on this platform (GPIO connected)\n");
+                FpFwCliPrint("\n  pwr set racklimit does not work on this platform (GPIO connected)\n");
                 return CLI_SUCCESS;
             }
              
@@ -272,7 +282,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
 
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
-                printf("%-72s%s", "Usage: pwr set minupdate <0-8>", "- sets the minimum plimit update per loop iteration, 0 disables\n");
+                FpFwCliPrint("%-72s%s", "Usage: pwr set minupdate <0-8>", pwr_strings[POWER_IF_CMD_SET_MINUPDATE]);
                 return CLI_ERROR;
             }  
 
@@ -284,7 +294,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
 
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
-                printf("%-72s%s", "Usage: pwr set nominal <1-31>", "- sets the nominal pstate used in loop (does not affect DVFS/ACPI)\n");
+                FpFwCliPrint("%-72s%s", "Usage: pwr set nominal <1-31>", pwr_strings[POWER_IF_CMD_SET_NOMINAL]);
                 return CLI_ERROR;
             } 
             p_pwrset_sub_command_args->nominalparams.current_val = (uint16_t)strtoul(argv[2],NULL,0);      
@@ -294,7 +304,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
         case POWER_IF_CMD_LOG_DDR :
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
-                printf("%-72s%s", "Usage: pwr log set nominal <0-1>", "- sets the power log DDR enable\n");
+                FpFwCliPrint("%-72s%s", "Usage: pwr log set nominal <0-1>", "- sets power log DDR enable\n");
                 return CLI_ERROR;
             }
             p_pwrset_sub_command_args->minupdate_val = (uint16_t)strtoul(argv[2],0,0);  
@@ -304,7 +314,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
         case POWER_IF_CMD_LOG_MASK :
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
-                printf("%-72s%s", "Usage: pwr log set nominal <0-1>", "- sets the power log MASK enable\n");
+                FpFwCliPrint("%-72s%s", "Usage: pwr log set nominal <0-1>", "- sets the power log MASK enable\n");
                 return CLI_ERROR;
             }
             p_pwrset_sub_command_args->minupdate_val = (uint16_t)strtoul(argv[2],0,0); 
@@ -325,7 +335,7 @@ static FPFW_CLI_STATUS cli_power_set_command(int argc, const char** argv)
 { 
 
     if (argc < 2) {
-        printf("Usage: pwr set <sub_command>\n");
+        FpFwCliPrint("Usage: pwr set <sub_command>\n");
         return CLI_ERROR;
     }
 
@@ -342,7 +352,7 @@ static FPFW_CLI_STATUS cli_power_set_command(int argc, const char** argv)
 static FPFW_CLI_STATUS cli_power_status_command(int argc, const char** argv)
 { 
     if (argc < 2) {
-        printf("Usage: pwr status <sub_cmd>\n");
+        FpFwCliPrint("Usage: pwr status <sub_cmd>\n");
         return CLI_ERROR;
     }
 
@@ -353,7 +363,7 @@ static FPFW_CLI_STATUS cli_power_status_command(int argc, const char** argv)
 static FPFW_CLI_STATUS cli_power_log_command(int argc, const char** argv)
 {
     if (argc < 2) {
-        printf("Usage: pwr log <sub_cmd>\n");
+        FpFwCliPrint("Usage: pwr log <sub_cmd>\n");
         return CLI_ERROR;
     }
 

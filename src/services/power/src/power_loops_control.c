@@ -24,6 +24,7 @@
 #include <corebits.h>
 #include <debug.h>
 #include <fpfw_cfg_mgr.h>
+#include <idsw_kng.h>
 #include <inttypes.h>
 #include <scf_power.h>
 #include <stdint.h>
@@ -58,6 +59,10 @@ static uint8_t boost_pri_for_tracking(power_runconfig_t* p_runconfig, uint8_t pr
 
 /*-- Declarations (Statics and globals) --*/
 #define DEFAULT_PRIORITY 0
+// Default value of PLIMIT_T1/2/3 is copied from silibs/libraries/dvfs/include/dvfs_struct.h
+#define DEFAULT_PLIMIT_T1 0x66 /* 40% of maximum threshold */
+#define DEFAULT_PLIMIT_T2 0xA7 /* 65% of maximum threshold. Alarm will trigger above this */
+#define DEFAULT_PLIMIT_T3 0xE6 /* 90% of maximum threshold. Highest check for cte alarm */
 
 // Table of state handler functions for control loop
 static const power_state_handler_t control_loop_handler_table[POWER_CONTROL_STATE_MAX] = {
@@ -771,8 +776,14 @@ static void hw_calculate_vcpu(power_runconfig_t* p_runconfig)
 
     uint16_t ldo_in_mv =
         power_vcpu_calc_max_core_voltage_mv(p_runconfig, &s_ctrl_loop.cores) + p_runconfig->fuses.v_ldo_dropout_mv;
-    float loadline_drop_mv = power_vcpu_calc_peak_current_A(p_runconfig, &s_ctrl_loop) *
-                             (float)p_runconfig->knobs.r_loadline_vcpu0_uohm /
+
+    float r_loadline_uohm = (float)p_runconfig->knobs.r_loadline_vcpu0_uohm;
+    if (idsw_get_die_id() == DIE_1)
+    {
+        r_loadline_uohm = (float)p_runconfig->knobs.r_loadline_vcpu1_uohm;
+    }
+
+    float loadline_drop_mv = power_vcpu_calc_peak_current_A(p_runconfig, &s_ctrl_loop) * r_loadline_uohm /
                              1000.0F; // r_loadline is uOhm - /1000 makes result mV
 
     const uint16_t possible_loadline_drop_mV = (uint16_t)FLOAT_TO_UNSIGNED(loadline_drop_mv);
@@ -818,12 +829,9 @@ static void hw_write_plimits(power_runconfig_t* p_runconfig)
         dvfs_plimit plimit_req = {
             .vf_index = s_ctrl_loop.cores.core[core].selected_plimit,
             .power_cap = rack_limit_throttle,
-            /* TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1505723/
-               these values need to come from vcpu calculation
-            */
-            .currthresh_1 = 0x66,
-            .currthresh_2 = 0xA7,
-            .currthresh_3 = 0xE6,
+            .currthresh_1 = s_ctrl_loop.cores.core[core].plimit_t1,
+            .currthresh_2 = s_ctrl_loop.cores.core[core].plimit_t2,
+            .currthresh_3 = s_ctrl_loop.cores.core[core].plimit_t3,
         };
 
         power_set_plimit(p_runconfig, core, plimit_req);
@@ -894,6 +902,9 @@ void power_loops_control_init()
         s_ctrl_loop.cores.core[core].current_base_pstate = p_runconfig->derived.pnominal;
         s_ctrl_loop.cores.core[core].current_throt_priority = DEFAULT_PRIORITY;
         s_ctrl_loop.cores.core[core].current_boost_priority = DEFAULT_PRIORITY;
+        s_ctrl_loop.cores.core[core].plimit_t1 = DEFAULT_PLIMIT_T1;
+        s_ctrl_loop.cores.core[core].plimit_t2 = DEFAULT_PLIMIT_T2;
+        s_ctrl_loop.cores.core[core].plimit_t3 = DEFAULT_PLIMIT_T3;
         // if core is valid
         if (corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core))
         {

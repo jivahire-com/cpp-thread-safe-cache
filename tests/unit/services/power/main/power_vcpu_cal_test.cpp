@@ -53,6 +53,8 @@ POWER_TEST(vcpu_calc_max_core_voltage_mv, NULL, NULL)
 
     corebits_clear(&test_runconfig.fuses.valid_cores);
 
+    test_runconfig.knobs.force_pstate = NUM_PSTATES; // Disable forced P-State
+
     for (unsigned bit_idx = 0; bit_idx < core_count; ++bit_idx)
     {
         power_core_t* core = &p_cores.core[bit_idx];
@@ -99,6 +101,31 @@ POWER_TEST(vcpu_calc_peak_current_A, NULL, NULL)
 
 #define TEST_POLY_CONSTANT 5.0f
 
+// calculation for plimit current threshold
+#define CORE0_PLIMIT1 137
+#define CORE0_PLIMIT2 144
+#define CORE0_PLIMIT3 152
+#define CORE2_PLIMIT1 131
+#define CORE2_PLIMIT2 139
+#define CORE2_PLIMIT3 146
+#define CORE4_PLIMIT1 126
+#define CORE4_PLIMIT2 133
+#define CORE4_PLIMIT3 140
+#define CORE6_PLIMIT1 123
+#define CORE6_PLIMIT2 130
+#define CORE6_PLIMIT3 137
+
+    uint8_t core_plimits[8][3] = {
+        {CORE0_PLIMIT1, CORE0_PLIMIT2, CORE0_PLIMIT3},
+        {0, 0, 0},
+        {CORE2_PLIMIT1, CORE2_PLIMIT2, CORE2_PLIMIT3},
+        {0, 0, 0},
+        {CORE4_PLIMIT1, CORE4_PLIMIT2, CORE4_PLIMIT3},
+        {0, 0, 0},
+        {CORE6_PLIMIT1, CORE6_PLIMIT2, CORE6_PLIMIT3},
+        {0, 0, 0},
+    };
+
     unsigned pstate = FIRST_ASSIGNED_PSTATE;
 
     power_service_config_t sconfig = {.platform_die_core_count = PEAK_TEST_CORE_COUNT};
@@ -106,6 +133,9 @@ POWER_TEST(vcpu_calc_peak_current_A, NULL, NULL)
     power_fuse_data_t f_config = {.process_id = (power_fuse_process_id_t)PROCESS_FF};
 
     power_knobs_t knobcfg = {
+        .current_threshold.t1_percent = 90,
+        .current_threshold.t2_percent = 95,
+        .current_threshold.t3_percent = 100,
         .leakage_temp_scaler.poly_coefficients[PROCESS_FF - 1] =
             (power_leakage_poly_t){.a = 0, .b = 0, .c = 0, .d = TEST_POLY_CONSTANT},
         .force_pstate = 32,
@@ -157,6 +187,20 @@ POWER_TEST(vcpu_calc_peak_current_A, NULL, NULL)
     expect_value_count(__wrap_FpFwAssert, expression, true, 5);
 
     assert_float_equal(power_vcpu_calc_peak_current_A(&test_runconfig, test_loop_config), PEAK_TEST_CALCULATED_VALUE, 0.01);
+
+    for (unsigned bit_idx = 0; bit_idx < core_count; ++bit_idx)
+    {
+
+        power_core_t* core = &test_loop_config->cores.core[bit_idx];
+
+        if (corebits_is_bit_set(&test_runconfig.fuses.valid_cores, bit_idx))
+        {
+            assert_int_equal(core_plimits[bit_idx][0], core->plimit_t1);
+            assert_int_equal(core_plimits[bit_idx][1], core->plimit_t2);
+            assert_int_equal(core_plimits[bit_idx][2], core->plimit_t3);
+            printf("Core %d, PLIMIT T1 = %d, T2 = %d, T3 = %d\n", bit_idx, core->plimit_t1, core->plimit_t2, core->plimit_t3);
+        }
+    }
 
     // all cores are forced to the same pstate (previous implementation allowed specific cores to be forced to different pstates)
     test_runconfig.knobs.force_pstate = FIRST_ASSIGNED_PSTATE;

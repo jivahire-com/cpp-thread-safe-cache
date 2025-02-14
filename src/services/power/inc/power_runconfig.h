@@ -486,6 +486,12 @@ typedef struct _power_core_t {
                                       // knob (desired we're working towards)
     uint8_t desired_pstate_count;     // used with intervals_to_lower_plimit knob
                                       // (current count)
+    uint8_t plimit_t1;                // current alarm lower threshold that sets DVFS CSR plimit.currthresh_1
+                                      // this is the low current level that core current must be reduced to end current throttling
+    uint8_t plimit_t2;                // current alarm upper threshold that sets DVFS CSR plimit.currthresh_2
+                                      // this is the high current level to cause a reduction in P-State performance the throttle current on step at a time
+    uint8_t plimit_t3;                // current alarm peak threshold that sets DVFS CSR plimit.currthresh_3
+                                      // this is the high current level to cause a multi-step P-State performance reduction to more quickly lower core current consumption
 } power_core_t;
 
 /**

@@ -25,7 +25,8 @@
 #define VOLT_MV_TO_V     (1.0f / 1000.0f)
 #define CURRENT_MA_TO_A  (1.0f / 1000.0f)
 
-#define FUSE_VCPU_TEMP_OFFSET (128)
+#define FUSE_VCPU_TEMP_OFFSET  (128)
+#define MAX_CURRENT_PER_CORE_A (8.0f)
 /*------------- Functions ----------------*/
 
 uint16_t power_vcpu_calc_max_core_voltage_mv(power_runconfig_t* p_runconfig, power_cores_t* p_cores)
@@ -36,15 +37,20 @@ uint16_t power_vcpu_calc_max_core_voltage_mv(power_runconfig_t* p_runconfig, pow
     uint16_t required_mv = 0;
     const power_service_config_t* p_config = p_runconfig->p_sconfig;
     const unsigned int core_count = p_config->platform_die_core_count;
+    const power_knobs_t* p_knobs = &p_runconfig->knobs;
+    const bool is_not_forced_pstate = (p_knobs->force_pstate >= NUM_PSTATES);
     // iterate over cores to determine the maximum per-core voltage requirement due to selected plimit
     for (unsigned core_idx = 0; core_idx < core_count; ++core_idx)
     {
+        // determine plimit to use for this core's current calculation (MAX_PLIMIT will be the selected plimit if pstate forced)
+        const uint8_t selected_plimit = is_not_forced_pstate ? p_cores->core[core_idx].selected_plimit
+                                                             :     /* normal case */
+                                            p_knobs->force_pstate; /* forced pstate case */
         // only want to include the valid/enabled cores
         if (corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core_idx))
         {
-            const uint16_t core_mv = p_runconfig->derived.vfts[p_runconfig->derived.assigned_vft[core_idx]]
-                                         .vf[p_cores->core[core_idx].selected_plimit]
-                                         .voltage_mv;
+            const uint16_t core_mv =
+                p_runconfig->derived.vfts[p_runconfig->derived.assigned_vft[core_idx]].vf[selected_plimit].voltage_mv;
             if (core_mv > required_mv)
             {
                 required_mv = core_mv;
@@ -98,7 +104,7 @@ float power_vcpu_calc_peak_current_A(power_runconfig_t* p_runconfig, power_ctrl_
     // now accumulate precalculated core dynamic and leakage current
     for (unsigned core_idx = 0; core_idx < core_count; ++core_idx)
     {
-        const power_core_t* core = &loop_config->cores.core[core_idx];
+        power_core_t* core = &loop_config->cores.core[core_idx];
         // determine plimit to use for this core's current calculation (MAX_PLIMIT will be the selected plimit if pstate forced)
         const uint8_t selected_plimit = is_not_forced_pstate ? core->selected_plimit : /* normal case */
                                             p_knobs->force_pstate; /* forced pstate case */
@@ -113,6 +119,31 @@ float power_vcpu_calc_peak_current_A(power_runconfig_t* p_runconfig, power_ctrl_
             const float leakage_scaler =
                 power_vcpu_calc_core_leakage_scaler(p_runconfig, loop_config->cores.core->temperature_dC);
             leakage_current_A += (precalc->leakage * leakage_scaler);
+
+            /* Updates P-Limit */
+            /* Reference: "LOW VOLTAGE DROPOUT (LDO)- IP DATASHEET"
+             * Link: https://microsoft.sharepoint.com/:w:/t/PowerDelivery/EUxg6yuT_MhLn9-rWxVMtp4BvtpfzgoZbQRs-ST9DADL1Q?e=1TrEOp
+             * Section "Interpreting ODCM readings" states that the relationship between ODCM output and core current after trimming is
+             * dout_adc(I_core) = I_core * 31.136mA.
+             * This relationship depends upon the trimming condition.
+             * It is assumed that the trim yields maximum ADC output when core current is 8 A.
+             * In this case, the current per LSB is 32mA */
+
+            float cur_threshold;
+            cur_threshold = ((precalc->dynamic) * (p_knobs->current_threshold.t1_percent) / 100 +
+                             (precalc->leakage) * leakage_scaler) *
+                            255 / MAX_CURRENT_PER_CORE_A;
+            core->plimit_t1 = (uint8_t)FLOAT_TO_UNSIGNED(cur_threshold);
+
+            cur_threshold = ((precalc->dynamic) * (p_knobs->current_threshold.t2_percent) / 100 +
+                             (precalc->leakage) * leakage_scaler) *
+                            255 / MAX_CURRENT_PER_CORE_A;
+            core->plimit_t2 = (uint8_t)FLOAT_TO_UNSIGNED(cur_threshold);
+
+            cur_threshold = ((precalc->dynamic) * (p_knobs->current_threshold.t3_percent) / 100 +
+                             (precalc->leakage) * leakage_scaler) *
+                            255 / MAX_CURRENT_PER_CORE_A;
+            core->plimit_t3 = (uint8_t)FLOAT_TO_UNSIGNED(cur_threshold);
         }
     }
 

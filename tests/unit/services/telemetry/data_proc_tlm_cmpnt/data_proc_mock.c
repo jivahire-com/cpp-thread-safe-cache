@@ -87,7 +87,7 @@ fpfw_status_t __wrap_platform_power_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dt
 void __wrap_data_proc_tlm_cmpnt_aggregate_update_mgr(void)
 {
 }
-uint64_t __wrap__tx_time_get(void)
+uint64_t __wrap_exec_tlm_cmpnt_get_timestamp_microseconds(void)
 {
-    return mock_type(uint32_t);
+    return mock_type(int64_t);
 }

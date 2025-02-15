@@ -19,10 +19,12 @@ target_link_libraries(${TARGET}
         tlm.service.cmpnt.interfaces
         fwlib.lib.assert
         fwlib.lib.status
+        fwlib.lib.tmr_queue
         fwlib.lib.utils
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.interface.platform.threadx
         ms::lib::error_codes
+        ms::lib::gtimer  
 
 )
 

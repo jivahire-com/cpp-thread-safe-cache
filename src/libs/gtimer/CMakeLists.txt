@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
     ms::lib::register_headers
     ms::lib::scp_interrupts
     silibs::gtimer
+    silibs::idsw_kng
     silibs::platform
 )
 

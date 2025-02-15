@@ -14,6 +14,7 @@
 #include <fpfw_tmr_queue.h>
 #include <gtimer.h>
 #include <gtimer_prodfw.h>
+#include <idsw_kng.h> //for CPU_SCP
 #include <prodfw_fnc_pointers.h>
 #include <stdint.h>
 
@@ -70,7 +71,10 @@ void gtimer_prodfw_init(gtimer_prodfw_init_config_t* config)
     s_timer_base_address = config->timer_base_address;
     s_timer_irq = config->timer_irq;
 
-    system_counter_init(config->counter_control_base, config->frequency_hz, config->scaling_factor);
+    if (idsw_get_cpu_type() == CPU_SCP)
+    {
+        system_counter_init(config->counter_control_base, config->frequency_hz, config->scaling_factor);
+    }
     gtimer_init(config->timer_control_base);
     gtimer_enable_timer(config->timer_base_address);
 

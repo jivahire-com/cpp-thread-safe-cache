@@ -392,17 +392,6 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_aggregate_24hr_tlm_data, test_setup, test
     // expand unit test once implementation is available
     data_proc_tlm_cmpnt_aggregate_24hr_tlm_data();
 }
-TEST_FUNCTION(test_tlm_get_timestamp_microseconds, test_setup, test_teardown)
-{
-    uint64_t timestamp = 0;
-    // Set up mock return values
-    will_return(__wrap__tx_time_get, 5);
-    // Call the function to be tested
-    timestamp = tlm_get_timestamp_microseconds();
-
-    // Add assertions to verify the expected behavior
-    assert_int_equal(timestamp, 5);
-}
 
 TEST_FUNCTION(test_tlm_average_power_sample, test_setup, test_teardown)
 {
@@ -874,7 +863,7 @@ TEST_FUNCTION(test_tlm_soc_component_update, test_setup, test_teardown)
     // Initialize soc_info
     soc_info.time_counter_uS = 0;
     // Set up mock return values
-    will_return(__wrap__tx_time_get, 5);
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5);
 
     // Call the function to be tested
     tlm_soc_component_update();
@@ -884,13 +873,13 @@ TEST_FUNCTION(test_tlm_soc_component_update, test_setup, test_teardown)
     // here soc_info.time_counter_uS will be 5 ;
     // Test :updated previous timestamp on next update.
 
-    will_return(__wrap__tx_time_get, 10);
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 10);
     tlm_soc_component_update();
     //  Add assertions to verify the expected behavior
     assert_int_equal(soc_info.time_counter_uS, 5); // 10-5 =5
 
     // Test :update again.
-    will_return(__wrap__tx_time_get, 15);
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 15);
     tlm_soc_component_update();
     //  Add assertions to verify the expected behavior
     assert_int_equal(soc_info.time_counter_uS, 10); // 15-5 =5
@@ -906,7 +895,7 @@ TEST_FUNCTION(test_tlm_core_component_update, test_setup, test_teardown)
     }
 
     // Set up mock return values for tlm_get_timestamp_microseconds
-    will_return(__wrap__tx_time_get, 5);
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5);
 
     // Call the function to be tested
     tlm_core_component_update();
@@ -919,7 +908,7 @@ TEST_FUNCTION(test_tlm_core_component_update, test_setup, test_teardown)
 
     // Test to updae : core[core_id].time_counter_uS in all core by time diff
     //  Set up mock return values for tlm_get_timestamp_microseconds
-    will_return(__wrap__tx_time_get, 10);
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 10);
 
     // Call the function to be tested
     tlm_core_component_update();
@@ -942,7 +931,7 @@ TEST_FUNCTION(test_tlm_tile_component_update, test_setup, test_teardown)
         tile[tile_id].max_tile_id = 0;
     }
     // Set up mock return values for tlm_get_timestamp_microseconds
-    will_return(__wrap__tx_time_get, 5);
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5);
 
     tlm_tile_component_update();
 
@@ -965,7 +954,7 @@ TEST_FUNCTION(test_tlm_tile_component_update, test_setup, test_teardown)
     }
 
     //  Set up mock return values for tlm_get_timestamp_microseconds
-    will_return(__wrap__tx_time_get, 10);
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 10);
 
     tlm_tile_component_update();
     temp_active_sample_max_temperature_dC = 60;

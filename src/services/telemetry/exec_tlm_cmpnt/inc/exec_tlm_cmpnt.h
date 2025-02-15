@@ -76,3 +76,9 @@ void exec_tlm_cmpnt_get_status(telemetry_executive_status_t *status);
  * @return None
  */
 void exec_tlm_cmpnt_notify_new_in_band_dcs_message(void);
+/**
+ * @brief The exec_tlm_get_timestamp_microseconds function retrieves the current timestamp in microseconds. 
+ * It calculates this timestamp based on the current tick count and the frequency of the timer.
+ * @return uint64_t  The function returns a uint64_t value representing the current timestamp in microseconds.
+ */
+uint64_t exec_tlm_cmpnt_get_timestamp_microseconds(void);

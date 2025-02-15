@@ -22,6 +22,12 @@ target_link_libraries(${TARGET}
         silibs::kng_silibs_platform
 )
 
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+       SCP_RUNTIME_INIT
+)
+
 # Defining platform APIs
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")

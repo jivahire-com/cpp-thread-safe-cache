@@ -243,6 +243,7 @@ add_library(${TARGET}
         etc_etd_init.c
         etr_init.c
         gpio_init.c
+        gtimer_init.c
         hw_semaphore_init.c
         hw_version_mcp_init.c
         icc_accel_mbx_init.c
@@ -271,6 +272,7 @@ target_link_libraries(
         fwlib.lib.mboxPrimitives
         fwlib.lib.platform.impl.timers.threadx
         fwlib.lib.utils
+        fwlib.lib.tmr_queue
         fwlib.platform.dfwkhost.threadx
         fwlib.service.cli
         fwlib.service.iccBase
@@ -291,6 +293,7 @@ target_link_libraries(
         ms::lib::crash_dump
         ms::lib::debug
         ms::lib::exception_handler
+        ms::lib::gtimer
         ms::lib::hw_semaphore
         ms::lib::icc::cli
         ms::lib::icc_platform_defines

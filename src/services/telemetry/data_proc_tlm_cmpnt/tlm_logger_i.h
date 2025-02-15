@@ -264,13 +264,6 @@ void data_proc_tlm_cmpnt_aggregate_update_mgr(void);
 void tlm_average_power_sample(uint8_t core_id);
 
 /**
- * @brief The tlm_get_timestamp_microseconds function retrieves the current timestamp in microseconds. 
- * It calculates this timestamp based on the current tick count and the frequency of the timer.
- * @return uint64_t  The function returns a uint64_t value representing the current timestamp in microseconds.
- */
-uint64_t tlm_get_timestamp_microseconds(void);
-
-/**
  * @brief tlm_calculate_mma_res function calculates the minimum, maximum, and average values of a 
  *          given metric over a specified time period. It updates the provided pointers with the 
  *          calculated results based on the latest value and the time difference.

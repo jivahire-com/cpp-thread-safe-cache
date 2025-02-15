@@ -30,6 +30,11 @@ extern "C" {
 //
 // Mocks
 //
+uint8_t __wrap_idsw_get_cpu_type()
+{
+    return mock_type(uint8_t);
+}
+
 void __wrap_system_counter_init(const uintptr_t gen_counter_ctrl_base, uint32_t frequency_hz, uint8_t increment_val)
 {
     check_expected(gen_counter_ctrl_base);
@@ -139,7 +144,7 @@ TEST_FUNCTION(test_gtimer_init, nullptr, nullptr)
         .scaling_factor = REFCLK_SCALING_FACTOR,
         .timer_irq = 45,
     };
-
+    will_return(__wrap_idsw_get_cpu_type, 0x2);
     expect_value(__wrap_system_counter_init, gen_counter_ctrl_base, test_config.counter_control_base);
     expect_value(__wrap_system_counter_init, frequency_hz, test_config.frequency_hz);
     expect_value(__wrap_system_counter_init, increment_val, test_config.scaling_factor);

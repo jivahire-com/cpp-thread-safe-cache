@@ -28,6 +28,7 @@ coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
 mock_target(${TARGET}
+    idsw_get_cpu_type
     system_counter_init
     gtimer_init
     gtimer_enable_timer

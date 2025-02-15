@@ -12,7 +12,8 @@
 #include "tlm_logger_i.h" // internal APIs
 
 #include <FpFwAssert.h>
-#include <assert.h>              // IWYU pragma: keep for static_assert
+#include <assert.h> // IWYU pragma: keep for static_assert
+#include <exec_tlm_cmpnt.h>
 #include <fpfw_status.h>         // for FPFW_STATUS_SUCCEEDED, fpf...
 #include <power_tlm_fuse.h>      //for power fuse
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
@@ -20,7 +21,6 @@
 #include <stddef.h>              // for size_t
 #include <stdint.h>              // for uint8_t, uint16_t
 #include <string.h>              // for memset
-#include <tx_api.h>
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
@@ -879,14 +879,6 @@ void data_proc_tlm_cmpnt_get_inst_core_amu_data(uint16_t core_id, p_inst_core_el
 
 //----------------Power telemetry update manager  ----------------
 
-uint64_t tlm_get_timestamp_microseconds(void)
-{
-    // TODO: replace with higher resolution timer when available
-    // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2314719
-    uint64_t timestamp_us = (uint64_t)tx_time_get();
-    return timestamp_us;
-}
-
 void tlm_average_power_sample(uint8_t core_id)
 {
     // Check if there are power samples for this core
@@ -1172,7 +1164,7 @@ void tlm_update_core_histogram(uint8_t core_id)
 
 static uint64_t tlm_calculate_time_diff(uint64_t* previous_timestamp_uS, uint64_t* time_stamp_uS, pwr_tlm_update_t update_type)
 {
-    uint64_t temp_stamp_uS = tlm_get_timestamp_microseconds();
+    uint64_t temp_stamp_uS = exec_tlm_cmpnt_get_timestamp_microseconds();
     uint64_t time_diff_uS = 0;
 
     // Calculate the general residency for the core

@@ -43,5 +43,5 @@ mock_target(${TARGET}
     sensor_fifo_svc_poll_dimm_info
     platform_power_fuses_get_dts_coeff_tile
     data_proc_tlm_cmpnt_aggregate_update_mgr
-    _tx_time_get
+    exec_tlm_cmpnt_get_timestamp_microseconds
 )

@@ -19,6 +19,7 @@
 
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>
+#include <gtimer_prodfw.h> //for timestamp
 #include <stdbool.h>
 #include <tx_api.h>
 
@@ -270,4 +271,16 @@ void exec_tlm_cmpnt_get_status(telemetry_executive_status_t* status)
     tlm_executive_status.twenty_four_hr_pkg_timer_active = (active == TX_TRUE) ? true : false;
 
     *status = tlm_executive_status;
+}
+
+uint64_t exec_tlm_cmpnt_get_timestamp_microseconds(void)
+{
+    uint64_t timestamp_us = 0;
+
+    uint64_t tick_count = gtimer_prodfw_get_counter();
+    uint32_t frequency = gtimer_prodfw_get_frequency();
+
+    timestamp_us = (tick_count * 1000000) / frequency;
+
+    return timestamp_us;
 }

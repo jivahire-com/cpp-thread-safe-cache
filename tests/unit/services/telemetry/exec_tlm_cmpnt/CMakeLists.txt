@@ -42,4 +42,6 @@ mock_target(${TARGET}
     _txe_timer_deactivate
     _txe_timer_activate
     _txe_timer_info_get
+    gtimer_prodfw_get_counter
+    gtimer_prodfw_get_frequency
 )

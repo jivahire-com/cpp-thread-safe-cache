@@ -270,3 +270,16 @@ TEST_FUNCTION(test_exec_tlm_cmpnt_is_telemetry_enabled, test_setup, test_teardow
     enabled = exec_tlm_cmpnt_is_telemetry_enabled();
     assert_true(enabled);
 }
+
+TEST_FUNCTION(test_exec_tlm_get_timestamp_microseconds, test_setup, test_teardown)
+{
+
+    uint64_t timestamp = 0;
+    // Set up mock return values for gtimer_prodfw_get_counter and gtimer_prodfw_get_frequency
+    will_return(__wrap_gtimer_prodfw_get_counter, 5000);
+    will_return(__wrap_gtimer_prodfw_get_frequency, 1000000000);
+    // Call the function to be tested
+    timestamp = exec_tlm_cmpnt_get_timestamp_microseconds();
+    // Add assertions to verify the expected behavior
+    assert_int_equal(timestamp, 5);
+}

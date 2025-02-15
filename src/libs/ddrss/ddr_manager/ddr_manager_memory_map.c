@@ -26,7 +26,8 @@
 // This macro is defined in silibs/soc_fw_shared/include/memory_map/ddrss_reserved_regions.h.
 GENERATE_ARRAY_OF_RSVD_REGIONS
 
-#define Memory_MODULE_NAME "SDS_Memory_Region"
+#define Memory_MODULE_NAME    "SDS_Memory_Region"
+#define TEXT_DDR_MMAP_ERR_NUM "mmap err %d\n"
 
 /*------------- Typedefs -----------------*/
 
@@ -61,7 +62,6 @@ void ddr_create_memory_map()
 
     if (add_1gb_reservation == true)
     {
-        DDR_LOG_WARN("Adding 1GB reserved range to DDR memory map - Borgens knob enabled");
         num_reserved_regions += 1;
     }
 
@@ -98,7 +98,7 @@ void ddr_create_memory_map()
     status = check_reservation_order(sorted_reservations);
     if (status != SILIBS_SUCCESS)
     {
-        DDR_LOG_CRIT("Error checking memory reservations order");
+        DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 0);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -107,14 +107,14 @@ void ddr_create_memory_map()
     if (ddrmap_add_reservations((*all_mem_regions).mem_regions, sorted_reservations, appended_mmap_tfa) != SILIBS_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_ADD_RESERVED_RANGE_TO_MEMORY_MAP, ET_NOPARAM);
-        DDR_LOG_CRIT("Error adding reserved range to DDR memory map");
+        DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 1);
     }
 
     // Pass to TF-A in Shared SRAM via SDS structure service
     if (MemoryMapPassToTFA(appended_mmap_tfa) != DFWK_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_USING_SDS_STRUCTURE, ET_NOPARAM);
-        DDR_LOG_CRIT("Error using SDS structure");
+        DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 2); //"Error using SDS structure"
     }
 }
 
@@ -136,7 +136,7 @@ static uint32_t MemoryMapPassToTFA(ddrss_memory_region_t mmap_tfa[])
     if (get_mmap_size_bytes(mmap_tfa, &numbytes_new_mmap) != SILIBS_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_READ_MEMORY_MAP_SIZE, ET_NOPARAM);
-        DDR_LOG_CRIT("Error reading DDR memory map size");
+        DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 3); //"Error reading DDR memory map size"
     }
 
     int result = sds_block_write(SDS_MEMORY_MAP_STRUCT_ID, mmap_tfa, numbytes_new_mmap);
@@ -185,7 +185,7 @@ int sort_reserved_regions(const ddrss_memory_region_t reservations[], uint32_t n
     {
         out_sorted[i] = reservations[i];
     }
-    printf("[DDR] --------original memory map----------- \n");
+    DDR_LOG_WARN("--------original memory map-----------");
     show_map(out_sorted, ddrmap_get_last_idx(out_sorted), true);
 
     // insertion sort
@@ -194,7 +194,7 @@ int sort_reserved_regions(const ddrss_memory_region_t reservations[], uint32_t n
         // Check for exit condition
         if (out_sorted[rsvd_count].start_address == 0 && out_sorted[rsvd_count].end_address == 0)
         {
-            printf("[DDR] --------sorted memory map----------- \n");
+            DDR_LOG_WARN("--------sorted memory map-----------");
             show_map(out_sorted, ddrmap_get_last_idx(out_sorted), true);
             return SILIBS_SUCCESS;
         }
@@ -211,7 +211,7 @@ int sort_reserved_regions(const ddrss_memory_region_t reservations[], uint32_t n
     }
 
     DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_SORTING_RESERVED_MEMORY_MAP, ET_NOPARAM);
-    printf("[DDR] Error while sorting reserved memory map");
+    DDR_LOG_WARN(TEXT_DDR_MMAP_ERR_NUM, 4); //"Error while sorting reserved memory map"
     return SILIBS_E_DATA;
 }
 
@@ -243,7 +243,7 @@ int check_reservation_order(const ddrss_memory_region_t reservations[])
         if (!(curr_start >= prev_end))
         {
             DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_UNEXPECTED_RESERVATION_OVERLAP, idx);
-            DDR_LOG_CRIT("Unexpected reservation overlap (0x%llx)\n", curr_start);
+            DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 5); //"Error - overlap while checking reservation order"
             return SILIBS_E_DATA;
         }
         idx++;
@@ -274,11 +274,11 @@ int ddrmap_add_reservations(const ddrss_memory_region_t in_mmap[],
     uint32_t res_idx = 0;
     uint64_t next_start = 0;
 
-    printf("[DDR] --------Incoming memory map------------- \n");
+    DDR_LOG_CRIT("--------Incoming memory map-------------");
     show_map(in_mmap, ddrmap_get_last_idx(in_mmap), true);
-    printf("[DDR] --------DDR Reservations---------------- \n");
+    DDR_LOG_CRIT("--------DDR Reservations----------------");
     show_map((ddrss_memory_region_t*)reservations, ddrmap_get_last_idx(reservations), true);
-    printf("[DDR] --------Outgoing memory map------------- \n");
+    DDR_LOG_CRIT("--------Outgoing memory map-------------");
 
     while (in_idx < MAX_MEMORY_REGIONS)
     {
@@ -362,7 +362,7 @@ int ddrmap_add_reservations(const ddrss_memory_region_t in_mmap[],
         in_idx++;
     }
     DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_INSERTING_RESERVED_MEMORY_MAP, ET_NOPARAM);
-    DDR_LOG_CRIT("Error while inserting reserved memory ranges for MSCP");
+    DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 6); //"Error while inserting reserved memory ranges for MSCP"
     return SILIBS_E_DATA;
 }
 
@@ -407,7 +407,7 @@ int ddrmap_get_last_idx(const ddrss_memory_region_t ddr_mmap[])
         mem_idx++;
     }
     DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_RESERVED_ADDRESS_RANGE_NOT_TERMINATED, ET_NOPARAM);
-    DDR_LOG_CRIT("Error - Reserved DDR address range is not terminated by an empty record");
+    DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 7); //"Error - Reserved DDR address range is not terminated by an empty record"
     return SILIBS_E_DATA;
 }
 
@@ -464,7 +464,7 @@ int get_mmap_size_bytes(ddrss_memory_region_t appended_mmap_64b[], size_t* num_b
         mem_region_count++;
     }
     DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_MEMORY_REGIONS_EXCEEDS_EXPECTED_SIZE, ET_NOPARAM);
-    DDR_LOG_CRIT("Discovered memory regions exceeds expected size");
+    DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 8); //"Discovered memory regions exceeds expected size"
     return SILIBS_E_DATA;
 }
 
@@ -484,27 +484,27 @@ void show_map(const ddrss_memory_region_t this_mmap[], int idx, bool show_all)
     {
         for (int i = 0; i < idx; i++)
         {
-            printf("[DDR] Region: %d \n", i);
-            printf("[DDR] \tstart: 0x%08lX%08lX \n",
-                   (unsigned long)(this_mmap[i].start_address >> 32),
-                   (unsigned long)(this_mmap[i].start_address & 0xFFFFFFFF));
-            printf("[DDR] \tend:   0x%08lX%08lX \n",
-                   (unsigned long)(this_mmap[i].end_address >> 32),
-                   (unsigned long)(this_mmap[i].end_address & 0xFFFFFFFF));
-            printf("[DDR] \tflags.available_sysmem:     %d \n", (int)this_mmap[i].attr.available_sysmem);
-            printf("[DDR] \tflags.pas_mask:           0x%X \n", (int)this_mmap[i].attr.as_uint32 & 0xf);
+            DDR_LOG_CRIT("Region: %d \n", i);
+            DDR_LOG_CRIT(" \tstart: 0x%08lX%08lX \n",
+                         (unsigned long)(this_mmap[i].start_address >> 32),
+                         (unsigned long)(this_mmap[i].start_address & 0xFFFFFFFF));
+            DDR_LOG_CRIT(" \tend:   0x%08lX%08lX \n",
+                         (unsigned long)(this_mmap[i].end_address >> 32),
+                         (unsigned long)(this_mmap[i].end_address & 0xFFFFFFFF));
+            DDR_LOG_CRIT(" \tflags.available_sysmem:     %d \n", (int)this_mmap[i].attr.available_sysmem);
+            DDR_LOG_CRIT(" \tflags.pas_mask:           0x%X \n", (int)this_mmap[i].attr.as_uint32 & 0xf);
         }
     }
     else
     {
-        printf("[DDR] Region: %d \n", idx);
-        printf("[DDR] \tstart: 0x%08lX%08lX \n",
-               (unsigned long)(this_mmap[idx].start_address >> 32),
-               (unsigned long)(this_mmap[idx].start_address & 0xFFFFFFFF));
-        printf("[DDR] \tend:   0x%08lX%08lX \n",
-               (unsigned long)(this_mmap[idx].end_address >> 32),
-               (unsigned long)(this_mmap[idx].end_address & 0xFFFFFFFF));
-        printf("[DDR] \tflags.available_sysmem:     %d \n", (int)this_mmap[idx].attr.available_sysmem);
-        printf("[DDR] \tflags.pas_mask:           0x%X \n", (int)this_mmap[idx].attr.as_uint32 & 0xf);
+        DDR_LOG_CRIT(" Region: %d \n", idx);
+        DDR_LOG_CRIT(" \tstart: 0x%08lX%08lX \n",
+                     (unsigned long)(this_mmap[idx].start_address >> 32),
+                     (unsigned long)(this_mmap[idx].start_address & 0xFFFFFFFF));
+        DDR_LOG_CRIT(" \tend:   0x%08lX%08lX \n",
+                     (unsigned long)(this_mmap[idx].end_address >> 32),
+                     (unsigned long)(this_mmap[idx].end_address & 0xFFFFFFFF));
+        DDR_LOG_CRIT(" \tflags.available_sysmem:     %d \n", (int)this_mmap[idx].attr.available_sysmem);
+        DDR_LOG_CRIT(" \tflags.pas_mask:           0x%X \n", (int)this_mmap[idx].attr.as_uint32 & 0xf);
     }
 }

@@ -55,12 +55,12 @@ void ddr_poll_dimms()
 {
     if (!ddr_manager_platform_is_polling_supported())
     {
-        DDR_LOG_CRIT("i3c polling timer should have been disabled during init on this platform");
+        DDR_LOG_CRIT("I3C polling timer !supported");
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_PLATFORM_NOT_SUPPORT_I3C_POLLING, ET_NOPARAM);
         BUG_ASSERT(false);
     }
 
-    for (int dimm_idx = 0; dimm_idx < NUM_DIMM; dimm_idx++)
+    for (int dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)
     {
         ddr_manager_i3c_temperature_t ts0_temp;
         if (ddr_manager_temperature_sensor_read(dimm_idx, 0, &ts0_temp) == DDR_MANAGER_I3C_SUCCESS)
@@ -103,7 +103,7 @@ void check_dimm_temp_thresholds()
     }
 
     uint16_t max_dimm_temp = 0;
-    for (int dimm_idx = 0; dimm_idx < NUM_DIMM; dimm_idx++)
+    for (int dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)
     {
         ddr_manager_i3c_temperature_t ts0_temp = ddr_telemetry_get_dimm_temp(dimm_idx, 0);
         ddr_manager_i3c_temperature_t ts1_temp = ddr_telemetry_get_dimm_temp(dimm_idx, 1);

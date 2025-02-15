@@ -21,7 +21,7 @@
 #define DDR_WORK_QUEUE_NAME ("ddr-work-queue")
 #define DDR_WORK_THREAD_NAME ("ddr-work_thread")
 #define DDR_TIMER_NAME ("ddr-timer")
-#define NUM_DIMM  (6) // Each die will address 6 DIMMs
+#define NUM_DIMM_PER_DIE  (6) // Each die will address 6 DIMMs
 #define NUM_DIMM_TEMP_SENSORS (2) // Each DIMM will have 2 temperature sensors
 
 #define MODULE_NAME "[DDR] "

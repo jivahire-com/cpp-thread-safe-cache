@@ -32,6 +32,8 @@
 /*-- Declarations (Statics and globals) --*/
 static uint32_t ddrss_interrupt_id[6] = {0, 1, 2, 3, 4, 5};
 
+#define TEXT_DDR_SPEED_GRADE_LOCKED "DDRSS - ddr_speed_grade locked to %s for %s\n"
+
 /*------------- Functions ----------------*/
 void prod_ddrss_lib_init(KNG_DIE_ID die_num)
 {
@@ -111,7 +113,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     if (platform_id == PLATFORM_SVP_SIM || platform_id == PLATFORM_SVP_MIN_CONFIG_SIM)
     {
         // SVP does not support full DDR model, skip it.
-        printf("DDRSS init is skipped for SVP\n");
+        printf("DDRSS init skipped: SVP\n");
         return;
     }
 
@@ -124,10 +126,10 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         // limitation. The actual DIMM size on FPGA is 64GB / 4 = 16GB.
         ddrss_cfgs.dimm_sku = DDR5_RDIMM_2Rx4_16Gb_64GB;
         // FPGA DDR runs at fixed frequency (support DDR6400 with DFI ratio 1:4)
-        printf("DDRSS - ddr_speed_grade locked to DDR6400 for FPGA\n");
+        printf(TEXT_DDR_SPEED_GRADE_LOCKED, "DDR6400", "FPGA");
         ddrss_cfgs.ext_knobs.ddr_speed_grade = DDRSS_SPEED_6400;
 
-        printf("Disabling UE scrub/demand poison enable for FPGA\n");
+        printf("Disabling UE scrub/demand poison enable: FPGA\n");
         ddrss_cfgs.ext_knobs.ue_scrub_poison_en = 0;
         ddrss_cfgs.ext_knobs.ue_demand_poison_en = 0;
     }
@@ -138,7 +140,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         ddrss_cfgs.platform_type = DDRSS_PLATFORM_EMU;
         ddrss_cfgs.dimm_sku = DDR5_RDIMM_2Rx4_16Gb_64GB;
         // Emulation supports DDR7200 only.
-        printf("DDRSS - ddr_speed_grade locked to DDR7200 for EMU\n");
+        printf(TEXT_DDR_SPEED_GRADE_LOCKED, "DDR7200", "EMU");
         ddrss_cfgs.ext_knobs.ddr_speed_grade = DDRSS_SPEED_7200;
     }
     else if (platform_id == PLATFORM_RVP_EVT_SILICON)
@@ -160,11 +162,11 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     }
     else
     {
-        printf("DDRSS init is not supported yet on platform Id 0x%x\n", platform_id);
+        printf("DDRSS init not supported on plat. Id 0x%x\n", platform_id);
         return;
     }
 
-    printf("DDRSS init for %s\n", platform_str);
+    printf("DDRSS init: %s\n", platform_str);
 
     // Map both DDRSS DIE0 and DIE1 cfg space through ATU
     uint32_t d0_start = ddrss_atu_map_cfg_space(SOC_D0);

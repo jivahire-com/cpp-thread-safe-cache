@@ -257,7 +257,7 @@ void prod_ddrss_interrupt_handler(void* context)
     if (sub_sts != SILIBS_SUCCESS)
     {
         sts = SILIBS_E_DEVICE;
-        printf("DDR interrupt handler failed for INTU int mask 0x%08x\n", (unsigned int)ddr_intu_err);
+        printf("DDR int handler failed for INTU mask 0x%08x\n", (unsigned int)ddr_intu_err);
     }
 
     printf("DDRSS %d ISR Exit with sts=%d\n\n", (int)ddrss, sts);
@@ -454,7 +454,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
     if (sub_sts)
     {
         sts = SILIBS_E_DEVICE;
-        printf("MC interrupt handler failed for INTU int mask 0x%08x\n", (unsigned int)mc_intu_err);
+        printf("MC int handler failed for INTU mask 0x%08x\n", (unsigned int)mc_intu_err);
     }
 
     return sts;

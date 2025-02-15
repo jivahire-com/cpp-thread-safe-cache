@@ -22,7 +22,7 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static ddr_manager_i3c_temperature_t dimm_temps[NUM_DIMM][NUM_DIMM_TEMP_SENSORS];
+static ddr_manager_i3c_temperature_t dimm_temps[NUM_DIMM_PER_DIE][NUM_DIMM_TEMP_SENSORS];
 static TX_MUTEX ddr_telemetry_mutex;
 
 /*------------- Functions ----------------*/
@@ -43,7 +43,7 @@ void ddr_telemetry_unlock()
 
 void ddr_telemetry_update_dimm_temp(uint8_t dimm_idx, uint8_t ts_idx, ddr_manager_i3c_temperature_t temp)
 {
-    BUG_ASSERT(dimm_idx < NUM_DIMM);
+    BUG_ASSERT(dimm_idx < NUM_DIMM_PER_DIE);
     BUG_ASSERT(ts_idx < NUM_DIMM_TEMP_SENSORS);
 
     ddr_telemetry_lock();
@@ -53,7 +53,7 @@ void ddr_telemetry_update_dimm_temp(uint8_t dimm_idx, uint8_t ts_idx, ddr_manage
 
 ddr_manager_i3c_temperature_t ddr_telemetry_get_dimm_temp(uint8_t dimm_idx, uint8_t ts_idx)
 {
-    BUG_ASSERT(dimm_idx < NUM_DIMM);
+    BUG_ASSERT(dimm_idx < NUM_DIMM_PER_DIE);
     BUG_ASSERT(ts_idx < NUM_DIMM_TEMP_SENSORS);
 
     ddr_manager_i3c_temperature_t temp;

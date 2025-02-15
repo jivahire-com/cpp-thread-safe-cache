@@ -48,7 +48,7 @@ static void ddr_manager_engage_bwl()
 
     ddr_manager_set_memhot_gpio();
     s_bwlEngaged = true;
-    printf("Engaging DDR BWL\n");
+    printf("DDR BWL+\n");
 }
 
 static void ddr_manager_disengage_bwl()
@@ -64,7 +64,7 @@ static void ddr_manager_disengage_bwl()
 
     ddr_manager_clear_memhot_gpio();
     s_bwlEngaged = false;
-    printf("Disengaging DDR BWL\n");
+    printf("DDR BWL-\n");
 }
 
 bool ddr_manager_get_bwl_engaged()

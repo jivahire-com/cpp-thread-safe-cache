@@ -103,8 +103,16 @@ __attribute__((__weak__)) FPFW_NORETURN void crash_dump_wait_forever()
 
 void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
 {
-    // Update the crash dump state
-    crash_dump_update_core_state(CRASH_DUMP_STATE_IN_PROGRESS);
+    crash_dump_context_t* ctx = crash_dump_context();
+
+    for (int i = 0; i < CRASH_DUMP_TYPE_NUM; i++)
+    {
+        if (ctx->type_ctx[i] != NULL)
+        {
+            // Update the crash dump state
+            crash_dump_update_core_state(ctx->type_ctx[i], CRASH_DUMP_STATE_IN_PROGRESS);
+        }
+    }
 
     // Assert GPIO_CD_IN_PROGRESS
     cd_gpio_assert_cd_in_progress(true);
@@ -112,34 +120,64 @@ void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p
     // Trigger remote entities to indicate this core has crashed if needed
     crash_dump_remote_trigger();
 
-    FPFwCrashDumpCtx* crash_dump_context = GetCrashDumpContext();
     FPFwCdBugCheckInfo bug_check_info = {};
-    bug_check_info.coreIndex = crash_dump_context->coreIndex;
+    bug_check_info.coreIndex = CRASH_DUMP_PROCESSOR_ID(ctx->die_index, ctx->core_index);
     bug_check_info.data.Code = errorCode;
     bug_check_info.data.Parameter[0] = p1;
     bug_check_info.data.Parameter[1] = p2;
     bug_check_info.data.Parameter[2] = p3;
     bug_check_info.data.Parameter[3] = p4;
 
-    FPFwCDCrashDumpHandler(crash_dump_context, &g_core_crash_context, &bug_check_info);
+    for (int i = 0; i < CRASH_DUMP_TYPE_NUM; i++)
+    {
+        if (ctx->type_ctx[i] != NULL)
+        {
+            // Dump the crash dump
+            FPFwCDCrashDumpHandler(&ctx->type_ctx[i]->crash_dump_ctx, &g_core_crash_context, &bug_check_info);
 
-    // Update the crash dump state
-    crash_dump_update_core_state(CRASH_DUMP_STATE_COMPLETED);
+            // Update the crash dump state
+            crash_dump_update_core_state(ctx->type_ctx[i], CRASH_DUMP_STATE_COMPLETED);
+        }
+    }
 }
 
 void crash_dump_register_mmio_register(volatile void* mmio_reg, uint32_t reg_count, FPFwCdDumpPriority priority)
 {
-    CdRegisterMMIORegisterSet(GetCrashDumpContext(), (uintptr_t)mmio_reg, reg_count, priority);
+    crash_dump_context_t* ctx = crash_dump_context();
+
+    for (int i = 0; i < CRASH_DUMP_TYPE_NUM; i++)
+    {
+        if (ctx->type_ctx[i] != NULL)
+        {
+            CdRegisterMMIORegisterSet(&ctx->type_ctx[i]->crash_dump_ctx, (uintptr_t)mmio_reg, reg_count, priority);
+        }
+    }
 }
 
 void crash_dump_register_address32(void* address, uint32_t size, FPFwCdDumpPriority priority)
 {
-    CdRegisterAddress32(GetCrashDumpContext(), address, size, priority);
+    crash_dump_context_t* ctx = crash_dump_context();
+
+    for (int i = 0; i < CRASH_DUMP_TYPE_NUM; i++)
+    {
+        if (ctx->type_ctx[i] != NULL)
+        {
+            CdRegisterAddress32(&ctx->type_ctx[i]->crash_dump_ctx, address, size, priority);
+        }
+    }
 }
 
 void crash_dump_register_address64(uint64_t address, uint32_t size, FPFwCdDumpPriority priority)
 {
-    CdRegisterAddress64(GetCrashDumpContext(), address, size, priority);
+    crash_dump_context_t* ctx = crash_dump_context();
+
+    for (int i = 0; i < CRASH_DUMP_TYPE_NUM; i++)
+    {
+        if (ctx->type_ctx[i] != NULL)
+        {
+            CdRegisterAddress64(&ctx->type_ctx[i]->crash_dump_ctx, address, size, priority);
+        }
+    }
 }
 
 void crash_dump_register_address32_pointer_array(FPFwCdDumpPriority priority,
@@ -148,5 +186,18 @@ void crash_dump_register_address32_pointer_array(FPFwCdDumpPriority priority,
                                                  void** pointerArray,
                                                  uint32_t pointerArrayCount)
 {
-    CdRegisterAddress32PointerArray(GetCrashDumpContext(), priority, minChunkSize, maxRegistrationCount, pointerArray, pointerArrayCount);
+    crash_dump_context_t* ctx = crash_dump_context();
+
+    for (int i = 0; i < CRASH_DUMP_TYPE_NUM; i++)
+    {
+        if (ctx->type_ctx[i] != NULL)
+        {
+            CdRegisterAddress32PointerArray(&ctx->type_ctx[i]->crash_dump_ctx,
+                                            priority,
+                                            minChunkSize,
+                                            maxRegistrationCount,
+                                            pointerArray,
+                                            pointerArrayCount);
+        }
+    }
 }

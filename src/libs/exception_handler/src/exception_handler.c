@@ -226,7 +226,7 @@ void threadx_stack_error_handler(TX_THREAD* tx_thread)
  * @brief Register main exception handler for fault ISR and debug monitor and thread stack error.
  *
  */
-int32_t exception_handler_init(void)
+KNG_STATUS exception_handler_init(void)
 {
     // Register the main exception handler for generic fault.
     if (nvic_set_isr_fault(main_exception_handler) != NVIC_STATUS_SUCCESS)

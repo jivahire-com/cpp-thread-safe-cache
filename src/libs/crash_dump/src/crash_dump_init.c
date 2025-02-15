@@ -8,6 +8,7 @@
  */
 
 /*--------------- Includes ---------------*/
+#include "crash_dump_context.h"   // for set_crash_dump_context
 #include "crash_dump_gpio.h"      // for cd_gpio_assert_cd_in_progress
 #include "crash_dump_overrides.h" // for cacheFlushOverride, cacheInvalidateOverride
 #include "crash_dump_payload.h"   // for crash_dump_register_core_registers
@@ -15,190 +16,101 @@
 
 #include <FpFwAssert.h>               // for FPFW_RUNTIME_ASSERT
 #include <crash_dump.h>               // for crash_dump_init
-#include <crash_dump_memory.h>        // for CRASH_DUMP_MINI_HEADER_ADDR, CRASH_DUMP_MINI_HEADER_SIZE...
-#include <idhw.h>                     // for idhw_is_single_die_boot_en
 #include <idsw_kng.h>                 // for DIE_0, DIE_1
 #include <modules/CdDumpDescriptor.h> // for FPFwCDInitDumpDescriptor
 #include <modules/CdMemoryPool.h>     // for FPFwCDInintMemoryPool
 #include <stdbool.h>                  // for false
-#include <stdint.h>                   // for uint8_t, uint32_t
-#include <tx_api.h> // for TX_MUTEX, TX_SUCCESS, TX_NO_INHERIT, TX_WAIT_FOREVER, tx_mutex_create
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define CRASH_DUMP_NUM_DESCRIPTORS 128 // ToDo: Re-evaluate this number
 
 /*-------------- Typedefs ----------------*/
 
 /*-------- Function Prototypes -----------*/
-static void init_mem_pool(uint64_t cd_mem_pool, uint32_t block_size);
-static void init_dump_desc();
-static void init_dump_file();
-static void init_dump_manager(uint64_t totalDumpSize);
+static void init_mem_pool(crash_dump_type_context_t* type_context);
+static void init_dump_desc(crash_dump_type_context_t* type_context);
+static void init_dump_file(crash_dump_type_context_t* type_context);
+static void init_dump_manager(crash_dump_type_context_t* type_context);
 
 /*-- Declarations (Statics and globals) --*/
-static FPFwCrashDumpCtx crash_dump_ctx = {};
-static FPFwCDMemPoolCtx mem_ctx = {};
-static FPFwCDDumpDescriptorCtx desc_ctx = {};
-static FPFwCDDumpFileCtx file_ctx = {};
-static FPFwCDDumpDescriptor desc_list[CRASH_DUMP_NUM_DESCRIPTORS] = {};
-static TX_MUTEX desc_mutex = {};
-static crash_dump_config_t* crash_dump_config = NULL;
 
 /*------------- Functions ----------------*/
-/**
- * @brief Get the Crash Dump Context object
- *
- * @return FPFwCrashDumpCtx* Crash dump context
- */
-FPFwCrashDumpCtx* GetCrashDumpContext()
-{
-    return &crash_dump_ctx;
-}
-
-/**
- * @brief Get the Crash Dump Context object
- *
- * @return Pointer to static crash dump context.
- */
-crash_dump_config_t* GetCrashDumpConfig()
-{
-    return crash_dump_config;
-}
-
 /**
  * @brief Start initialization of crash dump.
  *
  * @param config Configuration for crash dump.
  *
  */
-void crash_dump_init(crash_dump_config_t* config)
+void crash_dump_init(crash_dump_context_t* context)
 {
-    // Cache the configuration
-    crash_dump_config = config;
-
-    // Set Processor ID with DIE index (Upper 16 bits) and core index (Lower 16 bits).
-    crash_dump_ctx.prid = CRASH_DUMP_PROCESSOR_ID(config->die_index, config->core_index);
-    crash_dump_ctx.isPrimaryCore = config->is_primary;
+    // Cache the main cd context.
+    set_crash_dump_context(context);
 
     // De-assert CD_IN_PROGRESS
     cd_gpio_assert_cd_in_progress(false);
-
-    // Initialize crash dump framework
-    init_dump_desc();
-    crash_dump_enable_full_dump(config->core_index == CRASH_DUMP_CORE_SCP ? false : true);
-
-    // Register core built-in registers into crash dump
-    crash_dump_register_core_registers();
-
-    // Register error status registers and other diagnostic registers
-    crash_dump_register_default_registers(config->mmio_registers, config->mmio_register_count);
-
-    // Register core stack
-    crash_dump_register_core_stack();
-
-    // Add capture information about the core and the firmware
-    crash_dump_register_standard_info();
-
-    // Register ThreadX data registerer callback
-    crash_dump_register_threadx();
 }
 
 /**
- * @brief Enable or disable full crash dump
+ * @brief Register mini dump or full dump
  *
- * @param enable true to enable full crash dump, false to disable (mini dump only)
- *
- * @return true if successful, false otherwise
+ * @param type_context
+ * @return KNG_SUCCESS if succeeded, otherwise error code.
  */
-bool crash_dump_enable_full_dump(bool enable)
+KNG_STATUS crash_dump_register_dump(crash_dump_type_context_t* type_context)
 {
-    uint64_t mem_pool_addr = 0;
-    uint32_t mem_pool_size = 0;
-    crash_dump_status_t* status = NULL;
-    crash_dump_config_t* config = GetCrashDumpConfig();
+    crash_dump_context_t* ctx = crash_dump_context();
 
-    if (config == NULL)
+    if (ctx == NULL)
     {
-        FPFwCDPrintf("Crash dump configuration is not available\n");
-        return false;
+        return KNG_E_NOT_READY;
     }
 
-    if ((config->dump_type == FPFW_CD_DUMP_TYPE_FULL && enable) || (config->dump_type == FPFW_CD_DUMP_TYPE_MINI && !enable))
+    if (type_context == NULL || type_context->header == NULL || type_context->type >= CRASH_DUMP_TYPE_NUM)
     {
-        // Already in the desired state
-        return true;
+        return KNG_E_INVALIDARG;
     }
 
-    if (enable)
+    if (ctx->type_ctx[type_context->type] == NULL)
     {
-        if (IS_PLATFORM_SVP())
-        {
-            // If initializing a mini crash dump OR on SVP use a local semaphore within the MSCP EXP Block.
-            //   - See SVP Bug SVP bug https://azurecsi.visualstudio.com/1P-SoC-Modeling/_workitems/edit/2327121
-            // If initializing a full crash dump use a semaphore within the IOSS block.
-            config->cd_semaphore.semaphore_id = SEM_ID_MSCP_EXP_0;
-        }
-        else
-        {
-            config->cd_semaphore.semaphore_id = SEM_ID_DIE0_IOSS_0;
-        }
-
-        // Configure full dump memory pool.
-        switch (config->core_index)
-        {
-        case CRASH_DUMP_CORE_MCP:
-            status = (crash_dump_status_t*)CRASH_DUMP_FULL_HEADER_ADDR;
-            mem_pool_addr = CRASH_DUMP_FULL_MCP_ADDR;
-            mem_pool_size = CRASH_DUMP_FULL_MCP_SIZE;
-            break;
-        case CRASH_DUMP_CORE_SCP:
-            status = (crash_dump_status_t*)CRASH_DUMP_FULL_HEADER_ADDR;
-            mem_pool_addr = CRASH_DUMP_FULL_SCP_ADDR;
-            mem_pool_size = CRASH_DUMP_FULL_SCP_SIZE;
-            break;
-        default:
-            // MSCP only supports MCP and SCP cores.
-            return false;
-        }
+        ctx->type_ctx[type_context->type] = type_context;
     }
     else
     {
-        // Configure hw semaphore to use MSCP_EXP_0 for mini dump.
-        config->cd_semaphore.semaphore_id = SEM_ID_MSCP_EXP_0;
-
-        // Configure mini dump memory pool.
-        switch (config->core_index)
-        {
-        case CRASH_DUMP_CORE_SCP:
-            status = (crash_dump_status_t*)CRASH_DUMP_MINI_HEADER_ADDR;
-            mem_pool_addr = CRASH_DUMP_MINI_SCP_ADDR;
-            mem_pool_size = CRASH_DUMP_MINI_SCP_SIZE;
-            break;
-        default:
-            // Only SCP and HSP support mini dump.
-            return false;
-        }
+        return KNG_E_ALREADY_INITIALIZED;
     }
 
-    // If the status is already set, clear it.
-    crash_dump_update_state(CRASH_DUMP_NOT_IN_USE);
+    // Initialize crash dump header.
+    initialize_crash_dump_header(type_context);
 
-    // Update new crash dump status buffer.
-    config->dump_type = enable ? FPFW_CD_DUMP_TYPE_FULL : FPFW_CD_DUMP_TYPE_MINI;
-    config->cd_status = status;
+    // Configure FPFW crash dump context
+    // Set Processor ID with DIE index (Upper 16 bits) and core index (Lower 16 bits).
+    type_context->crash_dump_ctx.prid = CRASH_DUMP_PROCESSOR_ID(ctx->die_index, ctx->core_index);
+    type_context->crash_dump_ctx.isPrimaryCore = ctx->is_primary;
 
-    // Initialize crash dump header lock (hw semaphore) for Die0 SCP.
-    // ToDo: This must be moved to HSP.
-    initialize_crash_dump_header_lock(config);
+    // Initialize crash dump framework
+    init_dump_desc(type_context);
+    init_mem_pool(type_context);
+    init_dump_file(type_context);
+    init_dump_manager(type_context);
 
-    crash_dump_update_state(CRASH_DUMP_IN_USE);
+    // Register core built-in registers into crash dump
+    crash_dump_register_core_registers(type_context);
 
-    // Initialize FPFW crash dump memory pool, file and manager
-    init_mem_pool(mem_pool_addr, mem_pool_size);
-    init_dump_file();
-    init_dump_manager(mem_pool_size);
+    // Register error status registers and other diagnostic registers
+    crash_dump_register_default_registers(type_context, ctx->mmio_registers, ctx->mmio_register_count);
 
-    return true;
+    // Register core stack
+    crash_dump_register_core_stack(type_context);
+
+    // Add capture information about the core and the firmware
+    crash_dump_register_standard_info(type_context);
+
+    if (type_context->type == CRASH_DUMP_TYPE_FULL)
+    {
+        // Register ThreadX data registerer callback
+        crash_dump_register_threadx(type_context);
+    }
+
+    return KNG_SUCCESS;
 }
 
 /**
@@ -208,53 +120,60 @@ bool crash_dump_enable_full_dump(bool enable)
  * @param block_size Size of the memory pool.
  *
  */
-static void init_mem_pool(uint64_t cd_mem_pool, uint32_t block_size)
+static void init_mem_pool(crash_dump_type_context_t* type_context)
 {
     // Initialize crash dump memory pool
-    FPFW_RUNTIME_ASSERT(FPFwCDInitMemoryPool(&mem_ctx, cd_mem_pool, block_size));
-    (void)FPFwCDMemPoolOverrideCacheFlush(&mem_ctx, &cacheFlushOverride);
-    (void)FPFwCDMemPoolOverrideCacheInvalidate(&mem_ctx, &cacheInvalidateOverride);
+    FPFW_RUNTIME_ASSERT(FPFwCDInitMemoryPool(&type_context->mem_ctx, type_context->mem_pool_addr, type_context->mem_pool_size));
+    (void)FPFwCDMemPoolOverrideCacheFlush(&type_context->mem_ctx, &cacheFlushOverride);
+    (void)FPFwCDMemPoolOverrideCacheInvalidate(&type_context->mem_ctx, &cacheInvalidateOverride);
 }
 
 /**
  * @brief Initialize crash dump description.
  *
  */
-static void init_dump_desc()
+static void init_dump_desc(crash_dump_type_context_t* type_context)
 {
     // Create Tx mutex for descriptor set
-    FPFW_RUNTIME_ASSERT(tx_mutex_create(&desc_mutex, "cd desc mutex", TX_NO_INHERIT) == TX_SUCCESS);
+    FPFW_RUNTIME_ASSERT(tx_mutex_create(&type_context->desc_mutex,
+                                        type_context->type == CRASH_DUMP_TYPE_MINI ? "cd mini mutex" : "cd full mutex",
+                                        TX_NO_INHERIT) == TX_SUCCESS);
 
     // Create crash dump descriptor
-    FPFW_RUNTIME_ASSERT(FPFwCDInitDumpDescriptor(&desc_ctx, desc_list, CRASH_DUMP_NUM_DESCRIPTORS));
+    FPFW_RUNTIME_ASSERT(FPFwCDInitDumpDescriptor(&type_context->desc_ctx, type_context->desc_list, CRASH_DUMP_NUM_DESCRIPTORS));
 
-    (void)FPFwCDDumpDescriptorSetMutexCtx(&desc_ctx, (void*)&desc_mutex);
-    (void)FPFwCDDumpDescriptorOverrideMutexLock(&desc_ctx, &mutexLockOverride);
-    (void)FPFwCDDumpDescriptorOverrideMutexUnlock(&desc_ctx, &mutexUnlockOverride);
+    (void)FPFwCDDumpDescriptorSetMutexCtx(&type_context->desc_ctx, (void*)&type_context->desc_mutex);
+    (void)FPFwCDDumpDescriptorOverrideMutexLock(&type_context->desc_ctx, &mutexLockOverride);
+    (void)FPFwCDDumpDescriptorOverrideMutexUnlock(&type_context->desc_ctx, &mutexUnlockOverride);
 }
 
 /**
  * @brief Initialize crash dump file.
  *
  */
-static void init_dump_file()
+static void init_dump_file(crash_dump_type_context_t* type_context)
 {
-    FPFW_RUNTIME_ASSERT(FPFwCDInitDumpFile(&file_ctx));
-    (void)FPFwCDDumpFileOverrideInValidMemory(&file_ctx, &inMemoryOverride);
-    (void)FPFwCDDumpFileOverrideInValidCsrMemory(&file_ctx, &inMemoryOverride);
-    (void)FPFwCDDumpFileOverrideInValidGlobalMemory(&file_ctx, &inGlobalMemoryOverride);
-    file_ctx.product = CD_PRODUCT_ID_KINGSGATE;
+    FPFW_RUNTIME_ASSERT(FPFwCDInitDumpFile(&type_context->file_ctx));
+    (void)FPFwCDDumpFileOverrideInValidMemory(&type_context->file_ctx, &inMemoryOverride);
+    (void)FPFwCDDumpFileOverrideInValidCsrMemory(&type_context->file_ctx, &inMemoryOverride);
+    (void)FPFwCDDumpFileOverrideInValidGlobalMemory(&type_context->file_ctx, &inGlobalMemoryOverride);
+    type_context->file_ctx.product = CD_PRODUCT_ID_KINGSGATE;
 }
 
 /**
  * @brief Initialize crash dump manager.
  *
  */
-static void init_dump_manager(uint64_t totalDumpSize)
+static void init_dump_manager(crash_dump_type_context_t* type_context)
 {
-    FPFW_RUNTIME_ASSERT(FPFwCDInitDumpManager(&crash_dump_ctx, &mem_ctx, &desc_ctx, &file_ctx, NULL, totalDumpSize)); // No state manager.
+    FPFW_RUNTIME_ASSERT(FPFwCDInitDumpManager(&type_context->crash_dump_ctx,
+                                              &type_context->mem_ctx,
+                                              &type_context->desc_ctx,
+                                              &type_context->file_ctx,
+                                              NULL, // No state manager
+                                              type_context->mem_pool_size));
     FPFwCDOverridePrintf(&crash_dump_printf);
-    (void)FPFwCDDumpManagerSetPreDumpCallback(&crash_dump_ctx, &preDumpCallbackOverride, NULL);
-    (void)FPFwCDDumpManagerSetPostDumpCallback(&crash_dump_ctx, &postDumpCallbackOverride, NULL);
-    (void)FPFwCDDumpManagerOverrideGetCurTime(&crash_dump_ctx, &getCurTimeDefault);
+    (void)FPFwCDDumpManagerSetPreDumpCallback(&type_context->crash_dump_ctx, &preDumpCallbackOverride, NULL);
+    (void)FPFwCDDumpManagerSetPostDumpCallback(&type_context->crash_dump_ctx, &postDumpCallbackOverride, NULL);
+    (void)FPFwCDDumpManagerOverrideGetCurTime(&type_context->crash_dump_ctx, &getCurTimeDefault);
 }

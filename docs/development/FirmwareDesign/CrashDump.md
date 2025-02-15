@@ -272,8 +272,9 @@ Thus for any pre-mesh crashes, the HSP mailbox will be used, and the local die's
 The mailbox message should indicate a pre-mesh crash to allow HSP to distinguish the boot phase when it receives the crash request, since it will be responsible for transferring the dump to BMC.
 
 ### Full vs Mini Dump
-Certain crash scenarios may occur prior to DDR being initialized, as a consequence it will be necessary to store a size-constrained dump in SRAM in pre-DDR crash cases.
-Thus cores will store a mini-dump in MSCP_EXP scratch RAM[TBD]
+Certain crash scenarios may occur prior to DDR being initialized, as a consequence it will be necessary to store a size-constrained dump in SRAM in pre-DDR crash cases and DDR failed cases.
+Thus cores will store a mini-dump in MSCP_EXP scratch RAM[TBD].
+SCP will store mini dump as well as full dump to cover the case of crash after DDR initialization but failed in runtime.
 
 ### Memory Layout
 
@@ -372,7 +373,7 @@ enum
 typedef struct {
     uint16_t cd_status; // 0: Not in use, 1: In Use
     volatile uint8_t cores[CRASH_DUMP_CORE_NUM * 2];
-} crash_dump_status_t;
+} crash_dump_header_t;
 ```
 
 ### Dump Flows
@@ -404,7 +405,7 @@ end
     SCP0->>SCP0: FW BUG_CHECK()
     SCP0->>MCP0: Collect dump (MHU signal)
     SCP0->>SCP1: Collect dump (MHU signal)
-    MCP0->>MCP1: Collect dump (MHU signal)
+    SCP1->>MCP1: Collect dump (MHU signal)
     MCP0->>BMC: Assert SAFE_MODE_n (GPIO)
     SCP0->>HSP0: Collect dump (HSP Mailbox)
     HSP0->>SDM0: Collect dump (Mailbox)
@@ -444,6 +445,7 @@ end
     participant BMC
 
     SCP0->>SCP0: FW BUG_CHECK()
+    SCP0->>SCP1: Collect dump (MHU or SPI signal)
     SCP0->>HSP0: Collect dump (HSP Mailbox)
     HSP0->>HSP1: Collect dump (HSP Mailbox)
     HSP1->>SCP1: Collect dump (HSP Mailbox)
@@ -486,7 +488,7 @@ end
     OS->>OS: OS BugCheck
     SCP0->>MCP0: Collect dump (MHU signal)
     SCP0->>SCP1: Collect dump (MHU signal)
-    MCP0->>MCP1: Collect dump (MHU signal)
+    SCP1->>MCP1: Collect dump (MHU signal)
     MCP0->>BMC: Assert SAFE_MODE_n (GPIO)
     SCP0->>HSP0: Collect dump (HSP Mailbox)
     HSP0->>SDM0: Collect dump (Mailbox)

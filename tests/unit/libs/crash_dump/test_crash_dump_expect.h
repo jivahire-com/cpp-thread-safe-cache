@@ -22,10 +22,10 @@
 /*--------- Function Prototypes ----------*/
 extern "C" {
 
-void set_expectations_gpio_set_output(crash_dump_config_t *config);
-void set_expectations_crash_dump_enable_full_dump(crash_dump_config_t* config, crash_dump_status_t* status, bool fulldump);
+void set_expectations_gpio_set_output(crash_dump_context_t *context);
+void set_expectations_crash_dump_enable_full_dump(crash_dump_context_t* context, crash_dump_header_t* header, bool fulldump);
 void set_expectations_init_mem_pool(uint64_t addr, uint32_t size);
-void set_expectations_init_dump_desc();
+void set_expectations_init_dump_desc(bool is_full_dump);
 void set_expectations_init_dump_file();
 void set_expectations_init_dump_manager(uint32_t expectDumpSize);
 void set_expectations_crash_dump_register_core_registers();

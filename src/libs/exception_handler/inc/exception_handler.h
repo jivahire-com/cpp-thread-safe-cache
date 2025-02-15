@@ -18,4 +18,4 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
-int32_t exception_handler_init(void);
+KNG_STATUS exception_handler_init(void);

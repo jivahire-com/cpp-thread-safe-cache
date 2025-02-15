@@ -15,7 +15,7 @@
 #include <FpFwUtils.h>            // for FPFW_UNUSED
 #include <accelip_id.h>           // for ACCEL_ID_SDM, ACCEL_ID_CDED
 #include <bug_check.h>            // for BUG_CHECK_EXTERNAL
-#include <crash_dump.h>           // for GetCrashDumpConfig
+#include <crash_dump.h>           // for crash_dump_context
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
 #include <hsp_firmware_headers.h> // for kng_hsp_mailbox_msg
 #include <icc_mhu.h>              // for icc_mhu_request_t
@@ -48,9 +48,9 @@ static void cd_accel_recv_addr_notify_cb(void* context, size_t output_size_bytes
     accel_cd_params* accel_params = context;
     ACCEL_ID accel_type = accel_params->accel_type;
     accel_cd_addr_msg* msg = accel_params->params.payload_buffer;
-    crash_dump_config_t* config = GetCrashDumpConfig();
+    crash_dump_context_t* ctx = crash_dump_context();
 
-    config->accel_cd_dtcm_offset[accel_type] = msg->dtcm_offset;
+    ctx->accel_cd_dtcm_offset[accel_type] = msg->dtcm_offset;
     crash_dump_register_post_dump_callback(crash_dump_copy_accel_cd_file, (void*)accel_type);
     FPFwCDPrintf("CD[Accel %u]: DTCM offset 0x%lx\n", accel_type, msg->dtcm_offset);
 }
@@ -106,15 +106,15 @@ static bool icc_register_accel_addr_callback(fpfw_icc_base_ctx_t* icc_ctx, ACCEL
 
 void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t* icc_ctx)
 {
-    crash_dump_config_t* config = GetCrashDumpConfig();
+    crash_dump_context_t* ctx = crash_dump_context();
 
-    if (config == NULL)
+    if (ctx == NULL)
     {
-        FPFwCDPrintf("Crash dump config is not set for %d ICC\n", type);
+        FPFwCDPrintf("Crash dump context is not set for %d ICC\n", type);
         return;
     }
 
-    if (icc_ctx != NULL && config->icc_ctx[type] == NULL)
+    if (icc_ctx != NULL && ctx->icc_ctx[type] == NULL)
     {
         bool callback_registered = false;
 
@@ -143,12 +143,12 @@ void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t* ic
 
         if (callback_registered)
         {
-            config->icc_ctx[type] = icc_ctx;
+            ctx->icc_ctx[type] = icc_ctx;
         }
     }
     else
     {
-        FPFwCDPrintf("ICC context is NULL for %d ICC or ICC context is already set %p\n", type, config->icc_ctx[type]);
+        FPFwCDPrintf("ICC context is NULL for %d ICC or ICC context is already set %p\n", type, ctx->icc_ctx[type]);
     }
 }
 
@@ -157,23 +157,22 @@ void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t* ic
  */
 void crash_dump_notify_hsp()
 {
-    crash_dump_config_t* config = GetCrashDumpConfig();
+    crash_dump_context_t* ctx = crash_dump_context();
 
-    if (config == NULL)
+    if (ctx == NULL)
     {
-        FPFwCDPrintf("Crash dump config is not set to notify HSP\n");
+        FPFwCDPrintf("Crash dump context is not set to notify HSP\n");
         return;
     }
 
-    if (config->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP] != NULL)
+    if (ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP] != NULL)
     {
         kng_hsp_mailbox_msg hsp_crash_dump_msg;
 
         hsp_crash_dump_msg.as_uint32[0] = SET_HSP_MAILBOX_HEADER_ASUNIT32(HSP_MAILBOX_CMD_CRASHDUMP_REQ, 0, 0);
 
-        fpfw_status_t status = fpfw_icc_base_send_sync(config->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP],
-                                                       &hsp_crash_dump_msg,
-                                                       sizeof(hsp_crash_dump_msg));
+        fpfw_status_t status =
+            fpfw_icc_base_send_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP], &hsp_crash_dump_msg, sizeof(hsp_crash_dump_msg));
 
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
@@ -187,11 +186,11 @@ void crash_dump_notify_hsp()
  */
 void crash_dump_notify_accelerators()
 {
-    crash_dump_config_t* config = GetCrashDumpConfig();
+    crash_dump_context_t* ctx = crash_dump_context();
 
-    if (config == NULL)
+    if (ctx == NULL)
     {
-        FPFwCDPrintf("Crash dump config is not set to notify HSP\n");
+        FPFwCDPrintf("Crash dump config is not set to notify SDM/CDED\n");
         return;
     }
 
@@ -207,7 +206,7 @@ void crash_dump_notify_accelerators()
             icc_config_type = CRASH_DUMP_ICC_CONFIG_CDED;
         }
 
-        fpfw_icc_base_ctx_t* icc_ctx = config->icc_ctx[icc_config_type];
+        fpfw_icc_base_ctx_t* icc_ctx = ctx->icc_ctx[icc_config_type];
         large_fifo_mailbox_msg largefifo_crash_dump_msg;
 
         if (icc_ctx == NULL)
@@ -246,26 +245,26 @@ void crash_dump_notify_cores()
 {
     fpfw_status_t status;
     bool remote_notified = false;
-    crash_dump_config_t* config = GetCrashDumpConfig();
+    crash_dump_context_t* ctx = crash_dump_context();
 
-    if (config == NULL)
+    if (ctx == NULL)
     {
-        FPFwCDPrintf("Crash dump config is not set to notify other cores\n");
+        FPFwCDPrintf("Crash dump context is not set to notify other cores\n");
         return;
     }
 
-    if (config->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL] != NULL)
+    if (ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL] != NULL)
     {
-        status = icc_mhu_send_cd_sync(config->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL]);
+        status = icc_mhu_send_cd_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL]);
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send Crash dump signal to local core : status = 0x%08lx\n", status);
         }
     }
 
-    if (config->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_REMOTE] != NULL)
+    if (ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_REMOTE] != NULL)
     {
-        status = icc_mhu_send_cd_sync(config->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_REMOTE]);
+        status = icc_mhu_send_cd_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_REMOTE]);
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send Crash dump signal to remote core : status = 0x%08lx\n", status);
@@ -276,12 +275,12 @@ void crash_dump_notify_cores()
         }
     }
 
-    if (config->icc_ctx[CRASH_DUMP_ICC_CONFIG_SPI_REMOTE] != NULL && !remote_notified)
+    if (ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_SPI_REMOTE] != NULL && !remote_notified)
     {
         // Try with SPI transport ICC if MHU transport fore remote is not available.
         static rmss_d2d_mailbox_msg remote_core_cd_msg = {.header.cmd = RMSS_D2D_MAILBOX_MSG_CRASHDUMP_SIGNAL_REQ};
 
-        status = fpfw_icc_base_send_sync(config->icc_ctx[CRASH_DUMP_ICC_CONFIG_SPI_REMOTE],
+        status = fpfw_icc_base_send_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_SPI_REMOTE],
                                          &remote_core_cd_msg,
                                          sizeof(rmss_d2d_mailbox_msg));
 

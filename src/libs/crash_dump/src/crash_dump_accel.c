@@ -100,10 +100,15 @@ static const mmio_reg_addr_range_t accel_ext_cfg_offset[] = {
         .last_reg_addr = _ADDRESSBLOCK_0X100000_MISC_SYS_EXT_MBX2_EXT_MBX_REGS_I2E_MBX_INSTS_ADDRESS,
     },
     /* External interrupt 2 (SCP). Total length is 0x14 */
+    /*
+    SVP has issue to access these registers.
+    ToDo: Re-enable when issue is fixed.
+    Bug 2363625: [Crashdump] Hard fault to access SDM registers in SVP
     {
         .first_reg_addr = _ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_MSK_ADDRESS,
         .last_reg_addr = _ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_MSG_SEND_INTR_MSK_ADDRESS,
     },
+    */
 };
 
 /**
@@ -239,20 +244,22 @@ static const mmio_reg_addr_range_t cded_cp_aes_offset[] = {
 
 /**
  * @brief Registers an array of MMIO registers with CD framework
+ * @param type_ctx Pointer to crash dump type context
  * @param first_reg_addr Address of the first register in the array of registers
  * @param last_reg_addr  Address of the last register in the array of registers
  * @param offset An offset that needs to be added to all the register addresses
  * above to access this registers.
  * @return Total count of registered registers.
  */
-static uint32_t accel_register_mmio_register(uint32_t first_reg_addr, uint32_t last_reg_addr, uint32_t offset)
+static uint32_t accel_register_mmio_register(crash_dump_type_context_t* type_ctx,
+                                             uint32_t first_reg_addr,
+                                             uint32_t last_reg_addr,
+                                             uint32_t offset)
 {
-    void* mmio_reg;
-    uint32_t reg_count;
+    uint32_t mmio_reg = offset + first_reg_addr;
+    uint32_t reg_count = ((last_reg_addr - first_reg_addr) / BYTES_IN_WORD32) + 1;
 
-    mmio_reg = (void*)(offset + first_reg_addr);
-    reg_count = ((last_reg_addr - first_reg_addr) / BYTES_IN_WORD32) + 1;
-    crash_dump_register_mmio_register(mmio_reg, reg_count, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    CdRegisterMMIORegisterSet(&type_ctx->crash_dump_ctx, mmio_reg, reg_count, FPFW_CD_DUMP_PRIORITY_CRITICAL);
 
     return reg_count;
 }
@@ -260,20 +267,24 @@ static uint32_t accel_register_mmio_register(uint32_t first_reg_addr, uint32_t l
 /**
  * @brief Registers a array of array of MMIO registers with CD framework.
  * Lets call this structure as set of MMIO registers
+ * @param type_ctx Pointer to crash dump type context
  * @param mmio_reg_set Pointer to set of array of MMIO registers
  * @param mmio_reg_set_count Number of array of MMIO registers
  * @param offset An offset that needs to be added to all the register addresses
  * described within above structure to access this registers.
  * @return Total count of registered registers.
  */
-static uint32_t accel_register_mmio_register_set(const mmio_reg_addr_range_t* mmio_reg_set, uint32_t mmio_reg_set_count, uint32_t offset)
+static uint32_t accel_register_mmio_register_set(crash_dump_type_context_t* type_ctx,
+                                                 const mmio_reg_addr_range_t* mmio_reg_set,
+                                                 uint32_t mmio_reg_set_count,
+                                                 uint32_t offset)
 {
-    uint32_t i;
     uint32_t reg_count = 0;
 
-    for (i = 0; i < mmio_reg_set_count; i++)
+    for (uint32_t i = 0; i < mmio_reg_set_count; i++)
     {
-        reg_count += accel_register_mmio_register(mmio_reg_set[i].first_reg_addr, mmio_reg_set[i].last_reg_addr, offset);
+        reg_count +=
+            accel_register_mmio_register(type_ctx, mmio_reg_set[i].first_reg_addr, mmio_reg_set[i].last_reg_addr, offset);
     }
 
     return reg_count;
@@ -290,6 +301,7 @@ static uint32_t accel_register_mmio_register_set(const mmio_reg_addr_range_t* mm
  * engines. So all the registers of a compression engine will form a register
  * group.
  *
+ * @param type_ctx Pointer to crash dump type context
  * @param mmio_reg_group_count Number of register sets
  * @param mmio_reg_group_size Size of register sets. Only represents the address
  * space of the register set.
@@ -299,7 +311,8 @@ static uint32_t accel_register_mmio_register_set(const mmio_reg_addr_range_t* mm
  * described within above structure to access this registers.
  * @return Total count of registered registers.
  */
-static uint32_t accel_register_mmio_register_group(uint32_t mmio_reg_group_count,
+static uint32_t accel_register_mmio_register_group(crash_dump_type_context_t* type_ctx,
+                                                   uint32_t mmio_reg_group_count,
                                                    uint32_t mmio_reg_group_size,
                                                    const mmio_reg_addr_range_t* mmio_reg_set,
                                                    uint32_t mmio_reg_arr_count,
@@ -310,14 +323,14 @@ static uint32_t accel_register_mmio_register_group(uint32_t mmio_reg_group_count
 
     for (group_idx = 0; group_idx < mmio_reg_group_count; group_idx++)
     {
-        reg_count += accel_register_mmio_register_set(mmio_reg_set, mmio_reg_arr_count, offset);
+        reg_count += accel_register_mmio_register_set(type_ctx, mmio_reg_set, mmio_reg_arr_count, offset);
         offset += mmio_reg_group_size;
     }
 
     return reg_count;
 }
 
-static uint32_t crash_dump_register_sdm_ext_mmio()
+static uint32_t crash_dump_register_sdm_ext_mmio(crash_dump_type_context_t* type_ctx)
 {
     uint32_t atu_map_addr;
     uint32_t reg_count;
@@ -325,14 +338,15 @@ static uint32_t crash_dump_register_sdm_ext_mmio()
     atu_map_addr = atu_svc_accel_atu_addr(ACCEL_ID_SDM);
 
     /* Register CDED config registers */
-    reg_count = accel_register_mmio_register_set(accel_ext_cfg_offset,
+    reg_count = accel_register_mmio_register_set(type_ctx,
+                                                 accel_ext_cfg_offset,
                                                  FPFW_ARRAY_SIZE(accel_ext_cfg_offset),
                                                  atu_map_addr + ADDRESS_BLOCK_0x100000_OFFSET);
 
     return reg_count;
 }
 
-static uint32_t crash_dump_register_cded_ext_mmio()
+static uint32_t crash_dump_register_cded_ext_mmio(crash_dump_type_context_t* type_ctx)
 {
     uint32_t atu_map_addr;
     uint32_t offset = 0;
@@ -341,18 +355,20 @@ static uint32_t crash_dump_register_cded_ext_mmio()
     atu_map_addr = atu_svc_accel_atu_addr(ACCEL_ID_CDED);
 
     /* Register CDED config registers */
-    reg_count += accel_register_mmio_register_set(accel_ext_cfg_offset,
+    reg_count += accel_register_mmio_register_set(type_ctx,
+                                                  accel_ext_cfg_offset,
                                                   FPFW_ARRAY_SIZE(accel_ext_cfg_offset),
                                                   atu_map_addr + ADDRESS_BLOCK_0x100000_OFFSET);
 
     /* Register CDED CP config registers */
     offset += CDEDSS_CONFIG_CDED_REGS_REGS_ADDRESS;
     reg_count +=
-        accel_register_mmio_register_set(cded_cp_cfg_offset, FPFW_ARRAY_SIZE(cded_cp_cfg_offset), atu_map_addr + offset);
+        accel_register_mmio_register_set(type_ctx, cded_cp_cfg_offset, FPFW_ARRAY_SIZE(cded_cp_cfg_offset), atu_map_addr + offset);
 
     /* Register CDED CP CCMP engine registers */
     offset += CDED_REGS_CDED_CFG_REGS_SIZE;
-    reg_count += accel_register_mmio_register_group(CDED_REGS_CCMP_CFG_REGS_ARRAY_COUNT,
+    reg_count += accel_register_mmio_register_group(type_ctx,
+                                                    CDED_REGS_CCMP_CFG_REGS_ARRAY_COUNT,
                                                     CDED_REGS_CCMP_CFG_REGS_ARRAY_ELEMENT_SIZE,
                                                     cded_cp_ccmp_offset,
                                                     FPFW_ARRAY_SIZE(cded_cp_ccmp_offset),
@@ -360,7 +376,8 @@ static uint32_t crash_dump_register_cded_ext_mmio()
 
     /* Register CDED CP DCMP engine registers */
     offset += CDED_REGS_CCMP_CFG_REGS_SIZE;
-    reg_count += accel_register_mmio_register_group(CDED_REGS_DCMP_CFG_REGS_ARRAY_COUNT,
+    reg_count += accel_register_mmio_register_group(type_ctx,
+                                                    CDED_REGS_DCMP_CFG_REGS_ARRAY_COUNT,
                                                     CDED_REGS_DCMP_CFG_REGS_ARRAY_ELEMENT_SIZE,
                                                     cded_cp_dcmp_offset,
                                                     FPFW_ARRAY_SIZE(cded_cp_dcmp_offset),
@@ -368,19 +385,21 @@ static uint32_t crash_dump_register_cded_ext_mmio()
 
     /* Register CDED CP AES engine config registers */
     offset += CDED_REGS_DCMP_CFG_REGS_SIZE;
-    reg_count += accel_register_mmio_register_group(AES_PL_CFG_REGS_AES_PL_CFG_REGS_AES_PL_CFG_GRP_ARRAY_COUNT,
+    reg_count += accel_register_mmio_register_group(type_ctx,
+                                                    AES_PL_CFG_REGS_AES_PL_CFG_REGS_AES_PL_CFG_GRP_ARRAY_COUNT,
                                                     AES_PL_CFG_REGS_AES_PL_CFG_REGS_AES_PL_CFG_GRP_ARRAY_ELEMENT_SIZE,
                                                     cded_cp_aes_cfg_offset,
                                                     FPFW_ARRAY_SIZE(cded_cp_aes_cfg_offset),
                                                     atu_map_addr + offset);
+
     /* Register CDED CP AES engine registers */
     reg_count +=
-        accel_register_mmio_register_set(cded_cp_aes_offset, FPFW_ARRAY_SIZE(cded_cp_aes_offset), atu_map_addr + offset);
+        accel_register_mmio_register_set(type_ctx, cded_cp_aes_offset, FPFW_ARRAY_SIZE(cded_cp_aes_offset), atu_map_addr + offset);
 
     return reg_count;
 }
 
-static void copy_cd_file_dtcm_to_ddr(crash_dump_config_t* config, ACCEL_ID accel_type)
+static void copy_cd_file_dtcm_to_ddr(crash_dump_context_t* ctx, ACCEL_ID accel_type)
 {
     uint32_t cd_ddr_addr;
     uint32_t cd_file_size;
@@ -390,8 +409,9 @@ static void copy_cd_file_dtcm_to_ddr(crash_dump_config_t* config, ACCEL_ID accel
      * Add logic to wait for accel device to complete crashdump collection
      */
 
-    if (config->accel_cd_dtcm_offset[accel_type] == 0)
+    if (ctx->accel_cd_dtcm_offset[accel_type] == 0 || ctx->type_ctx[CRASH_DUMP_TYPE_FULL] == NULL)
     {
+        // Invalid DTCM address or no full dump context.
         return;
     }
 
@@ -407,7 +427,7 @@ static void copy_cd_file_dtcm_to_ddr(crash_dump_config_t* config, ACCEL_ID accel
     }
 
     uint32_t accel_dtcm_addr = atu_svc_accel_atu_addr(accel_type) + SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS;
-    uint32_t cd_file_addr = accel_dtcm_addr + config->accel_cd_dtcm_offset[accel_type];
+    uint32_t cd_file_addr = accel_dtcm_addr + ctx->accel_cd_dtcm_offset[accel_type];
     memcpy((void*)cd_ddr_addr, (void*)cd_file_addr, cd_file_size);
 }
 
@@ -418,8 +438,14 @@ static void copy_cd_file_dtcm_to_ddr(crash_dump_config_t* config, ACCEL_ID accel
  */
 void crash_dump_register_accel_ext_mmio()
 {
-    crash_dump_register_sdm_ext_mmio();
-    crash_dump_register_cded_ext_mmio();
+    crash_dump_context_t* ctx = crash_dump_context();
+
+    if (ctx->type_ctx[CRASH_DUMP_TYPE_FULL] != NULL)
+    {
+        // Register accelerators registers only for full dump.
+        crash_dump_register_sdm_ext_mmio(ctx->type_ctx[CRASH_DUMP_TYPE_FULL]);
+        crash_dump_register_cded_ext_mmio(ctx->type_ctx[CRASH_DUMP_TYPE_FULL]);
+    }
 }
 
 /**
@@ -428,19 +454,14 @@ void crash_dump_register_accel_ext_mmio()
  */
 void crash_dump_copy_accel_cd_file(void* ctx)
 {
-    crash_dump_config_t* config = GetCrashDumpConfig();
+    crash_dump_context_t* cd_ctx = crash_dump_context();
     ACCEL_ID accel_type = (ACCEL_ID)ctx;
 
-    if (config == NULL)
-    {
-        return;
-    }
-
-    if (!(accel_type < NUM_VALID_ACCEL_ID))
+    if (cd_ctx == NULL || accel_type >= NUM_VALID_ACCEL_ID)
     {
         return;
     }
 
     /* Copy accel crashdump file from accel DTCM to DDR */
-    copy_cd_file_dtcm_to_ddr(config, accel_type);
+    copy_cd_file_dtcm_to_ddr(cd_ctx, accel_type);
 }

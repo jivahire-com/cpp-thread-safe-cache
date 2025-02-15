@@ -11,10 +11,9 @@
 #include "crash_dump_payload.h" // for CD_MSFT_VERSION_INFO, CD_GUID, ...
 
 #include <build_data.h>               // for BUILD_ELF_SECTION_BINARY_METADATA
-#include <crash_dump.h>               // for GetCrashDumpContext, CD_GUID
+#include <crash_dump.h>               // for crash_dump_type_context_t
 #include <modules/CdDumpDescriptor.h> // for FPFwCdDumpPriority, _FPFwCdDum...
 #include <modules/CdDumpManager.h>    // for CdRegisterAddress32, CdRegiste...
-#include <stdint.h>                   // for uint32_t, uint8_t, uint64_t
 #include <string.h>                   // for memcpy
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -36,7 +35,7 @@
 CD_MSFT_VERSION_INFO cdMsftVersionInfo;
 
 /*------------- Functions ----------------*/
-void crash_dump_register_standard_info()
+void crash_dump_register_standard_info(crash_dump_type_context_t* type_context)
 {
     cdMsftVersionInfo.guid = (CD_GUID)CD_MSFT_VERSION_INFO_GUID;
     cdMsftVersionInfo.versionInfo.Major = g_BuildMetadata.Major;
@@ -48,5 +47,5 @@ void crash_dump_register_standard_info()
            BUILD_ELF_BINARY_METADATA_STR_SIZE);
     memcpy((void*)(cdMsftVersionInfo.elf_build_id), (void*)(g_note_gnu_build_id.BuildId), SHA1_GNU_ELF_BUILD_ID_SIZE__bytes);
 
-    crash_dump_register_address32((void*)&cdMsftVersionInfo, sizeof(cdMsftVersionInfo), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    CdRegisterAddress32(&type_context->crash_dump_ctx, (void*)&cdMsftVersionInfo, sizeof(cdMsftVersionInfo), FPFW_CD_DUMP_PRIORITY_CRITICAL);
 }

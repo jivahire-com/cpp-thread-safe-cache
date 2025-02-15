@@ -37,14 +37,6 @@ extern "C" {
 void* __real_memcpy(void* __a, const void* __b, size_t __c);
 
 /*-- Declarations (Statics and globals) --*/
-FPFwCrashDumpCtx* mock_crash_dump_ctx;
-FPFwCDMemPoolCtx* mock_memPoolCtx;
-FPFwCDDumpDescriptorCtx* mock_descCtx;
-FPFwCDDumpFileCtx* mock_fileCtx;
-FPFwCDStateManagerCtx* mock_stateCtx;
-
-TX_MUTEX* mock_desc_mutex;
-
 jmp_buf cd_test_setjmp_context;
 
 icc_base_recv_complete_notify fw_load_cb = NULL;
@@ -61,35 +53,14 @@ void crash_dump_wait_forever()
     longjmp(cd_test_setjmp_context, 1);
 }
 
-int init_crash_dump_context(void** pContext)
+crash_dump_context_t* __wrap_crash_dump_context()
 {
-    FPFW_UNUSED(pContext);
-
-    mock_crash_dump_ctx = NULL;
-    mock_memPoolCtx = NULL;
-    mock_descCtx = NULL;
-    mock_fileCtx = NULL;
-    mock_stateCtx = NULL;
-    mock_desc_mutex = NULL;
-
-    return 0;
-}
-
-crash_dump_config_t* __wrap_GetCrashDumpConfig()
-{
-    crash_dump_config_t* config = mock_type(crash_dump_config_t*);
-    if (config != NULL)
-    {
-        config->cd_status = mock_type(crash_dump_status_t*);
-    }
-
-    return config;
+    return mock_type(crash_dump_context_t*);
 }
 
 bool __wrap_FPFwCDInitMemoryPool(FPFwCDMemPoolCtx* ctx, uint64_t baseAddr, uint32_t poolSize)
 {
-    assert_non_null(ctx);  // Ensure the context is not NULL
-    mock_memPoolCtx = ctx; // Save the context
+    assert_non_null(ctx); // Ensure the context is not NULL
 
     check_expected(baseAddr);
     check_expected(poolSize);
@@ -101,7 +72,7 @@ bool __wrap_FPFwCDInitMemoryPool(FPFwCDMemPoolCtx* ctx, uint64_t baseAddr, uint3
 
 bool __wrap_FPFwCDMemPoolOverrideCacheFlush(FPFwCDMemPoolCtx* memPoolCtx, void (*cacheFlush)(uint64_t addr, uint32_t size))
 {
-    assert_ptr_equal(mock_memPoolCtx, memPoolCtx); // Ensure the context is the same as the one initialized
+    assert_non_null(memPoolCtx);
     check_expected_ptr(cacheFlush);
 
     function_called();
@@ -112,7 +83,7 @@ bool __wrap_FPFwCDMemPoolOverrideCacheFlush(FPFwCDMemPoolCtx* memPoolCtx, void (
 bool __wrap_FPFwCDMemPoolOverrideCacheInvalidate(FPFwCDMemPoolCtx* memPoolCtx,
                                                  void (*cacheInvalidate)(uint64_t addr, uint32_t size))
 {
-    assert_ptr_equal(mock_memPoolCtx, memPoolCtx); // Ensure the context is the same as the one initialized
+    assert_non_null(memPoolCtx);
     check_expected_ptr(cacheInvalidate);
 
     function_called();
@@ -122,10 +93,7 @@ bool __wrap_FPFwCDMemPoolOverrideCacheInvalidate(FPFwCDMemPoolCtx* memPoolCtx,
 
 bool __wrap_FPFwCDInitDumpDescriptor(FPFwCDDumpDescriptorCtx* ctx, FPFwCDDumpDescriptor* dumpDescriptorArray, uint32_t arraySize)
 {
-    assert_null(mock_descCtx); // Ensure this function is called first time
-    assert_non_null(ctx);      // Ensure the context is not NULL
-    mock_descCtx = ctx;        // Save the context
-
+    assert_non_null(ctx); // Ensure the context is not NULL
     assert_non_null(dumpDescriptorArray);
     check_expected(arraySize);
 
@@ -136,8 +104,8 @@ bool __wrap_FPFwCDInitDumpDescriptor(FPFwCDDumpDescriptorCtx* ctx, FPFwCDDumpDes
 
 bool __wrap_FPFwCDDumpDescriptorSetMutexCtx(FPFwCDDumpDescriptorCtx* dumpDescCtx, void* mutexCtx)
 {
-    assert_ptr_equal(mock_descCtx, dumpDescCtx); // Ensure the context is the same as the one initialized
-    assert_ptr_equal(mock_desc_mutex, mutexCtx); // Ensure the mutex is the same as the one initialized
+    assert_non_null(dumpDescCtx);
+    assert_non_null(mutexCtx);
 
     function_called();
 
@@ -146,7 +114,7 @@ bool __wrap_FPFwCDDumpDescriptorSetMutexCtx(FPFwCDDumpDescriptorCtx* dumpDescCtx
 
 bool __wrap_FPFwCDDumpDescriptorOverrideMutexLock(FPFwCDDumpDescriptorCtx* dumpDescCtx, uint32_t (*mutexLock)(void*))
 {
-    assert_ptr_equal(mock_descCtx, dumpDescCtx); // Ensure the context is the same as the one initialized
+    assert_non_null(dumpDescCtx);
     check_expected_ptr(mutexLock);
 
     function_called();
@@ -156,7 +124,7 @@ bool __wrap_FPFwCDDumpDescriptorOverrideMutexLock(FPFwCDDumpDescriptorCtx* dumpD
 
 bool __wrap_FPFwCDDumpDescriptorOverrideMutexUnlock(FPFwCDDumpDescriptorCtx* dumpDescCtx, uint32_t (*mutexUnlock)(void*))
 {
-    assert_ptr_equal(mock_descCtx, dumpDescCtx); // Ensure the context is the same as the one initialized
+    assert_non_null(dumpDescCtx);
     check_expected_ptr(mutexUnlock);
 
     function_called();
@@ -167,7 +135,6 @@ bool __wrap_FPFwCDDumpDescriptorOverrideMutexUnlock(FPFwCDDumpDescriptorCtx* dum
 bool __wrap_FPFwCDInitDumpFile(FPFwCDDumpFileCtx* ctx)
 {
     assert_non_null(ctx); // Ensure the context is not NULL
-    mock_fileCtx = ctx;   // Save the context
 
     function_called();
 
@@ -177,7 +144,7 @@ bool __wrap_FPFwCDInitDumpFile(FPFwCDDumpFileCtx* ctx)
 bool __wrap_FPFwCDDumpFileOverrideInValidMemory(FPFwCDDumpFileCtx* dumpFileCtx,
                                                 bool (*inValidMemory)(void* addr, uint32_t size))
 {
-    assert_ptr_equal(mock_fileCtx, dumpFileCtx); // Ensure the context is the same as the one initialized
+    assert_non_null(dumpFileCtx);
     check_expected_ptr(inValidMemory);
 
     function_called();
@@ -188,7 +155,7 @@ bool __wrap_FPFwCDDumpFileOverrideInValidMemory(FPFwCDDumpFileCtx* dumpFileCtx,
 bool __wrap_FPFwCDDumpFileOverrideInValidCsrMemory(FPFwCDDumpFileCtx* dumpFileCtx,
                                                    bool (*inValidCsrMemory)(void* addr, uint32_t size))
 {
-    assert_ptr_equal(mock_fileCtx, dumpFileCtx); // Ensure the context is the same as the one initialized
+    assert_non_null(dumpFileCtx);
     check_expected_ptr(inValidCsrMemory);
 
     function_called();
@@ -199,7 +166,7 @@ bool __wrap_FPFwCDDumpFileOverrideInValidCsrMemory(FPFwCDDumpFileCtx* dumpFileCt
 bool __wrap_FPFwCDDumpFileOverrideInValidGlobalMemory(FPFwCDDumpFileCtx* dumpFileCtx,
                                                       bool (*inValidGlobalMemory)(uint64_t address, uint32_t size))
 {
-    assert_ptr_equal(mock_fileCtx, dumpFileCtx); // Ensure the context is the same as the one initialized
+    assert_non_null(dumpFileCtx);
     check_expected_ptr(inValidGlobalMemory);
 
     function_called();
@@ -214,13 +181,11 @@ bool __wrap_FPFwCDInitDumpManager(FPFwCrashDumpCtx* ctx,
                                   FPFwCDStateManagerCtx* stateCtx,
                                   uint64_t totalDumpSize)
 {
-    assert_non_null(ctx);      // Ensure the context is not NULL
-    mock_crash_dump_ctx = ctx; // Save the context
-
-    assert_ptr_equal(mock_memPoolCtx, memPoolCtx); // Ensure the memory pool context is the same as the one initialized
-    assert_ptr_equal(mock_descCtx, descCtx); // Ensure the descriptor context is the same as the one initialized
-    assert_ptr_equal(mock_fileCtx, fileCtx); // Ensure the file context is the same as the one initialized
-    assert_null(stateCtx);                   // Ensure the state context is NULL
+    assert_non_null(ctx);
+    assert_non_null(memPoolCtx);
+    assert_non_null(descCtx);
+    assert_non_null(fileCtx);
+    assert_null(stateCtx); // Ensure the state context is NULL
     check_expected(totalDumpSize);
 
     function_called();
@@ -237,7 +202,7 @@ void __wrap_FPFwCDOverridePrintf(int (*printOverride)(const char* str, ...))
 
 bool __wrap_FPFwCDDumpManagerSetPreDumpCallback(FPFwCrashDumpCtx* ctx, bool (*preDumpCallback)(void*), void* preDumpCtx)
 {
-    assert_ptr_equal(mock_crash_dump_ctx, ctx); // Ensure the context is the same as the one initialized
+    assert_non_null(ctx);
 
     check_expected_ptr(preDumpCallback);
     check_expected_ptr(preDumpCtx);
@@ -249,7 +214,7 @@ bool __wrap_FPFwCDDumpManagerSetPreDumpCallback(FPFwCrashDumpCtx* ctx, bool (*pr
 
 bool __wrap_FPFwCDDumpManagerSetPostDumpCallback(FPFwCrashDumpCtx* ctx, bool (*postDumpCallback)(void*), void* postDumpCtx)
 {
-    assert_ptr_equal(mock_crash_dump_ctx, ctx); // Ensure the context is the same as the one initialized
+    assert_non_null(ctx);
 
     check_expected_ptr(postDumpCallback);
     check_expected_ptr(postDumpCtx);
@@ -261,7 +226,7 @@ bool __wrap_FPFwCDDumpManagerSetPostDumpCallback(FPFwCrashDumpCtx* ctx, bool (*p
 
 bool __wrap_FPFwCDDumpManagerOverrideGetCurTime(FPFwCrashDumpCtx* ctx, uint64_t (*getCurTime)(void))
 {
-    assert_ptr_equal(mock_crash_dump_ctx, ctx); // Ensure the context is the same as the one initialized
+    assert_non_null(ctx);
 
     check_expected_ptr(getCurTime);
 
@@ -272,7 +237,7 @@ bool __wrap_FPFwCDDumpManagerOverrideGetCurTime(FPFwCrashDumpCtx* ctx, uint64_t 
 
 bool __wrap_CdRegisterMMIORegisterSet(FPFwCrashDumpCtx* ctx, uint32_t regAddress, uint32_t regCount, uint32_t priority)
 {
-    assert_ptr_equal(mock_crash_dump_ctx, ctx); // Ensure the context is the same as the one initialized
+    assert_non_null(ctx);
 
     check_expected(regAddress);
     check_expected(regCount);
@@ -285,7 +250,7 @@ bool __wrap_CdRegisterMMIORegisterSet(FPFwCrashDumpCtx* ctx, uint32_t regAddress
 
 bool __wrap_CdRegisterAddress32(FPFwCrashDumpCtx* ctx, void* address, uint32_t size, FPFwCdDumpPriority priority)
 {
-    assert_ptr_equal(mock_crash_dump_ctx, ctx); // Ensure the context is the same as the one initialized
+    assert_non_null(ctx);
 
     check_expected_ptr(address);
     check_expected(size);
@@ -298,7 +263,7 @@ bool __wrap_CdRegisterAddress32(FPFwCrashDumpCtx* ctx, void* address, uint32_t s
 
 bool __wrap_CdRegisterAddress64(FPFwCrashDumpCtx* ctx, uint64_t address, uint32_t size, FPFwCdDumpPriority priority)
 {
-    assert_ptr_equal(mock_crash_dump_ctx, ctx); // Ensure the context is the same as the one initialized
+    assert_non_null(ctx);
 
     check_expected(address);
     check_expected(size);
@@ -316,7 +281,7 @@ bool __wrap_CdRegisterAddress32PointerArray(FPFwCrashDumpCtx* ctx,
                                             void** pointerArray,
                                             uint32_t pointerArrayCount)
 {
-    assert_ptr_equal(mock_crash_dump_ctx, ctx); // Ensure the context is the same as the one initialized
+    assert_non_null(ctx);
 
     check_expected(priority);
     check_expected(minimumChunkSize);
@@ -331,7 +296,7 @@ bool __wrap_CdRegisterAddress32PointerArray(FPFwCrashDumpCtx* ctx,
 
 bool __wrap_CdRegisterCallback(FPFwCrashDumpCtx* ctx, FPFW_CD_DUMP_CALLBACK callback, void* context, FPFwCdDumpPriority priority)
 {
-    assert_ptr_equal(mock_crash_dump_ctx, ctx); // Ensure the context is the same as the one initialized
+    assert_non_null(ctx);
 
     check_expected_ptr(callback);
     check_expected_ptr(context);
@@ -344,7 +309,7 @@ bool __wrap_CdRegisterCallback(FPFwCrashDumpCtx* ctx, FPFW_CD_DUMP_CALLBACK call
 
 bool __wrap_CdRegisterRegisterSet(FPFwCrashDumpCtx* ctx, void* address, uint32_t regIndex, uint32_t regCount, uint32_t priority)
 {
-    assert_ptr_equal(mock_crash_dump_ctx, ctx); // Ensure the context is the same as the one initialized
+    assert_non_null(ctx);
 
     check_expected_ptr(address);
     check_expected(regIndex);
@@ -358,9 +323,7 @@ bool __wrap_CdRegisterRegisterSet(FPFwCrashDumpCtx* ctx, void* address, uint32_t
 
 UINT __wrap__txe_mutex_create(TX_MUTEX* mutex_ptr, CHAR* name_ptr, UINT inherit, UINT mutex_control_block_size)
 {
-    assert_null(mock_desc_mutex); // Ensure this function is called first time
-    assert_non_null(mutex_ptr);   // Ensure the mutex pointer is not NULL
-    mock_desc_mutex = mutex_ptr;  // Save the mutex pointer
+    assert_non_null(mutex_ptr); // Ensure the mutex pointer is not NULL
 
     check_expected(name_ptr);
     FPFW_UNUSED(inherit);
@@ -373,7 +336,7 @@ UINT __wrap__txe_mutex_create(TX_MUTEX* mutex_ptr, CHAR* name_ptr, UINT inherit,
 
 UINT __wrap__tx_mutex_get(TX_MUTEX* mutex_ptr, ULONG wait_option)
 {
-    assert_ptr_equal(mock_desc_mutex, mutex_ptr); // Ensure the mutex pointer is the same as the one initialized
+    assert_non_null(mutex_ptr);
 
     FPFW_UNUSED(wait_option);
 
@@ -382,7 +345,7 @@ UINT __wrap__tx_mutex_get(TX_MUTEX* mutex_ptr, ULONG wait_option)
 
 UINT __wrap__tx_mutex_put(TX_MUTEX* mutex_ptr)
 {
-    assert_ptr_equal(mock_desc_mutex, mutex_ptr); // Ensure the mutex pointer is the same as the one initialized
+    assert_non_null(mutex_ptr);
 
     return 0;
 }

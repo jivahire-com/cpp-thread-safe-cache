@@ -108,94 +108,9 @@ void __wrap_FpFwCliPrint(const char* format, ...)
     va_end(args);
 }
 
-bool __wrap_FPFwCDRegisterAddress32(void* address, uint32_t size)
-{
-    check_expected_ptr(address);
-    check_expected(size);
-
-    function_called();
-    return true;
-}
-
 //
 // Tests
 //
-void set_expectations_crash_dump_enable_full_dump_cli(crash_dump_config_t* config,
-                                                      crash_dump_status_t* status,
-                                                      uint64_t addr,
-                                                      uint32_t size,
-                                                      bool fulldump)
-{
-    SEMAPHORE_ID expected_semaphore_id = fulldump ? SEM_ID_DIE0_IOSS_0 : SEM_ID_MSCP_EXP_0;
-
-    // For enable full crash dump
-    will_return(__wrap_GetCrashDumpConfig, config);
-    will_return(__wrap_GetCrashDumpConfig, status);
-
-    if (fulldump)
-    {
-        // For configuring crash dump semaphore
-        will_return_always(__wrap_idsw_get_platform_sdv, 0x30); // PLATFORM_FPGA
-    }
-
-    // For disable current crash dump state
-    will_return(__wrap_GetCrashDumpConfig, config);
-    will_return(__wrap_GetCrashDumpConfig, NULL);
-
-    // For initializing crash dump status lock
-    expect_value(__wrap_initialize_semaphore, id, expected_semaphore_id);
-    expect_function_call(__wrap_initialize_semaphore);
-
-    // For enabling new crash dump state
-    will_return(__wrap_GetCrashDumpConfig, config);
-    will_return(__wrap_GetCrashDumpConfig, status);
-    expect_value(__wrap_wait_for_semaphore, id, expected_semaphore_id);
-    expect_any(__wrap_wait_for_semaphore, key);
-    expect_function_call(__wrap_wait_for_semaphore);
-    expect_value(__wrap_release_semaphore, id, expected_semaphore_id);
-    expect_function_call(__wrap_release_semaphore);
-
-    // init_mem_pool
-    expect_function_call(__wrap_FPFwCDInitMemoryPool);
-    expect_value(__wrap_FPFwCDInitMemoryPool, baseAddr, addr);
-    expect_value(__wrap_FPFwCDInitMemoryPool, poolSize, size);
-
-    expect_function_call(__wrap_FPFwCDMemPoolOverrideCacheFlush);
-    expect_value(__wrap_FPFwCDMemPoolOverrideCacheFlush, cacheFlush, &cacheFlushOverride);
-
-    expect_function_call(__wrap_FPFwCDMemPoolOverrideCacheInvalidate);
-    expect_value(__wrap_FPFwCDMemPoolOverrideCacheInvalidate, cacheInvalidate, &cacheInvalidateOverride);
-
-    // init_dump_file
-    expect_function_call(__wrap_FPFwCDInitDumpFile);
-
-    expect_function_call(__wrap_FPFwCDDumpFileOverrideInValidMemory);
-    expect_value(__wrap_FPFwCDDumpFileOverrideInValidMemory, inValidMemory, &inMemoryOverride);
-
-    expect_function_call(__wrap_FPFwCDDumpFileOverrideInValidCsrMemory);
-    expect_value(__wrap_FPFwCDDumpFileOverrideInValidCsrMemory, inValidCsrMemory, &inMemoryOverride);
-
-    expect_function_call(__wrap_FPFwCDDumpFileOverrideInValidGlobalMemory);
-    expect_value(__wrap_FPFwCDDumpFileOverrideInValidGlobalMemory, inValidGlobalMemory, &inGlobalMemoryOverride);
-
-    // init_dump_manager
-    expect_function_call(__wrap_FPFwCDInitDumpManager);
-    expect_value(__wrap_FPFwCDInitDumpManager, totalDumpSize, size);
-
-    expect_function_call(__wrap_FPFwCDOverridePrintf);
-    expect_value(__wrap_FPFwCDOverridePrintf, printOverride, &crash_dump_printf);
-
-    expect_function_call(__wrap_FPFwCDDumpManagerSetPreDumpCallback);
-    expect_value(__wrap_FPFwCDDumpManagerSetPreDumpCallback, preDumpCallback, &preDumpCallbackOverride);
-    expect_value(__wrap_FPFwCDDumpManagerSetPreDumpCallback, preDumpCtx, NULL);
-
-    expect_function_call(__wrap_FPFwCDDumpManagerSetPostDumpCallback);
-    expect_value(__wrap_FPFwCDDumpManagerSetPostDumpCallback, postDumpCallback, &postDumpCallbackOverride);
-    expect_value(__wrap_FPFwCDDumpManagerSetPostDumpCallback, postDumpCtx, NULL);
-
-    expect_function_call(__wrap_FPFwCDDumpManagerOverrideGetCurTime);
-    expect_value(__wrap_FPFwCDDumpManagerOverrideGetCurTime, getCurTime, &getCurTimeDefault);
-}
 
 TEST_FUNCTION(test_crash_dump_cli_init, nullptr, nullptr)
 {
@@ -210,18 +125,36 @@ TEST_FUNCTION(test_cli_cd_register_beef, test_setup, test_teardown)
     const char* argv[] = {"cd_register_beef"};
     uint32_t dead_beef = 0xDEADBEEF;
     uint32_t beef_cafe = 0xBEEFCAFE;
+    crash_dump_type_context_t mini_context = {.type = CRASH_DUMP_TYPE_MINI};
+    crash_dump_type_context_t full_context = {.type = CRASH_DUMP_TYPE_FULL};
+    crash_dump_context_t context = {.type_ctx = {&mini_context, &full_context}, .die_index = 0, .core_index = CRASH_DUMP_CORE_SCP};
 
     // Get CLI handler
     CLI_COMMAND_FN handler = get_command_handler("cd_register_beef");
     assert_non_null(handler);
 
     // Setup expectations
-    expect_memory(__wrap_FPFwCDRegisterAddress32, address, &dead_beef, sizeof(uint32_t));
-    expect_value(__wrap_FPFwCDRegisterAddress32, size, sizeof(uint32_t));
-    expect_function_call(__wrap_FPFwCDRegisterAddress32);
-    expect_memory(__wrap_FPFwCDRegisterAddress32, address, &beef_cafe, sizeof(uint32_t));
-    expect_value(__wrap_FPFwCDRegisterAddress32, size, sizeof(uint32_t));
-    expect_function_call(__wrap_FPFwCDRegisterAddress32);
+    will_return_always(__wrap_crash_dump_context, &context);
+
+    expect_memory(__wrap_CdRegisterAddress32, address, &dead_beef, sizeof(uint32_t));
+    expect_value(__wrap_CdRegisterAddress32, size, sizeof(uint32_t));
+    expect_value(__wrap_CdRegisterAddress32, priority, FPFW_CD_DUMP_PRIORITY_NORMAL);
+    expect_function_call(__wrap_CdRegisterAddress32);
+
+    expect_memory(__wrap_CdRegisterAddress32, address, &dead_beef, sizeof(uint32_t));
+    expect_value(__wrap_CdRegisterAddress32, size, sizeof(uint32_t));
+    expect_value(__wrap_CdRegisterAddress32, priority, FPFW_CD_DUMP_PRIORITY_NORMAL);
+    expect_function_call(__wrap_CdRegisterAddress32);
+
+    expect_memory(__wrap_CdRegisterAddress32, address, &beef_cafe, sizeof(uint32_t));
+    expect_value(__wrap_CdRegisterAddress32, size, sizeof(uint32_t));
+    expect_value(__wrap_CdRegisterAddress32, priority, FPFW_CD_DUMP_PRIORITY_NORMAL);
+    expect_function_call(__wrap_CdRegisterAddress32);
+
+    expect_memory(__wrap_CdRegisterAddress32, address, &beef_cafe, sizeof(uint32_t));
+    expect_value(__wrap_CdRegisterAddress32, size, sizeof(uint32_t));
+    expect_value(__wrap_CdRegisterAddress32, priority, FPFW_CD_DUMP_PRIORITY_NORMAL);
+    expect_function_call(__wrap_CdRegisterAddress32);
 
     // Call the CLI handler
     FPFW_CLI_STATUS status = handler(argc, argv);
@@ -232,15 +165,20 @@ TEST_FUNCTION(test_cli_cd_register_string, test_setup, test_teardown)
 {
     int argc = 2;
     const char* argv[] = {"cd_register_string", "test_string"};
+    crash_dump_type_context_t full_context = {.type = CRASH_DUMP_TYPE_FULL};
+    crash_dump_context_t context = {.type_ctx = {NULL, &full_context}, .die_index = 0, .core_index = CRASH_DUMP_CORE_SCP};
 
     // Get CLI handler
     CLI_COMMAND_FN handler = get_command_handler("cd_register_string");
     assert_non_null(handler);
 
     // Setup expectations
-    expect_value(__wrap_FPFwCDRegisterAddress32, address, argv[1]);
-    expect_value(__wrap_FPFwCDRegisterAddress32, size, 11);
-    expect_function_call(__wrap_FPFwCDRegisterAddress32);
+    will_return_always(__wrap_crash_dump_context, &context);
+
+    expect_value(__wrap_CdRegisterAddress32, address, argv[1]);
+    expect_value(__wrap_CdRegisterAddress32, size, 11);
+    expect_value(__wrap_CdRegisterAddress32, priority, FPFW_CD_DUMP_PRIORITY_NORMAL);
+    expect_function_call(__wrap_CdRegisterAddress32);
 
     // Call the CLI handler
     FPFW_CLI_STATUS status = handler(argc, argv);
@@ -328,42 +266,4 @@ TEST_FUNCTION(test_cli_cd_stack_overflow, test_setup, test_teardown)
         printf("Exception caught (0x%08lx)\n", GetExceptionCode());
     }
 #endif
-}
-
-TEST_FUNCTION(test_cli_cd_full_dump, test_setup, test_teardown)
-{
-    int argc = 1;
-    const char* argv[] = {"cd_full_dump"};
-    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP};
-    crash_dump_status_t dump_status = {};
-
-    // Get CLI handler
-    CLI_COMMAND_FN handler = get_command_handler("cd_full_dump");
-    assert_non_null(handler);
-
-    // crash_dump_enable_full_dump();
-    set_expectations_crash_dump_enable_full_dump_cli(&config, &dump_status, CRASH_DUMP_FULL_SCP_ADDR, CRASH_DUMP_FULL_SCP_SIZE, true);
-
-    // Call the CLI handler
-    FPFW_CLI_STATUS status = handler(argc, argv);
-    assert_true(status == CLI_SUCCESS);
-}
-
-TEST_FUNCTION(test_cli_cd_mini_dump, test_setup, test_teardown)
-{
-    int argc = 1;
-    const char* argv[] = {"cd_mini_dump"};
-    crash_dump_config_t config = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP};
-    crash_dump_status_t dump_status = {};
-
-    // Get CLI handler
-    CLI_COMMAND_FN handler = get_command_handler("cd_mini_dump");
-    assert_non_null(handler);
-
-    // Set mock expectations of crash_dump_enable_full_dump()
-    set_expectations_crash_dump_enable_full_dump_cli(&config, &dump_status, CRASH_DUMP_MINI_SCP_ADDR, CRASH_DUMP_MINI_SCP_SIZE, false);
-
-    // Call the CLI handler
-    FPFW_CLI_STATUS status = handler(argc, argv);
-    assert_true(status == CLI_SUCCESS);
 }

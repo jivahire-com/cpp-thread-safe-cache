@@ -13,16 +13,20 @@
 #include <FpFwUtils.h>
 #include <accelip_id.h>
 #include <fpfw_icc_base.h>
+#include <kng_error.h>
 #include <modules/CdDumpDescriptor.h>
 #include <modules/CdDumpManager.h>
 #include <semaphore_lib.h>
 #include <stdint.h>
+#include <tx_api.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define CRASH_DUMP_NUM_DESCRIPTORS 128 // ToDo: Re-evaluate this number
+
 #define CRASH_DUMP_PROCESSOR_ID(d, c)   (((d) << 16) | ((c) & 0xFFFF))
 
 /*-------------- Typedefs ----------------*/
@@ -33,8 +37,16 @@ typedef enum
     CRASH_DUMP_CORE_HSP = 2,
     CRASH_DUMP_CORE_SDM = 3,
     CRASH_DUMP_CORE_CDED = 4,
+    CRASH_DUMP_CORE_KMP = 5,
     CRASH_DUMP_CORE_NUM
 } crash_dump_core_t;
+
+typedef enum
+{
+    CRASH_DUMP_TYPE_MINI = 0,
+    CRASH_DUMP_TYPE_FULL = 1,
+    CRASH_DUMP_TYPE_NUM
+} crash_dump_type_t;
 
 typedef enum : uint16_t
 {
@@ -94,38 +106,74 @@ typedef struct {
 } core_register_mmio_t;
 
 /**
- * @brief Crash dump status header
+ * @brief Crash dump status header type
  * 
  * cd_status: Crash dump status (Lower 8 bits: DIE0, Upper 8 bits: DIE1 - 0: In progress, 1: Completed for each core)
  * 
  */
 typedef struct {
-    uint16_t cd_status; // 0: Not in use, 1: In Use
+    volatile uint16_t status; // 0: Not in use, 1: In Use
     volatile uint8_t cores[CRASH_DUMP_CORE_NUM * 2];
-} crash_dump_status_t;
+} crash_dump_header_t;
 
 /**
  * @brief HW semaphore configuration
  * 
  */
 typedef struct {
-    SEMAPHORE_ID semaphore_id;
-    uint32_t semaphore_key;
+    SEMAPHORE_ID id;
+    uint32_t key;
 } crash_dump_semaphore_t;
 
+/**
+ * @brief Crash dump type based context (mini or full)
+ * 
+ */
 typedef struct {
-    uint32_t die_index;         // DIE index
-    uint32_t core_index;        // Core index
-    FPFW_CD_DUMP_TYPE dump_type;
+    crash_dump_type_t type;
+    uint64_t mem_pool_addr;
+    uint32_t mem_pool_size;
+
+    crash_dump_semaphore_t semaphore;    // Semaphore for header access
+    crash_dump_header_t *header;         // Crash dump status header
+
+    // FPFW Crash dump context
+    FPFwCrashDumpCtx crash_dump_ctx;
+    FPFwCDMemPoolCtx mem_ctx;
+    FPFwCDDumpDescriptorCtx desc_ctx;
+    FPFwCDDumpFileCtx file_ctx;
+    FPFwCDDumpDescriptor desc_list[CRASH_DUMP_NUM_DESCRIPTORS];
+    TX_MUTEX desc_mutex;
+} crash_dump_type_context_t;
+
+/**
+ * @brief Crash dump context type
+ * 
+ */
+typedef struct {
+    //
+    // Per type contexts
+    //
+    crash_dump_type_context_t *type_ctx[CRASH_DUMP_TYPE_NUM];   // type contexts.
+
+    //
+    // Global context
+    //
+    uint32_t die_index;                                         // DIE index
+    uint32_t core_index;                                        // Core index
+    bool is_primary;
+    fpfw_icc_base_ctx_t *icc_ctx[CRASH_DUMP_ICC_CONFIG_MAX];    // ICC context
+
+    // Core dependent descriptor registrations
     uint32_t mmio_register_count;
     const core_register_mmio_t *mmio_registers;
+
+    // Core dependent override functions
     bool (*in_memory)(uintptr_t start_addr, uintptr_t end_addr);
-    fpfw_icc_base_ctx_t *icc_ctx[CRASH_DUMP_ICC_CONFIG_MAX];
-    bool is_primary;
-    crash_dump_semaphore_t cd_semaphore;
-    crash_dump_status_t *cd_status; // Crash dump status header
+	
+	// Accelerators
     uint32_t accel_cd_dtcm_offset[NUM_VALID_ACCEL_ID];
-} crash_dump_config_t;
+} crash_dump_context_t;
 
 /*-- Declarations (Statics and globals) --*/
 extern core_crash_context_t g_core_crash_context;
@@ -163,20 +211,21 @@ FPFW_NORETURN void crash_dump_wait_forever();
  * 
  * @return Pointer to static crash dump context.
  */
-FPFwCrashDumpCtx *GetCrashDumpContext();
-
-/**
- * @brief Get the Crash Dump Config object
- * 
- * @return Pointer to static crash dump config.
- */
-crash_dump_config_t *GetCrashDumpConfig();
+crash_dump_context_t *crash_dump_context();
 
 /**
  * @brief Initialize crash dump components
  * 
  */
-void crash_dump_init(crash_dump_config_t *config);
+void crash_dump_init(crash_dump_context_t *context);
+
+/**
+ * @brief Register mini dump or full dump
+ * 
+ * @param type_context Crash dump context applied to specific type (mini or full)
+ * @return KNG_SUCCESS if succeeded, otherwise error code.
+ */
+KNG_STATUS crash_dump_register_dump(crash_dump_type_context_t *type_context);
 
 /**
  * @brief Configure ICC context for crash dump
@@ -185,15 +234,6 @@ void crash_dump_init(crash_dump_config_t *config);
  * @param icc_ctx ICC context
  */
 void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t *icc_ctx);
-
-/**
- * @brief Enable or disable full crash dump
- * 
- * @param enable true to enable full crash dump, false to disable (mini dump only)
- * 
- * @return true if successful, false otherwise
- */
-bool crash_dump_enable_full_dump(bool enable);
 
 /**
  * @brief Crash dump handler handles failure exceptions and generates a crash dump

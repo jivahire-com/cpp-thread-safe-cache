@@ -12,7 +12,6 @@
 
 #include <crash_dump.h> // for GetCrashDumpConfig
 #include <idsw_kng.h>   // for DIE_0, DIE_1
-#include <stdint.h>     // for uint32_t, uint64_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -23,49 +22,65 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-void initialize_crash_dump_header_lock(crash_dump_config_t* config)
+void initialize_crash_dump_header(crash_dump_type_context_t* type_context)
 {
-    // ToDo: Remove this when HSP initialize HW semaphore.
-    if (config->die_index == DIE_0 && config->core_index == CRASH_DUMP_CORE_SCP)
+    crash_dump_context_t* ctx = crash_dump_context();
+
+    if ((type_context->type == CRASH_DUMP_TYPE_MINI || ctx->die_index == DIE_0) && ctx->core_index == CRASH_DUMP_CORE_SCP)
     {
-        initialize_semaphore(config->cd_semaphore.semaphore_id);
+        // ToDo: Remove this when HSP initialize HW semaphore.
+        initialize_semaphore(type_context->semaphore.id);
+
+        // Initialize core status to CRASH_DUMP_STATE_NOT_AVAILABLE
+        if (type_context->header != NULL)
+        {
+            wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
+            for (uint16_t i = 0; i < CRASH_DUMP_CORE_NUM * 2; i++)
+            {
+                type_context->header->cores[i] = CRASH_DUMP_STATE_NOT_AVAILABLE;
+            }
+            release_semaphore(type_context->semaphore.id);
+        }
+
+        // Set this region is ready for crash dump.
+        crash_dump_update_state(type_context, CRASH_DUMP_IN_USE);
+    }
+    else
+    {
+        // MCP or DIE_1 SCP for full dump wait until DIE_0 SCP initialize header.
+        bool is_ready = false;
+
+        // Polling until crash dump header is ready.
+        while (!is_ready)
+        {
+            wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
+            is_ready = type_context->header->status == CRASH_DUMP_IN_USE;
+            release_semaphore(type_context->semaphore.id);
+        }
+    }
+
+    // Set this core state to ready.
+    crash_dump_update_core_state(type_context, CRASH_DUMP_STATE_READY);
+}
+
+void crash_dump_update_state(crash_dump_type_context_t* type_context, crash_dump_state_t state)
+{
+    if (type_context->header != NULL)
+    {
+        wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
+        type_context->header->status = (uint16_t)state;
+        release_semaphore(type_context->semaphore.id);
     }
 }
 
-crash_dump_status_t* GetCrashDumpStatus(crash_dump_config_t** ppConfig)
+void crash_dump_update_core_state(crash_dump_type_context_t* type_context, crash_dump_core_state_t state)
 {
-    crash_dump_config_t* config = GetCrashDumpConfig();
+    crash_dump_context_t* ctx = crash_dump_context();
 
-    if (ppConfig != NULL)
+    if (type_context->header != NULL)
     {
-        *ppConfig = config;
-    }
-
-    return config ? config->cd_status : NULL;
-}
-
-void crash_dump_update_state(crash_dump_state_t state)
-{
-    crash_dump_config_t* config = NULL;
-    crash_dump_status_t* cd_status = GetCrashDumpStatus(&config);
-
-    if (cd_status != NULL)
-    {
-        wait_for_semaphore(config->cd_semaphore.semaphore_id, config->cd_semaphore.semaphore_key);
-        cd_status->cd_status = (uint16_t)state;
-        release_semaphore(config->cd_semaphore.semaphore_id);
-    }
-}
-
-void crash_dump_update_core_state(crash_dump_core_state_t state)
-{
-    crash_dump_config_t* config = NULL;
-    crash_dump_status_t* cd_status = GetCrashDumpStatus(&config);
-
-    if (cd_status != NULL)
-    {
-        wait_for_semaphore(config->cd_semaphore.semaphore_id, config->cd_semaphore.semaphore_key);
-        cd_status->cores[config->die_index * CRASH_DUMP_CORE_NUM + config->core_index] = (uint8_t)state;
-        release_semaphore(config->cd_semaphore.semaphore_id);
+        wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
+        type_context->header->cores[ctx->die_index * CRASH_DUMP_CORE_NUM + ctx->core_index] = (uint8_t)state;
+        release_semaphore(type_context->semaphore.id);
     }
 }

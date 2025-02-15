@@ -64,7 +64,6 @@ mock_target(${TARGET}
     FPFwCDDumpManagerOverrideGetCurTime
     FpFwCliRegisterTable
     FpFwCliPrint
-    FPFwCDRegisterAddress32
     FPFwCDCrashDumpHandler
     CdRegisterMMIORegisterSet
     CdRegisterAddress32
@@ -79,7 +78,7 @@ mock_target(${TARGET}
     _tx_mutex_get
     _tx_mutex_put
     gpio_set_output
-    GetCrashDumpConfig
+    crash_dump_context
     initialize_semaphore
     memcpy
     nvic_get_current_irq

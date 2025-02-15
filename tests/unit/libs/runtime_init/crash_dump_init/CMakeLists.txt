@@ -52,8 +52,10 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     CdRegisterMMIORegisterSet
     atu_svc_accel_atu_addr
+    crash_dump_context
     crash_dump_init
-    crash_dump_init_post_mesh
+    crash_dump_register_dump
+    crash_dump_config_icc
     exception_handler_init
     idhw_is_single_die_boot_en
     idsw_get_die_id
@@ -113,7 +115,8 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     crash_dump_init
-    crash_dump_init_post_mesh
+    crash_dump_register_dump
+    crash_dump_config_icc
     exception_handler_init
     idsw_get_die_id
     idsw_get_cpu_type

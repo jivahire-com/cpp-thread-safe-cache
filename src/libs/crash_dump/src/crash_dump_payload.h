@@ -11,7 +11,6 @@
 /*---------- Nested Includes -------------*/
 #include <build_data.h> // for BUILD_ELF_SECTION_BINARY_METADATA
 #include <crash_dump.h> // for CD_GUID
-#include <tx_api.h>     // for ULONG, TX_THREAD
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -37,35 +36,40 @@ typedef struct _CD_MSFT_VERSION_INFO
 /*-------- Function Prototypes -----------*/
 /**
  * @brief Captures built-in Cortex M7 registers
- *
+ * 
+ * #param type_context crash dump type based context
  */
-void crash_dump_register_core_registers();
+void crash_dump_register_core_registers(crash_dump_type_context_t *type_context);
 
 /**
  * @brief Captures default crash registers
- *
+ * 
+ * #param type_context crash dump type based context
  * @param mmio_registers Array of core_register_mmio_t
  * @param mmio_register_count Number of elements in mmio_registers
  */
-void crash_dump_register_default_registers(const core_register_mmio_t *mmio_registers, uint32_t mmio_register_count);
+void crash_dump_register_default_registers(crash_dump_type_context_t *type_context, const core_register_mmio_t *mmio_registers, uint32_t mmio_register_count);
 
 /**
  * @brief Captures core stack
- *
+ * 
+ * #param type_context crash dump type based context
  */
-void crash_dump_register_core_stack();
+void crash_dump_register_core_stack(crash_dump_type_context_t *type_context);
 
 /**
  * @brief Captures standard information
- *
+ * 
+ * #param type_context crash dump type based context
  */
-void crash_dump_register_standard_info();
+void crash_dump_register_standard_info(crash_dump_type_context_t *type_context);
 
 /**
  * @brief Register callback to capture ThreadX crash information to the crash dump.
  *
+ * #param type_context crash dump type based context
  */
-void crash_dump_register_threadx();
+void crash_dump_register_threadx(crash_dump_type_context_t *type_context);
 
 /**
  * @brief Captures threadX data

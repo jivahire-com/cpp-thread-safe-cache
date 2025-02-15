@@ -10,7 +10,6 @@
 
 /*----------- Nested includes ------------*/
 #include <crash_dump.h>
-#include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -20,23 +19,26 @@
 
 /*--------- Function Prototypes ----------*/
 /**
- * @brief Initialize crash dump lock.
- * ToDo: Remove this when HSP initialize HW semaphore.
+ * @brief Initialize crash dump header or wait until it's initialized.
+ *
+ * @param type_context Crash dump type context.
  */
-void initialize_crash_dump_header_lock(crash_dump_config_t* config);
+void initialize_crash_dump_header(crash_dump_type_context_t *type_context);
 
 /**
  * @brief Update crash dump region state.
  * 
+ * @param type_context Crash dump type context.
  * @param state 1 in used, 0 not in use
  * 
  */
-void crash_dump_update_state(crash_dump_state_t state);
+void crash_dump_update_state(crash_dump_type_context_t *type_context, crash_dump_state_t state);
 
 /**
  * @brief Update crash dump state of core.
- * 
+ *
+ * @param type_context Crash dump type context.
  * @param state Idle (0), progress (1) or completed (2).
  * 
  */
-void crash_dump_update_core_state(crash_dump_core_state_t state);
+void crash_dump_update_core_state(crash_dump_type_context_t *type_context, crash_dump_core_state_t state);

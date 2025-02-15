@@ -94,7 +94,7 @@ bool inMemoryOverride(void* addr, uint32_t size)
     }
 
     // only return true if start and end addresses in valid memory space
-    return (uintptr_t)addr <= end_address ? GetCrashDumpConfig()->in_memory((uintptr_t)addr, end_address) : false;
+    return (uintptr_t)addr <= end_address ? crash_dump_context()->in_memory((uintptr_t)addr, end_address) : false;
 }
 
 bool inGlobalMemoryOverride(uint64_t addr, uint32_t size)

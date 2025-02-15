@@ -12,6 +12,7 @@
 #include <addressblock0_regs.h>      // for ADDRESSBLOCK0_WDOGLOAD_ADDRESS, ADDRESSBLOCK0_WDOGRIS_ADDRESS
 #include <bug_check.h>               // for BUG_CHECK
 #include <crash_dump.h>              // for crash_dump_init
+#include <crash_dump_memory.h>       // for CRASH_DUMP_MINI_HEADER_ADDR, CRASH_DUMP_MINI_HEADER_SIZE
 #include <exception_handler.h>       // for exception_handler_init
 #include <fpfw_init.h>               // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
 #include <idhw.h>                    // for idhw_get_cpu_type, idhw_get_die_id
@@ -63,34 +64,37 @@ bool in_memory(uintptr_t start_addr, uintptr_t end_addr)
 
 FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("hw_ver", "gpio_lib", "hw_sem"))
 {
-    static crash_dump_config_t config = {.dump_type = FPFW_CD_DUMP_TYPE_NONE,
-                                         .mmio_register_count =
-                                             sizeof(core_register_mmio) / sizeof(core_register_mmio[0]),
-                                         .mmio_registers = core_register_mmio,
-                                         .in_memory = in_memory};
+    static crash_dump_type_context_t full_dump_ctx = {.type = CRASH_DUMP_TYPE_FULL,
+                                                      .mem_pool_addr = CRASH_DUMP_FULL_MCP_ADDR,
+                                                      .mem_pool_size = CRASH_DUMP_FULL_MCP_SIZE,
+                                                      .header = (crash_dump_header_t*)CRASH_DUMP_FULL_HEADER_ADDR};
+
+    static crash_dump_context_t crash_dump_ctx = {.core_index = CRASH_DUMP_CORE_MCP,
+                                                  .is_primary = true,
+                                                  .mmio_register_count =
+                                                      sizeof(core_register_mmio) / sizeof(core_register_mmio[0]),
+                                                  .mmio_registers = core_register_mmio,
+                                                  .in_memory = in_memory};
 
     // Get the DIE index
-    config.die_index = idsw_get_die_id();
-
-    // Set the core index and primary core flag
-    if (idsw_get_cpu_type() == CPU_MCP)
-    {
-        config.core_index = CRASH_DUMP_CORE_MCP;
-        config.is_primary = true;
-    }
-    else
-    {
-        FPFW_RUNTIME_ASSERT(false); // Unexpected CPU type
-    }
+    crash_dump_ctx.die_index = idsw_get_die_id();
 
     // Set the semaphore key
-    config.cd_semaphore.semaphore_key = CRASH_DUMP_PROCESSOR_ID(config.die_index, config.core_index) + 1;
+    // If initializing a crash dump on SVP use a local semaphore within the MSCP EXP Block.
+    //   - See SVP Bug SVP bug https://azurecsi.visualstudio.com/1P-SoC-Modeling/_workitems/edit/2327121
+    // If initializing a full crash dump use a semaphore within the IOSS block.
+    full_dump_ctx.semaphore.id = IS_PLATFORM_SVP() ? SEM_ID_MSCP_EXP_0 : SEM_ID_DIE0_IOSS_0;
+    full_dump_ctx.semaphore.key = CRASH_DUMP_PROCESSOR_ID(crash_dump_ctx.die_index, crash_dump_ctx.core_index) + 1;
 
     // Initialize the crash dump
-    crash_dump_init(&config);
+    crash_dump_init(&crash_dump_ctx);
+
+    // Enable full dump
+    KNG_STATUS status = crash_dump_register_dump(&full_dump_ctx);
+    FPFW_RUNTIME_ASSERT(status == KNG_SUCCESS);
 
     // Initialize the exception handler
-    int32_t status = exception_handler_init();
+    status = exception_handler_init();
     FPFW_RUNTIME_ASSERT(status == KNG_SUCCESS);
 
     // Try to configure the crash dump ICC contexts if available.

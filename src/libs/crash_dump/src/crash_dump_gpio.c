@@ -34,7 +34,7 @@
  */
 void cd_gpio_assert_cd_in_progress(bool in_progress)
 {
-    if (GetCrashDumpConfig()->core_index == CRASH_DUMP_CORE_MCP)
+    if (crash_dump_context()->core_index == CRASH_DUMP_CORE_MCP)
     {
         // NB: this presumes that the GPIO pin and pad have been correctly configured by SCP
         // This signal is active-low
@@ -49,7 +49,7 @@ void cd_gpio_assert_cd_in_progress(bool in_progress)
  */
 void cd_gpio_assert_cd_available(bool available)
 {
-    if (GetCrashDumpConfig()->core_index == CRASH_DUMP_CORE_MCP)
+    if (crash_dump_context()->core_index == CRASH_DUMP_CORE_MCP)
     {
         // NB: this presumes that the GPIO pin and pad have been correctly configured by SCP
         // This signal is active-low

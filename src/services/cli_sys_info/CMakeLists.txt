@@ -19,6 +19,7 @@ target_include_directories(
 target_link_libraries(
     ${TARGET}
         PRIVATE
+            fwlib.service.iccBase
             fwlib.service.cli
             silibs::kng_silibs_platform
             silibs::platform

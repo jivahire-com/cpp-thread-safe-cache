@@ -28,6 +28,7 @@ target_link_libraries(
     PRIVATE
     register_headers
     fwlib.lib.mboxPrimitives
+    fwlib.service.iccBase
     ms::boot_loader::interface
     ms::cmsis::interface
     ms::lib::hsp_firmware_headers

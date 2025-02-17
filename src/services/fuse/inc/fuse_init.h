@@ -26,7 +26,8 @@ enum {
     FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR3_MINOR1   =(-24),
     FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR4_MINOR0   =(-25),
     FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR4_MINOR1   =(-26),
-    FUSE_ERROR_DISABLE_KNOB                       =(-27)
+    FUSE_ERROR_DISABLE_KNOB                       =(-27),
+    FUSE_ERROR_NO_DISTRIBUTION                    =(-28)
 };
 
 typedef union _kng_hsp_fuse_mailbox_msg {

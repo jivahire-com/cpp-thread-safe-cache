@@ -8,6 +8,8 @@
  */
 
 /*------------- Includes -----------------*/
+#include <assert.h>
+#include <fpfw_icc_base.h>        // for fpfw_icc_base_send_recv_req_t, fpfw...
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
 #include <idsw.h>                 // for idsw_get_platform_sdv
 #include <idsw_kng.h>             // for idsw_get_platform_sdv
@@ -27,27 +29,59 @@
 /*-- Declarations (Statics and globals) --*/
 static bool is_hsp_present = false;
 static bool is_warm_start = false;
+static fpfw_icc_base_ctx_t* icc_ctx = NULL;
+static hsp_security_state_t security_state = HSP_SECURITY_STATE_UNKNOWN;
 
 /*------------- Functions ----------------*/
+static void hsp_send_recv_security_state_msg(uint16_t req_msg, uint16_t rsp_msg)
+{
+    size_t recv_msg_size_bytes = 0;
+    kng_hsp_mailbox_msg msg = {
+        .header.cmd = req_msg,
+    };
+
+    //! Send the message to HSP & get response, blocking call
+    fpfw_status_t icc_status =
+        fpfw_icc_base_send_recv_sync(icc_ctx, &msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
+
+    //! Verify sync return status & response message
+    assert(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
+    assert(recv_msg_size_bytes > 0);
+    assert(msg.header.cmd == rsp_msg);
+
+    security_state = msg.policy_status_rsp.policy_status.security_state;
+}
+
 bool system_info_is_hsp_present()
 {
     return is_hsp_present;
 }
+
 bool system_info_is_warm_start()
 {
     return is_warm_start;
 }
-void system_info_init()
+
+void system_info_init(fpfw_icc_base_ctx_t* icc_base_ctx)
 {
-    HSP_BOOT_METADATA* boot_meta_data = (HSP_BOOT_METADATA*)(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS);
+    icc_ctx = icc_base_ctx;
+
+    HSP_BOOT_METADATA boot_meta_data;
+    boot_meta_data.AsUint32 = MMIO_READ32(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS);
+
     // Temporary until HSP writes actual metadata instead of arbitrary values
-    if (boot_meta_data->MetadataVersion == 0x1 && boot_meta_data->ResetReason == 0x7)
+    if (boot_meta_data.MetadataVersion == 0x1 && boot_meta_data.ResetReason == 0x7)
     {
         is_hsp_present = true;
     }
-    if (boot_meta_data->MetadataVersion == 0x1 && (boot_meta_data->ResetReason & MASK_WARM_START))
+    if (boot_meta_data.MetadataVersion == 0x1 && (boot_meta_data.ResetReason & MASK_WARM_START))
     {
         is_warm_start = true;
+    }
+
+    if (is_hsp_present && icc_ctx != NULL)
+    {
+        hsp_send_recv_security_state_msg(HSP_MAILBOX_CMD_GET_SECURITY_STATE_REQ, HSP_MAILBOX_CMD_GET_SECURITY_STATE_RSP);
     }
 }
 
@@ -55,4 +89,9 @@ KNG_PLAT_ID system_info_get_platform(void)
 {
     KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
     return platform_id;
+}
+
+hsp_security_state_t system_info_get_security_state()
+{
+    return security_state;
 }

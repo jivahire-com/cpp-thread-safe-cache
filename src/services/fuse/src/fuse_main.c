@@ -10,13 +10,12 @@
 
 #include <bug_check.h> // for BUG_ASSERT_PARAM, BUG_ASSERT
 #include <fpfw_cfg_mgr.h>
-#include <fpfw_icc_base.h> // for fpfw_icc_base_send_recv_req_t, fpfw...
-#include <fpfw_init.h>     // for fpfw_init_get_handle, FPFW_INIT_C...
-#include <fpfw_status.h>   // for fpfw_status_t
-#include <fuse.h>          // fuse library functions
-#include <fuse_dma.h>      // apply copy fuse to ram
-#include <fuse_events.h>   // apply event trace for fuse
-#include <fuse_init.h>     // fuse service API interface
+#include <fpfw_init.h>   // for fpfw_init_get_handle, FPFW_INIT_C...
+#include <fpfw_status.h> // for fpfw_status_t
+#include <fuse.h>        // fuse library functions
+#include <fuse_dma.h>    // apply copy fuse to ram
+#include <fuse_events.h> // apply event trace for fuse
+#include <fuse_init.h>   // fuse service API interface
 // #include <fuse_knobs.h>
 #include <fuse_struct.h>
 #include <fuses_top_regs.h>
@@ -41,11 +40,13 @@
 #include <tx_api.h> // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
 #include <utils.h>  // for sleep_ms()...
 /*-- Symbolic Constant Macros (defines) --*/
+
 /*------------- Typedefs -----------------*/
 #define NUM_CSR_BACKED_CORE_FUSE_DESCRIPTORS (4)
 #define MAX_BYTES_PER_FUSE                   8
 #define MAX_BITS_PER_FUSE                    (MAX_BYTES_PER_FUSE * 8)
 #define BITS_PER_BYTE                        (8)
+
 /*-------- Function Prototypes -----------*/
 static bool platform_requires_fuse_distribution();
 static int platform_fuse_copy_to_ram();
@@ -61,6 +62,7 @@ static uint32_t config_knob_32_63 = 0;
 static uint32_t config_knob_64_95 = 0;
 
 /*------------- Functions ----------------*/
+
 static bool platform_requires_fuse_distribution()
 {
     bool status = false;
@@ -328,6 +330,12 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
 
     printf(FUSE_NAME "Fuse Distribution Start\n");
     FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_START);
+    if (system_info_get_security_state() == HSP_SECURITY_STATE_SECURE)
+    {
+        printf(FUSE_NAME "Fuse Distribution is not supported in secure state\n");
+        return FUSE_ERROR_NO_DISTRIBUTION;
+    }
+
     if (platform_requires_fuse_distribution())
     {
         if (stage == FUSE_DISTRIBUTION_STAGE_POST_HSP)
@@ -379,6 +387,12 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
         printf(FUSE_NAME "Phase [%d] fuse distribution complete\n", stage);
         FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_END);
     }
+    else
+    {
+        printf(FUSE_NAME "Platform does not support fuse distribution\n");
+        return FUSE_ERROR_NO_DISTRIBUTION;
+    }
+
     return status;
 }
 
@@ -388,5 +402,6 @@ void fuse_init(fpfw_icc_base_ctx_t* icc_base_ctx)
     config_knob_0_31 = config_get_fuse_disable_value_0_31();
     config_knob_32_63 = config_get_fuse_disable_value_32_63();
     config_knob_64_95 = config_get_fuse_disable_value_64_95();
+
     FUSE_ET_STATUS(FUSE_ET_TYPE_SVC_START);
 }

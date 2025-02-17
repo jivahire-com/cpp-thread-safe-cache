@@ -47,6 +47,7 @@ typedef enum _HSP_MAILBOX_RSP_STATUS {
 typedef union _kng_hsp_mailbox_msg {
 	struct kng_hsp_mailbox_msg_header header;	/**< incoming mailbox message from protocol to handler. */
 	struct kng_hsp_mailbox_msg_rsp rsp;	        /**< outgoing mailbox message from handler to protocol. */
+	struct kng_hsp_mailbox_cmd_get_security_state_rsp policy_status_rsp; /**<Security status of the HSP. */
     uint32_t as_uint32[HSP_MBOX_FIFO_DEPTH];
 } kng_hsp_mailbox_msg;
 

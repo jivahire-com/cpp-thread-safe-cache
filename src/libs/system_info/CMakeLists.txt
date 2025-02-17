@@ -13,6 +13,7 @@ target_link_libraries(${TARGET}
         silibs::kng_silibs_platform
         silibs::platform
     PUBLIC
+        fwlib.service.iccBase
         silibs::idsw_kng
         silibs::platform
 )

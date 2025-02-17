@@ -18,6 +18,7 @@
 
 extern "C" {
 #include <MboxPrimitives.h>
+#include <fpfw_icc_base.h>        // for fpfw_icc_base_send_recv_req_t, fpfw...
 #include <hsp_firmware_headers.h> // for HSP_MAILBOX_CMD_BOOT_STATUS_NOTIFY, HSP_FIRMWARE_ID_SCP...
 #include <hsp_interaction_i.h>    // for send_post_code , hsp_mailbox_init
 #include <kingsgate_boot.h>       // for load_image, MSCP_CPU_SCP, MSCP_CPU_MCP
@@ -120,7 +121,7 @@ void __wrap___disable_irq()
 {
 }
 
-void __wrap_system_info_init()
+void __wrap_system_info_init(fpfw_icc_base_ctx_t*)
 {
 }
 

@@ -135,29 +135,6 @@ Function Write-FPGAFlash(
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
         echo "n" | plink -ssh $user@${ip} -pw $pw bios-updater -mode fwupdate -file $dest/$file -index 0
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-
-        # Flash the secondary partition with the cleared variable store
-        # Remove once datwizard has these changes https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2282583
-        $file = "clean_var_store.dat"
-        $filepath = "$env:REPO_APP_PATH_kingsgate_hsp_clean_variable_store/$file"
-        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-        Write-Host -ForegroundColor Blue "Downloading Secondary Flash Image via BMC . . ."
-        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-        Write-Host -ForegroundColor Blue "System: $Global:RDUPrefix-$system"
-        Write-Host -ForegroundColor Blue "IP    : $ip"
-        Write-Host -ForegroundColor Blue "File  : $filepath"
-        Write-Host -ForegroundColor Blue "Dest  : ${ip}:${dest}"
-        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-        echo "y" | pscp -scp -pw $pw $filepath $user@${ip}:$dest
-        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-
-        Write-host ""
-
-        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-        Write-Host -ForegroundColor Blue "Programming SoC Flash . . ."
-        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-        echo "n" | plink -ssh $user@${ip} -pw $pw bios-updater -mode fwupdate -file $dest/$file -index 1
-        Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
     }
     # Skip if unknown config or SVP
     else 

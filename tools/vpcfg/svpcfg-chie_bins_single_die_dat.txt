@@ -40,5 +40,3 @@ KingsgateSVP.DIE_0.VABRPSS3.#EXTRA_PROPERTIES#runtime_disabled=false
 KingsgateSVP.DIE_1.#EXTRA_PROPERTIES#runtime_disabled=true
 KingsgateSVP.Platform_Flash.PlatformFlash.#EXTRA_PROPERTIES#/ImageInfo/EEPROM_Image=$(REPO_APP_BUILD_DIR)/$(REPO_APP_BUILD_CONFIG)/arm-eabi-aarch/bin/flash/kingsgate.ifwi.svp.debug.custom.dat
 KingsgateSVP.Platform_Flash.PlatformFlash.#SCML_PROPERTIES#EEPROM_Image=$(REPO_APP_BUILD_DIR)/$(REPO_APP_BUILD_CONFIG)/arm-eabi-aarch/bin/flash/kingsgate.ifwi.svp.debug.custom.dat
-KingsgateSVP.Platform_Flash.PlatformFlashSecondary.#EXTRA_PROPERTIES#/ImageInfo/EEPROM_Image=$(REPO_APP_PATH_kingsgate_hsp_clean_variable_store)/clean_var_store.dat
-KingsgateSVP.Platform_Flash.PlatformFlashSecondary.#SCML_PROPERTIES#EEPROM_Image=$(REPO_APP_PATH_kingsgate_hsp_clean_variable_store)/clean_var_store.dat

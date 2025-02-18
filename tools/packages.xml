@@ -8,8 +8,6 @@
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="kingsgate_register_header" version="1.6.0"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="cded_register_header" version="1.0.0"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="kng_system_fuse_data" version="1.5.3"/>
-        <!-- This is a temporary dat that will be loaded into the secondary flash, to improve hsp variable store performance. Remove once workaround removed in production. -->
-        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="kingsgate_hsp_clean_variable_store" version="1.0.0"/>
     </universal_packages>
 
     <nuget_packages>

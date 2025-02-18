@@ -163,9 +163,7 @@
             "KingsgateSVP.DIE_1.VABRPSS2.#EXTRA_PROPERTIES#runtime_disabled":"false",
             "KingsgateSVP.DIE_1.VABRPSS3.#EXTRA_PROPERTIES#runtime_disabled":"false",
             "KingsgateSVP.Platform_Flash.PlatformFlash.#EXTRA_PROPERTIES#/ImageInfo/EEPROM_Image":"${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch/bin/flash/kingsgate.ifwi.ap.baremetal.debug.dat",
-            "KingsgateSVP.Platform_Flash.PlatformFlash.#SCML_PROPERTIES#EEPROM_Image":"${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch/bin/flash/kingsgate.ifwi.ap.baremetal.debug.dat",
-            "KingsgateSVP.Platform_Flash.PlatformFlashSecondary.#EXTRA_PROPERTIES#/ImageInfo/EEPROM_Image": "${env:REPO_APP_PATH_kingsgate_hsp_clean_variable_store}/clean_var_store.dat",
-            "KingsgateSVP.Platform_Flash.PlatformFlashSecondary.#SCML_PROPERTIES#EEPROM_Image": "${env:REPO_APP_PATH_kingsgate_hsp_clean_variable_store}/clean_var_store.dat"
+            "KingsgateSVP.Platform_Flash.PlatformFlash.#SCML_PROPERTIES#EEPROM_Image":"${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch/bin/flash/kingsgate.ifwi.ap.baremetal.debug.dat"
         },
         "env_vars": {
             "ARMLMD_LICENSE_FILE": "40002@wanlic.svceng.com",

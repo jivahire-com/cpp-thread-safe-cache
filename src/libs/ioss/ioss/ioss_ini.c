@@ -15,7 +15,8 @@
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <ioss_init.h>
-#include <ioss_top_regs.h>      // for IOSS_TOP_IOSS_PCR_ADDRESS, IOSS_...
+#include <ioss_top_regs.h> // for IOSS_TOP_IOSS_PCR_ADDRESS, IOSS_...
+#include <kng_atu_mappings.h>
 #include <kng_soc_constants.h>  // for ATU_PAGE_SIZE, NUM_IOSS_INSTANCES
 #include <silibs_ap_top_regs.h> // for AP_TOP_D0_VAB_CDED_IOSS_ADDRESS
 #include <silibs_common.h>      // for ALIGN_UP
@@ -28,13 +29,8 @@
 /*------------- Typedefs -----------------*/
 
 /*-- Declarations (Statics and globals) --*/
-static atu_map_entry_t atu_ioss_map = {
-    // D0-IOSS0
-    .ap_base_address = AP_TOP_D0_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS,
-    .mscp_start_address = 0,
-    .mscp_end_address = ALIGN_UP(VAB_CDED_IOSS_TOP_IOSS_SIZE, ATU_PAGE_SIZE) - 1,
-    .attribute = {{.axprot0 = 0x3, .axprot1 = 0x2, .axnse = 0x3}},
-};
+// D0-IOSS0
+static atu_map_entry_t atu_ioss_map = ATU_MAPPING_IOSS_TOP(0);
 
 static usb_cfg_t usb_cfg_knobs = {
     .power_on_port0 = true,

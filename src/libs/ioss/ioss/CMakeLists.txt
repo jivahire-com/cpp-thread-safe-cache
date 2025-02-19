@@ -10,9 +10,7 @@ target_link_libraries(${TARGET}
         kng_silibs_platform
         silibs_platform
         fwlib.lib.assert
-        ppu_v1
-        atu
-        pcr_ioss
+        silibs::atu
         silibs::idsw
         silibs::idsw_kng
         silibs::ioss_init

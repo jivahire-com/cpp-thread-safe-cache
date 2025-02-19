@@ -1,0 +1,5 @@
+coverage:
+  status:
+    comments: on
+    diff:           # Diff coverage is code coverage only for the lines changed in a pull request.
+      target: 80%

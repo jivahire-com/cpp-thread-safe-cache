@@ -31,7 +31,7 @@ class APBaremetalTests(EchoFallsBaseTest):
     """
 
     READ_UNTIL_KEY = "Primary AP core power on"
-    TIMEOUT_SECONDS = 1800
+    TIMEOUT_SECONDS = 900
 
     def __init__(
         self,
@@ -91,8 +91,8 @@ class APBaremetalTests(EchoFallsBaseTest):
         
     @keyword("Dut Setup")
     def dut_test_setup(self):
-        """Set up the DUT and verify the required connections."""
-        self.log.info("Running DUT Setup...")
+        """Simply set up the DUT, don't wait for Heartbeat"""
+        self.log.info("Running DUT Setup (not waiting for heartbeat)...")
         try:
             # Initialize connections
             self.scp_connection = self.dut.mb.node_0.soc.primary_die.scp.channel_manager
@@ -102,10 +102,6 @@ class APBaremetalTests(EchoFallsBaseTest):
             assert self.apns_connection is not None, "APNS connection not found."
 
             self.dut.setup()
-
-            # Additionally call an FPGA reset if DUT is FPGA. Bug: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2284576
-            if self.dut.get_dut_type() == DeviceType.BIGFPGA:
-                KngPythiaTestSetup.reset_fpga(self.dut, self.log)
 
             # Open connections
             self.scp_connection.get_current_channel().open()
@@ -118,7 +114,7 @@ class APBaremetalTests(EchoFallsBaseTest):
             if not self.apns_connection.get_current_channel().is_open():
                 self.log.error("APNS channel failed to open.")
                 return False
-
+            
             # Wait for the DUT to power up
             self.log.info(f"Waiting for key '{self.READ_UNTIL_KEY}' within {self.TIMEOUT_SECONDS} seconds.")
             command_response = self.scp_connection.get_current_channel().read_until(

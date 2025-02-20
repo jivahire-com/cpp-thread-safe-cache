@@ -374,6 +374,66 @@ function Kill-Putty {
 
 <#
 .SYNOPSIS
+Runs an OOB reset on a remote PC
+
+.EXAMPLE
+Run-OOBReset <PC_Name>: Run-OOBReset 'DH3'
+#>
+Function Start-OOBReset(
+    [Parameter(Mandatory=$false)] [string] $pc = "none"
+)
+{
+
+    if ($pc -eq "none") {
+        Write-Host "Running OOB Reset for the current system"
+        $fpga_system_name = (hostname).ToLower()
+        $fpga_system_name = $fpga_system_name -replace 'rdu-120015-', ''
+    }
+    else
+    {
+        $fpga_system_name = $pc.ToLower()
+        Write-Host "Running OOB Reset for the system: $fpga_system_name"
+    }
+
+    # Create new file in the shared directory for the reset monitor listener
+    Write-Output "Creating reset monitor listener file to trigger OOB reset..."
+
+    $reset_monitor_file_path = "\\lakshmi.svceng.com\rdu_lab\haps_runtime\kingsgate_big_fpga\reset_tools\force_reset_$fpga_system_name"
+    $reset_monitor_file = Join-Path $reset_monitor_file_path "reset"
+    $new_monitor_file = Join-Path $reset_monitor_file_path ".newer"
+
+    # Check if a file called .newer exists in the reset request directory, the
+    # modification time of this file is used by the watcher script to compare and
+    # issue a reset if there is anything "newer" found in the dir. If it doesn't
+    # exist, create one here.
+    if (-Not (Test-Path $new_monitor_file)) {
+        New-Item -ItemType File -Path $new_monitor_file
+        Write-Output "Newer file created at: $new_monitor_file"
+    }
+
+    # Finally, remove any stale reset notification and create a new notification
+    # file. Sleep for 5 seconds after a file operation as that is the current 
+    # worst case delay for the adapters to go through a reset.
+    if (Test-Path $reset_monitor_file) {
+        Remove-Item $reset_monitor_file
+        Write-Output "Reset file deleted at: $reset_monitor_file"
+    }
+
+    Start-Sleep -Seconds 5
+
+    # Create the reset file
+    New-Item -ItemType File -Path $reset_monitor_file
+    Write-Output "Reset file created at: $reset_monitor_file"
+
+    Start-Sleep -Seconds 5
+
+    # Delete the reset file
+    Remove-Item $reset_monitor_file
+    Write-Output "Reset file deleted at: $reset_monitor_file"
+}
+
+<#
+.SYNOPSIS
 Gets the help information of the commands available for debugging on FPGA.
 
 .EXAMPLE
@@ -404,5 +464,6 @@ New-Alias -Name checkuser -Value Check-UserLogin -Force
 New-Alias -Name kickuser -Value Logout-User -Force
 New-Alias -Name killt32 -Value Kill-Trace32 -Force
 New-Alias -Name killputty -Value Kill-Putty -Force
+New-Alias -Name oobreset -Value Start-OOBReset -Force
 
 Export-ModuleMember -Alias * -Function *

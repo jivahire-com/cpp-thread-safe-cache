@@ -103,7 +103,13 @@ jobs:
           kickuser -pc ${{ parameters.TestAgent }} -user 'all'
 
           # Flash Firmware
+          $bin_src_dir = "$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug/bin"
+          $bin_dest_dir = "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch"
+          Copy-Item $bin_src_dir $bin_dest_dir -Recurse -Force
           flashscpfw ${{ parameters.TestAgent }} -file ${{ parameters.dat_file }}
+
+          # OOB Reset
+          oobreset
 
           # Reset FPGA ROM and Fuse Data
           Invoke-Pythia -test .\tests\functional\pythia\test_suites\fpga_init\fpga_init.robot -platform fpga
@@ -122,10 +128,6 @@ jobs:
         showWarnings: true
         script: | 
           ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
-
-          $bin_src_dir = "$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug/bin"
-          $bin_dest_dir = "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch"
-          Copy-Item $bin_src_dir $bin_dest_dir -Recurse -Force
 
           Invoke-Pythia -test ${{ parameters.TestPlan }} -platform fpga
 

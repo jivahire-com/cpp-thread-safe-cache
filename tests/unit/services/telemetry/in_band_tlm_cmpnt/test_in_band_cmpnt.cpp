@@ -58,6 +58,8 @@ static int test_teardown(void** pContext)
 
 TEST_FUNCTION(test_in_band_cmpnt_init, test_setup, test_teardown)
 {
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1); // inband_inst_samples_per_pkg
+
     // ddr_manager_init
     expect_any_always(__wrap__txe_queue_create, queue_ptr);
     expect_any_always(__wrap__txe_queue_create, name_ptr);

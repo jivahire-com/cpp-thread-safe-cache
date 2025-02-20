@@ -14,7 +14,9 @@
 #include "package_creation_i.h"
 #include "telemetry_package_defs.h"
 
+#include <build_data.h>
 #include <data_proc_tlm_cmpnt.h>
+#include <exec_tlm_cmpnt.h>
 #include <fpfw_status.h>
 #include <telemetry_events_i.h>
 #include <tx_api.h>
@@ -37,12 +39,17 @@ static void populate_inst_collection_hdr(p_telemetry_collection_hdr_t header,
                                          uint32_t collection_size);
 
 /*-- Declarations (Statics and globals) --*/
+
 bool power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_ID_MAX];
 bool inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_ID_MAX];
 uint32_t power_pkg_record_number[POWER_TELEMETRY_ELEMENT_ID_MAX];
 uint32_t inst_pkg_record_number[INST_TELEMETRY_ELEMENT_ID_MAX];
 
+static_assert(sizeof(((telemetry_payload_header_t*)0)->manifest_id) <= sizeof(g_note_gnu_build_id.BuildId),
+              "Source ID is too small");
+
 /*------------- Functions ----------------*/
+
 void package_create_enable_disable_pwr_record(pwr_telemetry_element_id_t element_id, bool enable_record)
 {
     if (element_id >= POWER_TELEMETRY_ELEMENT_ID_MAX)
@@ -67,8 +74,28 @@ void package_create_enable_disable_inst_record(instantaneous_telemetry_element_i
     }
 }
 
+void package_create_populate_hdr(p_telemetry_package_hdr_t package_hdr)
+{
+    package_hdr->decoder_header.payload_parser_version = DIAG_PWR_TELEMETRY_PAYLOAD_PARSER_V2;
+    package_hdr->decoder_header.payload_parser_type = DIAG_PAYLOAD_PARSER_TELEMETRY;
+
+    // the gnu build id is unique per core.  Use the first 16 bytes for the manifest id which needs to be
+    // unique for the diagnostic decoder tool to decode the data
+    memcpy((void*)&package_hdr->payload_header.manifest_id,
+           (void*)g_note_gnu_build_id.BuildId,
+           sizeof(package_hdr->payload_header.manifest_id));
+
+    package_hdr->payload_header.timestamp_uS = exec_tlm_cmpnt_get_timestamp_microseconds();
+    package_hdr->payload_header.timestamp_utc = 0; // TODO: get UTC time when available
+    package_hdr->payload_header.package_number = 0;
+    package_hdr->payload_header.number_of_records = 0;
+    package_hdr->payload_header.package_payload_size = 0;
+}
+
 uint32_t package_create_power_pkg(uintptr_t pkg_location, size_t pkg_available_size)
 {
+    static uint32_t pwr_package_number = 1;
+
     if (pkg_available_size < POWER_PKG_MAX_SIZE)
     {
         FPFW_ET_LOG(PkgCreatePwrPkgNotEnoughSpace, pkg_available_size);
@@ -76,108 +103,110 @@ uint32_t package_create_power_pkg(uintptr_t pkg_location, size_t pkg_available_s
     }
 
     p_telemetry_package_hdr_t package_hdr = (p_telemetry_package_hdr_t)pkg_location;
+
+    package_create_populate_hdr(package_hdr);
+    package_hdr->payload_header.package_number = pwr_package_number++;
+
     pkg_location += sizeof(telemetry_package_hdr_t);
-    package_hdr->client_header.timestamp =
-        (uint64_t)tx_time_get(); // TODO: replace with higher resolution timer when available
 
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_PSTATE])
     {
         p_pwr_core_record_pstate_t pstate_record = (p_pwr_core_record_pstate_t)pkg_location;
         pkg_location += package_create_pwr_core_pstate_record(pstate_record);
-        package_hdr->client_header.number_of_records++;
+        package_hdr->payload_header.number_of_records++;
     }
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_CSTATE])
     {
         p_pwr_core_record_cstate_t cstate_record = (p_pwr_core_record_cstate_t)pkg_location;
         pkg_location += package_create_pwr_core_cstate_record(cstate_record);
-        package_hdr->client_header.number_of_records++;
+        package_hdr->payload_header.number_of_records++;
     }
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_THROTTLE])
     {
         p_pwr_core_record_throttle_t throttle_record = (p_pwr_core_record_throttle_t)pkg_location;
         pkg_location += package_create_pwr_core_throttle_record(throttle_record);
-        package_hdr->client_header.number_of_records++;
+        package_hdr->payload_header.number_of_records++;
     }
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_RACK_PRIORITIES])
     {
         p_pwr_core_record_rack_priorities_t rack_priority_record = (p_pwr_core_record_rack_priorities_t)pkg_location;
         pkg_location += package_create_pwr_core_rack_priority_record(rack_priority_record);
-        package_hdr->client_header.number_of_records++;
+        package_hdr->payload_header.number_of_records++;
     }
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_VOLTAGE])
     {
         p_pwr_core_record_voltage_t voltage_record = (p_pwr_core_record_voltage_t)pkg_location;
         pkg_location += package_create_pwr_core_voltage_record(voltage_record);
-        package_hdr->client_header.number_of_records++;
+        package_hdr->payload_header.number_of_records++;
     }
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_CURRENT])
     {
         p_pwr_core_record_current_t current_record = (p_pwr_core_record_current_t)pkg_location;
         pkg_location += package_create_pwr_core_current_record(current_record);
-        package_hdr->client_header.number_of_records++;
+        package_hdr->payload_header.number_of_records++;
     }
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_TEMPERATURE])
     {
         p_pwr_core_record_temperature_t temperature_record = (p_pwr_core_record_temperature_t)pkg_location;
         pkg_location += package_create_pwr_core_temperature_record(temperature_record);
-        package_hdr->client_header.number_of_records++;
+        package_hdr->payload_header.number_of_records++;
     }
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_HISTOGRAM])
     {
         p_pwr_core_record_histogram_t histogram_record = (p_pwr_core_record_histogram_t)pkg_location;
         pkg_location += package_create_pwr_core_histogram_record(histogram_record);
-        package_hdr->client_header.number_of_records++;
+        package_hdr->payload_header.number_of_records++;
     }
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_PC3])
     {
         p_pwr_soc_record_pc3_t pc3_record = (p_pwr_soc_record_pc3_t)pkg_location;
         pkg_location += package_create_pwr_soc_pc3_record(pc3_record);
-        package_hdr->client_header.number_of_records++;
+        package_hdr->payload_header.number_of_records++;
     }
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_VR_RAILS])
     {
         p_pwr_soc_record_vr_rail_t vr_rail_record = (p_pwr_soc_record_vr_rail_t)pkg_location;
         pkg_location += package_create_pwr_soc_vr_rail_record(vr_rail_record);
-        package_hdr->client_header.number_of_records++;
+        package_hdr->payload_header.number_of_records++;
     }
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_HNF])
     {
         p_pwr_soc_record_hnf_t hnf_record = (p_pwr_soc_record_hnf_t)pkg_location;
         pkg_location += package_create_pwr_soc_hnf_record(hnf_record);
-        package_hdr->client_header.number_of_records++;
+        package_hdr->payload_header.number_of_records++;
     }
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_DIMM])
     {
         p_pwr_soc_record_dimm_t dimm_record = (p_pwr_soc_record_dimm_t)pkg_location;
         pkg_location += package_create_pwr_soc_dimm_record(dimm_record);
-        package_hdr->client_header.number_of_records++;
+        package_hdr->payload_header.number_of_records++;
     }
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_SENSOR_TEMP])
     {
         p_pwr_soc_record_sensor_temp_t snsr_temp_record = (p_pwr_soc_record_sensor_temp_t)pkg_location;
         pkg_location += package_create_pwr_soc_sensor_temp_record(snsr_temp_record);
-        package_hdr->client_header.number_of_records++;
+        package_hdr->payload_header.number_of_records++;
     }
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_MPAM])
     {
         p_pwr_record_mpam_pstate_t mpam_record = (p_pwr_record_mpam_pstate_t)pkg_location;
         pkg_location += package_create_pwr_mpam_pstate_record(mpam_record);
-        package_hdr->client_header.number_of_records++;
+        package_hdr->payload_header.number_of_records++;
     }
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_MPAM_THROTTLE])
     {
         p_pwr_record_mpam_throttle_t mpam_record = (p_pwr_record_mpam_throttle_t)pkg_location;
         pkg_location += package_create_pwr_mpam_throttle_record(mpam_record);
-        package_hdr->client_header.number_of_records++;
+        package_hdr->payload_header.number_of_records++;
     }
 
     uint32_t pkg_size = pkg_location - (uintptr_t)package_hdr;
     if (pkg_size == sizeof(telemetry_package_hdr_t))
     {
-        // no records enabled, valid case no event trace
+        // no records enabled, valid case, no event trace
         return 0;
     }
-    package_hdr->client_header.package_payload_size = pkg_size - sizeof(telemetry_package_hdr_t);
+    package_hdr->payload_header.package_payload_size = pkg_size - sizeof(telemetry_package_hdr_t);
     return pkg_size;
 }
 
@@ -195,37 +224,37 @@ uint32_t package_create_append_to_inst_pkg(uintptr_t curr_pkg_position, size_t p
     {
         p_inst_core_record_summary_t summary_record = (p_inst_core_record_summary_t)next_position;
         next_position += package_create_inst_core_summary_record(summary_record);
-        pkg_hdr->client_header.number_of_records++;
+        pkg_hdr->payload_header.number_of_records++;
     }
     if (inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_SOC_RAILS])
     {
         p_inst_soc_record_rail_t rail_record = (p_inst_soc_record_rail_t)next_position;
         next_position += package_create_inst_soc_rail_record(rail_record);
-        pkg_hdr->client_header.number_of_records++;
+        pkg_hdr->payload_header.number_of_records++;
     }
     if (inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_SOC_DIMM_RT])
     {
         p_inst_soc_record_dimm_runtime_t dimm_record = (p_inst_soc_record_dimm_runtime_t)next_position;
         next_position += package_create_inst_soc_dimm_runtime_record(dimm_record);
-        pkg_hdr->client_header.number_of_records++;
+        pkg_hdr->payload_header.number_of_records++;
     }
     if (inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_SOC_DIMM_CONFIG])
     {
         p_inst_soc_record_dimm_config_t dimm_cfg_record = (p_inst_soc_record_dimm_config_t)next_position;
         next_position += package_create_inst_soc_dimm_config_record(dimm_cfg_record);
-        pkg_hdr->client_header.number_of_records++;
+        pkg_hdr->payload_header.number_of_records++;
     }
     if (inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_SOC_TEMP_SENSOR])
     {
         p_inst_soc_record_sensor_temp_t snsr_temp_record = (p_inst_soc_record_sensor_temp_t)next_position;
         next_position += package_create_inst_soc_sensor_temp_record(snsr_temp_record);
-        pkg_hdr->client_header.number_of_records++;
+        pkg_hdr->payload_header.number_of_records++;
     }
     if (inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_AMU])
     {
         p_inst_core_record_amu_counters_t amu_record = (p_inst_core_record_amu_counters_t)next_position;
         next_position += package_create_inst_core_amu_counters_record(amu_record);
-        pkg_hdr->client_header.number_of_records++;
+        pkg_hdr->payload_header.number_of_records++;
     }
 
     return next_position - curr_pkg_position;
@@ -233,7 +262,7 @@ uint32_t package_create_append_to_inst_pkg(uintptr_t curr_pkg_position, size_t p
 
 static void populate_record_hdr(p_telemetry_record_hdr_t header, uint32_t record_number, uint32_t number_of_collections, uint32_t record_size)
 {
-    header->timestamp = (uint64_t)tx_time_get(); // TODO: replace with higher resolution timer when available
+    header->timestamp_uS = exec_tlm_cmpnt_get_timestamp_microseconds();
     header->record_number = record_number;
     header->number_of_collections = number_of_collections;
     header->record_payload_size = record_size - sizeof(telemetry_record_hdr_t);
@@ -575,7 +604,7 @@ uint32_t package_create_pwr_mpam_throttle_record(p_pwr_record_mpam_throttle_t mp
 uint32_t package_create_inst_core_summary_record(p_inst_core_record_summary_t summary_record)
 {
     populate_record_hdr(&summary_record->record_header,
-                        ++power_pkg_record_number[INST_TELEMETRY_ELEMENT_CORE],
+                        ++inst_pkg_record_number[INST_TELEMETRY_ELEMENT_CORE],
                         NUMBER_OF_CORES_PER_DIE,
                         sizeof(inst_core_record_summary_t));
 
@@ -597,7 +626,7 @@ uint32_t package_create_inst_core_summary_record(p_inst_core_record_summary_t su
 uint32_t package_create_inst_soc_rail_record(p_inst_soc_record_rail_t rail_record)
 {
     populate_record_hdr(&rail_record->record_header,
-                        ++power_pkg_record_number[INST_TELEMETRY_ELEMENT_SOC_RAILS],
+                        ++inst_pkg_record_number[INST_TELEMETRY_ELEMENT_SOC_RAILS],
                         MAX_NUM_OF_VR_RAILS,
                         sizeof(inst_soc_record_rail_t));
 
@@ -617,7 +646,7 @@ uint32_t package_create_inst_soc_rail_record(p_inst_soc_record_rail_t rail_recor
 uint32_t package_create_inst_soc_dimm_runtime_record(p_inst_soc_record_dimm_runtime_t dimm_record)
 {
     populate_record_hdr(&dimm_record->record_header,
-                        ++power_pkg_record_number[INST_TELEMETRY_ELEMENT_SOC_DIMM_RT],
+                        ++inst_pkg_record_number[INST_TELEMETRY_ELEMENT_SOC_DIMM_RT],
                         NUMBER_OF_DIMM_MODULES,
                         sizeof(inst_soc_record_dimm_runtime_t));
 
@@ -638,7 +667,7 @@ uint32_t package_create_inst_soc_dimm_runtime_record(p_inst_soc_record_dimm_runt
 uint32_t package_create_inst_soc_dimm_config_record(p_inst_soc_record_dimm_config_t dimm_cfg_record)
 {
     populate_record_hdr(&dimm_cfg_record->record_header,
-                        ++power_pkg_record_number[INST_TELEMETRY_ELEMENT_SOC_DIMM_CONFIG],
+                        ++inst_pkg_record_number[INST_TELEMETRY_ELEMENT_SOC_DIMM_CONFIG],
                         1,
                         sizeof(inst_soc_record_dimm_config_t));
 
@@ -656,7 +685,7 @@ uint32_t package_create_inst_soc_dimm_config_record(p_inst_soc_record_dimm_confi
 uint32_t package_create_inst_soc_sensor_temp_record(p_inst_soc_record_sensor_temp_t snsr_temp_record)
 {
     populate_record_hdr(&snsr_temp_record->record_header,
-                        ++power_pkg_record_number[INST_TELEMETRY_ELEMENT_SOC_TEMP_SENSOR],
+                        ++inst_pkg_record_number[INST_TELEMETRY_ELEMENT_SOC_TEMP_SENSOR],
                         NUMBER_OF_SOC_TEMP_SENSORS,
                         sizeof(inst_soc_record_sensor_temp_t));
 
@@ -678,7 +707,7 @@ uint32_t package_create_inst_soc_sensor_temp_record(p_inst_soc_record_sensor_tem
 uint32_t package_create_inst_core_amu_counters_record(p_inst_core_record_amu_counters_t amu_record)
 {
     populate_record_hdr(&amu_record->record_header,
-                        ++power_pkg_record_number[INST_TELEMETRY_ELEMENT_AMU],
+                        ++inst_pkg_record_number[INST_TELEMETRY_ELEMENT_AMU],
                         NUMBER_OF_CORES_PER_DIE,
                         sizeof(inst_core_record_amu_counters_t));
 

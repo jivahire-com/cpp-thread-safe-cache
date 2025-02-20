@@ -263,6 +263,11 @@ void exec_tlm_cmpnt_notify_new_in_band_dcs_message(void)
     function_called();
 }
 
+uint64_t __wrap_exec_tlm_cmpnt_get_timestamp_microseconds(void)
+{
+    return 0x48;
+}
+
 void __wrap_dcs_client_flush_incoming_queue(dcp_client_id_t id)
 {
     FPFW_UNUSED(id);

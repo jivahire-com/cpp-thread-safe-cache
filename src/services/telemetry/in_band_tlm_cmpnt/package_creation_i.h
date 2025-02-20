@@ -48,6 +48,14 @@ void package_create_enable_disable_pwr_record(pwr_telemetry_element_id_t element
 void package_create_enable_disable_inst_record(instantaneous_telemetry_element_id_t element_id,  bool enable_record);
 
 /**
+ * @brief Populate the package header
+ *
+ * @param[in] package_hdr - package header
+ * @retval none
+ */
+void package_create_populate_hdr(p_telemetry_package_hdr_t package_hdr);
+
+/**
  * @brief Create a power package
  *
  * @param[in] pkg_location - location to store the package

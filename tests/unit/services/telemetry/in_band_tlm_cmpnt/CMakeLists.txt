@@ -54,4 +54,5 @@ mock_target(${TARGET}
     dcs_get_this_die_id
     dcs_get_this_cpu_id
     FpFwAssertWithArgs
+    exec_tlm_cmpnt_get_timestamp_microseconds
 )

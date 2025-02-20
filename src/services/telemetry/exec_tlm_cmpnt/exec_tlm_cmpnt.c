@@ -127,12 +127,12 @@ void exec_tlm_cmpnt_init(uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_pe
 
 void developer_test()
 {
-#define PWR_DEV_SAMPLING_PERIOD_MS (20)
-    tx_timer_change(&power_pkg_tmr, MS_TO_TX_TICKS(PWR_DEV_SAMPLING_PERIOD_MS), MS_TO_TX_TICKS(PWR_DEV_SAMPLING_PERIOD_MS));
+#define PWR_DEV_SAMPLING_PERIOD_MS (40)
+    tx_timer_change(&power_pkg_tmr, 1, MS_TO_TX_TICKS(PWR_DEV_SAMPLING_PERIOD_MS));
 
-#define INST_DEV_SAMPLING_PERIOD_MS (10)
-    tx_timer_change(&inst_sample_tmr, MS_TO_TX_TICKS(INST_DEV_SAMPLING_PERIOD_MS), MS_TO_TX_TICKS(INST_DEV_SAMPLING_PERIOD_MS));
-    tlm_executive_status.inst_pkg_sample_period_ms = PWR_DEV_SAMPLING_PERIOD_MS;
+#define INST_DEV_SAMPLING_PERIOD_MS (20)
+    tx_timer_change(&inst_sample_tmr, 1, MS_TO_TX_TICKS(INST_DEV_SAMPLING_PERIOD_MS));
+    tlm_executive_status.inst_pkg_sample_period_ms = INST_DEV_SAMPLING_PERIOD_MS;
 
     exec_tlm_cmpnt_enable_disable_telemetry(true);
 }
@@ -233,7 +233,6 @@ void exec_tlm_cmpnt_enable_disable_telemetry(bool enable)
         {
             tx_timer_activate(&inst_sample_tmr);
         }
-        tx_timer_activate(&inst_sample_tmr);
         tx_timer_activate(&power_pkg_tmr);
         tx_timer_activate(&_24hr_pkg_tmr);
 

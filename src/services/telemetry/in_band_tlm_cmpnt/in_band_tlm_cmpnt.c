@@ -12,9 +12,12 @@
 
 #include "dcs_manager_i.h"
 #include "ddr_manager_i.h"
+#include "element_schema.h"
 #include "in_band_tlm_cmpnt_i.h"
 #include "package_creation_i.h"
 #include "telemetry_package_defs.h"
+
+#include <FpFwAssert.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -32,22 +35,30 @@ void in_band_tlm_cmpnt_init(uint8_t die_id, uint16_t inst_samples_per_pkg)
 {
     inband_die_id = die_id;
     inband_inst_samples_per_pkg = inst_samples_per_pkg;
+
+    FPFW_RUNTIME_ASSERT_EXT(inband_inst_samples_per_pkg <= MAX_INST_SAMPLES_PER_PACKAGE, inband_inst_samples_per_pkg, 0, 0, 0);
+
     ddr_manager_init();
     dcs_manager_init();
 
     // TODO: temporary until DCS is supported
     package_create_enable_disable_pwr_record(POWER_TELEMETRY_ELEMENT_CORE_VOLTAGE, true);
     package_create_enable_disable_pwr_record(POWER_TELEMETRY_ELEMENT_CORE_CURRENT, true);
+
+    // since the telemetry schema events are not called within code, the linker will optimize out
+    // a single call is enough to anchor them
+    FPFW_ET_LOG(pwr_core_element_voltage, 1, 2, 3, 4);
 }
 
 void in_band_tlm_cmpnt_add_inst_sample(void)
 {
     static uintptr_t pkg_location = 0;
     static size_t pkg_used_size = 0;
-    static size_t pkg_available_size;
+    static size_t pkg_available_size = 0;
     static uint16_t sample_count = 0;
+    static uint32_t inst_package_number = 1;
 
-    if (sample_count == 0)
+    if (sample_count++ == 0)
     {
         fpfw_status_t status = ddr_manager_allocate_mem_for_inst_pkg(&pkg_location, &pkg_available_size);
 
@@ -56,10 +67,11 @@ void in_band_tlm_cmpnt_add_inst_sample(void)
             // error already traced
             return;
         }
-        pkg_used_size = sizeof(telemetry_package_hdr_t);
         p_telemetry_package_hdr_t package_hdr = (p_telemetry_package_hdr_t)pkg_location;
-        package_hdr->client_header.timestamp =
-            (uint64_t)tx_time_get(); // TODO: replace with higher resolution timer when available
+        package_create_populate_hdr(package_hdr);
+        package_hdr->payload_header.package_number = inst_package_number++;
+
+        pkg_used_size = sizeof(telemetry_package_hdr_t);
     }
 
     p_telemetry_package_hdr_t package_hdr = (p_telemetry_package_hdr_t)pkg_location;
@@ -67,10 +79,10 @@ void in_band_tlm_cmpnt_add_inst_sample(void)
     pkg_used_size +=
         package_create_append_to_inst_pkg(pkg_location + pkg_used_size, pkg_available_size - pkg_used_size, package_hdr);
 
-    if (++sample_count == inband_inst_samples_per_pkg)
+    if (sample_count == inband_inst_samples_per_pkg)
     {
         sample_count = 0;
-        package_hdr->client_header.package_payload_size = pkg_used_size - sizeof(telemetry_package_hdr_t);
+        package_hdr->payload_header.package_payload_size = pkg_used_size - sizeof(telemetry_package_hdr_t);
 
         if (pkg_used_size > sizeof(telemetry_package_hdr_t))
         {

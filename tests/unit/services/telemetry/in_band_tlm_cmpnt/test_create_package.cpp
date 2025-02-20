@@ -87,7 +87,7 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
     uint32_t record_size = package_create_pwr_core_pstate_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_core_record_pstate_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_CORES_PER_DIE);
     assert_int_equal(record.record_header.record_payload_size,
@@ -118,7 +118,7 @@ TEST_FUNCTION(test_get_pwr_core_cstate_data, test_setup, test_teardown)
     uint32_t record_size = package_create_pwr_core_cstate_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_core_record_cstate_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_CORES_PER_DIE);
     assert_int_equal(record.record_header.record_payload_size,
@@ -149,7 +149,7 @@ TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
     uint32_t record_size = package_create_pwr_core_throttle_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_core_record_throttle_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_CORES_PER_DIE);
     assert_int_equal(record.record_header.record_payload_size,
@@ -181,7 +181,7 @@ TEST_FUNCTION(test_get_pwr_core_rack_priority_data, test_setup, test_teardown)
     uint32_t record_size = package_create_pwr_core_rack_priority_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_core_record_rack_priorities_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_CORES_PER_DIE);
     assert_int_equal(record.record_header.record_payload_size,
@@ -214,7 +214,7 @@ TEST_FUNCTION(test_get_pwr_core_voltage_data, test_setup, test_teardown)
     uint32_t record_size = package_create_pwr_core_voltage_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_core_record_voltage_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_CORES_PER_DIE);
     assert_int_equal(record.record_header.record_payload_size,
@@ -245,7 +245,7 @@ TEST_FUNCTION(test_get_pwr_core_current_data, test_setup, test_teardown)
     uint32_t record_size = package_create_pwr_core_current_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_core_record_current_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_CORES_PER_DIE);
     assert_int_equal(record.record_header.record_payload_size,
@@ -276,7 +276,7 @@ TEST_FUNCTION(test_get_pwr_core_temperature_data, test_setup, test_teardown)
     uint32_t record_size = package_create_pwr_core_temperature_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_core_record_temperature_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_CORES_PER_DIE);
     assert_int_equal(record.record_header.record_payload_size,
@@ -308,7 +308,7 @@ TEST_FUNCTION(test_get_pwr_core_histogram_data, test_setup, test_teardown)
     uint32_t record_size = package_create_pwr_core_histogram_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_core_record_histogram_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_CORES_PER_DIE);
     assert_int_equal(record.record_header.record_payload_size,
@@ -341,7 +341,7 @@ TEST_FUNCTION(test_get_pwr_soc_pc3_data, test_setup, test_teardown)
     uint32_t record_size = package_create_pwr_soc_pc3_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_soc_record_pc3_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, 1);
     assert_int_equal(record.record_header.record_payload_size,
@@ -367,7 +367,7 @@ TEST_FUNCTION(test_get_pwr_soc_vr_rail_data, test_setup, test_teardown)
     uint32_t record_size = package_create_pwr_soc_vr_rail_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_soc_record_vr_rail_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, MAX_NUM_OF_VR_RAILS);
     assert_int_equal(record.record_header.record_payload_size,
@@ -397,7 +397,7 @@ TEST_FUNCTION(test_get_pwr_soc_hnf_data, test_setup, test_teardown)
     uint32_t record_size = package_create_pwr_soc_hnf_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_soc_record_hnf_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_HNF_CHANNELS_PER_DIE);
     assert_int_equal(record.record_header.record_payload_size,
@@ -427,7 +427,7 @@ TEST_FUNCTION(test_get_pwr_soc_dimm_data, test_setup, test_teardown)
     uint32_t record_size = package_create_pwr_soc_dimm_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_soc_record_dimm_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_DIMM_MODULES);
     assert_int_equal(record.record_header.record_payload_size,
@@ -457,7 +457,7 @@ TEST_FUNCTION(test_get_pwr_soc_sensor_temp_data, test_setup, test_teardown)
     uint32_t record_size = package_create_pwr_soc_sensor_temp_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_soc_record_sensor_temp_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_SOC_TEMP_SENSORS);
     assert_int_equal(record.record_header.record_payload_size,
@@ -489,7 +489,7 @@ TEST_FUNCTION(test_get_pwr_mpam_pstate_data, test_setup, test_teardown)
     uint32_t record_size = package_create_pwr_mpam_pstate_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_record_mpam_pstate_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_MPAMS);
     assert_int_equal(record.record_header.record_payload_size,
@@ -520,7 +520,7 @@ TEST_FUNCTION(test_get_pwr_mpam_throttle_data, test_setup, test_teardown)
     uint32_t record_size = package_create_pwr_mpam_throttle_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_record_mpam_throttle_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_MPAMS);
     assert_int_equal(record.record_header.record_payload_size,
@@ -552,7 +552,7 @@ TEST_FUNCTION(test_get_inst_core_summary_data, test_setup, test_teardown)
     uint32_t record_size = package_create_inst_core_summary_record(&record);
 
     assert_int_equal(record_size, sizeof(inst_core_record_summary_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_CORES_PER_DIE);
     assert_int_equal(record.record_header.record_payload_size,
@@ -583,7 +583,7 @@ TEST_FUNCTION(test_get_inst_soc_rail_data, test_setup, test_teardown)
     uint32_t record_size = package_create_inst_soc_rail_record(&record);
 
     assert_int_equal(record_size, sizeof(inst_soc_record_rail_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, MAX_NUM_OF_VR_RAILS);
     assert_int_equal(record.record_header.record_payload_size,
@@ -613,7 +613,7 @@ TEST_FUNCTION(test_get_inst_soc_dimm_runtime_data, test_setup, test_teardown)
     uint32_t record_size = package_create_inst_soc_dimm_runtime_record(&record);
 
     assert_int_equal(record_size, sizeof(inst_soc_record_dimm_runtime_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_DIMM_MODULES);
     assert_int_equal(record.record_header.record_payload_size,
@@ -644,7 +644,7 @@ TEST_FUNCTION(test_get_inst_soc_dimm_config_data, test_setup, test_teardown)
     uint32_t record_size = package_create_inst_soc_dimm_config_record(&record);
 
     assert_int_equal(record_size, sizeof(inst_soc_record_dimm_config_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, 1);
     assert_int_equal(record.record_header.record_payload_size,
@@ -671,7 +671,7 @@ TEST_FUNCTION(test_get_inst_soc_sensor_temp_data, test_setup, test_teardown)
     uint32_t record_size = package_create_inst_soc_sensor_temp_record(&record);
 
     assert_int_equal(record_size, sizeof(inst_soc_record_sensor_temp_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_SOC_TEMP_SENSORS);
     assert_int_equal(record.record_header.record_payload_size,
@@ -703,7 +703,7 @@ TEST_FUNCTION(test_get_inst_core_amu_counters_data, test_setup, test_teardown)
     uint32_t record_size = package_create_inst_core_amu_counters_record(&record);
 
     assert_int_equal(record_size, sizeof(inst_core_record_amu_counters_t));
-    assert_int_not_equal(record.record_header.timestamp, 0);
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_CORES_PER_DIE);
     assert_int_equal(record.record_header.record_payload_size,

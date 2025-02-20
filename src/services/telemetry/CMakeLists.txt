@@ -17,6 +17,7 @@ target_link_libraries(tlm.service.cmpnt.interfaces
         kng_silibs_platform
         fwlib.lib.status
         fwlib.lib.assert
+        fwlib.lib.utils
         ms::lib::interface::in_band_telemetry_ddr
         kng.service.telemetry.cmpnt.event_trace
     )

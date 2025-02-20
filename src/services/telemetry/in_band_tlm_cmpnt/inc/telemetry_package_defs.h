@@ -10,11 +10,12 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
-#include "stdint.h"
-#include "common_types.h"
-
+#include <IFpFwEventTracingBuffers.h>
 #include <diag_decoder.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
+#include <stdint.h>
+
+
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -70,16 +71,17 @@ typedef enum
 
 #pragma pack(push, 1)
 typedef struct {
-    guid_t manifest_id;
-    uint64_t timestamp;  /* Timestamp when the package was created  */
+    FPFW_ET_MANIFEST_ID manifest_id;
+    uint64_t timestamp_uS;  /* Timestamp when the package was created  */
+    uint64_t timestamp_utc;
     uint32_t package_number;
     uint32_t number_of_records;
     uint32_t package_payload_size;
-} telemetry_client_header_t;
+} telemetry_payload_header_t;
 
 typedef struct {
     diag_decoder_payload_header_t decoder_header;
-    telemetry_client_header_t client_header;
+    telemetry_payload_header_t payload_header;
 
 } telemetry_package_hdr_t, *p_telemetry_package_hdr_t;
 
@@ -91,8 +93,9 @@ typedef struct {
     uint16_t number_of_elements;
     uint32_t collection_payload_size;   // minus the collection header size
 } telemetry_collection_hdr_t, *p_telemetry_collection_hdr_t;
+
 typedef struct {
-    uint64_t timestamp; /* Timestamp when the record was created  */
+    uint64_t timestamp_uS; /* Timestamp when the record was created  */
     uint32_t record_number;
     uint32_t number_of_collections;
     uint32_t record_payload_size;  //  minus the record header size
@@ -395,7 +398,6 @@ typedef struct {
 
 //----------------INST_TELEMETRY_ELEMENT_CORE----------------
 
-//Latency in micro sec and residency in miliseconds. 
 typedef struct {
     uint8_t pstate_id;
     uint8_t cstate_id;

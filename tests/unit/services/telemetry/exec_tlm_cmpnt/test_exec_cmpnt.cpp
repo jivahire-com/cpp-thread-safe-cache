@@ -65,7 +65,6 @@ TEST_FUNCTION(test_exec_tlm_cmpnt_enable_disable_telemetry_enable_with_inst, tes
     will_return(__wrap__txe_timer_activate, TX_SUCCESS);
     will_return(__wrap__txe_timer_activate, TX_SUCCESS);
     will_return(__wrap__txe_timer_activate, TX_SUCCESS);
-    will_return(__wrap__txe_timer_activate, TX_SUCCESS);
 
     expect_function_call(data_proc_tlm_cmpnt_enable_disable_transition);
 
@@ -79,7 +78,6 @@ TEST_FUNCTION(test_exec_tlm_cmpnt_enable_disable_telemetry_enable_without_inst, 
     tlm_executive_status.op_mode = TLM_OP_MODE_DISABLED;
     tlm_executive_status.inst_pkg_sample_period_ms = 0;
 
-    will_return(__wrap__txe_timer_activate, TX_SUCCESS);
     will_return(__wrap__txe_timer_activate, TX_SUCCESS);
     will_return(__wrap__txe_timer_activate, TX_SUCCESS);
     will_return(__wrap__txe_timer_activate, TX_SUCCESS);

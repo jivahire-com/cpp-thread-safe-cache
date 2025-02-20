@@ -77,4 +77,5 @@ mock_target(${TARGET}
     get_ccg_knob_defaults
     get_default_d2d_cfg
     process_mesh_binary_from_spi
+    system_info_is_warm_start
 )

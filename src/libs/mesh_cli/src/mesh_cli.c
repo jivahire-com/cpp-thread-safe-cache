@@ -59,7 +59,7 @@ static FPFW_CLI_COMMAND mesh_cli_list[] = {
 
 static FPFW_CLI_STATUS mesh_echo_cli(int argc, const char** argv)
 {
-    FpFwCliPrint("\nmesh_echo_cli func. call\n");
+    FpFwCliPrint("mesh_echo_cli func. call\n");
 
     if (argc == 3)
     {
@@ -82,7 +82,7 @@ static FPFW_CLI_STATUS mesh_echo_cli(int argc, const char** argv)
     }
     else
     {
-        FpFwCliPrint(" Mesh Echo CLI Help\n");
+        FpFwCliPrint("Mesh Echo CLI Help\n");
         FpFwCliPrint("Cmds: 2, <32-bit address(in Hex)> <32-bit data(in Hex)\n");
         return CLI_ERROR;
     }
@@ -118,7 +118,7 @@ static FPFW_CLI_STATUS mesh_isr_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 
 exit_error:
-    FpFwCliPrint(" Mesh ISR CLI Help\n");
+    FpFwCliPrint("Mesh ISR CLI Help\n");
     FpFwCliPrint("Cmds: 1, <Error(0x0) or Fault(0x1)>\n");
     return CLI_ERROR;
 }
@@ -178,7 +178,7 @@ static FPFW_CLI_STATUS mesh_error_inj(int argc, const char** argv)
 exit_error1:
     FpFwCliPrint("Arg %s is Invalid Hex value\n", argv[current_arg]);
 exit_error:
-    FpFwCliPrint(" Mesh Error Injection CLI Help\n");
+    FpFwCliPrint("Mesh Error Injection CLI Help\n");
     FpFwCliPrint("Cmds: 5, <node_type> <node_id> <node_control_reg> <err_inj> <byte_par_err_inj>\n");
     return CLI_ERROR;
 }
@@ -250,7 +250,7 @@ static FPFW_CLI_STATUS mesh_pseudo_error_inj(int argc, const char** argv)
 exit_error1:
     FpFwCliPrint("Arg %s is Invalid Hex value\n", argv[current_arg]);
 exit_error:
-    FpFwCliPrint(" Mesh Pseudo Fault Error Injection CLI Help\n");
+    FpFwCliPrint("Mesh Pseudo Fault Error Injection CLI Help\n");
     FpFwCliPrint(
         "Cmds: 6, <secure/non_secure> <node_type> <node_id> <node_control_reg> <err_inj> <err_cnt_down>\n");
     FpFwCliPrint("HNS Ex: mesh_pseudo_error_inj 0x0 0x1 0xC 0x401 0x80000A20 0x1000\n");
@@ -339,7 +339,7 @@ static FPFW_CLI_STATUS mesh_pseudo_error_inj_test_suite(int argc, const char** a
 exit_error1:
     FpFwCliPrint("Arg %s is Invalid Hex value\n", argv[current_arg]);
 exit_error:
-    FpFwCliPrint(" Mesh Pseudo Fault Error Injection CLI Help\n");
+    FpFwCliPrint("Mesh Pseudo Fault Error Injection CLI Help\n");
     FpFwCliPrint("Cmds: 7,  <secure/non_secure> <node_type> <node_id_start> <node_id_end> <node_control_reg> "
                  "<err_inj> <err_cnt_down>\n");
     FpFwCliPrint("HNI Ex: mesh_pseudo_error_test_suite 0x0 0x3 0x0 0x10 0x401 0x80000A20 0x1000\n");
@@ -392,7 +392,7 @@ static FPFW_CLI_STATUS d2d_pseudo_error_inj(int argc, const char** argv)
 exit_error1:
     FpFwCliPrint("Arg %s is Invalid Hex value\n", argv[current_arg]);
 exit_error:
-    FpFwCliPrint(" Mesh Pseudo Fault Error Injection CLI Help\n");
+    FpFwCliPrint("Mesh Pseudo Fault Error Injection CLI Help\n");
     FpFwCliPrint("Cmds: 3, <node_id> <err_inj> <err_cnt_down>\n");
     FpFwCliPrint("Ex: d2d_pseudo_error_inj 0x0 0x102000 0xF0000\n");
     return CLI_ERROR;

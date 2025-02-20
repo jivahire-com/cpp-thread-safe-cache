@@ -75,79 +75,82 @@ void print_mesh_d2d_knob_values(void)
 {
     // Print the Mesh SAM Knobs
     cmn800_sam_cfg_t* temp_cmn800_sam_cfg = cmn800_get_mesh_sam_cfg_knob();
-    MESH_CRIT("Print the Mesh SAM Knobs\n");
-    MESH_CRIT("mesh_hnf_cbusy_limit_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_cbusy_limit_ctl));
-    MESH_CRIT("mesh_hnf_cbusy_resp_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_cbusy_resp_ctl));
-    MESH_CRIT("mesh_hnf_cbusy_sn_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_cbusy_sn_ctl));
-    MESH_CRIT("mesh_hnf_cbusy_write_limit_ctl = 0x%x_%x\n",
-              PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_cbusy_write_limit_ctl));
-    MESH_CRIT("mesh_hnf_cbusy_mode_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_cbusy_mode_ctl));
-    MESH_CRIT("mesh_hnf_aux_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_aux_ctl));
-    MESH_CRIT("mesh_hnf_r2_aux_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_r2_aux_ctl));
-    MESH_CRIT("mesh_hnf_cfg_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_cfg_ctl));
-    MESH_CRIT("mesh_hnf_lbt_cfg_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_lbt_cfg_ctl));
-    MESH_CRIT("mesh_hnf_lbt_aux_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_lbt_aux_ctl));
-    MESH_CRIT("mesh_hnf_lbt_cbusy_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_lbt_cbusy_ctl));
+    UNUSED(temp_cmn800_sam_cfg);
+    MESH_DBG("Print the Mesh SAM Knobs\n");
+    MESH_DBG("mesh_hnf_cbusy_limit_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_cbusy_limit_ctl));
+    MESH_DBG("mesh_hnf_cbusy_resp_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_cbusy_resp_ctl));
+    MESH_DBG("mesh_hnf_cbusy_sn_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_cbusy_sn_ctl));
+    MESH_DBG("mesh_hnf_cbusy_write_limit_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_cbusy_write_limit_ctl));
+    MESH_DBG("mesh_hnf_cbusy_mode_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_cbusy_mode_ctl));
+    MESH_DBG("mesh_hnf_aux_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_aux_ctl));
+    MESH_DBG("mesh_hnf_r2_aux_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_r2_aux_ctl));
+    MESH_DBG("mesh_hnf_cfg_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_cfg_ctl));
+    MESH_DBG("mesh_hnf_lbt_cfg_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_lbt_cfg_ctl));
+    MESH_DBG("mesh_hnf_lbt_aux_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_lbt_aux_ctl));
+    MESH_DBG("mesh_hnf_lbt_cbusy_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_lbt_cbusy_ctl));
     for (int i = 0; i < 6; i++)
     {
-        MESH_CRIT("mesh_hni_cfg_ctl[%d] = 0x%x_%x\n", i, PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hni_cfg_ctl[i]));
+        MESH_DBG("mesh_hni_cfg_ctl[%d] = 0x%x_%x\n", i, PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hni_cfg_ctl[i]));
     }
     for (int i = 0; i < 6; i++)
     {
-        MESH_CRIT("mesh_hni_aux_ctl[%d] = 0x%x_%x\n", i, PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hni_aux_ctl[i]));
+        MESH_DBG("mesh_hni_aux_ctl[%d] = 0x%x_%x\n", i, PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hni_aux_ctl[i]));
     }
-    MESH_CRIT("mesh_hnt_dn_domain_cxra = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnt_dn_domain_cxra));
+    MESH_DBG("mesh_hnt_dn_domain_cxra = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnt_dn_domain_cxra));
     for (int i = 0; i < 8; i++)
     {
-        MESH_CRIT("mesh_rni_cfg_ctl[%d] = 0x%x_%x\n", i, PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rni_cfg_ctl[i]));
+        MESH_DBG("mesh_rni_cfg_ctl[%d] = 0x%x_%x\n", i, PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rni_cfg_ctl[i]));
     }
     for (int i = 0; i < 8; i++)
     {
-        MESH_CRIT("mesh_rni_aux_ctl[%d] = 0x%x_%x\n", i, PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rni_aux_ctl[i]));
+        MESH_DBG("mesh_rni_aux_ctl[%d] = 0x%x_%x\n", i, PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rni_aux_ctl[i]));
     }
     for (int i = 0; i < 7; i++)
     {
-        MESH_CRIT("mesh_rnd_cfg_ctl[%d] = 0x%x_%x\n", i, PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rnd_cfg_ctl[i]));
+        MESH_DBG("mesh_rnd_cfg_ctl[%d] = 0x%x_%x\n", i, PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rnd_cfg_ctl[i]));
     }
     for (int i = 0; i < 7; i++)
     {
-        MESH_CRIT("mesh_rnd_aux_ctl[%d] = 0x%x_%x\n", i, PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rnd_aux_ctl[i]));
+        MESH_DBG("mesh_rnd_aux_ctl[%d] = 0x%x_%x\n", i, PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rnd_aux_ctl[i]));
     }
 
     // Print the Mesh RAS Knobs
     cmn800_ras_cfg_t* temp_cmn800_ras_cfg = cmn800_get_mesh_ras_cfg_knob();
-    MESH_CRIT("Print the Mesh RAS Knobs\n");
-    MESH_CRIT("mesh_RAS_Error_Detection_Disable = %d\n", temp_cmn800_ras_cfg->mesh_RAS_Error_Detection_Disable);
-    MESH_CRIT("mesh_RAS_Error_Deferment_Disable = %d\n", temp_cmn800_ras_cfg->mesh_RAS_Error_Deferment_Disable);
-    MESH_CRIT("mesh_RAS_Uncorrected_Error_Int_Disable = %d\n", temp_cmn800_ras_cfg->mesh_RAS_Uncorrected_Error_Int_Disable);
-    MESH_CRIT("mesh_RAS_Fault_Handling_Int_Disable = %d\n", temp_cmn800_ras_cfg->mesh_RAS_Fault_Handling_Int_Disable);
-    MESH_CRIT("mesh_RAS_Corrected_Error_Int_Disable = %d\n", temp_cmn800_ras_cfg->mesh_RAS_Corrected_Error_Int_Disable);
-    MESH_CRIT("mesh_RAS_Parity_Error_Disable = %d\n", temp_cmn800_ras_cfg->mesh_RAS_Parity_Error_Disable);
+    UNUSED(temp_cmn800_ras_cfg);
+    MESH_DBG("Print the Mesh RAS Knobs\n");
+    MESH_DBG("mesh_RAS_Error_Detection_Disable = %d\n", temp_cmn800_ras_cfg->mesh_RAS_Error_Detection_Disable);
+    MESH_DBG("mesh_RAS_Error_Deferment_Disable = %d\n", temp_cmn800_ras_cfg->mesh_RAS_Error_Deferment_Disable);
+    MESH_DBG("mesh_RAS_Uncorrected_Error_Int_Disable = %d\n", temp_cmn800_ras_cfg->mesh_RAS_Uncorrected_Error_Int_Disable);
+    MESH_DBG("mesh_RAS_Fault_Handling_Int_Disable = %d\n", temp_cmn800_ras_cfg->mesh_RAS_Fault_Handling_Int_Disable);
+    MESH_DBG("mesh_RAS_Corrected_Error_Int_Disable = %d\n", temp_cmn800_ras_cfg->mesh_RAS_Corrected_Error_Int_Disable);
+    MESH_DBG("mesh_RAS_Parity_Error_Disable = %d\n", temp_cmn800_ras_cfg->mesh_RAS_Parity_Error_Disable);
 
     // Print the Mesh CCG Knobs
     ccg_cfg_t* temp_ccg_cfg = get_ccg_knob_defaults();
-    MESH_CRIT("Print the Mesh CCG Knobs\n");
-    MESH_CRIT("por_ccg_ha_aux_ctl = 0x%x_%x\n", PRINT64_HEX(temp_ccg_cfg->por_ccg_ha_aux_ctl));
-    MESH_CRIT("por_ccg_ha_cfg_ctl = 0x%x_%x\n", PRINT64_HEX(temp_ccg_cfg->por_ccg_ha_cfg_ctl));
-    MESH_CRIT("por_ccg_ha_cxprtcl_link0_ctl = 0x%x_%x\n", PRINT64_HEX(temp_ccg_cfg->por_ccg_ha_cxprtcl_link0_ctl));
-    MESH_CRIT("por_ccg_ra_cfg_ctl = 0x%x_%x\n", PRINT64_HEX(temp_ccg_cfg->por_ccg_ra_cfg_ctl));
-    MESH_CRIT("por_ccg_ra_aux_ctl = 0x%x_%x\n", PRINT64_HEX(temp_ccg_cfg->por_ccg_ra_aux_ctl));
-    MESH_CRIT("por_ccg_ra_ccprtcl_link0_ctl = 0x%x_%x\n", PRINT64_HEX(temp_ccg_cfg->por_ccg_ra_ccprtcl_link0_ctl));
-    MESH_CRIT("por_ccg_ra_cbusy_limit_ctl = 0x%x_%x\n", PRINT64_HEX(temp_ccg_cfg->por_ccg_ra_cbusy_limit_ctl));
-    MESH_CRIT("por_ccla_aux_ctl = 0x%x_%x\n", PRINT64_HEX(temp_ccg_cfg->por_ccla_aux_ctl));
+    UNUSED(temp_ccg_cfg);
+    MESH_DBG("Print the Mesh CCG Knobs\n");
+    MESH_DBG("por_ccg_ha_aux_ctl = 0x%x_%x\n", PRINT64_HEX(temp_ccg_cfg->por_ccg_ha_aux_ctl));
+    MESH_DBG("por_ccg_ha_cfg_ctl = 0x%x_%x\n", PRINT64_HEX(temp_ccg_cfg->por_ccg_ha_cfg_ctl));
+    MESH_DBG("por_ccg_ha_cxprtcl_link0_ctl = 0x%x_%x\n", PRINT64_HEX(temp_ccg_cfg->por_ccg_ha_cxprtcl_link0_ctl));
+    MESH_DBG("por_ccg_ra_cfg_ctl = 0x%x_%x\n", PRINT64_HEX(temp_ccg_cfg->por_ccg_ra_cfg_ctl));
+    MESH_DBG("por_ccg_ra_aux_ctl = 0x%x_%x\n", PRINT64_HEX(temp_ccg_cfg->por_ccg_ra_aux_ctl));
+    MESH_DBG("por_ccg_ra_ccprtcl_link0_ctl = 0x%x_%x\n", PRINT64_HEX(temp_ccg_cfg->por_ccg_ra_ccprtcl_link0_ctl));
+    MESH_DBG("por_ccg_ra_cbusy_limit_ctl = 0x%x_%x\n", PRINT64_HEX(temp_ccg_cfg->por_ccg_ra_cbusy_limit_ctl));
+    MESH_DBG("por_ccla_aux_ctl = 0x%x_%x\n", PRINT64_HEX(temp_ccg_cfg->por_ccla_aux_ctl));
 
     // Print the Mesh D2D Knobs
     d2d_cfg_t* temp_d2d_cfg = get_default_d2d_cfg();
-    MESH_CRIT("Print the Mesh D2D Knobs\n");
-    MESH_CRIT("d2d_pll_divder = 0x%x\n", temp_d2d_cfg->d2d_pll_divder);
-    MESH_CRIT("d2d_ref_divder = 0x%x\n", temp_d2d_cfg->d2d_ref_divder);
-    MESH_CRIT("d2d_pll_fb_devider = 0x%x\n", temp_d2d_cfg->d2d_pll_fb_devider);
-    MESH_CRIT("d2d_ecc_cfg = 0x%x\n", temp_d2d_cfg->d2d_ecc_cfg);
-    MESH_CRIT("d2d_tx_interface_clk_alignment = 0x%x\n", temp_d2d_cfg->d2d_tx_interface_clk_alignment);
-    MESH_CRIT("d2d_ras_enable = 0x%x\n", temp_d2d_cfg->d2d_ras_enable);
-    MESH_CRIT("d2d_sleep_cfg = 0x%x\n", temp_d2d_cfg->d2d_sleep_cfg);
-    MESH_CRIT("d2d_sleep_cfg_entry = 0x%x\n", temp_d2d_cfg->d2d_sleep_cfg_entry);
-    MESH_CRIT("d2d_rxcal_find_goodlanes_skip = 0x%x\n", temp_d2d_cfg->d2d_rxcal_find_goodlanes_skip);
+    UNUSED(temp_d2d_cfg);
+    MESH_DBG("Print the Mesh D2D Knobs\n");
+    MESH_DBG("d2d_pll_divder = 0x%x\n", temp_d2d_cfg->d2d_pll_divder);
+    MESH_DBG("d2d_ref_divder = 0x%x\n", temp_d2d_cfg->d2d_ref_divder);
+    MESH_DBG("d2d_pll_fb_devider = 0x%x\n", temp_d2d_cfg->d2d_pll_fb_devider);
+    MESH_DBG("d2d_ecc_cfg = 0x%x\n", temp_d2d_cfg->d2d_ecc_cfg);
+    MESH_DBG("d2d_tx_interface_clk_alignment = 0x%x\n", temp_d2d_cfg->d2d_tx_interface_clk_alignment);
+    MESH_DBG("d2d_ras_enable = 0x%x\n", temp_d2d_cfg->d2d_ras_enable);
+    MESH_DBG("d2d_sleep_cfg = 0x%x\n", temp_d2d_cfg->d2d_sleep_cfg);
+    MESH_DBG("d2d_sleep_cfg_entry = 0x%x\n", temp_d2d_cfg->d2d_sleep_cfg_entry);
+    MESH_DBG("d2d_rxcal_find_goodlanes_skip = 0x%x\n", temp_d2d_cfg->d2d_rxcal_find_goodlanes_skip);
 }
 
 void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_param)
@@ -184,13 +187,14 @@ void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_para
     // Read the Config Knobs from SPI
     if (config_get_mesh_d2d_override() == true) // Check if the override is enabled
     {
-        MESH_CRIT("Mesh and D2D User Config Enabled\n");
+        MESH_DBG("Mesh and D2D User Config Enabled\n");
         if (idsw_get_platform_sdv() != PLATFORM_RVP_EVT_SILICON)
         {
-            MESH_CRIT("Pre-Si Platform !!\n");
+            MESH_DBG("Pre-Si Platform !!\n");
             uint8_t temp8 = config_get_cmn_sam_config();
-            MESH_CRIT("User knob read cmn_sam_config = 0x%x\n", temp8);
-            MESH_CRIT("cmn_sam_config not applied for Pre-Si Platform !!\n");
+            UNUSED(temp8);
+            MESH_DBG("User knob read cmn_sam_config = 0x%x\n", temp8);
+            MESH_DBG("cmn_sam_config not applied for Pre-Si Platform !!\n");
         }
         else
         {
@@ -288,7 +292,7 @@ void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_para
         temp_d2d_cfg->d2d_sleep_cfg_entry = config_get_d2d_sleep_cfg_entry();
         temp_d2d_cfg->d2d_rxcal_find_goodlanes_skip = config_get_d2d_rxcal_find_goodlanes_skip();
 
-        MESH_CRIT("Mesh and D2D Knob values after cfg_mgr read\n");
+        MESH_DBG("Mesh and D2D Knob values after cfg_mgr read\n");
         print_mesh_d2d_knob_values();
     }
     else
@@ -312,7 +316,7 @@ int mesh_read_binary_table_from_rmss(uint8_t die_num, uint32_t cmn_config_enum)
     {
         MESH_CRIT("process_mesh_binary_from_spi failed sts 0x%x\n", sts);
     }
-    MESH_CRIT("Mesh Binary Table Read from RMSS End sts 0x%x\n", sts);
+    MESH_CRIT("Mesh Bin Tbl Rd RMSS End sts 0x%x\n", sts);
     return sts;
 }
 
@@ -324,21 +328,19 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 
     int sts = 0x0;
 
+    MESH_CRIT("mesh_init Cold start Flow\n");
+
     cmn800_sequence_params_t cmn800_sequence_param = {};
 
     mesh_read_cfg_knobs_from_spi(&cmn800_sequence_param);
 
     if (is_i3c_supported())
     {
-        uint8_t dram_size = get_i3c_dimm_cap_per_ch();
-        MESH_INFO("dram_size 0x%x\n", dram_size);
         uint8_t dimm_sku = get_i3c_dimm_sku();
         MESH_INFO("dimm_sku 0x%x\n", dimm_sku);
-        uint32_t ddrss_en = get_i3c_dimm_detected();
-        MESH_INFO("ddrss_en 0x%x\n", (unsigned int)ddrss_en);
-        UNUSED(dram_size);
-        UNUSED(dimm_sku);
-        UNUSED(ddrss_en);
+        uint32_t ddrss_mask = get_i3c_dimm_detected();
+        MESH_INFO("ddrss_mask 0x%x\n", (unsigned int)ddrss_mask);
+        cmn800_set_i3c_dimm_params(dimm_sku, ddrss_mask);
     }
 
     MESH_INFO("cmn800_sequence_param.cmn_config_enum 0x%x\n", (uint8_t)cmn800_sequence_param.cmn_config_enum);
@@ -347,6 +349,15 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     if (sts != 0)
     {
         MESH_CRIT("mesh_read_binary_table_from_rmss failed sts 0x%x\n", sts);
+    }
+
+    if (system_info_is_warm_start())
+    {
+        MESH_CRIT("mesh_init Warm restart Flow\n");
+
+        // Call to re-init the D2D RAS Agents (API to be added)
+
+        return;
     }
 
     sts = cmn800_sequence_svp_updates(cmn800_sequence_param);

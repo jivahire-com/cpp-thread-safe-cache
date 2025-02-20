@@ -43,6 +43,9 @@
     (FPFW_DUR_MS(10)) // Current implementation of the timer has a minimum period of 10ms
 #define ASYNC_SEND_RETRY_MAX (5)
 
+// Number of times ICC Base will retry a sync operation before failing
+#define MAX_SYNC_RETRY_COUNT (5)
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -247,6 +250,7 @@ FPFW_INIT_COMPONENT(icc_mscp2mscp, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
                 .match_strategy_ctx = NULL,
             },
         .ctx = NULL,
+        .sync_loop_count = MAX_SYNC_RETRY_COUNT,
     };
 
     // Initialize ICC base ctx
@@ -385,6 +389,7 @@ FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu
                 .match_strategy_ctx = NULL,
             },
         .ctx = NULL,
+        .sync_loop_count = MAX_SYNC_RETRY_COUNT,
     };
 
     // Initialize ICC base ctx
@@ -531,6 +536,7 @@ FPFW_INIT_COMPONENT(icc_die2die, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_s
                 .match_strategy_ctx = NULL,
             },
         .ctx = NULL,
+        .sync_loop_count = MAX_SYNC_RETRY_COUNT,
     };
 
     // Initialize ICC base ctx for hsp mailbox transport driver

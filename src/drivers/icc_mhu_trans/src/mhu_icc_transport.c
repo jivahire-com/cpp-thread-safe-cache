@@ -223,14 +223,6 @@ fpfw_status_t mhu_icc_transport_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER Request)
         // Process the request
         uint32_t icc_packet_status = icc_mhu_send_packet(&(device->send_channel), p_mhu_packet);
 
-        if (icc_packet_status == ICC_MHU_STATUS_S_SUCCESS && p_mhu_packet->header.msg_header.command != ICC_SIGNAL_CRASH_DUMP_COLLECT)
-        {
-            // Wait for the message to be read by the receiving side unless it's a crash dump collect signal
-            while (icc_mhu_check_packet_pending(&(device->send_channel)))
-            {
-            }
-        }
-
         status = icc_packet_status_to_icc_transport_status(icc_packet_status);
         break;
     }

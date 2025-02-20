@@ -390,7 +390,6 @@ TEST_FUNCTION(test_mhu_icc_transport_dispatch_sync_send_success, test_setup, tes
     send_try_req.Input.BufferSizeBytes = TEST_SHARED_MEM_SIZE;
 
     will_return(__wrap_icc_mhu_send_packet, ICC_MHU_STATUS_S_SUCCESS);
-    will_return(__wrap_icc_mhu_check_packet_pending, false);
 
     fpfw_status_t status = mhu_icc_transport_dispatch_sync((PDFWK_SYNC_REQUEST_HEADER)&send_try_req);
     assert_int_equal(status, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);

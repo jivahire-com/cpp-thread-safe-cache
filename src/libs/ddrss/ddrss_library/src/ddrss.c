@@ -92,6 +92,12 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.ext_knobs.dram_power_down_entry_delay = config_get_dram_power_down_entry_delay();
     ddrss_cfgs.ext_knobs.dram_refresh_mode = config_get_dram_refresh_mode();
     ddrss_cfgs.ext_knobs.ecc_ce_th = config_get_ecc_ce_th();
+
+    // ECS
+    ddrss_cfgs.ext_knobs.ecs_readout_interval = config_get_ecs_readout_interval();
+    ddrss_cfgs.ext_knobs.ecs_readout_interval_unit = config_get_ecs_readout_interval_unit();
+    ddrss_cfgs.ext_knobs.periodic_ecs_readout_en = config_get_periodic_ecs_readout_en();
+
     ddrss_cfgs.ext_knobs.dram_power_down_entry_delay = config_get_dram_power_down_entry_delay();
     ddrss_cfgs.ext_knobs.erhm_en = config_get_erhm_en();
     ddrss_cfgs.ext_knobs.media_ecc_mode = config_get_media_ecc_mode();
@@ -103,6 +109,22 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.ext_knobs.ref_temp_high = config_get_ref_temp_high();
     ddrss_cfgs.ext_knobs.sbr_en = config_get_sbr_en();
     ddrss_cfgs.ext_knobs.sub_bank_hashing_mode = config_get_sub_bank_hashing_mode();
+    ddrss_cfgs.ext_knobs.chi_cbusy_map_mpam_0 = config_get_chi_cbusy_map_mpam_0();
+    ddrss_cfgs.ext_knobs.chi_cbusy_map_mpam_1 = config_get_chi_cbusy_map_mpam_1();
+    ddrss_cfgs.ext_knobs.chi_cbusy_map_mpam_2 = config_get_chi_cbusy_map_mpam_2();
+    ddrss_cfgs.ext_knobs.chi_cbusy_map_mpam_3 = config_get_chi_cbusy_map_mpam_3();
+    ddrss_cfgs.ext_knobs.chi_cbusy_map_mpam_4 = config_get_chi_cbusy_map_mpam_4();
+    ddrss_cfgs.ext_knobs.mc_mpam_bm_dis = config_get_mc_mpam_bm_dis();
+    ddrss_cfgs.ext_knobs.mc_mpam_bp_dis = config_get_mc_mpam_bp_dis();
+    ddrss_cfgs.ext_knobs.mc_mpam_winwd = config_get_mc_mpam_winwd();
+    ddrss_cfgs.ext_knobs.mc_mpam_mbw_xfers = config_get_mc_mpam_mbw_xfers();
+    ddrss_cfgs.ext_knobs.mc_mpam_mbw_cycles = config_get_mc_mpam_mbw_cycles();
+    ddrss_cfgs.ext_knobs.mpam_mbw_ns_max = config_get_mpam_mbw_ns_max();
+    ddrss_cfgs.ext_knobs.mpam_mbw_ns_hardlim = config_get_mpam_mbw_ns_hardlim();
+    ddrss_cfgs.ext_knobs.mpam_mbw_s_max = config_get_mpam_mbw_s_max();
+    ddrss_cfgs.ext_knobs.mpam_mbw_s_hardlim = config_get_mpam_mbw_s_hardlim();
+    ddrss_cfgs.ext_knobs.mpam_mbw_ns_min = config_get_mpam_mbw_ns_min();
+    ddrss_cfgs.ext_knobs.mpam_mbw_s_min = config_get_mpam_mbw_s_min();
 
     // Setting the PAS list generates an unrecoverable error on Dual Die FPGA. See bug:
     // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2383878 GENERATE_ARRAY_OF_RSVD_REGIONS

@@ -14,7 +14,6 @@
     <!-- DDR Manager knobs -->
     <Knob name="ddrmanager_bwl_en" type="bool" default="true" help="Enable/Disable bandwidth limiting (thermal throttling)" />
     <Knob name="ddrmanager_bwl_polling_period_ms" type="uint32_t" default="60" help="Default DIMM temperature/power polling period in ms" />
-    <Knob name="ddrmanager_ecs_polling_en" type="bool" default="false" help="Debug flag to control ECS polling/telemetry" />
     <Knob name="ddrmanager_dimm_temp_low" type="uint32_t" default="80" help="Integer value representing low temperature to disengage BWL (80°C)" />
     <Knob name="ddrmanager_dimm_temp_high" type="uint32_t" default="85" help="Integer value representing high temperature to engage BWL (85°C)" />
     <Knob name="ddrmanager_dimm_temp_crit" type="uint32_t" default="95" help="Integer value representing critical DIMM temperature where bad things happen (95°C)" />
@@ -22,15 +21,35 @@
     <!-- DDRSS knobs -->
     <Knob name="address_hashing_mode" type="DDRSS_ADDR_HASHING_MODE" default="DDRSS_ADDR_HASHING_MODE_DISABLED" help="Enable Physical Bank hashing on bus/semi address." />
     <Knob name="address_map_mode" type="uint8_t" default="3" help="DDR media address map mode. (0 - 4)" />
+    <Knob name="chi_cbusy_map_mpam_0" type="uint32_t" default="0xe4e4e4e4" help="The mapping for CHI CBusy field from the command priority and FECQ congestion level. (0x0 ~ 0xffffffff)" />
+    <Knob name="chi_cbusy_map_mpam_1" type="uint32_t" default="0xe4e4e4e4" help="The mapping for CHI CBusy field from the FECQ congestion level and MPAM bandwidth for command priority 0. (0x0 ~ 0xffffffff)" />
+    <Knob name="chi_cbusy_map_mpam_2" type="uint32_t" default="0xe4e4e4e4" help="The mapping for CHI CBusy field from the FECQ congestion level and MPAM bandwidth for command priority 1. (0x0 ~ 0xffffffff)" />
+    <Knob name="chi_cbusy_map_mpam_3" type="uint32_t" default="0xe4e4e4e4" help="The mapping for CHI CBusy field from the FECQ congestion level and MPAM bandwidth for command priority 2. (0x0 ~ 0xffffffff)" />
+    <Knob name="chi_cbusy_map_mpam_4" type="uint32_t" default="0xe4e4e4e4" help="The mapping for CHI CBusy field from the FECQ congestion level and MPAM bandwidth for command priority 3. (0x0 ~ 0xffffffff)" />
     <Knob name="cmd_merge_en" type="uint8_t" default="2" help="Command merge enable config. 2'b00: When a command completes it invalidates. No data sharing is permitted. All prefetch commands shall be dropped. 2'b01: When a command other that prefetch completes, it is invalidated. 2'b10: When permitted, a newer comamnd may reuse data from an older command. All merges are allowed. (0 ~ 3)" />
     <Knob name="ddr_speed_grade" type="DDRSS_SPEED_GRADE" default="DDRSS_SPEED_6400" help="DDR Speed Grade" />
     <Knob name="dram_power_down_entry_delay" type="uint8_t" default="16" help="Delay time for entering DRAM power down mode after entry conditions are satisfied. In multiple-of-8 memory controller cycles. (0 ~ 255)" />
     <Knob name="dram_refresh_mode" type="DDRSS_DRAM_REFRESH_MODE" default="DDRSS_DRAM_REFRESH_MODE_FINE_GRANULARITY" help="DRAM refersh mode." />
     <Knob name="ecc_ce_th" type="uint16_t" default="0" help="ECC threshold count after which any per-rank CE counter creates an appropriate RAS error record. (0x0 ~ 0x7ff)" />
+    <Knob name="ecs_readout_interval" type="uint8_t" default="20" help="Periodic ECS readout interval value in DDRSS_INTERVAL_TIME_UNIT. 0 : 256 units; 1 to 255 : number of units.  To disable, set periodic_ecs_readout_en = 0" />
+    <Knob name="ecs_readout_interval_unit" type="uint8_t" default="3" help="DDRSS_INTERVAL_UNIT_1US = 0, DDRSS_INTERVAL_UNIT_100US = 1, DDRSS_INTERVAL_UNIT_10MS = 2, DDRSS_INTERVAL_UNIT_1SEC = 3, DDRSS_INTERVAL_UNIT_1MIN = 4, DDRSS_INTERVAL_UNIT_1HOUR = 5" />
     <Knob name="erhm_en" type="uint8_t" default="0x0" help="Enable Enhanced Row Hammer mitigation logic 0 - Disable, 1 - Enable, 2 - AUTO (Enable if DIMM requests)" />
+    <Knob name="mc_mpam_bm_dis" type="uint8_t" default="0" help="MPAM Bandwidth Monitoring Disable. Set to 1'b1 to disable the MPAM  Bandwidth Monitoring Logic. (0 ~ 1)" />
+    <Knob name="mc_mpam_bp_dis" type="uint8_t" default="0" help="MPAM Bandwidth Partitioning Disable. Set to 1'b1 to disable the  MPAM Bandwidth Partitioning Logic. (0 ~ 1)" />
+    <Knob name="mc_mpam_winwd" type="uint32_t" default="0" help="Contents are identical to MPAMCFG_MBW_WINWD. (0x0 ~ 0xffffff)" />
+    <Knob name="mc_mpam_mbw_xfers" type="uint16_t" default="0" help="Number of media requests that can be issued in the amount of time  specified by MPAM_MBW_WINWD. This must be programmed prior to configuring  PARTID bandwidths via MPAM_MBW_MIN[MIN] or MPAM_MBW_MAX[MAX]. (0x0 ~ 0x3fff)" />
+    <Knob name="mc_mpam_mbw_cycles" type="uint16_t" default="0" help="Contents are identical to MPAMCFG_MBW_WINWD. (0x0 ~ 0xffff)" />
     <Knob name="media_ecc_mode" type="DDRSS_MEDIA_ECC_MODE" default="DDRSS_MEDIA_ECC_MODE_REED_SOLOMON" help="Media ECC mode." />
     <Knob name="media_scrub_en" type="uint8_t" default="0" help="Enable media patrol scrubbing. 0 - Disable, 1 - Enable" />
+    <Knob name="mpam_mbw_ns_max" type="uint16_t" default="0" help="Non-secure state  memory maximum bandwidth allocated to the partition selected by MPAMCFG_PART_SEL. (0x0 ~ 0xffff)" />
+    <Knob name="mpam_mbw_ns_hardlim" type="uint8_t" default="0" help="Non-secure state hard bandwidth limiting. 0 - When MAX bandwidth is exceeded, the partition contends with a low preference for downstream bandwidth beyond MAX. 1 - When MAX bandwidth is exceeded, the partition does not use any more bandwidth until the memory bandwidth measurement for the partition falls below MAX." />
+    <Knob name="mpam_mbw_s_max" type="uint16_t" default="0" help="Secure state memory maximum bandwidth allocated to the partition selected by MPAMCFG_PART_SEL. (0x0 ~ 0xffff)" />
+    <Knob name="mpam_mbw_s_hardlim" type="uint8_t" default="0" help="Secure state hard bandwidth limiting. 0 - When MAX bandwidth is exceeded, the partition contends with a low preference for downstream bandwidth beyond MAX. 1 - When MAX bandwidth is exceeded, the partition does not use any more bandwidth until the memory bandwidth measurement for the partition falls below MAX." />
+    <Knob name="mpam_mbw_ns_min" type="uint16_t" default="0" help="Non-secure state memory minimum bandwidth allocated to the partition selected by MPAMCFG_PART_SEL. (0x0 ~ 0xffff)" />
+    <Knob name="mpam_mbw_s_min" type="uint16_t" default="0" help="Secure state memory minimum bandwidth allocated to the partition selected by MPAMCFG_PART_SEL. (0x0 ~ 0xffff)" />
     <Knob name="page_open_timer" type="uint8_t" default="0" help="Number of cycles to wait after there are no cmds to Physical bank in FE before issuing a PRCHG to BE.  (0 ~ 255)" />
+    <Knob name="pas_encryption_en_mask" type="uint8_t" default="0" help="PAS encryption enabling mask, each bit indicates the encryption enabling state for each PAS (BIT0:S BIT1:NS  BIT2:ROOT  BIT3:REALM)." />
+    <Knob name="periodic_ecs_readout_en" type="uint8_t" default="0" help="Periodic ECS readout enable. 0 - Disable, 1 - Enable" />
     <Knob name="phy_fw_diag_en" type="uint8_t" default="0" help="DDR PHY firmware diagnostic enable (DV debug only, FW halts after PHY init). 0 - Disable, 1 - Enable" />
     <Knob name="phy_hdt_ctrl" type="uint8_t" default="0xC8" help="Controls the total number of debug messages.  0x04 - Maximal debug messages; 0x05 - Detailed debug messages; 0x0A - Coarse debug messages; 0xC8 - Stage completion; 0xC9 - Assertion messages; 0xFF - Firmware completion messages only; Invalid for all other values." />
     <Knob name="phy_margin_th" type="uint8_t" default="10" help="Minimum margin threshold to pass training. (0 ~ 255)" />
@@ -38,7 +57,6 @@
     <Knob name="ref_temp_high" type="uint8_t" default="0x05" help="Refresh rate and temperature at which the mediaRefTempHigh interrupt is generated. (1 ~ 5) 1 - 1x Refresh Rate, below 80C nominal. 2 - 1x Refresh Rate, 80-85C nominal. 3 - 2x Refresh Rate, 85-90C nominal. 4 - 2x Refresh Rate, 90-95C nominal. 5 - 2x Refresh Rate, above 95C nominal." />
     <Knob name="sbr_en" type="uint8_t" default="1" help="DRAM same bank refersh enable. 0 - Disable, 1 - Enable" />
     <Knob name="sub_bank_hashing_mode" type="DDRSS_SUB_BANK_HASHING_MODE" default="DDRSS_SUB_BANK_HASHING_MODE_DISABLED" help="Enable Row Sub-Bank Hashing for row-hammer mitigation." />
-    <Knob name="pas_encryption_en_mask" type="uint8_t" default="0" help="PAS encryption enabling mask, each bit indicates the encryption enabling state for each PAS (BIT0:S BIT1:NS  BIT2:ROOT  BIT3:REALM)." />
 
     <!-- Validation ONLY knobs -->
     <Knob name="borgens_1gb_ddr_reserve_enable" type="bool" default="false" />

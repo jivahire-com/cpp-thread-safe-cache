@@ -79,7 +79,7 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
         },
         /**
          * MPU Region 3 - MSCP_EXP SRAM (RAM0 + RAM1)
-         *                Normal Write-Back, Read and Write Allocate
+         *                Normal Noncacheable, Non-bufferable
          *                Priviledged R/W
          */
         {
@@ -88,8 +88,8 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
                                  ARM_MPU_AP_PRIV,
                                  TYPE_EXT_1,
                                  NON_SHAREABLE,
-                                 CACHEABLE,
-                                 BUFFERABLE,
+                                 NON_CACHEABLE,
+                                 NON_BUFFERABLE,
                                  DISABLE_SUBREGION,
                                  ARM_MPU_REGION_SIZE_2MB),
         },

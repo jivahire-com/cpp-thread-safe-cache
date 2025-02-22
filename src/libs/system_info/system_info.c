@@ -29,6 +29,7 @@
 /*-- Declarations (Statics and globals) --*/
 static bool is_hsp_present = false;
 static bool is_warm_start = false;
+static uint8_t board_id = 0xFF;
 static fpfw_icc_base_ctx_t* icc_ctx = NULL;
 static hsp_security_state_t security_state = HSP_SECURITY_STATE_UNKNOWN;
 
@@ -50,6 +51,22 @@ static void hsp_send_recv_security_state_msg(uint16_t req_msg, uint16_t rsp_msg)
     assert(msg.header.cmd == rsp_msg);
 
     security_state = msg.policy_status_rsp.policy_status.security_state;
+}
+
+uint8_t system_info_get_board_id()
+{
+    /*
+     * If this is called before system_info_init, read the board_id from
+     * HSP boot metadata here itself.
+     */
+    if (board_id == 0xFF)
+    {
+        HSP_BOOT_METADATA boot_meta_data;
+        boot_meta_data.AsUint32 = MMIO_READ32(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS);
+        board_id = (uint8_t)(boot_meta_data.BoardId);
+    }
+
+    return board_id;
 }
 
 bool system_info_is_hsp_present()
@@ -83,6 +100,8 @@ void system_info_init(fpfw_icc_base_ctx_t* icc_base_ctx)
     {
         hsp_send_recv_security_state_msg(HSP_MAILBOX_CMD_GET_SECURITY_STATE_REQ, HSP_MAILBOX_CMD_GET_SECURITY_STATE_RSP);
     }
+
+    board_id = (uint8_t)(boot_meta_data.BoardId);
 }
 
 KNG_PLAT_ID system_info_get_platform(void)

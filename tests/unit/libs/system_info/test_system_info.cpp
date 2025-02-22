@@ -49,6 +49,27 @@ uint32_t __wrap_mmio_read32(volatile uint32_t* addr)
     return mock_type(uint32_t);
 }
 
+TEST_FUNCTION(test_get_board_id, nullptr, nullptr)
+{
+    // Set up expectations
+    HSP_BOOT_METADATA boot_meta_data;
+    boot_meta_data.MetadataVersion = 1;
+    boot_meta_data.ResetReason = 7;
+    boot_meta_data.BoardId = 15;
+
+    expect_any(__wrap_mmio_read32, addr);
+    will_return(__wrap_mmio_read32, boot_meta_data.AsUint32);
+
+    // Call API under test
+    uint8_t board_id = system_info_get_board_id();
+
+    // Verify expectations
+    assert_true(board_id == 15);
+    assert_true(BOARD_ID_GET_REWORK_REV(board_id) == 7);
+    assert_true(BOARD_ID_GET_DESIGN_PHASE(board_id) == 1);
+    assert_true(BOARD_ID_GET_SOC_POSITION(board_id) == 0);
+}
+
 TEST_FUNCTION(system_info_init_hsp_present, nullptr, nullptr)
 {
     // Set up expectations
@@ -111,5 +132,4 @@ TEST_FUNCTION(system_info_init_nonsecure_mode, nullptr, nullptr)
     // Verify expectations
     assert_true(system_info_get_security_state() != HSP_SECURITY_STATE_SECURE);
 }
-
 } // extern "C"

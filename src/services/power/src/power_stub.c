@@ -51,18 +51,18 @@ int32_t platform_read_fuse(const uint32_t* target_addr, const uint32_t fuse_bit_
     }
 
     // need valid fuse values for DTS Y/K val
-    const uint32_t tile_y_start = TILE_THERMALS_SENSOR_Y_BIT_OFFSET;
-    const uint32_t tile_y_end =
-        TILE_THERMALS_SENSOR_Y_BIT_OFFSET + TILE_THERMALS_SENSOR_Y_WIDTH * TILE_THERMALS_SENSOR_Y_ARRAY_ELEMENTS;
-    const uint32_t tile_k_start = TILE_THERMALS_SENSOR_K_BIT_OFFSET;
-    const uint32_t tile_k_end =
-        TILE_THERMALS_SENSOR_K_BIT_OFFSET + TILE_THERMALS_SENSOR_K_WIDTH * TILE_THERMALS_SENSOR_K_ARRAY_ELEMENTS;
-    const uint32_t top_y_start = TOP_THERMALS_SENSOR_Y_BIT_OFFSET;
-    const uint32_t top_y_end =
-        TOP_THERMALS_SENSOR_Y_BIT_OFFSET + TOP_THERMALS_SENSOR_Y_WIDTH * TOP_THERMALS_SENSOR_Y_ARRAY_ELEMENTS;
-    const uint32_t top_k_start = TOP_THERMALS_SENSOR_K_BIT_OFFSET;
-    const uint32_t top_k_end =
-        TOP_THERMALS_SENSOR_K_BIT_OFFSET + TOP_THERMALS_SENSOR_K_WIDTH * TOP_THERMALS_SENSOR_K_ARRAY_ELEMENTS;
+    const uint32_t tile_y_start = TILE_THERMALS_SENSOR_RTS_Y_BIT_OFFSET;
+    const uint32_t tile_y_end = TILE_THERMALS_SENSOR_RTS_Y_BIT_OFFSET +
+                                TILE_THERMALS_SENSOR_RTS_Y_WIDTH * TILE_THERMALS_SENSOR_RTS_Y_ARRAY_ELEMENTS;
+    const uint32_t tile_k_start = TILE_THERMALS_SENSOR_RTS_K_BIT_OFFSET;
+    const uint32_t tile_k_end = TILE_THERMALS_SENSOR_RTS_K_BIT_OFFSET +
+                                TILE_THERMALS_SENSOR_RTS_K_WIDTH * TILE_THERMALS_SENSOR_RTS_K_ARRAY_ELEMENTS;
+    const uint32_t top_y_start = TOP_THERMALS_SENSOR_RTS_Y_BIT_OFFSET;
+    const uint32_t top_y_end = TOP_THERMALS_SENSOR_RTS_Y_BIT_OFFSET +
+                               TOP_THERMALS_SENSOR_RTS_Y_WIDTH * TOP_THERMALS_SENSOR_RTS_Y_ARRAY_ELEMENTS;
+    const uint32_t top_k_start = TOP_THERMALS_SENSOR_RTS_K_BIT_OFFSET;
+    const uint32_t top_k_end = TOP_THERMALS_SENSOR_RTS_K_BIT_OFFSET +
+                               TOP_THERMALS_SENSOR_RTS_K_WIDTH * TOP_THERMALS_SENSOR_RTS_K_ARRAY_ELEMENTS;
 
     if ((fuse_bit_offset == TEST_FLOW_CHECKS_PMM_REVISION_BIT_OFFSET) ||
         (fuse_bit_offset >= VF_CORE_ANCHOR_SEL_BIT_OFFSET && fuse_bit_size == VF_CORE_ANCHOR_SEL_WIDTH) ||

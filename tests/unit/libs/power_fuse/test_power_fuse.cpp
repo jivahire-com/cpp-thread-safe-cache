@@ -76,11 +76,11 @@ static int set_power_fuse_parameters_tile(void** state)
 {
     FPFW_UNUSED(state);
 
-    y_offset = TILE_THERMALS_SENSOR_Y_BIT_OFFSET;
-    y_width = TILE_THERMALS_SENSOR_Y_WIDTH;
+    y_offset = TILE_THERMALS_SENSOR_RTS_Y_BIT_OFFSET;
+    y_width = TILE_THERMALS_SENSOR_RTS_Y_WIDTH;
 
-    k_offset = TILE_THERMALS_SENSOR_K_BIT_OFFSET;
-    k_width = TILE_THERMALS_SENSOR_K_WIDTH;
+    k_offset = TILE_THERMALS_SENSOR_RTS_K_BIT_OFFSET;
+    k_width = TILE_THERMALS_SENSOR_RTS_K_WIDTH;
     coeff_spacing = TILE_PVT_NUM_CHANNELS_DTS;
 
     for (uint32_t i = 0; i < count; i++)
@@ -94,11 +94,11 @@ static int set_power_fuse_parameters_tile(void** state)
 static int set_power_fuse_parameters_soctop(void** state)
 {
     FPFW_UNUSED(state);
-    y_offset = TOP_THERMALS_SENSOR_Y_BIT_OFFSET;
-    y_width = TOP_THERMALS_SENSOR_Y_WIDTH;
+    y_offset = TOP_THERMALS_SENSOR_RTS_Y_BIT_OFFSET;
+    y_width = TOP_THERMALS_SENSOR_RTS_Y_WIDTH;
 
-    k_offset = TOP_THERMALS_SENSOR_K_BIT_OFFSET;
-    k_width = TOP_THERMALS_SENSOR_K_WIDTH;
+    k_offset = TOP_THERMALS_SENSOR_RTS_K_BIT_OFFSET;
+    k_width = TOP_THERMALS_SENSOR_RTS_K_WIDTH;
     coeff_spacing = 1;
     for (uint32_t i = 0; i < count; i++)
     {

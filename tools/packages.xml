@@ -7,7 +7,8 @@
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="python.win64" version="3.10.11-dev"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="kingsgate_register_header" version="1.6.0"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="cded_register_header" version="1.0.0"/>
-        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="kng_system_fuse_data" version="1.5.3"/>
+        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="kng_system_fuse_data" version="2.3.0"/>
+
     </universal_packages>
 
     <nuget_packages>
@@ -23,6 +24,7 @@
         <repo name="1pfw_fwlibs" url="https://azurecsi.visualstudio.com/DuvallFw/_git/1pfw.fwlibs" tag="v2.1.5"/>
         <repo name="threadx" url="https://dev.azure.com/AzureCSI/DuvallFw/_git/mirror.threadx" tag="v6.4.1_rel"/>
         <repo name="silibs" url="https://ms-tsd@dev.azure.com/ms-tsd/Kingsgate/_git/silibs" tag="promote_silibs_1284"/>
+
 
         <!-- /// @todo: remove "silibs_common" https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/1838599 -->
         <repo name="silibs_common" url="https://dev.azure.com/ms-tsd/SiInfra/_git/silibs_common" tag="promote_silibs_common_104"/>

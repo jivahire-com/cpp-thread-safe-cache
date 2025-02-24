@@ -402,11 +402,11 @@ int32_t power_fuses_get_ldodac_to_voltage(dvfs_vf_slope_t* slope_offset)
 
 int32_t power_fuses_get_dts_coeff_tile(dts_coeff_t* dts_coeff, uint32_t count)
 {
-    return power_fuses_get_dts_coeff(TILE_THERMALS_SENSOR_K_BIT_OFFSET,
-                                     TILE_THERMALS_SENSOR_K_WIDTH,
-                                     TILE_THERMALS_SENSOR_Y_BIT_OFFSET,
-                                     TILE_THERMALS_SENSOR_Y_WIDTH,
-                                     TILE_THERMALS_SENSOR_Y_ARRAY_ELEMENTS,
+    return power_fuses_get_dts_coeff(TILE_THERMALS_SENSOR_RTS_K_BIT_OFFSET,
+                                     TILE_THERMALS_SENSOR_RTS_K_WIDTH,
+                                     TILE_THERMALS_SENSOR_RTS_Y_BIT_OFFSET,
+                                     TILE_THERMALS_SENSOR_RTS_Y_WIDTH,
+                                     TILE_THERMALS_SENSOR_RTS_Y_ARRAY_ELEMENTS,
                                      count,
                                      TILE_PVT_NUM_CHANNELS_DTS,
                                      dts_coeff);
@@ -414,11 +414,11 @@ int32_t power_fuses_get_dts_coeff_tile(dts_coeff_t* dts_coeff, uint32_t count)
 
 int32_t power_fuses_get_dts_coeff_soctop(dts_coeff_t* dts_coeff, uint32_t count)
 {
-    return power_fuses_get_dts_coeff(TOP_THERMALS_SENSOR_K_BIT_OFFSET,
-                                     TOP_THERMALS_SENSOR_K_WIDTH,
-                                     TOP_THERMALS_SENSOR_Y_BIT_OFFSET,
-                                     TOP_THERMALS_SENSOR_Y_WIDTH,
-                                     TOP_THERMALS_SENSOR_Y_ARRAY_ELEMENTS,
+    return power_fuses_get_dts_coeff(TOP_THERMALS_SENSOR_RTS_K_BIT_OFFSET,
+                                     TOP_THERMALS_SENSOR_RTS_K_WIDTH,
+                                     TOP_THERMALS_SENSOR_RTS_Y_BIT_OFFSET,
+                                     TOP_THERMALS_SENSOR_RTS_Y_WIDTH,
+                                     TOP_THERMALS_SENSOR_RTS_Y_ARRAY_ELEMENTS,
                                      count,
                                      1,
                                      dts_coeff);

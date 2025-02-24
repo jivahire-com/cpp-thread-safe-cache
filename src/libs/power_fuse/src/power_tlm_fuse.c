@@ -211,10 +211,10 @@ fpfw_status_t platform_power_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dts_coeff
     // only read fuses on silicon platform
     if (platform_power_fuses_is_power_hw_supported() && isFuseServiceUp)
     {
-        status = platform_power_fuses_get_dts_coeff(TILE_THERMALS_SENSOR_K_BIT_OFFSET,
-                                                    TILE_THERMALS_SENSOR_K_WIDTH,
-                                                    TILE_THERMALS_SENSOR_Y_BIT_OFFSET,
-                                                    TILE_THERMALS_SENSOR_Y_WIDTH,
+        status = platform_power_fuses_get_dts_coeff(TILE_THERMALS_SENSOR_RTS_K_BIT_OFFSET,
+                                                    TILE_THERMALS_SENSOR_RTS_K_WIDTH,
+                                                    TILE_THERMALS_SENSOR_RTS_Y_BIT_OFFSET,
+                                                    TILE_THERMALS_SENSOR_RTS_Y_WIDTH,
                                                     count,
                                                     TILE_PVT_NUM_CHANNELS_DTS,
                                                     dts_coeff);
@@ -241,10 +241,10 @@ fpfw_status_t platform_power_fuses_get_dts_coeff_soctop(dts_tlm_coeff_t* dts_coe
     //  only read fuses on silicon platform
     if (platform_power_fuses_is_power_hw_supported() && isFuseServiceUp)
     {
-        status = platform_power_fuses_get_dts_coeff(TOP_THERMALS_SENSOR_K_BIT_OFFSET,
-                                                    TOP_THERMALS_SENSOR_K_WIDTH,
-                                                    TOP_THERMALS_SENSOR_Y_BIT_OFFSET,
-                                                    TOP_THERMALS_SENSOR_Y_WIDTH,
+        status = platform_power_fuses_get_dts_coeff(TOP_THERMALS_SENSOR_RTS_K_BIT_OFFSET,
+                                                    TOP_THERMALS_SENSOR_RTS_K_WIDTH,
+                                                    TOP_THERMALS_SENSOR_RTS_Y_BIT_OFFSET,
+                                                    TOP_THERMALS_SENSOR_RTS_Y_WIDTH,
                                                     count,
                                                     1,
                                                     dts_coeff);

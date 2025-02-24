@@ -121,8 +121,8 @@ typedef struct {
     uint8_t throttling_priority_id;
     uint32_t time_counter_uS; // for general residency calculation for the core in uS
     uint8_t pstate_from_current_pkt; /* pstate from current packet, during throttling */
-    uint32_t average_pwr_samples_value; //running average of power samples values, not in mW, multiply with 22 for mW .
-    uint8_t power_index;
+    uint32_t average_pwr_mW; //running average of power samples values in mW .
+    uint8_t num_pwr_samples;
     pwr_pstate_t pstate[NUMBER_OF_PSTATES];
     pwr_cstate_t cstate[NUMBER_OF_CSTATES];
     pwr_core_element_throttle_t throttle_info[NUMBER_OF_THROTTLE_TYPES];
@@ -251,17 +251,6 @@ fpfw_status_t tlm_logger_log_core_pstate(pstate_telem_t* pstate_telemetry);
  * @return  None 
  */
 void data_proc_tlm_cmpnt_aggregate_update_mgr(void);
-/**
- * @brief calculte avergare of all the sample reported so far 
- *         To convert each sample into mW so you multiply the power samples
- *         reading from sensor ram by 22(each bit represent 22mW)
- * 
- * @param[in] core_id - The core_id to get the data .
- * @param[out] core[core_id].average_pwr_samples_value store data in.
- * 
- * @return None 
- */
-void tlm_average_power_sample(uint8_t core_id);
 
 /**
  * @brief tlm_calculate_mma_res function calculates the minimum, maximum, and average values of a 

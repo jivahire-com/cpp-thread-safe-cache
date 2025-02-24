@@ -41,9 +41,9 @@ core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
 tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
 soc_runtime_info_t soc_info;
 dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE] = {0};
-/* per core power samples's averaged value,  used for averaging , sample need to be averaged and multiplied
-by a fator(22 , CORE_POWER_MW_PER_BIT) to get in mW, investigate if we can add units on task https://azurecsi.visualstudio.com/Dev/_workitems/edit/2330778/*/
-uint32_t core_pwr_sample[NUMBER_OF_CORES_PER_DIE] = {0}; // power sample values not in mW .
+/* per core power samples's averaged value in mW,  used for averaging , samples are  averaged and multiplied
+by a fator(22 , CORE_POWER_MW_PER_BIT) to get in mW*/
+uint32_t core_pwr_samples_accumulation_mW[NUMBER_OF_CORES_PER_DIE] = {0}; // power samples values  in mW .
 /* used only for MPAM*/
 uint32_t pstate_accum_uS[NUMBER_OF_CORES_PER_DIE][NUMBER_OF_PSTATES] = {0};
 
@@ -211,18 +211,18 @@ fpfw_status_t tlm_logger_log_core_current(core_current_t* current_data, uint8_t 
     if (current_data->data.change == 1)
     {
         core[core_id].flags.id_change_bit = 1;
-        core[core_id].power_index = 0;
-        core_pwr_sample[core_id] = 0;
+        core[core_id].num_pwr_samples = 0;
+        core_pwr_samples_accumulation_mW[core_id] = 0;
         core[core_id].pstate_timestamp_uS = current_data->timestamp;
     }
     else
     {
         // Stuff the power readings here
-        if (core[core_id].power_index < MAX_NUMBER_POWER_SAMPLE)
+        if (core[core_id].num_pwr_samples < MAX_NUMBER_POWER_SAMPLE)
         {
-            // We will keep up to a number of samples defined (currenly 500)
-            core_pwr_sample[core_id] += current_data->data.pwr;
-            core[core_id].power_index++;
+            // We will keep up to a number of samples defined
+            core_pwr_samples_accumulation_mW[core_id] += current_data->data.pwr * CORE_POWER_MW_PER_BIT;
+            core[core_id].num_pwr_samples++;
         }
 
         // NOTE: Based on pioneer throttling scenarios there are corner cases on the
@@ -794,7 +794,7 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
         // Pstate and Cstate(TODO)
         core_summary_data->pc_state_info.pstate_id = core[core_id].pstate->pstate_id;
         core_summary_data->pc_state_info.frequency_Mhz = core[core_id].pstate->frequency_Mhz;
-        core_summary_data->pc_state_info.power_mW = CORE_POWER_MW_PER_BIT * core[core_id].average_pwr_samples_value; // multiple by  22
+        core_summary_data->pc_state_info.power_mW = core[core_id].average_pwr_mW;
         core_summary_data->pc_state_info.pstate_residency_mS = core[core_id].pstate->residency_uS;
         core_summary_data->pc_state_info.cstate_plimit = core[core_id].active_sample_plimit;
         // force latency to zero.
@@ -879,18 +879,6 @@ void data_proc_tlm_cmpnt_get_inst_core_amu_data(uint16_t core_id, p_inst_core_el
 
 //----------------Power telemetry update manager  ----------------
 
-void tlm_average_power_sample(uint8_t core_id)
-{
-    // Check if there are power samples for this core
-    if (core[core_id].power_index > 0)
-    {
-        /* report avergare of all the sample reported so  far
-          To convert each sample into mW so you multiply the power reading from sensor ram by 22
-        */
-        core[core_id].average_pwr_samples_value = (core_pwr_sample[core_id] / core[core_id].power_index);
-    }
-}
-
 void tlm_update_mpam_residency(uint8_t core_id, uint16_t mpam_id, uint8_t pstate)
 {
 
@@ -899,6 +887,52 @@ void tlm_update_mpam_residency(uint8_t core_id, uint16_t mpam_id, uint8_t pstate
     FPFW_UNUSED(pstate);
     // Update the core - mpam - pstate instantaneous power
     // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2319779
+}
+
+void tlm_update_pstate_core_power(uint8_t core_id, uint8_t pstate_index)
+{
+
+    pwr_pstate_t* pstate = &core[core_id].pstate[pstate_index];
+    uint16_t latest_value_mW = pstate->latest_value_mW;
+
+    // Update min, max, and average power values
+    if (latest_value_mW < pstate->min_power_mW || pstate->min_power_mW == 0)
+    {
+        pstate->min_power_mW = latest_value_mW;
+    }
+    if (latest_value_mW > pstate->max_power_mW)
+    {
+        pstate->max_power_mW = latest_value_mW;
+    }
+
+    // Calculate the weighted average power value
+    if (core[core_id].num_pwr_samples <= 1)
+    {
+        pstate->avg_power_mW = latest_value_mW;
+    }
+    else
+    {
+        uint32_t weighted_previous_average = (uint32_t)pstate->avg_power_mW * (core[core_id].num_pwr_samples - 1);
+        uint32_t weighted_latest_value = latest_value_mW;
+        uint32_t new_avg_power_mW = (weighted_previous_average + weighted_latest_value) / core[core_id].num_pwr_samples;
+
+        // Ensure the calculated average does not exceed UINT16_MAX
+        if (new_avg_power_mW > UINT16_MAX)
+        {
+            new_avg_power_mW = UINT16_MAX;
+            FPFW_ET_LOG(PstatePWRUpdateMMAvgOverflow);
+        }
+
+        // Check if the calculated average goes lower but not lower than the new value
+        if (new_avg_power_mW < latest_value_mW)
+        {
+            pstate->avg_power_mW = latest_value_mW;
+        }
+        else
+        {
+            pstate->avg_power_mW = new_avg_power_mW;
+        }
+    }
 }
 
 void tlm_calculate_mma_res(uint16_t* mma_min, uint16_t* mma_max, uint16_t* mma_average, uint16_t* mma_latest_value, uint32_t time_diff_uS, uint32_t residency_uS)
@@ -1126,17 +1160,18 @@ void tlm_update_pstate(uint8_t core_id, uint64_t time_stamp_uS)
     {
         /*Update the current pstate residencies*/
         update_core_pstate_timestamps(core_id, pstate_index, time_stamp_uS);
-        tlm_average_power_sample(core_id);
-
+        // Check if there are power samples for this core
+        if (core[core_id].num_pwr_samples > 0)
+        {
+            /* average of all the sample reported so far*/
+            core[core_id].average_pwr_mW = (core_pwr_samples_accumulation_mW[core_id] / core[core_id].num_pwr_samples);
+        }
         /* core[core_id].average_power_samples_value has running average of the power samples, update latest_value_mW */
-        core[core_id].pstate[pstate_index].latest_value_mW = CORE_POWER_MW_PER_BIT * core[core_id].average_pwr_samples_value;
-        tlm_calculate_mma_res(&core[core_id].pstate[pstate_index].min_power_mW,
-                              &core[core_id].pstate[pstate_index].max_power_mW,
-                              &core[core_id].pstate[pstate_index].avg_power_mW,
-                              &core[core_id].pstate[pstate_index].latest_value_mW,
-                              core_pwr_sample[core_id], // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2330778/ align fucntions parameters
-                              core[core_id].pstate[pstate_index].residency_uS);
-
+        core[core_id].pstate[pstate_index].latest_value_mW = core[core_id].average_pwr_mW;
+        if (core[core_id].average_pwr_mW)
+        {
+            tlm_update_pstate_core_power(core_id, pstate_index);
+        }
         // Update the core - mpam - pstate instantaneous power
         tlm_update_mpam_residency(core_id, core[core_id].active_sample_mpam_id, pstate_index);
     }

@@ -29,7 +29,7 @@ extern core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
 extern soc_runtime_info_t soc_info;
 extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
-extern uint16_t core_pwr_sample[NUMBER_OF_CORES_PER_DIE];
+extern uint16_t core_pwr_samples_accumulation_mW[NUMBER_OF_CORES_PER_DIE];
 extern uint32_t pstate_accum_uS[NUMBER_OF_CORES_PER_DIE][NUMBER_OF_PSTATES]; // /* used only for MPAM*/
 }
 
@@ -391,28 +391,6 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_aggregate_24hr_tlm_data, test_setup, test
 {
     // expand unit test once implementation is available
     data_proc_tlm_cmpnt_aggregate_24hr_tlm_data();
-}
-
-TEST_FUNCTION(test_tlm_average_power_sample, test_setup, test_teardown)
-{
-    uint8_t core_id = 0;
-    // Test case: No power samples
-    core[core_id].power_index = 0;
-    tlm_average_power_sample(core_id);
-    assert_int_equal(core[core_id].average_pwr_samples_value, 0);
-
-    // Test case: With power samples
-    core[core_id].power_index = 5;
-    core_pwr_sample[core_id] = 110; // Example power sample value
-    tlm_average_power_sample(core_id);
-    assert_int_equal(core[core_id].average_pwr_samples_value, 22); // 110 / 5 = 22
-    // update index
-
-    core[core_id].average_pwr_samples_value = 0;
-    core[core_id].power_index = 6;
-    core_pwr_sample[core_id] = 600; // Example power sample value
-    tlm_average_power_sample(core_id);
-    assert_int_equal(core[core_id].average_pwr_samples_value, 100);
 }
 
 // Unit test for tlm_calculate_mma_res
@@ -789,35 +767,34 @@ TEST_FUNCTION(test_tlm_update_pstate, test_setup, test_teardown)
 
     core[core_id].pstate_from_pstate_pkt = 1;
     int pstate_index = core[core_id].pstate_from_pstate_pkt;
-    core[core_id].power_index = 5;
+    core[core_id].num_pwr_samples = 5;
     core[core_id].flags.id_change_bit = 0;
     core[core_id].flags.pstate_change = 0;
-    core_pwr_sample[core_id] = 50;
+    core_pwr_samples_accumulation_mW[core_id] = 50;
     core[core_id].pstate[pstate_index].residency_uS = 200;
 
     tlm_update_pstate(core_id, time_stamp_uS);
 
-    assert_int_equal(core[core_id].pstate[pstate_index].latest_value_mW, 220); // 22 * 5
-    assert_int_equal(core[core_id].pstate[pstate_index].min_power_mW, 220);
-    assert_int_equal(core[core_id].pstate[pstate_index].max_power_mW, 220);
-    assert_int_equal(core[core_id].pstate[pstate_index].avg_power_mW, 220); // (0 + 110) / 2
-
+    assert_int_equal(core[core_id].pstate[pstate_index].latest_value_mW, 10);
+    assert_int_equal(core[core_id].pstate[pstate_index].min_power_mW, 10);
+    assert_int_equal(core[core_id].pstate[pstate_index].max_power_mW, 10);
+    assert_int_equal(core[core_id].pstate[pstate_index].avg_power_mW, 10);
     // Test case: Throttling, no id_change_bit, no pstate_change
     core[core_id].throttling_status = TEMP_THROTTLE_START;
     core[core_id].pstate_from_current_pkt = 2;
     pstate_index = core[core_id].pstate_from_current_pkt;
     core[core_id].flags.id_change_bit = 0;
     core[core_id].flags.pstate_change = 0;
-    core[core_id].power_index = 12;
-    core_pwr_sample[core_id] = 60;
+    core[core_id].num_pwr_samples = 12;
+    core_pwr_samples_accumulation_mW[core_id] = 60;
     core[core_id].pstate[pstate_index].residency_uS = 300;
 
     tlm_update_pstate(core_id, time_stamp_uS);
 
-    assert_int_equal(core[core_id].pstate[pstate_index].latest_value_mW, 110); // 22 * 5
-    assert_int_equal(core[core_id].pstate[pstate_index].min_power_mW, 110);
-    assert_int_equal(core[core_id].pstate[pstate_index].max_power_mW, 110);
-    assert_int_equal(core[core_id].pstate[pstate_index].avg_power_mW, 110); // (0 + 110) / 2
+    assert_int_equal(core[core_id].pstate[pstate_index].latest_value_mW, 5);
+    assert_int_equal(core[core_id].pstate[pstate_index].min_power_mW, 5);
+    assert_int_equal(core[core_id].pstate[pstate_index].max_power_mW, 5);
+    assert_int_equal(core[core_id].pstate[pstate_index].avg_power_mW, 5);
 
     // Test case: id_change_bit set
     core[core_id].flags.id_change_bit = 1;
@@ -838,6 +815,68 @@ TEST_FUNCTION(test_tlm_update_pstate, test_setup, test_teardown)
     assert_int_equal(core[core_id].flags.id_change_bit, 0);
     assert_int_equal(core[core_id].flags.pstate_change, 0);
     assert_int_equal(pstate_accum_uS[core_id][pstate_index], 0);
+}
+
+TEST_FUNCTION(test_tlm_update_pstate_pwr, test_setup, test_teardown)
+{
+    uint8_t core_id = 0;
+    uint64_t time_stamp_uS = 1000;
+    // Test case: No throttling, no id_change_bit, no pstate_change
+    core[core_id].throttling_status = NO_THROTTLE;
+    core[core_id].pstate_timestamp_uS = 500;
+
+    core[core_id].pstate_from_pstate_pkt = 1;
+    int pstate_index = core[core_id].pstate_from_pstate_pkt;
+    core[core_id].num_pwr_samples = 5;
+    core[core_id].flags.id_change_bit = 0;
+    core[core_id].flags.pstate_change = 0;
+    core_pwr_samples_accumulation_mW[core_id] = 50;
+    core[core_id].pstate[pstate_index].residency_uS = 200;
+
+    tlm_update_pstate(core_id, time_stamp_uS);
+
+    assert_int_equal(core[core_id].pstate[pstate_index].latest_value_mW, 10);
+    assert_int_equal(core[core_id].pstate[pstate_index].min_power_mW, 10);
+    assert_int_equal(core[core_id].pstate[pstate_index].max_power_mW, 10);
+    assert_int_equal(core[core_id].pstate[pstate_index].avg_power_mW, 10);
+
+    // update pstate index and
+    core[core_id].num_pwr_samples++;
+    core_pwr_samples_accumulation_mW[core_id] += 20;
+    core[core_id].pstate[pstate_index].residency_uS += 100;
+
+    tlm_update_pstate(core_id, time_stamp_uS);
+
+    assert_int_equal(core[core_id].pstate[pstate_index].latest_value_mW, 11); // 22 * 5
+    assert_int_equal(core[core_id].pstate[pstate_index].min_power_mW, 10);
+    assert_int_equal(core[core_id].pstate[pstate_index].max_power_mW, 11);
+    assert_int_equal(core[core_id].pstate[pstate_index].avg_power_mW, 11);
+
+    uint16_t test_latest_pwr_mW = 0;
+
+    uint32_t test_weighted_previous_average = 0;
+    uint32_t test_weighted_latest_value = 0;
+    uint32_t test_new_avg_power_mW = 0;
+
+    for (uint8_t i = 0; i < 10; i++)
+    {
+        core[core_id].num_pwr_samples++;
+        core_pwr_samples_accumulation_mW[core_id] += 10;
+        core[core_id].pstate[pstate_index].residency_uS += 100;
+        test_latest_pwr_mW = (core_pwr_samples_accumulation_mW[core_id] / core[core_id].num_pwr_samples);
+        time_stamp_uS += 10;
+
+        test_weighted_previous_average =
+            core[core_id].pstate[pstate_index].avg_power_mW * (core[core_id].num_pwr_samples - 1);
+        test_weighted_latest_value = test_latest_pwr_mW;
+        test_new_avg_power_mW = (test_weighted_previous_average + test_weighted_latest_value) / core[core_id].num_pwr_samples;
+
+        tlm_update_pstate(core_id, time_stamp_uS);
+
+        assert_int_equal(core[core_id].pstate[pstate_index].latest_value_mW, test_latest_pwr_mW);
+
+        assert_int_equal(core[core_id].pstate[pstate_index].avg_power_mW, test_new_avg_power_mW);
+    }
 }
 // Unit test function
 TEST_FUNCTION(test_tlm_update_throttling, test_setup, test_teardown)

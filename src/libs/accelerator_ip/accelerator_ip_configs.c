@@ -102,13 +102,23 @@ typedef struct
 Silibs*/
 static DEFAULT_INSTANCE_SDM_MEM_INIT_CFG_T(sdm_mem_init);
 
-static sdm_ecc_dis_init_cfg_t sdm_ecc_dis_init = DEFAULT_SDM_ECC_DIS_INIT_CFG_T;
+static sdm_ecc_dis_init_cfg_t sdm_ecc_dis_init = {
+    .lstrg_dis_ecc_chk = false,
+    .bpe_dis_ecc_chk = false,
+    .atc_dis_ecc_chk = false,
+    .dct_dis_ecc_chk = false,
+    .armap_dis_parity_chk = false,
+    .fab_dis_ecc_chk = false,
+    .coproc_dis_ecc_chk = false,
+    .bpe_dis_parity_chk = false,
+};
+
 static sdm_pre_pcie_cfg_t sdmss_pre_pcie_cfg = DEFAULT_SDM_PRE_PCIE_CFG_T;
 /* TODO: ECC to be enabled: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1738671 */
 static sdm_emcpu_init_cfg_t sdmss_sdm_emcpu_init_cfg = {.release_m7_halt = false,
                                                         .initvtor_byte_addr = DIE0_SDMSS_INSTANCE0_INT_VECTOR,
-                                                        .enable_itcm_ecc = false,
-                                                        .enable_dtcm_ecc = false};
+                                                        .enable_itcm_ecc = true,
+                                                        .enable_dtcm_ecc = true};
 
 static sdmss_init_knobs_t sdmss_ss_cfg = DEFAULT_SDMSS_INIT_KNOBS_T;
 
@@ -118,8 +128,8 @@ static sdm_pre_pcie_cfg_t cdedss_pre_pcie_cfg = DEFAULT_SDM_PRE_PCIE_CFG_T;
 
 static sdm_emcpu_init_cfg_t cdedss_sdm_emcpu_init_cfg = {.release_m7_halt = false,
                                                          .initvtor_byte_addr = DIE0_CDEDSS_INSTANCE0_INT_VECTOR,
-                                                         .enable_itcm_ecc = false,
-                                                         .enable_dtcm_ecc = false};
+                                                         .enable_itcm_ecc = true,
+                                                         .enable_dtcm_ecc = true};
 
 static cdedss_init_knobs_t cdedss_ss_cfg = DEFAULT_CDEDSS_INIT_KNOBS_T;
 

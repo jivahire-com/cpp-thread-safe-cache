@@ -41,6 +41,9 @@ target_link_libraries(
             ms::driver::textio::pl011
             ms::vectors::cortex_m7
             ms::lib::runtime_init::mcp
+            ms::lib::boot_status
+            ms::lib::hsp_firmware_headers
+            ms::lib::system_info
             fwlib.lib.init
             fwlib.lib.utils
 )

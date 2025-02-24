@@ -31,6 +31,7 @@ target_link_libraries(
     fwlib.service.iccBase
     ms::boot_loader::interface
     ms::cmsis::interface
+    ms::lib::boot_status
     ms::lib::hsp_firmware_headers
     ms::lib::system_info
     ms::lib::zlib

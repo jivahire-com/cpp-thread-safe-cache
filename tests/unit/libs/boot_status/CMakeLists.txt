@@ -1,7 +1,7 @@
-set(TARGET system_info.test)
+set(TARGET boot_status.test)
 
 set(SOURCES
-    test_system_info.cpp
+    test_boot_status.cpp
 )
 
 # Compile test
@@ -12,11 +12,9 @@ target_link_libraries(${TARGET}
     PRIVATE
         fwlib.service.iccBase
         ms::cmocka::testrunner
+        ms::lib::boot_status
         ms::lib::hsp_firmware_headers
-        ms::lib::register_headers
         ms::lib::system_info
-        silibs::kng_silibs_platform
-        silibs::platform
 )
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
@@ -27,6 +25,11 @@ coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
 mock_target(${TARGET}
-   fpfw_icc_base_send_recv_sync
-   mmio_read32
+    fpfw_icc_base_send_sync
+    fpfw_icc_base_send
+    system_info_is_hsp_present
+    system_info_is_init_complete
+    idsw_get_cpu_type
+    FpFwLockRelease
+    FpFwLockAcquire
 ) 

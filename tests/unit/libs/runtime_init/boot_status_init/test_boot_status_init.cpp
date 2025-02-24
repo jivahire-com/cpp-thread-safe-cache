@@ -3,8 +3,8 @@
 //
 
 /**
- * @file test_warm_start_init.cpp
- * warm start init tests
+ * @file test_boot_status_init.cpp
+ * boot status init tests
  */
 
 /*------------- Includes -----------------*/
@@ -24,12 +24,12 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 
-extern fpfw_init_component_t _fpfw_component_sysinfo;
+extern fpfw_init_component_t _fpfw_component_boot_stat;
 /*------------- Functions ----------------*/
 //
 // Mocks
 //
-void __wrap_system_info_init(fpfw_icc_base_ctx_t* icc_base_ctx)
+void __wrap_boot_status_init(fpfw_icc_base_ctx_t* icc_base_ctx)
 {
     check_expected_ptr(icc_base_ctx);
     function_called();
@@ -44,7 +44,7 @@ void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
 //
 // Tests
 //
-TEST_FUNCTION(test_system_info_init, nullptr, nullptr)
+TEST_FUNCTION(test_boot_status_init, nullptr, nullptr)
 {
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
@@ -52,10 +52,10 @@ TEST_FUNCTION(test_system_info_init, nullptr, nullptr)
     // Set up expectations
     will_return(__wrap_fpfw_init_get_handle, dummy_icc_hspmbx_ctx);
     expect_function_call(__wrap_fpfw_init_get_handle);
-    expect_value(__wrap_system_info_init, icc_base_ctx, dummy_icc_hspmbx_ctx);
-    expect_function_call(__wrap_system_info_init);
+    expect_value(__wrap_boot_status_init, icc_base_ctx, dummy_icc_hspmbx_ctx);
+    expect_function_call(__wrap_boot_status_init);
 
     // Call API under test
-    _fpfw_component_sysinfo.init_fn();
+    _fpfw_component_boot_stat.init_fn();
 }
 }

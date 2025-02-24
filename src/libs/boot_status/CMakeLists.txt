@@ -1,22 +1,19 @@
-set(TARGET kng.lib.system_info)
+set(TARGET kng.lib.boot_status)
 
 add_library(${TARGET}
     STATIC
-        system_info.c
+        boot_status.c
 )
 
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.dfwk
-        ms::lib::register_headers
         ms::lib::hsp_firmware_headers
         ms::lib::crash_dump
-        silibs::kng_silibs_platform
-        silibs::platform
+        ms::lib::system_info
     PUBLIC
         fwlib.service.iccBase
         silibs::idsw_kng
-        silibs::platform
 )
 
 target_include_directories(${TARGET}
@@ -28,4 +25,4 @@ lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})
 
-add_library(ms::lib::system_info ALIAS ${TARGET})
+add_library(ms::lib::boot_status ALIAS ${TARGET})

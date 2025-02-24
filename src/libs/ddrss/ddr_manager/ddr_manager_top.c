@@ -220,4 +220,5 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
         tx_timer_deactivate((TX_TIMER*)&pddr_service_ctx->ddr_polling_timer);
         DDR_MANAGER_ET_WARN(DDR_MANAGER_ET_TYPE_PLATFORM_NOT_SUPPORT_I3C_POLLING, ET_NOPARAM);
     }
+    DDR_LOG_CRIT("DDR init, die_num: [%u] Done\n", pconfig->thread_config.die_number);
 }

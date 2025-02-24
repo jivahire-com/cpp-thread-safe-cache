@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         fwlib.platform.dfwkhost.threadx
         ms::client_interface::startup_shutdown
         ms::cmocka::testrunner
+        ms::lib::boot_status
         ms::lib::threadx
         ms::service::scp_startup_shutdown
         silibs::atu

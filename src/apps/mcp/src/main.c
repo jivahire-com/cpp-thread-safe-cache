@@ -10,11 +10,14 @@
 /*------------- Includes -----------------*/
 
 #include <FpFwUtils.h>
+#include <assert.h>
+#include <boot_status.h> // for boot_status_notify
 #include <fpfw_init.h>
 #include <mcp_events.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <system_info.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -100,6 +103,9 @@ void main_thread(ULONG thread_input)
     FPFW_UNUSED(thread_input);
 
     printf("\nHello World - MCP!\n");
+    system_info_set_init_complete();
+    fpfw_status_t status = boot_status_notify(BOOT_STATUS_CODE_MCP_OK);
+    assert(status == FPFW_STATUS_SUCCESS);
 
     // Do nothing
     uint32_t rtos_ticks = 0;

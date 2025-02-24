@@ -13,6 +13,7 @@
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
 #include <idsw.h>                 // for idsw_get_platform_sdv
 #include <idsw_kng.h>             // for idsw_get_platform_sdv
+#include <kingsgate_hsp_mailbox_commands.h>
 #define __NO_CSR_TYPEDEFS__
 #include <scp_exp_top_regs.h>
 #include <scp_top_regs.h>
@@ -29,6 +30,7 @@
 /*-- Declarations (Statics and globals) --*/
 static bool is_hsp_present = false;
 static bool is_warm_start = false;
+static bool is_runtime = false;
 static uint8_t board_id = 0xFF;
 static fpfw_icc_base_ctx_t* icc_ctx = NULL;
 static hsp_security_state_t security_state = HSP_SECURITY_STATE_UNKNOWN;
@@ -77,6 +79,16 @@ bool system_info_is_hsp_present()
 bool system_info_is_warm_start()
 {
     return is_warm_start;
+}
+
+bool system_info_is_init_complete()
+{
+    return is_runtime;
+}
+
+void system_info_set_init_complete()
+{
+    is_runtime = true;
 }
 
 void system_info_init(fpfw_icc_base_ctx_t* icc_base_ctx)

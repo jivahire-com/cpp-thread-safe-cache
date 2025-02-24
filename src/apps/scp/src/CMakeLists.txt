@@ -44,6 +44,7 @@ target_link_libraries(
             ms::lib::runtime_init::scp
             fwlib.lib.init
             fwlib.lib.utils
+            ms::lib::system_info
 )
 
 target_include_directories(

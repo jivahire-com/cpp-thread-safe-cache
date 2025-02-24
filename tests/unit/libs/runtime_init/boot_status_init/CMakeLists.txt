@@ -1,19 +1,26 @@
-set(TARGET pex_rng.test)
+set(TARGET boot_status_init.test)
 
 set(SOURCES
-    test_pex_rng.cpp
+    test_boot_status_init.cpp
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/boot_status_init.c
 )
 
 # Compile test
 add_executable(${TARGET} ${SOURCES})
 
+target_compile_definitions(${TARGET} PRIVATE UNIT_TEST)
+
+target_include_directories(${TARGET}
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/libs/system_info/inc
+)
+
 target_link_libraries(${TARGET}
     PRIVATE
+        fwlib.lib.init
+        fwlib.lib.utils
+        ms::lib::boot_status
         ms::cmocka::testrunner
-        ms::lib::pex_rng
-        ms::lib::system_info
-        ms::lib::register_headers
-        silibs::crypto::rng
 )
 
 # Generic ports implmented within this project
@@ -26,6 +33,6 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    FpFwAssert
-    rng_enable_r
+    boot_status_init
+    fpfw_init_get_handle
 )

@@ -21,10 +21,10 @@
     #include <mcp_top_regs.h>
     #include <scp_top_regs.h>
 #endif
-#include <boot_status_codes.h> // for _boot_status_code_t, boot_status_code_t
-#include <stdbool.h>           // for false, bool, true
-#include <stddef.h>            // for NULL
-#include <stdint.h>            // for uint32_t
+#include <boot_status.h> // for _boot_status_code_t, boot_status_code_t
+#include <stdbool.h>     // for false, bool, true
+#include <stddef.h>      // for NULL
+#include <stdint.h>      // for uint32_t
 #include <system_info.h>
 #include <unpack_image.h> // for unpack_image
 
@@ -224,31 +224,31 @@ void* load_image(kingsgate_boot_config_t* boot_config)
 
     if (boot_config->data_src_base == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else if (boot_config->data_src_end <= boot_config->data_src_base)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else if (boot_config->itc_ram_base == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else if (boot_config->itc_ram_size == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else if (boot_config->dtc_ram_base == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else if (boot_config->dtc_ram_size == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else if (boot_config->boot_meta_base == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else
     {
@@ -294,7 +294,7 @@ void* load_image(kingsgate_boot_config_t* boot_config)
     {
         // Unpack image mainly fails due to size mismatch or decompress failure. However no status code
         // for decompress failure.
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
         goto load_image_failed;
     }
 
@@ -308,7 +308,7 @@ load_image_failed:
 
 hsp_send_failed:
     // There is a boot status for this , but there is no way to send this out
-    boot_status = is_scp ? BOOT_STATUS_CODE_SCP_CONFIG_ERROR : BOOT_STATUS_CODE_MCP_CONFIG_ERROR;
+    boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     (void)boot_status;
     return NULL;
 }

@@ -8,7 +8,7 @@
  */
 
 /*----------- Nested includes ------------*/
-#include <boot_status_codes.h>
+#include <boot_status.h>
 #include <stdbool.h>
 #include <stdint.h>
 

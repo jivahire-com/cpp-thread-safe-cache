@@ -55,12 +55,26 @@ bool system_info_is_hsp_present();
 bool system_info_is_warm_start();
 
 /**
+ * @brief Checks if the all the core initializations are complete
+ * and main application can start.
+ * @return true if the current state of the system is runtime ready, false otherwise.
+ */
+bool system_info_is_init_complete();
+
+/**
  * @brief Caches the system information.
  *
  * @param icc_base_ctx The ICC base context.
  *
  */
 void system_info_init(fpfw_icc_base_ctx_t* icc_base_ctx);
+
+/**
+ * @brief Sets flag to indicate system is in runtime ready state.
+ * Must be 1st thing to be called in main.
+ * @note Post this, Async requests can be raised.
+ */
+void system_info_set_init_complete();
 
 /**
  * @brief Retrieves the platform ID.

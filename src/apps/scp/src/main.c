@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <system_info.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -100,6 +101,7 @@ void main_thread(ULONG thread_input)
     FPFW_UNUSED(thread_input);
 
     printf("\nHello World - SCP!\n");
+    system_info_set_init_complete();
 
     uint32_t rtos_ticks = 0;
     while (true)

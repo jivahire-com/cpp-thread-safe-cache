@@ -20,6 +20,7 @@ target_link_libraries(${TARGET}
     fwlib.lib.mboxPrimitives
     ms::cmocka::testrunner
     ms::boot_loader::interface
+    ms::lib::boot_status
     ms::lib::hsp_firmware_headers
     ms::lib::system_info
     ms::lib::zlib

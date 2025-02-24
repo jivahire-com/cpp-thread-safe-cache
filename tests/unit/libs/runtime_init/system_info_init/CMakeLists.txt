@@ -18,9 +18,13 @@ target_include_directories(${TARGET}
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.init
+        fwlib.lib.utils
         ms::lib::system_info
         ms::cmocka::testrunner
 )
+
+# Generic ports implmented within this project
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
 lint_target(${TARGET})
 format_target(${TARGET})
@@ -30,4 +34,5 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     system_info_init
+    fpfw_init_get_handle
 )

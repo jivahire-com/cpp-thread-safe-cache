@@ -16,6 +16,7 @@ add_library(${TARGET}
         avs_scp_init.c
         avs_scp_cli_init.c
         build_info_cli_init.c
+        boot_status_init.c
         cfg_mgr_init.c
         cli_accel_intr_init.c
         cli_crash_dump_init.c
@@ -97,6 +98,7 @@ target_link_libraries(
         ms::lib::interface::in_band_telemetry_ddr
         ms::lib::accelerator_ip
         ms::lib::build_info_cli
+        ms::lib::boot_status
         ms::lib::cli_accel_int
         ms::lib::config_manager
         ms::lib::config_manager::cli
@@ -234,6 +236,7 @@ add_library(${TARGET}
         accel_intr_client_init.c
         accel_intr_service_init.c
         atu_init.c
+        boot_status_init.c
         cfg_mgr_init.c
         cli_crash_dump_init.c
         cli_init.c
@@ -286,6 +289,7 @@ target_link_libraries(
         ms::lib::interface::in_band_telemetry_ddr
         ms::lib::accel_intr
         ms::lib::accelerator_ip
+        ms::lib::boot_status
         ms::lib::config_manager
         ms::lib::config_manager::cli
         ms::lib::cortex_m7::nvic

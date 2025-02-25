@@ -1,0 +1,103 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+/**
+ * @file health_monitor.h
+ * Public header file for supporting health monitoring
+ */
+#pragma once
+
+/*------------- Includes -----------------*/
+#include <cper.h>
+#include <fpfw_icc_base.h>  
+#include <kng_error.h>
+#include <health_monitor_temporary_ras.h>
+#include <health_monitor_temporary_einj_structs.h>
+#include <semaphore_lib.h>
+
+/*-- Symbolic Constant Macros (defines) --*/
+#define ERROR_INJECTION_PAYLOAD_VERSION ((1 << 24) /* Major version */ | \
+                                         (0 << 16) /* Minor version */ | \
+                                         (0 << 8)  /* Patch version */ | \
+                                         (0))      /* Build number */
+#define HM_GHES_VERSION_V2 10
+#define HM_ERROR_RECORD_COUNT 1
+#define HM_ERROR_SECTION_COUNT 2
+
+/*------------- Typedefs -----------------*/
+typedef acpi_einj_cmd_status_t (*hm_error_injection_cb_t)(ras_einj_info_t *p_information_base, void *error_domain_context);
+
+typedef enum
+{
+    HM_INTERCORE_SCP,
+    HM_INTERCORE_APCORE,
+    HM_INTERCORE_MCP,
+    HM_INTERCORE_HSP,
+    HM_INTERCORE_SDM,
+    HM_INTERCORE_CDED,
+    HM_INTERCORE_TYPE_MAX
+} hm_intercore_type_t;
+
+typedef enum
+{
+    HM_ERROR_REPORT_GPIO,
+    HM_ERROR_REPORT_INTERRUPT,
+    HM_ERROR_REPORT_VARSVC,
+} hm_error_report_type_t;
+
+typedef struct {
+    // GHES table related
+    acpi_ghes_t* mscp_ghes_base;
+    ras_einj_info_t* mscp_error_injection_addr_base;
+    uint32_t* mscp_ghes_error_record_addr_base;
+    uint32_t* mscp_ghes_error_record_addr_table_base;
+    uint64_t* mscp_ghes_ack_addr_table_base;
+    uint32_t mscp_ghes_base_apcore_offset;
+    // ICC context for intercore communication
+    fpfw_icc_base_ctx_t *icc_ctx[HM_INTERCORE_TYPE_MAX];
+    // Semaphore related
+    SEMAPHORE_ID semaphore_id;
+    uint32_t semaphore_key;
+    // Multi-die related
+    bool is_primary;
+} hm_config_t;
+
+typedef struct {
+    uint16_t error_domain_idx;
+    bool valid_fru_id;
+    guid_t fru_id;
+    bool valid_fru_str;
+    char fru_text[ACPI_FRU_TEXT_LENGTH];
+    hm_error_injection_cb_t injection_cb;
+    void *err_inject_ctx;
+    bool activated;
+} hm_error_domain_info_t;
+
+typedef struct {
+    uint16_t error_domain_idx;
+    acpi_error_severity_t err_severity;
+    acpi_cper_section_t cper_section;
+    uint32_t section_size;
+} hm_error_record_t;
+
+/*-------- Function Prototypes -----------*/
+hm_config_t* get_hm_config();
+acpi_einj_cmd_status_t hm_inject_error(void);
+acpi_einj_cmd_status_t jumoon_test(void);
+
+void hm_register_error_domain(uint16_t error_domain_idx,
+                              const guid_t* error_domain_guid,
+                              const char* error_domain_name,
+                              hm_error_injection_cb_t err_inject_cb,
+                              void* err_inject_ctx);
+
+void hm_submit_cper(uint16_t error_domain_idx, 
+                    acpi_error_severity_t err_severity, 
+                    void* err_record_section, 
+                    uint32_t err_record_section_size);
+
+void hm_pre_ddr_init(hm_config_t* hm_config);
+void hm_post_ddr_init();
+void hm_post_intercore_init(hm_intercore_type_t intercore_type, fpfw_icc_base_ctx_t* icc_ctx);
+

@@ -41,3 +41,5 @@ add_subdirectory(warm_start_init)
 add_subdirectory(warm_start_cli_init)
 add_subdirectory(atu_init)
 add_subdirectory(mcp_mpu_init)
+add_subdirectory(health_monitor_init)
+

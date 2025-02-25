@@ -67,7 +67,7 @@ add_library(${TARGET}
         variable_services_cli_init.c
         warm_start_cli_init.c
         warm_start_init.c
-
+        health_monitor_init.c
 )
 
 target_link_libraries(
@@ -162,6 +162,8 @@ target_link_libraries(
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
         ms::service::sys_info::cli
+        ms::service::health_monitor
+        ms::service::health_monitor::cli
         silibs::avs
         silibs::common::lib_uart_pl011
         silibs::crypto::rng

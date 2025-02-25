@@ -174,7 +174,7 @@ static bool handle_cded_cp_level3_intr(uintptr_t coproc_apb_addr, const cded_cp_
     // Read all ISRs at level 3
     for (i = 0; i < cded_cp_l2_irq_data->l3_irq_data_count; i++)
     {
-        isr[i] = MMIO_READ32(coproc_apb_addr + cded_int_get_category_status_reg_addr(cat_id[i], coproc_apb_addr));
+        isr[i] = MMIO_READ32(cded_int_get_category_status_reg_addr(cat_id[i], coproc_apb_addr));
         if (isr[i])
         {
             // Non-zero ISR which means that this ISR is not spurious
@@ -371,8 +371,8 @@ uint32_t accel_intr_cded_cp_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_E
         // Log Level 1 interrupt bit
         FPFW_ET_LOG(AccelIntr, IRQnum, bit_index);
 
-        l2_status_reg = MMIO_READ32(coproc_apb_addr + cded_int_get_category_status_reg_addr(CDED_CATEGORY_ID_CDED_CFG_FATAL,
-                                                                                            coproc_apb_addr));
+        l2_status_reg =
+            MMIO_READ32(cded_int_get_category_status_reg_addr(CDED_CATEGORY_ID_CDED_CFG_FATAL, coproc_apb_addr));
 
         // Check if level 2 interrupt status register suggests spurious interrupt
         if (l2_status_reg)

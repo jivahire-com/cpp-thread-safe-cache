@@ -688,7 +688,7 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__pass2, NULL, NULL)
         cded_int_get_category_status_reg_addr(CDED_CATEGORY_ID_CDED_CFG_FATAL, coproc_apb_addr);
     mmio_set_mock_data(0x12345678, 1 << SDM_EXT_CP_FATAL_ERR_INTR);
     mmio_set_mock_data(0xABCDEF12, 0x0);
-    mmio_set_mock_data(coproc_apb_addr + cded_cfg_fatal_offset, 1 << IC_XB_PERR);
+    mmio_set_mock_data(cded_cfg_fatal_offset, 1 << IC_XB_PERR);
 
     set_int_status(false);
 
@@ -729,8 +729,8 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__pass3, NULL, NULL)
         cded_int_get_category_status_reg_addr(CDED_CATEGORY_ID_COMPRESSOR0_FATAL, coproc_apb_addr);
     mmio_set_mock_data(0x12345678, 1 << SDM_EXT_CP_FATAL_ERR_INTR);
     mmio_set_mock_data(0xABCDEF12, 0x0);
-    mmio_set_mock_data(coproc_apb_addr + cded_cfg_fatal_offset, 1 << CCMP_FATAL_INT);
-    mmio_set_mock_data(coproc_apb_addr + cded_cfg_ccmp0_offset, 1 << CCMP_IB_PERR);
+    mmio_set_mock_data(cded_cfg_fatal_offset, 1 << CCMP_FATAL_INT);
+    mmio_set_mock_data(cded_cfg_ccmp0_offset, 1 << CCMP_IB_PERR);
 
     set_int_status(false);
 
@@ -759,8 +759,8 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__pass4, NULL, NULL)
         cded_int_get_category_status_reg_addr(CDED_CATEGORY_ID_DECOMPRESSOR0_FATAL, coproc_apb_addr);
     mmio_set_mock_data(0x12345678, 1 << SDM_EXT_CP_FATAL_ERR_INTR);
     mmio_set_mock_data(0xABCDEF12, 0x0);
-    mmio_set_mock_data(coproc_apb_addr + cded_cfg_fatal_offset, 1 << DCMP_FATAL_INT);
-    mmio_set_mock_data(coproc_apb_addr + cded_cfg_dcmp0_offset, 1 << DCMP_IB_PERR);
+    mmio_set_mock_data(cded_cfg_fatal_offset, 1 << DCMP_FATAL_INT);
+    mmio_set_mock_data(cded_cfg_dcmp0_offset, 1 << DCMP_IB_PERR);
 
     set_int_status(false);
 
@@ -788,8 +788,8 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__pass5, NULL, NULL)
     uint32_t cded_cfg_aes0_offset = cded_int_get_category_status_reg_addr(CDED_CATEGORY_ID_AES_FATAL, coproc_apb_addr);
     mmio_set_mock_data(0x12345678, 1 << SDM_EXT_CP_FATAL_ERR_INTR);
     mmio_set_mock_data(0xABCDEF12, 0x0);
-    mmio_set_mock_data(coproc_apb_addr + cded_cfg_fatal_offset, 1 << AES_FATAL_INT);
-    mmio_set_mock_data(coproc_apb_addr + cded_cfg_aes0_offset, 1 << CDED_AES_PL_PERR);
+    mmio_set_mock_data(cded_cfg_fatal_offset, 1 << AES_FATAL_INT);
+    mmio_set_mock_data(cded_cfg_aes0_offset, 1 << CDED_AES_PL_PERR);
 
     set_int_status(false);
 
@@ -817,7 +817,7 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__fail1, NULL, NULL)
         cded_int_get_category_status_reg_addr(CDED_CATEGORY_ID_CDED_CFG_FATAL, coproc_apb_addr);
     mmio_set_mock_data(0x12345678, 1 << SDM_EXT_CP_FATAL_ERR_INTR);
     mmio_set_mock_data(0xABCDEF12, 0x0);
-    mmio_set_mock_data(coproc_apb_addr + cded_cfg_fatal_offset, 0x0);
+    mmio_set_mock_data(cded_cfg_fatal_offset, 0x0);
 
     set_int_status(false);
 
@@ -854,8 +854,8 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__fail2, NULL, NULL)
         cded_int_get_category_status_reg_addr(CDED_CATEGORY_ID_COMPRESSOR0_FATAL, coproc_apb_addr);
     mmio_set_mock_data(0x12345678, 1 << SDM_EXT_CP_FATAL_ERR_INTR);
     mmio_set_mock_data(0xABCDEF12, 0x0);
-    mmio_set_mock_data(coproc_apb_addr + cded_cfg_fatal_offset, 1 << CCMP_FATAL_INT);
-    mmio_set_mock_data(coproc_apb_addr + cded_cfg_ccmp0_offset, 0x0);
+    mmio_set_mock_data(cded_cfg_fatal_offset, 1 << CCMP_FATAL_INT);
+    mmio_set_mock_data(cded_cfg_ccmp0_offset, 0x0);
 
     set_int_status(false);
 
@@ -896,8 +896,8 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__fail3, NULL, NULL)
         cded_int_get_category_status_reg_addr(CDED_CATEGORY_ID_DECOMPRESSOR0_FATAL, coproc_apb_addr);
     mmio_set_mock_data(0x12345678, 1 << SDM_EXT_CP_FATAL_ERR_INTR);
     mmio_set_mock_data(0xABCDEF12, 0x0);
-    mmio_set_mock_data(coproc_apb_addr + cded_cfg_fatal_offset, 1 << DCMP_FATAL_INT);
-    mmio_set_mock_data(coproc_apb_addr + cded_cfg_dcmp0_offset, 0x0);
+    mmio_set_mock_data(cded_cfg_fatal_offset, 1 << DCMP_FATAL_INT);
+    mmio_set_mock_data(cded_cfg_dcmp0_offset, 0x0);
 
     set_int_status(false);
 
@@ -937,8 +937,8 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__fail4, NULL, NULL)
     uint32_t cded_cfg_aes_offset = cded_int_get_category_status_reg_addr(CDED_CATEGORY_ID_AES_FATAL, coproc_apb_addr);
     mmio_set_mock_data(0x12345678, 1 << SDM_EXT_CP_FATAL_ERR_INTR);
     mmio_set_mock_data(0xABCDEF12, 0x0);
-    mmio_set_mock_data(coproc_apb_addr + cded_cfg_fatal_offset, 1 << AES_FATAL_INT);
-    mmio_set_mock_data(coproc_apb_addr + cded_cfg_aes_offset, 0x0);
+    mmio_set_mock_data(cded_cfg_fatal_offset, 1 << AES_FATAL_INT);
+    mmio_set_mock_data(cded_cfg_aes_offset, 0x0);
 
     set_int_status(false);
 

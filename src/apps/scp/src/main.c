@@ -18,11 +18,10 @@
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define KB                  (1024)
-#define STACK_MEM_POOL_SIZE (32 * KB)
-#define MAIN_STACK_SIZE     (4 * KB)
-#define DFWK_STACK_SIZE     (4 * KB)
-#define SLEEP_TICKS         (2)
+#define KB              (1024)
+#define MAIN_STACK_SIZE (TX_MINIMUM_STACK) + (1 * KB)
+#define DFWK_STACK_SIZE (4 * KB)
+#define SLEEP_TICKS     (2)
 /*--------- Typedefs ----------*/
 
 /*--------- Function Prototypes ----------*/
@@ -30,11 +29,9 @@
 void main_thread(ULONG thread_input);
 
 /*-- Declarations (Statics and globals) --*/
-static uint8_t s_stack_pool_memory[STACK_MEM_POOL_SIZE];
-static TX_BYTE_POOL s_stack_mem_pool_ctrl;
+static uint8_t s_main_stack[MAIN_STACK_SIZE];
 
 static TX_THREAD s_main_thread;
-static uint8_t* s_main_stack;
 
 extern fpfw_init_component_t _data_fpfw_init_start;
 extern fpfw_init_component_t _data_fpfw_init_end;
@@ -73,11 +70,6 @@ void tx_application_define(void* firstUnusedMemory)
     FPFW_UNUSED(firstUnusedMemory);
 
     /* ThreadX Component Utilization */
-
-    /* Create a byte memory pool from which to allocate the thread stacks.  */
-    (void)tx_byte_pool_create(&s_stack_mem_pool_ctrl, "stack byte pool", &s_stack_pool_memory, STACK_MEM_POOL_SIZE);
-
-    (void)tx_byte_allocate(&s_stack_mem_pool_ctrl, (VOID**)&s_main_stack, MAIN_STACK_SIZE, TX_NO_WAIT);
 
     // We need to do some initialization on a thread in order to allow blocking during the initialization routine
     (void)tx_thread_create(&s_main_thread,

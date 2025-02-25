@@ -825,11 +825,11 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
             }
 
             // make desired CPPC request to match expected nominal perf and base perf
-            dvfs_ns_set_cppc_desired2(cluster_pex_base_addr,
-                                      dvfs_get_cppc_from_pstate(p_runconfig->derived.pnominal),
-                                      dvfs_get_cppc_from_pstate(p_runconfig->derived.pnominal),
-                                      0,
-                                      0);
+            dvfs_ns_set_cppc_desired_perf(cluster_pex_base_addr,
+                                          dvfs_get_cppc_from_pstate(p_runconfig->derived.pnominal),
+                                          dvfs_get_cppc_from_pstate(p_runconfig->derived.pnominal),
+                                          0,
+                                          0);
         }
     }
 }
@@ -1013,7 +1013,7 @@ void power_hw_capture_cppc_state(power_hw_update_cb_t p_update_cb)
         uint8_t throttle_pri;
         uint8_t boost_pri;
         int status =
-            dvfs_ns_get_cppc_desired2(cluster_pex_base_addr, &cppc_desired_perf, &cppc_base_perf, &throttle_pri, &boost_pri);
+            dvfs_ns_get_cppc_desired_perf(cluster_pex_base_addr, &cppc_desired_perf, &cppc_base_perf, &throttle_pri, &boost_pri);
         // only real failure should be invalid pointers
         BUG_ASSERT_PARAM(status == DVFS_SUCCESS, status, 0);
         // call update callback with detail from this core's CPPC detail

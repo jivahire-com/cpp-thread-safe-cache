@@ -78,11 +78,11 @@ extern avs_pwr_request_context_t pwr_avs_request[MAX_AVS_INST];
 //
 // Mocks
 //
-void __wrap_dvfs_ns_set_cppc_desired2(const uintptr_t cluster_pex_base_addr,
-                                      uint8_t cppc_desired,
-                                      uint8_t cppc_base_perf,
-                                      uint8_t throttle_pri,
-                                      uint8_t boost_pri)
+void __wrap_dvfs_ns_set_cppc_desired_perf(const uintptr_t cluster_pex_base_addr,
+                                          uint8_t cppc_desired,
+                                          uint8_t cppc_base_perf,
+                                          uint8_t throttle_pri,
+                                          uint8_t boost_pri)
 {
     check_expected(cluster_pex_base_addr);
     check_expected(cppc_desired);
@@ -582,17 +582,17 @@ void init_core_base_expect()
     expect_any_count(__wrap_wait_for_FLLCalDone, cluster_pex_base_addr, TEST_CORE_COUNT);
     will_return_always(__wrap_wait_for_FLLCalDone, DVFS_SUCCESS);
 
-    expect_any_count(__wrap_dvfs_ns_set_cppc_desired2, cluster_pex_base_addr, TEST_CORE_COUNT);
-    expect_value_count(__wrap_dvfs_ns_set_cppc_desired2,
+    expect_any_count(__wrap_dvfs_ns_set_cppc_desired_perf, cluster_pex_base_addr, TEST_CORE_COUNT);
+    expect_value_count(__wrap_dvfs_ns_set_cppc_desired_perf,
                        cppc_desired,
                        dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL),
                        TEST_CORE_COUNT);
-    expect_value_count(__wrap_dvfs_ns_set_cppc_desired2,
+    expect_value_count(__wrap_dvfs_ns_set_cppc_desired_perf,
                        cppc_base_perf,
                        dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL),
                        TEST_CORE_COUNT);
-    expect_value_count(__wrap_dvfs_ns_set_cppc_desired2, throttle_pri, 0, TEST_CORE_COUNT);
-    expect_value_count(__wrap_dvfs_ns_set_cppc_desired2, boost_pri, 0, TEST_CORE_COUNT);
+    expect_value_count(__wrap_dvfs_ns_set_cppc_desired_perf, throttle_pri, 0, TEST_CORE_COUNT);
+    expect_value_count(__wrap_dvfs_ns_set_cppc_desired_perf, boost_pri, 0, TEST_CORE_COUNT);
 
     will_return_count(__wrap_dvfs_init, DVFS_SUCCESS, TEST_CORE_COUNT);
     will_return_count(__wrap_odcm_init, ODCM_SUCCESS, TEST_CORE_COUNT);
@@ -907,11 +907,11 @@ POWER_TEST(hwi_init_core__forced_pstate, setup, teardown)
     expect_any_count(__wrap_wait_for_FLLCalDone, cluster_pex_base_addr, 1);
     will_return_always(__wrap_wait_for_FLLCalDone, DVFS_SUCCESS);
 
-    expect_any(__wrap_dvfs_ns_set_cppc_desired2, cluster_pex_base_addr);
-    expect_value(__wrap_dvfs_ns_set_cppc_desired2, cppc_desired, dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL));
-    expect_value(__wrap_dvfs_ns_set_cppc_desired2, cppc_base_perf, dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL));
-    expect_value(__wrap_dvfs_ns_set_cppc_desired2, throttle_pri, 0);
-    expect_value(__wrap_dvfs_ns_set_cppc_desired2, boost_pri, 0);
+    expect_any(__wrap_dvfs_ns_set_cppc_desired_perf, cluster_pex_base_addr);
+    expect_value(__wrap_dvfs_ns_set_cppc_desired_perf, cppc_desired, dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL));
+    expect_value(__wrap_dvfs_ns_set_cppc_desired_perf, cppc_base_perf, dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL));
+    expect_value(__wrap_dvfs_ns_set_cppc_desired_perf, throttle_pri, 0);
+    expect_value(__wrap_dvfs_ns_set_cppc_desired_perf, boost_pri, 0);
 
     will_return_count(__wrap_dvfs_init, DVFS_SUCCESS, 1);
     will_return_count(__wrap_odcm_init, ODCM_SUCCESS, 1);
@@ -985,17 +985,17 @@ POWER_TEST(hwi_init_core__disabled_core, setup, teardown)
     expect_any_count(__wrap_wait_for_FLLCalDone, cluster_pex_base_addr, TEST_CORE_COUNT - 1);
     will_return_always(__wrap_wait_for_FLLCalDone, DVFS_SUCCESS);
 
-    expect_any_count(__wrap_dvfs_ns_set_cppc_desired2, cluster_pex_base_addr, TEST_CORE_COUNT - 1);
-    expect_value_count(__wrap_dvfs_ns_set_cppc_desired2,
+    expect_any_count(__wrap_dvfs_ns_set_cppc_desired_perf, cluster_pex_base_addr, TEST_CORE_COUNT - 1);
+    expect_value_count(__wrap_dvfs_ns_set_cppc_desired_perf,
                        cppc_desired,
                        dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL),
                        TEST_CORE_COUNT - 1);
-    expect_value_count(__wrap_dvfs_ns_set_cppc_desired2,
+    expect_value_count(__wrap_dvfs_ns_set_cppc_desired_perf,
                        cppc_base_perf,
                        dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL),
                        TEST_CORE_COUNT - 1);
-    expect_value_count(__wrap_dvfs_ns_set_cppc_desired2, throttle_pri, 0, TEST_CORE_COUNT - 1);
-    expect_value_count(__wrap_dvfs_ns_set_cppc_desired2, boost_pri, 0, TEST_CORE_COUNT - 1);
+    expect_value_count(__wrap_dvfs_ns_set_cppc_desired_perf, throttle_pri, 0, TEST_CORE_COUNT - 1);
+    expect_value_count(__wrap_dvfs_ns_set_cppc_desired_perf, boost_pri, 0, TEST_CORE_COUNT - 1);
 
     will_return_count(__wrap_dvfs_init, DVFS_SUCCESS, TEST_CORE_COUNT);
     will_return_count(__wrap_odcm_init, ODCM_SUCCESS, TEST_CORE_COUNT - 1);
@@ -1189,11 +1189,11 @@ POWER_TEST(hwi_init_core__fll_wait_fail, setup, teardown)
     expect_any_count(__wrap_wait_for_FLLCalDone, cluster_pex_base_addr, 1);
     will_return_always(__wrap_wait_for_FLLCalDone, DVFS_TIMEOUT);
 
-    expect_any(__wrap_dvfs_ns_set_cppc_desired2, cluster_pex_base_addr);
-    expect_value(__wrap_dvfs_ns_set_cppc_desired2, cppc_desired, dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL));
-    expect_value(__wrap_dvfs_ns_set_cppc_desired2, cppc_base_perf, dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL));
-    expect_value(__wrap_dvfs_ns_set_cppc_desired2, throttle_pri, 0);
-    expect_value(__wrap_dvfs_ns_set_cppc_desired2, boost_pri, 0);
+    expect_any(__wrap_dvfs_ns_set_cppc_desired_perf, cluster_pex_base_addr);
+    expect_value(__wrap_dvfs_ns_set_cppc_desired_perf, cppc_desired, dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL));
+    expect_value(__wrap_dvfs_ns_set_cppc_desired_perf, cppc_base_perf, dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL));
+    expect_value(__wrap_dvfs_ns_set_cppc_desired_perf, throttle_pri, 0);
+    expect_value(__wrap_dvfs_ns_set_cppc_desired_perf, boost_pri, 0);
 
     will_return_count(__wrap_dvfs_init, DVFS_SUCCESS, TEST_CORE_COUNT);
     will_return_count(__wrap_odcm_init, ODCM_SUCCESS, TEST_CORE_COUNT - 1);

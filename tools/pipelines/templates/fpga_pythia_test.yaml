@@ -71,7 +71,7 @@ jobs:
           buildId: ${{ parameters.build_id}}
           artifactName: 'drop_Build_Arm_EABI_AARCH_Debug_Build'
           downloadPath: '$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug'
- 
+
     # Setup the FPGA
     # TODO: Run OOB Reset
     - task: PowerShell@2

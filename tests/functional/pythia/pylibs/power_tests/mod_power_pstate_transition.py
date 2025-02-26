@@ -63,7 +63,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
         """
         self.log.info("Running Power module pstate transition test  . . .")
         self.dut.setup()
-    
+                
         core_com_channel=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
         core_com_channel.open()
         assert core_com_channel.is_open()

@@ -24,7 +24,6 @@ from kng_pythia_test_setup import KngPythiaTestSetup
 from pythia.tdk.common.connections.serial_connection import EmptySerialLinesError, SerialConnection
 
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
-
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
 class IntrExecCmd:
@@ -253,6 +252,9 @@ class accel_interrupt_test(EchoFallsBaseTest):
                 # Returning true since we don't want to block SVP pipelines
                 time.sleep(5) # Adding a sleep to avoid error during log folder creation by Pythia
                 return True
+            else:
+                self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
+                KngPythiaTestSetup.fpga_oob_reset(self.log)
 
             self.log.info("Generating test commands from JSON")
             interrupt_exec_dicts = self.__generate_exec_cmds()

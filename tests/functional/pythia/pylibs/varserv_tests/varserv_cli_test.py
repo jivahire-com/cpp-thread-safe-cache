@@ -62,7 +62,10 @@ class varserv_cli_test(EchoFallsBaseTest):
         """
         self.log.info("Running Variable Services CLI command Test. . .")
         self.dut.setup()
-
+        if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+            self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
+            KngPythiaTestSetup.fpga_oob_reset(self.log)
+            
         scp_channel=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
         # Open SCP channel
         scp_channel.open()

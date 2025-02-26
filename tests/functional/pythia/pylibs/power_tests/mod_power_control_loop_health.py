@@ -63,7 +63,7 @@ class mod_power_control_loop_health(EchoFallsBaseTest):
         """
         self.log.info("Running Power control loop health test  . . .")
         self.dut.setup()
-
+            
         core_com_channel=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
         core_com_channel.open()
         assert core_com_channel.is_open()

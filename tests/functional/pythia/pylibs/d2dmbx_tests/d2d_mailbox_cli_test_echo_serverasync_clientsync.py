@@ -14,7 +14,6 @@ from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
 
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
-
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
 class d2d_mailbox_cli_test_echo_serverasync_clientsync(EchoFallsBaseTest):
@@ -63,7 +62,10 @@ class d2d_mailbox_cli_test_echo_serverasync_clientsync(EchoFallsBaseTest):
         """
         self.log.info("Running D2D Mailbox CLI Echo command Test. . .")
         self.dut.setup()
-
+        if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+            self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
+            KngPythiaTestSetup.fpga_oob_reset(self.log)
+            
         core_com_die0_channel=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
         core_com_die1_channel=self.dut.mb.node_0.soc.secondary_die.scp.channel_manager.get_current_channel()
         

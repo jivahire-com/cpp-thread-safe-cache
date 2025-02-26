@@ -13,7 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs')
 
 from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
-
+from pythia.tdk.echofalls.constants.dut_types import DeviceType
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
 class configmgr_set_cli_test(EchoFallsBaseTest):
@@ -62,7 +62,10 @@ class configmgr_set_cli_test(EchoFallsBaseTest):
         """
         self.log.info("Running Config Manager CLI command Test. . .")
         self.dut.setup()
-
+        if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+            self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
+            KngPythiaTestSetup.fpga_oob_reset(self.log)
+            
         core_com_channel=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
         core_com_channel.open()
         assert core_com_channel.is_open()
@@ -81,7 +84,7 @@ class configmgr_set_cli_test(EchoFallsBaseTest):
         command="cfg_mgr"
         core_com_channel.write_line(write_string=command)
 
-        command="cfg_mgr_set uint8_test_knob 3"
+        command="cfg_mgr_set 256 3"
         self.log.info(f"Submitting SET command {command} . . .") 
         core_com_channel.write_line(write_string=command)
 
@@ -152,7 +155,7 @@ class configmgr_set_cli_test(EchoFallsBaseTest):
         last_value = None
         lines = data.splitlines()
         for i, line in enumerate(lines):
-            if "Primitive Data If Possible" in line:
+            if "Current Knob Value" in line:
                 # Check the next line for the value
                 if i + 1 < len(lines):
                     next_line = lines[i + 1].strip()

@@ -52,6 +52,7 @@ class cded_pipeline_init_test(EchoFallsBaseTest):
         self.dut.setup()
 
         if (self.dut.get_dut_type() == DeviceType.BIGFPGA):
+            KngPythiaTestSetup.fpga_oob_reset(self.log)
             KngPythiaTestSetup.reset_fpga(self.dut, self.log)
             time.sleep(30)
             exp_num_lines=1400

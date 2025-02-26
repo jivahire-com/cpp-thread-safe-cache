@@ -14,7 +14,6 @@ from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
 
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
-
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
 class largefifo_mailbox_cli_test_send_recv(EchoFallsBaseTest):
@@ -63,10 +62,14 @@ class largefifo_mailbox_cli_test_send_recv(EchoFallsBaseTest):
         """
         self.log.info("Running Large FIFO Mailbox CLI command Test. . .")
         scp_connection=self.dut.mb.node_0.soc.primary_die.scp.channel_manager
+        mcp_connection = self.dut.mb.node_0.soc.primary_die.mcp.channel_manager
         sdm_connection = self.dut.mb.node_0.soc.primary_die.sdm.channel_manager
 
         self.dut.setup()
-
+        if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+            self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
+            KngPythiaTestSetup.fpga_oob_reset(self.log)
+            
         if (self.dut.get_dut_type() == DeviceType.SVP):
             # TODO:  No Support. Pranjal to update status and its ADO reference
             self.log.info("TODO SVP Send Recv Tests")
@@ -75,12 +78,14 @@ class largefifo_mailbox_cli_test_send_recv(EchoFallsBaseTest):
             return True
          
         scp_channel = scp_connection.get_current_channel()
+        mcp_channel = mcp_connection.get_current_channel()
         sdm_channel = sdm_connection.get_current_channel()
         # Open SCP and SDM channels
         self.log.info("OPEN_CHANNEL")
-        result = self._open_channels(scp_channel, sdm_channel)
+        result = self._open_channels(scp_channel, sdm_channel, mcp_channel)
         if result is False:
             scp_channel.close()
+            mcp_channel.close()
             sdm_channel.close()
             self.test_notify(step="Open_Channels", msg="Test Fail", _is_error=True)
             self.dut.teardown()
@@ -88,11 +93,37 @@ class largefifo_mailbox_cli_test_send_recv(EchoFallsBaseTest):
             return False
         
         try:
-            self.log.info("Waiting for Heartbeat Msg")
+            self.log.info("Waiting for SCP Heartbeat Msg")
             scp_channel.read_until(key="ScpHeartBeat", timeout_seconds=1800)
         except Exception as e:
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
+            self.dut.teardown()
+            time.sleep(30)
+            return False
+
+        try:
+            self.log.info("Waiting for MCP Heartbeat Msg")
+            mcp_channel.read_until(key="McpHeartBeat", timeout_seconds=1800)
+        except Exception as e:
+            self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.mcp.channel_manager UART: {e}")
+            self.test_notify(step="McpHeartBeat", msg="Test Fail", _is_error=True)
+            self.dut.teardown()
+            time.sleep(30)
+            return False
+
+        # Execute AFM scripts to map SDM and CDED-SDM connections
+        self.log.info("Executing SDM AFM programming")
+        KngPythiaTestSetup.execute_accel_afm_seq(self.dut.mb.node_0.soc.primary_die.scp.debugger, 2, 2)
+        self.log.info("Executing SDM CDED AFM programming")
+        KngPythiaTestSetup.execute_accel_afm_seq(self.dut.mb.node_0.soc.primary_die.scp.debugger, 0, 2) 
+
+        try:
+            self.log.info("Waiting for SDM Heartbeat Msg")
+            sdm_channel.read_until(key="SdmHeartBeat", timeout_seconds=1800)
+        except Exception as e:
+            self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.sdm.channel_manager UART: {e}")
+            self.test_notify(step="SDMHeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             time.sleep(30)
             return False
@@ -106,6 +137,7 @@ class largefifo_mailbox_cli_test_send_recv(EchoFallsBaseTest):
             self._send_and_receive_commands(scp_channel, sdm_channel)
         except Exception as e:
             scp_channel.close()
+            mcp_channel.close()
             sdm_channel.close()
             self.test_notify(step="Large FIFO MBX SEND RECV Command", msg="Test Fail", _is_error=True)
             self.dut.teardown()
@@ -114,6 +146,7 @@ class largefifo_mailbox_cli_test_send_recv(EchoFallsBaseTest):
         
         # Close channels after completion
         scp_channel.close()
+        mcp_channel.close()
         sdm_channel.close()
         self.test_notify(step="Large FIFO MBX SEND RECV Command", msg="Test Done", _is_error=False)
         self.dut.teardown()

@@ -75,6 +75,9 @@ class fbc_sdm_cded_heart_beat_single_die(EchoFallsBaseTest):
         assert scp_connection is not None
 
         self.dut.setup()
+        if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+            self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
+            KngPythiaTestSetup.fpga_oob_reset(self.log)
         
         scp_channel = scp_connection.get_current_channel()
         scp_channel.open()

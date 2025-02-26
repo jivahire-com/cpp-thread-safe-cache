@@ -70,7 +70,10 @@ class mscp_heart_beat(EchoFallsBaseTest):
         assert mcp_connection is not None
 
         self.dut.setup()
-
+        if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+            self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
+            KngPythiaTestSetup.fpga_oob_reset(self.log)
+            
         scp_connection.get_current_channel().open()
         # If connection does not open then SVP didn't launch or FPGA system has a conflict booking. So teardown and return fail
         if not scp_connection.get_current_channel().is_open():

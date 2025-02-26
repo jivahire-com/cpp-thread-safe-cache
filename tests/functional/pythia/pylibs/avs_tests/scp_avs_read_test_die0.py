@@ -62,6 +62,9 @@ class scp_avs_read_test_die0(EchoFallsBaseTest):
         """
         self.log.info("Running AVS read tests on Die0  . . .")
         self.dut.setup()
+        if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+            self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
+            KngPythiaTestSetup.fpga_oob_reset(self.log)
       
         core_com_channel=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
         core_com_channel.open()

@@ -2,7 +2,7 @@
 
 """
 - Python-based Pythia 2.0 Test.
-- Test that checks for SDM virtual function memcpy completion from AP core0.
+-This module provides test case utilities for verifying the multiple functionality.
 """
 
 import sys, os
@@ -88,7 +88,18 @@ class APBaremetalTests(EchoFallsBaseTest):
         time.sleep(20)
 
         self.log.info("Restoring FPGA ROM and Fuses Done!!!")
-        
+
+    @keyword("Dut Setup Simple")
+    def dut_test_setup_simple(self):
+        """Set up the DUT, don't wait for Heartbeat"""
+        self.log.info("Running DUT Setup (not waiting for heartbeat)...")
+
+        try:
+            self.dut.setup()
+        except Exception as setup_error:
+            self.log.error(f"Error during DUT setup initialization: {setup_error}")
+            assert False, f"DUT setup failed: {setup_error}"
+    
     @keyword("Dut Setup")
     def dut_test_setup(self):
         """Simply set up the DUT, don't wait for Heartbeat"""
@@ -132,7 +143,7 @@ class APBaremetalTests(EchoFallsBaseTest):
         """Send a command to the DUT."""
         self.log.info(f"Submitting '{command}' command...")
         return self.apns_connection.get_current_channel().write_line(write_string=command)
-
+    
     @keyword("Parse Test Output")
     def parse_output(self, read_until_key: str, expected_results: list, failed_results: list, timeout: int = 500):
         """
@@ -165,3 +176,4 @@ class APBaremetalTests(EchoFallsBaseTest):
         """Teardown the DUT after the test."""
         self.log.info("Tearing down the DUT...")
         self.dut.teardown()
+        time.sleep(30)

@@ -12,7 +12,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs')
 
 from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
-
+from pythia.tdk.echofalls.constants.dut_types import DeviceType
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
 class varserv_dd_test(EchoFallsBaseTest):
@@ -61,7 +61,10 @@ class varserv_dd_test(EchoFallsBaseTest):
         """
         self.log.info("Running Variable Services DD command Test. . .")
         self.dut.setup()
-
+        if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+            self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
+            KngPythiaTestSetup.fpga_oob_reset(self.log)
+            
         scp_channel=self.dut.mb.node_0.soc.secondary_die.scp.channel_manager.get_current_channel()
         # Open SCP channel
         scp_channel.open()

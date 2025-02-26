@@ -15,6 +15,7 @@ Library     pylibs.avs_tests.scp_avs_read_test_die0
 
 *** Test Cases ***
 Test Case - SCP: SCP AVS read test.
+    
     # Get an instance of the test library
     ${test_lib} =    Get Library Instance    avs_read_test_lib
     

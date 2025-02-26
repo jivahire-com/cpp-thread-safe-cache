@@ -14,7 +14,6 @@ from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
 
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
-
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
 class largefifo_mailbox_cli_cded_scp_test_send_recv(EchoFallsBaseTest):
@@ -66,7 +65,10 @@ class largefifo_mailbox_cli_cded_scp_test_send_recv(EchoFallsBaseTest):
         cded_connection = self.dut.mb.node_0.soc.primary_die.sdm_cded.channel_manager
 
         self.dut.setup()
-
+        if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+            self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
+            KngPythiaTestSetup.fpga_oob_reset(self.log)
+            
         if (self.dut.get_dut_type() == DeviceType.SVP):
             # TODO:  No Support. Pranjal to update status and its ADO reference
             self.log.info("TODO SVP Send Recv Tests")
@@ -93,6 +95,16 @@ class largefifo_mailbox_cli_cded_scp_test_send_recv(EchoFallsBaseTest):
         except Exception as e:
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
+            self.dut.teardown()
+            time.sleep(30)
+            return False
+        
+        try:
+            self.log.info("Waiting for SDM CDED Heartbeat Msg")
+            cded_channel.read_until(key="SdmHeartBeat", timeout_seconds=1800)
+        except Exception as e:
+            self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.sdm_cded.channel_manager UART: {e}")
+            self.test_notify(step="SDMCDEDHeartBeat", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             time.sleep(30)
             return False

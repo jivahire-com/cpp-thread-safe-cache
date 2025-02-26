@@ -5,10 +5,12 @@
 
 import os
 import time
+import socket
 from pathlib import Path
 
 from pythia.tdk.common.util.debugger.trace32 import Trace32
 from pythia.tdk.echofalls.duts.bigfpga_dut import BigFpgaDut
+from pythia.tdk.echofalls.constants.dut_types import DeviceType
 
 FPGA_REVISION = "R22"
 SDM_UART_MUX = 2
@@ -95,3 +97,43 @@ class KngPythiaTestSetup():
         
         scp_debugger.execute_command("go")
         time.sleep(1)
+
+    @staticmethod
+    def fpga_oob_reset(log):
+        #Create new file in the shared directory for the reset monitor listener
+        log.info("Creating reset monitor listener file to trigger OOB reset...")
+        fpga_system_name = socket.gethostname().lower()
+        
+        log.info(f"System Name: {fpga_system_name}")
+        fpga_system_name = fpga_system_name.split('rdu-120015-')[-1]
+
+        reset_monitor_file_path = Path("R:/haps_runtime/kingsgate_big_fpga/reset_tools/force_reset_" + fpga_system_name)
+        reset_monitor_file = reset_monitor_file_path / "reset"
+        new_monitor_file = reset_monitor_file_path / ".newer"
+
+        # Check if a file called .newer exists in the reset request directory, the
+        # modification time of this file is used by the watcher script to compare and
+        # issue a reset if there is anything "newer" found in the dir. If it doesn't
+        # exist, create one here.
+        if not new_monitor_file.exists():
+            new_monitor_file.touch()
+            log.info(f"Newer file created at: {new_monitor_file}")
+
+        # Finally, remove any stale reset notification and create a new notification
+        # file. Sleep for 5 seconds after a file operation as that is the current 
+        # worst case delay for the adapters to go through a reset.
+        if reset_monitor_file.exists():
+            reset_monitor_file.unlink()
+            log.info(f"Reset file deleted at: {reset_monitor_file}")
+
+        time.sleep(5)
+
+        # Create the reset file
+        reset_monitor_file.touch()
+        log.info(f"Reset file created at: {reset_monitor_file}")
+
+        time.sleep(5)
+
+        # Delete the reset file
+        reset_monitor_file.unlink()
+        log.info(f"Reset file deleted at: {reset_monitor_file}")

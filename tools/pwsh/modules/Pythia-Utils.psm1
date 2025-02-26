@@ -71,7 +71,7 @@ Function Invoke-Pythia(
     # Setup the paths for the necessary Pythia configurations
     # In\Out for pre/post processed json files (for variable expansion)
 
-    $workspace_config_in = Join-Path -Path $env:REPO_APP_ROOT -ChildPath "tests\functional\pythia\configs\svp_workspace.json"
+    $workspace_config_in = Join-Path -Path $env:REPO_APP_ROOT -ChildPath "tests\functional\pythia\configs\workspace.json"
     $workspace_config_out = Join-Path -Path $test_results_dir -ChildPath "workspace.json"
 
     # Create new json files with expanded string values, expanding environment variables
@@ -108,10 +108,11 @@ Function Invoke-Pythia(
     Write-Host "`t`tUsing Payload: $recipe_payload_dir"
     Write-Host ""
 
+    if ($platform -eq "svp") {
     # This can also be set via the host configuration json for pythia, however that requires absolute paths.
     # Resolving the paths allows us to update the version and not have to update the paths.
     $env:SNPS_VS_VDK_SEARCH_PATHS=(Resolve-Path ${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}\win\release\KingsgateSVP\*\*\).toString()
-
+    }
     # Move to the test directory. Pythia will use relative paths once executed, moving into the test
     # dir will put any any folders that get created there (for things we can't configure atm, ex: SVP output dir).
     Push-Location -Path $test_results_dir

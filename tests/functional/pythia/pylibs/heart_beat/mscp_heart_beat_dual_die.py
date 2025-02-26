@@ -13,7 +13,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs')
 from kng_pythia_test_setup import KngPythiaTestSetup
 
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
-
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
 # Class name must match file name for Robot Framework Library usage
@@ -71,6 +70,9 @@ class mscp_heart_beat_dual_die(EchoFallsBaseTest):
             assert connection is not None
         
         self.dut.setup()
+        if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+            self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
+            KngPythiaTestSetup.fpga_oob_reset(self.log)
         
         for connection in connections:
             connection["channel"].get_current_channel().open()

@@ -80,4 +80,6 @@ mock_target(${TARGET}
     pciess_rps_ready
     pciess_rps_post_rp_ready_init
     pciess_probe
+    config_get_cxl_params_die0
+    config_get_cxl_params_die1
 )

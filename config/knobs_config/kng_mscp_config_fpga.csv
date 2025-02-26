@@ -10,5 +10,6 @@ FE3ED49F-B173-41ED-9076-356661D46A42,power_soc_thermtrip_en,false,"override for 
 FE3ED49F-B173-41ED-9076-356661D46A42,power_tile_hot_en,false,"override for fpga"
 FE3ED49F-B173-41ED-9076-356661D46A42,power_tile_thermtrip_en,false,"override for fpga"
 FE3ED49F-B173-41ED-9076-356661D46A42,power_soc_maximum_thermal_watts_limit,350,"Temp override until fuse value is verified"
-*,pcie_rpss5_cfg.pcie_cxl_support,true
+*,cxl_params_region0.pcie_cxl_support.valid,true,""
+*,cxl_params_region0.pcie_cxl_support.ports[0],RPSS5_RP0,""
 FE3ED49F-B173-41ED-9076-356661D46A42,usb_cfg.power_on_port1,false,"override for fpga"

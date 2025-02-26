@@ -14,6 +14,7 @@
 #include <cmocka.h> // IWYU pragma: keep
 #include <cstddef>  // IWYU pragma: keep
 #include <cstdint>  // IWYU pragma: keep
+#include <fpfw_cfg_mgr.h>
 #include <idsw_kng.h>
 #include <interrupts.h>
 #include <pcie_common.h>
@@ -32,6 +33,9 @@ extern "C" {
 #include <pcie_ss_common.h> // for pcie_ss_entity_t
 #include <silibs_status.h>  // for SILIBS_E_PARAM, SILIBS_SUCCESS
 #include <tx_api.h>
+
+cxl_region_params_t __real_config_get_cxl_params_die0(void);
+cxl_region_params_t __real_config_get_cxl_params_die1(void);
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -163,6 +167,11 @@ TEST_FUNCTION(test_pcie_rpss_init_success, test_setup, test_teardown)
     will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
     will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
     will_return(__wrap_pciess_deassert_por_reset, SILIBS_SUCCESS);
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+
+    cxl_region_params_t cxl_region_params_die0 = __real_config_get_cxl_params_die0();
+    will_return(__wrap_config_get_cxl_params_die0, &cxl_region_params_die0);
+
     int32_t ret = pcie_sched_sync_op(&(r.header));
     assert_int_equal(ret, 0);
     assert_int_equal(r.status, SILIBS_SUCCESS);
@@ -206,6 +215,11 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
     will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
     will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
     will_return(__wrap_pciess_deassert_por_reset, SILIBS_SUCCESS);
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+
+    cxl_region_params_t cxl_region_params_die0 = __real_config_get_cxl_params_die0();
+    will_return(__wrap_config_get_cxl_params_die0, &cxl_region_params_die0);
+
     pcie_sched_sync_op(&(r.header));
 
     assert_int_equal(rb_configs[0].flags.is_enabled, true);
@@ -457,4 +471,52 @@ TEST_FUNCTION(test_rpss_int, test_setup, test_teardown)
 
         rpss_irq_callback(irq_num);
     }
+}
+
+TEST_FUNCTION(test_rpss_init_cxl, test_setup, test_teardown)
+{
+    /*Setup the mock interface and device*/
+    pcie_root_bridge_config rb_configs[4];
+    pciess_device_t dev;
+    dev.rb_configs = rb_configs;
+    pciess_device_interface_t iface;
+    iface.dev = &dev;
+
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    r.header.RequestType = INITIAL_CONFIG_REQUEST;
+    r.req_type = INITIAL_CONFIG_REQUEST;
+    r.rpss_index = RPSS5; // RPSS5 on FPGA is CXL-enabled
+    r.rp_index = 0;
+
+    /* Set the owning interface*/
+    PDFWK_SYNC_REQUEST_HEADER req = (PDFWK_SYNC_REQUEST_HEADER)&r;
+    req->OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
+
+    mock_pcie_ent.id = r.rpss_index;
+
+    /* Setup silibs expectations */
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS5);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    expect_value(__wrap_pciess_config_entity, program_phy_regs, false);
+    expect_value(__wrap_pciess_config_entity, enable_apu, true);
+    will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
+    will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
+    will_return(__wrap_pciess_deassert_por_reset, SILIBS_SUCCESS);
+    will_return(__wrap_idsw_get_die_id, DIE_1);
+
+    cxl_region_params_t cxl_region_params_die1 = __real_config_get_cxl_params_die1();
+    cxl_region_params_die1.valid = true;
+    cxl_region_params_die1.interleave_ways = INTERLEAVE_NONE;
+    cxl_region_params_die1.ports[0] = CXL_RPSS5_RP0;
+    will_return(__wrap_config_get_cxl_params_die1, &cxl_region_params_die1);
+
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+
+    assert_int_equal(rb_configs[0].flags.is_enabled, true);
+    assert_int_equal(rb_configs[0].flags.is_cxl, true);
 }

@@ -31,6 +31,7 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_pcie;
 extern fpfw_init_component_t _fpfw_component_pcie_cli;
+extern fpfw_init_component_t _fpfw_component_cxl_chbcr;
 
 /*------------- Functions ----------------*/
 void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
@@ -147,4 +148,10 @@ TEST_FUNCTION(test_die0_unknown_plat_init, NULL, NULL)
 TEST_FUNCTION(test_cli_init, NULL, NULL)
 {
     _fpfw_component_pcie_cli.init_fn();
+}
+
+TEST_FUNCTION(test_cxl_init, NULL, NULL)
+{
+    will_return(__wrap_idsw_get_die_id, DIE_1);
+    _fpfw_component_cxl_chbcr.init_fn();
 }

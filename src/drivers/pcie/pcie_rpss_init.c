@@ -159,7 +159,7 @@ static void override_default_pcie_cfg(uint8_t rpss_id)
     pcie_cfg->pcie_gen5_eq_disable = pcie_cfg_knob.pcie_gen5_eq_disable;
     pcie_cfg->pcie_eq_bypass_support = pcie_cfg_knob.pcie_eq_bypass_support;
     pcie_cfg->pcie_no_eq_support = pcie_cfg_knob.pcie_no_eq_support;
-    pcie_cfg->pcie_cxl_support = pcie_cfg_knob.pcie_cxl_support;
+    /* pcie_cfg->pcie_cxl_support set below */
     pcie_cfg->pcie_cxl_sync_header_bypass = pcie_cfg_knob.pcie_cxl_sync_header_bypass;
     pcie_cfg->pcie_ide_support = pcie_cfg_knob.pcie_ide_support;
     pcie_cfg->pcie_tee_support = pcie_cfg_knob.pcie_tee_support;
@@ -172,6 +172,28 @@ static void override_default_pcie_cfg(uint8_t rpss_id)
     pcie_cfg->pcie_aer_ecrc_gen_support = pcie_cfg_knob.pcie_aer_ecrc_gen_support;
     pcie_cfg->pcie_aer_ecrc_check_support = pcie_cfg_knob.pcie_aer_ecrc_check_support;
     pcie_cfg->pcie_aer_multiple_header_support = pcie_cfg_knob.pcie_aer_multiple_header_support;
+
+    /* Determine if CXL is supported on this RPSS */
+    cxl_region_params_t cxl_region_params =
+        (idsw_get_die_id() == 0) ? config_get_cxl_params_die0() : config_get_cxl_params_die1();
+
+    if (cxl_region_params.valid == false)
+    {
+        return;
+    }
+
+    /* Loop through the CXL ports and see if this RPSS is one of them
+       If interleaving is disabled, we only need to check the first port
+       If interleaving is enabled, we need to check all ports up to interleave_ways */
+    for (uint8_t i = 0; i < cxl_region_params.interleave_ways ||
+                        (i == PCIESS_CXL_RP_IDX && cxl_region_params.interleave_ways == INTERLEAVE_NONE);
+         i++)
+    {
+        if (cxl_region_params.ports[i] == (CXL_PORT)rpss_id)
+        {
+            pcie_cfg->pcie_cxl_support = true;
+        }
+    }
 
     /* Root Port Defaults not set as in 1x16 Config they are
        not going to be used. If 4x4 bifurcation is used and RP

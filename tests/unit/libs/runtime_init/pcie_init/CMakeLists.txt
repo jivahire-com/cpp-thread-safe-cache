@@ -17,6 +17,8 @@ target_link_libraries(${TARGET}
     ms::cmocka::testrunner
     ms::driver::pcie
     ms::lib::threadx
+    ms::lib::cxl
+    ms::service::atu_service
     ms::service::pcie_manager
     ms::service::pcie_manager::cli
     silibs::idsw

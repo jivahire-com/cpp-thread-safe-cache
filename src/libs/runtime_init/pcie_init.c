@@ -10,6 +10,8 @@
 /*------------- Includes -----------------*/
 #include <DfwkPtrTypes.h>
 #include <DfwkThreadXHost.h>
+#include <atu_api.h>
+#include <cxl.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h>
 #include <idsw.h>
@@ -92,5 +94,21 @@ FPFW_INIT_COMPONENT(pcie_cli, FPFW_INIT_DEPENDENCIES("pcie", "cli"))
 
     pcie_cli_init((pciess_device_t*)pcie_dev_handles);
 
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
+FPFW_INIT_COMPONENT(cxl_chbcr, FPFW_INIT_DEPENDENCIES("mesh", "cfg_mgr", "pcie", "ddr", "atu_svc"))
+{
+    KNG_DIE_ID die_id = (KNG_DIE_ID)idsw_get_die_id();
+
+    // Only one die (die0) should initialize the CHBCR
+    if (die_id == DIE_1)
+    {
+        goto done_cxl_init;
+    }
+
+    cxl_chbcr_init((uint8_t*)MSCP_ATU_AP_WINDOW_CHBCR_BASE_ADDR);
+
+done_cxl_init:
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

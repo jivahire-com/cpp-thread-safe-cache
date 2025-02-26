@@ -201,9 +201,15 @@ void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_para
             cmn800_sequence_param->cmn_config_enum = config_get_cmn_sam_config();
             cmn800_sequence_param->cmn800_sequence_knobs.cmn_sam_config = config_get_cmn_sam_config();
         }
-        cmn800_sequence_param->cmn800_sequence_knobs.cmn_cxl_interleave = config_get_cmn_cxl_interleave();
+        //
+        // TODO: Apply configuration for start/end address as well
+        //
+        cxl_region_params_t cxl_region_params =
+            (idhw_get_die_id() == DIE_0) ? config_get_cxl_params_die0() : config_get_cxl_params_die1();
+        cmn800_sequence_param->cmn800_sequence_knobs.cmn_cxl_interleave = cxl_region_params.interleave_ways;
         cmn800_sequence_param->cmn800_sequence_knobs.cmn_cxl_device_interleave_size =
-            config_get_cmn_cxl_device_interleave_size();
+            cxl_region_params.interleave_size + 2; // Adjust for silibs-defined sizes
+
         cmn800_sequence_param->cmn800_sequence_knobs.cmn_uma_arsm_htg_wa_disabled =
             config_get_cmn_uma_arsm_htg_wa_disabled();
 

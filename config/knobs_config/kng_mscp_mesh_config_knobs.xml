@@ -4,6 +4,32 @@
   <!-- Enum values are declared separately from the knobs.
   The same Enum can be used as the 'enumtype' of any number of EnumKnobs -->
   <Enums>
+    <Enum name="CXL_INTERLEAVE_WAYS" help="Number of interleave ways in a region">
+      <Value name="INTERLEAVE_NONE" value="0"/>
+      <Value name="INTERLEAVE_2_WAYS" value="2"/>
+      <Value name="INTERLEAVE_3_WAYS" value="3"/>
+      <Value name="INTERLEAVE_4_WAYS" value="4"/>
+    </Enum>
+    <Enum name="CXL_INTERLEAVE_SIZE" help="Interleave granularities for CXL configuration">
+      <Value name="INTERLEAVE_SIZE_256B" value="0" help="256B Interleaved" />
+      <Value name="INTERLEAVE_SIZE_512B" value="1" help="512B Interleaved" />
+      <Value name="INTERLEAVE_SIZE_1KB" value="2" help="1024B Interleaved" />
+      <Value name="INTERLEAVE_SIZE_2KB" value="3" help="2048B Interleaved" />
+      <Value name="INTERLEAVE_SIZE_4KB" value="4" help="4096B Interleaved" />
+      <Value name="INTERLEAVE_SIZE_8KB" value="5" help="8192B Interleaved" />
+      <Value name="INTERLEAVE_SIZE_16KB" value="6" help="16384B Interleaved" />
+    </Enum>
+    <Enum name="CXL_PORT" help="specifies the port in the interleaving region">
+      <Value name="CXL_RPSS0_RP0" value="0"/>
+      <Value name="CXL_RPSS1_RP0" value="1"/>
+      <Value name="CXL_RPSS2_RP0" value="2"/>
+      <Value name="CXL_RPSS3_RP0" value="3"/>
+      <Value name="CXL_RPSS4_RP0" value="4"/>
+      <Value name="CXL_RPSS5_RP0" value="5"/>
+      <Value name="CXL_RPSS6_RP0" value="6"/>
+      <Value name="CXL_RPSS7_RP0" value="7"/>
+      <Value name="CXL_PORT_EMPTY" value="8"/>
+    </Enum>
   </Enums>
 
   <Structs>
@@ -25,6 +51,16 @@
     <Struct name="mesh_rnd_aux_ctl_t" help="">
       <Member name="mesh_rnd_aux_ctl" type="uint64_t" count="7" help="Set RN-D auxiliary control value"/>
     </Struct>
+      <!-- CXL: consumed by mesh and PCIe -->
+    <Struct name="cxl_region_params_t">
+      <Member name="valid" type="bool" default="false" help="is this entry valid?"/>
+      <!-- <Member name="die_id"  type="uint8_t" default="0" help="0 or 1"/> -->
+      <Member name="interleave_ways" type="CXL_INTERLEAVE_WAYS" default="INTERLEAVE_NONE" help="number of CXL interleave ways" />
+      <Member name="interleave_size" type="CXL_INTERLEAVE_SIZE" default="INTERLEAVE_SIZE_256B" help="Interleave granularity, from 64B to 16KB" />
+      <Member name="support_prefetch" type="bool" default="false" help="Enable prefetch on the ports listed below"/>
+      <Member name="init_pm" type="bool" default="false" help="Initialize power management on the ports listed below"/>
+      <Member name="ports" type="CXL_PORT" count="4" help="indices of up to 4 ports in region, number of entries should match interleave_ways if interleaving is enabled"/>
+    </Struct>
   </Structs>
 
   <!-- namespace indicates the GUID namespace the values are stored in -->
@@ -32,8 +68,11 @@
     <!-- Mesh Sequence -->
     <Knob name="mesh_d2d_override" type="bool" default="false" help="Enable and Use the Mesh D2D Knobs listed" />
     <Knob name="cmn_sam_config" type="CMN_SAM_CONFIG_TYPE" default="CMN_SAM_CONFIG_1D_UMA_64HNS_HIER_3SN" help="Select Mesh config" />
-    <Knob name="cmn_cxl_interleave" type="uint8_t" default="0" help="Selct CXL intearleave value 0,3 or 4" />
-    <Knob name="cmn_cxl_device_interleave_size" type="uint8_t" default="2" help="This field controls the interleave size across all aggregated CXSA/CXLSA Devices 4'h0: 64B Interleaved 4'h1: 128B Interleaved 4'h2: 256B Interleaved 4'h3: 512B Interleaved 4'h4: 1KB Interleaved 4'h5: 2KB Interleaved 4'h6: 4KB Interleaved 4'h7: 8KB Interleaved 4'h8: 16KB" />
+    <!-- <Knob name="cmn_cxl_interleave" type="uint8_t" default="0" help="Selct CXL intearleave value 0,3 or 4" />
+    <Knob name="cmn_cxl_device_interleave_size" type="uint8_t" default="2" help="This field controls the interleave size across all aggregated CXSA/CXLSA Devices 4'h0: 64B Interleaved 4'h1: 128B Interleaved 4'h2: 256B Interleaved 4'h3: 512B Interleaved 4'h4: 1KB Interleaved 4'h5: 2KB Interleaved 4'h6: 4KB Interleaved 4'h7: 8KB Interleaved 4'h8: 16KB" /> -->
+    <Knob name="cxl_params_die0" type="cxl_region_params_t" help="cxl region parameters for die 0" />
+    <Knob name="cxl_params_die1" type="cxl_region_params_t" help="cxl region parameters for die 1" />
+    
     <Knob name="cmn_uma_arsm_htg_wa_disabled" type="uint8_t" default="0" help="Set value for UMA ARSM HTG CFG" />
 
     <!-- Mesh -->

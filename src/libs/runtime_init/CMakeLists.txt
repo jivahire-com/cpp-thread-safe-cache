@@ -106,6 +106,7 @@ target_link_libraries(
         ms::lib::cortex_m7::nvic
         ms::lib::crash_dump
         ms::lib::css
+        ms::lib::cxl
         ms::lib::d2d_cntr_sync
         ms::lib::ddr::cli
         ms::lib::ddr_manager

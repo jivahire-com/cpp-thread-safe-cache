@@ -33,6 +33,7 @@
 #define DUMMY_SET_RACK_LIMIT_FUNCTION     dummy_set_function
 #define DUMMY_SET_MINUPDATE_FUNCTION      dummy_set_function
 #define DUMMY_SET_NOMINAL_FUNCTION        dummy_set_function
+#define DUMMY_SET_FORCED_FUNCTION         dummy_set_function
 
 /*------------- Typedefs -----------------*/
 
@@ -60,6 +61,8 @@ power_runconfig_write_dictionary_element_t power_runconfig_set_dictionary[] = {
     {POWER_IF_CMD_SET_RACK_LIMIT,       DUMMY_SET_RACK_LIMIT_FUNCTION       , "rack power limit"    },
     {POWER_IF_CMD_SET_MINUPDATE,        DUMMY_SET_MINUPDATE_FUNCTION        , "min update interval" },
     {POWER_IF_CMD_SET_NOMINAL,          DUMMY_SET_NOMINAL_FUNCTION          , "nominal pstate"      },
+    {POWER_IF_CMD_SET_FORCED,           DUMMY_SET_FORCED_FUNCTION           , "forced pstate ldodacin" },  
+
 };
 // clang-format on
 

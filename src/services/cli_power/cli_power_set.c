@@ -35,6 +35,7 @@ const power_cli_sub_command_dictionary_element_t power_cli_set_sub_command_dicti
     {"minupdate",  NULL, POWER_IF_CMD_SET_MINUPDATE      },
     {"nominal",    NULL, POWER_IF_CMD_SET_NOMINAL        },
     {"racklimit",  NULL, POWER_IF_CMD_SET_RACK_LIMIT     },
+    {"forced",     NULL, POWER_IF_CMD_SET_FORCED         },
 };
 //clang-format on
 
@@ -85,8 +86,7 @@ void cli_power_set_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* compl
 
     switch (p_cli_request->power_ext_if_cmd_id)
     {
-        case POWER_IF_CMD_SET_CAP:
-        
+        case POWER_IF_CMD_SET_CAP: {        
             if(p_cli_request->fetch_data.pwrset_response_val.pwr_icc_cap_result.result != MP_POWER_CAP_SUCCESS) {         
 
                    printf("Failed to set power cap: %d\n", 
@@ -102,9 +102,9 @@ void cli_power_set_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* compl
 
             }
             break;
+        }
 
-        case POWER_IF_CMD_SET_DESIRED_PSTATE:
-
+        case POWER_IF_CMD_SET_DESIRED_PSTATE: {
             printf("pwr set desired: core - %d (0x%08x) desired - 0x%x throttle_pri "
                     "- 0x%x\n",
                     p_cli_request->fetch_data.pwrset_response_val.desiredparams.core,
@@ -113,18 +113,18 @@ void cli_power_set_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* compl
                     p_cli_request->fetch_data.pwrset_response_val.desiredparams.throttle);
              
             break;
+        }
 
-        case POWER_IF_CMD_SET_PLIMIT:
-
+        case POWER_IF_CMD_SET_PLIMIT: {
             printf("\npwr set plimit: core - %d (0x%08x) plimit - 0x%x \n", 
                     p_cli_request->fetch_data.pwrset_response_val.plimitparams.core,
                     p_cli_request->fetch_data.pwrset_response_val.plimitparams.cluster_pex_base_addr,
                     p_cli_request->fetch_data.pwrset_response_val.plimitparams.state);
 
             break;
+        }
 
-        case POWER_IF_CMD_SET_LOOP_DISABLES:
-
+        case POWER_IF_CMD_SET_LOOP_DISABLES: {
             value = p_cli_request->fetch_data.pwrset_response_val.loopdis_bits; //p_cli_request->sub_command_args.pwrset_sub_command_args.loopdis_bits;
 
             printf("\n loop disables: %x (%s%s%s%s)\n",
@@ -135,9 +135,9 @@ void cli_power_set_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* compl
                    ((value & power_loops_disable_t_PVT_TELEM_LOOP) ? "pvttelem" : "\b"));
 
             break;
+        }
 
-        case POWER_IF_CMD_SET_MINUPDATE:
-
+        case POWER_IF_CMD_SET_MINUPDATE: {
             value = p_cli_request->fetch_data.pwrset_response_val.minupdate_val;
 
             if (value > PLIMIT_UPDATE_MAX)
@@ -155,29 +155,34 @@ void cli_power_set_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* compl
             else
             {
                 printf("\n%d", 1 << (value - 1));
-            }
-        
+            }     
 
             break;
+        }
 
-        case POWER_IF_CMD_SET_NOMINAL:
-
+        case POWER_IF_CMD_SET_NOMINAL: {
             printf("  nominal pstate: P%d (previous P%d)\n", 
                 p_cli_request->fetch_data.pwrset_response_val.nominalparams.current_val,
                 p_cli_request->fetch_data.pwrset_response_val.nominalparams.previous_val);
 
             break;
+        }
 
-        case POWER_IF_CMD_SET_RACK_LIMIT:
-
+        case POWER_IF_CMD_SET_RACK_LIMIT: {
             printf("\n  rack_limit: %s \n", (p_cli_request->fetch_data.pwrset_response_val.racklimit) ? "asserted" : "not asserted");
-
-            break;
-
-        default:
 
             break;
         }
 
+        case POWER_IF_CMD_SET_FORCED: {
+            printf("\n  pwr set forced: pstate: %d, ldodacin - 0x%04x \n",
+                    p_cli_request->fetch_data.pwrset_response_val.forcedparams.pstate,
+                    p_cli_request->fetch_data.pwrset_response_val.forcedparams.ldodacin);
+            break;
+        }
+
+        default:
+            break;
+        }
 }
 

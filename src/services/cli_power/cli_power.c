@@ -129,6 +129,7 @@ static uint8_t cli_power_set_get_arg_count(int subcommand_id)
             break;    
 
         case POWER_IF_CMD_SET_PLIMIT:
+        case POWER_IF_CMD_SET_FORCED:
             expected_argc = 4;
             break;    
    
@@ -195,8 +196,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
 
     switch (subcommand_id)
     {
-        case POWER_IF_CMD_SET_CAP:
-
+        case POWER_IF_CMD_SET_CAP: {
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr set cap <value>", pwr_strings[POWER_IF_CMD_SET_CAP]);
@@ -205,10 +205,10 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
             }
 
             p_pwrset_sub_command_args->cap_val = (uint16_t)strtoul(argv[2],NULL,10);
-            break;        
+            break;
+        }    
 
-        case POWER_IF_CMD_SET_DESIRED_PSTATE:
-
+        case POWER_IF_CMD_SET_DESIRED_PSTATE: {
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr set desired <core/all> <desired_0-31> <throttle_pri_0-7>", pwr_strings[POWER_IF_CMD_SET_DESIRED_PSTATE]);
@@ -229,11 +229,10 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
             p_pwrset_sub_command_args->desiredparams.core = core; 
             p_pwrset_sub_command_args->desiredparams.state = desired;    
             p_pwrset_sub_command_args->desiredparams.throttle = throttle;
+            break; 
+        }       
 
-            break;        
-
-        case POWER_IF_CMD_SET_PLIMIT:
-
+        case POWER_IF_CMD_SET_PLIMIT: {
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr set plimit <core/all> <plimit_0-31>", pwr_strings[POWER_IF_CMD_SET_PLIMIT]);
@@ -245,24 +244,22 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
             desired = (uint8_t)(strtoul(argv[3], 0, 0) & 0x1F);
             p_pwrset_sub_command_args->plimitparams.all = all;
             p_pwrset_sub_command_args->plimitparams.core = core; 
-            p_pwrset_sub_command_args->plimitparams.state = desired;     
+            p_pwrset_sub_command_args->plimitparams.state = desired;
+            break;    
+        }    
 
-            break;        
-
-        case POWER_IF_CMD_SET_LOOP_DISABLES:
-
+        case POWER_IF_CMD_SET_LOOP_DISABLES: {
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr set loopdis <disable bits>", pwr_strings[POWER_IF_CMD_SET_LOOP_DISABLES]);
                 return CLI_ERROR;
             }  
 
-            p_pwrset_sub_command_args->loopdis_bits = (uint16_t)strtoul(argv[2],0,0);    
-
+            p_pwrset_sub_command_args->loopdis_bits = (uint16_t)strtoul(argv[2],0,0);
             break;        
+        }
 
-        case POWER_IF_CMD_SET_RACK_LIMIT:
-
+        case POWER_IF_CMD_SET_RACK_LIMIT: {
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr set racklimit <0/1>", pwr_strings[POWER_IF_CMD_SET_RACK_LIMIT]);
@@ -274,55 +271,77 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
             if (power_hw_gpio_connected()) {
                 FpFwCliPrint("\n  pwr set racklimit does not work on this platform (GPIO connected)\n");
                 return CLI_SUCCESS;
-            }
-             
-            break;        
+            }             
+            break;
+        }
 
-        case POWER_IF_CMD_SET_MINUPDATE:
-
+        case POWER_IF_CMD_SET_MINUPDATE: {
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr set minupdate <0-8>", pwr_strings[POWER_IF_CMD_SET_MINUPDATE]);
                 return CLI_ERROR;
             }  
 
-            p_pwrset_sub_command_args->minupdate_val = (uint16_t)strtoul(argv[2],NULL,10);   
-                                
-            break;        
+            p_pwrset_sub_command_args->minupdate_val = (uint16_t)strtoul(argv[2],NULL,10);                                
+            break; 
+        }       
 
-        case POWER_IF_CMD_SET_NOMINAL:
-
+        case POWER_IF_CMD_SET_NOMINAL: {
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr set nominal <1-31>", pwr_strings[POWER_IF_CMD_SET_NOMINAL]);
                 return CLI_ERROR;
             } 
-            p_pwrset_sub_command_args->nominalparams.current_val = (uint16_t)strtoul(argv[2],NULL,0);      
-                                             
+            p_pwrset_sub_command_args->nominalparams.current_val = (uint16_t)strtoul(argv[2],NULL,0);                                             
             break;
+        }
 
-        case POWER_IF_CMD_LOG_DDR :
+        case POWER_IF_CMD_LOG_DDR : {
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr log set nominal <0-1>", "- sets power log DDR enable\n");
                 return CLI_ERROR;
             }
-            p_pwrset_sub_command_args->minupdate_val = (uint16_t)strtoul(argv[2],0,0);  
-
+            p_pwrset_sub_command_args->minupdate_val = (uint16_t)strtoul(argv[2],0,0);
             break;
+        }
 
-        case POWER_IF_CMD_LOG_MASK :
+        case POWER_IF_CMD_LOG_MASK : {
             if(argc != cli_power_set_get_arg_count(subcommand_id))
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr log set nominal <0-1>", "- sets the power log MASK enable\n");
                 return CLI_ERROR;
             }
-            p_pwrset_sub_command_args->minupdate_val = (uint16_t)strtoul(argv[2],0,0); 
-            
-            break; 
+            p_pwrset_sub_command_args->minupdate_val = (uint16_t)strtoul(argv[2],0,0);            
+            break;
+        }
 
-        default:
-        
+        case POWER_IF_CMD_SET_FORCED: {
+            if(argc != cli_power_set_get_arg_count(subcommand_id))
+            {
+                FpFwCliPrint("%-72s%s", "Usage: pwr set forced <pstate 0-30> <ldodacin>", "sets forced Pstate and ldodacin " );
+                return CLI_ERROR;
+            }  
+
+            uint8_t forced_pstate;
+            uint16_t forced_ldodacin;
+
+            forced_pstate = (uint8_t)strtoul(argv[2],0,0);
+            forced_ldodacin = (uint16_t)strtoul(argv[3],0,0);
+
+            if(forced_pstate > 30) // only allow setting to P30
+            {
+                FpFwCliPrint("Invalid pstate value\n");
+                return CLI_ERROR;
+            }
+
+            p_pwrset_sub_command_args->forcedparams.pstate = forced_pstate;
+            p_pwrset_sub_command_args->forcedparams.ldodacin = forced_ldodacin;
+            FpFwCliPrint("pwr set forced: pstate: %d, ldodacin - 0x%04x \n", p_pwrset_sub_command_args->forcedparams.pstate, p_pwrset_sub_command_args->forcedparams.ldodacin);
+            break;
+        }
+
+        default:        
             break;
 
     }

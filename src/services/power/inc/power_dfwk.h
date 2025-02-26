@@ -68,6 +68,12 @@ struct _nominalparams
     uint8_t previous_val;                    // previous value of nominal pstate used in loop    
 };
 
+struct _forcedparams
+{
+    uint8_t pstate;                          // sets forced pstate (0 - 31), after setting PMIN
+    uint16_t ldodacin;                       // sets the ldodacin value for the forced pstate
+};
+
 typedef union 
 {
 	uint16_t     cap_val;                        // set the rack power cap (W)
@@ -77,7 +83,7 @@ typedef union
     uint16_t    minupdate_val;                  // sets the minimum plimit update per loop iteration, 0 disables    
     struct      _nominalparams  nominalparams;  // sets the nominal pstate used in loop (does not affect DVFS/ACPI)
     uint16_t    racklimit;                      // sets the rack limit gpio for simulated implementations  
-    
+    struct     _forcedparams   forcedparams;   // sets forced pstate and ldodacin  
 } _pwrset_subcommand_args;
 
 typedef struct _pwr_icc_cap_complete_payload_t {
@@ -95,6 +101,7 @@ typedef union
     uint16_t    minupdate_val;                  // sets the minimum plimit update per loop iteration, 0 disables    
     struct      _nominalparams  nominalparams;  // sets the nominal pstate used in loop (does not affect DVFS/ACPI)
     uint16_t    racklimit;                      // sets the rack limit gpio for simulated implementations  
+    struct     _forcedparams   forcedparams;   // sets forced pstate and ldodacin  
     
 } _pwrset_response_val;
 

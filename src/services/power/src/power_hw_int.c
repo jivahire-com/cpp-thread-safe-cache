@@ -97,19 +97,7 @@ static void pll_copy_to_min(uintptr_t cluster_pex_base_addr, uint8_t pstate)
     }
 }
 
-/**
- * @brief Configures core PLL (directly) and VMAT (dvfs_cfg) for forced pstate
- *
- * @param[in] cluster_pex_base_addr - core/cluster register base address
- * @param[in] dvfs_cfg - dvfs_cfg for this core
- * @param[in] temp_vft - temporary storage for the update vft vmat
- * @param[in] core - core index
- * @param[in] pstate - pstate to retrieve PLL config for
- *
- * @return None
- *
- */
-static void setup_forced_pstate(uintptr_t cluster_pex_base_addr, dvfs_config_t* dvfs_cfg, dvfs_vft_t* temp_vft, unsigned int core, uint8_t pstate)
+void setup_forced_pstate(uintptr_t cluster_pex_base_addr, dvfs_config_t* dvfs_cfg, dvfs_vft_t* temp_vft, unsigned int core, uint8_t pstate)
 {
     FPFW_RUNTIME_ASSERT(dvfs_cfg != NULL);
     FPFW_RUNTIME_ASSERT(temp_vft != NULL);

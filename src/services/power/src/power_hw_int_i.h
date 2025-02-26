@@ -257,6 +257,20 @@ void power_telemetry_message_poll(power_hw_update_cb_t p_update_cb, power_hw_suc
  */
 void pwr_hw_vrs_init(void);
 
+/**
+ * @brief Configures core PLL (directly) and VMAT (dvfs_cfg) for forced pstate
+ *
+ * @param[in] cluster_pex_base_addr - core/cluster register base address
+ * @param[in] dvfs_cfg - dvfs_cfg for this core
+ * @param[in] temp_vft - temporary storage for the update vft vmat
+ * @param[in] core - core index
+ * @param[in] pstate - pstate to retrieve PLL config for
+ *
+ * @return None
+ *
+ */
+void setup_forced_pstate(uintptr_t cluster_pex_base_addr, dvfs_config_t* dvfs_cfg, dvfs_vft_t* temp_vft, unsigned int core, uint8_t pstate);
+
 bool all_requests_completed(avs_pwr_request_context_t* pwr_avs_request, uint8_t max_avs_bus);
 bool no_errors(avs_pwr_request_context_t* pwr_avs_request, uint8_t max_avs_bus);
 void reset_errors(avs_pwr_request_context_t* pwr_avs_request, uint8_t max_avs_bus);

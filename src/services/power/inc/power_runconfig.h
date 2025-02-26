@@ -367,6 +367,7 @@ typedef enum
     POWER_IF_CMD_LOG_DUMP,
     POWER_IF_CMD_LOG_DDR,
     POWER_IF_CMD_LOG_MASK,
+    POWER_IF_CMD_SET_FORCED,
 
     POWER_IF_CMD_UNKNOWN
 } power_if_cmd_t;

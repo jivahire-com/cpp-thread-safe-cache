@@ -244,10 +244,6 @@ void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t 
         send_request.load_fw_req.id = HSP_FIRMWARE_ID_RMM;
         send_request.load_fw_req.address = RMM_FW_LOAD_ADDRESS;
         break;
-    case AP_FW_ID_SPMC:
-        send_request.load_fw_req.id = HSP_FIRMWARE_ID_SPMC_MANIFEST;
-        send_request.load_fw_req.address = SPMC_FW_LOAD_ADDRESS;
-        break;
     case AP_FW_ID_RP_EXE:
         send_request.load_fw_req.id = HSP_FIRMWARE_ID_RP_EXE;
         send_request.load_fw_req.address = RP_EXE_LOAD_ADDRESS;

@@ -20,7 +20,6 @@ pe_uefi                    = { type='file', local='${REPO_APP_PATH_echofalls.svp
 rmm                        = { type='file', local='${REPO_APP_PATH_echofalls.rmm.build}/build/echofalls/debug/rmm.img'}
 rom_section                = { type='file', local='${REPO_APP_PATH_kingsgate.sprt.release}/release/sp1/sp1.img'}
 scp                        = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/scp/scp_boot_loader_embed_fw.bin'}
-spmc_manifest              = { type='file', local='${REPO_APP_PATH_echofalls.atf.build}/build/echofalls/debug/fdts/echofalls_svp_spmc_sp_manifest.dtb'}
 sprt                       = { type='file', local='${REPO_APP_PATH_kingsgate.sprt.release}/release/sprt/sprt.bin'}
 cded_dtcm                  = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/cded/cded_fw_dtcm.bin'}
 cded_itcm                  = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/cded/cded_fw_itcm.bin'}
@@ -45,7 +44,6 @@ pe_uefi                    = { type='file', local='${REPO_APP_PATH_echofalls.soc
 rmm                        = { type='file', local='${REPO_APP_PATH_echofalls.rmm.build}/build/echofalls/debug/rmm.img'}
 rom_section                = { type='file', local='${REPO_APP_PATH_kingsgate.sprt.release}/release/sp1/sp1.img'}
 scp                        = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/scp/scp_boot_loader_embed_fw.bin'}
-spmc_manifest              = { type='file', local='${REPO_APP_PATH_echofalls.atf.build}/build/echofalls/debug/fdts/echofalls_soc_spmc_sp_manifest.dtb'}
 sprt                       = { type='file', local='${REPO_APP_PATH_kingsgate.sprt.release}/release/sprt/sprt.bin'}
 cded_dtcm                  = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/cded/cded_fw_dtcm.bin'}
 cded_itcm                  = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/cded/cded_fw_itcm.bin'}
@@ -70,7 +68,6 @@ pe_uefi                    = { type='file', local='${REPO_APP_PATH_echofalls.fpg
 rmm                        = { type='file', local='${REPO_APP_PATH_echofalls.rmm.build}/build/echofalls/debug/rmm.img'}
 rom_section                = { type='file', local='${REPO_APP_PATH_kingsgate.sprt.release}/release/sp1/sp1.img'}
 scp                        = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/scp/scp_boot_loader_embed_fw.bin'}
-spmc_manifest              = { type='file', local='${REPO_APP_PATH_echofalls.atf.build}/build/echofalls/debug/fdts/echofalls_fpga_spmc_sp_manifest.dtb'}
 sprt                       = { type='file', local='${REPO_APP_PATH_kingsgate.sprt.release}/release/sprt/sprt.bin'}
 cded_dtcm                  = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/cded/cded_fw_dtcm.bin'}
 cded_itcm                  = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/cded/cded_fw_itcm.bin'}

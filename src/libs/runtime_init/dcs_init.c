@@ -24,8 +24,8 @@
 /*-- Symbolic Constant Macros (defines) --*/
 #define DCS_STACK_SIZE ((TX_MINIMUM_STACK) + ((2) * (FPFW_KB)))
 
-#define TRP_MAX_ROUTES    (2)
-#define TRP_MAX_ENDPOINTS (2)
+#define TRP_MAX_ROUTES    (3)
+#define TRP_MAX_ENDPOINTS (3)
 
 /*------------- Typedefs -----------------*/
 
@@ -35,6 +35,7 @@
 static uint8_t s_dcs_stack[DCS_STACK_SIZE];
 static uint8_t s_ap_icc_endpt_rx_buffer[ICC_MHU_DDR_PAYLOAD_SIZE]; // driver framework thread copies to this buffer
 static uint8_t s_local_mscp_icc_endpt_rx_buffer[ICC_MHU_DDR_PAYLOAD_SIZE]; // driver framework thread copies to this buffer
+static uint8_t s_d2d_mscp_icc_endpt_rx_buffer[ICC_MHU_DDR_PAYLOAD_SIZE]; // driver framework thread copies to this buffer
 static trp_icc_endpoint_t s_trp_icc_endpoint_table[TRP_MAX_ENDPOINTS];
 static trp_route_t s_trp_routing_table[TRP_MAX_ROUTES];
 
@@ -42,7 +43,7 @@ static trp_route_t s_trp_routing_table[TRP_MAX_ROUTES];
 // icc_mhu_packet_t includes icc header
 static_assert(sizeof(icc_mhu_packet_t) + sizeof(trp_msg_t) <= ICC_MHU_DDR_PAYLOAD_SIZE, "MHU payload size too small");
 
-FPFW_INIT_COMPONENT(dcs_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_mscp2mscp", "icc_mscp2apns"))
+FPFW_INIT_COMPONENT(dcs_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_mscp2mscp", "icc_mscp2apns", "icc_die2die"))
 {
     static dcs_config_t s_config = {
         .thread_config =
@@ -98,6 +99,7 @@ FPFW_INIT_COMPONENT(dcs_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_ms
         number_of_routes++;
     }
 
+    // ---------------------------------------------------------------------------------------------
     // add local mscp trp endpoint
     FPFW_RUNTIME_ASSERT(number_of_routes < TRP_MAX_ROUTES);
     FPFW_RUNTIME_ASSERT(number_of_endpoints < TRP_MAX_ENDPOINTS);
@@ -122,6 +124,33 @@ FPFW_INIT_COMPONENT(dcs_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_ms
 
     number_of_endpoints++;
     number_of_routes++;
+
+    // ---------------------------------------------------------------------------------------------
+    // add die to die trp endpoint if dual die
+    if (s_config.trp_icc_config.is_dual_die)
+    {
+        FPFW_RUNTIME_ASSERT(number_of_routes < TRP_MAX_ROUTES);
+        FPFW_RUNTIME_ASSERT(number_of_endpoints < TRP_MAX_ENDPOINTS);
+
+        s_trp_icc_endpoint_table[number_of_endpoints].icc_base_ctx =
+            (fpfw_icc_base_ctx_t*)fpfw_init_get_handle("icc_die2die");
+        s_trp_icc_endpoint_table[number_of_endpoints].async_recv_buffer = s_d2d_mscp_icc_endpt_rx_buffer;
+        s_trp_icc_endpoint_table[number_of_endpoints].async_recv_buffer_size = sizeof(s_d2d_mscp_icc_endpt_rx_buffer);
+        s_trp_icc_endpoint_table[number_of_endpoints].icc_payload_protocol = ICC_COMMAND_TRP_MSG;
+        s_trp_icc_endpoint_table[number_of_endpoints].transport_type = TRP_TRANSPORT_TYPE_MHU;
+        // no sprintf_s, keep length to ENDPOINT_NAME_MAX_LENGTH
+        sprintf(s_trp_icc_endpoint_table[number_of_endpoints].name,
+                "DIE_%d_%s_TRP",
+                s_config.trp_icc_config.this_die_id,
+                (s_config.trp_icc_config.this_cpu_id == CPU_SCP) ? "SCP" : "MCP");
+
+        s_trp_routing_table[number_of_routes].dest.die_id = s_config.trp_icc_config.this_die_id ^ 1;
+        s_trp_routing_table[number_of_routes].dest.cpu_id = s_config.trp_icc_config.this_cpu_id;
+        s_trp_routing_table[number_of_routes].icc_endpoint = &s_trp_icc_endpoint_table[number_of_endpoints];
+
+        number_of_endpoints++;
+        number_of_routes++;
+    }
 
     s_config.trp_icc_config.number_of_routes = number_of_routes;
     s_config.trp_icc_config.number_of_endpoints = number_of_endpoints;

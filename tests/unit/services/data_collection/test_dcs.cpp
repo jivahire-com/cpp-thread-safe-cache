@@ -480,9 +480,9 @@ TEST_FUNCTION(test_dcs_is_valid_dcp_msg_from_drv_frmwk_valid, test_setup, nullpt
     assert_int_equal(valid, true);
     assert_int_equal(dcp_msg.hdr.msg_status, (int16_t)DCP_STATUS_SUCCESS);
 
-    // DCP_MSG_ID_GET_SCHEMA
+    // DCP_MSG_ID_GET_MANIFEST
     dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
-    dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_SCHEMA;
+    dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_MANIFEST;
     dcp_msg.hdr.payload_size = 0;
 
     valid = dcs_is_valid_dcp_msg_from_drv_frmwk(&dcp_msg);

@@ -336,7 +336,7 @@ bool dcs_is_valid_dcp_msg_from_drv_frmwk(p_dcp_msg_t dcp_msg)
         {
         case DCP_MSG_ID_GET_CAPABILITIES:
         case DCP_MSG_ID_GET_STATE:
-        case DCP_MSG_ID_GET_SCHEMA:
+        case DCP_MSG_ID_GET_MANIFEST:
         case DCP_MSG_ID_READ_DATA:
         case DCP_MSG_ID_RESET:
         case DCP_MSG_ID_GET_PLAT_INFO:

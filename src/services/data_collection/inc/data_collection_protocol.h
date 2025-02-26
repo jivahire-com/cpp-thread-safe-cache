@@ -22,7 +22,7 @@
 // note: this header implements version 1.0.3 of the DCP protocol
 #define DCP_PROTOCOL_VERSION_MAJOR (1)
 #define DCP_PROTOCOL_VERSION_MINOR (0)
-#define DCP_PROTOCOL_VERSION_PATCH (3)
+#define DCP_PROTOCOL_VERSION_PATCH (4)
 
 #define DCP_PLATFORM_COBALT_100 (1)
 #define DCP_PLATFORM_COBALT_200 (2)
@@ -60,7 +60,7 @@ typedef enum {
 typedef enum {
     DCP_MSG_ID_GET_CAPABILITIES     = 0x0,
     DCP_MSG_ID_GET_STATE            = 0x1,
-    DCP_MSG_ID_GET_SCHEMA           = 0x2,
+    DCP_MSG_ID_GET_MANIFEST         = 0x2,
     DCP_MSG_ID_EVENTS_ENABLE_DISABLE= 0x3,
     DCP_MSG_ID_EVENTS_DISABLE       = 0x4,  // Deprecated - Keeping for backward compatibility
     DCP_MSG_ID_START_STOP           = 0x5,
@@ -92,7 +92,7 @@ typedef struct __attribute__((packed)) {
         struct __attribute__((packed)) {
             uint32_t DCP_MSG_ID_GET_CAPABILITIES     : 1;
             uint32_t DCP_MSG_ID_GET_STATE            : 1;
-            uint32_t DCP_MSG_ID_GET_SCHEMA           : 1;
+            uint32_t DCP_MSG_ID_GET_MANIFEST         : 1;
             uint32_t DCP_MSG_ID_EVENTS_ENABLE_DISABLE: 1;
             uint32_t DCP_MSG_ID_EVENTS_DISABLE       : 1;
             uint32_t DCP_MSG_ID_START_STOP           : 1;
@@ -120,13 +120,13 @@ typedef struct {
     uint32_t state; // dcp_client_state_t
 } dcp_msg_get_client_state_t, *p_dcp_msg_get_client_state_t;
 
-/* CLIENT_GET_SCHEMA */
+/* CLIENT_GET_MANIFEST */
 
 typedef struct __attribute__((packed)) {
+    uint64_t physical_start_addr;
     uint64_t start_addr_offset;
     uint64_t total_size;
-    uint32_t crc;
-} dcp_msg_get_schema_t, *p_dcp_msg_get_schema_t;
+} dcp_msg_get_manifest_t, *p_dcp_msg_get_manifest_t;
 
 /* CLIENT_EVENTS_ENABLE_DISABLE */
 
@@ -212,7 +212,7 @@ typedef struct __attribute__((packed)) {
     union __attribute__((packed)) {
         dcp_msg_get_caps_t get_caps;                            // DCP_MSG_ID_GET_CAPABILITIES
         dcp_msg_get_client_state_t get_state;                   // DCP_MSG_ID_GET_STATE
-        dcp_msg_get_schema_t get_schema;                        // DCP_MSG_ID_GET_SCHEMA
+        dcp_msg_get_manifest_t get_manifest;                    // DCP_MSG_ID_GET_MANIFEST
         dcp_msg_events_enable_disable_t events_enable_disable;  // DCP_MSG_ID_EVENTS_ENABLE_DISABLE
         dcp_msg_start_stop_t start_stop;                        // DCP_MSG_ID_START_STOP
         dcp_msg_read_data_t read_data;                          // DCP_MSG_ID_READ_DATA

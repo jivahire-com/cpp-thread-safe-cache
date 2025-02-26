@@ -117,14 +117,14 @@ void dcp_svc_client_handle_dcp_msg(p_trp_msg_t trp_msg)
         break;
     }
 
-    case DCP_MSG_ID_GET_SCHEMA: {
-        uint64_t start_addr_offset = 0;
-        uint64_t total_size = 0;
+    case DCP_MSG_ID_GET_MANIFEST: {
+        dcp_msg_get_manifest_t manifest_info;
 
-        if (FPFW_STATUS_SUCCEEDED(dcs_get_manifest_info(&start_addr_offset, &total_size)))
+        if (FPFW_STATUS_SUCCEEDED(dcs_get_manifest_info(&manifest_info)))
         {
-            trp_msg->payload.dcp_msg.payload.get_schema.start_addr_offset = start_addr_offset;
-            trp_msg->payload.dcp_msg.payload.get_schema.total_size = total_size;
+            trp_msg->payload.dcp_msg.payload.get_manifest.physical_start_addr = manifest_info.physical_start_addr;
+            trp_msg->payload.dcp_msg.payload.get_manifest.start_addr_offset = manifest_info.start_addr_offset;
+            trp_msg->payload.dcp_msg.payload.get_manifest.total_size = manifest_info.total_size;
             trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
         }
         else

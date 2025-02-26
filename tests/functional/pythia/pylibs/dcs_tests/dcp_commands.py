@@ -33,7 +33,7 @@ class DataCollectionProtocol:
         """Message IDs as defined in protocol spec"""
         CLIENT_GET_CAPABILITIES = 0x0000
         CLIENT_GET_STATE = 0x0001
-        CLIENT_GET_SCHEMA = 0x0002
+        CLIENT_GET_MANIFEST = 0x0002
         CLIENT_EVENTS_ENABLE_DISABLE = 0x0003
         CLIENT_START_STOP = 0x0005
         CLIENT_READ_DATA = 0x0007
@@ -61,7 +61,7 @@ class DataCollectionProtocol:
     class ClientEventsEnableDisable:
         """CLIENT_EVENTS_ENABLE_DISABLE protocol constants"""
         MAX_EVENTS = 64
-        
+
         class PayloadFormat:
             """Payload format as per protocol spec"""
             NUM_EVENTS_SIZE = 2
@@ -69,7 +69,7 @@ class DataCollectionProtocol:
             EVENT_ID_SIZE = 2
             EVENT_STATE_SIZE = 2
             EVENT_ENTRY_SIZE = PROVIDER_ID_SIZE + EVENT_ID_SIZE + EVENT_STATE_SIZE
-        
+
         class EventState(IntEnum):
             """Event states as defined in protocol spec"""
             EVENT_DISABLED = 0x0000
@@ -85,15 +85,15 @@ class DataCollectionProtocol:
     @staticmethod
     def to_hex_string(msg: List[int]) -> str:
         """Convert message bytes to hex string format
-        
+
         Args:
             msg: List of bytes to convert
-            
+
         Returns:
             str: Space-separated hex string (e.g., "0x00 0x01 0x02")
         """
         return " ".join(f"0x{b:02x}" for b in msg)
-    
+
     @classmethod
     def _get_next_sequence_number(cls) -> int:
         """Get next sequence number and increment counter"""
@@ -104,7 +104,7 @@ class DataCollectionProtocol:
     @staticmethod
     def create_header(msg_id: int, payload_size: int, client_id: int = 0) -> List[int]:
         """Create DCP message header
-        
+
         Args:
             msg_id: Message identifier
             payload_size: Size of payload in bytes
@@ -114,7 +114,7 @@ class DataCollectionProtocol:
         header.extend([client_id & 0xFF, (client_id >> 8) & 0xFF])  # client_id in little-endian
         header.extend([msg_id & 0xFF, (msg_id >> 8) & 0xFF])  # msg_id
         # Increment sequence number
-        header.extend(DataCollectionProtocol._get_next_sequence_number()) #seq number with increment 
+        header.extend(DataCollectionProtocol._get_next_sequence_number()) #seq number with increment
         header.extend([0x00, 0x00])  # msg_status
         header.extend([payload_size & 0xFF, (payload_size >> 8) & 0xFF])  # payload_size
         return header
@@ -123,14 +123,14 @@ class DataCollectionProtocol:
     @staticmethod
     def client_start_stop(*, client_id: int, state: ClientStartStop.State) -> str:
         """Create client start/stop command
-        
+
         Args:
             client_id: Client identifier
             state: Start/Stop state to set
-            
+
         Returns:
             str: Hex formatted command string
-            
+
         Examples:
             For START command (0x00000001):
             msg = [
@@ -140,7 +140,7 @@ class DataCollectionProtocol:
                 0x00, 0x00,             # seq_num (2 bytes)
                 0x00, 0x00,             # msg_status (2 bytes)
                 0x04, 0x00,             # payload_size (2 bytes, 4 in little-endian)
-                
+
                 # Payload (4 bytes):
                 0x01, 0x00, 0x00, 0x00  # START state (0x00000001 in little-endian)
             ]
@@ -150,7 +150,7 @@ class DataCollectionProtocol:
             payload = [0x01, 0x00, 0x00, 0x00]  # START = 0x00000001 in little-endian
         else:
             payload = [0x00, 0x00, 0x00, 0x00]  # STOP = 0x00000000 in little-endian
-        
+
         # Create complete message with client_id
         msg = DataCollectionProtocol.create_header(
             DataCollectionProtocol.MessageId.CLIENT_START_STOP,
@@ -158,25 +158,25 @@ class DataCollectionProtocol:
             client_id
         )
         msg.extend(payload)
-        
+
         # Log raw message for debugging
         logger.debug(f"Raw message bytes: {msg}")
-        
+
         return DataCollectionProtocol.to_hex_string(msg)
 
     # TODO: Add more protocols and uncomment once start stop is reviewed.
     # @staticmethod
     # def events_enable_disable(events: List[dict]) -> Tuple[int, List[int], str]:
-    
+
 
     @staticmethod
     def validate_response(response: DcpResponse, logger: Optional[logging.Logger] = None) -> bool:
         """Validate DCP response
-        
+
         Args:
             response: DcpResponse to validate
             logger: Optional logger for error messages
-            
+
         Returns:
             bool: True if response indicates success, False otherwise
         """
@@ -184,10 +184,10 @@ class DataCollectionProtocol:
             if logger:
                 logger.error(f"Command failed: {response.error}")
             return False
-        
+
         if response.status != DataCollectionProtocol.Status.DATA_COLLECTION_SUCCESS:
             if logger:
                 logger.error(f"Command returned error status: 0x{response.status:x}")
             return False
-            
+
         return True

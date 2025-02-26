@@ -198,13 +198,13 @@ TEST_FUNCTION(test_dcp_svc_client_handle_get_state_msg, test_setup, nullptr)
     dcp_svc_client_handle_incoming_msgs();
 }
 
-TEST_FUNCTION(test_dcp_svc_client_handle_get_schema_msg, test_setup, nullptr)
+TEST_FUNCTION(test_dcp_svc_client_handle_get_manifest_msg, test_setup, nullptr)
 {
     trp_msg_t trp_msg = {{0}};
     p_trp_msg_t p_trp_msg = &trp_msg;
 
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
-    trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_SCHEMA;
+    trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_MANIFEST;
 
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);

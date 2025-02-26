@@ -43,30 +43,32 @@ static int test_setup(void** pContext)
 
 TEST_FUNCTION(test_dcs_get_manifest_info, test_setup, nullptr)
 {
-    uint64_t manifest_offset = 0;
-    uint64_t manifest_size = 0;
+    dcp_msg_get_manifest_t manifest_info;
 
     diag_manifest_set_v2_header_t* set_header = (diag_manifest_set_v2_header_t*)IB_TLM_DDR_ATU_AP_FULL_MANIFEST_BASE_ADDR;
     set_header->sentinel = DIAG_METADATA_SENTINEL;
     set_header->manifest_set_size = 0xAABB;
 
-    fpfw_status_t status = dcs_get_manifest_info(&manifest_offset, &manifest_size);
+    fpfw_status_t status = dcs_get_manifest_info(&manifest_info);
 
     assert_true(FPFW_STATUS_SUCCEEDED(status));
-    assert_int_equal(manifest_offset, IB_TLM_DDR_GET_FULL_MANIFEST_OFFSET);
-    assert_int_equal(manifest_size, sizeof(diag_manifest_set_v2_header_t) + set_header->manifest_set_size);
+    assert_int_equal(manifest_info.physical_start_addr, IB_TELEMETRY_DDR_TOTAL_AP_BASE_ADDR);
+    assert_int_equal(manifest_info.start_addr_offset, IB_TLM_DDR_GET_FULL_MANIFEST_OFFSET);
+    assert_int_equal(manifest_info.total_size, sizeof(diag_manifest_set_v2_header_t) + set_header->manifest_set_size);
 
-    manifest_offset = 0;
-    manifest_size = 0;
+    manifest_info.physical_start_addr = 0;
+    manifest_info.start_addr_offset = 0;
+    manifest_info.total_size = 0;
 
     set_header->sentinel = 0x18;
     set_header->manifest_set_size = 0xAABB;
 
-    status = dcs_get_manifest_info(&manifest_offset, &manifest_size);
+    status = dcs_get_manifest_info(&manifest_info);
 
     assert_false(FPFW_STATUS_SUCCEEDED(status));
-    assert_int_equal(manifest_offset, 0);
-    assert_int_equal(manifest_size, 0);
+    assert_int_equal(manifest_info.physical_start_addr, 0);
+    assert_int_equal(manifest_info.start_addr_offset, 0);
+    assert_int_equal(manifest_info.total_size, 0);
 }
 
 TEST_FUNCTION(test_dcs_create_manifest_from_elf, test_setup, nullptr)

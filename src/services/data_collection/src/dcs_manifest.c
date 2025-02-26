@@ -129,7 +129,7 @@ void dcs_build_diag_decoder_full_manifest(void)
            (unsigned long)(IB_TLM_DDR_PHY_AP_FULL_MANIFEST_BASE_ADDR & 0xFFFFFFFF));
 }
 
-fpfw_status_t dcs_get_manifest_info(uint64_t* manifest_offset, uint64_t* manifest_size)
+fpfw_status_t dcs_get_manifest_info(p_dcp_msg_get_manifest_t manifest_info)
 {
     fpfw_status_t status = FPFW_STATUS_NOT_FOUND;
 
@@ -137,13 +137,22 @@ fpfw_status_t dcs_get_manifest_info(uint64_t* manifest_offset, uint64_t* manifes
 
     if (set_header->sentinel == DIAG_METADATA_SENTINEL)
     {
-        *manifest_offset = IB_TLM_DDR_GET_FULL_MANIFEST_OFFSET;
-        *manifest_size = sizeof(diag_manifest_set_v2_header_t) + set_header->manifest_set_size;
+        manifest_info->physical_start_addr = IB_TELEMETRY_DDR_TOTAL_AP_BASE_ADDR;
+        manifest_info->start_addr_offset = IB_TLM_DDR_GET_FULL_MANIFEST_OFFSET;
+        manifest_info->total_size = sizeof(diag_manifest_set_v2_header_t) + set_header->manifest_set_size;
 
         status = FPFW_STATUS_SUCCESS;
+
+        printf("DCS: Manifest Info Base Address: 0x%08lx%08lx\n",
+               (unsigned long)(manifest_info->physical_start_addr >> 32),
+               (unsigned long)(manifest_info->physical_start_addr & 0xFFFFFFFF));
+
+        printf("DCS: Manifest Info Base Offset: 0x%08lx%08lx\n",
+               (unsigned long)(manifest_info->start_addr_offset >> 32),
+               (unsigned long)(manifest_info->start_addr_offset & 0xFFFFFFFF));
     }
 
-    printf("DCS: Full Manifest Set Size: %ld\n",
+    printf("DCS: Full Manifest Size: %ld\n",
            (unsigned long)(set_header->manifest_set_size + sizeof(diag_manifest_set_v2_header_t)));
     printf("DCS: ATU Full Manifest Location: 0x%08lx\n", (unsigned long)IB_TLM_DDR_ATU_AP_FULL_MANIFEST_BASE_ADDR);
     printf("DCS: Physical Full Manifest Location: 0x%08lx%08lx\n",

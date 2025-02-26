@@ -940,7 +940,7 @@ void tlm_calculate_mma_res(uint16_t* mma_min, uint16_t* mma_max, uint16_t* mma_a
     // Check parameter bounds
     if (time_diff_uS == 0 || time_diff_uS > UINT32_MAX || residency_uS > UINT32_MAX)
     {
-        FPFW_ET_LOG(DataUpdateMMAWrongInValidTimeStamp);
+        // FPFW_ET_LOG(DataUpdateMMAWrongInValidTimeStamp); //TODO: re-enable once  test systems support it
     }
     // Calculate the average
     if (*mma_latest_value != 0)

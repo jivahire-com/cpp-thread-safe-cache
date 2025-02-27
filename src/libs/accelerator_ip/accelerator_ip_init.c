@@ -346,28 +346,11 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
      * How do we handle SDM firmware download in SCP warm boot scenario?
      */
 
-/**
- * TODO: Task 1982595: [SCP] Accel IP Move to Static ATU map
- */
-#if 0
-    ret = atu_unmap(ATU_ID_MSCP, &atu_map_entry);
-    if (ret != SILIBS_SUCCESS)
+    ret = accel_scp_intr_init(accel_type);
+    if (ret != ACCEL_INTR_RET_SUCCESS)
     {
-        critical_print("Accel IP: init_accelerator: ATU UNMAP failed.\n");
-        return ACCEL_RET_FAIL_ACCEL_IP;
-    }
-#endif
-    if (!(IS_PLATFORM_SVP()))
-    {
-        /**
-         * TODO: Task 1973445: [SCP] Move Accel Intr init in SCP after mailbox communication
-         */
-        ret = accel_scp_intr_init(accel_type);
-        if (ret != ACCEL_INTR_RET_SUCCESS)
-        {
-            critical_print("Accel IP: init_accelerator: Accel Interrupt init failed.\n");
-            return ACCEL_RET_FAIL_INTR_INIT;
-        }
+        critical_print("Accel IP: init_accelerator: Accel Interrupt init failed.\n");
+        return ACCEL_RET_FAIL_INTR_INIT;
     }
 
     return ACCEL_RET_SUCCESS;

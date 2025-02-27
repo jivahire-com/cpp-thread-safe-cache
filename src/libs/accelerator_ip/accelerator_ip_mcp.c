@@ -54,15 +54,11 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
 
     accel_intr_atu_map_address[accel_type] = atu_svc_accel_atu_addr(accel_type);
 
-    if (IS_PLATFORM_FPGA())
+    ret = accel_mcp_intr_init(accel_type);
+    if (ret != ACCEL_INTR_RET_SUCCESS)
     {
-
-        ret = accel_mcp_intr_init(accel_type);
-        if (ret != ACCEL_INTR_RET_SUCCESS)
-        {
-            critical_print("Accel IP: init_accelerator: Accel Interrupt init failed.\n");
-            return ACCEL_RET_FAIL_INTR_INIT;
-        }
+        critical_print("Accel IP: init_accelerator: Accel Interrupt init failed.\n");
+        return ACCEL_RET_FAIL_INTR_INIT;
     }
 
     return ACCEL_RET_SUCCESS;

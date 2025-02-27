@@ -477,20 +477,6 @@ TEST_FUNCTION(test_icc_sdm_mbx_init__fail5, nullptr, nullptr)
     assert_null(result.associated_handle);
 }
 
-TEST_FUNCTION(test_icc_sdm_mbx_init__fail6, nullptr, nullptr)
-{
-    //! Verify wrapped APIs are invoked in order
-    will_return(__wrap_idsw_get_die_id, DIE_1);
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
-
-    // Call the function under test
-    fpfw_init_result_t result = _fpfw_component_icc_sdm_mbx.init_fn();
-
-    // Perform necessary assertions on result
-    assert_true(result.status == FPFW_STATUS_SUCCESS);
-    assert_null(result.associated_handle);
-}
-
 TEST_FUNCTION(test_icc_cded_mbx_init, nullptr, nullptr)
 {
     // Set up expectations
@@ -659,20 +645,6 @@ TEST_FUNCTION(test_icc_cded_mbx_init__fail5, nullptr, nullptr)
 
     // Perform necessary assertions on result
     assert_true(result.status != FPFW_STATUS_SUCCESS);
-    assert_null(result.associated_handle);
-}
-
-TEST_FUNCTION(test_icc_cded_mbx_init__fail6, nullptr, nullptr)
-{
-    //! Verify wrapped APIs are invoked in order
-    will_return(__wrap_idsw_get_die_id, DIE_1);
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
-
-    // Call the function under test
-    fpfw_init_result_t result = _fpfw_component_icc_cded_mbx.init_fn();
-
-    // Perform necessary assertions on result
-    assert_true(result.status == FPFW_STATUS_SUCCESS);
     assert_null(result.associated_handle);
 }
 

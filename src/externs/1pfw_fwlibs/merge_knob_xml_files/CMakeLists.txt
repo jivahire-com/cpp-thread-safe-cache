@@ -35,6 +35,8 @@ set(EXPLICIT_PATH_PROD_FW_POWER_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kn
 set(EXPLICIT_PATH_PROD_FW_ACCEL_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_accel_config_knobs.xml)
 set(EXPLICIT_PATH_PROD_FW_FUNC_TEST_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_func_test_config_knobs.xml)
 set(EXPLICIT_PATH_PROD_FW_UNIT_TEST_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_unit_test_config_knobs.xml)
+set(EXPLICIT_PATH_PROD_FW_USB_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_usb_config_knobs.xml)
+set(EXPLICIT_PATH_PROD_FW_GPIO_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_gpio_config_knobs.xml)
 
 set(PROD_FW_KNOBS_NAMESPACE "FE3ED49F-B173-41ED-9076-356661D46A42")
 
@@ -45,10 +47,12 @@ if (i386-pc-windows-msvc)
                    ${EXPLICIT_PATH_PROD_FW_DDRSS_KNOBS} 
                    ${EXPLICIT_PATH_PROD_FW_I3C_KNOBS} 
                    ${EXPLICIT_PATH_PROD_FW_MESH_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_PCIE_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_PCIE_KNOBS}  
                    ${EXPLICIT_PATH_PROD_FW_POWER_KNOBS} 
                    ${EXPLICIT_PATH_PROD_FW_ACCEL_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_UNIT_TEST_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_UNIT_TEST_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_USB_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_GPIO_KNOBS}
                 -p ${PROD_FW_COMBINED_GENERATED_KNOBS} -n ${PROD_FW_KNOBS_NAMESPACE}
     )
 else()
@@ -60,7 +64,9 @@ else()
                    ${EXPLICIT_PATH_PROD_FW_PCIE_KNOBS} 
                    ${EXPLICIT_PATH_PROD_FW_POWER_KNOBS} 
                    ${EXPLICIT_PATH_PROD_FW_ACCEL_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_FUNC_TEST_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_FUNC_TEST_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_USB_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_GPIO_KNOBS} 
                 -p ${PROD_FW_COMBINED_GENERATED_KNOBS} -n ${PROD_FW_KNOBS_NAMESPACE}
     )
 endif()

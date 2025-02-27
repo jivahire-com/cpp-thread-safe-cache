@@ -10,9 +10,7 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-        clocks_sequence
         fwlib.lib.init
-        idhw
         fwlib.lib.utils
         silibs::idsw
         silibs::idsw_kng
@@ -21,10 +19,17 @@ target_link_libraries(${TARGET}
         silibs_platform
         kng_silibs_platform
         fwlib.lib.assert
-        ppu_v1
-        atu
         pcr_ioss
+        fwlib.lib.cfg_mgr
+        silibs::atu
+        silibs::ioss_init
+        silibs::usb_init
+        ms::lib::variable_services
+        ms::lib::error_codes
 )
+
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
 lint_target(${TARGET})
 format_target(${TARGET})

@@ -10,21 +10,21 @@
 /*------------- Includes -----------------*/
 #include "ioss_ini.h"
 
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
-#include <atu_lib.h>    // for atu_map_entry_t, atu_map, atu_unmap
-#include <idsw.h>
-#include <idsw_kng.h>
+#include <FpFwAssert.h>
+#include <atu_lib.h>
+#include <fpfw_cfg_mgr.h>
 #include <ioss_init.h>
-#include <ioss_top_regs.h> // for IOSS_TOP_IOSS_PCR_ADDRESS, IOSS_...
 #include <kng_atu_mappings.h>
-#include <kng_soc_constants.h>  // for ATU_PAGE_SIZE, NUM_IOSS_INSTANCES
-#include <silibs_ap_top_regs.h> // for AP_TOP_D0_VAB_CDED_IOSS_ADDRESS
-#include <silibs_common.h>      // for ALIGN_UP
-#include <silibs_status.h>      // for SILIBS_SUCCESS
-#include <stdint.h>             // for uint64_t, uint32_t, uint8_t
+#include <kng_error.h>
+#include <kng_soc_constants.h>
+#include <mscp_exp_rmss_memory_map.h>
+#include <silibs_status.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <usb_config_variable.h>
+#include <usb_knobs.h>
 #include <usb_struct_defaults.h>
-#include <vab_cded_ioss_top_regs.h> // for VAB_CDED_IOSS_TOP_IOSS_ADDRESS
+#include <variable_services.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -32,48 +32,13 @@
 // D0-IOSS0
 static atu_map_entry_t atu_ioss_map = ATU_MAPPING_IOSS_TOP(0);
 
-static usb_cfg_t usb_cfg_knobs = {
-    .power_on_port0 = true,
-    .power_on_port1 = true,
-    .usb_cfg =
-        {
-            {
-                .sd_config = {.dis_u1u2timerscale = true, .sd_mode = 2},
-            },
-            {
-                .sd_config =
-                    {
-                        .dis_u1u2timerscale = true,
-                        .sd_mode = 2,
-                    },
-            },
-        },
-};
-
-static usb_cfg_t usb_fpga_cfg_knobs = {
-    .power_on_port0 = true,
-    .power_on_port1 = false,
-    .usb_cfg =
-        {
-            {
-                .sd_config = {.dis_u1u2timerscale = true, .sd_mode = 2},
-            },
-        },
-};
-
-static usb_cfg_t usb_disable_cfg_knobs = {
-    .power_on_port0 = false,
-    .power_on_port1 = false,
-};
-
-static gpio_cfg_t gpio_cfg_knobs = {
+static USB_CFG_DATA uefi_knobs;
+static usb_cfg_t usb_prod_knobs = DEFAULT_USB_CFG_T;
+static var_service_req_ctx_t req_ctx = {};
+static var_service_shared_mem_t mem_ctx = {0};
+static gpio_cfg_t gpio_prod_knobs = {
     .gpio_init = true,
     .gpio_afm_init = true,
-};
-
-static gpio_cfg_t gpio_disable_cfg_knobs = {
-    .gpio_init = false,
-    .gpio_afm_init = false,
 };
 
 static ioss_cfg_t ioss_init_knobs = {
@@ -83,51 +48,60 @@ static ioss_cfg_t ioss_init_knobs = {
 /*------------- Functions ----------------*/
 void ioss_ini()
 {
-    int sts = atu_map(ATU_ID_MSCP, &atu_ioss_map);
+    silibs_status_t sts = SILIBS_SUCCESS;
+
+    sts = atu_map(ATU_ID_MSCP, &atu_ioss_map);
     FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
 
     uint32_t resolved_ioss_base_addr = atu_ioss_map.mscp_start_address;
 
-    // default is USB disabled
-    ioss_init_t init = {.ioss_knobs = &ioss_init_knobs,
-                        .gpio_knobs = &gpio_cfg_knobs,
-                        .usb_knobs = &usb_disable_cfg_knobs,
-                        .ioss_base_addr = resolved_ioss_base_addr};
+    // Override USB and GPIO knobs
+    usb_prod_knobs = config_get_usb_knobs();
+    gpio_prod_knobs = config_get_gpio_knobs();
 
-    /* TODO:
-     * Obtain USB configuration information from the configuration manager
-     * instead of relying on SDV. ADO - 1508440
-     * https://azurecsi.visualstudio.com/Dev/_workitems/edit/1508440
-     */
-    KNG_PLAT_ID plat = idsw_get_platform_sdv();
-    switch (plat)
+    mem_ctx.payload_base = (uintptr_t)SCP_EXP_SCP_USB_VARIABLE_SERVICE_PAYLOAD_BASE;
+    mem_ctx.max_payload_size = SCP_EXP_SCP_USB_VARIABLE_SERVICE_PAYLOAD_SIZE;
+
+    // USB configuration published by SCP for UEFI
+    uefi_knobs.PowerOnPort0 = usb_prod_knobs.power_on_port0;
+    uefi_knobs.PowerOnPort1 = usb_prod_knobs.power_on_port1;
+
+    uint16_t usb_var_name[] = USB_VAR_NAME;
+
+    if (variable_service_initialize_ctx(&req_ctx, &mem_ctx) != KNG_SUCCESS)
     {
-    // Note: FPGAs only support one controller subsytem - USB2_0
-    case PLATFORM_FPGA:
-    case PLATFORM_FPGA_LARGE:
-    case PLATFORM_FPGA_LARGE_RVP:
-        init.usb_knobs = &usb_fpga_cfg_knobs;
-        init.gpio_knobs = &gpio_disable_cfg_knobs;
-        break;
-
-    case PLATFORM_SVP_SIM:
-    case PLATFORM_SVP_MIN_CONFIG_SIM:
-    case PLATFORM_RVP_EVT_SILICON:
-        init.usb_knobs = &usb_cfg_knobs;
-        init.gpio_knobs = &gpio_disable_cfg_knobs;
-        break;
-
-    case PLATFORM_EMU_1D:
-    case PLATFORM_EMU_1D_8C:
-    case PLATFORM_EMU_2D:
-    case PLATFORM_EMU_2D_8C:
-    default:
-        printf("Skip USB init on platform id: %d\n", plat);
-        break;
+        printf("Variable_service_initialize_ctx failed");
+        FPFW_RUNTIME_ASSERT(false);
     }
 
+    // Prepare the set variable request
+    var_service_req_params_t set_var_req = {
+        .variable_name_ptr = usb_var_name,
+        .variable_name_size = sizeof(usb_var_name),
+        .vendor_namespace_guid = USB_VAR_GUID,
+        .data_size = sizeof(USB_CFG_DATA),
+        .data = (uint8_t*)&uefi_knobs,
+        .attributes =
+            {
+                .as_uint32 = EFI_VARIABLE_BOOTSERVICE_ACCESS,
+            },
+    };
+
+    // Publish USB variable
+    variable_service_sync_set_variable(&req_ctx, &set_var_req);
+
+    ioss_init_t init = {.ioss_knobs = &ioss_init_knobs,
+                        .gpio_knobs = &gpio_prod_knobs,
+                        .usb_knobs = &usb_prod_knobs,
+                        .ioss_base_addr = resolved_ioss_base_addr,
+                        .gpio_cfg_tbl = NULL,
+                        .gpio_cfg_num = 0,
+                        .gpio_afm_cfg_tbl = NULL,
+                        .gpio_afm_cfg_num = 0};
+
     // Enable IOSS IPs
-    ioss_init(D0_IOSS, &init);
+    sts = ioss_init(D0_IOSS, &init);
+    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
 
     sts = atu_unmap(ATU_ID_MSCP, &atu_ioss_map);
     FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);

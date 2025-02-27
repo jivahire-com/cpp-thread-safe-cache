@@ -12,7 +12,7 @@
   <!-- namespace indicates the GUID namespace the values are stored in -->
   <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
     <!-- USB -->
-    <Knob name="usb_knobs" type="usb_cfg_t" help="USBSS config knobs for port 0 and port 1"/>
+    <Knob name="gpio_knobs" type="gpio_cfg_t" help="GPIO config knobs"/>
   </Knobs>
 
 </ConfigSchema>

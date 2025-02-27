@@ -13,11 +13,14 @@
 
 #include <CMockaWrapper.h>
 #include <cstdint>
-#include <ioss_top_regs.h>          // for IOSS_TOP_IOSS_PCR_ADDRESS, IOSS_...
-#include <kng_soc_constants.h>      // for ATU_PAGE_SIZE, NUM_IOSS_INSTANCES
+#include <ioss_top_regs.h> // for IOSS_TOP_IOSS_PCR_ADDRESS, IOSS_...
+#include <kng_error.h>
+#include <kng_soc_constants.h> // for ATU_PAGE_SIZE, NUM_IOSS_INSTANCES
+#include <mscp_exp_rmss_memory_map.h>
 #include <silibs_ap_top_regs.h>     // for AP_TOP_D0_VAB_CDED_IOSS_ADDRESS
 #include <stddef.h>                 // for NULL
 #include <vab_cded_ioss_top_regs.h> // for VAB_CDED_IOSS_TOP_IOSS_ADDRESS
+#include <variable_services.h>
 
 extern "C" {
 #include <error_handler.h>
@@ -30,6 +33,9 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+static var_service_req_ctx_t req_ctx = {};
+static var_service_shared_mem_t mem_ctx = {0};
+
 /*------------- Functions ----------------*/
 //
 // Tests
@@ -37,7 +43,17 @@ extern "C" {
 TEST_FUNCTION(test_valid_die_0, NULL, NULL)
 {
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_function_call(__wrap_ioss_init);
+    mem_ctx.payload_base = (uintptr_t)SCP_EXP_SCP_USB_VARIABLE_SERVICE_PAYLOAD_BASE;
+    mem_ctx.max_payload_size = SCP_EXP_SCP_USB_VARIABLE_SERVICE_PAYLOAD_SIZE;
+    expect_memory(__wrap_variable_service_initialize_ctx, var_serv_ctx, &req_ctx, sizeof(req_ctx));
+    expect_memory(__wrap_variable_service_initialize_ctx, mem_ctx, &mem_ctx, sizeof(mem_ctx));
+    will_return(__wrap_variable_service_initialize_ctx, KNG_SUCCESS);
+
+    expect_any(__wrap_variable_service_sync_set_variable, var_serv_ctx);
+    expect_any(__wrap_variable_service_sync_set_variable, req_params);
+    expect_function_call(__wrap_variable_service_sync_set_variable);
+
+    will_return(__wrap_ioss_init, SILIBS_SUCCESS);
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
     ioss_ini();
 }
@@ -52,10 +68,56 @@ TEST_FUNCTION(test_atu_map_fail, NULL, NULL)
     }
 }
 
+TEST_FUNCTION(test_variable_service_initialize_ctx, NULL, NULL)
+{
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    mem_ctx.payload_base = (uintptr_t)SCP_EXP_SCP_USB_VARIABLE_SERVICE_PAYLOAD_BASE;
+    mem_ctx.max_payload_size = SCP_EXP_SCP_USB_VARIABLE_SERVICE_PAYLOAD_SIZE;
+    expect_memory(__wrap_variable_service_initialize_ctx, var_serv_ctx, &req_ctx, sizeof(req_ctx));
+    expect_memory(__wrap_variable_service_initialize_ctx, mem_ctx, &mem_ctx, sizeof(mem_ctx));
+    will_return(__wrap_variable_service_initialize_ctx, 1);
+    expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
+    if (!set_error_handler_return())
+    {
+        ioss_ini();
+    }
+}
+
+TEST_FUNCTION(test_ioss_init_failed, NULL, NULL)
+{
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    mem_ctx.payload_base = (uintptr_t)SCP_EXP_SCP_USB_VARIABLE_SERVICE_PAYLOAD_BASE;
+    mem_ctx.max_payload_size = SCP_EXP_SCP_USB_VARIABLE_SERVICE_PAYLOAD_SIZE;
+    expect_memory(__wrap_variable_service_initialize_ctx, var_serv_ctx, &req_ctx, sizeof(req_ctx));
+    expect_memory(__wrap_variable_service_initialize_ctx, mem_ctx, &mem_ctx, sizeof(mem_ctx));
+    will_return(__wrap_variable_service_initialize_ctx, KNG_SUCCESS);
+
+    expect_any(__wrap_variable_service_sync_set_variable, var_serv_ctx);
+    expect_any(__wrap_variable_service_sync_set_variable, req_params);
+    expect_function_call(__wrap_variable_service_sync_set_variable);
+
+    will_return(__wrap_ioss_init, SILIBS_E_INIT);
+    expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
+    if (!set_error_handler_return())
+    {
+        ioss_ini();
+    }
+}
+
 TEST_FUNCTION(test_atu_unmap_fail, NULL, NULL)
 {
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_function_call(__wrap_ioss_init);
+    mem_ctx.payload_base = (uintptr_t)SCP_EXP_SCP_USB_VARIABLE_SERVICE_PAYLOAD_BASE;
+    mem_ctx.max_payload_size = SCP_EXP_SCP_USB_VARIABLE_SERVICE_PAYLOAD_SIZE;
+    expect_memory(__wrap_variable_service_initialize_ctx, var_serv_ctx, &req_ctx, sizeof(req_ctx));
+    expect_memory(__wrap_variable_service_initialize_ctx, mem_ctx, &mem_ctx, sizeof(mem_ctx));
+    will_return(__wrap_variable_service_initialize_ctx, KNG_SUCCESS);
+
+    expect_any(__wrap_variable_service_sync_set_variable, var_serv_ctx);
+    expect_any(__wrap_variable_service_sync_set_variable, req_params);
+    expect_function_call(__wrap_variable_service_sync_set_variable);
+
+    will_return(__wrap_ioss_init, SILIBS_SUCCESS);
     will_return(__wrap_atu_unmap, SILIBS_E_INIT);
     expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
     if (!set_error_handler_return())

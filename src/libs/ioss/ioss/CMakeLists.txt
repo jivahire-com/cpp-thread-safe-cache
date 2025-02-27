@@ -10,16 +10,18 @@ target_link_libraries(${TARGET}
         kng_silibs_platform
         silibs_platform
         fwlib.lib.assert
+        fwlib.lib.cfg_mgr
         silibs::atu
-        silibs::idsw
-        silibs::idsw_kng
         silibs::ioss_init
         silibs::usb_init
+        ms::lib::variable_services
+        ms::lib::error_codes
 )
 
 target_include_directories(${TARGET}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${REPO_ROOT_DIR}/.externs/repo/silibs/soc_fw_shared/include
 )
 
 lint_target(${TARGET})

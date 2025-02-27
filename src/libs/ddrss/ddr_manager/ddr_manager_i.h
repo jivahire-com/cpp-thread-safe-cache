@@ -30,6 +30,12 @@
 #define DDR_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define DDR_LOG_CRIT(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 
+#ifdef DEBUG_PRINT_ENABLED
+#define DDR_LOG_DEBUG(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#else
+#define DDR_LOG_DEBUG(fmt, ...) (void)0
+#endif
+
 /*-------------- Typedefs ----------------*/
 typedef union _kng_hsp_cmd_load_fw_mailbox_msg
 {

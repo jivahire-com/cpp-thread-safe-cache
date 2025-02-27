@@ -185,7 +185,7 @@ int sort_reserved_regions(const ddrss_memory_region_t reservations[], uint32_t n
     {
         out_sorted[i] = reservations[i];
     }
-    DDR_LOG_WARN("--------original memory map-----------");
+    DDR_LOG_DEBUG("--------original memory map-----------");
     show_map(out_sorted, ddrmap_get_last_idx(out_sorted), true);
 
     // insertion sort
@@ -194,7 +194,7 @@ int sort_reserved_regions(const ddrss_memory_region_t reservations[], uint32_t n
         // Check for exit condition
         if (out_sorted[rsvd_count].start_address == 0 && out_sorted[rsvd_count].end_address == 0)
         {
-            DDR_LOG_WARN("--------sorted memory map-----------");
+            DDR_LOG_DEBUG("--------sorted memory map-----------");
             show_map(out_sorted, ddrmap_get_last_idx(out_sorted), true);
             return SILIBS_SUCCESS;
         }
@@ -274,11 +274,11 @@ int ddrmap_add_reservations(const ddrss_memory_region_t in_mmap[],
     uint32_t res_idx = 0;
     uint64_t next_start = 0;
 
-    DDR_LOG_CRIT("--------Incoming memory map-------------");
+    DDR_LOG_DEBUG("--------Incoming memory map-------------");
     show_map(in_mmap, ddrmap_get_last_idx(in_mmap), true);
-    DDR_LOG_CRIT("--------DDR Reservations----------------");
+    DDR_LOG_DEBUG("--------DDR Reservations----------------");
     show_map((ddrss_memory_region_t*)reservations, ddrmap_get_last_idx(reservations), true);
-    DDR_LOG_CRIT("--------Outgoing memory map-------------");
+    DDR_LOG_DEBUG("--------Outgoing memory map-------------");
 
     while (in_idx < MAX_MEMORY_REGIONS)
     {
@@ -484,27 +484,27 @@ void show_map(const ddrss_memory_region_t this_mmap[], int idx, bool show_all)
     {
         for (int i = 0; i < idx; i++)
         {
-            DDR_LOG_CRIT("Region: %d \n", i);
-            DDR_LOG_CRIT(" \tstart: 0x%08lX%08lX \n",
+            DDR_LOG_DEBUG("Region: %d \n", i);
+            DDR_LOG_DEBUG(" \tstart: 0x%08lX%08lX \n",
                          (unsigned long)(this_mmap[i].start_address >> 32),
                          (unsigned long)(this_mmap[i].start_address & 0xFFFFFFFF));
-            DDR_LOG_CRIT(" \tend:   0x%08lX%08lX \n",
+            DDR_LOG_DEBUG(" \tend:   0x%08lX%08lX \n",
                          (unsigned long)(this_mmap[i].end_address >> 32),
                          (unsigned long)(this_mmap[i].end_address & 0xFFFFFFFF));
-            DDR_LOG_CRIT(" \tflags.available_sysmem:     %d \n", (int)this_mmap[i].attr.available_sysmem);
-            DDR_LOG_CRIT(" \tflags.pas_mask:           0x%X \n", (int)this_mmap[i].attr.as_uint32 & 0xf);
+            DDR_LOG_DEBUG(" \tflags.available_sysmem:     %d \n", (int)this_mmap[i].attr.available_sysmem);
+            DDR_LOG_DEBUG(" \tflags.pas_mask:           0x%X \n", (int)this_mmap[i].attr.as_uint32 & 0xf);
         }
     }
     else
     {
-        DDR_LOG_CRIT(" Region: %d \n", idx);
-        DDR_LOG_CRIT(" \tstart: 0x%08lX%08lX \n",
+        DDR_LOG_DEBUG(" Region: %d \n", idx);
+        DDR_LOG_DEBUG(" \tstart: 0x%08lX%08lX \n",
                      (unsigned long)(this_mmap[idx].start_address >> 32),
                      (unsigned long)(this_mmap[idx].start_address & 0xFFFFFFFF));
-        DDR_LOG_CRIT(" \tend:   0x%08lX%08lX \n",
+        DDR_LOG_DEBUG(" \tend:   0x%08lX%08lX \n",
                      (unsigned long)(this_mmap[idx].end_address >> 32),
                      (unsigned long)(this_mmap[idx].end_address & 0xFFFFFFFF));
-        DDR_LOG_CRIT(" \tflags.available_sysmem:     %d \n", (int)this_mmap[idx].attr.available_sysmem);
-        DDR_LOG_CRIT(" \tflags.pas_mask:           0x%X \n", (int)this_mmap[idx].attr.as_uint32 & 0xf);
+        DDR_LOG_DEBUG(" \tflags.available_sysmem:     %d \n", (int)this_mmap[idx].attr.available_sysmem);
+        DDR_LOG_DEBUG(" \tflags.pas_mask:           0x%X \n", (int)this_mmap[idx].attr.as_uint32 & 0xf);
     }
 }

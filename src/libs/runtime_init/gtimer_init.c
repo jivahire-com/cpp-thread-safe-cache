@@ -42,6 +42,16 @@ static_assert(SOC_REFCLK_FREQUENCY_HZ * SOC_REFCLK_SCALING_FACTOR == 1000000000,
 static_assert(FPGA_REFCLK_FREQUENCY * FPGA_SCALING_FACTOR == 10000000,
               "FPGA_REFCLK_FREQUENCY * FPGA_SCALING_FACTOR must equal 10MHz");
 
+/*
+ * SVP does not support a 250 MHz refclk. The counter frequency on the
+ * SVP instead runs at 125 MHz (with a potential to scale it 8x - to make it
+ * appear to tick at 1 GHz).
+ */
+#define SVP_REFCLK_FREQUENCY 125000000ULL
+#define SVP_SCALING_FACTOR   1ULL
+static_assert(SVP_REFCLK_FREQUENCY * SVP_SCALING_FACTOR == 125000000,
+              "SVP_REFCLK_FREQUENCY * SVP_SCALING_FACTOR must equal 125MHz");
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -66,10 +76,16 @@ FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver"))
     config.timer_irq = HW_INT_MCP_GENERIC_TIMER_INT;
 #endif
 
+    /* Override default settings in case dev. platforms have different capabilities */
     if (IS_PLATFORM_FPGA())
     {
         config.frequency_hz = FPGA_REFCLK_FREQUENCY;
         config.scaling_factor = FPGA_SCALING_FACTOR;
+    }
+    else if (IS_PLATFORM_SVP())
+    {
+        config.frequency_hz = SVP_REFCLK_FREQUENCY;
+        config.scaling_factor = SVP_SCALING_FACTOR;
     }
 
     gtimer_prodfw_init(&config);

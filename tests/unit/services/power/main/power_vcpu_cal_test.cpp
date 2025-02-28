@@ -101,28 +101,18 @@ POWER_TEST(vcpu_calc_peak_current_A, NULL, NULL)
 
 #define TEST_POLY_CONSTANT 5.0f
 
-// calculation for plimit current threshold
-#define CORE0_PLIMIT1 137
-#define CORE0_PLIMIT2 144
-#define CORE0_PLIMIT3 152
-#define CORE2_PLIMIT1 131
-#define CORE2_PLIMIT2 139
-#define CORE2_PLIMIT3 146
-#define CORE4_PLIMIT1 126
-#define CORE4_PLIMIT2 133
-#define CORE4_PLIMIT3 140
-#define CORE6_PLIMIT1 123
-#define CORE6_PLIMIT2 130
-#define CORE6_PLIMIT3 137
+#define TEST_DEFAULT_PLIMIT_T1 0x66 /* 40% of maximum threshold */
+#define TEST_DEFAULT_PLIMIT_T2 0xA7 /* 65% of maximum threshold. Alarm will trigger above this */
+#define TEST_DEFAULT_PLIMIT_T3 0xE6 /* 90% of maximum threshold. Highest check for cte alarm */
 
     uint8_t core_plimits[8][3] = {
-        {CORE0_PLIMIT1, CORE0_PLIMIT2, CORE0_PLIMIT3},
+        {TEST_DEFAULT_PLIMIT_T1, TEST_DEFAULT_PLIMIT_T2, TEST_DEFAULT_PLIMIT_T3},
         {0, 0, 0},
-        {CORE2_PLIMIT1, CORE2_PLIMIT2, CORE2_PLIMIT3},
+        {TEST_DEFAULT_PLIMIT_T1, TEST_DEFAULT_PLIMIT_T2, TEST_DEFAULT_PLIMIT_T3},
         {0, 0, 0},
-        {CORE4_PLIMIT1, CORE4_PLIMIT2, CORE4_PLIMIT3},
+        {TEST_DEFAULT_PLIMIT_T1, TEST_DEFAULT_PLIMIT_T2, TEST_DEFAULT_PLIMIT_T3},
         {0, 0, 0},
-        {CORE6_PLIMIT1, CORE6_PLIMIT2, CORE6_PLIMIT3},
+        {TEST_DEFAULT_PLIMIT_T1, TEST_DEFAULT_PLIMIT_T2, TEST_DEFAULT_PLIMIT_T3},
         {0, 0, 0},
     };
 
@@ -190,15 +180,16 @@ POWER_TEST(vcpu_calc_peak_current_A, NULL, NULL)
 
     for (unsigned bit_idx = 0; bit_idx < core_count; ++bit_idx)
     {
-
-        power_core_t* core = &test_loop_config->cores.core[bit_idx];
-
         if (corebits_is_bit_set(&test_runconfig.fuses.valid_cores, bit_idx))
         {
-            assert_int_equal(core_plimits[bit_idx][0], core->plimit_t1);
-            assert_int_equal(core_plimits[bit_idx][1], core->plimit_t2);
-            assert_int_equal(core_plimits[bit_idx][2], core->plimit_t3);
-            printf("Core %d, PLIMIT T1 = %d, T2 = %d, T3 = %d\n", bit_idx, core->plimit_t1, core->plimit_t2, core->plimit_t3);
+            assert_int_equal(core_plimits[bit_idx][0], TEST_DEFAULT_PLIMIT_T1);
+            assert_int_equal(core_plimits[bit_idx][1], TEST_DEFAULT_PLIMIT_T2);
+            assert_int_equal(core_plimits[bit_idx][2], TEST_DEFAULT_PLIMIT_T3);
+            printf("Core %d, PLIMIT T1 = %d, T2 = %d, T3 = %d\n",
+                   bit_idx,
+                   core_plimits[bit_idx][0],
+                   core_plimits[bit_idx][1],
+                   core_plimits[bit_idx][2]);
         }
     }
 

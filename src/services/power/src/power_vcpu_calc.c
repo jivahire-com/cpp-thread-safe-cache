@@ -120,7 +120,7 @@ float power_vcpu_calc_peak_current_A(power_runconfig_t* p_runconfig, power_ctrl_
                 power_vcpu_calc_core_leakage_scaler(p_runconfig, loop_config->cores.core->temperature_dC);
             leakage_current_A += (precalc->leakage * leakage_scaler);
 
-            /* Updates P-Limit */
+            /* Updates P-Limit, if current throttling enabled */
             /* Reference: "LOW VOLTAGE DROPOUT (LDO)- IP DATASHEET"
              * Link: https://microsoft.sharepoint.com/:w:/t/PowerDelivery/EUxg6yuT_MhLn9-rWxVMtp4BvtpfzgoZbQRs-ST9DADL1Q?e=1TrEOp
              * Section "Interpreting ODCM readings" states that the relationship between ODCM output and core current after trimming is
@@ -129,21 +129,24 @@ float power_vcpu_calc_peak_current_A(power_runconfig_t* p_runconfig, power_ctrl_
              * It is assumed that the trim yields maximum ADC output when core current is 8 A.
              * In this case, the current per LSB is 32mA */
 
-            float cur_threshold;
-            cur_threshold = ((precalc->dynamic) * (p_knobs->current_threshold.t1_percent) / 100 +
-                             (precalc->leakage) * leakage_scaler) *
-                            255 / MAX_CURRENT_PER_CORE_A;
-            core->plimit_t1 = (uint8_t)FLOAT_TO_UNSIGNED(cur_threshold);
+            if (p_runconfig->knobs.current_threshold.power_current_throt_en == true)
+            {
+                float cur_threshold;
+                cur_threshold = ((precalc->dynamic) * (p_knobs->current_threshold.t1_percent) / 100 +
+                                 (precalc->leakage) * leakage_scaler) *
+                                255 / MAX_CURRENT_PER_CORE_A;
+                core->plimit_t1 = (uint8_t)FLOAT_TO_UNSIGNED(cur_threshold);
 
-            cur_threshold = ((precalc->dynamic) * (p_knobs->current_threshold.t2_percent) / 100 +
-                             (precalc->leakage) * leakage_scaler) *
-                            255 / MAX_CURRENT_PER_CORE_A;
-            core->plimit_t2 = (uint8_t)FLOAT_TO_UNSIGNED(cur_threshold);
+                cur_threshold = ((precalc->dynamic) * (p_knobs->current_threshold.t2_percent) / 100 +
+                                 (precalc->leakage) * leakage_scaler) *
+                                255 / MAX_CURRENT_PER_CORE_A;
+                core->plimit_t2 = (uint8_t)FLOAT_TO_UNSIGNED(cur_threshold);
 
-            cur_threshold = ((precalc->dynamic) * (p_knobs->current_threshold.t3_percent) / 100 +
-                             (precalc->leakage) * leakage_scaler) *
-                            255 / MAX_CURRENT_PER_CORE_A;
-            core->plimit_t3 = (uint8_t)FLOAT_TO_UNSIGNED(cur_threshold);
+                cur_threshold = ((precalc->dynamic) * (p_knobs->current_threshold.t3_percent) / 100 +
+                                 (precalc->leakage) * leakage_scaler) *
+                                255 / MAX_CURRENT_PER_CORE_A;
+                core->plimit_t3 = (uint8_t)FLOAT_TO_UNSIGNED(cur_threshold);
+            }
         }
     }
 

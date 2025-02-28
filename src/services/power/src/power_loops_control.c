@@ -15,6 +15,7 @@
 #include "power_i.h"
 #include "power_loops_i.h"
 #include "power_remote_die_i.h"
+#include "power_runconfig.h"
 #include "power_runconfig_i.h"
 #include "power_stub_i.h"
 
@@ -60,9 +61,10 @@ static uint8_t boost_pri_for_tracking(power_runconfig_t* p_runconfig, uint8_t pr
 /*-- Declarations (Statics and globals) --*/
 #define DEFAULT_PRIORITY 0
 // Default value of PLIMIT_T1/2/3 is copied from silibs/libraries/dvfs/include/dvfs_struct.h
-#define DEFAULT_PLIMIT_T1 0x66 /* 40% of maximum threshold */
-#define DEFAULT_PLIMIT_T2 0xA7 /* 65% of maximum threshold. Alarm will trigger above this */
-#define DEFAULT_PLIMIT_T3 0xE6 /* 90% of maximum threshold. Highest check for cte alarm */
+#define DEFAULT_PLIMIT_T1         0x66 /* 40% of maximum threshold */
+#define DEFAULT_PLIMIT_T2         0xA7 /* 65% of maximum threshold. Alarm will trigger above this */
+#define DEFAULT_PLIMIT_T3         0xE6 /* 90% of maximum threshold. Highest check for cte alarm */
+#define PLIMIT_DISABLE_THROTTLING 0xFF /* set to 0xFF to disable the current throttling */
 
 // Table of state handler functions for control loop
 static const power_state_handler_t control_loop_handler_table[POWER_CONTROL_STATE_MAX] = {
@@ -895,6 +897,19 @@ void power_loops_control_init()
         }
     }
 
+    // initialize the plimit values.  If throttling is disabled then set all to PLIMIT_DISABLE_THROTTLING
+    // (0xFF) otherwise, set to default values
+    uint8_t plimit_t1_value;
+    uint8_t plimit_t2_value;
+    uint8_t plimit_t3_value;
+
+    plimit_t1_value = p_runconfig->knobs.current_threshold.power_current_throt_en ? DEFAULT_PLIMIT_T1
+                                                                                  : PLIMIT_DISABLE_THROTTLING;
+    plimit_t2_value = p_runconfig->knobs.current_threshold.power_current_throt_en ? DEFAULT_PLIMIT_T2
+                                                                                  : PLIMIT_DISABLE_THROTTLING;
+    plimit_t3_value = p_runconfig->knobs.current_threshold.power_current_throt_en ? DEFAULT_PLIMIT_T3
+                                                                                  : PLIMIT_DISABLE_THROTTLING;
+
     // general per-core initialization
     for (unsigned int core = 0; core < core_count; ++core)
     {
@@ -902,9 +917,9 @@ void power_loops_control_init()
         s_ctrl_loop.cores.core[core].current_base_pstate = p_runconfig->derived.pnominal;
         s_ctrl_loop.cores.core[core].current_throt_priority = DEFAULT_PRIORITY;
         s_ctrl_loop.cores.core[core].current_boost_priority = DEFAULT_PRIORITY;
-        s_ctrl_loop.cores.core[core].plimit_t1 = DEFAULT_PLIMIT_T1;
-        s_ctrl_loop.cores.core[core].plimit_t2 = DEFAULT_PLIMIT_T2;
-        s_ctrl_loop.cores.core[core].plimit_t3 = DEFAULT_PLIMIT_T3;
+        s_ctrl_loop.cores.core[core].plimit_t1 = plimit_t1_value;
+        s_ctrl_loop.cores.core[core].plimit_t2 = plimit_t2_value;
+        s_ctrl_loop.cores.core[core].plimit_t3 = plimit_t3_value;
         // if core is valid
         if (corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core))
         {

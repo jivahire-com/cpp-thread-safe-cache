@@ -54,6 +54,7 @@
       <Member name="dec_amt1" type="uint8_t" help="0-7, 1-8 steps" />
     </Struct>
     <Struct name="power_currthrot_threshold_cfg_t" help="">
+      <Member name="power_current_throt_en" type="bool" help="enable current throttling" />
       <Member name="iref_to_max_percent" type="uint8_t" help="up to 100" />
       <Member name="t1_percent" type="uint8_t" />
       <Member name="t2_percent" type="uint8_t" />
@@ -277,7 +278,7 @@
     -->
     
     <!-- Undocumented -->
-    <Knob name="power_plimit_current_thresholds" type="power_currthrot_threshold_cfg_t" default="{80, 90, 95, 100}" />
+    <Knob name="power_plimit_current_thresholds" type="power_currthrot_threshold_cfg_t" default="{true, 80, 90, 95, 100}" />
     <Knob name="power_soc_vm_overvolt_en" type="bool" default="true" />
     <Knob name="power_soc_vm_undervolt_en" type="bool" default="true" />
     <Knob name="power_tile_vm_overvolt_en" type="bool" default="true" />

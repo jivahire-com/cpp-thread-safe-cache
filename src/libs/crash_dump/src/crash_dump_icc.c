@@ -16,6 +16,7 @@
 #include <accelip_id.h>           // for ACCEL_ID_SDM, ACCEL_ID_CDED
 #include <bug_check.h>            // for BUG_CHECK_EXTERNAL
 #include <crash_dump.h>           // for crash_dump_context
+#include <fpfw_cfg_mgr.h>         // for knobs
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
 #include <hsp_firmware_headers.h> // for kng_hsp_mailbox_msg
 #include <icc_mhu.h>              // for icc_mhu_request_t
@@ -152,6 +153,26 @@ void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t* ic
     }
 }
 
+static void crash_dump_send_hsp_command(uint32_t command)
+{
+    crash_dump_context_t* ctx = crash_dump_context();
+
+    if (ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP] != NULL)
+    {
+        kng_hsp_mailbox_msg hsp_crash_dump_msg;
+
+        hsp_crash_dump_msg.as_uint32[0] = SET_HSP_MAILBOX_HEADER_ASUNIT32(command, 0, 0);
+
+        fpfw_status_t status =
+            fpfw_icc_base_send_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP], &hsp_crash_dump_msg, sizeof(hsp_crash_dump_msg));
+
+        if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
+        {
+            FPFwCDPrintf("Failed to send 0x%08lx command to HSP: status = 0x%08lx\n", command, status);
+        }
+    }
+}
+
 /**
  * Notify HSP that this core has crashed by using HSP mailbox sync send.
  */
@@ -165,20 +186,7 @@ void crash_dump_notify_hsp()
         return;
     }
 
-    if (ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP] != NULL)
-    {
-        kng_hsp_mailbox_msg hsp_crash_dump_msg;
-
-        hsp_crash_dump_msg.as_uint32[0] = SET_HSP_MAILBOX_HEADER_ASUNIT32(HSP_MAILBOX_CMD_CRASHDUMP_REQ, 0, 0);
-
-        fpfw_status_t status =
-            fpfw_icc_base_send_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP], &hsp_crash_dump_msg, sizeof(hsp_crash_dump_msg));
-
-        if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
-        {
-            FPFwCDPrintf("Failed to send Crashdump request to HSP: status = 0x%08lx\n", status);
-        }
-    }
+    crash_dump_send_hsp_command(HSP_MAILBOX_CMD_CRASHDUMP_REQ);
 }
 
 /**
@@ -293,12 +301,54 @@ void crash_dump_notify_cores()
 
 void crash_dump_remote_trigger()
 {
-    // Notify to local and remote cores
-    crash_dump_notify_cores();
+    if (!crash_dump_context()->single_core_mode)
+    {
+        // Notify to local and remote cores
+        crash_dump_notify_cores();
+
+        // Notify Accel devices SDM and CDED
+        crash_dump_notify_accelerators();
+    }
 
     // Notify to HSP
     crash_dump_notify_hsp();
+}
 
-    // Notify Accel devices SDM and CDED
-    crash_dump_notify_accelerators();
+void crash_dump_request_hsp_warm_reset()
+{
+    crash_dump_context_t* ctx = crash_dump_context();
+
+    if (ctx == NULL)
+    {
+        FPFwCDPrintf("Crash dump context is not set to request warm reset\n");
+        return;
+    }
+
+    if (ctx->die_index != 0 || ctx->core_index != CRASH_DUMP_CORE_SCP)
+    {
+        // Only SCP core in die 0 can request warm reset to HSP0
+        return;
+    }
+
+    // Wait until all cores are in CRASH_DUMP_STATE_COMPLETED
+    while (crash_dump_get_is_dump_complete(NULL) == false)
+    {
+    }
+
+    // Notify HSP to warm reset
+    crash_dump_send_hsp_command(HSP_MAILBOX_CMD_WARM_RESET_REQ);
+}
+
+void crash_dump_transfer_full_dump_to_bmc()
+{
+    crash_dump_context_t* ctx = crash_dump_context();
+
+    if (config_get_crash_dump_emit_only_minidump() || ctx->die_index != 0 || ctx->core_index != CRASH_DUMP_CORE_MCP)
+    {
+        // HSP will transfer mini dump to BMC
+        return;
+    }
+
+    // ToDo: Die0 MCP will Transfer full dump to BMC
+    // https://azurecsi.visualstudio.com/Dev/_workitems/edit/1484995
 }

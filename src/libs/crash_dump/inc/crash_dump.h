@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define CRASH_DUMP_NUM_DESCRIPTORS 128 // ToDo: Re-evaluate this number
+#define CRASH_DUMP_NUM_DESCRIPTORS 200 // ToDo: Re-evaluate this number
 
 #define CRASH_DUMP_PROCESSOR_ID(d, c)   (((d) << 16) | ((c) & 0xFFFF))
 
@@ -162,6 +162,7 @@ typedef struct {
     uint32_t die_index;                                         // DIE index
     uint32_t core_index;                                        // Core index
     bool is_primary;
+    bool single_core_mode;
     fpfw_icc_base_ctx_t *icc_ctx[CRASH_DUMP_ICC_CONFIG_MAX];    // ICC context
 
     // Core dependent descriptor registrations
@@ -315,6 +316,15 @@ void crash_dump_register_address64(uint64_t address, uint32_t size, FPFwCdDumpPr
  * @param pointerArrayCount Number of addresses in pointerArray
  */
 void crash_dump_register_address32_pointer_array(FPFwCdDumpPriority priority, uint32_t minChunkSize, uint32_t maxRegistrationCount, void** pointerArray, uint32_t pointerArrayCount);
+
+/**
+ * @brief Check crash dump is completed
+ * 
+ * @param type_context Crash dump context applied to specific type (mini or full)
+ *                     If NULL, check all types of crash dump.
+ * @return true if all expected cores dumps are completed, otherwise false.
+ */
+bool crash_dump_get_is_dump_complete(crash_dump_type_context_t* type_context);
 
 /**
  * @brief Registers crash dump CLI commands

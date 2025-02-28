@@ -173,7 +173,7 @@ static void init_dump_manager(crash_dump_type_context_t* type_context)
                                               NULL, // No state manager
                                               type_context->mem_pool_size));
     FPFwCDOverridePrintf(&crash_dump_printf);
-    (void)FPFwCDDumpManagerSetPreDumpCallback(&type_context->crash_dump_ctx, &preDumpCallbackOverride, NULL);
-    (void)FPFwCDDumpManagerSetPostDumpCallback(&type_context->crash_dump_ctx, &postDumpCallbackOverride, NULL);
+    (void)FPFwCDDumpManagerSetPreDumpCallback(&type_context->crash_dump_ctx, &preDumpCallbackOverride, type_context);
+    (void)FPFwCDDumpManagerSetPostDumpCallback(&type_context->crash_dump_ctx, &postDumpCallbackOverride, type_context);
     (void)FPFwCDDumpManagerOverrideGetCurTime(&type_context->crash_dump_ctx, &getCurTimeDefault);
 }

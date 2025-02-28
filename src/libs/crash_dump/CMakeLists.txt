@@ -37,6 +37,7 @@ target_link_libraries(${TARGET}
         silibs::semaphore
     PRIVATE
         fwlib.lib.assert
+        fwlib.lib.cfg_mgr
         fwlib.service.cli
         kng.lib.hsp_firmware_headers
         ms::build_data
@@ -44,6 +45,7 @@ target_link_libraries(${TARGET}
         ms::lib::cortex_m7::nvic
         ms::lib::icc_platform_defines
         ms::lib::register_headers
+        ms::lib::system_info
         silibs::gpio
         silibs::icc_mhu
         silibs::idhw

@@ -15,4 +15,20 @@
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
+/**
+ * @brief Requests other cores and die to perform a crash dump.
+ * 
+ */
 void crash_dump_remote_trigger();
+
+/**
+ * @brief Requests HSP to perform a warm reset.
+ * 
+ */
+void crash_dump_request_hsp_warm_reset();
+
+/**
+ * @brief Transfers full crash dump to BMC.
+ * 
+ */
+void crash_dump_transfer_full_dump_to_bmc();

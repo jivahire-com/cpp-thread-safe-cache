@@ -33,7 +33,7 @@ static FPFW_CLI_COMMAND s_cd_cmd_list[] = {
     {NULL_LIST_ENTRY, "crashdump", "cd_register_beef", cd_register_beef, "Registers filler hex as data to be stored in Crash Dump", "Usage: cd_register_beef (no arguments)"},
     {NULL_LIST_ENTRY, "crashdump", "cd_register_string", cd_register_string, "Registers a string to be stored in a crash dump", "Usage: cd_register_string <string>"},
     {NULL_LIST_ENTRY, "crashdump", "cd_bug_check", cd_bug_check, "Invokes a bugcheck with the given error code", "Usage: cd_bug_check <error code>"},
-    {NULL_LIST_ENTRY, "crashdump", "cd_set_single_core_mode", cd_set_single_core_mode, "Generates single core crash dump", "Usage: cd_set_single_core_mode (no arguments)"},
+    {NULL_LIST_ENTRY, "crashdump", "cd_set_single_core_mode", cd_set_single_core_mode, "Generates single core crash dump", "Usage: cd_set_single_core_mode <0: multi-core, 1: single-core>"},
     {NULL_LIST_ENTRY, "crashdump", "cd_trigger_exception", cd_trigger_exception, "Triggers an exception, causing a fault handler to execute", "Usage: cd_trigger_exception (no arguments)"},
     {NULL_LIST_ENTRY, "crashdump", "cd_stack_overflow", cd_stack_overflow, "Causes stack overflow to test crash dump behavior", "Usage: cd_stack_overflow <suspend time tick>"},
 };
@@ -113,12 +113,17 @@ static FPFW_CLI_STATUS cd_trigger_exception(int argc, const char** pp_argv)
 
 static FPFW_CLI_STATUS cd_set_single_core_mode(int argc, const char** pp_argv)
 {
-    FPFW_UNUSED(argc);
-    FPFW_UNUSED(pp_argv);
+    if (argc == 2)
+    {
+        crash_dump_context_t* ctx = crash_dump_context();
 
-    // ToDo: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1484994
-    // crash_dump_set_is_primary_available(false);
-    // crash_dump_disable_cti();
+        ctx->single_core_mode = !!atoi(pp_argv[1]);
+        FpFwCliPrint("Crash dump %s core mode\n", ctx->single_core_mode ? "single" : "multi");
+    }
+    else
+    {
+        FpFwCliPrint("Invalid arguments!\n");
+    }
 
     return CLI_SUCCESS;
 }

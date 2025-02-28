@@ -83,6 +83,12 @@ void __wrap_sos_start_phase(PDFWK_INTERFACE_HEADER p_interface,
     check_expected_ptr(completion_routine);
     check_expected_ptr(p_completion_context);
 }
+
+void __wrap_FpFwLockInitialize(PFPFW_LOCK Lock)
+{
+    FPFW_UNUSED(Lock);
+    function_called();
+}
 }
 //
 // Tests
@@ -124,6 +130,10 @@ TEST_FUNCTION(sos_init_sos_int, nullptr, nullptr)
     expect_any(__wrap_sos_register_ssi, p_registration);
     expect_any(__wrap_sos_register_ssi, p_ssi_interface);
     will_return(__wrap_sos_register_ssi, FPFW_INIT_STATUS_SUCCESS);
+
+    // intercore communication init
+    will_return(__wrap_fpfw_init_get_handle, 1234);
+    expect_function_call(__wrap_FpFwLockInitialize);
 
     // now handle unit test of phase start requests
     expect_any(__wrap_DfwkAsyncRequestInitialize, Request);

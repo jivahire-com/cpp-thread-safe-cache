@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <tx_api.h>
+#include <kng_error.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 /*-- Symbolic Constant Macros (defines) --*/
@@ -96,7 +97,7 @@ unsigned sos_core_boot_stage_count();
 unsigned sos_core_shutdown_stage_count();
 const startup_shutdown_boot_stage_t* sos_core_boot_stages();
 const startup_shutdown_shutdown_stage_t* sos_core_shutdown_stages();
-void sos_core_shutdown_handler(ssi_shutdown_type_t shutdown_type);
+KNG_STATUS sos_core_shutdown_handler(ssi_shutdown_type_t shutdown_type);
 void sos_core_override_timeout(pstartup_reset_timeout_request_t request);
 void sos_boot_timeout_override(sos_stage_timeout_t timeout);
 void sos_shutdown_timeout_override(sos_stage_timeout_t timeout);
@@ -120,3 +121,4 @@ void sos_notify_ssi_boot_stage_and_wait(psos_service_context_t p_context,
                                         bool start);
 
 bool wait_for_remote_die_boot_stage(startup_shutdown_boot_stage_t current_boot_stage);
+KNG_STATUS sos_request_shutdown(ssi_shutdown_type_t type);

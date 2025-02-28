@@ -243,6 +243,8 @@ void sos_worker_thread_function(ULONG service_ctx)
 
         case SOS_QUEUE_ENTRY_TYPE_SHUTDOWN:
             SOS_LOG_INFO("SOS message: shutdown, (%d)\n", message.data.shutdown_type);
+            pstartup_shutdown_request_t shutdown_req = (pstartup_shutdown_request_t)message.p_request;
+            shutdown_req->result = KNG_SUCCESS;
 
             // notify all registered interfaces
             sos_notify_ssi_shutdown(p_sos_ctx, message.data.shutdown_type);
@@ -254,8 +256,8 @@ void sos_worker_thread_function(ULONG service_ctx)
 
             if (message.data.shutdown_type != AP_WARM_RESET)
             {
-                // Report HSP for shutdown_type completion
-                sos_core_shutdown_handler(message.data.shutdown_type);
+                pstartup_shutdown_request_t req = (pstartup_shutdown_request_t)message.p_request;
+                req->result = sos_core_shutdown_handler(message.data.shutdown_type);
             }
             else
             {

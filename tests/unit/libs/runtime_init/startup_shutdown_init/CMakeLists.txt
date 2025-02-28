@@ -42,4 +42,5 @@ mock_target(${TARGET}
     sos_interface_init
     sos_register_ssi
     sos_start_phase
+    FpFwLockInitialize
 )

@@ -8,6 +8,7 @@ add_library(${TARGET}
 
 target_link_libraries(${TARGET}
     PUBLIC
+        ms::lib::error_codes
     PRIVATE
         fwlib.dfwk
         fwlib.lib.interface.platform.errorhandler
@@ -33,6 +34,7 @@ set(STARTUP_COMMON_SOURCE
     startup_shutdown_ssi.c
     startup_shutdown_thread.c
     startup_shutdown_remote_sync.c
+    startup_shutdown_core_comm.c
 )
 
 set(STARTUP_COMMON_LIBS
@@ -43,9 +45,10 @@ set(STARTUP_COMMON_LIBS
     ms::build_data
     ms::lib::threadx
     ms::lib::debug
-    ms::lib::error_codes
+    ms::lib::utils
     ms::lib::crash_dump
     ms::lib::icc_platform_defines
+    ms::lib::hsp_firmware_headers
     ms::client_interface::startup_shutdown
     silibs::idhw
     silibs::idsw
@@ -66,6 +69,7 @@ add_library(${TARGET}
 
 target_link_libraries(${TARGET}
     PUBLIC
+        ms::lib::error_codes
     PRIVATE
         ${STARTUP_COMMON_LIBS}
 )

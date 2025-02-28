@@ -75,13 +75,9 @@ const startup_shutdown_shutdown_stage_t* sos_core_shutdown_stages()
     return scp_shutdown_stages;
 }
 
-void sos_core_shutdown_handler(ssi_shutdown_type_t shutdown_type)
+KNG_STATUS sos_core_shutdown_handler(ssi_shutdown_type_t shutdown_type)
 {
-    // This is where the SCP would handle the shutdown request after all registered ssi interfaces have been
-    // notified and responded. TO DO : Task 2066715 - Inform HSP of SCP shutdown completion
-
-    // For now, we just print a message
-    SOS_LOG_INFO("Received shutdown request: %d", (int)shutdown_type);
+    return sos_request_shutdown(shutdown_type);
 }
 
 void sos_boot_timeout_override(sos_stage_timeout_t timeout)

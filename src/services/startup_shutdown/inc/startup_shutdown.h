@@ -14,6 +14,7 @@
 #include <DfwkCommon.h>
 #include <FpFwAssert.h>
 #include <FpFwLinkedList.h>
+#include <kng_error.h>
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -84,6 +85,7 @@ typedef struct _startup_shutdown_request_t
 {
     DFWK_ASYNC_REQUEST_HEADER header;
     ssi_shutdown_type_t shutdown_type;
+    KNG_STATUS result;
 } startup_shutdown_request_t, *pstartup_shutdown_request_t;
 
 /*-- Declarations (Statics and globals) --*/

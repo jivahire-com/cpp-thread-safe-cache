@@ -13,6 +13,7 @@ target_link_libraries(${TARGET}
     PRIVATE
         ms::cmocka::testrunner
         ms::lib::threadx
+        ms::lib::error_codes
         ms::mocks::event_trace
         ms::mocks::threadx
         ms::service::scp_startup_shutdown
@@ -71,6 +72,9 @@ mock_target(${TARGET}
     idhw_is_single_die_boot_en
     idsw_get_die_id
     mscp_exp_spi_synchronize_dies
+    FpFwLockAcquire
+    FpFwLockRelease
+    fpfw_icc_base_send
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

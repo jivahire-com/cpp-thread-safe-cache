@@ -84,7 +84,25 @@ class configmgr_set_cli_test(EchoFallsBaseTest):
         command="cfg_mgr"
         core_com_channel.write_line(write_string=command)
 
-        command="cfg_mgr_set 256 3"
+        command="cfg_mgr_list"
+        self.log.info(f"Submitting LIST command {command} . . .") 
+        core_com_channel.write_line(write_string=command)
+
+        try:
+            list_data = core_com_channel.read_until(key="System Knob Configuration Entities Completed", timeout_seconds=300)
+            self.log.info("LIST command executed Successfully . . .")
+            knob_name = "uint8_test_knob"
+            index_value = self.get_knob_index(list_data,knob_name)
+        except Exception as e:
+            self.log.error(f"Error reading SCP UART: {e}")
+            core_com_channel.close()
+            self.test_notify(step="Config Manager LIST Command", msg="Test Fail", _is_error=True)
+            self.dut.teardown()
+            time.sleep(30)
+            return False
+
+        self.log.info(f"INDEX Value: {index_value}\n")
+        command=f"cfg_mgr_set {index_value} 3"
         self.log.info(f"Submitting SET command {command} . . .") 
         core_com_channel.write_line(write_string=command)
 
@@ -148,7 +166,13 @@ class configmgr_set_cli_test(EchoFallsBaseTest):
         time.sleep(30)
 
         return True
-    
+
+    #Parse knob index value from knob name    
+    def get_knob_index(self, data, knob_name):
+        match = re.search(rf"Knob Index\[(\d+)\], Name\[{re.escape(knob_name)}\]", data)
+        if match:
+            return match.group(1)
+        return None
 
     #Parse data bytes information from SET message
     def validate_data(self, data):

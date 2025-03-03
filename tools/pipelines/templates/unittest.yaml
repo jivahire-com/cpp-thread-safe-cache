@@ -27,6 +27,13 @@ jobs:
     # Set up permissions for other repos
     - template: auth.yaml
 
+    - task: UseDotNet@2
+      continueOnError: true
+      inputs:
+        packageType: 'sdk'
+        version: 6.x
+        performMultiLevelLookup: true
+        
     # Download input artifact
     - task: DownloadPipelineArtifact@2
       inputs:

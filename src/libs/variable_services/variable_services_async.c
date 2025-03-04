@@ -160,12 +160,28 @@ static int32_t variable_service_async_common_handler(variable_service_operation_
     }
     shared_mem->data_size = req_params->data_size;
 
+    /**
+     * @todo Task 2439872 [Variable Services] Incorporate FW Fix for RMSS RAM caching issue replacing the workaround
+     * https://azurecsi.visualstudio.com/Dev/_workitems/edit/2439872
+     * Replace the below for loop to copy each byte and verify with actual fix
+     */
     //! copy over the variable name into the shared memory byte by byte
+    volatile uint8_t name_byte = 0;
     for (uint32_t i = 0; i < req_params->variable_name_size; i++)
     {
-        shared_mem->variable_name_and_data[i] = ((volatile uint8_t*)req_params->variable_name_ptr)[i];
+        name_byte = ((volatile uint8_t*)req_params->variable_name_ptr)[i];
+        //! Copy & Verify name has been copied correctly into shared memory
+        do
+        {
+            shared_mem->variable_name_and_data[i] = name_byte;
+        } while (shared_mem->variable_name_and_data[i] != name_byte);
     }
 
+    /**
+     * @todo Task 2439872 [Variable Services] Incorporate FW Fix for RMSS RAM caching issue replacing the workaround
+     * https://azurecsi.visualstudio.com/Dev/_workitems/edit/2439872
+     * Replace the below for loop to copy each byte and verify with actual fix
+     */
     //! copy over the data into the shared memory for set variable byte by byte
     if (type == ASYNC_SET_VARIABLE)
     {

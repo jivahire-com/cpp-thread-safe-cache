@@ -6,8 +6,7 @@
 ## CONFIG MANAGER Tests
 ./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_cli_test.robot
 ./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_dump_cli_test.robot
-#To be enabled once the default know=b is placed first on the xml
-#./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_set_cli_test.robot
+./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_set_cli_test.robot
 
 ## GPIO Driver Tests
 ./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot

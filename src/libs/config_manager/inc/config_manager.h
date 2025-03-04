@@ -59,7 +59,7 @@ void cfg_mgr_init(fpfw_cfg_mgr_config_t* cfg_mgr_config, var_service_shared_mem_
  *  Pointer to context setup by the interface
 */
 
-bool read_knob_from_default_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespace, const char* knob_name, uint8_t* data, size_t data_size, void* ctx);
+fpfw_status_t read_knob_from_default_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespace, const char* knob_name, uint8_t* data, size_t data_size, void* ctx);
 
 /**
  * @brief 

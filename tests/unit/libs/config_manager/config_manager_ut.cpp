@@ -26,7 +26,8 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static uint8_t rmss_shared_ram_region[512] = {0};
+extern knob_data_t g_knob_data[];
+static uint8_t rmss_shared_ram_region[1024] = {0};
 static uint32_t test_data = 1234;
 
 fpfw_cfg_mgr_config_t config_manager_setting = {.mission_mode = false,
@@ -183,6 +184,15 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
 static int rmss_memory_map_setup(void** state)
 {
     FPFW_UNUSED(state);
+
+    //
+    // Reset global knob data that a previous test case may have overriden
+    //
+    for (uint32_t idx = 0; idx < KNOB_MAX; idx++)
+    {
+        g_knob_data[idx].statistics = (knob_statistics_t){0, 0};
+        memcpy(g_knob_data[idx].cache_value_address, g_knob_data[idx].default_value_address, g_knob_data[idx].value_size);
+    }
 
     knob_payload_header_t header = {.signature = CFG_MGR_RELAY_PAYLOAD_SIGNATURE, .total_override_knob_count = 0};
     memset(rmss_shared_ram_region, 0, sizeof(rmss_shared_ram_region));
@@ -359,4 +369,25 @@ TEST_FUNCTION(test_update_knob_data, nullptr, nullptr)
                      (uint8_t*)get_cached_knob_data()[1].data,
                      get_cached_knob_data()[0].size,
                      true);
+}
+
+TEST_FUNCTION(test_read_fails_on_max_knob, rmss_memory_map_setup, nullptr)
+{
+    //
+    // Initialize the config manager, which will increment the knob cindex used
+    // to read the knob from the default database.
+    //
+    will_return(__wrap_system_info_is_hsp_present, false);
+
+    cfg_mgr_init(&config_manager_setting, NULL);
+
+    assert_true(cached_knob_data_size() == KNOB_MAX);
+    assert_true(get_cached_knob_data() != NULL);
+
+    //
+    // Issue another read from the default db, which should fail as this is
+    // only done once on init.
+    //
+    fpfw_status_t status = read_knob_from_default_db_cb(NULL, NULL, NULL, 0, NULL);
+    assert_int_equal(status, FPFW_STATUS_NOT_FOUND);
 }

@@ -133,17 +133,17 @@ void apply_override_knob_from_primary_die(uint32_t rmss_base_addr)
     CFG_INFO("Applied override knob value for (%d) knobs\n", total_override_knob_count);
 }
 
-bool read_knob_from_default_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespace,
-                                  const char* knob_name,
-                                  uint8_t* data,
-                                  size_t data_size,
-                                  void* ctx)
+fpfw_status_t read_knob_from_default_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespace,
+                                           const char* knob_name,
+                                           uint8_t* data,
+                                           size_t data_size,
+                                           void* ctx)
 {
     FPFW_UNUSED(ctx);
 
     if (knob_index >= KNOB_MAX)
     {
-        return false;
+        return FPFW_STATUS_NOT_FOUND;
     }
 
     FPFwSpinLockAcquire(&lock);
@@ -156,7 +156,7 @@ bool read_knob_from_default_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespace,
     knob_index++;
     FPFwSpinLockRelease(&lock);
 
-    return true;
+    return FPFW_STATUS_SUCCESS;
 }
 
 bool update_knob_data(cached_knob_data_t* current_entry, const uint8_t* data, size_t data_size, bool permanent)

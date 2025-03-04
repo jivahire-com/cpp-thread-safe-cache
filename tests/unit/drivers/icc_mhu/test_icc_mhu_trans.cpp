@@ -367,7 +367,7 @@ TEST_FUNCTION(test_mhu_icc_transport_dispatch_sync_recv_success, test_setup, tes
     assert_int_equal(status, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(test_mhu_icc_transport_dispatch_sync_send_fail, test_setup, test_teardown)
+TEST_FUNCTION(test_mhu_icc_transport_dispatch_sync_send_busy, test_setup, test_teardown)
 {
     FPFW_ICC_TRANSPORT_SYNC_TRY_SEND_REQUEST send_try_req;
     send_try_req.Header.RequestType = ICC_TRANSPORT_TRY_SEND_SYNC_REQUEST_ID;
@@ -378,7 +378,7 @@ TEST_FUNCTION(test_mhu_icc_transport_dispatch_sync_send_fail, test_setup, test_t
     will_return(__wrap_icc_mhu_send_packet, ICC_MHU_STATUS_E_CHANNEL_BUSY);
 
     fpfw_status_t status = mhu_icc_transport_dispatch_sync((PDFWK_SYNC_REQUEST_HEADER)&send_try_req);
-    assert_int_equal(status, FPFW_ICC_TRANSPORT_STATUS_FAILED_ERR);
+    assert_int_equal(status, FPFW_ICC_TRANSPORT_STATUS_BUSY);
 }
 
 TEST_FUNCTION(test_mhu_icc_transport_dispatch_sync_send_success, test_setup, test_teardown)

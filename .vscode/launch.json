@@ -235,6 +235,14 @@
                         "Telemetry Service - In Band Cmpnt",
                         "kng.service.telemetry.cmpnt.in_band_tlm.test"
                     ],
+                    [
+                        "CFG Manager",
+                        "cfg_mgr.test.exe"
+                    ],
+                    [
+                        "Config Manager",
+                        "config_manager.test.exe"
+                    ],
                 ],
             },
         },

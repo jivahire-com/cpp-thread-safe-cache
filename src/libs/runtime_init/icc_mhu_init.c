@@ -43,8 +43,12 @@
     (FPFW_DUR_MS(10)) // Current implementation of the timer has a minimum period of 10ms
 #define ASYNC_SEND_RETRY_MAX (5)
 
-// Number of times ICC Base will retry a sync operation before failing
-#define MAX_SYNC_RETRY_COUNT (5)
+// ICC Base doesn't have an actual timeout on sync messages, and instead
+// it loops until the sync retry count is reached. We use a large retry
+// count here to avoid sync send failures as much as possible without
+// looping forever in ICC Base. Failures can still occur and ICC Base
+// returns an error code on such failures.
+#define MAX_SYNC_RETRY_COUNT (50)
 
 /*------------- Typedefs -----------------*/
 

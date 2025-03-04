@@ -50,7 +50,7 @@ const int COMPLEX_KNOB3B_DEF = 2;
 
 /*-------- Function Prototypes -----------*/
 extern void apply_default();
-extern void apply_db(fpfw_cfg_mgr_db_t* db);
+extern fpfw_status_t apply_db(fpfw_cfg_mgr_db_t* db);
 extern void apply_profile(profile_t* override);
 
 /*-- Declarations (Statics and globals) --*/
@@ -61,7 +61,11 @@ static std::map<std::string, std::vector<uint8_t>> knob_store;
 //
 // Mocks
 //
-static bool mock_read_knob_fn(const fpfw_cfg_mgr_guid_t* knob_namespace, const char* knob_name, uint8_t* data, size_t data_size, void* ctx)
+static fpfw_status_t mock_read_knob_fn(const fpfw_cfg_mgr_guid_t* knob_namespace,
+                                       const char* knob_name,
+                                       uint8_t* data,
+                                       size_t data_size,
+                                       void* ctx)
 {
     assert_non_null(knob_namespace);
     assert_non_null(ctx);
@@ -70,9 +74,9 @@ static bool mock_read_knob_fn(const fpfw_cfg_mgr_guid_t* knob_namespace, const c
     if (it != knob_store.end() && it->second.size() == data_size)
     {
         std::memcpy(data, it->second.data(), data_size);
-        return true;
+        return FPFW_STATUS_SUCCESS;
     }
-    return false;
+    return FPFW_STATUS_NOT_FOUND;
 }
 
 static bool mock_write_knob_fn(const fpfw_cfg_mgr_guid_t* knob_namespace,

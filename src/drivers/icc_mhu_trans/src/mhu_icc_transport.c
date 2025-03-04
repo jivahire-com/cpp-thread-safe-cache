@@ -62,6 +62,7 @@ static fpfw_status_t icc_packet_status_to_icc_transport_status(uint32_t status)
     case ICC_MHU_STATUS_E_PACKET_TOO_SMALL:
         return FPFW_ICC_TRANSPORT_STATUS_INVALID_SIZE_ARG_ERR;
     case ICC_MHU_STATUS_E_CHANNEL_BUSY:
+        return FPFW_ICC_TRANSPORT_STATUS_BUSY;
     case ICC_MHU_STATUS_E_CHANNEL_NOT_BUSY:
     default:
         return FPFW_ICC_TRANSPORT_STATUS_FAILED_ERR;

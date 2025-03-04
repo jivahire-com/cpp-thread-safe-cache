@@ -276,7 +276,26 @@ void __wrap_i3c_master_set_cfg_knobs(lib_i3c_cfg_t* p_lib_i3c_cfg)
     check_expected(p_lib_i3c_cfg->i3c_speed);
     check_expected(p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing);
     check_expected(p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing);
+    check_expected(p_lib_i3c_cfg->timing_override);
+    check_expected(p_lib_i3c_cfg->reg_scl_i3c_od_timing);
+    check_expected(p_lib_i3c_cfg->reg_scl_i3c_pp_timing);
+    check_expected(p_lib_i3c_cfg->reg_scl_i2c_fm_timing);
+    check_expected(p_lib_i3c_cfg->reg_scl_i2c_fmp_timing);
+    check_expected(p_lib_i3c_cfg->reg_scl_ext_lcnt_timing);
     function_called();
+}
+
+void i3c_master_set_cfg_knobs_default_expect(void)
+{
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->timing_override, false);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_i3c_od_timing, 0xA0010);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_i3c_pp_timing, 0xA000A);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_i2c_fm_timing, 0x100010);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_i2c_fmp_timing, 0x100010);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_lcnt_timing, 0x20202020);
 }
 
 // Tests
@@ -296,9 +315,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_initialize_fail, setup_svp_plat
         .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
 
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    i3c_master_set_cfg_knobs_default_expect();
     expect_function_call(__wrap_i3c_master_set_cfg_knobs);
 
     // Set up expectations
@@ -333,9 +350,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_master_dat_config_fail, setup_s
         .i3c_speed_in_khz = I3C_SPEED_SDR4_KHZ,
     };
 
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    i3c_master_set_cfg_knobs_default_expect();
     expect_function_call(__wrap_i3c_master_set_cfg_knobs);
 
     // Set up expectations
@@ -404,9 +419,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_i3c0_master_set_aasa_fail, setup_svp
 
     // Set up expectations
     // Instance 0
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    i3c_master_set_cfg_knobs_default_expect();
     expect_function_call(__wrap_i3c_master_set_cfg_knobs);
 
     // i3c_initialize
@@ -529,9 +542,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_single_die, setup_svp_platform, setu
     };
     // Set up expectations
     // Instance 0
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    i3c_master_set_cfg_knobs_default_expect();
     expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
@@ -667,9 +678,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_dual_die, setup_svp_platform_dual_di
     };
     // Set up expectations
     // Instance 0
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    i3c_master_set_cfg_knobs_default_expect();
     expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
@@ -821,9 +830,7 @@ TEST_FUNCTION(test_i3c_controller_svp_die_1, setup_svp_platform_dual_die, setup_
     };
     // Set up expectations
     // Instance 0
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    i3c_master_set_cfg_knobs_default_expect();
     expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
@@ -975,9 +982,7 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_0_single_die, setup_fpga_platform, se
     };
     // Set up expectations
     // Instance 0
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    i3c_master_set_cfg_knobs_default_expect();
     expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
@@ -1108,9 +1113,7 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_0_dual_die, setup_fpga_platform_dual_
     };
     // Set up expectations
     // Instance 0
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    i3c_master_set_cfg_knobs_default_expect();
     expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
@@ -1257,9 +1260,7 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_1_dual_die, setup_fpga_platform_dual_
     };
     // Set up expectations
     // Instance 0
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    i3c_master_set_cfg_knobs_default_expect();
     expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
@@ -1406,9 +1407,7 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_0_single_die, setup_fpga_rvp_plat
     };
     // Set up expectations
     // Instance 0
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    i3c_master_set_cfg_knobs_default_expect();
     expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
@@ -1549,9 +1548,7 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_0_dual_die, setup_fpga_rvp_platfo
     };
     // Set up expectations
     // Instance 0
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    i3c_master_set_cfg_knobs_default_expect();
     expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
@@ -1708,9 +1705,7 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_1, setup_fpga_platform, setup_undefin
     };
     // Set up expectations
     // Instance 0
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    i3c_master_set_cfg_knobs_default_expect();
     expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
@@ -1840,9 +1835,7 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_1, setup_fpga_rvp_platform, setup
     };
     // Set up expectations
     // Instance 0
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    i3c_master_set_cfg_knobs_default_expect();
     expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);
@@ -1983,9 +1976,7 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_1_dual_die, setup_fpga_rvp_platfo
     };
     // Set up expectations
     // Instance 0
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->i3c_speed, I3C_SPEED_SDR4);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_termn_lcnt_timing, 0xF);
-    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_sda_hold_switch_dly_timing, 0x50000);
+    i3c_master_set_cfg_knobs_default_expect();
     expect_function_call(__wrap_i3c_master_set_cfg_knobs);
     // i3c_initialize
     expect_value(__wrap_i3c_initialize, instance, instance_0);

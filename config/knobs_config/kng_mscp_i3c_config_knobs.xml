@@ -15,6 +15,12 @@
     <Knob name="i3c_speed" type="i3c_speed_t" default="I3C_SPEED_SDR4_2MHz" help="Desired I3C Speed for I3C0 and I3C1" />
     <Knob name="reg_scl_ext_termn_lcnt_timing" type="uint32_t" default="0xF" help="Set value for REG_SCL_EXT_TERMN_LCNT_TIMING" />
     <Knob name="reg_sda_hold_switch_dly_timing" type="uint32_t" default="0x50000" help="Set value for REG_SDA_HOLD_SWITCH_DLY_TIMING" />
+    <Knob name="timing_override" type="bool" default="false" help="Override the Timing Control Registers" />
+    <Knob name="reg_scl_i3c_od_timing" type="uint32_t" default="0xA0010" help="Set value for REG_SCL_I3C_OD_TIMING" />
+    <Knob name="reg_scl_i3c_pp_timing" type="uint32_t" default="0xA000A" help="Set value for REG_SCL_I3C_PP_TIMING" />
+    <Knob name="reg_scl_i2c_fm_timing" type="uint32_t" default="0x100010" help="Set value for REG_SCL_I2C_FM_TIMING" />
+    <Knob name="reg_scl_i2c_fmp_timing" type="uint32_t" default="0x100010" help="Set value for REG_SCL_I2C_FMP_TIMING" />
+    <Knob name="reg_scl_ext_lcnt_timing" type="uint32_t" default="0x20202020" help="Set value for REG_SCL_EXT_LCNT_TIMING" />
   </Knobs>
 
 </ConfigSchema>

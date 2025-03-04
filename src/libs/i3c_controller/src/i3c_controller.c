@@ -160,10 +160,22 @@ void i3c_controller_read_cfg_knobs_from_spi(void)
     temp_lib_i3c_cfg.i3c_speed = config_get_i3c_speed();
     temp_lib_i3c_cfg.reg_scl_ext_termn_lcnt_timing = config_get_reg_scl_ext_termn_lcnt_timing();
     temp_lib_i3c_cfg.reg_sda_hold_switch_dly_timing = config_get_reg_sda_hold_switch_dly_timing();
+    temp_lib_i3c_cfg.timing_override = config_get_timing_override();
+    temp_lib_i3c_cfg.reg_scl_i3c_od_timing = config_get_reg_scl_i3c_od_timing();
+    temp_lib_i3c_cfg.reg_scl_i3c_pp_timing = config_get_reg_scl_i3c_pp_timing();
+    temp_lib_i3c_cfg.reg_scl_i2c_fm_timing = config_get_reg_scl_i2c_fm_timing();
+    temp_lib_i3c_cfg.reg_scl_i2c_fmp_timing = config_get_reg_scl_i2c_fmp_timing();
+    temp_lib_i3c_cfg.reg_scl_ext_lcnt_timing = config_get_reg_scl_ext_lcnt_timing();
 
-    CRITICAL_PRINT("i3c_speed 0x%x\n", temp_lib_i3c_cfg.i3c_speed);
-    CRITICAL_PRINT("reg_scl_ext_termn_lcnt_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_ext_termn_lcnt_timing);
-    CRITICAL_PRINT("reg_sda_hold_switch_dly_timing 0x%x\n", temp_lib_i3c_cfg.reg_sda_hold_switch_dly_timing);
+    INFO_PRINT("i3c_speed 0x%x\n", temp_lib_i3c_cfg.i3c_speed);
+    INFO_PRINT("reg_scl_ext_termn_lcnt_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_ext_termn_lcnt_timing);
+    INFO_PRINT("reg_sda_hold_switch_dly_timing 0x%x\n", temp_lib_i3c_cfg.reg_sda_hold_switch_dly_timing);
+    INFO_PRINT("timing_override 0x%x\n", temp_lib_i3c_cfg.timing_override);
+    INFO_PRINT("reg_scl_i3c_od_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_i3c_od_timing);
+    INFO_PRINT("reg_scl_i3c_pp_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_i3c_pp_timing);
+    INFO_PRINT("reg_scl_i2c_fm_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_i2c_fm_timing);
+    INFO_PRINT("reg_scl_i2c_fmp_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_i2c_fmp_timing);
+    INFO_PRINT("reg_scl_ext_lcnt_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_ext_lcnt_timing);
 
     // Set the Config Knobs in lib_i3c
     i3c_master_set_cfg_knobs(&temp_lib_i3c_cfg);

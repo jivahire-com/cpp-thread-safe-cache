@@ -53,3 +53,6 @@
 
 ## DCS Tests
 ./../../../tests/functional/pythia/test_suites/dcs_tests/dcs_events_test.robot
+
+## Boot tests
+./../../../tests/functional/pythia/test_suites/boot_tests/uefi_boot_single_die.robot

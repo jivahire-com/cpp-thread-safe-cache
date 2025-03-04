@@ -486,11 +486,11 @@ void show_map(const ddrss_memory_region_t this_mmap[], int idx, bool show_all)
         {
             DDR_LOG_DEBUG("Region: %d \n", i);
             DDR_LOG_DEBUG(" \tstart: 0x%08lX%08lX \n",
-                         (unsigned long)(this_mmap[i].start_address >> 32),
-                         (unsigned long)(this_mmap[i].start_address & 0xFFFFFFFF));
+                          (unsigned long)(this_mmap[i].start_address >> 32),
+                          (unsigned long)(this_mmap[i].start_address & 0xFFFFFFFF));
             DDR_LOG_DEBUG(" \tend:   0x%08lX%08lX \n",
-                         (unsigned long)(this_mmap[i].end_address >> 32),
-                         (unsigned long)(this_mmap[i].end_address & 0xFFFFFFFF));
+                          (unsigned long)(this_mmap[i].end_address >> 32),
+                          (unsigned long)(this_mmap[i].end_address & 0xFFFFFFFF));
             DDR_LOG_DEBUG(" \tflags.available_sysmem:     %d \n", (int)this_mmap[i].attr.available_sysmem);
             DDR_LOG_DEBUG(" \tflags.pas_mask:           0x%X \n", (int)this_mmap[i].attr.as_uint32 & 0xf);
         }
@@ -499,11 +499,11 @@ void show_map(const ddrss_memory_region_t this_mmap[], int idx, bool show_all)
     {
         DDR_LOG_DEBUG(" Region: %d \n", idx);
         DDR_LOG_DEBUG(" \tstart: 0x%08lX%08lX \n",
-                     (unsigned long)(this_mmap[idx].start_address >> 32),
-                     (unsigned long)(this_mmap[idx].start_address & 0xFFFFFFFF));
+                      (unsigned long)(this_mmap[idx].start_address >> 32),
+                      (unsigned long)(this_mmap[idx].start_address & 0xFFFFFFFF));
         DDR_LOG_DEBUG(" \tend:   0x%08lX%08lX \n",
-                     (unsigned long)(this_mmap[idx].end_address >> 32),
-                     (unsigned long)(this_mmap[idx].end_address & 0xFFFFFFFF));
+                      (unsigned long)(this_mmap[idx].end_address >> 32),
+                      (unsigned long)(this_mmap[idx].end_address & 0xFFFFFFFF));
         DDR_LOG_DEBUG(" \tflags.available_sysmem:     %d \n", (int)this_mmap[idx].attr.available_sysmem);
         DDR_LOG_DEBUG(" \tflags.pas_mask:           0x%X \n", (int)this_mmap[idx].attr.as_uint32 & 0xf);
     }

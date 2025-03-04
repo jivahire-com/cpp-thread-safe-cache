@@ -28,6 +28,16 @@
                                 }, 
                                 "default": "telnet" 
                             } 
+                        },
+                        "apns": {
+                            "channels": {
+                                "telnet": {
+                                    "host": "localhost",
+                                    "port": 4258,
+                                    "timeout_seconds": 60.0 
+                                },
+                                "default":"telnet"
+                            }
                         } 
                     } 
                 } 

@@ -56,18 +56,34 @@ static void cd_accel_recv_addr_notify_cb(void* context, size_t output_size_bytes
     FPFwCDPrintf("CD[Accel %u]: DTCM offset 0x%lx\n", accel_type, msg->dtcm_offset);
 }
 
-static bool icc_register_mhu_callback(fpfw_icc_base_ctx_t* icc_ctx)
+static bool icc_register_mhu_remote_callback(fpfw_icc_base_ctx_t* icc_ctx)
 {
-    static uint8_t byte_payload[512];
-    static fpfw_icc_base_recv_req_t crashdump_mhu_recv_req = {
-        .payload_buffer = byte_payload,
-        .buffer_size = FPFW_ARRAY_SIZE(byte_payload),
+    static uint8_t rem_byte_payload[512];
+    static fpfw_icc_base_recv_req_t crashdump_rem_mhu_recv_req = {
+        .payload_buffer = rem_byte_payload,
+        .buffer_size = FPFW_ARRAY_SIZE(rem_byte_payload),
         .recv_cmd_code = ICC_SIGNAL_CRASH_DUMP_COLLECT,
         .cb = icc_base_recv_complete_notify_cb,
         .cb_ctx = NULL,
     };
 
-    fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &crashdump_mhu_recv_req);
+    fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &crashdump_rem_mhu_recv_req);
+
+    return status == FPFW_ICC_BASE_STATUS_SUCCESS ? true : false;
+}
+
+static bool icc_register_mhu_local_callback(fpfw_icc_base_ctx_t* icc_ctx)
+{
+    static uint8_t loc_byte_payload[512];
+    static fpfw_icc_base_recv_req_t crashdump_loc_mhu_recv_req = {
+        .payload_buffer = loc_byte_payload,
+        .buffer_size = FPFW_ARRAY_SIZE(loc_byte_payload),
+        .recv_cmd_code = ICC_SIGNAL_CRASH_DUMP_COLLECT,
+        .cb = icc_base_recv_complete_notify_cb,
+        .cb_ctx = NULL,
+    };
+
+    fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &crashdump_loc_mhu_recv_req);
 
     return status == FPFW_ICC_BASE_STATUS_SUCCESS ? true : false;
 }
@@ -122,8 +138,10 @@ void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t* ic
         switch (type)
         {
         case CRASH_DUMP_ICC_CONFIG_MHU_LOCAL:
+            callback_registered = icc_register_mhu_local_callback(icc_ctx);
+            break;
         case CRASH_DUMP_ICC_CONFIG_MHU_REMOTE:
-            callback_registered = icc_register_mhu_callback(icc_ctx);
+            callback_registered = icc_register_mhu_remote_callback(icc_ctx);
             break;
         case CRASH_DUMP_ICC_CONFIG_SPI_REMOTE:
             callback_registered = icc_register_spi_callback(icc_ctx);

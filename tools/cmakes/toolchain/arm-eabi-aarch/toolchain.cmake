@@ -17,6 +17,11 @@ set(CMAKE_CXX_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -nostartfiles -L${C
 set(CMAKE_ASM_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -nostartfiles -L${CMAKE_CURRENT_LIST_DIR}/ld")
 set(CMAKE_EXE_LINKER_FLAGS_INIT "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -L${CMAKE_CURRENT_LIST_DIR}/ld -Wl,--gc-sections")
 
+# Add Cortex m7 clock speed, ticks per second
+
+SET(TX_CORE_CLOCK_SPEED "6250000")        # Default to 6.5MHz which is the clock speed on FPGA for mscp
+SET(TX_CORE_TICKS_PER_SECOND "100")
+
 # Enable Floating Point Unit (FPU)
 option(ENABLE_FPU "Enable hardware floating-point unit for Cortex-M7" ON)
 if(ENABLE_FPU)
@@ -38,8 +43,8 @@ set(CMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS TRUE)
 set(CMAKE_NINJA_FORCE_RESPONSE_FILE TRUE)
 
 # Set repo utilities
-set(REPO_CLANG_TIDY "${CMAKE_SOURCE_DIR}/tools/cmakes/toolchain/arm-eabi-aarch/clang-tidy.cmd" 
-    "--quiet" 
+set(REPO_CLANG_TIDY "${CMAKE_SOURCE_DIR}/tools/cmakes/toolchain/arm-eabi-aarch/clang-tidy.cmd"
+    "--quiet"
     "--extra-arg=--target=thumb"
     "--extra-arg=-mfloat-abi=soft"
     "--extra-arg=-Qunused-arguments"
@@ -50,8 +55,8 @@ set(REPO_CLANG_TIDY "${CMAKE_SOURCE_DIR}/tools/cmakes/toolchain/arm-eabi-aarch/c
 
 # TODO: Enable IWYU once IWYU fails builds on warnings
 # ADO: 1967581
-#set(REPO_IWYU "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmakes/toolchain/arm-eabi-aarch/iwyu.cmd" 
-#    "-Xiwyu" "--quoted_includes_first" 
+#set(REPO_IWYU "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmakes/toolchain/arm-eabi-aarch/iwyu.cmd"
+#    "-Xiwyu" "--quoted_includes_first"
 #    "-Xiwyu" "--mapping_file=${CMAKE_SOURCE_DIR}/.iwyu")
 
 set(REPO_CLANG_FORMAT "$ENV{REPO_APP_PATH_llvm.win64}/bin/clang-format.exe")
@@ -60,8 +65,8 @@ set(REPO_CLANG_FORMAT "$ENV{REPO_APP_PATH_llvm.win64}/bin/clang-format.exe")
 set(OBJ_COPY "$ENV{REPO_APP_PATH_gcc.arm.eabi.aarch-win64}/bin/arm-none-eabi-objcopy.exe")
 
 file(GLOB COMMON_LINK_FILES ${CMAKE_CURRENT_LIST_DIR}/ld/*.ld)
-define_property(TARGET PROPERTY FIRMWARE_BIN 
-    BRIEF_DOCS "Binary file of the output firmware" 
+define_property(TARGET PROPERTY FIRMWARE_BIN
+    BRIEF_DOCS "Binary file of the output firmware"
     FULL_DOCS "Binary file of the output firmware")
 
 # temporarily enable optimization for size

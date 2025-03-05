@@ -31,8 +31,9 @@ extern "C" {
 
 /*-- Symbolic Constant Macros (defines) --*/
 
-#define TEST_RECV_IRQ_NUM    (1)
-#define TEST_SHARED_MEM_SIZE (sizeof(icc_mhu_header_t) + (8))
+#define TEST_RECV_IRQ_NUM               (1)
+#define TEST_SHARED_MEM_SIZE            (sizeof(icc_mhu_header_t) + (8))
+#define TEST_ASYNC_SEND_RETRY_PERIOD_NS (FPFW_DUR_MS(10)) //! Threadx timer resolution is 10ms
 
 /*------------- Typedefs -----------------*/
 
@@ -51,6 +52,7 @@ mhu_icc_transport_device_config_t s_test_dev_config = {
         {
             .ch_shared_mem_size = TEST_SHARED_MEM_SIZE,
         },
+    .async_send_retry_period = TEST_ASYNC_SEND_RETRY_PERIOD_NS,
     .async_send_retry_max = 2,
 };
 
@@ -121,7 +123,7 @@ fpfw_status_t __wrap_fpfw_timer_create(fpfw_timer_t* timer,
 fpfw_status_t __wrap_fpfw_timer_enable(fpfw_timer_t* timer, fpfw_dur_t delay)
 {
     FPFW_UNUSED(timer);
-    FPFW_UNUSED(delay);
+    assert_true(FPFW_TIMER_VALID_TIME(delay));
     return mock_type(fpfw_status_t);
 }
 
@@ -214,6 +216,17 @@ TEST_FUNCTION(test_mhu_icc_transport_device_init_invalid_size, NULL, NULL)
 
     status = mhu_icc_transport_device_init(&s_test_mhu_icc_transport_device, &s_test_schedule, &bad_config);
     assert_int_equal(status, FPFW_ICC_TRANSPORT_STATUS_INVALID_SIZE_ARG_ERR);
+}
+
+TEST_FUNCTION(test_mhu_icc_transport_device_init_invalid_cfg_arg, NULL, NULL)
+{
+    mhu_icc_transport_device_config_t bad_config;
+    bad_config.recv_channel.ch_shared_mem_size = TEST_SHARED_MEM_SIZE;
+    bad_config.send_channel.ch_shared_mem_size = TEST_SHARED_MEM_SIZE;
+    bad_config.async_send_retry_period = 0; //! Invalid async timer period
+
+    fpfw_status_t status = mhu_icc_transport_device_init(&s_test_mhu_icc_transport_device, &s_test_schedule, &bad_config);
+    assert_int_equal(status, FPFW_ICC_TRANSPORT_STATUS_INVALID_ARG_ERR);
 }
 
 TEST_FUNCTION(test_mhu_icc_transport_device_init_success, NULL, NULL)

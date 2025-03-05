@@ -59,6 +59,7 @@ typedef struct {
     bool timer_active;
     uint8_t timer_retry_max;
     uint8_t timer_retry_count;
+    fpfw_dur_t timer_period;
 } mhu_icc_transport_async_send_t, *pmhu_icc_transport_async_send_t;
 
 typedef struct {

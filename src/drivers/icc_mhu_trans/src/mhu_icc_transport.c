@@ -124,7 +124,8 @@ static void async_send_attempt(void* Context, fpfw_dur_t latency)
         device->async_send_ctx.timer_retry_count = 0;
         device->async_send_ctx.timer_active = true;
 
-        fpfw_status_t timer_status = fpfw_timer_enable(&(device->async_send_ctx.timer), 1);
+        fpfw_status_t timer_status =
+            fpfw_timer_enable(&(device->async_send_ctx.timer), device->async_send_ctx.timer_period);
         FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCESS == timer_status, timer_status, 0, 0, 0);
     }
 }
@@ -356,11 +357,17 @@ fpfw_status_t mhu_icc_transport_device_init(mhu_icc_transport_device_t* dev,
         return FPFW_ICC_TRANSPORT_STATUS_INVALID_SIZE_ARG_ERR;
     }
 
+    if (!FPFW_TIMER_VALID_TIME(config->async_send_retry_period))
+    {
+        return FPFW_ICC_TRANSPORT_STATUS_INVALID_ARG_ERR;
+    }
+
     dev->recv_channel = config->recv_channel;
     dev->send_channel = config->send_channel;
 
     dev->async_recv_ctx.recv_irq_num = config->recv_irq_num;
     dev->async_send_ctx.timer_retry_max = config->async_send_retry_max;
+    dev->async_send_ctx.timer_period = config->async_send_retry_period;
 
     // Initialize the device
     DfwkDeviceInitialize(&(dev->base_device), schedule);

@@ -25,6 +25,7 @@
 ./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_scp_cded__test_send_recv.robot
 ./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_sdm_scp__test_send_recv.robot
 ./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_mcp_cded__test_send_recv.robot
 
 ## Sensor FIFO Tests
 #TODO - FPGA implementation to be done soon by Hara

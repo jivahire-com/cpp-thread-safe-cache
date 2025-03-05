@@ -24,6 +24,7 @@
 ./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_scp_cded__test_send_recv.robot
 ./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_sdm_scp__test_send_recv.robot
 ./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_test_send_recv.robot
+./../../../tests/functional/pythia/test_suites/largefifombx_tests/largefifo_mailbox_cli_mcp_cded__test_send_recv.robot
 
 ## SDM and CDED PCIE Tests
 ./../../../tests/functional/pythia/test_suites/sdm_pcie_tests/sdm_pcie_tests.robot
@@ -34,7 +35,7 @@
 ./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_read_wrentry_single_fifo_test.robot
 
 ## Sensor FIFO Tests
-# To be uncommented or moved to nightly based on discussion with SSI team
+## To be uncommented or moved to nightly based on discussion with SSI team
 #./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli-verify_core_current_hw_fifo.robot
 #./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli-verify_dimm_temp_fw_fifo.robot
 #./../../../tests/functional/pythia/test_suites/sensor_fifo_tests/sensor_fifo_cli-verify_pstate_tlm_hw_fifo.robot

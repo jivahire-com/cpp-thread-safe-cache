@@ -141,11 +141,14 @@ static void ap_core_ssi_shutdown_quiesce(pssi_shutdown_notification_request_t p_
 {
     APCORE_LOG_TRACE("SSI shutdown, shutdown type %d", p_request->shutdown_type);
 
-    // turn off all cores
-    ap_core_ppu_cores_off(&s_ap_core_ctx, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
+    if (p_request->shutdown_type != MSCP_SUBSYS_RESET)
+    {
+        // turn off all cores
+        ap_core_ppu_cores_off(&s_ap_core_ctx, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
 
-    // turn off clusters
-    ap_core_ppu_clusters_off(&s_ap_core_ctx, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
+        // turn off clusters
+        ap_core_ppu_clusters_off(&s_ap_core_ctx, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
+    }
 
     DfwkAsyncRequestComplete(&p_request->header);
 }

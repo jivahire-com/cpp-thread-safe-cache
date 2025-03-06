@@ -485,8 +485,11 @@ AP_CORE_TEST(dispatch_shutdown, setup, NULL)
 
     for (int idx = SHUTDOWN; idx <= AP_WARM_RESET; idx++)
     {
-        expect_function_call(__wrap_ap_core_ppu_cores_off);
-        expect_function_call(__wrap_ap_core_ppu_clusters_off);
+        if (idx != MSCP_SUBSYS_RESET)
+        {
+            expect_function_call(__wrap_ap_core_ppu_cores_off);
+            expect_function_call(__wrap_ap_core_ppu_clusters_off);
+        }
         expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
 
         test_request.shutdown_type = (ssi_shutdown_type_t)idx;

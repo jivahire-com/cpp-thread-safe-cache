@@ -203,14 +203,16 @@ Function New-VPconfig(
 
     $SimDir = ${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}
 
-
+    $ProbeDir = $env:REPO_APP_ROOT + "tools/svp_probes"
+    
     $SimArgs = @(
        "-d", "$WorkspaceDir",
         "-s", "$SimDir\win\release\run_fixed_vdk.py",
         "--pyargs",
         "--output_dir", "$OutputDir",
         "--template_name", "KingsgateSVP",
-        "--norun"
+        "--norun",
+        "--sim_probe", "$ProbeDir/mother_probe.py"
     )
 
     $SimArgs += @("--vpconfig", "$SimConfig")

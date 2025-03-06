@@ -646,3 +646,6 @@ Similarly, a BUG_CHECK mock will be provided that will utilize setjmp in order t
 Functional tests will utilize the CLI and BMC entrypoints for invoking Crash Dump behaviour.
 They will validate each crash scenario against the requirements (eg: toggling required GPIOs, transferring crash dump to BMC, etc.)
 They will be run using SVP and Big FPGA, and when available, silicon.
+
+## SVP crashdump
+SVP crash dump probe will dump into file under %REPO_APP_ROOT%.svp_simulator/crashdump folder if there is a crash.

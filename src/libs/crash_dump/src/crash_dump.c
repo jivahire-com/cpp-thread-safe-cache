@@ -16,6 +16,7 @@
 #include <cmsis_m7.h>     // for __WFI
 #include <crash_dump.h>   // for crash_dump_handler
 #include <fpfw_cfg_mgr.h> // for knobs
+#include <idsw_kng.h>     // for IS_PLATFORM_SVP
 #include <nvic.h>         // for nvic_get_current_irq
 #include <stdint.h>       // for uint32_t
 
@@ -28,6 +29,20 @@ core_crash_context_t g_core_crash_context;
 static volatile bool s_bug_check_initiated_crash = false;
 
 /*------------- Functions ----------------*/
+void crash_dump_svp_probe(uint32_t die_index, uint32_t core_index, bool is_full, uint64_t dump_address, uint64_t dump_size)
+{
+    // Do Nothing but wait SVP crashdump probe generate dump file
+    FPFwCDPrintf("%s: Die%ld Core%ld: %s dump address 0x%08lx%08lx size 0x%08lx%08lx\n",
+                 __FUNCTION__,
+                 die_index,
+                 core_index,
+                 is_full ? "Full" : "Mini",
+                 (uint32_t)(dump_address >> 32),
+                 (uint32_t)(dump_address & 0xFFFFFFFF),
+                 (uint32_t)(dump_size >> 32),
+                 (uint32_t)(dump_size & 0xFFFFFFFF));
+}
+
 bool crash_dump_bug_check_initiated_dump()
 {
     return s_bug_check_initiated_crash;
@@ -144,6 +159,15 @@ void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p
 
                 // Update the crash dump state
                 crash_dump_update_core_state(ctx->type_ctx[i], CRASH_DUMP_STATE_COMPLETED);
+
+                if (IS_PLATFORM_SVP())
+                {
+                    crash_dump_svp_probe(ctx->die_index,
+                                         ctx->core_index,
+                                         ctx->type_ctx[i]->type == CRASH_DUMP_TYPE_FULL,
+                                         ctx->type_ctx[i]->mem_ctx.baseAddr,
+                                         ctx->type_ctx[i]->mem_ctx.nextAddr - ctx->type_ctx[i]->mem_ctx.baseAddr);
+                }
             }
         }
 

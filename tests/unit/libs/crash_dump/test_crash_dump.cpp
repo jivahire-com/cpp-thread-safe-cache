@@ -817,6 +817,7 @@ TEST_FUNCTION(test_crash_dump_handler, nullptr, nullptr)
                                     .in_memory = in_memory};
 
     will_return_always(__wrap_crash_dump_context, &context);
+    will_return_always(__wrap_idsw_get_platform_sdv, 0x30); // PLATFORM_FPGA
 
     // Set core state to in-progress for mini and full
     expect_any(__wrap_wait_for_semaphore, id);
@@ -940,6 +941,7 @@ TEST_FUNCTION(test_crash_dump_handler_icc_ctx_null, nullptr, nullptr)
                                     .in_memory = in_memory};
 
     will_return_always(__wrap_crash_dump_context, &context);
+    will_return_always(__wrap_idsw_get_platform_sdv, 0x30); // PLATFORM_FPGA
 
     // Set core state to in-progress
     expect_any(__wrap_wait_for_semaphore, id);
@@ -1010,6 +1012,7 @@ TEST_FUNCTION(test_crash_dump_handler_send_sync_fail, nullptr, nullptr)
                                     .in_memory = in_memory};
 
     will_return_always(__wrap_crash_dump_context, &context);
+    will_return_always(__wrap_idsw_get_platform_sdv, 0x30); // PLATFORM_FPGA
 
     // Set core state to in-progress
     expect_any(__wrap_wait_for_semaphore, id);
@@ -1105,6 +1108,8 @@ TEST_FUNCTION(test_crash_dump_handler_null_context, nullptr, nullptr)
                                             (fpfw_icc_base_ctx_t*)0x00000006, // Non-null ICC CDED Context
                                         },
                                     .in_memory = in_memory};
+
+    will_return_always(__wrap_idsw_get_platform_sdv, 0x41); // PLATFORM_SVP_SIM
 
     // Set core state to in-progress
     will_return_count(__wrap_crash_dump_context, &context, 2);

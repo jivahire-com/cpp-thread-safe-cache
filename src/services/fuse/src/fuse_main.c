@@ -86,6 +86,9 @@ static bool platform_requires_fuse_distribution()
     case PLATFORM_FPGA_LARGE_RVP:
         status = true;
         break;
+    case PLATFORM_SVP_SIM:
+        status = true;
+        break;
     default:
         printf(FUSE_NAME "Fuse distribution not supported in FW for platform\n");
         break;
@@ -315,6 +318,10 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
         break;
     case PLATFORM_RVP_EVT_SILICON:
         printf(FUSE_NAME "Platform is PLATFORM_RVP_EVT_SILICON\n");
+        break;
+    case PLATFORM_SVP_SIM:
+        printf(FUSE_NAME "Platform is PLATFORM_SVP_SIM\n");
+        status = fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
         break;
     default:
         status = SILIBS_E_SUPPORT;

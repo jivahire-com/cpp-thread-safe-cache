@@ -40,3 +40,6 @@ KingsgateSVP.DIE_0.VABRPSS3.#EXTRA_PROPERTIES#runtime_disabled=false
 KingsgateSVP.DIE_1.#EXTRA_PROPERTIES#runtime_disabled=true
 KingsgateSVP.Platform_Flash.PlatformFlash.#EXTRA_PROPERTIES#/ImageInfo/EEPROM_Image=$(REPO_APP_BUILD_DIR)/$(REPO_APP_BUILD_CONFIG)/arm-eabi-aarch/bin/flash/kingsgate.ifwi.ap.baremetal.debug.dat
 KingsgateSVP.Platform_Flash.PlatformFlash.#SCML_PROPERTIES#EEPROM_Image=$(REPO_APP_BUILD_DIR)/$(REPO_APP_BUILD_CONFIG)/arm-eabi-aarch/bin/flash/kingsgate.ifwi.ap.baremetal.debug.dat
+KingsgateSVP.DIE_0.RMSS.MSCP_EXP.Fuses.fuses_csr.#SCML_PROPERTIES#FUSE_DATA_FILE_0=$(REPO_APP_PATH_kng_system_fuse_data)/kingsgate_system_fuse_preload_emu_8c_32_bits_0
+KingsgateSVP.DIE_0.RMSS.MSCP_EXP.Fuses.fuses_csr.#SCML_PROPERTIES#FUSE_DATA_FILE_1=$(REPO_APP_PATH_kng_system_fuse_data)/kingsgate_system_fuse_preload_emu_8c_32_bits_1
+KingsgateSVP.DIE_0.RMSS.MSCP_EXP.Fuses.fuses_csr.#SCML_PROPERTIES#FUSE_DATA_FILE_2=$(REPO_APP_PATH_kng_system_fuse_data)/kingsgate_system_fuse_preload_emu_8c_32_bits_2

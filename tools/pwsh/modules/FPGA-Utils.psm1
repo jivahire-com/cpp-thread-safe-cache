@@ -81,7 +81,8 @@ Function Write-FPGAFlash(
     [Parameter(Mandatory=$false)] [string] $file = "kingsgate.ifwi.fpga.debug.custom.dat",
     [Parameter(Mandatory=$false)] [string] $user = "admin",
     [Parameter(Mandatory=$false)] [string] $pw = "admin",
-    [Parameter(Mandatory=$false)] [string] $dest = "/var/wcs/home"
+    [Parameter(Mandatory=$false)] [string] $dest = "/var/wcs/home",
+    [Parameter(Mandatory=$false)] [string] $bmcpass = "0penBmc"
 )
 {
 
@@ -125,7 +126,7 @@ Function Write-FPGAFlash(
         Write-Host -ForegroundColor Blue "File  : $filepath"
         Write-Host -ForegroundColor Blue "Dest  : ${ip}:${dest}"
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-        echo "y" | pscp -scp -pw $pw $filepath $user@${ip}:$dest
+        echo "y" | pscp -scp -P 2200 -pw $pw $filepath $user@${ip}:$dest
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
 
         Write-host ""
@@ -133,7 +134,7 @@ Function Write-FPGAFlash(
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
         Write-Host -ForegroundColor Blue "Programming SoC Flash . . ."
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-        echo "n" | plink -ssh $user@${ip} -pw $pw bios-updater -mode fwupdate -file $dest/$file -index 0
+        echo "n" | plink -ssh -P 2200 $user@{$ip} -pw $pw "echo $bmcpass | sudo -S su - root -c 'bios-updater -mode fwupdate -file $dest/$file -index 0'"
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
     }
     # Skip if unknown config or SVP

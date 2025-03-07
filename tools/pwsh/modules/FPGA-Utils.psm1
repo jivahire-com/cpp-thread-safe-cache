@@ -134,7 +134,7 @@ Function Write-FPGAFlash(
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
         Write-Host -ForegroundColor Blue "Programming SoC Flash . . ."
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
-        echo "n" | plink -ssh -P 2200 $user@{$ip} -pw $pw "echo $bmcpass | sudo -S su - root -c 'bios-updater -mode fwupdate -file $dest/$file -index 0'"
+        echo "n" | plink -ssh -P 2200 $user@$ip -pw $pw "echo $bmcpass | sudo -S su - root -c 'bios-updater -mode fwupdate -file $dest/$file -index 0'"
         Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
     }
     # Skip if unknown config or SVP

@@ -21,6 +21,7 @@
 #include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define NUM_RP 4
 
 /*------------- Typedefs -----------------*/
 
@@ -118,14 +119,10 @@ void print_rpss_entity(pcie_ss_entity_t* ss)
     FpFwCliPrint("phy_bcast_base_addr:  0x%lx\n", (uint32_t)(ss->bases.phy_bcast_base_addr));
     FpFwCliPrint("p1_base_addr:         0x%lx\n", (uint32_t)(ss->bases.p1_base_addr));
     FpFwCliPrint("============== RPs ==============================\n");
-    FpFwCliPrint("rp[0].valid:   %s\n", (ss->rps[0].valid == true) ? "true" : "false");
-    FpFwCliPrint("rp[0].live:    %s\n", (ss->rps[0].live == true) ? "true" : "false");
-    FpFwCliPrint("rp[1].valid:   %s\n", (ss->rps[1].valid == true) ? "true" : "false");
-    FpFwCliPrint("rp[1].live:    %s\n", (ss->rps[1].live == true) ? "true" : "false");
-    FpFwCliPrint("rp[2].valid:   %s\n", (ss->rps[2].valid == true) ? "true" : "false");
-    FpFwCliPrint("rp[2].live:    %s\n", (ss->rps[2].live == true) ? "true" : "false");
-    FpFwCliPrint("rp[3].valid:   %s\n", (ss->rps[3].valid == true) ? "true" : "false");
-    FpFwCliPrint("rp[3].live:    %s\n", (ss->rps[3].live == true) ? "true" : "false");
+    for (int i = 0; i < NUM_RP; i++) {
+        FpFwCliPrint("rp[%d].valid:   %s\n", i, (ss->rps[i].valid == true) ? "true" : "false");
+        FpFwCliPrint("rp[%d].live:    %s\n", i, (ss->rps[i].live == true) ? "true" : "false");
+    }
     FpFwCliPrint("================= End ===========================\n");
 }
 
@@ -209,34 +206,34 @@ void print_type1_rp_header(RPSS_INSTANCE rpss_idx, uint8_t rp_idx, rc4sx16_pf0_t
 
     /* clang-format off */
     FpFwCliPrint("======= PCIe RPSS [%d] RP [%d] type 1 config header =========\n", (uint8_t)rpss_idx, (uint8_t)rp_idx);
-    FpFwCliPrint("Vendor ID                                 : 0x%lx\n", rp_t1_hdr->type1_dev_id_vend_id_reg.vendor_id);
-    FpFwCliPrint("Device ID                                 : 0x%lx\n", rp_t1_hdr->type1_dev_id_vend_id_reg.device_id);
-    FpFwCliPrint("Status     | Command                      : 0x%lx\n", rp_t1_hdr->type1_status_command_reg.as_uint32);
-    FpFwCliPrint("Class Code | Rev ID                       : 0x%lx\n", rp_t1_hdr->type1_class_code_rev_id_reg.as_uint32);
-    FpFwCliPrint("Cache Line Size                           : 0x%lx\n", rp_t1_hdr->type1_bist_hdr_type_lat_cache_line_size_reg.cache_line_size);
-    FpFwCliPrint("Primary Latency Timer                     : 0x%lx\n", rp_t1_hdr->type1_bist_hdr_type_lat_cache_line_size_reg.latency_master_timer);
-    FpFwCliPrint("Primary Latency Timer                     : 0x%lx\n", rp_t1_hdr->type1_bist_hdr_type_lat_cache_line_size_reg.header_type);
-    FpFwCliPrint("BIST                                      : 0x%lx\n", rp_t1_hdr->type1_bist_hdr_type_lat_cache_line_size_reg.bist);
-    FpFwCliPrint("BAR0                                      : 0x%lx\n", rp_t1_hdr->bar0_reg.as_uint32);
-    FpFwCliPrint("BAR1                                      : 0x%lx\n", rp_t1_hdr->bar1_reg.as_uint32);
-    FpFwCliPrint("Primary Bus                               : 0x%lx\n", rp_t1_hdr->sec_lat_timer_sub_bus_sec_bus_pri_bus_reg.prim_bus);
-    FpFwCliPrint("Secondary Bus                             : 0x%lx\n", rp_t1_hdr->sec_lat_timer_sub_bus_sec_bus_pri_bus_reg.sec_bus);
-    FpFwCliPrint("Subordinate Bus                           : 0x%lx\n", rp_t1_hdr->sec_lat_timer_sub_bus_sec_bus_pri_bus_reg.sub_bus);
-    FpFwCliPrint("Secondary Latency Timer                   : 0x%lx\n", rp_t1_hdr->sec_lat_timer_sub_bus_sec_bus_pri_bus_reg.sec_lat_timer);
-    FpFwCliPrint("Secondary Status | I/O Limit | I/O Base   : 0x%lx\n", rp_t1_hdr->sec_stat_io_limit_io_base_reg.as_uint32);
-    FpFwCliPrint("Memory Base                               : 0x%lx\n", rp_t1_hdr->mem_limit_mem_base_reg.mem_base);
-    FpFwCliPrint("Memory Limit                              : 0x%lx\n", rp_t1_hdr->mem_limit_mem_base_reg.mem_limit);
-    FpFwCliPrint("Prefetchable Memory Lower Base            : 0x%lx\n", rp_t1_hdr->pref_mem_limit_pref_mem_base_reg.pref_mem_base);
-    FpFwCliPrint("Prefetchable Memory Lower Limit           : 0x%lx\n", rp_t1_hdr->pref_mem_limit_pref_mem_base_reg.pref_mem_limit);
-    FpFwCliPrint("Prefetchable Memory Upper Base            : 0x%lx\n", rp_t1_hdr->pref_base_upper_reg.pref_mem_base_upper);
-    FpFwCliPrint("Prefetchable Memory Upper Limit           : 0x%lx\n", rp_t1_hdr->pref_limit_upper_reg.pref_mem_limit_upper);
-    FpFwCliPrint("I/O Upper Limit                           : 0x%lx\n", rp_t1_hdr->io_limit_upper_io_base_upper_reg.io_base_upper);
-    FpFwCliPrint("I/O Upper Base                            : 0x%lx\n", rp_t1_hdr->io_limit_upper_io_base_upper_reg.io_limit_upper);
-    FpFwCliPrint("Capabilities Pointer                      : 0x%lx\n", rp_t1_hdr->type1_cap_ptr_reg.cap_pointer);
-    FpFwCliPrint("Expansion ROM Base                        : 0x%lx\n", rp_t1_hdr->type1_exp_rom_base_reg.exp_rom_base_address);
-    FpFwCliPrint("Interrupt Line                            : 0x%lx\n", rp_t1_hdr->bridge_ctrl_int_pin_int_line_reg.int_line);
-    FpFwCliPrint("Interrupt Pin                             : 0x%lx\n", rp_t1_hdr->bridge_ctrl_int_pin_int_line_reg.int_pin);
-    FpFwCliPrint("Bridge Control                            : 0x%lx\n", (rp_t1_hdr->bridge_ctrl_int_pin_int_line_reg.as_uint32 >> 16));
+    FpFwCliPrint("Vendor ID            : 0x%lx\n", rp_t1_hdr->type1_dev_id_vend_id_reg.vendor_id);
+    FpFwCliPrint("Device ID            : 0x%lx\n", rp_t1_hdr->type1_dev_id_vend_id_reg.device_id);
+    FpFwCliPrint("Status | Command     : 0x%lx\n", rp_t1_hdr->type1_status_command_reg.as_uint32);
+    FpFwCliPrint("Class Code | Rev ID  : 0x%lx\n", rp_t1_hdr->type1_class_code_rev_id_reg.as_uint32);
+    FpFwCliPrint("Cache Line Size      : 0x%lx\n", rp_t1_hdr->type1_bist_hdr_type_lat_cache_line_size_reg.cache_line_size);
+    FpFwCliPrint("Primary Latency Timer: 0x%lx\n", rp_t1_hdr->type1_bist_hdr_type_lat_cache_line_size_reg.latency_master_timer);
+    FpFwCliPrint("Header Type          : 0x%lx\n", rp_t1_hdr->type1_bist_hdr_type_lat_cache_line_size_reg.header_type);
+    FpFwCliPrint("BIST                 : 0x%lx\n", rp_t1_hdr->type1_bist_hdr_type_lat_cache_line_size_reg.bist);
+    FpFwCliPrint("BAR0                 : 0x%lx\n", rp_t1_hdr->bar0_reg.as_uint32);
+    FpFwCliPrint("BAR1                 : 0x%lx\n", rp_t1_hdr->bar1_reg.as_uint32);
+    FpFwCliPrint("Primary Bus          : 0x%lx\n", rp_t1_hdr->sec_lat_timer_sub_bus_sec_bus_pri_bus_reg.prim_bus);
+    FpFwCliPrint("Secondary Bus        : 0x%lx\n", rp_t1_hdr->sec_lat_timer_sub_bus_sec_bus_pri_bus_reg.sec_bus);
+    FpFwCliPrint("Subordinate Bus      : 0x%lx\n", rp_t1_hdr->sec_lat_timer_sub_bus_sec_bus_pri_bus_reg.sub_bus);
+    FpFwCliPrint("Secondary Lat Timer  : 0x%lx\n", rp_t1_hdr->sec_lat_timer_sub_bus_sec_bus_pri_bus_reg.sec_lat_timer);
+    FpFwCliPrint("Sec Status | I/O Lmt | I/O Base: 0x%lx\n", rp_t1_hdr->sec_stat_io_limit_io_base_reg.as_uint32);
+    FpFwCliPrint("Memory Base          : 0x%lx\n", rp_t1_hdr->mem_limit_mem_base_reg.mem_base);
+    FpFwCliPrint("Memory Limit         : 0x%lx\n", rp_t1_hdr->mem_limit_mem_base_reg.mem_limit);
+    FpFwCliPrint("Pref Mem Lower Base  : 0x%lx\n", rp_t1_hdr->pref_mem_limit_pref_mem_base_reg.pref_mem_base);
+    FpFwCliPrint("Pref Mem Lower Limit : 0x%lx\n", rp_t1_hdr->pref_mem_limit_pref_mem_base_reg.pref_mem_limit);
+    FpFwCliPrint("Pref Mem Upper Base  : 0x%lx\n", rp_t1_hdr->pref_base_upper_reg.pref_mem_base_upper);
+    FpFwCliPrint("Pref Mem Upper Limit : 0x%lx\n", rp_t1_hdr->pref_limit_upper_reg.pref_mem_limit_upper);
+    FpFwCliPrint("I/O Upper Limit      : 0x%lx\n", rp_t1_hdr->io_limit_upper_io_base_upper_reg.io_base_upper);
+    FpFwCliPrint("I/O Upper Base       : 0x%lx\n", rp_t1_hdr->io_limit_upper_io_base_upper_reg.io_limit_upper);
+    FpFwCliPrint("Capabilities Ptr     : 0x%lx\n", rp_t1_hdr->type1_cap_ptr_reg.cap_pointer);
+    FpFwCliPrint("Exp ROM Base         : 0x%lx\n", rp_t1_hdr->type1_exp_rom_base_reg.exp_rom_base_address);
+    FpFwCliPrint("Interrupt Line       : 0x%lx\n", rp_t1_hdr->bridge_ctrl_int_pin_int_line_reg.int_line);
+    FpFwCliPrint("Interrupt Pin        : 0x%lx\n", rp_t1_hdr->bridge_ctrl_int_pin_int_line_reg.int_pin);
+    FpFwCliPrint("Bridge Control       : 0x%lx\n", (rp_t1_hdr->bridge_ctrl_int_pin_int_line_reg.as_uint32 >> 16));
     FpFwCliPrint("============================ End ============================\n");
     /* clang-format on */
 }

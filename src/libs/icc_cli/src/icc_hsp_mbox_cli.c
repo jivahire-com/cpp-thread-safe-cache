@@ -152,8 +152,7 @@ FPFW_CLI_STATUS set_mbx_reg_val(int argc, const char** argv)
     FPFW_UNUSED(argv);
     if (argc != 3)
     {
-        FPFW_CLI_LOG_ERR("ERROR! Insufficient Args\n");
-        FPFW_CLI_LOG_ERR("Usage: mbx_reg_set <reg_id(0 to 7)> <val(uint32_t)>\n");
+        FPFW_CLI_LOG_ERR("ERROR! Invalid Args, Check Usage\n");
         return CLI_ERROR;
     }
 
@@ -168,8 +167,7 @@ FPFW_CLI_STATUS set_mbx_reg_val(int argc, const char** argv)
 
     if (reg_id < 0 || reg_id >= MAX_ICC_MAILBOX_REGS)
     {
-        FPFW_CLI_LOG_ERR("ERROR! Invalid Arg\n");
-        FPFW_CLI_LOG_ERR("Usage: mbx_reg_set <reg_id(0 to 7)> <val(uint32_t)>\n");
+        FPFW_CLI_LOG_ERR("ERROR! Invalid Args, Check Usage\n");
         return CLI_ERROR;
     }
 
@@ -178,7 +176,7 @@ FPFW_CLI_STATUS set_mbx_reg_val(int argc, const char** argv)
     old_value = *reg_address;
     *reg_address = value;
     new_value = *reg_address;
-    FPFW_CLI_LOG_INFO("Mailbox inst %d:\tReg %s\tAddress: 0x%08x\tOld Val: 0x%x\tNew Val: 0x%x\n",
+    FPFW_CLI_LOG_INFO("Mailbox inst %d:\tReg %s\tAddr: 0x%08x\tOld Val: 0x%x\tNew Val: 0x%x\n",
                       inst_id,
                       mbx_reg_names[reg_id],
                       (uint32_t)reg_address, // NO LINT
@@ -221,7 +219,7 @@ FPFW_CLI_STATUS hsp_mbox_echo(int argc, const char** argv)
     //! Prevent overwriting of the payload buffer
     if (is_echo_test_active)
     {
-        FPFW_CLI_LOG_ERR("[ECHO] Test already active\n");
+        FPFW_CLI_LOG_ERR("[ECHO] Test ongoing\n");
         return cli_status;
     }
 
@@ -233,7 +231,7 @@ FPFW_CLI_STATUS hsp_mbox_echo(int argc, const char** argv)
 
     if (argc != 4)
     {
-        FPFW_CLI_LOG_INFO("[ECHO] Insufficient Payload Args, Using default values\n");
+        FPFW_CLI_LOG_INFO("[ECHO] Use default values\n");
         hsp_echo_msg.as_uint32[1] = HSP_MBOX_TEST_PAYLOAD_1;
         hsp_echo_msg.as_uint32[2] = HSP_MBOX_TEST_PAYLOAD_2;
         hsp_echo_msg.as_uint32[3] = HSP_MBOX_TEST_PAYLOAD_3;
@@ -311,7 +309,7 @@ FPFW_CLI_STATUS hsp_mbox_send(int argc, const char** argv)
     //! Prevent overwriting of the send payload buffer
     if (is_send_test_active)
     {
-        FPFW_CLI_LOG_ERR("[SEND] Test already active\n");
+        FPFW_CLI_LOG_ERR("[SEND] Test ongoing\n");
         return cli_status;
     }
 
@@ -320,7 +318,7 @@ FPFW_CLI_STATUS hsp_mbox_send(int argc, const char** argv)
 
     if (argc != 5)
     {
-        FPFW_CLI_LOG_ERR("[SEND] Insufficient Payload Args, Using default values\n");
+        FPFW_CLI_LOG_ERR("[SEND] Use default values\n");
         hsp_send_msg.as_uint32[0] = SET_HSP_MAILBOX_HEADER_ASUNIT32(HSP_MAILBOX_CMD_TEST_ECHO_REQ, 0, 0);
         hsp_send_msg.as_uint32[1] = HSP_MBOX_TEST_PAYLOAD_1;
         hsp_send_msg.as_uint32[2] = HSP_MBOX_TEST_PAYLOAD_2;
@@ -401,13 +399,13 @@ FPFW_CLI_STATUS hsp_mbox_recv(int argc, const char** argv)
 
     if (is_recv_test_active)
     {
-        FPFW_CLI_LOG_ERR("[RECV] Test already active\n");
+        FPFW_CLI_LOG_ERR("[RECV] Test ongoing\n");
         return cli_status;
     }
 
     if (argc < 2)
     {
-        FPFW_CLI_LOG_ERR("[RECV] Insufficient Args, Command Code Required\n");
+        FPFW_CLI_LOG_ERR("[RECV] Invalid Args\n");
         return cli_status;
     }
     uint32_t recv_cmd_code = atoi(argv[1]);

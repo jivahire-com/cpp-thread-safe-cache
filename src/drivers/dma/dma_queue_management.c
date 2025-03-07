@@ -37,7 +37,7 @@ void move_request_to_channel_queue(pdma_device_t device, pdma_async_request_t re
     int channel = request->dma_private.assigned_channel;
 
     // Move the request to the channel's queue
-    DMA_LOG_INFO("Enqueueing request to channel %d\n", channel);
+    DMA_LOG_INFO("Enqueue request to channel %d\n", channel);
     request->status = FPFW_DMA_STATUS_QUEUED;
 
     // Copy the request to the channel queue and increment channel's total outstanding byte count
@@ -74,7 +74,7 @@ void dma_main_queue_dispatch(PDFWK_ASYNC_REQUEST_HEADER dfwk_request, void* cont
     if (status != SILIBS_SUCCESS)
     {
         // Unmapped & unhandled AP destination address
-        DMA_LOG_INFO("Invalid destination address: 0x%llX\n", request->input.dest_addr_32b_aligned);
+        DMA_LOG_INFO("Invalid dest addr: 0x%llX\n", request->input.dest_addr_32b_aligned);
         request->status = FPFW_DMA_STATUS_FAIL;
         DfwkAsyncRequestComplete(dfwk_request);
         return;
@@ -130,7 +130,7 @@ void dma_channel_0_queue_dispatch(PDFWK_ASYNC_REQUEST_HEADER dfwk_request, void*
     switch (dfwk_request->RequestType)
     {
     case DMA_REQUEST_SINGLE_ASYNC:
-        DMA_LOG_INFO("Starting DMA transfer on channel 0\n");
+        DMA_LOG_INFO("Start DMA transfer on channel 0\n");
         dma_start_transfer(device, CH_0, dfwk_request);
         break;
     default:
@@ -152,7 +152,7 @@ void dma_channel_1_queue_dispatch(PDFWK_ASYNC_REQUEST_HEADER dfwk_request, void*
     switch (dfwk_request->RequestType)
     {
     case DMA_REQUEST_SINGLE_ASYNC:
-        DMA_LOG_INFO("Starting DMA transfer on channel 1\n");
+        DMA_LOG_INFO("Start DMA transfer on channel 1\n");
         dma_start_transfer(device, CH_1, dfwk_request);
         break;
     default:
@@ -201,7 +201,7 @@ void update_channel_struct_subtract_remaining_bytes(pdma_device_t device, pdma_a
     // Check for negative remaining bytes
     if ((device->Channel[channel].remaining_bytes_all_requests > previous_remaining_bytes_all_requests) && !first_time)
     {
-        DMA_LOG_INFO("Error: Unexpected behavior - queue remaining bytes is negative\n");
+        DMA_LOG_INFO("Error: queue remaining bytes is negative\n");
         FPFwErrorRaise(FPFW_ERROR_DMA_REMAINING_BYTES_INVALID, 0, 0, 0, 0);
     }
     previous_remaining_bytes_all_requests = device->Channel[channel].remaining_bytes_all_requests;
@@ -248,7 +248,7 @@ bool check_parameters(pdma_device_t device, pdma_async_request_t request)
     if (request->input.dest_addr_32b_aligned == 0)
     {
         // Invalid destination address
-        DMA_LOG_INFO("Invalid destination address: 0x%llX\n", request->input.dest_addr_32b_aligned);
+        DMA_LOG_INFO("Invalid dest addr: 0x%llX\n", request->input.dest_addr_32b_aligned);
         return false;
     }
 

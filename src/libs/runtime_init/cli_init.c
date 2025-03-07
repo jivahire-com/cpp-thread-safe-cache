@@ -49,7 +49,7 @@ FPFW_INIT_COMPONENT(cli, FPFW_INIT_DEPENDENCIES("uart", "std_io"))
     if (CLI_SUCCESS == cli_result)
     {
         FpFwCliStart();
-        printf("CLI Initialized & Started\n");
+        printf("CLI Started\n");
     }
     return (fpfw_init_result_t){cli_result, NULL};
 }

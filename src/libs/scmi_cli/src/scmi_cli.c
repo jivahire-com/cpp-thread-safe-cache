@@ -43,7 +43,6 @@ static FPFW_CLI_STATUS scmi_setm(int argc, const char** argv)
     if (argc != 2)
     {
         FpFwCliPrint("ERROR! Insufficient Args\n");
-        FpFwCliPrint("Usage: scmi_setm <mode>\n");
         return CLI_ERROR;
     }
     uint8_t mode = atoi(argv[1]);
@@ -58,9 +57,7 @@ static FPFW_CLI_STATUS scmi_send(int argc, const char** argv)
 
     if (argc < 4)
     {
-        FpFwCliPrint("ERROR! Insufficient Args scmi_send\n");
-        FpFwCliPrint("Usage: scmi_send <protocol_id> <cmd_id> <payload size> <data0> .... <datan> \n");
-        FpFwCliPrint("        max 32 bytes payload only \n");
+        FpFwCliPrint("ERROR! Insufficient Args\n");
         return CLI_ERROR;
     }
     uint8_t protocol_id = atoi(argv[1]);

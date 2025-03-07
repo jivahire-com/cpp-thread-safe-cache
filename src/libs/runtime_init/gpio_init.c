@@ -66,8 +66,7 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver"))
 
     if (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE || idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE_RVP)
     {
-        printf("Programming FPGA specific GPIO Config table (Supporting loopback of pins 6 and 7 on GPIO "
-               "Bank 6) . . .\n");
+        printf("FPGA GPIO Config (Loopback pins 6,7on bank 6)\n");
         status = gpio_init(fpga_config_gpio_table, ARRAY_SIZE(fpga_config_gpio_table));
         gpio_init_config.gpio_config_table = fpga_config_gpio_table;
         gpio_init_config.table_size = ARRAY_SIZE(fpga_config_gpio_table);

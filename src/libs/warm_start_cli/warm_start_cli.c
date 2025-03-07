@@ -41,9 +41,9 @@ void boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_cont
 extern ws_data_list_t* p_ws_list;
 
 static FPFW_CLI_COMMAND warm_start_cli_list[] = {
-    {NULL_LIST_ENTRY, "warm_start", "wsrd", ws_read_cli, "Warm Start Read Data", "syntax: wswr <id> <space separated bytes>\nWrites warm data\n"},
-    {NULL_LIST_ENTRY, "warm_start", "wswr", ws_write_cli, "Warm Start Write Data", "syntax: wsrd <id> \nReads warm data\n"},
-    {NULL_LIST_ENTRY, "warm_start", "wsdisp", ws_disp_cli, "Warm Start Display Data", "syntax: wsdisp \nDisplays information around the warm data mechanism\n"},
+    {NULL_LIST_ENTRY, "warm_start", "wsrd", ws_read_cli, "Warm Start Read Data", "syntax: wsrd <id>\n"},
+    {NULL_LIST_ENTRY, "warm_start", "wswr", ws_write_cli, "Warm Start Write Data", "syntax: wswr <id> <byte>..\n"},
+    {NULL_LIST_ENTRY, "warm_start", "wsdisp", ws_disp_cli, "Warm Start Display Data", "syntax: wsdisp\n"},
     {NULL_LIST_ENTRY, "warm_start", "wsreset", ws_reset, "Warm Start Cli to perform Reset", "syntax: wsreset [cold, subsys, warm, shutdown]"},
 };
 
@@ -74,15 +74,14 @@ static FPFW_CLI_STATUS ws_write_cli(int argc, const char** argv)
 
     if (argc < 3)
     {
-        FpFwCliPrint("Incorrect parameters\n");
+        FpFwCliPrint("Incorrect args\n");
         FpFwCliPrint("Syntax: wswr <ID> <space separated bytes data>\n");
-        FpFwCliPrint("Example: wswr 7 1 23 45 6\n");
         return CLI_SUCCESS;
     }
 
     if (argc - 2 > MAX_DATA_COUNT)
     {
-        FpFwCliPrint("Too many data bytes provided. Maximum allowed is %d\n", MAX_DATA_COUNT);
+        FpFwCliPrint("Maximum byte allowed is %d\n", MAX_DATA_COUNT);
         return CLI_SUCCESS;
     }
 
@@ -128,7 +127,6 @@ static FPFW_CLI_STATUS ws_read_cli(int argc, const char** argv)
     {
         FpFwCliPrint("Incorrect parameters\n");
         FpFwCliPrint("Syntax: wsrd <ID>\n");
-        FpFwCliPrint("Example: wsrd 7\n");
         return CLI_SUCCESS;
     }
 
@@ -326,7 +324,7 @@ static FPFW_CLI_STATUS ws_reset(int argc, const char** argv)
     }
     else
     {
-        WS_LOG_INFO("Must provide input parameter\nOptions:\ncold, subsys, shutdown, and warm\n");
+        WS_LOG_INFO("Invalid Args, Check usage\n");
         return CLI_SUCCESS;
     }
 
@@ -339,5 +337,5 @@ void warm_start_cli_init(psos_device_t p_device)
 
     FpFwCliRegisterTable(warm_start_cli_list, FPFW_ARRAY_SIZE(warm_start_cli_list));
 
-    FpFwCliPrint("Warm Start CLI Init Complete\n");
+    FpFwCliPrint("Warm Start CLI Init done\n");
 }

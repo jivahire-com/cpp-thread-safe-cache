@@ -40,12 +40,12 @@ static FPFW_CLI_STATUS i3c_writeread(int argc, const char** argv);
 /*-- Declarations (Statics and globals) --*/
 
 static FPFW_CLI_COMMAND i3c_controller_cli_list[] = {
-    {NULL_LIST_ENTRY, "i3c", "i3c_echo", i3c_controller_echo_cli, "i3c echo data", "Usage: i3c_controller_echo <32-bit address(in Hex)> <32-bit data(in Hex)>"},
+    {NULL_LIST_ENTRY, "i3c", "i3c_echo", i3c_controller_echo_cli, "i3c echo cmd", "Usage: i3c_echo <addr(in Hex)> <data(in Hex)>"},
     {NULL_LIST_ENTRY, "i3c", "i3c_rstdaa", i3c_rstdaa, "i3c RSTDAA cmd", "Usage: i3c_rstdaa <I3C_Bus 0/1>"},
     {NULL_LIST_ENTRY, "i3c", "i3c_setaasa", i3c_setaasa, "i3c SETAASA cmd", "Usage: i3c_setaasa <I3C_Bus 0/1>"},
     {NULL_LIST_ENTRY, "i3c", "i3c_rd_ts", i3c_read_temp_sensor, "i3c Read TS cmd", "Usage: i3c_rd_ts <I3C_Bus 0/1> <dev_id 0x3/0x4, 0x8/0x9, 0xD/0xE>"},
     {NULL_LIST_ENTRY, "i3c", "i3c_rd_pwr", i3c_read_pmic_power, "i3c Read PMIC cmd", "Usage: i3c_rd_pwr <I3C_Bus 0/1> <dev_id 0x3/0x4, 0x8/0x9, 0xD/0xE>"},
-    {NULL_LIST_ENTRY, "i3c", "i3c_writeread", i3c_writeread, "i3c WriteRead cmd", "Usage: i3c_writeread <bus_index> <device_index> <rx_byte_count> <reg_address> <w_byte0> ... <w_byte n>"},
+    {NULL_LIST_ENTRY, "i3c", "i3c_writeread", i3c_writeread, "i3c WriteRead cmd", "Usage: i3c_writeread <bus_idx> <device_idx> <rx_byte_count> <reg_addr> <w_byte0> .. <w_byte n>"},
 };
 
 /*------------- Functions ----------------*/
@@ -104,7 +104,7 @@ static FPFW_CLI_STATUS i3c_setaasa(int argc, const char** argv)
         int32_t status = i3c_master_set_aasa(instance, I3C_SPEED_I2C_FM, i3c_master_setaasa_callback, NULL);
         if (status != CLI_SUCCESS)
         {
-            DEBUG_PRINT("ERR setting I3C0 slave's dynamic address\n");
+            DEBUG_PRINT("ERR setting I3C0 slave's dynamic addr\n");
             return status;
         }
     }
@@ -262,12 +262,7 @@ static FPFW_CLI_STATUS i3c_writeread(int argc, const char** argv)
 
     if (argc < 5)
     {
-        FpFwCliPrint(
-            "\nMaster: Write the register address and the following write bytes to the specified device,\n");
-        FpFwCliPrint("\nthen read <rx_byte_count> from the device\n");
-        FpFwCliPrint("Syntax: i3c_writeread <bus_index> <device_index> <rx_byte_count> <reg_address> "
-                     "<w_byte0> ... <w_byte n>\n");
-        FpFwCliPrint("Example: i3c_writeread 0 1 3 0x12 0x34\n");
+        FpFwCliPrint("Invalid Args, Check usage\n");
         return CLI_ERROR;
     }
     if ((argc - 5) > TX_ARR_LENGTH)
@@ -334,8 +329,6 @@ static FPFW_CLI_STATUS i3c_writeread(int argc, const char** argv)
 
 static FPFW_CLI_STATUS i3c_controller_echo_cli(int argc, const char** argv)
 {
-    FpFwCliPrint("\ni3c_controller_echo_cli func. call\n");
-
     if (argc == 3)
     {
         char* endptr;
@@ -367,5 +360,5 @@ void i3c_controller_cli_initialize(void)
 {
     FpFwCliRegisterTable(i3c_controller_cli_list, FPFW_ARRAY_SIZE(i3c_controller_cli_list));
 
-    FpFwCliPrint("i3c_controller CLI init complete\n");
+    FpFwCliPrint("i3c_controller CLI init done\n");
 }

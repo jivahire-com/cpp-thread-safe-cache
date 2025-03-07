@@ -24,7 +24,7 @@ FPFW_INIT_COMPONENT(d2d_cntr_sync, FPFW_INIT_DEPENDENCIES("hw_ver", "std_io", "m
     {
         KNG_DIE_ID die_num = idsw_get_die_id();
         d2d_cntr_sync_init(die_num);
-        printf("D2D Sync Counter Done, die_num: [%u]\n", die_num);
+        printf("d2d_cntr_sync done, die[%u]\n", die_num);
     }
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

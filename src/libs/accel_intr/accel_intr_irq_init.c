@@ -274,7 +274,7 @@ int32_t accel_mcp_intr_init(ACCEL_ID accel_type)
 
     if (accel_type >= NUM_VALID_ACCEL_ID)
     {
-        critical_print("Accelerator type out of bounds : %d\n", accel_type);
+        critical_print("Invalid Accelerator type %d\n", accel_type);
         return ACCEL_INTR_RET_FAIL_INTR_INIT;
     }
 

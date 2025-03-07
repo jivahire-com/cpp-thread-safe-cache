@@ -22,7 +22,7 @@
 FPFW_INIT_COMPONENT(css_prme, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc", "cfg_mgr"))
 {
     uint8_t die_num = (uint8_t)idhw_get_die_id();
-    printf("CSS Pre Mesh init, die_num [%d]\n", die_num);
+    printf("CSS Pre Mesh init on die[%d]\n", die_num);
 
     css_pre_mesh_init(die_num);
 
@@ -30,9 +30,8 @@ FPFW_INIT_COMPONENT(css_prme, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_sv
     // ADO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1725718
     if (IS_PLATFORM_SVP())
     {
-        printf("Initializing System Control Tower\n");
         css_configure_system_tower(die_num);
-        printf("System Control Tower initialization complete.\n");
+        printf("System Control Tower Initialized\n");
     }
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

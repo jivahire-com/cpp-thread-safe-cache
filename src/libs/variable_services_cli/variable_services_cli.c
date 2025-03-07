@@ -41,8 +41,8 @@ static FPFW_CLI_STATUS var_serv_async_get_var(int argc, const char** argv);
 static FPFW_CLI_STATUS var_serv_async_set_var(int argc, const char** argv);
 
 static FPFW_CLI_COMMAND s_variable_serv_cmd_list[] = {
-    {NULL_LIST_ENTRY, "variable_serv", "get_var", var_serv_async_get_var, "Request to read data from HSP via get var", "syntax: get_var <no args>\n"},
-    {NULL_LIST_ENTRY, "variable_serv", "set_var", var_serv_async_set_var, "Request to publish data to HSP via set var", "syntax: set_var <no args>\n"},
+    {NULL_LIST_ENTRY, "variable_serv", "get_var", var_serv_async_get_var, "get variable value from HSP", "syntax: get_var\n"},
+    {NULL_LIST_ENTRY, "variable_serv", "set_var", var_serv_async_set_var, "set new variable value", "syntax: set_var\n"},
 };
 
 /*--------- Function Prototypes ----------*/
@@ -134,8 +134,8 @@ static FPFW_CLI_STATUS var_serv_async_get_var(int argc, const char** argv)
         FpFwCliPrint("%02X ", ((uint8_t*)&s_get_var_req.vendor_namespace_guid)[i]);
     }
     FpFwCliPrint("\n");
-    FpFwCliPrint("[var_serv] Optional, data_size: %u\n", s_get_var_req.data_size);
-    FpFwCliPrint("[var_serv] Optional, attributes_size: %u\n", s_get_var_req.attributes_size);
+    FpFwCliPrint("[var_serv] data_size: %u\n", s_get_var_req.data_size);
+    FpFwCliPrint("[var_serv] attributes_size: %u\n", s_get_var_req.attributes_size);
 
     // Call the function to get the variable
     int32_t status =

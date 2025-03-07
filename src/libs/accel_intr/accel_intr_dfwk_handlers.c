@@ -298,7 +298,7 @@ uint32_t accel_intr_crash_dump_collection_timer_init(ACCEL_ID accel_type)
 
     if (status != FPFW_STATUS_SUCCESS)
     {
-        critical_print("fpfw_timer_create failed with 0x%x\n", status);
+        critical_print("fpfw_timer_create failed(0x%x)\n", status);
         return ACCEL_INTR_RET_FAIL_TIMER_CREATE;
     }
 
@@ -405,7 +405,7 @@ void accel_intr_handle_mbox_recvd(uint32_t IRQnum)
 
     if (accel_intr_mbox_ctx[accel] == NULL)
     {
-        critical_print("Interrupt number %lu not support for mailbox\n", IRQnum);
+        critical_print("Interrupt number %lu not support\n", IRQnum);
         return;
     }
 

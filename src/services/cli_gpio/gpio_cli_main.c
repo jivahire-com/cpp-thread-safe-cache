@@ -55,7 +55,7 @@ void gpio_cli_init(pgpio_interface_t gpio_iface)
 {
     if (gpio_iface == NULL)
     {
-        FpFwCliPrint("Failed to initialize GPIO CLI - GPIO interface is NULL\n");
+        FpFwCliPrint("Failed GPIO CLI Init, GPIO interface is NULL\n");
         FPFW_RUNTIME_ASSERT(false);
         return;
     }
@@ -74,11 +74,11 @@ static FPFW_CLI_STATUS gpio_cli_restore(int argc, const char** pp_argv)
                               s_gpio_iface->Device->ConfigTable->table_size);
     if (SILIBS_SUCCESS == slibs_ret)
     {
-        FpFwCliPrint("GPIO configuration restored\n");
+        FpFwCliPrint("GPIO config restored\n");
     }
     else
     {
-        FpFwCliPrint("Failed to restore GPIO configuration - 0x%08x\n", slibs_ret);
+        FpFwCliPrint("Failed to restore GPIO config - 0x%08x\n", slibs_ret);
         return CLI_ERROR;
     }
 
@@ -99,7 +99,7 @@ static FPFW_CLI_STATUS gpio_cli_set_int_enable(int argc, const char** pp_argv)
     }
     else
     {
-        FpFwCliPrint("Failed: Invalid Parameter\n");
+        FpFwCliPrint("Failed: Invalid Args\n");
         return CLI_ERROR;
     }
 
@@ -175,7 +175,7 @@ static FPFW_CLI_STATUS gpio_cli_set_dir(int argc, const char** pp_argv)
     }
     else
     {
-        FpFwCliPrint("Failed: Invalid Parameter\n");
+        FpFwCliPrint("Failed: Invalid Args\n");
         return CLI_ERROR;
     }
 
@@ -206,7 +206,7 @@ static FPFW_CLI_STATUS gpio_cli_get_dir(int argc, const char** pp_argv)
     }
     else
     {
-        FpFwCliPrint("Failed: Invalid Parameter\n");
+        FpFwCliPrint("Failed: Invalid Args\n");
         return CLI_ERROR;
     }
 
@@ -238,7 +238,7 @@ static FPFW_CLI_STATUS gpio_cli_set_pin(int argc, const char** pp_argv)
     }
     else
     {
-        FpFwCliPrint("Failed: Invalid Parameter\n");
+        FpFwCliPrint("Failed: Invalid Args\n");
         return CLI_ERROR;
     }
 
@@ -269,7 +269,7 @@ static FPFW_CLI_STATUS gpio_cli_get_pin(int argc, const char** pp_argv)
     }
     else
     {
-        FpFwCliPrint("Failed: Invalid Parameter\n");
+        FpFwCliPrint("Failed: Invalid Args\n");
         return CLI_ERROR;
     }
 
@@ -316,7 +316,7 @@ static FPFW_CLI_STATUS gpio_cli_register_isr(int argc, const char** pp_argv)
     }
     else
     {
-        FpFwCliPrint("Failed: Invalid Parameter\n");
+        FpFwCliPrint("Failed: Invalid Args\n");
         return CLI_ERROR;
     }
 

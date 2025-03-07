@@ -29,25 +29,17 @@
 /*------------- Functions ----------------*/
 static void print_build_info()
 {
-    CRITICAL_PRINT("--------------------------------------------------------------\n");
-    CRITICAL_PRINT(" _  ___\n");
-    CRITICAL_PRINT("| |/ (_)_ __   __ _ ___  __ _  __ _| |_ ___\n");
-    CRITICAL_PRINT("| ' /| | '_ \\ / _` / __|/ _` |/ _` | __/ _ \\\n");
-    CRITICAL_PRINT("| . \\| | | | | (_| \\__ \\ (_| | (_| | ||  __/\n");
-    CRITICAL_PRINT("|_|\\_\\_|_| |_|\\__, |___/\\__, |\\__,_|\\__\\___|\n");
-    CRITICAL_PRINT(" __  __  ____ |____/____|____/___                _ _______        __\n");
-    CRITICAL_PRINT("|  \\/  |/ ___| / ___|  _ \\  |  _ \\ _ __ ___   __| |  ___\\ \\      / /\n");
-    CRITICAL_PRINT("| |\\/| |\\___ \\| |   | |_) | | |_) | '__/ _ \\ / _` | |_   \\ \\ /\\ / / \n");
-    CRITICAL_PRINT("| |  | | ___) | |___|  __/  |  __/| | | (_) | (_| |  _|   \\ V  V /  \n");
-    CRITICAL_PRINT("|_|  |_||____/ \\____|_|     |_|   |_|  \\___/ \\__,_|_|      \\_/\\_/  \n");
+    
 
-    CRITICAL_PRINT("----------------------------------------------------------------\n");
+    for (int i = 0; i < 64; i++) {
+        CRITICAL_PRINT("-");
+    }
+    CRITICAL_PRINT("\n");
     CRITICAL_PRINT("Build Version: %d.%d.%d\n", (int)MAJOR_VERSION, (int)MINOR_VERSION, (int)PATCH_VERSION);
     CRITICAL_PRINT("Branch: %s\n", GIT_BRANCH);
     CRITICAL_PRINT("Commit: %s\n", GIT_COMMIT_SHA);
     CRITICAL_PRINT("Build Timestamp: %s\n", BUILD_TIMESTAMP);
     CRITICAL_PRINT("Build PC: %s\n", BUILD_PC);
-    CRITICAL_PRINT("----------------------------------------------------------------\n");
 
     /* MSCP Build Info */
     CRITICAL_PRINT("MSCP tag " SCP_DESCRIBE "\n");
@@ -61,7 +53,10 @@ static void print_build_info()
     CRITICAL_PRINT("SDM tag " SDM_DESCRIBE "\n");
     CRITICAL_PRINT("SDM Commit " SDM_LAST_COMMIT_DESCRIBE "\n");
 
-    CRITICAL_PRINT("----------------------------------------------------------------\n");
+    for (int i = 0; i < 64; i++) {
+        CRITICAL_PRINT("-");
+    }
+    CRITICAL_PRINT("\n");
 }
 
 FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk", "nvic"))

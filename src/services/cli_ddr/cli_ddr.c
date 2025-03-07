@@ -40,10 +40,10 @@ STATIC FPFW_CLI_STATUS wrrtydat_ue_error_injection(int Argc, const char** Argv);
 // TODO Silibs to provide APIs with arguments list
 // https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/584974
 STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
-    {NULL_LIST_ENTRY, "ddr_err_inj", "ecc_ce_err", ecc_ce_error_injection, "ECC CE error injection", "Usage: ecc_ce_err <parameter list undefined>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "ecc_ue_err", ecc_ue_error_injection, "ECC UE error injection", "Usage: ecc_ue_err <parameter list undefined>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "capar_err", cmd_addr_parity_error_injection, "CAPAR (Cmd/Addr Parity) error", "Usage: caddr_parity_err <parameter list undefined>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "wrrtydat_ue_err", wrrtydat_ue_error_injection, "WRRTYDAT UE error injection", "Usage: wrrtydat_ue_err <parameter list undefined>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "ecc_ce_err", ecc_ce_error_injection, "ECC CE error injection", "Usage: ecc_ce_err <parameter tbd>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "ecc_ue_err", ecc_ue_error_injection, "ECC UE error injection", "Usage: ecc_ue_err <parameter tbd>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "capar_err", cmd_addr_parity_error_injection, "CAPAR error", "Usage: caddr_parity_err <parameter tbd>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "wrrtydat_ue_err", wrrtydat_ue_error_injection, "WRRTYDAT UE error injection", "Usage: wrrtydat_ue_err <parameter tbd>"},
 };
 
 // ecc_ce_err (mc) (phy_add) {error bit}
@@ -58,7 +58,7 @@ STATIC FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char** Argv)
 
     if (Argc > 4)
     {
-        FpFwCliPrint("Invalid Argument! Please provide necessary arguments!");
+        FpFwCliPrint("Invalid Argument");
         return CLI_ERROR;
     }
 
@@ -94,13 +94,13 @@ STATIC FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char** Argv)
 
     if (check_null == false)
     {
-        FpFwCliPrint("Invalid Argument! Please provide necessary arguments!");
+        FpFwCliPrint("Invalid Argument");
         return CLI_ERROR;
     }
 
     die = 0;
     ddrss_ue_ce_error_injection(die, mc, p_addr, BIT_Value);
-    FpFwCliPrint("DDR: ecc_ce_error_injection - Done!!\n");
+    FpFwCliPrint("DDR: ecc_ce_error_injection done\n");
 
     return CLI_SUCCESS;
 }
@@ -175,18 +175,18 @@ STATIC FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv)
     }
     else
     {
-        FpFwCliPrint("Invalid Argument! Please provide necessary arguments!");
+        FpFwCliPrint("Invalid Argument");
         return CLI_ERROR;
     }
 
     if ((check_null == false) || (!ddrss_ue_ce_err_inj_validation(mc, BIT_Value)))
     {
-        FpFwCliPrint("Invalid Argument! Please provide necessary arguments!");
+        FpFwCliPrint("Invalid Argument");
         return CLI_ERROR;
     }
 
     ddrss_ue_ce_error_injection(die, mc, p_addr, BIT_Value);
-    FpFwCliPrint("DDR: ecc_ue_error_injection - Done!!\n");
+    FpFwCliPrint("DDR: ecc_ue_error_injection done\n");
     return CLI_SUCCESS;
 }
 
@@ -197,7 +197,7 @@ STATIC FPFW_CLI_STATUS cmd_addr_parity_error_injection(int Argc, const char** Ar
 
     // TODO Silibs to provide APIs with exact arguments list
     // https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/584974
-    FpFwCliPrint("Work in progress: cmd_addr_parity_error_injection!!\n");
+    FpFwCliPrint("Work in progress: cmd_addr_parity_error_injection\n");
 
     return CLI_SUCCESS;
 }
@@ -209,7 +209,7 @@ STATIC FPFW_CLI_STATUS wrrtydat_ue_error_injection(int Argc, const char** Argv)
 
     // TODO Silibs to provide APIs with exact arguments list
     // https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/584974
-    FpFwCliPrint("Work in progress: wrrtydat_ue_error_injection!!\n");
+    FpFwCliPrint("Work in progress: wrrtydat_ue_error_injection\n");
 
     return CLI_SUCCESS;
 }

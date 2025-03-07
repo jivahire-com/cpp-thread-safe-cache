@@ -65,7 +65,7 @@ FPFW_INIT_COMPONENT(ddr, FPFW_INIT_DEPENDENCIES("std_io", "ddr_pcr", "mesh", "hw
     fpfw_icc_base_ctx_t* icc_ctx = fpfw_init_get_handle("icc_hspmbx");
     if (icc_ctx == NULL)
     {
-        return (fpfw_init_result_t){FPFW_INIT_STATUS_E_POINTER, "Failed to get icc_hspmbx handle - Cannot init ddrss"};
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_E_POINTER, "icc_hspmbx is null"};
     }
 
     // Initialize DDR Manager - prod_ddrss_lib_init is moved to inside this init

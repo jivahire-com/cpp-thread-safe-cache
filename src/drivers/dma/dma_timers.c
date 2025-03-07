@@ -39,12 +39,12 @@ uint32_t initialize_tx_timer(dma_device_t* device, uint32_t channel)
     device_channel_pair[channel].device = device;
 
     // Initialize the timer for the DMA channel
-    DMA_LOG_INFO("Initializing polling timer for DMA channel %d\n", (int)channel);
+    DMA_LOG_INFO("Init polling timer for DMA channel %d\n", (int)channel);
     UINT status = TX_TIMER_ERROR;
     // clang-format off
     status = tx_timer_create(
         &device->polling_write_timer[channel],
-        "DMA Polling Timer",
+        "DMA_Polling",
         dma_write_async_polling_timer_cb,
         (ULONG)&device_channel_pair[channel],
         TIMER_INIT_TICKS,
@@ -54,7 +54,7 @@ uint32_t initialize_tx_timer(dma_device_t* device, uint32_t channel)
 
     if (TX_SUCCESS != status)
     {
-        DMA_LOG_INFO("Failed to create timer for DMA channel %d. Status=0x%X\n", (int)channel, status);
+        DMA_LOG_INFO("Failed DMA polling timer, DMA channel %d. Status=0x%X\n", (int)channel, status);
         // FPFwErrorRaise will be called by the caller
     }
 
@@ -73,7 +73,7 @@ void dma_write_async_polling_timer_cb(ULONG input)
     // Check if the pending write request is complete, stop the timer.
     if (dma_is_channel_free(device, channel))
     {
-        DMA_LOG_INFO("Polling timer cb: DMA channel %d is available\n", (int)channel);
+        DMA_LOG_INFO("Polling timer cb: DMA channel %d is ready\n", (int)channel);
         DMA_LOG_INFO("Disabling timer %d\n", (int)channel);
         uint32_t status = tx_timer_deactivate(&device->polling_write_timer[channel]);
         if (TX_SUCCESS != status)
@@ -82,7 +82,7 @@ void dma_write_async_polling_timer_cb(ULONG input)
         }
 
         // Process the completed write request
-        DMA_LOG_INFO("Processing completed write request for current request\n");
+        DMA_LOG_INFO("write request completed\n");
 
         // Set completion status
         // Read the status from the DMA controller / library
@@ -100,7 +100,7 @@ void dma_write_async_polling_timer_cb(ULONG input)
     // If the pending write request is NULL, stop the timer.
     if (device->Channel[channel].current_request == NULL)
     {
-        DMA_LOG_INFO("Polling timer cb: Disabling DMA chan %d timer, current_request is NULL\n", (int)channel);
+        DMA_LOG_INFO("Disabling timer %d timer, request is NULL\n", (int)channel);
         uint32_t status = tx_timer_deactivate(&device->polling_write_timer[channel]);
         if (TX_SUCCESS != status)
         {

@@ -92,13 +92,13 @@ FPFW_CLI_STATUS large_fifo_mbox_echo(int argc, const char** argv)
     //! Prevent overwriting of the payload buffer
     if (is_accel_echo_test_active)
     {
-        FpFwCliPrint("Echo cmd: Test already active, please wait for completion\n");
+        FpFwCliPrint("Echo cmd: Test ongoing\n");
         return cli_status;
     }
 
     if (argc < 2)
     {
-        FpFwCliPrint("Echo cmd: Insufficient Args, Command Code Required\n");
+        FpFwCliPrint("Echo cmd: invalid Args\n");
         return cli_status;
     }
 
@@ -189,13 +189,13 @@ FPFW_CLI_STATUS large_fifo_mbox_send(int argc, const char** argv)
     //! Prevent overwriting of the send payload buffer
     if (is_accel_send_test_active)
     {
-        FpFwCliPrint("Send cmd: Test already active, please wait for completion\n");
+        FpFwCliPrint("Send cmd: Test ongoing\n");
         return cli_status;
     }
 
     if (argc < 2)
     {
-        FpFwCliPrint("Send cmd: Insufficient Args, Command Code Required\n");
+        FpFwCliPrint("Send cmd: Invalid Args\n");
         return cli_status;
     }
 
@@ -282,13 +282,13 @@ FPFW_CLI_STATUS large_fifo_mbox_recv(int argc, const char** argv)
 
     if (is_accel_recv_test_active)
     {
-        FpFwCliPrint("Recv cmd: Test already active, please wait for completion\n");
+        FpFwCliPrint("Recv cmd: Test ongoing\n");
         return cli_status;
     }
 
     if (argc < 2)
     {
-        FpFwCliPrint("Recv cmd: Insufficient Args, Command Code Required\n");
+        FpFwCliPrint("Recv cmd: Invalid Args\n");
         return cli_status;
     }
 

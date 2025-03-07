@@ -237,7 +237,7 @@ int32_t read_sds_block(sds_service_request_t* p_sds_request)
 
     if (sds_block_header_info.sds_block_size < p_sds_request->io.byte_count)
     {
-        SDS_LOG_CRIT("Beyond Memory Capacity Access Not Allowed(Total : %d, Requested : %d)",
+        SDS_LOG_CRIT("Memory overflow(Total : %d, Requested : %d)",
                      (int)sds_block_header_info.sds_block_size,
                      (int)p_sds_request->io.byte_count);
         return KNG_E_INVALIDARG;
@@ -264,7 +264,7 @@ int32_t write_sds_block(sds_service_request_t* p_sds_request)
 
     if (sds_block_header_info.sds_block_size < p_sds_request->io.byte_count)
     {
-        SDS_LOG_CRIT("Beyond Memory Capacity Access Not Allowed(Total : %d, Requested : %d)",
+        SDS_LOG_CRIT("Memory overflow(Total : %d, Requested : %d)",
                      (int)sds_block_header_info.sds_block_size,
                      (int)p_sds_request->io.byte_count);
         return KNG_E_INVALIDARG;
@@ -285,7 +285,7 @@ void sds_service_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
     switch (p_request->RequestType)
     {
     default:
-        SDS_LOG_WARN("SDS service doesn't support async request");
+        SDS_LOG_WARN("SDS no async support");
         FPFW_RUNTIME_ASSERT(false);
         break;
     }

@@ -298,7 +298,7 @@ void d2d_error_isr(void* context)
         int status = ras_arm_agent_set_base(&d2dss2_agent[d2d_subsystem], translated_addr_ras2);
         if (status != SILIBS_SUCCESS)
         {
-            MESH_CRIT("Error in setting the base address for D2DSS2_AGENT%d\n", d2d_subsystem);
+            MESH_CRIT("Failed to set base addr, D2DSS2_AGENT%d\n", d2d_subsystem);
             goto d2d_ras_error_isr_exit;
         }
         bool error_found = ras_arm_agent_probe(&d2dss2_agent[d2d_subsystem], &record);
@@ -310,12 +310,12 @@ void d2d_error_isr(void* context)
             {
                 if (record.handler(&record))
                 {
-                    MESH_CRIT("Error encountered while handling record!\n");
+                    MESH_CRIT("Error encountered while handling record\n");
                 }
             }
             else
             {
-                MESH_CRIT("Record was marked invalid! No further handling will be done.\n");
+                MESH_CRIT("Invalid Record, No Further Action\n");
                 continue;
             }
 
@@ -339,7 +339,7 @@ void d2d_ras_init(void)
 {
     uint32_t translated_addr_ras2 = 0x0;
 
-    MESH_CRIT("D2D2 RAS...................Start\n");
+    MESH_CRIT("D2D2 RAS Start\n");
     for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
     {
         if ((uint8_t)idhw_get_die_id() == SOC_D1)
@@ -366,7 +366,7 @@ void d2d_ras_init(void)
 
         d2d_clear_atu_map(d2d_subsystem);
     }
-    MESH_CRIT("D2D2 RAS...................End\n");
+    MESH_CRIT("D2D2 RAS End\n");
 }
 
 /**
@@ -391,7 +391,7 @@ void d2d_ras_error_inj(uint8_t d2d_subsystem, uint32_t err_inj, uint32_t err_cnt
     int status = ras_arm_agent_set_base(&d2dss2_agent[d2d_subsystem], translated_addr_ras2);
     if (status != SILIBS_SUCCESS)
     {
-        MESH_CRIT("Error in setting the base address for D2DSS2_AGENT%d\n", d2d_subsystem);
+        MESH_CRIT("Failed to set base addr, D2DSS2_AGENT%d\n", d2d_subsystem);
         goto d2d_ras_error_inj_exit;
     }
 

@@ -119,7 +119,7 @@ void dma_lib_init(dma_device_t* device)
     //      CHx_IntSignal_EnableReg. Enable_BLOCK_TFR_DONE_IntSignal = 1 AND
     //      CHx_CTL.IOC_BLKTFR = 1)
 
-    DMA_LOG_INFO("Initializing SiLibs DMAC library -> software reset of HW\n");
+    DMA_LOG_INFO("Initializing DMAC lib\n");
     dmac_init(device->config->base_address, DMAC_RESET_TIMEOUT);
 
     // TODO: Selectively enable DMAC interrupts (Maya)
@@ -149,7 +149,7 @@ void dma_enable_nvic_interrupts(dma_device_t* device)
                                                         (void*)&device_interrupt_pair[interrupt_id - DMA_FIRST_IRQ]);
         if (intr_status != 0)
         {
-            DMA_LOG_INFO("Failed to register interrupt callback for interrupt %d\n", (int)interrupt_id);
+            DMA_LOG_INFO("Register interrupt callback failed %d\n", (int)interrupt_id);
         }
 
         intr_status |= FPFwCoreInterruptEnableVector(interrupt_id);

@@ -50,15 +50,16 @@ static fpfw_icc_base_recv_req_t s_icc_base_recv_params;
 
 static void mhu_icc_base_send_complete_notify(void* context, fpfw_status_t status)
 {
-    FpFwCliPrint("ICC CLI MHU Send Complete CB - status: 0x%08x\n", status);
+    FpFwCliPrint("MHU Send Complete CB - status: 0x%08x\n", status);
 
     icc_mhu_packet_t* req = (icc_mhu_packet_t*)context;
-    FpFwCliPrint("ICC CLI MHU Send Complete CB - command: 0x%08x\n", req->header.msg_header.command);
-    FpFwCliPrint("ICC CLI MHU Send Complete CB - payload size: %d\n", req->header.msg_header.payload_size);
+    FpFwCliPrint("MHU Send Complete CB - command: 0x%08x, payload size: %d\n",
+                 req->header.msg_header.command,
+                 req->header.msg_header.payload_size);
     uint8_t* payload = (uint8_t*)req->payload;
     for (int i = 0; i < req->header.msg_header.payload_size; i++)
     {
-        FpFwCliPrint("ICC CLI MHU Send Complete CB - payload [%d] == 0x%x \n", i, payload[i]);
+        FpFwCliPrint("MHU Send Complete CB - payload [%d] == 0x%x \n", i, payload[i]);
     }
 
     s_pending_send_request = false;
@@ -67,15 +68,16 @@ static void mhu_icc_base_send_complete_notify(void* context, fpfw_status_t statu
 static void mhu_icc_base_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     FPFW_UNUSED(output_size_bytes);
-    FpFwCliPrint("ICC CLI MHU Recv Complete CB - status: 0x%08x\n", status);
+    FpFwCliPrint("MHU Recv Complete CB - status: 0x%08x\n", status);
 
     icc_mhu_packet_t* req = (icc_mhu_packet_t*)context;
-    FpFwCliPrint("ICC CLI MHU Recv Complete CB - command: 0x%08x\n", req->header.msg_header.command);
-    FpFwCliPrint("ICC CLI MHU Recv Complete CB - payload size: %d\n", req->header.msg_header.payload_size);
+    FpFwCliPrint("MHU Recv Complete CB - command: 0x%08x, payload size: %d\n",
+                 req->header.msg_header.command,
+                 req->header.msg_header.payload_size);
     uint8_t* payload = (uint8_t*)req->payload;
     for (int i = 0; i < req->header.msg_header.payload_size; i++)
     {
-        FpFwCliPrint("ICC CLI MHU Recv Complete CB - payload [%d] == 0x%x \n", i, payload[i]);
+        FpFwCliPrint("MHU Recv Complete CB - payload [%d] == 0x%x \n", i, payload[i]);
     }
 
     s_pending_recv_request = false;
@@ -113,15 +115,14 @@ FPFW_CLI_STATUS mhu_recv(int argc, const char** argv)
     // expected arguments: recv <index> <command>
     if (argc < 3)
     {
-        FpFwCliPrint("ERROR! Insufficient Args: recv\n");
-        FpFwCliPrint("Usage: recv <index> <command>\n");
+        FpFwCliPrint("ERROR! Invalid Args: recv\n");
         return CLI_ERROR;
     }
 
     // Check if there is a pending request
     if (s_pending_recv_request)
     {
-        FpFwCliPrint("ERROR! There is a pending request\n");
+        FpFwCliPrint("ERROR! Test ongoing\n");
         return CLI_ERROR;
     }
 
@@ -138,7 +139,7 @@ FPFW_CLI_STATUS mhu_recv(int argc, const char** argv)
     // Check if the context has been initialized
     if (cli_ctx->icc_base_ctx[index] == NULL)
     {
-        FpFwCliPrint("ERROR! Context for index not initialized\n");
+        FpFwCliPrint("ERROR! ICC for index not initialized\n");
         return CLI_ERROR;
     }
 
@@ -175,15 +176,14 @@ FPFW_CLI_STATUS mhu_send(int argc, const char** argv)
     // expected arguments: send <index> <command> <size> <data 0> ... <data n-1>
     if (argc < 3)
     {
-        FpFwCliPrint("ERROR! Insufficient Args: send\n");
-        FpFwCliPrint("Usage: send <index> <command> <size> <data0> ... <data n-1>. Max size %d\n", MAX_CLI_MHU_PAYLOAD_SIZE);
+        FpFwCliPrint("ERROR! Invalid Args: send\n");
         return CLI_ERROR;
     }
 
     // Check if there is a pending request
     if (s_pending_send_request)
     {
-        FpFwCliPrint("ERROR! There is a pending request\n");
+        FpFwCliPrint("ERROR! Test ongoing\n");
         return CLI_ERROR;
     }
 
@@ -200,7 +200,7 @@ FPFW_CLI_STATUS mhu_send(int argc, const char** argv)
     // Check if the context has been initialized
     if (cli_ctx->icc_base_ctx[index] == NULL)
     {
-        FpFwCliPrint("ERROR! Context for index not initialized\n");
+        FpFwCliPrint("ERROR! ICC for index not initialized\n");
         return CLI_ERROR;
     }
 
@@ -211,14 +211,13 @@ FPFW_CLI_STATUS mhu_send(int argc, const char** argv)
         size = strtoul(argv[3], NULL, 0);
         if (size > MAX_CLI_MHU_PAYLOAD_SIZE)
         {
-            FpFwCliPrint("ERROR! Size %d exceeds max payload size %d\n", size, MAX_CLI_MHU_PAYLOAD_SIZE);
+            FpFwCliPrint("ERROR! Invalid Payload size(%d), max(%d)\n", size, MAX_CLI_MHU_PAYLOAD_SIZE);
             return CLI_ERROR;
         }
 
         if (argc != (4 + size))
         {
-            FpFwCliPrint("ERROR! Insufficient data arguments\n");
-            FpFwCliPrint("Usage: send <index> <command> <size> <data0> ... <data n-1>. Max size %d\n", MAX_CLI_MHU_PAYLOAD_SIZE);
+            FpFwCliPrint("ERROR! invalid arguments, check usage\n");
             return CLI_ERROR;
         }
 

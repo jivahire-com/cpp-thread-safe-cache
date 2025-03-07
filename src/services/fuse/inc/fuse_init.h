@@ -14,7 +14,7 @@
 #include <hsp_firmware_headers.h>
 #include <kingsgate_hsp_mailbox_commands.h>
 /*-- Symbolic Constant Macros (defines) --*/
-#define FUSE_NAME                            "[KNG Fuse] "
+#define FUSE_NAME                            "[Fuse] "
 
 /*-------------- Typedefs ----------------*/
 enum {

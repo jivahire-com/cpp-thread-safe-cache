@@ -41,11 +41,11 @@ void dma_start_transfer(dma_device_t* device, uint32_t channel, PDFWK_ASYNC_REQU
     // If polling mode, start the timer
     if (device->config->config_type == DMA_CONFIG_TYPE_POLLING)
     {
-        DMA_LOG_INFO("Starting polling write timer for channel %d\n", (int)channel);
+        DMA_LOG_INFO("Starting polling write timer, channel %d\n", (int)channel);
         uint32_t status = tx_timer_activate(&device->polling_write_timer[channel]);
         if (TX_SUCCESS != status)
         {
-            DMA_LOG_INFO("Failed to activate timer for DMA channel %d. Status=0x%X\n", (int)channel, (int)status);
+            DMA_LOG_INFO("Failed to activate timer, DMA channel %d. Status=0x%X\n", (int)channel, (int)status);
             FPFwErrorRaise(FPFW_ERROR_DMA_TIMER_ERROR, channel, status, 2, 0); // channel, status, unique instance, unused
         }
     }
@@ -66,5 +66,5 @@ void dma_start_transfer(dma_device_t* device, uint32_t channel, PDFWK_ASYNC_REQU
     dma_cfg.dmac_dest_tr_width = DMAC_TRANSFER_WIDTH_32_BITS;
 
     int sts = dmac_start_single_block_transfer(device->config->base_address, &dma_cfg);
-    DMA_LOG_INFO("dmac status after single block transfer was initiated: %d\n", sts);
+    DMA_LOG_INFO("Single block transfer was initiated: %d\n", sts);
 }

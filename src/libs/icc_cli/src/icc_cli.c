@@ -60,58 +60,48 @@ const char* icc_cli_interface_type_strings[ICC_CLI_MAX_TRANSPORT_TYPE] = {
 /*-- Declarations (Statics and globals) --*/
 
 static FPFW_CLI_COMMAND s_icc_hsp_mbx_cmd_list[] = {
-    {NULL_LIST_ENTRY, "icc_hspmbx", "mbx_list", display_mbx_list, "Displays the mailbox instances", "Usage: mbx_list (no arguments)"},
-    {NULL_LIST_ENTRY, "icc_hspmbx", "mbx_reg_show", display_mbx_register_status, "Displays the mailbox register status", "Usage: mbx_reg_show <inst_id, SCP=0, MCP=1>"},
-    {NULL_LIST_ENTRY, "icc_hspmbx", "mbx_reg_set", set_mbx_reg_val, "Sets the mailbox register value", "Usage: mbx_reg_set <inst_id (SCP=0, MCP=1)> <reg_id(0 to 7)> <val(uint32_t)>"},
-    {NULL_LIST_ENTRY, "icc_hspmbx", "echo", hsp_mbox_echo, "Sends a mailbox mesg to HSP & receives one, Async Operation", "Usage: echo <(uint32_t) (uint32_t) (uint32_t) (uint32_t)>"},
-    {NULL_LIST_ENTRY, "icc_hspmbx", "send", hsp_mbox_send, "Sends a mailbox mesg to HSP, Async Operation", "Usage: send <(uint32_t) (uint32_t) (uint32_t) (uint32_t)>"},
-    {NULL_LIST_ENTRY, "icc_hspmbx", "recv", hsp_mbox_recv, "Expects to recv mailbox mesg from HSP, Async Operation", "Usage: recv <(cmd code)>"},
+    {NULL_LIST_ENTRY, "icc_hspmbx", "mbx_list", display_mbx_list, "show the mailbox instances", "Usage: mbx_list"},
+    {NULL_LIST_ENTRY, "icc_hspmbx", "mbx_reg_show", display_mbx_register_status, "show mailbox register status", "Usage: mbx_reg_show <inst_id, SCP=0, MCP=1>"},
+    {NULL_LIST_ENTRY, "icc_hspmbx", "mbx_reg_set", set_mbx_reg_val, "Sets mailbox register value", "Usage: mbx_reg_set <inst_id (SCP=0, MCP=1)> <reg_id(0 to 7)> <val(uint32_t)>"},
+    {NULL_LIST_ENTRY, "icc_hspmbx", "echo", hsp_mbox_echo, "Sends a mailbox msg to HSP & recv one, async", "Usage: echo <(uint32_t)..(uint32_t)>"},
+    {NULL_LIST_ENTRY, "icc_hspmbx", "send", hsp_mbox_send, "Sends a mailbox msg to HSP, async", "Usage: send <(uint32_t) .. (uint32_t)>"},
+    {NULL_LIST_ENTRY, "icc_hspmbx", "recv", hsp_mbox_recv, "Expects to recv mailbox msg from HSP, async", "Usage: recv <(cmd code)>"},
 };
 
 static FPFW_CLI_COMMAND s_icc_d2d_rmss_mbx_cmd_list[] = {
-    {NULL_LIST_ENTRY, "icc_d2dmbx", "send", d2d_mbox_send, "Sends a mailbox mesg to scp of remote die, Async Operation", "Usage: die_send <(uint32_t) (uint32_t) (uint32_t) (uint32_t) ... upto 16 words>"},
-    {NULL_LIST_ENTRY, "icc_d2dmbx", "recv", d2d_mbox_recv, "Expects to recv mailbox mesg from scp of remote die, Async Operation", "Usage: die_recv <(cmd code)>"},
-    {NULL_LIST_ENTRY, "icc_d2dmbx", "sync", d2d_sync_test, "Write to shared sram from current to remote die, Sync Blocking", "Usage: die_sync <(local addr) (remote addr) (uint32_t)>"},
-    {NULL_LIST_ENTRY,
-     "icc_d2dmbx",
-     "echo_client",
-     d2d_mbox_echo_client,
-     "Sends a mailbox mesg to remote scp & receives back same content, Async Operation",
-     "Usage: echo_client <(uint32_t) (uint32_t) (uint32_t) ... upto 16 words)> or simply `echo_client`"},
-    {NULL_LIST_ENTRY, "icc_d2dmbx", "echo_serv", d2d_mbox_echo_server, "Receives mbox mesg from remote scp & send back the same content, Async Operation", "Usage: echo_serv"},
+    {NULL_LIST_ENTRY, "icc_d2dmbx", "send", d2d_mbox_send, "Sends a d2d mailbox msg async", "Usage: send <(uint32_t)..(uint32_t) upto 16 words>"},
+    {NULL_LIST_ENTRY, "icc_d2dmbx", "recv", d2d_mbox_recv, "Recv d2d mailbox msg from remote, async ", "Usage: recv <(cmd code)>"},
+    {NULL_LIST_ENTRY, "icc_d2dmbx", "sync", d2d_sync_test, "Write sync data into shared sram, sync", "Usage: sync <(local addr) (remote addr) (uint32_t)>"},
+    {NULL_LIST_ENTRY, "icc_d2dmbx", "echo_client", d2d_mbox_echo_client, "Mailbox msg send & recv (Async)", "Usage: echo_client <(uint32_t) .. upto 16 words)> or `echo_client`"},
+    {NULL_LIST_ENTRY, "icc_d2dmbx", "echo_serv", d2d_mbox_echo_server, "Receives mbox msg from remote & echo back, async", "Usage: echo_serv"},
     {NULL_LIST_ENTRY,
      "icc_d2dmbx",
      "echo_client_sync",
      d2d_mbox_echo_client_sync,
-     "Sends a mailbox mesg to remote scp & receives back same content, Blocking Operation",
-     "Usage: echo_client <(uint32_t) (uint32_t) (uint32_t) ... upto 16 words)> or simply `echo_client`"},
-    {NULL_LIST_ENTRY,
-     "icc_d2dmbx",
-     "echo_serv_sync",
-     d2d_mbox_echo_server_sync,
-     "Receives mbox mesg from remote scp & send back the same content, Blocking Operation",
-     "Usage: echo_serv"},
-    {NULL_LIST_ENTRY, "icc_d2dmbx", "test_reset", d2d_reset_test, "Resets currently active test, Only to be used for debugging", "Usage: test_reset <id>"},
+     "Same as d2d_mbox_echo_client but sync, blocking sync",
+     "Usage: echo_client <(uint32_t) .. upto 16 words)> or `echo_client`"},
+    {NULL_LIST_ENTRY, "icc_d2dmbx", "echo_serv_sync", d2d_mbox_echo_server_sync, "Same as d2d_mbox_echo_server,  blocking sync", "Usage: echo_serv"},
+    {NULL_LIST_ENTRY, "icc_d2dmbx", "test_reset", d2d_reset_test, "Resets currently active test", "Usage: test_reset <id>"},
 };
 
 static FPFW_CLI_COMMAND s_icc_mhu_cmd_list[] = {
-    {NULL_LIST_ENTRY, "icc_mhu", "list", mhu_list_indices, "Lists the MHU indices", "Usage: list_indices (no arguments)"},
-    {NULL_LIST_ENTRY, "icc_mhu", "recv", mhu_recv, "Receives a message via MHU", "Usage: recv <index> <command>"},
-    {NULL_LIST_ENTRY, "icc_mhu", "send", mhu_send, "Sends message via MHU", "Usage: send <index> <command> <size> <data0> ... <data 2>"},
+    {NULL_LIST_ENTRY, "icc_mhu", "list", mhu_list_indices, "Lists the MHU indices", "Usage: list"},
+    {NULL_LIST_ENTRY, "icc_mhu", "recv", mhu_recv, "Recv a msg via MHU", "Usage: recv <index> <command>"},
+    {NULL_LIST_ENTRY, "icc_mhu", "send", mhu_send, "Sends a msg via MHU", "Usage: send <index> <command> <size> <data0>..<data 2>"},
     {NULL_LIST_ENTRY, "icc_mhu", "clear", mhu_clear, "clears all pending cli messages", "Usage: clear"},
     {NULL_LIST_ENTRY, "icc_mhu", "props", mhu_props, "Lists each channels properties", "Usage: props"},
 };
 
 static FPFW_CLI_COMMAND s_icc_sdm_large_fifo_mbx_cmd_list[] = {
-    {NULL_LIST_ENTRY, "icc_largembx", "sdm_send", large_fifo_mbox_send, "Expects to recv mailbox mesg from SDM", "Usage: sdm_send <(cmd code)>"},
-    {NULL_LIST_ENTRY, "icc_largembx", "sdm_recv", large_fifo_mbox_recv, "Expects to send mailbox mesg to SDM", "Usage: sdm_recv <(cmd code)>"},
-    {NULL_LIST_ENTRY, "icc_largembx", "sdm_echo", large_fifo_mbox_echo, "Expects to send & receive mailbox mesg to SDM", "Usage: sdm_echo <(cmd code)>"},
+    {NULL_LIST_ENTRY, "icc_largembx", "sdm_send", large_fifo_mbox_send, "Recv mailbox msg from SDM", "Usage: sdm_send <(cmd code)>"},
+    {NULL_LIST_ENTRY, "icc_largembx", "sdm_recv", large_fifo_mbox_recv, "Send mailbox msg to SDM", "Usage: sdm_recv <(cmd code)>"},
+    {NULL_LIST_ENTRY, "icc_largembx", "sdm_echo", large_fifo_mbox_echo, "Send & receive mailbox msg to SDM", "Usage: sdm_echo <(cmd code)>"},
 };
 
 static FPFW_CLI_COMMAND s_icc_cded_large_fifo_mbx_cmd_list[] = {
-    {NULL_LIST_ENTRY, "icc_largembx", "cded_send", large_fifo_mbox_send, "Expects to recv mailbox mesg from CDED", "Usage: cded_send <(cmd code)>"},
-    {NULL_LIST_ENTRY, "icc_largembx", "cded_recv", large_fifo_mbox_recv, "Expects to send mailbox mesg to CDED", "Usage: cded_recv <(cmd code)>"},
-    {NULL_LIST_ENTRY, "icc_largembx", "cded_echo", large_fifo_mbox_echo, "Expects to send & receive mailbox mesg to CDED", "Usage: cded_echo <(cmd code)>"},
+    {NULL_LIST_ENTRY, "icc_largembx", "cded_send", large_fifo_mbox_send, "Recv mailbox msg from CDED", "Usage: cded_send <(cmd code)>"},
+    {NULL_LIST_ENTRY, "icc_largembx", "cded_recv", large_fifo_mbox_recv, "Send mailbox msg to CDED", "Usage: cded_recv <(cmd code)>"},
+    {NULL_LIST_ENTRY, "icc_largembx", "cded_echo", large_fifo_mbox_echo, "Send & receive mailbox msg to CDED", "Usage: cded_echo <(cmd code)>"},
 };
 
 /*------------- Functions ----------------*/

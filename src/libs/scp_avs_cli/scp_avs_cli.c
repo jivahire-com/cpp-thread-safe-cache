@@ -45,9 +45,9 @@ static FPFW_CLI_COMMAND scp_avs_cli_list[] = {
     {NULL_LIST_ENTRY, "avs", "avs_read", scp_avs_read_data_cli, "AVS read data", "Usage: avs_read <avs bus number> <rail number> <read command type>"},
     {NULL_LIST_ENTRY, "avs", "avs_write", scp_avs_write_data_cli, "AVS write data", "Usage: avs_write <avs bus number> <rail number> <write command type> <data>"},
     {NULL_LIST_ENTRY, "avs", "avs_read_all", scp_avs_read_vct_cli, "AVS read VCT", "Usage: avs_read_all <avs bus number> <rail number>"},
-    {NULL_LIST_ENTRY, "avs", "avs_read_m", scp_avs_read_multi_cli, "AVS read multi", "Usage: avs_read_multi <avs bus number> <command count> <rail> <cmd> <rail> <cmd>... Max CLI cmds accepted = 6"},
-    {NULL_LIST_ENTRY, "avs", "avs_write_m", scp_avs_write_multi_cli, "AVS write multi", "Usage: avs_write_multi <avs bus number> <data (rail 0)> <data (rail 1)>"},
-    {NULL_LIST_ENTRY, "avs", "avs_error_c", scp_avs_get_error_count_cli, "AVS error count", "Usage: avs_error_count"},
+    {NULL_LIST_ENTRY, "avs", "avs_read_m", scp_avs_read_multi_cli, "AVS read multi", "Usage: avs_read_m <avs bus number> <command count> <rail> <cmd> <rail> <cmd>... Max CLI cmds accepted = 6"},
+    {NULL_LIST_ENTRY, "avs", "avs_write_m", scp_avs_write_multi_cli, "AVS write multi", "Usage: avs_write_m <avs bus number> <data (rail 0)> <data (rail 1)>"},
+    {NULL_LIST_ENTRY, "avs", "avs_error_c", scp_avs_get_error_count_cli, "AVS error count", "Usage: avs_error_c"},
 };
 
 /*------------- Functions ----------------*/
@@ -56,7 +56,7 @@ bool check_not_in_use(void)
     if (cli_avs_request.in_use)
     {
         // TODO: Add Event Trace for AVS. https://azurecsi.visualstudio.com/Dev/_workitems/edit/1910297
-        FpFwCliPrint("\n AVSBus CLI not complete, rejecting new CLI command\n");
+        FpFwCliPrint("\n AVSBus CLI test ongoing\n");
         return false;
     }
     return true;
@@ -329,8 +329,7 @@ static FPFW_CLI_STATUS scp_avs_read_multi_cli(int argc, const char** argv)
     }
     else
     {
-        FpFwCliPrint(" AVS read multi CLI Help\n");
-        FpFwCliPrint("Cmds: 4+, <avs_bus> <cmd_count> <rail_sel> <cmd_type>...\n");
+        FpFwCliPrint("Invalid Args\n");
         return CLI_ERROR;
     }
     return CLI_SUCCESS;
@@ -424,5 +423,5 @@ void scp_avs_cli_initialize(pscp_avs_interface_t avs_array[])
     //
     DfwkAsyncRequestInitialize((PDFWK_ASYNC_REQUEST_HEADER)&cli_avs_request.request.Header,
                                sizeof(cli_avs_request.request));
-    FpFwCliPrint(" AVS CLI init complete\n");
+    FpFwCliPrint(" AVS CLI init done\n");
 }

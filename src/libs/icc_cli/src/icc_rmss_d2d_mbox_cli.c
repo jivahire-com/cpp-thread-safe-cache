@@ -358,7 +358,7 @@ FPFW_CLI_STATUS d2d_mbox_send(int argc, const char** argv)
 
     if (argc < 17)
     {
-        FPFW_CLI_LOG_ERR("[%s]: Insufficient Payload Args, Using default values\n", d2d_test_identifier_str[SEND_TEST_ID]);
+        FPFW_CLI_LOG_ERR("[%s]: Using default values\n", d2d_test_identifier_str[SEND_TEST_ID]);
         d2d_send_msg.as_uint32[0] = SET_RMSS_D2D_MAILBOX_HEADER_ASUNIT32(RMSS_D2D_MAILBOX_MSG_TEST_REQ, 0, 0);
         for (uint8_t i = 1; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
@@ -427,7 +427,7 @@ FPFW_CLI_STATUS d2d_mbox_recv(int argc, const char** argv)
 
     if ((argc < 2) || (atoi(argv[1]) < RMSS_D2D_MAILBOX_MSG_ECHO_RSP))
     {
-        FPFW_CLI_LOG_ERR("[%s]: Insufficient Args or Invalid cmd code, Using default Command code 0x2 -> "
+        FPFW_CLI_LOG_ERR("[%s]: Using default Command code 0x2 -> "
                          "RMSS_D2D_MAILBOX_MSG_TEST_REQ\n",
                          d2d_test_identifier_str[RECV_TEST_ID]);
         recv_cmd_code = RMSS_D2D_MAILBOX_MSG_TEST_REQ;
@@ -457,8 +457,7 @@ FPFW_CLI_STATUS d2d_mbox_echo_server(int argc, const char** argv)
 
     if (is_d2d_echo_serv_test_active)
     {
-        FPFW_CLI_LOG_ERR("[%s][ASYNC]: Test already active, please wait for completion\n",
-                         d2d_test_identifier_str[ECHO_SERVER_TEST_ID]);
+        FPFW_CLI_LOG_ERR("[%s][ASYNC]: Test ongoing\n", d2d_test_identifier_str[ECHO_SERVER_TEST_ID]);
         return cli_status;
     }
 
@@ -483,7 +482,7 @@ FPFW_CLI_STATUS d2d_mbox_echo_client(int argc, const char** argv)
     if (is_d2d_echo_client_test_active)
     {
         //! Prevent overlapping of send/recv operations, Must wait for completion
-        FPFW_CLI_LOG_ERR("[%s][ASYNC]: Client Side Test already active\n", d2d_test_identifier_str[ECHO_CLIENT_TEST_ID]);
+        FPFW_CLI_LOG_ERR("[%s][ASYNC]: Client Side Test ongoing\n", d2d_test_identifier_str[ECHO_CLIENT_TEST_ID]);
         return cli_status;
     }
 
@@ -495,8 +494,7 @@ FPFW_CLI_STATUS d2d_mbox_echo_client(int argc, const char** argv)
 
     if (argc < 17)
     {
-        FPFW_CLI_LOG_ERR("[%s][ASYNC]: Insufficient Payload Args, Using default values\n",
-                         d2d_test_identifier_str[ECHO_CLIENT_TEST_ID]);
+        FPFW_CLI_LOG_ERR("[%s][ASYNC]: Using default values\n", d2d_test_identifier_str[ECHO_CLIENT_TEST_ID]);
         for (uint8_t i = 1; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
             d2d_client_echo_msg.as_uint32[i] = D2D_MBOX_TEST_PAYLOAD * (i);
@@ -578,7 +576,7 @@ FPFW_CLI_STATUS d2d_sync_test(int argc, const char** argv)
 {
     if (argc != 4)
     {
-        FPFW_CLI_LOG_ERR("[%s]: No args provided, Using Defaults:\n", d2d_test_identifier_str[SYNC_TEST_ID]);
+        FPFW_CLI_LOG_ERR("[%s]: Using Defaults:\n", d2d_test_identifier_str[SYNC_TEST_ID]);
         my_d2d_sync_point.local_write_addr = d2d_sync_point.local_write_addr;
         my_d2d_sync_point.remote_write_addr = d2d_sync_point.remote_write_addr;
         my_d2d_sync_point.value = d2d_sync_point.value;
@@ -620,14 +618,14 @@ FPFW_CLI_STATUS d2d_reset_test(int argc, const char** argv)
         is_d2d_echo_serv_test_active = false;
         is_d2d_send_test_active = false;
         is_d2d_recv_test_active = false;
-        FPFW_CLI_LOG_ERR("No arg, by default all tests were Reset\n");
+        FPFW_CLI_LOG_ERR("By default all tests were Reset\n");
     }
     else
     {
         d2d_mbx_test_type test_id = atoi(argv[1]);
         if (test_id >= MAX_TEST_ID)
         {
-            FPFW_CLI_LOG_ERR("Invalid test ID, No tests were Reset\n");
+            FPFW_CLI_LOG_ERR("Invalid test ID\n");
             return CLI_ERROR;
         }
         switch (test_id)
@@ -648,7 +646,7 @@ FPFW_CLI_STATUS d2d_reset_test(int argc, const char** argv)
             FPFW_CLI_LOG_ERR("Unsupported Arg, No tests were Reset\n");
             return CLI_ERROR;
         }
-        FPFW_CLI_LOG_INFO("%s Reset Successfully\n", d2d_test_identifier_str[test_id]);
+        FPFW_CLI_LOG_INFO("%s Reset done\n", d2d_test_identifier_str[test_id]);
     }
     return CLI_SUCCESS;
 }
@@ -760,8 +758,7 @@ FPFW_CLI_STATUS d2d_mbox_echo_client_sync(int argc, const char** argv)
 
     if (argc < 17)
     {
-        FPFW_CLI_LOG_ERR("[%s][SYNC]: Insufficient Payload Args, Using default values\n",
-                         d2d_test_identifier_str[ECHO_CLIENT_TEST_ID]);
+        FPFW_CLI_LOG_ERR("[%s][SYNC]: Using default values\n", d2d_test_identifier_str[ECHO_CLIENT_TEST_ID]);
         for (uint8_t i = 1; i < D2D_MBOX_FIFO_DEPTH; i++)
         {
             client_echo_msg.as_uint32[i] = D2D_MBOX_TEST_PAYLOAD * (i);

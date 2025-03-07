@@ -261,7 +261,7 @@ int i3c_controller(uint8_t die_num)
             status = i3c_initialize(i3c_instance[i], i3c_configs[i]);
             if (status != SILIBS_SUCCESS)
             {
-                CRITICAL_PRINT(MOD_NAME "Error initializing I3C%d Master Controller\n", i);
+                CRITICAL_PRINT(MOD_NAME "I3C%d Master Init Error\n", i);
                 // Error or BUGCHECK
                 goto exit;
             }
@@ -281,7 +281,7 @@ int i3c_controller(uint8_t die_num)
             if (status != SILIBS_SUCCESS)
             {
                 // Error in configuring DAT
-                CRITICAL_PRINT(MOD_NAME "Error initializing I3C%d Device Address Table\n", i);
+                CRITICAL_PRINT(MOD_NAME "I3C%d Device Addr Table Init Error\n", i);
                 // Error or BUGCHECK
                 goto exit;
             }
@@ -318,7 +318,7 @@ int i3c_controller(uint8_t die_num)
             if (status != SILIBS_SUCCESS)
             {
                 // Error in setting all addresses to static addresses
-                CRITICAL_PRINT(MOD_NAME "Error in setting all addresses to static addresses, I3C 0x%x\n", i);
+                CRITICAL_PRINT(MOD_NAME "Err to set static addresses, I3C 0x%x\n", i);
                 // Error or BUGCHECK
                 goto exit;
             }
@@ -335,7 +335,7 @@ int i3c_controller(uint8_t die_num)
             status = ddr_i3c_interface_read_dimms_detected(&s_i3c_cmd_test, &ddrss_en);
             if (status != SILIBS_SUCCESS)
             {
-                CRITICAL_PRINT(MOD_NAME "Error in reading DDR DIMMs Detected, status 0x%x\n", status);
+                CRITICAL_PRINT(MOD_NAME "DDR DIMMs Read Err, status 0x%x\n", status);
                 // Error or BUGCHECK
                 goto exit;
             }
@@ -344,7 +344,7 @@ int i3c_controller(uint8_t die_num)
             status = ddr_i3c_interface_read_dimm_capacity(&s_i3c_cmd_test, ddrss_en, &dimm_cap_per_ch, &dimm_sku);
             if (status != SILIBS_SUCCESS)
             {
-                CRITICAL_PRINT(MOD_NAME "Error in reading DDR DIMM Capacity and SKU, status 0x%x\n", status);
+                CRITICAL_PRINT(MOD_NAME "DDR DIMM Capacity/SKU Read Err, status 0x%x\n", status);
                 // Error or BUGCHECK
                 goto exit;
             }
@@ -394,7 +394,7 @@ int i3c_controller(uint8_t die_num)
     }
     else
     {
-        CRITICAL_PRINT(MOD_NAME "I3C Controller init is not supported yet on the platform\n");
+        CRITICAL_PRINT(MOD_NAME "Not supported platform\n");
     }
 
 exit:

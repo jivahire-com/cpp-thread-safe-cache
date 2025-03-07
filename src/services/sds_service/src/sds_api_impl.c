@@ -43,7 +43,7 @@ int32_t sds_io_request(psds_service_interface_t p_interface, uint32_t sds_module
 
     if (status != KNG_SUCCESS)
     {
-        SDS_LOG_CRIT("Failed to send SDS request. Op Code: %d, Error code: %d", (int)requestType, (int)status);
+        SDS_LOG_CRIT("SDS request fsiled. Code: %d, Err: %d", (int)requestType, (int)status);
     }
 
     return status;
@@ -79,7 +79,7 @@ int32_t sds_block_creation(uint32_t sds_module_id, uint32_t request_size, uint32
 
     if (status != KNG_SUCCESS)
     {
-        SDS_LOG_CRIT("Failed to create SDS block. Error code: %d", (int)status);
+        SDS_LOG_CRIT("Failed to create SDS block. Err: %d", (int)status);
     }
 
     return status;

@@ -22,8 +22,7 @@
 static FPFW_CLI_STATUS whoami(int Argc, const char** Argv);
 
 /*------------------- Declarations (Statics and globals) --------------------*/
-static FPFW_CLI_COMMAND s_build_info_commands =
-    {NULL_LIST_ENTRY, "build_info", "whoami", whoami, "This command prints the build metadata of the current build.", "Usage: whoami"};
+static FPFW_CLI_COMMAND s_build_info_commands = {NULL_LIST_ENTRY, "build_info", "whoami", whoami, "show build metadata", "Usage: whoami"};
 
 /*--------------------------------- Externs ---------------------------------*/
 

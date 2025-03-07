@@ -32,7 +32,7 @@ FPFW_INIT_COMPONENT(arsm, FPFW_INIT_DEPENDENCIES("atu_svc", "hw_ver", "sysinfo")
          * the ARSM at simulation start time. SCP should not clobber ARSM state
          * to allow using this feature.
          */
-        printf("Skip arsm_init on SVP to avoid clobbering pre-loaded arsm state!\n");
+        printf("Skip arsm_init on SVP\n");
         goto done;
     }
 

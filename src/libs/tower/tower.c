@@ -88,7 +88,7 @@ static uint16_t tower_vab_instances_to_be_enabled(uint8_t die_num)
         break;
 
     default:
-        printf("Skip VAB init on unknown platform id: %d\n", plat);
+        printf("not supported platform id: %d\n", plat);
         break;
     }
 
@@ -142,7 +142,7 @@ static uint16_t tower_rpss_instances_to_be_enabled(uint8_t die_num)
         break;
 
     default:
-        printf("Skip RPSS init on unknown platform id: %d\n", plat);
+        printf("not supported platform id: %d\n", plat);
         break;
     }
 
@@ -196,11 +196,11 @@ static void hsp_send_recv_post_scp_init_tower_config(fpfw_icc_base_ctx_t* icc_ct
     msg.header.cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ;
     msg.header.flags = isolation_flag;
 
-    printf("Prepare to send HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ to HSP\n");
+    printf("Prepare to send %x to HSP\n", msg.header.cmd);
     //! Send the message to HSP & get response, blocking call
     fpfw_status_t icc_status =
         fpfw_icc_base_send_recv_sync(icc_ctx, &msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
-    printf("HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_RSP received from HSP\n");
+    printf("%x received from HSP\n", HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_RSP);
 
     //! Verify sync return status & response message
     BUG_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
@@ -301,7 +301,7 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 
     // TODO: Isolation information should be derived from fuse and knob values
     // For now, assume isolation is not enabled for now and configure the sdmss tower for isolation disabled
-    printf("Configure SDMSS tower for isolation disabled, TODO: derive this from knobs & fuses\n");
+    printf("Configure SDMSS tower for isolation disabled\n");
     tower_sequence_params.tower_sdmss_isolation_enabled = false;
 
     // CDEDSS Tower

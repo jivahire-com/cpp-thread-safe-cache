@@ -7,8 +7,7 @@ trigger:
     - main    # Auto trigger pipeline every time there is a PR completion to main, enables promoting (tagging) for official builds
 
 variables:
-- group: ef-pipeline-config-azurekv    # New library group for AzureCSI PAT's (1pfw-code-read-autorotated and fpfw-token-autorotated)
-- group: ef-pipeline-config            # Old library group for mstsd PATs
+- group: ef-pipeline-config-azurekv    # Centralized PAT Library Group
 - name: OfficialBuild
   value : $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
 

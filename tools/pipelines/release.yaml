@@ -4,8 +4,7 @@ name: 0.1.0.$(rev:r)
 trigger: none
 
 variables:
-- group: ef-pipeline-config-azurekv    # New library group for AzureCSI PAT's (1pfw-code-read-autorotated and fpfw-token-autorotated)
-- group: ef-pipeline-config            # Old library group for mstsd PATs
+- group: ef-pipeline-config-azurekv    # Centralized PAT Library Group
 - name: OfficialBuild
   value : $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
 

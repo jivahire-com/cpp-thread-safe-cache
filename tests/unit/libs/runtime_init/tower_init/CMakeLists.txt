@@ -23,6 +23,7 @@ target_link_libraries(${TARGET}
     silibs::idhw
     silibs::kng_silibs_platform
     silibs::tower_sequence
+    silibs::silibs_utils
 )
 
 lint_target(${TARGET})

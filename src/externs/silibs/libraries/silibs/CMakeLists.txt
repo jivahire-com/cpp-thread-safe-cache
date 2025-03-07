@@ -105,6 +105,7 @@ endforeach()
 
 add_subdirectory(${TARGET_DIR_SILIBS_COMMON}/idsw ${LIB_OUTS_DIR}/idsw)
 add_subdirectory(${TARGET_DIR_SILIBS_COMMON}/idsw_kng ${LIB_OUTS_DIR}/idsw_kng)
+add_subdirectory(${TARGET_DIR_SILIBS_COMMON}/silibs_utils ${LIB_OUTS_DIR}/silibs_utils)
 
 # Add the libraries where we either implement our own source or our own cmakes
 add_subdirectory(kng_silibs_platform ${LIB_OUTS_DIR}/kng_silibs_platform)

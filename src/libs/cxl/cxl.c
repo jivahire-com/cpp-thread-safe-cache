@@ -15,6 +15,7 @@
 #include <pcie_config_variable.h>
 #include <idsw_kng.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -119,8 +120,7 @@ void cxl_chbcr_init( uint8_t* chbcr_base_address)
             printf("CHBCR: Adding decoder with interleave size %d, ways %d\n", cxl_params[i].interleave_size, cxl_params[i].interleave_ways);
 
             uint64_t cxl_region_size = set_cxl_mem_region_base_and_size(cxl_region, &cxl_region_base, cxl_params[i].interleave_ways);
-            printf("CHBCR: Decoder base 0x%llx, size 0x%llx\n", cxl_region_base, cxl_region_size);
-
+            printf("CHBCR: Decoder with base 0x%lX%08lX size 0x%lX%08lX\n", (unsigned long)(cxl_region_base >> 32), (unsigned long)cxl_region_base, (unsigned long)(cxl_region_size >> 32), (unsigned long)(cxl_region_size));
             // Increment region base
             cxl_region_base += cxl_region_size;
 
@@ -146,7 +146,7 @@ void cxl_chbcr_init( uint8_t* chbcr_base_address)
                 printf("CHBCR: Adding decoder with no interleave\n");
 
                 uint64_t cxl_region_size = set_cxl_mem_region_base_and_size(cxl_region, &cxl_region_base, 1);
-                printf("CHBCR: Decoder with base 0x%llx, size 0x%llx\n", cxl_region_base, cxl_region_size);
+                printf("CHBCR: Decoder with base 0x%lX%08lX size 0x%lX%08lX\n", (unsigned long)(cxl_region_base >> 32), (unsigned long)cxl_region_base, (unsigned long)(cxl_region_size >> 32), (unsigned long)(cxl_region_size));
 
                 // Increment region base
                 cxl_region_base += cxl_region_size;

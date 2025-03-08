@@ -3,7 +3,7 @@
 //
 
 /**
- * @file
+ * @file pcie_misc_mocks.c
  * Misc. mock functions used by PCIe driver unit tests
  */
 
@@ -43,4 +43,14 @@ cxl_region_params_t __wrap_config_get_cxl_params_die1(void)
 {
     cxl_region_params_t* params = mock_ptr_type(cxl_region_params_t*);
     return *params;
+}
+
+uint8_t __wrap_system_info_get_board_id()
+{
+    return mock_type(uint8_t);
+}
+
+bool __wrap_config_get_pcie_configuration_mirroring()
+{
+    return mock_type(bool);
 }

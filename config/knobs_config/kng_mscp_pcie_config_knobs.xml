@@ -47,6 +47,7 @@
   <!-- namespace indicates the GUID namespace the values are stored in -->
   <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
     <!-- PCIe -->
+    <Knob name="pcie_configuration_mirroring" type = "bool" default="false" help = "Set to true to mirror RPSS configurations on dual SoC boards"/>
     <Knob name="die1_rpss_enabled" type="bool" default="true" help="Set to false to disable die1 RPSS instances"/>
     <Knob name="pcie_rpss0_cfg" type="pcie_prod_cfg_t" />
     <Knob name="pcie_rpss1_cfg" type="pcie_prod_cfg_t" />

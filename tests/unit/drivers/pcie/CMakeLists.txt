@@ -20,6 +20,7 @@ target_link_libraries(${TARGET}
     ms::lib::error_handler
     ms::lib::interrupts
     ms::lib::scp_interrupts
+    ms::lib::system_info
     ms::mocks::threadx
     ms::driver::pcie
     ms::driver::vab
@@ -52,6 +53,11 @@ mock_target(${TARGET}
     # Mock external MSCP interfaces
     enable_vab_isrs
     plat_overrides_post_rp_ready
+    system_info_get_board_id
+    # Config manager mocks
+    config_get_cxl_params_die0
+    config_get_cxl_params_die1
+    config_get_pcie_configuration_mirroring
     # DFWK mocks
     DfwkQueueEnqueueRequest
     DfwkAsyncRequestComplete
@@ -80,6 +86,4 @@ mock_target(${TARGET}
     pciess_rps_ready
     pciess_rps_post_rp_ready_init
     pciess_probe
-    config_get_cxl_params_die0
-    config_get_cxl_params_die1
 )

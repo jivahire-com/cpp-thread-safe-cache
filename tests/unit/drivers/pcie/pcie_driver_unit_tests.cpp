@@ -3,7 +3,7 @@
 //
 
 /**
- * @file
+ * @file pcie_driver_unit_tests.cpp
  * This section is used to describe the file and any relevant
  * information related to it purpose and how it should be used.
  */
@@ -27,6 +27,7 @@ extern "C" {
 #include <DfwkPtrTypes.h>
 #include <error_handler.h>
 #include <kng_soc_constants.h>
+#include <pcie_config_i.h>
 #include <pcie_dfwk.h>
 #include <pcie_dfwk_i.h>
 #include <pcie_irq.h>
@@ -36,6 +37,7 @@ extern "C" {
 
 cxl_region_params_t __real_config_get_cxl_params_die0(void);
 cxl_region_params_t __real_config_get_cxl_params_die1(void);
+bool __real_config_get_pcie_configuration_mirroring(void);
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -132,8 +134,8 @@ TEST_FUNCTION(interface_init, test_setup, test_teardown)
     assert_ptr_equal(iface.dev, &dev);
 }
 
-/* Test case for initial pciess init sync. request successful path */
-TEST_FUNCTION(test_pcie_rpss_init_success, test_setup, test_teardown)
+/* Test case for initial pciess init sync. request for non-mirrored configurations successful path */
+TEST_FUNCTION(test_pcie_rpss_init_soc1_success, test_setup, test_teardown)
 {
     /*Setup the mock interface and device*/
     pcie_root_bridge_config rb_configs[4];
@@ -142,39 +144,93 @@ TEST_FUNCTION(test_pcie_rpss_init_success, test_setup, test_teardown)
     pciess_device_interface_t iface;
     iface.dev = &dev;
 
-    /* Setup the request for an rpss */
-    pcie_sync_request_t r;
-    r.header.RequestType = INITIAL_CONFIG_REQUEST;
-    r.req_type = INITIAL_CONFIG_REQUEST;
-    r.rpss_index = RPSS2;
-    r.rp_index = 0;
+    /* Setup silibs expectations */
+    /* Will always is used because IS_PLATFORM_FPGA() uses 3 calls to idsw_get_platform_sdv */
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    for (uint8_t i = 0; i < NUM_RPSS; i++)
+    {
+        /* Setup the request for an rpss */
+        pcie_sync_request_t r;
+        r.header.RequestType = INITIAL_CONFIG_REQUEST;
+        r.req_type = INITIAL_CONFIG_REQUEST;
+        r.rpss_index = (RPSS_INSTANCE)i;
+        r.rp_index = 0;
 
-    /* Set the owning interface*/
-    PDFWK_SYNC_REQUEST_HEADER req = (PDFWK_SYNC_REQUEST_HEADER)&r;
-    req->OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
+        /* Set the owning interface*/
+        auto req = (PDFWK_SYNC_REQUEST_HEADER)&r;
+        req->OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
 
-    mock_pcie_ent.id = r.rpss_index;
+        mock_pcie_ent.id = r.rpss_index;
+        expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+        will_return(__wrap_atu_map, SILIBS_SUCCESS);
+        expect_value(__wrap_pciess_get_entity, rpss_idx, i);
+        will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+        will_return(__wrap_system_info_get_board_id, 0x00);
+        expect_value(__wrap_pciess_config_entity, program_phy_regs, true);
+        expect_value(__wrap_pciess_config_entity, enable_apu, true);
+        will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
+        will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
+        will_return(__wrap_pciess_deassert_por_reset, SILIBS_SUCCESS);
+        will_return(__wrap_idsw_get_die_id, DIE_0);
+
+        cxl_region_params_t cxl_region_params_die0 = __real_config_get_cxl_params_die0();
+        will_return(__wrap_config_get_cxl_params_die0, &cxl_region_params_die0);
+
+        int32_t ret = pcie_sched_sync_op(&(r.header));
+        assert_int_equal(ret, 0);
+        assert_int_equal(r.status, SILIBS_SUCCESS);
+    }
+}
+
+/* Test case for initial pciess init sync. request for mirrored configurations successful path */
+TEST_FUNCTION(test_pcie_rpss_init_soc2_success, test_setup, test_teardown)
+{
+    /*Setup the mock interface and device*/
+    pcie_root_bridge_config rb_configs[4];
+    pciess_device_t dev;
+    dev.rb_configs = rb_configs;
+    pciess_device_interface_t iface;
+    iface.dev = &dev;
 
     /* Setup silibs expectations */
     /* Will always is used because IS_PLATFORM_FPGA() uses 3 calls to idsw_get_platform_sdv */
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
-    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
-    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
-    expect_value(__wrap_pciess_config_entity, program_phy_regs, true);
-    expect_value(__wrap_pciess_config_entity, enable_apu, true);
-    will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
-    will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
-    will_return(__wrap_pciess_deassert_por_reset, SILIBS_SUCCESS);
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    for (uint8_t i = 0; i < NUM_RPSS; i++)
+    {
+        /* Setup the request for an rpss */
+        pcie_sync_request_t r;
+        r.header.RequestType = INITIAL_CONFIG_REQUEST;
+        r.req_type = INITIAL_CONFIG_REQUEST;
+        r.rpss_index = (RPSS_INSTANCE)i;
+        r.rp_index = 0;
 
-    cxl_region_params_t cxl_region_params_die0 = __real_config_get_cxl_params_die0();
-    will_return(__wrap_config_get_cxl_params_die0, &cxl_region_params_die0);
+        /* Set the owning interface*/
+        auto req = (PDFWK_SYNC_REQUEST_HEADER)&r;
+        req->OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
 
-    int32_t ret = pcie_sched_sync_op(&(r.header));
-    assert_int_equal(ret, 0);
-    assert_int_equal(r.status, SILIBS_SUCCESS);
+        mock_pcie_ent.id = r.rpss_index;
+        expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+        will_return(__wrap_atu_map, SILIBS_SUCCESS);
+        expect_value(__wrap_pciess_get_entity, rpss_idx, i);
+        will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+        will_return(__wrap_system_info_get_board_id, 0xFF);
+        bool is_mirroring = __real_config_get_pcie_configuration_mirroring();
+        is_mirroring = true;
+        will_return(__wrap_config_get_pcie_configuration_mirroring, is_mirroring);
+        expect_value(__wrap_pciess_config_entity, program_phy_regs, true);
+        expect_value(__wrap_pciess_config_entity, enable_apu, true);
+        will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
+        will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
+        will_return(__wrap_pciess_deassert_por_reset, SILIBS_SUCCESS);
+        will_return(__wrap_idsw_get_die_id, DIE_0);
+
+        cxl_region_params_t cxl_region_params_die0 = __real_config_get_cxl_params_die0();
+        will_return(__wrap_config_get_cxl_params_die0, &cxl_region_params_die0);
+
+        int32_t ret = pcie_sched_sync_op(&(r.header));
+        assert_int_equal(ret, 0);
+        assert_int_equal(r.status, SILIBS_SUCCESS);
+    }
 }
 
 /* Test case for successful rb config population*/
@@ -210,6 +266,7 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    will_return(__wrap_system_info_get_board_id, 0x00);
     expect_value(__wrap_pciess_config_entity, program_phy_regs, false);
     expect_value(__wrap_pciess_config_entity, enable_apu, true);
     will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
@@ -499,6 +556,7 @@ TEST_FUNCTION(test_rpss_init_cxl, test_setup, test_teardown)
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_system_info_get_board_id, 0x00);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS5);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
     expect_value(__wrap_pciess_config_entity, program_phy_regs, false);
@@ -519,4 +577,29 @@ TEST_FUNCTION(test_rpss_init_cxl, test_setup, test_teardown)
 
     assert_int_equal(rb_configs[0].flags.is_enabled, true);
     assert_int_equal(rb_configs[0].flags.is_cxl, true);
+}
+
+TEST_FUNCTION(test_get_config, test_setup, test_teardown)
+{
+    pcie_cfg_t* cfg;
+
+    for (uint8_t i = RPSS0; i < NUM_RPSS; i++)
+    {
+        cfg = nullptr;
+        cfg = get_configuration_for_rpss(i);
+        assert_non_null(cfg);
+    }
+
+    /* Test that get_configuration_for_rpss rejects invalid RPSS ids */
+    expect_value(FPFwErrorRaise, error, (uint32_t)-1);
+    if (!set_error_handler_return())
+    {
+        get_configuration_for_rpss(NUM_RPSS);
+    }
+
+    expect_value(FPFwErrorRaise, error, (uint32_t)-1);
+    if (!set_error_handler_return())
+    {
+        get_configuration_for_rpss((NUM_RPSS + 5));
+    }
 }

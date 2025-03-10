@@ -5,8 +5,11 @@
 // 
 // @brief: Dump the contents of the recv payload to a file.
 //
+//
 // @return: Filename of saved payload, -1 on failure.
 //
+
+&debug= 0
 
 // Get the status of the recv channel mailbox, don't bother getting the payload if not pending.
 DO check_packet_pending.cmm recv
@@ -16,9 +19,11 @@ ENTRY &pending_status
 
 if (&pending_status!=1)
 (
+    print  ""
     print  %COLOR.RED "ERROR"
     print  %COLOR.RED "No pending message, nothing new to get!"
     print  %COLOR.RED "ERROR"
+    print  ""
     ENDDO -1
 )
 
@@ -45,15 +50,23 @@ if (&pending_status!=1)
 // Useful if we want to save just the payload and not the ICC + Message Header. TBD
 &payload_offset=0x10
 
-print ""
-print "RECV Payload Addr [0x"+format.hex(8.,&recv_payload_addr)+"]"
-print ""
-print "    Version [0x"+format.hex(8.,data.long(EOAXI:&recv_payload_addr+&version_offset))+"]"
-print "    Token   [0x"+format.hex(4.,data.word(EOAXI:&recv_payload_addr+&token_offset))+"]"
-print "    Id      [0x"+format.hex(4.,data.word(EOAXI:&recv_payload_addr+&id_offset))+"]"
-print "    Command [0x"+format.hex(8.,data.long(EOAXI:&recv_payload_addr+&command_offset))+"]"
-print "    Size    [0x"+format.hex(4.,data.word(EOAXI:&recv_payload_addr+&payload_size_offset))+"]"
-print "    STATUS  [0x"+format.hex(4.,data.word(EOAXI:&recv_payload_addr+&status_offset))+"]"
+if (&debug==1)
+(
+    print  ""
+    print  "Getting ICC Packet."
+    print  ""
+
+    print ""
+    print "ICC RECV Payload Addr [0x"+format.hex(8.,&recv_payload_addr)+"]"
+    print ""
+    print "    Version [0x"+format.hex(8.,data.long(EOAXI:&recv_payload_addr+&version_offset))+"]"
+    print "    Token   [0x"+format.hex(4.,data.word(EOAXI:&recv_payload_addr+&token_offset))+"]"
+    print "    Id      [0x"+format.hex(4.,data.word(EOAXI:&recv_payload_addr+&id_offset))+"]"
+    print "    Command [0x"+format.hex(8.,data.long(EOAXI:&recv_payload_addr+&command_offset))+"]"
+    print "    Size    [0x"+format.hex(4.,data.word(EOAXI:&recv_payload_addr+&payload_size_offset))+"]"
+    print "    STATUS  [0x"+format.hex(4.,data.word(EOAXI:&recv_payload_addr+&status_offset))+"]"
+    print ""
+)
 
 // Save the entire payload to a file. Includes ICC MHU Header + Message Header + User Payload
 &time=DATE.TIME()
@@ -67,11 +80,20 @@ print "    STATUS  [0x"+format.hex(4.,data.word(EOAXI:&recv_payload_addr+&status
 &file_name = "d0_ap_ns_recv_payload_"+"&d"+"_"+"&m"+"_"+"&y"+"_"+"&time"+".bin"
 
 &payload_end_addr= &recv_payload_addr+&recv_payload_size
-Data.SAVE.Binary &file_name EOAXI:&recv_payload_addr--&payload_end_addr
+
+//
+// This is inclusive, so subtract one from the end address.
+//
+Data.SAVE.Binary &file_name EOAXI:&recv_payload_addr--(&payload_end_addr-1)
 
 Data.Dump EOAXI:&recv_payload_addr
 
-print "Saved payload to "+"&file_name"
+if (&debug==1)
+(
+    print ""
+    print "Saved payload to "+"&file_name"
+    print ""
+)
 
 //
 // !!! If reproducing these scripts in firmware or software issue a Data Synchronization Barrier before writing to the MHU IP !!!
@@ -97,16 +119,17 @@ print "Saved payload to "+"&file_name"
 data.set (EOAXI:&ch_0_flag_0_clr_address) %long 0x1
 
 // Validate the pending flag is now 0
-DO check_packet_pending.cmm recv
+DO ./check_packet_pending.cmm recv
 ENTRY &pending_status
 
 if (&pending_status!=0)
 (
+    print  ""
     print  %COLOR.RED "ERROR"
     print  %COLOR.RED "Failed to clear pending bit!"
     print  %COLOR.RED "ERROR"
+    print  ""
     ENDDO -1
 )
-
 
 ENDDO &file_name

@@ -1,0 +1,115 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+// 
+// @brief: Send the CLIENT_GET_PLATFORM_INFORMATION message to the MCP and print
+//         the response payload. The full ICC Response Payload is saved to a file.
+//
+// @param[in]: Optional - client_id: Client to send the message to. Defaults to 0.
+//
+// @return: 0 on success, -1 on failure.
+//
+
+ENTRY &client_id
+
+print  "----------------------------------------------------------------------------------------------------"
+
+&success_status= 0
+
+// Message ID for CLIENT_GET_PLATFORM_INFORMATION
+&message_id= 0x000C
+
+if ("&client_id"=="")
+(
+    &client_id=0
+)
+
+//
+// See the message in the specification for payload formatting: 
+//  https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Firmware/Telemetry/Data_Collection_Protocol/Data_Collection_Protocol_Specification_v1_0_4.docx?d=w3985a77534024f39b41ce6a7e2eca7e9&csf=1&web=1&e=TYg06V
+//
+
+print  ""
+print  "Sending CLIENT_GET_PLATFORM_INFORMATION."
+print  ""
+
+// This will send the message AND wait for the response, saving the response to a file
+DO ./send_dcp_message.cmm &message_id &client_id
+ENTRY &status
+
+if (&status!=0)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Failed to send the CLIENT_GET_PLATFORM_INFORMATION message!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// The CLIENT_GET_PLATFORM_INFORMATION message sends back a response, parse that here.
+//
+
+DO ./get_dcp_message.cmm
+ENTRY &dcp_payload_addr
+
+if (&dcp_payload_addr==-1)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "DCP Response indicates an error!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+// The CLIENT_GET_PLATFORM_INFORMATION response has multiple fields.
+&dcp_ver_major_offset= 0x0
+&dcp_ver_minor_offset= 0x4
+&dcp_ver_patch_offset= 0x8
+&ifwi_ver_major_offset= 0xC
+&ifwi_ver_minor_offset= 0x10
+&ifwi_ver_patch_offset= 0x14
+&ifwi_ver_revision_offset= 0x18
+&platform_id_offset= 0x1C
+
+DO ./read_address.cmm (&dcp_payload_addr+&dcp_ver_major_offset) 4
+ENTRY &dcp_ver_major
+
+DO ./read_address.cmm (&dcp_payload_addr+&dcp_ver_minor_offset) 4
+ENTRY &dcp_ver_minor
+
+DO ./read_address.cmm (&dcp_payload_addr+&dcp_ver_patch_offset) 4
+ENTRY &dcp_ver_patch
+
+DO ./read_address.cmm (&dcp_payload_addr+&ifwi_ver_major_offset) 4
+ENTRY &ifwi_ver_major
+
+DO ./read_address.cmm (&dcp_payload_addr+&ifwi_ver_minor_offset) 4
+ENTRY &ifwi_ver_minor
+
+DO ./read_address.cmm (&dcp_payload_addr+&ifwi_ver_patch_offset) 4
+ENTRY &ifwi_ver_patch
+
+DO ./read_address.cmm (&dcp_payload_addr+&ifwi_ver_revision_offset) 4
+ENTRY &ifwi_ver_revision
+
+DO ./read_address.cmm (&dcp_payload_addr+&platform_id_offset) 8
+ENTRY &platform_id
+
+print ""
+print "DCP CLIENT_GET_PLATFORM_INFORMATION Response"
+print ""
+print "    DCP Version Major      [0x"+format.hex(8.,&dcp_ver_major)+"]"
+print "    DCP Version Minor      [0x"+format.hex(8.,&dcp_ver_minor)+"]"
+print "    DCP Version Patch      [0x"+format.hex(8.,&dcp_ver_patch)+"]"
+print "    IFWI Version Major     [0x"+format.hex(8.,&ifwi_ver_major)+"]"
+print "    IFWI Version Minor     [0x"+format.hex(8.,&ifwi_ver_minor)+"]"
+print "    IFWI Version Patch     [0x"+format.hex(8.,&ifwi_ver_patch)+"]"
+print "    IFWI Version Revision  [0x"+format.hex(8.,&ifwi_ver_revision)+"]"
+print "    Platform ID            [0x"+format.hex(8.,&platform_id)+"]"
+print ""
+
+ENDDO &success_status

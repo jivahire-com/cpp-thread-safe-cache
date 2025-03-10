@@ -1,0 +1,129 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+// 
+// @brief: Get's a DCP message, validates it's a CLIENT_NOTIFICATION message, and
+//         prints the notification type.
+//
+// @return: 0 on success, -1 on failure.
+//
+
+print  "----------------------------------------------------------------------------------------------------"
+
+&success_status= 0
+
+print  ""
+print  "Checking for CLIENT_NOTIFICATION message."
+print  ""
+
+// Check to see if anything is pending, don't bother if no pending message
+&pwd=OS.PresentWorkingDirectory()
+chdir.DO ../d0_ap_ns_mcp_icc/check_packet_pending.cmm recv
+ENTRY &pending_status
+chdir &pwd
+
+if (&pending_status!=1)
+(
+	print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "No pending message, nothing to check!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+// Get the DCP Message and the Payload Address
+DO ./get_dcp_message.cmm
+ENTRY &dcp_payload_addr
+
+if (&dcp_payload_addr==-1)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "DCP Response indicates an error!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+// The message id is in the DCP Header, which is before the payload, work backwards from the payload address
+&message_id_offset= 0x8
+&message_id= data.short(EOAXI:&dcp_payload_addr-&message_id_offset)
+
+// Message ID for CLIENT_NOTIFICATION
+if (&message_id!=0x000B)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Expected a CLIENT_NOTIFICATION message, but received a message with ID [0x"+format.hex(4.,&message_id)+"]"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// Print the notification type.
+//
+// See: https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Firmware/Telemetry/Data_Collection_Protocol/Data_Collection_Protocol_Specification_v1_0_4.docx?d=w3985a77534024f39b41ce6a7e2eca7e9&csf=1&web=1&e=TYg06V
+//
+
+// The CLIENT_NOTIFICATION response has one field. A 4 byte field representing the type.
+&type_offset= 0x0
+
+cd.do ./read_address.cmm (&dcp_payload_addr+&type_offset) 4
+ENTRY &type
+
+if (&type==-1)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Failed to read the type value"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// Print the type
+//
+
+print ""
+print "DCP CLIENT_NOTIFICATION Response"
+print ""
+print "    Type [0x"+format.hex(8.,&type)+"]"
+if (&type==0x1)
+(
+    print "        Type: DATA_AVAILABLE"
+)
+else if (&type==0x2)
+(
+    print "        Type: CLIENT_FW_RESET"
+)
+else
+(
+    print "        Type: UNKNOWN"
+)
+print ""
+
+//
+// Clear the DCP message utilizing the get packet script
+//
+
+// Temporarily change the script running directory, execute a script, then change back
+&pwd=OS.PresentWorkingDirectory()
+chdir.DO ../d0_ap_ns_mcp_icc/get_packet.cmm
+ENTRY &file_name
+chdir &pwd
+
+if ("&file_name"=="-1")
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Failed to clear the DCP message!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+ENDDO &success_status

@@ -1,0 +1,237 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+// 
+// @brief: Send a DCP message and wait for a message back. Saving the final message to a file.
+//
+// @param[in]: Required - message_id: DCP Message ID, must be in hex.
+// @param[in]: Optional - client_id: Client to send the message to. Defaults to 0.
+// @param[in]: Optional - resp_timeout_ms: Timeout, in milliseconds, to wait for the MCP to message back. Defaults to 10ms
+// @param[in]: Optional - message_payload: DCP Message payload (as bytes), excludes the DCP Header, max size of 486 bytes. Defaults to all 0.
+//
+// @return: 0 on success, -1 on failure.
+//
+
+ENTRY &message_id &client_id &resp_timeout_ms %line &message_payload
+
+&debug= 0
+
+&pwd=OS.PresentWorkingDirectory()
+&success_status= 0
+
+if ("&message_id"=="")
+(
+  print  ""
+  print  %COLOR.RED "ERROR"
+  print  %COLOR.RED "Message ID must be provided!!!"
+  print  %COLOR.RED "Usage: 'cd.do send_dcp_message.cmm <message_id> [client_id]'
+  print  %COLOR.RED "ERROR"
+  print  ""
+  ENDDO -1
+)
+
+if ("&client_id"=="")
+(
+    &client_id=0
+)
+
+if ("&resp_timeout_ms"=="")
+(
+    &resp_timeout_ms= Format.Decimal(4.,3000.)
+)
+else
+(
+    &resp_timeout_ms= Format.Decimal(5.,&resp_timeout_ms)
+)
+
+// Count the bytes to ensure we don't go over
+if ("&message_payload"!="")
+(
+  &count=STRing.COUNT("&message_payload"," ")+1
+  if (&count>486)
+  (
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Payload size exceeds maximum size of 486 bytes!!!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+  )
+)
+
+//
+// Since we want to send a message and get a response, we should vlaidate that there are not pending messages
+// from the MCP. If there are, clear them.
+//
+
+// Temporarily change the script running directory, execute a script, then change back
+chdir.DO ../d0_ap_ns_mcp_icc/check_packet_pending.cmm recv
+ENTRY &pending_status
+chdir &pwd
+
+if (&pending_status==1)
+(
+	// Temporarily change the script running directory, execute a script, then change back
+	chdir.DO ../d0_ap_ns_mcp_icc/get_packet.cmm
+	ENTRY &file_name
+	chdir &pwd
+	
+	Wait  &resp_timeout_ms.ms
+)
+
+//
+// Setup the DCP Header + DCP Message Payload
+//
+// See: https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Firmware/Telemetry/Data_Collection_Protocol/Data_Collection_Protocol_Specification_v1_0_4.docx?d=w3985a77534024f39b41ce6a7e2eca7e9&csf=1&web=1&e=TYg06V
+//
+&client_id_offset= 0x0
+&message_id_offset= 0x2
+&seq_num_offset= 0x4
+&message_status_offset= 0x6
+&payload_size_offset= 0x8
+
+//
+// The header is a total of 10 bytes
+//
+// The payload is: (Total size of Shared Memory) - (Total ICC Headers Size) - (DCP Header Size)
+// This comes out to: 512 - 16 - 10 == 486
+//
+Var.NEWLOCAL uint8_t[10] \dcp_header
+var.NEWLOCAL uint8_t[486] \dcp_message_payload
+
+//
+// Fill in header
+//
+
+// Client ID
+Var.assign \dcp_header[0]=&client_id&0xFF
+Var.assign \dcp_header[1]=(&client_id>>8)&0xFF
+
+// Message ID
+Var.assign \dcp_header[2]=&message_id&0xFF
+Var.assign \dcp_header[3]=(&message_id>>8)&0xFF
+
+// The rest we set to 0
+Var.assign \dcp_header[4..9]=0x00
+
+//
+// Fill in message payload. Zeroize the payload then insert from user input
+//
+Var.assign \dcp_message_payload[0..485]=0x00
+
+&message_size= String.count("&message_payload"," ")+1
+if ("&message_payload"=="")
+(
+	&message_size= 0
+)
+
+&index= 0
+while (&index<&message_size)
+(
+	&byte= string.split("&message_payload"," ",&index)
+	Var.assign \dcp_message_payload[&index]=&byte
+    &index= &index+1
+)
+
+//
+// Update the DCP Header Payload Size
+//
+Var.assign \dcp_header[8]=&message_size&0xFF
+Var.assign \dcp_header[9]=(&message_size>>8)&0xFF
+
+//
+// Build the string version of the header + payload
+//
+&payload= ""
+
+&index= 0
+while (&index<Var.sizeof(\dcp_header))
+(
+    &payload= "&payload 0x"+Format.Hex(2.,Var.Value(\dcp_header[&index]))
+    &index= &index+1
+)
+&index= 0
+while (&index<Var.sizeof(\dcp_message_payload))
+(
+  &payload= "&payload 0x"+Format.Hex(2.,Var.Value(\dcp_message_payload[&index]))
+  &index= &index+1
+)
+
+//
+// Send the DCP Message via ICC
+//
+
+if (&debug==1)
+(
+  print  ""
+  print  "Sending DCP Message."
+  print  ""
+)
+
+// ICC Command for DCP
+// See https://dev.azure.com/ms-tsd/Kingsgate/_git/silibs?path=/libraries/kng_silibs_platform/include/kng_icc_shared.h
+&icc_dcp_command= 0x00020001
+
+// Temporarily change the script running directory, execute a script, then change back
+chdir.DO ../d0_ap_ns_mcp_icc/send_packet.cmm &icc_dcp_command &payload
+ENTRY &send_status
+chdir &pwd
+
+if (&send_status!=0)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Failed to send DCP Message!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+// The MCP has to respond to the message, we validate this here by waiting and checking the 
+// pending status bit.
+
+&index= 0
+&pending_status=0
+
+if (&debug==1)
+(
+	print ""
+	print "Waiting &resp_timeout_ms ms for a response"
+	print ""
+)
+
+Wait  &resp_timeout_ms.ms
+
+// Temporarily change the script running directory, execute a script, then change back
+chdir.DO ../d0_ap_ns_mcp_icc/check_packet_pending.cmm recv
+ENTRY &pending_status
+chdir &pwd
+
+
+if (&pending_status!=1)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Message Sent, but no response received!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+// Temporarily change the script running directory, execute a script, then change back
+chdir.DO ../d0_ap_ns_mcp_icc/get_packet.cmm
+ENTRY &file_name
+chdir &pwd
+
+if ("&file_name"=="-1")
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Failed to get the DCP Response!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+ENDDO &success_status

@@ -1,0 +1,123 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+// 
+// @brief: Send the CLIENT_READ_DATA message to the MCP and print
+//         the response payload. The full ICC Response Payload is saved to a file.
+//
+// @param[in]: Optional - client_id: Client to send the message to. Defaults to 0.
+//
+// @return: Returns comma separated string of the following format on success:
+//          "buffer_start_addr,buffer_size,read_data_addr_offset,read_data_size,crc"
+//          -1 on failure.
+//
+
+ENTRY &client_id
+
+print  "----------------------------------------------------------------------------------------------------"
+
+// Message ID for CLIENT_READ_DATA
+&message_id= 0x0007
+
+if ("&client_id"=="")
+(
+    &client_id=0
+)
+
+//
+// See the message in the specification for payload formatting: 
+//  https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Firmware/Telemetry/Data_Collection_Protocol/Data_Collection_Protocol_Specification_v1_0_4.docx?d=w3985a77534024f39b41ce6a7e2eca7e9&csf=1&web=1&e=TYg06V
+//
+
+// This will send the message AND wait for the response, saving the response to a file
+DO ./send_dcp_message.cmm &message_id &client_id
+ENTRY &status
+
+if (&status!=0)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Failed to send the CLIENT_READ_DATA message!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// The CLIENT_READ_DATA message sends back a response, parse that here.
+//
+
+DO ./get_dcp_message.cmm
+ENTRY &dcp_payload_addr
+
+if (&dcp_payload_addr==-1)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "DCP Response indicates an error!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+// The CLIENT_READ_DATA response has multiple fields.
+&buffer_start_addr_offset= 0x0
+&buffer_size_offset= 0x8
+&read_data_addr_offset_offset= 0x10
+&read_data_size_offset= 0x18
+&crc_offset= 0x20
+
+DO ./read_address.cmm (&dcp_payload_addr+&buffer_start_addr_offset) 8
+ENTRY &buffer_start_addr
+
+DO ./read_address.cmm (&dcp_payload_addr+&buffer_size_offset) 8
+ENTRY &buffer_size
+
+DO ./read_address.cmm (&dcp_payload_addr+&read_data_addr_offset_offset) 8
+ENTRY &read_data_addr_offset
+
+DO ./read_address.cmm (&dcp_payload_addr+&read_data_size_offset) 8
+ENTRY &read_data_size
+
+DO ./read_address.cmm (&dcp_payload_addr+&crc_offset) 8
+ENTRY &crc
+
+print ""
+print "DCP CLIENT_READ_DATA Response"
+print ""
+print "    Buffer Start Address     [0x"+format.hex(8.,&buffer_start_addr)+"]"
+print "    Buffer Size              [0x"+format.hex(8.,&buffer_size)+"]"
+print "    Read Data Address Offset [0x"+format.hex(8.,&read_data_addr_offset)+"]"
+print "    Read Data Size           [0x"+format.hex(8.,&read_data_size)+"]"
+print "    CRC                      [0x"+format.hex(8.,&crc)+"]"
+print ""
+
+if (&read_data_size!=0)
+(
+
+	// Save the manifest
+	&time=DATE.TIME()
+	&d=DATE.DAY()
+	&m=DATE.MONTH()
+	&y=DATE.YEAR()
+	&d=STRing.Replace("&d",".","",0)
+	&m=STRing.Replace("&m",".","",0)
+	&y=STRing.Replace("&y",".","",0)
+	&time=STRing.Replace("&time",":","_",0)
+	&file_name = "d0_ap_ns_dcp_client_read_data_"+"&d"+"_"+"&m"+"_"+"&y"+"_"+"&time"+".bin"
+
+	&data_start_addr= &buffer_start_addr+&read_data_addr_offset
+	&data_end_addr= &data_start_addr+&read_data_size
+
+	//
+	// This is inclusive, so subtract one from the end address.
+	//
+	Data.SAVE.Binary &file_name EOAXI:&data_start_addr--(&data_end_addr-1)
+
+	print ""
+	print "Saved read data to "+"&file_name"
+	print ""
+)
+
+ENDDO "&buffer_start_addr"+","+"&buffer_size"+","+"&read_data_addr_offset"+","+"&read_data_size"+","+"+"&crc"

@@ -12,6 +12,8 @@
 
 ENTRY &channel_direction
 
+&debug= 0
+
 // Default the channel address to the AP NS RECV MHU
 if ("&channel_direction"=="")
 (
@@ -37,11 +39,13 @@ else if ("&channel_direction"=="send")
 )
 else
 (
+    print  ""
     print  %COLOR.RED "ERROR"
     print  %COLOR.RED "Usage: 'cd.do check_packet_pending.cmm'      Check RECV Frame"
     print  %COLOR.RED "Usage: 'cd.do check_packet_pending.cmm recv' Check RECV Frame"
     print  %COLOR.RED "Usage: 'cd.do check_packet_pending.cmm send' Check SEND Frame"
     print  %COLOR.RED "ERROR"
+    print  ""
     ENDDO -1
 )
 
@@ -53,10 +57,15 @@ else
 // We only use channel 0 and flag 0 per MHU Frame
 // We can use the Post Box Register for either a Recv or Send frame due to the IP being monolithic and the Recv and Send frames have the same offsets for channels
 // The channel status register offset: https://kingsgatedocs.azurewebsites.net/static/csrs/v1.6.0/ap_addr_map/html/D0_AP2MCP_MHU_SND_NS-PDBCW_page_Registers.html#PDBCW0_ST
-&ch_0_flag_0pb_address = &mhu_address+&channels_offset+&channel_status_offset
-&ch_0_flag_0_pb_status = data.long(EOAXI:&ch_0_flag_0pb_address)
+&ch_0_flag_0_pb_address = &mhu_address+&channels_offset+&channel_status_offset
+&ch_0_flag_0_pb_status = data.long(EOAXI:&ch_0_flag_0_pb_address)
 
-print "PB - Addr [0x"+format.hex(8.,&ch_0_flag_0pb_address)+"] Status ["+format.hex(1.,&ch_0_flag_0_pb_status)+"]"
+if (&debug==1)
+(
+    print  ""
+    print "Checking for Pending Packet - Post Box - Address [0x"+format.hex(8.,&ch_0_flag_0_pb_address)+"] Status ["+format.hex(1.,&ch_0_flag_0_pb_status)+"]"
+    print  ""
+)
 
 // ENDO needed if called from cd.do. RETURN needed if from a subroutine
 ENDDO &ch_0_flag_0_pb_status

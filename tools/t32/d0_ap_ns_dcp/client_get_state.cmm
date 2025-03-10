@@ -1,0 +1,97 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+// 
+// @brief: Send the CLIENT_GET_STATE message to the MCP and prints
+//         the response payload. The full ICC Response Payload is saved to a file.
+//
+// @param[in]: Optional - client_id: Client to send the message to. Defaults to 0.
+//
+// @return: 0 on success, -1 on failure.
+//
+
+print  "----------------------------------------------------------------------------------------------------"
+
+ENTRY &client_id
+
+// Message ID for CLIENT_GET_STATE
+&message_id= 0x0001
+
+if ("&client_id"=="")
+(
+    &client_id=0
+)
+
+print  ""
+print  "Sending CLIENT_GET_STATE."
+print  ""
+
+// This will send the message AND wait for the response, saving the response to a file
+DO ./send_dcp_message.cmm &message_id &client_id
+ENTRY &status
+
+if (&status!=0)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Failed to send the CLIENT_GET_STATE message!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// Even though the response from the firmware is saved to a file, grab the details from
+// the response payload (in memory) here and print for the user.
+//
+
+&success_status= 0
+
+DO ./get_dcp_message.cmm
+ENTRY &dcp_payload_addr
+
+if (&dcp_payload_addr==-1)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "DCP Response indicates an error!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// Print the response from the firmware.
+//
+// See: https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Firmware/Telemetry/Data_Collection_Protocol/Data_Collection_Protocol_Specification_v1_0_4.docx?d=w3985a77534024f39b41ce6a7e2eca7e9&csf=1&web=1&e=TYg06V
+//
+
+// The CLIENT_GET_STATE response has one field. A 4 byte field representing the state.
+&state_offset= 0x0
+DO ./read_address.cmm (&dcp_payload_addr+&state_offset) 4
+ENTRY &state
+
+//
+// Print the state
+//
+
+print ""
+print "DCP CLIENT_GET_STATE Response"
+print ""
+print "    State [0x"+format.hex(8.,&state)+"]"
+if (&state==0x0)
+(
+    print "        State: CLIENT_STOPPED"
+)
+else if (&state==0x1)
+(
+    print "        State: CLIENT_STARTED"
+)
+else
+(
+    print "        State: UNKNOWN"
+)
+print ""
+
+ENDDO &success_status

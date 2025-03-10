@@ -18,11 +18,17 @@
 
 ENTRY &command %LINE &payload
 
+&debug= 0
+
+&success_status= 0
+
 if ("&command"=="")
 (
+    print  ""
     print  %COLOR.RED "ERROR"
     print  %COLOR.RED "Usage: send_packet.cmm <command> [payload_byte_0 payload_byte_1 ... payload_byte_N-1]"
     print  %COLOR.RED "ERROR"
+    print  ""
     ENDDO -1
 )
 
@@ -35,9 +41,11 @@ ENTRY &pending_status
 
 if (&pending_status!=0)
 (
+    print  ""
     print  %COLOR.RED "ERROR"
     print  %COLOR.RED "Pending message, must be cleared before a new one can be sent!"
     print  %COLOR.RED "ERROR"
+    print  ""
     ENDDO -1
 )
 
@@ -53,8 +61,14 @@ if ((&payload_size==1)&&("&payload"==""))
     &payload_size = 0
 )
 
-print "Command ["+"&command"+"] Payload Size ["+"&payload_size"+"]"
-print "Payload ["+"&payload"+"]"
+if (&debug==1)
+(
+    print ""
+    print "Sending ICC Packet."
+    print "Command ["+"&command"+"] Payload Size ["+"&payload_size"+"]"
+    print "Payload ["+"&payload"+"]"
+    print ""
+)
 
 //
 // With the icc mhu payload address and the offsets, update the shared memory before triggering the mhu ip block
@@ -120,4 +134,4 @@ Data.dump EOAXI:&send_payload_addr
 // Set the channels set register to trigger the interrupt
 data.set (EOAXI:&mhu_address+&channels_offset+&channel_set_offset) %long 0x1
 
-ENDDO 0
+ENDDO &success_status

@@ -1,0 +1,98 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+// 
+// @brief: Send the CLIENT_GET_CAPABILITIES message to the MCP and prints
+//         the response payload. The full ICC Response Payload is saved to a file.
+//
+// @param[in]: Optional - client_id: Client to send the message to. Defaults to 0.
+//
+// @return: 0 on success, -1 on failure.
+//
+
+print  "----------------------------------------------------------------------------------------------------"
+
+ENTRY &client_id
+
+&success_status= 0
+
+// Message ID for CLIENT_GET_CAPABILITIES
+&message_id= 0x0000
+
+if ("&client_id"=="")
+(
+    &client_id= 0
+)
+
+print  ""
+print  "Sending CLIENT_GET_CAPABILITIES."
+print  ""
+
+// This will send the message AND wait for the response, saving the response to a file
+DO ./send_dcp_message.cmm &message_id &client_id
+ENTRY &status
+
+if (&status!=0)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Failed to send the CLIENT_GET_CAPABILITIES message!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// Even though the response from the firmware is saved to a file, grab the details from
+// the response payload (in memory) here and print for the user.
+//
+
+DO ./get_dcp_message.cmm
+ENTRY &dcp_payload_addr
+
+if (&dcp_payload_addr==-1)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "DCP Response indicates an error!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// Print the response from the firmware.
+//
+// See: https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Firmware/Telemetry/Data_Collection_Protocol/Data_Collection_Protocol_Specification_v1_0_4.docx?d=w3985a77534024f39b41ce6a7e2eca7e9&csf=1&web=1&e=TYg06V
+//
+
+// The CLIENT_GET_CAPABILITIES response has one field. A 4 byte bitfield that represents the capabilities of the client.
+&capabilities_offset= 0x0
+DO ./read_address.cmm (&dcp_payload_addr+&capabilities_offset) 4
+ENTRY &capabilities
+
+//
+// Print each bit in the bitfield
+//
+
+print ""
+print "DCP CLIENT_GET_CAPABILITIES Response"
+print ""
+print "    Capabilities [0x"+format.hex(8.,&capabilities)+"]"
+print "    Bit 0:  CLIENT_GET_CAPABILITIES         [0x"+format.hex(1.,((&capabilities>>0)&1))+"]"
+print "    Bit 1:  CLIENT_GET_STATE                [0x"+format.hex(1.,((&capabilities>>1)&1))+"]"
+print "    Bit 2:  CLIENT_GET_SCHEMA               [0x"+format.hex(1.,((&capabilities>>2)&1))+"]"
+print "    Bit 3:  CLIENT_EVENTS_ENABLE_DISABLE    [0x"+format.hex(1.,((&capabilities>>3)&1))+"]"
+print "    Bit 4:  CLIENT_EVENTS_DISABLE           [0x"+format.hex(1.,((&capabilities>>4)&1))+"]"
+print "    Bit 5:  CLIENT_START_STOP               [0x"+format.hex(1.,((&capabilities>>5)&1))+"]"
+print "    Bit 6:  CLIENT_STOP                     [0x"+format.hex(1.,((&capabilities>>6)&1))+"]"
+print "    Bit 7:  CLIENT_READ_DATA                [0x"+format.hex(1.,((&capabilities>>7)&1))+"]"
+print "    Bit 8:  CLIENT_READ_DATA_COMPLETE       [0x"+format.hex(1.,((&capabilities>>8)&1))+"]"
+print "    Bit 9:  UTC_SYNC                        [0x"+format.hex(1.,((&capabilities>>9)&1))+"]"
+print "    Bit 10: CLIENT_RESET                    [0x"+format.hex(1.,((&capabilities>>10)&1))+"]"
+print "    Bit 11: CLIENT_NOTIFICATION             [0x"+format.hex(1.,((&capabilities>>11)&1))+"]"
+print "    Bit 11: CLIENT_GET_PLATFORM_INFORMATION [0x"+format.hex(1.,((&capabilities>>12)&1))+"]"
+print ""
+
+ENDDO &success_status

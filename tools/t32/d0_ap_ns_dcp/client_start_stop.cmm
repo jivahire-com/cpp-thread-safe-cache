@@ -1,0 +1,77 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+// 
+// @brief: Send the CLIENT_START_STOP message to the MCP and print
+//         the response payload. The full ICC Response Payload is saved to a file.
+//
+// @param[in]: Optional - client_id: Client to send the message to. Defaults to 0.
+// @param[in]: Optional - enabled:    1 to enable, 0 to disable. Defaults to 0.
+//
+// @return: 0 on success, -1 on failure.
+//
+
+print  "----------------------------------------------------------------------------------------------------"
+
+ENTRY &client_id &enabled
+
+&success_status= 0
+
+// Message ID for CLIENT_START_STOP
+&message_id= 0x0005
+
+if ("&client_id"=="")
+(
+    &client_id=0
+)
+if ("&enabled"=="")
+(
+    &enabled=0
+)
+
+//
+// See the message in the specification for payload formatting: 
+//  https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Firmware/Telemetry/Data_Collection_Protocol/Data_Collection_Protocol_Specification_v1_0_4.docx?d=w3985a77534024f39b41ce6a7e2eca7e9&csf=1&web=1&e=TYg06V
+//
+
+print  ""
+print  "Sending CLIENT_START_STOP."
+print  ""
+
+&enabled= "&enabled 0x0 0x0 0x0"
+
+// This will send the message AND wait for the response, saving the response to a file
+&timeout_ms= 1000.
+DO ./send_dcp_message.cmm &message_id &client_id &timeout_ms &enabled
+ENTRY &status
+
+if (&status!=0)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Failed to send the CLIENT_START_STOP message!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// The CLIENT_START_STOP message only sends the DCP Header back in response. No
+// need to parse the payload.
+//
+
+DO ./get_dcp_message.cmm
+ENTRY &dcp_payload_addr
+
+if (&dcp_payload_addr==-1)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "DCP Response indicates an error!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+ENDDO &success_status

@@ -1,0 +1,120 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+// 
+// @brief: Send the CLIENT_GET_MANIFEST message to the MCP and prints the response
+//         payload. The full ICC Response Payload is saved to a file. Saves the
+//         manifest to a file.
+//
+// @param[in]: Optional - client_id: Client to send the message to. Defaults to 0.
+//
+// @return: Manifest file name on success, -1 on failure.
+//
+
+print  "----------------------------------------------------------------------------------------------------"
+
+ENTRY &client_id
+
+// Message ID for CLIENT_GET_MANIFEST
+&message_id= 0x0002
+
+if ("&client_id"=="")
+(
+    &client_id=0
+)
+
+print  ""
+print  "Sending CLIENT_GET_MANIFEST."
+print  ""
+
+// This will send the message AND wait for the response, saving the response to a file
+DO ./send_dcp_message.cmm &message_id &client_id
+ENTRY &status
+
+if (&status!=0)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Failed to send the CLIENT_GET_MANIFEST message!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// Even though the response from the firmware is saved to a file, grab the details from
+// the response payload (in memory) here and print for the user.
+//
+
+DO ./get_dcp_message.cmm
+ENTRY &dcp_payload_addr
+
+if (&dcp_payload_addr==-1)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "DCP Response indicates an error!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// Print the response from the firmware.
+//
+// See: https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Firmware/Telemetry/Data_Collection_Protocol/Data_Collection_Protocol_Specification_v1_0_4.docx?d=w3985a77534024f39b41ce6a7e2eca7e9&csf=1&web=1&e=TYg06V
+//
+
+// The CLIENT_GET_MANIFEST response has multiple fields.
+&buffer_start_addr_offset= 0x0
+&start_addr_offset_offset= 0x8
+&total_size_offset= 0x10
+
+DO ./read_address.cmm (&dcp_payload_addr+&buffer_start_addr_offset) 8
+ENTRY &buffer_start_addr
+
+DO ./read_address.cmm (&dcp_payload_addr+&start_addr_offset_offset) 8
+ENTRY &start_addr_offset
+
+DO ./read_address.cmm (&dcp_payload_addr+&total_size_offset) 8
+ENTRY &total_size
+
+//
+// Print the state
+//
+
+print ""
+print "DCP CLIENT_GET_MANIFEST Response"
+print ""
+print "    Buffer Start Address [0x"+format.hex(8.,&buffer_start_addr)+"]"
+print "    Start Address Offset [0x"+format.hex(8.,&start_addr_offset)+"]"
+print "    Total Size           [0x"+format.hex(8.,&total_size)+"]"
+print ""
+
+// Save the manifest
+&time=DATE.TIME()
+&d=DATE.DAY()
+&m=DATE.MONTH()
+&y=DATE.YEAR()
+&d=STRing.Replace("&d",".","",0)
+&m=STRing.Replace("&m",".","",0)
+&y=STRing.Replace("&y",".","",0)
+&time=STRing.Replace("&time",":","_",0)
+&file_name = "d0_ap_ns_dcp_client_get_manifest_"+"&d"+"_"+"&m"+"_"+"&y"+"_"+"&time"+".bin"
+
+&manifest_start_addr= &buffer_start_addr+&start_addr_offset
+&manifest_end_addr= (&manifest_start_addr+&total_size)
+
+//
+// This is inclusive, so subtract one from the end address
+//
+Data.SAVE.Binary &file_name EOAXI:&manifest_start_addr--(&manifest_end_addr-1)
+
+Data.Dump EOAXI:&manifest_start_addr
+
+print ""
+print "Saved manifest to "+"&file_name"
+print ""
+
+ENDDO &file_name

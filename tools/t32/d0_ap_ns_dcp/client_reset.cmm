@@ -1,0 +1,64 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+// 
+// @brief: Send the CLIENT_RESET message to the MCP and prints
+//         the response payload. The full ICC Response Payload is saved to a file.
+//
+// @param[in]: Optional - client_id: Client to send the message to. Defaults to 0.
+//
+// @return: 0 on success, -1 on failure.
+//
+
+ENTRY &client_id
+
+print  "----------------------------------------------------------------------------------------------------"
+
+&success_status= 0
+
+// Message ID for CLIENT_RESET
+&message_id= 0x000A
+
+if ("&client_id"=="")
+(
+    &client_id=0
+)
+
+print  ""
+print  "Sending CLIENT_RESET."
+print  ""
+
+// This will send the message AND wait for the response, saving the response to a file
+&reset_timeout_ms= 5000.
+DO ./send_dcp_message.cmm &message_id &client_id &reset_timeout_ms
+ENTRY &status
+
+if (&status!=0)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Failed to send the CLIENT_RESET message!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// The response message does not contain a payload
+//
+
+DO ./get_dcp_message.cmm
+ENTRY &dcp_payload_addr
+
+if (&dcp_payload_addr==-1)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "DCP Response indicates an error!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+ENDDO &success_status

@@ -1,0 +1,122 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+// 
+// @brief: Send the CLIENT_READ_DATA_COMPLETE message to the MCP and print
+//         the response payload. The full ICC Response Payload is saved to a file.
+//
+// @param[in]: Optional - client_id: Client to send the message to. Defaults to 0.
+// @param[in]: Required - read_addr_offset: Offset of the read data in the buffer.
+// @param[in]: Required - read_data_size: Size of the read data in the buffer.
+// 
+//
+// @return: 0 on success, -1 on failure.
+//
+
+ENTRY &client_id &read_addr_offset &read_data_size
+
+print  "----------------------------------------------------------------------------------------------------"
+
+&success_status= 0
+
+// Message ID for CLIENT_READ_DATA_COMPLETE
+&message_id= 0x0008
+
+if ("&client_id"=="")
+(
+    &client_id=0
+)
+
+if ("&read_addr_offset"=="")
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Missing required parameter: read_addr_offset"
+    print  %COLOR.RED "Usage: 'cd.do client_read_data_complete.cmm [client_id] <read_addr_offset> <read_data_size>'"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+if ("&read_data_size"=="")
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Missing required parameter: read_data_size"
+    print  %COLOR.RED "Usage: 'cd.do client_read_data_complete.cmm [client_id] <read_addr_offset> <read_data_size>'"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// See the message in the specification for payload formatting: 
+//  https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Firmware/Telemetry/Data_Collection_Protocol/Data_Collection_Protocol_Specification_v1_0_4.docx?d=w3985a77534024f39b41ce6a7e2eca7e9&csf=1&web=1&e=TYg06V
+//
+
+// Break the read_addr_offset and read_data_size into bytes to meet the message payload requirements
+
+// Reserved bytes
+&message_payload= "0x00 0x00 0x00 0x00"
+
+// Format the read_addr_offset and read_data_size into 8 bytes each
+&read_addr_offset= format.hex(16., &read_addr_offset)
+&read_data_size= format.hex(16., &read_data_size)
+
+// Loop through each field and add each byte to the payload
+&index= 0
+while (&index<8)
+(
+    &byte= (&read_addr_offset>>(&index*8))&0xFF
+    &message_payload= "&message_payload "+"&byte"
+    &index= &index+1
+)
+
+&index= 0
+while (&index<8)
+(
+    &byte= (&read_data_size>>(&index*8))&0xFF
+    &message_payload= "&message_payload "+"&byte"
+    &index= &index+1
+)
+
+// Reserved bytes
+&message_payload= "&message_payload 0x00 0x00 0x00 0x00"
+
+print  ""
+print  "Sending CLIENT_READ_DATA_COMPLETE."
+print  ""
+
+// This will send the message AND wait for the response, saving the response to a file
+&timeout_ms= 3000.
+DO ./send_dcp_message.cmm &message_id &client_id &timeout_ms &message_payload
+ENTRY &status
+
+if (&status!=0)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Failed to send the CLIENT_READ_DATA_COMPLETE message!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// The CLIENT_READ_DATA_COMPLETE message does not send any additional payload.
+//
+
+DO ./get_dcp_message.cmm
+ENTRY &dcp_payload_addr
+
+if (&dcp_payload_addr==-1)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "DCP Response indicates an error!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+ENDDO &success_status

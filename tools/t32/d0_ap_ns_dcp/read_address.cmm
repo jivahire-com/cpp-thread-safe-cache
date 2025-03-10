@@ -1,0 +1,74 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+// 
+// @brief: Return the value at the given address, built byte by byte, to support
+//         reading unaligned reads.
+//
+// @param[in]: Required - address: Address to start reading from.
+// @param[in]: Required - size: Number of bytes to read. Maximum is 8 bytes.
+//
+// @return: value on success, -1 on failure.
+//
+
+ENTRY &address &size
+
+&debug= 0
+
+if (&debug==1)
+(
+    print ""
+    print "Reading address "+"&address"+" for "+"&size"+" bytes."
+    print ""
+)
+
+if ("&address"=="")
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Address is required!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+if ("&size"=="")
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Size is required!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+if (&size>8)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Maximum size is 8 bytes!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+&value= 0
+&byte_num= 0
+
+while (&byte_num<&size)
+(
+	&byte_address= &address+&byte_num
+	&byte_value= data.byte(EOAXI:&byte_address)
+	&value= &value|(&byte_value<<(8*&byte_num))
+	&byte_num= &byte_num+1
+)
+
+if (&debug==1)
+(
+    print ""
+    print "Value: [0x"+format.hex(&size.,&value)+"]"
+    print ""
+)
+
+ENDDO &value

@@ -1,0 +1,133 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+// 
+// @brief: Send the CLIENT_EVENTS_ENABLE_DISABLE message to the MCP and prints
+//         the response payload. The full ICC Response Payload is saved to a file.
+//
+// @param[in]: Optional - client_id: Client to send the message to. Defaults to 0.
+// @param[in]: Required - list_of_events: A list of provider events to enable or disable.
+//                                        A provider id AND event id AND enable/disable flag MUST be provided per event. If not provided for every event, the message will not be sent.
+//                                        The maximum number of events that can be enabled or disabled is 64.
+//                                        ex: [0x<provider_id_0> 0x<event_id_0> 0x<enable_0/disable_0> ... 0x<provider_id_n-1> 0x<event_id_n-1> 0x<enable_n-1/disable_n-1>]
+//
+// @return: 0 on success, -1 on failure.
+//
+
+print  "----------------------------------------------------------------------------------------------------"
+
+ENTRY &client_id %LINE &list_of_events
+
+&success_status= 0
+
+// Message ID for CLIENT_EVENTS_ENABLE_DISABLE
+&message_id= 0x0003
+
+if ("&client_id"=="")
+(
+    &client_id=0
+)
+
+if ("&list_of_events"=="")
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "List of events must be provided!!!"
+    print  %COLOR.RED "Usage: 'cd.do client_events_enable_disable.cmm [client_id] <list_of_events>'"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// See the message in the specification for payload formatting: 
+//  https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Firmware/Telemetry/Data_Collection_Protocol/Data_Collection_Protocol_Specification_v1_0_4.docx?d=w3985a77534024f39b41ce6a7e2eca7e9&csf=1&web=1&e=TYg06V
+//
+
+// Validate and build the payload
+&count=STRing.COUNT("&list_of_events"," ")+1
+&remainder= &count%3
+if (&remainder!=0)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "List of events not a factor of 3. List not formatted properly!!!"
+    print  %COLOR.RED "ex: [0x<provider_id_0> 0x<event_id_0> 0x<enable_0/disable_0> ... 0x<provider_id_n-1> 0x<event_id_n-1> 0x<enable_n-1/disable_n-1>]"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+&number_of_events=&count/3
+if (&number_of_events>64)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "List of events exceeds maximum size of 64 events!!!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// Build the message payload from the list of events.
+// We could validate each enable/disable flag here, but we'll let the firmware do that.
+//
+&number_of_events= format.hex(4.,&number_of_events)
+&number_of_events_byte_0= &number_of_events&0xFF
+&number_of_events_byte_1= (&number_of_events>>8)&0xFF
+&message_payload= "&number_of_events_byte_0 "+"&number_of_events_byte_1"
+
+// Each provider id, event id, and enable status are two bytes each. Break that up into bytes
+&index= 0
+while (&index<&count)
+(
+	&two_byte_value= string.split("&list_of_events"," ",&index)
+	&two_byte_value= format.hex(4.,&two_byte_value)
+	
+	&byte_0= &two_byte_value&0xFF
+	&byte_1= ((&two_byte_value)>>8)&0xFF
+	
+	&message_payload= "&message_payload "+"&byte_0 "+"&byte_1"
+	
+	&index= &index+1
+)
+
+print  ""
+print  "Sending DCP CLIENT_EVENTS_ENABLE_DISABLE."
+print  ""
+
+// This will send the message AND wait for the response, saving the response to a file
+&timeout_ms= 3000.
+DO ./send_dcp_message.cmm &message_id &client_id &timeout_ms &message_payload
+ENTRY &status
+
+if (&status!=0)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "Failed to send the CLIENT_EVENTS_ENABLE_DISABLE message!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+//
+// The CLIENT_EVENTS_ENABLE_DISABLE message only sends the DCP Header back in response. No
+// need to parse the payload.
+//
+
+DO ./get_dcp_message.cmm
+ENTRY &dcp_payload_addr
+
+if (&dcp_payload_addr==-1)
+(
+    print  ""
+    print  %COLOR.RED "ERROR"
+    print  %COLOR.RED "DCP Response indicates an error!"
+    print  %COLOR.RED "ERROR"
+    print  ""
+    ENDDO -1
+)
+
+ENDDO &success_status

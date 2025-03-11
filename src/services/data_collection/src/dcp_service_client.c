@@ -125,6 +125,7 @@ void dcp_svc_client_handle_dcp_msg(p_trp_msg_t trp_msg)
             trp_msg->payload.dcp_msg.payload.get_manifest.physical_start_addr = manifest_info.physical_start_addr;
             trp_msg->payload.dcp_msg.payload.get_manifest.start_addr_offset = manifest_info.start_addr_offset;
             trp_msg->payload.dcp_msg.payload.get_manifest.total_size = manifest_info.total_size;
+            trp_msg->payload.dcp_msg.hdr.payload_size = sizeof(dcp_msg_get_manifest_t);
             trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
         }
         else

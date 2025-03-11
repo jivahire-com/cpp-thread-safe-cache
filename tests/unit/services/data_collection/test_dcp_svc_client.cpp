@@ -227,6 +227,7 @@ TEST_FUNCTION(test_dcp_svc_client_handle_get_manifest_msg, test_setup, nullptr)
 
     dcp_svc_client_handle_incoming_msgs();
     assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.payload_size, sizeof(dcp_msg_get_manifest_t));
 
     set_header->sentinel = 0x24;
 

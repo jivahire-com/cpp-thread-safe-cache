@@ -560,17 +560,20 @@ Invoke-Buildsize
 #>
 Function Invoke-Buildsize()
 {
+    # Check to see if the build is ARM build
+    if ($env:REPO_APP_TOOLCHAIN -ne "arm-eabi-aarch")
+    {
+        return
+    }
+
     # Set up the path to search for elf files
     $BuildDirectory = Join-Path -Path $(Get-ChildItem -Path "Env:REPO_APP_TARGET_BUILD_DIR").Value -ChildPath 'bin'
 
     # Use Get-ChildItem to find all files with .elf extension in the directory
     $elfFiles = Get-ChildItem -Path $BuildDirectory -Recurse -Filter *fw.elf
 
-    # Iterate over each .elf file
-    foreach ($file in $elfFiles) {
-        # Process each .elf file for sizes
-        & "$env:REPO_APP_TOOLS_DIR\pwsh\binsize\binsizes.ps1" -FileName $file
-    }
+    # Display image sizes and post to PR
+    & "${env:REPO_APP_PATH_Python.win64}\tools\python.exe" "$env:REPO_APP_TOOLS_DIR\python_scripts\display_image_sizes.py"
 }
 
 <#

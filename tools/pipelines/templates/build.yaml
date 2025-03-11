@@ -32,6 +32,8 @@ jobs:
       displayName: Build
       env:
         AZURE_DEVOPS_EXT_PAT : $(System.AccessToken)
+        ADO_UTIL_TOKEN: $(System.AccessToken)
+        ADO_UTIL_ORG: $(System.CollectionUri)
       inputs:
         workingDirectory: '$(Build.SourcesDirectory)'
         targetType: 'inline'

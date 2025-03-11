@@ -54,7 +54,7 @@ jobs:
       inputs:
           buildType: 'specific'
           project: '2610da6a-0168-48f8-b34a-f1c882cb6660'  # Woodinville
-          definition: '5440'  # kingsgate.mscp.ci
+          definition: '8678'  # Kingsgate.MSCP-Official
           buildVersionToDownload: 'specific'
           buildId: ${{ parameters.build_id}}
           artifactName: 'drop_Build_Arm_EABI_AARCH_Debug_Build'

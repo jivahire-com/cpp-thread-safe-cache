@@ -9,7 +9,7 @@ trigger: none
 resources:
   pipelines:
   - pipeline: CIPipeline
-    source: kingsgate.mscp.ci
+    source: Kingsgate.MSCP-Official
     branch: main  
 
 variables:

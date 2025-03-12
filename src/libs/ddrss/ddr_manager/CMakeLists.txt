@@ -65,8 +65,9 @@ set(HEADER_FILE_PATH "${REPO_ROOT_DIR}/.externs/repo/silibs/soc_fw_shared/includ
 # Read the contents of the .h file
 file(READ ${HEADER_FILE_PATH} HEADER_CONTENTS)
 
-# Apply the regex to extract the last instance of *_RESERVATION_END 0xHEXNUMBER
-string(REGEX MATCHALL "(_RESERVATION_END 0x[0-9A-Fa-f]+)" MATCHES ${HEADER_CONTENTS})
+# Apply the regex to extract the last instance of *_RESERVATION_END  0xHEXNUMBER
+# Accept white spaces and parentheses
+string(REGEX MATCHALL "(_RESERVATION_END[ ]* [(]?0x[0-9A-Fa-f]+[)]?)" MATCHES ${HEADER_CONTENTS})
 
 # Get the last match from the list of matches
 list(GET MATCHES -1 LAST_RESERVATION_END)

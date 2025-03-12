@@ -11,6 +11,7 @@
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
 #include <data_collection_service.h>
+#include <dcs_cli_service.h>
 #include <fpfw_init.h>
 #include <icc_mhu.h>
 #include <idhw.h> // for idhw_is_single_die_boot_en
@@ -156,6 +157,8 @@ FPFW_INIT_COMPONENT(dcs_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_ms
     s_config.trp_icc_config.number_of_endpoints = number_of_endpoints;
 
     dcs_init(&s_config);
+
+    dcs_cli_svc_initialize();
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

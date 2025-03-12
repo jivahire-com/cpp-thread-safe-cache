@@ -52,6 +52,11 @@ void __wrap_dcs_init(p_dcs_config_t config)
     assert_non_null(config);
 }
 
+void __wrap_dcs_cli_svc_initialize(void)
+{
+    function_called();
+}
+
 idsw_die_id_t __wrap_idsw_get_die_id(void)
 {
     return mock_type(idsw_die_id_t);
@@ -79,6 +84,7 @@ TEST_FUNCTION(test_dcs_init, nullptr, nullptr)
     will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
     will_return(__wrap_idhw_is_single_die_boot_en, true);
     expect_function_call(__wrap_dcs_init);
+    expect_function_call(__wrap_dcs_cli_svc_initialize);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_dcs_svc.init_fn();
@@ -97,6 +103,7 @@ TEST_FUNCTION(test_dcs_init_die1_scp, nullptr, nullptr)
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
     will_return(__wrap_idhw_is_single_die_boot_en, true);
     expect_function_call(__wrap_dcs_init);
+    expect_function_call(__wrap_dcs_cli_svc_initialize);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_dcs_svc.init_fn();
@@ -115,6 +122,7 @@ TEST_FUNCTION(test_dcs_init_die0_scp, nullptr, nullptr)
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     expect_function_call(__wrap_dcs_init);
+    expect_function_call(__wrap_dcs_cli_svc_initialize);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_dcs_svc.init_fn();

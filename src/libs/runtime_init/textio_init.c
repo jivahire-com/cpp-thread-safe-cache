@@ -29,9 +29,9 @@
 /*------------- Functions ----------------*/
 static void print_build_info()
 {
-    
 
-    for (int i = 0; i < 64; i++) {
+    for (int i = 0; i < 64; i++)
+    {
         CRITICAL_PRINT("-");
     }
     CRITICAL_PRINT("\n");
@@ -53,7 +53,8 @@ static void print_build_info()
     CRITICAL_PRINT("SDM tag " SDM_DESCRIBE "\n");
     CRITICAL_PRINT("SDM Commit " SDM_LAST_COMMIT_DESCRIBE "\n");
 
-    for (int i = 0; i < 64; i++) {
+    for (int i = 0; i < 64; i++)
+    {
         CRITICAL_PRINT("-");
     }
     CRITICAL_PRINT("\n");

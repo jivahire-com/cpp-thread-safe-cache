@@ -10,6 +10,7 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#define FPFW_ET_NO_ALIGNMENT_CHECKS
 
 #include <event_trace_providers.h>
 #include <event_trace.h>
@@ -30,49 +31,49 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      10,
                      PwrPkgMemoryAllocationFailed,
                      FPFW_ET_LEVEL_WARNING,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      11,
                      InstPkgMemoryAllocationFailed,
                      FPFW_ET_LEVEL_WARNING,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      12,
                      PwrPkgGenerationFailed,
                      FPFW_ET_LEVEL_WARNING,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      13,
                      InstPkgGenerationFailed,
                      FPFW_ET_LEVEL_WARNING,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      14,
                      DeAllocateInvalidLocation,
                      FPFW_ET_LEVEL_ERROR,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, location))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, location))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      15,
                      DeAllocateQueueFreeFailed,
                      FPFW_ET_LEVEL_ERROR,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      16,
                      PkgCreatePwrPkgNotEnoughSpace,
                      FPFW_ET_LEVEL_ERROR,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, pkg_available_size))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, pkg_available_size))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      17,
                      PkgCreateInstPkgNotEnoughSpace,
                      FPFW_ET_LEVEL_ERROR,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, pkg_available_size))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, pkg_available_size))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      18,
@@ -93,15 +94,15 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      21,
                      DcsMgrClientFreeFail,
                      FPFW_ET_LEVEL_WARNING,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, block_addr),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, tx_status))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, block_addr),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, tx_status))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      22,
                      DcsMgrClientQueueFail,
                      FPFW_ET_LEVEL_WARNING,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, queue),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, tx_status))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, queue),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, tx_status))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      23,
@@ -120,13 +121,13 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      25,
                      DTSCoefficientReadFailedInit,
                      FPFW_ET_LEVEL_ERROR,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      26,
                      DIMMInfoInvalidDimmId,
                      FPFW_ET_LEVEL_ERROR,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      27,
@@ -139,7 +140,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      DataPackageInstRecordError,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, element_id))
-                    
+
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      29,
                      DcsMgrPkgFreeListEmpty,
@@ -171,7 +172,9 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, dest_cpu_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, dcp_client_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, trp_msg_id),
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_seq_num))
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_INT16, trp_msg_status),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, init_cmd),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, source_seq_num))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     33,
@@ -183,15 +186,17 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, dest_cpu_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, dcp_client_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, trp_msg_id),
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_seq_num))
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_INT16, trp_msg_status),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, init_cmd),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, source_seq_num))
 
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     34,
                     DcsMgrNoMatchPkgComplete,
                     FPFW_ET_LEVEL_ERROR,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, atu_mapped_location),
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, ddr_addr_offset))
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, atu_mapped_location),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, ddr_addr_offset))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     35,
@@ -213,33 +218,33 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     38,
                     DdrMgrDbgAllocatePwrPkgMem,
                     FPFW_ET_LEVEL_DEBUG,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, mem_location))
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, mem_location))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     39,
                     DdrMgrDbgAllocateInstPkgMem,
                     FPFW_ET_LEVEL_DEBUG,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, mem_location))
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, mem_location))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     40,
                     DdrMgrDbgFreePkgMem,
                     FPFW_ET_LEVEL_DEBUG,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, mem_location))
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, mem_location))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     41,
-                    DcsMgrDbgAllocatePkg,
+                    DcsMgrAddPkgToActiveList,
                     FPFW_ET_LEVEL_DEBUG,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, atu_mapped_location),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, atu_mapped_location),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_die_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_cpu_id))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     42,
-                    DcsMgrDbgFreePkg,
+                    DcsMgrRemovePkgFromActive,
                     FPFW_ET_LEVEL_DEBUG,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, atu_mapped_location),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, atu_mapped_location),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_die_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_cpu_id))
 

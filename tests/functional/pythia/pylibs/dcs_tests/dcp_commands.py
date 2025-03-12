@@ -4,9 +4,12 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple
 from enum import IntEnum
 import logging
+import ctypes
+
 
 import sys, os
 from pathlib import Path
+from trp_lib import trp_endpoint
 
 # Add paths for both package and direct imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -16,83 +19,31 @@ sys.path.extend([
     current_dir,
 ])
 
+from dcp_protocol import data_collection_protocol
+from trp_protocol import transfer_relay_protocol
+
 logger = logging.getLogger(__name__)
 
-@dataclass
-class DcpResponse:
-    """Response from a DCP message"""
-    status: int
-    payload: Optional[List[int]] = None
-    error: Optional[str] = None
 
-class DataCollectionProtocol:
-    """Constants defining the Data Collection Protocol Specification"""
+class dcp_msg_hdr_t(ctypes.LittleEndianStructure):
+    _pack_ = 1  # Force no padding
+    _fields_ = [
+        ("client_id", ctypes.c_uint16),
+        ("msg_id", ctypes.c_uint16),
+        ("seq_num", ctypes.c_uint16),
+        ("msg_status", ctypes.c_int16),
+        ("payload_size", ctypes.c_uint16)
+    ]
+    def __init__(self):
+        self.client_id = 0
+        self.msg_id = 0
+        self.seq_num = 0
+        self.msg_status = 0
+        self.payload_size = 0
+
+
+class dcp_commands:
     _sequence_number = 0   # Being defined here to use it for auto increment.
-
-    class MessageId(IntEnum):
-        """Message IDs as defined in protocol spec"""
-        CLIENT_GET_CAPABILITIES = 0x0000
-        CLIENT_GET_STATE = 0x0001
-        CLIENT_GET_MANIFEST = 0x0002
-        CLIENT_EVENTS_ENABLE_DISABLE = 0x0003
-        CLIENT_START_STOP = 0x0005
-        CLIENT_READ_DATA = 0x0007
-        CLIENT_READ_DATA_COMPLETE = 0x0008
-        CLIENT_RESET = 0x000A
-        CLIENT_NOTIFICATION = 0x000B
-        CLIENT_GET_PLATFORM_INFORMATION = 0x000C
-
-    class Status(IntEnum):
-        """Status codes as defined in protocol spec"""
-        DATA_COLLECTION_SUCCESS = 0x0000
-        DATA_COLLECTION_RD_DATA_NONE = 0x0001
-        DATA_COLLECTION_RD_DATA_VALID_LAST = 0x0002
-        DATA_COLLECTION_RD_DATA_VALID_MORE = 0x0003
-        DATA_COLLECTION_E_SIZE = 0xFFFF
-        DATA_COLLECTION_E_PARAM = 0xFFFE
-        DATA_COLLECTION_E_BUSY = 0xFFFD
-        DATA_COLLECTION_E_UNK_MSG = 0xFFFC
-        DATA_COLLECTION_E_UNK_CLIENT = 0xFFFB
-        DATA_COLLECTION_E_INCOMPLETE_HANDLER = 0xFFFA
-        DATA_COLLECTION_E_DEPRECATED_MSG = 0xFFF9
-        DATA_COLLECTION_E_BUFFER_DISCARDED = 0xFFF8
-        DATA_COLLECTION_E_UNSUPPORTED_MSG = 0xFFF7
-
-    class ClientEventsEnableDisable:
-        """CLIENT_EVENTS_ENABLE_DISABLE protocol constants"""
-        MAX_EVENTS = 64
-
-        class PayloadFormat:
-            """Payload format as per protocol spec"""
-            NUM_EVENTS_SIZE = 2
-            PROVIDER_ID_SIZE = 2
-            EVENT_ID_SIZE = 2
-            EVENT_STATE_SIZE = 2
-            EVENT_ENTRY_SIZE = PROVIDER_ID_SIZE + EVENT_ID_SIZE + EVENT_STATE_SIZE
-
-        class EventState(IntEnum):
-            """Event states as defined in protocol spec"""
-            EVENT_DISABLED = 0x0000
-            EVENT_ENABLED = 0x0001
-
-    class ClientStartStop:
-        """CLIENT_START_STOP protocol constants"""
-        class State(IntEnum):
-            """States as defined in protocol spec"""
-            STOP = 0x0000_0000
-            START = 0x0000_0001
-
-    @staticmethod
-    def to_hex_string(msg: List[int]) -> str:
-        """Convert message bytes to hex string format
-
-        Args:
-            msg: List of bytes to convert
-
-        Returns:
-            str: Space-separated hex string (e.g., "0x00 0x01 0x02")
-        """
-        return " ".join(f"0x{b:02x}" for b in msg)
 
     @classmethod
     def _get_next_sequence_number(cls) -> int:
@@ -102,7 +53,7 @@ class DataCollectionProtocol:
         return [current & 0xFF, (current >> 8) & 0xFF]
 
     @staticmethod
-    def create_header(msg_id: int, payload_size: int, client_id: int = 0) -> List[int]:
+    def create_header(msg_id: int, payload_size: int, client_id: data_collection_protocol.dcp_client_id_t) -> List[int]:
         """Create DCP message header
 
         Args:
@@ -110,84 +61,248 @@ class DataCollectionProtocol:
             payload_size: Size of payload in bytes
             client_id: Client identifier (default: 0)
         """
+
         header = []
-        header.extend([client_id & 0xFF, (client_id >> 8) & 0xFF])  # client_id in little-endian
+        header.extend([client_id.value & 0xFF, (client_id.value >> 8) & 0xFF])  # client_id in little-endian
         header.extend([msg_id & 0xFF, (msg_id >> 8) & 0xFF])  # msg_id
         # Increment sequence number
-        header.extend(DataCollectionProtocol._get_next_sequence_number()) #seq number with increment
+        header.extend(dcp_commands._get_next_sequence_number()) #seq number with increment
         header.extend([0x00, 0x00])  # msg_status
         header.extend([payload_size & 0xFF, (payload_size >> 8) & 0xFF])  # payload_size
         return header
 
     # Using * in the method definition to enforce named parameters
     @staticmethod
-    def client_start_stop(*, client_id: int, state: ClientStartStop.State) -> str:
-        """Create client start/stop command
-
+    def client_enable_disable_events(*,src_endpoint: trp_endpoint, dest_die: int, dest_cpu: transfer_relay_protocol.cpu_type, client_id: data_collection_protocol.dcp_client_id_t, events: list[tuple[int, int, int]]) -> None:
+        """Create client enable disable events command
+        NOTE: The number of events that can be sent will be limited by the CPU CLI command line max size
         Args:
+            src_endpoint: endpoint that message is sent from
+            dest_die: Destination die
+            dest_cpu: Destination CPU
             client_id: Client identifier
-            state: Start/Stop state to set
-
+            events: List of events to enable/disable
         Returns:
-            str: Hex formatted command string
-
-        Examples:
-            For START command (0x00000001):
-            msg = [
-                # Header (10 bytes):
-                0x00, 0x00,             # client_id (2 bytes)
-                0x05, 0x00,             # msg_id (2 bytes, 0x0005 in little-endian)
-                0x00, 0x00,             # seq_num (2 bytes)
-                0x00, 0x00,             # msg_status (2 bytes)
-                0x04, 0x00,             # payload_size (2 bytes, 4 in little-endian)
-
-                # Payload (4 bytes):
-                0x01, 0x00, 0x00, 0x00  # START state (0x00000001 in little-endian)
-            ]
+            None
         """
+        number_of_events = len([item for item in events if isinstance(item, tuple)])
+
+
         # Create payload based on state
-        if state == DataCollectionProtocol.ClientStartStop.State.START:
-            payload = [0x01, 0x00, 0x00, 0x00]  # START = 0x00000001 in little-endian
-        else:
-            payload = [0x00, 0x00, 0x00, 0x00]  # STOP = 0x00000000 in little-endian
+        dcp_msg_events = data_collection_protocol.client_events_enable_disable_msg.dcp_msg_events_enable_disable_t(number_of_events=number_of_events, events=events)
+
+        # Convert the structure to bytes
+        payload = bytearray(dcp_msg_events)
+
+        payload_used_size = ctypes.sizeof(ctypes.c_uint16) + (number_of_events * ctypes.sizeof(data_collection_protocol.client_events_enable_disable_msg.event))
 
         # Create complete message with client_id
-        msg = DataCollectionProtocol.create_header(
-            DataCollectionProtocol.MessageId.CLIENT_START_STOP,
+        dcp_msg_bytes = dcp_commands.create_header(
+            data_collection_protocol.dcp_msg_id_t.DCP_MSG_ID_EVENTS_ENABLE_DISABLE,
+            payload_used_size,
+            client_id
+        )
+        dcp_msg_bytes.extend(payload[:payload_used_size])
+
+        # Log raw message for debugging
+        logger.debug(f"Sending client_enable_disable_events message")
+
+        byte_response = src_endpoint.send_dcp_message(dest_die=dest_die, dest_cpu=dest_cpu, client_id=client_id, dcp_msg=dcp_msg_bytes)
+        response_dcp_msg_hdr = dcp_msg_hdr_t.from_buffer_copy(byte_response)
+
+        if not dcp_commands.validate_response(data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status), logger):
+            raise ValueError(f"Message Error: {data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status).name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
+
+    # Using * in the method definition to enforce named parameters
+    @staticmethod
+    def client_start_stop(*,src_endpoint: trp_endpoint, dest_die: int, dest_cpu: transfer_relay_protocol.cpu_type, client_id: data_collection_protocol.dcp_client_id_t, state: data_collection_protocol.client_start_stop_msg.dcp_start_stop_state_t) -> None:
+        """Create client start/stop command
+        Args:
+            src_endpoint: endpoint that message is sent from
+            dest_die: Destination die
+            dest_cpu: Destination CPU
+            client_id: Client identifier
+            state: Start/Stop state to set
+        Returns:
+            None
+        """
+        # Create payload based on state
+        dcp_msg_start_stop = data_collection_protocol.client_start_stop_msg.dcp_msg_start_stop_t(state=state.value)
+
+        # Convert the structure to bytes
+        payload = bytearray(dcp_msg_start_stop)
+
+        # Create complete header with client_id
+        dcp_msg_bytes = dcp_commands.create_header(
+            data_collection_protocol.dcp_msg_id_t.DCP_MSG_ID_START_STOP,
+            ctypes.sizeof(data_collection_protocol.client_start_stop_msg.dcp_msg_start_stop_t),
+            client_id
+        )
+        dcp_msg_bytes.extend(payload)
+
+        # Log raw message for debugging
+        logger.debug(f"sending client_start_stop message {state.name}")
+
+        byte_response = src_endpoint.send_dcp_message(dest_die=dest_die, dest_cpu=dest_cpu, client_id=client_id, dcp_msg=dcp_msg_bytes)
+        response_dcp_msg_hdr = dcp_msg_hdr_t.from_buffer_copy(byte_response)
+
+        if not dcp_commands.validate_response(data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status), logger):
+            raise ValueError(f"Message Error: {data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status).name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
+
+    @staticmethod
+    def client_get_state(*,src_endpoint: trp_endpoint, dest_die: int, dest_cpu: transfer_relay_protocol.cpu_type, client_id: data_collection_protocol.dcp_client_id_t) -> str:
+        """Get running state of client
+        Args:
+            src_endpoint: endpoint that message is sent from
+            dest_die: Destination die
+            dest_cpu: Destination CPU
+            client_id: Client identifier
+        Returns:
+            dcp_client_state_t: state
+        """
+        # Create complete message with client_id
+        dcp_msg_bytes = dcp_commands.create_header(
+            data_collection_protocol.dcp_msg_id_t.DCP_MSG_ID_GET_STATE,
+            0,
+            client_id
+        )
+
+        # Log raw message for debugging
+        logger.debug(f"Sending client_get_state message")
+
+        byte_response = src_endpoint.send_dcp_message(dest_die=dest_die, dest_cpu=dest_cpu, client_id=client_id, dcp_msg=dcp_msg_bytes)
+        response_dcp_msg_hdr = dcp_msg_hdr_t.from_buffer_copy(byte_response)
+
+        if not dcp_commands.validate_response(data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status), logger):
+            raise ValueError(f"Message Error: {data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status).name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
+
+        client_payload = data_collection_protocol.client_get_state_msg.dcp_msg_get_client_state_t.from_buffer_copy(byte_response[ctypes.sizeof(dcp_msg_hdr_t):])
+
+        state = data_collection_protocol.client_get_state_msg.dcp_client_state_t(client_payload.state)
+        logger.debug(f"Client state = : {state.name}")
+        return state
+
+    @staticmethod
+    def client_read_data(*,src_endpoint: trp_endpoint, dest_die: int, dest_cpu: transfer_relay_protocol.cpu_type, client_id: data_collection_protocol.dcp_client_id_t) -> str:
+        """Read data from client
+        Args:
+            src_endpoint: endpoint that message is sent from
+            dest_die: Destination die
+            dest_cpu: Destination CPU
+            client_id: Client identifier
+        Returns:
+            dcp_client_state_t: state
+        """
+        # Create complete message with client_id
+        dcp_msg_bytes = dcp_commands.create_header(
+            data_collection_protocol.dcp_msg_id_t.DCP_MSG_ID_READ_DATA,
+            0,
+            client_id
+        )
+
+        # Log raw message for debugging
+        logger.debug(f"Sending client_read_data message")
+
+        byte_response = src_endpoint.send_dcp_message(dest_die=dest_die, dest_cpu=dest_cpu, client_id=client_id, dcp_msg=dcp_msg_bytes)
+        response_dcp_msg_hdr = dcp_msg_hdr_t.from_buffer_copy(byte_response)
+
+        msg_status = data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status)
+
+        if not dcp_commands.validate_response(data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status), logger):
+            if msg_status != data_collection_protocol.dcp_status_t.DATA_COLLECTION_E_BUSY:
+                raise ValueError(f"Message Error: {data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status).name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
+            else:
+                return msg_status, None
+
+        read_data_rsp = None
+
+        if(msg_status == data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_VALID_MORE or msg_status == data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_VALID_LAST):
+            read_data_rsp = data_collection_protocol.client_read_data_msg.dcp_msg_read_data_t.from_buffer_copy(byte_response[ctypes.sizeof(dcp_msg_hdr_t):])
+
+        return msg_status, read_data_rsp
+
+    @staticmethod
+    def client_send_read_data_complete(*,src_endpoint: trp_endpoint, dest_die: int, dest_cpu: transfer_relay_protocol.cpu_type, client_id: data_collection_protocol.dcp_client_id_t, rd_data_addr_offset: ctypes.c_uint64 , rd_data_size: ctypes.c_uint64) -> str:
+        """Read data from client
+        Args:
+            src_endpoint: endpoint that message is sent from
+            dest_die: Destination die
+            dest_cpu: Destination CPU
+            client_id: Client identifier
+        Returns:
+            msg_status
+        """
+         # Create payload based on state
+        dcp_msg_read_complete = data_collection_protocol.client_read_data_complete_msg.dcp_msg_read_data_complete_t(rd_data_addr_offset = rd_data_addr_offset, rd_data_size = rd_data_size)
+
+        # Convert the structure to bytes
+        payload = bytearray(dcp_msg_read_complete)
+
+        # Create complete message with client_id
+        dcp_msg_bytes = dcp_commands.create_header(
+            data_collection_protocol.dcp_msg_id_t.DCP_MSG_ID_READ_DATA_COMPLETE,
             len(payload),
             client_id
         )
-        msg.extend(payload)
+
+        dcp_msg_bytes.extend(payload)
 
         # Log raw message for debugging
-        logger.debug(f"Raw message bytes: {msg}")
+        logger.debug(f"Sending client_send_read_data_complete message")
 
-        return DataCollectionProtocol.to_hex_string(msg)
+        byte_response = src_endpoint.send_dcp_message(dest_die=dest_die, dest_cpu=dest_cpu, client_id=client_id, dcp_msg=dcp_msg_bytes)
+        response_dcp_msg_hdr = dcp_msg_hdr_t.from_buffer_copy(byte_response)
 
-    # TODO: Add more protocols and uncomment once start stop is reviewed.
-    # @staticmethod
-    # def events_enable_disable(events: List[dict]) -> Tuple[int, List[int], str]:
+        msg_status = data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status)
+
+        if not dcp_commands.validate_response(msg_status, logger):
+            raise ValueError(f"Message Error: {msg_status.name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
+
+
+        return msg_status
+
+    @staticmethod
+    def client_reset(*,src_endpoint: trp_endpoint, dest_die: int, dest_cpu: transfer_relay_protocol.cpu_type, client_id: data_collection_protocol.dcp_client_id_t) -> str:
+        """Read data from client
+        Args:
+            src_endpoint: endpoint that message is sent from
+            dest_die: Destination die
+            dest_cpu: Destination CPU
+            client_id: Client identifier
+        Returns:
+            dcp_client_state_t: state
+        """
+        # Create complete message with client_id
+        dcp_msg_bytes = dcp_commands.create_header(
+            data_collection_protocol.dcp_msg_id_t.DCP_MSG_ID_RESET,
+            0,
+            client_id
+        )
+
+        # Log raw message for debugging
+        logger.debug(f"Sending client_reset message")
+
+        byte_response = src_endpoint.send_dcp_message(dest_die=dest_die, dest_cpu=dest_cpu, client_id=client_id, dcp_msg=dcp_msg_bytes, timeout_sec=30)
+        response_dcp_msg_hdr = dcp_msg_hdr_t.from_buffer_copy(byte_response)
+
+        msg_status = data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status)
+
+        if not dcp_commands.validate_response(data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status), logger):
+            raise ValueError(f"Message Error: {data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status).name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
 
 
     @staticmethod
-    def validate_response(response: DcpResponse, logger: Optional[logging.Logger] = None) -> bool:
+    def validate_response(response: data_collection_protocol.dcp_status_t, logger: Optional[logging.Logger] = None) -> bool:
         """Validate DCP response
-
         Args:
-            response: DcpResponse to validate
+            response: status to validate
             logger: Optional logger for error messages
-
         Returns:
             bool: True if response indicates success, False otherwise
         """
-        if response.error:
+        if response < 0:
             if logger:
-                logger.error(f"Command failed: {response.error}")
-            return False
-
-        if response.status != DataCollectionProtocol.Status.DATA_COLLECTION_SUCCESS:
-            if logger:
-                logger.error(f"Command returned error status: 0x{response.status:x}")
+                logger.error(f"Command returned error status: {response.name} ({response})")
             return False
 
         return True

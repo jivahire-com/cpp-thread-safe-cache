@@ -110,9 +110,8 @@ void dcs_manager_handle_read_complete_msg(p_trp_msg_t trp_msg);
 /**
  * @brief Handle a reset message from the data collection service.
  *
- * @param[in,out] trp_msg - Pointer to the incoming TRP message
  */
-void dcs_manager_handle_reset_msg(p_trp_msg_t trp_msg);
+void dcs_manager_handle_reset_msg(void);
 
 /**
  * @brief Send a TRP package notification to the primary MCP.

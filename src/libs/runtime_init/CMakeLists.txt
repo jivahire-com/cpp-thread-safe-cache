@@ -97,8 +97,8 @@ target_link_libraries(
         ms::driver::vab
         ms::lib::interface::in_band_telemetry_ddr
         ms::lib::accelerator_ip
-        ms::lib::build_info_cli
         ms::lib::boot_status
+        ms::lib::build_info_cli
         ms::lib::cli_accel_int
         ms::lib::config_manager
         ms::lib::config_manager::cli
@@ -125,6 +125,7 @@ target_link_libraries(
         ms::lib::mesh
         ms::lib::mesh::cli
         ms::lib::pex_rng
+        ms::lib::power_fuse
         ms::lib::power::cli
         ms::lib::register_headers
         ms::lib::scmi::cli
@@ -137,13 +138,6 @@ target_link_libraries(
         ms::lib::tower
         ms::lib::variable_services
         ms::lib::variable_services::cli
-        ms::lib::ddr::cli
-        ms::lib::tower
-        ms::lib::build_info_cli
-        ms::lib::pex_rng
-        ms::lib::power_fuse
-        ms::lib::config_manager
-        ms::lib::config_manager::cli
         ms::lib::warm_start
         ms::lib::warm_start::cli
         ms::service::accel_intr_client
@@ -151,10 +145,13 @@ target_link_libraries(
         ms::service::ap_core
         ms::service::atu_service
         ms::service::dcs
+        ms::service::dcs::cli
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
         ms::service::fuse
         ms::service::gpio::cli
+        ms::service::health_monitor
+        ms::service::health_monitor::cli
         ms::service::pcie_manager
         ms::service::pcie_manager::cli
         ms::service::power
@@ -163,8 +160,6 @@ target_link_libraries(
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
         ms::service::sys_info::cli
-        ms::service::health_monitor
-        ms::service::health_monitor::cli
         silibs::avs
         silibs::common::lib_uart_pl011
         silibs::crypto::rng
@@ -315,6 +310,7 @@ target_link_libraries(
         ms::lib::variable_services
         ms::service::atu_service
         ms::service::dcs
+        ms::service::dcs::cli
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
         ms::service::event_trace::relay

@@ -35,6 +35,14 @@
 // threadx allocated 4 bytes per block to manage pool
 #define DCS_BLOCK_POOL_SIZE ((sizeof(uint32_t) + DCS_TRP_MSG_BLOCK_SIZE) * (DCS_MAX_TRP_FORWARDING_MESSAGES))
 
+
+
+#define DIAG_SEQ_NUM_MASK  (0xFF00)
+#define DIAG_SEQ_NUM_CMD   (0xFF00)
+#define DIAG_SEQ_NUM_RESP  (0x7F00)
+#define DIAG_SEQ_NUM_CPU   (0xF)
+#define DIAG_SEQ_NUM_DIE   (0x7)
+
 /*-------------- Typedefs ----------------*/
 
 typedef struct {
@@ -61,6 +69,8 @@ typedef struct {
 
 } dcs_context_t;
 
+// callback for handling TRP messages
+typedef void (*trp_handler_cb)(p_trp_msg_t trp_msg_id_t);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -164,3 +174,12 @@ void dcs_flush_outgoing_queue(void);
  * @return none
  */
 void dcs_unregister_clients(void);
+
+/**
+ * @brief Register diagnostic TRP handler
+ *
+ * @param[in] handler The handler that registers a callback for diagnsotic TRP messages
+ *
+ * @return none
+ */
+void dcs_register_diag_trp_handler(trp_handler_cb handler);

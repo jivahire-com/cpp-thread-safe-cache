@@ -158,7 +158,19 @@
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}/.build/Debug/i386-pc-windows-msvc/bin",
             "console": true
+        },
+        {
+            "name": "Python Debug (Terminal)",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.externs/azpkg/python.win64.3.10.11-dev/tools/python.exe",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         }
+
     ],
     "inputs": [
         {
@@ -263,13 +275,20 @@
                 "key": "savedInitUnitTest",
                 "options": [
                     [
+                        "ARSM Init",
+                        "arsm_init.test.exe"
+                    ],
+                    [
                         "ICC Init",
                         "icc_init.test.exe"
                     ],
                     [
-                        "ARSM Init",
-                        "arsm_init.test.exe"
+                        "DCS Init",
+                        "dcs_init.test.exe"
                     ],
+
+
+
                 ],
             },
         },

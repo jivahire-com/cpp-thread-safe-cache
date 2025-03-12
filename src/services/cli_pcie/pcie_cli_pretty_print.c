@@ -119,7 +119,8 @@ void print_rpss_entity(pcie_ss_entity_t* ss)
     FpFwCliPrint("phy_bcast_base_addr:  0x%lx\n", (uint32_t)(ss->bases.phy_bcast_base_addr));
     FpFwCliPrint("p1_base_addr:         0x%lx\n", (uint32_t)(ss->bases.p1_base_addr));
     FpFwCliPrint("============== RPs ==============================\n");
-    for (int i = 0; i < NUM_RP; i++) {
+    for (int i = 0; i < NUM_RP; i++)
+    {
         FpFwCliPrint("rp[%d].valid:   %s\n", i, (ss->rps[i].valid == true) ? "true" : "false");
         FpFwCliPrint("rp[%d].live:    %s\n", i, (ss->rps[i].live == true) ? "true" : "false");
     }

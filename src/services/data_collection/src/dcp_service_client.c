@@ -130,6 +130,7 @@ void dcp_svc_client_handle_dcp_msg(p_trp_msg_t trp_msg)
         }
         else
         {
+            trp_msg->payload.dcp_msg.hdr.payload_size = 0;
             trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_E_INCOMPLETE_HANDLER;
         }
         break;

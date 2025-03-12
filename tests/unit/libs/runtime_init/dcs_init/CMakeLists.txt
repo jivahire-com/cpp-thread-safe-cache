@@ -13,6 +13,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.lib.utils
         kng.service.dcs
+        ms::service::dcs::cli
         ms::lib::interface::in_band_telemetry_ddr
         ms::cmocka::testrunner
         silibs::icc_mhu
@@ -39,4 +40,5 @@ mock_target(${TARGET}
     idsw_get_die_id
     idhw_is_single_die_boot_en
     dcs_init
+    dcs_cli_svc_initialize
 )

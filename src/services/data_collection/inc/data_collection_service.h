@@ -152,6 +152,8 @@ void dcs_client_send_new_trp_msg(p_trp_msg_t trp_msg);
 /**
  * @brief Forward an existing message to the die and core specified in the trp header. Use for forwarding incoming messages.
  * @note The message will be copied and queued for the DCS thread to handle. The caller may free the message after this function returns.
+ * @note The original sequence number is between the host and the primary. With this forwarding, a new sequence number is generated and
+ * @note init_cmd is set to 1 for proper handling. 
  * @note Thread Safe
  * @note Not ISR Safe
  *

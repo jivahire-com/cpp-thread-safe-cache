@@ -20,9 +20,13 @@
 
 #define ROUND_UP_TO_4_BYTE_ALIGN(x) (((x) + 3) & ~3)
 #define DCS_TRP_MSG_BLOCK_SIZE ROUND_UP_TO_4_BYTE_ALIGN(sizeof(trp_msg_t))
+#define TRP_GEN_MSG_ID(x) (0xD000 | (x))
+
+#define GET_INT_CMD_BIT(x) ((x) >> 15)
+#define GET_BASE_SEQ_NUM(x) ((x) & 0x7FFF)
 
 /*-------------- Typedefs ----------------*/
-#define TRP_GEN_MSG_ID(x) (0xD000 | (x))
+
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -77,9 +81,10 @@ typedef enum {
 typedef union
 {
     struct {
-        uint16_t number     : 10;
+        uint16_t number     : 8;
         uint16_t cpu_id     : 4;
-        uint16_t die_id     : 2;
+        uint16_t die_id     : 3;
+        uint16_t init_cmd   : 1;
     };
     uint16_t as_uint16;
 } trp_seq_number_t, *p_trp_seq_number_t;
@@ -92,7 +97,7 @@ typedef struct {
     char name[ENDPOINT_NAME_MAX_LENGTH]; // name of the endpoint
     uint32_t icc_payload_protocol;  // ICC_COMMAND_DCP_MSG or ICC_COMMAND_TRP_MSG
     trp_seq_number_t seq_number;
-    trp_transport_type_t transport_type; 
+    trp_transport_type_t transport_type;
 
 } trp_icc_endpoint_t, *p_trp_icc_endpoint_t;
 

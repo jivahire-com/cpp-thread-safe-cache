@@ -142,6 +142,26 @@ TEST_FUNCTION(test_dcs_manager_handle_handle_trp, test_setup, test_teardown)
     dcs_manager_handle_trp_msg(&trp_msg);
 }
 
+TEST_FUNCTION(test_dcs_manager_handle_dcp_msg_not_supported, test_setup, test_teardown)
+{
+    trp_msg_t trp_msg = {{0}};
+
+    // not supported on secondary instance
+    will_return(__wrap_dcs_is_primary_instance, false);
+    trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_STATE;
+
+    dcs_manager_handle_dcp_msg(&trp_msg);
+
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_E_UNSUPPORTED_MSG);
+
+    will_return(__wrap_dcs_is_primary_instance, false);
+    trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_READ_DATA;
+
+    dcs_manager_handle_dcp_msg(&trp_msg);
+
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_E_UNSUPPORTED_MSG);
+}
+
 TEST_FUNCTION(test_dcs_manager_handle_dcp_msg_get_state, test_setup, test_teardown)
 {
     trp_msg_t trp_msg = {{0}};
@@ -251,8 +271,10 @@ TEST_FUNCTION(test_in_band_tlm_cmpnt_handle_incoming_dcs_msg_dcp, test_setup, nu
     will_return(__wrap__txe_queue_receive, &p_trp_msg);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
-    will_return(__wrap_dcs_is_primary_instance, false);
+    will_return(__wrap_dcs_is_primary_instance, true);
     will_return(exec_tlm_cmpnt_is_telemetry_enabled, false);
+
+    expect_function_call(__wrap_dcs_client_send_trp_response);
 
     expect_function_calls(__wrap__txe_block_release, 1);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
@@ -577,7 +599,8 @@ TEST_FUNCTION(test_dcs_manager_handle_read_msg, test_setup, nullptr)
     trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_READ_DATA;
     in_flight_tlm_pkg = nullptr;
 
-    will_return(__wrap_dcs_is_primary_instance, false);
+    will_return(__wrap_dcs_is_primary_instance, true);
+    expect_function_call(__wrap_dcs_client_send_trp_response);
 
     dcs_manager_handle_dcp_msg(&trp_msg);
 
@@ -595,7 +618,8 @@ TEST_FUNCTION(test_dcs_manager_handle_read_msg, test_setup, nullptr)
     FpFwListInsertTail(&pkg_active_list, &tlm_pkg.list_entry);
     FpFwListInsertTail(&pkg_active_list, &tlm_pkg_2.list_entry);
 
-    will_return(__wrap_dcs_is_primary_instance, false);
+    will_return(__wrap_dcs_is_primary_instance, true);
+    expect_function_call(__wrap_dcs_client_send_trp_response);
 
     dcs_manager_handle_dcp_msg(&trp_msg);
 
@@ -676,7 +700,6 @@ TEST_FUNCTION(test_dcs_manager_handle_trp_msg_pkg_notif, test_setup, nullptr)
 
 TEST_FUNCTION(test_dcs_manager_handle_reset_msg, test_setup, nullptr)
 {
-    trp_msg_t trp_msg = {{0}};
     tlm_package_t tlm_pkg[4] = {{{0}}};
     uint8_t buffer[1000] = {0};
 
@@ -703,10 +726,12 @@ TEST_FUNCTION(test_dcs_manager_handle_reset_msg, test_setup, nullptr)
     in_flight.pkg.atu_mapped_location = (uintptr_t)buffer;
     in_flight_tlm_pkg = &in_flight;
 
+    expect_function_call(exec_tlm_cmpnt_enable_disable_telemetry);
+
     expect_function_call(__wrap_dcs_client_flush_incoming_queue);
     will_return(__wrap_dcs_is_primary_instance, true);
 
-    dcs_manager_handle_reset_msg(&trp_msg);
+    dcs_manager_handle_reset_msg();
 
     assert_true(FpFwListIsEmpty(&pkg_active_list));
     assert_false(FpFwListIsEmpty(&pkg_free_list));
@@ -727,10 +752,52 @@ TEST_FUNCTION(test_dcs_manager_handle_reset_msg, test_setup, nullptr)
         FpFwListInsertTail(&pkg_active_list, &tlm_pkg[i].list_entry);
     }
 
+    expect_function_call(exec_tlm_cmpnt_enable_disable_telemetry);
     expect_function_call(__wrap_dcs_client_flush_incoming_queue);
     will_return(__wrap_dcs_is_primary_instance, false);
 
-    dcs_manager_handle_reset_msg(&trp_msg);
+    dcs_manager_handle_reset_msg();
+
+    assert_true(FpFwListIsEmpty(&pkg_active_list));
+    assert_false(FpFwListIsEmpty(&pkg_free_list));
+}
+
+TEST_FUNCTION(test_dcs_manager_handle_reset_msg_from_trp, test_setup, nullptr)
+{
+    trp_msg_t trp_msg = {{0}};
+
+    tlm_package_t tlm_pkg[4] = {{{0}}};
+    uint8_t buffer[1000] = {0};
+
+    FpFwListInitialize(&pkg_free_list);
+    FpFwListInitialize(&pkg_active_list);
+
+    // setup two local packages and 2 remote
+    for (int i = 0; i < 4; i++)
+    {
+        tlm_pkg[i].pkg.source_die_id = 0;
+        tlm_pkg[i].pkg.source_cpu_id = 2;
+        tlm_pkg[i].pkg.reserved = 0;
+        tlm_pkg[i].pkg.atu_mapped_location = (uintptr_t)buffer;
+        tlm_pkg[i].pkg.ddr_addr_offset = 0x4000 + (i * 1000);
+        tlm_pkg[i].pkg.pkg_size = 1000;
+        tlm_pkg[i].pkg.crc = 0x4267 + i;
+        FpFwListEntryInitialize(&tlm_pkg[i].list_entry);
+        FpFwListInsertTail(&pkg_active_list, &tlm_pkg[i].list_entry);
+    }
+    tlm_pkg[1].pkg.source_die_id = 1;
+    tlm_pkg[3].pkg.source_cpu_id = 1;
+
+    tlm_package_t in_flight;
+    in_flight.pkg.atu_mapped_location = (uintptr_t)buffer;
+    in_flight_tlm_pkg = &in_flight;
+
+    will_return_always(__wrap_dcs_is_primary_instance, false);
+    expect_function_call(exec_tlm_cmpnt_enable_disable_telemetry);
+    expect_function_call(__wrap_dcs_client_flush_incoming_queue);
+
+    trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_RESET;
+    dcs_manager_handle_dcp_msg(&trp_msg);
 
     assert_true(FpFwListIsEmpty(&pkg_active_list));
     assert_false(FpFwListIsEmpty(&pkg_free_list));

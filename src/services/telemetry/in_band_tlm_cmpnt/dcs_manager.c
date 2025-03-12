@@ -103,7 +103,9 @@ void in_band_tlm_cmpnt_handle_incoming_dcs_msgs(void)
                         trp_msg->hdr.dest_cpu_id,
                         trp_msg->hdr.dcp_client_id,
                         trp_msg->hdr.trp_msg_id,
-                        trp_msg->hdr.source_seq_num.as_uint16);
+                        trp_msg->hdr.trp_msg_status,
+                        GET_INT_CMD_BIT(trp_msg->hdr.source_seq_num.as_uint16),
+                        GET_BASE_SEQ_NUM(trp_msg->hdr.source_seq_num.as_uint16)); // remove init_cmd bit
 
             if (trp_msg->hdr.trp_msg_id == TRP_MSG_ID_DCP_FORWARD)
             {
@@ -139,24 +141,30 @@ void dcs_manager_handle_dcp_msg(p_trp_msg_t trp_msg)
     // with Die 0 MCP. Any commands that change operating state, need to be forwarded to the secondary MCP.
     // Status requests only need to be replied from the Primary MCP since the secondary MCP tracks the state
     // of the system. DCP reads are only handled by the primary MCP, so those also are not forwarded.
+    bool primary_instance = dcs_is_primary_instance();
     bool forward = false;
+    uint16_t response_dcp_payload_size = 0;
 
     switch (trp_msg->payload.dcp_msg.hdr.msg_id)
     {
     case DCP_MSG_ID_GET_STATE:
-        trp_msg->payload.dcp_msg.payload.get_state.state =
-            exec_tlm_cmpnt_is_telemetry_enabled() ? DCP_CLIENT_STATE_RUNNING : DCP_CLIENT_STATE_STOPPED;
-        trp_msg->payload.dcp_msg.hdr.payload_size = sizeof(dcp_msg_get_client_state_t);
-        trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
+
+        if (primary_instance)
+        {
+            trp_msg->payload.dcp_msg.payload.get_state.state =
+                exec_tlm_cmpnt_is_telemetry_enabled() ? DCP_CLIENT_STATE_RUNNING : DCP_CLIENT_STATE_STOPPED;
+            response_dcp_payload_size = sizeof(dcp_msg_get_client_state_t);
+            trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
+        }
+        else
+        {
+            trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_E_UNSUPPORTED_MSG;
+        }
         break;
 
     case DCP_MSG_ID_EVENTS_ENABLE_DISABLE:
+        forward = true;
         dcs_manager_handle_record_enable_disable(trp_msg);
-
-        if (trp_msg->payload.dcp_msg.hdr.msg_status == DCP_STATUS_SUCCESS)
-        {
-            forward = true;
-        }
         break;
 
     case DCP_MSG_ID_START_STOP:
@@ -165,42 +173,47 @@ void dcs_manager_handle_dcp_msg(p_trp_msg_t trp_msg)
         bool enable = (trp_msg->payload.dcp_msg.payload.start_stop.state == DCP_START_STOP_STATE_START) ? true : false;
         exec_tlm_cmpnt_enable_disable_telemetry(enable);
 
-        trp_msg->payload.dcp_msg.hdr.payload_size = 0;
         trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
         break;
 
     case DCP_MSG_ID_READ_DATA:
-        // header for response is handled in the function
-        dcs_manager_handle_read_msg(trp_msg);
+        if (primary_instance)
+        {
+            response_dcp_payload_size = sizeof(dcp_msg_read_data_t);
+            dcs_manager_handle_read_msg(trp_msg);
+        }
+        else
+        {
+            trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_E_UNSUPPORTED_MSG;
+        }
         break;
 
     case DCP_MSG_ID_READ_DATA_COMPLETE:
-        // header for response is handled in the function
+
         dcs_manager_handle_read_complete_msg(trp_msg);
         break;
 
     case DCP_MSG_ID_RESET:
-
         forward = true;
 
-        // header for response is handled in the function
-        dcs_manager_handle_reset_msg(trp_msg);
+        dcs_manager_handle_reset_msg();
+        trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
         break;
 
     default:
         FPFW_ET_LOG(DcsMgrClientUnexpectedDcpMsg, trp_msg->payload.dcp_msg.hdr.msg_id);
 
-        trp_msg->payload.dcp_msg.hdr.payload_size = 0;
         trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_E_UNSUPPORTED_MSG;
         break;
     };
 
     // reply back to the host if primary instance, otherwise let forwarded messages drop
-    if (dcs_is_primary_instance())
+    if (primary_instance)
     {
         if (trp_msg->payload.dcp_msg.hdr.msg_status < 0)
         {
             trp_msg->hdr.trp_msg_status = TRP_STATUS_E_DCP_ERROR;
+            trp_msg->payload.dcp_msg.hdr.payload_size = 0; // no payload for errors and not forwarding
         }
         else
         {
@@ -212,6 +225,9 @@ void dcs_manager_handle_dcp_msg(p_trp_msg_t trp_msg)
             }
         }
 
+        // if incoming message was validated and required to be forwarded, the forward message above needs to
+        // retain the original payload size.
+        trp_msg->payload.dcp_msg.hdr.payload_size = response_dcp_payload_size;
         trp_msg->hdr.payload_size = sizeof(dcp_msg_hdr_t) + trp_msg->payload.dcp_msg.hdr.payload_size;
 
         dcs_client_send_trp_response(trp_msg);
@@ -290,7 +306,7 @@ void dcs_manager_add_tlm_package_to_active_list(p_tlm_package_t tlm_pkg)
         dcs_manager_send_trp_pkg_notification_to_primary(tlm_pkg);
     }
 
-    FPFW_ET_LOG(DcsMgrDbgAllocatePkg,
+    FPFW_ET_LOG(DcsMgrAddPkgToActiveList,
                 tlm_pkg->pkg.atu_mapped_location,
                 tlm_pkg->pkg.source_die_id,
                 tlm_pkg->pkg.source_cpu_id);
@@ -337,7 +353,9 @@ void dcs_manager_send_trp_package_helper(p_tlm_package_t tlm_pkg, trp_msg_id_t m
                 trp_msg.hdr.dest_cpu_id,
                 trp_msg.hdr.dcp_client_id,
                 trp_msg.hdr.trp_msg_id,
-                trp_msg.hdr.source_seq_num.as_uint16);
+                trp_msg.hdr.trp_msg_status,
+                GET_INT_CMD_BIT(trp_msg.hdr.source_seq_num.as_uint16),
+                GET_BASE_SEQ_NUM(trp_msg.hdr.source_seq_num.as_uint16)); // remove init_cmd bit
 
     // api copies message, ok to use stack memory
     dcs_client_send_new_trp_msg(&trp_msg);
@@ -345,7 +363,6 @@ void dcs_manager_send_trp_package_helper(p_tlm_package_t tlm_pkg, trp_msg_id_t m
 
 void dcs_manager_handle_record_enable_disable(p_trp_msg_t trp_msg)
 {
-    trp_msg->payload.dcp_msg.hdr.payload_size = 0;
     trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_E_PARAM;
 
     if (trp_msg->payload.dcp_msg.payload.events_enable_disable.number_of_events > DCP_MAX_ENABLE_DISABLE_EVENTS)
@@ -405,7 +422,6 @@ void dcs_manager_handle_record_enable_disable(p_trp_msg_t trp_msg)
 
 void dcs_manager_handle_read_msg(p_trp_msg_t trp_msg)
 {
-    trp_msg->payload.dcp_msg.hdr.payload_size = 0;
     trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
 
     if (FpFwListIsEmpty(&pkg_active_list))
@@ -430,8 +446,6 @@ void dcs_manager_handle_read_msg(p_trp_msg_t trp_msg)
     trp_msg->payload.dcp_msg.payload.read_data.rd_data_size = in_flight_tlm_pkg->pkg.pkg_size;
     trp_msg->payload.dcp_msg.payload.read_data.crc = in_flight_tlm_pkg->pkg.crc;
 
-    trp_msg->payload.dcp_msg.hdr.payload_size = sizeof(dcp_msg_read_data_t);
-
     if (FpFwListIsEmpty(&pkg_active_list))
     {
         trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_RD_DATA_VALID_LAST;
@@ -444,8 +458,6 @@ void dcs_manager_handle_read_msg(p_trp_msg_t trp_msg)
 
 void dcs_manager_handle_read_complete_msg(p_trp_msg_t trp_msg)
 {
-    trp_msg->payload.dcp_msg.hdr.payload_size = 0;
-
     if (in_flight_tlm_pkg == NULL)
     {
         // no package to complete
@@ -475,7 +487,10 @@ void dcs_manager_handle_read_complete_msg(p_trp_msg_t trp_msg)
 
 void dcs_manager_free_tlm_package_from_primary_mcp(p_tlm_package_t tlm_pkg)
 {
-    FPFW_ET_LOG(DcsMgrDbgFreePkg, tlm_pkg->pkg.atu_mapped_location, tlm_pkg->pkg.source_die_id, tlm_pkg->pkg.source_cpu_id);
+    FPFW_ET_LOG(DcsMgrRemovePkgFromActive,
+                tlm_pkg->pkg.atu_mapped_location,
+                tlm_pkg->pkg.source_die_id,
+                tlm_pkg->pkg.source_cpu_id);
 
     if (tlm_pkg->pkg.source_die_id == dcs_get_this_die_id() && tlm_pkg->pkg.source_cpu_id == dcs_get_this_cpu_id())
     {
@@ -512,7 +527,7 @@ void dcs_manager_free_tlm_package_from_secondary_mcp(p_tlm_package_t tlm_pkg)
 
     if (match)
     {
-        FPFW_ET_LOG(DcsMgrDbgFreePkg,
+        FPFW_ET_LOG(DcsMgrRemovePkgFromActive,
                     tlm_pkg->pkg.atu_mapped_location,
                     tlm_pkg->pkg.source_die_id,
                     tlm_pkg->pkg.source_cpu_id);
@@ -560,10 +575,10 @@ p_tlm_package_t dcs_manager_get_pkg_from_free_list(void)
     return ret_val;
 }
 
-void dcs_manager_handle_reset_msg(p_trp_msg_t trp_msg)
+void dcs_manager_handle_reset_msg()
 {
-    trp_msg->payload.dcp_msg.hdr.payload_size = 0;
-    trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
+    // disable telemetry
+    exec_tlm_cmpnt_enable_disable_telemetry(false);
 
     // flushing the queue is going to loop through the queue and free the blocks in the queue
     // the block that this message is in has already been popped off the queue and will be freed when

@@ -49,6 +49,12 @@ void notify_dcs_client_from_drv_frmwk(void)
     function_called();
 }
 
+void test_trp_diag_handler(p_trp_msg_t trp_msg)
+{
+    FPFW_UNUSED(trp_msg);
+    function_called();
+}
+
 static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
@@ -775,6 +781,42 @@ TEST_FUNCTION(test_dcs_forward_trp_msg_to_client_from_drv_frmwk_dcp_incomplete, 
     assert_int_equal(trp_msg.hdr.source_cpu_id, 0xD2);
     assert_int_equal(trp_msg.hdr.dest_die_id, 0xAA);
     assert_int_equal(trp_msg.hdr.dest_cpu_id, 0xA2);
+}
+
+TEST_FUNCTION(test_dcs_forward_trp_msg_to_client_from_drv_frmwk_diag_msg, test_setup, nullptr)
+{
+    trp_msg_t trp_msg = {{0}};
+
+    // setup diagnostic response, no handler so message is dropped
+    trp_msg.hdr.source_die_id = 0xAA;
+    trp_msg.hdr.source_cpu_id = 0xA2;
+    trp_msg.hdr.dest_die_id = 0xDD;
+    trp_msg.hdr.dest_cpu_id = 0xD2;
+    trp_msg.hdr.dcp_client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
+    trp_msg.hdr.source_seq_num.as_uint16 = DIAG_SEQ_NUM_RESP;
+    trp_msg.payload.dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
+    trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_CAPABILITIES;
+    trp_msg.payload.dcp_msg.hdr.payload_size = 0;
+
+    dcs_forward_trp_msg_to_client_from_drv_frmwk(&trp_msg);
+
+    // setup diagnostic response
+    trp_msg.hdr.source_die_id = 0xAA;
+    trp_msg.hdr.source_cpu_id = 0xA2;
+    trp_msg.hdr.dest_die_id = 0xDD;
+    trp_msg.hdr.dest_cpu_id = 0xD2;
+    trp_msg.hdr.dcp_client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
+    trp_msg.hdr.source_seq_num.as_uint16 = DIAG_SEQ_NUM_RESP;
+    trp_msg.payload.dcp_msg.hdr.client_id = DCP_CLIENT_ID_PWR_INST_TELEM;
+    trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_CAPABILITIES;
+    trp_msg.payload.dcp_msg.hdr.payload_size = 0;
+
+    dcs_register_diag_trp_handler(test_trp_diag_handler);
+    expect_function_calls(test_trp_diag_handler, 1);
+
+    dcs_forward_trp_msg_to_client_from_drv_frmwk(&trp_msg);
 }
 
 TEST_FUNCTION(test_dcs_handle_outbound_msgs, test_setup, nullptr)

@@ -54,7 +54,7 @@ TX_TIMER _24hr_pkg_tmr;
 TX_EVENT_FLAGS_GROUP s_thread_control;
 
 telemetry_executive_status_t tlm_executive_status = {
-    .op_mode = TLM_OP_MODE_NOMINAL,
+    .op_mode = TLM_OP_MODE_DISABLED,
     .pwr_pkg_period_ms = 0,
     .inst_pkg_sample_period_ms = 0,
     .pwr_aggr_period_ms = PWR_AGGR_PKG_PERIOD_MS,

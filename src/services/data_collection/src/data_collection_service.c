@@ -24,13 +24,14 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define ALL_EVENT_GROUP_BITS (0xFFFFFFFF)
-
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
 static dcs_context_t s_dcs_context;
+static trp_handler_cb s_diag_trp_handler;
+
 /*------------- Functions ----------------*/
 static void dcs_thread(ULONG thread_input);
 
@@ -159,10 +160,26 @@ void dcs_client_send_new_trp_msg(p_trp_msg_t trp_msg)
 
 void dcs_client_forward_trp_msg(p_trp_msg_t trp_msg, trp_broadcast_t broadcast_option)
 {
+    // the original message is between the host and the primary instance. When forwarding
+    // will now track the message between the primary and secondary instances with a
+    // new sequence number and also set init_cmd to 1
+
+    p_trp_icc_endpoint_t orig_source_endpt = trp_msg->hdr.incoming_endpt;
+    trp_seq_number_t orig_seq_num = trp_msg->hdr.source_seq_num;
+
+    // if a diagnostic message is forwarded, then the sequence number needs to originate from this cpu
+    trp_msg->hdr.incoming_endpt = NULL; // setting this to NULL will assign a new sequence number, which also sets init_cmd to 1
+    trp_msg->hdr.source_seq_num.die_id = dcs_get_this_die_id();
+    trp_msg->hdr.source_seq_num.cpu_id = dcs_get_this_cpu_id();
+
     trp_msg->hdr.broadcast_type = broadcast_option;
+
     // called from clients thread but can use the same api called from driver framework
+    // this will copy trp_msg to a new block and queue for sending
     dcs_queue_for_outbound_from_drv_frmwk(trp_msg, false);
     trp_msg->hdr.broadcast_type = TRP_BROADCAST_NONE;
+    trp_msg->hdr.incoming_endpt = orig_source_endpt; // restore original endpoint for a reply to sender
+    trp_msg->hdr.source_seq_num = orig_seq_num;      // restore original sequence number for a reply to sender
 }
 
 void dcs_client_send_trp_response(p_trp_msg_t trp_msg)
@@ -237,7 +254,22 @@ void dcs_forward_trp_msg_to_client_from_drv_frmwk(p_trp_msg_t trp_msg)
                 trp_msg->hdr.dest_cpu_id,
                 trp_msg->hdr.dcp_client_id,
                 trp_msg->hdr.trp_msg_id,
-                trp_msg->hdr.source_seq_num.as_uint16);
+                trp_msg->hdr.trp_msg_status,
+                GET_INT_CMD_BIT(trp_msg->hdr.source_seq_num.as_uint16),
+                GET_BASE_SEQ_NUM(trp_msg->hdr.source_seq_num.as_uint16)); // remove init_cmd bit
+
+    if (((trp_msg->hdr.source_seq_num.as_uint16 & DIAG_SEQ_NUM_MASK) == DIAG_SEQ_NUM_RESP) &&
+        (trp_msg->hdr.source_cpu_id != CPU_AP))
+    {
+        if (s_diag_trp_handler != NULL)
+        {
+            s_diag_trp_handler(trp_msg);
+        }
+
+        s_diag_trp_handler = NULL;
+        printf("drop diag rsp\n");
+        return;
+    }
 
     bool forward_to_client = true;
 
@@ -592,4 +624,9 @@ void dcs_client_flush_incoming_queue(dcp_client_id_t id)
             FPFW_ET_LOG(DcsSvcClientQueueFail, (uintptr_t)p_queue, queue_status);
         }
     } while (queue_status == TX_SUCCESS);
+}
+
+void dcs_register_diag_trp_handler(trp_handler_cb handler)
+{
+    s_diag_trp_handler = handler;
 }

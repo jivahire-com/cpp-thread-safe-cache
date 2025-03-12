@@ -208,9 +208,9 @@ void tlm_relay_send_outgoing_msg(p_trp_msg_t trp_msg)
             trp_msg->hdr.dest_die_id = trp_route->dest.die_id;
             trp_msg->hdr.dest_cpu_id = trp_route->dest.cpu_id;
 
-            // there may be no endpoints to broadcast to, so will not log error if route not found
             tlm_relay_send_trp_via_icc(trp_msg, trp_route->icc_endpoint);
         }
+        // there may be no endpoints to broadcast to, so will not log error if route not found
     }
 
     trp_msg->hdr.dest_die_id = orig_dest_die_id;
@@ -296,6 +296,31 @@ void tlm_relay_send_trp_via_icc(p_trp_msg_t trp_msg, p_trp_icc_endpoint_t icc_en
         {
             trp_msg->payload.dcp_msg.hdr.seq_num = tlm_relay_get_next_seq_num(icc_endpoint);
         }
+        else
+        {
+            if ((trp_msg->hdr.incoming_endpt == icc_endpoint) && (trp_msg->hdr.source_seq_num.init_cmd == 0))
+            {
+                // nominal sequence, init_cmd is set by the sender when originating the message
+                // the receiver processes the cmd and clears the init_cmd here to send the response
+                // however, if the condition above is met, then this means the sender is sending
+                // the same message to the receiver again. This is not expected behavior and could be possible
+                // if there was a mal-formed message or a bug in the sender. The result would be an infinite loop
+                // of the same message being sent back and forth. To prevent this, the message is dropped.
+                FPFW_ET_LOG(DcsDroppedTrpMsg,
+                            trp_msg->hdr.source_die_id,
+                            trp_msg->hdr.source_cpu_id,
+                            trp_msg->hdr.dest_die_id,
+                            trp_msg->hdr.dest_cpu_id,
+                            trp_msg->hdr.dcp_client_id,
+                            trp_msg->hdr.trp_msg_id,
+                            trp_msg->hdr.trp_msg_status,
+                            GET_INT_CMD_BIT(trp_msg->hdr.source_seq_num.as_uint16),
+                            GET_BASE_SEQ_NUM(trp_msg->hdr.source_seq_num.as_uint16)); // remove init_cmd bit
+
+                return;
+            }
+            trp_msg->hdr.source_seq_num.init_cmd = 0;
+        }
 
         icc_msg.header.msg_header.command = ICC_COMMAND_DCP_MSG;
         icc_msg.header.msg_header.payload_size = trp_msg->payload.dcp_msg.hdr.payload_size + sizeof(dcp_msg_hdr_t);
@@ -313,7 +338,36 @@ void tlm_relay_send_trp_via_icc(p_trp_msg_t trp_msg, p_trp_icc_endpoint_t icc_en
         // if not NULL, then reply or forward with the incoming sequence number
         if (trp_msg->hdr.incoming_endpt == NULL)
         {
-            trp_msg->hdr.source_seq_num.as_uint16 = tlm_relay_get_next_seq_num(icc_endpoint);
+            // diagnostic messages will retain special case sequence numbers
+            if ((trp_msg->hdr.source_seq_num.as_uint16 & DIAG_SEQ_NUM_MASK) != DIAG_SEQ_NUM_CMD)
+            {
+                trp_msg->hdr.source_seq_num.as_uint16 = tlm_relay_get_next_seq_num(icc_endpoint);
+            }
+        }
+        else
+        {
+            if ((trp_msg->hdr.incoming_endpt == icc_endpoint) && (trp_msg->hdr.source_seq_num.init_cmd == 0))
+            {
+                // nominal sequence, init_cmd is set by the sender when originating the message
+                // the receiver processes the cmd and clears the init_cmd here to send the response
+                // however, if the condition above is met, then this means the sender is sending
+                // the same message to the receiver again. This is not expected behavior and could be possible
+                // if there was a mal-formed message or a bug in the sender. The result would be an infinite loop
+                // of the same message being sent back and forth. To prevent this, the message is dropped.
+                FPFW_ET_LOG(DcsDroppedTrpMsg,
+                            trp_msg->hdr.source_die_id,
+                            trp_msg->hdr.source_cpu_id,
+                            trp_msg->hdr.dest_die_id,
+                            trp_msg->hdr.dest_cpu_id,
+                            trp_msg->hdr.dcp_client_id,
+                            trp_msg->hdr.trp_msg_id,
+                            trp_msg->hdr.trp_msg_status,
+                            GET_INT_CMD_BIT(trp_msg->hdr.source_seq_num.as_uint16),
+                            GET_BASE_SEQ_NUM(trp_msg->hdr.source_seq_num.as_uint16)); // remove init_cmd bit
+
+                return;
+            }
+            trp_msg->hdr.source_seq_num.init_cmd = 0;
         }
 
         icc_msg.header.msg_header.command = ICC_COMMAND_TRP_MSG;
@@ -328,7 +382,9 @@ void tlm_relay_send_trp_via_icc(p_trp_msg_t trp_msg, p_trp_icc_endpoint_t icc_en
                     trp_msg->hdr.dest_cpu_id,
                     trp_msg->hdr.dcp_client_id,
                     trp_msg->hdr.trp_msg_id,
-                    trp_msg->hdr.source_seq_num.as_uint16);
+                    trp_msg->hdr.trp_msg_status,
+                    GET_INT_CMD_BIT(trp_msg->hdr.source_seq_num.as_uint16),
+                    GET_BASE_SEQ_NUM(trp_msg->hdr.source_seq_num.as_uint16)); // remove init_cmd bit
     }
 
     fpfw_status_t status = fpfw_icc_base_send_sync(icc_endpoint->icc_base_ctx,
@@ -343,5 +399,9 @@ void tlm_relay_send_trp_via_icc(p_trp_msg_t trp_msg, p_trp_icc_endpoint_t icc_en
 uint16_t tlm_relay_get_next_seq_num(p_trp_icc_endpoint_t icc_endpoint)
 {
     icc_endpoint->seq_number.number++;
-    return icc_endpoint->seq_number.as_uint16;
+    trp_seq_number_t next_seq_num;
+    next_seq_num.as_uint16 = icc_endpoint->seq_number.as_uint16;
+    next_seq_num.init_cmd = 1;
+
+    return next_seq_num.as_uint16;
 }

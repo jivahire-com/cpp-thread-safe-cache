@@ -8,6 +8,11 @@
 ./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_dump_cli_test.robot
 ./../../../tests/functional/pythia/test_suites/configmgr_tests/configmgr_set_cli_test.robot
 
+## Crash Dump Tests
+./../../../tests/functional/pythia/test_suites/crash_dump_tests/crash_dump_trigger_exception_test.robot
+./../../../tests/functional/pythia/test_suites/crash_dump_tests/crash_dump_stack_overflow_test.robot
+./../../../tests/functional/pythia/test_suites/crash_dump_tests/crash_dump_set_single_core_mode_test.robot
+
 ## GPIO Driver Tests
 ./../../../tests/functional/pythia/test_suites/gpio_driver_tests/gpio_driver_test.robot
 

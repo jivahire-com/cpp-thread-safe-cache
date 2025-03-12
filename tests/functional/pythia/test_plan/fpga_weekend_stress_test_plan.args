@@ -6,6 +6,11 @@
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_read_tests_die0.robot
 ./../../../tests/functional/pythia/test_suites/avs_tests/avs_write_tests_die0.robot
 
+## Crash Dump Tests
+./../../../tests/functional/pythia/test_suites/crash_dump_tests/crash_dump_trigger_exception_test.robot
+./../../../tests/functional/pythia/test_suites/crash_dump_tests/crash_dump_trigger_exception_test.robot
+./../../../tests/functional/pythia/test_suites/crash_dump_tests/crash_dump_trigger_exception_test.robot
+
 ## HSP Mailbox Tests
 ./../../../tests/functional/pythia/test_suites/hspmbx_tests/hsp_mailbox_cli_test_send_recv.robot
 ./../../../tests/functional/pythia/test_suites/hspmbx_tests/hsp_mailbox_cli_test.robot

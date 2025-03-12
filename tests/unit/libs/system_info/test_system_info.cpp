@@ -91,6 +91,27 @@ TEST_FUNCTION(system_info_init_hsp_present, nullptr, nullptr)
     assert_true(system_info_is_hsp_present() == true);
 }
 
+TEST_FUNCTION(system_info_init_warm_start, nullptr, nullptr)
+{
+    // Set up expectations
+    fpfw_icc_base_ctx_t* icc_base_ctx = (fpfw_icc_base_ctx_t*)0x1234;
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_SECURITY_STATE_RSP);
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_SECURITY_STATE_SECURE);
+
+    HSP_BOOT_METADATA boot_meta_data;
+    boot_meta_data.MetadataVersion = 1;
+    boot_meta_data.ResetReason = 3;
+
+    expect_value(__wrap_mmio_read32, addr, SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS);
+    will_return(__wrap_mmio_read32, boot_meta_data.AsUint32);
+
+    // Call API under test
+    system_info_init(icc_base_ctx);
+
+    // Verify expectations
+    assert_true(system_info_is_warm_start() == true);
+}
+
 TEST_FUNCTION(system_info_init_secure_mode, nullptr, nullptr)
 {
     // Set up expectations

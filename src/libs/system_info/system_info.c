@@ -24,7 +24,7 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
-#define MASK_WARM_START (0b1000)
+
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
@@ -98,14 +98,22 @@ void system_info_init(fpfw_icc_base_ctx_t* icc_base_ctx)
     HSP_BOOT_METADATA boot_meta_data;
     boot_meta_data.AsUint32 = MMIO_READ32(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS);
 
-    // Temporary until HSP writes actual metadata instead of arbitrary values
-    if (boot_meta_data.MetadataVersion == 0x1 && boot_meta_data.ResetReason == 0x7)
+    if (boot_meta_data.MetadataVersion == 0x1)
     {
         is_hsp_present = true;
+
+        switch (boot_meta_data.ResetReason)
+        {
+        case HSP_FIRMWARE_RESET_REASON_CRASH:
+        case HSP_FIRMWARE_RESET_REASON_UPDATE:
+        case HSP_FIRMWARE_RESET_REASON_WARM_RESET:
+            is_warm_start = true;
+            break;
+        }
     }
-    if (boot_meta_data.MetadataVersion == 0x1 && (boot_meta_data.ResetReason & MASK_WARM_START))
+    else
     {
-        is_warm_start = true;
+        assert(false);
     }
 
     if (is_hsp_present && icc_ctx != NULL)

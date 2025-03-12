@@ -40,6 +40,8 @@ kingsgate_boot_config_t boot_config = {
     .itc_ram_size = SCP_ITCM_RAM_SIZE,
     .dtc_ram_base = (size_t)SCP_DTCM_RAM_BASE,
     .dtc_ram_size = SCP_DTCM_RAM_SIZE,
+    .rmss_data_base = (size_t)SCP_RMSS_RAM_DATA_BASE,
+    .rmss_data_size = SCP_RMSS_RAM_DATA_SIZE,
 
     .boot_meta_base = (size_t)SCP_BOOT_RAM_BASE,
     .cpu_type = MSCP_CPU_SCP,

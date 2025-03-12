@@ -66,11 +66,19 @@ bool decompress(void* source, uint32_t source_size, void* destination, uint32_t 
     return true;
 }
 
-bool unpack_image(size_t source_buffer, uint32_t source_buffer_size, size_t itc_ram_base, uint32_t itc_ram_size, size_t dtc_ram_base, uint32_t dtc_ram_size)
+bool unpack_image(size_t source_buffer,
+                  uint32_t source_buffer_size,
+                  size_t itc_ram_base,
+                  uint32_t itc_ram_size,
+                  size_t dtc_ram_base,
+                  uint32_t dtc_ram_size,
+                  size_t rmss_data_base,
+                  uint32_t rmss_data_size)
 {
     embed_image_header_t* header = NULL;
     void* itc_ram_compressed_source = NULL;
     void* dtc_ram_compressed_source = NULL;
+    void* rmss_data_compressed_source = NULL;
 
     // Ensure the source buffer has enough size to decode the header
     if (source_buffer_size < sizeof(embed_image_header_t))
@@ -99,6 +107,12 @@ bool unpack_image(size_t source_buffer, uint32_t source_buffer_size, size_t itc_
         return false;
     }
 
+    // Validate the embedded image RMSS data size will fit in the destination RMSS data region
+    if (header->rmss_data_ram.uncompressed_size > rmss_data_size)
+    {
+        return false;
+    }
+
     // Validate the uncompressed IRAM image
     if (header->itc_ram.compressed_offset + header->itc_ram.compressed_size > source_buffer_size)
     {
@@ -107,6 +121,12 @@ bool unpack_image(size_t source_buffer, uint32_t source_buffer_size, size_t itc_
 
     // Validate the uncompressed DRAM image
     if (header->dtc_ram.compressed_offset + header->dtc_ram.compressed_size > source_buffer_size)
+    {
+        return false;
+    }
+
+    // Validate the uncompressed RMSS data image
+    if (header->rmss_data_ram.compressed_offset + header->rmss_data_ram.compressed_size > source_buffer_size)
     {
         return false;
     }
@@ -127,5 +147,11 @@ bool unpack_image(size_t source_buffer, uint32_t source_buffer_size, size_t itc_
         return false;
     }
 
+    rmss_data_compressed_source = (uint8_t*)header + header->rmss_data_ram.compressed_offset;
+    // Decompress the RMSS data image
+    if (!decompress(rmss_data_compressed_source, header->rmss_data_ram.compressed_size, (void*)rmss_data_base, rmss_data_size))
+    {
+        return false;
+    }
     return true;
 }

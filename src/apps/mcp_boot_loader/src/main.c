@@ -40,6 +40,8 @@ kingsgate_boot_config_t boot_config = {
     .itc_ram_size = MCP_ITCM_RAM_SIZE,
     .dtc_ram_base = (size_t)MCP_DTCM_RAM_BASE,
     .dtc_ram_size = MCP_DTCM_RAM_SIZE,
+    .rmss_data_base = (size_t)MCP_RMSS_RAM_DATA_BASE,
+    .rmss_data_size = MCP_RMSS_RAM_DATA_SIZE,
 
     .boot_meta_base = (size_t)MCP_BOOT_RAM_BASE,
 

@@ -95,7 +95,16 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
                                  ARM_MPU_REGION_SIZE_2MB),
         },
         /**
-         * MPU Region 4 - MSCP_EXP SCF RAM
+         *  @todo 2457199 https://azurecsi.visualstudio.com/Dev/_workitems/edit/2457199
+         * Add MPU settings for rmss rodata region.
+         * For MCP starting address = 0x013BF490, Size = 64 KB
+         * 
+         * MPU Region 4 - MSCP_EXP SRAM RODATA 
+         *                Cacheable
+         *                Priviledged R Only
+         */
+        /**
+         * MPU Region 5 - MSCP_EXP SCF RAM
          *                Normal Noncacheable
          *                Priviledged R/W
          */
@@ -111,7 +120,7 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
                                  ARM_MPU_REGION_SIZE_64KB),
         },
         /**
-         * MPU Region 5 - DDR Used for In-Band Telemetry
+         * MPU Region 6 - DDR Used for In-Band Telemetry
          *                Normal Noncacheable
          *                Priviledged R/W
          */

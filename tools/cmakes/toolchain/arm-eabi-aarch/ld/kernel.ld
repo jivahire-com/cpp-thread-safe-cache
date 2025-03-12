@@ -3,6 +3,9 @@
    __CODE_SIZE__
    __DATA_START__
    __DATA_SIZE__
+   __RMSS_DATA_START__
+   __RMSS_DATA_SIZE__
+   __DATA_SIZE__
    __STACKSIZE__
 
    These should be derived from the global memory map for the target controller
@@ -17,6 +20,7 @@ MEMORY
 {
   CODE   (rx) : ORIGIN = __CODE_START__, LENGTH = __CODE_SIZE__
   DATA   (rw) : ORIGIN = __DATA_START__, LENGTH = __DATA_SIZE__
+  RMSS_DATA   (rx) : ORIGIN = __RMSS_DATA_START__, LENGTH = __RMSS_DATA_SIZE__
 }
 
 SECTIONS
@@ -54,11 +58,6 @@ SECTIONS
         KEEP(*(.eh_frame*))
     } > CODE
 
-    .rodata :
-    {
-         *(.rodata*)
-    } > CODE
-
     .ARM.extab :
     {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
@@ -71,6 +70,11 @@ SECTIONS
     } > CODE
     __exidx_end = .;
 
+    .BuildBinaryVersion :
+    {
+        *(.BuildBinaryVersion)
+    } > CODE
+    
     /**
      * All non-code writable sections needed for Event Trace. Used for decoding events.
      * Will be 0 sized if Event Trace is not used. Grows as providers and events added.
@@ -214,4 +218,9 @@ SECTIONS
     __HEAPSIZE__ = __heap_end__ - __heap_start__;
 
     __RAM_segment_used_end__ = .;
+
+    .rodata :
+    {
+         *(.rodata*)
+    } > RMSS_DATA
 }

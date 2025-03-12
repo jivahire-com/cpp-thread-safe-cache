@@ -15,7 +15,7 @@ from collections import OrderedDict
 # Generates the payload portion of the bootloader
 #
 # Creates build rules to:
-#   * Split the main image .elf in to separate .elf.dtcm.bin & .elf.itcm.bin files for the ITCM and DTCM regions
+#   * Split the main image .elf in to separate .elf.dtcm.bin, .elf.itcm.bin & .elf.rmss.bin files for the ITCM, DTCM & RMSS regions
 #   * Compress the .bin files in to .bin.gz files
 #   * Run a script to combine the .gz files into .elf.embed
 #     The .embed file will begin with a header followed by the content of the .gz files
@@ -30,6 +30,7 @@ from collections import OrderedDict
 #      uint32_t embed_image_header_tag;  // 0xEBDD4EAD
 #      struct embed_image_section iram;  // Location and size of the iram image
 #      struct embed_image_section dram;  // Location and size of the dram image
+#      struct embed_image_section dram;  // Location and size of the rmss image
 #  }
 #
 
@@ -82,32 +83,41 @@ def main():
     # Input files
     ITCM_BIN_PATH = sys.argv[1]
     DTCM_BIN_PATH = sys.argv[2]
-    ITCM_BIN_GZ_PATH = sys.argv[3]
-    DTCM_BIN_GZ_PATH = sys.argv[4]
-    BOOTLOADER_ELF_PATH = sys.argv[5]
-    OBJDUMP_PATH = sys.argv[6]
+    RMSS_BIN_PATH = sys.argv[3]
+    ITCM_BIN_GZ_PATH = sys.argv[4]
+    DTCM_BIN_GZ_PATH = sys.argv[5]
+    RMSS_BIN_GZ_PATH = sys.argv[6]
+    BOOTLOADER_ELF_PATH = sys.argv[7]
+    OBJDUMP_PATH = sys.argv[8]
 
     # Output file
-    EMBED_PATH = sys.argv[7]
+    EMBED_PATH = sys.argv[9]
 
     # Size checks
-    ITCM_BASE = int(sys.argv[8],0)
-    ITCM_SIZE = int(sys.argv[9],0)
-    DTCM_BASE = int(sys.argv[10],0)
-    DTCM_SIZE = int(sys.argv[11],0)
+    ITCM_BASE = int(sys.argv[10],0)
+    ITCM_SIZE = int(sys.argv[11],0)
+    DTCM_BASE = int(sys.argv[12],0)
+    DTCM_SIZE = int(sys.argv[13],0)
+    RMSS_BASE = int(sys.argv[14],0)
+    RMSS_SIZE = int(sys.argv[15],0)
 
     itcm_crc = 0
     dtcm_crc = 0
+    rmss_crc = 0
 
     with open(ITCM_BIN_PATH, 'rb') as itcm_bin_file:
         itcm_uncompressed = itcm_bin_file.read()
     with open(DTCM_BIN_PATH, 'rb') as dtcm_bin_file:
         dtcm_uncompressed = dtcm_bin_file.read()
+    with open(RMSS_BIN_PATH, 'rb') as rmss_bin_file:
+        rmss_uncompressed = rmss_bin_file.read()
 
     with open(ITCM_BIN_GZ_PATH, 'rb') as itcm_bin_gz_file:
         itcm_compressed = itcm_bin_gz_file.read()
     with open(DTCM_BIN_GZ_PATH, 'rb') as dtcm_bin_gz_file:
         dtcm_compressed = dtcm_bin_gz_file.read()
+    with open(RMSS_BIN_GZ_PATH, 'rb') as rmss_bin_gz_file:
+        rmss_compressed = rmss_bin_gz_file.read()
 
     embed_file_size = 0
 
@@ -116,7 +126,7 @@ def main():
 
     with open(EMBED_PATH, 'wb') as embed_file:
 
-        header_format = "<IIIIIIIII"
+        header_format = "<IIIIIIIIIIIII"
 
         embed_image_header_tag = 0xEBDD4EAD
         iram_compressed_offset = struct.calcsize(header_format)
@@ -128,6 +138,12 @@ def main():
         dram_compressed_size = len(dtcm_compressed)
         dram_uncompressed_size = len(dtcm_uncompressed)
         dram_uncompressed_crc32 = zlib.crc32(dtcm_uncompressed)
+
+        rmss_compressed_offset = dram_compressed_offset + dram_compressed_size
+        rmss_compressed_size = len(rmss_compressed)
+        rmss_uncompressed_size = len(rmss_uncompressed)
+        rmss_uncompressed_crc32 = zlib.crc32(rmss_uncompressed)
+        
         if iram_uncompressed_size > ITCM_SIZE:
             sys.stderr.write("ITCM section uncompressed exceeds size limit of {} by {}.\n".format(
                 ITCM_SIZE,
@@ -142,6 +158,13 @@ def main():
             ))
             sys.exit(1)
 
+        if rmss_uncompressed_size > RMSS_SIZE:
+            sys.stderr.write("RMSS section uncompressed exceeds size limit of {} by {}.\n".format(
+                RMSS_SIZE,
+                rmss_uncompressed_size - RMSS_SIZE
+            ))
+            sys.exit(1)
+
         header = struct.pack(header_format,
             embed_image_header_tag,
             iram_compressed_offset,
@@ -151,11 +174,16 @@ def main():
             dram_compressed_offset,
             dram_compressed_size,
             dram_uncompressed_size,
-            dram_uncompressed_crc32)
+            dram_uncompressed_crc32,
+            rmss_compressed_offset,
+            rmss_compressed_size,
+            rmss_uncompressed_size,
+            rmss_uncompressed_crc32)
         
         embed_file.write(header)
         embed_file.write(itcm_compressed)
         embed_file.write(dtcm_compressed)
+        embed_file.write(rmss_compressed)
 
         # Get the size of the file from the current file position
         embed_file_size = embed_file.tell()

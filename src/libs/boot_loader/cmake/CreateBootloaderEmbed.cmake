@@ -2,7 +2,7 @@
 # Generates the payload portion of the bootloader
 #
 # Creates build rules to:
-#   * Split the main image .elf in to separate .elf.dtcm.bin & .elf.itcm.bin files for the ITCM and DTCM regions
+#   * Split the main image .elf in to separate .elf.dtcm.bin, .elf.itcm.bin & .elf.rmss.bin files for the ITCM, DTCM & RMSS regions
 #   * Compress the .bin files in to .bin.gz files
 #   * Run a script to combine the .gz files into .elf.embed
 #   * Copy the .embed file into the base bootloader
@@ -18,16 +18,18 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
     set(OBJDUMP "$ENV{REPO_APP_PATH_gcc.arm.eabi.aarch-win64}/arm-none-eabi/bin/objdump.exe")
 
     # Paths to the flat .bin files for the main image's initialization data
-    # for the ITCM and DTCM memories  
+    # for the ITCM, DTCM & RMSS Data memories  
 	
     set(ITCM_BIN_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${FW_BLOCK}/${FW_IMAGE_TARGET}.elf.itcm.bin")
     set(DTCM_BIN_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${FW_BLOCK}/${FW_IMAGE_TARGET}.elf.dtcm.bin")
+    set(RMSS_BIN_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${FW_BLOCK}/${FW_IMAGE_TARGET}.elf.rmss.bin")
     	
-    # Paths to the compressed ITCM and DTCM initialization files
+    # Paths to the compressed ITCM, DTCM & RMSS initialization files
     set(ITCM_BIN_GZ_PATH "${ITCM_BIN_PATH}.gz")
     set(DTCM_BIN_GZ_PATH "${DTCM_BIN_PATH}.gz")
+    set(RMSS_BIN_GZ_PATH "${RMSS_BIN_PATH}.gz")
 
-    # Path to the '.embed' file which includes the compressed ITCM and DTCM data along
+    # Path to the '.embed' file which includes the compressed ITCM, DTCM & RMSS data along
     # with a manifest header
     set(EMBED_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${FW_BLOCK}/${FW_IMAGE_TARGET}.elf.embed")
     
@@ -61,7 +63,6 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
         ARGS -O binary 
             --only-section .vectors 
             --only-section .text 
-            --only-section .rodata
             --only-section .BuildBinaryVersion
             --only-section .EventMetadata.et.msdata
             --only-section .ProviderMetadata.et.msdata
@@ -88,9 +89,21 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
         DEPENDS "${FW_IMAGE_PATH}"
         COMMENT "Generating flat binary ${FW_IMAGE_TARGET}.dtcm.bin"
     )
+
+    add_custom_command(
+        OUTPUT "${RMSS_BIN_PATH}"
+        COMMAND ${OBJCOPY}
+        ARGS -O binary 
+            --only-section .rodata
+            "${FW_IMAGE_PATH}"
+            "${RMSS_BIN_PATH}"
+        DEPENDS "${FW_IMAGE_PATH}"
+        COMMENT "Generating flat binary ${FW_IMAGE_TARGET}.rmss.bin"
+    )
     
     add_custom_target(${FW_IMAGE_TARGET}_itcm_bin ALL DEPENDS "${ITCM_BIN_PATH}")
     add_custom_target(${FW_IMAGE_TARGET}_dtcm_bin ALL DEPENDS "${DTCM_BIN_PATH}")
+    add_custom_target(${FW_IMAGE_TARGET}_rmss_bin ALL DEPENDS "${RMSS_BIN_PATH}")
     
     add_custom_command(
         OUTPUT ${ITCM_BIN_GZ_PATH}
@@ -117,8 +130,23 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
             ${PYTHON_GZ_SCRIPT}
             ${DTCM_BIN_PATH}
         COMMENT "Compress DTCM into .gz ") 
-		
-    add_custom_target(${FW_IMAGE_TARGET}_gz ALL DEPENDS ${ITCM_BIN_GZ_PATH} ${ITCM_BIN_GZ_PATH})
+	
+    add_custom_command(
+        OUTPUT ${RMSS_BIN_GZ_PATH}
+        COMMAND ${Python3_EXECUTABLE}
+        ARGS ${PYTHON_GZ_SCRIPT}
+            # Input files
+            ${RMSS_BIN_PATH}
+            # Output file
+            ${RMSS_BIN_GZ_PATH}
+        DEPENDS
+            ${PYTHON_GZ_SCRIPT}
+            ${RMSS_BIN_PATH}
+        COMMENT "Compress RMSS RODATA into .gz ")
+
+    add_custom_target(${FW_IMAGE_TARGET}_itcm_gz ALL DEPENDS ${ITCM_BIN_GZ_PATH} ${ITCM_BIN_GZ_PATH})
+    add_custom_target(${FW_IMAGE_TARGET}_dtcm_gz ALL DEPENDS ${DTCM_BIN_GZ_PATH} ${DTCM_BIN_GZ_PATH})
+    add_custom_target(${FW_IMAGE_TARGET}_rmss_gz ALL DEPENDS ${RMSS_BIN_GZ_PATH} ${RMSS_BIN_GZ_PATH})
 
 
     # Critical Size checks
@@ -140,6 +168,15 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
     set(DTCM_BASE "0x20000000")
     math(EXPR DTCM_SIZE "491520")
 
+    # The RMSS ram region is separate for the SCP and MCP
+    if(FW_BLOCK STREQUAL "scp")
+        set(RMSS_BASE "0x0138F490")
+        math(EXPR RMSS_SIZE "196608")
+    else()
+        set(RMSS_BASE "0x0138B490")
+        math(EXPR RMSS_SIZE "65536")
+    endif()
+
     add_custom_command(
         OUTPUT "${EMBED_PATH}"
         COMMAND ${Python3_EXECUTABLE}
@@ -147,8 +184,10 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
             # Input files
                 ${ITCM_BIN_PATH}
                 ${DTCM_BIN_PATH}
+                ${RMSS_BIN_PATH}
                 ${ITCM_BIN_GZ_PATH}
                 ${DTCM_BIN_GZ_PATH}
+                ${RMSS_BIN_GZ_PATH}
                 ${BASE_BL_PATH}
                 ${OBJDUMP}
             # Output file
@@ -158,6 +197,8 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
                 ${ITCM_SIZE}
                 ${DTCM_BASE}
                 ${DTCM_SIZE}
+                ${RMSS_BASE}
+                ${RMSS_SIZE}
         DEPENDS
             ${PYTHON_EMBED_SCRIPT}
             ${ITCM_BIN_PATH}

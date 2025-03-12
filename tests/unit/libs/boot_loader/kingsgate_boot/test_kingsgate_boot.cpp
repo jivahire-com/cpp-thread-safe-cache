@@ -35,8 +35,12 @@ extern "C" {
 #define DTCM_COMPRESSED_STRING_SIZE   (40)
 #define DTCM_UNCOMPRESSED_STRING_SIZE (10)
 
+#define RMSS_DATA_COMPRESSED_STRING_SIZE   (40)
+#define RMSS_DATA_UNCOMPRESSED_STRING_SIZE (10)
+
 static const char* ITCM_UNCOMPRESSED_STRING = "ITCM TEST\n";
 static const char* DTCM_UNCOMPRESSED_STRING = "DTCM TEST\n";
+static const char* RMSS_DATA_UNCOMPRESSED_STRING = "DTCM TEST\n";
 
 /*------------- Typedefs -----------------*/
 typedef struct main_image_test_s
@@ -45,6 +49,7 @@ typedef struct main_image_test_s
     // uint8_t compressed_source[ITCM_COMPRESSED_STRING_SIZE + DTCM_COMPRESSED_STRING_SIZE];
     uint8_t compressed_itcm[ITCM_COMPRESSED_STRING_SIZE];
     uint8_t compressed_dtcm[DTCM_COMPRESSED_STRING_SIZE];
+    uint8_t compressed_rmss[RMSS_DATA_COMPRESSED_STRING_SIZE];
 } main_image_test_t;
 
 typedef enum _HSP_MBOX_STATUS_EX
@@ -57,12 +62,15 @@ typedef enum _HSP_MBOX_STATUS_EX
 /*------------------- Declarations (Statics and globals) --------------------*/
 const uint32_t SCP_ITCM_RAM_SIZE = (512 * 1024);
 const uint32_t SCP_DTCM_RAM_SIZE = (512 * 1024);
+const uint32_t SCP_RMSS_DATA_SIZE = (192 * 1024);
 
 const uint32_t MCP_ITCM_RAM_SIZE = (512 * 1024);
 const uint32_t MCP_DTCM_RAM_SIZE = (512 * 1024);
+const uint32_t MCP_RMSS_DATA_SIZE = (64 * 1024);
 
 static uint8_t test_itc_ram[SCP_ITCM_RAM_SIZE];
 static uint8_t test_dtc_ram[SCP_DTCM_RAM_SIZE];
+static uint8_t test_rmss_data[SCP_RMSS_DATA_SIZE];
 
 static HSP_BOOT_METADATA test_metadata;
 
@@ -75,21 +83,30 @@ static main_image_test_t test_main_image_data = {
                      .dtc_ram = {.compressed_offset = sizeof(embed_image_header_t) + ITCM_COMPRESSED_STRING_SIZE,
                                  .compressed_size = DTCM_COMPRESSED_STRING_SIZE,
                                  .uncompressed_size = DTCM_UNCOMPRESSED_STRING_SIZE,
-                                 .uncompressed_crc32 = 0xEFA62BF4}},
+                                 .uncompressed_crc32 = 0xEFA62BF4},
+                     .rmss_data_ram = {.compressed_offset = sizeof(embed_image_header_t) + ITCM_COMPRESSED_STRING_SIZE + DTCM_COMPRESSED_STRING_SIZE,
+                                       .compressed_size = RMSS_DATA_COMPRESSED_STRING_SIZE,
+                                       .uncompressed_size = RMSS_DATA_UNCOMPRESSED_STRING_SIZE,
+                                       .uncompressed_crc32 = 0xEFA62BF4}},
     .compressed_itcm = {0x1f, 0x8b, 0x08, 0x08, 0xea, 0x6a, 0x38, 0x66, 0x00, 0x03, 0x68, 0x6f, 0x70, 0x65,
                         0x2e, 0x74, 0x78, 0x74, 0x00, 0xf3, 0x0c, 0x71, 0xf6, 0x55, 0x08, 0x71, 0x0d, 0x0e,
                         0xe1, 0x02, 0x00, 0x44, 0xa0, 0x58, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x00},
     .compressed_dtcm = {0x1f, 0x8b, 0x08, 0x08, 0x0d, 0x6d, 0x38, 0x66, 0x00, 0x03, 0x68, 0x6f, 0x70, 0x65,
                         0x2e, 0x74, 0x78, 0x74, 0x00, 0x73, 0x09, 0x71, 0xf6, 0x55, 0x08, 0x71, 0x0d, 0x0e,
+                        0xe1, 0x02, 0x00, 0xf4, 0x2b, 0xa6, 0xef, 0x0a, 0x00, 0x00, 0x00, 0x00},
+    .compressed_rmss = {0x1f, 0x8b, 0x08, 0x08, 0x0d, 0x6d, 0x38, 0x66, 0x00, 0x03, 0x68, 0x6f, 0x70, 0x65,
+                        0x2e, 0x74, 0x78, 0x74, 0x00, 0x73, 0x09, 0x71, 0xf6, 0x55, 0x08, 0x71, 0x0d, 0x0e,
                         0xe1, 0x02, 0x00, 0xf4, 0x2b, 0xa6, 0xef, 0x0a, 0x00, 0x00, 0x00, 0x00}};
 
 static kingsgate_boot_config_t test_boot_config = {
     .data_src_base = (size_t)&test_main_image_data,
-    .data_src_end = (size_t)&test_main_image_data.compressed_dtcm[(DTCM_COMPRESSED_STRING_SIZE - 1)],
+    .data_src_end = (size_t)&test_main_image_data.compressed_rmss[RMSS_DATA_COMPRESSED_STRING_SIZE - 1],
     .itc_ram_base = (size_t)&test_itc_ram[0],
     .itc_ram_size = SCP_ITCM_RAM_SIZE,
     .dtc_ram_base = (size_t)&test_dtc_ram[0],
     .dtc_ram_size = SCP_DTCM_RAM_SIZE,
+    .rmss_data_base = (size_t)&test_rmss_data[0],
+    .rmss_data_size = SCP_RMSS_DATA_SIZE,
     .boot_meta_base = (size_t)&test_metadata, // This boot config is expected to work correctly when passed as is to unpack_image
     .cpu_type = MSCP_CPU_SCP};
 
@@ -525,7 +542,7 @@ TEST_FUNCTION(test_scp_boot_config_src_end_size_failure, nullptr, nullptr)
 
     assert_null(load_image(&test_boot_config));
     // Reverting to correct value
-    test_boot_config.data_src_end = (size_t)&test_main_image_data.compressed_dtcm[(DTCM_COMPRESSED_STRING_SIZE - 1)];
+    test_boot_config.data_src_end = (size_t)&test_main_image_data.compressed_rmss[RMSS_DATA_COMPRESSED_STRING_SIZE - 1];
 }
 
 TEST_FUNCTION(test_scp_boot_config_image_size_zero_failure, nullptr, nullptr)
@@ -793,6 +810,112 @@ TEST_FUNCTION(test_scp_boot_config_dtc_ram_size_failure, nullptr, nullptr)
     test_boot_config.dtc_ram_size = SCP_DTCM_RAM_SIZE;
 }
 
+TEST_FUNCTION(test_scp_boot_config_rmss_data_ram_base_failure, nullptr, nullptr)
+{
+    will_return_always(__wrap_system_info_is_hsp_present, true);
+    // Error injecting incorrect DTCM ram base
+    test_boot_config.cpu_type = MSCP_CPU_SCP;
+    test_boot_config.rmss_data_base = 0x0;
+
+    // mailbox create success
+    expect_any(__wrap_FpFwMailboxInit, pConfig);
+    expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
+    will_return(__wrap_FpFwMailboxInit, FPFW_MBX_SUCCESS);
+
+    // mailbox flush success
+    expect_any(__wrap_FpFwMailboxFlushFIFO, pMbxCtx);
+    will_return(__wrap_FpFwMailboxFlushFIFO, FPFW_MBX_SUCCESS);
+
+    expect_any_always(__wrap_FpFwMailboxSend, pMbxCtx);
+    expect_any_always(__wrap_FpFwMailboxSend, pMessage);
+    expect_any_always(__wrap_FpFwMailboxSend, pMessage->payloadBuffer);
+    expect_any_always(__wrap_FpFwMailboxSend, pMessage->payloadSize);
+
+    // MCP start code send
+    hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
+    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
+
+    expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
+    expect_value(__wrap_FpFwMailboxSend, id, (uint32_t)hsp_mbox_data.id);
+    expect_value(__wrap_FpFwMailboxSend, boot_code, (uint32_t)hsp_mbox_data.boot_status);
+    expect_value(__wrap_FpFwMailboxSend, status, (uint32_t)hsp_mbox_data.boot_status_ex);
+    will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
+
+    // MCP DTC RAM base error code
+    hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
+    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
+
+    expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
+    expect_value(__wrap_FpFwMailboxSend, id, (uint32_t)hsp_mbox_data.id);
+    expect_value(__wrap_FpFwMailboxSend, boot_code, (uint32_t)hsp_mbox_data.boot_status);
+    expect_value(__wrap_FpFwMailboxSend, status, (uint32_t)hsp_mbox_data.boot_status_ex);
+    will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
+
+    assert_null(load_image(&test_boot_config));
+    // Reverting to correct value
+    test_boot_config.rmss_data_base = (size_t)&test_rmss_data[0];
+}
+
+TEST_FUNCTION(test_scp_boot_config_rmss_data_ram_size_failure, nullptr, nullptr)
+{
+    will_return_always(__wrap_system_info_is_hsp_present, true);
+    // Error injecting incorrect ITCM ram size
+    test_boot_config.cpu_type = MSCP_CPU_SCP;
+    test_boot_config.rmss_data_size = 0x0;
+
+    // mailbox create success
+    expect_any(__wrap_FpFwMailboxInit, pConfig);
+    expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
+    will_return(__wrap_FpFwMailboxInit, FPFW_MBX_SUCCESS);
+
+    // mailbox flush success
+    expect_any(__wrap_FpFwMailboxFlushFIFO, pMbxCtx);
+    will_return(__wrap_FpFwMailboxFlushFIFO, FPFW_MBX_SUCCESS);
+
+    expect_any_always(__wrap_FpFwMailboxSend, pMbxCtx);
+    expect_any_always(__wrap_FpFwMailboxSend, pMessage);
+    expect_any_always(__wrap_FpFwMailboxSend, pMessage->payloadBuffer);
+    expect_any_always(__wrap_FpFwMailboxSend, pMessage->payloadSize);
+
+    // MCP start code send
+    hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
+    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
+
+    expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
+    expect_value(__wrap_FpFwMailboxSend, id, (uint32_t)hsp_mbox_data.id);
+    expect_value(__wrap_FpFwMailboxSend, boot_code, (uint32_t)hsp_mbox_data.boot_status);
+    expect_value(__wrap_FpFwMailboxSend, status, (uint32_t)hsp_mbox_data.boot_status_ex);
+    will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
+
+    // MCP ITC RAM size error code
+    hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
+    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
+
+    expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
+    expect_value(__wrap_FpFwMailboxSend, id, (uint32_t)hsp_mbox_data.id);
+    expect_value(__wrap_FpFwMailboxSend, boot_code, (uint32_t)hsp_mbox_data.boot_status);
+    expect_value(__wrap_FpFwMailboxSend, status, (uint32_t)hsp_mbox_data.boot_status_ex);
+
+    will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
+    assert_null(load_image(&test_boot_config));
+    // Reverting to correct value
+    test_boot_config.rmss_data_size = SCP_RMSS_DATA_SIZE;
+}
+
 TEST_FUNCTION(test_scp_boot_config_meta_base_null_failure, nullptr, nullptr)
 {
     will_return_always(__wrap_system_info_is_hsp_present, true);
@@ -949,7 +1072,7 @@ TEST_FUNCTION(test_mcp_boot_config_src_end_size_failure, nullptr, nullptr)
 
     assert_null(load_image(&test_boot_config));
     // Reverting to correct value
-    test_boot_config.data_src_end = (size_t)&test_main_image_data.compressed_dtcm[(DTCM_COMPRESSED_STRING_SIZE - 1)];
+    test_boot_config.data_src_end = (size_t)&test_main_image_data.compressed_rmss[RMSS_DATA_COMPRESSED_STRING_SIZE - 1];
 }
 
 TEST_FUNCTION(test_mcp_boot_config_image_size_zero_failure, nullptr, nullptr)
@@ -1215,6 +1338,112 @@ TEST_FUNCTION(test_mcp_boot_config_dtc_ram_size_failure, nullptr, nullptr)
     assert_null(load_image(&test_boot_config));
     // Reverting to correct value
     test_boot_config.dtc_ram_size = MCP_DTCM_RAM_SIZE;
+}
+
+TEST_FUNCTION(test_mcp_boot_config_rmss_data_ram_base_failure, nullptr, nullptr)
+{
+    will_return_always(__wrap_system_info_is_hsp_present, true);
+    // Error injecting incorrect DTCM ram base
+    test_boot_config.cpu_type = MSCP_CPU_MCP;
+    test_boot_config.rmss_data_base = 0x0;
+
+    // mailbox create success
+    expect_any(__wrap_FpFwMailboxInit, pConfig);
+    expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
+    will_return(__wrap_FpFwMailboxInit, FPFW_MBX_SUCCESS);
+
+    // mailbox flush success
+    expect_any(__wrap_FpFwMailboxFlushFIFO, pMbxCtx);
+    will_return(__wrap_FpFwMailboxFlushFIFO, FPFW_MBX_SUCCESS);
+
+    expect_any_always(__wrap_FpFwMailboxSend, pMbxCtx);
+    expect_any_always(__wrap_FpFwMailboxSend, pMessage);
+    expect_any_always(__wrap_FpFwMailboxSend, pMessage->payloadBuffer);
+    expect_any_always(__wrap_FpFwMailboxSend, pMessage->payloadSize);
+
+    // MCP start code send
+    hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
+    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
+
+    expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
+    expect_value(__wrap_FpFwMailboxSend, id, (uint32_t)hsp_mbox_data.id);
+    expect_value(__wrap_FpFwMailboxSend, boot_code, (uint32_t)hsp_mbox_data.boot_status);
+    expect_value(__wrap_FpFwMailboxSend, status, (uint32_t)hsp_mbox_data.boot_status_ex);
+    will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
+
+    // MCP DTC RAM base error code
+    hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
+    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
+
+    expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
+    expect_value(__wrap_FpFwMailboxSend, id, (uint32_t)hsp_mbox_data.id);
+    expect_value(__wrap_FpFwMailboxSend, boot_code, (uint32_t)hsp_mbox_data.boot_status);
+    expect_value(__wrap_FpFwMailboxSend, status, (uint32_t)hsp_mbox_data.boot_status_ex);
+    will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
+
+    assert_null(load_image(&test_boot_config));
+    // Reverting to correct value
+    test_boot_config.rmss_data_base = (size_t)&test_rmss_data[0];
+}
+
+TEST_FUNCTION(test_mcp_boot_config_rmss_data_ram_size_failure, nullptr, nullptr)
+{
+    will_return_always(__wrap_system_info_is_hsp_present, true);
+    // Error injecting incorrect ITCM ram size
+    test_boot_config.cpu_type = MSCP_CPU_MCP;
+    test_boot_config.rmss_data_size = 0x0;
+
+    // mailbox create success
+    expect_any(__wrap_FpFwMailboxInit, pConfig);
+    expect_any(__wrap_FpFwMailboxInit, pMbxCtx);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxFifoDepth);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxMesgHandlingType);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxImplementation);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MsgSizeBytes);
+    expect_any(__wrap_FpFwMailboxInit, pConfig->MbxBaseAddr);
+    will_return(__wrap_FpFwMailboxInit, FPFW_MBX_SUCCESS);
+
+    // mailbox flush success
+    expect_any(__wrap_FpFwMailboxFlushFIFO, pMbxCtx);
+    will_return(__wrap_FpFwMailboxFlushFIFO, FPFW_MBX_SUCCESS);
+
+    expect_any_always(__wrap_FpFwMailboxSend, pMbxCtx);
+    expect_any_always(__wrap_FpFwMailboxSend, pMessage);
+    expect_any_always(__wrap_FpFwMailboxSend, pMessage->payloadBuffer);
+    expect_any_always(__wrap_FpFwMailboxSend, pMessage->payloadSize);
+
+    // MCP start code send
+    hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
+    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
+
+    expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
+    expect_value(__wrap_FpFwMailboxSend, id, (uint32_t)hsp_mbox_data.id);
+    expect_value(__wrap_FpFwMailboxSend, boot_code, (uint32_t)hsp_mbox_data.boot_status);
+    expect_value(__wrap_FpFwMailboxSend, status, (uint32_t)hsp_mbox_data.boot_status_ex);
+    will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
+
+    // MCP ITC RAM size error code
+    hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
+    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
+
+    expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
+    expect_value(__wrap_FpFwMailboxSend, id, (uint32_t)hsp_mbox_data.id);
+    expect_value(__wrap_FpFwMailboxSend, boot_code, (uint32_t)hsp_mbox_data.boot_status);
+    expect_value(__wrap_FpFwMailboxSend, status, (uint32_t)hsp_mbox_data.boot_status_ex);
+
+    will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
+    assert_null(load_image(&test_boot_config));
+    // Reverting to correct value
+    test_boot_config.rmss_data_size = MCP_RMSS_DATA_SIZE;
 }
 
 TEST_FUNCTION(test_mcp_boot_config_meta_base_null_failure, nullptr, nullptr)
@@ -1996,6 +2225,7 @@ TEST_FUNCTION(test_scp_boot_success, nullptr, nullptr)
 
     memset((void*)test_boot_config.itc_ram_base, 0x0, ITCM_UNCOMPRESSED_STRING_SIZE);
     memset((void*)test_boot_config.dtc_ram_base, 0x0, DTCM_UNCOMPRESSED_STRING_SIZE);
+    memset((void*)test_boot_config.rmss_data_base, 0x0, RMSS_DATA_UNCOMPRESSED_STRING_SIZE);
 
     // mailbox create success
     expect_any(__wrap_FpFwMailboxInit, pConfig);
@@ -2056,7 +2286,9 @@ TEST_FUNCTION(test_scp_boot_success, nullptr, nullptr)
 
     assert_int_equal(memcmp((void*)test_boot_config.itc_ram_base, ITCM_UNCOMPRESSED_STRING, ITCM_UNCOMPRESSED_STRING_SIZE),
                      MEM_CMP_SUCCESS);
-    assert_int_equal(memcmp((void*)test_boot_config.dtc_ram_base, DTCM_UNCOMPRESSED_STRING, ITCM_UNCOMPRESSED_STRING_SIZE),
+    assert_int_equal(memcmp((void*)test_boot_config.dtc_ram_base, DTCM_UNCOMPRESSED_STRING, DTCM_UNCOMPRESSED_STRING_SIZE),
+                     MEM_CMP_SUCCESS);
+    assert_int_equal(memcmp((void*)test_boot_config.rmss_data_base, RMSS_DATA_UNCOMPRESSED_STRING, RMSS_DATA_UNCOMPRESSED_STRING_SIZE),
                      MEM_CMP_SUCCESS);
 }
 
@@ -2069,6 +2301,7 @@ TEST_FUNCTION(test_mcp_boot_success, nullptr, nullptr)
 
     memset((void*)test_boot_config.itc_ram_base, 0x0, ITCM_UNCOMPRESSED_STRING_SIZE);
     memset((void*)test_boot_config.dtc_ram_base, 0x0, DTCM_UNCOMPRESSED_STRING_SIZE);
+    memset((void*)test_boot_config.rmss_data_base, 0x0, RMSS_DATA_UNCOMPRESSED_STRING_SIZE);
 
     // mailbox create success
     expect_any(__wrap_FpFwMailboxInit, pConfig);
@@ -2128,7 +2361,9 @@ TEST_FUNCTION(test_mcp_boot_success, nullptr, nullptr)
     assert_non_null(load_image(&test_boot_config));
     assert_int_equal(memcmp((void*)test_boot_config.itc_ram_base, ITCM_UNCOMPRESSED_STRING, ITCM_UNCOMPRESSED_STRING_SIZE),
                      MEM_CMP_SUCCESS);
-    assert_int_equal(memcmp((void*)test_boot_config.dtc_ram_base, DTCM_UNCOMPRESSED_STRING, ITCM_UNCOMPRESSED_STRING_SIZE),
+    assert_int_equal(memcmp((void*)test_boot_config.dtc_ram_base, DTCM_UNCOMPRESSED_STRING, DTCM_UNCOMPRESSED_STRING_SIZE),
+                     MEM_CMP_SUCCESS);
+    assert_int_equal(memcmp((void*)test_boot_config.rmss_data_base, RMSS_DATA_UNCOMPRESSED_STRING, RMSS_DATA_UNCOMPRESSED_STRING_SIZE),
                      MEM_CMP_SUCCESS);
 }
 

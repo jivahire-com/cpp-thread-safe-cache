@@ -42,7 +42,9 @@ typedef struct kingsgate_boot_config_s {
     uint32_t    itc_ram_size;
     size_t      dtc_ram_base;
     uint32_t    dtc_ram_size;
-	
+	size_t      rmss_data_base;
+    uint32_t    rmss_data_size;
+    
 	size_t      boot_meta_base;
 
     mscp_cpu_t  cpu_type;

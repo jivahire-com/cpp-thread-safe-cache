@@ -250,6 +250,18 @@ void* load_image(kingsgate_boot_config_t* boot_config)
     {
         boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
+    else if (boot_config->rmss_data_base == 0)
+    {
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    }
+    else if (boot_config->rmss_data_size == 0)
+    {
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    }
+    else if ((boot_meta_data->ResetReason & BITMASK_WARM_BOOT) && (boot_meta_data->BootMode != 0))
+    {
+        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    }
     else
     {
         is_error_config = false;
@@ -290,7 +302,9 @@ void* load_image(kingsgate_boot_config_t* boot_config)
                      boot_config->itc_ram_base,
                      boot_config->itc_ram_size,
                      boot_config->dtc_ram_base,
-                     boot_config->dtc_ram_size) == false)
+                     boot_config->dtc_ram_size,
+                     boot_config->rmss_data_base,
+                     boot_config->rmss_data_size) == false)
     {
         // Unpack image mainly fails due to size mismatch or decompress failure. However no status code
         // for decompress failure.

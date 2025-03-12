@@ -43,6 +43,9 @@ target_include_directories(
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/../inc
             ${REPO_ROOT_DIR}/.externs/repo/cmsis/CMSIS/Core/Include
+            ${REPO_ROOT_DIR}/.externs/repo/silibs/soc_fw_shared/include/memory_map
+            ${REPO_ROOT_DIR}/.externs/repo/silibs/fpga_enablement/baremetal/include
+
 )
 
 add_compile_definitions(BL_REL_STR="${REPO_ROOT_DIR}/${CMAKE_BUILD_TYPE}")

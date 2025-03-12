@@ -31,6 +31,7 @@ typedef struct embed_image_header_s {
     uint32_t embed_image_header_tag;  // 0xEBDD4EAD
     embed_image_section_t itc_ram;  // Location and size of the iram image
     embed_image_section_t dtc_ram;  // Location and size of the dram image
+    embed_image_section_t rmss_data_ram;  // Location and size of the rmss data image
 } embed_image_header_t;
 
 /*--------- Function Prototypes ----------*/
@@ -49,6 +50,8 @@ typedef struct embed_image_header_s {
  *  @param[in] itcram_size Size of ITCM
  *  @param[in] dtcram_base Base address of DTCM
  *  @param[in] dtcram_size Size of DTCM
+ *  @param[in] rmss_data_base Base address of RMSS data region for rodata storage
+ *  @param[in] rmss_data_size Size of RMSS data region
  * 
  *  @return
  *      Returns true on success, false on failure
@@ -59,7 +62,9 @@ bool unpack_image(size_t    source_buffer,
                   size_t    itcram_base,
                   uint32_t  itcram_size,
                   size_t    dtcram_base,
-                  uint32_t  dtcram_size);
+                  uint32_t  dtcram_size,
+                  size_t rmss_data_base,
+                  uint32_t rmss_data_size);
 
 
 /**

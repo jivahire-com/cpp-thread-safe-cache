@@ -11,6 +11,7 @@
 #include "crash_dump_accel.h"
 
 #include "crash_dump_memory.h"
+#include "crash_dump_status.h" // for crash_dump_update_accel_state
 
 #include <CrashDump.h>          // for FPFwCDPrintf
 #include <atu_init.h>           // for atu_svc_accel_atu_addr
@@ -412,6 +413,7 @@ static void copy_cd_file_dtcm_to_ddr(crash_dump_context_t* ctx, ACCEL_ID accel_t
     if (ctx->accel_cd_dtcm_offset[accel_type] == 0 || ctx->type_ctx[CRASH_DUMP_TYPE_FULL] == NULL)
     {
         // Invalid DTCM address or no full dump context.
+        crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_NOT_AVAILABLE);
         return;
     }
 
@@ -429,6 +431,7 @@ static void copy_cd_file_dtcm_to_ddr(crash_dump_context_t* ctx, ACCEL_ID accel_t
     uint32_t accel_dtcm_addr = atu_svc_accel_atu_addr(accel_type) + SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS;
     uint32_t cd_file_addr = accel_dtcm_addr + ctx->accel_cd_dtcm_offset[accel_type];
     memcpy((void*)cd_ddr_addr, (void*)cd_file_addr, cd_file_size);
+    crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_COMPLETED);
 }
 
 /*------------- Public Functions ----------------*/

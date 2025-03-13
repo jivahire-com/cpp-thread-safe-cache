@@ -38,7 +38,15 @@ void crash_dump_update_state(crash_dump_type_context_t *type_context, crash_dump
  * @brief Update crash dump state of core.
  *
  * @param type_context Crash dump type context.
- * @param state Idle (0), progress (1) or completed (2).
+ * @param state Desired state of the core.
  * 
  */
 void crash_dump_update_core_state(crash_dump_type_context_t *type_context, crash_dump_core_state_t state);
+
+/**
+ * @brief Update crash dump state of accelerators.
+ * 
+ * @param accel_type Accelerator type.
+ * @param state Desired state of the accelerator.
+ */
+void crash_dump_update_accel_state(ACCEL_ID accel_type, crash_dump_core_state_t state);

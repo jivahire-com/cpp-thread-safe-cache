@@ -68,12 +68,14 @@ FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("hw_ver", "gpio_lib"))
                                                       .mem_pool_addr = CRASH_DUMP_MINI_SCP_ADDR,
                                                       .mem_pool_size = CRASH_DUMP_MINI_SCP_SIZE,
                                                       .header = (crash_dump_header_t*)CRASH_DUMP_MINI_HEADER_ADDR};
-    static crash_dump_context_t crash_dump_ctx = {.core_index = CRASH_DUMP_CORE_SCP,
-                                                  .is_primary = false,
-                                                  .mmio_register_count =
-                                                      sizeof(core_register_mmio) / sizeof(core_register_mmio[0]),
-                                                  .mmio_registers = core_register_mmio,
-                                                  .in_memory = in_memory};
+    static crash_dump_context_t crash_dump_ctx = {
+        .type_ctx = {NULL, NULL},
+        .callbacks = {{.pre_dump_cb_count = 0, .post_dump_cb_count = 0}, {.pre_dump_cb_count = 0, .post_dump_cb_count = 0}},
+        .core_index = CRASH_DUMP_CORE_SCP,
+        .is_primary = false,
+        .mmio_register_count = sizeof(core_register_mmio) / sizeof(core_register_mmio[0]),
+        .mmio_registers = core_register_mmio,
+        .in_memory = in_memory};
 
     // Get the DIE index
     crash_dump_ctx.die_index = idsw_get_die_id();

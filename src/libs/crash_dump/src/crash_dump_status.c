@@ -162,3 +162,31 @@ void crash_dump_update_core_state(crash_dump_type_context_t* type_context, crash
         release_semaphore(type_context->semaphore.id);
     }
 }
+
+void crash_dump_update_accel_state(ACCEL_ID accel_type, crash_dump_core_state_t state)
+{
+    crash_dump_context_t* ctx = crash_dump_context();
+    crash_dump_type_context_t* type_context =
+        ctx->type_ctx[CRASH_DUMP_TYPE_FULL]; // Accelerator crash dump is only for full dump.
+    uint32_t accel_index = CRASH_DUMP_CORE_SDM;
+
+    switch (accel_type)
+    {
+    case ACCEL_ID_SDM:
+        accel_index = CRASH_DUMP_CORE_SDM;
+        break;
+    case ACCEL_ID_CDED:
+        accel_index = CRASH_DUMP_CORE_CDED;
+        break;
+    default:
+        // Not valid Accelerator ID
+        return;
+    }
+
+    if (type_context != NULL && type_context->header != NULL)
+    {
+        wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
+        type_context->header->cores[ctx->die_index * CRASH_DUMP_CORE_NUM + accel_index] = (uint8_t)state;
+        release_semaphore(type_context->semaphore.id);
+    }
+}

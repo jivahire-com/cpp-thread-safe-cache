@@ -151,7 +151,7 @@ void power_init(ppower_service_t p_device, PDFWK_SCHEDULE p_schedule, const powe
     power_loops_control_init();
     power_loops_telemetry_init();
     power_log_init();
-    crash_dump_register_pre_dump_callback(crash_dump_predump_cb, NULL);
+    crash_dump_register_pre_dump_callback(crash_dump_predump_cb, NULL, CRASH_DUMP_TYPE_ALL);
 }
 
 void power_ap_soc_init()

@@ -56,6 +56,9 @@ extern void* cb_ctx;
 extern bool memcpy_mock;
 extern jmp_buf cd_test_setjmp_context;
 
+bool __real_crash_dump_get_is_dump_complete(crash_dump_type_context_t* type_context);
+bool __use_real_crash_dump_get_is_dump_complete = false;
+
 /*------------- Functions ----------------*/
 //
 // Mocks
@@ -63,6 +66,18 @@ extern jmp_buf cd_test_setjmp_context;
 bool in_memory(uintptr_t start_addr, uintptr_t end_addr)
 {
     assert_true(start_addr <= end_addr);
+
+    return mock_type(bool);
+}
+
+bool __wrap_crash_dump_get_is_dump_complete(crash_dump_type_context_t* type_context)
+{
+    if (__use_real_crash_dump_get_is_dump_complete)
+    {
+        return __real_crash_dump_get_is_dump_complete(type_context);
+    }
+
+    FPFW_UNUSED(type_context);
 
     return mock_type(bool);
 }
@@ -755,16 +770,21 @@ static void preDumpCallback(void* pContext)
 
 TEST_FUNCTION(test_crash_dump_register_pre_dump_callback_valid, nullptr, nullptr)
 {
-    uint8_t preDumpCallbackCtx = 0;
+    crash_dump_header_t mini_header = {.status = CRASH_DUMP_NOT_IN_USE};
+    crash_dump_header_t full_header = {.status = CRASH_DUMP_NOT_IN_USE};
+    crash_dump_type_context_t mini_context = {.type = CRASH_DUMP_TYPE_MINI, .header = &mini_header};
+    crash_dump_type_context_t full_context = {.type = CRASH_DUMP_TYPE_FULL, .header = &full_header};
+    crash_dump_context_t context = {.type_ctx = {&mini_context, &full_context}, .die_index = 0, .core_index = CRASH_DUMP_CORE_SCP};
+    will_return_always(__wrap_crash_dump_context, &context);
 
     // Call API to register callback
-    crash_dump_register_pre_dump_callback(preDumpCallback, &preDumpCallbackCtx);
+    crash_dump_register_pre_dump_callback(preDumpCallback, &mini_context, CRASH_DUMP_TYPE_MINI);
 
     // Verify registered callback is called by override
     expect_function_call(preDumpCallback);
-    expect_value(preDumpCallback, pContext, &preDumpCallbackCtx);
+    expect_value(preDumpCallback, pContext, &mini_context);
 
-    preDumpCallbackOverride(&preDumpCallbackCtx);
+    preDumpCallbackOverride(&mini_context);
 }
 
 TEST_FUNCTION(test_crash_dump_inMemoryOverride_validAddr, nullptr, nullptr)
@@ -848,9 +868,20 @@ TEST_FUNCTION(test_crash_dump_handler, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, context.icc_ctx[CRASH_DUMP_ICC_CONFIG_SDM]);
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_icc_base_send_sync);
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
+
     expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, context.icc_ctx[CRASH_DUMP_ICC_CONFIG_CDED]);
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_icc_base_send_sync);
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
 
     // Expect ICC HSP notification
     expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, context.icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP]);
@@ -896,17 +927,7 @@ TEST_FUNCTION(test_crash_dump_handler, nullptr, nullptr)
     expect_function_call(__wrap_release_semaphore);
 
     // Expect ICC HSP notification
-    expect_any(__wrap_wait_for_semaphore, id);
-    expect_any(__wrap_wait_for_semaphore, key);
-    expect_function_call(__wrap_wait_for_semaphore);
-    expect_any(__wrap_release_semaphore, id);
-    expect_function_call(__wrap_release_semaphore);
-
-    expect_any(__wrap_wait_for_semaphore, id);
-    expect_any(__wrap_wait_for_semaphore, key);
-    expect_function_call(__wrap_wait_for_semaphore);
-    expect_any(__wrap_release_semaphore, id);
-    expect_function_call(__wrap_release_semaphore);
+    will_return(__wrap_crash_dump_get_is_dump_complete, true);
 
     expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, context.icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP]);
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
@@ -977,11 +998,7 @@ TEST_FUNCTION(test_crash_dump_handler_icc_ctx_null, nullptr, nullptr)
     expect_function_call(__wrap_release_semaphore);
 
     // Checking dump done.
-    expect_any(__wrap_wait_for_semaphore, id);
-    expect_any(__wrap_wait_for_semaphore, key);
-    expect_function_call(__wrap_wait_for_semaphore);
-    expect_any(__wrap_release_semaphore, id);
-    expect_function_call(__wrap_release_semaphore);
+    will_return(__wrap_crash_dump_get_is_dump_complete, true);
 
     crash_dump_handler(errorCode, p1, p2, p3, p4);
 }
@@ -1042,9 +1059,20 @@ TEST_FUNCTION(test_crash_dump_handler_send_sync_fail, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, context.icc_ctx[CRASH_DUMP_ICC_CONFIG_SDM]);
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_NULL_ARG_ERR);
     expect_function_call(__wrap_fpfw_icc_base_send_sync);
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
+
     expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, context.icc_ctx[CRASH_DUMP_ICC_CONFIG_CDED]);
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_NULL_ARG_ERR);
     expect_function_call(__wrap_fpfw_icc_base_send_sync);
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
 
     // Expect ICC HSP notification
     expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, context.icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP]);
@@ -1070,11 +1098,7 @@ TEST_FUNCTION(test_crash_dump_handler_send_sync_fail, nullptr, nullptr)
     expect_function_call(__wrap_release_semaphore);
 
     // Checking dump done.
-    expect_any(__wrap_wait_for_semaphore, id);
-    expect_any(__wrap_wait_for_semaphore, key);
-    expect_function_call(__wrap_wait_for_semaphore);
-    expect_any(__wrap_release_semaphore, id);
-    expect_function_call(__wrap_release_semaphore);
+    will_return(__wrap_crash_dump_get_is_dump_complete, true);
 
     // Sending warm reset
     expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, context.icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP]);
@@ -1305,32 +1329,50 @@ TEST_FUNCTION(test_crash_dump_register_address32_pointer_array, nullptr, nullptr
 
 TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_sdm, nullptr, nullptr)
 {
-    crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL};
+    crash_dump_header_t full_header = {.status = CRASH_DUMP_IN_USE};
+    crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL, .header = &full_header};
     crash_dump_context_t context = {.type_ctx = {NULL, &type_context}};
     ACCEL_ID accel_type = ACCEL_ID_SDM;
 
-    will_return(__wrap_crash_dump_context, &context);
+    will_return_always(__wrap_crash_dump_context, &context);
     will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADCAFE);
+
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
 
     context.accel_cd_dtcm_offset[accel_type] = 0x1234DEAD;
     memcpy_mock = true;
     crash_dump_copy_accel_cd_file((void*)accel_type);
     memcpy_mock = false;
+
+    assert_true(full_header.cores[CRASH_DUMP_CORE_SDM] == CRASH_DUMP_STATE_COMPLETED);
 }
 
 TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_cded, nullptr, nullptr)
 {
-    crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL};
+    crash_dump_header_t full_header = {.status = CRASH_DUMP_IN_USE};
+    crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL, .header = &full_header};
     crash_dump_context_t context = {.type_ctx = {NULL, &type_context}};
     ACCEL_ID accel_type = ACCEL_ID_CDED;
 
-    will_return(__wrap_crash_dump_context, &context);
+    will_return_always(__wrap_crash_dump_context, &context);
     will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADCAFE);
+
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
 
     context.accel_cd_dtcm_offset[accel_type] = 0x1234DEAD;
     memcpy_mock = true;
     crash_dump_copy_accel_cd_file((void*)accel_type);
     memcpy_mock = false;
+
+    assert_true(full_header.cores[CRASH_DUMP_CORE_CDED] == CRASH_DUMP_STATE_COMPLETED);
 }
 
 TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_null_config, nullptr, nullptr)
@@ -1354,12 +1396,21 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_invalid_accel, nullptr, nullptr
 
 TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_null_dtcm, nullptr, nullptr)
 {
-    crash_dump_context_t context = {};
+    crash_dump_header_t full_header = {.status = CRASH_DUMP_IN_USE};
+    crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL, .header = &full_header};
+    crash_dump_context_t context = {.type_ctx = {NULL, &type_context}};
     ACCEL_ID accel_type = ACCEL_ID_SDM;
 
-    will_return(__wrap_crash_dump_context, &context);
+    will_return_always(__wrap_crash_dump_context, &context);
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
 
     crash_dump_copy_accel_cd_file((void*)accel_type);
+
+    assert_true(full_header.cores[CRASH_DUMP_CORE_SDM] == CRASH_DUMP_STATE_NOT_AVAILABLE);
 }
 
 TEST_FUNCTION(test_crash_dump_check_completion, nullptr, nullptr)
@@ -1370,6 +1421,8 @@ TEST_FUNCTION(test_crash_dump_check_completion, nullptr, nullptr)
     crash_dump_type_context_t full_context = {.type = CRASH_DUMP_TYPE_FULL, .header = &full_header};
     crash_dump_context_t context = {.type_ctx = {&mini_context, &full_context}, .die_index = 0, .core_index = CRASH_DUMP_CORE_SCP};
     will_return_always(__wrap_crash_dump_context, &context);
+
+    __use_real_crash_dump_get_is_dump_complete = true;
 
     // for mini dump
     expect_any(__wrap_wait_for_semaphore, id);
@@ -1469,6 +1522,8 @@ TEST_FUNCTION(test_crash_dump_check_completion, nullptr, nullptr)
     // Test all types
     is_completed = crash_dump_get_is_dump_complete(NULL);
     assert_true(is_completed);
+
+    __use_real_crash_dump_get_is_dump_complete = false;
 }
 
 TEST_FUNCTION(test_crash_dump_tx_full_dump_to_bm, nullptr, nullptr)

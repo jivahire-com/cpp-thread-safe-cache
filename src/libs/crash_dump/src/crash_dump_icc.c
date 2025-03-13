@@ -11,6 +11,7 @@
 #include "crash_dump_icc.h"
 
 #include "crash_dump_accel.h"
+#include "crash_dump_status.h"
 
 #include <FpFwUtils.h>            // for FPFW_UNUSED
 #include <accelip_id.h>           // for ACCEL_ID_SDM, ACCEL_ID_CDED
@@ -52,7 +53,7 @@ static void cd_accel_recv_addr_notify_cb(void* context, size_t output_size_bytes
     crash_dump_context_t* ctx = crash_dump_context();
 
     ctx->accel_cd_dtcm_offset[accel_type] = msg->dtcm_offset;
-    crash_dump_register_post_dump_callback(crash_dump_copy_accel_cd_file, (void*)accel_type);
+    crash_dump_register_post_dump_callback(crash_dump_copy_accel_cd_file, (void*)accel_type, CRASH_DUMP_TYPE_FULL);
     FPFwCDPrintf("CD[Accel %u]: DTCM offset 0x%lx\n", accel_type, msg->dtcm_offset);
 }
 
@@ -246,9 +247,15 @@ void crash_dump_notify_accelerators()
         fpfw_status_t status =
             fpfw_icc_base_send_sync(icc_ctx, &largefifo_crash_dump_msg, sizeof(largefifo_crash_dump_msg));
 
-        if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
+        if (status == FPFW_ICC_BASE_STATUS_SUCCESS)
+        {
+            crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_IN_PROGRESS);
+        }
+        else
         {
             FPFwCDPrintf("Fail to send CD req to %u: status = 0x%08lx\n", accel_type, status);
+
+            crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_NOT_AVAILABLE);
         }
     }
 }

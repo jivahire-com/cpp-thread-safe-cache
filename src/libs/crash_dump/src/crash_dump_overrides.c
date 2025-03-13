@@ -20,44 +20,50 @@
 #include <tx_api.h>     // for tx_mutex_get, tx_mutex_put
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define PRE_DUMP_CB_MAX  16
-#define POST_DUMP_CB_MAX 8
 
 /*------------- Typedefs -----------------*/
-typedef struct
-{
-    void (*callback_fn)(void*);
-    void* callback_ctx;
-} dump_callback_t;
 
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static dump_callback_t pre_dump_callbacks[PRE_DUMP_CB_MAX];
-static uint32_t pre_dump_cb_count = 0;
-
-static dump_callback_t post_dump_callbacks[POST_DUMP_CB_MAX];
-static uint32_t post_dump_cb_count = 0;
 
 /*------------- Functions ----------------*/
-void crash_dump_register_pre_dump_callback(void cb(void*), void* ctx)
+void crash_dump_register_pre_dump_callback(void cb(void*), void* ctx, crash_dump_type_t dump_type)
 {
-    FPFW_RUNTIME_ASSERT(pre_dump_cb_count < PRE_DUMP_CB_MAX - 1);
     FPFW_RUNTIME_ASSERT(cb != NULL);
+    crash_dump_context_t* cd_ctx = crash_dump_context();
 
-    pre_dump_callbacks[pre_dump_cb_count].callback_fn = cb;
-    pre_dump_callbacks[pre_dump_cb_count].callback_ctx = ctx;
-    pre_dump_cb_count++;
+    for (int i = 0; i < CRASH_DUMP_TYPE_NUM; i++)
+    {
+        if (dump_type == CRASH_DUMP_TYPE_ALL || dump_type == i)
+        {
+            crash_dump_type_callback_t* callback = &cd_ctx->callbacks[i];
+            FPFW_RUNTIME_ASSERT(callback->pre_dump_cb_count < PRE_DUMP_CB_MAX - 1);
+
+            callback->pre_dump_callbacks[callback->pre_dump_cb_count].callback_fn = cb;
+            callback->pre_dump_callbacks[callback->pre_dump_cb_count].callback_ctx = ctx;
+            callback->pre_dump_cb_count++;
+        }
+    }
 }
 
-void crash_dump_register_post_dump_callback(void cb(void*), void* ctx)
+void crash_dump_register_post_dump_callback(void cb(void*), void* ctx, crash_dump_type_t dump_type)
 {
-    FPFW_RUNTIME_ASSERT(post_dump_cb_count < POST_DUMP_CB_MAX - 1);
     FPFW_RUNTIME_ASSERT(cb != NULL);
+    crash_dump_context_t* cd_ctx = crash_dump_context();
 
-    post_dump_callbacks[post_dump_cb_count].callback_fn = cb;
-    post_dump_callbacks[post_dump_cb_count].callback_ctx = ctx;
-    post_dump_cb_count++;
+    for (int i = 0; i < CRASH_DUMP_TYPE_NUM; i++)
+    {
+        if (dump_type == CRASH_DUMP_TYPE_ALL || dump_type == i)
+        {
+            crash_dump_type_callback_t* callback = &cd_ctx->callbacks[i];
+            FPFW_RUNTIME_ASSERT(callback->post_dump_cb_count < POST_DUMP_CB_MAX - 1);
+
+            callback->post_dump_callbacks[callback->post_dump_cb_count].callback_fn = cb;
+            callback->post_dump_callbacks[callback->post_dump_cb_count].callback_ctx = ctx;
+            callback->post_dump_cb_count++;
+        }
+    }
 }
 
 /*------- Memory Pool Overrides -------*/
@@ -114,11 +120,13 @@ bool inGlobalMemoryOverride(uint64_t addr, uint32_t size)
  */
 bool preDumpCallbackOverride(void* preDumpCtx)
 {
-    FPFW_UNUSED(preDumpCtx);
+    crash_dump_context_t* ctx = crash_dump_context();
+    crash_dump_type_t type = ((crash_dump_type_context_t*)preDumpCtx)->type;
+    crash_dump_type_callback_t* callback = &ctx->callbacks[type];
 
-    for (uint32_t i = 0; i < pre_dump_cb_count; i++)
+    for (uint32_t i = 0; i < callback->pre_dump_cb_count; i++)
     {
-        pre_dump_callbacks[i].callback_fn(pre_dump_callbacks[i].callback_ctx);
+        callback->pre_dump_callbacks[i].callback_fn(callback->pre_dump_callbacks[i].callback_ctx);
     }
 
     return true;
@@ -132,11 +140,13 @@ bool preDumpCallbackOverride(void* preDumpCtx)
  */
 bool postDumpCallbackOverride(void* postDumpCtx)
 {
-    FPFW_UNUSED(postDumpCtx);
+    crash_dump_context_t* ctx = crash_dump_context();
+    crash_dump_type_t type = ((crash_dump_type_context_t*)postDumpCtx)->type;
+    crash_dump_type_callback_t* callback = &ctx->callbacks[type];
 
-    for (uint32_t i = 0; i < post_dump_cb_count; i++)
+    for (uint32_t i = 0; i < callback->post_dump_cb_count; i++)
     {
-        post_dump_callbacks[i].callback_fn(post_dump_callbacks[i].callback_ctx);
+        callback->post_dump_callbacks[i].callback_fn(callback->post_dump_callbacks[i].callback_ctx);
     }
 
     return true;

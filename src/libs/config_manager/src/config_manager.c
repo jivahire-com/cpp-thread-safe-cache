@@ -267,16 +267,16 @@ void cfg_mgr_init(fpfw_cfg_mgr_config_t* cfg_mgr_config, var_service_shared_mem_
                 {
                     apply_override_knob_from_primary_die(SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE);
                 }
-
-                // Copy all cached knob values, including the ones now that got overridden
-                // to the shared RAM for MCP to read.
-                size_t knob_values_size = fpfw_cfg_mgr_get_cached_knob_values_size();
-                BUG_ASSERT_PARAM(knob_values_size <= SCP_EXP_CONFIG_KNOB_CACHE_SIZE, knob_values_size, SCP_EXP_CONFIG_KNOB_CACHE_SIZE);
-
-                fpfw_status_t status =
-                    fpfw_cfg_mgr_get_cached_knob_values((void*)SCP_EXP_CONFIG_KNOB_CACHE_BASE, knob_values_size);
-                BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(status), status, knob_values_size);
             }
+
+            // Copy all cached knob values, including the ones now that got overridden
+            // to the shared RAM for MCP to read.
+            size_t knob_values_size = fpfw_cfg_mgr_get_cached_knob_values_size();
+            BUG_ASSERT_PARAM(knob_values_size <= SCP_EXP_CONFIG_KNOB_CACHE_SIZE, knob_values_size, SCP_EXP_CONFIG_KNOB_CACHE_SIZE);
+
+            fpfw_status_t status =
+                fpfw_cfg_mgr_get_cached_knob_values((void*)SCP_EXP_CONFIG_KNOB_CACHE_BASE, knob_values_size);
+            BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(status), status, knob_values_size);
         }
         else
         {

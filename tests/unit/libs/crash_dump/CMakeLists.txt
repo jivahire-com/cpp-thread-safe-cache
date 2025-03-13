@@ -86,4 +86,5 @@ mock_target(${TARGET}
     release_semaphore
     idhw_is_single_die_boot_en
     idsw_get_platform_sdv
+    crash_dump_get_is_dump_complete
 )

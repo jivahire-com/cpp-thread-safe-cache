@@ -29,6 +29,9 @@ extern "C" {
 
 #define CRASH_DUMP_PROCESSOR_ID(d, c)   (((d) << 16) | ((c) & 0xFFFF))
 
+#define PRE_DUMP_CB_MAX  8
+#define POST_DUMP_CB_MAX 8
+
 /*-------------- Typedefs ----------------*/
 typedef enum
 {
@@ -43,6 +46,7 @@ typedef enum
 
 typedef enum
 {
+    CRASH_DUMP_TYPE_ALL = -1,
     CRASH_DUMP_TYPE_MINI = 0,
     CRASH_DUMP_TYPE_FULL = 1,
     CRASH_DUMP_TYPE_NUM
@@ -117,6 +121,26 @@ typedef struct {
 } crash_dump_header_t;
 
 /**
+ * @brief Crashdump callback type
+ * 
+ */
+typedef struct
+{
+    void (*callback_fn)(void*);
+    void* callback_ctx;
+} crash_dump_callback_t;
+
+typedef struct
+{
+    crash_dump_callback_t pre_dump_callbacks[PRE_DUMP_CB_MAX];
+    uint32_t pre_dump_cb_count;
+
+    crash_dump_callback_t post_dump_callbacks[POST_DUMP_CB_MAX];
+    uint32_t post_dump_cb_count;
+} crash_dump_type_callback_t;
+
+
+/**
  * @brief HW semaphore configuration
  * 
  */
@@ -155,7 +179,7 @@ typedef struct {
     // Per type contexts
     //
     crash_dump_type_context_t *type_ctx[CRASH_DUMP_TYPE_NUM];   // type contexts.
-
+    crash_dump_type_callback_t callbacks[CRASH_DUMP_TYPE_NUM];  // crashdump callbacks
     //
     // Global context
     //
@@ -254,7 +278,7 @@ void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p
  *
  * @param ctx User defined callback function context (supplied to callback when called)
  */
-void crash_dump_register_pre_dump_callback(void cb(void *), void *ctx);
+void crash_dump_register_pre_dump_callback(void cb(void *), void *ctx, crash_dump_type_t dump_type);
 
 /**
  *
@@ -264,7 +288,7 @@ void crash_dump_register_pre_dump_callback(void cb(void *), void *ctx);
  *
  * @param ctx User defined callback function context (supplied to callback when called)
  */
-void crash_dump_register_post_dump_callback(void cb(void*), void* ctx);
+void crash_dump_register_post_dump_callback(void cb(void*), void* ctx, crash_dump_type_t dump_type);
 
 /**
  *

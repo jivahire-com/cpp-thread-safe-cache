@@ -58,5 +58,6 @@ int get_mmap_size_bytes(ddrss_memory_region_t appended_mmap_64b[], size_t *num_b
  *   |  lower   |  Region  |   upper  |   |  Region      |     remainder   |
  *   +----------+----------+----------+   +--------------+-----------------+
  */
-#define MAX_MEMORY_REGIONS       DDRSS_MAX_MEM_REGIONS + ARRAY_OF_RSVD_REGIONS_COUNT
+#define ALLOWANCE_FOR_EMPTY_ADDRESS_RANGES (6)
+#define MAX_MEMORY_REGIONS       (DDRSS_MAX_MEM_REGIONS + ARRAY_OF_RSVD_REGIONS_COUNT + ALLOWANCE_FOR_EMPTY_ADDRESS_RANGES)
 

@@ -70,9 +70,10 @@ static int teardown(void** state)
 //
 // Tests
 //
-TEST_FUNCTION(test_prod_ddrss_lib_init_skip, setup, teardown)
+TEST_FUNCTION(test_prod_ddrss_lib_init_partial_or_skip, setup, teardown)
 {
     KNG_DIE_ID test_die = (KNG_DIE_ID)0;
+    cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
     int i = 0;
 
     // ddrss init is skipped on svp, therefore no expectations
@@ -91,6 +92,14 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_skip, setup, teardown)
         expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
     }
     will_return_always(__wrap_idhw_is_single_die_boot_en, true);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
+    will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+    will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
+
+    will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
+    expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_1);
+
     prod_ddrss_lib_init(test_die);
 
     // ddrss init is skipped if not on an FPGA, therefore no expectations

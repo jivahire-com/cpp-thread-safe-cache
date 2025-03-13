@@ -133,12 +133,6 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.ext_knobs.pas_encryption_en_mask = config_get_pas_encryption_en_mask();
 
     platform_id = idsw_get_platform_sdv();
-    if (platform_id == PLATFORM_SVP_SIM || platform_id == PLATFORM_SVP_MIN_CONFIG_SIM)
-    {
-        // SVP does not support full DDR model, skip it.
-        printf("DDRSS init skipped: SVP\n");
-        return;
-    }
 
     const char* platform_str;
     if ((platform_id == PLATFORM_FPGA_LARGE) || (platform_id == PLATFORM_FPGA_LARGE_RVP))
@@ -182,6 +176,23 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         ddrss_cfgs.phy_fw_type = DDRSS_PHY_FW_TRAINING;
         ddrss_cfgs.phy_fw_img_info.fimg_base = SCP_EXP_DDR_PHY_DATA_BASE;
         ddrss_cfgs.phy_fw_img_info.fimg_check = 1;
+    }
+    else if (platform_id == PLATFORM_SVP_SIM || platform_id == PLATFORM_SVP_MIN_CONFIG_SIM)
+    {
+        platform_str = "SVP";
+
+        // For SVP only run very limited warm reset flow since the full DDR model
+        // is not supported on SVP. The intention here is to provide memory map info
+        // on SVP platform. The reported memory size is calculated using ddrss_mask
+        // (indicates DIMM numbers) and dimm_sku (indicates DIMM size).
+        // For single die, ddrss_mask = 0x3f, so total memory size is 6 * 64GB.
+        // For dual die, ddrss_mask = 0xff, so total memory size is 12 * 64GB.
+        ddrss_cfgs.dimm_sku = DDR5_RDIMM_2Rx4_16Gb_64GB;
+
+        // Force warm reset flow and turn off INTU and RAS for SVP.
+        ddrss_cfgs.reset_reason = DDRSS_SYS_RESET_WARM;
+        ddrss_cfgs.ext_knobs.ras_init_en = 0;
+        ddrss_cfgs.ext_knobs.intu_init_en = 0;
     }
     else
     {

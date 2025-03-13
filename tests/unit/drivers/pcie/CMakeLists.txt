@@ -52,7 +52,6 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     # Mock external MSCP interfaces
     enable_vab_isrs
-    plat_overrides_post_rp_ready
     system_info_get_board_id
     # Config manager mocks
     config_get_cxl_params_die0

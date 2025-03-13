@@ -142,12 +142,6 @@ int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
     /* Enable RPSS VAB ISRs now as the rpss is programmed and ready to go */
     enable_vab_isrs((1 << rpss->id));
 
-    /*
-     * Platform Override program GIC comparator
-     * Task 2013275: Platform Override: add programming of RPSS MSI comparator
-     */
-    plat_overrides_post_rp_ready(rpss);
-
     return sts;
 }
 

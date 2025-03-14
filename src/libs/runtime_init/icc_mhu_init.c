@@ -35,6 +35,7 @@
 #include <silibs_scp_top_regs.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <system_info.h>
 
 /*-------------- Macros ------------------*/
 
@@ -64,9 +65,9 @@
 //
 
 #ifdef SCP_RUNTIME_INIT
-FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "hw_ver", "mesh", "arsm"))
+FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "hw_ver", "mesh", "arsm", "sysinfo"))
 #else
-FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "hw_ver"))
+FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "hw_ver", "sysinfo"))
 #endif
 {
 
@@ -95,6 +96,7 @@ FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "
     }
 
     mhu_icc_transport_device_config_t dev_config = {
+        .recv_reset_on_init = !system_info_is_warm_start(),
         .recv_irq_num = HW_INT_AP2MSCP_MHU_S_INT,
         .recv_channel =
             {
@@ -151,7 +153,7 @@ FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_icc_mscp_2_tfa_if};
 }
 
-FPFW_INIT_COMPONENT(icc_mscp2mscp, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
+FPFW_INIT_COMPONENT(icc_mscp2mscp, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "sysinfo"))
 {
     KNG_CPU_TYPE cpu_id = idsw_get_cpu_type();
 
@@ -174,6 +176,7 @@ FPFW_INIT_COMPONENT(icc_mscp2mscp, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
     }
 
     mhu_icc_transport_device_config_t dev_config = {
+        .recv_reset_on_init = system_info_is_warm_start(),
         .recv_irq_num = HW_INT_MSCP2MSCP_MHU_INT,
         .recv_channel =
             {
@@ -275,9 +278,9 @@ FPFW_INIT_COMPONENT(icc_mscp2mscp, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
 }
 
 #ifdef SCP_RUNTIME_INIT
-FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "mesh"))
+FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "mesh", "sysinfo"))
 #else
-FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc"))
+FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "sysinfo"))
 #endif
 {
     KNG_CPU_TYPE cpu_id = idsw_get_cpu_type();
@@ -313,6 +316,7 @@ FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu
     }
 
     mhu_icc_transport_device_config_t dev_config = {
+        .recv_reset_on_init = system_info_is_warm_start(),
         .recv_irq_num = HW_INT_MSCP2AP_NS_MHU_INT,
         .recv_channel =
             {
@@ -414,9 +418,9 @@ FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu
 }
 
 #ifdef SCP_RUNTIME_INIT
-FPFW_INIT_COMPONENT(icc_die2die, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "mesh"))
+FPFW_INIT_COMPONENT(icc_die2die, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "mesh", "sysinfo"))
 #else
-FPFW_INIT_COMPONENT(icc_die2die, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc"))
+FPFW_INIT_COMPONENT(icc_die2die, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "sysinfo"))
 #endif
 {
     bool single_die = idhw_is_single_die_boot_en();
@@ -460,6 +464,7 @@ FPFW_INIT_COMPONENT(icc_die2die, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_s
     }
 
     mhu_icc_transport_device_config_t dev_config = {
+        .recv_reset_on_init = system_info_is_warm_start(),
         .recv_irq_num = HW_INT_D2D_NS_INT,
         .recv_channel =
             {

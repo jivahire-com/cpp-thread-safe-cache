@@ -40,6 +40,20 @@
 //
 
 typedef struct {
+    //
+    // If true, the MHU IP and shared memory for the recv channel
+    // will be reset as part of the device initialization.
+    //
+    // The primary used case for this is the warm reset scenario,
+    // where a channel may optionally want to clear it's state or
+    // not. On a cold reset the MHU IP and Shared Memory are reset
+    // by default, that's not the case for warm resets. Not resetting
+    // on a warm reset enables messages the other side of the recv 
+    // channel (the send side for the other core) has sent to be
+    // received on the recv side of the channel (not being cleared).
+    //
+    bool recv_reset_on_init;
+
     uint32_t recv_irq_num;
 
     icc_mhu_channel_t recv_channel;

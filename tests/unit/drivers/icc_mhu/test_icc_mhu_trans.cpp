@@ -133,6 +133,12 @@ fpfw_status_t __wrap_fpfw_timer_reset(fpfw_timer_t* timer)
     return mock_type(fpfw_status_t);
 }
 
+uint32_t __wrap_icc_mhu_clear_channel(picc_mhu_channel_t p_channel)
+{
+    FPFW_UNUSED(p_channel);
+    return mock_type(uint32_t);
+}
+
 uint32_t __wrap_icc_mhu_get_packet(picc_mhu_channel_t p_channel, picc_mhu_packet_t p_dest_mhu_packet)
 {
     FPFW_UNUSED(p_channel);
@@ -238,6 +244,24 @@ TEST_FUNCTION(test_mhu_icc_transport_device_init_success, NULL, NULL)
     fpfw_status_t status =
         mhu_icc_transport_device_init(&s_test_mhu_icc_transport_device, &s_test_schedule, &s_test_dev_config);
     assert_int_equal(status, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_mhu_icc_transport_device_init_reset_recv_success, NULL, NULL)
+{
+    s_test_dev_config.recv_reset_on_init = true;
+
+    expect_function_call(__wrap_DfwkDeviceInitialize);
+    will_return(__wrap_FPFwCoreInterruptRegisterCallback, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_timer_create, FPFW_STATUS_SUCCESS);
+
+    will_return(__wrap_icc_mhu_clear_channel, ICC_MHU_STATUS_S_SUCCESS);
+    will_return(__wrap_icc_mhu_check_packet_pending, false);
+
+    fpfw_status_t status =
+        mhu_icc_transport_device_init(&s_test_mhu_icc_transport_device, &s_test_schedule, &s_test_dev_config);
+    assert_int_equal(status, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
+
+    s_test_dev_config.recv_reset_on_init = false;
 }
 
 TEST_FUNCTION(test_mhu_icc_transport_interface_init_null, NULL, NULL)

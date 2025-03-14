@@ -25,6 +25,7 @@ set(LIBRARIES
     ms::lib::icc_platform_defines
     ms::lib::interface::mhu_icc_payloads
     ms::lib::accel_intr
+    ms::lib::system_info
     ms::service::atu_service
     silibs::platform
     silibs::kng_silibs_platform

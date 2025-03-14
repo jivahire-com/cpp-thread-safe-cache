@@ -206,6 +206,10 @@ fpfw_status_t mhu_icc_transport_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER Request)
         {
             p_mhu_packet->header.msg_header.payload_size = recv_try_req->Input.BufferSizeBytes - sizeof(icc_mhu_header_t);
         }
+
+        //
+        // icc_mhu_get_packet will clear the doorbell if there is a pending packet, even if the packet has an incompatible size.
+        //
         uint32_t icc_packet_status = icc_mhu_get_packet(&(device->recv_channel), p_mhu_packet);
 
         recv_try_req->Output.ReceivedBytes = p_mhu_packet->header.msg_header.payload_size + sizeof(icc_mhu_header_t);
@@ -312,6 +316,9 @@ void mhu_icc_transport_isr(void* context)
         p_mhu_req->header.msg_header.payload_size = p_req->Input.BufferSizeBytes - sizeof(icc_mhu_header_t);
     }
 
+    //
+    // icc_mhu_get_packet will clear the doorbell if there is a pending packet, even if the packet has an incompatible size.
+    //
     uint32_t icc_packet_status = icc_mhu_get_packet(&(device->recv_channel), p_mhu_req);
 
     // Update the user request based on the success of getting a packet
@@ -364,6 +371,30 @@ fpfw_status_t mhu_icc_transport_device_init(mhu_icc_transport_device_t* dev,
 
     dev->recv_channel = config->recv_channel;
     dev->send_channel = config->send_channel;
+
+    //
+    // We don't always want to reset the channel on initialization. For example, if the sending
+    // side of the channel is up before the receiving side, and has sent a message, we may want to
+    // still receive that when the receive side sets up the request (not clearing the channel).
+    //
+    if (config->recv_reset_on_init)
+    {
+        //
+        // Reset the receive channel and validate that it is clear
+        //     1. Clear the channel (clears the doorbell status and payload memory)
+        //     2. Validate that the doorbell status is clear
+        //
+
+        uint32_t recv_channel_clear_status = icc_mhu_clear_channel(&(dev->recv_channel));
+        FPFW_RUNTIME_ASSERT_EXT(recv_channel_clear_status == ICC_MHU_STATUS_S_SUCCESS,
+                                recv_channel_clear_status,
+                                dev->recv_channel.ch_id,
+                                (uintptr_t)dev,
+                                0);
+
+        bool recv_channel_busy = icc_mhu_check_packet_pending(&(dev->recv_channel));
+        FPFW_RUNTIME_ASSERT_EXT(recv_channel_busy == false, recv_channel_busy, dev->recv_channel.ch_id, (uintptr_t)dev, 0);
+    }
 
     dev->async_recv_ctx.recv_irq_num = config->recv_irq_num;
     dev->async_send_ctx.timer_retry_max = config->async_send_retry_max;

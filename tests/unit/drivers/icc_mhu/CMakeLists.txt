@@ -54,6 +54,7 @@ mock_target(${TARGET}
     fpfw_timer_create
     fpfw_timer_enable
     fpfw_timer_reset
+    icc_mhu_clear_channel
     icc_mhu_get_packet
     icc_mhu_send_packet
     icc_mhu_check_packet_pending

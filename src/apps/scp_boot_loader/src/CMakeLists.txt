@@ -35,6 +35,7 @@ target_link_libraries(
             ms::boot_loader::interface
             ms::lib::boot_loader
             ms::cmsis::interface
+            ms::lib::cortex_m7::mpu
             register_headers
 )
 

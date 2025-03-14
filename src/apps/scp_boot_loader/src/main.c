@@ -11,10 +11,10 @@
 /*------------- Includes -----------------*/
 #include <cmsis_m7.h>
 #include <kingsgate_boot.h>
+#include <mpu.h>
 #include <scp_mmap.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <unpack_image.h>
 
 /*-------------- Typedefs ----------------*/
 
@@ -47,6 +47,18 @@ kingsgate_boot_config_t boot_config = {
     .cpu_type = MSCP_CPU_SCP,
 };
 
+//! Will be overridden by the SCP firmware
+const ARM_MPU_Region_t region[] = {
+    /**
+     * MPU Region 0 - Complete Memory Map   0x00000000 - 0xFFFFFFFF
+     *                Strongly Ordered, non cacheable, non shared, non bufferable
+     *                Priviledged R/W
+     */
+    {
+        .RBAR = ARM_MPU_RBAR(0, 0x00000000), // NOLINT
+        .RASR = ARM_MPU_RASR(ENABLE_EXEC, ARM_MPU_AP_PRIV, TYPE_EXT_0, NON_SHAREABLE, NON_CACHEABLE, NON_BUFFERABLE, DISABLE_SUBREGION, ARM_MPU_REGION_SIZE_4GB),
+    },
+};
 /*------------- Functions ----------------*/
 
 /**
@@ -82,6 +94,17 @@ static void arch_init_ccr(void)
 }
 
 /**
+ * @brief  This function sets up the SHCSR register to enable fault handlers.
+ *
+ */
+static void arch_init_shcsr(void)
+{
+    SCB->SHCSR |= SCB_SHCSR_USGFAULTENA_Msk; // Enable usage fault
+    SCB->SHCSR |= SCB_SHCSR_BUSFAULTENA_Msk; // Enable bus fault
+    SCB->SHCSR |= SCB_SHCSR_MEMFAULTENA_Msk; // Enable memory fault
+}
+
+/**
  *  @brief This function is main function of SCP boot loader.
  *
  *  @note This function is invoked from C runtime _start.
@@ -94,11 +117,19 @@ static void arch_init_ccr(void)
  */
 int main(void)
 {
+    //! Set up the Configuration Control Register (CCR) in the System Control
     arch_init_ccr();
-
+    //! Set up the SHCSR register to enable fault handlers
+    arch_init_shcsr();
+    //! Set the initial MPU settings for bootloader which will be overridden by the SCP firmware
+    mpu_init(region, 1);
+    //! Parse boot config, decompress and load the image in TCMs & RMSS data region
+    //! and return the ITCM base address
     void* address = load_image(&boot_config);
     if (address)
     {
+        //! Set the vector table addr, fetch initial stack ptr (1st entry) from the vector table & set it as the main stack ptr
+        //! load reset handler address (2nd entry) from vector table into PC & ultimately start executing the reset handler (boot_loader_vectors.S)
         launch_image(address, &SCB->VTOR);
     }
     else

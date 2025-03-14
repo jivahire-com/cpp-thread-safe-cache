@@ -124,6 +124,7 @@ static void idle_handler(int event, const void* event_data)
     case POWER_LOOP_STATE_SIGNAL_ENTRY:
         // Returning to idle state
         POWER_LOG_TRACE("Control loop idle");
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [idle_handler] POWER_LOOP_STATE_SIGNAL_ENTRY\n");
         // reset necessary state
         corebits_clear(&s_ctrl_loop.plimits_pending);
         corebits_clear(&s_ctrl_loop.plimits_successful);
@@ -139,6 +140,7 @@ static void idle_handler(int event, const void* event_data)
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
         // Leaving idle state
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [idle_handler] POWER_CTRL_LOOP_SIGNAL_INTERVAL\n");
         power_control_loop_change_state(POWER_CONTROL_STATE_COLLECT_INPUTS);
         break;
     default:
@@ -239,6 +241,7 @@ static void collect_inputs_handler(int event, const void* event_data)
     switch (event)
     {
     case POWER_LOOP_STATE_SIGNAL_ENTRY:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [collect_inputs_handler] POWER_LOOP_STATE_SIGNAL_ENTRY\n");
         // Start state collection
         // Request VR currents - done from telem loop not here
 
@@ -248,12 +251,14 @@ static void collect_inputs_handler(int event, const void* event_data)
         get_current_state();
         break;
     case POWER_CTRL_LOOP_SIGNAL_VR_READ:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [collect_inputs_handler] POWER_CTRL_LOOP_SIGNAL_VR_READ\n");
         // state collection done?
         FPFW_RUNTIME_ASSERT(event_data != NULL);
         s_ctrl_loop.local.power = *(power_latest_calcs_t*)event_data;
         power_control_loop_change_state(POWER_CONTROL_STATE_EXCHANGE_INPUTS);
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [collect_inputs_handler] POWER_CTRL_LOOP_SIGNAL_INTERVAL\n");
         if (power_control_loop_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL))
         {
             power_control_loop_change_state(POWER_CONTROL_STATE_ERROR);
@@ -297,6 +302,7 @@ static void distribute_available_handler(int event, const void* event_data)
     switch (event)
     {
     case POWER_LOOP_STATE_SIGNAL_ENTRY: {
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [distribute_available_handler] POWER_LOOP_STATE_SIGNAL_ENTRY\n");
         // Start state distribute available
 
         // this update should really be a one-time thing, but we'll do it here to simplify synchronization
@@ -398,18 +404,22 @@ static void set_vr_handler(power_ctrl_loop_state_t next_state_set,
     {
     case POWER_LOOP_STATE_SIGNAL_ENTRY:
     case POWER_CTRL_LOOP_SIGNAL_VCPU_SET_FAIL:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [set_vr_handler] POWER_LOOP_STATE_SIGNAL_ENTRY\n");
         // State entry or failure/retry condition
         // Set VR(Vcpu)
         power_vrs_write_vcpu_voltage(s_ctrl_loop.required_vcpu);
         break;
     case POWER_CTRL_LOOP_SIGNAL_VCPU_DONE:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [set_vr_handler] POWER_CTRL_LOOP_SIGNAL_VCPU_DONE\n");
         power_control_loop_change_state(next_state_done);
         break;
     case POWER_CTRL_LOOP_SIGNAL_VCPU_PENDING:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [set_vr_handler] POWER_CTRL_LOOP_SIGNAL_VCPU_PENDING\n");
         // on set acknowledge, we need to read until change is done
         power_control_loop_change_state(next_state_set);
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [set_vr_handler] POWER_CTRL_LOOP_SIGNAL_INTERVAL\n");
         if (power_control_loop_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL))
         {
             power_control_loop_change_state(POWER_CONTROL_STATE_ERROR);
@@ -431,14 +441,17 @@ static void wait_vr_handler(power_ctrl_loop_state_t next_state_done, power_ctrl_
     case POWER_LOOP_STATE_SIGNAL_ENTRY:
     case POWER_CTRL_LOOP_SIGNAL_VCPU_SET_FAIL:
     case POWER_CTRL_LOOP_SIGNAL_VCPU_PENDING:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [wait_vr_handler] POWER_LOOP_STATE_SIGNAL_ENTRY\n");
         // State entry
         // Read VR(Vcpu) for done bit
         power_vrs_read_vcpu_voltage();
         break;
     case POWER_CTRL_LOOP_SIGNAL_VCPU_DONE:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [wait_vr_handler] POWER_CTRL_LOOP_SIGNAL_VCPU_DONE\n");
         power_control_loop_change_state(next_state_done);
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [wait_vr_handler] POWER_CTRL_LOOP_SIGNAL_INTERVAL\n");
         if (power_control_loop_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL))
         {
             power_control_loop_change_state(POWER_CONTROL_STATE_ERROR);
@@ -452,6 +465,7 @@ static void wait_vr_handler(power_ctrl_loop_state_t next_state_done, power_ctrl_
 
 static void set_vr_after_handler(int event, const void* event_data)
 {
+    POWER_LOG_TRACE("[POWER CTRL LOOP] [set_vr_after_handler] event %d\n", event);
     // call common handler indicating next state after VR change complete
     // if we're setting VR after PLIMIT change, next state is completion
     set_vr_handler(POWER_CONTROL_STATE_WAIT_VR_AFTER_PLIMIT, POWER_CONTROL_STATE_EXCHANGE_COMPLETION, event, event_data);
@@ -459,6 +473,7 @@ static void set_vr_after_handler(int event, const void* event_data)
 
 static void wait_vr_after_handler(int event, const void* event_data)
 {
+    POWER_LOG_TRACE("[POWER CTRL LOOP] [wait_vr_after_handler] event %d\n", event);
     // call common handler indicating next state after VR change complete
     // if we're setting VR after PLIMIT change, next state is completion
     wait_vr_handler(POWER_CONTROL_STATE_EXCHANGE_COMPLETION, event, event_data);
@@ -466,6 +481,7 @@ static void wait_vr_after_handler(int event, const void* event_data)
 
 static void set_vr_before_handler(int event, const void* event_data)
 {
+    POWER_LOG_TRACE("[POWER CTRL LOOP] [set_vr_before_handler] event %d\n", event);
     // call common handler indicating next state after VR change complete
     // if we're setting VR before PLIMIT change, next state is
     // SET_PLIMIT_AFTER_VR
@@ -474,6 +490,7 @@ static void set_vr_before_handler(int event, const void* event_data)
 
 static void wait_vr_before_handler(int event, const void* event_data)
 {
+    POWER_LOG_TRACE("[POWER CTRL LOOP] [wait_vr_before_handler] event %d\n", event);
     // call common handler indicating next state after VR change complete
     // if we're setting VR after PLIMIT change, next state is idle
     wait_vr_handler(POWER_CONTROL_STATE_SET_PLIMIT_AFTER_VR, event, event_data);
@@ -494,6 +511,7 @@ static void set_plimit_handler(power_ctrl_loop_state_t next_state, power_ctrl_lo
     switch (event)
     {
     case POWER_LOOP_STATE_SIGNAL_ENTRY:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [set_plimit_handler] POWER_LOOP_STATE_SIGNAL_ENTRY\n");
         // Start state collection
         // Set PLIMITs
         hw_write_plimits(p_runconfig);
@@ -504,6 +522,7 @@ static void set_plimit_handler(power_ctrl_loop_state_t next_state, power_ctrl_lo
         plimit->counter_last_send = counter;
         break;
     case POWER_CTRL_LOOP_SIGNAL_PLIMIT_PENDING: {
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [set_plimit_handler] POWER_CTRL_LOOP_SIGNAL_PLIMIT_PENDING\n");
         // Drain Sensor FIFO
         hw_drain_sensor_fifo();
         // all Plimits successful?
@@ -538,6 +557,7 @@ static void set_plimit_handler(power_ctrl_loop_state_t next_state, power_ctrl_lo
     }
     break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [set_plimit_handler] POWER_CTRL_LOOP_SIGNAL_INTERVAL\n");
         // error to receive any other event in this state
         if (power_control_loop_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL))
         {
@@ -576,19 +596,24 @@ static void set_plimit_after_handler(int event, const void* event_data)
 static void exchange_inputs_handler(int event, const void* event_data)
 {
     UNUSED(event_data);
+    //! How is this event data being used for exchange inputs event?
 
     switch (event)
     {
     case POWER_LOOP_STATE_SIGNAL_ENTRY:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [exchange_inputs_handler] POWER_LOOP_STATE_SIGNAL_ENTRY\n");
         // Start state exchange inputs
         // Exchange inputs
         power_remote_die_exchange_inputs(power_runconfig_get());
         break;
     case POWER_CTRL_LOOP_SIGNAL_EXCHANGE_INPUTS:
+        POWER_LOG_TRACE(
+            "[POWER CTRL LOOP] [exchange_inputs_handler] POWER_CTRL_LOOP_SIGNAL_EXCHANGE_INPUTS\n");
         // exchange inputs done
         power_control_loop_change_state(POWER_CONTROL_STATE_DISTRIBUTE_AVAILABLE);
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [exchange_inputs_handler] POWER_CTRL_LOOP_SIGNAL_INTERVAL\n");
         // retry on interval signal
         if (power_control_loop_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL))
         {
@@ -606,20 +631,24 @@ static void exchange_inputs_handler(int event, const void* event_data)
 
 static void exchange_completion_handler(int event, const void* event_data)
 {
-    UNUSED(event_data);
+    UNUSED(event_data); //! How is this event data intended to be used for exchange completion event?
 
     switch (event)
     {
     case POWER_LOOP_STATE_SIGNAL_ENTRY:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [exchange_completion_handler] POWER_LOOP_STATE_SIGNAL_ENTRY\n");
         // Start state exchange completion
         // Exchange completion
         power_remote_die_exchange_complete(power_runconfig_get());
         break;
     case POWER_CTRL_LOOP_SIGNAL_EXCHANGE_COMPLETE:
+        POWER_LOG_TRACE(
+            "[POWER CTRL LOOP] [exchange_completion_handler] POWER_CTRL_LOOP_SIGNAL_EXCHANGE_COMPLETE\n");
         // exchange completion done
         power_control_loop_change_state(POWER_CONTROL_STATE_IDLE);
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [exchange_completion_handler] POWER_CTRL_LOOP_SIGNAL_INTERVAL\n");
         // retry on interval signal
         if (power_control_loop_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL))
         {

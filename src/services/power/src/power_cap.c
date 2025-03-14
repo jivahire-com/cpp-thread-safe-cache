@@ -32,26 +32,31 @@ static power_cap_completed_callback_t s_power_cap_callback = NULL;
 
 float max_electrical_limit(power_runconfig_t* p_runconfig, power_latest_calcs_t* p_local_power, power_latest_calcs_t* p_remote_power)
 {
-    float cpuin_v0 = AVS_VOLTAGE_FLOAT(p_local_power->vcpu_avs_voltage);
-    float cpuin_v1 = AVS_VOLTAGE_FLOAT(p_remote_power->vcpu_avs_voltage);
+    const float local_vcpu = AVS_VOLTAGE_FLOAT(p_local_power->vcpu_avs_voltage);
+    const float remote_vcpu = AVS_VOLTAGE_FLOAT(p_remote_power->vcpu_avs_voltage);
+    const float local_icpu = AVS_CURRENT_FLOAT(p_local_power->vcpu_avs_current);
+    const float remote_icpu = AVS_CURRENT_FLOAT(p_remote_power->vcpu_avs_current);
+    const float cpuin_i0 = p_runconfig->p_sconfig->is_primary_die ? local_icpu : remote_icpu;
+    const float cpuin_i1 = p_runconfig->p_sconfig->is_primary_die ? remote_icpu : local_icpu;
+
+    float cpuin_v0 = p_runconfig->p_sconfig->is_primary_die ? local_vcpu : remote_vcpu;
+    float cpuin_v1 = p_runconfig->p_sconfig->is_primary_die ? remote_vcpu : local_vcpu;
+
     float r_loadline_ohms0 = 0.000001F * p_runconfig->knobs.r_loadline_vcpu0_uohm; // r_loadline knob is a value in uOhms
     float r_loadline_ohms1 = 0.000001F * p_runconfig->knobs.r_loadline_vcpu1_uohm; // r_loadline knob is a value in uOhms
 
     // V_cpuin = V_cpusetpoint - (I_cpu * R_loadline)
-    // TODO: match loadline 0/1 to local or remote die (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491058/)
-    cpuin_v0 -= (AVS_CURRENT_FLOAT(p_local_power->vcpu_avs_current) * r_loadline_ohms0);
-    cpuin_v1 -= (AVS_CURRENT_FLOAT(p_remote_power->vcpu_avs_current) * r_loadline_ohms1);
+    cpuin_v0 -= (cpuin_i0 * r_loadline_ohms0);
+    cpuin_v1 -= (cpuin_i1 * r_loadline_ohms1);
 
     /*
     P_MEL0 = V_cpu0 * I_MEL + V_cpu1 * I_cpu1
     P_MEL1 = V_cpu0 * I_cpu0 + V_cpu1 * I_MEL
     P_cpu_cap = MIN(P_cpu_cap, P_MEL0, P_MEL1)
     */
-    // TODO: match current limit 0/1 to local or remote die (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491058/)
     float P_MEL0 = (cpuin_v0 * p_runconfig->knobs.soc_maximum_electrical_current_limit_vcpu0) +
-                   (cpuin_v1 * AVS_CURRENT_FLOAT(p_remote_power->vcpu_avs_current)); // soc_maximum_electrical_current_limit knob is in amps
-    float P_MEL1 = (cpuin_v0 * AVS_CURRENT_FLOAT(p_local_power->vcpu_avs_current) +
-                    (cpuin_v1 * p_runconfig->knobs.soc_maximum_electrical_current_limit_vcpu1)); // soc_maximum_electrical_current_limit knob is in amps
+                   (cpuin_v1 * cpuin_i1); // soc_maximum_electrical_current_limit knob is in amps
+    float P_MEL1 = (cpuin_v0 * cpuin_i0 + (cpuin_v1 * p_runconfig->knobs.soc_maximum_electrical_current_limit_vcpu1)); // soc_maximum_electrical_current_limit knob is in amps
 
     return FPFW_MIN(P_MEL0, P_MEL1); // soc_maximum_electrical_current_limit
                                      // knob is in amps

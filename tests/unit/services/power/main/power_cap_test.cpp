@@ -42,6 +42,9 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 
 static power_runconfig_t test_power_runconfig = {};
+static power_service_config_t test_power_service_config = {
+    .is_primary_die = true,
+};
 
 /*------------- Functions ----------------*/
 //
@@ -65,7 +68,7 @@ static int setup(void** state)
     test_power_runconfig.knobs.soc_maximum_electrical_current_limit_vcpu1 = 500; // again, just need a value- this is in amps
 
     test_power_runconfig.derived.soc_maximum_thermal_watts_limit = CONFIGURED_THERMAL_WATTS_LIMIT;
-
+    test_power_runconfig.p_sconfig = &test_power_service_config;
     return 0;
 }
 

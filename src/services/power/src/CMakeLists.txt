@@ -46,6 +46,7 @@ target_link_libraries(${TARGET}
         silibs::avs
         silibs::dvfs
         silibs::gpio
+        silibs::icc_mhu
         silibs::idsw
         silibs::idsw_kng
         silibs::kng_silibs_platform

@@ -314,6 +314,13 @@ void power_vrs_initiate_vr_reads();
 uint32_t power_vrs_get_recent_power_mw();
 
 /**
+ * @brief Store remote power values
+ * 
+ * @param p_remote_power 
+ */
+void store_remote_soc_power(power_latest_calcs_t* p_remote_power);
+
+/**
  * @brief Initiates send of vcpu voltage write, will lead to signal of voltage change pending/done
  *
  * @param[in] voltage_mv - Voltage in mV

@@ -22,19 +22,15 @@
 #include <cortex_m7_atomics.h>
 #include <debug.h>
 #include <fpfw_icc_base.h>
+#include <icc_mhu.h>
 #include <icc_platform_defines.h>
 #include <inttypes.h>
+#include <kng_icc_shared.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-
-// TODO: Move to common header for cmd codes
-//       https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2016843
-#define POWER_CMD_CODE_EXCHANGE_INPUT    0x2701
-#define POWER_CMD_CODE_EXCHANGE_COMPLETE 0x2702
-
 // bit values for send/recv status
 #define SEND_STARTED  (1)
 #define RECV_COMPLETE (2)
@@ -42,15 +38,19 @@
 #define READY_STATUS  (SEND_STARTED | SEND_COMPLETE | RECV_COMPLETE)
 
 // define the max size of the mailbox message in words
-#define D2D_MBOX_MAX_WORDS (D2D_FIFO_MBOX_MAX_MESG_SIZE_BYTES / sizeof(uint32_t))
+#define D2D_MHU_MIN_MESG_SIZE_BYTES (sizeof(icc_mhu_packet_t))
+#define D2D_MHU_MAX_MESG_SIZE_BYTES (512)
+#define D2D_MBOX_MAX_WORDS          (D2D_FIFO_MBOX_MAX_MESG_SIZE_BYTES / sizeof(uint32_t))
+#define D2D_MHU_MIN_WORDS           (D2D_MHU_MIN_MESG_SIZE_BYTES / sizeof(uint32_t))
+#define D2D_MHU_MAX_WORDS           (D2D_MHU_MAX_MESG_SIZE_BYTES / sizeof(uint32_t))
 
 /*------------- Typedefs -----------------*/
 // power_d2d_context_t: context structure for D2D communication
 typedef struct _power_d2d_context
 {
     uint32_t send_recv_status;
-    uint32_t d2d_send_payload_buffer[D2D_MBOX_MAX_WORDS];
-    uint32_t d2d_recv_payload_buffer[D2D_MBOX_MAX_WORDS];
+    uint32_t d2d_send_payload_buffer[D2D_MHU_MAX_WORDS];
+    uint32_t d2d_recv_payload_buffer[D2D_MHU_MAX_WORDS];
     fpfw_icc_base_send_req_t d2d_send_params;
     fpfw_icc_base_recv_req_t d2d_recv_params;
     power_ctrl_loop_signal_t ctrl_loop_signal;
@@ -85,6 +85,7 @@ static void mark_and_send_if_ready(power_d2d_context_t* p_d2d_ctx, uint32_t type
 // callback for icc send completion
 static void power_remote_die_icc_base_send_complete_notify(void* context, fpfw_status_t status)
 {
+    POWER_LOG_TRACE("power_remote_die_icc_base_send_complete_notify\n");
     FPFW_RUNTIME_ASSERT(context != NULL);
     power_d2d_context_t* p_d2d_ctx = (power_d2d_context_t*)context;
 
@@ -101,6 +102,7 @@ static void power_remote_die_icc_base_send_complete_notify(void* context, fpfw_s
 // callback for icc receive completion
 static void power_remote_die_icc_base_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
+    POWER_LOG_TRACE("power_remote_die_icc_base_recv_complete_notify\n");
     FPFW_UNUSED(output_size_bytes);
 
     FPFW_RUNTIME_ASSERT(context != NULL);
@@ -174,8 +176,32 @@ static void power_remote_die_exchange(power_runconfig_t* p_runconfig, power_d2d_
         return;
     }
 
+    //! Prepare data to send as per command code
+    if (cmd_code == ICC_COMMAND_PWR_D2D_EX_INPUT_MSG)
+    {
+        POWER_LOG_TRACE("ICC_COMMAND_PWR_D2D_EX_INPUT_MSG\n");
+        //! Data to send are as follows:
+        //! 1. Current power cap, die 1 consumes die 0 value, power_cap_get_vrcpu_cap
+        //! 2. Snapshot of power_remote_data_t for local core
+        //! 3. Throttle priority histogram, corebits_t throttle_priority[VM_THROT_COUNT]
+        //! 4. Boost priority histogram, corebits_t boost_priority[VM_THROT_COUNT]
+        //! 5. Resource count (assumes all cores can go to highest P state) - limit to min P state that any core supports
+    }
+    else // cmd_code == ICC_COMMAND_PWR_D2D_EX_COMPLETE_MSG
+    {
+        POWER_LOG_TRACE("ICC_COMMAND_PWR_D2D_EX_COMPLETE_MSG\n");
+        //! Data to send are as follows:
+        //! 1. Minimally send pid_context from pid_get_context(pid_context_t *context) ..
+        //!    (on mismatch die1 will update to die0 value w/ pid_set_context AND both sides will log to power trace)
+        //! 2. Could additionally send plimit selections, throttling bool, for comparison
+    }
+
+    // Build the request to send
+    icc_mhu_packet_t* p_send_req = (icc_mhu_packet_t*)p_d2d_ctx->d2d_send_payload_buffer;
+    p_send_req->header.msg_header.command = cmd_code;
+    p_send_req->header.msg_header.payload_size = sizeof(p_d2d_ctx->d2d_send_payload_buffer) - sizeof(icc_mhu_header_t);
+
     // prepare the request
-    p_d2d_ctx->d2d_send_payload_buffer[0] = cmd_code; // first entry is the command code
     p_d2d_ctx->d2d_send_params.payload_buffer = p_d2d_ctx->d2d_send_payload_buffer;
     p_d2d_ctx->d2d_send_params.buffer_size = sizeof(p_d2d_ctx->d2d_send_payload_buffer);
     p_d2d_ctx->d2d_send_params.cb = power_remote_die_icc_base_send_complete_notify;
@@ -191,6 +217,7 @@ static void power_remote_die_exchange(power_runconfig_t* p_runconfig, power_d2d_
     }
     else
     {
+        POWER_LOG_TRACE("power_remote_die_exchange send complete\n");
         // update status and send completion to control loop if ready
         mark_and_send_if_ready(p_d2d_ctx, SEND_STARTED);
     }
@@ -211,8 +238,8 @@ void power_remote_die_init(power_runconfig_t* p_runconfig)
     s_power_remote_die_ctx.ex_inputs.ctrl_loop_signal = POWER_CTRL_LOOP_SIGNAL_EXCHANGE_INPUTS;
     s_power_remote_die_ctx.ex_complete.ctrl_loop_signal = POWER_CTRL_LOOP_SIGNAL_EXCHANGE_COMPLETE;
 
-    s_power_remote_die_ctx.ex_inputs.d2d_recv_params.recv_cmd_code = POWER_CMD_CODE_EXCHANGE_INPUT;
-    s_power_remote_die_ctx.ex_complete.d2d_recv_params.recv_cmd_code = POWER_CMD_CODE_EXCHANGE_COMPLETE;
+    s_power_remote_die_ctx.ex_inputs.d2d_recv_params.recv_cmd_code = ICC_COMMAND_PWR_D2D_EX_INPUT_MSG;
+    s_power_remote_die_ctx.ex_complete.d2d_recv_params.recv_cmd_code = ICC_COMMAND_PWR_D2D_EX_COMPLETE_MSG;
 
     // save off runconfig for future recv request setup
     s_power_remote_die_ctx.p_runconfig = p_runconfig;
@@ -245,7 +272,7 @@ void power_remote_die_exchange_inputs(power_runconfig_t* p_runconfig)
     FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
 
     // common function, pass exchange context and expected completion signal
-    power_remote_die_exchange(p_runconfig, &s_power_remote_die_ctx.ex_inputs, POWER_CMD_CODE_EXCHANGE_INPUT);
+    power_remote_die_exchange(p_runconfig, &s_power_remote_die_ctx.ex_inputs, ICC_COMMAND_PWR_D2D_EX_INPUT_MSG);
 }
 
 void power_remote_die_exchange_complete(power_runconfig_t* p_runconfig)
@@ -253,5 +280,5 @@ void power_remote_die_exchange_complete(power_runconfig_t* p_runconfig)
     FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
 
     // common function, pass exchange context and expected completion signal
-    power_remote_die_exchange(p_runconfig, &s_power_remote_die_ctx.ex_complete, POWER_CMD_CODE_EXCHANGE_COMPLETE);
+    power_remote_die_exchange(p_runconfig, &s_power_remote_die_ctx.ex_complete, ICC_COMMAND_PWR_D2D_EX_COMPLETE_MSG);
 }

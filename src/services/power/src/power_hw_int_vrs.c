@@ -57,7 +57,9 @@ typedef struct _power_vrs_context
     power_latest_calcs_t latest_power;
 
     // store recent power calculations
-    float soc_power[SOC_POWER_AVG_COUNT]; /* most recent x soc power measurements,
+    float soc_power[SOC_POWER_AVG_COUNT];        /* most recent x soc power measurements,
+                                                    most recent in 0 index */
+    float remote_soc_power[SOC_POWER_AVG_COUNT]; /* most recent x soc power measurements,
                                              most recent in 0 index */
     float vcpu_power_log[SOC_POWER_AVG_COUNT];
     float vcpu_current_log[SOC_POWER_AVG_COUNT];
@@ -482,11 +484,17 @@ static void calculate_soc_power()
     const power_service_config_t* p_config = p_runconfig->p_sconfig;
 
     // initialize with static rail power
-    // TODO: Only include static rail on die 0 (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491058/)
-    float soc_power = p_runconfig->knobs.static_rail_power_watts;
+    //! Only include static rail on die 0
+    float soc_power = 0;
+    if (p_config->is_primary_die)
+    {
+        soc_power = p_runconfig->knobs.static_rail_power_watts;
+    }
     float vcpu_power = 0;
-    // TODO: pick right loadline knob for die (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491058/)
-    float r_loadline_ohms = 0.000001F * p_runconfig->knobs.r_loadline_vcpu0_uohm; // loadline knobs in uOhms
+    //! pick right loadline knob for die (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491058/)
+    float r_loadline_ohms = 0.000001F * (p_runconfig->p_sconfig->is_primary_die
+                                             ? p_runconfig->knobs.r_loadline_vcpu0_uohm
+                                             : p_runconfig->knobs.r_loadline_vcpu1_uohm); // loadline knobs in uOhms
     float vsys_r_loadline_ohms = 0.000001F * p_runconfig->knobs.vsys_r_loadline_uohm;
     float rail_vcpu_current = 0;
 
@@ -537,7 +545,7 @@ uint32_t power_vrs_get_recent_power_mw()
     float total = 0.0F;
     for (int meas_idx = 0; meas_idx < SOC_POWER_AVG_COUNT; meas_idx++)
     {
-        total += s_power_vrs_ctx.soc_power[meas_idx];
+        total += (s_power_vrs_ctx.soc_power[meas_idx] + s_power_vrs_ctx.remote_soc_power[meas_idx]);
     }
     return (uint32_t)((total / SOC_POWER_AVG_COUNT) * PWR_MW);
 }
@@ -557,4 +565,14 @@ void pwr_avs_initialize(pscp_avs_interface_t avs_array[])
     }
     reset_errors(pwr_avs_request, (p_config->num_vr / MAX_AVS_RAILS));
     pwr_hw_vrs_init();
+}
+
+void store_remote_soc_power(power_latest_calcs_t* p_remote_power)
+{
+    // move 0-(x-1) to 1-x  -- leaving index 0 open for new measurement
+    memmove(&s_power_vrs_ctx.remote_soc_power[1],
+            &s_power_vrs_ctx.remote_soc_power[0],
+            sizeof(s_power_vrs_ctx.remote_soc_power[0]) * (SOC_POWER_AVG_COUNT - 1));
+    // save most recent measurement to index 0
+    s_power_vrs_ctx.remote_soc_power[0] = p_remote_power->soc_power;
 }

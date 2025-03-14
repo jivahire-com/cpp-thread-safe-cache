@@ -35,7 +35,7 @@
 
 FPFW_INIT_COMPONENT(
     pwr_svc,
-    FPFW_INIT_DEPENDENCIES("dfwk", "fuse_post_mesh", "atu_svc", "gpio_lib", "icc_d2dmbx", "avs0_int", "avs1_int", "avs2_int", "avs3_int", "hw_ver", "cfg_mgr"))
+    FPFW_INIT_DEPENDENCIES("dfwk", "fuse_post_mesh", "atu_svc", "gpio_lib", "icc_die2die", "avs0_int", "avs1_int", "avs2_int", "avs3_int", "hw_ver", "cfg_mgr"))
 {
     static power_service_t power_service;
     static power_service_config_t power_config = {
@@ -125,6 +125,7 @@ FPFW_INIT_COMPONENT(
 
     // is boot dual die?
     power_config.platform_is_multi_die = (!idhw_is_single_die_boot_en());
+    power_config.is_primary_die = (idsw_get_die_id() == DIE_0);
 
     // platform overrides
     switch (idsw_get_platform_sdv())
@@ -135,13 +136,11 @@ FPFW_INIT_COMPONENT(
         power_config.platform_cores_in_die = &svp_cores;
         power_config.platform_soc_power_support = true;
         power_config.platform_core_power_support = true;
-        power_config.platform_is_multi_die = false;
         break;
     case PLATFORM_SVP_MIN_CONFIG_SIM:
         power_config.platform_cores_in_die = &svp_min_config_cores;
         power_config.platform_soc_power_support = true;
         power_config.platform_core_power_support = true;
-        power_config.platform_is_multi_die = false;
         break;
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
@@ -168,7 +167,7 @@ FPFW_INIT_COMPONENT(
     // setup necessary config for dual die
     if (power_config.platform_is_multi_die)
     {
-        power_config.icc_d2d_ctx = fpfw_init_get_handle("icc_d2dmbx");
+        power_config.icc_d2d_ctx = fpfw_init_get_handle("icc_die2die");
     }
 
     power_config.scp_avs_insts[AVS_BUS0] = (scp_avs_interface_t*)fpfw_init_get_handle("avs0_int");

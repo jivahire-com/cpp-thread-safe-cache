@@ -289,6 +289,7 @@ typedef struct _power_service_config_t
     bool platform_soc_power_support;         // true if soc power supported on platform
     bool platform_core_power_support;        // true if tile/core power supported on platform
     bool platform_is_multi_die;              // true if platform is multi-die
+    bool is_primary_die;
 } power_service_config_t, *ppower_service_config_t;
 
 /**

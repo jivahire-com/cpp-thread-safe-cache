@@ -252,6 +252,7 @@ add_library(${TARGET}
         icc_d2dmbx_init.c
         icc_hspmbx_init.c
         icc_mhu_init.c
+        mcp_clock_init.c
         mcp_crash_dump_init.c
         mcp_mpu_init.c
         nvic_init.c
@@ -327,6 +328,7 @@ target_link_libraries(
         silibs::idsw
         silibs::idsw_kng
         silibs::kng_silibs_platform
+        silibs::pik_clock
         silibs::platform
         silibs::sdm_command_desc
         silibs::sensor_ram_bridge

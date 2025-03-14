@@ -1,0 +1,118 @@
+{
+    "id": "TEST_HOST",
+    "ip": "localhost",
+    "reset_on_setup": false,
+    "connections": {
+        "mb": {
+            "node_0": {
+                "is_present": true,
+                "soc": {
+                    "is_present": true,
+                    "primary_die": {
+                        "is_present": true,
+                        "hsp": {
+                            "channels": {
+                                "serial": {
+                                    "baud_rate": 115200,
+                                    "serial_port": "COM4",
+                                    "line_separator": "\n",
+                                    "enable_warning_logs":"false",
+                                    "file_name":"hsp0_logs"
+                                },
+                                "default": "serial"
+                            },
+                            "debugger": {
+                                "bins": "Kingsgate/T32/bin/windows64",
+                                "startup_script": "/Kingsgate/Kingsgate_TRACE32/Start/configUSB_HSP.t32",
+                                "startup_args": "/Kingsgate/Kingsgate_TRACE32/Start/work-settings.cmm",
+                                "reset_script": "/Kingsgate/Kingsgate_TRACE32/Prep_R22/HSPresetSystem.cmm",
+                                "reset_args": "",
+                                "processor_type": "riscv",
+                                "node": "localhost",
+                                "port": "30003"
+                            }
+                        },
+                        "scp": {
+                            "channels": {
+                                "serial": {
+                                    "baud_rate": 115200,
+                                    "serial_port": "COM5",
+                                    "line_separator": "\n",
+                                    "enable_warning_logs":"false",
+                                    "file_name":"scp0_logs"
+                                },
+                                "default": "serial"
+                            },
+                            "debugger": {
+                                "bins": "Kingsgate/T32/bin/windows64",
+                                "startup_script": "/Kingsgate/Kingsgate_TRACE32/Start/configUSB_SCP.t32",
+                                "startup_args": "/Kingsgate/Kingsgate_TRACE32/Start/work-settings.cmm",
+                                "processor_type": "arm",
+                                "node": "localhost",
+                                "port": "30001"
+                            }
+                        },
+                        "mcp": {
+                            "channels": {
+                                "serial": {
+                                    "baud_rate": 115200,
+                                    "serial_port": "COM6",
+                                    "line_separator": "\n",
+                                    "enable_warning_logs":"false",
+                                    "file_name":"mcp0_logs"
+                                },
+                                "default": "serial"
+                            }
+                        },
+                        "sdm": {
+                            "channels": {
+                                "serial": {
+                                    "baud_rate": 115200,
+                                    "serial_port": "COM6",
+                                    "line_separator": "\n",
+                                    "enable_warning_logs":"false",
+                                    "file_name":"sdm0_logs"
+                                },
+                                "default": "serial"
+                            }
+                        },
+                        "sdm_cded": {
+                            "channels": {
+                                "serial": {
+                                    "baud_rate": 115200,
+                                    "serial_port": "COM4",
+                                    "line_separator": "\n",
+                                    "enable_warning_logs":"false",
+                                    "file_name":"sdm_cded0_logs"
+                                },
+                                "default": "serial"
+                            }
+                        },
+                        "apns": {
+                            "channels": {
+                                "serial": {
+                                    "baud_rate": 115200,
+                                    "serial_port": "COM7",
+                                    "line_separator": "\n",
+                                    "enable_warning_logs":"false",
+                                    "file_name":"apns0_logs"
+                                },
+                                "default": "serial"
+                            }
+                        }
+                    }
+                },
+                "dcscm": {
+                    "is_present": true,
+                    "bmc": {
+                        "host": "172.29.232.28",
+                        "credential": {
+                            "username": "admin",
+                            "password": "admin"
+                        }
+                    }
+                } 
+            }
+        }
+    }
+}

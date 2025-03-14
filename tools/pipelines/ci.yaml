@@ -37,7 +37,16 @@ stages:
   - template: templates/svp_pythia_test.yaml
     parameters:
       ArtifactName: SVP_Pythia_Tests_SingleDie
-      TestPlan: .\tests\functional\pythia\test_plan\svp_single_die_ci_test_plan.args
+      TestPlan: .\tests\functional\test_plan\svp_single_die_test_plan.args
+
+- stage: SVP_Pythia_Accel_Tests_SingleDie
+  dependsOn: [Build_Arm_EABI_AARCH_Debug]
+  jobs:
+  - template: templates/svp_pythia_test.yaml
+    parameters:
+      ArtifactName: SVP_Pythia_Accel_Tests_SingleDie
+      TestPlan: .\tests\functional\test_plan\accel_single_die_test_plan.args
+      ifwi: '.\.build\Debug\arm-eabi-aarch\bin\flash\kingsgate.ifwi.ap.baremetal.debug.dat'
 
 - stage: SVP_Pythia_Tests_DualDie
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
@@ -45,7 +54,7 @@ stages:
   - template: templates/svp_pythia_test.yaml
     parameters:
       ArtifactName: SVP_Pythia_Tests_DualDie
-      TestPlan: .\tests\functional\pythia\test_plan\svp_dual_die_ci_test_plan.args
+      TestPlan: .\tests\functional\test_plan\svp_dual_die_test_plan.args
 
 - stage: Unit_Test_x86
   dependsOn: [Build_x86_Debug, Build_Arm_EABI_AARCH_Debug]

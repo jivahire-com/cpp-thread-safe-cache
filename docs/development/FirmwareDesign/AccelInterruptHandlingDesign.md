@@ -351,7 +351,7 @@ Note over ACCEL_IP: FATAL interrupt is triggered
 
 ## 6 Functional Testing
 
-* All interrupts are tested using single function test [`accel_interrupt`](./../../../tests/functional/pythia/staging_tests/accel_interrupt/accel_interrupt_test.robot).
+* All interrupts are tested using single function test [`accel_interrupt`](./../../../tests/functional/staging_tests/accel_interrupt/accel_interrupt_test.robot).
 * It uses a corresponding json file [`accel_interrupts.json`](./../../../tests/functional/pythia/staging_tests/accel_interrupt/accel_interrupts.json) to loop through all interrupts and their triggers. 
 * It will compare the expected result mentioned in json to mark a particular interrupt checking pass / fail. 
 

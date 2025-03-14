@@ -1,0 +1,7 @@
+{
+    "description": "Kingsgate Functional Tests running on SVP",
+    "platform": "SVP",
+    "title": "SVP Functional",
+    "version": "0",
+    "components": []
+}

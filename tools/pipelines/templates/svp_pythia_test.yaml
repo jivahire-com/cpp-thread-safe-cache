@@ -10,13 +10,16 @@ parameters:
   default: 'bins'
 - name: Pool
   type: string
-  default: '1pfw-kingsgate-windows'   
+  default: '1pfw-kingsgate-windows'
 - name: TestPlan
   type: string
   default: '.\tests\functional\pythia\test_plan\svp_single_die_ci_test_plan.args'
 - name: build_id
   type: string
   default: '0'
+- name : ifwi
+  type: string
+  default: 'kingsgate.ifwi.svp.debug.custom.dat'
 
 jobs:
 - job: 'SVP_Pythia_Tests'
@@ -46,7 +49,7 @@ jobs:
           buildType: 'current'
           downloadType: 'single'
           artifactName: 'drop_Build_Arm_EABI_AARCH_Debug_Build'
-          downloadPath: '$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug'
+          downloadPath: '$(Build.SourcesDirectory)\.build\Debug\arm-eabi-aarch'
 
     # Download input artifact for nightlystress and weekendstress
     - task: DownloadPipelineArtifact@2
@@ -58,12 +61,11 @@ jobs:
           buildVersionToDownload: 'specific'
           buildId: ${{ parameters.build_id}}
           artifactName: 'drop_Build_Arm_EABI_AARCH_Debug_Build'
-          downloadPath: '$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug'
+          downloadPath: '$(Build.SourcesDirectory)\.build\Debug\arm-eabi-aarch'
 
     # 1. Setup the environment
-    # 2. Build the FW
-    # 3. Invoke Pythia
-    # Logs will be under $(Build.SourcesDirectory)\.testlogs\pythia
+    # 2. Invoke Pythia
+    # Logs will be stored under $(Build.SourcesDirectory)\.testlogs\pythia
     - task: PowerShell@2
       displayName: Run Test Suites
       env:
@@ -75,11 +77,8 @@ jobs:
         script: | 
           ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
 
-          $bin_src_dir = "$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug/bin"
-          $bin_dest_dir = "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch"
-          Copy-Item $bin_src_dir $bin_dest_dir -Recurse -Force
-
-          Invoke-Pythia -test ${{ parameters.TestPlan }} -platform svp
+          # Run the test suite
+          Invoke-Pythia -test ${{ parameters.TestPlan }} -platform svp -ifwi ${{ parameters.ifwi }}
 
           # Remove intermediate output / output that contains system variables (ie: Azure credentials)
           Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\output.xml"
@@ -89,7 +88,7 @@ jobs:
 
     # Publish the results of the test suite
     - task: PublishTestResults@2
-      displayName: Publish SVP Pythia Tests Results
+      displayName: 'Publish: SVP Pythia Test Results'
       condition: succeededOrFailed()
       inputs:
         testRunTitle: 'Kingsgate SVP Pythia Tests'
@@ -102,6 +101,7 @@ jobs:
 
     # Publish results as a pipeline artifact
     - task: PublishPipelineArtifact@1
+      displayName: 'Publish: Pipeline Artifacts'
       condition: succeededOrFailed()
       inputs:
         targetPath: '$(Build.SourcesDirectory)\.testlogs\pythia'

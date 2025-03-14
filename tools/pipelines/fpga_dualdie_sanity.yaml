@@ -26,4 +26,4 @@ stages:
           ArtifactName: FPGA_Pythia_Tests
           Pool: "1pfw-kingsgate-big-fpga"
           TestAgent: "DF11"
-          TestPlan: .\tests\functional\pythia\test_plan\fpga_dual_die_test_plan.args
+          TestPlan: .\tests\functional\test_plan\fpga_dual_die_test_plan.args

@@ -26,11 +26,11 @@ To stay aligned with as many teams within the organization as possible, use of P
 
 ### Workspace Configurations
 
-These are JSON files that described the expected configuration of a Pythia workspace. You can find available configuration files [here](../../tests/functional/pythia/configs/).
+These are JSON files that described the expected configuration of a Pythia workspace. You can find available configuration files [here](../../tests/functional/configs/).
 
 ### Host Configurations
 
-These are JSON files that describe the Host Machine the test will run on, what type of connections it will have that can be used by a test, and any other configuration details needed that may impact running a test (ex: the path to the SVP executable needed to for Pythia to launch SVP). You can find available configuration files [here](../../tests/functional/pythia/hosts/).
+These are JSON files that describe the Host Machine the test will run on, what type of connections it will have that can be used by a test, and any other configuration details needed that may impact running a test (ex: the path to the SVP executable needed to for Pythia to launch SVP). You can find available configuration files [here](../../tests/functional/hosts/).
 
 ### Recipe Configurations
 
@@ -38,7 +38,7 @@ Recipe JSON files describe all of the components that need to be downloaded, cop
 
 Fortunately for SVP based tests all of our dependencies get downloaded and setup when we configure this repo, which results in our SVP recipe relying on local pathing to dependencies (through environment variables).
 
-You can find available configuration files [here](../../tests/functional/pythia/recipes/).
+You can find available configuration files [here](../../tests/functional/recipes/).
 
 ### Python Tests
 
@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
 #### Test(s) Location
 
-All python based tests can be found [here](../../tests/functional/pythia/tests/).
+All python based tests can be found [here](../../tests/functional/tests/).
 
 ### Robot Framework Tests
 
@@ -161,7 +161,7 @@ Test Case - Example Test
 
 #### Test Suite(s) Location
 
-All test suites can be found [here](../../tests/functional/pythia/test_suites/).
+All test suites can be found [here](../../tests/functional/test_suites/).
 
 ### Running Pythia Tests
 

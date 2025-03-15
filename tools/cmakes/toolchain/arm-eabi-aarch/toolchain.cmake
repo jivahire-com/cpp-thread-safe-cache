@@ -11,17 +11,6 @@ set(CMAKE_C_COMPILER "$ENV{REPO_APP_PATH_gcc.arm.eabi.aarch-win64}/bin/arm-none-
 set(CMAKE_CXX_COMPILER "$ENV{REPO_APP_PATH_gcc.arm.eabi.aarch-win64}/bin/arm-none-eabi-g++.exe")
 set(CMAKE_ASM_COMPILER "$ENV{REPO_APP_PATH_gcc.arm.eabi.aarch-win64}/bin/arm-none-eabi-gcc.exe")
 
-# Set C flags
-set(CMAKE_C_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -nostartfiles -L${CMAKE_CURRENT_LIST_DIR}/ld -Wall -Wextra -Werror -ftest-coverage -ffunction-sections -fdata-sections --specs=nano.specs")
-set(CMAKE_CXX_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -nostartfiles -L${CMAKE_CURRENT_LIST_DIR}/ld -Wall -Wextra -Werror -ftest-coverage -ffunction-sections -fdata-sections --specs=nano.specs")
-set(CMAKE_ASM_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -nostartfiles -L${CMAKE_CURRENT_LIST_DIR}/ld")
-set(CMAKE_EXE_LINKER_FLAGS_INIT "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -L${CMAKE_CURRENT_LIST_DIR}/ld -Wl,--gc-sections")
-
-# Add Cortex m7 clock speed, ticks per second
-
-SET(TX_CORE_CLOCK_SPEED "6250000")        # Default to 6.5MHz which is the clock speed on FPGA for mscp
-SET(TX_CORE_TICKS_PER_SECOND "100")
-
 # Enable Floating Point Unit (FPU)
 option(ENABLE_FPU "Enable hardware floating-point unit for Cortex-M7" ON)
 if(ENABLE_FPU)
@@ -29,6 +18,16 @@ if(ENABLE_FPU)
     message(STATUS "Hardware Floating Point Unit (FPU) is enabled")
     string(APPEND CMAKE_C_FLAGS_INIT "-mfloat-abi=hard -mfpu=fpv5-sp-d16 ")
 endif()
+
+# Set C flags
+set(CMAKE_C_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} ${CMAKE_C_FLAGS_INIT} -mthumb -nostartfiles -L${CMAKE_CURRENT_LIST_DIR}/ld -Wall -Wextra -Werror -ftest-coverage -ffunction-sections -fdata-sections --specs=nano.specs")
+set(CMAKE_CXX_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} ${CMAKE_C_FLAGS_INIT} -mthumb -nostartfiles -L${CMAKE_CURRENT_LIST_DIR}/ld -Wall -Wextra -Werror -ftest-coverage -ffunction-sections -fdata-sections --specs=nano.specs")
+set(CMAKE_ASM_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -nostartfiles -L${CMAKE_CURRENT_LIST_DIR}/ld")
+set(CMAKE_EXE_LINKER_FLAGS_INIT "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -L${CMAKE_CURRENT_LIST_DIR}/ld -Wl,--gc-sections")
+
+# Add Cortex m7 clock speed, ticks per second
+SET(TX_CORE_CLOCK_SPEED "6250000")        # Default to 6.5MHz which is the clock speed on FPGA for mscp
+SET(TX_CORE_TICKS_PER_SECOND "100")
 
 set(CMAKE_EXECUTABLE_SUFFIX_C ".elf")
 set(CMAKE_EXECUTABLE_SUFFIX_CXX ".elf")

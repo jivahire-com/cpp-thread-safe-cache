@@ -15,3 +15,6 @@
 
 ## Accelerator Interrupt Tests
 # ./../../../tests/functional/test_suites/accel_interrupt/accel_interrupt_test.robot
+
+## SVP Teardown
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot

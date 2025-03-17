@@ -77,9 +77,9 @@ class varserv_cli_test(EchoFallsBaseTest):
             return False
         
         try:
-            # Wait for SOS Boot Completion message and enter commands
-            self.log.info("Waiting for SOS BOOT  Msg")
-            scp_channel.read_until(key="SOS boot completed", timeout_seconds=1800)
+            # Wait for ScpHeartBeat Completion message and enter commands
+            self.log.info("Waiting for ScpHeartBeat  Msg")
+            scp_channel.read_until(key="ScpHeartBeat", timeout_seconds=900)
         except Exception as e:
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)

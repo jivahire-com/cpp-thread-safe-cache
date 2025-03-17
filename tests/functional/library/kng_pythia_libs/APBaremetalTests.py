@@ -13,6 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs')
 from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
 
+from pythia.tdk.common.util.variables_store import VariablesStore
 from robot.api.deco import keyword
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
@@ -30,7 +31,7 @@ class APBaremetalTests(EchoFallsBaseTest):
     :param host_name:           Name of the host to find the host config file, if host_config is a directory. Defaults to None
     """
 
-    READ_UNTIL_KEY = "Primary AP core power on"
+    READ_UNTIL_KEY = "HeartBeat"
     TIMEOUT_SECONDS = 900
 
     def __init__(
@@ -89,6 +90,15 @@ class APBaremetalTests(EchoFallsBaseTest):
 
         self.log.info("Restoring FPGA ROM and Fuses Done!!!")
 
+    @keyword("Dut Force Teardown")
+    def test_teardown_force(self):
+        """Force Teardown the DUT after the test"""
+        self.log.info("Forcibly Tearing down the DUT...")
+        VariablesStore()["FORCE_SVP_TEARDOWN"] = True
+        self.dut.teardown()
+        time.sleep(30)
+        return True
+    
     @keyword("Dut Setup Simple")
     def dut_test_setup_simple(self):
         """Set up the DUT, don't wait for Heartbeat"""

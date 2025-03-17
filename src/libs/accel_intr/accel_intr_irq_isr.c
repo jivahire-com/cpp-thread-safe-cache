@@ -23,6 +23,7 @@
 #include <accel_intr_client.h>
 #include <accel_intr_service.h>
 #include <accelerator_ip.h> // for ACCELERATOR_CDEDSS, ACCELERATOR_SDMSS
+#include <atu_init.h>       // for atu_svc_accel_atu_addr
 #include <bitops.h>
 #include <bug_check.h> // for BUG_CHECK
 #include <cded_interrupts.h>
@@ -64,7 +65,7 @@
  * @retval void
  *
  */
-static void accel_intr_fatal_isr(uint32_t IRQnum, uint32_t ext_cfg_addr)
+static void accel_intr_fatal_isr(ACCEL_ID accel_type, uint32_t IRQnum, uint32_t ext_cfg_addr)
 {
     // FATAL interrupt is received. Need to disable IRQ
     // Disable IRQ in NVIC, always returns SUCCESS
@@ -76,55 +77,10 @@ static void accel_intr_fatal_isr(uint32_t IRQnum, uint32_t ext_cfg_addr)
     accel_intr_emcpu_wdt_control(ext_cfg_addr, ACCEL_INTR_DISABLE_ACCEL_EMCPU_WDT);
 
     // Send ASYNC message
-    send_fatal_intr_async_request(IRQnum);
+    send_fatal_intr_async_request(accel_type);
 }
 
-/**
- * @brief Handle misc tasks for Doorbell interrupt SDM_MSG0_INTR
- *
- * @details
- * This function is called to check if Doorbell interrupt is received and
- * take appropriate action
- * 1. Clear interrupt
- * 2. Send ASYNC message for further interrupt processing
- *
- * @param[in] IRQnum : IRQ number on which this interrupt is received.
- *            Determines if this is from CDED ACCEL IP / Generic ACCEL IP
- * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- *
- * @retval void
- *
- */
-static void accel_intr_sys_msg_isr(uint32_t IRQnum, uint32_t ext_cfg_addr)
-{
-    // Doorbell interrupt is received.
-    bool irq_status = false;
-
-    (void)is_sdm_ext_int_status_set(ext_cfg_addr, SDM_EXT_SYS_MSG0_INTR_VECTOR, &irq_status);
-
-    if (irq_status == true)
-    {
-        FPFW_ET_LOG(AccelIntr, IRQnum, SDM_EXT_SDM_MSG0_INTR);
-
-        // Clear interrupt at level 1 since we are done handling
-        accel_intr_clear_interrupt_level_1(ext_cfg_addr, SDM_EXT_SDM_MSG0_INTR);
-
-        /**
-         * We enable SDM_MSG0_INTR at level 1 only when needed.
-         * This will be done as part of crash dump collection request.
-         * Hence disabling it here after interrupt has been handled.
-         */
-        sdm_ext_int_disable(ext_cfg_addr, SDM_EXT_SDM_MSG0_INTR);
-
-        // Add memory barrier to make sure interrupt is disabled before ISR returns
-        cortex_m7_atomic_call_data_memory_barrier();
-
-        // Send ASYNC message that Doorbell interrupt is received
-        send_sdm_msg_async_request(IRQnum);
-    }
-}
-
-static void accel_intr_mbox_isr(uint32_t IRQnum, uint32_t ext_cfg_addr)
+static void accel_intr_mbox_isr(ACCEL_ID accel_type, uint32_t IRQnum, uint32_t ext_cfg_addr)
 {
     // Mailbox interrupt is received.
     bool irq_status = false;
@@ -139,7 +95,7 @@ static void accel_intr_mbox_isr(uint32_t IRQnum, uint32_t ext_cfg_addr)
         accel_intr_mask_interrupt_level_1(ext_cfg_addr, SDM_EXT_MBX_I2E_INTR);
 
         // Send ASYNC message that Mailbox interrupt is received
-        send_mailbox_async_request(IRQnum);
+        send_mailbox_async_request(accel_type);
     }
 }
 
@@ -620,22 +576,18 @@ uint32_t accel_intr_process_fatal_interrupts(uint32_t IRQnum, uint32_t ext_cfg_a
 void accel_intr_isr_scp(void* callback_param)
 {
     uint32_t IRQnum = (uint32_t)callback_param;
-
+    ACCEL_ID accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
     // Based on ATU MAP get sdm_ext_cfg base address
-    uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(accel_intr_get_accel_type_from_irq_num(IRQnum));
+    uint32_t ext_cfg_addr = atu_svc_accel_atu_addr(accel_type);
 
     uint32_t validate_irq_status =
         accel_intr_process_fatal_interrupts(IRQnum, ext_cfg_addr, ACCEL_INTR_PROCESS_INTR_IN_TOP_HALF);
 
-    // Check if SDM_MSG0_INTR i.e. doorbell interrupt is received.
-    // Incase loop ends
-    accel_intr_sys_msg_isr(IRQnum, ext_cfg_addr);
-
-    accel_intr_mbox_isr(IRQnum, ext_cfg_addr);
+    accel_intr_mbox_isr(accel_type, IRQnum, ext_cfg_addr);
 
     if (ACCEL_INTR_IS_INTERRUPT_VALID_SET(validate_irq_status))
     {
-        accel_intr_fatal_isr(IRQnum, ext_cfg_addr);
+        accel_intr_fatal_isr(accel_type, IRQnum, ext_cfg_addr);
     }
 
     /**
@@ -651,9 +603,9 @@ void accel_intr_isr_scp(void* callback_param)
 void accel_intr_isr_mcp(void* callback_param)
 {
     uint32_t IRQnum = (uint32_t)callback_param;
-
+    ACCEL_ID accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
     // Based on ATU MAP get sdm_ext_cfg base address
-    uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(accel_intr_get_accel_type_from_irq_num(IRQnum));
+    uint32_t ext_cfg_addr = atu_svc_accel_atu_addr(accel_type);
 
-    accel_intr_mbox_isr(IRQnum, ext_cfg_addr);
+    accel_intr_mbox_isr(accel_type, IRQnum, ext_cfg_addr);
 }

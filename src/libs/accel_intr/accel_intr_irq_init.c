@@ -20,8 +20,8 @@
 #include <FPFwInterrupts.h> // for FPFwCoreInterruptEnableVector,...
 #include <FpFwUtils.h>      // for FPFW_UNUSED
 #include <accel_intr_service.h>
-#include <accelerator_ip.h> // for accelerator_ip_get_atu_mapped_cfg_address
-#include <accelip_id.h>     // for ACCEL_ID_CDED, ACCEL_ID_SDM
+#include <accelip_id.h> // for ACCEL_ID_CDED, ACCEL_ID_SDM
+#include <atu_init.h>   // for atu_svc_accel_atu_addr
 #include <bitops.h>
 #include <cortex_m7_atomics.h> // for cortex_m7_atomic_call_data_memory_barrier
 #include <idsw.h>
@@ -136,6 +136,42 @@ void accel_intr_emcpu_wdt_control(uint32_t ext_cfg_addr, uint8_t enable)
     cortex_m7_atomic_call_data_memory_barrier();
 }
 
+void accel_intr_scp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr)
+{
+    // For each individual interrupt, re initialise them
+    for (eACCEL_SCP_INTR idx = ACCEL_SCP_INTR_EMCPU_WDT_ERR; idx < ACCEL_SCP_INTR_MAX; idx++)
+    {
+        // We are using this check to ensure that we are enabling only supported interrupts
+        if (accel_irq_scp_data[idx].accel_irq_init_fn == NULL)
+        {
+            continue;
+        }
+        // Call init function for that IRQ, always returns SUCCESS
+        accel_irq_scp_data[idx].accel_irq_init_fn(accel_type, accel_irq_scp_data[idx].accel_irq_bit, ext_cfg_addr);
+    }
+
+    // To make sure all interrupts are cleared
+    cortex_m7_atomic_call_data_memory_barrier();
+}
+
+void accel_intr_mcp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr)
+{
+    // For each individual interrupt, re initialise them
+    for (eACCEL_MCP_INTR idx = ACCEL_MCP_INTR_FIRST; idx < ACCEL_MCP_INTR_MAX; idx++)
+    {
+        // We are using this check to ensure that we are enabling only supported interrupts
+        if (accel_irq_mcp_data[idx].accel_irq_init_fn == NULL)
+        {
+            continue;
+        }
+        // Call init function for that IRQ, always returns SUCCESS
+        accel_irq_mcp_data[idx].accel_irq_init_fn(accel_type, accel_irq_mcp_data[idx].accel_irq_bit, ext_cfg_addr);
+    }
+
+    // To make sure all interrupts are cleared
+    cortex_m7_atomic_call_data_memory_barrier();
+}
+
 void accel_intr_clear_disable_irq_in_sdm_intr_tree(uint32_t ext_cfg_addr,
                                                    SDM_EXT_INT_CATEGORY category_id,
                                                    uint32_t interrupt_mask,
@@ -239,19 +275,14 @@ int32_t accel_scp_intr_init(ACCEL_ID accel_type)
      */
     (void)set_ext_int_sub_system(SDM_EXT_SCP_SUBSYSTEM);
 
+    // ATU MAP base address for given accel device
+    uint32_t ext_cfg_addr = atu_svc_accel_atu_addr(accel_type);
     // Mask all interrupts in Level 1 register first
     uint32_t interrupt_mask = SL_GET_BIT_MASK_RANGE(SDM_EXT_EMCPU_WDT_ERR_INTR, SDM_EXT_SDM_MSG3_INTR);
-    sdm_ext_int_mask_disable(accelerator_ip_get_atu_mapped_cfg_address(accel_type), SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask);
+    sdm_ext_int_mask_disable(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask);
 
-    // For each individual interrupt, clear and unmask at level 1 and level 2
-    for (eACCEL_SCP_INTR idx = ACCEL_SCP_INTR_EMCPU_WDT_ERR; idx < ACCEL_SCP_INTR_MAX; idx++)
-    {
-        if (accel_irq_scp_data[idx].accel_irq_init_fn != NULL)
-        {
-            // Call init function for that IRQ, always returns SUCCESS
-            (void)accel_irq_scp_data[idx].accel_irq_init_fn(accel_type, accel_irq_scp_data[idx].accel_irq_bit);
-        }
-    }
+    // Initialize each interrupt
+    accel_intr_scp_init(accel_type, ext_cfg_addr);
 
     // Register ISR for handling the interrupt
     // Clear and Enable interrupt in NVIC
@@ -284,19 +315,15 @@ int32_t accel_mcp_intr_init(ACCEL_ID accel_type)
      */
     (void)set_ext_int_sub_system(SDM_EXT_MCP_SUBSYSTEM);
 
+    // ATU MAP base address for given accel device
+    uint32_t ext_cfg_addr = atu_svc_accel_atu_addr(accel_type);
     // Mask all interrupts in Level 1 register first
-    uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(accel_type);
     sdm_ext_int_mask_disable(ext_cfg_addr,
                              SDM_EXT_CATEGORY_ID_EXT_INTR,
                              SL_GET_BIT_MASK_RANGE(SDM_EXT_EMCPU_WDT_ERR_INTR, SDM_EXT_SDM_MSG3_INTR));
 
-    for (eACCEL_MCP_INTR idx = ACCEL_MCP_INTR_FIRST; idx < ACCEL_MCP_INTR_MAX; idx++)
-    {
-        if (accel_irq_mcp_data[idx].accel_irq_init_fn != NULL)
-        {
-            (void)accel_irq_mcp_data[idx].accel_irq_init_fn(accel_type, accel_irq_mcp_data[idx].accel_irq_bit);
-        }
-    }
+    // Initialize each interrupt
+    accel_intr_mcp_init(accel_type, ext_cfg_addr);
 
     // Register ISR for handling the interrupt
     // Clear and Enable interrupt in NVIC
@@ -311,12 +338,12 @@ int32_t accel_mcp_intr_init(ACCEL_ID accel_type)
     return ACCEL_INTR_RET_SUCCESS;
 }
 
-uint32_t accel_intr_emcpu_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index)
+uint32_t accel_intr_emcpu_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
 {
     FPFW_UNUSED(bit_index);
+    FPFW_UNUSED(accel_type);
 
     uint32_t interrupt_mask = SL_GET_SINGLE_BIT_MASK(SDM_EXT_EMCPU_WDT_FATAL_INTR);
-    uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(accel_type);
 
     accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EMCPU_WATCHDOG, interrupt_mask, SDM_EXT_EMCPU_WDT_ERR_INTR_VECTOR);
     accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EMCPU_WATCHDOG, interrupt_mask);
@@ -328,13 +355,13 @@ uint32_t accel_intr_emcpu_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NU
  * TODO: Task 1982366: [SCP] Accel IP Fatal Interrupt Cleanup Tasks / Comments
  * Combine various interrupt inits in single silibs call
  */
-uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index)
+uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
 {
     FPFW_UNUSED(bit_index);
+    FPFW_UNUSED(accel_type);
 
     // Clear and enable TEL_ECC errors
     uint32_t interrupt_mask = SL_GET_BIT_MASK_RANGE(SDM_EXT_BPE_SCRATCH_ERR_INTR, SDM_EXT_LSTRG_ERR_INTR);
-    uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(accel_type);
 
     /**
      * TODO: Task 1982366: [SCP] Accel IP Fatal Interrupt Cleanup Tasks / Comments
@@ -384,10 +411,11 @@ uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBE
     return ACCEL_INTR_RET_SUCCESS;
 }
 
-uint32_t accel_intr_single_level_irq_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index)
+uint32_t accel_intr_single_level_irq_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
 {
+    FPFW_UNUSED(accel_type);
+
     uint32_t interrupt_mask = SL_GET_SINGLE_BIT_MASK(bit_index);
-    uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(accel_type);
 
     accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask, SDM_EXT_INVALID_INTERRUPT_INPUT);
     accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask);
@@ -395,10 +423,9 @@ uint32_t accel_intr_single_level_irq_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT
     return ACCEL_INTR_RET_SUCCESS;
 }
 
-uint32_t accel_intr_cded_cp_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index)
+uint32_t accel_intr_cded_cp_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
 {
     uint32_t interrupt_mask = SL_GET_SINGLE_BIT_MASK(bit_index);
-    uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(accel_type);
 
     accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask, SDM_EXT_INVALID_INTERRUPT_INPUT);
     /* CDED CP fatal interrupt is only valid for CDEDSS */
@@ -410,12 +437,12 @@ uint32_t accel_intr_cded_cp_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMB
     return ACCEL_INTR_RET_SUCCESS;
 }
 
-uint32_t accel_intr_sdm_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index)
+uint32_t accel_intr_sdm_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
 {
     FPFW_UNUSED(bit_index);
+    FPFW_UNUSED(accel_type);
 
     uint32_t interrupt_mask = SL_GET_BIT_MASK_RANGE(SDM_EXT_SDM_WDT_BP_INTR, SDM_EXT_SDM_WDT_MSI_INTR);
-    uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(accel_type);
 
     accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_SDM_WATCHDOG, interrupt_mask, SDM_EXT_SDM_WDT_ERR_INTR_VECTOR);
     accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_SDM_WATCHDOG, interrupt_mask);
@@ -423,12 +450,12 @@ uint32_t accel_intr_sdm_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMB
     return ACCEL_INTR_RET_SUCCESS;
 }
 
-uint32_t accel_intr_fab_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index)
+uint32_t accel_intr_fab_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
 {
     FPFW_UNUSED(bit_index);
+    FPFW_UNUSED(accel_type);
 
     uint32_t interrupt_mask = SL_GET_BIT_MASK_RANGE(SDM_EXT_FAB_BOOT_CONFIG_WDT, SDM_EXT_MISC_WDT);
-    uint32_t ext_cfg_addr = accelerator_ip_get_atu_mapped_cfg_address(accel_type);
 
     accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_FABRIC_WATCHDOG, interrupt_mask, SDM_EXT_FAB_WDT_ERR_INTR_VECTOR);
     accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_FABRIC_WATCHDOG, interrupt_mask);

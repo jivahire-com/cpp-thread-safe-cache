@@ -170,6 +170,12 @@ typedef struct {
     TX_MUTEX desc_mutex;
 } crash_dump_type_context_t;
 
+typedef struct {
+    uint32_t cd_file_offset;
+    uint32_t cd_file_size;
+    uint32_t cd_magic_nr_offset;
+} crash_dump_accel_context_t;
+
 /**
  * @brief Crash dump context type
  * 
@@ -197,7 +203,7 @@ typedef struct {
     bool (*in_memory)(uintptr_t start_addr, uintptr_t end_addr);
 	
 	// Accelerators
-    uint32_t accel_cd_dtcm_offset[NUM_VALID_ACCEL_ID];
+    crash_dump_accel_context_t accel_cd_ctx[NUM_VALID_ACCEL_ID];
 } crash_dump_context_t;
 
 /*-- Declarations (Statics and globals) --*/
@@ -361,6 +367,14 @@ void crash_dump_cli_init(void);
  * 
  */
 void crash_dump_register_accel_ext_mmio();
+
+/**
+ * @brief Check is given accel core has completed its CD file collection
+ * 
+ * @param[in] accel_type SDM or CDED accel type
+ * @return true - CD file collection complete. false - CD file collection not complete
+ */
+bool crash_dump_is_accel_cd_complete(ACCEL_ID accel_type);
 
 #ifdef __cplusplus
 }

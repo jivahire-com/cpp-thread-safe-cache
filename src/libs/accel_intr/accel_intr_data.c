@@ -74,13 +74,6 @@ const accel_intr_irq_data_t accel_irq_scp_data[ACCEL_SCP_INTR_MAX] = {
             .accel_irq_fn = accel_intr_fab_wdt_err_fn
         },
 
-    [ACCEL_SCP_INTR_AXI_BURST_ERR] =
-        {
-            .accel_irq_bit = SDM_EXT_AXI_BURST_ERR_INTR,
-            .accel_irq_init_fn = NULL,
-            .accel_irq_fn = NULL
-        },
-
     [ACCEL_SCP_INTR_AXI_UNSUPP_INTR_STATUS] =
         {
             .accel_irq_bit = SDM_EXT_AXI_UNSUPP_INTR_STATUS_INTR,
@@ -236,8 +229,6 @@ eACCEL_SCP_INTR accel_scp_get_intr_enum(SDM_EXT_INTERRUPT_NUMBER irq_bit)
         return ACCEL_SCP_INTR_SDM_WDT_ERR;
     case SDM_EXT_FAB_WDT_ERR_INTR:
         return ACCEL_SCP_INTR_FAB_WDT_ERR;
-    case SDM_EXT_AXI_BURST_ERR_INTR:
-        return ACCEL_SCP_INTR_AXI_BURST_ERR;
     case SDM_EXT_AXI_UNSUPP_INTR_STATUS_INTR:
         return ACCEL_SCP_INTR_AXI_UNSUPP_INTR_STATUS;
     case SDM_EXT_STYRESE_REQ_ERR_INTR:

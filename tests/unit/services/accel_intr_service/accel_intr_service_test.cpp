@@ -20,6 +20,7 @@ extern "C" {
 #include <DfwkThreadXHost.h>         // for DFWK_THREADX_HOST
 #include <accel_intr_service.h>      // for accel_intr_service_init, accel_intr_service_interface_init...
 #include <accel_intr_service_dfwk.h> // for accel_intr_service_t, accel_intr_service_interf...
+#include <accelip_id.h>              // for ACCEL_ID_SDM, ACCEL_ID_CDED
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -128,20 +129,9 @@ void __wrap_FpFwAssert(int expression)
  * @param[in] IRQnum : IRQnum to identify between SDM / CDED Accel IP
  *
  */
-void __wrap_accel_intr_handle_fatal_intr_recvd(uint32_t IRQnum)
+void __wrap_accel_intr_handle_fatal_intr_recvd(ACCEL_ID accel)
 {
-    check_expected(IRQnum);
-}
-
-/**
- * @brief Mock function for accel_intr_handle_sdm_msg_recvd
- *
- * @param[in] IRQnum : IRQnum to identify between SDM / CDED Accel IP
- *
- */
-void __wrap_accel_intr_handle_sdm_msg_recvd(uint32_t IRQnum)
-{
-    check_expected(IRQnum);
+    check_expected(accel);
 }
 
 /**
@@ -150,9 +140,9 @@ void __wrap_accel_intr_handle_sdm_msg_recvd(uint32_t IRQnum)
  * @param[in] IRQnum : IRQnum to identify between SDM / CDED Accel IP
  *
  */
-void __wrap_accel_intr_handle_mbox_recvd(uint32_t IRQnum)
+void __wrap_accel_intr_handle_mbox_recvd(ACCEL_ID accel)
 {
-    check_expected(IRQnum);
+    check_expected(accel);
 }
 
 } // extern "C"
@@ -197,27 +187,9 @@ TEST_FUNCTION(test_accel_intr_service_dispatch_fatal, NULL, NULL)
     accel_intr_service_request_t accel_intr_service_request;
     accel_intr_service_t accel_intr_service_device;
     accel_intr_service_request.header.RequestType = ACCEL_INTR_SERVICE_FATAL_INTR_RECVD;
-    accel_intr_service_request.IRQnum = 0x77;
+    accel_intr_service_request.accel_type = ACCEL_ID_SDM;
 
-    expect_value(__wrap_accel_intr_handle_fatal_intr_recvd, IRQnum, 0x77);
-
-    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &accel_intr_service_request.header);
-
-    assert_non_null(s_dispatch_routine);
-    s_dispatch_routine(&(accel_intr_service_request.header), &accel_intr_service_device.header);
-}
-
-/**
- * @brief Tests path for async dispatch
- */
-TEST_FUNCTION(test_accel_intr_service_dispatch_sdm_msg, NULL, NULL)
-{
-    accel_intr_service_request_t accel_intr_service_request;
-    accel_intr_service_t accel_intr_service_device;
-    accel_intr_service_request.header.RequestType = ACCEL_INTR_SERVICE_SDM_MSG_RECVD;
-    accel_intr_service_request.IRQnum = 0x77;
-
-    expect_value(__wrap_accel_intr_handle_sdm_msg_recvd, IRQnum, 0x77);
+    expect_value(__wrap_accel_intr_handle_fatal_intr_recvd, accel, accel_intr_service_request.accel_type);
 
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &accel_intr_service_request.header);
 
@@ -233,9 +205,9 @@ TEST_FUNCTION(test_accel_intr_service_dispatch_mbox, NULL, NULL)
     accel_intr_service_request_t accel_intr_service_request;
     accel_intr_service_t accel_intr_service_device;
     accel_intr_service_request.header.RequestType = ACCEL_INTR_SERVICE_MBOX_RECVD;
-    accel_intr_service_request.IRQnum = 0x77;
+    accel_intr_service_request.accel_type = ACCEL_ID_SDM;
 
-    expect_value(__wrap_accel_intr_handle_mbox_recvd, IRQnum, 0x77);
+    expect_value(__wrap_accel_intr_handle_mbox_recvd, accel, accel_intr_service_request.accel_type);
 
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &accel_intr_service_request.header);
 
@@ -251,7 +223,7 @@ TEST_FUNCTION(test_accel_intr_service_dispatch_default, NULL, NULL)
     accel_intr_service_request_t accel_intr_service_request;
     accel_intr_service_t accel_intr_service_device;
     accel_intr_service_request.header.RequestType = ACCEL_INTR_SERVICE_COMMANDS_START_ID;
-    accel_intr_service_request.IRQnum = 0x77;
+    accel_intr_service_request.accel_type = ACCEL_ID_SDM;
 
     expect_value(__wrap_FpFwAssert, expression, false);
 

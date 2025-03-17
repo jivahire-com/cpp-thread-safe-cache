@@ -77,4 +77,10 @@ fpfw_status_t __wrap_fpfw_timer_reset(fpfw_timer_t* timer)
     return mock_type(fpfw_status_t);
 }
 
+uint32_t __wrap_FPFwCoreInterruptEnableVector(uint32_t irqnum)
+{
+    check_expected(irqnum);
+    return mock_type(uint32_t);
+}
+
 } // extern "C"

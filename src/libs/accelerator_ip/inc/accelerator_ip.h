@@ -69,17 +69,6 @@ typedef void (*crash_dump_cb_t)(void *);
 /*------------------- Declarations (Statics and globals) --------------------*/
 
 /*--------------------------- Function Prototypes ---------------------------*/
-/**
- * @brief Get ATU mapped address for ext_cfg based on Accel Type
- *
- *
- * @param[in] accel_type : Accelerator type : SDM / CDED
- *
- * @retval ATU mapped Accel Ext Cfg address
- * 
- * @deprecated This API is deprecated. Please use atu_svc_accel_atu_addr()
- */
-uint32_t accelerator_ip_get_atu_mapped_cfg_address(ACCEL_ID accel_type);
 
 /**
  * @brief Initialize Accelerator on SCP core

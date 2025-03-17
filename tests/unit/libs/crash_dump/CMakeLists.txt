@@ -29,6 +29,7 @@ target_link_libraries(${TARGET}
     ms::lib::crash_dump
     ms::lib::icc_platform_defines
     ms::lib::threadx
+    ms::mocks::silibs_platform
     silibs::idhw
     silibs::kng_silibs_platform
     silibs::gpio
@@ -81,6 +82,7 @@ mock_target(${TARGET}
     crash_dump_context
     initialize_semaphore
     memcpy
+    mmio_read32
     nvic_get_current_irq
     wait_for_semaphore
     release_semaphore

@@ -52,9 +52,11 @@ static void cd_accel_recv_addr_notify_cb(void* context, size_t output_size_bytes
     accel_cd_addr_msg* msg = accel_params->params.payload_buffer;
     crash_dump_context_t* ctx = crash_dump_context();
 
-    ctx->accel_cd_dtcm_offset[accel_type] = msg->dtcm_offset;
+    ctx->accel_cd_ctx[accel_type].cd_file_offset = msg->cd_file_offset;
+    ctx->accel_cd_ctx[accel_type].cd_file_size = msg->cd_file_size;
+    ctx->accel_cd_ctx[accel_type].cd_magic_nr_offset = msg->magic_nr_offset;
     crash_dump_register_post_dump_callback(crash_dump_copy_accel_cd_file, (void*)accel_type, CRASH_DUMP_TYPE_FULL);
-    FPFwCDPrintf("CD[Accel %u]: DTCM offset 0x%lx\n", accel_type, msg->dtcm_offset);
+    FPFwCDPrintf("[CD][Accel %u]: CD file offset 0x%lx size 0x%lx\n", accel_type, msg->cd_file_offset, msg->cd_file_size);
 }
 
 static bool icc_register_mhu_remote_callback(fpfw_icc_base_ctx_t* icc_ctx)

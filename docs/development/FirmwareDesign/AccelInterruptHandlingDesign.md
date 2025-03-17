@@ -152,19 +152,17 @@ sequenceDiagram
 #### 4.1.2 Top-half (ISR): ISR will act as Top-Half and will be responsible for doing only the most critical tasks.
 
 * ISR will record the Accelerator IP from which interrupt has been triggered (SDM / CDED).
-* ISR will also check if at least one valid FATAl interrupt exists and/or doorbell interrupt `SYS_MSG0_INTR` is raised.
-    * This will be done by checking both level 1 and level 2 registers of interrupts that are set until a valid FATAL interrupt is found. 
-    * Doorbell interrupt is checked and processed separately after FATAL interrupt checking is done.
-    * If no such interrupt is found, the ISR returns after clearing the interrupt at level 1.
+* ISR will also check if at least one valid FATAl interrupt exists.
+    * This will be done by checking both level 1 and level 2 registers of interrupts that are set until a valid FATAL interrupt is found.
+    * Once a valid fatal interrupt is received, SCP should wait until accel IP has completed its CD collection.
+    * Accel IP writes a magic number onto a pre determined memory location on accel IPs DTCM.
+    * SCP enabled a timer to wait for accel IP to complete its CD collection. Once the timer expires SCP looks for magic number
+    * If spurious interrupt is found, the ISR returns after clearing the interrupt at level 1.
 * Based on the interrupt that is received, these actions will be taken
     * **FATAL Interrupts**
         * Disable ACCEL emCPU watchdog timer.
         * Disable the interrupt that has been raised using `nvic_irq_disable`.
         * Create async request for FATAL interrupt and trigger the request for Bottom-half to handle using `DfwkInterfaceSendAsync`.
-    * **Doorbell Interrupt SYS_MSG0_INTR**: This indicates that ACCEL emCPU has successfully collected crash dump.
-        * Clear doorbell interrupt `SYS_MSG0_INTR` from ACCEL IP Interrupt Tree
-        * Disable doorbell interrupt in Level 1 register to make sure we receive this interrupt only when expected. 
-        * Create async request for SYS_MSG and trigger the request for Bottom-half to handle using `DfwkInterfaceSendAsync`.
 
 #### 4.1.3 Bottom-half: Bottom-half will be function calls that are called by Driver Framework when a ISR triggers the Async Request.
 
@@ -215,43 +213,7 @@ scp_emcpu_handle_fatal_interrupt_recv(...)
          * Level 2 registers are cleared as part of Accel emCPU boot up
          */
         accel_intr_clear_and_unmask_interrupts();
-    }
-}
-
-// **** scp_emcpu_handle_doorbel_from_accel_ip_recv ****
-scp_emcpu_handle_doorbel_from_accel_ip_recv(...)
-{
-    /**
-     * 1. Reset the timer and inactivate it by calling fpfw_timer_reset
-     * 2. Trigger ACCEL emCPU reset
-     */
-    reset_timer();
-    trigger_accel_emcpu_reset();
-}
-
-// **** scp_emcpu_handle_doorbel_from_accel_ip_recv_timeout ****
-scp_emcpu_handle_doorbel_from_accel_ip_recv_timeout(...)
-{
-    if (first_timeout)
-    {
-        /**
-         * 1. Reset ACCEL emCPU
-         * 2. Clear all interrupts routed from ACCEL IP
-         * 3. Trigger doorbell interrupt `SYS2_MSG0_INTR` again to collect ACCEL Subsystem Dump
-         * 4. Create timer to wait on doorbell interrupt SDM_MSG0_INTR using fpfw_timer_create
-         */
-        trigger_accel_emcpu_reset();
-        accel_intr_clear_and_unmask_interrupts();
-        request_crash_dump_collection();
-    }
-    else
-    {
-        /** 
-         * 1. Set flag for soc_reset : Second timeout indicates that ACCEL emCPU is not able 
-         *     to collect crash dump even after one emCPU reset. So to recover, SoC reset will be needed.
-         * 2. Request SoC reset in SCP.
-         */
-        request_soc_reset();
+        nvic_irq_enable();
     }
 }
 ```
@@ -265,6 +227,7 @@ participant ACCEL_IP as Accelerator IP
 participant SCP_EMCPU_DFWK as <br/>SCP emCPU<br/>DFWK & Timers<br/>
 participant SCP_EMCPU_ACCELIP_ISR as <br/>SCP emCPU<br/>AccelIP ISR<br/>
 participant scp_soc_reset_handler as <br/>SCP emCPU<br/>SoC Reset Handler<br/>
+participant SCP_CD as SCP CrashDump
 Note over ACCEL_IP: FATAL interrupt is triggered
     ACCEL_IP->>SCP_EMCPU_ACCELIP_ISR: Triggers IRQ_119 in SCP emCPU
     Note over SCP_EMCPU_ACCELIP_ISR: Record ACCEL IP based on IRQNum (SDM / CDED)
@@ -287,49 +250,19 @@ Note over ACCEL_IP: FATAL interrupt is triggered
         Note over scp_soc_reset_handler: Reset SoC
     else accel_emcpu_reset is set
         Note over scp_emcpu_handle_accel_fatal_interrupt_recv: Trigger doorbell interrupt SYS2_MSG0_INTR for ACCEL emCPU to collect crash dump
-        scp_emcpu_handle_accel_fatal_interrupt_recv-->>ACCEL_IP: Doorbell interrupt SYS2_MSG0_INTR triggered
         par
             Note over scp_emcpu_handle_accel_fatal_interrupt_recv: Enable IRQ
             scp_emcpu_handle_accel_fatal_interrupt_recv-->>SCP_EMCPU_DFWK : Create timer to wait on doorbell interrupt SDM_MSG0_INTR using fpfw_timer_create
         and
-            Create participant ACCEL_EMCPU_SYS_MSG_ISR as <br/>ACCEL emCPU<br/>AccelIP Doorbell Interrupt ISR<br/>
-            ACCEL_IP->>ACCEL_EMCPU_SYS_MSG_ISR: Triggers doorbell interrupt SYS2_MSG0_INTR in ACCEL emCPU
-            Note over ACCEL_EMCPU_SYS_MSG_ISR : Log and collect crash dump
-            Note over ACCEL_EMCPU_SYS_MSG_ISR : Clear interrupt from ACCEL IP Interrupt Tree
-            Note over ACCEL_EMCPU_SYS_MSG_ISR : Trigger doorbell interrupt SDM_MSG0_INTR to SCP
-            destroy ACCEL_EMCPU_SYS_MSG_ISR
-            ACCEL_EMCPU_SYS_MSG_ISR-->>ACCEL_IP: Doorbell interrupt SDM_MSG0_INTR Triggered
+            Create participant ACCEL_CD_Collector as ACCEL_CD
+            ACCEL_CD_Collector->>ACCEL_CD_Collector: Triggers CD collection
+            Note over ACCEL_CD_Collector : Crash Dump collection done
+            ACCEL_CD_Collector->>ACCEL_CD_Collector: Write Magic number in DTCM
         end
     end
-    destroy scp_emcpu_handle_accel_fatal_interrupt_recv
-    scp_emcpu_handle_accel_fatal_interrupt_recv-->>SCP_EMCPU_DFWK: 
-    alt Doorbell interrupt SYS_MSG0_INTR received as expected
-        ACCEL_IP->>+SCP_EMCPU_ACCELIP_ISR: Triggers IRQ_119 in SCP emCPU
-        Note over SCP_EMCPU_ACCELIP_ISR: Record ACCEL IP based on IRQNum (SDM / CDED)
-        Note over SCP_EMCPU_ACCELIP_ISR: Validate for FATAL interrupt / doorbell interrupt SYS_MSG0_INTR
-        create participant SCP_EMCPU_ACCELIP_SYS_MSG0_ISR as <br/>SCP emCPU<br/>AccelIP Doorbell Interrupt ISR<br/>
-        SCP_EMCPU_ACCELIP_ISR->>SCP_EMCPU_ACCELIP_SYS_MSG0_ISR : Doorbell interrupt SYS_MSG0_INTR received
-        Note over SCP_EMCPU_ACCELIP_SYS_MSG0_ISR: Clear doorbell interrupt SYS_MSG0_INTR
-        destroy SCP_EMCPU_ACCELIP_SYS_MSG0_ISR
-        SCP_EMCPU_ACCELIP_SYS_MSG0_ISR->>SCP_EMCPU_DFWK: Trigger Async request using DfwkInterfaceSendAsync
-        create participant scp_emcpu_scp_emcpu_handle_doorbel_from_accel_ip_recv as <br/>SCP emCPU<br/>DFWK<br/>Doorbell Interrupt Function<br/>
-        SCP_EMCPU_DFWK-->>scp_emcpu_scp_emcpu_handle_doorbel_from_accel_ip_recv: Async Request for doorbell interrupt SYS_MSG0_INTR is received
-        Note over scp_emcpu_scp_emcpu_handle_doorbel_from_accel_ip_recv : Reset timer and inactivate it
-        Note over scp_emcpu_scp_emcpu_handle_doorbel_from_accel_ip_recv : Trigger Accel emCPU reset
-    else    Timer timeout
-        alt First Timeout
-            create participant scp_emcpu_handle_doorbel_from_accel_ip_recv_timeout as <br/>SCP emCPU<br/>Timer<br/>Timeout Function<br/>
-            SCP_EMCPU_DFWK->>scp_emcpu_handle_doorbel_from_accel_ip_recv_timeout : Timeout
-            Note over scp_emcpu_handle_doorbel_from_accel_ip_recv_timeout : Reset ACCEL emCPU
-            Note over scp_emcpu_handle_doorbel_from_accel_ip_recv_timeout : Clear all ACCEL IP interrupts
-            Note over scp_emcpu_handle_doorbel_from_accel_ip_recv_timeout : Trigger doorbell interrupt `SYS_MSG0_INTR`
-            scp_emcpu_handle_doorbel_from_accel_ip_recv_timeout-->>SCP_EMCPU_DFWK : Create timer to wait on doorbell interrupt SDM_MSG0_INTR using fpfw_timer_create
-        else Second Timeout
-            scp_emcpu_handle_doorbel_from_accel_ip_recv_timeout->>scp_soc_reset_handler : Request SoC Reset
-            Note over scp_soc_reset_handler: Triggers crash dump for SCP, MCP, ACCEL and other cores
-            Note over scp_soc_reset_handler: Reset SoC
-        end
-    end
+    SCP_EMCPU_DFWK->>SCP_EMCPU_DFWK: Timer expired
+    Note over SCP_EMCPU_DFWK: Check for Magic number in accel DTCM
+    SCP_EMCPU_DFWK->>SCP_CD: Transfer CD from accel DTCM to DDR
 ```
 ## 5 Unit Testing
 | Testcase                                      | Description  |
@@ -345,9 +278,6 @@ Note over ACCEL_IP: FATAL interrupt is triggered
 | accel_intr_handle_fatal_intr_recvd_pass_accel_emcpu_reset | Runs accel_intr_handle_fatal_intr_recvd with all passing and emCPU reset trigger |
 | accel_intr_handle_fatal_intr_recvd_pass_no_level2_intr | Runs accel_intr_handle_fatal_intr_recvd with only Level 1 interrupt set |
 | accel_intr_handle_fatal_intr_recvd_pass_no_interrupt | Runs accel_intr_handle_fatal_intr_recvd with no valid interrupt set |
-| accel_intr_handle_sdm_msg_recvd | Runs accel_intr_handle_sdm_msg_recvd with all passing  |
-| accel_intr_handle_sdm_msg_recv_timeout_count_0 | accel_intr_handle_sdm_msg_recvd_timeout for first timeout |
-| accel_intr_handle_sdm_msg_recv_timeout_count_1 | accel_intr_handle_sdm_msg_recvd for second timeout |
 
 ## 6 Functional Testing
 

@@ -3,14 +3,11 @@
 //
 
 /**
- * @file silibs_platform_mocks.c
+ * @file silibs_platform_mock.c
  * silibs_platform MOCKS for unit testing. Only built for win32
  */
 
 /*-------------------------------- Includes ---------------------------------*/
-#include <CMockaWrapper.h> // for assert_int_equal, Cmock...
-
-extern "C" {
 
 #include <FpFwCMocka.h>
 #include <FpFwUtils.h> // for FPFW_UNUSED
@@ -118,5 +115,3 @@ void __wrap_mmio_update32(volatile uint32_t* addr, uint32_t data, uint32_t mask)
     check_expected(data);
     check_expected(mask);
 }
-
-} // extern "c"

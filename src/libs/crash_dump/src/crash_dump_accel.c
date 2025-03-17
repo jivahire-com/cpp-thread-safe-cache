@@ -14,12 +14,14 @@
 #include "crash_dump_status.h" // for crash_dump_update_accel_state
 
 #include <CrashDump.h>          // for FPFwCDPrintf
+#include <FpFwUtils.h>          // for FPFW_MIN
 #include <atu_init.h>           // for atu_svc_accel_atu_addr
 #include <cded_regs_regs.h>     // for CDED_REGS_CCMP_CFG_ADDRESS
 #include <cdedss_config_regs.h> // for CDEDSS_CONFIG_CDED_REGS_REGS_ADDRESS
 #include <crash_dump.h>         // for crash_dump_register_address32
 #include <sdm_ext_cfg_regs.h>   // for SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS...
 #include <silibs_common.h>      // for BYTES_IN_WORD32
+#include <silibs_platform.h>    // for MMIO_READ32
 #include <stdint.h>             // for uint32_t
 #include <string.h>             // for memcpy
 
@@ -28,6 +30,12 @@
  * in the generate header file
  */
 #define ADDRESS_BLOCK_0x100000_OFFSET (SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS)
+
+/**
+ * CD magic number which indicates that CD collection is complete
+ *
+ */
+#define CD_MAGIC_NUMBER 0xCDED5D55
 
 /*-------------- Typedefs ----------------*/
 
@@ -403,35 +411,46 @@ static uint32_t crash_dump_register_cded_ext_mmio(crash_dump_type_context_t* typ
 static void copy_cd_file_dtcm_to_ddr(crash_dump_context_t* ctx, ACCEL_ID accel_type)
 {
     uint32_t cd_ddr_addr;
-    uint32_t cd_file_size;
+    uint32_t accel_dtcm_addr;
+    uint32_t cd_file_size = ctx->accel_cd_ctx[accel_type].cd_file_size;
+    uint32_t cd_file_off = ctx->accel_cd_ctx[accel_type].cd_file_offset;
 
-    /**
-     * TODO: TASK 1974315 https://azurecsi.visualstudio.com/Dev/_workitems/edit/1974315
-     * Add logic to wait for accel device to complete crashdump collection
-     */
-
-    if (ctx->accel_cd_dtcm_offset[accel_type] == 0 || ctx->type_ctx[CRASH_DUMP_TYPE_FULL] == NULL)
+    if (ctx->type_ctx[CRASH_DUMP_TYPE_FULL] == NULL)
     {
-        // Invalid DTCM address or no full dump context.
-        crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_NOT_AVAILABLE);
-        return;
+        // no full dump context.
+        goto cd_transfer_failed;
+    }
+
+    if (cd_file_size == 0 || cd_file_off + cd_file_size > SDM_EXT_CFG_EMCPU_TCM_DTCM_SIZE)
+    {
+        // Invalid DTCM address or size.
+        goto cd_transfer_failed;
+    }
+
+    if (!crash_dump_is_accel_cd_complete(accel_type))
+    {
+        // Invalid MAGIC number address or CD collection is not complete for given accel core
+        goto cd_transfer_failed;
     }
 
     if (accel_type == ACCEL_ID_SDM)
     {
         cd_ddr_addr = CRASH_DUMP_FULL_SDM_ADDR;
-        cd_file_size = CRASH_DUMP_FULL_SDM_SIZE;
+        cd_file_size = FPFW_MIN(CRASH_DUMP_FULL_SDM_SIZE, cd_file_size);
     }
     else
     {
         cd_ddr_addr = CRASH_DUMP_FULL_CDED_ADDR;
-        cd_file_size = CRASH_DUMP_FULL_CDED_SIZE;
+        cd_file_size = FPFW_MIN(CRASH_DUMP_FULL_CDED_SIZE, cd_file_size);
     }
 
-    uint32_t accel_dtcm_addr = atu_svc_accel_atu_addr(accel_type) + SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS;
-    uint32_t cd_file_addr = accel_dtcm_addr + ctx->accel_cd_dtcm_offset[accel_type];
-    memcpy((void*)cd_ddr_addr, (void*)cd_file_addr, cd_file_size);
+    accel_dtcm_addr = atu_svc_accel_atu_addr(accel_type) + SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS;
+    memcpy((void*)cd_ddr_addr, (void*)(accel_dtcm_addr + cd_file_off), cd_file_size);
     crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_COMPLETED);
+    return;
+
+cd_transfer_failed:
+    crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_NOT_AVAILABLE);
 }
 
 /*------------- Public Functions ----------------*/
@@ -467,4 +486,34 @@ void crash_dump_copy_accel_cd_file(void* ctx)
 
     /* Copy accel crashdump file from accel DTCM to DDR */
     copy_cd_file_dtcm_to_ddr(cd_ctx, accel_type);
+}
+
+bool crash_dump_is_accel_cd_complete(ACCEL_ID accel_type)
+{
+    crash_dump_context_t* cd_ctx = crash_dump_context();
+    uint32_t* cd_magic_nr;
+
+    if (cd_ctx == NULL)
+    {
+        return false;
+    }
+
+    cd_magic_nr = (void*)cd_ctx->accel_cd_ctx[accel_type].cd_magic_nr_offset;
+    if ((uint32_t)cd_magic_nr + sizeof(*cd_magic_nr) > SDM_EXT_CFG_EMCPU_TCM_DTCM_SIZE)
+    {
+        // Invalid magic number address.
+        return false;
+    }
+
+    // Compute the ATU mapped address of the magic number
+    uint32_t accel_dtcm_addr = atu_svc_accel_atu_addr(accel_type) + SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS;
+    cd_magic_nr = (void*)cd_magic_nr + accel_dtcm_addr;
+
+    if (MMIO_READ32(cd_magic_nr) != CD_MAGIC_NUMBER)
+    {
+        // SDM/CDED busy
+        return false;
+    }
+
+    return true;
 }

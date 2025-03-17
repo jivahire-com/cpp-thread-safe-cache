@@ -5,7 +5,6 @@ set(SOURCES
     fpfw_mock.cpp
     nvic_mock.cpp
     sdm_ext_interrupts_mock.cpp
-    silibs_platform_mock.cpp
     test_accel_intr.cpp
 )
 
@@ -27,6 +26,7 @@ target_link_libraries(${TARGET}
         ms::lib::register_headers
         ms::lib::scp_interrupts
         ms::lib::utils
+        ms::mocks::silibs_platform
         silibs::pcr_rpss
         silibs::sdm_init
         silibs::smmu
@@ -55,13 +55,17 @@ unit_test_target(${TARGET})
 
 # Mock the functions needed
 mock_target(${TARGET}
+    FPFwCoreInterruptEnableVector
     accel_intr_service_get_cfg_address
     accel_mbox_sw_intr_cb
+    atu_svc_accel_atu_addr
     cded_clear_trigger_int_mask
     cded_int_mask_enable
     cded_int_mask_disable
     cded_int_mask_status_clear
     crash_dump_bug_check
+    crash_dump_bug_check_external
+    crash_dump_is_accel_cd_complete
     fpfw_timer_create
     fpfw_timer_enable
     fpfw_timer_reset

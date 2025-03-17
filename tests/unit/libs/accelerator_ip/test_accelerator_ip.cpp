@@ -807,11 +807,6 @@ TEST_FUNCTION(accel_disable_cpu_wait_test_fail1, nullptr, nullptr)
     accel_disable_cpu_wait(NUM_VALID_ACCEL_ID);
 }
 
-TEST_FUNCTION(accelerator_ip_get_atu_mapped_cfg_address_test, nullptr, nullptr)
-{
-    accelerator_ip_get_atu_mapped_cfg_address(ACCEL_ID_CDED);
-}
-
 TEST_FUNCTION(accel_get_itcm_addr_sdm_test, nullptr, nullptr)
 {
     uint32_t low_addr;

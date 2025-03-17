@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         fwlib.dfwk
         fwlib.lib.linkedlist
         fwlib.lib.utils
+        silibs::sdm_command_desc
  )
 
 target_compile_definitions(${TARGET} PRIVATE UNIT_TEST)

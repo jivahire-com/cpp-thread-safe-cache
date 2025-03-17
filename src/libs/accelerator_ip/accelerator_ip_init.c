@@ -456,11 +456,6 @@ ACCEL_ID get_accelip_type(ACCELIP_SS_INSTANCE accel_type)
     }
 }
 
-uint32_t accelerator_ip_get_atu_mapped_cfg_address(ACCEL_ID accel_type)
-{
-    return accel_intr_atu_map_address[accel_type];
-}
-
 void accel_disable_cpu_wait(ACCEL_ID accel_type)
 {
     char accel_name[ACCEL_NAME_LEN];

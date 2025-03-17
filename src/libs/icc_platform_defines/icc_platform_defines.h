@@ -257,7 +257,9 @@ typedef union _large_fifo_mailbox_msg {
 typedef union _accel_cd_msg {
 	struct {
 		large_fifo_mailbox_msg_header hdr;
-		uint32_t dtcm_offset;
+		uint32_t cd_file_offset;
+		uint32_t cd_file_size;
+		uint32_t magic_nr_offset;
 	};
 	uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
 } accel_cd_addr_msg;

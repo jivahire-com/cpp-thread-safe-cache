@@ -47,20 +47,7 @@ static void accel_intr_service_async_request(PDFWK_ASYNC_REQUEST_HEADER p_reques
         paccel_intr_service_request_t p_accel_intr_service_request = (paccel_intr_service_request_t)p_request;
 
         // Call handler
-        accel_intr_handle_fatal_intr_recvd(p_accel_intr_service_request->IRQnum);
-
-        DfwkAsyncRequestComplete(p_request);
-    }
-    break;
-
-    /**
-     * Handle Accel IP SDM_MSG interrupt
-     */
-    case ACCEL_INTR_SERVICE_SDM_MSG_RECVD: {
-        paccel_intr_service_request_t p_accel_intr_service_request = (paccel_intr_service_request_t)p_request;
-
-        // Call handler
-        accel_intr_handle_sdm_msg_recvd(p_accel_intr_service_request->IRQnum);
+        accel_intr_handle_fatal_intr_recvd(p_accel_intr_service_request->accel_type);
 
         DfwkAsyncRequestComplete(p_request);
     }
@@ -73,7 +60,7 @@ static void accel_intr_service_async_request(PDFWK_ASYNC_REQUEST_HEADER p_reques
         paccel_intr_service_request_t p_accel_intr_service_request = (paccel_intr_service_request_t)p_request;
 
         // Call handler
-        accel_intr_handle_mbox_recvd(p_accel_intr_service_request->IRQnum);
+        accel_intr_handle_mbox_recvd(p_accel_intr_service_request->accel_type);
 
         DfwkAsyncRequestComplete(p_request);
     }
@@ -91,14 +78,13 @@ static int32_t accel_intr_service_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER p_requ
     {
     case ACCEL_INTR_SERVICE_FATAL_INTR_RECVD:
     // Placeholder to service `FATAL Interrupt` sync command
-    case ACCEL_INTR_SERVICE_SDM_MSG_RECVD:
-    // Placeholder to service `SDM MSG Interrupt` sync command
     default:
         FPFW_RUNTIME_ASSERT(false);
         break;
     }
     return DFWK_SUCCESS;
 }
+
 /*------------- Functions ----------------*/
 
 void accel_intr_service_interface_init(paccel_intr_service_t p_device, paccel_intr_service_interface_t p_interface)

@@ -19,6 +19,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.linkedlist
         fwlib.lib.utils
         fwlib.platform.dfwkhost.threadx
+        silibs::sdm_command_desc
 )
 
 target_compile_definitions(${TARGET} PRIVATE UNIT_TEST)

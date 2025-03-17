@@ -32,7 +32,6 @@ typedef enum {
     ACCEL_SCP_INTR_CSR_PARITY_ERR,          // Maps to SDM_EXT_CSR_PARITY_ERR_INTR
     ACCEL_SCP_INTR_SDM_WDT_ERR,             // Maps to SDM_EXT_SDM_WDT_ERR_INTR
     ACCEL_SCP_INTR_FAB_WDT_ERR,             // Maps to SDM_EXT_FAB_WDT_ERR_INTR
-    ACCEL_SCP_INTR_AXI_BURST_ERR,           // Maps to SDM_EXT_AXI_BURST_ERR_INTR
     ACCEL_SCP_INTR_AXI_UNSUPP_INTR_STATUS,  // Maps to SDM_EXT_AXI_UNSUPP_INTR_STATUS_INTR
     ACCEL_SCP_INTR_STYRESE_REQ_ERR,         // Maps to SDM_EXT_STYRESE_REQ_ERR_INTR
     ACCEL_SCP_INTR_MBX_I2E,                 // Maps to SDM_EXT_MBX_I2E_INTR
@@ -96,14 +95,14 @@ typedef enum {
 typedef struct
 {
     SDM_EXT_INTERRUPT_NUMBER accel_irq_bit;
-    uint32_t (*accel_irq_init_fn)(ACCEL_ID, SDM_EXT_INTERRUPT_NUMBER);             // Interrupt specific init code.
+    uint32_t (*accel_irq_init_fn)(ACCEL_ID, SDM_EXT_INTERRUPT_NUMBER, uint32_t);   // Interrupt specific init code.
     uint32_t (*accel_irq_fn)(uint32_t, uint32_t, SDM_EXT_INTERRUPT_NUMBER, bool);  // Interrupt specific ISR handler code
 } accel_intr_irq_data_t, *paccel_intr_irq_data_t;
 
 // Structure to store data that is passed with timer
 typedef struct
 {
-    uint32_t    IRQnum;                     // IRQnum for which this timer is called. This determines ACCEL type
+    ACCEL_ID    accel_type;                 // Accel type (SDM /CDED)
     uint32_t    timeout_count;              // Timeout count. This is needed to take different action based on timeout
     bool        is_soc_reset;               // Indicate if this is SoC reset 
     bool        is_collecting_crashdump;    // Indicates if crash dump collection has started
@@ -253,6 +252,14 @@ void accel_intr_mask_interrupt_level_1(uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_
  */
 void accel_intr_unmask_interrupt_level_1(uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index);
 
+/**
+ * @brief Initialize SDM/CDED interrupts for SCP core
+ * 
+ * @param[in] accel_type : Accel type (SDM /CDED)
+ * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
+ */
+void accel_intr_scp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr);
+
 /*************************************************************************
  * IRQ Init functions
  *************************************************************************/
@@ -265,11 +272,12 @@ void accel_intr_unmask_interrupt_level_1(uint32_t ext_cfg_addr, SDM_EXT_INTERRUP
  *
  * @param[in] accel_type : Accel type (SDM /CDED)
  * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
+ * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
  *
  * @retval
  *  Always returns, ACCEL_RET_SUCCESS
  */
-uint32_t accel_intr_emcpu_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index);
+uint32_t accel_intr_emcpu_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr);
 
 /**
  * @brief Initialize UE_ECC_ERR Interrupt
@@ -279,11 +287,12 @@ uint32_t accel_intr_emcpu_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NU
  *
  * @param[in] accel_type : Accel type (SDM /CDED)
  * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
+ * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
  *
  * @retval
  *  Always returns, ACCEL_RET_SUCCESS
  */
-uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index);
+uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr);
 
 /**
  * @brief Initialize all ACCEL interrupts that have only level 1 register
@@ -293,11 +302,12 @@ uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBE
  *
  * @param[in] accel_type : Accel type (SDM /CDED)
  * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
+ * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
  *
  * @retval
  *  Always returns, ACCEL_RET_SUCCESS
  */
-uint32_t accel_intr_single_level_irq_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index);
+uint32_t accel_intr_single_level_irq_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr);
 
 /**
  * @brief Initialize SDM_WDT_ERR Interrupt
@@ -307,11 +317,12 @@ uint32_t accel_intr_single_level_irq_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT
  *
  * @param[in] accel_type : Accel type (SDM /CDED)
  * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
+ * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
  *
  * @retval
  *  Always returns, ACCEL_RET_SUCCESS
  */
-uint32_t accel_intr_sdm_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index);
+uint32_t accel_intr_sdm_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr);
 
 /**
  * @brief Initialize FAB_WDT_ERR Interrupt
@@ -322,11 +333,12 @@ uint32_t accel_intr_sdm_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMB
  *
  * @param[in] accel_type : Accel type (SDM /CDED)
  * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
+ * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
  *
  * @retval
  *  Always returns, ACCEL_RET_SUCCESS
  */
-uint32_t accel_intr_fab_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index);
+uint32_t accel_intr_fab_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr);
 
 /**
  * @brief Initialize CDED_CP_FATAL_ERR Interrupt
@@ -337,11 +349,12 @@ uint32_t accel_intr_fab_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMB
  *
  * @param[in] accel_type : Accel type (SDM /CDED)
  * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
+ * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
  *
  * @retval
  *  Always returns, ACCEL_RET_SUCCESS
  */
-uint32_t accel_intr_cded_cp_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index);
+uint32_t accel_intr_cded_cp_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr);
 
 /*************************************************************************
  * IRQ Validation and Handler functions

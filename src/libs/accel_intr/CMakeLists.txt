@@ -41,6 +41,7 @@ target_link_libraries(${TARGET}
         ms::lib::error_codes
         ms::lib::event_trace::trace
         ms::lib::interrupts
+        ms::service::atu_service
         silibs::cded_interrupts
 )
 

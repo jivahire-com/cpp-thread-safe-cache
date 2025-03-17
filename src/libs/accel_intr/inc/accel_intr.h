@@ -91,34 +91,24 @@ int32_t accel_scp_intr_init(ACCEL_ID accel_type);
 int32_t accel_mcp_intr_init(ACCEL_ID accel_type);
 
 /**
- * @brief Function called when ASYNC request for SDM_MSG0_INTR is  received
- *  
- * @param[in] IRQnum : This will have IRQNum to identify if interrupt is received for CDED / SDM
- *
- * @retval void
- *
- */
-void accel_intr_handle_sdm_msg_recvd(uint32_t IRQnum);
-
-/**
  * @brief Function called when ASYNC request for FATAL_INTR is received
  *  
- * @param[in] IRQnum : This will have IRQNum to identify if interrupt is received for CDED / SDM
+ * @param[in] accel_type : CDED / SDM accelerator_type
  *
  * @retval void
  *
  */
-void accel_intr_handle_fatal_intr_recvd(uint32_t IRQnum);
+void accel_intr_handle_fatal_intr_recvd(ACCEL_ID accel_type);
 
 /**
  * @brief Function called when ASYNC request for mailbox interrupt is received
  *  
- * @param[in] IRQnum : This will have IRQNum to identify if interrupt is received for CDED / SDM
+ * @param[in] accel_type : CDED / SDM accelerator_type
  *
  * @retval void
  *
  */
-void accel_intr_handle_mbox_recvd(uint32_t IRQnum);
+void accel_intr_handle_mbox_recvd(ACCEL_ID accel);
 
 /**
  * @brief Setup interrupt context for Mailbox interrupts.

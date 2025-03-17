@@ -32,29 +32,17 @@ static accel_intr_service_cmd_context_t accel_intr_service_cmd_context;
 
 static void accel_intr_async_request_complete(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_completion_context)
 {
+    FPFW_UNUSED(p_request);
     FPFW_UNUSED(p_completion_context);
-
-    paccel_intr_service_request_t p_accel_intr_service_request = (paccel_intr_service_request_t)p_request;
-
-    /**
-     * Enable Interrupt was earlier being done as part of request handler.
-     * With that implementation there is a possibility that new interrupt can be triggered before first one is
-     * processed. As per DFWK recommendation, enabling only after complete processing is done.
-     */
-    if (p_request->RequestType == ACCEL_INTR_SERVICE_FATAL_INTR_RECVD)
-    {
-        FPFwCoreInterruptEnableVector(p_accel_intr_service_request->IRQnum);
-    }
 }
 
-static void dispatch_accel_intr_async_request(uint32_t IRQnum,
+static void dispatch_accel_intr_async_request(ACCEL_ID accel_type,
                                               e_accel_intr_service_command_id_t command,
                                               DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine)
 {
     int idx = ACCEL_INTR_SERVICE_GET_IDX_FROM_COMMAND(command);
-    ACCEL_ID accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
 
-    accel_intr_service_cmd_context.requests[accel_type][idx].IRQnum = IRQnum;
+    accel_intr_service_cmd_context.requests[accel_type][idx].accel_type = accel_type;
 
     accel_intr_service_cmd_context.requests[accel_type][idx].header.RequestType = command;
 
@@ -63,19 +51,14 @@ static void dispatch_accel_intr_async_request(uint32_t IRQnum,
                            &accel_intr_service_cmd_context.requests[accel_type][idx].header);
 }
 
-void send_sdm_msg_async_request(uint32_t IRQnum)
+void send_fatal_intr_async_request(ACCEL_ID accel_type)
 {
-    dispatch_accel_intr_async_request(IRQnum, ACCEL_INTR_SERVICE_SDM_MSG_RECVD, accel_intr_async_request_complete);
+    dispatch_accel_intr_async_request(accel_type, ACCEL_INTR_SERVICE_FATAL_INTR_RECVD, accel_intr_async_request_complete);
 }
 
-void send_fatal_intr_async_request(uint32_t IRQnum)
+void send_mailbox_async_request(ACCEL_ID accel_type)
 {
-    dispatch_accel_intr_async_request(IRQnum, ACCEL_INTR_SERVICE_FATAL_INTR_RECVD, accel_intr_async_request_complete);
-}
-
-void send_mailbox_async_request(uint32_t IRQnum)
-{
-    dispatch_accel_intr_async_request(IRQnum, ACCEL_INTR_SERVICE_MBOX_RECVD, accel_intr_async_request_complete);
+    dispatch_accel_intr_async_request(accel_type, ACCEL_INTR_SERVICE_MBOX_RECVD, accel_intr_async_request_complete);
 }
 
 void accel_intr_client_init(paccel_intr_service_interface_t p_interface)

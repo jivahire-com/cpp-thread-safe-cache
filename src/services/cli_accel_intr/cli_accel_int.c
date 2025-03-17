@@ -12,9 +12,9 @@
 
 #include <FpFwLinkedList.h>       // for NULL_LIST_ENTRY
 #include <FpFwUtils.h>            // for FPFW_ARRAY_SIZE
-#include <accelerator_ip.h>       // for accelerator_ip_get_atu_mapped_cfg_address
 #include <accelip_id.h>           // for ACCEL_ID_CDED, ACCEL_ID_SDM
 #include <accelip_ss_init.h>      // for D0_ACCELIP_SDMSS, D0_ACCELIP_CDEDSS
+#include <atu_init.h>             // for atu_svc_accel_atu_addr
 #include <cli_accel_int.h>        // for READ_WRITE, READ_ONLY, READ...
 #include <cli_accel_int_events.h> // for EventWriteREG_OPER_FAILED
 #include <errno.h>                // for EPERM, EINVAL
@@ -180,7 +180,7 @@ static int cli_accel_int_read_write_reg(uint32_t reg_offset, uint32_t* reg_value
 {
     int index = cli_accel_int_get_register_idx(reg_offset);
 
-    uint32_t reg_addr = accelerator_ip_get_atu_mapped_cfg_address(ACCEL_ID_SDM) + reg_offset;
+    uint32_t reg_addr = atu_svc_accel_atu_addr(ACCEL_ID_SDM) + reg_offset;
 
     if (index < 0)
     {

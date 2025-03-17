@@ -249,40 +249,38 @@ FPFW_ET_DEFINE_EVENT(
 
 /**
  * This prints:
- * IRQ Number (SDM / CDED)
+ * Accel type (SDM / CDED)
  */
 FPFW_ET_DEFINE_EVENT(
     EVENT_TRACE_PROVIDER_ID_SCP_ACCEL_INTR,
     SCP_ACCEL_EVENT_ID_INTERRUPT_SOC_RESET,
     AccelIntrSoCReset,
     FPFW_ET_LEVEL_ERROR,
-    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, IRQnum)
+    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, accel_id)
 )
 
 /**
  * This prints:
- * IRQ Number
+ * Accel type (SDM / CDED)
  */
 FPFW_ET_DEFINE_EVENT(
     EVENT_TRACE_PROVIDER_ID_SCP_ACCEL_INTR,
     SCP_ACCEL_EVENT_ID_INTERRUPT_EMCPU_RESET,
     AccelIntremCPUReset,
     FPFW_ET_LEVEL_ERROR,
-    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, IRQnum)
+    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, accel_id)
 )
 
 /**
  * This prints:
- * IRQ Number
- * Timeout Count
+ * Accel type (SDM / CDED)
  */
 FPFW_ET_DEFINE_EVENT(
     EVENT_TRACE_PROVIDER_ID_SCP_ACCEL_INTR,
     SCP_ACCEL_EVENT_ID_INTERRUPT_CRASHDUMP_COLLECTION_TIMEOUT,
     AccelIntrCrashdumpCollectTimeout,
-    FPFW_ET_LEVEL_ERROR,
-    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, IRQnum),
-    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, timeout_count)
+    FPFW_ET_LEVEL_INFO,
+    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, accel_id)
 )
 
 /*-------------------------------- Typedefs ---------------------------------*/

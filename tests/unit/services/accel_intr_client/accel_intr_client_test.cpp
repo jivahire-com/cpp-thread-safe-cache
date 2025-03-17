@@ -19,6 +19,7 @@ extern "C" {
 #include <DfwkStatus.h>              // for DFWK_SUCCESS
 #include <accel_intr_client.h>       // for accel_intr_client_init, send_fatal_intr_async_request...
 #include <accel_intr_service_dfwk.h> // for accel_intr_service_t, accel_intr_service_interf...
+#include <accelip_id.h>              // for ACCEL_ID_SDM, ACCEL_ID_CDED
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -125,19 +126,14 @@ TEST_FUNCTION(test_accel_intr_client, NULL, NULL)
 
     accel_intr_client_init(&accel_intr_interface);
 
-    expect_value_count(__wrap_DfwkInterfaceSendAsync, Interface, &accel_intr_interface, 3);
+    expect_value_count(__wrap_DfwkInterfaceSendAsync, Interface, &accel_intr_interface, 2);
 
-    send_sdm_msg_async_request(0x77);
-
-    assert_non_null(CurCompletionRoutine);
-    CurCompletionRoutine(CurHeader, NULL);
-
-    send_fatal_intr_async_request(0x77);
+    send_fatal_intr_async_request(ACCEL_ID_SDM);
 
     assert_non_null(CurCompletionRoutine);
     CurCompletionRoutine(CurHeader, NULL);
 
-    send_mailbox_async_request(0x77);
+    send_mailbox_async_request(ACCEL_ID_SDM);
     assert_non_null(CurCompletionRoutine);
     CurCompletionRoutine(CurHeader, NULL);
 }

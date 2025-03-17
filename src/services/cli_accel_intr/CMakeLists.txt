@@ -28,6 +28,7 @@ target_link_libraries(
             ms::lib::register_headers
             ms::lib::threadx
             ms::lib::utils
+            ms::service::atu_service
             silibs::accelip_ss_init
             silibs::kng_silibs_platform
             silibs::platform

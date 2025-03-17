@@ -11,6 +11,7 @@
 
 /*----------- Nested includes ------------*/
 #include <DfwkDriver.h>
+#include <accelip_id.h>
 #include <stdint.h>
 
 /*-------------- Typedefs ----------------*/
@@ -21,7 +22,6 @@
 typedef enum {
     ACCEL_INTR_SERVICE_COMMANDS_START_ID = 0x1000,
     ACCEL_INTR_SERVICE_FATAL_INTR_RECVD,
-    ACCEL_INTR_SERVICE_SDM_MSG_RECVD,
     ACCEL_INTR_SERVICE_MBOX_RECVD,
     ACCEL_INTR_SERVICE_MAX_COMMAND
 } e_accel_intr_service_command_id_t;
@@ -43,7 +43,7 @@ typedef struct
 /* Structure for the async dfwk request to the accel interrupt interface */
 typedef struct {
     DFWK_ASYNC_REQUEST_HEADER header;
-    uint32_t IRQnum;
+    ACCEL_ID accel_type;
 } accel_intr_service_request_t, *paccel_intr_service_request_t;
 
 /*--------- Function Prototypes ----------*/

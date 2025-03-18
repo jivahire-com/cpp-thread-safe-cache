@@ -32,9 +32,9 @@
 ./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_mcp_cded__test_send_recv.robot
 
 ## Crash Dump Tests
-./../../../tests/functional/pythia/test_suites/crash_dump_tests/crash_dump_trigger_exception_test.robot
-./../../../tests/functional/pythia/test_suites/crash_dump_tests/crash_dump_stack_overflow_test.robot
-./../../../tests/functional/pythia/test_suites/crash_dump_tests/crash_dump_set_single_core_mode_test.robot
+./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_trigger_exception_test.robot
+./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_stack_overflow_test.robot
+./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_set_single_core_mode_test.robot
 
 ## Variable Service Tests
 ./../../../tests/functional/test_suites/varserv_tests/varserv_cli_test.robot

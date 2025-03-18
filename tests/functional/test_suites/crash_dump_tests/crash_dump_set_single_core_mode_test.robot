@@ -5,8 +5,8 @@ Documentation    Verifies crash dump set single core mode
 
 # Import the python library, class must match filename when filepaths of full files.
 # Importing also calls __init__().
-Library     ${CURDIR}/../../pylibs
-Library     pylibs.crash_dump_tests.crash_dump_set_single_core_mode_test
+Library     ${CURDIR}/../../library
+Library     library.crash_dump_tests.crash_dump_set_single_core_mode_test
 ...         workspace_config=${WORKSPACE_CONFIG}
 ...         default_log_home=${LOG_DIR}
 ...         fw_payload_path=${PAYLOAD_DIR}

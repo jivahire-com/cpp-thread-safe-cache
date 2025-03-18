@@ -1,3 +1,7 @@
+--variable KEEP_SVP_ALIVE:TRUE
+
+## Dual Die Heartbeat Tests
+./../../../tests/functional/test_suites/heart_beat/mscp_heartbeat_hsp_boot_dual_die.robot
 
 ## AVS Die 1 Tests
 ./../../../tests/functional/test_suites/avs_tests/avs_read_tests_die1.robot
@@ -8,21 +12,25 @@
 ./../../../tests/functional/test_suites/d2dmbx_tests/d2d_mailbox_cli_test_echo.robot
 ./../../../tests/functional/test_suites/d2dmbx_tests/d2d_mailbox_cli_test_echo_serverasync_clientsync.robot
 
-## Dual Die Heartbeat Tests
-./../../../tests/functional/test_suites/heart_beat/mscp_heartbeat_hsp_boot_dual_die.robot
-
-## Power Tests
-./../../../tests/functional/test_suites/power_tests/mod_power_control_loop_health.robot
-./../../../tests/functional/test_suites/power_tests/mod_power_ft.robot
-./../../../tests/functional/test_suites/power_tests/mod_power_pstate_transition.robot
-./../../../tests/functional/test_suites/power_tests/mod_power_telemetry_loop_health.robot
-
 ## Variable Service Tests
 ./../../../tests/functional/test_suites/varserv_tests/varserv_dd_test.robot
 
 ## Sensor FIFO short duration tests
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_read_wrentry_single_fifo_test.robot
+
+## SVP Teardown
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+## Power Tests
+./../../../tests/functional/test_suites/power_tests/mod_power_control_loop_health.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+./../../../tests/functional/test_suites/power_tests/mod_power_ft.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+./../../../tests/functional/test_suites/power_tests/mod_power_pstate_transition.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+./../../../tests/functional/test_suites/power_tests/mod_power_telemetry_loop_health.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 
 ## Sensor FIFO Tests
 # To be uncommented or moved to nightly based on discussion with SSI team

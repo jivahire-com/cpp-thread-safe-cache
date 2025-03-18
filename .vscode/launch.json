@@ -283,6 +283,10 @@
                         "icc_init.test.exe"
                     ],
                     [
+                        "I3C target Init",
+                        "i3c_target_mcp_init.test"
+                    ],
+                    [
                         "DCS Init",
                         "dcs_init.test.exe"
                     ],

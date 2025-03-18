@@ -89,8 +89,8 @@ void __wrap_FpFwCliRegisterTable(PFPFW_CLI_COMMAND pTable, size_t TableLength)
 
 int __wrap_gpio_afm_init(const gpio_afm_entry_t* gpio_afm_tbl, uint32_t num)
 {
-    assert_null(gpio_afm_tbl); // Expecting nullptr to use default configuration
-    assert_true(num == 0);     // Expecting 0 entries
+    check_expected_ptr(gpio_afm_tbl); 
+    check_expected(num);              
 
     function_called();
 
@@ -135,7 +135,14 @@ idsw_plat_id_t __wrap_idsw_get_platform_sdv(void)
 TEST_FUNCTION(test_gpio_lib_init_SVP, nullptr, nullptr)
 {
     // Set up expectations
+    expect_value(__wrap_gpio_afm_init, gpio_afm_tbl, NULL);
+    expect_value(__wrap_gpio_afm_init, num, 0);
     expect_function_call(__wrap_gpio_afm_init);
+
+    expect_not_value(__wrap_gpio_afm_init, gpio_afm_tbl, NULL);
+    expect_value(__wrap_gpio_afm_init, num, 2);
+    expect_function_call(__wrap_gpio_afm_init);
+
     expect_function_call(__wrap_idsw_get_platform_sdv);
     expect_function_call(__wrap_idsw_get_platform_sdv);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
@@ -154,7 +161,15 @@ TEST_FUNCTION(test_gpio_lib_init_SVP, nullptr, nullptr)
 TEST_FUNCTION(test_gpio_lib_init_FPGA, nullptr, nullptr)
 {
     // Set up expectations
+   
+    expect_value(__wrap_gpio_afm_init, gpio_afm_tbl, NULL);
+    expect_value(__wrap_gpio_afm_init, num, 0);
     expect_function_call(__wrap_gpio_afm_init);
+
+    expect_not_value(__wrap_gpio_afm_init, gpio_afm_tbl, NULL);
+    expect_value(__wrap_gpio_afm_init, num, 2);
+    expect_function_call(__wrap_gpio_afm_init);
+
     expect_function_call(__wrap_idsw_get_platform_sdv);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
     expect_not_value(__wrap_gpio_init, gpio_cfg_tbl, NULL);

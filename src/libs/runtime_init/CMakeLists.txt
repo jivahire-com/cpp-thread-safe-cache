@@ -249,6 +249,8 @@ add_library(${TARGET}
         gtimer_init.c
         hw_semaphore_init.c
         hw_version_mcp_init.c
+        i3c_target_mcp_cli_init.c
+        i3c_target_mcp_init.c
         icc_accel_mbx_init.c
         icc_cli_init.c
         icc_d2dmbx_init.c
@@ -271,6 +273,7 @@ target_link_libraries(
     ${TARGET}
     PRIVATE
         fwlib.dfwk
+        fwlib.driver.dw_i3c
         fwlib.driver.mboxIccTransport
         fwlib.lib.crashDump
         fwlib.lib.init
@@ -278,8 +281,9 @@ target_link_libraries(
         fwlib.lib.platform.impl.timers.threadx
         fwlib.lib.utils
         fwlib.lib.tmr_queue
-        fwlib.platform.dfwkhost.threadx
+        fwlib.platform.dfwkhost.threadx  
         fwlib.service.cli
+        fwlib.service.i3c.cli  
         fwlib.service.iccBase
         fwlib.service.icc_dispatcher
         ms::build_data
@@ -356,6 +360,7 @@ target_compile_definitions(
        MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=MCP_EXP_TOP_MSCP_MBOX_ADDRESS
        MSCP_EXP_TOP_SPI_CTRL_ADDRESS=0
        MSCP_EXP_TOP_SPI_BRIDGE_ADDRESS=0
+       MSCP_EXP_TOP_I3C_2_ADDRESS=MCP_EXP_TOP_I3C_2_ADDRESS
        RMSS_D2D_SCP_MB_HW_INT=4294967295 #Unused on MCP
        MCP_RUNTIME_INIT
        ACCEL_MBOX_OFFSET_AFTER_0X100000=_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_MBX1_EXT_MBX_REGS_E2I_MBX_CTRL_ADDRESS

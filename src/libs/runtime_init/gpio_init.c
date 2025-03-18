@@ -49,6 +49,13 @@ static const gpio_config_entry_t def_gpio_config_table_grp[] = {
     {GPIO_CTRL_PIN_MSK(MSCP_EXP_GPIO_6, 0xFF),
      {.grp = {.grp_level = 0x0F, .grp_dir = 0x0D, .grp_int_enable = 0x10, .grp_int_lvl_edge = 0x00}}},
 };
+/* AFM configuration for i3c scl and sda gpios */
+static const gpio_afm_entry_t fpga_config_gpio_table_afm[] = {
+    {PADRING_SE_AFM_I3C2_SCL,
+     {{.pull_down = 0, .pull_up = 0, .drive_strength = 3, .slew_rate = 0, .schmitt_trigger = 0, .afmsel = 1}}},
+    {PADRING_SE_AFM_I3C2_SDA,
+     {{.pull_down = 0, .pull_up = 0, .drive_strength = 3, .slew_rate = 0, .schmitt_trigger = 0, .afmsel = 1}}},
+};
 
 /*------------- Functions ----------------*/
 /**
@@ -62,6 +69,11 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver"))
 
     // Initialize GPIO
     status = gpio_afm_init(NULL, 0);
+    FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
+
+    int i3c_config_table_size = ARRAY_SIZE(fpga_config_gpio_table_afm);
+    // update i3c AFM gpio setting.
+    status = gpio_afm_init(fpga_config_gpio_table_afm, i3c_config_table_size);
     FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
 
     if (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE || idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE_RVP)

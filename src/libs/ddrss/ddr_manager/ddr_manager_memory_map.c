@@ -81,6 +81,10 @@ void ddr_create_memory_map()
     // Update ptr to memory info table from ddrss library or from static table defined in ddr_memory_map.h
     ddrss_get_memory_map(&all_mem_regions);
 
+    // Change incoming memory map to use exclusive addressing.
+    //  Ex: 0x80000000 - 0x90000000 instead of 0x80000000 - 0x8FFFFFFF
+    reformat_incoming_memory_map(&all_mem_regions);
+
     // Check & sort the reserved region array into ascending order before splicing with the incoming memory
     sort_reserved_regions(_dram_rsvd_regions, num_reserved_regions, sorted_reservations);
 
@@ -160,6 +164,24 @@ void ddrss_get_memory_map(const ddrss_sys_mem_region_t** all_mem_regions)
     *all_mem_regions = ddrss_get_system_mem_region();
     DDR_MANAGER_ET_VERBOSE_PARAM(DDR_MANAGER_ET_TYPE_NUMBER_OF_MEMORY_REGION,
                                  (unsigned long)(*all_mem_regions)->num_regions);
+}
+
+void reformat_incoming_memory_map(const ddrss_sys_mem_region_t** all_mem_regions)
+{
+    ddrss_memory_region_t* mmap = (ddrss_memory_region_t*)(*all_mem_regions)->mem_regions;
+    uint32_t idx = 0;
+
+    // Change incoming memory map to use exclusive addressing.
+    //  Ex: 0x80000000 - 0x90000000 instead of 0x80000000 - 0x8FFFFFFF
+    while (idx < (*all_mem_regions)->num_regions)
+    {
+        // Check if end_address ends in 0xFFFF
+        if ((mmap[idx].end_address & 0xFFFF) == 0xFFFF)
+        {
+            mmap[idx].end_address += 1;
+        }
+        idx++;
+    }
 }
 
 /**

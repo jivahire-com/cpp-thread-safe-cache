@@ -193,6 +193,63 @@ static ddrss_sys_mem_region_t ddrss_sys_test_map = {
     .num_regions = 6,
 };
 
+static ddrss_memory_region_t ddr_inclusive_map[] = {
+    {
+        .start_address = (uint64_t)0x80000000U,
+        .end_address = (uint64_t)0xFFFFFFFFU,
+        .attr =
+            {
+                .as_uint32 = (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM) | AVAILABLE_SYSMEM,
+            },
+    },
+    {
+        .start_address = (uint64_t)0x20080000000U,
+        .end_address = (uint64_t)0x25FFFFFFFFFU,
+        .attr =
+            {
+                .as_uint32 = (PAS_SECURE | PAS_ROOT) | AVAILABLE_SYSMEM,
+            },
+    },
+    {
+        .start_address = (uint64_t)0x40000000000U,
+        .end_address = 0x45FFFFFFFFFU,
+        .attr =
+            {
+                .as_uint32 = (PAS_SECURE | PAS_ROOT) | AVAILABLE_SYSMEM,
+            },
+    },
+    {
+        .start_address = 0,
+        .end_address = 0,
+        .attr =
+            {
+                .as_uint32 = (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM) | AVAILABLE_SYSMEM,
+            },
+    },
+    {
+        .start_address = 0,
+        .end_address = 0,
+        .attr =
+            {
+                .as_uint32 = (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM) | AVAILABLE_SYSMEM,
+            },
+    },
+};
+
+static ddrss_sys_mem_region_t ddrss_sys_inclusive_test_map = {
+    .mem_regions =
+        {
+            ddr_inclusive_map[0],
+            ddr_inclusive_map[1],
+            ddr_inclusive_map[2],
+            ddr_inclusive_map[3],
+            ddr_inclusive_map[4],
+        },
+    .num_regions = 5,
+};
+
+const ddrss_sys_mem_region_t* p_inclusive_test_map = &ddrss_sys_inclusive_test_map;
+
 // (I=incoming range, R=Reserved range, OI=Expected output- incoming, OR=Expected output - reserved)
 //    I    R    OR
 //    I    R    OR
@@ -373,6 +430,39 @@ TEST_FUNCTION(test_ddr_create_memory_map_no_borgens, NULL, NULL)
     ddr_create_memory_map();
 }
 
+TEST_FUNCTION(test_ddr_make_incoming_map_exclusive, NULL, NULL)
+{
+    ddrss_memory_region_t* mmap = (ddrss_memory_region_t*)ddrss_sys_inclusive_test_map.mem_regions;
+    uint32_t idx = 0;
+
+    // Check preconditions
+    while (idx < ddrss_sys_inclusive_test_map.num_regions)
+    {
+        if (mmap[idx].start_address == 0 && mmap[idx].end_address == 0)
+        {
+            break;
+        }
+        assert_int_equal(mmap[idx].end_address & 0xFFFF, 0xFFFF);
+        idx++;
+    }
+
+    // Change incoming memory map to use exclusive addressing.
+    //  Ex: 0x80000000 - 0x90000000 instead of 0x80000000 - 0x8FFFFFFF
+    reformat_incoming_memory_map(&p_inclusive_test_map);
+
+    // Check postconditions
+    idx = 0;
+    while (idx < ddrss_sys_inclusive_test_map.num_regions)
+    {
+        if (mmap[idx].start_address == 0 && mmap[idx].end_address == 0)
+        {
+            break;
+        }
+
+        assert_int_equal((mmap[idx].end_address & 0xFFFF) & 0xFFFF, 0);
+        idx++;
+    }
+}
 TEST_FUNCTION(test_sort_reserved_regions, NULL, NULL)
 {
     ddrss_memory_region_t sorted_reservations[RSVD_REGIONS_COUNT] = {};

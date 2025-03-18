@@ -31,6 +31,7 @@ uint64_t get_start_address(const ddrss_memory_region_t mmap[], int idx);
 uint64_t get_end_address(const ddrss_memory_region_t mmap[], int idx);
 void ddrss_get_memory_map(const ddrss_sys_mem_region_t **mem_regions);
 int get_mmap_size_bytes(ddrss_memory_region_t appended_mmap_64b[], size_t *num_bytes);
+void reformat_incoming_memory_map(const ddrss_sys_mem_region_t **mem_regions);
 /*
  * Declared in include/ddrss_lib.h
  * ---------------------------------------------------------------------------------------------------

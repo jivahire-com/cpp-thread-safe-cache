@@ -49,7 +49,7 @@ jobs:
           buildType: 'current'
           downloadType: 'single'
           artifactName: 'drop_Build_Arm_EABI_AARCH_Debug_Build'
-          downloadPath: '$(Build.SourcesDirectory)\.build\Debug\arm-eabi-aarch'
+          downloadPath: '$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug'
 
     # Download input artifact for nightlystress and weekendstress
     - task: DownloadPipelineArtifact@2
@@ -61,7 +61,7 @@ jobs:
           buildVersionToDownload: 'specific'
           buildId: ${{ parameters.build_id}}
           artifactName: 'drop_Build_Arm_EABI_AARCH_Debug_Build'
-          downloadPath: '$(Build.SourcesDirectory)\.build\Debug\arm-eabi-aarch'
+          downloadPath: '$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug'
 
     # 1. Setup the environment
     # 2. Invoke Pythia
@@ -76,6 +76,10 @@ jobs:
         showWarnings: true
         script: | 
           ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
+
+          $bin_src_dir = "$(System.ArtifactsDirectory)/bins.arm-eabi-aarch.Debug/bin"
+          $bin_dest_dir = "${env:REPO_APP_BUILD_DIR}/${env:REPO_APP_BUILD_CONFIG}/arm-eabi-aarch"
+          Copy-Item $bin_src_dir $bin_dest_dir -Recurse -Force
 
           # Run the test suite
           Invoke-Pythia -test ${{ parameters.TestPlan }} -platform svp -ifwi ${{ parameters.ifwi }}

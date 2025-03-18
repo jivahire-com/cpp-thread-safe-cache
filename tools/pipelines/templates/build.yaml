@@ -11,6 +11,7 @@ parameters:
 
 jobs:
 - job: 'Build'
+  displayName: Build
   pool: 
     name: 1pfw-kingsgate-windows
     isCustom: true
@@ -20,7 +21,6 @@ jobs:
     ob_outputDirectory: '$(Build.SourcesDirectory)/.build/${{ parameters.Configuration }}/${{ parameters.Toolchain }}/'
     ob_sdl_codeSignValidation_excludes: -|**\*.test*.exe; # Excluding unit tests
 
-  displayName: Build
   steps: 
 
     # Set up permissions for other repos

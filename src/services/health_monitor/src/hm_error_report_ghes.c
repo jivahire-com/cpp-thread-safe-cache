@@ -51,7 +51,7 @@ void construct_mscp_ghes_table()
     default_ghes.num_of_records = HM_ERROR_RECORD_COUNT;
     default_ghes.max_sections_per_record = HM_ERROR_SECTION_COUNT;
     default_ghes.max_raw_data_length = 0;
-    default_ghes.error_status_block_length = sizeof(acpi_ghes_error_record_multi_t);
+    default_ghes.error_status_block_length = sizeof(acpi_ghes_error_record_dual_die_t);
 
     // Error Status Address
     default_ghes.address.space_id = 0;
@@ -84,7 +84,7 @@ void construct_mscp_ghes_table()
     default_ghes.ack.rd_ack_wr = 0;
 
     // default error record values
-    acpi_ghes_error_record_multi_t default_ghes_error_record;
+    acpi_ghes_error_record_dual_die_t default_ghes_error_record;
     memset(&default_ghes_error_record, 0, sizeof(default_ghes_error_record));
     default_ghes_error_record.data_length = sizeof(default_ghes_error_record.data);
     default_ghes_error_record.error_severity = 3;
@@ -123,7 +123,7 @@ void construct_mscp_ghes_table()
             default_ghes_error_record.block_status_entry_count = 0;
 
             // Error Record update for current error domain
-            for (size_t i = 0; i < sizeof(acpi_ghes_error_record_multi_t); i++)
+            for (size_t i = 0; i < sizeof(acpi_ghes_error_record_dual_die_t); i++)
             {
                 ((volatile uint8_t*)current_ghes_error_record_base)[i] =
                     ((const uint8_t*)&default_ghes_error_record)[i];
@@ -140,6 +140,7 @@ void construct_mscp_ghes_table()
                 ((uint32_t)current_ghes_error_record_base + default_ghes.error_status_block_length));
         }
 
+        set_ghes_table_ready();
         HM_LOG_INFO("GHES created(%p)", (void*)hm_config->mscp_ghes_base);
     }
 }
@@ -162,8 +163,8 @@ void activate_error_domain(uint16_t error_domain_idx, const guid_t* error_domain
 
     // locate error record base of current error domain
     uint32_t error_record_base = (uint32_t)(current_error_domain_ghes_base->address.address);
-    volatile acpi_ghes_error_record_multi_t* current_error_domain_error_record_base =
-        (acpi_ghes_error_record_multi_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
+    volatile acpi_ghes_error_record_dual_die_t* current_error_domain_error_record_base =
+        (acpi_ghes_error_record_dual_die_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
 
     // lock before updating error domain information
     wait_for_semaphore(hm_config->semaphore_id, hm_config->semaphore_key);
@@ -238,6 +239,10 @@ void update_error_record_section(uint16_t error_domain_idx, acpi_error_severity_
         {
             BUG_ASSERT_PARAM(false, ghes_table_init, 0);
         }
+        else
+        {
+            HM_LOG_INFO("Err record update(%d), severity(%d)", error_domain_idx, err_severity);
+        }
 
         hm_config_t* hm_config = get_hm_config();
         BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
@@ -248,8 +253,8 @@ void update_error_record_section(uint16_t error_domain_idx, acpi_error_severity_
 
         // locate error record base of current error domain
         uint32_t error_record_base = (uint32_t)(current_error_domain_ghes_base->address.address);
-        volatile acpi_ghes_error_record_multi_t* current_domain_error_record_base =
-            (acpi_ghes_error_record_multi_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
+        volatile acpi_ghes_error_record_dual_die_t* current_domain_error_record_base =
+            (acpi_ghes_error_record_dual_die_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
 
         // locate error record section
         uint32_t current_section_idx = current_domain_error_record_base->block_status_entry_count;

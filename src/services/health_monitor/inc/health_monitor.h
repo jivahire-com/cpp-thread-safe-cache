@@ -10,9 +10,9 @@
 
 /*------------- Includes -----------------*/
 #include <cper.h>
-#include <fpfw_icc_base.h>  
+#include <fpfw_icc_base.h>
+#include <icc_mhu.h>  
 #include <kng_error.h>
-#include <health_monitor_temporary_ras.h>
 #include <health_monitor_temporary_einj_structs.h>
 #include <semaphore_lib.h>
 
@@ -26,7 +26,7 @@
 #define HM_ERROR_SECTION_COUNT 2
 
 /*------------- Typedefs -----------------*/
-typedef acpi_einj_cmd_status_t (*hm_error_injection_cb_t)(ras_einj_info_t *p_information_base, void *error_domain_context);
+typedef acpi_einj_cmd_status_t (*hm_error_injection_cb_t)(ras_einj_info_t_temp *p_information_base, void *error_domain_context);
 
 typedef enum
 {
@@ -49,7 +49,7 @@ typedef enum
 typedef struct {
     // GHES table related
     acpi_ghes_t* mscp_ghes_base;
-    ras_einj_info_t* mscp_error_injection_addr_base;
+    ras_einj_info_t_temp* mscp_error_injection_addr_base;
     uint32_t* mscp_ghes_error_record_addr_base;
     uint32_t* mscp_ghes_error_record_addr_table_base;
     uint64_t* mscp_ghes_ack_addr_table_base;
@@ -66,8 +66,8 @@ typedef struct {
 typedef struct {
     uint16_t error_domain_idx;
     bool valid_fru_id;
-    guid_t fru_id;
     bool valid_fru_str;
+    guid_t fru_id;
     char fru_text[ACPI_FRU_TEXT_LENGTH];
     hm_error_injection_cb_t injection_cb;
     void *err_inject_ctx;
@@ -76,15 +76,15 @@ typedef struct {
 
 typedef struct {
     uint16_t error_domain_idx;
+    uint16_t reserved;
+    uint32_t section_size;
     acpi_error_severity_t err_severity;
     acpi_cper_section_t cper_section;
-    uint32_t section_size;
 } hm_error_record_t;
 
 /*-------- Function Prototypes -----------*/
 hm_config_t* get_hm_config();
 acpi_einj_cmd_status_t hm_inject_error(void);
-acpi_einj_cmd_status_t jumoon_test(void);
 
 void hm_register_error_domain(uint16_t error_domain_idx,
                               const guid_t* error_domain_guid,
@@ -100,4 +100,3 @@ void hm_submit_cper(uint16_t error_domain_idx,
 void hm_pre_ddr_init(hm_config_t* hm_config);
 void hm_post_ddr_init();
 void hm_post_intercore_init(hm_intercore_type_t intercore_type, fpfw_icc_base_ctx_t* icc_ctx);
-

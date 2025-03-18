@@ -14,6 +14,7 @@ target_link_libraries(
     silibs_platform
     ms::service::health_monitor
     silibs::semaphore
+    silibs::icc_mhu
     ms::lib::crash_dump
 )
 

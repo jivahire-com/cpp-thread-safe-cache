@@ -33,7 +33,7 @@ extern char* TEST_ERROR_DOMAIN_NAME;
 extern guid_t error_domain_guid[];
 acpi_error_domain_t test_error_domain = ACPI_ERROR_DOMAIN_MESH;
 /*------------- Functions ----------------*/
-acpi_einj_cmd_status_t hm_error_injection_cb(ras_einj_info_t* payload, void* ctx)
+acpi_einj_cmd_status_t hm_error_injection_cb(ras_einj_info_t_temp* payload, void* ctx)
 {
     FPFW_UNUSED(payload);
     FPFW_UNUSED(ctx);
@@ -67,8 +67,8 @@ TEST_FUNCTION(test_hm_register_error_domain, post_ddr_setup, nullptr)
     assert_true(current_ghes_base->enabled == true);
 
     uint32_t error_record_base = (uint32_t)(current_ghes_base->address.address);
-    acpi_ghes_error_record_multi_t* current_ghes_error_record_base =
-        (acpi_ghes_error_record_multi_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
+    acpi_ghes_error_record_dual_die_t* current_ghes_error_record_base =
+        (acpi_ghes_error_record_dual_die_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
 
     for (uint32_t section_count = 0; section_count < current_ghes_base->max_sections_per_record; section_count++)
     {
@@ -97,8 +97,8 @@ TEST_FUNCTION(test_hm_register_error_domain_nofru, post_ddr_setup, nullptr)
     assert_true(current_ghes_base->enabled == true);
 
     uint32_t error_record_base = (uint32_t)(current_ghes_base->address.address);
-    acpi_ghes_error_record_multi_t* current_ghes_error_record_base =
-        (acpi_ghes_error_record_multi_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
+    acpi_ghes_error_record_dual_die_t* current_ghes_error_record_base =
+        (acpi_ghes_error_record_dual_die_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
 
     for (uint32_t section_count = 0; section_count < current_ghes_base->max_sections_per_record; section_count++)
     {

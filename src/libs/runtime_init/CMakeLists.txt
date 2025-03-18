@@ -68,6 +68,7 @@ add_library(${TARGET}
         warm_start_cli_init.c
         warm_start_init.c
         health_monitor_init.c
+        err_domain_scp_init.c
 )
 
 target_link_libraries(
@@ -140,6 +141,7 @@ target_link_libraries(
         ms::lib::variable_services::cli
         ms::lib::warm_start
         ms::lib::warm_start::cli
+        ms::lib::error_domain::scp
         ms::service::accel_intr_client
         ms::service::accel_intr_service
         ms::service::ap_core
@@ -262,6 +264,7 @@ add_library(${TARGET}
         telemetry_service_init.c
         textio_init.c
         variable_services_init.c
+        err_domain_mcp_init.c
 )
 
 target_link_libraries(
@@ -309,6 +312,7 @@ target_link_libraries(
         ms::lib::system_info
         ms::lib::threadx
         ms::lib::variable_services
+        ms::lib::error_domain::mcp
         ms::service::atu_service
         ms::service::dcs
         ms::service::dcs::cli

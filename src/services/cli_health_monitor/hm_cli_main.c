@@ -40,12 +40,12 @@ static FPFW_CLI_STATUS hm_inject_err_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS hm_activate_sample_err_domain_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS hm_submit_sample_cper_cli(int argc, const char** argv);
 static void dump_ghes(uint32_t ghes_idx);
-static void dump_ghes_error_record(acpi_ghes_error_record_multi_t* ghes_error_record_base, uint32_t max_section_count);
+static void dump_ghes_error_record(acpi_ghes_error_record_dual_die_t* ghes_error_record_base, uint32_t max_section_count);
 static void print_section_as_byte_view(const acpi_cper_section_t* section);
-static void print_einj_payload(ras_einj_info_t* payload);
+static void print_einj_payload(ras_einj_info_t_temp* payload);
 static bool check_memory_corruption(void* start1, uint32_t size1, void* start2, uint32_t size2, void* start3, uint32_t size3);
 static const char* get_section_name(guid_t section_type);
-static acpi_einj_cmd_status_t hm_cli_error_injection_cb(ras_einj_info_t* payload, void* ctx);
+static acpi_einj_cmd_status_t hm_cli_error_injection_cb(ras_einj_info_t_temp* payload, void* ctx);
 
 /*-- Declarations (Statics and globals) --*/
 static FPFW_CLI_COMMAND cfg_mgr_cli_list[] = {
@@ -114,12 +114,12 @@ static FPFW_CLI_STATUS hm_dump_ghes_cli(int argc, const char** argv)
 
     // calculate the total size of GHES and Error record
     acpi_ghes_t* current_ghes_base = hm_config->mscp_ghes_base;
-    acpi_ghes_error_record_multi_t* current_ghes_error_record_base = NULL;
+    acpi_ghes_error_record_dual_die_t* current_ghes_error_record_base = NULL;
     for (uint32_t error_domain_idx = 0; error_domain_idx < ACPI_ERROR_DOMAIN_COUNT; error_domain_idx++)
     {
         uint32_t error_record_base = (uint32_t)(current_ghes_base->address.address);
         current_ghes_error_record_base =
-            (acpi_ghes_error_record_multi_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
+            (acpi_ghes_error_record_dual_die_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
 
         current_ghes_base++;
     }
@@ -128,7 +128,7 @@ static FPFW_CLI_STATUS hm_dump_ghes_cli(int argc, const char** argv)
     FpFwCliPrint("Total Err record size = %d\n",
                  ((uint32_t)current_ghes_error_record_base - (uint32_t)hm_config->mscp_ghes_error_record_addr_base));
     FpFwCliPrint("GHES entity size:%d\n", sizeof(acpi_ghes_t));
-    FpFwCliPrint("Err record size :%d\n", sizeof(acpi_ghes_error_record_multi_t));
+    FpFwCliPrint("Err record size :%d\n", sizeof(acpi_ghes_error_record_dual_die_t));
     FpFwCliPrint("Err record section size :%d\n", sizeof(acpi_cper_section_t));
 
     // check any memory corruption between GHES, Error record and Ack addr table
@@ -154,8 +154,8 @@ static FPFW_CLI_STATUS hm_inject_err_cli(int argc, const char** argv)
         return CLI_ERROR;
     }
 
-    ras_einj_info_t input_einj_payload;
-    memset(&input_einj_payload, 0, sizeof(ras_einj_info_t));
+    ras_einj_info_t_temp input_einj_payload;
+    memset(&input_einj_payload, 0, sizeof(ras_einj_info_t_temp));
     input_einj_payload.version = ERROR_INJECTION_PAYLOAD_VERSION;
     input_einj_payload.component_group = (uint16_t)strtol(argv[1], NULL, 0);
     input_einj_payload.component_type = (uint16_t)strtol(argv[2], NULL, 0);
@@ -170,9 +170,9 @@ static FPFW_CLI_STATUS hm_inject_err_cli(int argc, const char** argv)
     hm_config_t* hm_config = get_hm_config();
     BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
 
-    volatile ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
+    volatile ras_einj_info_t_temp* einj_payload = (ras_einj_info_t_temp*)hm_config->mscp_error_injection_addr_base;
 
-    for (uint32_t i = 0; i < sizeof(ras_einj_info_t); i++)
+    for (uint32_t i = 0; i < sizeof(ras_einj_info_t_temp); i++)
     {
         ((volatile uint8_t*)einj_payload)[i] = ((const uint8_t*)&input_einj_payload)[i];
     }
@@ -196,7 +196,7 @@ static FPFW_CLI_STATUS hm_dump_einj_cli(int argc, const char** argv)
     hm_config_t* hm_config = get_hm_config();
     BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
 
-    ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
+    ras_einj_info_t_temp* einj_payload = (ras_einj_info_t_temp*)hm_config->mscp_error_injection_addr_base;
 
     print_einj_payload(einj_payload);
     return CLI_SUCCESS;
@@ -311,8 +311,8 @@ void dump_ghes(uint32_t ghes_idx)
 
     // error record populate via GHES
     uint32_t error_record_base = (uint32_t)(current_ghes_base->address.address);
-    acpi_ghes_error_record_multi_t* current_ghes_error_record_base =
-        (acpi_ghes_error_record_multi_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
+    acpi_ghes_error_record_dual_die_t* current_ghes_error_record_base =
+        (acpi_ghes_error_record_dual_die_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
 
     // Dump Error record associated with current GHES
     dump_ghes_error_record(current_ghes_error_record_base, current_ghes_base->max_sections_per_record);
@@ -338,7 +338,7 @@ void dump_ghes(uint32_t ghes_idx)
     FpFwCliPrint("\n");
 }
 
-void dump_ghes_error_record(acpi_ghes_error_record_multi_t* ghes_error_record_base, uint32_t max_section_count)
+void dump_ghes_error_record(acpi_ghes_error_record_dual_die_t* ghes_error_record_base, uint32_t max_section_count)
 {
     FpFwCliPrint("Err block(%p):\n", ghes_error_record_base);
     FpFwCliPrint(" UE=%d, CE=%d, Mul_UE=%d, Mul_CE=%d, Ctn=%d\n",
@@ -476,7 +476,7 @@ void print_section_as_byte_view(const acpi_cper_section_t* section)
     FpFwCliPrint("\n");
 }
 
-void print_einj_payload(ras_einj_info_t* payload)
+void print_einj_payload(ras_einj_info_t_temp* payload)
 {
     if (payload == NULL)
     {
@@ -509,7 +509,7 @@ const char* get_section_name(guid_t section_type)
     return "unknown";
 }
 
-acpi_einj_cmd_status_t hm_cli_error_injection_cb(ras_einj_info_t* payload, void* ctx)
+acpi_einj_cmd_status_t hm_cli_error_injection_cb(ras_einj_info_t_temp* payload, void* ctx)
 {
     FPFW_UNUSED(payload);
     FPFW_UNUSED(ctx);

@@ -18,10 +18,10 @@ extern "C" {
 hm_config_t hm_config_test = {0};
 
 static acpi_ghes_t ghes_local[ACPI_ERROR_DOMAIN_COUNT + 1];
-static acpi_ghes_error_record_multi_t ghes_error_record_local[ACPI_ERROR_DOMAIN_COUNT + 1];
+static acpi_ghes_error_record_dual_die_t ghes_error_record_local[ACPI_ERROR_DOMAIN_COUNT + 1];
 static uint64_t ghes_record_addr_table_local[ACPI_ERROR_DOMAIN_COUNT] = {0};
 static uint64_t ghes_ack_addr_table_local[ACPI_ERROR_DOMAIN_COUNT] = {0};
-static ras_einj_info_t einj_payload_local = {0};
+static ras_einj_info_t_temp einj_payload_local = {0};
 extern acpi_error_domain_t test_error_domain;
 
 /*-- Declarations (Statics and globals) --*/

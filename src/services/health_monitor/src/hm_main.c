@@ -65,10 +65,6 @@ void hm_post_ddr_init()
         {
             // Secondary scp wait for primary scp to construct GHES table
             HM_LOG_INFO("Waiting GHES completion");
-
-            // Temporary code block until sharable memory is available on ARSM
-            // ToDo - ADO 2347758 : Define RAS related memory block on DIE 0 ARSM
-            construct_mscp_ghes_table();
         }
 
         wait_for_ghes_construction();
@@ -92,6 +88,9 @@ void hm_post_intercore_init(hm_intercore_type_t intercore_type, fpfw_icc_base_ct
     {
     case HM_INTERCORE_SCP:
         hm_prepare_error_injection_listener(icc_ctx);
+        break;
+    case HM_INTERCORE_MCP:
+        hm_prepare_mscp_listener(icc_ctx);
         break;
     default:
         break;

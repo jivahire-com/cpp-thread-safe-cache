@@ -8,6 +8,7 @@ add_library(${TARGET}
         hm_error_report_cper.c
         hm_error_report_ue.c
         hm_error_injection.c
+        hm_error_domain_mcp.c
         hm_main.c
 )
 
@@ -23,6 +24,8 @@ target_link_libraries(${TARGET}
     PUBLIC
         fwlib.service.iccBase
         ms::lib::error_codes
+        silibs::semaphore
+        silibs::icc_mhu
     PRIVATE
         fwlib.lib.status
         fwlib.lib.init
@@ -30,7 +33,6 @@ target_link_libraries(${TARGET}
         silibs::idsw
         silibs::idsw_kng
         silibs::spi_bridge
-        silibs::semaphore
         ms::lib::crash_dump
         ms::lib::icc_platform_defines    
 )

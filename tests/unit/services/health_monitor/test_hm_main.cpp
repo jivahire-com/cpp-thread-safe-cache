@@ -36,7 +36,7 @@ extern int pre_ddr_setup(void** state);
 extern hm_config_t hm_config_test;
 
 extern acpi_ghes_t ghes_local[];
-extern acpi_ghes_error_record_multi_t ghes_error_record_local[];
+extern acpi_ghes_error_record_dual_die_t ghes_error_record_local[];
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -126,4 +126,11 @@ TEST_FUNCTION(test_hm_post_intercore_init_scp, pre_ddr_setup, nullptr)
     expect_function_call(__wrap_fpfw_icc_base_recv);
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     hm_post_intercore_init(HM_INTERCORE_SCP, (fpfw_icc_base_ctx_t*)1234);
+}
+
+TEST_FUNCTION(test_hm_post_intercore_init_mcp, pre_ddr_setup, nullptr)
+{
+    expect_function_calls(__wrap_fpfw_icc_base_recv, 2);
+    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    hm_post_intercore_init(HM_INTERCORE_MCP, (fpfw_icc_base_ctx_t*)1234);
 }

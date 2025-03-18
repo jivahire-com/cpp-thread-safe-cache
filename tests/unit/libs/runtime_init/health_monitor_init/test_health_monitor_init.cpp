@@ -3,8 +3,8 @@
 //
 
 /**
- * @file test_startup_shutdown_init.cpp
- * Tests the init of the sos service
+ * @file test_health_monitor_init.cpp
+ * Tests the init of the health monitor
  */
 
 /*------------- Includes -----------------*/
@@ -28,7 +28,8 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_hm_svc;
 extern fpfw_init_component_t _fpfw_component_hm_post_init;
-extern fpfw_init_component_t _fpfw_component_hm_icc_scp;
+extern fpfw_init_component_t _fpfw_component_hm_scp;
+extern fpfw_init_component_t _fpfw_component_hm_mcp;
 extern fpfw_init_component_t _fpfw_component_hm_cli_init;
 
 /*------------- Functions ----------------*/
@@ -101,13 +102,25 @@ TEST_FUNCTION(hm_post_init, nullptr, nullptr)
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(hm_icc_scp, nullptr, nullptr)
+TEST_FUNCTION(hm_scp, nullptr, nullptr)
 {
     will_return_always(__wrap_fpfw_init_get_handle, (void*)1234);
     expect_function_call_any(__wrap_hm_post_intercore_init);
 
     // Call the function under test
-    fpfw_init_result_t result = _fpfw_component_hm_icc_scp.init_fn();
+    fpfw_init_result_t result = _fpfw_component_hm_scp.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(hm_mcp, nullptr, nullptr)
+{
+    will_return_always(__wrap_fpfw_init_get_handle, (void*)1234);
+    expect_function_call_any(__wrap_hm_post_intercore_init);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_hm_mcp.init_fn();
 
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);

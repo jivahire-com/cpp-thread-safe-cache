@@ -8,9 +8,9 @@
  */
 
 /*------------- Includes -----------------*/
+#include <atu_api.h>
 #include <fpfw_init.h>
 #include <health_monitor.h>
-#include <health_monitor_temporary_ras.h>
 #include <hm_cli.h>
 #include <idhw.h>
 #include <idsw.h>
@@ -25,41 +25,30 @@
 
 FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver"))
 {
-    // Requirement : mscp_ghes_base (92 byte) * Error Domain Count
-    // Requirement : mscp_ghes_error_record_addr_base (580 byte) * Error Domain Count
-    // Requirement : mscp_ghes_error_record_addr_table_base (sizeof(uint64_t)) * Error Domain Count
-    // Requirement : mscp_ghes_ack_addr_table_base (sizeof(uint64_t)) * Error Domain Count
+    // TO DO - Define Error Injection Memory Addr on DDR space.
+    // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2438322/
+    static ras_einj_info_t_temp einj_payload_temp = {0};
 
-    /*
-    static hm_config_t hm_config = {.mscp_ghes_base_addr = (acpi_ghes_t*)MSCP_ACPI_GHES_BASE,
-                                    .mscp_ghes_record_addr_table_base =
-    (uint32_t*)MSCP_ACPI_GHES_ERROR_RECORD_ADDRESS_TABLE_BASE, .mscp_ghes_ack_addr_table_base =
-    (uint64_t*)MSCP_ACPI_GHES_ACK_ADDRESS_TABLE_BASE, .mscp_ghes_error_record_addr_base =
-    (uint32_t*)MSCP_ACPI_GHES_ERROR_RECORD_BASE, .mscp_ghes_base_apcore_offset =
-    MSCP_ACPI_GHES_AP_CORE_ADDR_OFFSET, .icc_apcore = NULL, .icc_mscp = NULL, .icc_hsp = NULL, .icc_sdm =
-    NULL, .icc_cded = NULL};
-    */
-
-    // Temporary initialization will not be functional as local memory is not visible across dies.
-    // Temporary initialization until GHES memory block is available on ARSM
-    // ToDo - ADO 2347758 : Define RAS related memory block on DIE 0 ARSM
-    static acpi_ghes_t ghes_base_temp[ACPI_ERROR_DOMAIN_COUNT] = {0};
-    static acpi_ghes_error_record_multi_t ghes_error_record_base_temp[ACPI_ERROR_DOMAIN_COUNT] = {0};
-    static uint64_t ghes_error_record_addr_table_base_temp[ACPI_ERROR_DOMAIN_COUNT] = {0};
-    static uint64_t ghes_ack_addr_table_base_temp[ACPI_ERROR_DOMAIN_COUNT] = {0};
-    static ras_einj_info_t einj_payload_temp = {0};
+    uintptr_t mscp_ghes_base = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_GHES_TABLE_BLOCK_BASE);
+    uintptr_t mscp_ghes_error_record_addr_table_base =
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_ERROR_RECORD_ADDRESS_TABLE_BASE);
+    uintptr_t mscp_ghes_ack_addr_table_base =
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_ACK_ADDRESS_TABLE_BASE);
+    uintptr_t mscp_ghes_error_record_addr_base =
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_GHES_ERROR_RECORD_BASE);
 
     static hm_config_t hm_config = {0};
-
-    hm_config.mscp_ghes_base = (acpi_ghes_t*)ghes_base_temp;
-    hm_config.mscp_ghes_error_record_addr_table_base = (uint32_t*)ghes_error_record_addr_table_base_temp;
-    hm_config.mscp_ghes_ack_addr_table_base = (uint64_t*)ghes_ack_addr_table_base_temp;
-    hm_config.mscp_ghes_error_record_addr_base = (uint32_t*)ghes_error_record_base_temp;
+    hm_config.mscp_ghes_base = (acpi_ghes_t*)mscp_ghes_base;
+    hm_config.mscp_ghes_error_record_addr_table_base = (uint32_t*)mscp_ghes_error_record_addr_table_base;
+    hm_config.mscp_ghes_ack_addr_table_base = (uint64_t*)mscp_ghes_ack_addr_table_base;
+    hm_config.mscp_ghes_error_record_addr_base = (uint32_t*)mscp_ghes_error_record_addr_base;
     hm_config.mscp_ghes_base_apcore_offset = 0;
     hm_config.mscp_error_injection_addr_base = &einj_payload_temp;
-    // Temporary initialization end
 
-    hm_config.semaphore_id = SEM_ID_MSCP_EXP_1;
+    // To Do
+    // SVP Bug on IOSS Semaphore -  https://azurecsi.visualstudio.com/1P-SoC-Modeling/_workitems/edit/2327121
+    hm_config.semaphore_id = IS_PLATFORM_SVP() ? SEM_ID_MSCP_EXP_1 : SEM_ID_DIE0_IOSS_1;
+
     hm_config.semaphore_key = HM_SEMAPHORE_KEY(idsw_get_die_id());
     hm_config.is_primary = (idsw_get_die_id() == DIE_0);
 
@@ -73,13 +62,19 @@ FPFW_INIT_COMPONENT(hm_post_init, FPFW_INIT_DEPENDENCIES("hm_svc", "atu_svc", "m
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(hm_icc_scp, FPFW_INIT_DEPENDENCIES("hm_svc", "icc_d2dmbx"))
+FPFW_INIT_COMPONENT(hm_scp, FPFW_INIT_DEPENDENCIES("hm_svc", "icc_d2dmbx"))
 {
     hm_post_intercore_init(HM_INTERCORE_SCP, fpfw_init_get_handle("icc_d2dmbx"));
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(hm_cli_init, FPFW_INIT_DEPENDENCIES("hm_post_init", "hm_icc_scp"))
+FPFW_INIT_COMPONENT(hm_mcp, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_mscp2mscp"))
+{
+    hm_post_intercore_init(HM_INTERCORE_MCP, fpfw_init_get_handle("icc_mscp2mscp"));
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
+FPFW_INIT_COMPONENT(hm_cli_init, FPFW_INIT_DEPENDENCIES("hm_post_init", "hm_scp"))
 {
     hm_cli_init();
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

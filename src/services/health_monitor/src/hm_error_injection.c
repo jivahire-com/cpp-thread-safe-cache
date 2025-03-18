@@ -63,7 +63,16 @@ acpi_einj_cmd_status_t hm_inject_error(void)
     acpi_einj_cmd_status_t status = ACPI_EINJ_SUCCESS;
 
     hm_config_t* hm_config = get_hm_config();
-    volatile ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
+    volatile ras_einj_info_t_temp* einj_payload = (ras_einj_info_t_temp*)hm_config->mscp_error_injection_addr_base;
+
+    if (idhw_is_single_die_boot_en() == true)
+    {
+        if (einj_payload->component_instance != idsw_get_die_id())
+        {
+            HM_LOG_CRIT("Invalid DIE_ID(%d)", einj_payload->component_instance);
+            return ACPI_EINJ_INVALID_ACCESS;
+        }
+    }
 
     if (einj_payload->component_instance <= 1)
     {
@@ -96,7 +105,7 @@ acpi_einj_cmd_status_t hm_inject_error(void)
     }
     else
     {
-        HM_LOG_CRIT("Invalid instance in EINJ payload(%d)", einj_payload->component_instance);
+        HM_LOG_CRIT("Invalid DIE_ID(%d)", einj_payload->component_instance);
         status = ACPI_EINJ_INVALID_ACCESS;
     }
 
@@ -105,11 +114,11 @@ acpi_einj_cmd_status_t hm_inject_error(void)
 
 acpi_einj_cmd_status_t hm_inject_error_local(void)
 {
-    ras_einj_info_t einj_payload = {0};
+    ras_einj_info_t_temp einj_payload = {0};
     hm_config_t* hm_config = get_hm_config();
 
     wait_for_semaphore(hm_config->semaphore_id, hm_config->semaphore_key);
-    for (size_t i = 0; i < sizeof(ras_einj_info_t); i++)
+    for (size_t i = 0; i < sizeof(ras_einj_info_t_temp); i++)
     {
         ((uint8_t*)&einj_payload)[i] = ((volatile uint8_t*)hm_config->mscp_error_injection_addr_base)[i];
     }

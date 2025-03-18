@@ -36,8 +36,11 @@ void hm_submit_cached_cper();
 void hm_report_uncorrected_error(hm_error_report_type_t type);
 void update_error_record_section(uint16_t error_domain_idx, acpi_error_severity_t err_severity, void *err_record_section, uint32_t err_record_section_size);
 void hm_prepare_error_injection_listener(fpfw_icc_base_ctx_t* icc_ctx);
+void hm_prepare_mscp_listener(fpfw_icc_base_ctx_t* icc_ctx);
 void hm_inject_error_recv_cb(void* context, size_t output_size_bytes, fpfw_status_t status);
 hm_error_domain_info_t* hm_get_registered_error_domain(acpi_error_domain_t error_domain_idx);
+bool hm_mcp_error_record_submit_listener(fpfw_icc_base_ctx_t* icc_ctx);
+bool hm_mcp_error_domain_register_listener(fpfw_icc_base_ctx_t* icc_ctx);
 
 /*-- Declarations (Statics and globals) --*/
 

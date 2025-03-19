@@ -108,7 +108,7 @@
       <Member name="thermtrip" type="power_pvt_threshold_config_dts_t" help="thermtrip thresholds" />
     </Struct>
     <Struct name="power_pvt_soc_vm_cfg_t" help="">
-      <Member type="power_pvt_vm_cfg_t" name="thresholds" count="18" help="SOC VM thresholds (vddq from DDR10, Vsoc in MSCP, Va0p85 in PCIe0, Vsoc northwest PCM, Vsys northwest PCM, Vddq from DDR1, Va0p85 in PCIe2, Vsys southeast PCM)"/>
+      <Member type="power_pvt_vm_cfg_t" name="thresholds" count="18" help="SOC VM thresholds (VSOC, VPCIE0P75, VDDQ1P1, VPLL_VGPIO_1P2, VSOC, VD2D0P55, VCLK_VPLL_0P875, VCLK_VPLL_0P875, VDDQ1P1, VSOC, VD2D0P55, VCLK_VPLL_0P875, VCLK_VPLL_0P875, VDDQ1P1, VSOC, VPCIE0P75, VDDQ1P1, VPLL_VGPIO_1P2)"/>
     </Struct>
     <Struct name="power_fllcal_pstate_bounds_t" help="">
       <Member name="pstate_min" type="uint8_t" help="" />

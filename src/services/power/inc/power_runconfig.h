@@ -240,7 +240,7 @@ typedef enum _power_control_loop_vr_names_t
 {
     NO_VSYS = (-1),     // VSYS is on Die0 only
     MPCL_VR_VCPU = 0,   //Die0
-    MPCL_VR_VA0P85,
+    MPCL_VR_VPCIE0P75,
     MPCL_VR_VSYS,
     MPCL_VR_VDDQ1P1,
     MPCL_VR_VSOC,

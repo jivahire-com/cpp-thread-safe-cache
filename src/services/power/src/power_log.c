@@ -10,6 +10,7 @@
 #include "power_i.h"
 
 #include <FpFwUtils.h>
+#include <atu_lib.h>
 #include <bug_check.h>
 #include <corebits.h>
 #include <crash_dump.h>
@@ -19,7 +20,7 @@
 #include <power_dfwk.h>      // for (anonymous), ppower_service_cli_re...
 #include <power_init.h>      // for power_init, power_interface_init
 #include <power_log.h>       // for power_init, power_interface_init
-#include <silibs_platform.h> // for MMIO_WRITE32, MMIO_READ32
+#include <silibs_platform.h> // for MMIO_WRITE32, MMIO_READ32, MMIO_WRITE16, MMIO_WRITE8
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,40 +47,80 @@ static power_log_data_t log = {};
 
 /*------------- Functions ----------------*/
 
-/* function to return a string to print for type and payload */
-void mmio_ap_mem_cpy(uint64_t globalAddr, void* localAddr, uint64_t numBytes)
+void mmio_ap_mem_cpy(uint64_t globalAddr, uintptr_t localAddr, uint64_t numBytes)
 {
     uint64_t bytesCopied = 0;
+
+    atu_map_entry_t log_mem_atu_map_struct;
+    atu_entry_attr_t log_test_atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT};
+
+    uint64_t start_addr = 0;
+    uint64_t end_addr = 0;
+
+    // set up the mapping for the DDR log
+    start_addr = globalAddr;
+    if (idsw_get_die_id() == DIE_0)
+    {
+        end_addr = (POWER_LOG_DDR_BASE_DIE0 + POWER_LOG_DDR_SIZE_DIE0);
+        BUG_ASSERT((start_addr + numBytes < end_addr) && (start_addr >= POWER_LOG_DDR_BASE_DIE0));
+    }
+    else
+    {
+        end_addr = (POWER_LOG_DDR_BASE_DIE1 + POWER_LOG_DDR_SIZE_DIE1);
+        BUG_ASSERT((start_addr + numBytes < end_addr) && (start_addr >= POWER_LOG_DDR_BASE_DIE1));
+    }
+    log_mem_atu_map_struct.ap_base_address = start_addr;
+    log_mem_atu_map_struct.mscp_start_address = 0;
+    log_mem_atu_map_struct.mscp_end_address = end_addr - 1;
+    log_mem_atu_map_struct.attribute.as_uint32 = log_test_atu_root_attr.as_uint32;
+
+    if (!atu_map(ATU_ID_MSCP, &log_mem_atu_map_struct))
+    {
+        printf("  ATU mapping failed\n");
+    }
+    else
+    {
+        printf("  ATU mapping succeeded\n");
+    }
+
     while (bytesCopied < numBytes)
     {
         uint64_t bytesLeft = numBytes - bytesCopied;
+
         if (bytesLeft >= sizeof(uint64_t))
         {
-            MMIO_WRITE64(globalAddr + bytesCopied, *(uint64_t*)(localAddr + bytesCopied));
+            MMIO_WRITE64(log_mem_atu_map_struct.mscp_start_address + bytesCopied,
+                         *(uint64_t*)((uint8_t*)localAddr + bytesCopied));
             bytesCopied += sizeof(uint64_t);
         }
         else if (bytesLeft >= sizeof(uint32_t))
         {
-            MMIO_WRITE32(globalAddr + bytesCopied, *(uint32_t*)(localAddr + bytesCopied));
+            MMIO_WRITE32(log_mem_atu_map_struct.mscp_start_address + bytesCopied,
+                         *(uint32_t*)((uint8_t*)localAddr + bytesCopied));
             bytesCopied += sizeof(uint32_t);
         }
         else if (bytesLeft >= sizeof(uint16_t))
         {
-            MMIO_WRITE16(globalAddr + bytesCopied, *(uint16_t*)(localAddr + bytesCopied));
+            MMIO_WRITE16(log_mem_atu_map_struct.mscp_start_address + bytesCopied,
+                         *(uint16_t*)((uint8_t*)localAddr + bytesCopied));
             bytesCopied += sizeof(uint16_t);
         }
         else
         {
-            MMIO_WRITE8(globalAddr + bytesCopied, *(uint8_t*)(localAddr + bytesCopied));
+            MMIO_WRITE8(log_mem_atu_map_struct.mscp_start_address + bytesCopied,
+                        *(uint8_t*)((uint8_t*)localAddr + bytesCopied));
             bytesCopied += sizeof(uint8_t);
         }
     }
+    atu_unmap(ATU_ID_MSCP, &log_mem_atu_map_struct);
 }
+
 power_log_data_t* get_instance()
 {
     power_log_data_t* log_data_instance = &log;
     return log_data_instance;
 }
+
 char* power_log_string(uint8_t type, power_log_payload_t* payload)
 {
 #define POWER_LOG_STRING_CASES(name, id, payload_type, has_core_field, fmt_str, ...) \
@@ -133,8 +174,6 @@ void power_log_init()
 /* sets the use DDR flag and resets the DDR content (on enable) */
 void power_log_use_ddr(bool use_ddr)
 {
-    // power_log_data_t *log = &power_context.log;
-
     should_use_ddr = use_ddr;
     if (use_ddr)
     {
@@ -153,11 +192,15 @@ void power_log_use_ddr(bool use_ddr)
         // create an initial invalid entry
         if (idsw_get_die_id() == DIE_0)
         {
-            mmio_ap_mem_cpy(POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE0, 0), &invalid_entry, sizeof(power_log_entry_t));
+            mmio_ap_mem_cpy(POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE0, 0),
+                            (uintptr_t)&invalid_entry,
+                            sizeof(power_log_entry_t));
         }
         else
         {
-            mmio_ap_mem_cpy(POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE1, 0), &invalid_entry, sizeof(power_log_entry_t));
+            mmio_ap_mem_cpy(POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE1, 0),
+                            (uintptr_t)&invalid_entry,
+                            sizeof(power_log_entry_t));
         }
     }
 }
@@ -180,7 +223,6 @@ static inline unsigned next_ddr_entry(unsigned entry)
 
 static void add_ddr_entry(power_log_entry_t* log_entry)
 {
-
     ASSERT(log_entry != NULL);
 
     // increment to next entry
@@ -192,11 +234,15 @@ static void add_ddr_entry(power_log_entry_t* log_entry)
     // copy entry to DDR
     if (idsw_get_die_id() == DIE_0)
     {
-        mmio_ap_mem_cpy(POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE0, log.last_ddr_entry), log_entry, sizeof(power_log_entry_t));
+        mmio_ap_mem_cpy(POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE0, log.last_ddr_entry),
+                        (uintptr_t)log_entry,
+                        sizeof(power_log_entry_t));
     }
     else
     {
-        mmio_ap_mem_cpy(POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE1, log.last_ddr_entry), log_entry, sizeof(power_log_entry_t));
+        mmio_ap_mem_cpy(POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE1, log.last_ddr_entry),
+                        (uintptr_t)log_entry,
+                        sizeof(power_log_entry_t));
     }
 }
 

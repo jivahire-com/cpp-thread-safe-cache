@@ -43,6 +43,7 @@ target_link_libraries(${TARGET}
         ms::lib::corebits
         ms::lib::scp_avs
         ms::lib::scp_avs::cli
+        silibs::atu
         silibs::avs
         silibs::dvfs
         silibs::gpio

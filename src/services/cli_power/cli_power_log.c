@@ -114,18 +114,9 @@ static void power_log_list(ppower_service_cli_request_t p_cli_request)
 // "pwr log useddr" command
 void power_log_ddr(ppower_service_cli_request_t p_cli_request)
 {
-
     uint16_t value = p_cli_request->pwrset_sub_command_args.minupdate_val;
     power_log_use_ddr((value != 0));
 
-    printf("  log use ddr: %s\n", (value != 0) ? "true" : "false");
-    uint64_t start_addr = POWER_LOG_RESERVATION_BASE;
-    uint64_t end_addr   = POWER_LOG_RESERVATION_END - 1;
-    printf("   DDR range: 0x%" PRIx32 "%08" PRIx32 "--0x%" PRIx32 "%08" PRIx32 "\n",
-       (uint32_t)(start_addr >> 32),
-       (uint32_t)start_addr,
-       (uint32_t)(end_addr >> 32),
-       (uint32_t)end_addr);
 }
 
 // "pwr log mask" command

@@ -8,28 +8,86 @@
  */
 
 /*------------- Includes -----------------*/
+#include "idsw.h"       // for idsw_get_die_id and related constants
 #include "power_test.h" // for POWER_TEST
 
 #include <cstddef> // for NULL
 
 extern "C" {
+#include "atu_lib.h"    // for ATU_ID_MAX, atu_id_t, atu_map_entry_t
 #include "corebits.h"   // for corebits_t
 #include "power_test.h" // for POWER_TEST, UNUSED
 
-#include <CMockaWrapper.h>  // for expect_any_always, CmockaWrapperTest
-#include <assert.h>         // for assert
-#include <cstddef>          // for NULL, size_t
-#include <fpfw_status.h>    // for FPFW_STATUS_NULL_POINTER, FPFW_STATUS...
+#include <CMockaWrapper.h> // for expect_any_always, CmockaWrapperTest
+#include <assert.h>        // for assert
+#include <cstddef>         // for NULL, size_t
+#include <fpfw_status.h>   // for FPFW_STATUS_NULL_POINTER, FPFW_STATUS...
+#include <idsw_kng.h>
 #include <mock_bug_check.h> // for __wrap_crash_dump_bug_check
 #include <modules/CdDumpDescriptor.h>
 #include <power_i.h>
 #include <power_log.h>
 #include <string.h>
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
 
 /*------------- Functions ----------------*/
+
+KNG_DIE_ID __wrap_idsw_get_die_id(void)
+{
+    return mock_type(KNG_DIE_ID);
+}
+
+int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    FPFW_UNUSED(atu_id);
+    FPFW_UNUSED(atu_map_entry);
+
+    return mock_type(int);
+}
+
+int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    FPFW_UNUSED(atu_id);
+    FPFW_UNUSED(atu_map_entry);
+
+    return mock_type(int);
+}
+
+void __wrap_mmio_write64(volatile uint64_t* addr, uint64_t data)
+{
+    FPFW_UNUSED(addr);
+    FPFW_UNUSED(data);
+    function_called();
+    return;
+}
+
+void __wrap_mmio_write32(volatile uint32_t* addr, uint32_t data)
+{
+    FPFW_UNUSED(addr);
+    FPFW_UNUSED(data);
+    function_called();
+    return;
+}
+
+void __wrap_mmio_write16(volatile uint16_t* addr, uint16_t data)
+{
+    FPFW_UNUSED(addr);
+    FPFW_UNUSED(data);
+    function_called();
+    return;
+}
+
+void __wrap_mmio_write8(volatile uint8_t* addr, uint8_t data)
+{
+    FPFW_UNUSED(addr);
+    FPFW_UNUSED(data);
+    function_called();
+    return;
+}
+
 power_log_data_t* log1;
 
 static char log_data[POWER_LOG_LOCAL_SIZE] = {};
@@ -228,7 +286,28 @@ POWER_TEST(log_string, setup, teardown)
 
 POWER_TEST(power_log_init, setup, teardown)
 {
-
     expect_function_call(__wrap_crash_dump_register_address32);
     power_log_init();
+}
+
+POWER_TEST(mmio_ap_mem_cpy, setup, teardown)
+{
+    uint64_t globalAddr = POWER_LOG_RESERVATION_BASE;
+    uint64_t localAddr = POWER_LOG_DDR_BASE_DIE0;
+    uint64_t numBytes = 15;
+
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+
+    expect_function_call(__wrap_mmio_write64);
+    expect_function_call(__wrap_mmio_write32);
+    expect_function_call(__wrap_mmio_write16);
+    expect_function_call(__wrap_mmio_write8);
+
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+
+    // Call the function to test
+    mmio_ap_mem_cpy(globalAddr, (uintptr_t)&localAddr, numBytes);
+
+    assert_int_equal(localAddr, POWER_LOG_DDR_BASE_DIE0);
 }

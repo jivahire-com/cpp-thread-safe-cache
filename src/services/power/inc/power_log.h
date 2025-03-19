@@ -136,7 +136,7 @@ POWER_LOG_GENERATOR(MASK_BITS)
 
 /*--------- Function Prototypes ----------*/
 
-void mmio_ap_mem_cpy(uint64_t globalAddr, void* localAddr, uint64_t numBytes);
+void mmio_ap_mem_cpy(uint64_t globalAddr, uintptr_t localAddr, uint64_t numBytes);
 power_log_data_t *get_instance();
 void power_log_init();
 void power_log_use_ddr(bool use_ddr);

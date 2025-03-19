@@ -109,15 +109,10 @@ static const mmio_reg_addr_range_t accel_ext_cfg_offset[] = {
         .last_reg_addr = _ADDRESSBLOCK_0X100000_MISC_SYS_EXT_MBX2_EXT_MBX_REGS_I2E_MBX_INSTS_ADDRESS,
     },
     /* External interrupt 2 (SCP). Total length is 0x14 */
-    /*
-    SVP has issue to access these registers.
-    ToDo: Re-enable when issue is fixed.
-    Bug 2363625: [Crashdump] Hard fault to access SDM registers in SVP
     {
         .first_reg_addr = _ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_MSK_ADDRESS,
         .last_reg_addr = _ADDRESSBLOCK_0X100000_MISC_SYS_EXT_INTR2_MSG_SEND_INTR_MSK_ADDRESS,
     },
-    */
 };
 
 /**

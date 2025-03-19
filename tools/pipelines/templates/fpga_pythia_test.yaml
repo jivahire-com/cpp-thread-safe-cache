@@ -95,7 +95,7 @@ jobs:
           killputty
 
           # Reset all COM ports
-          python .\tests\functional\library\fpga_reset_com_ports.py
+          python .\tests\functional\library\kng_pythia_libs\fpga_reset_com_ports.py
           
           # Kick all users out
           kickuser -pc ${{ parameters.TestAgent }} -user 'all'

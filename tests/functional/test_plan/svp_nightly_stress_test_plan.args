@@ -1,3 +1,4 @@
+--variable KEEP_SVP_ALIVE:TRUE
 
 ## AVS Die 0 Tests
 ./../../../tests/functional/test_suites/avs_tests/avs_read_tests_die0.robot
@@ -44,3 +45,6 @@
 ## Variable Service Tests
 ./../../../tests/functional/test_suites/varserv_tests/varserv_dd_test.robot
 ./../../../tests/functional/test_suites/varserv_tests/varserv_dd_test.robot
+
+## SVP Teardown
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot

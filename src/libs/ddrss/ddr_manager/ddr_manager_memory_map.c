@@ -119,7 +119,10 @@ void ddr_create_memory_map()
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_USING_SDS_STRUCTURE, ET_NOPARAM);
         DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 2); //"Error using SDS structure"
+        return;
     }
+
+    printf("Memory Map copied to SDS\n");
 }
 
 /**

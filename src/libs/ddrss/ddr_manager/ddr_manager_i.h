@@ -46,6 +46,7 @@ typedef union _kng_hsp_cmd_load_fw_mailbox_msg
 /*--------- Function Prototypes ----------*/
 void ddr_worker_thread_func(ULONG pddr_service_ctx);
 void ddr_timer_cb(ULONG pddr_service_ctx);
+bool dimm_is_present(uint32_t dimm_local_idx);
 
 /**
  * @brief Initializes DDR telemetry.
@@ -87,6 +88,16 @@ void ddr_create_smbios_type_16(void);
 void ddr_create_smbios_type_17(void);
 void copy_type_16_to_ddr(void);
 void copy_type_17_to_ddr(void);
+
+uint32_t get_single_type17_table_and_strings_size(uint8_t* spd_buff);
+size_t get_deviceLocator_string(uint32_t dimm_global_idx, char* buffer, size_t bufferSize);
+size_t get_dimm_bank_locator_string(uint32_t dimm_global_idx, char* buffer, size_t bufferSize);
+size_t get_dimm_manufacturer_string(const uint8_t* spd_buff, char* buffer, size_t bufferSize);
+size_t get_dimm_serial_number_string(const uint8_t *spd_buff, char *buffer, size_t bufferSize);
+size_t get_dimm_asset_tag_string(char* buffer, size_t bufferSize);
+size_t get_dimm_part_number_string(const uint8_t* spd_buff, char* buffer, size_t bufferSize);
+size_t get_dimm_phy_fw_version_string(char* buffer, size_t bufferSize);
+
 
 uint16_t config_manager_get_ddr_dimm_temp_threshold_low();
 uint16_t config_manager_get_ddr_dimm_temp_threshold_high();

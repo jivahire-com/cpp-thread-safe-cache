@@ -427,6 +427,8 @@ TEST_FUNCTION(test_ddr_create_memory_map_no_borgens, NULL, NULL)
     will_return(__wrap_config_get_borgens_1gb_ddr_reserve_enable, true);
     will_return(__wrap_ddrss_get_system_mem_region, &ddrss_sys_test_map);
 
+    will_return_always(__wrap_idsw_get_die_id, 0);
+
     ddr_create_memory_map();
 }
 

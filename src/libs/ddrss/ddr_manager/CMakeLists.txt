@@ -33,6 +33,7 @@ target_link_libraries(${TARGET}
         silibs::kng_silibs_platform
         silibs::platform
         silibs::ras_arm
+        silibs::spi_bridge
         fwlib.dfwk
         fwlib.lib.init
         ms::lib::atomics
@@ -42,6 +43,7 @@ target_link_libraries(${TARGET}
         ms::lib::event_trace::trace
         ms::lib::hsp_firmware_headers
         ms::lib::i3c_controller
+        ms::lib::icc_platform_defines
         ms::lib::system_info
         ms::service::sds_service
     PUBLIC

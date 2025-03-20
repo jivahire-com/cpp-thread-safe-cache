@@ -22,6 +22,8 @@ set(LIBS
         ms::lib::stdio_textio
         ms::driver::textio::pl011
         silibs::ddr_i3c
+        silibs::atu
+        silibs::spi_bridge
         fwlib.lib.init
         fwlib.lib.utils
         fwlib.lib.spinlock
@@ -70,6 +72,22 @@ mock_target(${TARGET}
     system_info_is_hsp_present
     mmio_read32
     mmio_write32
+    atu_map
+    atu_translate_address
+    mmio_write8
+    mmio_read8
+    mmio_write16
+    mmio_read16
+    idhw_is_single_die_boot_en
+    idsw_get_die_id
+    ddr_i3c_interface_read_spd_nvm_data
+    mscp_exp_spi_synchronize_dies
+    atu_unmap
+    ddrss_phy_get_training_margin
+    dimm_vendor_from_id
+    get_dimm_serial_number_string
+    get_dimm_part_number_string
+    get_i3c_dimm_detected
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

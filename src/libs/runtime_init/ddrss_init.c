@@ -22,7 +22,7 @@
 
 #define MS_PER_TICK             (10) // Todo:  Revisit this if/when we change from ThreadX SW timer to gtimer
 #define DDR_TIMER_INITIAL_TICKS (18) // Let things settle down before starting the timer
-#define DDR_STACK_SIZE          ((TX_MINIMUM_STACK) + ((2) * (KB)))
+#define DDR_STACK_SIZE          ((TX_MINIMUM_STACK) + ((4) * (KB)))
 #define DDR_THREAD_PRIORITY     (15)
 
 /*-------------- Functions ---------------*/

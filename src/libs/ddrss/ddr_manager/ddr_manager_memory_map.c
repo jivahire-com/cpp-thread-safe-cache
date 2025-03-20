@@ -18,8 +18,15 @@
 #include "shared_sds_def.h"
 
 #include <ErrorHandler.h> // for FPFwErrorRaise
+#include <atu_lib.h>
+#include <bug_check.h>
 #include <ddr_manager_events.h>
+#include <ddrss_runtime_api.h>
+#include <dram_translation_config.h>
 #include <fpfw_cfg_mgr.h>
+#include <idsw_kng.h>
+#include <silibs_common.h>
+#include <silibs_platform.h>
 #include <stdio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -56,6 +63,12 @@ void ddr_create_memory_map()
     const ddrss_sys_mem_region_t* all_mem_regions = NULL;
     int status;
     int num_reserved_regions = ARRAY_OF_RSVD_REGIONS_COUNT;
+
+    // Return if not DIE_0
+    if (idsw_get_die_id() != DIE_0)
+    {
+        return;
+    }
 
     // Check the Borgens config knob to see if we need to insert an additional 1GB reserved range
     bool add_1gb_reservation = config_get_borgens_1gb_ddr_reserve_enable();
@@ -137,8 +150,10 @@ void ddr_create_memory_map()
 static uint32_t MemoryMapPassToTFA(ddrss_memory_region_t mmap_tfa[])
 {
     size_t numbytes_new_mmap = 0;
+    int result = 0;
 
-    sds_block_creation(SDS_MEMORY_MAP_STRUCT_ID, SDS_MEMORY_MAP_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
+    result = sds_block_creation(SDS_MEMORY_MAP_STRUCT_ID, SDS_MEMORY_MAP_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
+    BUG_ASSERT_PARAM(result == KNG_SUCCESS, result, 0);
 
     if (get_mmap_size_bytes(mmap_tfa, &numbytes_new_mmap) != SILIBS_SUCCESS)
     {
@@ -146,7 +161,8 @@ static uint32_t MemoryMapPassToTFA(ddrss_memory_region_t mmap_tfa[])
         DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 3); //"Error reading DDR memory map size"
     }
 
-    int result = sds_block_write(SDS_MEMORY_MAP_STRUCT_ID, mmap_tfa, numbytes_new_mmap);
+    result = sds_block_write(SDS_MEMORY_MAP_STRUCT_ID, mmap_tfa, numbytes_new_mmap);
+    BUG_ASSERT_PARAM(result == KNG_SUCCESS, result, 0);
 
     return result;
 }
@@ -532,4 +548,47 @@ void show_map(const ddrss_memory_region_t this_mmap[], int idx, bool show_all)
         DDR_LOG_DEBUG(" \tflags.available_sysmem:     %d \n", (int)this_mmap[idx].attr.available_sysmem);
         DDR_LOG_DEBUG(" \tflags.pas_mask:           0x%X \n", (int)this_mmap[idx].attr.as_uint32 & 0xf);
     }
+}
+
+/**
+ *  Copy the PRM address translation configuration struct to DDR
+ *
+ *  @param
+ *      none
+ *
+ *  @return
+ *      none
+ */
+void ddr_publish_prm_addr_trans_cfg()
+{
+    ddrss_addr_trans_cfg_t addr_trans_cfg = {0};
+    atu_map_entry_t prm_cfg_atu_map_struct;
+    atu_entry_attr_t prm_cfg_atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT};
+
+    prm_cfg_atu_map_struct.ap_base_address = ALIGN_DOWN(DRAM_TRANSLATION_CONFIG_STRUCT_BASE, ATU_PAGE_SIZE);
+    prm_cfg_atu_map_struct.mscp_start_address = 0;
+    prm_cfg_atu_map_struct.mscp_end_address = ALIGN_UP(DDRSS_TRANSLATION_RESERVATION_SIZE, ATU_PAGE_SIZE) - 1;
+    prm_cfg_atu_map_struct.attribute.as_uint32 = prm_cfg_atu_root_attr.as_uint32;
+
+    if (idsw_get_die_id() == DIE_1)
+    {
+        return;
+    }
+
+    int sts = atu_map(ATU_ID_MSCP, &prm_cfg_atu_map_struct);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
+
+    int result = ddrss_get_address_trans_config(&addr_trans_cfg);
+    BUG_ASSERT_PARAM(result == SILIBS_SUCCESS, result, 0);
+
+    uint32_t offset =
+        (uint32_t)((uint64_t)DRAM_TRANSLATION_CONFIG_STRUCT_BASE - (uint64_t)(prm_cfg_atu_map_struct.ap_base_address));
+
+    for (uint32_t i = 0; i < sizeof(addr_trans_cfg); i++)
+    {
+        MMIO_WRITE8(prm_cfg_atu_map_struct.mscp_start_address + offset + i, ((uint8_t*)&addr_trans_cfg)[i]);
+    }
+
+    sts = atu_unmap(ATU_ID_MSCP, &prm_cfg_atu_map_struct);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 }

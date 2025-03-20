@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include <atu_lib.h>
+#include <bug_check.h>
 #include <ddrss.h>
 #include <ddrss_lib.h>
 #include <kng_soc_constants.h>
@@ -20,8 +21,7 @@
 #include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define DDR_ASSERT ASSERT_FAIL
-#define NUM_DIE    2
+#define NUM_DIE 2
 
 #ifndef _8KB
     #define _8KB (0x2000UL)
@@ -40,6 +40,7 @@ static bool new_atu_mapping = false;
 uintptr_t ddrss_atu_map_cfg_space(uint32_t die_num)
 {
     ddrss_atu_map_flags[die_num] = 0;
+    int sts = 0;
 
     /* Creating an ATU map table to map a portion of SCP remappable space into  memory region of AP */
     ddrss_cfg_space_mem_atu_map_struct[die_num].ap_base_address =
@@ -56,11 +57,14 @@ uintptr_t ddrss_atu_map_cfg_space(uint32_t die_num)
         ddrss_cfg_space_mem_atu_map_struct[die_num].mscp_start_address = offset + ddr_atu_tmp.mscp_start_address;
         ddrss_cfg_space_mem_atu_map_struct[die_num].mscp_end_address +=
             ddrss_cfg_space_mem_atu_map_struct[die_num].mscp_start_address;
-        DDR_ASSERT(ddr_atu_tmp.mscp_end_address >= ddrss_cfg_space_mem_atu_map_struct[die_num].mscp_end_address);
+        BUG_ASSERT_PARAM(ddr_atu_tmp.mscp_end_address >= ddrss_cfg_space_mem_atu_map_struct[die_num].mscp_end_address,
+                         ddr_atu_tmp.mscp_end_address,
+                         ddrss_cfg_space_mem_atu_map_struct[die_num].mscp_end_address);
     }
     else
     {
-        DDR_ASSERT(!atu_map(ATU_ID_MSCP, &ddrss_cfg_space_mem_atu_map_struct[die_num]));
+        sts = atu_map(ATU_ID_MSCP, &ddrss_cfg_space_mem_atu_map_struct[die_num]);
+        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
         ddrss_atu_map_flags[die_num] |= BIT1;
     }
 
@@ -73,7 +77,8 @@ void ddrss_atu_unmap_cfg_space(uint32_t die_num)
 {
     if (ddrss_atu_map_flags[die_num] & BIT1)
     {
-        DDR_ASSERT(!atu_unmap(ATU_ID_MSCP, &ddrss_cfg_space_mem_atu_map_struct[die_num]));
+        int sts = atu_unmap(ATU_ID_MSCP, &ddrss_cfg_space_mem_atu_map_struct[die_num]);
+        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
     }
 }
 
@@ -82,7 +87,7 @@ void ddrss_atu_unmap_cfg_space(uint32_t die_num)
 */
 uintptr_t ddrss_atu_map_media_addr(uint64_t p_addr_8K_aligned)
 {
-    DDR_ASSERT(p_addr_8K_aligned % _8KB == 0);
+    BUG_ASSERT_PARAM(p_addr_8K_aligned % _8KB == 0, p_addr_8K_aligned, _8KB);
 
     /* Creating an ATU map table to map a portion of SCP remappable space into memory region of AP */
     ddr_media_atu_struct.ap_base_address = p_addr_8K_aligned;
@@ -93,7 +98,7 @@ uintptr_t ddrss_atu_map_media_addr(uint64_t p_addr_8K_aligned)
     int retval = atu_map(ATU_ID_MSCP, &ddr_media_atu_struct);
     if (retval != SILIBS_SUCCESS)
     {
-        // DDR_ASSERT(0);
+        // BUG_ASSERT_PARAM(retval == SILIBS_SUCCESS, retval, 0);
         printf("ERR: atu_map() returned %d\n", retval);
     }
     else
@@ -107,7 +112,9 @@ uintptr_t ddrss_atu_map_media_addr(uint64_t p_addr_8K_aligned)
 
 void ddrss_atu_unmap_media_addr(uint64_t p_addr_8K_aligned)
 {
-    DDR_ASSERT(p_addr_8K_aligned == ddr_media_atu_struct.ap_base_address);
+    BUG_ASSERT_PARAM(p_addr_8K_aligned == ddr_media_atu_struct.ap_base_address,
+                     p_addr_8K_aligned,
+                     ddr_media_atu_struct.ap_base_address);
     if (!new_atu_mapping)
     {
         printf("No need to unmap ATU region since it was already mapped\n");
@@ -117,7 +124,7 @@ void ddrss_atu_unmap_media_addr(uint64_t p_addr_8K_aligned)
     int retval = atu_unmap(ATU_ID_MSCP, &ddr_media_atu_struct);
     if (retval != SILIBS_SUCCESS)
     {
-        // DDR_ASSERT(0);
+        // BUG_ASSERT_PARAM(retval == SILIBS_SUCCESS, retval, 0);
         printf("ERR: atu_unmap() returned %d\n", retval);
     }
     else

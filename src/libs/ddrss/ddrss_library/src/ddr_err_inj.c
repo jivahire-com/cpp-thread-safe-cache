@@ -12,6 +12,7 @@
 
 #include <FpFwUtils.h>
 #include <arm_intrinsic.h> // for __DSB on Windows builds (empty define)
+#include <bug_check.h>
 #include <ddr_err_inj.h>
 #include <ddrss.h>
 #include <ddrss_lib.h>
@@ -89,7 +90,8 @@ void ddrss_ue_ce_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, 
         p_addr = p_addr_new;
 
         // update the media address accordingly
-        DDR_ASSERT(!ddrss_physical_to_media_addr(p_addr, &m_addr, &tgt_mc));
+        sts = ddrss_physical_to_media_addr(p_addr, &m_addr, &tgt_mc);
+        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
         mc = tgt_mc;
     }
 
@@ -117,7 +119,8 @@ void ddrss_ue_ce_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, 
     media_data_err_inj.err_inj_beat = 1;
     media_data_err_inj.err_inj_cnt = 1;
     printf("Injecting media_data_err\n");
-    DDR_ASSERT(!ddrss_inject_media_data_err(mc, &media_data_err_inj));
+    sts = ddrss_inject_media_data_err(mc, &media_data_err_inj);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
     __DSB();
 
     uint64_t p_addr_8K_aligned = p_addr & 0xFFFFFFFFFFFFE000;

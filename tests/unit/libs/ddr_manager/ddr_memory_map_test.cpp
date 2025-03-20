@@ -23,11 +23,14 @@ extern "C" {
 #define UNUSED(x)          (void)(x)
 #define MAX_REGIONS        12
 #define RSVD_REGIONS_COUNT (sizeof(unsort_regions) / sizeof(ddrss_memory_region_t))
+#define KNG_SUCCESS        0
 
 extern ddrss_memory_region_t _dram_rsvd_regions[];
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
+int32_t __wrap_sds_block_creation(uint32_t sds_module_id, uint32_t request_size, uint32_t region_id);
+int32_t __wrap_sds_block_write(uint32_t sds_module_id, void* buffer, size_t buffer_size);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -424,10 +427,11 @@ TEST_FUNCTION(test_ddrss_get_memory_map, NULL, NULL)
 
 TEST_FUNCTION(test_ddr_create_memory_map_no_borgens, NULL, NULL)
 {
+    will_return_always(__wrap_idsw_get_die_id, 0);
     will_return(__wrap_config_get_borgens_1gb_ddr_reserve_enable, true);
     will_return(__wrap_ddrss_get_system_mem_region, &ddrss_sys_test_map);
-
-    will_return_always(__wrap_idsw_get_die_id, 0);
+    will_return(__wrap_sds_block_creation, KNG_SUCCESS);
+    will_return(__wrap_sds_block_write, KNG_SUCCESS);
 
     ddr_create_memory_map();
 }
@@ -759,9 +763,12 @@ TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
     assert_int_equal(result_map_64[6].attr.as_uint32 & 0xf, PAS_ROOT);
 }
 
-// TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
-// {
-//     will_return(__wrap_config_get_borgens_1gb_ddr_reserve_enable, false);
-
-//     ddrss_memory_region_t result_map_64[MAX_REGIONS] = {};
-//     const ddrss_sys_mem_region_t* test_map = &ddrss_sys_test_map;
+TEST_FUNCTION(test_publish_prm_addr_trans_cfg, NULL, NULL)
+{
+    will_return(__wrap_idsw_get_die_id, 0);
+    will_return(__wrap_atu_map, (uint32_t)0x60000000);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_function_calls(__wrap_mmio_write8, sizeof(ddrss_addr_trans_cfg_t));
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+    ddr_publish_prm_addr_trans_cfg();
+}

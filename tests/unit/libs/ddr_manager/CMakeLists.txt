@@ -60,34 +60,36 @@ mock_target(${TARGET}
     _txe_queue_send
     _txe_queue_receive
     _txe_timer_create
+    atu_map
+    atu_translate_address
+    atu_unmap
     config_get_borgens_1gb_ddr_reserve_enable
+    ddr_i3c_interface_read_spd_nvm_data
     ddr_i3c_interface_read_temp_sensor_mr_reg
     ddr_i3c_interface_get_instance
     ddr_manager_platform_is_polling_supported
     ddrss_get_system_mem_region
-    fpfw_icc_base_send_recv_sync
-    idhw_get_die_id
-    idsw_get_platform_sdv
-    prod_ddrss_lib_init
-    system_info_is_hsp_present
-    mmio_read32
-    mmio_write32
-    atu_map
-    atu_translate_address
-    mmio_write8
-    mmio_read8
-    mmio_write16
-    mmio_read16
-    idhw_is_single_die_boot_en
-    idsw_get_die_id
-    ddr_i3c_interface_read_spd_nvm_data
-    mscp_exp_spi_synchronize_dies
-    atu_unmap
     ddrss_phy_get_training_margin
     dimm_vendor_from_id
-    get_dimm_serial_number_string
+    fpfw_icc_base_send_recv_sync
     get_dimm_part_number_string
+    get_dimm_serial_number_string
     get_i3c_dimm_detected
+    idhw_get_die_id
+    idhw_is_single_die_boot_en
+    idsw_get_die_id
+    idsw_get_platform_sdv
+    mmio_read8
+    mmio_read16
+    mmio_read32
+    mmio_write8
+    mmio_write16
+    mmio_write32
+    mscp_exp_spi_synchronize_dies
+    prod_ddrss_lib_init
+    sds_block_creation
+    sds_block_write
+    system_info_is_hsp_present
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

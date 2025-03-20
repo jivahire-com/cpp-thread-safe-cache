@@ -15,6 +15,7 @@
 
 #include <atu_lib.h>
 #include <bdat_schema.h>
+#include <bug_check.h>
 #include <ddr_i3c.h>
 #include <ddrss_dimm.h>
 #include <ddrss_lib.h>
@@ -28,7 +29,6 @@
 #include <stdio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define DDR_ASSERT                      ASSERT_FAIL
 #define BDAT_SUPPORTED_MSFT_SCHEMAS     0x1
 #define BDAT_RESERVATION_SIZE           (BDAT_DATA_END - BDAT_DATA_START)
 #define SMBIOS_HANDOFF_RESERVATION_SIZE (SMBIOS_HANDOFF_RESERVATION_END - SMBIOS_HANDOFF_RESERVATION_BASE)
@@ -136,7 +136,10 @@ void ddr_create_bdat(void)
     uint8_t Bios_data_sign[] = {'B', 'D', 'A', 'T', 'H', 'E', 'A', 'D'};
     atu_entry_attr_t bdat_test_atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT};
     ddrss_cfg_knobs_t ddrss_prd_cfg_knobs = {0};
-    DDR_ASSERT(ddrss_get_config(&ddrss_prd_cfg_knobs) == SILIBS_SUCCESS);
+    int sts = SILIBS_SUCCESS;
+
+    sts = ddrss_get_config(&ddrss_prd_cfg_knobs);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
     ddrss_phy_training_margin_t ddrss_phy_training_margin[DDRSS_SS_NUM_PER_DIE];
     uint32_t fw_ver = ddrss_get_fw_version();
@@ -146,7 +149,8 @@ void ddr_create_bdat(void)
     bdat_mem_atu_map_struct.mscp_end_address = BDAT_RESERVATION_SIZE - 1;
     bdat_mem_atu_map_struct.attribute.as_uint32 = bdat_test_atu_root_attr.as_uint32;
 
-    DDR_ASSERT(!atu_map(ATU_ID_MSCP, &bdat_mem_atu_map_struct));
+    sts = atu_map(ATU_ID_MSCP, &bdat_mem_atu_map_struct);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
     printf("Create DDR BDAT Table...\n");
 
@@ -501,7 +505,8 @@ void ddr_create_bdat(void)
                      bdat_crc);
     }
 
-    DDR_ASSERT(!atu_unmap(ATU_ID_MSCP, &bdat_mem_atu_map_struct));
+    sts = atu_unmap(ATU_ID_MSCP, &bdat_mem_atu_map_struct);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
     printf("BDAT DONE\n");
 }
 
@@ -545,14 +550,17 @@ void ddr_create_smbios_tables(void)
     atu_entry_attr_t smbios_test_atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT};
     KNG_DIE_ID die_num = idsw_get_die_id();
     ddrss_cfg_knobs_t ddrss_prd_cfg_knobs = {0};
-    DDR_ASSERT(ddrss_get_config(&ddrss_prd_cfg_knobs) == SILIBS_SUCCESS);
+    int sts = SILIBS_SUCCESS;
+    sts = ddrss_get_config(&ddrss_prd_cfg_knobs);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
     smbios_mem_atu_map_struct.ap_base_address = SMBIOS_HANDOFF_RESERVATION_BASE;
     smbios_mem_atu_map_struct.mscp_start_address = 0;
     smbios_mem_atu_map_struct.mscp_end_address = SMBIOS_HANDOFF_RESERVATION_SIZE - 1;
     smbios_mem_atu_map_struct.attribute.as_uint32 = smbios_test_atu_root_attr.as_uint32;
 
-    DDR_ASSERT(!atu_map(ATU_ID_MSCP, &smbios_mem_atu_map_struct));
+    sts = atu_map(ATU_ID_MSCP, &smbios_mem_atu_map_struct);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
     uint32_t dimm_capacity_gb = get_i3c_dimm_cap_per_ch();
     uint32_t dimm_capacity_mb = dimm_capacity_gb * 1024;
@@ -633,9 +641,8 @@ void ddr_create_smbios_tables(void)
     uint8_t spd_buff[SIZE_64_BYTES] = {0};
     uint16_t data_offset = START_OF_VENDOR_INFO;
     i3c_cmd_t s_i3c_cmd = {0};
+    ddrss_dimm_spd_t* dimm_spd = {0};
     data_len = 0;
-
-    ddrss_dimm_spd_t* dimm_spd = ddrss_get_dimm_spd(0);
 
     if (die_num == DIE_1)
     {
@@ -646,6 +653,8 @@ void ddr_create_smbios_tables(void)
     for (uint16_t dimm_local_idx = 0; dimm_local_idx < NUM_DIMM_PER_DIE; dimm_local_idx++)
     {
         dimm_global_idx = (die_num * 6) + dimm_local_idx; // 6 dimm per die: die0- 0 to 5, die1- 6 to 11
+
+        dimm_spd = ddrss_get_dimm_spd(dimm_local_idx);
 
         /* Length of the structure, 15h for version 2.1, 1Bh for
         version 2.3, 1Ch for version 2.6, 22h for version
@@ -824,7 +833,8 @@ void ddr_create_smbios_tables(void)
         MMIO_WRITE8(this_dies_smbios_next_addr++, 0);
     }
 
-    DDR_ASSERT(!atu_unmap(ATU_ID_MSCP, &smbios_mem_atu_map_struct));
+    sts = atu_unmap(ATU_ID_MSCP, &smbios_mem_atu_map_struct);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
     printf("SMBIOS 17 DONE\n");
 }
 

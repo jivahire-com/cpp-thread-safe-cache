@@ -10,6 +10,8 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <ddrss_config.h>
+#include <ddrss_runtime_api.h>
 #include <kingsgate_hsp_boot_metadata.h>
 #include <kingsgate_hsp_mailbox_commands.h>
 #include <fpfw_icc_base.h>
@@ -43,6 +45,7 @@ typedef union _kng_hsp_cmd_load_fw_mailbox_msg
     struct kng_hsp_mailbox_msg_rsp rsp; /**< outgoing mailbox message from handler to protocol. */
     uint32_t as_uint32[4];
 } kng_hsp_cmd_load_fw_mailbox_msg;
+
 /*--------- Function Prototypes ----------*/
 void ddr_worker_thread_func(ULONG pddr_service_ctx);
 void ddr_timer_cb(ULONG pddr_service_ctx);
@@ -131,3 +134,11 @@ bool ddr_manager_platform_is_polling_supported();
  * @return true if platform supports PHY binary loading, false otherwise
  */
 bool platform_supports_phy_bin_loading();
+
+/**
+ * @brief  Publish the DDR translation configuration table to shared memory locatioin
+ *
+ * \b Description:
+ * This function publishes the address translation configuration for DDRSS that OS will use.
+ */
+void ddr_publish_prm_addr_trans_cfg();

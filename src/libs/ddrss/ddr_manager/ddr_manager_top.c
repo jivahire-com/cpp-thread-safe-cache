@@ -66,6 +66,11 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
                 ddr_create_smbios_tables();
                 break;
 
+            case DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT:
+                // Copy the PRM address translation config to the reserved region
+                ddr_publish_prm_addr_trans_cfg();
+                break;
+
             case DDR_POLL_DIMMS_I3C_EVENT:
                 ddr_poll_dimms();
                 break;
@@ -168,6 +173,14 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
+    work_queue_msg = DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT;
+    status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
+    if (status != TX_SUCCESS)
+    {
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_SEND_ERROR_COPY_PRM_CONFIG, status);
+        FPFwErrorRaise(status, 0, 0, 0, 0);
+    }
+
     status = tx_thread_create((TX_THREAD*)&pddr_service_ctx->work_thread, /* TX_THREAD *thread_ptr */
                               (char*)DDR_WORK_THREAD_NAME,                /* CHAR *name_ptr */
                               ddr_worker_thread_func,                     /* VOID (*entry_function)(ULONG) */
@@ -220,5 +233,6 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
         tx_timer_deactivate((TX_TIMER*)&pddr_service_ctx->ddr_polling_timer);
         DDR_MANAGER_ET_WARN(DDR_MANAGER_ET_TYPE_PLATFORM_NOT_SUPPORT_I3C_POLLING, ET_NOPARAM);
     }
+
     DDR_LOG_CRIT("DDR init, die_num: [%u] Done\n", pconfig->thread_config.die_number);
 }

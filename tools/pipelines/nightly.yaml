@@ -37,7 +37,7 @@ stages:
     parameters:
       ArtifactName: SVP_Pythia_Accel_Tests_SingleDie
       TestPlan: .\tests\functional\test_plan\accel_single_die_test_plan.args
-      ifwi: 'kingsgate.ifwi.ap.baremetal.debug.dat'
+      ifwi: '.\.build\Debug\arm-eabi-aarch\bin\flash\kingsgate.ifwi.ap.baremetal.debug.dat'
 
 - stage: SVP_Pythia_Tests_DualDie
   dependsOn: [Build_Arm_EABI_AARCH_Debug]

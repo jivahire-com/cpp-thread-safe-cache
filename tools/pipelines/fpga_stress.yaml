@@ -43,7 +43,7 @@ stages:
       Pool: 1pfw-kingsgate-big-fpga
       build_id: $(BUILD_ID)
       TestPlan: .\tests\functional\test_plan\accel_single_die_test_plan.args
-      ifwi: '.\.build\Debug\arm-eabi-aarch\bin\flash\kingsgate.ifwi.ap.baremetal.debug.dat'
+      ifwi: 'kingsgate.ifwi.ap.baremetal.debug.dat'
 
 # This is to tag the commits that pass weekend stress tests.
 - stage: Promote

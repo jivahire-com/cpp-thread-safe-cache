@@ -56,6 +56,7 @@ target_link_libraries(${TARGET}
         ms::lib::threadx
         ms::lib::debug
         ms::service::fuse
+        ms::service::pcie_manager
         ms::service::sds_service
         ms::client_interface::ap_core
         ms::client_interface::startup_shutdown

@@ -30,6 +30,7 @@
 
 /*-- Declarations (Statics and globals) --*/
 static startup_shutdown_boot_stage_t scp_boot_stages[] = {
+    {STARTUP_PHASE_MSCP_ASYNC, STARTUP_PCIE_PHY_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
     {STARTUP_PHASE_MSCP_ASYNC, STARTUP_MCP_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
     {STARTUP_PHASE_MSCP_ASYNC, STARTUP_SDM_ITCM_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
     {STARTUP_PHASE_MSCP_ASYNC, STARTUP_SDM_DTCM_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},

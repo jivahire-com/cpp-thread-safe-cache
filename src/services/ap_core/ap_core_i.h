@@ -53,6 +53,7 @@ typedef enum {
     AP_FW_ID_RP_EXE,
     AP_FW_ID_RP_DATA,
     AP_FW_ID_MCP,
+    AP_FW_PCIE_PHY,
     AP_FW_ID_SDM_ITCM,
     AP_FW_ID_SDM_DTCM,
     AP_FW_ID_CDED_ITCM,
@@ -65,7 +66,7 @@ typedef enum {
 
 /*--------- Function Prototypes ----------*/
 
-void ap_core_ppu_init(ap_core_service_context_t *p_context);
+void ap_core_ppu_init(ap_core_service_context_t* p_context);
 void ap_core_ppu_clusters_on(ap_core_service_context_t* p_context, uint32_t timeout_ms);
 void ap_core_ppu_clusters_on_if_needed(ap_core_service_context_t* p_context, uint32_t timeout_ms);
 void ap_core_ppu_clusters_off(ap_core_service_context_t* p_context, uint32_t timeout_ms);
@@ -75,7 +76,7 @@ void ap_core_ppu_core_set_power_state(ap_core_service_context_t* p_context, unsi
 unsigned int ap_core_util_boot_core(ap_core_service_context_t* p_context);
 void ap_core_util_set_rvbaraddr(ap_core_service_context_t* p_context, unsigned core_idx, uint64_t rvbaraddr);
 void ap_core_util_set_all_rvbaraddr(ap_core_service_context_t* p_context, uint64_t rvbaraddr);
-void ap_core_util_get_fuse_enabled_cores(corebits_t *p_enabled_cores);
+void ap_core_util_get_fuse_enabled_cores(corebits_t* p_enabled_cores);
 void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t fw_id);
 void ap_core_request_mcp_load(fpfw_icc_base_ctx_t* icc_hspmbx_ctx);
 pap_core_asynchronous_request_t ap_core_get_outstanding_request();

@@ -16,6 +16,7 @@
 #include <kng_soc_constants.h>
 #include <pcie_dfwk.h>
 #include <pcie_manager_i.h>
+#include <pcie_phy_load_events.h>
 #include <scp_pcie_manager.h>
 #include <silibs_kng_soc.h>
 #include <stddef.h>
@@ -32,6 +33,8 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+TX_EVENT_FLAGS_GROUP pcie_phyfw_load_event;
+
 static pcie_manager_context_t pcie_mgr_ctx[PCIE_RPSS_PER_DIE] = {0};
 static uint8_t stacks[PCIE_RPSS_PER_DIE * PCIE_RP_SERVICE_THREAD_STACK_SIZE] = {0};
 static pciess_device_t dev[PCIE_RPSS_PER_DIE];
@@ -64,17 +67,19 @@ void scp_pcie_config_service_initialize(uint16_t rpss_to_init)
     }
 
     int status = tx_event_flags_create(&event_ptr, "PCIe Config Set Event");
-
-    pcie_cfg_mgr_ctx.event_ptr = &event_ptr;
-    pcie_cfg_mgr_ctx.event_flags_mask = rpss_to_init;
-    pcie_cfg_mgr_ctx.rb_config_var = &rb_config_var;
-    pcie_cfg_mgr_ctx.vab_config_var = &vab_config_var;
-
     if (status != TX_SUCCESS)
     {
         printf("%s: Failed to create event flags! TX_STATUS: %d\n", __func__, status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
+
+    // If this fails it asserts within the function.
+    pcie_phyfw_create_event(&pcie_phyfw_load_event);
+
+    pcie_cfg_mgr_ctx.event_ptr = &event_ptr;
+    pcie_cfg_mgr_ctx.event_flags_mask = rpss_to_init;
+    pcie_cfg_mgr_ctx.rb_config_var = &rb_config_var;
+    pcie_cfg_mgr_ctx.vab_config_var = &vab_config_var;
 
     status = tx_thread_create(&(pcie_cfg_mgr_ctx.worker),
                               "pcie_config_worker_thread",
@@ -120,6 +125,7 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
         pcie_mgr_ctx[i].dev->rb_configs = &rb_config_var.rootbridge_config[i * PCIESS_NUM_PORTS];
         pcie_mgr_ctx[i].iface = &(iface[i]);
         pcie_mgr_ctx[i].event_ptr = &event_ptr;
+        pcie_mgr_ctx[i].phyfw_load_event_ptr = &pcie_phyfw_load_event;
 
         /* Setup worker queue for each rpss worker thread */
         int status = tx_queue_create(&(pcie_mgr_ctx[i].work_queue),

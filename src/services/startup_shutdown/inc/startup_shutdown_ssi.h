@@ -12,7 +12,6 @@
 #include <DfwkCommon.h>
 #include <stdint.h>
 
-
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
@@ -35,7 +34,7 @@ enum SSI_REQUEST_IDS
  * ideally these should be kept somewhat in order to avoid any unnecessary confusion.  Stages will be a
  * part of some phase, and drivers dependent on startup notification can expect start/complete of the phase
  * enveloping all of the start/complete of individual boot stages.
- * 
+ *
  */
 typedef enum _ssi_startup_stage
 {
@@ -57,7 +56,8 @@ typedef enum _ssi_startup_stage
     STARTUP_RMM_LOAD,
     STARTUP_RP_EXE_LOAD,
     STARTUP_RP_DATA_LOAD,
-    STARTUP_PRIMARY_AP_CORE_BOOT
+    STARTUP_PRIMARY_AP_CORE_BOOT,
+    STARTUP_PCIE_PHY_LOAD
 } ssi_startup_stage_t;
 
 /**
@@ -131,12 +131,12 @@ typedef union _ssi_request_t
  *
  *  @param p_completion_context A context that is supplied when the completion routine is called.
  */
- void ssi_startup_stage_start(PDFWK_INTERFACE_HEADER p_interface,
-                                           pssi_request_t p_request,
-                                           ssi_startup_stage_t stage,
-                                           ssi_startup_type_t boot_type,
-                                           DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
-                                           void* p_completion_context);
+void ssi_startup_stage_start(PDFWK_INTERFACE_HEADER p_interface,
+                             pssi_request_t p_request,
+                             ssi_startup_stage_t stage,
+                             ssi_startup_type_t boot_type,
+                             DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                             void* p_completion_context);
 
 /**
  *  Inline function to send an asynchronous startup stage complete request/notification
@@ -153,12 +153,12 @@ typedef union _ssi_request_t
  *
  *  @param p_completion_context A context that is supplied when the completion routine is called.
  */
- void ssi_startup_stage_complete(PDFWK_INTERFACE_HEADER p_interface,
-                                              pssi_request_t p_request,
-                                              ssi_startup_stage_t stage,
-                                              ssi_startup_type_t boot_type,
-                                              DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
-                                              void* p_completion_context);
+void ssi_startup_stage_complete(PDFWK_INTERFACE_HEADER p_interface,
+                                pssi_request_t p_request,
+                                ssi_startup_stage_t stage,
+                                ssi_startup_type_t boot_type,
+                                DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                                void* p_completion_context);
 
 /**
  *  Inline function to send an asynchronous shutdown/quiesce request/notification
@@ -173,8 +173,8 @@ typedef union _ssi_request_t
  *
  *  @param p_completion_context A context that is supplied when the completion routine is called.
  */
- void ssi_shutdown_quiesce(PDFWK_INTERFACE_HEADER p_interface,
-                                        pssi_request_t p_request,
-                                        ssi_shutdown_type_t shutdown_type,
-                                        DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
-                                        void* p_completion_context);
+void ssi_shutdown_quiesce(PDFWK_INTERFACE_HEADER p_interface,
+                          pssi_request_t p_request,
+                          ssi_shutdown_type_t shutdown_type,
+                          DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                          void* p_completion_context);

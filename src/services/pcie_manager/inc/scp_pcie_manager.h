@@ -18,8 +18,8 @@
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define PCIE_OUTSTANDING_REQ_QUOTA (4) /* This allows up to 4 outstanding async. requests per rpss */
-#define MAX_PENDING_WAIT_FOR_EVENT_PER_RP   (2) /* Max number of pending wait for event Req per RP */
+#define PCIE_OUTSTANDING_REQ_QUOTA        (4) /* This allows up to 4 outstanding async. requests per rpss */
+#define MAX_PENDING_WAIT_FOR_EVENT_PER_RP (2) /* Max number of pending wait for event Req per RP */
 /*-------------- Typedefs ----------------*/
 
 /* PCIe completion request format - this is what is used by the service for internal communication */
@@ -42,6 +42,7 @@ typedef struct _pcie_manager_context_t
     TX_THREAD worker;
     TX_QUEUE work_queue;
     TX_EVENT_FLAGS_GROUP* event_ptr;
+    TX_EVENT_FLAGS_GROUP* phyfw_load_event_ptr;
     TX_TIMER expiry_timer[PCIESS_NUM_PORTS];
 } pcie_manager_context_t;
 
@@ -76,14 +77,13 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
 
 /*--------- Function Prototypes ----------*/
 /**
- *  @brief      Send WAIT_FOR_EVENT Asysn message to the RP 
+ *  @brief      Send WAIT_FOR_EVENT Asysn message to the RP
  *
  *  @param[in]  ctx     Manager Context
- *  @param[in]  rp_idx  RP index within the RPSS 
- *  @param[in]  num_event Number of WAIT_FOR_EVENT async messages to send 
+ *  @param[in]  rp_idx  RP index within the RPSS
+ *  @param[in]  num_event Number of WAIT_FOR_EVENT async messages to send
  *              Max number set by MAX_PENDING_WAIT_FOR_EVENT_PER_RP.
  *
  *  @retval     None. Errors raised if failure in initialization.
  */
 void send_async_wait_for_event(pcie_manager_context_t* ctx, uint8_t rp_idx, uint8_t num_event);
-

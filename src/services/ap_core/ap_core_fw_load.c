@@ -26,6 +26,8 @@
 #include <mcp_top_regs.h>
 #undef __NO_CSR_TYPEDEFS__
 #include <mcp_exp_top_regs.h>
+#include <mscp_exp_rmss_memory_map.h>
+#include <pcie_phy_load_events.h> // PhyFW load event
 #include <startup_shutdown_ssi.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -71,8 +73,23 @@ static void request_ap_load_recv_complete_notify(void* context, size_t output_si
     BUG_ASSERT(recv_payload_buffer.rsp.status == 0);
 
     DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
-
     APCORE_LOG_TRACE("AP FW load response received");
+}
+
+static void request_pcie_phy_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    FPFW_UNUSED(context);
+    FPFW_UNUSED(output_size_bytes);
+
+    BUG_ASSERT(status == FPFW_STATUS_SUCCESS);
+    BUG_ASSERT(recv_payload_buffer.header.cmd == HSP_MAILBOX_CMD_LOAD_FW_RSP);
+    BUG_ASSERT(recv_payload_buffer.rsp.status == 0);
+
+    DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
+
+    // Set Pcie Phy FW Load Event Flag
+    pcie_phyfw_set_load_event(&pcie_phyfw_load_event);
+    APCORE_LOG_INFO("PCIE PHY FW load [0x%x] completed.", SCP_EXP_PCIE_PHY_FW_BASE);
 }
 
 static void request_mcp_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -184,7 +201,12 @@ void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t 
 
     recv_params.recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_RSP;
     recv_params.cb = request_ap_load_recv_complete_notify;
-    if (fw_id == AP_FW_ID_MCP)
+    if (fw_id == AP_FW_PCIE_PHY)
+    {
+        recv_params.cb = request_pcie_phy_load_complete_notify;
+        recv_params.cb_ctx = icc_hspmbx_ctx;
+    }
+    else if (fw_id == AP_FW_ID_MCP)
     {
         recv_params.cb = request_mcp_load_complete_notify;
         recv_params.cb_ctx = icc_hspmbx_ctx;
@@ -251,6 +273,10 @@ void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t 
     case AP_FW_ID_RP_DATA:
         send_request.load_fw_req.id = HSP_FIRMWARE_ID_RP_DATA;
         send_request.load_fw_req.address = RP_DATA_LOAD_ADDRESS;
+        break;
+    case AP_FW_PCIE_PHY:
+        send_request.load_fw_req.id = HSP_FIRMWARE_ID_PCIE_PHY;
+        send_request.load_fw_req.address = SCP_EXP_PCIE_PHY_FW_BASE;
         break;
     case AP_FW_ID_MCP:
         send_request.load_fw_req.id = HSP_FIRMWARE_ID_MCP;

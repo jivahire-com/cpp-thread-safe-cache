@@ -28,6 +28,7 @@ extern "C" {
 #include <mcp_top_regs.h>
 #undef __NO_CSR_TYPEDEFS__
 #include <mcp_exp_top_regs.h>
+#include <mscp_exp_rmss_memory_map.h>
 #define __NO_CSR_TYPEDEFS__
 #include <scp_exp_csr_regs.h>
 #include <scp_exp_top_regs.h>
@@ -530,6 +531,58 @@ AP_CORE_TEST(dispatch_bl31_load, setup, NULL)
     // Call the callback to simulate the response
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
     fw_load_cb(NULL, 0, FPFW_STATUS_SUCCESS);
+}
+
+AP_CORE_TEST(dispatch_pcie_phyfw_load, setup, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_PCIE_PHY_LOAD;
+    test_request.boot_type = COLD_BOOT;
+
+    // Set up expectations
+    will_return(__wrap_system_info_is_hsp_present, true);
+
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
+
+    kng_hsp_mailbox_cmd_load_fw_req send_request = {
+        .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
+        .header.context = 0,
+        .id = HSP_FIRMWARE_ID_PCIE_PHY,
+        .address = SCP_EXP_PCIE_PHY_FW_BASE,
+        .size = 0x00000000,
+    };
+    expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request, sizeof(send_request));
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    // Call API under test
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+
+    // Call the callback to simulate the response
+    expect_value(__wrap_FpFwAssert, expression, false);
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+    fw_load_cb(NULL, 0, FPFW_STATUS_SUCCESS);
+}
+
+AP_CORE_TEST(dispatch_pcie_phyfw_load_hsp_not_present, setup, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_PCIE_PHY_LOAD;
+    test_request.boot_type = COLD_BOOT;
+
+    // Set up expectations
+    // In ap_core_dispatch()
+    will_return(__wrap_system_info_is_hsp_present, false);
+    expect_any(__wrap_DfwkAsyncRequestComplete, Request);
+    s_dispatch_routine(&test_request.header, &test_device.header);
 }
 
 AP_CORE_TEST(dispatch_mcp_load, setup, NULL)

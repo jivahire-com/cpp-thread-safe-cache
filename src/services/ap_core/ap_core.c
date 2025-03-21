@@ -183,6 +183,16 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
         case STARTUP_CLUSTER_CORE_INIT:
             ap_core_ssi_start_cluster_init(ssi_request);
             break;
+        case STARTUP_PCIE_PHY_LOAD:
+            if (system_info_is_hsp_present() && ssi_request->boot_type == COLD_BOOT)
+            {
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_PCIE_PHY);
+            }
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
+            break;
         case STARTUP_PRIMARY_AP_CORE_BOOT:
             if (s_ap_core_ctx.p_config->primary_boot_die)
             {

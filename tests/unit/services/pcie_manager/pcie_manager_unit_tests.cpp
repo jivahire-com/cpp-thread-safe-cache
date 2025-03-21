@@ -69,7 +69,7 @@ TEST_FUNCTION(pcie_service_init_fail, NULL, NULL)
     expect_any_always(__wrap__txe_thread_create, auto_start);
     expect_any_always(__wrap__txe_thread_create, thread_control_block_size);
     will_return(__wrap__txe_thread_create, TX_SUCCESS);
-    will_return(__wrap__txe_event_flags_create, TX_SUCCESS);
+    will_return_always(__wrap__txe_event_flags_create, TX_SUCCESS);
 
     // tx queue fails
     expect_value(__wrap_pcie_dfwk_init, schedule, sched);
@@ -89,8 +89,7 @@ TEST_FUNCTION(pcie_service_init_fail, NULL, NULL)
     // tx thread fails
     expect_value(__wrap_pcie_dfwk_init, schedule, sched);
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
-    will_return(__wrap__txe_thread_create, TX_SUCCESS);      // scp_pcie_config_service_initialize
-    will_return(__wrap__txe_event_flags_create, TX_SUCCESS); // scp_pcie_config_service_initialize
+    will_return(__wrap__txe_thread_create, TX_SUCCESS); // scp_pcie_config_service_initialize
     will_return(__wrap__txe_thread_create, TX_NOT_DONE);
     expect_value(FPFwErrorRaise, error, (uint32_t)TX_NOT_DONE);
     if (!set_error_handler_return())
@@ -131,7 +130,7 @@ TEST_FUNCTION(pcie_service_init_success_die1, NULL, NULL)
     scp_pcie_initialize(sched, rpss_to_init, DIE_1);
 }
 
-TEST_FUNCTION(config_service_init_fail, NULL, NULL)
+TEST_FUNCTION(config_service_init_event_create_fail, NULL, NULL)
 {
     auto* sched = (PDFWK_SCHEDULE)0xdeadbeef;
     uint16_t rpss_to_init = ((1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3));
@@ -140,16 +139,27 @@ TEST_FUNCTION(config_service_init_fail, NULL, NULL)
     expect_any_always(__wrap__txe_event_flags_create, group_ptr);
     expect_any_always(__wrap__txe_event_flags_create, name_ptr);
     expect_any_always(__wrap__txe_event_flags_create, event_control_block_size);
-    will_return(__wrap__txe_event_flags_create, TX_NO_MEMORY);
-    expect_value(FPFwErrorRaise, error, (uint32_t)TX_NO_MEMORY);
+    will_return(__wrap__txe_event_flags_create, TX_NOT_DONE);
+    expect_value(FPFwErrorRaise, error, (uint32_t)TX_NOT_DONE);
 
     if (!set_error_handler_return())
     {
         scp_pcie_initialize(sched, rpss_to_init, DIE_0);
     }
+}
+
+TEST_FUNCTION(config_service_init_thread_create_fail, NULL, NULL)
+{
+    auto* sched = (PDFWK_SCHEDULE)0xdeadbeef;
+    uint16_t rpss_to_init = ((1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3));
+
+    // tx_event_flags_create fails
+    expect_any_always(__wrap__txe_event_flags_create, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_create, name_ptr);
+    expect_any_always(__wrap__txe_event_flags_create, event_control_block_size);
+    will_return_always(__wrap__txe_event_flags_create, TX_SUCCESS);
 
     // tx_thread_create fails
-    will_return(__wrap__txe_event_flags_create, TX_SUCCESS);
     expect_any_always(__wrap__txe_thread_create, thread_ptr);
     expect_any_always(__wrap__txe_thread_create, name_ptr);
     expect_any_always(__wrap__txe_thread_create, entry_function);

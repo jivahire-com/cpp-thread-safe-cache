@@ -16,6 +16,7 @@
 #include <pcie_config_variable.h>
 #include <pcie_dfwk.h>             // for pcie_async_request_t, pcie_dfwk_interf...
 #include <pcie_manager_i.h>        // for rpss_req_completion_cb, rpss_service_t...
+#include <pcie_phy_load_events.h>  // PhyFW load event
 #include <pcie_rp_event_handler.h> // Process Events/misc RP helper functions
 #include <pcie_ss_common.h>        // pciess_entity
 #include <pciess.h>
@@ -222,6 +223,10 @@ void rpss_service_thread_fn(ULONG thread_input)
     /* Initialize and open the interface for this root port subsystem */
     pcie_dfwk_interface_init(d, iface);
     DfwkClientInterfaceOpen(&(iface->header));
+
+    /* Wait for Pcie PhyFW Load Event */
+    printf("Waiting for Pcie[PCIESS: %d] Phy FW Load \n", ctx->rpss_idx);
+    pcie_phyfw_wait_load_event(ctx->phyfw_load_event_ptr);
 
     /* Start Initial PCIESS/RP Init */
     send_full_pciess_init(ctx);

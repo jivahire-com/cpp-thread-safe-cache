@@ -614,7 +614,7 @@ int32_t power_fuses_get_tdp_config(power_fuse_tdp_t* tdp_config)
     uint64_t fuse_data = 0;
 
     // read fuse for data
-    int32_t status = platform_read_fuse((uint32_t*)&fuse_data, TDP_NUM_CORES_BIT_OFFSET, TDP_NUM_CORES_WIDTH);
+    int32_t status = platform_read_fuse((uint32_t*)&fuse_data, NUM_CORES_BIT_OFFSET, NUM_CORES_WIDTH);
     if ((fuse_data == 0) || (status != FPFW_STATUS_SUCCESS))
     {
         // we divide by num cores, so it can't be 0
@@ -623,20 +623,14 @@ int32_t power_fuses_get_tdp_config(power_fuse_tdp_t* tdp_config)
     }
     tdp_config->num_cores = (uint8_t)fuse_data;
 
-    status = platform_read_fuse((uint32_t*)&fuse_data, TDP_FREQUENCY_BIT_OFFSET, TDP_FREQUENCY_WIDTH);
+    status = platform_read_fuse((uint32_t*)&fuse_data, BASE_FREQUENCY_BIT_OFFSET, BASE_FREQUENCY_WIDTH);
     if (status != FPFW_STATUS_SUCCESS)
     {
         return status;
     }
     tdp_config->freq_MHz = (uint16_t)fuse_data;
-
-    status = platform_read_fuse((uint32_t*)&fuse_data, TDP_POWER_BIT_OFFSET, TDP_POWER_WIDTH);
-    if (status != FPFW_STATUS_SUCCESS)
-    {
-        return status;
-    }
-    tdp_config->power_A = (uint16_t)fuse_data;
-
+    tdp_config->power_A = TDP_DEFAULT_POWER_A;
+    
     return FPFW_STATUS_SUCCESS;
 }
 

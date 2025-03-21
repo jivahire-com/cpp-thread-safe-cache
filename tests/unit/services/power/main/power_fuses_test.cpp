@@ -744,9 +744,8 @@ POWER_TEST(get_tdp_config_third_fuse_read_fail, set_fuse_data_to_default, NULL)
 
     will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
     will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
-    will_return(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER);
 
-    assert_true((power_fuses_get_tdp_config(&tdp_config) == FPFW_STATUS_NULL_POINTER));
+    assert_true((power_fuses_get_tdp_config(&tdp_config) == FPFW_STATUS_SUCCESS));
 }
 
 POWER_TEST(get_tdp_config_fuse_read_success, set_fuse_data_to_one, set_fuse_data_to_default)

@@ -26,6 +26,7 @@ target_link_libraries(${TARGET}
     silibs::cmn800_skus
     silibs::cmn800_sequence
     silibs::cmn800_ras_sequence
+    silibs::d2d_counter_sync
     silibs::idhw
     silibs::idsw
     silibs::idsw_kng

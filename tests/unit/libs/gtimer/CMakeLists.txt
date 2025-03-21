@@ -16,6 +16,10 @@ target_link_libraries(${TARGET}
         ms::lib::interrupts
         ms::lib::gtimer
         ms::lib::register_headers
+        silibs::d2d_counter_sync
+        silibs::idsw_kng
+        silibs::spi_bridge
+        kng_silibs_platform
 )
 
 # Defining platform APIs
@@ -29,6 +33,9 @@ unit_test_target(${TARGET})
 
 mock_target(${TARGET}
     idsw_get_cpu_type
+    idsw_get_platform_sdv
+    idhw_get_die_id
+    idhw_is_single_die_boot_en
     system_counter_init
     gtimer_init
     gtimer_enable_timer
@@ -40,4 +47,7 @@ mock_target(${TARGET}
     fpfw_tmr_queue_add_oneshot
     fpfw_tmr_queue_add_periodic
     fpfw_tmr_queue_expire
+    mscp_exp_spi_synchronize_dies
+    d2d_counter_sync_configure_d1_params
+    d2d_counter_sync_configure_d0_and_enable_sync
 )

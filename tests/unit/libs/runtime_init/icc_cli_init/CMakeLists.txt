@@ -12,6 +12,7 @@ target_link_libraries(${TARGET}
     PRIVATE
         fwlib.service.cli
         fwlib.lib.init
+        fwlib.lib.interface.platform.dbgprint
         fwlib.lib.utils
         ms::lib::icc::cli
         ms::cmocka::testrunner

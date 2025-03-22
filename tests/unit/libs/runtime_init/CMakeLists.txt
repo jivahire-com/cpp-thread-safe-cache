@@ -44,4 +44,5 @@ add_subdirectory(mcp_clock_init)
 add_subdirectory(mcp_mpu_init)
 add_subdirectory(health_monitor_init)
 add_subdirectory(error_domain_init)
+add_subdirectory(spi_bridge_init)
 

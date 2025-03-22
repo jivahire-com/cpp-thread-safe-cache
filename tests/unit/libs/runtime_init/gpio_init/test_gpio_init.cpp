@@ -89,8 +89,8 @@ void __wrap_FpFwCliRegisterTable(PFPFW_CLI_COMMAND pTable, size_t TableLength)
 
 int __wrap_gpio_afm_init(const gpio_afm_entry_t* gpio_afm_tbl, uint32_t num)
 {
-    check_expected_ptr(gpio_afm_tbl); 
-    check_expected(num);              
+    check_expected_ptr(gpio_afm_tbl);
+    check_expected(num);
 
     function_called();
 
@@ -161,7 +161,7 @@ TEST_FUNCTION(test_gpio_lib_init_SVP, nullptr, nullptr)
 TEST_FUNCTION(test_gpio_lib_init_FPGA, nullptr, nullptr)
 {
     // Set up expectations
-   
+
     expect_value(__wrap_gpio_afm_init, gpio_afm_tbl, NULL);
     expect_value(__wrap_gpio_afm_init, num, 0);
     expect_function_call(__wrap_gpio_afm_init);

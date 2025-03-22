@@ -10,6 +10,7 @@
 
 /*------------- Includes -----------------*/
 
+#include <DbgPrint.h>
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>  
 #include <atu_api.h>               // for MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR
@@ -61,9 +62,9 @@ FPFW_INIT_COMPONENT(pex_rng, FPFW_INIT_DEPENDENCIES("dfwk", "sysinfo", "mesh", "
         break;
     }
 
-    printf("RNG init start\n");
+    FPFW_DBGPRINT_INFO("RNG init start\n");
     init_pex_rng(&rng_config);
-    printf("RNG init done\n");
+    FPFW_DBGPRINT_INFO("RNG init done\n");
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 
 }

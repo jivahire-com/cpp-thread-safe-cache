@@ -9,6 +9,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <ddr_manager.h>
 #include <ddrss.h>
 #include <fpfw_cfg_mgr.h>
@@ -27,12 +28,12 @@
 
 /*-------------- Functions ---------------*/
 // Todo: Add "ddr_training" to dependencies when available
-FPFW_INIT_COMPONENT(ddr_pcr, FPFW_INIT_DEPENDENCIES("css_pome", "atu_svc", "hw_ver"))
+FPFW_INIT_COMPONENT(ddr_pcr, FPFW_INIT_DEPENDENCIES("css_pome", "atu_svc", "hw_ver", "debug_print"))
 {
     KNG_DIE_ID die_num = idsw_get_die_id();
-    printf("DDR PCR init, die_num: [%u]\n", die_num);
+    FPFW_DBGPRINT_INFO("DDR PCR init, die_num: [%u]\n", die_num);
 
-    printf("DDR PCR init, die_num: [%u]\n", die_num);
+    FPFW_DBGPRINT_INFO("DDR PCR init, die_num: [%u]\n", die_num);
     prod_ddrss_pcr_init(die_num);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

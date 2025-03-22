@@ -12,6 +12,7 @@ target_link_libraries(${TARGET}
     PRIVATE
         fwlib.dfwk
         fwlib.lib.init
+        fwlib.lib.interface.platform.dbgprint
         fwlib.lib.utils
         fwlib.platform.dfwkhost.threadx
         ms::client_interface::startup_shutdown

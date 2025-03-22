@@ -12,6 +12,7 @@ target_link_libraries(${TARGET}
     cmn800
     cmn800_sequence
     fwlib.lib.init
+    fwlib.lib.interface.platform.dbgprint
     fwlib.lib.utils
     idhw
     silibs::idsw

@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 
+#include <DbgPrint.h>
 #include <atu_api.h>
 #include <fpfw_init.h>
 #include <idsw.h>
@@ -20,7 +21,7 @@
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(arsm, FPFW_INIT_DEPENDENCIES("atu_svc", "hw_ver", "sysinfo"))
+FPFW_INIT_COMPONENT(arsm, FPFW_INIT_DEPENDENCIES("atu_svc", "hw_ver", "sysinfo", "debug_print"))
 {
     if (IS_PLATFORM_SVP())
     {
@@ -32,7 +33,7 @@ FPFW_INIT_COMPONENT(arsm, FPFW_INIT_DEPENDENCIES("atu_svc", "hw_ver", "sysinfo")
          * the ARSM at simulation start time. SCP should not clobber ARSM state
          * to allow using this feature.
          */
-        printf("Skip arsm_init on SVP\n");
+        FPFW_DBGPRINT_INFO("Skip arsm_init on SVP\n");
         goto done;
     }
 

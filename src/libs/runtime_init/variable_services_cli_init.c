@@ -4,6 +4,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <atu_api.h>
 #include <fpfw_init.h>
 #include <idhw.h>
@@ -43,6 +44,6 @@ FPFW_INIT_COMPONENT(var_serv_cli, FPFW_INIT_DEPENDENCIES("var_serv", "ddr", "atu
     }
     
     variable_services_cli_init(&mem_ctx);
-    printf("var_serv_cli Init Done, die[%u] MemBase[0x%x] Size[0x%x]\n", die_num, mem_ctx.payload_base, mem_ctx.max_payload_size);
+    FPFW_DBGPRINT_INFO("var_serv_cli Init Done, die[%u] MemBase[0x%x] Size[0x%x]\n", die_num, mem_ctx.payload_base, mem_ctx.max_payload_size);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

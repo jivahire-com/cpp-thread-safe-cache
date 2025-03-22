@@ -6,6 +6,7 @@
 /*------------- Includes -----------------*/
 #include "ioss_ini.h" // for ioss_init
 
+#include <DbgPrint.h>
 #include <fpfw_init.h> // for FPFW_INIT_STATUS_SUCCESS, fpfw_init_r...
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -27,12 +28,12 @@ FPFW_INIT_COMPONENT(ioss, FPFW_INIT_DEPENDENCIES("vab", "tower_cfg", "cfg_mgr", 
 
     if (idsw_get_die_id() == SOC_D1)
     {
-        printf("Skip IOSS init on die - 1!\n");
+        FPFW_DBGPRINT_INFO("Skip IOSS init on die - 1!\n");
         goto exit;
     }
-    printf("IOSS init\n");
+    FPFW_DBGPRINT_INFO("IOSS init\n");
     ioss_ini();
-    printf("IOSS init complete\n");
+    FPFW_DBGPRINT_INFO("IOSS init complete\n");
 
 exit:
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

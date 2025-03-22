@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <fpfw_init.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -87,7 +88,7 @@ static uint16_t vab_instances_to_be_enabled(uint8_t die_num)
         break;
 
     default:
-        printf("Skip VAB init on unknown platform id: %d\n", plat);
+        FPFW_DBGPRINT_WARNING("Skip VAB init on unknown platform id: %d\n", plat);
         break;
     }
 
@@ -97,11 +98,11 @@ static uint16_t vab_instances_to_be_enabled(uint8_t die_num)
 FPFW_INIT_COMPONENT(vab, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc"))
 {
     uint8_t die_num = (uint8_t)idsw_get_die_id();
-    printf("VAB Initialization: Begin for die:0x%x\n", die_num);
+    FPFW_DBGPRINT_INFO("VAB Initialization: Begin for die:0x%x\n", die_num);
     uint16_t vab_instances_enabled = vab_instances_to_be_enabled(die_num);
-    printf("Bit mask of VAB instances to be enabled: 0x%x\n", vab_instances_enabled);
+    FPFW_DBGPRINT_INFO("Bit mask of VAB instances to be enabled: 0x%x\n", vab_instances_enabled);
     vab_common_init(vab_instances_enabled);
-    printf("VAB Initialization: End\n");
+    FPFW_DBGPRINT_INFO("VAB Initialization: End\n");
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
@@ -124,7 +125,7 @@ FPFW_INIT_COMPONENT(accel_vab_irq, FPFW_INIT_DEPENDENCIES("vab", "accel", "nvic"
         vab_instances_to_init = ((1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS));
         break;
     default:
-        printf("accel_vab_irq init skipped! Got invalid die id: %d\n", die_id);
+        FPFW_DBGPRINT_WARNING("accel_vab_irq init skipped! Got invalid die id: %d\n", die_id);
         break;
     }
 

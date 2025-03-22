@@ -13,6 +13,7 @@ target_link_libraries(${TARGET}
     fwlib.dfwk
     fwlib.lib.cfg_mgr
     fwlib.lib.init
+    fwlib.lib.interface.platform.dbgprint
     fwlib.platform.dfwkhost.threadx
     ms::cmocka::testrunner
     ms::driver::pcie

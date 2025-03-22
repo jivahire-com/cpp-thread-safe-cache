@@ -56,6 +56,7 @@ add_library(${TARGET}
         scp_mpu_init.c
         sds_init.c
         sensor_fifo_init.c
+        spi_bridge_init.c
         startup_shutdown_init.c
         system_info_cli_init.c
         system_info_init.c
@@ -79,6 +80,7 @@ target_link_libraries(
         fwlib.lib.crashDump
         fwlib.lib.init
         fwlib.lib.mboxPrimitives
+        fwlib.lib.interface.platform.dbgprint
         fwlib.lib.platform.impl.timers.threadx
         fwlib.lib.tmr_queue
         fwlib.lib.utils
@@ -260,6 +262,7 @@ add_library(${TARGET}
         nvic_init.c
         power_fuse_init.c
         sensor_fifo_init.c
+        spi_bridge_init.c
         system_info_init.c
         telemetry_service_init.c
         textio_init.c
@@ -276,6 +279,7 @@ target_link_libraries(
         fwlib.lib.crashDump
         fwlib.lib.init
         fwlib.lib.mboxPrimitives
+        fwlib.lib.interface.platform.dbgprint
         fwlib.lib.platform.impl.timers.threadx
         fwlib.lib.utils
         fwlib.lib.tmr_queue

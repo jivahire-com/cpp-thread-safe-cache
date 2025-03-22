@@ -630,7 +630,7 @@ int32_t power_fuses_get_tdp_config(power_fuse_tdp_t* tdp_config)
     }
     tdp_config->freq_MHz = (uint16_t)fuse_data;
     tdp_config->power_A = TDP_DEFAULT_POWER_A;
-    
+
     return FPFW_STATUS_SUCCESS;
 }
 

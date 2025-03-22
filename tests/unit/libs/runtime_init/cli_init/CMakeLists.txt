@@ -13,6 +13,7 @@ target_link_libraries(${TARGET}
         fwlib.service.cli
         fwlib.dfwk
         fwlib.lib.init
+        fwlib.lib.interface.platform.dbgprint
         fwlib.lib.utils
         ms::cmocka::testrunner
         ms::driver::textio::pl011

@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <FpFwCli.h>      // for FpFwCliInitialize, FpFwCliStart, FPFW_CLI_...
 #include <fpfw_init.h>    // for fpfw_init_get_handle, FPFW_INIT_COMPONENT
 #include <stdint.h>       // for uint8_t
@@ -26,7 +27,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(cli, FPFW_INIT_DEPENDENCIES("uart", "std_io"))
+FPFW_INIT_COMPONENT(cli, FPFW_INIT_DEPENDENCIES("uart", "std_io", "debug_print"))
 {
     fpfw_init_component_id_t uart_id = "uart";
     static uint8_t cli_cmd_history[CLI_COMMAND_HISTORY_SIZE];
@@ -49,7 +50,7 @@ FPFW_INIT_COMPONENT(cli, FPFW_INIT_DEPENDENCIES("uart", "std_io"))
     if (CLI_SUCCESS == cli_result)
     {
         FpFwCliStart();
-        printf("CLI Started\n");
+        FPFW_DBGPRINT_INFO("CLI Started\n");
     }
     return (fpfw_init_result_t){cli_result, NULL};
 }

@@ -4,6 +4,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <fpfw_icc_base.h> // for fpfw_icc_base_init, fpfw_icc_ba...
 #include <fpfw_init.h>
 #include <idhw.h>
@@ -18,10 +19,10 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(mesh, FPFW_INIT_DEPENDENCIES("i3c_controller", "icc_hspmbx", "sysinfo", "icc_d2dmbx", "fuse_pre_mesh"))
+FPFW_INIT_COMPONENT(mesh, FPFW_INIT_DEPENDENCIES("i3c_controller", "icc_hspmbx", "sysinfo", "icc_d2dmbx", "fuse_pre_mesh", "debug_print"))
 {
     uint8_t die_num = (uint8_t)idhw_get_die_id();
-    printf("Mesh init, die_num: [%u]\n", die_num);
+    FPFW_DBGPRINT_INFO("Mesh init, die_num: [%u]\n", die_num);
 
     fpfw_icc_base_ctx_t* icc_ctx = fpfw_init_get_handle("icc_hspmbx");
     mesh_init(die_num, icc_ctx);

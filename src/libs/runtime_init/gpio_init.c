@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
 #include <FpFwAssert.h>      // for FPFW_RUNTIME_ASSERT
 #include <fpfw_init.h>       // for FPFW_INIT_COMPONENT
@@ -62,7 +63,7 @@ static const gpio_afm_entry_t fpga_config_gpio_table_afm[] = {
  * @brief Initialize and configure GPIO registers.
  *
  */
-FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver"))
+FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_print"))
 {
     int status = SILIBS_SUCCESS;
     static gpio_init_config_t gpio_init_config;
@@ -78,7 +79,7 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver"))
 
     if (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE || idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE_RVP)
     {
-        printf("FPGA GPIO Config (Loopback pins 6,7on bank 6)\n");
+        FPFW_DBGPRINT_INFO("FPGA GPIO Config (Loopback pins 6,7on bank 6)\n");
         status = gpio_init(fpga_config_gpio_table, ARRAY_SIZE(fpga_config_gpio_table));
         gpio_init_config.gpio_config_table = fpga_config_gpio_table;
         gpio_init_config.table_size = ARRAY_SIZE(fpga_config_gpio_table);

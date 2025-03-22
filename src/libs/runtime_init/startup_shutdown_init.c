@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <DfwkCommon.h>            // for DfwkAsyncRequestInitialize, PDFW...
 #include <FpFwAssert.h>            // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>             // for FPFW_UNUSED
@@ -37,7 +38,7 @@ FPFW_INIT_COMPONENT(sos_svc, FPFW_INIT_DEPENDENCIES("dfwk"))
 void boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
 {
     FPFW_UNUSED(p_completion_context);
-    printf("SOS boot completed (%x)\n", (uintptr_t)request);
+    FPFW_DBGPRINT_INFO("SOS boot completed (%x)\n", (uintptr_t)request);
     //! Send boot notify message to HSP now
     fpfw_status_t status = boot_status_notify(BOOT_STATUS_CODE_SCP_OK);
     FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);

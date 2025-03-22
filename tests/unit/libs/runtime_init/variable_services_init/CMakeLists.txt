@@ -10,6 +10,7 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.init
+    fwlib.lib.interface.platform.dbgprint
     fwlib.lib.utils
     idhw
     silibs::idsw

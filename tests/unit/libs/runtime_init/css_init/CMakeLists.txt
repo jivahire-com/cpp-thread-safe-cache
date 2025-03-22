@@ -13,6 +13,7 @@ target_link_libraries(${TARGET}
         atu
         clocks_sequence
         fwlib.lib.init
+        fwlib.lib.interface.platform.dbgprint
         idhw
         silibs::idsw
         silibs::idsw_kng

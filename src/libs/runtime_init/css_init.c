@@ -4,6 +4,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <css.h>
 #include <fpfw_init.h>
 #include <idhw.h>
@@ -19,10 +20,10 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(css_prme, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc", "cfg_mgr"))
+FPFW_INIT_COMPONENT(css_prme, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc", "cfg_mgr", "debug_print"))
 {
     uint8_t die_num = (uint8_t)idhw_get_die_id();
-    printf("CSS Pre Mesh init on die[%d]\n", die_num);
+    FPFW_DBGPRINT_INFO("CSS Pre Mesh init on die[%d]\n", die_num);
 
     css_pre_mesh_init(die_num);
 
@@ -31,17 +32,17 @@ FPFW_INIT_COMPONENT(css_prme, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_sv
     if (IS_PLATFORM_SVP())
     {
         css_configure_system_tower(die_num);
-        printf("System Control Tower Initialized\n");
+        FPFW_DBGPRINT_INFO("System Control Tower Initialized\n");
     }
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(css_pome, FPFW_INIT_DEPENDENCIES("std_io", "accel_iso_cfg"))
+FPFW_INIT_COMPONENT(css_pome, FPFW_INIT_DEPENDENCIES("std_io", "accel_iso_cfg", "debug_print"))
 {
-    printf("CSS Post Mesh init\n");
+    FPFW_DBGPRINT_INFO("CSS Post Mesh init\n");
 
     css_post_mesh_init();
-    printf("CSS Post Mesh init done\n");
+    FPFW_DBGPRINT_INFO("CSS Post Mesh init done\n");
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

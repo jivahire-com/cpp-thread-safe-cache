@@ -16,6 +16,7 @@ endif()
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.init
+        fwlib.lib.interface.platform.dbgprint
         idhw
         ms::cmocka::testrunner
         ms::lib::ddr_manager

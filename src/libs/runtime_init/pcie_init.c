@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <DfwkPtrTypes.h>
 #include <DfwkThreadXHost.h>
 #include <atu_api.h>
@@ -50,7 +51,7 @@ FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "v
     }
     else
     {
-        printf("WARNING: rpss_mask == %d\n", rpss_mask);
+        FPFW_DBGPRINT_WARNING("WARNING: rpss_mask == %d\n", rpss_mask);
     }
 
     switch (plat)
@@ -73,11 +74,11 @@ FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "v
         break;
 
     case PLATFORM_SVP_MIN_CONFIG_SIM:
-        printf("Skip RPSS init on SVP min config!\n");
+        FPFW_DBGPRINT_INFO("Skip RPSS init on SVP min config!\n");
         break;
 
     default:
-        printf("Skip RPSS init on unknown platform id: %d\n", plat);
+        FPFW_DBGPRINT_INFO("Skip RPSS init on unknown platform id: %d\n", plat);
         break;
     }
 

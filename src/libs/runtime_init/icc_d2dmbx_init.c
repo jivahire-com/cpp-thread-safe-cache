@@ -4,6 +4,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <DfwkHost.h>        // for DfwkDeviceInitialize
 #include <DfwkStatus.h>      // for DFWK_SUCCESS
 #include <DfwkThreadXHost.h> // for PDFWK_THREADX_HOST
@@ -35,7 +36,6 @@
 
 /*-------------- Macros ------------------*/
 #define D2D_MBOX_SPI_CTRL_BASE_ADDR      (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_SPI_CTRL_ADDRESS)
-#define D2D_MBOX_SPI_BRIDGE_BASE_ADDR    (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_SPI_BRIDGE_ADDRESS)
 #define D2D_MBOX_SYNC_OPERATION_LOOP_MAX 0x200000UL
 /*------------- Typedefs -----------------*/
 
@@ -86,42 +86,12 @@ static uint32_t SpiControllerRead32(uint32_t baseAddr, FPFW_MBX_REG_OFFSET regOf
 }
 
 /**
- * @brief API to configure & verify spi controller & bridge
- *
- * @param spi_master_reg base addr of spi controller
- * @param clkDiv
- * @return int32_t
- */
-static int32_t SpiControllerBridgeInit(uintptr_t spi_ctrl_addr, uintptr_t spi_bridge_addr, uint16_t clkDiv)
-{
-    int32_t status = 0;
-    //! SPI bridge initialization
-    spi_bridge_init(spi_bridge_addr, clkDiv);
-    status = spi_bridge_check_errors(spi_bridge_addr);
-    if (status != SILIBS_SUCCESS)
-    {
-        printf("SPI bridge Init Error. Addr[0x%x]\n", spi_bridge_addr);
-        return status;
-    }
-    spi_bridge_clear_error_interrupts(spi_bridge_addr);
-
-    //! SPI Controller initialization
-    spi_controller_init(spi_ctrl_addr, clkDiv);
-    status = spi_controller_check_errors(spi_ctrl_addr);
-    if (status != SILIBS_SUCCESS)
-    {
-        printf("SPI Controller Init Error. Addr[0x%x]\n", spi_ctrl_addr);
-    }
-    return status;
-}
-
-/**
  * @note ICC Support added for D2D Mailbox or RMSS Mailbox.
  * Current die scp can send, remote die scp or mcp can recv.
  * Remote die scp can send, current die scp or mcp can recv.
  *
  */
-FPFW_INIT_COMPONENT(icc_d2dmbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
+FPFW_INIT_COMPONENT(icc_d2dmbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "debug_print"))
 {
     //! Statics declarations required for mailbox primitive
     static struct _fpfw_timer_t d2d_timer[ICC_MAX_ASYNC_REQ_TYPE] = {};
@@ -150,13 +120,6 @@ FPFW_INIT_COMPONENT(icc_d2dmbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
         //! set the SPI read/write APIs for d2d in mbox primitives config
         d2d_cfg.mbox_dev_cfg.RemoteRegWrite32 = SpiControllerWrite32;
         d2d_cfg.mbox_dev_cfg.RemoteRegRead32 = SpiControllerRead32;
-
-        //! Initialize SPI controller & bridge, HSP currently does this, should we remove this?
-        int32_t status = SpiControllerBridgeInit(D2D_MBOX_SPI_CTRL_BASE_ADDR, D2D_MBOX_SPI_BRIDGE_BASE_ADDR, 10);
-        if (status != DFWK_SUCCESS)
-        {
-            return (fpfw_init_result_t){status, NULL};
-        }
     }
 
     //! Statics declarations required for mailbox transport driver

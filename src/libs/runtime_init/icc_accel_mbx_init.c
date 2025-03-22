@@ -5,6 +5,7 @@
 
 /*------------- Includes -----------------*/
 
+#include <DbgPrint.h>
 #include <DfwkHost.h>        // for DfwkDeviceInitialize
 #include <DfwkThreadXHost.h> // for PDFWK_THREADX_HOST
 #include <MboxPrimitives.h>
@@ -104,7 +105,9 @@ static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
         fpfw_mbox_icc_transport_dfwk_device_init(&accel_mbx_dev[accel_type], &accel_mbx_cfg[accel_type]);
     if (status != DFWK_SUCCESS)
     {
-        printf("fpfw_mbox_icc_transport_dfwk_device_init failed for accel %d with status %ld\n", accel_type, (long int)status);
+        FPFW_DBGPRINT_ERROR("fpfw_mbox_icc_transport_dfwk_device_init failed for accel %d with status %ld\n",
+                            accel_type,
+                            (long int)status);
         return status;
     }
 
@@ -113,7 +116,10 @@ static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
     status = fpfw_mbox_icc_transport_dfwk_interface_init(&accel_mbx_dev[accel_type], &accel_mbx_intf[accel_type]);
     if (status != DFWK_SUCCESS)
     {
-        printf("fpfw_mbox_icc_transport_dfwk_interface_init failed for accel %d with status %ld\n", accel_type, (long int)status);
+        FPFW_DBGPRINT_ERROR(
+            "fpfw_mbox_icc_transport_dfwk_interface_init failed for accel %d with status %ld\n",
+            accel_type,
+            (long int)status);
         return status;
     }
 
@@ -121,7 +127,7 @@ static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
     status = fpfw_icc_base_init(&s_accel_mbx_icc_base_ctx[accel_type], &s_accel_mbx_icc_cfg[accel_type]);
     if (status != FPFW_STATUS_SUCCESS)
     {
-        printf("fpfw_icc_base_init failed for accel %d with status %ld\n", accel_type, (long int)status);
+        FPFW_DBGPRINT_ERROR("fpfw_icc_base_init failed for accel %d with status %ld\n", accel_type, (long int)status);
         return status;
     }
 
@@ -129,7 +135,7 @@ static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
     status = fpfw_icc_dispatcher_start(&s_accel_mbx_icc_base_ctx[accel_type].dispatch_ctx);
     if (status != FPFW_ICC_DISPATCH_STATUS_SUCCESS)
     {
-        printf("fpfw_icc_dispatcher_start failed for accel %d with status %ld\n", accel_type, (long int)status);
+        FPFW_DBGPRINT_ERROR("fpfw_icc_dispatcher_start failed for accel %d with status %ld\n", accel_type, (long int)status);
         return status;
     }
 
@@ -148,7 +154,7 @@ static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
     status = accel_intr_init(accel_type);
     if (status)
     {
-        printf("accel_intr_init failed for accel %d with status %ld\n", accel_type, (long int)status);
+        FPFW_DBGPRINT_ERROR("accel_intr_init failed for accel %d with status %ld\n", accel_type, (long int)status);
         return status;
     }
 
@@ -157,7 +163,7 @@ static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel_atu"))
+FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel_atu", "debug_print"))
 {
     ACCEL_ID accel_type = ACCEL_ID_SDM;
 
@@ -171,7 +177,7 @@ FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel
     return (fpfw_init_result_t){status, &s_accel_mbx_icc_base_ctx[accel_type]};
 }
 
-FPFW_INIT_COMPONENT(icc_cded_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel_atu"))
+FPFW_INIT_COMPONENT(icc_cded_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel_atu", "debug_print"))
 {
     ACCEL_ID accel_type = ACCEL_ID_CDED;
 

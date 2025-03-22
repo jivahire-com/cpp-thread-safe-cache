@@ -82,38 +82,6 @@ idsw_cpu_type_t __wrap_idsw_get_cpu_type(void)
     return mock_type(idsw_cpu_type_t);
 }
 
-int __wrap_spi_controller_init(uintptr_t spi_master_reg, uint16_t clkDiv)
-{
-    FPFW_UNUSED(spi_master_reg);
-    FPFW_UNUSED(clkDiv);
-    return mock_type(int);
-}
-
-int __wrap_spi_bridge_init(uintptr_t spi_bridge_reg, uint16_t clkDiv)
-{
-    FPFW_UNUSED(spi_bridge_reg);
-    FPFW_UNUSED(clkDiv);
-    return mock_type(int);
-}
-
-int __wrap_spi_controller_check_errors(uintptr_t spi_master_reg)
-{
-    FPFW_UNUSED(spi_master_reg);
-    return mock_type(int);
-}
-
-int __wrap_spi_bridge_check_errors(uintptr_t spi_bridge_reg)
-{
-    FPFW_UNUSED(spi_bridge_reg);
-    return mock_type(int);
-}
-
-int __wrap_spi_bridge_clear_error_interrupts(uintptr_t spi_bridge_reg)
-{
-    FPFW_UNUSED(spi_bridge_reg);
-    return mock_type(int);
-}
-
 fpfw_status_t __wrap_fpfw_mbox_icc_transport_dfwk_device_init(fpfw_mbox_icc_transport_device_t* dev,
                                                               fpfw_mbox_icc_transport_config_t* cfg)
 {
@@ -292,11 +260,6 @@ TEST_FUNCTION(test_icc_d2dmbx_init, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
-    will_return(__wrap_spi_bridge_init, SILIBS_SUCCESS);
-    will_return(__wrap_spi_bridge_check_errors, SILIBS_SUCCESS);
-    will_return(__wrap_spi_bridge_clear_error_interrupts, SILIBS_SUCCESS);
-    will_return(__wrap_spi_controller_init, SILIBS_SUCCESS);
-    will_return(__wrap_spi_controller_check_errors, SILIBS_SUCCESS);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_d2dmbx.init_fn();

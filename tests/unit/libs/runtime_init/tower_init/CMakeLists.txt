@@ -14,6 +14,7 @@ target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.assert
     fwlib.lib.init
+    fwlib.lib.interface.platform.dbgprint
     fwlib.service.iccBase
     ms::cmocka::testrunner
     ms::lib::tower

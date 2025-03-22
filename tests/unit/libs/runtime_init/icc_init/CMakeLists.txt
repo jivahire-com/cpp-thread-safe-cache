@@ -13,6 +13,7 @@ set(LIBRARIES
     fwlib.lib.init
     fwlib.lib.mboxPrimitives
     fwlib.platform.dfwkhost.threadx
+    fwlib.lib.interface.platform.dbgprint
     fwlib.lib.platform.impl.timers.threadx
     fwlib.lib.utils
     fwlib.driver.mboxIccTransport
@@ -91,9 +92,4 @@ mock_target(${TARGET}
     idsw_get_cpu_type
     mhu_icc_transport_device_init
     mhu_icc_transport_interface_init
-    spi_bridge_init
-    spi_bridge_check_errors
-    spi_bridge_clear_error_interrupts
-    spi_controller_init
-    spi_controller_check_errors
 )

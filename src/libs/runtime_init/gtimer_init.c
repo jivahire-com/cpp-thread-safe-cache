@@ -15,6 +15,7 @@
 #include <interrupts.h>
 #include <silibs_mcp_top_regs.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #define __NO_CSR_TYPEDEFS__
 #include <scp_top_regs.h>
@@ -59,7 +60,7 @@ static_assert(SVP_REFCLK_FREQUENCY * SVP_SCALING_FACTOR == 125000000,
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver"))
+FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "spi_bridge"))
 {
     gtimer_prodfw_init_config_t config;
     config.frequency_hz = SOC_GTIMER_TARGET_FREQUENCY_HZ;

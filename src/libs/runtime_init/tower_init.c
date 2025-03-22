@@ -4,6 +4,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <FpFwAssert.h>
 #include <fpfw_icc_base.h> // for fpfw_icc_base_init, fpfw_icc_ba...
 #include <fpfw_init.h>
@@ -27,11 +28,11 @@ FPFW_INIT_COMPONENT(tower_cfg, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh"
 
     FPFW_RUNTIME_ASSERT(icc_ctx != NULL);
 
-    printf("Tower init, die_num [%d]\n", die_num);
+    FPFW_DBGPRINT_INFO("Tower init, die_num [%d]\n", die_num);
 
     tower_init(die_num, icc_ctx);
 
-    printf("Tower init done, die_num [%d]\n", die_num);
+    FPFW_DBGPRINT_INFO("Tower init done, die_num [%d]\n", die_num);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

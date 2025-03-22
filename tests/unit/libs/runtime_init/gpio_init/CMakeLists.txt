@@ -16,6 +16,7 @@ target_include_directories(${TARGET}
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.init
+        fwlib.lib.interface.platform.dbgprint
         fwlib.platform.dfwkhost.threadx
         fwlib.service.cli
         ms::cmocka::testrunner

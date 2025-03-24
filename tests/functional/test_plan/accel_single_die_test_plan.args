@@ -4,10 +4,10 @@
 ./../../../tests/functional/test_suites/accel_uptime/apbm_boot_sdm_cded_uptime_single_die.robot
 
 ## Large FIFO Mailbox Tests
-# ./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_cded_scp__test_send_recv.robot
-# ./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_scp_cded__test_send_recv.robot
-# ./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_sdm_scp__test_send_recv.robot
-# ./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_mcp_cded__test_send_recv.robot
+./../../../tests/functional/test_suites/largefifombx_tests/scp_sdm_icc_mbx_die0_test.robot
+./../../../tests/functional/test_suites/largefifombx_tests/scp_cded_icc_mbx_die0_test.robot
+./../../../tests/functional/test_suites/largefifombx_tests/mcp_sdm_icc_mbx_die0_test.robot
+./../../../tests/functional/test_suites/largefifombx_tests/mcp_cded_icc_mbx_die0_test.robot
 
 ## SDM and CDED PCIE Tests
 ./../../../tests/functional/test_suites/sdm_pf_cmd_tests/sdm_pf_die0_tests.robot

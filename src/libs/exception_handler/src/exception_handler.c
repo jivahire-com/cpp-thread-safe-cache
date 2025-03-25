@@ -12,6 +12,7 @@
 
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <bug_check.h>  // for BUG_CHECK
+#include <cmsdk_wd.h>   // for wdog_cmsdk_apb_disable
 #include <crash_dump.h> // for crash_dump_handler, crash_dump_bug_check_initiated_dump
 #include <kng_error.h>  // for KNG_CD_DEFAULT_EXCEPTION, KNG_CD_HARDFAULT_EXCEPTION ...
 #include <nvic.h>       // for nvic_set_isr_fault, nvic_irq_set_isr ...
@@ -125,7 +126,9 @@ void exception_handler(exception_stack_frame_t* stack_frame)
 {
     save_crash_context(stack_frame);
 
-    // ToDo: Disable Watchdog
+    // Disable Watchdog
+    wdog_cmsdk_apb_disable();         // Disable watchdog
+    wdog_cmsdk_apb_lock_unlock(true); // Lock counter
 
     int32_t errorCode = KNG_CD_DEFAULT_EXCEPTION;
     uint32_t bugCheckParams[4] = {};
@@ -236,6 +239,9 @@ KNG_STATUS exception_handler_init(void)
 
     // Register the main exception handler for DebugMonitor_IRQn
     NVIC_SetVector(DebugMonitor_IRQn, (uint32_t)main_exception_handler);
+
+    // Register the watchdog timeout handler for NonMaskableInt_IRQn
+    NVIC_SetVector(NonMaskableInt_IRQn, (uint32_t)main_exception_handler);
 
     // Register the stack error handler for tx stack error
     if (tx_thread_stack_error_notify(threadx_stack_error_handler) != TX_SUCCESS)

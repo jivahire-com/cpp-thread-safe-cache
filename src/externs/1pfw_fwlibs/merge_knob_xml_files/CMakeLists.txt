@@ -38,6 +38,7 @@ set(EXPLICIT_PATH_PROD_FW_UNIT_TEST_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_confi
 set(EXPLICIT_PATH_PROD_FW_USB_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_usb_config_knobs.xml)
 set(EXPLICIT_PATH_PROD_FW_GPIO_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_gpio_config_knobs.xml)
 set(EXPLICIT_PATH_PROD_FW_CRASHDUMP_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_crash_dump_config_knobs.xml)
+set(EXPLICIT_PATH_PROD_FW_SYSTEM_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_system_config_knobs.xml)
 
 set(PROD_FW_KNOBS_NAMESPACE "FE3ED49F-B173-41ED-9076-356661D46A42")
 
@@ -55,6 +56,7 @@ if (i386-pc-windows-msvc)
                    ${EXPLICIT_PATH_PROD_FW_USB_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_GPIO_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_CRASHDUMP_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_SYSTEM_KNOBS}
                 -p ${PROD_FW_COMBINED_GENERATED_KNOBS} -n ${PROD_FW_KNOBS_NAMESPACE}
     )
 else()
@@ -70,6 +72,7 @@ else()
                    ${EXPLICIT_PATH_PROD_FW_USB_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_GPIO_KNOBS} 
                    ${EXPLICIT_PATH_PROD_FW_CRASHDUMP_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_SYSTEM_KNOBS}
                 -p ${PROD_FW_COMBINED_GENERATED_KNOBS} -n ${PROD_FW_KNOBS_NAMESPACE}
     )
 endif()
@@ -86,6 +89,7 @@ set(KNOB_FILES_DEPENDS ${EXPLICIT_PATH_SILIBS_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_USB_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_GPIO_KNOBS} 
                    ${EXPLICIT_PATH_PROD_FW_CRASHDUMP_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_SYSTEM_KNOBS}
     )
 add_custom_command(
     OUTPUT ${PROD_FW_COMBINED_GENERATED_KNOBS}

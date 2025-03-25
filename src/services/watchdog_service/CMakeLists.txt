@@ -1,8 +1,7 @@
-# Exception handler
-set(TARGET kng.lib.exception_handler)
+set(TARGET kng.service.wdog_service)
 
-set (SOURCES
-    src/exception_handler.c
+set (SOURCES 
+        src/wdog_service.c
 )
 
 add_library(${TARGET}
@@ -11,13 +10,12 @@ add_library(${TARGET}
 )
 
 target_link_libraries(${TARGET}
-    PRIVATE
-        fwlib.lib.assert
-        ms::lib::cortex_m7::nvic
-        ms::lib::crash_dump
+    PUBLIC
         ms::lib::error_codes
+    PRIVATE
         ms::lib::threadx
         silibs::cmsdk_wd
+        silibs::kng_silibs_platform
 )
 
 target_include_directories(${TARGET}
@@ -29,4 +27,4 @@ lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})
 
-add_library(ms::lib::exception_handler ALIAS ${TARGET})
+add_library(ms::service::wdog ALIAS ${TARGET})

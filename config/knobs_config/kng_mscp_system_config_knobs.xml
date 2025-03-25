@@ -1,0 +1,24 @@
+<!--
+    Kingsgate MSCP system config knobs
+-->
+<ConfigSchema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:noNamespaceSchemaLocation="configschema.xsd">
+
+  <!-- Enum values are declared separately from the knobs.
+       The same Enum can be used as the 'enumtype' of any number of EnumKnobs -->
+  <Enums>
+  </Enums>
+
+  <Structs>
+  </Structs>
+
+  <!-- namespace indicates the GUID namespace the values are stored in -->
+  <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
+    <!-- Watchdog config knobs -->
+    <Knob name="wdog_en" type="bool" default="true" help="Enable/Disable Watchdog." />
+    <Knob name="wdog_timeout_s" type="uint32_t" default="5" help="Watchdog timeout in seconds." />
+    <Knob name="wdog_counter_freq_Mhz" type="uint32_t" default="200" help="Watchdog counter decrement frequency in Mhz" />
+    <!-- end Watchdog config knobs -->
+  </Knobs>
+
+</ConfigSchema>

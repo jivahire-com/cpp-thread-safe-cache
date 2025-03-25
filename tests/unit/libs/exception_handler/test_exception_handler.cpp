@@ -36,6 +36,17 @@ void crash_dump_wait_forever()
     function_called();
 }
 
+void __wrap_wdog_cmsdk_apb_lock_unlock(bool lock)
+{
+    check_expected(lock);
+    function_called();
+}
+
+void __wrap_wdog_cmsdk_apb_disable()
+{
+    function_called();
+}
+
 void save_crash_context(exception_stack_frame_t* stack_frame)
 {
     check_expected_ptr(stack_frame);
@@ -110,6 +121,10 @@ void test_exception_handler_params(int exception, uint32_t error_code)
     expect_value(save_crash_context, stack_frame, &stack_frame);
     expect_function_call(save_crash_context);
 
+    expect_function_call(__wrap_wdog_cmsdk_apb_disable);
+    expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, true);
+    expect_function_call(__wrap_wdog_cmsdk_apb_lock_unlock);
+
     expect_function_call(get_active_exception);
     will_return(get_active_exception, exception);
 
@@ -135,6 +150,9 @@ TEST_FUNCTION(test_exception_handler_init, NULL, NULL)
 
     expect_any(NVIC_SetVector, isr);
     expect_function_call(NVIC_SetVector); // expect DebugMonitor_IRQn handler to be set
+
+    expect_any(NVIC_SetVector, isr);
+    expect_function_call(NVIC_SetVector); // expect NonMaskableInt_IRQn handler to be set
 
     expect_any(__wrap__tx_thread_stack_error_notify, stack_error_handler);
     expect_function_call(__wrap__tx_thread_stack_error_notify); // expect stack error handler to be set
@@ -173,6 +191,10 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
     expect_value(save_crash_context, stack_frame, &stack_frame);
     expect_function_call(save_crash_context);
 
+    expect_function_call(__wrap_wdog_cmsdk_apb_disable);
+    expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, true);
+    expect_function_call(__wrap_wdog_cmsdk_apb_lock_unlock);
+
     expect_function_call(get_active_exception);
     will_return(get_active_exception, -4); // DebugMonitor_IRQn
 
@@ -194,6 +216,10 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
     // Set up expectations
     expect_value(save_crash_context, stack_frame, &stack_frame);
     expect_function_call(save_crash_context);
+
+    expect_function_call(__wrap_wdog_cmsdk_apb_disable);
+    expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, true);
+    expect_function_call(__wrap_wdog_cmsdk_apb_lock_unlock);
 
     expect_function_call(get_active_exception);
     will_return(get_active_exception, -4); // DebugMonitor_IRQn

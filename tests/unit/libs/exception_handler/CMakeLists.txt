@@ -36,5 +36,7 @@ mock_target(${TARGET}
     crash_dump_handler
     crash_dump_bug_check_initiated_dump
     nvic_set_isr_fault
+    wdog_cmsdk_apb_disable
+    wdog_cmsdk_apb_lock_unlock
     _tx_thread_stack_error_notify
 )

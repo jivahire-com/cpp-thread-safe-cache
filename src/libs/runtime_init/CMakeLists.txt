@@ -69,6 +69,7 @@ add_library(${TARGET}
         warm_start_init.c
         health_monitor_init.c
         err_domain_scp_init.c
+        watchdog_init.c
 )
 
 target_link_libraries(
@@ -162,6 +163,7 @@ target_link_libraries(
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
         ms::service::sys_info::cli
+        ms::service::wdog
         silibs::avs
         silibs::common::lib_uart_pl011
         silibs::crypto::rng
@@ -268,6 +270,7 @@ add_library(${TARGET}
         textio_init.c
         variable_services_init.c
         err_domain_mcp_init.c
+        watchdog_init.c
 )
 
 target_link_libraries(
@@ -331,6 +334,7 @@ target_link_libraries(
         ms::service::sys_info::cli
         ms::service::telemetry
         ms::service::telemetry::cli
+        ms::service::wdog
         silibs::atu
         silibs::common::lib_uart_pl011
         silibs::icc_mhu

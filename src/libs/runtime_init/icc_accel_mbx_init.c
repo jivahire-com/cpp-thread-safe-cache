@@ -10,6 +10,7 @@
 #include <DfwkThreadXHost.h> // for PDFWK_THREADX_HOST
 #include <MboxPrimitives.h>
 #include <accel_intr.h>
+#include <accel_intr_virt_irq.h>
 #include <accelip_id.h>    // for ACCEL_ID_CDED, ACCEL_ID_SDM
 #include <atu_init.h>      // for atu_svc_accel_atu_addr
 #include <fpfw_icc_base.h> // for fpfw_icc_base_ctx_t
@@ -47,8 +48,8 @@ static fpfw_icc_base_ctx_t s_accel_mbx_icc_base_ctx[NUM_VALID_ACCEL_ID] = {};
 static fpfw_icc_base_config s_accel_mbx_icc_cfg[NUM_VALID_ACCEL_ID] = {};
 
 const uint32_t accel_irq_num[NUM_VALID_ACCEL_ID] = {
-    [ACCEL_ID_SDM] = HW_INT_SDM_MBOX_INT,
-    [ACCEL_ID_CDED] = HW_INT_CDED_MBOX_INT,
+    [ACCEL_ID_SDM] = GET_VIRTUAL_IRQ(HW_INT_SDM_COMB_INT, SDM_EXT_MBX_I2E_INTR, SDM_DOMAIN),
+    [ACCEL_ID_CDED] = GET_VIRTUAL_IRQ(HW_INT_CDED_COMB_INT, SDM_EXT_MBX_I2E_INTR, CDED_SDM_DOMAIN),
 };
 
 /*------------- Static Functions ----------------*/
@@ -139,31 +140,12 @@ static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
         return status;
     }
 
-    /**
-     * Setup callback context for this mailbox.
-     * This context will be passed ICC stack interrupt handler
-     */
-    accel_intr_set_mbx_ctx(accel_type, &accel_mbx_dev[accel_type]);
-
-    /**
-     * ICC stack register's its own CB on the shared NVIC interrupt line
-     * Overwrite that CB with accel_intr lib CB so that interrupt comes to
-     * accel_intr lib and later it can be routed to ICC stack
-     * TODO: 2090607
-     */
-    status = accel_intr_init(accel_type);
-    if (status)
-    {
-        FPFW_DBGPRINT_ERROR("accel_intr_init failed for accel %d with status %ld\n", accel_type, (long int)status);
-        return status;
-    }
-
     return FPFW_INIT_STATUS_SUCCESS;
 }
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel_atu", "debug_print"))
+FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel_atu", "debug_print", "virt_irq"))
 {
     ACCEL_ID accel_type = ACCEL_ID_SDM;
 
@@ -177,7 +159,7 @@ FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel
     return (fpfw_init_result_t){status, &s_accel_mbx_icc_base_ctx[accel_type]};
 }
 
-FPFW_INIT_COMPONENT(icc_cded_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel_atu", "debug_print"))
+FPFW_INIT_COMPONENT(icc_cded_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel_atu", "debug_print", "virt_irq"))
 {
     ACCEL_ID accel_type = ACCEL_ID_CDED;
 

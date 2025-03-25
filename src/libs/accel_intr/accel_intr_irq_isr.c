@@ -80,6 +80,7 @@ static void accel_intr_fatal_isr(ACCEL_ID accel_type, uint32_t IRQnum, uint32_t 
     send_fatal_intr_async_request(accel_type);
 }
 
+// TODO ADO: 2500310 Redundant code to be removed
 static void accel_intr_mbox_isr(ACCEL_ID accel_type, uint32_t IRQnum, uint32_t ext_cfg_addr)
 {
     // Mailbox interrupt is received.
@@ -583,6 +584,7 @@ void accel_intr_isr_scp(void* callback_param)
     uint32_t validate_irq_status =
         accel_intr_process_fatal_interrupts(IRQnum, ext_cfg_addr, ACCEL_INTR_PROCESS_INTR_IN_TOP_HALF);
 
+    // TODO ADO: 2500310 Redundant code to be removed
     accel_intr_mbox_isr(accel_type, IRQnum, ext_cfg_addr);
 
     if (ACCEL_INTR_IS_INTERRUPT_VALID_SET(validate_irq_status))
@@ -600,6 +602,8 @@ void accel_intr_isr_scp(void* callback_param)
      */
 }
 
+// TODO ADO: 2500310 Redundant code to be removed - no longer
+// needed with virt irq
 void accel_intr_isr_mcp(void* callback_param)
 {
     uint32_t IRQnum = (uint32_t)callback_param;

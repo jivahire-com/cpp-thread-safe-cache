@@ -147,6 +147,8 @@ static bool mbox_icc_transport_recv_request_handler(PDFWK_ASYNC_REQUEST_HEADER r
 
 /*------------- Global Functions ----------------*/
 
+// TODO ADO: 2500310 Redundant code to be removed
+// This module is a workaround that is no longer needed
 void accel_mbox_sw_intr_cb(void* mbox_dev_ctx)
 {
     //! Get the mailbox device context & stored ref to request from the device ctx

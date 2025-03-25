@@ -1,12 +1,9 @@
-set(TARGET accel_intr.test)
+set(TARGET accel_virt_intr.test)
 
 set(SOURCES
-    cded_interrupts_mock.cpp
-    fpfw_mock.cpp
+    test_accel_virt_intr.cpp
     nvic_mock.cpp
-    sdm_ext_interrupts_mock.cpp
-    test_accel_intr.cpp
-    virt_irq_mock.cpp
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/virt_irq_init.c
 )
 
 # Compile test
@@ -28,7 +25,6 @@ target_link_libraries(${TARGET}
         ms::lib::register_headers
         ms::lib::scp_interrupts
         ms::lib::utils
-        ms::mocks::silibs_platform
         silibs::pcr_rpss
         silibs::sdm_init
         silibs::smmu
@@ -47,10 +43,10 @@ target_include_directories(${TARGET}
 target_compile_definitions(
     ${TARGET}
     PRIVATE
-       HW_INT_SDM_NVIC_INT=119
-       HW_INT_CDED_SDM_NVIC_INT=118
-       HW_INT_SDM_COMB_INT=HW_INT_SDM_NVIC_INT
-       HW_INT_CDED_COMB_INT=HW_INT_CDED_SDM_NVIC_INT
+    HW_INT_SDM_NVIC_INT=119
+    HW_INT_CDED_SDM_NVIC_INT=118
+    HW_INT_SDM_COMB_INT=HW_INT_SDM_NVIC_INT
+    HW_INT_CDED_COMB_INT=HW_INT_CDED_SDM_NVIC_INT
 )
 
 # Defining platform APIs
@@ -66,41 +62,16 @@ unit_test_target(${TARGET})
 
 # Mock the functions needed
 mock_target(${TARGET}
-    FPFwCoreInterruptEnableVector
-    accel_intr_service_get_cfg_address
-    accel_mbox_sw_intr_cb
+    accelerator_ip_get_atu_mapped_cfg_address
     atu_svc_accel_atu_addr
-    cded_clear_trigger_int_mask
-    cded_int_mask_enable
-    cded_int_mask_disable
-    cded_int_mask_status_clear
-    crash_dump_bug_check
-    crash_dump_bug_check_external
-    crash_dump_is_accel_cd_complete
-    fpfw_timer_create
-    fpfw_timer_enable
-    fpfw_timer_reset
-    idsw_get_cpu_type
-    idsw_get_platform_sdv
-    is_sdm_ext_int_mask_status_clear
-    is_sdm_ext_int_status_set
     mmio_read32
-    mmio_update32
-    mmio_write32
-    nvic_irq_clear_pending
-    nvic_irq_disable
-    nvic_irq_enable
     nvic_irq_set_isr_with_param
+    nvic_irq_clear_pending
+    nvic_irq_enable
+    nvic_irq_disable
     sdm_ext_get_category_mask_reg_addr
     sdm_ext_get_category_status_reg_addr
-    sdm_ext_int_mask_disable
     sdm_ext_int_mask_enable
+    sdm_ext_int_mask_disable
     sdm_ext_int_mask_status_clear
-    send_fatal_intr_async_request
-    send_mailbox_async_request
-    send_sdm_msg_async_request
-    set_ext_int_sub_system
-    virt_irq_disable
-    virt_irq_enable
-    virt_irq_set_isr_with_param
 )

@@ -8,6 +8,7 @@ add_library(${TARGET}
         accel_intr_events.c
         accel_intr_irq_init.c
         accel_intr_irq_isr.c
+        accel_intr_virt_irq.c
 )
 
 target_include_directories(${TARGET}
@@ -37,6 +38,7 @@ target_link_libraries(${TARGET}
         ms::lib::accel_mbox_icc_transport
         ms::lib::cortex_m7::atomics
         ms::lib::cortex_m7::nvic
+        ms::lib::cortex_m7::virt_irq
         ms::lib::crash_dump
         ms::lib::error_codes
         ms::lib::event_trace::trace

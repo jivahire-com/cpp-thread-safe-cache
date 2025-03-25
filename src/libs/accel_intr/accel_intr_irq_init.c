@@ -14,6 +14,7 @@
 /*-------------------------------- Includes ---------------------------------*/
 #include "accel_intr.h"
 #include "accel_intr_priv.h"
+#include "accel_intr_virt_irq.h"
 
 #include <DfwkDriver.h>     // for DfwkInterfaceInitialize, DfwkQueueInitia...
 #include <DfwkHost.h>       // for DfwkDeviceInitialize
@@ -54,63 +55,94 @@
 
 /*------------------- Declarations (Statics and globals) --------------------*/
 
+static uint32_t accel_nvic_int_num[NUM_VALID_ACCEL_ID] = {0, 0};
+
 /*--------------------------------- Externs ---------------------------------*/
 
 /*----------------------------- Static Functions ----------------------------*/
 
 /**
- * @brief Clear and enable interrupt in NVIC
+ * @brief This function is used to register callbacks for a specific accelerator interrupt.
+ * The function identifies the correct callback and domain info and registers the callback
+ * with the appropriate virtual interrupt.
  *
- * @param[in] p_accelip_intr_cntxt : Accel IP context to choose between SDMCC / CDEDSS IRQ number
- *
- * @retval uint32_t
- * On Success : ACCEL_INTR_RET_SUCCESS
- * On Failure : ACCEL_INTR_RET_FAIL_INTR_NVIC
- *
+ * @param accel_type Value between ACCEL_ID_SDM and ACCEL_ID_CDED
+ * @param bit_index The bit offset of the interrupt in level-1 ext interrupt register
+ * @return uint32_t success/failure of the irq registration
  */
-static uint32_t accel_intr_nvic_init(idsw_cpu_type_t cpu_type, ACCEL_ID accel_type)
+static uint32_t accel_intr_register_virtual_irq(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index)
 {
-    uint32_t IRQnum = accel_intr_get_irq_num_from_accel_type(accel_type);
-    isr_callback_fn_with_params_t isr_cb;
+    uint32_t nvic_irq_num = 0x0;
+    isr_callback_fn_with_params_t p_cb_fun = NULL;
+    uint32_t domain_num = 0x0;
 
-    if (cpu_type == CPU_SCP)
+    switch (idsw_get_cpu_type())
     {
-        isr_cb = accel_intr_isr_scp;
+    case CPU_SCP:
+        p_cb_fun = accel_intr_isr_scp;
+        if (accel_type == ACCEL_ID_CDED)
+        {
+            domain_num = SCP_CDED_SDM_DOMAIN;
+            nvic_irq_num = accel_nvic_int_num[ACCEL_ID_CDED];
+        }
+        else
+        {
+            domain_num = SCP_SDM_DOMAIN;
+            nvic_irq_num = accel_nvic_int_num[ACCEL_ID_SDM];
+        }
+        break;
+    case CPU_MCP:
+        p_cb_fun = accel_intr_isr_mcp;
+        if (accel_type == ACCEL_ID_CDED)
+        {
+            domain_num = MCP_CDED_SDM_DOMAIN;
+            nvic_irq_num = accel_nvic_int_num[ACCEL_ID_CDED];
+        }
+        else
+        {
+            domain_num = MCP_SDM_DOMAIN;
+            nvic_irq_num = accel_nvic_int_num[ACCEL_ID_SDM];
+        }
+        break;
+    default:
+        return ACCEL_INTR_RET_FAIL_VIRT_IRQ_REG;
     }
-    else /* CPU_MCP */
-    {
-        isr_cb = accel_intr_isr_mcp;
-    }
 
-    // Register ISR
-    nvic_status_t status = FPFwCoreInterruptRegisterCallback(IRQnum, isr_cb, (void*)IRQnum);
-
-    if (status != NVIC_STATUS_SUCCESS)
-    {
-        critical_print("AccelIp Interrupt Init : NVIC Set ISR failed\n");
-        return ACCEL_INTR_RET_FAIL_INTR_NVIC;
-    }
-
-    // Clear pending and Enable IRQ in NVIC, always returns SUCCESS
-    FPFwCoreInterruptEnableVector(IRQnum);
-
-    return ACCEL_INTR_RET_SUCCESS;
+    // Register irq with virtual irq framework
+    return FPFwCoreInterruptRegisterCallback(GET_VIRTUAL_IRQ(nvic_irq_num, bit_index, domain_num), p_cb_fun, (void*)nvic_irq_num);
 }
 
 /*----------------------------- Global Functions ----------------------------*/
 
+// TODO ADO: 2500310 Make default type as error
+void accel_intr_set_irq_num_for_accel(ACCEL_ID accel_type, uint32_t irq_num)
+{
+    switch (accel_type)
+    {
+    case ACCEL_ID_CDED:
+        accel_nvic_int_num[ACCEL_ID_CDED] = irq_num;
+        break;
+    case ACCEL_ID_SDM:
+    default:
+        accel_nvic_int_num[ACCEL_ID_SDM] = irq_num;
+        break;
+    }
+}
+
+// TODO ADO: 2500310 Make default type as error
 uint32_t accel_intr_get_irq_num_from_accel_type(ACCEL_ID accel_type)
 {
     switch (accel_type)
     {
     case ACCEL_ID_CDED:
-        return CDEDSS_IRQ_NUMBER;
+        return accel_nvic_int_num[ACCEL_ID_CDED];
     case ACCEL_ID_SDM:
     default:
-        return SDMSS_IRQ_NUMBER;
+        return accel_nvic_int_num[ACCEL_ID_SDM];
     }
 }
 
+// TODO ADO: 2500310 Make default type as error
 ACCEL_ID accel_intr_get_accel_type_from_irq_num(uint32_t IRQnum)
 {
     switch (IRQnum)
@@ -284,16 +316,6 @@ int32_t accel_scp_intr_init(ACCEL_ID accel_type)
     // Initialize each interrupt
     accel_intr_scp_init(accel_type, ext_cfg_addr);
 
-    // Register ISR for handling the interrupt
-    // Clear and Enable interrupt in NVIC
-    ret = accel_intr_nvic_init(CPU_SCP, accel_type);
-
-    if (ret != ACCEL_INTR_RET_SUCCESS)
-    {
-        critical_print("AccelIp Interrupt NVIC init failed\n");
-        return ret;
-    }
-
     return ACCEL_INTR_RET_SUCCESS;
 }
 
@@ -301,8 +323,6 @@ int32_t accel_scp_intr_init(ACCEL_ID accel_type)
 
 int32_t accel_mcp_intr_init(ACCEL_ID accel_type)
 {
-    uint32_t ret = ACCEL_INTR_RET_SUCCESS;
-
     if (accel_type >= NUM_VALID_ACCEL_ID)
     {
         critical_print("Invalid Accelerator type %d\n", accel_type);
@@ -325,16 +345,6 @@ int32_t accel_mcp_intr_init(ACCEL_ID accel_type)
     // Initialize each interrupt
     accel_intr_mcp_init(accel_type, ext_cfg_addr);
 
-    // Register ISR for handling the interrupt
-    // Clear and Enable interrupt in NVIC
-    ret = accel_intr_nvic_init(CPU_MCP, accel_type);
-
-    if (ret != ACCEL_INTR_RET_SUCCESS)
-    {
-        critical_print("AccelIp Interrupt NVIC init failed\n");
-        return ret;
-    }
-
     return ACCEL_INTR_RET_SUCCESS;
 }
 
@@ -344,6 +354,13 @@ uint32_t accel_intr_emcpu_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NU
     FPFW_UNUSED(accel_type);
 
     uint32_t interrupt_mask = SL_GET_SINGLE_BIT_MASK(SDM_EXT_EMCPU_WDT_FATAL_INTR);
+    uint32_t ret = ACCEL_INTR_RET_SUCCESS;
+
+    ret = accel_intr_register_virtual_irq(accel_type, bit_index);
+    if (ret != ACCEL_INTR_RET_SUCCESS)
+    {
+        return ret;
+    }
 
     accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EMCPU_WATCHDOG, interrupt_mask, SDM_EXT_EMCPU_WDT_ERR_INTR_VECTOR);
     accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EMCPU_WATCHDOG, interrupt_mask);
@@ -357,11 +374,15 @@ uint32_t accel_intr_emcpu_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NU
  */
 uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
 {
-    FPFW_UNUSED(bit_index);
-    FPFW_UNUSED(accel_type);
-
     // Clear and enable TEL_ECC errors
     uint32_t interrupt_mask = SL_GET_BIT_MASK_RANGE(SDM_EXT_BPE_SCRATCH_ERR_INTR, SDM_EXT_LSTRG_ERR_INTR);
+    uint32_t ret = ACCEL_INTR_RET_SUCCESS;
+
+    ret = accel_intr_register_virtual_irq(accel_type, bit_index);
+    if (ret != ACCEL_INTR_RET_SUCCESS)
+    {
+        return ret;
+    }
 
     /**
      * TODO: Task 1982366: [SCP] Accel IP Fatal Interrupt Cleanup Tasks / Comments
@@ -413,9 +434,14 @@ uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBE
 
 uint32_t accel_intr_single_level_irq_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
 {
-    FPFW_UNUSED(accel_type);
-
     uint32_t interrupt_mask = SL_GET_SINGLE_BIT_MASK(bit_index);
+    uint32_t ret = ACCEL_INTR_RET_SUCCESS;
+
+    ret = accel_intr_register_virtual_irq(accel_type, bit_index);
+    if (ret != ACCEL_INTR_RET_SUCCESS)
+    {
+        return ret;
+    }
 
     accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask, SDM_EXT_INVALID_INTERRUPT_INPUT);
     accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask);
@@ -426,6 +452,13 @@ uint32_t accel_intr_single_level_irq_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT
 uint32_t accel_intr_cded_cp_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
 {
     uint32_t interrupt_mask = SL_GET_SINGLE_BIT_MASK(bit_index);
+    uint32_t ret = ACCEL_INTR_RET_SUCCESS;
+
+    ret = accel_intr_register_virtual_irq(accel_type, bit_index);
+    if (ret != ACCEL_INTR_RET_SUCCESS)
+    {
+        return ret;
+    }
 
     accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask, SDM_EXT_INVALID_INTERRUPT_INPUT);
     /* CDED CP fatal interrupt is only valid for CDEDSS */
@@ -439,10 +472,14 @@ uint32_t accel_intr_cded_cp_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMB
 
 uint32_t accel_intr_sdm_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
 {
-    FPFW_UNUSED(bit_index);
-    FPFW_UNUSED(accel_type);
-
     uint32_t interrupt_mask = SL_GET_BIT_MASK_RANGE(SDM_EXT_SDM_WDT_BP_INTR, SDM_EXT_SDM_WDT_MSI_INTR);
+    uint32_t ret = ACCEL_INTR_RET_SUCCESS;
+
+    ret = accel_intr_register_virtual_irq(accel_type, bit_index);
+    if (ret != ACCEL_INTR_RET_SUCCESS)
+    {
+        return ret;
+    }
 
     accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_SDM_WATCHDOG, interrupt_mask, SDM_EXT_SDM_WDT_ERR_INTR_VECTOR);
     accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_SDM_WATCHDOG, interrupt_mask);
@@ -452,10 +489,14 @@ uint32_t accel_intr_sdm_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMB
 
 uint32_t accel_intr_fab_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
 {
-    FPFW_UNUSED(bit_index);
-    FPFW_UNUSED(accel_type);
-
     uint32_t interrupt_mask = SL_GET_BIT_MASK_RANGE(SDM_EXT_FAB_BOOT_CONFIG_WDT, SDM_EXT_MISC_WDT);
+    uint32_t ret = ACCEL_INTR_RET_SUCCESS;
+
+    ret = accel_intr_register_virtual_irq(accel_type, bit_index);
+    if (ret != ACCEL_INTR_RET_SUCCESS)
+    {
+        return ret;
+    }
 
     accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_FABRIC_WATCHDOG, interrupt_mask, SDM_EXT_FAB_WDT_ERR_INTR_VECTOR);
     accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_FABRIC_WATCHDOG, interrupt_mask);

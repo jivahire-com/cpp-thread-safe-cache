@@ -4,11 +4,13 @@
  */
 
 /*------------- Includes -----------------*/
+#include <accel_intr.h>
 #include <accelerator_ip.h> // for scp_accelerators_init
 #include <atu_init.h>
 #include <fpfw_init.h> // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMP...
 #include <idsw.h>
 #include <idsw_kng.h>
+#include <interrupts.h>
 #include <stdio.h> // for printf, NULL
 
 /*------------- Typedefs -----------------*/
@@ -27,8 +29,13 @@
  * `css_pome` which in-turn depends on the `std_io`, `hw_ver` and `mesh`.
  */
 // FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh"))
-FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("vab", "hw_ver", "accel_iso_cfg", "accel_intr_clnt", "nvic", "ddr", "accel_atu", "cd_pomesh"))
+FPFW_INIT_COMPONENT(accel,
+                    FPFW_INIT_DEPENDENCIES("vab", "hw_ver", "accel_iso_cfg", "accel_intr_clnt", "nvic", "ddr", "accel_atu", "cd_pomesh", "virt_irq"))
 {
+    // Update accel irq numbers used in irq init
+    accel_intr_set_irq_num_for_accel(ACCEL_ID_SDM, HW_INT_SDM_COMB_INT);
+    accel_intr_set_irq_num_for_accel(ACCEL_ID_CDED, HW_INT_CDED_COMB_INT);
+
     // Initialize the Accelerators
     scp_accelerators_init();
 

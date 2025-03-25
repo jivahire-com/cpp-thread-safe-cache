@@ -21,6 +21,16 @@ target_link_libraries(${TARGET}
         silibs_platform
         ms::service::atu_service
         ms::lib::accelerator_ip
+        ms::lib::scp_interrupts
+)
+
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+       HW_INT_SDM_NVIC_INT=119
+       HW_INT_CDED_SDM_NVIC_INT=118
+       HW_INT_SDM_COMB_INT=HW_INT_SDM_NVIC_INT
+       HW_INT_CDED_COMB_INT=HW_INT_CDED_SDM_NVIC_INT
 )
 
 # Defining platform APIs

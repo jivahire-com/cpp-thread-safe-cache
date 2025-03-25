@@ -65,6 +65,7 @@ add_library(${TARGET}
         vab_init.c
         variable_services_init.c
         variable_services_cli_init.c
+        virt_irq_init.c
         warm_start_cli_init.c
         warm_start_init.c
         health_monitor_init.c
@@ -107,6 +108,7 @@ target_link_libraries(
         ms::lib::config_manager::cli
         ms::lib::cortex_m7::mpu
         ms::lib::cortex_m7::nvic
+        ms::lib::cortex_m7::virt_irq
         ms::lib::crash_dump
         ms::lib::css
         ms::lib::cxl
@@ -188,8 +190,8 @@ target_compile_definitions(
     PRIVATE
        MSCP2HSP_MAILBOX_BASE_ADDRESS=SCP_TOP_SCP2HSP_MAILBOX_ADDRESS
        HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2SCP_MB_SW_INT
-       HW_INT_SDM_MBOX_INT=HW_INT_SDM_INTR2_SCP_COMB_INT
-       HW_INT_CDED_MBOX_INT=HW_INT_CDED_SDM_INTR2_SCP_COMB_INT
+       HW_INT_SDM_COMB_INT=HW_INT_SDM_INTR2_SCP_COMB_INT
+       HW_INT_CDED_COMB_INT=HW_INT_CDED_SDM_INTR2_SCP_COMB_INT
        HW_INT_MSCP2MSCP_MHU_INT=HW_INT_MCP2SCP_MHU_INT
        HW_INT_MSCP2AP_NS_MHU_INT=HW_INT_AP2SCP_MHU_NS_INT
        HW_INT_AP2MSCP_MHU_S_INT=HW_INT_AP2SCP_MHU_S_INT
@@ -203,6 +205,8 @@ target_compile_definitions(
        ACCEL_MBOX_OFFSET_AFTER_0X100000=_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_MBX2_EXT_MBX_REGS_E2I_MBX_CTRL_ADDRESS
        MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE=SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE
        MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE=SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE
+       SDM_DOMAIN=SCP_SDM_DOMAIN
+       CDED_SDM_DOMAIN=SCP_CDED_SDM_DOMAIN
 )
 
 # Define base addresses during compile time for respective core fw
@@ -270,6 +274,7 @@ add_library(${TARGET}
         textio_init.c
         variable_services_init.c
         err_domain_mcp_init.c
+        virt_irq_init.c
         watchdog_init.c
 )
 
@@ -286,9 +291,9 @@ target_link_libraries(
         fwlib.lib.platform.impl.timers.threadx
         fwlib.lib.utils
         fwlib.lib.tmr_queue
-        fwlib.platform.dfwkhost.threadx  
+        fwlib.platform.dfwkhost.threadx
         fwlib.service.cli
-        fwlib.service.i3c.cli  
+        fwlib.service.i3c.cli
         fwlib.service.iccBase
         fwlib.service.icc_dispatcher
         ms::build_data
@@ -305,6 +310,7 @@ target_link_libraries(
         ms::lib::config_manager::cli
         ms::lib::cortex_m7::nvic
         ms::lib::cortex_m7::mpu
+        ms::lib::cortex_m7::virt_irq
         ms::lib::crash_dump
         ms::lib::debug
         ms::lib::exception_handler
@@ -356,8 +362,8 @@ target_compile_definitions(
     PRIVATE
        MSCP2HSP_MAILBOX_BASE_ADDRESS=MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
        HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2MCP_MB_SW_INT
-       HW_INT_SDM_MBOX_INT=HW_INT_SDM_INTR1_MCP_COMB_INT
-       HW_INT_CDED_MBOX_INT=HW_INT_CDED_SDM_INTR1_MCP_COMB_INT
+       HW_INT_SDM_COMB_INT=HW_INT_SDM_INTR1_MCP_COMB_INT
+       HW_INT_CDED_COMB_INT=HW_INT_CDED_SDM_INTR1_MCP_COMB_INT
        HW_INT_MSCP2MSCP_MHU_INT=HW_INT_SCP2MCP_MHU_NS_INT
        HW_INT_MSCP2AP_NS_MHU_INT=HW_INT_AP2MCP_MHU_NS_INT
        HW_INT_AP2MSCP_MHU_S_INT=HW_INT_AP2MCP_MHU_S_INT
@@ -372,6 +378,8 @@ target_compile_definitions(
        ACCEL_MBOX_OFFSET_AFTER_0X100000=_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_MBX1_EXT_MBX_REGS_E2I_MBX_CTRL_ADDRESS
        MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE=MSCP_ATU_AP_WINDOW_VAR_SVC_BASE_ADDR
        MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE=MSCP_ATU_AP_WINDOW_VAR_SVC_DIE_SIZE
+       SDM_DOMAIN=MCP_SDM_DOMAIN
+       CDED_SDM_DOMAIN=MCP_CDED_SDM_DOMAIN
 )
 
 # Define base addresses during compile time for respective core fw

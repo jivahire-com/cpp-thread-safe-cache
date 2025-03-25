@@ -16,7 +16,8 @@
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 typedef enum {
-    ACCEL_INTR_RET_FAIL_INTR_INIT = (-3), // Total number of error types
+    ACCEL_INTR_RET_FAIL_VIRT_IRQ_REG = (-4), // Total number of error types
+    ACCEL_INTR_RET_FAIL_INTR_INIT,
     ACCEL_INTR_RET_FAIL_INTR_NVIC,
     ACCEL_INTR_RET_FAIL_TIMER_CREATE,
     ACCEL_INTR_RET_SUCCESS = 0
@@ -37,10 +38,19 @@ typedef enum {
 /*--------------------------- Function Prototypes ---------------------------*/
 
 /**
- * @brief Get IRQ Number based on accel_type
- * 
+ * @brief Set IRQ Number based on accel_type
+ *
  * @param[in] accel_type: CDED / SDM accelerator_type
- * 
+ * @param[in] irq_num: NVIC Irq num of the accelarator for the corresponding core
+ * @retval
+ */
+void accel_intr_set_irq_num_for_accel(ACCEL_ID accel_type, uint32_t irq_num);
+
+/**
+ * @brief Get IRQ Number based on accel_type
+ *
+ * @param[in] accel_type: CDED / SDM accelerator_type
+ *
  * @retval
  * IRQ Number : 119 (SDM) / 118 (CDED)
  */
@@ -48,9 +58,9 @@ uint32_t accel_intr_get_irq_num_from_accel_type(ACCEL_ID accel_type);
 
 /**
  * @brief Get accel_type based on IRQ number
- * 
+ *
  * @param[in] IRQnum: 119 (SDM) / 118 (CDED)
- * 
+ *
  * @retval
  * accel_type : SDM / CDED
  */
@@ -66,7 +76,7 @@ ACCEL_ID accel_intr_get_accel_type_from_irq_num(uint32_t IRQnum);
  * 3. Enable in NVIC
  *
  * @param[in] accel_type : CDED / SDM accelerator_type
- * 
+ *
  * @retval
  *  On success, ACCEL_INTR_RET_SUCCESS
  *  On failure, ACCEL_INTR_RET_FAIL_*
@@ -83,7 +93,7 @@ int32_t accel_scp_intr_init(ACCEL_ID accel_type);
  * 3. Enable in NVIC
  *
  * @param[in] accel_type : CDED / SDM accelerator_type
- * 
+ *
  * @retval
  *  On success, ACCEL_INTR_RET_SUCCESS
  *  On failure, ACCEL_INTR_RET_FAIL_*
@@ -92,7 +102,7 @@ int32_t accel_mcp_intr_init(ACCEL_ID accel_type);
 
 /**
  * @brief Function called when ASYNC request for FATAL_INTR is received
- *  
+ *
  * @param[in] accel_type : CDED / SDM accelerator_type
  *
  * @retval void
@@ -102,7 +112,7 @@ void accel_intr_handle_fatal_intr_recvd(ACCEL_ID accel_type);
 
 /**
  * @brief Function called when ASYNC request for mailbox interrupt is received
- *  
+ *
  * @param[in] accel_type : CDED / SDM accelerator_type
  *
  * @retval void
@@ -112,9 +122,9 @@ void accel_intr_handle_mbox_recvd(ACCEL_ID accel);
 
 /**
  * @brief Setup interrupt context for Mailbox interrupts.
- *  
+ *
  * @param[in] accel : Accel device corresponding to the given context
- * 
+ *
  * @param[in] ctx : Mailbox interrupt context
  *
  * @retval void

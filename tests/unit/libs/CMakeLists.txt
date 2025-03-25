@@ -1,5 +1,6 @@
 add_subdirectory(accelerator_ip)
 add_subdirectory(accel_intr)
+add_subdirectory(accel_virt_intr)
 add_subdirectory(boot_loader)
 add_subdirectory(boot_status)
 add_subdirectory(cfg_mgr)

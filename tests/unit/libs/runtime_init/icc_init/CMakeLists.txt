@@ -26,6 +26,8 @@ set(LIBRARIES
     ms::lib::icc_platform_defines
     ms::lib::interface::mhu_icc_payloads
     ms::lib::accel_intr
+    ms::lib::cortex_m7::nvic
+    ms::lib::cortex_m7::virt_irq
     ms::lib::system_info
     ms::service::atu_service
     silibs::platform
@@ -58,8 +60,8 @@ target_compile_definitions(
     PRIVATE
        MSCP2HSP_MAILBOX_BASE_ADDRESS=1000
        HW_INT_HSP2MSCP_MBOX_INT=0
-       HW_INT_CDED_MBOX_INT=118
-       HW_INT_SDM_MBOX_INT=119
+       HW_INT_CDED_COMB_INT=118
+       HW_INT_SDM_COMB_INT=119
        HW_INT_MSCP2MSCP_MHU_INT=120
        HW_INT_AP2MSCP_MHU_S_INT=121
        HW_INT_MSCP2AP_NS_MHU_INT=122
@@ -70,6 +72,8 @@ target_compile_definitions(
        MSCP_EXP_TOP_SPI_BRIDGE_ADDRESS=0
        RMSS_D2D_SCP_MB_HW_INT=0
        ACCEL_MBOX_OFFSET_AFTER_0X100000=1000
+       CDED_SDM_DOMAIN=1
+       SDM_DOMAIN=2
 )
 
 lint_target(${TARGET})

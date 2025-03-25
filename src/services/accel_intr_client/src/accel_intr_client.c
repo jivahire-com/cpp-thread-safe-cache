@@ -56,6 +56,7 @@ void send_fatal_intr_async_request(ACCEL_ID accel_type)
     dispatch_accel_intr_async_request(accel_type, ACCEL_INTR_SERVICE_FATAL_INTR_RECVD, accel_intr_async_request_complete);
 }
 
+// TODO ADO: 2500310 Redundant code to be removed
 void send_mailbox_async_request(ACCEL_ID accel_type)
 {
     dispatch_accel_intr_async_request(accel_type, ACCEL_INTR_SERVICE_MBOX_RECVD, accel_intr_async_request_complete);

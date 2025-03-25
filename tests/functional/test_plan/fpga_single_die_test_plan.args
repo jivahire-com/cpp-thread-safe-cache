@@ -25,7 +25,7 @@
 
 ## Sensor FIFO Tests
 #TODO - FPGA implementation to be done soon by Hara
-#./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
 
 ## Variable Service Tests
 ./../../../tests/functional/test_suites/varserv_tests/varserv_cli_test.robot

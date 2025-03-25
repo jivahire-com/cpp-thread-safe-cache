@@ -108,27 +108,19 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         self.log.info(f"Running SENSOR FIFO CLI TEST with command: {command}")
         
         try:
-            core_com_channel = self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
-
-            if self.dut.get_dut_type() == DeviceType.BIGFPGA:
-                # TODO: Need to implement without reset when testing in BIGFPGA
-                KngPythiaTestSetup.reset_fpga(self.dut, self.log)
-                self.log.info(f"Testing on BIGFPGA")
-                return True
-
-            elif self.dut.get_dut_type() == DeviceType.SVP:
-                self.log.info(f"opening channel for SVP")
+            if self.dut.get_dut_type() in [DeviceType.BIGFPGA,DeviceType.SVP]:
+                core_com_channel = self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
+                self.log.info(f"Testing and opening channel for {self.dut.get_dut_type().value}")
                 core_com_channel.open()
                 if not core_com_channel.is_open():
                     self.log.error("Failed to open core communication channel")
                     return False
+
                 if optional_first_command:
                     self.log.info(f"Executing first command: {optional_first_command}")
                     core_com_channel.write_line(write_string=optional_first_command)
-
                 self.log.info(f"Executing command: {command}")
                 core_com_channel.write_line(write_string=command)
-                
                 try:
                     command_response = core_com_channel.read_until(key=read_until_key, timeout_seconds=60)
                     self.log.info("Received Response Successfully from UART . . .")
@@ -440,10 +432,6 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         try:
             self.log.info("Setting up DUT...")
             self.dut.setup()
-            if self.dut.get_dut_type() == DeviceType.BIGFPGA:
-                self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
-                KngPythiaTestSetup.fpga_oob_reset(self.log)
-                 
             # Wait for SCP heartbeat during initial setup
             if not self.wait_for_scp_mcp_heartbeat():
                 self.log.error("Failed to receive initial SCP-MCP heartbeat during setup")
@@ -483,14 +471,8 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         try:
             core_com_channel = self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
 
-            if self.dut.get_dut_type() == DeviceType.BIGFPGA:
-                # TODO: Need to implement without reset when testing in BIGFPGA
-                KngPythiaTestSetup.reset_fpga(self.dut, self.log)
-                self.log.info(f"Testing on BIGFPGA")
-                return True
-
-            elif self.dut.get_dut_type() == DeviceType.SVP:
-                self.log.info(f"Opening channel for SVP")
+            if self.dut.get_dut_type() in [DeviceType.BIGFPGA,DeviceType.SVP]:
+                self.log.info(f"Testing and Opening channel for {self.dut.get_dut_type().value}")
                 core_com_channel.open()
                 if not core_com_channel.is_open():
                     self.log.error("Failed to open core communication channel")

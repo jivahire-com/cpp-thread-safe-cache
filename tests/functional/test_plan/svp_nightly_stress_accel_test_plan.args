@@ -1,0 +1,28 @@
+--variable KEEP_SVP_ALIVE:TRUE
+
+## Single Die Heartbeat Tests
+./../../../tests/functional/test_suites/accel_uptime/apbm_boot_sdm_cded_uptime_single_die.robot
+./../../../tests/functional/test_suites/accel_uptime/apbm_boot_sdm_cded_uptime_single_die.robot
+
+## Large FIFO Mailbox Tests
+./../../../tests/functional/test_suites/largefifombx_tests/scp_sdm_icc_mbx_die0_test.robot
+./../../../tests/functional/test_suites/largefifombx_tests/scp_cded_icc_mbx_die0_test.robot
+./../../../tests/functional/test_suites/largefifombx_tests/mcp_sdm_icc_mbx_die0_test.robot
+./../../../tests/functional/test_suites/largefifombx_tests/mcp_cded_icc_mbx_die0_test.robot
+./../../../tests/functional/test_suites/largefifombx_tests/scp_sdm_icc_mbx_die0_test.robot
+./../../../tests/functional/test_suites/largefifombx_tests/scp_cded_icc_mbx_die0_test.robot
+./../../../tests/functional/test_suites/largefifombx_tests/mcp_sdm_icc_mbx_die0_test.robot
+./../../../tests/functional/test_suites/largefifombx_tests/mcp_cded_icc_mbx_die0_test.robot
+
+## SDM and CDED PCIE Tests
+./../../../tests/functional/test_suites/sdm_pf_cmd_tests/sdm_pf_die0_tests.robot
+./../../../tests/functional/test_suites/cded_descriptors_tests/cded_descriptors_die0_tests.robot
+./../../../tests/functional/test_suites/sdm_pf_cmd_tests/sdm_pf_die0_tests.robot
+./../../../tests/functional/test_suites/cded_descriptors_tests/cded_descriptors_die0_tests.robot
+
+## Accelerator Interrupt Tests
+# ./../../../tests/functional/test_suites/accel_interrupt/accel_interrupt_test.robot
+# ./../../../tests/functional/test_suites/accel_interrupt/accel_interrupt_test.robot
+
+## SVP Teardown
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot

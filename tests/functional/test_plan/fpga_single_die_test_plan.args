@@ -18,13 +18,6 @@
 ./../../../tests/functional/test_suites/hspmbx_tests/hsp_mailbox_cli_test_send_recv.robot
 ./../../../tests/functional/test_suites/hspmbx_tests/hsp_mailbox_cli_test.robot
 
-## Large FIFO Mailbox Tests
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_cded_scp__test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_scp_cded__test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_sdm_scp__test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_mcp_cded__test_send_recv.robot
-
 ## Crash Dump Tests
 ./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_trigger_exception_test.robot
 ./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_stack_overflow_test.robot

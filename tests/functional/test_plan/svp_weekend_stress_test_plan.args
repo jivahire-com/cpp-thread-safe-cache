@@ -16,23 +16,6 @@
 ./../../../tests/functional/test_suites/hspmbx_tests/hsp_mailbox_cli_test.robot
 ./../../../tests/functional/test_suites/hspmbx_tests/hsp_mailbox_cli_test_send_recv.robot
 
-## Large FIFO Mailbox Tests
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_cded_scp__test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_scp_cded__test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_sdm_scp__test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_mcp_cded__test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_cded_scp__test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_scp_cded__test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_sdm_scp__test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_mcp_cded__test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_cded_scp__test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_scp_cded__test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_sdm_scp__test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_test_send_recv.robot
-./../../../tests/functional/test_suites/largefifombx_tests/largefifo_mailbox_cli_mcp_cded__test_send_recv.robot
-
 ## Variable Service Tests
 ./../../../tests/functional/test_suites/varserv_tests/varserv_cli_test.robot
 ./../../../tests/functional/test_suites/varserv_tests/varserv_cli_test.robot

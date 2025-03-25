@@ -28,6 +28,7 @@ variables:
 # Build stage
 stages:
 - stage: MSCP_FPGA_Pythia_Tests
+  dependsOn: []
   jobs:
   - template: templates/fpga_pythia_test.yaml
     parameters:
@@ -36,13 +37,14 @@ stages:
       build_id: $(BUILD_ID)
 
 - stage: ACCEL_FPGA_Pythia_Tests
+  dependsOn: []
   jobs:
   - template: templates/fpga_pythia_test.yaml
     parameters:
       ArtifactName: ACCEL
       Pool: 1pfw-kingsgate-big-fpga
       build_id: $(BUILD_ID)
-      TestPlan: .\tests\functional\test_plan\accel_single_die_test_plan.args
+      TestPlan: .\tests\functional\test_plan\fpga_nightly_stress_test_plan.args
       ifwi: 'kingsgate.ifwi.ap.baremetal.debug.dat'
 
 # This is to tag the commits that pass weekend stress tests.

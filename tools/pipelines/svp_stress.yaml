@@ -30,7 +30,16 @@ stages:
     parameters:
       ArtifactName: SVP_Pythia_Nightly_Stress_Tests
       build_id: $(BUILD_ID)
-      TestPlan: $(Test_Plan)
+      TestPlan: $(Test_Plan_Single)
+
+- stage: SVP_Pythia_Nightly_Stress_DualDie_Tests
+  dependsOn: []
+  jobs:
+  - template: templates/svp_pythia_test.yaml
+    parameters:
+      ArtifactName: SVP_Pythia_Nightly_Stress_DualDie_Tests
+      build_id: $(BUILD_ID)
+      TestPlan: $(Test_Plan_Dual)
 
 - stage: SVP_Accel_Nightly_Stress_Tests
   dependsOn: []
@@ -44,7 +53,7 @@ stages:
 
 # This is to tag the commits that pass nightly tests.
 - stage: Promote
-  dependsOn: [ SVP_Pythia_Nightly_Stress_Tests, SVP_Accel_Nightly_Stress_Tests ]
+  dependsOn: [ SVP_Pythia_Nightly_Stress_Tests, SVP_Pythia_Nightly_Stress_DualDie_Tests, SVP_Accel_Nightly_Stress_Tests ]
   # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
   condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
   pool: 

@@ -20,10 +20,13 @@ parameters:
 - name : ifwi
   type: string
   default: 'kingsgate.ifwi.svp.debug.custom.dat'
+- name : TimeoutInMinutes
+  type: number
+  default: 240
 
 jobs:
 - job: 'SVP_Pythia_Tests'
-  timeoutInMinutes: 240
+  timeoutInMinutes: ${{ parameters.TimeoutInMinutes }}
   displayName: SVP Pythia Tests
   pool: 
     name: ${{ parameters.Pool }}

@@ -34,6 +34,8 @@
     </git>
 
     <pip_packages>
+        <!-- /// @TODO: setuptools 78.0.0 breaks packages using dashes in setup.cfg, remove once fixed https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/2499526 -->
+        <package name="setuptools" version="78.0.2" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/" />
         <!-- /// @TODO: numpy 2.0 has a binary incompatibility, remove once fixed https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/1875594 -->
         <package name="numpy" version="1.26.4" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/" />
         <package name="error-code-generator" version="0.1.*" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/" />

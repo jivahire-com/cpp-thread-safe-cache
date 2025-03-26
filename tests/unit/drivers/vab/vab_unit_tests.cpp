@@ -11,7 +11,6 @@
 #include <CMockaWrapper.h>
 #include <atu_lib.h>
 #include <cstddef>
-#include <idsw_kng.h>
 #include <interrupts.h>
 #include <kng_soc_constants.h>
 #include <silibs_platform.h>
@@ -384,8 +383,6 @@ TEST_FUNCTION(test_enable_d0_vab_isr, NULL, NULL)
     uint16_t vabs_to_init = ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) |
                              (1 << D0_VAB3_RPSS3) | (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS));
 
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
-
     for (uint16_t vab_id = 0; vab_id < MAX_VAB_INSTANCES; vab_id++)
     {
         if ((vabs_to_init >> vab_id) & 0x1)
@@ -406,8 +403,6 @@ TEST_FUNCTION(test_enable_d1_vab_isr, NULL, NULL)
     uint16_t vabs_to_init = ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) |
                              (1 << D1_VAB3_RPSS3) | (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS));
 
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
-
     for (uint16_t vab_id = 0; vab_id < MAX_VAB_INSTANCES; vab_id++)
     {
         if ((vabs_to_init >> vab_id) & 0x1)
@@ -427,26 +422,10 @@ TEST_FUNCTION(test_enable_vab_isr_bad_init_flag, NULL, NULL)
 {
     uint16_t vabs_to_init = (1 << MAX_VAB_INSTANCES);
 
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     enable_vab_isrs(vabs_to_init);
 }
 
 TEST_FUNCTION(test_enable_vab_isr_no_vabs, NULL, NULL)
 {
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     enable_vab_isrs(0);
-}
-
-TEST_FUNCTION(test_enable_vab_isr_on_fpga, NULL, NULL)
-{
-    uint16_t vabs_to_init = ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) |
-                             (1 << D0_VAB3_RPSS3) | (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS));
-
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
-
-    /*
-     * Skip init on FPGA for now as there are RTL issues with parity error
-     * signals spuriously triggering the interrupt.
-     */
-    enable_vab_isrs(vabs_to_init);
 }

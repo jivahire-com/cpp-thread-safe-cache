@@ -19,7 +19,6 @@ target_link_libraries(
             ms::lib::scp_interrupts
             ms::lib::threadx
             silibs::atu
-            silibs::idsw_kng
             silibs::intu
             silibs::kng_silibs_platform
             silibs::pcie

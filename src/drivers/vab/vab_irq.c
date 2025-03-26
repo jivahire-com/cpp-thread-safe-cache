@@ -11,8 +11,6 @@
 #include <FPFwInterrupts.h>
 #include <FpFwAssert.h>
 #include <atu_lib.h>
-#include <idsw.h>
-#include <idsw_kng.h>
 #include <interrupts.h>
 #include <intu_lib.h>
 #include <kng_atu_mappings.h>
@@ -319,19 +317,6 @@ static void map_and_get_vab_ctx(SUBSYSTEM_WITH_VAB_ID vab, vab_isr_ctx_t** vab_i
 
 void enable_vab_isrs(uint16_t vab_instances_to_init)
 {
-    /*
-     * There are still lingering INTU issues that are preventing us from
-     * fully enabling this on FPGA.
-     *
-     * Details: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2234370
-     *          https://dev.azure.com/ms-tsd/Emu_Proto/_workitems/edit/845206
-     *
-     */
-    if (IS_PLATFORM_FPGA())
-    {
-        return;
-    }
-
     for (SUBSYSTEM_WITH_VAB_ID vab = D0_VAB0_RPSS0; vab < MAX_VAB_INSTANCES; vab++)
     {
         if ((vab_instances_to_init >> vab) & 0x1)

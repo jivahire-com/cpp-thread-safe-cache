@@ -266,7 +266,7 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
-    will_return(__wrap_system_info_get_board_id, 0x00);
+    will_return_always(__wrap_system_info_get_board_id, 0x00);
     expect_value(__wrap_pciess_config_entity, program_phy_regs, false);
     expect_value(__wrap_pciess_config_entity, enable_apu, true);
     will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
@@ -281,6 +281,7 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
 
     assert_int_equal(rb_configs[0].flags.is_enabled, true);
     assert_int_equal(rb_configs[3].flags.is_enabled, true);
+    assert_int_equal(rb_configs[0].flags.is_secondary_soc, false);
 }
 
 /* Test case for initial pciess init sync. request atu mapping failures */
@@ -555,7 +556,10 @@ TEST_FUNCTION(test_rpss_init_cxl, test_setup, test_teardown)
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    will_return(__wrap_system_info_get_board_id, 0x00);
+    will_return_always(__wrap_system_info_get_board_id, 0xFF);
+    bool is_mirroring = __real_config_get_pcie_configuration_mirroring();
+    is_mirroring = true;
+    will_return(__wrap_config_get_pcie_configuration_mirroring, is_mirroring);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS5);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
     expect_value(__wrap_pciess_config_entity, program_phy_regs, false);
@@ -576,6 +580,7 @@ TEST_FUNCTION(test_rpss_init_cxl, test_setup, test_teardown)
 
     assert_int_equal(rb_configs[0].flags.is_enabled, true);
     assert_int_equal(rb_configs[0].flags.is_cxl, true);
+    assert_int_equal(rb_configs[0].flags.is_secondary_soc, 0b1);
 }
 
 TEST_FUNCTION(test_get_config, test_setup, test_teardown)

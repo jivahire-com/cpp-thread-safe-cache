@@ -164,4 +164,10 @@ int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
     return mock_type(int);
 }
 
+bool __wrap_ddrss_is_valid_local_mc(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    return mock_type(bool);
+}
+
 } // extern "C"

@@ -20,8 +20,6 @@ target_link_libraries(${TARGET}
     ms::driver::pcie
     ms::driver::vab
     silibs::atu
-    silibs::idsw
-    silibs::idsw_kng
     silibs::kng_silibs_platform
     silibs_platform
     silibs::vab_init
@@ -41,7 +39,6 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     atu_map
     atu_unmap
-    idsw_get_platform_sdv
     vabss_intu_probe
     vabss_intu_clear
     nvic_irq_set_isr_with_param

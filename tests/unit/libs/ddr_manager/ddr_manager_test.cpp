@@ -725,6 +725,8 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_0, NULL, NULL)
         expect_function_call(__wrap_ddr_i3c_interface_read_spd_nvm_data);
         will_return(__wrap_ddr_i3c_interface_read_spd_nvm_data, SILIBS_SUCCESS);
 
+        will_return(__wrap_ddrss_is_valid_local_mc, true);
+
         // Write Type17 table to memory
         expect_function_calls(__wrap_mmio_write8, sizeof(SMBIOS_MEM_DEVICE_17));
 
@@ -791,6 +793,8 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_1, NULL, NULL)
     {
         expect_function_call(__wrap_ddr_i3c_interface_read_spd_nvm_data);
         will_return(__wrap_ddr_i3c_interface_read_spd_nvm_data, SILIBS_SUCCESS);
+
+        will_return(__wrap_ddrss_is_valid_local_mc, true);
 
         // Write Type17 table to memory
         expect_function_calls(__wrap_mmio_write8, sizeof(SMBIOS_MEM_DEVICE_17));

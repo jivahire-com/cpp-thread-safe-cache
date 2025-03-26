@@ -306,6 +306,8 @@ void populate_rb_configs_from_rpss_entity(pcie_ss_entity_t* rpss, pcie_root_brid
         rb_configs[i].flags.hot_plug_enabled = pcie_cfg->rp_cfgs[i].pcie_rp_hotplug_capable;
         rb_configs[i].flags.is_cxl = pcie_cfg->pcie_cxl_support && (i == PCIESS_CXL_RP_IDX);
         rb_configs[i].slot_number = pcie_cfg->rp_cfgs[i].pcie_rp_slot_num;
+        rb_configs[i].flags.is_secondary_soc =
+            (BOARD_ID_GET_SOC_POSITION(system_info_get_board_id()) == 0x01) ? 0b1 : 0b0;
 
         rb_configs[i].mmiol.base = rpss->ranges[i].mmiol_start;
         rb_configs[i].mmiol.limit = rpss->ranges[i].mmiol_end;

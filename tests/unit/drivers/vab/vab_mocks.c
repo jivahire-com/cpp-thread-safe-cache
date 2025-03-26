@@ -12,7 +12,6 @@
 #include <FpFwUtils.h>
 #include <atu_lib.h>
 #include <cmocka.h> // IWYU pragma: keep
-#include <idsw.h>
 #include <nvic.h>
 #include <vab_init.h>
 #include <vab_intu.h>
@@ -26,11 +25,6 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-idsw_plat_id_t __wrap_idsw_get_platform_sdv(void)
-{
-    return mock_type(idsw_plat_id_t);
-}
-
 nvic_status_t __wrap_nvic_irq_set_isr_with_param(uint32_t irq_num, isr_callback_fn_with_params_t isr, void* parameter)
 {
     check_expected(irq_num);

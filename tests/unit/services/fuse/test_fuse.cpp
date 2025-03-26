@@ -565,16 +565,33 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
     // Debug prints
     printf("Freed memory for fuse_dist_exclude_list1\n");
 }
-TEST_FUNCTION(test_fuse_core_to_ap, NULL, NULL)
+TEST_FUNCTION(test_fuse_core_to_ap_die0, NULL, NULL)
 {
+    // mocks
+    kng_fuse_disable_core_t DIE0_core_disable_post_knob_test = {0x00, 0x00, 0xFFFFFFF0, 0xFFFFFFFF};
+
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     expect_value(__wrap_sds_block_write, sds_module_id, FUSE_DISABLE_CORE_DIE0_STRUCT_ID);
-    expect_memory(__wrap_sds_block_write, buffer, &(DIE0_fuse_disable_test), FUSE_DISABLE_CORE_DIE0_SIZE);
+    expect_memory(__wrap_sds_block_write, buffer, &(DIE0_core_disable_post_knob_test), FUSE_DISABLE_CORE_DIE0_SIZE);
     expect_value(__wrap_sds_block_write, buffer_size, FUSE_DISABLE_CORE_DIE0_SIZE);
     write_fuse_info_to_ap();
 }
+
+TEST_FUNCTION(test_fuse_core_to_ap_die1, NULL, NULL)
+{ // mocks
+    kng_fuse_disable_core_t DIE1_core_disable_post_knob_test = {0x00, 0x00, 0xFFFFFFF0, 0xFFFFFFFF};
+    will_return_always(__wrap_idsw_get_die_id, DIE_1);
+    expect_value(__wrap_sds_block_write, sds_module_id, FUSE_DISABLE_CORE_DIE1_STRUCT_ID);
+    expect_memory(__wrap_sds_block_write, buffer, &(DIE1_core_disable_post_knob_test), FUSE_DISABLE_CORE_DIE1_SIZE);
+    expect_value(__wrap_sds_block_write, buffer_size, FUSE_DISABLE_CORE_DIE1_SIZE);
+    write_fuse_info_to_ap();
+}
+
 TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
 {
+    // mocks
+    kng_fuse_disable_core_t DIE0_core_disable_post_knob_test = {0x00, 0x00, 0xFFFFFFF0, 0xFFFFFFFF};
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
@@ -601,16 +618,16 @@ TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
     will_return(__wrap_system_info_is_warm_start, false);
     expect_memory(__wrap_read_core_defect_fuses,
                   fuse_dis_core_64_67,
-                  &(DIE0_fuse_disable_test.fuse_dis_core_64_95),
-                  sizeof(DIE0_fuse_disable_test.fuse_dis_core_64_95));
+                  &(DIE0_core_disable_post_knob_test.fuse_dis_core_64_95),
+                  sizeof(DIE0_core_disable_post_knob_test.fuse_dis_core_64_95));
     expect_memory(__wrap_read_core_defect_fuses,
                   fuse_dis_core_32_63,
-                  &(DIE0_fuse_disable_test.fuse_dis_core_32_63),
-                  sizeof(DIE0_fuse_disable_test.fuse_dis_core_32_63));
+                  &(DIE0_core_disable_post_knob_test.fuse_dis_core_32_63),
+                  sizeof(DIE0_core_disable_post_knob_test.fuse_dis_core_32_63));
     expect_memory(__wrap_read_core_defect_fuses,
                   fuse_dis_core_0_31,
-                  &(DIE0_fuse_disable_test.fuse_dis_core_0_31),
-                  sizeof(DIE0_fuse_disable_test.fuse_dis_core_0_31));
+                  &(DIE0_core_disable_post_knob_test.fuse_dis_core_0_31),
+                  sizeof(DIE0_core_disable_post_knob_test.fuse_dis_core_0_31));
     will_return(__wrap_read_core_defect_fuses, SILIBS_SUCCESS);
     // Expectation for trigger_debugger_for_manual_overrides
     expect_function_call(__wrap_trigger_debugger_for_manual_overrides);

@@ -288,9 +288,9 @@
     <Knob name="power_tile_hot_en" type="bool" default="true" />
     <Knob name="power_tile_thermtrip_en" type="bool" default="true" />
     <Knob name="intclk_knobs" type="intclk_cfg_t" help="INT-CLK knobs for programming non-POR frequency" />
-    <Knob name="fuse_disable_value_0_31" type="uint32_t" default="0" />
-    <Knob name="fuse_disable_value_32_63" type="uint32_t" default="0" />
-    <Knob name="fuse_disable_value_64_95" type="uint32_t" default="0" />
+    <Knob name="core_disable_value_0_31" type="uint32_t" default="0" />
+    <Knob name="core_disable_value_32_63" type="uint32_t" default="0" />
+    <Knob name="core_disable_value_64_95" type="uint32_t" default="0" />
   </Knobs>
 
 </ConfigSchema>

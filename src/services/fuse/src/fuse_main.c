@@ -151,16 +151,12 @@ static int read_core_disabled_fuses()
         printf(FUSE_NAME "get the defect knob fail\n");
         return status;
     }
-
-    p_fuse_disable->fuse_dis_core_0_31 |= config_knob_0_31;
-    p_fuse_disable->fuse_dis_core_32_63 |= config_knob_32_63;
-    p_fuse_disable->fuse_dis_core_64_95 |= (config_knob_64_95 & 0x0F);
-
     printf(FUSE_NAME "save disable knob in DIE%d done\n", p_die_num);
 
     return SILIBS_SUCCESS;
 }
 
+// USE SDS API to write core fuse info to AP
 int write_fuse_info_to_ap()
 {
     int32_t result = 0;
@@ -168,6 +164,10 @@ int write_fuse_info_to_ap()
     {
         result = sds_block_creation(FUSE_DISABLE_CORE_DIE0_STRUCT_ID, FUSE_DISABLE_CORE_DIE0_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
         BUG_ASSERT(result == KNG_SUCCESS);
+
+        DIE0_fuse_disable.fuse_dis_core_0_31 |= config_knob_0_31;
+        DIE0_fuse_disable.fuse_dis_core_32_63 |= config_knob_32_63;
+        DIE0_fuse_disable.fuse_dis_core_64_95 |= (config_knob_64_95 | 0xFFFFFFF0);
         DIE0_fuse_disable.fuse_dis_core_96_127 = 0xFFFFFFFF;
         result = sds_block_write(FUSE_DISABLE_CORE_DIE0_STRUCT_ID, &DIE0_fuse_disable, FUSE_DISABLE_CORE_DIE0_SIZE);
         BUG_ASSERT(result == KNG_SUCCESS);
@@ -176,6 +176,9 @@ int write_fuse_info_to_ap()
     {
         result = sds_block_creation(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, FUSE_DISABLE_CORE_DIE1_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
         BUG_ASSERT(result == KNG_SUCCESS);
+        DIE1_fuse_disable.fuse_dis_core_0_31 |= config_knob_0_31;
+        DIE1_fuse_disable.fuse_dis_core_32_63 |= config_knob_32_63;
+        DIE1_fuse_disable.fuse_dis_core_64_95 |= (config_knob_64_95 | 0xFFFFFFF0);
         DIE1_fuse_disable.fuse_dis_core_96_127 = 0xFFFFFFFF;
         result = sds_block_write(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, &DIE1_fuse_disable, FUSE_DISABLE_CORE_DIE1_SIZE);
         BUG_ASSERT(result == KNG_SUCCESS);
@@ -406,9 +409,9 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
 void fuse_init(fpfw_icc_base_ctx_t* icc_base_ctx)
 {
     icc_base_ctx_fuse = icc_base_ctx;
-    config_knob_0_31 = config_get_fuse_disable_value_0_31();
-    config_knob_32_63 = config_get_fuse_disable_value_32_63();
-    config_knob_64_95 = config_get_fuse_disable_value_64_95();
+    config_knob_0_31 = config_get_core_disable_value_0_31();
+    config_knob_32_63 = config_get_core_disable_value_32_63();
+    config_knob_64_95 = config_get_core_disable_value_64_95();
 
     FUSE_ET_STATUS(FUSE_ET_TYPE_SVC_START);
 }

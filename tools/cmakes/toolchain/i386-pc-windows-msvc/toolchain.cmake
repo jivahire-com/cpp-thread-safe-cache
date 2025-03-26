@@ -29,8 +29,8 @@ set(CMAKE_CXX_COMPILER_RANLIB "${CMAKE_RANLIB}")
 set(CMAKE_C_FLAGS "-g -m32 --target=${CLANG_TARGET_TRIPLE} -Wall -Wextra -Werror -Wno-missing-field-initializers")
 set(CMAKE_CXX_FLAGS "-g -m32 --target=${CLANG_TARGET_TRIPLE} -Wall -Wextra -Werror -Wno-missing-field-initializers")
 
-# Set compiler and linker options to fix BinSkim Error
-add_compile_options(-Xclang -cfguard -fstack-protector)
+# Set compiler and linker options to fix BinSkim Errors
+add_compile_options("SHELL:-Xclang -cfguard" "SHELL:-Xclang -gsrc-hash=sha256" -fstack-protector)
 add_link_options("LINKER:/guard:cf,/CETCOMPAT")
 
 # Set repo utilities

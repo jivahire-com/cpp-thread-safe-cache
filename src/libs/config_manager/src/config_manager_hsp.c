@@ -41,9 +41,18 @@ void write_knob_completion_routine(void* context, struct _variable_service_req_c
 void read_knob_from_hsp(cached_knob_data_t* current_entry, uint32_t current_knob_index)
 {
     // Retrieve the knob from HSP during init phase. make sure we update knobs before init phase completed.
+    uint32_t var_name_length = strlen(current_entry->name);
+    uint16_t var_wide_name[var_name_length + 1];
+
+    for (uint32_t i = 0; i < var_name_length; ++i)
+    {
+        var_wide_name[i] = (uint16_t)current_entry->name[i];
+    }
+    var_wide_name[var_name_length] = 0x00;
+
     var_service_req_params_t var_svc_req = {};
-    var_svc_req.variable_name_ptr = (uint16_t*)current_entry->name;
-    var_svc_req.variable_name_size = strlen(current_entry->name) + 1;
+    var_svc_req.variable_name_ptr = var_wide_name;
+    var_svc_req.variable_name_size = (var_name_length + 1) * sizeof(uint16_t);
     memcpy(&var_svc_req.vendor_namespace_guid, current_entry->knob_namespace, sizeof(var_svc_req.vendor_namespace_guid));
     var_svc_req.data_size = current_entry->size;
     var_svc_req.data = current_entry->data;
@@ -71,10 +80,19 @@ void read_knob_from_hsp(cached_knob_data_t* current_entry, uint32_t current_knob
 
 void write_knob_to_hsp(cached_knob_data_t* current_entry)
 {
+    uint32_t var_name_length = strlen(current_entry->name);
+    uint16_t var_wide_name[var_name_length + 1];
+
+    for (uint32_t i = 0; i < var_name_length; ++i)
+    {
+        var_wide_name[i] = (uint16_t)current_entry->name[i];
+    }
+    var_wide_name[var_name_length] = 0x00;
+
     int32_t result = KNG_SUCCESS;
     var_service_req_params_t var_svc_req = {};
-    var_svc_req.variable_name_ptr = (uint16_t*)current_entry->name;
-    var_svc_req.variable_name_size = strlen(current_entry->name) + 1;
+    var_svc_req.variable_name_ptr = var_wide_name;
+    var_svc_req.variable_name_size = (var_name_length + 1) * sizeof(uint16_t);
     memcpy(&var_svc_req.vendor_namespace_guid, current_entry->knob_namespace, sizeof(var_svc_req.vendor_namespace_guid));
     var_svc_req.data_size = current_entry->size;
     var_svc_req.data = current_entry->data;

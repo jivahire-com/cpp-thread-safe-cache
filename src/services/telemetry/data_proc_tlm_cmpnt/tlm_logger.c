@@ -967,11 +967,7 @@ void tlm_calculate_mma_res(uint16_t* mma_min, uint16_t* mma_max, uint16_t* mma_a
                 average = UINT16_MAX;
                 FPFW_ET_LOG(DataUpdateMMAvgOverflow);
             }
-            // Check if the calculated average goes lower but not lower than the new value
-            if (!((*mma_average > (uint16_t)average) && (uint16_t)average < *mma_latest_value))
-            {
-                *mma_average = (uint16_t)average;
-            }
+            *mma_average = (uint16_t)average;
         }
         else
         {

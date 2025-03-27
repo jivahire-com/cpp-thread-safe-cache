@@ -13,14 +13,14 @@
 
 #include <DfwkCommon.h> // for PDFWK_ASYNC_REQUEST_HEADER, DFWK_ASYNC_REQUE...
 #include <FpFwCMocka.h> // for check_expected_ptr, assert_non_null, assert_...
-#include <fpfw_icc_base.h>
-#include <fpfw_init.h>
 #include <fpfw_status.h>
 #include <idsw_kng.h>
 #include <pcie_dfwk.h>      // for pcie_async_request_t, pciess_device_t
 #include <pcie_ss_common.h> // pciess_entity
 #include <scp_pcie_manager.h>
 #include <stddef.h> // for size_t
+#include <variable_services.h>
+#include <variable_services_mem.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -106,29 +106,6 @@ void* __wrap_memset(void* str, int c, size_t n)
     return __real_memset(str, c, n);
 }
 
-icc_base_recv_complete_notify recv_cb;
-
-fpfw_status_t __wrap_fpfw_icc_base_send(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_send_req_t* params)
-{
-    FPFW_UNUSED(icc_ctx);
-    icc_base_send_complete_notify send_cb = params->cb;
-
-    send_cb(params->cb_ctx, FPFW_STATUS_SUCCESS);
-
-    recv_cb(params->cb_ctx, 16, FPFW_STATUS_SUCCESS);
-
-    return FPFW_STATUS_SUCCESS;
-}
-
-fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_recv_req_t* params)
-{
-    FPFW_UNUSED(icc_ctx);
-
-    recv_cb = params->cb;
-
-    return FPFW_STATUS_SUCCESS;
-}
-
 /*
 void __wrap_end_async_wait_for_event(pcie_manager_context_t* ctx, uint8_t rp_idx, uint8_t num_event)
 {
@@ -142,4 +119,32 @@ void __wrap_variable_serv_copy_to_rmss_ram(volatile uint8_t* target_addr, const 
     FPFW_UNUSED(target_addr);
     FPFW_UNUSED(source_ptr);
     FPFW_UNUSED(size);
+}
+
+int32_t __wrap_variable_service_async_set_variable(var_service_req_ctx_t* var_serv_ctx,
+                                                   var_service_req_params_t* req_params,
+                                                   variable_service_req_complete_notify callback,
+                                                   void* context)
+{
+    FPFW_UNUSED(var_serv_ctx);
+    FPFW_UNUSED(req_params);
+    FPFW_UNUSED(callback);
+    FPFW_UNUSED(context);
+
+    var_serv_ctx->async_req_result = mock();
+
+    callback(context, var_serv_ctx, NULL, 0);
+    return 0;
+}
+
+int32_t __wrap_variable_service_initialize_ctx(var_service_req_ctx_t* var_serv_ctx, var_service_shared_mem_t* mem_ctx)
+{
+    assert_non_null(var_serv_ctx);
+    assert_non_null(mem_ctx);
+
+    uint64_t min = mock();
+    uint64_t max = mock();
+    assert_in_range(mem_ctx->payload_base, min, max);
+
+    return 0;
 }

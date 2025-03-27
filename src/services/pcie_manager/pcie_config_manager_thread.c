@@ -11,10 +11,10 @@
 
 #include <DfwkClient.h>   // for DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE
 #include <ErrorHandler.h> // for FPFwErrorRaise
-#include <fpfw_icc_base.h>
-#include <fpfw_init.h>
-#include <hsp_firmware_headers.h>
+#include <atu_api.h>
+#include <bug_check.h>
 #include <idsw_kng.h>
+#include <kng_error.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <pcie_config_variable.h>
 #include <pcie_manager_i.h>   // for rpss_req_completion_cb, rpss_service_t...
@@ -25,158 +25,81 @@
 #include <stdio.h>   // for fflush, printf, stdout
 #include <tx_api.h>  // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
 #include <variable_services.h>
+#include <variable_services_mem.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
-static void icc_var_send_complete_cb(void* context, fpfw_status_t status);
-static void icc_var_recv_complete_cb(void* context, size_t output_size_bytes, fpfw_status_t status);
-static void set_hsp_variable(const guid_t* guid_ptr,
-                             const uint16_t* variable_name_ptr,
-                             size_t variable_name_size,
-                             void* data_ptr,
-                             size_t data_size);
+void set_var_complete_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size);
 /*-- Declarations (Statics and globals) --*/
 
 static uint32_t rb_cb_ctx;
 static uint32_t vab_cb_ctx;
-static kng_hsp_mailbox_cmd_set_variable set_var_send_msg = {.header.cmd = HSP_MAILBOX_CMD_SET_VARIABLE_REQ,
-                                                            .set_variable_address =
-                                                                SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE};
-static kng_hsp_mailbox_msg set_var_recv_msg = {.header.cmd = HSP_MAILBOX_CMD_SET_VARIABLE_RSP};
-
-static fpfw_icc_base_send_req_t set_var_send_req = {.payload_buffer = &set_var_send_msg,
-                                                    .cb = icc_var_send_complete_cb,
-                                                    .cb_ctx = &rb_cb_ctx,
-                                                    .buffer_size = sizeof(kng_hsp_mailbox_msg)};
-
-static fpfw_icc_base_recv_req_t set_var_recv_req = {
-    .payload_buffer = &set_var_recv_msg,
-    .buffer_size = sizeof(kng_hsp_mailbox_msg),
-    .cb = icc_var_recv_complete_cb,
-    .recv_cmd_code = HSP_MAILBOX_CMD_SET_VARIABLE_RSP,
-    .cb_ctx = &rb_cb_ctx,
-};
 
 /* publish NV variable with RB aperture info */
 static guid_t const rb_config_guid_die_0 = PCIE_RB_CONFIG_VAR_DIE_0_GUID;
 static guid_t const vab_config_guid_die_0 = VAB_CONFIG_VAR_DIE_0_GUID;
-static uint16_t const rb_config_varname_die_0[] = PCIE_RB_CONFIG_VAR_DIE_0_NAME;
-static uint16_t const vab_config_varname_die_0[] = VAB_CONFIG_VAR_DIE_0_NAME;
+static uint16_t rb_config_varname_die_0[] = PCIE_RB_CONFIG_VAR_DIE_0_NAME;
+static uint16_t vab_config_varname_die_0[] = VAB_CONFIG_VAR_DIE_0_NAME;
 
 static guid_t const rb_config_guid_die_1 = PCIE_RB_CONFIG_VAR_DIE_1_GUID;
 static guid_t const vab_config_guid_die_1 = VAB_CONFIG_VAR_DIE_1_GUID;
-static uint16_t const rb_config_varname_die_1[] = PCIE_RB_CONFIG_VAR_DIE_1_NAME;
-static uint16_t const vab_config_varname_die_1[] = VAB_CONFIG_VAR_DIE_1_NAME;
+static uint16_t rb_config_varname_die_1[] = PCIE_RB_CONFIG_VAR_DIE_1_NAME;
+static uint16_t vab_config_varname_die_1[] = VAB_CONFIG_VAR_DIE_1_NAME;
 
 static kingsgate_pcie_root_bridge_config* rb_config_var;
 static kingsgate_pcie_vab_config* vab_config_var;
 static const guid_t* rb_config_guid;
 static const guid_t* vab_config_guid;
-static const uint16_t* rb_config_varname;
-static const uint16_t* vab_config_varname;
+static uint16_t* rb_config_varname;
+static uint16_t* vab_config_varname;
+
+var_service_shared_mem_t rb_set_var_mem_ctx = {.payload_base = SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE,
+                                               .max_payload_size = sizeof(variable_service_shared_mem_format_t) +
+                                                                   sizeof(rb_config_varname_die_0) +
+                                                                   sizeof(kingsgate_pcie_root_bridge_config)};
+
+var_service_shared_mem_t vab_set_var_mem_ctx = {.payload_base = SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE,
+                                                .max_payload_size = sizeof(variable_service_shared_mem_format_t) +
+                                                                    sizeof(vab_config_varname_die_0) +
+                                                                    sizeof(kingsgate_pcie_vab_config)};
+
+static var_service_req_ctx_t rb_set_var_ctx = {};
+static var_service_req_ctx_t vab_set_var_ctx = {};
 
 /*------------- Functions ----------------*/
 
-/* Will be called when the SetVariable is completed from MSCP side */
-static void icc_var_send_complete_cb(void* context, fpfw_status_t status)
-{
-    //! cb is raised when send is complete
-    //! check status & do work
-    if (context == &rb_cb_ctx)
-    {
-        printf("RB SetVariable send complete, status is %x\n", (int)status);
-    }
-    else if (context == &vab_cb_ctx)
-    {
-        printf("VAB SetVariable send complete, status is %x\n", (int)status);
-    }
-}
-
 /* Will be called when the SetVariable is completed from HSP side */
-static void icc_var_recv_complete_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
+void set_var_complete_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size)
 {
     //! cb is raised when receive is complete
     //! check status & do work
-    FPFW_UNUSED(output_size_bytes);
+    FPFW_UNUSED(data_size);
+    FPFW_UNUSED(data_start_ptr);
+
+    int status;
 
     if (context == &rb_cb_ctx)
     {
-        printf("RB SetVariable response received, status is %x\n", (int)status);
-        printf("received status from hsp: 0x%x\n", (int)set_var_recv_msg.rsp.status);
-        set_var_send_req.cb_ctx = &vab_cb_ctx;
-        set_var_recv_req.cb_ctx = &vab_cb_ctx;
-        memset((void*)SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE, 0, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_SIZE);
-        set_hsp_variable(vab_config_guid,
-                         vab_config_varname,
-                         sizeof(vab_config_varname_die_0),
-                         (void*)vab_config_var,
-                         sizeof(kingsgate_pcie_vab_config));
+        printf("RB SetVariable response received, status is %x\n", (int)var_serv_ctx->async_req_result);
+        // unlock context so we can send another for VAB
+        // variable_service_unlock_get_var_ctx(var_serv_ctx);
+        var_service_req_params_t req_params = {};
+        req_params.variable_name_ptr = (uint16_t*)vab_config_varname;
+        req_params.variable_name_size = sizeof(vab_config_varname_die_0);
+        memcpy(&req_params.vendor_namespace_guid, vab_config_guid, sizeof(req_params.vendor_namespace_guid));
+        req_params.data_size = sizeof(kingsgate_pcie_vab_config);
+        req_params.data = (uint8_t*)vab_config_var;
+        req_params.attributes.as_uint32 = EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS;
+        status = variable_service_async_set_variable(&vab_set_var_ctx, &req_params, set_var_complete_cb, (void*)&vab_cb_ctx);
+        BUG_ASSERT(status == KNG_SUCCESS);
     }
     else if (context == &vab_cb_ctx)
     {
-        printf("VAB SetVariable response received, status is %x\n", (int)status);
-        printf("received status from hsp: 0x%x\n", (int)set_var_recv_msg.rsp.status);
-        memset((void*)SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE, 0, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_SIZE);
+        printf("VAB SetVariable response received, status is %x\n", (int)var_serv_ctx->async_req_result);
     }
-}
-
-void variable_serv_copy_to_rmss_ram(volatile uint8_t* target_addr, const void* source_ptr, size_t size)
-{
-    volatile uint8_t data_byte = 0;
-    for (size_t i = 0; i < size; i++)
-    {
-        data_byte = *(((volatile uint8_t*)source_ptr) + i); // NOLINT
-        do
-        {
-            target_addr[i] = data_byte;
-        } while (target_addr[i] != data_byte);
-    }
-}
-
-static void set_hsp_variable(const guid_t* guid_ptr, const uint16_t* variable_name_ptr, size_t variable_name_size, void* data_ptr, size_t data_size)
-{
-    volatile uint8_t* target_addr = (volatile uint8_t*)(SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
-
-    struct hsp_mbox_set_variable set_var;
-    set_var.variable_name_size = variable_name_size / sizeof(uint16_t);
-    set_var.vendor_guid.guid.data1 = guid_ptr->guid1;
-    set_var.vendor_guid.guid.data2 = guid_ptr->guid2;
-    set_var.vendor_guid.guid.data3 = guid_ptr->guid3;
-    set_var.vendor_guid.guid.data4[0] = guid_ptr->guid4[0];
-    set_var.vendor_guid.guid.data4[1] = guid_ptr->guid4[1];
-    set_var.vendor_guid.guid.data4[2] = guid_ptr->guid4[2];
-    set_var.vendor_guid.guid.data4[3] = guid_ptr->guid4[3];
-    set_var.vendor_guid.guid.data4[4] = guid_ptr->guid4[4];
-    set_var.vendor_guid.guid.data4[5] = guid_ptr->guid4[5];
-    set_var.vendor_guid.guid.data4[6] = guid_ptr->guid4[6];
-    set_var.vendor_guid.guid.data4[7] = guid_ptr->guid4[7];
-    set_var.attributes = EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS;
-    set_var.data_size = data_size;
-
-    //! Copy over the set var hsp mbox packet to the shared memory
-    variable_serv_copy_to_rmss_ram(target_addr, &set_var, sizeof(set_var));
-    target_addr += sizeof(set_var);
-
-    //! Next copy over the variable name following the mbox packet
-    variable_serv_copy_to_rmss_ram(target_addr, variable_name_ptr, variable_name_size);
-    target_addr += variable_name_size;
-
-    //! Finally copy the data & verify shared memory is updated
-    variable_serv_copy_to_rmss_ram(target_addr, data_ptr, data_size);
-    target_addr += data_size;
-
-    fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)fpfw_init_get_handle("icc_hspmbx");
-
-    fpfw_status_t recv_status = fpfw_icc_base_recv(icc_ctx, &set_var_recv_req);
-    printf("SetVariable response: got status %x\n", (int)recv_status);
-
-    fpfw_status_t send_status = fpfw_icc_base_send(icc_ctx, &set_var_send_req);
-    printf("SetVariable request: got status %x\n", (int)send_status);
-
-    FpFwAssert((uint32_t)target_addr <= SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_END);
 }
 
 void config_variable_service_thread_fn(ULONG thread_input)
@@ -186,12 +109,12 @@ void config_variable_service_thread_fn(ULONG thread_input)
     rb_config_var = ctx->rb_config_var;
     vab_config_var = ctx->vab_config_var;
     KNG_DIE_ID current_die_instance = (KNG_DIE_ID)idsw_get_die_id();
-    static_assert(SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_SIZE > sizeof(struct hsp_mbox_set_variable) +
+    static_assert(SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_SIZE > sizeof(variable_service_shared_mem_format_t) +
                                                                        sizeof(rb_config_varname_die_0) +
                                                                        sizeof(kingsgate_pcie_root_bridge_config),
                   "ERROR: PCIE RB Variable payload size exceeded");
 
-    static_assert(SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_SIZE > sizeof(struct hsp_mbox_set_variable) +
+    static_assert(SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_SIZE > sizeof(variable_service_shared_mem_format_t) +
                                                                        sizeof(vab_config_varname_die_0) +
                                                                        sizeof(kingsgate_pcie_vab_config),
                   "ERROR: PCIE VAB Variable payload size exceeded");
@@ -209,6 +132,8 @@ void config_variable_service_thread_fn(ULONG thread_input)
     /* Note that there is no MMIOL for either RB*/
     if (current_die_instance == DIE_0)
     {
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].mmiol.base = UINT32_MAX;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].mmiol.limit = 0x0;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].mmioh.base = D0_SDM_MMIOH_START;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].mmioh.limit = D0_SDM_MMIOH_END;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].bus.base = D0_SDM_RCIEP_BUS;
@@ -216,6 +141,8 @@ void config_variable_service_thread_fn(ULONG thread_input)
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_enabled = true;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_integrated_endpoint = true;
 
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmiol.base = UINT32_MAX;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmiol.limit = 0x0;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmioh.base = D0_CDED_MMIOH_START;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmioh.limit = D0_CDED_MMIOH_END;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].bus.base = D0_CDED_RCIEP_BUS;
@@ -225,6 +152,8 @@ void config_variable_service_thread_fn(ULONG thread_input)
     }
     else
     {
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].mmiol.base = UINT32_MAX;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].mmiol.limit = 0x0;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].mmioh.base = D1_SDM_MMIOH_START;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].mmioh.limit = D1_SDM_MMIOH_END;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].bus.base = D1_SDM_RCIEP_BUS;
@@ -232,6 +161,8 @@ void config_variable_service_thread_fn(ULONG thread_input)
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_enabled = true;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_integrated_endpoint = true;
 
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmiol.base = UINT32_MAX;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmiol.limit = 0x0;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmioh.base = D1_CDED_MMIOH_START;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmioh.limit = D1_CDED_MMIOH_END;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].bus.base = D1_CDED_RCIEP_BUS;
@@ -270,6 +201,7 @@ void config_variable_service_thread_fn(ULONG thread_input)
     for (uint8_t i = 0; i < PCIE_CONFIG_VAR_NUM_VAB; i++)
     {
         printf("VAB %d smmu_bypass %d\n", i, (int)(vab_config_var->perf_config[i].smmu_bypass));
+        printf("VAB %d disable %d\n", i, (int)(vab_config_var->vab_config[i].vab_disable));
     }
 
     if (current_die_instance == DIE_0)
@@ -285,11 +217,27 @@ void config_variable_service_thread_fn(ULONG thread_input)
         vab_config_guid = &vab_config_guid_die_1;
         rb_config_varname = rb_config_varname_die_1;
         vab_config_varname = vab_config_varname_die_1;
+        // By default the payload is in the MSCP EXP RAM but Die 1 HSP cannot access it
+        // So Die 1 payload is in DDR
+        rb_set_var_mem_ctx.payload_base = (uintptr_t)MSCP_ATU_AP_WINDOW_VAR_SVC_PCIE_PAYLOAD_BASE;
     }
 
-    set_hsp_variable(rb_config_guid,
-                     rb_config_varname,
-                     sizeof(rb_config_varname_die_0),
-                     (void*)rb_config_var,
-                     sizeof(kingsgate_pcie_root_bridge_config));
+    // Init RB variable service context
+    variable_service_initialize_ctx(&rb_set_var_ctx, &rb_set_var_mem_ctx);
+
+    // Init VAB variable service context
+    vab_set_var_mem_ctx.payload_base = rb_set_var_mem_ctx.payload_base + rb_set_var_mem_ctx.max_payload_size;
+    variable_service_initialize_ctx(&vab_set_var_ctx, &vab_set_var_mem_ctx);
+
+    var_service_req_params_t req_params = {};
+    req_params.variable_name_ptr = (uint16_t*)rb_config_varname;
+    req_params.variable_name_size = sizeof(rb_config_varname_die_0);
+    memcpy(&req_params.vendor_namespace_guid, rb_config_guid, sizeof(req_params.vendor_namespace_guid));
+    req_params.data_size = sizeof(kingsgate_pcie_root_bridge_config);
+    req_params.data = (uint8_t*)rb_config_var;
+    req_params.attributes.as_uint32 = EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS;
+
+    status = variable_service_async_set_variable(&rb_set_var_ctx, &req_params, set_var_complete_cb, (void*)&rb_cb_ctx);
+
+    BUG_ASSERT(status == KNG_SUCCESS);
 }

@@ -11,9 +11,12 @@
 /*------------- Includes -----------------*/
 #include <DfwkClient.h>
 #include <FpFwCli.h>
+#include <atu_api.h>
 #include <fpfw_icc_base.h>
 #include <fpfw_init.h>
 #include <hsp_firmware_headers.h>
+#include <idsw_kng.h>
+#include <kng_error.h>
 #include <kng_soc_constants.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <pcie_cli_i.h>
@@ -24,6 +27,8 @@
 #include <silibs_status.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <variable_services.h>
+#include <variable_services_mem.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -34,9 +39,8 @@ static FPFW_CLI_STATUS dump_rpss_entity(int argc, const char** argv);
 static FPFW_CLI_STATUS dump_rp_entity(int argc, const char** argv);
 static FPFW_CLI_STATUS dump_rp_link_info(int argc, const char** argv);
 static FPFW_CLI_STATUS dump_rp_dbi_cfg_hdr(int argc, const char** argv);
-static void icc_get_var_recv_complete_cb(void* context, size_t output_size_bytes, fpfw_status_t status);
-static void icc_get_var_send_complete_cb(void* context, fpfw_status_t status);
 static FPFW_CLI_STATUS dump_pci_hsp_variables(int argc, const char** argv);
+static void get_variable_cb(void* context, struct _variable_service_req_ctx* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size);
 
 /*-- Declarations (Statics and globals) --*/
 /* clang-format off */
@@ -89,53 +93,43 @@ static pcie_ss_entity_t* curr_ss_entity = NULL;
 
 static uint32_t rb_cb_ctx;
 static uint32_t vab_cb_ctx;
-static kng_hsp_mailbox_cmd_get_variable get_send_msg = {.header.cmd = HSP_MAILBOX_CMD_GET_VARIABLE_REQ,
-                                                        .get_variable_address = SCP_EXP_SCP_VARIABLE_SERVICE_PAYLOAD_BASE};
 
-static kng_hsp_mailbox_msg get_recv_msg = {.header.cmd = HSP_MAILBOX_CMD_GET_VARIABLE_RSP};
+guid_t rb_config_guid_die_0 = PCIE_RB_CONFIG_VAR_DIE_0_GUID;
+guid_t vab_config_guid_die_0 = VAB_CONFIG_VAR_DIE_0_GUID;
+uint16_t rb_config_varname_die_0[] = PCIE_RB_CONFIG_VAR_DIE_0_NAME;
+uint16_t vab_config_varname_die_0[] = VAB_CONFIG_VAR_DIE_0_NAME;
 
-static fpfw_icc_base_send_req_t get_var_send_req = {.payload_buffer = &get_send_msg,
-                                                    .cb = icc_get_var_send_complete_cb,
-                                                    .cb_ctx = NULL,
-                                                    .buffer_size = sizeof(kng_hsp_mailbox_msg)};
+guid_t rb_config_guid_die_1 = PCIE_RB_CONFIG_VAR_DIE_1_GUID;
+guid_t vab_config_guid_die_1 = VAB_CONFIG_VAR_DIE_1_GUID;
+uint16_t rb_config_varname_die_1[] = PCIE_RB_CONFIG_VAR_DIE_1_NAME;
+uint16_t vab_config_varname_die_1[] = VAB_CONFIG_VAR_DIE_1_NAME;
 
-static fpfw_icc_base_recv_req_t get_var_recv_req = {
-    .payload_buffer = &get_recv_msg,
-    .buffer_size = sizeof(kng_hsp_mailbox_msg),
-    .cb = icc_get_var_recv_complete_cb,
-    .recv_cmd_code = HSP_MAILBOX_CMD_GET_VARIABLE_RSP,
-    .cb_ctx = NULL,
-};
+// Mem region to store the variable service payload
+// Max size can hold either RB or VAB config
+var_service_shared_mem_t var_svc_mem_ctx = {.payload_base = SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE,
+                                            .max_payload_size = sizeof(variable_service_shared_mem_format_t) +
+                                                                sizeof(rb_config_varname_die_0) +
+                                                                sizeof(kingsgate_pcie_root_bridge_config)};
+
+static var_service_req_ctx_t var_svc_req_ctx = {};
 
 kingsgate_pcie_root_bridge_config* get_rb_config;
 kingsgate_pcie_vab_config* get_vab_config;
 
 /*------------- Functions ----------------*/
 
-static void icc_get_var_send_complete_cb(void* context, fpfw_status_t status)
-{
-    //! cb is raised when send is complete
-    //! check status & do work
-    FPFW_UNUSED(context);
-    printf("icc getvar send complete, status is %x\n", (int)status);
-}
-
-static void icc_get_var_recv_complete_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
+static void get_variable_cb(void* context, struct _variable_service_req_ctx* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size)
 {
     //! cb is raised when recieve is complete
     //! check status & do work
-    FPFW_UNUSED(context);
-    FPFW_UNUSED(output_size_bytes);
-    printf("icc get_var rcv complete, status is 0x%x\n", (int)status);
-    printf("received status = 0x%x\n", (int)get_recv_msg.rsp.status);
-    if (status != 0 || get_recv_msg.rsp.status != 0)
-    {
-        return;
-    }
+    FPFW_UNUSED(data_size);
+
+    printf("PCIe GetVariable response received, status is %x\n", (int)var_serv_ctx->async_req_result);
 
     if (context == &rb_cb_ctx)
     {
         /* Print RB configurations */
+        get_rb_config = (kingsgate_pcie_root_bridge_config*)data_start_ptr;
         for (uint8_t i = 0; i < PCIE_CONFIG_VAR_NUM_RB; i++)
         {
             /* Copy over the rb config */
@@ -167,69 +161,39 @@ static void icc_get_var_recv_complete_cb(void* context, size_t output_size_bytes
     else if (context == &vab_cb_ctx)
     {
         /* Print VAB configurations */
+        get_vab_config = (kingsgate_pcie_vab_config*)data_start_ptr;
         for (uint8_t i = 0; i < PCIE_CONFIG_VAR_NUM_VAB; i++)
         {
             printf("VAB %d smmu_bypass %d\n", i, (int)(get_vab_config->perf_config[i].smmu_bypass));
+            printf("VAB %d disable %d\n", i, (int)(get_vab_config->vab_config[i].vab_disable));
         }
         memset((void*)SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE, 0, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_SIZE);
     }
 }
 
-static void get_hsp_variable(guid_t* guid_ptr, uint16_t* variable_name_ptr, size_t variable_name_size, size_t data_size, uint32_t* cb_ctx)
+static FPFW_CLI_STATUS get_hsp_variable(guid_t* guid_ptr,
+                                        uint16_t* variable_name_ptr,
+                                        size_t variable_name_size,
+                                        size_t data_size,
+                                        uint32_t* cb_ctx)
 {
-    volatile uint8_t* target_addr = (volatile uint8_t*)(SCP_EXP_SCP_VARIABLE_SERVICE_PAYLOAD_BASE);
-    volatile uint8_t data_byte = 0;
 
-    struct hsp_mbox_get_variable get_var;
-    get_var.variable_name_size = variable_name_size / sizeof(uint16_t);
-    get_var.vendor_guid.guid.data1 = guid_ptr->guid1;
-    get_var.vendor_guid.guid.data2 = guid_ptr->guid2;
-    get_var.vendor_guid.guid.data3 = guid_ptr->guid3;
-    get_var.vendor_guid.guid.data4[0] = guid_ptr->guid4[0];
-    get_var.vendor_guid.guid.data4[1] = guid_ptr->guid4[1];
-    get_var.vendor_guid.guid.data4[2] = guid_ptr->guid4[2];
-    get_var.vendor_guid.guid.data4[3] = guid_ptr->guid4[3];
-    get_var.vendor_guid.guid.data4[4] = guid_ptr->guid4[4];
-    get_var.vendor_guid.guid.data4[5] = guid_ptr->guid4[5];
-    get_var.vendor_guid.guid.data4[6] = guid_ptr->guid4[6];
-    get_var.vendor_guid.guid.data4[7] = guid_ptr->guid4[7];
-    get_var.attributes_size = 0;
-    get_var.data_size = data_size;
+    var_service_req_params_t req_params = {};
+    req_params.variable_name_ptr = variable_name_ptr;
+    req_params.variable_name_size = variable_name_size;
+    memcpy(&req_params.vendor_namespace_guid, guid_ptr, sizeof(req_params.vendor_namespace_guid));
+    req_params.data_size = data_size;
+    req_params.data = NULL; // don't need this for get_var
+    req_params.attributes.as_uint32 = EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS;
 
-    //! Copy over the get var hsp mbox packet to the shared memory
-    for (size_t i = 0; i < sizeof(get_var); i++)
+    int status = variable_service_async_get_variable(&var_svc_req_ctx, &req_params, get_variable_cb, (void*)cb_ctx);
+
+    if (status != KNG_SUCCESS)
     {
-        data_byte = *(((volatile uint8_t*)&get_var) + i); // NOLINT
-        do
-        {
-            target_addr[i] = data_byte;
-        } while (target_addr[i] != data_byte);
+        FpFwCliPrint("[var_serv] Get Variable Async Request Failed\n");
+        return CLI_ERROR;
     }
-    target_addr += sizeof(get_var);
-
-    //! Next copy over the variable name following the mbox packet
-    for (size_t i = 0; i < variable_name_size; i++)
-    {
-        data_byte = *(((volatile uint8_t*)variable_name_ptr) + i); // NOLINT
-        do
-        {
-            target_addr[i] = data_byte;
-        } while (target_addr[i] != data_byte);
-    }
-    target_addr += variable_name_size;
-
-    get_rb_config = (kingsgate_pcie_root_bridge_config*)target_addr;
-    get_vab_config = (kingsgate_pcie_vab_config*)target_addr;
-
-    fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)fpfw_init_get_handle("icc_hspmbx");
-
-    get_var_send_req.cb_ctx = cb_ctx;
-    fpfw_status_t send_status = fpfw_icc_base_send(icc_ctx, &get_var_send_req);
-    printf("GetVariable request: got status %x\n", (int)send_status);
-
-    get_var_recv_req.cb_ctx = cb_ctx;
-    fpfw_status_t recv_status = fpfw_icc_base_recv(icc_ctx, &get_var_recv_req);
-    printf("GetVariable response: got status %x\n", (int)recv_status);
+    return CLI_SUCCESS;
 }
 
 static FPFW_CLI_STATUS dump_pci_hsp_variables(int argc, const char** argv)
@@ -238,45 +202,36 @@ static FPFW_CLI_STATUS dump_pci_hsp_variables(int argc, const char** argv)
     {
         return CLI_ERROR;
     }
-    guid_t rb_config_guid_die_0 = PCIE_RB_CONFIG_VAR_DIE_0_GUID;
-    guid_t vab_config_guid_die_0 = VAB_CONFIG_VAR_DIE_0_GUID;
-    uint16_t rb_config_varname_die_0[] = PCIE_RB_CONFIG_VAR_DIE_0_NAME;
-    uint16_t vab_config_varname_die_0[] = VAB_CONFIG_VAR_DIE_0_NAME;
-
-    guid_t rb_config_guid_die_1 = PCIE_RB_CONFIG_VAR_DIE_1_GUID;
-    guid_t vab_config_guid_die_1 = VAB_CONFIG_VAR_DIE_1_GUID;
-    uint16_t rb_config_varname_die_1[] = PCIE_RB_CONFIG_VAR_DIE_1_NAME;
-    uint16_t vab_config_varname_die_1[] = VAB_CONFIG_VAR_DIE_1_NAME;
 
     switch (strtoul(argv[1], NULL, 0))
     {
     case (1):
-        get_hsp_variable(&rb_config_guid_die_0,
-                         rb_config_varname_die_0,
-                         sizeof(rb_config_varname_die_0),
-                         sizeof(kingsgate_pcie_root_bridge_config),
-                         &rb_cb_ctx);
+        return get_hsp_variable(&rb_config_guid_die_0,
+                                rb_config_varname_die_0,
+                                sizeof(rb_config_varname_die_0),
+                                sizeof(kingsgate_pcie_root_bridge_config),
+                                &rb_cb_ctx);
         break;
     case (2):
-        get_hsp_variable(&vab_config_guid_die_0,
-                         vab_config_varname_die_0,
-                         sizeof(vab_config_varname_die_0),
-                         sizeof(kingsgate_pcie_vab_config),
-                         &vab_cb_ctx);
+        return get_hsp_variable(&vab_config_guid_die_0,
+                                vab_config_varname_die_0,
+                                sizeof(vab_config_varname_die_0),
+                                sizeof(kingsgate_pcie_vab_config),
+                                &vab_cb_ctx);
         break;
     case (3):
-        get_hsp_variable(&rb_config_guid_die_1,
-                         rb_config_varname_die_1,
-                         sizeof(rb_config_varname_die_1),
-                         sizeof(kingsgate_pcie_root_bridge_config),
-                         &rb_cb_ctx);
+        return get_hsp_variable(&rb_config_guid_die_1,
+                                rb_config_varname_die_1,
+                                sizeof(rb_config_varname_die_1),
+                                sizeof(kingsgate_pcie_root_bridge_config),
+                                &rb_cb_ctx);
         break;
     case (4):
-        get_hsp_variable(&vab_config_guid_die_1,
-                         vab_config_varname_die_1,
-                         sizeof(vab_config_varname_die_1),
-                         sizeof(kingsgate_pcie_vab_config),
-                         &vab_cb_ctx);
+        return get_hsp_variable(&vab_config_guid_die_1,
+                                vab_config_varname_die_1,
+                                sizeof(vab_config_varname_die_1),
+                                sizeof(kingsgate_pcie_vab_config),
+                                &vab_cb_ctx);
         break;
     default:
         break;
@@ -451,6 +406,19 @@ void pcie_cli_init(pciess_device_t* pcie_dev_handles)
         pcie_dfwk_interface_init(&(pcie_dev_handles[i]), &(iface[i]));
         DfwkClientInterfaceOpen(&(iface[i].header));
     }
+
+    KNG_DIE_ID current_die_instance = (KNG_DIE_ID)idsw_get_die_id();
+    if (current_die_instance == DIE_0)
+    {
+        var_svc_mem_ctx.payload_base = SCP_EXP_SCP_VARIABLE_SERVICE_PAYLOAD_BASE;
+    }
+    else
+    {
+        var_svc_mem_ctx.payload_base = (uintptr_t)MSCP_ATU_AP_WINDOW_VAR_SVC_PCIE_PAYLOAD_BASE;
+    }
+
+    // Init RB variable service context
+    variable_service_initialize_ctx(&var_svc_req_ctx, &var_svc_mem_ctx);
 
     FpFwCliRegisterTable(&pcie_cli_table[0], (sizeof(pcie_cli_table) / sizeof(FPFW_CLI_COMMAND)));
 }

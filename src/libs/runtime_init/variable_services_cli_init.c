@@ -39,8 +39,8 @@ FPFW_INIT_COMPONENT(var_serv_cli, FPFW_INIT_DEPENDENCIES("var_serv", "ddr", "atu
     else
     {
         //! Payload resides in DDR space (Die 1 SCP can't access RMSS Ram)
-        mem_ctx.payload_base = (uintptr_t)MSCP_ATU_AP_WINDOW_VAR_SVC_BASE_ADDR;
-        mem_ctx.max_payload_size = MSCP_ATU_AP_WINDOW_VAR_SVC_DIE_SIZE;
+        mem_ctx.payload_base = (uintptr_t)MSCP_ATU_AP_WINDOW_VAR_SVC_TEST_PAYLOAD_BASE;
+        mem_ctx.max_payload_size = MSCP_ATU_AP_WINDOW_VAR_SVC_TEST_PAYLOAD_BASE_SIZE;
     }
     
     variable_services_cli_init(&mem_ctx);

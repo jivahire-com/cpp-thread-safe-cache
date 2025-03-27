@@ -88,6 +88,13 @@ FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "v
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, pcie_dev_handles};
 }
 
+FPFW_INIT_COMPONENT(pcie_config, FPFW_INIT_DEPENDENCIES("pcie", "atu_svc", "ddr", "var_serv"))
+{
+    scp_pcie_start_config_service_thread();
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
 FPFW_INIT_COMPONENT(pcie_cli, FPFW_INIT_DEPENDENCIES("pcie", "cli"))
 {
     fpfw_init_component_id_t pcie_id = "pcie";

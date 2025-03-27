@@ -15,9 +15,13 @@ target_link_libraries(
     fwlib.service.iccBase
     fwlib.lib.init
     ms::driver::pcie
+    ms::lib::error_codes
     ms::lib::threadx
     ms::lib::hsp_firmware_headers
+    ms::lib::variable_services
+    ms::service::atu_service
     silibs::kng_silibs_platform
+    silibs::idsw_kng
     silibs::pcie
     silibs::pciess
 )

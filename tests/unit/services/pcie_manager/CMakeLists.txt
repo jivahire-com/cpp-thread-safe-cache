@@ -19,8 +19,10 @@ target_link_libraries(${TARGET}
     ms::driver::pcie
     ms::lib::error_handler
     ms::lib::threadx
+    ms::lib::variable_services
     ms::mocks::threadx
     ms::service::pcie_manager
+    ms::service::atu_service
     silibs::kng_silibs_platform
     silibs::pcie
     silibs::pciess
@@ -62,7 +64,7 @@ mock_target(${TARGET}
     send_sync_get_rpss_entity
     memcpy
     memset
-    fpfw_icc_base_send
-    fpfw_icc_base_recv
     variable_serv_copy_to_rmss_ram
+    variable_service_initialize_ctx
+    variable_service_async_set_variable
 )

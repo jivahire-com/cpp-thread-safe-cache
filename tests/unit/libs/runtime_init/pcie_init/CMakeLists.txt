@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
     ms::cmocka::testrunner
     ms::driver::pcie
     ms::lib::threadx
+    ms::mocks::threadx
     ms::lib::cxl
     ms::service::atu_service
     ms::service::pcie_manager
@@ -45,4 +46,5 @@ mock_target(${TARGET}
     pcie_cli_init
     scp_pcie_initialize
     idsw_get_die_id
+    _txe_thread_create
 )

@@ -55,9 +55,7 @@ pcie_manager_context_t* scp_pcie_get_manager_context(uint8_t rpss_idx)
     return &pcie_mgr_ctx[rpss_idx % PCIE_RPSS_PER_DIE];
 }
 
-/*  Initialize the event flags for configuration variables and
- *  start the thread to be alerted when all configs are populated
- */
+/*  Initialize the event flags for configuration variables */
 void scp_pcie_config_service_initialize(uint16_t rpss_to_init)
 {
     if (!rpss_to_init)
@@ -80,17 +78,21 @@ void scp_pcie_config_service_initialize(uint16_t rpss_to_init)
     pcie_cfg_mgr_ctx.event_flags_mask = rpss_to_init;
     pcie_cfg_mgr_ctx.rb_config_var = &rb_config_var;
     pcie_cfg_mgr_ctx.vab_config_var = &vab_config_var;
+}
 
-    status = tx_thread_create(&(pcie_cfg_mgr_ctx.worker),
-                              "pcie_config_worker_thread",
-                              config_variable_service_thread_fn,
-                              (ULONG)(&pcie_cfg_mgr_ctx),
-                              (void*)(config_stack),
-                              PCIE_RP_SERVICE_THREAD_STACK_SIZE,
-                              10,
-                              10,
-                              TX_NO_TIME_SLICE,
-                              TX_AUTO_START);
+/* Start the thread to be alerted when all configs are populated */
+void scp_pcie_start_config_service_thread(void)
+{
+    int status = tx_thread_create(&(pcie_cfg_mgr_ctx.worker),
+                                  "pcie_config_worker_thread",
+                                  config_variable_service_thread_fn,
+                                  (ULONG)(&pcie_cfg_mgr_ctx),
+                                  (void*)(config_stack),
+                                  PCIE_RP_SERVICE_THREAD_STACK_SIZE,
+                                  10,
+                                  10,
+                                  TX_NO_TIME_SLICE,
+                                  TX_AUTO_START);
     if (status != TX_SUCCESS)
     {
         printf("%s: Failed to launch config service thread! TX_STATUS: %d\n", __func__, status);
@@ -114,6 +116,7 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
     {
         if (((rpss_to_init_per_die >> i) & 0x1) != 0x1)
         {
+            vab_config_var.vab_config[i].vab_disable = true;
             continue;
         }
 

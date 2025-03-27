@@ -87,3 +87,12 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
  *  @retval     None. Errors raised if failure in initialization.
  */
 void send_async_wait_for_event(pcie_manager_context_t* ctx, uint8_t rp_idx, uint8_t num_event);
+
+/**
+ *  @brief      Start the PCIe configuration service thread after dependencies have been initialized.
+ *
+ *
+ *  @retval     None. Errors raised if failure in initialization.
+ */
+void scp_pcie_start_config_service_thread(void);
+

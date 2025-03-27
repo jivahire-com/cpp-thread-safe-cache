@@ -32,6 +32,7 @@ extern "C" {
 extern fpfw_init_component_t _fpfw_component_pcie;
 extern fpfw_init_component_t _fpfw_component_pcie_cli;
 extern fpfw_init_component_t _fpfw_component_cxl_chbcr;
+extern fpfw_init_component_t _fpfw_component_pcie_config;
 
 /*------------- Functions ----------------*/
 void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
@@ -154,4 +155,21 @@ TEST_FUNCTION(test_cxl_init, NULL, NULL)
 {
     will_return(__wrap_idsw_get_die_id, DIE_1);
     _fpfw_component_cxl_chbcr.init_fn();
+}
+
+TEST_FUNCTION(test_pcie_config_init, NULL, NULL)
+{
+    expect_any_always(__wrap__txe_thread_create, thread_ptr);
+    expect_any_always(__wrap__txe_thread_create, name_ptr);
+    expect_any_always(__wrap__txe_thread_create, entry_function);
+    expect_any_always(__wrap__txe_thread_create, entry_input);
+    expect_any_always(__wrap__txe_thread_create, stack_start);
+    expect_any_always(__wrap__txe_thread_create, stack_size);
+    expect_any_always(__wrap__txe_thread_create, priority);
+    expect_any_always(__wrap__txe_thread_create, preempt_threshold);
+    expect_any_always(__wrap__txe_thread_create, time_slice);
+    expect_any_always(__wrap__txe_thread_create, auto_start);
+    expect_any_always(__wrap__txe_thread_create, thread_control_block_size);
+    will_return_always(__wrap__txe_thread_create, TX_SUCCESS);
+    _fpfw_component_pcie_config.init_fn();
 }

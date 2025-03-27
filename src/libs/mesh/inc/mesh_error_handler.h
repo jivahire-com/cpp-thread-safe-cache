@@ -65,6 +65,9 @@ MSB of Mesh Node ID
 #define D2DSS_TEST_RAS_INJ_COUNTER              (0xFFFFF)
 #define D2DSS_TEST_RAS_ERROR_INF                (0x102000)
 
+#define D2DSS_CE_COUNTER_MAX                    (0x7FFFULL)
+#define D2DSS_ERR0MISC0_HI                      (0x24)
+
 /**
  * Mesh Fault ISR
  * This function is called when a Mesh Fault ISR is triggered by the hardware INT

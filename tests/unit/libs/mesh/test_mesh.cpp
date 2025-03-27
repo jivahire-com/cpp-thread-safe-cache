@@ -43,6 +43,7 @@ extern void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequen
 /*-- Declarations (Statics and globals) --*/
 bool simulate_single_die = true;
 bool g_test_mesh_d2d_override = false;
+uint16_t g_test_d2d_ecc_ce_counter = 0x0;
 KNG_DIE_ID g_test_die = (KNG_DIE_ID)0;
 static fpfw_icc_base_ctx_t* test_icc_base_hsp_mbx_ctx;
 extern ras_agent_entity_t d2dss2_agent[NUM_OF_CCG_WITH_D2D];
@@ -103,6 +104,20 @@ bool __wrap_system_info_is_warm_start()
     return mock_type(bool);
 }
 
+void __wrap_mmio_write32(void* addr, uint32_t data)
+{
+    function_called();
+    FPFW_UNUSED(addr);
+    FPFW_UNUSED(data);
+    return;
+}
+
+uint32_t __wrap_mmio_read32(void* addr)
+{
+    FPFW_UNUSED(addr);
+    return 0;
+}
+
 //
 // Setup and Teardown Functions
 //
@@ -146,6 +161,7 @@ static int setup_undefined_platform(void** pContext)
     g_test_die = (KNG_DIE_ID)0;
     g_ras_arm_agent_set_base = SILIBS_SUCCESS;
     g_test_mesh_d2d_override = false;
+    g_test_d2d_ecc_ce_counter = 0x0;
     return 0;
 }
 
@@ -362,6 +378,11 @@ void setup_common_isr_expectations(void)
     // FPFwCoreInterruptEnableVector
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_INTREQERRNS);
     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_INTREQERRNS);
+}
+
+uint16_t __wrap_config_get_d2d_ecc_ce_counter(void)
+{
+    return g_test_d2d_ecc_ce_counter;
 }
 
 bool __wrap_config_get_mesh_d2d_override(void)
@@ -923,6 +944,33 @@ TEST_FUNCTION(test_mesh_error_handler_d2d_ras_init_Die_1, setup_svp_platform, se
         expect_value(__wrap_ras_arm_agent_enable_logging, agent, &d2dss2_agent[d2d_subsystem]);
         expect_function_call(__wrap_ras_arm_agent_enable_logging);
     }
+    // Call API under test
+    d2d_ras_init();
+}
+
+// D2D RAS Init for Die 0
+TEST_FUNCTION(test_mesh_error_handler_d2d_ras_init_Die_0, setup_svp_platform, setup_undefined_platform)
+{
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+    // d2d_ras_init
+    for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
+    {
+        expect_value(__wrap_ras_arm_agent_setup_entity, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_setup_entity);
+        expect_value(__wrap_ras_arm_agent_init, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_init);
+        expect_value(__wrap_ras_arm_agent_enable_signaling_by_type, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_signaling_by_type);
+        expect_value(__wrap_ras_arm_agent_enable_fhi, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_fhi);
+        expect_value(__wrap_ras_arm_agent_enable_logging, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_enable_logging);
+        expect_function_call(__wrap_mmio_write32);
+    }
+    // Override the g_test_d2d_ecc_ce_counter to test the D2D RAS init
+    g_test_d2d_ecc_ce_counter = 0x30;
+
     // Call API under test
     d2d_ras_init();
 }

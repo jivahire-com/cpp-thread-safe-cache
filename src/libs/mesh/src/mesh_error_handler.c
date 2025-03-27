@@ -17,6 +17,7 @@
 #include <cmn_config.h>           // for CMN800_CONFIG_CONFIG
 #include <d2d_ras_regs.h>
 #include <d2dss_cxs_regs.h>
+#include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h> // for fpfw_icc_base_ctx_t
 #include <idhw.h>          // for idhw_is_single_die_boot_en
 #include <idsw.h>          // for idsw_get_platform_sdv,
@@ -356,13 +357,31 @@ void d2d_ras_init(void)
         // Need to convert the knobs to RAS_ARM_COMMON types
         ASSERT_FAIL(ras_arm_agent_enable_signaling_by_type(
                         &d2dss2_agent[d2d_subsystem],
-                        RAS_ARM_CNTRL_DFI | RAS_ARM_CNTRL_CED | RAS_ARM_CNTRL_CI | RAS_ARM_CNTRL_DUI | RAS_ARM_CNTRL_CFI |
-                            RAS_ARM_CNTRL_UE | RAS_ARM_CNTRL_FI | RAS_ARM_CNTRL_UI | RAS_ARM_CNTRL_ED) == SILIBS_SUCCESS);
+                        RAS_ARM_CNTRL_DFI | RAS_ARM_CNTRL_CI | RAS_ARM_CNTRL_DUI | RAS_ARM_CNTRL_CFI | RAS_ARM_CNTRL_UE |
+                            RAS_ARM_CNTRL_FI | RAS_ARM_CNTRL_UI | RAS_ARM_CNTRL_ED) == SILIBS_SUCCESS);
         // Enable fhi ERRFHICR2
         ASSERT_FAIL(ras_arm_agent_enable_fhi(&d2dss2_agent[d2d_subsystem]) == SILIBS_SUCCESS);
 
         // Enable logging
         ASSERT_FAIL(ras_arm_agent_enable_logging(&d2dss2_agent[d2d_subsystem]) == SILIBS_SUCCESS);
+
+        // Program the CE Counter Register
+        uint16_t temp16 = config_get_d2d_ecc_ce_counter();
+        if (temp16 != 0)
+        {
+            uint32_t data32 = D2DSS_CE_COUNTER_MAX - temp16;
+            MESH_CRIT("D2D:: CE Counter To write 0x%08x\n", data32);
+            // Read
+            MESH_CRIT("D2D:: CE Counter Reg Read Addr 0x%08x, Value 0x%08x\n",
+                      (uintptr_t)(translated_addr_ras2 + D2DSS_ERR0MISC0_HI),
+                      MMIO_READ32((uintptr_t)(translated_addr_ras2 + D2DSS_ERR0MISC0_HI)));
+            // Write
+            MMIO_WRITE32((uintptr_t)(translated_addr_ras2 + D2DSS_ERR0MISC0_HI), data32);
+            // Readback
+            MESH_CRIT("D2D:: CE Counter Reg Readback Addr 0x%08x, Value 0x%08x\n",
+                      (uintptr_t)(translated_addr_ras2 + D2DSS_ERR0MISC0_HI),
+                      MMIO_READ32((uintptr_t)(translated_addr_ras2 + D2DSS_ERR0MISC0_HI)));
+        }
 
         d2d_clear_atu_map(d2d_subsystem);
     }

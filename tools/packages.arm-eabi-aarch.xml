@@ -20,7 +20,7 @@
         <package name="echofalls.fpga.uefi.build" version="1.10.0.251" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="echofalls.fpga.stmm.build" version="1.10.0.251" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="1pfw.datwizard-preview-x86_64-pc-windows-msvc" version="0.2.0-20250325.5" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/nuget/v3/index.json"/>
-        <package name="kng_mesh_binary_images" version="1.0.0.4" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins/nuget/v3/index.json"/>
+        <package name="kng_mesh_binary_images" version="1.0.0.5" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins/nuget/v3/index.json"/>
     </nuget_packages>
 
     <pip_packages>

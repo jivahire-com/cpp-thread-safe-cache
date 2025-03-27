@@ -78,4 +78,7 @@ mock_target(${TARGET}
     get_default_d2d_cfg
     process_mesh_binary_from_spi
     system_info_is_warm_start
+    config_get_d2d_ecc_ce_counter
+    mmio_read32
+    mmio_write32
 )

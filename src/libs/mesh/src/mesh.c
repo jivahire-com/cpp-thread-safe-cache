@@ -148,7 +148,6 @@ void print_mesh_d2d_knob_values(void)
     MESH_DBG("d2d_pll_fb_devider = 0x%x\n", temp_d2d_cfg->d2d_pll_fb_devider);
     MESH_DBG("d2d_ecc_cfg = 0x%x\n", temp_d2d_cfg->d2d_ecc_cfg);
     MESH_DBG("d2d_tx_interface_clk_alignment = 0x%x\n", temp_d2d_cfg->d2d_tx_interface_clk_alignment);
-    MESH_DBG("d2d_ras_enable = 0x%x\n", temp_d2d_cfg->d2d_ras_enable);
     MESH_DBG("d2d_sleep_cfg = 0x%x\n", temp_d2d_cfg->d2d_sleep_cfg);
     MESH_DBG("d2d_sleep_cfg_entry = 0x%x\n", temp_d2d_cfg->d2d_sleep_cfg_entry);
     MESH_DBG("d2d_rxcal_find_goodlanes_skip = 0x%x\n", temp_d2d_cfg->d2d_rxcal_find_goodlanes_skip);
@@ -289,12 +288,11 @@ void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_para
 
         // Read and Update the D2D Knobs
         d2d_cfg_t* temp_d2d_cfg = get_default_d2d_cfg();
-        temp_d2d_cfg->d2d_pll_divder = config_get_d2d_pll_divder();
-        temp_d2d_cfg->d2d_ref_divder = config_get_d2d_ref_divder();
-        temp_d2d_cfg->d2d_pll_fb_devider = config_get_d2d_pll_fb_devider();
+        temp_d2d_cfg->d2d_pll_divder = config_get_d2d_pll_divider();
+        temp_d2d_cfg->d2d_ref_divder = config_get_d2d_ref_divider();
+        temp_d2d_cfg->d2d_pll_fb_devider = config_get_d2d_pll_fb_divider();
         temp_d2d_cfg->d2d_ecc_cfg = config_get_d2d_ecc_cfg();
         temp_d2d_cfg->d2d_tx_interface_clk_alignment = config_get_d2d_tx_interface_clk_alignment();
-        temp_d2d_cfg->d2d_ras_enable = config_get_d2d_ras_enable();
         temp_d2d_cfg->d2d_sleep_cfg = config_get_d2d_sleep_cfg();
         temp_d2d_cfg->d2d_sleep_cfg_entry = config_get_d2d_sleep_cfg_entry();
         temp_d2d_cfg->d2d_rxcal_find_goodlanes_skip = config_get_d2d_rxcal_find_goodlanes_skip();

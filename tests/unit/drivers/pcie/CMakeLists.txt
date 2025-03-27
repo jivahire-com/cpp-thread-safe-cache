@@ -85,4 +85,5 @@ mock_target(${TARGET}
     pciess_rps_ready
     pciess_rps_post_rp_ready_init
     pciess_probe
+    pciess_phys_program_fw
 )

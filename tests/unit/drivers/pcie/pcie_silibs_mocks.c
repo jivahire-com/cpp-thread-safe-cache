@@ -107,6 +107,13 @@ silibs_status_t __wrap_pciess_phys_sram_init_done(pcie_ss_entity_t* ss)
     return mock_type(silibs_status_t);
 }
 
+silibs_status_t __wrap_pciess_phys_program_fw(pcie_ss_entity_t* ss, pcie_phy_fw_t* fw)
+{
+    assert_non_null(ss);
+    assert_non_null(fw);
+    return mock_type(silibs_status_t);
+}
+
 silibs_status_t __wrap_pciess_rps_pre_rp_ready_init(pcie_ss_entity_t* ss)
 {
     assert_non_null(ss);

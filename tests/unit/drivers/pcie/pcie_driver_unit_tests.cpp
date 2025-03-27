@@ -318,6 +318,7 @@ TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success, test_setup, test_teardow
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return(__wrap_pciess_phys_sram_init_done, SILIBS_SUCCESS);
+    will_return(__wrap_pciess_phys_program_fw, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_pre_rp_ready_init, SILIBS_SUCCESS);
     int32_t ret = pcie_sched_sync_op(&(r.header));
     assert_int_equal(ret, 0);

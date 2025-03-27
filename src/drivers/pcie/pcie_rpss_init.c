@@ -17,6 +17,7 @@
 #include <idsw_kng.h>
 #include <kng_atu_mappings.h>
 #include <kng_soc_constants.h>
+#include <mscp_exp_rmss_memory_map.h>
 #include <pcie_config_i.h>
 #include <pcie_dfwk.h>
 #include <pcie_platform_overrides_i.h>
@@ -108,11 +109,18 @@ int begin_rpss_pre_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
     pcie_sync_request_t* r = (pcie_sync_request_t*)req;
     silibs_status_t sts = SILIBS_SUCCESS;
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
+    pcie_phy_fw_t* phyfw = (pcie_phy_fw_t*)(SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
+
     FPFW_RUNTIME_ASSERT(rpss != NULL);
 
     if (plat_get_phy_programming_support() == true)
     {
         sts = pciess_phys_sram_init_done(rpss);
+        FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+
+        // There is no PHY Loaded other than the this, so any failure here should be
+        // treated as FATAL
+        sts = pciess_phys_program_fw(rpss, phyfw);
         FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
     }
 

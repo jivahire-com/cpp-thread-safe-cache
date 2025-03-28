@@ -53,3 +53,11 @@
 
 ## SVP Teardown
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+## Crash Dump Tests
+./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_trigger_exception_test.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_stack_overflow_test.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_set_single_core_mode_test.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot

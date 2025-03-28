@@ -7,7 +7,7 @@ parameters:
   default: 'i386-pc-windows-msvc'
 - name: Configuration
   type: string
-  default: 'Release'
+  default: 'Debug'
 
 jobs:
 - job: 'Build'

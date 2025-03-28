@@ -17,15 +17,6 @@ variables:
 
 # Build stage
 stages:
-- stage: Build_x86_Debug
-  dependsOn: []
-  jobs:
-  - template: templates/build.yaml
-    parameters:
-      Toolchain: i386-pc-windows-msvc
-      Configuration: Debug
-      ArtifactName: Build_x86_Debug
-
 - stage: Build_Arm_EABI_AARCH_Debug
   dependsOn: []
   jobs:
@@ -42,8 +33,8 @@ stages:
     parameters:
       ArtifactName: SVP_Pythia_Tests
 
-- stage: Unit_Test_x86
-  dependsOn: [Build_x86_Debug, Build_Arm_EABI_AARCH_Debug]
+- stage: Build_Unit_Test_x86
+  dependsOn: []
   jobs:
   - template: templates/unittest.yaml
     parameters:
@@ -52,10 +43,10 @@ stages:
       # Pipeline variables defined within ADO
       BranchCoverage: $(branch_coverage)
       LineCoverage: $(line_coverage)
-      ArtifactName: Unit_Test_x86
+      ArtifactName: Build_Unit_Test_x86
 
 - stage: Publish
-  dependsOn: [Unit_Test_x86, Build_x86_Debug, Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests]
+  dependsOn: [Build_Unit_Test_x86, Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests]
   condition: eq(variables['OfficialBuild'], 'true')
   pool: 
     name: 1pfw-kingsgate-windows

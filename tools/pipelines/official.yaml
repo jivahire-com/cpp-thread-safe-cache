@@ -59,15 +59,6 @@ extends:
           enabled: true
 
     stages:
-    - stage: Build_x86_Debug
-      dependsOn: []
-      jobs:
-      - template: tools/pipelines/templates/build.yaml@self
-        parameters:
-          Toolchain: i386-pc-windows-msvc
-          Configuration: Debug
-          ArtifactName: Build_x86_Debug
-
     - stage: Build_Arm_EABI_AARCH_Debug
       dependsOn: []
       jobs:
@@ -77,8 +68,8 @@ extends:
           Configuration: Debug
           ArtifactName: Build_Arm_EABI_AARCH_Debug
 
-    - stage: Unit_Test_x86
-      dependsOn: Build_x86_Debug
+    - stage: Build_Unit_Test_x86
+      dependsOn: []
       jobs:
       - template: tools/pipelines/templates/unittest.yaml@self
         parameters:
@@ -86,10 +77,10 @@ extends:
           Configuration: Debug
           BranchCoverage: $(branch_coverage)
           LineCoverage: $(line_coverage)
-          ArtifactName: Unit_Test_x86
+          ArtifactName: Build_Unit_Test_x86
 
     - stage: Publish
-      dependsOn: [Unit_Test_x86, Build_x86_Debug, Build_Arm_EABI_AARCH_Debug]
+      dependsOn: [Build_Unit_Test_x86, Build_Arm_EABI_AARCH_Debug]
       condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
       jobs:
       - template: tools/pipelines/templates/publish.yaml@self
@@ -99,7 +90,7 @@ extends:
 
     # Promote is to tag the merge commit so that it can be used by tag reference. This stage is configured to tag by BuildNumber after every PR closure.
     - stage: Promote
-      dependsOn: [Unit_Test_x86, Build_x86_Debug, Build_Arm_EABI_AARCH_Debug]
+      dependsOn: [Build_Unit_Test_x86, Build_Arm_EABI_AARCH_Debug]
       # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
       condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
       jobs:

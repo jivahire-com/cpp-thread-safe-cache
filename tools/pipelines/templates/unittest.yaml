@@ -33,32 +33,26 @@ jobs:
         packageType: 'sdk'
         version: 6.x
         performMultiLevelLookup: true
-        
-    # Download input artifact
-    - task: DownloadPipelineArtifact@2
-      inputs:
-          buildType: 'current'
-          downloadType: 'single'
-          artifactName: 'drop_Build_x86_Debug_Build'
-          downloadPath: '$(System.ArtifactsDirectory)\bins.i386-pc-windows-msvc.Debug'
 
     # Main test task, loads test scripts and runs the orchestrator
     - task: PowerShell@2
-      displayName: Unit Tests
+      displayName: Build and Unit Tests
       inputs:
+        workingDirectory: '$(Build.SourcesDirectory)'
         targetType: 'inline'
         script: |
           $env:AZURE_DEVOPS_EXT_PAT = "$(System.AccessToken)"
           $env:REPO_APP_ROOT = "$(Build.SourcesDirectory)"
 
-          & "$(Build.SourcesDirectory)\start.ps1" -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
-
+          ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
+          build
+          
           $TargetLogDir = "$(System.ArtifactsDirectory)\Unit_Test_Logs"
           & "${env:REPO_APP_PATH_1pfw.tools.win64}\sptest" `
             /devicesfile:"$(Build.SourcesDirectory)\tests\unit\SpTestDevices.xml" `
-            /packagesdir:"$(System.ArtifactsDirectory)\bins.i386-pc-windows-msvc.Debug"\bin `
+            /packagesdir:"$(Build.SourcesDirectory)\.build\${{ parameters.Configuration }}\${{ parameters.Toolchain }}"\bin `
             /logsdir:"$TargetLogDir" `
-            /define:test_bin_dir="$(System.ArtifactsDirectory)\bins.i386-pc-windows-msvc.Debug"\bin `
+            /define:test_bin_dir="$(Build.SourcesDirectory)\.build\${{ parameters.Configuration }}\${{ parameters.Toolchain }}"\bin `
             /define:test_src_dir="$(Build.SourcesDirectory)" `
             /runtests
 
@@ -135,11 +129,3 @@ jobs:
             throw "Branch coverage is less than target!"
           }
           Write-Host "Coverage check passed!"
-
-    # Publish results as a pipeline artifact
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: '$(System.ArtifactsDirectory)\Unit_Test_Logs'
-        artifact: 'drop_${{ parameters.ArtifactName }}_Unit_Tests'
-        publishLocation: 'pipeline'
-        parallel: true

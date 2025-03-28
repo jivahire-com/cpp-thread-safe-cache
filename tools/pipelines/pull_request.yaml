@@ -1,5 +1,5 @@
 
-name: 0.1.2.$(rev:r)
+name: 1.20.0.$(rev:r)
 
 trigger: none
 

@@ -2,7 +2,7 @@
 # Copyright (C) Microsoft Corporation. All rights reserved.
 #
 
-name: 0.1.0.$(rev:r)
+name: 1.20.0.$(rev:r)
 
 trigger: none
 

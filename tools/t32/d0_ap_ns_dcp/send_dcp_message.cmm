@@ -38,7 +38,7 @@ if ("&client_id"=="")
 
 if ("&resp_timeout_ms"=="")
 (
-    &resp_timeout_ms= Format.Decimal(4.,3000.)
+    &resp_timeout_ms= Format.Decimal(4.,4000.)
 )
 else
 (
@@ -112,8 +112,13 @@ Var.assign \dcp_header[1]=(&client_id>>8)&0xFF
 Var.assign \dcp_header[2]=&message_id&0xFF
 Var.assign \dcp_header[3]=(&message_id>>8)&0xFF
 
+// Sequence Number
+// NOTE: A real host should increment this number for each new message sent. For testing, we will just set it to 0xFFFF.
+Var.assign \dcp_header[4]=0xFF
+Var.assign \dcp_header[5]=0xFF
+
 // The rest we set to 0
-Var.assign \dcp_header[4..9]=0x00
+Var.assign \dcp_header[6..9]=0x00
 
 //
 // Fill in message payload. Zeroize the payload then insert from user input

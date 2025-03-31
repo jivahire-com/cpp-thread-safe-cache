@@ -114,7 +114,68 @@ void print_mesh_d2d_knob_values(void)
     {
         MESH_DBG("mesh_rnd_aux_ctl[%d] = 0x%x_%x\n", i, PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rnd_aux_ctl[i]));
     }
-
+    MESH_DBG("mesh_hnf_pocq_alloc_class_dedicated = 0x%x_%x\n",
+             PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_pocq_alloc_class_dedicated));
+    MESH_DBG("mesh_hnf_pocq_alloc_class_max_allowed = 0x%x_%x\n",
+             PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_pocq_alloc_class_max_allowed));
+    MESH_DBG("mesh_hnf_pocq_alloc_class_contended_min = 0x%x_%x\n",
+             PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_pocq_alloc_class_contended_min));
+    MESH_DBG("mesh_hnf_pocq_alloc_misc_max_allowed = 0x%x_%x\n",
+             PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_pocq_alloc_misc_max_allowed));
+    MESH_DBG("mesh_hnf_class_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_class_ctl));
+    MESH_DBG("mesh_hnf_pocq_qos_class_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_pocq_qos_class_ctl));
+    MESH_DBG("mesh_hnf_class_pocq_arb_weight_ctl = 0x%x_%x\n",
+             PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_class_pocq_arb_weight_ctl));
+    MESH_DBG("mesh_hnf_class_retry_weight_ctl = 0x%x_%x\n",
+             PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_class_retry_weight_ctl));
+    MESH_DBG("mesh_hnf_pocq_misc_retry_weight_ctl = 0x%x_%x\n",
+             PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_pocq_misc_retry_weight_ctl));
+    MESH_DBG("mesh_sbsx_cbusy_limit_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_sbsx_cbusy_limit_ctl));
+    for (int i = 0; i < 3; i++)
+    {
+        MESH_DBG("mesh_rni_qos_cfg[%d].qos_control = 0x%x_%x\n",
+                 i,
+                 PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rni_qos_cfg[i].qos_control));
+        MESH_DBG("mesh_rni_qos_cfg[%d].qos_lat_tagt = 0x%x_%x\n",
+                 i,
+                 PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rni_qos_cfg[i].qos_lat_tagt));
+        MESH_DBG("mesh_rni_qos_cfg[%d].qos_lat_scale = 0x%x_%x\n",
+                 i,
+                 PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rni_qos_cfg[i].qos_lat_scale));
+        MESH_DBG("mesh_rni_qos_cfg[%d].qos_lat_range = 0x%x_%x\n",
+                 i,
+                 PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rni_qos_cfg[i].qos_lat_range));
+    }
+    for (int i = 0; i < 3; i++)
+    {
+        MESH_DBG("mesh_rnd_qos_cfg[%d].qos_control = 0x%x_%x\n",
+                 i,
+                 PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rnd_qos_cfg[i].qos_control));
+        MESH_DBG("mesh_rnd_qos_cfg[%d].qos_lat_tagt = 0x%x_%x\n",
+                 i,
+                 PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rnd_qos_cfg[i].qos_lat_tagt));
+        MESH_DBG("mesh_rnd_qos_cfg[%d].qos_lat_scale = 0x%x_%x\n",
+                 i,
+                 PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rnd_qos_cfg[i].qos_lat_scale));
+        MESH_DBG("mesh_rnd_qos_cfg[%d].qos_lat_range = 0x%x_%x\n",
+                 i,
+                 PRINT64_HEX(temp_cmn800_sam_cfg->mesh_rnd_qos_cfg[i].qos_lat_range));
+    }
+    for (int i = 0; i < 3; i++)
+    {
+        MESH_DBG("mesh_mxp_qos_cfg[%d].qos_control = 0x%x_%x\n",
+                 i,
+                 PRINT64_HEX(temp_cmn800_sam_cfg->mesh_mxp_qos_cfg[i].qos_control));
+        MESH_DBG("mesh_mxp_qos_cfg[%d].qos_lat_tagt = 0x%x_%x\n",
+                 i,
+                 PRINT64_HEX(temp_cmn800_sam_cfg->mesh_mxp_qos_cfg[i].qos_lat_tagt));
+        MESH_DBG("mesh_mxp_qos_cfg[%d].qos_lat_scale = 0x%x_%x\n",
+                 i,
+                 PRINT64_HEX(temp_cmn800_sam_cfg->mesh_mxp_qos_cfg[i].qos_lat_scale));
+        MESH_DBG("mesh_mxp_qos_cfg[%d].qos_lat_range = 0x%x_%x\n",
+                 i,
+                 PRINT64_HEX(temp_cmn800_sam_cfg->mesh_mxp_qos_cfg[i].qos_lat_range));
+    }
     // Print the Mesh RAS Knobs
     cmn800_ras_cfg_t* temp_cmn800_ras_cfg = cmn800_get_mesh_ras_cfg_knob();
     UNUSED(temp_cmn800_ras_cfg);
@@ -234,35 +295,82 @@ void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_para
         temp_cmn800_sam_cfg->mesh_hnf_lbt_aux_ctl = config_get_mesh_hnf_lbt_aux_ctl();
         temp_cmn800_sam_cfg->mesh_hnf_lbt_cbusy_ctl = config_get_mesh_hnf_lbt_cbusy_ctl();
         mesh_hni_cfg_ctl_t temp_mesh_hni_cfg_ctl = config_get_mesh_hni_cfg_ctl_knob();
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < MESH_HNI_CFG_CTL_MAX; i++)
         {
             temp_cmn800_sam_cfg->mesh_hni_cfg_ctl[i] = temp_mesh_hni_cfg_ctl.mesh_hni_cfg_ctl[i];
         }
         mesh_hni_aux_ctl_t temp_mesh_hni_aux_ctl = config_get_mesh_hni_aux_ctl_knob();
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < MESH_HNI_AUX_CTL_MAX; i++)
         {
             temp_cmn800_sam_cfg->mesh_hni_aux_ctl[i] = temp_mesh_hni_aux_ctl.mesh_hni_aux_ctl[i];
         }
         temp_cmn800_sam_cfg->mesh_hnt_dn_domain_cxra = config_get_mesh_hnt_dn_domain_cxra();
         mesh_rni_cfg_ctl_t temp_mesh_rni_cfg_ctl = config_get_mesh_rni_cfg_ctl_knob();
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < MESH_RNI_CFG_CTL_MAX; i++)
         {
             temp_cmn800_sam_cfg->mesh_rni_cfg_ctl[i] = temp_mesh_rni_cfg_ctl.mesh_rni_cfg_ctl[i];
         }
         mesh_rni_aux_ctl_t temp_mesh_rni_aux_ctl = config_get_mesh_rni_aux_ctl_knob();
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < MESH_RNI_AUX_CTL_MAX; i++)
         {
             temp_cmn800_sam_cfg->mesh_rni_aux_ctl[i] = temp_mesh_rni_aux_ctl.mesh_rni_aux_ctl[i];
         }
         mesh_rnd_cfg_ctl_t temp_mesh_rnd_cfg_ctl = config_get_mesh_rnd_cfg_ctl_knob();
-        for (int i = 0; i < 7; i++)
+        for (int i = 0; i < MESH_RND_CFG_CTL_MAX; i++)
         {
             temp_cmn800_sam_cfg->mesh_rnd_cfg_ctl[i] = temp_mesh_rnd_cfg_ctl.mesh_rnd_cfg_ctl[i];
         }
         mesh_rnd_aux_ctl_t temp_mesh_rnd_aux_ctl = config_get_mesh_rnd_aux_ctl_knob();
-        for (int i = 0; i < 7; i++)
+        for (int i = 0; i < MESH_RND_AUX_CTL_MAX; i++)
         {
             temp_cmn800_sam_cfg->mesh_rnd_aux_ctl[i] = temp_mesh_rnd_aux_ctl.mesh_rnd_aux_ctl[i];
+        }
+        temp_cmn800_sam_cfg->mesh_hnf_pocq_alloc_class_dedicated = config_get_mesh_hnf_pocq_alloc_class_dedicated();
+        temp_cmn800_sam_cfg->mesh_hnf_pocq_alloc_class_max_allowed = config_get_mesh_hnf_pocq_alloc_class_max_allowed();
+        temp_cmn800_sam_cfg->mesh_hnf_pocq_alloc_class_contended_min =
+            config_get_mesh_hnf_pocq_alloc_class_contended_min();
+        temp_cmn800_sam_cfg->mesh_hnf_pocq_alloc_misc_max_allowed = config_get_mesh_hnf_pocq_alloc_misc_max_allowed();
+        temp_cmn800_sam_cfg->mesh_hnf_class_ctl = config_get_mesh_hnf_class_ctl();
+        temp_cmn800_sam_cfg->mesh_hnf_pocq_qos_class_ctl = config_get_mesh_hnf_pocq_qos_class_ctl();
+        temp_cmn800_sam_cfg->mesh_hnf_class_pocq_arb_weight_ctl = config_get_mesh_hnf_class_pocq_arb_weight_ctl();
+        temp_cmn800_sam_cfg->mesh_hnf_class_retry_weight_ctl = config_get_mesh_hnf_class_retry_weight_ctl();
+        temp_cmn800_sam_cfg->mesh_hnf_pocq_misc_retry_weight_ctl = config_get_mesh_hnf_pocq_misc_retry_weight_ctl();
+        temp_cmn800_sam_cfg->mesh_sbsx_cbusy_limit_ctl = config_get_mesh_sbsx_cbusy_limit_ctl();
+        mesh_rni_qos_cfg_t temp_mesh_rni_qos_cfg_knob = config_get_mesh_rni_qos_cfg_knob();
+        for (int i = 0; i < MESH_RNI_QOS_CFG_MAX; i++)
+        {
+            temp_cmn800_sam_cfg->mesh_rni_qos_cfg[i].qos_control =
+                temp_mesh_rni_qos_cfg_knob.mesh_rni_qos_cfg[i].qos_control;
+            temp_cmn800_sam_cfg->mesh_rni_qos_cfg[i].qos_lat_tagt =
+                temp_mesh_rni_qos_cfg_knob.mesh_rni_qos_cfg[i].qos_lat_tgt;
+            temp_cmn800_sam_cfg->mesh_rni_qos_cfg[i].qos_lat_scale =
+                temp_mesh_rni_qos_cfg_knob.mesh_rni_qos_cfg[i].qos_lat_scale;
+            temp_cmn800_sam_cfg->mesh_rni_qos_cfg[i].qos_lat_range =
+                temp_mesh_rni_qos_cfg_knob.mesh_rni_qos_cfg[i].qos_lat_range;
+        }
+        mesh_rnd_qos_cfg_t temp_mesh_rnd_qos_cfg_knob = config_get_mesh_rnd_qos_cfg_knob();
+        for (int i = 0; i < MESH_RND_QOS_CFG_MAX; i++)
+        {
+            temp_cmn800_sam_cfg->mesh_rnd_qos_cfg[i].qos_control =
+                temp_mesh_rnd_qos_cfg_knob.mesh_rnd_qos_cfg[i].qos_control;
+            temp_cmn800_sam_cfg->mesh_rnd_qos_cfg[i].qos_lat_tagt =
+                temp_mesh_rnd_qos_cfg_knob.mesh_rnd_qos_cfg[i].qos_lat_tgt;
+            temp_cmn800_sam_cfg->mesh_rnd_qos_cfg[i].qos_lat_scale =
+                temp_mesh_rnd_qos_cfg_knob.mesh_rnd_qos_cfg[i].qos_lat_scale;
+            temp_cmn800_sam_cfg->mesh_rnd_qos_cfg[i].qos_lat_range =
+                temp_mesh_rnd_qos_cfg_knob.mesh_rnd_qos_cfg[i].qos_lat_range;
+        }
+        mesh_mxp_qos_cfg_t temp_mesh_mxp_qos_cfg_knob = config_get_mesh_mxp_qos_cfg_knob();
+        for (int i = 0; i < MESH_MXP_QOS_CFG_MAX; i++)
+        {
+            temp_cmn800_sam_cfg->mesh_mxp_qos_cfg[i].qos_control =
+                temp_mesh_mxp_qos_cfg_knob.mesh_mxp_qos_cfg[i].qos_control;
+            temp_cmn800_sam_cfg->mesh_mxp_qos_cfg[i].qos_lat_tagt =
+                temp_mesh_mxp_qos_cfg_knob.mesh_mxp_qos_cfg[i].qos_lat_tgt;
+            temp_cmn800_sam_cfg->mesh_mxp_qos_cfg[i].qos_lat_scale =
+                temp_mesh_mxp_qos_cfg_knob.mesh_mxp_qos_cfg[i].qos_lat_scale;
+            temp_cmn800_sam_cfg->mesh_mxp_qos_cfg[i].qos_lat_range =
+                temp_mesh_mxp_qos_cfg_knob.mesh_mxp_qos_cfg[i].qos_lat_range;
         }
 
         // Read and Update the Mesh RAS Knobs

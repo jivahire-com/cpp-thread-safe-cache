@@ -1040,6 +1040,62 @@ void verify_mesh_config_knobs(void)
     assert_int_equal(default_sam_cfg_knb.mesh_rnd_aux_ctl[4], 0x4004012);
     assert_int_equal(default_sam_cfg_knb.mesh_rnd_aux_ctl[5], 0x4004012);
     assert_int_equal(default_sam_cfg_knb.mesh_rnd_aux_ctl[6], 0x4004012);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_class_dedicated, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_class_max_allowed, 0x8203E3F);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_class_contended_min, 0x10101010);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_misc_max_allowed, 0x204);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_class_ctl, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_qos_class_ctl, 0x70B8ECFF);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_class_pocq_arb_weight_ctl, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_class_retry_weight_ctl, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_misc_retry_weight_ctl, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_sbsx_cbusy_limit_ctl, 0x483018);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[0].qos_control, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[0].qos_lat_tagt, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[0].qos_lat_scale, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[0].qos_lat_range, 0x0);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[1].qos_control, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[1].qos_lat_tagt, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[1].qos_lat_scale, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[1].qos_lat_range, 0x0);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[2].qos_control, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[2].qos_lat_tagt, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[2].qos_lat_scale, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[2].qos_lat_range, 0x0);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[0].qos_control, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[0].qos_lat_tagt, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[0].qos_lat_scale, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[0].qos_lat_range, 0x0);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[1].qos_control, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[1].qos_lat_tagt, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[1].qos_lat_scale, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[1].qos_lat_range, 0x0);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[2].qos_control, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[2].qos_lat_tagt, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[2].qos_lat_scale, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[2].qos_lat_range, 0x0);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[0].qos_control, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[0].qos_lat_tagt, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[0].qos_lat_scale, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[0].qos_lat_range, 0x0);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[1].qos_control, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[1].qos_lat_tagt, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[1].qos_lat_scale, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[1].qos_lat_range, 0x0);
+
+    assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[2].qos_control, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[2].qos_lat_tagt, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[2].qos_lat_scale, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[2].qos_lat_range, 0x0);
 }
 
 void verify_mesh_ras_config_knobs(void)

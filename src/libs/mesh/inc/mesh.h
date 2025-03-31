@@ -18,6 +18,16 @@
 
 #define PRINT64_HEX(a) (uint32_t)((a) >> 32), (uint32_t)((a) & 0xFFFFFFFF)
 
+#define MESH_HNI_CFG_CTL_MAX            6
+#define MESH_HNI_AUX_CTL_MAX            6
+#define MESH_RNI_CFG_CTL_MAX            8
+#define MESH_RNI_AUX_CTL_MAX            8
+#define MESH_RND_CFG_CTL_MAX            7
+#define MESH_RND_AUX_CTL_MAX            7
+#define MESH_RNI_QOS_CFG_MAX            3
+#define MESH_RND_QOS_CFG_MAX            3
+#define MESH_MXP_QOS_CFG_MAX            3
+
 /**
  * @brief Initializes the mesh.
  *

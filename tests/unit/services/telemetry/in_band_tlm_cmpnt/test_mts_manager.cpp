@@ -162,6 +162,29 @@ TEST_FUNCTION(test_mts_manager_handle_dcp_msg_not_supported, test_setup, test_te
     assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_E_UNSUPPORTED_MSG);
 }
 
+TEST_FUNCTION(test_mts_manager_handle_dcp_msg_get_capabilities, test_setup, test_teardown)
+{
+    trp_msg_t trp_msg = {{{{0}}}};
+
+    will_return(__wrap_mts_is_primary_instance, true);
+    expect_function_call(__wrap_mts_client_send_trp_response);
+
+    trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_CAPABILITIES;
+
+    mts_manager_handle_dcp_msg(&trp_msg);
+
+    dcp_msg_get_caps_t exp_caps = {{{0}}};
+    exp_caps.caps.DCP_MSG_ID_GET_CAPABILITIES = 1;
+    exp_caps.caps.DCP_MSG_ID_GET_STATE = 1;
+    exp_caps.caps.DCP_MSG_ID_EVENTS_ENABLE_DISABLE = 1;
+    exp_caps.caps.DCP_MSG_ID_START_STOP = 1;
+    exp_caps.caps.DCP_MSG_ID_READ_DATA = 1;
+    exp_caps.caps.DCP_MSG_ID_READ_DATA_COMPLETE = 1;
+    exp_caps.caps.DCP_MSG_ID_RESET = 1;
+    p_dcp_msg_get_caps_t act_caps = &trp_msg.payload.dcp_msg.payload.get_caps;
+    assert_int_equal(act_caps->caps.as_uint32, exp_caps.caps.as_uint32);
+}
+
 TEST_FUNCTION(test_mts_manager_handle_dcp_msg_get_state, test_setup, test_teardown)
 {
     trp_msg_t trp_msg = {{{{0}}}};

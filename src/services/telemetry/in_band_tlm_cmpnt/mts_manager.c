@@ -146,6 +146,21 @@ void mts_manager_handle_dcp_msg(p_trp_msg_t trp_msg)
 
     switch (trp_msg->payload.dcp_msg.hdr.msg_id)
     {
+    case DCP_MSG_ID_GET_CAPABILITIES:
+        p_dcp_msg_get_caps_t get_caps = &trp_msg->payload.dcp_msg.payload.get_caps;
+        get_caps->caps.as_uint32 = 0;
+        get_caps->caps.DCP_MSG_ID_GET_CAPABILITIES = 1;
+        get_caps->caps.DCP_MSG_ID_GET_STATE = 1;
+        get_caps->caps.DCP_MSG_ID_EVENTS_ENABLE_DISABLE = 1;
+        get_caps->caps.DCP_MSG_ID_START_STOP = 1;
+        get_caps->caps.DCP_MSG_ID_READ_DATA = 1;
+        get_caps->caps.DCP_MSG_ID_READ_DATA_COMPLETE = 1;
+        get_caps->caps.DCP_MSG_ID_RESET = 1;
+
+        trp_msg->payload.dcp_msg.hdr.payload_size = sizeof(dcp_msg_get_caps_t);
+        trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
+        break;
+
     case DCP_MSG_ID_GET_STATE:
 
         if (primary_instance)

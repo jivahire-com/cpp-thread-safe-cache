@@ -10,9 +10,9 @@
 /*------------- Includes -----------------*/
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
-#include <data_collection_service.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <in_band_tlm_cmpnt_i.h>
+#include <message_transfer_service.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -34,43 +34,43 @@ ULONG __wrap__tx_time_get(VOID)
     return time++;
 }
 
-bool __wrap_dcs_is_primary_instance(void)
+bool __wrap_mts_is_primary_instance(void)
 {
     return mock_type(bool);
 }
 
-void __wrap_dcs_client_forward_trp_msg(p_trp_msg_t trp_msg, trp_broadcast_t broadcast_option)
+void __wrap_mts_client_forward_trp_msg(p_trp_msg_t trp_msg, trp_broadcast_t broadcast_option)
 {
     FPFW_UNUSED(trp_msg);
     FPFW_UNUSED(broadcast_option);
     function_called();
 }
 
-void __wrap_dcs_client_send_trp_response(p_trp_msg_t trp_msg)
+void __wrap_mts_client_send_trp_response(p_trp_msg_t trp_msg)
 {
     FPFW_UNUSED(trp_msg);
     function_called();
 }
 
-void __wrap_dcs_client_send_new_trp_msg(p_trp_msg_t trp_msg)
+void __wrap_mts_client_send_new_trp_msg(p_trp_msg_t trp_msg)
 {
     FPFW_UNUSED(trp_msg);
     function_called();
 }
 
-void __wrap_dcs_client_send_dcp_notification(dcp_client_id_t client_id, dcp_notification_type_t notification)
+void __wrap_mts_client_send_dcp_notification(mts_client_id_t client_id, dcp_notification_type_t notification)
 {
     FPFW_UNUSED(client_id);
     FPFW_UNUSED(notification);
     function_called();
 }
 
-uint8_t __wrap_dcs_get_this_die_id(void)
+uint8_t __wrap_mts_get_this_die_id(void)
 {
     return 0;
 }
 
-uint8_t __wrap_dcs_get_this_cpu_id(void)
+mts_platform_core_id_t __wrap_mts_get_this_core_id(void)
 {
     return 2;
 }
@@ -258,7 +258,7 @@ void exec_tlm_cmpnt_enable_disable_telemetry(bool enable)
     function_called();
 }
 
-void exec_tlm_cmpnt_notify_new_in_band_dcs_message(void)
+void exec_tlm_cmpnt_notify_new_in_band_mts_message(void)
 {
     function_called();
 }
@@ -268,7 +268,7 @@ uint64_t __wrap_exec_tlm_cmpnt_get_timestamp_microseconds(void)
     return 0x48;
 }
 
-void __wrap_dcs_client_flush_incoming_queue(dcp_client_id_t id)
+void __wrap_mts_client_flush_incoming_queue(mts_client_id_t id)
 {
     FPFW_UNUSED(id);
     function_called();
@@ -350,7 +350,7 @@ UINT __wrap__txe_block_release(VOID* block_ptr)
     return mock_type(UINT);
 }
 
-fpfw_status_t __wrap_dcs_client_register(dcp_client_id_t id, p_dcs_client_t client)
+fpfw_status_t __wrap_mts_client_register(mts_client_id_t id, p_mts_client_t client)
 {
     FPFW_UNUSED(id);
     FPFW_UNUSED(client);

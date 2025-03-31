@@ -47,8 +47,10 @@ set(FPFW_PLATFORM_IMPL_LOCK "fwlib.lib.platform.impl.lock.threadx")
 # Generic ports implmented within this project
 set(FPFW_PLATFORM_IMPL_THREADX "ms::lib::threadx")
 
-# Generic timer ports implmented within this project
+# Generic timer ports implemented within this project
 set(FPFW_PLATFORM_IMPL_TIMER "fwlib.lib.platform.impl.timers.threadx")
+
+set(FPFW_PLATFORM_IMPL_MTS "kng.service.platform.impl.mts")
 
 include(FetchContent)
 FetchContent_Declare(
@@ -60,10 +62,46 @@ FetchContent_Declare(
 
 FetchContent_GetProperties(${TARGET})
 
+#add prior to 1pfw.fwlibs in order to set cmake options
+
+# configure platform MTS definitions
+option(FPFW_FWLIBS_MTS_DEF_ENABLE "Enable MTS Definitions" ON)
+
+set(FPFW_PLATFORM_IMPL_MTS_CORE_DEFINITION
+    "MTS_PLATFORM_CORE_AP::0x0001"
+    "MTS_PLATFORM_CORE_SCP::0x0002"
+    "MTS_PLATFORM_CORE_MCP::0x0003"
+    "MTS_PLATFORM_CORE_HSP::0x0004"
+    "MTS_PLATFORM_CORE_TBP::0x0005"
+    "MTS_PLATFORM_CORE_SDM::0x0006"
+    "MTS_PLATFORM_CORE_CDED_SDM::0x0007"
+    "MTS_PLATFORM_CORE_CDED_KMP::0x0008"
+)
+
+set(MTS_PLATFORM_PRIMARY_DIE_ID
+    "0"
+)
+set(MTS_PLATFORM_PRIMARY_CORE_ID
+    "MTS_PLATFORM_CORE_MCP"
+)
+set(MTS_PLATFORM_HOST_DIE_ID
+    "0"
+)
+set(MTS_PLATFORM_HOST_CORE_ID
+    "MTS_PLATFORM_CORE_AP"
+)
+set(MTS_DCP_PLATFORM_ID
+    "DCP_PLATFORM_COBALT_200"
+)
+
+
+add_subdirectory(message_transfer_service)
+
 if (NOT ${TARGET}_POPULATED)
     FetchContent_Populate(${TARGET})
     add_subdirectory(${TARGET_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src/1pfw.fwlibs EXCLUDE_FROM_ALL)
 endif()
+
 
 include($ENV{REPO_APP_CMAKE_TOOLCHAIN_DIR}/cmake/lint.cmake)
 include($ENV{REPO_APP_CMAKE_TOOLCHAIN_DIR}/cmake/format.cmake)

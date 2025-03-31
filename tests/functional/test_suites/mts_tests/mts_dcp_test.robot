@@ -1,0 +1,45 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
+*** Settings ***
+Documentation    Verifies Message Transfer System (MTS) Data Collection Protocol (DCP) functionality.
+...
+...    This robot test verifies the MTS library functionality by:
+...    1. Testing the DCP commands
+...    2. Verifying command responses
+...    3. Validating proper setup and teardown of test environment
+
+Library    ${CURDIR}/../../library
+
+Library    library.mts_tests.mts_dcp_test.MtsDcpTest
+...    workspace_config=${WORKSPACE_CONFIG}
+...    default_log_home=${LOG_DIR}
+...    fw_payload_path=${PAYLOAD_DIR}
+...    host_config=${HOST_CONFIG_DIR}/hsp_scp_bl_embed_fw.json
+...    WITH NAME    mts_dcp_test_lib
+
+Suite Setup       Setup Test Environment
+Suite Teardown    Teardown Test Environment
+
+*** Keywords ***
+Setup Test Environment
+    ${test_lib}=    Get Library Instance    mts_dcp_test_lib
+    ${setup_result}=    Call Method    ${test_lib}    setup
+    Should Be True    ${setup_result}    Failed to setup DUT
+
+Teardown Test Environment
+    ${test_lib}=    Get Library Instance    mts_dcp_test_lib
+    Run Keyword And Ignore Error    Call Method    ${test_lib}    teardown
+
+*** Test Cases ***
+Test Case - MTS Client Start Stop Test
+    [Documentation]    Verifies MTS client start and stop command functionality.
+    ...
+    ...    Test Steps:
+
+    [Tags]    ssi    ssi_mts_event_start_stop    mts    mts_client    TEST_CASE_ID:2356228
+
+    ${test_lib} =    Get Library Instance    mts_dcp_test_lib
+    Log To Console    \nExecuting MTS Client Start/Stop Test...
+    ${test_result} =    Call Method    ${test_lib}    test_client_start_stop
+
+    Should be True    ${test_result}

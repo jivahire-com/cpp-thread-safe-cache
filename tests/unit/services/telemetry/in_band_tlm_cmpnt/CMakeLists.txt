@@ -3,7 +3,7 @@ set(TARGET  kng.service.telemetry.cmpnt.in_band_tlm.test)
 set(SOURCES
     in_band_mocks.c
     test_create_package.cpp
-    test_dcs_manager.cpp
+    test_mts_manager.cpp
     test_ddr_manager.cpp
     test_in_band_cmpnt.cpp
 )
@@ -44,15 +44,15 @@ mock_target(${TARGET}
     _txe_queue_flush
     _txe_block_pool_create
     _txe_block_release
-    dcs_client_register
-    dcs_is_primary_instance
-    dcs_client_send_new_trp_msg
-    dcs_client_forward_trp_msg
-    dcs_client_send_trp_response
-    dcs_client_flush_incoming_queue
-    dcs_client_send_dcp_notification
-    dcs_get_this_die_id
-    dcs_get_this_cpu_id
+    mts_client_register
+    mts_is_primary_instance
+    mts_client_send_new_trp_msg
+    mts_client_forward_trp_msg
+    mts_client_send_trp_response
+    mts_client_flush_incoming_queue
+    mts_client_send_dcp_notification
+    mts_get_this_die_id
+    mts_get_this_core_id
     FpFwAssertWithArgs
     exec_tlm_cmpnt_get_timestamp_microseconds
 )

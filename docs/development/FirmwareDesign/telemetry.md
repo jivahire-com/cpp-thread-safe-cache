@@ -30,7 +30,7 @@ processes it and then sends the data out.
 | Document                                  | Link                                |
 | ----------------------------------------- | ----------------------------------- |
 | Telemetry Requirements and Specification | [Link](https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/_layouts/15/Doc.aspx?sourcedoc=%7B5A49A2ED-ECF6-4733-BACF-053E12198DAE%7D&file=1PFW_Kingsgate_Power_Telemetry_Requirements_And_Specifications%20-%20WIP.docx&wdOrigin=TEAMS-MAGLEV.p2p_ns.rwc&action=default&mobileredirect=true)    |
-| Data Collection Service  | [Link](./  TBD) |
+| Message Transfer Service  | [Link](./  TBD) |
 | Sensor Fifo Service | [Link](./SensorFifo.md) |
 
 ## Requirements
@@ -165,9 +165,9 @@ Since a block allocation pattern is used instead of a heap, there is no occurren
 Memory leaks are still possible, however care is taken to avoid this.
 
 - If there is any failure to create a package, the block is freed via ddr_manager_deallocate_mem()
-- If the block cannot be queued in the DCS manager, the block is also freed.
+- If the block cannot be queued in the MTS manager, the block is also freed.
 - If the host does not respond to the controller with a CLIENT_READ_DATA_COMPLETE, the data collection service will timeout and issue a notification for the controller to also free the block.
-- If the production rate of packages is greater than the consumption rate and the DCS Manger pending queue is full, the controller will pop the oldest pending block, free it, and then add the new block to the pending queue.
+- If the production rate of packages is greater than the consumption rate and the MTS Manger pending queue is full, the controller will pop the oldest pending block, free it, and then add the new block to the pending queue.
 - In all cases, event traces are logged if any of these events occur.
 
 NOTES:
@@ -175,14 +175,12 @@ NOTES:
 - Another possible implementation is utilizing threadx block pools. However, that implementation reserves 4 bytes per block, as internally it manages the block as a linked list. That isn't desirable as it offsets the start address and limits the use of the complete block. This implementation does not have that limitation and overall memory consumption is equivalent, although the queue memory is internal.
 - Current model with two memory pools with fixed blocks sized for max usage is the simplest memory model. This shouldn't be a limitation with the large amount of available DDR.  However it is optional to configure the block sizes at run time init utilizing knob values to reduce blocks sizes if deemed necessary at a later date.
 
-#### Data Collection Service Management
+#### Message Transfer Service Management
 
-The Data collection service manager is an object within the In band Telemetry Component that handles all interactions
-with the data collection service, which is the proxy for the host.
+The message transfer service manager is an object within the In band Telemetry Component that handles all interactions
+with the message transfer service, which is the proxy for the host.
 
-Currently it contains a pending package queue which is used to populate Data Collection protocol messages.
-
-TBD more when this is implemented
+It routes incoming TRP/DCP messages and queues all pending packages.
 
 #### Telemetry Power Package Example Sequence
 
@@ -195,8 +193,8 @@ participant Dataproc as Data Processing Cmpnt
 participant InBand as In Band Tlm Cmpnt
 participant PkgCr as In Band Tlm Cmpnt.Package Creation
 participant DdrMgr as In Band Tlm Cmpnt.DDR Manager
-participant DcsMgr as In Band Tlm Cmpnt.DCS Manager
-participant DCS as Data Collection Service
+participant MtsMgr as In Band Tlm Cmpnt.MTS Manager
+participant MTS as Message Transfer Service
 Exec->>Exec: Power Package Timer Expired
 Exec->>InBand:in_band_tlm_cmpnt_generate_pwr_pkg()
 InBand->>DdrMgr: ddr_manager_allocate_mem_for_pwr_pkg()
@@ -211,14 +209,14 @@ loop All Power Records
         PkgCr->>PkgCr: Skip record
     end
 end
-PkgCr->>DcsMgr: dcs_manager_queue_tlm_package()
-DcsMgr->>DcsMgr: Queue ackage info in dcs_pkg_pending_queue
-DcsMgr->>DCS: CLIENT_NOTIFICATION
-DCS->>DcsMgr: CLIENT_READ_DATA
-DcsMgr->>DcsMgr: Dequeue package info from dcs_pkg_pending_queue
-DcsMgr->>DCS: CLIENT_READ_DATA response
-DCS->>DcsMgr: CLIENT_READ_DATA_COMPLETE
-DcsMgr->>DdrMgr: ddr_manager_deallocate_mem()
+PkgCr->>MtsMgr: mts_manager_queue_tlm_package()
+MtsMgr->>MtsMgr: Queue ackage info in mts_pkg_pending_queue
+MtsMgr->>MTS: CLIENT_NOTIFICATION
+MTS->>MtsMgr: CLIENT_READ_DATA
+MtsMgr->>MtsMgr: Dequeue package info from mts_pkg_pending_queue
+MtsMgr->>MTS: CLIENT_READ_DATA response
+MTS->>MtsMgr: CLIENT_READ_DATA_COMPLETE
+MtsMgr->>DdrMgr: ddr_manager_deallocate_mem()
 :::
 
 ### Out of Band Telemetry Component

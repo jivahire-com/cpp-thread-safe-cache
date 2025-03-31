@@ -45,7 +45,7 @@
 /*------------- Functions ----------------*/
 
 
-FPFW_INIT_COMPONENT(tlm_svc, FPFW_INIT_DEPENDENCIES("sensor_fifo", "dcs_svc", "hw_ver", "atu_svc"))
+FPFW_INIT_COMPONENT(tlm_svc, FPFW_INIT_DEPENDENCIES("sensor_fifo", "mts_svc", "hw_ver", "atu_svc"))
 {
     telemetry_service_init(idsw_get_die_id(), POWER_TLM_PKG_PERIOD_MS, INST_TLM_PKG_SAMPLE_PERIOD_MS, INST_TLM_SAMPLES_PER_PKG);
 

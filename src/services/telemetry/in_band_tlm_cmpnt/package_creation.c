@@ -54,7 +54,7 @@ void package_create_enable_disable_pwr_record(pwr_telemetry_element_id_t element
 {
     if (element_id >= POWER_TELEMETRY_ELEMENT_ID_MAX)
     {
-        FPFW_ET_LOG(DcsMgrInvalidEventEnableDisable, EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA, element_id);
+        FPFW_ET_LOG(MtsMgrInvalidEventEnableDisable, EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA, element_id);
     }
     else
     {
@@ -66,7 +66,7 @@ void package_create_enable_disable_inst_record(instantaneous_telemetry_element_i
 {
     if (element_id >= INST_TELEMETRY_ELEMENT_ID_MAX)
     {
-        FPFW_ET_LOG(DcsMgrInvalidEventEnableDisable, EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA, element_id);
+        FPFW_ET_LOG(MtsMgrInvalidEventEnableDisable, EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA, element_id);
     }
     else
     {

@@ -65,7 +65,7 @@ void in_band_tlm_cmpnt_generate_pwr_pkg(void)
     function_called();
 }
 
-void in_band_tlm_cmpnt_handle_incoming_dcs_msgs(void)
+void in_band_tlm_cmpnt_handle_incoming_mts_msgs(void)
 {
     function_called();
 }

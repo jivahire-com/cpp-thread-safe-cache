@@ -2,7 +2,7 @@ set(TARGET kng.service.telemetry.cmpnt.in_band_tlm)
 
 add_library(${TARGET}
     STATIC
-        dcs_manager.c
+        mts_manager.c
         ddr_manager.c
         element_schema.c
         in_band_tlm_cmpnt.c
@@ -29,7 +29,7 @@ target_link_libraries(${TARGET}
         ms::lib::error_codes
         ms::lib::event_trace::trace
         ms::lib::interface::in_band_telemetry_ddr
-        ms::service::dcs
+        ms::service::mts
 
 
 )

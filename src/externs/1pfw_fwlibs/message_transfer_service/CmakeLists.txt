@@ -1,0 +1,46 @@
+
+set(TARGET kng.service.platform.impl.mts)
+
+
+add_library(${TARGET}
+    STATIC
+        src/mts_manifest.c
+        src/mts_platform_implementation.c
+)
+
+target_link_libraries(
+    ${TARGET}
+        PUBLIC
+          fwlib.service.mts
+          fwlib.service.iccBase
+
+        PRIVATE
+          fwlib.lib.interface.platform.errorhandler
+          fwlib.lib.interface.platform.specialization.mts
+          ms::build_data
+          ms::lib::interface::in_band_telemetry_ddr
+          ms::lib::event_trace::trace
+          ms::lib::icc_platform_defines
+          silibs::kng_silibs_platform
+          silibs::icc_mhu
+          silibs::idhw
+          silibs::idsw
+          silibs::idsw_kng
+
+)
+
+target_include_directories(${TARGET}
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+# Give Platform specialization access to private includes
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.mts,INCLUDE_DIRECTORIES>)
+
+add_library(ms::service::mts ALIAS kng.service.platform.impl.mts)
+
+lint_target(${TARGET})
+format_target(${TARGET})
+coverage_target(${TARGET})

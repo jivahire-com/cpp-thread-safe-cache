@@ -44,7 +44,7 @@
 ./../../../tests/functional/test_suites/varserv_tests/varserv_cli_test.robot
 
 ## DCS Tests
-./../../../tests/functional/test_suites/dcs_tests/dcs_dcp_test.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_test.robot
 
 ## SVP Teardown
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot

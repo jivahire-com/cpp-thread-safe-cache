@@ -171,9 +171,9 @@ void tlm_svc_thread(ULONG thread_input)
             data_proc_tlm_cmpnt_aggregate_24hr_tlm_data();
         }
 
-        if (current_bits & NEW_INBAND_DCS_MESSAGE)
+        if (current_bits & NEW_INBAND_MTS_MESSAGE)
         {
-            in_band_tlm_cmpnt_handle_incoming_dcs_msgs();
+            in_band_tlm_cmpnt_handle_incoming_mts_msgs();
         }
     }
 }
@@ -210,9 +210,9 @@ void every_24hr_pkg_timer_cb(ULONG context)
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 
-void exec_tlm_cmpnt_notify_new_in_band_dcs_message(void)
+void exec_tlm_cmpnt_notify_new_in_band_mts_message(void)
 {
-    UINT txStatus = tx_event_flags_set(&s_thread_control, NEW_INBAND_DCS_MESSAGE, TX_OR);
+    UINT txStatus = tx_event_flags_set(&s_thread_control, NEW_INBAND_MTS_MESSAGE, TX_OR);
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 

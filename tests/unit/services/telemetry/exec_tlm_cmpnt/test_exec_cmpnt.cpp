@@ -244,16 +244,16 @@ TEST_FUNCTION(test_every_24hr_pkg_timer_cb, test_setup, test_teardown)
     every_24hr_pkg_timer_cb(0);
 }
 
-TEST_FUNCTION(test_exec_tlm_cmpnt_notify_new_in_band_dcs_message, test_setup, test_teardown)
+TEST_FUNCTION(test_exec_tlm_cmpnt_notify_new_in_band_mts_message, test_setup, test_teardown)
 {
     expect_any_always(__wrap__txe_event_flags_set, group_ptr);
-    expect_value(__wrap__txe_event_flags_set, flags_to_set, NEW_INBAND_DCS_MESSAGE);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, NEW_INBAND_MTS_MESSAGE);
     expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
 
     will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
 
     expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
-    exec_tlm_cmpnt_notify_new_in_band_dcs_message();
+    exec_tlm_cmpnt_notify_new_in_band_mts_message();
 }
 
 TEST_FUNCTION(test_exec_tlm_cmpnt_is_telemetry_enabled, test_setup, test_teardown)

@@ -37,6 +37,6 @@ void in_band_tlm_cmpnt_add_inst_sample(void);
 void in_band_tlm_cmpnt_generate_pwr_pkg(void);
 
 /**
- * @brief Handle incoming DCS messages. Called from executive telemetry component.
+ * @brief Handle incoming MTS messages. Called from executive telemetry component.
  */
-void in_band_tlm_cmpnt_handle_incoming_dcs_msgs(void);
+void in_band_tlm_cmpnt_handle_incoming_mts_msgs(void);

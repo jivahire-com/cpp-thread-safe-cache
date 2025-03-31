@@ -16,10 +16,10 @@
 extern "C" {
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
-#include <dcs_manager_i.h>
 #include <ddr_manager_i.h>
 #include <in_band_tlm_cmpnt.h>
 #include <in_band_tlm_cmpnt_i.h>
+#include <mts_manager_i.h>
 #include <package_creation_i.h>
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
 }
@@ -38,8 +38,8 @@ static int test_setup(void** pContext)
     FpFwListInitialize(&pkg_free_list);
     for (size_t i = 0; i < MAX_PENDING_PACKAGES; i++)
     {
-        FpFwListEntryInitialize(&dcs_active_pkg_buffer[i].list_entry);
-        FpFwListInsertTail(&pkg_free_list, &dcs_active_pkg_buffer[i].list_entry);
+        FpFwListEntryInitialize(&mts_active_pkg_buffer[i].list_entry);
+        FpFwListInsertTail(&pkg_free_list, &mts_active_pkg_buffer[i].list_entry);
     }
     FpFwListInitialize(&pkg_active_list);
 
@@ -82,7 +82,7 @@ TEST_FUNCTION(test_in_band_cmpnt_init, test_setup, test_teardown)
     will_return_always(__wrap__txe_block_pool_create, TX_SUCCESS);
     expect_function_calls(__wrap__txe_block_pool_create, 1);
 
-    expect_function_calls(__wrap_FpFwAssertWithArgs, 2);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
 
     in_band_tlm_cmpnt_init(DIE_ID, 3);
 }
@@ -108,8 +108,8 @@ TEST_FUNCTION(test_gen_inst_report, test_setup, test_teardown)
     will_return(__wrap__txe_queue_receive, &mock_data);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
-    // last time will dcs_manager_queue_tlm_package
-    will_return(__wrap_dcs_is_primary_instance, true);
+    // last time will mts_manager_queue_tlm_package
+    will_return(__wrap_mts_is_primary_instance, true);
 
     for (uint16_t sample_count = 0; sample_count < inband_inst_samples_per_pkg; sample_count++)
     {
@@ -173,8 +173,8 @@ TEST_FUNCTION(test_gen_pwr_report_some_records, test_setup, test_teardown)
     will_return(__wrap__txe_queue_receive, &mock_data);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
-    // for  dcs_manager_queue_tlm_package
-    will_return(__wrap_dcs_is_primary_instance, true);
+    // for  mts_manager_queue_tlm_package
+    will_return(__wrap_mts_is_primary_instance, true);
 
     in_band_tlm_cmpnt_generate_pwr_pkg();
 }

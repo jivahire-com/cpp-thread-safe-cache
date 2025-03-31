@@ -71,13 +71,13 @@ void exec_tlm_cmpnt_enable_disable_telemetry(bool enable);
 void exec_tlm_cmpnt_get_status(telemetry_executive_status_t *status);
 
 /**
- * @brief Notify the telemetry executive component that a new in-band DCS message has been received.
+ * @brief Notify the telemetry executive component that a new in-band MTS message has been received.
  *
  * @return None
  */
-void exec_tlm_cmpnt_notify_new_in_band_dcs_message(void);
+void exec_tlm_cmpnt_notify_new_in_band_mts_message(void);
 /**
- * @brief The exec_tlm_get_timestamp_microseconds function retrieves the current timestamp in microseconds. 
+ * @brief The exec_tlm_get_timestamp_microseconds function retrieves the current timestamp in microseconds.
  * It calculates this timestamp based on the current tick count and the frequency of the timer.
  * @return uint64_t  The function returns a uint64_t value representing the current timestamp in microseconds.
  */

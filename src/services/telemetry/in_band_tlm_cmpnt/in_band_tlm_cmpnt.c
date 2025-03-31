@@ -10,10 +10,10 @@
 /*------------- Includes -----------------*/
 #include "in_band_tlm_cmpnt.h"
 
-#include "dcs_manager_i.h"
 #include "ddr_manager_i.h"
 #include "element_schema.h"
 #include "in_band_tlm_cmpnt_i.h"
+#include "mts_manager_i.h"
 #include "package_creation_i.h"
 #include "telemetry_package_defs.h"
 
@@ -39,9 +39,9 @@ void in_band_tlm_cmpnt_init(uint8_t die_id, uint16_t inst_samples_per_pkg)
     FPFW_RUNTIME_ASSERT_EXT(inband_inst_samples_per_pkg <= MAX_INST_SAMPLES_PER_PACKAGE, inband_inst_samples_per_pkg, 0, 0, 0);
 
     ddr_manager_init();
-    dcs_manager_init();
+    mts_manager_init();
 
-    // TODO: temporary until DCS is supported
+    // TODO: temporary until MTS is supported
     package_create_enable_disable_pwr_record(POWER_TELEMETRY_ELEMENT_CORE_VOLTAGE, true);
     package_create_enable_disable_pwr_record(POWER_TELEMETRY_ELEMENT_CORE_CURRENT, true);
 
@@ -86,7 +86,7 @@ void in_band_tlm_cmpnt_add_inst_sample(void)
 
         if (pkg_used_size > sizeof(telemetry_package_hdr_t))
         {
-            dcs_manager_queue_tlm_package(pkg_location, pkg_used_size);
+            mts_manager_queue_tlm_package(pkg_location, pkg_used_size);
         }
         else
         {
@@ -108,7 +108,7 @@ void in_band_tlm_cmpnt_generate_pwr_pkg(void)
         pkg_used_size = package_create_power_pkg(pkg_location, pkg_available_size);
         if (pkg_used_size > 0)
         {
-            dcs_manager_queue_tlm_package(pkg_location, pkg_used_size);
+            mts_manager_queue_tlm_package(pkg_location, pkg_used_size);
         }
         else
         {

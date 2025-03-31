@@ -5,7 +5,7 @@
 /**
  *  @file icc_platform_defines.h
  *  Header for adding ICC related platform defines, macros, etc.
- *  
+ *
  *  @note The HSP and D2D mailbox message format is kept the same as dictated by the HSP firmware headers.
 */
 
@@ -122,11 +122,11 @@
         ((((uint32_t)(flags) & ((1U << LARGE_FIFO_MBOX_FLAG_SIZE) - 1)) << LARGE_FIFO_MBOX_FLAG_START_POS)  | \
      (((uint32_t)(ctx) & ((1U << LARGE_FIFO_MBOX_CONTEXT_SIZE) - 1)) << LARGE_FIFO_MBOX_CONTEXT_START_POS) | \
      (((uint32_t)(cmd) & ((1U << LARGE_FIFO_MBOX_CMD_CODE_SIZE) - 1)) << LARGE_FIFO_MBOX_CMD_CODE_START_POS))
-	
+
 /*------------- Typedefs -----------------*/
 /**
  * @brief  RMSS D2D Mailbox response status
- * 
+ *
  */
 typedef enum _rmss_d2d_mailbox_rsp_status {
 	RMSS_D2D_MAILBOX_RSP_STATUS_SUCCESS = 0,
@@ -136,12 +136,12 @@ typedef enum _rmss_d2d_mailbox_rsp_status {
 
 /**
  * @brief  RMSS D2D Mailbox message command code table
- * 
+ *
  */
 typedef enum _rmss_d2d_mailbox_msg_command_code {
-    RMSS_D2D_MAILBOX_MSG_ECHO_REQ = 0x0,							
+    RMSS_D2D_MAILBOX_MSG_ECHO_REQ = 0x0,
     RMSS_D2D_MAILBOX_MSG_ECHO_RSP,
-	RMSS_D2D_MAILBOX_MSG_TEST_REQ,							
+	RMSS_D2D_MAILBOX_MSG_TEST_REQ,
     RMSS_D2D_MAILBOX_MSG_TEST_RSP,
 	RMSS_D2D_MAILBOX_MSG_CRASHDUMP_SIGNAL_REQ,
 	RMSS_D2D_MAILBOX_MSG_ERROR_INJECTION_REQ,
@@ -186,7 +186,7 @@ typedef struct _rmss_d2d_mailbox_msg_rsp {
 
 /**
  * @brief Generic D2D Mailbox message
- * 
+ *
  */
 typedef union _rmss_d2d_mailbox_msg {
 	rmss_d2d_mailbox_msg_header header;	/**< incoming mailbox message from protocol to handler. */
@@ -199,7 +199,7 @@ typedef union _rmss_d2d_mailbox_msg {
 
 /**
  * @brief large_fifo Mailbox response status
- * 
+ *
  */
 typedef enum _large_fifo_mailbox_rsp_status {
 	LARGE_FIFO_MAILBOX_RSP_STATUS_SUCCESS = 0,
@@ -209,15 +209,17 @@ typedef enum _large_fifo_mailbox_rsp_status {
 
 /**
  * @brief  large_fifo Mailbox message command code table
- * 
+ *
  */
 typedef enum _large_fifo_mailbox_msg_command_code {
-    LARGE_FIFO_MAILBOX_MSG_ECHO_REQ = 0x0,							
+    LARGE_FIFO_MAILBOX_MSG_ECHO_REQ = 0x0,
     LARGE_FIFO_MAILBOX_MSG_ECHO_RSP,
-	LARGE_FIFO_MAILBOX_MSG_TEST_REQ,							
-    LARGE_FIFO_MAILBOX_MSG_TEST_RSP,							
+	LARGE_FIFO_MAILBOX_MSG_TEST_REQ,
+    LARGE_FIFO_MAILBOX_MSG_TEST_RSP,
 	LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_REQ,
 	LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_ADDR_REQ,
+    LARGE_FIFO_MAILBOX_MSG_DCP,
+    LARGE_FIFO_MAILBOX_MSG_TRP,
     LARGE_FIFO_MAILBOX_MSG_MAX
 }large_fifo_mailbox_msg_command_code;
 
@@ -243,7 +245,7 @@ typedef struct _large_fifo_mailbox_msg_rsp {
 
 /**
  * @brief Generic Large Fifo Mailbox message
- * 
+ *
  */
 typedef union _large_fifo_mailbox_msg {
 	struct {
@@ -255,7 +257,7 @@ typedef union _large_fifo_mailbox_msg {
 
 /**
  * @brief CD metadata Large Fifo Mailbox message
- * 
+ *
  */
 typedef union _accel_cd_msg {
 	struct {
@@ -269,7 +271,7 @@ typedef union _accel_cd_msg {
 
 /**
  * @brief Accel CD send message request
- * 
+ *
  */
 typedef struct _accel_cd_params {
 	fpfw_icc_base_recv_req_t params;

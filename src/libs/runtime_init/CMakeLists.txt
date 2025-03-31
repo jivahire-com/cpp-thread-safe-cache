@@ -24,15 +24,16 @@ add_library(${TARGET}
         cli_init.c
         cli_power_init.c
         css_init.c
-        dcs_init.c
         ddrss_init.c
         debug_init.c
         dfwk_init.c
         dma_init.c
+        err_domain_scp_init.c
         etc_etd_init.c
         fuse_init.c
         gpio_init.c
         gtimer_init.c
+        health_monitor_init.c
         hw_semaphore_init.c
         hw_version_scp_init.c
         i3c_controller_init.c
@@ -45,6 +46,7 @@ add_library(${TARGET}
         ioss_init.c
         mesh_init.c
         mesh_scp_cli_init.c
+        mts_init.c
         nvic_init.c
         pcie_init.c
         pex_rng_init.c
@@ -68,8 +70,6 @@ add_library(${TARGET}
         virt_irq_init.c
         warm_start_cli_init.c
         warm_start_init.c
-        health_monitor_init.c
-        err_domain_scp_init.c
         watchdog_init.c
 )
 
@@ -90,6 +90,7 @@ target_link_libraries(
         fwlib.service.cli
         fwlib.service.icc_dispatcher
         fwlib.service.iccBase
+        fwlib.service.mts.cli
         ms::build_data
         ms::driver::dma::scp
         ms::driver::gpio
@@ -116,6 +117,7 @@ target_link_libraries(
         ms::lib::ddr_manager
         ms::lib::ddrss_init
         ms::lib::debug
+        ms::lib::error_domain::scp
         ms::lib::exception_handler
         ms::lib::gtimer
         ms::lib::hsp_firmware_headers
@@ -144,19 +146,17 @@ target_link_libraries(
         ms::lib::variable_services::cli
         ms::lib::warm_start
         ms::lib::warm_start::cli
-        ms::lib::error_domain::scp
         ms::service::accel_intr_client
         ms::service::accel_intr_service
         ms::service::ap_core
         ms::service::atu_service
-        ms::service::dcs
-        ms::service::dcs::cli
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
         ms::service::fuse
         ms::service::gpio::cli
         ms::service::health_monitor
         ms::service::health_monitor::cli
+        ms::service::mts
         ms::service::pcie_manager
         ms::service::pcie_manager::cli
         ms::service::power
@@ -246,9 +246,9 @@ add_library(${TARGET}
         cfg_mgr_init.c
         cli_crash_dump_init.c
         cli_init.c
-        dcs_init.c
         debug_init.c
         dfwk_init.c
+        err_domain_mcp_init.c
         etc_etd_init.c
         etr_init.c
         gpio_init.c
@@ -265,6 +265,7 @@ add_library(${TARGET}
         mcp_clock_init.c
         mcp_crash_dump_init.c
         mcp_mpu_init.c
+        mts_init.c
         nvic_init.c
         power_fuse_init.c
         sensor_fifo_init.c
@@ -273,7 +274,6 @@ add_library(${TARGET}
         telemetry_service_init.c
         textio_init.c
         variable_services_init.c
-        err_domain_mcp_init.c
         virt_irq_init.c
         watchdog_init.c
 )
@@ -296,6 +296,7 @@ target_link_libraries(
         fwlib.service.i3c.cli
         fwlib.service.iccBase
         fwlib.service.icc_dispatcher
+        fwlib.service.mts.cli
         ms::build_data
         ms::driver::dma::mcp
         ms::driver::gpio
@@ -313,6 +314,7 @@ target_link_libraries(
         ms::lib::cortex_m7::virt_irq
         ms::lib::crash_dump
         ms::lib::debug
+        ms::lib::error_domain::mcp
         ms::lib::exception_handler
         ms::lib::gtimer
         ms::lib::hw_semaphore
@@ -327,14 +329,12 @@ target_link_libraries(
         ms::lib::system_info
         ms::lib::threadx
         ms::lib::variable_services
-        ms::lib::error_domain::mcp
         ms::service::atu_service
-        ms::service::dcs
-        ms::service::dcs::cli
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
         ms::service::event_trace::relay
         ms::service::gpio::cli
+        ms::service::mts
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
         ms::service::sys_info::cli

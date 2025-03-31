@@ -219,13 +219,20 @@
                 "key": "savedSvcUnitTest",
                 "options": [
                     [
-
-                        "Data Collection Service",
-                        "kng.service.dcs.test.exe"
+                        "CFG Manager",
+                        "cfg_mgr.test.exe"
+                    ],
+                    [
+                        "Config Manager",
+                        "config_manager.test.exe"
                     ],
                     [
                         "Event Trace Relay Service",
                         "service.event_trace.relay.test.exe"
+                    ],
+                    [
+                        "MTS Platform",
+                        "kng.service.platform.impl.mts.test.exe"
                     ],
                     [
                         "Power Fuse",
@@ -246,14 +253,6 @@
                     [
                         "Telemetry Service - In Band Cmpnt",
                         "kng.service.telemetry.cmpnt.in_band_tlm.test"
-                    ],
-                    [
-                        "CFG Manager",
-                        "cfg_mgr.test.exe"
-                    ],
-                    [
-                        "Config Manager",
-                        "config_manager.test.exe"
                     ],
                 ],
             },
@@ -287,12 +286,9 @@
                         "i3c_target_mcp_init.test"
                     ],
                     [
-                        "DCS Init",
-                        "dcs_init.test.exe"
+                        "MTS Init",
+                        "mts_init.test.exe"
                     ],
-
-
-
                 ],
             },
         },

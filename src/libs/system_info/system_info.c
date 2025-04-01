@@ -34,6 +34,10 @@ static bool is_runtime = false;
 static uint8_t board_id = 0xFF;
 static fpfw_icc_base_ctx_t* icc_ctx = NULL;
 static hsp_security_state_t security_state = HSP_SECURITY_STATE_UNKNOWN;
+static uint8_t reset_reason = HSP_FIRMWARE_RESET_REASON_UNDEFINED;
+static bool mission_mode = false;
+static bool cli_enable = false;
+static bool watchdog_enable = false;
 
 /*------------- Functions ----------------*/
 static void hsp_send_recv_security_state_msg(uint16_t req_msg, uint16_t rsp_msg)
@@ -53,6 +57,9 @@ static void hsp_send_recv_security_state_msg(uint16_t req_msg, uint16_t rsp_msg)
     assert(msg.header.cmd == rsp_msg);
 
     security_state = msg.policy_status_rsp.policy_status.security_state;
+    mission_mode = (msg.policy_status_rsp.policy_status.mission_mode == 1) ? true : false;
+    cli_enable = (msg.policy_status_rsp.policy_status.cli_enable == 1) ? true : false;
+    watchdog_enable = (msg.policy_status_rsp.policy_status.watchdog_enable == 1) ? true : false;
 }
 
 uint8_t system_info_get_board_id()
@@ -102,6 +109,8 @@ void system_info_init(fpfw_icc_base_ctx_t* icc_base_ctx)
     {
         is_hsp_present = true;
 
+        reset_reason = boot_meta_data.ResetReason;
+
         switch (boot_meta_data.ResetReason)
         {
         case HSP_FIRMWARE_RESET_REASON_CRASH:
@@ -113,12 +122,17 @@ void system_info_init(fpfw_icc_base_ctx_t* icc_base_ctx)
     }
     else
     {
+        reset_reason = HSP_FIRMWARE_RESET_REASON_UNDEFINED;
         assert(false);
     }
 
     if (is_hsp_present && icc_ctx != NULL)
     {
         hsp_send_recv_security_state_msg(HSP_MAILBOX_CMD_GET_SECURITY_STATE_REQ, HSP_MAILBOX_CMD_GET_SECURITY_STATE_RSP);
+    }
+    else
+    {
+        cli_enable = true;
     }
 
     board_id = (uint8_t)(boot_meta_data.BoardId);
@@ -133,4 +147,24 @@ KNG_PLAT_ID system_info_get_platform(void)
 hsp_security_state_t system_info_get_security_state()
 {
     return security_state;
+}
+
+bool system_info_get_mission_mode(void)
+{
+    return mission_mode;
+}
+
+bool system_info_get_cli_enable(void)
+{
+    return cli_enable;
+}
+
+bool system_info_get_watchdog_disable_allowed(void)
+{
+    return watchdog_enable ? false : true;
+}
+
+uint8_t system_info_get_reset_reason(void)
+{
+    return reset_reason;
 }

@@ -29,4 +29,5 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
    fpfw_icc_base_send_recv_sync
    mmio_read32
+   idsw_get_platform_sdv
 ) 

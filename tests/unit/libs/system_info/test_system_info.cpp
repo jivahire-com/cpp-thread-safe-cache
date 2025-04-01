@@ -37,6 +37,9 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, 
     kng_hsp_mailbox_msg* output_message = (kng_hsp_mailbox_msg*)payload_buffer;
     output_message->header.cmd = mock_type(uint16_t);
     output_message->policy_status_rsp.policy_status.security_state = mock_type(uint8_t);
+    output_message->policy_status_rsp.policy_status.mission_mode = mock_type(bool);
+    output_message->policy_status_rsp.policy_status.cli_enable = mock_type(bool);
+    output_message->policy_status_rsp.policy_status.watchdog_enable = mock_type(bool);
 
     *output_recv_bytes = sizeof(kng_hsp_mailbox_msg);
 
@@ -47,6 +50,11 @@ uint32_t __wrap_mmio_read32(volatile uint32_t* addr)
 {
     check_expected(addr);
     return mock_type(uint32_t);
+}
+
+idsw_plat_id_t __wrap_idsw_get_platform_sdv(void)
+{
+    return mock_type(uint8_t);
 }
 
 TEST_FUNCTION(test_get_board_id, nullptr, nullptr)
@@ -76,6 +84,12 @@ TEST_FUNCTION(system_info_init_hsp_present, nullptr, nullptr)
     fpfw_icc_base_ctx_t* icc_base_ctx = (fpfw_icc_base_ctx_t*)0x1234;
     will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_SECURITY_STATE_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_SECURITY_STATE_SECURE);
+    // mission_mode
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // cli_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
+    // watchdog_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
 
     HSP_BOOT_METADATA boot_meta_data;
     boot_meta_data.MetadataVersion = 1;
@@ -97,6 +111,12 @@ TEST_FUNCTION(system_info_init_warm_start, nullptr, nullptr)
     fpfw_icc_base_ctx_t* icc_base_ctx = (fpfw_icc_base_ctx_t*)0x1234;
     will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_SECURITY_STATE_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_SECURITY_STATE_SECURE);
+    // mission_mode
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // cli_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
+    // watchdog_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
 
     HSP_BOOT_METADATA boot_meta_data;
     boot_meta_data.MetadataVersion = 1;
@@ -118,6 +138,12 @@ TEST_FUNCTION(system_info_init_secure_mode, nullptr, nullptr)
     fpfw_icc_base_ctx_t* icc_base_ctx = (fpfw_icc_base_ctx_t*)0x1234;
     will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_SECURITY_STATE_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_SECURITY_STATE_SECURE);
+    // mission_mode
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // cli_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
+    // watchdog_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
 
     HSP_BOOT_METADATA boot_meta_data;
     boot_meta_data.MetadataVersion = 1;
@@ -139,6 +165,12 @@ TEST_FUNCTION(system_info_init_nonsecure_mode, nullptr, nullptr)
     fpfw_icc_base_ctx_t* icc_base_ctx = (fpfw_icc_base_ctx_t*)0x1234;
     will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_SECURITY_STATE_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_SECURITY_STATE_TEST);
+    // mission_mode
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // cli_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
+    // watchdog_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
 
     HSP_BOOT_METADATA boot_meta_data;
     boot_meta_data.MetadataVersion = 1;
@@ -153,4 +185,201 @@ TEST_FUNCTION(system_info_init_nonsecure_mode, nullptr, nullptr)
     // Verify expectations
     assert_true(system_info_get_security_state() != HSP_SECURITY_STATE_SECURE);
 }
+
+TEST_FUNCTION(system_info_init_mission_mode, nullptr, nullptr)
+{
+    // Set up expectations for mission mode return false
+    fpfw_icc_base_ctx_t* icc_base_ctx = (fpfw_icc_base_ctx_t*)0x1234;
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_SECURITY_STATE_RSP);
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_SECURITY_STATE_SECURE);
+    // mission_mode
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
+    // cli_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
+    // watchdog_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+
+    HSP_BOOT_METADATA boot_meta_data;
+    boot_meta_data.MetadataVersion = 1;
+    boot_meta_data.ResetReason = 4;
+
+    expect_any(__wrap_mmio_read32, addr);
+    will_return(__wrap_mmio_read32, boot_meta_data.AsUint32);
+
+    // Call API under test
+    system_info_init(icc_base_ctx);
+
+    // Verify expectations
+    assert_true(system_info_get_mission_mode() == true);
+}
+
+TEST_FUNCTION(system_info_init_cli_enable, nullptr, nullptr)
+{
+    // Set up expectations for cli_enable return true
+    fpfw_icc_base_ctx_t* icc_base_ctx = (fpfw_icc_base_ctx_t*)0x1234;
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_SECURITY_STATE_RSP);
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_SECURITY_STATE_SECURE);
+    // mission_mode
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // cli_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
+    // watchdog_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+
+    HSP_BOOT_METADATA boot_meta_data;
+    boot_meta_data.MetadataVersion = 1;
+    boot_meta_data.ResetReason = 7;
+
+    expect_any(__wrap_mmio_read32, addr);
+    will_return(__wrap_mmio_read32, boot_meta_data.AsUint32);
+
+    // Call API under test
+    system_info_init(icc_base_ctx);
+
+    // Verify expectations
+    assert_true(system_info_get_cli_enable() == true);
+
+    // Set up expectations for cli_enable return false
+    icc_base_ctx = (fpfw_icc_base_ctx_t*)0x1234;
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_SECURITY_STATE_RSP);
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_SECURITY_STATE_SECURE);
+    // mission_mode
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // cli_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // watchdog_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+
+    boot_meta_data.MetadataVersion = 1;
+    boot_meta_data.ResetReason = 7;
+
+    expect_any(__wrap_mmio_read32, addr);
+    will_return(__wrap_mmio_read32, boot_meta_data.AsUint32);
+
+    // Call API under test
+    system_info_init(icc_base_ctx);
+
+    // Verify expectations
+    assert_true(system_info_get_cli_enable() == false);
+
+    // Set up expectations for icc_base_ctx is NULL
+    icc_base_ctx = NULL;
+
+    boot_meta_data.MetadataVersion = 1;
+    boot_meta_data.ResetReason = 7;
+
+    expect_any(__wrap_mmio_read32, addr);
+    will_return(__wrap_mmio_read32, boot_meta_data.AsUint32);
+
+    // Call API under test
+    system_info_init(icc_base_ctx);
+
+    // Verify expectations
+    assert_true(system_info_get_cli_enable() == true);
+}
+
+TEST_FUNCTION(system_info_init_watchdog_disable_allowed, nullptr, nullptr)
+{
+    // Set up expectations for watchdog_enable return false
+    fpfw_icc_base_ctx_t* icc_base_ctx = (fpfw_icc_base_ctx_t*)0x1234;
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_SECURITY_STATE_RSP);
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_SECURITY_STATE_SECURE);
+    // mission_mode
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // cli_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
+    // watchdog_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+
+    HSP_BOOT_METADATA boot_meta_data;
+    boot_meta_data.MetadataVersion = 1;
+    boot_meta_data.ResetReason = 7;
+
+    expect_any(__wrap_mmio_read32, addr);
+    will_return(__wrap_mmio_read32, boot_meta_data.AsUint32);
+
+    // Call API under test
+    system_info_init(icc_base_ctx);
+
+    // Verify expectations
+    assert_true(system_info_get_watchdog_disable_allowed() == true);
+
+    // Set up expectations for watchdog_enable return true
+    icc_base_ctx = (fpfw_icc_base_ctx_t*)0x1234;
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_SECURITY_STATE_RSP);
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_SECURITY_STATE_SECURE);
+    // mission_mode
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // cli_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
+    // watchdog_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
+
+    boot_meta_data.MetadataVersion = 1;
+    boot_meta_data.ResetReason = 7;
+
+    expect_any(__wrap_mmio_read32, addr);
+    will_return(__wrap_mmio_read32, boot_meta_data.AsUint32);
+
+    // Call API under test
+    system_info_init(icc_base_ctx);
+
+    // Verify expectations
+    assert_true(system_info_get_watchdog_disable_allowed() == false);
+}
+
+TEST_FUNCTION(system_info_init_reset_reason, nullptr, nullptr)
+{
+    // Set up expectations for reset reason is HSP_FIRMWARE_RESET_REASON_CRASH
+    fpfw_icc_base_ctx_t* icc_base_ctx = (fpfw_icc_base_ctx_t*)0x1234;
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_SECURITY_STATE_RSP);
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_SECURITY_STATE_SECURE);
+    // mission_mode
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // cli_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
+    // watchdog_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+
+    HSP_BOOT_METADATA boot_meta_data;
+    boot_meta_data.MetadataVersion = 1;
+    boot_meta_data.ResetReason = 2;
+
+    expect_any(__wrap_mmio_read32, addr);
+    will_return(__wrap_mmio_read32, boot_meta_data.AsUint32);
+
+    // Call API under test
+    system_info_init(icc_base_ctx);
+
+    // Verify expectations
+    assert_true(system_info_get_reset_reason() == 2);
+}
+
+TEST_FUNCTION(test_system_info_init_complete, nullptr, nullptr)
+{
+    // Verify default status
+    assert_true(system_info_is_init_complete() == false);
+
+    // Call API under test
+    system_info_set_init_complete();
+
+    // Verify API expectations
+    assert_true(system_info_is_init_complete() == true);
+}
+
+TEST_FUNCTION(test_system_info_get_platform, nullptr, nullptr)
+{
+    // Set up expectations for PLATFORM_FPGA
+    will_return(__wrap_idsw_get_platform_sdv, 0x30);
+
+    // Verify API expectations
+    assert_true(system_info_get_platform() == 0x30);
+
+    // Set up expectations for PLATFORM_SVP_SIM
+    will_return(__wrap_idsw_get_platform_sdv, 0x41);
+
+    // Verify API expectations
+    assert_true(system_info_get_platform() == 0x41);
+}
+
 } // extern "C"

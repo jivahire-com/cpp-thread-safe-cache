@@ -90,6 +90,34 @@ KNG_PLAT_ID system_info_get_platform(void);
 hsp_security_state_t system_info_get_security_state(void);
 
 /**
+ * @brief Retrieves the mission mode from HSP.
+ *
+ * @return The mission mode from HSP.
+ */
+bool system_info_get_mission_mode(void);
+
+/**
+ * @brief Retrieves the cli enable from HSP.
+ *
+ * @return The cli enable from HSP.
+ */
+bool system_info_get_cli_enable(void);
+
+/**
+ * @brief Retrieves whether it is allowed to disable watchdog.
+ *
+ * @return The opposite value of watchdog_enable.
+ */
+bool system_info_get_watchdog_disable_allowed(void);
+
+/**
+ * @brief Retrieves the reset reason from HSP.
+ *
+ * @return The reset reason from HSP.
+ */
+uint8_t system_info_get_reset_reason(void);
+
+/**
  * @brief Retrieves the board ID. The board ID is shared by HSP as part
  *        of boot metadata.
  *

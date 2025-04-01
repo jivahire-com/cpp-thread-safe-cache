@@ -36,6 +36,7 @@ add_library(${TARGET}
         health_monitor_init.c
         hw_semaphore_init.c
         hw_version_scp_init.c
+        ib_telm_hsp_init.c
         i3c_controller_init.c
         i3c_controller_scp_cli_init.c
         icc_accel_mbx_init.c

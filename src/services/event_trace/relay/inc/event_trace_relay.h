@@ -16,6 +16,7 @@
 #include <FpFwUtils.h>
 #include <IFpFwEventTracingBuffers.h>
 #include <diag_decoder.h>
+#include <fpfw_icc_base.h>
 #include <in_band_telemetry_ddr.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -156,6 +157,12 @@ typedef struct
     } request_queue;
     TX_THREAD worker_thread;
     /**
+     * Keep track of ICC Contexts not managed by MTS
+     */
+    struct {
+        fpfw_icc_base_ctx_t* p_hsp_icc_ctx;
+    } icc;
+    /**
      * Keep track of unexpected but possible states
      */
     struct {
@@ -163,8 +170,6 @@ typedef struct
         uint64_t delayed_host_reads;
     } health_stats;
 } etr_service_context_t, *p_etr_service_context_t;
-
-
 
 typedef struct
 {
@@ -184,6 +189,10 @@ typedef struct
         uint32_t priority;          // ThreadX Thread priority
         uint32_t time_slice_option; // ThreadX Thread slicing option
     } thread_config;
+    struct
+    {
+        fpfw_icc_base_ctx_t* p_hsp_icc_ctx; 
+    } icc_config;
 } etr_service_config_t;
 
 /*--------- Function Prototypes ----------*/

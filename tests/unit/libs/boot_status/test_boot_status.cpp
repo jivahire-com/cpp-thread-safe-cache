@@ -39,9 +39,9 @@ fpfw_status_t __wrap_fpfw_icc_base_send_sync(fpfw_icc_base_ctx_t* icc_ctx, void*
     assert_true(buffer_size > 0);
 
     kng_hsp_mailbox_msg* output_message = (kng_hsp_mailbox_msg*)payload_buffer;
-    assert_int_equal(output_message->header.cmd, HSP_MAILBOX_CMD_BOOT_STATUS_NOTIFY);
+    assert_int_equal(output_message->header.cmd, HSP_MAILBOX_CMD_BOOT_STATUS_EXTD_NOTIFY);
     //! Store the boot status_ex value for verification
-    test_boot_status_ex = output_message->boot_stat_notif.boot_status_ex;
+    test_boot_status_ex = output_message->boot_stat_notif.boot_status_ex.boot_status_int;
     function_called();
 
     return mock_type(fpfw_status_t);
@@ -55,9 +55,9 @@ fpfw_status_t __wrap_fpfw_icc_base_send(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
     // save the passed in callback
     s_stored_send_cb = params->cb;
     kng_hsp_mailbox_msg* output_message = (kng_hsp_mailbox_msg*)params->payload_buffer;
-    assert_int_equal(output_message->header.cmd, HSP_MAILBOX_CMD_BOOT_STATUS_NOTIFY);
+    assert_int_equal(output_message->header.cmd, HSP_MAILBOX_CMD_BOOT_STATUS_EXTD_NOTIFY);
     //! Store the boot status_ex value for verification
-    test_boot_status_ex = output_message->boot_stat_notif.boot_status_ex;
+    test_boot_status_ex = output_message->boot_stat_notif.boot_status_ex.boot_status_int;
     s_stored_send_context = params->cb_ctx;
 
     function_called();

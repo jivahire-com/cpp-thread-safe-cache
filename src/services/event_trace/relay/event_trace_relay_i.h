@@ -38,3 +38,4 @@ void etr_process_request(etr_service_context_t* p_service, etr_service_request_t
  */
 void etr_icc_handle_etc();
 void etr_icc_handle_etdcc();
+void etr_icc_handle_hsp(void* context, size_t output_size_bytes, fpfw_status_t status);

@@ -13,7 +13,9 @@ target_link_libraries(
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.interface.platform.lock
         fwlib.lib.interface.platform.threadx
+        fwlib.service.iccBase
         IFPFW.EventTracing
+        ms::lib::hsp_firmware_headers
         ms::lib::interface::in_band_telemetry_ddr
 )
 

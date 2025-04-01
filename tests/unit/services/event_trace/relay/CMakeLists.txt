@@ -9,6 +9,7 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.utils
+    fwlib.service.iccBase
     ms::cmocka::testrunner
     ms::lib::error_handler
     ms::lib::threadx
@@ -41,4 +42,6 @@ mock_target(${TARGET}
     _txe_thread_create
     _txe_queue_send
     _txe_queue_receive
+    fpfw_icc_base_recv
+    fpfw_icc_base_send_sync
 )

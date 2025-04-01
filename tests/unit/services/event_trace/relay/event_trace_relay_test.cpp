@@ -20,6 +20,7 @@ extern "C" {
 #include <error_handler.h>
 #include <event_trace_relay.h>
 #include <event_trace_relay_i.h>
+#include <fpfw_icc_base.h>
 #include <in_band_telemetry_ddr.h>
 #include <tx_api.h>
 #include <tx_initialize.h>
@@ -46,7 +47,12 @@ uint8_t s_asic_ddr_memory[ASIC_BUFFER_PAYLOAD_SIZE * TEST_ASIC_COUNT] = {0};
 uint8_t s_hsp_ddr_memory[HSP_BUFFER_PAYLOAD_SIZE * TEST_HSP_COUNT] = {0};
 uint8_t s_test_stack[1024] = {0};
 
+static uint32_t test_icc_base_ctx_hsp = 0;
+
+// static fpfw_icc_base_ctx_t s_test_icc_base_hsp;
+
 static etr_service_context_t s_test_context;
+
 static etr_service_config_t s_test_config = {
     .soc_info =
         {
@@ -69,6 +75,10 @@ static etr_service_config_t s_test_config = {
             .stack_size = sizeof(s_test_stack),
             .priority = 10,
             .time_slice_option = TX_NO_TIME_SLICE,
+        },
+    .icc_config =
+        {
+            .p_hsp_icc_ctx = (fpfw_icc_base_ctx_t*)&test_icc_base_ctx_hsp,
         },
 };
 
@@ -113,6 +123,23 @@ UINT __wrap__txe_queue_front_send(TX_QUEUE* queue_ptr, VOID* source_ptr, ULONG w
     return mock_type(UINT);
 }
 
+fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_recv_req_t* params)
+{
+    FPFW_UNUSED(icc_ctx);
+    FPFW_UNUSED(params);
+
+    return mock_type(fpfw_status_t);
+}
+
+fpfw_status_t __wrap_fpfw_icc_base_send_sync(fpfw_icc_base_ctx_t* icc_ctx, void* payload_buffer, size_t buffer_size)
+{
+    FPFW_UNUSED(icc_ctx);
+    FPFW_UNUSED(payload_buffer);
+    FPFW_UNUSED(buffer_size);
+
+    return mock_type(fpfw_status_t);
+}
+
 } // extern "C"
 
 int test_setup(void** ppContext)
@@ -152,6 +179,9 @@ int test_setup(void** ppContext)
     expect_any(__wrap__txe_thread_create, auto_start);
     expect_any(__wrap__txe_thread_create, thread_control_block_size);
     will_return(__wrap__txe_thread_create, TX_SUCCESS);
+
+    // Setup ICC expectations
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
 
     etr_initialize(&s_test_context, &s_test_config);
 
@@ -464,4 +494,13 @@ TEST_FUNCTION(test_etr_process_request_bad_type, test_setup, test_teardown)
     {
         etr_process_request(&s_test_context, &request);
     }
+}
+
+TEST_FUNCTION(test_etr_icc_handle_hsp, test_setup, test_teardown)
+{
+    // The HSP ICC interface simply handles a request, sends a response, and sets up another receive
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    etr_icc_handle_hsp((void*)&s_test_context, 0, FPFW_ICC_BASE_STATUS_SUCCESS);
 }

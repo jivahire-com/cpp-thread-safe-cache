@@ -29,7 +29,7 @@ static uint8_t s_etr_stack[ETR_STACK_SIZE];
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(etr, FPFW_INIT_DEPENDENCIES("etc"))
+FPFW_INIT_COMPONENT(etr, FPFW_INIT_DEPENDENCIES("etc", "icc_hspmbx", "atu_svc"))
 {
 
     etr_service_config_t config = {
@@ -57,6 +57,9 @@ FPFW_INIT_COMPONENT(etr, FPFW_INIT_DEPENDENCIES("etc"))
                 .priority = 10,
                 .time_slice_option = TX_NO_TIME_SLICE,
             },
+        .icc_config = {
+            .p_hsp_icc_ctx = fpfw_init_get_handle("icc_hspmbx"),
+        },
     };
 
     etr_initialize(&s_etr_service_ctx, &config);

@@ -120,13 +120,13 @@ static void boot_status_notify_complete(void* context, fpfw_status_t status)
     boot_status_req_t* req = (boot_status_req_t*)context;
     assert(status == FPFW_STATUS_SUCCESS); //! status of the icc base communication
     assert(req != NULL);
-    assert(req->msg.header.cmd == HSP_MAILBOX_CMD_BOOT_STATUS_NOTIFY); //! msg is a boot status notify message
+    assert(req->msg.header.cmd == HSP_MAILBOX_CMD_BOOT_STATUS_EXTD_NOTIFY); //! msg is a boot status notify message
 
     //! Print the boot status notification message on uart
     printf("[Boot Status] Async Notif Send Complete, ID[%" PRId32 "] Stat[0x%" PRIx32 "] Stat_ex[0x%" PRIx32 "]\n",
            req->msg.boot_stat_notif.id,
            req->msg.boot_stat_notif.boot_status,
-           req->msg.boot_stat_notif.boot_status_ex);
+           req->msg.boot_stat_notif.boot_status_ex.boot_status_int);
 
     //! mark the request as not in use, so the memory can be reused for next request
     FPFW_LOCK_STATE oldState = FpFwLockAcquire(&boot_status_lock); //! critical section start
@@ -174,10 +174,10 @@ fpfw_status_t boot_status_notify(boot_status_code_t boot_status)
     }
 
     //! Prepare the hsp message packet
-    req_mem.msg.boot_stat_notif.header.cmd = HSP_MAILBOX_CMD_BOOT_STATUS_NOTIFY;
+    req_mem.msg.boot_stat_notif.header.cmd = HSP_MAILBOX_CMD_BOOT_STATUS_EXTD_NOTIFY;
     req_mem.msg.boot_stat_notif.id = (cpu_type == CPU_SCP) ? HSP_FIRMWARE_ID_SCP : HSP_FIRMWARE_ID_MCP;
     req_mem.msg.boot_stat_notif.boot_status = boot_status;
-    req_mem.msg.boot_stat_notif.boot_status_ex = HSP_MAILBOX_BOOT_STATUS_EX_FATAL; //! Set by default
+    req_mem.msg.boot_stat_notif.boot_status_ex.boot_status_int = HSP_MAILBOX_BOOT_STATUS_EX_FATAL; //! Set by default
     //! iterate table of boot status codes to find the boot status type to update boot_status_ex
     for (uint32_t i = 0; i < BOOT_STATUS_TABLE_SIZE; i++)
     {
@@ -185,7 +185,7 @@ fpfw_status_t boot_status_notify(boot_status_code_t boot_status)
         {
             if (boot_status_table[i].status_type == BOOT_STATUS_PROGRESS)
             {
-                req_mem.msg.boot_stat_notif.boot_status_ex = HSP_MAILBOX_BOOT_STATUS_EX_COMPLETE;
+                req_mem.msg.boot_stat_notif.boot_status_ex.boot_status_int = HSP_MAILBOX_BOOT_STATUS_EX_COMPLETE;
             }
             break;
         }
@@ -235,7 +235,7 @@ fpfw_status_t boot_status_notify(boot_status_code_t boot_status)
                ((is_icc_sync) ? "Completed" : "Raised"),
                req_mem.msg.boot_stat_notif.id,
                req_mem.msg.boot_stat_notif.boot_status,
-               req_mem.msg.boot_stat_notif.boot_status_ex);
+               req_mem.msg.boot_stat_notif.boot_status_ex.boot_status_int);
     }
     return status;
 }

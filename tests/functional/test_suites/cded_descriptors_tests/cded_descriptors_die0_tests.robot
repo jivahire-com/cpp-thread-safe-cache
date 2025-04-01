@@ -76,7 +76,7 @@ ${TIMEOUT}              ${900}
 
 @{PASS_RESPONSE_USER_DEF_OPCODE}       Starting  CDED Test
 ...                                    accelerator_id = Accel-CDED (1)
-...                                    workload: opcode = USER_DEF_OPCODE (0x65)
+...                                    workload: opcode = USER_DEF_OPCODE (0x3C4)
 ...                                    wait_for_cmd_completion-464: INFO: Status: exp=0x0, rx=0x0
 ...                                    wait_for_cmd_completion-476: INFO: RX: SUCCESS
 ...                                    CDED Test DONE

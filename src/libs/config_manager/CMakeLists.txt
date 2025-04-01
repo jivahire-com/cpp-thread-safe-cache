@@ -8,22 +8,22 @@ add_library(${TARGET}
 
 target_link_libraries(${TARGET}
     PUBLIC 
-    fwlib.lib.cfg_mgr
+        fwlib.lib.cfg_mgr
+        ms::lib::variable_services
     PRIVATE
-    kng_silibs_platform
-    silibs::platform
-    silibs::idhw
-    silibs::idsw
-    silibs::idsw_kng
-    silibs::spi_bridge
-    fwlib.lib.status
-    fwlib.lib.utils
-    fwlib.lib.spinlock
-    ms::lib::error_codes
-    ms::lib::crash_dump
-    ms::lib::icc_platform_defines
-    ms::lib::variable_services
-    ms::lib::system_info
+        kng_silibs_platform
+        silibs::platform
+        silibs::idhw
+        silibs::idsw
+        silibs::idsw_kng
+        silibs::spi_bridge
+        fwlib.lib.status
+        fwlib.lib.utils
+        fwlib.lib.spinlock
+        ms::lib::error_codes
+        ms::lib::crash_dump
+        ms::lib::icc_platform_defines
+        ms::lib::system_info
 )
 
 target_include_directories(${TARGET}

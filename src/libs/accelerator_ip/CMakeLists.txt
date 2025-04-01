@@ -9,6 +9,7 @@ add_library(
             accelerator_ip_configs.c
             accelerator_ip_init.c
             accelerator_ip_isolation.c
+            accelerator_ip_knobs.c
             accelerator_ip_mcp.c
 )
 
@@ -16,10 +17,8 @@ target_include_directories(
     ${TARGET}
         PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}/inc
-            ${REPO_ROOT_DIR}/src/libs/utils/include
-
         PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/inc_priv
+            ${CMAKE_CURRENT_SOURCE_DIR}/inc_priv
 )
 
 # @todo remove after completing task https://azurecsi.visualstudio.com/Dev/_workitems/edit/1933312/
@@ -39,8 +38,11 @@ target_link_libraries(
         fwlib.driver.mboxIccTransport
         fwlib.lib.cfg_mgr
         fwlib.lib.init
+        fwlib.lib.interface.platform.dbgprint
+        fwlib.lib.utils
         fwlib.service.icc_dispatcher
         fwlib.service.iccBase
+        ms::lib::config_manager
         ms::lib::crash_dump
         ms::lib::debug
         ms::lib::error_codes
@@ -49,6 +51,7 @@ target_link_libraries(
         ms::lib::utils
         ms::lib::system_info
         ms::service::atu_service
+        silibs::idhw
         silibs::idsw
         silibs::idsw_kng
         silibs::pcr_vab

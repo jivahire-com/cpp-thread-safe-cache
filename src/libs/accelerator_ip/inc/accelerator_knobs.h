@@ -1,0 +1,50 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+/**
+ * @file accelerator_knobs.h
+ * Accelerator IP knobs specific definitions to be consumed by FW.
+ */
+
+#pragma once
+
+/*----------------------------- Nested includes -----------------------------*/
+
+/*------------------- Symbolic Constant Macros (defines) --------------------*/
+
+/*-------------------------------- Typedefs ---------------------------------*/
+typedef enum {
+    STATUS_KNOB_TRANSFER_SUCCESS = 0,
+    STATUS_KNOB_TRANSFER_SKIP_NO_OVERRIDE_DATA,
+    STATUS_KNOB_TRANSFER_FAIL_INVALID_BUFFER,
+    STATUS_KNOB_TRANSFER_FAIL_MEMORY_OVERFLOW,
+    STATUS_KNOB_TRANSFER_FAIL_SIZE_MISMATCH,
+    STATUS_KNOB_TRANSFER_FAIL_INVALID_DATA_SIZE,
+    STATUS_KNOB_TRANSFER_FAIL_INVALID_KNOB_NAME,
+    STATUS_KNOB_TRANSFER_FAIL_INVALID_KNOB_DATA,
+    STATUS_KNOB_TRANSFER_FAIL,
+} knob_transfer_status_t;
+
+typedef struct {
+    const char* p_name;
+    uint8_t size;
+    uint8_t* p_data;
+} transfer_accel_sys_info_data_t;
+
+/*------------------- Declarations (Statics and globals) --------------------*/
+
+/*--------------------------- Function Prototypes ---------------------------*/
+
+/**
+ * @brief Function to download the knobs for the accelerator from SCP
+ *
+ * \b Description:
+ * This function is invoked before initializing the accelerator 
+ *
+ * @param[in] accel_type - Accelerator type
+ *
+ * @retval
+ *  No return value
+ */
+knob_transfer_status_t scp_download_accel_knobs(ACCEL_ID accel_type);

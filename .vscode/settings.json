@@ -15,7 +15,15 @@
         "chrono": "c",
         "codecvt": "c",
         "xlocale": "c",
-        "functional": "c"
+        "functional": "c",
+        "array": "c",
+        "format": "c",
+        "initializer_list": "c",
+        "utility": "c",
+        "vector": "c",
+        "xstring": "c",
+        "xtree": "c",
+        "xutility": "c"
     },
     "cmake.buildDirectory": "${env:REPO_APP_TARGET_BUILD_DIR}",
     "cmake.buildTask": true,

@@ -80,6 +80,11 @@ mock_target(${TARGET}
     accel_disable_cpu_wait
     accel_get_itcm_addr
     accel_get_dtcm_addr
+
+    atu_svc_accel_atu_addr
+    idsw_get_platform_sdv
+    idsw_get_die_id
+    idhw_get_soc_id
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

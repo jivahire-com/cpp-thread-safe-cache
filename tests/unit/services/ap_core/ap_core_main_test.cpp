@@ -254,6 +254,26 @@ void __wrap_accel_disable_cpu_wait(ACCEL_ID accel_type)
     function_called();
 }
 
+uint32_t __wrap_atu_svc_accel_atu_addr(ACCEL_ID accel_id)
+{
+    FPFW_UNUSED(accel_id);
+
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_idsw_get_platform_sdv()
+{
+    return mock_type(uint32_t);
+}
+uint8_t __wrap_idsw_get_die_id()
+{
+    return mock_type(uint8_t);
+}
+uint8_t __wrap_idhw_get_soc_id()
+{
+    return mock_type(uint8_t);
+}
+
 } // extern "C"
 
 static int setup(void** state)
@@ -699,6 +719,11 @@ AP_CORE_TEST(dispatch_sdm_dtcm_load, setup, NULL)
     s_dispatch_routine(&test_request.header, &test_device.header);
 
     // Call the callback to simulate the response
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0);
+    will_return_always(__wrap_idsw_get_platform_sdv, 0x41);
+    will_return_always(__wrap_idsw_get_die_id, 0x0);
+    will_return_always(__wrap_idhw_get_soc_id, 0x0);
+
     expect_value(__wrap_accel_disable_cpu_wait, accel_type, ACCEL_ID_SDM);
     expect_function_call(__wrap_accel_disable_cpu_wait);
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
@@ -791,6 +816,11 @@ AP_CORE_TEST(dispatch_cded_dtcm_load, setup, NULL)
     s_dispatch_routine(&test_request.header, &test_device.header);
 
     // Call the callback to simulate the response
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0);
+    will_return_always(__wrap_idsw_get_platform_sdv, 0x41);
+    will_return_always(__wrap_idsw_get_die_id, 0x0);
+    will_return_always(__wrap_idhw_get_soc_id, 0x0);
+
     expect_value(__wrap_accel_disable_cpu_wait, accel_type, ACCEL_ID_CDED);
     expect_function_call(__wrap_accel_disable_cpu_wait);
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);

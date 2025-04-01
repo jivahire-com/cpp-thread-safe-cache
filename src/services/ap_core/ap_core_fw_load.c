@@ -15,6 +15,7 @@
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
 #include <accelerator_ip.h>
+#include <accelerator_knobs.h>
 #include <accelip_id.h>
 #include <ap_fw_info.h>
 #include <assert.h>
@@ -180,6 +181,7 @@ static void request_accel_dtcm_load_complete_notify(void* context, size_t output
 
     ACCEL_ID accel_type = (ACCEL_ID)context;
 
+    scp_download_accel_knobs(accel_type);
     accel_disable_cpu_wait(accel_type);
 
     DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());

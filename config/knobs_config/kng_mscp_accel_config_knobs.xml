@@ -159,6 +159,9 @@
     <Knob name="cded_wr_lim_cnt" type="accel_wr_lim_cnt_t"/>
     <Knob name="cded_isolation_enable" type="accel_isolation_enable_t"/>
     <Knob name="cded_emm_resp_code" type="accel_emm_resp_code_t"/>
+
+    <!-- Test Knobs -->
+    <Knob name="m7_test_knob" type="uint32_t" default="4" help="Test Knob for Accel transfer" />
   </Knobs>
 
 </ConfigSchema>

@@ -1,7 +1,10 @@
 --variable KEEP_SVP_ALIVE:TRUE
 
-## Single Die Heartbeat Tests
+## Single Die Uptime Tests
 ./../../../tests/functional/test_suites/accel_uptime/apbm_boot_sdm_cded_uptime_single_die.robot
+
+## Single Die Knobs Transfer Tests
+./../../../tests/functional/test_suites/accel_knobs_transfer/accel_knobs_transfer_single_die.robot
 
 ## Large FIFO Mailbox Tests
 ./../../../tests/functional/test_suites/largefifombx_tests/scp_sdm_icc_mbx_die0_test.robot

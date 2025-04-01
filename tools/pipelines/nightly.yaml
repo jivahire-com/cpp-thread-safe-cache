@@ -71,7 +71,7 @@ stages:
   - template: templates/fpga_pythia_test.yaml
     parameters:
       ArtifactName: MSCP_DualDie
-      TestAgent: 'DF14'
+      TestAgent: 'DF8'
       TestPlan: .\tests\functional\test_plan\fpga_dual_die_test_plan.args
 
 # This is to tag the commits that pass nightly tests.

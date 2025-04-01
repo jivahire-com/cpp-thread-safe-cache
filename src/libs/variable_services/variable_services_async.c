@@ -17,8 +17,10 @@
 #include <fpfw_icc_base.h> // for FPFW_ICC_BASE
 #include <hsp_firmware_headers.h>
 #include <kng_error.h> // for KNG_E_INVALIDARG, KNG_E_NOTIMPL
-#include <stddef.h>    // for NULL
-#include <string.h>    // for memcpy
+#include <mpu.h>
+#include <silibs_common.h>
+#include <stddef.h> // for NULL
+#include <string.h> // for memcpy
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -156,49 +158,33 @@ static int32_t variable_service_async_common_handler(variable_service_operation_
     for (uint32_t i = 0; i < sizeof(guid_t) / sizeof(uint32_t); i++)
     {
         ((volatile uint32_t*)&shared_mem->vendor_namespace_guid)[i] =
-            ((volatile uint32_t*)&req_params->vendor_namespace_guid)[i];
+            ((uint32_t*)&req_params->vendor_namespace_guid)[i];
     }
+
     shared_mem->data_size = req_params->data_size;
 
-    /**
-     * @todo Task 2439872 [Variable Services] Incorporate FW Fix for RMSS RAM caching issue replacing the workaround
-     * https://azurecsi.visualstudio.com/Dev/_workitems/edit/2439872
-     * Replace the below for loop to copy each byte and verify with actual fix
-     */
-    //! copy over the variable name into the shared memory byte by byte
-    volatile uint8_t name_byte = 0;
+    //! copy over the variable name into the shared memory
     for (uint32_t i = 0; i < req_params->variable_name_size; i++)
     {
-        name_byte = ((volatile uint8_t*)req_params->variable_name_ptr)[i];
-        //! Copy & Verify name has been copied correctly into shared memory
-        do
-        {
-            shared_mem->variable_name_and_data[i] = name_byte;
-        } while (shared_mem->variable_name_and_data[i] != name_byte);
+        ((volatile uint8_t*)shared_mem->variable_name_and_data)[i] = ((uint8_t*)req_params->variable_name_ptr)[i];
     }
 
-    /**
-     * @todo Task 2439872 [Variable Services] Incorporate FW Fix for RMSS RAM caching issue replacing the workaround
-     * https://azurecsi.visualstudio.com/Dev/_workitems/edit/2439872
-     * Replace the below for loop to copy each byte and verify with actual fix
-     */
-    //! copy over the data into the shared memory for set variable byte by byte
     if (type == ASYNC_SET_VARIABLE)
     {
-        volatile uint8_t data_byte = 0;
+        //! copy over the data into the shared memory for set variable
         for (uint32_t i = 0; i < req_params->data_size; i++)
         {
-            data_byte = ((volatile uint8_t*)req_params->data)[i];
-            do
-            {
-                //! Copy & Verify data has been copied correctly
-                shared_mem->variable_name_and_data[req_params->variable_name_size + i] = data_byte;
-            } while (shared_mem->variable_name_and_data[req_params->variable_name_size + i] != data_byte);
+            ((volatile uint8_t*)shared_mem->variable_name_and_data)[req_params->variable_name_size + i] =
+                req_params->data[i];
         }
     }
 
     //! Debug prints pre mailbox communication testing
     debug_print_pre_mbox_send(var_serv_ctx);
+
+    //! Flush the cache for the shared memory region to ensure the data is visible to HSP
+    SCB_CleanInvalidateDCache_by_Addr((void*)ALIGN_DOWN(var_serv_ctx->shared_mem.payload_base, 32),
+                                      var_serv_ctx->shared_mem.max_payload_size);
 
     //! Send the payload & wait for response
     fpfw_status_t icc_status = fpfw_icc_base_send_recv(hsp_icc_ctx, &var_serv_ctx->icc_req);

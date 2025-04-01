@@ -79,40 +79,86 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
                                  ARM_MPU_REGION_SIZE_512KB),
         },
         /**
-         * MPU Region 3 - MSCP_EXP SRAM (RAM0 + RAM1)
-         *                Normal Noncacheable, Non-bufferable
-         *                Priviledged R/W
+         * MPU Region 3~6 - MSCP_EXP SRAM (RAM0 + (13 * 64kb of RAM1))
+         *                  Outer and inner Write-Back. Write and read allocate
+         *                  Priviledged R/W
          */
         {
             .RBAR = ARM_MPU_RBAR(3, MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM0_ADDRESS),    // NOLINT
             .RASR = ARM_MPU_RASR(ENABLE_EXEC,
                                  ARM_MPU_AP_PRIV,
                                  TYPE_EXT_1,
-                                 NON_SHAREABLE,
+                                 SHAREABLE,
+                                 CACHEABLE,
+                                 BUFFERABLE,
+                                 DISABLE_SUBREGION,
+                                 ARM_MPU_REGION_SIZE_1MB),
+        },
+        {
+            .RBAR = ARM_MPU_RBAR(4, MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM1_ADDRESS),    // NOLINT
+            .RASR = ARM_MPU_RASR(ENABLE_EXEC,
+                                 ARM_MPU_AP_PRIV,
+                                 TYPE_EXT_1,
+                                 SHAREABLE,
+                                 CACHEABLE,
+                                 BUFFERABLE,
+                                 DISABLE_SUBREGION,
+                                 ARM_MPU_REGION_SIZE_512KB),
+        },
+        {
+            .RBAR = ARM_MPU_RBAR(5, MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM1_ADDRESS + MCP_EXP_TOP_RAM1_SIZE/2),    // NOLINT
+            .RASR = ARM_MPU_RASR(ENABLE_EXEC,
+                                 ARM_MPU_AP_PRIV,
+                                 TYPE_EXT_1,
+                                 SHAREABLE,
+                                 CACHEABLE,
+                                 BUFFERABLE,
+                                 DISABLE_SUBREGION,
+                                 ARM_MPU_REGION_SIZE_256KB),
+        },
+        {
+            .RBAR = ARM_MPU_RBAR(6, MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM1_ADDRESS + (3 * MCP_EXP_TOP_RAM1_SIZE / 4)),    // NOLINT
+            .RASR = ARM_MPU_RASR(ENABLE_EXEC,
+                                 ARM_MPU_AP_PRIV,
+                                 TYPE_EXT_1,
+                                 SHAREABLE,
+                                 CACHEABLE,
+                                 BUFFERABLE,
+                                 DISABLE_SUBREGION,
+                                 ARM_MPU_REGION_SIZE_64KB),
+        },
+        /**
+         * MPU Region 7~9 - MSCP_EXP SRAM (last 192kb of RAM1))
+         *                  Strongly Ordered
+         *                  Priviledged R/W
+         */
+        {
+            .RBAR = ARM_MPU_RBAR(7, MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM1_ADDRESS + (13 * MCP_EXP_TOP_RAM1_SIZE / 16)),    // NOLINT
+            .RASR = ARM_MPU_RASR(ENABLE_EXEC,
+                                 ARM_MPU_AP_PRIV,
+                                 TYPE_EXT_0,
+                                 SHAREABLE,
                                  NON_CACHEABLE,
                                  NON_BUFFERABLE,
                                  DISABLE_SUBREGION,
-                                 ARM_MPU_REGION_SIZE_2MB),
+                                 ARM_MPU_REGION_SIZE_64KB),
         },
-        /**
-         *  @todo 2457199 https://azurecsi.visualstudio.com/Dev/_workitems/edit/2457199
-         * Add MPU settings for rmss rodata region.
-         * For MCP starting address = 0x013BF490, Size = 64 KB
-         * 
-         * MPU Region 4 - MSCP_EXP SRAM RODATA 
-         *                Cacheable
-         *                Priviledged R Only
-         */
-        /**
-         * MPU Region 5 - MSCP_EXP SCF RAM
-         *                Normal Noncacheable
-         *                Priviledged R/W
-         */
         {
-            .RBAR = ARM_MPU_RBAR(4, MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_SCF_RAM_ADDRESS), // NOLINT
-            .RASR = ARM_MPU_RASR(DISABLE_EXEC,
+            .RBAR = ARM_MPU_RBAR(8, MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM1_ADDRESS + (14 * MCP_EXP_TOP_RAM1_SIZE / 16)),    // NOLINT
+            .RASR = ARM_MPU_RASR(ENABLE_EXEC,
                                  ARM_MPU_AP_PRIV,
-                                 TYPE_EXT_1,
+                                 TYPE_EXT_0,
+                                 SHAREABLE,
+                                 NON_CACHEABLE,
+                                 NON_BUFFERABLE,
+                                 DISABLE_SUBREGION,
+                                 ARM_MPU_REGION_SIZE_64KB),
+        },
+        {
+            .RBAR = ARM_MPU_RBAR(9, MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM1_ADDRESS + (15 * MCP_EXP_TOP_RAM1_SIZE / 16)),    // NOLINT
+            .RASR = ARM_MPU_RASR(ENABLE_EXEC,
+                                 ARM_MPU_AP_PRIV,
+                                 TYPE_EXT_0,
                                  SHAREABLE,
                                  NON_CACHEABLE,
                                  NON_BUFFERABLE,
@@ -120,12 +166,28 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
                                  ARM_MPU_REGION_SIZE_64KB),
         },
         /**
-         * MPU Region 6 - DDR Used for In-Band Telemetry
+         * MPU Region 10 - MSCP_EXP SCF RAM
          *                Normal Noncacheable
          *                Priviledged R/W
          */
         {
-            .RBAR = ARM_MPU_RBAR(5, MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR), // NOLINT
+            .RBAR = ARM_MPU_RBAR(10, MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_SCF_RAM_ADDRESS), // NOLINT
+            .RASR = ARM_MPU_RASR(DISABLE_EXEC,
+                                 ARM_MPU_AP_PRIV,
+                                 TYPE_EXT_1,
+                                 SHAREABLE,
+                                 CACHEABLE,
+                                 BUFFERABLE,
+                                 DISABLE_SUBREGION,
+                                 ARM_MPU_REGION_SIZE_64KB),
+        },
+        /**
+         * MPU Region 11 - DDR Used for In-Band Telemetry
+         *                Normal Noncacheable
+         *                Priviledged R/W
+         */
+        {
+            .RBAR = ARM_MPU_RBAR(11, MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR), // NOLINT
             .RASR = ARM_MPU_RASR(DISABLE_EXEC,
                                  ARM_MPU_AP_PRIV,
                                  TYPE_EXT_1,
@@ -136,12 +198,12 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
                                  ARM_MPU_REGION_SIZE_128MB),
         },
         /**
-         * MPU Region 6 - System memory PPB (Cortex-M7 registers)
+         * MPU Region 12 - System memory PPB (Cortex-M7 registers)
          *                Strongly Ordered
          *                Priviledged R/W
-         */
+        */
         {
-            .RBAR = ARM_MPU_RBAR(6, MCP_TOP_CORTEX_M7_ADDRESS), // NOLINT
+            .RBAR = ARM_MPU_RBAR(12, MCP_TOP_CORTEX_M7_ADDRESS), // NOLINT
             .RASR = ARM_MPU_RASR(DISABLE_EXEC,
                                  ARM_MPU_AP_PRIV,
                                  TYPE_EXT_0,
@@ -154,9 +216,19 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
     };
     // clang-format on
 
-    uint8_t region_count = sizeof(regions) / sizeof(regions[0]);
+    // Disable Dynamic read allocate mode
+    SCnSCB->ACTLR |= SCnSCB_ACTLR_DISRAMODE_Msk;
 
+    uint8_t region_count = sizeof(regions) / sizeof(regions[0]);
     mpu_init(regions, region_count);
+
+    // Enable I caches,  ensures that any stale instructions are not used.
+    SCB_InvalidateICache();
+    SCB_EnableICache();
+
+    // Enable D caches, ensures any stale data is not used.
+    SCB_InvalidateDCache();
+    SCB_EnableDCache();
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

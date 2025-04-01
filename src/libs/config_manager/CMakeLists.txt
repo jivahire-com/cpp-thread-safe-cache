@@ -24,6 +24,7 @@ target_link_libraries(${TARGET}
         ms::lib::crash_dump
         ms::lib::icc_platform_defines
         ms::lib::system_info
+        ms::lib::cortex_m7::mpu
 )
 
 target_include_directories(${TARGET}

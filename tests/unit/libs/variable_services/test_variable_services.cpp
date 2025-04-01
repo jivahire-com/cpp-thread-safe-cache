@@ -14,6 +14,7 @@ extern "C" {
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t, fpfw_icc_ba...
 #include <hsp_firmware_headers.h> // for kng_hsp_mailbox_msg, HSP_MAILBOX_RSP...
 #include <kng_error.h>
+#include <silibs_common.h>
 #include <stdint.h>                   // for int32_t, uint32_t
 #include <variable_services.h>        // for var_service_shared_mem_t, var_serv...
 #include <variable_services_helper.h> // for variable_services_sync_get_vari...
@@ -136,6 +137,10 @@ static int setup(void** pContext)
 /*------------- Test Cases ----------------*/
 TEST_FUNCTION(test_variable_services_sync_get_variable, setup, teardown)
 {
+    expect_function_call_any(SCB_CleanInvalidateDCache_by_Addr);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, addr, (void*)ALIGN_DOWN(shared_mem.payload_base, 32), -1);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, dsize, shared_mem.max_payload_size, -1);
+
     //! client buffer to store the response data
     uint8_t client_buffer[5] = {0};
 
@@ -164,6 +169,10 @@ TEST_FUNCTION(test_variable_services_sync_get_variable, setup, teardown)
 
 TEST_FUNCTION(test_variable_services_sync_set_variable, setup, teardown)
 {
+    expect_function_call_any(SCB_CleanInvalidateDCache_by_Addr);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, addr, (void*)ALIGN_DOWN(shared_mem.payload_base, 32), -1);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, dsize, shared_mem.max_payload_size, -1);
+
     //! client's data to be written to the shared memory region
     uint8_t client_data[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
 
@@ -277,6 +286,10 @@ void test_variable_service_req_complete_notify(void* context,
 
 TEST_FUNCTION(test_variable_services_async_get_variable, setup, teardown)
 {
+    expect_function_call_any(SCB_CleanInvalidateDCache_by_Addr);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, addr, (void*)ALIGN_DOWN(shared_mem.payload_base, 32), -1);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, dsize, shared_mem.max_payload_size, -1);
+
     //! client buffer to store the response data,
     uint8_t client_buffer[5] = {0};
 
@@ -313,6 +326,10 @@ TEST_FUNCTION(test_variable_services_async_get_variable, setup, teardown)
 
 TEST_FUNCTION(test_variable_services_async_set_variable, setup, teardown)
 {
+    expect_function_call_any(SCB_CleanInvalidateDCache_by_Addr);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, addr, (void*)ALIGN_DOWN(shared_mem.payload_base, 32), -1);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, dsize, shared_mem.max_payload_size, -1);
+
     //! client's data to be written to the shared memory region
     uint8_t client_data[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
 

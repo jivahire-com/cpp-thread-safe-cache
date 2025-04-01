@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         ms::lib::hsp_firmware_headers
         ms::lib::variable_services
         ms::lib::system_info
+        ms::lib::cortex_m7::mpu
 )
 
 # Get private includes for module under test

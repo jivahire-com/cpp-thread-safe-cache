@@ -18,10 +18,6 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 #define KB                          (1024)
-//! Makes the compiler happy!
-#ifndef SL_1KB
-#define SL_1KB KB
-#endif
 #define MCP_VTOR_ALIGNMENT_OFFSET   0x80 //Bits 0-6 of VTOR register are reserved in cortex-M7
 
 #define MCP_BL_DATA_SECTION_SIZE    (32 * KB) //Lower 32KB of DTCM is used the data, bss, heap and stack of bootloader
@@ -34,10 +30,8 @@
 #define MCP_BOOT_RAM_BASE            MCP_MSCP_EXP_SRAM0_ADDR 
 #define MCP_MAX_IMAGE_SIZE          (450 * KB) // MSCP_EXP RAM each slot is 1MB and with ITCM/DTCM each 512KB, the compressed main image of FW could be this value
                                                // in combined elf with bootloader
-//! @todo Split the region for SCP & MCP to avoid future confusion
-//! Total size of the region `SCP_EXP_RODATA_RMSS_REGION_BASE` is 256 KB, of which the initial 192 KB is used by SCP & remaining 64 KB is used for the MCP
-#define MCP_RMSS_RAM_DATA_BASE       SCP_EXP_RODATA_RMSS_REGION_BASE + (192 * KB) // 0x013BF490UL
-#define MCP_RMSS_RAM_DATA_SIZE      (64 * KB)
+#define MCP_RMSS_RAM_DATA_BASE      MCP_EXP_RODATA_RMSS_REGION_BASE
+#define MCP_RMSS_RAM_DATA_SIZE      MCP_EXP_RODATA_RMSS_REGION_SIZE
 
 /*-------------- Typedefs ----------------*/
 

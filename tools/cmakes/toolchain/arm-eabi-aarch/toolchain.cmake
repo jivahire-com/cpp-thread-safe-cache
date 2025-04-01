@@ -29,6 +29,9 @@ set(CMAKE_EXE_LINKER_FLAGS_INIT "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -L${CMA
 SET(TX_CORE_CLOCK_SPEED "6250000")        # Default to 6.5MHz which is the clock speed on FPGA for mscp
 SET(TX_CORE_TICKS_PER_SECOND "100")
 
+set(__ICACHE_PRESENT 1)
+set(__DCACHE_PRESENT 1)
+
 set(CMAKE_EXECUTABLE_SUFFIX_C ".elf")
 set(CMAKE_EXECUTABLE_SUFFIX_CXX ".elf")
 

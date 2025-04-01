@@ -181,7 +181,6 @@ target_link_libraries(
         silibs::sdm_command_desc
         silibs::sensor_ram_bridge
         silibs::spi_bridge
-
 )
 
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)

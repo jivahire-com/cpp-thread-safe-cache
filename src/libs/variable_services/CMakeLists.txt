@@ -20,6 +20,7 @@ target_link_libraries(
             ms::lib::error_codes
             ms::service::atu_service
             silibs::idsw_kng
+            ms::lib::cortex_m7::mpu
 )
 
 target_include_directories(${TARGET}

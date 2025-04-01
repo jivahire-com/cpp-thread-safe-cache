@@ -20,8 +20,10 @@
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <memory.h>
+#include <mpu.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <mscp_exp_spi_synchronize_dies.h>
+#include <silibs_common.h>
 #include <spi_bridge.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -74,6 +76,9 @@ void write_override_knob_to_shared_rmss(void* rmss_base_addr, size_t rmss_base_a
     }
 
     knob_payload_start->total_override_knob_count = total_override_count;
+
+    // Flush the cache for the shared memory region
+    SCB_CleanInvalidateDCache_by_Addr((void*)ALIGN_DOWN((uintptr_t)rmss_base_addr, 32), rmss_base_addr_size);
 }
 
 void apply_override_knob_from_primary_die(uint32_t rmss_base_addr)

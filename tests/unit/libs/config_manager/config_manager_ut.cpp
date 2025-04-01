@@ -18,6 +18,7 @@ extern "C" {
 #include <kng_error.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <mscp_exp_spi_synchronize_dies.h>
+#include <silibs_common.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -237,7 +238,6 @@ TEST_FUNCTION(test_cfg_mgr_init_no_hsp, nullptr, nullptr)
 TEST_FUNCTION(test_cfg_mgr_init_mcp, nullptr, nullptr)
 {
     will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
-
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
     will_return(__wrap_fpfw_cfg_mgr_set_cached_knob_values, FPFW_STATUS_SUCCESS);
@@ -250,11 +250,8 @@ TEST_FUNCTION(test_cfg_mgr_init_mcp, nullptr, nullptr)
 TEST_FUNCTION(test_cfg_mgr_init_no_override, nullptr, nullptr)
 {
     hsp_variable_svc_invoke_count = 0;
-#if defined(SCP_RUNTIME_INIT)
+
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
-#elif defined(MCP_RUNTIME_INIT)
-    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
-#endif
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
@@ -265,6 +262,10 @@ TEST_FUNCTION(test_cfg_mgr_init_no_override, nullptr, nullptr)
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
     expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_addr, SCP_EXP_CONFIG_KNOB_CACHE_BASE);
     expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_size, KNOB_MAX);
+
+    expect_function_call_any(SCB_CleanInvalidateDCache_by_Addr);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, addr, (void*)ALIGN_DOWN(shared_mem.payload_base, 32), -1);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, dsize, shared_mem.max_payload_size, -1);
 
     cfg_mgr_init(&config_manager_setting, &shared_mem);
 
@@ -281,11 +282,8 @@ TEST_FUNCTION(test_cfg_mgr_init_no_override, nullptr, nullptr)
 TEST_FUNCTION(test_cfg_mgr_init_override_die0, rmss_memory_map_setup, nullptr)
 {
     hsp_variable_svc_invoke_count = 0;
-#if defined(SCP_RUNTIME_INIT)
+
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
-#elif defined(MCP_RUNTIME_INIT)
-    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
-#endif
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
@@ -297,17 +295,18 @@ TEST_FUNCTION(test_cfg_mgr_init_override_die0, rmss_memory_map_setup, nullptr)
     expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_addr, SCP_EXP_CONFIG_KNOB_CACHE_BASE);
     expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_size, KNOB_MAX);
 
+    expect_function_call_any(SCB_CleanInvalidateDCache_by_Addr);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, addr, (void*)ALIGN_DOWN(shared_mem.payload_base, 32), -1);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, dsize, shared_mem.max_payload_size, -1);
+
     cfg_mgr_init(&config_manager_setting, &shared_mem);
 }
 
 TEST_FUNCTION(test_cfg_mgr_init_override_die1, rmss_memory_map_setup, nullptr)
 {
     hsp_variable_svc_invoke_count = 0;
-#if defined(SCP_RUNTIME_INIT)
+
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
-#elif defined(MCP_RUNTIME_INIT)
-    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
-#endif
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_1);
@@ -322,11 +321,11 @@ TEST_FUNCTION(test_cfg_mgr_init_override_die1, rmss_memory_map_setup, nullptr)
 
 TEST_FUNCTION(test_update_knob_in_cached_db_cb, nullptr, nullptr)
 {
-#if defined(SCP_RUNTIME_INIT)
+    expect_function_call_any(SCB_CleanInvalidateDCache_by_Addr);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, addr, (void*)ALIGN_DOWN(shared_mem.payload_base, 32), -1);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, dsize, shared_mem.max_payload_size, -1);
+
     will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
-#elif defined(MCP_RUNTIME_INIT)
-    will_return_always(__wrap_idsw_get_cpu_type, CPU_MCP);
-#endif
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
@@ -346,18 +345,17 @@ TEST_FUNCTION(test_update_knob_in_cached_db_cb, nullptr, nullptr)
 
 TEST_FUNCTION(test_update_knob_data, nullptr, nullptr)
 {
-#if defined(SCP_RUNTIME_INIT)
+    expect_function_call_any(SCB_CleanInvalidateDCache_by_Addr);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, addr, (void*)ALIGN_DOWN(shared_mem.payload_base, 32), -1);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, dsize, shared_mem.max_payload_size, -1);
+
     will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
-#elif defined(MCP_RUNTIME_INIT)
-    will_return_always(__wrap_idsw_get_cpu_type, CPU_MCP);
-#endif
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
     expect_function_call(__wrap_variable_service_async_set_variable);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
-
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
     expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_addr, SCP_EXP_CONFIG_KNOB_CACHE_BASE);

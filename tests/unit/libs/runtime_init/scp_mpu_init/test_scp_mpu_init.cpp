@@ -50,6 +50,10 @@ TEST_FUNCTION(test_scp_mpu_init, nullptr, nullptr)
     expect_function_call(ARM_MPU_Disable);
     expect_function_call(ARM_MPU_Load);
     expect_function_call(ARM_MPU_Enable);
+    expect_function_call(SCB_InvalidateICache);
+    expect_function_call(SCB_EnableICache);
+    expect_function_call(SCB_InvalidateDCache);
+    expect_function_call(SCB_EnableDCache);
 
     // Set expectations to have valid region table and its count.
     expect_not_value(__wrap_ARM_MPU_Load, table, NULL);

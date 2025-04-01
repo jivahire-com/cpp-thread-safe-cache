@@ -89,7 +89,7 @@ class crash_dump_stack_overflow_test(EchoFallsBaseTest):
             return False
 
 
-        command = "crashdump cd_stack_overflow"
+        command = "crashdump st_over"
         self.log.info(f"Submitting {command}\n")
         scp_channel.write_line(write_string=command)
         try:

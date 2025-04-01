@@ -122,7 +122,7 @@ TEST_FUNCTION(test_crash_dump_cli_init, nullptr, nullptr)
 TEST_FUNCTION(test_cli_cd_register_beef, test_setup, test_teardown)
 {
     int argc = 1;
-    const char* argv[] = {"cd_register_beef"};
+    const char* argv[] = {"reg_beef"};
     uint32_t dead_beef = 0xDEADBEEF;
     uint32_t beef_cafe = 0xBEEFCAFE;
     crash_dump_type_context_t mini_context = {.type = CRASH_DUMP_TYPE_MINI};
@@ -130,7 +130,7 @@ TEST_FUNCTION(test_cli_cd_register_beef, test_setup, test_teardown)
     crash_dump_context_t context = {.type_ctx = {&mini_context, &full_context}, .die_index = 0, .core_index = CRASH_DUMP_CORE_SCP};
 
     // Get CLI handler
-    CLI_COMMAND_FN handler = get_command_handler("cd_register_beef");
+    CLI_COMMAND_FN handler = get_command_handler("reg_beef");
     assert_non_null(handler);
 
     // Setup expectations
@@ -164,12 +164,12 @@ TEST_FUNCTION(test_cli_cd_register_beef, test_setup, test_teardown)
 TEST_FUNCTION(test_cli_cd_register_string, test_setup, test_teardown)
 {
     int argc = 2;
-    const char* argv[] = {"cd_register_string", "test_string"};
+    const char* argv[] = {"reg_string", "test_string"};
     crash_dump_type_context_t full_context = {.type = CRASH_DUMP_TYPE_FULL};
     crash_dump_context_t context = {.type_ctx = {NULL, &full_context}, .die_index = 0, .core_index = CRASH_DUMP_CORE_SCP};
 
     // Get CLI handler
-    CLI_COMMAND_FN handler = get_command_handler("cd_register_string");
+    CLI_COMMAND_FN handler = get_command_handler("reg_string");
     assert_non_null(handler);
 
     // Setup expectations
@@ -188,10 +188,10 @@ TEST_FUNCTION(test_cli_cd_register_string, test_setup, test_teardown)
 TEST_FUNCTION(test_cli_cd_bug_check, test_setup, test_teardown)
 {
     int argc = 2;
-    const char* argv[] = {"cd_bug_check", "0x80000000"};
+    const char* argv[] = {"bc", "0x80000000"};
 
     // Get CLI handler
-    CLI_COMMAND_FN handler = get_command_handler("cd_bug_check");
+    CLI_COMMAND_FN handler = get_command_handler("bc");
     assert_non_null(handler);
 
     // Call the CLI handler
@@ -205,25 +205,35 @@ TEST_FUNCTION(test_cli_cd_bug_check, test_setup, test_teardown)
 TEST_FUNCTION(test_cli_cd_set_single_core_mode, test_setup, test_teardown)
 {
     int argc = 1;
-    const char* argv[] = {"cd_set_single_core_mode"};
+    const char* argv[] = {"single"};
 
     // Get CLI handler
-    CLI_COMMAND_FN handler = get_command_handler("cd_set_single_core_mode");
+    CLI_COMMAND_FN handler = get_command_handler("single");
     assert_non_null(handler);
 
     // Call the CLI handler
-    FPFW_CLI_STATUS status = handler(argc, argv);
+    FPFW_CLI_STATUS status = handler(argc, argv); // Failure case: no argument provided
+    assert_true(status == CLI_ERROR);
+
+    argc = 2;
+    const char* argv2[] = {"single", "1"};
+    crash_dump_context_t context = {.single_core_mode = false};
+
+    // Setup expectations
+    will_return_always(__wrap_crash_dump_context, &context);
+
+    status = handler(argc, argv2); // Success case: single core mode enabled
     assert_true(status == CLI_SUCCESS);
-}
+    assert_true(context.single_core_mode);
 }
 
 TEST_FUNCTION(test_cli_cd_trigger_exception, test_setup, test_teardown)
 {
     int argc = 1;
-    const char* argv[] = {"cd_trigger_exception"};
+    const char* argv[] = {"trig_except"};
 
     // Get CLI handler
-    CLI_COMMAND_FN handler = get_command_handler("cd_trigger_exception");
+    CLI_COMMAND_FN handler = get_command_handler("trig_except");
     assert_non_null(handler);
 
 #ifdef _WIN32
@@ -245,10 +255,10 @@ TEST_FUNCTION(test_cli_cd_trigger_exception, test_setup, test_teardown)
 TEST_FUNCTION(test_cli_cd_stack_overflow, test_setup, test_teardown)
 {
     int argc = 1;
-    const char* argv[] = {"cd_stack_overflow"};
+    const char* argv[] = {"st_over"};
 
     // Get CLI handler
-    CLI_COMMAND_FN handler = get_command_handler("cd_stack_overflow");
+    CLI_COMMAND_FN handler = get_command_handler("st_over");
     assert_non_null(handler);
 
 #ifdef _WIN32
@@ -266,4 +276,5 @@ TEST_FUNCTION(test_cli_cd_stack_overflow, test_setup, test_teardown)
         printf("Exception caught (0x%08lx)\n", GetExceptionCode());
     }
 #endif
+}
 }

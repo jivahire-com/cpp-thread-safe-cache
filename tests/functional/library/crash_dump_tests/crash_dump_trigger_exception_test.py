@@ -89,7 +89,7 @@ class crash_dump_trigger_exception_test(EchoFallsBaseTest):
             return False
 
 
-        command = "crashdump cd_trigger_exception"
+        command = "crashdump trig_except"
         self.log.info(f"Submitting {command}\n")
         scp_channel.write_line(write_string=command)
         try:

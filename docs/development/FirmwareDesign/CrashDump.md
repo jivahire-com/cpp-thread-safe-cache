@@ -288,8 +288,8 @@ Reserved memory in DIE0 SRAM for crash mini dump
 +---------+---------------+---------------+--
 |         |               |               |
 |         |               |               |
-| Core    | SCP0 Dump     | SCP1 Dump     |
-| States  |               | (Copy buffer) |
+| Dump    | SCP0 Dump     | SCP1 Dump     |
+| Header  |               | (Copy buffer) |
 |         |               |               |
 |         |               |               |
 |         |               |               |
@@ -301,8 +301,8 @@ Reserved memory in DIE1 SRAM for crash mini dump
 +---------+---------------+---------------+--
 |         |               |               |
 |         |               |               |
-| Core    | SCP1 Dump     | Reserved      |
-| States  |               |               |
+| Dump    | SCP1 Dump     | Reserved      |
+| Header  |               |               |
 |         |               |               |
 |         |               |               |
 |         |               |               |
@@ -317,8 +317,8 @@ Crash Dump Base           Base + Reservation size
 +---------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--
 |         |       |       |       |       |       |       |       |       |       |       |       |       |
 |         |       |       |       |       |       |       |       |       |       |       |       |       |
-| Core    | MCP0  | SCP0  | HSP0  | CDED0 | SDM0  | KMP0  | MCP1  | SCP1  | HSP1  | CDED1 | SDM1  | KMP1  |
-| States  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  |
+| Dump    | MCP0  | SCP0  | HSP0  | CDED0 | SDM0  | KMP0  | MCP1  | SCP1  | HSP1  | CDED1 | SDM1  | KMP1  |
+| Header  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  | Dump  |
 |         |       |       |       |       |       |       |       |       |       |       |       |       |
 |         |       |       |       |       |       |       |       |       |       |       |       |       |
 +---------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--
@@ -404,16 +404,16 @@ end
 
     SCP0->>SCP0: FW BUG_CHECK()
     SCP0->>MCP0: Collect dump (MHU signal)
+    SCP0->>SDM0: Collect dump (MHU signal)
     SCP0->>SCP1: Collect dump (MHU signal)
     SCP1->>MCP1: Collect dump (MHU signal)
+    SCP1->>SDM1: Collect dump (MHU signal)
     MCP0->>BMC: Assert SAFE_MODE_n (GPIO)
     SCP0->>HSP0: Collect dump (HSP Mailbox)
-    HSP0->>SDM0: Collect dump (Mailbox)
     HSP0->>HSP1: Collect dump (HSP Mailbox)
-    HSP1->>SDM1: Collect dump (Mailbox)
     Note over HSP1, MCP0: Collect dump
 
-    HSP0->>HSP0: Warm reset
+    SCP0->>HSP0: Warm reset
     HSP0->>HSP1: Warm reset
     Note over HSP0, MCP0: Warm reset
     Note over HSP1, MCP1: Warm reset
@@ -627,13 +627,14 @@ void crash_dump_register_address64(uint64_t address, uint32_t size, FPFwCdDumpPr
 
 ## CLI
 The Crash Dump CLI will expose a few commands to allow test interaction:
-| CLI Command                                           | Description                                              |
-| -----------                                           | -------------------------------------------------------- |
-| cd_register_mmio_register                             | Registers MMIO register range                            |
-| cd_register_address32                                 | Registers range of 32-bit addresses                      |
-| cd_register_address64                                 | Registers range of 64-bit addresses                      |
-| cd_bug_check                                          | Triggers a BUG_CHECK                                     |
-| cd_stack_overflow                                     | Triggers stack overflow                                  |
+| CLI Command                                 | Description                                              |
+| -----------                                 | -------------------------------------------------------- |
+| reg_beef                                    | Registers filler hex as data to be stored in Crash dump  |
+| reg_string                                  | Registers a string to be stored in a crash dump          |
+| single                                      | Generates single core crash dump only                    |
+| bc                                          | Triggers a BUG_CHECK                                     |
+| trig_except                                 | Triggers a exception
+| st_over                                     | Triggers stack overflow                                  |
 
 ## Unit Testing
 

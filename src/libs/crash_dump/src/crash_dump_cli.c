@@ -30,12 +30,12 @@ static FPFW_CLI_STATUS cd_stack_overflow(int argc, const char** pp_argv);
 
 /*-- Declarations (Statics and globals) --*/
 static FPFW_CLI_COMMAND s_cd_cmd_list[] = {
-    {NULL_LIST_ENTRY, "crashdump", "cd_register_beef", cd_register_beef, "Registers filler hex as data to be stored in Crash Dump", "Usage: cd_register_beef (no arguments)"},
-    {NULL_LIST_ENTRY, "crashdump", "cd_register_string", cd_register_string, "Registers a string to be stored in a crash dump", "Usage: cd_register_string <string>"},
-    {NULL_LIST_ENTRY, "crashdump", "cd_bug_check", cd_bug_check, "Invokes a bugcheck with the given error code", "Usage: cd_bug_check <error code>"},
-    {NULL_LIST_ENTRY, "crashdump", "cd_set_single_core_mode", cd_set_single_core_mode, "Generates single core crash dump", "Usage: cd_set_single_core_mode <0: multi-core, 1: single-core>"},
-    {NULL_LIST_ENTRY, "crashdump", "cd_trigger_exception", cd_trigger_exception, "Triggers an exception, causing a fault handler to execute", "Usage: cd_trigger_exception (no arguments)"},
-    {NULL_LIST_ENTRY, "crashdump", "cd_stack_overflow", cd_stack_overflow, "Causes stack overflow to test crash dump behavior", "Usage: cd_stack_overflow <suspend time tick>"},
+    {NULL_LIST_ENTRY, "crashdump", "reg_beef", cd_register_beef, "Registers filler hex as data to be stored in Crash Dump", "Usage: reg_beef (no arguments)"},
+    {NULL_LIST_ENTRY, "crashdump", "reg_string", cd_register_string, "Registers a string to be stored in a crash dump", "Usage: reg_string <string>"},
+    {NULL_LIST_ENTRY, "crashdump", "bc", cd_bug_check, "Invokes a bugcheck with the given error code", "Usage: bc <error code>"},
+    {NULL_LIST_ENTRY, "crashdump", "single", cd_set_single_core_mode, "Generates single core crash dump", "Usage: single <0: multi-core, 1: single-core>"},
+    {NULL_LIST_ENTRY, "crashdump", "trig_except", cd_trigger_exception, "Triggers an exception, causing a fault handler to execute", "Usage: trig_except (no arguments)"},
+    {NULL_LIST_ENTRY, "crashdump", "st_over", cd_stack_overflow, "Causes stack overflow to test crash dump behavior", "Usage: st_over <suspend time tick>"},
 };
 
 static uint32_t dead_beef = 0xDEADBEEF;
@@ -123,6 +123,7 @@ static FPFW_CLI_STATUS cd_set_single_core_mode(int argc, const char** pp_argv)
     else
     {
         FpFwCliPrint("Invalid arguments!\n");
+        return CLI_ERROR;
     }
 
     return CLI_SUCCESS;

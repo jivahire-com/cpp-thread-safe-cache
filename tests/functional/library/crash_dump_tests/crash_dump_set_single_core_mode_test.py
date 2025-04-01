@@ -110,7 +110,7 @@ class crash_dump_set_single_core_mode_test(EchoFallsBaseTest):
             return False
 
 
-        command = "crashdump cd_set_single_core_mode 1"
+        command = "crashdump single 1"
         self.log.info(f"Submitting {command}\n")
         scp_channel.write_line(write_string=command)
         try:
@@ -124,7 +124,7 @@ class crash_dump_set_single_core_mode_test(EchoFallsBaseTest):
             time.sleep(30)
             return False
 
-        command = "crashdump cd_trigger_exception"
+        command = "crashdump trig_except"
         self.log.info(f"Submitting {command}\n")
         scp_channel.write_line(write_string=command)
         try:

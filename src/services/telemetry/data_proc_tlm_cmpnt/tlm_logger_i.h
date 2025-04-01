@@ -246,12 +246,19 @@ fpfw_status_t telmain_log_dimm_info(sensor_ram_dimm_info_t* dimm_info);
  */
 fpfw_status_t tlm_logger_log_core_pstate(pstate_telem_t* pstate_telemetry);
 /**
+ * @brief Internal API to log cstate telemetry.
+ * @param cstate_telemetry - SCF RAM formatted resource for pstate packets
+ *        (IMPORTANT : pstate telemetry packet provide both p state/c state))
+ *        NOTE: The Pstate packet contains the core id reference internally.
+ * @return fpfw_status_t
+ */
+fpfw_status_t  tlm_logger_log_core_cstate(pstate_telem_t* cstate_telemetry);
+/**
  * @brief Power telemetry update management -update data after logging. 
  * @param   None 
  * @return  None 
  */
 void data_proc_tlm_cmpnt_aggregate_update_mgr(void);
-
 /**
  * @brief tlm_calculate_mma_res function calculates the minimum, maximum, and average values of a 
  *          given metric over a specified time period. It updates the provided pointers with the 
@@ -266,15 +273,6 @@ void data_proc_tlm_cmpnt_aggregate_update_mgr(void);
  * @param residency_uS The total residency time in microseconds over which the average is calculated
  */
 void tlm_calculate_mma_res(uint16_t* mma_min, uint16_t* mma_max, uint16_t* mma_average, uint16_t* mma_latest_value, uint32_t time_diff_uS, uint32_t residency_uS);
-/**
- * @brief  function updates the residency time of a core's current cstate (CPU power state) 
- *          based on the provided timestamp. It also handles the cstate change indicator for the core
- * 
- * @param core_id  The identifier of the core for which the cstate residency is being updated.
- * @param time_stamp_uS The current timestamp in microseconds.
- */
-void tlm_update_cstate(uint8_t core_id, uint64_t time_stamp_uS);
-
 /**
  * @brief  function updates the minimum, maximum, and average current values for a specified core based on the provided 
  *         time difference and residency time

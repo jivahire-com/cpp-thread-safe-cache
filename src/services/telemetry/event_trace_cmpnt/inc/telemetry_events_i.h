@@ -254,18 +254,28 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     FPFW_ET_LEVEL_INFO)
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                     44,
-                     DataUpdateMMAvgOverflow,
-                     FPFW_ET_LEVEL_ERROR)
+                    44,
+                    DataUpdateMMAvgOverflow,
+                    FPFW_ET_LEVEL_ERROR)
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                     45,
-                     DataUpdateMMAWrongInValidTimeStamp,
-                     FPFW_ET_LEVEL_DEBUG)
+                    45,
+                    DataUpdateMMAWrongInValidTimeStamp,
+                    FPFW_ET_LEVEL_DEBUG)
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                     46,
-                     PstatePWRUpdateMMAvgOverflow,
-                     FPFW_ET_LEVEL_ERROR)
+                    46,
+                    PstatePWRUpdateMMAvgOverflow,
+                    FPFW_ET_LEVEL_ERROR)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    47,
+                    LogCstateValidTimeStamp,
+                    FPFW_ET_LEVEL_ERROR)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    48,
+                    CstateUnexpectedLevelChange,
+                    FPFW_ET_LEVEL_ERROR)
 
 /*--------- Function Prototypes ----------*/
 

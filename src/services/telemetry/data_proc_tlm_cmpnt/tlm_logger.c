@@ -261,6 +261,83 @@ fpfw_status_t tlm_logger_log_core_current(core_current_t* current_data, uint8_t 
     return FPFW_STATUS_SUCCESS;
 }
 
+fpfw_status_t tlm_logger_log_core_cstate(pstate_telem_t* cstate_telemetry)
+{
+    // Power information per P State Per Core is updated based on current
+    // telemetry (which also provides power information). See the update
+
+    // Convert Sensor Data into Pstate Entry
+    uint8_t core_id = cstate_telemetry->data.core;
+    if (core_id >= NUMBER_OF_CORES_PER_DIE)
+    {
+        return FPFW_STATUS_INVALID_ARGS;
+    }
+
+    // Check for throttling indication first. If System is throttling, do not
+    // take snapshots of Pstates and Cstates
+    if (cstate_telemetry->data.throttle_status == NO_THROTTLE)
+    {
+        /* Log cstate */
+        uint8_t new_cstate = cstate_telemetry->data.cstate;
+        uint64_t timestamp_us = cstate_telemetry->timestamp;
+
+        if (new_cstate != core[core_id].cstate_from_pstate_pkt) // if there is a change in cstate, we have to handle it.
+        {
+
+            /*Note : There will be no valid case for CState to be changing between C1, C2 and C3 directly.
+                    Everything should go through C0 first before we can get into C1 or C2 or C3, so if there
+                    are cases such as C1 to C3 then we discard that kind of calculations.
+                    Hardware logic is responsible to make sure change happen in proper order.
+                    TODO: only logging warining but updating calculation, need to be updated
+                    based on real time scenario.
+                    https://azurecsi.visualstudio.com/Dev/_workitems/edit/2507082
+            */
+            // case 1 : Invalid cstate change- return.
+            if (new_cstate > core[core_id].cstate_from_pstate_pkt + 1)
+            {
+                FPFW_ET_LOG(CstateUnexpectedLevelChange);
+                return FPFW_STATUS_INVALID_ARGS;
+            }
+            // case 2 : First time entering in a cstate -if timestamp is 0 so continue and update entry and
+            // timestamp. At first entry on start all core timestamp are 0 , so log entry,timestamp and state.
+            if (core[core_id].cstate_timestamp_uS == 0)
+            {
+                core[core_id].flags.cstate_change = 1;
+                core[core_id].cstate_from_pstate_pkt = new_cstate;
+                core[core_id].cstate_timestamp_uS = timestamp_us;
+                // Update the entry count
+                core[core_id].cstate[new_cstate].entry_count++;
+                return FPFW_STATUS_SUCCESS;
+            }
+            // normal cstate entry/residency update.
+            if (timestamp_us > core[core_id].cstate_timestamp_uS)
+            {
+                // Update the previous Cstate residency
+                uint64_t cstate_time_diff_uS = 0;
+                uint8_t cstate_index = core[core_id].cstate_from_pstate_pkt;
+                cstate_time_diff_uS = timestamp_us - core[core_id].cstate_timestamp_uS;
+                core[core_id].cstate[cstate_index].residency_uS += cstate_time_diff_uS;
+            }
+            else
+            {
+                // case 3 : return if timestamp < core[core_id].cstate_timestamp_uS return. eg. Network time sync issue.
+                FPFW_ET_LOG(LogCstateValidTimeStamp);
+                return FPFW_STATUS_INVALID_ARGS;
+            }
+            // TODO: Implement cstate entry/exit latency calculation.
+            // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2492944
+            //  Indicate the changes
+            core[core_id].flags.cstate_change = 1;
+            core[core_id].cstate_from_pstate_pkt = new_cstate;
+            core[core_id].cstate_timestamp_uS = timestamp_us;
+            // Update the entry count
+            core[core_id].cstate[new_cstate].entry_count++;
+        }
+    }
+
+    return FPFW_STATUS_SUCCESS;
+}
+
 fpfw_status_t update_core_pstate_timestamps(uint8_t core_id, uint8_t pstate, uint64_t timestamp_uS)
 {
     // Update the residency of the previous pstate
@@ -301,14 +378,9 @@ fpfw_status_t tlm_logger_log_core_pstate(pstate_telem_t* pstate_telemetry)
             core[core_id].pstate_timestamp_uS = pstate_telemetry->timestamp;
         }
 
-        // Process other task only if we are not throttling
+        // Log cstate and  update core's throttling and nominal pstate if we are not throttling
         if (core[core_id].flags.throttling_start_occurred == 0)
         {
-
-            // **Place holder for processing cstate latency here
-            // https://dev.azure.com/AzureCSI/Dev/_queries/edit/1755548/?triage=true
-            // chk_and_update_cstate(core_id, pstate_telemetry->data.cstate, pstate_telemetry->timestamp);
-
             //! reset the throttling type to no throttling
             core[core_id].throttle_source = THROTTLE_SOURCE_NONE;
             core[core_id].throttle_trnsn_event = THROTTLE_TRNSN_NONE;
@@ -478,7 +550,7 @@ void data_proc_tlm_cmpnt_aggregate_pwr_tlm_data(void)
         status = sensor_fifo_svc_poll_core_current(current_data, &core_index);
         if (status.curr_data_is_valid == true)
         {
-            // process the tile voltage
+            // process the core current
             tlm_logger_log_core_current(current_data, core_index);
         }
     } while (status.more_entries == true);
@@ -490,8 +562,9 @@ void data_proc_tlm_cmpnt_aggregate_pwr_tlm_data(void)
         status = sensor_fifo_svc_poll_core_pstate(state_data);
         if (status.curr_data_is_valid == true)
         {
-            // process the tile voltage
+            // process the core states(pstate/cstate)
             tlm_logger_log_core_pstate(state_data);
+            tlm_logger_log_core_cstate(state_data);
         }
     } while (status.more_entries == true);
 
@@ -578,8 +651,21 @@ void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_ele
 
 void data_proc_tlm_cmpnt_get_pwr_core_cstate_data(uint16_t core_id, pwr_core_element_cstate_t (*cstate_array)[NUMBER_OF_CSTATES])
 {
-    FPFW_UNUSED(core_id);
-    FPFW_UNUSED(cstate_array);
+    // parameter check: core_id, check if correct
+    if (core_id >= NUMBER_OF_CORES_PER_DIE || cstate_array == NULL)
+    {
+        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_CORE_CSTATE);
+    }
+    else
+    {
+        for (uint16_t cstate_index = 0; cstate_index < NUMBER_OF_CSTATES; cstate_index++)
+        {
+            (*cstate_array)[cstate_index].cstate_id = core[core_id].cstate[cstate_index].cstate_id;
+            (*cstate_array)[cstate_index].residency_mS =
+                ROUND_USEC_TO_MSEC(core[core_id].cstate[cstate_index].residency_uS);
+            (*cstate_array)[cstate_index].entry_count = core[core_id].cstate[cstate_index].entry_count;
+        }
+    }
 }
 
 void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id,
@@ -976,27 +1062,6 @@ void tlm_calculate_mma_res(uint16_t* mma_min, uint16_t* mma_max, uint16_t* mma_a
     }
 }
 
-void tlm_update_cstate(uint8_t core_id, uint64_t time_stamp_uS)
-{
-    uint8_t cstate_index = core[core_id].cstate_from_pstate_pkt;
-    if (core[core_id].flags.cstate_change == 0)
-    {
-        uint64_t cstate_time_diff_uS = 0;
-        // Update the cstate residency, cstate power not needed for kingsgate.
-        if (core[core_id].cstate_timestamp_uS != 0 && (time_stamp_uS > core[core_id].cstate_timestamp_uS))
-        {
-            cstate_time_diff_uS = time_stamp_uS - core[core_id].cstate_timestamp_uS;
-            core[core_id].cstate[cstate_index].residency_uS += cstate_time_diff_uS;
-        }
-    }
-    else
-    {
-        // Clear the cstate change indicator for this core
-        core[core_id].flags.cstate_change = 0;
-    }
-    core[core_id].cstate_timestamp_uS = time_stamp_uS;
-}
-
 void tlm_update_core_current(uint8_t core_id, uint32_t time_diff_uS, uint32_t residency_uS)
 {
     /* For core current :min, max avg calculation*/
@@ -1273,9 +1338,6 @@ void tlm_core_component_update(void)
         {
             /* update pstate residency and power */
             tlm_update_pstate(core_id, time_stamp_uS);
-
-            /* update cstate residency only, power not required for KNG.*/
-            tlm_update_cstate(core_id, time_stamp_uS);
 
             // Check to update throttling and priorities
             tlm_update_throttling(core_id, time_stamp_uS);

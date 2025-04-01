@@ -296,6 +296,103 @@ TEST_FUNCTION(test_tlm_logger_log_core_pstate, test_setup, test_teardown)
     assert_int_equal(status, FPFW_STATUS_INVALID_ARGS);
 }
 
+// Test for tlm_logger_log_core_pstate
+TEST_FUNCTION(test_tlm_logger_log_core_cstate, test_setup, test_teardown)
+{
+    fpfw_status_t status;
+    core[0].cstate_timestamp_uS = 0;
+    // pstate telemetry packet provide both p state/c state
+    pstate_telem_t pstate_data = {
+        .timestamp = 10,
+        .data =
+            {
+                .pstate = 12,
+                .throttle_status = 0,
+                .vm_throttle_pri = 0,
+                .max_pstate = 0,
+                .cstate = 1,
+                .plimit = 5,
+                .core = 0,
+                .mpam_low = 0,
+                .mpam_high = 0,
+                .boost_priority = 0,
+            },
+    };
+    tlm_logger_log_core_cstate(&pstate_data);
+    assert_int_equal(core[0].cstate[1].residency_uS, 0);
+    assert_int_equal(core[0].cstate[1].entry_count, 1);
+
+    pstate_data.timestamp = 20;
+
+    pstate_data.data.cstate = 2;
+    tlm_logger_log_core_cstate(&pstate_data);
+    assert_int_equal(core[0].cstate[1].residency_uS, 10);
+    assert_int_equal(core[0].cstate[2].entry_count, 1);
+
+    pstate_data.timestamp = 30;
+    tlm_logger_log_core_cstate(&pstate_data);
+
+    pstate_data.timestamp = 40;
+    tlm_logger_log_core_cstate(&pstate_data);
+
+    pstate_data.timestamp = 50;
+    tlm_logger_log_core_cstate(&pstate_data);
+
+    pstate_data.data.cstate = 1;
+
+    pstate_data.timestamp = 60;
+    tlm_logger_log_core_cstate(&pstate_data);
+
+    assert_int_equal(core[0].cstate[2].residency_uS, 40);
+    assert_int_equal(core[0].cstate[1].entry_count, 2);
+
+    // test :invalid cstate change.
+    pstate_data.timestamp = 70;
+    pstate_data.data.cstate = 4;
+    status = tlm_logger_log_core_cstate(&pstate_data);
+    assert_int_equal(status, FPFW_STATUS_INVALID_ARGS);
+}
+
+// Test for tlm_logger_log_core_pstate
+TEST_FUNCTION(test_tlm_logger_log_core_cstate_invalid_timestamp, test_setup, test_teardown)
+{
+    fpfw_status_t status;
+
+    core[0].cstate_timestamp_uS = 0;
+    // pstate telemetry packet provide both p state/c state
+    pstate_telem_t pstate_data = {
+        .timestamp = 10,
+        .data =
+            {
+                .pstate = 12,
+                .throttle_status = 0,
+                .vm_throttle_pri = 0,
+                .max_pstate = 0,
+                .cstate = 1,
+                .plimit = 5,
+                .core = 1,
+                .mpam_low = 0,
+                .mpam_high = 0,
+                .boost_priority = 0,
+            },
+    };
+    // test : first time core timestamp is 0 .
+    status = tlm_logger_log_core_cstate(&pstate_data);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+    assert_int_equal(core[1].cstate_timestamp_uS, 10);
+
+    assert_int_equal(core[1].cstate[1].residency_uS, 0);
+    assert_int_equal(core[1].cstate[1].entry_count, 1);
+
+    // test :timestamp < core[core_id].cstate_timestamp_uS
+
+    pstate_data.timestamp = 5;
+    pstate_data.data.cstate = 2;
+    status = tlm_logger_log_core_cstate(&pstate_data);
+    assert_int_equal(status, FPFW_STATUS_INVALID_ARGS);
+    assert_int_equal(core[1].cstate_timestamp_uS, 10);
+}
+
 // Test for tlm_logger_log_vr_temp
 TEST_FUNCTION(test_tlm_logger_log_vr_temp, test_setup, test_teardown)
 {
@@ -438,42 +535,6 @@ TEST_FUNCTION(test_tlm_calculate_mma_res, test_setup, test_teardown)
     assert_int_equal(mma_min, 30);
     assert_int_equal(mma_max, 100);
     assert_int_equal(mma_average, 52);
-}
-
-// Unit test for tlm_update_cstate
-TEST_FUNCTION(test_tlm_update_cstate, test_setup, test_teardown)
-{
-    uint8_t core_id = 0;
-    uint64_t time_stamp_uS = 1000;
-
-    // Test case: No cstate change and valid timestamp
-    core[core_id].cstate_from_pstate_pkt = 1;
-    uint8_t cstate_index = core[core_id].cstate_from_pstate_pkt;
-    core[core_id].cstate_timestamp_uS = 500;
-    core[core_id].flags.cstate_change = 0;
-
-    tlm_update_cstate(core_id, time_stamp_uS);
-    assert_int_equal(core[core_id].cstate[cstate_index].residency_uS, 500); // 1000 - 500
-    assert_int_equal(core[core_id].cstate_timestamp_uS, time_stamp_uS);
-
-    // Test case: No cstate change and zero previous timestamp
-    core[core_id].cstate_from_pstate_pkt = 2;
-    cstate_index = core[core_id].cstate_from_pstate_pkt;
-    core[core_id].cstate_timestamp_uS = 0;
-    core[core_id].flags.cstate_change = 0;
-    tlm_update_cstate(core_id, time_stamp_uS);
-    assert_int_equal(core[core_id].cstate[cstate_index].residency_uS, 0); // No change in residency
-    assert_int_equal(core[core_id].cstate_timestamp_uS, time_stamp_uS);
-
-    // Test case: Cstate change indicator set
-    core[core_id].cstate_from_pstate_pkt = 3;
-    cstate_index = core[core_id].cstate_from_pstate_pkt;
-    core[core_id].cstate_timestamp_uS = 500;
-    core[core_id].flags.cstate_change = 1;
-    tlm_update_cstate(core_id, time_stamp_uS);
-    assert_int_equal(core[core_id].cstate[cstate_index].residency_uS, 0); // No change in residency
-    assert_int_equal(core[core_id].flags.cstate_change, 0);               // Indicator cleared
-    assert_int_equal(core[core_id].cstate_timestamp_uS, time_stamp_uS);
 }
 
 // Unit test for tlm_update_core_current

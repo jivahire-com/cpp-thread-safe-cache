@@ -111,10 +111,23 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
 
 TEST_FUNCTION(test_get_pwr_core_cstate_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     pwr_core_element_cstate_t cstate_array[NUMBER_OF_CSTATES] = {{0}};
+    for (uint16_t cstate_index = 0; cstate_index < NUMBER_OF_CSTATES; cstate_index++)
+    {
+        core[TEST_CORE_ID_5].cstate[cstate_index].cstate_id = cstate_index;
+        core[TEST_CORE_ID_5].cstate[cstate_index].residency_uS = 10000;
+        core[TEST_CORE_ID_5].cstate[cstate_index].entry_count = 10;
+    }
     data_proc_tlm_cmpnt_get_pwr_core_cstate_data(TEST_CORE_ID_5, &cstate_array);
+    // check for valid data into full cstate_array .
+    // Every core will have NUMBER_OF_CSTATES, and each cstate elemenet have , it's own data
+    for (uint16_t cstate_index = 0; cstate_index < NUMBER_OF_CSTATES; cstate_index++)
+    {
+        assert_int_equal(cstate_array[cstate_index].cstate_id, core[TEST_CORE_ID_5].cstate[cstate_index].cstate_id);
+        assert_int_equal(cstate_array[cstate_index].residency_mS,
+                         core[TEST_CORE_ID_5].cstate[cstate_index].residency_uS / 1000);
+        assert_int_equal(cstate_array[cstate_index].entry_count, core[TEST_CORE_ID_5].cstate[cstate_index].entry_count);
+    }
 }
 
 TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)

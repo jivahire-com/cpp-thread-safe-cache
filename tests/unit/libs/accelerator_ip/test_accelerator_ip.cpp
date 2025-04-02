@@ -713,6 +713,24 @@ TEST_FUNCTION(accelip_isolation_control_test, nullptr, nullptr)
     assert_int_equal(scp_accelerators_isolation_control(), ACCEL_RET_SUCCESS);
 }
 
+TEST_FUNCTION(accel_is_isolation_enabled_sdm_test, nullptr, nullptr)
+{
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    assert_int_equal(accel_is_isolation_enabled(ACCEL_ID_SDM), false);
+}
+
+TEST_FUNCTION(accel_is_isolation_enabled_cded_test, nullptr, nullptr)
+{
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    assert_int_equal(accel_is_isolation_enabled(ACCEL_ID_CDED), false);
+}
+
+TEST_FUNCTION(accel_is_isolation_enabled_envalid_test, nullptr, nullptr)
+{
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    assert_int_equal(accel_is_isolation_enabled(NUM_VALID_ACCEL_ID), false);
+}
+
 TEST_FUNCTION(mcp_accelerators_init_test_die0_pass, nullptr, nullptr)
 {
     will_return(__wrap_idsw_get_die_id, SOC_D0);

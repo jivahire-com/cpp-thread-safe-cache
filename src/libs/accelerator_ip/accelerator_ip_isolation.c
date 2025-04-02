@@ -14,14 +14,9 @@
 
 #include <FpFwAssert.h>          // for FPFW_RUNTIME_ASSERT
 #include <accelerator_ip_priv.h> // for get_accelerator_ctxt
-#include <atu_lib.h>             // for atu_map, atu_unmap, atu_map...
-#include <idsw.h>                // for idsw_get_platform_sdv, idsw...
-#include <idsw_kng.h>
-#include <kng_soc_constants.h> // for DIE_INSTANCE
-#include <silibs_platform.h>   // for debug_print, MMIO_UPDATE32
-#include <silibs_status.h>     // for SILIBS_SUCCESS
-#include <stdint.h>            // for int32_t, uintptr_t, uint32_t
-#include <string.h>            // for memcpy, strlen
+#include <fpfw_cfg_mgr.h>
+#include <idsw.h>   // for idsw_get_platform_sdv, idsw...
+#include <string.h> // for memcpy, strlen
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
@@ -38,6 +33,26 @@
 /*----------------------------- Static Functions ----------------------------*/
 
 /*----------------------------- Global Functions ----------------------------*/
+bool accel_is_isolation_enabled(ACCEL_ID accel_type)
+{
+    bool is_enabled = false;
+    DIE_INSTANCE current_die_instance = (DIE_INSTANCE)idsw_get_die_id();
+
+    // Read Knob value for SDM/CDED Isolation as per Die id
+    switch (accel_type)
+    {
+    case ACCEL_ID_SDM:
+        is_enabled = config_get_sdm_isolation_enable().isolation_enable[current_die_instance];
+        break;
+    case ACCEL_ID_CDED:
+        is_enabled = config_get_cded_isolation_enable().isolation_enable[current_die_instance];
+        break;
+    default:
+        is_enabled = false;
+    }
+
+    return is_enabled;
+}
 
 int32_t scp_accelerators_isolation_control(void)
 {

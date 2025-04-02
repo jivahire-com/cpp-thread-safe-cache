@@ -180,3 +180,13 @@ void accel_get_dtcm_addr(ACCEL_ID accel_type, uint32_t *low_addr, uint32_t *high
  * @param accel_type Accel instance
  */
 void accel_disable_cpu_wait(ACCEL_ID accel_type);
+
+/**
+ * @brief This API will read KNOB and return true if Accelerator
+ * isolation is enabled otherwise false
+ *
+ * @param[in] accel_type Accel instance
+ *
+ * @retval Return True if Isolation enabled otherwise False
+ */
+bool accel_is_isolation_enabled(ACCEL_ID accel_type);

@@ -111,7 +111,9 @@ static int32_t variable_service_async_common_handler(variable_service_operation_
     uint32_t total_size =
         sizeof(variable_service_shared_mem_format_t) + req_params->variable_name_size + req_params->data_size;
     uint32_t total_payload_size = total_size - sizeof(variable_service_mem_metadata_t);
-    BUG_ASSERT(total_size <= var_serv_ctx->shared_mem.max_payload_size);
+    BUG_ASSERT_PARAM(total_size <= var_serv_ctx->shared_mem.max_payload_size,
+                     total_size,
+                     var_serv_ctx->shared_mem.max_payload_size);
 
     //! Assumption, this shared memory address is accessible by MSCP
     volatile variable_service_shared_mem_format_t* shared_mem =
@@ -209,21 +211,27 @@ static void variable_service_common_async_cb(void* context, size_t output_size_b
 
     //! these are non recoverable errors, indicating memory corruption or protocol mismatch, must assert
     //! perform sanity check on expected icc status
-    BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS); //! always success
+    BUG_ASSERT_PARAM(status == FPFW_ICC_BASE_STATUS_SUCCESS, status, FPFW_ICC_BASE_STATUS_SUCCESS); //! always success
     //! output size must be atleast the size hsp mailbox header i.e 4 bytes
-    BUG_ASSERT(output_size_bytes > sizeof(uint32_t));
+    BUG_ASSERT_PARAM(output_size_bytes > sizeof(uint32_t), output_size_bytes, 0);
     //! perform sanity check on shared memory & var service ctx, assert indicates memory corruption
     BUG_ASSERT(is_var_serv_ctx_in_use(var_serv_ctx) == true);
 
     //! Verify expected response cmd
     if (var_serv_ctx->operation_type == ASYNC_SET_VARIABLE)
     {
-        BUG_ASSERT(shared_mem->metadata.msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
-        BUG_ASSERT(shared_mem->metadata.msg.rsp.header.cmd == HSP_MAILBOX_CMD_SET_VARIABLE_RSP);
+        BUG_ASSERT_PARAM(shared_mem->metadata.msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS,
+                         shared_mem->metadata.msg.rsp.status,
+                         HSP_MAILBOX_RSP_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM(shared_mem->metadata.msg.rsp.header.cmd == HSP_MAILBOX_CMD_SET_VARIABLE_RSP,
+                         shared_mem->metadata.msg.rsp.header.cmd,
+                         HSP_MAILBOX_CMD_SET_VARIABLE_RSP);
     }
     else if (var_serv_ctx->operation_type == ASYNC_GET_VARIABLE)
     {
-        BUG_ASSERT(shared_mem->metadata.msg.rsp.header.cmd == HSP_MAILBOX_CMD_GET_VARIABLE_RSP);
+        BUG_ASSERT_PARAM(shared_mem->metadata.msg.rsp.header.cmd == HSP_MAILBOX_CMD_GET_VARIABLE_RSP,
+                         shared_mem->metadata.msg.rsp.header.cmd,
+                         HSP_MAILBOX_CMD_GET_VARIABLE_RSP);
 
         if (shared_mem->metadata.msg.rsp.status != HSP_MAILBOX_RSP_STATUS_NOT_FOUND)
         {

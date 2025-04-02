@@ -10,15 +10,21 @@
 #pragma once
 
 /*--------------- Includes ---------------*/
+#include <DbgPrint.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_cfg_mgr_init.h>
 #include <variable_services.h>
 
 /*-------------- Typedefs ----------------*/
-#define CFG_INFO(...) INFO_PRINT("[CFG_MGR] " __VA_ARGS__)
-#define CFG_DBG(...) DEBUG_PRINT("[CFG_MGR] " __VA_ARGS__)
-#define CFG_ERR(...)  CRITICAL_PRINT("[CFG_MGR] " __VA_ARGS__)
-#define CFG_CRIT(...) CRITICAL_PRINT("[CFG_MGR] " __VA_ARGS__)
+#define CFG_MGR_MODULE_NAME "[CFG_MGR] "
+#ifndef NEWLINE
+#define NEWLINE "\n"
+#endif
+
+#define CFG_INFO(fmt, ...) FPFW_DBGPRINT_INFO(CFG_MGR_MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define CFG_DBG(fmt, ...) FPFW_DBGPRINT_VERBOSE(CFG_MGR_MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define CFG_ERR(fmt, ...) FPFW_DBGPRINT_ERROR(CFG_MGR_MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define CFG_CRIT(fmt, ...) FPFW_DBGPRINT_ERROR(CFG_MGR_MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 
 typedef struct _cached_knob_data_t {
     knob_t index;
@@ -28,6 +34,8 @@ typedef struct _cached_knob_data_t {
     size_t size;
     bool overridden;
 } cached_knob_data_t;
+
+typedef void (*update_knob_completion_routine)(cached_knob_data_t* requested_knob, uint8_t* updated_data, size_t data_size);
 
 /*--------- Function Prototypes ----------*/
 /**
@@ -109,4 +117,13 @@ cached_knob_data_t* get_cached_knob_data(void);
  * @param permanent
  *  Flag to indicate if the data update is permanent
  */
-bool update_knob_data(cached_knob_data_t* current_entry, const uint8_t* data, size_t data_size, bool permanent);
+bool update_knob_data(cached_knob_data_t* current_entry, const uint8_t* data, size_t data_size, update_knob_completion_routine cb, bool permanent);
+
+/**
+ * @brief   
+ *  check the knob data from variable store
+ * 
+ * @param current_entry 
+ *  Pointer to the knob data which needs to be updated
+ */
+void check_var_store_knob_data_async(cached_knob_data_t* current_entry);

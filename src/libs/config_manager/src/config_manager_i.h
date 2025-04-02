@@ -10,6 +10,7 @@
 #pragma once
 
 /*--------------- Includes ---------------*/
+#include <config_manager.h>
 #include <variable_services.h>
 
 /*-------------- Typedefs ----------------*/
@@ -25,6 +26,12 @@ typedef struct _knob_payload_t{
     uint16_t knob_data_size;
 } knob_payload_t;
 
+typedef struct _var_store_ctx_t
+{
+    cached_knob_data_t* knob_item;
+    update_knob_completion_routine cb;
+} var_store_ctx_t;
+
 /*--------- Function Prototypes ----------*/
 /**
  * @brief Initializes the variable service for HSP communication
@@ -38,14 +45,14 @@ void hsp_variable_service_initialize(var_service_shared_mem_t* var_svc_mem_ctx);
  * @param current_entry
  *    Pointer to the cached knob data
  */
-void read_knob_from_hsp(cached_knob_data_t* current_entry, uint32_t current_knob_index);
+void read_knob_from_hsp(cached_knob_data_t* current_entry);
 
 /**
  * @brief Writes a knob value to the HSP
  * @param current_entry
  *    Pointer to the cached knob data
  */
-void write_knob_to_hsp(cached_knob_data_t* current_entry);
+void write_knob_to_hsp(cached_knob_data_t* current_entry, update_knob_completion_routine cb);
 
 /**
  * @brief Applies the override knob value from the HSP

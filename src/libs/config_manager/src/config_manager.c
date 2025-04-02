@@ -36,6 +36,7 @@
 #define D2D_MBOX_SPI_CTRL_BASE_ADDR (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_SPI_CTRL_ADDRESS)
 
 /*-- Declarations (Statics and globals) --*/
+extern knob_data_t g_knob_data[];
 static cached_knob_data_t system_knob_cached[KNOB_MAX] = {0};
 static FPFW_SPINLOCK lock;
 static uint32_t knob_index = 0;
@@ -164,7 +165,7 @@ fpfw_status_t read_knob_from_default_db_cb(const fpfw_cfg_mgr_guid_t* knob_names
     return FPFW_STATUS_SUCCESS;
 }
 
-bool update_knob_data(cached_knob_data_t* current_entry, const uint8_t* data, size_t data_size, bool permanent)
+bool update_knob_data(cached_knob_data_t* current_entry, const uint8_t* data, size_t data_size, update_knob_completion_routine cb, bool permanent)
 {
     // report something wrong.
     if (data_size != current_entry->size)
@@ -180,20 +181,30 @@ bool update_knob_data(cached_knob_data_t* current_entry, const uint8_t* data, si
 
     if (permanent)
     {
-        // update variable store.
-        // only primary scp will write to HSP
         if (idsw_get_cpu_type() != CPU_SCP || idsw_get_die_id() != DIE_0 || !system_info_is_hsp_present())
         {
             return false;
         }
 
-        write_knob_to_hsp(current_entry);
-    }
+        FPFwSpinLockAcquire(&lock);
+        memcpy(current_entry->data, data, data_size);
+        current_entry->overridden = true;
+        FPFwSpinLockRelease(&lock);
 
-    FPFwSpinLockAcquire(&lock);
-    memcpy(current_entry->data, data, data_size);
-    current_entry->overridden = true;
-    FPFwSpinLockRelease(&lock);
+        write_knob_to_hsp(current_entry, cb);
+    }
+    else
+    {
+        FPFwSpinLockAcquire(&lock);
+        memcpy(current_entry->data, data, data_size);
+        current_entry->overridden = true;
+        FPFwSpinLockRelease(&lock);
+
+        if (cb != NULL)
+        {
+            cb(current_entry, (uint8_t*)current_entry->data, current_entry->size);
+        }
+    }
 
     return true;
 }
@@ -213,7 +224,7 @@ bool update_knob_in_cached_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespace,
 
         if (0 == strcmp(current_entry->name, knob_name))
         {
-            return update_knob_data(current_entry, data, data_size, false);
+            return update_knob_data(current_entry, data, data_size, NULL, false);
         }
     }
 
@@ -222,15 +233,21 @@ bool update_knob_in_cached_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespace,
 
 void apply_override_knob_from_hsp()
 {
-    if (!(IS_PLATFORM_SVP()))
+    CFG_INFO("Query knob data from HSP");
+
+    for (uint32_t idx = 0; idx < cached_knob_data_size(); idx++)
     {
-        for (uint32_t idx = 0; idx < cached_knob_data_size(); idx++)
+        if (idx % (cached_knob_data_size() / 10) == 0)
         {
-            FPFwSpinLockAcquire(&lock);
-            read_knob_from_hsp(&(get_cached_knob_data()[idx]), idx);
-            FPFwSpinLockRelease(&lock);
+            CFG_INFO("%d%% check completed", (idx * 100) / cached_knob_data_size());
         }
+
+        FPFwSpinLockAcquire(&lock);
+        read_knob_from_hsp(&(get_cached_knob_data()[idx]));
+        FPFwSpinLockRelease(&lock);
     }
+
+    CFG_INFO("Query knob data from HSP Complete");
 }
 
 void cfg_mgr_init(fpfw_cfg_mgr_config_t* cfg_mgr_config, var_service_shared_mem_t* var_svc_mem_ctx)
@@ -242,8 +259,6 @@ void cfg_mgr_init(fpfw_cfg_mgr_config_t* cfg_mgr_config, var_service_shared_mem_
 
     // check all knob data properly loaded
     BUG_ASSERT_PARAM(knob_index == KNOB_MAX, knob_index, KNOB_MAX);
-
-    CFG_INFO("Initialized with defalt knobs\n");
 
     if (cfg_mgr_config->mission_mode == false && system_info_is_hsp_present())
     {

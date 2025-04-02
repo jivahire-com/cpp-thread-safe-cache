@@ -29,6 +29,7 @@ target_link_libraries(${TARGET}
         ms::lib::config_manager
         ms::lib::config_manager::cli
         ms::lib::variable_services
+        fwlib.lib.interface.platform.dbgprint
 )
 
 # Provide compile time definition
@@ -52,6 +53,7 @@ mock_target(${TARGET}
     variable_service_initialize_ctx
     variable_service_sync_get_variable
     variable_service_async_set_variable
+    variable_service_async_get_variable
     variable_service_unlock_get_var_ctx
     update_knob_in_cached_db_cb
     idsw_get_die_id

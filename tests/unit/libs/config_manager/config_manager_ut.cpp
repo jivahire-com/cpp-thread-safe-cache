@@ -112,6 +112,31 @@ int32_t __wrap_variable_service_async_set_variable(var_service_req_ctx_t* var_se
     return 0;
 }
 
+int32_t __wrap_variable_service_async_get_variable(var_service_req_ctx_t* var_serv_ctx,
+                                                   var_service_req_params_t* req_params,
+                                                   variable_service_req_complete_notify callback,
+                                                   void* context)
+{
+    FPFW_UNUSED(var_serv_ctx);
+    FPFW_UNUSED(req_params);
+    FPFW_UNUSED(callback);
+    FPFW_UNUSED(context);
+    function_called();
+
+    cached_knob_data_t* current_entry = (cached_knob_data_t*)context;
+
+    if (current_entry->index == 0)
+    {
+        callback(context, var_serv_ctx, (uint8_t*)current_entry->data, current_entry->size);
+    }
+    else
+    {
+        callback(context, var_serv_ctx, (uint8_t*)current_entry->data, current_entry->size - 1);
+    }
+
+    return 0;
+}
+
 bool __wrap_update_knob_in_cached_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespace,
                                         const char* knob_name,
                                         const uint8_t* data,
@@ -220,6 +245,13 @@ fpfw_status_t __wrap_fpfw_cfg_mgr_set_cached_knob_values(void* src_addr, size_t 
     check_expected(src_size);
     return mock_type(fpfw_status_t);
 }
+
+void update_knob_cb(cached_knob_data_t* requested_knob, uint8_t* updated_data, size_t data_size)
+{
+    FPFW_UNUSED(requested_knob);
+    FPFW_UNUSED(updated_data);
+    FPFW_UNUSED(data_size);
+}
 }
 
 //
@@ -255,7 +287,6 @@ TEST_FUNCTION(test_cfg_mgr_init_no_override, nullptr, nullptr)
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
 
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
@@ -282,13 +313,11 @@ TEST_FUNCTION(test_cfg_mgr_init_no_override, nullptr, nullptr)
 TEST_FUNCTION(test_cfg_mgr_init_override_die0, rmss_memory_map_setup, nullptr)
 {
     hsp_variable_svc_invoke_count = 0;
-
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_SUCCESS);
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
@@ -331,7 +360,6 @@ TEST_FUNCTION(test_update_knob_in_cached_db_cb, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
     expect_function_call(__wrap_update_knob_in_cached_db_cb);
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
@@ -355,7 +383,6 @@ TEST_FUNCTION(test_update_knob_data, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
     expect_function_call(__wrap_variable_service_async_set_variable);
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
     expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_addr, SCP_EXP_CONFIG_KNOB_CACHE_BASE);
@@ -366,6 +393,7 @@ TEST_FUNCTION(test_update_knob_data, nullptr, nullptr)
     update_knob_data(&get_cached_knob_data()[0],
                      (uint8_t*)get_cached_knob_data()[1].data,
                      get_cached_knob_data()[0].size,
+                     update_knob_cb,
                      true);
 }
 
@@ -388,4 +416,28 @@ TEST_FUNCTION(test_read_fails_on_max_knob, rmss_memory_map_setup, nullptr)
     //
     fpfw_status_t status = read_knob_from_default_db_cb(NULL, NULL, NULL, 0, NULL);
     assert_int_equal(status, FPFW_STATUS_NOT_FOUND);
+}
+
+TEST_FUNCTION(test_check_var_store_knob_data_async, rmss_memory_map_setup, nullptr)
+{
+    expect_function_call_any(SCB_CleanInvalidateDCache_by_Addr);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, addr, (void*)ALIGN_DOWN(shared_mem.payload_base, 32), -1);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, dsize, shared_mem.max_payload_size, -1);
+
+    will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    will_return_always(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
+    expect_function_call_any(__wrap_variable_service_async_get_variable);
+
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_addr, SCP_EXP_CONFIG_KNOB_CACHE_BASE);
+    expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_size, KNOB_MAX);
+
+    cfg_mgr_init(&config_manager_setting, &shared_mem);
+
+    check_var_store_knob_data_async(&get_cached_knob_data()[0]);
+    check_var_store_knob_data_async(&get_cached_knob_data()[1]);
 }

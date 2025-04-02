@@ -10,6 +10,7 @@ target_link_libraries(${TARGET}
     PUBLIC 
         fwlib.lib.cfg_mgr
         ms::lib::variable_services
+	    fwlib.lib.interface.platform.dbgprint
     PRIVATE
         kng_silibs_platform
         silibs::platform

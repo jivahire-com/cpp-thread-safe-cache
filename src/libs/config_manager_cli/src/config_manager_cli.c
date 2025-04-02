@@ -26,6 +26,7 @@
 /*--------- Function Prototypes ----------*/
 static FPFW_CLI_STATUS cfg_mgr_knob_list_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS cfg_mgr_knob_data_dump_cli(int argc, const char** argv);
+static FPFW_CLI_STATUS cfg_mgr_check_var_store_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS cfg_mgr_set_knob_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS cfg_mgr_reset_knob_cli(int argc, const char** argv);
 
@@ -35,6 +36,7 @@ extern knob_data_t g_knob_data[];
 static FPFW_CLI_COMMAND cfg_mgr_cli_list[] = {
     {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_list", cfg_mgr_knob_list_cli, "show knobs list", "cfg_mgr_list"},
     {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_dump", cfg_mgr_knob_data_dump_cli, "show all knobs data", "cfg_mgr_dump <name or idx>"},
+    {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_check_var_store", cfg_mgr_check_var_store_cli, "check variable store has same value", "cfg_mgr_check_var_store <name or idx>"},
     {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_set", cfg_mgr_set_knob_cli, "overwrites the value of the knob", "cfg_mgr_set <name or idx> <data>"},
     {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_reset", cfg_mgr_reset_knob_cli, "reset specified knob value", "Usage: cfg_mgr_reset <name or idx>"}};
 
@@ -152,6 +154,25 @@ static void dump_knob_data(cached_knob_data_t* current_entry, uint32_t idx)
     }
 }
 
+static void update_knob_cb(cached_knob_data_t* updated_knob, uint8_t* updated_data, size_t data_size)
+{
+    FPFW_UNUSED(updated_data);
+    FPFW_UNUSED(data_size);
+
+    FpFwCliPrint("--New knob data dump\n");
+    dump_knob_data(updated_knob, updated_knob->index);
+    FpFwCliPrint("\n--Knob configuration update completed--\n");
+}
+
+static void reset_knob_cb(cached_knob_data_t* updated_knob, uint8_t* updated_data, size_t data_size)
+{
+    FPFW_UNUSED(updated_data);
+    FPFW_UNUSED(data_size);
+
+    FpFwCliPrint("--knob data dump after reset\n");
+    dump_knob_data(updated_knob, updated_knob->index);
+}
+
 static FPFW_CLI_STATUS cfg_mgr_knob_list_cli(int argc, const char** argv)
 {
     FPFW_UNUSED(argc);
@@ -214,6 +235,31 @@ static FPFW_CLI_STATUS cfg_mgr_knob_data_dump_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
+static FPFW_CLI_STATUS cfg_mgr_check_var_store_cli(int argc, const char** argv)
+{
+    cached_knob_data_t* current_entry = NULL;
+
+    if (argc != 2)
+    {
+        FpFwCliPrint("Invalid Parameter\n");
+        return CLI_ERROR;
+    }
+
+    uint32_t knob_idx = 0;
+    current_entry = get_knob_data_by(argv[1], &knob_idx);
+
+    if (current_entry == NULL)
+    {
+        FpFwCliPrint("Check Index is valid or Knob name\n");
+        return CLI_ERROR;
+    }
+
+    dump_knob_data(current_entry, knob_idx);
+    check_var_store_knob_data_async(current_entry);
+
+    return CLI_SUCCESS;
+}
+
 static FPFW_CLI_STATUS cfg_mgr_set_knob_cli(int argc, const char** argv)
 {
     uint32_t knob_idx = 0;
@@ -249,7 +295,7 @@ static FPFW_CLI_STATUS cfg_mgr_set_knob_cli(int argc, const char** argv)
         ((char*)buffer)[i] = strtol(argv[2 + i], NULL, 16) & 0xff;
     }
 
-    bool result = update_knob_data(current_entry, buffer, current_entry->size, true);
+    bool result = update_knob_data(current_entry, buffer, current_entry->size, update_knob_cb, true);
 
     if (!result)
     {
@@ -264,11 +310,6 @@ static FPFW_CLI_STATUS cfg_mgr_set_knob_cli(int argc, const char** argv)
 
         return CLI_ERROR;
     }
-
-    FpFwCliPrint("--New knob data dump\n");
-    dump_knob_data(current_entry, knob_idx);
-
-    FpFwCliPrint("\n--Knob configuration update completed--\n");
 
     return CLI_SUCCESS;
 }
@@ -298,7 +339,7 @@ static FPFW_CLI_STATUS cfg_mgr_reset_knob_cli(int argc, const char** argv)
     if (current_entry->overridden)
     {
         bool result =
-            update_knob_data(current_entry, g_knob_data[knob_idx].default_value_address, current_entry->size, true);
+            update_knob_data(current_entry, g_knob_data[knob_idx].default_value_address, current_entry->size, reset_knob_cb, true);
 
         if (!result)
         {
@@ -310,9 +351,6 @@ static FPFW_CLI_STATUS cfg_mgr_reset_knob_cli(int argc, const char** argv)
     {
         FpFwCliPrint("Nothing to reset\n");
     }
-
-    FpFwCliPrint("--knob data dump after reset\n");
-    dump_knob_data(current_entry, knob_idx);
 
     return CLI_SUCCESS;
 }

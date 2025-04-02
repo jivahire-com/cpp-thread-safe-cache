@@ -84,7 +84,9 @@ static int32_t variable_service_sync_common_handler(variable_service_operation_t
     uint32_t total_size =
         sizeof(variable_service_shared_mem_format_t) + req_params->variable_name_size + req_params->data_size;
     uint32_t total_payload_size = total_size - sizeof(variable_service_mem_metadata_t);
-    BUG_ASSERT(total_size <= var_serv_ctx->shared_mem.max_payload_size);
+    BUG_ASSERT_PARAM(total_size <= var_serv_ctx->shared_mem.max_payload_size,
+                     total_size,
+                     var_serv_ctx->shared_mem.max_payload_size);
 
     //! Assumption, this shared memory address is accessible by MSCP
     volatile variable_service_shared_mem_format_t* shared_mem =
@@ -104,8 +106,9 @@ static int32_t variable_service_sync_common_handler(variable_service_operation_t
     else if (type == SYNC_SET_VARIABLE)
     {
         shared_mem->metadata.msg.header.cmd = HSP_MAILBOX_CMD_SET_VARIABLE_REQ;
-        BUG_ASSERT(variable_services_check_attribute(req_params->attributes.as_uint32) ==
-                   KNG_SUCCESS); //! check for valid combination of attributes
+
+        int32_t result = variable_services_check_attribute(req_params->attributes.as_uint32);
+        BUG_ASSERT_PARAM(result == KNG_SUCCESS, result, req_params->attributes.as_uint32); //! check for valid combination of attributes
         shared_mem->attributes = req_params->attributes.as_uint32;
     }
     //! populate lower 32 bits of the variable payload address in the 1st word of the hsp mbox message struct, get/set_variable_address field
@@ -156,19 +159,25 @@ static int32_t variable_service_sync_common_handler(variable_service_operation_t
     debug_print_post_mbox_recv(var_serv_ctx, recv_msg_size_bytes, icc_status);
 
     //! Verify sync return status & response message
-    BUG_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS, icc_status, FPFW_ICC_BASE_STATUS_SUCCESS);
     BUG_ASSERT(recv_msg_size_bytes > 0);
 
     if (type == SYNC_SET_VARIABLE)
     {
-        BUG_ASSERT(shared_mem->metadata.msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
-        BUG_ASSERT(shared_mem->metadata.msg.rsp.header.cmd == HSP_MAILBOX_CMD_SET_VARIABLE_RSP);
+        BUG_ASSERT_PARAM(shared_mem->metadata.msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS,
+                         shared_mem->metadata.msg.rsp.status,
+                         HSP_MAILBOX_RSP_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM(shared_mem->metadata.msg.rsp.header.cmd == HSP_MAILBOX_CMD_SET_VARIABLE_RSP,
+                         shared_mem->metadata.msg.rsp.header.cmd,
+                         HSP_MAILBOX_CMD_SET_VARIABLE_RSP);
         //! HSP has consumed the data, free up the ctx & shared memory for SET
         variable_service_unlock_get_var_ctx(var_serv_ctx);
     }
     else if (type == SYNC_GET_VARIABLE)
     {
-        BUG_ASSERT(shared_mem->metadata.msg.rsp.header.cmd == HSP_MAILBOX_CMD_GET_VARIABLE_RSP);
+        BUG_ASSERT_PARAM(shared_mem->metadata.msg.rsp.header.cmd == HSP_MAILBOX_CMD_GET_VARIABLE_RSP,
+                         shared_mem->metadata.msg.rsp.header.cmd,
+                         HSP_MAILBOX_CMD_GET_VARIABLE_RSP);
 
         // ! bugcheck all failures  except record not found
         if (shared_mem->metadata.msg.rsp.status == HSP_MAILBOX_RSP_STATUS_NOT_FOUND)
@@ -177,7 +186,9 @@ static int32_t variable_service_sync_common_handler(variable_service_operation_t
         }
         else
         {
-            BUG_ASSERT(shared_mem->metadata.msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+            BUG_ASSERT_PARAM(shared_mem->metadata.msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS,
+                             shared_mem->metadata.msg.rsp.status,
+                             HSP_MAILBOX_RSP_STATUS_SUCCESS);
             //! Reset data buffer & copy data over from shared memory into the data buffer supplied in request params
             memset(req_params->data, 0, req_params->data_size);
             memcpy((void*)req_params->data,

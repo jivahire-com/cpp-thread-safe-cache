@@ -27,6 +27,7 @@ target_link_libraries(${TARGET}
         ms::lib::config_manager::cli
         ms::lib::variable_services
         ms::service::atu_service
+        fwlib.lib.interface.platform.dbgprint
 )
 
 # Provide compile time definition

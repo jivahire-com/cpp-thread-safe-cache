@@ -131,7 +131,6 @@ class configmgr_set_cli_test(EchoFallsBaseTest):
         core_com_channel.write_line(write_string=command)
 
         try:
-            core_com_channel.read_until(key="Ok", timeout_seconds=300)
             check = core_com_channel.read_until(key="Ok", timeout_seconds=300)
             self.log.info("DUMP command executed successfully . . .")
             # Store GUID after issuing GET command and validate it with GUID on SET

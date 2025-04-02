@@ -48,7 +48,7 @@
 ## Variable Service Tests
 ./../../../tests/functional/test_suites/varserv_tests/varserv_cli_test.robot
 
-## DCS Tests
+## MTS Tests
 #./../../../tests/functional/test_suites/mts_tests/mts_dcp_test.robot
 
 ## SVP Teardown

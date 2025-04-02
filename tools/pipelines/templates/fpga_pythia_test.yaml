@@ -27,10 +27,13 @@ parameters:
 - name: ifwi
   type: string
   default: 'kingsgate.ifwi.fpga.debug.custom.dat'
+- name : TimeoutInMinutes
+  type: number
+  default: 240
 
 jobs:
 - job: 'FPGA_Pythia_Tests'
-  timeoutInMinutes: 240
+  timeoutInMinutes: ${{ parameters.TimeoutInMinutes }}
   displayName: FPGA Pythia Tests
   pool: 
     name: ${{ parameters.Pool }}

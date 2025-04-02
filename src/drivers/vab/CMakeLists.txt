@@ -16,6 +16,7 @@ target_link_libraries(
             ms::driver::pcie
             ms::lib::debug
             ms::lib::interrupts
+            ms::lib::mesh
             ms::lib::register_headers
             ms::lib::scp_interrupts
             ms::lib::threadx

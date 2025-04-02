@@ -115,3 +115,10 @@ int __wrap_vab_init(vab_init_t* vab_init_params)
     function_called();
     return 0;
 }
+
+void __wrap_d2d_error_isr(void* context)
+{
+    FPFW_UNUSED(context);
+
+    function_called();
+}

@@ -15,6 +15,7 @@
 #include <intu_lib.h>
 #include <kng_atu_mappings.h>
 #include <kng_soc_constants.h>
+#include <mesh_error_handler.h>
 #include <pcie_irq.h>
 #include <silibs_common.h>
 #include <silibs_platform.h>
@@ -186,7 +187,18 @@ void process_sdmss_probe(uint32_t irq, vabss_int_probe_t* probe)
         if (probe->intu0[idx].asserted)
         {
             printf("INT[%u] VAB-INTU0[%d] pin fired - critical error!\n", (uint8_t)irq, idx);
-            FPFW_RUNTIME_ASSERT(false);
+            switch (idx)
+            {
+            case VAB_SDMSS_INTU0_D2DSS_0_3_RAS_CRI:
+            case VAB_SDMSS_INTU0_D2DSS_0_3_RAS_FHI:
+            case VAB_SDMSS_INTU0_D2DSS_4_7_RAS_CRI:
+            case VAB_SDMSS_INTU0_D2DSS_4_7_RAS_FHI:
+                d2d_error_isr(NULL);
+                break;
+            default:
+                FPFW_RUNTIME_ASSERT(false);
+                break;
+            }
             break;
         }
     }

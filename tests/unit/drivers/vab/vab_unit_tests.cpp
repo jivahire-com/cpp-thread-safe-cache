@@ -245,9 +245,9 @@ TEST_FUNCTION(test_sdmss_vab_isr_no_pins_set, NULL, NULL)
     mock_isr_ctx.vab_irq_num = HW_INT_VAB4_COMBINED_SCP_INT;
     mock_isr_ctx.vab_base = VAB_RPSS_TOP_VAB_ADDRESS;
     mock_isr_ctx.probe.intu0 = (vabss_int_t*)&(mock_probe.intu0);
-    mock_isr_ctx.probe.num_intu0_pins = VAB_RPSS_INTU0_NUM_CFGS;
+    mock_isr_ctx.probe.num_intu0_pins = VAB_SDMSS_INTU0_NUM_CFGS;
     mock_isr_ctx.probe.intu1 = (vabss_int_t*)&(mock_probe.intu1);
-    mock_isr_ctx.probe.num_intu1_pins = VAB_RPSS_INTU1_NUM_CFGS;
+    mock_isr_ctx.probe.num_intu1_pins = VAB_SDMSS_INTU1_NUM_CFGS;
     mock_isr_ctx.process_probe = process_sdmss_probe;
 
     expect_value(__wrap_vabss_intu_probe, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);
@@ -271,9 +271,9 @@ TEST_FUNCTION(test_sdmss_vab_isr_intu0_cri_pin_set, NULL, NULL)
     mock_isr_ctx.vab_irq_num = HW_INT_VAB4_COMBINED_SCP_INT;
     mock_isr_ctx.vab_base = VAB_RPSS_TOP_VAB_ADDRESS;
     mock_isr_ctx.probe.intu0 = (vabss_int_t*)&(mock_probe.intu0);
-    mock_isr_ctx.probe.num_intu0_pins = VAB_RPSS_INTU0_NUM_CFGS;
+    mock_isr_ctx.probe.num_intu0_pins = VAB_SDMSS_INTU0_NUM_CFGS;
     mock_isr_ctx.probe.intu1 = (vabss_int_t*)&(mock_probe.intu1);
-    mock_isr_ctx.probe.num_intu1_pins = VAB_RPSS_INTU1_NUM_CFGS;
+    mock_isr_ctx.probe.num_intu1_pins = VAB_SDMSS_INTU1_NUM_CFGS;
     mock_isr_ctx.process_probe = process_sdmss_probe;
 
     expect_value(__wrap_vabss_intu_probe, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);
@@ -290,6 +290,34 @@ TEST_FUNCTION(test_sdmss_vab_isr_intu0_cri_pin_set, NULL, NULL)
     }
 }
 
+TEST_FUNCTION(test_sdmss_vab_isr_intu0_d2d_pin_set, NULL, NULL)
+{
+    sdmss_intu_probe_t mock_probe;
+    vab_isr_ctx_t mock_isr_ctx;
+
+    mock_isr_ctx.vab_irq_num = HW_INT_VAB4_COMBINED_SCP_INT;
+    mock_isr_ctx.vab_base = VAB_RPSS_TOP_VAB_ADDRESS;
+    mock_isr_ctx.probe.intu0 = (vabss_int_t*)&(mock_probe.intu0);
+    mock_isr_ctx.probe.num_intu0_pins = VAB_SDMSS_INTU0_NUM_CFGS;
+    mock_isr_ctx.probe.intu1 = (vabss_int_t*)&(mock_probe.intu1);
+    mock_isr_ctx.probe.num_intu1_pins = VAB_SDMSS_INTU1_NUM_CFGS;
+    mock_isr_ctx.process_probe = process_sdmss_probe;
+
+    expect_value(__wrap_vabss_intu_probe, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);
+    expect_value(__wrap_vabss_intu_probe, dest, INTU_TO_SCP);
+    will_return(__wrap_vabss_intu_probe, VAB_SDMSS_INTU0_D2DSS_0_3_RAS_CRI);
+    will_return(__wrap_vabss_intu_probe, true);
+    will_return(__wrap_vabss_intu_probe, 12);
+    will_return(__wrap_vabss_intu_probe, false);
+    will_return(__wrap_vabss_intu_probe, SILIBS_SUCCESS);
+    expect_function_call(__wrap_d2d_error_isr);
+    expect_value(__wrap_vabss_intu_clear, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);
+    expect_value(__wrap_vabss_intu_clear, dest, INTU_TO_SCP);
+    will_return(__wrap_vabss_intu_clear, SILIBS_SUCCESS);
+
+    vab_isr(&mock_isr_ctx);
+}
+
 TEST_FUNCTION(test_sdmss_vab_isr_intu1_cri_pin_set, NULL, NULL)
 {
     sdmss_intu_probe_t mock_probe;
@@ -298,9 +326,9 @@ TEST_FUNCTION(test_sdmss_vab_isr_intu1_cri_pin_set, NULL, NULL)
     mock_isr_ctx.vab_irq_num = HW_INT_VAB4_COMBINED_SCP_INT;
     mock_isr_ctx.vab_base = VAB_RPSS_TOP_VAB_ADDRESS;
     mock_isr_ctx.probe.intu0 = (vabss_int_t*)&(mock_probe.intu0);
-    mock_isr_ctx.probe.num_intu0_pins = VAB_RPSS_INTU0_NUM_CFGS;
+    mock_isr_ctx.probe.num_intu0_pins = VAB_SDMSS_INTU0_NUM_CFGS;
     mock_isr_ctx.probe.intu1 = (vabss_int_t*)&(mock_probe.intu1);
-    mock_isr_ctx.probe.num_intu1_pins = VAB_RPSS_INTU1_NUM_CFGS;
+    mock_isr_ctx.probe.num_intu1_pins = VAB_SDMSS_INTU1_NUM_CFGS;
     mock_isr_ctx.process_probe = process_sdmss_probe;
 
     expect_value(__wrap_vabss_intu_probe, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);
@@ -325,9 +353,9 @@ TEST_FUNCTION(test_cdedss_vab_isr_no_pins_set, NULL, NULL)
     mock_isr_ctx.vab_irq_num = HW_INT_VAB5_COMBINED_SCP_INT;
     mock_isr_ctx.vab_base = VAB_RPSS_TOP_VAB_ADDRESS;
     mock_isr_ctx.probe.intu0 = (vabss_int_t*)&(mock_probe.intu0);
-    mock_isr_ctx.probe.num_intu0_pins = VAB_RPSS_INTU0_NUM_CFGS;
+    mock_isr_ctx.probe.num_intu0_pins = VAB_CDEDSS_INTU0_NUM_CFGS;
     mock_isr_ctx.probe.intu1 = (vabss_int_t*)&(mock_probe.intu1);
-    mock_isr_ctx.probe.num_intu1_pins = VAB_RPSS_INTU1_NUM_CFGS;
+    mock_isr_ctx.probe.num_intu1_pins = VAB_CDEDSS_INTU1_NUM_CFGS;
     mock_isr_ctx.process_probe = process_cdedss_probe;
 
     expect_value(__wrap_vabss_intu_probe, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);
@@ -352,9 +380,9 @@ TEST_FUNCTION(test_cdedss_vab_isr_intu0_cri_pin_set, NULL, NULL)
     mock_isr_ctx.vab_irq_num = HW_INT_VAB5_COMBINED_SCP_INT;
     mock_isr_ctx.vab_base = VAB_RPSS_TOP_VAB_ADDRESS;
     mock_isr_ctx.probe.intu0 = (vabss_int_t*)&(mock_probe.intu0);
-    mock_isr_ctx.probe.num_intu0_pins = VAB_RPSS_INTU0_NUM_CFGS;
+    mock_isr_ctx.probe.num_intu0_pins = VAB_CDEDSS_INTU0_NUM_CFGS;
     mock_isr_ctx.probe.intu1 = (vabss_int_t*)&(mock_probe.intu1);
-    mock_isr_ctx.probe.num_intu1_pins = VAB_RPSS_INTU1_NUM_CFGS;
+    mock_isr_ctx.probe.num_intu1_pins = VAB_CDEDSS_INTU1_NUM_CFGS;
     mock_isr_ctx.process_probe = process_cdedss_probe;
 
     expect_value(__wrap_vabss_intu_probe, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);
@@ -379,9 +407,9 @@ TEST_FUNCTION(test_cdedss_vab_isr_intu1_cri_pin_set, NULL, NULL)
     mock_isr_ctx.vab_irq_num = HW_INT_VAB5_COMBINED_SCP_INT;
     mock_isr_ctx.vab_base = VAB_RPSS_TOP_VAB_ADDRESS;
     mock_isr_ctx.probe.intu0 = (vabss_int_t*)&(mock_probe.intu0);
-    mock_isr_ctx.probe.num_intu0_pins = VAB_RPSS_INTU0_NUM_CFGS;
+    mock_isr_ctx.probe.num_intu0_pins = VAB_CDEDSS_INTU0_NUM_CFGS;
     mock_isr_ctx.probe.intu1 = (vabss_int_t*)&(mock_probe.intu1);
-    mock_isr_ctx.probe.num_intu1_pins = VAB_RPSS_INTU1_NUM_CFGS;
+    mock_isr_ctx.probe.num_intu1_pins = VAB_CDEDSS_INTU1_NUM_CFGS;
     mock_isr_ctx.process_probe = process_cdedss_probe;
 
     expect_value(__wrap_vabss_intu_probe, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);

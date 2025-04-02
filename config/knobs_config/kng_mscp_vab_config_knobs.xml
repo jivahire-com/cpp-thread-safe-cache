@@ -1,0 +1,21 @@
+<ConfigSchema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:noNamespaceSchemaLocation="configschema.xsd">
+
+  <!-- Enum values are declared separately from the knobs.
+       The same Enum can be used as the 'enumtype' of any number of EnumKnobs -->
+  <Enums>
+  </Enums>
+
+  <Structs>
+    <Struct name="vab_knobs_t">
+      <Member name="vab_pcr_cfg" type="vab_pcr_config_t" count="12" help="Vab pcr config knob for all vab instances. Vab instance ordering follows SUBSYSTEM_WITH_VAB_ID enum" />
+    </Struct>
+  </Structs>
+
+  <!-- namespace indicates the GUID namespace the values are stored in -->
+  <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
+    <!--  VAB Knobs -->
+    <Knob name="vab_knobs" type = "vab_knobs_t" help = "VAB config knobs"/>
+  </Knobs>
+
+</ConfigSchema>

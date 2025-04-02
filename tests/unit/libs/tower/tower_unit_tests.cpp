@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h> // for expect_value, check_expected, CmockaWra...
+#include <fpfw_cfg_mgr.h>
 
 extern "C" {
 #include <fpfw_icc_base.h> // for fpfw_icc_base_ctx_t
@@ -24,6 +25,8 @@ extern "C" {
 
 /*-------- Function Prototypes -----------*/
 
+tower_knobs_t __real_config_get_tower_knobs(void);
+
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
@@ -37,6 +40,10 @@ TEST_FUNCTION(test_tower_sequence_init_die0_silicon, nullptr, nullptr)
     const auto test_die = (KNG_DIE_ID)0;
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
+
+    tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_system_info_is_hsp_present, false);
@@ -58,7 +65,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_silicon, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) |
@@ -67,7 +73,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_silicon, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3)));
@@ -100,6 +105,10 @@ TEST_FUNCTION(test_tower_sequence_init_die1_silicon, nullptr, nullptr)
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
 
+    tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_system_info_is_hsp_present, false);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
@@ -120,7 +129,6 @@ TEST_FUNCTION(test_tower_sequence_init_die1_silicon, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3) |
@@ -129,7 +137,6 @@ TEST_FUNCTION(test_tower_sequence_init_die1_silicon, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3)));
@@ -162,6 +169,10 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_1d_8c, nullptr, nullptr)
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
 
+    tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_1D_8C);
     will_return_always(__wrap_system_info_is_hsp_present, false);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
@@ -182,7 +193,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_1d_8c, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) |
@@ -191,7 +201,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_1d_8c, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3)));
@@ -224,6 +233,10 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_1d, nullptr, nullptr)
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
 
+    tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_1D);
     will_return_always(__wrap_system_info_is_hsp_present, false);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
@@ -244,7 +257,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_1d, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) |
@@ -253,7 +265,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_1d, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3)));
@@ -286,6 +297,10 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_2d_8c, nullptr, nullptr)
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
 
+    tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_2D_8C);
     will_return_always(__wrap_system_info_is_hsp_present, false);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
@@ -306,7 +321,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_2d_8c, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) |
@@ -315,7 +329,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_2d_8c, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3)));
@@ -348,6 +361,10 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_2d, nullptr, nullptr)
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
 
+    tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_2D);
     will_return_always(__wrap_system_info_is_hsp_present, false);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
@@ -368,7 +385,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_2d, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) |
@@ -377,7 +393,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_2d, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3)));
@@ -410,6 +425,10 @@ TEST_FUNCTION(test_tower_sequence_init_die1_emu_2d, nullptr, nullptr)
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
 
+    tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_2D);
     will_return_always(__wrap_system_info_is_hsp_present, false);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
@@ -430,7 +449,6 @@ TEST_FUNCTION(test_tower_sequence_init_die1_emu_2d, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3) |
@@ -439,7 +457,6 @@ TEST_FUNCTION(test_tower_sequence_init_die1_emu_2d, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3)));
@@ -472,6 +489,10 @@ TEST_FUNCTION(test_tower_sequence_init_die1_emu_2d_8c, nullptr, nullptr)
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
 
+    tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_2D_8C);
     will_return_always(__wrap_system_info_is_hsp_present, false);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
@@ -492,7 +513,6 @@ TEST_FUNCTION(test_tower_sequence_init_die1_emu_2d_8c, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3) |
@@ -501,7 +521,6 @@ TEST_FUNCTION(test_tower_sequence_init_die1_emu_2d_8c, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3)));
@@ -534,6 +553,10 @@ TEST_FUNCTION(test_tower_sequence_init_die0_fpga, nullptr, nullptr)
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
 
+    tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return_always(__wrap_system_info_is_hsp_present, false);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
@@ -554,7 +577,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_fpga, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS)));
@@ -562,7 +584,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_fpga, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2)));
@@ -595,6 +616,10 @@ TEST_FUNCTION(test_tower_sequence_init_die1_fpga, nullptr, nullptr)
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
 
+    tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return_always(__wrap_system_info_is_hsp_present, false);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
@@ -615,7 +640,6 @@ TEST_FUNCTION(test_tower_sequence_init_die1_fpga, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D1_VAB1_RPSS1) | (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS)));
@@ -623,7 +647,6 @@ TEST_FUNCTION(test_tower_sequence_init_die1_fpga, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_instances_enabled, (1 << D1_VAB1_RPSS1));
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_sam, true);
@@ -654,6 +677,10 @@ TEST_FUNCTION(test_tower_sequence_init_die0_svp, nullptr, nullptr)
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
 
+    tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return_always(__wrap_system_info_is_hsp_present, false);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
@@ -674,7 +701,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) |
@@ -683,7 +709,6 @@ TEST_FUNCTION(test_tower_sequence_init_die0_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3)));
@@ -716,6 +741,10 @@ TEST_FUNCTION(test_tower_sequence_init_die1_svp, nullptr, nullptr)
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
 
+    tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return_always(__wrap_system_info_is_hsp_present, false);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
@@ -736,7 +765,6 @@ TEST_FUNCTION(test_tower_sequence_init_die1_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3) |
@@ -745,7 +773,6 @@ TEST_FUNCTION(test_tower_sequence_init_die1_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3)));
@@ -778,6 +805,10 @@ TEST_FUNCTION(test_tower_sequence_init_die0_invalid_platform, nullptr, nullptr)
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
 
+    tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
     will_return_always(__wrap_idsw_get_platform_sdv, 0x100);
     will_return_always(__wrap_system_info_is_hsp_present, false);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
@@ -798,13 +829,11 @@ TEST_FUNCTION(test_tower_sequence_init_die0_invalid_platform, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_instances_enabled, 0);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_instances_enabled, 0);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_sam, true);
@@ -835,6 +864,10 @@ TEST_FUNCTION(test_tower_sequence_init_die1_invalid_platform, nullptr, nullptr)
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
 
+    tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
     will_return_always(__wrap_idsw_get_platform_sdv, 0x100);
     will_return_always(__wrap_system_info_is_hsp_present, false);
 
@@ -855,13 +888,11 @@ TEST_FUNCTION(test_tower_sequence_init_die1_invalid_platform, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_instances_enabled, 0);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_instances_enabled, 0);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_sdmss_sam, true);
@@ -895,6 +926,10 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die0_svp, nullptr, nullptr)
                                           .flags = HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED}};
     size_t output_recv_bytes = 0;
 
+    tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return_always(__wrap_system_info_is_hsp_present, true);
 
@@ -921,7 +956,6 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die0_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3) |
@@ -930,7 +964,6 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die0_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) | (1 << D0_VAB3_RPSS3)));
@@ -966,6 +999,10 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die1_svp, nullptr, nullptr)
                                           .flags = HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED}};
     size_t output_recv_bytes = 0;
 
+    tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return_always(__wrap_system_info_is_hsp_present, true);
 
@@ -993,7 +1030,6 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die1_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_vab_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_vab_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_vab_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3) |
@@ -1002,7 +1038,6 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die1_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_rpss_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_rpss_os_first_ras_err_handling, false);
     expect_value(__wrap_tower_sequence_configure_towers,
                  tower_sequence_param->tower_rpss_instances_enabled,
                  ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) | (1 << D1_VAB3_RPSS3)));

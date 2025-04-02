@@ -10,6 +10,7 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.utils
+    fwlib.lib.cfg_mgr
     ms::cmocka::mocks
     ms::cmocka::testrunner
     ms::lib::atomics
@@ -46,4 +47,5 @@ mock_target(${TARGET}
     nvic_irq_enable
     rpss_irq_callback
     vab_init
+    config_get_vab_knobs
 )

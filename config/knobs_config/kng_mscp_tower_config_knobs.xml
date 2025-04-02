@@ -1,0 +1,21 @@
+<ConfigSchema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:noNamespaceSchemaLocation="configschema.xsd">
+
+  <!-- Enum values are declared separately from the knobs.
+       The same Enum can be used as the 'enumtype' of any number of EnumKnobs -->
+  <Enums>
+  </Enums>
+
+  <Structs>
+    <Struct name="tower_knobs_t">
+      <Member name="tower_mode_cfg" type="tower_sequence_knobs_t" count="1" help="Tower configuration mode (mission mode vs debug)" />
+    </Struct>
+  </Structs>
+
+  <!-- namespace indicates the GUID namespace the values are stored in -->
+  <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
+    <!--  Tower Knobs -->
+    <Knob name="tower_knobs" type = "tower_knobs_t" help = "Tower config knobs"/>
+  </Knobs>
+
+</ConfigSchema>

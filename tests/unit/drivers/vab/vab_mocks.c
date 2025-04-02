@@ -12,6 +12,7 @@
 #include <FpFwUtils.h>
 #include <atu_lib.h>
 #include <cmocka.h> // IWYU pragma: keep
+#include <fpfw_cfg_mgr.h>
 #include <nvic.h>
 #include <vab_init.h>
 #include <vab_intu.h>
@@ -91,6 +92,13 @@ int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
     FPFW_UNUSED(atu_map_entry);
 
     return mock_type(int);
+}
+
+vab_knobs_t __wrap_config_get_vab_knobs(void)
+{
+    vab_knobs_t* vab_config = mock_ptr_type(vab_knobs_t*);
+    function_called();
+    return *vab_config;
 }
 
 int __wrap_vab_init(vab_init_t* vab_init_params)

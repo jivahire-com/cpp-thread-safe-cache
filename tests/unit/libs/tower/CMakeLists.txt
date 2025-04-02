@@ -15,6 +15,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.lib.utils
         fwlib.service.iccBase
+        fwlib.lib.cfg_mgr
         ms::cmocka::mocks
         ms::cmocka::testrunner
         ms::lib::error_handler
@@ -43,4 +44,5 @@ mock_target(${TARGET}
     idsw_get_platform_sdv
     system_info_is_hsp_present
     fpfw_icc_base_send_recv_sync
+    config_get_tower_knobs
 )

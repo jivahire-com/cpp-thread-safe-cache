@@ -12,6 +12,7 @@
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <atu_lib.h>    // for atu_map, atu_unmap, atu_map_entry_t
 #include <bug_check.h>
+#include <fpfw_cfg_mgr.h>
 #include <fpfw_status.h>
 #include <hsp_firmware_headers.h>
 #include <idsw.h>              // for idsw_get_platform_sdv
@@ -215,6 +216,10 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 
     tower_sequence_soc_init_params_t tower_sequence_params = {0};
 
+    tower_sequence_knobs_t tower_cfg = config_get_tower_knobs().tower_mode_cfg;
+
+    tower_sequence_params.tower_cfg = &tower_cfg;
+
     // Fabric Tower
     tower_sequence_params.tower_configure_fabric_apu = true;
     tower_sequence_params.tower_configure_fabric_fmu = true;
@@ -263,8 +268,6 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         tower_sequence_params.tower_configure_vab_sam = true;
         tower_sequence_params.tower_configure_vab_apu = true;
         tower_sequence_params.tower_configure_vab_fmu = true;
-        // TODO: Remove the below hardocde if this would be configured with a knob (WI - 2101383)
-        tower_sequence_params.tower_vab_os_first_ras_err_handling = false;
     }
 
     // RPSS towers
@@ -286,8 +289,6 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         tower_sequence_params.tower_configure_rpss_sam = true;
         tower_sequence_params.tower_configure_rpss_apu = true;
         tower_sequence_params.tower_configure_rpss_fmu = true;
-        // TODO: Remove the below hardocde if this would be configured with a knob (WI - 2101383)
-        tower_sequence_params.tower_rpss_os_first_ras_err_handling = false;
     }
 
     // SDMSS tower

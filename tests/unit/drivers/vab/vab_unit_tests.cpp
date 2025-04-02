@@ -11,6 +11,7 @@
 #include <CMockaWrapper.h>
 #include <atu_lib.h>
 #include <cstddef>
+#include <fpfw_cfg_mgr.h>
 #include <interrupts.h>
 #include <kng_soc_constants.h>
 #include <silibs_platform.h>
@@ -24,6 +25,8 @@ extern "C" {
 #include <vab_irq.h>
 #include <vab_regs.h>
 #include <vab_rpss_top_regs.h>
+
+vab_knobs_t __real_config_get_vab_knobs(void);
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -54,6 +57,10 @@ TEST_FUNCTION(test_skip_all_vabs, NULL, NULL)
 {
 
     int status;
+    vab_knobs_t vab_config_knobs = __real_config_get_vab_knobs();
+    will_return(__wrap_config_get_vab_knobs, &vab_config_knobs);
+    expect_function_call(__wrap_config_get_vab_knobs);
+
     status = vab_common_init(0);
     assert_int_equal(status, SILIBS_SUCCESS);
 }
@@ -63,6 +70,9 @@ TEST_FUNCTION(test_successful_init_all_vabs, NULL, NULL)
 
     // int status;
     uint16_t vabs_to_init = 0xfff;
+    vab_knobs_t vab_config_knobs = __real_config_get_vab_knobs();
+    will_return(__wrap_config_get_vab_knobs, &vab_config_knobs);
+    expect_function_call(__wrap_config_get_vab_knobs);
 
     // Setup expectations for all VABs
     for (uint16_t vab_id = 0; vab_id < MAX_VAB_INSTANCES; vab_id++)
@@ -87,12 +97,18 @@ TEST_FUNCTION(test_successful_init_all_vabs, NULL, NULL)
             expect_function_call(__wrap_vab_init);
         }
     }
+
     vab_common_init(vabs_to_init);
 }
 
 TEST_FUNCTION(test_atu_map_fail, NULL, NULL)
 {
     uint16_t vabs_to_init = 0xfff;
+
+    vab_knobs_t vab_config_knobs = __real_config_get_vab_knobs();
+    will_return(__wrap_config_get_vab_knobs, &vab_config_knobs);
+    expect_function_call(__wrap_config_get_vab_knobs);
+
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
     will_return(__wrap_atu_map, SILIBS_E_INIT);
     expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
@@ -105,6 +121,10 @@ TEST_FUNCTION(test_atu_map_fail, NULL, NULL)
 TEST_FUNCTION(test_atu_unmap_fail, NULL, NULL)
 {
     uint16_t vabs_to_init = 0x1;
+
+    vab_knobs_t vab_config_knobs = __real_config_get_vab_knobs();
+    will_return(__wrap_config_get_vab_knobs, &vab_config_knobs);
+    expect_function_call(__wrap_config_get_vab_knobs);
 
     for (uint16_t vab_id = 0; vab_id < MAX_VAB_INSTANCES; vab_id++)
     {

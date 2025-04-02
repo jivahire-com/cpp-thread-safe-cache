@@ -8,6 +8,7 @@ add_library(${TARGET}
 target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.assert
+    fwlib.lib.cfg_mgr
     fwlib.service.iccBase
     silibs_platform
     ms::lib::crash_dump

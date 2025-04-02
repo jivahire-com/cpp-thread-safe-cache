@@ -11,6 +11,7 @@
 #include <FpFwCMocka.h> // IWYU pragma: keep
 #include <atu_lib.h>
 #include <cmocka.h> // IWYU pragma: keep
+#include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h>
 #include <hsp_firmware_headers.h> // for HSP_MAILBOX_CMD_BOOT_STATUS_NOTIFY, HspFirmwareIdScp...
 #include <idsw.h>
@@ -56,6 +57,13 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
     return mock_type(KNG_PLAT_ID);
 }
 
+tower_knobs_t __wrap_config_get_tower_knobs(void)
+{
+    tower_knobs_t* tower_config = mock_ptr_type(tower_knobs_t*);
+    function_called();
+    return *tower_config;
+}
+
 int __wrap_tower_sequence_configure_towers(tower_sequence_soc_init_params_t* tower_sequence_param)
 {
     check_expected(tower_sequence_param->tower_configure_fabric_apu);
@@ -74,13 +82,11 @@ int __wrap_tower_sequence_configure_towers(tower_sequence_soc_init_params_t* tow
     check_expected(tower_sequence_param->tower_configure_vab_sam);
     check_expected(tower_sequence_param->tower_configure_vab_apu);
     check_expected(tower_sequence_param->tower_configure_vab_fmu);
-    check_expected(tower_sequence_param->tower_vab_os_first_ras_err_handling);
     check_expected(tower_sequence_param->tower_vab_instances_enabled);
 
     check_expected(tower_sequence_param->tower_configure_rpss_sam);
     check_expected(tower_sequence_param->tower_configure_rpss_apu);
     check_expected(tower_sequence_param->tower_configure_rpss_fmu);
-    check_expected(tower_sequence_param->tower_rpss_os_first_ras_err_handling);
     check_expected(tower_sequence_param->tower_rpss_instances_enabled);
 
     check_expected(tower_sequence_param->tower_configure_sdmss_sam);

@@ -12,6 +12,7 @@ target_link_libraries(
             fwlib.dfwk
             fwlib.lib.assert
             fwlib.platform.dfwkhost.threadx
+            fwlib.lib.cfg_mgr
             ms::driver::pcie
             ms::lib::debug
             ms::lib::interrupts

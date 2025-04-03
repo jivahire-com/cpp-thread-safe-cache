@@ -13,6 +13,7 @@
 extern "C" {
 
 #include <FpFwUtils.h> // for FPFW_UNUSED
+#include <accelip_id.h>
 #include <fpfw_init.h> // for fpfw_init_result_t, fpfw_init_component_t
 #include <health_monitor.h>
 #include <health_monitor_i.h>
@@ -47,6 +48,11 @@ fpfw_status_t __wrap_fpfw_icc_base_send(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
     FPFW_UNUSED(icc_ctx);
     FPFW_UNUSED(params);
     function_called();
+
+    if (params->cb != NULL)
+    {
+        params->cb(params->cb_ctx, FPFW_ICC_BASE_STATUS_SUCCESS);
+    }
 
     return (mock_type(fpfw_status_t));
 }
@@ -88,6 +94,53 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
         mcp_cper_payload.error_record.section_size = sizeof(acpi_cper_section_t);
 
         params->cb(&mcp_cper_payload, sizeof(mcp_cper_payload), FPFW_STATUS_SUCCESS);
+    }
+    else
+    {
+        uint32_t cmd_code = (uint32_t)icc_ctx;
+        switch (cmd_code)
+        {
+        case ICC_HM_ERROR_DOMAIN_REGISTER_ACCEL(ACCEL_ID_SDM):
+        case ICC_HM_ERROR_DOMAIN_REGISTER_ACCEL(ACCEL_ID_CDED):
+        case ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(ACCEL_ID_SDM):
+        case ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(ACCEL_ID_CDED):
+            // static hm_accel_error_domain_register_payload_t sdm_err_domain_register_payload;
+            // sdm_err_domain_register_payload.header.cmd = ICC_HM_ERROR_DOMAIN_REGISTER_ACCEL(ACCEL_ID_SDM);
+            // sdm_err_domain_register_payload.error_domain_idx = ACPI_ERROR_DOMAIN_SDM;
+            // sdm_err_domain_register_payload.valid_fru_id = 1;
+            // sdm_err_domain_register_payload.valid_fru_text = 1;
+            // sdm_err_domain_register_payload.fru_id = (guid_t)SDM_PROC_ERROR_DOMAIN_FRU_GUID_DEF;
+            // strncpy(sdm_err_domain_register_payload.fru_text,
+            //         SDM_PROC_FRU,
+            //         sizeof(sdm_err_domain_register_payload.fru_text) - 1);
+            // sdm_err_domain_register_payload.fru_text[sizeof(sdm_err_domain_register_payload.fru_text) - 1] = '\0';
+
+            // params->cb(&sdm_err_domain_register_payload, sizeof(hm_accel_error_domain_register_payload_t), FPFW_STATUS_SUCCESS);
+            custom_fpfw_recv(params);
+            break;
+        // case ICC_HM_ERROR_DOMAIN_REGISTER_ACCEL(ACCEL_ID_CDED):
+        //     static hm_accel_error_domain_register_payload_t cded_err_domain_register_payload;
+        //     cded_err_domain_register_payload.header.cmd = ICC_HM_ERROR_DOMAIN_REGISTER_ACCEL(ACCEL_ID_CDED);
+        //     cded_err_domain_register_payload.error_domain_idx = ACPI_ERROR_DOMAIN_CDED_SDM;
+        //     cded_err_domain_register_payload.valid_fru_id = 1;
+        //     cded_err_domain_register_payload.valid_fru_text = 1;
+        //     cded_err_domain_register_payload.fru_id = (guid_t)CDED_SDM_PROC_ERROR_DOMAIN_FRU_GUID_DEF;
+        //     strncpy(cded_err_domain_register_payload.fru_text,
+        //             CDED_SDM_PROC_FRU,
+        //             sizeof(cded_err_domain_register_payload.fru_text) - 1);
+        //     cded_err_domain_register_payload.fru_text[sizeof(sdm_err_domain_register_payload.fru_text) - 1] = '\0';
+
+        //     params->cb(&cded_err_domain_register_payload, sizeof(hm_accel_error_domain_register_payload_t),
+        //     FPFW_STATUS_SUCCESS); break;
+        case ICC_HM_ERROR_INJECTION_ACCEL(ACCEL_ID_SDM):
+        case ICC_HM_ERROR_INJECTION_ACCEL(ACCEL_ID_CDED):
+        case ICC_HM_TX_DONE_ACK_ACCEL(ACCEL_ID_SDM):
+        case ICC_HM_TX_DONE_ACK_ACCEL(ACCEL_ID_CDED):
+
+            break;
+        default:
+            break;
+        }
     }
 
     return (mock_type(fpfw_status_t));

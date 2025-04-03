@@ -13,9 +13,11 @@
 extern "C" {
 
 #include <FpFwUtils.h> // for FPFW_UNUSED
+#include <accelip_id.h>
 #include <fpfw_init.h> // for fpfw_init_result_t, fpfw_init_component_t
 #include <health_monitor.h>
 #include <health_monitor_i.h>
+#include <health_monitor_icc.h>
 #include <hm_test.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -133,4 +135,18 @@ TEST_FUNCTION(test_hm_post_intercore_init_mcp, pre_ddr_setup, nullptr)
     expect_function_calls(__wrap_fpfw_icc_base_recv, 2);
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     hm_post_intercore_init(HM_INTERCORE_MCP, (fpfw_icc_base_ctx_t*)1234);
+}
+
+TEST_FUNCTION(test_hm_post_intercore_init_sdm, pre_ddr_setup, nullptr)
+{
+    expect_function_calls(__wrap_fpfw_icc_base_recv, 1);
+    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    hm_post_intercore_init(HM_INTERCORE_SDM, (fpfw_icc_base_ctx_t*)ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(ACCEL_ID_SDM));
+}
+
+TEST_FUNCTION(test_hm_post_intercore_init_cded, pre_ddr_setup, nullptr)
+{
+    expect_function_calls(__wrap_fpfw_icc_base_recv, 1);
+    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    hm_post_intercore_init(HM_INTERCORE_CDED, (fpfw_icc_base_ctx_t*)ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(ACCEL_ID_CDED));
 }

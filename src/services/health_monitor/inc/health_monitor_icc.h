@@ -10,14 +10,29 @@
 
 /*------------- Includes -----------------*/
 #include <cper.h>
-#include <icc_mhu.h>  
+#include <icc_platform_defines.h>
+#include <icc_mhu.h>
 #include <health_monitor.h>
 #include <health_monitor_temporary_einj_structs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 // this will go away once new silib is available
+
+#define MBOX_HMM_HEADER_SIZE	(sizeof(large_fifo_mailbox_msg_header) + sizeof(uint32_t))/sizeof(uint32_t) // 32-bit allocated for transfer metadata
+#define MBOX_HMM_DATA_DEPTH		(LARGE_FIFO_MBOX_FIFO_DEPTH - MBOX_HMM_HEADER_SIZE)
+
 #ifndef ICC_GEN_CMD
 #define ICC_GEN_CMD(module, cmd)         ((module << 16) + cmd)
+#endif
+
+// The accelerators used a large fifo mbx which only has 16-bit for commands
+// Hence defining a second command which only 16-bit wide
+#ifndef ICC_ACCEL_GEN_CMD
+#define ICC_ACCEL_GEN_CMD(module, cmd)         (((module << 8) + cmd)&0xFFFF)
+#endif
+
+#ifndef ICC_ACCEL_CMDS_WIDTH
+#define ICC_ACCEL_CMDS_WIDTH        (0x10)
 #endif
 
 #ifndef ICC_MODULE_HEALTH_MONITOR
@@ -36,6 +51,26 @@
 #define ICC_HM_ERROR_INJECTION_MCP          ICC_GEN_CMD(ICC_MODULE_HEALTH_MONITOR, 0x3)
 #endif
 
+#ifndef ICC_HM_ERROR_DOMAIN_REGISTER_ACCEL
+#define ICC_HM_ERROR_DOMAIN_REGISTER_ACCEL(accel_id)    ICC_ACCEL_GEN_CMD(ICC_MODULE_HEALTH_MONITOR, (accel_id * ICC_ACCEL_CMDS_WIDTH) + 0x1)
+#endif
+
+#ifndef ICC_HM_ERROR_DOMAIN_REGISTER_DONE_ACK_ACCEL
+#define ICC_HM_ERROR_DOMAIN_REGISTER_DONE_ACK_ACCEL(accel_id)          ICC_ACCEL_GEN_CMD(ICC_MODULE_HEALTH_MONITOR, (accel_id * ICC_ACCEL_CMDS_WIDTH) + 0x2)
+#endif
+
+#ifndef ICC_HM_ERROR_RECORD_SUBMIT_ACCEL
+#define ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(accel_id)      ICC_ACCEL_GEN_CMD(ICC_MODULE_HEALTH_MONITOR, (accel_id * ICC_ACCEL_CMDS_WIDTH) + 0x3)
+#endif
+
+#ifndef ICC_HM_ERROR_INJECTION_ACCEL
+#define ICC_HM_ERROR_INJECTION_ACCEL(accel_id)          ICC_ACCEL_GEN_CMD(ICC_MODULE_HEALTH_MONITOR, (accel_id * ICC_ACCEL_CMDS_WIDTH) + 0x4)
+#endif
+
+#ifndef ICC_HM_TX_DONE_ACK_ACCEL
+#define ICC_HM_TX_DONE_ACK_ACCEL(accel_id)          ICC_ACCEL_GEN_CMD(ICC_MODULE_HEALTH_MONITOR, (accel_id * ICC_ACCEL_CMDS_WIDTH) + 0x5)
+#endif
+
 /*------------- Typedefs -----------------*/
 typedef struct {
     icc_mhu_header_t header;
@@ -46,6 +81,18 @@ typedef struct {
     char fru_text[ACPI_FRU_TEXT_LENGTH];
 } hm_mhu_error_domain_register_payload_t;
 
+typedef union {
+	struct {
+		large_fifo_mailbox_msg_header header;
+		uint16_t error_domain_idx;
+		uint8_t valid_fru_id;
+		uint8_t valid_fru_text;
+		guid_t fru_id;
+		char fru_text[ACPI_FRU_TEXT_LENGTH];
+	};
+	uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
+} hm_accel_error_domain_register_payload_t;
+
 typedef struct {
     icc_mhu_header_t header;
     hm_error_record_t error_record;
@@ -55,3 +102,53 @@ typedef struct {
     icc_mhu_header_t header;
     ras_einj_info_t_temp error_injection_info;
 } hm_mhu_error_injection_payload_t;
+
+typedef union {
+    struct
+    {
+        large_fifo_mailbox_msg_header header;
+        ras_einj_info_t_temp error_injection_info;
+    };
+    uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
+} hm_accel_error_injection_payload_t;
+
+typedef union _accel_hmm_msg {
+	struct {
+		large_fifo_mailbox_msg_header header;
+		struct {
+			uint8_t tfr_pkt_cnt;
+			uint8_t tfr_size;
+			union
+			{
+				uint16_t reserved;
+				acpi_error_severity_t err_severity;
+			};
+		};
+		uint32_t hmm_msg_bytes[MBOX_HMM_DATA_DEPTH];
+	};
+	uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
+} hm_accel_msg_t;
+
+typedef union _accel_hmm_msg_ack {
+	struct {
+		large_fifo_mailbox_msg_header header;
+		struct {
+			uint8_t tfr_pkt_cnt;
+			uint8_t tfr_size;
+			uint16_t tfr_offset;
+		};
+	};
+	uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
+} hm_accel_msg_ack_t;
+
+typedef struct _hm_accel_cper_payload_t
+{
+    acpi_err_sec_accel_vendor_t accel_err_payload;
+    fpfw_icc_base_recv_req_t hm_icc_sdm_err_submit_req;
+    hm_accel_msg_t msg_payload;
+    uint16_t err_payload_size;
+    uint16_t err_payload_curr_offset;
+    uint16_t error_domain_index;
+    ACCEL_ID accel_id;
+    acpi_error_severity_t err_severity;
+} hm_accel_cper_info_t;

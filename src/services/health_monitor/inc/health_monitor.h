@@ -11,7 +11,7 @@
 /*------------- Includes -----------------*/
 #include <cper.h>
 #include <fpfw_icc_base.h>
-#include <icc_mhu.h>  
+#include <icc_mhu.h>
 #include <kng_error.h>
 #include <health_monitor_temporary_einj_structs.h>
 #include <semaphore_lib.h>
@@ -92,9 +92,9 @@ void hm_register_error_domain(uint16_t error_domain_idx,
                               hm_error_injection_cb_t err_inject_cb,
                               void* err_inject_ctx);
 
-void hm_submit_cper(uint16_t error_domain_idx, 
-                    acpi_error_severity_t err_severity, 
-                    void* err_record_section, 
+void hm_submit_cper(uint16_t error_domain_idx,
+                    acpi_error_severity_t err_severity,
+                    void* err_record_section,
                     uint32_t err_record_section_size);
 
 void hm_pre_ddr_init(hm_config_t* hm_config);

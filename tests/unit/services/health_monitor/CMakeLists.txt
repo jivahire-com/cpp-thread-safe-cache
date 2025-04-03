@@ -8,12 +8,13 @@ set(SOURCES
     test_hm_error_report_cper.cpp
     test_hm_error_injection.cpp
     test_hm_error_domain_mcp.cpp
+    test_hm_error_domain_accel.cpp
     ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_main.c
     ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_domain_register.c
     ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_report_ghes.c
-    ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_domain_sdm.c
+    ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_domain_accel.c
     ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_domain_hsp.c
-    ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_domain_cded.c
+    # ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_domain_cded.c
     ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_domain_apcore.c
 )
 
@@ -36,7 +37,7 @@ target_link_libraries(${TARGET}
 )
 
 # Get private includes for module under test
-target_include_directories(${TARGET}    
+target_include_directories(${TARGET}
     PRIVATE
         $<TARGET_PROPERTY:ms::service::health_monitor,INCLUDE_DIRECTORIES>
         ./
@@ -52,6 +53,7 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    crash_dump_bug_check
     initialize_semaphore
     idhw_is_single_die_boot_en
     mscp_exp_spi_synchronize_dies

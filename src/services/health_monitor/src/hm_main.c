@@ -92,6 +92,12 @@ void hm_post_intercore_init(hm_intercore_type_t intercore_type, fpfw_icc_base_ct
     case HM_INTERCORE_MCP:
         hm_prepare_mscp_listener(icc_ctx);
         break;
+    case HM_INTERCORE_SDM:
+        hm_prepare_sdm_listener(icc_ctx);
+        break;
+    case HM_INTERCORE_CDED:
+        hm_prepare_cded_sdm_listener(icc_ctx);
+        break;
     default:
         break;
     }

@@ -111,25 +111,16 @@ FPFW_INIT_COMPONENT(hm_svc_hsp_init,
 
     hm_post_intercore_init(HM_INTERCORE_HSP);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
-}
+}*/
 
-FPFW_INIT_COMPONENT(hm_svc_sdm_init,
-                    FPFW_INIT_DEPENDENCIES("hm_svc_post_init", "icc_sdm_mbx"))
+FPFW_INIT_COMPONENT(hm_svc_sdm_init, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_sdm_mbx"))
 {
-    hm_config_t* hm_config = (hm_config_t*)fpfw_init_get_handle("hm_svc");
-    hm_config->icc_apcore = fpfw_init_get_handle("icc_sdm_mbx");
-
-    hm_post_intercore_init(HM_INTERCORE_SDM);
+    hm_post_intercore_init(HM_INTERCORE_SDM, fpfw_init_get_handle("icc_sdm_mbx"));
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(hm_svc_cded_init,
-                    FPFW_INIT_DEPENDENCIES("hm_svc_post_init", "icc_cded_mbx"))
+FPFW_INIT_COMPONENT(hm_svc_cded_init, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_cded_mbx"))
 {
-    hm_config_t* hm_config = (hm_config_t*)fpfw_init_get_handle("hm_svc");
-    hm_config->icc_apcore = fpfw_init_get_handle("icc_cded_mbx");
-
-    hm_post_intercore_init(HM_INTERCORE_CDED);
+    hm_post_intercore_init(HM_INTERCORE_CDED, fpfw_init_get_handle("icc_cded_mbx"));
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
-*/

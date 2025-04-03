@@ -170,6 +170,20 @@ static void request_accel_itcm_load_complete_notify(void* context, size_t output
     APCORE_LOG_INFO("Accel[%d] ITCM FW load completed", accel_type);
 }
 
+static void request_rmm_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    FPFW_UNUSED(context);
+    FPFW_UNUSED(output_size_bytes);
+
+    BUG_ASSERT(status == FPFW_STATUS_SUCCESS);
+    BUG_ASSERT(recv_payload_buffer.header.cmd == HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    BUG_ASSERT(recv_payload_buffer.rsp.status == 0);
+
+    DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
+
+    APCORE_LOG_INFO("RMM FW load completed");
+}
+
 static void request_accel_dtcm_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     FPFW_UNUSED(context);
@@ -191,31 +205,32 @@ static void request_accel_dtcm_load_complete_notify(void* context, size_t output
 
 void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t fw_id)
 {
-    // Listen for the response
+    //! Prepare for recv response
     // TODO: Use send_recv API instead once HSP respects sequence number
     // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1893482
     static fpfw_icc_base_recv_req_t recv_params = {
         .payload_buffer = &recv_payload_buffer,
         .buffer_size = sizeof(recv_payload_buffer),
-        .recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_RSP,
+        .recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_RSP, //! default,  resp code for `HSP_MAILBOX_CMD_LOAD_FW_REQ` cmd
         .cb_ctx = NULL,
     };
 
-    recv_params.recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_RSP;
-    recv_params.cb = request_ap_load_recv_complete_notify;
     if (fw_id == AP_FW_PCIE_PHY)
     {
+        recv_params.recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_RSP;
         recv_params.cb = request_pcie_phy_load_complete_notify;
         recv_params.cb_ctx = icc_hspmbx_ctx;
     }
     else if (fw_id == AP_FW_ID_MCP)
     {
+        recv_params.recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_RSP;
         recv_params.cb = request_mcp_load_complete_notify;
         recv_params.cb_ctx = icc_hspmbx_ctx;
     }
     else if (fw_id == AP_FW_ID_KMP)
     {
-        recv_params.recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP;
+        recv_params.recv_cmd_code =
+            HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP; //! resp code for `HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ` cmd
         recv_params.cb = request_kmp_load_complete_notify;
         recv_params.cb_ctx = icc_hspmbx_ctx;
     }
@@ -231,7 +246,20 @@ void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t 
         recv_params.cb = request_accel_dtcm_load_complete_notify;
         recv_params.cb_ctx = (void*)(fw_id == AP_FW_ID_SDM_DTCM ? ACCEL_ID_SDM : ACCEL_ID_CDED);
     }
-
+    else if (fw_id == AP_FW_ID_RMM)
+    {
+        recv_params.recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP;
+        recv_params.cb = request_rmm_load_complete_notify;
+        recv_params.cb_ctx = (void*)(fw_id);
+    }
+    else
+    {
+        //! Default case for all other firmware IDs that use
+        //! req cmd code HSP_MAILBOX_CMD_LOAD_FW_RSP to send & resp code HSP_MAILBOX_CMD_LOAD_FW_REQ to recv
+        recv_params.recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_RSP;
+        recv_params.cb = request_ap_load_recv_complete_notify;
+        recv_params.cb_ctx = NULL;
+    }
     fpfw_status_t status = fpfw_icc_base_recv(icc_hspmbx_ctx, &recv_params);
     BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
 
@@ -265,8 +293,10 @@ void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t 
         send_request.load_fw_req.address = HAFNIUM_FW_LOAD_ADDRESS;
         break;
     case AP_FW_ID_RMM:
-        send_request.load_fw_req.id = HSP_FIRMWARE_ID_RMM;
-        send_request.load_fw_req.address = RMM_FW_LOAD_ADDRESS;
+        send_request.load_fw_64bit_req.id = HSP_FIRMWARE_ID_RMM;
+        send_request.load_fw_64bit_req.header.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ;
+        send_request.load_fw_64bit_req.load_addr_low = REALM_FW_LOAD_ADDRESS & (uint32_t)0xFFFFFFFF;
+        send_request.load_fw_64bit_req.load_addr_high = REALM_FW_LOAD_ADDRESS >> 32;
         break;
     case AP_FW_ID_RP_EXE:
         send_request.load_fw_req.id = HSP_FIRMWARE_ID_RP_EXE;

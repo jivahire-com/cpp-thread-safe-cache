@@ -1003,17 +1003,18 @@ AP_CORE_TEST(dispatch_rmm_load, setup, NULL)
     // Set up expectations
     will_return(__wrap_system_info_is_hsp_present, true);
 
-    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_RSP);
-    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_RSP);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
 
-    kng_hsp_mailbox_cmd_load_fw_req send_request = {
-        .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_REQ,
+    kng_hsp_mailbox_cmd_load_fw_64bit_req send_request = {
+        .header.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ,
         .header.context = 0,
         .id = HSP_FIRMWARE_ID_RMM,
-        .address = RMM_FW_LOAD_ADDRESS,
-        .size = 0x00000000,
+        .load_addr_low = REALM_FW_LOAD_ADDRESS & (uint32_t)0xFFFFFFFF,
+        .load_addr_high = REALM_FW_LOAD_ADDRESS >> 32,
     };
+
     expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request, sizeof(send_request));
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
 

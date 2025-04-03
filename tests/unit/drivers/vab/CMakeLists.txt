@@ -20,6 +20,8 @@ target_link_libraries(${TARGET}
     ms::lib::scp_interrupts
     ms::driver::pcie
     ms::driver::vab
+    silibs::idsw
+    silibs::idsw_kng
     silibs::atu
     silibs::kng_silibs_platform
     silibs_platform
@@ -40,6 +42,7 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     atu_map
     atu_unmap
+    idsw_get_platform_sdv
     vabss_intu_probe
     vabss_intu_clear
     nvic_irq_set_isr_with_param

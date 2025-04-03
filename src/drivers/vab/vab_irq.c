@@ -11,6 +11,8 @@
 #include <FPFwInterrupts.h>
 #include <FpFwAssert.h>
 #include <atu_lib.h>
+#include <idsw.h>
+#include <idsw_kng.h>
 #include <interrupts.h>
 #include <intu_lib.h>
 #include <kng_atu_mappings.h>
@@ -329,6 +331,18 @@ static void map_and_get_vab_ctx(SUBSYSTEM_WITH_VAB_ID vab, vab_isr_ctx_t** vab_i
 
 void enable_vab_isrs(uint16_t vab_instances_to_init)
 {
+    /*
+     * INTU-0 Pin 6 is tripping on some big FPGA systems and causing a
+     * crash.
+     * This needs to be investigated a bit more. Till then, disable
+     * VAB INTU signalling on big FPGA systems.
+     * WI: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2516114
+     */
+    if (IS_PLATFORM_FPGA())
+    {
+        return;
+    }
+
     for (SUBSYSTEM_WITH_VAB_ID vab = D0_VAB0_RPSS0; vab < MAX_VAB_INSTANCES; vab++)
     {
         if ((vab_instances_to_init >> vab) & 0x1)

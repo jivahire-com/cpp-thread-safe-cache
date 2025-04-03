@@ -19,12 +19,11 @@
 #include <config_manager.h> // for config_get_sdm_base_class_code, config_get_sdm_pf_subsystem_id, config_get_sdm_pf_device_id, config_get_sdm_pf_int_pin
 #include <idhw.h>           // for idhw_get_die_id, idhw_get_platform_...
 #include <idsw.h>           // for idsw_get_platform_sdv, idsw...
-#include <idsw_kng.h>       // for idsw_get_die_id, idsw_get_platform_sdv
 #include <stdint.h>         // for uint32_t
-#include <stdio.h>          // for printf
 #include <string.h>         // for memcpy, strlen
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
+#define BYTES_IN_32B_WORD 4
 
 // Transfer this to Cortex m7 once both sides of the implementation are complete: ADO 2503735
 #define START_MAGIC_STRING "KNOBS_START"
@@ -53,14 +52,33 @@ const char* knob_list[] = {
 };
 
 const uint32_t m7_test_knob_value = 0xFFFFFFFF;
-
 // Clean up FPFW_DBGPRINT_ after all PRs in the series are merged : ADO 2503735
-// TODO: Check if this region of the memory map needs to be set as strongly ordered in MPU: ADO 2503735
-// TODO: Handle accelerator knobs transfer as volatile to prevent compiler optimization: ADO 2503735
 
 /*--------------------------------- Externs ---------------------------------*/
 
 /*----------------------------- Static Functions ----------------------------*/
+static void intercore_aligned_memcpy(uint8_t* p_dest, uint8_t* p_src, uint16_t num_bytes, uint8_t align)
+{
+#ifdef _WIN32
+    FPFW_UNUSED(p_dest);
+    FPFW_UNUSED(p_src);
+    FPFW_UNUSED(num_bytes);
+    FPFW_UNUSED(align);
+#else
+    for (uint16_t i = 0; i < num_bytes; i++)
+    {
+        unsigned int align_bytes_offset = (unsigned int)p_dest % align;
+
+        volatile uint32_t* p_dest_32b_aligned = (uint32_t*)(p_dest - align_bytes_offset);
+        *p_dest_32b_aligned |= (*p_src) << (FPFW_BITS_IN_BYTE * align_bytes_offset);
+
+        p_dest++;
+        p_src++;
+    }
+
+#endif
+}
+
 static knob_transfer_status_t write_string_to_buff(uint8_t* p_addr, uint8_t* p_buff_end_addr, const char* p_str)
 {
     size_t str_len = STRING_BUFFER_LENGTH(p_str);
@@ -71,9 +89,7 @@ static knob_transfer_status_t write_string_to_buff(uint8_t* p_addr, uint8_t* p_b
         return STATUS_KNOB_TRANSFER_FAIL_MEMORY_OVERFLOW;
     }
 
-#ifndef _WIN32
-    memcpy(p_addr, p_str, str_len);
-#endif
+    intercore_aligned_memcpy(p_addr, (uint8_t*)p_str, str_len, BYTES_IN_32B_WORD);
 
     return STATUS_KNOB_TRANSFER_SUCCESS;
 }
@@ -109,22 +125,16 @@ static knob_transfer_status_t write_knob_to_buffer(uint8_t* p_addr,
 
     // Copy the knob name into the buffer
     FPFW_DBGPRINT_INFO("Name: %s, Name Size: %d, ", p_knob_name, STRING_BUFFER_LENGTH(p_knob_name));
-#ifndef _WIN32
-    memcpy(p_addr, p_knob_name, STRING_BUFFER_LENGTH(p_knob_name));
-#endif
+    intercore_aligned_memcpy(p_addr, (uint8_t*)p_knob_name, STRING_BUFFER_LENGTH(p_knob_name), BYTES_IN_32B_WORD);
     p_addr += STRING_BUFFER_LENGTH(p_knob_name);
 
     // Copy the size of the knob data into the buffer
     FPFW_DBGPRINT_INFO("Data Size: %d, Addr: %p, Dest Addr: %p \n", knob_size, &knob_size, p_addr);
-#ifndef _WIN32
-    memcpy(p_addr, &knob_size, sizeof(uint8_t));
-#endif
+    intercore_aligned_memcpy(p_addr, &knob_size, sizeof(uint8_t), BYTES_IN_32B_WORD);
     p_addr += sizeof(uint8_t);
 
-// Copy the knob data into the buffer
-#ifndef _WIN32
-    memcpy(p_addr, p_knob_data, knob_size);
-#endif
+    // Copy the knob data into the buffer
+    intercore_aligned_memcpy(p_addr, p_knob_data, knob_size, BYTES_IN_32B_WORD);
 
     return STATUS_KNOB_TRANSFER_SUCCESS;
 }

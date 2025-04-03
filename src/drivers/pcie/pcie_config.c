@@ -28,8 +28,14 @@
 
 /*-------- Function Prototypes -----------*/
 static bool mirror_rpss_configurations();
-static void apply_one_to_one_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cfg, pcie_prod_cfg_t* pcie_cfg_knob);
-static void apply_mirrored_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cfg, pcie_prod_cfg_t* pcie_cfg_knob);
+static void apply_one_to_one_configurations(uint8_t rpss_id,
+                                            pcie_cfg_t* pcie_cfg,
+                                            pcie_prod_cfg_t* pcie_cfg_knob,
+                                            pcie_prod_phy_cfg_t* phy_cfg_knob);
+static void apply_mirrored_configurations(uint8_t rpss_id,
+                                          pcie_cfg_t* pcie_cfg,
+                                          pcie_prod_cfg_t* pcie_cfg_knob,
+                                          pcie_prod_phy_cfg_t* phy_cfg_knob);
 
 /*-- Declarations (Statics and globals) --*/
 static pcie_cfg_t pcie_cfg_np[NUM_RPSS] = {
@@ -58,12 +64,13 @@ static bool mirror_rpss_configurations()
     return config_mirroring;
 }
 
-static void apply_one_to_one_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cfg, pcie_prod_cfg_t* pcie_cfg_knob)
+static void apply_one_to_one_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cfg, pcie_prod_cfg_t* pcie_cfg_knob, pcie_prod_phy_cfg_t* phy_cfg_knob)
 {
     switch (rpss_id)
     {
     case RPSS0:
         *pcie_cfg_knob = config_get_pcie_rpss0_cfg();
+        *phy_cfg_knob = config_get_pcie_rpss0_phy_cfg();
         pcie_cfg->rp_cfgs[0] = config_get_pcie_rpss0_rp0_cfg();
         pcie_cfg->rp_cfgs[1] = config_get_pcie_rpss0_rp1_cfg();
         pcie_cfg->rp_cfgs[2] = config_get_pcie_rpss0_rp2_cfg();
@@ -71,6 +78,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cf
         break;
     case RPSS1:
         *pcie_cfg_knob = config_get_pcie_rpss1_cfg();
+        *phy_cfg_knob = config_get_pcie_rpss1_phy_cfg();
         pcie_cfg->rp_cfgs[0] = config_get_pcie_rpss1_rp0_cfg();
         pcie_cfg->rp_cfgs[1] = config_get_pcie_rpss1_rp1_cfg();
         pcie_cfg->rp_cfgs[2] = config_get_pcie_rpss1_rp2_cfg();
@@ -78,6 +86,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cf
         break;
     case RPSS2:
         *pcie_cfg_knob = config_get_pcie_rpss2_cfg();
+        *phy_cfg_knob = config_get_pcie_rpss2_phy_cfg();
         pcie_cfg->rp_cfgs[0] = config_get_pcie_rpss2_rp0_cfg();
         pcie_cfg->rp_cfgs[1] = config_get_pcie_rpss2_rp1_cfg();
         pcie_cfg->rp_cfgs[2] = config_get_pcie_rpss2_rp2_cfg();
@@ -85,6 +94,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cf
         break;
     case RPSS3:
         *pcie_cfg_knob = config_get_pcie_rpss3_cfg();
+        *phy_cfg_knob = config_get_pcie_rpss3_phy_cfg();
         pcie_cfg->rp_cfgs[0] = config_get_pcie_rpss3_rp0_cfg();
         pcie_cfg->rp_cfgs[1] = config_get_pcie_rpss3_rp1_cfg();
         pcie_cfg->rp_cfgs[2] = config_get_pcie_rpss3_rp2_cfg();
@@ -92,6 +102,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cf
         break;
     case RPSS4:
         *pcie_cfg_knob = config_get_pcie_rpss4_cfg();
+        *phy_cfg_knob = config_get_pcie_rpss4_phy_cfg();
         pcie_cfg->rp_cfgs[0] = config_get_pcie_rpss4_rp0_cfg();
         pcie_cfg->rp_cfgs[1] = config_get_pcie_rpss4_rp1_cfg();
         pcie_cfg->rp_cfgs[2] = config_get_pcie_rpss4_rp2_cfg();
@@ -99,6 +110,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cf
         break;
     case RPSS5:
         *pcie_cfg_knob = config_get_pcie_rpss5_cfg();
+        *phy_cfg_knob = config_get_pcie_rpss5_phy_cfg();
         pcie_cfg->rp_cfgs[0] = config_get_pcie_rpss5_rp0_cfg();
         pcie_cfg->rp_cfgs[1] = config_get_pcie_rpss5_rp1_cfg();
         pcie_cfg->rp_cfgs[2] = config_get_pcie_rpss5_rp2_cfg();
@@ -106,6 +118,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cf
         break;
     case RPSS6:
         *pcie_cfg_knob = config_get_pcie_rpss6_cfg();
+        *phy_cfg_knob = config_get_pcie_rpss6_phy_cfg();
         pcie_cfg->rp_cfgs[0] = config_get_pcie_rpss6_rp0_cfg();
         pcie_cfg->rp_cfgs[1] = config_get_pcie_rpss6_rp1_cfg();
         pcie_cfg->rp_cfgs[2] = config_get_pcie_rpss6_rp2_cfg();
@@ -113,6 +126,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cf
         break;
     case RPSS7:
         *pcie_cfg_knob = config_get_pcie_rpss7_cfg();
+        *phy_cfg_knob = config_get_pcie_rpss7_phy_cfg();
         pcie_cfg->rp_cfgs[0] = config_get_pcie_rpss7_rp0_cfg();
         pcie_cfg->rp_cfgs[1] = config_get_pcie_rpss7_rp1_cfg();
         pcie_cfg->rp_cfgs[2] = config_get_pcie_rpss7_rp2_cfg();
@@ -127,7 +141,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cf
     }
 }
 
-static void apply_mirrored_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cfg, pcie_prod_cfg_t* pcie_cfg_knob)
+static void apply_mirrored_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cfg, pcie_prod_cfg_t* pcie_cfg_knob, pcie_prod_phy_cfg_t* phy_cfg_knob)
 {
     /*
      * Apply PCIe configurations for mirrored 2 socket boards.
@@ -148,6 +162,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cfg,
     {
     case RPSS0:
         *pcie_cfg_knob = config_get_pcie_rpss3_cfg();
+        *phy_cfg_knob = config_get_pcie_rpss3_phy_cfg();
         pcie_cfg->rp_cfgs[0] = config_get_pcie_rpss3_rp0_cfg();
         pcie_cfg->rp_cfgs[1] = config_get_pcie_rpss3_rp1_cfg();
         pcie_cfg->rp_cfgs[2] = config_get_pcie_rpss3_rp2_cfg();
@@ -155,6 +170,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cfg,
         break;
     case RPSS1:
         *pcie_cfg_knob = config_get_pcie_rpss2_cfg();
+        *phy_cfg_knob = config_get_pcie_rpss2_phy_cfg();
         pcie_cfg->rp_cfgs[0] = config_get_pcie_rpss2_rp0_cfg();
         pcie_cfg->rp_cfgs[1] = config_get_pcie_rpss2_rp1_cfg();
         pcie_cfg->rp_cfgs[2] = config_get_pcie_rpss2_rp2_cfg();
@@ -162,6 +178,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cfg,
         break;
     case RPSS2:
         *pcie_cfg_knob = config_get_pcie_rpss1_cfg();
+        *phy_cfg_knob = config_get_pcie_rpss1_phy_cfg();
         pcie_cfg->rp_cfgs[0] = config_get_pcie_rpss1_rp0_cfg();
         pcie_cfg->rp_cfgs[1] = config_get_pcie_rpss1_rp1_cfg();
         pcie_cfg->rp_cfgs[2] = config_get_pcie_rpss1_rp2_cfg();
@@ -169,6 +186,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cfg,
         break;
     case RPSS3:
         *pcie_cfg_knob = config_get_pcie_rpss0_cfg();
+        *phy_cfg_knob = config_get_pcie_rpss0_phy_cfg();
         pcie_cfg->rp_cfgs[0] = config_get_pcie_rpss0_rp0_cfg();
         pcie_cfg->rp_cfgs[1] = config_get_pcie_rpss0_rp1_cfg();
         pcie_cfg->rp_cfgs[2] = config_get_pcie_rpss0_rp2_cfg();
@@ -176,6 +194,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cfg,
         break;
     case RPSS4:
         *pcie_cfg_knob = config_get_pcie_rpss7_cfg();
+        *phy_cfg_knob = config_get_pcie_rpss7_phy_cfg();
         pcie_cfg->rp_cfgs[0] = config_get_pcie_rpss7_rp0_cfg();
         pcie_cfg->rp_cfgs[1] = config_get_pcie_rpss7_rp1_cfg();
         pcie_cfg->rp_cfgs[2] = config_get_pcie_rpss7_rp2_cfg();
@@ -183,6 +202,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cfg,
         break;
     case RPSS5:
         *pcie_cfg_knob = config_get_pcie_rpss6_cfg();
+        *phy_cfg_knob = config_get_pcie_rpss6_phy_cfg();
         pcie_cfg->rp_cfgs[0] = config_get_pcie_rpss6_rp0_cfg();
         pcie_cfg->rp_cfgs[1] = config_get_pcie_rpss6_rp1_cfg();
         pcie_cfg->rp_cfgs[2] = config_get_pcie_rpss6_rp2_cfg();
@@ -190,6 +210,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cfg,
         break;
     case RPSS6:
         *pcie_cfg_knob = config_get_pcie_rpss5_cfg();
+        *phy_cfg_knob = config_get_pcie_rpss5_phy_cfg();
         pcie_cfg->rp_cfgs[0] = config_get_pcie_rpss5_rp0_cfg();
         pcie_cfg->rp_cfgs[1] = config_get_pcie_rpss5_rp1_cfg();
         pcie_cfg->rp_cfgs[2] = config_get_pcie_rpss5_rp2_cfg();
@@ -197,6 +218,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id, pcie_cfg_t* pcie_cfg,
         break;
     case RPSS7:
         *pcie_cfg_knob = config_get_pcie_rpss4_cfg();
+        *phy_cfg_knob = config_get_pcie_rpss4_phy_cfg();
         pcie_cfg->rp_cfgs[0] = config_get_pcie_rpss4_rp0_cfg();
         pcie_cfg->rp_cfgs[1] = config_get_pcie_rpss4_rp1_cfg();
         pcie_cfg->rp_cfgs[2] = config_get_pcie_rpss4_rp2_cfg();
@@ -215,16 +237,18 @@ void override_default_pcie_cfg(uint8_t rpss_id)
 {
     pcie_cfg_t* pcie_cfg = &pcie_cfg_np[rpss_id];
     pcie_prod_cfg_t pcie_cfg_knob;
+    pcie_prod_phy_cfg_t phy_cfg_knob;
 
     if (mirror_rpss_configurations() == true)
     {
-        apply_mirrored_configurations(rpss_id, pcie_cfg, &pcie_cfg_knob);
+        apply_mirrored_configurations(rpss_id, pcie_cfg, &pcie_cfg_knob, &phy_cfg_knob);
     }
     else
     {
-        apply_one_to_one_configurations(rpss_id, pcie_cfg, &pcie_cfg_knob);
+        apply_one_to_one_configurations(rpss_id, pcie_cfg, &pcie_cfg_knob, &phy_cfg_knob);
     }
 
+    pcie_cfg->pcie_ss_override = false; // Disable so that individual RPSS settings are used
     pcie_cfg->pcie_ss_en = pcie_cfg_knob.pcie_ss_en;
     pcie_cfg->pcie_bifurcation_mode = pcie_cfg_knob.pcie_bifurcation_mode;
     pcie_cfg->pcie_clock_mode = pcie_cfg_knob.pcie_clock_mode;
@@ -258,6 +282,12 @@ void override_default_pcie_cfg(uint8_t rpss_id)
     pcie_cfg->pcie_aer_ecrc_gen_support = pcie_cfg_knob.pcie_aer_ecrc_gen_support;
     pcie_cfg->pcie_aer_ecrc_check_support = pcie_cfg_knob.pcie_aer_ecrc_check_support;
     pcie_cfg->pcie_aer_multiple_header_support = pcie_cfg_knob.pcie_aer_multiple_header_support;
+
+    /* Apply PHY knobs per lane*/
+    for (uint8_t i = 0; i < PCIE_LANE_COUNT; i++)
+    {
+        pcie_cfg->phy_lane_cfgs[i] = phy_cfg_knob.phy_lane_cfgs[i];
+    }
 
     /* Determine if CXL is supported on this RPSS */
     cxl_region_params_t cxl_region_params =

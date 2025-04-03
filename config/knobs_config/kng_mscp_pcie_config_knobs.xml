@@ -42,6 +42,10 @@
       <Member name="pcie_aer_ecrc_check_support" type="bool" default="true" help="AER ECRC Check Support for PCIeSS" />
       <Member name="pcie_aer_multiple_header_support" type="bool" default="true" help="AER Muliple-Header Support for PCIeSS" />
     </Struct>
+
+    <Struct name="pcie_prod_phy_cfg_t" help="Knobs to configure PHY per lane per RPSS">
+      <Member name="phy_lane_cfgs" type="pcie_phy_lane_cfg_t" count="16" help="Per-PHY lane configuration structure" />
+    </Struct>
   </Structs>
 
   <!-- namespace indicates the GUID namespace the values are stored in -->
@@ -49,6 +53,7 @@
     <!-- PCIe -->
     <Knob name="pcie_configuration_mirroring" type = "bool" default="false" help = "Set to true to mirror RPSS configurations on dual SoC boards"/>
     <Knob name="die1_rpss_enabled" type="bool" default="true" help="Set to false to disable die1 RPSS instances"/>
+    
     <Knob name="pcie_rpss0_cfg" type="pcie_prod_cfg_t" />
     <Knob name="pcie_rpss1_cfg" type="pcie_prod_cfg_t" />
     <Knob name="pcie_rpss2_cfg" type="pcie_prod_cfg_t" />
@@ -57,6 +62,15 @@
     <Knob name="pcie_rpss5_cfg" type="pcie_prod_cfg_t" />
     <Knob name="pcie_rpss6_cfg" type="pcie_prod_cfg_t" />
     <Knob name="pcie_rpss7_cfg" type="pcie_prod_cfg_t" />
+
+    <Knob name="pcie_rpss0_phy_cfg" type="pcie_prod_phy_cfg_t" />
+    <Knob name="pcie_rpss1_phy_cfg" type="pcie_prod_phy_cfg_t" />
+    <Knob name="pcie_rpss2_phy_cfg" type="pcie_prod_phy_cfg_t" />
+    <Knob name="pcie_rpss3_phy_cfg" type="pcie_prod_phy_cfg_t" />
+    <Knob name="pcie_rpss4_phy_cfg" type="pcie_prod_phy_cfg_t" />
+    <Knob name="pcie_rpss5_phy_cfg" type="pcie_prod_phy_cfg_t" />
+    <Knob name="pcie_rpss6_phy_cfg" type="pcie_prod_phy_cfg_t" />
+    <Knob name="pcie_rpss7_phy_cfg" type="pcie_prod_phy_cfg_t" />
 
     <!--                                                          {pcie_rp_en, pcie_rp_port_num, pcie_rp_is_slot, pcie_rp_slot_num, pcie_rp_hotplug_capable, pcie_rp_cap_en_rel_order, pcie_rp_ide_support, pcie_rp_stream_pcrc_en, pcie_rp_ide_rekey_support, pcie_rp_ide_sync_msg_threshold, pcie_rp_tee_support, pcie_rp_fips_test, pcie_rp_ras_mode, pcie_rp_aer_ecrc_gen_support, pcie_rp_aer_ecrc_check_support, pcie_rp_aer_multiple_header_support, pcie_rp_aspm_support, pcie_rp_l0s_entrance_latency,   pcie_rp_l1_entrance_latency,   pcie_rp_l1_exit_latency,     pcie_rp_l0s_exit_latency,   pcie_rp_ltr_support, pcie_rp_clock_mode, pcie_rp_stagger_time, pcie_rp_loopback_mode, pcie_rp_cap_gen_speed, pcie_rp_cap_mps,     pcie_rp_rcb_mode, pcie_rp_fast_link_mode, pcie_rp_gen3_eq_disable, pcie_rp_gen4_eq_disable, pcie_rp_gen5_eq_disable, pcie_rp_eq_bypass_support, pcie_rp_no_eq_support, pcie_rp_msi_ext_data_support, pcie_rp_msi_64bit_support, pcie_rp_msi_multi_msg_support}-->
     <Knob name="pcie_rpss0_rp0_cfg" type="pcie_rp_cfg_t" default="{true,       0,                false,           0,                false,                   true,                     false,               false,                  false,                     251,                            false,               PCIE_FIPS_NO_TEST, PCIE_RAS_MODE_EN, true,                         true,                           true,                                PCIE_L1_SUPPORT,      PCIE_L0S_ENTRANCE_LATENCY_4_US, PCIE_L1_ENTRANCE_LATENCY_8_US, PCIE_L1_LATENCY_32_TO_64_US, PCIE_L0S_LATENCY_2_TO_4_US, true,                PCIE_CLOCK_SRIS,    PCIE_STAGGER_NONE,    PCIE_LOOPBACK_NONE,    PCIE_GEN_1,            PCIE_MAX_1024B_SIZE, PCIE_RP_RCB_64B,  false,                  false,                   false,                   false,                   false,                     false,                 true,                         true,                      PCIE_MSI_REQ_1_VECTOR}"/>

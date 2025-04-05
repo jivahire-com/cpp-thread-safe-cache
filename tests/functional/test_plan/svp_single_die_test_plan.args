@@ -46,3 +46,6 @@
 
 ## Warm Start Tests
 ./../../../tests/functional/test_suites/warm_start_tests/warm_start_test.robot
+
+## SVP Teardown
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot

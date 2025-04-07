@@ -44,7 +44,7 @@ stages:
       ArtifactName: ACCEL
       Pool: 1pfw-kingsgate-big-fpga
       build_id: $(BUILD_ID)
-      TestPlan: .\tests\functional\test_plan\fpga_nightly_stress_test_plan.args
+      TestPlan: .\tests\functional\test_plan\fpga_nightly_stress_accel_test_plan.args
       ifwi: 'kingsgate.ifwi.ap.baremetal.debug.dat'
 
 # This is to tag the commits that pass weekend stress tests.

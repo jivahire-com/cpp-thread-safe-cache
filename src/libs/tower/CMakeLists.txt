@@ -11,6 +11,7 @@ target_link_libraries(${TARGET}
     fwlib.lib.cfg_mgr
     fwlib.service.iccBase
     silibs_platform
+    ms::lib::accelerator_ip
     ms::lib::crash_dump
     ms::lib::error_codes
     ms::lib::hsp_firmware_headers

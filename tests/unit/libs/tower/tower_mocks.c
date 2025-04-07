@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include <FpFwCMocka.h> // IWYU pragma: keep
+#include <accelerator_ip.h>
 #include <atu_lib.h>
 #include <cmocka.h> // IWYU pragma: keep
 #include <fpfw_cfg_mgr.h>
@@ -122,5 +123,12 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, 
 
 bool __wrap_system_info_is_hsp_present()
 {
+    return mock_type(bool);
+}
+
+bool __wrap_accel_is_isolation_enabled(ACCEL_ID acc_id)
+{
+    check_expected(acc_id);
+
     return mock_type(bool);
 }

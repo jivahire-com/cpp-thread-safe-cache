@@ -13,6 +13,7 @@
 /*-------------------------------- Includes ---------------------------------*/
 #include "accelerator_ip.h"
 
+#include <DbgPrint.h>   // for FPFW_DBGPRINT_INFO, FPFW_DBGPRINT_ERROR
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <_addressblock_0x100000_regs.h>
 #include <accel_intr.h>          // for accel_intr_irq_init
@@ -477,17 +478,25 @@ int32_t scp_accelerators_init(void)
     // Init all available Accelerator instances
     for (uint32_t index = 0; index < accel_ctxt_size; index++)
     {
-        // TODO (ADO 1728772) : init any particular accelerator instance only if that is enabled in fuse
         if (p_ss_ctxt[index].accelip_metadata.die_instance == current_die_instance)
         {
-            update_accel_ctxt_from_knobs(&p_ss_ctxt[index]);
-            ret = init_accelerator(&p_ss_ctxt[index]);
-            printf("accel lib: Die %d type %d instance %d stat %d\n",
-                   p_ss_ctxt[index].accelip_metadata.die_instance,
-                   p_ss_ctxt[index].accelip_metadata.accel_type,
-                   p_ss_ctxt[index].accelip_metadata.accel_instance,
-                   ret);
-            FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
+            if (!accel_is_isolation_enabled(get_accelip_type(p_ss_ctxt[index].accelip_metadata.accel_type)))
+            {
+                update_accel_ctxt_from_knobs(&p_ss_ctxt[index]);
+                ret = init_accelerator(&p_ss_ctxt[index]);
+                FPFW_DBGPRINT_INFO("accel lib: Die %d type %d instance %d stat %d\n",
+                                   p_ss_ctxt[index].accelip_metadata.die_instance,
+                                   p_ss_ctxt[index].accelip_metadata.accel_type,
+                                   p_ss_ctxt[index].accelip_metadata.accel_instance,
+                                   ret);
+                FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
+            }
+            else
+            {
+                FPFW_DBGPRINT_INFO("Accel type %d on Die %d has been isolated\n",
+                                   p_ss_ctxt[index].accelip_metadata.accel_type,
+                                   current_die_instance);
+            }
         }
     }
 

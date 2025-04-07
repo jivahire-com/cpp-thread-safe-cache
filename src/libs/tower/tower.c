@@ -10,7 +10,8 @@
 /*------------- Includes -----------------*/
 
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
-#include <atu_lib.h>    // for atu_map, atu_unmap, atu_map_entry_t
+#include <accelerator_ip.h>
+#include <atu_lib.h> // for atu_map, atu_unmap, atu_map_entry_t
 #include <bug_check.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_status.h>
@@ -300,18 +301,32 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     tower_sequence_params.tower_configure_sdmss_apu = true;
     tower_sequence_params.tower_configure_sdmss_fmu = true;
 
-    // TODO: Isolation information should be derived from fuse and knob values
-    // For now, assume isolation is not enabled for now and configure the sdmss tower for isolation disabled
-    printf("Configure SDMSS tower for isolation disabled\n");
-    tower_sequence_params.tower_sdmss_isolation_enabled = false;
+    if (accel_is_isolation_enabled(ACCEL_ID_SDM))
+    {
+        printf("Configure SDMSS tower for isolation enabled\n");
+        tower_sequence_params.tower_sdmss_isolation_enabled = true;
+    }
+    else
+    {
+        printf("Configure SDMSS tower for isolation disabled\n");
+        tower_sequence_params.tower_sdmss_isolation_enabled = false;
+    }
 
     // CDEDSS Tower
-    // Send a message to HSP for configuring CDESS tower (along with isolation enabled/disabled)
-    // TODO: Isolation information should be derived from fuse and knob values
-    // For now, assume isolation is not enabled for now and configure the CDESS tower for isolation disabled
+    // Send a message to HSP for configuring CDEDSS tower (along with isolation enabled/disabled)
     if (system_info_is_hsp_present())
     {
-        hsp_send_recv_post_scp_init_tower_config(icc_ctx, HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED);
+        if (accel_is_isolation_enabled(ACCEL_ID_CDED))
+        {
+            printf("Configure CDEDSS tower for isolation enabled\n");
+            hsp_send_recv_post_scp_init_tower_config(icc_ctx, 0);
+        }
+        else
+        {
+            printf("Configure CDEDSS tower for isolation disabled\n");
+            hsp_send_recv_post_scp_init_tower_config(icc_ctx, HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED);
+        }
+
         // Not sure if we need to add more variables to the tower struct and keep track of it
     }
 

@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.cfg_mgr
         ms::cmocka::mocks
         ms::cmocka::testrunner
+        ms::lib::accelerator_ip
         ms::lib::error_handler
         ms::lib::hsp_firmware_headers
         ms::lib::tower
@@ -39,6 +40,7 @@ unit_test_target(${TARGET})
 # Mock the functions needed
 mock_target(${TARGET}
     tower_sequence_configure_towers
+    accel_is_isolation_enabled
     atu_map
     atu_unmap
     idsw_get_platform_sdv

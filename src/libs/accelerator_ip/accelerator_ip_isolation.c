@@ -80,7 +80,7 @@ int32_t scp_accelerators_isolation_control(void)
 
             ret = accelip_ss_enable_ip_isolation(atu_map_entry.mscp_start_address,
                                                  p_ss_ctxt[index].accelip_metadata.accel_type,
-                                                 p_ss_ctxt[index].p_init_params->accelip_ss_cfg->isolation_enable);
+                                                 accel_is_isolation_enabled(get_accelip_type(p_ss_ctxt[index].accelip_metadata.accel_type)));
             FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
 
             ret = atu_unmap(ATU_ID_MSCP, &atu_map_entry);

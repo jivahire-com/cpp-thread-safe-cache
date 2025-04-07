@@ -306,7 +306,7 @@ void cb_fun(void* context)
 
 TEST_FUNCTION(accelip_pre_boot_config_pass_test, nullptr, nullptr)
 {
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_count(__wrap_idsw_get_die_id, SOC_D0, 3);
     expect_any_always(__wrap_FpFwAssert, expression);
 
     // In init_accelerator()
@@ -320,7 +320,7 @@ TEST_FUNCTION(accelip_pre_boot_config_pass_test, nullptr, nullptr)
 
 TEST_FUNCTION(accelip_pre_boot_config_pass_test2, nullptr, nullptr)
 {
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_count(__wrap_idsw_get_die_id, SOC_D0, 3);
     expect_any_always(__wrap_FpFwAssert, expression);
 
     // In init_accelerator()
@@ -335,7 +335,7 @@ TEST_FUNCTION(accelip_pre_boot_config_pass_test2, nullptr, nullptr)
 TEST_FUNCTION(accelip_pre_boot_config_accelip_ss_init_fail_test, nullptr, nullptr)
 {
     // Accelip ss init fail
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_count(__wrap_idsw_get_die_id, SOC_D0, 3);
     expect_any_always(__wrap_FpFwAssert, expression);
 
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
@@ -350,7 +350,7 @@ TEST_FUNCTION(test_scp_accelerators_init_invalid_accel, nullptr, nullptr)
     uint32_t accel_ctxt_size = 0;
 
     // In scp_accelerators_init()
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_count(__wrap_idsw_get_die_id, SOC_D0, 3);
     expect_value(__wrap_FpFwAssert, expression, true);
     expect_value(__wrap_FpFwAssert, expression, false);
     expect_value(__wrap_FpFwAssert, expression, false);
@@ -371,7 +371,7 @@ TEST_FUNCTION(test_scp_accelerators_init_invalid_accel, nullptr, nullptr)
 
 TEST_FUNCTION(test_scp_accelerators_init_intr_init_failed, nullptr, nullptr)
 {
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_count(__wrap_idsw_get_die_id, SOC_D0, 3);
     expect_any_always(__wrap_FpFwAssert, expression);
 
     // In init_accelerator()
@@ -705,7 +705,7 @@ TEST_FUNCTION(accelip_emcpu_reset_send_invalid_cb, nullptr, nullptr)
 
 TEST_FUNCTION(accelip_isolation_control_test, nullptr, nullptr)
 {
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_count(__wrap_idsw_get_die_id, SOC_D0, 3);
     expect_any_always(__wrap_FpFwAssert, expression);
     will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 2);
     will_return_count(__wrap_atu_unmap, SILIBS_SUCCESS, 2);

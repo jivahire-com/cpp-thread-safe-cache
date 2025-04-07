@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include "ap_core.h"
 
+#include "accelerator_ip.h"
 #include "ap_core_i.h"
 #include "ap_core_init.h"
 
@@ -301,7 +302,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 
             break;
         case STARTUP_SDM_ITCM_LOAD:
-            if (system_info_is_hsp_present())
+            if (system_info_is_hsp_present() && !accel_is_isolation_enabled(ACCEL_ID_SDM))
             {
                 ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_SDM_ITCM);
             }
@@ -312,7 +313,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 
             break;
         case STARTUP_SDM_DTCM_LOAD:
-            if (system_info_is_hsp_present())
+            if (system_info_is_hsp_present() && !accel_is_isolation_enabled(ACCEL_ID_SDM))
             {
                 ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_SDM_DTCM);
             }
@@ -323,7 +324,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 
             break;
         case STARTUP_CDED_ITCM_LOAD:
-            if (system_info_is_hsp_present())
+            if (system_info_is_hsp_present() && !accel_is_isolation_enabled(ACCEL_ID_CDED))
             {
                 ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_CDED_ITCM);
             }
@@ -334,7 +335,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 
             break;
         case STARTUP_CDED_DTCM_LOAD:
-            if (system_info_is_hsp_present())
+            if (system_info_is_hsp_present() && !accel_is_isolation_enabled(ACCEL_ID_CDED))
             {
                 ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_CDED_DTCM);
             }
@@ -345,7 +346,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 
             break;
         case STARTUP_KMP_LOAD:
-            if (system_info_is_hsp_present())
+            if (system_info_is_hsp_present() && !accel_is_isolation_enabled(ACCEL_ID_CDED))
             {
                 ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_KMP);
             }

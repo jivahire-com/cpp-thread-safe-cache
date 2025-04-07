@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+
 #include "startup_shutdown.h"
 
 #include "startup_shutdown_i.h"
@@ -19,7 +20,10 @@
 #include <FpFwUtils.h>
 #include <debug.h>
 #include <fpfw_cfg_mgr.h>
+#include <fpfw_icc_base.h>
 #include <fpfw_init.h>
+#include <hsp_firmware_headers.h>
+#include <icc_platform_defines.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <tx_api.h>

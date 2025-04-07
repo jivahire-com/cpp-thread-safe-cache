@@ -20,6 +20,8 @@ target_link_libraries(${TARGET}
         ms::lib::boot_status
         ms::lib::threadx
         ms::service::scp_startup_shutdown
+        ms::lib::hsp_firmware_headers
+        kng.lib.hsp_firmware_headers
         silibs::atu
         silibs::idsw_kng
         silibs::kng_silibs_platform
@@ -44,4 +46,5 @@ mock_target(${TARGET}
     sos_register_ssi
     sos_start_phase
     FpFwLockInitialize
+    fpfw_icc_base_recv
 )

@@ -22,6 +22,7 @@ target_link_libraries(
             ms::lib::crash_dump
             ms::lib::error_codes
             ms::service::scp_startup_shutdown
+            kng.lib.hsp_firmware_headers
         PUBLIC
             fwlib.lib.assert
             fwlib.dfwk

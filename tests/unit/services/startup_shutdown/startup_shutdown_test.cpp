@@ -15,10 +15,12 @@
 
 extern "C" {
 
-#include <CMockaWrapper.h>  // for expect_value, check_expected_ptr, Cmo...
-#include <DfwkCommon.h>     // for PDFWK_DEVICE_HEADER, DFWK_ASYNC_REQUE...
-#include <DfwkStatus.h>     // for DFWK_SUCCESS
-#include <FpFwLinkedList.h> // for PFPFW_LIST_HANDLE, FPFW_LIST_HANDLE
+#include <CMockaWrapper.h>        // for expect_value, check_expected_ptr, Cmo...
+#include <DfwkCommon.h>           // for PDFWK_DEVICE_HEADER, DFWK_ASYNC_REQUE...
+#include <DfwkStatus.h>           // for DFWK_SUCCESS
+#include <FpFwLinkedList.h>       // for PFPFW_LIST_HANDLE, FPFW_LIST_HANDLE
+#include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
+#include <icc_platform_defines.h>
 #include <startup_shutdown.h>
 #include <startup_shutdown_i.h>
 #include <startup_shutdown_init.h>

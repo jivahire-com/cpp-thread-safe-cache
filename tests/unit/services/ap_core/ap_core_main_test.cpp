@@ -425,6 +425,7 @@ AP_CORE_TEST(dispatch_ap_core_boot, setup, NULL)
     // expect a call to get boot_core
     expect_value(__wrap_ap_core_util_boot_core, p_context, s_ap_core_ctx);
     will_return(__wrap_ap_core_util_boot_core, TEST_BOOT_CORE);
+    will_return(__wrap_system_info_is_hsp_present, true);
 
     // expect that die info is stored in SDS
     shared_scp_exp_csr_die_config test_die_config = {.as_uint32 = 42};
@@ -458,6 +459,7 @@ AP_CORE_TEST(dispatch_cluster_core_init, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_CLUSTER_CORE_INIT;
+    test_request.boot_type = COLD_BOOT;
 
     // expect a call to turn on cluster PPUs
     expect_value(__wrap_ap_core_ppu_clusters_on, p_context, s_ap_core_ctx);
@@ -655,6 +657,7 @@ AP_CORE_TEST(dispatch_sdm_itcm_load, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_SDM_ITCM_LOAD;
+    test_request.boot_type = COLD_BOOT;
 
     // Set up expectations
     // In ap_core_dispatch()
@@ -686,6 +689,7 @@ AP_CORE_TEST(dispatch_sdm_itcm_load_hsp_not_present, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_SDM_ITCM_LOAD;
+    test_request.boot_type = COLD_BOOT;
 
     // Set up expectations
     // In ap_core_dispatch()
@@ -701,6 +705,7 @@ AP_CORE_TEST(dispatch_sdm_dtcm_load, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_SDM_DTCM_LOAD;
+    test_request.boot_type = COLD_BOOT;
 
     // Set up expectations
     // In ap_core_dispatch()
@@ -739,6 +744,7 @@ AP_CORE_TEST(dispatch_sdm_dtcm_load_hsp_not_present, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_SDM_DTCM_LOAD;
+    test_request.boot_type = COLD_BOOT;
 
     // Set up expectations
     // In ap_core_dispatch()
@@ -754,6 +760,7 @@ AP_CORE_TEST(dispatch_cded_itcm_load, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_CDED_ITCM_LOAD;
+    test_request.boot_type = COLD_BOOT;
 
     // Set up expectations
     // In ap_core_dispatch()
@@ -785,6 +792,7 @@ AP_CORE_TEST(dispatch_cded_itcm_load_hsp_not_present, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_CDED_ITCM_LOAD;
+    test_request.boot_type = COLD_BOOT;
 
     // Set up expectations
     // In ap_core_dispatch()
@@ -800,6 +808,7 @@ AP_CORE_TEST(dispatch_cded_dtcm_load, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_CDED_DTCM_LOAD;
+    test_request.boot_type = COLD_BOOT;
 
     // Set up expectations
     // In ap_core_dispatch()
@@ -838,6 +847,7 @@ AP_CORE_TEST(dispatch_cded_dtcm_load_hsp_not_present, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_CDED_DTCM_LOAD;
+    test_request.boot_type = COLD_BOOT;
 
     // Set up expectations
     // In ap_core_dispatch()
@@ -853,10 +863,10 @@ AP_CORE_TEST(dispatch_kmp_load, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_KMP_LOAD; // unhandled stage
+    test_request.boot_type = COLD_BOOT;
 
     // Set up expectations
     will_return(__wrap_system_info_is_hsp_present, true);
-    will_return_always(__wrap_idsw_get_die_id, 0x0);
 
     expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
     will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
@@ -872,6 +882,7 @@ AP_CORE_TEST(dispatch_kmp_load, setup, NULL)
     };
     expect_memory(__wrap_fpfw_icc_base_send, params->payload_buffer, &send_request, sizeof(send_request));
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
 
     // Call API under test
     assert_non_null(s_dispatch_routine);
@@ -887,7 +898,6 @@ AP_CORE_TEST(dispatch_kmp_load, setup, NULL)
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
 
     // Call the callback to simulate the response
-    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
     fw_load_cb(&icc_hspmbx_ctx, 0, FPFW_STATUS_SUCCESS);
 }
 
@@ -898,6 +908,7 @@ AP_CORE_TEST(dispatch_kmp_hsp_not_present, setup, NULL)
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_KMP_LOAD; // unhandled stage
+    test_request.boot_type = COLD_BOOT;
 
     // Set up expectations
     will_return(__wrap_system_info_is_hsp_present, false);

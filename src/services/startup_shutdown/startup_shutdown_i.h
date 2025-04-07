@@ -11,7 +11,7 @@
 
 #include "startup_shutdown.h"
 #include "startup_shutdown_ssi.h"
-
+#include <DbgPrint.h>
 #include <DfwkCommon.h>
 #include <FpFwAssert.h>
 #include <FpFwLinkedList.h>
@@ -33,9 +33,9 @@
 #else
 #define SOS_LOG_TRACE(fmt, ...) 
 #endif
-#define SOS_LOG_INFO(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
-#define SOS_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
-#define SOS_LOG_CRIT(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define SOS_LOG_INFO(fmt, ...) FPFW_DBGPRINT_INFO(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define SOS_LOG_WARN(fmt, ...) FPFW_DBGPRINT_VERBOSE(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define SOS_LOG_CRIT(fmt, ...) FPFW_DBGPRINT_ERROR(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define DEFAULT_SOS_TIMEOUT_MS 120000
 
 /*-------------- Typedefs ----------------*/

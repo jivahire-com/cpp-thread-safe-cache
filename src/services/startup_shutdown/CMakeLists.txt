@@ -9,9 +9,12 @@ add_library(${TARGET}
 target_link_libraries(${TARGET}
     PUBLIC
         ms::lib::error_codes
+        ms::lib::system_info
+        fwlib.lib.interface.platform.dbgprint
     PRIVATE
         fwlib.dfwk
         fwlib.lib.interface.platform.errorhandler
+        kng.lib.hsp_firmware_headers
 )
 
 target_include_directories(${TARGET}

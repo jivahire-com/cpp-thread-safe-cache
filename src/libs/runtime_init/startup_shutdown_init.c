@@ -20,6 +20,7 @@
 #include <stdbool.h>               // for false, true
 #include <stdint.h>                // for uintptr_t
 #include <stdio.h>                 // for NULL, printf
+#include <system_info.h>           // for system_info_is_warm_start
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -44,7 +45,7 @@ void boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_cont
     FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);
 }
 
-FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx"))
+FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "sysinfo"))
 {
     static sos_interface_t sos_interface;
     sos_interface_init(fpfw_init_get_handle("sos_svc"), &sos_interface, true);
@@ -63,9 +64,19 @@ FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx"))
     // send synchronous and asynchronous startup stage start requests
     static startup_start_phase_request_t startup_phase_request;
     DfwkAsyncRequestInitialize((void*)&startup_phase_request.header.async, sizeof(startup_phase_request));
-    // queue the boot phases for this reset type - cold boot for now
-    sos_start_phase((void*)&sos_interface, NULL, COLD_BOOT, STARTUP_PHASE_MSCP_ASYNC, NULL, NULL); // synchronous
-    sos_start_phase((void*)&sos_interface, &startup_phase_request, COLD_BOOT, STARTUP_PHASE_AP_ASYNC, boot_completion, NULL); // asynchronous
 
+    // Determine the boot type based on the system_info_is_warm_start() API
+    if (!system_info_is_warm_start())
+    {
+        // queue the boot phases for this reset type
+        sos_start_phase((void*)&sos_interface, NULL, COLD_BOOT, STARTUP_PHASE_MSCP_ASYNC, NULL, NULL); // synchronous
+        sos_start_phase((void*)&sos_interface, &startup_phase_request, COLD_BOOT, STARTUP_PHASE_AP_ASYNC, boot_completion, NULL); // asynchronous
+    }
+    else
+    {
+        // queue the boot phases for this reset type
+        sos_start_phase((void*)&sos_interface, NULL, WARM_BOOT_POST_AP, STARTUP_PHASE_MSCP_ASYNC, NULL, NULL); // synchronous
+        sos_start_phase((void*)&sos_interface, &startup_phase_request, WARM_BOOT_POST_AP, STARTUP_PHASE_AP_ASYNC, boot_completion, NULL); // asynchronous
+    }
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &sos_interface};
 }

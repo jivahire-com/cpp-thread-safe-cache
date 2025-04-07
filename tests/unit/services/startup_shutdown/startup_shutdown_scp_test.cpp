@@ -14,7 +14,11 @@
 
 extern "C" {
 
-#include <CMockaWrapper.h>      // for check_expected, check_expected_ptr
+#include <CMockaWrapper.h>        // for check_expected, check_expected_ptr
+#include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
+#include <hsp_firmware_headers.h>
+#include <icc_platform_defines.h>
+#include <startup_shutdown.h>   // for sos_queue_entry_t, sos_queue_start_phase
 #include <startup_shutdown_i.h> // for sos_queue_start_phase, sos_thread_...
 #include <startup_shutdown_init.h>
 #include <startup_shutdown_ssi.h> // for _ssi_startup_stage, _startup_type
@@ -35,6 +39,8 @@ extern "C" {
 extern "C" {
 unsigned __real_sos_core_boot_stage_count();
 const startup_shutdown_boot_stage_t* __real_sos_core_boot_stages();
+static icc_base_recv_complete_notify fw_load_cb = NULL;
+static void* cb_ctx = NULL;
 
 int32_t __wrap_FpFwLockAcquire(PFPFW_LOCK Lock)
 {
@@ -53,7 +59,17 @@ void __wrap_FpFwLockRelease(PFPFW_LOCK Lock, FPFW_LOCK_STATE OldState)
 fpfw_status_t __wrap_fpfw_icc_base_send(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_send_req_t* params)
 {
     check_expected_ptr(icc_ctx);
-    FPFW_UNUSED(params);
+    assert_non_null(params->payload_buffer);
+    return mock_type(fpfw_status_t);
+}
+
+fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_recv_req_t* params)
+{
+    check_expected(icc_ctx);
+    check_expected(params->recv_cmd_code);
+    fw_load_cb = params->cb;
+    cb_ctx = params->cb_ctx;
+
     return mock_type(fpfw_status_t);
 }
 
@@ -135,41 +151,75 @@ SOS_TEST(sos_shutdown_timeout, NULL, NULL)
     assert_int_equal(return_timeout, test_time_out);
 }
 
-// test for sos_core_shutdown_handler
-SOS_TEST(sos_core_shutdown_handler, NULL, NULL)
+// test for sos_core_shutdown_handler SHUTDOWN case
+SOS_TEST(sos_core_shutdown_handler_shutdown, NULL, NULL)
 {
     fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xBADDBEEF);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
     sos_icc_init(test_icc_ctx);
 
-    will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_FAIL);
     expect_function_call(__wrap_FpFwLockAcquire);
     expect_function_call(__wrap_FpFwLockRelease);
-    expect_value(__wrap_fpfw_icc_base_send, icc_ctx, test_icc_ctx);
-    assert_true(KNG_FAILED(sos_core_shutdown_handler(SHUTDOWN)));
-
-    will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_FAIL);
-    expect_function_call(__wrap_FpFwLockAcquire);
-    expect_function_call(__wrap_FpFwLockRelease);
-    expect_value(__wrap_fpfw_icc_base_send, icc_ctx, test_icc_ctx);
-    assert_true(KNG_FAILED(sos_core_shutdown_handler(COLD_RESET)));
-
-    will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_FAIL);
-    expect_function_call(__wrap_FpFwLockAcquire);
-    expect_function_call(__wrap_FpFwLockRelease);
-    expect_value(__wrap_fpfw_icc_base_send, icc_ctx, test_icc_ctx);
-    assert_true(KNG_FAILED(sos_core_shutdown_handler(MSCP_SUBSYS_RESET)));
-
-    expect_function_call(__wrap_FpFwLockAcquire);
-    expect_function_call(__wrap_FpFwLockRelease);
-    assert_true(KNG_FAILED(sos_core_shutdown_handler(AP_WARM_RESET)));
 
     will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_SUCCESS);
-    expect_function_call(__wrap_FpFwLockAcquire);
-    expect_function_call(__wrap_FpFwLockRelease);
     expect_value(__wrap_fpfw_icc_base_send, icc_ctx, test_icc_ctx);
-    assert_true(KNG_SUCCEEDED(sos_core_shutdown_handler(SHUTDOWN)));
+
+    sos_core_shutdown_handler(SHUTDOWN);
+}
+
+// test for shutdown handler cb
+SOS_TEST(sos_shutdown_req_cb, NULL, NULL)
+{
+    void* request = (void*)0x12345678;
+    fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xBADDBEEF);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+    sos_icc_init(test_icc_ctx);
 
     expect_function_call(__wrap_FpFwLockAcquire);
     expect_function_call(__wrap_FpFwLockRelease);
-    assert_true(KNG_FAILED(sos_core_shutdown_handler(SHUTDOWN)));
+    shutdown_req_cb(request, DFWK_SUCCESS);
+}
+
+// test for prepare_reset_recv_cb
+SOS_TEST(prepare_reset_recv_cb, NULL, NULL)
+{
+    fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xBADDBEEF);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+    sos_icc_init(test_icc_ctx);
+
+    kng_hsp_mailbox_cmd_core_reset_complete_notify test_send_params = {
+        .header.cmd = HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_RSP,
+    };
+
+    will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_send, icc_ctx, test_icc_ctx);
+
+    prepare_reset_recv_cb(&test_send_params, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_RSP, DFWK_SUCCESS);
+}
+
+// test for sos_core_shutdown_handler COLD_RESET case
+SOS_TEST(sos_core_shutdown_handler_cold_reset, NULL, NULL)
+{
+    fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xBADDBEEF);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    sos_icc_init(test_icc_ctx);
+
+    expect_function_call(__wrap_FpFwLockAcquire);
+    expect_function_call(__wrap_FpFwLockRelease);
+
+    will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_send, icc_ctx, test_icc_ctx);
+
+    sos_core_shutdown_handler(COLD_RESET);
 }

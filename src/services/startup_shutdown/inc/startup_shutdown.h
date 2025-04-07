@@ -16,11 +16,15 @@
 #include <FpFwLinkedList.h>
 #include <kng_error.h>
 #include <stdint.h>
+#include <fpfw_status.h>
+#include <fpfw_icc_base.h>
+#include <fpfw_icc_base.h>
+#include <fpfw_icc_base.h>
+#include <hsp_firmware_headers.h> // for kng_hsp_mailbox_msg
 
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
-
 /**
  *  Synchonous and Asynchronous Interface Request IDs
  */
@@ -88,6 +92,13 @@ typedef struct _startup_shutdown_request_t
     KNG_STATUS result;
 } startup_shutdown_request_t, *pstartup_shutdown_request_t;
 
+typedef struct
+{
+    bool in_use;
+    kng_hsp_mailbox_msg msg;
+    fpfw_icc_base_send_req_t hsp_send_params;
+} shutdown_icc_req_t;
+
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
@@ -147,3 +158,8 @@ void sos_shutdown(PDFWK_INTERFACE_HEADER p_interface,
                   ssi_shutdown_type_t shutdown_type,
                   DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
                   void* p_completion_context);
+
+void shutdown_req_cb(void* context, fpfw_status_t status);
+void prepare_reset_recv_cb(void* context, size_t cmd_code, fpfw_status_t status);
+void receive_prep_core_reset(void* context, fpfw_status_t status);
+

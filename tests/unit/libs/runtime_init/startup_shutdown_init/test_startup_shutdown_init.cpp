@@ -15,6 +15,7 @@ extern "C" {
 #include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
 #include <FpFwUtils.h>       // for FPFW_UNUSED
 #include <fpfw_init.h>       // for fpfw_init_result_t, fpfw_init_component_t
+#include <hsp_firmware_headers.h>
 #include <startup_shutdown.h>
 #include <startup_shutdown_init.h>
 #include <startup_shutdown_ssi.h>
@@ -89,7 +90,15 @@ void __wrap_FpFwLockInitialize(PFPFW_LOCK Lock)
     FPFW_UNUSED(Lock);
     function_called();
 }
+fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_recv_req_t* params)
+{
+    check_expected(icc_ctx);
+    check_expected(params->recv_cmd_code);
+
+    return mock_type(fpfw_status_t);
 }
+}
+
 //
 // Tests
 //
@@ -134,6 +143,10 @@ TEST_FUNCTION(sos_init_sos_int, nullptr, nullptr)
     // intercore communication init
     will_return(__wrap_fpfw_init_get_handle, 1234);
     expect_function_call(__wrap_FpFwLockInitialize);
+
+    expect_any(__wrap_fpfw_icc_base_recv, icc_ctx);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
 
     // now handle unit test of phase start requests
     expect_any(__wrap_DfwkAsyncRequestInitialize, Request);

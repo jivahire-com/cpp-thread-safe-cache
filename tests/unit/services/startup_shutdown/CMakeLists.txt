@@ -14,9 +14,11 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::lib::threadx
         ms::lib::error_codes
+        ms::lib::system_info
         ms::mocks::event_trace
         ms::mocks::threadx
         ms::service::scp_startup_shutdown
+        kng.lib.hsp_firmware_headers
     PUBLIC
         fwlib.lib.assert
         fwlib.dfwk
@@ -75,6 +77,7 @@ mock_target(${TARGET}
     FpFwLockAcquire
     FpFwLockRelease
     fpfw_icc_base_send
+    fpfw_icc_base_recv
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

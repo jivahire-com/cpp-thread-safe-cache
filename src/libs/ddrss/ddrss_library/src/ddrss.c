@@ -116,6 +116,8 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.ext_knobs.chi_cbusy_map_mpam_4 = config_get_chi_cbusy_map_mpam_4();
     ddrss_cfgs.ext_knobs.mc_mpam_bm_dis = config_get_mc_mpam_bm_dis();
     ddrss_cfgs.ext_knobs.mc_mpam_bp_dis = config_get_mc_mpam_bp_dis();
+    ddrss_cfgs.ext_knobs.mc_mpam_mbw_min_overflow_max = config_get_mc_mpam_mbw_min_overflow_max();
+    ddrss_cfgs.ext_knobs.mc_mpam_mbw_max_overflow_max = config_get_mc_mpam_mbw_max_overflow_max();
     ddrss_cfgs.ext_knobs.mc_mpam_winwd = config_get_mc_mpam_winwd();
     ddrss_cfgs.ext_knobs.mc_mpam_mbw_xfers = config_get_mc_mpam_mbw_xfers();
     ddrss_cfgs.ext_knobs.mc_mpam_mbw_cycles = config_get_mc_mpam_mbw_cycles();

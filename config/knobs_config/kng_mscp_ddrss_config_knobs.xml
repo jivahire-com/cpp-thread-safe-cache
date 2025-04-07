@@ -34,6 +34,8 @@
     <Knob name="ecs_readout_interval" type="uint8_t" default="20" help="Periodic ECS readout interval value in DDRSS_INTERVAL_TIME_UNIT. 0 : 256 units; 1 to 255 : number of units.  To disable, set periodic_ecs_readout_en = 0" />
     <Knob name="ecs_readout_interval_unit" type="uint8_t" default="3" help="DDRSS_INTERVAL_UNIT_1US = 0, DDRSS_INTERVAL_UNIT_100US = 1, DDRSS_INTERVAL_UNIT_10MS = 2, DDRSS_INTERVAL_UNIT_1SEC = 3, DDRSS_INTERVAL_UNIT_1MIN = 4, DDRSS_INTERVAL_UNIT_1HOUR = 5" />
     <Knob name="erhm_en" type="uint8_t" default="0x0" help="Enable Enhanced Row Hammer mitigation logic 0 - Disable, 1 - Enable, 2 - AUTO (Enable if DIMM requests)" />
+    <Knob name="mc_mpam_mbw_min_overflow_max" type="uint8_t" default="1" help="Number of bandwidth accounting windows worth of bandwidth in excess of a PARTID's minimum bandwidth limit to be tracked by the logic.  Must not be programmed to zero. (0x1 ~ 0xff)" />
+    <Knob name="mc_mpam_mbw_max_overflow_max" type="uint8_t" default="1" help="Number of bandwidth accounting windows worth of bandwidth in excess of a PARTID's maximum bandwidth limit to be tracked by the logic.  Must not be programmed to zero. (0x1 ~ 0xff)" />
     <Knob name="mc_mpam_bm_dis" type="uint8_t" default="0" help="MPAM Bandwidth Monitoring Disable. Set to 1'b1 to disable the MPAM  Bandwidth Monitoring Logic. (0 ~ 1)" />
     <Knob name="mc_mpam_bp_dis" type="uint8_t" default="0" help="MPAM Bandwidth Partitioning Disable. Set to 1'b1 to disable the  MPAM Bandwidth Partitioning Logic. (0 ~ 1)" />
     <Knob name="mc_mpam_winwd" type="uint32_t" default="0" help="Contents are identical to MPAMCFG_MBW_WINWD. (0x0 ~ 0xffffff)" />

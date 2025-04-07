@@ -67,7 +67,7 @@ class transfer_relay_protocol:
             ("dest_node" , trp_node_t),
             ("trp_msg_status", ctypes.c_int8),
             ("broadcast_type", ctypes.c_uint8),
-            ("dcp_client_id", ctypes.c_uint16),
+            ("mts_client_id", ctypes.c_uint16),
             ("trp_msg_id", ctypes.c_uint16),
             ("incoming_endpt", ctypes.c_uint32),    # pointer to trp_endpoint
             ("source_seq_num", ctypes.c_uint16),
@@ -80,7 +80,7 @@ class transfer_relay_protocol:
             self.dest_node.core_id = 0
             self.trp_msg_status = 0
             self.broadcast_type = 0
-            self.dcp_client_id = 0
+            self.mts_client_id = 0
             self.trp_msg_id = 0
             self.incoming_endpt = 0
             self.source_seq_num = 0

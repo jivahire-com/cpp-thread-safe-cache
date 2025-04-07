@@ -17,6 +17,7 @@ steps:
       git config --global http.https://azurecsi.visualstudio.com/DuvallFw/_git/mirror.cmocka/.extraheader "AUTHORIZATION: Basic $DuvallFWAuthToken"
       git config --global http.https://dev.azure.com/AzureCSI/DuvallFw/_git/mirror.cmsis_6/.extraheader "AUTHORIZATION: Basic $DuvallFWAuthToken"
       git config --global http.https://dev.azure.com/AzureCSI/DuvallFw/_git/mirror.threadx/.extraheader "AUTHORIZATION: Basic $DuvallFWAuthToken"
+      git config --global http.https://azurecsi.visualstudio.com/DuvallFw/_git/mirror.pldm.extraheader "AUTHORIZATION: Basic $DuvallFWAuthToken"
 
       # zlib internal copy
       git config --global http.https://dev.azure.com/AzureCSI/Woodinville/_git/mirror_zlib/.extraheader  "Authorization: bearer $(System.AccessToken)"

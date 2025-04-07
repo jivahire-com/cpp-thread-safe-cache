@@ -69,7 +69,7 @@ class mts_cli_trp_endpoint(trp_endpoint):
         trp_msg_hdr.src_node.core_id = self.source_cpu.value
         trp_msg_hdr.dest_node.die_id = dest_die
         trp_msg_hdr.dest_node.core_id = dest_cpu.value
-        trp_msg_hdr.dcp_client_id = client_id.value
+        trp_msg_hdr.mts_client_id = client_id.value
         trp_msg_hdr.trp_msg_id = transfer_relay_protocol.trp_msg_id_t.TRP_MSG_ID_DCP_FORWARD.value
         trp_msg_hdr.source_seq_num = self.get_next_sequence_number()
         trp_msg_hdr.payload_size = len(dcp_msg)
@@ -107,7 +107,7 @@ class mts_cli_trp_endpoint(trp_endpoint):
         logger.debug(f"TRP Header - Destination Die ID: {trp_msg_hdr.dest_node.die_id}")
         logger.debug(f"TRP Header - Destination Core ID: {trp_msg_hdr.dest_node.core_id}")
         logger.debug(f"TRP Header - Message status: {trp_msg_hdr.trp_msg_status:x}")
-        logger.debug(f"TRP Header - DCP Client ID: {trp_msg_hdr.dcp_client_id}")
+        logger.debug(f"TRP Header - DCP Client ID: {trp_msg_hdr.mts_client_id}")
         logger.debug(f"TRP Header - TRP Message ID: {trp_msg_hdr.trp_msg_id:x}")
         logger.debug(f"TRP Header - Source Sequence Number: {trp_msg_hdr.source_seq_num:x}")
         logger.debug(f"TRP Header - Payload Size: {trp_msg_hdr.payload_size:x}")

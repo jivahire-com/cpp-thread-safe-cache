@@ -21,6 +21,8 @@ target_link_libraries(${TARGET}
         fwlib.lib.assert
         fwlib.lib.status
         fwlib.lib.utils
+        fwlib.lib.pldm.protocol
+        fwlib.service.pldm
         ms::lib::error_codes
 )
 

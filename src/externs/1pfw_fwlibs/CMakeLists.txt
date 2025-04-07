@@ -94,6 +94,7 @@ set(MTS_DCP_PLATFORM_ID
     "DCP_PLATFORM_COBALT_200"
 )
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ports/inc)
 
 add_subdirectory(message_transfer_service)
 

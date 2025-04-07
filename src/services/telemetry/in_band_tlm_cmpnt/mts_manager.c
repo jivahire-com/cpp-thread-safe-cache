@@ -100,7 +100,7 @@ void in_band_tlm_cmpnt_handle_incoming_mts_msgs(void)
                         trp_msg->hdr.src_node.core_id,
                         trp_msg->hdr.dest_node.die_id,
                         trp_msg->hdr.dest_node.core_id,
-                        trp_msg->hdr.dcp_client_id,
+                        trp_msg->hdr.mts_client_id,
                         trp_msg->hdr.trp_msg_id,
                         trp_msg->hdr.trp_msg_status,
                         GET_INT_CMD_BIT(trp_msg->hdr.source_seq_num.as_uint16),
@@ -352,7 +352,7 @@ void mts_manager_send_trp_package_helper(p_tlm_package_t tlm_pkg, trp_msg_id_t m
     trp_msg.hdr.src_node.core_id = mts_get_this_core_id();
     trp_msg.hdr.dest_node.die_id = dest_die_id;
     trp_msg.hdr.dest_node.core_id = dest_core_id;
-    trp_msg.hdr.dcp_client_id = MTS_CLIENT_ID_PWR_INST_TELEM;
+    trp_msg.hdr.mts_client_id = MTS_CLIENT_ID_PWR_INST_TELEM;
     trp_msg.hdr.trp_msg_id = msg_id;
     trp_msg.hdr.trp_msg_status = TRP_STATUS_SUCCESS;
     trp_msg.hdr.broadcast_type = TRP_BROADCAST_NONE;
@@ -365,7 +365,7 @@ void mts_manager_send_trp_package_helper(p_tlm_package_t tlm_pkg, trp_msg_id_t m
                 trp_msg.hdr.src_node.core_id,
                 trp_msg.hdr.dest_node.die_id,
                 trp_msg.hdr.dest_node.core_id,
-                trp_msg.hdr.dcp_client_id,
+                trp_msg.hdr.mts_client_id,
                 trp_msg.hdr.trp_msg_id,
                 trp_msg.hdr.trp_msg_status,
                 GET_INT_CMD_BIT(trp_msg.hdr.source_seq_num.as_uint16),

@@ -1,4 +1,7 @@
 
+## Boot tests
+./../../../tests/functional/test_suites/boot_tests/uefi_boot_single_die.robot
+
 ## AVS Die 0 Tests
 ./../../../tests/functional/test_suites/avs_tests/avs_read_tests_die0.robot
 ./../../../tests/functional/test_suites/avs_tests/avs_write_tests_die0.robot

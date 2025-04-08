@@ -76,8 +76,8 @@ void exec_tlm_cmpnt_init(uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_pe
                                      0,                      // Entry input
                                      s_tlm_svc_thread_stack, // Thread stack
                                      TLM_SVC_STACK_SIZE,     // Thread stack size
-                                     3,                      // Priority
-                                     3,                      // Preempt Threshold
+                                     5,                      // Priority
+                                     5,                      // Preempt Threshold
                                      TX_NO_TIME_SLICE,
                                      TX_AUTO_START);
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);

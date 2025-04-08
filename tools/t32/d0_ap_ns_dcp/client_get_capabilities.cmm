@@ -92,7 +92,7 @@ print "    Bit 8:  CLIENT_READ_DATA_COMPLETE       [0x"+format.hex(1.,((&capabil
 print "    Bit 9:  UTC_SYNC                        [0x"+format.hex(1.,((&capabilities>>9)&1))+"]"
 print "    Bit 10: CLIENT_RESET                    [0x"+format.hex(1.,((&capabilities>>10)&1))+"]"
 print "    Bit 11: CLIENT_NOTIFICATION             [0x"+format.hex(1.,((&capabilities>>11)&1))+"]"
-print "    Bit 11: CLIENT_GET_PLATFORM_INFORMATION [0x"+format.hex(1.,((&capabilities>>12)&1))+"]"
+print "    Bit 12: CLIENT_GET_PLATFORM_INFORMATION [0x"+format.hex(1.,((&capabilities>>12)&1))+"]"
 print ""
 
 ENDDO &success_status

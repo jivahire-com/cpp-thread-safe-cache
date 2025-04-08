@@ -51,7 +51,7 @@ FPFW_INIT_COMPONENT(mts_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_ms
             {
                 .p_stack = s_mts_stack,
                 .stack_size = sizeof(s_mts_stack),
-                .priority = 5,
+                .priority = 3,
                 .time_slice_option = TX_NO_TIME_SLICE,
             },
         .trp_general_config =

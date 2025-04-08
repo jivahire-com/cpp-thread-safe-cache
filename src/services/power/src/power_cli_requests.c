@@ -289,6 +289,63 @@ static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, vo
             break;
         }
 
+        case POWER_IF_CMD_SET_PSTATE_FREQ: {
+            p_cli_request->fetch_data.pwrset_response_val.pstatefreq.pstate =
+                p_cli_request->pwrset_sub_command_args.pstatefreq.pstate;
+            p_cli_request->fetch_data.pwrset_response_val.pstatefreq.freq_ctrl =
+                p_cli_request->pwrset_sub_command_args.pstatefreq.freq_ctrl;
+            p_cli_request->fetch_data.pwrset_response_val.pstatefreq.fb_div =
+                p_cli_request->pwrset_sub_command_args.pstatefreq.fb_div;
+            p_cli_request->fetch_data.pwrset_response_val.pstatefreq.frac_div =
+                p_cli_request->pwrset_sub_command_args.pstatefreq.frac_div;
+
+            uint8_t cli_pstate = 0;
+            uint32_t cli_freq_ctrl = 0;
+            uint16_t cli_fb_div = 0;
+            uint32_t cli_frac_div = 0;
+
+            cli_pstate = p_cli_request->fetch_data.pwrset_response_val.pstatefreq.pstate;
+            cli_freq_ctrl = p_cli_request->fetch_data.pwrset_response_val.pstatefreq.freq_ctrl;
+            cli_fb_div = p_cli_request->fetch_data.pwrset_response_val.pstatefreq.fb_div;
+            cli_frac_div = p_cli_request->fetch_data.pwrset_response_val.pstatefreq.frac_div;
+
+            // Set the frequency for the pstate
+            dvfs_pll_pstate_config_t pstate_config = {0};
+            pstate_config.freq_ctrl_value = cli_freq_ctrl;
+            pstate_config.dco_div_value = cli_fb_div;
+            pstate_config.dco_frac_value = cli_frac_div;
+
+            for (unsigned int core = 0; core < core_count; ++core)
+            {
+                const uintptr_t cluster_pex_base_addr =
+                    (p_config->cluster_pex_base + (p_config->cluster_stride * core));
+                const bool core_enabled = corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core);
+
+                // Check if the core is valid and enabled
+                if (corebits_is_bit_set(p_config->platform_cores_in_die, core) && core_enabled)
+                {
+                    dvfs_pll_set_pstate_config(cluster_pex_base_addr, cli_pstate, &pstate_config);
+
+                    // below for debugging - or we may want to leave this in for testing.
+                    dvfs_pll_pstate_config_t pstate_config_read = {0};
+                    dvfs_pll_get_pstate_config(cluster_pex_base_addr, cli_pstate, &pstate_config_read);
+
+                    printf("Read after write. Core = %d, pstate = %d, freq_ctrl = 0x%lx, fb_div = 0x%04x, "
+                           "frac_div = 0x%lx\n",
+                           core,
+                           cli_pstate,
+                           (unsigned long)pstate_config_read.freq_ctrl_value,
+                           pstate_config_read.dco_div_value,
+                           (unsigned long)pstate_config_read.dco_frac_value);
+                    // end of code for debugging
+                }
+            }
+
+            // // will complete request in callback
+            DfwkAsyncRequestComplete(p_request);
+            break;
+        }
+
         default:
             DfwkAsyncRequestComplete(p_request);
             break;

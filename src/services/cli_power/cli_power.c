@@ -121,37 +121,33 @@ static uint8_t cli_power_set_get_arg_count(int subcommand_id)
     switch (subcommand_id)
     {
         case POWER_IF_CMD_SET_CAP:
+        case POWER_IF_CMD_SET_LOOP_DISABLES:
+        case POWER_IF_CMD_SET_RACK_LIMIT:
+        case POWER_IF_CMD_SET_MINUPDATE:
+        case POWER_IF_CMD_SET_NOMINAL:
+        case POWER_IF_CMD_LOG_MASK:
+        case POWER_IF_CMD_LOG_DDR:
             expected_argc = 3;
-            break;        
-
-        case POWER_IF_CMD_SET_DESIRED_PSTATE:
-            expected_argc = 5;
-            break;    
+            break;
 
         case POWER_IF_CMD_SET_PLIMIT:
         case POWER_IF_CMD_SET_FORCED:
             expected_argc = 4;
             break;    
+
+        case POWER_IF_CMD_SET_DESIRED_PSTATE:
+            expected_argc = 5;
+            break;
    
-        case POWER_IF_CMD_SET_LOOP_DISABLES:
-        case POWER_IF_CMD_SET_RACK_LIMIT:
-        case POWER_IF_CMD_SET_MINUPDATE:
-        case POWER_IF_CMD_SET_NOMINAL:
-            expected_argc = 3;
-            break;  
-        case POWER_IF_CMD_LOG_DDR:
-            expected_argc = 3;
+        case POWER_IF_CMD_SET_PSTATE_FREQ:
+            expected_argc = 6;
             break;
-        case POWER_IF_CMD_LOG_MASK:
-            expected_argc = 3;
-            break;
+
         default:
             break; 
-
     }
 
    return expected_argc;
-
 }
 
 static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char** argv, _pwrset_subcommand_args* p_pwrset_sub_command_args)
@@ -338,6 +334,40 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
             p_pwrset_sub_command_args->forcedparams.pstate = forced_pstate;
             p_pwrset_sub_command_args->forcedparams.ldodacin = forced_ldodacin;
             FpFwCliPrint("pwr set forced: pstate: %d, ldodacin - 0x%04x \n", p_pwrset_sub_command_args->forcedparams.pstate, p_pwrset_sub_command_args->forcedparams.ldodacin);
+            break;
+        }
+
+        case POWER_IF_CMD_SET_PSTATE_FREQ: {
+            if(argc != cli_power_set_get_arg_count(subcommand_id))
+            {
+                FpFwCliPrint("%-72s%s", "Usage: pwr set pstate_freq <pstate 0-31> <freq_ctrl> <fb_div> <frac_div>", "- sets Pstate freq. " );
+                return CLI_ERROR;
+            }  
+
+            uint8_t cli_pstate = 0;
+            uint32_t cli_freq_ctrl = 0;
+            uint16_t cli_fb_div = 0;
+            uint32_t cli_frac_div = 0;
+
+            cli_pstate = (uint8_t)strtoul(argv[2],0,0);
+            cli_freq_ctrl = (uint32_t)strtoul(argv[3],0,16);
+            cli_fb_div = (uint16_t)strtoul(argv[4],0,16);
+            cli_frac_div = (uint32_t)strtoul(argv[5],0,16);
+
+            if(cli_pstate > MAX_PLIMIT) 
+            {
+                FpFwCliPrint("Invalid pstate value\n");
+                return CLI_ERROR;
+            }
+
+            p_pwrset_sub_command_args->pstatefreq.pstate = cli_pstate;
+            p_pwrset_sub_command_args->pstatefreq.freq_ctrl = cli_freq_ctrl;
+            p_pwrset_sub_command_args->pstatefreq.fb_div = cli_fb_div;
+            p_pwrset_sub_command_args->pstatefreq.frac_div = cli_frac_div;
+
+            FpFwCliPrint("pwr set pstate freq: pstate = %d, freq_ctrl = 0x%lx, fb_div = 0x%lx, frac_div = 0x%lx\n",
+                p_pwrset_sub_command_args->pstatefreq.pstate, p_pwrset_sub_command_args->pstatefreq.freq_ctrl, 
+                p_pwrset_sub_command_args->pstatefreq.fb_div, p_pwrset_sub_command_args->pstatefreq.frac_div);
             break;
         }
 

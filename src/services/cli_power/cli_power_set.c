@@ -36,6 +36,7 @@ const power_cli_sub_command_dictionary_element_t power_cli_set_sub_command_dicti
     {"nominal",    NULL, POWER_IF_CMD_SET_NOMINAL        },
     {"racklimit",  NULL, POWER_IF_CMD_SET_RACK_LIMIT     },
     {"forced",     NULL, POWER_IF_CMD_SET_FORCED         },
+    {"pstate_freq", NULL, POWER_IF_CMD_SET_PSTATE_FREQ },
 };
 //clang-format on
 
@@ -155,7 +156,7 @@ void cli_power_set_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* compl
             else
             {
                 printf("\n%d", 1 << (value - 1));
-            }     
+            }    
 
             break;
         }
@@ -178,6 +179,15 @@ void cli_power_set_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* compl
             printf("\n  pwr set forced: pstate: %d, ldodacin - 0x%04x \n",
                     p_cli_request->fetch_data.pwrset_response_val.forcedparams.pstate,
                     p_cli_request->fetch_data.pwrset_response_val.forcedparams.ldodacin);
+            break;
+        }
+
+        case POWER_IF_CMD_SET_PSTATE_FREQ: {
+            printf("\n pwr set pstate table: pstate = %d, freq_ctrl = 0x%lx, fb_div = 0x%04x, frac_div = 0x%lx\n", 
+                    p_cli_request->fetch_data.pwrset_response_val.pstatefreq.pstate,
+                    (unsigned long)p_cli_request->fetch_data.pwrset_response_val.pstatefreq.freq_ctrl,
+                    p_cli_request->fetch_data.pwrset_response_val.pstatefreq.fb_div,
+                    (unsigned long)p_cli_request->fetch_data.pwrset_response_val.pstatefreq.frac_div);
             break;
         }
 

@@ -73,6 +73,13 @@ struct _forcedparams
     uint8_t pstate;                          // sets forced pstate (0 - 31), after setting PMIN
     uint16_t ldodacin;                       // sets the ldodacin value for the forced pstate
 };
+struct _pstatefreq
+{
+    uint32_t frac_div;                       // sets the dco_frac_value for the forced pstate
+    uint32_t freq_ctrl;                      // sets the freq_ctrl_value for the forced pstate
+    uint16_t fb_div;                         // sets the dco_div_value for the forced pstate
+    uint8_t pstate;                          // sets the forced pstate (0 - 31)
+};
 
 typedef union 
 {
@@ -83,7 +90,8 @@ typedef union
     uint16_t    minupdate_val;                  // sets the minimum plimit update per loop iteration, 0 disables    
     struct      _nominalparams  nominalparams;  // sets the nominal pstate used in loop (does not affect DVFS/ACPI)
     uint16_t    racklimit;                      // sets the rack limit gpio for simulated implementations  
-    struct     _forcedparams   forcedparams;   // sets forced pstate and ldodacin  
+    struct     _forcedparams    forcedparams;   // sets forced pstate and ldodacin
+    struct     _pstatefreq      pstatefreq;     // sets forced frequency for testing/verification via (dco_frac, freq_ctrl, dco_div)
 } _pwrset_subcommand_args;
 
 typedef struct _pwr_icc_cap_complete_payload_t {
@@ -101,8 +109,8 @@ typedef union
     uint16_t    minupdate_val;                  // sets the minimum plimit update per loop iteration, 0 disables    
     struct      _nominalparams  nominalparams;  // sets the nominal pstate used in loop (does not affect DVFS/ACPI)
     uint16_t    racklimit;                      // sets the rack limit gpio for simulated implementations  
-    struct     _forcedparams   forcedparams;   // sets forced pstate and ldodacin  
-    
+    struct     _forcedparams    forcedparams;   // sets forced pstate and ldodacin  
+    struct     _pstatefreq      pstatefreq;     // sets forced frequency for a particular pstate (used for testing/verification)
 } _pwrset_response_val;
 
 /* Structure for the async dfwk CLI request to the power interface */

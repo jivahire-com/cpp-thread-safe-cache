@@ -53,7 +53,7 @@ stages:
   - template: templates/fpga_pythia_test.yaml
     parameters:
       ArtifactName: ACCEL
-      TestAgent: 'DH3'
+      Pool: '1pfw-kingsgate-bigfpga-pipelines'
       TestPlan: .\tests\functional\test_plan\accel_single_die_test_plan.args
       ifwi: 'kingsgate.ifwi.ap.baremetal.debug.dat'
   
@@ -63,7 +63,7 @@ stages:
   - template: templates/fpga_pythia_test.yaml
     parameters:
       ArtifactName: MSCP
-      TestAgent: 'DH3'
+      Pool: '1pfw-kingsgate-bigfpga-pipelines'
 
 - stage: MSCP_FPGA_Pythia_Dualdie_Tests
   dependsOn: [Build_Arm_EABI_AARCH_Debug]

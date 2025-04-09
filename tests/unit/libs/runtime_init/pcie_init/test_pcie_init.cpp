@@ -159,6 +159,7 @@ TEST_FUNCTION(test_cxl_init, NULL, NULL)
 
 TEST_FUNCTION(test_pcie_config_init, NULL, NULL)
 {
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_any_always(__wrap__txe_thread_create, thread_ptr);
     expect_any_always(__wrap__txe_thread_create, name_ptr);
     expect_any_always(__wrap__txe_thread_create, entry_function);
@@ -171,5 +172,11 @@ TEST_FUNCTION(test_pcie_config_init, NULL, NULL)
     expect_any_always(__wrap__txe_thread_create, auto_start);
     expect_any_always(__wrap__txe_thread_create, thread_control_block_size);
     will_return_always(__wrap__txe_thread_create, TX_SUCCESS);
+    _fpfw_component_pcie_config.init_fn();
+}
+
+TEST_FUNCTION(test_pcie_config_min_config, NULL, NULL)
+{
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_MIN_CONFIG_SIM);
     _fpfw_component_pcie_config.init_fn();
 }

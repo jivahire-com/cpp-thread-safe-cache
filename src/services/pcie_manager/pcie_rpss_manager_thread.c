@@ -8,10 +8,10 @@
  */
 
 /*------------- Includes -----------------*/
-#include "FpFwAssert.h" // for FPFW_RUNTIME_ASSERT
-
+#include <DbgPrint.h>
 #include <DfwkClient.h>   // for DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE
 #include <ErrorHandler.h> // for FPFwErrorRaise
+#include <FpFwAssert.h>   // for FPFW_RUNTIME_ASSERT
 #include <idsw_kng.h>
 #include <pcie_config_variable.h>
 #include <pcie_dfwk.h>             // for pcie_async_request_t, pcie_dfwk_interf...
@@ -24,7 +24,6 @@
 #include <silibs_kng_soc.h>
 #include <stdbool.h> // for true
 #include <stdint.h>  // for uint8_t
-#include <stdio.h>   // for fflush, printf, stdout
 #include <tx_api.h>  // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -80,7 +79,7 @@ static void pcie_rp_timer_expiry_callback(unsigned long cb_val)
     uint8_t rpss_idx = GET_RPSS_INDEX_FROM_TIMER_CALLBACK(cb_val);
     uint8_t rp_idx = GET_RP_INDEX_FROM_TIMER_CALLBACK(cb_val);
 
-    printf("Timer Expired RPSS: 0x%x \t RP: 0x%x \n", rpss_idx, rp_idx);
+    FPFW_DBGPRINT_WARNING("RPSS[%d] RP[%d]: Link training timer expired!\n", rpss_idx, rp_idx);
     pcie_rp_check_link(rpss_idx, rp_idx);
 }
 
@@ -105,7 +104,10 @@ static void start_link_training_timer(pcie_manager_context_t* ctx)
                                      TX_AUTO_ACTIVATE);
             if (status != TX_SUCCESS)
             {
-                printf("Failed to create link training timer! TX_STATUS: %d\n", status);
+                FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Failed to create link training timer! TX_STATUS: %d\n",
+                                    ctx->rpss_idx,
+                                    rp_idx,
+                                    status);
                 FPFwErrorRaise(status, 0, 0, 0, 0);
             }
         }
@@ -168,7 +170,7 @@ void send_sync_start_link_training_requests(pcie_manager_context_t* ctx)
         }
         else
         {
-            printf("Skip Link Training: RPSS: 0x%x \t RP: 0x%x \n", ctx->rpss_idx, rp_idx);
+            FPFW_DBGPRINT_WARNING("RPSS[%d] RP[%d]: Skip link training!\n", ctx->rpss_idx, rp_idx);
         }
     }
 }
@@ -207,7 +209,7 @@ pcie_ss_entity_t* send_sync_get_rpss_entity(uint8_t rpss_idx)
 
     if (sync_req.status != SILIBS_SUCCESS || rpss_ent == NULL)
     {
-        printf("Error getting RPSS Entity RPSS: %d \n", rpss_idx);
+        FPFW_DBGPRINT_ERROR("RPSS[%d]: Error getting RPSS entity!\n", rpss_idx);
     }
 
     return rpss_ent;
@@ -224,8 +226,8 @@ void rpss_service_thread_fn(ULONG thread_input)
     pcie_dfwk_interface_init(d, iface);
     DfwkClientInterfaceOpen(&(iface->header));
 
-    /* Wait for Pcie PhyFW Load Event */
-    printf("Waiting for Pcie[PCIESS: %d] Phy FW Load \n", ctx->rpss_idx);
+    /* Wait for the PCIe phy firmware load event - set within the AP core firmware load module */
+    FPFW_DBGPRINT_INFO("RPSS[%d]: Waiting for phy firmware load\n", ctx->rpss_idx);
     pcie_phyfw_wait_load_event(ctx->phyfw_load_event_ptr);
 
     /* Start Initial PCIESS/RP Init */
@@ -235,10 +237,10 @@ void rpss_service_thread_fn(ULONG thread_input)
     send_async_wait_for_event_for_pciess(ctx);
 
     /*
-       Start LT Timer [ On SVP the LT INT fires very quickly, so
-       the timer get started only after the LT INT is processed
-       So we start the LT timer just before we set the LTSSM_EN
-    */
+     * Start LT Timer. On SVP, the link_up interrupt fires very quickly, and
+     * the timer starts only after the interrupt is processed.
+     * So, we start the timer just *before* the driver call to set LTSSM_EN
+     */
     start_link_training_timer(ctx);
 
     /* Send Start LT */
@@ -251,13 +253,12 @@ void rpss_service_thread_fn(ULONG thread_input)
         (void)tx_queue_receive(&(ctx->work_queue), (void*)&cmpl_req, TX_WAIT_FOREVER);
 
         /* Handle completion based on request type */
-        printf("WAIT_FOR_EVENT Completion:: PCIe SS: %d | Root port: %d | Op: %d | Status: %d |\n",
-               ctx->rpss_idx,
-               cmpl_req.rp_index,
-               cmpl_req.op,
-               (int)cmpl_req.async_data.data);
+        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: WAIT_FOR_EVENT completed | Op: %d | Status: %d |\n",
+                           ctx->rpss_idx,
+                           cmpl_req.rp_index,
+                           cmpl_req.op,
+                           (int)cmpl_req.async_data.data);
 
         process_wait_for_event_data(ctx->rpss_idx, &cmpl_req);
-        fflush(stdout);
     }
 }

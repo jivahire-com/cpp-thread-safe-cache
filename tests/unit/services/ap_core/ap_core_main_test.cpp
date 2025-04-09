@@ -274,6 +274,14 @@ uint8_t __wrap_idhw_get_soc_id()
     return mock_type(uint8_t);
 }
 
+int32_t __wrap__txe_event_flags_set(TX_EVENT_FLAGS_GROUP* event_flags_group_ptr, ULONG flags, UINT options)
+{
+    FPFW_UNUSED(event_flags_group_ptr);
+    FPFW_UNUSED(flags);
+    FPFW_UNUSED(options);
+    return mock_type(int32_t);
+}
+
 } // extern "C"
 
 static int setup(void** state)
@@ -586,7 +594,7 @@ AP_CORE_TEST(dispatch_pcie_phyfw_load, setup, NULL)
     s_dispatch_routine(&test_request.header, &test_device.header);
 
     // Call the callback to simulate the response
-    expect_value(__wrap_FpFwAssert, expression, false);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
     fw_load_cb(NULL, 0, FPFW_STATUS_SUCCESS);
 }

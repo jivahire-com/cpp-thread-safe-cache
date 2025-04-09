@@ -15,6 +15,7 @@ target_link_libraries(
         PRIVATE
         fwlib.dfwk
         fwlib.platform.dfwkhost.threadx
+        fwlib.lib.interface.platform.dbgprint
         fwlib.lib.interface.platform.errorhandler
         kng_silibs_platform
         ms::driver::pcie

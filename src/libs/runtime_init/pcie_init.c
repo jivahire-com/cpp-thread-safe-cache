@@ -90,8 +90,17 @@ FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "v
 
 FPFW_INIT_COMPONENT(pcie_config, FPFW_INIT_DEPENDENCIES("pcie", "atu_svc", "ddr", "var_serv"))
 {
+    KNG_PLAT_ID plat = idsw_get_platform_sdv();
+
+    if (plat == PLATFORM_SVP_MIN_CONFIG_SIM)
+    {
+        FPFW_DBGPRINT_INFO("Skip RPSS configuration init on SVP min config!\n");
+        goto done;
+    }
+
     scp_pcie_start_config_service_thread();
 
+done:
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 

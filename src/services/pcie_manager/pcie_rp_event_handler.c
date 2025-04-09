@@ -8,10 +8,10 @@
  */
 
 /*------------- Includes -----------------*/
-#include "FpFwAssert.h" // for FPFW_RUNTIME_ASSERT
-
+#include <DbgPrint.h>
 #include <DfwkClient.h>   // for DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE
 #include <ErrorHandler.h> // for FPFwErrorRaise
+#include <FpFwAssert.h>   // for FPFW_RUNTIME_ASSERT
 #include <idsw_kng.h>
 #include <pcie_config_variable.h>
 #include <pcie_dfwk.h>      // for pcie_async_request_t, pcie_dfwk_interf...
@@ -23,7 +23,6 @@
 #include <silibs_kng_soc.h>
 #include <stdbool.h> // for true
 #include <stdint.h>  // for uint8_t
-#include <stdio.h>   // for fflush, printf, stdout
 #include <tx_api.h>  // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -46,19 +45,19 @@ silibs_status_t pcie_rp_check_link(uint8_t rpss_idx, uint8_t rp_idx)
 
     if (rpss->rps[rp_idx].enabled)
     {
+        /* TODO: Log SEL events in case of failures */
         status = pciess_rp_get_link_train_done(&rpss->rps[rp_idx]);
         if (status == SILIBS_E_OVERWRITTEN)
         {
-            printf("Link Width mismatch for RPSS: %d \t RP: %d\n", rpss_idx, rp_idx);
-            // TODO:: Log SEL Event
+            FPFW_DBGPRINT_WARNING("RPSS[%d] RP[%d]: Link Width mismatch!\n", rpss_idx, rp_idx);
         }
         else if (status == SILIBS_SUCCESS)
         {
-            printf("Success:: Link Trained to Correct Width/Speed \n");
+            FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: Link Trained to Correct Width/Speed!\n", rpss_idx, rp_idx);
         }
         else
         {
-            printf("Error:: Link Training Failed for RPSS: %d \t RP: %d\n", rpss_idx, rp_idx);
+            FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Link Training failure!\n", rpss_idx, rp_idx);
         }
     }
 

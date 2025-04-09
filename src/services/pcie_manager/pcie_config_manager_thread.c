@@ -7,10 +7,10 @@
  * Implements PCIe config manager thread.
  */
 
-#include "FpFwAssert.h" // for FPFW_RUNTIME_ASSERT
-
+#include <DbgPrint.h>
 #include <DfwkClient.h>   // for DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE
 #include <ErrorHandler.h> // for FPFwErrorRaise
+#include <FpFwAssert.h>   // for FPFW_RUNTIME_ASSERT
 #include <atu_api.h>
 #include <bug_check.h>
 #include <idsw_kng.h>
@@ -22,7 +22,6 @@
 #include <silibs_kng_soc.h>
 #include <stdbool.h> // for true
 #include <stdint.h>  // for uint8_t
-#include <stdio.h>   // for fflush, printf, stdout
 #include <tx_api.h>  // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
 #include <variable_services.h>
 #include <variable_services_mem.h>
@@ -83,7 +82,7 @@ void set_var_complete_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uin
 
     if (context == &rb_cb_ctx)
     {
-        printf("RB SetVariable response received, status is %x\n", (int)var_serv_ctx->async_req_result);
+        FPFW_DBGPRINT_INFO("[PCIe Config] RB set_variable response received! Status: %x\n", (int)var_serv_ctx->async_req_result);
         // unlock context so we can send another for VAB
         // variable_service_unlock_get_var_ctx(var_serv_ctx);
         var_service_req_params_t req_params = {};
@@ -98,7 +97,8 @@ void set_var_complete_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uin
     }
     else if (context == &vab_cb_ctx)
     {
-        printf("VAB SetVariable response received, status is %x\n", (int)var_serv_ctx->async_req_result);
+        FPFW_DBGPRINT_INFO("[PCIe Config] VAB set_variable response received! Status: %x\n",
+                           (int)var_serv_ctx->async_req_result);
     }
 }
 
@@ -121,11 +121,11 @@ void config_variable_service_thread_fn(ULONG thread_input)
     int status = tx_event_flags_get(ctx->event_ptr, ctx->event_flags_mask, TX_AND, &event, TX_WAIT_FOREVER);
     if (status != TX_SUCCESS)
     {
-        printf("%s: Failed to get event flags! TX_STATUS: %d\n", __func__, status);
+        FPFW_DBGPRINT_ERROR("[PCIe Config] Failed to get event flags! TX_STATUS: %d\n", status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
-    printf("PCIe configs are set\n");
+    FPFW_DBGPRINT_INFO("[PCIe Config] PCIe configs are set\n");
     tx_event_flags_delete(ctx->event_ptr);
 
     /* The BARs for accelerators should be added here, see definitions in silibs_kng_soc.h*/
@@ -179,29 +179,35 @@ void config_variable_service_thread_fn(ULONG thread_input)
 
         if (rb_config->flags.is_enabled == false)
         {
+            FPFW_DBGPRINT_INFO("RB[%d]: Disabled\n", i);
             continue;
         }
 
-        printf("RB config %d is enabled\n", i);
+        FPFW_DBGPRINT_INFO("RB[%d]: Enabled\n", i);
 
-        printf("MMIO64 range 0x%08lx%08lx - 0x%08lx%08lx\n",
-               (unsigned long)(rb_config->mmioh.base >> 32),
-               (unsigned long)(rb_config->mmioh.base),
-               (unsigned long)(rb_config->mmioh.limit >> 32),
-               (unsigned long)(rb_config->mmioh.limit));
+        FPFW_DBGPRINT_INFO("RB[%d]: MMIO64 range 0x%08lx%08lx - 0x%08lx%08lx\n",
+                           i,
+                           (unsigned long)(rb_config->mmioh.base >> 32),
+                           (unsigned long)(rb_config->mmioh.base),
+                           (unsigned long)(rb_config->mmioh.limit >> 32),
+                           (unsigned long)(rb_config->mmioh.limit));
 
-        printf("MMIO32 range 0x%lx - 0x%lx\n",
-               (unsigned long)rb_config->mmiol.base,
-               (unsigned long)rb_config->mmiol.limit);
+        FPFW_DBGPRINT_INFO("RB[%d]: MMIO32 range 0x%lx - 0x%lx\n",
+                           i,
+                           (unsigned long)rb_config->mmiol.base,
+                           (unsigned long)rb_config->mmiol.limit);
 
-        printf("bus range 0x%lx - 0x%lx\n", (unsigned long)rb_config->bus.base, (unsigned long)rb_config->bus.limit);
+        FPFW_DBGPRINT_INFO("RB[%d]: Bus range 0x%lx - 0x%lx\n",
+                           i,
+                           (unsigned long)rb_config->bus.base,
+                           (unsigned long)rb_config->bus.limit);
     }
 
     /* Print VAB configurations */
     for (uint8_t i = 0; i < PCIE_CONFIG_VAR_NUM_VAB; i++)
     {
-        printf("VAB %d smmu_bypass %d\n", i, (int)(vab_config_var->perf_config[i].smmu_bypass));
-        printf("VAB %d disable %d\n", i, (int)(vab_config_var->vab_config[i].vab_disable));
+        FPFW_DBGPRINT_INFO("VAB[%d]: smmu_bypass: %d\n", i, (int)(vab_config_var->perf_config[i].smmu_bypass));
+        FPFW_DBGPRINT_INFO("VAB[%d]: disable: %d\n", i, (int)(vab_config_var->vab_config[i].vab_disable));
     }
 
     if (current_die_instance == DIE_0)

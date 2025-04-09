@@ -11,7 +11,7 @@ target_link_libraries(${TARGET}
     PRIVATE
         fwlib.service.iccBase
         ms::cmocka::testrunner
-        ms::lib::hsp_firmware_headers 
+        ms::lib::hsp_firmware_headers
         ms::lib::scp_avs
         ms::lib::system_info
         ms::lib::threadx
@@ -52,7 +52,7 @@ mock_target(${TARGET}
     DfwkDeviceInitialize
     DfwkQueueInitialize
     DfwkInterfaceInitialize
-        
+
     ap_core_ppu_clusters_on
     ap_core_ppu_clusters_off
     ap_core_ppu_cores_off
@@ -85,6 +85,8 @@ mock_target(${TARGET}
     idsw_get_platform_sdv
     idsw_get_die_id
     idhw_get_soc_id
+
+    _txe_event_flags_set
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

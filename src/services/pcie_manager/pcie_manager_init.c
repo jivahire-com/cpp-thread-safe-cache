@@ -9,6 +9,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <DfwkPtrTypes.h>
 #include <ErrorHandler.h>
 #include <errno.h>
@@ -21,7 +22,6 @@
 #include <silibs_kng_soc.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -55,24 +55,21 @@ pcie_manager_context_t* scp_pcie_get_manager_context(uint8_t rpss_idx)
     return &pcie_mgr_ctx[rpss_idx % PCIE_RPSS_PER_DIE];
 }
 
-/*  Initialize the event flags for configuration variables */
+/* Initialize the event flags for configuration variables */
 void scp_pcie_config_service_initialize(uint16_t rpss_to_init)
 {
     if (!rpss_to_init)
     {
-        printf("%s: No RPSS, not initializing PCIE config service\n", __func__);
+        FPFW_DBGPRINT_INFO("[PCIe Config] No RPSS, not initializing PCIE config service\n");
         return;
     }
 
     int status = tx_event_flags_create(&event_ptr, "PCIe Config Set Event");
     if (status != TX_SUCCESS)
     {
-        printf("%s: Failed to create event flags! TX_STATUS: %d\n", __func__, status);
+        FPFW_DBGPRINT_ERROR("[PCIe Config] Failed to create event flags! TX_STATUS: %d\n", status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
-
-    // If this fails it asserts within the function.
-    pcie_phyfw_create_event(&pcie_phyfw_load_event);
 
     pcie_cfg_mgr_ctx.event_ptr = &event_ptr;
     pcie_cfg_mgr_ctx.event_flags_mask = rpss_to_init;
@@ -95,7 +92,7 @@ void scp_pcie_start_config_service_thread(void)
                                   TX_AUTO_START);
     if (status != TX_SUCCESS)
     {
-        printf("%s: Failed to launch config service thread! TX_STATUS: %d\n", __func__, status);
+        FPFW_DBGPRINT_ERROR("[PCIe Config] Failed to launch config service thread! TX_STATUS: %d\n", status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 }
@@ -104,11 +101,22 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
 {
     if (schedule == NULL)
     {
-        printf("%s: Failure - NULL driver framework schedule!\n", __func__);
+        FPFW_DBGPRINT_ERROR("[PCIe Init] Failure - NULL driver framework schedule!\n");
         FPFwErrorRaise(-EINVAL, 0, 0, 0, 0);
     }
 
     scp_pcie_config_service_initialize(rpss_to_init);
+
+    /*
+     * Create an event flag which will be used to notify the PCIe manager
+     * once phy firmware has been loaded from flash.
+     *
+     * Note: The AP core framework will load the PCIe phy firmware
+     *       unconditionally and notify the PCIe manager. So we should
+     *       always create this event even if there are no RPSS instances to
+     *       be enabled.
+     */
+    pcie_phyfw_create_event(&pcie_phyfw_load_event);
 
     uint16_t rpss_to_init_per_die = (die_id == DIE_1) ? (rpss_to_init >> PCIE_RPSS_PER_DIE) : (rpss_to_init);
 
@@ -138,7 +146,7 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
                                      sizeof(pcie_mgr_ctx[i].cmpl_req));
         if (status != TX_SUCCESS)
         {
-            printf("%s: Failed to create work queues! TX_STATUS: %d\n", __func__, status);
+            FPFW_DBGPRINT_ERROR("[PCIe Init] Failed to create work queues! TX_STATUS: %d\n", status);
             FPFwErrorRaise(status, 0, 0, 0, 0);
         }
 
@@ -155,7 +163,7 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
                                   TX_AUTO_START);
         if (status != TX_SUCCESS)
         {
-            printf("%s: Failed to create worker threads! TX_STATUS: %d\n", __func__, status);
+            FPFW_DBGPRINT_ERROR("[PCIe Init] Failed to create worker threads! TX_STATUS: %d\n", status);
             FPFwErrorRaise(status, 0, 0, 0, 0);
         }
     }

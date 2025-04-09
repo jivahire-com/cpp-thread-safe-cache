@@ -69,19 +69,19 @@ static bool hm_accel_error_record_submit_listener(fpfw_icc_base_ctx_t* icc_ctx, 
 
 static fpfw_status_t hm_accel_error_record_ack_tx(fpfw_icc_base_ctx_t* icc_ctx, hm_accel_msg_t* accel_mesg, ACCEL_ID accel_id)
 {
-    static hm_accel_msg_ack_t hm_accel_ack_payload;
+    static hm_accel_msg_ack_t hm_accel_ack_payload[NUM_VALID_ACCEL_ID] = {0};
 
-    hm_accel_ack_payload.header.cmd = ICC_HM_TX_DONE_ACK_ACCEL(accel_id);
-    hm_accel_ack_payload.tfr_pkt_cnt = accel_mesg->tfr_pkt_cnt;
-    hm_accel_ack_payload.tfr_size = accel_mesg->tfr_size;
+    hm_accel_ack_payload[accel_id].header.cmd = ICC_HM_TX_DONE_ACK_ACCEL(accel_id);
+    hm_accel_ack_payload[accel_id].tfr_pkt_cnt = accel_mesg->tfr_pkt_cnt;
+    hm_accel_ack_payload[accel_id].tfr_size = accel_mesg->tfr_size;
 
-    static fpfw_icc_base_send_req_t hm_icc_sdm_cper_acq_req = {0};
-    hm_icc_sdm_cper_acq_req.payload_buffer = &hm_accel_ack_payload;
-    hm_icc_sdm_cper_acq_req.buffer_size = sizeof(hm_accel_error_injection_payload_t);
-    hm_icc_sdm_cper_acq_req.cb = hm_accel_ack_tx_cb;
-    hm_icc_sdm_cper_acq_req.cb_ctx = NULL;
+    static fpfw_icc_base_send_req_t hm_icc_sdm_cper_acq_req[NUM_VALID_ACCEL_ID] = {0};
+    hm_icc_sdm_cper_acq_req[accel_id].payload_buffer = &hm_accel_ack_payload[accel_id];
+    hm_icc_sdm_cper_acq_req[accel_id].buffer_size = sizeof(hm_accel_error_injection_payload_t);
+    hm_icc_sdm_cper_acq_req[accel_id].cb = hm_accel_ack_tx_cb;
+    hm_icc_sdm_cper_acq_req[accel_id].cb_ctx = NULL;
 
-    return fpfw_icc_base_send(icc_ctx, &hm_icc_sdm_cper_acq_req);
+    return fpfw_icc_base_send(icc_ctx, &hm_icc_sdm_cper_acq_req[accel_id]);
 }
 
 static void hm_accel_error_record_submit_listener_cb(void* context, size_t output_size_bytes, fpfw_status_t status)

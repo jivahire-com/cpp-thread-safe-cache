@@ -18,6 +18,8 @@ extern "C" {
 #include <FpFwUtils.h>       // for FPFW_UNUSED
 #include <fpfw_dw_i3c.h>     // for fpfw_dw_i3c_config_t, fpfw_dw_i3c_device_t
 #include <fpfw_init.h>
+#include <idsw.h>
+#include <idsw_kng.h> // for KNG_DIE_ID
 #include <mcp_exp_top_regs.h>
 #include <silibs_mcp_top_regs.h>
 #define __NO_CSR_TYPEDEFS__
@@ -34,6 +36,11 @@ extern fpfw_init_component_t _fpfw_component_i3c_target;
 
 /*------------- Functions ----------------*/
 /* Mocks */
+
+KNG_DIE_ID __wrap_idsw_get_die_id()
+{
+    return mock_type(KNG_DIE_ID);
+}
 
 void __wrap_DfwkDeviceInitialize(PDFWK_DEVICE_HEADER Device, PDFWK_SCHEDULE Schedule)
 {
@@ -60,6 +67,7 @@ fpfw_status_t __wrap_fpfw_dw_i3c_initialize(fpfw_dw_i3c_device_t* device, fpfw_d
 TEST_FUNCTION(test_i3c_target_init_pass, NULL, NULL)
 {
     // Set up expectations
+    will_return(__wrap_idsw_get_die_id, 0);
     will_return(__wrap_fpfw_dw_i3c_initialize, FPFW_INIT_STATUS_SUCCESS);
 
     //! Verify wrapped APIs are invoked in order
@@ -77,12 +85,21 @@ TEST_FUNCTION(test_i3c_target_init_pass, NULL, NULL)
 
 TEST_FUNCTION(test_i3c_target_init_fail, NULL, NULL)
 {
-
+    will_return(__wrap_idsw_get_die_id, 0);
     will_return(__wrap_fpfw_dw_i3c_initialize, FPFW_STATUS_FAIL);
     fpfw_init_result_t result = _fpfw_component_i3c_target.init_fn();
 
     // Perform necessary assertions on result
     assert_true(result.status != FPFW_STATUS_SUCCESS);
+    assert_null(result.associated_handle);
+}
+
+TEST_FUNCTION(test_i3c_target_init_pass_die1, NULL, NULL)
+{
+    will_return(__wrap_idsw_get_die_id, 1);
+    fpfw_init_result_t result = _fpfw_component_i3c_target.init_fn();
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
     assert_null(result.associated_handle);
 }
 

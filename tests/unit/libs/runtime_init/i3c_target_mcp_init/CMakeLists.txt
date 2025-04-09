@@ -20,6 +20,8 @@ target_link_libraries(${TARGET}
         ms::lib::register_headers
         ms::lib::mcp_interrupts
         ms::lib::threadx
+        silibs::idsw
+        silibs::idsw_kng
 )
 
 # Defining platform APIs
@@ -41,5 +43,6 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     DfwkDeviceInitialize
     fpfw_init_get_handle
-    fpfw_dw_i3c_initialize   
+    fpfw_dw_i3c_initialize
+    idsw_get_die_id   
 )

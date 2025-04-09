@@ -9,6 +9,7 @@
 #include <DfwkThreadXHost.h>
 #include <fpfw_dw_i3c.h> // for fpfw_dw_i3c_config_t, fpfw_dw_i3c_device_t
 #include <fpfw_init.h>   // for FPFW_INIT_COMPONENT, FPFW_INIT_D...
+#include <idsw_kng.h>
 #include <interrupts.h>
 #include <mcp_exp_top_regs.h>
 #include <silibs_mcp_top_regs.h>
@@ -31,6 +32,10 @@ FPFW_INIT_COMPONENT(i3c_target, FPFW_INIT_DEPENDENCIES("hw_ver", "nvic", "dfwk",
 
     DEBUG_PRINT("I3C target init \n");
 
+    if (idsw_get_die_id() == DIE_1)
+    { // DIE_1 I3C_2 not used .
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
     static fpfw_dw_i3c_device_t s_I3cTargetDevice;
 
     static fpfw_dw_i3c_config_t s_I3cTargetConfig = {

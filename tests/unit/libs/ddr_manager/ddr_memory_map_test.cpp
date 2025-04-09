@@ -399,8 +399,8 @@ static ddrss_memory_region_t test_map_reservations_verify_security_flag_per_requ
         .end_address = 0x81800400U,
         .attr =
             {
-                .as_uint32 = (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM) | NOT_AVAILABLE_SYSMEM,
-            }, // Incoming map has this flag set PAS_SECURE
+                .as_uint32 = (PAS_ROOT | PAS_REALM) | NOT_AVAILABLE_SYSMEM,
+            }, // Incoming map has this flag set PAS_NON_SECURE
     },
     {
         .start_address = 0,
@@ -528,17 +528,17 @@ TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
     assert_int_equal(result_map_64[0].start_address, 0x80000000);
     assert_int_equal(result_map_64[0].end_address, 0x81800000);
     assert_int_equal(result_map_64[0].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[0].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM));
+    assert_int_equal(result_map_64[0].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[1].start_address, 0x81800000);
     assert_int_equal(result_map_64[1].end_address, 0xFF000000);
     assert_int_equal(result_map_64[1].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[1].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_ROOT));
+    assert_int_equal(result_map_64[1].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[2].start_address, 0xFF000000);
     assert_int_equal(result_map_64[2].end_address, 0x100000000);
     assert_int_equal(result_map_64[2].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[2].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_ROOT));
+    assert_int_equal(result_map_64[2].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     // Inserted range ---------------------------------------------
     assert_int_equal(result_map_64[3].start_address, 0x8080000000);
@@ -549,7 +549,7 @@ TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
     assert_int_equal(result_map_64[4].start_address, 0x8400000000);
     assert_int_equal(result_map_64[4].end_address, 0xB000000000);
     assert_int_equal(result_map_64[4].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[4].attr.as_uint32 & 0xf, PAS_ROOT);
+    assert_int_equal(result_map_64[4].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     /**** Test 2 - Reserved range does not align with boundary of existing range ****/
     ddrmap_add_reservations((*test_map).mem_regions, test_map_reservations_three_contiguous, result_map_64);
@@ -557,23 +557,23 @@ TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
     assert_int_equal(result_map_64[0].start_address, 0x80000000);
     assert_int_equal(result_map_64[0].end_address, 0x81800000);
     assert_int_equal(result_map_64[0].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[0].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM));
+    assert_int_equal(result_map_64[0].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[1].start_address, 0x81800000);
     assert_int_equal(result_map_64[1].end_address, 0xFF000000);
     assert_int_equal(result_map_64[1].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[1].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_ROOT));
+    assert_int_equal(result_map_64[1].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[2].start_address, 0xFF000000);
     assert_int_equal(result_map_64[2].end_address, 0x100000000);
     assert_int_equal(result_map_64[2].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[2].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_ROOT));
+    assert_int_equal(result_map_64[2].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     // Inserted ranges --------------------------------------------
     assert_int_equal(result_map_64[3].start_address, 0x8080000000);
     assert_int_equal(result_map_64[3].end_address, 0x8084000000);
     assert_int_equal(result_map_64[3].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[3].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM));
+    assert_int_equal(result_map_64[3].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[4].start_address, 0x8084000000);
     assert_int_equal(result_map_64[4].end_address, 0x8086000000);
@@ -593,18 +593,18 @@ TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
     assert_int_equal(result_map_64[7].start_address, 0x8088000000);
     assert_int_equal(result_map_64[7].end_address, 0x8200000000);
     assert_int_equal(result_map_64[7].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[7].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM));
+    assert_int_equal(result_map_64[7].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
     // ------------------------------------------------------------
 
     assert_int_equal(result_map_64[8].start_address, 0x8400000000);
     assert_int_equal(result_map_64[8].end_address, 0xB000000000);
     assert_int_equal(result_map_64[8].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[8].attr.as_uint32 & 0xf, PAS_ROOT);
+    assert_int_equal(result_map_64[8].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[9].start_address, 0x20000000000);
     assert_int_equal(result_map_64[9].end_address, 0xF0000000000);
     assert_int_equal(result_map_64[9].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[9].attr.as_uint32 & 0xf, PAS_ROOT);
+    assert_int_equal(result_map_64[9].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[10].start_address, 0);
     assert_int_equal(result_map_64[10].end_address, 0);
@@ -617,23 +617,23 @@ TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
     assert_int_equal(result_map_64[0].start_address, 0x80000000);
     assert_int_equal(result_map_64[0].end_address, 0x81800000);
     assert_int_equal(result_map_64[0].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[0].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM));
+    assert_int_equal(result_map_64[0].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[1].start_address, 0x81800000);
     assert_int_equal(result_map_64[1].end_address, 0xFF000000);
     assert_int_equal(result_map_64[1].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[1].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_ROOT));
+    assert_int_equal(result_map_64[1].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[2].start_address, 0xFF000000);
     assert_int_equal(result_map_64[2].end_address, 0x100000000);
     assert_int_equal(result_map_64[2].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[2].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_ROOT));
+    assert_int_equal(result_map_64[2].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     // Inserted ranges --------------------------------------------
     assert_int_equal(result_map_64[3].start_address, 0x8080000000);
     assert_int_equal(result_map_64[3].end_address, 0x8082000000);
     assert_int_equal(result_map_64[3].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[3].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM));
+    assert_int_equal(result_map_64[3].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[4].start_address, 0x8082000000);
     assert_int_equal(result_map_64[4].end_address, 0x8084000000);
@@ -643,12 +643,12 @@ TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
     assert_int_equal(result_map_64[5].start_address, 0x8084000000);
     assert_int_equal(result_map_64[5].end_address, 0x8200000000);
     assert_int_equal(result_map_64[5].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[5].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM));
+    assert_int_equal(result_map_64[5].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[6].start_address, 0x8400000000);
     assert_int_equal(result_map_64[6].end_address, 0x9FFFFFF000);
     assert_int_equal(result_map_64[6].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[6].attr.as_uint32 & 0xf, PAS_ROOT);
+    assert_int_equal(result_map_64[6].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[7].start_address, 0x9FFFFFF000);
     assert_int_equal(result_map_64[7].end_address, 0xA000000000);
@@ -658,13 +658,13 @@ TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
     assert_int_equal(result_map_64[8].start_address, 0xA000000000);
     assert_int_equal(result_map_64[8].end_address, 0xB000000000);
     assert_int_equal(result_map_64[8].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[8].attr.as_uint32 & 0xf, PAS_ROOT);
+    assert_int_equal(result_map_64[8].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
     // ------------------------------------------------------------
 
     assert_int_equal(result_map_64[9].start_address, 0x20000000000);
     assert_int_equal(result_map_64[9].end_address, 0xF0000000000);
     assert_int_equal(result_map_64[9].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[9].attr.as_uint32 & 0xf, PAS_ROOT);
+    assert_int_equal(result_map_64[9].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[10].start_address, 0);
     assert_int_equal(result_map_64[10].end_address, 0);
@@ -677,12 +677,12 @@ TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
     assert_int_equal(result_map_64[3].start_address, 0x8080000000);
     assert_int_equal(result_map_64[3].end_address, 0x8200000000);
     assert_int_equal(result_map_64[3].attr.available_sysmem, 0);
-    assert_int_equal(result_map_64[3].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM));
+    assert_int_equal(result_map_64[3].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[4].start_address, 0x8400000000);
     assert_int_equal(result_map_64[4].end_address, 0xB000000000);
     assert_int_equal(result_map_64[4].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[4].attr.as_uint32 & 0xf, PAS_ROOT);
+    assert_int_equal(result_map_64[4].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     /**** test_map_reservations_none ****/
     ddrmap_add_reservations((*test_map).mem_regions, test_map_reservations_none, result_map_64);
@@ -690,32 +690,32 @@ TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
     assert_int_equal(result_map_64[0].start_address, 0x80000000);
     assert_int_equal(result_map_64[0].end_address, 0x81800000);
     assert_int_equal(result_map_64[0].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[0].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM));
+    assert_int_equal(result_map_64[0].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[1].start_address, 0x81800000);
     assert_int_equal(result_map_64[1].end_address, 0xFF000000);
     assert_int_equal(result_map_64[1].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[1].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_ROOT));
+    assert_int_equal(result_map_64[1].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[2].start_address, 0xFF000000);
     assert_int_equal(result_map_64[2].end_address, 0x100000000);
     assert_int_equal(result_map_64[2].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[2].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_ROOT));
+    assert_int_equal(result_map_64[2].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[3].start_address, 0x8080000000);
     assert_int_equal(result_map_64[3].end_address, 0x8200000000);
     assert_int_equal(result_map_64[3].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[3].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM));
+    assert_int_equal(result_map_64[3].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[4].start_address, 0x8400000000);
     assert_int_equal(result_map_64[4].end_address, 0xB000000000);
     assert_int_equal(result_map_64[4].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[4].attr.as_uint32 & 0xf, PAS_ROOT);
+    assert_int_equal(result_map_64[4].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[5].start_address, 0x20000000000);
     assert_int_equal(result_map_64[5].end_address, 0xF0000000000);
     assert_int_equal(result_map_64[5].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[5].attr.as_uint32 & 0xf, PAS_ROOT);
+    assert_int_equal(result_map_64[5].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[6].start_address, 0);
     assert_int_equal(result_map_64[6].end_address, 0);
@@ -728,39 +728,39 @@ TEST_FUNCTION(test_ddrmap_add_reservations_happy_path, NULL, NULL)
     assert_int_equal(result_map_64[0].start_address, 0x80000000);
     assert_int_equal(result_map_64[0].end_address, 0x81800000);
     assert_int_equal(result_map_64[0].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[0].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM));
+    assert_int_equal(result_map_64[0].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     // Test that is_security_region == 1 -------------------------
     assert_int_equal(result_map_64[1].start_address, 0x81800000);
     assert_int_equal(result_map_64[1].end_address, 0x81800100);
     assert_int_equal(result_map_64[1].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[1].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_ROOT));
+    assert_int_equal(result_map_64[1].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[2].start_address, 0x81800100);
     assert_int_equal(result_map_64[2].end_address, 0x81800400);
     assert_int_equal(result_map_64[2].attr.available_sysmem, 0);
-    assert_int_equal(result_map_64[2].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM));
+    assert_int_equal(result_map_64[2].attr.as_uint32 & 0xf, (PAS_ROOT | PAS_REALM));
 
     assert_int_equal(result_map_64[3].start_address, 0x81800400);
     assert_int_equal(result_map_64[3].end_address, 0xFF000000);
     assert_int_equal(result_map_64[3].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[3].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_ROOT));
+    assert_int_equal(result_map_64[3].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
     ///////////////////////////////////////////////////////////////
 
     assert_int_equal(result_map_64[4].start_address, 0xFF000000);
     assert_int_equal(result_map_64[4].end_address, 0x100000000);
     assert_int_equal(result_map_64[4].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[4].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_ROOT));
+    assert_int_equal(result_map_64[4].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[5].start_address, 0x8080000000);
     assert_int_equal(result_map_64[5].end_address, 0x8200000000);
     assert_int_equal(result_map_64[5].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[5].attr.as_uint32 & 0xf, (PAS_SECURE | PAS_NON_SECURE | PAS_ROOT | PAS_REALM));
+    assert_int_equal(result_map_64[5].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 
     assert_int_equal(result_map_64[6].start_address, 0x8400000000);
     assert_int_equal(result_map_64[6].end_address, 0xB000000000);
     assert_int_equal(result_map_64[6].attr.available_sysmem, 1);
-    assert_int_equal(result_map_64[6].attr.as_uint32 & 0xf, PAS_ROOT);
+    assert_int_equal(result_map_64[6].attr.as_uint32 & 0xf, (PAS_NON_SECURE));
 }
 
 TEST_FUNCTION(test_publish_prm_addr_trans_cfg, NULL, NULL)

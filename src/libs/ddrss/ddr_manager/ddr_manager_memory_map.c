@@ -199,6 +199,12 @@ void reformat_incoming_memory_map(const ddrss_sys_mem_region_t** all_mem_regions
         {
             mmap[idx].end_address += 1;
         }
+
+        // Change PAS mask from whatever it is to be PAS_NON_SECURE
+        mmap[idx].attr.as_uint32 = 0;
+        mmap[idx].attr.non_secure = 1;
+        mmap[idx].attr.available_sysmem = 1;
+
         idx++;
     }
 }

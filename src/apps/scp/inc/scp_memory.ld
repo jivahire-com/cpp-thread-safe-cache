@@ -14,8 +14,8 @@ __ITCMSTART__        = 0x00000080;
 __ITCMEND__          = 0x0007FFFF;
 __DTCMSTART__        = 0x20000000;
 __DTCMEND__          = 0x20077FFF;
-__RMSSDATASTART__    = 0x01365E80;
-__RMSSDATAEND__      = 0x01395E7F;
+__RMSSDATASTART__    = 0x0134D000;
+__RMSSDATAEND__      = 0x0137CFFF;
 
 /* 
  * CODE and DATA sizes map directly to the sizes of the respective TCM (plus one for size).

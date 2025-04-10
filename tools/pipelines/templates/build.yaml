@@ -8,6 +8,9 @@ parameters:
 - name: Configuration
   type: string
   default: 'Debug'
+- name: FunctionalTest
+  type: string
+  default: 'Build'
 
 jobs:
 - job: 'Build'
@@ -49,6 +52,16 @@ jobs:
           mkdir -p publish
           Copy-Item -Path .\.build\${{ parameters.Configuration }}\**\bin\* -Recurse -Destination ./publish
           Copy-Item -Recurse ./publish $(Build.ArtifactStagingDirectory)
+          if ('${{ parameters.FunctionalTest }}' -eq "Official") {
+              # Copying functional tests to artifacts
+              $targetPath = "$(Build.SourcesDirectory)\.build\${{ parameters.Configuration }}\${{ parameters.Toolchain }}\functional_test"
+              # Create the target directory if it does not exist
+              if (!(Test-Path -Path $targetPath)) {
+                  mkdir $targetPath
+              }
+              # Copy functional tests
+              Copy-Item -Path .\tests\* -Recurse -Destination "$targetPath"
+          }
 
     - task: Bash@3
       displayName: Get release notes for Silibs (Bash)

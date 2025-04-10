@@ -26,6 +26,9 @@
         <!-- Silibs Release Notes -->
         <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\Release_Notes\*" target="Release_Notes\" />
 
+        <!-- Functional Tests -->
+        <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\functional_test\**\*" target="functional_test\" />
+
         <!-- Combined Platform Config Knobs -->
         <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\Config_Knobs\*.xml" target="Config_Knobs\" />
         <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\start_of_borgens_range.txt" target="Config_Knobs\" />

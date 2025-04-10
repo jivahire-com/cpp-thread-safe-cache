@@ -67,6 +67,7 @@ extends:
           Toolchain: arm-eabi-aarch
           Configuration: Debug
           ArtifactName: Build_Arm_EABI_AARCH_Debug
+          FunctionalTest: Official
 
     - stage: Build_Unit_Test_x86
       dependsOn: []

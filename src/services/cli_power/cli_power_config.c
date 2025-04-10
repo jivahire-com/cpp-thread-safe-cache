@@ -47,6 +47,7 @@ static void print_power_config_fgpll(power_knobs_t* knobs);
 static void print_power_config_knobs(power_knobs_t* knobs);
 static void print_power_config_max_allowed_plimit(power_knobs_t* knobs);
 static void print_power_config_min_allowed_plimit(power_knobs_t* knobs);
+static void print_power_config_vcpucalc(power_knobs_t* knobs);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -78,8 +79,8 @@ const power_cli_sub_command_dictionary_element_t power_cli_config_sub_command_di
     {"tel",                 (print_function)print_power_config_tel,                 POWER_IF_CMD_GET_RUNCONFIG_FUSES},
     {"vft",                 (print_function)print_power_config_vft,                 POWER_IF_CMD_GET_RUNCONFIG_FUSES},
     {"vftpre",              (print_function)print_power_config_vftpre,              POWER_IF_CMD_GET_RUNCONFIG_FUSES},
-    {"vcpucalc",            (print_function)print_power_config_vcpucalc,            POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
     */
+    {"vcpucalc",            (print_function)print_power_config_vcpucalc,            POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
 };
 //clang-format on
 
@@ -453,7 +454,7 @@ static void print_power_config_knobs(power_knobs_t* knobs)
     print_power_config_interval(knobs);
     print_power_config_tel(knobs);
     print_power_config_limits(knobs);
-    // print_power_config_vcpucalc(knobs);
+    print_power_config_vcpucalc(knobs);
     print_power_config_mpmm(knobs);
     print_power_config_pidcfg(knobs);
     print_power_config_loopcfg(knobs);
@@ -524,4 +525,20 @@ void cli_power_config_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* co
 
     FpFwCliPrint("Invalid sub cmd.\n");
 }
+
+
+static void print_power_config_vcpucalc(power_knobs_t* knobs)
+{
+    
+    FpFwCliPrint("\nConfigured Vcpu Calc Inputs\n");
+    FpFwCliPrint("---------------------------\n");
+    FpFwCliPrint("R_loadline VCPU0 uohm : %uuOhm\n", knobs->r_loadline_vcpu0_uohm);
+    FpFwCliPrint("R_loadline VCPU1 uohm : %uuOhm\n", knobs->r_loadline_vcpu1_uohm);
+    FpFwCliPrint( "ActvtyFact : %u\n", knobs->activity_factor_dhry_adjustment);
+    FpFwCliPrint("vcpu Offset mv    : %imV\n", knobs->vcpu_offset_mv);
+    FpFwCliPrint("Vldo offset: %i(LDO DAC offset)\n", knobs->ldo_offset);
+    FpFwCliPrint("forced Pstate(32 to disable, 0-31 to force pstate): %i\n", knobs->force_pstate);
+    FpFwCliPrint("\n");
+}
+
 /* -------------------------------------- */

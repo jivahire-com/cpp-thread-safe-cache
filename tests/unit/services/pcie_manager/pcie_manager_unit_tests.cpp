@@ -159,6 +159,8 @@ TEST_FUNCTION(config_service_thread_fail, NULL, NULL)
     will_return(__wrap__txe_event_flags_get, TX_WAIT_ERROR);
     expect_value(FPFwErrorRaise, error, (uint32_t)TX_WAIT_ERROR);
     will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return(__wrap_accel_is_isolation_enabled, false);
+    will_return(__wrap_accel_is_isolation_enabled, false);
 
     if (!set_error_handler_return())
     {
@@ -200,6 +202,9 @@ TEST_FUNCTION(config_service_thread_success_die0, NULL, NULL)
     will_return(__wrap_variable_service_async_set_variable, 0);
     will_return(__wrap_variable_service_async_set_variable, 0);
 
+    will_return(__wrap_accel_is_isolation_enabled, false);
+    will_return(__wrap_accel_is_isolation_enabled, false);
+
     if (!set_error_handler_return())
     {
         memcpy_mock = true;
@@ -240,6 +245,112 @@ TEST_FUNCTION(config_service_thread_success_die1, NULL, NULL)
 
     will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
     will_return(__wrap__txe_event_flags_delete, TX_SUCCESS);
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+
+    will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
+    will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_END);
+    will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
+    will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_END);
+
+    will_return(__wrap_variable_service_async_set_variable, 0);
+    will_return(__wrap_variable_service_async_set_variable, 0);
+
+    will_return(__wrap_accel_is_isolation_enabled, false);
+    will_return(__wrap_accel_is_isolation_enabled, false);
+
+    if (!set_error_handler_return())
+    {
+        memcpy_mock = true;
+        config_variable_service_thread_fn((ULONG)&ctx);
+        memcpy_mock = false;
+    }
+
+    // Check that SDM/CDED config was set and is for DIE0
+    assert_int_equal(rb_config_var.rootbridge_config[16].flags.is_enabled, true);
+    assert_int_equal(rb_config_var.rootbridge_config[17].flags.is_enabled, true);
+    assert_int_equal(rb_config_var.rootbridge_config[16].mmioh.base, D0_SDM_MMIOH_START);
+    assert_int_equal(rb_config_var.rootbridge_config[17].mmioh.base, D0_CDED_MMIOH_START);
+    assert_int_equal(rb_config_var.rootbridge_config[16].mmiol.base, UINT32_MAX);
+    assert_int_equal(rb_config_var.rootbridge_config[17].mmiol.base, UINT32_MAX);
+}
+
+TEST_FUNCTION(config_service_thread_success_die0_accel_isolation, NULL, NULL)
+{
+    pcie_config_manager_context_t ctx;
+    kingsgate_pcie_root_bridge_config rb_config_var = {{{0}}};
+    kingsgate_pcie_vab_config vab_config_var = {0};
+    ctx.rb_config_var = &rb_config_var;
+    ctx.vab_config_var = &vab_config_var;
+
+    rb_config_var.rootbridge_config[0].flags.is_enabled = true;
+    rb_config_var.rootbridge_config[0].mmioh.base = 0x10000000;
+    rb_config_var.rootbridge_config[0].mmioh.limit = 0x20000000;
+    rb_config_var.rootbridge_config[0].mmioh.base = 0x30000000;
+    rb_config_var.rootbridge_config[0].mmioh.limit = 0x40000000;
+
+    // event_flags_get fails
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    expect_any_always(__wrap__txe_event_flags_delete, group_ptr);
+
+    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
+    will_return(__wrap__txe_event_flags_delete, TX_SUCCESS);
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+
+    will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
+    will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_END);
+    will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
+    will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_END);
+
+    will_return(__wrap_variable_service_async_set_variable, 0);
+    will_return(__wrap_variable_service_async_set_variable, 0);
+
+    will_return(__wrap_accel_is_isolation_enabled, true);
+    will_return(__wrap_accel_is_isolation_enabled, true);
+
+    if (!set_error_handler_return())
+    {
+        memcpy_mock = true;
+        config_variable_service_thread_fn((ULONG)&ctx);
+        memcpy_mock = false;
+    }
+
+    // Check that SDM/CDED config was set and is for DIE0
+    assert_int_equal(rb_config_var.rootbridge_config[16].flags.is_enabled, false);
+    assert_int_equal(rb_config_var.rootbridge_config[17].flags.is_enabled, false);
+    assert_int_equal(rb_config_var.rootbridge_config[16].mmioh.base, D0_SDM_MMIOH_START);
+    assert_int_equal(rb_config_var.rootbridge_config[17].mmioh.base, D0_CDED_MMIOH_START);
+    assert_int_equal(rb_config_var.rootbridge_config[16].mmiol.base, UINT32_MAX);
+    assert_int_equal(rb_config_var.rootbridge_config[17].mmiol.base, UINT32_MAX);
+}
+
+TEST_FUNCTION(config_service_thread_success_die1_accel_isolation, NULL, NULL)
+{
+    pcie_config_manager_context_t ctx;
+    kingsgate_pcie_root_bridge_config rb_config_var = {{{0}}};
+    kingsgate_pcie_vab_config vab_config_var = {0};
+    ctx.rb_config_var = &rb_config_var;
+    ctx.vab_config_var = &vab_config_var;
+
+    rb_config_var.rootbridge_config[0].flags.is_enabled = true;
+    rb_config_var.rootbridge_config[0].mmioh.base = 0x10000000;
+    rb_config_var.rootbridge_config[0].mmioh.limit = 0x20000000;
+    rb_config_var.rootbridge_config[0].mmioh.base = 0x30000000;
+    rb_config_var.rootbridge_config[0].mmioh.limit = 0x40000000;
+
+    // event_flags_get fails
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    expect_any_always(__wrap__txe_event_flags_delete, group_ptr);
+
+    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
+    will_return(__wrap__txe_event_flags_delete, TX_SUCCESS);
     will_return(__wrap_idsw_get_die_id, SOC_D1);
 
     will_return(__wrap_variable_service_initialize_ctx, MSCP_ATU_AP_WINDOW_VAR_SVC_PCIE_PAYLOAD_BASE);
@@ -250,6 +361,9 @@ TEST_FUNCTION(config_service_thread_success_die1, NULL, NULL)
     will_return(__wrap_variable_service_async_set_variable, 0);
     will_return(__wrap_variable_service_async_set_variable, 0);
 
+    will_return(__wrap_accel_is_isolation_enabled, true);
+    will_return(__wrap_accel_is_isolation_enabled, true);
+
     if (!set_error_handler_return())
     {
         memcpy_mock = true;
@@ -258,8 +372,8 @@ TEST_FUNCTION(config_service_thread_success_die1, NULL, NULL)
     }
 
     // Check that SDM/CDED config was set and is for DIE1
-    assert_int_equal(rb_config_var.rootbridge_config[16].flags.is_enabled, true);
-    assert_int_equal(rb_config_var.rootbridge_config[17].flags.is_enabled, true);
+    assert_int_equal(rb_config_var.rootbridge_config[16].flags.is_enabled, false);
+    assert_int_equal(rb_config_var.rootbridge_config[17].flags.is_enabled, false);
     assert_int_equal(rb_config_var.rootbridge_config[16].mmioh.base, D1_SDM_MMIOH_START);
     assert_int_equal(rb_config_var.rootbridge_config[17].mmioh.base, D1_CDED_MMIOH_START);
     assert_int_equal(rb_config_var.rootbridge_config[16].mmiol.base, UINT32_MAX);

@@ -17,6 +17,7 @@ target_link_libraries(${TARGET}
     ms::cmocka::mocks
     ms::cmocka::testrunner
     ms::driver::pcie
+    ms::lib::accelerator_ip
     ms::lib::error_handler
     ms::lib::threadx
     ms::lib::variable_services
@@ -67,4 +68,5 @@ mock_target(${TARGET}
     variable_serv_copy_to_rmss_ram
     variable_service_initialize_ctx
     variable_service_async_set_variable
+    accel_is_isolation_enabled
 )

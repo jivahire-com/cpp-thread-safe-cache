@@ -8,9 +8,10 @@
  */
 
 #include <DbgPrint.h>
-#include <DfwkClient.h>   // for DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE
-#include <ErrorHandler.h> // for FPFwErrorRaise
-#include <FpFwAssert.h>   // for FPFW_RUNTIME_ASSERT
+#include <DfwkClient.h>     // for DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE
+#include <ErrorHandler.h>   // for FPFwErrorRaise
+#include <FpFwAssert.h>     // for FPFW_RUNTIME_ASSERT
+#include <accelerator_ip.h> // For Accel isolation
 #include <atu_api.h>
 #include <bug_check.h>
 #include <idsw_kng.h>
@@ -109,6 +110,11 @@ void config_variable_service_thread_fn(ULONG thread_input)
     rb_config_var = ctx->rb_config_var;
     vab_config_var = ctx->vab_config_var;
     KNG_DIE_ID current_die_instance = (KNG_DIE_ID)idsw_get_die_id();
+
+    bool sdm_enable = !(accel_is_isolation_enabled(ACCEL_ID_SDM)); // If SDM isolation enabled, sdm_enable == false
+    bool cded_enable = !(accel_is_isolation_enabled(ACCEL_ID_CDED));
+
+    FPFW_DBGPRINT_INFO("Die[%d] \t SDM: %d \t CDED %d \n", (int)current_die_instance, (int)sdm_enable, (int)cded_enable);
     static_assert(SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_SIZE > sizeof(variable_service_shared_mem_format_t) +
                                                                        sizeof(rb_config_varname_die_0) +
                                                                        sizeof(kingsgate_pcie_root_bridge_config),
@@ -138,7 +144,7 @@ void config_variable_service_thread_fn(ULONG thread_input)
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].mmioh.limit = D0_SDM_MMIOH_END;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].bus.base = D0_SDM_RCIEP_BUS;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].bus.limit = D0_SDM_RCEC_BUS;
-        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_enabled = true;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_enabled = sdm_enable;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_integrated_endpoint = true;
 
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmiol.base = UINT32_MAX;
@@ -147,7 +153,7 @@ void config_variable_service_thread_fn(ULONG thread_input)
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmioh.limit = D0_CDED_MMIOH_END;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].bus.base = D0_CDED_RCIEP_BUS;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].bus.limit = D0_CDED_RCEC_BUS;
-        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].flags.is_enabled = true;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].flags.is_enabled = cded_enable;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].flags.is_integrated_endpoint = true;
     }
     else
@@ -157,8 +163,9 @@ void config_variable_service_thread_fn(ULONG thread_input)
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].mmioh.base = D1_SDM_MMIOH_START;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].mmioh.limit = D1_SDM_MMIOH_END;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].bus.base = D1_SDM_RCIEP_BUS;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].bus.base = D1_SDM_RCIEP_BUS;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].bus.limit = D1_SDM_RCEC_BUS;
-        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_enabled = true;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_enabled = sdm_enable;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_integrated_endpoint = true;
 
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmiol.base = UINT32_MAX;
@@ -167,7 +174,7 @@ void config_variable_service_thread_fn(ULONG thread_input)
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmioh.limit = D1_CDED_MMIOH_END;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].bus.base = D1_CDED_RCIEP_BUS;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].bus.limit = D1_CDED_RCEC_BUS;
-        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].flags.is_enabled = true;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].flags.is_enabled = cded_enable;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].flags.is_integrated_endpoint = true;
     }
 

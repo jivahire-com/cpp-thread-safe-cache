@@ -11,8 +11,9 @@
 /*------------- Includes -----------------*/
 #include "pcie_mocks.h"
 
-#include <DfwkCommon.h> // for PDFWK_ASYNC_REQUEST_HEADER, DFWK_ASYNC_REQUE...
-#include <FpFwCMocka.h> // for check_expected_ptr, assert_non_null, assert_...
+#include <DfwkCommon.h>     // for PDFWK_ASYNC_REQUEST_HEADER, DFWK_ASYNC_REQUE...
+#include <FpFwCMocka.h>     // for check_expected_ptr, assert_non_null, assert_...
+#include <accelerator_ip.h> // For Accel isolation
 #include <fpfw_status.h>
 #include <idsw_kng.h>
 #include <pcie_dfwk.h>      // for pcie_async_request_t, pciess_device_t
@@ -147,4 +148,10 @@ int32_t __wrap_variable_service_initialize_ctx(var_service_req_ctx_t* var_serv_c
     assert_in_range(mem_ctx->payload_base, min, max);
 
     return 0;
+}
+
+bool __wrap_accel_is_isolation_enabled(ACCEL_ID accel_type)
+{
+    FPFW_UNUSED(accel_type);
+    return mock_type(bool);
 }

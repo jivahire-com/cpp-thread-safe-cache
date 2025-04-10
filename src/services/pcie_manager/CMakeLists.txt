@@ -24,6 +24,7 @@ target_link_libraries(
         ms::lib::variable_services
         ms::lib::error_codes
         ms::lib::crash_dump
+        ms::lib::accelerator_ip
         silibs::idsw
         silibs::idsw_kng
         silibs::pciess

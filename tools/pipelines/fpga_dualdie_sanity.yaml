@@ -24,6 +24,6 @@ stages:
       - template: templates/fpga_pythia_test.yaml
         parameters:
           ArtifactName: FPGA_Pythia_Tests
-          Pool: "1pfw-kingsgate-big-fpga"
-          TestAgent: "DF11"
+          Pool: '1pfw-kingsgate-bigfpga-pipelines'
+          TestVehicleCapability: 'DualDieFPGA'
           TestPlan: .\tests\functional\test_plan\fpga_dual_die_test_plan.args

@@ -15,9 +15,9 @@ parameters:
 - name: Pool
   type: string
   default: '1pfw-kingsgate-bigfpga-pipelines'
-- name: TestAgent
+- name: TestVehicleCapability
   type: string
-  default: 'DH3'  
+  default: 'SingleDieFPGA'  
 - name: TestPlan
   type: string
   default: '.\tests\functional\test_plan\fpga_single_die_test_plan.args'
@@ -37,7 +37,7 @@ jobs:
   displayName: FPGA Pythia Tests
   pool: 
     name: ${{ parameters.Pool }}
-    demands: TestVehicle -equals SingleDieFPGA
+    demands: TestVehicle -equals ${{ parameters.TestVehicleCapability }}
     isCustom: true
     type: windows
 
@@ -99,12 +99,19 @@ jobs:
 
           # Reset all COM ports
           python .\tests\functional\library\kng_pythia_libs\fpga_reset_com_ports.py
+
+          # Retrieve the agent name
+          $agentName = $env:AGENT_NAME
+          Write-Host "Agent Name: $agentName"
+          $splitAgentName = $agentName -split '-'
+          $trimmedAgentName = $splitAgentName[-1]
+          Write-Host "Trimmed Agent Name: $trimmedAgentName"
           
           # Kick all users out
-          kickuser -pc ${{ parameters.TestAgent }} -user 'all'
+          kickuser -pc $trimmedAgentName -user 'all'
 
           # Flash firmware
-          flashscpfw ${{ parameters.TestAgent }} -file ${{ parameters.ifwi }}
+          flashscpfw $trimmedAgentName -file ${{ parameters.ifwi }}
 
           # OOB Reset
           oobreset

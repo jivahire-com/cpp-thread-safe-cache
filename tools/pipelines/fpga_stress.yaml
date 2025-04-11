@@ -34,6 +34,7 @@ stages:
     parameters:
       ArtifactName: MSCP
       Pool: '1pfw-kingsgate-bigfpga-pipelines'
+      TestVehicleCapability: 'SingleDieFPGA'
       build_id: $(BUILD_ID)
 
 - stage: ACCEL_FPGA_Pythia_Tests
@@ -43,6 +44,7 @@ stages:
     parameters:
       ArtifactName: ACCEL
       Pool: '1pfw-kingsgate-bigfpga-pipelines'
+      TestVehicleCapability: 'SingleDieFPGA'
       build_id: $(BUILD_ID)
       TestPlan: .\tests\functional\test_plan\fpga_nightly_stress_accel_test_plan.args
       ifwi: 'kingsgate.ifwi.ap.baremetal.debug.dat'

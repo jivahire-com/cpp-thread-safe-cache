@@ -8,11 +8,13 @@
 
   <Structs>
   </Structs>
-
+  
   <!-- namespace indicates the GUID namespace the values are stored in -->
   <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
     <!-- USB -->
     <Knob name="gpio_knobs" type="gpio_cfg_t" help="GPIO config knobs"/>
+    <Knob name="uart_afm_cfg_die0" type="uart_afm_cfg_t" help="UART AFM config knobs for Die 0"/>
+    <Knob name="uart_afm_cfg_die1" type="uart_afm_cfg_t" help="UART AFM config knobs for Die 1"/>
   </Knobs>
 
 </ConfigSchema>

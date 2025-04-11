@@ -11,6 +11,7 @@ target_link_libraries(
     fwlib.dfwk
     fwlib.service.cli
     ms::driver::gpio
+    silibs::idsw_kng
 )
 
 target_include_directories(${TARGET}

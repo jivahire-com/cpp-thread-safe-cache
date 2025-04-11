@@ -15,6 +15,7 @@ target_include_directories(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
+        fwlib.lib.cfg_mgr
         fwlib.lib.init
         fwlib.lib.interface.platform.dbgprint
         fwlib.platform.dfwkhost.threadx
@@ -24,6 +25,7 @@ target_link_libraries(${TARGET}
         ms::lib::interrupts
         ms::lib::scp_interrupts
         ms::lib::threadx
+        ms::lib::variable_services
         ms::service::gpio::cli
         silibs::idsw
         silibs::idsw_kng
@@ -43,8 +45,11 @@ mock_target(${TARGET}
     fpfw_init_get_handle
     FpFwCliRegisterTable
     gpio_afm_init
-    gpio_init
     gpio_device_init
+    gpio_init
     gpio_interface_init
+    gpio_override_uart_afmsel
+    idsw_get_cpu_type
+    idsw_get_die_id
     idsw_get_platform_sdv
 )

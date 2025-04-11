@@ -10,6 +10,7 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <exec_tlm_cmpnt.h>
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -40,3 +41,30 @@ void in_band_tlm_cmpnt_generate_pwr_pkg(void);
  * @brief Handle incoming MTS messages. Called from executive telemetry component.
  */
 void in_band_tlm_cmpnt_handle_incoming_mts_msgs(void);
+
+/**
+ * @brief Execute in-band telemetry component exit actions for the given telemetry mode.
+ * @param[in] exiting_mode  current telemetry mode
+ * @return None
+ *
+ */
+void in_band_tlm_cmpnt_tlm_mode_exit_actions(tlm_operating_mode_t exiting_mode);
+
+/**
+ * @brief Execute in-band telemetry component enter actions for the given telemetry mode.
+ * @param[in] entering_mode  new telemetry mode
+ * @return None
+ *
+ */
+void in_band_tlm_cmpnt_tlm_mode_enter_actions(tlm_operating_mode_t entering_mode);
+
+/**
+ * @brief Check if any instantaneous telemetry record is enabled. If not inst packages will not be generated.
+ * @return true if enabled, false if disabled.
+ */
+bool in_band_tlm_cmpnt_is_instantaneous_enabled(void);
+
+/**
+ * @brief Collect raw sensor fifo data for debug packages.
+ */
+void in_band_tlm_cmpnt_sample_sensor_fifo_dbg_data(void);

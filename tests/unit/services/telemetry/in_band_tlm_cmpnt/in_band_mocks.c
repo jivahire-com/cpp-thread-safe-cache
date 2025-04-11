@@ -246,14 +246,14 @@ void data_proc_tlm_cmpnt_get_inst_core_amu_data(uint16_t core_id, p_inst_core_el
     function_called();
 }
 
-bool exec_tlm_cmpnt_is_telemetry_enabled(void)
+bool exec_tlm_cmpnt_is_telemetry_publishing_enabled(void)
 {
     return mock_type(bool);
 }
 
-void exec_tlm_cmpnt_enable_disable_telemetry(bool enable)
+void exec_tlm_cmpnt_change_telemetry_mode(tlm_operating_mode_t new_mode)
 {
-    FPFW_UNUSED(enable);
+    FPFW_UNUSED(new_mode);
 
     function_called();
 }

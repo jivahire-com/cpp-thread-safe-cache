@@ -49,6 +49,17 @@ static_assert(sizeof(((telemetry_payload_header_t*)0)->manifest_id) <= sizeof(g_
               "Source ID is too small");
 
 /*------------- Functions ----------------*/
+bool in_band_tlm_cmpnt_is_instantaneous_enabled(void)
+{
+    for (uint32_t i = 0; i < INST_TELEMETRY_ELEMENT_ID_MAX; i++)
+    {
+        if (inst_pkg_element_enable[i])
+        {
+            return true;
+        }
+    }
+    return false;
+}
 
 void package_create_enable_disable_pwr_record(pwr_telemetry_element_id_t element_id, bool enable_record)
 {

@@ -18,6 +18,7 @@ extern "C" {
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <ddr_manager_i.h>
+#include <in_band_tlm_cmpnt.h>
 #include <in_band_tlm_cmpnt_i.h>
 #include <package_creation_i.h>
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
@@ -77,6 +78,9 @@ TEST_FUNCTION(test_record_enable_disable, test_setup, test_teardown)
 
     package_create_enable_disable_inst_record(INST_TELEMETRY_ELEMENT_CORE, false);
     assert_false(inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_CORE]);
+
+    package_create_enable_disable_pwr_record(POWER_TELEMETRY_ELEMENT_ID_MAX, true);
+    package_create_enable_disable_inst_record(INST_TELEMETRY_ELEMENT_ID_MAX, true);
 }
 
 TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
@@ -906,4 +910,18 @@ TEST_FUNCTION(test_package_create_append_to_inst_pkg_too_small, test_setup, test
     uint32_t pkg_size =
         package_create_append_to_inst_pkg((uintptr_t)&cr_max_package_mem, sizeof(inst_report_partial_package_t), &pkg_header);
     assert_int_equal(pkg_size, 0);
+}
+
+TEST_FUNCTION(test_in_band_tlm_cmpnt_is_instantaneous_enabled, test_setup, test_teardown)
+{
+    for (uint32_t i = 0; i < INST_TELEMETRY_ELEMENT_ID_MAX; i++)
+    {
+        inst_pkg_element_enable[i] = false;
+    }
+    bool is_enabled = in_band_tlm_cmpnt_is_instantaneous_enabled();
+    assert_int_equal(is_enabled, false);
+
+    inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_SOC_RAILS] = true;
+    is_enabled = in_band_tlm_cmpnt_is_instantaneous_enabled();
+    assert_int_equal(is_enabled, true);
 }

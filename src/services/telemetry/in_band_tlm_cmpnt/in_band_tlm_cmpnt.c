@@ -13,8 +13,10 @@
 #include "ddr_manager_i.h"
 #include "element_schema.h"
 #include "in_band_tlm_cmpnt_i.h"
+#include "message_transfer_service.h"
 #include "mts_manager_i.h"
 #include "package_creation_i.h"
+#include "telemetry_events_i.h"
 #include "telemetry_package_defs.h"
 
 #include <FpFwAssert.h>
@@ -43,7 +45,7 @@ void in_band_tlm_cmpnt_init(uint8_t die_id, uint16_t inst_samples_per_pkg)
 
     // TODO: temporary until MTS is supported
     package_create_enable_disable_pwr_record(POWER_TELEMETRY_ELEMENT_CORE_VOLTAGE, true);
-    package_create_enable_disable_pwr_record(POWER_TELEMETRY_ELEMENT_CORE_CURRENT, true);
+    package_create_enable_disable_inst_record(INST_TELEMETRY_ELEMENT_CORE, true);
 
     // since the telemetry schema events are not called within code, the linker will optimize out
     // a single call is enough to anchor them
@@ -115,4 +117,68 @@ void in_band_tlm_cmpnt_generate_pwr_pkg(void)
             ddr_manager_deallocate_mem(&pkg_location);
         }
     }
+}
+
+void in_band_tlm_cmpnt_begin_sensor_fifo_dbg_collection(void)
+{
+    printf("Sensor FIFO Debug Collection started\n");
+}
+
+void in_band_tlm_cmpnt_end_sensor_fifo_dbg_collection(void)
+{
+    printf("Sensor FIFO Debug Collection ended\n");
+}
+
+void in_band_tlm_cmpnt_sample_sensor_fifo_dbg_data(void)
+{
+    printf("Sensor FIFO Debug Data sampled\n");
+}
+
+void in_band_tlm_cmpnt_tlm_mode_exit_actions(tlm_operating_mode_t exiting_mode)
+{
+    switch (exiting_mode)
+    {
+    case TLM_OP_MODE_PUBLISHING:
+        mts_manager_free_publish_resources();
+        break;
+
+    case TLM_OP_MODE_DISABLED:
+        break;
+
+    case TLM_OP_MODE_COLLECTING_DATA:
+        break;
+
+    case TLM_OP_MODE_SENSOR_FIFO_RAW_DATA:
+        in_band_tlm_cmpnt_end_sensor_fifo_dbg_collection();
+        break;
+
+    default:
+        FPFW_RUNTIME_ASSERT_EXT(false, exiting_mode, 0, 0, 0);
+        break;
+    }
+}
+void in_band_tlm_cmpnt_tlm_mode_enter_actions(tlm_operating_mode_t entering_mode)
+{
+    switch (entering_mode)
+    {
+    case TLM_OP_MODE_PUBLISHING:
+        ddr_manager_initialize_memory();
+        break;
+
+    case TLM_OP_MODE_DISABLED:
+        break;
+
+    case TLM_OP_MODE_COLLECTING_DATA:
+        break;
+
+    case TLM_OP_MODE_SENSOR_FIFO_RAW_DATA:
+        in_band_tlm_cmpnt_begin_sensor_fifo_dbg_collection();
+        break;
+
+    default:
+        FPFW_RUNTIME_ASSERT_EXT(false, entering_mode, 0, 0, 0);
+        break;
+    }
+
+    mts_manager_send_mode_to_sec_cores(entering_mode);
 }

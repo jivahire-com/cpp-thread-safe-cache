@@ -8,8 +8,10 @@
  */
 
 /*------------- Includes -----------------*/
+
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
-#include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <FpFwLock.h>
+#include <FpFwUtils.h> // for FPFW_UNUSED
 #include <exec_tlm_cmpnt.h>
 #include <tx_api.h>
 
@@ -48,13 +50,6 @@ void data_proc_tlm_cmpnt_aggregate_24hr_tlm_data(void)
     function_called();
 }
 
-void data_proc_tlm_cmpnt_enable_disable_transition(bool enable)
-{
-    FPFW_UNUSED(enable);
-
-    function_called();
-}
-
 void in_band_tlm_cmpnt_add_inst_sample(void)
 {
     function_called();
@@ -68,6 +63,27 @@ void in_band_tlm_cmpnt_generate_pwr_pkg(void)
 void in_band_tlm_cmpnt_handle_incoming_mts_msgs(void)
 {
     function_called();
+}
+void in_band_tlm_cmpnt_sample_sensor_fifo_dbg_data(void)
+{
+    function_called();
+}
+
+void in_band_tlm_cmpnt_tlm_mode_exit_actions(tlm_operating_mode_t exiting_mode)
+{
+    FPFW_UNUSED(exiting_mode);
+    function_called();
+}
+
+void in_band_tlm_cmpnt_tlm_mode_enter_actions(tlm_operating_mode_t entering_mode)
+{
+    FPFW_UNUSED(entering_mode);
+    function_called();
+}
+
+bool in_band_tlm_cmpnt_is_instantaneous_enabled(void)
+{
+    return mock_type(bool);
 }
 
 UINT __wrap__txe_timer_info_get(TX_TIMER* timer_ptr, CHAR** name, UINT* active, ULONG* remaining_ticks, ULONG* reschedule_ticks, TX_TIMER** next_timer)
@@ -90,4 +106,25 @@ uint64_t __wrap_gtimer_prodfw_get_counter(void)
 uint32_t __wrap_gtimer_prodfw_get_frequency(void)
 {
     return mock_type(uint32_t);
+}
+
+FPFW_LOCK_STATE __wrap_FpFwLockAcquire(PFPFW_LOCK Lock)
+{
+    FPFW_UNUSED(Lock);
+    return 0x48;
+}
+
+void __wrap_FpFwLockRelease(PFPFW_LOCK Lock, FPFW_LOCK_STATE OldState)
+{
+    FPFW_UNUSED(Lock);
+    FPFW_UNUSED(OldState);
+}
+
+UINT __wrap__txe_timer_change(TX_TIMER* timer_ptr, ULONG initial_ticks, ULONG reschedule_ticks)
+{
+    FPFW_UNUSED(timer_ptr);
+    FPFW_UNUSED(initial_ticks);
+    FPFW_UNUSED(reschedule_ticks);
+
+    return mock_type(UINT);
 }

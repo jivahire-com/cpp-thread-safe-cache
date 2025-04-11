@@ -57,8 +57,7 @@ void ddr_manager_init(void)
 
     FpFwAssertWithArgs(status == TX_SUCCESS, status, (uintptr_t)&inst_pkg_free_queue, 0, 0);
 
-    ddr_manager_init_free_memory(&pwr_pkg_free_queue, POWER_POOL_MEM_START, POWER_POOL_BLOCK_SIZE, NUM_POWER_POOL_BLOCKS);
-    ddr_manager_init_free_memory(&inst_pkg_free_queue, INST_POOL_MEM_START, INST_POOL_BLOCK_SIZE, NUM_INST_POOL_BLOCKS);
+    ddr_manager_initialize_memory();
 }
 
 void ddr_manager_init_free_memory(TX_QUEUE* queue, uintptr_t mem_start, size_t block_size, uint32_t num_blocks)
@@ -133,4 +132,12 @@ void ddr_manager_deallocate_mem(uintptr_t* pkg_location)
     {
         FPFW_ET_LOG(DeAllocateQueueFreeFailed, tx_status);
     }
+}
+
+void ddr_manager_initialize_memory()
+{
+    ddr_manager_init_free_memory(&pwr_pkg_free_queue, POWER_POOL_MEM_START, POWER_POOL_BLOCK_SIZE, NUM_POWER_POOL_BLOCKS);
+    ddr_manager_init_free_memory(&inst_pkg_free_queue, INST_POOL_MEM_START, INST_POOL_BLOCK_SIZE, NUM_INST_POOL_BLOCKS);
+
+    FPFW_ET_LOG(MtsMgrInitDDR);
 }

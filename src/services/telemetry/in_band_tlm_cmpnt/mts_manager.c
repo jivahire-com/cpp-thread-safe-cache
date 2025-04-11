@@ -166,7 +166,7 @@ void mts_manager_handle_dcp_msg(p_trp_msg_t trp_msg)
         if (primary_instance)
         {
             trp_msg->payload.dcp_msg.payload.get_state.state =
-                exec_tlm_cmpnt_is_telemetry_enabled() ? DCP_CLIENT_STATE_RUNNING : DCP_CLIENT_STATE_STOPPED;
+                exec_tlm_cmpnt_is_telemetry_publishing_enabled() ? DCP_CLIENT_STATE_RUNNING : DCP_CLIENT_STATE_STOPPED;
             response_dcp_payload_size = sizeof(dcp_msg_get_client_state_t);
             trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
         }
@@ -182,10 +182,16 @@ void mts_manager_handle_dcp_msg(p_trp_msg_t trp_msg)
         break;
 
     case DCP_MSG_ID_START_STOP:
-        forward = true;
+        forward = false; // will not forward command to secondary MCP, will forward state change instead
 
-        bool enable = (trp_msg->payload.dcp_msg.payload.start_stop.state == DCP_START_STOP_STATE_START) ? true : false;
-        exec_tlm_cmpnt_enable_disable_telemetry(enable);
+        if (trp_msg->payload.dcp_msg.payload.start_stop.state == DCP_START_STOP_STATE_START)
+        {
+            exec_tlm_cmpnt_change_telemetry_mode(TLM_OP_MODE_PUBLISHING);
+        }
+        else
+        {
+            exec_tlm_cmpnt_change_telemetry_mode(TLM_OP_MODE_COLLECTING_DATA);
+        }
 
         trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
         break;
@@ -203,14 +209,13 @@ void mts_manager_handle_dcp_msg(p_trp_msg_t trp_msg)
         break;
 
     case DCP_MSG_ID_READ_DATA_COMPLETE:
-
         mts_manager_handle_read_complete_msg(trp_msg);
         break;
 
     case DCP_MSG_ID_RESET:
-        forward = true;
+        forward = false; // will not forward command to secondary MCP, will forward state change instead
 
-        mts_manager_handle_reset_msg();
+        exec_tlm_cmpnt_change_telemetry_mode(TLM_OP_MODE_COLLECTING_DATA);
         trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
         break;
 
@@ -253,19 +258,21 @@ void mts_manager_handle_trp_msg(p_trp_msg_t trp_msg)
     switch (trp_msg->hdr.trp_msg_id)
     {
     case TRP_MSG_ID_PACKAGE_NOTIFICATION: {
-        p_tlm_package_t tlm_pkg = mts_manager_get_pkg_from_free_list();
-        if (tlm_pkg == NULL)
+        if (exec_tlm_cmpnt_is_telemetry_publishing_enabled())
         {
-            // unable to store, send complete back to sender to free memory
-            tlm_package_t rsp_pkg;
-            rsp_pkg.pkg = trp_msg->payload.package_notification;
-            mts_manager_send_trp_read_complete(&rsp_pkg);
+            p_tlm_package_t tlm_pkg = mts_manager_get_pkg_from_free_list();
+            if (tlm_pkg != NULL)
+            {
+                tlm_pkg->pkg = trp_msg->payload.package_notification;
+                mts_manager_add_tlm_package_to_active_list(tlm_pkg);
+                break;
+            }
         }
-        else
-        {
-            tlm_pkg->pkg = trp_msg->payload.package_notification;
-            mts_manager_add_tlm_package_to_active_list(tlm_pkg);
-        }
+
+        // unable to store, send complete back to sender to free memory
+        tlm_package_t rsp_pkg;
+        rsp_pkg.pkg = trp_msg->payload.package_notification;
+        mts_manager_send_trp_read_complete(&rsp_pkg);
         break;
     }
 
@@ -273,6 +280,21 @@ void mts_manager_handle_trp_msg(p_trp_msg_t trp_msg)
         tlm_package_t remove_pkg;
         remove_pkg.pkg = trp_msg->payload.package_notification;
         mts_manager_free_tlm_package_from_secondary_mcp(&remove_pkg);
+        break;
+    }
+
+    case TRP_MSG_ID_CLIENT_DEFINED: {
+        p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg->payload.client_msg;
+        if (tlm_client_msg->cmd == TLM_CLIENT_CMD_SET_MODE)
+        {
+            // set the telemetry mode to the requested mode
+            exec_tlm_cmpnt_change_telemetry_mode(tlm_client_msg->payload.mode);
+        }
+
+        else
+        {
+            FPFW_ET_LOG(MtsMgrClientUnexpectedCmd, tlm_client_msg->cmd);
+        }
         break;
     }
 
@@ -334,7 +356,7 @@ void mts_manager_add_tlm_package_to_active_list(p_tlm_package_t tlm_pkg)
 
 void mts_manager_send_trp_pkg_notification_to_primary(p_tlm_package_t tlm_pkg)
 {
-    mts_manager_send_trp_package_helper(tlm_pkg, TRP_MSG_ID_PACKAGE_NOTIFICATION, MTS_PLATFORM_HOST_DIE_ID, MTS_PLATFORM_HOST_CORE_ID);
+    mts_manager_send_trp_package_helper(tlm_pkg, TRP_MSG_ID_PACKAGE_NOTIFICATION, MTS_PLATFORM_PRIMARY_DIE_ID, MTS_PLATFORM_PRIMARY_CORE_ID);
 }
 
 void mts_manager_send_trp_read_complete(p_tlm_package_t tlm_pkg)
@@ -589,11 +611,8 @@ p_tlm_package_t mts_manager_get_pkg_from_free_list(void)
     return ret_val;
 }
 
-void mts_manager_handle_reset_msg()
+void mts_manager_free_publish_resources()
 {
-    // disable telemetry
-    exec_tlm_cmpnt_enable_disable_telemetry(false);
-
     // flushing the queue is going to loop through the queue and free the blocks in the queue
     // the block that this message is in has already been popped off the queue and will be freed when
     // this function returns
@@ -650,5 +669,30 @@ void mts_manager_handle_reset_msg()
     }
     FpFwListInitialize(&pkg_active_list);
 
-    FPFW_ET_LOG(MtsMgrResetMsgReceived);
+    FPFW_ET_LOG(MtsMgrPackagesFlushed);
+}
+
+void mts_manager_send_mode_to_sec_cores(tlm_operating_mode_t new_mode)
+{
+    if (mts_is_primary_instance() == true)
+    {
+        trp_msg_t trp_msg = {0};
+        trp_msg.hdr.src_node.die_id = mts_get_this_die_id();
+        trp_msg.hdr.src_node.core_id = mts_get_this_core_id();
+        trp_msg.hdr.dest_node.die_id =
+            mts_get_this_die_id() + 1; // dest is assigned during broadcast, this is just a placeholder
+        trp_msg.hdr.dest_node.core_id = mts_get_this_core_id();
+        trp_msg.hdr.mts_client_id = MTS_CLIENT_ID_PWR_INST_TELEM;
+        trp_msg.hdr.trp_msg_id = TRP_MSG_ID_CLIENT_DEFINED;
+        trp_msg.hdr.trp_msg_status = TRP_STATUS_SUCCESS;
+        trp_msg.hdr.broadcast_type = TRP_BROADCAST_PRIM_TO_SEC_PEER_ONLY;
+        trp_msg.hdr.payload_size = TLM_CLIENT_SET_MODE_MSG_SIZE;
+
+        p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
+        tlm_client_msg->cmd = TLM_CLIENT_CMD_SET_MODE;
+        tlm_client_msg->payload.mode = new_mode;
+
+        // api copies message, ok to use stack memory
+        mts_client_forward_trp_msg(&trp_msg, TRP_BROADCAST_PRIM_TO_SEC_PEER_ONLY);
+    }
 }

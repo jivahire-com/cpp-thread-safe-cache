@@ -178,3 +178,53 @@ TEST_FUNCTION(test_gen_pwr_report_some_records, test_setup, test_teardown)
 
     in_band_tlm_cmpnt_generate_pwr_pkg();
 }
+
+TEST_FUNCTION(test_in_band_tlm_cmpnt_begin_sensor_fifo_dbg_collection, test_setup, test_teardown)
+{
+    in_band_tlm_cmpnt_begin_sensor_fifo_dbg_collection();
+}
+
+TEST_FUNCTION(test_in_band_tlm_cmpnt_end_sensor_fifo_dbg_collection, test_setup, test_teardown)
+{
+    in_band_tlm_cmpnt_end_sensor_fifo_dbg_collection();
+}
+
+TEST_FUNCTION(test_in_band_tlm_cmpnt_sample_sensor_fifo_dbg_data, test_setup, test_teardown)
+{
+    in_band_tlm_cmpnt_sample_sensor_fifo_dbg_data();
+}
+
+TEST_FUNCTION(test_in_band_tlm_cmpnt_tlm_mode_exit_actions, test_setup, test_teardown)
+{
+    FpFwListInitialize(&pkg_free_list);
+    FpFwListInitialize(&pkg_active_list);
+
+    expect_function_call(__wrap_mts_client_flush_incoming_queue);
+    will_return(__wrap_mts_is_primary_instance, false);
+    in_band_tlm_cmpnt_tlm_mode_exit_actions(TLM_OP_MODE_PUBLISHING);
+
+    // no actions
+    in_band_tlm_cmpnt_tlm_mode_exit_actions(TLM_OP_MODE_DISABLED);
+    in_band_tlm_cmpnt_tlm_mode_exit_actions(TLM_OP_MODE_COLLECTING_DATA);
+
+    in_band_tlm_cmpnt_tlm_mode_exit_actions(TLM_OP_MODE_SENSOR_FIFO_RAW_DATA);
+
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+    in_band_tlm_cmpnt_tlm_mode_exit_actions((tlm_operating_mode_t)(TLM_OP_MODE_SENSOR_FIFO_RAW_DATA + 10));
+}
+
+TEST_FUNCTION(test_in_band_tlm_cmpnt_tlm_mode_enter_actions, test_setup, test_teardown)
+{
+    // // no actions
+    will_return(__wrap_mts_is_primary_instance, false);
+    in_band_tlm_cmpnt_tlm_mode_enter_actions(TLM_OP_MODE_DISABLED);
+    will_return(__wrap_mts_is_primary_instance, false);
+    in_band_tlm_cmpnt_tlm_mode_enter_actions(TLM_OP_MODE_COLLECTING_DATA);
+
+    will_return(__wrap_mts_is_primary_instance, false);
+    in_band_tlm_cmpnt_tlm_mode_enter_actions(TLM_OP_MODE_SENSOR_FIFO_RAW_DATA);
+
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+    will_return(__wrap_mts_is_primary_instance, false);
+    in_band_tlm_cmpnt_tlm_mode_enter_actions((tlm_operating_mode_t)(TLM_OP_MODE_SENSOR_FIFO_RAW_DATA + 10));
+}

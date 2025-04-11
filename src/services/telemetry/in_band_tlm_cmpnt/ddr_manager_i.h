@@ -157,3 +157,10 @@ fpfw_status_t ddr_manager_allocate_mem_for_inst_pkg(uintptr_t *pkg_location, siz
  * @retval none
  */
 void ddr_manager_deallocate_mem(uintptr_t* pkg_location);
+
+/**
+ * @brief Initialize the free memory for the ddr manager
+ *
+ * @retval none
+ */
+void ddr_manager_initialize_memory();

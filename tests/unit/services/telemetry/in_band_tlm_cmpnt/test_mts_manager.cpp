@@ -135,13 +135,6 @@ TEST_FUNCTION(test_mts_manager_handle_record_enable_disable_fail, test_setup, te
     assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_E_PARAM);
 }
 
-TEST_FUNCTION(test_mts_manager_handle_handle_trp, test_setup, test_teardown)
-{
-    trp_msg_t trp_msg = {{{{0}}}};
-
-    mts_manager_handle_trp_msg(&trp_msg);
-}
-
 TEST_FUNCTION(test_mts_manager_handle_dcp_msg_not_supported, test_setup, test_teardown)
 {
     trp_msg_t trp_msg = {{{{0}}}};
@@ -190,7 +183,7 @@ TEST_FUNCTION(test_mts_manager_handle_dcp_msg_get_state, test_setup, test_teardo
     trp_msg_t trp_msg = {{{{0}}}};
 
     will_return(__wrap_mts_is_primary_instance, true);
-    will_return(exec_tlm_cmpnt_is_telemetry_enabled, true);
+    will_return(exec_tlm_cmpnt_is_telemetry_publishing_enabled, true);
     expect_function_call(__wrap_mts_client_send_trp_response);
 
     trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_STATE;
@@ -201,7 +194,7 @@ TEST_FUNCTION(test_mts_manager_handle_dcp_msg_get_state, test_setup, test_teardo
     assert_int_equal(trp_msg.payload.dcp_msg.payload.get_state.state, DCP_CLIENT_STATE_RUNNING);
 
     will_return(__wrap_mts_is_primary_instance, true);
-    will_return(exec_tlm_cmpnt_is_telemetry_enabled, false);
+    will_return(exec_tlm_cmpnt_is_telemetry_publishing_enabled, false);
     expect_function_call(__wrap_mts_client_send_trp_response);
 
     trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_STATE;
@@ -245,20 +238,20 @@ TEST_FUNCTION(test_mts_manager_handle_dcp_msg_start_stop, test_setup, test_teard
     trp_msg_t trp_msg = {{{{0}}}};
 
     will_return(__wrap_mts_is_primary_instance, false);
-    expect_function_call(exec_tlm_cmpnt_enable_disable_telemetry);
+    expect_function_call(exec_tlm_cmpnt_change_telemetry_mode);
 
     trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_START_STOP;
-    trp_msg.payload.dcp_msg.payload.start_stop.state = DCP_START_STOP_STATE_START;
+    trp_msg.payload.dcp_msg.payload.start_stop.state = DCP_START_STOP_STATE_STOP;
 
     mts_manager_handle_dcp_msg(&trp_msg);
 
     assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
 
     will_return(__wrap_mts_is_primary_instance, false);
-    expect_function_call(exec_tlm_cmpnt_enable_disable_telemetry);
+    expect_function_call(exec_tlm_cmpnt_change_telemetry_mode);
 
     trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_START_STOP;
-    trp_msg.payload.dcp_msg.payload.start_stop.state = DCP_START_STOP_STATE_STOP;
+    trp_msg.payload.dcp_msg.payload.start_stop.state = DCP_START_STOP_STATE_START;
 
     mts_manager_handle_dcp_msg(&trp_msg);
 
@@ -295,7 +288,7 @@ TEST_FUNCTION(test_in_band_tlm_cmpnt_handle_incoming_mts_msg_dcp, test_setup, nu
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(__wrap_mts_is_primary_instance, true);
-    will_return(exec_tlm_cmpnt_is_telemetry_enabled, false);
+    will_return(exec_tlm_cmpnt_is_telemetry_publishing_enabled, false);
 
     expect_function_call(__wrap_mts_client_send_trp_response);
 
@@ -491,6 +484,24 @@ TEST_FUNCTION(test_mts_manager_handle_trp_msg_pkg_compl, test_setup, nullptr)
 
     FpFwListEntryInitialize(&mts_active_pkg_buffer[2].list_entry);
     FpFwListInsertTail(&pkg_active_list, &mts_active_pkg_buffer[2].list_entry);
+
+    mts_manager_handle_trp_msg(&trp_msg);
+}
+
+TEST_FUNCTION(test_mts_manager_handle_trp_msg_client_defined, test_setup, nullptr)
+{
+    trp_msg_t trp_msg = {{{{0}}}};
+
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_CLIENT_DEFINED;
+    p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
+    tlm_client_msg->cmd = TLM_CLIENT_CMD_SET_MODE;
+    tlm_client_msg->payload.mode = TLM_OP_MODE_COLLECTING_DATA;
+    expect_function_call(exec_tlm_cmpnt_change_telemetry_mode);
+
+    mts_manager_handle_trp_msg(&trp_msg);
+
+    tlm_client_msg->cmd = 0xFFFF;
+    tlm_client_msg->payload.mode = TLM_OP_MODE_COLLECTING_DATA;
 
     mts_manager_handle_trp_msg(&trp_msg);
 }
@@ -698,6 +709,7 @@ TEST_FUNCTION(test_mts_manager_handle_trp_msg_pkg_notif, test_setup, nullptr)
 
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_PACKAGE_NOTIFICATION;
 
+    will_return(exec_tlm_cmpnt_is_telemetry_publishing_enabled, true);
     will_return(__wrap_mts_is_primary_instance, false);
     expect_function_call(__wrap_mts_client_send_new_trp_msg);
 
@@ -716,12 +728,13 @@ TEST_FUNCTION(test_mts_manager_handle_trp_msg_pkg_notif, test_setup, nullptr)
     assert_int_equal(queued_pkg->pkg.crc, 0x4267);
 
     // free list is now empty, test that read complete is sent back to sender
+    will_return(exec_tlm_cmpnt_is_telemetry_publishing_enabled, true);
     will_return(__wrap_mts_is_primary_instance, false);
     expect_function_call(__wrap_mts_client_send_new_trp_msg);
     mts_manager_handle_trp_msg(&trp_msg);
 }
 
-TEST_FUNCTION(test_mts_manager_handle_reset_msg, test_setup, nullptr)
+TEST_FUNCTION(test_mts_manager_free_publish_resources, test_setup, nullptr)
 {
     tlm_package_t tlm_pkg[4] = {{{0}}};
     uint8_t buffer[1000] = {0};
@@ -749,12 +762,10 @@ TEST_FUNCTION(test_mts_manager_handle_reset_msg, test_setup, nullptr)
     in_flight.pkg.local_mmap_addr = (uintptr_t)buffer;
     in_flight_tlm_pkg = &in_flight;
 
-    expect_function_call(exec_tlm_cmpnt_enable_disable_telemetry);
-
     expect_function_call(__wrap_mts_client_flush_incoming_queue);
     will_return(__wrap_mts_is_primary_instance, true);
 
-    mts_manager_handle_reset_msg();
+    mts_manager_free_publish_resources();
 
     assert_true(FpFwListIsEmpty(&pkg_active_list));
     assert_false(FpFwListIsEmpty(&pkg_free_list));
@@ -775,53 +786,32 @@ TEST_FUNCTION(test_mts_manager_handle_reset_msg, test_setup, nullptr)
         FpFwListInsertTail(&pkg_active_list, &tlm_pkg[i].list_entry);
     }
 
-    expect_function_call(exec_tlm_cmpnt_enable_disable_telemetry);
     expect_function_call(__wrap_mts_client_flush_incoming_queue);
     will_return(__wrap_mts_is_primary_instance, false);
 
-    mts_manager_handle_reset_msg();
+    mts_manager_free_publish_resources();
 
     assert_true(FpFwListIsEmpty(&pkg_active_list));
     assert_false(FpFwListIsEmpty(&pkg_free_list));
 }
 
-TEST_FUNCTION(test_mts_manager_handle_reset_msg_from_trp, test_setup, nullptr)
+TEST_FUNCTION(test_mts_manager_handle_reset, test_setup, nullptr)
 {
     trp_msg_t trp_msg = {{{{0}}}};
 
-    tlm_package_t tlm_pkg[4] = {{{0}}};
-    uint8_t buffer[1000] = {0};
-
-    FpFwListInitialize(&pkg_free_list);
-    FpFwListInitialize(&pkg_active_list);
-
-    // setup two local packages and 2 remote
-    for (int i = 0; i < 4; i++)
-    {
-        tlm_pkg[i].pkg.source_die_id = 0;
-        tlm_pkg[i].pkg.source_core_id = 2;
-        tlm_pkg[i].pkg.reserved = 0;
-        tlm_pkg[i].pkg.local_mmap_addr = (uintptr_t)buffer;
-        tlm_pkg[i].pkg.phy_addr_offset = 0x4000 + (i * 1000);
-        tlm_pkg[i].pkg.pkg_size = 1000;
-        tlm_pkg[i].pkg.crc = 0x4267 + i;
-        FpFwListEntryInitialize(&tlm_pkg[i].list_entry);
-        FpFwListInsertTail(&pkg_active_list, &tlm_pkg[i].list_entry);
-    }
-    tlm_pkg[1].pkg.source_die_id = 1;
-    tlm_pkg[3].pkg.source_core_id = 1;
-
-    tlm_package_t in_flight;
-    in_flight.pkg.local_mmap_addr = (uintptr_t)buffer;
-    in_flight_tlm_pkg = &in_flight;
-
     will_return_always(__wrap_mts_is_primary_instance, false);
-    expect_function_call(exec_tlm_cmpnt_enable_disable_telemetry);
-    expect_function_call(__wrap_mts_client_flush_incoming_queue);
+    expect_function_call(exec_tlm_cmpnt_change_telemetry_mode);
 
     trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_RESET;
     mts_manager_handle_dcp_msg(&trp_msg);
+}
 
-    assert_true(FpFwListIsEmpty(&pkg_active_list));
-    assert_false(FpFwListIsEmpty(&pkg_free_list));
+TEST_FUNCTION(test_mts_manager_send_mode_to_sec_cores, test_setup, nullptr)
+{
+    will_return(__wrap_mts_is_primary_instance, false);
+    mts_manager_send_mode_to_sec_cores(TLM_OP_MODE_PUBLISHING);
+
+    will_return(__wrap_mts_is_primary_instance, true);
+    expect_function_call(__wrap_mts_client_forward_trp_msg);
+    mts_manager_send_mode_to_sec_cores(TLM_OP_MODE_PUBLISHING);
 }

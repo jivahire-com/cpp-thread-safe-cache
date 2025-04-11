@@ -37,7 +37,7 @@ class trp_endpoint(ABC):
         self.source_die = source_die  # Store common attribute
         self.source_cpu = source_cpu
         self.sequence_number = 0
-        self.default_timeout_sec = 10
+        self.default_timeout_sec = 60
 
     @abstractmethod
     def send_dcp_message(self, dest_die: ctypes.c_uint8, dest_cpu: transfer_relay_protocol.cpu_type, client_id: data_collection_protocol.mts_client_id_t, dcp_msg: list[int], timeout_sec: int = None) -> str:
@@ -81,6 +81,7 @@ class mts_cli_trp_endpoint(trp_endpoint):
         self.source_comm_channel.write_line(write_string=send_str)
         try:
             cmd_timeout_sec = timeout_sec if timeout_sec is not None else self.default_timeout_sec
+            logger.debug(f"Waiting for TRP response for {cmd_timeout_sec} seconds")
             response = self.source_comm_channel.read_until(key="TrpRx", timeout_seconds=cmd_timeout_sec)
         except Exception as e:
             logger.error(f"Error while reading response: {e}")
@@ -88,7 +89,7 @@ class mts_cli_trp_endpoint(trp_endpoint):
 
         rsp_index = response.find("Rsp: ")
         if (rsp_index == -1):
-            raise ValueError("TRP Response not found in {response}")
+            raise ValueError(f"TRP Response not found in {response}")
 
         response_str = response[rsp_index + 4:].strip()
         response_str = response_str.split('\n')[0]  # Take only the part before the newline
@@ -96,7 +97,7 @@ class mts_cli_trp_endpoint(trp_endpoint):
         # Split the string into individual components and convert to list of integers
         response_list = [int(x) for x in response_str.split()]
 
-         # Convert response_list to byte array
+        # Convert response_list to byte array
         response_bytes = bytearray(response_list)
         logger.debug(f"\nDCP in TRP response: {' '.join(f'{b:02X}' for b in response_bytes)}\n")
 
@@ -107,7 +108,7 @@ class mts_cli_trp_endpoint(trp_endpoint):
         logger.debug(f"TRP Header - Destination Die ID: {trp_msg_hdr.dest_node.die_id}")
         logger.debug(f"TRP Header - Destination Core ID: {trp_msg_hdr.dest_node.core_id}")
         logger.debug(f"TRP Header - Message status: {trp_msg_hdr.trp_msg_status:x}")
-        logger.debug(f"TRP Header - DCP Client ID: {trp_msg_hdr.mts_client_id}")
+        logger.debug(f"TRP Header - MTS Client ID: {trp_msg_hdr.mts_client_id}")
         logger.debug(f"TRP Header - TRP Message ID: {trp_msg_hdr.trp_msg_id:x}")
         logger.debug(f"TRP Header - Source Sequence Number: {trp_msg_hdr.source_seq_num:x}")
         logger.debug(f"TRP Header - Payload Size: {trp_msg_hdr.payload_size:x}")

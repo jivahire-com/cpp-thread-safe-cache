@@ -14,14 +14,28 @@
 
 #include <FpFwAssert.h>
 #include <FpFwLinkedList.h>
+#include <exec_tlm_cmpnt.h>
 #include <fpfw_status.h>
 #include <stdint.h>
 #include <transfer_relay_protocol.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define TLM_CLIENT_SET_MODE_MSG_SIZE (4)
 
 /*-------------- Typedefs ----------------*/
+typedef enum
+{
+   TLM_CLIENT_CMD_SET_MODE = 1,
+} tlm_client_cmd_t;
+
+typedef struct __attribute__((packed)) tlm_client_msg_t{
+    uint16_t cmd;                                                   // tlm_client_cmd_t
+    union __attribute__((packed)) {
+        uint16_t                       mode;                        // tlm_operating_mode_t
+    } payload;
+} tlm_client_msg_t, *p_tlm_client_msg_t;
+
 typedef struct
 {
    FPFW_LIST_ENTRY list_entry;
@@ -108,12 +122,6 @@ void mts_manager_handle_read_msg(p_trp_msg_t trp_msg);
 void mts_manager_handle_read_complete_msg(p_trp_msg_t trp_msg);
 
 /**
- * @brief Handle a reset message from the data collection service.
- *
- */
-void mts_manager_handle_reset_msg(void);
-
-/**
  * @brief Send a TRP package notification to the primary MCP.
  *
  * @param[in] tlm_pkg - Pointer to the telemetry package
@@ -158,3 +166,18 @@ p_tlm_package_t mts_manager_get_pkg_from_free_list(void);
  * @param[in] dest_core_id - Destination Core ID
  */
 void mts_manager_send_trp_package_helper(p_tlm_package_t tlm_pkg, trp_msg_id_t msg_id, uint8_t dest_die_id, uint8_t dest_core_id);
+
+/**
+ * @brief stops publishing telemetry data and frees all resources.
+ *
+ */
+void mts_manager_free_publish_resources(void);
+
+/**
+ * @brief Changes the telemetry service mode and notifies secondary cores if called from
+ * the primary core.
+ * @param[in] new_mode The new telemetry mode.
+ * @return None
+ *
+ */
+void mts_manager_send_mode_to_sec_cores(tlm_operating_mode_t new_mode);

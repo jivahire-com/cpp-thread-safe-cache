@@ -35,6 +35,8 @@ unit_test_target(${TARGET})
 
 mock_target(${TARGET}
     FpFwAssertWithArgs
+    FpFwLockAcquire
+    FpFwLockRelease
     _txe_thread_create
     _txe_timer_create
     _txe_event_flags_create
@@ -42,6 +44,7 @@ mock_target(${TARGET}
     _txe_timer_deactivate
     _txe_timer_activate
     _txe_timer_info_get
+    _txe_timer_change
     gtimer_prodfw_get_counter
     gtimer_prodfw_get_frequency
 )

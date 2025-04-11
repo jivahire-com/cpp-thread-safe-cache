@@ -25,7 +25,7 @@
 FPFW_ET_DEFINE_PROVIDER_EX(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                            TelemetrySvc,
                            FPFW_ET_LEVEL_MASK_INFO | FPFW_ET_LEVEL_MASK_WARNING | FPFW_ET_LEVEL_MASK_ERROR |
-                               FPFW_ET_LEVEL_MASK_FATAL | FPFW_ET_LEVEL_MASK_DEBUG | FPFW_ET_LEVEL_MASK_ALWAYS);
+                               FPFW_ET_LEVEL_MASK_FATAL | FPFW_ET_LEVEL_MASK_ALWAYS);
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      10,
@@ -250,7 +250,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     43,
-                    MtsMgrResetMsgReceived,
+                    MtsMgrPackagesFlushed,
                     FPFW_ET_LEVEL_INFO)
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
@@ -277,5 +277,46 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     CstateUnexpectedLevelChange,
                     FPFW_ET_LEVEL_ERROR)
 
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                     49,
+                     ExecInvalidModeChange,
+                     FPFW_ET_LEVEL_WARNING,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, current_mode),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, new_mode))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    50,
+                    ExecTlmSvcModeChange,
+                    FPFW_ET_LEVEL_INFO,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, current_mode),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, new_mode))
+
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    51,
+                    ExecInvalidTimerPeriod,
+                    FPFW_ET_LEVEL_WARNING,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, data_aggr_period_ms),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, inst_pkg_sample_period_ms),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, pwr_pkg_period_ms),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, twenty_four_hr_pkg_period_ms))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    52,
+                    MtsMgrClientUnexpectedCmd,
+                    FPFW_ET_LEVEL_WARNING,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, cmd))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    53,
+                    MtsMgrInitDDR,
+                    FPFW_ET_LEVEL_INFO)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    54,
+                    TimerChangeFail,
+                    FPFW_ET_LEVEL_WARNING,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, tmr_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status))
 /*--------- Function Prototypes ----------*/
 

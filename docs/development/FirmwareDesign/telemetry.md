@@ -99,6 +99,51 @@ Any other signaling from external entry points, ISR's, communication stack callb
 
 Using asynchronous management of the external interfaces ensures all telemetry processing is thread safe.  No internal locks are required.
 
+The executive component controls high level functionality of the service via tlm_operating_mode_t.  A high level
+state diagram shows the main functionality of the different modes.
+
+NOTE: In DataCollectMode, raw data is collected and processed, but the data is not packaged for the host. In publishing mode, data is also collected and published to the host.  ie the Data Aggregation timer is active in both states.
+
+:::mermaid
+stateDiagram-v2
+    [*] --> DataCollectMode
+
+    state DataCollectMode {
+        [*] --> DCModeActive : entry / Enable Aggr Tmr
+        DCModeActive --> [*] : exit / None
+    }
+
+    state PublishingMode {
+        [*] --> PublishModeActive : entry / Enable Publish Tmr's
+        PublishModeActive --> [*] : exit/Dis Pub Tmr's,Free Rsrcs
+    }
+
+    state SensorFifoMode {
+        [*] --> SensorFifoModeActive : entry / Create Dbg Pkg
+        SensorFifoModeActive --> [*] : exit / Cmpl Pkg, Notify Host
+    }
+
+    state DisabledMode {
+        [*] --> DisabledModeActive : entry / Disable All Tmr's
+        DisabledModeActive --> [*] : exit / Enable Aggr Tmr
+    }
+
+    DataCollectMode --> PublishingMode : To Publish
+    DataCollectMode --> DisabledMode : To Disabled
+    DataCollectMode --> SensorFifoMode : To SnsrFifo
+
+    PublishingMode --> DataCollectMode : To DataColl
+    PublishingMode --> SensorFifoMode : To SnsrFifo
+    PublishingMode --> DisabledMode : To Disabled
+
+    DisabledMode --> DataCollectMode : To DataColl
+    DisabledMode --> SensorFifoMode : To SnsrFifo
+    DisabledMode --> PublishingMode : To Publish
+
+    SensorFifoMode --> DisabledMode : To Disabled
+
+:::
+
 ### Data Processing Component
 
 - Polls data from Sensor Fifo.

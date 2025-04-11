@@ -43,7 +43,7 @@ class MtsDcpTest(EchoFallsBaseTest):
         default_log_home: str = None,
         fw_payload_path: str = None,
         host_config: Path | str = None,
-        name: str = None,
+        name: str = "MtsDcpTest",
         number: str = "NaN",
         dut_platform: str = "KingsgateSVP",
         host_name: str | None = None,

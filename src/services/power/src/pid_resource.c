@@ -8,6 +8,8 @@
 /*------------- Includes -----------------*/
 #include "pid_resource.h"
 
+#include "power_log.h" // for power_log_cores
+
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>  // for FPFW_RUNTIME_ASSERT
 #include <stdbool.h>
@@ -92,15 +94,15 @@ uint32_t pid_calculate_resources(float delta_time, float measured_value)
         pidctx.available_resources = pidcfg.max;
     }
 
-    /* TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1946116
-       enable power log
-
-    // log current PID state
-    power_log_cores(
-        &ALLCORES,
-        POWER_LOG_DATA(
-            PID, {.error = error, .p = proportional, .i = integral, .d = derivative, .available = available_resources}));
-    */
+    //! enable power log, log current PID state
+    power_log_cores(&ALLCORES,
+                    POWER_LOG_DATA(PID,
+                                   {.error = error,
+                                    .p = proportional,
+                                    .i = pidctx.integral,
+                                    .d = derivative,
+                                    .available = ((uint32_t)pidctx.available_resources),
+                                    .scaled = (uint32_t)temp}));
 
     // output current value
     return pidctx.available_resources;

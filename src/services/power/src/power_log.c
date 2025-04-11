@@ -47,10 +47,10 @@ static power_log_data_t log = {};
 
 /*------------- Functions ----------------*/
 
-void mmio_ap_mem_cpy(uint64_t globalAddr, uintptr_t localAddr, uint64_t numBytes)
+int mmio_ap_mem_cpy(uint64_t globalAddr, uintptr_t localAddr, uint64_t numBytes)
 {
+    int status = SILIBS_SUCCESS;
     uint64_t bytesCopied = 0;
-
     atu_map_entry_t log_mem_atu_map_struct;
     atu_entry_attr_t log_test_atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT};
 
@@ -74,13 +74,11 @@ void mmio_ap_mem_cpy(uint64_t globalAddr, uintptr_t localAddr, uint64_t numBytes
     log_mem_atu_map_struct.mscp_end_address = end_addr - 1;
     log_mem_atu_map_struct.attribute.as_uint32 = log_test_atu_root_attr.as_uint32;
 
-    if (!atu_map(ATU_ID_MSCP, &log_mem_atu_map_struct))
+    status = atu_map(ATU_ID_MSCP, &log_mem_atu_map_struct);
+    if (status != SILIBS_SUCCESS)
     {
-        printf("  ATU mapping failed\n");
-    }
-    else
-    {
-        printf("  ATU mapping succeeded\n");
+        POWER_LOG_ERR("Pwr Log DDR failed due to ATU mapping failure, Stat:%d\n", status);
+        return status;
     }
 
     while (bytesCopied < numBytes)
@@ -112,7 +110,7 @@ void mmio_ap_mem_cpy(uint64_t globalAddr, uintptr_t localAddr, uint64_t numBytes
             bytesCopied += sizeof(uint8_t);
         }
     }
-    atu_unmap(ATU_ID_MSCP, &log_mem_atu_map_struct);
+    return atu_unmap(ATU_ID_MSCP, &log_mem_atu_map_struct);
 }
 
 power_log_data_t* get_instance()
@@ -152,6 +150,10 @@ bool power_log_has_cores(uint8_t type)
 
 void power_log_init()
 {
+    if (log.initialized)
+    {
+        return;
+    }
     // power_log_data_t *log = &power_context.log;
     //  allocate memory for log entries
     log.entries = malloc(POWER_LOG_LOCAL_SIZE);
@@ -169,45 +171,60 @@ void power_log_init()
     // register the power log with crash dump
     // need crashdump
     crash_dump_register_address32((void*)&log.entries, POWER_LOG_LOCAL_SIZE, FPFW_CD_DUMP_PRIORITY_NORMAL);
+    POWER_LOG_INFO("Pwr Log Init, Size[%u] MaxEntries[%u] Mask[0x%" PRIx32 "]\n", POWER_LOG_LOCAL_SIZE, log.max_entries, log.mask);
+    log.initialized = true;
 }
 
 /* sets the use DDR flag and resets the DDR content (on enable) */
-void power_log_use_ddr(bool use_ddr)
+int power_log_use_ddr(bool use_ddr)
 {
+    int status = SILIBS_SUCCESS;
+    KNG_DIE_ID die_id = idsw_get_die_id();
     should_use_ddr = use_ddr;
-    if (use_ddr)
+    if ((use_ddr) && (log.initialized))
     {
         power_log_entry_t invalid_entry = {.type = POWER_LOG_INVALID_TYPE};
-        // reset DDR log
-        if (idsw_get_die_id() == DIE_0)
+        // reset DDR log & create an initial invalid entry
+        log.last_ddr_entry = 0;
+        log.oldest_ddr_entry = 0;
+        if (die_id == DIE_0)
         {
             log.max_ddr_entries = (POWER_LOG_DDR_SIZE_DIE0) / sizeof(power_log_entry_t);
+            status = mmio_ap_mem_cpy(POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE0, 0),
+                                     (uintptr_t)&invalid_entry,
+                                     sizeof(power_log_entry_t));
         }
         else
         {
             log.max_ddr_entries = (POWER_LOG_DDR_SIZE_DIE1) / sizeof(power_log_entry_t);
+            status = mmio_ap_mem_cpy(POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE1, 0),
+                                     (uintptr_t)&invalid_entry,
+                                     sizeof(power_log_entry_t));
         }
-        log.last_ddr_entry = 0;
-        log.oldest_ddr_entry = 0;
-        // create an initial invalid entry
-        if (idsw_get_die_id() == DIE_0)
+
+        if (status != SILIBS_SUCCESS)
         {
-            mmio_ap_mem_cpy(POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE0, 0),
-                            (uintptr_t)&invalid_entry,
-                            sizeof(power_log_entry_t));
+            POWER_LOG_ERR("Power log DDR failure, Stat:%d\n", status);
+            should_use_ddr = false;
+            return status;
         }
-        else
-        {
-            mmio_ap_mem_cpy(POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE1, 0),
-                            (uintptr_t)&invalid_entry,
-                            sizeof(power_log_entry_t));
-        }
+        POWER_LOG_INFO("Power log using DDR, Die ID[%d]\n", die_id);
     }
+    else
+    {
+        POWER_LOG_INFO("Power log not using DDR, Die ID[%d]\n", die_id);
+    }
+    return status;
 }
 
 /* for a given entry index, returns the next, wrapping at end of log */
 static inline unsigned next_entry(unsigned entry)
 {
+    if (log.max_entries == 0)
+    {
+        POWER_LOG_ERR("Power log not initialized or max entries is 0\n");
+        return 0;
+    }
     entry += 1;
     entry %= log.max_entries;
     return entry;
@@ -216,6 +233,12 @@ static inline unsigned next_entry(unsigned entry)
 /* for a given DDR entry index, returns the next, wrapping at end of log */
 static inline unsigned next_ddr_entry(unsigned entry)
 {
+    if (log.max_ddr_entries == 0)
+    {
+        POWER_LOG_ERR("Power log DDR not initialized or max_ddr_entries is 0\n");
+        return 0;
+    }
+
     entry += 1;
     entry %= log.max_ddr_entries;
     return entry;
@@ -248,6 +271,12 @@ static void add_ddr_entry(power_log_entry_t* log_entry)
 
 void power_log_update_timestamp(uint64_t timestamp)
 {
+    if (!log.initialized)
+    {
+        POWER_LOG_ERR("Power log not initialized\n");
+        return;
+    }
+
     // power_log_data_t *log  = &power_context.log;
     log.last_timestamp = timestamp;
     unsigned previous_last = log.last_timestamp_entry;
@@ -273,6 +302,12 @@ void power_log_update_timestamp(uint64_t timestamp)
 /* this is the main log function; takes a list of cores the log applies to, a type, and the type's payload */
 void power_log_cores(const corebits_t* cores, uint8_t type, power_log_payload_t* payload)
 {
+    if (!log.initialized)
+    {
+        POWER_LOG_ERR("Power log not initialized\n");
+        return;
+    }
+
     // power_log_data_t *log               = &power_context.log;
     bool found = false;
     unsigned entry_idx = log.last_timestamp_entry;
@@ -334,6 +369,12 @@ void power_log_cores(const corebits_t* cores, uint8_t type, power_log_payload_t*
 
 void power_log_core(unsigned int core, uint8_t type, power_log_payload_t* payload)
 {
+    if (!log.initialized)
+    {
+        POWER_LOG_ERR("Power log not initialized\n");
+        return;
+    }
+
     corebits_t new_pending = {0};
     corebits_set_bit(&new_pending, core);
     power_log_cores(&new_pending, type, payload);
@@ -341,6 +382,12 @@ void power_log_core(unsigned int core, uint8_t type, power_log_payload_t* payloa
 
 void power_log_cores_ts(uint64_t timestamp, const corebits_t* cores, uint8_t type, power_log_payload_t* payload)
 {
+    if (!log.initialized)
+    {
+        POWER_LOG_ERR("Power log not initialized\n");
+        return;
+    }
+
     power_log_update_timestamp(timestamp);
     power_log_cores(cores, type, payload);
 }

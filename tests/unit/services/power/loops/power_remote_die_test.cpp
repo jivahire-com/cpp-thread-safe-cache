@@ -28,7 +28,6 @@ extern "C" {
 #include <power_runconfig_i.h> // for power_fuses_read, power_fuses_get_cur...
 #include <stdint.h>            // for int8_t, uint64_t, uint8_t, uintptr_t
 #include <string.h>            // for memcpy
-
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
@@ -48,6 +47,7 @@ static icc_base_send_complete_notify s_stored_send_cb = NULL;
 static void* s_stored_send_context = NULL;
 static void* s_stored_recv_context = NULL;
 static uint32_t* s_stored_send_payload_buffer = NULL;
+static uint8_t mock_arsm_buffer[2048] = {0};
 
 /*------------- Functions ----------------*/
 //
@@ -90,6 +90,23 @@ uint32_t __wrap_cortex_m7_atomic_or(volatile uint32_t* address, uint32_t value)
     return *address;
 }
 
+power_d2d_arsm_data_t* __wrap_get_arsm_mem_to_write(void* d2d_ctx)
+{
+    FPFW_UNUSED(d2d_ctx);
+    return (power_d2d_arsm_data_t*)mock_arsm_buffer;
+}
+
+power_d2d_arsm_data_t* __wrap_get_arsm_mem_to_read(void* d2d_ctx)
+{
+    FPFW_UNUSED(d2d_ctx);
+    return (power_d2d_arsm_data_t*)mock_arsm_buffer;
+}
+
+void __wrap_cortex_m7_atomic_call_data_synchronization_barrier(void)
+{
+    // nothing to do here; this is a no-op in the test environment
+    function_called();
+}
 // end mocks
 } // extern "C"
 
@@ -154,8 +171,7 @@ void setup_multi_die()
 
 POWER_TEST(remote_die_init__dual_die, setup, teardown)
 {
-    expect_value(__wrap_FpFwAssert, expression, true);
-
+    expect_value_count(__wrap_FpFwAssert, expression, true, 4);
     setup_multi_die();
 
     // expect two calls to setup_recv_request
@@ -182,12 +198,12 @@ POWER_TEST(remote_die_exchange_inputs__single_die, setup, teardown)
 POWER_TEST(remote_die_exchange_inputs__multi_die, setup, teardown)
 {
     expect_value(__wrap_FpFwAssert, expression, true);
-
     setup_multi_die();
 
     // expect a call to icc send
     set_expectations_for_send_request((void*)TEST_ICC_D2D_CTX);
     // no immediate signal when we call the exchange function
+    expect_function_call(__wrap_cortex_m7_atomic_call_data_synchronization_barrier);
     expect_function_call(__wrap_cortex_m7_atomic_or);
     __real_power_remote_die_exchange_inputs(&s_test_power_runconfig);
 
@@ -214,6 +230,7 @@ POWER_TEST(remote_die_exchange_inputs__multi_die__send_started, setup, teardown)
     set_expectations_for_send_request((void*)TEST_ICC_D2D_CTX);
     // no immediate signal when we call the exchange function
     expect_value(__wrap_FpFwAssert, expression, true);
+    expect_function_call(__wrap_cortex_m7_atomic_call_data_synchronization_barrier);
     expect_function_call(__wrap_cortex_m7_atomic_or);
     __real_power_remote_die_exchange_inputs(&s_test_power_runconfig);
 
@@ -244,6 +261,7 @@ POWER_TEST(remote_die_exchange_inputs__multi_die__recv_first, setup, teardown)
     // then exchange inputs call
     set_expectations_for_send_request((void*)TEST_ICC_D2D_CTX);
     // still no immediate signal when we call the exchange function
+    expect_function_call(__wrap_cortex_m7_atomic_call_data_synchronization_barrier);
     expect_function_call(__wrap_cortex_m7_atomic_or);
     __real_power_remote_die_exchange_inputs(&s_test_power_runconfig);
 

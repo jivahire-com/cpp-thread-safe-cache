@@ -71,6 +71,7 @@ mock_target(${TARGET}
     power_telemetry_init_config
     power_telemetry_enable
     power_timer_start_loop_timers
+    power_timer_get_counter
     crash_dump_bug_check
     ws_data_get
     ws_data_put

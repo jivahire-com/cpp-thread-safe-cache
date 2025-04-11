@@ -44,7 +44,7 @@ const power_cli_sub_command_dictionary_element_t power_cli_log_sub_command_dicti
 const uint32_t length_log_commands_dictionary =
     sizeof(power_cli_log_sub_command_dictionary) / sizeof(power_cli_sub_command_dictionary_element_t);
 /*-------------- Functions ---------------*/
-power_if_cmd_t cli_power_log_get_cmd_id(char* sub_command)
+power_if_cmd_t cli_power_log_get_cmd_id(const char* sub_command)
 {
     if (sub_command == NULL)
     {
@@ -115,8 +115,19 @@ static void power_log_list(ppower_service_cli_request_t p_cli_request)
 void power_log_ddr(ppower_service_cli_request_t p_cli_request)
 {
     uint16_t value = p_cli_request->pwrset_sub_command_args.minupdate_val;
-    power_log_use_ddr((value != 0));
-
+    int status = power_log_use_ddr((value != 0));
+    if (status != 0) {
+        printf("  Failed to set log use ddr\n");
+        return;
+    }
+    printf("  log use ddr: %s\n", (value != 0) ? "true" : "false");
+    uint64_t start_addr = POWER_LOG_RESERVATION_BASE;
+    uint64_t end_addr   = POWER_LOG_RESERVATION_END - 1;
+    printf("   DDR range: 0x%" PRIx32 "%08" PRIx32 "--0x%" PRIx32 "%08" PRIx32 "\n",
+       (uint32_t)(start_addr >> 32),
+       (uint32_t)start_addr,
+       (uint32_t)(end_addr >> 32),
+       (uint32_t)end_addr);
 }
 
 // "pwr log mask" command
@@ -152,5 +163,4 @@ void cli_power_log_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* compl
         default:
            break;
     }    
-    printf("Power Logging yet to be implemented\n");
 }

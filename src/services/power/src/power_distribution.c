@@ -11,6 +11,7 @@
 #include "power_distribution_i.h"
 #include "power_events.h"
 #include "power_i.h"
+#include "power_log.h"
 #include "power_loops_i.h"
 #include "power_stub_i.h"
 
@@ -345,11 +346,9 @@ static void power_distribution_push_selections(power_runconfig_t* p_runconfig,
                                                unsigned* p_per_pri_selections,
                                                unsigned* p_max_base)
 {
-    /* TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1946116
-                 enable power log
+    //! enable power log
     power_log_thrpri_t selections = {0}; // structure to store per-priority exceptions to log
     static_assert(VM_THROT_COUNT <= DIMOF(selections.selection), "Required size mismatch in structure");
-    */
 
     // if pstate forced, just return
     if (p_runconfig->knobs.force_pstate < NUM_PSTATES)
@@ -365,11 +364,8 @@ static void power_distribution_push_selections(power_runconfig_t* p_runconfig,
         corebits_t cores_at_pri = boost ? p_ctrlloop->boost_priority[pri_idx] : p_ctrlloop->throttle_priority[pri_idx];
         POWER_LOG_TRACE("Priority group %d: P%d (%s)", pri_idx, selection, boost ? "boost" : "throttle");
 
-        /* TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1946116
-                 enable power log
-        // store selection for log
+        //! enable power log, store selection for log
         selections.selection[pri_idx] = selection;
-        */
 
         for (int core = corebits_first(&cores_at_pri); core >= 0; core = corebits_first(&cores_at_pri))
         {
@@ -385,11 +381,9 @@ static void power_distribution_push_selections(power_runconfig_t* p_runconfig,
             p_ctrlloop->plimit.selections[pri_idx].acc[min_selected_plimit]++;
         }
     }
-    /* TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1946116
-                 enable power log
 
-    power_log_cores(&ALLCORES, TP_SELECTION, &(power_log_payload_t){.TP_SELECTION = selections});
-    */
+    //! enable power log
+    power_log_cores(&ALLCORES, TP_SELECTION, &(power_log_payload_t){.members.TP_SELECTION = selections});
 }
 
 void power_distribution_distribute_resources(power_runconfig_t* p_runconfig, power_ctrl_loop_detail_t* p_ctrlloop)
@@ -472,11 +466,9 @@ void power_distribution_minimum_plimit_updates(power_runconfig_t* p_runconfig, p
     {
         corebits_set_bit(&new_pending, core);
     }
-    // log the cores included in minimum update
-    /* TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1946116
-                 enable power log
-    power_log_cores_ts(mod_power_timer_get_counter(), &new_pending, POWER_LOG_DATA(DIST_MIN_PLIMIT_UPD, NULL));
-    */
+    //! enable power log, log the cores included in minimum update
+    power_log_cores_ts(power_timer_get_counter(), &new_pending, POWER_LOG_DATA(DIST_MIN_PLIMIT_UPD, NULL));
+
     corebits_or(&p_ctrlloop->plimits_pending, &new_pending);
 
     // next iteration

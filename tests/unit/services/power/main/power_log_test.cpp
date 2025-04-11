@@ -102,8 +102,17 @@ static int setup(void** state)
     log1->mask = UINT32_MAX;
     log1->entries = (power_log_entry_t*)log_data;
     log1->last_entry = 0; // ensure we start at 0, so math in tests doesn't have to deal with wrap
+    log1->initialized = true;
     memset(log1->entries, 0, POWER_LOG_LOCAL_SIZE);
-    power_log_use_ddr(false);
+    log1->max_entries = POWER_LOG_LOCAL_SIZE / sizeof(power_log_entry_t);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_function_call_any(__wrap_mmio_write64);
+    // expect_function_call(__wrap_mmio_write32);
+    // expect_function_call(__wrap_mmio_write16);
+    // expect_function_call(__wrap_mmio_write8);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
+    power_log_use_ddr(true);
     power_log_update_timestamp(0);
 
     use_wrap = true;
@@ -118,7 +127,9 @@ static int teardown(void** state)
     use_wrap = false;
 
     /* ensure use ddr disabled */
+    will_return(__wrap_idsw_get_die_id, DIE_0);
     power_log_use_ddr(false);
+    log1->initialized = false;
     return 0;
 }
 
@@ -249,6 +260,10 @@ POWER_TEST(log_cores_update_ts_between, setup, teardown)
     // 2nd log
     power_log_cores(&expected_cores, TEST_ENTRY_CORES, &test_payload_b);
     // 3rd log (should be a third entry - same payload as previous, different core, but with timestamp change)
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_function_call_any(__wrap_mmio_write64);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
     power_log_update_timestamp(LOG_TS);
     power_log_cores(&expected_cores_2, TEST_ENTRY_CORES, &test_payload_b);
 
@@ -284,13 +299,13 @@ POWER_TEST(log_string, setup, teardown)
     assert_memory_equal(power_log_string(TEST_ENTRY_CORES, &test_payload), &expected2, sizeof(expected2));
 }
 
-POWER_TEST(power_log_init, setup, teardown)
+POWER_TEST(power_log_init, NULL, teardown)
 {
     expect_function_call(__wrap_crash_dump_register_address32);
     power_log_init();
 }
 
-POWER_TEST(mmio_ap_mem_cpy, setup, teardown)
+POWER_TEST(mmio_ap_mem_cpy, NULL, NULL)
 {
     uint64_t globalAddr = POWER_LOG_RESERVATION_BASE;
     uint64_t localAddr = POWER_LOG_DDR_BASE_DIE0;
@@ -307,7 +322,8 @@ POWER_TEST(mmio_ap_mem_cpy, setup, teardown)
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     // Call the function to test
-    mmio_ap_mem_cpy(globalAddr, (uintptr_t)&localAddr, numBytes);
+    int status = mmio_ap_mem_cpy(globalAddr, (uintptr_t)&localAddr, numBytes);
+    assert_int_equal(status, SILIBS_SUCCESS);
 
     assert_int_equal(localAddr, POWER_LOG_DDR_BASE_DIE0);
 }

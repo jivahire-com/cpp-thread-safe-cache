@@ -48,7 +48,7 @@
 #define POWER_LOG_DATA(name, ...) \
     name, &(power_log_payload_t) \
     { \
-        .name = __VA_ARGS__ \
+        .members.name = __VA_ARGS__ \
     }
 
 // pointer to first byte past cores structure within payload
@@ -117,6 +117,7 @@ typedef struct _power_log_data {
     unsigned last_ddr_entry;
     unsigned oldest_ddr_entry;
     uint32_t mask;
+    bool initialized;
 } power_log_data_t;
 
 // generates log type enums
@@ -136,10 +137,10 @@ POWER_LOG_GENERATOR(MASK_BITS)
 
 /*--------- Function Prototypes ----------*/
 
-void mmio_ap_mem_cpy(uint64_t globalAddr, uintptr_t localAddr, uint64_t numBytes);
+int mmio_ap_mem_cpy(uint64_t globalAddr, uintptr_t localAddr, uint64_t numBytes);
 power_log_data_t *get_instance();
 void power_log_init();
-void power_log_use_ddr(bool use_ddr);
+int power_log_use_ddr(bool use_ddr);
 void power_log_update_timestamp(uint64_t timestamp);
 void power_log_core(unsigned int core, uint8_t type, power_log_payload_t *payload);
 void power_log_cores(const corebits_t *cores, uint8_t type, power_log_payload_t *payload);

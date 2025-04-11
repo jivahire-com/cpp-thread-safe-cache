@@ -284,7 +284,6 @@ POWER_TEST(init, NULL, NULL)
     expect_function_call(__wrap_power_loops_init);
     expect_function_call(__wrap_power_loops_control_init);
     expect_function_call(__wrap_power_loops_telemetry_init);
-    expect_function_call(__wrap_crash_dump_register_address32);
     expect_function_call(__wrap_crash_dump_register_pre_dump_callback);
     power_init(&test_device, &test_schedule, &test_config);
 }
@@ -318,7 +317,6 @@ POWER_TEST(init_ws, NULL, NULL)
     expect_function_call(__wrap_power_loops_init);
     expect_function_call(__wrap_power_loops_control_init);
     expect_function_call(__wrap_power_loops_telemetry_init);
-    expect_function_call(__wrap_crash_dump_register_address32);
     expect_function_call(__wrap_crash_dump_register_pre_dump_callback);
 
     power_init(&test_device, &test_schedule, &test_config);

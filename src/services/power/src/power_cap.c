@@ -142,3 +142,8 @@ bool power_cap_is_capped()
 {
     return (s_local_soc_power_cap_watts != NO_POWER_CAP);
 }
+
+uint16_t get_current_soc_power_cap()
+{
+    return s_local_soc_power_cap_watts;
+}

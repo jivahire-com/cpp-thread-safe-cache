@@ -353,8 +353,11 @@ typedef struct _power_derived_config_t
 /* List of different command IDs that can be sent to the the power service */
 typedef enum
 {
+    //! All get commands
     POWER_IF_CMD_GET_RUNCONFIG_KNOBS,
     POWER_IF_CMD_GET_RUNCONFIG_FUSES,
+
+    //! All set commands
     POWER_IF_CMD_SET_CAP,
     POWER_IF_CMD_SET_DESIRED_PSTATE,
     POWER_IF_CMD_SET_PLIMIT, 
@@ -362,15 +365,20 @@ typedef enum
     POWER_IF_CMD_SET_RACK_LIMIT,
     POWER_IF_CMD_SET_MINUPDATE,
     POWER_IF_CMD_SET_NOMINAL,
+    POWER_IF_CMD_SET_FORCED,
+    POWER_IF_CMD_SET_PSTATE_FREQ,
+
+    //! All status commands
     POWER_IF_CMD_STATUS_CL,
     POWER_IF_CMD_STATUS_VRTL,
-    POWER_IF_CMD_SET_PVTTL,
+    POWER_IF_CMD_STATUS_PVTTL,
+    
+    //! All log commands
     POWER_IF_CMD_LOG_DUMP,
     POWER_IF_CMD_LOG_DDR,
     POWER_IF_CMD_LOG_MASK,
-    POWER_IF_CMD_SET_FORCED,
-    POWER_IF_CMD_SET_PSTATE_FREQ,
-    
+
+    //! Keep last
     POWER_IF_CMD_UNKNOWN
 } power_if_cmd_t;
 

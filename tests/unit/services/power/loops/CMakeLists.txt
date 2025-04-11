@@ -105,6 +105,16 @@ mock_target(${TARGET}
     sensor_fifo_svc_add_vr_current
     power_vcpu_calc_max_core_voltage_mv
     power_vcpu_calc_peak_current_A
+    power_log_cores_ts
+    power_log_core
+    store_remote_soc_power
+    idsw_get_die_id
+    power_cap_update
+    pid_set_context
+    pid_get_context
+    get_arsm_mem_to_write
+    get_arsm_mem_to_read
+    cortex_m7_atomic_call_data_synchronization_barrier
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

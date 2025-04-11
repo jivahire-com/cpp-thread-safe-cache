@@ -13,6 +13,7 @@
 #include "power_events.h"
 #include "power_hw_int_i.h"
 #include "power_i.h"
+#include "power_log.h"
 #include "power_loops_i.h"
 #include "power_remote_die_i.h"
 #include "power_runconfig.h"
@@ -100,10 +101,9 @@ static bool power_control_loop_retry_fail(power_loop_retries_t type)
 static void power_control_loop_change_state(power_ctrl_loop_state_t state)
 {
     FPFW_RUNTIME_ASSERT(state < POWER_CONTROL_STATE_MAX);
-    // update the timestamp used in power logs
-    /*
+
     power_log_update_timestamp(power_timer_get_counter());
-    */
+
     // call the common function with detail for power control loop
     return power_loops_change_state(&s_control_loop_context, (int)state);
 }
@@ -236,8 +236,6 @@ static uint8_t throt_pri_for_tracking(power_runconfig_t* p_runconfig, uint8_t pr
 
 static void collect_inputs_handler(int event, const void* event_data)
 {
-    UNUSED(event_data);
-
     switch (event)
     {
     case POWER_LOOP_STATE_SIGNAL_ENTRY:
@@ -347,18 +345,15 @@ static void distribute_available_handler(int event, const void* event_data)
                                         (s_ctrl_loop.local.power.vcpu_power + s_ctrl_loop.remote.power.vcpu_power));
         }
 
-        /* TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1946116
-                 enable power log
-
-        power_log_cores_ts(power_timer_get_counter(),
-                           &ALLCORES,
-                           POWER_LOG_DATA(DIST_AVAIL,
-                                          {.soc_pwr  = power_context.soc_power[0],
-                                           .vcpu_pwr = power_context.vcpu_power,
-                                           .soc_cap  = MIN(power_context.soc_power_cap_watts,
-                                                              (float)p_runconfig->soc_maximum_thermal_watts_limit),
-                                           .vcpu_cap = temp}));
-        */
+        //! enable power log
+        power_log_cores_ts(
+            power_timer_get_counter(),
+            &ALLCORES,
+            POWER_LOG_DATA(DIST_AVAIL,
+                           {.soc_pwr = s_ctrl_loop.local.power.soc_power,
+                            .vcpu_pwr = s_ctrl_loop.local.power.vcpu_power,
+                            .soc_cap = (float)FPFW_MIN(get_current_soc_power_cap(), p_runconfig->derived.soc_maximum_thermal_watts_limit),
+                            .vcpu_cap = temp}));
 
         // Determine Distribution
         power_distribution_distribute_resources(p_runconfig, &s_ctrl_loop);
@@ -593,9 +588,16 @@ static void set_plimit_after_handler(int event, const void* event_data)
     set_plimit_handler(POWER_CONTROL_STATE_EXCHANGE_COMPLETION, event, event_data);
 }
 
+static void power_cap_completed_callback(int result, uint16_t current_cap, uint16_t previous_cap_watts)
+{
+    //! Do we need this callback for anything else?
+    POWER_LOG_INFO("[POWER CAP UPDATE] result %d Current %d Previous %d\n", result, current_cap, previous_cap_watts);
+}
+
 static void exchange_inputs_handler(int event, const void* event_data)
 {
-    UNUSED(event_data);
+    uint16_t new_vrcpu_cap_die0 = 0;
+    static uint16_t prev_vrcpu_cap_die0 = 0;
     //! How is this event data being used for exchange inputs event?
 
     switch (event)
@@ -609,7 +611,45 @@ static void exchange_inputs_handler(int event, const void* event_data)
     case POWER_CTRL_LOOP_SIGNAL_EXCHANGE_INPUTS:
         POWER_LOG_TRACE(
             "[POWER CTRL LOOP] [exchange_inputs_handler] POWER_CTRL_LOOP_SIGNAL_EXCHANGE_INPUTS\n");
-        // exchange inputs done
+        FPFW_RUNTIME_ASSERT(event_data != NULL);
+        /**
+         * @note Event data contains the following from remote post icc d2d recv:
+         * 1. latest soc power
+         * 2. core wise boost/throttle priority data
+         * 3. max resource to raise all cores to highest perf level
+         * 4. and if the remote core is scp die 0, it also contains the power cap that die 1 needs to set.
+         */
+        power_d2d_data_ex_input_t* p_input_data = (power_d2d_data_ex_input_t*)event_data;
+
+        //! store/update remote power snapshot data (contains soc pwr, prior & resource data) in the control loop context
+        memcpy(&s_ctrl_loop.remote, &p_input_data->remote_data_snapshot, sizeof(power_remote_data_t));
+        store_remote_soc_power(&p_input_data->remote_data_snapshot.power);
+
+        //! Fetch power cap to match die 0 if the current die is die 1
+        if (idsw_get_die_id() == DIE_1)
+        {
+            new_vrcpu_cap_die0 = p_input_data->vrcpu_cap_die0;
+            POWER_LOG_TRACE("vrcpu_cap_die0 = %d\n", new_vrcpu_cap_die0);
+            //! check if the power cap has changed
+            if (new_vrcpu_cap_die0 != prev_vrcpu_cap_die0)
+            {
+                //! update the power cap for die 1, the callback will be raised post power_cap_finalise()
+                //! when the current local core's power cap matches the new requested power cap.
+                int result = power_cap_update(power_cap_completed_callback, new_vrcpu_cap_die0, false);
+                if (result != MP_POWER_CAP_PENDING)
+                {
+                    // if the power cap update failed, we need to set the power cap back to the previous value
+                    POWER_LOG_ERR("Power cap update failed, status %d\n", result);
+                }
+                else
+                {
+                    POWER_LOG_INFO("Power cap update pending, new cap %d\n", new_vrcpu_cap_die0);
+                    //! track prev received power cap from die 0
+                    prev_vrcpu_cap_die0 = new_vrcpu_cap_die0;
+                }
+            }
+        }
+        //! Move on to the next event to distribute the available power
         power_control_loop_change_state(POWER_CONTROL_STATE_DISTRIBUTE_AVAILABLE);
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
@@ -631,7 +671,7 @@ static void exchange_inputs_handler(int event, const void* event_data)
 
 static void exchange_completion_handler(int event, const void* event_data)
 {
-    UNUSED(event_data); //! How is this event data intended to be used for exchange completion event?
+    pid_context_t loc_pid_context = {0};
 
     switch (event)
     {
@@ -644,6 +684,23 @@ static void exchange_completion_handler(int event, const void* event_data)
     case POWER_CTRL_LOOP_SIGNAL_EXCHANGE_COMPLETE:
         POWER_LOG_TRACE(
             "[POWER CTRL LOOP] [exchange_completion_handler] POWER_CTRL_LOOP_SIGNAL_EXCHANGE_COMPLETE\n");
+        FPFW_RUNTIME_ASSERT(event_data != NULL);
+        power_d2d_data_ex_complete_t* p_complete_data = (power_d2d_data_ex_complete_t*)event_data;
+        //! Get the pid context from local die
+        pid_get_context(&loc_pid_context);
+        //! Do this sync only for die 1
+        if (idsw_get_die_id() == DIE_1)
+        {
+            // check if the pid context on die 1 is different from die 0
+            if ((loc_pid_context.available_resources != p_complete_data->pid_context.available_resources) ||
+                (loc_pid_context.integral != p_complete_data->pid_context.integral) ||
+                (loc_pid_context.prev_error != p_complete_data->pid_context.prev_error))
+            {
+                POWER_LOG_INFO("PID context mismatch between die 0 and die 1\n");
+                //! pid ctx on both dies must sync
+                pid_set_context(&p_complete_data->pid_context);
+            }
+        }
         // exchange completion done
         power_control_loop_change_state(POWER_CONTROL_STATE_IDLE);
         break;
@@ -867,9 +924,8 @@ static void hw_write_plimits(power_runconfig_t* p_runconfig)
 
         power_set_plimit(p_runconfig, core, plimit_req);
 
-        // log the plimit selection
-        // TODO: https://dev.azure.com/AzureCSI/Dev/_queries/edit/1811056
-        // power_log_core(core, POWER_LOG_DATA(PLIMIT, {.plimit = plimit, .rack_cap = rack_power_cap}));
+        //! Enable logging the plimit selection
+        power_log_core(core, POWER_LOG_DATA(PLIMIT, {.plimit = plimit_req.vf_index, .rack_cap = rack_limit_throttle}));
 
         core = corebits_first(&changes);
     }

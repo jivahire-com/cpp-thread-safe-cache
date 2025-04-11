@@ -47,19 +47,42 @@ static power_timer_context_t s_power_timer_ctx;
 
 uint64_t power_timer_get_counter()
 {
-    return (uint64_t)tx_time_get();
+    return gtimer_prodfw_get_counter();
 }
 
 uint64_t power_timer_get_counter_ticks_us(uint16_t time_in_us)
 {
-    FPFW_UNUSED(time_in_us);
-    return 1000ULL; // some non-zero value for now
+    //! 125MHz timer, 1 tick = 8 ns
+    //! 1 tick = 0.008 us
+    //! 1 us = 125 ticks
+    uint64_t ticks_per_us = (uint64_t)gtimer_prodfw_get_frequency() / 1000000UL;
+    uint64_t ticks_in_us = 0;
+    if (time_in_us <= UINT64_MAX / ticks_per_us)
+    {
+        ticks_in_us = (uint64_t)time_in_us * ticks_per_us;
+    }
+    else
+    {
+        // Handle overflow case, e.g., log an error or return a safe value
+        FPFW_RUNTIME_ASSERT(0 && "Integer overflow detected in power_timer_get_counter_ticks_us");
+    }
+    return ticks_in_us;
 }
 
 uint64_t power_timer_get_us_from_counter(uint32_t ticks)
 {
-    FPFW_UNUSED(ticks);
-    return 0ULL;
+    //! 125MHz timer
+    //! 1 tick = 8 ns = 0.008 us
+    //! 1 us = 125 ticks
+    uint32_t time_per_tick_ns = (1000000000ULL) / (uint64_t)gtimer_prodfw_get_frequency(); //! If freq = 125MHz, this is 8ns
+    if (ticks > UINT64_MAX / time_per_tick_ns)
+    {
+        // Handle overflow case, e.g., log an error or return a safe value
+        FPFW_RUNTIME_ASSERT(0 && "Integer overflow detected in power_timer_get_us_from_counter");
+        return 0; // Return a safe value in case of overflow
+    }
+    uint64_t time_in_us = (ticks * time_per_tick_ns) / 1000ULL; // convert to us
+    return time_in_us;
 }
 
 void ctrl_loop_timer_cb(void* ctx, uint64_t exp_tick, uint64_t now_tick)

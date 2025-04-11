@@ -14,15 +14,18 @@
 #include <cstddef> // for NULL
 
 extern "C" {
-
+#include "pid_resource.h" // for pid_config_t, pid_context_t
 #include "power_hw_int_i.h"
-#include "power_i.h"           // for power_latest_calcs_t
-#include "power_loops_i.h"     // for power_loops_control_init
+#include "power_i.h"       // for power_latest_calcs_t
+#include "power_log.h"     // for POWER_LOG_INFO
+#include "power_loops_i.h" // for power_loops_control_init
+#include "power_remote_die_i.h"
 #include "power_runconfig.h"   // for MIN_PLIMIT, power_service_config_t
 #include "power_runconfig_i.h" // for power_runconfig_t
 
 #include <CMockaWrapper.h> // for CmockaWrapperTest, expect_value, will...
 #include <corebits.h>      // for corebits_set_bit
+#include <idsw_kng.h>
 #include <pid_resource.h>  // for pid_config_t
 #include <power_loops_i.h> // for _power_ctrl_loop_state_t, _power_ctrl...
 #include <power_stub_i.h>  // for _power_pmin_type_t, power_pmin_type_t
@@ -35,7 +38,7 @@ extern "C" {
 /*-- Symbolic Constant Macros (defines) --*/
 #define TEST_STATES     2
 #define EXIT_TEST_VALUE 0x1234
-
+#define TEST_TIMER_VAL  0x1234
 /*------------- Typedefs -----------------*/
 typedef VOID (*entry_function_t)(ULONG entry_input);
 
@@ -272,6 +275,60 @@ void __wrap_power_hw_capture_cppc_state(power_hw_update_cb_t p_update_cb)
     function_called();
 }
 
+void __wrap_power_log_cores_ts(uint64_t timestamp, const corebits_t* cores, uint8_t type, power_log_payload_t* payload)
+{
+    UNUSED(timestamp);
+    UNUSED(cores);
+    UNUSED(type);
+    UNUSED(payload);
+    function_called();
+}
+
+void __wrap_power_log_core(unsigned int core, uint8_t type, power_log_payload_t* payload)
+{
+    UNUSED(core);
+    UNUSED(type);
+    UNUSED(payload);
+    function_called();
+}
+
+void __wrap_store_remote_soc_power(power_latest_calcs_t* p_remote_power)
+{
+    assert_non_null(p_remote_power);
+    function_called();
+}
+
+int __wrap_power_cap_update(power_cap_completed_callback_t callback, uint16_t new_power_cap, bool source_is_cli)
+{
+    assert_non_null(callback);
+    check_expected(new_power_cap);
+    check_expected(source_is_cli);
+    return mock_type(int);
+}
+
+static bool mock_die_id_1_flag = false;
+
+idsw_die_id_t __wrap_idsw_get_die_id(void)
+{
+    if (mock_die_id_1_flag)
+    {
+        mock_die_id_1_flag = false;
+        return 1;
+    }
+    return 0;
+}
+
+void __wrap_pid_set_context(const pid_context_t* context)
+{
+    assert_non_null(context);
+    function_called();
+}
+
+void __wrap_pid_get_context(pid_context_t* context)
+{
+    assert_non_null(context);
+    function_called();
+}
 // End mocks
 
 } // extern "C"
@@ -405,7 +462,7 @@ void setup_expectations_for_retry_fail(power_loop_retries_t type, bool fail)
 POWER_TEST(control_idle_handler__signal_interval, NULL, NULL)
 {
     setup_expectations_for_state_change(POWER_CONTROL_STATE_COLLECT_INPUTS);
-
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_IDLE, POWER_CTRL_LOOP_SIGNAL_INTERVAL, NULL);
 }
@@ -413,7 +470,7 @@ POWER_TEST(control_idle_handler__signal_interval, NULL, NULL)
 POWER_TEST(control_idle_handler__signal_default, NULL, NULL)
 {
     // nothing should happen, no expectations to setup
-
+    // will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_IDLE, POWER_CTRL_LOOP_SIGNAL_MAX, NULL);
 }
@@ -443,7 +500,7 @@ POWER_TEST(control_idle_error_handler__enter_exit_error, NULL, NULL)
 POWER_TEST(control_error_handler__signal_interval, NULL, NULL)
 {
     setup_expectations_for_state_change(POWER_CONTROL_STATE_IDLE);
-
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_ERROR, POWER_CTRL_LOOP_SIGNAL_INTERVAL, NULL);
 }
@@ -554,6 +611,7 @@ POWER_TEST(control_collect_inputs_handler__signal_vr_read, NULL, NULL)
 
     // handle the runtime assert
     expect_value(__wrap_FpFwAssert, expression, true);
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
 
     // call state handler
     call_handler(POWER_CONTROL_STATE_COLLECT_INPUTS, POWER_CTRL_LOOP_SIGNAL_VR_READ, &test_calcs);
@@ -563,6 +621,7 @@ POWER_TEST(control_collect_inputs_handler__signal_interval_error, NULL, NULL)
 {
     setup_expectations_for_state_change(POWER_CONTROL_STATE_ERROR);
     setup_expectations_for_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL, true);
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_COLLECT_INPUTS, POWER_CTRL_LOOP_SIGNAL_INTERVAL, NULL);
 }
@@ -597,7 +656,7 @@ POWER_TEST(control_warmstart_handler__signal_entry, NULL, NULL)
     // setup expectations for warmstart distribution
     expect_value(__wrap_power_distribution_distribute_warmstart_resources, p_runconfig, &test_runconfig);
     expect_not_value(__wrap_power_distribution_distribute_warmstart_resources, p_ctrlloop, NULL);
-
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_WARMSTART_ENTRY, POWER_CTRL_LOOP_SIGNAL_ENTRY, NULL);
 }
@@ -638,6 +697,10 @@ void setup_dist_available_signal_entry(bool new_cap, bool rack_limit)
         expect_value(__wrap_pid_calculate_resources, measured_value, (float)TEST_MEASURED_VCPU_POWER + (float)TEST_MEASURED_VCPU_POWER);
         will_return(__wrap_pid_calculate_resources, 0);
     }
+
+    //! power logging into DDR is enabled for distribute handler, so expect it to be called
+    will_return_maybe(__wrap_power_timer_get_counter, 0);
+    expect_function_call(__wrap_power_log_cores_ts);
 
     expect_function_call(__wrap_power_vcpu_calc_max_core_voltage_mv);
     expect_function_call(__wrap_power_vcpu_calc_peak_current_A);
@@ -706,7 +769,7 @@ POWER_TEST(control_set_vr_after_handler__signal_pending, NULL, NULL)
 {
     // expectations on entry
     setup_expectations_for_state_change(POWER_CONTROL_STATE_WAIT_VR_AFTER_PLIMIT);
-
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_SET_VR_AFTER_PLIMIT, POWER_CTRL_LOOP_SIGNAL_VCPU_PENDING, NULL);
 }
@@ -715,7 +778,7 @@ POWER_TEST(control_set_vr_after_handler__signal_done, NULL, NULL)
 {
     // expectations on entry
     setup_expectations_for_state_change(POWER_CONTROL_STATE_EXCHANGE_COMPLETION);
-
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_SET_VR_AFTER_PLIMIT, POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
 }
@@ -724,6 +787,7 @@ POWER_TEST(control_set_vr_after_handler__signal_interval_error, NULL, NULL)
 {
     setup_expectations_for_state_change(POWER_CONTROL_STATE_ERROR);
     setup_expectations_for_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL, true);
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_SET_VR_AFTER_PLIMIT, POWER_CTRL_LOOP_SIGNAL_INTERVAL, NULL);
 }
@@ -775,7 +839,7 @@ POWER_TEST(control_wait_vr_after_handler__signal_done, NULL, NULL)
 {
     // expectations on entry
     setup_expectations_for_state_change(POWER_CONTROL_STATE_EXCHANGE_COMPLETION);
-
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_WAIT_VR_AFTER_PLIMIT, POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
 }
@@ -784,6 +848,7 @@ POWER_TEST(control_wait_vr_after_handler__signal_interval_error, NULL, NULL)
 {
     setup_expectations_for_state_change(POWER_CONTROL_STATE_ERROR);
     setup_expectations_for_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL, true);
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_WAIT_VR_AFTER_PLIMIT, POWER_CTRL_LOOP_SIGNAL_INTERVAL, NULL);
 }
@@ -808,7 +873,7 @@ POWER_TEST(control_set_vr_before_handler__signal_pending, NULL, NULL)
 {
     // expectations on entry
     setup_expectations_for_state_change(POWER_CONTROL_STATE_WAIT_VR_BEFORE_PLIMIT);
-
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_SET_VR_BEFORE_PLIMIT, POWER_CTRL_LOOP_SIGNAL_VCPU_PENDING, NULL);
 }
@@ -817,7 +882,7 @@ POWER_TEST(control_set_vr_before_handler__signal_done, NULL, NULL)
 {
     // expectations on entry
     setup_expectations_for_state_change(POWER_CONTROL_STATE_SET_PLIMIT_AFTER_VR);
-
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_SET_VR_BEFORE_PLIMIT, POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
 }
@@ -826,7 +891,7 @@ POWER_TEST(control_wait_vr_before_handler__signal_done, NULL, NULL)
 {
     // expectations on entry
     setup_expectations_for_state_change(POWER_CONTROL_STATE_SET_PLIMIT_AFTER_VR);
-
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_WAIT_VR_BEFORE_PLIMIT, POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
 }
@@ -838,6 +903,8 @@ void setup_write_plimits()
     // expectations for power_set_plimit
     expect_any(__wrap_power_set_plimit, p_runconfig);
     expect_value(__wrap_power_set_plimit, core, TEST_CORE);
+    //! Power logging into DDR is enabled for plimit writes, so expect it to be called
+    expect_function_call(__wrap_power_log_core);
     will_return(__wrap_corebits_first, TEST_CORE);
     will_return(__wrap_corebits_first, -1);
 }
@@ -884,7 +951,7 @@ POWER_TEST(control_set_plimit_after_handler__signal_plimit, NULL, NULL)
     expect_function_call(__wrap_power_cap_finalize);
 
     setup_expectations_for_state_change(POWER_CONTROL_STATE_EXCHANGE_COMPLETION);
-
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_SET_PLIMIT_AFTER_VR, POWER_CTRL_LOOP_SIGNAL_PLIMIT_PENDING, NULL);
 }
@@ -905,6 +972,7 @@ POWER_TEST(control_set_plimit_after_handler__signal_interval_error, NULL, NULL)
 
     setup_expectations_for_state_change(POWER_CONTROL_STATE_ERROR);
     setup_expectations_for_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL, true);
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_SET_PLIMIT_AFTER_VR, POWER_CTRL_LOOP_SIGNAL_INTERVAL, NULL);
 }
@@ -934,7 +1002,7 @@ POWER_TEST(control_set_plimit_before_handler__signal_plimit, NULL, NULL)
     expect_function_call(__wrap_power_cap_finalize);
 
     setup_expectations_for_state_change(POWER_CONTROL_STATE_SET_VR_AFTER_PLIMIT);
-
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_SET_PLIMIT_BEFORE_VR, POWER_CTRL_LOOP_SIGNAL_PLIMIT_PENDING, NULL);
 }
@@ -954,11 +1022,25 @@ POWER_TEST(control_exchange_inputs_handler__signal_entry, NULL, NULL)
 
 POWER_TEST(control_exchange_inputs_handler__signal_exchange_inputs_done, NULL, NULL)
 {
+    power_d2d_data_ex_input_t input_data = {};
+    input_data.vrcpu_cap_die0 = 400;
+
     // expectations for exchanged signal
     setup_expectations_for_state_change(POWER_CONTROL_STATE_DISTRIBUTE_AVAILABLE);
 
+    // expectations on entry
+    expect_value(__wrap_FpFwAssert, expression, true);
+
+    //! expectations on exchange inputs
+    expect_function_call(__wrap_store_remote_soc_power); //! applicable for both dies
+    mock_die_id_1_flag = true;                           // set flag to call real function
+    expect_value(__wrap_power_cap_update, new_power_cap, input_data.vrcpu_cap_die0); //! update for die 1
+    expect_value(__wrap_power_cap_update, source_is_cli, false);                     //! update for die 1
+    will_return(__wrap_power_cap_update, MP_POWER_CAP_PENDING);                      //! update for die 1
+
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
-    call_handler(POWER_CONTROL_STATE_EXCHANGE_INPUTS, POWER_CTRL_LOOP_SIGNAL_EXCHANGE_INPUTS, NULL);
+    call_handler(POWER_CONTROL_STATE_EXCHANGE_INPUTS, POWER_CTRL_LOOP_SIGNAL_EXCHANGE_INPUTS, &input_data);
 }
 
 POWER_TEST(control_exchange_inputs_handler__signal_interval_error, NULL, NULL)
@@ -966,6 +1048,7 @@ POWER_TEST(control_exchange_inputs_handler__signal_interval_error, NULL, NULL)
     // expectations on entry
     setup_expectations_for_state_change(POWER_CONTROL_STATE_ERROR);
     setup_expectations_for_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL, true);
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_EXCHANGE_INPUTS, POWER_CTRL_LOOP_SIGNAL_INTERVAL, NULL);
 }
@@ -994,11 +1077,22 @@ POWER_TEST(control_exchange_completion_handler__signal_entry, NULL, NULL)
 
 POWER_TEST(control_exchange_completion_handler__signal_exchange_complete_done, NULL, NULL)
 {
+    power_d2d_data_ex_complete_t complete_data = {};
+    //! dummy value to indicate pid ctx mismatch between dies
+    complete_data.pid_context.available_resources = 0x12345678;
     // expectations on exchange done
     setup_expectations_for_state_change(POWER_CONTROL_STATE_IDLE);
 
+    // expectations on entry
+    expect_value(__wrap_FpFwAssert, expression, true);
+
+    //! expectations for exchanged signal done
+    expect_function_call(__wrap_pid_get_context); //! applicable for both dies
+    mock_die_id_1_flag = true;                    // set flag to call real function
+    expect_function_call(__wrap_pid_set_context); //! applicable for only die 1
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
-    call_handler(POWER_CONTROL_STATE_EXCHANGE_COMPLETION, POWER_CTRL_LOOP_SIGNAL_EXCHANGE_COMPLETE, NULL);
+    call_handler(POWER_CONTROL_STATE_EXCHANGE_COMPLETION, POWER_CTRL_LOOP_SIGNAL_EXCHANGE_COMPLETE, &complete_data);
 }
 
 POWER_TEST(control_exchange_completion_handler__signal_interval_error, NULL, NULL)
@@ -1006,6 +1100,7 @@ POWER_TEST(control_exchange_completion_handler__signal_interval_error, NULL, NUL
     // expectations on entry
     setup_expectations_for_state_change(POWER_CONTROL_STATE_ERROR);
     setup_expectations_for_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL, true);
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_EXCHANGE_COMPLETION, POWER_CTRL_LOOP_SIGNAL_INTERVAL, NULL);
 }

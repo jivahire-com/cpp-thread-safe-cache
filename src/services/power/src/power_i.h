@@ -421,6 +421,13 @@ int power_cap_cancel(power_cap_completed_callback_t callback, bool source_is_cli
 bool power_cap_is_capped();
 
 /**
+ * @brief Get the current power cap
+ * 
+ * @return uint16_t 
+ */
+uint16_t get_current_soc_power_cap();
+
+/**
  * @brief Find maximum of all cores plimit voltage requirement
  *
  * \b Description:
@@ -432,6 +439,7 @@ bool power_cap_is_capped();
  *
  */
 uint16_t power_vcpu_calc_max_core_voltage_mv(power_runconfig_t* p_runconfig, power_cores_t* p_cores);
+
 /**
  * @brief Calculate core leakage scaler for temperature
  *

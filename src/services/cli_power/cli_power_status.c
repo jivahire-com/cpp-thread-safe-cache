@@ -71,7 +71,7 @@ static void print_temp(uint16_t temp);
 const power_cli_sub_command_dictionary_element_t power_cli_status_sub_command_dictionary[] = {
     {"cl",                NULL,               POWER_IF_CMD_STATUS_CL},
     {"vrtl",              NULL,             POWER_IF_CMD_STATUS_VRTL},
-    {"pvttl",             NULL,            POWER_IF_CMD_SET_PVTTL},
+    {"pvttl",             NULL,            POWER_IF_CMD_STATUS_PVTTL},
 
 };
 
@@ -122,7 +122,7 @@ void cli_power_status_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* co
             print_power_status_vrtlinfo(p_cli_request);                        
             break;
             
-        case POWER_IF_CMD_SET_PVTTL:
+        case POWER_IF_CMD_STATUS_PVTTL:
             print_power_status_pvttlinfo(p_cli_request);                            
             break;
 

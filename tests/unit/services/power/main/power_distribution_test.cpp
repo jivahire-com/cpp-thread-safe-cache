@@ -26,6 +26,7 @@ extern "C" {
 #include <mock_bug_check.h> // for __wrap_crash_dump_bug_check
 #include <power_distribution_i.h>
 #include <power_i.h>           // for power_fuses_get_dts_coeff, power_fuse...
+#include <power_log.h>         // for power_log_init
 #include <power_loops_i.h>     // for power_fuses_get_dts_coeff, power_fuse...
 #include <power_runconfig.h>   // for power_fuse_data_t, dts_coeff_t, power...
 #include <power_runconfig_i.h> // for power_fuses_read, power_fuses_get_cur...
@@ -55,9 +56,17 @@ power_ctrl_loop_detail_t s_ctrl_loop_detail;
 //
 // Mocks
 //
+uint64_t __wrap_power_timer_get_counter(void)
+{
+    //! just a dummy value to satisfy the test
+    //! this is not used in the test, but the function is called in the code
+    return 0x123456789ABCDEFULL;
+}
 
 // end of extern C after mock functions ...
 } // extern "C"
+
+static bool OneTimeInitFlag = false;
 
 static int distribution_setup(void** state)
 {
@@ -83,6 +92,14 @@ static int distribution_setup(void** state)
 
     s_runconfig.derived.vfts[0].min_plimit = 0;
     s_runconfig.derived.pnominal = TEST_NOMINAL_PERF;
+
+    //! Sufficient to initialize power log once for all tests
+    if (!OneTimeInitFlag)
+    {
+        expect_function_call(__wrap_crash_dump_register_address32);
+        power_log_init();
+        OneTimeInitFlag = true;
+    }
 
     return 0;
 }
@@ -858,7 +875,7 @@ POWER_TEST(distribution_minimum_plimit_updates, distribution_setup, distribution
 
         s_runconfig.knobs.minimum_plimit_updates = (power_loops_minimum_plimit_t)min_plimit;
         corebits_clear(&s_ctrl_loop_detail.plimits_pending);
-        printf("All plimits cycled in %d iterations", necessary_iterations);
+        printf("All plimits cycled in %d iterations\n", necessary_iterations);
         for (unsigned iterations = 0; iterations < necessary_iterations; iterations++)
         {
             assert_false(corebits_is_equal(&s_ctrl_loop_detail.plimits_pending, &allbits));

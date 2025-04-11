@@ -14,6 +14,7 @@
 #include <FpFwUtils.h>
 #include <atu_lib.h>
 #include <ddrss_lib.h>
+#include <ddrss_runtime_api.h>
 #include <idsw_kng.h>
 #include <silibs_status.h>
 #include <stddef.h>
@@ -111,6 +112,11 @@ void __wrap_prod_ddrss_lib_init(KNG_DIE_ID die_num)
 bool __wrap_config_get_borgens_1gb_ddr_reserve_enable()
 {
     return mock_type(bool);
+}
+
+ddrss_phy_training_dq_margin_t* __wrap_ddrss_get_training_margin_base()
+{
+    return mock_type(ddrss_phy_training_dq_margin_t*);
 }
 
 const ddrss_sys_mem_region_t* __wrap_ddrss_get_system_mem_region(void)

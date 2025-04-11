@@ -69,6 +69,7 @@ mock_target(${TARGET}
     ddr_i3c_interface_get_instance
     ddr_manager_platform_is_polling_supported
     ddrss_get_system_mem_region
+    ddrss_get_training_margin_base
     ddrss_is_valid_local_mc
     ddrss_phy_get_training_margin
     dimm_vendor_from_id

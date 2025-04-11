@@ -48,6 +48,7 @@ extern "C" {
     #define PRINT_EXPECT_CALL(fn, param, ret) (void)0
 #endif
 
+#define DDRSS_PHY_TRAINING_MARGIN_SIZE_BYTES (7680)
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -56,6 +57,7 @@ extern "C" {
 static fpfw_icc_base_ctx_t* icc_ctx;
 static bool g_should_wrap_idsw_get_platform_sdv = false;
 mscp_exp_spi_sync_point_t d2d_sync_point_test = {};
+uint8_t test_dq_training_margin[DDRSS_PHY_TRAINING_MARGIN_SIZE_BYTES] = {0};
 
 /*------------- Functions ----------------*/
 //
@@ -427,6 +429,7 @@ TEST_FUNCTION(ddr_create_bdat_test_single_die, NULL, NULL)
     will_return(__wrap_atu_map, 0x012345678);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
 
+    will_return(__wrap_ddrss_get_training_margin_base, &test_dq_training_margin);
     will_return_always(__wrap_idhw_is_single_die_boot_en, true);
 
     // Clearing memory
@@ -457,13 +460,13 @@ TEST_FUNCTION(ddr_create_bdat_test_single_die, NULL, NULL)
     // refCodeRevision
     expect_function_calls(__wrap_mmio_write8, 4);
 
-    // maxNode, maxCh, maxRankDimm, maxSubchannelRank
-    expect_function_calls(__wrap_mmio_write8, 4);
+    // maxNode, maxCh, maxDimm, maxRankDimm, maxSubchannelRank
+    expect_function_calls(__wrap_mmio_write8, 5);
 
     for (int socket_idx = 0; socket_idx < MAX_SOCKET; socket_idx++)
     {
         // PiStepUnit, RxVrefStepUnit, TxVrefStepUnit, CSVrefStepUnit, CAVrefStepUnit, DeviceVrefStepUnit, ddrVoltage, ddrFreq
-        expect_function_calls(__wrap_mmio_write16, 8);
+        expect_function_calls(__wrap_mmio_write8, 16);
 
         will_return_maybe(__wrap_get_i3c_dimm_detected, 0x0FFF);
         for (int dimm_local_idx = 0; dimm_local_idx < DDRSS_SS_NUM_PER_DIE; dimm_local_idx++)
@@ -494,6 +497,16 @@ TEST_FUNCTION(ddr_create_bdat_test_single_die, NULL, NULL)
                 {
                     expect_function_calls(__wrap_mmio_write8, 10);
                 }
+
+                // New DQ margin data
+                for (size_t dq_lane_margin_idx = 0; dq_lane_margin_idx < MAX_DDRSS_DQ_LANE_MARGIN_DBYTE_NUM;
+                     dq_lane_margin_idx++)
+                {
+                    for (size_t tx_rx_lane_idx = 0; tx_rx_lane_idx < MAX_DDRSS_DQ_LANE_MARGIN_TX_RX_LANE_NUM; tx_rx_lane_idx++)
+                    {
+                        expect_function_calls(__wrap_mmio_write8, 8);
+                    }
+                }
             }
         }
     }
@@ -502,19 +515,22 @@ TEST_FUNCTION(ddr_create_bdat_test_single_die, NULL, NULL)
     expect_function_calls(__wrap_mmio_write8, 16);
 
     // schemaHeader.DataSize
-    expect_function_call(__wrap_mmio_write32);
+    expect_function_calls(__wrap_mmio_write8, 4);
 
     // schemaHeader.Crc16 (as 0)
-    expect_function_call(__wrap_mmio_write16);
+    expect_function_calls(__wrap_mmio_write8, 2);
 
     // BdatHeader.Crc16 (as 0)
-    expect_function_call(__wrap_mmio_write16);
+    expect_function_calls(__wrap_mmio_write8, 2);
 
     // CalculateRemoteCheckSum16
-    for (uint32_t i = 0; i < sizeof(BDAT_DATA_STRUCTURE_MSFT_4) / 2; i++)
+    for (uint32_t i = 0; i < sizeof(BDAT_DATA_STRUCTURE_MSFT_5) / 2; i++)
     {
         will_return(__wrap_mmio_read16, 0xFFFF);
     }
+
+    // Account for the new struct size being 29795 Bytes..
+    will_return(__wrap_mmio_read16, 0xFFFF);
 
     // CRC16 values
     expect_function_calls(__wrap_mmio_write16, 2);
@@ -530,6 +546,8 @@ TEST_FUNCTION(ddr_create_bdat_test_die_0, NULL, NULL)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_atu_map, 0x012345678);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
+
+    will_return(__wrap_ddrss_get_training_margin_base, &test_dq_training_margin);
 
     will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     expect_value(__wrap_mscp_exp_spi_synchronize_dies, die_id, DIE_0);
@@ -563,13 +581,13 @@ TEST_FUNCTION(ddr_create_bdat_test_die_0, NULL, NULL)
     // refCodeRevision
     expect_function_calls(__wrap_mmio_write8, 4);
 
-    // maxNode, maxCh, maxRankDimm, maxSubchannelRank
-    expect_function_calls(__wrap_mmio_write8, 4);
+    // maxNode, maxCh, maxDimm, maxRankDimm, maxSubchannelRank
+    expect_function_calls(__wrap_mmio_write8, 5);
 
     for (int socket_idx = 0; socket_idx < MAX_SOCKET; socket_idx++)
     {
         // PiStepUnit, RxVrefStepUnit, TxVrefStepUnit, CSVrefStepUnit, CAVrefStepUnit, DeviceVrefStepUnit, ddrVoltage, ddrFreq
-        expect_function_calls(__wrap_mmio_write16, 8);
+        expect_function_calls(__wrap_mmio_write8, 16);
 
         will_return_maybe(__wrap_get_i3c_dimm_detected, 0x0FFF);
         for (int dimm_local_idx = 0; dimm_local_idx < DDRSS_SS_NUM_PER_DIE; dimm_local_idx++)
@@ -600,6 +618,16 @@ TEST_FUNCTION(ddr_create_bdat_test_die_0, NULL, NULL)
                 {
                     expect_function_calls(__wrap_mmio_write8, 10);
                 }
+
+                // New DQ margin data
+                for (size_t dq_lane_margin_idx = 0; dq_lane_margin_idx < MAX_DDRSS_DQ_LANE_MARGIN_DBYTE_NUM;
+                     dq_lane_margin_idx++)
+                {
+                    for (size_t tx_rx_lane_idx = 0; tx_rx_lane_idx < MAX_DDRSS_DQ_LANE_MARGIN_TX_RX_LANE_NUM; tx_rx_lane_idx++)
+                    {
+                        expect_function_calls(__wrap_mmio_write8, 8);
+                    }
+                }
             }
         }
     }
@@ -608,22 +636,24 @@ TEST_FUNCTION(ddr_create_bdat_test_die_0, NULL, NULL)
     expect_function_calls(__wrap_mmio_write8, 16);
 
     // schemaHeader.DataSize
-    expect_function_call(__wrap_mmio_write32);
+    expect_function_calls(__wrap_mmio_write8, 4);
 
     // schemaHeader.Crc16 (as 0)
-    expect_function_calls(__wrap_mmio_write16, 1);
+    expect_function_calls(__wrap_mmio_write8, 2);
 
     // BdatHeader.Crc16 (as 0)
-    expect_function_calls(__wrap_mmio_write16, 1);
+    expect_function_calls(__wrap_mmio_write8, 2);
 
     expect_value(__wrap_mscp_exp_spi_synchronize_dies, die_id, DIE_0);
     will_return(__wrap_mscp_exp_spi_synchronize_dies, SILIBS_SUCCESS);
 
     // CalculateRemoteCheckSum16
-    for (uint32_t i = 0; i < sizeof(BDAT_DATA_STRUCTURE_MSFT_4) / 2; i++)
+    for (uint32_t i = 0; i < sizeof(BDAT_DATA_STRUCTURE_MSFT_5) / 2; i++)
     {
         will_return(__wrap_mmio_read16, 0xFFFF);
     }
+
+    will_return(__wrap_mmio_read16, 0xFFFF);
 
     // CRC16 values
     expect_function_calls(__wrap_mmio_write16, 2);
@@ -642,6 +672,7 @@ TEST_FUNCTION(ddr_create_bdat_test_die_1, NULL, NULL)
     will_return(__wrap_atu_map, 0x012345678);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
 
+    will_return(__wrap_ddrss_get_training_margin_base, &test_dq_training_margin);
     will_return_always(__wrap_idhw_is_single_die_boot_en, false);
 
     PRINT_EXPECT_CALL(__wrap_mscp_exp_spi_synchronize_dies, DIE_1, SILIBS_SUCCESS);
@@ -685,6 +716,16 @@ TEST_FUNCTION(ddr_create_bdat_test_die_1, NULL, NULL)
                 {
                     PRINT_EXPECT_CALL(__wrap_mmio_write8, addr, 10);
                     expect_function_calls(__wrap_mmio_write8, 10);
+                }
+
+                // New DQ margin data
+                for (size_t dq_lane_margin_idx = 0; dq_lane_margin_idx < MAX_DDRSS_DQ_LANE_MARGIN_DBYTE_NUM;
+                     dq_lane_margin_idx++)
+                {
+                    for (size_t tx_rx_lane_idx = 0; tx_rx_lane_idx < MAX_DDRSS_DQ_LANE_MARGIN_TX_RX_LANE_NUM; tx_rx_lane_idx++)
+                    {
+                        expect_function_calls(__wrap_mmio_write8, 8);
+                    }
                 }
             }
         }

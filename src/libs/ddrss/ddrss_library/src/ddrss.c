@@ -29,10 +29,16 @@
 #include <stdio.h>
 #include <string.h>
 
+/*-- Symbolic Constant Macros (defines) --*/
+#define TEXT_DDR_SPEED_GRADE_LOCKED "DDRSS - ddr_speed_grade locked to %s for %s\n"
+
+/*------------- Typedefs -----------------*/
+
+/*-------- Function Prototypes -----------*/
+
 /*-- Declarations (Statics and globals) --*/
 static uint32_t ddrss_interrupt_id[6] = {0, 1, 2, 3, 4, 5};
-
-#define TEXT_DDR_SPEED_GRADE_LOCKED "DDRSS - ddr_speed_grade locked to %s for %s\n"
+ddrss_phy_training_dq_margin_t ddrss_phy_training_dq_margin = {0};
 
 /*------------- Functions ----------------*/
 void prod_ddrss_lib_init(KNG_DIE_ID die_num)
@@ -226,6 +232,9 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         printf("DDRSS - phy_fw_diag_en enabled\n");
     }
 
+    // Set up per-lane margin buffer
+    ddrss_cfgs.dq_lane_margin_base = (uint64_t)(uintptr_t)&ddrss_phy_training_dq_margin;
+
     // Run DDRSS init
     sts = ddrss_init(&ddrss_cfgs);
     FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
@@ -252,4 +261,9 @@ void prod_ddrss_pcr_init(KNG_DIE_ID die_num)
     FPFW_RUNTIME_ASSERT(ddrss_set_die_base(die_num, start_addr) == SILIBS_SUCCESS);
     pcr_ddrss_configure_clock_and_pcr_reset(ddrss_mask, die_num);
     ddrss_atu_unmap_cfg_space(die_num);
+}
+
+ddrss_phy_training_dq_margin_t* ddrss_get_training_margin_base(void)
+{
+    return &ddrss_phy_training_dq_margin;
 }

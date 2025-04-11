@@ -87,10 +87,6 @@ void ddr_create_memory_map(void);
 void ddr_process_i3c_data(void);
 void ddr_create_bdat(void);
 void ddr_create_smbios_tables(void);
-void ddr_create_smbios_type_16(void);
-void ddr_create_smbios_type_17(void);
-void copy_type_16_to_ddr(void);
-void copy_type_17_to_ddr(void);
 
 uint32_t get_single_type17_table_and_strings_size(uint8_t* spd_buff);
 size_t get_deviceLocator_string(uint32_t dimm_global_idx, char* buffer, size_t bufferSize);

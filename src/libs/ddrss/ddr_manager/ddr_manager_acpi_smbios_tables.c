@@ -17,6 +17,7 @@
 #include <bdat_schema.h>
 #include <bug_check.h>
 #include <ddr_i3c.h>
+#include <ddrss.h>
 #include <ddrss_dimm.h>
 #include <ddrss_lib.h>
 #include <dw_i3c.h>
@@ -154,6 +155,10 @@ void ddr_create_bdat(void)
 
     printf("Create DDR BDAT Table...\n");
 
+    // Get the new training per-lane margin data
+    ddrss_phy_training_dq_margin_t* dq_margin = ddrss_get_training_margin_base();
+    BUG_ASSERT_PARAM(dq_margin != NULL, dq_margin, 0);
+
     if (!idhw_is_single_die_boot_en())
     {
         d2d_sync_point.value = RMSS_D2D_DDR_BDAT_BEGIN_SYNC_POINT;
@@ -166,7 +171,7 @@ void ddr_create_bdat(void)
 
     if (die_num == DIE_0)
     {
-        // clear memory first - all 16KB
+        // clear memory first - all 32KB
         for (int i = 0; i < (BDAT_RESERVATION_SIZE / 4); i++)
         {
             MMIO_WRITE32((bdat_mem_atu_map_struct.mscp_start_address + (4 * i)), 0);
@@ -176,83 +181,86 @@ void ddr_create_bdat(void)
         for (uint32_t i = 0; i < (sizeof(Bios_data_sign)); i++)
         {
             MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                            offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatHeader.BiosDataSignature[i]),
+                            offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatHeader.BiosDataSignature[i]),
                         Bios_data_sign[i]);
         }
         MMIO_WRITE32(bdat_mem_atu_map_struct.mscp_start_address +
-                         offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatHeader.BiosDataStructSize),
-                     sizeof(BDAT_DATA_STRUCTURE_MSFT_4));
+                         offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatHeader.BiosDataStructSize),
+                     sizeof(BDAT_DATA_STRUCTURE_MSFT_5));
         // crc calculated at last
         MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                         offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatHeader.Reserved),
+                         offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatHeader.Reserved),
                      0);
         MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                         offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatHeader.PrimaryVersion),
+                         offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatHeader.PrimaryVersion),
                      BDAT_PRIMARY_VER);
         MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                         offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatHeader.SecondaryVersion),
+                         offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatHeader.SecondaryVersion),
                      BDAT_SECONDARY_VER);
         MMIO_WRITE32(bdat_mem_atu_map_struct.mscp_start_address +
-                         offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatHeader.OemOffset),
+                         offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatHeader.OemOffset),
                      0);
         MMIO_WRITE32(bdat_mem_atu_map_struct.mscp_start_address +
-                         offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatHeader.Reserved1),
+                         offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatHeader.Reserved1),
                      0);
         MMIO_WRITE32(bdat_mem_atu_map_struct.mscp_start_address +
-                         offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatHeader.Reserved2),
+                         offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatHeader.Reserved2),
                      0);
 
         // create BDAT schema list
         MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                         offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatSchemas.SchemaListLength),
+                         offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatSchemas.SchemaListLength),
                      BDAT_SUPPORTED_MSFT_SCHEMAS);
         MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                         offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatSchemas.Reserved),
+                         offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatSchemas.Reserved),
                      0);
         MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                         offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatSchemas.Year),
+                         offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatSchemas.Year),
                      0);
         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatSchemas.Month),
+                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatSchemas.Month),
                     0);
         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatSchemas.Day),
+                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatSchemas.Day),
                     0);
         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatSchemas.Hour),
+                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatSchemas.Hour),
                     0);
         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatSchemas.Minute),
+                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatSchemas.Minute),
                     0);
         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatSchemas.Second),
+                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatSchemas.Second),
                     0);
         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatSchemas.Reserved1),
+                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatSchemas.Reserved1),
                     0);
         MMIO_WRITE32(bdat_mem_atu_map_struct.mscp_start_address +
-                         offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatSchemas.Schemas[0]),
+                         offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatSchemas.Schemas[0]),
                      sizeof(BDAT_STRUCTURE_MSFT_4));
 
-        /* --------------------------- (Top level) BDAT_DATA_STRUCTURE_MSFT_4 --------------------------- */
+        /* --------------------------- (Top level) BDAT_DATA_STRUCTURE_MSFT_5 --------------------------- */
         uint32_t addr = bdat_mem_atu_map_struct.mscp_start_address +
-                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.refCodeRevision);
+                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.refCodeRevision);
         MMIO_WRITE8(addr, (uint8_t)(fw_ver & 0xFF));
         MMIO_WRITE8(addr + 1, (uint8_t)((fw_ver >> 8) & 0xFF));
         MMIO_WRITE8(addr + 2, (uint8_t)((fw_ver >> 16) & 0xFF));
         MMIO_WRITE8(addr + 3, (uint8_t)((fw_ver >> 24) & 0xFF));
 
         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.maxNode),
+                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.maxNode),
                     MAX_SOCKET);
         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.maxCh),
+                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.maxCh),
                     MAX_CH);
         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.maxRankDimm),
+                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.maxDimm),
+                    MAX_DIMM);
+        MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
+                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.maxRankDimm),
                     MAX_RANK_DIMM);
         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.maxSubchannelRank),
+                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.maxSubchannelRank),
                     MAX_SUBCHANNEL);
     } // end of DIE_0 ONLY
 
@@ -261,30 +269,53 @@ void ddr_create_bdat(void)
     {
         if (die_num == DIE_0)
         {
-            MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                             offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.socketList[socket_idx].PiStepUnit),
-                         (uint16_t)ddrss_get_latency_step_unit());
-            MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                             offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.socketList[socket_idx].RxVrefStepUnit),
-                         ddrss_get_rx_vref_step_unit());
-            MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                             offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.socketList[socket_idx].TxVrefStepUnit),
-                         ddrss_get_device_vref_step_unit());
-            MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                             offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.socketList[socket_idx].CSVrefStepUnit),
-                         ddrss_get_device_vref_step_unit());
-            MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                             offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.socketList[socket_idx].CAVrefStepUnit),
-                         ddrss_get_device_vref_step_unit());
-            MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                             offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.socketList[socket_idx].DeviceVrefStepUnit),
-                         ddrss_get_device_vref_step_unit());
-            MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                             offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.socketList[socket_idx].ddrVoltage),
-                         ddrss_get_vdd_voltage());
-            MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                             offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.socketList[socket_idx].ddrFreq),
-                         (uint16_t)ddrss_get_dimm_speed_mts() / 2);
+            uint32_t addr = bdat_mem_atu_map_struct.mscp_start_address +
+                            offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.socketList[socket_idx].PiStepUnit);
+            uint16_t data = (uint16_t)ddrss_get_latency_step_unit();
+            MMIO_WRITE8(addr, (uint8_t)(data & 0xFF));
+            MMIO_WRITE8(addr + 1, (uint8_t)((data >> 8) & 0xFF));
+
+            addr = bdat_mem_atu_map_struct.mscp_start_address +
+                   offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.socketList[socket_idx].RxVrefStepUnit);
+            data = (uint16_t)ddrss_get_rx_vref_step_unit();
+            MMIO_WRITE8(addr, (uint8_t)(data & 0xFF));
+            MMIO_WRITE8(addr + 1, (uint8_t)((data >> 8) & 0xFF));
+
+            addr = bdat_mem_atu_map_struct.mscp_start_address +
+                   offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.socketList[socket_idx].TxVrefStepUnit);
+            data = (uint16_t)ddrss_get_device_vref_step_unit();
+            MMIO_WRITE8(addr, (uint8_t)(data & 0xFF));
+            MMIO_WRITE8(addr + 1, (uint8_t)((data >> 8) & 0xFF));
+
+            addr = bdat_mem_atu_map_struct.mscp_start_address +
+                   offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.socketList[socket_idx].CSVrefStepUnit);
+            data = (uint16_t)ddrss_get_device_vref_step_unit();
+            MMIO_WRITE8(addr, (uint8_t)(data & 0xFF));
+            MMIO_WRITE8(addr + 1, (uint8_t)((data >> 8) & 0xFF));
+
+            addr = bdat_mem_atu_map_struct.mscp_start_address +
+                   offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.socketList[socket_idx].CAVrefStepUnit);
+            data = (uint16_t)ddrss_get_device_vref_step_unit();
+            MMIO_WRITE8(addr, (uint8_t)(data & 0xFF));
+            MMIO_WRITE8(addr + 1, (uint8_t)((data >> 8) & 0xFF));
+
+            addr = bdat_mem_atu_map_struct.mscp_start_address +
+                   offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.socketList[socket_idx].DeviceVrefStepUnit);
+            data = (uint16_t)ddrss_get_device_vref_step_unit();
+            MMIO_WRITE8(addr, (uint8_t)(data & 0xFF));
+            MMIO_WRITE8(addr + 1, (uint8_t)((data >> 8) & 0xFF));
+
+            addr = bdat_mem_atu_map_struct.mscp_start_address +
+                   offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.socketList[socket_idx].ddrVoltage);
+            data = (uint16_t)ddrss_get_vdd_voltage();
+            MMIO_WRITE8(addr, (uint8_t)(data & 0xFF));
+            MMIO_WRITE8(addr + 1, (uint8_t)((data >> 8) & 0xFF));
+
+            addr = bdat_mem_atu_map_struct.mscp_start_address +
+                   offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.socketList[socket_idx].ddrFreq);
+            data = (uint16_t)ddrss_get_dimm_speed_mts() / 2;
+            MMIO_WRITE8(addr, (uint8_t)(data & 0xFF));
+            MMIO_WRITE8(addr + 1, (uint8_t)((data >> 8) & 0xFF));
         } // end of DIE_0 ONLY
 
         // Both DIEs iterate over thier respective 6 DIMMs (dimm_global_idx)
@@ -292,14 +323,15 @@ void ddr_create_bdat(void)
         {
             dimm_global_idx = (die_num * 6) + dimm_local_idx; // 6 dimm per die: die0- 0 to 5, die1- 6 to 11
             mc = dimm_global_idx * 2;
-            if (dimm_is_present(dimm_local_idx))
+
+            bool this_dimm_is_present = dimm_is_present(dimm_local_idx);
+            if (this_dimm_is_present)
             {
-                /* BDAT_CHANNEL_STRUCTURE_MSFT_4 */
+                /* BDAT_CHANNEL_STRUCTURE_MSFT_5 */
                 MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                                offsetof(BDAT_DATA_STRUCTURE_MSFT_4,
+                                offsetof(BDAT_DATA_STRUCTURE_MSFT_5,
                                          bdat_mem_data.socketList[socket_idx].channelList[dimm_global_idx].chEnabled),
                             1);
-
                 /* BDAT_SPD_STRUCTURE_MSFT_4 */
                 // Write 'valid' bytes based on JEDEC JESD400-5 DDR5 SPD Contents 1.0 Beta 0
                 // bdat_valid_bytes is an array where each bit set represents 1 valid byte of SPD data.
@@ -309,7 +341,7 @@ void ddr_create_bdat(void)
                     MMIO_WRITE8(
                         bdat_mem_atu_map_struct.mscp_start_address +
                             offsetof(
-                                BDAT_DATA_STRUCTURE_MSFT_4,
+                                BDAT_DATA_STRUCTURE_MSFT_5,
                                 bdat_mem_data.socketList[socket_idx].channelList[dimm_global_idx].spdBytes.valid[validBytes_idx]),
                         bdat_valid_bytes[validBytes_idx]);
                 }
@@ -330,14 +362,14 @@ void ddr_create_bdat(void)
                     MMIO_WRITE8(
                         bdat_mem_atu_map_struct.mscp_start_address +
                             offsetof(
-                                BDAT_DATA_STRUCTURE_MSFT_4,
+                                BDAT_DATA_STRUCTURE_MSFT_5,
                                 bdat_mem_data.socketList[socket_idx].channelList[dimm_global_idx].spdBytes.spdData[spdData_idx]),
                         spd_buff_1k[spdData_idx]);
                 }
 
-                /* BDAT_RANK_STRUCTURE_MSFT_4 */
+                /* BDAT_RANK_STRUCTURE_MSFT_5 */
                 // read ddrs margin data per dimm
-                if (ddrss_phy_get_training_margin(mc, ddrss_phy_training_margin) != SILIBS_SUCCESS)
+                if (ddrss_phy_get_training_margin(mc, &ddrss_phy_training_margin[dimm_local_idx]) != SILIBS_SUCCESS)
                 {
                     printf("Error reading DIE=%d global DIMM=%d margin data\n", die_num, dimm_global_idx);
                 }
@@ -345,7 +377,7 @@ void ddr_create_bdat(void)
                 for (size_t rank_idx = 0; rank_idx < ddrss_prd_cfg_knobs.dimm_rank; rank_idx++)
                 {
                     MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                                    offsetof(BDAT_DATA_STRUCTURE_MSFT_4,
+                                    offsetof(BDAT_DATA_STRUCTURE_MSFT_5,
                                              bdat_mem_data.socketList[socket_idx]
                                                  .channelList[dimm_global_idx]
                                                  .rankList[rank_idx]
@@ -356,7 +388,7 @@ void ddr_create_bdat(void)
                     for (size_t subchan_idx = 0; subchan_idx < MAX_SUBCHANNEL; subchan_idx++)
                     {
                         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4,
+                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5,
                                                  bdat_mem_data.socketList[socket_idx]
                                                      .channelList[dimm_global_idx]
                                                      .rankList[rank_idx]
@@ -364,7 +396,7 @@ void ddr_create_bdat(void)
                                                      .CsDlyMargin),
                                     ddrss_phy_training_margin[dimm_local_idx].margin[subchan_idx][rank_idx].cs_dly_margin);
                         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4,
+                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5,
                                                  bdat_mem_data.socketList[socket_idx]
                                                      .channelList[dimm_global_idx]
                                                      .rankList[rank_idx]
@@ -372,7 +404,7 @@ void ddr_create_bdat(void)
                                                      .CsVrefMargin),
                                     ddrss_phy_training_margin[dimm_local_idx].margin[subchan_idx][rank_idx].cs_vref_margin);
                         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4,
+                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5,
                                                  bdat_mem_data.socketList[socket_idx]
                                                      .channelList[dimm_global_idx]
                                                      .rankList[rank_idx]
@@ -380,7 +412,7 @@ void ddr_create_bdat(void)
                                                      .CaDlyMargin),
                                     ddrss_phy_training_margin[dimm_local_idx].margin[subchan_idx][rank_idx].ca_dly_margin);
                         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4,
+                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5,
                                                  bdat_mem_data.socketList[socket_idx]
                                                      .channelList[dimm_global_idx]
                                                      .rankList[rank_idx]
@@ -388,7 +420,7 @@ void ddr_create_bdat(void)
                                                      .CaVrefMargin),
                                     ddrss_phy_training_margin[dimm_local_idx].margin[subchan_idx][rank_idx].ca_vref_margin);
                         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4,
+                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5,
                                                  bdat_mem_data.socketList[socket_idx]
                                                      .channelList[dimm_global_idx]
                                                      .rankList[rank_idx]
@@ -396,7 +428,7 @@ void ddr_create_bdat(void)
                                                      .RxClkDlyMargin),
                                     ddrss_phy_training_margin[dimm_local_idx].margin[subchan_idx][rank_idx].rx_clk_dly_margin);
                         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4,
+                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5,
                                                  bdat_mem_data.socketList[socket_idx]
                                                      .channelList[dimm_global_idx]
                                                      .rankList[rank_idx]
@@ -404,7 +436,7 @@ void ddr_create_bdat(void)
                                                      .VrefDacMargin),
                                     ddrss_phy_training_margin[dimm_local_idx].margin[subchan_idx][rank_idx].vref_dac_margin);
                         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4,
+                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5,
                                                  bdat_mem_data.socketList[socket_idx]
                                                      .channelList[dimm_global_idx]
                                                      .rankList[rank_idx]
@@ -412,7 +444,7 @@ void ddr_create_bdat(void)
                                                      .TxDqDlyMargin),
                                     ddrss_phy_training_margin[dimm_local_idx].margin[subchan_idx][rank_idx].tx_dq_dly_margin);
                         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4,
+                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5,
                                                  bdat_mem_data.socketList[socket_idx]
                                                      .channelList[dimm_global_idx]
                                                      .rankList[rank_idx]
@@ -420,7 +452,7 @@ void ddr_create_bdat(void)
                                                      .DeviceVrefMargin),
                                     ddrss_phy_training_margin[dimm_local_idx].margin[subchan_idx][rank_idx].device_vref_margin);
                         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4,
+                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5,
                                                  bdat_mem_data.socketList[socket_idx]
                                                      .channelList[dimm_global_idx]
                                                      .rankList[rank_idx]
@@ -428,13 +460,48 @@ void ddr_create_bdat(void)
                                                      .QCsDlyMargin),
                                     ddrss_phy_training_margin[dimm_local_idx].margin[subchan_idx][rank_idx].q_cs_dly_margin);
                         MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_4,
+                                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5,
                                                  bdat_mem_data.socketList[socket_idx]
                                                      .channelList[dimm_global_idx]
                                                      .rankList[rank_idx]
                                                      .subchannelList[subchan_idx]
                                                      .QCaDlyMargin),
                                     ddrss_phy_training_margin[dimm_local_idx].margin[subchan_idx][rank_idx].q_ca_dly_margin);
+                    }
+
+                    /* New DQ margin data (big) */
+                    for (size_t dq_lane_margin_idx = 0; dq_lane_margin_idx < MAX_DDRSS_DQ_LANE_MARGIN_DBYTE_NUM;
+                         dq_lane_margin_idx++)
+                    {
+                        for (size_t tx_rx_lane_idx = 0; tx_rx_lane_idx < MAX_DDRSS_DQ_LANE_MARGIN_TX_RX_LANE_NUM;
+                             tx_rx_lane_idx++)
+                        {
+                            uint32_t addr = bdat_mem_atu_map_struct.mscp_start_address +
+                                            offsetof(BDAT_DATA_STRUCTURE_MSFT_5,
+                                                     bdat_mem_data.socketList[socket_idx]
+                                                         .channelList[dimm_global_idx]
+                                                         .rankList[rank_idx]
+                                                         .marginList[dq_lane_margin_idx][tx_rx_lane_idx]
+                                                         .dword[0]);
+                            uint32_t data32 = dq_margin->margin[rank_idx][dq_lane_margin_idx][tx_rx_lane_idx].dword[0];
+                            MMIO_WRITE8(addr, (uint8_t)data32 & 0xFF);
+                            MMIO_WRITE8(addr + 1, (uint8_t)((data32 >> 8) & 0xFF));
+                            MMIO_WRITE8(addr + 2, (uint8_t)((data32 >> 16) & 0xFF));
+                            MMIO_WRITE8(addr + 3, (uint8_t)((data32 >> 24) & 0xFF));
+
+                            addr = bdat_mem_atu_map_struct.mscp_start_address +
+                                   offsetof(BDAT_DATA_STRUCTURE_MSFT_5,
+                                            bdat_mem_data.socketList[socket_idx]
+                                                .channelList[dimm_global_idx]
+                                                .rankList[rank_idx]
+                                                .marginList[dq_lane_margin_idx][tx_rx_lane_idx]
+                                                .dword[1]);
+                            data32 = dq_margin->margin[rank_idx][dq_lane_margin_idx][tx_rx_lane_idx].dword[1];
+                            MMIO_WRITE8(addr, (uint8_t)data32 & 0xFF);
+                            MMIO_WRITE8(addr + 1, (uint8_t)((data32 >> 8) & 0xFF));
+                            MMIO_WRITE8(addr + 2, (uint8_t)((data32 >> 16) & 0xFF));
+                            MMIO_WRITE8(addr + 3, (uint8_t)((data32 >> 24) & 0xFF));
+                        }
                     }
                 }
             }
@@ -445,19 +512,19 @@ void ddr_create_bdat(void)
         }
     }
 
-    /* BDAT_SCHEMA_HEADER_STRUCTURE_MSFT_4 */
+    /* BDAT_SCHEMA_HEADER_STRUCTURE_MSFT_5 */
     guid_bytes_t BDAT_GUID;
-    BDAT_GUID.Guid.Data1 = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_4}.Guid.Data1;
-    BDAT_GUID.Guid.Data2 = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_4}.Guid.Data2;
-    BDAT_GUID.Guid.Data3 = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_4}.Guid.Data3;
-    BDAT_GUID.Guid.Data4[0] = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_4}.Guid.Data4[0];
-    BDAT_GUID.Guid.Data4[1] = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_4}.Guid.Data4[1];
-    BDAT_GUID.Guid.Data4[2] = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_4}.Guid.Data4[2];
-    BDAT_GUID.Guid.Data4[3] = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_4}.Guid.Data4[3];
-    BDAT_GUID.Guid.Data4[4] = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_4}.Guid.Data4[4];
-    BDAT_GUID.Guid.Data4[5] = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_4}.Guid.Data4[5];
-    BDAT_GUID.Guid.Data4[6] = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_4}.Guid.Data4[6];
-    BDAT_GUID.Guid.Data4[7] = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_4}.Guid.Data4[7];
+    BDAT_GUID.Guid.Data1 = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_5}.Guid.Data1;
+    BDAT_GUID.Guid.Data2 = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_5}.Guid.Data2;
+    BDAT_GUID.Guid.Data3 = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_5}.Guid.Data3;
+    BDAT_GUID.Guid.Data4[0] = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_5}.Guid.Data4[0];
+    BDAT_GUID.Guid.Data4[1] = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_5}.Guid.Data4[1];
+    BDAT_GUID.Guid.Data4[2] = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_5}.Guid.Data4[2];
+    BDAT_GUID.Guid.Data4[3] = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_5}.Guid.Data4[3];
+    BDAT_GUID.Guid.Data4[4] = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_5}.Guid.Data4[4];
+    BDAT_GUID.Guid.Data4[5] = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_5}.Guid.Data4[5];
+    BDAT_GUID.Guid.Data4[6] = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_5}.Guid.Data4[6];
+    BDAT_GUID.Guid.Data4[7] = (guid_bytes_t){BDAT_CUSTOM_GUID_MSFT_5}.Guid.Data4[7];
 
     const int GUID_SIZE_BYTES = 16;
 
@@ -466,21 +533,27 @@ void ddr_create_bdat(void)
         for (int byte_idx = 0; byte_idx < GUID_SIZE_BYTES; byte_idx++)
         {
             MMIO_WRITE8(bdat_mem_atu_map_struct.mscp_start_address +
-                            offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.schemaHeader.Guid) + byte_idx,
+                            offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.schemaHeader.Guid) + byte_idx,
                         BDAT_GUID.AsByte[byte_idx]);
         }
 
-        MMIO_WRITE32(bdat_mem_atu_map_struct.mscp_start_address +
-                         offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.schemaHeader.DataSize),
-                     sizeof(BDAT_DATA_STRUCTURE_MSFT_4));
+        uint32_t addr = bdat_mem_atu_map_struct.mscp_start_address +
+                        offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.schemaHeader.DataSize);
+        MMIO_WRITE8(addr, (uint8_t)(sizeof(BDAT_DATA_STRUCTURE_MSFT_5) & 0xFF));
+        MMIO_WRITE8(addr + 1, (uint8_t)((sizeof(BDAT_DATA_STRUCTURE_MSFT_5) >> 8) & 0xFF));
+        MMIO_WRITE8(addr + 2, (uint8_t)((sizeof(BDAT_DATA_STRUCTURE_MSFT_5) >> 16) & 0xFF));
+        MMIO_WRITE8(addr + 3, (uint8_t)((sizeof(BDAT_DATA_STRUCTURE_MSFT_5) >> 24) & 0xFF));
 
         // Calculate checksum with schemaHeader.Crc16 as 0 & then overwrite
-        MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                         offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.schemaHeader.Crc16),
-                     0);
-        MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                         offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatHeader.Crc16),
-                     0);
+        addr = bdat_mem_atu_map_struct.mscp_start_address +
+               offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.schemaHeader.Crc16);
+        MMIO_WRITE8(addr, (uint8_t)(0 & 0xFF));
+        MMIO_WRITE8(addr + 1, (uint8_t)((0 >> 8) & 0xFF));
+
+        addr = bdat_mem_atu_map_struct.mscp_start_address +
+               offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatHeader.Crc16);
+        MMIO_WRITE8(addr, (uint8_t)(0 & 0xFF));
+        MMIO_WRITE8(addr + 1, (uint8_t)((0 >> 8) & 0xFF));
     } // end of DIE_0 ONLY
 
     if (!idhw_is_single_die_boot_en())
@@ -496,12 +569,12 @@ void ddr_create_bdat(void)
     if (die_num == DIE_0)
     {
         uint16_t bdat_crc = CalculateRemoteCheckSum16(bdat_mem_atu_map_struct.mscp_start_address,
-                                                      sizeof(BDAT_DATA_STRUCTURE_MSFT_4));
+                                                      sizeof(BDAT_DATA_STRUCTURE_MSFT_5));
         MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                         offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_mem_data.schemaHeader.Crc16),
+                         offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_mem_data.schemaHeader.Crc16),
                      bdat_crc);
         MMIO_WRITE16(bdat_mem_atu_map_struct.mscp_start_address +
-                         offsetof(BDAT_DATA_STRUCTURE_MSFT_4, bdat_struct.BdatHeader.Crc16),
+                         offsetof(BDAT_DATA_STRUCTURE_MSFT_5, bdat_struct.BdatHeader.Crc16),
                      bdat_crc);
     }
 

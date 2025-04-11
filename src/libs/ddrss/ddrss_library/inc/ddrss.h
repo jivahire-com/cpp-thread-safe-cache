@@ -12,6 +12,7 @@
 #include <ddr_erg0_regs.h>
 #include <ddr_erg1_regs.h>
 #include <ddrmctop_regs.h>
+#include <ddrss_runtime_api.h>
 #include <idsw_kng.h>
 #include <silibs_platform.h>
 #include <stdbool.h>
@@ -74,4 +75,5 @@ void prod_ddrss_pcr_init(KNG_DIE_ID die_num);
 
 // in ddrss_ras.c
 int ddrss_probe_ras_agent(uint32_t mc, uint32_t ras_agent_entity_id);
+ddrss_phy_training_dq_margin_t* ddrss_get_training_margin_base(void);
 

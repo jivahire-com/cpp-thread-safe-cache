@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
     ms::lib::arm_intrinsic
     ms::lib::register_headers
     ms::service::ap_core
+    ms::client_interface::startup_shutdown
     silibs::icc_mhu	
     silibs::kng_silibs_platform
     silibs_platform
@@ -46,6 +47,8 @@ mock_target(${TARGET}
     ap_core_core_power_off
     ap_core_core_power_on
     ap_core_set_rvbaraddr
+    ap_core_power_completion
+    ap_core_reset_addr_completion
     fpfw_icc_transport_recv_async_req
     fpfw_icc_transport_try_send_sync_req
     scmi_send_resp
@@ -53,4 +56,8 @@ mock_target(${TARGET}
     scmi_power_protocol_cmds
     scmi_sys_pwr_protocol_cmds
     scmi_ap_core_protocol_cmds
+    scmi_cold_boot_completion
+    scmi_shutdown_completion
+    scmi_warm_boot_completion
+    sos_shutdown
 )

@@ -31,6 +31,9 @@ target_link_libraries(${TARGET}
         ms::driver::icc_mhu_trans
         ms::service::ap_core
         ms::service::atu_service
+        ms::client_interface::startup_shutdown
+        ms::lib::crash_dump
+        kng.lib.hsp_firmware_headers
     PUBLIC
         ms::cmsis::interface
         ms::lib::debug

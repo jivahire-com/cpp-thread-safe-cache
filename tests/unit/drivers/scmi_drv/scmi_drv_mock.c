@@ -30,6 +30,7 @@
 #include <mhu_icc_transport.h>
 #include <scmi_prim.h>
 #include <scmi_prim_i.h>
+#include <startup_shutdown.h>
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -105,6 +106,24 @@ int __wrap_scmi_ap_core_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t
     return mock_type(int);
 }
 
+void __wrap_scmi_cold_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+{
+    FPFW_UNUSED(request);
+    FPFW_UNUSED(p_completion_context);
+}
+
+void __wrap_scmi_shutdown_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+{
+    FPFW_UNUSED(request);
+    FPFW_UNUSED(p_completion_context);
+}
+
+void __wrap_scmi_warm_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+{
+    FPFW_UNUSED(request);
+    FPFW_UNUSED(p_completion_context);
+}
+
 int32_t __wrap_DfwkClientInterfaceOpen(PDFWK_INTERFACE_HEADER Interface)
 {
     check_expected_ptr(Interface);
@@ -155,4 +174,29 @@ void __wrap_ap_core_core_power_off(PDFWK_INTERFACE_HEADER p_interface,
     FPFW_UNUSED(completion_routine);
     FPFW_UNUSED(p_completion_context);
     check_expected(core_id);
+}
+
+void __wrap_ap_core_power_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+{
+    FPFW_UNUSED(request);
+    FPFW_UNUSED(p_completion_context);
+}
+
+void __wrap_ap_core_reset_addr_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+{
+    FPFW_UNUSED(request);
+    FPFW_UNUSED(p_completion_context);
+}
+
+void __wrap_sos_shutdown(PDFWK_INTERFACE_HEADER p_interface,
+                         pstartup_shutdown_request_t p_request,
+                         ssi_shutdown_type_t shutdown_type,
+                         DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                         void* p_completion_context)
+{
+    FPFW_UNUSED(p_interface);
+    FPFW_UNUSED(p_request);
+    FPFW_UNUSED(shutdown_type);
+    FPFW_UNUSED(completion_routine);
+    FPFW_UNUSED(p_completion_context);
 }

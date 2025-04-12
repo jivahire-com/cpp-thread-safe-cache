@@ -17,6 +17,7 @@
 #include <ap_core.h>
 #include <arm_intrinsic.h>
 #include <atu_api.h>
+#include <bug_check.h> // for BUG_ASSERT
 #include <cmsis_m7.h>
 #include <debug.h>
 #include <fpfw_icc_transport_interface.h>
@@ -29,6 +30,8 @@
 #include <kng_scp_tfa_shared.h>
 #include <mhu_icc_transport.h>
 #include <scmi_prim.h>
+#include <startup_shutdown.h>
+#include <startup_shutdown_init.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -61,6 +64,29 @@ static mhu_icc_transport_intrf_t* s_icc_mscp2tfa = NULL;
 static volatile scmi_transport_message_t* scmi_recv_message;
 static volatile scmi_transport_message_t* scmi_send_message;
 static FPFW_ICC_TRANSPORT_ASYNC_RECV_REQUEST recv_request;
+
+static startup_shutdown_request_t scmi_sys_pwr_set_req;
+
+void scmi_cold_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+{
+    FPFW_UNUSED(p_completion_context);
+    FPFW_UNUSED(request);
+    printf("Cold Boot Completed\n");
+}
+
+void scmi_shutdown_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+{
+    FPFW_UNUSED(p_completion_context);
+    FPFW_UNUSED(request);
+    printf("Shutdown Completed\n");
+}
+
+void scmi_warm_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+{
+    FPFW_UNUSED(p_completion_context);
+    printf("Request (%x)\n is completed\n", (uintptr_t)request);
+    printf("AP Warm Boot Completed\n");
+}
 
 void scmi_set_debug_mode(uint8_t mode)
 {
@@ -239,8 +265,56 @@ int scmi_sys_pwr_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
     }
     case SCMI_SYS_PWR_STATE_SET_MSG: {
         SCMI_LOG_INFO("SCMI_SYS_PWR_STATE_SET_MSG: %x\n", cmd_code);
-        int32_t status = 0;
-        scmi_send_resp(SCMI_SYS_PWR_PROTO_ID, SCMI_PWR_STATE_SET_MSG, (uint8_t*)&status, sizeof(status));
+
+        scmi_sys_pwr_set_state_a2p_t* p_sys_pwr_set_state = (scmi_sys_pwr_set_state_a2p_t*)payload;
+        bool ignore_pwr_up = (bool)(p_sys_pwr_set_state->flags & 0x1U);
+        scmi_sys_pwr_set_state_p2a_t resp = {0};
+        resp.status = SCMI_STATUS_SUCCESS;
+
+        if (p_sys_pwr_set_state->flags & (uint32_t)(~0x1U))
+        {
+            resp.status = SCMI_STATUS_INVALID_PARAMETERS;
+            scmi_send_resp(SCMI_SYS_PWR_PROTO_ID, SCMI_PWR_STATE_SET_MSG, (uint8_t*)&resp, sizeof(resp));
+        }
+        else
+        {
+            // send synchronous and asynchronous startup stage start requests
+            DfwkAsyncRequestInitialize((void*)&scmi_sys_pwr_set_req.header, sizeof(scmi_sys_pwr_set_req));
+
+            switch (p_sys_pwr_set_state->system_state)
+            {
+            case SCMI_SYS_PWR_SYS_STATE_SHUTDOWN:
+                scmi_send_resp(SCMI_SYS_PWR_PROTO_ID, SCMI_PWR_STATE_SET_MSG, (uint8_t*)&resp, sizeof(resp));
+                sos_shutdown((void*)fpfw_init_get_handle("sos_int"), &scmi_sys_pwr_set_req, SHUTDOWN, scmi_shutdown_completion, NULL);
+                break;
+            case SCMI_SYS_PWR_SYS_STATE_COLD_RESET:
+                scmi_send_resp(SCMI_SYS_PWR_PROTO_ID, SCMI_PWR_STATE_SET_MSG, (uint8_t*)&resp, sizeof(resp));
+                sos_shutdown((void*)fpfw_init_get_handle("sos_int"), &scmi_sys_pwr_set_req, COLD_RESET, scmi_cold_boot_completion, NULL);
+                break;
+            case SCMI_SYS_PWR_SYS_STATE_WARM_RESET:
+                scmi_send_resp(SCMI_SYS_PWR_PROTO_ID, SCMI_PWR_STATE_SET_MSG, (uint8_t*)&resp, sizeof(resp));
+                sos_shutdown((void*)fpfw_init_get_handle("sos_int"), &scmi_sys_pwr_set_req, AP_WARM_RESET, scmi_warm_boot_completion, NULL);
+                break;
+            case SCMI_SYS_PWR_SYS_STATE_POWER_UP:
+                scmi_send_resp(SCMI_SYS_PWR_PROTO_ID, SCMI_PWR_STATE_SET_MSG, (uint8_t*)&resp, sizeof(resp));
+                if (!ignore_pwr_up)
+                {
+                    SCMI_LOG_INFO("Force Power Up\n");
+                }
+                break;
+            case SCMI_SYS_PWR_SYS_STATE_SUSPEND:
+                scmi_send_resp(SCMI_SYS_PWR_PROTO_ID, SCMI_PWR_STATE_SET_MSG, (uint8_t*)&resp, sizeof(resp));
+                break;
+            default:
+                SCMI_LOG_INFO("SCMI_SYS_PWR_STATE_SET_MSG: invalid system_state : %" PRId32 "\n",
+                              p_sys_pwr_set_state->system_state);
+
+                resp.status = SCMI_STATUS_INVALID_PARAMETERS;
+                SCMI_LOG_INFO("SCMI_SYS_PWR_STATE_SET_MSG: returning %" PRId32 "\n", resp.status);
+                scmi_send_resp(SCMI_SYS_PWR_PROTO_ID, SCMI_PWR_STATE_SET_MSG, (uint8_t*)&resp, sizeof(resp));
+                break;
+            }
+        }
         break;
     }
     case SCMI_SYS_PWR_STATE_GET_MSG: {

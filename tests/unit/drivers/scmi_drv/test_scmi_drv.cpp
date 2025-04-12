@@ -23,6 +23,8 @@ extern "C" {
 #include <scmi_init.h>
 #include <scmi_prim.h>
 #include <scmi_prim_i.h>
+#include <startup_shutdown.h>
+#include <startup_shutdown_init.h>
 #include <stddef.h> // for NULL
 #include <stdint.h> // for uint32_t
 }
@@ -40,6 +42,11 @@ int __real_scmi_check_message(scmi_icc_packet_t* packet);
 int __real_scmi_power_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size);
 int __real_scmi_sys_pwr_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size);
 int __real_scmi_ap_core_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size);
+void __real_scmi_cold_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context);
+void __real_scmi_shutdown_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context);
+void __real_scmi_warm_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context);
+void __real_ap_core_power_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context);
+void __real_ap_core_reset_addr_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context);
 }
 
 /*-- Declarations (Statics and globals) --*/
@@ -138,6 +145,26 @@ TEST_FUNCTION(test_scmi_check_message, test_setup, test_teardown)
     assert_int_equal(status, SCMI_PROTOCOL_NOT_SUPPORTED);
 }
 
+TEST_FUNCTION(test_ap_core_power_completion, test_setup, test_teardown)
+{
+    _DFWK_ASYNC_REQUEST_HEADER req = {0};
+
+    // APCORE_CORE_POWER_ON_ASYNC
+    req.RequestType = 1;
+    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
+    __real_ap_core_power_completion(&req, NULL);
+
+    // APCORE_CORE_POWER_OFF_ASYNC
+    req.RequestType = 2;
+    __real_ap_core_power_completion(&req, NULL);
+}
+
+TEST_FUNCTION(test_ap_core_reset_addr_completion, test_setup, test_teardown)
+{
+    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
+    __real_ap_core_reset_addr_completion(NULL, NULL);
+}
+
 TEST_FUNCTION(test_scmi_ap_core_protocol_cmds, test_setup, test_teardown)
 {
 #define RVBARLO 0x12345678
@@ -168,12 +195,86 @@ TEST_FUNCTION(test_scmi_sys_pwr_protocol_cmds, test_setup, test_teardown)
 {
     // Sys Power Control Commands
     uint8_t data[] = {1, 2, 3, 4};
+    scmi_sys_pwr_set_state_a2p_t sys_power_set = {0};
+
     will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
     int status = __real_scmi_sys_pwr_protocol_cmds(SCMI_PROTOCOL_VERSION, data, 0);
     assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
 
+    // Sys Power State Set Invalid flags
     will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
-    status = __real_scmi_sys_pwr_protocol_cmds(SCMI_SYS_PWR_STATE_SET_MSG, data, 2);
+    sys_power_set.flags = 0xFF;
+    sys_power_set.system_state = SCMI_SYS_PWR_SYS_STATE_SHUTDOWN;
+    status = __real_scmi_sys_pwr_protocol_cmds(SCMI_SYS_PWR_STATE_SET_MSG, (uint8_t*)&sys_power_set, sizeof(sys_power_set));
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
+
+    // Sys Power State Set Shutdown
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(startup_shutdown_request_t));
+    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
+    sys_power_set.flags = 0;
+    sys_power_set.system_state = SCMI_SYS_PWR_SYS_STATE_SHUTDOWN;
+    status = __real_scmi_sys_pwr_protocol_cmds(SCMI_SYS_PWR_STATE_SET_MSG, (uint8_t*)&sys_power_set, sizeof(sys_power_set));
+    // callback function
+    __real_scmi_shutdown_completion(NULL, NULL);
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
+
+    // Sys Power State Set Cold Reset
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(startup_shutdown_request_t));
+    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
+    sys_power_set.flags = 0;
+    sys_power_set.system_state = SCMI_SYS_PWR_SYS_STATE_COLD_RESET;
+    status = __real_scmi_sys_pwr_protocol_cmds(SCMI_SYS_PWR_STATE_SET_MSG, (uint8_t*)&sys_power_set, sizeof(sys_power_set));
+    // callback function
+    __real_scmi_cold_boot_completion(NULL, NULL);
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
+
+    // Sys Power State Set Warm Reset
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(startup_shutdown_request_t));
+    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
+    sys_power_set.flags = 0;
+    sys_power_set.system_state = SCMI_SYS_PWR_SYS_STATE_WARM_RESET;
+    status = __real_scmi_sys_pwr_protocol_cmds(SCMI_SYS_PWR_STATE_SET_MSG, (uint8_t*)&sys_power_set, sizeof(sys_power_set));
+    // callback function
+    __real_scmi_warm_boot_completion(NULL, NULL);
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
+
+    // Sys Power State Set Force Power Up
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(startup_shutdown_request_t));
+    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
+    sys_power_set.flags = 0;
+    sys_power_set.system_state = SCMI_SYS_PWR_SYS_STATE_POWER_UP;
+    status = __real_scmi_sys_pwr_protocol_cmds(SCMI_SYS_PWR_STATE_SET_MSG, (uint8_t*)&sys_power_set, sizeof(sys_power_set));
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
+
+    // Sys Power State Set Ignore Power Up
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(startup_shutdown_request_t));
+    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
+    sys_power_set.flags = 1;
+    sys_power_set.system_state = SCMI_SYS_PWR_SYS_STATE_POWER_UP;
+    status = __real_scmi_sys_pwr_protocol_cmds(SCMI_SYS_PWR_STATE_SET_MSG, (uint8_t*)&sys_power_set, sizeof(sys_power_set));
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
+
+    // Sys Power State Set Suspend
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(startup_shutdown_request_t));
+    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
+    sys_power_set.flags = 0;
+    sys_power_set.system_state = SCMI_SYS_PWR_SYS_STATE_SUSPEND;
+    status = __real_scmi_sys_pwr_protocol_cmds(SCMI_SYS_PWR_STATE_SET_MSG, (uint8_t*)&sys_power_set, sizeof(sys_power_set));
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
+
+    // Sys Power State Set Invalid system_state
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(startup_shutdown_request_t));
+    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
+    sys_power_set.flags = 0;
+    sys_power_set.system_state = 0xFF;
+    status = __real_scmi_sys_pwr_protocol_cmds(SCMI_SYS_PWR_STATE_SET_MSG, (uint8_t*)&sys_power_set, sizeof(sys_power_set));
     assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
 
     will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);

@@ -69,6 +69,11 @@ void __wrap_wdog_cmsdk_apb_reload()
     function_called();
 }
 
+bool __wrap_config_get_wdog_en()
+{
+    return true;
+}
+
 //
 // Tests
 //

@@ -157,6 +157,7 @@ target_link_libraries(
         ms::service::gpio::cli
         ms::service::health_monitor
         ms::service::health_monitor::cli
+        ms::service::mem::cli
         ms::service::mts
         ms::service::pcie_manager
         ms::service::pcie_manager::cli
@@ -334,6 +335,7 @@ target_link_libraries(
         ms::service::event_trace::decoder
         ms::service::event_trace::relay
         ms::service::gpio::cli
+        ms::service::mem::cli
         ms::service::mts
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli

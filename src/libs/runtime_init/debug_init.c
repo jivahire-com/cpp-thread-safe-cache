@@ -6,6 +6,7 @@
 /*------------- Includes -----------------*/
 
 #include <DbgPrint.h>
+#include <cli_mem.h>
 #include <debug.h>     // for debug_init
 #include <fpfw_init.h> // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
 #include <gtimer_prodfw.h>
@@ -40,6 +41,13 @@ FPFW_INIT_COMPONENT(debug_print, FPFW_INIT_DEPENDENCIES("std_io", "gtimer"))
         .timestamp_us_cb = dbgprint_counter_to_us,
     };
     DbgPrintInit(&config);
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
+FPFW_INIT_COMPONENT(mem_cli, FPFW_INIT_DEPENDENCIES("cli"))
+{
+    cli_mem_init();
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

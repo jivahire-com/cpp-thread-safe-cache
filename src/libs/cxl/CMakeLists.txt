@@ -15,3 +15,8 @@ target_link_libraries(${TARGET}
 )
 
 add_library(ms::lib::cxl ALIAS ${TARGET})
+
+# Enable linting, formatting, and coverage
+lint_target(${TARGET})
+format_target(${TARGET})
+coverage_target(${TARGET})

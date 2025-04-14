@@ -75,13 +75,104 @@ void dma_isr(void* context)
 
 void dma_channel_isr(dma_device_t* device, uint32_t channel)
 {
-    uint64_t INT_MASK = 0xFFFFFFFFFFFFFFFF; // Todo: Task 2015102: Update DMA interrupt handling
     uint64_t status;
 
     // Handle Channel x interrupt
     status = dmac_get_ch_interrupt_status(device->config->base_address, channel);
-    dmac_clear_ch_interrupts(device->config->base_address, INT_MASK, channel); // TODO: Task 2015102: Update DMA interrupt handling
-    FPFW_UNUSED(status);
+    dmac_clear_ch_interrupts(device->config->base_address, DMAC_ENABLED_CH_INTS_MASK, channel);
+
+    while(status)
+    {
+        if (status & DMAC_CH_INT_CHANNEL_ABORTED)
+        {
+            status &= ~DMAC_CH_INT_CHANNEL_ABORTED;
+            DMA_LOG_INFO("Channel Abort Interrupt recvd on channel 0%u", (unsigned int)channel);
+        }
+
+        else if (status & DMAC_CH_INT_CHANNEL_DISABLED)
+        {
+            status &= ~DMAC_CH_INT_CHANNEL_DISABLED;
+            DMA_LOG_INFO("Channel Disable Interrupt recvd on channel 0%u", (unsigned int)channel);
+        }
+
+        else if (status & DMAC_CH_INT_CHANNEL_SUSPENDED)
+        {
+            status &= ~DMAC_CH_INT_CHANNEL_SUSPENDED;
+            DMA_LOG_INFO("Channel Suspend Interrupt recvd on channel 0%u", (unsigned int)channel);
+        }
+
+        else if (status & DMAC_CH_INT_CHANNEL_LOCK_CLEARED)
+        {
+            status &= ~DMAC_CH_INT_CHANNEL_LOCK_CLEARED;
+            DMA_LOG_INFO("Channel Lock Clear Interrupt recvd on channel 0%u", (unsigned int)channel);
+        }
+
+        else if (status & DMAC_CH_INT_SHADOWREG_OR_LLI_INVALID_ERR)
+        {
+            status &= ~DMAC_CH_INT_SHADOWREG_OR_LLI_INVALID_ERR;
+            DMA_LOG_INFO("Channel LLI Invalid Interrupt recvd on channel 0%u", (unsigned int)channel);
+        }
+
+        else if (status & DMAC_CH_INT_LLI_WR_SLV_ERR)
+        {
+            status &= ~DMAC_CH_INT_LLI_WR_SLV_ERR;
+            DMA_LOG_INFO("Channel LLI Write Slave Error Interrupt recvd on channel 0%u", (unsigned int)channel);
+        }
+
+        else if (status & DMAC_CH_INT_LLI_RD_SLV_ERR)
+        {
+            status &= ~DMAC_CH_INT_LLI_RD_SLV_ERR;
+            DMA_LOG_INFO("Channel LLI Read Slave Error Interrupt recvd on channel 0%u", (unsigned int)channel);
+        }
+
+        else if (status & DMAC_CH_INT_LLI_WR_DEC_ERR)
+        {
+            status &= ~DMAC_CH_INT_LLI_WR_DEC_ERR;
+            DMA_LOG_INFO("Channel LLI Write Decode Error Interrupt recvd on channel 0%u", (unsigned int)channel);
+        }
+
+        else if (status & DMAC_CH_INT_LLI_RD_DEC_ERR)
+        {
+            status &= ~DMAC_CH_INT_LLI_RD_DEC_ERR;
+            DMA_LOG_INFO("Channel LLI Read Decode Error Interrupt recvd on channel 0%u", (unsigned int)channel);
+        }
+
+        else if (status & DMAC_CH_INT_DST_SLV_ERR)
+        {
+            status &= ~DMAC_CH_INT_DST_SLV_ERR;
+            DMA_LOG_INFO("Channel Destination Slave Error Interrupt recvd on channel 0%u", (unsigned int)channel);
+        }
+
+        else if (status & DMAC_CH_INT_SRC_SLV_ERR)
+        {
+            status &= ~DMAC_CH_INT_SRC_SLV_ERR;
+            DMA_LOG_INFO("Channel Source Slave Error Interrupt recvd on channel 0%u", (unsigned int)channel);
+        }
+
+        else if (status & DMAC_CH_INT_DST_TRANSCOMP)
+        {
+            status &= ~DMAC_CH_INT_DST_TRANSCOMP;
+            DMA_LOG_INFO("Channel Destination Transaction Complete Interrupt recvd on channel 0%u", (unsigned int)channel);
+        }
+
+        else if (status & DMAC_CH_INT_SRC_TRANSCOMP)
+        {
+            status &= ~DMAC_CH_INT_SRC_TRANSCOMP;
+            DMA_LOG_INFO("Channel Source Transaction Complete Interrupt recvd on channel 0%u", (unsigned int)channel);
+        }
+
+        else if (status & DMAC_CH_INT_DMA_TFR_DONE)
+        {
+            status &= ~DMAC_CH_INT_DMA_TFR_DONE;
+            DMA_LOG_INFO("Channel DMA Transfer Done Interrupt recvd on channel 0%u", (unsigned int)channel);
+        }
+
+        else if (status & DMAC_CH_INT_BLOCK_TFR_DONE)
+        {
+            status &= ~DMAC_CH_INT_BLOCK_TFR_DONE;
+            DMA_LOG_INFO("Channel Block Transfer Done Interrupt recvd on channel 0%u", (unsigned int)channel);
+        }
+    }
 
     // If completed:
     // Set completion status
@@ -93,8 +184,14 @@ void dma_channel_isr(dma_device_t* device, uint32_t channel)
 
 void dma_reg_isr(dma_device_t* device)
 {
-    // Handle the interrupt
-    FPFW_UNUSED(device);
+    uint64_t status;
+    uint64_t INT_MASK = 0xFFFFFFFFFFFFFFFF; // Todo: Task 2015102: Update DMA interrupt handling
+
+    // Handle Channel x interrupt
+    status = dmac_get_common_interrupt_status(device->config->base_address);
+    dmac_clear_common_interrupts(device->config->base_address, INT_MASK);
+
+    DMA_LOG_INFO("Common Register Interrupt %llx recvd", status);
 }
 
 void dma_atu_parity_isr(dma_device_t* device)

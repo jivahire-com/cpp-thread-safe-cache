@@ -28,6 +28,32 @@
 #define DMA_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define DMA_LOG_CRIT(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 
+// Channel Interrupts Mask Aliases
+#define DMAC_CH_INT_CHANNEL_ABORTED                 (0x1ULL << 31)
+#define DMAC_CH_INT_CHANNEL_DISABLED                (0x1ULL << 30)
+#define DMAC_CH_INT_CHANNEL_SUSPENDED               (0x1ULL << 29)
+#define DMAC_CH_INT_CHANNEL_LOCK_CLEARED            (0x1ULL << 27)
+#define DMAC_CH_INT_SHADOWREG_OR_LLI_INVALID_ERR    (0x1ULL << 13)
+#define DMAC_CH_INT_LLI_WR_SLV_ERR                  (0x1ULL << 12)
+#define DMAC_CH_INT_LLI_RD_SLV_ERR                  (0x1ULL << 11)
+#define DMAC_CH_INT_LLI_WR_DEC_ERR                  (0x1ULL << 10)
+#define DMAC_CH_INT_LLI_RD_DEC_ERR                  (0x1ULL << 9)
+#define DMAC_CH_INT_DST_SLV_ERR                     (0x1ULL << 8)
+#define DMAC_CH_INT_SRC_SLV_ERR                     (0x1ULL << 7)
+#define DMAC_CH_INT_DST_TRANSCOMP                   (0x1ULL << 4)
+#define DMAC_CH_INT_SRC_TRANSCOMP                   (0x1ULL << 3)
+#define DMAC_CH_INT_DMA_TFR_DONE                    (0x1ULL << 1)
+#define DMAC_CH_INT_BLOCK_TFR_DONE                  (0x1ULL << 0)
+
+#define DMAC_ENABLED_CH_INTS_MASK                   (                                               \
+    DMAC_CH_INT_CHANNEL_ABORTED | DMAC_CH_INT_CHANNEL_DISABLED | DMAC_CH_INT_CHANNEL_SUSPENDED |    \
+    DMAC_CH_INT_CHANNEL_LOCK_CLEARED | DMAC_CH_INT_SHADOWREG_OR_LLI_INVALID_ERR |                   \
+    DMAC_CH_INT_LLI_WR_SLV_ERR | DMAC_CH_INT_LLI_RD_SLV_ERR | DMAC_CH_INT_LLI_WR_DEC_ERR |          \
+    DMAC_CH_INT_LLI_RD_DEC_ERR | DMAC_CH_INT_DST_SLV_ERR | DMAC_CH_INT_SRC_SLV_ERR |                \
+    DMAC_CH_INT_DST_TRANSCOMP | DMAC_CH_INT_SRC_TRANSCOMP | DMAC_CH_INT_DMA_TFR_DONE |              \
+    DMAC_CH_INT_BLOCK_TFR_DONE                                                                      \
+)
+
 /*--------- Function Prototypes ----------*/
 // Interrupts
 void dma_isr(void* context);

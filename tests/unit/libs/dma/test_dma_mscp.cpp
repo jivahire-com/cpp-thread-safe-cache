@@ -565,4 +565,50 @@ TEST_FUNCTION(test_dma_update_channel_struct_subtract_remaining_bytes_fail, setu
         update_channel_struct_subtract_remaining_bytes(&device, &TestRequest);
     }
 }
+
+TEST_FUNCTION(test_dma_channel_interrupts, setup, teardown)
+{
+    uint8_t chan = 0;
+    uint8_t req_byte_sz = 10;
+
+    // Arrange
+    device.config->config_type = DMA_CONFIG_TYPE_INTERRUPT;
+    device.config->cpu_type = CPU_SCP;
+    device.config->base_address = DMAC_SCP_BASE_ADDR;
+
+    dma_async_request_t TestRequest = {};
+    TestRequest.input.src_addr_32b_aligned = (uint64_t)0x87654300;
+    TestRequest.input.dest_addr_32b_aligned = 0x12345600; // not used in this test
+    TestRequest.input.byte_count = req_byte_sz;
+    TestRequest.header.OwningQueue = NULL;
+    TestRequest.header.RequestType = DMA_REQUEST_SINGLE_ASYNC;
+    TestRequest.status = FPFW_DMA_STATUS_NOT_STARTED;
+    TestRequest.dma_private.translated_mscp_atu_address = (uint64_t)0xC0FFEE;
+
+    for (uint64_t i = (1ULL << 63); i > 0U; i >>= 1)
+    {
+        if ((i & DMAC_ENABLED_CH_INTS_MASK) != 0)
+        {
+            chan = (chan + 1) % DMAC_MAX_CHANNELS;
+
+            TestRequest.dma_private.assigned_channel = chan;
+            device.Channel[chan].current_request = &TestRequest;
+            device.Channel[chan].current_request->status = FPFW_DMA_STATUS_IN_PROGRESS;
+            device.Channel[chan].remaining_bytes_all_requests = req_byte_sz;
+            expect_value(__wrap_DfwkAsyncRequestComplete, Request, &TestRequest.header);
+
+            // Set up device_interrupt_pair with and interrupt ID = DMAC_CH0_INT
+            device_identifier_pair_t device_interrupt_pair;
+            device_interrupt_pair.device = &device;
+            device_interrupt_pair.interrupt_id = DMAC_CH0_INT + chan;
+            will_return(__wrap_dmac_get_ch_interrupt_status, i); // DMAC_CH0_INT is pending
+
+            dma_isr(static_cast<void*>(&device_interrupt_pair));
+
+            // Assert
+            assert_ptr_equal(device.Channel[chan].current_request, NULL);
+        }
+    }
+}
+
 } // extern "C"

@@ -106,14 +106,16 @@ TEST_FUNCTION(test_cxl_chbcr_init_2_regions_no_interleave, setup, teardown)
     assert_int_equal(result_base, CXL_MEM_REGION_BASE_ADDR);
     uint64_t result_size = (region->size_low.as_uint32 & 0xF) | ((uint64_t)region->size_high.size_high << 32);
     assert_int_equal(result_size, CXL_MEM_REGION_SIZE);
-    assert_int_equal(region->target_list.target_port_id[0], config_get_pcie_rpss4_rp0_cfg().pcie_rp_port_num);
+    pcie_prod_rp_cfg_t rp_cfg = config_get_pcie_rpss4_rp0_cfg();
+    assert_int_equal(region->target_list.target_port_id[0], rp_cfg.silibs_rp_cfg.pcie_rp_port_num);
 
     region++;
     result_base = (region->base_low.as_uint32 & 0xF) | ((uint64_t)region->base_high.base_high << 32);
     assert_int_equal(result_base, CXL_MEM_REGION_BASE_ADDR + CXL_MEM_REGION_SIZE);
     result_size = (region->size_low.as_uint32 & 0xF) | ((uint64_t)region->size_high.size_high << 32);
     assert_int_equal(result_size, CXL_MEM_REGION_SIZE);
-    assert_int_equal(region->target_list.target_port_id[0], config_get_pcie_rpss5_rp0_cfg().pcie_rp_port_num);
+    rp_cfg = config_get_pcie_rpss5_rp0_cfg();
+    assert_int_equal(region->target_list.target_port_id[0], rp_cfg.silibs_rp_cfg.pcie_rp_port_num);
 }
 
 // Test cxl_chbcr_init one interleaved region
@@ -147,10 +149,14 @@ TEST_FUNCTION(test_cxl_chbcr_init_one_region_interleave, setup, teardown)
     assert_int_equal(result_base, CXL_MEM_REGION_BASE_ADDR);
     uint64_t result_size = (region->size_low.as_uint32 & 0xF) | ((uint64_t)region->size_high.size_high << 32);
     assert_int_equal(result_size, CXL_MEM_REGION_SIZE * 4); // 4 targets
-    assert_int_equal(region->target_list.target_port_id[0], config_get_pcie_rpss4_rp0_cfg().pcie_rp_port_num);
-    assert_int_equal(region->target_list.target_port_id[1], config_get_pcie_rpss5_rp0_cfg().pcie_rp_port_num);
-    assert_int_equal(region->target_list.target_port_id[2], config_get_pcie_rpss6_rp0_cfg().pcie_rp_port_num);
-    assert_int_equal(region->target_list.target_port_id[3], config_get_pcie_rpss7_rp0_cfg().pcie_rp_port_num);
+    pcie_prod_rp_cfg_t rp_cfg = config_get_pcie_rpss4_rp0_cfg();
+    assert_int_equal(region->target_list.target_port_id[0], rp_cfg.silibs_rp_cfg.pcie_rp_port_num);
+    rp_cfg = config_get_pcie_rpss5_rp0_cfg();
+    assert_int_equal(region->target_list.target_port_id[1], rp_cfg.silibs_rp_cfg.pcie_rp_port_num);
+    rp_cfg = config_get_pcie_rpss6_rp0_cfg();
+    assert_int_equal(region->target_list.target_port_id[2], rp_cfg.silibs_rp_cfg.pcie_rp_port_num);
+    rp_cfg = config_get_pcie_rpss7_rp0_cfg();
+    assert_int_equal(region->target_list.target_port_id[3], rp_cfg.silibs_rp_cfg.pcie_rp_port_num);
 }
 
 // Test both interleaved and non-interleaved regions
@@ -191,20 +197,25 @@ TEST_FUNCTION(test_cxl_chbcr_init_both, setup, teardown)
     assert_int_equal(result_base, CXL_MEM_REGION_BASE_ADDR);
     uint64_t result_size = (region->size_low.as_uint32 & 0xF) | ((uint64_t)region->size_high.size_high << 32);
     assert_int_equal(result_size, CXL_MEM_REGION_SIZE);
-    assert_int_equal(region->target_list.target_port_id[0], config_get_pcie_rpss0_rp0_cfg().pcie_rp_port_num);
+    pcie_prod_rp_cfg_t rp_cfg = config_get_pcie_rpss0_rp0_cfg();
+    assert_int_equal(region->target_list.target_port_id[0], rp_cfg.silibs_rp_cfg.pcie_rp_port_num);
     region++;
 
     result_base = (region->base_low.as_uint32 & 0xF) | ((uint64_t)region->base_high.base_high << 32);
     assert_int_equal(result_base, CXL_MEM_REGION_BASE_ADDR + CXL_MEM_REGION_SIZE);
     result_size = (region->size_low.as_uint32 & 0xF) | ((uint64_t)region->size_high.size_high << 32);
     assert_int_equal(result_size, CXL_MEM_REGION_SIZE);
-    assert_int_equal(region->target_list.target_port_id[0], config_get_pcie_rpss1_rp0_cfg().pcie_rp_port_num);
+    rp_cfg = config_get_pcie_rpss1_rp0_cfg();
+    assert_int_equal(region->target_list.target_port_id[0], rp_cfg.silibs_rp_cfg.pcie_rp_port_num);
     region++;
 
     result_base = (region->base_low.as_uint32 & 0xF) | ((uint64_t)region->base_high.base_high << 32);
     assert_int_equal(result_base, CXL_MEM_REGION_BASE_ADDR + 2 * CXL_MEM_REGION_SIZE);
     result_size = (region->size_low.as_uint32 & 0xF) | ((uint64_t)region->size_high.size_high << 32);
     assert_int_equal(result_size, CXL_MEM_REGION_SIZE * 2);
-    assert_int_equal(region->target_list.target_port_id[0], config_get_pcie_rpss6_rp0_cfg().pcie_rp_port_num);
-    assert_int_equal(region->target_list.target_port_id[1], config_get_pcie_rpss7_rp0_cfg().pcie_rp_port_num);
+
+    rp_cfg = config_get_pcie_rpss6_rp0_cfg();
+    assert_int_equal(region->target_list.target_port_id[0], rp_cfg.silibs_rp_cfg.pcie_rp_port_num);
+    rp_cfg = config_get_pcie_rpss7_rp0_cfg();
+    assert_int_equal(region->target_list.target_port_id[1], rp_cfg.silibs_rp_cfg.pcie_rp_port_num);
 }

@@ -14,10 +14,12 @@
 #include <FpFwAssert.h>
 #include <ap_top_regs.h>
 #include <atu_lib.h>
+#include <fpfw_cfg_mgr.h>
 #include <idsw_kng.h>
 #include <kng_atu_mappings.h>
 #include <kng_soc_constants.h>
 #include <mscp_exp_rmss_memory_map.h>
+#include <oi_pcie.h>
 #include <pcie_config_i.h>
 #include <pcie_dfwk.h>
 #include <pcie_platform_overrides_i.h>
@@ -149,6 +151,17 @@ int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
 
     /* Enable RPSS VAB ISRs now as the rpss is programmed and ready to go */
     enable_vab_isrs((1 << rpss->id));
+
+    pcie_prod_cfg_workarounds_t* rpss_workarounds = get_workaround_for_rpss(rpss->id);
+
+    for (uint8_t i = 0; i < PCIESS_NUM_PORTS; i++)
+    {
+        if (rpss_workarounds->prod_rp_cfgs[i].hide_dpc == true)
+        {
+            sts = oi_pcie_rp_dbi_hide_dpc_cap(&(rpss->rps[i]));
+            FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+        }
+    }
 
     return sts;
 }

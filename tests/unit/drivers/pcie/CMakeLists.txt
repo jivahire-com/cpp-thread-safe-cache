@@ -86,4 +86,5 @@ mock_target(${TARGET}
     pciess_rps_post_rp_ready_init
     pciess_probe
     pciess_phys_program_fw
+    oi_pcie_rp_dbi_hide_dpc_cap
 )

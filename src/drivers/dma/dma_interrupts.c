@@ -81,7 +81,7 @@ void dma_channel_isr(dma_device_t* device, uint32_t channel)
     status = dmac_get_ch_interrupt_status(device->config->base_address, channel);
     dmac_clear_ch_interrupts(device->config->base_address, DMAC_ENABLED_CH_INTS_MASK, channel);
 
-    while(status)
+    while (status)
     {
         if (status & DMAC_CH_INT_CHANNEL_ABORTED)
         {

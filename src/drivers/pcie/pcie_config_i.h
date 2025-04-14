@@ -50,3 +50,12 @@ void populate_rb_configs_from_rpss_entity(pcie_ss_entity_t* rpss, pcie_root_brid
  * @retval Pointer to the PCIe configuration structure.
  */
 pcie_cfg_t* get_configuration_for_rpss(uint8_t rpss_id);
+
+/*
+ * @brief Get the workaround configuration for the given RPSS ID.
+ *
+ * @param rpss_id The RPSS ID to get the workaround configuration for.
+ *
+ * @retval Pointer to the workaround configuration structure.
+ */
+pcie_prod_cfg_workarounds_t* get_workaround_for_rpss(uint8_t rpss_id);

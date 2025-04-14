@@ -30,39 +30,40 @@
 /*------------- Functions ----------------*/
 static uint8_t get_rp_port_number_from_cxl_port(CXL_PORT port)
 {
+    pcie_prod_rp_cfg_t rp_knob = {0};
     switch (port)
     {
     case CXL_RPSS0_RP0:
-        return config_get_pcie_rpss0_rp0_cfg().pcie_rp_port_num;
+        rp_knob = config_get_pcie_rpss0_rp0_cfg();
         break;
     case CXL_RPSS1_RP0:
-        return config_get_pcie_rpss1_rp0_cfg().pcie_rp_port_num;
+        rp_knob = config_get_pcie_rpss1_rp0_cfg();
         break;
     case CXL_RPSS2_RP0:
-        return config_get_pcie_rpss2_rp0_cfg().pcie_rp_port_num;
+        rp_knob = config_get_pcie_rpss2_rp0_cfg();
         break;
     case CXL_RPSS3_RP0:
-        return config_get_pcie_rpss3_rp0_cfg().pcie_rp_port_num;
+        rp_knob = config_get_pcie_rpss3_rp0_cfg();
         break;
     case CXL_RPSS4_RP0:
-        return config_get_pcie_rpss4_rp0_cfg().pcie_rp_port_num;
+        rp_knob = config_get_pcie_rpss4_rp0_cfg();
         break;
     case CXL_RPSS5_RP0:
-        return config_get_pcie_rpss5_rp0_cfg().pcie_rp_port_num;
+        rp_knob = config_get_pcie_rpss5_rp0_cfg();
         break;
     case CXL_RPSS6_RP0:
-        return config_get_pcie_rpss6_rp0_cfg().pcie_rp_port_num;
+        rp_knob = config_get_pcie_rpss6_rp0_cfg();
         break;
     case CXL_RPSS7_RP0:
-        return config_get_pcie_rpss7_rp0_cfg().pcie_rp_port_num;
+        rp_knob = config_get_pcie_rpss7_rp0_cfg();
         break;
     default:
+        // Should never reach here
+        FPFW_UNREACHABLE();
+        return 0xFF;
         break;
     }
-
-    // Should never reach here
-    FPFW_UNREACHABLE();
-    return 0xFF;
+    return rp_knob.silibs_rp_cfg.pcie_rp_port_num;
 }
 
 uint64_t set_cxl_mem_region_base_and_size(cxl_hdm_decoder_region_t* hdm_decoder, uint64_t* base, uint8_t num_targets)

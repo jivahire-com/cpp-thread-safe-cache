@@ -177,3 +177,9 @@ bool __wrap_pciess_probe(pcie_ss_entity_t* ss, pciess_int_probe_t* info, INTU_DE
 
     return mock_type(bool);
 }
+
+silibs_status_t __wrap_oi_pcie_rp_dbi_hide_dpc_cap(pcie_rp_entity_t* rp)
+{
+    assert_non_null(rp);
+    return mock_type(silibs_status_t);
+}

@@ -367,6 +367,38 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_success, test_setup, test_teardo
     assert_int_equal(r.status, SILIBS_SUCCESS);
 }
 
+/* Test hide dpc is called if workaround is set*/
+TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_hide_dpc, test_setup, test_teardown)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    r.header.RequestType = POST_RP_INIT_REQUEST;
+    r.req_type = POST_RP_INIT_REQUEST;
+    r.rpss_index = RPSS2;
+    r.rp_index = 0;
+
+    mock_pcie_ent.id = r.rpss_index;
+
+    pcie_prod_cfg_workarounds_t* rpss_workarounds = get_workaround_for_rpss(r.rpss_index);
+
+    /* Set the workaround to true*/
+    rpss_workarounds->prod_rp_cfgs[0].hide_dpc = true;
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    will_return(__wrap_pciess_rps_ready, SILIBS_SUCCESS);
+    will_return(__wrap_pciess_rps_post_rp_ready_init, SILIBS_SUCCESS);
+    will_return(__wrap_pciess_rps_clear_intus, SILIBS_SUCCESS);
+    expect_value(__wrap_enable_vab_isrs, vab_instances_to_init, (1 << r.rpss_index));
+    will_return(__wrap_oi_pcie_rp_dbi_hide_dpc_cap, SILIBS_SUCCESS);
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+
+    /* Restore default value*/
+    rpss_workarounds->prod_rp_cfgs[0].hide_dpc = false;
+}
+
 TEST_FUNCTION(test_default_async_dispatch, test_setup, test_teardown)
 {
     /* Setup the request */
@@ -606,5 +638,22 @@ TEST_FUNCTION(test_get_config, test_setup, test_teardown)
     if (!set_error_handler_return())
     {
         get_configuration_for_rpss((NUM_RPSS + 5));
+    }
+}
+
+TEST_FUNCTION(test_get_workarounds, test_setup, test_teardown)
+{
+    pcie_prod_cfg_workarounds_t* pcie_workaround_cfg;
+    for (uint8_t i = RPSS0; i < NUM_RPSS; i++)
+    {
+        pcie_workaround_cfg = nullptr;
+        pcie_workaround_cfg = get_workaround_for_rpss(i);
+        assert_non_null(pcie_workaround_cfg);
+    }
+    /* Test that get_workaround_for_rpss rejects invalid RPSS ids */
+    expect_value(FPFwErrorRaise, error, (uint32_t)-1);
+    if (!set_error_handler_return())
+    {
+        get_workaround_for_rpss(NUM_RPSS);
     }
 }

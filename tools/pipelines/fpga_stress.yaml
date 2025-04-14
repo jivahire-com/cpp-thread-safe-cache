@@ -32,10 +32,22 @@ stages:
   jobs:
   - template: templates/fpga_pythia_test.yaml
     parameters:
-      ArtifactName: MSCP
+      ArtifactName: MSCP_SingleDie
       Pool: '1pfw-kingsgate-bigfpga-pipelines'
       TestVehicleCapability: 'SingleDieFPGA'
       build_id: $(BUILD_ID)
+      TestPlan: $(Test_Plan_Single)
+
+- stage: MSCP_FPGA_Pythia_DualDie_Tests
+  dependsOn: []
+  jobs:
+  - template: templates/fpga_pythia_test.yaml
+    parameters:
+      ArtifactName: MSCP_DualDie
+      Pool: '1pfw-kingsgate-bigfpga-pipelines'
+      TestVehicleCapability: 'DualDieFPGA'
+      build_id: $(BUILD_ID)
+      TestPlan: $(Test_Plan_Dual)
 
 - stage: ACCEL_FPGA_Pythia_Tests
   dependsOn: []
@@ -46,12 +58,12 @@ stages:
       Pool: '1pfw-kingsgate-bigfpga-pipelines'
       TestVehicleCapability: 'SingleDieFPGA'
       build_id: $(BUILD_ID)
-      TestPlan: .\tests\functional\test_plan\fpga_nightly_stress_accel_test_plan.args
+      TestPlan: $(Test_Plan_Accel)
       ifwi: 'kingsgate.ifwi.ap.baremetal.debug.dat'
 
 # This is to tag the commits that pass weekend stress tests.
 - stage: Promote
-  dependsOn: [ MSCP_FPGA_Pythia_Tests, ACCEL_FPGA_Pythia_Tests ]
+  dependsOn: [ MSCP_FPGA_Pythia_Tests, MSCP_FPGA_Pythia_DualDie_Tests, ACCEL_FPGA_Pythia_Tests ]
   # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
   condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
   pool: 

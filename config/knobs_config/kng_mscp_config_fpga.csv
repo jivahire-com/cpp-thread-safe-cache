@@ -1,6 +1,5 @@
 Guid,Knob,Value,Help
 FE3ED49F-B173-41ED-9076-356661D46A42,power_control_loop_interval,10,"override for fpga"
-FE3ED49F-B173-41ED-9076-356661D46A42,power_pvt_loop_interval,100,"override for fpga"
 FE3ED49F-B173-41ED-9076-356661D46A42,power_soc_vm_overvolt_en,false,"override for fpga"
 FE3ED49F-B173-41ED-9076-356661D46A42,power_soc_vm_undervolt_en,false,"override for fpga"
 FE3ED49F-B173-41ED-9076-356661D46A42,power_tile_vm_overvolt_en,false,"override for fpga"

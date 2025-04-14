@@ -875,6 +875,7 @@ AP_CORE_TEST(dispatch_kmp_load, setup, NULL)
 
     // Set up expectations
     will_return(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_idsw_get_die_id, 0x0);
 
     expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
     will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);

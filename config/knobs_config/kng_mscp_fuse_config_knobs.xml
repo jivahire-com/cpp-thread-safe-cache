@@ -1,0 +1,21 @@
+<ConfigSchema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:noNamespaceSchemaLocation="configschema.xsd">
+
+  <!-- Enum values are declared separately from the knobs.
+       The same Enum can be used as the 'enumtype' of any number of EnumKnobs -->
+  <Enums>
+  </Enums>
+  
+  <Structs>
+    <Struct name="fuse_knobs_t">
+      <Member name="fuse_ignore_ifwi_overrides" type="bool" default="false"  help="If true, do not apply fuse overrides from IFWI even if present." />
+    </Struct>
+  </Structs>
+
+  <!-- namespace indicates the GUID namespace the values are stored in -->
+  <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
+    <!--  FUSE KNOBS -->
+    <Knob name="fuse_knobs" type="fuse_knobs_t" help="Fuse knobs." />
+  </Knobs>
+
+</ConfigSchema>

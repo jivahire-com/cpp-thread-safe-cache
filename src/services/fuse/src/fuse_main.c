@@ -222,61 +222,64 @@ int platform_fuse_override()
         printf(FUSE_NAME "copy_to_ram status=%d\n", status);
         BUG_ASSERT_PARAM((status == SILIBS_SUCCESS), status, SILIBS_SUCCESS);
 
-        const bool is_fused_part =
-            (read_fuse(SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH) != 0);
-        printf(FUSE_NAME "if fused part [%d] \n", is_fused_part);
-        // wait for the HSP Fuse for HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ so I will only pass for SVP
-        if (plat_id == PLATFORM_RVP_EVT_SILICON)
+        if (!config_get_fuse_knobs().fuse_ignore_ifwi_overrides)
         {
-            status = read_override_from_spi(); // Read override buffer from SPI Flash and apply to fuses if present
-        }
-        else
-        {
-            printf(FUSE_NAME "Non_support_machine!\n");
-            status = SILIBS_E_SUPPORT;
-        }
-
-        FUSE_ET_STATUS(FUSE_ET_TYPE_MAILBOX_REQUEST_OVERRIDES);
-        const bool fuse_overrides_present = (status == SILIBS_SUCCESS);
-        if (!is_fused_part && !fuse_overrides_present)
-        {
-            FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_NO_OVERRIDES);
-            printf(FUSE_NAME "fuse no override\n");
-            if (status != SILIBS_SUCCESS)
+            const bool is_fused_part =
+                (read_fuse(SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH) != 0);
+            printf(FUSE_NAME "if fused part [%d] \n", is_fused_part);
+            // wait for the HSP Fuse for HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ so I will only pass for SVP
+            if (plat_id == PLATFORM_RVP_EVT_SILICON)
             {
-                printf(FUSE_NAME "Fuse no override!\n");
-                status = FUSE_NO_OVERRIDES;
-                return status;
+                status = read_override_from_spi(); // Read override buffer from SPI Flash and apply to fuses if present
             }
-        }
-        else if (!is_fused_part && fuse_overrides_present)
-        {
-            printf(FUSE_NAME "Unfused part with fuse overrides in SPI. Applying overrides ignoring "
-                             "per-fuse valids.\n");
-            status = apply_fuse_override_ignoring_valids(die_id, Kingsgate_fuse_override_buffer_location);
-            FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_IGNORE_VALIDS);
-            if (status != SILIBS_SUCCESS)
+            else
             {
-                printf(FUSE_NAME "fuse_override_ignoring_valids fail!\n");
-                status = FUSE_ERROR_IGNORE_VALIDS;
-                return status;
+                printf(FUSE_NAME "Non_support_machine!\n");
+                status = SILIBS_E_SUPPORT;
             }
-        }
-        else if (is_fused_part && !fuse_overrides_present)
-        {
-            printf(FUSE_NAME "Fused part with no fuse overrides in SPI.\n");
-        }
-        else
-        {
-            printf(FUSE_NAME "Fused part with fuse overrides in SPI. Applying all valid overrides.\n");
-            status = apply_fuse_override(die_id, Kingsgate_fuse_override_buffer_location);
-            FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_WITH_OVERRIDES);
 
-            if (status != SILIBS_SUCCESS)
+            FUSE_ET_STATUS(FUSE_ET_TYPE_MAILBOX_REQUEST_OVERRIDES);
+            const bool fuse_overrides_present = (status == SILIBS_SUCCESS);
+            if (!is_fused_part && !fuse_overrides_present)
             {
-                printf(FUSE_NAME "fuse_override fail!\n");
-                status = FUSE_ERROR_WITH_OVERRIDES;
-                return status;
+                FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_NO_OVERRIDES);
+                printf(FUSE_NAME "fuse no override\n");
+                if (status != SILIBS_SUCCESS)
+                {
+                    printf(FUSE_NAME "Fuse no override!\n");
+                    status = FUSE_NO_OVERRIDES;
+                    return status;
+                }
+            }
+            else if (!is_fused_part && fuse_overrides_present)
+            {
+                printf(FUSE_NAME "Unfused part with fuse overrides in SPI. Applying overrides ignoring "
+                                 "per-fuse valids.\n");
+                status = apply_fuse_override_ignoring_valids(die_id, Kingsgate_fuse_override_buffer_location);
+                FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_IGNORE_VALIDS);
+                if (status != SILIBS_SUCCESS)
+                {
+                    printf(FUSE_NAME "fuse_override_ignoring_valids fail!\n");
+                    status = FUSE_ERROR_IGNORE_VALIDS;
+                    return status;
+                }
+            }
+            else if (is_fused_part && !fuse_overrides_present)
+            {
+                printf(FUSE_NAME "Fused part with no fuse overrides in SPI.\n");
+            }
+            else
+            {
+                printf(FUSE_NAME "Fused part with fuse overrides in SPI. Applying all valid overrides.\n");
+                status = apply_fuse_override(die_id, Kingsgate_fuse_override_buffer_location);
+                FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_WITH_OVERRIDES);
+
+                if (status != SILIBS_SUCCESS)
+                {
+                    printf(FUSE_NAME "fuse_override fail!\n");
+                    status = FUSE_ERROR_WITH_OVERRIDES;
+                    return status;
+                }
             }
         }
         if (!system_info_is_warm_start())

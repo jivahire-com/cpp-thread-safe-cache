@@ -105,6 +105,12 @@ fpfw_status_t ddr_manager_allocate_mem_for_inst_pkg(uintptr_t* pkg_location, siz
     return status;
 }
 
+void ddr_manager_allocate_mem_for_snsr_fifo_dbg_pkg(uintptr_t* pkg_location, size_t* available_size)
+{
+    *pkg_location = (uintptr_t)IB_TLM_DDR_ATU_AP_WIN_PWR_TLM_BASE_ADDR;
+    *available_size = IB_TLM_DDR_ATU_AP_WIN_PWR_TLM_SIZE;
+}
+
 void ddr_manager_deallocate_mem(uintptr_t* pkg_location)
 {
     TX_QUEUE* free_queue;

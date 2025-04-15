@@ -7,6 +7,7 @@ add_library(${TARGET}
         element_schema.c
         in_band_tlm_cmpnt.c
         package_creation.c
+        snsr_fifo_debug.c
 )
 
 target_include_directories(${TARGET}

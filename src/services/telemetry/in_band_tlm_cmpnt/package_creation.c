@@ -18,6 +18,7 @@
 #include <data_proc_tlm_cmpnt.h>
 #include <exec_tlm_cmpnt.h>
 #include <fpfw_status.h>
+#include <message_transfer_service.h>
 #include <telemetry_events_i.h>
 #include <tx_api.h>
 
@@ -98,6 +99,7 @@ void package_create_populate_hdr(p_telemetry_package_hdr_t package_hdr)
 
     package_hdr->payload_header.timestamp_uS = exec_tlm_cmpnt_get_timestamp_microseconds();
     package_hdr->payload_header.timestamp_utc = 0; // TODO: get UTC time when available
+    package_hdr->payload_header.source_die = mts_get_this_die_id();
     package_hdr->payload_header.package_number = 0;
     package_hdr->payload_header.number_of_records = 0;
     package_hdr->payload_header.package_payload_size = 0;

@@ -222,6 +222,18 @@ void sensor_fifo_svc_disable_fifo(SENSOR_FIFO_ID fifo);
 void sensor_fifo_svc_get_properties(SENSOR_FIFO_ID fifo, psensor_fifo_properties_t properties);
 
 /**
+ * @brief Retrieve fifo empty status
+ *
+ * @note Thread Safe - Yes
+ * @note ISR safe - No
+ * @note Blocking call - No
+ * @note Additional stack requirements - No
+ *
+ * @param[out] is_empty - Array of bool values for each fifo
+ */
+void sensor_fifo_svc_is_empty( bool (*is_empty)[SENSOR_FIFO_MAX_ID]);
+
+/**
  * @brief Retrieve operational health of the sensor fifo service for telemetry reporting. This will clear the data.
  *
  * @note Thread Safe - Yes

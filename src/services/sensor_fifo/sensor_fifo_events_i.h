@@ -79,4 +79,11 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_SENSOR_FIFO_SVC,
                     FPFW_ET_LEVEL_WARNING,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, context))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_SENSOR_FIFO_SVC,
+                    18,
+                    FifoEmptyFail,
+                    FPFW_ET_LEVEL_WARNING,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
+
 /*--------- Function Prototypes ----------*/

@@ -6,6 +6,7 @@ set(SOURCES
     test_mts_manager.cpp
     test_ddr_manager.cpp
     test_in_band_cmpnt.cpp
+    test_snsr_fifo_dbg.cpp
 )
 
 add_executable(${TARGET} ${SOURCES})
@@ -55,4 +56,14 @@ mock_target(${TARGET}
     mts_get_this_core_id
     FpFwAssertWithArgs
     exec_tlm_cmpnt_get_timestamp_microseconds
+    sensor_fifo_svc_poll_tile_temperature
+    sensor_fifo_svc_poll_tile_voltage
+    sensor_fifo_svc_poll_core_current
+    sensor_fifo_svc_poll_core_pstate
+    sensor_fifo_svc_poll_vr_temperature
+    sensor_fifo_svc_poll_vr_current
+    sensor_fifo_svc_poll_soc_pvt_temperature
+    sensor_fifo_svc_poll_soc_pvt_voltage
+    sensor_fifo_svc_poll_dimm_info
+    sensor_fifo_svc_is_empty
 )

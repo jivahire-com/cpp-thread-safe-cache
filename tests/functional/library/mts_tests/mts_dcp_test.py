@@ -273,19 +273,19 @@ def main():
 
     die0_scp_trp_endpoint = mts_cli_trp_endpoint(telnet_port, 0, transfer_relay_protocol.cpu_type.CPU_SCP)
 
-    msg_status = dcp_commands.client_reset(
-                    src_endpoint = die0_scp_trp_endpoint,
-                    dest_die=0,
-                    dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
-                    client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM)
+    # msg_status = dcp_commands.client_reset(
+    #                 src_endpoint = die0_scp_trp_endpoint,
+    #                 dest_die=0,
+    #                 dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                 client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM)
 
-    client_state = dcp_commands.client_get_state(
-                    src_endpoint = die0_scp_trp_endpoint,
-                    dest_die=0,
-                    dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
-                    client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM)
+    # client_state = dcp_commands.client_get_state(
+    #                 src_endpoint = die0_scp_trp_endpoint,
+    #                 dest_die=0,
+    #                 dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                 client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM)
 
-    print(client_state)
+    # print(client_state)
 
     # event_tuple = [(
     #     0x0202,
@@ -306,61 +306,62 @@ def main():
     #                 client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
     #                 events=event_tuple)
 
-    dcp_commands.client_start_stop(
-                    src_endpoint = die0_scp_trp_endpoint,
-                    dest_die=0,
-                    dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
-                    client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
-                    state=data_collection_protocol.client_start_stop_msg.dcp_start_stop_state_t.DCP_START_STOP_STATE_START)
+    # dcp_commands.client_start_stop(
+    #                 src_endpoint = die0_scp_trp_endpoint,
+    #                 dest_die=0,
+    #                 dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                 client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
+    #                 state=data_collection_protocol.client_start_stop_msg.dcp_start_stop_state_t.DCP_START_STOP_STATE_START)
 
-    client_state = dcp_commands.client_get_state(
-                    src_endpoint = die0_scp_trp_endpoint,
-                    dest_die=0,
-                    dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
-                    client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM)
+    # client_state = dcp_commands.client_get_state(
+    #                 src_endpoint = die0_scp_trp_endpoint,
+    #                 dest_die=0,
+    #                 dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                 client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM)
 
-    print(client_state)
+    # print(client_state)
 
     # uncomment to manually stress test telemetry data collection
-    # start_time = time.time()
-    # while True:
-    #     if time.time() - start_time > 7200:
-    #         print("Loop timeout reached")
-    #         break
+    start_time = time.time()
+    while True:
+        if time.time() - start_time > 0:
+            print("Loop timeout reached")
+            break
 
-    #     while True:
-    #         status, response = dcp_commands.client_read_data(
-    #             src_endpoint=die0_scp_trp_endpoint,
-    #             dest_die=0,
-    #             dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
-    #             client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM
-    #             )
+        while True:
+            status, response = dcp_commands.client_read_data(
+                src_endpoint=die0_scp_trp_endpoint,
+                dest_die=0,
+                dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+                client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM
+                )
 
-    #         print(status)
 
-    #         if status not in [
-    #             data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_VALID_LAST,
-    #             data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_VALID_MORE
-    #             ]:
-    #             break
+            if status not in [
+                data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_VALID_LAST,
+                data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_VALID_MORE
+                ]:
+                break
 
-    #         dcp_commands.client_send_read_data_complete(
-    #             src_endpoint=die0_scp_trp_endpoint,
-    #             dest_die=0,
-    #             dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
-    #             client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
-    #             rd_data_addr_offset=response.rd_data_addr_offset,
-    #             rd_data_size=response.rd_data_size
-    #             )
+            print(f"phys: {response.physical_start_addr:x}, size: {response.physical_buffer_size:x}, offset: {response.rd_data_addr_offset:x}, size: {response.rd_data_size:x}, crc: {response.crc:x}\n")
+
+            dcp_commands.client_send_read_data_complete(
+                src_endpoint=die0_scp_trp_endpoint,
+                dest_die=0,
+                dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+                client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
+                rd_data_addr_offset=response.rd_data_addr_offset,
+                rd_data_size=response.rd_data_size
+                )
 
     #     time.sleep(60)
 
-    dcp_commands.client_start_stop(
-                    src_endpoint = die0_scp_trp_endpoint,
-                    dest_die=0,
-                    dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
-                    client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
-                    state=data_collection_protocol.client_start_stop_msg.dcp_start_stop_state_t.DCP_START_STOP_STATE_STOP)
+    # dcp_commands.client_start_stop(
+    #                 src_endpoint = die0_scp_trp_endpoint,
+    #                 dest_die=0,
+    #                 dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                 client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
+    #                 state=data_collection_protocol.client_start_stop_msg.dcp_start_stop_state_t.DCP_START_STOP_STATE_STOP)
 
     telnet_port.close()
 

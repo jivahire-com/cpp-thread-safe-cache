@@ -77,7 +77,7 @@ sensor_ram_poll_status_t fifo_poll_helper(DEVICE_FIFO_ID fifo_id, size_t entry_s
  *
  * @param[in] is_enabled - array of bool values for each fifo
  */
-fpfw_status_t sensor_fifo_svc_notify_mcp(bool (*is_enabled)[DEVICE_FIFO_MAX_ID]);
+fpfw_status_t sensor_fifo_svc_notify_mcp(bool (*is_enabled)[SENSOR_FIFO_MAX_ID]);
 
 /**
  * @brief   Notify the sensor service that an icc message has been received

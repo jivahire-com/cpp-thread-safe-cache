@@ -110,7 +110,7 @@ void sensor_fifo_svc_enable_fifo(SENSOR_FIFO_ID fifo)
     }
     else
     {
-        FPFW_ET_LOG(FifoDisableFail, status);
+        FPFW_ET_LOG(FifoEnableFail, status);
     }
 }
 
@@ -134,7 +134,18 @@ void sensor_fifo_svc_disable_fifo(SENSOR_FIFO_ID fifo)
     }
 }
 
-fpfw_status_t sensor_fifo_svc_notify_mcp(bool (*is_enabled)[DEVICE_FIFO_MAX_ID])
+void sensor_fifo_svc_is_empty(bool (*is_empty)[SENSOR_FIFO_MAX_ID])
+{
+    fpfw_status_t status = sensor_fifo_driver_inf_is_empty(pSensor_fifo_driver_inf, is_empty);
+
+    if (FPFW_STATUS_FAILED(status))
+    {
+        FPFW_ET_LOG(FifoEmptyFail, status);
+        memset(*is_empty, 0, sizeof(bool) * SENSOR_FIFO_MAX_ID);
+    }
+}
+
+fpfw_status_t sensor_fifo_svc_notify_mcp(bool (*is_enabled)[SENSOR_FIFO_MAX_ID])
 {
     icc_mhu_snsr_fifo_msg_t icc_msg;
 

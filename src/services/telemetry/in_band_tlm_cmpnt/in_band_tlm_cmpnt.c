@@ -119,21 +119,6 @@ void in_band_tlm_cmpnt_generate_pwr_pkg(void)
     }
 }
 
-void in_band_tlm_cmpnt_begin_sensor_fifo_dbg_collection(void)
-{
-    printf("Sensor FIFO Debug Collection started\n");
-}
-
-void in_band_tlm_cmpnt_end_sensor_fifo_dbg_collection(void)
-{
-    printf("Sensor FIFO Debug Collection ended\n");
-}
-
-void in_band_tlm_cmpnt_sample_sensor_fifo_dbg_data(void)
-{
-    printf("Sensor FIFO Debug Data sampled\n");
-}
-
 void in_band_tlm_cmpnt_tlm_mode_exit_actions(tlm_operating_mode_t exiting_mode)
 {
     switch (exiting_mode)
@@ -172,6 +157,7 @@ void in_band_tlm_cmpnt_tlm_mode_enter_actions(tlm_operating_mode_t entering_mode
         break;
 
     case TLM_OP_MODE_SENSOR_FIFO_RAW_DATA:
+        mts_manager_free_publish_resources();
         in_band_tlm_cmpnt_begin_sensor_fifo_dbg_collection();
         break;
 

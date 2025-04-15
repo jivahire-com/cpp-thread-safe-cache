@@ -151,6 +151,15 @@ fpfw_status_t ddr_manager_allocate_mem_for_pwr_pkg(uintptr_t *pkg_location, size
 fpfw_status_t ddr_manager_allocate_mem_for_inst_pkg(uintptr_t *pkg_location, size_t* available_size);
 
 /**
+ * @brief Allocate memory for sensor fifo debug package
+ *
+ * @param[out] pkg_location - location to store the package
+ * @param[out] available_size - size of the storage location
+ * @retval none
+ */
+void ddr_manager_allocate_mem_for_snsr_fifo_dbg_pkg(uintptr_t *pkg_location, size_t* available_size);
+
+/**
  * @brief Deallocate memory
  *
  * @param[in] pkg_location - location to deallocate

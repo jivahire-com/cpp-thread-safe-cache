@@ -117,6 +117,32 @@ TEST_FUNCTION(test_svc_global_hw_enable, test_setup, nullptr)
     sensor_fifo_svc_set_global_hw_enable(false);
 }
 
+TEST_FUNCTION(test_sensor_fifo_svc_is_empty, test_setup, nullptr)
+{
+    bool is_empty[SENSOR_FIFO_MAX_ID];
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, SENSOR_FIFO_SYNC_QUERY_IS_EMPTY);
+    will_return(__wrap_DfwkInterfaceSendSync, FPFW_STATUS_SUCCESS);
+
+    sensor_fifo_svc_is_empty(&is_empty);
+
+    for (int i = 0; i < SENSOR_FIFO_MAX_ID; i++)
+    {
+        is_empty[i] = true;
+    }
+
+    // verify cleared on fail
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, SENSOR_FIFO_SYNC_QUERY_IS_EMPTY);
+    will_return(__wrap_DfwkInterfaceSendSync, FPFW_STATUS_FAIL);
+
+    sensor_fifo_svc_is_empty(&is_empty);
+
+    for (int i = 0; i < SENSOR_FIFO_MAX_ID; i++)
+    {
+        assert_false(is_empty[i]);
+    }
+}
+
 TEST_FUNCTION(test_svc_fifo_enable_disable, test_setup, nullptr)
 {
 

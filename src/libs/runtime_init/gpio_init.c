@@ -12,16 +12,16 @@
 #include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
 #include <FpFwAssert.h>      // for FPFW_RUNTIME_ASSERT
 #include <fpfw_cfg_mgr.h>
-#include <fpfw_init.h>       // for FPFW_INIT_COMPONENT
-#include <gpio.h>            // for gpio_device_init, gpio_interface_init
-#include <gpio_cli.h>        // for gpio_cli_init
-#include <gpio_lib.h>        // for gpio_init
+#include <fpfw_init.h> // for FPFW_INIT_COMPONENT
+#include <gpio.h>      // for gpio_device_init, gpio_interface_init
+#include <gpio_cli.h>  // for gpio_cli_init
+#include <gpio_lib.h>  // for gpio_init
 #include <gpio_struct_defaults.h>
-#include <idsw.h>            // for idsw_get_platform_sdv, idsw...
+#include <idsw.h> // for idsw_get_platform_sdv, idsw...
 #include <idsw_kng.h>
-#include <interrupts.h>    // HW_INT_GPIO_CTRL_4_INT, HW_INT_GPIO_CTRL_6_INT
+#include <interrupts.h>        // HW_INT_GPIO_CTRL_4_INT, HW_INT_GPIO_CTRL_6_INT
 #include <kng_soc_constants.h> // for SOC_D0, D1
-#include <silibs_status.h> // for SILIBS_SUCCESS
+#include <silibs_status.h>     // for SILIBS_SUCCESS
 #include <stdio.h>
 #include <variable_services.h>
 
@@ -75,7 +75,8 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_pri
     DIE_INSTANCE die_id = idsw_get_die_id();
 
     // Initialize only on SCP
-    if (idsw_get_cpu_type() == CPU_MCP) {
+    if (idsw_get_cpu_type() == CPU_MCP)
+    {
         return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
     }
     // Initialize GPIO
@@ -111,11 +112,11 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_pri
     {
         uart_afm_knobs = config_get_uart_afm_cfg_die0();
     }
-    
+
     status = gpio_override_uart_afmsel(die_id, &uart_afm_knobs);
-    
+
     FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
- 
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &gpio_init_config};
 }
 

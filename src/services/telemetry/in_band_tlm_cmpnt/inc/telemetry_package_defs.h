@@ -74,6 +74,7 @@ typedef struct {
     FPFW_ET_MANIFEST_ID manifest_id;
     uint64_t timestamp_uS;  /* Timestamp when the package was created  */
     uint64_t timestamp_utc;
+    uint32_t source_die;
     uint32_t package_number;
     uint32_t number_of_records;
     uint32_t package_payload_size;

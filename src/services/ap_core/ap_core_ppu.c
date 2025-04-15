@@ -14,6 +14,7 @@
 #include <bug_check.h>
 #include <core_cluster_with_pvt_regs.h> // for CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS
 #include <corebits.h>
+#include <idhw.h>
 #include <kng_error.h>
 #include <pik_clock_lib.h>
 #include <ppu_v1.h>
@@ -89,7 +90,15 @@ static void cluster_set_power_state(ap_core_service_context_t* p_context, unsign
         }
 
         // Dynamic enable cluster PPU to support dynamic INTCLK gating
-        ppu_dynamic_enable(cluster_ppu_addr, PPU_V1_MODE_OFF);
+        // if SVP, use PPU_V1_MODE_ON due to an ARM model error
+        if (IS_PLATFORM_SVP())
+        {
+            ppu_dynamic_enable(cluster_ppu_addr, PPU_V1_MODE_ON);
+        }
+        else
+        {
+            ppu_dynamic_enable(cluster_ppu_addr, PPU_V1_MODE_OFF);
+        }
     }
     else
     {

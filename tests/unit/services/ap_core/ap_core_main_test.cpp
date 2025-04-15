@@ -130,10 +130,11 @@ void __wrap_ap_core_ppu_init(ap_core_service_context_t* p_context)
     s_ap_core_ctx = p_context;
 }
 
-void __wrap_ap_core_ppu_clusters_on(ap_core_service_context_t* p_context)
+void __wrap_ap_core_ppu_clusters_on(ap_core_service_context_t* p_context, uint32_t timeout_ms)
 {
     assert_non_null(p_context);
     check_expected_ptr(p_context);
+    FPFW_UNUSED(timeout_ms);
 }
 
 void __wrap_ap_core_ppu_clusters_off(ap_core_service_context_t* p_context, uint32_t timeout_ms)
@@ -265,6 +266,7 @@ uint32_t __wrap_idsw_get_platform_sdv()
 {
     return mock_type(uint32_t);
 }
+
 uint8_t __wrap_idsw_get_die_id()
 {
     return mock_type(uint8_t);

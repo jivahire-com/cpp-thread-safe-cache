@@ -72,6 +72,10 @@ mock_target(${TARGET}
     sds_block_write
 
     ppu_v1_init
+    ppu_v1_set_power_mode_with_timeout
+    ppu_dynamic_enable
+
+    pik_clock_power_transition
 
     write_fuse_info_to_ap
 

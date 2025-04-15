@@ -60,7 +60,9 @@ target_link_libraries(${TARGET}
         ms::service::sds_service
         ms::client_interface::ap_core
         ms::client_interface::startup_shutdown
+        silibs::idhw
         silibs::idsw
+        silibs::idsw_kng
         silibs::pik_clock
         silibs::platform
         silibs::ppu_v1

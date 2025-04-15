@@ -146,12 +146,7 @@ void dma_lib_init(dma_device_t* device)
     dmac_init(device->config->base_address, DMAC_RESET_TIMEOUT);
 
     DMA_LOG_INFO("Enabling DMAC interrupts\n");
-    dmac_clear_common_interrupts(device->config->base_address, DMAC_INT_ALL);
     dmac_enable_common_interrupts(device->config->base_address, DMAC_INT_ALL);
-
-    dmac_clear_ch_interrupts(device->config->base_address, DMAC_INT_ALL, CH_0);
-    dmac_clear_ch_interrupts(device->config->base_address, DMAC_INT_ALL, CH_1);
-
     dmac_enable_ch_interrupts(device->config->base_address, DMAC_ENABLED_CH_INTS_MASK, CH_0);
     dmac_enable_ch_interrupts(device->config->base_address, DMAC_ENABLED_CH_INTS_MASK, CH_1);
 }

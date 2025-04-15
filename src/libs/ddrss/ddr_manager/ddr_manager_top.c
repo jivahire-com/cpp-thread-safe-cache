@@ -148,37 +148,44 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
-    work_queue_msg = DDR_CREATE_MEMORY_MAP_EVENT;
-    status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
-    if (status != TX_SUCCESS)
+    if (!system_info_is_warm_start())
     {
-        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_SEND_ERROR_CREATE_MMAP, status);
-        FPFwErrorRaise(status, 0, 0, 0, 0);
+        work_queue_msg = DDR_CREATE_MEMORY_MAP_EVENT;
+        status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
+        if (status != TX_SUCCESS)
+        {
+            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_SEND_ERROR_CREATE_MMAP, status);
+            FPFwErrorRaise(status, 0, 0, 0, 0);
+        }
+
+        work_queue_msg = DDR_CREATE_BDAT_EVENT;
+        status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
+
+        if (status != TX_SUCCESS)
+        {
+            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_SEND_ERROR_CREATE_BDAT, status);
+            FPFwErrorRaise(status, 0, 0, 0, 0);
+        }
+
+        work_queue_msg = DDR_CREATE_SMBIOS_TABLES_EVENT;
+        status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
+        if (status != TX_SUCCESS)
+        {
+            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_SEND_ERROR_CREATE_SMBIOS_TABLES, status);
+            FPFwErrorRaise(status, 0, 0, 0, 0);
+        }
+
+        work_queue_msg = DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT;
+        status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
+        if (status != TX_SUCCESS)
+        {
+            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_SEND_ERROR_COPY_PRM_CONFIG, status);
+            FPFwErrorRaise(status, 0, 0, 0, 0);
+        }
     }
-
-    work_queue_msg = DDR_CREATE_BDAT_EVENT;
-    status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
-
-    if (status != TX_SUCCESS)
+    else
     {
-        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_SEND_ERROR_CREATE_BDAT, status);
-        FPFwErrorRaise(status, 0, 0, 0, 0);
-    }
-
-    work_queue_msg = DDR_CREATE_SMBIOS_TABLES_EVENT;
-    status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
-    if (status != TX_SUCCESS)
-    {
-        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_SEND_ERROR_CREATE_SMBIOS_TABLES, status);
-        FPFwErrorRaise(status, 0, 0, 0, 0);
-    }
-
-    work_queue_msg = DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT;
-    status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
-    if (status != TX_SUCCESS)
-    {
-        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_SEND_ERROR_COPY_PRM_CONFIG, status);
-        FPFwErrorRaise(status, 0, 0, 0, 0);
+        DEBUG_PRINT("DDR warm start, skipping tables/memory map creation\n");
     }
 
     status = tx_thread_create((TX_THREAD*)&pddr_service_ctx->work_thread, /* TX_THREAD *thread_ptr */
@@ -218,7 +225,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     prod_ddrss_lib_init(pconfig->thread_config.die_number);
 
     ddr_init_telemetry();
-    if (system_info_is_hsp_present())
+    if (system_info_is_hsp_present() && (!system_info_is_warm_start()))
     {
         hsp_send_ddr_init_notify(icc_ctx);
     }

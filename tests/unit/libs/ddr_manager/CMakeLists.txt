@@ -92,6 +92,7 @@ mock_target(${TARGET}
     sds_block_creation
     sds_block_write
     system_info_is_hsp_present
+    system_info_is_warm_start
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

@@ -92,6 +92,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_partial_or_skip, setup, teardown)
         expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
     }
     will_return_always(__wrap_idhw_is_single_die_boot_en, true);
+    will_return_always(__wrap_system_info_is_warm_start, false);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
@@ -154,6 +155,7 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga, setup, teardown)
     }
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
@@ -162,6 +164,64 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga, setup, teardown)
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
 
     prod_ddrss_lib_init(test_die);
+}
+
+TEST_FUNCTION(test_ddrss_lib_init_fpga_warm_start, setup, teardown)
+{
+    cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
+    KNG_DIE_ID test_die = (KNG_DIE_ID)1;
+    int i = 0;
+    extern bool g_should_check_reset_reason_cfg_knobs;
+    g_should_check_reset_reason_cfg_knobs = true;
+
+    // Get same starting values for knobs as code under test
+    ddrss_cfg_knobs_t test_ddrss_knobs = {};
+    ddrss_get_config(&test_ddrss_knobs);
+
+    // initialize the CFG
+    cmn800_snf_to_mc_config.is_numa_enabled = 1;
+    cmn800_snf_to_mc_config.map_size = 0;
+    memset(cmn800_snf_to_mc_config.ddr_mc_map, 0xff, sizeof(cmn800_snf_to_mc_config.ddr_mc_map));
+    cmn800_snf_to_mc_config.hash_select = 0;
+
+    // set up die id
+    idsw_set_die_id(test_die);
+
+    // ddrss init is not skipped on the Big FPGA, and the
+    // atu map is fixed so no atu map / un map calls
+    idsw_set_platform_sdv(PLATFORM_FPGA_LARGE);
+    for (int this_irq_num = HW_INT_DDRSS0; this_irq_num <= HW_INT_DDRSS5; this_irq_num++)
+    {
+        i = (this_irq_num - HW_INT_DDRSS0);
+
+        // FPFwCoreInterruptRegisterCallback
+        expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, isr, prod_ddrss_interrupt_handler);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, ddrss_num, ddrss_num[i]);
+
+        // FPFwCoreInterruptEnableVector
+        expect_value(__wrap_nvic_irq_clear_pending, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
+    }
+
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
+    test_ddrss_knobs.ext_knobs.ddrss_mask = 0x03F;
+    test_ddrss_knobs.die_id = (DIE_INSTANCE)test_die;
+
+    will_return(__wrap_system_info_is_warm_start, true);
+    test_ddrss_knobs.reset_reason = DDRSS_SYS_RESET_WARM;
+
+    will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
+    will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+
+    expect_value(__wrap_ddrss_init, cfg_knobs->reset_reason, DDRSS_SYS_RESET_WARM);
+    will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
+    expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
+
+    prod_ddrss_lib_init(test_die);
+    g_should_check_reset_reason_cfg_knobs = false;
 }
 
 TEST_FUNCTION(test_ddrss_lib_init_emu, setup, teardown)
@@ -197,6 +257,7 @@ TEST_FUNCTION(test_ddrss_lib_init_emu, setup, teardown)
     }
 
     will_return(__wrap_idhw_is_single_die_boot_en, false);
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
@@ -237,6 +298,7 @@ TEST_FUNCTION(test_ddrss_lib_init_rvp, setup, teardown)
     }
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);

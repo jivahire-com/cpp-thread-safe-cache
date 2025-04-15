@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <system_info.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define TEXT_DDR_SPEED_GRADE_LOCKED "DDRSS - ddr_speed_grade locked to %s for %s\n"
@@ -47,11 +48,11 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfg_knobs_t ddrss_cfgs;
     KNG_PLAT_ID platform_id;
     uint32_t interrupt_idx;
+    const char* platform_str;
+    const char* start_type;
 
     // 1 DDRSS contains 2 memory controllers
     // PHY level is under MC level in heirarchy, 1 PHY per DDRSS.
-    printf("DDRSS init start - die %d\n", die_num);
-
     // Register interrupt handler for DDRSS - Each DDRSS contains 2 memory controllers
     // RAS level
     // MC level
@@ -142,7 +143,17 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
 
     platform_id = idsw_get_platform_sdv();
 
-    const char* platform_str;
+    if (system_info_is_warm_start())
+    {
+        ddrss_cfgs.reset_reason = DDRSS_SYS_RESET_WARM;
+        start_type = "warm start";
+    }
+    else
+    {
+        ddrss_cfgs.reset_reason = DDRSS_SYS_RESET_COLD;
+        start_type = "cold start";
+    }
+
     if ((platform_id == PLATFORM_FPGA_LARGE) || (platform_id == PLATFORM_FPGA_LARGE_RVP))
     {
         platform_str = "FPGA";
@@ -201,6 +212,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         ddrss_cfgs.reset_reason = DDRSS_SYS_RESET_WARM;
         ddrss_cfgs.ext_knobs.ras_init_en = 0;
         ddrss_cfgs.ext_knobs.intu_init_en = 0;
+        start_type = "Forcing warm start for ddrss_init (SVP)";
     }
     else
     {
@@ -208,7 +220,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         return;
     }
 
-    printf("DDRSS init: %s\n", platform_str);
+    printf("DDRSS die %d init: %s - %s\n", die_num, platform_str, start_type);
 
     // Map both DDRSS DIE0 and DIE1 cfg space through ATU
     uint32_t d0_start = ddrss_atu_map_cfg_space(SOC_D0);

@@ -145,6 +145,11 @@ bool __wrap_system_info_is_hsp_present()
     return true;
 }
 
+bool __wrap_system_info_is_warm_start()
+{
+    return mock_type(bool);
+}
+
 KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
 {
     if (g_should_wrap_idsw_get_platform_sdv)
@@ -222,6 +227,7 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     }
 
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
+    will_return(__wrap_system_info_is_warm_start, false);
 
     // tx queue send DDR MEMORY MAP EVENT fails
     expect_any_always(__wrap__txe_queue_send, queue_ptr);
@@ -236,6 +242,7 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     }
 
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
 
     // tx queue send DDR BDAT EVENT fails
@@ -248,6 +255,7 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     }
 
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
 
@@ -261,6 +269,7 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     }
 
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
@@ -287,6 +296,7 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     }
 
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
@@ -363,6 +373,8 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     expect_value(__wrap__txe_queue_send, wait_option, TX_NO_WAIT);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
 
+    will_return(__wrap_system_info_is_warm_start, false);
+
     expect_value(__wrap__txe_thread_create, thread_ptr, &ddr_service_ctx.work_thread);
     expect_value(__wrap__txe_thread_create, name_ptr, DDR_WORK_THREAD_NAME);
     expect_value(__wrap__txe_thread_create, entry_function, ddr_worker_thread_func);
@@ -381,9 +393,76 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     size_t output_recv_bytes = 0;
     kng_hsp_mailbox_msg msg = {.header = {.cmd = HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY}};
 
+    will_return(__wrap_system_info_is_warm_start, false);
     expect_memory(__wrap_fpfw_icc_base_send_recv_sync, payload_buffer, &msg, sizeof(msg));
     expect_memory(__wrap_fpfw_icc_base_send_recv_sync, output_recv_bytes, &output_recv_bytes, sizeof(output_recv_bytes));
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    // Telemetry init
+    expect_function_call(__wrap__txe_mutex_create);
+
+    ddr_manager_init(&ddr_service_ctx, &config, icc_ctx);
+}
+
+TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
+{
+    uint8_t ddr_test_stack[DDR_TEST_STACK_SIZE];
+    static uint32_t ddr_queue_pool[10];
+    static ddr_service_context_t ddr_service_ctx = {};
+
+    ddr_service_config_t config = {.thread_config =
+                                       {
+                                           .p_stack = ddr_test_stack,
+                                           .stack_size = sizeof(ddr_test_stack),
+                                           .priority = DDR_TEST_THREAD_PRIORITY,
+                                           .time_slice_option = TX_NO_TIME_SLICE,
+                                       },
+                                   .timer_config =
+                                       {
+                                           .initial_ticks = DDR_TEST_TIMER_INITIAL_TICKS,
+                                           .reschedule_ticks = DDR_TEST_TIMER_RESCHEDULE_TICKS,
+                                       },
+                                   .queue_config = {
+                                       .p_queue = ddr_queue_pool,
+                                       .msg_size = sizeof(ddr_queue_pool[0]) / sizeof(uint32_t),
+                                       .queue_num_words = sizeof(ddr_queue_pool) / sizeof(uint32_t),
+                                   }};
+
+    expect_value(__wrap__txe_queue_create, queue_ptr, &ddr_service_ctx.work_queue);
+    expect_value(__wrap__txe_queue_create, name_ptr, DDR_WORK_QUEUE_NAME);
+    expect_value(__wrap__txe_queue_create, message_size, config.queue_config.msg_size);
+    expect_value(__wrap__txe_queue_create, queue_start, config.queue_config.p_queue);
+    expect_value(__wrap__txe_queue_create, queue_size, config.queue_config.queue_num_words * sizeof(uint32_t));
+    expect_any(__wrap__txe_queue_create, queue_control_block_size);
+    will_return(__wrap__txe_queue_create, TX_SUCCESS);
+
+    will_return(__wrap_system_info_is_warm_start, true);
+
+    // Do not expect DDR_CREATE_MEMORY_MAP_EVENT
+
+    // Do not expect DDR_CREATE_BDAT_EVENT
+
+    // Do not expect DDR_CREATE_SMBIOS_TABLES_EVENT
+
+    // Do not expect DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT
+
+    expect_value(__wrap__txe_thread_create, thread_ptr, &ddr_service_ctx.work_thread);
+    expect_value(__wrap__txe_thread_create, name_ptr, DDR_WORK_THREAD_NAME);
+    expect_value(__wrap__txe_thread_create, entry_function, ddr_worker_thread_func);
+    expect_value(__wrap__txe_thread_create, entry_input, (ULONG)&ddr_service_ctx);
+    expect_value(__wrap__txe_thread_create, stack_start, config.thread_config.p_stack);
+    expect_value(__wrap__txe_thread_create, stack_size, config.thread_config.stack_size);
+    expect_value(__wrap__txe_thread_create, priority, config.thread_config.priority);
+    expect_value(__wrap__txe_thread_create, preempt_threshold, config.thread_config.priority);
+    expect_value(__wrap__txe_thread_create, time_slice, config.thread_config.time_slice_option);
+    expect_value(__wrap__txe_thread_create, auto_start, TX_AUTO_START);
+    expect_any(__wrap__txe_thread_create, thread_control_block_size);
+    will_return(__wrap__txe_thread_create, TX_SUCCESS);
+
+    will_return(__wrap__txe_timer_create, TX_SUCCESS);
+
+    will_return(__wrap_system_info_is_warm_start, true);
+    // Do not expect hsp_send_ddr_init_notify
 
     // Telemetry init
     expect_function_call(__wrap__txe_mutex_create);

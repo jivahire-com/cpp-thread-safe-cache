@@ -72,4 +72,5 @@ mock_target(${TARGET}
     ddrss_atu_unmap_cfg_space
     ddrss_inject_media_data_err
     ddrss_physical_to_media_addr
+    system_info_is_warm_start
 )

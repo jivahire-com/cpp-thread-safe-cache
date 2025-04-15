@@ -34,6 +34,7 @@ uint32_t g_phy_int_sts;
 uint32_t g_mc_intu_sts;
 uint32_t g_mc_intu_dest_enable;
 bool g_mmio_read32_mocktype;
+bool g_should_check_reset_reason_cfg_knobs = false;
 
 /*------------- Functions ----------------*/
 
@@ -70,7 +71,10 @@ int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
 
 int __wrap_ddrss_init(ddrss_cfg_knobs_t* cfg_knobs)
 {
-    FPFW_UNUSED(cfg_knobs);
+    if (g_should_check_reset_reason_cfg_knobs)
+    {
+        check_expected(cfg_knobs->reset_reason);
+    }
     return mock_type(int);
 }
 
@@ -250,4 +254,9 @@ int __wrap_ddrss_physical_to_media_addr(uint64_t pa, ddrss_media_addr_t* ma, uin
     FPFW_UNUSED(ma);
     FPFW_UNUSED(mc);
     return (SILIBS_SUCCESS);
+}
+
+bool __wrap_system_info_is_warm_start(void)
+{
+    return mock_type(bool);
 }

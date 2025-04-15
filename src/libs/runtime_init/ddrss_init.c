@@ -16,6 +16,7 @@
 #include <fpfw_init.h>
 #include <idhw.h>
 #include <stdio.h>
+#include <system_info.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define UNUSED(x) (void)(x)
@@ -28,17 +29,22 @@
 
 /*-------------- Functions ---------------*/
 // Todo: Add "ddr_training" to dependencies when available
-FPFW_INIT_COMPONENT(ddr_pcr, FPFW_INIT_DEPENDENCIES("css_pome", "atu_svc", "hw_ver", "debug_print"))
+FPFW_INIT_COMPONENT(ddr_pcr, FPFW_INIT_DEPENDENCIES("css_pome", "atu_svc", "hw_ver", "debug_print", "sysinfo"))
 {
+    if (system_info_is_warm_start())
+    {
+        FPFW_DBGPRINT_INFO("DDR PCR init skipped - warm start\n");
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+
     KNG_DIE_ID die_num = idsw_get_die_id();
     FPFW_DBGPRINT_INFO("DDR PCR init, die_num: [%u]\n", die_num);
 
-    FPFW_DBGPRINT_INFO("DDR PCR init, die_num: [%u]\n", die_num);
     prod_ddrss_pcr_init(die_num);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(ddr, FPFW_INIT_DEPENDENCIES("std_io", "ddr_pcr", "mesh", "hw_ver", "icc_hspmbx", "cfg_mgr", "css_pome", "atu_svc", "fuse_post_mesh"))
+FPFW_INIT_COMPONENT(ddr, FPFW_INIT_DEPENDENCIES("std_io", "ddr_pcr", "mesh", "hw_ver", "icc_hspmbx", "cfg_mgr", "css_pome", "atu_svc", "fuse_post_mesh", "sysinfo"))
 {
     static uint8_t ddr_stack[DDR_STACK_SIZE];
     static uint32_t ddr_queue_pool[10];

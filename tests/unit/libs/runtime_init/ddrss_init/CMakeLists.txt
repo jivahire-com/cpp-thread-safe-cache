@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::lib::ddr_manager
         ms::lib::ddrss_init
+        ms::lib::system_info
         silibs_platform
 )
 
@@ -34,7 +35,12 @@ mock_target(${TARGET}
     FPFwCoreInterruptEnableVector
     FPFwCoreInterruptRegisterCallback
     ddr_manager_init
+    ddrss_atu_map_cfg_space
+    ddrss_atu_unmap_cfg_space
+    ddrss_set_die_base
     idhw_get_die_id
     idsw_get_die_id
     idhw_is_single_die_boot_en
+    pcr_ddrss_configure_clock_and_pcr_reset
+    system_info_is_warm_start
 )

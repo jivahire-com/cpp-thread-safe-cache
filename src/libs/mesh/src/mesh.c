@@ -84,7 +84,7 @@ void print_mesh_d2d_knob_values(void)
     MESH_DBG("mesh_hnf_cbusy_write_limit_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_cbusy_write_limit_ctl));
     MESH_DBG("mesh_hnf_cbusy_mode_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_cbusy_mode_ctl));
     MESH_DBG("mesh_hnf_aux_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_aux_ctl));
-    MESH_DBG("mesh_hnf_r2_aux_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_r2_aux_ctl));
+    MESH_DBG("mesh_hnf_aux_ctl_1 = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_aux_ctl_1));
     MESH_DBG("mesh_hnf_cfg_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_cfg_ctl));
     MESH_DBG("mesh_hnf_lbt_cfg_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_lbt_cfg_ctl));
     MESH_DBG("mesh_hnf_lbt_aux_ctl = 0x%x_%x\n", PRINT64_HEX(temp_cmn800_sam_cfg->mesh_hnf_lbt_aux_ctl));
@@ -289,7 +289,7 @@ void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_para
         temp_cmn800_sam_cfg->mesh_hnf_cbusy_write_limit_ctl = config_get_mesh_hnf_cbusy_write_limit_ctl();
         temp_cmn800_sam_cfg->mesh_hnf_cbusy_mode_ctl = config_get_mesh_hnf_cbusy_mode_ctl();
         temp_cmn800_sam_cfg->mesh_hnf_aux_ctl = config_get_mesh_hnf_aux_ctl();
-        temp_cmn800_sam_cfg->mesh_hnf_r2_aux_ctl = config_get_mesh_hnf_r2_aux_ctl();
+        temp_cmn800_sam_cfg->mesh_hnf_aux_ctl_1 = config_get_mesh_hnf_aux_ctl_1();
         temp_cmn800_sam_cfg->mesh_hnf_cfg_ctl = config_get_mesh_hnf_cfg_ctl();
         temp_cmn800_sam_cfg->mesh_hnf_lbt_cfg_ctl = config_get_mesh_hnf_lbt_cfg_ctl();
         temp_cmn800_sam_cfg->mesh_hnf_lbt_aux_ctl = config_get_mesh_hnf_lbt_aux_ctl();

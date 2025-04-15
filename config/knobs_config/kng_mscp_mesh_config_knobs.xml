@@ -34,10 +34,10 @@
 
   <Structs>
     <Struct name="mesh_hni_cfg_ctl_t" help="">
-      <Member name="mesh_hni_cfg_ctl" type="uint64_t" count="6" help="Set HN-I Config CTL value"/>
+      <Member name="mesh_hni_cfg_ctl" type="uint64_t" count="11" help="Set HN-I Config CTL value"/>
     </Struct>
     <Struct name="mesh_hni_aux_ctl_t" help="">
-      <Member name="mesh_hni_aux_ctl" type="uint64_t" count="6" help="Set HN-I AUX ctl value"/>
+      <Member name="mesh_hni_aux_ctl" type="uint64_t" count="11" help="Set HN-I AUX ctl value"/>
     </Struct>
     <Struct name="mesh_rni_cfg_ctl_t" help="">
       <Member name="mesh_rni_cfg_ctl" type="uint64_t" count="8" help="Set RN-I config control value(chip_id field will be ignored)"/>
@@ -97,13 +97,13 @@
     <Knob name="mesh_hnf_cbusy_write_limit_ctl" type="uint64_t" default="0x302010" help="Cbusy threshold limits for POCQ write entries."/>
     <Knob name="mesh_hnf_cbusy_mode_ctl" type="uint64_t" default="0x3000" help="Control register for additional CBusy controls"/>
     <Knob name="mesh_hnf_aux_ctl" type="uint64_t" default="0x2000001000200002" help="Auxiliary control register for HNF. Default val 0x2000_0010_0020_0002"/>
-    <Knob name="mesh_hnf_r2_aux_ctl" type="uint64_t" default="0x3001005A900" help="Set value for por_hnf_aux_ctl_1"/>
+    <Knob name="mesh_hnf_aux_ctl_1" type="uint64_t" default="0x3001005A900" help="Set value for por_hnf_aux_ctl_1"/>
     <Knob name="mesh_hnf_cfg_ctl" type="uint64_t" default="0x2000C017389A3000" help="Set value for por_hnf_cfg_ctl"/>
     <Knob name="mesh_hnf_lbt_cfg_ctl" type="uint64_t" default="0x7F7F00" help="Functions as the configuration control register for HN-F. Only applicable to LBT transactions"/>
     <Knob name="mesh_hnf_lbt_aux_ctl" type="uint64_t" default="0x440000000000006" help="Functions as the auxiliary control register for HN-F. Only applicable to LBT transactions"/>
     <Knob name="mesh_hnf_lbt_cbusy_ctl" type="uint64_t" default="0x0" help="Controls the CBusy response for LCN Bound Transactions"/>
-    <Knob name="mesh_hni_cfg_ctl_knob" type="mesh_hni_cfg_ctl_t" default="{{0x1,0x1,0x1,0x1,0x1,0x1}}" help="Set HN-I Config CTL value"/>
-    <Knob name="mesh_hni_aux_ctl_knob" type="mesh_hni_aux_ctl_t" default="{{0x1000,0x1000,0x1000,0x1000,0x1000,0x1000}}" help="Set HN-I AUX ctl value"/>
+    <Knob name="mesh_hni_cfg_ctl_knob" type="mesh_hni_cfg_ctl_t" default="{{0x1,0x1,0x1,0x1,0x1,0x1,0x21,0x21,0x21,0x21,0x21}}" help="Set HN-I Config CTL value"/>
+    <Knob name="mesh_hni_aux_ctl_knob" type="mesh_hni_aux_ctl_t" default="{{0x1000,0x1000,0x1000,0x1000,0x1000,0x1000,0x0,0x0,0x0,0x0,0x0}}" help="Set HN-I AUX ctl value"/>
     <Knob name="mesh_hnt_dn_domain_cxra" type="uint64_t" default="0" help="Set value for cxra per HNT (There are 4 HNTs)"/>
     <Knob name="mesh_rni_cfg_ctl_knob" type="mesh_rni_cfg_ctl_t" default="{{0xd000802001c21,0xd000802001c21,0xd000802001c21,0xd000802001c21,0xd004200401c41,0xd000802001c71,0xd000802001c71,0xd000802001c71}}" help="Set RN-I config control value(chip_id field will be ignored)"/>
     <Knob name="mesh_rni_aux_ctl_knob" type="mesh_rni_aux_ctl_t" default="{{0x4004002,0x4004002,0x4004002,0x4004002,0x4004002,0x4004002,0x4004002,0x4004002}}" help="Set RN-I auxiliary control value"/>

@@ -50,6 +50,17 @@ void dma_start_transfer(dma_device_t* device, uint32_t channel, PDFWK_ASYNC_REQU
         }
     }
 
+    if (device->config->stall_timeout_ms > 0)
+    {
+        DMA_LOG_INFO("Starting Stall timer, channel %d\n", (int)channel);
+        uint32_t status = tx_timer_activate(&device->stall_timer[channel]);
+        if (TX_SUCCESS != status)
+        {
+            DMA_LOG_INFO("Failed to activate stall timer, DMA channel %d. Status=0x%X\n", (int)channel, (int)status);
+            FPFwErrorRaise(FPFW_ERROR_DMA_TIMER_ERROR, channel, status, 5, 0); // channel, status, unique instance, unused
+        }
+    }
+
     // Start the DMA transfer
     request->status = FPFW_DMA_STATUS_IN_PROGRESS;
 
@@ -67,4 +78,16 @@ void dma_start_transfer(dma_device_t* device, uint32_t channel, PDFWK_ASYNC_REQU
 
     int sts = dmac_start_single_block_transfer(device->config->base_address, &dma_cfg);
     DMA_LOG_INFO("Single block transfer was initiated: %d\n", sts);
+}
+
+void dma_abort_transaction(dma_device_t* device, uint32_t channel)
+{
+    // Disable the DMA channel
+    dmac_disable_channel(device->config->base_address, channel);
+
+    // Abort the DMA transfer
+    dmac_abort_transfer(device->config->base_address, channel);
+
+    // Enable back the DMA channel
+    dmac_enable_channel(device->config->base_address, channel);
 }

@@ -93,11 +93,15 @@ mock_target(${TARGET}
     get_dmac_reset_reg
     get_dmac_cfg_reg
     set_dmac_cfg_reg
+    get_dmac_chen_reg
     dmac_get_ch_interrupt_status
+    dmac_disable_channel
+    dmac_enable_channel
+    dmac_abort_transfer
 
     # Threadx mocks
     _txe_timer_activate
     _txe_timer_create
     _txe_timer_delete
-    # _txe_timer_deactivate
+    _txe_timer_deactivate
 )

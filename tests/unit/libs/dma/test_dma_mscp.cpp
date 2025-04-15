@@ -30,6 +30,8 @@ extern "C" {
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
+void setup_common_dma_device_init_polling_pass(bool enable_stall_timer);
+void setup_common_dma_device_init_interrupt_pass(bool enable_stall_timer);
 
 /*-- Declarations (Statics and globals) --*/
 // Declared in dma_mocks.c
@@ -69,41 +71,41 @@ static int teardown(void** state)
     return 0;
 }
 
-//
-// Tests
-//
-
-TEST_FUNCTION(test_scp_dma_device_init_polling_pass, setup, teardown)
+void setup_common_dma_device_init_polling_pass(bool enable_stall_timer)
 {
     device.config->base_address = DMA_TEST_BASE_ADDR;
     device.config->config_type = DMA_CONFIG_TYPE_POLLING;
+    if (enable_stall_timer)
+    {
+        device.config->stall_timeout_ms = 10000U;
+    }
 
     // Arrange
     config.base_address = (uintptr_t)DMA_TEST_BASE_ADDR;
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
-    will_return_count(__wrap__txe_timer_create, TX_SUCCESS, 2);
+    will_return_count(__wrap__txe_timer_create, TX_SUCCESS, 2 + (2 * (UINT)enable_stall_timer));
 
     // DfwkDeviceInitialize
     expect_value(__wrap_DfwkDeviceInitialize, Device, &device);
     expect_value(__wrap_DfwkDeviceInitialize, Schedule, &schedule);
-
-    // Act
-    dma_device_init(&device, &config, &schedule);
-
-    // Assert
-    assert_ptr_not_equal(device.config, NULL);
-    assert_int_not_equal(device.config->base_address, DMA_TEST_BASE_ADDR); // Bogus value
-    assert_int_equal(device.config->base_address, DMAC_SCP_BASE_ADDR);     // Defined by SiLibs
 }
 
-TEST_FUNCTION(test_scp_dma_device_init_interrupt_pass, setup, teardown)
+void setup_common_dma_device_init_interrupt_pass(bool enable_stall_timer)
 {
     device.config->base_address = DMA_TEST_BASE_ADDR;
     device.config->config_type = DMA_CONFIG_TYPE_INTERRUPT;
+    if (enable_stall_timer)
+    {
+        device.config->stall_timeout_ms = 10000U;
+    }
 
     // Arrange
     config.base_address = (uintptr_t)DMA_TEST_BASE_ADDR;
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    if (enable_stall_timer)
+    {
+        will_return_count(__wrap__txe_timer_create, TX_SUCCESS, 2);
+    }
 
     // dma_enable_nvic_interrupts
     device_identifier_pair_t device_interrupt_pair[NUM_DMA_INTERRUPTS] = {};
@@ -124,6 +126,54 @@ TEST_FUNCTION(test_scp_dma_device_init_interrupt_pass, setup, teardown)
     // DfwkDeviceInitialize
     expect_value(__wrap_DfwkDeviceInitialize, Device, &device);
     expect_value(__wrap_DfwkDeviceInitialize, Schedule, &schedule);
+}
+
+//
+// Tests
+//
+
+TEST_FUNCTION(test_scp_dma_device_init_polling_pass, setup, teardown)
+{
+    setup_common_dma_device_init_polling_pass(false);
+
+    // Act
+    dma_device_init(&device, &config, &schedule);
+
+    // Assert
+    assert_ptr_not_equal(device.config, NULL);
+    assert_int_not_equal(device.config->base_address, DMA_TEST_BASE_ADDR); // Bogus value
+    assert_int_equal(device.config->base_address, DMAC_SCP_BASE_ADDR);     // Defined by SiLibs
+}
+
+TEST_FUNCTION(test_scp_dma_device_init_polling_pass_stall_enabled, setup, teardown)
+{
+    setup_common_dma_device_init_polling_pass(true);
+
+    // Act
+    dma_device_init(&device, &config, &schedule);
+
+    // Assert
+    assert_ptr_not_equal(device.config, NULL);
+    assert_int_not_equal(device.config->base_address, DMA_TEST_BASE_ADDR); // Bogus value
+    assert_int_equal(device.config->base_address, DMAC_SCP_BASE_ADDR);     // Defined by SiLibs
+}
+
+TEST_FUNCTION(test_scp_dma_device_init_interrupt_pass, setup, teardown)
+{
+    setup_common_dma_device_init_interrupt_pass(false);
+
+    // Act
+    dma_device_init(&device, &config, &schedule);
+
+    // Assert
+    assert_ptr_not_equal(device.config, NULL);
+    assert_int_not_equal(device.config->base_address, DMA_TEST_BASE_ADDR); // Bogus value
+    assert_int_equal(device.config->base_address, DMAC_SCP_BASE_ADDR);     // Defined by SiLibs
+}
+
+TEST_FUNCTION(test_scp_dma_device_init_interrupt_pass_stall_enabled, setup, teardown)
+{
+    setup_common_dma_device_init_interrupt_pass(true);
 
     // Act
     dma_device_init(&device, &config, &schedule);
@@ -369,6 +419,7 @@ TEST_FUNCTION(test_dma_channel_0_queue_dispatch_pass_starts_polling_timer, setup
     device.config->config_type = DMA_CONFIG_TYPE_POLLING;
     device.config->cpu_type = CPU_SCP;
     device.config->base_address = DMAC_SCP_BASE_ADDR;
+    device.config->stall_timeout_ms = 10000U;
 
     dma_async_request_t TestRequest = {};
     TestRequest.input.src_addr_32b_aligned = (uint64_t)0x87654300;
@@ -390,8 +441,8 @@ TEST_FUNCTION(test_dma_channel_0_queue_dispatch_pass_starts_polling_timer, setup
     dma_cfg.dmac_src_tr_width = DMAC_TRANSFER_WIDTH_32_BITS;
     dma_cfg.dmac_dest_tr_width = DMAC_TRANSFER_WIDTH_32_BITS;
 
-    // Polling timer
-    will_return(__wrap__txe_timer_activate, TX_SUCCESS);
+    will_return(__wrap__txe_timer_activate, TX_SUCCESS); // Polling timer
+    will_return(__wrap__txe_timer_activate, TX_SUCCESS); // Stall Timer
 
     expect_value(__wrap_dmac_start_single_block_transfer, dmac_base_addr, DMAC_SCP_BASE_ADDR);
     expect_value(__wrap_dmac_start_single_block_transfer, cfg->dmac_dest_tr_width, dma_cfg.dmac_dest_tr_width);
@@ -609,6 +660,168 @@ TEST_FUNCTION(test_dma_channel_interrupts, setup, teardown)
             assert_ptr_equal(device.Channel[chan].current_request, NULL);
         }
     }
+}
+
+extern void dma_stall_timer_cb(ULONG input);
+extern void dma_write_async_polling_timer_cb(ULONG input);
+
+TEST_FUNCTION(test_dma_timer_cb_stall_timeout_pass, setup, teardown)
+{
+    device_identifier_pair_t dev_pair = {0};
+    dma_async_request_t dma_req = {.status = FPFW_DMA_STATUS_NOT_STARTED};
+    device.config->base_address = DMA_TEST_BASE_ADDR;
+    device.config->config_type = DMA_CONFIG_TYPE_POLLING;
+    dev_pair.device = &device;
+    g_FpFwLockAcquire_check_signature = false;
+
+    // Arrange
+    dev_pair.channel = CH_0;
+    dma_req.dma_private.assigned_channel = dev_pair.channel;
+    device.Channel[dma_req.dma_private.assigned_channel].current_request = &dma_req;
+    will_return(__wrap_get_dmac_chen_reg, 0ULL); // Channel Free
+
+    // Act
+    dma_stall_timer_cb((ULONG)&dev_pair);
+
+    // Assert Nothing
+}
+
+TEST_FUNCTION(test_dma_timer_cb_stall_timeout_abort, setup, teardown)
+{
+    device_identifier_pair_t dev_pair = {0};
+    dma_async_request_t dma_req = {.status = FPFW_DMA_STATUS_NOT_STARTED};
+    device.config->base_address = DMA_TEST_BASE_ADDR;
+    device.config->config_type = DMA_CONFIG_TYPE_POLLING;
+    device.config->stall_timeout_ms = 10000UL;
+    dev_pair.device = &device;
+    g_FpFwLockAcquire_check_signature = false;
+
+    // Arrange
+    dev_pair.channel = CH_1;
+    dma_req.dma_private.assigned_channel = dev_pair.channel;
+    device.Channel[dma_req.dma_private.assigned_channel].current_request = &dma_req;
+    will_return(__wrap_get_dmac_chen_reg, (1ULL << dev_pair.channel)); // Channel not Available
+    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &dma_req);
+
+    // Act
+    dma_stall_timer_cb((ULONG)&dev_pair);
+
+    // Assert
+    assert_null(device.Channel[CH_0].current_request);
+}
+
+TEST_FUNCTION(test_dma_timer_cb_stall_timeout_timer_fail, setup, teardown)
+{
+    device_identifier_pair_t dev_pair = {0};
+    dma_async_request_t dma_req = {.status = FPFW_DMA_STATUS_NOT_STARTED};
+    device.config->base_address = DMA_TEST_BASE_ADDR;
+    device.config->config_type = DMA_CONFIG_TYPE_POLLING;
+    device.config->stall_timeout_ms = 10000UL;
+    dev_pair.device = &device;
+    g_FpFwLockAcquire_check_signature = false;
+
+    // Arrange
+    dev_pair.channel = CH_1;
+    dma_req.dma_private.assigned_channel = dev_pair.channel;
+    device.Channel[dma_req.dma_private.assigned_channel].current_request = &dma_req;
+    will_return(__wrap_get_dmac_chen_reg, (1ULL << dev_pair.channel)); // Channel not Available
+    will_return(__wrap__txe_timer_deactivate, TX_SUSPEND_ERROR);
+    expect_value(FPFwErrorRaise, error, (uint32_t)FPFW_ERROR_DMA_TIMER_ERROR);
+
+    // Act
+    dma_stall_timer_cb((ULONG)&dev_pair);
+
+    // Assert Nothing
+}
+
+TEST_FUNCTION(test_dma_timer_cb_async_poll_tx_complete, setup, teardown)
+{
+    device_identifier_pair_t dev_pair = {0};
+    dma_async_request_t dma_req = {.status = FPFW_DMA_STATUS_NOT_STARTED};
+    device.config->base_address = DMA_TEST_BASE_ADDR;
+    device.config->config_type = DMA_CONFIG_TYPE_POLLING;
+    device.config->stall_timeout_ms = 0U; // Stall Timer disabled
+    dev_pair.device = &device;
+    g_FpFwLockAcquire_check_signature = false;
+
+    // Arrange
+    dev_pair.channel = CH_0;
+    dma_req.dma_private.assigned_channel = dev_pair.channel;
+    device.Channel[dma_req.dma_private.assigned_channel].current_request = &dma_req;
+    will_return(__wrap_get_dmac_chen_reg, 0ULL); // Channel Free
+    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &dma_req);
+
+    // Act
+    dma_write_async_polling_timer_cb((ULONG)&dev_pair);
+
+    // Assert
+    assert_null(device.Channel[CH_0].current_request);
+}
+
+TEST_FUNCTION(test_dma_timer_cb_async_poll_tx_ongoing, setup, teardown)
+{
+    device_identifier_pair_t dev_pair = {0};
+    dma_async_request_t dma_req = {.status = FPFW_DMA_STATUS_NOT_STARTED};
+    device.config->base_address = DMA_TEST_BASE_ADDR;
+    device.config->config_type = DMA_CONFIG_TYPE_POLLING;
+    device.config->stall_timeout_ms = 0U; // Stall Timer disabled
+    dev_pair.device = &device;
+    g_FpFwLockAcquire_check_signature = false;
+
+    // Arrange
+    dev_pair.channel = CH_1;
+    dma_req.dma_private.assigned_channel = dev_pair.channel;
+    device.Channel[dma_req.dma_private.assigned_channel].current_request = &dma_req;
+    will_return(__wrap_get_dmac_chen_reg, (1ULL << dev_pair.channel)); // Channel not Available
+
+    // Act
+    dma_write_async_polling_timer_cb((ULONG)&dev_pair);
+
+    // Assert Nothing
+}
+
+TEST_FUNCTION(test_dma_timer_cb_async_poll_req_null_chan_busy, setup, teardown)
+{
+    device_identifier_pair_t dev_pair = {0};
+    dma_async_request_t dma_req = {.status = FPFW_DMA_STATUS_NOT_STARTED};
+    device.config->base_address = DMA_TEST_BASE_ADDR;
+    device.config->config_type = DMA_CONFIG_TYPE_POLLING;
+    device.config->stall_timeout_ms = 0U; // Stall Timer disabled
+    dev_pair.device = &device;
+    g_FpFwLockAcquire_check_signature = false;
+
+    // Arrange
+    dev_pair.channel = CH_0;
+    dma_req.dma_private.assigned_channel = dev_pair.channel;
+    device.Channel[dma_req.dma_private.assigned_channel].current_request = &dma_req;
+    will_return(__wrap_get_dmac_chen_reg, (1ULL << dev_pair.channel)); // Channel not Available
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &dma_req);
+    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
+
+    // Act
+    dma_complete_request(&device, dev_pair.channel, FPFW_DMA_STATUS_SUCCESS);
+    dma_write_async_polling_timer_cb((ULONG)&dev_pair);
+
+    // Assert
+    assert_null(device.Channel[CH_0].current_request);
+}
+
+TEST_FUNCTION(test_dma_init_stall_timer_fail_invalid_channel, setup, teardown)
+{
+    uint32_t chan = 0x02;
+    device.config->base_address = DMA_TEST_BASE_ADDR;
+    device.config->config_type = DMA_CONFIG_TYPE_POLLING;
+    device.config->stall_timeout_ms = 10000U; // Stall Timer disabled
+
+    // Arrange
+
+    // Act
+    uint32_t ret = initialize_stall_timer(&device, chan);
+
+    // Assert
+    assert_int_equal(ret, TX_TIMER_ERROR);
 }
 
 } // extern "C"

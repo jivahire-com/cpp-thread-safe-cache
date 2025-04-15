@@ -174,12 +174,8 @@ void dma_channel_isr(dma_device_t* device, uint32_t channel)
         }
     }
 
-    // If completed:
-    // Set completion status
-    device->Channel[channel].current_request->status = FPFW_DMA_STATUS_SUCCESS; // or FPFW_DMA_STATUS_FAIL;
-
-    // Have dfwk process the callback
-    dma_complete_request(device, channel);
+    // Have dfwk process the callback with return status
+    dma_complete_request(device, channel, FPFW_DMA_STATUS_SUCCESS);
 }
 
 void dma_reg_isr(dma_device_t* device)

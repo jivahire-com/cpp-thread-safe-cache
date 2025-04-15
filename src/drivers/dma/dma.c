@@ -35,18 +35,25 @@
 
 /*------------- Functions ----------------*/
 
-void dma_complete_request(dma_device_t* device, uint32_t channel)
+void dma_complete_request(dma_device_t* device, uint32_t channel, FPFW_DMA_STATUS req_status)
 {
     /*
        REMEMBER: This is called from the either the timer thread or DMA ISR - not DFWK.
-       Need to mind thread safety.  Critical sections are implemented in
+       Need to mind thread safety. Critical sections are implemented in
        `update_channel_struct_subtract_remaining_bytes`
     */
-
-    // If completed, have dfwk process the callback
     pdma_async_request_t request = device->Channel[channel].current_request;
+
+    if (device->config->stall_timeout_ms > 0U)
+    {
+        disable_timer(device->stall_timer, channel);
+    }
+
+    // Update the request result
+    request->status = req_status;
     update_channel_struct_subtract_remaining_bytes(device, request);
 
+    // Have dfwk process the callback
     DfwkAsyncRequestComplete(&(request->header));
     device->Channel[channel].current_request = NULL;
 }
@@ -89,6 +96,22 @@ void dma_device_init(dma_device_t* device, dma_config_t* pconfig, DFWK_SCHEDULE*
     default:
         // No other configuration type is supported
         FPFW_RUNTIME_ASSERT(false);
+    }
+
+    if (pconfig->stall_timeout_ms > 0)
+    {
+        for (DMAC_CHANNEL ch = DMAC_CHANNEL0; ch < DMAC_MAX_CHANNELS; ch++)
+        {
+            uint32_t status = initialize_stall_timer(device, ch);
+            if (TX_SUCCESS != status)
+            {
+                FPFwErrorRaise(FPFW_ERROR_DMA_TIMER_ERROR, ch, status, 0, 0); // channel, status, unique instance, unused
+            }
+        }
+    }
+    else
+    {
+        DMA_LOG_INFO("Stall timeout disabled\n");
     }
 
     // Initialize each channel's lock for thread safety when modifying remaining bytes

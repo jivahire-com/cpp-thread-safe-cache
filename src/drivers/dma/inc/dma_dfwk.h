@@ -61,6 +61,7 @@ typedef struct {
     //
     DMA_CONFIG_TYPE config_type;
     KNG_CPU_TYPE cpu_type;
+    uint16_t stall_timeout_ms;
 } dma_config_t;
 
 
@@ -118,8 +119,8 @@ typedef struct {
     dma_config_t* config;
 
     TX_TIMER polling_write_timer[DMAC_MAX_CHANNELS];
-    // Todo: Task 2015100: Add WDT for DMA transfers in progress
-    // TX_TIMER wdt[DMAC_MAX_CHANNELS];           // Watchdog timer for DMA transactions
+    TX_TIMER stall_timer[DMAC_MAX_CHANNELS];    // Stall timer for DMA transactions, to abort
+                                                // channel transaction if they continue for more than this time.
 } dma_device_t, *pdma_device_t;
 
 
@@ -156,6 +157,7 @@ typedef struct {
 #define FPFW_ERROR_DMA_REMAINING_BYTES_INVALID (0x00000001)
 #define FPFW_ERROR_DMA_INVALID_INTERRUPT       (0x00000002)
 #define FPFW_ERROR_DMA_TIMER_ERROR             (0x00000003)
+#define FPFW_ERROR_DMA_STALLED                 (0x00000004)
 
 //*--------- Function Prototypes ----------*/
 #ifdef __cplusplus

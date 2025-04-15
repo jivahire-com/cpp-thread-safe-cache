@@ -11,6 +11,7 @@
 
 /*----------- Nested includes ------------*/
 #include <DfwkDriver.h>
+#include "dma_dfwk.h"       // For dma_device_t, etc.
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define MODULE_NAME "[DMA] "
@@ -68,14 +69,17 @@ void dma_main_queue_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* context);
 void dma_channel_0_queue_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* context);
 void dma_channel_1_queue_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* context);
 void dma_start_transfer(dma_device_t* device, uint32_t channel, PDFWK_ASYNC_REQUEST_HEADER request);
-void dma_complete_request(dma_device_t* device, uint32_t channel);
+void dma_complete_request(dma_device_t* device, uint32_t channel, FPFW_DMA_STATUS req_status);
 void update_channel_struct_add_remaining_bytes(pdma_device_t device, pdma_async_request_t request);
 void update_channel_struct_subtract_remaining_bytes(pdma_device_t device, pdma_async_request_t request);
 uint32_t get_channel_with_shortest_queue(pdma_device_t device);
 bool dma_is_channel_free(dma_device_t* device, uint32_t channel);
+void dma_abort_transaction(dma_device_t* device, uint32_t channel);
 
 // Timers
 uint32_t initialize_tx_timer(dma_device_t* device, uint32_t channel);
+uint32_t initialize_stall_timer(dma_device_t* device, uint32_t channel);
+void disable_timer(TX_TIMER* timer, uint32_t channel);
 
 // Others
 bool check_parameters(pdma_device_t device, pdma_async_request_t request);

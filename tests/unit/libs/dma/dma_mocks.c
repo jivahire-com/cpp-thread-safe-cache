@@ -207,6 +207,12 @@ UINT __wrap__txe_timer_activate(TX_TIMER* timer_ptr)
     return mock_type(UINT);
 }
 
+UINT __wrap__txe_timer_deactivate(TX_TIMER* timer_ptr)
+{
+    FPFW_UNUSED(timer_ptr);
+    return mock_type(UINT);
+}
+
 uint64_t __wrap_get_dmac_id_reg(uintptr_t dmac_base_addr)
 {
     FPFW_UNUSED(dmac_base_addr);
@@ -290,4 +296,28 @@ uint64_t __wrap_dmac_get_ch_interrupt_status(uintptr_t dmac_base_addr, DMAC_CHAN
     FPFW_UNUSED(dmac_base_addr);
     FPFW_UNUSED(channel_id);
     return (mock_type(uint64_t));
+}
+
+uint64_t __wrap_get_dmac_chen_reg(uintptr_t dmac_base_addr)
+{
+    FPFW_UNUSED(dmac_base_addr);
+    return (mock_type(uint64_t));
+}
+
+void __wrap_dmac_disable_channel(uintptr_t dmac_base_addr, DMAC_CHANNEL channel_id)
+{
+    FPFW_UNUSED(dmac_base_addr);
+    FPFW_UNUSED(channel_id);
+}
+
+void __wrap_dmac_enable_channel(uintptr_t dmac_base_addr, DMAC_CHANNEL channel_id)
+{
+    FPFW_UNUSED(dmac_base_addr);
+    FPFW_UNUSED(channel_id);
+}
+
+void __wrap_dmac_abort_transfer(uintptr_t dmac_base_addr, DMAC_CHANNEL channel_id)
+{
+    FPFW_UNUSED(dmac_base_addr);
+    FPFW_UNUSED(channel_id);
 }

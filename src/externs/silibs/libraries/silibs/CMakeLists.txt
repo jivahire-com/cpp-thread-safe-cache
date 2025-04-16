@@ -14,6 +14,12 @@ add_compile_options(-I${TARGET_DIR}/libraries/common/silibs_platform/include
                     -I${TARGET_DIR}/registerheader_overrides
                     -I$ENV{REPO_APP_PATH_cded_register_header}
 )
+if (arm-eabi-aarch)
+  option(PLATFORM_CACHING_ENABLED "Platform provides cache flush/invalidate functionality." ON)
+elseif(i386-pc-windows-msvc)
+  option(PLATFORM_CACHING_ENABLED "Platform provides cache flush/invalidate functionality." OFF)
+endif()
+
 
 # Disable warnings for shared libs
 add_compile_options(-w)

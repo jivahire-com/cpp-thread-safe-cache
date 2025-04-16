@@ -246,6 +246,30 @@ TEST_FUNCTION(test_mhu_icc_transport_device_init_success, NULL, NULL)
     assert_int_equal(status, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
 }
 
+TEST_FUNCTION(test_mhu_icc_transport_device_init_cacheable_success, NULL, NULL)
+{
+
+    expect_value(SCB_InvalidateDCache_by_Addr, addr, s_test_mhu_icc_transport_device.recv_channel.ch_shared_mem_addr);
+    expect_value(SCB_InvalidateDCache_by_Addr, dsize, s_test_mhu_icc_transport_device.recv_channel.ch_shared_mem_size);
+    expect_function_call(SCB_InvalidateDCache_by_Addr);
+    expect_value(SCB_InvalidateDCache_by_Addr, addr, s_test_mhu_icc_transport_device.send_channel.ch_shared_mem_addr);
+    expect_value(SCB_InvalidateDCache_by_Addr, dsize, s_test_mhu_icc_transport_device.send_channel.ch_shared_mem_size);
+    expect_function_call(SCB_InvalidateDCache_by_Addr);
+    expect_function_call(__wrap_DfwkDeviceInitialize);
+    will_return(__wrap_FPFwCoreInterruptRegisterCallback, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_timer_create, FPFW_STATUS_SUCCESS);
+
+    s_test_dev_config.recv_channel.ch_shared_mem_cacheable = true;
+    s_test_dev_config.send_channel.ch_shared_mem_cacheable = true;
+    fpfw_status_t status =
+        mhu_icc_transport_device_init(&s_test_mhu_icc_transport_device, &s_test_schedule, &s_test_dev_config);
+    assert_int_equal(status, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
+
+    // Reset config to non-cacheable
+    s_test_dev_config.recv_channel.ch_shared_mem_cacheable = false;
+    s_test_dev_config.send_channel.ch_shared_mem_cacheable = false;
+}
+
 TEST_FUNCTION(test_mhu_icc_transport_device_init_reset_recv_success, NULL, NULL)
 {
     s_test_dev_config.recv_reset_on_init = true;

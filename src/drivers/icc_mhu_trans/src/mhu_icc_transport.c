@@ -26,12 +26,25 @@
 #include <fpfw_timer_types.h>
 #include <icc_mhu.h>
 #include <kng_icc_shared.h>
+
+// clang-format off
+#include <cmsis_m7.h>
+#ifdef PLATFORM_CACHING_ENABLED
+#include <cmsis_compiler.h>
+#include <m-profile/armv7m_cachel1.h>
+#endif
+// clang-format on
+
 #include <mhu_icc_transport.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+
+// Cache line size for Cortex-M7
+#define CACHE_LINE_SIZE        (32U)
+#define CACHE_ALIGN_DOWN(addr) ((addr) & ~((CACHE_LINE_SIZE) - 1))
 
 /*------------- Typedefs -----------------*/
 
@@ -44,6 +57,37 @@
 //
 // PRIVATE FUNCTIONS
 //
+
+//
+// Provide the platform specific cache flush and invalidate functions
+// needed by the silibs icc_mhu library.
+//
+// Enabled via the cmake option:
+//     option(PLATFORM_CACHING_ENABLED "Platform provides cache flush/invalidate functionality." ON)
+//
+// TODO: Move to common cache wrappers once available: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2531884
+//
+#ifdef PLATFORM_CACHING_ENABLED
+void data_cache_flush(volatile void* addr, int32_t dsize)
+{
+    // Align the address to the cache line size
+    // Size aligned by SCB_CleanDCache_by_Addr
+    void* aligned_addr = (void*)CACHE_ALIGN_DOWN((uintptr_t)addr);
+
+    // Clean (flush) the data cache line
+    SCB_CleanDCache_by_Addr(aligned_addr, dsize);
+}
+
+void data_cache_invalidate(volatile void* addr, int32_t dsize)
+{
+    // Align the address to the cache line size
+    // Size aligned by SCB_CleanDCache_by_Addr
+    void* aligned_addr = (void*)CACHE_ALIGN_DOWN((uintptr_t)addr);
+
+    // Invalidate the data cache line
+    SCB_InvalidateDCache_by_Addr(aligned_addr, dsize);
+}
+#endif
 
 //
 // The silibs icc_mhu library has its own status, while this driver returns
@@ -371,6 +415,16 @@ fpfw_status_t mhu_icc_transport_device_init(mhu_icc_transport_device_t* dev,
 
     dev->recv_channel = config->recv_channel;
     dev->send_channel = config->send_channel;
+
+    // Invalidate the recv and send channel payload memory if cacheable
+    if (dev->recv_channel.ch_shared_mem_cacheable)
+    {
+        SCB_InvalidateDCache_by_Addr((uint32_t*)dev->recv_channel.ch_shared_mem_addr, dev->recv_channel.ch_shared_mem_size);
+    }
+    if (dev->send_channel.ch_shared_mem_cacheable)
+    {
+        SCB_InvalidateDCache_by_Addr((uint32_t*)dev->send_channel.ch_shared_mem_addr, dev->send_channel.ch_shared_mem_size);
+    }
 
     //
     // We don't always want to reset the channel on initialization. For example, if the sending

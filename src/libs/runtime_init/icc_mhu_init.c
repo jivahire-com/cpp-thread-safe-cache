@@ -102,6 +102,7 @@ FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "
             {
                 .mhu_addr = MHU_SCP_AP_S_REC_BASE_ADDRESS,
                 .ch_id = MHU_INTERFACE_ID(AP_CORE_SEC, SCP_LOCAL),
+                .ch_shared_mem_cacheable = false,
                 .ch_shared_mem_size = D0_ARSM_TFA_AP_2_SCP_SEND_SIZE,
                 .ch_shared_mem_addr = recv_payload_address,
                 .ch_db_config =
@@ -114,6 +115,7 @@ FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "
             {
                 .mhu_addr = MHU_SCP_AP_S_SEND_BASE_ADDRESS,
                 .ch_id = MHU_INTERFACE_ID(SCP_LOCAL, AP_CORE_SEC),
+                .ch_shared_mem_cacheable = false,
                 .ch_shared_mem_size = D0_ARSM_TFA_AP_2_SCP_SEND_SIZE,
                 .ch_shared_mem_addr = send_payload_address,
                 .ch_db_config =
@@ -178,10 +180,12 @@ FPFW_INIT_COMPONENT(icc_mscp2mscp, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "sys
     mhu_icc_transport_device_config_t dev_config = {
         .recv_reset_on_init = system_info_is_warm_start(),
         .recv_irq_num = HW_INT_MSCP2MSCP_MHU_INT,
+        // The RMSS MSCP_EXP RAM block where the payloads are stored is cacheable.
         .recv_channel =
             {
                 .mhu_addr = recv_mhu_addr,
                 .ch_id = recv_ch_id,
+                .ch_shared_mem_cacheable = true,
                 .ch_shared_mem_size = SCP_EXP_ICC_MHU_SCP_MCP_LOCAL_SEND_SIZE,
                 .ch_shared_mem_addr = recv_payload_address,
                 .ch_db_config =
@@ -194,6 +198,7 @@ FPFW_INIT_COMPONENT(icc_mscp2mscp, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "sys
             {
                 .mhu_addr = send_mhu_addr,
                 .ch_id = send_ch_id,
+                .ch_shared_mem_cacheable = true,
                 .ch_shared_mem_size = SCP_EXP_ICC_MHU_SCP_MCP_LOCAL_SEND_SIZE,
                 .ch_shared_mem_addr = send_payload_address,
                 .ch_db_config =
@@ -322,6 +327,7 @@ FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu
             {
                 .mhu_addr = recv_mhu_addr,
                 .ch_id = recv_ch_id,
+                .ch_shared_mem_cacheable = false,
                 .ch_shared_mem_size = ICC_MHU_DDR_PAYLOAD_SIZE,
                 .ch_shared_mem_addr = recv_payload_address,
                 .ch_db_config =
@@ -334,6 +340,7 @@ FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu
             {
                 .mhu_addr = send_mhu_addr,
                 .ch_id = send_ch_id,
+                .ch_shared_mem_cacheable = false,
                 .ch_shared_mem_size = ICC_MHU_DDR_PAYLOAD_SIZE,
                 .ch_shared_mem_addr = send_payload_address,
                 .ch_db_config =
@@ -470,6 +477,7 @@ FPFW_INIT_COMPONENT(icc_die2die, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_s
             {
                 .mhu_addr = recv_mhu_addr,
                 .ch_id = recv_ch_id,
+                .ch_shared_mem_cacheable = false,
                 .ch_shared_mem_size = ICC_MHU_DDR_PAYLOAD_SIZE,
                 .ch_shared_mem_addr = recv_payload_address,
                 .ch_db_config =
@@ -482,6 +490,7 @@ FPFW_INIT_COMPONENT(icc_die2die, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_s
             {
                 .mhu_addr = send_mhu_addr,
                 .ch_id = send_ch_id,
+                .ch_shared_mem_cacheable = false,
                 .ch_shared_mem_size = ICC_MHU_DDR_PAYLOAD_SIZE,
                 .ch_shared_mem_addr = send_payload_address,
                 .ch_db_config =

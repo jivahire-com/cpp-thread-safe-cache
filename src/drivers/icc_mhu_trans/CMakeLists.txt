@@ -28,9 +28,13 @@ target_link_libraries(${TARGET}
         fwlib.lib.interface.platform.threadx
         fwlib.driver.interface.iccTransport
         fwlib.service.icc_dispatcher
+        ms::cmsis::interface
         silibs::icc_mhu
 )
 
+if (arm-eabi-aarch)
+    add_compile_definitions(PLATFORM_CACHING_ENABLED)
+endif()
 
 add_library(ms::driver::icc_mhu_trans ALIAS ${TARGET})
 

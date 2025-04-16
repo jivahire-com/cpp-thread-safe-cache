@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
     fwlib.driver.interface.iccTransport
     fwlib.platform.dfwkhost.threadx
     fwlib.lib.utils
+    ms::cmsis::interface
     ms::cmocka::mocks
     ms::cmocka::testrunner
     ms::lib::debug

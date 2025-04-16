@@ -16,6 +16,7 @@
 #include "accelerator_ip.h"
 #include "accelerator_ip_priv.h"
 
+#include <DbgPrint.h>      // for FPFW_DBGPRINT_INFO
 #include <FpFwAssert.h>    // for FPFW_RUNTIME_ASSERT
 #include <accel_intr.h>    // for accel_intr_mcp_init
 #include <accelip_id.h>    // NUM_VALID_ACCEL_ID, ACCEL_ID_SDM, ACCEL_ID_CDED
@@ -82,13 +83,22 @@ int32_t mcp_accelerators_init(void)
         // TODO (ADO 1728772) : init any particular accelerator instance only if that is enabled in fuse
         if (p_ss_ctxt[index].accelip_metadata.die_instance == current_die_instance)
         {
-            ret = init_accelerator(&p_ss_ctxt[index]);
-            printf("accel lib: Die %d type %d instance %d stat %d\n",
-                   p_ss_ctxt[index].accelip_metadata.die_instance,
-                   p_ss_ctxt[index].accelip_metadata.accel_type,
-                   p_ss_ctxt[index].accelip_metadata.accel_instance,
-                   ret);
-            FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
+            if (!accel_is_isolation_enabled(get_accelip_type(p_ss_ctxt[index].accelip_metadata.accel_type)))
+            {
+                ret = init_accelerator(&p_ss_ctxt[index]);
+                FPFW_DBGPRINT_INFO("accel lib: Die %d type %d instance %d stat %d\n",
+                                   p_ss_ctxt[index].accelip_metadata.die_instance,
+                                   p_ss_ctxt[index].accelip_metadata.accel_type,
+                                   p_ss_ctxt[index].accelip_metadata.accel_instance,
+                                   ret);
+                FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
+            }
+            else
+            {
+                FPFW_DBGPRINT_INFO("Accel type %d on Die %d has been isolated\n",
+                                   p_ss_ctxt[index].accelip_metadata.accel_type,
+                                   current_die_instance);
+            }
         }
     }
 

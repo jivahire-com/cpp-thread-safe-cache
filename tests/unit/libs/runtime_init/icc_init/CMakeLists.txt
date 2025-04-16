@@ -84,6 +84,7 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     DfwkDeviceInitialize
     accel_intr_init
+    accel_is_isolation_enabled
     fpfw_init_get_handle
     fpfw_mbox_icc_transport_dfwk_device_init
     fpfw_mbox_icc_transport_dfwk_interface_init

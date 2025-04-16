@@ -20,6 +20,7 @@ extern "C" {
 #include <FpFwUtils.h>
 #include <accelerator_ip.h> // for scp_accelerators_init, ACCEL_RET_SUCCESS
 #include <accelip_id.h>
+#include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h>
 #include <fpfw_status.h>
 #include <hsp_firmware_headers.h>
@@ -296,6 +297,20 @@ void __wrap_mmio_update32(volatile uint32_t* addr, uint32_t data, uint32_t mask)
     FPFW_UNUSED(mask);
 }
 
+accel_isolation_enable_t __wrap_config_get_sdm_isolation_enable(void)
+{
+    accel_isolation_enable_t* accel_isolation_enable = mock_ptr_type(accel_isolation_enable_t*);
+
+    return *accel_isolation_enable;
+}
+
+accel_isolation_enable_t __wrap_config_get_cded_isolation_enable(void)
+{
+    accel_isolation_enable_t* accel_isolation_enable = mock_ptr_type(accel_isolation_enable_t*);
+
+    return *accel_isolation_enable;
+}
+
 // Setup and callback functions
 void cb_fun(void* context)
 {
@@ -308,6 +323,10 @@ TEST_FUNCTION(accelip_pre_boot_config_pass_test, nullptr, nullptr)
 {
     will_return_count(__wrap_idsw_get_die_id, SOC_D0, 3);
     expect_any_always(__wrap_FpFwAssert, expression);
+
+    accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
+    will_return_always(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
+    will_return_always(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
 
     // In init_accelerator()
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
@@ -323,6 +342,10 @@ TEST_FUNCTION(accelip_pre_boot_config_pass_test2, nullptr, nullptr)
     will_return_count(__wrap_idsw_get_die_id, SOC_D0, 3);
     expect_any_always(__wrap_FpFwAssert, expression);
 
+    accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
+    will_return_always(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
+    will_return_always(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
+
     // In init_accelerator()
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return_always(__wrap_system_info_is_hsp_present, false);
@@ -332,11 +355,27 @@ TEST_FUNCTION(accelip_pre_boot_config_pass_test2, nullptr, nullptr)
     assert_int_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
 }
 
+TEST_FUNCTION(accelip_pre_boot_config_isolation, nullptr, nullptr)
+{
+    will_return_count(__wrap_idsw_get_die_id, SOC_D0, 3);
+    expect_any_always(__wrap_FpFwAssert, expression);
+
+    accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {true, true}};
+    will_return_always(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
+    will_return_always(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
+
+    assert_int_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
+
 TEST_FUNCTION(accelip_pre_boot_config_accelip_ss_init_fail_test, nullptr, nullptr)
 {
     // Accelip ss init fail
     will_return_count(__wrap_idsw_get_die_id, SOC_D0, 3);
     expect_any_always(__wrap_FpFwAssert, expression);
+
+    accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
+    will_return_always(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
+    will_return_always(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
 
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return_always(__wrap_system_info_is_hsp_present, true);
@@ -352,6 +391,11 @@ TEST_FUNCTION(test_scp_accelerators_init_invalid_accel, nullptr, nullptr)
     // In scp_accelerators_init()
     will_return_count(__wrap_idsw_get_die_id, SOC_D0, 3);
     expect_value(__wrap_FpFwAssert, expression, true);
+
+    accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
+    will_return_maybe(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
+    will_return_maybe(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
+
     expect_value(__wrap_FpFwAssert, expression, false);
     expect_value(__wrap_FpFwAssert, expression, false);
 
@@ -373,6 +417,10 @@ TEST_FUNCTION(test_scp_accelerators_init_intr_init_failed, nullptr, nullptr)
 {
     will_return_count(__wrap_idsw_get_die_id, SOC_D0, 3);
     expect_any_always(__wrap_FpFwAssert, expression);
+
+    accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
+    will_return_always(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
+    will_return_always(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
 
     // In init_accelerator()
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
@@ -708,33 +756,22 @@ TEST_FUNCTION(accelip_isolation_control_test, nullptr, nullptr)
     will_return_count(__wrap_idsw_get_die_id, SOC_D0, 3);
     expect_any_always(__wrap_FpFwAssert, expression);
     will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 2);
+    accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
+    will_return(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
+    will_return(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
     will_return_count(__wrap_atu_unmap, SILIBS_SUCCESS, 2);
 
     assert_int_equal(scp_accelerators_isolation_control(), ACCEL_RET_SUCCESS);
 }
 
-TEST_FUNCTION(accel_is_isolation_enabled_sdm_test, nullptr, nullptr)
-{
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-    assert_int_equal(accel_is_isolation_enabled(ACCEL_ID_SDM), false);
-}
-
-TEST_FUNCTION(accel_is_isolation_enabled_cded_test, nullptr, nullptr)
-{
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-    assert_int_equal(accel_is_isolation_enabled(ACCEL_ID_CDED), false);
-}
-
-TEST_FUNCTION(accel_is_isolation_enabled_envalid_test, nullptr, nullptr)
-{
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-    assert_int_equal(accel_is_isolation_enabled(NUM_VALID_ACCEL_ID), false);
-}
-
 TEST_FUNCTION(mcp_accelerators_init_test_die0_pass, nullptr, nullptr)
 {
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_always(__wrap_idsw_get_die_id, SOC_D0);
     expect_value(__wrap_FpFwAssert, expression, true);
+
+    accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
+    will_return(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
+    will_return(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
 
     // init accelertor
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
@@ -746,13 +783,29 @@ TEST_FUNCTION(mcp_accelerators_init_test_die0_pass, nullptr, nullptr)
 
 TEST_FUNCTION(mcp_accelerators_init_test_die1_pass, nullptr, nullptr)
 {
-    will_return(__wrap_idsw_get_die_id, SOC_D1);
+    will_return_always(__wrap_idsw_get_die_id, SOC_D1);
     expect_value(__wrap_FpFwAssert, expression, true);
+
+    accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
+    will_return(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
+    will_return(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
 
     // init accelertor
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return_count(__wrap_accel_mcp_intr_init, ACCEL_INTR_RET_SUCCESS, 2);
     expect_value_count(__wrap_FpFwAssert, expression, true, 2);
+
+    assert_int_equal(mcp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
+
+TEST_FUNCTION(mcp_accelerators_init_test_isolation_pass, nullptr, nullptr)
+{
+    will_return_always(__wrap_idsw_get_die_id, SOC_D1);
+    expect_value(__wrap_FpFwAssert, expression, true);
+
+    accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {true, true}};
+    will_return(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
+    will_return(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
 
     assert_int_equal(mcp_accelerators_init(), ACCEL_RET_SUCCESS);
 }
@@ -769,7 +822,7 @@ TEST_FUNCTION(mcp_accelerators_init_test_fail1, nullptr, nullptr)
     p_ss_ctxt[0].accelip_metadata.accel_type = NUM_ACCELIP_SS_INSTANCES;
     p_ss_ctxt[1].accelip_metadata.accel_type = NUM_ACCELIP_SS_INSTANCES;
 
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_always(__wrap_idsw_get_die_id, SOC_D0);
     expect_value(__wrap_FpFwAssert, expression, true);
 
     expect_value(__wrap_FpFwAssert, expression, false);
@@ -783,22 +836,12 @@ TEST_FUNCTION(mcp_accelerators_init_test_fail1, nullptr, nullptr)
 
 TEST_FUNCTION(mcp_accelerators_init_test_fail3, nullptr, nullptr)
 {
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_always(__wrap_idsw_get_die_id, SOC_D0);
     expect_value(__wrap_FpFwAssert, expression, true);
 
-    // init accelertor
-    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
-    will_return_count(__wrap_accel_mcp_intr_init, ACCEL_INTR_RET_FAIL_INTR_INIT, 2);
-    expect_value_count(__wrap_FpFwAssert, expression, false, 2);
-
-    assert_int_equal(mcp_accelerators_init(), ACCEL_RET_FAIL_INTR_INIT);
-}
-
-TEST_FUNCTION(mcp_accelerators_init_test_fail4, nullptr, nullptr)
-{
-    expect_value(__wrap_FpFwAssert, expression, true);
-
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
+    will_return(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
+    will_return(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
 
     // init accelertor
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);

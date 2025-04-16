@@ -518,11 +518,12 @@ void static_atu_config(uint8_t die_num)
     }
 }
 
-void accel_atu_config()
+void accel_atu_config(ACCEL_ID accel_id)
 {
     uint8_t die_num = (uint8_t)idsw_get_die_id();
     atu_map_entry_t* atu_accel_map = NULL;
-    int i;
+
+    BUG_ASSERT_PARAM(accel_id < NUM_VALID_ACCEL_ID, accel_id, NUM_VALID_ACCEL_ID);
 
     if (die_num == 0)
     {
@@ -534,16 +535,13 @@ void accel_atu_config()
     }
     else
     {
-        FPFW_RUNTIME_ASSERT(false);
+        BUG_ASSERT_PARAM(false, die_num, 0);
         return;
     }
 
     // Initialize SDM/CDED ATU
-    for (i = 0; i < NUM_VALID_ACCEL_ID; i++)
-    {
-        int status = atu_map(ATU_ID_MSCP, &atu_accel_map[i]);
-        BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, SILIBS_SUCCESS);
-    }
+    int status = atu_map(ATU_ID_MSCP, &atu_accel_map[accel_id]);
+    BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, SILIBS_SUCCESS);
 }
 
 void atu_svc_init(atu_service_t* atu_service, PDFWK_SCHEDULE schedule)

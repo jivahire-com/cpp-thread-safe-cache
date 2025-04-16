@@ -363,10 +363,11 @@ bool crash_dump_get_is_dump_complete(crash_dump_type_context_t* type_context);
 void crash_dump_cli_init(void);
 
 /**
- * @brief Captures Accel device externally accessible registers
+ * @brief Captures accel cores externally accessible registers
  * 
+ * @param[in] accel_type SDM or CDED accel type
  */
-void crash_dump_register_accel_ext_mmio();
+void crash_dump_register_accel_ext_mmio(ACCEL_ID accel_type);
 
 /**
  * @brief Check is given accel core has completed its CD file collection

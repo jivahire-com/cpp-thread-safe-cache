@@ -11,6 +11,7 @@
 #include <MboxPrimitives.h>
 #include <accel_intr.h>
 #include <accel_intr_virt_irq.h>
+#include <accelerator_ip.h>
 #include <accelip_id.h>    // for ACCEL_ID_CDED, ACCEL_ID_SDM
 #include <atu_init.h>      // for atu_svc_accel_atu_addr
 #include <fpfw_icc_base.h> // for fpfw_icc_base_ctx_t
@@ -145,9 +146,14 @@ static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel_atu", "debug_print", "virt_irq"))
+FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel_atu", "debug_print", "virt_irq", "cfg_mgr"))
 {
     ACCEL_ID accel_type = ACCEL_ID_SDM;
+
+    if (accel_is_isolation_enabled(accel_type))
+    {
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
 
     fpfw_status_t status = accel_mbox_init(accel_type);
     if (status != FPFW_INIT_STATUS_SUCCESS)
@@ -159,9 +165,14 @@ FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel
     return (fpfw_init_result_t){status, &s_accel_mbx_icc_base_ctx[accel_type]};
 }
 
-FPFW_INIT_COMPONENT(icc_cded_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel_atu", "debug_print", "virt_irq"))
+FPFW_INIT_COMPONENT(icc_cded_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel_atu", "debug_print", "virt_irq", "cfg_mgr"))
 {
     ACCEL_ID accel_type = ACCEL_ID_CDED;
+
+    if (accel_is_isolation_enabled(accel_type))
+    {
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
 
     fpfw_status_t status = accel_mbox_init(accel_type);
     if (status != FPFW_INIT_STATUS_SUCCESS)

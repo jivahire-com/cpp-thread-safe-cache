@@ -23,8 +23,9 @@ void atu_svc_init(atu_service_t* atu_service, PDFWK_SCHEDULE schedule);
 /**
  * @brief Config ATU mapping for accel devices 
  * 
+ * @param accel_id SDM or CDED accel device ID
  */
-void accel_atu_config();
+void accel_atu_config(ACCEL_ID accel_id);
 
 /**
  * @brief Returns ATU address for passed accel device

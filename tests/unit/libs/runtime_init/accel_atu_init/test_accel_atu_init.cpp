@@ -18,8 +18,12 @@ extern "C" {
 #include <atu_lib.h>
 #include <fpfw_init.h>
 #include <idsw_kng.h>
+#include <kng_error.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+
+#define BUGCHECK_MOCK_RETURN   (setjmp(mock_jump_buf))
+#define bugcheck_mock_return() BUGCHECK_MOCK_RETURN
 
 /*------------- Typedefs -----------------*/
 
@@ -27,6 +31,9 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_accel_atu;
+
+static jmp_buf mock_jump_buf;
+static bool should_return;
 
 /*------------- Functions ----------------*/
 //
@@ -54,13 +61,17 @@ void __wrap_FpFwAssert(int expression)
 
 void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
 {
-    FPFW_UNUSED(errorCode);
+    check_expected(errorCode);
     FPFW_UNUSED(p1);
     FPFW_UNUSED(p2);
     FPFW_UNUSED(p3);
     FPFW_UNUSED(p4);
 
-    function_called();
+    // Handle noreturn, allowing control to return to test
+    if (!should_return)
+    {
+        longjmp(mock_jump_buf, 1);
+    }
 }
 }
 
@@ -70,7 +81,7 @@ void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, u
 
 TEST_FUNCTION(test_accel_atu_die0, nullptr, nullptr)
 {
-    will_return(__wrap_idsw_get_die_id, 0);
+    will_return_always(__wrap_idsw_get_die_id, 0);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
 
     // Call the function under test
@@ -82,7 +93,7 @@ TEST_FUNCTION(test_accel_atu_die0, nullptr, nullptr)
 
 TEST_FUNCTION(test_accel_atu_die1, nullptr, nullptr)
 {
-    will_return(__wrap_idsw_get_die_id, 1);
+    will_return_always(__wrap_idsw_get_die_id, 1);
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
 
     // Call the function under test
@@ -94,27 +105,29 @@ TEST_FUNCTION(test_accel_atu_die1, nullptr, nullptr)
 
 TEST_FUNCTION(test_accel_atu_fail1, nullptr, nullptr)
 {
-    will_return(__wrap_idsw_get_die_id, 2);
-    expect_value(__wrap_FpFwAssert, expression, false);
+    will_return_always(__wrap_idsw_get_die_id, 2);
+    expect_value(__wrap_crash_dump_bug_check, errorCode, (uint32_t)KNG_BGCHK_BUGCHECK);
 
-    // Call the function under test
-    fpfw_init_result_t result = _fpfw_component_accel_atu.init_fn();
-
-    // Perform necessary assertions on result
-    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+    should_return = false;
+    if (!bugcheck_mock_return())
+    {
+        fpfw_init_result_t result = _fpfw_component_accel_atu.init_fn();
+        assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+    }
 }
 
 TEST_FUNCTION(test_accel_atu_fail2, nullptr, nullptr)
 {
-    will_return(__wrap_idsw_get_die_id, 1);
+    will_return_always(__wrap_idsw_get_die_id, 1);
     will_return_always(__wrap_atu_map, SILIBS_E_PARAM);
-    expect_function_call_any(__wrap_crash_dump_bug_check);
+    expect_value(__wrap_crash_dump_bug_check, errorCode, (uint32_t)KNG_BGCHK_BUGCHECK);
 
-    // Call the function under test
-    fpfw_init_result_t result = _fpfw_component_accel_atu.init_fn();
-
-    // Perform necessary assertions on result
-    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+    should_return = false;
+    if (!bugcheck_mock_return())
+    {
+        fpfw_init_result_t result = _fpfw_component_accel_atu.init_fn();
+        assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+    }
 }
 
 TEST_FUNCTION(test_atu_svc_accel_atu_addr_die0, nullptr, nullptr)

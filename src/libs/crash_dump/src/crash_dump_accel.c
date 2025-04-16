@@ -450,17 +450,27 @@ cd_transfer_failed:
 
 /*------------- Public Functions ----------------*/
 /**
- * @brief Register Accel cores MMIO registers
+ * @brief Register SDM cores MMIO registers
  *
  */
-void crash_dump_register_accel_ext_mmio()
+void crash_dump_register_accel_ext_mmio(ACCEL_ID accel_type)
 {
     crash_dump_context_t* ctx = crash_dump_context();
 
-    if (ctx->type_ctx[CRASH_DUMP_TYPE_FULL] != NULL)
+    if (ctx->type_ctx[CRASH_DUMP_TYPE_FULL] == NULL || accel_type >= NUM_VALID_ACCEL_ID)
     {
-        // Register accelerators registers only for full dump.
+        // No full dump context or invalid accel type.
+        return;
+    }
+
+    if (accel_type == ACCEL_ID_SDM)
+    {
+        // Register SDM core registers only for full dump.
         crash_dump_register_sdm_ext_mmio(ctx->type_ctx[CRASH_DUMP_TYPE_FULL]);
+    }
+    else
+    {
+        // Register CDED core registers only for full dump.
         crash_dump_register_cded_ext_mmio(ctx->type_ctx[CRASH_DUMP_TYPE_FULL]);
     }
 }

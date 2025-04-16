@@ -240,6 +240,7 @@ void crash_dump_notify_accelerators()
 
         if (icc_ctx == NULL)
         {
+            crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_NOT_AVAILABLE);
             continue;
         }
 

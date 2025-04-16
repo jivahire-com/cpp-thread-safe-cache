@@ -20,6 +20,7 @@ target_link_libraries(${TARGET}
         silibs::idhw
         silibs::idsw
         ms::cmocka::testrunner
+        ms::lib::accelerator_ip
         ms::service::atu_service
         ms::service::health_monitor
         ms::service::health_monitor::cli
@@ -27,6 +28,7 @@ target_link_libraries(${TARGET}
 
 # Generic ports implmented within this project
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
 lint_target(${TARGET})
 format_target(${TARGET})
@@ -35,6 +37,7 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    accel_is_isolation_enabled
     fpfw_init_get_handle
     idsw_get_die_id
     hm_pre_ddr_init

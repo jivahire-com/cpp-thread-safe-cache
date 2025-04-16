@@ -15,6 +15,7 @@ extern "C" {
 #include <FpFwUtils.h>
 #include <accelip_id.h>
 #include <crash_dump.h>
+#include <fpfw_icc_base.h>
 #include <fpfw_init.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -120,6 +121,13 @@ bool __wrap_CdRegisterMMIORegisterSet(FPFwCrashDumpCtx* ctx, uint32_t regAddress
     function_called();
 
     return true;
+}
+
+bool __wrap_accel_is_isolation_enabled(ACCEL_ID accel_type)
+{
+    check_expected(accel_type);
+
+    return mock_type(bool);
 }
 
 //
@@ -290,22 +298,46 @@ TEST_FUNCTION(test_cd_accel, nullptr, nullptr)
     crash_dump_type_context_t full_context = {.type = CRASH_DUMP_TYPE_FULL};
     crash_dump_context_t context = {.type_ctx = {NULL, &full_context}, .die_index = 0, .core_index = CRASH_DUMP_CORE_SCP};
 
-    will_return_always(__wrap_crash_dump_context, &context);
-
+    // SDM
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_SDM);
+    will_return(__wrap_accel_is_isolation_enabled, false);
     expect_value(__wrap_crash_dump_config_icc, type, CRASH_DUMP_ICC_CONFIG_SDM);
     expect_function_call(__wrap_crash_dump_config_icc);
 
-    expect_value(__wrap_crash_dump_config_icc, type, CRASH_DUMP_ICC_CONFIG_CDED);
-    expect_function_call(__wrap_crash_dump_config_icc);
-
+    will_return_always(__wrap_crash_dump_context, &context);
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0x12345678);
     expect_function_call_any(__wrap_CdRegisterMMIORegisterSet);
     expect_any_always(__wrap_CdRegisterMMIORegisterSet, regAddress);
     expect_any_always(__wrap_CdRegisterMMIORegisterSet, regCount);
     expect_any_always(__wrap_CdRegisterMMIORegisterSet, priority);
 
+    // CDED
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_CDED);
+    will_return(__wrap_accel_is_isolation_enabled, false);
+    expect_value(__wrap_crash_dump_config_icc, type, CRASH_DUMP_ICC_CONFIG_CDED);
+    expect_function_call(__wrap_crash_dump_config_icc);
+
     // Call API under test
     _fpfw_component_cd_accel.init_fn();
 }
+
+/**
+ * @brief Accel cores are isolated
+ *
+ */
+TEST_FUNCTION(test_cd_accel_isolation, nullptr, nullptr)
+{
+    // SDM
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_SDM);
+    will_return(__wrap_accel_is_isolation_enabled, true);
+
+    // CDED
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_CDED);
+    will_return(__wrap_accel_is_isolation_enabled, true);
+
+    // Call API under test
+    _fpfw_component_cd_accel.init_fn();
+}
+
 #endif // SCP_RUNTIME_INIT
 }

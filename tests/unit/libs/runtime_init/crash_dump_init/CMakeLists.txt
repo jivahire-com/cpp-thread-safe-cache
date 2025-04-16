@@ -21,8 +21,10 @@ target_link_libraries(${TARGET}
         fwlib.lib.assert
         fwlib.lib.init
         fwlib.lib.crashDump
+        fwlib.service.iccBase
         ms::cmocka::testrunner
         ms::cmsis::interface
+        ms::lib::accelerator_ip
         ms::lib::crash_dump
         ms::lib::exception_handler
         silibs::icc_mhu
@@ -42,6 +44,7 @@ target_compile_definitions(
 
 # Defining platform APIs
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
 lint_target(${TARGET})
 format_target(${TARGET})
@@ -51,6 +54,7 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     CdRegisterMMIORegisterSet
+    accel_is_isolation_enabled
     atu_svc_accel_atu_addr
     crash_dump_context
     crash_dump_init

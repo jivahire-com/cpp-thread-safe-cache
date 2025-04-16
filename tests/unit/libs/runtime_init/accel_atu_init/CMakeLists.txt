@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         silibs::idsw_kng
         ms::cmocka::testrunner
         ms::lib::css
+        ms::lib::error_codes
         silibs_platform
         ms::service::atu_service
         ms::lib::accelerator_ip

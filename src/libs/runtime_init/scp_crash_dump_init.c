@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include <FpFwAssert.h>              // for FPFW_RUNTIME_ASSERT
+#include <accelerator_ip.h>          // for accel_is_isolation_enabled
 #include <addressblock0_regs.h>      // for ADDRESSBLOCK0_WDOGLOAD_ADDRESS, ADDRESSBLOCK0_WDOGRIS_ADDRESS
 #include <bug_check.h>               // for BUG_CHECK
 #include <crash_dump.h>              // for crash_dump_init
@@ -171,11 +172,33 @@ FPFW_INIT_COMPONENT(cd_pomesh, FPFW_INIT_DEPENDENCIES("cd_init", "ddr", "hw_sem"
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(cd_accel, FPFW_INIT_DEPENDENCIES("cd_init", "cd_pomesh", "icc_sdm_mbx", "icc_cded_mbx"))
+FPFW_INIT_COMPONENT(cd_accel, FPFW_INIT_DEPENDENCIES("cd_init", "cd_pomesh", "icc_sdm_mbx", "icc_cded_mbx", "cfg_mgr"))
 {
-    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_SDM, fpfw_init_get_handle("icc_sdm_mbx"));
-    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_CDED, fpfw_init_get_handle("icc_cded_mbx"));
-    crash_dump_register_accel_ext_mmio();
+    for (ACCEL_ID accel_type = ACCEL_ID_SDM; accel_type < NUM_VALID_ACCEL_ID; accel_type++)
+    {
+        crash_dump_icc_config_t icc_config_type;
+        fpfw_icc_base_ctx_t* icc_ctx;
+
+        if (accel_is_isolation_enabled(accel_type))
+        {
+            // Skip if isolation is enabled for the given accelerator.
+            continue;
+        }
+
+        if (accel_type == ACCEL_ID_SDM)
+        {
+            icc_config_type = CRASH_DUMP_ICC_CONFIG_SDM;
+            icc_ctx = fpfw_init_get_handle("icc_sdm_mbx");
+        }
+        else
+        {
+            icc_config_type = CRASH_DUMP_ICC_CONFIG_CDED;
+            icc_ctx = fpfw_init_get_handle("icc_cded_mbx");
+        }
+
+        crash_dump_config_icc(icc_config_type, icc_ctx);
+        crash_dump_register_accel_ext_mmio(accel_type);
+    }
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

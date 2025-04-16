@@ -232,6 +232,13 @@ bool __wrap_idhw_is_single_die_boot_en()
     return mock_type(bool);
 }
 
+bool __wrap_accel_is_isolation_enabled(ACCEL_ID accel_type)
+{
+    check_expected(accel_type);
+
+    return mock_type(bool);
+}
+
 /*------------- Test cases ----------------*/
 
 TEST_FUNCTION(test_icc_hspmbx_init, nullptr, nullptr)
@@ -306,6 +313,10 @@ TEST_FUNCTION(test_icc_sdm_mbx_init, nullptr, nullptr)
     // Set up expectations
     DFWK_THREADX_HOST test_host = {};
 
+    // SDM isolation
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_SDM);
+    will_return(__wrap_accel_is_isolation_enabled, false);
+
     //! Verify wrapped APIs are invoked in order
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_function_call(__wrap_DfwkDeviceInitialize);
@@ -335,8 +346,26 @@ TEST_FUNCTION(test_icc_sdm_mbx_init, nullptr, nullptr)
     assert_non_null(result.associated_handle);
 }
 
+TEST_FUNCTION(test_icc_sdm_mbx_init_isolation, nullptr, nullptr)
+{
+    // SDM isolation
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_SDM);
+    will_return(__wrap_accel_is_isolation_enabled, true);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_icc_sdm_mbx.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_STATUS_SUCCESS);
+    assert_null(result.associated_handle);
+}
+
 TEST_FUNCTION(test_icc_sdm_mbx_init__fail1, nullptr, nullptr)
 {
+    // SDM isolation
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_SDM);
+    will_return(__wrap_accel_is_isolation_enabled, false);
+
     //! Verify wrapped APIs are invoked in order
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_FAIL);
@@ -353,6 +382,10 @@ TEST_FUNCTION(test_icc_sdm_mbx_init__fail2, nullptr, nullptr)
 {
     // Set up expectations
     DFWK_THREADX_HOST test_host = {};
+
+    // SDM isolation
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_SDM);
+    will_return(__wrap_accel_is_isolation_enabled, false);
 
     //! Verify wrapped APIs are invoked in order
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
@@ -373,6 +406,10 @@ TEST_FUNCTION(test_icc_sdm_mbx_init__fail3, nullptr, nullptr)
 {
     // Set up expectations
     DFWK_THREADX_HOST test_host = {};
+
+    // SDM isolation
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_SDM);
+    will_return(__wrap_accel_is_isolation_enabled, false);
 
     //! Verify wrapped APIs are invoked in order
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
@@ -406,6 +443,10 @@ TEST_FUNCTION(test_icc_sdm_mbx_init__fail4, nullptr, nullptr)
 {
     // Set up expectations
     DFWK_THREADX_HOST test_host = {};
+
+    // SDM isolation
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_SDM);
+    will_return(__wrap_accel_is_isolation_enabled, false);
 
     //! Verify wrapped APIs are invoked in order
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
@@ -441,6 +482,10 @@ TEST_FUNCTION(test_icc_cded_mbx_init, nullptr, nullptr)
     // Set up expectations
     DFWK_THREADX_HOST test_host = {};
 
+    // CDED isolation
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_CDED);
+    will_return(__wrap_accel_is_isolation_enabled, false);
+
     //! Verify wrapped APIs are invoked in order
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
@@ -470,8 +515,26 @@ TEST_FUNCTION(test_icc_cded_mbx_init, nullptr, nullptr)
     assert_non_null(result.associated_handle);
 }
 
+TEST_FUNCTION(test_icc_cded_mbx_init_isolation, nullptr, nullptr)
+{
+    // CDED isolation
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_CDED);
+    will_return(__wrap_accel_is_isolation_enabled, true);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_icc_cded_mbx.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_STATUS_SUCCESS);
+    assert_null(result.associated_handle);
+}
+
 TEST_FUNCTION(test_icc_cded_mbx_init__fail1, nullptr, nullptr)
 {
+    // CDED isolation
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_CDED);
+    will_return(__wrap_accel_is_isolation_enabled, false);
+
     //! Verify wrapped APIs are invoked in order
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_fpfw_mbox_icc_transport_dfwk_device_init, FPFW_STATUS_FAIL);
@@ -488,6 +551,10 @@ TEST_FUNCTION(test_icc_cded_mbx_init__fail2, nullptr, nullptr)
 {
     // Set up expectations
     DFWK_THREADX_HOST test_host = {};
+
+    // CDED isolation
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_CDED);
+    will_return(__wrap_accel_is_isolation_enabled, false);
 
     //! Verify wrapped APIs are invoked in order
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
@@ -508,6 +575,10 @@ TEST_FUNCTION(test_icc_cded_mbx_init__fail3, nullptr, nullptr)
 {
     // Set up expectations
     DFWK_THREADX_HOST test_host = {};
+
+    // CDED isolation
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_CDED);
+    will_return(__wrap_accel_is_isolation_enabled, false);
 
     //! Verify wrapped APIs are invoked in order
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
@@ -541,6 +612,10 @@ TEST_FUNCTION(test_icc_cded_mbx_init__fail4, nullptr, nullptr)
 {
     // Set up expectations
     DFWK_THREADX_HOST test_host = {};
+
+    // CDED isolation
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_CDED);
+    will_return(__wrap_accel_is_isolation_enabled, false);
 
     //! Verify wrapped APIs are invoked in order
     will_return_always(__wrap_idsw_get_die_id, DIE_0);

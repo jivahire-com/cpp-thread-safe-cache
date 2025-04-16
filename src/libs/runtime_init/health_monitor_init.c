@@ -8,6 +8,8 @@
  */
 
 /*------------- Includes -----------------*/
+#include <accelerator_ip.h>
+#include <accelip_id.h>
 #include <atu_api.h>
 #include <fpfw_init.h>
 #include <health_monitor.h>
@@ -113,14 +115,24 @@ FPFW_INIT_COMPONENT(hm_svc_hsp_init,
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }*/
 
-FPFW_INIT_COMPONENT(hm_svc_sdm_init, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_sdm_mbx"))
+FPFW_INIT_COMPONENT(hm_svc_sdm_init, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_sdm_mbx", "cfg_mgr"))
 {
-    hm_post_intercore_init(HM_INTERCORE_SDM, fpfw_init_get_handle("icc_sdm_mbx"));
+    /* Incase of SDM isolation skip HMM */
+    if (!accel_is_isolation_enabled(ACCEL_ID_SDM))
+    {
+        hm_post_intercore_init(HM_INTERCORE_SDM, fpfw_init_get_handle("icc_sdm_mbx"));
+    }
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(hm_svc_cded_init, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_cded_mbx"))
+FPFW_INIT_COMPONENT(hm_svc_cded_init, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_cded_mbx", "cfg_mgr"))
 {
-    hm_post_intercore_init(HM_INTERCORE_CDED, fpfw_init_get_handle("icc_cded_mbx"));
+    /* Incase of CDED isolation skip HMM */
+    if (!accel_is_isolation_enabled(ACCEL_ID_CDED))
+    {
+        hm_post_intercore_init(HM_INTERCORE_CDED, fpfw_init_get_handle("icc_cded_mbx"));
+    }
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

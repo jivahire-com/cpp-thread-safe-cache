@@ -10,6 +10,7 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET}
     PRIVATE
         atu
+        fwlib.lib.cfg_mgr
         fwlib.service.iccBase
         silibs::idsw
         silibs::idsw_kng
@@ -50,6 +51,8 @@ mock_target(${TARGET}
     atu_unmap
     configure_cdedss_hsp_system_addr_map
     configure_cdedss_vab_system_addr_map
+    config_get_sdm_isolation_enable
+    config_get_cded_isolation_enable
     crash_dump_bug_check
     FpFwAssert
     debug_print

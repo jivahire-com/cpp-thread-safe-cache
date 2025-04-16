@@ -12,8 +12,9 @@
 
 extern "C" {
 
-#include <FpFwUtils.h> // for FPFW_UNUSED
-#include <fpfw_init.h> // for fpfw_init_result_t, fpfw_init_component_t
+#include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <accelip_id.h> // for ACCEL_ID_SDM, ACCEL_ID_CDED
+#include <fpfw_init.h>  // for fpfw_init_result_t, fpfw_init_component_t
 #include <health_monitor.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -31,6 +32,8 @@ extern fpfw_init_component_t _fpfw_component_hm_post_init;
 extern fpfw_init_component_t _fpfw_component_hm_scp;
 extern fpfw_init_component_t _fpfw_component_hm_mcp;
 extern fpfw_init_component_t _fpfw_component_hm_cli_init;
+extern fpfw_init_component_t _fpfw_component_hm_svc_sdm_init;
+extern fpfw_init_component_t _fpfw_component_hm_svc_cded_init;
 
 /*------------- Functions ----------------*/
 //
@@ -72,6 +75,13 @@ void __wrap_hm_post_intercore_init(hm_intercore_type_t intercore_type, fpfw_icc_
 void __wrap_hm_cli_init()
 {
     function_called();
+}
+
+bool __wrap_accel_is_isolation_enabled(ACCEL_ID accel_type)
+{
+    check_expected(accel_type);
+
+    return mock_type(bool);
 }
 }
 
@@ -132,6 +142,58 @@ TEST_FUNCTION(hm_cli_init, nullptr, nullptr)
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_hm_cli_init.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(hm_svc_sdm_init, nullptr, nullptr)
+{
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_SDM);
+    will_return(__wrap_accel_is_isolation_enabled, false);
+    will_return_always(__wrap_fpfw_init_get_handle, (void*)1234);
+    expect_function_call_any(__wrap_hm_post_intercore_init);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_hm_svc_sdm_init.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(hm_svc_cded_init, nullptr, nullptr)
+{
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_CDED);
+    will_return(__wrap_accel_is_isolation_enabled, false);
+    will_return_always(__wrap_fpfw_init_get_handle, (void*)1234);
+    expect_function_call_any(__wrap_hm_post_intercore_init);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_hm_svc_cded_init.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(hm_svc_sdm_init_isolation, nullptr, nullptr)
+{
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_SDM);
+    will_return(__wrap_accel_is_isolation_enabled, true);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_hm_svc_sdm_init.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(hm_svc_cded_init_isolation, nullptr, nullptr)
+{
+    expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_CDED);
+    will_return(__wrap_accel_is_isolation_enabled, true);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_hm_svc_cded_init.init_fn();
 
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);

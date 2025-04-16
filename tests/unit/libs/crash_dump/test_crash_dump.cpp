@@ -978,6 +978,18 @@ TEST_FUNCTION(test_crash_dump_handler_icc_ctx_null, nullptr, nullptr)
     // Expect ICC core notification : no_op
 
     // Send ICC Accel notification : no_op
+    // SDM ICC context is not configured, so no notification is sent. Set state to NA
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
+    // CDED ICC context is not configured, so no notification is sent. Set state to NA
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
 
     // Expect ICC HSP notification : no_op
 

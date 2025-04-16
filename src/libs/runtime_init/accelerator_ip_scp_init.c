@@ -6,6 +6,7 @@
 /*------------- Includes -----------------*/
 #include <accel_intr.h>
 #include <accelerator_ip.h> // for scp_accelerators_init
+#include <accelip_id.h>     // for ACCEL_ID_CDED, ACCEL_ID_SDM
 #include <atu_init.h>
 #include <fpfw_init.h> // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMP...
 #include <idsw.h>
@@ -30,7 +31,7 @@
  */
 // FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh"))
 FPFW_INIT_COMPONENT(accel,
-                    FPFW_INIT_DEPENDENCIES("vab", "hw_ver", "accel_iso_cfg", "accel_intr_clnt", "nvic", "ddr", "accel_atu", "cd_pomesh", "virt_irq"))
+                    FPFW_INIT_DEPENDENCIES("vab", "hw_ver", "accel_iso_cfg", "accel_intr_clnt", "nvic", "ddr", "accel_atu", "cd_pomesh", "virt_irq", "cfg_mgr"))
 {
     // Update accel irq numbers used in irq init
     accel_intr_set_irq_num_for_accel(ACCEL_ID_SDM, HW_INT_SDM_COMB_INT);
@@ -42,10 +43,16 @@ FPFW_INIT_COMPONENT(accel,
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(accel_atu, FPFW_INIT_DEPENDENCIES("vab", "hw_ver", "atu_svc", "nvic", "ddr"))
+FPFW_INIT_COMPONENT(accel_atu, FPFW_INIT_DEPENDENCIES("vab", "hw_ver", "atu_svc", "nvic", "ddr", "cfg_mgr"))
 {
     // Initialize the Accelerators
-    accel_atu_config();
+    for (ACCEL_ID accel_type = ACCEL_ID_SDM; accel_type < NUM_VALID_ACCEL_ID; accel_type++)
+    {
+        if (!accel_is_isolation_enabled(accel_type))
+        {
+            accel_atu_config(accel_type);
+        }
+    }
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

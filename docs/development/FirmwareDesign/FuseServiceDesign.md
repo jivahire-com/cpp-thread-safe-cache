@@ -256,7 +256,7 @@ typedef union
 
 The format of this buffer also represents override data fetched from SPI flash through HSP.
  
-int apply_fuse_override(const uintptr_t override_buffer);
+int fuse_override(const uintptr_t override_buffer);
 
 /*!
  * @brief Apply Fuse overrides, ignoring valids. This API should be used on unfused parts to apply
@@ -268,7 +268,7 @@ int apply_fuse_override(const uintptr_t override_buffer);
  * @retval ::FAILURE  the operation did not succeed
  * @return One of the standard error codes.
  */
-silibs_status_t apply_fuse_override_ignoring_valids(const uintptr_t override_buffer);
+silibs_status_t fuse_override_ignoring_valids(const uintptr_t override_buffer);
 
 /* 
  *@brief Distribute fuses to CSRs matching the given phase
@@ -305,7 +305,7 @@ typedef enum
 
 } FUSE_DISTRIBUTION_MINOR_PHASE;
 
-silibs_status_t distribute_fuses(const FUSE_DISTRIBUTION_MAJOR_PHASE phase_maj,
+silibs_status_t fuse_distribution(const FUSE_DISTRIBUTION_MAJOR_PHASE phase_maj,
                                  const FUSE_DISTRIBUTION_MINOR_PHASE phase_min,
                                  const fuse_dist_exclude_range_t *exclude_list, const uint32_t exclude_list_count);
 ```

@@ -29,7 +29,7 @@ unit_test_target(${TARGET})
 
 mock_target(${TARGET}
     idsw_get_platform_sdv
-    read_fuse
+    fuse_read
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

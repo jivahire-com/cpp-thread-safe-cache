@@ -14,6 +14,7 @@ target_link_libraries(${TARGET}
     ms::lib::fuse_artifacts_lib
     ms::lib::register_headers
     silibs::fuse
+    silibs::fuse_common
     silibs::idsw_kng
     silibs::kng_silibs_platform
 )

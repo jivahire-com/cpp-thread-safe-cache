@@ -60,7 +60,7 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
     return mock_type(KNG_PLAT_ID);
 }
 
-uint64_t __wrap_read_fuse(const unsigned int fuse_bit_offset, const unsigned int fuse_bit_size)
+uint64_t __wrap_fuse_read(const unsigned int fuse_bit_offset, const unsigned int fuse_bit_size)
 {
     check_expected(fuse_bit_offset);
     check_expected(fuse_bit_size);
@@ -123,17 +123,18 @@ TEST_FUNCTION(test_platform_power_fuses_get_dts_coeff_tile_supported, set_power_
 
     for (uint32_t i = 0; i < 2; i++)
     {
-        expect_value(__wrap_read_fuse, fuse_bit_offset, y_offset);
-        expect_value(__wrap_read_fuse, fuse_bit_size, y_width);
-        will_return(__wrap_read_fuse, 6);
+        expect_value(__wrap_fuse_read, fuse_bit_offset, y_offset);
+        expect_value(__wrap_fuse_read, fuse_bit_size, y_width);
+        will_return(__wrap_fuse_read, 6);
 
-        expect_value(__wrap_read_fuse, fuse_bit_offset, k_offset);
-        expect_value(__wrap_read_fuse, fuse_bit_size, k_width);
-        will_return(__wrap_read_fuse, 5);
+        expect_value(__wrap_fuse_read, fuse_bit_offset, k_offset);
+        expect_value(__wrap_fuse_read, fuse_bit_size, k_width);
+        will_return(__wrap_fuse_read, 5);
 
         k_offset += (k_width * coeff_spacing);
         y_offset += (y_width * coeff_spacing);
     }
+
     platform_power_fuses_get_dts_coeff_tile(dts_coeff, count);
     for (uint32_t i = 0; i < count; i++)
     {
@@ -162,13 +163,13 @@ TEST_FUNCTION(test_platform_power_fuses_get_dts_coeff_soctop_supported, set_powe
 
     for (uint32_t i = 0; i < 2; i++)
     {
-        expect_value(__wrap_read_fuse, fuse_bit_offset, y_offset);
-        expect_value(__wrap_read_fuse, fuse_bit_size, y_width);
-        will_return(__wrap_read_fuse, 6);
+        expect_value(__wrap_fuse_read, fuse_bit_offset, y_offset);
+        expect_value(__wrap_fuse_read, fuse_bit_size, y_width);
+        will_return(__wrap_fuse_read, 6);
 
-        expect_value(__wrap_read_fuse, fuse_bit_offset, k_offset);
-        expect_value(__wrap_read_fuse, fuse_bit_size, k_width);
-        will_return(__wrap_read_fuse, 5);
+        expect_value(__wrap_fuse_read, fuse_bit_offset, k_offset);
+        expect_value(__wrap_fuse_read, fuse_bit_size, k_width);
+        will_return(__wrap_fuse_read, 5);
 
         k_offset += (k_width * coeff_spacing);
         y_offset += (y_width * coeff_spacing);

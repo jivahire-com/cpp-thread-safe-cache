@@ -52,12 +52,12 @@ mock_target(${TARGET}
     idsw_get_platform_sdv
     idsw_get_die_id
     fuse_dma_copy_to_ram_blocking
-    read_fuse
+    fuse_read
     read_core_defect_fuses
-    apply_fuse_override
-    distribute_fuses
+    fuse_override
+    fuse_distribution
     trigger_debugger_for_manual_overrides
-    apply_fuse_override_ignoring_valids
+    fuse_override_ignoring_valids
     fuse_dist_get_exclusion_list
     fuse_get_exclude_list_fpga
     fpfw_init_get_handle

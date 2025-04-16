@@ -35,6 +35,7 @@ set(SILIB_LIST
     dmac
     dvfs
     fuse
+    fuse_common
     gpio
     gtimer
     i2c

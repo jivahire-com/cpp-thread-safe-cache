@@ -74,7 +74,7 @@ silibs_status_t __wrap_fuse_dma_copy_to_ram_blocking()
     return mock_type(int);
 }
 
-int __wrap_read_fuse(const unsigned fuse_bit_offset, const unsigned fuse_bit_size)
+int __wrap_fuse_read(const unsigned fuse_bit_offset, const unsigned fuse_bit_size)
 {
     check_expected(fuse_bit_offset);
     check_expected(fuse_bit_size);
@@ -89,7 +89,7 @@ silibs_status_t __wrap_read_core_defect_fuses(uint32_t* fuse_dis_core_64_67, uin
     check_expected_ptr(fuse_dis_core_0_31);
     return mock_type(silibs_status_t);
 }
-silibs_status_t __wrap_apply_fuse_override(KNG_DIE_ID die_id, const uintptr_t override_buffer)
+silibs_status_t __wrap_fuse_override(KNG_DIE_ID die_id, const uintptr_t override_buffer)
 {
     check_expected(die_id);
     check_expected_ptr(override_buffer);
@@ -97,7 +97,7 @@ silibs_status_t __wrap_apply_fuse_override(KNG_DIE_ID die_id, const uintptr_t ov
     return SILIBS_SUCCESS;
 }
 
-silibs_status_t __wrap_apply_fuse_override_ignoring_valids(idsw_die_id_t die_id, const uintptr_t override_buffer)
+silibs_status_t __wrap_fuse_override_ignoring_valids(idsw_die_id_t die_id, const uintptr_t override_buffer)
 {
     check_expected(die_id);
     check_expected_ptr(override_buffer);
@@ -105,11 +105,11 @@ silibs_status_t __wrap_apply_fuse_override_ignoring_valids(idsw_die_id_t die_id,
     return 0;
 }
 
-silibs_status_t __wrap_distribute_fuses(KNG_DIE_ID die_id,
-                                        const FUSE_DISTRIBUTION_MAJOR_PHASE phase_maj,
-                                        const FUSE_DISTRIBUTION_MINOR_PHASE phase_min,
-                                        const fuse_dist_exclude_range_t* exclude_list,
-                                        const uint32_t exclude_list_count)
+silibs_status_t __wrap_fuse_distribution(KNG_DIE_ID die_id,
+                                         const FUSE_DISTRIBUTION_MAJOR_PHASE phase_maj,
+                                         const FUSE_DISTRIBUTION_MINOR_PHASE phase_min,
+                                         const fuse_dist_exclude_range_t* exclude_list,
+                                         const uint32_t exclude_list_count)
 {
     check_expected(die_id);
     check_expected(phase_maj);
@@ -118,7 +118,7 @@ silibs_status_t __wrap_distribute_fuses(KNG_DIE_ID die_id,
     check_expected(exclude_list_count);
 
     // Debug prints
-    printf("In __wrap_distribute_fuses:\n");
+    printf("In __wrap_fuse_distribution:\n");
     for (uint32_t i = 0; i < exclude_list_count; ++i)
     {
         printf("Exclusion list [%u]: start_addr=%llu, end_addr=%llu\n",
@@ -227,9 +227,9 @@ TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
     will_return_always(__wrap_fuse_dma_copy_to_ram_blocking, 0);
-    expect_value(__wrap_read_fuse, fuse_bit_offset, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET);
-    expect_value(__wrap_read_fuse, fuse_bit_size, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
-    will_return(__wrap_read_fuse, 1);
+    expect_value(__wrap_fuse_read, fuse_bit_offset, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET);
+    expect_value(__wrap_fuse_read, fuse_bit_size, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
+    will_return(__wrap_fuse_read, 1);
     kng_hsp_fuse_mailbox_msg msg = {};
     msg.fuse_req.header.cmd = HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ;
     msg.fuse_req.header.flags = HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED;
@@ -238,10 +238,10 @@ TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
     expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, sizeof(msg));
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
 
-    // Expectation for apply_fuse_override
-    expect_value(__wrap_apply_fuse_override, die_id, DIE_0);
-    expect_value(__wrap_apply_fuse_override, override_buffer, (uintptr_t)(SCP_EXP_FUSE_DATA_BASE));
-    expect_function_call(__wrap_apply_fuse_override);
+    // Expectation for fuse_override
+    expect_value(__wrap_fuse_override, die_id, DIE_0);
+    expect_value(__wrap_fuse_override, override_buffer, (uintptr_t)(SCP_EXP_FUSE_DATA_BASE));
+    expect_function_call(__wrap_fuse_override);
 
     will_return(__wrap_system_info_is_warm_start, false);
     expect_memory(__wrap_read_core_defect_fuses,
@@ -266,9 +266,9 @@ TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
 TEST_FUNCTION(test_read_fuse, NULL, NULL)
 {
     uint64_t fuse_data = 0;
-    expect_value(__wrap_read_fuse, fuse_bit_offset, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET);
-    expect_value(__wrap_read_fuse, fuse_bit_size, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
-    will_return_always(__wrap_read_fuse, 1);
+    expect_value(__wrap_fuse_read, fuse_bit_offset, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET);
+    expect_value(__wrap_fuse_read, fuse_bit_size, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
+    will_return_always(__wrap_fuse_read, 1);
     platform_read_for_fuse((uintptr_t)&fuse_data, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
 }
 
@@ -316,14 +316,14 @@ TEST_FUNCTION(test_fuse_distribution_SVP_PRE_MESH, NULL, NULL)
                fuse_dist_exclude_list1[i].end_addr);
     }
 
-    expect_any(__wrap_distribute_fuses, die_id);
-    expect_value(__wrap_distribute_fuses, phase_maj, POST_HSP_DIST_MAJOR);
-    expect_value(__wrap_distribute_fuses, phase_min, POST_HSP_DIST_MINOR);
-    expect_memory(__wrap_distribute_fuses, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
-    expect_value(__wrap_distribute_fuses, exclude_list_count, exclude_list_count1);
-    expect_function_call(__wrap_distribute_fuses);
+    expect_any(__wrap_fuse_distribution, die_id);
+    expect_value(__wrap_fuse_distribution, phase_maj, POST_HSP_DIST_MAJOR);
+    expect_value(__wrap_fuse_distribution, phase_min, POST_HSP_DIST_MINOR);
+    expect_memory(__wrap_fuse_distribution, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_fuse_distribution, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_fuse_distribution);
 
-    printf("Before distribute_fuses: die_id=DIE_0, phase_maj=POST_HSP_DIST_MAJOR, "
+    printf("Before fuse_distribution: die_id=DIE_0, phase_maj=POST_HSP_DIST_MAJOR, "
            "phase_min=POST_HSP_DIST_MINOR, exclude_list=%p, exclude_list_count=%u\n",
            (void*)fuse_dist_exclude_list1,
            exclude_list_count1);
@@ -374,38 +374,39 @@ TEST_FUNCTION(test_fuse_distribution_SVP_POST_MESH, NULL, NULL)
                fuse_dist_exclude_list1[i].end_addr);
     }
 
-    expect_value(__wrap_distribute_fuses, die_id, DIE_0);
-    expect_value(__wrap_distribute_fuses, phase_maj, POST_HSP_DIST_MAJOR);
-    expect_value(__wrap_distribute_fuses, phase_min, MESH_INIT_MINOR);
-    expect_memory(__wrap_distribute_fuses, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
-    expect_value(__wrap_distribute_fuses, exclude_list_count, exclude_list_count1);
-    expect_function_call(__wrap_distribute_fuses);
+    expect_value(__wrap_fuse_distribution, die_id, DIE_0);
+    expect_value(__wrap_fuse_distribution, phase_maj, POST_HSP_DIST_MAJOR);
+    expect_value(__wrap_fuse_distribution, phase_min, MESH_INIT_MINOR);
+    expect_memory(__wrap_fuse_distribution, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_fuse_distribution, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_fuse_distribution);
 
-    printf("Before distribute_fuses: die_id=DIE_0, phase_maj=POST_HSP_DIST_MAJOR, phase_min=MESH_INIT_MINOR, "
-           "exclude_list=%p, exclude_list_count=%u\n",
-           (void*)fuse_dist_exclude_list1,
-           exclude_list_count1);
+    printf(
+        "Before fuse_distribution: die_id=DIE_0, phase_maj=POST_HSP_DIST_MAJOR, phase_min=MESH_INIT_MINOR, "
+        "exclude_list=%p, exclude_list_count=%u\n",
+        (void*)fuse_dist_exclude_list1,
+        exclude_list_count1);
 
-    expect_value(__wrap_distribute_fuses, die_id, DIE_0);
-    expect_value(__wrap_distribute_fuses, phase_maj, POST_MESH_INIT_MAJOR);
-    expect_value(__wrap_distribute_fuses, phase_min, POST_MESH_INIT_MINOR);
-    expect_memory(__wrap_distribute_fuses, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
-    expect_value(__wrap_distribute_fuses, exclude_list_count, exclude_list_count1);
-    expect_function_call(__wrap_distribute_fuses);
+    expect_value(__wrap_fuse_distribution, die_id, DIE_0);
+    expect_value(__wrap_fuse_distribution, phase_maj, POST_MESH_INIT_MAJOR);
+    expect_value(__wrap_fuse_distribution, phase_min, POST_MESH_INIT_MINOR);
+    expect_memory(__wrap_fuse_distribution, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_fuse_distribution, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_fuse_distribution);
 
-    printf("Before distribute_fuses: die_id=DIE_0, phase_maj=POST_MESH_INIT_MAJOR, "
+    printf("Before fuse_distribution: die_id=DIE_0, phase_maj=POST_MESH_INIT_MAJOR, "
            "phase_min=POST_MESH_INIT_MINOR, exclude_list=%p, exclude_list_count=%u\n",
            (void*)fuse_dist_exclude_list1,
            exclude_list_count1);
 
-    expect_value(__wrap_distribute_fuses, die_id, DIE_0);
-    expect_value(__wrap_distribute_fuses, phase_maj, POST_MESH_INIT_MAJOR);
-    expect_value(__wrap_distribute_fuses, phase_min, POST_BRIDGE_INIT_MINOR);
-    expect_memory(__wrap_distribute_fuses, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
-    expect_value(__wrap_distribute_fuses, exclude_list_count, exclude_list_count1);
-    expect_function_call(__wrap_distribute_fuses);
+    expect_value(__wrap_fuse_distribution, die_id, DIE_0);
+    expect_value(__wrap_fuse_distribution, phase_maj, POST_MESH_INIT_MAJOR);
+    expect_value(__wrap_fuse_distribution, phase_min, POST_BRIDGE_INIT_MINOR);
+    expect_memory(__wrap_fuse_distribution, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_fuse_distribution, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_fuse_distribution);
 
-    printf("Before distribute_fuses: die_id=DIE_0, phase_maj=POST_MESH_INIT_MAJOR, "
+    printf("Before fuse_distribution: die_id=DIE_0, phase_maj=POST_MESH_INIT_MAJOR, "
            "phase_min=POST_BRIDGE_INIT_MINOR, exclude_list=%p, exclude_list_count=%u\n",
            (void*)fuse_dist_exclude_list1,
            exclude_list_count1);
@@ -458,14 +459,14 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_0, NULL, NULL)
     }
 
     // TODO: reinstate with // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2002810
-    expect_any(__wrap_distribute_fuses, die_id);
-    expect_value(__wrap_distribute_fuses, phase_maj, POST_HSP_DIST_MAJOR);
-    expect_value(__wrap_distribute_fuses, phase_min, POST_HSP_DIST_MINOR);
-    expect_memory(__wrap_distribute_fuses, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
-    expect_value(__wrap_distribute_fuses, exclude_list_count, exclude_list_count1);
-    expect_function_call(__wrap_distribute_fuses);
+    expect_any(__wrap_fuse_distribution, die_id);
+    expect_value(__wrap_fuse_distribution, phase_maj, POST_HSP_DIST_MAJOR);
+    expect_value(__wrap_fuse_distribution, phase_min, POST_HSP_DIST_MINOR);
+    expect_memory(__wrap_fuse_distribution, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_fuse_distribution, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_fuse_distribution);
 
-    printf("Before distribute_fuses: die_id=DIE_0, phase_maj=POST_HSP_DIST_MAJOR, "
+    printf("Before fuse_distribution: die_id=DIE_0, phase_maj=POST_HSP_DIST_MAJOR, "
            "phase_min=POST_HSP_DIST_MINOR, exclude_list=%p, exclude_list_count=%u\n",
            (void*)fuse_dist_exclude_list1,
            exclude_list_count1);
@@ -520,38 +521,39 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
     }
 
     // TODO: reinstate with // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2002810
-    expect_value(__wrap_distribute_fuses, die_id, DIE_0);
-    expect_value(__wrap_distribute_fuses, phase_maj, POST_HSP_DIST_MAJOR);
-    expect_value(__wrap_distribute_fuses, phase_min, MESH_INIT_MINOR);
-    expect_memory(__wrap_distribute_fuses, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
-    expect_value(__wrap_distribute_fuses, exclude_list_count, exclude_list_count1);
-    expect_function_call(__wrap_distribute_fuses);
+    expect_value(__wrap_fuse_distribution, die_id, DIE_0);
+    expect_value(__wrap_fuse_distribution, phase_maj, POST_HSP_DIST_MAJOR);
+    expect_value(__wrap_fuse_distribution, phase_min, MESH_INIT_MINOR);
+    expect_memory(__wrap_fuse_distribution, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_fuse_distribution, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_fuse_distribution);
 
-    printf("Before distribute_fuses: die_id=DIE_0, phase_maj=POST_HSP_DIST_MAJOR, phase_min=MESH_INIT_MINOR, "
-           "exclude_list=%p, exclude_list_count=%u\n",
-           (void*)fuse_dist_exclude_list1,
-           exclude_list_count1);
+    printf(
+        "Before fuse_distribution: die_id=DIE_0, phase_maj=POST_HSP_DIST_MAJOR, phase_min=MESH_INIT_MINOR, "
+        "exclude_list=%p, exclude_list_count=%u\n",
+        (void*)fuse_dist_exclude_list1,
+        exclude_list_count1);
 
-    expect_value(__wrap_distribute_fuses, die_id, DIE_0);
-    expect_value(__wrap_distribute_fuses, phase_maj, POST_MESH_INIT_MAJOR);
-    expect_value(__wrap_distribute_fuses, phase_min, POST_MESH_INIT_MINOR);
-    expect_memory(__wrap_distribute_fuses, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
-    expect_value(__wrap_distribute_fuses, exclude_list_count, exclude_list_count1);
-    expect_function_call(__wrap_distribute_fuses);
+    expect_value(__wrap_fuse_distribution, die_id, DIE_0);
+    expect_value(__wrap_fuse_distribution, phase_maj, POST_MESH_INIT_MAJOR);
+    expect_value(__wrap_fuse_distribution, phase_min, POST_MESH_INIT_MINOR);
+    expect_memory(__wrap_fuse_distribution, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_fuse_distribution, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_fuse_distribution);
 
-    printf("Before distribute_fuses: die_id=DIE_0, phase_maj=POST_MESH_INIT_MAJOR, "
+    printf("Before fuse_distribution: die_id=DIE_0, phase_maj=POST_MESH_INIT_MAJOR, "
            "phase_min=POST_MESH_INIT_MINOR, exclude_list=%p, exclude_list_count=%u\n",
            (void*)fuse_dist_exclude_list1,
            exclude_list_count1);
 
-    expect_value(__wrap_distribute_fuses, die_id, DIE_0);
-    expect_value(__wrap_distribute_fuses, phase_maj, POST_MESH_INIT_MAJOR);
-    expect_value(__wrap_distribute_fuses, phase_min, POST_BRIDGE_INIT_MINOR);
-    expect_memory(__wrap_distribute_fuses, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
-    expect_value(__wrap_distribute_fuses, exclude_list_count, exclude_list_count1);
-    expect_function_call(__wrap_distribute_fuses);
+    expect_value(__wrap_fuse_distribution, die_id, DIE_0);
+    expect_value(__wrap_fuse_distribution, phase_maj, POST_MESH_INIT_MAJOR);
+    expect_value(__wrap_fuse_distribution, phase_min, POST_BRIDGE_INIT_MINOR);
+    expect_memory(__wrap_fuse_distribution, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_fuse_distribution, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_fuse_distribution);
 
-    printf("Before distribute_fuses: die_id=DIE_0, phase_maj=POST_MESH_INIT_MAJOR, "
+    printf("Before fuse_distribution: die_id=DIE_0, phase_maj=POST_MESH_INIT_MAJOR, "
            "phase_min=POST_BRIDGE_INIT_MINOR, exclude_list=%p, exclude_list_count=%u\n",
            (void*)fuse_dist_exclude_list1,
            exclude_list_count1);
@@ -596,9 +598,9 @@ TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
-    expect_value(__wrap_read_fuse, fuse_bit_offset, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET);
-    expect_value(__wrap_read_fuse, fuse_bit_size, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
-    will_return(__wrap_read_fuse, 0);
+    expect_value(__wrap_fuse_read, fuse_bit_offset, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET);
+    expect_value(__wrap_fuse_read, fuse_bit_size, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH);
+    will_return(__wrap_fuse_read, 0);
     will_return(__wrap_fuse_dma_copy_to_ram_blocking, 1);
 
     // Mock ICC send/receive function
@@ -610,10 +612,10 @@ TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
     expect_memory(__wrap_fpfw_icc_base_send_recv_sync, output_recv_bytes, &output_recv_bytes, sizeof(output_recv_bytes));
     expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, sizeof(msg));
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-    // Expectation for apply_fuse_override
-    expect_value(__wrap_apply_fuse_override_ignoring_valids, die_id, DIE_0);
-    expect_value(__wrap_apply_fuse_override_ignoring_valids, override_buffer, (uintptr_t)(SCP_EXP_FUSE_DATA_BASE));
-    expect_function_call(__wrap_apply_fuse_override_ignoring_valids);
+    // Expectation for fuse_override
+    expect_value(__wrap_fuse_override_ignoring_valids, die_id, DIE_0);
+    expect_value(__wrap_fuse_override_ignoring_valids, override_buffer, (uintptr_t)(SCP_EXP_FUSE_DATA_BASE));
+    expect_function_call(__wrap_fuse_override_ignoring_valids);
 
     will_return(__wrap_system_info_is_warm_start, false);
     expect_memory(__wrap_read_core_defect_fuses,

@@ -195,7 +195,7 @@ int platform_read_for_fuse(const uintptr_t fuse_store_addr, const uint64_t fuse_
         printf(FUSE_NAME "Requested Fuse Size in bits not valid(Min:%d Max:%d bits) \n", 1, MAX_BITS_PER_FUSE);
         return FPFW_INIT_STATUS_E_UNKNOWN_ID;
     }
-    fuse_data = read_fuse(fuse_bit_offset, fuse_bit_size);
+    fuse_data = fuse_read(fuse_bit_offset, fuse_bit_size);
     // number of valid bytes to copy from fuse_data
     size_t fuse_size = ((fuse_bit_size + (BITS_PER_BYTE - 1)) / BITS_PER_BYTE);
     memcpy((void*)fuse_store_addr, (void*)&fuse_data, fuse_size);
@@ -222,10 +222,13 @@ int platform_fuse_override()
         printf(FUSE_NAME "copy_to_ram status=%d\n", status);
         BUG_ASSERT_PARAM((status == SILIBS_SUCCESS), status, SILIBS_SUCCESS);
 
+        /* Enable fuse feature once DMA fuse copy is successful */
+        fuse_feature_enable(true);
+
         if (!config_get_fuse_knobs().fuse_ignore_ifwi_overrides)
         {
             const bool is_fused_part =
-                (read_fuse(SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH) != 0);
+                (fuse_read(SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH) != 0);
             printf(FUSE_NAME "if fused part [%d] \n", is_fused_part);
             // wait for the HSP Fuse for HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ so I will only pass for SVP
             if (plat_id == PLATFORM_RVP_EVT_SILICON)
@@ -255,7 +258,7 @@ int platform_fuse_override()
             {
                 printf(FUSE_NAME "Unfused part with fuse overrides in SPI. Applying overrides ignoring "
                                  "per-fuse valids.\n");
-                status = apply_fuse_override_ignoring_valids(die_id, Kingsgate_fuse_override_buffer_location);
+                status = fuse_override_ignoring_valids(die_id, Kingsgate_fuse_override_buffer_location);
                 FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_IGNORE_VALIDS);
                 if (status != SILIBS_SUCCESS)
                 {
@@ -271,7 +274,7 @@ int platform_fuse_override()
             else
             {
                 printf(FUSE_NAME "Fused part with fuse overrides in SPI. Applying all valid overrides.\n");
-                status = apply_fuse_override(die_id, Kingsgate_fuse_override_buffer_location);
+                status = fuse_override(die_id, Kingsgate_fuse_override_buffer_location);
                 FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_WITH_OVERRIDES);
 
                 if (status != SILIBS_SUCCESS)
@@ -353,7 +356,7 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
     {
         if (stage == FUSE_DISTRIBUTION_STAGE_POST_HSP)
         {
-            status = distribute_fuses(die_id, POST_HSP_DIST_MAJOR, POST_HSP_DIST_MINOR, fuse_dist_exclude_list, exclude_list_count);
+            status = fuse_distribution(die_id, POST_HSP_DIST_MAJOR, POST_HSP_DIST_MINOR, fuse_dist_exclude_list, exclude_list_count);
             FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR0);
             if (status != SILIBS_SUCCESS)
             {
@@ -364,7 +367,7 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
         }
         else if (stage == FUSE_DISTRIBUTION_STAGE_POST_HSP_MESH_INIT)
         {
-            status = distribute_fuses(die_id, POST_HSP_DIST_MAJOR, MESH_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
+            status = fuse_distribution(die_id, POST_HSP_DIST_MAJOR, MESH_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
             FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR1);
             if (status != SILIBS_SUCCESS)
             {
@@ -375,7 +378,7 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
         }
         else if (stage == FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT)
         {
-            status = distribute_fuses(die_id, POST_MESH_INIT_MAJOR, POST_MESH_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
+            status = fuse_distribution(die_id, POST_MESH_INIT_MAJOR, POST_MESH_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
             FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR4_MINOR0);
             if (status != SILIBS_SUCCESS)
             {
@@ -386,7 +389,7 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
         }
         else if (stage == FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT_BRIDGE_INIT)
         {
-            status = distribute_fuses(die_id, POST_MESH_INIT_MAJOR, POST_BRIDGE_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
+            status = fuse_distribution(die_id, POST_MESH_INIT_MAJOR, POST_BRIDGE_INIT_MINOR, fuse_dist_exclude_list, exclude_list_count);
             FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR4_MINOR1);
             if (status != SILIBS_SUCCESS)
             {

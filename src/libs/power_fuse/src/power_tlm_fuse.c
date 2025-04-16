@@ -20,9 +20,7 @@
 #include <silibs_platform.h> // silibs status and result
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define MAX_BYTES_PER_FUSE 8
-#define MAX_BITS_PER_FUSE  (MAX_BYTES_PER_FUSE * CHAR_BIT)
-#define BITS_PER_BYTE      CHAR_BIT
+#define BITS_PER_BYTE CHAR_BIT
 /**
  * @brief isFuseServiceUp flag to check if fuse service is already up or not , only needed on SCP
  * on MCP it is expected that fuse service will already be up and running  when
@@ -120,7 +118,7 @@ static fpfw_status_t platform_power_fuse_read(const uintptr_t fuse_store_addr,
         FPFW_ET_LOG(RequestedFuseBitReadSizeInValid, fuse_bit_size);
         return FPFW_STATUS_INVALID_ARGS;
     }
-    fuse_data = read_fuse(fuse_bit_offset, fuse_bit_size);
+    fuse_data = fuse_read(fuse_bit_offset, fuse_bit_size);
     // number of valid bytes to copy from fuse_data
     size_t fuse_size = ((fuse_bit_size + (BITS_PER_BYTE - 1)) / BITS_PER_BYTE);
     memcpy((void*)fuse_store_addr, (void*)&fuse_data, fuse_size);

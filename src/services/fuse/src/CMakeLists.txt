@@ -39,6 +39,7 @@ target_link_libraries(${TARGET}
     ms::lib::utils
     ms::service::sds_service
     silibs::fuse
+    silibs::fuse_common
     silibs::idsw
     silibs::idsw_kng
     silibs::platform

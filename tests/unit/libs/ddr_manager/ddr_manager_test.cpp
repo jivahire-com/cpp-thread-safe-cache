@@ -55,7 +55,6 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 static fpfw_icc_base_ctx_t* icc_ctx;
-static bool g_should_wrap_idsw_get_platform_sdv = false;
 mscp_exp_spi_sync_point_t d2d_sync_point_test = {};
 uint8_t test_dq_training_margin[DDRSS_PHY_TRAINING_MARGIN_SIZE_BYTES] = {0};
 
@@ -148,18 +147,6 @@ bool __wrap_system_info_is_hsp_present()
 bool __wrap_system_info_is_warm_start()
 {
     return mock_type(bool);
-}
-
-KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
-{
-    if (g_should_wrap_idsw_get_platform_sdv)
-    {
-        return mock_type(KNG_PLAT_ID);
-    }
-    else
-    {
-        return PLATFORM_RVP_EVT_SILICON;
-    }
 }
 
 int __wrap_ddrss_phy_get_training_margin(uint32_t mc, ddrss_phy_training_dq_margin_t* ddrss_phy_training_margin)

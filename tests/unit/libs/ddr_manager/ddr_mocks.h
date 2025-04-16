@@ -7,6 +7,8 @@
 
 extern "C"{
 extern bool in_setup_teardown;
+extern bool g_should_wrap_idsw_get_platform_sdv;
+
 int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry);
 int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry);
 uint8_t __wrap_mmio_read8(volatile uint8_t* addr);
@@ -19,4 +21,5 @@ bool __wrap_ddr_manager_platform_is_polling_supported();
 bool __wrap_config_get_borgens_1gb_ddr_reserve_enable();
 ddrss_phy_training_dq_margin_t* __wrap_ddrss_get_training_margin_base();
 KNG_DIE_ID __wrap_idsw_get_die_id();
+KNG_PLAT_ID __wrap_idsw_get_platform_sdv();
 }

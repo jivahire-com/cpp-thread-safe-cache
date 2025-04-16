@@ -16,12 +16,13 @@
 #include "memory_map/ddrss_reserved_regions.h"
 
 /*-- Symbolic Constant Macros (defines) --*/
-
+extern ddrss_memory_region_t outgoing_memory_map[];
 
 /*----------- Typedefs -------------------*/
 
-/*--------Funciton Prototypes-----------*/
+/*--------Function Prototypes-----------*/
 int sort_reserved_regions(const ddrss_memory_region_t reservations[], uint32_t num_rsvd, ddrss_memory_region_t out_sorted[]);
+int sort_reserved_regions_inplace(ddrss_memory_region_t regions[], uint32_t num_rsvd);
 int check_reservation_order(const ddrss_memory_region_t reservations[]);
 int ddrmap_add_reservations(const ddrss_memory_region_t in_mmap[],
                             const ddrss_memory_region_t reservations[],
@@ -59,6 +60,13 @@ void reformat_incoming_memory_map(const ddrss_sys_mem_region_t **mem_regions);
  *   |  lower   |  Region  |   upper  |   |  Region      |     remainder   |
  *   +----------+----------+----------+   +--------------+-----------------+
  */
-#define ALLOWANCE_FOR_EMPTY_ADDRESS_RANGES (6)
-#define MAX_MEMORY_REGIONS       (DDRSS_MAX_MEM_REGIONS + ARRAY_OF_RSVD_REGIONS_COUNT + ALLOWANCE_FOR_EMPTY_ADDRESS_RANGES)
+#define ALLOWANCE_FOR_EMPTY_ADDRESS_RANGES (12)
+#define ALLOWANCE_FOR_BORGENS_RANGE (1)
+#define ALLOWANCE_FOR_SVP_RANGE (1)
+#define MAX_MEMORY_REGIONS       (DDRSS_MAX_MEM_REGIONS + ARRAY_OF_RSVD_REGIONS_COUNT + ALLOWANCE_FOR_EMPTY_ADDRESS_RANGES + ALLOWANCE_FOR_BORGENS_RANGE + ALLOWANCE_FOR_SVP_RANGE)
+
+// The reserved region for SVP from Bug#
+#define SVP_RESERVED_REGION_START (0x0000020290000000)
+#define SVP_RESERVED_REGION_END   (0x0000026000000000)
+#define SVP_RESERVED_REGION_SIZE  (SVP_RESERVED_REGION_END - SVP_RESERVED_REGION_START)
 

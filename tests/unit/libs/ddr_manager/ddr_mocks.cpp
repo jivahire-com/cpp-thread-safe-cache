@@ -28,6 +28,7 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+bool g_should_wrap_idsw_get_platform_sdv = false;
 
 /*------------- Functions ----------------*/
 
@@ -174,6 +175,18 @@ bool __wrap_ddrss_is_valid_local_mc(uint32_t mc)
 {
     FPFW_UNUSED(mc);
     return mock_type(bool);
+}
+
+KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
+{
+    if (g_should_wrap_idsw_get_platform_sdv)
+    {
+        return mock_type(KNG_PLAT_ID);
+    }
+    else
+    {
+        return PLATFORM_RVP_EVT_SILICON;
+    }
 }
 
 } // extern "C"

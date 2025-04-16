@@ -26,12 +26,19 @@
 #define NUM_DIMM_PER_DIE  (6) // Each die will address 6 DIMMs
 #define NUM_DIMM_TEMP_SENSORS (2) // Each DIMM will have 2 temperature sensors
 
+// SVP Reserved regions
+// Bug #2538992 - Limit 0x0000020290000000 - 0x0000026000000000 by setting Uefi Concealed attribute`
+#define SVP_DDRSS_RESERVED_REGION_START (0x0000020290000000)
+#define SVP_DDRSS_RESERVED_REGION_END   (0x0000026000000000)
+#define SVP_DDRSS_RESERVED_REGION_ATTRIBUTES (DRAM_ACCESS_ANY | UEFI_CONCEALED_REGION)
+
 #define MODULE_NAME "[DDR] "
 #define NEWLINE     "\n"
 
 #define DDR_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define DDR_LOG_CRIT(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 
+// #define DEBUG_PRINT_ENABLED (1) // Enable debug print statements
 #ifdef DEBUG_PRINT_ENABLED
 #define DDR_LOG_DEBUG(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #else
@@ -50,6 +57,7 @@ typedef union _kng_hsp_cmd_load_fw_mailbox_msg
 void ddr_worker_thread_func(ULONG pddr_service_ctx);
 void ddr_timer_cb(ULONG pddr_service_ctx);
 bool dimm_is_present(uint32_t dimm_local_idx);
+ddrss_memory_region_t* ddr_manager_get_outgoing_memory_map();
 
 /**
  * @brief Initializes DDR telemetry.

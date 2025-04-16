@@ -39,12 +39,12 @@ GENERATE_ARRAY_OF_RSVD_REGIONS
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
-void insert_range(ddrss_memory_region_t mmap[], int idx, uint64_t start, uint64_t end, int reserved_for_ap, int pas_mask);
+void insert_range(ddrss_memory_region_t mmap[], int idx, uint64_t start, uint64_t end, uint32_t pas_mask);
 void show_map(const ddrss_memory_region_t this_mmap[], int idx, bool show_all);
 static uint32_t MemoryMapPassToTFA(ddrss_memory_region_t mmap_tfa[]);
 
 /*-- Declarations (Statics and globals) --*/
-ddrss_memory_region_t appended_mmap_tfa[MAX_MEMORY_REGIONS] = {0};
+ddrss_memory_region_t outgoing_memory_map[MAX_MEMORY_REGIONS] = {0};
 
 /*------------- Functions ----------------*/
 /**
@@ -63,6 +63,9 @@ void ddr_create_memory_map()
     const ddrss_sys_mem_region_t* all_mem_regions = NULL;
     int status;
     int num_reserved_regions = ARRAY_OF_RSVD_REGIONS_COUNT;
+    bool add_svp_reserved_region = false;
+    bool add_1gb_reservation = false;
+    ddrss_memory_region_t* p_outgoing_memory_map = ddr_manager_get_outgoing_memory_map();
 
     // Return if not DIE_0
     if (idsw_get_die_id() != DIE_0)
@@ -71,10 +74,18 @@ void ddr_create_memory_map()
     }
 
     // Check the Borgens config knob to see if we need to insert an additional 1GB reserved range
-    bool add_1gb_reservation = config_get_borgens_1gb_ddr_reserve_enable();
-
-    if (add_1gb_reservation == true)
+    if (config_get_borgens_1gb_ddr_reserve_enable())
     {
+        add_1gb_reservation = true;
+        num_reserved_regions += 1;
+    }
+
+    // Check if platform is SVP / Limit the available system memory for SVP due to performance reasons
+    // Incoming _dram_rsvd_regions are not guarnateed to be in ascending order and will be sorted before inserting. This makes it safe to insert a range at the end of the array
+    if (IS_PLATFORM_SVP())
+    {
+        // Bug #2538992 - Limit available memory to SVP for performance
+        add_svp_reserved_region = true;
         num_reserved_regions += 1;
     }
 
@@ -99,8 +110,11 @@ void ddr_create_memory_map()
     reformat_incoming_memory_map(&all_mem_regions);
 
     // Check & sort the reserved region array into ascending order before splicing with the incoming memory
+    // sorted_reservations[] may be larger than _dram_rsvd_regions[] if the config knob is set to add 1GB
+    // reservation or if the platform is SVP.  Therefore, not switching over to sort_reserved_regions_inplace()
     sort_reserved_regions(_dram_rsvd_regions, num_reserved_regions, sorted_reservations);
 
+    // Reserve 1GB for validation if config knob is set
     if (add_1gb_reservation == true)
     {
         int terminating_array_idx = ddrmap_get_last_idx(sorted_reservations);
@@ -108,10 +122,27 @@ void ddr_create_memory_map()
         uint64_t start_of_1gb_reservation = get_end_address(sorted_reservations, terminating_array_idx - 1);
         uint64_t end_of_1gb_reservation = start_of_1gb_reservation + ONE_GB;
 
-        insert_range(sorted_reservations, terminating_array_idx, start_of_1gb_reservation, end_of_1gb_reservation, NOT_AVAILABLE_SYSMEM, DRAM_ACCESS_ANY);
-        insert_range(sorted_reservations, terminating_array_idx + 1, 0, 0, NOT_AVAILABLE_SYSMEM, DRAM_ACCESS_ANY);
+        insert_range(sorted_reservations, terminating_array_idx, start_of_1gb_reservation, end_of_1gb_reservation, DRAM_ACCESS_ANY);
+        insert_range(sorted_reservations, terminating_array_idx + 1, 0, 0, DRAM_ACCESS_ANY);
     }
 
+    show_map(sorted_reservations, ddrmap_get_last_idx(sorted_reservations), true);
+    if (add_svp_reserved_region == true)
+    {
+        // Insert SVP reserved region
+        int terminating_array_idx = ddrmap_get_last_idx(sorted_reservations);
+        insert_range(sorted_reservations,
+                     terminating_array_idx,
+                     SVP_DDRSS_RESERVED_REGION_START,
+                     SVP_DDRSS_RESERVED_REGION_END,
+                     SVP_DDRSS_RESERVED_REGION_ATTRIBUTES);
+
+        insert_range(sorted_reservations, terminating_array_idx + 1, 0, 0, DRAM_ACCESS_ANY);
+    }
+
+    sort_reserved_regions_inplace(sorted_reservations, num_reserved_regions);
+
+    show_map(sorted_reservations, ddrmap_get_last_idx(sorted_reservations), true);
     status = check_reservation_order(sorted_reservations);
     if (status != SILIBS_SUCCESS)
     {
@@ -121,14 +152,14 @@ void ddr_create_memory_map()
 
     // Add reserved regions
     // Walk the memory regions and insert reserved ranges.  Returns populated memory map as 3rd parameter
-    if (ddrmap_add_reservations((*all_mem_regions).mem_regions, sorted_reservations, appended_mmap_tfa) != SILIBS_SUCCESS)
+    if (ddrmap_add_reservations((*all_mem_regions).mem_regions, sorted_reservations, p_outgoing_memory_map) != SILIBS_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_ADD_RESERVED_RANGE_TO_MEMORY_MAP, ET_NOPARAM);
         DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 1);
     }
 
     // Pass to TF-A in Shared SRAM via SDS structure service
-    if (MemoryMapPassToTFA(appended_mmap_tfa) != DFWK_SUCCESS)
+    if (MemoryMapPassToTFA(p_outgoing_memory_map) != DFWK_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_USING_SDS_STRUCTURE, ET_NOPARAM);
         DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 2); //"Error using SDS structure"
@@ -226,7 +257,7 @@ int sort_reserved_regions(const ddrss_memory_region_t reservations[], uint32_t n
 {
     uint32_t rsvd_count = 0;
     int pre_idx = 0;
-    ddrss_memory_region_t curr_region[ARRAY_OF_RSVD_REGIONS_COUNT] = {};
+    ddrss_memory_region_t curr_region[num_rsvd] = {};
 
     for (size_t i = 0; i < num_rsvd; i++)
     {
@@ -262,6 +293,56 @@ int sort_reserved_regions(const ddrss_memory_region_t reservations[], uint32_t n
     return SILIBS_E_DATA;
 }
 
+int sort_reserved_regions_inplace(ddrss_memory_region_t regions[], uint32_t num_rsvd)
+{
+    // Check for null pointer input.
+    if (regions == NULL)
+    {
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_SORTING_RESERVED_MEMORY_MAP, ET_NOPARAM);
+        DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 9); // Error: Null pointer passed to sort_reserved_regions_inplace
+        return SILIBS_E_DATA;
+    }
+
+    // Check that there is at least one region.
+    if (num_rsvd == 0)
+    {
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_SORTING_RESERVED_MEMORY_MAP, ET_NOPARAM);
+        DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 10); // Error: Number of reserved regions is 0
+        return SILIBS_E_DATA;
+    }
+
+    // Insertion sort on the regions array based on start_address.
+    for (uint32_t i = 1; i < num_rsvd; i++)
+    {
+        ddrss_memory_region_t key = regions[i];
+
+        // If the termination marker is encountered, sorting is complete.
+        if (key.start_address == 0 && key.end_address == 0)
+        {
+            DDR_LOG_DEBUG("Termination marker encountered at index %u; sorting complete.", i);
+            return SILIBS_SUCCESS;
+        }
+
+        int j = i - 1;
+        while (j >= 0 && regions[j].start_address > key.start_address)
+        {
+            regions[j + 1] = regions[j];
+            j--;
+        }
+        regions[j + 1] = key;
+    }
+
+    // Verify that a termination marker exists in the sorted list.
+    if (!(regions[num_rsvd - 1].start_address == 0 && regions[num_rsvd - 1].end_address == 0))
+    {
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_RESERVED_ADDRESS_RANGE_NOT_TERMINATED, ET_NOPARAM);
+        DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 7); // Error: Reserved DDR address range is not terminated.
+        return SILIBS_E_DATA;
+    }
+
+    return SILIBS_SUCCESS;
+}
+
 /**
  *  Check the reservations are in ascending order & not overlapping
  *
@@ -277,8 +358,14 @@ int check_reservation_order(const ddrss_memory_region_t reservations[])
     uint64_t curr_start;
     uint64_t prev_end;
 
-    while (idx < ARRAY_OF_RSVD_REGIONS_COUNT)
+    while (idx < MAX_MEMORY_REGIONS)
     {
+        // Check for exit condition
+        if (reservations[idx].start_address == 0 && reservations[idx].end_address == 0)
+        {
+            return SILIBS_SUCCESS;
+        }
+
         curr_start = reservations[idx].start_address;
         prev_end = reservations[idx - 1].end_address;
 
@@ -347,12 +434,7 @@ int ddrmap_add_reservations(const ddrss_memory_region_t in_mmap[],
 
                 // set PAS per reserved regions requirement
                 int pas_mask = reservations[res_idx].attr.as_uint32;
-                insert_range(out_mmap,
-                             out_idx,
-                             reservations[res_idx].start_address,
-                             next_start,
-                             reservations[res_idx].attr.available_sysmem,
-                             pas_mask);
+                insert_range(out_mmap, out_idx, reservations[res_idx].start_address, next_start, pas_mask);
                 show_map(out_mmap, out_idx, false);
                 out_idx++;
                 res_idx++;
@@ -365,7 +447,6 @@ int ddrmap_add_reservations(const ddrss_memory_region_t in_mmap[],
                              out_idx,
                              next_start,
                              MIN(in_mmap[in_idx].end_address, reservations[res_idx].start_address),
-                             in_mmap[in_idx].attr.available_sysmem,
                              in_mmap[in_idx].attr.as_uint32);
                 next_start = reservations[res_idx].start_address == 0
                                  ? in_mmap[in_idx].end_address
@@ -381,7 +462,6 @@ int ddrmap_add_reservations(const ddrss_memory_region_t in_mmap[],
                              out_idx,
                              next_start,
                              MIN(in_mmap[in_idx].end_address, reservations[res_idx].end_address),
-                             reservations[res_idx].attr.available_sysmem,
                              in_mmap[in_idx].attr.as_uint32);
                 next_start = MIN(in_mmap[in_idx].end_address, reservations[res_idx].end_address);
                 show_map(out_mmap, out_idx, false);
@@ -393,12 +473,7 @@ int ddrmap_add_reservations(const ddrss_memory_region_t in_mmap[],
             else if (next_start < in_mmap[in_idx].end_address)
             {
                 // Here is a corner case where next reservation could be 0 to signify the end of the list
-                insert_range(out_mmap,
-                             out_idx,
-                             next_start,
-                             in_mmap[in_idx].end_address,
-                             in_mmap[in_idx].attr.available_sysmem,
-                             in_mmap[in_idx].attr.as_uint32);
+                insert_range(out_mmap, out_idx, next_start, in_mmap[in_idx].end_address, in_mmap[in_idx].attr.as_uint32);
                 next_start = reservations[res_idx].start_address == 0
                                  ? in_mmap[in_idx].end_address
                                  : MIN(in_mmap[in_idx].end_address, reservations[res_idx].start_address);
@@ -421,15 +496,13 @@ int ddrmap_add_reservations(const ddrss_memory_region_t in_mmap[],
  *      IN  - Array index where to insert next record
  *      IN  - starting address
  *      IN  - ending address
- *      IN  - attr.available_sysmem
  *      IN  - attr.pas_mask
  */
-void insert_range(ddrss_memory_region_t mmap[], int idx, uint64_t start, uint64_t end, int reserved_for_ap, int pas_mask)
+void insert_range(ddrss_memory_region_t mmap[], int idx, uint64_t start, uint64_t end, uint32_t pas_mask)
 {
     mmap[idx].start_address = start;
     mmap[idx].end_address = end;
     mmap[idx].attr.as_uint32 = pas_mask;
-    mmap[idx].attr.available_sysmem = reserved_for_ap;
 };
 
 /**
@@ -445,6 +518,7 @@ int ddrmap_get_last_idx(const ddrss_memory_region_t ddr_mmap[])
 {
     // Find the last element in the array (start == end == 0)
     uint32_t mem_idx = 0;
+
     while (mem_idx < MAX_MEMORY_REGIONS)
     {
         if ((ddr_mmap[mem_idx].start_address == 0) && (ddr_mmap[mem_idx].end_address == 0))
@@ -531,28 +605,38 @@ void show_map(const ddrss_memory_region_t this_mmap[], int idx, bool show_all)
     {
         for (int i = 0; i < idx; i++)
         {
-            DDR_LOG_DEBUG("Region: %d \n", i);
-            DDR_LOG_DEBUG(" \tstart: 0x%08lX%08lX \n",
+            DDR_LOG_DEBUG("Region: %d ", i);
+            DDR_LOG_DEBUG(" \tstart: 0x%08lX%08lX ",
                           (unsigned long)(this_mmap[i].start_address >> 32),
                           (unsigned long)(this_mmap[i].start_address & 0xFFFFFFFF));
-            DDR_LOG_DEBUG(" \tend:   0x%08lX%08lX \n",
+            DDR_LOG_DEBUG(" \tend:   0x%08lX%08lX ",
                           (unsigned long)(this_mmap[i].end_address >> 32),
                           (unsigned long)(this_mmap[i].end_address & 0xFFFFFFFF));
-            DDR_LOG_DEBUG(" \tflags.available_sysmem:     %d \n", (int)this_mmap[i].attr.available_sysmem);
-            DDR_LOG_DEBUG(" \tflags.pas_mask:           0x%X \n", (int)this_mmap[i].attr.as_uint32 & 0xf);
+            DDR_LOG_DEBUG(" \tflags.secure:             %d ", (int)this_mmap[i].attr.secure);
+            DDR_LOG_DEBUG(" \tflags.non_secure:         %d ", (int)this_mmap[i].attr.non_secure);
+            DDR_LOG_DEBUG(" \tflags.root:               %d ", (int)this_mmap[i].attr.root);
+            DDR_LOG_DEBUG(" \tflags.realm:              %d ", (int)this_mmap[i].attr.realm);
+            DDR_LOG_DEBUG(" \tflags.available_sysmem:   %d ", (int)this_mmap[i].attr.available_sysmem);
+            DDR_LOG_DEBUG(" \tflags.uefi_concealed:     %d ", (int)this_mmap[i].attr.uefi_concealed);
+            DDR_LOG_DEBUG(" \tflags.pas_mask:           0x%X ", (int)this_mmap[i].attr.as_uint32);
         }
     }
     else
     {
-        DDR_LOG_DEBUG(" Region: %d \n", idx);
-        DDR_LOG_DEBUG(" \tstart: 0x%08lX%08lX \n",
+        DDR_LOG_DEBUG(" Region: %d ", idx);
+        DDR_LOG_DEBUG(" \tstart: 0x%08lX%08lX ",
                       (unsigned long)(this_mmap[idx].start_address >> 32),
                       (unsigned long)(this_mmap[idx].start_address & 0xFFFFFFFF));
-        DDR_LOG_DEBUG(" \tend:   0x%08lX%08lX \n",
+        DDR_LOG_DEBUG(" \tend:   0x%08lX%08lX ",
                       (unsigned long)(this_mmap[idx].end_address >> 32),
                       (unsigned long)(this_mmap[idx].end_address & 0xFFFFFFFF));
-        DDR_LOG_DEBUG(" \tflags.available_sysmem:     %d \n", (int)this_mmap[idx].attr.available_sysmem);
-        DDR_LOG_DEBUG(" \tflags.pas_mask:           0x%X \n", (int)this_mmap[idx].attr.as_uint32 & 0xf);
+        DDR_LOG_DEBUG(" \tflags.secure:             %d ", (int)this_mmap[idx].attr.secure);
+        DDR_LOG_DEBUG(" \tflags.non_secure:         %d ", (int)this_mmap[idx].attr.non_secure);
+        DDR_LOG_DEBUG(" \tflags.root:               %d ", (int)this_mmap[idx].attr.root);
+        DDR_LOG_DEBUG(" \tflags.realm:              %d ", (int)this_mmap[idx].attr.realm);
+        DDR_LOG_DEBUG(" \tflags.available_sysmem:   %d ", (int)this_mmap[idx].attr.available_sysmem);
+        DDR_LOG_DEBUG(" \tflags.uefi_concealed:     %d ", (int)this_mmap[idx].attr.uefi_concealed);
+        DDR_LOG_DEBUG(" \tflags.pas_mask:           0x%X ", (int)this_mmap[idx].attr.as_uint32);
     }
 }
 

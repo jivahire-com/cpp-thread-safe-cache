@@ -175,3 +175,29 @@ void begin_link_training(PDFWK_SYNC_REQUEST_HEADER req)
 
     pciess_rp_initiate_link_training(&(rpss->rps[r->rp_index]));
 }
+
+int get_rp_ready(PDFWK_SYNC_REQUEST_HEADER req)
+{
+    pcie_sync_request_t* r = (pcie_sync_request_t*)req;
+    silibs_status_t sts = SILIBS_SUCCESS;
+
+    pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
+    FPFW_RUNTIME_ASSERT(rpss != NULL);
+
+    sts = pciess_rp_ready(&(rpss->rps[r->rp_index]));
+
+    return sts;
+}
+
+int get_rp_link_status(PDFWK_SYNC_REQUEST_HEADER req)
+{
+    pcie_sync_request_t* r = (pcie_sync_request_t*)req;
+    silibs_status_t sts = SILIBS_SUCCESS;
+
+    pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
+    FPFW_RUNTIME_ASSERT(rpss != NULL);
+
+    sts = pciess_rp_get_link_train_done(&(rpss->rps[r->rp_index]));
+
+    return sts;
+}

@@ -399,6 +399,44 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_hide_dpc, test_setup, test_teard
     rpss_workarounds->prod_rp_cfgs[0].hide_dpc = false;
 }
 
+TEST_FUNCTION(test_get_rp_ready_success, test_setup, test_teardown)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    r.header.RequestType = GET_RP_READY_REQUEST;
+    r.req_type = GET_RP_READY_REQUEST;
+    r.rpss_index = RPSS2;
+    r.rp_index = 0;
+
+    mock_pcie_ent.id = r.rpss_index;
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    will_return(__wrap_pciess_rp_ready, SILIBS_SUCCESS);
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_get_rp_link_status, test_setup, test_teardown)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    r.header.RequestType = GET_LINK_STATUS;
+    r.req_type = GET_LINK_STATUS;
+    r.rpss_index = RPSS2;
+    r.rp_index = 0;
+
+    mock_pcie_ent.id = r.rpss_index;
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    will_return(__wrap_pciess_rp_get_link_train_done, SILIBS_SUCCESS);
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+}
+
 TEST_FUNCTION(test_default_async_dispatch, test_setup, test_teardown)
 {
     /* Setup the request */

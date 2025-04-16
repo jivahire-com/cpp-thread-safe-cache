@@ -63,8 +63,9 @@ void rpss_req_completion_cb(PDFWK_ASYNC_REQUEST_HEADER req, void* ctx_ref)
     }
 
     /*
-     * Send new WAIT_FOR_EVENT async request to the Driver becasue we always have
-     * MAX_PENDING_WAIT_FOR_EVENT_PER_RP pending requests
+     * Send new WAIT_FOR_EVENT async requests to the driver because we should
+     * always have MAX_PENDING_WAIT_FOR_EVENT_PER_RP pending requests to not
+     * miss any interrupts/events.
      */
     send_async_wait_for_event(ctx, async_req->rp_index, 1);
 }

@@ -38,12 +38,14 @@ typedef enum _pcie_rp_sync_request_t
     POST_RP_INIT_REQUEST,
 	INITIATE_LINK_TRAINING,
     GET_RPSS_ENTITY_REQUEST,
+    GET_RP_READY_REQUEST,
+    GET_LINK_STATUS,
     CLI_REQUEST,
     PCIE_MAX_SYNC_REQ
 } pcie_rp_sync_request_t;
 
 /*
- * For now async callback just has a INT mask 
+ * For now async callback just has a INT mask
  * passed back to the service.
  */
 typedef struct _pcie_async_data_t

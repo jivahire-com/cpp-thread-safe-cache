@@ -28,8 +28,6 @@
 #include <stdio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define RPSS_PCIE_LINK_UP (BIT13)
-#define RPSS_INTU_STRIDE  (RPSS_ADDR_MAP_RPSS_INTU_IAGG_P1_ADDRESS - RPSS_ADDR_MAP_RPSS_INTU_IAGG_P0_ADDRESS)
 
 /*------------- Typedefs -----------------*/
 

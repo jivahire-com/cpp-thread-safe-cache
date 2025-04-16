@@ -20,6 +20,7 @@
 #include <pcie_ss_common.h> // pciess_entity
 #include <scp_pcie_manager.h>
 #include <stddef.h> // for size_t
+#include <stdint.h>
 #include <variable_services.h>
 #include <variable_services_mem.h>
 
@@ -53,6 +54,28 @@ void __wrap_DfwkAsyncRequestSetCompletionRoutine(PDFWK_ASYNC_REQUEST_HEADER Requ
     check_expected_ptr(Request);
     check_expected_ptr(CompletionRoutine);
     check_expected_ptr(CompletionContext);
+}
+
+int32_t __wrap_DfwkInterfaceSendSync(PDFWK_INTERFACE_HEADER Interface, PDFWK_SYNC_REQUEST_HEADER Request)
+{
+    assert_non_null(Interface);
+    assert_non_null(Request);
+    check_expected(Request->RequestType);
+
+    pcie_sync_request_t* req = (pcie_sync_request_t*)Request;
+
+    void* data = mock_ptr_type(pcie_ss_entity_t*);
+
+    if (Request->RequestType == GET_RPSS_ENTITY_REQUEST)
+    {
+        assert_non_null(data);
+        assert_non_null(req->p_requested_data);
+        pcie_ss_entity_t** rpss_ent = (pcie_ss_entity_t**)(req->p_requested_data);
+        *rpss_ent = (pcie_ss_entity_t*)data;
+    }
+
+    req->status = mock();
+    return mock_type(int32_t);
 }
 
 void __wrap_DfwkInterfaceSendAsync(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request)

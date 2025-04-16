@@ -183,3 +183,9 @@ silibs_status_t __wrap_oi_pcie_rp_dbi_hide_dpc_cap(pcie_rp_entity_t* rp)
     assert_non_null(rp);
     return mock_type(silibs_status_t);
 }
+
+silibs_status_t __wrap_pciess_rp_ready(pcie_rp_entity_t* rp)
+{
+    assert_non_null(rp);
+    return mock_type(silibs_status_t);
+}

@@ -71,6 +71,12 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
             r->status = SILIBS_SUCCESS;
         }
         break;
+    case (GET_RP_READY_REQUEST):
+        sts = get_rp_ready(incoming);
+        break;
+    case (GET_LINK_STATUS):
+        sts = get_rp_link_status(incoming);
+        break;
     case (CLI_REQUEST):
         handle_cli_request(r);
         break;

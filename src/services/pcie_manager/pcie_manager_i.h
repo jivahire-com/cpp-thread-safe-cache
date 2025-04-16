@@ -66,17 +66,7 @@ void send_start_link_training_requests(pcie_manager_context_t* ctx);
 void rpss_req_completion_cb(PDFWK_ASYNC_REQUEST_HEADER req, void* ctx);
 
 /**
- *  @brief Send Sync Request to pci driver to get the pciess entity of 
- *         the given rpss_index.
- *
- *  @param[in]  rpss_idx  rpss_index
-  *
- *  @return     RPSS Entity
- */
-pcie_ss_entity_t* send_sync_get_rpss_entity(uint8_t rpss_idx);
-
-/**
- *  @brief Get PCIE Manager COntext from the RPSS Index 
+ *  @brief Get PCIE Manager COntext from the RPSS Index
   *
  *  @param[in]  rpss_idx  rpss_index
   *
@@ -86,7 +76,7 @@ pcie_manager_context_t* scp_pcie_get_manager_context(uint8_t rpss_idx);
 
 /**
  * @brief Copies variable service data to RMSS RAM
- * 
+ *
  * @param target_addr RMSS ram address
  * @param source_ptr ptr to data to copy
  * @param size size of data

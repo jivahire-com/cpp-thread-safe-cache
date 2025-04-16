@@ -3,7 +3,6 @@ set(TARGET scp_pcie_manager.test)
 set(SOURCES
     pcie_manager_unit_tests.cpp
     pcie_mocks.c
-    pcie_silibs_mocks.c
 )
 
 add_executable(${TARGET} ${SOURCES})
@@ -27,7 +26,7 @@ target_link_libraries(${TARGET}
     silibs::kng_silibs_platform
     silibs::pcie
     silibs::pciess
-    silibs::pcr_rpss    
+    silibs::pcr_rpss
     silibs_platform
 )
 
@@ -47,9 +46,12 @@ coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
 mock_target(${TARGET}
+    # DFWK mocks
     DfwkAsyncRequestInitialize
     DfwkAsyncRequestSetCompletionRoutine
     DfwkInterfaceSendAsync
+    DfwkInterfaceSendSync
+    # Thread X mocks
     _txe_queue_create
     _txe_thread_create
     _txe_queue_send
@@ -58,15 +60,18 @@ mock_target(${TARGET}
     _txe_event_flags_set
     _txe_event_flags_get
     _txe_event_flags_delete
+    _txe_timer_delete
+    _txe_timer_create
+    # Driver mocks
     idsw_get_die_id
     pcie_dfwk_init
-    pciess_rp_get_link_train_done
     scp_pcie_get_manager_context
-    send_sync_get_rpss_entity
+    # SCP support mocks
+    accel_is_isolation_enabled
+    crash_dump_bug_check
     memcpy
     memset
     variable_serv_copy_to_rmss_ram
     variable_service_initialize_ctx
     variable_service_async_set_variable
-    accel_is_isolation_enabled
 )

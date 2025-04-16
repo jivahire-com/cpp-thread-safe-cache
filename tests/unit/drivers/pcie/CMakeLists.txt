@@ -70,18 +70,19 @@ mock_target(${TARGET}
     # Silibs mocks begin
     atu_map
     idsw_get_die_id
-    idsw_get_platform_sdv
+    pciess_rp_get_link_train_done
     intu_get_interrupt_status
+    idsw_get_platform_sdv
     pciess_get_entity
     pciess_config_entity
     pciess_config_ss_for_bifur
     pciess_deassert_por_reset
     pciess_rp_clear_intus
     pciess_rp_initiate_link_training
-    pciess_rp_get_link_train_done
     pciess_phys_sram_init_done
     pciess_rps_clear_intus
     pciess_rps_pre_rp_ready_init
+    pciess_rp_ready
     pciess_rps_ready
     pciess_rps_post_rp_ready_init
     pciess_probe

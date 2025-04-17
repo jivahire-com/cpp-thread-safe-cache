@@ -13,6 +13,7 @@
 
 #include <bug_check.h>
 #include <stddef.h>
+#include <string.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -268,21 +269,31 @@ void power_vcpu_precalculate_vf_currents(power_runconfig_t* p_runconfig, dvfs_co
             // no cores use this VFT
             continue;
         }
+
         // iterate over voltage/freq pairs in this table
         for (unsigned pstate_idx = p_runconfig->derived.vfts[vf_idx].min_plimit; pstate_idx < NUM_PSTATES; ++pstate_idx)
         {
+            uint8_t max_ldo_dac_idx = 0;
+            uint8_t crv_idx = 1;
+
+            if (p_dvfs_cfg->init_cfg.pex_features.itd_en == 0)
+            {
+                while (crv_idx < VFT_CURVE_COUNT_PER_CURVESET)
+                {
+                    if (p_dvfs_cfg->fuse_cfg.vft->vmat_info[max_ldo_dac_idx].ldo_dac_in[pstate_idx] <
+                        p_dvfs_cfg->fuse_cfg.vft->vmat_info[crv_idx].ldo_dac_in[pstate_idx])
+                    {
+                        max_ldo_dac_idx = crv_idx;
+                    }
+                    crv_idx++;
+                }
+            }
+
             const uint16_t core_mv = p_runconfig->derived.vfts[vf_idx].vf[pstate_idx].voltage_mv;
             const uint16_t core_MHz = p_runconfig->derived.vfts[vf_idx].vf[pstate_idx].freq_Mhz;
 
-            // the LDO code for this pstate
-            /* TODO: several interpolations below require an ldo_dac code; determine which
-             *       of the (up-to) 4 ITD-related curve's ldo_dac code we should be using.
-             *       MIN/MAX value, etc.
-             *
-             *       https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1888554/
-             */
             const uint16_t ldo_dac =
-                p_runconfig->dvfs_vft.curveset[vf_idx].curve[vf_idx].vmat_info[0].ldo_dac_in[pstate_idx]; // p_dvfs_cfg->fuse_cfg.vft->vmat_info[0].ldo_dac_in[pstate_idx];
+                p_runconfig->dvfs_vft.curveset[vf_idx].vmat_info[max_ldo_dac_idx].ldo_dac_in[pstate_idx];
 
             // interpolate cdyn for this LDO code
             const uint32_t cdyn_pf = power_vcpu_interpolate_from_points(&p_runconfig->fuses.core_cdyn[0],

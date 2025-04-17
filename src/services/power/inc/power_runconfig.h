@@ -18,14 +18,15 @@
 #include <fpfw_cfg_mgr.h>
 #include <pvt_struct.h>
 #include <scp_avs_driver.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 /* static config macros*/
-#define MAX_BYTES_PER_FUSE (8)
-#define BITS_PER_BYTE      (8)
-#define MAX_BITS_PER_FUSE  (MAX_BYTES_PER_FUSE * BITS_PER_BYTE)
+
+#define BITS_PER_BYTE  CHAR_BIT
+
 
 #define NUM_SOC_VM  18
 #define NUM_TILE_VM 4
@@ -47,7 +48,6 @@
 /* number of VFT curvesets */
 #define VFT_CURVE_COUNT_PER_CURVESET 4
 #define VFT_CURVESET_COUNT           7
-#define VFT_PER_SET                  4
 
 /* number of power samples for averaging of soc power output */
 #define SOC_POWER_AVG_COUNT 5
@@ -180,20 +180,13 @@ typedef struct _power_fuse_vf_curveset_t
     power_fuse_core_vf_t curveset[VFT_CURVESET_COUNT]; // curveset for VF table
 } power_fuse_vf_curveset_t;
 
-/**
- * @brief Struct for DVFS interpolated VF curves
- */
-typedef struct _power_dvfs_vf_curve_t
-{
-    dvfs_vft_t curve[VFT_CURVE_COUNT_PER_CURVESET]; // vf points for VF table
-} power_dvfs_vf_curve_t;
 
 /**
  * @brief Struct for DVFS interpolated VF curveset
  */
 typedef struct _power_dvfs_vf_curveset_t
 {
-    power_dvfs_vf_curve_t curveset[VFT_CURVESET_COUNT]; // curveset for VF table
+    dvfs_vft_t curveset[VFT_CURVESET_COUNT]; // curveset for VF table
 } power_dvfs_vf_curveset_t;
 
 /**
@@ -214,6 +207,7 @@ typedef struct _power_fuse_data_t
     power_fuse_tdp_t tdp_config; // tdp config used by mfg
     uint8_t v_ldo_dropout_mv;    // voltage in mV to add for ldo dropout
     uint8_t vcpu_guardband_mv;   // voltage in mV to add for Vin guardband
+    int8_t  curve_max_temp[NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1];
 } power_fuse_data_t;
 
 /**
@@ -251,7 +245,6 @@ typedef enum _power_control_loop_vr_names_t
     MPCL_VR_VD2D0P875,
     MPCL_VR_COUNT,
 } power_control_loop_vr_names_t;
-
 /**
  *  @brief Structure AVS bus, rail lookup
  */

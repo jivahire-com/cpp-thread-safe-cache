@@ -86,7 +86,7 @@ Function Initialize-SimEnv()
 
     # Set License Servers and Search Paths
     $env:ARMLMD_LICENSE_FILE="40002@wanlic.svceng.com"
-    $env:SNPSLMD_LICENSE_FILE="40003@wanlic.svceng.com"
+    $env:SNPSLMD_LICENSE_FILE = "40003@gem-lic-01.svceng.com;40003@wanlic.svceng.com"
     $env:SNPS_VPX_START_SIMULATION_TIMEOUT = 600
     $env:SNPS_VPSESSION_LAUNCH_TIMEOUT_SEC = 600
     $env:SNPS_VPX_DEFAULT_TIMEOUT = 600

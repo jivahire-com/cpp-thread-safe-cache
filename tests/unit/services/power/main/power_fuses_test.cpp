@@ -66,11 +66,6 @@ uint64_t __wrap_platform_read_fuse(const uintptr_t target_addr, const unsigned f
     return mock_type(uint64_t);
 }
 
-bool __wrap_power_fuses_is_power_hw_supported()
-{
-    return mock_type(bool);
-}
-
 } // extern "C"
 
 //
@@ -130,16 +125,6 @@ static int reset_run_config_to_empty(void** state)
 // Tests
 //
 
-POWER_TEST(read_fuse_power_hw_not_supported, NULL, NULL)
-{
-    power_fuse_data_t test_fuses = {};
-
-    will_return(__wrap_power_runconfig_get, &test_power_runconfig);
-    will_return(__wrap_power_fuses_is_power_hw_supported, false);
-
-    power_fuses_read(&test_fuses);
-}
-
 POWER_TEST(read_fuse_null_fuse_ptr, set_fuse_data_to_default, NULL)
 {
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
@@ -163,7 +148,6 @@ POWER_TEST(read_fuse_power_hw_supported, set_fuse_data_to_default, NULL)
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
 
     will_return(__wrap_power_runconfig_get, &test_power_runconfig);
-    will_return(__wrap_power_fuses_is_power_hw_supported, true);
     will_return_always(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
 
     if (!bugcheck_mock_return())
@@ -181,7 +165,6 @@ POWER_TEST(read_fuse_power_hw_supported_core_enabled, set_run_config_core_enable
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
 
     will_return(__wrap_power_runconfig_get, &test_power_runconfig);
-    will_return(__wrap_power_fuses_is_power_hw_supported, true);
     will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, -1);
 
     power_fuses_read(&test_fuses);
@@ -198,7 +181,6 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
 
     will_return_always(__wrap_power_runconfig_get, &test_power_runconfig);
-    will_return_always(__wrap_power_fuses_is_power_hw_supported, true);
 
     if (!bugcheck_mock_return())
     {
@@ -209,16 +191,16 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
 
     if (!bugcheck_mock_return())
     {
-        // power_fuses_read_memasst will fail
+        // power_fuses_read_vf will fail
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 6);
-        will_return(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
 
     if (!bugcheck_mock_return())
     {
         // power_fuses_read_memasst will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 104);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 398);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 9);
         power_fuses_read(&test_fuses);
     }
@@ -226,7 +208,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_get_ldodac_to_voltage will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 150);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 444);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
@@ -234,7 +216,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_get_dts_coeff_tile will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 152);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 446);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
@@ -242,7 +224,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_get_dts_coeff_soctop will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 221);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 515);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
@@ -250,7 +232,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_get_ldo_headroom will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 251);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 545);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
@@ -258,7 +240,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_get_vcpu_guardband will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 252);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 546);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
@@ -266,7 +248,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_vcpu_leakage will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 253);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 547);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 4);
         power_fuses_read(&test_fuses);
     }
@@ -274,7 +256,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_ldo_dyn will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 281);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 575);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 4);
         power_fuses_read(&test_fuses);
     }
@@ -282,7 +264,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_core_cdyn will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 289);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 583);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 2);
         power_fuses_read(&test_fuses);
     }
@@ -290,7 +272,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_process_id will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 295);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 589);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
@@ -298,7 +280,15 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // power_fuses_get_tdp_config will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 297);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 591);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
+        power_fuses_read(&test_fuses);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        // power_fuses_get_curve_temp will fail
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 590);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
@@ -411,13 +401,12 @@ POWER_TEST(get_dts_coeff_y_fuse_read_zero, set_fuse_data_to_zero, set_fuse_data_
     unsigned coeff_spacing = 0x2;
     dts_coeff_t dts_coeff = {};
 
-    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
-
     expect_any_always(__wrap_platform_read_fuse, target_addr);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
 
     will_return_always(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
 
     if (!bugcheck_mock_return())
     {
@@ -493,13 +482,12 @@ POWER_TEST(loadac_to_volage_zero_fuse_data, set_fuse_data_to_zero, set_fuse_data
 {
     dvfs_vf_slope_t slope_offset = {};
 
-    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
-
     expect_any_always(__wrap_platform_read_fuse, target_addr);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
 
     will_return_always(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
 
     if (!bugcheck_mock_return())
     {
@@ -705,13 +693,24 @@ POWER_TEST(get_tdp_config_first_fuse_read_fail, set_fuse_data_to_zero, set_fuse_
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
 
     will_return(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER);
-    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
 
     if (!bugcheck_mock_return())
     {
         // status check will fail
         power_fuses_get_tdp_config(&tdp_config);
     }
+}
+POWER_TEST(get_tdp_config_first_fuse_read_fail_success, set_fuse_data_to_zero, set_fuse_data_to_default)
+{
+    power_fuse_tdp_t tdp_config;
+
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+
+    expect_any_always(__wrap_platform_read_fuse, target_addr);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
+
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
 
     if (!bugcheck_mock_return())
     {
@@ -857,4 +856,42 @@ POWER_TEST(read_vf_success, set_fuse_data_to_zero, set_fuse_data_to_default)
     will_return_always(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
 
     assert_true((power_fuses_read_vf(&vf, ldo_offset) == FPFW_STATUS_SUCCESS));
+}
+
+POWER_TEST(read_curve_temp_success, set_fuse_data_to_zero, set_fuse_data_to_default)
+{
+    int8_t curve_max_temp[NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1];
+
+    expect_any_always(__wrap_platform_read_fuse, target_addr);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
+
+    will_return_always(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+
+    assert_true((power_fuses_get_curve_temp(curve_max_temp, NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1) == FPFW_STATUS_SUCCESS));
+}
+
+POWER_TEST(read_curve_temp_size_failure, set_fuse_data_to_zero, set_fuse_data_to_default)
+{
+    int8_t curve_max_temp[NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1];
+
+    assert_true((power_fuses_get_curve_temp(curve_max_temp, 0) == FPFW_STATUS_INVALID_ARGS));
+}
+
+POWER_TEST(read_curve_temp_null_array, set_fuse_data_to_zero, set_fuse_data_to_default)
+{
+    assert_true((power_fuses_get_curve_temp(NULL, NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1) == FPFW_STATUS_NULL_POINTER));
+}
+
+POWER_TEST(read_curve_temp_read_fail, set_fuse_data_to_zero, set_fuse_data_to_default)
+{
+    int8_t curve_max_temp[NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1];
+
+    expect_any_always(__wrap_platform_read_fuse, target_addr);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
+
+    will_return_always(__wrap_platform_read_fuse, FPFW_STATUS_FAIL);
+
+    assert_true((power_fuses_get_curve_temp(curve_max_temp, NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1) == FPFW_STATUS_FAIL));
 }

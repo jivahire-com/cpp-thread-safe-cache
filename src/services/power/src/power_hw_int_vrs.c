@@ -13,7 +13,6 @@
 #include "power_i.h"
 #include "power_loops_i.h"
 #include "power_runconfig.h"
-#include "power_stub_i.h"
 
 #include <DfwkDriver.h>
 #include <DfwkHost.h>

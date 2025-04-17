@@ -21,7 +21,6 @@ add_library(${TARGET}
         power_main.c
         power_remote_die.c
         power_runconfig.c
-        power_stub.c
         power_timer.c
         power_warmstart.c
         power_vcpu_calc.c
@@ -54,6 +53,7 @@ target_link_libraries(${TARGET}
         silibs::pvt
         silibs::sensor_ram_bridge
         silibs::fuse
+        silibs::fuse_common
     PRIVATE
         fwlib.dfwk
         fwlib.lib.interface.platform.errorhandler

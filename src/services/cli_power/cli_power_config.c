@@ -77,7 +77,6 @@ const power_cli_sub_command_dictionary_element_t power_cli_config_sub_command_di
     {"coremin",             (print_function)print_power_config_min_plimit,          POWER_IF_CMD_GET_RUNCONFIG_FUSES},
     {"lkgcalc",             (print_function)print_power_config_lkg,                 POWER_IF_CMD_GET_RUNCONFIG_FUSES},
     {"tel",                 (print_function)print_power_config_tel,                 POWER_IF_CMD_GET_RUNCONFIG_FUSES},
-    {"vft",                 (print_function)print_power_config_vft,                 POWER_IF_CMD_GET_RUNCONFIG_FUSES},
     {"vftpre",              (print_function)print_power_config_vftpre,              POWER_IF_CMD_GET_RUNCONFIG_FUSES},
     */
     {"vcpucalc",            (print_function)print_power_config_vcpucalc,            POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
@@ -448,6 +447,13 @@ static void print_power_config_fgpll(power_knobs_t* knobs)
 }
 /* -------------------------------------- */
 
+static void print_power_config_itd_cfg(power_knobs_t* knobs)
+{
+    printf("\nITD Config\n");
+    printf("--------------\n");
+    printf("ITD Enabled : %d\n", knobs->itd_cfg);
+}
+
 /* -------------------------------------- */
 static void print_power_config_knobs(power_knobs_t* knobs)
 {
@@ -463,6 +469,8 @@ static void print_power_config_knobs(power_knobs_t* knobs)
     print_power_config_survivability_mode(knobs);
     print_power_config_fgpll(knobs);
     print_power_config_static_rails(knobs);
+    print_power_config_itd_cfg(knobs);
+
 }
 /* -------------------------------------- */
 

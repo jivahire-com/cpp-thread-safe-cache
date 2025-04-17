@@ -56,7 +56,7 @@ static void power_ws_generate_fuse_data(const power_runconfig_t* runconfig, powe
             for (unsigned curve_idx = 0; curve_idx < VFT_CURVE_COUNT_PER_CURVESET; ++curve_idx)
             {
                 ws_fuse_data->vfts[vf_idx].vf[pstate_idx].ldo_dac_in[curve_idx] =
-                    runconfig->dvfs_vft.curveset[vf_idx].curve[curve_idx].vmat_info[0].ldo_dac_in[pstate_idx];
+                    runconfig->dvfs_vft.curveset[vf_idx].vmat_info[curve_idx].ldo_dac_in[pstate_idx];
             }
 
             // Store the freq/voltage points for each pstate

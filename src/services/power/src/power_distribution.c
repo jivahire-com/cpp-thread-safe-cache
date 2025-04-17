@@ -13,7 +13,6 @@
 #include "power_i.h"
 #include "power_log.h"
 #include "power_loops_i.h"
-#include "power_stub_i.h"
 
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>

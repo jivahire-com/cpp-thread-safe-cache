@@ -61,7 +61,6 @@ mock_target(${TARGET}
     power_hw_full_init_allowed
     power_init_core
     power_init_soc
-    power_fuses_is_power_hw_supported
     power_loops_init
     power_loops_control_init
     power_loops_control_post_core_init

@@ -12,15 +12,16 @@
 #include "power_runconfig_i.h" // for power_runconfig_t, power_runconfig_get
 #include "pvt_struct.h"        // for TILE_PVT_NUM_CHANNELS_DTS
 
-#include <FpFwAssert.h>             // for FPFW_RUNTIME_ASSERT
-#include <bug_check.h>              // for BUG_CHECK
-#include <corebits.h>               // for corebits_set_bit, corebits_clear_bit
-#include <dvfs_struct.h>            // for dvfs_core_memasst_entry_t, dvfs_core_...
+#include <FpFwAssert.h>  // for FPFW_RUNTIME_ASSERT
+#include <bug_check.h>   // for BUG_CHECK
+#include <corebits.h>    // for corebits_set_bit, corebits_clear_bit
+#include <dvfs_struct.h> // for dvfs_core_memasst_entry_t, dvfs_core_...
+#include <fuse.h>        //fuse_read
+#include <idsw_kng.h>
 #include <kingsgate_fuse_defines.h> // for VF_CORE_ANCHOR_SEL_WIDTH, CORE_CDYN_0...
 #include <kng_soc_constants.h>      // for NUM_AP_CORES_PER_DIE
 #include <power_events.h>           // for POWER_ET_WARN, POWER_ET_ENCODE_FREQ_C...
 #include <power_i.h>                // for DIMOF, BUG_ASSERT, BUG_CHECK, MODULE_...
-#include <power_stub_i.h>           // for platform_read_fuse, power_fuses_is_po...
 #include <silibs_common.h>          // for ARRAY_SIZE
 #include <stdbool.h>                // for bool
 #include <stddef.h>                 // for NULL
@@ -58,6 +59,14 @@ static const uint32_t core_disables_fuse_widths[] = {CORE_DEFECT_MFG_MASK_CORE_D
                                                      CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_67_64_WIDTH,
                                                      CORE_DEFECT_IFT_MASK_CORE_DEFECT_IFT_67_64_WIDTH};
 
+static const uint32_t curve_temp_ranges_offsets[] = {VF_CURVE_TEMP_RANGES_TEMP_THRESHOLD_T1_BIT_OFFSET,
+                                                     VF_CURVE_TEMP_RANGES_TEMP_THRESHOLD_T2_BIT_OFFSET,
+                                                     VF_CURVE_TEMP_RANGES_TEMP_THRESHOLD_T3_BIT_OFFSET};
+
+static const uint32_t curve_temp_ranges_widths[] = {VF_CURVE_TEMP_RANGES_TEMP_THRESHOLD_T1_WIDTH,
+                                                    VF_CURVE_TEMP_RANGES_TEMP_THRESHOLD_T2_WIDTH,
+                                                    VF_CURVE_TEMP_RANGES_TEMP_THRESHOLD_T3_WIDTH};
+
 // core memasst
 #define COREMEMASST(number, field, type) DVFS_CORE_MEM_ASST_TRIMS_##number##_BOUND_##field##_##type
 #define COREMEMASST_ALL(f, t) \
@@ -84,20 +93,25 @@ static const uint32_t core_memasst_ldodacin_widths[] = {COREMEMASST_WIDTHS(LDODA
 static const uint32_t core_memasst_valid_boundary_offsets[] = {COREMEMASST_OFFSETS(VALID_BOUNDARY)};
 static const uint32_t core_memasst_valid_boundary_widths[] = {COREMEMASST_WIDTHS(VALID_BOUNDARY)};
 
-// NOTE: THE VF FREQ MACROS HAVE AN EXTRA TEMP VARIABLE GOING FROM 0-3 ADDING ANOTHER COMBOS
 // helpers for VF fuse names
-#define VF(curve_number, field, index, type) VF##curve_number##_TEMP0_##field##_##index##_##type
-#define VF_CURVE(n, f, t) \
-    VF(n, f, 6, t), VF(n, f, 5, t), VF(n, f, 4, t), VF(n, f, 3, t), VF(n, f, 2, t), VF(n, f, 1, t), VF(n, f, 0, t),
+#define VF(curve_number, temp, field, index, type) VF##curve_number##_TEMP##temp##_##field##_##index##_##type
+#define VFT(n, f, i, t)                            VF(n, 0, f, i, t), VF(n, 1, f, i, t), VF(n, 2, f, i, t), VF(n, 3, f, i, t)
+#define VF_CURVE(n, f, t)                                                                                 \
+    VFT(n, f, 6, t), VFT(n, f, 5, t), VFT(n, f, 4, t), VFT(n, f, 3, t), VFT(n, f, 2, t), VFT(n, f, 1, t), \
+        VFT(n, f, 0, t)
 #define VF_CURVES(f, t)                                                                                      \
     {VF_CURVE(0, f, t)}, {VF_CURVE(1, f, t)}, {VF_CURVE(2, f, t)}, {VF_CURVE(3, f, t)}, {VF_CURVE(4, f, t)}, \
         {VF_CURVE(5, f, t)}, {VF_CURVE(6, f, t)},
 
 // arrays for VF fuse offsets and widths
-static const uint32_t core_vft_fuse_freq_offsets[][VFT_CURVESET_COUNT] = {VF_CURVES(FREQ, BIT_OFFSET)};
-static const uint32_t core_vft_fuse_ldodac_offsets[][VFT_CURVESET_COUNT] = {VF_CURVES(LDO_DAC_CODE, BIT_OFFSET)};
-static const uint32_t core_vft_fuse_freq_widths[][VFT_CURVESET_COUNT] = {VF_CURVES(FREQ, WIDTH)};
-static const uint32_t core_vft_fuse_ldodac_widths[][VFT_CURVESET_COUNT] = {VF_CURVES(LDO_DAC_CODE, WIDTH)};
+static const uint32_t core_vft_fuse_freq_offsets[][VFT_CURVE_COUNT_PER_CURVESET * VFT_CURVESET_COUNT] = {
+    VF_CURVES(FREQ, BIT_OFFSET)};
+static const uint32_t core_vft_fuse_ldodac_offsets[][VFT_CURVE_COUNT_PER_CURVESET * VFT_CURVESET_COUNT] = {
+    VF_CURVES(LDO_DAC_CODE, BIT_OFFSET)};
+static const uint32_t core_vft_fuse_freq_widths[][VFT_CURVE_COUNT_PER_CURVESET * VFT_CURVESET_COUNT] = {
+    VF_CURVES(FREQ, WIDTH)};
+static const uint32_t core_vft_fuse_ldodac_widths[][VFT_CURVE_COUNT_PER_CURVESET * VFT_CURVESET_COUNT] = {
+    VF_CURVES(LDO_DAC_CODE, WIDTH)};
 
 // helpers for VPU_LEAKAGE offsets and widths
 #define PFUSE(fuse, index, field, type) fuse##_##index##_##field##_##type
@@ -145,6 +159,35 @@ static const uint32_t core_cdyn_cdyn_widths[] = {CC_WIDTHS(CDYN)};
 static const uint32_t core_cdyn_ldo_widths[] = {CC_WIDTHS(LDO)};
 
 /*------------- Functions ----------------*/
+
+bool power_fuses_is_power_hw_supported()
+{
+    return true;
+}
+
+int32_t platform_read_fuse(const uint32_t* target_addr, const uint32_t fuse_bit_offset, const uint32_t fuse_bit_size)
+{
+    uint64_t fuse_data = 0xdeadbeef;
+    int status = 0;
+
+    if ((fuse_bit_size == 0) || (fuse_bit_size > MAX_BITS_PER_FUSE))
+    {
+        POWER_LOG_INFO("Requested Fuse Size in bits not valid(Min:%d Max:%d bits)", 1, MAX_BITS_PER_FUSE);
+        // FUSE_ET_READ(FUSE_STATUS_INVALID_SIZE, fuse_bit_offset, fuse_bit_size, 0);
+        return FPFW_STATUS_INVALID_ARGS; // need E_PARAM define
+    }
+
+    fuse_data = fuse_read(fuse_bit_offset, fuse_bit_size);
+    // number of valid bytes to copy from fuse_data
+    size_t fuse_size = ((fuse_bit_size + (BITS_PER_BYTE - 1)) / BITS_PER_BYTE);
+    memcpy((void*)target_addr, (void*)&fuse_data, fuse_size);
+    POWER_LOG_INFO("Success: Requested Fuse of byte size:%d copied to 0x%X", fuse_size, (unsigned int)target_addr);
+    // FUSE_ET_READ(FUSE_STATUS_INVALID_SIZE, fuse_bit_offset, fuse_bit_size, 0);
+
+    // Always return Success.
+    status = FPFW_STATUS_SUCCESS;
+    return status;
+}
 
 uint8_t power_fuses_get_pmm_rev()
 {
@@ -210,6 +253,13 @@ int32_t power_fuses_get_dts_coeff(uint32_t k_offset,
             if (status != FPFW_STATUS_SUCCESS)
             {
                 return status;
+            }
+
+            KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
+
+            if (platform_id == PLATFORM_SVP_SIM && fuse_data_y == 0)
+            {
+                fuse_data_y = 1;
             }
             // a value of 0 for Y is invalid; would cause a divide by 0
             if (fuse_data_y == 0)
@@ -311,6 +361,13 @@ int32_t power_fuses_read_memasst(dvfs_core_memasst_entries_t* memasst_entries)
                                      core_memasst_valid_boundary_offsets[entry_idx],
                                      core_memasst_valid_boundary_widths[entry_idx]);
         memasst_entries->entry[entry_idx].valid_boundary = (uint8_t)fuse_data;
+        // Workaround until fuses file are updated
+        // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2409436
+        if (entry_idx == 0)
+        {
+            memasst_entries->entry[entry_idx].ldo_dac_in = 324;
+            memasst_entries->entry[entry_idx].valid_boundary = 1;
+        }
 
         // check status once, since we OR'd together
         if (status != FPFW_STATUS_SUCCESS)
@@ -381,6 +438,16 @@ int32_t power_fuses_get_ldodac_to_voltage(dvfs_vf_slope_t* slope_offset)
     int32_t status =
         platform_read_fuse((uint32_t*)&fuse_data, LDO_DAC_TO_VOLTAGE_M_BIT_OFFSET, LDO_DAC_TO_VOLTAGE_M_WIDTH);
     // a value of 0 for gradient is invalid
+    // workaround
+    // TODO: Need to remove the default value assignemnt M value calculation needs to be investigated
+
+    KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
+
+    if (platform_id == PLATFORM_SVP_SIM && fuse_data == 0)
+    {
+        fuse_data = 1;
+    }
+
     if ((fuse_data == 0) || (status != FPFW_STATUS_SUCCESS))
     {
         POWER_LOG_CRIT(MODULE_NAME "ldodac_to_voltage gradient is 0");
@@ -615,6 +682,14 @@ int32_t power_fuses_get_tdp_config(power_fuse_tdp_t* tdp_config)
 
     // read fuse for data
     int32_t status = platform_read_fuse((uint32_t*)&fuse_data, NUM_CORES_BIT_OFFSET, NUM_CORES_WIDTH);
+
+    KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
+
+    if (platform_id == PLATFORM_SVP_SIM && fuse_data == 0)
+    {
+        fuse_data = 124;
+    }
+
     if ((fuse_data == 0) || (status != FPFW_STATUS_SUCCESS))
     {
         // we divide by num cores, so it can't be 0
@@ -662,10 +737,12 @@ int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offs
 {
     // unexpected, but if something changes want to know about it
     // Checking that the size of pair index in the innermost struct matches with our array definitions
-    BUG_ASSERT_PARAM((DIMOF(((power_fuse_vf_curveset_t*)0)->curveset[0].curve[0].pair) >=
-                      DIMOF(core_vft_fuse_freq_offsets[0])),
-                     DIMOF(((power_fuse_vf_curveset_t*)0)->curveset[0].curve[0].pair),
-                     DIMOF(core_vft_fuse_freq_offsets[0]));
+    BUG_ASSERT_PARAM(
+        (DIMOF(
+             ((power_fuse_vf_curveset_t*)0)->curveset[VFT_CURVESET_COUNT].curve[VFT_CURVE_COUNT_PER_CURVESET].pair) >=
+         DIMOF(core_vft_fuse_freq_offsets)),
+        DIMOF(((power_fuse_vf_curveset_t*)0)->curveset[VFT_CURVESET_COUNT].curve[VFT_CURVE_COUNT_PER_CURVESET].pair),
+        DIMOF(core_vft_fuse_freq_offsets));
     BUG_ASSERT_PARAM((DVFS_FUSED_PAIRS_COUNT >= VFT_CURVESET_COUNT), DVFS_FUSED_PAIRS_COUNT, VFT_CURVESET_COUNT);
 
     if (!vf_curves)
@@ -684,36 +761,78 @@ int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offs
     // iterate over fuses
     for (uint32_t curve_idx = 0; curve_idx < DIMOF(core_vft_fuse_freq_offsets); ++curve_idx)
     {
-        uint64_t fuse_data = 0;
-        for (uint32_t pair_idx = 0; pair_idx < VFT_CURVESET_COUNT; ++pair_idx)
+        for (uint32_t temp_idx = 0; temp_idx < VFT_CURVE_COUNT_PER_CURVESET; ++temp_idx)
         {
-            // read fuse at index into temp fuse data
-            int32_t status = platform_read_fuse((uint32_t*)&fuse_data,
-                                                core_vft_fuse_freq_offsets[curve_idx][pair_idx],
-                                                core_vft_fuse_freq_widths[curve_idx][pair_idx]);
-            if (status != FPFW_STATUS_SUCCESS)
+            uint64_t fuse_data = 0;
+            for (uint32_t pair_idx = 0; pair_idx < VFT_CURVESET_COUNT; ++pair_idx)
             {
-                return status;
-            }
-            vf_curves->curveset[curve_idx].curve[0].pair[pair_idx].freq_Mhz = fuse_data;
 
-            // read ldodaccode fuse
-            status = platform_read_fuse((uint32_t*)&fuse_data,
-                                        core_vft_fuse_ldodac_offsets[curve_idx][pair_idx],
-                                        core_vft_fuse_ldodac_widths[curve_idx][pair_idx]);
-            if (status != FPFW_STATUS_SUCCESS)
-            {
-                return status;
+                // read fuse at index into temp fuse data
+                int32_t status = platform_read_fuse(
+                    (uint32_t*)&fuse_data,
+                    core_vft_fuse_freq_offsets[curve_idx][temp_idx + pair_idx * VFT_CURVE_COUNT_PER_CURVESET],
+                    core_vft_fuse_freq_widths[curve_idx][temp_idx + pair_idx * VFT_CURVE_COUNT_PER_CURVESET]);
+                if (status != FPFW_STATUS_SUCCESS)
+                {
+                    return status;
+                }
+                vf_curves->curveset[curve_idx].curve[temp_idx].pair[pair_idx].freq_Mhz = fuse_data;
+
+                // read ldodaccode fuse
+                status = platform_read_fuse(
+                    (uint32_t*)&fuse_data,
+                    core_vft_fuse_ldodac_offsets[curve_idx][temp_idx + pair_idx * VFT_CURVE_COUNT_PER_CURVESET],
+                    core_vft_fuse_ldodac_widths[curve_idx][temp_idx + pair_idx * VFT_CURVE_COUNT_PER_CURVESET]);
+                if (status != FPFW_STATUS_SUCCESS)
+                {
+                    return status;
+                }
+                if (fuse_data != 0)
+                {
+                    // offset ldo value if offset provided, cap to max ldo value
+                    fuse_data = ldo_cap_to_max(vf_curves->curveset[curve_idx].curve[temp_idx].pair[pair_idx].freq_Mhz,
+                                               fuse_data + ldo_offset,
+                                               curve_idx);
+                }
+                vf_curves->curveset[curve_idx].curve[temp_idx].pair[pair_idx].ldo_dac_in = fuse_data;
             }
-            if (fuse_data != 0)
-            {
-                // offset ldo value if offset provided, cap to max ldo value
-                fuse_data = ldo_cap_to_max(vf_curves->curveset[curve_idx].curve[0].pair[pair_idx].freq_Mhz,
-                                           fuse_data + ldo_offset,
-                                           curve_idx);
-            }
-            vf_curves->curveset[curve_idx].curve[0].pair[pair_idx].ldo_dac_in = fuse_data;
         }
+    }
+    return FPFW_STATUS_SUCCESS;
+}
+
+int32_t power_fuses_get_curve_temp(int8_t* core_max_temp, uint32_t count)
+{
+    if (!core_max_temp)
+    {
+        return FPFW_STATUS_NULL_POINTER;
+    }
+
+    if (count != (NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1))
+    {
+        return FPFW_STATUS_INVALID_ARGS;
+    }
+
+    memset(core_max_temp, 0, count);
+    // clear structure
+    FPFW_UNUSED(count);
+    int32_t status = 0;
+    // iterate over fuses
+
+    for (uint32_t entry_idx = 0; entry_idx < DIMOF(curve_temp_ranges_offsets); entry_idx++)
+    {
+        uint64_t fuse_data = 0;
+        // read fuses at index
+        status = platform_read_fuse((uint32_t*)&fuse_data,
+                                    curve_temp_ranges_offsets[entry_idx],
+                                    curve_temp_ranges_widths[entry_idx]);
+
+        if (status != FPFW_STATUS_SUCCESS)
+        {
+            return status;
+        }
+
+        core_max_temp[entry_idx] = (int8_t)fuse_data;
     }
 
     return FPFW_STATUS_SUCCESS;
@@ -762,6 +881,8 @@ void power_fuses_read(power_fuse_data_t* p_fuses)
         status = power_fuses_process_id(&p_fuses->process_id); // read fuse - 1
         BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
         status = power_fuses_get_tdp_config(&p_fuses->tdp_config); // read fuse - 3
+        BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
+        status = power_fuses_get_curve_temp(&p_fuses->curve_max_temp[0], ARRAY_SIZE(p_fuses->curve_max_temp));
         BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
     }
     else

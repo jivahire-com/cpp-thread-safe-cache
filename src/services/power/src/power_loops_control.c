@@ -18,7 +18,6 @@
 #include "power_remote_die_i.h"
 #include "power_runconfig.h"
 #include "power_runconfig_i.h"
-#include "power_stub_i.h"
 
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>

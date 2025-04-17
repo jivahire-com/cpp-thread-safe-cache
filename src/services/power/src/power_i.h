@@ -491,6 +491,8 @@ void power_vcpu_precalculate_vf_currents(power_runconfig_t* p_runconfig, dvfs_co
  */
 uint32_t power_vcpu_interpolate_from_points(const power_vcpu_interp_t* points, unsigned points_count, uint16_t ldo_dac);
 
+int32_t power_fuses_get_curve_temp(int8_t* core_max_temp, uint32_t count);
+
 /**
  * @brief AVS write callback function.
  *

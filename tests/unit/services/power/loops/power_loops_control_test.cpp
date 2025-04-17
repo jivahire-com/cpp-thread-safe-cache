@@ -28,7 +28,6 @@ extern "C" {
 #include <idsw_kng.h>
 #include <pid_resource.h>  // for pid_config_t
 #include <power_loops_i.h> // for _power_ctrl_loop_state_t, _power_ctrl...
-#include <power_stub_i.h>  // for _power_pmin_type_t, power_pmin_type_t
 #include <scf_power.h>     // for SCF_CORE_POWER_STATE_T
 #include <stdint.h>        // for uint32_t, uint64_t, uintptr_t, uint16_t
 #include <stdio.h>         // for printf

@@ -53,6 +53,7 @@ static power_knobs_t s_expected_knobs = {};
 static power_fuse_data_t s_expected_fuses = {};
 static const corebits_t platform_cores = (corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFF, 0xFFFFFFFF, 0xF);
 static power_service_config_t s_test_config = {.platform_cores_in_die = &platform_cores};
+uint8_t valid_cores = NUM_AP_CORES_PER_DIE;
 
 /*------------- Functions ----------------*/
 //
@@ -95,19 +96,35 @@ void __wrap_power_fuses_read(power_fuse_data_t* p_fuses)
     memcpy_s(p_fuses, sizeof(power_fuse_data_t), mock_ptr_type(power_fuse_data_t*), sizeof(power_fuse_data_t));
 }
 
+int32_t __wrap_power_fuses_get_curve_assignment(uint32_t core, uint32_t* curve_assignment)
+{
+
+    FPFW_UNUSED(core);
+    FPFW_UNUSED(curve_assignment);
+    return mock_type(int);
+}
+
 int __wrap_dvfs_vft_from_fuse_data_per_itd(const dvfs_vf_fused_pairs_t* vf_pairs,
                                            const dvfs_core_memasst_entries_t* core_memasst_entries,
                                            uint8_t* min_valid_plimit,
                                            dvfs_vft_t* vft)
 {
-    UNUSED(vf_pairs);
+    FPFW_UNUSED(vf_pairs);
     check_expected_ptr(core_memasst_entries);
     *min_valid_plimit = mock_type(uint8_t);
     memcpy_s(vft, sizeof(dvfs_vft_t), mock_ptr_type(dvfs_vft_t*), sizeof(dvfs_vft_t));
     return mock_type(int);
 }
 
-} // extern "C"
+int __wrap_dvfs_mvolt_from_ldo_dac(uint16_t ldo_dac_in, const dvfs_vf_slope_t* slope_offset, uint16_t* mvolt)
+{
+    FPFW_UNUSED(ldo_dac_in);
+    FPFW_UNUSED(slope_offset);
+    FPFW_UNUSED(mvolt);
+    return DVFS_SUCCESS;
+}
+}
+// extern "C"
 
 //
 // Helper functions
@@ -163,7 +180,6 @@ void basic_fuse_setup(power_fuse_data_t* p_fuses)
 static int setup(void** state)
 {
     UNUSED(state);
-
     basic_fuse_setup(&s_expected_fuses);
     basic_knobs_setup(&s_expected_knobs);
 
@@ -177,13 +193,22 @@ static int setup(void** state)
 // shared function for setting a baseline set of runtime config initialization expectations
 void set_default_expectations(uint8_t min_plimit)
 {
+    uint8_t fuse_data_per_itd_call_max = VFT_CURVESET_COUNT * VFT_CURVE_COUNT_PER_CURVESET;
+
+    if (min_plimit == NUM_PSTATES)
+        fuse_data_per_itd_call_max = 2 * fuse_data_per_itd_call_max;
 
     static const dvfs_vft_t default_vft = DVFS_VFT_DEFAULT_CONFIG;
 
     will_return(__wrap_power_knobs_read, &s_expected_knobs);
     will_return(__wrap_power_fuses_read, &s_expected_fuses);
 
-    for (unsigned iter = 0; iter < VFT_CURVESET_COUNT * VFT_CURVE_COUNT_PER_CURVESET; ++iter)
+    for (unsigned core_idx = 0; core_idx < valid_cores; ++core_idx)
+    {
+        will_return(__wrap_power_fuses_get_curve_assignment, FPFW_STATUS_SUCCESS);
+    }
+
+    for (unsigned iter = 0; iter < fuse_data_per_itd_call_max; ++iter)
     {
         expect_memory(__wrap_dvfs_vft_from_fuse_data_per_itd,
                       core_memasst_entries,
@@ -280,6 +305,8 @@ POWER_TEST(runconfig_derived_curve_assignment, setup, NULL)
 POWER_TEST(runconfig_derived_curve_assignment_core_disabled, setup, NULL)
 {
 #define TEST_DISABLED_CORE 5
+    valid_cores--;
+
     set_default_expectations(TEST_MIN_VALID_PLIMIT);
 
     // disable a core
@@ -312,6 +339,7 @@ POWER_TEST(runconfig_derived_curve_assignment_core_disabled, setup, NULL)
 // ensure indexed curve assignment matches fuses
 POWER_TEST(runconfig_derived_curve_assignment_curve_assignment, setup, NULL)
 {
+    valid_cores = 2 * NUM_AP_CORES_PER_DIE;
     set_default_expectations(TEST_MIN_VALID_PLIMIT);
 
     power_runconfig_init(&s_test_config);
@@ -328,7 +356,9 @@ POWER_TEST(runconfig_derived_curve_assignment_curve_assignment, setup, NULL)
 // ensure default VFT if no valid curve
 POWER_TEST(runconfig_default_if_no_valid_curve, setup, NULL)
 {
+    valid_cores = NUM_AP_CORES_PER_DIE;
     // min_plimit of NUM_PSTATES indicates fuses didn't result in a valid curve
+    // will require to fuse each curve at each curse set
     set_default_expectations(NUM_PSTATES);
 
     power_runconfig_init(&s_test_config);

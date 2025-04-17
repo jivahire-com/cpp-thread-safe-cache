@@ -18,7 +18,6 @@
 #include "power_i.h"         // for TEMP2DOUT_FUSED, BUG_CHECK
 #include "power_runconfig.h" // for power_knobs_t, dts_coeff_t, power_run...
 #include "power_runconfig_i.h"
-#include "power_stub_i.h"
 
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <bug_check.h>  // for BUG_CHECK
@@ -117,26 +116,40 @@ void setup_forced_pstate(uintptr_t cluster_pex_base_addr, dvfs_config_t* dvfs_cf
     // reassign to copy
     dvfs_cfg->fuse_cfg.vft = temp_vft;
 
-    // copy vft settings to lower perf pstates
+    uint8_t min_ldo_dac_idx = 0;
+    uint8_t crv_idx = 1;
+
+    if (dvfs_cfg->init_cfg.pex_features.itd_en == 0)
+    {
+        while (crv_idx < NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS)
+        {
+            if (temp_vft->vmat_info[min_ldo_dac_idx].ldo_dac_in[pstate] < temp_vft->vmat_info[crv_idx].ldo_dac_in[pstate])
+            {
+                min_ldo_dac_idx = crv_idx;
+            }
+            crv_idx++;
+        }
+    }
+
     for (unsigned pstate_idx = pstate + 1; pstate_idx < NUM_PSTATES; ++pstate_idx)
     {
-        for (unsigned col_num = 0; col_num < NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS; ++col_num)
+        for (crv_idx = 0; crv_idx < VFT_CURVE_COUNT_PER_CURVESET; ++crv_idx)
         {
-            temp_vft->vmat_info[col_num].ldo_dac_in[pstate_idx] = temp_vft->vmat_info[col_num].ldo_dac_in[pstate];
-            temp_vft->vmat_info[col_num].memasst_hd_ema[pstate_idx] =
-                temp_vft->vmat_info[col_num].memasst_hd_ema[pstate];
-            temp_vft->vmat_info[col_num].memasst_hd_rawlm[pstate_idx] =
-                temp_vft->vmat_info[col_num].memasst_hd_rawlm[pstate];
-            temp_vft->vmat_info[col_num].memasst_hshc_ema[pstate_idx] =
-                temp_vft->vmat_info[col_num].memasst_hshc_ema[pstate];
-            temp_vft->vmat_info[col_num].memasst_hshc_rawlm[pstate_idx] =
-                temp_vft->vmat_info[col_num].memasst_hshc_rawlm[pstate];
-            temp_vft->vmat_info[col_num].memasst_tp_emaa[pstate_idx] =
-                temp_vft->vmat_info[col_num].memasst_tp_emaa[pstate];
-            temp_vft->vmat_info[col_num].memasst_tp_emab[pstate_idx] =
-                temp_vft->vmat_info[col_num].memasst_tp_emab[pstate];
-            temp_vft->vmat_info[col_num].memasst_hd_emaw[pstate_idx] =
-                temp_vft->vmat_info[col_num].memasst_hd_emaw[pstate];
+            uint8_t ldo_dac_idx = (dvfs_cfg->init_cfg.pex_features.itd_en == 0) ? min_ldo_dac_idx : crv_idx;
+
+            temp_vft->vmat_info[crv_idx].ldo_dac_in[pstate_idx] = temp_vft->vmat_info[ldo_dac_idx].ldo_dac_in[pstate];
+            temp_vft->vmat_info[crv_idx].memasst_hd_ema[pstate_idx] =
+                temp_vft->vmat_info[ldo_dac_idx].memasst_hd_ema[pstate];
+            temp_vft->vmat_info[crv_idx].memasst_hd_rawlm[pstate_idx] =
+                temp_vft->vmat_info[ldo_dac_idx].memasst_hd_rawlm[pstate];
+            temp_vft->vmat_info[crv_idx].memasst_hshc_ema[pstate_idx] =
+                temp_vft->vmat_info[ldo_dac_idx].memasst_hshc_ema[pstate];
+            temp_vft->vmat_info[crv_idx].memasst_hshc_rawlm[pstate_idx] =
+                temp_vft->vmat_info[ldo_dac_idx].memasst_hshc_rawlm[pstate];
+            temp_vft->vmat_info[crv_idx].memasst_tp_emaa[pstate_idx] =
+                temp_vft->vmat_info[ldo_dac_idx].memasst_tp_emaa[pstate];
+            temp_vft->vmat_info[crv_idx].memasst_tp_emab[pstate_idx] =
+                temp_vft->vmat_info[ldo_dac_idx].memasst_tp_emab[pstate];
         }
     }
 }
@@ -281,8 +294,6 @@ static void power_init_update_dvfs_cfg_common(const power_runconfig_t* p_runconf
     p_dvfs_cfg->static_pll_cfg.dco1_lckcntsel = p_knobs->plllock_cfg.lckcntsel;
     // enable c1 telemetry based on knob
     p_dvfs_cfg->init_cfg.c1_telem_en = p_knobs->c1_tel_enable;
-    // TODO: enable ITD (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491054/)
-    // (fix force_pstate vmat copy, full VFT generation before enabling)
     p_dvfs_cfg->init_cfg.pex_features.itd_en = p_knobs->itd_cfg;
 }
 
@@ -330,6 +341,7 @@ static void power_init_update_dvfs_cfg_core(const power_runconfig_t* p_runconfig
 
     const power_knobs_t* p_knobs = &p_runconfig->knobs;
     const unsigned assigned_vft = p_runconfig->derived.assigned_vft[core];
+    p_dvfs_cfg->fuse_cfg.vft = &p_runconfig->dvfs_vft.curveset[assigned_vft];
 
     if (p_runconfig->derived.vfts[assigned_vft].min_plimit == NUM_PSTATES)
     {
@@ -341,10 +353,22 @@ static void power_init_update_dvfs_cfg_core(const power_runconfig_t* p_runconfig
         BUG_CHECK(KNG_SC_NO_VALID_PSTATES, core, assigned_vft);
     }
     p_dvfs_cfg->fuse_cfg.core_disabled = false;
-    // use assigned VF table
-    // TODO: https://dev.azure.com/AzureCSI/Dev/_queries/edit/1491054
-    // update below for ITD - use a default of 0 to select vft curve for now
-    p_dvfs_cfg->fuse_cfg.vft = &p_runconfig->dvfs_vft.curveset[assigned_vft].curve[0];
+
+    uint16_t temp_itd_temp_boundaries[NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1] = {0};
+
+    const uint32_t tile_num = core / CORES_PER_TILE;
+    for (uint8_t temp_idx = 0; temp_idx < sizeof(p_runconfig->fuses.curve_max_temp); ++temp_idx)
+    {
+        temp_itd_temp_boundaries[temp_idx] =
+            (uint16_t)CLIP_PVT(TEMP2DOUT_FUSED(((float)p_runconfig->fuses.curve_max_temp[temp_idx]),
+                                               p_runconfig->fuses.dts_coeff_tile[tile_num].k_val,
+                                               p_runconfig->fuses.dts_coeff_tile[tile_num].y_val));
+    }
+
+    memcpy((void*)p_dvfs_cfg->fuse_cfg.vft->itd_temp_boundaries,
+           temp_itd_temp_boundaries,
+           sizeof(uint16_t) * (NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1));
+
     // update highest perf based on curve
     p_dvfs_cfg->init_cfg.cppc.highest_perf = dvfs_get_cppc_from_pstate(p_runconfig->derived.vfts[assigned_vft].min_plimit);
     p_dvfs_cfg->init_cfg.cppc.lowest_nonlin_perf = dvfs_get_cppc_from_pstate(
@@ -693,7 +717,6 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
         return;
     }
 
-    /* Base config to match with latest DVFS library update */
     dvfs_config_t dvfs_cfg = DVFS_DEFAULT_CONFIG;
     power_init_update_dvfs_cfg_common(p_runconfig, &dvfs_cfg, p_telemetry_config);
 

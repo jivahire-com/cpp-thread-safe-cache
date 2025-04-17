@@ -19,7 +19,8 @@
 #include <bug_check.h> // for BUG_CHECK
 #include <corebits.h>  // for corebits_is_bit_set, corebits_is_clear
 #include <dvfs.h>
-#include <dvfs_struct.h>   // for dvfs_vft_t, NUM_PSTATES, dvfs_vf_fuse...
+#include <dvfs_struct.h> // for dvfs_vft_t, NUM_PSTATES, dvfs_vf_fuse...
+#include <idsw_kng.h>
 #include <silibs_common.h> // for MAX, MIN
 #include <stdbool.h>
 #include <string.h> // for memset
@@ -168,6 +169,9 @@ static uint8_t get_global_min_plimit()
 
 static void runconfig_generate_derived_vfts()
 {
+
+    KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
+
     // setup assigned vft/core mappings
     for (unsigned core_idx = 0; core_idx < NUM_AP_CORES_PER_DIE; ++core_idx)
     {
@@ -191,21 +195,37 @@ static void runconfig_generate_derived_vfts()
     for (unsigned vf_idx = 0; vf_idx < VFT_CURVESET_COUNT; ++vf_idx)
     {
         uint8_t min_plimit = 0;
+        uint8_t last_valid_curve = 0;
         for (unsigned crv_idx = 0; crv_idx < VFT_CURVE_COUNT_PER_CURVESET; ++crv_idx)
         {
             // TODO: fix curve structure for ITD - shouldn't have 4 curves and 4 vmat_info (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491054/)
-            int status = dvfs_vft_from_fuse_data_per_itd(
-                &power_runconfig.fuses.vf.curveset[vf_idx].curve[crv_idx],
-                &power_runconfig.fuses.memasst,
-                &min_plimit,
-                &power_runconfig.dvfs_vft.curveset[vf_idx].curve[crv_idx].vmat_info[0]);
+            int status =
+                dvfs_vft_from_fuse_data_per_itd(&power_runconfig.fuses.vf.curveset[vf_idx].curve[crv_idx],
+                                                &power_runconfig.fuses.memasst,
+                                                &min_plimit,
+                                                &power_runconfig.dvfs_vft.curveset[vf_idx].vmat_info[crv_idx]);
+
             if (DVFS_SUCCESS != status)
             {
                 BUG_CHECK(KNG_SC_FUSE_GEN_VFT, vf_idx, status);
             }
+            else
+            {
+                last_valid_curve = crv_idx;
+            }
+
+            if (min_plimit == NUM_PSTATES)
+            {
+                dvfs_vft_from_fuse_data_per_itd(&power_runconfig.fuses.vf.curveset[vf_idx].curve[last_valid_curve],
+                                                &power_runconfig.fuses.memasst,
+                                                &min_plimit,
+                                                &power_runconfig.dvfs_vft.curveset[vf_idx].vmat_info[last_valid_curve]);
+            }
+
             // track min_plimit to ensure all curves have same
             if (crv_idx > 0)
             {
+
                 BUG_ASSERT_PARAM(min_plimit == power_runconfig.derived.vfts[vf_idx].min_plimit,
                                  min_plimit,
                                  power_runconfig.derived.vfts[vf_idx].min_plimit);
@@ -222,9 +242,9 @@ static void runconfig_generate_derived_vfts()
         {
             // put default DVFS curve in slot 0
             const dvfs_vft_t default_vft = DVFS_VFT_DEFAULT_CONFIG;
-            for (unsigned crv_idx = 0; crv_idx < VFT_CURVE_COUNT_PER_CURVESET; ++crv_idx)
+            for (unsigned crv_idx = 0; crv_idx < VFT_CURVESET_COUNT; ++crv_idx)
             {
-                power_runconfig.dvfs_vft.curveset[vf_idx].curve[crv_idx] = default_vft;
+                power_runconfig.dvfs_vft.curveset[crv_idx] = default_vft;
             }
             POWER_LOG_WARN("Using default VF curve for curve 0");
             power_runconfig.derived.vfts[vf_idx].min_plimit = 0;
@@ -239,10 +259,10 @@ static void runconfig_generate_derived_vfts()
             {
                 uint16_t voltage_mv;
                 int status = dvfs_mvolt_from_ldo_dac(
-                    power_runconfig.dvfs_vft.curveset[vf_idx].curve[crv_idx].vmat_info[0].ldo_dac_in[pstate_idx],
+                    power_runconfig.dvfs_vft.curveset[vf_idx].vmat_info[crv_idx].ldo_dac_in[pstate_idx],
                     &power_runconfig.fuses.ldodac_to_volt,
                     &voltage_mv);
-                if (DVFS_SUCCESS != status)
+                if (DVFS_SUCCESS != status && platform_id != PLATFORM_SVP_SIM)
                 {
                     BUG_CHECK(KNG_SC_FUSE_LDO_MVOLT_CONV, (pstate_idx << 16) | vf_idx, status);
                 }

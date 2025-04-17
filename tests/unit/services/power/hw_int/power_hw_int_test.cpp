@@ -181,7 +181,7 @@ void base_config()
 {
     s_runconfig.derived.pnominal = DVFS_DEF_PLIMIT_INDEX_NOMINAL;
     const dvfs_vft_t default_vft = DVFS_VFT_DEFAULT_CONFIG;
-    s_runconfig.dvfs_vft.curveset[0].curve[0] = default_vft;
+    s_runconfig.dvfs_vft.curveset[0] = default_vft;
 
     power_fuse_data_t* f = &s_runconfig.fuses;
 
@@ -458,7 +458,7 @@ void validate_dvfs_cfg(unsigned int core)
     const unsigned assigned_vft = s_runconfig.derived.assigned_vft[core];
 
     // fuse cfg
-    dvfs_cfg.fuse_cfg.vft = &s_runconfig.dvfs_vft.curveset[assigned_vft].curve[0];
+    dvfs_cfg.fuse_cfg.vft = &s_runconfig.dvfs_vft.curveset[assigned_vft];
     // init cfg
     // configure default cppc settings
     dvfs_cfg.init_cfg.cppc.highest_perf = dvfs_get_cppc_from_pstate(s_runconfig.derived.vfts[assigned_vft].min_plimit);
@@ -521,6 +521,21 @@ void validate_dvfs_cfg(unsigned int core)
     // TODO: enable ITD (https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491054/)
     // (fix force_pstate vmat copy, full VFT generation before enabling)
     dvfs_cfg.init_cfg.pex_features.itd_en = knobs->itd_cfg;
+
+    uint16_t temp_itd_temp_boundaries[NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1] = {0};
+
+    const uint32_t tile_num = core / CORES_PER_TILE;
+    for (uint8_t temp_idx = 0; temp_idx < sizeof(s_runconfig.fuses.curve_max_temp); ++temp_idx)
+    {
+        temp_itd_temp_boundaries[temp_idx] =
+            (uint16_t)CLIP_PVT(TEMP2DOUT_FUSED(((float)s_runconfig.fuses.curve_max_temp[temp_idx]),
+                                               s_runconfig.fuses.dts_coeff_tile[tile_num].k_val,
+                                               s_runconfig.fuses.dts_coeff_tile[tile_num].y_val));
+    }
+
+    memcpy((char*)dvfs_cfg.fuse_cfg.vft->itd_temp_boundaries,
+           (char*)temp_itd_temp_boundaries,
+           sizeof(uint16_t) * (NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1));
 
     // adclk offset
     if (knobs->adclk_offset.enable)

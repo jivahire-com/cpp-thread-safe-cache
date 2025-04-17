@@ -10,6 +10,7 @@
 #pragma once
 
 /*--------------- Includes ---------------*/
+#include <numa_config_variable.h>
 
 #define MESH_INFO(...) INFO_PRINT("[CMN800] " __VA_ARGS__)
 #define MESH_DBG(...) DEBUG_PRINT("[CMN800] " __VA_ARGS__)
@@ -37,3 +38,12 @@
  * @param icc_ctx The mailbox primitive context.
  */
 void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx);
+
+/**
+ * @brief Print the NUMA Data Structure that is filled out
+ *
+ * @param numa_cfg Pointer to the numa cfg to print
+ *
+ * @return void
+ */
+void print_numa_info(NUMA_CFG* numa_cfg);

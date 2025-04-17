@@ -25,7 +25,9 @@ target_link_libraries(${TARGET}
         ms::lib::mesh
         ms::lib::cortex_m7::nvic
         ms::lib::scp_interrupts
+        ms::lib::variable_services
         silibs_platform
+        silibs::spi_bridge
         ms::lib::hsp_firmware_headers
         fwlib.service.iccBase
         ras_arm
@@ -81,4 +83,10 @@ mock_target(${TARGET}
     config_get_d2d_ecc_ce_counter
     mmio_read32
     mmio_write32
+    variable_service_initialize_ctx
+    variable_service_sync_set_variable
+    variable_service_sync_get_variable
+    memset
+    memcmp
+    mscp_exp_spi_synchronize_dies
 )

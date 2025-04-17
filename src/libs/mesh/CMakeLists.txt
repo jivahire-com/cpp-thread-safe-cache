@@ -19,6 +19,7 @@ target_link_libraries(${TARGET}
     ms::lib::register_headers
     ms::lib::scp_interrupts
     ms::lib::system_info
+    ms::lib::variable_services
     silibs::atu
     ms::lib::i3c_controller
     silibs::cml
@@ -33,6 +34,7 @@ target_link_libraries(${TARGET}
     silibs::kng_silibs_platform
     silibs::ppu_v1
     silibs::ras_arm
+    silibs::spi_bridge
 )
 
 target_include_directories(${TARGET}

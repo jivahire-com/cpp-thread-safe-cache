@@ -29,8 +29,11 @@ extern "C" {
 #include <interrupts.h>
 #include <mesh.h> // for mesh_init
 #include <mesh_error_handler.h>
+#include <mscp_exp_rmss_memory_map.h>
+#include <mscp_exp_spi_synchronize_dies.h> // for mscp_exp_spi_synchronize_dies
 #include <ras_arm.h>
 #include <stdint.h> // for int32_t, uint32_t
+#include <variable_services.h>
 
 extern void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_param);
 
@@ -48,6 +51,12 @@ KNG_DIE_ID g_test_die = (KNG_DIE_ID)0;
 static fpfw_icc_base_ctx_t* test_icc_base_hsp_mbx_ctx;
 extern ras_agent_entity_t d2dss2_agent[NUM_OF_CCG_WITH_D2D];
 silibs_status_t g_ras_arm_agent_set_base = SILIBS_SUCCESS;
+static var_service_req_ctx_t s_req_ctx = {};
+static var_service_shared_mem_t mem_ctx = {0};
+var_service_req_params_t s_set_var_req = {0};
+var_service_req_params_t s_get_var_req = {0};
+bool memcpy_mock = true;
+extern NUMA_CFG numa_cfg;
 
 d2d_cfg_t unit_test_default_d2d_cfg = {
     .d2d_pll_divder = 0x2,
@@ -118,6 +127,56 @@ uint32_t __wrap_mmio_read32(void* addr)
     return 0;
 }
 
+int __wrap_mscp_exp_spi_synchronize_dies(mscp_exp_spi_sync_point_t sync_point, int die_id)
+{
+    FPFW_UNUSED(die_id); //! unused parameter
+    assert_int_equal(sync_point.value, D2D_NUMA_INFO);
+    return mock_type(int);
+}
+
+int32_t __wrap_variable_service_initialize_ctx(var_service_req_ctx_t* var_serv_ctx, var_service_shared_mem_t* mem_ctx)
+{
+    check_expected(var_serv_ctx);
+    check_expected(mem_ctx);
+    return mock_type(int);
+}
+
+void __wrap_variable_service_sync_set_variable(var_service_req_ctx_t* var_serv_ctx, var_service_req_params_t* req_params)
+{
+    check_expected(var_serv_ctx);
+    check_expected(req_params);
+    function_called();
+}
+
+int32_t __wrap_variable_service_sync_get_variable(var_service_req_ctx_t* var_serv_ctx, var_service_req_params_t* req_params)
+{
+    check_expected(var_serv_ctx);
+    check_expected(req_params);
+    function_called();
+    return mock_type(int);
+}
+
+void* __real_memset(void* str, int c, size_t n);
+
+void* __wrap_memset(void* str, int c, size_t n)
+{
+    if (memcpy_mock)
+    {
+        return NULL;
+    }
+    return __real_memset(str, c, n);
+}
+
+void* __real_memcmp(void* __a, const void* __b, size_t __c);
+
+void* __wrap_memcmp(void* __a, const void* __b, size_t __c)
+{
+    if (memcpy_mock)
+    {
+        return 0;
+    }
+    return __real_memcmp(__a, __b, __c);
+}
 //
 // Setup and Teardown Functions
 //
@@ -422,6 +481,26 @@ int __wrap_process_mesh_binary_from_spi(uintptr_t pMeshBinHeader, uint32_t confi
     return 0;
 }
 
+void setup_common_numa_variables_expectations(KNG_DIE_ID die_num)
+{
+    if (die_num == 0)
+    {
+        mem_ctx.payload_base = (uintptr_t)SCP_EXP_SCP_MESH_NUMA_VARIABLE_SERVICE_PAYLOAD_BASE;
+        mem_ctx.max_payload_size = SCP_EXP_SCP_MESH_NUMA_VARIABLE_SERVICE_PAYLOAD_SIZE;
+        expect_memory(__wrap_variable_service_initialize_ctx, var_serv_ctx, &s_req_ctx, sizeof(s_req_ctx));
+        expect_memory(__wrap_variable_service_initialize_ctx, mem_ctx, &mem_ctx, sizeof(mem_ctx));
+        will_return(__wrap_variable_service_initialize_ctx, 0);
+
+        expect_any(__wrap_variable_service_sync_set_variable, var_serv_ctx);
+        expect_any(__wrap_variable_service_sync_set_variable, req_params);
+        expect_function_call(__wrap_variable_service_sync_set_variable);
+
+        expect_any(__wrap_variable_service_sync_get_variable, var_serv_ctx);
+        expect_any(__wrap_variable_service_sync_get_variable, req_params);
+        expect_function_call(__wrap_variable_service_sync_get_variable);
+        will_return(__wrap_variable_service_sync_get_variable, 0);
+    }
+}
 //
 // Tests
 //
@@ -448,6 +527,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_0_SVP, setup_svp_platform, setu
     // Setup the common ISR Expectations
     setup_common_isr_expectations();
 
+    setup_common_numa_variables_expectations(test_die);
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
 }
@@ -475,6 +555,8 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_SVP, setup_svp_platform, setu
     // Setup the common ISR Expectations
     setup_common_isr_expectations();
 
+    setup_common_numa_variables_expectations(test_die);
+
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
 }
@@ -501,6 +583,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_0_FPGA, setup_fpga_platform, se
     // Setup the common ISR Expectations
     setup_common_isr_expectations();
 
+    setup_common_numa_variables_expectations(test_die);
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
 }
@@ -527,7 +610,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_FPGA, setup_fpga_platform, se
 
     // Setup the common ISR Expectations
     setup_common_isr_expectations();
-
+    setup_common_numa_variables_expectations(test_die);
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
 }
@@ -563,7 +646,6 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_0_SVP, setup_svp_platform_dual_di
 
     // Setup the common ISR Expectations
     setup_common_isr_expectations();
-
     // d2d_ras_init
     for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
     {
@@ -578,6 +660,8 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_0_SVP, setup_svp_platform_dual_di
         expect_value(__wrap_ras_arm_agent_enable_logging, agent, &d2dss2_agent[d2d_subsystem]);
         expect_function_call(__wrap_ras_arm_agent_enable_logging);
     }
+    setup_common_numa_variables_expectations(test_die);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies, SILIBS_SUCCESS);
 
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
@@ -630,6 +714,9 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_SVP, setup_svp_platform_dual_di
         expect_function_call(__wrap_ras_arm_agent_enable_logging);
     }
 
+    setup_common_numa_variables_expectations(test_die);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies, SILIBS_SUCCESS);
+
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
 }
@@ -679,6 +766,9 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_0_FPGA, setup_fpga_platform_dual_
         expect_value(__wrap_ras_arm_agent_enable_logging, agent, &d2dss2_agent[d2d_subsystem]);
         expect_function_call(__wrap_ras_arm_agent_enable_logging);
     }
+
+    setup_common_numa_variables_expectations(test_die);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies, SILIBS_SUCCESS);
 
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
@@ -730,6 +820,9 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_FPGA, setup_fpga_platform_dual_
         expect_value(__wrap_ras_arm_agent_enable_logging, agent, &d2dss2_agent[d2d_subsystem]);
         expect_function_call(__wrap_ras_arm_agent_enable_logging);
     }
+
+    setup_common_numa_variables_expectations(test_die);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies, SILIBS_SUCCESS);
 
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
@@ -1242,5 +1335,22 @@ TEST_FUNCTION(test_mesh_init_dual_die_warm_reset_boot_Die_1_FPGA, setup_fpga_pla
     expect_function_call(__wrap_process_mesh_binary_from_spi);
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
+}
+
+// Test Print Function
+TEST_FUNCTION(test_mesh_init_print_numa_info, setup_svp_platform, setup_undefined_platform)
+{
+    // Set up expectations
+    numa_cfg.NumaEnabled = true;
+    // Set Non-Zero Values
+    numa_cfg.PerDomainCfg[NumaDomainZero].DomainNum = 0x0;
+    numa_cfg.PerDomainCfg[NumaDomainZero].MinIts = 0x3;
+    numa_cfg.PerDomainCfg[NumaDomainZero].MaxIts = 0x5;
+    numa_cfg.PerDomainCfg[NumaDomainOne].DomainNum = 0x1;
+    numa_cfg.PerDomainCfg[NumaDomainOne].MinIts = 0x4;
+    numa_cfg.PerDomainCfg[NumaDomainOne].MaxIts = 0x6;
+
+    // Call API under test
+    print_numa_info(&numa_cfg);
 }
 }

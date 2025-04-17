@@ -32,15 +32,19 @@
 #include <mesh.h>              // for mesh_init
 #include <mesh_error_handler.h>
 #include <mscp_exp_rmss_memory_map.h>
-#include <stdbool.h> // for true
-#include <stdint.h>  // for uint8_t
-#include <stdio.h>   // for MESH_INFO
+#include <mscp_exp_spi_synchronize_dies.h> // for mscp_exp_spi_synchronize_dies
+#include <stdbool.h>                       // for true
+#include <stdint.h>                        // for uint8_t
+#include <stdio.h>                         // for MESH_INFO
 #include <system_info.h>
+#include <variable_services.h> // for var_service_shared_mem_t, var_serv...
 
 /*------------- Defines -----------------*/
 static fpfw_icc_base_ctx_t* s_mbx_icc_ctx;
 const int MEANINGLESS_NUMBER_MESH = 10;
 static int unused_parameter_not_null = MEANINGLESS_NUMBER_MESH;
+extern NUMA_CFG numa_cfg;
+static var_service_req_ctx_t s_req_ctx = {};
 
 /*------------- Functions ----------------*/
 
@@ -414,6 +418,153 @@ void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_para
     }
 }
 
+/**
+ * @brief Print the NUMA Data Structure that is filled out
+ *
+ * @param numa_cfg Pointer to the numa cfg to print
+ *
+ * @return void
+ */
+void print_numa_info(NUMA_CFG* numa_cfg)
+{
+    UNUSED(numa_cfg);
+    // Print NUMA Table
+    MESH_CRIT("Print NUMA Table");
+    MESH_CRIT("numa_cfg->NumaEnabled 0x%x\n", numa_cfg->NumaEnabled);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainZero].DomainNum 0x%x\n",
+              numa_cfg->PerDomainCfg[NumaDomainZero].DomainNum);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainZero].LatencyToRemote 0x%x\n",
+              numa_cfg->PerDomainCfg[NumaDomainZero].LatencyToRemote);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainZero].MinIts 0x%x\n", numa_cfg->PerDomainCfg[NumaDomainZero].MinIts);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainZero].MaxIts 0x%x\n", numa_cfg->PerDomainCfg[NumaDomainZero].MaxIts);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainZero].CoreMin 0x%x\n", numa_cfg->PerDomainCfg[NumaDomainZero].CoreMin);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainZero].CoreMax 0x%x\n", numa_cfg->PerDomainCfg[NumaDomainZero].CoreMax);
+
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[0x0].BaseAddressLow 0x%lx\n",
+              numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_0].BaseAddressLow);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[0x0].BaseAddressHigh 0x%lx\n",
+              numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_0].BaseAddressHigh);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[0x0].SizeLow 0x%lx\n",
+              numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_0].SizeLow);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[0x0].SizeHigh 0x%lx\n",
+              numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_0].SizeHigh);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[0x0].Flags 0x%x\n",
+              numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_0].Flags);
+
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[0x1].BaseAddressLow 0x%lx\n",
+              numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_1].BaseAddressLow);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[0x1].BaseAddressHigh 0x%lx\n",
+              numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_1].BaseAddressHigh);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[0x1].SizeLow 0x%lx\n",
+              numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_1].SizeLow);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[0x1].SizeHigh 0x%lx\n",
+              numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_1].SizeHigh);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[0x1].Flags 0x%x\n",
+              numa_cfg->PerDomainCfg[NumaDomainZero].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_1].Flags);
+
+    // NUMA 1
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainOne].DomainNum 0x%x\n", numa_cfg->PerDomainCfg[NumaDomainOne].DomainNum);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainOne].LatencyToRemote 0x%x\n",
+              numa_cfg->PerDomainCfg[NumaDomainOne].LatencyToRemote);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainOne].MinIts 0x%x\n", numa_cfg->PerDomainCfg[NumaDomainOne].MinIts);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainOne].MaxIts 0x%x\n", numa_cfg->PerDomainCfg[NumaDomainOne].MaxIts);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainOne].CoreMin 0x%x\n", numa_cfg->PerDomainCfg[NumaDomainOne].CoreMin);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainOne].CoreMax 0x%x\n", numa_cfg->PerDomainCfg[NumaDomainOne].CoreMax);
+
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[0x0].BaseAddressLow 0x%lx\n",
+              numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_0].BaseAddressLow);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[0x0].BaseAddressHigh 0x%lx\n",
+              numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_0].BaseAddressHigh);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[0x0].SizeLow 0x%lx\n",
+              numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_0].SizeLow);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[0x0].SizeHigh 0x%lx\n",
+              numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_0].SizeHigh);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[0x0].Flags 0x%x\n",
+              numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_0].Flags);
+
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[0x1].BaseAddressLow 0x%lx\n",
+              numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_1].BaseAddressLow);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[0x1].BaseAddressHigh 0x%lx\n",
+              numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_1].BaseAddressHigh);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[0x1].SizeLow 0x%lx\n",
+              numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_1].SizeLow);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[0x1].SizeHigh 0x%lx\n",
+              numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_1].SizeHigh);
+    MESH_CRIT("numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[0x1].Flags 0x%x\n",
+              numa_cfg->PerDomainCfg[NumaDomainOne].MemAffinity[CMN800_SKU_NUMA_MEM_AFFINITY_1].Flags);
+}
+
+/**
+ * @brief Create numa payload to be stored on SPI
+ *
+ * @param void
+ *
+ * @return void
+ */
+void save_numa_info(void)
+{
+    var_service_req_params_t s_set_var_req = {0};
+    NUMA_CFG* pNuma_cfg = &numa_cfg;
+
+    uint16_t mesh_numa_variable_name[] = NUMA_CFG_VAR_NAME;
+    s_set_var_req.variable_name_ptr = (uint16_t*)mesh_numa_variable_name;
+    static const guid_t vendor_guid[] = {NUMA_CFG_VAR_GUID};
+
+    // UEFI (as the consumer) defines VariableNameSize to be the number of uint16_t characters + 1 for NULL terminator.
+    s_set_var_req.variable_name_size = (uint32_t)sizeof(mesh_numa_variable_name);
+    MESH_INFO("SetVariableNameSize 0x%x\n", s_set_var_req.variable_name_size);
+    memcpy(&s_set_var_req.vendor_namespace_guid, vendor_guid, sizeof(s_set_var_req.vendor_namespace_guid));
+    s_set_var_req.data = (uint8_t*)pNuma_cfg;
+    s_set_var_req.data_size = sizeof(NUMA_CFG);
+
+    // Check for the Size of the NUMA config to ensure the size in the RMSS reservation is correct
+    MESH_INFO("NUMA CFG Size 0x%x bytes\n", s_set_var_req.data_size);
+
+    s_set_var_req.attributes.as_uint32 = EFI_VARIABLE_BOOTSERVICE_ACCESS; // Save in Volatile Memory
+
+    var_service_shared_mem_t mem_ctx = {0};
+
+    mem_ctx.payload_base = (uintptr_t)SCP_EXP_SCP_MESH_NUMA_VARIABLE_SERVICE_PAYLOAD_BASE;
+    mem_ctx.max_payload_size = SCP_EXP_SCP_MESH_NUMA_VARIABLE_SERVICE_PAYLOAD_SIZE;
+    //! reset shared memory region
+    memset((void*)mem_ctx.payload_base, 0, mem_ctx.max_payload_size);
+    variable_service_initialize_ctx(&s_req_ctx, &mem_ctx);
+    // Call the function to set the variable
+    variable_service_sync_set_variable(&s_req_ctx, &s_set_var_req);
+
+    MESH_INFO("Stored NUMA config through Variable Service\n");
+
+    // Check for the storage using GetVariable API
+    var_service_req_params_t s_get_var_req = {0};
+    s_get_var_req.variable_name_ptr = (uint16_t*)mesh_numa_variable_name;
+    s_get_var_req.variable_name_size = sizeof(mesh_numa_variable_name);
+    MESH_INFO("GetVariableNameSize 0x%x\n", s_get_var_req.variable_name_size);
+    memcpy(&s_get_var_req.vendor_namespace_guid, vendor_guid, sizeof(s_get_var_req.vendor_namespace_guid));
+    s_get_var_req.data_size = sizeof(NUMA_CFG);
+    s_get_var_req.attributes_size = 0;
+    uint8_t TempData[sizeof(NUMA_CFG)] = {0};
+    s_get_var_req.data = TempData;
+    int status = variable_service_sync_get_variable(&s_req_ctx, &s_get_var_req);
+    if (status != SILIBS_SUCCESS)
+    {
+        MESH_CRIT("GetVariable failed with status 0x%x\n", status);
+    }
+    else
+    {
+        MESH_INFO("GetVariable succeeded\n");
+        // Verify the data content
+        status = memcmp((void*)s_get_var_req.data, (void*)&numa_cfg, sizeof(NUMA_CFG));
+        if (status != 0)
+        {
+            MESH_CRIT("GetVariable data mismatch, NUMA config DataCheck Failed!!\n");
+        }
+        else
+        {
+            MESH_CRIT("Mesh NUMA config stored in SPI and DataCheck Passed\n");
+        }
+    }
+}
+
 int mesh_read_binary_table_from_rmss(uint8_t die_num, uint32_t cmn_config_enum)
 {
     int sts = SILIBS_SUCCESS;
@@ -534,6 +685,22 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
                                                     (void*)&unused_parameter_not_null);
     intr_status |= FPFwCoreInterruptEnableVector(HW_INT_INTREQERRNS);
     FPFW_RUNTIME_ASSERT(intr_status == 0);
+
+    // Publish NUMA info regardless of single or dual die boot
+    // This is required for the OS to be able to read the NUMA info from the SPI flash
+    if (die_num == SOC_D0)
+    {
+        save_numa_info();
+    }
+    // Sync between D0 and D1 in case of dual die boot
+    if (cmn800_sequence_param.BOOT_2D_ENABLE)
+    {
+        //! SCP 0 & 1 must synchronize since NUMA info is stored by D0 only and will take time due to synchronous HSP call
+        int d2d_sync_point_numa_info_status =
+            mscp_exp_spi_synchronize_dies(d2d_sync_point_numa_info, idsw_get_die_id());
+        BUG_ASSERT_PARAM(d2d_sync_point_numa_info_status == SILIBS_SUCCESS, d2d_sync_point_numa_info_status, SILIBS_SUCCESS);
+    }
+    MESH_INFO("save_numa_info done\n");
 
     MESH_CRIT("Mesh Init Done\n");
 

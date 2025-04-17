@@ -27,6 +27,7 @@
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+extern NUMA_CFG numa_cfg;
 
 /*-------------- Typedefs ----------------*/
 
@@ -39,9 +40,15 @@ static FPFW_CLI_STATUS mesh_error_inj(int argc, const char** argv);
 
 static FPFW_CLI_STATUS mesh_pseudo_error_inj(int argc, const char** argv);
 
+static FPFW_CLI_STATUS mesh_ras_error_dump(int argc, const char** argv);
+
+static FPFW_CLI_STATUS mesh_ras_hns_ce_counter_update(int argc, const char** argv);
+
 static FPFW_CLI_STATUS mesh_pseudo_error_inj_test_suite(int argc, const char** argv);
 
 static FPFW_CLI_STATUS d2d_pseudo_error_inj(int argc, const char** argv);
+
+static FPFW_CLI_STATUS print_mesh_numa_config(int argc, const char** argv);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -50,8 +57,16 @@ static FPFW_CLI_COMMAND mesh_cli_list[] = {
     {NULL_LIST_ENTRY, "mesh", "mesh_isr", mesh_isr_cli, "mesh isr process", "Usage: mesh_isr <Error(0x0) or Fault(0x1)>"},
     {NULL_LIST_ENTRY, "mesh", "mesh_error_inj", mesh_error_inj, "mesh error injection", "Usage: mesh_error_inj <node_type> <node_id> <node_control_reg> <err_inj> <byte_par_err_inj>"},
     {NULL_LIST_ENTRY, "mesh", "mesh_pseudo_error_inj", mesh_pseudo_error_inj, "mesh pseudo fault injection", "Usage: mesh_pseudo_error_inj <secure/non_secure> <node_type> <node_id> <node_control_reg> <err_inj> <err_cnt_down>"},
+    {NULL_LIST_ENTRY, "mesh", "mesh_ras_error_dump", mesh_ras_error_dump, "mesh ras error dump", "Usage: mesh_ras_error_dump <secure/non_secure> <node_type> <node_id>"},
+    {NULL_LIST_ENTRY,
+     "mesh",
+     "mesh_ras_hns_ce_counter_update",
+     mesh_ras_hns_ce_counter_update,
+     "mesh ras hns ce counter update",
+     "Usage: mesh_ras_hns_ce_counter_update <secure/non_secure> <node_type> <node_id> <cecr> <ceco>"},
     {NULL_LIST_ENTRY, "mesh", "mesh_pseudo_error_test_suite", mesh_pseudo_error_inj_test_suite, "mesh pseudo fault injection test suite", "Usage: mesh_pseudo_error_test_suite <secure/non_secure> <node_type> <node_id_start> <node_id_end> <node_control_reg> <err_inj> <err_cnt_down>"},
     {NULL_LIST_ENTRY, "mesh", "d2d_pseudo_error_inj", d2d_pseudo_error_inj, "d2d pseudo fault injection", "Usage: d2d_pseudo_error_inj <node_id> <err_inj> <err_cnt_down>"},
+    {NULL_LIST_ENTRY, "mesh", "print_mesh_numa_config", print_mesh_numa_config, "Print the Mesh NUMA config", "Usage: print_mesh_numa_config"},
 
 };
 
@@ -258,6 +273,108 @@ exit_error:
     return CLI_ERROR;
 }
 
+static FPFW_CLI_STATUS mesh_ras_error_dump(int argc, const char** argv)
+{
+    FpFwCliPrint("mesh_ras_error_dump func. call\n\n");
+    uint8_t current_arg = 0x0;
+    if (argc == 4)
+    {
+        char* endptr;
+        uint8_t non_secure = strtoul(argv[++current_arg], &endptr, 16);
+        if (*endptr != '\0')
+        {
+            goto exit_error1;
+        }
+        uint8_t node_type = strtoul(argv[++current_arg], &endptr, 16);
+        if (*endptr != '\0')
+        {
+            goto exit_error1;
+        }
+        uint8_t node_id = strtoul(argv[++current_arg], &endptr, 16);
+        if (*endptr != '\0')
+        {
+            goto exit_error1;
+        }
+        FpFwCliPrint("cmn800_ras_error_dump Start\n");
+        FpFwCliPrint("%s node_type: 0x%x, node_id: 0x%x, die_num: %d\n",
+                     (non_secure == 0x0) ? "Secure" : "Non-Secure",
+                     node_type,
+                     node_id,
+                     (uint8_t)idhw_get_die_id());
+        cmn800_ras_error_dump(node_type, node_id, (uint8_t)idhw_get_die_id(), (bool)non_secure);
+        FpFwCliPrint("cmn800_ras_error_dump End\n");
+    }
+    else
+    {
+        goto exit_error;
+    }
+    return CLI_SUCCESS;
+exit_error1:
+    FpFwCliPrint("Arg %s is Invalid Hex value\n", argv[current_arg]);
+exit_error:
+    FpFwCliPrint("Mesh RAS Error Dump CLI Help\n");
+    FpFwCliPrint("Cmds: 3, <secure/non_secure> <node_type> <node_id>\n");
+    FpFwCliPrint("HNS Ex: mesh_ras_error_dump 0x0 0x1 0xC\n");
+    FpFwCliPrint("HNI Ex: mesh_ras_error_dump 0x1 0x3 0x0\n");
+    return CLI_ERROR;
+}
+static FPFW_CLI_STATUS mesh_ras_hns_ce_counter_update(int argc, const char** argv)
+{
+    FpFwCliPrint("mesh_ras_hns_ce_counter_update func. call\n\n");
+    uint8_t current_arg = 0x0;
+    if (argc == 6)
+    {
+        char* endptr;
+        uint8_t non_secure = strtoul(argv[++current_arg], &endptr, 16);
+        if (*endptr != '\0')
+        {
+            goto exit_error1;
+        }
+        uint8_t node_type = strtoul(argv[++current_arg], &endptr, 16);
+        if (*endptr != '\0')
+        {
+            goto exit_error1;
+        }
+        uint8_t node_id = strtoul(argv[++current_arg], &endptr, 16);
+        if (*endptr != '\0')
+        {
+            goto exit_error1;
+        }
+        uint16_t cecr = strtoul(argv[++current_arg], &endptr, 16);
+        if (*endptr != '\0')
+        {
+            goto exit_error1;
+        }
+        uint16_t ceco = strtoul(argv[++current_arg], &endptr, 16);
+        if (*endptr != '\0')
+        {
+            goto exit_error1;
+        }
+        FpFwCliPrint("cmn800_hns_ce_counter_update Start\n");
+        FpFwCliPrint("%s node_type: 0x%x, node_id: 0x%x, die_num: %d, cecr 0x%x, ceco 0x%x\n",
+                     (non_secure == 0x0) ? "Secure" : "Non-Secure",
+                     node_type,
+                     node_id,
+                     (uint8_t)idhw_get_die_id(),
+                     cecr,
+                     ceco);
+        cmn800_hns_ce_counter_update(node_type, node_id, (uint8_t)idhw_get_die_id(), (bool)non_secure, cecr, ceco);
+        FpFwCliPrint("cmn800_hns_ce_counter_update End\n");
+    }
+    else
+    {
+        goto exit_error;
+    }
+    return CLI_SUCCESS;
+exit_error1:
+    FpFwCliPrint("Arg %s is Invalid Hex value\n", argv[current_arg]);
+exit_error:
+    FpFwCliPrint("Mesh RAS HNS CE Counter Update CLI Help\n");
+    FpFwCliPrint("Cmds: 5, <secure/non_secure> <node_type> <node_id> <cecr> <ceco>\n");
+    FpFwCliPrint("HNS Ex: mesh_ras_hns_ce_counter_update 0x0 0x1 0xC 0x7ffe 0x0\n");
+    return CLI_ERROR;
+}
+
 static FPFW_CLI_STATUS mesh_pseudo_error_inj_test_suite(int argc, const char** argv)
 {
     FpFwCliPrint("mesh_pseudo_error_inj_test_suite func. call\n\n");
@@ -396,6 +513,27 @@ exit_error:
     FpFwCliPrint("Cmds: 3, <node_id> <err_inj> <err_cnt_down>\n");
     FpFwCliPrint("Ex: d2d_pseudo_error_inj 0x0 0x102000 0xF0000\n");
     return CLI_ERROR;
+}
+
+static FPFW_CLI_STATUS print_mesh_numa_config(int argc, const char** argv)
+{
+    FPFW_UNUSED(argv);
+    FpFwCliPrint("print_mesh_numa_config func. call\n");
+
+    if (argc == 1)
+    {
+        // Print the NUMA config
+        FpFwCliPrint("NUMA config\n");
+        print_numa_info(&numa_cfg);
+        FpFwCliPrint("NUMA config end\n");
+    }
+    else
+    {
+        FpFwCliPrint("print_mesh_numa_config CLI Help\n");
+        FpFwCliPrint("Cmds: 0\n");
+        return CLI_ERROR;
+    }
+    return CLI_SUCCESS;
 }
 
 void mesh_cli_initialize(void)

@@ -534,6 +534,15 @@ void AVSPwrReadRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Compl
  */
 void AVSPwrKnobWriteRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext);
 
+/**
+ * @brief Checks if HW has AVS devices.
+ *
+ * @param[in] None
+ * @return true or false
+ *
+ */
+bool power_hw_has_avs_devices(void);
+
 #ifdef __cplusplus
 }
 #endif

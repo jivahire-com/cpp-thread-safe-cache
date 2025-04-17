@@ -73,12 +73,34 @@ avs_pwr_request_context_t pwr_avs_request[MAX_AVS_INST] = {0};
 static pscp_avs_interface_t pwr_avs_interfaces[MAX_AVS_INST] = {0};
 
 /*------------- Functions ----------------*/
+bool power_hw_has_avs_devices()
+{
+    KNG_PLAT_ID platform_id;
+    platform_id = idsw_get_platform_sdv();
+
+    // Return true for PLATFORM_FPGA_LARGE_RVP, PLATFORM_RVP_EVT_SILICON and SVP platforms (AVS devices or simulated)
+    if ((platform_id == PLATFORM_FPGA_LARGE_RVP) || (platform_id == PLATFORM_RVP_EVT_SILICON) ||
+        (platform_id == PLATFORM_SVP_SIM) || (platform_id == PLATFORM_SVP_MIN_CONFIG_SIM))
+    {
+        return true;
+    }
+    // Return false for any other platform
+    return false;
+}
+
 void AVSPwrWriteRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext)
 {
     FPFW_UNUSED(Request);
     int pwr_avs_bus = (int)CompletionContext;
 
     pwr_avs_request[pwr_avs_bus].in_use = false;
+
+    if (!power_hw_has_avs_devices())
+    {
+        // if no VR's then complete and return
+        power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
+        return;
+    }
 
     if (pwr_avs_request[pwr_avs_bus].request.avs_response_status != SCP_AVS_STATUS_SUCCESS)
     {
@@ -145,6 +167,20 @@ void AVSPwrReadRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Compl
     const power_service_config_t* p_config = p_runconfig->p_sconfig;
 
     pwr_avs_request[pwr_avs_bus].in_use = false;
+
+    if (!power_hw_has_avs_devices()) // If no VRs then complete and return.
+    {
+        if (pwr_avs_request[pwr_avs_bus].request.Header.RequestType == AVS_REQUEST_READ_DATA)
+        {
+            power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
+        }
+        else // //AVS_REQUEST_READ_MULTI
+        {
+            power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VR_READ, &s_power_vrs_ctx.latest_power);
+            power_loops_vr_telem_handle_event(POWER_VR_TELEM_SIGNAL_VR_CURRENT, s_power_vrs_ctx.vr_inputs);
+        }
+        return;
+    }
 
     if (pwr_avs_request[pwr_avs_bus].request.avs_response_status != SCP_AVS_STATUS_SUCCESS)
     {

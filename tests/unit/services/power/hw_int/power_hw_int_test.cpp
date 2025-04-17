@@ -24,17 +24,18 @@ extern "C" {
 #include <dvfs.h>                  // for dvfs_get_cppc_from_pstate, _DVFS_...
 #include <dvfs_struct.h>           // for DVFS_DEF_PLIMIT_INDEX_NOMINAL
 #include <fgpll_regs.h>            // for (anonymous), fgpll_reg, ptr_fgpll...
-#include <mock_bug_check.h>        // for __wrap_crash_dump_bug_check
-#include <odcm.h>                  // for _ODCM_RETCODE
-#include <odcm_struct.h>           // for ODCM_DEFAULT_CONFIG, odcm_config_t
-#include <pex_regs.h>              // for PEX_CORE_PLL_ADDRESS
-#include <power_hw_int_i.h>        // for power_init_core, power_init_soc
-#include <power_i.h>               // for TEMP2DOUT_FUSED
-#include <power_init.h>            // for power_init
-#include <power_runconfig.h>       // for power_knobs_t, power_fuse_data_t
-#include <power_runconfig_i.h>     // for power_runconfig_t
-#include <pvt.h>                   // for _PVT_RETCODE
-#include <pvt_struct.h>            // for VOLTS2DOUT, pvt_alarm_setting_con...
+#include <idsw_kng.h>
+#include <mock_bug_check.h>    // for __wrap_crash_dump_bug_check
+#include <odcm.h>              // for _ODCM_RETCODE
+#include <odcm_struct.h>       // for ODCM_DEFAULT_CONFIG, odcm_config_t
+#include <pex_regs.h>          // for PEX_CORE_PLL_ADDRESS
+#include <power_hw_int_i.h>    // for power_init_core, power_init_soc
+#include <power_i.h>           // for TEMP2DOUT_FUSED
+#include <power_init.h>        // for power_init
+#include <power_runconfig.h>   // for power_knobs_t, power_fuse_data_t
+#include <power_runconfig_i.h> // for power_runconfig_t
+#include <pvt.h>               // for _PVT_RETCODE
+#include <pvt_struct.h>        // for VOLTS2DOUT, pvt_alarm_setting_con...
 #include <scp_exp_csr_regs.h>
 #include <silibs_common.h> // for ARRAY_SIZE, MAX
 #include <silibs_scp_exp_top_regs.h>
@@ -158,6 +159,11 @@ void __wrap_power_loops_control_handle_event(power_ctrl_loop_signal_t event, con
     UNUSED(event_data);
     function_called();
     return;
+}
+
+KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
+{
+    return mock_type(KNG_PLAT_ID);
 }
 
 /*-------- Function Prototypes -----------*/
@@ -1514,6 +1520,29 @@ POWER_TEST(power_vrs_write_vcpu_voltage_callback, setup, teardown)
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].cmd_type = AVS_VOLTAGE_RW;
 
     expect_function_call(__wrap_power_loops_control_handle_event);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    AVSPwrWriteRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
+    assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num].in_use, 0);
+}
+
+POWER_TEST(power_vrs_write_vcpu_voltage_callback_no_vrs, setup, teardown)
+{
+    PDFWK_ASYNC_REQUEST_HEADER request = NULL;
+    scp_avs_device_t test_avs_device = {
+        .avs_bus_num = AVS_BUS0,
+    };
+
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_single_resp.error.as_uint8 = AVS_ERROR_NONE;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_single_resp.error.v_done = 1;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_status = SCP_AVS_STATUS_SUCCESS;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.Header.RequestType = AVS_REQUEST_WRITE_DATA;
+    pwr_avs_request[test_avs_device.avs_bus_num].in_use = 1;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].rail_id = 0;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].cmd_type = AVS_VOLTAGE_RW;
+
+    expect_function_call(__wrap_power_loops_control_handle_event);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     AVSPwrWriteRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
     assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
     assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num].in_use, 0);
@@ -1529,6 +1558,7 @@ POWER_TEST(power_vrs_write_vcpu_voltage_callback_error, setup, teardown)
     pwr_avs_request[test_avs_device.avs_bus_num].in_use = 1;
 
     expect_function_call(__wrap_power_loops_control_handle_event);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     AVSPwrWriteRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
     assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num].in_use, 0);
 }
@@ -1556,6 +1586,36 @@ POWER_TEST(power_vrs_read_vcpu_voltage_callback_vdone, setup, teardown)
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 
     expect_function_call(__wrap_power_loops_control_handle_event);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    AVSPwrReadRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
+    assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num].in_use, 0);
+}
+
+POWER_TEST(power_vrs_read_vcpu_voltage_callback_vdone_no_vrs, setup, teardown)
+{
+    PDFWK_ASYNC_REQUEST_HEADER request = NULL;
+    scp_avs_device_t test_avs_device = {
+        .avs_bus_num = AVS_BUS0,
+    };
+
+    power_service_config_t sconfig = {};
+    power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
+    uint8_t vcpu_test_index = 0;
+    sconfig.avs_details[vcpu_test_index].bus_id = vcpu_test_index;
+    sconfig.avs_details[vcpu_test_index].rail_id = vcpu_test_index;
+
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_single_resp.error.as_uint8 = AVS_ERROR_NONE;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_single_resp.error.v_done = 1;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_status = SCP_AVS_STATUS_SUCCESS;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.Header.RequestType = AVS_REQUEST_READ_DATA;
+    pwr_avs_request[test_avs_device.avs_bus_num].in_use = 1;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].rail_id = 0;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].cmd_type = AVS_VOLTAGE_RW;
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+
+    expect_function_call(__wrap_power_loops_control_handle_event);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     AVSPwrReadRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
     assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
     assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num].in_use, 0);
@@ -1584,6 +1644,8 @@ POWER_TEST(power_vrs_read_vcpu_voltage_callback, setup, teardown)
     will_return(__wrap_power_runconfig_get, &test_runconfig);
     expect_function_call(__wrap_power_loops_control_handle_event);
 
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+
     AVSPwrReadRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
     assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
     assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num].in_use, 0);
@@ -1608,6 +1670,7 @@ POWER_TEST(power_vrs_read_vcpu_voltage_callback_error, setup, teardown)
 
     expect_function_call(__wrap_power_loops_control_handle_event);
     will_return(__wrap_power_runconfig_get, &test_runconfig);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     AVSPwrReadRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
     assert_int_equal(pwr_avs_request[test_avs_device.avs_bus_num].in_use, 0);
 }

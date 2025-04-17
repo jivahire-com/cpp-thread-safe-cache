@@ -33,7 +33,7 @@ extern char* TEST_ERROR_DOMAIN_NAME;
 extern guid_t error_domain_guid[];
 acpi_error_domain_t test_error_domain = ACPI_ERROR_DOMAIN_MESH;
 /*------------- Functions ----------------*/
-acpi_einj_cmd_status_t hm_error_injection_cb(ras_einj_info_t_temp* payload, void* ctx)
+acpi_einj_cmd_status_t hm_error_injection_cb(ras_einj_info_t* payload, void* ctx)
 {
     FPFW_UNUSED(payload);
     FPFW_UNUSED(ctx);

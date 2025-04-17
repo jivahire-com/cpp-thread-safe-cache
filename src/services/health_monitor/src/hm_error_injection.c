@@ -63,7 +63,7 @@ acpi_einj_cmd_status_t hm_inject_error(void)
     acpi_einj_cmd_status_t status = ACPI_EINJ_SUCCESS;
 
     hm_config_t* hm_config = get_hm_config();
-    volatile ras_einj_info_t_temp* einj_payload = (ras_einj_info_t_temp*)hm_config->mscp_error_injection_addr_base;
+    volatile ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
 
     if (idhw_is_single_die_boot_en() == true)
     {
@@ -78,7 +78,7 @@ acpi_einj_cmd_status_t hm_inject_error(void)
     {
         if (einj_payload->component_instance != idsw_get_die_id())
         {
-            HM_LOG_INFO("Send EINJ req to remote");
+            HM_LOG_INFO("error injection request was made for remote core, re-route");
 
             static rmss_d2d_mailbox_msg einj_relay_msg = {0};
             einj_relay_msg.as_uint32[0] =
@@ -94,7 +94,7 @@ acpi_einj_cmd_status_t hm_inject_error(void)
             fpfw_status_t icc_status = fpfw_icc_base_send(hm_config->icc_ctx[HM_INTERCORE_SCP], &scp_send_params);
             if (icc_status != FPFW_ICC_BASE_STATUS_SUCCESS)
             {
-                HM_LOG_CRIT("Failed to send EINJ req to remote");
+                HM_LOG_CRIT("failed to send injection request to remote");
                 status = ACPI_EINJ_UNKNOWN_FAILURE;
             }
         }
@@ -114,11 +114,11 @@ acpi_einj_cmd_status_t hm_inject_error(void)
 
 acpi_einj_cmd_status_t hm_inject_error_local(void)
 {
-    ras_einj_info_t_temp einj_payload = {0};
+    ras_einj_info_t einj_payload = {0};
     hm_config_t* hm_config = get_hm_config();
 
     wait_for_semaphore(hm_config->semaphore_id, hm_config->semaphore_key);
-    for (size_t i = 0; i < sizeof(ras_einj_info_t_temp); i++)
+    for (size_t i = 0; i < sizeof(ras_einj_info_t); i++)
     {
         ((uint8_t*)&einj_payload)[i] = ((volatile uint8_t*)hm_config->mscp_error_injection_addr_base)[i];
     }
@@ -147,11 +147,11 @@ acpi_einj_cmd_status_t hm_inject_error_local(void)
 
     if (err_domain != NULL)
     {
-        HM_LOG_INFO("Invoke EINJ handler for (%d)", (int)target_error_domain_idx);
+        HM_LOG_INFO("Invoke %s EINJ handler", get_error_domain_name(target_error_domain_idx));
     }
     else
     {
-        HM_LOG_INFO("Err domain(%d) not activated", (int)target_error_domain_idx);
+        HM_LOG_INFO("%s error domain not activated", get_error_domain_name(target_error_domain_idx));
         return ACPI_EINJ_INVALID_ACCESS;
     }
 

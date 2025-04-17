@@ -49,7 +49,7 @@ void hm_submit_cper(uint16_t error_domain_idx, acpi_error_severity_t err_severit
         }
         else
         {
-            HM_LOG_CRIT("CPER cache full (%d)", error_domain_idx);
+            HM_LOG_CRIT("CPER cache full (%s)", get_error_domain_name(error_domain_idx));
 
             // cache is full, report uncorrectable error first
             for (uint32_t non_fatal_cper_idx = 0; non_fatal_cper_idx < local_cper_count; non_fatal_cper_idx++)

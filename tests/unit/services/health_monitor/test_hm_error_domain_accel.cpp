@@ -234,8 +234,8 @@ TEST_FUNCTION(hm_sdm_error_injection_cb, post_ddr_setup, nullptr)
     expect_function_call(__wrap_fpfw_icc_base_send);
 
     hm_config_t* hm_config = get_hm_config();
-    ras_einj_info_t_temp input_einj_payload;
-    memset(&input_einj_payload, 0, sizeof(ras_einj_info_t_temp));
+    ras_einj_info_t input_einj_payload;
+    memset(&input_einj_payload, 0, sizeof(ras_einj_info_t));
     input_einj_payload.version = ERROR_INJECTION_PAYLOAD_VERSION;
     input_einj_payload.component_type = 0;
     input_einj_payload.component_group = (uint16_t)ACPI_ERROR_DOMAIN_SDM;
@@ -245,9 +245,9 @@ TEST_FUNCTION(hm_sdm_error_injection_cb, post_ddr_setup, nullptr)
     input_einj_payload.param_type.error_parameters[1] = 0;
     input_einj_payload.value_type.error_values = 0;
 
-    volatile ras_einj_info_t_temp* einj_payload = (ras_einj_info_t_temp*)hm_config->mscp_error_injection_addr_base;
+    volatile ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
 
-    for (uint32_t i = 0; i < sizeof(ras_einj_info_t_temp); i++)
+    for (uint32_t i = 0; i < sizeof(ras_einj_info_t); i++)
     {
         ((volatile uint8_t*)einj_payload)[i] = ((const uint8_t*)&input_einj_payload)[i];
     }
@@ -265,8 +265,8 @@ TEST_FUNCTION(hm_sdm_error_injection_cb_icc_send_fail, post_ddr_setup, nullptr)
     expect_function_call(__wrap_fpfw_icc_base_send);
 
     hm_config_t* hm_config = get_hm_config();
-    ras_einj_info_t_temp input_einj_payload;
-    memset(&input_einj_payload, 0, sizeof(ras_einj_info_t_temp));
+    ras_einj_info_t input_einj_payload;
+    memset(&input_einj_payload, 0, sizeof(ras_einj_info_t));
     input_einj_payload.version = ERROR_INJECTION_PAYLOAD_VERSION;
     input_einj_payload.component_type = 0;
     input_einj_payload.component_group = (uint16_t)ACPI_ERROR_DOMAIN_SDM;
@@ -276,9 +276,9 @@ TEST_FUNCTION(hm_sdm_error_injection_cb_icc_send_fail, post_ddr_setup, nullptr)
     input_einj_payload.param_type.error_parameters[1] = 0;
     input_einj_payload.value_type.error_values = 0;
 
-    volatile ras_einj_info_t_temp* einj_payload = (ras_einj_info_t_temp*)hm_config->mscp_error_injection_addr_base;
+    volatile ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
 
-    for (uint32_t i = 0; i < sizeof(ras_einj_info_t_temp); i++)
+    for (uint32_t i = 0; i < sizeof(ras_einj_info_t); i++)
     {
         ((volatile uint8_t*)einj_payload)[i] = ((const uint8_t*)&input_einj_payload)[i];
     }
@@ -296,8 +296,8 @@ TEST_FUNCTION(hm_cded_error_injection_cb, post_ddr_setup, nullptr)
     expect_function_call(__wrap_fpfw_icc_base_send);
 
     hm_config_t* hm_config = get_hm_config();
-    ras_einj_info_t_temp input_einj_payload;
-    memset(&input_einj_payload, 0, sizeof(ras_einj_info_t_temp));
+    ras_einj_info_t input_einj_payload;
+    memset(&input_einj_payload, 0, sizeof(ras_einj_info_t));
     input_einj_payload.version = ERROR_INJECTION_PAYLOAD_VERSION;
     input_einj_payload.component_type = 0;
     input_einj_payload.component_group = (uint16_t)ACPI_ERROR_DOMAIN_CDED_SDM;
@@ -307,9 +307,9 @@ TEST_FUNCTION(hm_cded_error_injection_cb, post_ddr_setup, nullptr)
     input_einj_payload.param_type.error_parameters[1] = 0;
     input_einj_payload.value_type.error_values = 0;
 
-    volatile ras_einj_info_t_temp* einj_payload = (ras_einj_info_t_temp*)hm_config->mscp_error_injection_addr_base;
+    volatile ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
 
-    for (uint32_t i = 0; i < sizeof(ras_einj_info_t_temp); i++)
+    for (uint32_t i = 0; i < sizeof(ras_einj_info_t); i++)
     {
         ((volatile uint8_t*)einj_payload)[i] = ((const uint8_t*)&input_einj_payload)[i];
     }
@@ -327,8 +327,8 @@ TEST_FUNCTION(hm_cded_error_injection_cb_icc_send_fail, post_ddr_setup, nullptr)
     expect_function_call(__wrap_fpfw_icc_base_send);
 
     hm_config_t* hm_config = get_hm_config();
-    ras_einj_info_t_temp input_einj_payload;
-    memset(&input_einj_payload, 0, sizeof(ras_einj_info_t_temp));
+    ras_einj_info_t input_einj_payload;
+    memset(&input_einj_payload, 0, sizeof(ras_einj_info_t));
     input_einj_payload.version = ERROR_INJECTION_PAYLOAD_VERSION;
     input_einj_payload.component_type = 0;
     input_einj_payload.component_group = (uint16_t)ACPI_ERROR_DOMAIN_CDED_SDM;
@@ -338,9 +338,9 @@ TEST_FUNCTION(hm_cded_error_injection_cb_icc_send_fail, post_ddr_setup, nullptr)
     input_einj_payload.param_type.error_parameters[1] = 0;
     input_einj_payload.value_type.error_values = 0;
 
-    volatile ras_einj_info_t_temp* einj_payload = (ras_einj_info_t_temp*)hm_config->mscp_error_injection_addr_base;
+    volatile ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
 
-    for (uint32_t i = 0; i < sizeof(ras_einj_info_t_temp); i++)
+    for (uint32_t i = 0; i < sizeof(ras_einj_info_t); i++)
     {
         ((volatile uint8_t*)einj_payload)[i] = ((const uint8_t*)&input_einj_payload)[i];
     }

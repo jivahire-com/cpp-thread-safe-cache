@@ -98,6 +98,9 @@ void hm_post_intercore_init(hm_intercore_type_t intercore_type, fpfw_icc_base_ct
     case HM_INTERCORE_CDED:
         hm_prepare_cded_sdm_listener(icc_ctx);
         break;
+    case HM_INTERCORE_HSP:
+        hm_prepare_hsp_listener(icc_ctx);
+        break;
     default:
         break;
     }
@@ -121,4 +124,33 @@ void wait_for_ghes_construction()
     BUG_ASSERT_PARAM(d2d_sync_status == SILIBS_SUCCESS, d2d_sync_status, SILIBS_SUCCESS);
 
     set_ghes_table_ready();
+}
+
+const char* get_error_domain_name(acpi_error_domain_t domain)
+{
+    static const char* enum_names[] = {"DDR",
+                                       "MESH",
+                                       "SECURE_RAM",
+                                       "NON_SECURE_RAM",
+                                       "MCP_PROC",
+                                       "SCP_PROC",
+                                       "HSP_PROC",
+                                       "AP_PROC",
+                                       "SDM",
+                                       "CDED_SDM",
+                                       "SMMU",
+                                       "PCIE",
+                                       "GIC",
+                                       "STD_PROCESSOR",
+                                       "STD_MEMORY",
+                                       "STD_PCIE",
+                                       "STD_PLATFORM"};
+
+    // Check if the domain is within the valid range
+    if (domain < ACPI_ERROR_DOMAIN_COUNT)
+    {
+        return enum_names[domain];
+    }
+
+    return "NA";
 }

@@ -3,8 +3,8 @@
 //
 
 /**
- * @file test_hm_error_domain_mcp.cpp
- * Tests health monitor error injection
+ * @file test_hm_error_domain_hsp.cpp
+ * Tests health monitor hsp error domain
  */
 
 /*------------- Includes -----------------*/
@@ -20,6 +20,7 @@ extern "C" {
 #include <hm_test.h>
 #include <idsw.h>
 #include <idsw_kng.h>
+#include <kingsgate_hsp_mailbox_commands.h>
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -40,37 +41,39 @@ extern "C" {
 //
 // Tests
 //
-TEST_FUNCTION(hm_mcp_error_domain_register_listener, post_ddr_setup, nullptr)
+TEST_FUNCTION(hm_hsp_error_record_submit_listener, post_ddr_setup, nullptr)
 {
     expect_function_call_any(__wrap_fpfw_icc_base_recv);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-    hm_mcp_error_domain_register_listener((fpfw_icc_base_ctx_t*)ICC_HM_ERROR_DOMAIN_REGISTER_MCP);
+    hm_hsp_error_record_submit_listener((fpfw_icc_base_ctx_t*)HSP_MAILBOX_CMD_RAS_ERROR_REPORT_REQ);
 }
 
-TEST_FUNCTION(hm_mcp_error_domain_register_listener_failed, post_ddr_setup, nullptr)
+TEST_FUNCTION(hm_hsp_error_domain_register_listener, post_ddr_setup, nullptr)
 {
     expect_function_call_any(__wrap_fpfw_icc_base_recv);
-    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_NULL_ARG_ERR);
-    hm_mcp_error_domain_register_listener((fpfw_icc_base_ctx_t*)ICC_HM_ERROR_DOMAIN_REGISTER_MCP);
+    expect_function_call_any(__wrap_wait_for_semaphore);
+    expect_function_call_any(__wrap_release_semaphore);
+    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    hm_hsp_error_domain_register_listener((fpfw_icc_base_ctx_t*)HSP_MAILBOX_CMD_RAS_ERROR_REGISTER_REQ);
 }
 
-TEST_FUNCTION(hm_mcp_error_injection_cb, post_ddr_setup, nullptr)
+TEST_FUNCTION(hm_hsp_error_injection_cb, post_ddr_setup, nullptr)
 {
     will_return_always(__wrap_idhw_is_single_die_boot_en, true);
     will_return_always(__wrap_idsw_get_die_id, 0);
     expect_function_call(__wrap_wait_for_semaphore);
     expect_function_call(__wrap_release_semaphore);
-    will_return_always(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
-    expect_function_call(__wrap_fpfw_icc_base_send);
+    will_return_always(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_send_recv);
 
     hm_config_t* hm_config = get_hm_config();
     ras_einj_info_t input_einj_payload;
     memset(&input_einj_payload, 0, sizeof(ras_einj_info_t));
     input_einj_payload.version = ERROR_INJECTION_PAYLOAD_VERSION;
     input_einj_payload.component_type = 0;
-    input_einj_payload.component_group = (uint16_t)ACPI_ERROR_DOMAIN_MCP_PROC;
+    input_einj_payload.component_group = (uint16_t)ACPI_ERROR_DOMAIN_HSP_PROC;
     input_einj_payload.component_instance = 0;
     input_einj_payload.status_operation.value = 0;
     input_einj_payload.param_type.error_parameters[0] = 0;
@@ -85,20 +88,4 @@ TEST_FUNCTION(hm_mcp_error_injection_cb, post_ddr_setup, nullptr)
     }
 
     hm_inject_error();
-}
-
-TEST_FUNCTION(hm_mcp_error_record_submit_listener, post_ddr_setup, nullptr)
-{
-    expect_function_call_any(__wrap_fpfw_icc_base_recv);
-    expect_function_call_any(__wrap_wait_for_semaphore);
-    expect_function_call_any(__wrap_release_semaphore);
-    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-    hm_mcp_error_record_submit_listener((fpfw_icc_base_ctx_t*)ICC_HM_ERROR_RECORD_SUBMIT_MCP);
-}
-
-TEST_FUNCTION(hm_mcp_error_record_submit_listener_failed, post_ddr_setup, nullptr)
-{
-    expect_function_call_any(__wrap_fpfw_icc_base_recv);
-    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_NULL_ARG_ERR);
-    hm_mcp_error_record_submit_listener((fpfw_icc_base_ctx_t*)ICC_HM_ERROR_RECORD_SUBMIT_MCP);
 }

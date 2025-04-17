@@ -21,7 +21,9 @@ extern "C" {
 #include <hm_test.h>
 #include <idsw.h>
 #include <idsw_kng.h>
+#include <kingsgate_hsp_mailbox_commands.h>
 #include <stdint.h>
+#include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -32,7 +34,7 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 extern acpi_error_domain_t test_error_domain;
 extern char* TEST_ERROR_DOMAIN_NAME;
-extern ras_einj_info_t_temp einj_payload_local;
+extern ras_einj_info_t einj_payload_local;
 /*------------- Functions ----------------*/
 
 //
@@ -64,7 +66,9 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
     function_called();
 
     static bool mcp_register_tested = false;
+    static bool hsp_register_tested = false;
     static bool mcp_cper_tested = false;
+    static bool hsp_cper_tested = false;
 
     if (icc_ctx == (fpfw_icc_base_ctx_t*)ICC_HM_ERROR_DOMAIN_REGISTER_MCP && mcp_register_tested == false)
     {
@@ -83,6 +87,26 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
 
         params->cb(&mcp_err_domain_register_payload, sizeof(hm_mhu_error_domain_register_payload_t), FPFW_STATUS_SUCCESS);
     }
+    else if (icc_ctx == (fpfw_icc_base_ctx_t*)HSP_MAILBOX_CMD_RAS_ERROR_REGISTER_REQ && hsp_register_tested == false)
+    {
+        hsp_register_tested = true;
+
+        hm_config_t* hm_config = get_hm_config();
+        hm_error_domain_info_t* hsp_err_domain = (hm_error_domain_info_t*)(hm_config->mscp_hsp_ras_payload_base);
+
+        hsp_err_domain->error_domain_idx = ACPI_ERROR_DOMAIN_HSP_PROC;
+        hsp_err_domain->valid_fru_id = 0;
+        hsp_err_domain->valid_fru_str = 1;
+        strncpy(hsp_err_domain->fru_text, HSP_PROC_FRU, sizeof(hsp_err_domain->fru_text));
+
+        struct kng_hsp_mailbox_cmd_ras_error_register_req hsp_err_domain_register_payload;
+        hsp_err_domain_register_payload.error_domain_payload_address_low = (uint32_t)hsp_err_domain;
+
+        static fpfw_icc_base_recv_req_t hsp_err_domain_register_icc_payload;
+        hsp_err_domain_register_icc_payload.payload_buffer = &hsp_err_domain_register_payload;
+
+        params->cb(&hsp_err_domain_register_icc_payload, sizeof(fpfw_icc_base_recv_req_t), FPFW_STATUS_SUCCESS);
+    }
     else if (icc_ctx == (fpfw_icc_base_ctx_t*)ICC_HM_ERROR_RECORD_SUBMIT_MCP && mcp_cper_tested == false)
     {
         mcp_cper_tested = true;
@@ -94,6 +118,26 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
         mcp_cper_payload.error_record.section_size = sizeof(acpi_cper_section_t);
 
         params->cb(&mcp_cper_payload, sizeof(mcp_cper_payload), FPFW_STATUS_SUCCESS);
+    }
+    else if (icc_ctx == (fpfw_icc_base_ctx_t*)HSP_MAILBOX_CMD_RAS_ERROR_REPORT_REQ && hsp_cper_tested == false)
+    {
+        hsp_cper_tested = true;
+
+        hm_config_t* hm_config = get_hm_config();
+        hm_error_record_t* hsp_err_record =
+            (hm_error_record_t*)(hm_config->mscp_hsp_ras_payload_base + HM_HSP_ERROR_RECORD_OFFSET);
+        hsp_err_record->error_domain_idx = ACPI_ERROR_DOMAIN_HSP_PROC;
+        hsp_err_record->section_size = sizeof(acpi_err_sec_hsp_processor_t);
+        hsp_err_record->err_severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
+        hsp_err_record->cper_section.sec_hsp_proc.error_type = 1;
+
+        struct kng_hsp_mailbox_cmd_ras_error_report_req hsp_err_report_payload;
+        hsp_err_report_payload.cper_payload_address_low = (uint32_t)hsp_err_record;
+
+        static fpfw_icc_base_recv_req_t hsp_err_submit_icc_payload;
+        hsp_err_submit_icc_payload.payload_buffer = &hsp_err_report_payload;
+
+        params->cb(&hsp_err_submit_icc_payload, sizeof(fpfw_icc_base_recv_req_t), FPFW_STATUS_SUCCESS);
     }
     else
     {
@@ -145,6 +189,15 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
 
     return (mock_type(fpfw_status_t));
 }
+
+fpfw_status_t __wrap_fpfw_icc_base_send_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_send_recv_req_t* params)
+{
+    FPFW_UNUSED(icc_ctx);
+    function_called();
+
+    params->cb(params->cb_ctx, sizeof(kng_hsp_mailbox_msg_rsp), FPFW_STATUS_SUCCESS);
+    return (mock_type(fpfw_status_t));
+}
 }
 
 //
@@ -162,7 +215,7 @@ TEST_FUNCTION(test_hm_inject_error, post_ddr_setup, nullptr)
 
     hm_config_t* hm_config = get_hm_config();
 
-    ras_einj_info_t_temp* einj_payload = (ras_einj_info_t_temp*)hm_config->mscp_error_injection_addr_base;
+    ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
     assert_true(einj_payload->version == ERROR_INJECTION_PAYLOAD_VERSION);
     assert_true(einj_payload->component_group == test_error_domain);
     assert_true(hm_inject_error() == ACPI_EINJ_SUCCESS);
@@ -197,7 +250,7 @@ TEST_FUNCTION(test_hm_inject_error_singledie, post_ddr_setup, nullptr)
 
     hm_config_t* hm_config = get_hm_config();
 
-    ras_einj_info_t_temp* einj_payload = (ras_einj_info_t_temp*)hm_config->mscp_error_injection_addr_base;
+    ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
     assert_true(einj_payload->version == ERROR_INJECTION_PAYLOAD_VERSION);
     assert_true(einj_payload->component_group == test_error_domain);
     einj_payload->component_instance = 0;

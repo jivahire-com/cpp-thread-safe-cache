@@ -150,3 +150,10 @@ TEST_FUNCTION(test_hm_post_intercore_init_cded, pre_ddr_setup, nullptr)
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     hm_post_intercore_init(HM_INTERCORE_CDED, (fpfw_icc_base_ctx_t*)ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(ACCEL_ID_CDED));
 }
+
+TEST_FUNCTION(test_hm_post_intercore_init_hsp, pre_ddr_setup, nullptr)
+{
+    expect_function_calls(__wrap_fpfw_icc_base_recv, 2);
+    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    hm_post_intercore_init(HM_INTERCORE_HSP, (fpfw_icc_base_ctx_t*)1234);
+}

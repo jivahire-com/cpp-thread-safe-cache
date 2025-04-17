@@ -13,7 +13,6 @@
 #include <fpfw_icc_base.h>
 #include <icc_mhu.h>
 #include <kng_error.h>
-#include <health_monitor_temporary_einj_structs.h>
 #include <semaphore_lib.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -26,7 +25,7 @@
 #define HM_ERROR_SECTION_COUNT 2
 
 /*------------- Typedefs -----------------*/
-typedef acpi_einj_cmd_status_t (*hm_error_injection_cb_t)(ras_einj_info_t_temp *p_information_base, void *error_domain_context);
+typedef acpi_einj_cmd_status_t (*hm_error_injection_cb_t)(ras_einj_info_t *p_information_base, void *error_domain_context);
 
 typedef enum
 {
@@ -49,13 +48,15 @@ typedef enum
 typedef struct {
     // GHES table related
     acpi_ghes_t* mscp_ghes_base;
-    ras_einj_info_t_temp* mscp_error_injection_addr_base;
+    ras_einj_info_t* mscp_error_injection_addr_base;
     uint32_t* mscp_ghes_error_record_addr_base;
     uint32_t* mscp_ghes_error_record_addr_table_base;
     uint64_t* mscp_ghes_ack_addr_table_base;
     uint32_t mscp_ghes_base_apcore_offset;
     // ICC context for intercore communication
     fpfw_icc_base_ctx_t *icc_ctx[HM_INTERCORE_TYPE_MAX];
+    // HSP ICC Payload related
+    uint8_t* mscp_hsp_ras_payload_base;
     // Semaphore related
     SEMAPHORE_ID semaphore_id;
     uint32_t semaphore_key;
@@ -65,8 +66,8 @@ typedef struct {
 
 typedef struct {
     uint16_t error_domain_idx;
-    bool valid_fru_id;
-    bool valid_fru_str;
+    uint8_t valid_fru_id;
+    uint8_t valid_fru_str;
     guid_t fru_id;
     char fru_text[ACPI_FRU_TEXT_LENGTH];
     hm_error_injection_cb_t injection_cb;

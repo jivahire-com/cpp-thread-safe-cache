@@ -31,6 +31,9 @@ void set_ghes_table_ready()
 
 void construct_mscp_ghes_table()
 {
+    static_assert((ACPI_ERROR_DOMAIN_COUNT * sizeof(acpi_ghes_error_record_dual_die_t) < RAS_GHES_ERROR_RECORD_SIZE),
+                  "GHES error record size is too small");
+
     hm_config_t* hm_config = get_hm_config();
 
     volatile acpi_ghes_t* current_ghes_base = hm_config->mscp_ghes_base;
@@ -224,11 +227,7 @@ void activate_error_domain(uint16_t error_domain_idx, const guid_t* error_domain
 
     release_semaphore(hm_config->semaphore_id);
 
-    HM_LOG_INFO("Err domain ON(%d), GHES(%p), Record(%p), (%s)",
-                error_domain_idx,
-                (void*)current_error_domain_ghes_base,
-                (void*)current_error_domain_error_record_base,
-                skip ? "skipped" : "enabled");
+    HM_LOG_INFO("%s error domain %s", get_error_domain_name(error_domain_idx), skip ? "already registered" : "registered");
 }
 
 void update_error_record_section(uint16_t error_domain_idx, acpi_error_severity_t err_severity, void* err_record_section, uint32_t err_record_section_size)
@@ -238,10 +237,6 @@ void update_error_record_section(uint16_t error_domain_idx, acpi_error_severity_
         if (ghes_table_init == false)
         {
             BUG_ASSERT_PARAM(false, ghes_table_init, 0);
-        }
-        else
-        {
-            HM_LOG_INFO("Err record update(%d), severity(%d)", error_domain_idx, err_severity);
         }
 
         hm_config_t* hm_config = get_hm_config();
@@ -309,6 +304,8 @@ void update_error_record_section(uint16_t error_domain_idx, acpi_error_severity_
         {
             hm_report_uncorrected_error(HM_ERROR_REPORT_INTERRUPT);
         }
+
+        HM_LOG_INFO("%s CPER record updated, severity(%d)", get_error_domain_name(error_domain_idx), err_severity);
     }
     else
     {

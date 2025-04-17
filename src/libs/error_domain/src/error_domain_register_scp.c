@@ -28,7 +28,7 @@ static guid_t SCP_ERROR_DOMAIN_GUID = SCP_PROC_ERROR_DOMAIN_FRU_GUID_DEF;
 
 /*-------------- Functions ---------------*/
 
-static acpi_einj_cmd_status_t scp_error_injection_handler(ras_einj_info_t_temp* einj_payload, void* ctx)
+static acpi_einj_cmd_status_t scp_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
 {
     FPFW_UNUSED(ctx);
     FPFW_UNUSED(einj_payload);

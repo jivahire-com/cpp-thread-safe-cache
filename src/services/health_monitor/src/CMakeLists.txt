@@ -10,6 +10,7 @@ add_library(${TARGET}
         hm_error_injection.c
         hm_error_domain_mcp.c
         hm_error_domain_accel.c
+        hm_error_domain_hsp.c
         hm_main.c
 )
 
@@ -31,13 +32,15 @@ target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.status
         fwlib.lib.init
+        fwlib.lib.interface.platform.dbgprint
         silibs::idhw
         silibs::idsw
         silibs::idsw_kng
         silibs::spi_bridge
         ms::lib::crash_dump
         ms::lib::icc_platform_defines
-        ms::service::atu_service
+        ms::service::atu_service      
+        kng.lib.hsp_firmware_headers 
 )
 
 lint_target(${TARGET})

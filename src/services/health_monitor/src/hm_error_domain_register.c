@@ -74,7 +74,7 @@ void hm_register_error_domain(uint16_t error_domain_idx,
         }
         else
         {
-            HM_LOG_INFO("signup pending (%d)", error_domain_idx);
+            HM_LOG_INFO("activation pending for %s, waiting DDR init", get_error_domain_name(error_domain_idx));
             error_domain_info[error_domain_idx].activated = false;
         }
     }

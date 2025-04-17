@@ -42,7 +42,7 @@ void __wrap_hm_register_error_domain(uint16_t error_domain_idx,
     FPFW_UNUSED(error_domain_name);
     FPFW_UNUSED(err_inject_ctx);
 
-    ras_einj_info_t_temp einj_payload;
+    ras_einj_info_t einj_payload;
     err_inject_cb(&einj_payload, NULL);
     function_called();
 }

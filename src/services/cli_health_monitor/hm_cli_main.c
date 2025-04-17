@@ -42,10 +42,10 @@ static FPFW_CLI_STATUS hm_submit_sample_cper_cli(int argc, const char** argv);
 static void dump_ghes(uint32_t ghes_idx);
 static void dump_ghes_error_record(acpi_ghes_error_record_dual_die_t* ghes_error_record_base, uint32_t max_section_count);
 static void print_section_as_byte_view(const acpi_cper_section_t* section);
-static void print_einj_payload(ras_einj_info_t_temp* payload);
+static void print_einj_payload(ras_einj_info_t* payload);
 static bool check_memory_corruption(void* start1, uint32_t size1, void* start2, uint32_t size2, void* start3, uint32_t size3);
 static const char* get_section_name(guid_t section_type);
-static acpi_einj_cmd_status_t hm_cli_error_injection_cb(ras_einj_info_t_temp* payload, void* ctx);
+static acpi_einj_cmd_status_t hm_cli_error_injection_cb(ras_einj_info_t* payload, void* ctx);
 
 /*-- Declarations (Statics and globals) --*/
 static FPFW_CLI_COMMAND cfg_mgr_cli_list[] = {
@@ -154,8 +154,8 @@ static FPFW_CLI_STATUS hm_inject_err_cli(int argc, const char** argv)
         return CLI_ERROR;
     }
 
-    ras_einj_info_t_temp input_einj_payload;
-    memset(&input_einj_payload, 0, sizeof(ras_einj_info_t_temp));
+    ras_einj_info_t input_einj_payload;
+    memset(&input_einj_payload, 0, sizeof(ras_einj_info_t));
     input_einj_payload.version = ERROR_INJECTION_PAYLOAD_VERSION;
     input_einj_payload.component_group = (uint16_t)strtol(argv[1], NULL, 0);
     input_einj_payload.component_type = (uint16_t)strtol(argv[2], NULL, 0);
@@ -170,9 +170,9 @@ static FPFW_CLI_STATUS hm_inject_err_cli(int argc, const char** argv)
     hm_config_t* hm_config = get_hm_config();
     BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
 
-    volatile ras_einj_info_t_temp* einj_payload = (ras_einj_info_t_temp*)hm_config->mscp_error_injection_addr_base;
+    volatile ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
 
-    for (uint32_t i = 0; i < sizeof(ras_einj_info_t_temp); i++)
+    for (uint32_t i = 0; i < sizeof(ras_einj_info_t); i++)
     {
         ((volatile uint8_t*)einj_payload)[i] = ((const uint8_t*)&input_einj_payload)[i];
     }
@@ -196,7 +196,7 @@ static FPFW_CLI_STATUS hm_dump_einj_cli(int argc, const char** argv)
     hm_config_t* hm_config = get_hm_config();
     BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
 
-    ras_einj_info_t_temp* einj_payload = (ras_einj_info_t_temp*)hm_config->mscp_error_injection_addr_base;
+    ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
 
     print_einj_payload(einj_payload);
     return CLI_SUCCESS;
@@ -476,7 +476,7 @@ void print_section_as_byte_view(const acpi_cper_section_t* section)
     FpFwCliPrint("\n");
 }
 
-void print_einj_payload(ras_einj_info_t_temp* payload)
+void print_einj_payload(ras_einj_info_t* payload)
 {
     if (payload == NULL)
     {
@@ -509,7 +509,7 @@ const char* get_section_name(guid_t section_type)
     return "unknown";
 }
 
-acpi_einj_cmd_status_t hm_cli_error_injection_cb(ras_einj_info_t_temp* payload, void* ctx)
+acpi_einj_cmd_status_t hm_cli_error_injection_cb(ras_einj_info_t* payload, void* ctx)
 {
     FPFW_UNUSED(payload);
     FPFW_UNUSED(ctx);

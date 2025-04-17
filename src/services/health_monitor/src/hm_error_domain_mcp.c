@@ -32,7 +32,7 @@ static void hm_mcp_error_injection_req_cb(void* context, fpfw_status_t status)
     FPFW_UNUSED(status);
 }
 
-static acpi_einj_cmd_status_t hm_mcp_error_injection_cb(ras_einj_info_t_temp* einj_payload, void* ctx)
+static acpi_einj_cmd_status_t hm_mcp_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx)
 {
     FPFW_UNUSED(ctx);
 
@@ -42,7 +42,7 @@ static acpi_einj_cmd_status_t hm_mcp_error_injection_cb(ras_einj_info_t_temp* ei
     err_injection_payload.header.msg_header.command = ICC_HM_ERROR_INJECTION_MCP;
     err_injection_payload.header.msg_header.payload_size =
         sizeof(hm_mhu_error_injection_payload_t) - sizeof(icc_mhu_header_t);
-    memcpy(&err_injection_payload.error_injection_info, einj_payload, sizeof(ras_einj_info_t_temp));
+    memcpy(&err_injection_payload.error_injection_info, einj_payload, sizeof(ras_einj_info_t));
 
     static fpfw_icc_base_send_req_t hm_icc_mcp_err_injection_req = {0};
     hm_icc_mcp_err_injection_req.payload_buffer = &err_injection_payload;
@@ -54,12 +54,12 @@ static acpi_einj_cmd_status_t hm_mcp_error_injection_cb(ras_einj_info_t_temp* ei
 
     if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
     {
-        HM_LOG_CRIT("ICC(%d) : EINJ request failed(%d)", HM_INTERCORE_MCP, (int)status);
+        HM_LOG_CRIT("MCP error injection request failed(%d)", (int)status);
         result = ACPI_EINJ_UNKNOWN_FAILURE;
     }
     else
     {
-        HM_LOG_INFO("ICC(%d) : EINJ request made", HM_INTERCORE_MCP);
+        HM_LOG_INFO("MCP error injection request was made");
     }
 
     return result;
@@ -71,7 +71,7 @@ static void hm_mcp_error_domain_register_listener_cb(void* context, size_t outpu
 
     if (status != FPFW_STATUS_SUCCESS)
     {
-        HM_LOG_CRIT("%d Icc failed(%d)", HM_INTERCORE_MCP, (int)status);
+        HM_LOG_CRIT("MCP registration failed(%d)", (int)status);
         return;
     }
 
@@ -79,7 +79,7 @@ static void hm_mcp_error_domain_register_listener_cb(void* context, size_t outpu
 
     if (hm_err_register_payload == NULL || hm_err_register_payload->header.msg_header.command != ICC_HM_ERROR_DOMAIN_REGISTER_MCP)
     {
-        HM_LOG_CRIT("%d Icc invalid", HM_INTERCORE_MCP);
+        HM_LOG_CRIT("Invalid MCP registration payload(%p)", hm_err_register_payload);
         return;
     }
 
@@ -88,9 +88,6 @@ static void hm_mcp_error_domain_register_listener_cb(void* context, size_t outpu
                              hm_err_register_payload->valid_fru_text ? (char*)hm_err_register_payload->fru_text : NULL,
                              hm_mcp_error_injection_cb,
                              NULL);
-
-    hm_config_t* hm_config = get_hm_config();
-    hm_mcp_error_domain_register_listener(hm_config->icc_ctx[HM_INTERCORE_MCP]);
 }
 
 static void hm_mcp_error_record_submit_listener_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -99,7 +96,7 @@ static void hm_mcp_error_record_submit_listener_cb(void* context, size_t output_
 
     if (status != FPFW_STATUS_SUCCESS)
     {
-        HM_LOG_CRIT("%d Icc failed(%d)", HM_INTERCORE_MCP, (int)status);
+        HM_LOG_CRIT("MCP CPER ICC get failed(%d)", (int)status);
         return;
     }
 
@@ -107,7 +104,7 @@ static void hm_mcp_error_record_submit_listener_cb(void* context, size_t output_
 
     if (hm_err_submit_payload == NULL || hm_err_submit_payload->header.msg_header.command != ICC_HM_ERROR_RECORD_SUBMIT_MCP)
     {
-        HM_LOG_CRIT("%d Icc invalid", HM_INTERCORE_MCP);
+        HM_LOG_CRIT("Invalid MCP CPER payload(%p)", hm_err_submit_payload);
         return;
     }
 
@@ -122,7 +119,7 @@ static void hm_mcp_error_record_submit_listener_cb(void* context, size_t output_
 
 bool hm_mcp_error_domain_register_listener(fpfw_icc_base_ctx_t* icc_ctx)
 {
-    HM_LOG_INFO("Icc(%d) err register listener start", HM_INTERCORE_MCP);
+    HM_LOG_INFO("Waiting MCP error domain registration");
     static uint8_t hm_icc_mcp_err_register_payload[SCP_EXP_ICC_MHU_SCP_MCP_LOCAL_RECEIVE_SIZE];
     static fpfw_icc_base_recv_req_t hm_icc_mcp_err_register_recv_req = {0};
 
@@ -138,7 +135,6 @@ bool hm_mcp_error_domain_register_listener(fpfw_icc_base_ctx_t* icc_ctx)
 
 bool hm_mcp_error_record_submit_listener(fpfw_icc_base_ctx_t* icc_ctx)
 {
-    HM_LOG_INFO("Icc(%d) err submit listener start", HM_INTERCORE_MCP);
     static uint8_t hm_icc_mcp_err_submit_payload[SCP_EXP_ICC_MHU_SCP_MCP_LOCAL_RECEIVE_SIZE];
     static fpfw_icc_base_recv_req_t hm_icc_mcp_err_submit_req = {0};
 

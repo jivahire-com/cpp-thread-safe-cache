@@ -9,6 +9,7 @@ set(SOURCES
     test_hm_error_injection.cpp
     test_hm_error_domain_mcp.cpp
     test_hm_error_domain_accel.cpp
+    test_hm_error_domain_hsp.cpp
     ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_main.c
     ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_domain_register.c
     ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_report_ghes.c
@@ -62,4 +63,5 @@ mock_target(${TARGET}
     idsw_get_die_id
     fpfw_icc_base_send
     fpfw_icc_base_recv
+    fpfw_icc_base_send_recv
 )

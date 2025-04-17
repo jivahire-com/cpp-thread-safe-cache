@@ -13,14 +13,17 @@
 #include <icc_platform_defines.h>
 #include <icc_mhu.h>
 #include <health_monitor.h>
-#include <health_monitor_temporary_einj_structs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+
+#define HM_HSP_ERROR_REGISTRATION_OFFSET (0)
+#define HM_HSP_ERROR_INJECTION_OFFSET (128)
+#define HM_HSP_ERROR_RECORD_OFFSET (192)
+
+#define MBOX_HMM_HEADER_SIZE    (sizeof(large_fifo_mailbox_msg_header) + sizeof(uint32_t))/sizeof(uint32_t) // 32-bit allocated for transfer metadata
+#define MBOX_HMM_DATA_DEPTH        (LARGE_FIFO_MBOX_FIFO_DEPTH - MBOX_HMM_HEADER_SIZE)
+
 // this will go away once new silib is available
-
-#define MBOX_HMM_HEADER_SIZE	(sizeof(large_fifo_mailbox_msg_header) + sizeof(uint32_t))/sizeof(uint32_t) // 32-bit allocated for transfer metadata
-#define MBOX_HMM_DATA_DEPTH		(LARGE_FIFO_MBOX_FIFO_DEPTH - MBOX_HMM_HEADER_SIZE)
-
 #ifndef ICC_GEN_CMD
 #define ICC_GEN_CMD(module, cmd)         ((module << 16) + cmd)
 #endif
@@ -82,15 +85,15 @@ typedef struct {
 } hm_mhu_error_domain_register_payload_t;
 
 typedef union {
-	struct {
-		large_fifo_mailbox_msg_header header;
-		uint16_t error_domain_idx;
-		uint8_t valid_fru_id;
-		uint8_t valid_fru_text;
-		guid_t fru_id;
-		char fru_text[ACPI_FRU_TEXT_LENGTH];
-	};
-	uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
+    struct {
+        large_fifo_mailbox_msg_header header;
+        uint16_t error_domain_idx;
+        uint8_t valid_fru_id;
+        uint8_t valid_fru_text;
+        guid_t fru_id;
+        char fru_text[ACPI_FRU_TEXT_LENGTH];
+    };
+    uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
 } hm_accel_error_domain_register_payload_t;
 
 typedef struct {
@@ -100,45 +103,45 @@ typedef struct {
 
 typedef struct {
     icc_mhu_header_t header;
-    ras_einj_info_t_temp error_injection_info;
+    ras_einj_info_t error_injection_info;
 } hm_mhu_error_injection_payload_t;
 
 typedef union {
     struct
     {
         large_fifo_mailbox_msg_header header;
-        ras_einj_info_t_temp error_injection_info;
+        ras_einj_info_t error_injection_info;
     };
     uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
 } hm_accel_error_injection_payload_t;
 
 typedef union _accel_hmm_msg {
-	struct {
-		large_fifo_mailbox_msg_header header;
-		struct {
-			uint8_t tfr_pkt_cnt;
-			uint8_t tfr_size;
-			union
-			{
-				uint16_t reserved;
-				acpi_error_severity_t err_severity;
-			};
-		};
-		uint32_t hmm_msg_bytes[MBOX_HMM_DATA_DEPTH];
-	};
-	uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
+    struct {
+        large_fifo_mailbox_msg_header header;
+        struct {
+            uint8_t tfr_pkt_cnt;
+            uint8_t tfr_size;
+            union
+            {
+                uint16_t reserved;
+                acpi_error_severity_t err_severity;
+            };
+        };
+        uint32_t hmm_msg_bytes[MBOX_HMM_DATA_DEPTH];
+    };
+    uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
 } hm_accel_msg_t;
 
 typedef union _accel_hmm_msg_ack {
-	struct {
-		large_fifo_mailbox_msg_header header;
-		struct {
-			uint8_t tfr_pkt_cnt;
-			uint8_t tfr_size;
-			uint16_t tfr_offset;
-		};
-	};
-	uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
+    struct {
+        large_fifo_mailbox_msg_header header;
+        struct {
+            uint8_t tfr_pkt_cnt;
+            uint8_t tfr_size;
+            uint16_t tfr_offset;
+        };
+    };
+    uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
 } hm_accel_msg_ack_t;
 
 typedef struct _hm_accel_cper_payload_t

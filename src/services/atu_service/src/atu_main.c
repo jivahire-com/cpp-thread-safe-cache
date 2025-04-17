@@ -148,6 +148,13 @@ atu_map_entry_t atu_static_map_single_die_die0[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CHBCR_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
+    // Error Injection region
+    {
+        .ap_base_address = ERROR_INJECTION_RESERVATION_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ERROR_INJECTION_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ERROR_INJECTION_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
     {0},
 };
 
@@ -247,6 +254,13 @@ atu_map_entry_t atu_static_map_dual_die_die0[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CHBCR_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
+    // Error Injection region
+    {
+        .ap_base_address = ERROR_INJECTION_RESERVATION_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ERROR_INJECTION_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ERROR_INJECTION_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
     {0},
 };
 
@@ -319,6 +333,13 @@ atu_map_entry_t atu_static_map_single_die_die1[] = {
         .ap_base_address = CHBCR_RESERVATION_BASE,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_CHBCR_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CHBCR_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    // Error Injection region
+    {
+        .ap_base_address = ERROR_INJECTION_RESERVATION_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ERROR_INJECTION_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ERROR_INJECTION_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
     {0},
@@ -418,6 +439,13 @@ atu_map_entry_t atu_static_map_dual_die_die1[] = {
         .ap_base_address = CHBCR_RESERVATION_BASE,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_CHBCR_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CHBCR_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    // Error Injection region
+    {
+        .ap_base_address = ERROR_INJECTION_RESERVATION_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ERROR_INJECTION_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ERROR_INJECTION_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
     {0},

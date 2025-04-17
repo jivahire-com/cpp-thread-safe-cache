@@ -31,9 +31,10 @@ extern fpfw_init_component_t _fpfw_component_hm_svc;
 extern fpfw_init_component_t _fpfw_component_hm_post_init;
 extern fpfw_init_component_t _fpfw_component_hm_scp;
 extern fpfw_init_component_t _fpfw_component_hm_mcp;
+extern fpfw_init_component_t _fpfw_component_hm_hsp;
+extern fpfw_init_component_t _fpfw_component_hm_sdm;
+extern fpfw_init_component_t _fpfw_component_hm_cded;
 extern fpfw_init_component_t _fpfw_component_hm_cli_init;
-extern fpfw_init_component_t _fpfw_component_hm_svc_sdm_init;
-extern fpfw_init_component_t _fpfw_component_hm_svc_cded_init;
 
 /*------------- Functions ----------------*/
 //
@@ -67,7 +68,7 @@ void __wrap_hm_post_ddr_init()
 
 void __wrap_hm_post_intercore_init(hm_intercore_type_t intercore_type, fpfw_icc_base_ctx_t* icc_ctx)
 {
-    FPFW_UNUSED(intercore_type);
+    check_expected(intercore_type);
     assert_non_null(icc_ctx);
     function_called();
 }
@@ -115,6 +116,7 @@ TEST_FUNCTION(hm_post_init, nullptr, nullptr)
 TEST_FUNCTION(hm_scp, nullptr, nullptr)
 {
     will_return_always(__wrap_fpfw_init_get_handle, (void*)1234);
+    expect_value(__wrap_hm_post_intercore_init, intercore_type, HM_INTERCORE_SCP);
     expect_function_call_any(__wrap_hm_post_intercore_init);
 
     // Call the function under test
@@ -127,10 +129,24 @@ TEST_FUNCTION(hm_scp, nullptr, nullptr)
 TEST_FUNCTION(hm_mcp, nullptr, nullptr)
 {
     will_return_always(__wrap_fpfw_init_get_handle, (void*)1234);
+    expect_value(__wrap_hm_post_intercore_init, intercore_type, HM_INTERCORE_MCP);
     expect_function_call_any(__wrap_hm_post_intercore_init);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_hm_mcp.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(hm_hsp, nullptr, nullptr)
+{
+    will_return_always(__wrap_fpfw_init_get_handle, (void*)1234);
+    expect_value(__wrap_hm_post_intercore_init, intercore_type, HM_INTERCORE_HSP);
+    expect_function_call_any(__wrap_hm_post_intercore_init);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_hm_hsp.init_fn();
 
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
@@ -147,53 +163,55 @@ TEST_FUNCTION(hm_cli_init, nullptr, nullptr)
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(hm_svc_sdm_init, nullptr, nullptr)
+TEST_FUNCTION(hm_sdm, nullptr, nullptr)
 {
     expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_SDM);
     will_return(__wrap_accel_is_isolation_enabled, false);
     will_return_always(__wrap_fpfw_init_get_handle, (void*)1234);
+    expect_value(__wrap_hm_post_intercore_init, intercore_type, HM_INTERCORE_SDM);
     expect_function_call_any(__wrap_hm_post_intercore_init);
 
     // Call the function under test
-    fpfw_init_result_t result = _fpfw_component_hm_svc_sdm_init.init_fn();
+    fpfw_init_result_t result = _fpfw_component_hm_sdm.init_fn();
 
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(hm_svc_cded_init, nullptr, nullptr)
+TEST_FUNCTION(hm_cded, nullptr, nullptr)
 {
     expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_CDED);
     will_return(__wrap_accel_is_isolation_enabled, false);
     will_return_always(__wrap_fpfw_init_get_handle, (void*)1234);
+    expect_value(__wrap_hm_post_intercore_init, intercore_type, HM_INTERCORE_CDED);
     expect_function_call_any(__wrap_hm_post_intercore_init);
 
     // Call the function under test
-    fpfw_init_result_t result = _fpfw_component_hm_svc_cded_init.init_fn();
+    fpfw_init_result_t result = _fpfw_component_hm_cded.init_fn();
 
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(hm_svc_sdm_init_isolation, nullptr, nullptr)
+TEST_FUNCTION(hm_sdm_isolation, nullptr, nullptr)
 {
     expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_SDM);
     will_return(__wrap_accel_is_isolation_enabled, true);
 
     // Call the function under test
-    fpfw_init_result_t result = _fpfw_component_hm_svc_sdm_init.init_fn();
+    fpfw_init_result_t result = _fpfw_component_hm_sdm.init_fn();
 
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(hm_svc_cded_init_isolation, nullptr, nullptr)
+TEST_FUNCTION(hm_cded_isolation, nullptr, nullptr)
 {
     expect_value(__wrap_accel_is_isolation_enabled, accel_type, ACCEL_ID_CDED);
     will_return(__wrap_accel_is_isolation_enabled, true);
 
     // Call the function under test
-    fpfw_init_result_t result = _fpfw_component_hm_svc_cded_init.init_fn();
+    fpfw_init_result_t result = _fpfw_component_hm_cded.init_fn();
 
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);

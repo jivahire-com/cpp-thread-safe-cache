@@ -14,6 +14,7 @@ extern "C" {
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <health_monitor.h>
 #include <health_monitor_i.h>
+#include <mscp_exp_rmss_memory_map.h>
 /*-- Symbolic Constant Macros (defines) --*/
 hm_config_t hm_config_test = {0};
 
@@ -21,7 +22,8 @@ static acpi_ghes_t ghes_local[ACPI_ERROR_DOMAIN_COUNT + 1];
 static acpi_ghes_error_record_dual_die_t ghes_error_record_local[ACPI_ERROR_DOMAIN_COUNT + 1];
 static uint64_t ghes_record_addr_table_local[ACPI_ERROR_DOMAIN_COUNT] = {0};
 static uint64_t ghes_ack_addr_table_local[ACPI_ERROR_DOMAIN_COUNT] = {0};
-static ras_einj_info_t_temp einj_payload_local = {0};
+static uint8_t hsp_ras_payload[SCP_EXP_HSP_RAS_PAYLOAD_SIZE] = {0};
+static ras_einj_info_t einj_payload_local = {0};
 extern acpi_error_domain_t test_error_domain;
 
 /*-- Declarations (Statics and globals) --*/
@@ -37,6 +39,7 @@ int pre_ddr_setup(void** state)
     hm_config_test.mscp_ghes_error_record_addr_base = (uint32_t*)ghes_error_record_local;
     hm_config_test.mscp_ghes_base_apcore_offset = 0;
     hm_config_test.mscp_error_injection_addr_base = &einj_payload_local;
+    hm_config_test.mscp_hsp_ras_payload_base = (uint8_t*)hsp_ras_payload;
     hm_config_test.semaphore_id = SEM_ID_MSCP_EXP_1;
     hm_config_test.semaphore_key = 0;
     hm_config_test.is_primary = 1;

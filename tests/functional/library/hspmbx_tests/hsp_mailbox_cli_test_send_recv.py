@@ -87,7 +87,7 @@ class hsp_mailbox_cli_test_send_recv(EchoFallsBaseTest):
             command="recv 193"
             self.log.info(f"Submitting RECV command {command} . . .") 
             core_com_channel.write_line(write_string=command)
-            command="send 192 A B C"
+            command="send 192"
             self.log.info(f"Submitting SEND command {command} . . .") 
             core_com_channel.write_line(write_string=command)
 

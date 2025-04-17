@@ -17,6 +17,7 @@
 #include <modules/CdDumpDescriptor.h>
 #include <modules/CdDumpManager.h>
 #include <semaphore_lib.h>
+#include <shared_crashdump_def.h>
 #include <stdint.h>
 #include <tx_api.h>
 
@@ -35,36 +36,11 @@ extern "C" {
 /*-------------- Typedefs ----------------*/
 typedef enum
 {
-    CRASH_DUMP_CORE_MCP = 0,
-    CRASH_DUMP_CORE_SCP = 1,
-    CRASH_DUMP_CORE_HSP = 2,
-    CRASH_DUMP_CORE_SDM = 3,
-    CRASH_DUMP_CORE_CDED = 4,
-    CRASH_DUMP_CORE_KMP = 5,
-    CRASH_DUMP_CORE_NUM
-} crash_dump_core_t;
-
-typedef enum
-{
     CRASH_DUMP_TYPE_ALL = -1,
     CRASH_DUMP_TYPE_MINI = 0,
     CRASH_DUMP_TYPE_FULL = 1,
     CRASH_DUMP_TYPE_NUM
 } crash_dump_type_t;
-
-typedef enum : uint16_t
-{
-    CRASH_DUMP_NOT_IN_USE = 0,
-    CRASH_DUMP_IN_USE = 1
-} crash_dump_state_t;
-
-typedef enum : uint8_t
-{
-    CRASH_DUMP_STATE_NOT_AVAILABLE = 0,
-    CRASH_DUMP_STATE_READY = 1,
-    CRASH_DUMP_STATE_IN_PROGRESS = 2,
-    CRASH_DUMP_STATE_COMPLETED = 3
-} crash_dump_core_state_t;
 
 typedef enum
 {
@@ -108,17 +84,6 @@ typedef struct {
     uint32_t count;
     FPFwCdDumpPriority priority;
 } core_register_mmio_t;
-
-/**
- * @brief Crash dump status header type
- * 
- * cd_status: Crash dump status (Lower 8 bits: DIE0, Upper 8 bits: DIE1 - 0: In progress, 1: Completed for each core)
- * 
- */
-typedef struct {
-    volatile uint16_t status; // 0: Not in use, 1: In Use
-    volatile uint8_t cores[CRASH_DUMP_CORE_NUM * 2];
-} crash_dump_header_t;
 
 /**
  * @brief Crashdump callback type

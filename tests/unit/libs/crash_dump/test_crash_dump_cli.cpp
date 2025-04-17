@@ -194,6 +194,28 @@ TEST_FUNCTION(test_cli_cd_bug_check, test_setup, test_teardown)
     CLI_COMMAND_FN handler = get_command_handler("bc");
     assert_non_null(handler);
 
+    will_return(__wrap_nvic_get_current_irq, -1); // NVIC_STATUS_ERROR
+
+    // Call the CLI handler
+    if (!setjmp(cd_test_setjmp_context))
+    {
+        handler(argc, argv);
+        assert_true(false); // Should not reach here
+    }
+}
+
+TEST_FUNCTION(test_cli_cd_bug_check_isr, test_setup, test_teardown)
+{
+    int argc = 2;
+    const char* argv[] = {"bc", "0x80000000"};
+
+    // Get CLI handler
+    CLI_COMMAND_FN handler = get_command_handler("bc");
+    assert_non_null(handler);
+
+    will_return(__wrap_nvic_get_current_irq, 0); // NVIC_STATUS_SUCCESS
+    expect_function_call(NVIC_SetPriority);
+
     // Call the CLI handler
     if (!setjmp(cd_test_setjmp_context))
     {

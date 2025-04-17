@@ -54,6 +54,15 @@ FPFW_NORETURN void crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_
 
     s_bug_check_initiated_crash = true;
 
+    uint32_t nvic_irq_num = 0;
+    nvic_status_t nvic_status = nvic_get_current_irq(&nvic_irq_num);
+
+    if (nvic_status == NVIC_STATUS_SUCCESS)
+    {
+        // Lower the interrupt priority to 1 if it is called by the other ISR.
+        // This is to ensure DebugMonitor_IRQn interrupt, otherwise HardFault will occur.
+        NVIC_SetPriority(nvic_irq_num, 1);
+    }
 #ifndef _WIN32
     // Ensure args are put into specific registers, so they can later be recovered by the debug handler
     __asm__ volatile("mov r0, %[code]\n"

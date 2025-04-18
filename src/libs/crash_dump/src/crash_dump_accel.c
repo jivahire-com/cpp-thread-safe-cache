@@ -19,6 +19,7 @@
 #include <cded_regs_regs.h>     // for CDED_REGS_CCMP_CFG_ADDRESS
 #include <cdedss_config_regs.h> // for CDEDSS_CONFIG_CDED_REGS_REGS_ADDRESS
 #include <crash_dump.h>         // for crash_dump_register_address32
+#include <crash_dump_events.h>  // for CRASH_DUMP_ET
 #include <sdm_ext_cfg_regs.h>   // for SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS...
 #include <silibs_common.h>      // for BYTES_IN_WORD32
 #include <silibs_platform.h>    // for MMIO_READ32
@@ -413,18 +414,21 @@ static void copy_cd_file_dtcm_to_ddr(crash_dump_context_t* ctx, ACCEL_ID accel_t
     if (ctx->type_ctx[CRASH_DUMP_TYPE_FULL] == NULL)
     {
         // no full dump context.
+        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ACCEL_INVALID_ADDRESS);
         goto cd_transfer_failed;
     }
 
     if (cd_file_size == 0 || cd_file_off + cd_file_size > SDM_EXT_CFG_EMCPU_TCM_DTCM_SIZE)
     {
         // Invalid DTCM address or size.
+        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ACCEL_INVALID_SIZE);
         goto cd_transfer_failed;
     }
 
     if (!crash_dump_is_accel_cd_complete(accel_type))
     {
         // Invalid MAGIC number address or CD collection is not complete for given accel core
+        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ACCEL_CD_INCOMPLETE);
         goto cd_transfer_failed;
     }
 
@@ -446,6 +450,7 @@ static void copy_cd_file_dtcm_to_ddr(crash_dump_context_t* ctx, ACCEL_ID accel_t
 
 cd_transfer_failed:
     crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_NOT_AVAILABLE);
+    CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ACCEL_TRANSFER_FAILED);
 }
 
 /*------------- Public Functions ----------------*/
@@ -486,6 +491,7 @@ void crash_dump_copy_accel_cd_file(void* ctx)
 
     if (cd_ctx == NULL || accel_type >= NUM_VALID_ACCEL_ID)
     {
+        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ACCEL_INVALID_ADDRESS);
         return;
     }
 
@@ -500,6 +506,7 @@ bool crash_dump_is_accel_cd_complete(ACCEL_ID accel_type)
 
     if (cd_ctx == NULL)
     {
+        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ACCEL_INVALID_ADDRESS);
         return false;
     }
 
@@ -507,6 +514,7 @@ bool crash_dump_is_accel_cd_complete(ACCEL_ID accel_type)
     if ((uint32_t)cd_magic_nr + sizeof(*cd_magic_nr) > SDM_EXT_CFG_EMCPU_TCM_DTCM_SIZE)
     {
         // Invalid magic number address.
+        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ACCEL_INVALID_SIZE);
         return false;
     }
 
@@ -517,6 +525,7 @@ bool crash_dump_is_accel_cd_complete(ACCEL_ID accel_type)
     if (MMIO_READ32(cd_magic_nr) != CD_MAGIC_NUMBER)
     {
         // SDM/CDED busy
+        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ACCEL_MAGIC_NUMBER_UNMATCHED);
         return false;
     }
 

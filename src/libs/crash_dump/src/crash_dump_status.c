@@ -10,9 +10,10 @@
 /*------------- Includes -----------------*/
 #include "crash_dump_status.h"
 
-#include <crash_dump.h>  // for GetCrashDumpConfig
-#include <idsw_kng.h>    // for DIE_0, DIE_1
-#include <system_info.h> // for system_info_is_warm_start
+#include <crash_dump.h>        // for GetCrashDumpConfig
+#include <crash_dump_events.h> // for CRASH_DUMP_ET
+#include <idsw_kng.h>          // for DIE_0, DIE_1
+#include <system_info.h>       // for system_info_is_warm_start
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -99,6 +100,7 @@ void initialize_crash_dump_header(crash_dump_type_context_t* type_context)
     if (system_info_is_warm_start())
     {
         // Keep crash dump status if warm start.
+        CRASH_DUMP_ET_WARNING(CRASH_DUMP_ET_TYPE_STATUS_WARM_START);
         return;
     }
 
@@ -180,6 +182,7 @@ void crash_dump_update_accel_state(ACCEL_ID accel_type, crash_dump_core_state_t 
         break;
     default:
         // Not valid Accelerator ID
+        CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_STATUS_INVALID_PARAMS, accel_type);
         return;
     }
 

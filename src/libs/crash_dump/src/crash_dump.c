@@ -12,13 +12,14 @@
 #include "crash_dump_icc.h"
 #include "crash_dump_status.h" // for crash_dump_update_core_state
 
-#include <FpFwUtils.h>    // for FPFW_UNUSED
-#include <cmsis_m7.h>     // for __WFI
-#include <crash_dump.h>   // for crash_dump_handler
-#include <fpfw_cfg_mgr.h> // for knobs
-#include <idsw_kng.h>     // for IS_PLATFORM_SVP
-#include <nvic.h>         // for nvic_get_current_irq
-#include <stdint.h>       // for uint32_t
+#include <FpFwUtils.h>         // for FPFW_UNUSED
+#include <cmsis_m7.h>          // for __WFI
+#include <crash_dump.h>        // for crash_dump_handler
+#include <crash_dump_events.h> // for CRASH_DUMP_ET
+#include <fpfw_cfg_mgr.h>      // for knobs
+#include <idsw_kng.h>          // for IS_PLATFORM_SVP
+#include <nvic.h>              // for nvic_get_current_irq
+#include <stdint.h>            // for uint32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -177,6 +178,8 @@ void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p
                                          ctx->type_ctx[i]->mem_ctx.baseAddr,
                                          ctx->type_ctx[i]->mem_ctx.nextAddr - ctx->type_ctx[i]->mem_ctx.baseAddr);
                 }
+
+                CRASH_DUMP_ET_INFO(CRASH_DUMP_ET_TYPE_CD_CRASH);
             }
         }
 
@@ -184,6 +187,7 @@ void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p
         if (config_get_crash_dump_warm_reset())
         {
             crash_dump_request_hsp_warm_reset();
+            CRASH_DUMP_ET_INFO(CRASH_DUMP_ET_TYPE_CD_HSP_RESET);
         }
     }
 }

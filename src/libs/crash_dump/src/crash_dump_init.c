@@ -16,6 +16,7 @@
 
 #include <FpFwAssert.h>               // for FPFW_RUNTIME_ASSERT
 #include <crash_dump.h>               // for crash_dump_init
+#include <crash_dump_events.h>        // for CRASH_DUMP_ET
 #include <idsw_kng.h>                 // for DIE_0, DIE_1
 #include <modules/CdDumpDescriptor.h> // for FPFwCDInitDumpDescriptor
 #include <modules/CdMemoryPool.h>     // for FPFwCDInintMemoryPool
@@ -61,11 +62,13 @@ KNG_STATUS crash_dump_register_dump(crash_dump_type_context_t* type_context)
 
     if (ctx == NULL)
     {
+        CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_INIT_INVALID_ADDRESS, KNG_E_NOT_READY);
         return KNG_E_NOT_READY;
     }
 
     if (type_context == NULL || type_context->header == NULL || type_context->type >= CRASH_DUMP_TYPE_NUM)
     {
+        CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_INIT_INVALID_ADDRESS, KNG_E_INVALIDARG);
         return KNG_E_INVALIDARG;
     }
 

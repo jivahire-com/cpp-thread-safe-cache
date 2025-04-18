@@ -14,6 +14,7 @@ set (SOURCES
         src/crash_dump_payload_msft.c
         src/crash_dump_payload_threadx.c
         src/crash_dump_status.c
+        src/crash_dump_events.c
 )
 
 if("$ENV{REPO_APP_TOOLCHAIN}" STREQUAL "i386-pc-windows-msvc")
@@ -46,6 +47,7 @@ target_link_libraries(${TARGET}
         ms::lib::icc_platform_defines
         ms::lib::register_headers
         ms::lib::system_info
+        ms::lib::event_trace::trace
         silibs::gpio
         silibs::icc_mhu
         silibs::idhw

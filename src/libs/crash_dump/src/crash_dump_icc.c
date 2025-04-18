@@ -17,6 +17,7 @@
 #include <accelip_id.h>           // for ACCEL_ID_SDM, ACCEL_ID_CDED
 #include <bug_check.h>            // for BUG_CHECK_EXTERNAL
 #include <crash_dump.h>           // for crash_dump_context
+#include <crash_dump_events.h>    // for CRASH_DUMP_ET
 #include <fpfw_cfg_mgr.h>         // for knobs
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
 #include <hsp_firmware_headers.h> // for kng_hsp_mailbox_msg
@@ -131,6 +132,7 @@ void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t* ic
     if (ctx == NULL)
     {
         FPFwCDPrintf("Crash dump context is not set for %d ICC\n", type);
+        CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_INVALID_ADDRESS, type);
         return;
     }
 
@@ -190,6 +192,7 @@ static void crash_dump_send_hsp_command(uint32_t command)
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send 0x%08lx command to HSP: status = 0x%08lx\n", command, status);
+            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_ERROR, status);
         }
     }
 }
@@ -204,6 +207,7 @@ void crash_dump_notify_hsp()
     if (ctx == NULL)
     {
         FPFwCDPrintf("Crash dump context is not set to notify HSP\n");
+        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ICC_INVALID_ADDRESS);
         return;
     }
 
@@ -220,6 +224,7 @@ void crash_dump_notify_accelerators()
     if (ctx == NULL)
     {
         FPFwCDPrintf("Crash dump config is not set to notify SDM/CDED\n");
+        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ICC_INVALID_ADDRESS);
         return;
     }
 
@@ -257,6 +262,7 @@ void crash_dump_notify_accelerators()
         else
         {
             FPFwCDPrintf("Fail to send CD req to %u: status = 0x%08lx\n", accel_type, status);
+            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_ERROR, status);
 
             crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_NOT_AVAILABLE);
         }
@@ -286,6 +292,7 @@ void crash_dump_notify_cores()
     if (ctx == NULL)
     {
         FPFwCDPrintf("Crash dump context is not set to notify other cores\n");
+        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ICC_INVALID_ADDRESS);
         return;
     }
 
@@ -295,6 +302,7 @@ void crash_dump_notify_cores()
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send Crash dump signal to local core : status = 0x%08lx\n", status);
+            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_ERROR, status);
         }
     }
 
@@ -304,6 +312,7 @@ void crash_dump_notify_cores()
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send Crash dump signal to remote core : status = 0x%08lx\n", status);
+            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_ERROR, status);
         }
         else
         {
@@ -323,6 +332,7 @@ void crash_dump_notify_cores()
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send Crash dump signal to remote core via SPI : status = 0x%08lx\n", status);
+            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_ERROR, status);
         }
     }
 }
@@ -349,12 +359,15 @@ void crash_dump_request_hsp_warm_reset()
     if (ctx == NULL)
     {
         FPFwCDPrintf("Crash dump context is not set to request warm reset\n");
+        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ICC_INVALID_ADDRESS);
         return;
     }
 
     if (ctx->die_index != 0 || ctx->core_index != CRASH_DUMP_CORE_SCP)
     {
         // Only SCP core in die 0 can request warm reset to HSP0
+
+        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ICC_INVALID_PARAMS);
         return;
     }
 

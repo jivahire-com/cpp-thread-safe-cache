@@ -59,7 +59,10 @@ void css_pre_mesh_init(uint8_t die_num)
     scp_clocks_pre_mesh_param.system_ppu_opmode = PPU_V1_OPMODE_01;
     scp_clocks_pre_mesh_param.skip_css_pcr_init = false;
     scp_clocks_pre_mesh_param.skip_msxp_pcr_init = false;
-    scp_clocks_pre_mesh_param.system_smmu_gpt_enabled = false;
+    // GPT enable / disable would be a knob controlled by TF-A. This param here doesn't enable GPT
+    // but configures the GPT size (needs to be programmed before smmu is released out of reset) which can be
+    // done regardless of whether GPT/GPC is enabled or not.
+    scp_clocks_pre_mesh_param.system_smmu_gpt_enabled = true;
     scp_clocks_pre_mesh_param.system_smmu_l0gptsz = 0;
     scp_clocks_pre_mesh_param.intclk_cfg = &intclk_knobs;
     int sts = clocks_sequence_css_pre_mesh_init(&scp_clocks_pre_mesh_param);

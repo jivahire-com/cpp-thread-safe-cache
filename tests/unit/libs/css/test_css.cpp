@@ -73,7 +73,7 @@ TEST_FUNCTION(test_css_pre_mesh_init_die0_intclk_2000mhz, nullptr, nullptr)
     expect_value(__wrap_clocks_sequence_css_pre_mesh_init, clocks_sequence_params->system_ppu_opmode, PPU_V1_OPMODE_01);
     expect_value(__wrap_clocks_sequence_css_pre_mesh_init, clocks_sequence_params->skip_css_pcr_init, false);
     expect_value(__wrap_clocks_sequence_css_pre_mesh_init, clocks_sequence_params->skip_msxp_pcr_init, false);
-    expect_value(__wrap_clocks_sequence_css_pre_mesh_init, clocks_sequence_params->system_smmu_gpt_enabled, false);
+    expect_value(__wrap_clocks_sequence_css_pre_mesh_init, clocks_sequence_params->system_smmu_gpt_enabled, true);
     expect_value(__wrap_clocks_sequence_css_pre_mesh_init, clocks_sequence_params->system_smmu_l0gptsz, 0);
     expect_value(__wrap_clocks_sequence_css_pre_mesh_init, clocks_sequence_params->intclk_cfg->freq_mhz, 2000);
     expect_value(__wrap_clocks_sequence_css_pre_mesh_init, clocks_sequence_params->intclk_cfg->ref_div, 1);
@@ -94,7 +94,7 @@ TEST_FUNCTION(test_css_pre_mesh_init_die1_intclk_2000mhz, nullptr, nullptr)
     expect_value(__wrap_clocks_sequence_css_pre_mesh_init, clocks_sequence_params->system_ppu_opmode, PPU_V1_OPMODE_01);
     expect_value(__wrap_clocks_sequence_css_pre_mesh_init, clocks_sequence_params->skip_css_pcr_init, false);
     expect_value(__wrap_clocks_sequence_css_pre_mesh_init, clocks_sequence_params->skip_msxp_pcr_init, false);
-    expect_value(__wrap_clocks_sequence_css_pre_mesh_init, clocks_sequence_params->system_smmu_gpt_enabled, false);
+    expect_value(__wrap_clocks_sequence_css_pre_mesh_init, clocks_sequence_params->system_smmu_gpt_enabled, true);
     expect_value(__wrap_clocks_sequence_css_pre_mesh_init, clocks_sequence_params->system_smmu_l0gptsz, 0);
     expect_value(__wrap_clocks_sequence_css_pre_mesh_init, clocks_sequence_params->intclk_cfg->freq_mhz, 2000);
     expect_value(__wrap_clocks_sequence_css_pre_mesh_init, clocks_sequence_params->intclk_cfg->ref_div, 1);

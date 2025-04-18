@@ -1,0 +1,21 @@
+<ConfigSchema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:noNamespaceSchemaLocation="configschema.xsd">
+
+  <!-- Enum values are declared separately from the knobs.
+       The same Enum can be used as the 'enumtype' of any number of EnumKnobs -->
+  <Enums>
+  </Enums>
+
+  <Structs>
+    <Struct name="smmu_vab_prod_knobs_t">
+      <Member name="smmu_gbpa_cfg" type="smmu_gbpa_cfg_t" count="12" default="{{0, 0, 1, 0, 1, 0b1111}, {0, 0, 1, 0, 1, 0b1111}, {0, 0, 1, 0, 1, 0b1111}, {0, 0, 1, 0, 1, 0b1111}, {0, 0, 1, 0, 1, 0b1111}, {0, 0, 1, 0, 1, 0b1111}, {0, 0, 1, 0, 1, 0b1111}, {0, 0, 1, 0, 1, 0b1111}, {0, 0, 1, 0, 1, 0b1111}, {0, 0, 1, 0, 1, 0b1111}, {0, 0, 1, 0, 1, 0b1111}, {0, 0, 1, 0, 1, 0b1111}}" help=" SMMU Global Bypass Attribute settings. The mem_attr encoding used is - 0b1111: Normal memory, Inner Write-Back, Outer Write-Back." />
+    </Struct>
+  </Structs>
+
+  <!-- namespace indicates the GUID namespace the values are stored in -->
+  <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
+    <!--  SMMU Knobs -->
+    <Knob name="smmu_vab_knobs" type = "smmu_vab_prod_knobs_t" help = "SMMU global bypass config knob"/>
+  </Knobs>
+
+</ConfigSchema>

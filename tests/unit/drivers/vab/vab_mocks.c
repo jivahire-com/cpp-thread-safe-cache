@@ -107,12 +107,16 @@ vab_knobs_t __wrap_config_get_vab_knobs(void)
     return *vab_config;
 }
 
+smmu_vab_prod_knobs_t __wrap_config_get_smmu_vab_knobs(void)
+{
+    smmu_vab_prod_knobs_t* smmu_vab_config_knob = mock_ptr_type(smmu_vab_prod_knobs_t*);
+    function_called();
+    return *smmu_vab_config_knob;
+}
+
 int __wrap_vab_init(vab_init_t* vab_init_params)
 {
     check_expected(vab_init_params->security_state);
-    check_expected(vab_init_params->vab_smmu_gbpa_cfg->sh_cfg);
-    check_expected(vab_init_params->vab_smmu_gbpa_cfg->mt_cfg);
-    check_expected(vab_init_params->vab_smmu_gbpa_cfg->mem_attr);
     check_expected(vab_init_params->system_counter_delay);
     check_expected(vab_init_params->vab_resolved_base_addr);
     check_expected(vab_init_params->vab_configure_intu);

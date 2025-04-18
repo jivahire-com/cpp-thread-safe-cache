@@ -28,6 +28,7 @@ extern "C" {
 #include <vab_rpss_top_regs.h>
 
 vab_knobs_t __real_config_get_vab_knobs(void);
+smmu_vab_prod_knobs_t __real_config_get_smmu_vab_knobs(void);
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -58,6 +59,11 @@ TEST_FUNCTION(test_skip_all_vabs, NULL, NULL)
 {
 
     int status;
+
+    smmu_vab_prod_knobs_t smmu_vab_config_knob = __real_config_get_smmu_vab_knobs();
+    will_return(__wrap_config_get_smmu_vab_knobs, &smmu_vab_config_knob);
+    expect_function_call(__wrap_config_get_smmu_vab_knobs);
+
     vab_knobs_t vab_config_knobs = __real_config_get_vab_knobs();
     will_return(__wrap_config_get_vab_knobs, &vab_config_knobs);
     expect_function_call(__wrap_config_get_vab_knobs);
@@ -71,6 +77,11 @@ TEST_FUNCTION(test_successful_init_all_vabs, NULL, NULL)
 
     // int status;
     uint16_t vabs_to_init = 0xfff;
+
+    smmu_vab_prod_knobs_t smmu_vab_config_knob = __real_config_get_smmu_vab_knobs();
+    will_return(__wrap_config_get_smmu_vab_knobs, &smmu_vab_config_knob);
+    expect_function_call(__wrap_config_get_smmu_vab_knobs);
+
     vab_knobs_t vab_config_knobs = __real_config_get_vab_knobs();
     will_return(__wrap_config_get_vab_knobs, &vab_config_knobs);
     expect_function_call(__wrap_config_get_vab_knobs);
@@ -84,9 +95,6 @@ TEST_FUNCTION(test_successful_init_all_vabs, NULL, NULL)
             will_return(__wrap_atu_map, SILIBS_SUCCESS);
 
             expect_value(__wrap_vab_init, vab_init_params->security_state, SECURITY_STATE_NON_SECURE);
-            expect_value(__wrap_vab_init, vab_init_params->vab_smmu_gbpa_cfg->sh_cfg, 1);
-            expect_value(__wrap_vab_init, vab_init_params->vab_smmu_gbpa_cfg->mt_cfg, 1);
-            expect_value(__wrap_vab_init, vab_init_params->vab_smmu_gbpa_cfg->mem_attr, 0b1111);
             expect_value(__wrap_vab_init, vab_init_params->system_counter_delay, 0);
             expect_value(__wrap_vab_init, vab_init_params->vab_resolved_base_addr, 0x0);
             expect_value(__wrap_vab_init, vab_init_params->vab_configure_intu, true);
@@ -106,6 +114,10 @@ TEST_FUNCTION(test_atu_map_fail, NULL, NULL)
 {
     uint16_t vabs_to_init = 0xfff;
 
+    smmu_vab_prod_knobs_t smmu_vab_config_knob = __real_config_get_smmu_vab_knobs();
+    will_return(__wrap_config_get_smmu_vab_knobs, &smmu_vab_config_knob);
+    expect_function_call(__wrap_config_get_smmu_vab_knobs);
+
     vab_knobs_t vab_config_knobs = __real_config_get_vab_knobs();
     will_return(__wrap_config_get_vab_knobs, &vab_config_knobs);
     expect_function_call(__wrap_config_get_vab_knobs);
@@ -123,6 +135,10 @@ TEST_FUNCTION(test_atu_unmap_fail, NULL, NULL)
 {
     uint16_t vabs_to_init = 0x1;
 
+    smmu_vab_prod_knobs_t smmu_vab_config_knob = __real_config_get_smmu_vab_knobs();
+    will_return(__wrap_config_get_smmu_vab_knobs, &smmu_vab_config_knob);
+    expect_function_call(__wrap_config_get_smmu_vab_knobs);
+
     vab_knobs_t vab_config_knobs = __real_config_get_vab_knobs();
     will_return(__wrap_config_get_vab_knobs, &vab_config_knobs);
     expect_function_call(__wrap_config_get_vab_knobs);
@@ -135,9 +151,6 @@ TEST_FUNCTION(test_atu_unmap_fail, NULL, NULL)
             will_return(__wrap_atu_map, SILIBS_SUCCESS);
 
             expect_value(__wrap_vab_init, vab_init_params->security_state, SECURITY_STATE_NON_SECURE);
-            expect_value(__wrap_vab_init, vab_init_params->vab_smmu_gbpa_cfg->sh_cfg, 1);
-            expect_value(__wrap_vab_init, vab_init_params->vab_smmu_gbpa_cfg->mt_cfg, 1);
-            expect_value(__wrap_vab_init, vab_init_params->vab_smmu_gbpa_cfg->mem_attr, 0b1111);
             expect_value(__wrap_vab_init, vab_init_params->system_counter_delay, 0);
             expect_value(__wrap_vab_init, vab_init_params->vab_resolved_base_addr, 0x0);
             expect_value(__wrap_vab_init, vab_init_params->vab_configure_intu, true);

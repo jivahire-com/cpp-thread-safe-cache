@@ -64,6 +64,7 @@ int vab_common_init(uint16_t vab_instances_to_init)
     smmu_gbpa_cfg.mem_attr = 0b1111;
 
     vab_init_t vab_init_cfg = {.vab_smmu_gbpa_cfg = &smmu_gbpa_cfg};
+    smmu_vab_prod_knobs_t smmu_vab_config_knob = config_get_smmu_vab_knobs();
     vab_knobs_t vab_config_knob = config_get_vab_knobs();
 
     for (uint16_t vab_id = 0; vab_id < MAX_VAB_INSTANCES; vab_id++)
@@ -73,6 +74,7 @@ int vab_common_init(uint16_t vab_instances_to_init)
             FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_vabss_map[vab_id]));
 
             vab_init_cfg.vab_pcr_cfg = &vab_config_knob.vab_pcr_cfg[vab_id];
+            vab_init_cfg.vab_smmu_gbpa_cfg = &smmu_vab_config_knob.smmu_gbpa_cfg[vab_id];
 
             // TODO: What should be the default security state? This is used for configuring SMMU registers
             vab_init_cfg.security_state = SECURITY_STATE_NON_SECURE;

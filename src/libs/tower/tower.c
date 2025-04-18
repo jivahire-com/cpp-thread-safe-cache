@@ -260,8 +260,10 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
             FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_vab_maps[vab_id]));
             tower_sequence_params.tower_vab_resolved_addr[vab_id] = atu_vab_maps[vab_id].mscp_start_address;
             tower_sequence_params.vab_smmu_l0gpt_size[vab_id] = 0;
-            // TODO: When should GPT be enabled for VAB SMMU?
-            tower_sequence_params.vab_smmu_gpt_enabled[vab_id] = false;
+            // GPT enable / disable would be a knob controlled by TF-A. This param here doesn't enable GPT
+            // but configures the GPT size (needs to be programmed before smmu is released out of reset) which
+            // can be done regardless of whether GPT/GPC is enabled or not.
+            tower_sequence_params.vab_smmu_gpt_enabled[vab_id] = true;
         }
     }
     if (vab_instances_to_init != 0)

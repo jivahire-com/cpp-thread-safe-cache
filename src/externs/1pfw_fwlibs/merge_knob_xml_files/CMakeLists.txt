@@ -42,7 +42,7 @@ set(EXPLICIT_PATH_PROD_FW_SYSTEM_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/k
 set(EXPLICIT_PATH_PROD_FW_TOWER_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_tower_config_knobs.xml)
 set(EXPLICIT_PATH_PROD_FW_VAB_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_vab_config_knobs.xml)
 set(EXPLICIT_PATH_PROD_FW_FUSE_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_fuse_config_knobs.xml)
-
+set(EXPLICIT_PATH_PROD_FW_SMMU_VAB_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_smmu_config_knobs.xml)
 
 set(PROD_FW_KNOBS_NAMESPACE "FE3ED49F-B173-41ED-9076-356661D46A42")
 
@@ -64,6 +64,7 @@ if (i386-pc-windows-msvc)
                    ${EXPLICIT_PATH_PROD_FW_TOWER_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_VAB_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_FUSE_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_SMMU_VAB_KNOBS}
                 -p ${PROD_FW_COMBINED_GENERATED_KNOBS} -n ${PROD_FW_KNOBS_NAMESPACE}
     )
 else()
@@ -83,6 +84,7 @@ else()
                    ${EXPLICIT_PATH_PROD_FW_TOWER_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_VAB_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_FUSE_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_SMMU_VAB_KNOBS}
                 -p ${PROD_FW_COMBINED_GENERATED_KNOBS} -n ${PROD_FW_KNOBS_NAMESPACE}
     )
 endif()
@@ -101,6 +103,7 @@ set(KNOB_FILES_DEPENDS ${EXPLICIT_PATH_SILIBS_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_TOWER_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_VAB_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_FUSE_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_SMMU_VAB_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_CRASHDUMP_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_SYSTEM_KNOBS}
     )

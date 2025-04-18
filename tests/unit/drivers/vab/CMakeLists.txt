@@ -51,5 +51,6 @@ mock_target(${TARGET}
     rpss_irq_callback
     vab_init
     config_get_vab_knobs
+    config_get_smmu_vab_knobs
     d2d_error_isr
 )

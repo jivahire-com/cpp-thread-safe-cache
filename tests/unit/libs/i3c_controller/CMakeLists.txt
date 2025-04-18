@@ -8,6 +8,9 @@ set(SOURCES
 add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
+    PUBLIC
+        fwlib.lib.interface.platform.dbgprint
+
     PRIVATE
         fwlib.lib.init
         fwlib.lib.utils

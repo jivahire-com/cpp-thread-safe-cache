@@ -10,12 +10,13 @@
 #pragma once
 
 /*--------------- Includes ---------------*/
+#include <DbgPrint.h>
 #include <numa_config_variable.h>
 
-#define MESH_INFO(...) INFO_PRINT("[CMN800] " __VA_ARGS__)
-#define MESH_DBG(...) DEBUG_PRINT("[CMN800] " __VA_ARGS__)
-#define MESH_ERR(...)  CRITICAL_PRINT("[CMN800] " __VA_ARGS__)
-#define MESH_CRIT(...) CRITICAL_PRINT("[CMN800] " __VA_ARGS__)
+#define MESH_INFO(...) FPFW_DBGPRINT_INFO("[CMN800] " __VA_ARGS__)
+#define MESH_DBG(...) FPFW_DBGPRINT_VERBOSE("[CMN800] " __VA_ARGS__)
+#define MESH_ERR(...)  FPFW_DBGPRINT_ERROR("[CMN800] " __VA_ARGS__)
+#define MESH_CRIT(...) FPFW_DBGPRINT_ALWAYS("[CMN800] " __VA_ARGS__)
 
 #define PRINT64_HEX(a) (uint32_t)((a) >> 32), (uint32_t)((a) & 0xFFFFFFFF)
 

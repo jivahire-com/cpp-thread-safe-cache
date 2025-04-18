@@ -9,6 +9,7 @@ target_link_libraries(${TARGET}
     PUBLIC
     silibs::lib_i3c
     silibs::spi_bridge
+    fwlib.lib.interface.platform.dbgprint
 
     PRIVATE
     fwlib.driver.mboxIccTransport

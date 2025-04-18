@@ -25,7 +25,7 @@
 #include <spi_bridge.h>
 #include <stdbool.h> // for true
 #include <stdint.h>  // for uint8_t
-#include <stdio.h>   // for CRITICAL_PRINT
+#include <stdio.h>
 #include <system_info.h>
 #include <tx_api.h>
 
@@ -104,7 +104,7 @@ static void i3c_controller_ibi_callback(uint8_t device_address, uint8_t ibi_type
     UNUSED(device_address);
     UNUSED(ibi_type);
 
-    CRITICAL_PRINT(MOD_NAME "%s - Begin", __func__);
+    FPFW_DBGPRINT_ALWAYS(MOD_NAME "%s - Begin", __func__);
 }
 
 /*
@@ -115,7 +115,7 @@ static void i3c_controller_notification_callback(uint8_t notification, void* con
     UNUSED(context);
     UNUSED(notification);
 
-    CRITICAL_PRINT(MOD_NAME "%s - %d", __func__, (int)notification);
+    FPFW_DBGPRINT_ALWAYS(MOD_NAME "%s - %d", __func__, (int)notification);
 }
 
 bool is_i3c_supported()
@@ -167,15 +167,15 @@ void i3c_controller_read_cfg_knobs_from_spi(void)
     temp_lib_i3c_cfg.reg_scl_i2c_fmp_timing = config_get_reg_scl_i2c_fmp_timing();
     temp_lib_i3c_cfg.reg_scl_ext_lcnt_timing = config_get_reg_scl_ext_lcnt_timing();
 
-    INFO_PRINT("i3c_speed 0x%x\n", temp_lib_i3c_cfg.i3c_speed);
-    INFO_PRINT("reg_scl_ext_termn_lcnt_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_ext_termn_lcnt_timing);
-    INFO_PRINT("reg_sda_hold_switch_dly_timing 0x%x\n", temp_lib_i3c_cfg.reg_sda_hold_switch_dly_timing);
-    INFO_PRINT("timing_override 0x%x\n", temp_lib_i3c_cfg.timing_override);
-    INFO_PRINT("reg_scl_i3c_od_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_i3c_od_timing);
-    INFO_PRINT("reg_scl_i3c_pp_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_i3c_pp_timing);
-    INFO_PRINT("reg_scl_i2c_fm_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_i2c_fm_timing);
-    INFO_PRINT("reg_scl_i2c_fmp_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_i2c_fmp_timing);
-    INFO_PRINT("reg_scl_ext_lcnt_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_ext_lcnt_timing);
+    FPFW_DBGPRINT_INFO("i3c_speed 0x%x\n", temp_lib_i3c_cfg.i3c_speed);
+    FPFW_DBGPRINT_INFO("reg_scl_ext_termn_lcnt_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_ext_termn_lcnt_timing);
+    FPFW_DBGPRINT_INFO("reg_sda_hold_switch_dly_timing 0x%x\n", temp_lib_i3c_cfg.reg_sda_hold_switch_dly_timing);
+    FPFW_DBGPRINT_INFO("timing_override 0x%x\n", temp_lib_i3c_cfg.timing_override);
+    FPFW_DBGPRINT_INFO("reg_scl_i3c_od_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_i3c_od_timing);
+    FPFW_DBGPRINT_INFO("reg_scl_i3c_pp_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_i3c_pp_timing);
+    FPFW_DBGPRINT_INFO("reg_scl_i2c_fm_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_i2c_fm_timing);
+    FPFW_DBGPRINT_INFO("reg_scl_i2c_fmp_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_i2c_fmp_timing);
+    FPFW_DBGPRINT_INFO("reg_scl_ext_lcnt_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_ext_lcnt_timing);
 
     // Set the Config Knobs in lib_i3c
     i3c_master_set_cfg_knobs(&temp_lib_i3c_cfg);
@@ -195,7 +195,7 @@ int i3c_controller(uint8_t die_num)
     int status = 0;
 
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
-    CRITICAL_PRINT(MOD_NAME "%s Start, die_num: [%u]\n", __func__, die_num);
+    FPFW_DBGPRINT_ALWAYS(MOD_NAME "%s Start, die_num: [%u]\n", __func__, die_num);
 
     KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
 
@@ -203,7 +203,7 @@ int i3c_controller(uint8_t die_num)
     {
         i3c_controller_read_cfg_knobs_from_spi();
         i3c_speed_t i3c_speed = config_get_i3c_speed();
-        CRITICAL_PRINT("i3c_speed 0x%x\n", i3c_speed);
+        FPFW_DBGPRINT_ALWAYS("i3c_speed 0x%x\n", i3c_speed);
         uint16_t user_i3c_speed_in_khz = fnc_decode_i3c_speed_to_khz(i3c_speed);
         uint8_t index_i3c0 = 0x0;
         uint8_t index_i3c1 = 0x0;
@@ -261,7 +261,7 @@ int i3c_controller(uint8_t die_num)
             status = i3c_initialize(i3c_instance[i], i3c_configs[i]);
             if (status != SILIBS_SUCCESS)
             {
-                CRITICAL_PRINT(MOD_NAME "I3C%d Master Init Error\n", i);
+                FPFW_DBGPRINT_ALWAYS(MOD_NAME "I3C%d Master Init Error\n", i);
                 // Error or BUGCHECK
                 goto exit;
             }
@@ -281,7 +281,7 @@ int i3c_controller(uint8_t die_num)
             if (status != SILIBS_SUCCESS)
             {
                 // Error in configuring DAT
-                CRITICAL_PRINT(MOD_NAME "I3C%d Device Addr Table Init Error\n", i);
+                FPFW_DBGPRINT_ALWAYS(MOD_NAME "I3C%d Device Addr Table Init Error\n", i);
                 // Error or BUGCHECK
                 goto exit;
             }
@@ -309,7 +309,7 @@ int i3c_controller(uint8_t die_num)
             if (status != SILIBS_SUCCESS)
             {
                 // Error in sending PMIC ON
-                CRITICAL_PRINT(MOD_NAME "Error in sending PMIC ON, I3C 0x%x\n", i);
+                FPFW_DBGPRINT_ALWAYS(MOD_NAME "Error in sending PMIC ON, I3C 0x%x\n", i);
                 // Error or BUGCHECK
                 goto exit;
             }
@@ -318,7 +318,7 @@ int i3c_controller(uint8_t die_num)
             if (status != SILIBS_SUCCESS)
             {
                 // Error in setting all addresses to static addresses
-                CRITICAL_PRINT(MOD_NAME "Err to set static addresses, I3C 0x%x\n", i);
+                FPFW_DBGPRINT_ALWAYS(MOD_NAME "Err to set static addresses, I3C 0x%x\n", i);
                 // Error or BUGCHECK
                 goto exit;
             }
@@ -335,21 +335,21 @@ int i3c_controller(uint8_t die_num)
             status = ddr_i3c_interface_read_dimms_detected(&s_i3c_cmd_test, &ddrss_en);
             if (status != SILIBS_SUCCESS)
             {
-                CRITICAL_PRINT(MOD_NAME "DDR DIMMs Read Err, status 0x%x\n", status);
+                FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMMs Read Err, status 0x%x\n", status);
                 // Error or BUGCHECK
                 goto exit;
             }
             SLEEP_US(DELAY_10_MS);
-            CRITICAL_PRINT(MOD_NAME "DDR DIMM Detected: 0x%x\n", ddrss_en);
+            FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMM Detected: 0x%x\n", ddrss_en);
             status = ddr_i3c_interface_read_dimm_capacity(&s_i3c_cmd_test, ddrss_en, &dimm_cap_per_ch, &dimm_sku);
             if (status != SILIBS_SUCCESS)
             {
-                CRITICAL_PRINT(MOD_NAME "DDR DIMM Capacity/SKU Read Err, status 0x%x\n", status);
+                FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMM Capacity/SKU Read Err, status 0x%x\n", status);
                 // Error or BUGCHECK
                 goto exit;
             }
             SLEEP_US(DELAY_10_MS);
-            CRITICAL_PRINT(MOD_NAME "DDR DIMM Capacity: 0x%x, SKU: 0x%x\n", dimm_cap_per_ch, dimm_sku);
+            FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMM Capacity: 0x%x, SKU: 0x%x\n", dimm_cap_per_ch, dimm_sku);
             g_dimm_cap_per_ch = dimm_cap_per_ch;
             g_dimm_sku = dimm_sku;
         }
@@ -363,7 +363,7 @@ int i3c_controller(uint8_t die_num)
         // I3C Sync point with Remote Die on a 2-Die Config
         if (!idhw_is_single_die_boot_en()) // 2 Die
         {
-            CRITICAL_PRINT("I3C Sync with Remote Die\n");
+            FPFW_DBGPRINT_ALWAYS("I3C Sync with Remote Die\n");
             mscp_exp_spi_invalidate_region(die_num);
 
             if (die_num == SOC_D0)
@@ -371,9 +371,9 @@ int i3c_controller(uint8_t die_num)
                 i3c_test_sync.data_d0_to_d1_data = ddrss_en;
                 i3c_test_sync.data_ack_d0_to_d1_data = SPI_SYNC_DATA_VALID;
                 ASSERT_FAIL(mscp_exp_spi_write_d0_to_d1_data(&i3c_test_sync, die_num) == SILIBS_SUCCESS);
-                DEBUG_PRINT("Data written to D1 0x%x\n", i3c_test_sync.data_d0_to_d1_data);
+                FPFW_DBGPRINT_VERBOSE("Data written to D1 0x%x\n", i3c_test_sync.data_d0_to_d1_data);
                 ASSERT_FAIL(mscp_exp_spi_read_d1_to_d0_data(&i3c_test_sync, die_num) == SILIBS_SUCCESS);
-                DEBUG_PRINT("Data from D1 0x%x\n", i3c_test_sync.data_d1_to_d0_data);
+                FPFW_DBGPRINT_VERBOSE("Data from D1 0x%x\n", i3c_test_sync.data_d1_to_d0_data);
                 g_ddrss_en = (ddrss_en | i3c_test_sync.data_d1_to_d0_data);
             }
             else
@@ -381,9 +381,9 @@ int i3c_controller(uint8_t die_num)
                 i3c_test_sync.data_d1_to_d0_data = ddrss_en;
                 i3c_test_sync.data_ack_d1_to_d0_data = SPI_SYNC_DATA_VALID;
                 ASSERT_FAIL(mscp_exp_spi_write_d1_to_d0_data(&i3c_test_sync, die_num) == SILIBS_SUCCESS);
-                DEBUG_PRINT("Data written to D0 0x%x\n", i3c_test_sync.data_d1_to_d0_data);
+                FPFW_DBGPRINT_VERBOSE("Data written to D0 0x%x\n", i3c_test_sync.data_d1_to_d0_data);
                 ASSERT_FAIL(mscp_exp_spi_read_d0_to_d1_data(&i3c_test_sync, die_num) == SILIBS_SUCCESS);
-                DEBUG_PRINT("Data from D0 0x%x\n", i3c_test_sync.data_d0_to_d1_data);
+                FPFW_DBGPRINT_VERBOSE("Data from D0 0x%x\n", i3c_test_sync.data_d0_to_d1_data);
                 g_ddrss_en = (ddrss_en | i3c_test_sync.data_d0_to_d1_data);
             }
         }
@@ -394,10 +394,10 @@ int i3c_controller(uint8_t die_num)
     }
     else
     {
-        CRITICAL_PRINT(MOD_NAME "Not supported platform\n");
+        FPFW_DBGPRINT_ALWAYS(MOD_NAME "Not supported platform\n");
     }
 
 exit:
-    CRITICAL_PRINT(MOD_NAME "%s End, die_num: [%u], status 0x%x\n", __func__, die_num, status);
+    FPFW_DBGPRINT_ALWAYS(MOD_NAME "%s End, die_num: [%u], status 0x%x\n", __func__, die_num, status);
     return status;
 }

@@ -4,11 +4,12 @@
 
 /**
  *  @file i3c_controller.h
- *  Calls the I3C Controller Library for KNG SOC 
+ *  Calls the I3C Controller Library for KNG SOC
  */
 
 #pragma once
 
+#include <DbgPrint.h>
 #include <dw_i3c.h>
 #include <silibs_scp_top_regs.h>
 #include <silibs_scp_exp_top_regs.h>
@@ -115,7 +116,7 @@ i3c_instance_t* get_i3c1();
  *   This function initializes I3C Controller for the specified die number.
  *   It initializes the I3C Controller controller, registers the notification callback, registers the ISRs, configures the Device Address Table (DAT),
  *   sets all addresses to static addresses, and registers the IBI handler.
- * 
+ *
  * @param die_num
  * @return int
  */

@@ -28,6 +28,7 @@ target_link_libraries(
             ms::lib::i3c_controller
             silibs::lib_i3c
             silibs::ddr_i3c
+            fwlib.lib.interface.platform.dbgprint
 )
 
 lint_target(${TARGET})

@@ -24,7 +24,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.utils
         ms::lib::error_codes
         ms::lib::power_fuse    
-        
+        silibs::dvfs
 )
 
 lint_target(${TARGET})

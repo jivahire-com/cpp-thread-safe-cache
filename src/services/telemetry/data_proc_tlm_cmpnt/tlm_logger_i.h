@@ -157,11 +157,19 @@ typedef struct {
 /*--------- Function Prototypes ----------*/
 
 /**
- * @brief initalize the dts coeff data structure.
+ * @brief Initialize the dts coeff data structure.
  *
- * @return fpfw_status_t
+ * @return none
  */
-fpfw_status_t tlm_logger_init_fuse_dts_coeff_data(void);
+void  tlm_logger_init_fuse_dts_coeff_data(void);
+
+/**
+ * @brief Initialize the static information, like cstate id, pstate, etc.. 
+ * 
+ * @return none
+ */
+void tlm_logger_init_constant_data();
+
 /**
  * @brief Internal API to log tile/core/hnf temperature parameters
  *

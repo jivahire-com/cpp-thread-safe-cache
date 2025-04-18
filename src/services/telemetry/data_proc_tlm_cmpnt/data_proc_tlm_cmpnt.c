@@ -26,12 +26,11 @@
 
 void data_proc_tlm_cmpnt_init(void)
 {
-    /* initialize dts coeff data at startup */
-    fpfw_status_t status = tlm_logger_init_fuse_dts_coeff_data();
-    if (FPFW_STATUS_FAILED(status))
-    {
-        FPFW_ET_LOG(DTSCoefficientReadFailedInit, status);
-    }
+    /* Initialize dts coeff data at startup */
+    tlm_logger_init_fuse_dts_coeff_data();
+
+    /* Initialize the data that doesn't update */
+    tlm_logger_init_constant_data();
 }
 
 void data_proc_tlm_cmpnt_enable_disable_transition(bool enable)

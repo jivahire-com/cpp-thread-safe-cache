@@ -17,6 +17,7 @@ target_link_libraries(${TARGET}
     ms::lib::error_handler
     ms::lib::power_fuse
     ms::service::sensor_fifo 
+    silibs::dvfs
 )
 
 # Defining platform APIs

@@ -13,6 +13,7 @@
 
 #include <FpFwAssert.h>
 #include <assert.h> // IWYU pragma: keep for static_assert
+#include <dvfs.h>
 #include <exec_tlm_cmpnt.h>
 #include <fpfw_status.h>         // for FPFW_STATUS_SUCCEEDED, fpf...
 #include <power_tlm_fuse.h>      //for power fuse
@@ -72,16 +73,32 @@ void data_proc_tlm_cmpnt_clear_pwr_tlm_data(void)
     FPFW_ET_LOG(TelemetryDataCleared);
 }
 
-fpfw_status_t tlm_logger_init_fuse_dts_coeff_data(void)
+void tlm_logger_init_fuse_dts_coeff_data(void)
 {
     fpfw_status_t status =
         platform_power_fuses_get_dts_coeff_tile(tileDtsCoefficients,
                                                 sizeof(tileDtsCoefficients) / sizeof(tileDtsCoefficients[0]));
     if (FPFW_STATUS_FAILED(status))
     {
-        return status;
+        FPFW_ET_LOG(DTSCoefficientReadFailedInit, status);
     }
-    return FPFW_STATUS_SUCCESS;
+}
+
+void tlm_logger_init_constant_data()
+{
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        for (uint8_t cstate_id = 0; cstate_id < NUMBER_OF_CSTATES; cstate_id++)
+        {
+            core[core_id].cstate[cstate_id].cstate_id = cstate_id;
+        }
+
+        for (uint8_t pstate_id = 0; pstate_id < NUMBER_OF_PSTATES; pstate_id++)
+        {
+            core[core_id].pstate[pstate_id].pstate_id = pstate_id;
+            core[core_id].pstate[pstate_id].frequency_Mhz = dvfs_get_freq_from_plimit(pstate_id);
+        }
+    }
 }
 
 // Based on the HAS, there are 3 temperature sensors for each Core in each tile
@@ -878,10 +895,21 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
     else
     {
         // Pstate and Cstate(TODO)
-        core_summary_data->pc_state_info.pstate_id = core[core_id].pstate->pstate_id;
-        core_summary_data->pc_state_info.frequency_Mhz = core[core_id].pstate->frequency_Mhz;
+
+        //
+        // Depdending on the throttling status, we need to use a different source for what pstate id the
+        // core is currently in.
+        //
+        uint8_t current_pstate = core[core_id].nominal_pstate;
+        if (core[core_id].throttling_status != NO_THROTTLE)
+        {
+            current_pstate = core[core_id].pstate_from_current_pkt;
+        }
+
+        core_summary_data->pc_state_info.pstate_id = core[core_id].pstate[current_pstate].pstate_id;
+        core_summary_data->pc_state_info.frequency_Mhz = core[core_id].pstate[current_pstate].frequency_Mhz;
         core_summary_data->pc_state_info.power_mW = core[core_id].average_pwr_mW;
-        core_summary_data->pc_state_info.pstate_residency_mS = core[core_id].pstate->residency_uS;
+        core_summary_data->pc_state_info.pstate_residency_mS = core[core_id].pstate[current_pstate].residency_uS / 1000;
         core_summary_data->pc_state_info.cstate_plimit = core[core_id].active_sample_plimit;
         // force latency to zero.
         core_summary_data->pc_state_info.cstate_entry_latency_uS = 0;

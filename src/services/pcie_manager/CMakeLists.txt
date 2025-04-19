@@ -2,6 +2,7 @@ set(TARGET kng.service.scp_pcie_manager)
 
 add_library(${TARGET}
     STATIC
+        pcie_async_requests.c
         pcie_manager_init.c
         pcie_rpss_manager_thread.c
         pcie_config_manager_thread.c

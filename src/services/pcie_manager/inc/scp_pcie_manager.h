@@ -20,6 +20,7 @@
 /*-- Symbolic Constant Macros (defines) --*/
 #define PCIE_OUTSTANDING_REQ_QUOTA        (4) /* This allows up to 4 outstanding async. requests per rpss */
 #define MAX_PENDING_WAIT_FOR_EVENT_PER_RP (2) /* Max number of pending wait for event Req per RP */
+
 /*-------------- Typedefs ----------------*/
 
 /* PCIe completion request format - this is what is used by the service for internal communication */
@@ -75,19 +76,6 @@ typedef struct _pcie_config_manager_context_t
  */
 void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DIE_ID die_id);
 
-/*--------- Function Prototypes ----------*/
-/**
- *  @brief      Send WAIT_FOR_EVENT Asysn message to the RP
- *
- *  @param[in]  ctx     Manager Context
- *  @param[in]  rp_idx  RP index within the RPSS
- *  @param[in]  num_event Number of WAIT_FOR_EVENT async messages to send
- *              Max number set by MAX_PENDING_WAIT_FOR_EVENT_PER_RP.
- *
- *  @retval     None. Errors raised if failure in initialization.
- */
-void send_async_wait_for_event(pcie_manager_context_t* ctx, uint8_t rp_idx, uint8_t num_event);
-
 /**
  *  @brief      Start the PCIe configuration service thread after dependencies have been initialized.
  *
@@ -95,4 +83,3 @@ void send_async_wait_for_event(pcie_manager_context_t* ctx, uint8_t rp_idx, uint
  *  @retval     None. Errors raised if failure in initialization.
  */
 void scp_pcie_start_config_service_thread(void);
-

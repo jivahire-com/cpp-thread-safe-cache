@@ -21,6 +21,7 @@ extern "C" {
 #include <error_handler.h>     // for set_error_handler_return
 #include <kng_soc_constants.h> // for RPSS0
 #include <mscp_exp_rmss_memory_map.h>
+#include <pcie_async_requests_i.h>
 #include <pcie_dfwk.h>             // for pciess_device_interface_t, pciess_dev...
 #include <pcie_manager_i.h>        // for rpss_req_completion_cb, send_start_li...
 #include <pcie_rp_event_handler.h> // for process_wait_for_event_data
@@ -414,16 +415,6 @@ TEST_FUNCTION(test_completion_callback, NULL, NULL) // abe
     async_req.status = SILIBS_E_TIMEOUT;
     async_req.async_data.data = 0;
 
-    mock_pcie_ent.id = (RPSS_INSTANCE)0;
-    mock_pcie_ent.rps[0].enabled = true;
-    mock_pcie_ent.rps[1].enabled = false;
-    mock_pcie_ent.rps[2].enabled = false;
-    mock_pcie_ent.rps[3].enabled = false;
-    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_RPSS_ENTITY_REQUEST);
-    will_return(__wrap_DfwkInterfaceSendSync, &mock_pcie_ent);
-    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
-    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
-
     expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
     expect_any(__wrap_DfwkAsyncRequestSetCompletionRoutine, Request);
     expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionRoutine, rpss_req_completion_cb);
@@ -446,6 +437,13 @@ TEST_FUNCTION(test_completion_callback_queue_full, NULL, NULL)
     auto& async_req = ctx.async_req[0];
     async_req.rp_index = 2;
     async_req.status = SILIBS_E_TIMEOUT;
+
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_any(__wrap_DfwkAsyncRequestSetCompletionRoutine, Request);
+    expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionRoutine, rpss_req_completion_cb);
+    expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionContext, &ctx);
+    expect_value(__wrap_DfwkInterfaceSendAsync, Interface, &ctx.iface->header);
+    expect_any(__wrap_DfwkInterfaceSendAsync, Request);
 
     /* Setup worker queue to fail */
     expect_value(__wrap__txe_queue_send, queue_ptr, &(ctx.work_queue));
@@ -537,6 +535,12 @@ TEST_FUNCTION(test_sync_get_rpss_entity_pass, NULL, NULL)
 {
     ctx.rpss_idx = (RPSS_INSTANCE)0x01;
 
+    mock_pcie_ent.id = (RPSS_INSTANCE)0;
+    mock_pcie_ent.rps[0].enabled = true;
+    mock_pcie_ent.rps[1].enabled = false;
+    mock_pcie_ent.rps[2].enabled = false;
+    mock_pcie_ent.rps[3].enabled = false;
+
     expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_RPSS_ENTITY_REQUEST);
     will_return(__wrap_DfwkInterfaceSendSync, &mock_pcie_ent);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
@@ -549,6 +553,12 @@ TEST_FUNCTION(test_sync_get_rpss_entity_pass, NULL, NULL)
 TEST_FUNCTION(test_sync_get_rpss_entity_silibs_fail, NULL, NULL)
 {
     ctx.rpss_idx = (RPSS_INSTANCE)0x01;
+
+    mock_pcie_ent.id = (RPSS_INSTANCE)0;
+    mock_pcie_ent.rps[0].enabled = true;
+    mock_pcie_ent.rps[1].enabled = false;
+    mock_pcie_ent.rps[2].enabled = false;
+    mock_pcie_ent.rps[3].enabled = false;
 
     expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_RPSS_ENTITY_REQUEST);
     will_return(__wrap_DfwkInterfaceSendSync, &mock_pcie_ent);
@@ -827,4 +837,34 @@ TEST_FUNCTION(test_all_sync_req_invalid_ids, NULL, NULL)
     {
         send_sync_rp_get_link_status((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id);
     }
+}
+
+TEST_FUNCTION(test_init_wait_for_event_queue_on_rpss, NULL, NULL)
+{
+    mock_pcie_ent.id = (RPSS_INSTANCE)0;
+    mock_pcie_ent.rps[0].enabled = true;
+    mock_pcie_ent.rps[1].enabled = false;
+    mock_pcie_ent.rps[2].enabled = false;
+    mock_pcie_ent.rps[3].enabled = false;
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_RPSS_ENTITY_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, &mock_pcie_ent);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_any(__wrap_DfwkAsyncRequestSetCompletionRoutine, Request);
+    expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionRoutine, rpss_req_completion_cb);
+    expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionContext, &ctx);
+    expect_value(__wrap_DfwkInterfaceSendAsync, Interface, &ctx.iface->header);
+    expect_any(__wrap_DfwkInterfaceSendAsync, Request);
+
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_any(__wrap_DfwkAsyncRequestSetCompletionRoutine, Request);
+    expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionRoutine, rpss_req_completion_cb);
+    expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionContext, &ctx);
+    expect_value(__wrap_DfwkInterfaceSendAsync, Interface, &ctx.iface->header);
+    expect_any(__wrap_DfwkInterfaceSendAsync, Request);
+
+    init_wait_for_event_queue_on_rpss(&ctx);
 }

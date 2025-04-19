@@ -31,7 +31,7 @@
     (((rp_index & 0xFF) << 8) | (rpss_index & 0xFF))
 #define GET_RPSS_INDEX_FROM_TIMER_CALLBACK(cb_val) (cb_val & 0xFF)
 #define GET_RP_INDEX_FROM_TIMER_CALLBACK(cb_val)   ((cb_val >> 8) & 0xFF)
-#define RP_LINK_TRAINING_TIMEOUT_TICKS             (10)
+#define RP_LINK_TRAINING_TIMEOUT_TICKS             (1000)
 #define RP_TIMER_ONE_SHOT                          (0)
 
 /*------------- Typedefs -----------------*/

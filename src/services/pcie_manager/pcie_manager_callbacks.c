@@ -10,14 +10,16 @@
 
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
-#include <DfwkPtrTypes.h>   // for PDFWK_ASYNC_REQUEST_HEADER
-#include <ErrorHandler.h>   // for FPFwErrorRaise
-#include <FpFwAssert.h>     // for FPFW_RUNTIME_ASSERT
-#include <pcie_dfwk.h>      // for pcie_async_request_t
-#include <pcie_manager_i.h> // for rpss_req_completion_cb
+#include <DfwkPtrTypes.h>
+#include <ErrorHandler.h>
+#include <FpFwAssert.h>
+#include <pcie_async_requests_i.h>
+#include <pcie_dfwk.h>
+#include <pcie_manager_i.h>
 #include <pciess_int.h>
-#include <scp_pcie_manager.h> // for pcie_manager_context_t, pciess_complet...
-#include <tx_api.h>           // for TX_NO_WAIT, TX_SUCCESS, tx_queue_send
+#include <scp_pcie_manager.h>
+#include <string.h>
+#include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -39,13 +41,24 @@ void rpss_req_completion_cb(PDFWK_ASYNC_REQUEST_HEADER req, void* ctx_ref)
     cmpl.rp_index = async_req->rp_index;
     cmpl.op = async_req->rp_op;
     cmpl.status = async_req->status;
-    cmpl.async_data = async_req->async_data;
+    memcpy(&(cmpl.async_data), &(async_req->async_data), sizeof(pcie_async_data_t));
+
+    /*
+     * Free the async request that just completed and requeue it.
+     * We cannot use this async request again in the service as it will
+     * now be pended in the driver work queue for the next event.
+     * If any data from the request is needed, copy it to the service level
+     * completion request before this.
+     */
+    memset(async_req, 0, sizeof(pcie_async_request_t));
+    send_async_rp_wait_for_event(ctx, async_req, cmpl.rp_index);
+    async_req = NULL;
 
     /* If LINK_UP is received, then we stop the link training expiration timer */
-    if (async_req->async_data.data & (0x1 << PCIESS_RP_INT_LINK_UP))
+    if (cmpl.async_data.data & (0x1 << PCIESS_RP_INT_LINK_UP))
     {
-        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: LINK_UP received!\n", async_req->rpss_index, async_req->rp_index);
-        tx_timer_delete(&(ctx->expiry_timer[async_req->rp_index]));
+        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: LINK_UP received!\n", ctx->rpss_idx, cmpl.rp_index);
+        tx_timer_delete(&(ctx->expiry_timer[cmpl.rp_index]));
     }
 
     /*
@@ -58,14 +71,7 @@ void rpss_req_completion_cb(PDFWK_ASYNC_REQUEST_HEADER req, void* ctx_ref)
     int status = tx_queue_send(&(ctx->work_queue), &(cmpl), TX_NO_WAIT);
     if (status != TX_SUCCESS)
     {
-        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: tx_queue_send error - %d\n", async_req->rpss_index, cmpl.rp_index, status);
+        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: tx_queue_send error - %d\n", ctx->rpss_idx, cmpl.rp_index, status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
-
-    /*
-     * Send new WAIT_FOR_EVENT async requests to the driver because we should
-     * always have MAX_PENDING_WAIT_FOR_EVENT_PER_RP pending requests to not
-     * miss any interrupts/events.
-     */
-    send_async_wait_for_event(ctx, async_req->rp_index, 1);
 }

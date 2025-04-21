@@ -31,16 +31,23 @@ extern "C" {
 uint8_t cr_max_package_mem[POWER_PKG_MAX_SIZE] = {0};
 telemetry_package_hdr_t pkg_header;
 
+extern "C" {
+
+extern bool g_die_id_mocked;
+}
+
 /*-------- Function Prototypes -----------*/
 static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
+
     return 0;
 }
 
 static int test_teardown(void** pContext)
 {
     FPFW_UNUSED(pContext);
+    g_die_id_mocked = false;
     return 0;
 }
 
@@ -924,4 +931,185 @@ TEST_FUNCTION(test_in_band_tlm_cmpnt_is_instantaneous_enabled, test_setup, test_
     inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_SOC_RAILS] = true;
     is_enabled = in_band_tlm_cmpnt_is_instantaneous_enabled();
     assert_int_equal(is_enabled, true);
+}
+
+TEST_FUNCTION(test_in_band_tlm_cmpnt_core_id_die_offset, test_setup, test_teardown)
+{
+
+    // The core id is offset for any package containing a collection of records per core.
+    // To validate this we don't need to actually look at any of the data in the record,
+    // just the collection id matching the expected core id for that die for that event.
+
+    g_die_id_mocked = true;
+
+    // Test the p state collections
+    for (uint8_t die_id = 0; die_id < 2; die_id++)
+    {
+        // Setup die id
+        will_return(__wrap_mts_get_this_die_id, die_id);
+        package_creation_init();
+
+        // Fill in the record
+        expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_pstate_data, NUMBER_OF_CORES_PER_DIE);
+        pwr_core_record_pstate_t pstate_record;
+        FPFW_UNUSED(package_create_pwr_core_pstate_record(&pstate_record));
+
+        for (uint16_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+        {
+            assert_int_equal(pstate_record.pstate_collection[core_id].collection_header.collection_id,
+                             CORE_ID_WITH_DIE_OFFSET(core_id));
+        }
+    }
+
+    // Test the c state collections
+    for (uint8_t die_id = 0; die_id < 2; die_id++)
+    {
+        // Setup die id
+        will_return(__wrap_mts_get_this_die_id, die_id);
+        package_creation_init();
+
+        // Fill in the record
+        expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_cstate_data, NUMBER_OF_CORES_PER_DIE);
+        pwr_core_record_cstate_t cstate_record;
+        FPFW_UNUSED(package_create_pwr_core_cstate_record(&cstate_record));
+
+        for (uint16_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+        {
+            assert_int_equal(cstate_record.cstate_collection[core_id].collection_header.collection_id,
+                             CORE_ID_WITH_DIE_OFFSET(core_id));
+        }
+    }
+
+    // Test the throttle collections
+    for (uint8_t die_id = 0; die_id < 2; die_id++)
+    {
+        // Setup die id
+        will_return(__wrap_mts_get_this_die_id, die_id);
+        package_creation_init();
+
+        // Fill in the record
+        expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_throttle_data, NUMBER_OF_CORES_PER_DIE);
+        pwr_core_record_throttle_t throttle_record;
+        FPFW_UNUSED(package_create_pwr_core_throttle_record(&throttle_record));
+
+        for (uint16_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+        {
+            assert_int_equal(throttle_record.throttle_collection[core_id].collection_header.collection_id,
+                             CORE_ID_WITH_DIE_OFFSET(core_id));
+        }
+    }
+
+    // Test the rack priority collections
+    for (uint8_t die_id = 0; die_id < 2; die_id++)
+    {
+        // Setup die id
+        will_return(__wrap_mts_get_this_die_id, die_id);
+        package_creation_init();
+
+        // Fill in the record
+        expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data, NUMBER_OF_CORES_PER_DIE);
+        pwr_core_record_rack_priorities_t rack_priority_record;
+        FPFW_UNUSED(package_create_pwr_core_rack_priority_record(&rack_priority_record));
+
+        for (uint16_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+        {
+            assert_int_equal(rack_priority_record.rack_priority_collection[core_id].collection_header.collection_id,
+                             CORE_ID_WITH_DIE_OFFSET(core_id));
+        }
+    }
+
+    // Test the voltage collections
+    for (uint8_t die_id = 0; die_id < 2; die_id++)
+    {
+        // Setup die id
+        will_return(__wrap_mts_get_this_die_id, die_id);
+        package_creation_init();
+
+        // Fill in the record
+        expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_voltage_data, NUMBER_OF_CORES_PER_DIE);
+        pwr_core_record_voltage_t voltage_record;
+        FPFW_UNUSED(package_create_pwr_core_voltage_record(&voltage_record));
+
+        for (uint16_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+        {
+            assert_int_equal(voltage_record.voltage_collection[core_id].collection_header.collection_id,
+                             CORE_ID_WITH_DIE_OFFSET(core_id));
+        }
+    }
+
+    // Test the current collections
+    for (uint8_t die_id = 0; die_id < 2; die_id++)
+    {
+        // Setup die id
+        will_return(__wrap_mts_get_this_die_id, die_id);
+        package_creation_init();
+
+        // Fill in the record
+        expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_current_data, NUMBER_OF_CORES_PER_DIE);
+        pwr_core_record_current_t current_record;
+        FPFW_UNUSED(package_create_pwr_core_current_record(&current_record));
+
+        for (uint16_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+        {
+            assert_int_equal(current_record.current_collection[core_id].collection_header.collection_id,
+                             CORE_ID_WITH_DIE_OFFSET(core_id));
+        }
+    }
+
+    // Test the temperature collections
+    for (uint8_t die_id = 0; die_id < 2; die_id++)
+    {
+        // Setup die id
+        will_return(__wrap_mts_get_this_die_id, die_id);
+        package_creation_init();
+
+        // Fill in the record
+        expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_temperature_data, NUMBER_OF_CORES_PER_DIE);
+        pwr_core_record_temperature_t temperature_record;
+        FPFW_UNUSED(package_create_pwr_core_temperature_record(&temperature_record));
+
+        for (uint16_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+        {
+            assert_int_equal(temperature_record.temperature_collection[core_id].collection_header.collection_id,
+                             CORE_ID_WITH_DIE_OFFSET(core_id));
+        }
+    }
+
+    // Test the histogram collections
+    for (uint8_t die_id = 0; die_id < 2; die_id++)
+    {
+        // Setup die id
+        will_return(__wrap_mts_get_this_die_id, die_id);
+        package_creation_init();
+
+        // Fill in the record
+        expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_histogram_data, NUMBER_OF_CORES_PER_DIE);
+        pwr_core_record_histogram_t histogram_record;
+        FPFW_UNUSED(package_create_pwr_core_histogram_record(&histogram_record));
+
+        for (uint16_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+        {
+            assert_int_equal(histogram_record.histogram_collection[core_id].collection_header.collection_id,
+                             CORE_ID_WITH_DIE_OFFSET(core_id));
+        }
+    }
+
+    // Test the instantaneous core collections
+    for (uint8_t die_id = 0; die_id < 2; die_id++)
+    {
+        // Setup die id
+        will_return(__wrap_mts_get_this_die_id, die_id);
+        package_creation_init();
+
+        // Fill in the record
+        expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_core_summary_data, NUMBER_OF_CORES_PER_DIE);
+        inst_core_record_summary_t summary_record;
+        FPFW_UNUSED(package_create_inst_core_summary_record(&summary_record));
+
+        for (uint16_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+        {
+            assert_int_equal(summary_record.inst_core_summary_collection[core_id].collection_header.collection_id,
+                             CORE_ID_WITH_DIE_OFFSET(core_id));
+        }
+    }
 }

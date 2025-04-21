@@ -27,6 +27,8 @@ uint8_t _ProviderMetadata_et_msdata_end;   // Pointer to the end   of the .Provi
 uint8_t _EventMetadata_et_msdata_start;    // Pointer to the start of the .EventMetadata section
 uint8_t _EventMetadata_et_msdata_end;      // Pointer to the end   of the .EventMetadata memory section
 
+bool g_die_id_mocked = false;
+
 /*------------- Functions ----------------*/
 ULONG __wrap__tx_time_get(VOID)
 {
@@ -67,6 +69,10 @@ void __wrap_mts_client_send_dcp_notification(mts_client_id_t client_id, dcp_noti
 
 uint8_t __wrap_mts_get_this_die_id(void)
 {
+    if (g_die_id_mocked)
+    {
+        return mock_type(uint8_t);
+    }
     return 0;
 }
 

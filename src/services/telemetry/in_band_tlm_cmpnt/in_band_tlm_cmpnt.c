@@ -42,10 +42,7 @@ void in_band_tlm_cmpnt_init(uint8_t die_id, uint16_t inst_samples_per_pkg)
 
     ddr_manager_init();
     mts_manager_init();
-
-    // TODO: temporary until MTS is supported
-    package_create_enable_disable_pwr_record(POWER_TELEMETRY_ELEMENT_CORE_VOLTAGE, true);
-    package_create_enable_disable_inst_record(INST_TELEMETRY_ELEMENT_CORE, true);
+    package_creation_init();
 
     // since the telemetry schema events are not called within code, the linker will optimize out
     // a single call is enough to anchor them

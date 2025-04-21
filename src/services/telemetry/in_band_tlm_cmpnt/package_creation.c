@@ -46,10 +46,18 @@ bool inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_ID_MAX];
 uint32_t power_pkg_record_number[POWER_TELEMETRY_ELEMENT_ID_MAX];
 uint32_t inst_pkg_record_number[INST_TELEMETRY_ELEMENT_ID_MAX];
 
+uint8_t core_offset_per_die = 0;
+
 static_assert(sizeof(((telemetry_payload_header_t*)0)->manifest_id) <= sizeof(g_note_gnu_build_id.BuildId),
               "Source ID is too small");
 
 /*------------- Functions ----------------*/
+
+void package_creation_init()
+{
+    core_offset_per_die = mts_get_this_die_id() * NUMBER_OF_CORES_PER_DIE;
+}
+
 bool in_band_tlm_cmpnt_is_instantaneous_enabled(void)
 {
     for (uint32_t i = 0; i < INST_TELEMETRY_ELEMENT_ID_MAX; i++)
@@ -318,7 +326,7 @@ uint32_t package_create_pwr_core_pstate_record(p_pwr_core_record_pstate_t pstate
     {
         populate_pwr_collection_hdr(&pstate_record->pstate_collection[core_id].collection_header,
                                     POWER_TELEMETRY_ELEMENT_CORE_PSTATE,
-                                    core_id,
+                                    CORE_ID_WITH_DIE_OFFSET(core_id),
                                     NUMBER_OF_PSTATES,
                                     sizeof(pwr_core_collection_pstate_t));
 
@@ -339,7 +347,7 @@ uint32_t package_create_pwr_core_cstate_record(p_pwr_core_record_cstate_t cstate
     {
         populate_pwr_collection_hdr(&cstate_record->cstate_collection[core_id].collection_header,
                                     POWER_TELEMETRY_ELEMENT_CORE_CSTATE,
-                                    core_id,
+                                    CORE_ID_WITH_DIE_OFFSET(core_id),
                                     NUMBER_OF_CSTATES,
                                     sizeof(pwr_core_collection_cstate_t));
 
@@ -359,7 +367,7 @@ uint32_t package_create_pwr_core_throttle_record(p_pwr_core_record_throttle_t th
     {
         populate_pwr_collection_hdr(&throttle_record->throttle_collection[core_id].collection_header,
                                     POWER_TELEMETRY_ELEMENT_CORE_THROTTLE,
-                                    core_id,
+                                    CORE_ID_WITH_DIE_OFFSET(core_id),
                                     NUMBER_OF_THROTTLE_TYPES,
                                     sizeof(pwr_core_collection_throttle_t));
 
@@ -379,7 +387,7 @@ uint32_t package_create_pwr_core_rack_priority_record(p_pwr_core_record_rack_pri
     {
         populate_pwr_collection_hdr(&rack_priority_record->rack_priority_collection[core_id].collection_header,
                                     POWER_TELEMETRY_ELEMENT_CORE_RACK_PRIORITIES,
-                                    core_id,
+                                    CORE_ID_WITH_DIE_OFFSET(core_id),
                                     NUMBER_OF_RACK_PRIORITIES,
                                     sizeof(pwr_core_collection_rack_priorities_t));
 
@@ -401,7 +409,7 @@ uint32_t package_create_pwr_core_voltage_record(p_pwr_core_record_voltage_t volt
     {
         populate_pwr_collection_hdr(&voltage_record->voltage_collection[core_id].collection_header,
                                     POWER_TELEMETRY_ELEMENT_CORE_VOLTAGE,
-                                    core_id,
+                                    CORE_ID_WITH_DIE_OFFSET(core_id),
                                     1,
                                     sizeof(pwr_core_collection_voltage_t));
 
@@ -421,7 +429,7 @@ uint32_t package_create_pwr_core_current_record(p_pwr_core_record_current_t curr
     {
         populate_pwr_collection_hdr(&current_record->current_collection[core_id].collection_header,
                                     POWER_TELEMETRY_ELEMENT_CORE_CURRENT,
-                                    core_id,
+                                    CORE_ID_WITH_DIE_OFFSET(core_id),
                                     1,
                                     sizeof(pwr_core_collection_current_t));
 
@@ -441,7 +449,7 @@ uint32_t package_create_pwr_core_temperature_record(p_pwr_core_record_temperatur
     {
         populate_pwr_collection_hdr(&temperature_record->temperature_collection[core_id].collection_header,
                                     POWER_TELEMETRY_ELEMENT_CORE_TEMPERATURE,
-                                    core_id,
+                                    CORE_ID_WITH_DIE_OFFSET(core_id),
                                     1,
                                     sizeof(pwr_core_collection_temperature_t));
 
@@ -462,7 +470,7 @@ uint32_t package_create_pwr_core_histogram_record(p_pwr_core_record_histogram_t 
     {
         populate_pwr_collection_hdr(&histogram_record->histogram_collection[core_id].collection_header,
                                     POWER_TELEMETRY_ELEMENT_CORE_HISTOGRAM,
-                                    core_id,
+                                    CORE_ID_WITH_DIE_OFFSET(core_id),
                                     NUMBER_OF_HS_VOLTAGE_SCALES * NUMBER_OF_HS_TEMP_SCALES,
                                     sizeof(pwr_core_collection_histogram_t));
 
@@ -625,7 +633,7 @@ uint32_t package_create_inst_core_summary_record(p_inst_core_record_summary_t su
     {
         populate_inst_collection_hdr(&summary_record->inst_core_summary_collection[core_id].collection_header,
                                      INST_TELEMETRY_ELEMENT_CORE,
-                                     core_id,
+                                     CORE_ID_WITH_DIE_OFFSET(core_id),
                                      1,
                                      sizeof(inst_core_collection_summary_t));
 
@@ -728,7 +736,7 @@ uint32_t package_create_inst_core_amu_counters_record(p_inst_core_record_amu_cou
     {
         populate_inst_collection_hdr(&amu_record->amu_counter_collection[core_id].collection_header,
                                      INST_TELEMETRY_ELEMENT_AMU,
-                                     core_id,
+                                     CORE_ID_WITH_DIE_OFFSET(core_id),
                                      1,
                                      sizeof(inst_core_collection_amu_counters_t));
 

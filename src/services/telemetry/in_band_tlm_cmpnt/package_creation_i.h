@@ -14,20 +14,31 @@
 
 #include <event_trace_providers.h>
 #include <fpfw_status.h>
+#include <message_transfer_service.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-
 
 /*-------------- Typedefs ----------------*/
 
 /*-- Declarations (Statics and globals) --*/
+
 extern bool power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_ID_MAX];
 extern uint32_t power_pkg_record_number[POWER_TELEMETRY_ELEMENT_ID_MAX];
 
 extern bool inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_ID_MAX];
 extern uint32_t inst_pkg_record_number[INST_TELEMETRY_ELEMENT_ID_MAX];
 
+extern uint8_t core_offset_per_die;
+#define CORE_ID_WITH_DIE_OFFSET(core_id) ((core_id) + (core_offset_per_die))
+
 /*--------- Function Prototypes ----------*/
+
+/**
+ * @brief Initialize any constant, post initialization, values for package creation.
+ * 
+ * @retval none
+ */
+void package_creation_init();
 
 /**
  * @brief enable/disable a power record for packaging

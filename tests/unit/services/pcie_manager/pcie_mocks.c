@@ -178,3 +178,47 @@ bool __wrap_accel_is_isolation_enabled(ACCEL_ID accel_type)
     FPFW_UNUSED(accel_type);
     return mock_type(bool);
 }
+
+void __wrap_pcie_dfwk_interface_init(pciess_device_t* dev, pciess_device_interface_t* iface)
+{
+    FPFW_UNUSED(dev);
+    FPFW_UNUSED(iface);
+}
+
+UINT __wrap_pcie_phyfw_wait_load_event(TX_EVENT_FLAGS_GROUP* pcie_phyfw_load_complete)
+{
+    FPFW_UNUSED(pcie_phyfw_load_complete);
+    return TX_SUCCESS;
+}
+
+int32_t __wrap_DfwkClientInterfaceOpen(PDFWK_INTERFACE_HEADER Interface)
+{
+    check_expected_ptr(Interface);
+    return mock_type(int32_t);
+}
+
+UINT __wrap__tx_thread_sleep(ULONG timer_ticks)
+{
+    check_expected(timer_ticks);
+    return TX_SUCCESS;
+}
+
+uint8_t __wrap_system_info_get_board_id()
+{
+    return mock_type(uint8_t);
+}
+
+uint8_t __wrap_config_get_overlake_rpss_index_secondary_soc(void)
+{
+    return mock_type(uint8_t);
+}
+
+uint8_t __wrap_config_get_overlake_rpss_index_primary_soc(void)
+{
+    return mock_type(uint8_t);
+}
+
+uint8_t __wrap_config_get_enable_overlake_sbr_workaround(void)
+{
+    return mock_type(uint8_t);
+}

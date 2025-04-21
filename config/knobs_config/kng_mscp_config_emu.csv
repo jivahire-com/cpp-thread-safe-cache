@@ -1,3 +1,6 @@
 Guid,Knob,Value,Help
 FE3ED49F-B173-41ED-9076-356661D46A42,usb_knobs.power_on_port0,false,"override for emu"
 *,usb_knobs.power_on_port1,false,"override for emu"
+*,pcie_rpss0_cfg.pcie_bifurcation_mode,PCIE_BIFURCATION_1X16,"EMU supports 1x16 only"
+*,pcie_rpss1_cfg.pcie_bifurcation_mode,PCIE_BIFURCATION_1X16,"EMU supports 1x16 only"
+*,pcie_rpss2_cfg.pcie_bifurcation_mode,PCIE_BIFURCATION_1X16,"EMU supports 1x16 only"

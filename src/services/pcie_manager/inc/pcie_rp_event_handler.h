@@ -16,7 +16,6 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
-
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/

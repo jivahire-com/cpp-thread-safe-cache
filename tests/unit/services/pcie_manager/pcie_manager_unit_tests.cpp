@@ -26,6 +26,7 @@ extern "C" {
 #include <pcie_manager_i.h>        // for rpss_req_completion_cb, send_start_li...
 #include <pcie_rp_event_handler.h> // for process_wait_for_event_data
 #include <pcie_sync_requests_i.h>
+#include <pciess_int.h>
 #include <scp_pcie_manager.h> // for scp_pcie_initialize, pcie_manager_con...
 #include <setjmp.h>
 #include <silibs_kng_soc.h>
@@ -531,6 +532,89 @@ TEST_FUNCTION(test_process_wait_for_event_unhandled, NULL, NULL)
     }
 }
 
+/* Test link up routine in process_wait_for_event_data */
+TEST_FUNCTION(test_process_wait_for_event_linkup, NULL, NULL)
+{
+    /* Setup BIT0 (link up) in the wait for event completion */
+    pciess_completion_request_t cmpl_req;
+    cmpl_req.async_data.data = 1 << PCIESS_RP_INT_LINK_UP;
+
+    ctx.rpss_idx = (RPSS_INSTANCE)0;
+    cmpl_req.rp_index = 0;
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_LINK_STATUS);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+    will_return(__wrap_system_info_get_board_id, 0);
+    will_return(__wrap_config_get_overlake_rpss_index_primary_soc, 1); // not this RPSS
+
+    process_wait_for_event_data(&ctx, &cmpl_req);
+
+    ctx.rpss_idx = (RPSS_INSTANCE)0;
+    cmpl_req.rp_index = 1; // wrong rp index
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_LINK_STATUS);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    process_wait_for_event_data(&ctx, &cmpl_req);
+}
+
+/* Test link up routine in process_wait_for_event_data */
+TEST_FUNCTION(test_process_wait_for_event_linkup_overlake_failure, NULL, NULL)
+{
+    /* Setup BIT0 (link up) in the wait for event completion */
+    pciess_completion_request_t cmpl_req;
+    cmpl_req.async_data.data = 1 << PCIESS_RP_INT_LINK_UP;
+
+    ctx.rpss_idx = (RPSS_INSTANCE)0;
+    cmpl_req.rp_index = 0;
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_LINK_STATUS);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_OVERWRITTEN); // link training failure
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+    will_return(__wrap_system_info_get_board_id, 0);
+    will_return(__wrap_config_get_overlake_rpss_index_primary_soc, ctx.rpss_idx); // Overlake RPSS
+    will_return(__wrap_config_get_enable_overlake_sbr_workaround, 1);             // enable workaround
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, SET_SECONDARY_BUS_RESET_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    expect_value(__wrap__tx_thread_sleep, timer_ticks, 1);
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, CLEAR_SECONDARY_BUS_RESET_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    process_wait_for_event_data(&ctx, &cmpl_req);
+
+    /* Secondary SoC case*/
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_LINK_STATUS);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_OVERWRITTEN); // link training failure
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+    will_return(__wrap_system_info_get_board_id, 1 << 6); // GPIO indicates secondary SoC
+    will_return(__wrap_config_get_overlake_rpss_index_secondary_soc, ctx.rpss_idx); // Overlake RPSS
+    will_return(__wrap_config_get_enable_overlake_sbr_workaround, 1);               // enable workaround
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, SET_SECONDARY_BUS_RESET_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    expect_value(__wrap__tx_thread_sleep, timer_ticks, 1);
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, CLEAR_SECONDARY_BUS_RESET_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    process_wait_for_event_data(&ctx, &cmpl_req);
+}
+
 TEST_FUNCTION(test_sync_get_rpss_entity_pass, NULL, NULL)
 {
     ctx.rpss_idx = (RPSS_INSTANCE)0x01;
@@ -778,6 +862,60 @@ TEST_FUNCTION(test_send_sync_rp_get_link_status_dfwk_fail, NULL, NULL)
     }
 }
 
+TEST_FUNCTION(test_send_sync_set_secondary_bus_reset_pass, NULL, NULL)
+{
+    ctx.rpss_idx = (RPSS_INSTANCE)0x01;
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, SET_SECONDARY_BUS_RESET_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    silibs_status_t sts = send_sync_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
+    assert_int_equal(sts, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_send_sync_set_secondary_bus_reset_fail, NULL, NULL)
+{
+    ctx.rpss_idx = (RPSS_INSTANCE)0x01;
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, SET_SECONDARY_BUS_RESET_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, -1);
+    expect_function_calls(__wrap_crash_dump_bug_check, 1);
+
+    silibs_status_t sts = send_sync_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
+    assert_int_equal(sts, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_send_sync_clear_secondary_bus_reset_pass, NULL, NULL)
+{
+    ctx.rpss_idx = (RPSS_INSTANCE)0x01;
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, CLEAR_SECONDARY_BUS_RESET_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    silibs_status_t sts = send_sync_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
+    assert_int_equal(sts, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_send_sync_clear_secondary_bus_reset_fail, NULL, NULL)
+{
+    ctx.rpss_idx = (RPSS_INSTANCE)0x01;
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, CLEAR_SECONDARY_BUS_RESET_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, -1);
+    expect_function_calls(__wrap_crash_dump_bug_check, 1);
+
+    silibs_status_t sts = send_sync_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
+    assert_int_equal(sts, SILIBS_SUCCESS);
+}
+
 TEST_FUNCTION(test_all_sync_req_invalid_ids, NULL, NULL)
 {
     RPSS_INSTANCE valid_rpss_id = (RPSS_INSTANCE)0x01;
@@ -785,7 +923,7 @@ TEST_FUNCTION(test_all_sync_req_invalid_ids, NULL, NULL)
     uint8_t valid_rp_id = 0x03;
     uint8_t invalid_rp_id = 0xFF;
 
-    expect_function_calls(__wrap_crash_dump_bug_check, 10);
+    expect_function_calls(__wrap_crash_dump_bug_check, 14);
     should_return = false;
 
     if (!bugcheck_mock_return())
@@ -836,6 +974,26 @@ TEST_FUNCTION(test_all_sync_req_invalid_ids, NULL, NULL)
     if (!bugcheck_mock_return())
     {
         send_sync_rp_get_link_status((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        send_sync_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, invalid_rpss_id, valid_rp_id);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        send_sync_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        send_sync_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, invalid_rpss_id, valid_rp_id);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        send_sync_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id);
     }
 }
 

@@ -254,6 +254,10 @@
                         "Telemetry Service - In Band Cmpnt",
                         "kng.service.telemetry.cmpnt.in_band_tlm.test"
                     ],
+                    [
+                        "PCIe manager service",
+                        "scp_pcie_manager.test.exe"
+                    ],
                 ],
             },
         },

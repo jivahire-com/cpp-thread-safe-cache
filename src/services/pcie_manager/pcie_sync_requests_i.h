@@ -101,3 +101,25 @@ silibs_status_t send_sync_rp_initiate_link_training(PDFWK_INTERFACE_HEADER iface
  * @retval Other:          Error occurred while obtaining link status.
  */
 silibs_status_t send_sync_rp_get_link_status(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx);
+
+/**
+ * @brief Send a synchronous request to set the secondary bus reset for the specified RP.
+ *
+ * @param[in] rpss_idx  - The RPSS instance index.
+ * @param[in] rp_index  - The root port index.
+ *
+ * @retval SILIBS_SUCCESS: SBR bit set successfully.
+ * @retval Other:          Error occurred while setting SBR bit.
+ */
+silibs_status_t send_sync_set_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx);
+
+/**
+ * @brief Send a synchronous request to clear the secondary bus reset for the specified RP.
+ *
+ * @param[in] rpss_idx  - The RPSS instance index.
+ * @param[in] rp_index  - The root port index.
+ *
+ * @retval SILIBS_SUCCESS: SBR bit cleared successfully.
+ * @retval Other:          Error occurred while clearing SBR bit.
+ */
+silibs_status_t send_sync_clear_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx);

@@ -276,3 +276,67 @@ silibs_status_t send_sync_rp_get_link_status(PDFWK_INTERFACE_HEADER iface, uint8
 
     return sync_req.status;
 }
+
+silibs_status_t send_sync_set_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx)
+{
+    int32_t dfwk_status = DFWK_SUCCESS;
+
+    if ((rpss_idx >= NUM_RPSS) || (rp_idx >= PCIESS_NUM_PORTS))
+    {
+        FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Invalid RPSS/RP index!\n", rpss_idx, rp_idx);
+        BUG_ASSERT_PARAM(((rpss_idx < NUM_RPSS) && (rp_idx < PCIESS_NUM_PORTS)), rpss_idx, rp_idx);
+    }
+
+    pcie_sync_request_t sync_req = {
+        .header = {.RequestType = SET_SECONDARY_BUS_RESET_REQUEST},
+        .rpss_index = rpss_idx,
+        .req_type = SET_SECONDARY_BUS_RESET_REQUEST,
+        .rp_index = rp_idx,
+    };
+
+    dfwk_status = DfwkInterfaceSendSync(iface, &sync_req.header);
+
+    if (DFWK_FAILED(dfwk_status))
+    {
+        FPFW_DBGPRINT_ERROR(
+            "RPSS[%d] RP[%d]: Failed to send SET_SECONDARY_BUS_RESET_REQUEST! dfwk_status: %d\n",
+            rpss_idx,
+            rp_idx,
+            dfwk_status);
+        BUG_ASSERT_PARAM((dfwk_status == DFWK_SUCCESS), dfwk_status, 0);
+    }
+
+    return sync_req.status;
+}
+
+silibs_status_t send_sync_clear_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx)
+{
+    int32_t dfwk_status = DFWK_SUCCESS;
+
+    if ((rpss_idx >= NUM_RPSS) || (rp_idx >= PCIESS_NUM_PORTS))
+    {
+        FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Invalid RPSS/RP index!\n", rpss_idx, rp_idx);
+        BUG_ASSERT_PARAM(((rpss_idx < NUM_RPSS) && (rp_idx < PCIESS_NUM_PORTS)), rpss_idx, rp_idx);
+    }
+
+    pcie_sync_request_t sync_req = {
+        .header = {.RequestType = CLEAR_SECONDARY_BUS_RESET_REQUEST},
+        .rpss_index = rpss_idx,
+        .req_type = CLEAR_SECONDARY_BUS_RESET_REQUEST,
+        .rp_index = rp_idx,
+    };
+
+    dfwk_status = DfwkInterfaceSendSync(iface, &sync_req.header);
+
+    if (DFWK_FAILED(dfwk_status))
+    {
+        FPFW_DBGPRINT_ERROR(
+            "RPSS[%d] RP[%d]: Failed to send SET_SECONDARY_BUS_RESET_REQUEST! dfwk_status: %d\n",
+            rpss_idx,
+            rp_idx,
+            dfwk_status);
+        BUG_ASSERT_PARAM((dfwk_status == DFWK_SUCCESS), dfwk_status, 0);
+    }
+
+    return sync_req.status;
+}

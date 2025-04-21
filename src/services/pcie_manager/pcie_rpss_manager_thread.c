@@ -21,9 +21,10 @@
 #include <pciess.h>
 #include <scp_pcie_manager.h>
 #include <silibs_kng_soc.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <tx_api.h>
+#include <stdbool.h> // for true
+#include <stdint.h>  // for uint8_t
+#include <stdio.h>   // for fflush, printf, stdout
+#include <tx_api.h>  // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
 
 /*-- Symbolic Constant Macros (defines) --*/
 /*
@@ -109,5 +110,6 @@ void rpss_service_thread_fn(ULONG thread_input)
                            (int)cmpl_req.async_data.data);
 
         process_wait_for_event_data(ctx, &cmpl_req);
+        fflush(stdout);
     }
 }

@@ -20,6 +20,7 @@ target_link_libraries(
         fwlib.platform.dfwkhost.threadx
         fwlib.lib.interface.platform.dbgprint
         fwlib.lib.interface.platform.errorhandler
+        fwlib.lib.cfg_mgr
         kng_silibs_platform
         ms::driver::pcie
         ms::lib::debug
@@ -27,6 +28,7 @@ target_link_libraries(
         ms::lib::variable_services
         ms::lib::error_codes
         ms::lib::crash_dump
+        ms::lib::system_info
         ms::lib::accelerator_ip
         silibs::idsw
         silibs::idsw_kng

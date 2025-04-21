@@ -11,6 +11,7 @@
 #include <DfwkDriver.h>
 #include <DfwkHost.h>
 #include <FpFwAssert.h>
+#include <oi_pcie.h>
 #include <pcie_cli_helpers_i.h>
 #include <pcie_dfwk.h>
 #include <pcie_dfwk_i.h>
@@ -37,6 +38,7 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
     /* No null check required here as DFWK handles it for us */
     pcie_sync_request_t* r = (pcie_sync_request_t*)incoming;
     silibs_status_t sts = SILIBS_SUCCESS;
+    pcie_ss_entity_t* rpss;
 
     if (r->rp_index >= PCIESS_NUM_PORTS || r->rpss_index >= PCIE_NUM_RPSS)
     {
@@ -76,6 +78,14 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
         break;
     case (GET_LINK_STATUS):
         sts = get_rp_link_status(incoming);
+        break;
+    case (SET_SECONDARY_BUS_RESET_REQUEST):
+        rpss = pciess_get_entity(r->rpss_index);
+        sts = oi_pcie_rp_dbi_set_secondary_bus_reset(&rpss->rps[r->rp_index]);
+        break;
+    case (CLEAR_SECONDARY_BUS_RESET_REQUEST):
+        rpss = pciess_get_entity(r->rpss_index);
+        sts = oi_pcie_rp_dbi_reset_secondary_bus_reset(&rpss->rps[r->rp_index]);
         break;
     case (CLI_REQUEST):
         handle_cli_request(r);

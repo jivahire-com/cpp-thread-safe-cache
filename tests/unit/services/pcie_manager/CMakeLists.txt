@@ -30,6 +30,8 @@ target_link_libraries(${TARGET}
     silibs_platform
 )
 
+target_compile_definitions(${TARGET} PRIVATE UNIT_TEST)
+
 # Get private includes for module under test
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:ms::service::pcie_manager,INCLUDE_DIRECTORIES>)
 
@@ -38,7 +40,6 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_THREADX "extern.th
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
-
 
 lint_target(${TARGET})
 format_target(${TARGET})
@@ -74,4 +75,13 @@ mock_target(${TARGET}
     variable_serv_copy_to_rmss_ram
     variable_service_initialize_ctx
     variable_service_async_set_variable
+
+    pcie_dfwk_interface_init
+    DfwkClientInterfaceOpen
+    pcie_phyfw_wait_load_event
+    _tx_thread_sleep
+    system_info_get_board_id
+    config_get_overlake_rpss_index_secondary_soc
+    config_get_overlake_rpss_index_primary_soc
+    config_get_enable_overlake_sbr_workaround
 )

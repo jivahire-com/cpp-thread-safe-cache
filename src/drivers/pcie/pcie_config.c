@@ -301,37 +301,14 @@ void override_default_pcie_cfg(uint8_t rpss_id)
     pcie_cfg->pcie_ss_override = false; // Disable so that individual RPSS settings are used
     pcie_cfg->pcie_ss_en = pcie_cfg_knob.pcie_ss_en;
     pcie_cfg->pcie_bifurcation_mode = pcie_cfg_knob.pcie_bifurcation_mode;
-    pcie_cfg->pcie_clock_mode = pcie_cfg_knob.pcie_clock_mode;
-    pcie_cfg->pcie_stagger_time = pcie_cfg_knob.pcie_stagger_time;
-    pcie_cfg->pcie_aspm_support = pcie_cfg_knob.pcie_aspm_support;
-    pcie_cfg->pcie_ltr_support = pcie_cfg_knob.pcie_ltr_support;
-    pcie_cfg->pcie_l1_exit_latency = pcie_cfg_knob.pcie_l1_exit_latency;
-    pcie_cfg->pcie_l0s_exit_latency = pcie_cfg_knob.pcie_l0s_exit_latency;
-    pcie_cfg->pcie_loopback_mode = pcie_cfg_knob.pcie_loopback_mode;
-    pcie_cfg->pcie_cap_gen_speed = pcie_cfg_knob.pcie_cap_gen_speed;
-    pcie_cfg->pcie_cap_mps = pcie_cfg_knob.pcie_cap_mps;
-    pcie_cfg->pcie_rcb_mode = pcie_cfg_knob.pcie_rcb_mode;
-    pcie_cfg->pcie_ras_mode = pcie_cfg_knob.pcie_ras_mode;
-    pcie_cfg->pcie_fast_link_mode = pcie_cfg_knob.pcie_fast_link_mode;
-    pcie_cfg->pcie_gen3_eq_disable = pcie_cfg_knob.pcie_gen3_eq_disable;
-    pcie_cfg->pcie_gen4_eq_disable = pcie_cfg_knob.pcie_gen4_eq_disable;
-    pcie_cfg->pcie_gen5_eq_disable = pcie_cfg_knob.pcie_gen5_eq_disable;
-    pcie_cfg->pcie_eq_bypass_support = pcie_cfg_knob.pcie_eq_bypass_support;
-    pcie_cfg->pcie_no_eq_support = pcie_cfg_knob.pcie_no_eq_support;
-
     /* pcie_cfg->pcie_cxl_support set below */
     pcie_cfg->pcie_cxl_sync_header_bypass = pcie_cfg_knob.pcie_cxl_sync_header_bypass;
-    pcie_cfg->pcie_ide_support = pcie_cfg_knob.pcie_ide_support;
-    pcie_cfg->pcie_tee_support = pcie_cfg_knob.pcie_tee_support;
-    pcie_cfg->pcie_fips_test = pcie_cfg_knob.pcie_fips_test;
-    pcie_cfg->pcie_ide_rekey_support = pcie_cfg_knob.pcie_ide_rekey_support;
-    pcie_cfg->pcie_ide_sync_msg_threshold = pcie_cfg_knob.pcie_ide_sync_msg_threshold;
-    pcie_cfg->pcie_msi_ext_data_support = pcie_cfg_knob.pcie_msi_ext_data_support;
-    pcie_cfg->pcie_msi_64bit_support = pcie_cfg_knob.pcie_msi_64bit_support;
-    pcie_cfg->pcie_system_counter_delay = pcie_cfg_knob.pcie_system_counter_delay;
-    pcie_cfg->pcie_aer_ecrc_gen_support = pcie_cfg_knob.pcie_aer_ecrc_gen_support;
-    pcie_cfg->pcie_aer_ecrc_check_support = pcie_cfg_knob.pcie_aer_ecrc_check_support;
-    pcie_cfg->pcie_aer_multiple_header_support = pcie_cfg_knob.pcie_aer_multiple_header_support;
+
+    /* Apply PHY knobs per lane*/
+    for (uint8_t i = 0; i < PCIE_LANE_COUNT; i++)
+    {
+        pcie_cfg->phy_lane_cfgs[i] = phy_cfg_knob.phy_lane_cfgs[i];
+    }
 
     /* Apply PHY knobs per lane*/
     for (uint8_t i = 0; i < PCIE_LANE_COUNT; i++)
@@ -386,6 +363,7 @@ void populate_rb_configs_from_rpss_entity(pcie_ss_entity_t* rpss, pcie_root_brid
         rb_configs[i].flags.hot_plug_enabled = pcie_cfg->rp_cfgs[i].pcie_rp_hotplug_capable;
         rb_configs[i].flags.is_cxl = pcie_cfg->pcie_cxl_support && (i == PCIESS_CXL_RP_IDX);
         rb_configs[i].slot_number = pcie_cfg->rp_cfgs[i].pcie_rp_slot_num;
+        rb_configs[i].flags.is_slot = pcie_cfg->rp_cfgs[i].pcie_rp_is_slot;
         rb_configs[i].flags.is_secondary_soc =
             (BOARD_ID_GET_SOC_POSITION(system_info_get_board_id()) == 0x01) ? 0b1 : 0b0;
 

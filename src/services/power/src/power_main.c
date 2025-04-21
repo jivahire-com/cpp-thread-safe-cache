@@ -38,9 +38,8 @@ static void crash_dump_predump_cb(void* ctx);
 
 /*------------- Functions ----------------*/
 
-static void power_service_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
+void power_service_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 {
-
     FPFW_UNUSED(p_context);
 
     switch (p_request->RequestType)
@@ -70,13 +69,12 @@ static void power_service_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER p_request, v
     }
     break;
     case SSI_SHUTDOWN_QUIESCE_ASYNC: {
-
         pssi_shutdown_notification_request_t ssi_request = (pssi_shutdown_notification_request_t)p_request;
-
-        // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2002015
 
         if (ssi_request->shutdown_type != AP_WARM_RESET)
         {
+            power_runconfig_t* p_runconfig = power_runconfig_get();
+            p_runconfig->knobs.loops_disable = power_loops_disable_t_ALL;
             // Force pmin
             power_hw_force_pmin(PM_FW_PMIN_CONTROL);
         }

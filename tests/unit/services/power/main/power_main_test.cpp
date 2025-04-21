@@ -16,19 +16,21 @@
 
 extern "C" {
 
-#include <CMockaWrapper.h> // for expect_value, check_expected_ptr, Cmo...
-#include <DfwkCommon.h>    // for PDFWK_DEVICE_HEADER, DFWK_ASYNC_REQUE...
+#include <CMockaWrapper.h>    // for expect_value, check_expected_ptr, Cmo...
+#include <DfwkAsyncRequest.h> // for PDFWK_ASYNC_REQUEST_HEADER
+#include <DfwkCommon.h>       // for PDFWK_DEVICE_HEADER, DFWK_ASYNC_REQUE...
 #include <modules/CdDumpDescriptor.h>
 #include <odcm_struct.h> // for odcm_telem_config_t
 #include <power_dfwk.h>  // for power_service_t, power_service_interf...
 #include <power_hw_int_i.h>
-#include <power_hw_int_i.h>    // for power_telcfg_t
-#include <power_i.h>           // for power_init, power_interface_init
-#include <power_init.h>        // for power_init, power_interface_init
-#include <power_runconfig.h>   // for power_service_config_t
-#include <power_runconfig_i.h> // for power_runconfig_t
-#include <power_warmstart_i.h> // for power_ws_fuse_t
-#include <warm_start_id.h>     // for mod_ws_data_id_t
+#include <power_hw_int_i.h>       // for power_telcfg_t
+#include <power_i.h>              // for power_init, power_interface_init
+#include <power_init.h>           // for power_init, power_interface_init
+#include <power_runconfig.h>      // for power_service_config_t
+#include <power_runconfig_i.h>    // for power_runconfig_t
+#include <power_warmstart_i.h>    // for power_ws_fuse_t
+#include <startup_shutdown_ssi.h> // for pssi_startup_notification_request_t
+#include <warm_start_id.h>        // for mod_ws_data_id_t
 
 } // extern "C"
 
@@ -93,6 +95,11 @@ void __wrap_DfwkQueueInitialize(PDFWK_QUEUE Queue,
     check_expected(QueueType);
     // save the dispatch routine for later use
     s_dispatch_routine = DispatchRoutine;
+}
+
+void __wrap_DfwkAsyncRequestComplete(PDFWK_ASYNC_REQUEST_HEADER Request)
+{
+    check_expected_ptr(Request);
 }
 
 void __wrap_FpFwAssert(int expression)
@@ -268,6 +275,11 @@ void __wrap_crash_dump_register_pre_dump_callback(void cb(void*), void* ctx)
     FPFW_UNUSED(cb);
     function_called();
 }
+void __wrap_power_hw_force_pmin(power_pmin_type_t type)
+{
+    check_expected(type);
+    function_called();
+}
 
 } // extern "C"
 
@@ -428,4 +440,31 @@ POWER_TEST(dispatch_default, NULL, NULL)
     {
         s_dispatch_routine(&test_request, &test_device.header);
     }
+}
+
+POWER_TEST(power_service_dispatch_async_shutdown_quiesce, NULL, NULL)
+{
+    DFWK_ASYNC_REQUEST_HEADER mock_request;
+    power_runconfig_t test_runconfig;
+    mock_request.RequestType = SSI_SHUTDOWN_QUIESCE_ASYNC;
+
+    pssi_shutdown_notification_request_t ssi_request = (pssi_shutdown_notification_request_t)&mock_request;
+    ssi_request->shutdown_type = MSCP_SUBSYS_RESET;
+
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+    expect_value(__wrap_power_hw_force_pmin, type, PM_FW_PMIN_CONTROL);
+    expect_function_call(__wrap_power_hw_force_pmin);
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &mock_request);
+
+    power_service_dispatch_async(&mock_request, NULL);
+    assert_true(test_runconfig.knobs.loops_disable == power_loops_disable_t_ALL);
+}
+
+POWER_TEST(power_service_dispatch_async_complete_async, NULL, NULL)
+{
+    DFWK_ASYNC_REQUEST_HEADER mock_request;
+    mock_request.RequestType = SSI_STARTUP_STAGE_COMPLETE_ASYNC;
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &mock_request);
+
+    power_service_dispatch_async(&mock_request, NULL);
 }

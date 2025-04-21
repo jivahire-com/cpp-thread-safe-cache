@@ -543,6 +543,8 @@ void AVSPwrKnobWriteRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* 
  */
 bool power_hw_has_avs_devices(void);
 
+void power_service_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context);
+
 #ifdef __cplusplus
 }
 #endif

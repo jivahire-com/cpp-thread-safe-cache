@@ -92,6 +92,8 @@ mock_target(${TARGET}
     atu_map
     atu_unmap
     idsw_get_die_id
+    power_hw_force_pmin
+    DfwkAsyncRequestComplete
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

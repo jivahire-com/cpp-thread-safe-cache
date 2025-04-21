@@ -22,6 +22,7 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define DFVS_FUSED_COREMEMASST_COUNT 5
+#define INFO_ROWS                    3
 
 /*-- Declarations (Statics and globals) --*/
 static const char* s_true_str = "true";
@@ -47,6 +48,7 @@ static void print_power_config_fgpll(power_knobs_t* knobs);
 static void print_power_config_knobs(power_knobs_t* knobs);
 static void print_power_config_max_allowed_plimit(power_knobs_t* knobs);
 static void print_power_config_min_allowed_plimit(power_knobs_t* knobs);
+static void print_power_config_vftpre(power_vft_curveset_precalc_t* precalculated_current);
 static void print_power_config_vcpucalc(power_knobs_t* knobs);
 
 /*-- Declarations (Statics and globals) --*/
@@ -71,14 +73,14 @@ const power_cli_sub_command_dictionary_element_t power_cli_config_sub_command_di
     {"allowed_max_plimit",  (print_function)print_power_config_max_allowed_plimit,  POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
     {"fgpll",               (print_function)print_power_config_fgpll,               POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
     {"knobs",               (print_function)print_power_config_knobs,               POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
-    /* TODO: The below functions need to be added after the underlying print functions are ported. 
+    /* TODO: The below functions need to be added after the underlying print functions are ported.
     These CLI functions are not implemented in this PR. */
     /*
     {"coremin",             (print_function)print_power_config_min_plimit,          POWER_IF_CMD_GET_RUNCONFIG_FUSES},
     {"lkgcalc",             (print_function)print_power_config_lkg,                 POWER_IF_CMD_GET_RUNCONFIG_FUSES},
     {"tel",                 (print_function)print_power_config_tel,                 POWER_IF_CMD_GET_RUNCONFIG_FUSES},
-    {"vftpre",              (print_function)print_power_config_vftpre,              POWER_IF_CMD_GET_RUNCONFIG_FUSES},
     */
+    {"vftpre",              (print_function)print_power_config_vftpre,              POWER_IF_CMD_GET_RUNCONFIG_VFTPRE},
     {"vcpucalc",            (print_function)print_power_config_vcpucalc,            POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
 };
 //clang-format on
@@ -318,7 +320,7 @@ static void print_power_config_loopcfg(power_knobs_t* knobs)
     FpFwCliPrint("Step size up max.: %u\n", knobs->max_plimit_step_size_up);
     FpFwCliPrint("Step size dn max.: %u\n", knobs->max_plimit_step_size_down);
     FpFwCliPrint("Min plimit upds/loop: ");
-    
+
     /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
     // print_minupdate(knobs->minimum_plimit_updates);
     // FpFwCliPrint("\n");
@@ -534,10 +536,55 @@ void cli_power_config_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* co
     FpFwCliPrint("Invalid sub cmd.\n");
 }
 
+static void print_power_config_vftpre(power_vft_curveset_precalc_t* precalculated_current)
+{
+    char tempstr[20];
+    FpFwCliPrint("\n");
+    for (unsigned vf_idx = 0; vf_idx <= VFT_CURVESET_COUNT; ++vf_idx) {
+        for (unsigned pstate_idx = 0; pstate_idx < NUM_PSTATES + INFO_ROWS; ++pstate_idx) {
+            switch (pstate_idx) {
+                case 0:  // print curve number
+                    FpFwCliPrint("Curve   %d     ", vf_idx);
+                    FpFwCliPrint("\n");
+                    break;
+                case 1:  // print header
+                    FpFwCliPrint("  lkg (A)    reflkg (A) dynamic (A) dyn_ldo (A)  cdyn (pF)    PState ");
+                    FpFwCliPrint("\n");
+                    break;
+                case 2:  // print header
+                    FpFwCliPrint("=========== =========== =========== =========== =========== ===========");
+                    FpFwCliPrint("\n");
+                    break;
+                default:
+                    print_padding((unsigned)precalculated_current->curveset[vf_idx].vf[pstate_idx - INFO_ROWS].leakage, 3);
+                    snprintf(tempstr, sizeof(tempstr), "%f", precalculated_current->curveset[vf_idx].vf[pstate_idx - INFO_ROWS].leakage);
+                    FpFwCliPrint("%s ", tempstr);
+                    print_padding((unsigned)precalculated_current->curveset[vf_idx].vf[pstate_idx-INFO_ROWS].ref_leakage, 3);
+                    snprintf(tempstr, sizeof(tempstr), "%f", precalculated_current->curveset[vf_idx].vf[pstate_idx-INFO_ROWS].ref_leakage);
+                    FpFwCliPrint("%s ", tempstr);
+                    print_padding((unsigned)precalculated_current->curveset[vf_idx].vf[pstate_idx-INFO_ROWS].dynamic, 3);
+                    snprintf(tempstr, sizeof(tempstr), "%f", precalculated_current->curveset[vf_idx].vf[pstate_idx-INFO_ROWS].dynamic);
+                    FpFwCliPrint("%s ", tempstr);
+                    print_padding((unsigned)precalculated_current->curveset[vf_idx].vf[pstate_idx-INFO_ROWS].dynamic_ldo, 3);
+                    snprintf(tempstr, sizeof(tempstr), "%f", precalculated_current->curveset[vf_idx].vf[pstate_idx-INFO_ROWS].dynamic_ldo);
+                    FpFwCliPrint("%s ", tempstr);
+                    print_padding((unsigned)precalculated_current->curveset[vf_idx].vf[pstate_idx-INFO_ROWS].cdyn_pf, 3);
+                    snprintf(tempstr, sizeof(tempstr), "%f", precalculated_current->curveset[vf_idx].vf[pstate_idx-INFO_ROWS].cdyn_pf);
+                    FpFwCliPrint("%s ", tempstr);
+                    print_padding((unsigned)(pstate_idx-INFO_ROWS), 3);
+                    FpFwCliPrint("%d",(pstate_idx-INFO_ROWS));
+                    FpFwCliPrint("\n");
+                    break;
+            }
+        }
+        FpFwCliPrint("\n");
+    }
+}
+
 
 static void print_power_config_vcpucalc(power_knobs_t* knobs)
 {
-    
+
     FpFwCliPrint("\nConfigured Vcpu Calc Inputs\n");
     FpFwCliPrint("---------------------------\n");
     FpFwCliPrint("R_loadline VCPU0 uohm : %uuOhm\n", knobs->r_loadline_vcpu0_uohm);

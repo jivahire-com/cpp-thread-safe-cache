@@ -43,6 +43,7 @@ void __real_power_runconfig_init(const power_service_config_t* p_config);
 DFWK_ASYNC_REQUEST_DISPATCH s_dispatch_routine = NULL;
 DFWK_REQUEST_DISPATCH_SYNC s_dispatch_routine_sync = NULL;
 const power_telcfg_t* sp_telemetry_config;
+dvfs_config_t dvfs_cfg = DVFS_DEFAULT_CONFIG;
 
 /*------------- Functions ----------------*/
 //
@@ -147,6 +148,12 @@ void __wrap_power_init_soc(const power_runconfig_t* p_runconfig)
     check_expected_ptr(p_runconfig);
 }
 
+void __wrap_power_vcpu_precalculate_vf_currents(power_runconfig_t* p_runconfig, dvfs_config_t* p_dvfs_cfg)
+{
+    check_expected_ptr(p_runconfig);
+    assert_int_equal((uintptr_t)p_dvfs_cfg, (uintptr_t)&dvfs_cfg);
+}
+
 // wrap for power_init_core
 void __wrap_power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t* p_telemetry_config)
 {
@@ -230,6 +237,11 @@ void __wrap_tile_pvt_dma_config(uintptr_t cluster_pex_base_addr, const tile_pvt_
 power_runconfig_t* __wrap_power_runconfig_get()
 {
     return mock_type(power_runconfig_t*);
+}
+// wrap for power_get_dvfs_config
+dvfs_config_t* __wrap_power_get_dvfs_config()
+{
+    return mock_type(dvfs_config_t*);
 }
 
 void __wrap_power_loops_control_init()
@@ -329,6 +341,7 @@ POWER_TEST(init_ap_soc, NULL, NULL)
 
     will_return(__wrap_power_hw_full_init_allowed, true);
     will_return(__wrap_power_runconfig_get, &test_runconfig);
+    will_return(__wrap_power_get_dvfs_config, &dvfs_cfg);
     expect_value(__wrap_power_init_soc, p_runconfig, &test_runconfig);
     expect_value(__wrap_power_init_core, p_runconfig, &test_runconfig);
     expect_value(__wrap_FpFwAssert, expression, true); // power_ws_save_fuse_init checks runconfig.
@@ -339,7 +352,7 @@ POWER_TEST(init_ap_soc, NULL, NULL)
     expect_value(__wrap_ws_data_put, size, sizeof(test_ws_stored));
     will_return(__wrap_ws_data_put, &test_ws_stored);
     expect_function_call(__wrap_ws_data_put);
-
+    expect_value(__wrap_power_vcpu_precalculate_vf_currents, p_runconfig, &test_runconfig);
     expect_function_call(__wrap_power_loops_control_post_core_init);
     power_ap_soc_init();
 }
@@ -366,10 +379,12 @@ POWER_TEST(init_ap_soc_ws, NULL, NULL)
 
     will_return(__wrap_power_hw_full_init_allowed, false);
     will_return(__wrap_power_runconfig_get, &test_runconfig);
+    will_return(__wrap_power_get_dvfs_config, &dvfs_cfg);
     expect_value_count(__wrap_FpFwAssert, expression, true, 7);
     expect_function_call(__wrap_reset_tile_pvt_dts_vm);
     expect_function_call(__wrap_tile_pvt_sda_reconfig);
     expect_function_call(__wrap_tile_pvt_dma_config);
+    expect_value(__wrap_power_vcpu_precalculate_vf_currents, p_runconfig, &test_runconfig);
     expect_function_call(__wrap_power_loops_control_post_core_init);
 
     power_ap_soc_init();

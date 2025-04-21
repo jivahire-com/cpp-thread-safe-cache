@@ -349,6 +349,7 @@ typedef enum
     //! All get commands
     POWER_IF_CMD_GET_RUNCONFIG_KNOBS,
     POWER_IF_CMD_GET_RUNCONFIG_FUSES,
+    POWER_IF_CMD_GET_RUNCONFIG_VFTPRE,
 
     //! All set commands
     POWER_IF_CMD_SET_CAP,

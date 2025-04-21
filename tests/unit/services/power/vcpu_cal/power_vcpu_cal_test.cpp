@@ -28,6 +28,10 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*------------- Functions ----------------*/
+void __wrap_FpFwAssert(int expression)
+{
+    check_expected(expression);
+}
 
 } // extern "C
 
@@ -284,4 +288,95 @@ POWER_TEST(power_vcpu_interpolate_from_points, NULL, NULL)
 
     assert_int_equal(INTERPOLATE_TEST4_OUTPUT,
                      power_vcpu_interpolate_from_points(default_core_cdyn, DIMOF(default_core_cdyn), INTERPOLATE_TEST4_INPUT));
+}
+
+POWER_TEST(power_vcpu_precalculate_vf_currents, NULL, NULL)
+{
+
+#define TEST_CORE_TDP                        66
+#define TEST_LDO_DYNANMIC_CURRENT_CALCULATED 0.073909
+#define TEST_LEAKAGE_CURRENT_CALCULATED      0.377212
+#define TEST_DYNAMIC_CURRENT_CALCULATED      984
+
+    power_runconfig_t test_runconfig;
+    dvfs_config_t test_dvfs_cfg = DVFS_DEFAULT_CONFIG;
+
+    test_runconfig.fuses.core_cdyn[0].common.ldo_dac = 375;
+    test_runconfig.fuses.core_cdyn[0].common.field32 = 745;
+    test_runconfig.fuses.core_cdyn[0].current.ldo_dac = 375;
+    test_runconfig.fuses.core_cdyn[0].current.current_ma = 745;
+    test_runconfig.fuses.core_cdyn[0].current.vcpu_mv = 0;
+    test_runconfig.fuses.core_cdyn[0].current.temp_offset = 0;
+    test_runconfig.fuses.core_cdyn[0].cdyn.ldo_dac = 375;
+    test_runconfig.fuses.core_cdyn[0].cdyn.cdyn_pf = 745;
+    test_runconfig.fuses.vcpu_ldo_dyn[0].common.ldo_dac = 340;
+    test_runconfig.fuses.vcpu_ldo_dyn[0].common.field32 = 3350;
+    test_runconfig.fuses.vcpu_ldo_dyn[0].current.ldo_dac = 340;
+    test_runconfig.fuses.vcpu_ldo_dyn[0].current.current_ma = 3350;
+    test_runconfig.fuses.vcpu_ldo_dyn[0].current.vcpu_mv = 1080;
+    test_runconfig.fuses.vcpu_ldo_dyn[0].current.temp_offset = 118;
+    test_runconfig.fuses.vcpu_ldo_dyn[0].cdyn.ldo_dac = 340;
+    test_runconfig.fuses.vcpu_ldo_dyn[0].cdyn.cdyn_pf = 3350;
+    test_runconfig.fuses.vcpu_leakage[0].common.ldo_dac = 340;
+    test_runconfig.fuses.vcpu_leakage[0].common.field32 = 17100;
+    test_runconfig.fuses.vcpu_leakage[0].current.ldo_dac = 340;
+    test_runconfig.fuses.vcpu_leakage[0].current.current_ma = 17100;
+    test_runconfig.fuses.vcpu_leakage[0].current.vcpu_mv = 1080;
+    test_runconfig.fuses.vcpu_leakage[0].current.temp_offset = 213;
+    test_runconfig.fuses.vcpu_leakage[0].cdyn.ldo_dac = 340;
+    test_runconfig.fuses.vcpu_leakage[0].cdyn.cdyn_pf = 17100;
+
+    test_runconfig.derived.vfts[0].assigned_cores = {0xFF, 0x0, 0x0}; // all cores assigned to curve 0
+
+    power_core_vft_point_t test_vf[NUM_PSTATES] = {
+        {.freq_Mhz = 0, .voltage_mv = 0},       {.freq_Mhz = 0, .voltage_mv = 0},
+        {.freq_Mhz = 3500, .voltage_mv = 1020}, {.freq_Mhz = 3450, .voltage_mv = 1016},
+        {.freq_Mhz = 3400, .voltage_mv = 1010}, {.freq_Mhz = 3350, .voltage_mv = 996},
+        {.freq_Mhz = 3300, .voltage_mv = 980},  {.freq_Mhz = 3250, .voltage_mv = 964},
+        {.freq_Mhz = 3200, .voltage_mv = 948},  {.freq_Mhz = 3150, .voltage_mv = 932},
+        {.freq_Mhz = 3100, .voltage_mv = 916},  {.freq_Mhz = 3050, .voltage_mv = 900},
+        {.freq_Mhz = 3000, .voltage_mv = 884},  {.freq_Mhz = 2950, .voltage_mv = 868},
+        {.freq_Mhz = 2900, .voltage_mv = 854},  {.freq_Mhz = 2850, .voltage_mv = 842},
+        {.freq_Mhz = 2800, .voltage_mv = 830},  {.freq_Mhz = 2750, .voltage_mv = 828},
+        {.freq_Mhz = 2700, .voltage_mv = 824},  {.freq_Mhz = 2650, .voltage_mv = 822},
+        {.freq_Mhz = 2600, .voltage_mv = 818},  {.freq_Mhz = 2550, .voltage_mv = 816},
+        {.freq_Mhz = 2500, .voltage_mv = 812},  {.freq_Mhz = 2450, .voltage_mv = 810},
+        {.freq_Mhz = 2400, .voltage_mv = 806},  {.freq_Mhz = 2300, .voltage_mv = 800},
+        {.freq_Mhz = 2200, .voltage_mv = 794},  {.freq_Mhz = 2100, .voltage_mv = 788},
+        {.freq_Mhz = 1900, .voltage_mv = 778},  {.freq_Mhz = 1700, .voltage_mv = 770},
+        {.freq_Mhz = 1500, .voltage_mv = 762},  {.freq_Mhz = 1200, .voltage_mv = 750},
+    };
+
+    dvfs_vmat_info_t test_vmat_info = {
+        .ldo_dac_in = {0,   0,   495, 485, 475, 470, 465, 460, 455, 450, 445, 440, 435, 430, 425, 420,
+                       415, 414, 412, 411, 409, 408, 406, 405, 403, 400, 397, 394, 389, 385, 381, 375},
+    };
+
+    for (unsigned pstate_idx = 0; pstate_idx < NUM_PSTATES; ++pstate_idx)
+    {
+        test_runconfig.derived.vfts[0].vf[pstate_idx].voltage_mv = test_vf[pstate_idx].voltage_mv;
+        test_runconfig.derived.vfts[0].vf[pstate_idx].freq_Mhz = test_vf[pstate_idx].freq_Mhz;
+        test_runconfig.dvfs_vft.curveset[0].vmat_info[0].ldo_dac_in[pstate_idx] = test_vmat_info.ldo_dac_in[pstate_idx];
+        test_runconfig.derived.vfts[0].min_plimit = 2;
+    }
+
+    for (unsigned vf_idx = 1; vf_idx < VFT_CURVESET_COUNT; ++vf_idx)
+    {
+
+        test_runconfig.derived.vfts[vf_idx].min_plimit = 2;
+        for (unsigned pstate_idx = 0; pstate_idx < NUM_PSTATES; ++pstate_idx)
+        {
+            test_runconfig.derived.vfts[vf_idx].vf[pstate_idx].voltage_mv = 0;
+            test_runconfig.derived.vfts[vf_idx].vf[pstate_idx].freq_Mhz = 0;
+        }
+    }
+
+    test_runconfig.fuses.tdp_config.num_cores = TEST_CORE_TDP;
+    expect_value_count(__wrap_FpFwAssert, expression, true, 840); // for p_runconfig,p_dvfs_cfg
+
+    power_vcpu_precalculate_vf_currents(&test_runconfig, &test_dvfs_cfg);
+    assert_int_equal(TEST_LDO_DYNANMIC_CURRENT_CALCULATED,
+                     test_runconfig.precalculated_current.curveset[0].vf[2].dynamic_ldo);
+    assert_int_equal(TEST_LEAKAGE_CURRENT_CALCULATED, test_runconfig.precalculated_current.curveset[0].vf[2].ref_leakage);
+    assert_int_equal(TEST_DYNAMIC_CURRENT_CALCULATED, test_runconfig.precalculated_current.curveset[0].vf[2].cdyn_pf);
 }

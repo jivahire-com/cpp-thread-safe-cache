@@ -58,7 +58,7 @@ static FPFW_CLI_COMMAND cli_power_commands[] = {
     {NULL_LIST_ENTRY, "pwr", "set",    cli_power_set_command,    "Set specific internal values",         "Usage: pwr set <sub_command>"   },
     {NULL_LIST_ENTRY, "pwr", "status", cli_power_status_command, "Display module status",                "Usage: pwr status <sub_command>"},
     {NULL_LIST_ENTRY, "pwr", "log",    cli_power_log_command,    "Access power log",                     "Usage: pwr log <sub_command>"   },
-    };      
+    };
 //clang-format on
 
 /*-------------- Functions ---------------*/
@@ -73,14 +73,14 @@ static power_if_cmd_t cli_power_get_cmd_id(e_cli_power_command_id_t command, cha
             return cli_power_status_get_cmd_id(subcommand);
         case CLI_COMMANDS_POWER_LOG :
             return cli_power_log_get_cmd_id(subcommand);
-        default: 
+        default:
             return POWER_IF_CMD_UNKNOWN;
     }
 }
 
 static FPFW_CLI_STATUS dispatch_power_cli_async_request(uint8_t die, e_cli_power_command_id_t command, char* subcommand, _pwrset_subcommand_args* p_set_data, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine )
 {
-    
+
         power_cli_cmd_context.request.die = die;
 
         power_cli_cmd_context.request.header.RequestType = command;
@@ -99,7 +99,7 @@ static FPFW_CLI_STATUS dispatch_power_cli_async_request(uint8_t die, e_cli_power
             return CLI_ERROR;
         }
 
-        DfwkAsyncRequestSetCompletionRoutine(&power_cli_cmd_context.request.header, CompletionRoutine, NULL); 
+        DfwkAsyncRequestSetCompletionRoutine(&power_cli_cmd_context.request.header, CompletionRoutine, NULL);
         DfwkInterfaceSendAsync(&power_cli_cmd_context.p_interface->header, &power_cli_cmd_context.request.header);
 
         return CLI_SUCCESS;
@@ -135,26 +135,27 @@ static uint8_t cli_power_cmd_arg_count(int subcommand_id)
         case POWER_IF_CMD_SET_PLIMIT:
         case POWER_IF_CMD_SET_FORCED:
             expected_argc = 4;
-            break;    
+            break;
 
         case POWER_IF_CMD_SET_DESIRED_PSTATE:
             expected_argc = 5;
             break;
-   
+
         case POWER_IF_CMD_SET_PSTATE_FREQ:
             expected_argc = 6;
             break;
 
         default:
-            break; 
+            break;
     }
 
    return expected_argc;
 }
 
 static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char** argv, _pwrset_subcommand_args* p_pwrset_sub_command_args)
-{ 
+{
     char* pwr_strings[] = {
+        "", // intentional empty string to align with enum
         "", // intentional empty string to align with enum
         "", // intentional empty string to align with enum
         "- set rack power cap (W)\n",
@@ -170,7 +171,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
 
     if (argc == 2)
     {
-        if( (strcmp(argv[1], "??") == 0) )        
+        if( (strcmp(argv[1], "??") == 0) )
         {
             FpFwCliPrint("\n");
             FpFwCliPrint("%-72s%s", "Usage: pwr set ??", "- help menu\n");
@@ -187,7 +188,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
 
             return CLI_ERROR;
         }
-    }      
+    }
 
     unsigned char all = 0;
     unsigned char core = 0;
@@ -202,13 +203,13 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
             if(argc != cli_power_cmd_arg_count(subcommand_id))
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr set cap <value>", pwr_strings[POWER_IF_CMD_SET_CAP]);
-                
+
                 return CLI_ERROR;
             }
 
             p_pwrset_sub_command_args->cap_val = (uint16_t)strtoul(argv[2],NULL,10);
             break;
-        }    
+        }
 
         case POWER_IF_CMD_SET_DESIRED_PSTATE: {
             if(argc != cli_power_cmd_arg_count(subcommand_id))
@@ -226,39 +227,39 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
 
             // throttle is the throttle priority 0-7
             throttle = (uint8_t)(strtoul(argv[4], 0, 0) & 0x7);
-            
-            p_pwrset_sub_command_args->desiredparams.all = all; 
-            p_pwrset_sub_command_args->desiredparams.core = core; 
-            p_pwrset_sub_command_args->desiredparams.state = desired;    
+
+            p_pwrset_sub_command_args->desiredparams.all = all;
+            p_pwrset_sub_command_args->desiredparams.core = core;
+            p_pwrset_sub_command_args->desiredparams.state = desired;
             p_pwrset_sub_command_args->desiredparams.throttle = throttle;
-            break; 
-        }       
+            break;
+        }
 
         case POWER_IF_CMD_SET_PLIMIT: {
             if(argc != cli_power_cmd_arg_count(subcommand_id))
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr set plimit <core/all> <plimit_0-31>", pwr_strings[POWER_IF_CMD_SET_PLIMIT]);
                 return CLI_ERROR;
-            }        
+            }
 
             all = (unsigned char)(strcmp(argv[2], "all") == 0);
             core = (all  ? 0 : (unsigned)strtoul(argv[2], 0, 68));
             desired = (uint8_t)(strtoul(argv[3], 0, 0) & 0x1F);
             p_pwrset_sub_command_args->plimitparams.all = all;
-            p_pwrset_sub_command_args->plimitparams.core = core; 
+            p_pwrset_sub_command_args->plimitparams.core = core;
             p_pwrset_sub_command_args->plimitparams.state = desired;
-            break;    
-        }    
+            break;
+        }
 
         case POWER_IF_CMD_SET_LOOP_DISABLES: {
             if(argc != cli_power_cmd_arg_count(subcommand_id))
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr set loopdis <disable bits>", pwr_strings[POWER_IF_CMD_SET_LOOP_DISABLES]);
                 return CLI_ERROR;
-            }  
+            }
 
             p_pwrset_sub_command_args->loopdis_bits = (uint16_t)strtoul(argv[2],0,0);
-            break;        
+            break;
         }
 
         case POWER_IF_CMD_SET_RACK_LIMIT: {
@@ -266,14 +267,14 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr set racklimit <0/1>", pwr_strings[POWER_IF_CMD_SET_RACK_LIMIT]);
                 return CLI_ERROR;
-            }  
+            }
 
-            p_pwrset_sub_command_args->racklimit = (uint16_t)strtoul(argv[2],NULL,0);  
-            
+            p_pwrset_sub_command_args->racklimit = (uint16_t)strtoul(argv[2],NULL,0);
+
             if (power_hw_gpio_connected()) {
                 FpFwCliPrint("\n  pwr set racklimit does not work on this platform (GPIO connected)\n");
                 return CLI_SUCCESS;
-            }             
+            }
             break;
         }
 
@@ -282,19 +283,19 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr set minupdate <0-8>", pwr_strings[POWER_IF_CMD_SET_MINUPDATE]);
                 return CLI_ERROR;
-            }  
+            }
 
-            p_pwrset_sub_command_args->minupdate_val = (uint16_t)strtoul(argv[2],NULL,10);                                
-            break; 
-        }       
+            p_pwrset_sub_command_args->minupdate_val = (uint16_t)strtoul(argv[2],NULL,10);
+            break;
+        }
 
         case POWER_IF_CMD_SET_NOMINAL: {
             if(argc != cli_power_cmd_arg_count(subcommand_id))
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr set nominal <1-31>", pwr_strings[POWER_IF_CMD_SET_NOMINAL]);
                 return CLI_ERROR;
-            } 
-            p_pwrset_sub_command_args->nominalparams.current_val = (uint16_t)strtoul(argv[2],NULL,0);                                             
+            }
+            p_pwrset_sub_command_args->nominalparams.current_val = (uint16_t)strtoul(argv[2],NULL,0);
             break;
         }
 
@@ -303,7 +304,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr set forced <pstate 0-30> <ldodacin>", "sets forced Pstate and ldodacin " );
                 return CLI_ERROR;
-            }  
+            }
 
             uint8_t forced_pstate;
             uint16_t forced_ldodacin;
@@ -328,7 +329,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
             {
                 FpFwCliPrint("%-72s%s", "Usage: pwr set pstate_freq <pstate 0-31> <freq_ctrl> <fb_div> <frac_div>", "- sets Pstate freq. " );
                 return CLI_ERROR;
-            }  
+            }
 
             uint8_t cli_pstate = 0;
             uint32_t cli_freq_ctrl = 0;
@@ -340,7 +341,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
             cli_fb_div = (uint16_t)strtoul(argv[4],0,16);
             cli_frac_div = (uint32_t)strtoul(argv[5],0,16);
 
-            if(cli_pstate > MAX_PLIMIT) 
+            if(cli_pstate > MAX_PLIMIT)
             {
                 FpFwCliPrint("Invalid pstate value\n");
                 return CLI_ERROR;
@@ -352,25 +353,25 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
             p_pwrset_sub_command_args->pstatefreq.frac_div = cli_frac_div;
 
             FpFwCliPrint("pwr set pstate freq: pstate = %d, freq_ctrl = 0x%lx, fb_div = 0x%lx, frac_div = 0x%lx\n",
-                p_pwrset_sub_command_args->pstatefreq.pstate, p_pwrset_sub_command_args->pstatefreq.freq_ctrl, 
+                p_pwrset_sub_command_args->pstatefreq.pstate, p_pwrset_sub_command_args->pstatefreq.freq_ctrl,
                 p_pwrset_sub_command_args->pstatefreq.fb_div, p_pwrset_sub_command_args->pstatefreq.frac_div);
             break;
         }
 
-        default:        
+        default:
             break;
 
     }
 
     FpFwCliPrint("pwr_cli_comp\n");
     return CLI_SUCCESS;
-}      
+}
 
 static FPFW_CLI_STATUS cli_power_log_cmd_param_conversion(int argc, const char** argv, _pwrset_subcommand_args* p_pwrset_sub_command_args)
 {
     if (argc == 2)
     {
-        if( (strcmp(argv[1], "??") == 0) )        
+        if( (strcmp(argv[1], "??") == 0) )
         {
             FpFwCliPrint("\n");
             FpFwCliPrint("%-72s%s", "Usage: pwr log ??", "- help menu\n");
@@ -381,7 +382,7 @@ static FPFW_CLI_STATUS cli_power_log_cmd_param_conversion(int argc, const char**
 
             return CLI_ERROR;
         }
-    }      
+    }
     int subcommand_id = cli_power_log_get_cmd_id(argv[1]);
 
     switch (subcommand_id)
@@ -402,7 +403,7 @@ static FPFW_CLI_STATUS cli_power_log_cmd_param_conversion(int argc, const char**
                 FpFwCliPrint("%-72s%s", "Usage: pwr log mask <value>", "- sets the power log MASK enable\n");
                 return CLI_ERROR;
             }
-            p_pwrset_sub_command_args->minupdate_val = (uint16_t)strtoul(argv[2],0,0);            
+            p_pwrset_sub_command_args->minupdate_val = (uint16_t)strtoul(argv[2],0,0);
             break;
         }
 
@@ -419,13 +420,13 @@ static FPFW_CLI_STATUS cli_power_log_cmd_param_conversion(int argc, const char**
 }
 
 static FPFW_CLI_STATUS cli_power_set_command(int argc, const char** argv)
-{ 
+{
     if (argc < 2) {
         FpFwCliPrint("Usage: pwr set <sub_command>\n");
         return CLI_ERROR;
     }
     _pwrset_subcommand_args pwrset_sub_command_args = {};
- 
+
     if (cli_power_set_cmd_param_conversion(argc,argv, &pwrset_sub_command_args) == 0) {
         return dispatch_power_cli_async_request((uint8_t)idsw_get_die_id(), CLI_COMMANDS_POWER_SET, (char*)argv[1], &pwrset_sub_command_args, cli_power_set_async_print);
     }
@@ -434,7 +435,7 @@ static FPFW_CLI_STATUS cli_power_set_command(int argc, const char** argv)
 }
 
 static FPFW_CLI_STATUS cli_power_status_command(int argc, const char** argv)
-{ 
+{
     if (argc < 2) {
         FpFwCliPrint("Usage: pwr status <sub_cmd>\n");
         return CLI_ERROR;
@@ -467,7 +468,7 @@ FPFW_CLI_STATUS cli_power_init(ppower_service_interface_t p_interface)
 
     // Cache the power interface pointer
     power_cli_cmd_context.p_interface = p_interface;
-    
+
     // Register List of CLI commands with CLI
     FpFwCliRegisterTable(cli_power_commands, FPFW_ARRAY_SIZE(cli_power_commands));
 

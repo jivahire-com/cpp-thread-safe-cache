@@ -66,6 +66,7 @@ power_runconfig_t* power_runconfig_get();
 void* power_runconfig_get_element(power_if_cmd_t id);
 void power_runconfig_set_element(power_if_cmd_t id, void* p_set_data);
 void power_runconfig_init(const power_service_config_t* p_config);
+dvfs_config_t* power_get_dvfs_config();
 
 /* Knob specific APIs */
 void power_knobs_read(power_knobs_t* p_knobs);

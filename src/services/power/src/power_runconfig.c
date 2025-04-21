@@ -46,10 +46,12 @@ void dummy_set_function(char* p_string, void* p_set_data);
 static power_runconfig_t power_runconfig = {};
 static power_adclk_tel_t adclk_tel = {};
 static TX_MUTEX adclk_tel_mutex;
+static dvfs_config_t dvfs_config = DVFS_DEFAULT_CONFIG;
 
 power_runconfig_read_dictionary_element_t power_runconfig_read_dictionary[] = {
     {POWER_IF_CMD_GET_RUNCONFIG_FUSES, &power_runconfig.fuses},
     {POWER_IF_CMD_GET_RUNCONFIG_KNOBS, &power_runconfig.knobs},
+    {POWER_IF_CMD_GET_RUNCONFIG_VFTPRE, &power_runconfig.precalculated_current},
 };
 
 // clang-format off
@@ -79,6 +81,12 @@ const uint32_t length_power_runconfig_set_dictionary =
 power_runconfig_t* power_runconfig_get()
 {
     return &power_runconfig;
+}
+
+dvfs_config_t* power_get_dvfs_config()
+{
+
+    return &dvfs_config;
 }
 
 /*------------- Functions ----------------*/

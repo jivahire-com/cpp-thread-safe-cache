@@ -160,7 +160,8 @@ void power_ap_soc_init()
     power_telcfg_t telemetry_config;
     power_telemetry_init_config(&telemetry_config);
 
-    const power_runconfig_t* p_runconfig = power_runconfig_get();
+    power_runconfig_t* p_runconfig = power_runconfig_get();
+    dvfs_config_t* dvfs_cfg = power_get_dvfs_config();
 
     if (full_init)
     {
@@ -177,6 +178,9 @@ void power_ap_soc_init()
     {
         power_init_ws_core(p_runconfig, &telemetry_config);
     }
+
+    // precalculate VCPU current
+    power_vcpu_precalculate_vf_currents(p_runconfig, dvfs_cfg);
 
     // secondary init of control loop after core init
     power_loops_control_post_core_init();

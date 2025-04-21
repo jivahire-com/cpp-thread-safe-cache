@@ -365,3 +365,11 @@ POWER_TEST(runconfig_default_if_no_valid_curve, setup, NULL)
 
     assert_int_not_equal(power_runconfig_get()->derived.vfts[0].min_plimit, NUM_PSTATES);
 }
+
+// ensure a non-null config is setup for DVFS
+POWER_TEST(runconfig_dvfs_default, NULL, NULL)
+{
+    dvfs_config_t test_config = DVFS_DEFAULT_CONFIG;
+    assert_non_null(power_get_dvfs_config()); // check for non-null
+    assert_memory_equal(power_get_dvfs_config(), &test_config, sizeof(dvfs_config_t));
+}

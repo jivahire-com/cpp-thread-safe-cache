@@ -381,13 +381,21 @@ silibs_status_t __wrap_ras_arm_agent_set_base(ras_agent_entity_t* agent, uintptr
     return g_ras_arm_agent_set_base;
 }
 
+silibs_status_t ras_wrap_handler(ras_error_record_t* record)
+{
+    assert_non_null(record);
+    return SILIBS_SUCCESS;
+}
+
 bool __wrap_ras_arm_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* record)
 {
     check_expected(agent);
     assert_non_null(record);
-    record->handler = 0;
+    record->handler = mock_type(ras_generic_handler_t);
+    record->err_code = mock_type(uint32_t);
+    record->err_code_valid = mock_type(bool);
     function_called();
-    return true;
+    return mock_type(bool);
 }
 
 int __wrap_ras_print_record(ras_error_record_t* record)
@@ -402,6 +410,16 @@ silibs_status_t __wrap_ras_arm_agent_trigger_by_type(ras_agent_entity_t* agent, 
     FPFW_UNUSED(types);
     function_called();
     return SILIBS_SUCCESS;
+}
+
+void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
+{
+    check_expected(errorCode);
+    check_expected(p1);
+    check_expected(p2);
+    check_expected(p3);
+    check_expected(p4);
+    function_called();
 }
 
 void setup_common_isr_expectations(void)
@@ -1011,9 +1029,56 @@ TEST_FUNCTION(test_mesh_error_handler_d2d_ras_error_isr, setup_svp_platform, set
         expect_value(__wrap_ras_arm_agent_set_base, agent, &d2dss2_agent[d2d_subsystem]);
         expect_function_call(__wrap_ras_arm_agent_set_base);
         expect_value(__wrap_ras_arm_agent_probe, agent, &d2dss2_agent[d2d_subsystem]);
+        will_return(__wrap_ras_arm_agent_probe, NULL); // handler
+        will_return(__wrap_ras_arm_agent_probe, 0x0);  // error code
+        will_return(__wrap_ras_arm_agent_probe, true); // error code valid
+        will_return(__wrap_ras_arm_agent_probe, true); // return
         expect_function_call(__wrap_ras_arm_agent_probe);
         expect_function_call(__wrap_ras_print_record);
     }
+    // Call API under test
+    d2d_error_isr(NULL);
+}
+
+TEST_FUNCTION(test_mesh_error_handler_d2d_ras_error_isr_crash, setup_svp_platform, setup_undefined_platform)
+{
+    // Set up expectations
+    expect_value(__wrap_ras_arm_agent_set_base, agent, &d2dss2_agent[0]);
+    expect_function_call(__wrap_ras_arm_agent_set_base);
+    expect_value(__wrap_ras_arm_agent_probe, agent, &d2dss2_agent[0]);
+    will_return(__wrap_ras_arm_agent_probe, NULL);       // handler
+    will_return(__wrap_ras_arm_agent_probe, 0x80000001); // error code
+    will_return(__wrap_ras_arm_agent_probe, true);       // error code valid
+    will_return(__wrap_ras_arm_agent_probe, true);       // return
+    expect_function_call(__wrap_ras_arm_agent_probe);
+    expect_function_call(__wrap_ras_print_record);
+
+    expect_value(__wrap_ras_arm_agent_set_base, agent, &d2dss2_agent[1]);
+    expect_function_call(__wrap_ras_arm_agent_set_base);
+    expect_value(__wrap_ras_arm_agent_probe, agent, &d2dss2_agent[1]);
+    will_return(__wrap_ras_arm_agent_probe, ras_wrap_handler); // handler
+    will_return(__wrap_ras_arm_agent_probe, 0x0);              // error code
+    will_return(__wrap_ras_arm_agent_probe, false);            // error code valid
+    will_return(__wrap_ras_arm_agent_probe, false);            // return
+    expect_function_call(__wrap_ras_arm_agent_probe);
+
+    expect_value(__wrap_ras_arm_agent_set_base, agent, &d2dss2_agent[2]);
+    expect_function_call(__wrap_ras_arm_agent_set_base);
+    expect_value(__wrap_ras_arm_agent_probe, agent, &d2dss2_agent[2]);
+    will_return(__wrap_ras_arm_agent_probe, ras_wrap_handler); // handler
+    will_return(__wrap_ras_arm_agent_probe, 0x80000001);       // error code
+    will_return(__wrap_ras_arm_agent_probe, true);             // error code valid
+    will_return(__wrap_ras_arm_agent_probe, true);             // return
+    expect_function_call(__wrap_ras_arm_agent_probe);
+    expect_function_call(__wrap_ras_print_record);
+
+    expect_value(__wrap_crash_dump_bug_check, errorCode, 0x80000001);
+    expect_any(__wrap_crash_dump_bug_check, p1);
+    expect_any(__wrap_crash_dump_bug_check, p2);
+    expect_any(__wrap_crash_dump_bug_check, p3);
+    expect_any(__wrap_crash_dump_bug_check, p4);
+    expect_function_call(__wrap_crash_dump_bug_check);
+
     // Call API under test
     d2d_error_isr(NULL);
 }

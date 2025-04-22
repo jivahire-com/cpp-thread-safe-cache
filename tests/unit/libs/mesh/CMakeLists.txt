@@ -92,4 +92,5 @@ mock_target(${TARGET}
     memset
     memcmp
     mscp_exp_spi_synchronize_dies
+    crash_dump_bug_check
 )

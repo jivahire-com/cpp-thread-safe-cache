@@ -23,6 +23,7 @@
 #include <idsw.h>          // for idsw_get_platform_sdv,
 #include <idsw_kng.h>      // for PLATFORM_FPGA_LARGE
 #include <kng_atu_mappings.h>
+#include <kng_error.h>
 #include <kng_soc_constants.h> // for NUM_DIE
 #include <mesh.h>              // for mesh_init
 #include <mesh_error_handler.h>
@@ -317,13 +318,15 @@ void d2d_error_isr(void* context)
             else
             {
                 MESH_CRIT("Invalid Record, No Further Action\n");
+                d2d_clear_atu_map(d2d_subsystem); // Clear the ATU Map since error was found and we will check next D2D Subsystem
                 continue;
             }
 
             // ADO 1513835 The combined INT is cleared outside this module
 
             d2d_clear_atu_map(d2d_subsystem); // Clear the ATU Map since error was found and we are jumping out of the loop
-            break;                            // Break out of the loop
+            BUG_CHECK(record.err_code_valid ? (KNG_STATUS)record.err_code : KNG_E_FAIL, 0, 0);
+            break; // Break out of the loop
         }
     d2d_ras_error_isr_exit:
         d2d_clear_atu_map(d2d_subsystem);

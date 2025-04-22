@@ -95,6 +95,12 @@
     <Struct name="accel_emm_resp_code_t">
       <Member name="emm_resp_code" type="uint8_t" count="2" default="{0, 0}" max="{31, 31}" help="EMM response code. Refer to PCR MAS for details. Valid values are 0 (EMM disabled) and 1 through 31 where higher values represent higher freq output clock."/>
     </Struct>
+    <Struct name="accel_err_intr_en_disable_t">
+      <Member name="err_intr_enb_disable" type="bool" count="32" help="Error / interrupt enable or disable" />
+    </Struct>
+    <Struct name="soc_accel_err_intr_en_disable_t">
+      <Member name="accel_err_intr_enb_disable" type="accel_err_intr_en_disable_t" count="2" help="Error / interrupt enable or disable" />
+    </Struct>
   </Structs>
 
   <!-- namespace indicates the GUID namespace the values are stored in -->
@@ -162,6 +168,8 @@
 
     <!-- Test Knobs -->
     <Knob name="m7_test_knob" type="uint32_t" default="4" help="Test Knob for Accel transfer" />
+
+    <Knob name="err_intr_enb_disable" type="soc_accel_err_intr_en_disable_t" />
   </Knobs>
 
 </ConfigSchema>

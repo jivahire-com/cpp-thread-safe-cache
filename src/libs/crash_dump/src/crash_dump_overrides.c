@@ -175,3 +175,59 @@ int crash_dump_printf(const char* format, ...)
 
     return length;
 }
+
+/*------- Memory APIs Overrides --------*/
+static void crash_dump_aligned_write(uint64_t addr, uint8_t* value, size_t size)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+        *(volatile uint8_t*)((uintptr_t)addr + i) = *(value + i); // NOLINT
+    }
+}
+
+static void crash_dump_aligned_read(uint64_t addr, uint8_t* value, size_t size)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+        *(value + i) = *(volatile uint8_t*)((uintptr_t)addr + i); // NOLINT
+    }
+}
+
+void crash_dump_aligned_write16(uint64_t addr, uint16_t value)
+{
+    crash_dump_aligned_write(addr, (uint8_t*)&value, sizeof(uint16_t));
+}
+
+void crash_dump_aligned_write32(uint64_t addr, uint32_t value)
+{
+    crash_dump_aligned_write(addr, (uint8_t*)&value, sizeof(uint32_t));
+}
+
+void crash_dump_aligned_write64(uint64_t addr, uint64_t value)
+{
+    crash_dump_aligned_write(addr, (uint8_t*)&value, sizeof(uint64_t));
+}
+
+uint16_t crash_dump_aligned_read16(uint64_t addr)
+{
+    uint16_t value = 0;
+    crash_dump_aligned_read(addr, (uint8_t*)&value, sizeof(uint16_t));
+
+    return value;
+}
+
+uint32_t crash_dump_aligned_read32(uint64_t addr)
+{
+    uint32_t value = 0;
+    crash_dump_aligned_read(addr, (uint8_t*)&value, sizeof(uint32_t));
+
+    return value;
+}
+
+uint64_t crash_dump_aligned_read64(uint64_t addr)
+{
+    uint64_t value = 0;
+    crash_dump_aligned_read(addr, (uint8_t*)&value, sizeof(uint64_t));
+
+    return value;
+}

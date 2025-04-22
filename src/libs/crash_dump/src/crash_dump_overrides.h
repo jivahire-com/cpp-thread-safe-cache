@@ -39,3 +39,11 @@ uint64_t getCurTimeDefault(void);
 
 /*------- Utility Overrides -------*/
 int crash_dump_printf(const char *format, ...);
+
+/*------- Memory APIs Overrides --------*/
+void crash_dump_aligned_write16(uint64_t addr, uint16_t value);
+void crash_dump_aligned_write32(uint64_t addr, uint32_t value);
+void crash_dump_aligned_write64(uint64_t addr, uint64_t value);
+uint16_t crash_dump_aligned_read16(uint64_t addr);
+uint32_t crash_dump_aligned_read32(uint64_t addr);
+uint64_t crash_dump_aligned_read64(uint64_t addr);

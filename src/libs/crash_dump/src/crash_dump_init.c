@@ -179,4 +179,15 @@ static void init_dump_manager(crash_dump_type_context_t* type_context)
     (void)FPFwCDDumpManagerSetPreDumpCallback(&type_context->crash_dump_ctx, &preDumpCallbackOverride, type_context);
     (void)FPFwCDDumpManagerSetPostDumpCallback(&type_context->crash_dump_ctx, &postDumpCallbackOverride, type_context);
     (void)FPFwCDDumpManagerOverrideGetCurTime(&type_context->crash_dump_ctx, &getCurTimeDefault);
+
+    if (type_context->type == CRASH_DUMP_TYPE_MINI)
+    {
+        FPFwCDOverrideFPFwCDWrite16(&type_context->crash_dump_ctx, &crash_dump_aligned_write16);
+        FPFwCDOverrideFPFwCDWrite32(&type_context->crash_dump_ctx, &crash_dump_aligned_write32);
+        FPFwCDOverrideFPFwCDWrite64(&type_context->crash_dump_ctx, &crash_dump_aligned_write64);
+
+        FPFwCDOverrideFPFwCDRead16(&type_context->crash_dump_ctx, &crash_dump_aligned_read16);
+        FPFwCDOverrideFPFwCDRead32(&type_context->crash_dump_ctx, &crash_dump_aligned_read32);
+        FPFwCDOverrideFPFwCDRead64(&type_context->crash_dump_ctx, &crash_dump_aligned_read64);
+    }
 }

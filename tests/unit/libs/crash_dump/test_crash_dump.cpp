@@ -1713,4 +1713,34 @@ TEST_FUNCTION(test_crash_dump_tx_full_dump_to_bm, nullptr, nullptr)
 
     crash_dump_transfer_full_dump_to_bmc();
 }
+
+TEST_FUNCTION(test_crash_dump_mem_api_override, nullptr, nullptr)
+{
+    uint16_t addr16 = 0;
+    uint16_t data16 = 0x1234;
+    crash_dump_aligned_write16((uint64_t)&addr16, data16);
+    assert_int_equal(data16, addr16);
+
+    uint32_t addr32 = 0;
+    uint32_t data32 = 0x12345678;
+    crash_dump_aligned_write32((uint64_t)&addr32, data32);
+    assert_int_equal(data32, addr32);
+
+    uint64_t addr64 = 0;
+    uint64_t data64 = 0x123456789ABCDEF0;
+    crash_dump_aligned_write64((uint64_t)&addr64, data64);
+    assert_int_equal(data64, addr64);
+
+    addr16 = 0x1234;
+    data16 = crash_dump_aligned_read16((uint64_t)&addr16);
+    assert_int_equal(data16, addr16);
+
+    addr32 = 0x12345678;
+    data32 = crash_dump_aligned_read32((uint64_t)&addr32);
+    assert_int_equal(data32, addr32);
+
+    addr64 = 0x123456789ABCDEF0;
+    data64 = crash_dump_aligned_read64((uint64_t)&addr64);
+    assert_int_equal(data64, addr64);
+}
 }

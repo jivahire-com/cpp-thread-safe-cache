@@ -14,6 +14,10 @@
 #include <pcie_dfwk.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define  COHERENCY_READ_WRITE_DOMAIN_MODE   (0x3)   /* 2’b11 */
+#define  COHERENCY_READ_WRITE_CACHE_MODE    (0xF)   /* 4’b1111 */
+#define  COHERENCY_READ_WRITE_DOMAIN_VALUE  (0x2)   /* 2’b10  Sharable Domain */
+#define  COHERENCY_READ_WRITE_CACHE_VALUE   (0xF)   /* 4’b1111  Write-Back Read/Write*/
 
 /*-------------- Typedefs ----------------*/
 
@@ -67,9 +71,9 @@ int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req);
  *                  driver which contains information on how to
  *                  configure this pciess instance.
  *
- *  @return silibs_status_t returned by the silibs API
+ *  @return None
  */
-int begin_link_training(PDFWK_SYNC_REQUEST_HEADER req);
+void begin_link_training(PDFWK_SYNC_REQUEST_HEADER req);
 
 /**
  *  @brief Get ready status for a given RP.

@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include <FpFwCMocka.h>       // IWYU pragma: keep
+#include <FpFwUtils.h>        // for FPFW_UNUSED
 #include <atu_lib.h>          // for atu_id_t, atu_map_entry_t
 #include <cmocka.h>           // IWYU pragma: keep
 #include <e32_mem_map_regs.h> // for e32_mem_map_reg
@@ -16,6 +17,7 @@
 #include <idsw_kng.h>         // for KNG_PLAT_ID
 #include <intu_lib.h>
 #include <kng_soc_constants.h>     // for RPSS_INSTANCE
+#include <oi_pcie.h>               // for  pcie_laattr_ovrd_t
 #include <pcie_knobs.h>            // for pcie_cfg_t
 #include <pcie_ss_common.h>        // for pcie_ss_entity_t
 #include <pcie_x16_e32_phy_regs.h> // for pcie_x16_e32_phy_reg
@@ -187,5 +189,42 @@ silibs_status_t __wrap_oi_pcie_rp_dbi_hide_dpc_cap(pcie_rp_entity_t* rp)
 silibs_status_t __wrap_pciess_rp_ready(pcie_rp_entity_t* rp)
 {
     assert_non_null(rp);
+    return mock_type(silibs_status_t);
+}
+
+silibs_status_t __wrap_oi_pcie_rp_dbi_set_read_cacheability(pcie_rp_entity_t* rp,
+                                                            uint8_t domain_mode,
+                                                            uint8_t domain_value,
+                                                            uint8_t cache_mode,
+                                                            uint8_t cache_value)
+{
+    assert_non_null(rp);
+    FPFW_UNUSED(domain_mode);
+    FPFW_UNUSED(domain_value);
+    FPFW_UNUSED(cache_mode);
+    FPFW_UNUSED(cache_value);
+    return mock_type(silibs_status_t);
+}
+
+silibs_status_t __wrap_oi_pcie_rp_dbi_set_write_cacheability(pcie_rp_entity_t* rp,
+                                                             uint8_t domain_mode,
+                                                             uint8_t domain_value,
+                                                             uint8_t cache_mode,
+                                                             uint8_t cache_value)
+{
+    assert_non_null(rp);
+    FPFW_UNUSED(domain_mode);
+    FPFW_UNUSED(domain_value);
+    FPFW_UNUSED(cache_mode);
+    FPFW_UNUSED(cache_value);
+    return mock_type(silibs_status_t);
+}
+
+silibs_status_t __wrap_oi_pcie_ss_set_laattr_rp_overrides(pcie_ss_entity_t* ss, unsigned rp_index, pcie_laattr_ovrd_t* overrides, bool wr_rd)
+{
+    assert_non_null(ss);
+    assert_non_null(overrides);
+    FPFW_UNUSED(wr_rd);
+    FPFW_UNUSED(rp_index);
     return mock_type(silibs_status_t);
 }

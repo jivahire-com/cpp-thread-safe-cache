@@ -23,6 +23,7 @@
 #include <pcie_config_i.h>
 #include <pcie_dfwk.h>
 #include <pcie_platform_overrides_i.h>
+#include <pcie_rpss_init_i.h>
 #include <pcie_ss_common.h>
 #include <pciess.h>
 #include <silibs_status.h>
@@ -159,6 +160,36 @@ int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
         if (rpss_workarounds->prod_rp_cfgs[i].hide_dpc == true)
         {
             sts = oi_pcie_rp_dbi_hide_dpc_cap(&(rpss->rps[i]));
+            FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+        }
+
+        // Apply force read allocate
+        if (rpss_workarounds->prod_rp_cfgs[i].force_read_allocate == true)
+        {
+            pcie_laattr_ovrd_t overrides = {0};
+            overrides.tph_override = PCIE_LAATTR_NC_NGRE;
+            overrides.tph_override_op = PCIE_LAATTR_OVERRIDE;
+            sts = oi_pcie_rp_dbi_set_read_cacheability(&(rpss->rps[i]),
+                                                       COHERENCY_READ_WRITE_DOMAIN_MODE,
+                                                       COHERENCY_READ_WRITE_DOMAIN_VALUE,
+                                                       COHERENCY_READ_WRITE_CACHE_MODE,
+                                                       COHERENCY_READ_WRITE_CACHE_VALUE);
+            sts |= oi_pcie_ss_set_laattr_rp_overrides(rpss, i, &overrides, false);
+            FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+        }
+
+        // Apply force write allocate
+        if (rpss_workarounds->prod_rp_cfgs[i].force_write_allocate == true)
+        {
+            pcie_laattr_ovrd_t overrides = {0};
+            overrides.tph_override = PCIE_LAATTR_NC_NGRE;
+            overrides.tph_override_op = PCIE_LAATTR_OVERRIDE;
+            sts = oi_pcie_rp_dbi_set_write_cacheability(&(rpss->rps[i]),
+                                                        COHERENCY_READ_WRITE_DOMAIN_MODE,
+                                                        COHERENCY_READ_WRITE_DOMAIN_VALUE,
+                                                        COHERENCY_READ_WRITE_CACHE_MODE,
+                                                        COHERENCY_READ_WRITE_CACHE_VALUE);
+            sts |= oi_pcie_ss_set_laattr_rp_overrides(rpss, i, &overrides, true);
             FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
         }
     }

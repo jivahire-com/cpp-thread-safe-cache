@@ -24,14 +24,14 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 // Default value for all workaround knobs
-#define DEFAULT_PCIE_PROD_CFG_WORKAROUNDS_T \
-    {                                       \
-        .prod_rp_cfgs = {                   \
-            {.hide_dpc = false},            \
-            {.hide_dpc = false},            \
-            {.hide_dpc = false},            \
-            {.hide_dpc = false},            \
-        }                                   \
+#define DEFAULT_PCIE_PROD_CFG_WORKAROUNDS_T                                                   \
+    {                                                                                         \
+        .prod_rp_cfgs = {                                                                     \
+            {.hide_dpc = false, .force_read_allocate = false, .force_write_allocate = false}, \
+            {.hide_dpc = false, .force_read_allocate = false, .force_write_allocate = false}, \
+            {.hide_dpc = false, .force_read_allocate = false, .force_write_allocate = false}, \
+            {.hide_dpc = false, .force_read_allocate = false, .force_write_allocate = false}, \
+        }                                                                                     \
     }
 
 /*------------- Typedefs -----------------*/

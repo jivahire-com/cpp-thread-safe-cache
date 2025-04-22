@@ -88,4 +88,7 @@ mock_target(${TARGET}
     pciess_probe
     pciess_phys_program_fw
     oi_pcie_rp_dbi_hide_dpc_cap
+    oi_pcie_ss_set_laattr_rp_overrides
+    oi_pcie_rp_dbi_set_write_cacheability
+    oi_pcie_rp_dbi_set_read_cacheability
 )

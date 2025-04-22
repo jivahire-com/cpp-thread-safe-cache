@@ -15,6 +15,7 @@ target_link_libraries(${TARGET}
         ms::service::mts
         fwlib.service.mts.cli
         ms::lib::interface::in_band_telemetry_ddr
+        ms::lib::icc_platform_defines
         ms::cmocka::testrunner
         silibs::icc_mhu
         silibs::idhw

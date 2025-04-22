@@ -12,6 +12,7 @@
 #include <FpFwUtils.h>
 #include <fpfw_init.h>
 #include <icc_mhu.h>
+#include <icc_platform_defines.h>
 #include <idhw.h> // for idhw_is_single_die_boot_en
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -25,8 +26,8 @@
 /*-- Symbolic Constant Macros (defines) --*/
 #define MTS_STACK_SIZE ((TX_MINIMUM_STACK) + ((2) * (FPFW_KB)))
 
-#define TRP_MAX_ROUTES    (3)
-#define TRP_MAX_ENDPOINTS (3)
+#define TRP_MAX_ROUTES    (5)
+#define TRP_MAX_ENDPOINTS (5)
 
 /*------------- Typedefs -----------------*/
 
@@ -37,6 +38,8 @@ static uint8_t s_mts_stack[MTS_STACK_SIZE];
 static uint8_t s_ap_icc_endpt_rx_buffer[ICC_MHU_DDR_PAYLOAD_SIZE]; // driver framework thread copies to this buffer
 static uint8_t s_local_mscp_icc_endpt_rx_buffer[ICC_MHU_DDR_PAYLOAD_SIZE]; // driver framework thread copies to this buffer
 static uint8_t s_d2d_mscp_icc_endpt_rx_buffer[ICC_MHU_DDR_PAYLOAD_SIZE]; // driver framework thread copies to this buffer
+static uint8_t s_local_sdm_icc_endpt_rx_buffer[LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES]; // driver framework thread copies to this buffer
+static uint8_t s_local_cded_icc_endpt_rx_buffer[LARGE_FIFO_MBOX_MAX_MESG_SIZE_BYTES]; // driver framework thread copies to this buffer
 static trp_icc_endpoint_t s_trp_icc_endpoint_table[TRP_MAX_ENDPOINTS];
 static trp_route_t s_trp_routing_table[TRP_MAX_ROUTES];
 
@@ -44,7 +47,8 @@ static trp_route_t s_trp_routing_table[TRP_MAX_ROUTES];
 // icc_mhu_packet_t includes icc header
 static_assert(sizeof(icc_mhu_packet_t) + sizeof(trp_msg_t) <= ICC_MHU_DDR_PAYLOAD_SIZE, "MHU payload size too small");
 
-FPFW_INIT_COMPONENT(mts_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_mscp2mscp", "icc_mscp2apns", "icc_die2die"))
+FPFW_INIT_COMPONENT(mts_svc,
+                    FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_mscp2mscp", "icc_mscp2apns", "icc_die2die", "icc_cded_mbx", "icc_sdm_mbx"))
 {
     static mts_config_t s_config = {
         .thread_config =
@@ -109,6 +113,70 @@ FPFW_INIT_COMPONENT(mts_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_ms
 
         s_trp_routing_table[number_of_routes].dest.die_id = DIE_0;
         s_trp_routing_table[number_of_routes].dest.core_id = CPU_AP;
+        s_trp_routing_table[number_of_routes].trp_endpoint =
+            (p_trp_endpoint_t)&s_trp_icc_endpoint_table[num_icc_endpoints];
+
+        num_icc_endpoints++;
+        number_of_routes++;
+    }
+
+    // add accel endpoint
+    if (s_config.trp_general_config.this_core_id == CPU_MCP)
+    {
+        // ---------------------------------------------------------------------------------------------
+        // add local sdm trp endpoint
+        FPFW_RUNTIME_ASSERT(number_of_routes < TRP_MAX_ROUTES);
+        FPFW_RUNTIME_ASSERT(num_icc_endpoints < TRP_MAX_ENDPOINTS);
+
+        s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.transport_type = TRP_TRANSPORT_TYPE_ICC_LARGE_MBOX;
+        s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.async_recv_buffer = s_local_sdm_icc_endpt_rx_buffer;
+        s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.async_recv_buffer_size =
+            sizeof(s_local_sdm_icc_endpt_rx_buffer);
+        sprintf(s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.name,
+                "DIE_%d_%s_TRP",
+                s_config.trp_general_config.this_die_id,
+                "SDM");
+
+        s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.seq_number.as_uint16 = this_core_seq_number.as_uint16;
+
+        s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx =
+            (fpfw_icc_base_ctx_t*)fpfw_init_get_handle("icc_sdm_mbx");
+        FPFW_RUNTIME_ASSERT(s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx != NULL);
+        s_trp_icc_endpoint_table[num_icc_endpoints].icc_payload_protocol = LARGE_FIFO_MAILBOX_MSG_TRP;
+
+        s_trp_routing_table[number_of_routes].dest.die_id =
+            s_config.trp_general_config.this_die_id; // the icc context handle above is on the same die
+        s_trp_routing_table[number_of_routes].dest.core_id = CPU_SDM;
+        s_trp_routing_table[number_of_routes].trp_endpoint =
+            (p_trp_endpoint_t)&s_trp_icc_endpoint_table[num_icc_endpoints];
+
+        num_icc_endpoints++;
+        number_of_routes++;
+
+        // ---------------------------------------------------------------------------------------------
+        // add local cded-sdm trp endpoint
+        FPFW_RUNTIME_ASSERT(number_of_routes < TRP_MAX_ROUTES);
+        FPFW_RUNTIME_ASSERT(num_icc_endpoints < TRP_MAX_ENDPOINTS);
+
+        s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.transport_type = TRP_TRANSPORT_TYPE_ICC_LARGE_MBOX;
+        s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.async_recv_buffer = s_local_cded_icc_endpt_rx_buffer;
+        s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.async_recv_buffer_size =
+            sizeof(s_local_cded_icc_endpt_rx_buffer);
+        sprintf(s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.name,
+                "DIE_%d_%s_TRP",
+                s_config.trp_general_config.this_die_id,
+                "CDED");
+
+        s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.seq_number.as_uint16 = this_core_seq_number.as_uint16;
+
+        s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx =
+            (fpfw_icc_base_ctx_t*)fpfw_init_get_handle("icc_cded_mbx");
+        FPFW_RUNTIME_ASSERT(s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx != NULL);
+        s_trp_icc_endpoint_table[num_icc_endpoints].icc_payload_protocol = LARGE_FIFO_MAILBOX_MSG_TRP;
+
+        s_trp_routing_table[number_of_routes].dest.die_id =
+            s_config.trp_general_config.this_die_id; // the icc context handle above is on the same die
+        s_trp_routing_table[number_of_routes].dest.core_id = CPU_CDED_SDM;
         s_trp_routing_table[number_of_routes].trp_endpoint =
             (p_trp_endpoint_t)&s_trp_icc_endpoint_table[num_icc_endpoints];
 

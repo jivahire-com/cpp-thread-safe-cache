@@ -156,6 +156,8 @@ void mts_platform_send_msg_via_transport(p_trp_msg_t trp_msg, p_trp_endpoint_t t
             FPFW_ET_LOG(MtsTransportSizeExceedsMax, transfer_size, sizeof(large_fifo_mailbox_msg));
             return;
         }
+        // Setting transfer size to sizeof(large_fifo_mailbox_msg) as any other value will return FPFW_ICC_BASE_STATUS_INVALID_SIZE_ARG_ERR
+        transfer_size = sizeof(large_fifo_mailbox_msg);
         break;
     }
     default: {

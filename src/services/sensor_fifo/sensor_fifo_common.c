@@ -141,7 +141,7 @@ void sensor_fifo_svc_is_empty(bool (*is_empty)[SENSOR_FIFO_MAX_ID])
     if (FPFW_STATUS_FAILED(status))
     {
         FPFW_ET_LOG(FifoEmptyFail, status);
-        memset(*is_empty, 0, sizeof(bool) * SENSOR_FIFO_MAX_ID);
+        memset(*is_empty, 1, sizeof(bool) * SENSOR_FIFO_MAX_ID);
     }
 }
 

@@ -128,10 +128,10 @@ TEST_FUNCTION(test_sensor_fifo_svc_is_empty, test_setup, nullptr)
 
     for (int i = 0; i < SENSOR_FIFO_MAX_ID; i++)
     {
-        is_empty[i] = true;
+        is_empty[i] = false;
     }
 
-    // verify cleared on fail
+    // verify set on fail
     expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, SENSOR_FIFO_SYNC_QUERY_IS_EMPTY);
     will_return(__wrap_DfwkInterfaceSendSync, FPFW_STATUS_FAIL);
 
@@ -139,7 +139,7 @@ TEST_FUNCTION(test_sensor_fifo_svc_is_empty, test_setup, nullptr)
 
     for (int i = 0; i < SENSOR_FIFO_MAX_ID; i++)
     {
-        assert_false(is_empty[i]);
+        assert_true(is_empty[i]);
     }
 }
 

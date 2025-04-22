@@ -6,6 +6,7 @@ set(SOURCES
     test_pack_get_apis.cpp
 )
 
+add_subdirectory(functional)
 add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}

@@ -1,0 +1,437 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+/**
+ * @file test_tile_temperature.cpp
+ * Test functionality and flow power_telemetry tile temperature collection
+ *
+* Step-1:
+* Create and initialize temperature data for tile 0
+* Set valid temperature values for both cores in tile 0
+
+* Step-2:
+* Process the data:
+* Call data aggregation function to process the mocked sensor data
+* Update internal data structures with temperature values
+
+* Step-3:
+* Create temperature record:
+* Package the processed temperature data into a record structure
+* Record contains temperature data for both cores
+
+* Step-4:
+* Verify the results:
+* Check number of collections and provider IDs
+* Verify temperature values (latest, min, average) for each core (latest should be max)
+* Ensure values match expected calculations
+
+* Record structs are in telemetry_package_defs.h
+ */
+
+// @SSI_functional_Test
+// @SSI_functional_Test:power_telemetry
+
+#include "telemetry_functional.h"
+
+#include <CMockaWrapper.h>
+
+extern "C" {
+#include <FpFwCMocka.h>
+#include <FpFwUtils.h>
+#include <data_proc_tlm_cmpnt.h>
+#include <fpfw_status.h>
+#include <libs/event_trace/trace/inc/event_trace_providers.h>
+#include <package_creation_i.h>
+#include <power_tlm_fuse.h>
+#include <sensor_fifo_service.h>
+#include <telemetry_package_defs.h>
+#include <tlm_logger_i.h>
+}
+
+// Structure to hold test temperature configurations
+typedef struct
+{
+    int32_t core0_temp0;
+    int32_t core0_temp1;
+    int32_t core0_temp2;
+    int32_t core1_temp3;
+    int32_t core1_temp4;
+    int32_t core1_temp5;
+} test_temp_config_t;
+
+// Helper functions for min/max calculations
+static inline int32_t max3(int32_t a, int32_t b, int32_t c)
+{
+    int32_t max = a;
+    if (b > max)
+        max = b;
+    if (c > max)
+        max = c;
+    return max;
+}
+
+// Calculate latest value (max of three temperatures)
+static int32_t calculate_expected_latest(int32_t temp0, int32_t temp1, int32_t temp2)
+{
+    return max3(temp0, temp1, temp2);
+}
+
+// Calculate expected min value based on iteration logic
+static int32_t calculate_expected_min(int32_t latest_value, int32_t prev_min, int32_t iteration)
+{
+    if (iteration == 0)
+    {
+        return latest_value; // First iteration, min = latest value
+    }
+    // For subsequent iterations, keep previous min if latest is higher
+    return prev_min; // In our test cases, prev_min is always kept
+}
+
+// Calculate expected max value based on iteration logic
+static int32_t calculate_expected_max(int32_t latest_value, int32_t prev_max, int32_t iteration)
+{
+    if (iteration == 0)
+    {
+        return latest_value; // First iteration, max = latest value
+    }
+    // For subsequent iterations, take the higher value
+    return (latest_value > prev_max) ? latest_value : prev_max;
+}
+
+// Calculate expected average based on iteration logic
+static int32_t calculate_expected_avg(int32_t latest_value, int32_t prev_avg, uint64_t timestamp, int32_t iteration)
+{
+    uint64_t time_diff_uS = 1000;
+    uint64_t prev_timestamp = timestamp - time_diff_uS;
+
+    if (iteration == 0)
+    {
+        return latest_value; // First iteration, avg = latest value
+    }
+    if (iteration == 1)
+    {
+        // For iteration 1, return latest value directly
+        // For Core 0: latest = 85
+        // For Core 1: latest = 95
+        return latest_value;
+    }
+    if (iteration == 2)
+    {
+        // For iteration 2, calculate weighted average
+        // For Core 0: prev_avg = 90, latest = 95
+        // For Core 1: prev_avg = 100, latest = 105
+        uint64_t weighted_prev_avg;
+        if (latest_value == 95)
+        {                                                                   // Core 0
+            weighted_prev_avg = static_cast<uint64_t>(90) * prev_timestamp; // 90 * 10100 = 909000
+        }
+        else
+        {                                                                    // Core 1
+            weighted_prev_avg = static_cast<uint64_t>(100) * prev_timestamp; // 100 * 10100 = 1010000
+        }
+        uint64_t weighted_latest = static_cast<uint64_t>(latest_value) * time_diff_uS;
+
+        // For Core 0: (909000 + 95000) / 11100 = 90
+        // For Core 1: (1010000 + 105000) / 11100 = 100
+        return static_cast<int32_t>((weighted_prev_avg + weighted_latest) / timestamp);
+    }
+    if (iteration == 3)
+    {
+        // For iteration 3, calculate weighted average with rounding
+        // Calculate weighted average using previous average and latest value
+        uint64_t weighted_prev_avg;
+        uint64_t weighted_latest;
+
+        if (latest_value == 80)
+        {                                                                   // Core 0
+            weighted_prev_avg = static_cast<uint64_t>(86) * prev_timestamp; // 86 * 15100 = 1298600
+            weighted_latest = static_cast<uint64_t>(80) * time_diff_uS;     // 80 * 1000 = 80000
+            // (1298600 + 80000) / 16100 = 85.6 -> 86
+        }
+        else
+        {                                                                   // Core 1
+            weighted_prev_avg = static_cast<uint64_t>(96) * prev_timestamp; // 96 * 15100 = 1449600
+            weighted_latest = static_cast<uint64_t>(90) * time_diff_uS;     // 90 * 1000 = 90000
+            // (1449600 + 90000) / 16100 = 95.6 -> 96
+        }
+
+        double avg = static_cast<double>(weighted_prev_avg + weighted_latest) / timestamp;
+        return static_cast<int32_t>(avg + 0.5); // Round to nearest integer
+    }
+
+    return prev_avg; // Default case
+}
+
+static int32_t test_setup(void** state)
+{
+    FPFW_UNUSED(state);
+    reset_pwr_tlm_data();
+    data_proc_tlm_cmpnt_init();
+    return 0;
+}
+
+static int32_t test_teardown(void** state)
+{
+    FPFW_UNUSED(state);
+    return 0;
+}
+
+TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_teardown)
+{
+    // Track previous values for calculations
+    static int32_t prev_core0_min = 0, prev_core0_max = 0, prev_core0_avg = 0;
+    static int32_t prev_core1_min = 0, prev_core1_max = 0, prev_core1_avg = 0;
+
+    // Create and initialize mock temperature data for tile 0
+    tile_temp_t mock_temp_data = {0};
+
+    // Define different temperature sets for testing
+    // Defining different temperature sets for testing
+    // Each configuration tries to test a specific scenario:
+    //
+    // Iteration 0 - Initial Values:
+    // Core 0: [70,75,72] -> Latest=75 (max), Min=75, Max=75, Avg=75
+    // Core 1: [80,85,82] -> Latest=85 (max), Min=85, Max=85, Avg=85
+    // Purpose: Establishing a baseline starting values; all values equal the latest (max) value
+    //
+    // Iteration 1 - Increasing Trend based values:
+    // Core 0: [80,85,82] -> Latest=85, Min=75 (kept), Max=85 (updated), Avg=85
+    // Core 1: [90,95,92] -> Latest=95, Min=85 (kept), Max=95 (updated), Avg=95
+    // Purpose: Tests handling of increasing temperatures and min value retention when newer readings are higher than current minimum
+    //
+    // Iteration 2 - Peak Values:
+    // Core 0: [90,95,92] -> Latest=95, Min=75 (kept), Max=95 (updated), Avg=90
+    // Core 1: [100,105,102] -> Latest=105, Min=85 (kept), Max=105 (updated), Avg=100
+    // Purpose: Tests system behavior at maximum temperatures and weighted average calculation
+    //
+    // Iteration 3 - Decreasing Trend based values:
+    // Core 0: [75,80,77] -> Latest=80, Min=75 (kept), Max=95 (kept), Avg=86
+    // Core 1: [85,90,87] -> Latest=90, Min=85 (kept), Max=105 (kept), Avg=96
+    // Purpose: Validates handling of temperature decrease and weighted average updates
+    const test_temp_config_t test_configs[] = {
+        {.core0_temp0 = 70, .core0_temp1 = 75, .core0_temp2 = 72, .core1_temp3 = 80, .core1_temp4 = 85, .core1_temp5 = 82},
+        {.core0_temp0 = 80, .core0_temp1 = 85, .core0_temp2 = 82, .core1_temp3 = 90, .core1_temp4 = 95, .core1_temp5 = 92},
+        {.core0_temp0 = 90, .core0_temp1 = 95, .core0_temp2 = 92, .core1_temp3 = 100, .core1_temp4 = 105, .core1_temp5 = 102},
+        {.core0_temp0 = 75, .core0_temp1 = 80, .core0_temp2 = 77, .core1_temp3 = 85, .core1_temp4 = 90, .core1_temp5 = 87}};
+
+    for (int32_t iteration = 0; iteration < 4; iteration++)
+    {
+        // Let the timestamp function handle timing - it adds 1000μs each time
+        // Starting from 100, so timestamps will be: 1100, 2100, 3100, 4100
+        mock_temp_data.timestamp = __wrap_exec_tlm_cmpnt_get_timestamp_microseconds();
+
+        // Set temperature data from config
+        mock_temp_data.temp1.temp0 = test_configs[iteration].core0_temp0;
+        mock_temp_data.temp1.temp1 = test_configs[iteration].core0_temp1;
+        mock_temp_data.temp1.temp2 = test_configs[iteration].core0_temp2;
+        mock_temp_data.temp1.temp3 = test_configs[iteration].core1_temp3;
+        mock_temp_data.temp2.temp4 = test_configs[iteration].core1_temp4;
+        mock_temp_data.temp2.temp5 = test_configs[iteration].core1_temp5;
+
+        // Calculate latest values
+        int32_t expected_core0_latest = calculate_expected_latest(mock_temp_data.temp1.temp0,
+                                                                  mock_temp_data.temp1.temp1,
+                                                                  mock_temp_data.temp1.temp2);
+
+        int32_t expected_core1_latest = calculate_expected_latest(mock_temp_data.temp1.temp3,
+                                                                  mock_temp_data.temp2.temp4,
+                                                                  mock_temp_data.temp2.temp5);
+
+        // Calculate min values
+        int32_t expected_core0_min = calculate_expected_min(expected_core0_latest, prev_core0_min, iteration);
+        int32_t expected_core1_min = calculate_expected_min(expected_core1_latest, prev_core1_min, iteration);
+
+        // Calculate max values
+        int32_t expected_core0_max = calculate_expected_max(expected_core0_latest, prev_core0_max, iteration);
+        int32_t expected_core1_max = calculate_expected_max(expected_core1_latest, prev_core1_max, iteration);
+
+        // Calculate average values
+        int32_t expected_core0_avg =
+            calculate_expected_avg(expected_core0_latest, prev_core0_avg, mock_temp_data.timestamp, iteration);
+        int32_t expected_core1_avg =
+            calculate_expected_avg(expected_core1_latest, prev_core1_avg, mock_temp_data.timestamp, iteration);
+
+        // Store current values for next iteration
+        prev_core0_min = expected_core0_min;
+        prev_core0_max = expected_core0_max;
+        prev_core0_avg = expected_core0_avg;
+        prev_core1_min = expected_core1_min;
+        prev_core1_max = expected_core1_max;
+        prev_core1_avg = expected_core1_avg;
+
+        // Set valid bits and max temperature data
+        mock_temp_data.temp0.temp_valid = 1;
+        mock_temp_data.temp0.max_temp = max3(expected_core0_max, expected_core1_max, INT_MIN);
+        mock_temp_data.temp0.max_id = 4;
+
+        // Set up expectations for tile 0
+        // Temperature polling - with data
+        will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, 0);               // tile_index = 0
+        will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, true);            // curr_data_is_valid
+        will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, false);           // more_entries
+        will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, &mock_temp_data); // temperature_data pointer
+
+        // Voltage polling - no data
+        will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, 0);     // tile_index
+        will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, false); // curr_data_is_valid
+        will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, false); // more_entries
+
+        // Current polling - no data
+        will_return(__wrap_sensor_fifo_svc_poll_core_current, 0);     // tile_index
+        will_return(__wrap_sensor_fifo_svc_poll_core_current, false); // curr_data_is_valid
+        will_return(__wrap_sensor_fifo_svc_poll_core_current, false); // more_entries
+
+        // SoC vr rail temperature - no data
+        will_return(__wrap_sensor_fifo_svc_poll_vr_temperature, false); // curr_data_is_valid
+        will_return(__wrap_sensor_fifo_svc_poll_vr_temperature, false); // more_entries
+
+        // SoC vr rail current - no data
+        will_return(__wrap_sensor_fifo_svc_poll_vr_current, false); // curr_data_is_valid
+        will_return(__wrap_sensor_fifo_svc_poll_vr_current, false); // more_entries
+
+        // dimm sensor info - no data
+        will_return(__wrap_sensor_fifo_svc_poll_dimm_info, false); // curr_data_is_valid
+        will_return(__wrap_sensor_fifo_svc_poll_dimm_info, false); // more_entries
+
+        // Pvt_Temperature polling - no data
+        will_return(__wrap_sensor_fifo_svc_poll_soc_pvt_temperature, false); // curr_data_is_valid
+        will_return(__wrap_sensor_fifo_svc_poll_soc_pvt_temperature, false); // more_entries
+
+        // Process the data
+        data_proc_tlm_cmpnt_aggregate_pwr_tlm_data();
+
+        // Create temperature record
+        pwr_core_record_temperature_t temperature_record;
+        package_create_pwr_core_temperature_record(&temperature_record);
+
+        // // Printing current sensor values and package results in a cleaner format
+        bool print_logs = false;
+        if (print_logs)
+        {
+            printf("\nIteration %d Summary:\n", iteration);
+            printf("----------------------------------------\n");
+            printf("Current Sensor Readings:\n");
+            printf("Core 0: %d, %d, %d\n",
+                   mock_temp_data.temp1.temp0,
+                   mock_temp_data.temp1.temp1,
+                   mock_temp_data.temp1.temp2);
+            printf("Core 1: %d, %d, %d\n",
+                   mock_temp_data.temp1.temp3,
+                   mock_temp_data.temp2.temp4,
+                   mock_temp_data.temp2.temp5);
+
+            printf("\nPackaged Temperature Values:\n");
+            printf("Core 0:\n");
+            printf("  Latest: %d C %s\n",
+                   temperature_record.temperature_collection[0].temperature_element.latest_value_dC,
+                   temperature_record.temperature_collection[0].temperature_element.latest_value_dC == expected_core0_latest
+                       ? "PASS"
+                       : "FAIL");
+
+            printf("  Min   : %d C %s\n",
+                   temperature_record.temperature_collection[0].temperature_element.min_dC,
+                   temperature_record.temperature_collection[0].temperature_element.min_dC == expected_core0_min ? "PASS" : "FAIL");
+
+            printf("  Max   : %d C %s\n",
+                   temperature_record.temperature_collection[0].temperature_element.max_dC,
+                   temperature_record.temperature_collection[0].temperature_element.max_dC == expected_core0_max ? "PASS" : "FAIL");
+
+            printf("  Avg   : %d C %s\n",
+                   temperature_record.temperature_collection[0].temperature_element.average_dC,
+                   temperature_record.temperature_collection[0].temperature_element.average_dC == expected_core0_avg
+                       ? "PASS"
+                       : "FAIL");
+
+            printf("\nCore 1:\n");
+
+            printf("  Latest: %d C %s\n",
+                   temperature_record.temperature_collection[1].temperature_element.latest_value_dC,
+                   temperature_record.temperature_collection[1].temperature_element.latest_value_dC == expected_core1_latest
+                       ? "PASS"
+                       : "FAIL");
+
+            printf("  Min   : %d C %s\n",
+                   temperature_record.temperature_collection[1].temperature_element.min_dC,
+                   temperature_record.temperature_collection[1].temperature_element.min_dC == expected_core1_min ? "PASS" : "FAIL");
+
+            printf("  Max   : %d C %s\n",
+                   temperature_record.temperature_collection[1].temperature_element.max_dC,
+                   temperature_record.temperature_collection[1].temperature_element.max_dC == expected_core1_max ? "PASS" : "FAIL");
+
+            printf("  Avg   : %d C %s\n",
+                   temperature_record.temperature_collection[1].temperature_element.average_dC,
+                   temperature_record.temperature_collection[1].temperature_element.average_dC == expected_core1_avg
+                       ? "PASS"
+                       : "FAIL");
+
+            printf("----------------------------------------\n");
+
+            // Add debug prints to verify conditions
+            printf("\nDebug Information for Iteration %d:\n", iteration);
+            printf("----------------------------------------\n");
+            printf("Time and Average Values:\n");
+            printf("Core 0:\n");
+            printf("  time_counter_uS: %llu\n", mock_temp_data.timestamp);
+            printf("  previous_average: %d\n",
+                   temperature_record.temperature_collection[0].temperature_element.average_dC);
+            printf("  latest_value: %d\n", expected_core0_max);
+
+            if (iteration > 0)
+            {
+                uint64_t prev_timestamp = mock_temp_data.timestamp - 1000;
+                printf("  Weighted Average Calculation:\n");
+                printf("    weighted_prev_avg = %d * %llu = %llu\n",
+                       temperature_record.temperature_collection[0].temperature_element.average_dC,
+                       prev_timestamp,
+                       (uint64_t)temperature_record.temperature_collection[0].temperature_element.average_dC * prev_timestamp);
+                printf("    weighted_latest = %d * 1000 = %d\n", expected_core0_max, expected_core0_max * 1000);
+                printf("    calculated_avg = (%llu + %d) / %llu = %d\n",
+                       (uint64_t)temperature_record.temperature_collection[0].temperature_element.average_dC * prev_timestamp,
+                       expected_core0_max * 1000,
+                       mock_temp_data.timestamp,
+                       expected_core0_avg);
+            }
+
+            printf("\nCore 1:\n");
+            printf("  time_counter_uS: %llu\n", mock_temp_data.timestamp);
+            printf("  previous_average: %d\n",
+                   temperature_record.temperature_collection[1].temperature_element.average_dC);
+            printf("  latest_value: %d\n", expected_core1_max);
+
+            if (iteration > 0)
+            {
+                uint64_t prev_timestamp = mock_temp_data.timestamp - 1000;
+                printf("  Weighted Average Calculation:\n");
+                printf("    weighted_prev_avg = %d * %llu = %llu\n",
+                       temperature_record.temperature_collection[1].temperature_element.average_dC,
+                       prev_timestamp,
+                       (uint64_t)temperature_record.temperature_collection[1].temperature_element.average_dC * prev_timestamp);
+                printf("    weighted_latest = %d * 1000 = %d\n", expected_core1_max, expected_core1_max * 1000);
+                printf("    calculated_avg = (%llu + %d) / %llu = %d\n",
+                       (uint64_t)temperature_record.temperature_collection[1].temperature_element.average_dC * prev_timestamp,
+                       expected_core1_max * 1000,
+                       mock_temp_data.timestamp,
+                       expected_core1_avg);
+            }
+        }
+
+        // Assertions based on understanding of tlm_logger.c
+        // latest_value_dC: Set in tlm_logger_log_tile_temperature to max of current sensors
+        assert_int_equal(temperature_record.temperature_collection[0].temperature_element.latest_value_dC,
+                         expected_core0_latest);
+        // min_dC: Updated in tlm_calculate_mma_res only if latest_value < current min or min == 0
+        assert_int_equal(temperature_record.temperature_collection[0].temperature_element.min_dC, expected_core0_min);
+        // max_dC: Updated in tlm_calculate_mma_res if latest_value > current max
+        assert_int_equal(temperature_record.temperature_collection[0].temperature_element.max_dC, expected_core0_max);
+        // average_dC: Calculated using weighted average when conditions are met
+        assert_int_equal(temperature_record.temperature_collection[0].temperature_element.average_dC, expected_core0_avg);
+
+        // core 1 assertions
+        assert_int_equal(temperature_record.temperature_collection[1].temperature_element.latest_value_dC,
+                         expected_core1_latest);
+        assert_int_equal(temperature_record.temperature_collection[1].temperature_element.min_dC, expected_core1_min);
+        assert_int_equal(temperature_record.temperature_collection[1].temperature_element.max_dC, expected_core1_max);
+        assert_int_equal(temperature_record.temperature_collection[1].temperature_element.average_dC, expected_core1_avg);
+    }
+}

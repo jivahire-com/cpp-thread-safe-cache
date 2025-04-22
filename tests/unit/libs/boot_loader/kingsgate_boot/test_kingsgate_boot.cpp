@@ -271,19 +271,19 @@ TEST_FUNCTION(test_hsp_mail_box_init_success, nullptr, nullptr)
 TEST_FUNCTION(test_send_post_code_scp_invalid_code, nullptr, nullptr)
 {
     will_return_always(__wrap_system_info_is_hsp_present, true);
-    assert_false(send_post_code(BOOT_STATUS_CODE_SCP_MAX, true, false));
+    assert_false(send_post_code(MSCP_BOOT_STATUS_CODE_SCP_MAX, true, false));
 }
 
 TEST_FUNCTION(test_send_post_code_mcp_invalid_min_code, nullptr, nullptr)
 {
     will_return_always(__wrap_system_info_is_hsp_present, true);
-    assert_false(send_post_code(BOOT_STATUS_CODE_SCP_MAX, false, false));
+    assert_false(send_post_code(MSCP_BOOT_STATUS_CODE_SCP_MAX, false, false));
 }
 
 TEST_FUNCTION(test_send_post_code_mcp_invalid_max_code, nullptr, nullptr)
 {
     will_return_always(__wrap_system_info_is_hsp_present, true);
-    assert_false(send_post_code(BOOT_STATUS_CODE_MCP_MAX, false, false));
+    assert_false(send_post_code(MSCP_BOOT_STATUS_CODE_MCP_MAX, false, false));
 }
 
 TEST_FUNCTION(test_send_post_code_scp_non_fatal_success, nullptr, nullptr)
@@ -295,7 +295,7 @@ TEST_FUNCTION(test_send_post_code_scp_non_fatal_success, nullptr, nullptr)
     expect_value(__wrap_FpFwMailboxSend, pMessage->payloadSize, mail_box_send_payload.payloadSize);
 
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_OK;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_OK;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (hsp_mbox_data.header.cmd & 0xFFFF));
@@ -304,7 +304,7 @@ TEST_FUNCTION(test_send_post_code_scp_non_fatal_success, nullptr, nullptr)
     expect_value(__wrap_FpFwMailboxSend, status, hsp_mbox_data.boot_status_ex);
 
     will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
-    assert_true(send_post_code(BOOT_STATUS_CODE_SCP_OK, true, false));
+    assert_true(send_post_code(MSCP_BOOT_STATUS_CODE_SCP_OK, true, false));
 }
 
 TEST_FUNCTION(test_send_post_code_mcp_non_fatal_success, nullptr, nullptr)
@@ -316,7 +316,7 @@ TEST_FUNCTION(test_send_post_code_mcp_non_fatal_success, nullptr, nullptr)
     expect_value(__wrap_FpFwMailboxSend, pMessage->payloadSize, mail_box_send_payload.payloadSize);
 
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_OK;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_OK;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -325,7 +325,7 @@ TEST_FUNCTION(test_send_post_code_mcp_non_fatal_success, nullptr, nullptr)
     expect_value(__wrap_FpFwMailboxSend, status, (uint32_t)hsp_mbox_data.boot_status_ex);
 
     will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
-    assert_true(send_post_code(BOOT_STATUS_CODE_MCP_OK, false, false));
+    assert_true(send_post_code(MSCP_BOOT_STATUS_CODE_MCP_OK, false, false));
 }
 
 TEST_FUNCTION(test_send_post_code_mcp_fatal_success, nullptr, nullptr)
@@ -337,7 +337,7 @@ TEST_FUNCTION(test_send_post_code_mcp_fatal_success, nullptr, nullptr)
     expect_value(__wrap_FpFwMailboxSend, pMessage->payloadSize, mail_box_send_payload.payloadSize);
 
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -346,7 +346,7 @@ TEST_FUNCTION(test_send_post_code_mcp_fatal_success, nullptr, nullptr)
     expect_value(__wrap_FpFwMailboxSend, status, (uint32_t)hsp_mbox_data.boot_status_ex);
 
     will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
-    assert_true(send_post_code(BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG, false, true));
+    assert_true(send_post_code(MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG, false, true));
 }
 
 TEST_FUNCTION(test_send_post_code_scp_fatal_success, nullptr, nullptr)
@@ -358,7 +358,7 @@ TEST_FUNCTION(test_send_post_code_scp_fatal_success, nullptr, nullptr)
     expect_value(__wrap_FpFwMailboxSend, pMessage->payloadSize, mail_box_send_payload.payloadSize);
 
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -367,7 +367,7 @@ TEST_FUNCTION(test_send_post_code_scp_fatal_success, nullptr, nullptr)
     expect_value(__wrap_FpFwMailboxSend, status, (uint32_t)hsp_mbox_data.boot_status_ex);
 
     will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
-    assert_true(send_post_code(BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG, true, true));
+    assert_true(send_post_code(MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG, true, true));
 }
 
 TEST_FUNCTION(test_send_post_code_scp_fail, nullptr, nullptr)
@@ -385,7 +385,7 @@ TEST_FUNCTION(test_send_post_code_scp_fail, nullptr, nullptr)
 
     will_return_always(__wrap_FpFwMailboxSend, FPFW_MBX_FIFO_NOT_EMPTY);
 
-    assert_false(send_post_code(BOOT_STATUS_CODE_SCP_OK, true, false));
+    assert_false(send_post_code(MSCP_BOOT_STATUS_CODE_SCP_OK, true, false));
 }
 
 TEST_FUNCTION(test_send_post_code_mcp_fail, nullptr, nullptr)
@@ -403,7 +403,7 @@ TEST_FUNCTION(test_send_post_code_mcp_fail, nullptr, nullptr)
 
     will_return_always(__wrap_FpFwMailboxSend, FPFW_MBX_FIFO_NOT_EMPTY);
 
-    assert_false(send_post_code(BOOT_STATUS_CODE_MCP_OK, false, false));
+    assert_false(send_post_code(MSCP_BOOT_STATUS_CODE_MCP_OK, false, false));
 }
 
 TEST_FUNCTION(test_null_boot_config, nullptr, nullptr)
@@ -466,7 +466,7 @@ TEST_FUNCTION(test_scp_boot_config_src_base_failure, nullptr, nullptr)
 
     // SCP start code send success
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -477,7 +477,7 @@ TEST_FUNCTION(test_scp_boot_config_src_base_failure, nullptr, nullptr)
 
     // SCP data src base error
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -520,7 +520,7 @@ TEST_FUNCTION(test_scp_boot_config_src_end_size_failure, nullptr, nullptr)
 
     // SCP send start code success
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -531,7 +531,7 @@ TEST_FUNCTION(test_scp_boot_config_src_end_size_failure, nullptr, nullptr)
 
     // SCP send image size error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -573,7 +573,7 @@ TEST_FUNCTION(test_scp_boot_config_image_size_zero_failure, nullptr, nullptr)
 
     // SCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -584,7 +584,7 @@ TEST_FUNCTION(test_scp_boot_config_image_size_zero_failure, nullptr, nullptr)
 
     // SCP send image size error
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -626,7 +626,7 @@ TEST_FUNCTION(test_scp_boot_config_itc_ram_base_failure, nullptr, nullptr)
 
     // SCP send start code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -637,7 +637,7 @@ TEST_FUNCTION(test_scp_boot_config_itc_ram_base_failure, nullptr, nullptr)
 
     // SCP send ITCRAM base error
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -679,7 +679,7 @@ TEST_FUNCTION(test_scp_boot_config_itc_ram_size_failure, nullptr, nullptr)
 
     // SCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -690,7 +690,7 @@ TEST_FUNCTION(test_scp_boot_config_itc_ram_size_failure, nullptr, nullptr)
 
     // SCP send ITC RAM size error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -732,7 +732,7 @@ TEST_FUNCTION(test_scp_boot_config_dtc_ram_base_failure, nullptr, nullptr)
 
     // SCP send start code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -743,7 +743,7 @@ TEST_FUNCTION(test_scp_boot_config_dtc_ram_base_failure, nullptr, nullptr)
 
     // SCP send DTC RAM base error
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -785,7 +785,7 @@ TEST_FUNCTION(test_scp_boot_config_dtc_ram_size_failure, nullptr, nullptr)
 
     // SCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -796,7 +796,7 @@ TEST_FUNCTION(test_scp_boot_config_dtc_ram_size_failure, nullptr, nullptr)
 
     // SCP send DTC RAM size error
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -838,7 +838,7 @@ TEST_FUNCTION(test_scp_boot_config_rmss_data_ram_base_failure, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -849,7 +849,7 @@ TEST_FUNCTION(test_scp_boot_config_rmss_data_ram_base_failure, nullptr, nullptr)
 
     // MCP DTC RAM base error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -891,7 +891,7 @@ TEST_FUNCTION(test_scp_boot_config_rmss_data_ram_size_failure, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -902,7 +902,7 @@ TEST_FUNCTION(test_scp_boot_config_rmss_data_ram_size_failure, nullptr, nullptr)
 
     // MCP ITC RAM size error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -944,7 +944,7 @@ TEST_FUNCTION(test_scp_boot_config_meta_base_null_failure, nullptr, nullptr)
 
     // SCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -955,7 +955,7 @@ TEST_FUNCTION(test_scp_boot_config_meta_base_null_failure, nullptr, nullptr)
 
     // SCP boot meta base error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -997,7 +997,7 @@ TEST_FUNCTION(test_mcp_boot_config_src_base_failure, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1008,7 +1008,7 @@ TEST_FUNCTION(test_mcp_boot_config_src_base_failure, nullptr, nullptr)
 
     // MCP data src base error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1050,7 +1050,7 @@ TEST_FUNCTION(test_mcp_boot_config_src_end_size_failure, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1061,7 +1061,7 @@ TEST_FUNCTION(test_mcp_boot_config_src_end_size_failure, nullptr, nullptr)
 
     // MCP data src end error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1103,7 +1103,7 @@ TEST_FUNCTION(test_mcp_boot_config_image_size_zero_failure, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1114,7 +1114,7 @@ TEST_FUNCTION(test_mcp_boot_config_image_size_zero_failure, nullptr, nullptr)
 
     // MCP image size error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1156,7 +1156,7 @@ TEST_FUNCTION(test_mcp_boot_config_itc_ram_base_failure, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1167,7 +1167,7 @@ TEST_FUNCTION(test_mcp_boot_config_itc_ram_base_failure, nullptr, nullptr)
 
     // MCP ITC RAM base error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1209,7 +1209,7 @@ TEST_FUNCTION(test_mcp_boot_config_itc_ram_size_failure, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1220,7 +1220,7 @@ TEST_FUNCTION(test_mcp_boot_config_itc_ram_size_failure, nullptr, nullptr)
 
     // MCP ITC RAM size error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1262,7 +1262,7 @@ TEST_FUNCTION(test_mcp_boot_config_dtc_ram_base_failure, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1273,7 +1273,7 @@ TEST_FUNCTION(test_mcp_boot_config_dtc_ram_base_failure, nullptr, nullptr)
 
     // MCP DTC RAM base error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1315,7 +1315,7 @@ TEST_FUNCTION(test_mcp_boot_config_dtc_ram_size_failure, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1326,7 +1326,7 @@ TEST_FUNCTION(test_mcp_boot_config_dtc_ram_size_failure, nullptr, nullptr)
 
     // MCP DTC RAM size error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1368,7 +1368,7 @@ TEST_FUNCTION(test_mcp_boot_config_rmss_data_ram_base_failure, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1379,7 +1379,7 @@ TEST_FUNCTION(test_mcp_boot_config_rmss_data_ram_base_failure, nullptr, nullptr)
 
     // MCP DTC RAM base error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1421,7 +1421,7 @@ TEST_FUNCTION(test_mcp_boot_config_rmss_data_ram_size_failure, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1432,7 +1432,7 @@ TEST_FUNCTION(test_mcp_boot_config_rmss_data_ram_size_failure, nullptr, nullptr)
 
     // MCP ITC RAM size error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1474,7 +1474,7 @@ TEST_FUNCTION(test_mcp_boot_config_meta_base_null_failure, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1485,7 +1485,7 @@ TEST_FUNCTION(test_mcp_boot_config_meta_base_null_failure, nullptr, nullptr)
 
     // MCP boot meta error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1527,7 +1527,7 @@ TEST_FUNCTION(test_scp_load_image_error_hsp_send_failure, nullptr, nullptr)
 
     // SCP send start code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1538,7 +1538,7 @@ TEST_FUNCTION(test_scp_load_image_error_hsp_send_failure, nullptr, nullptr)
 
     // SCP boot meta error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_any_always(__wrap_FpFwMailboxSend, cmd);
@@ -1580,7 +1580,7 @@ TEST_FUNCTION(test_mcp_load_image_error_hsp_send_failure, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1591,7 +1591,7 @@ TEST_FUNCTION(test_mcp_load_image_error_hsp_send_failure, nullptr, nullptr)
 
     // MCP Boot meta error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_any_always(__wrap_FpFwMailboxSend, cmd);
@@ -1634,7 +1634,7 @@ TEST_FUNCTION(test_scp_start_hsp_send_failure, nullptr, nullptr)
 
     // SCP send start code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_any_always(__wrap_FpFwMailboxSend, cmd);
@@ -1673,7 +1673,7 @@ TEST_FUNCTION(test_mcp_start_hsp_send_failure, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_any_always(__wrap_FpFwMailboxSend, cmd);
@@ -1710,7 +1710,7 @@ TEST_FUNCTION(test_scp_irq_disable_hsp_send_failure, nullptr, nullptr)
 
     // SCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1721,7 +1721,7 @@ TEST_FUNCTION(test_scp_irq_disable_hsp_send_failure, nullptr, nullptr)
 
     // SCP IRQ disabled code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_IRQ_DISABLED;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_IRQ_DISABLED;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_any_always(__wrap_FpFwMailboxSend, cmd);
@@ -1761,7 +1761,7 @@ TEST_FUNCTION(test_mcp_irq_disable_hsp_send_failure, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1772,7 +1772,7 @@ TEST_FUNCTION(test_mcp_irq_disable_hsp_send_failure, nullptr, nullptr)
     will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
 
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_IRQ_DISABLED;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_IRQ_DISABLED;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_any_always(__wrap_FpFwMailboxSend, cmd);
@@ -1810,7 +1810,7 @@ TEST_FUNCTION(test_scp_boot_reason_hsp_send_fail, nullptr, nullptr)
 
     // SCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1821,7 +1821,7 @@ TEST_FUNCTION(test_scp_boot_reason_hsp_send_fail, nullptr, nullptr)
     will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
 
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_IRQ_DISABLED;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_IRQ_DISABLED;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1832,7 +1832,7 @@ TEST_FUNCTION(test_scp_boot_reason_hsp_send_fail, nullptr, nullptr)
     will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
 
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_COLD_BOOT;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_COLD_BOOT;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_any_always(__wrap_FpFwMailboxSend, cmd);
@@ -1870,7 +1870,7 @@ TEST_FUNCTION(test_mcp_boot_reason_hsp_send_fail, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1881,7 +1881,7 @@ TEST_FUNCTION(test_mcp_boot_reason_hsp_send_fail, nullptr, nullptr)
     will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
 
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_IRQ_DISABLED;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_IRQ_DISABLED;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1892,7 +1892,7 @@ TEST_FUNCTION(test_mcp_boot_reason_hsp_send_fail, nullptr, nullptr)
     will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
 
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_COLD_BOOT;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_COLD_BOOT;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_any_always(__wrap_FpFwMailboxSend, cmd);
@@ -1934,7 +1934,7 @@ TEST_FUNCTION(test_scp_cold_boot_unpack_image_fail, nullptr, nullptr)
 
     // SCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1945,7 +1945,7 @@ TEST_FUNCTION(test_scp_cold_boot_unpack_image_fail, nullptr, nullptr)
     will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
 
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_IRQ_DISABLED;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_IRQ_DISABLED;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1956,7 +1956,7 @@ TEST_FUNCTION(test_scp_cold_boot_unpack_image_fail, nullptr, nullptr)
     will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
 
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_COLD_BOOT;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_COLD_BOOT;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -1967,7 +1967,7 @@ TEST_FUNCTION(test_scp_cold_boot_unpack_image_fail, nullptr, nullptr)
     will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
 
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2011,7 +2011,7 @@ TEST_FUNCTION(test_scp_warm_boot_unpack_image_fail, nullptr, nullptr)
 
     // SCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2022,7 +2022,7 @@ TEST_FUNCTION(test_scp_warm_boot_unpack_image_fail, nullptr, nullptr)
     will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
 
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_IRQ_DISABLED;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_IRQ_DISABLED;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2033,7 +2033,7 @@ TEST_FUNCTION(test_scp_warm_boot_unpack_image_fail, nullptr, nullptr)
     will_return(__wrap_FpFwMailboxSend, FPFW_MBX_SUCCESS);
 
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_WARM_BOOT;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_WARM_BOOT;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2045,7 +2045,7 @@ TEST_FUNCTION(test_scp_warm_boot_unpack_image_fail, nullptr, nullptr)
 
     // SCP unpack fail error code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2089,7 +2089,7 @@ TEST_FUNCTION(test_mcp_cold_boot_unpack_image_fail, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2100,7 +2100,7 @@ TEST_FUNCTION(test_mcp_cold_boot_unpack_image_fail, nullptr, nullptr)
 
     // MCP IRQ disable code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_IRQ_DISABLED;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_IRQ_DISABLED;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2111,7 +2111,7 @@ TEST_FUNCTION(test_mcp_cold_boot_unpack_image_fail, nullptr, nullptr)
 
     // MCP cold boot reason send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_COLD_BOOT;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_COLD_BOOT;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2122,7 +2122,7 @@ TEST_FUNCTION(test_mcp_cold_boot_unpack_image_fail, nullptr, nullptr)
 
     // MCP unpack image fail error code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2166,7 +2166,7 @@ TEST_FUNCTION(test_mcp_warm_boot_unpack_image_fail, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2178,7 +2178,7 @@ TEST_FUNCTION(test_mcp_warm_boot_unpack_image_fail, nullptr, nullptr)
 
     // MCP irq disable code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_IRQ_DISABLED;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_IRQ_DISABLED;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2190,7 +2190,7 @@ TEST_FUNCTION(test_mcp_warm_boot_unpack_image_fail, nullptr, nullptr)
 
     // MCP warm boot reason code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_WARM_BOOT;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_WARM_BOOT;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2202,7 +2202,7 @@ TEST_FUNCTION(test_mcp_warm_boot_unpack_image_fail, nullptr, nullptr)
 
     // MCP unpack image fail code
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2248,7 +2248,7 @@ TEST_FUNCTION(test_scp_boot_success, nullptr, nullptr)
 
     // SCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2260,7 +2260,7 @@ TEST_FUNCTION(test_scp_boot_success, nullptr, nullptr)
 
     // SCP irq disable code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_IRQ_DISABLED;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_IRQ_DISABLED;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2272,7 +2272,7 @@ TEST_FUNCTION(test_scp_boot_success, nullptr, nullptr)
 
     // SCP cold boot reason send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_SCP_COLD_BOOT;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_COLD_BOOT;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2324,7 +2324,7 @@ TEST_FUNCTION(test_mcp_boot_success, nullptr, nullptr)
 
     // MCP start code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_START;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2336,7 +2336,7 @@ TEST_FUNCTION(test_mcp_boot_success, nullptr, nullptr)
 
     // MCP IRQ disable code send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_IRQ_DISABLED;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_IRQ_DISABLED;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));
@@ -2348,7 +2348,7 @@ TEST_FUNCTION(test_mcp_boot_success, nullptr, nullptr)
 
     // MCP cold boot reason send
     hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
-    hsp_mbox_data.boot_status = BOOT_STATUS_CODE_MCP_COLD_BOOT;
+    hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_COLD_BOOT;
     hsp_mbox_data.boot_status_ex = HSP_MBOX_STATUS_NOT_FATAL;
 
     expect_value(__wrap_FpFwMailboxSend, cmd, (uint32_t)(hsp_mbox_data.header.cmd & 0xFFFF));

@@ -211,69 +211,67 @@ On any failure cases if HSP to MSCP mailbox communication is available , it send
 Here is the boot status codes currently used in kingsgate , however these are bound to change with ongoing discussions to effectively manage it.
 ```c
     // SCP range is from 0x40 - 0x5F, and MCP is 0x60 - 0x7F
-    typedef enum _boot_status_code_t
+    typedef enum _mscp_boot_status_code_t
     {
-        BOOT_STATUS_CODE_SCP_OK = 0x40,
-        BOOT_STATUS_CODE_SCP_START,
-        BOOT_STATUS_CODE_SCP_COLD_BOOT,
-        BOOT_STATUS_CODE_SCP_WARM_BOOT,
-        BOOT_STATUS_CODE_SCP_IRQ_DISABLED,
-        BOOT_STATUS_CODE_SCP_E_SIZE,
-        BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG,
-        BOOT_STATUS_CODE_SCP_E_DATA_SRC_BASE,
-        BOOT_STATUS_CODE_SCP_E_IMAGE_SIZE,
-        BOOT_STATUS_CODE_SCP_E_ITCRAM_BASE,
-        BOOT_STATUS_CODE_SCP_E_ITCRAM_SIZE,
-        BOOT_STATUS_CODE_SCP_E_DTCRAM_BASE,
-        BOOT_STATUS_CODE_SCP_E_DTCRAM_SIZE,
-        BOOT_STATUS_CODE_SCP_E_SEND_HSP_FAILURE,
-        BOOT_STATUS_CODE_SCP_E_BOOT_META,
-        BOOT_STATUS_CODE_SCP_MAX = 0x5F,
+        //! progress codes for SCP
+        MSCP_BOOT_STATUS_CODE_SCP_OK = 0x0,
+        MSCP_BOOT_STATUS_CODE_SCP_START,
+        MSCP_BOOT_STATUS_CODE_SCP_COLD_BOOT,
+        MSCP_BOOT_STATUS_CODE_SCP_WARM_BOOT,
+        MSCP_BOOT_STATUS_CODE_SCP_IRQ_DISABLED,
+        MSCP_BOOT_STATUS_CODE_SCP_MESH_INIT_END,
+        MSCP_BOOT_STATUS_CODE_SCP_TOWER_INIT_END,
+        MSCP_BOOT_STATUS_CODE_SCP_ACCEL_INIT_END,
+        MSCP_BOOT_STATUS_CODE_SCP_DDR_INIT_END,
+        //! Error codes for SCP
+        MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG,
+        //! Keep last for SCP, do not use as post code
+        MSCP_BOOT_STATUS_CODE_SCP_MAX,
 
-        BOOT_STATUS_CODE_MCP_OK = 0x60,
-        // Add as needed for MCP
-        BOOT_STATUS_CODE_MCP_START,
-        BOOT_STATUS_CODE_MCP_COLD_BOOT,
-        BOOT_STATUS_CODE_MCP_WARM_BOOT,
-        BOOT_STATUS_CODE_MCP_IRQ_DISABLED,
-        BOOT_STATUS_CODE_MCP_E_SIZE,
-        BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG,
-        BOOT_STATUS_CODE_MCP_E_DATA_SRC_BASE,
-        BOOT_STATUS_CODE_MCP_E_IMAGE_SIZE,
-        BOOT_STATUS_CODE_MCP_E_ITCRAM_BASE,
-        BOOT_STATUS_CODE_MCP_E_ITCRAM_SIZE,
-        BOOT_STATUS_CODE_MCP_E_DTCRAM_BASE,
-        BOOT_STATUS_CODE_MCP_E_DTCRAM_SIZE,
-        BOOT_STATUS_CODE_MCP_E_SEND_HSP_FAILURE,
-        BOOT_STATUS_CODE_MCP_E_BOOT_META,
-        BOOT_STATUS_CODE_MCP_MAX = 0x7F
-    } boot_status_code_t;
+        //! progress codes for MCP
+        MSCP_BOOT_STATUS_CODE_MCP_OK,
+        MSCP_BOOT_STATUS_CODE_MCP_START,
+        MSCP_BOOT_STATUS_CODE_MCP_COLD_BOOT,
+        MSCP_BOOT_STATUS_CODE_MCP_WARM_BOOT,
+        MSCP_BOOT_STATUS_CODE_MCP_IRQ_DISABLED,
+        //! Error codes for MCP, do not use as post code
+        MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG,
+        //! Keep last for MCP
+        MSCP_BOOT_STATUS_CODE_MCP_MAX,
 
-    // boot status code flow
+        //! Keep last entry in this enum, do not use as post code
+        MSCP_BOOT_STATUS_CODE_MAX,
+    } mscp_boot_status_code_t;
+
+    // currently for all the config error below we send
+    MSCP_BOOT_STATUS_CODE_SCP/MCP_E_BOOT_CONFIG
+
+    // Tbd, possible mscp boot statuses for boot status code flow
+    // to provide more details (to be added): 
     // This is sent after mailbox init if the SCP/MCP boot loader is executing
-    BOOT_STATUS_CODE_SCP/MCP_START
+    MSCP_BOOT_STATUS_CODE_SCP/MCP_START
     // This code is sent if boot_config->data_src_base == 0
-    BOOT_STATUS_CODE_SCP/MCP_E_DATA_SRC_BASE
+    MSCP_BOOT_STATUS_CODE_SCP/MCP_E_DATA_SRC_BASE
     // This code is sent if boot_config->data_src_end <= boot_config->data_sec_base
-    BOOT_STATUS_CODE_SCP/MCP_E_IMAGE_SIZE
+    MSCP_BOOT_STATUS_CODE_SCP/MCP_E_IMAGE_SIZE
     // This code is sent if boot_config->itc_ram_base == 0
-    BOOT_STATUS_CODE_SCP/MCP_E_ITCRAM_BASE
+    MSCP_BOOT_STATUS_CODE_SCP/MCP_E_ITCRAM_BASE
     // This code is sent if boot_config->itc_ram_size == 0
-    BOOT_STATUS_CODE_SCP/MCP_E_ITCRAM_SIZE
+    MSCP_BOOT_STATUS_CODE_SCP/MCP_E_ITCRAM_SIZE
     // This code is sent if boot_config->dtc_ram_base == 0
-    BOOT_STATUS_CODE_SCP/MCP_E_DTCRAM_BASE
+    MSCP_BOOT_STATUS_CODE_SCP/MCP_E_DTCRAM_BASE
     // This code is sent if boot_config->dtc_ram_size == 0
-    BOOT_STATUS_CODE_SCP/MCP_E_DTCRAM_SIZE
+    MSCP_BOOT_STATUS_CODE_SCP/MCP_E_DTCRAM_SIZE
     // This code is sent if boot_config->boot_meta_base == 0
-    BOOT_STATUS_CODE_SCP/MCP_E_BOOT_META
+    MSCP_BOOT_STATUS_CODE_SCP/MCP_E_BOOT_META
     // This code is sent to inform HSP the SCP IRQ is disabled 
-    BOOT_STATUS_CODE_SCP/MCP_IRQ_DISABLED
+    MSCP_BOOT_STATUS_CODE_SCP/MCP_IRQ_DISABLED
     // This code is sent if is boot metadata indicates it is a warm boot
-    BOOT_STATUS_CODE_SCP/MCP_WARM_BOOT 
+    MSCP_BOOT_STATUS_CODE_SCP/MCP_WARM_BOOT 
     // This code is sent if is boot metadata indicates it is a cold boot
-    BOOT_STATUS_CODE_SCP/MCP_COLD_BOOT
+    MSCP_BOOT_STATUS_CODE_SCP/MCP_COLD_BOOT
     // This code is sent if call to unpack_image fails (decompression failure)
-    BOOT_STATUS_CODE_SCP/MCP_E_SIZE
+    MSCP_BOOT_STATUS_CODE_SCP/MCP_E_SIZE
 ```
 
 ## Bootloader interfaces 

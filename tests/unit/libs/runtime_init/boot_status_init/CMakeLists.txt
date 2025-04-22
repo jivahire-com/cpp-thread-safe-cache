@@ -21,6 +21,8 @@ target_link_libraries(${TARGET}
         fwlib.lib.utils
         ms::lib::boot_status
         ms::cmocka::testrunner
+        silibs::idsw_kng
+        silibs::platform
 )
 
 # Generic ports implmented within this project
@@ -35,4 +37,5 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     boot_status_init
     fpfw_init_get_handle
+    idsw_get_cpu_type
 )

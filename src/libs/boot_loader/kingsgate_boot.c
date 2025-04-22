@@ -21,7 +21,7 @@
     #include <mcp_top_regs.h>
     #include <scp_top_regs.h>
 #endif
-#include <boot_status.h> // for _boot_status_code_t, boot_status_code_t
+#include <boot_status.h> // for _mscp_boot_status_code_t, mscp_boot_status_code_t
 #include <stdbool.h>     // for false, bool, true
 #include <stddef.h>      // for NULL
 #include <stdint.h>      // for uint32_t
@@ -67,7 +67,7 @@ void sleep_ms(uint32_t millisecond)
     }
 }
 #endif
-bool send_post_code(boot_status_code_t boot_post_code, bool is_scp, bool is_fatal)
+bool send_post_code(mscp_boot_status_code_t boot_post_code, bool is_scp, bool is_fatal)
 {
     // TODO: Replace the  mail box data and response with proper structure once it has been defined on HSP
     // side ADO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1793271
@@ -93,13 +93,13 @@ bool send_post_code(boot_status_code_t boot_post_code, bool is_scp, bool is_fata
         // If HSP is not present simply return true so boot loader can proceed
         return ret_code;
     }
-    if (is_scp && (boot_post_code >= BOOT_STATUS_CODE_SCP_MAX))
+    if (is_scp && (boot_post_code >= MSCP_BOOT_STATUS_CODE_SCP_MAX))
     {
         // Post code is out of range of SCP
         return false;
     }
 
-    if (!is_scp && ((boot_post_code < BOOT_STATUS_CODE_MCP_OK) || (boot_post_code >= BOOT_STATUS_CODE_MCP_MAX)))
+    if (!is_scp && ((boot_post_code < MSCP_BOOT_STATUS_CODE_MCP_OK) || (boot_post_code >= MSCP_BOOT_STATUS_CODE_MCP_MAX)))
     {
         // Post code is out of range of MCP
         return false;
@@ -171,7 +171,7 @@ bool hsp_mailbox_init(uint32_t mail_box_address)
 void* load_image(kingsgate_boot_config_t* boot_config)
 {
     uint32_t mail_box_address = 0;
-    uint32_t boot_status = BOOT_STATUS_CODE_SCP_OK;
+    uint32_t boot_status = MSCP_BOOT_STATUS_CODE_SCP_OK;
     uint32_t image_size = 0;
     bool is_scp = false;
     bool is_error_config = true;
@@ -192,7 +192,7 @@ void* load_image(kingsgate_boot_config_t* boot_config)
     {
         is_scp = true;
 
-        boot_status = BOOT_STATUS_CODE_SCP_START;
+        boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
 
         mail_box_address = SCP_TOP_SCP2HSP_MAILBOX_ADDRESS;
     }
@@ -200,7 +200,7 @@ void* load_image(kingsgate_boot_config_t* boot_config)
     {
         is_scp = false;
 
-        boot_status = BOOT_STATUS_CODE_MCP_START;
+        boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
 
         mail_box_address = MCP_TOP_MCP2HSP_MAILBOX_ADDRESS;
     }
@@ -224,43 +224,43 @@ void* load_image(kingsgate_boot_config_t* boot_config)
 
     if (boot_config->data_src_base == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+        boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else if (boot_config->data_src_end <= boot_config->data_src_base)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+        boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else if (boot_config->itc_ram_base == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+        boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else if (boot_config->itc_ram_size == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+        boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else if (boot_config->dtc_ram_base == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+        boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else if (boot_config->dtc_ram_size == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+        boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else if (boot_config->boot_meta_base == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+        boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else if (boot_config->rmss_data_base == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+        boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else if (boot_config->rmss_data_size == 0)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+        boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else if ((boot_meta_data->ResetReason & BITMASK_WARM_BOOT) && (boot_meta_data->BootMode != 0))
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+        boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     }
     else
     {
@@ -274,7 +274,7 @@ void* load_image(kingsgate_boot_config_t* boot_config)
 
     __disable_irq();
 
-    boot_status = is_scp ? BOOT_STATUS_CODE_SCP_IRQ_DISABLED : BOOT_STATUS_CODE_MCP_IRQ_DISABLED;
+    boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_IRQ_DISABLED : MSCP_BOOT_STATUS_CODE_MCP_IRQ_DISABLED;
 
     if (send_post_code(boot_status, is_scp, false) == false)
     {
@@ -283,11 +283,11 @@ void* load_image(kingsgate_boot_config_t* boot_config)
 
     if (boot_meta_data->ResetReason & BITMASK_WARM_BOOT)
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_WARM_BOOT : BOOT_STATUS_CODE_MCP_WARM_BOOT;
+        boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_WARM_BOOT : MSCP_BOOT_STATUS_CODE_MCP_WARM_BOOT;
     }
     else
     {
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_COLD_BOOT : BOOT_STATUS_CODE_MCP_COLD_BOOT;
+        boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_COLD_BOOT : MSCP_BOOT_STATUS_CODE_MCP_COLD_BOOT;
     }
 
     if (send_post_code(boot_status, is_scp, false) == false)
@@ -308,7 +308,7 @@ void* load_image(kingsgate_boot_config_t* boot_config)
     {
         // Unpack image mainly fails due to size mismatch or decompress failure. However no status code
         // for decompress failure.
-        boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+        boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
         goto load_image_failed;
     }
 
@@ -322,7 +322,7 @@ load_image_failed:
 
 hsp_send_failed:
     // There is a boot status for this , but there is no way to send this out
-    boot_status = is_scp ? BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
     (void)boot_status;
     return NULL;
 }

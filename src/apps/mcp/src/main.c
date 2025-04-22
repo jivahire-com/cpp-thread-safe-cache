@@ -11,7 +11,7 @@
 
 #include <FpFwUtils.h>
 #include <assert.h>
-#include <boot_status.h> // for boot_status_notify
+#include <boot_status.h> // for post_led_status
 #include <fpfw_init.h>
 #include <mcp_events.h>
 #include <stdbool.h>
@@ -40,6 +40,7 @@ static TX_THREAD s_main_thread;
 extern fpfw_init_component_t _data_fpfw_init_start;
 extern fpfw_init_component_t _data_fpfw_init_end;
 
+static boot_status_req_t boot_status_req = {0};
 // Prior to main, an assembly function initializes .bss and invokes constructors
 // see cortexm7_vectors.S for the initial reset_handler entrypoint
 int main(void)
@@ -97,8 +98,7 @@ void main_thread(ULONG thread_input)
 
     printf("\nHello World - MCP!\n");
     system_info_set_init_complete();
-    fpfw_status_t status = boot_status_notify(BOOT_STATUS_CODE_MCP_OK);
-    assert(status == FPFW_STATUS_SUCCESS);
+    post_led_status(&boot_status_req, LED_STATUS_CODE_MCP_BOOT_COMPLETE);
 
     // Do nothing
     uint32_t rtos_ticks = 0;

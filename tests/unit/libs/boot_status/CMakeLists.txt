@@ -30,6 +30,6 @@ mock_target(${TARGET}
     system_info_is_hsp_present
     system_info_is_init_complete
     idsw_get_cpu_type
-    FpFwLockRelease
-    FpFwLockAcquire
+    idsw_get_die_id
+    crash_dump_bug_check
 ) 

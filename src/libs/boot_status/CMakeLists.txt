@@ -8,12 +8,14 @@ add_library(${TARGET}
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.dfwk
-        ms::lib::hsp_firmware_headers
+        fwlib.lib.interface.platform.dbgprint
         ms::lib::crash_dump
         ms::lib::system_info
+        silibs::idsw_kng
     PUBLIC
         fwlib.service.iccBase
-        silibs::idsw_kng
+        ms::lib::hsp_firmware_headers
+        
 )
 
 target_include_directories(${TARGET}

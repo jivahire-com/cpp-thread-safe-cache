@@ -43,7 +43,7 @@ void sleep_ms(uint32_t millisecond);
  *  @return
  *      returns true if successful in mailbox send or false if failed
  */
-bool send_post_code(boot_status_code_t boot_post_code, bool is_scp, bool is_fatal);
+bool send_post_code(mscp_boot_status_code_t boot_post_code, bool is_scp, bool is_fatal);
 
 /**
  *  @brief This function initialises HSP mailbox comunication for SCP/MCP based on address configured.

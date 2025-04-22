@@ -8,9 +8,11 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <FpFwLock.h> // for FPFW_LOCK, FpFwLockInitialize, FpFwLockAcquire, FpFwLockRelease
-#include <assert.h>
-#include <boot_status.h>                    // for boot_status_notify_complete, system_info_boot_status_notify
+#include <boot_status.h>
+#include <boot_status_codes.h>
+#include <bug_check.h>
 #include <fpfw_icc_base.h>                  // for fpfw_icc_base_send_recv_req_t, fpfw...
 #include <hsp_firmware_headers.h>           // for HSP_FIRMWARE_ID
 #include <idsw.h>                           // for idsw_get_cpu_type
@@ -23,219 +25,442 @@
 #include <system_info.h> // for system_info_is_init_complete
 
 /*------------- Typedefs -----------------*/
-/**
- * @brief Memory required to raise a sync/async boot status
- * notify request to HSP.
- * Only a single request is supported at a time, so no need
- * to maintain a list of requests
- */
-typedef struct _boot_status_req_t
-{
-    bool in_use;                              //! flag to indicate if the request is in use or not
-    kng_hsp_mailbox_msg msg;                  //! actual mbox payload
-    fpfw_icc_base_send_req_t hsp_send_params; //! async message send params
-} boot_status_req_t;
-
-/**
- * @brief Enum to describe the type of boot status
- *
- */
-typedef enum _boot_status_type_t
-{
-    BOOT_STATUS_PROGRESS = 0x00,
-    BOOT_STATUS_ERROR = 0x01,
-} boot_status_type_t;
-
-/**
- * @brief Boot status table to map boot status codes to their types
- *
- */
-typedef struct _boot_status_table_t
-{
-    boot_status_code_t status_code;
-    boot_status_type_t status_type;
-} boot_status_table_t;
-
-//! Update this table as new boot status codes are added
-static const boot_status_table_t boot_status_table[] = {
-    {BOOT_STATUS_CODE_SCP_OK, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_SCP_START, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_SCP_COLD_BOOT, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_SCP_WARM_BOOT, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_SCP_IRQ_DISABLED, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_SCP_MESH_INIT_START, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_SCP_MESH_INIT_END, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_SCP_TOWER_INIT_START, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_SCP_TOWER_INIT_END, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_SCP_ACCEL_INIT_START, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_SCP_ACCEL_INIT_END, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_SCP_DDR_INIT_START, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_SCP_DDR_INIT_END, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG, BOOT_STATUS_ERROR},
-    {BOOT_STATUS_CODE_SCP_E_DDR0_TRAINING, BOOT_STATUS_ERROR},
-    {BOOT_STATUS_CODE_SCP_E_DDR1_TRAINING, BOOT_STATUS_ERROR},
-    {BOOT_STATUS_CODE_SCP_E_DDR2_TRAINING, BOOT_STATUS_ERROR},
-    {BOOT_STATUS_CODE_SCP_E_DDR3_TRAINING, BOOT_STATUS_ERROR},
-    {BOOT_STATUS_CODE_SCP_E_DDR4_TRAINING, BOOT_STATUS_ERROR},
-    {BOOT_STATUS_CODE_SCP_E_DDR5_TRAINING, BOOT_STATUS_ERROR},
-    {BOOT_STATUS_CODE_SCP_E_DDR6_TRAINING, BOOT_STATUS_ERROR},
-    {BOOT_STATUS_CODE_SCP_E_DDR7_TRAINING, BOOT_STATUS_ERROR},
-    {BOOT_STATUS_CODE_SCP_E_DDR8_TRAINING, BOOT_STATUS_ERROR},
-    {BOOT_STATUS_CODE_SCP_E_DDR9_TRAINING, BOOT_STATUS_ERROR},
-    {BOOT_STATUS_CODE_SCP_E_DDR10_TRAINING, BOOT_STATUS_ERROR},
-    {BOOT_STATUS_CODE_SCP_E_DDR11_TRAINING, BOOT_STATUS_ERROR},
-    {BOOT_STATUS_CODE_SCP_MAX, BOOT_STATUS_ERROR},
-
-    {BOOT_STATUS_CODE_MCP_OK, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_MCP_START, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_MCP_COLD_BOOT, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_MCP_WARM_BOOT, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_MCP_IRQ_DISABLED, BOOT_STATUS_PROGRESS},
-    {BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG, BOOT_STATUS_ERROR},
-    {BOOT_STATUS_CODE_MCP_MAX, BOOT_STATUS_ERROR},
-
-    {BOOT_STATUS_CODE_MAX, BOOT_STATUS_ERROR}};
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define BOOT_STATUS_TABLE_SIZE (sizeof(boot_status_table) / sizeof(boot_status_table[0]))
 
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static fpfw_icc_base_ctx_t* icc_ctx = NULL;
-static boot_status_req_t req_mem = {0};
-static FPFW_LOCK boot_status_lock; //! lock for protecting req_mem
+static boot_status_icc_ctx_t* boot_status_icc_ctx = NULL; //! store boot status ctx from init
 
 /*------------- Functions ----------------*/
-void boot_status_init(fpfw_icc_base_ctx_t* icc_base_ctx)
+void boot_status_init(boot_status_icc_ctx_t* boot_status_ctx)
 {
-    icc_ctx = icc_base_ctx;
-    memset(&req_mem, 0, sizeof(req_mem));
-    //! Initialize the lock to protect the global memory ctx
-    FpFwLockInitialize(&boot_status_lock);
-}
+    BUG_ASSERT(boot_status_ctx != NULL);              //! check if the boot status ctx is valid
+    BUG_ASSERT(boot_status_ctx->hsp_mbx_ctx != NULL); //! check if the hsp mbox ctx is valid
+    boot_status_icc_ctx = boot_status_ctx;            //! store the boot status ctx from init
 
-static void boot_status_notify_complete(void* context, fpfw_status_t status)
-{
-    boot_status_req_t* req = (boot_status_req_t*)context;
-    assert(status == FPFW_STATUS_SUCCESS); //! status of the icc base communication
-    assert(req != NULL);
-    assert(req->msg.header.cmd == HSP_MAILBOX_CMD_BOOT_STATUS_EXTD_NOTIFY); //! msg is a boot status notify message
-
-    //! Print the boot status notification message on uart
-    printf("[Boot Status] Async Notif Send Complete, ID[%" PRId32 "] Stat[0x%" PRIx32 "] Stat_ex[0x%" PRIx32 "]\n",
-           req->msg.boot_stat_notif.id,
-           req->msg.boot_stat_notif.boot_status,
-           req->msg.boot_stat_notif.boot_status_ex.boot_status_int);
-
-    //! mark the request as not in use, so the memory can be reused for next request
-    FPFW_LOCK_STATE oldState = FpFwLockAcquire(&boot_status_lock); //! critical section start
-    req->in_use = false; //! mark the request as not in use, so the mem can be reused for next request
-    memset(&req_mem, 0, sizeof(req_mem));         //! reset the request memory just to be safe
-    FpFwLockRelease(&boot_status_lock, oldState); //! critical section end
-}
-
-fpfw_status_t boot_status_notify(boot_status_code_t boot_status)
-{
-    KNG_CPU_TYPE cpu_type = idsw_get_cpu_type(); //! get the cpu type, scp/mcp
-    fpfw_status_t status = FPFW_STATUS_SUCCESS;
-    bool is_icc_sync = false;     //! cache the request type in case `is_runtime` flag updates
-    bool ongoing_request = false; //! cache the in_use flag to check if the global memory is in use
-
-    //! Check boot status validity as per core
-    if (((cpu_type == CPU_SCP) && ((boot_status >= BOOT_STATUS_CODE_SCP_MAX) || (boot_status < BOOT_STATUS_CODE_SCP_OK))) ||
-        ((cpu_type == CPU_MCP) && ((boot_status >= BOOT_STATUS_CODE_MCP_MAX) || (boot_status < BOOT_STATUS_CODE_MCP_OK))))
+    KNG_CPU_TYPE cpu_type = idsw_get_cpu_type();
+    if (cpu_type == CPU_SCP)
     {
-        return FPFW_STATUS_INVALID_ARGS;
-    }
-
-    //! Check if the pre requisite for sending boot status notify is met. hsp is present and icc ctx is set
-    if ((!system_info_is_hsp_present()) || (icc_ctx == NULL))
-    {
-        return FPFW_STATUS_INVALID_STATE;
-    }
-
-    //! check if there is already an ongoing request, only a single request is supported at a time
-    //! Only applicable for async requests raised from different threads during runtime
-    FPFW_LOCK_STATE oldState = FpFwLockAcquire(&boot_status_lock); //! critical section start
-    if (req_mem.in_use)
-    {
-        ongoing_request = true; //! global memory is in use, return busy status
-    }
-    else
-    {
-        //! mark the request as in use
-        req_mem.in_use = true;
-    }
-    FpFwLockRelease(&boot_status_lock, oldState); //! critical section end
-    if (ongoing_request)
-    {
-        return FPFW_STATUS_BUSY;
-    }
-
-    //! Prepare the hsp message packet
-    req_mem.msg.boot_stat_notif.header.cmd = HSP_MAILBOX_CMD_BOOT_STATUS_EXTD_NOTIFY;
-    req_mem.msg.boot_stat_notif.id = (cpu_type == CPU_SCP) ? HSP_FIRMWARE_ID_SCP : HSP_FIRMWARE_ID_MCP;
-    req_mem.msg.boot_stat_notif.boot_status = boot_status;
-    req_mem.msg.boot_stat_notif.boot_status_ex.boot_status_int = HSP_MAILBOX_BOOT_STATUS_EX_FATAL; //! Set by default
-    //! iterate table of boot status codes to find the boot status type to update boot_status_ex
-    for (uint32_t i = 0; i < BOOT_STATUS_TABLE_SIZE; i++)
-    {
-        if (boot_status == boot_status_table[i].status_code)
+        for (uint8_t i = 0; i < BOOT_STATUS_ACCEL_MAX; i++)
         {
-            if (boot_status_table[i].status_type == BOOT_STATUS_PROGRESS)
-            {
-                req_mem.msg.boot_stat_notif.boot_status_ex.boot_status_int = HSP_MAILBOX_BOOT_STATUS_EX_COMPLETE;
-            }
-            break;
+            BUG_ASSERT(boot_status_ctx->accel_icc_ctx[i].lfifo_mbx_ctx != NULL);
+            BUG_ASSERT(boot_status_ctx->accel_icc_ctx[i].send_params != NULL);
+            BUG_ASSERT(boot_status_ctx->accel_icc_ctx[i].recv_params != NULL);
+
+            //! Kick off the mechanism to recv boot status from accel cores
+            //! To capture init time boot status from accel cores ie pre runtime init
+            //! need to use sync or blocking version of the icc base recv API.
+            //! Maybe start a timer here, the cb check's the system's state
+            //! If pre runtime, it will call the icc recv sync API & parse the payload
+            //! to verify it's boot status message & enable the timer for next message.
+            //! If runtime, it will call the icc recv async API & parse the payload
+            //! & disable the timer. Henceforth the async recv request can be raised in
+            //! the completion cb.
         }
     }
+}
+
+void boot_status_reset(void)
+{
+    boot_status_icc_ctx = NULL; //! store boot status ctx from init
+    FPFW_DBGPRINT_INFO("[Boot Status] Reset completed.\n");
+}
+
+static void boot_status_extd_notify_complete(void* context, fpfw_status_t status)
+{
+    boot_status_req_t* req = (boot_status_req_t*)context;
+    BUG_ASSERT(status == FPFW_STATUS_SUCCESS); //! status of the icc base communication
+    BUG_ASSERT(req != NULL);
+    BUG_ASSERT(req->msg.header.cmd == HSP_MAILBOX_CMD_BOOT_STATUS_EXTD_NOTIFY); //! msg is a boot status notify message
+
+    //! call the user provided cb is provided
+    if (req->cb != NULL)
+    {
+        req->cb(req->cb_ctx);
+    }
+
+    //! Print the boot status notification message on uart
+    FPFW_DBGPRINT_INFO("[Boot Status Extd] Async Notif Send Complete, Cmd[0x%" PRIx16 "] ID[%" PRId32
+                       "] Stat[0x%" PRIx32 "] Stat_ex[0x%" PRIx32 "]\n",
+                       req->msg.header.cmd,
+                       req->msg.boot_stat_extd_notif.id,
+                       req->msg.boot_stat_extd_notif.boot_status,
+                       req->msg.boot_stat_extd_notif.boot_status_ex.boot_status_int);
+}
+
+static bool check_boot_status_ex_param_validity(uint32_t boot_status_ex, KNG_CPU_TYPE cpu_type, KNG_DIE_ID die_id)
+{
+    bool is_valid_led_status = false;
+
+    //! 1st Check for valid input range
+    //! SCP, MCP, SDM & CDED allowed
+    uint8_t component_group = (boot_status_ex & 0xFF);
+    if ((component_group != COMPONENT_GROUP_SCP) && (component_group != COMPONENT_GROUP_MCP) &&
+        (component_group != COMPONENT_GROUP_SDM) && (component_group != COMPONENT_GROUP_CDED))
+    {
+        FPFW_DBGPRINT_ERROR("[Boot Status] Invalid component group[0x%" PRIx32 "]\n", component_group);
+        return false;
+    }
+    //! Valid range is MSCP_GENERIC to MSCP_SUBGROUP_MAX
+    uint8_t sub_component_group = ((boot_status_ex >> 8) & 0xFF);
+    if (sub_component_group >= MSCP_SUBGROUP_MAX)
+    {
+        FPFW_DBGPRINT_ERROR("[Boot Status] Invalid sub component group[0x%" PRIx32 "]\n", sub_component_group);
+        return false;
+    }
+    //! Valid range is SCP_PRIMARY to MAX_COMPONENT_INSTANCE
+    uint8_t instance = ((boot_status_ex >> 16) & 0xFF);
+    if (instance >= MAX_COMPONENT_INSTANCE)
+    {
+        FPFW_DBGPRINT_ERROR("[Boot Status] Invalid instance[0x%" PRIx32 "]\n", instance);
+        return false;
+    }
+    //! 8 bit reserved led status can be either 0 or 0x40 to 0x7f
+    uint8_t led_status = ((boot_status_ex >> 24) & 0xFF);
+    if (!((led_status == 0) || ((led_status >= BOOT_STATUS_CODE_SCP0_OK) && (led_status <= BOOT_STATUS_CODE_CDED1_HW_FAULT))))
+    {
+        FPFW_DBGPRINT_ERROR("[Boot Status] Invalid led status[0x%" PRIx32 "]\n", led_status);
+        return false;
+    }
+
+    //! 2nd Check for valid component group & instance based on current cpu type & die id
+    if (cpu_type == CPU_SCP)
+    {
+        if ((component_group != COMPONENT_GROUP_SCP) && (component_group != COMPONENT_GROUP_SDM) &&
+            (component_group != COMPONENT_GROUP_CDED))
+        {
+            FPFW_DBGPRINT_ERROR("[Boot Status] Invalid component group[0x%" PRIx32
+                                "] for current cpu type[0x%" PRIx32 "]\n",
+                                component_group,
+                                cpu_type);
+            return false;
+        }
+
+        if (die_id == DIE_0)
+        {
+            if (((component_group == COMPONENT_GROUP_SCP) && (instance != SCP_PRIMARY)) ||
+                ((component_group == COMPONENT_GROUP_SDM) && (instance != SDM_PRIMARY)) ||
+                ((component_group == COMPONENT_GROUP_CDED) && (instance != CDED_PRIMARY)))
+            {
+                FPFW_DBGPRINT_ERROR("[Boot Status] Invalid instance[0x%" PRIx32
+                                    "] for component group[0x%" PRIx32 "]\n",
+                                    instance,
+                                    component_group);
+                return false;
+            }
+        }
+        else // DIE 1
+        {
+            if (((component_group == COMPONENT_GROUP_SCP) && (instance != SCP_SECONDARY)) ||
+                ((component_group == COMPONENT_GROUP_SDM) && (instance != SDM_SECONDARY)) ||
+                ((component_group == COMPONENT_GROUP_CDED) && (instance != CDED_SECONDARY)))
+            {
+                FPFW_DBGPRINT_ERROR("[Boot Status] Invalid instance[0x%" PRIx32
+                                    "] for component group[0x%" PRIx32 "]\n",
+                                    instance,
+                                    component_group);
+                return false;
+            }
+        }
+    }
+    else // MCP
+    {
+        if (component_group != COMPONENT_GROUP_MCP)
+        {
+            FPFW_DBGPRINT_ERROR("[Boot Status] Invalid component group[0x%" PRIx32
+                                "] for current cpu type[0x%" PRIx32 "]\n",
+                                component_group,
+                                cpu_type);
+            return false;
+        }
+
+        if ((die_id == DIE_0 && instance != MCP_PRIMARY) || (die_id == DIE_1 && instance != MCP_SECONDARY))
+        {
+            FPFW_DBGPRINT_ERROR("[Boot Status] Invalid instance[0x%" PRIx32 "] for component group[0x%" PRIx32 "]\n",
+                                instance,
+                                component_group);
+            return false;
+        }
+    }
+
+    //! 3rd, Now that range, component group & instance are validated, check for led status combination
+    if (led_status == 0)
+    {
+        return true; //! led status is 0, so valid
+    }
+
+    switch (instance)
+    {
+    case SCP_PRIMARY:
+        is_valid_led_status =
+            (led_status == BOOT_STATUS_CODE_SCP_ACCEL_FAILED) ||
+            (((led_status >= BOOT_STATUS_CODE_SCP0_OK) && (led_status <= BOOT_STATUS_CODE_SCP0_BOOT_COMPLETE)) ||
+             ((led_status >= BOOT_STATUS_CODE_SCP_E_DDR0_TRAINING) && (led_status <= BOOT_STATUS_CODE_SCP_E_DDR5_TRAINING)));
+        break;
+    case SCP_SECONDARY:
+        is_valid_led_status =
+            (led_status == BOOT_STATUS_CODE_SCP_ACCEL_FAILED) ||
+            (((led_status >= BOOT_STATUS_CODE_SCP1_OK) && (led_status <= BOOT_STATUS_CODE_SCP1_BOOT_COMPLETE)) ||
+             ((led_status >= BOOT_STATUS_CODE_SCP1_E_DDR6_TRAINING) && (led_status <= BOOT_STATUS_CODE_SCP1_E_DDR11_TRAINING)));
+        break;
+    case MCP_PRIMARY:
+        is_valid_led_status =
+            (led_status == BOOT_STATUS_CODE_MCP0_OK) || (led_status == BOOT_STATUS_CODE_MCP0_BOOT_COMPLETE);
+        break;
+    case MCP_SECONDARY:
+        is_valid_led_status =
+            (led_status == BOOT_STATUS_CODE_MCP1_OK) || (led_status == BOOT_STATUS_CODE_MCP1_BOOT_COMPLETE);
+        break;
+    case SDM_PRIMARY:
+        is_valid_led_status = (led_status == BOOT_STATUS_CODE_SDM0_OK) ||
+                              (led_status == BOOT_STATUS_CODE_SDM0_BOOT_COMPLETE) ||
+                              (led_status == BOOT_STATUS_CODE_SDM0_HW_FAULT);
+        break;
+    case SDM_SECONDARY:
+        is_valid_led_status = (led_status == BOOT_STATUS_CODE_SDM1_OK) ||
+                              (led_status == BOOT_STATUS_CODE_SDM1_BOOT_COMPLETE) ||
+                              (led_status == BOOT_STATUS_CODE_SDM1_HW_FAULT);
+        break;
+    case CDED_PRIMARY:
+        is_valid_led_status = (led_status == BOOT_STATUS_CODE_CDED0_OK) ||
+                              (led_status == BOOT_STATUS_CODE_CDED0_BOOT_COMPLETE) ||
+                              (led_status == BOOT_STATUS_CODE_CDED0_HW_FAULT);
+        break;
+    case CDED_SECONDARY:
+        is_valid_led_status = (led_status == BOOT_STATUS_CODE_CDED1_OK) ||
+                              (led_status == BOOT_STATUS_CODE_CDED1_BOOT_COMPLETE) ||
+                              (led_status == BOOT_STATUS_CODE_CDED1_HW_FAULT);
+        break;
+    default:
+        is_valid_led_status = false; //! invalid instance, so invalid led status
+        break;
+    }
+
+    if (!is_valid_led_status)
+    {
+        FPFW_DBGPRINT_ERROR("[Boot Status] Invalid led status[0x%" PRIx32 "] for instance[0x%" PRIx32 "]\n", led_status, instance);
+        return false;
+    }
+    return true;
+}
+
+static uint8_t convert_led_status_to_boot_status(uint8_t led_status)
+{
+    uint8_t boot_status = 0xFF; //! invalid boot status
+    KNG_DIE_ID die_id = idsw_get_die_id();
+    KNG_CPU_TYPE cpu_type = idsw_get_cpu_type(); //! get the cpu type, scp/mcp
+
+    if ((cpu_type == CPU_MCP) &&
+        ((led_status != LED_STATUS_CODE_MCP_OK) && (led_status != LED_STATUS_CODE_MCP_BOOT_COMPLETE)))
+    {
+        FPFW_DBGPRINT_ERROR("[Post LED Status] Invalid status code[0x%" PRIx32 "]\n", led_status);
+        BUG_ASSERT(false); //! should not reach here
+    }
+
+    switch (led_status)
+    {
+    case LED_STATUS_CODE_SCP_ACCEL_FAILED:
+        boot_status = BOOT_STATUS_CODE_SCP_ACCEL_FAILED;
+        break;
+    case LED_STATUS_CODE_SCP_OK:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_SCP0_OK : BOOT_STATUS_CODE_SCP1_OK;
+        break;
+    case LED_STATUS_CODE_MCP_OK:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_MCP0_OK : BOOT_STATUS_CODE_MCP1_OK;
+        break;
+    case LED_STATUS_CODE_SDM_OK:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_SDM0_OK : BOOT_STATUS_CODE_SDM1_OK;
+        break;
+    case LED_STATUS_CODE_CDED_OK:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_CDED0_OK : BOOT_STATUS_CODE_CDED1_OK;
+        break;
+    case LED_STATUS_CODE_SCP_BOOT_COMPLETE:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_SCP0_BOOT_COMPLETE : BOOT_STATUS_CODE_SCP1_BOOT_COMPLETE;
+        break;
+    case LED_STATUS_CODE_MCP_BOOT_COMPLETE:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_MCP0_BOOT_COMPLETE : BOOT_STATUS_CODE_MCP1_BOOT_COMPLETE;
+        break;
+    case LED_STATUS_CODE_SDM_BOOT_COMPLETE:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_SDM0_BOOT_COMPLETE : BOOT_STATUS_CODE_SDM1_BOOT_COMPLETE;
+        break;
+    case LED_STATUS_CODE_CDED_BOOT_COMPLETE:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_CDED0_BOOT_COMPLETE : BOOT_STATUS_CODE_CDED1_BOOT_COMPLETE;
+        break;
+    case LED_STATUS_CODE_SCP_MESH_INIT_START:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_SCP0_MESH_INIT_START : BOOT_STATUS_CODE_SCP1_MESH_INIT_START;
+        break;
+    case LED_STATUS_CODE_SCP_TOWER_INIT_START:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_SCP0_TOWER_INIT_START : BOOT_STATUS_CODE_SCP1_TOWER_INIT_START;
+        break;
+    case LED_STATUS_CODE_SCP_ACCEL_INIT_START:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_SCP0_ACCEL_INIT_START : BOOT_STATUS_CODE_SCP1_ACCEL_INIT_START;
+        break;
+    case LED_STATUS_CODE_SCP_DDR_INIT_START:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_SCP0_DDR_INIT_START : BOOT_STATUS_CODE_SCP1_DDR_INIT_START;
+        break;
+    case LED_STATUS_CODE_SDM_HW_FAULT:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_SDM0_HW_FAULT : BOOT_STATUS_CODE_SDM1_HW_FAULT;
+        break;
+    case LED_STATUS_CODE_CDED_HW_FAULT:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_CDED0_HW_FAULT : BOOT_STATUS_CODE_CDED1_HW_FAULT;
+        break;
+    case LED_STATUS_CODE_SCP_E_DDR0_TRAINING:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_SCP_E_DDR0_TRAINING : BOOT_STATUS_CODE_SCP1_E_DDR6_TRAINING;
+        break;
+    case LED_STATUS_CODE_SCP_E_DDR1_TRAINING:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_SCP_E_DDR1_TRAINING : BOOT_STATUS_CODE_SCP1_E_DDR7_TRAINING;
+        break;
+    case LED_STATUS_CODE_SCP_E_DDR2_TRAINING:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_SCP_E_DDR2_TRAINING : BOOT_STATUS_CODE_SCP1_E_DDR8_TRAINING;
+        break;
+    case LED_STATUS_CODE_SCP_E_DDR3_TRAINING:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_SCP_E_DDR3_TRAINING : BOOT_STATUS_CODE_SCP1_E_DDR9_TRAINING;
+        break;
+    case LED_STATUS_CODE_SCP_E_DDR4_TRAINING:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_SCP_E_DDR4_TRAINING : BOOT_STATUS_CODE_SCP1_E_DDR10_TRAINING;
+        break;
+    case LED_STATUS_CODE_SCP_E_DDR5_TRAINING:
+        boot_status = (die_id == DIE_0) ? BOOT_STATUS_CODE_SCP_E_DDR5_TRAINING : BOOT_STATUS_CODE_SCP1_E_DDR11_TRAINING;
+        break;
+    default:
+        break;
+    }
+    return boot_status;
+}
+
+void boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
+{
+    KNG_CPU_TYPE cpu_type = idsw_get_cpu_type(); //! get the cpu type, scp/mcp
+    KNG_DIE_ID die_id = idsw_get_die_id();       //! get the die id
+    fpfw_status_t status = FPFW_STATUS_SUCCESS;
+    bool is_icc_sync = false; //! cache the request type in case `is_runtime` flag updates
+
+    //! Null check for the request memory
+    BUG_ASSERT(p_req_mem != NULL);
+    //! check validity of boot_status_ex bit fields
+    BUG_ASSERT(check_boot_status_ex_param_validity(boot_status_ex, cpu_type, die_id));
+    //! check if hsp is present
+    BUG_ASSERT(system_info_is_hsp_present());
+    //! check if icc ctx is set
+    BUG_ASSERT(boot_status_icc_ctx != NULL);
+    BUG_ASSERT(boot_status_icc_ctx->hsp_mbx_ctx != NULL);
+
+    //! Prepare the hsp message packet
+    p_req_mem->msg.boot_stat_extd_notif.header.cmd = HSP_MAILBOX_CMD_BOOT_STATUS_EXTD_NOTIFY;
+    p_req_mem->msg.boot_stat_extd_notif.id = (cpu_type == CPU_SCP) ? HSP_FIRMWARE_ID_SCP : HSP_FIRMWARE_ID_MCP;
+    p_req_mem->msg.boot_stat_extd_notif.boot_status = boot_status;
+    p_req_mem->msg.boot_stat_extd_notif.boot_status_ex.boot_status_int = boot_status_ex;
 
     //! Check current state of the system, init or runtime
     if (system_info_is_init_complete())
     {
         //! Prepare async send request
-        req_mem.hsp_send_params.payload_buffer = &req_mem.msg;
-        req_mem.hsp_send_params.buffer_size = sizeof(req_mem.msg);
-        req_mem.hsp_send_params.cb = boot_status_notify_complete;
-        req_mem.hsp_send_params.cb_ctx = &req_mem;
+        p_req_mem->hsp_send_params.payload_buffer = &p_req_mem->msg;
+        p_req_mem->hsp_send_params.buffer_size = sizeof(p_req_mem->msg);
+        p_req_mem->hsp_send_params.cb = boot_status_extd_notify_complete;
+        p_req_mem->hsp_send_params.cb_ctx = p_req_mem;
 
         //! Raise an async hsp mbox send request to notify hsp of boot status
         //! Hsp will not send a response for this message, so no need to wait for a response
-        status = fpfw_icc_base_send(icc_ctx, &req_mem.hsp_send_params);
-        //! Clear up the memory for next request if failure
-        if (status != FPFW_STATUS_SUCCESS)
-        {
-            FPFW_LOCK_STATE oldState = FpFwLockAcquire(&boot_status_lock); //! critical section start
-            req_mem.in_use = false;
-            memset(&req_mem, 0, sizeof(req_mem));
-            FpFwLockRelease(&boot_status_lock, oldState); //! critical section end
-        }
+        status = fpfw_icc_base_send(boot_status_icc_ctx->hsp_mbx_ctx, &p_req_mem->hsp_send_params);
     }
     else
     {
         //! Raise sync hsp mbox request to notify hsp of boot status, blocking call, will wait until send is
         //! complete, ie data pushed to fifo or timeout occurs
-        status = fpfw_icc_base_send_sync(icc_ctx, &req_mem.msg, sizeof(req_mem.msg));
+        status = fpfw_icc_base_send_sync(boot_status_icc_ctx->hsp_mbx_ctx, &p_req_mem->msg, sizeof(p_req_mem->msg));
         is_icc_sync = true;
-        //! mark the request as not in use, no need for locks as we are still in init phase
-        req_mem.in_use = false;
-        //! reset the request memory
-        memset(&req_mem, 0, sizeof(req_mem));
     }
 
     if (status != FPFW_STATUS_SUCCESS)
     {
-        printf("[Boot Status] %s Notif Send Failed, Status[0x%" PRIx32 "]\n", ((is_icc_sync) ? "Sync" : "Async"), status);
+        FPFW_DBGPRINT_ERROR("[Boot Status Extd] %s Notif Send Failed, Status[0x%" PRIx32 "]\n",
+                            ((is_icc_sync) ? "Sync" : "Async"),
+                            status);
+        BUG_ASSERT(status == FPFW_STATUS_SUCCESS); //! status of the icc base communication
     }
     else
     {
-        printf("[Boot Status] %s Notif Send %s, ID[%" PRId32 "] Stat[0x%" PRIx32 "] Stat_ex[0x%" PRIx32 "]\n",
-               ((is_icc_sync) ? "Sync" : "Async"),
-               ((is_icc_sync) ? "Completed" : "Raised"),
-               req_mem.msg.boot_stat_notif.id,
-               req_mem.msg.boot_stat_notif.boot_status,
-               req_mem.msg.boot_stat_notif.boot_status_ex.boot_status_int);
+        FPFW_DBGPRINT_INFO("[Boot Status Extd] %s Notif Send %s, Cmd[0x%" PRIx16 "] ID[%" PRId32
+                           "] Stat[0x%" PRIx32 "] Stat_ex[0x%" PRIx32 "]\n",
+                           ((is_icc_sync) ? "Sync" : "Async"),
+                           ((is_icc_sync) ? "Completed" : "Raised"),
+                           p_req_mem->msg.header.cmd,
+                           p_req_mem->msg.boot_stat_extd_notif.id,
+                           p_req_mem->msg.boot_stat_extd_notif.boot_status,
+                           p_req_mem->msg.boot_stat_extd_notif.boot_status_ex.boot_status_int);
+
+        //! call the callback function if provided & sync request is raised since the request is completed immediately
+        if (is_icc_sync && p_req_mem->cb != NULL)
+        {
+            p_req_mem->cb(p_req_mem->cb_ctx);
+        }
     }
-    return status;
+}
+
+void post_led_status(boot_status_req_t* p_req_mem, led_status_codes_t status)
+{
+    //! Null check for the request memory
+    BUG_ASSERT(p_req_mem != NULL);
+    BUG_ASSERT(status < LED_STATUS_CODE_MAX); //! check if the status code is valid
+
+    //! Keep the boot_status field as unused, we will populate the boot_status_ex field
+    //! of struct kng_hsp_mailbox_boot_status_extd_notify
+    mscp_boot_status_code_t boot_status = MSCP_BOOT_STATUS_CODE_UNUSED;
+    uint8_t led_status = convert_led_status_to_boot_status(status);
+    boot_status_component_subgroup_t sub_group = MSCP_GENERIC; //! Use generic subgroup
+
+    //! Get group from status code
+    boot_status_component_group_t group = 0;
+    if ((led_status >= BOOT_STATUS_CODE_SCP0_OK && led_status <= BOOT_STATUS_CODE_SCP1_BOOT_COMPLETE) ||
+        (led_status >= BOOT_STATUS_CODE_SCP_ACCEL_FAILED && led_status <= BOOT_STATUS_CODE_SCP1_E_DDR11_TRAINING))
+    {
+        group = COMPONENT_GROUP_SCP;
+    }
+    else if (led_status >= BOOT_STATUS_CODE_MCP0_OK && led_status <= BOOT_STATUS_CODE_MCP1_BOOT_COMPLETE)
+    {
+        group = COMPONENT_GROUP_MCP;
+    }
+    else if ((led_status >= BOOT_STATUS_CODE_SDM0_OK && led_status <= BOOT_STATUS_CODE_SDM1_BOOT_COMPLETE) ||
+             (led_status == BOOT_STATUS_CODE_SDM0_HW_FAULT) || (led_status == BOOT_STATUS_CODE_SDM1_HW_FAULT))
+    {
+        group = COMPONENT_GROUP_SDM;
+    }
+    else if ((led_status >= BOOT_STATUS_CODE_CDED0_OK && led_status <= BOOT_STATUS_CODE_CDED1_BOOT_COMPLETE) ||
+             (led_status == BOOT_STATUS_CODE_CDED0_HW_FAULT) || (led_status == BOOT_STATUS_CODE_CDED1_HW_FAULT))
+    {
+        group = COMPONENT_GROUP_CDED;
+    }
+    else
+    {
+        FPFW_DBGPRINT_ERROR("[Post LED Status] Invalid status code[0x%" PRIx32 "]\n", status);
+        BUG_ASSERT(false); //! should not reach here
+    }
+
+    //! Get instance from group
+    KNG_DIE_ID die_id = idsw_get_die_id(); //! get the die id
+    boot_status_component_instance_t instance = 0;
+    if (group == COMPONENT_GROUP_SCP)
+    {
+        instance = (die_id == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY;
+    }
+    else if (group == COMPONENT_GROUP_MCP)
+    {
+        instance = (die_id == DIE_0) ? MCP_PRIMARY : MCP_SECONDARY;
+    }
+    else if (group == COMPONENT_GROUP_SDM)
+    {
+        instance = (die_id == DIE_0) ? SDM_PRIMARY : SDM_SECONDARY;
+    }
+    else //! group is COMPONENT_GROUP_CDED
+    {
+        instance = (die_id == DIE_0) ? CDED_PRIMARY : CDED_SECONDARY;
+    }
+
+    //! Generate the extended boot status code
+    uint32_t boot_status_ex = GEN_BOOT_STATUS_EX_LED_CODE(group, sub_group, instance, led_status);
+    //! call the raw API for boot status notify
+    boot_status_notify_extd(p_req_mem, boot_status, boot_status_ex);
 }

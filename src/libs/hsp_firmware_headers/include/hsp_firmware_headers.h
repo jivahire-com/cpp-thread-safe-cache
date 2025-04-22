@@ -10,6 +10,7 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <boot_status_codes.h>
 #include <kingsgate_hsp_boot_metadata.h>
 #include <kingsgate_hsp_mailbox_commands.h>
 
@@ -46,7 +47,8 @@ typedef enum _HSP_MAILBOX_RSP_STATUS {
  */
 typedef union _kng_hsp_mailbox_msg {
 	struct kng_hsp_mailbox_msg_header header;	/**< incoming mailbox message from protocol to handler. */
-	struct kng_hsp_mailbox_boot_status_extd_notify boot_stat_notif; //! Initiator MSCP, Receiver HSP
+	struct kng_hsp_mailbox_boot_status_notify boot_stat_notif; //! Initiator MSCP, Receiver HSP
+	struct kng_hsp_mailbox_boot_status_extd_notify boot_stat_extd_notif; //! Initiator MSCP, Receiver HSP
 	struct kng_hsp_mailbox_msg_rsp rsp;	        /**< outgoing mailbox message from handler to protocol. */
 	struct kng_hsp_mailbox_cmd_get_security_state_rsp policy_status_rsp; /**<Security status of the HSP. */
 	struct kng_hsp_mailbox_cmd_telemetry_ddr_addr_notify telm_ddr_addr_notify; /**< SCP will send a notification to HSP regarding the base address of the DDR region allocated to HSP. */

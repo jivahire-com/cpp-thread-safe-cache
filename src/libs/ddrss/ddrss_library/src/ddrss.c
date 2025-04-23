@@ -139,6 +139,9 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.ext_knobs.mpam_mbw_ns_min = config_get_mpam_mbw_ns_min();
     ddrss_cfgs.ext_knobs.mpam_mbw_s_min = config_get_mpam_mbw_s_min();
 
+    // Set FW vs OS first knob
+    ddrss_cfgs.ext_knobs.ddrss_ras_fw_first = config_get_ddrss_ras_fw_first();
+
     // Setting the PAS list generates an unrecoverable error on Dual Die FPGA. See bug:
     // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2383878 GENERATE_ARRAY_OF_RSVD_REGIONS
     // DDRSS_PAS_REGIONS

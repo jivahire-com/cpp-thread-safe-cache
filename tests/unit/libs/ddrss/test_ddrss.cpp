@@ -385,7 +385,8 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_phy, setup, teardown)
     // Test PHY interrupts
     g_ddr_intu_sts = (1 << DDRSS_INTU_PHY_IRQ);
     g_intu_enable = 0xFFFFFFFF; // This is a mask
-    g_phy_int_sts = csr_PhyAcsmParityErrEn_MASK | csr_PhyPIEParityErrEn_MASK | csr_PhyRdfPtrChkErrEn_MASK |
+    g_phy_int_sts = csr_PhyTrngFailEn_MASK | csr_PhyTrngCmpltEn_MASK | csr_PhyInitCmpltEn_MASK |
+                    csr_PhyAcsmParityErrEn_MASK | csr_PhyPIEParityErrEn_MASK | csr_PhyRdfPtrChkErrEn_MASK |
                     csr_PhyEccEn_MASK | csr_PhyPIEProgErrEn_MASK | csr_PhyTxPPTEn_MASK | csr_PhyAlertEn_MASK;
     expect_value(__wrap_ddrss_clear_phy_interrupt_status, phy_int_sts, g_phy_int_sts);
     expect_any_always(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask);
@@ -411,5 +412,65 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_others, setup, teardown)
     g_intu_enable = 0xFFFFFFFF; // This is a mask
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, g_ddr_intu_sts);
     prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
+}
+
+TEST_FUNCTION(test_prod_ddrss_get_intr_event_cper, setup, teardown)
+{
+    uint32_t mc = 0;
+    silibs_status_t status = 0;
+    uint32_t intr_event = 0;
+    acpi_err_sec_mem_vendor_t ddr_cper = {};
+
+    intr_event = DDRSS_INTU_MC_MEDIAECSTRANSPCHANGED;
+    status = prod_ddrss_get_intr_event_cper(mc, intr_event, &ddr_cper);
+    assert_int_equal(status, SILIBS_SUCCESS);
+    assert_int_equal(ddr_cper.vendor_err_info.misc.mc_evt_ecs_trandchanged, 1);
+    assert_int_equal(ddr_cper.vendor_err_info.misc.valid_mc_evt_ecs_trandchanged, 1);
+    assert_int_equal(ddr_cper.error_type, DDRSS_CPER_EVT_ECS_TRANS_CHANGED);
+
+    intr_event = DDRSS_INTU_MC_MEDIAREFTEMPCHANGED;
+    memset(&ddr_cper, 0, sizeof(ddr_cper));
+    status = prod_ddrss_get_intr_event_cper(mc, intr_event, &ddr_cper);
+    assert_int_equal(status, SILIBS_SUCCESS);
+    assert_int_equal(ddr_cper.vendor_err_info.misc.mc_evtref_tempchanged, 1);
+    assert_int_equal(ddr_cper.vendor_err_info.misc.valid_mc_evtref_tempchanged, 1);
+    assert_int_equal(ddr_cper.error_type, DDRSS_CPER_EVT_REF_TEMP_CHANGED);
+
+    intr_event = DDRSS_INTU_MC_MEDIAREFTEMPHIGH;
+    memset(&ddr_cper, 0, sizeof(ddr_cper));
+    status = prod_ddrss_get_intr_event_cper(mc, intr_event, &ddr_cper);
+    assert_int_equal(status, SILIBS_SUCCESS);
+    assert_int_equal(ddr_cper.vendor_err_info.misc.mc_evtref_temphigh, 1);
+    assert_int_equal(ddr_cper.vendor_err_info.misc.valid_mc_evtref_temphigh, 1);
+    assert_int_equal(ddr_cper.error_type, DDRSS_CPER_EVT_REF_TEMP_HIGH);
+
+    intr_event = DDRSS_INTU_PLL_INTERRUPT_OUT;
+    memset(&ddr_cper, 0, sizeof(ddr_cper));
+    status = prod_ddrss_get_intr_event_cper(mc, intr_event, &ddr_cper);
+    assert_int_equal(status, SILIBS_SUCCESS);
+    assert_int_equal(ddr_cper.vendor_err_info.misc.ddr_intu_pll_out, 1);
+    assert_int_equal(ddr_cper.vendor_err_info.misc.valid_ddr_intu_pll_out, 1);
+    assert_int_equal(ddr_cper.error_type, DDRSS_CPER_INTU_PLL_INTERRUPT);
+
+    intr_event = DDRSS_INTU_PCR_PAR_ERR;
+    memset(&ddr_cper, 0, sizeof(ddr_cper));
+    status = prod_ddrss_get_intr_event_cper(mc, intr_event, &ddr_cper);
+    assert_int_equal(status, SILIBS_SUCCESS);
+    assert_int_equal(ddr_cper.vendor_err_info.misc.ddr_pcr_par_err, 1);
+    assert_int_equal(ddr_cper.vendor_err_info.misc.valid_ddr_pcr_par_err, 1);
+    assert_int_equal(ddr_cper.error_type, DDRSS_CPER_INTU_PCR_PAR_ERR);
+
+    intr_event = DDRSS_INTU_INTU_PAR_ERR;
+    memset(&ddr_cper, 0, sizeof(ddr_cper));
+    status = prod_ddrss_get_intr_event_cper(mc, intr_event, &ddr_cper);
+    assert_int_equal(status, SILIBS_SUCCESS);
+    assert_int_equal(ddr_cper.vendor_err_info.misc.ddr_intu_par_err, 1);
+    assert_int_equal(ddr_cper.vendor_err_info.misc.valid_ddr_intu_par_err, 1);
+    assert_int_equal(ddr_cper.error_type, DDRSS_CPER_INTU_PAR_ERR);
+
+    intr_event = 0xFF;
+    memset(&ddr_cper, 0, sizeof(ddr_cper));
+    status = prod_ddrss_get_intr_event_cper(mc, intr_event, &ddr_cper);
+    assert_int_equal(status, SILIBS_E_DEVICE);
 }
 }

@@ -17,9 +17,11 @@
 
 #include <FpFwAssert.h>
 #include <arm_intrinsic.h>
+#include <cper.h>
 #include <ddrss.h>
 #include <ddrss_intu.h>
 #include <ddrss_lib.h>
+#include <health_monitor.h>
 #include <idsw_kng.h>
 #include <nvic.h>
 #include <silibs_platform.h>
@@ -53,7 +55,7 @@ static int ddrss_get_and_probe_ras_agent(uint32_t mc,
         ras_print_record(record);
         sub_sts = ddrss_convert_ras_rec_to_cper(mc, record, &ddr_ras_cper, &ddr_vendor_cper);
         // TODO: Uncomment below API when silibs PR is merged
-        // ddrss_print_cper(&ddr_ras_cper, &ddr_vendor_cper);
+        ddrss_print_cper(&ddr_ras_cper, &ddr_vendor_cper);
         if (record->handler)
         {
             if (record->handler(record))
@@ -88,6 +90,7 @@ void prod_ddrss_interrupt_handler(void* context)
     // silicon libs as 0-11 as a result.
     uint32_t local_ddrss = *(uint32_t*)(context);
     KNG_DIE_ID die_num = idsw_get_die_id();
+    acpi_err_sec_mem_vendor_t ddr_cper = {0};
 
     uint32_t ddrss = (die_num == DIE_1) ? local_ddrss + 6 : local_ddrss; // 0-11
     uint32_t ddr_intu_err = 0;
@@ -131,9 +134,17 @@ void prod_ddrss_interrupt_handler(void* context)
         // ERROR condition
         printf("DDRSS received unexpected interrupts!\n");
         ddr_intu_clr_sts |= (ddr_intu_sts & ddrss_unexpected_int);
-        // We should really never get here because the intu_enable bits for these should not be set.
-        // If, however, we do get here, we need to clear the interrupt and could log to a CPER.
-        // TODO: Handle the record by sending to DDR_Manager queue ADO Task#1485473 to be logged to CPER.
+
+        ddr_cper.module = DDRSS_MC_TO_DDRSS(mc);
+        ddr_cper.valid_module = 1;
+        ddr_cper.device = DDRSS_IS_SUB_CHANEL0(mc);
+        ddr_cper.valid_device = 1;
+        ddr_cper.error_type = DDRSS_CPER_ERROR_UNKNOWN;
+        ddr_cper.valid_error_type = 1;
+        ddr_cper.error_status.error_type = ddr_cper.error_type;
+        ddr_cper.error_status.data = 1;
+        ddr_cper.valid_error_status = 1;
+        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &ddr_cper, sizeof(acpi_err_sec_mem_vendor_t));
     }
 
     uint32_t int_mask;
@@ -208,6 +219,10 @@ void prod_ddrss_interrupt_handler(void* context)
     {
         printf("DDR PLL int\n");
         ddr_intu_clr_sts |= int_mask;
+
+        printf("CPER:DDR PLL");
+        prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_PLL_INTERRUPT_OUT, &ddr_cper);
+        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &ddr_cper, sizeof(acpi_err_sec_mem_vendor_t));
     }
 
     int_mask = (1 << DDRSS_INTU_PCR_PAR_ERR);
@@ -215,6 +230,10 @@ void prod_ddrss_interrupt_handler(void* context)
     {
         printf("DDR PCR PAR int\n");
         ddr_intu_clr_sts |= int_mask;
+
+        printf("CPER:DDR PCR PAR");
+        prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_PCR_PAR_ERR, &ddr_cper);
+        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &ddr_cper, sizeof(acpi_err_sec_mem_vendor_t));
     }
 
     int_mask = (1 << DDRSS_INTU_INTU_PAR_ERR);
@@ -222,6 +241,10 @@ void prod_ddrss_interrupt_handler(void* context)
     {
         printf("DDR INTU PAR int\n");
         ddr_intu_clr_sts |= int_mask;
+
+        printf("CPER:DDR INTU PAR");
+        prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_INTU_PAR_ERR, &ddr_cper);
+        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &ddr_cper, sizeof(acpi_err_sec_mem_vendor_t));
     }
 
     int_mask = (1 << DDRSS_INTU_MC0_SCP_INT);
@@ -277,6 +300,7 @@ int prod_ddrss_phy_interrupt_handler(uint32_t mc)
     int sts = SILIBS_SUCCESS;
     uint32_t phy_int_sts = 0;
     uint32_t phy_int_clr = 0;
+    acpi_err_sec_mem_vendor_t ddr_cper = {0};
 
     // Read PHY interrupt status
     sts = ddrss_get_phy_interrupt_status(mc, &phy_int_sts);
@@ -285,48 +309,92 @@ int prod_ddrss_phy_interrupt_handler(uint32_t mc)
         printf("Failed to get INTU enable status.  Retval = %d\n", sts);
     }
 
-    // TODO: Send DDR Manager a message to log *ALL* errors to CPER and/or SEL
-    // ADO Task#1485473
+    if (phy_int_sts & csr_PhyTrngFailEn_MASK)
+    {
+        phy_int_clr |= csr_PhyTrngFailEn_MASK;
+    }
 
-    // TODO: Handle PHY fatal errors
+    if (phy_int_sts & csr_PhyTrngCmpltEn_MASK)
+    {
+        phy_int_clr |= csr_PhyTrngCmpltEn_MASK;
+    }
 
-    // TODO: Handle PHY non-fatal errors
+    if (phy_int_sts & csr_PhyInitCmpltEn_MASK)
+    {
+        phy_int_clr |= csr_PhyInitCmpltEn_MASK;
+    }
+
     if (phy_int_sts & csr_PhyAcsmParityErrEn_MASK)
     { // ACSM is an internal memory within the PHY
         phy_int_clr |= csr_PhyAcsmParityErrEn_MASK;
+        ddr_cper.vendor_err_info.phy_fatal.phyacsmparityerr = 1;
+        ddr_cper.vendor_err_info.phy_fatal.valid_phyacsmparityerr = 1;
+        ddr_cper.valid_vendor_err_info = 1;
     }
 
     if (phy_int_sts & csr_PhyPIEParityErrEn_MASK)
     { // PIE is an internal memory within the PHY
         phy_int_clr |= csr_PhyPIEParityErrEn_MASK;
+        ddr_cper.vendor_err_info.phy_fatal.phypieparityerr = 1;
+        ddr_cper.vendor_err_info.phy_fatal.valid_phypieparityerr = 1;
+        ddr_cper.valid_vendor_err_info = 1;
     }
 
     if (phy_int_sts & csr_PhyRdfPtrChkErrEn_MASK)
     {
         phy_int_clr |= csr_PhyRdfPtrChkErrEn_MASK;
+        ddr_cper.vendor_err_info.phy_fatal.phyrdfptrchkerr = 1;
+        ddr_cper.vendor_err_info.phy_fatal.valid_phyrdfptrchkerr = 1;
+        ddr_cper.valid_vendor_err_info = 1;
     }
 
     if (phy_int_sts & csr_PhyEccEn_MASK)
     {
         phy_int_clr |= csr_PhyEccEn_MASK;
+        ddr_cper.vendor_err_info.phy_fatal.phyeccen = 1;
+        ddr_cper.vendor_err_info.phy_fatal.valid_phyeccen = 1;
+        ddr_cper.valid_vendor_err_info = 1;
     }
 
     if (phy_int_sts & csr_PhyPIEProgErrEn_MASK)
     {
         uint32_t arc_ecc = MMIO_READ32(tDRTUB | csr_ArcEccIndications_ADDR);
         phy_int_clr |= csr_PhyPIEProgErrEn_MASK;
-        // Need to fill this info into CPER once the CPER structure is defined. ADO Task#1485473
         (void)arc_ecc;
+        ddr_cper.vendor_err_info.phy_fatal.phypieprogerr = 1;
+        ddr_cper.vendor_err_info.phy_fatal.valid_phypieprogerr = 1;
+        ddr_cper.valid_vendor_err_info = 1;
     }
 
     if (phy_int_sts & csr_PhyTxPPTEn_MASK)
     {
         phy_int_clr |= csr_PhyTxPPTEn_MASK;
+        ddr_cper.vendor_err_info.phy_fatal.phytxppt = 1;
+        ddr_cper.vendor_err_info.phy_fatal.valid_phytxppt = 1;
+        ddr_cper.valid_vendor_err_info = 1;
     }
 
     if (phy_int_sts & csr_PhyAlertEn_MASK)
     {
         phy_int_clr |= csr_PhyAlertEn_MASK;
+        ddr_cper.vendor_err_info.phy_fatal.phyalert = 1;
+        ddr_cper.vendor_err_info.phy_fatal.valid_phyalert = 1;
+        ddr_cper.valid_vendor_err_info = 1;
+    }
+
+    if (phy_int_sts & (csr_PhyAcsmParityErrEn_MASK | csr_PhyPIEParityErrEn_MASK | csr_PhyRdfPtrChkErrEn_MASK |
+                       csr_PhyEccEn_MASK | csr_PhyPIEProgErrEn_MASK | csr_PhyTxPPTEn_MASK | csr_PhyAlertEn_MASK))
+    {
+        ddr_cper.module = DDRSS_MC_TO_DDRSS(mc);
+        ddr_cper.valid_module = 1;
+        ddr_cper.device = DDRSS_IS_SUB_CHANEL0(mc);
+        ddr_cper.valid_device = 1;
+        ddr_cper.error_type = DDRSS_CPER_PHY_FATAL;
+        ddr_cper.valid_error_type = 1;
+        ddr_cper.error_status.error_type = ddr_cper.error_type;
+        ddr_cper.error_status.data = 1;
+        ddr_cper.valid_error_status = 1;
+        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &ddr_cper, sizeof(ddr_cper));
     }
 
     // Clear interrupt
@@ -348,6 +416,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
     uint32_t mc_intu_clr_sts = 0;
     uint32_t mc_intu_err = 0;
     uint32_t mc_intu_sts = 0;
+    acpi_err_sec_mem_vendor_t ddr_cper = {0};
 
     ddrss_mc_intu_get_interrupt_status(mc, &mc_intu_sts);
 
@@ -394,6 +463,10 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
             mc_intu_err |= (1 << DDRSS_INTU_MC_MEDIAECSTRANSPCHANGED);
         }
         mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_MEDIAECSTRANSPCHANGED);
+
+        printf("CPER:MC media ESC trans changed");
+        prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_MC_MEDIAECSTRANSPCHANGED, &ddr_cper);
+        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &ddr_cper, sizeof(acpi_err_sec_mem_vendor_t));
     }
 
     if (mc_intu_sts & (1 << DDRSS_INTU_MC_MEDIAREFTEMPCHANGED))
@@ -407,6 +480,10 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_MEDIAREFTEMPCHANGED);
         // TODO: BWL: Handle the temperature change by sending to DDR_Manager queue: RAS - Temperature
         // ADO Feature#1140772, Task#1494090
+
+        printf("CPER:MC media ref temp changed");
+        prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_MC_MEDIAREFTEMPCHANGED, &ddr_cper);
+        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &ddr_cper, sizeof(acpi_err_sec_mem_vendor_t));
     }
 
     if (mc_intu_sts & (1 << DDRSS_INTU_MC_MEDIAREFTEMPHIGH))
@@ -420,6 +497,10 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_MEDIAREFTEMPHIGH);
         // TODO: BWL: Handle the temperature change by sending to DDR_Manager queue: RAS - Temperature
         // ADO Feature#1140772, Task#1494090
+
+        printf("CPER:MC media ref temp changed");
+        prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_MC_MEDIAREFTEMPHIGH, &ddr_cper);
+        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &ddr_cper, sizeof(acpi_err_sec_mem_vendor_t));
     }
 
     if (mc_intu_sts & (1 << DDRSS_INTU_MC_PHYINLP3))
@@ -458,4 +539,61 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
     }
 
     return sts;
+}
+
+int prod_ddrss_get_intr_event_cper(uint32_t mc, uint32_t intr_event, acpi_err_sec_mem_vendor_t* ddr_cper)
+{
+    switch (intr_event)
+    {
+    case DDRSS_INTU_MC_MEDIAECSTRANSPCHANGED: {
+        ddr_cper->vendor_err_info.misc.mc_evt_ecs_trandchanged = 1;
+        ddr_cper->vendor_err_info.misc.valid_mc_evt_ecs_trandchanged = 1;
+        ddr_cper->error_type = DDRSS_CPER_EVT_ECS_TRANS_CHANGED;
+        break;
+    }
+    case DDRSS_INTU_MC_MEDIAREFTEMPCHANGED: {
+        ddr_cper->vendor_err_info.misc.mc_evtref_tempchanged = 1;
+        ddr_cper->vendor_err_info.misc.valid_mc_evtref_tempchanged = 1;
+        ddr_cper->error_type = DDRSS_CPER_EVT_REF_TEMP_CHANGED;
+        break;
+    }
+    case DDRSS_INTU_MC_MEDIAREFTEMPHIGH: {
+        ddr_cper->vendor_err_info.misc.mc_evtref_temphigh = 1;
+        ddr_cper->vendor_err_info.misc.valid_mc_evtref_temphigh = 1;
+        ddr_cper->error_type = DDRSS_CPER_EVT_REF_TEMP_HIGH;
+        break;
+    }
+    case DDRSS_INTU_PLL_INTERRUPT_OUT: {
+        ddr_cper->vendor_err_info.misc.ddr_intu_pll_out = 1;
+        ddr_cper->vendor_err_info.misc.valid_ddr_intu_pll_out = 1;
+        ddr_cper->error_type = DDRSS_CPER_INTU_PLL_INTERRUPT;
+        break;
+    }
+    case DDRSS_INTU_PCR_PAR_ERR: {
+        ddr_cper->vendor_err_info.misc.ddr_pcr_par_err = 1;
+        ddr_cper->vendor_err_info.misc.valid_ddr_pcr_par_err = 1;
+        ddr_cper->error_type = DDRSS_CPER_INTU_PCR_PAR_ERR;
+        break;
+    }
+    case DDRSS_INTU_INTU_PAR_ERR: {
+        ddr_cper->vendor_err_info.misc.ddr_intu_par_err = 1;
+        ddr_cper->vendor_err_info.misc.valid_ddr_intu_par_err = 1;
+        ddr_cper->error_type = DDRSS_CPER_INTU_PAR_ERR;
+        break;
+    }
+    default:
+        return SILIBS_E_DEVICE;
+    }
+
+    ddr_cper->module = DDRSS_MC_TO_DDRSS(mc);
+    ddr_cper->valid_module = 1;
+    ddr_cper->device = DDRSS_IS_SUB_CHANEL0(mc);
+    ddr_cper->valid_device = 1;
+    ddr_cper->valid_error_type = 1;
+    ddr_cper->error_status.error_type = ddr_cper->error_type;
+    ddr_cper->error_status.control = 1;
+    ddr_cper->valid_error_status = 1;
+    ddr_cper->valid_vendor_err_info = 1;
+
+    return SILIBS_SUCCESS;
 }

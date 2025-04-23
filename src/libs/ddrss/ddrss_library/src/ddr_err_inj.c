@@ -16,6 +16,7 @@
 #include <ddr_err_inj.h>
 #include <ddrss.h>
 #include <ddrss_lib.h>
+#include <health_monitor.h>
 #include <kng_soc_constants.h>
 #include <nvic.h> // Has nested include of cmsis_gcc_m.h for __DSB() intrinsic
 #include <silibs_ap_top_regs.h>
@@ -132,4 +133,12 @@ void ddrss_ue_ce_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, 
 
     printf("Unmapping ATU media address\n");
     ddrss_atu_unmap_media_addr(p_addr_8K_aligned);
+}
+
+acpi_einj_cmd_status_t ddr_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx)
+{
+    FPFW_UNUSED(einj_payload);
+    FPFW_UNUSED(ctx);
+
+    return ACPI_EINJ_SUCCESS;
 }

@@ -27,9 +27,11 @@ target_link_libraries(${TARGET}
     ms::lib::arm_intrinsic
     ms::lib::scp_interrupts
     ms::lib::system_info
+    ms::service::health_monitor
     silibs::platform
     kng_silibs_platform
     atu
+    silibs::icc_mhu
     silibs::idhw
     silibs::idsw
     silibs::idsw_kng
@@ -47,6 +49,7 @@ target_link_libraries(${TARGET}
 target_include_directories(${TARGET}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
+        $<TARGET_PROPERTY:ms::service::health_monitor,INCLUDE_DIRECTORIES>
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )

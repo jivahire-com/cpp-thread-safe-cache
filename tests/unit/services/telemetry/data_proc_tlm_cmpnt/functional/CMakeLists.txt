@@ -2,6 +2,7 @@ set(TARGET kng.service.telemetry.cmpnt.data_proc.functional.test)
 
 set(SOURCES
     test_tile_temperature.cpp
+    test_tile_voltage.cpp
     telemetry_functional_mocks.c
 )
 

@@ -39,7 +39,7 @@ void hm_submit_cper(uint16_t error_domain_idx, acpi_error_severity_t err_severit
 
             if (err_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)
             {
-                hm_report_uncorrected_error(HM_ERROR_REPORT_GPIO);
+                hm_report_error_event(HM_ERROR_REPORT_GPIO, true);
             }
         }
         else if (local_cper_count < MAX_CPER_CACHE)
@@ -65,7 +65,7 @@ void hm_submit_cper(uint16_t error_domain_idx, acpi_error_severity_t err_severit
         if ((err_severity == ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL) ||
             (err_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL))
         {
-            hm_report_uncorrected_error(HM_ERROR_REPORT_VARSVC);
+            hm_report_error_event(HM_ERROR_REPORT_VARSVC, true);
         }
     }
     else

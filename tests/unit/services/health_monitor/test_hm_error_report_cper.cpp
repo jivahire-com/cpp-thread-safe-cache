@@ -30,6 +30,12 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
+void __wrap_gpio_set_output(uint32_t gpio_ctrl_pin_id, uint32_t level)
+{
+    FPFW_UNUSED(gpio_ctrl_pin_id);
+    FPFW_UNUSED(level);
+    function_called();
+}
 
 //
 // Mocks
@@ -100,6 +106,7 @@ TEST_FUNCTION(test_hm_submit_cper_ue, post_ddr_setup, nullptr)
 {
     expect_function_call(__wrap_wait_for_semaphore);
     expect_function_call(__wrap_release_semaphore);
+    expect_function_call(__wrap_gpio_set_output);
 
     acpi_err_sec_generic_t general_cper_section = {};
     general_cper_section.err_misc0 = 0x12;
@@ -128,6 +135,7 @@ TEST_FUNCTION(test_hm_submit_cper_ue_multi, post_ddr_setup, nullptr)
 {
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
+    expect_function_call_any(__wrap_gpio_set_output);
 
     acpi_err_sec_generic_t general_cper_section = {};
     general_cper_section.err_misc0 = 0x12;

@@ -48,6 +48,9 @@ void hm_post_ddr_init()
         initialize_semaphore(hm_config->semaphore_id);
     }
 
+    // De-assert FATAL_ERROR GPIO
+    hm_report_error_event(HM_ERROR_REPORT_GPIO, false);
+
     // Construct GHES table
     if (idhw_is_single_die_boot_en() == true)
     {

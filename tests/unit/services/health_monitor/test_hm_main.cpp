@@ -75,6 +75,7 @@ TEST_FUNCTION(test_hm_post_ddr_init, pre_ddr_setup, nullptr)
     will_return_always(__wrap_idsw_get_die_id, 0);
     will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_mscp_exp_spi_synchronize_dies, 0);
+    expect_function_call(__wrap_gpio_set_output);
     hm_post_ddr_init();
 
     hm_config_t* hm_config = get_hm_config();
@@ -98,6 +99,7 @@ TEST_FUNCTION(test_hm_post_ddr_init, pre_ddr_setup, nullptr)
 TEST_FUNCTION(test_hm_post_ddr_init_single_die, pre_ddr_setup, nullptr)
 {
     will_return_always(__wrap_idhw_is_single_die_boot_en, true);
+    expect_function_call(__wrap_gpio_set_output);
 
     hm_post_ddr_init();
     hm_config_t* hm_config = get_hm_config();

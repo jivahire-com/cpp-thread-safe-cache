@@ -62,6 +62,7 @@ int post_ddr_setup(void** state)
     will_return_always(__wrap_idsw_get_die_id, 0);
     will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_mscp_exp_spi_synchronize_dies, 0);
+    expect_function_call(__wrap_gpio_set_output);
 
     pre_ddr_setup(state);
     hm_post_ddr_init();

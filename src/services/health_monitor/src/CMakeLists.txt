@@ -30,6 +30,7 @@ target_link_libraries(${TARGET}
         silibs::semaphore
         silibs::icc_mhu
     PRIVATE
+        silibs::gpio
         fwlib.lib.status
         fwlib.lib.init
         fwlib.lib.interface.platform.dbgprint

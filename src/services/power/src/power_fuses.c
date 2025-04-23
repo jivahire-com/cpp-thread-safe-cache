@@ -255,9 +255,7 @@ int32_t power_fuses_get_dts_coeff(uint32_t k_offset,
                 return status;
             }
 
-            KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
-
-            if (platform_id == PLATFORM_SVP_SIM && fuse_data_y == 0)
+            if (IS_PLATFORM_SVP() && fuse_data_y == 0)
             {
                 fuse_data_y = 1;
             }
@@ -441,9 +439,7 @@ int32_t power_fuses_get_ldodac_to_voltage(dvfs_vf_slope_t* slope_offset)
     // workaround
     // TODO: Need to remove the default value assignemnt M value calculation needs to be investigated
 
-    KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
-
-    if (platform_id == PLATFORM_SVP_SIM && fuse_data == 0)
+    if (IS_PLATFORM_SVP() && fuse_data == 0)
     {
         fuse_data = 1;
     }
@@ -683,9 +679,7 @@ int32_t power_fuses_get_tdp_config(power_fuse_tdp_t* tdp_config)
     // read fuse for data
     int32_t status = platform_read_fuse((uint32_t*)&fuse_data, NUM_CORES_BIT_OFFSET, NUM_CORES_WIDTH);
 
-    KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
-
-    if (platform_id == PLATFORM_SVP_SIM && fuse_data == 0)
+    if (IS_PLATFORM_SVP() && fuse_data == 0)
     {
         fuse_data = 124;
     }

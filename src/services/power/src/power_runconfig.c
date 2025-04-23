@@ -177,9 +177,6 @@ static uint8_t get_global_min_plimit()
 
 static void runconfig_generate_derived_vfts()
 {
-
-    KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
-
     // setup assigned vft/core mappings
     for (unsigned core_idx = 0; core_idx < NUM_AP_CORES_PER_DIE; ++core_idx)
     {
@@ -270,7 +267,7 @@ static void runconfig_generate_derived_vfts()
                     power_runconfig.dvfs_vft.curveset[vf_idx].vmat_info[crv_idx].ldo_dac_in[pstate_idx],
                     &power_runconfig.fuses.ldodac_to_volt,
                     &voltage_mv);
-                if (DVFS_SUCCESS != status && platform_id != PLATFORM_SVP_SIM)
+                if (DVFS_SUCCESS != status && !(IS_PLATFORM_SVP()))
                 {
                     BUG_CHECK(KNG_SC_FUSE_LDO_MVOLT_CONV, (pstate_idx << 16) | vf_idx, status);
                 }

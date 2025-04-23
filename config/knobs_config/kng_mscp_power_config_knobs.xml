@@ -250,13 +250,9 @@
     <Knob name="power_soc_temp" type="power_soc_temp_cfg_t" default="{{930, 950}, {1130, 1150}}" help="Configuration for SOC temperature thresholds" />
     <Knob name="power_soc_vms" type="power_pvt_soc_vm_cfg_t" default="{{{{1281, 1331}, {941, 891}}, {{858, 908}, {689, 639}}, {{933, 983}, {777, 727}}, {{858, 908}, {689, 639}}, {{1006, 1056}, {775, 725}}, {{1281, 1331}, {941, 891}}, {{933, 983}, {777, 727}}, {{1006, 1056}, {775, 725}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}}}" help="Configuration for SOC voltage monitor thresholds" />
 
-    <!-- Document only
-    <Knob name="power_vcpu0_offset" type="" default="0" help="Offset in mV to add to final Vcpu calculation" />
-    <Knob name="power_vcpu1_offset" type="" default="0" help="Offset in mV to add to final Vcpu calculation" />
-    -->
-    <!-- Undocumented -->
-    <Knob name="power_vcpu_offset" type="uint16_t" default="0" help="offset in mV to add to final vcpu calculation" />
-
+    <Knob name="power_vcpu0_offset" type="int16_t" default="0" help="Offset in mV to add to final Vcpu calculation" />
+    <Knob name="power_vcpu1_offset" type="int16_t" default="0" help="Offset in mV to add to final Vcpu calculation" />
+   
     <Knob name="power_force_vrs" type="power_force_vrs_t" default="{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}" help="Can be used to override SOC voltage regulator settings during boot" />
     <Knob name="power_enable_survivability_mode" type="bool" default="false" help="True to initialize DVFS in SW control mode and safe settings" />
     <Knob name="power_survivability_mode_pstate" type="uint8_t" default="31" min="0" max="31" help="Survivability mode pstate used to configure the core PLL in this mode" />

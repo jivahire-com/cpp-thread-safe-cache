@@ -108,7 +108,14 @@ void power_knobs_read(power_knobs_t* p_knobs)
     p_knobs->tile_temp_hot_en = config_get_power_tile_hot_en();
     p_knobs->tile_temp_thermtrip_en = config_get_power_tile_thermtrip_en();
 
-    p_knobs->vcpu_offset_mv = config_get_power_vcpu_offset();
+    if (idsw_get_die_id() == DIE_0)
+    {
+        p_knobs->vcpu_offset_mv = config_get_power_vcpu0_offset();
+    }
+    else
+    {
+        p_knobs->vcpu_offset_mv = config_get_power_vcpu1_offset();
+    }
 
     p_knobs->enable_survivability_mode = config_get_power_enable_survivability_mode();
     p_knobs->survivability_mode_pstate = config_get_power_survivability_mode_pstate();

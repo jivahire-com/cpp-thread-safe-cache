@@ -92,6 +92,8 @@ mock_target(${TARGET}
     atu_map
     atu_unmap
     idsw_get_die_id
+    config_get_power_vcpu0_offset
+    config_get_power_vcpu1_offset
     power_hw_force_pmin
     DfwkAsyncRequestComplete
 )

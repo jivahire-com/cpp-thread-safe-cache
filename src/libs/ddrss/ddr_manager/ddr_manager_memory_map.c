@@ -126,7 +126,6 @@ void ddr_create_memory_map()
         insert_range(sorted_reservations, terminating_array_idx + 1, 0, 0, DRAM_ACCESS_ANY);
     }
 
-    show_map(sorted_reservations, ddrmap_get_last_idx(sorted_reservations), true);
     if (add_svp_reserved_region == true)
     {
         // Insert SVP reserved region
@@ -141,8 +140,8 @@ void ddr_create_memory_map()
     }
 
     sort_reserved_regions_inplace(sorted_reservations, num_reserved_regions);
+    collapse_adjacent_reservations(sorted_reservations);
 
-    show_map(sorted_reservations, ddrmap_get_last_idx(sorted_reservations), true);
     status = check_reservation_order(sorted_reservations);
     if (status != SILIBS_SUCCESS)
     {
@@ -319,7 +318,7 @@ int sort_reserved_regions_inplace(ddrss_memory_region_t regions[], uint32_t num_
         // If the termination marker is encountered, sorting is complete.
         if (key.start_address == 0 && key.end_address == 0)
         {
-            DDR_LOG_DEBUG("Termination marker encountered at index %u; sorting complete.", i);
+            DDR_LOG_DEBUG("Termination marker encountered at index %u; sorting complete.", (unsigned int)i);
             return SILIBS_SUCCESS;
         }
 
@@ -341,6 +340,57 @@ int sort_reserved_regions_inplace(ddrss_memory_region_t regions[], uint32_t num_
     }
 
     return SILIBS_SUCCESS;
+}
+
+// If reservations are adjacent and have exactly the same attributes, collapse them into one
+// This is to avoid having multiple entries in the memory map for adjacent reservations
+void collapse_adjacent_reservations(ddrss_memory_region_t sorted_reservations[])
+{
+    uint32_t idx = 0;
+    uint32_t next_idx = 1;
+    uint32_t last_idx = ddrmap_get_last_idx(sorted_reservations);
+    uint64_t next_start;
+    uint64_t curr_end;
+    uint64_t next_end;
+    uint32_t curr_attr;
+    uint32_t next_attr;
+
+    while (next_idx < last_idx)
+    {
+        // Check for exit condition
+        if (sorted_reservations[next_idx].start_address == 0 && sorted_reservations[next_idx].end_address == 0)
+        {
+            return;
+        }
+
+        curr_end = sorted_reservations[idx].end_address;
+        curr_attr = sorted_reservations[idx].attr.as_uint32;
+
+        next_start = sorted_reservations[next_idx].start_address;
+        next_end = sorted_reservations[next_idx].end_address;
+        next_attr = sorted_reservations[next_idx].attr.as_uint32;
+
+        if ((curr_end == next_start) && (curr_attr == next_attr))
+        {
+            // Collapse the two adjacent reservations into one
+            sorted_reservations[idx].end_address = next_end;
+            sorted_reservations[next_idx].start_address = 0;
+            sorted_reservations[next_idx].end_address = 0;
+            sorted_reservations[next_idx].attr.as_uint32 = 0;
+            next_idx++;
+        }
+        else
+        {
+            idx++;
+            sorted_reservations[idx] = sorted_reservations[next_idx];
+            next_idx++;
+        }
+    }
+
+    // Clear the final entry in the array
+    sorted_reservations[idx + 1].start_address = 0;
+    sorted_reservations[idx + 1].end_address = 0;
+    sorted_reservations[idx + 1].attr.as_uint32 = 0;
 }
 
 /**
@@ -390,8 +440,8 @@ int check_reservation_order(const ddrss_memory_region_t reservations[])
  *  The 'PAS' flag is overwritten when adding a reserved range.
  *
  *  @param
- *      IN - Pointer to array of 64bit formatted array of memory regions
- *      IN - Pointer to const array of _dram_rsvd_regions
+ *      IN - Pointer to base map - array of 64bit formatted array of memory regions
+ *      IN - Pointer to const array of sorted reserved regions
  *      OUT - out_mmap - Incoming memory regions + added reserved regions
  *
  *      Incoming and outging arrays are terminated by an all-zero ddrss_memory_region_t
@@ -419,6 +469,28 @@ int ddrmap_add_reservations(const ddrss_memory_region_t in_mmap[],
         // Check for exit condition
         if (in_mmap[in_idx].start_address == 0 && in_mmap[in_idx].end_address == 0)
         {
+            // Check for remaining reservations that have the EXTERNAL_MEMORY_REGION flag set.  These will go into out_mmap
+            while (res_idx < MAX_MEMORY_REGIONS)
+            {
+                if (reservations[res_idx].start_address == 0 && reservations[res_idx].end_address == 0)
+                {
+                    break;
+                }
+
+                // Check if the reservation is an external memory region
+                if ((reservations[res_idx].attr.as_uint32 & EXTERNAL_MEMORY_REGION) != 0)
+                {
+                    insert_range(out_mmap,
+                                 out_idx,
+                                 reservations[res_idx].start_address,
+                                 reservations[res_idx].end_address,
+                                 reservations[res_idx].attr.as_uint32);
+                    show_map(out_mmap, out_idx, false);
+                    out_idx++;
+                }
+                res_idx++;
+            }
+
             // Append last memory region of all 0s
             out_mmap[out_idx] = in_mmap[in_idx];
             return SILIBS_SUCCESS;
@@ -618,6 +690,7 @@ void show_map(const ddrss_memory_region_t this_mmap[], int idx, bool show_all)
             DDR_LOG_DEBUG(" \tflags.realm:              %d ", (int)this_mmap[i].attr.realm);
             DDR_LOG_DEBUG(" \tflags.available_sysmem:   %d ", (int)this_mmap[i].attr.available_sysmem);
             DDR_LOG_DEBUG(" \tflags.uefi_concealed:     %d ", (int)this_mmap[i].attr.uefi_concealed);
+            DDR_LOG_DEBUG(" \tflags.external_memory:    %d ", (int)this_mmap[i].attr.external_memory);
             DDR_LOG_DEBUG(" \tflags.pas_mask:           0x%X ", (int)this_mmap[i].attr.as_uint32);
         }
     }
@@ -636,6 +709,7 @@ void show_map(const ddrss_memory_region_t this_mmap[], int idx, bool show_all)
         DDR_LOG_DEBUG(" \tflags.realm:              %d ", (int)this_mmap[idx].attr.realm);
         DDR_LOG_DEBUG(" \tflags.available_sysmem:   %d ", (int)this_mmap[idx].attr.available_sysmem);
         DDR_LOG_DEBUG(" \tflags.uefi_concealed:     %d ", (int)this_mmap[idx].attr.uefi_concealed);
+        DDR_LOG_DEBUG(" \tflags.external_memory:    %d ", (int)this_mmap[idx].attr.external_memory);
         DDR_LOG_DEBUG(" \tflags.pas_mask:           0x%X ", (int)this_mmap[idx].attr.as_uint32);
     }
 }

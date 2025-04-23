@@ -23,6 +23,7 @@ extern ddrss_memory_region_t outgoing_memory_map[];
 /*--------Function Prototypes-----------*/
 int sort_reserved_regions(const ddrss_memory_region_t reservations[], uint32_t num_rsvd, ddrss_memory_region_t out_sorted[]);
 int sort_reserved_regions_inplace(ddrss_memory_region_t regions[], uint32_t num_rsvd);
+void collapse_adjacent_reservations(ddrss_memory_region_t sorted_reservations[]);
 int check_reservation_order(const ddrss_memory_region_t reservations[]);
 int ddrmap_add_reservations(const ddrss_memory_region_t in_mmap[],
                             const ddrss_memory_region_t reservations[],

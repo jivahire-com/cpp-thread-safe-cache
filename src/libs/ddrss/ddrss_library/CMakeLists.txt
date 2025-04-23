@@ -31,6 +31,7 @@ target_link_libraries(${TARGET}
     silibs::platform
     kng_silibs_platform
     atu
+    silibs::cmsdk_wd
     silibs::icc_mhu
     silibs::idhw
     silibs::idsw

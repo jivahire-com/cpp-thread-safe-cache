@@ -14,6 +14,7 @@
 #include <FpFwAssert.h>
 #include <atu_lib.h>
 #include <cmn800.h>
+#include <cmsdk_wd.h> // for wdog_cmsdk_apb_disable
 #include <ddr_err_inj.h>
 #include <ddr_i3c.h>
 #include <ddrss.h>
@@ -249,6 +250,10 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     {
         ddrss_cfgs.ext_knobs.phy_fw_diag_en = 1;
         printf("DDRSS - phy_fw_diag_en enabled\n");
+
+        // Disable Watchdog
+        wdog_cmsdk_apb_disable();         // Disable watchdog
+        wdog_cmsdk_apb_lock_unlock(true); // Lock counter
     }
 
     // Set up per-lane margin buffer

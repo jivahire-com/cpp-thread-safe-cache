@@ -28,8 +28,15 @@ extern uint32_t power_pkg_record_number[POWER_TELEMETRY_ELEMENT_ID_MAX];
 extern bool inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_ID_MAX];
 extern uint32_t inst_pkg_record_number[INST_TELEMETRY_ELEMENT_ID_MAX];
 
-extern uint8_t core_offset_per_die;
-#define CORE_ID_WITH_DIE_OFFSET(core_id) ((core_id) + (core_offset_per_die))
+extern uint8_t core_id_offset_per_die;
+extern uint8_t voltage_rail_id_offset_per_die;
+extern uint8_t hnf_id_offset_per_die;
+extern uint8_t temp_id_offset_per_die;
+
+#define CORE_ID_WITH_DIE_OFFSET(core_id) ((core_id) + (core_id_offset_per_die))
+#define VOLTAGE_RAIL_ID_WITH_DIE_OFFSET(rail_id) ((rail_id) + (voltage_rail_id_offset_per_die))
+#define HNF_ID_WITH_DIE_OFFSET(hnf_id) ((hnf_id) + (hnf_id_offset_per_die))
+#define TEMP_ID_WITH_DIE_OFFSET(temp_id) ((temp_id) + (temp_id_offset_per_die))
 
 /*--------- Function Prototypes ----------*/
 

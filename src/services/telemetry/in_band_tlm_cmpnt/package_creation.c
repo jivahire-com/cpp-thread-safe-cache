@@ -46,7 +46,10 @@ bool inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_ID_MAX];
 uint32_t power_pkg_record_number[POWER_TELEMETRY_ELEMENT_ID_MAX];
 uint32_t inst_pkg_record_number[INST_TELEMETRY_ELEMENT_ID_MAX];
 
-uint8_t core_offset_per_die = 0;
+uint8_t core_id_offset_per_die = 0;
+uint8_t voltage_rail_id_offset_per_die = 0;
+uint8_t hnf_id_offset_per_die = 0;
+uint8_t temp_id_offset_per_die = 0;
 
 static_assert(sizeof(((telemetry_payload_header_t*)0)->manifest_id) <= sizeof(g_note_gnu_build_id.BuildId),
               "Source ID is too small");
@@ -55,7 +58,17 @@ static_assert(sizeof(((telemetry_payload_header_t*)0)->manifest_id) <= sizeof(g_
 
 void package_creation_init()
 {
-    core_offset_per_die = mts_get_this_die_id() * NUMBER_OF_CORES_PER_DIE;
+    uint8_t die_id = mts_get_this_die_id();
+
+    //
+    // Since each die can produce it's own telemetry we need a way to distinguish between the elements
+    // on that die and the elements on other die (other than die id). Set up those offsets here, and
+    // use them when we create the collections in the records in the packages.
+    //
+    core_id_offset_per_die = die_id * NUMBER_OF_CORES_PER_DIE;
+    voltage_rail_id_offset_per_die = die_id * MAX_NUM_OF_VR_RAILS;
+    hnf_id_offset_per_die = die_id * NUMBER_OF_HNF_CHANNELS_PER_DIE;
+    temp_id_offset_per_die = die_id * NUMBER_OF_SOC_TEMP_SENSORS;
 }
 
 bool in_band_tlm_cmpnt_is_instantaneous_enabled(void)
@@ -509,7 +522,7 @@ uint32_t package_create_pwr_soc_vr_rail_record(p_pwr_soc_record_vr_rail_t vr_rai
     {
         populate_pwr_collection_hdr(&vr_rail_record->rail_collection[rail_id].collection_header,
                                     POWER_TELEMETRY_ELEMENT_SOC_VR_RAILS,
-                                    rail_id,
+                                    VOLTAGE_RAIL_ID_WITH_DIE_OFFSET(rail_id),
                                     1,
                                     sizeof(pwr_soc_collection_vr_rail_t));
 
@@ -530,7 +543,7 @@ uint32_t package_create_pwr_soc_hnf_record(p_pwr_soc_record_hnf_t hnf_record)
     {
         populate_pwr_collection_hdr(&hnf_record->hnf_collection[channel].collection_header,
                                     POWER_TELEMETRY_ELEMENT_SOC_HNF,
-                                    channel,
+                                    HNF_ID_WITH_DIE_OFFSET(channel),
                                     1,
                                     sizeof(pwr_soc_collection_hnf_t));
 
@@ -570,7 +583,7 @@ uint32_t package_create_pwr_soc_sensor_temp_record(p_pwr_soc_record_sensor_temp_
     {
         populate_pwr_collection_hdr(&snsr_temp_record->sensor_temp_collection[snsr_id].collection_header,
                                     POWER_TELEMETRY_ELEMENT_SOC_SENSOR_TEMP,
-                                    snsr_id,
+                                    TEMP_ID_WITH_DIE_OFFSET(snsr_id),
                                     1,
                                     sizeof(pwr_soc_collection_sensor_temp_t));
 
@@ -655,7 +668,7 @@ uint32_t package_create_inst_soc_rail_record(p_inst_soc_record_rail_t rail_recor
     {
         populate_inst_collection_hdr(&rail_record->rail_collection[rail_id].collection_header,
                                      INST_TELEMETRY_ELEMENT_SOC_RAILS,
-                                     rail_id,
+                                     VOLTAGE_RAIL_ID_WITH_DIE_OFFSET(rail_id),
                                      1,
                                      sizeof(inst_soc_collection_rail_t));
 
@@ -714,7 +727,7 @@ uint32_t package_create_inst_soc_sensor_temp_record(p_inst_soc_record_sensor_tem
     {
         populate_inst_collection_hdr(&snsr_temp_record->temperature_collection[snsr_id].collection_header,
                                      INST_TELEMETRY_ELEMENT_SOC_TEMP_SENSOR,
-                                     snsr_id,
+                                     TEMP_ID_WITH_DIE_OFFSET(snsr_id),
                                      1,
                                      sizeof(inst_soc_collection_sensor_temp_t));
 

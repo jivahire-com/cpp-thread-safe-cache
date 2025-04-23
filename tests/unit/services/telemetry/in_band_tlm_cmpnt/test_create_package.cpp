@@ -1113,3 +1113,113 @@ TEST_FUNCTION(test_in_band_tlm_cmpnt_core_id_die_offset, test_setup, test_teardo
         }
     }
 }
+
+TEST_FUNCTION(test_in_band_tlm_cmpnt_soc_voltage_rails_die_offset, test_setup, test_teardown)
+{
+    // The collection id for SOC voltage rails should match the id per die.
+    g_die_id_mocked = true;
+
+    for (uint8_t die_id = 0; die_id < 2; die_id++)
+    {
+        // Setup die id
+        will_return(__wrap_mts_get_this_die_id, die_id);
+        package_creation_init();
+
+        // Fill in the record
+        expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data, MAX_NUM_OF_VR_RAILS);
+        pwr_soc_record_vr_rail_t vr_rail_record;
+        FPFW_UNUSED(package_create_pwr_soc_vr_rail_record(&vr_rail_record));
+
+        for (uint16_t rail_id = 0; rail_id < MAX_NUM_OF_VR_RAILS; rail_id++)
+        {
+            assert_int_equal(vr_rail_record.rail_collection[rail_id].collection_header.collection_id,
+                             VOLTAGE_RAIL_ID_WITH_DIE_OFFSET(rail_id));
+        }
+    }
+
+    // Test the instantaneous SOC rail collections
+    for (uint8_t die_id = 0; die_id < 2; die_id++)
+    {
+        // Setup die id
+        will_return(__wrap_mts_get_this_die_id, die_id);
+        package_creation_init();
+
+        // Fill in the record
+        expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_rail_data, MAX_NUM_OF_VR_RAILS);
+        inst_soc_record_rail_t rail_record;
+        FPFW_UNUSED(package_create_inst_soc_rail_record(&rail_record));
+
+        for (uint16_t rail_id = 0; rail_id < MAX_NUM_OF_VR_RAILS; rail_id++)
+        {
+            assert_int_equal(rail_record.rail_collection[rail_id].collection_header.collection_id,
+                             VOLTAGE_RAIL_ID_WITH_DIE_OFFSET(rail_id));
+        }
+    }
+}
+
+TEST_FUNCTION(test_in_band_tlm_cmpnt_hnf_id_die_offset, test_setup, test_teardown)
+{
+    // The collection id for HNF channels should match the id per die.
+    g_die_id_mocked = true;
+
+    for (uint8_t die_id = 0; die_id < 2; die_id++)
+    {
+        // Setup die id
+        will_return(__wrap_mts_get_this_die_id, die_id);
+        package_creation_init();
+
+        // Fill in the record
+        expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_hnf_data, NUMBER_OF_HNF_CHANNELS_PER_DIE);
+        pwr_soc_record_hnf_t hnf_record;
+        FPFW_UNUSED(package_create_pwr_soc_hnf_record(&hnf_record));
+
+        for (uint16_t hnf_id = 0; hnf_id < NUMBER_OF_HNF_CHANNELS_PER_DIE; hnf_id++)
+        {
+            assert_int_equal(hnf_record.hnf_collection[hnf_id].collection_header.collection_id,
+                             HNF_ID_WITH_DIE_OFFSET(hnf_id));
+        }
+    }
+}
+
+TEST_FUNCTION(test_in_band_tlm_cmpnt_temp_id_die_offset, test_setup, test_teardown)
+{
+    // The collection id for SOC temperature sensors should match the id per die.
+    g_die_id_mocked = true;
+
+    for (uint8_t die_id = 0; die_id < 2; die_id++)
+    {
+        // Setup die id
+        will_return(__wrap_mts_get_this_die_id, die_id);
+        package_creation_init();
+
+        // Fill in the record
+        expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data, NUMBER_OF_SOC_TEMP_SENSORS);
+        pwr_soc_record_sensor_temp_t temp_record;
+        FPFW_UNUSED(package_create_pwr_soc_sensor_temp_record(&temp_record));
+
+        for (uint16_t temp_id = 0; temp_id < NUMBER_OF_SOC_TEMP_SENSORS; temp_id++)
+        {
+            assert_int_equal(temp_record.sensor_temp_collection[temp_id].collection_header.collection_id,
+                             TEMP_ID_WITH_DIE_OFFSET(temp_id));
+        }
+    }
+
+    // Test the instantaneous SOC temperature collections
+    for (uint8_t die_id = 0; die_id < 2; die_id++)
+    {
+        // Setup die id
+        will_return(__wrap_mts_get_this_die_id, die_id);
+        package_creation_init();
+
+        // Fill in the record
+        expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data, NUMBER_OF_SOC_TEMP_SENSORS);
+        inst_soc_record_sensor_temp_t temp_record;
+        FPFW_UNUSED(package_create_inst_soc_sensor_temp_record(&temp_record));
+
+        for (uint16_t temp_id = 0; temp_id < NUMBER_OF_SOC_TEMP_SENSORS; temp_id++)
+        {
+            assert_int_equal(temp_record.temperature_collection[temp_id].collection_header.collection_id,
+                             TEMP_ID_WITH_DIE_OFFSET(temp_id));
+        }
+    }
+}

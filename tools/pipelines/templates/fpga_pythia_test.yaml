@@ -116,8 +116,15 @@ jobs:
           # OOB Reset
           oobreset
 
+          #TODO - Validate on reset ROM FUSE without running as a test
           # Reset FPGA ROM and Fuse Data
-          Invoke-Pythia -test .\tests\functional\test_suites\fpga_init\fpga_init.robot -platform fpga
+          if ($TestVehicle -eq "SingleDieFPGA") {
+              Invoke-Pythia .\tests\functional\test_suites\fpga_init\fpga_init_singledie.robot -platform "fpga"
+          }
+          elseif ($TestVehicle -eq "DualDieFPGA") {
+              Invoke-Pythia .\tests\functional\test_suites\fpga_init\fpga_init_dualdie.robot -platform "fpga"
+          }
+
 
     # 1. Setup the environment
     # 2. Invoke Pythia

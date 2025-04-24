@@ -1,0 +1,34 @@
+<ConfigSchema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:noNamespaceSchemaLocation="configschema.xsd">
+
+  <!-- Enum values are declared separately from the knobs.
+       The same Enum can be used as the 'enumtype' of any number of EnumKnobs -->
+  <Enums>
+    <Enum name="power_tlm_inst_sample_period_t" help="">
+      <Value name="PWR_TLM_INST_SAMPLE_PERIOD_5_MS" prettyname="5 mS" value="1" help="create inst record's every 5 mS" />
+      <Value name="PWR_TLM_INST_SAMPLE_PERIOD_10_MS" prettyname="10 mS" value="2" help="create inst record's every 10 mS" />
+      <Value name="PWR_TLM_INST_SAMPLE_PERIOD_20_MS" prettyname="20 mS" value="4" help="create inst record's every 20 mS" />
+      <Value name="PWR_TLM_INST_SAMPLE_PERIOD_40_MS" prettyname="40 mS" value="8" help="create inst record's every 40 mS" />
+      <Value name="PWR_TLM_INST_SAMPLE_PERIOD_100_MS" prettyname="100 mS" value="20" help="create inst record's every 100 mS" />
+    </Enum>
+    <Enum name="power_tlm_prod_package_period_t" help="">
+      <Value name="PWR_TLM_PROD_PKG_PERIOD_30_SEC" prettyname="30 seconds" value="1" help="create production package every 30 sec" />
+      <Value name="PWR_TLM_PROD_PKG_PERIOD_1_MIN" prettyname="1 minute" value="2" help="create production package every minute" />
+      <Value name="PWR_TLM_PROD_PKG_PERIOD_2_MIN" prettyname="2 minute" value="3" help="create production package every 2 minutes" />
+    </Enum>
+  </Enums>
+
+  <Structs>
+    <Struct name="power_tlm_knobs_t" help="">
+      <Member name="inst_sample_period" type="power_tlm_inst_sample_period_t" default="PWR_TLM_INST_SAMPLE_PERIOD_10_MS" help="Inst Record Sampling Period" />
+      <Member name="prod_pkg_period" type="power_tlm_prod_package_period_t" default="PWR_TLM_PROD_PKG_PERIOD_2_MIN" help="Production Package Period" />
+      <Member name="inst_samples_per_pkg" type="uint16_t" default="10" help="Package generated every n inst_sample_period" />
+    </Struct>
+  </Structs>
+
+  <!-- namespace indicates the GUID namespace the values are stored in -->
+  <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
+    <Knob name="pwr_tlm_knobs" type="power_tlm_knobs_t" help="Power Telemetry knobs"/>
+  </Knobs>
+
+</ConfigSchema>

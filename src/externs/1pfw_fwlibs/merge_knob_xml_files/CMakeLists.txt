@@ -43,20 +43,21 @@ set(EXPLICIT_PATH_PROD_FW_TOWER_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kn
 set(EXPLICIT_PATH_PROD_FW_VAB_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_vab_config_knobs.xml)
 set(EXPLICIT_PATH_PROD_FW_FUSE_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_fuse_config_knobs.xml)
 set(EXPLICIT_PATH_PROD_FW_SMMU_VAB_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_smmu_config_knobs.xml)
+set(EXPLICIT_PATH_PROD_FW_POWER_TLM_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_power_tlm_knobs.xml)
 
 set(PROD_FW_KNOBS_NAMESPACE "FE3ED49F-B173-41ED-9076-356661D46A42")
 
 # Merge all XMLs into one TOP level XML ---------------------------------------------------------------------
 if (i386-pc-windows-msvc)
-    set(MERGE_COMMAND ${Python3_EXECUTABLE} ${EXPLICIT_PATH_MERGE_KNOBS_SCRIPT} 
+    set(MERGE_COMMAND ${Python3_EXECUTABLE} ${EXPLICIT_PATH_MERGE_KNOBS_SCRIPT}
                 -t ${EXPLICIT_PATH_SILIBS_KNOBS}
-                   ${EXPLICIT_PATH_PROD_FW_DDRSS_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_I3C_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_MESH_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_PCIE_KNOBS}  
-                   ${EXPLICIT_PATH_PROD_FW_POWER_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_ACCEL_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_UNIT_TEST_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_DDRSS_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_I3C_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_MESH_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_PCIE_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_POWER_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_ACCEL_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_UNIT_TEST_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_USB_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_GPIO_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_CRASHDUMP_KNOBS}
@@ -65,45 +66,48 @@ if (i386-pc-windows-msvc)
                    ${EXPLICIT_PATH_PROD_FW_VAB_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_FUSE_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_SMMU_VAB_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_POWER_TLM_KNOBS}
                 -p ${PROD_FW_COMBINED_GENERATED_KNOBS} -n ${PROD_FW_KNOBS_NAMESPACE}
     )
 else()
-    set(MERGE_COMMAND ${Python3_EXECUTABLE} ${EXPLICIT_PATH_MERGE_KNOBS_SCRIPT} 
-                -t ${EXPLICIT_PATH_SILIBS_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_DDRSS_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_I3C_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_MESH_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_PCIE_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_POWER_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_ACCEL_KNOBS} 
+    set(MERGE_COMMAND ${Python3_EXECUTABLE} ${EXPLICIT_PATH_MERGE_KNOBS_SCRIPT}
+                -t ${EXPLICIT_PATH_SILIBS_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_DDRSS_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_I3C_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_MESH_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_PCIE_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_POWER_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_ACCEL_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_FUNC_TEST_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_USB_KNOBS}
-                   ${EXPLICIT_PATH_PROD_FW_GPIO_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_GPIO_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_CRASHDUMP_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_SYSTEM_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_TOWER_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_VAB_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_FUSE_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_SMMU_VAB_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_POWER_TLM_KNOBS}
                 -p ${PROD_FW_COMBINED_GENERATED_KNOBS} -n ${PROD_FW_KNOBS_NAMESPACE}
     )
 endif()
 
 set(KNOB_FILES_DEPENDS ${EXPLICIT_PATH_SILIBS_KNOBS}
-                   ${EXPLICIT_PATH_PROD_FW_DDRSS_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_I3C_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_MESH_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_PCIE_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_POWER_KNOBS} 
-                   ${EXPLICIT_PATH_PROD_FW_ACCEL_KNOBS} 
+                   ${EXPLICIT_PATH_PROD_FW_DDRSS_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_I3C_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_MESH_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_PCIE_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_POWER_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_ACCEL_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_FUNC_TEST_KNOBS}
-                   ${EXPLICIT_PATH_PROD_FW_UNIT_TEST_KNOBS}  
+                   ${EXPLICIT_PATH_PROD_FW_UNIT_TEST_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_USB_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_GPIO_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_TOWER_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_VAB_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_FUSE_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_SMMU_VAB_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_POWER_TLM_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_CRASHDUMP_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_SYSTEM_KNOBS}
     )

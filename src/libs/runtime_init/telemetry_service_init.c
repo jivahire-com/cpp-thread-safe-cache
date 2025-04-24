@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -15,26 +16,13 @@
 #include <telemetry_service.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-// note, eventually these will be replaced with a config knob
 
 /**
- * @brief Power Package records are sampled and sent utilizing the same timer
+ * @brief Note: If changing this value review ddr_manager_i.h
+ *  max samples per package is used to size the memory pool for instantaneous packages.
  *
  */
-#define POWER_TLM_PKG_PERIOD_MS (120 * 1000)
-
-/**
- * @brief Instantaneous Package records are sampled utilizing this period.
- *
- */
-#define INST_TLM_PKG_SAMPLE_PERIOD_MS (10)
-
-/**
- * @brief Number of samples per package. In order to reduce host communication overhead, multiple
- * record samples are sent in a single package.
- *
- */
-#define INST_TLM_SAMPLES_PER_PKG (10)
+#define MAX_INST_SAMPLES_PER_PACKAGE (20)
 
 /*------------- Typedefs -----------------*/
 
@@ -44,10 +32,29 @@
 
 /*------------- Functions ----------------*/
 
-
 FPFW_INIT_COMPONENT(tlm_svc, FPFW_INIT_DEPENDENCIES("sensor_fifo", "mts_svc", "hw_ver", "atu_svc"))
 {
-    telemetry_service_init(idsw_get_die_id(), POWER_TLM_PKG_PERIOD_MS, INST_TLM_PKG_SAMPLE_PERIOD_MS, INST_TLM_SAMPLES_PER_PKG);
+    power_tlm_knobs_t pwr_tlm_knobs = config_get_pwr_tlm_knobs();
+
+    uint32_t pwr_pkg_period_ms = (120 * 1000);
+    if (pwr_tlm_knobs.prod_pkg_period == PWR_TLM_PROD_PKG_PERIOD_30_SEC)
+    {
+        pwr_pkg_period_ms = 30 * 1000;
+    }
+    else if (pwr_tlm_knobs.prod_pkg_period == PWR_TLM_PROD_PKG_PERIOD_1_MIN)
+    {
+        pwr_pkg_period_ms = 60 * 1000;
+    }
+
+    uint32_t inst_pkg_sample_period_ms = pwr_tlm_knobs.inst_sample_period * 5; // resolution of knob is 5ms
+
+    uint16_t inst_samples_per_pkg = pwr_tlm_knobs.inst_samples_per_pkg;
+    if (inst_samples_per_pkg > MAX_INST_SAMPLES_PER_PACKAGE)
+    {
+        inst_samples_per_pkg = MAX_INST_SAMPLES_PER_PACKAGE;
+    }
+
+    telemetry_service_init(idsw_get_die_id(), pwr_pkg_period_ms, inst_pkg_sample_period_ms, inst_samples_per_pkg);
 
     telemetry_cli_svc_initialize();
 

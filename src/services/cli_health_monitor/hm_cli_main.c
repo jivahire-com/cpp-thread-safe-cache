@@ -147,23 +147,25 @@ static FPFW_CLI_STATUS hm_dump_ghes_cli(int argc, const char** argv)
 
 static FPFW_CLI_STATUS hm_inject_err_cli(int argc, const char** argv)
 {
-    if (argc < 8)
+    if (argc < 9)
     {
-        FpFwCliPrint(
-            "usage: hm_inject_err <group> <type> <instance> <operation> <param1> <param2> <e_val>\n");
+        FpFwCliPrint("usage: hm_inject_err <group> <type> <instance> <status_operation> <err_type> "
+                     "<err_severity> <err_addr> <err_value>\n");
         return CLI_ERROR;
     }
 
     ras_einj_info_t input_einj_payload;
     memset(&input_einj_payload, 0, sizeof(ras_einj_info_t));
     input_einj_payload.version = ERROR_INJECTION_PAYLOAD_VERSION;
+    
     input_einj_payload.component_group = (uint16_t)strtol(argv[1], NULL, 0);
     input_einj_payload.component_type = (uint16_t)strtol(argv[2], NULL, 0);
     input_einj_payload.component_instance = (uint16_t)strtol(argv[3], NULL, 0);
     input_einj_payload.status_operation.value = (uint16_t)strtol(argv[4], NULL, 0);
-    input_einj_payload.param_type.error_parameters[0] = (uint64_t)strtoull(argv[5], NULL, 0);
-    input_einj_payload.param_type.error_parameters[1] = (uint64_t)strtoull(argv[6], NULL, 0);
-    input_einj_payload.value_type.error_values = (uint64_t)strtoull(argv[7], NULL, 0);
+    input_einj_payload.param_type.error_type = (uint16_t)strtol(argv[5], NULL, 0);
+    input_einj_payload.param_type.severity = (uint16_t)strtol(argv[6], NULL, 0);
+    input_einj_payload.param_type.address_64 = (uint64_t*)(uintptr_t)strtoull(argv[7], NULL, 0);
+    input_einj_payload.value_type.error_values = (uint64_t)strtoull(argv[8], NULL, 0);
 
     print_einj_payload(&input_einj_payload);
 
@@ -488,8 +490,8 @@ void print_einj_payload(ras_einj_info_t* payload)
     FpFwCliPrint(" einj group %ld\n", payload->component_group);
     FpFwCliPrint(" einj type %ld\n", payload->component_type);
     FpFwCliPrint(" einj instance %ld\n", payload->component_instance);
-    FpFwCliPrint(" einj stat_op status %d\n", (payload->status_operation.value >> 8) & 0xFF);
-    FpFwCliPrint(" einj stat_op op code %d\n", payload->status_operation.value & 0xFF);
+    FpFwCliPrint(" einj stat_op status %d\n", payload->status_operation.value & 0xFF);
+    FpFwCliPrint(" einj stat_op operation %d\n", (payload->status_operation.value >> 8) & 0xFF);
     FpFwCliPrint(" einj param err_type %d\n", (uint16_t)((payload->param_type.error_parameters[0]) & 0xFFFF));
     FpFwCliPrint(" einj param sev %d\n", (uint16_t)((payload->param_type.error_parameters[0] >> 16) & 0xFFFF));
     FpFwCliPrint(" einj param reserved %d\n", (uint16_t)((payload->param_type.error_parameters[0] >> 32) & 0xFFFFFFFF));

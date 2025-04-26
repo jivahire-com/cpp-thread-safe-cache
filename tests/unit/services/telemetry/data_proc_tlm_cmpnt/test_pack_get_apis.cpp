@@ -134,33 +134,35 @@ TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
 {
     pwr_core_element_throttle_t throttle_array[NUMBER_OF_THROTTLE_TYPES] = {{0}};
     uint8_t throttle_index = 0;
+    uint8_t avg_pstate = 5;
+    uint32_t entry_count = 10;
+    uint32_t exit_count = 10;
+    uint8_t reserved = 0;
+    uint32_t residency_mS = 100;
+    uint8_t max_pstate = 5;
+    uint8_t type_id = THROTTLE_SOURCE_TEMPERATURE;
+
     for (throttle_index = 0; throttle_index < NUMBER_OF_THROTTLE_TYPES; throttle_index++)
     {
-        core[TEST_CORE_ID_5].throttle_info[throttle_index].avg_pstate = 5;
-        core[TEST_CORE_ID_5].throttle_info[throttle_index].entry_count = 10;
-        core[TEST_CORE_ID_5].throttle_info[throttle_index].exit_count = 10;
-        core[TEST_CORE_ID_5].throttle_info[throttle_index].max_pstate = 26;
-        core[TEST_CORE_ID_5].throttle_info[throttle_index].reserved = 0;
-        core[TEST_CORE_ID_5].throttle_info[throttle_index].residency_mS = 100;
-        core[TEST_CORE_ID_5].throttle_info[throttle_index].type_id = THROTTLE_SOURCE_TEMPERATURE;
+        core[TEST_CORE_ID_5].throttle_info[throttle_index].avg_pstate = avg_pstate;
+        core[TEST_CORE_ID_5].throttle_info[throttle_index].entry_count = entry_count;
+        core[TEST_CORE_ID_5].throttle_info[throttle_index].exit_count = exit_count;
+        core[TEST_CORE_ID_5].throttle_info[throttle_index].max_pstate = max_pstate;
+        core[TEST_CORE_ID_5].throttle_info[throttle_index].reserved = reserved;
+        core[TEST_CORE_ID_5].throttle_info[throttle_index].residency_mS = residency_mS;
+        core[TEST_CORE_ID_5].throttle_info[throttle_index].type_id = type_id;
     }
     data_proc_tlm_cmpnt_get_pwr_core_throttle_data(TEST_CORE_ID_5, &throttle_array);
+
     for (throttle_index = 0; throttle_index < NUMBER_OF_THROTTLE_TYPES; throttle_index++)
     {
-        assert_int_equal(throttle_array[throttle_index].avg_pstate,
-                         core[TEST_CORE_ID_5].throttle_info[throttle_index].avg_pstate);
-        assert_int_equal(throttle_array[throttle_index].entry_count,
-                         core[TEST_CORE_ID_5].throttle_info[throttle_index].entry_count);
-        assert_int_equal(throttle_array[throttle_index].exit_count,
-                         core[TEST_CORE_ID_5].throttle_info[throttle_index].exit_count);
-        assert_int_equal(throttle_array[throttle_index].max_pstate,
-                         core[TEST_CORE_ID_5].throttle_info[throttle_index].max_pstate);
-        assert_int_equal(throttle_array[throttle_index].reserved,
-                         core[TEST_CORE_ID_5].throttle_info[throttle_index].reserved);
-        assert_int_equal(throttle_array[throttle_index].residency_mS,
-                         core[TEST_CORE_ID_5].throttle_info[throttle_index].residency_mS);
-        assert_int_equal(throttle_array[throttle_index].type_id,
-                         core[TEST_CORE_ID_5].throttle_info[throttle_index].type_id);
+        assert_int_equal(throttle_array[throttle_index].avg_pstate, avg_pstate);
+        assert_int_equal(throttle_array[throttle_index].entry_count, entry_count);
+        assert_int_equal(throttle_array[throttle_index].exit_count, exit_count);
+        assert_int_equal(throttle_array[throttle_index].max_pstate, max_pstate);
+        assert_int_equal(throttle_array[throttle_index].reserved, reserved);
+        assert_int_equal(throttle_array[throttle_index].residency_mS, residency_mS);
+        assert_int_equal(throttle_array[throttle_index].type_id, type_id);
     }
 
     // setup for failure case.

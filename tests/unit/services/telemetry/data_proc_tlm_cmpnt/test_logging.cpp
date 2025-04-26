@@ -410,6 +410,164 @@ TEST_FUNCTION(test_tlm_logger_log_core_cstate_invalid_timestamp, test_setup, tes
     assert_int_equal(core[1].cstate_timestamp_uS, 10);
 }
 
+// Test for tlm_logger_calculate_throttle_index_pass
+TEST_FUNCTION(test_tlm_logger_calculate_throttle_index_pass, test_setup, test_teardown)
+{
+
+    pstate_throttle_status_t th_status = CURRENT_THROTTLING_START;
+    int throttle_index = tlm_logger_calculate_throttle_index(th_status);
+    assert_int_equal(throttle_index, 0);
+}
+
+// Test for tlm_logger_calculate_throttle_index_fail
+TEST_FUNCTION(test_tlm_logger_calculate_throttle_index_fail, test_setup, test_teardown)
+{
+    pstate_throttle_status_t th_status = NO_THROTTLING;
+    int throttle_index = tlm_logger_calculate_throttle_index(th_status);
+    assert_int_equal(throttle_index, -1);
+}
+// Test for tlm_logger_log_core_states
+TEST_FUNCTION(test_tlm_logger_log_core_states_no_throttling, test_setup, test_teardown)
+{
+    fpfw_status_t status;
+    pstate_telem_t pstate_data = {
+        .timestamp = 10,
+        .data =
+            {
+                .pstate = 12,
+                .throttle_status = NO_THROTTLING,
+                .vm_throttle_pri = 0,
+                .max_pstate = 0,
+                .cstate = 2,
+                .plimit = 5,
+                .core = 0,
+                .mpam_low = 0,
+                .mpam_high = 0,
+                .boost_priority = 0,
+            },
+    };
+
+    // Baseline log
+    status = tlm_logger_log_core_states(&pstate_data);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+    assert_int_equal(core[0].throttle_info[1].entry_count, 0);
+}
+
+// Test for tlm_logger_log_core_throttling
+TEST_FUNCTION(test_tlm_logger_log_core_states_in_throttle_start, test_setup, test_teardown)
+{
+    fpfw_status_t status;
+    core[0].throttling_status = 0; // NO_THROTTLING;
+
+    pstate_telem_t pstate_data = {
+        .timestamp = 10,
+        .data =
+            {
+                .pstate = 12,
+                .throttle_status = CURRENT_THROTTLING_START,
+                .vm_throttle_pri = 0,
+                .max_pstate = 0,
+                .cstate = 2,
+                .plimit = 5,
+                .core = 0,
+                .mpam_low = 0,
+                .mpam_high = 0,
+                .boost_priority = 0,
+            },
+    };
+
+    status = tlm_logger_log_core_states(&pstate_data);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+    assert_int_equal(core[0].throttle_info[0].entry_count, 1);
+}
+
+// Test for tlm_logger_log_core_throttling
+TEST_FUNCTION(test_tlm_logger_log_core_states_in_throttle_end, test_setup, test_teardown)
+{
+    fpfw_status_t status;
+    core[0].throttling_status = CURRENT_THROTTLING_START;
+
+    pstate_telem_t pstate_data = {
+        .timestamp = 10,
+        .data =
+            {
+                .pstate = 12,
+                .throttle_status = CURRENT_THROTTLING_END,
+                .vm_throttle_pri = 0,
+                .max_pstate = 0,
+                .cstate = 2,
+                .plimit = 5,
+                .core = 0,
+                .mpam_low = 0,
+                .mpam_high = 0,
+                .boost_priority = 0,
+            },
+    };
+
+    status = tlm_logger_log_core_states(&pstate_data);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+    assert_int_equal(core[0].throttle_info[0].exit_count, 1);
+}
+
+// Test for tlm_logger_log_core_throttling
+TEST_FUNCTION(test_tlm_logger_log_core_throttling_start, test_setup, test_teardown)
+{
+    fpfw_status_t status;
+    core[0].throttling_status = 0;
+    core[0].throttle_previous_timestamp_uS[1] = 1000;
+
+    pstate_telem_t pstate_data = {
+        .timestamp = 2000,
+        .data =
+            {
+                .pstate = 12,
+                .throttle_status = TEMP_THROTTLE_START,
+                .vm_throttle_pri = 0,
+                .max_pstate = 0,
+                .cstate = 2,
+                .plimit = 5,
+                .core = 0,
+                .mpam_low = 0,
+                .mpam_high = 0,
+                .boost_priority = 0,
+            },
+    };
+
+    status = tlm_logger_log_core_throttling(&pstate_data);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+    assert_int_equal(core[0].throttle_info[1].entry_count, 1);
+    assert_int_equal(core[0].throttle_info[1].residency_mS, 0);
+}
+
+// Test for tlm_logger_log_core_throttling
+TEST_FUNCTION(test_tlm_logger_log_core_throttling_end, test_setup, test_teardown)
+{
+    fpfw_status_t status;
+    core[0].throttling_status = TEMP_THROTTLE_START;
+
+    pstate_telem_t pstate_data = {
+        .timestamp = 3000,
+        .data =
+            {
+                .pstate = 12,
+                .throttle_status = TEMP_THROTTLE_END, // TEMP_THROTTLE_END
+                .vm_throttle_pri = 0,
+                .max_pstate = 0,
+                .cstate = 2,
+                .plimit = 5,
+                .core = 0,
+                .mpam_low = 0,
+                .mpam_high = 0,
+                .boost_priority = 0,
+            },
+    };
+
+    status = tlm_logger_log_core_throttling(&pstate_data);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+    assert_int_equal(core[0].throttle_info[1].exit_count, 1);
+    assert_int_equal(core[0].throttle_info[1].residency_mS, 1);
+}
+
 // Test for tlm_logger_log_vr_temp
 TEST_FUNCTION(test_tlm_logger_log_vr_temp, test_setup, test_teardown)
 {
@@ -956,16 +1114,87 @@ TEST_FUNCTION(test_tlm_update_pstate_pwr, test_setup, test_teardown)
         assert_int_equal(core[core_id].pstate[pstate_index].avg_power_mW, test_new_avg_power_mW);
     }
 }
+
+TEST_FUNCTION(test_tlm_update_rack_throttling, test_setup, test_teardown)
+{
+    uint8_t core_id = 0;
+    uint8_t throttle_index = 4;
+
+    pstate_telem_t pstate_data = {
+        .timestamp = 10,
+        .data =
+            {
+                .pstate = 12,
+                .throttle_status = 0,
+                .vm_throttle_pri = 0,
+                .max_pstate = 0,
+                .cstate = 2,
+                .plimit = 5,
+                .core = 0,
+                .mpam_low = 0,
+                .mpam_high = 0,
+                .boost_priority = 0,
+            },
+    };
+    // Call the function to be tested//TODO: update once implemented
+    tlm_update_rack_throttling(&pstate_data, throttle_index, core_id);
+}
+
 // Unit test function
 TEST_FUNCTION(test_tlm_update_throttling, test_setup, test_teardown)
 {
     uint8_t core_id = 0;
-    uint64_t time_stamp_uS = 1000;
-    // Call the function to be tested TODO:: update when implemented
+    uint8_t throttle_index = 4;
+    uint64_t time_stamp_uS = 5000;
+    core[core_id].core_throttling_tracker[throttle_index] = 1;
+    core[core_id].throttle_previous_timestamp_uS[throttle_index] = 1000;
+    core[core_id].pstate_from_current_pkt = 20;
+
+    core[core_id].throttle_info[throttle_index].residency_mS = 10;
+    core[core_id].throttle_info[throttle_index].avg_pstate = 10;
+    core[core_id].throttle_info[throttle_index].max_pstate = 5;
+
     tlm_update_throttling(core_id, time_stamp_uS);
-    // Add assertions to verify the expected behavior
-    // Since the function does nothing for now, there is nothing to assert
+
+    assert_int_equal(core[core_id].throttle_info[throttle_index].residency_mS, 14);
+    assert_int_equal(core[core_id].throttle_previous_timestamp_uS[throttle_index], 5000);
+    assert_int_equal(core[core_id].throttle_info[throttle_index].max_pstate, 20);
+
+    assert_int_equal(core[core_id].throttle_info[throttle_index].avg_pstate, 12);
+
+    // inactive throttling
+    core[core_id].core_throttling_tracker[throttle_index] = 0;
+    time_stamp_uS = 10000;
+    tlm_update_throttling(core_id, time_stamp_uS);
+
+    assert_int_not_equal(core[core_id].throttle_info[throttle_index].residency_mS, 19);
+    assert_int_equal(core[core_id].throttle_previous_timestamp_uS[throttle_index], 10000);
 }
+// tlm_update_throttling_pstate(core_id, i, time_diff_uS, core[core_id].throttle_info[i].residency_mS);
+
+TEST_FUNCTION(test_tlm_update_throttling_pstate, test_setup, test_teardown)
+{
+    uint8_t core_id = 0;
+    uint8_t throttle_index = 1;
+    uint64_t time_stamp_uS = 5000;
+
+    core[core_id].core_throttling_tracker[throttle_index] = 1;
+    core[core_id].throttle_previous_timestamp_uS[throttle_index] = 1000;
+    core[core_id].pstate_from_current_pkt = 20;
+
+    core[core_id].throttle_info[throttle_index].residency_mS = 10;
+    core[core_id].throttle_info[throttle_index].avg_pstate = 10;
+    core[core_id].throttle_info[throttle_index].max_pstate = 5;
+    uint32_t time_diff_uS = time_stamp_uS - core[core_id].throttle_previous_timestamp_uS[throttle_index];
+    tlm_update_throttling_pstate(core_id,
+                                 throttle_index,
+                                 time_diff_uS,
+                                 core[core_id].throttle_info[throttle_index].residency_mS);
+
+    assert_int_equal(core[core_id].throttle_info[throttle_index].max_pstate, 20);
+    assert_int_equal(core[core_id].throttle_info[throttle_index].avg_pstate, 14);
+}
+
 TEST_FUNCTION(test_tlm_update_core_histogram, test_setup, test_teardown)
 {
     uint8_t core_id = 0;

@@ -291,7 +291,6 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, current_mode),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, new_mode))
 
-
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     51,
                     ExecInvalidTimerPeriod,
@@ -311,12 +310,30 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     53,
                     MtsMgrInitDDR,
                     FPFW_ET_LEVEL_INFO)
-
+ 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     54,
                     TimerChangeFail,
                     FPFW_ET_LEVEL_WARNING,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, tmr_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    55,
+                    LogCoreThrottleValidTimeStamp,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, status))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    56,
+                    LogCoreThrottleInValidStatus,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_INT8, status))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    57,
+                    LogCoreThrottleInValidCoreId,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, status))
 /*--------- Function Prototypes ----------*/
 

@@ -28,9 +28,9 @@
 
 typedef struct
 {
-    uint8_t throttle_source;
-    uint8_t transition_event;
-} throttling_properties_t;
+    pstate_throttle_status_t throttle_status;
+    throttle_source_t throttle_source;
+} throttling_lookup_tbl_t;
 
 /*-------- Function Prototypes -----------*/
 
@@ -42,25 +42,27 @@ core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
 tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
 soc_runtime_info_t soc_info;
 dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE] = {0};
+
 /* per core power samples's averaged value in mW,  used for averaging , samples are  averaged and multiplied
 by a fator(22 , CORE_POWER_MW_PER_BIT) to get in mW*/
 uint32_t core_pwr_samples_accumulation_mW[NUMBER_OF_CORES_PER_DIE] = {0}; // power samples values  in mW .
 /* used only for MPAM*/
 uint32_t pstate_accum_uS[NUMBER_OF_CORES_PER_DIE][NUMBER_OF_PSTATES] = {0};
 
-static throttling_properties_t throttling_prop[] = {
-    // throttle             transition event              // Status from HAS Document index value
-    {THROTTLE_SOURCE_NONE, THROTTLE_TRNSN_NONE},          //   b0000 - None
-    {THROTTLE_SOURCE_CURRENT, THROTTLE_TRNSN_START},      //   b0001 - Current Throttling Start
-    {THROTTLE_SOURCE_TEMPERATURE, THROTTLE_TRNSN_START},  //   b0010 - Temperature Throttling Start
-    {THROTTLE_SOURCE_RACK_LIMIT, THROTTLE_TRNSN_START},   //   b0011 - Rack Limit Throttling Start
-    {THROTTLE_SOURCE_VR_HOT, THROTTLE_TRNSN_START},       //   b0100 - Sys_ForcePmin Throttling Start
-    {THROTTLE_SOURCE_ADAPTIVE_CLK, THROTTLE_TRNSN_START}, //   b0101 - Adaptive Clocking Throttling Start
-    {THROTTLE_SOURCE_CURRENT, THROTTLE_TRNSN_END},        //   b0110 - Current Throttling End
-    {THROTTLE_SOURCE_TEMPERATURE, THROTTLE_TRNSN_END},    //   b0111 - Temperature Throttling End
-    {THROTTLE_SOURCE_RACK_LIMIT, THROTTLE_TRNSN_END},     //   b1000 - Rack Limit Throttling End
-    {THROTTLE_SOURCE_VR_HOT, THROTTLE_TRNSN_END},         //   b1001 - Sys_ForcePmin Throttling End
-    {THROTTLE_SOURCE_ADAPTIVE_CLK, THROTTLE_TRNSN_END},   //   b1010 - Adaptive Clocking Throttling End
+static throttling_lookup_tbl_t throttling_tbl[] = {
+    // throttle  status             throttle source                     // Status from KNG RMSSHASv0.p14 Document index value
+    {CURRENT_THROTTLING_START, THROTTLE_SOURCE_CURRENT},       //   b0001 - Current Throttling Start
+    {TEMP_THROTTLING_START, THROTTLE_SOURCE_TEMPERATURE},      //   b0010 - Temperature Throttling Start
+    {RACK_THROTTLING_START, THROTTLE_SOURCE_RACK_LIMIT},       //   b0011 - Rack Limit Throttling Start
+    {SYS_FRC_PMIN_THROTTLING_START, THROTTLE_SOURCE_VR_HOT},   //   b0100 - Sys_ForcePmin Throttling Start
+    {ADPT_CLK_THROTTLING_START, THROTTLE_SOURCE_ADAPTIVE_CLK}, //   b0101 - Adaptive Clocking Throttling Start
+    {CURRENT_THROTTLING_END, THROTTLE_SOURCE_CURRENT},         //   b0110 - Current Throttling End
+    {TEMP_THROTTLING_END, THROTTLE_SOURCE_TEMPERATURE},        //   b0111 - Temperature Throttling End
+    {RACK_THROTTLING_END, THROTTLE_SOURCE_RACK_LIMIT},         //   b1000 - Rack Limit Throttling End
+    {SYS_FRC_PMIN_THROTTLING_END, THROTTLE_SOURCE_VR_HOT},     //   b1001 - Sys_ForcePmin Throttling End
+    {ADPT_CLK_THROTTLING_END, THROTTLE_SOURCE_ADAPTIVE_CLK},   //   b1010 - Adaptive Clocking Throttling End
+    {CURRENT_THROTTLING_OVERRUN, THROTTLE_SOURCE_CURRENT_OVERRUN}, //   b1011 - current throttling overrun-start
+    {ADPT_CLK_THROTTLING_OVERRUN, THROTTLE_SOURCE_ADAPTIVE_CLK_OVERRUN}, //   b1100 - adaptive clocking overrun - start
 };
 
 /*------------- Functions ----------------*/
@@ -370,6 +372,130 @@ fpfw_status_t update_core_pstate_timestamps(uint8_t core_id, uint8_t pstate, uin
     return FPFW_STATUS_SUCCESS;
 }
 
+int8_t tlm_logger_calculate_throttle_index(pstate_throttle_status_t status)
+{
+    /*Calculate source of the throttling,
+     inputs =>  1-12
+     outs => 0-6  [CURR,TEMP,RACK,VR_HOT,ADPT_CLK,CURR_OVERRUN,ADPT_OVERRUN]
+     */
+    int8_t ret = 0;
+    if (status >= 1 && status <= 12)
+    {
+        ret = throttling_tbl[status].throttle_source - 1;
+    }
+    else
+    {
+        // if status =0 or > 0 ,we should not be here log event trace and return with -1;
+        ret = -1;
+    }
+    return ret;
+}
+
+void tlm_update_throttling_status_on_exit(uint8_t core_id, uint64_t timestamp_uS)
+{
+    int i = 0;
+    // End all active throttling and update residency
+    for (i = 0; i < NUMBER_OF_THROTTLE_TYPES; i++)
+    {
+        if (core[core_id].core_throttling_tracker[i])
+        {
+            uint64_t time_diff_uS = timestamp_uS - core[core_id].throttle_previous_timestamp_uS[i];
+            core[core_id].throttle_info[i].residency_mS += time_diff_uS / 1000; // Convert to milliseconds
+            core[core_id].core_throttling_tracker[i] = 0;                       // Mark as inactive
+        }
+    }
+}
+
+void tlm_update_throttling_pstate(uint8_t core_id, int8_t throttle_index, uint32_t time_diff_uS, uint32_t residency_mS)
+{
+    /* For core throttling : max avg pstate calculation*/
+    uint16_t temp_min_pstate = 0;
+    uint16_t temp_avg_pstate = core[core_id].throttle_info[throttle_index].avg_pstate;
+    uint16_t temp_max_pstate = core[core_id].throttle_info[throttle_index].max_pstate;
+    uint16_t temp_pstate = core[core_id].pstate_from_current_pkt;
+    /* For core pstate- min, max avg calculation during throttle*/
+    tlm_calculate_mma_res(&temp_min_pstate, &temp_max_pstate, &temp_avg_pstate, &temp_pstate, time_diff_uS, residency_mS * 1000);
+    // Update core throttle info
+    core[core_id].throttle_info[throttle_index].avg_pstate = temp_avg_pstate;
+    core[core_id].throttle_info[throttle_index].max_pstate = temp_max_pstate;
+}
+
+void tlm_update_rack_throttling(pstate_telem_t* pstate_telemetry, int throttle_index, uint8_t core_id)
+{
+    // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2561396
+    //  Update me as per above task requirement: if throttling is RACK, update throttling_priority_id.
+    // check if throttle index is THROTTLE_SOURCE_RACK_LIMIT and if new vm priority is different than
+    // previous one update priority id.
+    // update  core[core_id].throttling_priority_id from pstate packet with pstate_telemetry->data.vm_throttle_pri
+    FPFW_UNUSED(core_id);
+    FPFW_UNUSED(pstate_telemetry);
+    FPFW_UNUSED(throttle_index);
+}
+
+fpfw_status_t tlm_logger_log_core_throttling(pstate_telem_t* pstate_telemetry)
+{
+
+    uint8_t core_id = pstate_telemetry->data.core;
+    pstate_throttle_status_t status = pstate_telemetry->data.throttle_status;
+
+    // 1. There may be multiple throttling at the same time.e.g Rack throttle  and Temperature throttle.
+    // 2. During throttle get the pstate from current pkt, at the time of logging throttling (pstate packet), we have processed
+    //    the current telemtry packet already, hence the current pkt, it the most recent current telemetry packet.
+    // 3. calculate residency and entry count .
+    // 4. max pstate is the reported max pstate during that throttling residency.
+
+    uint64_t time_diff_uS = 0;
+    int8_t throttle_index = 0;
+
+    /* throttle_index will always be within limits of 0 ~6 or -1, based on lkp tbl*/
+    throttle_index = tlm_logger_calculate_throttle_index(status);
+    if (throttle_index < 0)
+    {
+        FPFW_ET_LOG(LogCoreThrottleInValidStatus, status);
+        return FPFW_STATUS_INVALID_ARGS;
+    }
+    // Check for throttle start/end event.
+    if (pstate_telemetry->data.throttle_status != core[core_id].throttling_status)
+    {
+        // Store the current status for throttling information
+        // If there is a throttling end event, process it to calculate the following:
+        //    1. Update of the cores throttling residency according to the throttling type
+        //    2. Store the latest core max pstate and average pstate during throttling.
+        if (status >= CURRENT_THROTTLING_END)
+        {
+            if (!(core[core_id].throttle_previous_timestamp_uS[throttle_index] != 0 &&
+                  pstate_telemetry->timestamp > core[core_id].throttle_previous_timestamp_uS[throttle_index]))
+            {
+                // return if timestamp < core[core_id].throttle_info[throttle_index].previous_timestamp_uS return. eg. Network time sync issue.
+                // Invalid timestamp : not to update the residency with wrong data, but update the exit count and end status.
+                core[core_id].throttle_info[throttle_index].exit_count++;
+                core[core_id].throttling_status = pstate_telemetry->data.throttle_status;
+                FPFW_ET_LOG(LogCoreThrottleValidTimeStamp, status);
+                return FPFW_STATUS_INVALID_ARGS;
+            }
+            // Get the Throttling time stamp now and subtract from previous
+            time_diff_uS = (pstate_telemetry->timestamp - core[core_id].throttle_previous_timestamp_uS[throttle_index]);
+
+            // This is the per core and per type throttling residency in uS
+            core[core_id].throttle_info[throttle_index].residency_mS += MICROSECONDS_TO_MILLISECONDS(time_diff_uS);
+            core[core_id].throttle_info[throttle_index].exit_count++;
+            core[core_id].core_throttling_tracker[throttle_index] = 0;
+            // Record the current pstate
+            core[core_id].pstate_from_pstate_pkt = pstate_telemetry->data.pstate;
+        }
+        else
+        {
+            core[core_id].core_throttling_tracker[throttle_index] = 1;
+            core[core_id].throttle_info[throttle_index].entry_count++;
+            core[core_id].throttle_previous_timestamp_uS[throttle_index] = pstate_telemetry->timestamp;
+        }
+    }
+
+    // dummy implementation for rack throttle update.
+    tlm_update_rack_throttling(pstate_telemetry, throttle_index, core_id);
+
+    return FPFW_STATUS_SUCCESS;
+}
 fpfw_status_t tlm_logger_log_core_pstate(pstate_telem_t* pstate_telemetry)
 {
     // Power information per P State Per Core is updated based on current
@@ -383,92 +509,74 @@ fpfw_status_t tlm_logger_log_core_pstate(pstate_telem_t* pstate_telemetry)
         return FPFW_STATUS_INVALID_ARGS;
     }
 
+    // take snapshots of Pstates and Cstates
+    // check to log the Core Pstate if there are changes
+    if (pstate_telemetry->data.pstate != core[core_id].pstate_from_pstate_pkt)
+    {
+        core[core_id].pstate_from_pstate_pkt = pstate_telemetry->data.pstate;
+        core[core_id].pstate[pstate_telemetry->data.pstate].entry_count++;
+        // TODO: Investigation task to check if we need an API for timestamp conversion :
+        // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2571666
+        core[core_id].pstate_timestamp_uS = pstate_telemetry->timestamp;
+    }
+
+    // if previous throttling status was throttling, check all type of active throttling
+    // end and update the tracker.
+    if (core[core_id].throttling_status != NO_THROTTLING)
+    {
+        tlm_update_throttling_status_on_exit(core_id, pstate_telemetry->timestamp);
+    }
+    // Save the current plimit
+    core[core_id].active_sample_plimit = pstate_telemetry->data.plimit;
+
+    return FPFW_STATUS_SUCCESS;
+}
+
+fpfw_status_t tlm_logger_log_core_states(pstate_telem_t* pstate_telemetry)
+{
+    // Convert Sensor Data into Pstate Entry
+    uint8_t core_id = pstate_telemetry->data.core;
+    if (core_id >= NUMBER_OF_CORES_PER_DIE)
+    {
+        FPFW_ET_LOG(LogCoreThrottleInValidCoreId, core_id);
+        return FPFW_STATUS_INVALID_ARGS;
+    }
     // Check for throttling indication first. If System is throttling, do not
     // take snapshots of Pstates and Cstates
-    if (pstate_telemetry->data.throttle_status == NO_THROTTLE)
+    pstate_throttle_status_t status = pstate_telemetry->data.throttle_status;
+
+    switch (status)
     {
-        // check to log the Core Pstate if there are changes
-        if (pstate_telemetry->data.pstate != core[core_id].pstate_from_pstate_pkt)
-        {
-            core[core_id].pstate_from_pstate_pkt = pstate_telemetry->data.pstate;
-            core[core_id].pstate[pstate_telemetry->data.pstate].entry_count++;
-            core[core_id].pstate_timestamp_uS = pstate_telemetry->timestamp;
-        }
+    case NO_THROTTLING:
+        // log pstate
+        tlm_logger_log_core_pstate(pstate_telemetry);
+        // log cstate
+        tlm_logger_log_core_cstate(pstate_telemetry);
+        break;
+    case CURRENT_THROTTLING_START:
+    case TEMP_THROTTLING_START:
+    case SYS_FRC_PMIN_THROTTLING_START:
+    case ADPT_CLK_THROTTLING_START:
+    case CURRENT_THROTTLING_END:
+    case TEMP_THROTTLING_END:
+    case SYS_FRC_PMIN_THROTTLE_END:
+    case ADPT_CLK_THROTTLE_END:
+    case CURRENT_THROTTLING_OVERRUN: // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2571672
+    case ADPT_CLK_THROTTLING_OVERRUN:
+        // Throttling information is logged based on status code (status_index)
+        tlm_logger_log_core_throttling(pstate_telemetry);
+        break;
 
-        // Log cstate and  update core's throttling and nominal pstate if we are not throttling
-        if (core[core_id].flags.throttling_start_occurred == 0)
-        {
-            //! reset the throttling type to no throttling
-            core[core_id].throttle_source = THROTTLE_SOURCE_NONE;
-            core[core_id].throttle_trnsn_event = THROTTLE_TRNSN_NONE;
-            core[core_id].nominal_pstate = pstate_telemetry->data.pstate;
-        }
-
-        // Save the current plimit
-        core[core_id].active_sample_plimit = pstate_telemetry->data.plimit;
+    case RACK_THROTTLING_START:
+    case RACK_THROTTLING_END:
+        // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2561396
+        break;
+    default:
+        break;
     }
-    else
-    {
-        PSTATE_THROTTLE_STATUS_CODES prop_index = pstate_telemetry->data.throttle_status;
-        core[core_id].throttle_source = throttling_prop[prop_index].throttle_source;
-        core[core_id].throttle_trnsn_event = throttling_prop[prop_index].transition_event;
-
-        // Check for throttle events start
-        if (pstate_telemetry->data.throttle_status != core[core_id].throttling_status)
-        {
-            // Store the current status for throttling information
-
-            core[core_id].flags.throttling_ev_change = 1;
-
-            // If there is a throttling end event, process it to calculate the following:
-            //    1. Update of the cores throttling residency according to the throttling type
-            //    2. Update the runtime throttling counter which is used for the MPAM throttling calculation and update
-            //    3. Store the latest core max pstate and average pstate during throttling.
-            if (prop_index >= CURRENT_THROTTLE_END)
-            {
-                if (core[core_id].throttle_timestamp_uS != 0 && pstate_telemetry->timestamp > core[core_id].throttle_timestamp_uS)
-                {
-                    // Get the Throttling time stamp now and subtract from previous
-                    uint64_t timestamp_now = (pstate_telemetry->timestamp - core[core_id].throttle_timestamp_uS) / 1000;
-
-                    // This is the per core and per type throttling residency in uS
-                    core[core_id].throttle_info[prop_index - CURRENT_THROTTLE_END].residency_mS += timestamp_now;
-
-                    // This throttling counter will be used by the MPAM for VM Throttling
-                    core[core_id].throttling_counter += timestamp_now;
-                }
-                core[core_id].throttle_info[prop_index - CURRENT_THROTTLE_END].exit_count++;
-
-                // Record the current pstate
-                core[core_id].pstate_from_pstate_pkt = pstate_telemetry->data.pstate;
-
-                // Indicate that the throttling have at least ended once
-                core[core_id].flags.throttling_end_occurred = 1;
-                core[core_id].flags.throttling_start_occurred = 0;
-            }
-            else
-            {
-                core[core_id].throttle_info[prop_index - 1].entry_count++;
-
-                // Indicate that the throttling start
-                core[core_id].flags.throttling_start_occurred = 1;
-                core[core_id].throttle_timestamp_uS = pstate_telemetry->timestamp;
-            }
-        }
-
-        if (core[core_id].throttle_source == THROTTLE_SOURCE_RACK_LIMIT)
-        {
-            // Check if there was a priority id change
-            if (core[core_id].throttling_priority_id != pstate_telemetry->data.vm_throttle_pri)
-            {
-                core[core_id].flags.rack_priority_change = 1;
-                core[core_id].throttling_priority_id = pstate_telemetry->data.vm_throttle_pri;
-            }
-        }
-    }
-
-    //! set the throttling status
+    //! update  throttling status
     core[core_id].throttling_status = pstate_telemetry->data.throttle_status;
+
     return FPFW_STATUS_SUCCESS;
 }
 
@@ -580,8 +688,7 @@ void data_proc_tlm_cmpnt_aggregate_pwr_tlm_data(void)
         if (status.curr_data_is_valid == true)
         {
             // process the core states(pstate/cstate)
-            tlm_logger_log_core_pstate(state_data);
-            tlm_logger_log_core_cstate(state_data);
+            tlm_logger_log_core_states(state_data);
         }
     } while (status.more_entries == true);
 
@@ -685,6 +792,23 @@ void data_proc_tlm_cmpnt_get_pwr_core_cstate_data(uint16_t core_id, pwr_core_ele
     }
 }
 
+void tlm_core_reset_throttle_data(uint16_t core_id)
+{
+    // parameter check: core_id, check if correct
+    if (core_id >= NUMBER_OF_CORES_PER_DIE)
+    {
+        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_CORE_THROTTLE);
+    }
+    else
+    {
+        for (uint16_t throttle_index = 0; throttle_index < NUMBER_OF_THROTTLE_TYPES; throttle_index++)
+        {
+            // reset core throttle array once record is collected/packaged.
+            memset(&core[core_id].throttle_info[throttle_index], 0, sizeof(core[core_id].throttle_info[throttle_index]));
+        }
+    }
+}
+
 void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id,
                                                     pwr_core_element_throttle_t (*throttle_array)[NUMBER_OF_THROTTLE_TYPES])
 {
@@ -705,6 +829,9 @@ void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id,
             (*throttle_array)[throttle_index].residency_mS = core[core_id].throttle_info[throttle_index].residency_mS;
             (*throttle_array)[throttle_index].type_id = core[core_id].throttle_info[throttle_index].type_id;
         }
+
+        // reset throttling data on record collection
+        tlm_core_reset_throttle_data(core_id);
     }
 }
 
@@ -900,7 +1027,7 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
         // Depdending on the throttling status, we need to use a different source for what pstate id the
         // core is currently in.
         //
-        uint8_t current_pstate = core[core_id].nominal_pstate;
+        uint8_t current_pstate = core[core_id].pstate_from_pstate_pkt;
         if (core[core_id].throttling_status != NO_THROTTLE)
         {
             current_pstate = core[core_id].pstate_from_current_pkt;
@@ -1273,13 +1400,6 @@ void tlm_update_pstate(uint8_t core_id, uint64_t time_stamp_uS)
     }
 }
 
-void tlm_update_throttling(uint8_t core_id, uint64_t time_stamp_uS)
-{
-    FPFW_UNUSED(core_id);
-    FPFW_UNUSED(time_stamp_uS);
-    /* TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2319985 */
-}
-
 void tlm_update_core_histogram(uint8_t core_id)
 {
     FPFW_UNUSED(core_id);
@@ -1348,6 +1468,31 @@ void tlm_soc_component_update(void)
     // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023433
 }
 
+void tlm_update_throttling(uint8_t core_id, uint64_t time_stamp_uS)
+{
+
+    int8_t i = 0;
+    // End all active throttling and update residency
+    for (i = 0; i < NUMBER_OF_THROTTLE_TYPES; i++)
+    {
+        if (core[core_id].core_throttling_tracker[i])
+        {
+            if (core[core_id].throttle_previous_timestamp_uS[i] != 0 &&
+                time_stamp_uS > core[core_id].throttle_previous_timestamp_uS[i])
+            {
+                // Get the Throttling time stamp now and subtract from previous
+                uint64_t time_diff_uS = time_stamp_uS - core[core_id].throttle_previous_timestamp_uS[i];
+                // This is the per core and per type throttling residency in uS
+                core[core_id].throttle_info[i].residency_mS += MICROSECONDS_TO_MILLISECONDS(time_diff_uS);
+                // Use per throttle type accumualated residency for max and avg calculation.
+                /* For core pstate- min, max avg calculation during throttle*/
+                tlm_update_throttling_pstate(core_id, i, time_diff_uS, core[core_id].throttle_info[i].residency_mS);
+            }
+        }
+        core[core_id].throttle_previous_timestamp_uS[i] = time_stamp_uS;
+    }
+}
+
 void tlm_core_component_update(void)
 {
     static uint64_t previous_core_timestamp_uS = 0;
@@ -1361,7 +1506,7 @@ void tlm_core_component_update(void)
         /* Calculate  the general residency for the core*/
         core[core_id].time_counter_uS += time_diff_uS;
 
-        /* Do not do any update for this core if the current packet timestamp is zero */
+        /* Do not do any update for this core if the current packet timestamp is zero: disable core */
         if (core[core_id].current_pkt_timestamp != 0)
         {
             /* update pstate residency and power */

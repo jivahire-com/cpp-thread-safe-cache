@@ -24,8 +24,8 @@
 #define NUMBER_OF_HNF_CHANNELS_PER_DIE (NUMBER_OF_TILES_PER_DIE*2)
 #define NUMBER_OF_PSTATES (32)
 #define NUMBER_OF_CSTATES (5)
-
-#define NUMBER_OF_THROTTLE_TYPES    (7)
+//current, temperature, RACK, VR HOT, ADP_CLK, currnt overrun, adp_clk overrun
+#define NUMBER_OF_THROTTLE_TYPES    (7)  //(5+2)
 #define NUMBER_OF_RACK_PRIORITIES   (8)
 #define NUMBER_OF_HS_VOLTAGE_SCALES (17)
 #define NUMBER_OF_HS_TEMP_SCALES    (7)

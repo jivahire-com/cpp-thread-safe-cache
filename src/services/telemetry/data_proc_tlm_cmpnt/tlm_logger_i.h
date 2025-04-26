@@ -28,8 +28,7 @@ extern "C" {
 #define MAX_BUFFER_ENTRIES 		 8
 #define MAX_NUMBER_POWER_SAMPLE  100
 #define DOUT2MILLIVOLTS(voltage) (voltage * 1000)
-
-
+#define MICROSECONDS_TO_MILLISECONDS(time_diff_uS) ((time_diff_uS) / 1000)
 
 
 // The current conversion factor is set by default as 26.5 per bit.
@@ -53,12 +52,13 @@ typedef enum
 
 typedef enum
 {
-    THROTTLE_SOURCE_NONE = 0,
-    THROTTLE_SOURCE_CURRENT,
+    THROTTLE_SOURCE_CURRENT=0,
     THROTTLE_SOURCE_TEMPERATURE,
     THROTTLE_SOURCE_RACK_LIMIT,
     THROTTLE_SOURCE_VR_HOT,
     THROTTLE_SOURCE_ADAPTIVE_CLK,
+    THROTTLE_SOURCE_CURRENT_OVERRUN,
+    THROTTLE_SOURCE_ADAPTIVE_CLK_OVERRUN,
 } throttle_source_t;
 
 // enum for type of power telemetry components soc,tile or core.
@@ -108,17 +108,16 @@ typedef struct {
     core_control_flags_t flags;
     uint64_t cstate_timestamp_uS; //for cstate residency update.
     uint64_t pstate_timestamp_uS;
-    uint64_t throttle_timestamp_uS;
     uint64_t current_pkt_timestamp;
-    uint64_t throttling_counter;
     uint8_t pstate_from_pstate_pkt; /* pstate from pstate packet*/
     uint8_t cstate_from_pstate_pkt; /* cstate from pstate packet from sensor fifo*/
     uint8_t active_sample_plimit;
     uint8_t ldo_voltage;
     uint8_t throttling_status;
-    uint8_t throttle_trnsn_event;
+    uint8_t throttle_event;
     uint8_t throttle_source;
     uint8_t throttling_priority_id;
+    uint64_t throttle_previous_timestamp_uS[NUMBER_OF_THROTTLE_TYPES];
     uint32_t time_counter_uS; // for general residency calculation for the core in uS
     uint8_t pstate_from_current_pkt; /* pstate from current packet, during throttling */
     uint32_t average_pwr_mW; //running average of power samples values in mW .
@@ -131,7 +130,7 @@ typedef struct {
     current_t current;
     temperature_t temperature;
     uint16_t active_sample_mpam_id;
-    uint8_t nominal_pstate;
+    bool core_throttling_tracker[NUMBER_OF_THROTTLE_TYPES];
 } core_runtime_info_t;
 
 typedef struct {
@@ -153,6 +152,27 @@ typedef struct {
     pwr_soc_element_sensor_temp_t sensor_temp[NUMBER_OF_SOC_TEMP_SENSORS];
     pwr_soc_element_dimm_t      dimm[NUMBER_OF_DIMM_MODULES];
 } soc_runtime_info_t;
+
+/**
+ *  @brief Enum for Pstate message throttle status codes
+ * // Status from KNG RMSSHASv0.p14 Document index value
+ */
+typedef enum _pstate_throttle_status_t
+{
+    NO_THROTTLING = 0,
+    CURRENT_THROTTLING_START,
+    TEMP_THROTTLING_START,
+    RACK_THROTTLING_START,
+    SYS_FRC_PMIN_THROTTLING_START,
+    ADPT_CLK_THROTTLING_START,
+    CURRENT_THROTTLING_END,
+    TEMP_THROTTLING_END,
+    RACK_THROTTLING_END,
+    SYS_FRC_PMIN_THROTTLING_END,
+    ADPT_CLK_THROTTLING_END,
+    CURRENT_THROTTLING_OVERRUN,
+    ADPT_CLK_THROTTLING_OVERRUN
+} pstate_throttle_status_t;
 
 /*--------- Function Prototypes ----------*/
 
@@ -261,6 +281,36 @@ fpfw_status_t tlm_logger_log_core_pstate(pstate_telem_t* pstate_telemetry);
  * @return fpfw_status_t
  */
 fpfw_status_t  tlm_logger_log_core_cstate(pstate_telem_t* cstate_telemetry);
+/**
+ * @brief Internal API to log states-pstate,cstate and also log core throttling telemetry.
+ * @param pstate_telemetry - SCF RAM formatted resource for pstate packets
+ *        (IMPORTANT : pstate telemetry packet provide both p state/c state and throttling status))
+ *        
+ * @return fpfw_status_t
+ */
+fpfw_status_t  tlm_logger_log_core_states(pstate_telem_t* pstate_telemetry);
+/**
+ * @brief  calculate throttling index based on throttle status in telemetry pkt.
+ * 
+ * @param status  1-12 if success or -1 in case of a error.
+ * @return int return index for throttle info array.
+ */
+int8_t tlm_logger_calculate_throttle_index(pstate_throttle_status_t status);
+/**
+ * @brief log the throttling states, based on pstate pkt and start/end event 
+ * from pkt.
+ * 
+ * @param pstate_telemetry 
+ * @return fpfw_status_t None
+ */
+fpfw_status_t tlm_logger_log_core_throttling(pstate_telem_t* pstate_telemetry);
+/**
+ * @brief This api clear the throttling tracker.
+ * 
+ * @param core_id 
+ * @param timestamp_uS 
+ */
+void tlm_update_throttling_status_on_exit(uint8_t core_id, uint64_t timestamp_uS);
 /**
  * @brief Power telemetry update management -update data after logging. 
  * @param   None 
@@ -393,10 +443,27 @@ void tlm_update_soc_dimm_info(uint8_t dimm_module_index, uint32_t time_diff_uS, 
  */
 void tlm_update_pstate(uint8_t core_id, uint64_t time_stamp_uS);
 /**
- * @brief function is intended to update the throttling status for a specified 
- *          core based on the provided timestamp
+ * @brief  This API used during cores are throttling, MMA calculation is triggerd by this APIs
+ * 
  * @param core_id 
- * @param time_stamp_uS 
+ * @param throttle_index  Throttling type.
+ * @param time_diff_uS    time diff between current timestamp and previous time stamp
+ * @param residency_mS  - residency in mS
+ */
+void tlm_update_throttling_pstate(uint8_t core_id, int8_t throttle_index, uint32_t time_diff_uS, uint32_t residency_mS);
+/**
+ * @brief update rack throttling 
+ * 
+ * @param pstate_telemetry  provide pstate tlm pkt.
+ * @param throttle_index - source of throttle , in this case rack.
+ * @param core_id 
+ */
+void tlm_update_rack_throttling(pstate_telem_t* pstate_telemetry, int throttle_index, uint8_t core_id);
+/**
+ * @brief tlm_update_throttling from runtime update manager.
+ * 
+ * @param core_id 
+ * @param time_stamp_uS -system time stamp
  */
 void tlm_update_throttling(uint8_t core_id, uint64_t time_stamp_uS);
 /**
@@ -424,6 +491,14 @@ void tlm_core_component_update(void);
  * and uses this information to update the residency and metrics for each tile.
  */
 void tlm_tile_component_update(void);
+/**
+ * @brief Reset the core throttle data for the specified core.
+ *
+ * @param[in] core_id - The core id to reset the throttle data to. 0 
+ *
+ * @return None
+ */
+void tlm_core_reset_throttle_data(uint16_t core_id);
 #ifdef __cplusplus
 }
 #endif

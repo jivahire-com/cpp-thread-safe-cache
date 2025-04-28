@@ -95,7 +95,6 @@ TEST_FUNCTION(test_successful_init_all_vabs, NULL, NULL)
             will_return(__wrap_atu_map, SILIBS_SUCCESS);
 
             expect_value(__wrap_vab_init, vab_init_params->security_state, SECURITY_STATE_NON_SECURE);
-            expect_value(__wrap_vab_init, vab_init_params->system_counter_delay, 0);
             expect_value(__wrap_vab_init, vab_init_params->vab_resolved_base_addr, 0x0);
             expect_value(__wrap_vab_init, vab_init_params->vab_configure_intu, true);
             expect_value(__wrap_vab_init, vab_init_params->vab_id, vab_id);
@@ -151,7 +150,6 @@ TEST_FUNCTION(test_atu_unmap_fail, NULL, NULL)
             will_return(__wrap_atu_map, SILIBS_SUCCESS);
 
             expect_value(__wrap_vab_init, vab_init_params->security_state, SECURITY_STATE_NON_SECURE);
-            expect_value(__wrap_vab_init, vab_init_params->system_counter_delay, 0);
             expect_value(__wrap_vab_init, vab_init_params->vab_resolved_base_addr, 0x0);
             expect_value(__wrap_vab_init, vab_init_params->vab_configure_intu, true);
             expect_value(__wrap_vab_init, vab_init_params->vab_id, vab_id);

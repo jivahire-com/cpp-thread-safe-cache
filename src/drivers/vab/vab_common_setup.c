@@ -58,12 +58,8 @@ int vab_common_init(uint16_t vab_instances_to_init)
      * The mem_attr encoding used is -
      * 0b1111: Normal memory, Inner Write-Back, Outer Write-Back.
      */
-    smmu_gbpa_cfg_t smmu_gbpa_cfg = {0};
-    smmu_gbpa_cfg.sh_cfg = 1;
-    smmu_gbpa_cfg.mt_cfg = 1;
-    smmu_gbpa_cfg.mem_attr = 0b1111;
 
-    vab_init_t vab_init_cfg = {.vab_smmu_gbpa_cfg = &smmu_gbpa_cfg};
+    vab_init_t vab_init_cfg = {0};
     smmu_vab_prod_knobs_t smmu_vab_config_knob = config_get_smmu_vab_knobs();
     vab_knobs_t vab_config_knob = config_get_vab_knobs();
 
@@ -78,8 +74,7 @@ int vab_common_init(uint16_t vab_instances_to_init)
 
             // TODO: What should be the default security state? This is used for configuring SMMU registers
             vab_init_cfg.security_state = SECURITY_STATE_NON_SECURE;
-            // TODO: Use silibs knobs to get the system counter delay value
-            vab_init_cfg.system_counter_delay = 0;
+            vab_init_cfg.system_counter_delay = vab_config_knob.vab_sys_cntr_delay[vab_id];
             vab_init_cfg.vab_resolved_base_addr = atu_vabss_map[vab_id].mscp_start_address;
             vab_init_cfg.vab_configure_intu = true;
             vab_init_cfg.vab_id = vab_id;

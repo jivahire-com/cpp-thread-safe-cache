@@ -9,13 +9,14 @@
   <Structs>
     <Struct name="vab_knobs_t">
       <Member name="vab_pcr_cfg" type="vab_pcr_config_t" count="12" help="Vab pcr config knob for all vab instances. Vab instance ordering follows SUBSYSTEM_WITH_VAB_ID enum" />
+      <Member name="vab_sys_cntr_delay" type="uint32_t" count="12" default="{0x12, 0xD, 0x8, 0x4, 0x12, 0xD, 0x8, 0x4, 0x18, 0x18, 0x13, 0x13}" help="Vab system counter delay knob for all VAB instances. Debug wrap and ras node share same delay value" />
     </Struct>
   </Structs>
 
   <!-- namespace indicates the GUID namespace the values are stored in -->
   <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
     <!--  VAB Knobs -->
-    <Knob name="vab_knobs" type = "vab_knobs_t" help = "VAB config knobs"/>
+    <Knob name="vab_knobs" type ="vab_knobs_t" help ="VAB config knobs"/>
   </Knobs>
 
 </ConfigSchema>

@@ -1,0 +1,22 @@
+<ConfigSchema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:noNamespaceSchemaLocation="configschema.xsd">
+
+  <!-- Enum values are declared separately from the knobs.
+       The same Enum can be used as the 'enumtype' of any number of EnumKnobs -->
+  <Enums>
+  </Enums>
+
+  <Structs>
+    <Struct name="clocks_sequence_knobs_t">
+      <Member name="clocks_intclk_cfg" type="intclk_cfg_t" count="1" help="Int-clk frequency configuration" />
+      <Member name="sys_counter_delay_cfg" type="sys_counter_delay_cfg_t" count="1" help="System counter delay config for msxp and dbgroot" />
+    </Struct>
+  </Structs>
+
+  <!-- namespace indicates the GUID namespace the values are stored in -->
+  <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
+    <!-- clocks sequence -->
+    <Knob name="clock_seq_knobs" type="clocks_sequence_knobs_t" help="Clocks sequence knobs" />
+  </Knobs>
+
+</ConfigSchema>

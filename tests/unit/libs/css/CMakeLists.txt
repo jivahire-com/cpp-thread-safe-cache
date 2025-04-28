@@ -33,5 +33,4 @@ unit_test_target(${TARGET})
 # Mock the functions needed
 mock_target(${TARGET}
     clocks_sequence_css_pre_mesh_init
-    config_get_intclk_knobs
 )

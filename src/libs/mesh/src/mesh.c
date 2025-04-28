@@ -230,6 +230,14 @@ void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_para
     cmn800_sequence_param->D2D_INIT = 0;       // D2D_INIT_FRONTDOOR
     cmn800_sequence_param->USE_HW_TIMER = 0;
     // cmn800_sequence_param->cmn800_sequence_knobs = DEFAULT_CMN800_SEQUENCE_CFG_T;
+
+    d2dss_sys_counter_delay_t sys_cntr_delay = config_get_d2dss_system_counter_delay();
+    for (int i = 0; i < NUM_D2DSS_PER_DIE; i++)
+    {
+        cmn800_sequence_param->cmn800_sequence_knobs.d2dss_system_counter_delay[i] =
+            sys_cntr_delay.d2dss_sys_counter_delay[i];
+    }
+
     if (!idhw_is_single_die_boot_en()) // 2 Die
     {
         MESH_INFO("Dual Die Boot\n");

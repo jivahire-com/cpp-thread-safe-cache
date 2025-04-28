@@ -53,7 +53,7 @@ void css_pre_mesh_init(uint8_t die_num)
 {
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
 
-    intclk_cfg_t intclk_knobs = config_get_intclk_knobs();
+    intclk_cfg_t intclk_knobs = config_get_clock_seq_knobs().clocks_intclk_cfg;
 
     clocks_sequence_css_pre_mesh_init_t scp_clocks_pre_mesh_param = {};
     scp_clocks_pre_mesh_param.system_ppu_opmode = PPU_V1_OPMODE_01;
@@ -90,6 +90,8 @@ void css_post_mesh_init()
 {
     clocks_sequence_css_post_mesh_init_t scp_clocks_post_mesh_param = {};
     scp_clocks_post_mesh_param.skip_periph_pcr_init = false;
+    sys_counter_delay_cfg_t sys_counter_delay_cfg = config_get_clock_seq_knobs().sys_counter_delay_cfg;
+    scp_clocks_post_mesh_param.sys_counter_delay = &sys_counter_delay_cfg;
     int sts = clocks_sequence_css_post_mesh_init(&scp_clocks_post_mesh_param);
     FPFW_RUNTIME_ASSERT(sts == 0);
 }

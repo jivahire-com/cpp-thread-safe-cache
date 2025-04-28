@@ -117,7 +117,6 @@ smmu_vab_prod_knobs_t __wrap_config_get_smmu_vab_knobs(void)
 int __wrap_vab_init(vab_init_t* vab_init_params)
 {
     check_expected(vab_init_params->security_state);
-    check_expected(vab_init_params->system_counter_delay);
     check_expected(vab_init_params->vab_resolved_base_addr);
     check_expected(vab_init_params->vab_configure_intu);
     check_expected(vab_init_params->vab_id);

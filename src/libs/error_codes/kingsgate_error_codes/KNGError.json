@@ -298,6 +298,63 @@
           "Description": "Fused curve has no valid pstates"
         }
       ]
+    },
+    {
+      "Facility_Name": "FACILITY_HEALTHMONITOR",
+      "Facility_Value": 59,
+      "Facility_Description": "This is for Health Monitor library error codes.",
+      "Errors": [
+        {
+          "Name": "KNG_HM_UNUSED_ERROR",
+          "Value": 0,
+          "Description": "Do not use, defined to prevent use of 0 as error code."
+        },
+        {
+          "Name": "KNG_HM_SCF_CE",
+          "Value": 1,
+          "Description": "Correctable Error in SCP SCF RAM"
+        },
+        {
+          "Name": "KNG_HM_SCF_UE",
+          "Value": 2,
+          "Description": "Uncorrectable Error in SCP SCF RAM"
+        },
+        {
+          "Name": "KNG_HM_SCF_OF",
+          "Value": 3,
+          "Description": "Overflow Error in SCP SCF RAM"
+        },
+        {
+          "Name": "KNG_HM_RMSS_RAM0_CE",
+          "Value": 4,
+          "Description": "Correctable Error in RMSS RAM0"
+        },
+        {
+          "Name": "KNG_HM_RMSS_RAM0_UE",
+          "Value": 5,
+          "Description": "Uncorrectable Error in RMSS RAM0"
+        },
+        {
+          "Name": "KNG_HM_RMSS_RAM0_OF",
+          "Value": 6,
+          "Description": "Overflow Error in RMSS RAM0"
+        },
+        {
+          "Name": "KNG_HM_RMSS_RAM1_CE",
+          "Value": 7,
+          "Description": "Correctable Error in RMSS RAM1"
+        },
+        {
+          "Name": "KNG_HM_RMSS_RAM1_UE",
+          "Value": 8,
+          "Description": "Uncorrectable Error in RMSS RAM1"
+        },
+        {
+          "Name": "KNG_HM_RMSS_RAM1_OF",
+          "Value": 9,
+          "Description": "Overflow Error in RMSS RAM1"
+        }
+      ]
     }
   ]
 }

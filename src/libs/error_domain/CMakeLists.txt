@@ -19,8 +19,12 @@ target_link_libraries(
             fwlib.lib.status
         PRIVATE
             fwlib.lib.assert
+            fwlib.lib.interface.platform.dbgprint
+            ms::lib::arm_intrinsic
+            ms::lib::cortex_m7::nvic
             ms::lib::crash_dump
             ms::lib::error_codes
+            ms::lib::scp_interrupts
             ms::service::health_monitor
 )
 
@@ -62,10 +66,13 @@ target_link_libraries(
             fwlib.lib.status
         PRIVATE
             fwlib.lib.assert
+            fwlib.lib.interface.platform.dbgprint
             fwlib.service.iccBase
+            ms::lib::cortex_m7::nvic
             ms::lib::crash_dump
             ms::lib::error_codes
             ms::lib::icc_platform_defines
+            ms::lib::mcp_interrupts
             ms::service::health_monitor
             silibs::icc_mhu
             

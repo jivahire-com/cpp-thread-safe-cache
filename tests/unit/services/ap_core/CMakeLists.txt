@@ -93,6 +93,8 @@ mock_target(${TARGET}
     idhw_get_soc_id
 
     _txe_event_flags_set
+
+    config_get_kmp_safe_state
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

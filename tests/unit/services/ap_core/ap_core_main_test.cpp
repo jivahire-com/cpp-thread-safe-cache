@@ -206,6 +206,11 @@ bool __wrap_system_info_is_hsp_present()
     return mock_type(bool);
 }
 
+bool __wrap_config_get_kmp_safe_state()
+{
+    return mock_type(bool);
+}
+
 int __wrap_write_fuse_info_to_ap()
 {
     return mock_type(int);
@@ -888,6 +893,7 @@ AP_CORE_TEST(dispatch_kmp_load, setup, NULL)
 
     // Set up expectations
     will_return(__wrap_system_info_is_hsp_present, true);
+    will_return(__wrap_config_get_kmp_safe_state, false);
     will_return_always(__wrap_idsw_get_die_id, 0x0);
 
     expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);

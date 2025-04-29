@@ -167,7 +167,7 @@
     <Knob name="cded_emm_resp_code" type="accel_emm_resp_code_t"/>
 
     <!-- Test Knobs -->
-    <Knob name="m7_test_knob" type="uint32_t" default="4" help="Test Knob for Accel transfer" />
+    <Knob name="kmp_safe_state" type="bool" default="true" help="Knob to set KMP to a safe state (reset)" />
 
     <Knob name="err_intr_enb_disable" type="soc_accel_err_intr_en_disable_t" />
   </Knobs>

@@ -45,13 +45,10 @@ const char* scp_end_magic_string = END_MAGIC_STRING;
 const uint32_t config_offset = 0x0007fc00;
 const uint32_t config_size = 0x00000400;
 
-// This is the list of knobs to be transferred to the accelerator. The list is yet to be finalized.
-// For now, we are transferring the m7_test_knob to the accelerator. Remove later: ADO 2503735
-const char* knob_list[] = {
-    "m7_test_knob",
+const char* knob_transfer_list[] = {
+    "kmp_safe_state",
 };
 
-const uint32_t m7_test_knob_value = 0xFFFFFFFF;
 // Clean up FPFW_DBGPRINT_ after all PRs in the series are merged : ADO 2503735
 
 /*--------------------------------- Externs ---------------------------------*/
@@ -262,11 +259,12 @@ knob_transfer_status_t scp_download_accel_knobs(ACCEL_ID accel_type)
     }
     p_config_data_write_address += bytes_written;
 
-    for (uint32_t knob_num = 0; knob_num < FPFW_ARRAY_SIZE(knob_list); knob_num++)
+    for (uint32_t knob_num = 0; knob_num < FPFW_ARRAY_SIZE(knob_transfer_list); knob_num++)
     {
-        BUG_ASSERT(knob_list[knob_num] != NULL);
-
-        status = transfer_knob_to_accel(p_config_data_write_address, p_config_data_end_address, knob_list[knob_num], &bytes_written);
+        status = transfer_knob_to_accel(p_config_data_write_address,
+                                        p_config_data_end_address,
+                                        knob_transfer_list[knob_num],
+                                        &bytes_written);
         if (status != STATUS_KNOB_TRANSFER_SUCCESS)
         {
             FPFW_DBGPRINT_ERROR("Failed to write knob data. Continuing . . .\n");

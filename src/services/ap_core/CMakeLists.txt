@@ -43,31 +43,32 @@ target_link_libraries(${TARGET}
         ms::lib::corebits
     PRIVATE
         fwlib.dfwk
+        fwlib.lib.cfg_mgr
+        fwlib.lib.interface.platform.dbgprint
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.init
         fwlib.service.iccBase
         ms::build_data
         ms::lib::accelerator_ip
-        ms::lib::utils
         ms::lib::crash_dump
-        ms::lib::hsp_firmware_headers
+        ms::lib::debug
         ms::lib::error_codes
+        ms::lib::hsp_firmware_headers
         ms::lib::system_info
         ms::lib::threadx
-        ms::lib::debug
+        ms::lib::utils
+        ms::client_interface::ap_core
+        ms::client_interface::startup_shutdown
         ms::service::fuse
         ms::service::pcie_manager
         ms::service::sds_service
-        ms::client_interface::ap_core
-        ms::client_interface::startup_shutdown
         silibs::idhw
         silibs::idsw
         silibs::idsw_kng
+        silibs::kng_silibs_platform
         silibs::pik_clock
         silibs::platform
-        silibs::ppu_v1
-        silibs::kng_silibs_platform
-        
+        silibs::ppu_v1        
 )
 
 target_include_directories(${TARGET}

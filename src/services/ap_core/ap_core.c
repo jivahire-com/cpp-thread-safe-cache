@@ -14,12 +14,14 @@
 #include "ap_core_i.h"
 #include "ap_core_init.h"
 
+#include <DbgPrint.h>
 #include <DfwkDriver.h>
 #include <DfwkHost.h>
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
 #include <bug_check.h>
 #include <corebits.h>
+#include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h> // for fpfw_icc_base_send, fpfw_icc_base...
 #include <fuse_init.h>
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
@@ -333,12 +335,13 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
             }
             break;
         case STARTUP_KMP_LOAD:
-            if (system_info_is_hsp_present() && !accel_is_isolation_enabled(ACCEL_ID_CDED))
+            if (system_info_is_hsp_present() && !accel_is_isolation_enabled(ACCEL_ID_CDED) && !config_get_kmp_safe_state())
             {
                 ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_KMP);
             }
             else
             {
+                FPFW_DBGPRINT_INFO("KMP not loaded, either is isolated or in a safe state");
                 DfwkAsyncRequestComplete(p_request);
             }
             break;

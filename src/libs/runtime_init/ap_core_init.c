@@ -93,7 +93,7 @@ FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "tower_cfg", "ic
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &ap_core_service};
 }
 
-FPFW_INIT_COMPONENT(ap_core_int, FPFW_INIT_DEPENDENCIES("ap_core_svc", "sos_int"))
+FPFW_INIT_COMPONENT(ap_core_int, FPFW_INIT_DEPENDENCIES("ap_core_svc", "sos_int", "mesh"))
 {
     static ap_core_interface_t ap_core_interface;
     ap_core_interface_init(fpfw_init_get_handle("ap_core_svc"), &ap_core_interface);

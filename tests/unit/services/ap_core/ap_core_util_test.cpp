@@ -20,7 +20,9 @@ extern "C" {
 #include <ap_core_init.h>
 #include <core_cluster_with_pvt_regs.h>
 #include <core_manager_and_clock_control_registers_regs.h>
+#include <core_mapping.h>
 #include <corebits.h>
+#include <kng_soc_constants.h>
 
 } // extern "C"
 
@@ -52,6 +54,7 @@ extern "C" {
 #define TEST_RVBARADDR  0x123456789abcdef0
 #define TEST_CORE_COUNT 4
 #define TEST_CORE       2
+
 AP_CORE_TEST(util_get_boot_core, NULL, NULL)
 {
 
@@ -63,7 +66,12 @@ AP_CORE_TEST(util_get_boot_core, NULL, NULL)
 
     // set up the enabled cores
     corebits_t test_enabled_cores = {0};
-    corebits_set_bit(&test_enabled_cores, TEST_CORE_COUNT - 1);
+
+    for (unsigned int core = 0; core < NUM_AP_CORES_PER_DIE; core++)
+    {
+        corebits_set_bit(&test_enabled_cores, core);
+    }
+
     test_context.enabled_cores = test_enabled_cores;
 
     // expect null check
@@ -71,7 +79,7 @@ AP_CORE_TEST(util_get_boot_core, NULL, NULL)
 
     // expect the boot core to be last core
     unsigned int boot_core = __real_ap_core_util_boot_core(&test_context);
-    assert_int_equal(boot_core, TEST_CORE_COUNT - 1);
+    assert_int_equal(boot_core, CORE_MAPPING_UMA[0]);
 }
 
 AP_CORE_TEST(util_set_rvbaraddr, NULL, NULL)

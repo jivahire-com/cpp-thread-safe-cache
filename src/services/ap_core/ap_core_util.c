@@ -11,9 +11,14 @@
 #include "ap_core_i.h"
 
 #include <FpFwAssert.h>
+#include <FpFwUtils.h>
+#include <assert.h>
 #include <core_cluster_with_pvt_regs.h> // for CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS
 #include <core_manager_and_clock_control_registers_regs.h>
+#include <core_mapping.h>
 #include <corebits.h>
+#include <kng_soc_constants.h>
+#include <mesh.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -24,23 +29,33 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+extern NUMA_CFG numa_cfg;
 
 /*------------- Functions ----------------*/
 
 // utility function to find the first core to boot
 unsigned int ap_core_util_boot_core(ap_core_service_context_t* p_context)
 {
-    // TODO: proper implementation
-    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/1877167
     FPFW_RUNTIME_ASSERT(p_context != NULL);
-    // for now, just return the first core that is enabled
+
+    static_assert(NUM_AP_CORES_PER_DIE <= FPFW_ARRAY_SIZE(CORE_MAPPING_UMA), "Boot core mapping size unexpected");
+    static_assert(NUM_AP_CORES_PER_DIE <= FPFW_ARRAY_SIZE(CORE_MAPPING_NUMA), "Boot core mapping size unexpected");
+
+    const CONFIG_TYPE_UINT8* core_mapping = CORE_MAPPING_UMA;
+
+    if (numa_cfg.NumaEnabled)
+    {
+        core_mapping = CORE_MAPPING_NUMA;
+    }
+
     for (unsigned int core_idx = 0; core_idx < p_context->p_config->platform_die_core_count; ++core_idx)
     {
-        if (corebits_is_bit_set(&p_context->enabled_cores, core_idx))
+        if (corebits_is_bit_set(&p_context->enabled_cores, core_mapping[core_idx]))
         {
-            return core_idx;
+            return core_mapping[core_idx];
         }
     }
+
     return 0;
 }
 

@@ -30,8 +30,9 @@
  * `css_pome` which in-turn depends on the `std_io`, `hw_ver` and `mesh`.
  */
 // FPFW_INIT_COMPONENT(accel, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh"))
-FPFW_INIT_COMPONENT(accel,
-                    FPFW_INIT_DEPENDENCIES("vab", "hw_ver", "accel_iso_cfg", "accel_intr_clnt", "nvic", "ddr", "accel_atu", "cd_pomesh", "virt_irq", "cfg_mgr"))
+FPFW_INIT_COMPONENT(
+    accel,
+    FPFW_INIT_DEPENDENCIES("vab", "hw_ver", "accel_iso_cfg", "accel_intr_clnt", "nvic", "ddr", "accel_atu", "cd_pomesh", "virt_irq", "cfg_mgr", "boot_stat"))
 {
     // Update accel irq numbers used in irq init
     accel_intr_set_irq_num_for_accel(ACCEL_ID_SDM, HW_INT_SDM_COMB_INT);

@@ -157,7 +157,7 @@ static FPFW_CLI_STATUS hm_inject_err_cli(int argc, const char** argv)
     ras_einj_info_t input_einj_payload;
     memset(&input_einj_payload, 0, sizeof(ras_einj_info_t));
     input_einj_payload.version = ERROR_INJECTION_PAYLOAD_VERSION;
-    
+
     input_einj_payload.component_group = (uint16_t)strtol(argv[1], NULL, 0);
     input_einj_payload.component_type = (uint16_t)strtol(argv[2], NULL, 0);
     input_einj_payload.component_instance = (uint16_t)strtol(argv[3], NULL, 0);

@@ -69,12 +69,6 @@ typedef struct _boot_status_req_t
 typedef struct _boot_status_icc_ctx_t
 {
     fpfw_icc_base_ctx_t* hsp_mbx_ctx; //! store icc ctx for HSP mbox
-    //! The following is only applicable for SCP core
-    struct{
-      fpfw_icc_base_ctx_t* lfifo_mbx_ctx; //! store icc ctx for large fifo mbox
-      fpfw_icc_base_send_req_t* send_params;//! memory for send req for large fifo mbox
-      fpfw_icc_base_recv_req_t* recv_params; //! memory for recv req for large fifo mbox
-    } accel_icc_ctx[BOOT_STATUS_ACCEL_MAX]; //! store icc ctx for large fifo mbox for each die
 }boot_status_icc_ctx_t;
 
 /**

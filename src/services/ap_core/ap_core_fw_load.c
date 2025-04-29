@@ -198,6 +198,10 @@ static void request_accel_dtcm_load_complete_notify(void* context, size_t output
     scp_download_accel_knobs(accel_type);
     accel_disable_cpu_wait(accel_type);
 
+    // Start the boot timer for given accel.
+    status = accel_start_boot_status_timer(accel_type);
+    BUG_ASSERT(status == FPFW_STATUS_SUCCESS);
+
     DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
 
     APCORE_LOG_INFO("Accel[%d] DTCM FW load completed", accel_type);

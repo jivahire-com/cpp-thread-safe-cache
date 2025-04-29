@@ -11,6 +11,8 @@
 
 /*----------------------------- Nested includes -----------------------------*/
 #include <accelerator_ip.h>
+#include <accelip_id.h>
+#include <boot_status.h>
 #include <tower_vab.h>
 
 /* Target SoC Register Includes */
@@ -41,3 +43,10 @@
  * 
  */
 subsystem_ctxt_t *get_accelerator_ctxt(uint32_t* accel_instance_size);
+
+/**
+ * @brief Send accel boot status code to HSP
+ * 
+ * @param led_boot_status LED Boot status code to send
+ */
+void accel_send_led_boot_status(led_status_codes_t led_boot_status);

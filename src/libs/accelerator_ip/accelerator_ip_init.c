@@ -11,36 +11,38 @@
 /*-------------------------------- Features ---------------------------------*/
 
 /*-------------------------------- Includes ---------------------------------*/
-#include "accelerator_ip.h"
+#include "accelerator_ip.h" // for accel_wait_for_mbox_boot_status
 
-#include <DbgPrint.h>   // for FPFW_DBGPRINT_INFO, FPFW_DBGPRINT_ERROR
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
-#include <_addressblock_0x100000_regs.h>
-#include <accel_intr.h>          // for accel_intr_irq_init
-#include <accelerator_ip_priv.h> // for get_accelerator_ctxt
-#include <accelip_id.h>          // NUM_VALID_ACCEL_ID, ACCEL_ID_SDM, ACCEL_ID_CDED
-#include <atu_init.h>            // for atu_svc_accel_atu_addr
-#include <atu_lib.h>             // for atu_map, atu_unmap, atu_map...
-#include <bug_check.h>           // for BUG_ASSERT
-#include <cdedss_config_regs.h>  // for CDEDSS_CONFIG_SDM_EXT_CFG_ADDRESS
-#include <fpfw_cfg_mgr.h>
-#include <fpfw_icc_base.h>   // for fpfw_icc_base_init, fpfw_icc_ba...
-#include <fpfw_icc_base_i.h> // for fpfw_icc_base_ctx_t
-#include <fpfw_init.h>
-#include <fpfw_mbox_icc_transport.h> // for ICC_MBX_ASYNC_RECV, ICC_MBX_ASY...
-#include <hsp_firmware_headers.h>
-#include <idsw.h> // for idsw_get_platform_sdv, idsw...
-#include <idsw_kng.h>
-#include <kng_soc_constants.h> // for DIE_INSTANCE
-#include <sdm_ext_cfg_regs.h>  // for SDM_EXT_CFG_EMCPU_TCM_ITCM_ADDRESS, SDM_EXT_CFG_EMCPU_TCM_ITCM_SIZE
-#include <sdmss_config_regs.h> // for SDMSS_CONFIG_SDM_EXT_CFG_ADDRESS
-#include <silibs_common.h>     // for ALIGN_UP
-#include <silibs_platform.h>   // for debug_print, MMIO_UPDATE32
-#include <silibs_status.h>     // for SILIBS_SUCCESS
-#include <stdint.h>            // for int32_t, uintptr_t, uint32_t
-#include <stdio.h>             // for printf, NULL
-#include <string.h>            // for memcpy, strlen
-#include <system_info.h>       // for system_info_is_hsp_present
+#include <DbgPrint.h>                    // for FPFW_DBGPRINT_INFO, FPFW_DBGPRINT_ERROR
+#include <FpFwAssert.h>                  // for FPFW_RUNTIME_ASSERT
+#include <_addressblock_0x100000_regs.h> // for fpfw_init_get_handle
+#include <accel_intr.h>                  // for accel_intr_irq_init
+#include <accelerator_ip_priv.h>         // for get_accelerator_ctxt, accel_send_boot_status_code
+#include <accelip_id.h>                  // for NUM_VALID_ACCEL_ID, ACCEL_ID_SDM
+#include <atu_init.h>                    // for atu_svc_accel_atu_addr
+#include <atu_lib.h>                     // for atu_map, atu_unmap, atu_map...
+#include <boot_status.h>                 // for LED_STATUS_CODE_SCP_ACCEL_FAILED
+#include <boot_status_codes.h>           // for BOOT_STATUS_CODE_SCP0_ACCEL_INIT_START
+#include <bug_check.h>                   // for BUG_ASSERT
+#include <cdedss_config_regs.h>          // for CDEDSS_CONFIG_SDM_EXT_CFG_ADDRESS
+#include <fpfw_cfg_mgr.h>                // for config_get_sdm_pf_subsystem_id
+#include <fpfw_icc_base.h>               // for fpfw_icc_base_init, fpfw_icc_ba...
+#include <fpfw_icc_base_i.h>             // for fpfw_icc_base_ctx_t
+#include <fpfw_init.h>                   // for fpfw_init_get_handle
+#include <fpfw_mbox_icc_transport.h>     // for ICC_MBX_ASYNC_RECV, ICC_MBX_ASY...
+#include <hsp_firmware_headers.h>        // for kng_hsp_mailbox_msg
+#include <icc_platform_defines.h>        // for accel_boot_status_msg
+#include <idsw.h>                        // for idsw_get_platform_sdv, idsw...
+#include <kng_soc_constants.h>           // for DIE_INSTANCE
+#include <sdm_ext_cfg_regs.h>            // for SDM_EXT_CFG_EMCPU_TCM_ITCM_ADDRESS
+#include <sdmss_config_regs.h>           // for SDMSS_CONFIG_SDM_EXT_CFG_ADDRESS
+#include <silibs_common.h>               // for ALIGN_UP
+#include <silibs_platform.h>             // for debug_print, MMIO_UPDATE32
+#include <silibs_status.h>               // for SILIBS_SUCCESS
+#include <stdint.h>                      // for int32_t, uintptr_t, uint32_t
+#include <stdio.h>                       // for printf, NULL
+#include <string.h>                      // for memcpy, strlen
+#include <system_info.h>                 // for system_info_is_hsp_present
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
@@ -471,9 +473,16 @@ int32_t scp_accelerators_init(void)
     int ret = ACCEL_RET_SUCCESS;
     uint32_t accel_ctxt_size = 0;
 
-    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
+    if (!accel_is_isolation_enabled(ACCEL_ID_SDM) || !accel_is_isolation_enabled(ACCEL_ID_CDED))
+    {
+        accel_send_led_boot_status(LED_STATUS_CODE_SCP_ACCEL_FAILED);
+    }
 
-    FPFW_RUNTIME_ASSERT(p_ss_ctxt != NULL);
+    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
+    if (p_ss_ctxt == NULL)
+    {
+        goto accel_init_failed;
+    }
 
     // Init all available Accelerator instances
     for (uint32_t index = 0; index < accel_ctxt_size; index++)
@@ -489,7 +498,10 @@ int32_t scp_accelerators_init(void)
                                    p_ss_ctxt[index].accelip_metadata.accel_type,
                                    p_ss_ctxt[index].accelip_metadata.accel_instance,
                                    ret);
-                FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
+                if (ret != ACCEL_RET_SUCCESS)
+                {
+                    goto accel_init_failed;
+                }
             }
             else
             {
@@ -501,6 +513,11 @@ int32_t scp_accelerators_init(void)
     }
 
     return ret;
+
+accel_init_failed:
+    accel_send_led_boot_status(LED_STATUS_CODE_SCP_ACCEL_FAILED);
+    FPFW_RUNTIME_ASSERT(false);
+    return ACCEL_RET_FAIL_GENERAL;
 }
 
 /* TODO: Review use of BUG_ASSERT (vis a vis ASSERT) in accelIP init sequence https://azurecsi.visualstudio.com/Dev/_workitems/edit/2025877/ */

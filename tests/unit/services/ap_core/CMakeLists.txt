@@ -9,6 +9,7 @@ add_executable(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
+        fwlib.lib.interface.platform.timers
         fwlib.service.iccBase
         ms::cmocka::testrunner
         ms::lib::hsp_firmware_headers
@@ -66,6 +67,7 @@ mock_target(${TARGET}
 
     fpfw_icc_base_send
     fpfw_icc_base_recv
+    fpfw_timer_enable
 
     mmio_read32
     sds_block_creation

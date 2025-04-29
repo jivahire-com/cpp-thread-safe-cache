@@ -6,6 +6,7 @@ set(TARGET ms_accelerator_ip_lib)
 add_library(
     ${TARGET}
         STATIC
+            accelerator_ip_boot_status.c
             accelerator_ip_configs.c
             accelerator_ip_init.c
             accelerator_ip_isolation.c
@@ -27,6 +28,7 @@ target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.icc
 target_link_libraries(
     ${TARGET}
     PUBLIC
+        fwlib.lib.status
         ms::lib::accel_intr
         silibs::accelip_ss_init
         silibs::atu
@@ -42,11 +44,13 @@ target_link_libraries(
         fwlib.lib.utils
         fwlib.service.icc_dispatcher
         fwlib.service.iccBase
+        ms::lib::boot_status
         ms::lib::config_manager
         ms::lib::crash_dump
         ms::lib::debug
         ms::lib::error_codes
         ms::lib::hsp_firmware_headers
+        ms::lib::icc_platform_defines
         ms::lib::register_headers
         ms::lib::utils
         ms::lib::system_info

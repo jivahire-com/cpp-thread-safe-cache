@@ -6,28 +6,25 @@
 /*------------- Includes -----------------*/
 
 #include <DbgPrint.h>
-#include <DfwkHost.h>        // for DfwkDeviceInitialize
-#include <DfwkThreadXHost.h> // for PDFWK_THREADX_HOST
-#include <MboxPrimitives.h>
-#include <accel_intr.h>
-#include <accel_intr_virt_irq.h>
-#include <accelerator_ip.h>
-#include <accelip_id.h>    // for ACCEL_ID_CDED, ACCEL_ID_SDM
-#include <atu_init.h>      // for atu_svc_accel_atu_addr
-#include <fpfw_icc_base.h> // for fpfw_icc_base_ctx_t
-#include <fpfw_icc_base_i.h>
+#include <DfwkHost.h>                // for DfwkDeviceInitialize
+#include <DfwkThreadXHost.h>         // for PDFWK_THREADX_HOST
+#include <MboxPrimitives.h>          // for ACCEL_MBOX_OFFSET_AFTER_0X100000
+#include <accel_intr.h>              // for accel_intr_init, accel_intr_set_mbx_ctx
+#include <accel_intr_virt_irq.h>     // for SDM_DOMAIN, CDED_SDM_DOMAIN
+#include <accelerator_ip.h>          // for accel_is_isolation_enabled
+#include <accelip_id.h>              // for ACCEL_ID_CDED, ACCEL_ID_SDM
+#include <atu_init.h>                // for atu_svc_accel_atu_addr
+#include <fpfw_icc_base.h>           // for fpfw_icc_base_ctx_t
+#include <fpfw_icc_base_i.h>         // for _fpfw_icc_base_ctx_t
 #include <fpfw_init.h>               // for FPFW_INIT_STATUS_E_INVALID_NODE
 #include <fpfw_mbox_icc_transport.h> // for ICC_MAX_ASYNC_REQ_TYPE
 #include <fpfw_timer.h>              // for fpfw_timer_t
-#include <fpfw_timer_port.h>
-#include <icc_platform_defines.h>
-#include <idsw.h>
-#include <idsw_kng.h>
-#include <interrupts.h>
-#include <kng_soc_constants.h>
-#include <sdm_ext_cfg_regs.h>
-#include <stddef.h> // for NULL
-#include <stdio.h>  // for printf
+#include <fpfw_timer_port.h>         // for _fpfw_timer_t
+#include <icc_platform_defines.h>    // for large_fifo_mailbox_msg_header
+#include <interrupts.h>              // for HW_INT_SDM_INTR1_MCP_COMB_INT
+#include <sdm_ext_cfg_regs.h>        // for SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS
+#include <stddef.h>                  // for NULL
+#include <stdio.h>                   // for printf
 
 /*-------------- Macros ------------------*/
 
@@ -83,6 +80,7 @@ static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
     accel_mbx_cfg[accel_type].timer_handle[ICC_MBX_ASYNC_SEND] = &accel_mbx_timer[accel_type][ICC_MBX_ASYNC_SEND];
     accel_mbx_cfg[accel_type].timer_handle[ICC_MBX_ASYNC_RECV] = &accel_mbx_timer[accel_type][ICC_MBX_ASYNC_RECV];
     accel_mbx_cfg[accel_type].mbx_irq_num = accel_irq_num[accel_type];
+    accel_mbx_cfg[accel_type].min_mesg_size = sizeof(large_fifo_mailbox_msg_header);
 
     s_accel_mbx_icc_cfg[accel_type].transport_interface = &accel_mbx_intf[accel_type].header;
     s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.transport_interface = &accel_mbx_intf[accel_type];
@@ -146,7 +144,7 @@ static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel_atu", "debug_print", "virt_irq", "cfg_mgr"))
+FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel", "debug_print", "virt_irq", "cfg_mgr"))
 {
     ACCEL_ID accel_type = ACCEL_ID_SDM;
 
@@ -165,7 +163,7 @@ FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel
     return (fpfw_init_result_t){status, &s_accel_mbx_icc_base_ctx[accel_type]};
 }
 
-FPFW_INIT_COMPONENT(icc_cded_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel_atu", "debug_print", "virt_irq", "cfg_mgr"))
+FPFW_INIT_COMPONENT(icc_cded_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel", "debug_print", "virt_irq", "cfg_mgr"))
 {
     ACCEL_ID accel_type = ACCEL_ID_CDED;
 

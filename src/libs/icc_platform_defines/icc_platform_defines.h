@@ -220,6 +220,8 @@ typedef enum _large_fifo_mailbox_msg_command_code {
 	LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_ADDR_REQ,
     LARGE_FIFO_MAILBOX_MSG_DCP,
     LARGE_FIFO_MAILBOX_MSG_TRP,
+	LARGE_FIFO_MAILBOX_MSG_BOOT_STATUS_REQ,
+	LARGE_FIFO_MAILBOX_MSG_BOOT_STATUS_RSP,
     LARGE_FIFO_MAILBOX_MSG_MAX
 }large_fifo_mailbox_msg_command_code;
 
@@ -277,3 +279,15 @@ typedef struct _accel_cd_params {
 	fpfw_icc_base_recv_req_t params;
 	ACCEL_ID accel_type;
 } accel_cd_params;
+
+/**
+ * @brief Boot status code Fifo Mailbox message
+ * 
+ */
+typedef union _accel_boot_status_msg {
+	struct {
+		large_fifo_mailbox_msg_header hdr;
+		uint32_t boot_status;
+	};
+	uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
+} accel_boot_status_msg;

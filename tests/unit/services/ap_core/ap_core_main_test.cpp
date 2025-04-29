@@ -23,6 +23,8 @@ extern "C" {
 #include <ap_core_init.h>
 #include <ap_fw_info.h>
 #include <corebits.h>
+#include <fpfw_timer.h>           // for fpfw_timer_create, fpfw_timer_enable...
+#include <fpfw_timer_port.h>      // for _fpfw_timer_t
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
 #define __NO_CSR_TYPEDEFS__
 #include <mcp_top_regs.h>
@@ -282,6 +284,13 @@ int32_t __wrap__txe_event_flags_set(TX_EVENT_FLAGS_GROUP* event_flags_group_ptr,
     FPFW_UNUSED(flags);
     FPFW_UNUSED(options);
     return mock_type(int32_t);
+}
+
+fpfw_status_t __wrap_fpfw_timer_enable(fpfw_timer_t* timer, fpfw_dur_t delay)
+{
+    FPFW_UNUSED(timer);
+    FPFW_UNUSED(delay);
+    return mock_type(fpfw_status_t);
 }
 
 } // extern "C"
@@ -743,6 +752,7 @@ AP_CORE_TEST(dispatch_sdm_dtcm_load, setup, NULL)
 
     expect_value(__wrap_accel_disable_cpu_wait, accel_type, ACCEL_ID_SDM);
     expect_function_call(__wrap_accel_disable_cpu_wait);
+    will_return(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
     fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
 }
@@ -846,6 +856,7 @@ AP_CORE_TEST(dispatch_cded_dtcm_load, setup, NULL)
 
     expect_value(__wrap_accel_disable_cpu_wait, accel_type, ACCEL_ID_CDED);
     expect_function_call(__wrap_accel_disable_cpu_wait);
+    will_return(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
     fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
 }

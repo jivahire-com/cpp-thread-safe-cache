@@ -12,6 +12,7 @@
 /*----------------------------- Nested includes -----------------------------*/
 #include <accelip_id.h>                   // for ACCEL_ID_CDED, ACCEL_ID_SDM
 #include <atu_lib.h>                      // for atu_id_t, atu_map_entry_t
+#include <fpfw_status.h>                  // for fpfw_status_t
 #include <kng_soc_constants.h>            // for DIE_INSTANCE
 #include <stdint.h>                       // for int32_t, uint64_t, uint8_t
 
@@ -190,3 +191,20 @@ void accel_disable_cpu_wait(ACCEL_ID accel_type);
  * @retval Return True if Isolation enabled otherwise False
  */
 bool accel_is_isolation_enabled(ACCEL_ID accel_type);
+
+/**
+ * @brief Setup SCP to receive boot status code from accel cores 
+ * 
+ * @param[in] accel_type Accel instance
+ * 
+ * @return fpfw_status_t 
+ */
+fpfw_status_t accel_setup_boot_status_code(ACCEL_ID accel_type);
+
+/**
+ * @brief Start the timer which expects boot status code from accel cores
+ * 
+ * @param accel_type Accel instance
+ * @return fpfw_status_t
+ */
+fpfw_status_t accel_start_boot_status_timer(ACCEL_ID accel_type);

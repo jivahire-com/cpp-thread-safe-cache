@@ -39,27 +39,6 @@ void boot_status_init(boot_status_icc_ctx_t* boot_status_ctx)
     BUG_ASSERT(boot_status_ctx != NULL);              //! check if the boot status ctx is valid
     BUG_ASSERT(boot_status_ctx->hsp_mbx_ctx != NULL); //! check if the hsp mbox ctx is valid
     boot_status_icc_ctx = boot_status_ctx;            //! store the boot status ctx from init
-
-    KNG_CPU_TYPE cpu_type = idsw_get_cpu_type();
-    if (cpu_type == CPU_SCP)
-    {
-        for (uint8_t i = 0; i < BOOT_STATUS_ACCEL_MAX; i++)
-        {
-            BUG_ASSERT(boot_status_ctx->accel_icc_ctx[i].lfifo_mbx_ctx != NULL);
-            BUG_ASSERT(boot_status_ctx->accel_icc_ctx[i].send_params != NULL);
-            BUG_ASSERT(boot_status_ctx->accel_icc_ctx[i].recv_params != NULL);
-
-            //! Kick off the mechanism to recv boot status from accel cores
-            //! To capture init time boot status from accel cores ie pre runtime init
-            //! need to use sync or blocking version of the icc base recv API.
-            //! Maybe start a timer here, the cb check's the system's state
-            //! If pre runtime, it will call the icc recv sync API & parse the payload
-            //! to verify it's boot status message & enable the timer for next message.
-            //! If runtime, it will call the icc recv async API & parse the payload
-            //! & disable the timer. Henceforth the async recv request can be raised in
-            //! the completion cb.
-        }
-    }
 }
 
 void boot_status_reset(void)

@@ -25,6 +25,7 @@
 #include <icc_platform_defines.h>
 #include <idhw.h>
 #include <idsw_kng.h>
+#include <mscp_exp_rmss_memory_map.h>
 #include <mscp_exp_spi_synchronize_dies.h>
 #include <smbios_structs.h>
 #include <stdio.h>
@@ -161,8 +162,12 @@ void ddr_create_bdat(void)
 
     if (!idhw_is_single_die_boot_en())
     {
-        d2d_sync_point.value = RMSS_D2D_DDR_BDAT_BEGIN_SYNC_POINT;
-        if (mscp_exp_spi_synchronize_dies(d2d_sync_point, die_num) != SILIBS_SUCCESS)
+        mscp_exp_spi_sync_point_t d2d_ddr_sync_point;
+        d2d_ddr_sync_point.local_write_addr = SCP_EXP_D2D_SYNC_DDR_BDAT_BASE;
+        d2d_ddr_sync_point.remote_write_addr = SCP_EXP_D2D_SYNC_DDR_BDAT_BASE + sizeof(uint32_t);
+        d2d_ddr_sync_point.value = RMSS_D2D_DDR_BDAT_BEGIN_SYNC_POINT;
+
+        if (mscp_exp_spi_synchronize_dies(d2d_ddr_sync_point, die_num) != SILIBS_SUCCESS)
         {
             // Raise error
             printf("Error Syncing dies\n");
@@ -558,8 +563,12 @@ void ddr_create_bdat(void)
 
     if (!idhw_is_single_die_boot_en())
     {
-        d2d_sync_point.value = RMSS_D2D_DDR_BDAT_CRC_READY_SYNC_POINT;
-        if (mscp_exp_spi_synchronize_dies(d2d_sync_point, die_num) != SILIBS_SUCCESS)
+        mscp_exp_spi_sync_point_t d2d_ddr_sync_point;
+        d2d_ddr_sync_point.local_write_addr = SCP_EXP_D2D_SYNC_DDR_BDAT_CRC_BASE;
+        d2d_ddr_sync_point.remote_write_addr = SCP_EXP_D2D_SYNC_DDR_BDAT_CRC_BASE + sizeof(uint32_t);
+        d2d_ddr_sync_point.value = RMSS_D2D_DDR_BDAT_CRC_READY_SYNC_POINT;
+
+        if (mscp_exp_spi_synchronize_dies(d2d_ddr_sync_point, die_num) != SILIBS_SUCCESS)
         {
             // Raise error
             printf("Error Syncing dies\n");
@@ -698,8 +707,12 @@ void ddr_create_smbios_tables(void)
 
     if (!idhw_is_single_die_boot_en())
     {
-        d2d_sync_point.value = RMSS_D2D_DDR_SMBIOS16_DONE_SYNC_POINT;
-        if (mscp_exp_spi_synchronize_dies(d2d_sync_point, die_num) != SILIBS_SUCCESS)
+        mscp_exp_spi_sync_point_t d2d_ddr_sync_point;
+        d2d_ddr_sync_point.local_write_addr = SCP_EXP_D2D_SYNC_DDR_SMBIOS16_BASE;
+        d2d_ddr_sync_point.remote_write_addr = SCP_EXP_D2D_SYNC_DDR_SMBIOS16_BASE + sizeof(uint32_t);
+        d2d_ddr_sync_point.value = RMSS_D2D_DDR_SMBIOS16_DONE_SYNC_POINT;
+
+        if (mscp_exp_spi_synchronize_dies(d2d_ddr_sync_point, die_num) != SILIBS_SUCCESS)
         {
             // Raise error
             printf("Error Syncing dies\n");

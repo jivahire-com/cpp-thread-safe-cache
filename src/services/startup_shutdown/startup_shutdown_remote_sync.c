@@ -19,6 +19,7 @@
 #include <idhw.h>
 #include <idsw.h>
 #include <idsw_kng.h>
+#include <mscp_exp_rmss_memory_map.h>
 #include <mscp_exp_spi_synchronize_dies.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -38,11 +39,12 @@ bool wait_for_remote_die_boot_stage(startup_shutdown_boot_stage_t current_boot_s
     {
         if (current_boot_stage.remote_die_sync_required)
         {
-            //! Synchronize with the remote die at this point
-            //! D0 writes data to remote SRAM at offset 0x0 & polls for D1 to write to it's own local SRAM at offset 0x4
-            //! D1 writes to local SRAM at offset 0x4 & polls for D0 to write to it's local SRAM at offset 0x0
-            d2d_sync_point.value = (RMSS_D2D_SPI_SYNC_ENUM_START | current_boot_stage.stage);
-            status = mscp_exp_spi_synchronize_dies(d2d_sync_point, idsw_get_die_id());
+            mscp_exp_spi_sync_point_t d2d_sos_sync_point;
+            d2d_sos_sync_point.local_write_addr = SCP_EXP_D2D_SYNC_APCORE_BASE;
+            d2d_sos_sync_point.remote_write_addr = SCP_EXP_D2D_SYNC_APCORE_BASE + sizeof(uint32_t);
+            d2d_sos_sync_point.value = (RMSS_D2D_SPI_SYNC_ENUM_START | current_boot_stage.stage);
+
+            status = mscp_exp_spi_synchronize_dies(d2d_sos_sync_point, idsw_get_die_id());
         }
     }
 

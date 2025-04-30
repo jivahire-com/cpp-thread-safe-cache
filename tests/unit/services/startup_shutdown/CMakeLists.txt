@@ -60,9 +60,12 @@ mock_target(${TARGET}
     sos_core_boot_stages
     sos_core_boot_stage_count
     sos_queue_shutdown
+    sos_queue_quiesce
     sos_queue_start_phase
     sos_thread_init
-    ssi_shutdown_quiesce
+    sos_quiesce
+    ssi_shutdown
+    ssi_quiesce
     ssi_startup_stage_complete
     ssi_startup_stage_start
     _txe_event_flags_create

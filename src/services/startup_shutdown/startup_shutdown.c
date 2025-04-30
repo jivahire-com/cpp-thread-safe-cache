@@ -59,6 +59,11 @@ void sos_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* context)
         sos_queue_shutdown(p_shutdown_request->shutdown_type, request);
     }
     break;
+    case STARTUP_REQUEST_QUIESCE_ASYNC: {
+        pstartup_shutdown_request_t p_shutdown_request = (pstartup_shutdown_request_t)request;
+        sos_queue_quiesce(p_shutdown_request->shutdown_type, request);
+    }
+    break;
 
     /* boot and shutdown requests */
     /* these are here as test, this interface was registered as an SSI */
@@ -78,10 +83,18 @@ void sos_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* context)
         DfwkAsyncRequestComplete(request);
     }
     break;
-    case SSI_SHUTDOWN_QUIESCE_ASYNC: {
+    case SSI_SHUTDOWN_ASYNC: {
         pssi_shutdown_notification_request_t ssi_request = (pssi_shutdown_notification_request_t)request;
         FPFW_UNUSED(ssi_request)
         SOS_LOG_TRACE("SSI shutdown, shutdown type %d", ssi_request->shutdown_type);
+        // complete immediately, since nothing to do
+        DfwkAsyncRequestComplete(request);
+    }
+    break;
+    case SSI_QUIESCE_ASYNC: {
+        pssi_shutdown_notification_request_t ssi_request = (pssi_shutdown_notification_request_t)request;
+        FPFW_UNUSED(ssi_request)
+        SOS_LOG_TRACE("SSI quiesce, shutdown type %d", ssi_request->shutdown_type);
         // complete immediately, since nothing to do
         DfwkAsyncRequestComplete(request);
     }

@@ -81,13 +81,18 @@ void __real_ssi_startup_stage_complete(PDFWK_INTERFACE_HEADER p_interface,
                                        DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
                                        void* p_completion_context);
 
-void __real_ssi_shutdown_quiesce(PDFWK_INTERFACE_HEADER p_interface,
-                                 pssi_request_t p_request,
-                                 ssi_shutdown_type_t shutdown_type,
-                                 DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
-                                 void* p_completion_context);
+void __real_ssi_shutdown(PDFWK_INTERFACE_HEADER p_interface,
+                         pssi_request_t p_request,
+                         ssi_shutdown_type_t shutdown_type,
+                         DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                         void* p_completion_context);
 
-} // extern "C"
+void __real_sos_quiesce(PDFWK_INTERFACE_HEADER p_interface,
+                        pstartup_shutdown_request_t p_request,
+                        DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                        void* p_completion_context);
+}
+// extern "C"
 
 //
 // Tests
@@ -182,6 +187,26 @@ SOS_TEST(sos_shutdown, NULL, NULL)
     assert_int_equal(s_async_header.RequestType, STARTUP_REQUEST_SHUTDOWN_ASYNC);
 }
 
+SOS_TEST(sos_quiesce, NULL, NULL)
+{
+    sos_interface_t test_interface;
+    startup_shutdown_request_t test_request = {};
+    test_request.header.AllocatedSize = sizeof(startup_shutdown_request_t);
+
+    expect_value(__wrap_DfwkInterfaceSendAsync, Interface, &test_interface.header);
+    expect_any(__wrap_DfwkInterfaceSendAsync, Request);
+
+    expect_any(__wrap_DfwkAsyncRequestSetCompletionRoutine, Request);
+    expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionRoutine, TEST_COMPLETION_ROUTINE);
+    expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionContext, TEST_COMPLETION_CONTEXT);
+
+    // call the function
+    __real_sos_quiesce(&test_interface.header, &test_request, TEST_COMPLETION_ROUTINE, TEST_COMPLETION_CONTEXT);
+
+    // check observable updates
+    assert_int_equal(s_async_header.RequestType, STARTUP_REQUEST_QUIESCE_ASYNC);
+}
+
 // ssi interfaces
 SOS_TEST(ssi_startup_stage_start, NULL, NULL)
 {
@@ -223,7 +248,7 @@ SOS_TEST(ssi_startup_stage_complete, NULL, NULL)
     assert_int_equal(s_async_header.RequestType, SSI_STARTUP_STAGE_COMPLETE_ASYNC);
 }
 
-SOS_TEST(ssi_shutdown_quiesce, NULL, NULL)
+SOS_TEST(ssi_shutdown, NULL, NULL)
 {
     DFWK_INTERFACE_HEADER test_interface;
     ssi_request_t test_request = {};
@@ -237,8 +262,8 @@ SOS_TEST(ssi_shutdown_quiesce, NULL, NULL)
     expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionContext, TEST_COMPLETION_CONTEXT);
 
     // call the function
-    __real_ssi_shutdown_quiesce(&test_interface, &test_request, SHUTDOWN, TEST_COMPLETION_ROUTINE, TEST_COMPLETION_CONTEXT);
+    __real_ssi_shutdown(&test_interface, &test_request, SHUTDOWN, TEST_COMPLETION_ROUTINE, TEST_COMPLETION_CONTEXT);
 
     // check observable updates
-    assert_int_equal(s_async_header.RequestType, SSI_SHUTDOWN_QUIESCE_ASYNC);
+    assert_int_equal(s_async_header.RequestType, SSI_SHUTDOWN_ASYNC);
 }

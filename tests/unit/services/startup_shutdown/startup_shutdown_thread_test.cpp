@@ -144,11 +144,24 @@ void __wrap_ssi_startup_stage_complete(PDFWK_INTERFACE_HEADER p_interface,
     check_expected_ptr(p_completion_context);
 }
 
-void __wrap_ssi_shutdown_quiesce(PDFWK_INTERFACE_HEADER p_interface,
-                                 pssi_request_t p_request,
-                                 ssi_shutdown_type_t shutdown_type,
-                                 DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
-                                 void* p_completion_context)
+void __wrap_ssi_shutdown(PDFWK_INTERFACE_HEADER p_interface,
+                         pssi_request_t p_request,
+                         ssi_shutdown_type_t shutdown_type,
+                         DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                         void* p_completion_context)
+{
+    check_expected_ptr(p_interface);
+    check_expected_ptr(p_request);
+    check_expected(shutdown_type);
+    check_expected_ptr(completion_routine);
+    check_expected_ptr(p_completion_context);
+}
+
+void __wrap_ssi_quiesce(PDFWK_INTERFACE_HEADER p_interface,
+                        pssi_request_t p_request,
+                        ssi_shutdown_type_t shutdown_type,
+                        DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                        void* p_completion_context)
 {
     check_expected_ptr(p_interface);
     check_expected_ptr(p_request);
@@ -169,6 +182,7 @@ const startup_shutdown_boot_stage_t* __wrap_sos_core_boot_stages()
 extern void __real_sos_thread_init(psos_service_context_t p_context);
 extern void __real_sos_queue_start_phase(ssi_startup_type_t boot_type, ssi_startup_stage_t phase, PDFWK_ASYNC_REQUEST_HEADER p_request);
 extern void __real_sos_queue_shutdown(ssi_shutdown_type_t shutdown_type, PDFWK_ASYNC_REQUEST_HEADER p_request);
+extern void __real_sos_queue_quiesce(ssi_shutdown_type_t shutdown_type, PDFWK_ASYNC_REQUEST_HEADER p_request);
 extern void __real_FpFwListInitialize(PFPFW_LIST_HANDLE list);
 extern void __real_FpFwListInsertTail(PFPFW_LIST_HANDLE list, PFPFW_LIST_ENTRY newEntry);
 } // extern "C"
@@ -292,15 +306,37 @@ SOS_TEST(sos_notify_ssi_shutdown, NULL, NULL)
     {
         for (unsigned i = 0; i < count; i++)
         {
-            expect_value(__wrap_ssi_shutdown_quiesce, p_interface, (uintptr_t)(s_test_registrations[i].p_ssi_interface));
-            expect_value(__wrap_ssi_shutdown_quiesce, p_request, (uintptr_t)&s_test_registrations[i].ssi_request);
-            expect_value(__wrap_ssi_shutdown_quiesce, shutdown_type, (ssi_shutdown_type_t)current_shutdown);
-            expect_any(__wrap_ssi_shutdown_quiesce, completion_routine);
-            expect_value(__wrap_ssi_shutdown_quiesce, p_completion_context, s_test_registrations[i].interface_unique_flag);
+            expect_value(__wrap_ssi_shutdown, p_interface, (uintptr_t)(s_test_registrations[i].p_ssi_interface));
+            expect_value(__wrap_ssi_shutdown, p_request, (uintptr_t)&s_test_registrations[i].ssi_request);
+            expect_value(__wrap_ssi_shutdown, shutdown_type, (ssi_shutdown_type_t)current_shutdown);
+            expect_any(__wrap_ssi_shutdown, completion_routine);
+            expect_value(__wrap_ssi_shutdown, p_completion_context, s_test_registrations[i].interface_unique_flag);
         }
 
         // call the function
         sos_notify_ssi_shutdown(&s_test_service_ctx, (ssi_shutdown_type_t)current_shutdown);
+    }
+}
+
+SOS_TEST(sos_notify_ssi_quiesce, NULL, NULL)
+{
+    setup_registrations();
+
+    unsigned count = FPFW_ARRAY_SIZE(s_test_registrations);
+
+    for (int current_shutdown = SHUTDOWN; current_shutdown <= AP_WARM_RESET; current_shutdown++)
+    {
+        for (unsigned i = 0; i < count; i++)
+        {
+            expect_value(__wrap_ssi_quiesce, p_interface, (uintptr_t)(s_test_registrations[i].p_ssi_interface));
+            expect_value(__wrap_ssi_quiesce, p_request, (uintptr_t)&s_test_registrations[i].ssi_request);
+            expect_value(__wrap_ssi_quiesce, shutdown_type, (ssi_shutdown_type_t)current_shutdown);
+            expect_any(__wrap_ssi_quiesce, completion_routine);
+            expect_value(__wrap_ssi_quiesce, p_completion_context, s_test_registrations[i].interface_unique_flag);
+        }
+
+        // call the function
+        sos_notify_ssi_quiesce(&s_test_service_ctx, (ssi_shutdown_type_t)current_shutdown);
     }
 }
 
@@ -414,6 +450,24 @@ SOS_TEST(sos_queue_shutdown, NULL, NULL)
 
     // call the function
     __real_sos_queue_shutdown(test_shutdown_type, NULL);
+
+    // verify observable output
+    assert_int_equal(s_queue_entry.data.shutdown_type, test_shutdown_type);
+}
+
+// test for sos_queue_quiesce
+SOS_TEST(sos_queue_quiesce, NULL, NULL)
+{
+    ssi_shutdown_type_t test_shutdown_type = SHUTDOWN;
+
+    // expectations for ThreadX APIs
+    expect_not_value(__wrap__txe_queue_send, queue_ptr, NULL);
+    expect_not_value(__wrap__txe_queue_send, source_ptr, NULL);
+    expect_value(__wrap__txe_queue_send, wait_option, TX_NO_WAIT);
+    will_return(__wrap__txe_queue_send, TX_SUCCESS);
+
+    // call the function
+    __real_sos_queue_quiesce(test_shutdown_type, NULL);
 
     // verify observable output
     assert_int_equal(s_queue_entry.data.shutdown_type, test_shutdown_type);

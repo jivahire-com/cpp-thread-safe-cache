@@ -34,13 +34,15 @@ enum STARTUP_SHUTDOWN_REQUEST_IDS
     STARTUP_RESET_TIMEOUT_SYNC,
     STARTUP_REQUEST_START_PHASE_SYNC,
     STARTUP_REQUEST_SHUTDOWN_ASYNC,
+    STARTUP_REQUEST_QUIESCE_ASYNC,
     STARTUP_REQUEST_START_PHASE_ASYNC,
 };
 
 typedef enum _sos_stage_category_t
 {
     BOOT_STAGE,
-    SHUTDOWN_STAGE
+    SHUTDOWN_STAGE,
+    QUIESCE_STAGE,
 } sos_stage_category_t;
 
 typedef struct _startup_ssi_registration_t
@@ -159,7 +161,12 @@ void sos_shutdown(PDFWK_INTERFACE_HEADER p_interface,
                   DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
                   void* p_completion_context);
 
+void sos_quiesce(PDFWK_INTERFACE_HEADER p_interface,
+                    pstartup_shutdown_request_t p_request,
+                    DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                    void* p_completion_context);
+
 void shutdown_req_cb(void* context, fpfw_status_t status);
 void prepare_reset_recv_cb(void* context, size_t cmd_code, fpfw_status_t status);
-void receive_prep_core_reset(void* context, fpfw_status_t status);
-
+void receive_prep_core_reset();
+void quiesce_complete_notify(DFWK_ASYNC_REQUEST_HEADER* request, void* p_completion_context);

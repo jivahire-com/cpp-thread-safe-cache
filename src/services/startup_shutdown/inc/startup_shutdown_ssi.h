@@ -24,7 +24,9 @@ enum SSI_REQUEST_IDS
     SSI_START_ID = 0xFF00, /* allow for possibility of only one interface registration for owning driver/service */
     SSI_STARTUP_STAGE_START_ASYNC,
     SSI_STARTUP_STAGE_COMPLETE_ASYNC, /* all start actions are complete */
-    SSI_SHUTDOWN_QUIESCE_ASYNC,
+    SSI_SHUTDOWN_ASYNC,
+    SSI_QUIESCE_ASYNC,
+
 };
 
 /**
@@ -173,8 +175,15 @@ void ssi_startup_stage_complete(PDFWK_INTERFACE_HEADER p_interface,
  *
  *  @param p_completion_context A context that is supplied when the completion routine is called.
  */
-void ssi_shutdown_quiesce(PDFWK_INTERFACE_HEADER p_interface,
+void ssi_shutdown(PDFWK_INTERFACE_HEADER p_interface,
                           pssi_request_t p_request,
                           ssi_shutdown_type_t shutdown_type,
                           DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
                           void* p_completion_context);
+
+void ssi_quiesce(PDFWK_INTERFACE_HEADER p_interface,
+                            pssi_request_t p_request,
+                            ssi_shutdown_type_t shutdown_type,
+                            DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                            void* p_completion_context);
+  

@@ -130,6 +130,12 @@ void __wrap_sos_queue_shutdown(ssi_shutdown_type_t shutdown_type, PDFWK_ASYNC_RE
     check_expected_ptr(p_request);
 }
 
+void __wrap_sos_queue_quiesce(ssi_shutdown_type_t shutdown_type, PDFWK_ASYNC_REQUEST_HEADER p_request)
+{
+    check_expected(shutdown_type);
+    check_expected_ptr(p_request);
+}
+
 void __wrap_DfwkAsyncRequestComplete(PDFWK_ASYNC_REQUEST_HEADER Request)
 {
     check_expected_ptr(Request);
@@ -234,6 +240,22 @@ SOS_TEST(dispatch_async_SHUTDOWN_REQUEST_SHUTDOWN_ASYNC, NULL, NULL)
     }
 }
 
+SOS_TEST(dispatch_async_SHUTDOWN_REQUEST_QUIESCE_ASYNC, NULL, NULL)
+{
+#define TEST_SHUTDOWN_TYPE MSCP_SUBSYS_RESET
+    startup_shutdown_request_t test_request;
+    test_request.shutdown_type = TEST_SHUTDOWN_TYPE;
+    test_request.header.RequestType = STARTUP_REQUEST_QUIESCE_ASYNC;
+
+    expect_value(__wrap_sos_queue_quiesce, shutdown_type, TEST_SHUTDOWN_TYPE);
+    expect_value(__wrap_sos_queue_quiesce, p_request, &test_request);
+
+    if (s_dispatch_routine)
+    {
+        s_dispatch_routine(&test_request.header, NULL);
+    }
+}
+
 SOS_TEST(dispatch_async_SSI_STARTUP_STAGE_START_ASYNC, NULL, NULL)
 {
     ssi_startup_notification_request_t test_request;
@@ -258,10 +280,22 @@ SOS_TEST(dispatch_async_SSI_STARTUP_STAGE_COMPLETE_ASYNC, NULL, NULL)
     }
 }
 
-SOS_TEST(dispatch_async_SSI_SHUTDOWN_QUIESCE_ASYNC, NULL, NULL)
+SOS_TEST(dispatch_async_SSI_SHUTDOWN_ASYNC, NULL, NULL)
 {
     ssi_shutdown_notification_request_t test_request;
-    test_request.header.RequestType = SSI_SHUTDOWN_QUIESCE_ASYNC;
+    test_request.header.RequestType = SSI_SHUTDOWN_ASYNC;
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request);
+
+    if (s_dispatch_routine)
+    {
+        s_dispatch_routine(&test_request.header, NULL);
+    }
+}
+
+SOS_TEST(dispatch_async_SSI_QUIESCE_ASYNC, NULL, NULL)
+{
+    ssi_shutdown_notification_request_t test_request;
+    test_request.header.RequestType = SSI_QUIESCE_ASYNC;
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request);
 
     if (s_dispatch_routine)

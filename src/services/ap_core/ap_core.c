@@ -140,7 +140,7 @@ static void ap_core_ssi_start_primary_ap_core_boot(pssi_startup_notification_req
 }
 
 // dispatcher function to handle shutdown scenario
-static void ap_core_ssi_shutdown_quiesce(pssi_shutdown_notification_request_t p_request)
+static void ap_core_ssi_shutdown(pssi_shutdown_notification_request_t p_request)
 {
     APCORE_LOG_TRACE("SSI shutdown, shutdown type %d", p_request->shutdown_type);
 
@@ -355,11 +355,14 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
         // complete immediately, since nothing to do
         DfwkAsyncRequestComplete(p_request);
         break;
-    case SSI_SHUTDOWN_QUIESCE_ASYNC: {
+    case SSI_SHUTDOWN_ASYNC: {
         pssi_shutdown_notification_request_t ssi_request = (pssi_shutdown_notification_request_t)p_request;
-        ap_core_ssi_shutdown_quiesce(ssi_request);
+        ap_core_ssi_shutdown(ssi_request);
+        break;
     }
-    break;
+    case SSI_QUIESCE_ASYNC:
+        DfwkAsyncRequestComplete(p_request);
+        break;
     default:
         FPFW_RUNTIME_ASSERT((false));
         break;

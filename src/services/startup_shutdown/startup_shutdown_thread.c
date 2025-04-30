@@ -124,11 +124,32 @@ void sos_notify_ssi_shutdown(psos_service_context_t p_context, ssi_shutdown_type
         pstartup_ssi_registration_t p_registration = CONTAINING_RECORD(iterator, startup_ssi_registration_t, list_entry);
 
         // call the appropriate SSI function, passing in the request object registered at boot time
-        ssi_shutdown_quiesce(p_registration->p_ssi_interface,
-                             &p_registration->ssi_request,
-                             shutdown_type,
-                             sos_completion,
-                             (void*)p_registration->interface_unique_flag);
+        ssi_shutdown(p_registration->p_ssi_interface,
+                     &p_registration->ssi_request,
+                     shutdown_type,
+                     sos_completion,
+                     (void*)p_registration->interface_unique_flag);
+    }
+}
+
+void sos_notify_ssi_quiesce(psos_service_context_t p_context, ssi_shutdown_type_t shutdown_type)
+{
+    FPFW_RUNTIME_ASSERT(p_context != NULL);
+
+    // iterate over ssi registrations
+    PFPFW_LIST_ENTRY iterator;
+    PFPFW_LIST_ENTRY iterator_next;
+
+    FpFwListForEach(p_context->ssi_registrations, iterator, iterator_next)
+    {
+        pstartup_ssi_registration_t p_registration = CONTAINING_RECORD(iterator, startup_ssi_registration_t, list_entry);
+
+        // call the appropriate SSI function, passing in the request object registered at boot time
+        ssi_quiesce(p_registration->p_ssi_interface,
+                    &p_registration->ssi_request,
+                    shutdown_type,
+                    sos_completion,
+                    (void*)p_registration->interface_unique_flag);
     }
 }
 
@@ -177,6 +198,8 @@ void sos_worker_thread_function(ULONG service_ctx)
 {
     sos_service_context_t* p_sos_ctx = (sos_service_context_t*)service_ctx;
     sos_queue_entry_t message;
+
+    sos_stage_timeout_t current_stage;
 
     SOS_LOG_INFO("Worker thread begin");
 
@@ -250,8 +273,9 @@ void sos_worker_thread_function(ULONG service_ctx)
             sos_notify_ssi_shutdown(p_sos_ctx, message.data.shutdown_type);
 
             // wait for responses
-            sos_stage_timeout_t current_stage = {.stage_category = SHUTDOWN_STAGE,
-                                                 .operation_stage.shutdown = message.data.shutdown_type};
+            current_stage.stage_category = SHUTDOWN_STAGE;
+            current_stage.operation_stage.shutdown = message.data.shutdown_type;
+
             wait_ssi_complete(current_stage);
 
             if (message.data.shutdown_type != AP_WARM_RESET)
@@ -264,6 +288,18 @@ void sos_worker_thread_function(ULONG service_ctx)
                 // trigger warm reset operation
                 sos_start_phase(fpfw_init_get_handle("sos_int"), NULL, WARM_BOOT_POST_AP, STARTUP_PHASE_AP_ASYNC, NULL, NULL);
             }
+
+            break;
+
+        case SOS_QUEUE_ENTRY_TYPE_QUIESCE:
+            SOS_LOG_INFO("SOS message: quiesce, (%d)\n", message.data.shutdown_type);
+
+            // notify all registered interfaces
+            sos_notify_ssi_quiesce(p_sos_ctx, message.data.shutdown_type);
+
+            current_stage.stage_category = QUIESCE_STAGE;
+            current_stage.timeout_ms = DEFAULT_SOS_TIMEOUT_MS;
+            wait_ssi_complete(current_stage);
 
             break;
         }
@@ -294,6 +330,19 @@ void sos_queue_shutdown(ssi_shutdown_type_t shutdown_type, PDFWK_ASYNC_REQUEST_H
 {
     sos_queue_entry_t message;
     message.type = SOS_QUEUE_ENTRY_TYPE_SHUTDOWN;
+    message.data.shutdown_type = shutdown_type;
+    message.p_request = p_request;
+
+    SOS_LOG_INFO("Queue shutdown type %d", shutdown_type);
+
+    int status = tx_queue_send(&s_sos_thread_ctx.work_queue, &message, TX_NO_WAIT);
+    FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);
+}
+
+void sos_queue_quiesce(ssi_shutdown_type_t shutdown_type, PDFWK_ASYNC_REQUEST_HEADER p_request)
+{
+    sos_queue_entry_t message;
+    message.type = SOS_QUEUE_ENTRY_TYPE_QUIESCE;
     message.data.shutdown_type = shutdown_type;
     message.p_request = p_request;
 

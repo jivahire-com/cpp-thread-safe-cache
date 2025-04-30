@@ -526,7 +526,7 @@ AP_CORE_TEST(dispatch_shutdown, setup, NULL)
 {
     ssi_shutdown_notification_request_t test_request;
     ap_core_service_t test_device;
-    test_request.header.RequestType = SSI_SHUTDOWN_QUIESCE_ASYNC;
+    test_request.header.RequestType = SSI_SHUTDOWN_ASYNC;
 
     assert_non_null(s_dispatch_routine);
 
@@ -537,6 +537,23 @@ AP_CORE_TEST(dispatch_shutdown, setup, NULL)
             expect_function_call(__wrap_ap_core_ppu_cores_off);
             expect_function_call(__wrap_ap_core_ppu_clusters_off);
         }
+        expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+
+        test_request.shutdown_type = (ssi_shutdown_type_t)idx;
+        s_dispatch_routine(&test_request.header, &test_device.header);
+    }
+}
+
+AP_CORE_TEST(dispatch_quiesce, setup, NULL)
+{
+    ssi_shutdown_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_QUIESCE_ASYNC;
+
+    assert_non_null(s_dispatch_routine);
+
+    for (int idx = SHUTDOWN; idx <= AP_WARM_RESET; idx++)
+    {
         expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
 
         test_request.shutdown_type = (ssi_shutdown_type_t)idx;

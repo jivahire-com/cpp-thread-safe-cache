@@ -73,6 +73,17 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
     return mock_type(fpfw_status_t);
 }
 
+void __wrap_sos_quiesce(PDFWK_INTERFACE_HEADER p_interface,
+                        pstartup_shutdown_request_t p_request,
+                        DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                        void* p_completion_context)
+{
+    FPFW_UNUSED(p_interface);
+    FPFW_UNUSED(p_request);
+    FPFW_UNUSED(completion_routine);
+    FPFW_UNUSED(p_completion_context);
+}
+
 } // extern "C"
 
 //
@@ -198,11 +209,24 @@ SOS_TEST(prepare_reset_recv_cb, NULL, NULL)
     kng_hsp_mailbox_cmd_core_reset_complete_notify test_send_params = {
         .header.cmd = HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_RSP,
     };
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(startup_shutdown_request_t));
+
+    prepare_reset_recv_cb(&test_send_params, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_RSP, DFWK_SUCCESS);
+}
+
+// test for quiesce_complete_cb
+SOS_TEST(quiese_complete_notify, NULL, NULL)
+{
+    fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
+    kng_hsp_mailbox_cmd_core_reset_complete_notify test_send_params = {
+        .header.cmd = HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_RSP,
+    };
 
     will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_SUCCESS);
     expect_value(__wrap_fpfw_icc_base_send, icc_ctx, test_icc_ctx);
 
-    prepare_reset_recv_cb(&test_send_params, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_RSP, DFWK_SUCCESS);
+    quiesce_complete_notify((DFWK_ASYNC_REQUEST_HEADER*)test_icc_ctx, &test_send_params);
 }
 
 // test for sos_core_shutdown_handler COLD_RESET case

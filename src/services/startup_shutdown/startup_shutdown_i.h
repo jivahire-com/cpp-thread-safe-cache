@@ -43,7 +43,8 @@
 enum sos_queue_entry_type_t
 {
     SOS_QUEUE_ENTRY_TYPE_BOOT_PHASE,
-    SOS_QUEUE_ENTRY_TYPE_SHUTDOWN
+    SOS_QUEUE_ENTRY_TYPE_SHUTDOWN,
+    SOS_QUEUE_ENTRY_TYPE_QUIESCE
 };
 
 typedef struct _ssi_startup_phase_t
@@ -107,6 +108,7 @@ uint32_t sos_shutdown_timeout(sos_stage_timeout_t current_stage);
 // interface to start a phase
 void sos_queue_start_phase(ssi_startup_type_t boot_type, ssi_startup_stage_t phase, PDFWK_ASYNC_REQUEST_HEADER p_request);
 void sos_queue_shutdown(ssi_shutdown_type_t shutdown_type, PDFWK_ASYNC_REQUEST_HEADER p_request);
+void sos_queue_quiesce(ssi_shutdown_type_t shutdown_type, PDFWK_ASYNC_REQUEST_HEADER p_request);
 void sos_thread_init(psos_service_context_t p_context);
 
 // internal interfaces - declared here for test
@@ -114,6 +116,7 @@ int sos_queue_find_phase(ssi_startup_stage_t phase);
 void sos_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context);
 void sos_notify_ssi_boot_stage(psos_service_context_t p_context, ssi_startup_stage_t stage, ssi_startup_type_t startup_type, bool start);
 void sos_notify_ssi_shutdown(psos_service_context_t p_context, ssi_shutdown_type_t shutdown_type);
+void sos_notify_ssi_quiesce(psos_service_context_t p_context, ssi_shutdown_type_t shutdown_type);
 void wait_ssi_complete(sos_stage_timeout_t current_stage);
 void sos_notify_ssi_boot_stage_and_wait(psos_service_context_t p_context,
                                         ssi_startup_stage_t stage,

@@ -68,7 +68,8 @@ void power_service_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_
         DfwkAsyncRequestComplete(p_request);
     }
     break;
-    case SSI_SHUTDOWN_QUIESCE_ASYNC: {
+    case SSI_QUIESCE_ASYNC: {
+
         pssi_shutdown_notification_request_t ssi_request = (pssi_shutdown_notification_request_t)p_request;
 
         if (ssi_request->shutdown_type != AP_WARM_RESET)
@@ -83,6 +84,9 @@ void power_service_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_
         DfwkAsyncRequestComplete(p_request);
     }
     break;
+    case SSI_SHUTDOWN_ASYNC:
+        DfwkAsyncRequestComplete(p_request);
+        break;
     case CLI_COMMANDS_POWER_CONFIG:
     case CLI_COMMANDS_POWER_SET:
     case CLI_COMMANDS_POWER_STATUS:

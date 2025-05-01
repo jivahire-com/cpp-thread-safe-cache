@@ -119,6 +119,8 @@ static void hm_hsp_error_record_submit_listener_cb(void* context, size_t output_
                    hm_err_submit_payload->err_severity,
                    &hm_err_submit_payload->cper_section,
                    hm_err_submit_payload->section_size);
+
+    hm_hsp_error_record_submit_listener(hm_config->icc_ctx[HM_INTERCORE_HSP]);
 }
 
 static void hm_hsp_error_domain_register_listener_cb(void* context, size_t output_size_bytes, fpfw_status_t status)

@@ -255,6 +255,10 @@
                         "kng.service.telemetry.cmpnt.in_band_tlm.test"
                     ],
                     [
+                        "Telemetry Service - Data Proc Functional",
+                        "kng.service.telemetry.cmpnt.data_proc.functional.test"
+                    ],
+                    [
                         "PCIe manager service",
                         "scp_pcie_manager.test.exe"
                     ],

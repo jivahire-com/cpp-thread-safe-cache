@@ -254,6 +254,7 @@ add_library(${TARGET}
         err_domain_mcp_init.c
         etc_etd_init.c
         etr_init.c
+        fuse_init.c
         gpio_init.c
         gtimer_init.c
         hw_semaphore_init.c
@@ -347,6 +348,8 @@ target_link_libraries(
         ms::service::wdog
         silibs::atu
         silibs::common::lib_uart_pl011
+        silibs::fuse
+        silibs::fuse_common
         silibs::icc_mhu
         silibs::idhw
         silibs::idsw

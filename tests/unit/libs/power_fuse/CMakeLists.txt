@@ -28,7 +28,6 @@ coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
 mock_target(${TARGET}
-    idsw_get_platform_sdv
     fuse_read
 )
 

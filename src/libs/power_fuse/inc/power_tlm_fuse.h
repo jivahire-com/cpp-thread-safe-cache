@@ -6,37 +6,51 @@
  *  @file power_tlm_fuse.h
  *  This library provide apis to read the power fuses for telemetry.
  * 
- *  Note :  This library can be used on both the processor MCP and SCP. 
- *  SCP have some startup dependencies, on SCP this library depends 
- *  on the fuse service to complete its initialization before it can 
- *  actually read the fuses 
- *  
+ *  Note: This library can be used on both the processor MCP and SCP,
+ *        see the runtime init component for dependency details.
  */
 
 #pragma once
 
 /*--------------- Includes ---------------*/
+
 #include <stdint.h> 
-#include <fpfw_status.h> // for fpfw_status_t
+#include <fpfw_status.h>
+
 /*-- Symbolic Constant Macros (defines) --*/
 
 // Helpers for DTS Coefficient values taken from fuses:
 #define PWR_TLM_DTS_K_COEFF_FUSED_TEMP(fused_k) (-1.0F * (float)fused_k)
 #define PWR_TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y) ((float)fused_y)
 
+//
+// Default values from the datasheet for the sensors, section 3.1 "Coefficients  for Deep N-Well".
+// https://microsoft.sharepoint.com/:b:/r/teams/Kingsgate/Shared%20Documents/Third%20Party%20IP/SNPS/Sensors%20%26%20Monitors%20(formerly%20from%20Moortec)/DTS/N3P/dwc_sensors_dts2_tsmcn3p_databook.pdf?csf=1&web=1&e=OhWey1
+//
+// Rounded and unsigned to reflect as if the values are from the fuses, see above macros for the appropriate sign application.
+//
+#define DEFAULT_DTS_FUSED_Y_VAL (648)
+#define DEFAULT_DTS_FUSED_K_VAL (281)
+
 /**
  * @brief To obtain the temperature value, the following equation should be applied to the dout output of the DTS.
- * Temperature = ( 𝒅𝒐𝒖𝒕 /16384 ) ∗ 𝒀+𝑲 [℃] 
- * Reference : Synopsys Cores Sensors  Distributed Thermal Sensor (Series 2)  section 6.2
+ * Temperature = ( 𝒅𝒐𝒖𝒕 /16384 ) ∗ 𝒀+𝑲 [℃]. We want to round up so we add a half a degree.
+ * Reference : Synopsys Cores Sensors  Distributed Thermal Sensor (Series 2) section 6.2
  */
 
 #ifndef PWR_TLM_DOUT2TEMP_FUSED_DC
     #define PWR_TLM_DOUT2TEMP_FUSED_DC(dout, fused_k, fused_y) \
-        (dout / 16384.0F * PWR_TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y) + PWR_TLM_DTS_K_COEFF_FUSED_TEMP(fused_k))
+    ((uint16_t)((((dout) / (16384.0F)) * PWR_TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y)) + PWR_TLM_DTS_K_COEFF_FUSED_TEMP(fused_k) + (0.5F)))
 #endif
 
-/* DTS coeff spacing  */
+#ifndef PWR_TLM_TEMP2DOUT_FUSED
+    #define PWR_TLM_TEMP2DOUT_FUSED(temp, fused_k, fused_y) \
+    ((uint16_t)((16384.0F) * (((temp) - PWR_TLM_DTS_K_COEFF_FUSED_TEMP(fused_k)) / PWR_TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y))))
+#endif
+
+/* DTS coeff spacing */
 #define TILE_PVT_NUM_CHANNELS_DTS 8
+
 /*--------------- Typedefs ---------------*/
 
 /**
@@ -49,8 +63,8 @@ typedef struct _dts_tlm_coeff_t
 } dts_tlm_coeff_t;
 
 /**
- * @brief API to set the staus of fuse service.
- * To be only called from the power fuse runtime init.  
+ * @brief Initialize the library. Captures status of dependencies being initialized.
+ *
  * @return None 
  */
 void power_fuse_init(void);
@@ -58,19 +72,19 @@ void power_fuse_init(void);
 /**
  * @brief Get the DTS coefficients for all TILE_THERMALS_SENSOR in soc die.
  *
- * @param[in] core_id - Size of the array , which will be equal number of tiles
- * @param[out] Pointer to the array to store the DTS k/y values data in..
+ * @param[out] dts_coeff - Pointer to memory to store the fuse data in.
+ * @param[in] count Number of elements that can fit in dts_coeff.
  *
- * @return None
+ * @return fpfw_status_t
  */
 fpfw_status_t platform_power_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dts_coeff, uint32_t count);
+
 /**
  * @brief Get the DTS coefficients for all TOP_THERMALS_SENSOR on soc die.
  *
- * @param[in] core_id - Size of the array 
- * @param[out] Pointer to the array to store the DTS k/y values data in..
+ * @param[out] dts_coeff - Pointer to memory to store the fuse data in.
+ * @param[in] count Number of elements that can fit in dts_coeff.
  *
- * @return None
+ * @return fpfw_status_t
  */
 fpfw_status_t platform_power_fuses_get_dts_coeff_soctop(dts_tlm_coeff_t* dts_coeff, uint32_t count);
-

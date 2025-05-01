@@ -133,15 +133,15 @@ fpfw_status_t tlm_logger_log_tile_temperature(tile_temp_t* temperature_data, uin
     if (temperature_data->temp0.temp_valid == 1)
     {
         // Check between which is bigger to log for tile core0
-        int16_t inst_temp_0_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp1.temp0,
-                                                            tileDtsCoefficients[tile_index].k_val,
-                                                            tileDtsCoefficients[tile_index].y_val);
-        int16_t inst_temp_1_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp1.temp1,
-                                                            tileDtsCoefficients[tile_index].k_val,
-                                                            tileDtsCoefficients[tile_index].y_val);
-        int16_t inst_temp_2_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp1.temp2,
-                                                            tileDtsCoefficients[tile_index].k_val,
-                                                            tileDtsCoefficients[tile_index].y_val);
+        uint16_t inst_temp_0_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp1.temp0,
+                                                             tileDtsCoefficients[tile_index].k_val,
+                                                             tileDtsCoefficients[tile_index].y_val);
+        uint16_t inst_temp_1_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp1.temp1,
+                                                             tileDtsCoefficients[tile_index].k_val,
+                                                             tileDtsCoefficients[tile_index].y_val);
+        uint16_t inst_temp_2_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp1.temp2,
+                                                             tileDtsCoefficients[tile_index].k_val,
+                                                             tileDtsCoefficients[tile_index].y_val);
 
         core[core_id].temperature.latest_value_dC = find_hot_core_temp(inst_temp_0_dC, inst_temp_1_dC, inst_temp_2_dC);
 

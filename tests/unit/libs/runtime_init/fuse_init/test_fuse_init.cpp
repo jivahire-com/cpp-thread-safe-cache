@@ -28,9 +28,11 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+
 extern fpfw_init_component_t _fpfw_component_fuse_pre_mesh;
 extern fpfw_init_component_t _fpfw_component_fuse_post_mesh;
 extern fpfw_init_component_t _fpfw_component_cli_fuse;
+extern fpfw_init_component_t _fpfw_component_fuse_en;
 
 /*------------- Functions ----------------*/
 //
@@ -63,6 +65,11 @@ FPFW_CLI_STATUS __wrap_platform_fuse_init_cli(void)
 {
     function_called();
     return mock_type(FPFW_CLI_STATUS);
+}
+
+void __wrap_fuse_feature_enable(const bool enable)
+{
+    check_expected(enable);
 }
 
 /* Tests */
@@ -98,5 +105,12 @@ TEST_FUNCTION(test_cli_fuse_init, NULL, NULL)
     expect_function_call(__wrap_platform_fuse_init_cli);
     will_return(__wrap_platform_fuse_init_cli, CLI_SUCCESS);
     _fpfw_component_cli_fuse.init_fn();
+}
+
+TEST_FUNCTION(test_fuse_en, NULL, NULL)
+{
+    // Mock fuse feature enable
+    expect_value(__wrap_fuse_feature_enable, enable, true);
+    _fpfw_component_fuse_en.init_fn();
 }
 }

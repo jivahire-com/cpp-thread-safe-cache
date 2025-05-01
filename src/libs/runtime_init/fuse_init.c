@@ -9,8 +9,11 @@
 #include <atu_lib.h>
 #include <bug_check.h> // for BUG_ASSERT_PARAM, BUG_ASSERT
 #include <fpfw_init.h>
-#include <fuse_client.h>
-#include <fuse_init.h>
+#if defined(SCP_RUNTIME_INIT)
+    #include <fuse_client.h>
+    #include <fuse_init.h>
+#endif
+#include <fuse_utils.h>
 #include <idhw.h>
 #include <idsw.h>
 #include <stdio.h> // for NULL, printf
@@ -21,6 +24,17 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
+
+//
+// Only the SCP has to distribute the fuses, while the MCP and the SCP need the
+// feature enabled.
+//
+
+//
+// Fuse Distribution + Fuse Service CLI
+//
+
+#if defined(SCP_RUNTIME_INIT)
 FPFW_INIT_COMPONENT(fuse_pre_mesh, FPFW_INIT_DEPENDENCIES("icc_hspmbx"))
 {
     fpfw_icc_base_ctx_t* icc_hspmbx_ctx = fpfw_init_get_handle("icc_hspmbx");
@@ -51,8 +65,27 @@ FPFW_INIT_COMPONENT(fuse_post_mesh,
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
+//
+// Enable the Fuse CLI
+//
+
 FPFW_INIT_COMPONENT(cli_fuse, FPFW_INIT_DEPENDENCIES("fuse_post_mesh"))
 {
     FPFW_CLI_STATUS status = platform_fuse_init_cli();
     return (fpfw_init_result_t){status, NULL};
+}
+#endif
+
+//
+// Ensure the fuse feature is enabled
+//
+
+#if defined(SCP_RUNTIME_INIT)
+FPFW_INIT_COMPONENT(fuse_en, FPFW_INIT_DEPENDENCIES("fuse_post_mesh"))
+#elif defined(MCP_RUNTIME_INIT)
+FPFW_INIT_COMPONENT(fuse_en, FPFW_INIT_NULL_NODE)
+#endif
+{
+    fuse_feature_enable(true);
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

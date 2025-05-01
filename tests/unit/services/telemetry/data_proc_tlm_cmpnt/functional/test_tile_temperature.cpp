@@ -49,15 +49,18 @@ extern "C" {
 #include <tlm_logger_i.h>
 }
 
+#define TEST_TEMP2DOUT(temp) \
+    (PWR_TLM_TEMP2DOUT_FUSED((temp), DEFAULT_DTS_FUSED_K_VAL, DEFAULT_DTS_FUSED_Y_VAL))
+
 // Structure to hold test temperature configurations
 typedef struct
 {
-    int32_t core0_temp0;
-    int32_t core0_temp1;
-    int32_t core0_temp2;
-    int32_t core1_temp3;
-    int32_t core1_temp4;
-    int32_t core1_temp5;
+    uint16_t core0_temp0;
+    uint16_t core0_temp1;
+    uint16_t core0_temp2;
+    uint16_t core1_temp3;
+    uint16_t core1_temp4;
+    uint16_t core1_temp5;
 } test_temp_config_t;
 
 // Helper functions for min/max calculations
@@ -213,7 +216,8 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
         {.core0_temp0 = 70, .core0_temp1 = 75, .core0_temp2 = 72, .core1_temp3 = 80, .core1_temp4 = 85, .core1_temp5 = 82},
         {.core0_temp0 = 80, .core0_temp1 = 85, .core0_temp2 = 82, .core1_temp3 = 90, .core1_temp4 = 95, .core1_temp5 = 92},
         {.core0_temp0 = 90, .core0_temp1 = 95, .core0_temp2 = 92, .core1_temp3 = 100, .core1_temp4 = 105, .core1_temp5 = 102},
-        {.core0_temp0 = 75, .core0_temp1 = 80, .core0_temp2 = 77, .core1_temp3 = 85, .core1_temp4 = 90, .core1_temp5 = 87}};
+        {.core0_temp0 = 75, .core0_temp1 = 80, .core0_temp2 = 77, .core1_temp3 = 85, .core1_temp4 = 90, .core1_temp5 = 87},
+    };
 
     for (int32_t iteration = 0; iteration < 4; iteration++)
     {
@@ -264,6 +268,15 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
         mock_temp_data.temp0.temp_valid = 1;
         mock_temp_data.temp0.max_temp = max3(expected_core0_max, expected_core1_max, INT_MIN);
         mock_temp_data.temp0.max_id = 4;
+
+        // Now that we have the mock temp data setup as dC, convert it to DOUT to reflect what we expect from SCF RAM.
+        mock_temp_data.temp0.max_temp = TEST_TEMP2DOUT(mock_temp_data.temp0.max_temp);
+        mock_temp_data.temp1.temp0 = TEST_TEMP2DOUT(mock_temp_data.temp1.temp0);
+        mock_temp_data.temp1.temp1 = TEST_TEMP2DOUT(mock_temp_data.temp1.temp1);
+        mock_temp_data.temp1.temp2 = TEST_TEMP2DOUT(mock_temp_data.temp1.temp2);
+        mock_temp_data.temp1.temp3 = TEST_TEMP2DOUT(mock_temp_data.temp1.temp3);
+        mock_temp_data.temp2.temp4 = TEST_TEMP2DOUT(mock_temp_data.temp2.temp4);
+        mock_temp_data.temp2.temp5 = TEST_TEMP2DOUT(mock_temp_data.temp2.temp5);
 
         // Set up expectations for tile 0
         // Temperature polling - with data

@@ -5,6 +5,7 @@ set(SOURCES
     ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/fuse_init.c
 )
 
+add_compile_definitions(SCP_RUNTIME_INIT)
 
 add_executable(${TARGET} ${SOURCES})
 
@@ -49,10 +50,10 @@ unit_test_target(${TARGET})
 
 
 mock_target(${TARGET}
+   fuse_feature_enable
    fpfw_init_get_handle
    fuse_init
    platform_fuse_override
    platform_fuse_distribution
    platform_fuse_init_cli
-
 )

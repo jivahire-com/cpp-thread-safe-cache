@@ -114,8 +114,8 @@ static FPFW_CLI_STATUS read_power_fuse_tile(int Argc, const char** Argv)
 
     for (int i = 0; i < NUMBER_OF_TILES_PER_DIE; i++)
     {
-        FpFwCliPrint("\n DTS coefficient :tileDtsCoefficientsTest[%d].k_val = %d\n"
-                     "tileDtsCoefficientsTest[%d].y_val = %d\n",
+        FpFwCliPrint("DTS coefficient:\n\ttileDtsCoefficientsTest[%d].k_val = %d\n"
+                     "\ttileDtsCoefficientsTest[%d].y_val = %d\n",
                      i,
                      tileDtsCoefficientsTest[i].k_val,
                      i,
@@ -141,8 +141,8 @@ static FPFW_CLI_STATUS read_power_fuse_soctop(int Argc, const char** Argv)
 
     for (int i = 0; i < NUMBER_OF_TILES_PER_DIE; i++)
     {
-        FpFwCliPrint("\n DTS coefficient :soctopDtsCoefficientsTest[%d].k_val = %d\n"
-                     "soctopDtsCoefficientsTest[%d].y_val = %d\n",
+        FpFwCliPrint("DTS coefficient:\n\tsoctopDtsCoefficientsTest[%d].k_val = %d\n"
+                     "\tsoctopDtsCoefficientsTest[%d].y_val = %d\n",
                      i,
                      soctopDtsCoefficientsTest[i].k_val,
                      i,

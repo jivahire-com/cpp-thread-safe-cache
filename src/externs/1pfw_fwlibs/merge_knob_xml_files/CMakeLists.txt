@@ -43,6 +43,7 @@ set(EXPLICIT_PATH_PROD_FW_TOWER_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kn
 set(EXPLICIT_PATH_PROD_FW_VAB_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_vab_config_knobs.xml)
 set(EXPLICIT_PATH_PROD_FW_FUSE_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_fuse_config_knobs.xml)
 set(EXPLICIT_PATH_PROD_FW_SMMU_VAB_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_smmu_config_knobs.xml)
+set(EXPLICIT_PATH_PROD_FW_D2D_CNTR_SYNC_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_d2d_counter_knobs.xml)
 set(EXPLICIT_PATH_PROD_FW_POWER_TLM_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_power_tlm_knobs.xml)
 set(EXPLICIT_PATH_PROD_FW_CLOCK_SEQ_KNOBS ${CMAKE_SOURCE_DIR}/config/knobs_config/kng_mscp_clock_sequence_knobs.xml)
 
@@ -67,6 +68,7 @@ if (i386-pc-windows-msvc)
                    ${EXPLICIT_PATH_PROD_FW_VAB_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_FUSE_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_SMMU_VAB_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_D2D_CNTR_SYNC_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_POWER_TLM_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_CLOCK_SEQ_KNOBS}
                 -p ${PROD_FW_COMBINED_GENERATED_KNOBS} -n ${PROD_FW_KNOBS_NAMESPACE}
@@ -89,6 +91,7 @@ else()
                    ${EXPLICIT_PATH_PROD_FW_VAB_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_FUSE_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_SMMU_VAB_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_D2D_CNTR_SYNC_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_POWER_TLM_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_CLOCK_SEQ_KNOBS}
                 -p ${PROD_FW_COMBINED_GENERATED_KNOBS} -n ${PROD_FW_KNOBS_NAMESPACE}
@@ -114,6 +117,7 @@ set(KNOB_FILES_DEPENDS ${EXPLICIT_PATH_SILIBS_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_CLOCK_SEQ_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_CRASHDUMP_KNOBS}
                    ${EXPLICIT_PATH_PROD_FW_SYSTEM_KNOBS}
+                   ${EXPLICIT_PATH_PROD_FW_D2D_CNTR_SYNC_KNOBS}
     )
 add_custom_command(
     OUTPUT ${PROD_FW_COMBINED_GENERATED_KNOBS}

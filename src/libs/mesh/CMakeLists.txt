@@ -17,6 +17,7 @@ target_link_libraries(${TARGET}
     fwlib.service.iccBase
     silibs_platform
     ms::lib::crash_dump
+    ms::lib::d2d_cntr_sync
     ms::lib::error_codes
     ms::lib::hsp_firmware_headers
     ms::lib::register_headers
@@ -30,7 +31,6 @@ target_link_libraries(${TARGET}
     silibs::cmn800_skus
     silibs::cmn800_sequence
     silibs::cmn800_ras_sequence
-    silibs::d2d_counter_sync
     silibs::idhw
     silibs::idsw
     silibs::idsw_kng

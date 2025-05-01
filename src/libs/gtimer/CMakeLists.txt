@@ -15,7 +15,6 @@ target_link_libraries(${TARGET}
     ms::lib::error_codes
     ms::lib::register_headers
     ms::lib::scp_interrupts
-    silibs::d2d_counter_sync
     silibs::idhw
     silibs::gtimer
     silibs::idsw_kng

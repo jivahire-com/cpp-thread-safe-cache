@@ -1,0 +1,22 @@
+<ConfigSchema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:noNamespaceSchemaLocation="configschema.xsd">
+
+  <!-- Enum values are declared separately from the knobs.
+       The same Enum can be used as the 'enumtype' of any number of EnumKnobs -->
+  <Enums>
+  </Enums>
+
+  <Structs>
+    <Struct name="d2d_counter_sync_knobs_t">
+        <Member name="d2d_counter_sync_d0_cfg" type="d2d_counter_sync_d0_config_t" count="1" help="On boot config params (Die 0) for multi-die counter sync " />
+        <Member name="d2d_counter_sync_d1_cfg" type="d2d_counter_sync_d1_config_t" count="1" help="On boot config params (Die 1) for multi-die counter sync " />
+    </Struct>
+  </Structs>
+
+  <!-- namespace indicates the GUID namespace the values are stored in -->
+  <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
+    <!--  D2d counter Knobs -->
+    <Knob name="d2d_counter_sync_knobs" type="d2d_counter_sync_knobs_t" help="D2D counter sync knob structure" />
+  </Knobs>
+
+</ConfigSchema>

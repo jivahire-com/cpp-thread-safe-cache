@@ -10,8 +10,6 @@
 /*------------- Includes -----------------*/
 #include <FPFwInterrupts.h>
 #include <bug_check.h>
-#include <d2d_counter_struct_defaults.h> // for DEFAULT_INSTANCE_D2D_COUNTER_SYNC_D0_CONFIG_T, DEFAULT_INSTANCE_D2D_COUNTER_SYNC_D1_CONFIG_T
-#include <d2d_counter_sync.h> // for d2d_counter_sync_enable, d2d_counter_sync_configure_d0_and_enable_sync
 #include <fpfw_status.h>
 #include <fpfw_tmr_queue.h>
 #include <gtimer.h>
@@ -89,30 +87,6 @@ void gtimer_prodfw_init(gtimer_prodfw_init_config_t* config)
     //! Initialize & enable counter for the given device & update frequency
     gtimer_init(config->timer_control_base);
     gtimer_enable_timer(config->timer_base_address);
-
-    //! d2d sync counters are not supported on SVP currently
-    if (!(IS_PLATFORM_SVP()))
-    {
-        //! d2d counter sync logic is only needed for dual die boot for scp cores
-        if ((idsw_get_cpu_type() == CPU_SCP) && !idhw_is_single_die_boot_en())
-        {
-            if (idhw_get_die_id() == DIE_0)
-            {
-                //! Configure & Enable D2D counter sync logic for die 0
-                DEFAULT_INSTANCE_D2D_COUNTER_SYNC_D0_CONFIG_T(d0_config);
-                d2d_counter_sync_configure_d0_and_enable_sync(&d0_config);
-                printf("[GTimer] D2D Cntr Sync Config & Enable DIE 0\n");
-            }
-            else
-            {
-                //! Only configure D2D counter sync logic for die 1
-                //! This will be enabled post d2dss_sequence()
-                DEFAULT_INSTANCE_D2D_COUNTER_SYNC_D1_CONFIG_T(d1_config);
-                d2d_counter_sync_configure_d1_params(&d1_config);
-                printf("[GTimer] D2D Cntr Sync Config DIE 1\n");
-            }
-        }
-    }
 
     fpfw_status_t status = fpfw_tmr_queue_init(&s_timer_queue, gtimer_prodfw_get_counter);
     BUG_ASSERT(status == FPFW_STATUS_SUCCESS);

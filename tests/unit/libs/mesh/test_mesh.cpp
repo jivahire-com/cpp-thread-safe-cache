@@ -20,6 +20,7 @@ extern "C" {
 #include <cmn800_error_handler.h> // for acpi_err_sec_generic_t
 #include <cmn800_sequence.h>      // for cmn800_sequence_params_t
 #include <cmn_config.h>           // for CMN800_CONFIG_CONFIG
+#include <d2d_cntr_sync.h>        // for d2d_counter_sync_enable
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h> // for fpfw_icc_base_ctx_t
 #include <fpfw_status.h>
@@ -422,6 +423,11 @@ void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, u
     function_called();
 }
 
+void __wrap_d2d_cntr_sync_enable(void)
+{
+    function_called();
+}
+
 void setup_common_isr_expectations(void)
 {
     // FPFwCoreInterruptRegisterCallback
@@ -734,6 +740,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_SVP, setup_svp_platform_dual_di
 
     setup_common_numa_variables_expectations(test_die);
     will_return(__wrap_mscp_exp_spi_synchronize_dies, SILIBS_SUCCESS);
+    expect_function_call(__wrap_d2d_cntr_sync_enable);
 
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
@@ -841,6 +848,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_FPGA, setup_fpga_platform_dual_
 
     setup_common_numa_variables_expectations(test_die);
     will_return(__wrap_mscp_exp_spi_synchronize_dies, SILIBS_SUCCESS);
+    expect_function_call(__wrap_d2d_cntr_sync_enable);
 
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);

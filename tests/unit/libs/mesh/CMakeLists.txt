@@ -27,6 +27,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::lib::mesh
         ms::lib::cortex_m7::nvic
+        ms::lib::d2d_cntr_sync
         ms::lib::scp_interrupts
         ms::lib::variable_services
         silibs_platform
@@ -93,4 +94,5 @@ mock_target(${TARGET}
     memcmp
     mscp_exp_spi_synchronize_dies
     crash_dump_bug_check
+    d2d_cntr_sync_enable
 )

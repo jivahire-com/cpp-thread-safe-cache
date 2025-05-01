@@ -17,8 +17,8 @@
 #include <cmn800_sequence.h>       // for cmn800_sequence, d2dss_sequence, cmn8...
 #include <cmn800_sequence_knobs.h> // for cmn800_sequence, d2dss_sequence, cmn8...
 #include <cmn800_sequence_struct_defaults.h>
-#include <cmn_config.h>       // for CMN800_CONFIG_CONFIG
-#include <d2d_counter_sync.h> // for d2d_counter_sync_enable
+#include <cmn_config.h>    // for CMN800_CONFIG_CONFIG
+#include <d2d_cntr_sync.h> // for d2d_counter_sync_enable
 #include <d2dss.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h> // for fpfw_icc_base_ctx_t
@@ -653,15 +653,10 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         FPFW_RUNTIME_ASSERT(sts == 0);
         // Setup the D2D RAS Agents for Interrupt Handling
         d2d_ras_init();
-        //! d2d sync counters are not supported on SVP currently
-        if (!(IS_PLATFORM_SVP()))
+        //! Enable die 1 sync counter for uniform timestamps across dies
+        if (die_num == DIE_1)
         {
-            //! Enable d2d counter sync for SCP DIE 1 post d2d link is up
-            if ((die_num == DIE_1) && (idsw_get_cpu_type() == CPU_SCP))
-            {
-                d2d_counter_sync_enable(die_num);
-                MESH_CRIT("[MESH INIT] D2D Cntr Sync Enable DIE 1\n");
-            }
+            d2d_cntr_sync_enable();
         }
     }
     else

@@ -1,6 +1,7 @@
 {
     "id": "TEST_HOST",
     "ip": "localhost",
+    "reset_on_setup": false,
     "connections": {
         "mb": {
             "node_0": {
@@ -98,7 +99,7 @@
                                     "serial_port": "COM4",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
-                                    "file_name":"cded_sdm0_logs"
+                                    "file_name":"sdm_cded0_logs"
                                 },
                                 "default": "serial"
                             },
@@ -139,6 +140,7 @@
                                 "serial": {
                                     "baud_rate": 115200,
                                     "serial_port": "COM9",
+                                    "line_separator": "\n",
                                     "enable_warning_logs":"false",
                                     "file_name":"hsp1_logs"
                                 },
@@ -178,6 +180,7 @@
                                 "serial": {
                                     "baud_rate": 115200,
                                     "serial_port": "COM11",
+                                    "line_separator": "\n",
                                     "enable_warning_logs":"false",
                                     "file_name":"mcp1_logs"
                                 },
@@ -196,7 +199,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM11",
+                                    "serial_port": "COM10",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
                                     "file_name":"sdm1_logs"
@@ -216,10 +219,10 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM9",
+                                    "serial_port": "COM10",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
-                                    "file_name":"cded_sdm1_logs"
+                                    "file_name":"sdm_cded1_logs"
                                 },
                                 "default": "serial"
                             },

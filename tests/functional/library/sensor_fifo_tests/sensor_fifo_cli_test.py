@@ -432,6 +432,9 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         try:
             self.log.info("Setting up DUT...")
             self.dut.setup()
+            if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+                self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
+                KngPythiaTestSetup.fpga_oob_reset(self.log)
             # Wait for SCP heartbeat during initial setup
             if not self.wait_for_scp_mcp_heartbeat():
                 self.log.error("Failed to receive initial SCP-MCP heartbeat during setup")

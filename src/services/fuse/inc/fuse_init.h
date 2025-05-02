@@ -97,6 +97,15 @@ int platform_read_for_fuse(const uintptr_t , const uint64_t , const uint32_t );
  *
  */
 int write_fuse_info_to_ap();
+
+/**
+ * Print fuse artifacts version used in the FW code
+ *
+ * @return none
+ *
+ */
+void fuse_print_version(void);
+
 #ifdef __cplusplus
 }
 #endif

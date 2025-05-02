@@ -13,6 +13,7 @@
 #include <fpfw_init.h>   // for fpfw_init_get_handle, FPFW_INIT_C...
 #include <fpfw_status.h> // for fpfw_status_t
 #include <fuse.h>        // fuse library functions
+#include <fuse_artifact_version.h>
 #include <fuse_dma.h>    // apply copy fuse to ram
 #include <fuse_events.h> // apply event trace for fuse
 #include <fuse_init.h>   // fuse service API interface
@@ -435,4 +436,12 @@ void fuse_init(fpfw_icc_base_ctx_t* icc_base_ctx)
     config_knob_64_95 = config_get_core_disable_value_64_95();
 
     FUSE_ET_STATUS(FUSE_ET_TYPE_SVC_START);
+}
+
+void fuse_print_version(void)
+{
+    FPFW_DBGPRINT_INFO(FUSE_NAME "Current fuse artifacts version %d.%d.%d \n",
+                       ((FUSE_ARTIFACT_VERSION >> 24) & 0xff),
+                       ((FUSE_ARTIFACT_VERSION >> 12) & 0xfff),
+                       (FUSE_ARTIFACT_VERSION & 0xfff));
 }

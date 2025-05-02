@@ -46,6 +46,7 @@ FPFW_INIT_COMPONENT(fuse_pre_mesh, FPFW_INIT_DEPENDENCIES("icc_hspmbx"))
     }
 
     fuse_init(icc_hspmbx_ctx);
+    fuse_print_version();
     platform_fuse_override();
 
     platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_HSP);

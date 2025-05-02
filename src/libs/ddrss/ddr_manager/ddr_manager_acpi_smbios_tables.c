@@ -719,6 +719,12 @@ void ddr_create_smbios_tables(void)
         }
     }
 
+    // Align to next 32bit addr
+    if (!FPFW_IS_ALIGNED(smbios_next_addr, sizeof(uint32_t)))
+    {
+        smbios_next_addr = FPFW_ALIGN_SIZE_TO_4_BYTES(smbios_next_addr);
+    }
+
     printf("SMBIOS 16 DONE\n");
 
     // --------------------------- Type 17 tables ---------------------------
@@ -741,6 +747,12 @@ void ddr_create_smbios_tables(void)
         dimm_global_idx = (die_num * 6) + dimm_local_idx; // 6 dimm per die: die0- 0 to 5, die1- 6 to 11
 
         dimm_spd = ddrss_get_dimm_spd(dimm_local_idx);
+
+        // Align to next 32bit addr
+        if (!FPFW_IS_ALIGNED(this_dies_smbios_next_addr, sizeof(uint32_t)))
+        {
+            this_dies_smbios_next_addr = FPFW_ALIGN_SIZE_TO_4_BYTES(this_dies_smbios_next_addr);
+        }
 
         /* Length of the structure, 15h for version 2.1, 1Bh for
         version 2.3, 1Ch for version 2.6, 22h for version

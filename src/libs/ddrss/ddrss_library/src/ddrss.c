@@ -365,10 +365,6 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     {
         platform_str = "RVP";
         ddrss_cfgs.platform_type = DDRSS_PLATFORM_SILICON;
-        // TODO: For RVP platform, after I3C DIMM SPD detection is added,
-        //      the dimm_sku and ddrss_mask needs to be updated using detection results.
-        // ddrss_cfgs.ext_knobs.ddrss_mask = get_i3c_dimm_detected(); // Will enable on separate PR..
-
         ddrss_cfgs.dimm_sku = DDR5_RDIMM_2Rx4_16Gb_64GB;
         ddrss_cfgs.ext_knobs.ddr_speed_grade = config_get_ddr_speed_grade();
 
@@ -418,6 +414,12 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.numa_cfg = mc_config->is_numa_enabled ? DDRSS_NUMA_CFG_NUMA : DDRSS_NUMA_CFG_UMA;
     ddrss_cfgs.hash_addr_bits_sel = mc_config->hash_select;
     memcpy(ddrss_cfgs.mc_mapping_order, mc_config->ddr_mc_map, sizeof(ddrss_cfgs.mc_mapping_order));
+    if (platform_id == PLATFORM_RVP_EVT_SILICON)
+    {
+        // For RVP platform, use I3C detected DIMM population and sku.
+        ddrss_cfgs.dimm_sku = mc_config->i3c_dimm_sku;
+        ddrss_cfgs.ext_knobs.ddrss_mask = mc_config->i3c_ddrss_mask;
+    }
 
     // Set DDRSS ext_knobs from config knobs
     if (config_get_phy_fw_diag_en())

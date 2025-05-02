@@ -12,6 +12,7 @@
 #include <FpFwLinkedList.h> // for NULL_LIST_ENTRY
 #include <FpFwUtils.h>      // for FPFW_UNUSED, FPFW_ARRAY_SIZE
 #include <ddr_err_inj.h>
+#include <ddr_manager_i3c.h>
 #include <ddr_memory_map.h>
 #include <ddrss_lib.h>
 #include <stdio.h> // for printf
@@ -34,6 +35,8 @@ STATIC FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char** Argv);
 STATIC FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv);
 STATIC FPFW_CLI_STATUS cmd_addr_parity_error_injection(int Argc, const char** Argv);
 STATIC FPFW_CLI_STATUS wrrtydat_ue_error_injection(int Argc, const char** Argv);
+STATIC FPFW_CLI_STATUS read_dimm_pmic_power(int Argc, const char** Argv);
+STATIC FPFW_CLI_STATUS read_dimm_temp_sensor(int Argc, const char** Argv);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -44,6 +47,8 @@ STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
     {NULL_LIST_ENTRY, "ddr_err_inj", "ecc_ue_err", ecc_ue_error_injection, "ECC UE error injection", "Usage: ecc_ue_err <parameter tbd>"},
     {NULL_LIST_ENTRY, "ddr_err_inj", "capar_err", cmd_addr_parity_error_injection, "CAPAR error", "Usage: caddr_parity_err <parameter tbd>"},
     {NULL_LIST_ENTRY, "ddr_err_inj", "wrrtydat_ue_err", wrrtydat_ue_error_injection, "WRRTYDAT UE error injection", "Usage: wrrtydat_ue_err <parameter tbd>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "read_dimm_pmic_power", read_dimm_pmic_power, "Read PMIC power", "Usage: read_dimm_pmic_power <dimm_idx>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "read_dimm_temp_sensor", read_dimm_temp_sensor, "Read DIMM temperature sensor", "Usage: read_dimm_temp_sensor <dimm_idx> <channel_idx>"},
 };
 
 // ecc_ce_err (mc) (phy_add) {error bit}
@@ -211,6 +216,55 @@ STATIC FPFW_CLI_STATUS wrrtydat_ue_error_injection(int Argc, const char** Argv)
     // https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/584974
     FpFwCliPrint("Work in progress: wrrtydat_ue_error_injection\n");
 
+    return CLI_SUCCESS;
+}
+
+STATIC FPFW_CLI_STATUS read_dimm_pmic_power(int Argc, const char** Argv)
+{
+    uint8_t ddrss_index = 0;
+    uint16_t power_mw = 0;
+    int sts = 0;
+
+    if (Argc != 2)
+    {
+        FpFwCliPrint("Invalid number of arguments.  Usage: read_dimm_pmic_power <dimm_idx>\n");
+        return CLI_ERROR;
+    }
+
+    ddrss_index = (uint8_t)(strtoul(Argv[1], NULL, 0));
+    sts = ddr_manager_power_mw_read(ddrss_index, &power_mw);
+    if (sts != 0)
+    {
+        FpFwCliPrint("Error reading PMIC power\n");
+        return CLI_ERROR;
+    }
+
+    return CLI_SUCCESS;
+}
+
+STATIC FPFW_CLI_STATUS read_dimm_temp_sensor(int Argc, const char** Argv)
+{
+    uint8_t ddrss_index = 0;
+    uint8_t channel_idx = 0;
+    ddr_manager_i3c_temperature_t temperature = {0};
+    int sts = 0;
+
+    if (Argc != 3)
+    {
+        FpFwCliPrint("Invalid number of arguments.  Usage: read_dimm_temp_sensor <dimm_idx> <channel_idx>\n");
+        return CLI_ERROR;
+    }
+
+    ddrss_index = (uint8_t)(strtoul(Argv[1], NULL, 0));
+    channel_idx = (uint8_t)(strtoul(Argv[2], NULL, 0));
+    sts = ddr_manager_temperature_sensor_read(ddrss_index, channel_idx, &temperature);
+    if (sts != 0)
+    {
+        FpFwCliPrint("Error reading DIMM temperature sensor\n");
+        return CLI_ERROR;
+    }
+
+    FpFwCliPrint("Temperature: %d.%d\n", temperature.temp_int, temperature.temp_frac);
     return CLI_SUCCESS;
 }
 

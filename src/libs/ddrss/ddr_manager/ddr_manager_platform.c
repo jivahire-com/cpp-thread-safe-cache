@@ -24,10 +24,6 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-bool ddr_manager_platform_is_polling_supported()
-{
-    return idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON;
-}
 
 ddrss_memory_region_t* ddr_manager_get_outgoing_memory_map()
 {

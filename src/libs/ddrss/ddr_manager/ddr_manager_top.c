@@ -28,20 +28,32 @@
 /*-------------- Typedefs ----------------*/
 
 /*-------- Function Prototypes -----------*/
+static void enable_i3c_dimm_polling_timer(void);
 
 /*-- Declarations (Statics and globals) --*/
+ddr_service_context_t* ddr_service_ctx;
+ddr_service_config_t* ddr_service_config;
 
 /*-------------- Functions ---------------*/
+ddr_service_context_t* ddr_get_service_context(void)
+{
+    return ddr_service_ctx;
+}
+
+ddr_service_config_t* ddr_get_service_config(void)
+{
+    return ddr_service_config;
+}
 
 void ddr_worker_thread_func(ULONG pddr_service_ctx)
 {
-    ddr_service_context_t* ddr_service_ctx = (ddr_service_context_t*)pddr_service_ctx;
+    ddr_service_context_t* service_ctx = (ddr_service_context_t*)pddr_service_ctx;
     uint32_t received_message;
     UINT status;
 
     while (1)
     {
-        status = tx_queue_receive(&ddr_service_ctx->work_queue, &received_message, TX_WAIT_FOREVER);
+        status = tx_queue_receive(&service_ctx->work_queue, &received_message, TX_WAIT_FOREVER);
         if (status != TX_SUCCESS)
         {
             DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TX_QUEUE_RECEIVE, status);
@@ -64,6 +76,7 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
 
             case DDR_CREATE_SMBIOS_TABLES_EVENT:
                 ddr_create_smbios_tables();
+                enable_i3c_dimm_polling_timer();
                 break;
 
             case DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT:
@@ -73,6 +86,8 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
 
             case DDR_POLL_DIMMS_I3C_EVENT:
                 ddr_poll_dimms();
+                check_dimm_temp_thresholds();
+                ddr_telemetry_report();
                 break;
 
             case DDR_I3C_DATA_READY_EVENT:
@@ -83,6 +98,31 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
                 DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_UNKNOWN_MESSAGE_TYPE, (int)received_message);
                 break;
             }
+        }
+    }
+}
+
+void enable_i3c_dimm_polling_timer(void)
+{
+    idsw_plat_id_t plat_id = idsw_get_platform_sdv();
+
+    if (plat_id == PLATFORM_RVP_EVT_SILICON)
+    {
+        ddr_service_context_t* pddr_service_ctx = ddr_get_service_context();
+        ddr_service_config_t* pconfig = ddr_get_service_config();
+
+        int status = tx_timer_create((TX_TIMER*)&pddr_service_ctx->ddr_polling_timer, /* TX_TIMER *timer_ptr */
+                                     (char*)DDR_TIMER_NAME,                           /* CHAR *name_ptr */
+                                     ddr_timer_cb,            /* VOID (*expiration_function)(ULONG input) */
+                                     (ULONG)pddr_service_ctx, /* ULONG expiration_input */
+                                     pconfig->timer_config.initial_ticks,    /* ULONG initial_ticks >= 1 */
+                                     pconfig->timer_config.reschedule_ticks, /* ULONG reschedule_ticks */
+                                     TX_AUTO_ACTIVATE);                      /* UINT auto_activate) */
+
+        if (status != TX_SUCCESS)
+        {
+            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TIMER_CREATE_ERROR, status);
+            FPFwErrorRaise(status, 0, 0, 0, 0);
         }
     }
 }
@@ -135,6 +175,10 @@ static void hsp_send_ddr_init_notify(fpfw_icc_base_ctx_t* icc_ctx)
  */
 void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_config_t* pconfig, fpfw_icc_base_ctx_t* icc_ctx)
 {
+    // Copy to globals so that we can access in other places
+    ddr_service_ctx = pddr_service_ctx;
+    ddr_service_config = pconfig;
+
     uint32_t work_queue_msg = 0;
     int status = tx_queue_create((TX_QUEUE*)&pddr_service_ctx->work_queue, /* TX_QUEUE *queue_ptr */
                                  (char*)DDR_WORK_QUEUE_NAME,               /* CHAR *name_ptr */
@@ -205,20 +249,6 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
-    status = tx_timer_create((TX_TIMER*)&pddr_service_ctx->ddr_polling_timer, /* TX_TIMER *timer_ptr */
-                             (char*)DDR_TIMER_NAME,                           /* CHAR *name_ptr */
-                             ddr_timer_cb,            /* VOID (*expiration_function)(ULONG input) */
-                             (ULONG)pddr_service_ctx, /* ULONG expiration_input */
-                             pconfig->timer_config.initial_ticks,    /* ULONG initial_ticks >= 1 */
-                             pconfig->timer_config.reschedule_ticks, /* ULONG reschedule_ticks */
-                             TX_AUTO_ACTIVATE);                      /* UINT auto_activate) */
-
-    if (status != TX_SUCCESS)
-    {
-        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TIMER_CREATE_ERROR, status);
-        FPFwErrorRaise(status, 0, 0, 0, 0);
-    }
-
     ddr_manager_i3c_init();
 
     DDR_LOG_CRIT("DDR init, die_num: [%u]\n", pconfig->thread_config.die_number);
@@ -232,13 +262,6 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     else
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_NO_HSP_DETECTED, ET_NOPARAM);
-    }
-
-    // For development - if platform doesn't support I3C DIMM polling, disable the timer
-    if (!ddr_manager_platform_is_polling_supported())
-    {
-        tx_timer_deactivate((TX_TIMER*)&pddr_service_ctx->ddr_polling_timer);
-        DDR_MANAGER_ET_WARN(DDR_MANAGER_ET_TYPE_PLATFORM_NOT_SUPPORT_I3C_POLLING, ET_NOPARAM);
     }
 
     DDR_LOG_CRIT("DDR init, die_num: [%u] Done\n", pconfig->thread_config.die_number);

@@ -9,10 +9,15 @@
  */
 
 /*------------- Includes -----------------*/
+#include "ddr_manager_bwl.h"
 #include "ddr_manager_i.h"
 #include "ddr_manager_i3c.h"
 
 #include <bug_check.h>
+#include <fpfw_cfg_mgr.h>
+#include <gtimer_prodfw.h>
+#include <idsw_kng.h>
+#include <sensor_fifo_service.h>
 #include <stdio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -62,4 +67,30 @@ ddr_manager_i3c_temperature_t ddr_telemetry_get_dimm_temp(uint8_t dimm_idx, uint
     ddr_telemetry_unlock();
 
     return temp;
+}
+
+void ddr_telemetry_report()
+{
+    KNG_DIE_ID die_num = idsw_get_die_id();
+    sensor_ram_dimm_info_t dimm_info = {0};
+    uint16_t power_mW = 0;
+
+    dimm_info.timestamp = gtimer_prodfw_get_counter();
+    dimm_info.dimm_throttling = ddr_manager_get_bwl_engaged();
+    dimm_info.dimm_memory_frequency_id = (uint8_t)config_get_ddr_speed_grade();
+
+    for (int dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)
+    {
+        dimm_info.dimm_id = dimm_idx + (die_num * NUM_DIMM_PER_DIE);
+        if (ddr_manager_power_mw_read(dimm_idx, &power_mW) != DDR_MANAGER_I3C_SUCCESS)
+        {
+            power_mW = 0;
+        };
+        dimm_info.dimm_power_mW = power_mW;
+        dimm_info.dimm_temp_s0_dC = ddr_telemetry_get_dimm_temp(dimm_idx, 0).temp_int;
+        dimm_info.dimm_temp_s1_dC = ddr_telemetry_get_dimm_temp(dimm_idx, 1).temp_int;
+
+        // Send the telemetry data to the telemetry service
+        sensor_fifo_svc_add_dimm_info(&dimm_info);
+    }
 }

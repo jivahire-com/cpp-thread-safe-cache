@@ -21,17 +21,21 @@ extern "C" {
 #include <atu_lib.h>     // for atu_map
 #include <bdat_schema.h> // for bdat structure
 #include <ddr_i3c.h>
-#include <ddr_manager.h>   // for ddr_manager_init, ddr_service_context_t
+#include <ddr_manager.h> // for ddr_manager_init, ddr_service_context_t
+#include <ddr_manager_bwl.h>
 #include <ddr_manager_i.h> // for ddr_poll_dimms, ddr_worker_thread_func
 #include <ddrss_lib.h>
 #include <error_handler.h> // for set_error_handler_return
+#include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h>
 #include <hsp_firmware_headers.h>
 #include <idsw_kng.h>
 #include <kingsgate_hsp_mailbox_commands.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <mscp_exp_spi_synchronize_dies.h>
+#include <sensor_fifo_service.h>
 #include <smbios_structs.h>
+#include <thread_x_mocks.h>
 #include <tx_api.h> // for TX_SUCCESS, ULONG, TX_NOT_DONE, TX_NO_MEMORY
 
 } // extern "C"
@@ -49,9 +53,11 @@ extern "C" {
 #endif
 
 #define DDRSS_PHY_TRAINING_MARGIN_SIZE_BYTES (7680)
+#define NUM_TEMP_SENSORS_PER_DIMM            (2)
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
+static int begin_bwl_disengaged(void** state);
 
 /*-- Declarations (Statics and globals) --*/
 static fpfw_icc_base_ctx_t* icc_ctx;
@@ -188,7 +194,46 @@ bool __wrap_idhw_is_single_die_boot_en(void)
     return mock_type(bool);
 }
 
+void __wrap_sensor_fifo_svc_add_dimm_info(sensor_ram_dimm_info_t* dimm_info)
+{
+    check_expected_ptr(dimm_info);
+}
+
+int32_t __wrap_ddr_i3c_interface_read_pmic_power(i3c_instance_t* instance,
+                                                 i3c_cmd_t* s_i3c_cmd,
+                                                 uint8_t dev_id,
+                                                 uint8_t mr_reg,
+                                                 uint8_t* data8,
+                                                 uint8_t* data_len)
+{
+    UNUSED(instance);
+    UNUSED(s_i3c_cmd);
+    UNUSED(dev_id);
+    UNUSED(mr_reg);
+    UNUSED(data_len);
+    *data8 = mock_type(uint8_t);
+
+    return SILIBS_SUCCESS;
+}
+
+uint64_t __wrap_gtimer_prodfw_get_counter()
+{
+    return mock_type(uint64_t);
+}
 } // extern "C"
+
+static int begin_bwl_disengaged(void** state)
+{
+    (void)state;
+
+    // Arrange
+    expect_function_call(__wrap_mmio_read32);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_write32);
+
+    ddr_manager_disable_bwl_i3c();
+    return 0;
+}
 
 //
 // Tests
@@ -290,9 +335,18 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
     will_return(__wrap__txe_thread_create, TX_SUCCESS);
 
-    // tx timer create fails
-    will_return(__wrap__txe_timer_create, TX_TIMER_ERROR);
-    expect_value(FPFwErrorRaise, error, (uint32_t)(TX_TIMER_ERROR));
+    // Inside ddr_manager_i3c_init()
+    will_return(__wrap_idhw_get_die_id, 0);
+
+    // Telemetry init
+    expect_function_call(__wrap__txe_mutex_create);
+
+    size_t output_recv_bytes = 0;
+    kng_hsp_mailbox_msg msg = {.header = {.cmd = HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY}};
+    will_return(__wrap_system_info_is_warm_start, false);
+    expect_memory(__wrap_fpfw_icc_base_send_recv_sync, payload_buffer, &msg, sizeof(msg));
+    expect_memory(__wrap_fpfw_icc_base_send_recv_sync, output_recv_bytes, &output_recv_bytes, sizeof(output_recv_bytes));
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
 
     if (!set_error_handler_return())
     {
@@ -336,6 +390,8 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     expect_any(__wrap__txe_queue_create, queue_control_block_size);
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
 
+    will_return(__wrap_system_info_is_warm_start, false);
+
     // DDR_CREATE_MEMORY_MAP_EVENT
     expect_value(__wrap__txe_queue_send, queue_ptr, &ddr_service_ctx.work_queue);
     expect_any(__wrap__txe_queue_send, source_ptr);
@@ -360,8 +416,6 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     expect_value(__wrap__txe_queue_send, wait_option, TX_NO_WAIT);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
 
-    will_return(__wrap_system_info_is_warm_start, false);
-
     expect_value(__wrap__txe_thread_create, thread_ptr, &ddr_service_ctx.work_thread);
     expect_value(__wrap__txe_thread_create, name_ptr, DDR_WORK_THREAD_NAME);
     expect_value(__wrap__txe_thread_create, entry_function, ddr_worker_thread_func);
@@ -375,20 +429,26 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     expect_any(__wrap__txe_thread_create, thread_control_block_size);
     will_return(__wrap__txe_thread_create, TX_SUCCESS);
 
-    will_return(__wrap__txe_timer_create, TX_SUCCESS);
+    // Inside ddr_manager_i3c_init()
+    will_return(__wrap_idhw_get_die_id, 0);
+
+    // Telemetry init
+    expect_function_call(__wrap__txe_mutex_create);
 
     size_t output_recv_bytes = 0;
     kng_hsp_mailbox_msg msg = {.header = {.cmd = HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY}};
-
     will_return(__wrap_system_info_is_warm_start, false);
     expect_memory(__wrap_fpfw_icc_base_send_recv_sync, payload_buffer, &msg, sizeof(msg));
     expect_memory(__wrap_fpfw_icc_base_send_recv_sync, output_recv_bytes, &output_recv_bytes, sizeof(output_recv_bytes));
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
 
-    // Telemetry init
-    expect_function_call(__wrap__txe_mutex_create);
-
     ddr_manager_init(&ddr_service_ctx, &config, icc_ctx);
+}
+
+void tx_queue_copy_parameter(void* p)
+{
+    // Copy the parameter to the destination
+    *(uint32_t*)p = mock_type(int);
 }
 
 TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
@@ -446,13 +506,14 @@ TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
     expect_any(__wrap__txe_thread_create, thread_control_block_size);
     will_return(__wrap__txe_thread_create, TX_SUCCESS);
 
-    will_return(__wrap__txe_timer_create, TX_SUCCESS);
-
-    will_return(__wrap_system_info_is_warm_start, true);
-    // Do not expect hsp_send_ddr_init_notify
+    // will_return(__wrap__txe_timer_create, TX_SUCCESS);
+    will_return(__wrap_idhw_get_die_id, DIE_0);
 
     // Telemetry init
     expect_function_call(__wrap__txe_mutex_create);
+
+    // Do not expect hsp_send_ddr_init_notify
+    will_return(__wrap_system_info_is_warm_start, true);
 
     ddr_manager_init(&ddr_service_ctx, &config, icc_ctx);
 }
@@ -879,10 +940,22 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_0, NULL, NULL)
     ddr_create_smbios_tables();
 }
 
-TEST_FUNCTION(ddr_create_smbios_tables_test_die_1, NULL, NULL)
+TEST_FUNCTION(ddr_create_smbios_tables_test_die_1_and_will_start_i3c_timer, NULL, NULL)
 {
-    will_return_always(__wrap_idsw_get_die_id, DIE_1);
+    int callback_param = DDR_CREATE_SMBIOS_TABLES_EVENT;
+    will_return(tx_queue_copy_parameter, callback_param);
+    set_txe_queue_receive_callback_func(tx_queue_copy_parameter);
 
+    ddr_service_context_t ddr_service_ctx = {};
+    ddr_service_ctx.work_queue.tx_queue_start = (ULONG*)0x1234;
+
+    expect_value(__wrap__txe_queue_receive, queue_ptr, &(ddr_service_ctx.work_queue));
+    expect_any(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, (ULONG)TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    // ddr_create_smbios_tables()
+    will_return_always(__wrap_idsw_get_die_id, DIE_1);
     will_return(__wrap_atu_map, 0x012345678);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
 
@@ -942,8 +1015,62 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_1, NULL, NULL)
         // Additional NULL byte between type17 tables
         expect_function_calls(__wrap_mmio_write8, 1);
     }
-
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+    // end of ddr_create_smbios_tables()
 
-    ddr_create_smbios_tables();
+    // Check that timer is created/started
+    will_return(__wrap__txe_timer_create, TX_SUCCESS);
+
+    // Exit the while (1) loop
+    callback_param = 0xFF;
+    will_return(tx_queue_copy_parameter, callback_param);
+    expect_value(__wrap__txe_queue_receive, queue_ptr, &(ddr_service_ctx.work_queue));
+    expect_any(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, (ULONG)TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
+
+    // Expect the error
+    expect_value(FPFwErrorRaise, error, (uint32_t)TX_QUEUE_EMPTY);
+
+    if (!set_error_handler_return())
+    {
+        ddr_worker_thread_func((ULONG)&ddr_service_ctx);
+    }
+}
+
+TEST_FUNCTION(ddr_telemetry_report_verify_temps, begin_bwl_disengaged, NULL)
+{
+    ddr_manager_i3c_temperature_t dimm_temp = {.is_positive = true};
+    sensor_ram_dimm_info_t test_dimm_info = {0};
+    test_dimm_info.dimm_memory_frequency_id = (uint8_t)config_get_ddr_speed_grade();
+    const int POWER_SCALING_FACTOR = 125;
+
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return(__wrap_gtimer_prodfw_get_counter, 0);
+
+    for (int dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)
+    {
+        will_return(__wrap_ddr_i3c_interface_read_pmic_power, (dimm_idx));
+        test_dimm_info.dimm_id = dimm_idx;
+        test_dimm_info.dimm_power_mW = (dimm_idx * POWER_SCALING_FACTOR);
+
+        for (int ts_idx = 0; ts_idx < NUM_TEMP_SENSORS_PER_DIMM; ts_idx++)
+        {
+            dimm_temp.temp_int = (10 * dimm_idx) + ts_idx;
+            ddr_telemetry_update_dimm_temp(dimm_idx, ts_idx, dimm_temp);
+
+            if (ts_idx == 0)
+            {
+                test_dimm_info.dimm_temp_s0_dC = dimm_temp.temp_int;
+            }
+            else
+            {
+                test_dimm_info.dimm_temp_s1_dC = dimm_temp.temp_int;
+            }
+        }
+
+        expect_memory(__wrap_sensor_fifo_svc_add_dimm_info, dimm_info, &test_dimm_info, sizeof(test_dimm_info));
+    }
+
+    ddr_telemetry_report();
 }

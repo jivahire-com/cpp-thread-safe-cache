@@ -10,6 +10,7 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <dw_i3c.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -31,6 +32,23 @@ typedef struct {
     };
     bool is_positive;  // true if positive, false if negative
 } ddr_manager_i3c_temperature_t;
+
+// Create a struct for reading each DDR I3C device type
+typedef struct {
+    i3c_instance_t* instance; // I3C instance
+    i3c_cmd_t* cmd;       // I3C command
+    uint8_t ts0_dev_id;
+    uint8_t ts1_dev_id;
+    uint8_t pmic_dev_id;
+    uint8_t ts_mr_reg_low;
+    uint8_t ts_mr_reg_high;
+    uint8_t pmic_mr_reg;
+} ddr_i3c_descriptor_t;
+
+typedef struct {
+    bool is_initialized;
+    ddr_i3c_descriptor_t dimm[6]; //todo - Why doesn't the NUM_DIMM_PER_DIE macro work here?
+} ddr_i3c_details_t;
 
 typedef enum
 {
@@ -77,7 +95,7 @@ typedef enum
  */
 // TODO: Move below API to a Private API section
 int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manager_i3c_temperature_t* ts_scaled_celsius);
-
+int ddr_manager_power_mw_read(int dimm_idx, uint16_t* power_mW);
 /**
  *  API to initialize the DDR I3C interface
  */

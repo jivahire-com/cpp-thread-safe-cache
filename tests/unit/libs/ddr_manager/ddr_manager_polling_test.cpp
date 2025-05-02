@@ -62,22 +62,26 @@ TEST_FUNCTION(test_ddr_manager_poll_below_high_to_low_thresh, setup_disengaged_a
     will_return(__wrap_mmio_read32, 0);
     expect_function_call(__wrap_mmio_write32);
 
-    // Set up the expected calls
-    will_return_always(__wrap_idhw_get_die_id, DIE_0);
-
-    // High temp
+    // High temp (> 85C): 88
     for (uint8_t sens_idx = 0; sens_idx < NUM_SENSORS_PER_DIMM; sens_idx++)
     {
         expect_any_count(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, dev_id, 2);
         expect_any_count(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, mr_reg, 2);
         expect_any_count(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, instance, 2);
 
-        will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, (BIT0 | BIT2 | BIT4 | BIT5 | BIT6 | BIT7));
+        // Low byte 8
+        will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, (BIT7));
         will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
 
-        will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, (BIT1 | BIT2));
+        // High byte 16 + 64 = 80
+        will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, (BIT0 | BIT2));
         will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
     }
+
+    // Act on 88 degrees C
+    ddr_poll_dimms();
+    check_dimm_temp_thresholds();
+    assert_true(ddr_manager_get_bwl_engaged());
 
     // Low temp
     for (uint8_t sens_idx = 0; sens_idx < NUM_SENSORS_PER_DIMM; sens_idx++)
@@ -86,26 +90,21 @@ TEST_FUNCTION(test_ddr_manager_poll_below_high_to_low_thresh, setup_disengaged_a
         expect_any_count(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, mr_reg, 2);
         expect_any_count(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, instance, 2);
 
-        will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, (BIT0 | BIT2 | BIT4 | BIT5 | BIT6 | BIT7));
+        will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, (BIT4 | BIT5));
         will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
 
-        will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, (BIT0 | BIT1));
+        will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, (BIT2));
         will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
     }
 
-    // Act
+    // Act on 67 degrees C
     ddr_poll_dimms();
-    assert_true(ddr_manager_get_bwl_engaged());
-
-    ddr_poll_dimms();
+    check_dimm_temp_thresholds();
     assert_false(ddr_manager_get_bwl_engaged());
 }
 
 TEST_FUNCTION(test_ddr_manager_poll_crit_thresh, NULL, NULL)
 {
-    // Arrange
-    will_return_always(__wrap_idhw_get_die_id, DIE_0);
-
     // Crit temp
     for (uint8_t sens_idx = 0; sens_idx < NUM_SENSORS_PER_DIMM; sens_idx++)
     {
@@ -113,13 +112,16 @@ TEST_FUNCTION(test_ddr_manager_poll_crit_thresh, NULL, NULL)
         expect_any_count(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, mr_reg, 2);
         expect_any_count(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, instance, 2);
 
-        will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, (BIT0 | BIT2 | BIT4 | BIT5 | BIT6 | BIT7));
+        // Low: 1+2+4+8 = 15
+        will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, (BIT4 | BIT5 | BIT6 | BIT7));
         will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
 
+        // High: 16+32+64+128 = 240
         will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, (BIT0 | BIT1 | BIT2 | BIT3));
         will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
     }
 
+    // Expect a GPIO Read/Write for critical temperature
     for (uint8_t dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)
     {
         expect_function_call(__wrap_mmio_read32);
@@ -134,4 +136,5 @@ TEST_FUNCTION(test_ddr_manager_poll_crit_thresh, NULL, NULL)
 
     // Act
     ddr_poll_dimms();
+    check_dimm_temp_thresholds();
 }

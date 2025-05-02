@@ -76,9 +76,10 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0, NULL, NULL)
 
     // Set up the expected calls
     will_return_always(__wrap_idhw_get_die_id, DIE_0);
+    expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, instance, &i3c_instance_1);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, dev_id, DDR0_TS0);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, mr_reg, TS_MR49);
-    expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, instance, &i3c_instance_1);
+
     will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, (BIT0 | BIT2 | BIT4 | BIT5 | BIT6 | BIT7));
     will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
 
@@ -107,15 +108,17 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0_die1, NULL, NULL)
 
     // Set up the expected calls
     will_return_always(__wrap_idhw_get_die_id, DIE_1);
+    ddr_manager_i3c_init();
+
+    expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, instance, &i3c_instance_0);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, dev_id, DDR0_TS0);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, mr_reg, TS_MR49);
-    expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, instance, &i3c_instance_0);
     will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, (BIT0 | BIT2 | BIT4 | BIT5 | BIT6 | BIT7));
     will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
 
+    expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, instance, &i3c_instance_0);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, dev_id, DDR0_TS0);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, mr_reg, TS_MR50);
-    expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, instance, &i3c_instance_0);
     will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, (BIT0 | BIT1));
     will_return(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, DDR_I3C_INTERFACE_SUCCESS);
 
@@ -138,6 +141,8 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr1, NULL, NULL)
 
     // Set up the expected calls
     will_return_always(__wrap_idhw_get_die_id, DIE_0);
+    ddr_manager_i3c_init();
+
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, dev_id, DDR0_TS0);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, mr_reg, TS_MR49);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, instance, &i3c_instance_0);
@@ -169,6 +174,8 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr2, NULL, NULL)
 
     // Set up the expected calls
     will_return_always(__wrap_idhw_get_die_id, DIE_0);
+    ddr_manager_i3c_init();
+
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, dev_id, DDR0_TS0 + DDR_I3C_DEV_ID_1 * I3C_REGISTER_OFFSET);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, mr_reg, TS_MR49);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, instance, &i3c_instance_1);
@@ -200,6 +207,8 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr3, NULL, NULL)
 
     // Set up the expected calls
     will_return_always(__wrap_idhw_get_die_id, DIE_0);
+    ddr_manager_i3c_init();
+
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, dev_id, DDR0_TS0 + DDR_I3C_DEV_ID_1 * I3C_REGISTER_OFFSET);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, mr_reg, TS_MR49);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, instance, &i3c_instance_0);
@@ -231,6 +240,8 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr4, NULL, NULL)
 
     // Set up the expected calls
     will_return_always(__wrap_idhw_get_die_id, DIE_0);
+    ddr_manager_i3c_init();
+
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, dev_id, DDR0_TS0 + DDR_I3C_DEV_ID_2 * I3C_REGISTER_OFFSET);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, mr_reg, TS_MR49);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, instance, &i3c_instance_1);
@@ -261,7 +272,6 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0_negative, NULL, NULL
     ddr_manager_i3c_temperature_t ts_scaled_celsius;
 
     // Set up the expected calls
-    will_return_always(__wrap_idhw_get_die_id, DIE_0);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, dev_id, DDR0_TS0);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, mr_reg, TS_MR49);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, instance, &i3c_instance_1);
@@ -291,7 +301,6 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0_low_word_error, NULL
     ddr_manager_i3c_temperature_t ts_scaled_celsius;
 
     // Set up the expected calls
-    will_return_always(__wrap_idhw_get_die_id, DIE_0);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, dev_id, DDR0_TS0);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, mr_reg, TS_MR49);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, instance, &i3c_instance_1);
@@ -313,7 +322,6 @@ TEST_FUNCTION(test_ddr_manager_temperature_sensor_read_ddr0_high_word_error, NUL
     ddr_manager_i3c_temperature_t ts_scaled_celsius;
 
     // Set up the expected calls
-    will_return_always(__wrap_idhw_get_die_id, DIE_0);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, dev_id, DDR0_TS0);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, mr_reg, TS_MR49);
     expect_value(__wrap_ddr_i3c_interface_read_temp_sensor_mr_reg, instance, &i3c_instance_1);

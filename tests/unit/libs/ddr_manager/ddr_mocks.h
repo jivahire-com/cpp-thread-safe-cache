@@ -17,7 +17,6 @@ uint32_t __wrap_mmio_read32(void* addr);
 void __wrap_mmio_write8(void* addr, uint8_t data);
 void __wrap_mmio_write16(volatile uint16_t* addr, uint16_t data);
 void __wrap_mmio_write32(void* addr, uint32_t data);
-bool __wrap_ddr_manager_platform_is_polling_supported();
 bool __wrap_config_get_borgens_1gb_ddr_reserve_enable();
 ddrss_phy_training_dq_margin_t* __wrap_ddrss_get_training_margin_base();
 KNG_DIE_ID __wrap_idsw_get_die_id();

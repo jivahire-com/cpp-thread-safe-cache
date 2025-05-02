@@ -74,6 +74,14 @@ void ddr_init_telemetry(void);
 void ddr_poll_dimms(void);
 
 /**
+ * @brief Checks the DIMM temperature thresholds.
+ *
+ * This function evaluates the current temperature data for each DIMM and 
+ * initiates appropriate corrective actions if any DIMM exceeds its thermal limits.
+ */
+void check_dimm_temp_thresholds();
+
+/**
  * @brief Updates the telemetry snapshot for DIMM temps
  * 
  * @param dimm_idx The index of the DIMM.
@@ -91,6 +99,13 @@ void ddr_telemetry_update_dimm_temp(uint8_t dimm_idx, uint8_t ts_idx, ddr_manage
  */
 ddr_manager_i3c_temperature_t ddr_telemetry_get_dimm_temp(uint8_t dimm_idx, uint8_t ts_idx);
 
+/**
+ * @brief Reports the telemetry data for DIMMs.
+ *
+ * This function reports the telemetry data for the DIMMs to the telemetry service.
+ */
+void ddr_telemetry_report(void);
+
 void ddr_create_memory_map(void);
 void ddr_process_i3c_data(void);
 void ddr_create_bdat(void);
@@ -104,11 +119,6 @@ size_t get_dimm_serial_number_string(const uint8_t *spd_buff, char *buffer, size
 size_t get_dimm_asset_tag_string(char* buffer, size_t bufferSize);
 size_t get_dimm_part_number_string(const uint8_t* spd_buff, char* buffer, size_t bufferSize);
 size_t get_dimm_phy_fw_version_string(char* buffer, size_t bufferSize);
-
-
-uint16_t config_manager_get_ddr_dimm_temp_threshold_low();
-uint16_t config_manager_get_ddr_dimm_temp_threshold_high();
-uint16_t config_manager_get_ddr_dimm_temp_threshold_critical();
 
 /**
  * Sets bit 2 in MSCP EXP THERMAL_IO Register to assert THERMAL_TRIP GPIO
@@ -124,13 +134,6 @@ void ddr_manager_set_memhot_gpio();
  * Clears bit 1 in MSCP EXP THERMAL_IO Register to de-assert MEMORY_HOT GPIO
  */
 void ddr_manager_clear_memhot_gpio();
-
-/**
- * Checks if polling is supported on the platform for the DDR manager.
- *
- * @return true if polling is supported, false otherwise.
- */
-bool ddr_manager_platform_is_polling_supported();
 
 /**
  * Check if platform supports PHY binary loading

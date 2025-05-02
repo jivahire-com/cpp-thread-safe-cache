@@ -66,6 +66,7 @@ mock_target(${TARGET}
     config_get_borgens_1gb_ddr_reserve_enable
     ddr_i3c_interface_read_spd_nvm_data
     ddr_i3c_interface_read_temp_sensor_mr_reg
+    ddr_i3c_interface_read_pmic_power
     ddr_i3c_interface_get_instance
     ddr_manager_platform_is_polling_supported
     ddrss_get_system_mem_region
@@ -77,6 +78,7 @@ mock_target(${TARGET}
     get_dimm_part_number_string
     get_dimm_serial_number_string
     get_i3c_dimm_detected
+    gtimer_prodfw_get_counter
     idhw_get_die_id
     idhw_is_single_die_boot_en
     idsw_get_die_id
@@ -93,6 +95,7 @@ mock_target(${TARGET}
     sds_block_write
     system_info_is_hsp_present
     system_info_is_warm_start
+    sensor_fifo_svc_add_dimm_info
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

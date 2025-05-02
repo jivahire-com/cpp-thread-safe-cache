@@ -41,12 +41,14 @@ target_link_libraries(${TARGET}
         ms::lib::ddrss_init
         ms::lib::error_codes
         ms::lib::event_trace::trace
+        ms::lib::gtimer
         ms::lib::hsp_firmware_headers
         ms::lib::i3c_controller
         ms::lib::icc_platform_defines
         ms::lib::system_info
         ms::service::sds_service
     PUBLIC
+        ms::service::sensor_fifo
         silibs::atu
         fwlib.platform.dfwkhost.threadx
         fwlib.lib.cfg_mgr

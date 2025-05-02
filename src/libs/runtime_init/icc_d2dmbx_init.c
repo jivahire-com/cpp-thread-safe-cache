@@ -58,7 +58,7 @@
  * @param regOffset offset of the desired register
  * @param value 2-bit data value to write
  */
-static void SpiControllerWrite32(uint32_t baseAddr, FPFW_MBX_REG_OFFSET regOffset, uint32_t value)
+static void SpiControllerWrite32(uintptr_t baseAddr, FPFW_MBX_REG_OFFSET regOffset, uint32_t value)
 {
     uint32_t mbx_reg_addr = baseAddr + regOffset;
     int status = spi_controller_write_direct_instruction((uintptr_t)D2D_MBOX_SPI_CTRL_BASE_ADDR, mbx_reg_addr, 9, value);
@@ -76,7 +76,7 @@ static void SpiControllerWrite32(uint32_t baseAddr, FPFW_MBX_REG_OFFSET regOffse
  * @param regOffset offset of the desired register
  * @return uint32_t 2-bit data value read
  */
-static uint32_t SpiControllerRead32(uint32_t baseAddr, FPFW_MBX_REG_OFFSET regOffset)
+static uint32_t SpiControllerRead32(uintptr_t baseAddr, FPFW_MBX_REG_OFFSET regOffset)
 {
     uint32_t readData = 0;
     uint32_t mbx_reg_addr = baseAddr + regOffset;

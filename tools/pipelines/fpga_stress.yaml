@@ -2,7 +2,7 @@
 # Copyright (C) Microsoft Corporation. All rights reserved.
 #
 
-name: 1.20.0.$(rev:r)
+name: $(Build.DefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd).$(Rev:r)
 
 trigger: none
 

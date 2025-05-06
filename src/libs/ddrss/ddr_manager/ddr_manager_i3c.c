@@ -122,7 +122,10 @@ void ddr_manager_i3c_init()
     i3c_instance_t* i3c_instance_1;
     i3c_instance_t* i3c_instance;
 
+    // Initialize I3C Interface
+    ddr_i3c_interface_set_instance(get_i3c0(), get_i3c1());
     ddr_i3c_interface_get_instance(&i3c_instance_0, &i3c_instance_1);
+
     KNG_DIE_ID die_id = idhw_get_die_id();
 
     i3c_cmd_t i3c_cmd[NUM_DIMM_PER_DIE] = {0};
@@ -140,6 +143,7 @@ void ddr_manager_i3c_init()
         {
             i3c_instance = (dimm % 2 ? i3c_instance_1 : i3c_instance_0);
         }
+
         // Convert from DDRSS_EN to I3C Slave Device Enum
         i3c_dev_idx = i3c_get_dev_id(dimm);
         ddr_i3c_sensors.dimm[dimm].ts0_dev_id = get_ts_idx(i3c_dev_idx, 0);

@@ -1061,11 +1061,11 @@ TEST_FUNCTION(ddr_telemetry_report_verify_temps, begin_bwl_disengaged, NULL)
 
             if (ts_idx == 0)
             {
-                test_dimm_info.dimm_temp_s0_dC = dimm_temp.temp_int;
+                test_dimm_info.dimm_temp_s0_dC = (10 * dimm_temp.temp_int) + (dimm_temp.temp_frac / 10);
             }
             else
             {
-                test_dimm_info.dimm_temp_s1_dC = dimm_temp.temp_int;
+                test_dimm_info.dimm_temp_s1_dC = (10 * dimm_temp.temp_int) + (dimm_temp.temp_frac / 10);
             }
         }
 

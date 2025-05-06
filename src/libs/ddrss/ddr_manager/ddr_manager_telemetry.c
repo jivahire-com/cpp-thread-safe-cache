@@ -87,8 +87,12 @@ void ddr_telemetry_report()
             power_mW = 0;
         };
         dimm_info.dimm_power_mW = power_mW;
-        dimm_info.dimm_temp_s0_dC = ddr_telemetry_get_dimm_temp(dimm_idx, 0).temp_int;
-        dimm_info.dimm_temp_s1_dC = ddr_telemetry_get_dimm_temp(dimm_idx, 1).temp_int;
+
+        ddr_manager_i3c_temperature_t temp0 = ddr_telemetry_get_dimm_temp(dimm_idx, 0);
+        dimm_info.dimm_temp_s0_dC = (10 * temp0.temp_int + (temp0.temp_frac / 10));
+
+        ddr_manager_i3c_temperature_t temp1 = ddr_telemetry_get_dimm_temp(dimm_idx, 1);
+        dimm_info.dimm_temp_s1_dC = (10 * temp1.temp_int + (temp1.temp_frac / 10));
 
         // Send the telemetry data to the telemetry service
         sensor_fifo_svc_add_dimm_info(&dimm_info);

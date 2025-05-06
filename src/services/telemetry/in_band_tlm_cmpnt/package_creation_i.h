@@ -42,7 +42,7 @@ extern uint8_t temp_id_offset_per_die;
 
 /**
  * @brief Initialize any constant, post initialization, values for package creation.
- * 
+ *
  * @retval none
  */
 void package_creation_init();
@@ -149,11 +149,11 @@ uint32_t package_create_pwr_core_temperature_record(p_pwr_core_record_temperatur
 uint32_t package_create_pwr_core_histogram_record(p_pwr_core_record_histogram_t histogram_record);
 
 /**
- * @brief   Create a power soc pc3 record
- * @param[out] pc3_record - location where the record will be stored
+ * @brief   Create a power soc package monitor record
+ * @param[out] pkg_mon_record - location where the record will be stored
  * @return uint32_t - Number of bytes in the record
  */
-uint32_t package_create_pwr_soc_pc3_record(p_pwr_soc_record_pc3_t pc3_record);
+uint32_t package_create_pwr_soc_pkg_mon_record(p_pwr_soc_record_pkg_monitor_t pkg_mon_record);
 
 /**
  * @brief   Create a power soc vr rail record
@@ -170,11 +170,11 @@ uint32_t package_create_pwr_soc_vr_rail_record(p_pwr_soc_record_vr_rail_t vr_rai
 uint32_t package_create_pwr_soc_hnf_record(p_pwr_soc_record_hnf_t hnf_record);
 
 /**
- * @brief   Create a power soc dimm record
- * @param[out] dimm_record - location where the record will be stored
+ * @brief   Create a power soc dimm temperature record
+ * @param[out] dimm_temp_record - location where the record will be stored
  * @return uint32_t - Number of bytes in the record
  */
-uint32_t package_create_pwr_soc_dimm_record(p_pwr_soc_record_dimm_t dimm_record);
+uint32_t package_create_pwr_soc_dimm_temp_record(p_pwr_soc_record_dimm_temp_t dimm_temp_record);
 
 /**
  * @brief   Create a power soc sensor temp record
@@ -188,14 +188,14 @@ uint32_t package_create_pwr_soc_sensor_temp_record(p_pwr_soc_record_sensor_temp_
  * @param[out] mpam_record - location where the record will be stored
  * @return uint32_t - Number of bytes in the record
  */
-uint32_t package_create_pwr_mpam_pstate_record(p_pwr_record_mpam_pstate_t mpam_record);
+uint32_t package_create_pwr_mpam_pstate_record(p_pwr_soc_record_mpam_pstate_t mpam_record);
 
 /**
  * @brief   Create a power mpam throttle record
  * @param[out] mpam_throttle_record - location where the record will be stored
  * @return uint32_t - Number of bytes in the record
  */
-uint32_t package_create_pwr_mpam_throttle_record(p_pwr_record_mpam_throttle_t mpam_throttle_record);
+uint32_t package_create_pwr_mpam_throttle_record(p_pwr_soc_record_mpam_throttle_t mpam_throttle_record);
 
 /**
  * @brief   Create a instantaneous core summary record
@@ -213,28 +213,15 @@ uint32_t package_create_inst_soc_rail_record(p_inst_soc_record_rail_t rail_recor
 
 /**
  * @brief   Create a instantaneous soc dimm runtime record
- * @param[out] dimm_record - location where the record will be stored
+ * @param[out] dimm_temp_record - location where the record will be stored
  * @return uint32_t - Number of bytes in the record
  */
-uint32_t package_create_inst_soc_dimm_runtime_record(p_inst_soc_record_dimm_runtime_t dimm_record);
-
-/**
- * @brief   Create a instantaneous soc dimm config record
- * @param[out] dimm_cfg_record - location where the record will be stored
- * @return uint32_t - Number of bytes in the record
- */
-uint32_t package_create_inst_soc_dimm_config_record(p_inst_soc_record_dimm_config_t dimm_cfg_record);
+uint32_t package_create_inst_soc_dimm_runtime_record(p_inst_soc_record_dimm_runtime_t dimm_temp_record);
 
 /**
  * @brief   Create a instantaneous soc sensor temp record
  * @param[out] snsr_temp_record - location where the record will be stored
  * @return uint32_t - Number of bytes in the record
  */
-uint32_t package_create_inst_soc_sensor_temp_record(p_inst_soc_record_sensor_temp_t snsr_temp_record);
+uint32_t package_create_inst_soc_sensor_temp_record(p_inst_soc_record_die_temp_t snsr_temp_record);
 
-/**
- * @brief   Create a instantaneous core amu counters record
- * @param[out] amu_record - location where the record will be stored
- * @return uint32_t - Number of bytes in the record
- */
-uint32_t package_create_inst_core_amu_counters_record(p_inst_core_record_amu_counters_t amu_record);

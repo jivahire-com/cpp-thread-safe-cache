@@ -175,9 +175,9 @@ TEST_FUNCTION(test_tlm_logger_log_dimm_information, test_setup, test_teardown)
         // Process the data
         data_proc_tlm_cmpnt_aggregate_pwr_tlm_data();
 
-        // Create dimm record
-        pwr_soc_record_dimm_t dimm_record;
-        package_create_pwr_soc_dimm_record(&dimm_record);
+        // Create dimm temp record
+        pwr_soc_record_dimm_temp_t dimm_temp_record;
+        package_create_pwr_soc_dimm_temp_record(&dimm_temp_record);
 
         // Calculate expected values using helper function
         int32_t expected_s0_latest = 0, expected_s1_latest = 0;
@@ -193,27 +193,15 @@ TEST_FUNCTION(test_tlm_logger_log_dimm_information, test_setup, test_teardown)
             printf("            Experted     Actual\n");
             printf("S0 latest      %d          %d\n",
                    expected_s0_latest,
-                   dimm_record.dimm_collection[iteration].dimm_element.s0.latest_value_dC);
+                   dimm_temp_record.dimm_collection[iteration].dimm_element.s0.latest_value_dC);
             printf("S1 latest      %d          %d\n",
                    expected_s1_latest,
-                   dimm_record.dimm_collection[iteration].dimm_element.s1.latest_value_dC);
-            printf("Frequency_id   %d           %d\n",
-                   expected_frequency_id,
-                   dimm_record.dimm_collection[iteration].dimm_element.dimm_memory_frequency_id);
-            printf("Power          %d         %d\n",
-                   expected_power,
-                   dimm_record.dimm_collection[iteration].dimm_element.dimm_power_mW);
-            printf("Throttling     %d           %d\n",
-                   expected_throttling,
-                   dimm_record.dimm_collection[iteration].dimm_element.dimm_throttling);
+                   dimm_temp_record.dimm_collection[iteration].dimm_element.s1.latest_value_dC);
             printf("                         \n");
         }
 
         // Assertions using calculated expected values from function calculate_expected_values
-        assert_int_equal(expected_s0_latest, dimm_record.dimm_collection[iteration].dimm_element.s0.latest_value_dC);
-        assert_int_equal(expected_s1_latest, dimm_record.dimm_collection[iteration].dimm_element.s1.latest_value_dC);
-        assert_int_equal(expected_frequency_id, dimm_record.dimm_collection[iteration].dimm_element.dimm_memory_frequency_id);
-        assert_int_equal(expected_power, dimm_record.dimm_collection[iteration].dimm_element.dimm_power_mW);
-        assert_int_equal(expected_throttling, dimm_record.dimm_collection[iteration].dimm_element.dimm_throttling);
+        assert_int_equal(expected_s0_latest, dimm_temp_record.dimm_collection[iteration].dimm_element.s0.latest_value_dC);
+        assert_int_equal(expected_s1_latest, dimm_temp_record.dimm_collection[iteration].dimm_element.s1.latest_value_dC);
     }
 }

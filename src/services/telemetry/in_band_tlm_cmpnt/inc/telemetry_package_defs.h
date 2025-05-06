@@ -24,6 +24,9 @@
 #define NUMBER_OF_HNF_CHANNELS_PER_DIE (NUMBER_OF_TILES_PER_DIE*2)
 #define NUMBER_OF_PSTATES (32)
 #define NUMBER_OF_CSTATES (5)
+#define NUMBER_OF_AGING_COUNTER_PAIRS (8)
+#define NUMBER_OF_ACCEL_COUNTERS (100)
+
 //current, temperature, RACK, VR HOT, ADP_CLK, currnt overrun, adp_clk overrun
 #define NUMBER_OF_THROTTLE_TYPES    (7)  //(5+2)
 #define NUMBER_OF_RACK_PRIORITIES   (8)
@@ -34,7 +37,7 @@
 #define NUMBER_OF_DIMM_MODULES      (12)
 #define NUMBER_OF_DIMM_CHANNELS     (24)
 #define NUMBER_OF_MPAMS             (128)
-#define NUMBER_OF_AMU_COUNTERS      (7)
+
 
 /*-------------- Typedefs ----------------*/
 
@@ -47,25 +50,35 @@ typedef enum
     POWER_TELEMETRY_ELEMENT_CORE_VOLTAGE,
     POWER_TELEMETRY_ELEMENT_CORE_CURRENT,
     POWER_TELEMETRY_ELEMENT_CORE_TEMPERATURE,
+    POWER_TELEMETRY_ELEMENT_CORE_POWER,
     POWER_TELEMETRY_ELEMENT_CORE_HISTOGRAM,
-    POWER_TELEMETRY_ELEMENT_SOC_PC3,
+    POWER_TELEMETRY_ELEMENT_CORE_AGING,
+    POWER_TELEMETRY_ELEMENT_CORE_DROOPS,
+    POWER_TELEMETRY_ELEMENT_CORE_RELIABILITY_GUARD_BAND,
+    POWER_TELEMETRY_ELEMENT_SOC_PKG_MON,
     POWER_TELEMETRY_ELEMENT_SOC_VR_RAILS,
-    POWER_TELEMETRY_ELEMENT_SOC_HNF,
-    POWER_TELEMETRY_ELEMENT_SOC_DIMM,
+    POWER_TELEMETRY_ELEMENT_SOC_DIMM_TEMPERATURE,
+    POWER_TELEMETRY_ELEMENT_SOC_DIMM_POWER,
+    POWER_TELEMETRY_ELEMENT_SOC_HNF_TEMP,
     POWER_TELEMETRY_ELEMENT_SOC_SENSOR_TEMP,
-    POWER_TELEMETRY_ELEMENT_MPAM,
-    POWER_TELEMETRY_ELEMENT_MPAM_THROTTLE,
+    POWER_TELEMETRY_ELEMENT_SOC_PER_DIE_MESH,
+    POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE,
+    POWER_TELEMETRY_ELEMENT_SOC_PER_DIE_PHY_COUNTERS,
+    POWER_TELEMETRY_ELEMENT_SOC_MAX_TEMPERATURE,
+    POWER_TELEMETRY_ELEMENT_SOC_ACCEL_COUNTERS,
+    POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM,
+    POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_THROTTLE,
+    POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_POWER,
     POWER_TELEMETRY_ELEMENT_ID_MAX
 } pwr_telemetry_element_id_t;
 
 typedef enum
 {
     INST_TELEMETRY_ELEMENT_CORE,
-    INST_TELEMETRY_ELEMENT_SOC_RAILS,
+    INST_TELEMETRY_ELEMENT_SOC_VOLTAGE_RAILS,
     INST_TELEMETRY_ELEMENT_SOC_DIMM_RT,
-    INST_TELEMETRY_ELEMENT_SOC_DIMM_CONFIG,
-    INST_TELEMETRY_ELEMENT_SOC_TEMP_SENSOR,
-    INST_TELEMETRY_ELEMENT_AMU,
+    INST_TELEMETRY_ELEMENT_SOC_DIE_TEMP,
+    INST_TELEMETRY_ELEMENT_SOC_MAX_TEMP,
     INST_TELEMETRY_ELEMENT_ID_MAX
 } instantaneous_telemetry_element_id_t;
 
@@ -124,6 +137,13 @@ typedef struct {
 } current_t;
 
 typedef struct {
+    uint16_t max_mW;
+    uint16_t min_mW;
+    uint16_t average_mW;
+    uint16_t latest_value_mW; // defined as reserved for tlm packages
+} power_t;
+
+typedef struct {
     uint16_t max_uS;
     uint16_t min_uS;
     uint16_t average_uS;
@@ -156,9 +176,6 @@ typedef struct {
     uint8_t cstate_id;
     uint32_t residency_mS;
     uint32_t entry_count;
-    uint16_t max_power_mW;
-    uint16_t min_power_mW;
-    uint16_t avg_power_mW;
 } pwr_core_element_cstate_t, *p_pwr_core_element_cstate_t;
 
 typedef struct {
@@ -178,7 +195,6 @@ typedef struct {
     uint8_t avg_pstate;
     uint8_t reserved;
     uint32_t entry_count;
-    uint32_t exit_count;
     uint32_t residency_mS;
 } pwr_core_element_throttle_t, *p_pwr_core_element_throttle_t;
 
@@ -195,13 +211,9 @@ typedef struct {
 //----------------POWER_TELEMETRY_ELEMENT_CORE_RACK_PRIORITIES----------------
 
 typedef struct {
-    uint8_t priority_id;
-    uint8_t max_pstate;
-    uint8_t avg_pstate;
-    uint8_t reserved;
     uint32_t entry_count;
-    uint32_t exit_count;
     uint32_t residency_mS;
+    uint8_t priority_id;
 } pwr_core_element_rack_priorities_t, *p_pwr_core_element_rack_priorities_t;
 
 typedef struct {
@@ -256,6 +268,20 @@ typedef struct {
     pwr_core_collection_temperature_t temperature_collection[NUMBER_OF_CORES_PER_DIE];
 } pwr_core_record_temperature_t, *p_pwr_core_record_temperature_t;
 
+//----------------POWER_TELEMETRY_ELEMENT_CORE_POWER----------------
+
+typedef power_t pwr_core_element_power_t, *p_pwr_core_element_power_t;
+
+typedef struct {
+    telemetry_collection_hdr_t collection_header;
+    pwr_core_element_power_t power_element;
+} pwr_core_collection_power_t, *p_pwr_core_collection_power_t;
+
+typedef struct {
+    telemetry_record_hdr_t record_header;
+    pwr_core_collection_current_t power_collection[NUMBER_OF_CORES_PER_DIE];
+} pwr_core_record_power_t, *p_pwr_core_record_power_t;
+
 //----------------POWER_TELEMETRY_ELEMENT_CORE_HISTOGRAM----------------
 
 typedef struct {
@@ -274,21 +300,78 @@ typedef struct {
     pwr_core_collection_histogram_t histogram_collection[NUMBER_OF_CORES_PER_DIE];
 } pwr_core_record_histogram_t, *p_pwr_core_record_histogram_t;
 
-//----------------POWER_TELEMETRY_ELEMENT_SOC_PC3----------------
+//----------------POWER_TELEMETRY_ELEMENT_CORE_AGING----------------
 
 typedef struct {
-    uint32_t duration_mS;
-} pwr_soc_element_pc3_t, *p_pwr_soc_element_pc3_t;
+    uint64_t timestamp_uS;
+    uint32_t unaged_counter;
+    uint32_t aged_counter;
+    uint16_t voltage_mV;
+    uint16_t temperature_dC;
+    uint8_t counter_id;
+} pwr_core_element_aging_t, *p_pwr_core_element_aging_t;
 
 typedef struct {
     telemetry_collection_hdr_t collection_header;
-    pwr_soc_element_pc3_t pc3_element;
-} pwr_soc_collection_pc3_t, *p_pwr_soc_collection_pc3_t;
+    pwr_core_element_aging_t aging_element[NUMBER_OF_AGING_COUNTER_PAIRS];
+} pwr_core_collection_aging_t, *p_pwr_core_collection_aging_t;
 
 typedef struct {
     telemetry_record_hdr_t record_header;
-    pwr_soc_collection_pc3_t pc3_collection;
-} pwr_soc_record_pc3_t, *p_pwr_soc_record_pc3_t;
+    pwr_core_collection_aging_t aging_collection[NUMBER_OF_CORES_PER_DIE];
+} pwr_core_record_aging_t, *p_pwr_core_record_aging_t;
+
+//----------------POWER_TELEMETRY_ELEMENT_CORE_DROOPS----------------
+
+typedef struct {
+    uint64_t droop_count;
+    voltage_t ldo_output_voltage;
+    voltage_t vcpu_input_voltage;
+} pwr_core_element_droop_count_t, *p_pwr_core_element_droop_count_t;
+
+typedef struct {
+    telemetry_collection_hdr_t collection_header;
+    pwr_core_element_droop_count_t droop_count_element;
+} pwr_core_collection_droop_count_t, *p_pwr_core_collection_droop_count_t;
+
+typedef struct {
+    telemetry_record_hdr_t record_header;
+    pwr_core_collection_droop_count_t droop_count_collection[NUMBER_OF_CORES_PER_DIE];
+} pwr_core_record_droop_count_t, *p_pwr_core_record_droop_count_t;
+
+//----------------POWER_TELEMETRY_ELEMENT_CORE_RELIABILITY_GUARD_BAND----------------
+
+typedef struct {
+    uint64_t timestamp_uS;
+    uint16_t guard_band_voltage_mV;
+} pwr_core_element_guard_band_t, *p_pwr_core_element_guard_band_t;
+
+typedef struct {
+    telemetry_collection_hdr_t collection_header;
+    pwr_core_element_guard_band_t guard_band_element;
+} pwr_core_collection_guard_band_t, *p_pwr_core_collection_guard_band_t;
+
+typedef struct {
+    telemetry_record_hdr_t record_header;
+    pwr_core_collection_guard_band_t guard_band_collection[NUMBER_OF_CORES_PER_DIE];
+} pwr_core_record_guard_band_t, *p_pwr_core_record_guard_band_t;
+
+//----------------POWER_TELEMETRY_ELEMENT_SOC_PKG_MON----------------
+
+typedef struct {
+    uint32_t pc3_duration_mS;
+    uint32_t pc4_duration_mS;
+} pwr_soc_element_pkg_monitor_t, *p_pwr_soc_element_pkg_monitor_t;
+
+typedef struct {
+    telemetry_collection_hdr_t collection_header;
+    pwr_soc_element_pkg_monitor_t pkg_mon_element;
+} pwr_soc_collection_pkg_monitor_t, *p_pwr_soc_collection_pkg_monitor_t;
+
+typedef struct {
+    telemetry_record_hdr_t record_header;
+    pwr_soc_collection_pkg_monitor_t pkg_mon_collection;
+} pwr_soc_record_pkg_monitor_t, *p_pwr_soc_record_pkg_monitor_t;
 
 //----------------POWER_TELEMETRY_ELEMENT_SOC_VR_RAILS----------------
 
@@ -308,7 +391,38 @@ typedef struct {
     pwr_soc_collection_vr_rail_t rail_collection[MAX_NUM_OF_VR_RAILS];
 } pwr_soc_record_vr_rail_t, *p_pwr_soc_record_vr_rail_t;
 
-//----------------POWER_TELEMETRY_ELEMENT_SOC_HNF----------------
+//----------------POWER_TELEMETRY_ELEMENT_SOC_DIMM_TEMPERATURE----------------
+
+typedef struct {
+    temperature_t s0;
+    temperature_t s1;
+} pwr_soc_element_dimm_temp_t, *p_pwr_soc_element_dimm_temp_t;
+
+typedef struct {
+    telemetry_collection_hdr_t collection_header;
+    pwr_soc_element_dimm_temp_t dimm_element;
+} pwr_soc_collection_dimm_temp_t, *p_pwr_soc_collection_dimm_temp_t;
+
+typedef struct {
+    telemetry_record_hdr_t record_header;
+    pwr_soc_collection_dimm_temp_t dimm_collection[NUMBER_OF_DIMM_MODULES];
+} pwr_soc_record_dimm_temp_t, *p_pwr_soc_record_dimm_temp_t;
+
+//----------------POWER_TELEMETRY_ELEMENT_SOC_DIMM_POWER----------------
+
+typedef power_t pwr_soc_element_dimm_power_t, *p_pwr_soc_element_dimm_power_t;
+
+typedef struct {
+    telemetry_collection_hdr_t collection_header;
+    pwr_soc_element_dimm_power_t dimm_element;
+} pwr_soc_collection_dimm_power_t, *p_pwr_soc_collection_dimm_power_t;
+
+typedef struct {
+    telemetry_record_hdr_t record_header;
+    pwr_soc_collection_dimm_power_t dimm_collection[NUMBER_OF_DIMM_MODULES];
+} pwr_soc_record_dimm_power_t, *p_pwr_soc_record_dimm_power_t;
+
+//----------------POWER_TELEMETRY_ELEMENT_SOC_HNF_TEMP----------------
 typedef temperature_t pwr_soc_element_hnf_t, *p_pwr_soc_element_hnf_t;
 
 typedef struct {
@@ -320,26 +434,6 @@ typedef struct {
     telemetry_record_hdr_t record_header;
     pwr_soc_collection_hnf_t hnf_collection[NUMBER_OF_HNF_CHANNELS_PER_DIE];
 } pwr_soc_record_hnf_t, *p_pwr_soc_record_hnf_t;
-
-//----------------POWER_TELEMETRY_ELEMENT_SOC_DIMM----------------
-
-typedef struct {
-    temperature_t s0;
-    temperature_t s1;
-    uint8_t dimm_throttling;
-    uint8_t dimm_memory_frequency_id;
-    uint16_t dimm_power_mW;
-} pwr_soc_element_dimm_t, *p_pwr_soc_element_dimm_t;
-
-typedef struct {
-    telemetry_collection_hdr_t collection_header;
-    pwr_soc_element_dimm_t dimm_element;
-} pwr_soc_collection_dimm_t, *p_pwr_soc_collection_dimm_t;
-
-typedef struct {
-    telemetry_record_hdr_t record_header;
-    pwr_soc_collection_dimm_t dimm_collection[NUMBER_OF_DIMM_MODULES];
-} pwr_soc_record_dimm_t, *p_pwr_soc_record_dimm_t;
 
 //----------------POWER_TELEMETRY_ELEMENT_SOC_SENSOR_TEMP----------------
 
@@ -355,81 +449,173 @@ typedef struct {
     pwr_soc_collection_sensor_temp_t sensor_temp_collection[NUMBER_OF_SOC_TEMP_SENSORS];
 } pwr_soc_record_sensor_temp_t, *p_pwr_soc_record_sensor_temp_t;
 
-//----------------POWER_TELEMETRY_ELEMENT_MPAM----------------
+//----------------POWER_TELEMETRY_ELEMENT_SOC_PER_DIE_MESH----------------
 
 typedef struct {
-    uint8_t pstate_id;
-    uint8_t reserved;
-    uint16_t frequency_Mhz;
-    uint32_t max_power_mW;
-    uint32_t min_power_mW;
-    uint32_t avg_power_mW;
+    uint64_t m1_entry_count;
+    uint64_t m2_entry_count;
+    uint64_t m0_residency_count;
+    uint64_t m1_residency_count;
+    uint64_t m2_residency_count;
+    uint64_t delivery_perf_count;
+} pwr_soc_element_die_mesh_t, *p_pwr_soc_element_die_mesh_t;
+
+typedef struct {
+    telemetry_collection_hdr_t collection_header;
+    pwr_soc_element_die_mesh_t die_mesh_element;
+} pwr_soc_collection_die_mesh_t, *p_pwr_soc_collection_die_mesh_t;
+
+typedef struct {
+    telemetry_record_hdr_t record_header;
+    pwr_soc_collection_die_mesh_t die_mesh_collection;
+} pwr_soc_record_die_mesh_t, *p_pwr_soc_record_die_mesh_t;
+
+//----------------POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE----------------
+
+typedef struct {
+    uint64_t residency_count;
+    uint64_t bw_transmit;
+    uint64_t bw_receive;;
+    uint8_t  link_id;
+} pwr_soc_element_d2d_link_t, *p_pwr_soc_element_d2d_link_t;
+
+typedef struct {
+    telemetry_collection_hdr_t collection_header;
+    pwr_soc_element_d2d_link_t d2d_link_element;
+} pwr_soc_collection_d2d_link_t, *p_pwr_soc_collection_d2d_link_t;
+
+typedef struct {
+    telemetry_record_hdr_t record_header;
+    pwr_soc_collection_d2d_link_t d2d_link_collection;
+} pwr_soc_record_d2d_link_t, *p_pwr_soc_record_d2d_link_t;
+
+//----------------POWER_TELEMETRY_ELEMENT_SOC_PER_DIE_PHY_COUNTERS----------------
+
+typedef struct {
+    uint64_t counter0;
+    uint64_t counter1;
+    uint64_t counter2;
+    uint64_t counter3;
+    uint64_t counter4;
+    uint64_t counter5;
+    uint64_t counter6;
+    uint64_t counter7;
+} pwr_soc_element_die_phy_t, *p_pwr_soc_element_die_phy_t;
+
+typedef struct {
+    telemetry_collection_hdr_t collection_header;
+    pwr_soc_element_die_phy_t die_phy_element;
+} pwr_soc_collection_die_phy_t, *p_pwr_soc_collection_die_phy_t;
+
+typedef struct {
+    telemetry_record_hdr_t record_header;
+    pwr_soc_collection_die_phy_t die_phy_collection;
+} pwr_soc_record_die_phy_t, *p_pwr_soc_record_die_phy_t;
+
+//----------------POWER_TELEMETRY_ELEMENT_SOC_MAX_TEMPERATURE----------------
+
+typedef struct {
+    uint16_t average_max_dC;
+    uint16_t peak_max_dC;
+} pwr_soc_element_max_soc_temp_t, *p_pwr_soc_element_max_soc_temp_t;
+
+typedef struct {
+    telemetry_collection_hdr_t collection_header;
+    pwr_soc_element_max_soc_temp_t max_soc_temp_element;
+} pwr_soc_collection_max_soc_temp_t, *p_pwr_soc_collection_max_soc_temp_t;
+
+typedef struct {
+    telemetry_record_hdr_t record_header;
+    pwr_soc_collection_max_soc_temp_t max_soc_temp_collection;
+} pwr_soc_record_max_soc_temp_t, *p_pwr_soc_record_max_soc_temp_t;
+
+//----------------POWER_TELEMETRY_ELEMENT_SOC_ACCEL_COUNTERS----------------
+
+typedef struct {
+    uint32_t counter;
+} pwr_soc_element_accel_count_t, *p_pwr_soc_element_accel_count_t;
+
+typedef struct {
+    telemetry_collection_hdr_t collection_header;
+    pwr_soc_element_accel_count_t accel_counter[NUMBER_OF_ACCEL_COUNTERS];
+} pwr_soc_collection_accel_count_t, *p_pwr_soc_collection_accel_count_t;
+
+typedef struct {
+    telemetry_record_hdr_t record_header;
+    pwr_soc_collection_accel_count_t accel_count_collection;
+} pwr_soc_record_accel_count_t, *p_pwr_soc_record_accel_count_t;
+
+//----------------POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM----------------
+
+typedef struct {
+    power_t power;
     uint32_t residency_mS;
-} pwr_element_mpam_pstate_t, *p_pwr_element_mpam_pstate_t;
+    uint32_t transition_count;
+    uint8_t pstate_id;
+} pwr_soc_element_mpam_pstate_t, *p_pwr_soc_element_mpam_pstate_t;
 
 typedef struct {
     telemetry_collection_hdr_t collection_header;
-    pwr_element_mpam_pstate_t mpam_pstate_element[NUMBER_OF_PSTATES];
-} pwr_collection_mpam_pstate_t, *p_pwr_collection_mpam_pstate_t;
+    pwr_soc_element_mpam_pstate_t mpam_pstate_element[NUMBER_OF_PSTATES];
+} pwr_soc_collection_mpam_pstate_t, *p_pwr_soc_collection_mpam_pstate_t;
 
 typedef struct {
     telemetry_record_hdr_t record_header;
-    pwr_collection_mpam_pstate_t mpam_pstate_collection[NUMBER_OF_MPAMS];
-} pwr_record_mpam_pstate_t, *p_pwr_record_mpam_pstate_t;
+    pwr_soc_collection_mpam_pstate_t mpam_pstate_collection[NUMBER_OF_MPAMS];
+} pwr_soc_record_mpam_pstate_t, *p_pwr_soc_record_mpam_pstate_t;
 
-//----------------POWER_TELEMETRY_ELEMENT_MPAM_THROTTLE----------------
+//----------------POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_THROTTLE----------------
 
 typedef struct {
-    uint16_t nominal_frequency_Mhz;
+    uint16_t throttle_duration_mS;
+    uint16_t nominal_pstate_frequency_Mhz;
     uint16_t max_pstate_frequency_Mhz;
-    uint16_t avg_throttle_frequency_Mhz;
-    uint16_t throttle_extent_pct; /*mpam throttle in % we did,  w.r.t the nominal frequency (nominal_frequency_Mhz;).*/
-    uint32_t throttle_duration_mS;
-} pwr_element_mpam_throttle_t, *p_pwr_element_mpam_throttle_t;
+    uint16_t avg_pstate_frequency_Mhz;
+    uint16_t throttle_extent_centipct;
+} pwr_soc_element_mpam_throttle_t, *p_pwr_soc_element_mpam_throttle_t;
 
 typedef struct {
     telemetry_collection_hdr_t collection_header;
-    pwr_element_mpam_throttle_t mpam_throttle_element;
-} pwr_collection_mpam_throttle_t, *p_pwr_collection_mpam_throttle_t;
+    pwr_soc_element_mpam_throttle_t mpam_throttle_element;
+} pwr_soc_collection_mpam_throttle_t, *p_pwr_collection_mpam_throttle_t;
 
 typedef struct {
     telemetry_record_hdr_t record_header;
-    pwr_collection_mpam_throttle_t mpam_throttle_collection[NUMBER_OF_MPAMS];
-} pwr_record_mpam_throttle_t, *p_pwr_record_mpam_throttle_t;
+    pwr_soc_collection_mpam_throttle_t mpam_throttle_collection[NUMBER_OF_MPAMS];
+} pwr_soc_record_mpam_throttle_t, *p_pwr_soc_record_mpam_throttle_t;
+
+//----------------POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_POWER----------------
+
+typedef power_t pwr_soc_element_mpam_power_t, *p_pwr_soc_element_power_t;
+
+typedef struct {
+    telemetry_collection_hdr_t collection_header;
+    pwr_soc_element_mpam_power_t mpam_power_element;
+} pwr_soc_collection_mpam_power_t, *p_pwr_soc_collection_mpam_power_t;
+
+typedef struct {
+    telemetry_record_hdr_t record_header;
+    pwr_soc_collection_mpam_power_t mpam_power_collection[NUMBER_OF_MPAMS];
+} pwr_soc_record_mpam_power_t, *p_pwr_soc_record_mpam_power_t;
+
 
 //----------------INST_TELEMETRY_ELEMENT_CORE----------------
 
 typedef struct {
-    uint8_t pstate_id;
-    uint8_t cstate_id;
-    uint8_t cstate_residency_mS;
-    uint8_t pstate_residency_mS;
-    uint16_t frequency_Mhz;
+    uint32_t cstate_entry_latency_uS;
+    uint32_t cstate_exit_latency_uS;
+    uint16_t voltage_mV;
+    uint16_t current_mA;
+    uint16_t temperature_dC;
     uint16_t power_mW;
-    uint16_t cstate_plimit;
-    uint16_t cstate_entry_latency_uS;
-    uint16_t cstate_exit_latency_uS;
-} inst_core_pcstate_info_t;
-
-typedef struct {
-    uint8_t throttle_type_priority_id;/* Priority ID represent  the Priority, there are 8 Priority Levels (0 to 7) */
-    uint8_t throttle_type_residency_mS; /* Duration of such Throttling Type in mS : for throttle_type Current, Temp, VR Hot, Adaptive, Current Overrun, Aclk Overrun */
-    /* Throttling Priorities are only for the Rack Throttling type: This residency indicate the duration of such a Priority Level in mS*/
-    uint8_t throttle_priority_residency_mS;
-    uint8_t throttle_start_stop_id;
-} inst_core_throttle_info_t;
-
-typedef struct {
-    uint16_t vct_voltage_mV;
-    uint16_t vct_current_mA;
-    uint16_t vct_temperature_dC;
-    uint16_t vct_max_temp_dC;
-} inst_core_vct_info_t;
-
-typedef struct {
-    inst_core_pcstate_info_t pc_state_info;
-    inst_core_throttle_info_t throttle_info;
-    inst_core_vct_info_t vct_info;
+    uint16_t frequency_Mhz;
+    uint16_t guard_band_voltage_mV;
+    uint8_t pstate;
+    uint8_t cstate;
+    uint8_t plimit;
+    uint8_t mpam_id;
+    uint8_t velocity_boost_priority;
+    uint8_t throttling_type_and_rack_priority;
 } inst_core_element_summary_t, *p_inst_core_element_summary_t;
 
 typedef struct {
@@ -442,11 +628,11 @@ typedef struct {
     inst_core_collection_summary_t inst_core_summary_collection[NUMBER_OF_CORES_PER_DIE];
 } inst_core_record_summary_t, *p_inst_core_record_summary_t;
 
-//----------------INST_TELEMETRY_ELEMENT_SOC_RAILS----------------
+//----------------INST_TELEMETRY_ELEMENT_SOC_VOLTAGE_RAILS----------------
 
 typedef struct {
     uint16_t voltage_mV;
-    uint32_t current_mA;
+    uint16_t current_mA;
     uint16_t temperature_dC;
 } inst_soc_element_rail_t, *p_inst_soc_element_rail_t;
 
@@ -463,13 +649,11 @@ typedef struct {
 //----------------INST_TELEMETRY_ELEMENT_SOC_DIMM_RT----------------
 
 typedef struct {
-    uint8_t memory_freq_id;
-    uint8_t reserved;
-    uint8_t throttling_flags;
-    uint16_t residency_mS;
-    uint16_t temp_s0_latest_dC;
-    uint16_t temp_s1_latest_dC;
+    uint16_t temperature_dC;
+    uint16_t threshold_dC;
     uint16_t power_mW;
+    uint8_t memory_freq_id;
+    uint8_t throttling_flags;
 } inst_soc_element_dimm_runtime_t, *p_inst_soc_element_dimm_runtime_t;
 
 typedef struct {
@@ -477,67 +661,44 @@ typedef struct {
     inst_soc_element_dimm_runtime_t dimm_rt_element;
 } inst_soc_collection_dimm_runtime_t, *p_inst_soc_collection_dimm_runtime_t;
 
-
 typedef struct {
     telemetry_record_hdr_t record_header;
     inst_soc_collection_dimm_runtime_t dimm_collection[NUMBER_OF_DIMM_MODULES];
 } inst_soc_record_dimm_runtime_t, *p_inst_soc_record_dimm_runtime_t;
 
-//----------------INST_TELEMETRY_ELEMENT_SOC_DIMM_CONFIG----------------
+//----------------INST_TELEMETRY_ELEMENT_SOC_DIE_TEMP----------------
 
 typedef struct {
-    uint16_t temp_threshold_high_dC;
-    uint16_t temp_threshold_low_dC;
-    uint16_t temp_threshold_critical_dC;
-} inst_soc_element_dimm_config_t, *p_inst_soc_element_dimm_config_t;
+    uint16_t temperature_dC;
+} inst_soc_element_die_temp_t, *p_inst_soc_element_die_temp_t;
 
 typedef struct {
     telemetry_collection_hdr_t collection_header;
-    inst_soc_element_dimm_config_t dimm_config_element;
-} inst_soc_collection_dimm_config_t, *p_inst_soc_collection_dimm_config_t;
+    inst_soc_element_die_temp_t temperature_element;
+} inst_soc_collection_die_temp_t, *p_inst_soc_collection_die_temp_t;
 
 typedef struct {
     telemetry_record_hdr_t record_header;
-    inst_soc_collection_dimm_config_t dimm_config_collection;
-} inst_soc_record_dimm_config_t, *p_inst_soc_record_dimm_config_t;
+    inst_soc_collection_die_temp_t temperature_collection[NUMBER_OF_SOC_TEMP_SENSORS];
+} inst_soc_record_die_temp_t, *p_inst_soc_record_die_temp_t;
 
-//----------------INST_TELEMETRY_ELEMENT_SOC_TEMP_SENSOR----------------
+//----------------INST_TELEMETRY_ELEMENT_SOC_MAX_TEMP----------------
 
-typedef temperature_t inst_soc_element_sensor_temp_t, *p_inst_soc_element_sensor_temp_t;
+typedef struct {
+    uint16_t die0_max_temperature_dC;
+    uint16_t die1_max_temperature_dC;
+} inst_soc_element_max_temp_t, *p_inst_soc_element_max_temp_t;
 
 typedef struct {
     telemetry_collection_hdr_t collection_header;
-    inst_soc_element_sensor_temp_t temperature_element;
-} inst_soc_collection_sensor_temp_t, *p_inst_soc_collection_sensor_temp_t;
+    inst_soc_element_max_temp_t temperature_element;
+} inst_soc_collection_max_temp_t, *p_inst_soc_collection_max_temp_t;
 
 typedef struct {
     telemetry_record_hdr_t record_header;
-    inst_soc_collection_sensor_temp_t temperature_collection[NUMBER_OF_SOC_TEMP_SENSORS];
-} inst_soc_record_sensor_temp_t, *p_inst_soc_record_sensor_temp_t;
+    inst_soc_collection_max_temp_t temperature_collection;
+} inst_soc_record_max_temp_t, *p_inst_soc_record_max_temp_t;
 
-//----------------INST_TELEMETRY_ELEMENT_AMU----------------
-typedef struct {
-    uint64_t amevcntr_00;
-    uint64_t amevcntr_01;
-    uint64_t amevcntr_02;
-    uint64_t amevcntr_03;
-    uint64_t amevcntr_10;
-    uint64_t amevcntr_11;
-    uint64_t amevcntr_12;
-} inst_core_element_amu_counters_t, *p_inst_core_element_amu_counters_t;
-
-typedef struct {
-    telemetry_collection_hdr_t collection_header;
-    union {
-        uint64_t counters[NUMBER_OF_AMU_COUNTERS];
-        inst_core_element_amu_counters_t amu_counter_element;
-    };
-} inst_core_collection_amu_counters_t, *p_inst_core_collection_amu_counters_t;
-
-typedef struct {
-    telemetry_record_hdr_t record_header;
-    inst_core_collection_amu_counters_t amu_counter_collection[NUMBER_OF_CORES_PER_DIE];
-} inst_core_record_amu_counters_t, *p_inst_core_record_amu_counters_t;
 
 #pragma pack(pop)
 

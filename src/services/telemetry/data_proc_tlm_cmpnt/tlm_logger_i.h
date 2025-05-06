@@ -62,7 +62,7 @@ typedef enum
 } throttle_source_t;
 
 // enum for type of power telemetry components soc,tile or core.
-typedef enum 
+typedef enum
 {
     PWR_TLM_SOC_UPDATE = 0,
     PWR_TLM_CORE_UPDATE,
@@ -81,7 +81,7 @@ typedef struct {
     uint16_t max_power_mW;
     uint16_t min_power_mW;
     uint16_t avg_power_mW;
-    uint16_t latest_value_mW;// latest power 
+    uint16_t latest_value_mW;// latest power
 } pwr_pstate_t;
 
 typedef struct {
@@ -150,7 +150,7 @@ typedef struct {
     pwr_soc_element_vr_rail_t rail[MAX_NUM_OF_VR_RAILS];
     pwr_soc_element_hnf_t hnf[NUMBER_OF_HNF_CHANNELS_PER_DIE];
     pwr_soc_element_sensor_temp_t sensor_temp[NUMBER_OF_SOC_TEMP_SENSORS];
-    pwr_soc_element_dimm_t      dimm[NUMBER_OF_DIMM_MODULES];
+    pwr_soc_element_dimm_temp_t      dimm[NUMBER_OF_DIMM_MODULES];
 } soc_runtime_info_t;
 
 /**
@@ -184,8 +184,8 @@ typedef enum _pstate_throttle_status_t
 void  tlm_logger_init_fuse_dts_coeff_data(void);
 
 /**
- * @brief Initialize the static information, like cstate id, pstate, etc.. 
- * 
+ * @brief Initialize the static information, like cstate id, pstate, etc..
+ *
  * @return none
  */
 void tlm_logger_init_constant_data();
@@ -249,7 +249,7 @@ void tlm_logger_log_vr_temp(vr_temp_t* vr_temperature);
  */
 void tlm_logger_log_vr_current(vr_current_t* vr_current);
 /**
- * @brief Internal API to log soc pvt temperature (SOC_TOP_TEMP) 
+ * @brief Internal API to log soc pvt temperature (SOC_TOP_TEMP)
  *
  * @param soc_pvt_temp_t - SCF RAM formatted resource for soc_pvt_temp
  *
@@ -257,7 +257,7 @@ void tlm_logger_log_vr_current(vr_current_t* vr_current);
  */
 void tlm_logger_log_soc_pvt_temp(soc_pvt_temp_t* pvt_temperature);
 /**
- * @brief Internal API to log soc dimm information (DIMM) 
+ * @brief Internal API to log soc dimm information (DIMM)
  *
  * @param sensor_ram_dimm_info_t - SCF RAM formatted resource for dimm
  *
@@ -285,136 +285,136 @@ fpfw_status_t  tlm_logger_log_core_cstate(pstate_telem_t* cstate_telemetry);
  * @brief Internal API to log states-pstate,cstate and also log core throttling telemetry.
  * @param pstate_telemetry - SCF RAM formatted resource for pstate packets
  *        (IMPORTANT : pstate telemetry packet provide both p state/c state and throttling status))
- *        
+ *
  * @return fpfw_status_t
  */
 fpfw_status_t  tlm_logger_log_core_states(pstate_telem_t* pstate_telemetry);
 /**
  * @brief  calculate throttling index based on throttle status in telemetry pkt.
- * 
+ *
  * @param status  1-12 if success or -1 in case of a error.
  * @return int return index for throttle info array.
  */
 int8_t tlm_logger_calculate_throttle_index(pstate_throttle_status_t status);
 /**
- * @brief log the throttling states, based on pstate pkt and start/end event 
+ * @brief log the throttling states, based on pstate pkt and start/end event
  * from pkt.
- * 
- * @param pstate_telemetry 
+ *
+ * @param pstate_telemetry
  * @return fpfw_status_t None
  */
 fpfw_status_t tlm_logger_log_core_throttling(pstate_telem_t* pstate_telemetry);
 /**
  * @brief This api clear the throttling tracker.
- * 
- * @param core_id 
- * @param timestamp_uS 
+ *
+ * @param core_id
+ * @param timestamp_uS
  */
 void tlm_update_throttling_status_on_exit(uint8_t core_id, uint64_t timestamp_uS);
 /**
- * @brief Power telemetry update management -update data after logging. 
- * @param   None 
- * @return  None 
+ * @brief Power telemetry update management -update data after logging.
+ * @param   None
+ * @return  None
  */
 void data_proc_tlm_cmpnt_aggregate_update_mgr(void);
 /**
- * @brief tlm_calculate_mma_res function calculates the minimum, maximum, and average values of a 
- *          given metric over a specified time period. It updates the provided pointers with the 
+ * @brief tlm_calculate_mma_res function calculates the minimum, maximum, and average values of a
+ *          given metric over a specified time period. It updates the provided pointers with the
  *          calculated results based on the latest value and the time difference.
- * 
+ *
  * @param mma_min -Pointer to the variable that stores the minimum value of the metric.
  *                 This value will be updated based on the latest value and the time difference.
  * @param mma_max -Pointer to the variable that stores the maximum value of the metric.
- * @param mma_average -Pointer to the variable that stores the average value of the metric. 
+ * @param mma_average -Pointer to the variable that stores the average value of the metric.
  * @param mma_latest_value  -Pointer to the variable that stores the latest value of the metric
  * @param time_diff_uS - The time difference in microseconds between the current and previous measurements
  * @param residency_uS The total residency time in microseconds over which the average is calculated
  */
 void tlm_calculate_mma_res(uint16_t* mma_min, uint16_t* mma_max, uint16_t* mma_average, uint16_t* mma_latest_value, uint32_t time_diff_uS, uint32_t residency_uS);
 /**
- * @brief  function updates the minimum, maximum, and average current values for a specified core based on the provided 
+ * @brief  function updates the minimum, maximum, and average current values for a specified core based on the provided
  *         time difference and residency time
- * 
+ *
  * @param core_id  core for which the current values are being updated.
  * @param time_diff_uS  time_diff_uS: The time difference in microseconds between the current and previous measurements.
  * @param residency_uS  The total residency time in microseconds over which the average is calculated.
  */
 void tlm_update_core_current(uint8_t core_id, uint32_t time_diff_uS, uint32_t residency_uS);
 /**
- * @brief    function updates the minimum, maximum, and average voltage values for a specified core based 
+ * @brief    function updates the minimum, maximum, and average voltage values for a specified core based
  *           on the provided time difference and residency time
- * 
+ *
  * @param core_id  core for which the current values are being updated.
  * @param time_diff_uS  time_diff_uS: The time difference in microseconds between the current and previous measurements.
  * @param residency_uS  The total residency time in microseconds over which the average is calculated.
  */
 void tlm_update_core_voltage(uint8_t core_id, uint32_t time_diff_uS, uint32_t residency_uS);
 /**
- * @brief    function updates the minimum, maximum, and average temperature values for 
+ * @brief    function updates the minimum, maximum, and average temperature values for
  *           a specified core based on the provided time difference and residency time
- * 
+ *
  * @param core_id  core for which the current values are being updated.
  * @param time_diff_uS  time_diff_uS: The time difference in microseconds between the current and previous measurements.
  * @param residency_uS  The total residency time in microseconds over which the average is calculated.
  */
 void tlm_update_core_temperature(uint8_t core_id, uint32_t time_diff_uS, uint32_t residency_uS);
 /**
- * @brief    function updates the minimum, maximum, and average voltage values for the 
+ * @brief    function updates the minimum, maximum, and average voltage values for the
  *           vCPU of a specified tile based on the provided time difference and residency time
- * 
+ *
  * @param core_id  core for which the current values are being updated.
  * @param time_diff_uS  time_diff_uS: The time difference in microseconds between the current and previous measurements.
  * @param residency_uS  The total residency time in microseconds over which the average is calculated.
  */
 void tlm_update_tile_vcpu(uint8_t tile_id, uint32_t time_diff_uS, uint32_t residency_uS);
 /**
- * @brief    function updates the minimum, maximum, and average voltage values for the 
+ * @brief    function updates the minimum, maximum, and average voltage values for the
  *           vSYS of a specified tile based on the provided time difference and residency time
- * 
+ *
  * @param core_id  core for which the current values are being updated.
  * @param time_diff_uS  time_diff_uS: The time difference in microseconds between the current and previous measurements.
  * @param residency_uS  The total residency time in microseconds over which the average is calculated.
  */
 void tlm_update_tile_vsys(uint8_t tile_id, uint32_t time_diff_uS, uint32_t residency_uS);
 /**
- * @brief function updates the minimum, maximum, and average voltage values for 
+ * @brief function updates the minimum, maximum, and average voltage values for
  *         a specified SOC VR (Voltage Regulator) rail based on the provided time difference and residency time
- * 
+ *
  * @param vr_index The identifier of the VR rail for which the voltage values are being updated.
- * @param time_diff_uS 
- * @param residency_uS 
+ * @param time_diff_uS
+ * @param residency_uS
  */
 void tlm_update_soc_rails_voltage(uint8_t vr_index, uint32_t time_diff_uS, uint32_t residency_uS);
 /**
- * @brief  function updates the minimum, maximum, and average current values for 
+ * @brief  function updates the minimum, maximum, and average current values for
  *          a specified SOC VR (Voltage Regulator) rail based on the provided time difference and residency time
- * 
- * @param vr_index 
- * @param time_diff_uS 
- * @param residency_uS 
+ *
+ * @param vr_index
+ * @param time_diff_uS
+ * @param residency_uS
  */
 void tlm_update_soc_rails_current(uint8_t vr_index, uint32_t time_diff_uS, uint32_t residency_uS);
 /**
- * @brief  function updates the minimum, maximum, and average temperature values for 
+ * @brief  function updates the minimum, maximum, and average temperature values for
  *         a specified SOC VR (Voltage Regulator) rail based on the provided time difference and residency time
- * 
+ *
  * @param vr_index - The identifier of the VR rail for which the voltage values are being updated.
- * @param time_diff_uS 
- * @param residency_uS 
+ * @param time_diff_uS
+ * @param residency_uS
  */
 void tlm_update_soc_rails_temperature(uint8_t vr_index, uint32_t time_diff_uS, uint32_t residency_uS);
 /**
- * @brief function updates the minimum, maximum, and average temperature values for 
+ * @brief function updates the minimum, maximum, and average temperature values for
  *        a specified SOC HNF  based on the provided time difference and residency time
- * 
+ *
  * @param hnf_index The identifier of the HNF for which the temperature values are being updated.
  * @param time_diff_uS  The time difference in microseconds between the current and previous measurements
  * @param residency_uS  The total residency time in microseconds over which the average is calculated.
  */
 void tlm_update_soc_hnf_temperature(uint8_t hnf_index, uint32_t time_diff_uS, uint32_t residency_uS);
 /**
- * @brief function updates the minimum, maximum, and average temperature values for 
- *        a specified SOC PVT  sensor based on 
+ * @brief function updates the minimum, maximum, and average temperature values for
+ *        a specified SOC PVT  sensor based on
  *        the provided time difference and residency time.
  * @param pvt_index  The identifier of the PVT sensor for which the temperature values are being updated.
  * @param time_diff_uS The time difference in microseconds between the current and previous measurements
@@ -422,79 +422,79 @@ void tlm_update_soc_hnf_temperature(uint8_t hnf_index, uint32_t time_diff_uS, ui
  */
 void tlm_update_soc_pvt_temperature(uint8_t pvt_index, uint32_t time_diff_uS, uint32_t residency_uS);
 /**
- * @brief  function updates the minimum, maximum, and average temperature values for a specified 
- * SOC DIMM (Dual In-line Memory Module) based on the provided time difference and residency time. 
- * It updates the temperature data for both S0 and S1 sensors of the DIMM module. It utilizes 
+ * @brief  function updates the minimum, maximum, and average temperature values for a specified
+ * SOC DIMM (Dual In-line Memory Module) based on the provided time difference and residency time.
+ * It updates the temperature data for both S0 and S1 sensors of the DIMM module. It utilizes
  * the tlm_calculate_mma_res function to perform the calculations.
- * 
+ *
  * @param dimm_module_index The identifier of the DIMM module for which the temperature values are being updated.
  * @param time_diff_uS -The time difference in microseconds between the current and previous measurements.
  * @param residency_uS  -The total residency time in microseconds over which the average is calculated.
  */
 void tlm_update_soc_dimm_info(uint8_t dimm_module_index, uint32_t time_diff_uS, uint32_t residency_uS);
 /**
- * @brief The tlm_update_pstate function updates the power state (PState) residency and power metrics 
- *          for a specified core based on the provided timestamp. It handles both throttling and 
- *          non-throttling scenarios and updates the minimum, maximum, and average power values 
+ * @brief The tlm_update_pstate function updates the power state (PState) residency and power metrics
+ *          for a specified core based on the provided timestamp. It handles both throttling and
+ *          non-throttling scenarios and updates the minimum, maximum, and average power values
  *          for the current PState.
- * 
+ *
  * @param core_id -The identifier of the core for which the PState is being updated.
  * @param time_stamp_uS -The current timestamp in microseconds.
  */
 void tlm_update_pstate(uint8_t core_id, uint64_t time_stamp_uS);
 /**
  * @brief  This API used during cores are throttling, MMA calculation is triggerd by this APIs
- * 
- * @param core_id 
+ *
+ * @param core_id
  * @param throttle_index  Throttling type.
  * @param time_diff_uS    time diff between current timestamp and previous time stamp
  * @param residency_mS  - residency in mS
  */
 void tlm_update_throttling_pstate(uint8_t core_id, int8_t throttle_index, uint32_t time_diff_uS, uint32_t residency_mS);
 /**
- * @brief update rack throttling 
- * 
+ * @brief update rack throttling
+ *
  * @param pstate_telemetry  provide pstate tlm pkt.
  * @param throttle_index - source of throttle , in this case rack.
- * @param core_id 
+ * @param core_id
  */
 void tlm_update_rack_throttling(pstate_telem_t* pstate_telemetry, int throttle_index, uint8_t core_id);
 /**
  * @brief tlm_update_throttling from runtime update manager.
- * 
- * @param core_id 
+ *
+ * @param core_id
  * @param time_stamp_uS -system time stamp
  */
 void tlm_update_throttling(uint8_t core_id, uint64_t time_stamp_uS);
 /**
  * @brief function is intended to update the histogram data for a specified core
- * 
- * @param core_id 
+ *
+ * @param core_id
  */
 void tlm_update_core_histogram(uint8_t core_id);
 /**
- * @brief The tlm_soc_component_update function updates various SOC (System on Chip) components, 
+ * @brief The tlm_soc_component_update function updates various SOC (System on Chip) components,
  *         including VR (Voltage Regulator) rails, HNF temperatures, PVT (Process, Voltage, Temperature) sensors
- *         and DIMM (Dual In-line Memory Module) temperatures. It calculates the time difference 
+ *         and DIMM (Dual In-line Memory Module) temperatures. It calculates the time difference
  *         since the last update and uses this information to update the residency and metrics for each component.
  */
 void tlm_soc_component_update(void);
 /**
- * @brief function updates various metrics for all cores, including PState residency and power, 
- * CState residency, throttling status, core current, voltage, and temperature. It calculates the 
+ * @brief function updates various metrics for all cores, including PState residency and power,
+ * CState residency, throttling status, core current, voltage, and temperature. It calculates the
  * time difference since the last update and uses this information to update the residency and metrics for each core.
  */
 void tlm_core_component_update(void);
 /**
- * @brief function updates various metrics for all tiles, including the maximum tile temperature, 
- * vCPU voltage, and system voltage (Vsys). It calculates the time difference since the last update 
+ * @brief function updates various metrics for all tiles, including the maximum tile temperature,
+ * vCPU voltage, and system voltage (Vsys). It calculates the time difference since the last update
  * and uses this information to update the residency and metrics for each tile.
  */
 void tlm_tile_component_update(void);
 /**
  * @brief Reset the core throttle data for the specified core.
  *
- * @param[in] core_id - The core id to reset the throttle data to. 0 
+ * @param[in] core_id - The core id to reset the throttle data to. 0
  *
  * @return None
  */

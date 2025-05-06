@@ -136,8 +136,6 @@ TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
     uint8_t throttle_index = 0;
     uint8_t avg_pstate = 5;
     uint32_t entry_count = 10;
-    uint32_t exit_count = 10;
-    uint8_t reserved = 0;
     uint32_t residency_mS = 100;
     uint8_t max_pstate = 5;
     uint8_t type_id = THROTTLE_SOURCE_TEMPERATURE;
@@ -146,9 +144,7 @@ TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
     {
         core[TEST_CORE_ID_5].throttle_info[throttle_index].avg_pstate = avg_pstate;
         core[TEST_CORE_ID_5].throttle_info[throttle_index].entry_count = entry_count;
-        core[TEST_CORE_ID_5].throttle_info[throttle_index].exit_count = exit_count;
         core[TEST_CORE_ID_5].throttle_info[throttle_index].max_pstate = max_pstate;
-        core[TEST_CORE_ID_5].throttle_info[throttle_index].reserved = reserved;
         core[TEST_CORE_ID_5].throttle_info[throttle_index].residency_mS = residency_mS;
         core[TEST_CORE_ID_5].throttle_info[throttle_index].type_id = type_id;
     }
@@ -158,9 +154,7 @@ TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
     {
         assert_int_equal(throttle_array[throttle_index].avg_pstate, avg_pstate);
         assert_int_equal(throttle_array[throttle_index].entry_count, entry_count);
-        assert_int_equal(throttle_array[throttle_index].exit_count, exit_count);
         assert_int_equal(throttle_array[throttle_index].max_pstate, max_pstate);
-        assert_int_equal(throttle_array[throttle_index].reserved, reserved);
         assert_int_equal(throttle_array[throttle_index].residency_mS, residency_mS);
         assert_int_equal(throttle_array[throttle_index].type_id, type_id);
     }
@@ -169,9 +163,7 @@ TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
     uint8_t index = 0; // test for one of the throttle type.
     core[TEST_CORE_ID_5].throttle_info[index].avg_pstate = 6;
     core[TEST_CORE_ID_5].throttle_info[index].entry_count = 12;
-    core[TEST_CORE_ID_5].throttle_info[index].exit_count = 12;
     core[TEST_CORE_ID_5].throttle_info[index].max_pstate = 28;
-    core[TEST_CORE_ID_5].throttle_info[index].reserved = 0;
     core[TEST_CORE_ID_5].throttle_info[index].residency_mS = 110;
     core[TEST_CORE_ID_5].throttle_info[index].type_id = THROTTLE_SOURCE_TEMPERATURE;
     data_proc_tlm_cmpnt_get_pwr_core_throttle_data(NUMBER_OF_CORES_PER_DIE, &throttle_array);
@@ -182,8 +174,6 @@ TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
                          core[TEST_CORE_ID_5].throttle_info[throttle_index].avg_pstate);
     assert_int_not_equal(throttle_array[throttle_index].entry_count,
                          core[TEST_CORE_ID_5].throttle_info[throttle_index].entry_count);
-    assert_int_not_equal(throttle_array[throttle_index].exit_count,
-                         core[TEST_CORE_ID_5].throttle_info[throttle_index].exit_count);
     assert_int_not_equal(throttle_array[throttle_index].max_pstate,
                          core[TEST_CORE_ID_5].throttle_info[throttle_index].max_pstate);
     assert_int_equal(throttle_array[throttle_index].reserved,
@@ -205,11 +195,7 @@ TEST_FUNCTION(test_get_pwr_core_rack_priority_data, test_setup, test_teardown)
     {
         // ID representing the Priority, there are 8 Priority Levels (0 to 7)
         core[TEST_CORE_ID_5].priorities[rack_index].priority_id = rack_index;
-        core[TEST_CORE_ID_5].priorities[rack_index].avg_pstate = 5;
         core[TEST_CORE_ID_5].priorities[rack_index].entry_count = 1;
-        core[TEST_CORE_ID_5].priorities[rack_index].exit_count = 0;
-        core[TEST_CORE_ID_5].priorities[rack_index].max_pstate = 28;
-        core[TEST_CORE_ID_5].priorities[rack_index].reserved = 0;
         core[TEST_CORE_ID_5].priorities[rack_index].residency_mS = 100;
     }
 
@@ -219,40 +205,22 @@ TEST_FUNCTION(test_get_pwr_core_rack_priority_data, test_setup, test_teardown)
     {
         assert_int_equal(rack_priority_array[rack_index].priority_id,
                          core[TEST_CORE_ID_5].priorities[rack_index].priority_id);
-        assert_int_equal(rack_priority_array[rack_index].avg_pstate,
-                         core[TEST_CORE_ID_5].priorities[rack_index].avg_pstate);
         assert_int_equal(rack_priority_array[rack_index].entry_count,
                          core[TEST_CORE_ID_5].priorities[rack_index].entry_count);
-        assert_int_equal(rack_priority_array[rack_index].exit_count,
-                         core[TEST_CORE_ID_5].priorities[rack_index].exit_count);
-        assert_int_equal(rack_priority_array[rack_index].max_pstate,
-                         core[TEST_CORE_ID_5].priorities[rack_index].max_pstate);
-        assert_int_equal(rack_priority_array[rack_index].reserved, core[TEST_CORE_ID_5].priorities[rack_index].reserved);
         assert_int_equal(rack_priority_array[rack_index].residency_mS,
                          core[TEST_CORE_ID_5].priorities[rack_index].residency_mS);
     }
     rack_index = 0;
     // test for failure case .
     // change data in core data structure for rack priority 0 only.
-    core[TEST_CORE_ID_5].priorities[rack_index].avg_pstate = 15;
     core[TEST_CORE_ID_5].priorities[rack_index].entry_count = 2;
-    core[TEST_CORE_ID_5].priorities[rack_index].exit_count = 1;
-    core[TEST_CORE_ID_5].priorities[rack_index].max_pstate = 29;
-    core[TEST_CORE_ID_5].priorities[rack_index].reserved = 1;
     core[TEST_CORE_ID_5].priorities[rack_index].residency_mS = 110;
 
     data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(NUMBER_OF_CORES_PER_DIE, &rack_priority_array);
 
     assert_int_equal(rack_priority_array[rack_index].priority_id, core[TEST_CORE_ID_5].priorities[rack_index].priority_id);
-    assert_int_not_equal(rack_priority_array[rack_index].avg_pstate,
-                         core[TEST_CORE_ID_5].priorities[rack_index].avg_pstate);
     assert_int_not_equal(rack_priority_array[rack_index].entry_count,
                          core[TEST_CORE_ID_5].priorities[rack_index].entry_count);
-    assert_int_not_equal(rack_priority_array[rack_index].exit_count,
-                         core[TEST_CORE_ID_5].priorities[rack_index].exit_count);
-    assert_int_not_equal(rack_priority_array[rack_index].max_pstate,
-                         core[TEST_CORE_ID_5].priorities[rack_index].max_pstate);
-    assert_int_not_equal(rack_priority_array[rack_index].reserved, core[TEST_CORE_ID_5].priorities[rack_index].reserved);
     assert_int_not_equal(rack_priority_array[rack_index].residency_mS,
                          core[TEST_CORE_ID_5].priorities[rack_index].residency_mS);
 }
@@ -351,12 +319,12 @@ TEST_FUNCTION(test_get_pwr_core_histogram_data, test_setup, test_teardown)
     data_proc_tlm_cmpnt_get_pwr_core_histogram_data(TEST_CORE_ID_5, &histogram_data);
 }
 
-TEST_FUNCTION(test_get_pwr_soc_pc3_data, test_setup, test_teardown)
+TEST_FUNCTION(test_get_pwr_soc_pkg_mon_data, test_setup, test_teardown)
 {
     // the api is currently just stubbed out
     // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
-    pwr_soc_element_pc3_t pc3_data = {0};
-    data_proc_tlm_cmpnt_get_pwr_soc_pc3_data(&pc3_data);
+    pwr_soc_element_pkg_monitor_t pc3_data = {0};
+    data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data(&pc3_data);
 }
 
 TEST_FUNCTION(test_get_pwr_soc_vr_rail_data, test_setup, test_teardown)
@@ -460,7 +428,7 @@ TEST_FUNCTION(test_get_pwr_soc_hnf_data, test_setup, test_teardown)
 
 TEST_FUNCTION(test_get_pwr_soc_dimm_data, test_setup, test_teardown)
 {
-    pwr_soc_element_dimm_t dimm_data = {{0}};
+    pwr_soc_element_dimm_temp_t dimm_data = {{0}};
     fpfw_status_t status;
     sensor_ram_dimm_info_t dimm_info = {
         .timestamp = 0,
@@ -476,12 +444,9 @@ TEST_FUNCTION(test_get_pwr_soc_dimm_data, test_setup, test_teardown)
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
 
     // Check DIMM information
-    data_proc_tlm_cmpnt_get_pwr_soc_dimm_data(TEST_DIMM_CHANN_ID_3, &dimm_data);
+    data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(TEST_DIMM_CHANN_ID_3, &dimm_data);
     assert_int_equal(dimm_data.s0.latest_value_dC, (dimm_info.dimm_temp_s0_dC));
     assert_int_equal(dimm_data.s1.latest_value_dC, (dimm_info.dimm_temp_s1_dC));
-    assert_int_equal(dimm_data.dimm_power_mW, (dimm_info.dimm_power_mW));
-    assert_int_equal(dimm_data.dimm_throttling, (dimm_info.dimm_throttling));
-    assert_int_equal(dimm_data.dimm_memory_frequency_id, (dimm_info.dimm_memory_frequency_id));
 
     // setup and test for fail case.
     dimm_info.dimm_temp_s0_dC = 27;
@@ -492,12 +457,9 @@ TEST_FUNCTION(test_get_pwr_soc_dimm_data, test_setup, test_teardown)
 
     status = telmain_log_dimm_info(&dimm_info);
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
-    data_proc_tlm_cmpnt_get_pwr_soc_dimm_data(NUMBER_OF_DIMM_MODULES, &dimm_data);
+    data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(NUMBER_OF_DIMM_MODULES, &dimm_data);
     assert_int_not_equal(dimm_data.s0.latest_value_dC, (dimm_info.dimm_temp_s0_dC));
     assert_int_not_equal(dimm_data.s1.latest_value_dC, (dimm_info.dimm_temp_s1_dC));
-    assert_int_not_equal(dimm_data.dimm_power_mW, (dimm_info.dimm_power_mW));
-    assert_int_not_equal(dimm_data.dimm_throttling, (dimm_info.dimm_throttling));
-    assert_int_not_equal(dimm_data.dimm_memory_frequency_id, (dimm_info.dimm_memory_frequency_id));
 }
 
 TEST_FUNCTION(test_get_pwr_soc_snsr_temp_data, test_setup, test_teardown)
@@ -527,7 +489,7 @@ TEST_FUNCTION(test_get_pwr_mpam_pstate_data, test_setup, test_teardown)
 {
     // the api is currently just stubbed out
     // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
-    pwr_element_mpam_pstate_t mpam_pstate_array[NUMBER_OF_PSTATES] = {{0}};
+    pwr_soc_element_mpam_pstate_t mpam_pstate_array[NUMBER_OF_PSTATES] = {{{0}}};
     data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data(TEST_MPAM_ID_4, &mpam_pstate_array);
 }
 
@@ -535,7 +497,7 @@ TEST_FUNCTION(test_get_pwr_soc_mpam_throttle_data, test_setup, test_teardown)
 {
     // the api is currently just stubbed out
     // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
-    pwr_element_mpam_throttle_t mpam_throttle_data = {0};
+    pwr_soc_element_mpam_throttle_t mpam_throttle_data = {0};
     data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(TEST_MPAM_ID_4, &mpam_throttle_data);
 }
 
@@ -543,7 +505,7 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
 {
     // the api is currently just stubbed out
     // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
-    inst_core_element_summary_t core_summary_data = {{0}};
+    inst_core_element_summary_t core_summary_data = {0};
     data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(TEST_CORE_ID_5, &core_summary_data);
 }
 
@@ -563,26 +525,10 @@ TEST_FUNCTION(test_get_inst_soc_dimm_runtime_data, test_setup, test_teardown)
     data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(TEST_DIMM_CHANN_ID_3, &dimm_runtime_data);
 }
 
-TEST_FUNCTION(test_get_inst_soc_dimm_config_data, test_setup, test_teardown)
-{
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
-    inst_soc_element_dimm_config_t dimm_config_data = {0};
-    data_proc_tlm_cmpnt_get_inst_soc_dimm_config_data(&dimm_config_data);
-}
-
 TEST_FUNCTION(test_get_inst_soc_snsr_temp_data, test_setup, test_teardown)
 {
     // the api is currently just stubbed out
     // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
-    inst_soc_element_sensor_temp_t snsr_temp_data = {0};
+    inst_soc_element_die_temp_t snsr_temp_data = {0};
     data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(TEST_SNSR_ID_0, &snsr_temp_data);
-}
-
-TEST_FUNCTION(test_get_inst_core_amu_data, test_setup, test_teardown)
-{
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
-    inst_core_element_amu_counters_t amu_data = {0};
-    data_proc_tlm_cmpnt_get_inst_core_amu_data(TEST_CORE_ID_5, &amu_data);
 }

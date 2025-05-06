@@ -506,7 +506,6 @@ TEST_FUNCTION(test_tlm_logger_log_core_states_in_throttle_end, test_setup, test_
 
     status = tlm_logger_log_core_states(&pstate_data);
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
-    assert_int_equal(core[0].throttle_info[0].exit_count, 1);
 }
 
 // Test for tlm_logger_log_core_throttling
@@ -564,7 +563,6 @@ TEST_FUNCTION(test_tlm_logger_log_core_throttling_end, test_setup, test_teardown
 
     status = tlm_logger_log_core_throttling(&pstate_data);
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
-    assert_int_equal(core[0].throttle_info[1].exit_count, 1);
     assert_int_equal(core[0].throttle_info[1].residency_mS, 1);
 }
 
@@ -623,9 +621,6 @@ TEST_FUNCTION(test_tlm_logger_log_dimm_information, test_setup, test_teardown)
     // Check DIMM information
     assert_int_equal(soc_info.dimm[dimm_info.dimm_id].s0.latest_value_dC, (dimm_info.dimm_temp_s0_dC));
     assert_int_equal(soc_info.dimm[dimm_info.dimm_id].s1.latest_value_dC, (dimm_info.dimm_temp_s1_dC));
-    assert_int_equal(soc_info.dimm[dimm_info.dimm_id].dimm_power_mW, (dimm_info.dimm_power_mW));
-    assert_int_equal(soc_info.dimm[dimm_info.dimm_id].dimm_throttling, (dimm_info.dimm_throttling));
-    assert_int_equal(soc_info.dimm[dimm_info.dimm_id].dimm_memory_frequency_id, (dimm_info.dimm_memory_frequency_id));
 
     // invalid DIMM id.
     dimm_info.dimm_id = 17;

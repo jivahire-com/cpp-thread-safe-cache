@@ -86,7 +86,7 @@ TEST_FUNCTION(test_mts_manager_handle_record_enable_disable, test_setup, test_te
     trp_msg.payload.dcp_msg.payload.events_enable_disable.number_of_events = 2;
 
     trp_msg.payload.dcp_msg.payload.events_enable_disable.events[0].provider_id = EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA;
-    trp_msg.payload.dcp_msg.payload.events_enable_disable.events[0].event_id = POWER_TELEMETRY_ELEMENT_SOC_PC3;
+    trp_msg.payload.dcp_msg.payload.events_enable_disable.events[0].event_id = POWER_TELEMETRY_ELEMENT_SOC_PKG_MON;
     trp_msg.payload.dcp_msg.payload.events_enable_disable.events[0].state = DCP_EVENTS_ENABLE_STATE_ENABLE;
 
     trp_msg.payload.dcp_msg.payload.events_enable_disable.events[1].provider_id = EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA;
@@ -95,7 +95,7 @@ TEST_FUNCTION(test_mts_manager_handle_record_enable_disable, test_setup, test_te
 
     mts_manager_handle_record_enable_disable(&trp_msg);
 
-    assert_true(power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_PC3]);
+    assert_true(power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_PKG_MON]);
     assert_true(inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_CORE]);
     assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
 
@@ -103,7 +103,7 @@ TEST_FUNCTION(test_mts_manager_handle_record_enable_disable, test_setup, test_te
     trp_msg.payload.dcp_msg.payload.events_enable_disable.events[1].state = DCP_EVENTS_ENABLE_STATE_DISABLE;
     mts_manager_handle_record_enable_disable(&trp_msg);
 
-    assert_false(power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_PC3]);
+    assert_false(power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_PKG_MON]);
     assert_false(inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_CORE]);
     assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
 }

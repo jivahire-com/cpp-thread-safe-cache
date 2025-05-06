@@ -95,7 +95,7 @@ TEST_FUNCTION(test_gen_inst_report, test_setup, test_teardown)
     {
         inst_pkg_element_enable[i] = false;
     }
-    inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_SOC_RAILS] = true;
+    inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_SOC_VOLTAGE_RAILS] = true;
     expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_rail_data, MAX_NUM_OF_VR_RAILS * inband_inst_samples_per_pkg);
 
     // first time allocates packager

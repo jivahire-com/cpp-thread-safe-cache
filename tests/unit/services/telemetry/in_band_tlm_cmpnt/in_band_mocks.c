@@ -149,9 +149,9 @@ void data_proc_tlm_cmpnt_get_pwr_core_histogram_data(
     function_called();
 }
 
-void data_proc_tlm_cmpnt_get_pwr_soc_pc3_data(p_pwr_soc_element_pc3_t soc_pc3_data)
+void data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data(p_pwr_soc_element_pkg_monitor_t soc_pkg_mon_data)
 {
-    memset(soc_pc3_data, 0xFF, sizeof(pwr_soc_element_pc3_t));
+    memset(soc_pkg_mon_data, 0xFF, sizeof(pwr_soc_element_pkg_monitor_t));
 
     function_called();
 }
@@ -172,10 +172,10 @@ void data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(uint16_t hnf_channel, p_pwr_soc_el
     function_called();
 }
 
-void data_proc_tlm_cmpnt_get_pwr_soc_dimm_data(uint16_t dimm_channel, p_pwr_soc_element_dimm_t dimm_data)
+void data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(uint16_t dimm_channel, p_pwr_soc_element_dimm_temp_t dimm_data)
 {
     FPFW_UNUSED(dimm_channel);
-    memset(dimm_data, 0xFF, sizeof(pwr_soc_element_dimm_t));
+    memset(dimm_data, 0xFF, sizeof(pwr_soc_element_dimm_temp_t));
 
     function_called();
 }
@@ -189,18 +189,18 @@ void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_so
 }
 
 void data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data(uint16_t mpam_id,
-                                                  pwr_element_mpam_pstate_t (*mpam_pstate_array)[NUMBER_OF_PSTATES])
+                                                  pwr_soc_element_mpam_pstate_t (*mpam_pstate_array)[NUMBER_OF_PSTATES])
 {
     FPFW_UNUSED(mpam_id);
-    memset((*mpam_pstate_array), 0xFF, sizeof(pwr_element_mpam_pstate_t) * NUMBER_OF_PSTATES);
+    memset((*mpam_pstate_array), 0xFF, sizeof(pwr_soc_element_mpam_pstate_t) * NUMBER_OF_PSTATES);
 
     function_called();
 }
 
-void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_element_mpam_throttle_t mpam_throttle_data)
+void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_soc_element_mpam_throttle_t mpam_throttle_data)
 {
     FPFW_UNUSED(mpam_id);
-    memset(mpam_throttle_data, 0xFF, sizeof(pwr_element_mpam_throttle_t));
+    memset(mpam_throttle_data, 0xFF, sizeof(pwr_soc_element_mpam_throttle_t));
 
     function_called();
 }
@@ -229,25 +229,10 @@ void data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(uint16_t dimm_module, p_
     function_called();
 }
 
-void data_proc_tlm_cmpnt_get_inst_soc_dimm_config_data(p_inst_soc_element_dimm_config_t dimm_cfg)
-{
-    memset(dimm_cfg, 0xFF, sizeof(inst_soc_element_dimm_config_t));
-
-    function_called();
-}
-
-void data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(uint16_t sensor_id, p_inst_soc_element_sensor_temp_t sensor_temp_data)
+void data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(uint16_t sensor_id, p_inst_soc_element_die_temp_t sensor_temp_data)
 {
     FPFW_UNUSED(sensor_id);
-    memset(sensor_temp_data, 0xFF, sizeof(inst_soc_element_sensor_temp_t));
-
-    function_called();
-}
-
-void data_proc_tlm_cmpnt_get_inst_core_amu_data(uint16_t core_id, p_inst_core_element_amu_counters_t amu_data)
-{
-    FPFW_UNUSED(core_id);
-    memset(amu_data, 0xFF, sizeof(inst_core_element_amu_counters_t));
+    memset(sensor_temp_data, 0xFF, sizeof(inst_soc_element_die_temp_t));
 
     function_called();
 }

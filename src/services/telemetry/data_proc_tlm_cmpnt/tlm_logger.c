@@ -468,7 +468,6 @@ fpfw_status_t tlm_logger_log_core_throttling(pstate_telem_t* pstate_telemetry)
             {
                 // return if timestamp < core[core_id].throttle_info[throttle_index].previous_timestamp_uS return. eg. Network time sync issue.
                 // Invalid timestamp : not to update the residency with wrong data, but update the exit count and end status.
-                core[core_id].throttle_info[throttle_index].exit_count++;
                 core[core_id].throttling_status = pstate_telemetry->data.throttle_status;
                 FPFW_ET_LOG(LogCoreThrottleValidTimeStamp, status);
                 return FPFW_STATUS_INVALID_ARGS;
@@ -478,7 +477,6 @@ fpfw_status_t tlm_logger_log_core_throttling(pstate_telem_t* pstate_telemetry)
 
             // This is the per core and per type throttling residency in uS
             core[core_id].throttle_info[throttle_index].residency_mS += MICROSECONDS_TO_MILLISECONDS(time_diff_uS);
-            core[core_id].throttle_info[throttle_index].exit_count++;
             core[core_id].core_throttling_tracker[throttle_index] = 0;
             // Record the current pstate
             core[core_id].pstate_from_pstate_pkt = pstate_telemetry->data.pstate;
@@ -611,15 +609,14 @@ void tlm_logger_log_soc_pvt_temp(soc_pvt_temp_t* pvt_temperature)
 
 fpfw_status_t telmain_log_dimm_info(sensor_ram_dimm_info_t* dimm_info)
 {
+    // TODO: update via https://azurecsi.visualstudio.com/Dev/_workitems/edit/2592133
+
     // DIMM(Dual inline memory module)- Convert Sensor Data into DIMM Entries
     // Check for which DIMM channel is this entry, do not process anything beyond the valid DIMM index
     if (dimm_info->dimm_id < NUMBER_OF_DIMM_MODULES)
     {
         soc_info.dimm[dimm_info->dimm_id].s0.latest_value_dC = dimm_info->dimm_temp_s0_dC;
         soc_info.dimm[dimm_info->dimm_id].s1.latest_value_dC = dimm_info->dimm_temp_s1_dC;
-        soc_info.dimm[dimm_info->dimm_id].dimm_throttling = dimm_info->dimm_throttling;
-        soc_info.dimm[dimm_info->dimm_id].dimm_memory_frequency_id = dimm_info->dimm_memory_frequency_id;
-        soc_info.dimm[dimm_info->dimm_id].dimm_power_mW = dimm_info->dimm_power_mW;
     }
     else
     {
@@ -823,9 +820,7 @@ void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id,
         {
             (*throttle_array)[throttle_index].avg_pstate = core[core_id].throttle_info[throttle_index].avg_pstate;
             (*throttle_array)[throttle_index].entry_count = core[core_id].throttle_info[throttle_index].entry_count;
-            (*throttle_array)[throttle_index].exit_count = core[core_id].throttle_info[throttle_index].exit_count;
             (*throttle_array)[throttle_index].max_pstate = core[core_id].throttle_info[throttle_index].max_pstate;
-            (*throttle_array)[throttle_index].reserved = core[core_id].throttle_info[throttle_index].reserved;
             (*throttle_array)[throttle_index].residency_mS = core[core_id].throttle_info[throttle_index].residency_mS;
             (*throttle_array)[throttle_index].type_id = core[core_id].throttle_info[throttle_index].type_id;
         }
@@ -849,11 +844,7 @@ void data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(uint16_t core_id,
         for (uint16_t rack_index = 0; rack_index < NUMBER_OF_RACK_PRIORITIES; rack_index++)
         {
             (*rack_priority_array)[rack_index].priority_id = core[core_id].priorities[rack_index].priority_id;
-            (*rack_priority_array)[rack_index].avg_pstate = core[core_id].priorities[rack_index].avg_pstate;
             (*rack_priority_array)[rack_index].entry_count = core[core_id].priorities[rack_index].entry_count;
-            (*rack_priority_array)[rack_index].exit_count = core[core_id].priorities[rack_index].exit_count;
-            (*rack_priority_array)[rack_index].max_pstate = core[core_id].priorities[rack_index].max_pstate;
-            (*rack_priority_array)[rack_index].reserved = core[core_id].priorities[rack_index].reserved;
             (*rack_priority_array)[rack_index].residency_mS = core[core_id].priorities[rack_index].residency_mS;
         }
     }
@@ -915,9 +906,9 @@ void data_proc_tlm_cmpnt_get_pwr_core_histogram_data(
     FPFW_UNUSED(histogram_array);
 }
 
-void data_proc_tlm_cmpnt_get_pwr_soc_pc3_data(p_pwr_soc_element_pc3_t soc_pc3_data)
+void data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data(p_pwr_soc_element_pkg_monitor_t soc_pkg_mon_data)
 {
-    FPFW_UNUSED(soc_pc3_data);
+    FPFW_UNUSED(soc_pkg_mon_data);
 }
 
 void data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(uint16_t rail_id, p_pwr_soc_element_vr_rail_t rail_data)
@@ -952,7 +943,7 @@ void data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(uint16_t hnf_channel, p_pwr_soc_el
     // parameter check: hnf_channel, check if correct
     if (hnf_channel >= NUMBER_OF_HNF_CHANNELS_PER_DIE || hnf_data == NULL)
     {
-        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_SOC_HNF);
+        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_SOC_HNF_TEMP);
     }
     else
     {
@@ -963,23 +954,20 @@ void data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(uint16_t hnf_channel, p_pwr_soc_el
     }
 }
 
-void data_proc_tlm_cmpnt_get_pwr_soc_dimm_data(uint16_t dimm_channel, p_pwr_soc_element_dimm_t dimm_data)
+void data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(uint16_t dimm_channel, p_pwr_soc_element_dimm_temp_t dimm_data)
 {
     // parameter check: dimm_channel, check if correct
     if (dimm_channel >= NUMBER_OF_DIMM_CHANNELS || dimm_data == NULL)
     {
-        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_SOC_DIMM);
+        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_SOC_DIMM_TEMPERATURE);
     }
     else
     {
+        // TODO: fill in complete data structure https://azurecsi.visualstudio.com/Dev/_workitems/edit/2592133
         // DIMM temperature s0
         dimm_data->s0.latest_value_dC = soc_info.dimm[dimm_channel].s0.latest_value_dC;
         // DIMM temperature s1
         dimm_data->s1.latest_value_dC = soc_info.dimm[dimm_channel].s1.latest_value_dC;
-        // DIMM freq,power,throttle info
-        dimm_data->dimm_memory_frequency_id = soc_info.dimm[dimm_channel].dimm_memory_frequency_id;
-        dimm_data->dimm_power_mW = soc_info.dimm[dimm_channel].dimm_power_mW;
-        dimm_data->dimm_throttling = soc_info.dimm[dimm_channel].dimm_throttling;
     }
 }
 
@@ -1000,13 +988,13 @@ void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_so
 }
 
 void data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data(uint16_t mpam_id,
-                                                  pwr_element_mpam_pstate_t (*mpam_pstate_array)[NUMBER_OF_PSTATES])
+                                                  pwr_soc_element_mpam_pstate_t (*mpam_pstate_array)[NUMBER_OF_PSTATES])
 {
     FPFW_UNUSED(mpam_id);
     FPFW_UNUSED(mpam_pstate_array);
 }
 
-void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_element_mpam_throttle_t mpam_throttle_data)
+void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_soc_element_mpam_throttle_t mpam_throttle_data)
 {
     FPFW_UNUSED(mpam_id);
     FPFW_UNUSED(mpam_throttle_data);
@@ -1014,6 +1002,8 @@ void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_
 
 void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst_core_element_summary_t core_summary_data)
 {
+    // TODO: update via task for inst core data
+
     // parameter check: core_id, check if correct
     if (core_id >= NUMBER_OF_CORES_PER_DIE || core_summary_data == NULL)
     {
@@ -1027,30 +1017,30 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
         // Depdending on the throttling status, we need to use a different source for what pstate id the
         // core is currently in.
         //
-        uint8_t current_pstate = core[core_id].pstate_from_pstate_pkt;
-        if (core[core_id].throttling_status != NO_THROTTLE)
-        {
-            current_pstate = core[core_id].pstate_from_current_pkt;
-        }
+        // uint8_t current_pstate = core[core_id].pstate_from_pstate_pkt;
+        // if (core[core_id].throttling_status != NO_THROTTLE)
+        // {
+        //     current_pstate = core[core_id].pstate_from_current_pkt;
+        // }
 
-        core_summary_data->pc_state_info.pstate_id = core[core_id].pstate[current_pstate].pstate_id;
-        core_summary_data->pc_state_info.frequency_Mhz = core[core_id].pstate[current_pstate].frequency_Mhz;
-        core_summary_data->pc_state_info.power_mW = core[core_id].average_pwr_mW;
-        core_summary_data->pc_state_info.pstate_residency_mS = core[core_id].pstate[current_pstate].residency_uS / 1000;
-        core_summary_data->pc_state_info.cstate_plimit = core[core_id].active_sample_plimit;
-        // force latency to zero.
-        core_summary_data->pc_state_info.cstate_entry_latency_uS = 0;
-        core_summary_data->pc_state_info.cstate_exit_latency_uS = 0;
-        // Throttling and priorities
-        core_summary_data->throttle_info.throttle_type_priority_id = core[core_id].throttling_priority_id;
-        core_summary_data->throttle_info.throttle_type_residency_mS = core[core_id].throttle_info->residency_mS;
-        core_summary_data->throttle_info.throttle_priority_residency_mS = 0;
-        core_summary_data->throttle_info.throttle_start_stop_id = 0;
-        // Voltage, current and Temperature
-        core_summary_data->vct_info.vct_voltage_mV = core[core_id].voltage.latest_value_mV;
-        core_summary_data->vct_info.vct_temperature_dC = core[core_id].temperature.latest_value_dC;
-        core_summary_data->vct_info.vct_current_mA = core[core_id].current.latest_value_mA;
-        core_summary_data->vct_info.vct_max_temp_dC = core[core_id].temperature.max_dC;
+        // core_summary_data->pc_state_info.pstate_id = core[core_id].pstate[current_pstate].pstate_id;
+        // core_summary_data->pc_state_info.frequency_Mhz = core[core_id].pstate[current_pstate].frequency_Mhz;
+        // core_summary_data->pc_state_info.power_mW = core[core_id].average_pwr_mW;
+        // core_summary_data->pc_state_info.pstate_residency_mS = core[core_id].pstate[current_pstate].residency_uS / 1000;
+        // core_summary_data->pc_state_info.cstate_plimit = core[core_id].active_sample_plimit;
+        // // force latency to zero.
+        // core_summary_data->pc_state_info.cstate_entry_latency_uS = 0;
+        // core_summary_data->pc_state_info.cstate_exit_latency_uS = 0;
+        // // Throttling and priorities
+        // core_summary_data->throttle_info.throttle_type_priority_id = core[core_id].throttling_priority_id;
+        // core_summary_data->throttle_info.throttle_type_residency_mS = core[core_id].throttle_info->residency_mS;
+        // core_summary_data->throttle_info.throttle_priority_residency_mS = 0;
+        // core_summary_data->throttle_info.throttle_start_stop_id = 0;
+        // // Voltage, current and Temperature
+        // core_summary_data->vct_info.vct_voltage_mV = core[core_id].voltage.latest_value_mV;
+        // core_summary_data->vct_info.vct_temperature_dC = core[core_id].temperature.latest_value_dC;
+        // core_summary_data->vct_info.vct_current_mA = core[core_id].current.latest_value_mA;
+        // core_summary_data->vct_info.vct_max_temp_dC = core[core_id].temperature.max_dC;
     }
 }
 
@@ -1059,7 +1049,7 @@ void data_proc_tlm_cmpnt_get_inst_soc_rail_data(uint16_t rail_id, p_inst_soc_ele
     // parameter check: core_id, check if correct
     if (rail_id >= MAX_NUM_OF_VR_RAILS || rail_data == NULL)
     {
-        FPFW_ET_LOG(DataPackageInstRecordError, INST_TELEMETRY_ELEMENT_SOC_RAILS);
+        FPFW_ET_LOG(DataPackageInstRecordError, INST_TELEMETRY_ELEMENT_SOC_VOLTAGE_RAILS);
     }
     else
     {
@@ -1079,43 +1069,31 @@ void data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(uint16_t dimm_module, p_
     }
     else
     {
-        // DIMM temperature s0
-        dimm_data->temp_s0_latest_dC = soc_info.dimm[dimm_module].s0.latest_value_dC;
-        // DIMM temperature s1
-        dimm_data->temp_s1_latest_dC = soc_info.dimm[dimm_module].s1.latest_value_dC;
-        // DIMM freq,power,throttle info
-        dimm_data->memory_freq_id = soc_info.dimm[dimm_module].dimm_memory_frequency_id;
-        dimm_data->power_mW = soc_info.dimm[dimm_module].dimm_power_mW;
-        // TODO: investigate flag :https://azurecsi.visualstudio.com/Dev/_workitems/edit/2297112
-        dimm_data->throttling_flags = soc_info.dimm[dimm_module].dimm_throttling;
+
+        // TODO: update via https://azurecsi.visualstudio.com/Dev/_workitems/edit/2592610
+        // // DIMM temperature s0
+        // dimm_data->temp_s0_latest_dC = soc_info.dimm[dimm_module].s0.latest_value_dC;
+        // // DIMM temperature s1
+        // dimm_data->temp_s1_latest_dC = soc_info.dimm[dimm_module].s1.latest_value_dC;
     }
 }
 
-void data_proc_tlm_cmpnt_get_inst_soc_dimm_config_data(p_inst_soc_element_dimm_config_t dimm_cfg)
-{
-    FPFW_UNUSED(dimm_cfg);
-}
-
-void data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(uint16_t sensor_id, p_inst_soc_element_sensor_temp_t sensor_temp_data)
+void data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(uint16_t sensor_id, p_inst_soc_element_die_temp_t sensor_temp_data)
 {
     // perf_soc_temp_fill_data for sensor
     if (sensor_id >= NUMBER_OF_SOC_TEMP_SENSORS || sensor_temp_data == NULL)
     {
-        FPFW_ET_LOG(DataPackageInstRecordError, INST_TELEMETRY_ELEMENT_SOC_TEMP_SENSOR);
+        FPFW_ET_LOG(DataPackageInstRecordError, INST_TELEMETRY_ELEMENT_SOC_DIE_TEMP);
     }
     else
     {
-        sensor_temp_data->latest_value_dC = soc_info.sensor_temp->latest_value_dC;
-        sensor_temp_data->average_dC = soc_info.sensor_temp->average_dC;
-        sensor_temp_data->max_dC = soc_info.sensor_temp->max_dC;
-        sensor_temp_data->min_dC = soc_info.sensor_temp->min_dC;
-    }
-}
+        // TODO: update via  https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584944
 
-void data_proc_tlm_cmpnt_get_inst_core_amu_data(uint16_t core_id, p_inst_core_element_amu_counters_t amu_data)
-{
-    FPFW_UNUSED(core_id);
-    FPFW_UNUSED(amu_data);
+        // sensor_temp_data->latest_value_dC = soc_info.sensor_temp->latest_value_dC;
+        // sensor_temp_data->average_dC = soc_info.sensor_temp->average_dC;
+        // sensor_temp_data->max_dC = soc_info.sensor_temp->max_dC;
+        // sensor_temp_data->min_dC = soc_info.sensor_temp->min_dC;
+    }
 }
 
 //----------------Power telemetry update manager  ----------------

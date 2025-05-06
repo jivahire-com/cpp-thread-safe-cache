@@ -89,6 +89,8 @@ cd /home/rdu_lab/haps_runtime/kingsgate_sd/OOB_reset
 source /home/continuous_integration/release/enviro/etc/enviro_startup.bash
 module load settings/tsd
 
+SIGNAL_PATH="/home/rdu_lab/haps_runtime/kingsgate_big_fpga/reset_tools/reset_signal/${SYSTEM_NAME}"
+
 echo "Monitoring ${MONITOR_PATH} ..."
 
 echo "System Name ${SYSTEM_NAME} ..."
@@ -113,17 +115,27 @@ while true; do
   else
     echo $(date "+%D-%T: OOB reset requested for ${SYSTEM_NAME}")
     if [ "${SYSTEM_NAME}" == "df2" ]; then
-      ./proto_hw reset F2_F3
+      output=$(./proto_hw reset F2_F3)
     elif [ "${SYSTEM_NAME}" == "df5" ]; then
-      ./proto_hw reset F5_F6
+      output=$(./proto_hw reset F5_F6)
     elif [ "${SYSTEM_NAME}" == "df8" ]; then
-      ./proto_hw reset F8_F9
+      output=$(./proto_hw reset F8_F9)
     elif [ "${SYSTEM_NAME}" == "df11" ]; then
-      ./proto_hw reset F11_F12
+      output=$(./proto_hw reset F11_F12)
     elif [ "${SYSTEM_NAME}" == "df14" ]; then
-      ./proto_hw reset F14_F15
+      output=$(./proto_hw reset F14_F15)
     else
-      ./proto_hw reset
+      output=$(./proto_hw reset)
     fi
+
+    # Print output every time, regardless of the condition
+    echo "$output"
   fi
+
+  # Check if $output contains the required strings
+  if [[ "$output" == *"Resetting the system"* && "$output" == *"exit status=0"* ]]; then
+    echo "Reset Successful. Create a file in shared folder to signal test..."
+    touch ${SIGNAL_PATH}/.reset
+  fi
+
 done

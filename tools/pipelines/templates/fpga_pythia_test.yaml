@@ -116,13 +116,15 @@ jobs:
           # OOB Reset
           oobreset
 
-          #TODO - Validate on reset ROM FUSE without running as a test
           # Reset FPGA ROM and Fuse Data
-          if ($TestVehicle -eq "SingleDieFPGA") {
-              Invoke-Pythia .\tests\functional\test_suites\fpga_init\fpga_init_singledie.robot -platform "fpga"
-          }
-          elseif ($TestVehicle -eq "DualDieFPGA") {
+          # Any agent starting with 'DF' is considered a DualDieFPGA Agent
+          if ($trimmedAgentName -like 'DF*') {
+              Write-Host "Agent Type: DualDieFPGA Agent"
               Invoke-Pythia .\tests\functional\test_suites\fpga_init\fpga_init_dualdie.robot -platform "fpga"
+          }
+          else {
+              Write-Host "Agent Type: SingleDieFPGA Agent"
+              Invoke-Pythia .\tests\functional\test_suites\fpga_init\fpga_init_singledie.robot -platform "fpga"
           }
 
 

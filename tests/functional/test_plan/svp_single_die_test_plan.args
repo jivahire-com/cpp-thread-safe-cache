@@ -1,4 +1,5 @@
 --variable KEEP_SVP_ALIVE:TRUE
+--variable HOST_JSON:hsp_scp_bl_embed_fw.json
 
 ## Boot tests
 ./../../../tests/functional/test_suites/boot_tests/uefi_boot_single_die.robot

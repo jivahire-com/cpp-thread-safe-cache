@@ -46,21 +46,21 @@ Invoke-Pythia -test .\tests\functional\test_suites\heart_beat\
 Function Invoke-Pythia(
     [Parameter(Mandatory=$true)] [string] $test,
     [Parameter(Mandatory=$true)] [ValidateSet('svp', 'fpga')] [string] $platform = "svp",
-    [Parameter(Mandatory=$false)] [string] $ifwi = "$env:REPO_APP_BUILD_DIR/Debug/arm-eabi-aarch/bin/flash/kingsgate.ifwi.svp.debug.custom.dat"
+    [Parameter(Mandatory=$false)] [string] $ifwi = "$env:REPO_APP_BUILD_DIR/Debug/arm-eabi-aarch/bin/flash/kingsgate.ifwi.svp.debug.custom.dat",
+    [Parameter(Mandatory=$false)] [string] $hostjson = "hsp_scp_bl_embed_fw.json"
 )
 {
 
     Write-Host ""
     Write-Host "`tInvoking Pythia Functional Test"
     Write-Host ""
-
+    
     # Ensure REPO_APP_ROOT is set
     if (-not $env:REPO_APP_ROOT -or $env:REPO_APP_ROOT -eq "") {
         throw "ERROR: REPO_APP_ROOT is not set. Please set it before running tests."
     }
 
     $env:REPO_TEST_DIR = (Join-Path $env:REPO_APP_ROOT "tests/functional").replace("\", "/")
-
     # Ensure test path is absolute but avoid duplicating root path
     if (-not $test -or $test -eq "") {
         $test = Join-Path -Path $env:REPO_TEST_DIR -ChildPath "test_suites"
@@ -176,6 +176,7 @@ Function Invoke-Pythia(
         -A $test_results_dir/test_plan.args
     } else {
         & ${env:REPO_APP_PATH_python.win64}\tools\python.exe -m robot `
+        --variable HOST_JSON:"$hostjson" `
         --variable WORKSPACE_CONFIG:"$workspace_config_out" `
         --variable LIBRARIES:"$env:LIBRARIES" `
         --variable RESOURCES:"$env:RESOURCES" `

@@ -1,4 +1,5 @@
 --variable KEEP_SVP_ALIVE:TRUE
+--variable HOST_JSON:hsp_scp_bl_embed_fw.json
 
 ## AVS Die 0 Tests
 ./../../../tests/functional/test_suites/avs_tests/avs_read_tests_die0.robot

@@ -57,22 +57,20 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             host_config=host_config,
             host_name=host_name,
         )
+        self.core_com_channel_scp = None
+        self.core_com_channel_mcp = None
 
     def wait_for_scp_mcp_heartbeat(self) -> bool:
         """Wait for both SCP and MCP heartbeat messages"""
         try:
-            # Setup channels
-            scp_channel = self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
-            mcp_channel = self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel()
-            
             # Open channels
-            scp_channel.open()
-            mcp_channel.open()
+            self.core_com_channel_scp.open()
+            self.core_com_channel_mcp.open()
             
             # Wait for SCP heartbeat
             self.log.info("Waiting for initial SCP Heartbeat Message...")
             try:
-                scp_channel.read_until(key="ScpHeartBeat", timeout_seconds=1800)
+                self.core_com_channel_scp.read_until(key="ScpHeartBeat", timeout_seconds=1800)
                 self.log.info("SCP Heartbeat received successfully")
             except Exception as e:
                 self.log.error(f"Failed to receive SCP heartbeat: {str(e)}")
@@ -81,7 +79,7 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             # Wait for MCP heartbeat
             self.log.info("Waiting for initial MCP Heartbeat Message...")
             try:
-                mcp_channel.read_until(key="McpHeartBeat", timeout_seconds=3600)
+                self.core_com_channel_mcp.read_until(key="McpHeartBeat", timeout_seconds=1800)
                 self.log.info("MCP Heartbeat received successfully")
             except Exception as e:
                 self.log.error(f"Failed to receive MCP heartbeat: {str(e)}")
@@ -95,10 +93,10 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             return False
         finally:
             # Close channels
-            if 'scp_channel' in locals() and scp_channel.is_open():
-                scp_channel.close()
-            if 'mcp_channel' in locals() and mcp_channel.is_open():
-                mcp_channel.close()    
+            if self.core_com_channel_scp.is_open():
+                self.core_com_channel_scp.close()
+            if self.core_com_channel_mcp.is_open():
+                self.core_com_channel_mcp.close()    
 
     def sensor_fifo_cli_test(self, command: str, read_until_key: str, pass_logs: Union[List[str], str] = None, optional_first_command: Optional[str] = None) -> bool:
         """
@@ -109,25 +107,24 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         
         try:
             if self.dut.get_dut_type() in [DeviceType.BIGFPGA,DeviceType.SVP]:
-                core_com_channel = self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
                 self.log.info(f"Testing and opening channel for {self.dut.get_dut_type().value}")
-                core_com_channel.open()
-                if not core_com_channel.is_open():
+                self.core_com_channel_scp.open()
+                if not self.core_com_channel_scp.is_open():
                     self.log.error("Failed to open core communication channel")
                     return False
 
                 if optional_first_command:
                     self.log.info(f"Executing first command: {optional_first_command}")
-                    core_com_channel.write_line(write_string=optional_first_command)
+                    self.core_com_channel_scp.write_line(write_string=optional_first_command)
                 self.log.info(f"Executing command: {command}")
-                core_com_channel.write_line(write_string=command)
+                self.core_com_channel_scp.write_line(write_string=command)
                 try:
-                    command_response = core_com_channel.read_until(key=read_until_key, timeout_seconds=60)
+                    command_response = self.core_com_channel_scp.read_until(key=read_until_key, timeout_seconds=60)
                     self.log.info("Received Response Successfully from UART . . .")
                     self.log.info(command_response)
                 except Exception as e:
                     self.log.error(f"Error reading UART: {e}")
-                    core_com_channel.close()
+                    self.core_com_channel_scp.close()
                     return False
 
                 if pass_logs is not None:
@@ -160,7 +157,7 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             self.log.error(f"Error during test execution: {str(e)}")
             return False
         finally:
-            core_com_channel.close()
+            self.core_com_channel_scp.close()
 
     def run_command_on_mcp(self, command: str, read_until_key: str, pass_logs: Union[List[str], str] = None) -> bool:
         """
@@ -169,17 +166,16 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         self.log.info(f"Running command on MCP with command: {command}")
         
         try:
-            core_com_channel_mcp = self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel()
-            core_com_channel_mcp.open()
-            if not core_com_channel_mcp.is_open():
+            self.core_com_channel_mcp.open()
+            if not self.core_com_channel_mcp.is_open():
                 self.log.error("Failed to open MCP communication channel")
                 return False
 
             self.log.info(f"Executing command: {command}")
-            core_com_channel_mcp.write_line(write_string=command)
+            self.core_com_channel_mcp.write_line(write_string=command)
             
             try:
-                command_response = core_com_channel_mcp.read_until(key=read_until_key, timeout_seconds=60)
+                command_response = self.core_com_channel_mcp.read_until(key=read_until_key, timeout_seconds=60)
                 self.log.info("Received Response Successfully from MCP . . .")
                 self.log.info(command_response)
             except Exception as e:
@@ -207,7 +203,7 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             self.log.error(f"Error during MCP command execution: {str(e)}")
             return False
         finally:
-            core_com_channel_mcp.close()
+            self.core_com_channel_mcp.close()
 
     #Creating a separate keyword for validating test_result as the return value can be True or a string(Command response)
     def validate_test_result(self, test_result):
@@ -435,6 +431,15 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             if self.dut.get_dut_type() == DeviceType.BIGFPGA:
                 self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
                 KngPythiaTestSetup.fpga_oob_reset(self.log)
+                
+            if self.dut.mb.node_0.soc.secondary_die is not None:
+                self.log.info("Current Test is executing on DualDie Config, so secondary die will be used to open channel on SCP and MCP core")
+                self.core_com_channel_scp = self.dut.mb.node_0.soc.secondary_die.scp.channel_manager.get_current_channel()
+                self.core_com_channel_mcp = self.dut.mb.node_0.soc.secondary_die.mcp.channel_manager.get_current_channel()
+            else:
+                self.log.info("Current Test is executing on SingleDie Config, so primary die will be used to open channel on SCP and MCP core")
+                self.core_com_channel_scp = self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
+                self.core_com_channel_mcp = self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel()
             # Wait for SCP heartbeat during initial setup
             if not self.wait_for_scp_mcp_heartbeat():
                 self.log.error("Failed to receive initial SCP-MCP heartbeat during setup")
@@ -472,20 +477,18 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         self.log.info(f"Running command: {command}")
 
         try:
-            core_com_channel = self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
-
             if self.dut.get_dut_type() in [DeviceType.BIGFPGA,DeviceType.SVP]:
                 self.log.info(f"Testing and Opening channel for {self.dut.get_dut_type().value}")
-                core_com_channel.open()
-                if not core_com_channel.is_open():
+                self.core_com_channel_scp.open()
+                if not self.core_com_channel_scp.is_open():
                     self.log.error("Failed to open core communication channel")
                     return False
 
                 self.log.info(f"Executing command: {command}")
-                core_com_channel.write_line(write_string=command)
+                self.core_com_channel_scp.write_line(write_string=command)
                 
                 try:
-                    command_response = core_com_channel.read_until(key=read_until_key, timeout_seconds=60)
+                    command_response = self.core_com_channel_scp.read_until(key=read_until_key, timeout_seconds=60)
                     self.log.info("Received Response Successfully from UART . . .")
                     # self.log.info(command_response)
                     return command_response
@@ -493,7 +496,7 @@ class SensorFifoCliTest(EchoFallsBaseTest):
                     self.log.error(f"Error reading UART: {e}")
                     return False
                 finally:
-                    core_com_channel.close()
+                    self.core_com_channel_scp.close()
             else:
                 raise ValueError("Unsupported DUT type")
             
@@ -522,11 +525,10 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             time.sleep(5)  # Short delay for SVP to settle
 
             # Ensure UART is ready by checking channel
-            core_com_channel = self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
-            if not core_com_channel.is_open():
+            if not self.core_com_channel_scp.is_open():
                 self.log.info("Opening UART channel")
-                core_com_channel.open()
-                if not core_com_channel.is_open():
+                self.core_com_channel_scp.open()
+                if not self.core_com_channel_scp.is_open():
                     self.log.error("Failed to open UART channel")
                     return False
 

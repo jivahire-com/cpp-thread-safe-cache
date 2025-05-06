@@ -4,7 +4,7 @@ Library           library.sensor_fifo_tests.sensor_fifo_cli_test.SensorFifoCliTe
 ...               workspace_config=${WORKSPACE_CONFIG}
 ...               default_log_home=${LOG_DIR}
 ...               fw_payload_path=${PAYLOAD_DIR}
-...               host_config=${HOST_CONFIG_DIR}/hsp_scp_bl_embed_fw.json
+...               host_config=${HOST_CONFIG_DIR}/${HOST_JSON}
 ...               WITH NAME    sensor_fifo_cli_test_lib
 
 Library           ${CURDIR}/../functional/library/sensor_fifo_tests/sensor_fifo_lib.py

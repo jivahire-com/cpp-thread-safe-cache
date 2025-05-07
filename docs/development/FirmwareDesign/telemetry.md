@@ -17,11 +17,11 @@ processes it and then sends the data out.
 
 | Term   | Description                     |
 | ------ | ------------------------------- |
-| ATU                   | Address Translation Unit
+| ATU                   | Address Translation Unit                      |
 | CLI                   | Command Line Interface                        |
 | ICC                   | Inter Core Communication                      |
 | MCP                   | Management Control Processor                  |
-| MHU                   |  Message Handling Unit                        |
+| MHU                   | Message Handling Unit                         |
 | NSSM                  | Non-Secure Shared Memory                      |
 | SCP                   | System Control Processor                      |
 
@@ -29,8 +29,9 @@ processes it and then sends the data out.
 
 | Document                                  | Link                                |
 | ----------------------------------------- | ----------------------------------- |
-| Telemetry Requirements and Specification | [Link](https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/_layouts/15/Doc.aspx?sourcedoc=%7B5A49A2ED-ECF6-4733-BACF-053E12198DAE%7D&file=1PFW_Kingsgate_Power_Telemetry_Requirements_And_Specifications%20-%20WIP.docx&wdOrigin=TEAMS-MAGLEV.p2p_ns.rwc&action=default&mobileredirect=true)    |
-| Message Transfer Service  | [Link](./  TBD) |
+| Telemetry Requirements and Specification | [Link](https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Firmware/Telemetry/1PFW_Kingsgate_Power_Telemetry_Requirements_And_Specifications%20V0.4%20WIP.docx?d=wfd425643c61b46e09ad093e10faf5d0b&csf=1&web=1&e=Df1DYl)    |
+| Data Collection Protocol Specification  | [Link](https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/_layouts/15/Doc.aspx?sourcedoc=%7B41EF1114-520C-42F3-B134-80AE7C0741E6%7D&file=Data_Collection_Protocol_Specification_v1_0_6.docx&action=default&mobileredirect=true) |
+| Message Transfer Service  | [Link](https://azurecsi.visualstudio.com/DuvallFw/_git/1pfw.fwlibs?path=/doc/Modules/services/message_transfer.md) |
 | Sensor Fifo Service | [Link](./SensorFifo.md) |
 
 ## Requirements

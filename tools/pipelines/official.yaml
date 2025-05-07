@@ -24,7 +24,7 @@ variables:
 - name: BuildVersion
   value: $[ variables['Build.BuildNumber'] ]
 - name: OfficialBuild
-  value : $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+  value : $[in(variables['Build.SourceBranch'], 'refs/heads/main', 'refs/heads/MSCP_M1.2_A0')]
 
 resources:
   repositories: 
@@ -82,7 +82,7 @@ extends:
 
     - stage: Publish
       dependsOn: [Build_Unit_Test_x86, Build_Arm_EABI_AARCH_Debug]
-      condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+      condition: eq(variables['OfficialBuild'], 'true')
       jobs:
       - template: tools/pipelines/templates/publish.yaml@self
         parameters:

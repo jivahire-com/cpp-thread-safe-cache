@@ -33,3 +33,6 @@
 
 ## Variable Service Tests
 ./../../../tests/functional/test_suites/varserv_tests/varserv_cli_test.robot
+
+## Warm Start Tests
+./../../../tests/functional/test_suites/warm_start_tests/warm_start_test.robot

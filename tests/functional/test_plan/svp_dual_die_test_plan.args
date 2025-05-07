@@ -1,9 +1,6 @@
 --variable KEEP_SVP_ALIVE:TRUE
 --variable HOST_JSON:hsp_scp_bl_embed_fw_dual_die.json
 
-## Sensor FIFO short duration tests
-./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
-
 ## Dual Die Heartbeat Tests
 ./../../../tests/functional/test_suites/heart_beat/mscp_heartbeat_hsp_boot_dual_die.robot
 
@@ -27,6 +24,9 @@
 ## Variable Service Tests
 ./../../../tests/functional/test_suites/varserv_tests/varserv_dd_test.robot
 
+## Sensor FIFO short duration tests
+./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+
 ## SVP Teardown
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 
@@ -41,8 +41,7 @@
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 
 ## Warm Start Tests
-#  Disabled till sporadic failure is resolved
-#./../../../tests/functional/test_suites/warm_start_tests/warm_start_test.robot
+./../../../tests/functional/test_suites/warm_start_tests/warm_start_test_die1.robot
 
 ## SVP Teardown
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot

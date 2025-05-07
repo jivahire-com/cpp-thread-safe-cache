@@ -25,3 +25,6 @@
 
 ## Sensor FIFO Tests
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+
+## Warm Start Tests
+./../../../tests/functional/test_suites/warm_start_tests/warm_start_test_die1.robot

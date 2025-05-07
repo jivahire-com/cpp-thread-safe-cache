@@ -54,6 +54,7 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    atu_svc_accel_atu_addr
     crash_dump_bug_check
     initialize_semaphore
     idhw_is_single_die_boot_en

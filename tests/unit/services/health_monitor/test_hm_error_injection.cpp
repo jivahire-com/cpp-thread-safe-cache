@@ -148,40 +148,12 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
         case ICC_HM_ERROR_DOMAIN_REGISTER_ACCEL(ACCEL_ID_CDED):
         case ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(ACCEL_ID_SDM):
         case ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(ACCEL_ID_CDED):
-            // static hm_accel_error_domain_register_payload_t sdm_err_domain_register_payload;
-            // sdm_err_domain_register_payload.header.cmd = ICC_HM_ERROR_DOMAIN_REGISTER_ACCEL(ACCEL_ID_SDM);
-            // sdm_err_domain_register_payload.error_domain_idx = ACPI_ERROR_DOMAIN_SDM;
-            // sdm_err_domain_register_payload.valid_fru_id = 1;
-            // sdm_err_domain_register_payload.valid_fru_text = 1;
-            // sdm_err_domain_register_payload.fru_id = (guid_t)SDM_PROC_ERROR_DOMAIN_FRU_GUID_DEF;
-            // strncpy(sdm_err_domain_register_payload.fru_text,
-            //         SDM_PROC_FRU,
-            //         sizeof(sdm_err_domain_register_payload.fru_text) - 1);
-            // sdm_err_domain_register_payload.fru_text[sizeof(sdm_err_domain_register_payload.fru_text) - 1] = '\0';
-
-            // params->cb(&sdm_err_domain_register_payload, sizeof(hm_accel_error_domain_register_payload_t), FPFW_STATUS_SUCCESS);
             custom_fpfw_recv(params);
             break;
-        // case ICC_HM_ERROR_DOMAIN_REGISTER_ACCEL(ACCEL_ID_CDED):
-        //     static hm_accel_error_domain_register_payload_t cded_err_domain_register_payload;
-        //     cded_err_domain_register_payload.header.cmd = ICC_HM_ERROR_DOMAIN_REGISTER_ACCEL(ACCEL_ID_CDED);
-        //     cded_err_domain_register_payload.error_domain_idx = ACPI_ERROR_DOMAIN_CDED_SDM;
-        //     cded_err_domain_register_payload.valid_fru_id = 1;
-        //     cded_err_domain_register_payload.valid_fru_text = 1;
-        //     cded_err_domain_register_payload.fru_id = (guid_t)CDED_SDM_PROC_ERROR_DOMAIN_FRU_GUID_DEF;
-        //     strncpy(cded_err_domain_register_payload.fru_text,
-        //             CDED_SDM_PROC_FRU,
-        //             sizeof(cded_err_domain_register_payload.fru_text) - 1);
-        //     cded_err_domain_register_payload.fru_text[sizeof(sdm_err_domain_register_payload.fru_text) - 1] = '\0';
-
-        //     params->cb(&cded_err_domain_register_payload, sizeof(hm_accel_error_domain_register_payload_t),
-        //     FPFW_STATUS_SUCCESS); break;
         case ICC_HM_ERROR_INJECTION_ACCEL(ACCEL_ID_SDM):
         case ICC_HM_ERROR_INJECTION_ACCEL(ACCEL_ID_CDED):
         case ICC_HM_TX_DONE_ACK_ACCEL(ACCEL_ID_SDM):
         case ICC_HM_TX_DONE_ACK_ACCEL(ACCEL_ID_CDED):
-
-            break;
         default:
             break;
         }

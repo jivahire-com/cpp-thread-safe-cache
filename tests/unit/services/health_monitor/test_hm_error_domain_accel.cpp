@@ -22,6 +22,8 @@ extern "C" {
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -60,6 +62,12 @@ _Noreturn void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint
 
     // Handle noreturn, allowing control to return to test
     longjmp(mock_jump_buf, BUG_CHECK_RETURN_VALUE);
+}
+
+uint32_t __wrap_atu_svc_accel_atu_addr(ACCEL_ID accel_id)
+{
+    FPFW_UNUSED(accel_id);
+    return (mock_type(uint32_t));
 }
 
 // Custom functions
@@ -351,6 +359,7 @@ TEST_FUNCTION(hm_cded_error_injection_cb_icc_send_fail, post_ddr_setup, nullptr)
 TEST_FUNCTION(hm_sdm_err_submission_cb_all_path, post_ddr_setup, nullptr)
 {
     hm_accel_cper_info_t* cper_info;
+    acpi_err_sec_accel_vendor_t cper_mesg;
 
     // Get the payload object and fill it with info
     auto it = g_callback_map.find(ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(ACCEL_ID_CDED));
@@ -359,25 +368,24 @@ TEST_FUNCTION(hm_sdm_err_submission_cb_all_path, post_ddr_setup, nullptr)
         return;
     }
 
+    // Just set the dummy payload to 0
+    memset(&cper_mesg, 0, sizeof(acpi_err_sec_accel_vendor_t));
+
     cper_info = (hm_accel_cper_info_t*)it->second.ctx;
     cper_info->msg_payload.header.cmd = ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(ACCEL_ID_CDED);
-    cper_info->msg_payload.err_severity = (acpi_error_severity_t)0;
-    cper_info->msg_payload.tfr_size = MBOX_HMM_DATA_DEPTH;
+    // Using absolute address as atu mock will return 0
+    // Subtract 0x80000 - the dtcm offset that gets added in cper cb function
+    cper_info->msg_payload.dtcm_mem_offset = ((uint32_t)&cper_mesg) - 0x80000;
 
+    expect_function_call_any(__wrap_wait_for_semaphore);
+    expect_function_call_any(__wrap_release_semaphore);
     expect_function_call_any(__wrap_fpfw_icc_base_recv);
     expect_function_call_any(__wrap_fpfw_icc_base_send);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0x0);
+
     // First cper run
-    custom_invoke_callback(ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(ACCEL_ID_CDED), FPFW_STATUS_SUCCESS);
-
-    expect_function_call_any(__wrap_wait_for_semaphore);
-    expect_function_call_any(__wrap_release_semaphore);
-    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
-
-    cper_info->msg_payload.tfr_size = sizeof(acpi_err_sec_accel_vendor_t) - MBOX_HMM_DATA_DEPTH;
-    // Cper transmission should complete at this point
     custom_invoke_callback(ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(ACCEL_ID_CDED), FPFW_STATUS_SUCCESS);
 
     // Switch accel ID to SDM and send fail status

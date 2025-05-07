@@ -19,6 +19,7 @@
 #include <health_monitor_icc.h>
 #include <icc_platform_defines.h>
 #include <mscp_exp_rmss_memory_map.h>
+#include <sdm_ext_cfg_regs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -69,8 +70,7 @@ static fpfw_status_t hm_accel_error_record_ack_tx(fpfw_icc_base_ctx_t* icc_ctx, 
     static hm_accel_msg_ack_t hm_accel_ack_payload[NUM_VALID_ACCEL_ID] = {0};
 
     hm_accel_ack_payload[accel_id].header.cmd = ICC_HM_TX_DONE_ACK_ACCEL(accel_id);
-    hm_accel_ack_payload[accel_id].tfr_pkt_cnt = accel_mesg->tfr_pkt_cnt;
-    hm_accel_ack_payload[accel_id].tfr_size = accel_mesg->tfr_size;
+    hm_accel_ack_payload[accel_id].cper_buffer_offset = accel_mesg->dtcm_mem_offset;
 
     static fpfw_icc_base_send_req_t hm_icc_sdm_cper_acq_req[NUM_VALID_ACCEL_ID] = {0};
     hm_icc_sdm_cper_acq_req[accel_id].payload_buffer = &hm_accel_ack_payload[accel_id];
@@ -87,7 +87,9 @@ static void hm_accel_error_record_submit_listener_cb(void* context, size_t outpu
 
     hm_accel_cper_info_t* curr_cper_info = (hm_accel_cper_info_t*)context;
     hm_accel_msg_t* payload = (hm_accel_msg_t*)&curr_cper_info->msg_payload;
-    uint8_t* curr_cper_buffer_ptr = (uint8_t*)&curr_cper_info->accel_err_payload;
+    uint32_t accel_dtcm_base_addr =
+        (SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS + atu_svc_accel_atu_addr(curr_cper_info->accel_id));
+    uint8_t* curr_cper_buffer_ptr = (uint8_t*)(accel_dtcm_base_addr + payload->dtcm_mem_offset);
     hm_intercore_type_t core_type = (curr_cper_info->accel_id == ACCEL_ID_SDM) ? HM_INTERCORE_SDM : HM_INTERCORE_CDED;
 
     if (status != FPFW_STATUS_SUCCESS)
@@ -103,25 +105,13 @@ static void hm_accel_error_record_submit_listener_cb(void* context, size_t outpu
     }
 
     // memcpy the ICC buffer to global cper buffer
-    if (curr_cper_info->err_payload_size == 0)
-    {
-        curr_cper_info->err_severity = curr_cper_info->msg_payload.err_severity;
-    }
+    memcpy((void*)&curr_cper_info->accel_err_payload, (void*)curr_cper_buffer_ptr, sizeof(acpi_err_sec_accel_vendor_t));
+    curr_cper_info->err_severity = (uint32_t)(*((curr_cper_buffer_ptr) + sizeof(acpi_err_sec_accel_vendor_t)));
 
-    memcpy(&curr_cper_buffer_ptr[curr_cper_info->err_payload_curr_offset], payload->hmm_msg_bytes, payload->tfr_size);
-    curr_cper_info->err_payload_size += payload->tfr_size;
-    curr_cper_info->err_payload_curr_offset += payload->tfr_size;
-
-    if (curr_cper_info->err_payload_size == sizeof(acpi_err_sec_accel_vendor_t))
-    {
-        // Need to submit CPER here and reset system to stable state
-        hm_submit_cper(curr_cper_info->error_domain_index,
-                       curr_cper_info->err_severity,
-                       &curr_cper_info->accel_err_payload,
-                       curr_cper_info->err_payload_size);
-        curr_cper_info->err_payload_size = 0;
-        curr_cper_info->err_payload_curr_offset = 0;
-    }
+    hm_submit_cper(curr_cper_info->error_domain_index,
+                   curr_cper_info->err_severity,
+                   &curr_cper_info->accel_err_payload,
+                   sizeof(acpi_err_sec_accel_vendor_t));
 
     hm_config_t* hm_config = get_hm_config();
     hm_accel_error_record_submit_listener(hm_config->icc_ctx[core_type], curr_cper_info);
@@ -227,8 +217,6 @@ void hm_prepare_sdm_listener(fpfw_icc_base_ctx_t* icc_ctx)
 
     // Setup the info for cper submission callback
     accel_cper_info[ACCEL_ID_SDM].error_domain_index = ACPI_ERROR_DOMAIN_SDM;
-    accel_cper_info[ACCEL_ID_SDM].err_payload_size = 0;
-    accel_cper_info[ACCEL_ID_SDM].err_payload_curr_offset = 0;
     accel_cper_info[ACCEL_ID_SDM].hm_icc_sdm_err_submit_req.recv_cmd_code = ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(ACCEL_ID_SDM);
     accel_cper_info[ACCEL_ID_SDM].hm_icc_sdm_err_submit_req.payload_buffer = &accel_cper_info[ACCEL_ID_SDM].msg_payload;
     accel_cper_info[ACCEL_ID_SDM].hm_icc_sdm_err_submit_req.buffer_size = sizeof(hm_accel_msg_t);
@@ -253,8 +241,6 @@ void hm_prepare_cded_sdm_listener(fpfw_icc_base_ctx_t* icc_ctx)
 
     // Setup the info for cper submission callback
     accel_cper_info[ACCEL_ID_CDED].error_domain_index = ACPI_ERROR_DOMAIN_CDED_SDM;
-    accel_cper_info[ACCEL_ID_CDED].err_payload_size = 0;
-    accel_cper_info[ACCEL_ID_CDED].err_payload_curr_offset = 0;
     accel_cper_info[ACCEL_ID_CDED].hm_icc_sdm_err_submit_req.recv_cmd_code =
         ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(ACCEL_ID_CDED);
     accel_cper_info[ACCEL_ID_CDED].hm_icc_sdm_err_submit_req.payload_buffer = &accel_cper_info[ACCEL_ID_CDED].msg_payload;

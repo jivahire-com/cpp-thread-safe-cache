@@ -116,31 +116,21 @@ typedef union {
 } hm_accel_error_injection_payload_t;
 
 typedef union _accel_hmm_msg {
-    struct {
-        large_fifo_mailbox_msg_header header;
-        struct {
-            uint8_t tfr_pkt_cnt;
-            uint8_t tfr_size;
-            union
-            {
-                uint16_t reserved;
-                acpi_error_severity_t err_severity;
-            };
-        };
-        uint32_t hmm_msg_bytes[MBOX_HMM_DATA_DEPTH];
-    };
-    uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
+	struct {
+		large_fifo_mailbox_msg_header header;
+		struct {
+			uint32_t dtcm_mem_offset;
+		};
+		uint32_t hmm_msg_bytes[MBOX_HMM_DATA_DEPTH];
+	};
+	uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
 } hm_accel_msg_t;
 
 typedef union _accel_hmm_msg_ack {
     struct {
-        large_fifo_mailbox_msg_header header;
-        struct {
-            uint8_t tfr_pkt_cnt;
-            uint8_t tfr_size;
-            uint16_t tfr_offset;
-        };
-    };
+		large_fifo_mailbox_msg_header header;
+		uint32_t cper_buffer_offset;
+	};
     uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
 } hm_accel_msg_ack_t;
 
@@ -149,8 +139,6 @@ typedef struct _hm_accel_cper_payload_t
     acpi_err_sec_accel_vendor_t accel_err_payload;
     fpfw_icc_base_recv_req_t hm_icc_sdm_err_submit_req;
     hm_accel_msg_t msg_payload;
-    uint16_t err_payload_size;
-    uint16_t err_payload_curr_offset;
     uint16_t error_domain_index;
     ACCEL_ID accel_id;
     acpi_error_severity_t err_severity;

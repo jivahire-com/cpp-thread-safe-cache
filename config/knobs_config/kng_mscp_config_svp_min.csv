@@ -1,7 +1,7 @@
 Guid,Knob,Value,Help
 FE3ED49F-B173-41ED-9076-356661D46A42,power_control_loop_interval,10,"override for svp min config"
 FE3ED49F-B173-41ED-9076-356661D46A42,power_pvt_loop_interval,100,"override for svp min config"
-FE3ED49F-B173-41ED-9076-356661D46A42,power_soc_maximum_thermal_watts_limit,350,"Temp override until fuse value is verified"
+FE3ED49F-B173-41ED-9076-356661D46A42,power_soc_maximum_thermal_watts_limit,400,"Temp override until fuse value is verified"
 *,gpio_knobs.gpio_afm_init,false,"override for svp"
 *,pcie_rpss3_cfg.pcie_bifurcation_mode,PCIE_BIFURCATION_4X4,"SVP supports 4x4 only"
 *,pcie_rpss4_cfg.pcie_bifurcation_mode,PCIE_BIFURCATION_4X4,"SVP supports 4x4 only"

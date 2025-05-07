@@ -61,6 +61,8 @@ TX_TIMER _24hr_pkg_tmr;
 TX_EVENT_FLAGS_GROUP s_thread_control;
 tlm_operating_mode_t pending_mode_change;
 
+bool _24_pkg_pending = false;
+
 telemetry_executive_status_t tlm_executive_status = {
     .op_mode = TLM_OP_MODE_COLLECTING_DATA,
     .pwr_pkg_period_ms = 0,
@@ -175,10 +177,20 @@ void tlm_svc_thread(ULONG thread_input)
             if (current_bits & PWR_PKG_TMR_EXPIRED)
             {
                 in_band_tlm_cmpnt_generate_pwr_pkg();
+
+                if (_24_pkg_pending)
+                {
+                    in_band_tlm_cmpnt_generate_24hr_pkg();
+                    _24_pkg_pending = false;
+                }
             }
 
             if (current_bits & EVERY_24HR_PKG_TMR_EXPIRED)
             {
+                // data for the 24hr package requires data collected from other sources
+                // the data_proc api will kick off those requests.
+                // when the next pwr package expires, then the 24hr package will be generated
+                _24_pkg_pending = true;
                 data_proc_tlm_cmpnt_aggregate_24hr_tlm_data();
             }
         }
@@ -356,6 +368,7 @@ void run_timer_exit_actions(tlm_operating_mode_t exiting_mode)
         tx_timer_deactivate(&inst_sample_tmr);
         tx_timer_deactivate(&power_pkg_tmr);
         tx_timer_deactivate(&_24hr_pkg_tmr);
+        _24_pkg_pending = false;
         break;
 
     case TLM_OP_MODE_DISABLED:

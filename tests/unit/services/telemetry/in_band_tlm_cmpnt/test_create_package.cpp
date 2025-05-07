@@ -657,12 +657,12 @@ TEST_FUNCTION(test_get_inst_soc_sensor_temp_data, test_setup, test_teardown)
     expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data, NUMBER_OF_SOC_TEMP_SENSORS);
     uint32_t record_size = package_create_inst_soc_sensor_temp_record(&record);
 
-    assert_int_equal(record_size, sizeof(inst_soc_element_die_temp_t));
+    assert_int_equal(record_size, sizeof(inst_soc_record_die_temp_t));
     assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
     assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_SOC_TEMP_SENSORS);
     assert_int_equal(record.record_header.record_payload_size,
-                     (sizeof(inst_soc_element_die_temp_t) - sizeof(telemetry_record_hdr_t)));
+                     (sizeof(inst_soc_record_die_temp_t) - sizeof(telemetry_record_hdr_t)));
 
     for (uint16_t sensor_id = 0; sensor_id < NUMBER_OF_SOC_TEMP_SENSORS; sensor_id++)
     {
@@ -694,33 +694,38 @@ TEST_FUNCTION(test_package_create_power_pkg_none_enabled, test_setup, test_teard
     assert_int_equal(pkg_size, 0);
 }
 
-// TEST_FUNCTION(test_package_create_power_pkg_all_enabled, test_setup, test_teardown)
-// {
-//     for (uint16_t i = 0; i < POWER_TELEMETRY_ELEMENT_ID_MAX; i++)
-//     {
-//         power_pkg_element_enable[i] = true;
-//     }
+TEST_FUNCTION(test_package_create_power_pkg_all_enabled, test_setup, test_teardown)
+{
+    for (uint16_t i = 0; i < POWER_TELEMETRY_ELEMENT_ID_MAX; i++)
+    {
+        power_pkg_element_enable[i] = true;
+    }
 
-//     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_pstate_data, NUMBER_OF_CORES_PER_DIE);
-//     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_cstate_data, NUMBER_OF_CORES_PER_DIE);
-//     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_throttle_data, NUMBER_OF_CORES_PER_DIE);
-//     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data, NUMBER_OF_CORES_PER_DIE);
-//     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_voltage_data, NUMBER_OF_CORES_PER_DIE);
-//     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_current_data, NUMBER_OF_CORES_PER_DIE);
-//     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_temperature_data, NUMBER_OF_CORES_PER_DIE);
-//     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_histogram_data, NUMBER_OF_CORES_PER_DIE);
-//     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data, 1);
-//     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data, MAX_NUM_OF_VR_RAILS);
-//     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_hnf_data, NUMBER_OF_HNF_CHANNELS_PER_DIE);
-//     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data, NUMBER_OF_DIMM_MODULES);
-//     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data, NUMBER_OF_SOC_TEMP_SENSORS);
-//     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data, NUMBER_OF_MPAMS);
-//     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data, NUMBER_OF_MPAMS);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_pstate_data, NUMBER_OF_CORES_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_cstate_data, NUMBER_OF_CORES_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_throttle_data, NUMBER_OF_CORES_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data, NUMBER_OF_CORES_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_voltage_data, NUMBER_OF_CORES_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_current_data, NUMBER_OF_CORES_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_temperature_data, NUMBER_OF_CORES_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data, MAX_NUM_OF_VR_RAILS);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data, NUMBER_OF_DIMM_MODULES);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_hnf_data, NUMBER_OF_HNF_CHANNELS_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data, NUMBER_OF_SOC_TEMP_SENSORS);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data, NUMBER_OF_MPAMS);
+    // TODO: uncommented when record is added
+    // expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data, NUMBER_OF_MPAMS);
 
-//     uint32_t pkg_size = package_create_power_pkg((uintptr_t)cr_max_package_mem, POWER_PKG_MAX_SIZE);
+    uint32_t pkg_size = package_create_power_pkg((uintptr_t)cr_max_package_mem, POWER_PKG_MAX_SIZE);
 
-//     assert_int_equal(pkg_size, POWER_PKG_MAX_SIZE);
-// }
+    // TODO: remove records below when added to the package
+    assert_int_equal(pkg_size,
+                     POWER_PKG_MAX_SIZE - sizeof(pwr_core_record_power_t) -
+                         sizeof(pwr_core_record_droop_count_t) - sizeof(pwr_soc_record_dimm_power_t) -
+                         sizeof(pwr_soc_record_die_mesh_t) - sizeof(pwr_soc_record_d2d_link_t) -
+                         sizeof(pwr_soc_record_die_phy_t) - sizeof(pwr_soc_record_max_soc_temp_t) -
+                         sizeof(pwr_soc_record_mpam_power_t) - sizeof(pwr_core_record_guard_band_t));
+}
 
 TEST_FUNCTION(test_package_create_power_pkg_some_enabled, test_setup, test_teardown)
 {
@@ -728,7 +733,7 @@ TEST_FUNCTION(test_package_create_power_pkg_some_enabled, test_setup, test_teard
     {
         telemetry_package_hdr_t package_header;
         pwr_core_record_pstate_t pstate_record;
-        pwr_soc_record_pkg_monitor_t pkg_mon_record;
+        pwr_core_record_temperature_t temperature_record;
     } power_report_partial_package_t;
 
     power_report_partial_package_t* package = (power_report_partial_package_t*)cr_max_package_mem;
@@ -739,22 +744,22 @@ TEST_FUNCTION(test_package_create_power_pkg_some_enabled, test_setup, test_teard
     }
 
     power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_PSTATE] = true;
-    power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_PKG_MON] = true;
+    power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_TEMPERATURE] = true;
 
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_pstate_data, NUMBER_OF_CORES_PER_DIE);
-    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data, 1);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_temperature_data, NUMBER_OF_CORES_PER_DIE);
 
     uint32_t pkg_size = package_create_power_pkg((uintptr_t)cr_max_package_mem, POWER_PKG_MAX_SIZE);
-    assert_int_equal(pkg_size, sizeof(pwr_core_record_pstate_t) + sizeof(pwr_soc_record_pkg_monitor_t) + sizeof(telemetry_package_hdr_t));
+    assert_int_equal(pkg_size, sizeof(pwr_core_record_pstate_t) + sizeof(pwr_core_record_temperature_t) + sizeof(telemetry_package_hdr_t));
 
     // verify the record headers unique fields are correct
     assert_int_equal(package->pstate_record.record_header.number_of_collections, NUMBER_OF_CORES_PER_DIE);
     assert_int_equal(package->pstate_record.record_header.record_payload_size,
                      (sizeof(pwr_core_record_pstate_t) - sizeof(telemetry_record_hdr_t)));
 
-    assert_int_equal(package->pkg_mon_record.record_header.number_of_collections, 1);
-    assert_int_equal(package->pkg_mon_record.record_header.record_payload_size,
-                     (sizeof(pwr_soc_record_pkg_monitor_t) - sizeof(telemetry_record_hdr_t)));
+    assert_int_equal(package->temperature_record.record_header.number_of_collections, NUMBER_OF_CORES_PER_DIE);
+    assert_int_equal(package->temperature_record.record_header.record_payload_size,
+                     (sizeof(pwr_core_record_temperature_t) - sizeof(telemetry_record_hdr_t)));
 }
 
 TEST_FUNCTION(test_package_create_power_pkg_too_small, test_setup, test_teardown)
@@ -763,19 +768,39 @@ TEST_FUNCTION(test_package_create_power_pkg_too_small, test_setup, test_teardown
     {
         telemetry_package_hdr_t package_header;
         pwr_core_record_pstate_t pstate_record;
-        pwr_soc_record_pkg_monitor_t pkg_mon_record;
+        pwr_soc_record_dimm_temp_t dim_temp_record;
     } power_report_partial_package_t;
 
+    uint32_t pkg_size = package_create_power_pkg((uintptr_t)cr_max_package_mem, sizeof(power_report_partial_package_t));
+    assert_int_equal(pkg_size, 0);
+}
+
+TEST_FUNCTION(test_package_create_24hr_pkg_all_enabled, test_setup, test_teardown)
+{
     for (uint16_t i = 0; i < POWER_TELEMETRY_ELEMENT_ID_MAX; i++)
     {
-        power_pkg_element_enable[i] = false;
+        power_pkg_element_enable[i] = true;
     }
 
-    power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_PSTATE] = true;
-    power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_PKG_MON] = true;
-    power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_VR_RAILS] = true;
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_histogram_data, NUMBER_OF_CORES_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data, 1);
 
-    uint32_t pkg_size = package_create_power_pkg((uintptr_t)cr_max_package_mem, sizeof(power_report_partial_package_t));
+    uint32_t pkg_size = package_create_24hr_pkg((uintptr_t)cr_max_package_mem, POWER_24HR_PKG_MAX_SIZE);
+
+    // TODO: remove records below when added to the package
+    assert_int_equal(pkg_size, POWER_24HR_PKG_MAX_SIZE - sizeof(pwr_core_record_aging_t) - sizeof(pwr_soc_record_accel_count_t));
+}
+
+TEST_FUNCTION(test_package_create_24hr_pkg_too_small, test_setup, test_teardown)
+{
+    typedef struct
+    {
+        telemetry_package_hdr_t package_header;
+        pwr_soc_record_pkg_monitor_t pkg_mon_record;
+    } power_24hr_report_partial_package_t;
+
+    uint32_t pkg_size =
+        package_create_power_pkg((uintptr_t)cr_max_package_mem, sizeof(power_24hr_report_partial_package_t));
     assert_int_equal(pkg_size, 0);
 }
 
@@ -804,7 +829,15 @@ TEST_FUNCTION(test_package_create_append_to_inst_pkg_all_enabled, test_setup, te
 
     uint32_t pkg_size = package_create_append_to_inst_pkg((uintptr_t)cr_max_package_mem, INST_PKG_MAX_SIZE, &pkg_header);
 
-    assert_int_equal(pkg_size, sizeof(inst_full_package_t));
+    printf("full package: %d\n", sizeof(inst_full_package_t));
+    printf("core summary record: %d\n", sizeof(inst_core_record_summary_t));
+    printf("rail record: %d\n", sizeof(inst_soc_record_rail_t));
+    printf("dimm record: %d\n", sizeof(inst_soc_record_dimm_runtime_t));
+    printf("sensor record: %d\n", sizeof(inst_soc_record_die_temp_t));
+    printf("max temprecord: %d\n", sizeof(inst_soc_record_max_temp_t));
+
+    // TODO: soc max temp not implemented yet, once it is added remove the subtraction
+    assert_int_equal(pkg_size, sizeof(inst_full_package_t) - sizeof(inst_soc_record_max_temp_t));
 }
 
 TEST_FUNCTION(test_package_create_append_to_inst_pkg_some_enabled, test_setup, test_teardown)
@@ -829,7 +862,7 @@ TEST_FUNCTION(test_package_create_append_to_inst_pkg_some_enabled, test_setup, t
     expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data, NUMBER_OF_SOC_TEMP_SENSORS);
 
     uint32_t pkg_size = package_create_append_to_inst_pkg((uintptr_t)&cr_max_package_mem, INST_PKG_MAX_SIZE, &pkg_header);
-    assert_int_equal(pkg_size, sizeof(inst_soc_record_rail_t) + sizeof(inst_soc_element_die_temp_t));
+    assert_int_equal(pkg_size, sizeof(inst_soc_record_rail_t) + sizeof(inst_soc_record_die_temp_t));
     // verify the record headers unique fields are correct
     assert_int_equal(package->rail_record.record_header.number_of_collections, MAX_NUM_OF_VR_RAILS);
     assert_int_equal(package->rail_record.record_header.record_payload_size,
@@ -837,7 +870,7 @@ TEST_FUNCTION(test_package_create_append_to_inst_pkg_some_enabled, test_setup, t
 
     assert_int_equal(package->sensor_temp_record.record_header.number_of_collections, NUMBER_OF_SOC_TEMP_SENSORS);
     assert_int_equal(package->sensor_temp_record.record_header.record_payload_size,
-                     (sizeof(inst_soc_element_die_temp_t) - sizeof(telemetry_record_hdr_t)));
+                     (sizeof(inst_soc_record_die_temp_t) - sizeof(telemetry_record_hdr_t)));
 }
 
 TEST_FUNCTION(test_package_create_append_to_inst_pkg_too_small, test_setup, test_teardown)

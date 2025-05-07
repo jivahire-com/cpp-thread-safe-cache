@@ -83,6 +83,15 @@ void package_create_populate_hdr(p_telemetry_package_hdr_t package_hdr);
 uint32_t package_create_power_pkg(uintptr_t pkg_location, size_t pkg_available_size);
 
 /**
+ * @brief Create a 24 hour package
+ *
+ * @param[in] pkg_location - location to store the package
+ * @param[in] pkg_available_size - available size of the storage location
+ * @retval uint32_t - Number of bytes in the package
+ */
+uint32_t package_create_24hr_pkg(uintptr_t pkg_location, size_t pkg_available_size);
+
+/**
  * @brief Create a instantaneous package
  *
  * @param[in] curr_pkg_position - location in the current package to append the next records

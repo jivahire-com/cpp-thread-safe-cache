@@ -60,10 +60,16 @@ void in_band_tlm_cmpnt_generate_pwr_pkg(void)
     function_called();
 }
 
+void in_band_tlm_cmpnt_generate_24hr_pkg(void)
+{
+    function_called();
+}
+
 void in_band_tlm_cmpnt_handle_incoming_mts_msgs(void)
 {
     function_called();
 }
+
 void in_band_tlm_cmpnt_sample_sensor_fifo_dbg_data(void)
 {
     function_called();

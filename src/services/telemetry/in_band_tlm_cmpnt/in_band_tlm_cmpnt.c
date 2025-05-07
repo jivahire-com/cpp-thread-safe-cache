@@ -116,6 +116,29 @@ void in_band_tlm_cmpnt_generate_pwr_pkg(void)
     }
 }
 
+void in_band_tlm_cmpnt_generate_24hr_pkg(void)
+{
+    uintptr_t pkg_location;
+    size_t pkg_available_size;
+    uint32_t pkg_used_size;
+
+    // can use instantaneous block as it large enough, (static_assert ensures this), also more of them available
+    fpfw_status_t status = ddr_manager_allocate_mem_for_inst_pkg(&pkg_location, &pkg_available_size);
+
+    if (FPFW_STATUS_SUCCEEDED(status)) // failure already traced
+    {
+        pkg_used_size = package_create_24hr_pkg(pkg_location, pkg_available_size);
+        if (pkg_used_size > 0)
+        {
+            mts_manager_queue_tlm_package(pkg_location, pkg_used_size);
+        }
+        else
+        {
+            ddr_manager_deallocate_mem(&pkg_location);
+        }
+    }
+}
+
 void in_band_tlm_cmpnt_tlm_mode_exit_actions(tlm_operating_mode_t exiting_mode)
 {
     switch (exiting_mode)

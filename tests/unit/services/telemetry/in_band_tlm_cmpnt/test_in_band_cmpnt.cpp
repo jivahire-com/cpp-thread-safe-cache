@@ -179,6 +179,46 @@ TEST_FUNCTION(test_gen_pwr_report_some_records, test_setup, test_teardown)
     in_band_tlm_cmpnt_generate_pwr_pkg();
 }
 
+TEST_FUNCTION(test_gen_24hr_report_no_records, test_setup, test_teardown)
+{
+    for (uint16_t i = 0; i < POWER_TELEMETRY_ELEMENT_ID_MAX; i++)
+    {
+        power_pkg_element_enable[i] = false;
+    }
+
+    expect_value(__wrap__txe_queue_receive, queue_ptr, &inst_pkg_free_queue);
+    expect_any(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+
+    uint32_t* mock_data = (uint32_t*)ib_max_package_mem;
+    will_return(__wrap__txe_queue_receive, sizeof(uint32_t));
+    will_return(__wrap__txe_queue_receive, &mock_data);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    in_band_tlm_cmpnt_generate_24hr_pkg();
+}
+
+TEST_FUNCTION(test_gen_24hr_report_some_records, test_setup, test_teardown)
+{
+    power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_PKG_MON] = true;
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data, 1);
+
+    // for ddr_manager_allocate_mem_for_pwr_pkg
+    expect_value(__wrap__txe_queue_receive, queue_ptr, &inst_pkg_free_queue);
+    expect_any(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+
+    uint32_t* mock_data = (uint32_t*)ib_max_package_mem;
+    will_return(__wrap__txe_queue_receive, sizeof(uint32_t));
+    will_return(__wrap__txe_queue_receive, &mock_data);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    // for  mts_manager_queue_tlm_package
+    will_return(__wrap_mts_is_primary_instance, true);
+
+    in_band_tlm_cmpnt_generate_24hr_pkg();
+}
+
 TEST_FUNCTION(test_in_band_tlm_cmpnt_tlm_mode_exit_actions, test_setup, test_teardown)
 {
     FpFwListInitialize(&pkg_free_list);

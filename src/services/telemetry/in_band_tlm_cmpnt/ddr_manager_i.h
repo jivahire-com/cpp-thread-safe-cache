@@ -29,22 +29,38 @@ typedef struct
     pwr_core_record_voltage_t voltage_record;
     pwr_core_record_current_t current_record;
     pwr_core_record_temperature_t temperature_record;
-    pwr_core_record_histogram_t histogram_record;
-    pwr_soc_record_pkg_monitor_t pkg_mon_record;
+    pwr_core_record_power_t power_record;
+    pwr_core_record_droop_count_t droop_count_record;
     pwr_soc_record_vr_rail_t vrail_record;
-    pwr_soc_record_hnf_t hnf_record;
     pwr_soc_record_dimm_temp_t dimm_temp_record;
+    pwr_soc_record_dimm_power_t dimm_power_record;
+    pwr_soc_record_hnf_t hnf_record;
     pwr_soc_record_sensor_temp_t sensor_temp_record;
+    pwr_soc_record_die_mesh_t die_mesh_record;
+    pwr_soc_record_d2d_link_t d2d_link_record;
+    pwr_soc_record_die_phy_t die_phy_record;
+    pwr_soc_record_max_soc_temp_t max_soc_temp_record;
     pwr_soc_record_mpam_pstate_t mpam_pstate_record;
     pwr_soc_record_mpam_throttle_t mpam_throttle_record;
+    pwr_soc_record_mpam_power_t mpam_power_record;
+    pwr_core_record_guard_band_t guard_band_record;
 } power_full_package_t;
+
+typedef struct
+{
+    pwr_core_record_histogram_t histogram_record;
+    pwr_core_record_aging_t aging_record;
+    pwr_soc_record_pkg_monitor_t pkg_mon_record;
+    pwr_soc_record_accel_count_t accel_count_record;
+} power_24_hr_package_t;
 
 typedef struct
 {
     inst_core_record_summary_t summary_record;
     inst_soc_record_rail_t rail_record;
     inst_soc_record_dimm_runtime_t dimm_runtime_record;
-    inst_soc_element_die_temp_t sensor_temp_record;
+    inst_soc_record_die_temp_t die_temp_record;
+    inst_soc_record_max_temp_t max_temp_record;
 } inst_full_package_t;
 
 
@@ -65,6 +81,9 @@ typedef struct
 #define INST_PKG_MIN_SIZE  (sizeof(inst_full_package_t) + sizeof(telemetry_package_hdr_t))
 #define INST_PKG_MAX_SIZE \
     ((MAX_INST_SAMPLES_PER_PACKAGE * sizeof(inst_full_package_t)) + sizeof(telemetry_package_hdr_t))
+
+// 24hr packages can use INST_POOL_BLOCK_SIZE blocks
+#define POWER_24HR_PKG_MAX_SIZE (sizeof(power_24_hr_package_t) + sizeof(telemetry_package_hdr_t))
 
 #define POWER_POOL_BLOCK_SIZE (POWER_POOL_BLOCK_ALIGN(POWER_PKG_MAX_SIZE))
 #define INST_POOL_BLOCK_SIZE  (INST_POOL_BLOCK_ALIGN(INST_PKG_MAX_SIZE))

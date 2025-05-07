@@ -36,7 +36,9 @@ TX_QUEUE pwr_pkg_free_queue;
 uintptr_t inst_pkg_buffer[NUM_INST_POOL_BLOCKS];
 TX_QUEUE inst_pkg_free_queue;
 
-static_assert(POWER_PKG_MAX_SIZE <= (256 * 1024), "Power package size exceeds block size");
+static_assert(POWER_PKG_MAX_SIZE <= (256 * 1024), "Power package size exceeds expected size");
+static_assert(POWER_PKG_MAX_SIZE <= POWER_POOL_BLOCK_SIZE, "Power pkg size exceeds block size");
+static_assert(POWER_24HR_PKG_MAX_SIZE <= INST_POOL_BLOCK_SIZE, "24 hr pkg exceeds instantaneous pkg size");
 
 /*------------- Functions ----------------*/
 void ddr_manager_init(void)

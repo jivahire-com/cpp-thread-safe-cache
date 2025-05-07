@@ -68,12 +68,16 @@ KNG_DIE_ID __wrap_idsw_get_die_id(void)
     return mock_type(KNG_DIE_ID);
 }
 
+bool __wrap_idhw_is_single_die_boot_en(void)
+{
+    return mock_type(bool);
+}
+
 silibs_status_t __wrap_fuse_dma_copy_to_ram_blocking()
 {
     // function_called();
     return mock_type(int);
 }
-
 int __wrap_fuse_read(const unsigned fuse_bit_offset, const unsigned fuse_bit_size)
 {
     check_expected(fuse_bit_offset);
@@ -707,7 +711,7 @@ TEST_FUNCTION(test_fuse_distribution_emulation_POST_MESH, NULL, NULL)
     printf("Freed memory for fuse_dist_exclude_list1\n");
 }
 
-TEST_FUNCTION(test_fuse_core_to_ap_die0, NULL, NULL)
+TEST_FUNCTION(test_fuse_core_to_ap, NULL, NULL)
 {
     // mocks
     kng_fuse_disable_core_t DIE0_core_disable_post_knob_test = {0x00, 0x00, 0xFFFFFFF0, 0xFFFFFFFF};
@@ -716,15 +720,10 @@ TEST_FUNCTION(test_fuse_core_to_ap_die0, NULL, NULL)
     expect_value(__wrap_sds_block_write, sds_module_id, FUSE_DISABLE_CORE_DIE0_STRUCT_ID);
     expect_memory(__wrap_sds_block_write, buffer, &(DIE0_core_disable_post_knob_test), FUSE_DISABLE_CORE_DIE0_SIZE);
     expect_value(__wrap_sds_block_write, buffer_size, FUSE_DISABLE_CORE_DIE0_SIZE);
-    write_fuse_info_to_ap();
-}
 
-TEST_FUNCTION(test_fuse_core_to_ap_die1, NULL, NULL)
-{ // mocks
-    kng_fuse_disable_core_t DIE1_core_disable_post_knob_test = {0x00, 0x00, 0xFFFFFFF0, 0xFFFFFFFF};
-    will_return_always(__wrap_idsw_get_die_id, DIE_1);
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
     expect_value(__wrap_sds_block_write, sds_module_id, FUSE_DISABLE_CORE_DIE1_STRUCT_ID);
-    expect_memory(__wrap_sds_block_write, buffer, &(DIE1_core_disable_post_knob_test), FUSE_DISABLE_CORE_DIE1_SIZE);
+    expect_memory(__wrap_sds_block_write, buffer, &(DIE0_core_disable_post_knob_test), FUSE_DISABLE_CORE_DIE1_SIZE);
     expect_value(__wrap_sds_block_write, buffer_size, FUSE_DISABLE_CORE_DIE1_SIZE);
     write_fuse_info_to_ap();
 }

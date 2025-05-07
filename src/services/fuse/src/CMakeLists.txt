@@ -41,6 +41,7 @@ target_link_libraries(${TARGET}
     silibs::fuse
     silibs::fuse_common
     silibs::idsw
+    silibs::idhw
     silibs::idsw_kng
     silibs::platform
     silibs::kng_silibs_platform    

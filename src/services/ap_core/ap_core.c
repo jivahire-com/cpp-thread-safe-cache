@@ -55,18 +55,24 @@ static ap_core_service_context_t s_ap_core_ctx = {0};
 static fpfw_icc_base_ctx_t* s_icc_base_ctx = NULL;
 
 /*------------- Functions ----------------*/
-static void ap_core_die_config_handover()
+static void ap_core_die_config_handover(pssi_startup_notification_request_t p_request)
 {
-    shared_scp_exp_csr_die_config die_config_val = {
-        .as_uint32 = MMIO_READ32(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_DIE_CONFIG_ADDRESS)};
 
-    int32_t result = sds_block_creation(SDS_DIE_CONFIG_STRUCT_ID, SDS_DIE_CONFIG_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
-    BUG_ASSERT(result == KNG_SUCCESS);
+    s_ap_core_ctx.outstanding_request = (pap_core_asynchronous_request_t)p_request;
 
-    result = sds_block_write(SDS_DIE_CONFIG_STRUCT_ID, &die_config_val, SDS_DIE_CONFIG_SIZE);
-    BUG_ASSERT(result == KNG_SUCCESS);
+    if (s_ap_core_ctx.p_config->primary_boot_die)
+    {
+        shared_scp_exp_csr_die_config die_config_val = {
+            .as_uint32 = MMIO_READ32(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_DIE_CONFIG_ADDRESS)};
 
+        int32_t result = sds_block_creation(SDS_DIE_CONFIG_STRUCT_ID, SDS_DIE_CONFIG_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
+        BUG_ASSERT(result == KNG_SUCCESS);
+
+        result = sds_block_write(SDS_DIE_CONFIG_STRUCT_ID, &die_config_val, SDS_DIE_CONFIG_SIZE);
+        BUG_ASSERT(result == KNG_SUCCESS);
+    }
     write_fuse_info_to_ap();
+    DfwkAsyncRequestComplete(&p_request->header);
 }
 
 // dispatcher function to handle set of rvbaraddr
@@ -126,7 +132,6 @@ static void ap_core_ssi_start_primary_ap_core_boot(pssi_startup_notification_req
     unsigned int boot_core = ap_core_util_boot_core(&s_ap_core_ctx);
     APCORE_LOG_INFO("Primary AP core power on (%d)", boot_core);
 
-    ap_core_die_config_handover();
     ap_core_util_set_rvbaraddr(&s_ap_core_ctx, boot_core, s_ap_core_ctx.p_config->boot_core_rvbaraddr);
 
     if (boot_type != COLD_BOOT)
@@ -203,6 +208,18 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
             {
                 DfwkAsyncRequestComplete(p_request);
             }
+            break;
+        case STARTUP_DIE_CONFIG_INIT:
+            if (ssi_request->boot_type == COLD_BOOT)
+            {
+                // Save die config info for TFA
+                ap_core_die_config_handover(ssi_request);
+            }
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
+
             break;
         case STARTUP_PRIMARY_AP_CORE_BOOT:
             if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())

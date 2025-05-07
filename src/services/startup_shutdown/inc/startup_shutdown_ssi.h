@@ -58,6 +58,7 @@ typedef enum _ssi_startup_stage
     STARTUP_RMM_LOAD,
     STARTUP_RP_EXE_LOAD,
     STARTUP_RP_DATA_LOAD,
+    STARTUP_DIE_CONFIG_INIT,
     STARTUP_PRIMARY_AP_CORE_BOOT,
     STARTUP_PCIE_PHY_LOAD
 } ssi_startup_stage_t;

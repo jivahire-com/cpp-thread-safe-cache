@@ -17,6 +17,7 @@
 #include <fuse_dma.h>    // apply copy fuse to ram
 #include <fuse_events.h> // apply event trace for fuse
 #include <fuse_init.h>   // fuse service API interface
+#include <idhw.h>
 // #include <fuse_knobs.h>
 #include <fuse_struct.h>
 #include <fuses_top_regs.h>
@@ -179,19 +180,21 @@ int write_fuse_info_to_ap()
         DIE0_fuse_disable.fuse_dis_core_96_127 = 0xFFFFFFFF;
         result = sds_block_write(FUSE_DISABLE_CORE_DIE0_STRUCT_ID, &DIE0_fuse_disable, FUSE_DISABLE_CORE_DIE0_SIZE);
         BUG_ASSERT(result == KNG_SUCCESS);
+        if (!idhw_is_single_die_boot_en())
+        {
+            result = sds_block_creation(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, FUSE_DISABLE_CORE_DIE1_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
+            BUG_ASSERT(result == KNG_SUCCESS);
+            DIE1_fuse_disable.fuse_dis_core_0_31 |= config_knob_0_31;
+            DIE1_fuse_disable.fuse_dis_core_32_63 |= config_knob_32_63;
+            DIE1_fuse_disable.fuse_dis_core_64_95 |= (config_knob_64_95 | 0xFFFFFFF0);
+            DIE1_fuse_disable.fuse_dis_core_96_127 = 0xFFFFFFFF;
+
+            // TODO: TASK 2598729 : [SCP] DIE1 sends fuse info to DIE0 to write. Since, core info is same for both dies, we write the DIE0 struct for now.
+            result = sds_block_write(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, &DIE0_fuse_disable, FUSE_DISABLE_CORE_DIE1_SIZE);
+            BUG_ASSERT(result == KNG_SUCCESS);
+        }
     }
-    else
-    {
-        result = sds_block_creation(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, FUSE_DISABLE_CORE_DIE1_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
-        BUG_ASSERT(result == KNG_SUCCESS);
-        DIE1_fuse_disable.fuse_dis_core_0_31 |= config_knob_0_31;
-        DIE1_fuse_disable.fuse_dis_core_32_63 |= config_knob_32_63;
-        DIE1_fuse_disable.fuse_dis_core_64_95 |= (config_knob_64_95 | 0xFFFFFFF0);
-        DIE1_fuse_disable.fuse_dis_core_96_127 = 0xFFFFFFFF;
-        result = sds_block_write(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, &DIE1_fuse_disable, FUSE_DISABLE_CORE_DIE1_SIZE);
-        BUG_ASSERT(result == KNG_SUCCESS);
-    }
-    printf(FUSE_NAME "DIE%d fuse info to ap successfully!\n", idsw_get_die_id());
+    printf(FUSE_NAME "DIE fuse info to ap successfully!\n");
     return result;
 }
 

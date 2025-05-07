@@ -437,6 +437,29 @@ AP_CORE_TEST(dispatch_power_off_async, setup, NULL)
     s_dispatch_routine(&test_request.header, &test_device.header);
 }
 
+AP_CORE_TEST(dispatch_die_config, setup, NULL)
+{
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_DIE_CONFIG_INIT;
+    test_request.boot_type = COLD_BOOT;
+
+    // expect that die info is stored in SDS
+    shared_scp_exp_csr_die_config test_die_config = {.as_uint32 = 42};
+    expect_value(__wrap_mmio_read32, addr, SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_DIE_CONFIG_ADDRESS);
+    will_return(__wrap_mmio_read32, test_die_config.as_uint32);
+    expect_value(__wrap_sds_block_write, sds_module_id, SDS_DIE_CONFIG_STRUCT_ID);
+    expect_memory(__wrap_sds_block_write, buffer, &test_die_config, sizeof(test_die_config));
+    expect_value(__wrap_sds_block_write, buffer_size, sizeof(test_die_config));
+    will_return(__wrap_write_fuse_info_to_ap, 0);
+
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+}
+
 AP_CORE_TEST(dispatch_ap_core_boot, setup, NULL)
 {
 #define TEST_BOOT_CORE 5
@@ -450,15 +473,6 @@ AP_CORE_TEST(dispatch_ap_core_boot, setup, NULL)
     expect_value(__wrap_ap_core_util_boot_core, p_context, s_ap_core_ctx);
     will_return(__wrap_ap_core_util_boot_core, TEST_BOOT_CORE);
     will_return(__wrap_system_info_is_hsp_present, true);
-
-    // expect that die info is stored in SDS
-    shared_scp_exp_csr_die_config test_die_config = {.as_uint32 = 42};
-    expect_value(__wrap_mmio_read32, addr, SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_DIE_CONFIG_ADDRESS);
-    will_return(__wrap_mmio_read32, test_die_config.as_uint32);
-    expect_value(__wrap_sds_block_write, sds_module_id, SDS_DIE_CONFIG_STRUCT_ID);
-    expect_memory(__wrap_sds_block_write, buffer, &test_die_config, sizeof(test_die_config));
-    expect_value(__wrap_sds_block_write, buffer_size, sizeof(test_die_config));
-    will_return(__wrap_write_fuse_info_to_ap, 0);
 
     // expect a call to set_rvbaraddr
     expect_value(__wrap_ap_core_util_set_rvbaraddr, p_context, s_ap_core_ctx);

@@ -112,6 +112,34 @@ static FPFW_CLI_STATUS cli_power_config_command(int argc, const char** argv)
         return CLI_ERROR;
     }
 
+    if ((strcmp(argv[1], "??") == 0))
+    {
+        FpFwCliPrint("\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg ??", "- help menu\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg fuse", "Misc fuse configs\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg dts", "DTS Coefficients\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg memasst", "Memasst values\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg intervals", "Config loop intervals\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg limits", "Config control loop limits\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg mpmm", "MPMM config\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg pid", "Control loop PID config\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg pvt", "PVT thresholds\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg ctrlloop", "Control loop configs\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg srvmode", "Survivability Mode\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg tel", "Telemetry config\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg throttle", "Throttle config\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg static", "Static rails\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg allowed_min_plimit", "Allowed plimit min\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg allowed_max_plimit", "Allowed plimit max\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg fgpll", "FGPLL config\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg knobs", "Power config knobs\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg vftpre", "Pre-calculated current\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg vcpucalc", "VCPU calc inputs \n");
+        FpFwCliPrint("\n");
+
+        return CLI_ERROR;
+    }
+
     /* Die - 0 (Default), Cmd ID - CLI_COMMANDS_POWER_CONFIG, subcommand - argv[1], setval - None (Unused), callback - cli_power_config_async_print */
     return dispatch_power_cli_async_request(0, CLI_COMMANDS_POWER_CONFIG, (char*)argv[1], NULL, cli_power_config_async_print);
 }
@@ -441,6 +469,18 @@ static FPFW_CLI_STATUS cli_power_status_command(int argc, const char** argv)
         return CLI_ERROR;
     }
 
+    if ((strcmp(argv[1], "??") == 0))
+    {
+        FpFwCliPrint("\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr status ??", "- help menu\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr status cl", "Control loop info\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr status vrtl", "VR telemetry loop info\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr status pvttl", "PVT telemetry loop info\n");
+        FpFwCliPrint("\n");
+
+        return CLI_ERROR;
+    }
+    
     /* Die - 0 (Default), Cmd ID - CLI_COMMANDS_POWER_CONFIG, subcommand - argv[1], setval - None (Unused), callback - cli_power_config_async_print */
     return dispatch_power_cli_async_request((uint8_t)idsw_get_die_id(), CLI_COMMANDS_POWER_STATUS, (char*)argv[1], NULL, cli_power_status_async_print);
 }

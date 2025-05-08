@@ -16,6 +16,7 @@
 #include <ddr_err_inj.h>
 #include <ddrss.h>
 #include <ddrss_lib.h>
+#include <fpfw_cfg_mgr.h>
 #include <health_monitor.h>
 #include <kng_soc_constants.h>
 #include <nvic.h> // Has nested include of cmsis_gcc_m.h for __DSB() intrinsic
@@ -56,6 +57,18 @@ void ddrss_ue_ce_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, 
     ddrss_media_addr_t m_addr;
     uint64_t p_addr_new;
     uint32_t tgt_mc;
+
+    // Check that cmd_merge_en is 0 or 1
+    if (config_get_cmd_merge_en() != 0 && config_get_cmd_merge_en() != 1)
+    {
+        printf("WARNING: cmd_merge_en config knob value should be 0 or 1 to do err_inj\n");
+    }
+
+    // For UE, check that ue_max_retry is 0 - otherwise, UE will be converted to CE
+    if ((Bit & BIT0) && (config_get_ue_max_retry() != 0))
+    {
+        printf("WARNING: ue_max_retry config knob value should be 0 to do uncorrectable err_inj\n");
+    }
 
     tgt_mc = DDRSS_GET_LOCAL_MC(mc) + DDRSS_MAX_MC_NUM_PER_DIE * die_num;
     if (tgt_mc != mc)

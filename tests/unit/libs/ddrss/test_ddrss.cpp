@@ -414,6 +414,8 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_others, setup, teardown)
     prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
 }
 
+// Test prod_ddrss_interrupt_pending
+
 TEST_FUNCTION(test_prod_ddrss_get_intr_event_cper, setup, teardown)
 {
     uint32_t mc = 0;
@@ -472,5 +474,50 @@ TEST_FUNCTION(test_prod_ddrss_get_intr_event_cper, setup, teardown)
     memset(&ddr_cper, 0, sizeof(ddr_cper));
     status = prod_ddrss_get_intr_event_cper(mc, intr_event, &ddr_cper);
     assert_int_equal(status, SILIBS_E_DEVICE);
+}
+
+TEST_FUNCTION(test_prod_ddrss_interrupt_pending, setup, teardown)
+{
+    KNG_DIE_ID test_die = (KNG_DIE_ID)0;
+
+    // Set up die id for test
+    idsw_set_die_id(test_die);
+
+    // Test case 1: No interrupt pending
+    g_ddr_intu_sts = 0;
+    g_intu_enable = 0xFFFFFFFF;
+
+    bool result = prod_ddrss_interrupt_pending((void*)&ddrss_num[0]);
+    assert_int_equal(result, false);
+
+    // Test case 2: Interrupt pending but masked
+    g_ddr_intu_sts = (1 << DDRSS_INTU_MC0_CRI_INT);
+    g_intu_enable = 0;
+
+    result = prod_ddrss_interrupt_pending((void*)&ddrss_num[1]);
+    assert_int_equal(result, false);
+
+    // Test case 3: Interrupt pending and enabled
+    g_ddr_intu_sts = (1 << DDRSS_INTU_MC0_CRI_INT);
+    g_intu_enable = 0xFFFFFFFF;
+
+    result = prod_ddrss_interrupt_pending((void*)&ddrss_num[2]);
+    assert_int_equal(result, true);
+
+    // Test case 4: Multiple interrupts with some enabled
+    g_ddr_intu_sts = (1 << DDRSS_INTU_MC0_CRI_INT) | (1 << DDRSS_INTU_PHY_IRQ);
+    g_intu_enable = (1 << DDRSS_INTU_PHY_IRQ);
+
+    result = prod_ddrss_interrupt_pending((void*)&ddrss_num[3]);
+    assert_int_equal(result, true);
+
+    // Test case 5: Test with different die ID
+    test_die = (KNG_DIE_ID)1;
+    idsw_set_die_id(test_die);
+    g_ddr_intu_sts = (1 << DDRSS_INTU_MC1_CRI_INT);
+    g_intu_enable = 0xFFFFFFFF;
+
+    result = prod_ddrss_interrupt_pending((void*)&ddrss_num[4]);
+    assert_int_equal(result, true);
 }
 }

@@ -72,6 +72,51 @@ static int ddrss_get_and_probe_ras_agent(uint32_t mc,
 }
 
 /**
+ * @brief     Check if a DDRSS interrupt is pending and enabled for this context.
+ *
+ * This function reads the DDRSS INTU status register, masks off any interrupts
+ * that are not currently enabled for the SCP destination, and returns whether
+ * any valid interrupt bits remain set.
+ *
+ * @param[in] context  Void pointer to a uint32_t holding the local DDRSS index (0–5).
+ *                     On Die1, this is adjusted by +6 to map into the 0–11 range.
+ *
+ * @return true  if one or more enabled interrupts are pending,
+ *         false otherwise.
+ */
+bool prod_ddrss_interrupt_pending(void* context)
+{
+    uint32_t local_ddrss = *(uint32_t*)(context);
+    KNG_DIE_ID die_num = idsw_get_die_id();
+
+    uint32_t ddrss = (die_num == DIE_1) ? local_ddrss + 6 : local_ddrss; // 0-11
+    uint32_t mc = ddrss * 2;
+    uint32_t ddr_intu_sts = 0;
+    uintptr_t ddrss_base = 0;
+    int sts = SILIBS_SUCCESS;
+
+    // Read DDRSS INTU status
+    sts = ddrss_get_component_base(ddrss, DDRSS_COMP_ID_DDRINTU, &ddrss_base);
+    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+
+    sts = intu_get_interrupt_status(ddrss_base, &ddr_intu_sts);
+    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+
+    // Only check enabled interrupts
+    uint32_t intu_enable = 0;
+    sts = ddrss_ddr_intu_get_interrupt_dest_enable(mc, DDRSS_INTU_SCP_INT, &intu_enable);
+    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+
+    ddr_intu_sts = ddr_intu_sts & intu_enable;
+    if (ddr_intu_sts == 0)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+/**
  * @brief TOP Level DDRSS interrupt handler
  *         The DDRSS library is written to assume that memory controllers are uniquely
  *         numbered across the two dies.

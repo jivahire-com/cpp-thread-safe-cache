@@ -13,6 +13,7 @@
 
 #include <ErrorHandler.h> // for FPFwErrorRaise
 #include <bug_check.h>
+#include <crash_dump.h>
 #include <ddr_manager_events.h>   // for DDR_MANAGER_ET_FATAL, DDR_MANAGER_ET_TYPE_CURVE_H...
 #include <ddrss.h>                // for ddr_manager_init
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
@@ -28,9 +29,11 @@
 /*-------------- Typedefs ----------------*/
 
 /*-------- Function Prototypes -----------*/
-static void enable_i3c_dimm_polling_timer(void);
+static void crash_dump_predump_cb(void* ctx);
 
 /*-- Declarations (Statics and globals) --*/
+static uint32_t ddrss_interrupt_id[6] = {0, 1, 2, 3, 4, 5};
+static void enable_i3c_dimm_polling_timer(void);
 ddr_service_context_t* ddr_service_ctx;
 ddr_service_config_t* ddr_service_config;
 
@@ -264,5 +267,21 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_NO_HSP_DETECTED, ET_NOPARAM);
     }
 
+    // Add crash dump pre-dump callback to check DDR RAS for UE
+    crash_dump_register_pre_dump_callback(crash_dump_predump_cb, NULL, CRASH_DUMP_TYPE_FULL);
     DDR_LOG_CRIT("DDR init, die_num: [%u] Done\n", pconfig->thread_config.die_number);
+}
+
+static void crash_dump_predump_cb(void* ctx)
+{
+    FPFW_UNUSED(ctx);
+
+    // Check for any uncorrectable errors in the DDR RAS handler
+    for (int ddrss = 0; ddrss < NUM_DIMM_PER_DIE; ddrss++)
+    {
+        if (prod_ddrss_interrupt_pending((void*)&ddrss_interrupt_id[ddrss]))
+        {
+            prod_ddrss_interrupt_handler((void*)&ddrss_interrupt_id[ddrss]);
+        }
+    }
 }

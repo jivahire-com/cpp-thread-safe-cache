@@ -68,6 +68,7 @@
 void prod_ddrss_lib_init(KNG_DIE_ID die_num);
 int prod_ddrss_phy_interrupt_handler(uint32_t mc);
 int prod_ddrss_mc_interrupt_handler(uint32_t mc);
+bool prod_ddrss_interrupt_pending(void* context);
 void prod_ddrss_interrupt_handler(void *context);
 uintptr_t ddrss_get_top_base(uint32_t mc);
 int prod_ddrss_get_intr_event_cper(uint32_t mc, uint32_t intr_event, acpi_err_sec_mem_vendor_t *ddr_cper);

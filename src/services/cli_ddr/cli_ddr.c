@@ -15,7 +15,8 @@
 #include <ddr_manager_i3c.h>
 #include <ddr_memory_map.h>
 #include <ddrss_lib.h>
-#include <stdio.h> // for printf
+#include <idsw_kng.h> // for idsw_get_die_id
+#include <stdio.h>    // for printf
 #include <stdlib.h>
 
 #ifdef UNIT_TEST
@@ -54,7 +55,7 @@ STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
 // ecc_ce_err (mc) (phy_add) {error bit}
 STATIC FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char** Argv)
 {
-    uint32_t die = 0;
+    KNG_DIE_ID die_id = idsw_get_die_id();
     uint32_t mc = 0;
     uint64_t p_addr = 0x20080000000ULL;
     uint8_t bit = 0;
@@ -103,16 +104,15 @@ STATIC FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char** Argv)
         return CLI_ERROR;
     }
 
-    die = 0;
-    ddrss_ue_ce_error_injection(die, mc, p_addr, BIT_Value);
-    FpFwCliPrint("DDR: ecc_ce_error_injection done\n");
+    ddrss_ue_ce_error_injection(die_id, mc, p_addr, BIT_Value);
+    FpFwCliPrint("DDR: ecc_ce_error_injection - Done!!\n");
 
     return CLI_SUCCESS;
 }
 
 STATIC FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv)
 {
-    int32_t die = 0;
+    KNG_DIE_ID die_id = idsw_get_die_id();
     uint32_t mc = 0;
     uint64_t p_addr = 0;
     uint16_t BIT_Value = 0;
@@ -190,8 +190,8 @@ STATIC FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv)
         return CLI_ERROR;
     }
 
-    ddrss_ue_ce_error_injection(die, mc, p_addr, BIT_Value);
-    FpFwCliPrint("DDR: ecc_ue_error_injection done\n");
+    ddrss_ue_ce_error_injection(die_id, mc, p_addr, BIT_Value);
+    FpFwCliPrint("DDR: ecc_ue_error_injection - Done!!\n");
     return CLI_SUCCESS;
 }
 

@@ -23,6 +23,7 @@ target_link_libraries(
         ms::lib::ddrss_init
         PRIVATE
         fwlib.service.cli
+        silibs::idsw
         silibs::platform
         silibs::kng_silibs_platform
         silibs::ras_arm

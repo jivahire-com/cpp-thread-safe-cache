@@ -20,7 +20,7 @@
 #include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define MAX_KNOB_SIZE 128
+#define MAX_KNOB_SIZE 512
 /*-------------- Typedefs ----------------*/
 
 /*--------- Function Prototypes ----------*/
@@ -103,6 +103,7 @@ static cached_knob_data_t* get_knob_data_by(const char* argument, uint32_t* knob
             {
                 *knob_idx = idx;
                 current_entry = current;
+                break;
             }
         }
     }

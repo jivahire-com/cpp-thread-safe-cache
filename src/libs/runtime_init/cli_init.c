@@ -16,8 +16,9 @@
 #include <textio_pl011.h> // for textio_pl011_device_interface_initialize
 
 /*------- Symbolic Constant Macros (defines) ----------*/
-#define CLI_COMMAND_LENGTH       (256)
-#define CLI_COMMAND_HISTORY_LEN  (4)
+#define CLI_ARGS_COUNT           (300)
+#define CLI_COMMAND_LENGTH       (300)
+#define CLI_COMMAND_HISTORY_LEN  (2)
 #define CLI_COMMAND_HISTORY_SIZE (CLI_COMMAND_LENGTH * CLI_COMMAND_HISTORY_LEN)
 
 /*------------- Typedefs -----------------*/
@@ -33,7 +34,8 @@ FPFW_INIT_COMPONENT(cli, FPFW_INIT_DEPENDENCIES("uart", "std_io", "debug_print")
     static uint8_t cli_cmd_history[CLI_COMMAND_HISTORY_SIZE];
     static FPFW_CLI_CONFIG cli_config = {.CommandHistory = cli_cmd_history,
                                          .CommandHistorySize = CLI_COMMAND_HISTORY_SIZE,
-                                         .MaxCommandLength = CLI_COMMAND_LENGTH};
+                                         .MaxCommandLength = CLI_COMMAND_LENGTH,
+                                         .MaxArgsCount = CLI_ARGS_COUNT};
 
     //! Pl011 cli interfaces
     static textio_pl011_interface_t pl011_interface_cli = {0};

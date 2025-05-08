@@ -250,9 +250,10 @@ class sensor_ram_dimm_info(ctypes.Structure):
         ("dimm_temp_s0_dc", ctypes.c_uint16),
         ("dimm_temp_s1_dc", ctypes.c_uint16),
         ("dimm_power_mw", ctypes.c_uint16),
+        ("dimm_mr4_throttle_count", ctypes.c_uint16),
         ("dimm_id", ctypes.c_uint8),
-        ("dimm_throttling", ctypes.c_uint8),  # 1 = throttle, 0 = not throttle
+        ("dimm_throttling", ctypes.c_uint8),  # dimm_throttle_source_t
         ("dimm_memory_frequency_id", ctypes.c_uint8),
-        ("padding", ctypes.c_uint8 * 7),  # Padding to align to 8 bytes
+        ("padding", ctypes.c_uint8 * 5),  # Padding to align to 8 bytes
     ]
 

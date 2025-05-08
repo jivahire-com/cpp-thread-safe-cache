@@ -59,7 +59,7 @@ class FifoProperties:
 
 class SensorDataCreator:
     """Helper class to create sensor FIFO data"""
-    
+
     @staticmethod
     def get_timestamp() -> int:
         """Get current timestamp in nanoseconds"""
@@ -118,7 +118,7 @@ class SensorDataCreator:
             f"0x{timestamp:016x}",
             f"0x{pstate_data:016x}"
         ]
-    
+
     @staticmethod
     def create_scp_message(
         timestamp: Optional[int] = None,
@@ -144,7 +144,7 @@ class SensorDataCreator:
         if not (0 <= msg_type <= 3): raise ValueError("msg_type must be 0-3")
         if not (0 <= mpam_high <= 15): raise ValueError("mpam_high must be 0-15")
         if not (0 <= pstate <= 31): raise ValueError("pstate must be 0-31")
-        if ldo_voltage is not None and not (0 <= ldo_voltage <= 511): 
+        if ldo_voltage is not None and not (0 <= ldo_voltage <= 511):
             raise ValueError("ldo_voltage must be 0-511")
         if cppc_desired is not None and not (0 <= cppc_desired <= 31):
             raise ValueError("cppc_desired must be 0-31")
@@ -330,13 +330,13 @@ class SensorDataCreator:
                 raise ValueError("Temperature values must be 0-65535")
 
         result = [f"0x{timestamp:016x}"]
-        
+
         # Pack temperatures into quadwords (4 temperatures per quadword)
         for i in range(0, len(temperatures), 4):
             chunk = temperatures[i:i+4]
             while len(chunk) < 4:  # Pad last chunk if needed
                 chunk.append(0)
-            
+
             data = 0
             for j, temp in enumerate(chunk):
                 data |= (temp & 0xFFFF) << (j * 16)
@@ -368,13 +368,13 @@ class SensorDataCreator:
                 raise ValueError("Voltage values must be 0-65535")
 
         result = [f"0x{timestamp:016x}"]
-        
+
         # Pack voltages into quadwords (4 voltages per quadword)
         for i in range(0, len(voltages), 4):
             chunk = voltages[i:i+4]
             while len(chunk) < 4:  # Pad last chunk if needed
                 chunk.append(0)
-            
+
             data = 0
             for j, voltage in enumerate(chunk):
                 data |= (voltage & 0xFFFF) << (j * 16)
@@ -392,13 +392,10 @@ class SensorDataCreator:
         dimm_id: int = 0,
         dimm_throttling: int = 0,
         dimm_memory_frequency_id: int = 0,
-        dimm_info_type: int = 0,
         dimm_temp_s0: int = 0,
         dimm_temp_s1: int = 0,
         dimm_power: int = 0,
-        temp_threshold_low: int = 0,
-        temp_threshold_high: int = 0,
-        temp_threshold_critical: int = 0
+        dimm_mr4_throttle_count: int = 0
     ) -> List[str]:
         """Create DIMM information data"""
         if timestamp is None:
@@ -408,34 +405,30 @@ class SensorDataCreator:
         if not (0 <= dimm_id <= 0xFF): raise ValueError("dimm_id must be 0-255")
         if not (0 <= dimm_throttling <= 0xFF): raise ValueError("dimm_throttling must be 0-255")
         if not (0 <= dimm_memory_frequency_id <= 0xFF): raise ValueError("dimm_memory_frequency_id must be 0-255")
-        if not (0 <= dimm_info_type <= 0xFF): raise ValueError("dimm_info_type must be 0-255")
-        
+
         # Validate 16-bit values
-        for value in [dimm_temp_s0, dimm_temp_s1, dimm_power, 
-                     temp_threshold_low, temp_threshold_high, temp_threshold_critical]:
+        for value in [dimm_temp_s0, dimm_temp_s1, dimm_power, dimm_mr4_throttle_count]:
             if not (0 <= value <= 0xFFFF):
                 raise ValueError("Temperature and power values must be 0-65535")
 
         # Pack first quadword: timestamp
         result = [f"0x{timestamp:016x}"]
-        
-        # Pack second quadword: dimm info
+
+        # Pack second quadword:
         data1 = (
-            (dimm_id & 0xFF) |
-            ((dimm_throttling & 0xFF) << 8) |
-            ((dimm_memory_frequency_id & 0xFF) << 16) |
-            ((dimm_info_type & 0xFF) << 24) |
-            ((dimm_temp_s0 & 0xFFFF) << 32) |
-            ((dimm_temp_s1 & 0xFFFF) << 48)
+            (dimm_mr4_throttle_count & 0xFFFF) |
+            ((dimm_power & 0xFFFF) << 16) |
+            ((dimm_temp_s1 & 0xFFFF) << 32) |
+            ((dimm_temp_s0 & 0xFFFF) << 48)
         )
         result.append(f"0x{data1:016x}")
-        
+
         # Pack third quadword: thresholds
         data2 = (
-            (dimm_power & 0xFFFF) |
-            ((temp_threshold_low & 0xFFFF) << 16) |
-            ((temp_threshold_high & 0xFFFF) << 32) |
-            ((temp_threshold_critical & 0xFFFF) << 48)
+            0 |
+            ((dimm_memory_frequency_id & 0xFF) << 40) |
+            ((dimm_throttling & 0xFF) << 48) |
+            ((dimm_id & 0xFF) << 56)
         )
         result.append(f"0x{data2:016x}")
 
@@ -461,13 +454,13 @@ class SensorDataCreator:
                 raise ValueError("Temperature values must be 0-65535")
 
         result = [f"0x{timestamp:016x}"]
-        
+
         # Pack temperatures into quadwords (4 temperatures per quadword)
         for i in range(0, len(temperatures), 4):
             chunk = temperatures[i:i+4]
             while len(chunk) < 4:  # Pad last chunk if needed
                 chunk.append(0)
-            
+
             data = 0
             for j, temp in enumerate(chunk):
                 data |= (temp & 0xFFFF) << (j * 16)
@@ -499,7 +492,7 @@ class SensorDataCreator:
                 raise ValueError("Current and voltage values must be 0-65535")
 
         result = [f"0x{timestamp:016x}"]
-        
+
         # Pack currents and voltages into quadwords
         for i in range(0, MAX_NUM_OF_VR_RAILS, 2):
             data = (
@@ -514,18 +507,18 @@ class SensorDataCreator:
 
 def create_sensor_data(fifo_id: Union[SensorFifoId, int], timestamp_offset_ns: int = 0, **kwargs) -> List[str]:
     """Creates FIFO data based on the FIFO ID and provided parameters
-    
+
     Args:
         fifo_id: The FIFO ID to create data for
         timestamp_offset_ns: Optional offset in nanoseconds to add to the timestamp (default: 0)
         **kwargs: Additional parameters specific to each FIFO type
     """
     fifo_id = SensorFifoId(fifo_id)
-    
+
     # If timestamp is provided in kwargs, use it, otherwise generate new one with offset
     if 'timestamp' not in kwargs:
         kwargs['timestamp'] = SensorDataCreator.get_timestamp() + timestamp_offset_ns
-    
+
     creators = {
         SensorFifoId.PSTATE_TELEMETRY_HW: SensorDataCreator.create_pstate_data,
         SensorFifoId.SCP_MSG_TELEMETRY_HW: SensorDataCreator.create_scp_message,
@@ -538,10 +531,10 @@ def create_sensor_data(fifo_id: Union[SensorFifoId, int], timestamp_offset_ns: i
         SensorFifoId.VR_TEMP_FW: SensorDataCreator.create_vr_temperature,
         SensorFifoId.VR_CURRENT_FW: SensorDataCreator.create_vr_current
     }
-    
+
     if fifo_id not in creators:
         raise ValueError(f"Unsupported FIFO ID: {fifo_id}")
-        
+
     return creators[fifo_id](**kwargs)
 
 # Example usage

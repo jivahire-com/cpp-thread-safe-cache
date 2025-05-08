@@ -54,6 +54,14 @@ typedef enum
     SENSOR_FIFO_MAX_ID = 10
 } SENSOR_FIFO_ID;
 
+typedef enum
+{
+    DIMM_THROTTLE_SOURCE_NONE = 0,
+    DIMM_THROTTLE_SOURCE_EXT_TEMP_SENSOR = 1,
+    DIMM_THROTTLE_SOURCE_MR4 = 2,
+    DIMM_THROTTLE_SOURCE_BOTH = 3,
+} dimm_throttle_source_t;
+
 /**
  * @brief Information describing a single FIFO
  *
@@ -148,10 +156,11 @@ typedef struct __attribute__((packed)) {
     uint16_t dimm_temp_s0_dC;
     uint16_t dimm_temp_s1_dC;
     uint16_t dimm_power_mW;
+    uint16_t dimm_mr4_throttle_count; // number of times MR4 throttled since last report
     uint8_t dimm_id;
-    uint8_t dimm_throttling; //1- throttle  0-not throttle
-    uint8_t dimm_memory_frequency_id;
-    uint8_t  padding[7]; // needs to be multiple of QUADWORD_SIZE
+    uint8_t dimm_throttling; // dimm_throttle_source_t
+    uint8_t dimm_memory_frequency_id; // DDRSS_SPEED_GRADE
+    uint8_t  padding[5]; // needs to be multiple of QUADWORD_SIZE
 } sensor_ram_dimm_info_t;
 
 /**

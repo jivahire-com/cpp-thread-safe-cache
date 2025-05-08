@@ -1,8 +1,8 @@
 from typing import List, Optional, Union, Dict
 import random
 from sensor_fifo_lib import (
-    SensorFifoId, 
-    create_sensor_data, 
+    SensorFifoId,
+    create_sensor_data,
     NUMBER_OF_SOC_TEMP_SENSORS,
     NUMBER_OF_SOC_VOLT_MON_SENSORS,
     MAX_NUM_OF_VR_RAILS,
@@ -11,7 +11,7 @@ from sensor_fifo_lib import (
 
 class SensorDataGenerator:
     """Generator for random sensor FIFO data"""
-    
+
     # Robot Framework FIFO name mapping
     FIFO_NAME_TO_ID = {
         "PSTATE": SensorFifoId.PSTATE_TELEMETRY_HW,
@@ -25,12 +25,12 @@ class SensorDataGenerator:
         "VR_TEMP": SensorFifoId.VR_TEMP_FW,
         "VR_CURRENT": SensorFifoId.VR_CURRENT_FW
     }
-    
+
     def __init__(self, seed: Optional[int] = None):
         """Initialize generator with optional random seed"""
         if seed is not None:
             random.seed(seed)
-            
+
         # Define reasonable ranges for different sensor types
         self.ranges = {
             'temperature': (20, 95),    # °C
@@ -64,32 +64,28 @@ class SensorDataGenerator:
                 's_desired_perf': (0, 31)
             },
             'dimm': {
-                'id': (0, 7),           # DIMM IDs
-                'freq': (0, 5),         # Frequency IDs
-                'throttle': (0, 1),     # Throttling states
-                'temp_thresh': {
-                    'low': 60,
-                    'high': 85,
-                    'critical': 95
-                }
+                'id': (0, 6),            # DIMM IDs
+                'freq': (0, 10),         # DDRSS_SPEED_GRADE
+                'throttle': (0, 3),      # Throttling states
+                'mr4_count' : (0, 1000)  # dimm_mr4_throttle_count
             }
         }
 
     def get_valid_core_id(self) -> int:
         """Get a valid core_id value within the range 0-135.
-        
+
         Returns:
             int: A core_id value between 0 and 135
         """
         return random.randint(0, 135)  # Direct generation within valid range
-    
+
     def generate_random_data(self, fifo_id: Union[SensorFifoId, int], num_entries: int) -> List[List[str]]:
         """Generate specified number of random entries for given FIFO type"""
         fifo_id = SensorFifoId(fifo_id)
         entries = []
-        
+
         timestamp_base = random.randint(0, 3600) * int(1e9)  # Random base within 24 hours
-        
+
         for entry_num in range(num_entries):
             timestamp_offset = timestamp_base + (entry_num * random.randint(1000000, 999999999))
             if fifo_id == SensorFifoId.PSTATE_TELEMETRY_HW:
@@ -109,11 +105,11 @@ class SensorDataGenerator:
                     mpam_high=random.randint(*self.ranges['pstate']['mpam_high']),
                     boost_priority=random.randint(*self.ranges['pstate']['boost_priority'])
                 )
-                
+
             elif fifo_id == SensorFifoId.SCP_MSG_TELEMETRY_HW:
                 msg_type = random.randint(*self.ranges['scp_msg']['msg_type'])
                 valid_core_id = self.get_valid_core_id()  # Get valid core_id before creating data
-                
+
                 try:
                     entry = create_sensor_data(
                         fifo_id,
@@ -135,7 +131,7 @@ class SensorDataGenerator:
                 except ValueError as e:
                     print(f"Debug - core_id: {valid_core_id}, msg_type: {msg_type}")  # Debug info
                     raise e
-                
+
             elif fifo_id == SensorFifoId.TILE_TEMPERATURE_TELEMETRY_HW:
                 entry = create_sensor_data(
                     fifo_id,
@@ -147,7 +143,7 @@ class SensorDataGenerator:
                     core1_temp=random.randint(*self.ranges['temperature']),
                     sensor_temps=[random.randint(*self.ranges['temperature']) for _ in range(8)]
                 )
-                
+
             elif fifo_id == SensorFifoId.TILE_VOLTAGE_TELEMETRY_HW:
                 entry = create_sensor_data(
                     fifo_id,
@@ -157,7 +153,7 @@ class SensorDataGenerator:
                     vcpu=random.randint(*self.ranges['voltage']['vcpu']),
                     vsys=random.randint(*self.ranges['voltage']['vsys'])
                 )
-                
+
             elif fifo_id == SensorFifoId.CORE_CURRENT_TELEMETRY_HW:
                 current = random.randint(*self.ranges['current'])
                 voltage_mv = random.randint(*self.ranges['voltage']['vcore'])
@@ -177,12 +173,12 @@ class SensorDataGenerator:
                     mpam_id_high=random.randint(*self.ranges['pstate']['mpam_high']),
                     cstate=random.randint(*self.ranges['pstate']['cstate'])
                 )
-                
+
             elif fifo_id == SensorFifoId.PVT_TEMP_FW:
                 entry = create_sensor_data(
                     fifo_id,
                     timestamp_offset_ns=timestamp_offset,
-                    temperatures=[random.randint(*self.ranges['temperature']) 
+                    temperatures=[random.randint(*self.ranges['temperature'])
                                 for _ in range(NUMBER_OF_SOC_TEMP_SENSORS)]
                 )
 
@@ -190,10 +186,10 @@ class SensorDataGenerator:
                 entry = create_sensor_data(
                     fifo_id,
                     timestamp_offset_ns=timestamp_offset,  # Use unique timestamp
-                    voltages=[random.randint(*self.ranges['voltage']['vcore']) 
+                    voltages=[random.randint(*self.ranges['voltage']['vcore'])
                              for _ in range(NUMBER_OF_SOC_VOLT_MON_SENSORS)]
                 )
-                
+
             elif fifo_id == SensorFifoId.DIMM_TEMP_FW:
                 entry = create_sensor_data(
                     fifo_id,
@@ -204,34 +200,32 @@ class SensorDataGenerator:
                     dimm_temp_s0=random.randint(*self.ranges['temperature']),
                     dimm_temp_s1=random.randint(*self.ranges['temperature']),
                     dimm_power=random.randint(*self.ranges['power']),
-                    temp_threshold_low=self.ranges['dimm']['temp_thresh']['low'],
-                    temp_threshold_high=self.ranges['dimm']['temp_thresh']['high'],
-                    temp_threshold_critical=self.ranges['dimm']['temp_thresh']['critical']
+                    dimm_mr4_throttle_count=random.randint(*self.ranges['dimm']['mr4_count']),
                 )
-                
+
             elif fifo_id == SensorFifoId.VR_TEMP_FW:
                 entry = create_sensor_data(
                     fifo_id,
                     timestamp_offset_ns=timestamp_offset,
-                    temperatures=[random.randint(*self.ranges['temperature']) 
+                    temperatures=[random.randint(*self.ranges['temperature'])
                                 for _ in range(MAX_NUM_OF_VR_RAILS)]
                 )
-                
+
             elif fifo_id == SensorFifoId.VR_CURRENT_FW:
                 entry = create_sensor_data(
                     fifo_id,
                     timestamp_offset_ns=timestamp_offset,
-                    currents=[random.randint(*self.ranges['current']) 
+                    currents=[random.randint(*self.ranges['current'])
                              for _ in range(MAX_NUM_OF_VR_RAILS)],
-                    voltages=[random.randint(*self.ranges['voltage']['vcore']) 
+                    voltages=[random.randint(*self.ranges['voltage']['vcore'])
                              for _ in range(MAX_NUM_OF_VR_RAILS)]
                 )
-                
+
             else:
                 raise ValueError(f"Unsupported FIFO ID: {fifo_id}")
-                
+
             entries.append(entry)
-            
+
         return entries
 
     def generate_sensor_fifo_data(self, fifo_name: str, num_entries: int = 1, seed: Optional[int] = None) -> List[List[str]]:
@@ -239,19 +233,19 @@ class SensorDataGenerator:
         fifo_name = fifo_name.upper()
         if fifo_name not in self.FIFO_NAME_TO_ID:
             raise ValueError(f"Unknown FIFO type: {fifo_name}. Valid types: {list(self.FIFO_NAME_TO_ID.keys())}")
-            
+
         if seed is not None:
             random.seed(seed)
-            
+
         fifo_id = self.FIFO_NAME_TO_ID[fifo_name]
-                   
+
         return self.generate_random_data(fifo_id, num_entries)
 
     def generate_all_sensor_fifo_data(self, num_entries: int = 1, seed: Optional[int] = None) -> Dict[str, List[List[str]]]:
         """Generate random sensor FIFO data entries for all FIFO types"""
         if seed is not None:
             random.seed(seed)
-            
+
         result = {}
         for fifo_name in self.FIFO_NAME_TO_ID:
             result[fifo_name] = self.generate_sensor_fifo_data(fifo_name, num_entries)
@@ -270,7 +264,7 @@ if __name__ == "__main__":
     # Example usage with seed for reproducibility
     SEED = 42
     generator = SensorDataGenerator(SEED)
-    
+
     # Example 1: Generate specific FIFO type data
     temp_data = generator.generate_sensor_fifo_data("TEMPERATURE", num_entries=3)
     print("\n=== Temperature Data ===")
@@ -278,7 +272,7 @@ if __name__ == "__main__":
         print(f"\nEntry {i}:")
         for qword in entry:
             print(f"  {qword}")
-    
+
     # Example 2: Test PVT_VOLTAGE specifically
     pvt_voltage_data = generator.generate_sensor_fifo_data("PVT_VOLTAGE", num_entries=2)
     print("\n=== PVT_VOLTAGE Data ===")
@@ -286,7 +280,7 @@ if __name__ == "__main__":
         print(f"\nEntry {i}:")
         for j, qword in enumerate(entry):
             print(f"  Buffer[{j}]: {qword}")
-            
+
     # Example 3: Generate all FIFO types
     print("\n=== Generating All FIFO Types ===")
     all_data = generator.generate_all_sensor_fifo_data(num_entries=4)

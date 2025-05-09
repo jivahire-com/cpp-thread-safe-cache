@@ -21,6 +21,9 @@ parameters:
 - name: TestPlan
   type: string
   default: '.\tests\functional\test_plan\fpga_single_die_test_plan.args'
+- name: TestAgent
+  type: string
+  default: ''
 - name: build_id
   type: string
   default: '0'
@@ -37,7 +40,11 @@ jobs:
   displayName: FPGA Pythia Tests
   pool: 
     name: ${{ parameters.Pool }}
-    demands: TestVehicle -equals ${{ parameters.TestVehicleCapability }}
+    demands:
+      - ${{ if eq(parameters.Pool, '1pfw-kingsgate-big-fpga') }}:
+          - Agent.Name -equals ${{ parameters.TestAgent }}
+      - ${{ if eq(parameters.Pool, '1pfw-kingsgate-bigfpga-pipelines') }}:
+          - TestVehicle -equals ${{ parameters.TestVehicleCapability }}
     isCustom: true
     type: windows
 

@@ -1,0 +1,88 @@
+#
+# Copyright (C) Microsoft Corporation. All rights reserved.
+#
+
+name: $(Build.DefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd).$(Rev:r)
+
+trigger: none
+
+parameters:
+# Debug Pipeline parameters
+- name: 'debug'
+  displayName: 'Enable debug output'
+  type: boolean
+  default: false
+- name: 'fpga_custom_pipeline'
+  displayName: 'Run FPGA Custom pipeline'
+  type: boolean
+  default: true
+- name: 'fpga_custom_pipeline_pool'
+  displayName: 'Run FPGA Custom pipeline on pool'
+  type: string
+  default: '1pfw-kingsgate-big-fpga'
+  values:
+  - 1pfw-kingsgate-big-fpga
+  - 1pfw-kingsgate-bigfpga-pipelines
+- name: 'fpga_custom_pipeline_dut'
+  displayName: 'FPGA Device Name (Select DH3 and DF8 only for URGENT Debug)'
+  type: string
+  default: RDU-120015-DH6
+  values:
+  - RDU-120015-DH3 (Only for URGENT Debug)
+  - RDU-120015-DE3
+  - RDU-120015-DH5
+  - RDU-120015-DH6
+  - RDU-120015-DH7
+  - RDU-120015-DH10
+  - RDU-120015-DH11
+  - RDU-120015-DH13
+  - RDU-120015-DF2
+  - RDU-120015-DF5
+  - RDU-120015-DF8 (Only for URGENT Debug)
+  - RDU-120015-DF11
+  - RDU-120015-DF14
+
+- name: 'fpga_custom_pipeline_test_plan'
+  displayName: 'Set Custom pipeline test plan (Select correct plan according to FPGA Device)'
+  type: string
+  default: '.\tests\functional\test_plan\fpga_single_die_test_plan.args'
+  values:
+  - '.\tests\functional\test_plan\accel_single_die_test_plan.args'
+  - '.\tests\functional\test_plan\fpga_single_die_test_plan.args'
+  - '.\tests\functional\test_plan\fpga_dual_die_test_plan.args'
+
+- name: 'fpga_custom_pipeline_ifwi'
+  displayName: 'Set Custom pipeline IFWI'
+  type: string
+  default: 'kingsgate.ifwi.fpga.debug.custom.dat'
+  values:
+  - 'kingsgate.ifwi.ap.baremetal.debug.dat' # AP_BM IFWI
+  - 'kingsgate.ifwi.fpga.debug.custom.dat' # UEFI IFWI 
+
+variables:
+- group: ef-pipeline-config-azurekv    # Centralized PAT Library Group
+- name: OfficialBuild
+  value : $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+
+# Build stage
+stages:
+- stage: Build_Arm_EABI_AARCH_Debug
+  dependsOn: []
+  jobs:
+  - template: templates/build.yaml
+    parameters:
+      Toolchain: arm-eabi-aarch
+      Configuration: Debug
+      ArtifactName: Build_Arm_EABI_AARCH_Debug
+
+- stage: Test_Pythia_FPGA_Custom_Stage
+  dependsOn: [Build_Arm_EABI_AARCH_Debug]
+  condition: and(succeeded(), eq('${{ parameters.fpga_custom_pipeline }}', true))
+  jobs:
+  - template: templates/fpga_pythia_test.yaml
+    parameters:
+      ArtifactName: Test_Pythia_FPGA_Custom_Stage
+      TestPlan: ${{ parameters.fpga_custom_pipeline_test_plan }}
+      ifwi: ${{ parameters.fpga_custom_pipeline_ifwi }}
+      TestAgent: ${{ parameters.fpga_custom_pipeline_dut }}
+      Pool: ${{ parameters.fpga_custom_pipeline_pool }}

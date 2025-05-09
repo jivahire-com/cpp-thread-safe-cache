@@ -56,6 +56,8 @@ mock_target(${TARGET}
     mts_get_this_core_id
     FpFwAssertWithArgs
     exec_tlm_cmpnt_get_timestamp_microseconds
+    data_proc_tlm_cmpnt_reset_aggregated_data
+    data_proc_tlm_cmpnt_reset_aggregated_24hr_data
     sensor_fifo_svc_poll_tile_temperature
     sensor_fifo_svc_poll_tile_voltage
     sensor_fifo_svc_poll_core_current

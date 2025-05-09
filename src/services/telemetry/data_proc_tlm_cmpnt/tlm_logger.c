@@ -789,23 +789,6 @@ void data_proc_tlm_cmpnt_get_pwr_core_cstate_data(uint16_t core_id, pwr_core_ele
     }
 }
 
-void tlm_core_reset_throttle_data(uint16_t core_id)
-{
-    // parameter check: core_id, check if correct
-    if (core_id >= NUMBER_OF_CORES_PER_DIE)
-    {
-        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_CORE_THROTTLE);
-    }
-    else
-    {
-        for (uint16_t throttle_index = 0; throttle_index < NUMBER_OF_THROTTLE_TYPES; throttle_index++)
-        {
-            // reset core throttle array once record is collected/packaged.
-            memset(&core[core_id].throttle_info[throttle_index], 0, sizeof(core[core_id].throttle_info[throttle_index]));
-        }
-    }
-}
-
 void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id,
                                                     pwr_core_element_throttle_t (*throttle_array)[NUMBER_OF_THROTTLE_TYPES])
 {
@@ -824,9 +807,6 @@ void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id,
             (*throttle_array)[throttle_index].residency_mS = core[core_id].throttle_info[throttle_index].residency_mS;
             (*throttle_array)[throttle_index].type_id = core[core_id].throttle_info[throttle_index].type_id;
         }
-
-        // reset throttling data on record collection
-        tlm_core_reset_throttle_data(core_id);
     }
 }
 
@@ -980,10 +960,10 @@ void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_so
     }
     else
     {
-        sensor_temp_data->latest_value_dC = soc_info.sensor_temp->latest_value_dC;
-        sensor_temp_data->average_dC = soc_info.sensor_temp->average_dC;
-        sensor_temp_data->max_dC = soc_info.sensor_temp->max_dC;
-        sensor_temp_data->min_dC = soc_info.sensor_temp->min_dC;
+        sensor_temp_data->latest_value_dC = soc_info.sensor_temp[sensor_id].latest_value_dC;
+        sensor_temp_data->average_dC = soc_info.sensor_temp[sensor_id].average_dC;
+        sensor_temp_data->max_dC = soc_info.sensor_temp[sensor_id].max_dC;
+        sensor_temp_data->min_dC = soc_info.sensor_temp[sensor_id].min_dC;
     }
 }
 
@@ -1542,4 +1522,106 @@ void data_proc_tlm_cmpnt_aggregate_update_mgr(void)
     tlm_core_component_update();
     tlm_tile_component_update();
     tlm_soc_component_update();
+}
+
+//----------------Power telemetry resources reset   ----------------
+
+void tlm_core_data_reset()
+{
+    /* reset global data for each core */
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        // create a local copy of each core data and restore selectively
+        // TODO: optimize core_runtime_info_t struct : https://azurecsi.visualstudio.com/Dev/_workitems/edit/2602180
+        core_runtime_info_t temp_core = core[core_id];
+
+        /* Reset all the core data for core_id*/
+        memset(&core[core_id], 0, sizeof(core[core_id]));
+
+        /* Restore data from the local copy. This is data that either does not change or should be kept
+        for the next collection window. */
+
+        core[core_id].cstate_timestamp_uS = temp_core.cstate_timestamp_uS;
+        core[core_id].pstate_timestamp_uS = temp_core.pstate_timestamp_uS;
+        core[core_id].current_pkt_timestamp = temp_core.current_pkt_timestamp;
+        core[core_id].flags = temp_core.flags;
+        core[core_id].pstate_from_pstate_pkt = temp_core.pstate_from_pstate_pkt;
+        core[core_id].cstate_from_pstate_pkt = temp_core.cstate_from_pstate_pkt;
+        core[core_id].ldo_voltage = temp_core.ldo_voltage;
+        core[core_id].throttling_status = temp_core.throttling_status;
+        core[core_id].throttle_event = temp_core.throttle_event;
+        core[core_id].throttle_source = temp_core.throttle_source;
+        core[core_id].throttling_priority_id = temp_core.throttling_priority_id;
+        core[core_id].pstate_from_current_pkt = temp_core.pstate_from_current_pkt;
+        core[core_id].average_pwr_mW = temp_core.average_pwr_mW;
+        core[core_id].voltage.latest_value_mV = temp_core.voltage.latest_value_mV;
+        core[core_id].current.latest_value_mA = temp_core.current.latest_value_mA;
+        core[core_id].temperature.latest_value_dC = temp_core.temperature.latest_value_dC;
+
+        for (uint8_t pstate_index = 0; pstate_index < NUMBER_OF_PSTATES; pstate_index++)
+        {
+            core[core_id].pstate[pstate_index].frequency_Mhz = dvfs_get_freq_from_plimit(pstate_index);
+        }
+        for (uint8_t throttle_index = 0; throttle_index < NUMBER_OF_THROTTLE_TYPES; throttle_index++)
+        {
+            core[core_id].throttle_previous_timestamp_uS[throttle_index] =
+                temp_core.throttle_previous_timestamp_uS[throttle_index];
+            core[core_id].core_throttling_tracker[throttle_index] = temp_core.core_throttling_tracker[throttle_index];
+        }
+    }
+}
+
+void tlm_soc_data_reset(void)
+{
+    soc_runtime_info_t soc_info_temp;
+    // TODO: optimize soc_runtime_info_t struct : https://azurecsi.visualstudio.com/Dev/_workitems/edit/2602180
+    memcpy(&soc_info_temp, &soc_info, sizeof(soc_runtime_info_t));
+    memset(&soc_info, 0, sizeof(soc_runtime_info_t));
+
+    /* Restore selective data from the local copy */
+    for (uint8_t rail_id = 0; rail_id < MAX_NUM_OF_VR_RAILS; rail_id++)
+    {
+        soc_info.rail[rail_id].voltage.latest_value_mV = soc_info_temp.rail[rail_id].voltage.latest_value_mV;
+        soc_info.rail[rail_id].temperature.latest_value_dC = soc_info_temp.rail[rail_id].temperature.latest_value_dC;
+        soc_info.rail[rail_id].current.latest_value_mA = soc_info_temp.rail[rail_id].current.latest_value_mA;
+    }
+
+    for (uint8_t hnf_channel = 0; hnf_channel < NUMBER_OF_HNF_CHANNELS_PER_DIE; hnf_channel++)
+    {
+        soc_info.hnf[hnf_channel].latest_value_dC = soc_info_temp.hnf[hnf_channel].latest_value_dC;
+    }
+
+    for (uint8_t pvt_index = 0; pvt_index < NUMBER_OF_SOC_TEMP_SENSORS; pvt_index++)
+    {
+        soc_info.sensor_temp[pvt_index].latest_value_dC = soc_info_temp.sensor_temp[pvt_index].latest_value_dC;
+    }
+}
+
+void tlm_tile_data_reset(void)
+{
+    // Reset data for tiles
+    for (uint8_t tile_id = 0; tile_id < NUMBER_OF_TILES_PER_DIE; tile_id++)
+    {
+
+        tile_runtime_info_t temp_tile = tile[tile_id];
+        memset(&tile[tile_id], 0, sizeof(tile[tile_id]));
+
+        // Restore selective tile data
+        tile[tile_id].active_sample_max_temperature_dC = temp_tile.active_sample_max_temperature_dC;
+        tile[tile_id].max_tile_temperature_dC = temp_tile.max_tile_temperature_dC;
+        tile[tile_id].active_sample_max_id = temp_tile.active_sample_max_id;
+        tile[tile_id].max_tile_id = temp_tile.max_tile_id;
+    }
+}
+
+void data_proc_tlm_cmpnt_reset_aggregated_24hr_data(void)
+{
+    // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2601165
+    //  Implement the reset function for the power telemetry data for 24hr specific record.
+}
+void data_proc_tlm_cmpnt_reset_aggregated_data(void)
+{
+    tlm_core_data_reset();
+    tlm_soc_data_reset();
+    tlm_tile_data_reset();
 }

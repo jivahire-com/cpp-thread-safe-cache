@@ -1307,3 +1307,91 @@ TEST_FUNCTION(test_tlm_tile_component_update, test_setup, test_teardown)
         assert_int_equal(tile[tile_id].max_tile_id, 1);
     }
 }
+// Unit test function
+TEST_FUNCTION(test_tlm_core_data_reset, test_setup, test_teardown)
+{
+    uint8_t core_id = 0;
+    uint8_t throttle_index = 1;
+
+    core[core_id].throttle_previous_timestamp_uS[throttle_index] = 1000;
+    core[core_id].pstate_from_current_pkt = 20;
+
+    core[core_id].throttle_info[throttle_index].residency_mS = 10;
+    core[core_id].throttle_info[throttle_index].avg_pstate = 10;
+    core[core_id].throttle_info[throttle_index].max_pstate = 5;
+
+    core[core_id].voltage.min_mV = 0;
+    core[core_id].voltage.max_mV = 0;
+    core[core_id].voltage.average_mV = 0;
+    core[core_id].voltage.latest_value_mV = 1200;
+
+    tlm_core_data_reset();
+
+    assert_int_equal(core[core_id].throttle_previous_timestamp_uS[throttle_index], 1000);
+    assert_int_equal(core[core_id].throttle_info[throttle_index].residency_mS, 0);
+}
+
+// Unit test function
+TEST_FUNCTION(test_tlm_soc_data_reset, test_setup, test_teardown)
+{
+    uint8_t dimm_module_index = 0;
+
+    // Initialize soc_info with some test values
+    soc_info.dimm[dimm_module_index].s0.min_dC = 0;
+    soc_info.dimm[dimm_module_index].s0.max_dC = 0;
+    soc_info.dimm[dimm_module_index].s0.average_dC = 0;
+    soc_info.dimm[dimm_module_index].s0.latest_value_dC = 10;
+
+    soc_info.dimm[dimm_module_index].s1.min_dC = 0;
+    soc_info.dimm[dimm_module_index].s1.max_dC = 0;
+    soc_info.dimm[dimm_module_index].s1.average_dC = 0;
+    soc_info.dimm[dimm_module_index].s1.latest_value_dC = 20;
+
+    tlm_soc_data_reset();
+
+    assert_int_equal(soc_info.dimm[dimm_module_index].s0.latest_value_dC, 0);
+    assert_int_equal(soc_info.dimm[dimm_module_index].s1.latest_value_dC, 0);
+}
+
+// Unit test function
+TEST_FUNCTION(test_tlm_tile_data_reset, test_setup, test_teardown)
+{
+
+    uint8_t tile_id = 0;
+
+    // Test case: Initial values
+    tile[tile_id].vcpu.min_mV = 10;
+    tile[tile_id].vcpu.max_mV = 40;
+    tile[tile_id].vcpu.average_mV = 30;
+    tile[tile_id].vcpu.latest_value_mV = 1200;
+
+    tile[tile_id].active_sample_max_id = 1;
+    tile[tile_id].active_sample_max_temperature_dC = 900;
+    tile[tile_id].max_tile_id = 0;
+    tile[tile_id].max_tile_temperature_dC = 450;
+
+    // Test case: Update with new latest value
+    tile[tile_id].vcpu.latest_value_mV = 1300;
+
+    tlm_tile_data_reset();
+
+    assert_int_not_equal(tile[tile_id].vcpu.min_mV, 10);
+    assert_int_not_equal(tile[tile_id].vcpu.max_mV, 40);
+    assert_int_not_equal(tile[tile_id].vcpu.average_mV, 30);
+
+    assert_int_equal(tile[tile_id].active_sample_max_temperature_dC, 900);
+    assert_int_equal(tile[tile_id].max_tile_temperature_dC, 450);
+}
+// Unit test function
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_reset_aggregated_24hr_data, test_setup, test_teardown)
+{
+    // TODO - complete with the records will be collected with 24hr window.
+    data_proc_tlm_cmpnt_reset_aggregated_24hr_data();
+}
+
+// Unit test function
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_reset_aggregated_data, test_setup, test_teardown)
+{
+    // TODO - complete with the records will be collected with 24hr window.
+    // data_proc_tlm_cmpnt_reset_aggregated_data();
+}

@@ -492,13 +492,20 @@ void tlm_core_component_update(void);
  */
 void tlm_tile_component_update(void);
 /**
- * @brief Reset the core throttle data for the specified core.
- *
- * @param[in] core_id - The core id to reset the throttle data to. 0
- *
- * @return None
+ * @brief function reset the cores data after a collection window .
+ * 
  */
-void tlm_core_reset_throttle_data(uint16_t core_id);
+void tlm_core_data_reset(void);
+/**
+ * @brief function reset the soc data after a collection window .
+ * 
+ */
+void tlm_soc_data_reset(void);
+/**
+ * @brief function reset the tiles data after a collection window .
+ * 
+ */
+void tlm_tile_data_reset(void);
 #ifdef __cplusplus
 }
 #endif

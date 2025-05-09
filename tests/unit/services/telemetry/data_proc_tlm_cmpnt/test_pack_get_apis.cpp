@@ -62,6 +62,7 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
 {
     pwr_core_element_pstate_t pstate_array[NUMBER_OF_PSTATES] = {{0}};
     uint8_t avg_power = 30;
+    pwr_pstate_t temp_pstate[NUMBER_OF_PSTATES] = {{0}};
     for (uint16_t pstate_index = 0; pstate_index < NUMBER_OF_PSTATES; pstate_index++)
     {
         core[TEST_CORE_ID_5].pstate[pstate_index].pstate_id = pstate_index;
@@ -73,20 +74,25 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
         core[TEST_CORE_ID_5].pstate[pstate_index].entry_count = 10;
         // increment avg power for every pstate by 1
         avg_power++;
+        // cache data to correctness check after the record collection because some data
+        // need to be reset for next collection window.
+        memcpy(&temp_pstate[pstate_index],
+               &core[TEST_CORE_ID_5].pstate[pstate_index],
+               sizeof(core[TEST_CORE_ID_5].pstate[pstate_index]));
     }
+
     data_proc_tlm_cmpnt_get_pwr_core_pstate_data(TEST_CORE_ID_5, &pstate_array);
     // check for valid data into full pstate_array .
     // Every core will have NUMBER_OF_PSTATES, and each pstate elemenet have , it's own data
     for (uint16_t pstate_index = 0; pstate_index < NUMBER_OF_PSTATES; pstate_index++)
     {
-        assert_int_equal(pstate_array[pstate_index].pstate_id, core[TEST_CORE_ID_5].pstate[pstate_index].pstate_id);
-        assert_int_equal(pstate_array[pstate_index].avg_power_mW, core[TEST_CORE_ID_5].pstate[pstate_index].avg_power_mW);
-        assert_int_equal(pstate_array[pstate_index].min_power_mW, core[TEST_CORE_ID_5].pstate[pstate_index].min_power_mW);
-        assert_int_equal(pstate_array[pstate_index].max_power_mW, core[TEST_CORE_ID_5].pstate[pstate_index].max_power_mW);
-        assert_int_equal(pstate_array[pstate_index].frequency_Mhz, core[TEST_CORE_ID_5].pstate[pstate_index].frequency_Mhz);
-        assert_int_equal(pstate_array[pstate_index].residency_mS,
-                         core[TEST_CORE_ID_5].pstate[pstate_index].residency_uS / 1000);
-        assert_int_equal(pstate_array[pstate_index].entry_count, core[TEST_CORE_ID_5].pstate[pstate_index].entry_count);
+        assert_int_equal(pstate_array[pstate_index].pstate_id, temp_pstate[pstate_index].pstate_id);
+        assert_int_equal(pstate_array[pstate_index].avg_power_mW, temp_pstate[pstate_index].avg_power_mW);
+        assert_int_equal(pstate_array[pstate_index].min_power_mW, temp_pstate[pstate_index].min_power_mW);
+        assert_int_equal(pstate_array[pstate_index].max_power_mW, temp_pstate[pstate_index].max_power_mW);
+        assert_int_equal(pstate_array[pstate_index].frequency_Mhz, temp_pstate[pstate_index].frequency_Mhz);
+        assert_int_equal(pstate_array[pstate_index].residency_mS, temp_pstate[pstate_index].residency_uS / 1000);
+        assert_int_equal(pstate_array[pstate_index].entry_count, temp_pstate[pstate_index].entry_count);
     }
     // setup for failure case, change pstate 0 element data.
     uint8_t index = 0;
@@ -112,21 +118,25 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
 TEST_FUNCTION(test_get_pwr_core_cstate_data, test_setup, test_teardown)
 {
     pwr_core_element_cstate_t cstate_array[NUMBER_OF_CSTATES] = {{0}};
+    pwr_cstate_t temp_cstate[NUMBER_OF_CSTATES] = {{0}};
     for (uint16_t cstate_index = 0; cstate_index < NUMBER_OF_CSTATES; cstate_index++)
     {
         core[TEST_CORE_ID_5].cstate[cstate_index].cstate_id = cstate_index;
         core[TEST_CORE_ID_5].cstate[cstate_index].residency_uS = 10000;
         core[TEST_CORE_ID_5].cstate[cstate_index].entry_count = 10;
+
+        memcpy(&temp_cstate[cstate_index],
+               &core[TEST_CORE_ID_5].cstate[cstate_index],
+               sizeof(core[TEST_CORE_ID_5].pstate[cstate_index]));
     }
     data_proc_tlm_cmpnt_get_pwr_core_cstate_data(TEST_CORE_ID_5, &cstate_array);
     // check for valid data into full cstate_array .
     // Every core will have NUMBER_OF_CSTATES, and each cstate elemenet have , it's own data
     for (uint16_t cstate_index = 0; cstate_index < NUMBER_OF_CSTATES; cstate_index++)
     {
-        assert_int_equal(cstate_array[cstate_index].cstate_id, core[TEST_CORE_ID_5].cstate[cstate_index].cstate_id);
-        assert_int_equal(cstate_array[cstate_index].residency_mS,
-                         core[TEST_CORE_ID_5].cstate[cstate_index].residency_uS / 1000);
-        assert_int_equal(cstate_array[cstate_index].entry_count, core[TEST_CORE_ID_5].cstate[cstate_index].entry_count);
+        assert_int_equal(cstate_array[cstate_index].cstate_id, temp_cstate[cstate_index].cstate_id);
+        assert_int_equal(cstate_array[cstate_index].residency_mS, temp_cstate[cstate_index].residency_uS / 1000);
+        assert_int_equal(cstate_array[cstate_index].entry_count, temp_cstate[cstate_index].entry_count);
     }
 }
 
@@ -266,16 +276,16 @@ TEST_FUNCTION(test_get_pwr_core_current_data, test_setup, test_teardown)
 {
     pwr_core_element_current_t current_get_data = {0};
     uint8_t index = TEST_CORE_ID_5;
-
+    current_t test_current = {0};
     core[index].current.latest_value_mA = 30;
     core[index].current.average_mA = 30;
     core[index].current.max_mA = 40;
     core[index].current.min_mA = 20;
-
+    memcpy(&test_current, &core[TEST_CORE_ID_5].current, sizeof(core[TEST_CORE_ID_5].current));
     data_proc_tlm_cmpnt_get_pwr_core_current_data(index, &current_get_data);
     // Check core 0 current
     // check for valid data into full current  array.
-    assert_int_equal(memcmp(&current_get_data, &core[TEST_CORE_ID_5].current, sizeof(core[TEST_CORE_ID_5].current)), 0);
+    assert_int_equal(memcmp(&current_get_data, &test_current, sizeof(core[TEST_CORE_ID_5].current)), 0);
     // setup for fail case .
     core[index].current.latest_value_mA = 0;
     core[index].current.average_mA = 0;
@@ -290,15 +300,16 @@ TEST_FUNCTION(test_get_pwr_core_current_data, test_setup, test_teardown)
 TEST_FUNCTION(test_get_pwr_core_temperature_data, test_setup, test_teardown)
 {
     pwr_core_element_temperature_t temp_data = {0};
+    temperature_t test_temperature = {0};
 
     core[TEST_CORE_ID_5].temperature.latest_value_dC = 30;
     core[TEST_CORE_ID_5].temperature.average_dC = 30;
     core[TEST_CORE_ID_5].temperature.max_dC = 40;
     core[TEST_CORE_ID_5].temperature.min_dC = 20;
-
+    memcpy(&test_temperature, &core[TEST_CORE_ID_5].temperature, sizeof(core[TEST_CORE_ID_5].temperature));
     data_proc_tlm_cmpnt_get_pwr_core_temperature_data(TEST_CORE_ID_5, &temp_data);
     // check for valid data into full temperaure array.
-    assert_int_equal(memcmp(&temp_data, &core[TEST_CORE_ID_5].temperature, sizeof(core[TEST_CORE_ID_5].temperature)), 0);
+    assert_int_equal(memcmp(&temp_data, &test_temperature, sizeof(test_temperature)), 0);
 
     // setup for fail case .
     core[TEST_CORE_ID_5].temperature.latest_value_dC = 0;

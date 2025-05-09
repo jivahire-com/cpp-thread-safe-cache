@@ -253,3 +253,15 @@ void data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(uint16_t sensor_id, p_inst_
  * @return None
  */
 void data_proc_tlm_cmpnt_clear_pwr_tlm_data(void);
+
+/**
+ * @brief This API clear the aggregated telemetry data after the collection window, 
+ * @return None 
+ */
+void data_proc_tlm_cmpnt_reset_aggregated_data(void);
+
+/**
+ * @brief This API clear the aggregated 24hr telemetry data after the collection. 
+ * @return None 
+ */
+void data_proc_tlm_cmpnt_reset_aggregated_24hr_data(void);

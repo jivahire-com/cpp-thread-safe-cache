@@ -254,6 +254,16 @@ void exec_tlm_cmpnt_notify_new_in_band_mts_message(void)
     function_called();
 }
 
+void __wrap_data_proc_tlm_cmpnt_reset_aggregated_data(void)
+{
+    function_called();
+}
+
+void __wrap_data_proc_tlm_cmpnt_reset_aggregated_24hr_data(void)
+{
+    function_called();
+}
+
 uint64_t __wrap_exec_tlm_cmpnt_get_timestamp_microseconds(void)
 {
     return 0x48;

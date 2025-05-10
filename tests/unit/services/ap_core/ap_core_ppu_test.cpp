@@ -48,6 +48,11 @@ void __wrap_ppu_v1_init(uintptr_t ppu_addr)
     check_expected(ppu_addr);
 }
 
+void __wrap_ppu_v1_disable_handshake(uintptr_t ppu_addr)
+{
+    check_expected(ppu_addr);
+}
+
 int __wrap_pik_clock_power_transition(uint32_t dev_id, MOD_PD_STATE state)
 {
     check_expected(dev_id);
@@ -172,4 +177,25 @@ AP_CORE_TEST(ap_core_ppu_clusters_on, NULL, NULL)
 
     // Act
     __real_ap_core_ppu_clusters_on(&context, timeout_ms);
+}
+
+AP_CORE_TEST(ap_core_ppu_disable_handshaking, NULL, NULL)
+{
+    // Arrange
+    ap_core_service_context_t context = {};
+    ap_core_service_config_t test_config = {.platform_die_core_count = 1};
+    context.p_config = &test_config;
+    corebits_set_bit(&context.enabled_cores, 0);
+
+    // Assert
+    expect_value(__wrap_FpFwAssert, expression, 1);
+    expect_value(__wrap_ppu_v1_disable_handshake,
+                 ppu_addr,
+                 CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS + VOYAGER_DSU_CLUSTER_CORE0_PPU_ADDRESS);
+
+    expect_value(__wrap_ppu_v1_disable_handshake,
+                 ppu_addr,
+                 CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS + VOYAGER_DSU_CLUSTER_CLUSTER_PPU_ADDRESS);
+    // Act
+    ap_core_ppu_disable_handshaking(&context);
 }

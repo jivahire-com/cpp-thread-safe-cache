@@ -541,6 +541,8 @@ AP_CORE_TEST(dispatch_shutdown, setup, NULL)
     ssi_shutdown_notification_request_t test_request;
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_SHUTDOWN_ASYNC;
+    expect_not_value(__wrap_FpFwAssert, expression, false);
+    expect_not_value(__wrap_FpFwAssert, expression, false);
 
     assert_non_null(s_dispatch_routine);
 

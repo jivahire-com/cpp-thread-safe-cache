@@ -10,6 +10,7 @@
 /*----------- Nested includes ------------*/
 #include "ap_core_init.h"
 
+#include <DbgPrint.h>
 #include <DfwkCommon.h>
 #include <FpFwAssert.h>
 #include <FpFwLinkedList.h>
@@ -28,13 +29,13 @@
 #define APCORE_ENABLE_TRACE_LEVEL_LOG 1
 
 #if APCORE_ENABLE_TRACE_LEVEL_LOG
-#define APCORE_LOG_TRACE(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define APCORE_LOG_TRACE(fmt, ...) FPFW_DBGPRINT_VERBOSE(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #else
 #define APCORE_LOG_TRACE(fmt, ...) 
 #endif
-#define APCORE_LOG_INFO(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
-#define APCORE_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
-#define APCORE_LOG_CRIT(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define APCORE_LOG_INFO(fmt, ...) FPFW_DBGPRINT_INFO(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define APCORE_LOG_WARN(fmt, ...) FPFW_DBGPRINT_WARNING(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define APCORE_LOG_CRIT(fmt, ...) FPFW_DBGPRINT_ERROR(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 
 /*-------------- Typedefs ----------------*/
 typedef struct
@@ -72,6 +73,7 @@ void ap_core_ppu_clusters_on_if_needed(ap_core_service_context_t* p_context, uin
 void ap_core_ppu_clusters_off(ap_core_service_context_t* p_context, uint32_t timeout_ms);
 void ap_core_ppu_cores_off(ap_core_service_context_t* p_context, uint32_t timeout_ms);
 void ap_core_ppu_core_set_power_state(ap_core_service_context_t* p_context, unsigned core_idx, bool power_state_on, uint32_t timeout_ms);
+void ap_core_ppu_disable_handshaking(ap_core_service_context_t* p_context);
 
 unsigned int ap_core_util_boot_core(ap_core_service_context_t* p_context);
 void ap_core_util_set_rvbaraddr(ap_core_service_context_t* p_context, unsigned core_idx, uint64_t rvbaraddr);

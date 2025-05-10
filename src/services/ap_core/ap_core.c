@@ -148,15 +148,24 @@ static void ap_core_ssi_start_primary_ap_core_boot(pssi_startup_notification_req
 static void ap_core_ssi_shutdown(pssi_shutdown_notification_request_t p_request)
 {
     APCORE_LOG_TRACE("SSI shutdown, shutdown type %d", p_request->shutdown_type);
-
-    if (p_request->shutdown_type != MSCP_SUBSYS_RESET)
+    if (p_request->shutdown_type == MSCP_SUBSYS_RESET)
     {
-        // turn off all cores
-        ap_core_ppu_cores_off(&s_ap_core_ctx, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
-
-        // turn off clusters
-        ap_core_ppu_clusters_off(&s_ap_core_ctx, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
+        DfwkAsyncRequestComplete(&p_request->header);
+        return;
     }
+
+    if ((p_request->shutdown_type == COLD_RESET_SCP_INITIATED) || (p_request->shutdown_type == SHUTDOWN_SCP_INITIATED))
+    {
+        // turn off PPU handshaking
+        APCORE_LOG_INFO("Disabling PPU handshaking");
+        ap_core_ppu_disable_handshaking(&s_ap_core_ctx);
+    }
+
+    // turn off all cores
+    ap_core_ppu_cores_off(&s_ap_core_ctx, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
+
+    // turn off clusters
+    ap_core_ppu_clusters_off(&s_ap_core_ctx, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
 
     DfwkAsyncRequestComplete(&p_request->header);
 }

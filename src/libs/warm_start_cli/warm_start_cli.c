@@ -248,7 +248,7 @@ void cold_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion
 {
     FPFW_UNUSED(p_completion_context);
     FPFW_UNUSED(request);
-    BUG_ASSERT(false);
+    printf("Cold boot completion\n");
 }
 
 void subsys_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
@@ -262,7 +262,7 @@ void shutdown_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_
 {
     FPFW_UNUSED(p_completion_context);
     FPFW_UNUSED(request);
-    BUG_ASSERT(false);
+    printf("Shutdown completion\n");
 }
 
 void warm_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
@@ -302,7 +302,7 @@ static FPFW_CLI_STATUS ws_reset(int argc, const char** argv)
     {
         if (strcmp(argv[1], "cold") == 0)
         {
-            sos_shutdown((void*)&sos_interface, &shutdown_request, COLD_RESET, cold_boot_completion, NULL);
+            sos_shutdown((void*)&sos_interface, &shutdown_request, COLD_RESET_SCP_INITIATED, cold_boot_completion, NULL);
         }
         else if (strcmp(argv[1], "subsys") == 0)
         {
@@ -310,7 +310,7 @@ static FPFW_CLI_STATUS ws_reset(int argc, const char** argv)
         }
         else if (strcmp(argv[1], "shutdown") == 0)
         {
-            sos_shutdown((void*)&sos_interface, &shutdown_request, SHUTDOWN, shutdown_completion, NULL);
+            sos_shutdown((void*)&sos_interface, &shutdown_request, SHUTDOWN_SCP_INITIATED, shutdown_completion, NULL);
         }
         else if (strcmp(argv[1], "warm") == 0)
         {

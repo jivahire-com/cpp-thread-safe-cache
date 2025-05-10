@@ -12,12 +12,14 @@
 
 #include <FpFwAssert.h>
 #include <bug_check.h>
+#include <cluster_ppu_regs.h>
 #include <core_cluster_with_pvt_regs.h> // for CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS
 #include <corebits.h>
 #include <idhw.h>
 #include <kng_error.h>
 #include <pik_clock_lib.h>
 #include <ppu_v1.h>
+#include <silibs_platform.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -25,6 +27,10 @@
 #include <voyager_dsu_cluster_regs.h> // for VOYAGER_DSU_CLUSTER_CLUSTER_PPU_ADDRESS, ...
 
 /*-- Symbolic Constant Macros (defines) --*/
+
+#define PPU_V1_PWCR_DEV_REQ_EN    UINT32_C(0x000000FF)
+#define PPU_V1_PWCR_DEV_ACTIVE_EN UINT32_C(0x0007FF00)
+#define PPU_V1_PWPR_DYNAMIC_EN    UINT32_C(0x00000100)
 
 /*------------- Typedefs -----------------*/
 
@@ -219,6 +225,41 @@ void ap_core_ppu_core_set_power_state(ap_core_service_context_t* p_context, unsi
         if (KNG_FAILED(status))
         {
             BUG_CHECK(status, core_ppu_addr, power_state_on);
+        }
+    }
+}
+
+// future silibs API for disabling PPU handshaking
+void ppu_v1_disable_handshake(uintptr_t ppu_v1_base_addr)
+{
+    vptr_cluster_ppu_reg ppu = (vptr_cluster_ppu_reg)ppu_v1_base_addr;
+
+    // Disable dynamic transitions (per TRM: needed before disabling handshaking)
+    ppu->ppu_pwpr.as_uint32 = PPU_V1_MODE_ON;
+
+    // Disable PPU handshaking
+    ppu->ppu_pwcr.as_uint32 &= ~(PPU_V1_PWCR_DEV_REQ_EN | PPU_V1_PWCR_DEV_ACTIVE_EN);
+}
+
+// function to disable PPU handshaking
+void ap_core_ppu_disable_handshaking(ap_core_service_context_t* p_context)
+{
+    FPFW_RUNTIME_ASSERT(p_context != NULL);
+
+    for (unsigned int core_idx = 0; core_idx < p_context->p_config->platform_die_core_count; ++core_idx)
+    {
+        // only initialize cores that are enabled (present/fused)
+        if (corebits_is_bit_set(&p_context->enabled_cores, core_idx))
+        {
+            uintptr_t cluster_ppu_addr =
+                (p_context->p_config->cluster_pex_base + (core_idx * p_context->p_config->cluster_stride) +
+                 CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS + VOYAGER_DSU_CLUSTER_CLUSTER_PPU_ADDRESS);
+            uintptr_t core_ppu_addr =
+                (p_context->p_config->cluster_pex_base + (core_idx * p_context->p_config->cluster_stride) +
+                 CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS + VOYAGER_DSU_CLUSTER_CORE0_PPU_ADDRESS);
+
+            ppu_v1_disable_handshake(core_ppu_addr);
+            ppu_v1_disable_handshake(cluster_ppu_addr);
         }
     }
 }

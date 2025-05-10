@@ -57,7 +57,7 @@ target_link_libraries(${TARGET}
         ms::lib::system_info
         ms::lib::threadx
         ms::lib::utils
-	ms::lib::mesh
+	    ms::lib::mesh
         ms::client_interface::ap_core
         ms::client_interface::startup_shutdown
         ms::service::fuse

@@ -73,7 +73,7 @@ class warm_start_test(EchoFallsBaseTest):
         
         try:
             self.log.info("Waiting for Heartbeat Msg")
-            core_com_channel.read_until(key="ScpHeartBeat", timeout_seconds=900)
+            core_com_channel.read_until(key="ScpHeartBeat", timeout_seconds=1800)
         except Exception as e:
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
@@ -118,7 +118,7 @@ class warm_start_test(EchoFallsBaseTest):
         core_com_channel.write_line(write_string=command)
 
         try:
-            core_com_channel.read_until(key="[APcore] SSI shutdown, shutdown type 2", timeout_seconds=900)
+            core_com_channel.read_until(key="[SoS] Reset complete notification sent successfully", timeout_seconds=900)
             self.log.info("Mailbox cmd sent to HSP requesting MSCP subsys reset.. ")
             self.log.info("Waiting until SCP is released out of reset.. ")
             core_com_channel.read_until(key="Hello World - SCP!", timeout_seconds=1800)

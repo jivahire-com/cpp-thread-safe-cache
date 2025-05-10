@@ -164,9 +164,11 @@ KNG_STATUS sos_request_shutdown(ssi_shutdown_type_t type)
     switch (type)
     {
     case SHUTDOWN:
+    case SHUTDOWN_SCP_INITIATED:
         shutdown_req.msg.as_uint32[0] = SET_HSP_MAILBOX_HEADER_ASUNIT32(HSP_MAILBOX_CMD_SHUTDOWN_REQ, 0, 0);
         break;
     case COLD_RESET:
+    case COLD_RESET_SCP_INITIATED:
         shutdown_req.msg.as_uint32[0] = SET_HSP_MAILBOX_HEADER_ASUNIT32(HSP_MAILBOX_CMD_COLD_RESET_REQ, 0, 0);
         break;
     case MSCP_SUBSYS_RESET:

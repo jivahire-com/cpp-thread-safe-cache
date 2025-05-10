@@ -982,8 +982,6 @@ void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_
 
 void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst_core_element_summary_t core_summary_data)
 {
-    // TODO: update via task for inst core data
-
     // parameter check: core_id, check if correct
     if (core_id >= NUMBER_OF_CORES_PER_DIE || core_summary_data == NULL)
     {
@@ -991,36 +989,39 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
     }
     else
     {
-        // Pstate and Cstate(TODO)
-
-        //
         // Depdending on the throttling status, we need to use a different source for what pstate id the
         // core is currently in.
-        //
-        // uint8_t current_pstate = core[core_id].pstate_from_pstate_pkt;
-        // if (core[core_id].throttling_status != NO_THROTTLE)
-        // {
-        //     current_pstate = core[core_id].pstate_from_current_pkt;
-        // }
+        uint8_t current_pstate = core[core_id].pstate_from_pstate_pkt;
+        if (core[core_id].throttling_status != NO_THROTTLE)
+        {
+            /* Note : DVFS engine can generate a lot of Pstate changes during throttling the
+            Pstate telemetry get suppressed and the only way to see Pstate samples is from
+            harvesting them from the periodic current telemetry packets */
+            current_pstate = core[core_id].pstate_from_current_pkt;
+        }
 
-        // core_summary_data->pc_state_info.pstate_id = core[core_id].pstate[current_pstate].pstate_id;
-        // core_summary_data->pc_state_info.frequency_Mhz = core[core_id].pstate[current_pstate].frequency_Mhz;
-        // core_summary_data->pc_state_info.power_mW = core[core_id].average_pwr_mW;
-        // core_summary_data->pc_state_info.pstate_residency_mS = core[core_id].pstate[current_pstate].residency_uS / 1000;
-        // core_summary_data->pc_state_info.cstate_plimit = core[core_id].active_sample_plimit;
-        // // force latency to zero.
-        // core_summary_data->pc_state_info.cstate_entry_latency_uS = 0;
-        // core_summary_data->pc_state_info.cstate_exit_latency_uS = 0;
-        // // Throttling and priorities
-        // core_summary_data->throttle_info.throttle_type_priority_id = core[core_id].throttling_priority_id;
-        // core_summary_data->throttle_info.throttle_type_residency_mS = core[core_id].throttle_info->residency_mS;
-        // core_summary_data->throttle_info.throttle_priority_residency_mS = 0;
-        // core_summary_data->throttle_info.throttle_start_stop_id = 0;
-        // // Voltage, current and Temperature
-        // core_summary_data->vct_info.vct_voltage_mV = core[core_id].voltage.latest_value_mV;
-        // core_summary_data->vct_info.vct_temperature_dC = core[core_id].temperature.latest_value_dC;
-        // core_summary_data->vct_info.vct_current_mA = core[core_id].current.latest_value_mA;
-        // core_summary_data->vct_info.vct_max_temp_dC = core[core_id].temperature.max_dC;
+        core_summary_data->pstate = current_pstate;
+        core_summary_data->cstate = core[core_id].cstate_from_pstate_pkt;
+        core_summary_data->frequency_Mhz = core[core_id].pstate[current_pstate].frequency_Mhz;
+        core_summary_data->power_mW = core[core_id].average_pwr_mW;
+        core_summary_data->voltage_mV = core[core_id].voltage.latest_value_mV;
+        core_summary_data->current_mA = core[core_id].current.latest_value_mA;
+        core_summary_data->temperature_dC = core[core_id].temperature.latest_value_dC;
+        core_summary_data->plimit = core[core_id].active_sample_plimit;
+
+        // TODO :Below items need to be updated, when corresponding records will have implementation.
+        // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584933
+        core_summary_data->mpam_id = 0;
+        // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584924
+        core_summary_data->cstate_entry_latency_uS = 0;
+        // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584925
+        core_summary_data->cstate_exit_latency_uS = 0;
+        // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584939
+        core_summary_data->guard_band_voltage_mV = 0;
+        core_summary_data->velocity_boost_priority = 0;
+        // TODO: what if not throttling and what if rack throttling (rack type + vm priority )?
+        core_summary_data->throttling_type_and_rack_priority =
+            tlm_logger_calculate_throttle_index(core[core_id].throttling_status);
     }
 }
 

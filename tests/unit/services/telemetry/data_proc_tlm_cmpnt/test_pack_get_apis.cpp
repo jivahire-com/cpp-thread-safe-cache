@@ -514,10 +514,38 @@ TEST_FUNCTION(test_get_pwr_soc_mpam_throttle_data, test_setup, test_teardown)
 
 TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     inst_core_element_summary_t core_summary_data = {0};
+    // pstate
+    core[TEST_CORE_ID_5].throttling_status = NO_THROTTLE;
+    core[TEST_CORE_ID_5].pstate_from_pstate_pkt = 10;
+    uint8_t pstate_index = core[TEST_CORE_ID_5].pstate_from_pstate_pkt;
+    core[TEST_CORE_ID_5].pstate[pstate_index].pstate_id = pstate_index;
+
+    core[TEST_CORE_ID_5].average_pwr_mW = 10;
+    core[TEST_CORE_ID_5].pstate[pstate_index].frequency_Mhz = 150;
+    // cstate
+    core[TEST_CORE_ID_5].cstate_from_pstate_pkt = 2;
+    uint16_t cstate_index = core[TEST_CORE_ID_5].cstate_from_pstate_pkt;
+    core[TEST_CORE_ID_5].cstate[cstate_index].cstate_id = cstate_index;
+    // core voltage
+    core[TEST_CORE_ID_5].voltage.latest_value_mV = 3200;
+    // core temperature and current,plimit.
+    core[TEST_CORE_ID_5].current.latest_value_mA = 30;
+    core[TEST_CORE_ID_5].temperature.latest_value_dC = 400;
+    // plimit
+    core[TEST_CORE_ID_5].active_sample_plimit = 1;
+
     data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(TEST_CORE_ID_5, &core_summary_data);
+    assert_int_equal(core_summary_data.pstate, core[TEST_CORE_ID_5].pstate[pstate_index].pstate_id);
+    assert_int_equal(core_summary_data.cstate, core[TEST_CORE_ID_5].cstate[cstate_index].cstate_id);
+
+    assert_int_equal(core_summary_data.plimit, core[TEST_CORE_ID_5].active_sample_plimit);
+    assert_int_equal(core_summary_data.power_mW, core[TEST_CORE_ID_5].average_pwr_mW);
+    assert_int_equal(core_summary_data.frequency_Mhz, core[TEST_CORE_ID_5].pstate[pstate_index].frequency_Mhz);
+
+    assert_int_equal(core_summary_data.voltage_mV, core[TEST_CORE_ID_5].voltage.latest_value_mV);
+    assert_int_equal(core_summary_data.current_mA, core[TEST_CORE_ID_5].current.latest_value_mA);
+    assert_int_equal(core_summary_data.temperature_dC, core[TEST_CORE_ID_5].temperature.latest_value_dC);
 }
 
 TEST_FUNCTION(test_get_inst_soc_rail_data, test_setup, test_teardown)

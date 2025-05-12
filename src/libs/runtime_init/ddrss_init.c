@@ -44,7 +44,9 @@ FPFW_INIT_COMPONENT(ddr_pcr, FPFW_INIT_DEPENDENCIES("css_pome", "atu_svc", "hw_v
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(ddr, FPFW_INIT_DEPENDENCIES("std_io", "ddr_pcr", "mesh", "hw_ver", "icc_hspmbx", "cfg_mgr", "css_pome", "atu_svc", "fuse_post_mesh", "sysinfo"))
+FPFW_INIT_COMPONENT(
+    ddr,
+    FPFW_INIT_DEPENDENCIES("std_io", "ddr_pcr", "mesh", "hw_ver", "icc_hspmbx", "cfg_mgr", "css_pome", "atu_svc", "fuse_post_mesh", "sysinfo", "core_info"))
 {
     static uint8_t ddr_stack[DDR_STACK_SIZE];
     static uint32_t ddr_queue_pool[10];

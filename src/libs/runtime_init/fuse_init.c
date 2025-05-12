@@ -17,6 +17,7 @@
 #include <idhw.h>
 #include <idsw.h>
 #include <stdio.h> // for NULL, printf
+#include <system_info.h>
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -61,7 +62,6 @@ FPFW_INIT_COMPONENT(fuse_post_mesh,
 {
     platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT);
     platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT_BRIDGE_INIT);
-
     FPFW_DBGPRINT_INFO(FUSE_NAME "SVC post-mesh init done\n");
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

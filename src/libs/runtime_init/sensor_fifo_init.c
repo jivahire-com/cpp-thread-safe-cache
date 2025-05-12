@@ -11,13 +11,13 @@
 
 
 #include <DfwkThreadXHost.h>     // for PDFWK_THREADX_HOST
+#include <core_info.h>
 #include <device_fifo_id.h>
 #include <fpfw_init.h>           // for FPFW_INIT_STATUS_SUCCESS, fpfw_init_get...
 #include <idsw.h>                // for idsw_get_die_id
 #include <idsw_kng.h>
 #include <inttypes.h>
 #include <kng_soc_constants.h>  // for NUM_AP_CORES_PER_DIE
-#include <platform_core_config.h>
 #include <scf_mhu_device.h>
 #include <sensor_fifo_cli_service.h>
 #include <sensor_fifo_driver_interface.h>
@@ -356,73 +356,49 @@ static void sensor_fifo_get_core_mask(uint64_t *core_mask_lo, uint64_t *core_mas
 }
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(sensor_fifo, FPFW_INIT_DEPENDENCIES("dfwk","hw_ver","std_io","icc_mscp2mscp"))
+FPFW_INIT_COMPONENT(sensor_fifo, FPFW_INIT_DEPENDENCIES("dfwk","hw_ver","std_io","icc_mscp2mscp","core_info"))
 {
-    switch (idsw_get_platform_sdv())
-    {
-    case PLATFORM_SVP_SIM:
-      platform_cores_config = &svp_cores;
-      break;
-    case PLATFORM_SVP_MIN_CONFIG_SIM:
-      platform_cores_config = &svp_min_config_cores;
-      break;
-    case PLATFORM_EMU:
-    case PLATFORM_EMU_1D:
-    case PLATFORM_EMU_2D:
-      platform_cores_config = &platform_cores;
-      break;
-    case PLATFORM_EMU_1D_8C:
-    case PLATFORM_EMU_2D_8C:
-      platform_cores_config = &zebu_cores_8C_model;
-      break;
-        // fall-thru intended
-    case PLATFORM_FPGA:
-    case PLATFORM_FPGA_TINY:
-    case PLATFORM_FPGA_SMALL:
-    case PLATFORM_FPGA_LARGE:
-    case PLATFORM_FPGA_LARGE_RVP:
+  platform_cores_config = core_info_get_enable_cores_result();
+  if(IS_PLATFORM_FPGA())
+  {
 
-        s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].entry_count = FPGA_TILE_TEMP_FIFO_NUM_ENTRIES;
-        s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].start_address_incl = FPGA_TILE_TEMP_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].end_address_excl = FPGA_TILE_TEMP_FIFO_END_ADDR;
+      s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].entry_count = FPGA_TILE_TEMP_FIFO_NUM_ENTRIES;
+      s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].start_address_incl = FPGA_TILE_TEMP_FIFO_START_ADDR;
+      s_fifo_properties[SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW].end_address_excl = FPGA_TILE_TEMP_FIFO_END_ADDR;
 
-        s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].entry_count = FPGA_TILE_VOLT_FIFO_NUM_ENTRIES;
-        s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].start_address_incl = FPGA_TILE_VOLT_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].end_address_excl = FPGA_TILE_VOLT_FIFO_END_ADDR;
+      s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].entry_count = FPGA_TILE_VOLT_FIFO_NUM_ENTRIES;
+      s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].start_address_incl = FPGA_TILE_VOLT_FIFO_START_ADDR;
+      s_fifo_properties[SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW].end_address_excl = FPGA_TILE_VOLT_FIFO_END_ADDR;
 
-        s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].entry_count = FPGA_CORE_CURRENT_FIFO_NUM_ENTRIES;
-        s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].start_address_incl = FPGA_CORE_CURRENT_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].end_address_excl = FPGA_CORE_CURRENT_FIFO_END_ADDR;
+      s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].entry_count = FPGA_CORE_CURRENT_FIFO_NUM_ENTRIES;
+      s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].start_address_incl = FPGA_CORE_CURRENT_FIFO_START_ADDR;
+      s_fifo_properties[SENSOR_FIFO_CORE_CURRENT_TELEMETRY_HW].end_address_excl = FPGA_CORE_CURRENT_FIFO_END_ADDR;
 
-        s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].entry_count = FPGA_PSTATE_FIFO_NUM_ENTRIES;
-        s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].start_address_incl = FPGA_PSTATE_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].end_address_excl = FPGA_PSTATE_FIFO_END_ADDR;
+      s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].entry_count = FPGA_PSTATE_FIFO_NUM_ENTRIES;
+      s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].start_address_incl = FPGA_PSTATE_FIFO_START_ADDR;
+      s_fifo_properties[SENSOR_FIFO_PSTATE_TELEMETRY_HW].end_address_excl = FPGA_PSTATE_FIFO_END_ADDR;
 
-        s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].entry_count = FPGA_SCP_MSG_FIFO_NUM_ENTRIES;
-        s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].start_address_incl = FPGA_SCP_MSG_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].end_address_excl = FPGA_SCP_MSG_FIFO_END_ADDR;
+      s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].entry_count = FPGA_SCP_MSG_FIFO_NUM_ENTRIES;
+      s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].start_address_incl = FPGA_SCP_MSG_FIFO_START_ADDR;
+      s_fifo_properties[SENSOR_FIFO_SCP_MSG_TELEMETRY_HW].end_address_excl = FPGA_SCP_MSG_FIFO_END_ADDR;
 
-        s_fifo_properties[SENSOR_FIFO_PVT_TEMP_FW].start_address_incl = FPGA_PVT_TEMP_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_PVT_TEMP_FW].end_address_excl = FPGA_PVT_TEMP_FIFO_END_ADDR;
+      s_fifo_properties[SENSOR_FIFO_PVT_TEMP_FW].start_address_incl = FPGA_PVT_TEMP_FIFO_START_ADDR;
+      s_fifo_properties[SENSOR_FIFO_PVT_TEMP_FW].end_address_excl = FPGA_PVT_TEMP_FIFO_END_ADDR;
 
-        s_fifo_properties[SENSOR_FIFO_PVT_VOLTAGE_FW].start_address_incl = FPGA_PVT_VOLT_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_PVT_VOLTAGE_FW].end_address_excl = FPGA_PVT_VOLT_FIFO_END_ADDR;
+      s_fifo_properties[SENSOR_FIFO_PVT_VOLTAGE_FW].start_address_incl = FPGA_PVT_VOLT_FIFO_START_ADDR;
+      s_fifo_properties[SENSOR_FIFO_PVT_VOLTAGE_FW].end_address_excl = FPGA_PVT_VOLT_FIFO_END_ADDR;
 
-        s_fifo_properties[SENSOR_FIFO_DIMM_TEMP_FW].start_address_incl = FPGA_DIMM_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_DIMM_TEMP_FW].end_address_excl = FPGA_DIMM_FIFO_END_ADDR;
+      s_fifo_properties[SENSOR_FIFO_DIMM_TEMP_FW].start_address_incl = FPGA_DIMM_FIFO_START_ADDR;
+      s_fifo_properties[SENSOR_FIFO_DIMM_TEMP_FW].end_address_excl = FPGA_DIMM_FIFO_END_ADDR;
 
-        s_fifo_properties[SENSOR_FIFO_VR_TEMP_FW].start_address_incl = FPGA_VR_TEMP_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_VR_TEMP_FW].end_address_excl = FPGA_VR_TEMP_FIFO_END_ADDR;
+      s_fifo_properties[SENSOR_FIFO_VR_TEMP_FW].start_address_incl = FPGA_VR_TEMP_FIFO_START_ADDR;
+      s_fifo_properties[SENSOR_FIFO_VR_TEMP_FW].end_address_excl = FPGA_VR_TEMP_FIFO_END_ADDR;
 
-        s_fifo_properties[SENSOR_FIFO_VR_CURRENT_FW].start_address_incl = FPGA_VR_CURRENT_FIFO_START_ADDR;
-        s_fifo_properties[SENSOR_FIFO_VR_CURRENT_FW].end_address_excl = FPGA_VR_CURRENT_FIFO_END_ADDR;
+      s_fifo_properties[SENSOR_FIFO_VR_CURRENT_FW].start_address_incl = FPGA_VR_CURRENT_FIFO_START_ADDR;
+      s_fifo_properties[SENSOR_FIFO_VR_CURRENT_FW].end_address_excl = FPGA_VR_CURRENT_FIFO_END_ADDR;
 
-        s_scf_mhu_device_cfg.scf_ram_buffer_size = FPGA_SCF_RAM_BUFFER_SIZE_BYTES;
-        platform_cores_config = &fpga_platform_cores;
-    default:
-        break;
-    }
-
+      s_scf_mhu_device_cfg.scf_ram_buffer_size = FPGA_SCF_RAM_BUFFER_SIZE_BYTES;
+  }
     // get driver fwk threadx handle
     fpfw_init_component_id_t dfwk_id = "dfwk";
     PDFWK_THREADX_HOST drvfwk = (PDFWK_THREADX_HOST)fpfw_init_get_handle(dfwk_id);

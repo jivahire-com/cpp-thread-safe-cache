@@ -18,6 +18,7 @@ add_library(${TARGET}
         build_info_cli_init.c
         boot_status_init.c
         cfg_mgr_init.c
+        core_info_init.c
         cli_accel_intr_init.c
         cli_crash_dump_init.c
         cli_ddr_init.c
@@ -108,6 +109,7 @@ target_link_libraries(
         ms::lib::build_info_cli
         ms::lib::cli_accel_int
         ms::lib::config_manager
+        ms::lib::core_info
         ms::lib::config_manager::cli
         ms::lib::cortex_m7::mpu
         ms::lib::cortex_m7::nvic
@@ -247,6 +249,7 @@ add_library(${TARGET}
         atu_init.c
         boot_status_init.c
         cfg_mgr_init.c
+        core_info_init.c
         cli_crash_dump_init.c
         cli_init.c
         debug_init.c
@@ -312,6 +315,7 @@ target_link_libraries(
         ms::lib::accelerator_ip
         ms::lib::boot_status
         ms::lib::config_manager
+        ms::lib::core_info
         ms::lib::config_manager::cli
         ms::lib::cortex_m7::nvic
         ms::lib::cortex_m7::mpu

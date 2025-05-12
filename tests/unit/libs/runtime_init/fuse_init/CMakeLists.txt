@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         ms::lib::hsp_firmware_headers
         ms::lib::scp_interrupts
         ms::lib::threadx
+        ms::lib::system_info
         ms::mocks::event_trace
         ms::mocks::threadx
         ms::service::atu_service
@@ -56,4 +57,6 @@ mock_target(${TARGET}
    platform_fuse_override
    platform_fuse_distribution
    platform_fuse_init_cli
+   system_info_get_platform_disable_cores 
+   system_info_get_platform_disable_cores 
 )

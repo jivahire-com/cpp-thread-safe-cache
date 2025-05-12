@@ -15,19 +15,20 @@
 #include <FpFwAssert.h>            // for FPFW_RUNTIME_ASSERT
 #include <atu_api.h>               // for MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR
 #include <core_cluster_top_regs.h> // for CORE_CLUSTER_TOP_CORE_CLUSTER0_AD...
+#include <core_info.h>
 #include <corebits.h>
 #include <fpfw_init.h> // for fpfw_init_get_handle, FPFW_INIT_S...
 #include <idhw.h>
 #include <idsw.h> // for idsw_get_die_id
 #include <idsw_kng.h>
 #include <kng_soc_constants.h> // for NUM_AP_CORES_PER_DIE
-#include <platform_core_config.h>
-#include <power_init.h> // for power_init, power_interface_init
+#include <power_init.h>        // for power_init, power_interface_init
 #include <silibs_scp_exp_top_regs.h>
 #include <silibs_scp_top_regs.h>
 #include <startup_shutdown.h>
 #include <stdbool.h> // for false, true
 #include <stdint.h>  // for uint32_t
+#include <system_info.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -35,9 +36,10 @@
 
 FPFW_INIT_COMPONENT(
     pwr_svc,
-    FPFW_INIT_DEPENDENCIES("dfwk", "fuse_post_mesh", "atu_svc", "gpio_lib", "icc_die2die", "avs0_int", "avs1_int", "avs2_int", "avs3_int", "hw_ver", "cfg_mgr"))
+    FPFW_INIT_DEPENDENCIES("dfwk", "fuse_post_mesh", "atu_svc", "gpio_lib", "icc_die2die", "avs0_int", "avs1_int", "avs2_int", "avs3_int", "hw_ver", "cfg_mgr", "core_info"))
 {
     static power_service_t power_service;
+    corebits_t* sys_cores_in_die1 = core_info_get_enable_cores_result();
     static power_service_config_t power_config = {
         .soc_pvt_base = (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_PVT_ADDRESS),
         .cluster_stride = (CORE_CLUSTER_TOP_CORE_CLUSTER1_ADDRESS - CORE_CLUSTER_TOP_CORE_CLUSTER0_ADDRESS),
@@ -118,7 +120,7 @@ FPFW_INIT_COMPONENT(
 
     // platform defaults
     power_config.cluster_pex_base = MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR;
-    power_config.platform_cores_in_die = &platform_cores;
+    power_config.platform_cores_in_die = sys_cores_in_die1;
     power_config.platform_die_core_count = NUM_AP_CORES_PER_DIE;
     power_config.platform_soc_power_support = false;
     power_config.platform_core_power_support = false;
@@ -126,25 +128,22 @@ FPFW_INIT_COMPONENT(
     // is boot dual die?
     power_config.platform_is_multi_die = (!idhw_is_single_die_boot_en());
     power_config.is_primary_die = (idsw_get_die_id() == DIE_0);
-
+    power_config.platform_cores_in_die = sys_cores_in_die1;
     // platform overrides
     switch (idsw_get_platform_sdv())
     {
     case PLATFORM_SVP_SIM:
         // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1811925/
         // update based on https://azurecsi.visualstudio.com/Dev/_workitems/edit/1811919
-        power_config.platform_cores_in_die = &svp_cores;
         power_config.platform_soc_power_support = true;
         power_config.platform_core_power_support = true;
         break;
     case PLATFORM_SVP_MIN_CONFIG_SIM:
-        power_config.platform_cores_in_die = &svp_min_config_cores;
         power_config.platform_soc_power_support = true;
         power_config.platform_core_power_support = true;
         break;
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
-        power_config.platform_cores_in_die = &fpga_platform_cores;
         // FPGA r21 supports core and soc power management
         power_config.platform_soc_power_support = true;
         power_config.platform_core_power_support = true;
@@ -152,12 +151,10 @@ FPFW_INIT_COMPONENT(
     case PLATFORM_EMU:
     case PLATFORM_EMU_1D:
     case PLATFORM_EMU_2D:
-        power_config.platform_cores_in_die = &platform_cores;
         power_config.platform_core_power_support = true;
         break;
     case PLATFORM_EMU_1D_8C:
     case PLATFORM_EMU_2D_8C:
-        power_config.platform_cores_in_die = &zebu_cores_8C_model;
         power_config.platform_core_power_support = true;
         break;
     default:

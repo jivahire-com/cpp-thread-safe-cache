@@ -56,6 +56,7 @@ void __wrap_ap_core_init(pap_core_service_t p_device,
 {
     assert_non_null(p_device);
     assert_non_null(p_config);
+    assert_non_null(p_config->platform_cores_in_die);
     assert_non_null(icc_base_ctx);
     check_expected_ptr(p_schedule);
 
@@ -108,10 +109,8 @@ TEST_FUNCTION(ap_core_init_ap_core_svc, nullptr, nullptr)
     //! Set up expectations
     DFWK_THREADX_HOST test_host = {};
 
-    fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(0xdeadbeef);
-    will_return(__wrap_fpfw_init_get_handle, dummy_icc_hspmbx_ctx);
-
-    will_return(__wrap_fpfw_init_get_handle, &test_host); //! driver fmwk host handle
+    will_return(__wrap_fpfw_init_get_handle, (void*)0x2cfed84); // icc_hspmbx
+    will_return(__wrap_fpfw_init_get_handle, &test_host);       // dfwk
     expect_value(__wrap_ap_core_init, p_schedule, &(test_host.Schedule));
 
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
@@ -133,10 +132,8 @@ TEST_FUNCTION(ap_core_init_ap_core_svc__svp, nullptr, nullptr)
     //! Set up expectations
     DFWK_THREADX_HOST test_host = {};
 
-    fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(0xdeadbeef);
-    will_return(__wrap_fpfw_init_get_handle, dummy_icc_hspmbx_ctx);
-
-    will_return(__wrap_fpfw_init_get_handle, &test_host); //! driver fmwk host handle
+    will_return(__wrap_fpfw_init_get_handle, (void*)0x2cfed84); // icc_hspmbx
+    will_return(__wrap_fpfw_init_get_handle, &test_host);       // dfwk
     expect_value(__wrap_ap_core_init, p_schedule, &(test_host.Schedule));
 
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
@@ -159,13 +156,11 @@ TEST_FUNCTION(ap_core_init_ap_core_svc__bigfpga, nullptr, nullptr)
     DFWK_THREADX_HOST test_host = {};
     uint32_t rvbar_value = 0;
 
-    fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(0xdeadbeef);
-    will_return(__wrap_fpfw_init_get_handle, dummy_icc_hspmbx_ctx);
-
-    will_return(__wrap_fpfw_init_get_handle, &test_host); //! driver fmwk host handle
+    will_return(__wrap_fpfw_init_get_handle, (void*)0x2cfed84); // icc_hspmbx
+    will_return(__wrap_fpfw_init_get_handle, &test_host);       // dfwk
     expect_value(__wrap_ap_core_init, p_schedule, &(test_host.Schedule));
 
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE_RVP);
     will_return(__wrap_idsw_get_die_id, DIE_0);
 
     // on FPGA we also expect a call that will write forever loop; it uses atu_translate_address call

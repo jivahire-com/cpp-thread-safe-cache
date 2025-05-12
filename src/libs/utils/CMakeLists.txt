@@ -4,7 +4,6 @@ set (TARGET utils)
 add_library(
     ${TARGET} STATIC
         utils.c
-        platform_core_config.c
 )
 
 target_include_directories(

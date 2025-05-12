@@ -240,6 +240,10 @@
     <Knob name="zq_cal_interval" type="uint8_t" default="10" help="Periodic ZQCAL interval value in DDRSS_INTERVAL_TIME_UNIT. 0 : 256 units; 1 to 255 : number of units." />
     <Knob name="zq_cal_interval_unit" type="uint8_t" default="1" help="Periodic ZQCAL interval unit (DDRSS_INTERVAL_TIME_UNIT)." />
 
+    <!-- Extra DDR internal knobs from silibs -->
+    <Knob name="ddr_debug_level" type="uint8_t" default="2" help="Control DDR debug print level. 0: None; 1: Critical; 2: Info; 3: Debug; 4:Trace. (0 ~ 4)" />
+    <Knob name="parallel_phy_train_en" type="uint8_t" default="1" help="Run DDR PHY training FW in parallel. 0 - Disable, 1 - Enable" />
+
     <!-- Validation ONLY knobs -->
     <Knob name="borgens_1gb_ddr_reserve_enable" type="bool" default="false" />
   </Knobs>

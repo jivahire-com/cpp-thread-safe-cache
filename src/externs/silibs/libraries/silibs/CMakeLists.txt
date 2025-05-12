@@ -128,7 +128,6 @@ add_subdirectory(rng ${LIB_OUTS_DIR}/rng)
 target_compile_options (
   ddrss PRIVATE
     "-Os"
-    "-DDDRSS_COMPILE_DEBUG_LEVEL=DDRSS_DEBUG_LEVEL_CRITICAL"
     "-DDDRSS_PHY_TRAIN_FW_BUILTIN_ENABLE=0"
     "-DDDRSS_PHY_PIE_CODE_DATA_BUILTIN_ENABLE=0"
 )

@@ -63,7 +63,7 @@ extern uint8_t _data_etproviderfilter_end;   // Pointer to the end   of the .Pro
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(etd, FPFW_INIT_DEPENDENCIES("std_io"))
+FPFW_INIT_COMPONENT(etd, FPFW_INIT_DEPENDENCIES("std_io", "debug_print"))
 {
     etd_service_config_t config = {
         .event_queue_config = {.base_address = (uintptr_t)s_etd_event_queue_memory,

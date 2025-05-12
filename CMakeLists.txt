@@ -22,6 +22,8 @@ add_compile_definitions(SCP_CONFIG_VARIABLE_TYPE)
 # SILIBS_PRINT_VERBOSITY_LEVEL_ALL      0xF
 add_compile_definitions(SILIBS_PRINT_VERBOSITY_LEVEL=0x1) # Set to Critical
 
+add_compile_definitions(FPFW_DEBUG)
+
 # Suppress strncpy() is deprecated warnings in Unit test windows setup.
 # strncpy() is used in Event trace
 if("$ENV{REPO_APP_TOOLCHAIN}" STREQUAL "i386-pc-windows-msvc")

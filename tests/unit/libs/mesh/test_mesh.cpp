@@ -1272,7 +1272,7 @@ void verify_mesh_ras_config_knobs(void)
     assert_int_equal(default_mesh_ras_cfg_knb.mesh_RAS_Uncorrected_Error_Int_Disable, false);
     assert_int_equal(default_mesh_ras_cfg_knb.mesh_RAS_Fault_Handling_Int_Disable, false);
     assert_int_equal(default_mesh_ras_cfg_knb.mesh_RAS_Corrected_Error_Int_Disable, true);
-    assert_int_equal(default_mesh_ras_cfg_knb.mesh_RAS_Parity_Error_Disable, true);
+    assert_int_equal(default_mesh_ras_cfg_knb.mesh_RAS_Parity_Error_Disable, false);
 }
 
 void verify_ccg_config_knobs(void)

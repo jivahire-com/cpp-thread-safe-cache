@@ -189,7 +189,9 @@ void prod_ddrss_interrupt_handler(void* context)
         ddr_cper.error_status.error_type = ddr_cper.error_type;
         ddr_cper.error_status.data = 1;
         ddr_cper.valid_error_status = 1;
-        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &ddr_cper, sizeof(acpi_err_sec_mem_vendor_t));
+        acpi_cper_section_t cper_section;
+        cper_section.sec_ddr_mem_vendor = ddr_cper;
+        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(ddr_cper));
     }
 
     uint32_t int_mask;
@@ -267,7 +269,9 @@ void prod_ddrss_interrupt_handler(void* context)
 
         printf("CPER:DDR PLL");
         prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_PLL_INTERRUPT_OUT, &ddr_cper);
-        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &ddr_cper, sizeof(acpi_err_sec_mem_vendor_t));
+        acpi_cper_section_t cper_section;
+        cper_section.sec_ddr_mem_vendor = ddr_cper;
+        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(ddr_cper));
     }
 
     int_mask = (1 << DDRSS_INTU_PCR_PAR_ERR);
@@ -278,7 +282,9 @@ void prod_ddrss_interrupt_handler(void* context)
 
         printf("CPER:DDR PCR PAR");
         prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_PCR_PAR_ERR, &ddr_cper);
-        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &ddr_cper, sizeof(acpi_err_sec_mem_vendor_t));
+        acpi_cper_section_t cper_section;
+        cper_section.sec_ddr_mem_vendor = ddr_cper;
+        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(ddr_cper));
     }
 
     int_mask = (1 << DDRSS_INTU_INTU_PAR_ERR);
@@ -289,7 +295,9 @@ void prod_ddrss_interrupt_handler(void* context)
 
         printf("CPER:DDR INTU PAR");
         prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_INTU_PAR_ERR, &ddr_cper);
-        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &ddr_cper, sizeof(acpi_err_sec_mem_vendor_t));
+        acpi_cper_section_t cper_section;
+        cper_section.sec_ddr_mem_vendor = ddr_cper;
+        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(ddr_cper));
     }
 
     int_mask = (1 << DDRSS_INTU_MC0_SCP_INT);
@@ -439,7 +447,9 @@ int prod_ddrss_phy_interrupt_handler(uint32_t mc)
         ddr_cper.error_status.error_type = ddr_cper.error_type;
         ddr_cper.error_status.data = 1;
         ddr_cper.valid_error_status = 1;
-        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &ddr_cper, sizeof(ddr_cper));
+        acpi_cper_section_t cper_section;
+        cper_section.sec_ddr_mem_vendor = ddr_cper;
+        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &cper_section, sizeof(ddr_cper));
     }
 
     // Clear interrupt
@@ -511,7 +521,9 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
 
         printf("CPER:MC media ESC trans changed");
         prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_MC_MEDIAECSTRANSPCHANGED, &ddr_cper);
-        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &ddr_cper, sizeof(acpi_err_sec_mem_vendor_t));
+        acpi_cper_section_t cper_section;
+        cper_section.sec_ddr_mem_vendor = ddr_cper;
+        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(acpi_err_sec_mem_vendor_t));
     }
 
     if (mc_intu_sts & (1 << DDRSS_INTU_MC_MEDIAREFTEMPCHANGED))
@@ -528,7 +540,9 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
 
         printf("CPER:MC media ref temp changed");
         prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_MC_MEDIAREFTEMPCHANGED, &ddr_cper);
-        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &ddr_cper, sizeof(acpi_err_sec_mem_vendor_t));
+        acpi_cper_section_t cper_section;
+        cper_section.sec_ddr_mem_vendor = ddr_cper;
+        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(acpi_err_sec_mem_vendor_t));
     }
 
     if (mc_intu_sts & (1 << DDRSS_INTU_MC_MEDIAREFTEMPHIGH))
@@ -545,7 +559,9 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
 
         printf("CPER:MC media ref temp changed");
         prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_MC_MEDIAREFTEMPHIGH, &ddr_cper);
-        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &ddr_cper, sizeof(acpi_err_sec_mem_vendor_t));
+        acpi_cper_section_t cper_section;
+        cper_section.sec_ddr_mem_vendor = ddr_cper;
+        hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(acpi_err_sec_mem_vendor_t));
     }
 
     if (mc_intu_sts & (1 << DDRSS_INTU_MC_PHYINLP3))

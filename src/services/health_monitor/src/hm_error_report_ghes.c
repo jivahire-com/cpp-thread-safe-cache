@@ -230,7 +230,10 @@ void activate_error_domain(uint16_t error_domain_idx, const guid_t* error_domain
     HM_LOG_INFO("%s error domain %s", get_error_domain_name(error_domain_idx), skip ? "already registered" : "registered");
 }
 
-void update_error_record_section(uint16_t error_domain_idx, acpi_error_severity_t err_severity, void* err_record_section, uint32_t err_record_section_size)
+void update_error_record_section(uint16_t error_domain_idx,
+                                 acpi_error_severity_t err_severity,
+                                 acpi_cper_section_t* err_record_section,
+                                 uint32_t err_record_section_size)
 {
     if ((error_domain_idx < ACPI_ERROR_DOMAIN_COUNT) && (err_record_section_size <= sizeof(acpi_cper_section_t)))
     {

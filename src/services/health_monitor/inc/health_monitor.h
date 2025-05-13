@@ -95,7 +95,7 @@ void hm_register_error_domain(uint16_t error_domain_idx,
 
 void hm_submit_cper(uint16_t error_domain_idx,
                     acpi_error_severity_t err_severity,
-                    void* err_record_section,
+                    acpi_cper_section_t* err_record_section,
                     uint32_t err_record_section_size);
 
 void hm_pre_ddr_init(hm_config_t* hm_config);

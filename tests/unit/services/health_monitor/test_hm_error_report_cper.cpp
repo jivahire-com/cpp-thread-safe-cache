@@ -56,7 +56,10 @@ TEST_FUNCTION(test_hm_submit_cper_ce, post_ddr_setup, nullptr)
     general_cper_section.err_misc2 = 0x56;
     general_cper_section.err_misc3 = 0x78;
 
-    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, ACPI_ERROR_SEVERITY_CORRECTED, &general_cper_section, sizeof(general_cper_section));
+    acpi_cper_section_t cper_section;
+    cper_section.sec_mesh = general_cper_section;
+
+    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(general_cper_section));
 
     // locate error record
     hm_config_t* hm_config = get_hm_config();
@@ -84,8 +87,11 @@ TEST_FUNCTION(test_hm_submit_cper_ce_multi, post_ddr_setup, nullptr)
     general_cper_section.err_misc2 = 0x56;
     general_cper_section.err_misc3 = 0x78;
 
-    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, ACPI_ERROR_SEVERITY_CORRECTED, &general_cper_section, sizeof(general_cper_section));
-    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, ACPI_ERROR_SEVERITY_CORRECTED, &general_cper_section, sizeof(general_cper_section));
+    acpi_cper_section_t cper_section;
+    cper_section.sec_mesh = general_cper_section;
+
+    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(general_cper_section));
+    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(general_cper_section));
 
     // locate error record
     hm_config_t* hm_config = get_hm_config();
@@ -114,7 +120,10 @@ TEST_FUNCTION(test_hm_submit_cper_ue, post_ddr_setup, nullptr)
     general_cper_section.err_misc2 = 0x56;
     general_cper_section.err_misc3 = 0x78;
 
-    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &general_cper_section, sizeof(general_cper_section));
+    acpi_cper_section_t cper_section;
+    cper_section.sec_mesh = general_cper_section;
+
+    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &cper_section, sizeof(general_cper_section));
 
     // locate error record
     hm_config_t* hm_config = get_hm_config();
@@ -143,8 +152,11 @@ TEST_FUNCTION(test_hm_submit_cper_ue_multi, post_ddr_setup, nullptr)
     general_cper_section.err_misc2 = 0x56;
     general_cper_section.err_misc3 = 0x78;
 
-    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &general_cper_section, sizeof(general_cper_section));
-    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &general_cper_section, sizeof(general_cper_section));
+    acpi_cper_section_t cper_section;
+    cper_section.sec_mesh = general_cper_section;
+
+    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &cper_section, sizeof(general_cper_section));
+    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &cper_section, sizeof(general_cper_section));
 
     // locate error record
     hm_config_t* hm_config = get_hm_config();

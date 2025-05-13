@@ -36,7 +36,7 @@ bool ddr_subsystem_enabled();
 void hm_register_cached_error_domain();
 void hm_submit_cached_cper();
 void hm_report_error_event(hm_error_report_type_t type, bool trigger);
-void update_error_record_section(uint16_t error_domain_idx, acpi_error_severity_t err_severity, void *err_record_section, uint32_t err_record_section_size);
+void update_error_record_section(uint16_t error_domain_idx, acpi_error_severity_t err_severity, acpi_cper_section_t *err_record_section, uint32_t err_record_section_size);
 void hm_prepare_error_injection_listener(fpfw_icc_base_ctx_t* icc_ctx);
 void hm_prepare_mscp_listener(fpfw_icc_base_ctx_t* icc_ctx);
 void hm_prepare_sdm_listener(fpfw_icc_base_ctx_t* icc_ctx);

@@ -108,10 +108,10 @@ static void hm_accel_error_record_submit_listener_cb(void* context, size_t outpu
     memcpy((void*)&curr_cper_info->accel_err_payload, (void*)curr_cper_buffer_ptr, sizeof(acpi_err_sec_accel_vendor_t));
     curr_cper_info->err_severity = (uint32_t)(*((curr_cper_buffer_ptr) + sizeof(acpi_err_sec_accel_vendor_t)));
 
-    hm_submit_cper(curr_cper_info->error_domain_index,
-                   curr_cper_info->err_severity,
-                   &curr_cper_info->accel_err_payload,
-                   sizeof(acpi_err_sec_accel_vendor_t));
+    acpi_cper_section_t cper_section;
+    cper_section.sec_sdm = curr_cper_info->accel_err_payload;
+
+    hm_submit_cper(curr_cper_info->error_domain_index, curr_cper_info->err_severity, &cper_section, sizeof(acpi_err_sec_accel_vendor_t));
 
     hm_config_t* hm_config = get_hm_config();
     hm_accel_error_record_submit_listener(hm_config->icc_ctx[core_type], curr_cper_info);

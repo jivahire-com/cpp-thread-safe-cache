@@ -69,9 +69,12 @@ static void ram_ecc_isr(uint32_t* status_addr, uint32_t* address_addr, uint32_t 
     if (status & status_mask)
     {
         // Submit CPER
-        acpi_err_sec_firmware_t cper_section = {.severity = ACPI_ERROR_SEVERITY_CORRECTED,
-                                                .record_id = SCP_SCF_RAM,
-                                                .param = {status, address, err, 0}};
+        acpi_err_sec_firmware_t sec_fw_cper_section = {.severity = ACPI_ERROR_SEVERITY_CORRECTED,
+                                                       .record_id = SCP_SCF_RAM,
+                                                       .param = {status, address, err, 0}};
+
+        acpi_cper_section_t cper_section;
+        cper_section.sec_fw = sec_fw_cper_section;
 
         hm_submit_cper(ACPI_ERROR_DOMAIN_SCP_PROC, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(cper_section));
 

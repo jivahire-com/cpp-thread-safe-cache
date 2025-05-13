@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include <bug_check.h>
+#include <cper.h>
 #include <health_monitor_i.h>
 #include <string.h>
 
@@ -20,7 +21,7 @@
 static void update_local_error_record(uint32_t sec_idx,
                                       uint16_t error_domain_idx,
                                       acpi_error_severity_t err_severity,
-                                      void* err_record_section,
+                                      acpi_cper_section_t* err_record_section,
                                       uint32_t err_record_section_size);
 
 /*-- Declarations (Statics and globals) --*/
@@ -28,7 +29,10 @@ static hm_error_record_t error_record_sections[MAX_CPER_CACHE] = {0};
 static uint32_t local_cper_count = 0;
 /*------------- Functions ----------------*/
 
-void hm_submit_cper(uint16_t error_domain_idx, acpi_error_severity_t err_severity, void* err_record_section, uint32_t err_record_section_size)
+void hm_submit_cper(uint16_t error_domain_idx,
+                    acpi_error_severity_t err_severity,
+                    acpi_cper_section_t* err_record_section,
+                    uint32_t err_record_section_size)
 {
     if ((error_domain_idx < ACPI_ERROR_DOMAIN_COUNT) && (err_record_section_size <= sizeof(acpi_cper_section_t)) &&
         err_record_section != NULL && err_record_section_size > 0)
@@ -88,7 +92,7 @@ void hm_submit_cached_cper()
 void update_local_error_record(uint32_t sec_idx,
                                uint16_t error_domain_idx,
                                acpi_error_severity_t err_severity,
-                               void* err_record_section,
+                               acpi_cper_section_t* err_record_section,
                                uint32_t err_record_section_size)
 {
     error_record_sections[sec_idx].error_domain_idx = error_domain_idx;

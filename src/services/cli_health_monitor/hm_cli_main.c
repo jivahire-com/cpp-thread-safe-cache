@@ -251,7 +251,10 @@ static FPFW_CLI_STATUS hm_submit_sample_cper_cli(int argc, const char** argv)
     general_cper_section.err_misc2 = 0x56;
     general_cper_section.err_misc3 = 0x78;
 
-    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, sev, &general_cper_section, sizeof(general_cper_section));
+    acpi_cper_section_t cper_section;
+    cper_section.sec_mesh = general_cper_section;
+
+    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, sev, &cper_section, sizeof(general_cper_section));
     return CLI_SUCCESS;
 }
 

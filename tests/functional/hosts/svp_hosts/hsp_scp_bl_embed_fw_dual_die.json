@@ -63,6 +63,7 @@
         "vdk_name": "KingsgateSVP",
         "work_dir": ".svp_simulator",
         "setup_script": "${env:REPO_APP_PATH_microsoft.internal.windows.virtualizerruntime}/SLS/windows/setup.bat",
+        "probes": ["${env:REPO_APP_ROOT}tools/svp_probes/mother_probe.py"],
         "params": {
             "KingsgateSVP.DIE_0.CDEDSS.SDM_EMCPU.terminal_uart_sdm.#SCML_PROPERTIES#ENABLE_TCP_ON_PORT":"4271",
             "KingsgateSVP.DIE_0.HSSS.HSP.HSP_E21_LT_PSP.#EXTRA_PROPERTIES#/ImageInfo/core0/cpu0/initial_image":"${env:REPO_APP_PATH_kingsgate.firmware.a0rom}/release/bin/sim/rom-sim.elf",

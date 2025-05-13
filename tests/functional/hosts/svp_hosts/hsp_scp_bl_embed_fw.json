@@ -50,6 +50,7 @@
         "vdk_name": "KingsgateSVP",
         "work_dir": ".svp_simulator",
         "setup_script" :"${env:REPO_APP_PATH_microsoft.internal.windows.virtualizerruntime}/SLS/windows/setup.bat",
+        "probes": ["${env:REPO_APP_ROOT}tools/svp_probes/mother_probe.py"],
         "params": {
             "KingsgateSVP.#EXTRA_PROPERTIES#/multi_chip_mode": "false",
             "KingsgateSVP.DIE_0.CDEDSS.SDM_EMCPU.terminal_uart_sdm.#SCML_PROPERTIES#ENABLE_TCP_ON_PORT": "4271",

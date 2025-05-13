@@ -40,6 +40,7 @@
         <package name="init_graph_tool" version="1.1.*" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/" />
         <package name="xmlschema" version="3.3.1" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/" />
         <package name="fpfw_adoutils" version="0.*" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/" />
+        <package name="crash-dump-analysis-tool" version="0.6.129" source="https://pkgs.dev.azure.com/AzureCSI/DuvallFw/_packaging/chie.duvall.1pfw/pypi/simple/" />
     </pip_packages>
 
 </packages>

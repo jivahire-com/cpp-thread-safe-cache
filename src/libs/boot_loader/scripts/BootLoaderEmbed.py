@@ -76,7 +76,7 @@ def get_sections(objdump, elf):
         
 
 
-# This script is directly called from CreateBootloader.cmake
+# This script is directly called from CreateBootloaderEmbed.cmake
 # Input arguments should match inputs from that cmake script
 def main():
 

@@ -203,8 +203,10 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
             ${PYTHON_EMBED_SCRIPT}
             ${ITCM_BIN_PATH}
             ${DTCM_BIN_PATH}
+            ${RMSS_BIN_PATH}
             ${ITCM_BIN_GZ_PATH}
             ${DTCM_BIN_GZ_PATH}
+            ${RMSS_BIN_GZ_PATH}
         COMMENT "Combining flat binaries into ${FW_IMAGE_TARGET}.embed")
 
     add_custom_target(${FW_IMAGE_TARGET}_embed DEPENDS ${EMBED_PATH})

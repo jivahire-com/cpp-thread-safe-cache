@@ -85,9 +85,9 @@ void quiesce_complete_notify(DFWK_ASYNC_REQUEST_HEADER* request, void* p_complet
     fpfw_icc_base_recv_req_t* recv_params = (fpfw_icc_base_recv_req_t*)p_completion_context;
     static fpfw_icc_base_send_req_t send_params;
     memset(&send_params, 0, sizeof(send_params));
+    ((kng_hsp_mailbox_msg*)recv_params->payload_buffer)->header.cmd = HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_RSP;
     send_params.payload_buffer = recv_params->payload_buffer; // Buffer containing the message to send
     send_params.buffer_size = HSP_MBOX_MAX_MESG_SIZE_BYTES;   // Size of the buffer
-    recv_params->recv_entry.cmd_code = HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_RSP; // Set the appropriate command code
     send_params.cb = reset_complete_notify;
     send_params.cb_ctx = &send_params; // Pass the context to the callback function
 

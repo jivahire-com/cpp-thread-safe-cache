@@ -20,6 +20,7 @@
 #include <cmn_config.h>    // for CMN800_CONFIG_CONFIG
 #include <d2d_cntr_sync.h> // for d2d_counter_sync_enable
 #include <d2dss.h>
+#include <ddr_i3c.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h> // for fpfw_icc_base_ctx_t
 #include <hsp_firmware_headers.h>
@@ -592,10 +593,101 @@ int mesh_read_binary_table_from_rmss(uint8_t die_num, uint32_t cmn_config_enum)
     return sts;
 }
 
+/**
+ *  Function to decode the mesh configuration to the number of DDRSS required
+ *  This uses the SNF Node ID pairs connected to the DDRSS controllers to determine
+ *  which DDRSS needs to be enabled based on the Mesh Config.
+ *  For Ex:
+ *  SNF_0 and SNF-2 are connected to DDRSS0 MC0 and MC1 respectively.
+ *  If either of SNF_0 or SNF_1 is detected in the node_id_indices, then DDRSS_0 (BIT0) is set
+ *
+ *  @param
+ *      uint32_t* ddrss_en - Pointer to the variable to fill with the DDRSS required
+ *      uint32_t cmn_config_enum - The mesh configuration enum to be used to determine the DDRSS
+ *      (e.g. CONFIG_1D_UMA_8HNS_HIER_3SN_enum)
+ *
+ *  @return
+ *      none
+ **/
+void mesh_check_ddrss_from_config(uint32_t* ddrss_en, uint32_t cmn_config_enum)
+{
+    *ddrss_en = 0x0;
+    if (cmn_config_enum >= CONFIG_CMN800_MAX_enum)
+    {
+        MESH_CRIT("Invalid Mesh Config Enum 0x%x\n", cmn_config_enum);
+        return;
+    }
+
+    config_t* test_config = cmn800_get_mesh_table_ptr();
+    cmn800_snf_to_mc_config_t* local_snf_to_mc_config = NULL;
+    local_snf_to_mc_config = cmn800_generate_ddr_mc_map_from_snf_config(&test_config[cmn_config_enum]);
+
+    // local_snf_to_mc_config->ddr_mc_map holds the MC to be used for the mesh
+    // This needs to be converted to DDRSS_EN for getting the BITMASK
+
+    for (uint8_t mc_count = 0; mc_count < CMN800_NUM_SUPPORTED_SNF_NODES; mc_count++) // MC Count == SNF Count
+    {
+        switch (local_snf_to_mc_config->ddr_mc_map[mc_count])
+        {
+        case DDRSS_0_MC0:
+        case DDRSS_0_MC1:
+            *ddrss_en |= BITMASK_DDRSS_0;
+            break;
+        case DDRSS_1_MC2:
+        case DDRSS_1_MC3:
+            *ddrss_en |= BITMASK_DDRSS_1;
+            break;
+        case DDRSS_2_MC4:
+        case DDRSS_2_MC5:
+            *ddrss_en |= BITMASK_DDRSS_2;
+            break;
+        case DDRSS_3_MC6:
+        case DDRSS_3_MC7:
+            *ddrss_en |= BITMASK_DDRSS_3;
+            break;
+        case DDRSS_4_MC8:
+        case DDRSS_4_MC9:
+            *ddrss_en |= BITMASK_DDRSS_4;
+            break;
+        case DDRSS_5_MC10:
+        case DDRSS_5_MC11:
+            *ddrss_en |= BITMASK_DDRSS_5;
+            break;
+        case DDRSS_6_MC12:
+        case DDRSS_6_MC13:
+            *ddrss_en |= BITMASK_DDRSS_6;
+            break;
+        case DDRSS_7_MC14:
+        case DDRSS_7_MC15:
+            *ddrss_en |= BITMASK_DDRSS_7;
+            break;
+        case DDRSS_8_MC16:
+        case DDRSS_8_MC17:
+            *ddrss_en |= BITMASK_DDRSS_8;
+            break;
+        case DDRSS_9_MC18:
+        case DDRSS_9_MC19:
+            *ddrss_en |= BITMASK_DDRSS_9;
+            break;
+        case DDRSS_10_MC20:
+        case DDRSS_10_MC21:
+            *ddrss_en |= BITMASK_DDRSS_10;
+            break;
+        case DDRSS_11_MC22:
+        case DDRSS_11_MC23:
+            *ddrss_en |= BITMASK_DDRSS_11;
+            break;
+        default:
+            break;
+        }
+    }
+    MESH_INFO("Mesh Config ddrss_en 0x%lx", *ddrss_en);
+}
+
 void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 {
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
-
+    uint32_t test32 = 0x0;
     s_mbx_icc_ctx = icc_ctx;
 
     int sts = 0x0;
@@ -606,21 +698,48 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 
     mesh_read_cfg_knobs_from_spi(&cmn800_sequence_param);
 
-    if (is_i3c_supported())
-    {
-        uint8_t dimm_sku = get_i3c_dimm_sku();
-        MESH_INFO("dimm_sku 0x%x\n", dimm_sku);
-        uint32_t ddrss_mask = get_i3c_dimm_detected();
-        MESH_INFO("ddrss_mask 0x%x\n", (unsigned int)ddrss_mask);
-        cmn800_set_i3c_dimm_params(dimm_sku, ddrss_mask);
-    }
-
     MESH_INFO("cmn800_sequence_param.cmn_config_enum 0x%x\n", (uint8_t)cmn800_sequence_param.cmn_config_enum);
 
     sts = mesh_read_binary_table_from_rmss(die_num, cmn800_sequence_param.cmn_config_enum);
     if (sts != 0)
     {
         MESH_CRIT("mesh_read_binary_table_from_rmss failed sts 0x%x\n", sts);
+    }
+
+    if (is_i3c_supported())
+    {
+        uint8_t dimm_sku = get_i3c_dimm_sku();
+        MESH_INFO("dimm_sku 0x%x\n", dimm_sku);
+        uint32_t i3c_ddrss_mask = get_i3c_dimm_detected();
+        MESH_INFO("i3c_ddrss_mask 0x%x\n", (unsigned int)i3c_ddrss_mask);
+
+        uint32_t ddrss_mask_from_mesh = 0x0;
+        mesh_check_ddrss_from_config(&ddrss_mask_from_mesh, cmn800_sequence_param.cmn_config_enum);
+        if (ddrss_mask_from_mesh != 0) // DDRSS decoded correctly from the mesh config
+        {
+            // Test the Mesh Required DIMMs to be same or subset of the I3C Detected DIMMS
+            test32 = i3c_ddrss_mask & ddrss_mask_from_mesh;
+            MESH_INFO("Mask of DIMMs required for Mesh and DIMMs detected 0x%x\n", test32);
+            if ((test32 != ddrss_mask_from_mesh) || (test32 == 0x0))
+            {
+                MESH_CRIT("ddrss_mask_from_mesh 0x%x is not subset of i3c_ddrss_mask 0x%x\n", ddrss_mask_from_mesh, i3c_ddrss_mask);
+                if (idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON)
+                {
+                    MESH_CRIT("Cannot Proceed with Boot\n");
+                    FPFW_RUNTIME_ASSERT(0);
+                }
+                else
+                {
+                    MESH_INFO("Proceed with Boot since its a Pre-Si Platform\n");
+                }
+            }
+        }
+        else
+        {
+            MESH_CRIT("ddrss_mask_from_mesh is 0x%x, Cannot Proceed with Boot\n", ddrss_mask_from_mesh);
+            FPFW_RUNTIME_ASSERT(0);
+        }
+        cmn800_set_i3c_dimm_params(dimm_sku, test32);
     }
 
     if (system_info_is_warm_start())

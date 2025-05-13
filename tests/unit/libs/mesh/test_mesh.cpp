@@ -58,6 +58,13 @@ var_service_req_params_t s_set_var_req = {0};
 var_service_req_params_t s_get_var_req = {0};
 bool memcpy_mock = true;
 extern NUMA_CFG numa_cfg;
+cmn800_snf_to_mc_config_t mc_config = {
+    .is_numa_enabled = 1,
+    .ddr_mc_map = {0, 1, 4, 2, 3, 6, 5, 8, 9, 7, 10, 11, 23, 22, 19, 21, 20, 17, 18, 15, 14, 16, 13, 12},
+    .map_size = 24,
+    .hash_select = 0,
+    .i3c_dimm_sku = 0,
+    .i3c_ddrss_mask = 0};
 
 d2d_cfg_t unit_test_default_d2d_cfg = {
     .d2d_pll_divder = 0x2,
@@ -428,6 +435,13 @@ void __wrap_d2d_cntr_sync_enable(void)
     function_called();
 }
 
+cmn800_snf_to_mc_config_t* __wrap_cmn800_generate_ddr_mc_map_from_snf_config(const config_t* config)
+{
+    FPFW_UNUSED(config);
+    function_called();
+    return &mc_config;
+}
+
 void setup_common_isr_expectations(void)
 {
     // FPFwCoreInterruptRegisterCallback
@@ -536,6 +550,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_0_SVP, setup_svp_platform, setu
     will_return(__wrap_system_info_is_warm_start, false);
 
     expect_function_call(__wrap_process_mesh_binary_from_spi);
+    expect_function_call(__wrap_cmn800_generate_ddr_mc_map_from_snf_config);
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -564,6 +579,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_SVP, setup_svp_platform, setu
     will_return(__wrap_system_info_is_warm_start, false);
 
     expect_function_call(__wrap_process_mesh_binary_from_spi);
+    expect_function_call(__wrap_cmn800_generate_ddr_mc_map_from_snf_config);
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -592,6 +608,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_0_FPGA, setup_fpga_platform, se
     will_return(__wrap_system_info_is_warm_start, false);
 
     expect_function_call(__wrap_process_mesh_binary_from_spi);
+    expect_function_call(__wrap_cmn800_generate_ddr_mc_map_from_snf_config);
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -620,6 +637,7 @@ TEST_FUNCTION(test_mesh_init_single_die_boot_Die_1_FPGA, setup_fpga_platform, se
     will_return(__wrap_system_info_is_warm_start, false);
 
     expect_function_call(__wrap_process_mesh_binary_from_spi);
+    expect_function_call(__wrap_cmn800_generate_ddr_mc_map_from_snf_config);
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -647,6 +665,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_0_SVP, setup_svp_platform_dual_di
     will_return(__wrap_system_info_is_warm_start, false);
 
     expect_function_call(__wrap_process_mesh_binary_from_spi);
+    expect_function_call(__wrap_cmn800_generate_ddr_mc_map_from_snf_config);
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -699,6 +718,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_SVP, setup_svp_platform_dual_di
     will_return(__wrap_system_info_is_warm_start, false);
 
     expect_function_call(__wrap_process_mesh_binary_from_spi);
+    expect_function_call(__wrap_cmn800_generate_ddr_mc_map_from_snf_config);
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -753,6 +773,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_0_FPGA, setup_fpga_platform_dual_
     will_return(__wrap_system_info_is_warm_start, false);
 
     expect_function_call(__wrap_process_mesh_binary_from_spi);
+    expect_function_call(__wrap_cmn800_generate_ddr_mc_map_from_snf_config);
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -807,6 +828,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_boot_Die_1_FPGA, setup_fpga_platform_dual_
     will_return(__wrap_system_info_is_warm_start, false);
 
     expect_function_call(__wrap_process_mesh_binary_from_spi);
+    expect_function_call(__wrap_cmn800_generate_ddr_mc_map_from_snf_config);
     expect_value(__wrap_cmn800_sequence_svp_updates, cmn800_sequence_param.die_num, test_die);
     expect_function_call(__wrap_cmn800_sequence_svp_updates);
 
@@ -1346,6 +1368,7 @@ TEST_FUNCTION(test_mesh_init_single_die_warm_reset_boot_Die_0_SVP, setup_svp_pla
     will_return(__wrap_system_info_is_warm_start, true);
 
     expect_function_call(__wrap_process_mesh_binary_from_spi);
+    expect_function_call(__wrap_cmn800_generate_ddr_mc_map_from_snf_config);
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
 }
@@ -1358,6 +1381,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_warm_reset_boot_Die_0_SVP, setup_svp_platf
     will_return(__wrap_system_info_is_warm_start, true);
 
     expect_function_call(__wrap_process_mesh_binary_from_spi);
+    expect_function_call(__wrap_cmn800_generate_ddr_mc_map_from_snf_config);
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
 }
@@ -1370,6 +1394,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_warm_reset_boot_Die_1_SVP, setup_svp_platf
     will_return(__wrap_system_info_is_warm_start, true);
 
     expect_function_call(__wrap_process_mesh_binary_from_spi);
+    expect_function_call(__wrap_cmn800_generate_ddr_mc_map_from_snf_config);
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
 }
@@ -1382,6 +1407,7 @@ TEST_FUNCTION(test_mesh_init_single_die_warm_reset_boot_Die_0_FPGA, setup_fpga_p
     will_return(__wrap_system_info_is_warm_start, true);
 
     expect_function_call(__wrap_process_mesh_binary_from_spi);
+    expect_function_call(__wrap_cmn800_generate_ddr_mc_map_from_snf_config);
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
 }
@@ -1394,6 +1420,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_warm_reset_boot_Die_0_FPGA, setup_fpga_pla
     will_return(__wrap_system_info_is_warm_start, true);
 
     expect_function_call(__wrap_process_mesh_binary_from_spi);
+    expect_function_call(__wrap_cmn800_generate_ddr_mc_map_from_snf_config);
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
 }
@@ -1406,6 +1433,7 @@ TEST_FUNCTION(test_mesh_init_dual_die_warm_reset_boot_Die_1_FPGA, setup_fpga_pla
     will_return(__wrap_system_info_is_warm_start, true);
 
     expect_function_call(__wrap_process_mesh_binary_from_spi);
+    expect_function_call(__wrap_cmn800_generate_ddr_mc_map_from_snf_config);
     // Call API under test
     mesh_init(test_die, test_icc_base_hsp_mbx_ctx);
 }

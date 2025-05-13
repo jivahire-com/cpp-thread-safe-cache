@@ -31,6 +31,7 @@ target_link_libraries(${TARGET}
     silibs::cmn800_skus
     silibs::cmn800_sequence
     silibs::cmn800_ras_sequence
+    silibs::ddr_i3c
     silibs::idhw
     silibs::idsw
     silibs::idsw_kng

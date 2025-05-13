@@ -95,4 +95,5 @@ mock_target(${TARGET}
     mscp_exp_spi_synchronize_dies
     crash_dump_bug_check
     d2d_cntr_sync_enable
+    cmn800_generate_ddr_mc_map_from_snf_config
 )

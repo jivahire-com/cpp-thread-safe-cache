@@ -30,6 +30,34 @@
 #define MESH_RND_QOS_CFG_MAX            3
 #define MESH_MXP_QOS_CFG_MAX            3
 
+typedef enum{
+    DDRSS_0_MC0 = 0,
+    DDRSS_0_MC1 = 1,
+    DDRSS_1_MC2 = 2,
+    DDRSS_1_MC3 = 3,
+    DDRSS_2_MC4 = 4,
+    DDRSS_2_MC5 = 5,
+    DDRSS_3_MC6 = 6,
+    DDRSS_3_MC7 = 7,
+    DDRSS_4_MC8 = 8,
+    DDRSS_4_MC9 = 9,
+    DDRSS_5_MC10 = 10,
+    DDRSS_5_MC11 = 11,
+    DDRSS_6_MC12 = 12,
+    DDRSS_6_MC13 = 13,
+    DDRSS_7_MC14 = 14,
+    DDRSS_7_MC15 = 15,
+    DDRSS_8_MC16 = 16,
+    DDRSS_8_MC17 = 17,
+    DDRSS_9_MC18 = 18,
+    DDRSS_9_MC19 = 19,
+    DDRSS_10_MC20 = 20,
+    DDRSS_10_MC21 = 21,
+    DDRSS_11_MC22 = 22,
+    DDRSS_11_MC23 = 23,
+    DDRSS_MAX = 24,
+} ddrss_mc_id_t;
+
 /**
  * @brief Initializes the mesh.
  *

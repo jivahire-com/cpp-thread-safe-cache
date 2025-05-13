@@ -34,6 +34,12 @@ extern fpfw_init_component_t _fpfw_component_bs_accel;
 //
 // Mocks
 //
+bool __wrap_accel_is_isolation_enabled(ACCEL_ID accel_type)
+{
+    FPFW_UNUSED(accel_type);
+    return mock_type(bool);
+}
+
 void __wrap_boot_status_init(boot_status_icc_ctx_t* boot_status_ctx)
 {
     assert_non_null(boot_status_ctx);
@@ -82,6 +88,7 @@ TEST_FUNCTION(test_boot_status_init, nullptr, nullptr)
 TEST_FUNCTION(test_bs_accel_init, nullptr, nullptr)
 {
     // Set up expectations
+    will_return_always(__wrap_accel_is_isolation_enabled, false);
     will_return_count(__wrap_accel_setup_boot_status_code, FPFW_INIT_STATUS_SUCCESS, NUM_VALID_ACCEL_ID);
 
     // Call API under test
@@ -91,6 +98,7 @@ TEST_FUNCTION(test_bs_accel_init, nullptr, nullptr)
 TEST_FUNCTION(test_bs_accel_init_fail, nullptr, nullptr)
 {
     // Set up expectations
+    will_return_always(__wrap_accel_is_isolation_enabled, false);
     will_return(__wrap_accel_setup_boot_status_code, FPFW_STATUS_FAIL);
 
     // Call API under test

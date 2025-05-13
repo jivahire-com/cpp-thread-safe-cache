@@ -19,6 +19,9 @@
 #include <accelip_ss_init.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
+// ToDo: Remove this flag and the code guarded by it after SDM/CDED warm reset implemented.
+//       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2496178/
+#define WORKAROUND_ACCEL_WARM_RESET 1
 
 /*-------------------------------- Typedefs ---------------------------------*/
 typedef enum {

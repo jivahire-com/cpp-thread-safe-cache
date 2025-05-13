@@ -27,7 +27,7 @@ virt_irq_plat_cb_t* mscp_virt_irq_plat_info[TOTAL_VIRTUAL_IRQ_COUNT];
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(virt_irq, FPFW_INIT_DEPENDENCIES("nvic"))
+FPFW_INIT_COMPONENT(virt_irq, FPFW_INIT_DEPENDENCIES("nvic", "cfg_mgr"))
 {
     virt_irq_plat_cb_t* accel_virt_irq_plat_info = NULL;
     uint32_t accel_virt_irq_cnt = accel_intr_get_virt_irq_plat_info(&accel_virt_irq_plat_info);

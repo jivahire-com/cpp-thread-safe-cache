@@ -396,8 +396,14 @@ static void update_accel_ctxt_from_knobs(subsystem_ctxt_t* p_ss_ctxt)
             config_get_sdm_tot_dwq_num_entries_avail().tot_dwq_num_entries_avail[die_id];
         pre_pcie_cfg->rd_lim_cnt = config_get_sdm_rd_lim_cnt().rd_lim_cnt[die_id];
         pre_pcie_cfg->wr_lim_cnt = config_get_sdm_wr_lim_cnt().wr_lim_cnt[die_id];
-
+#ifdef WORKAROUND_ACCEL_WARM_RESET
+        // ToDo: Remove this flag and the code guarded by it after SDM/CDED warm reset implemented.
+        //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2496178/
+        ss_cfg->isolation_enable =
+            system_info_is_warm_start() ? true : config_get_sdm_isolation_enable().isolation_enable[die_id];
+#else
         ss_cfg->isolation_enable = config_get_sdm_isolation_enable().isolation_enable[die_id];
+#endif
         ss_cfg->emm_resp_code = config_get_sdm_emm_resp_code().emm_resp_code[die_id];
     }
     else
@@ -434,8 +440,14 @@ static void update_accel_ctxt_from_knobs(subsystem_ctxt_t* p_ss_ctxt)
             config_get_cded_tot_dwq_num_entries_avail().tot_dwq_num_entries_avail[die_id];
         pre_pcie_cfg->rd_lim_cnt = config_get_cded_rd_lim_cnt().rd_lim_cnt[die_id];
         pre_pcie_cfg->wr_lim_cnt = config_get_cded_wr_lim_cnt().wr_lim_cnt[die_id];
-
+#ifdef WORKAROUND_ACCEL_WARM_RESET
+        // ToDo: Remove this flag and the code guarded by it after SDM/CDED warm reset implemented.
+        //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2496178/
+        ss_cfg->isolation_enable =
+            system_info_is_warm_start() ? true : config_get_cded_isolation_enable().isolation_enable[die_id];
+#else
         ss_cfg->isolation_enable = config_get_cded_isolation_enable().isolation_enable[die_id];
+#endif
         ss_cfg->emm_resp_code = config_get_cded_emm_resp_code().emm_resp_code[die_id];
     }
 }

@@ -74,6 +74,7 @@ mock_target(${TARGET}
     CdRegisterRegisterSet
     atu_svc_accel_atu_addr
     fpfw_icc_base_recv
+    fpfw_icc_base_recv_sync
     fpfw_icc_base_send_sync
     _txe_mutex_create
     _tx_mutex_get

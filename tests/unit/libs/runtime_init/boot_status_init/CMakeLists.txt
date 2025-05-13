@@ -44,6 +44,7 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    accel_is_isolation_enabled
     accel_setup_boot_status_code
     boot_status_init
     fpfw_init_get_handle

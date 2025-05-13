@@ -13,11 +13,21 @@
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <bug_check.h>
 #include <fpfw_status.h>
+#include <mscp_exp_rmss_memory_map.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <tx_api.h> // for TX_MUTEX
+#include <tx_thread.h>
+
+// clang-format off
+#include <cmsis_m7.h>
+#ifdef PLATFORM_CACHING_ENABLED
+#include <cmsis_compiler.h>
+#include <m-profile/armv7m_cachel1.h>
+#endif
+// clang-format on
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -92,7 +102,7 @@ void* ws_data_get(mod_ws_data_id_t id, uint32_t* p_size)
     {
         WS_LOG_INFO("[WS] Data Get %d", (int)id);
 
-        tx_status = tx_mutex_get(&ws_data_mutex, TX_WAIT_FOREVER);
+        tx_status = tx_mutex_get(&ws_data_mutex, TX_THREAD_GET_SYSTEM_STATE() == 0 ? TX_WAIT_FOREVER : TX_NO_WAIT);
         BUG_ASSERT(tx_status == TX_SUCCESS);
 
         *p_size = 0;
@@ -127,7 +137,7 @@ void* ws_data_put(mod_ws_data_id_t id, void* p_data, uint32_t size)
 
     WS_LOG_INFO("[WS] Data put %d", (int)id);
 
-    tx_status = tx_mutex_get(&ws_data_mutex, TX_WAIT_FOREVER);
+    tx_status = tx_mutex_get(&ws_data_mutex, TX_THREAD_GET_SYSTEM_STATE() == 0 ? TX_WAIT_FOREVER : TX_NO_WAIT);
     BUG_ASSERT(tx_status == TX_SUCCESS);
 
     if (p_ws_list->magic_id != WARM_START_MAGIC_ID)
@@ -138,6 +148,7 @@ void* ws_data_put(mod_ws_data_id_t id, void* p_data, uint32_t size)
         p_entry->id = WARM_START_ID_RESERVED;
         p_entry->size = ws_size - sizeof(ws_data_list_t);
         p_entry->p_next = NULL;
+        SCB_CleanDCache_by_Addr(p_ws_list, sizeof(ws_data_list_t));
     }
 
     // Traverse list looking for existing data or end
@@ -154,6 +165,7 @@ void* ws_data_put(mod_ws_data_id_t id, void* p_data, uint32_t size)
                     memcpy(&p_entry->data, p_data, size);
                 }
                 p_entry->checksum = calculate_checksum(p_data, size);
+                SCB_CleanDCache_by_Addr(p_entry, sizeof(ws_data_entry_t) + size - sizeof(uint8_t));
                 p_entry_data = &p_entry->data;
                 break;
             }
@@ -187,6 +199,7 @@ void* ws_data_put(mod_ws_data_id_t id, void* p_data, uint32_t size)
                     p_temp_entry->id = WARM_START_ID_RESERVED;
                     p_temp_entry->size = p_entry->size - (size + sizeof(ws_data_entry_t));
                     p_temp_entry->p_next = p_entry->p_next;
+                    SCB_CleanDCache_by_Addr(p_temp_entry, sizeof(ws_data_entry_t) + p_temp_entry->size - sizeof(uint8_t));
                     p_entry->p_next = p_temp_entry;
                 }
 
@@ -198,6 +211,8 @@ void* ws_data_put(mod_ws_data_id_t id, void* p_data, uint32_t size)
                 p_entry->checksum = calculate_checksum(p_data, size);
                 p_entry->size = size;
                 p_entry->id = id;
+                SCB_CleanDCache_by_Addr(p_entry, sizeof(ws_data_entry_t) + size - sizeof(uint8_t));
+
                 p_entry_data = &p_entry->data;
                 break;
             }
@@ -223,8 +238,8 @@ void warm_start_init(void)
 {
     // Initialize the list attributes
 
-    p_ws_list = (void*)SCP_WARM_START_BASE;
-    ws_size = SCP_WARM_START_SIZE;
+    p_ws_list = (void*)SCP_EXP_SCP_WARM_START_DATA_BASE;
+    ws_size = SCP_EXP_SCP_WARM_START_DATA_SIZE;
 
     FPFW_RUNTIME_ASSERT(tx_mutex_create(&ws_data_mutex, "ws data mutex", TX_NO_INHERIT) == TX_SUCCESS);
 

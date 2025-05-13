@@ -16,6 +16,7 @@
 
 extern "C" {
 #include <FpFwUtils.h>
+#include <accelip_id.h> // for ACCEL_ID
 #include <build_data.h> // for BUILD_ELF_SECTION_BINARY_METADATA
 #include <fpfw_init.h>
 #include <idsw.h>
@@ -40,6 +41,12 @@ uint8_t _EventMetadata_et_msdata_end;      // Pointer to the end   of the .Event
 //
 // Mocks
 //
+bool __wrap_accel_is_isolation_enabled(ACCEL_ID accel_type)
+{
+    FPFW_UNUSED(accel_type);
+    return mock_type(bool);
+}
+
 void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
 {
     FPFW_UNUSED(id);
@@ -83,6 +90,7 @@ TEST_FUNCTION(test_mts_init, nullptr, nullptr)
     will_return(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
     will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return_always(__wrap_accel_is_isolation_enabled, false);
     expect_function_call(__wrap_mts_init);
     expect_function_call(__wrap_mts_cli_svc_initialize);
 

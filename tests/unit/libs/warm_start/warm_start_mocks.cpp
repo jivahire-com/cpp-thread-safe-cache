@@ -50,7 +50,7 @@ UINT __wrap__txe_mutex_get(TX_MUTEX* mutex_ptr, ULONG wait_option)
 {
     assert_ptr_equal(ws_mock_mutex, mutex_ptr); // Ensure the mutex pointer is the same as the one initialized
 
-    assert_int_equal(wait_option, TX_WAIT_FOREVER);
+    FPFW_UNUSED(wait_option);
 
     function_called();
 

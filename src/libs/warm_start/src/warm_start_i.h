@@ -18,10 +18,6 @@
 #define NEWLINE     "\n"
 #define WARM_START_MAGIC_ID 0x12345678
 
-/* TODO Update the magic number after https://dev.azure.com/ms-tsd/Kingsgate/_git/silibs/pullrequest/187912 is merged*/
-#define SCP_WARM_START_BASE 0x01290000UL
-#define SCP_WARM_START_SIZE 65536
-
 #define WS_LOG_INFO(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define WS_LOG_ERR(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 

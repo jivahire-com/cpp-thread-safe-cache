@@ -32,16 +32,19 @@ FPFW_INIT_COMPONENT(boot_stat, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "hw_ver", "s
 }
 
 #ifdef SCP_RUNTIME_INIT
-FPFW_INIT_COMPONENT(bs_accel, FPFW_INIT_DEPENDENCIES("icc_sdm_mbx", "icc_cded_mbx"))
+FPFW_INIT_COMPONENT(bs_accel, FPFW_INIT_DEPENDENCIES("icc_sdm_mbx", "icc_cded_mbx", "cfg_mgr"))
 {
     uint32_t status;
 
     for (ACCEL_ID accel_type = ACCEL_ID_SDM; accel_type < NUM_VALID_ACCEL_ID; accel_type++)
     {
-        status = accel_setup_boot_status_code(accel_type);
-        if (status != FPFW_INIT_STATUS_SUCCESS)
+        if (!accel_is_isolation_enabled(accel_type))
         {
-            break;
+            status = accel_setup_boot_status_code(accel_type);
+            if (status != FPFW_INIT_STATUS_SUCCESS)
+            {
+                break;
+            }
         }
     }
 

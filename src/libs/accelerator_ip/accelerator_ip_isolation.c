@@ -17,6 +17,11 @@
 #include <fpfw_cfg_mgr.h>
 #include <idsw.h>   // for idsw_get_platform_sdv, idsw...
 #include <string.h> // for memcpy, strlen
+#ifdef WORKAROUND_ACCEL_WARM_RESET
+    // ToDo: Remove this flag and the code guarded by it after SDM/CDED warm reset implemented.
+    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2496178/
+    #include <system_info.h> // for system_info_is_warm_start
+#endif
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
@@ -37,6 +42,16 @@ bool accel_is_isolation_enabled(ACCEL_ID accel_type)
 {
     bool is_enabled = false;
     DIE_INSTANCE current_die_instance = (DIE_INSTANCE)idsw_get_die_id();
+
+#ifdef WORKAROUND_ACCEL_WARM_RESET
+    // ToDo: Remove this flag and the code guarded by it after SDM/CDED warm reset implemented.
+    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2496178/
+    if (system_info_is_warm_start())
+    {
+        // If warm start, return true for isolation enabled until accelerators are ready for warm start.
+        return true;
+    }
+#endif
 
     // Read Knob value for SDM/CDED Isolation as per Die id
     switch (accel_type)

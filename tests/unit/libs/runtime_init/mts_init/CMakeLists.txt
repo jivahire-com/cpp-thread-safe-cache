@@ -14,6 +14,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.utils
         ms::service::mts
         fwlib.service.mts.cli
+        ms::lib::accelerator_ip
         ms::lib::interface::in_band_telemetry_ddr
         ms::lib::icc_platform_defines
         ms::cmocka::testrunner
@@ -25,6 +26,7 @@ target_link_libraries(${TARGET}
 )
 
 # Defining platform APIs
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_THREADX "extern.threadx.win32")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
@@ -36,6 +38,7 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    accel_is_isolation_enabled
     fpfw_init_get_handle
     idsw_get_cpu_type
     idsw_get_die_id

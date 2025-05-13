@@ -35,10 +35,11 @@
 #include <silibs_common.h> // for ARRAY_SIZE, MAX
 #include <silibs_scp_exp_top_regs.h>
 #include <silibs_scp_top_regs.h>
-#include <stdbool.h> // for bool, true, false
-#include <stddef.h>  // for NULL
-#include <stdint.h>  // for UINT16_MAX, uint16_t, uint8_t, uintptr_t
-#include <string.h>  // for memcpy
+#include <stdbool.h>     // for bool, true, false
+#include <stddef.h>      // for NULL
+#include <stdint.h>      // for UINT16_MAX, uint16_t, uint8_t, uintptr_t
+#include <string.h>      // for memcpy
+#include <system_info.h> // for system_info_is_warm_start
 
 /*------------- Typedefs -----------------*/
 
@@ -909,7 +910,7 @@ bool power_hw_uses_pvt_model()
 bool power_hw_full_init_allowed()
 {
     // only allow full init if cold boot
-    return true;
+    return !system_info_is_warm_start();
 }
 
 uint8_t power_hw_pstate_from_freq(uint16_t freq_MHz)

@@ -400,6 +400,18 @@ fpfw_status_t __wrap_fpfw_icc_base_send_sync(fpfw_icc_base_ctx_t* icc_ctx, void*
     return mock_type(fpfw_status_t);
 }
 
+fpfw_status_t __wrap_fpfw_icc_base_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, void* payload_buffer, size_t buffer_size, size_t* output_recv_bytes)
+{
+    check_expected(icc_ctx);
+    assert_non_null(payload_buffer);
+    assert_true(buffer_size > 0);
+    assert_non_null(output_recv_bytes);
+
+    function_called();
+
+    return mock_type(fpfw_status_t);
+}
+
 void __wrap_initialize_semaphore(SEMAPHORE_ID id)
 {
     check_expected(id);

@@ -8,8 +8,10 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h> // for FPFW_DBGPRINT_INFO
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
+#include <accelerator_ip.h> // for accel_is_isolation_enabled()
 #include <fpfw_init.h>
 #include <icc_mhu.h>
 #include <icc_platform_defines.h>
@@ -123,65 +125,84 @@ FPFW_INIT_COMPONENT(mts_svc,
     // add accel endpoint
     if (s_config.trp_general_config.this_core_id == CPU_MCP)
     {
+        typedef struct trp_endpoint_subset
+        {
+            void* p_async_recv_buffer;
+            size_t buf_size;
+            char* p_subsystem_name;
+            const char* p_fpfw_init_handle_name;
+            uint8_t core_id;
+        } st_trp_endpoint_subset_t, *p_st_trp_endpoint_subset_t;
+
+#define NUM_TRP_EP_SUBSET (2)
+
+        st_trp_endpoint_subset_t trp_endpoint_subset[NUM_TRP_EP_SUBSET] = {
+            // TRP subset for SDM
+            {
+                .p_async_recv_buffer = &s_local_sdm_icc_endpt_rx_buffer,
+                .buf_size = sizeof(s_local_sdm_icc_endpt_rx_buffer),
+                .p_subsystem_name = "SDM",
+                .p_fpfw_init_handle_name = "icc_sdm_mbx",
+                .core_id = CPU_SDM,
+            },
+
+            // TRP subset for CDED
+            {
+                .p_async_recv_buffer = &s_local_cded_icc_endpt_rx_buffer,
+                .buf_size = sizeof(s_local_cded_icc_endpt_rx_buffer),
+                .p_subsystem_name = "CDED",
+                .p_fpfw_init_handle_name = "icc_cded_mbx",
+                .core_id = CPU_CDED_SDM,
+            }};
+
         // ---------------------------------------------------------------------------------------------
-        // add local sdm trp endpoint
-        FPFW_RUNTIME_ASSERT(number_of_routes < TRP_MAX_ROUTES);
-        FPFW_RUNTIME_ASSERT(num_icc_endpoints < TRP_MAX_ENDPOINTS);
+        // Add Local TRP Endpoint
+        for (uint8_t i = 0; i < NUM_TRP_EP_SUBSET; i++)
+        {
+            p_trp_icc_endpoint_t p_trp_icc_ep = &s_trp_icc_endpoint_table[num_icc_endpoints];
+            p_st_trp_endpoint_subset_t p_trp_ep_subset = &trp_endpoint_subset[i];
 
-        s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.transport_type = TRP_TRANSPORT_TYPE_ICC_LARGE_MBOX;
-        s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.async_recv_buffer = s_local_sdm_icc_endpt_rx_buffer;
-        s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.async_recv_buffer_size =
-            sizeof(s_local_sdm_icc_endpt_rx_buffer);
-        sprintf(s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.name,
-                "DIE_%d_%s_TRP",
-                s_config.trp_general_config.this_die_id,
-                "SDM");
+            // Skip if Accel Core is in ISOLATION
+            ACCEL_ID accel_id = (p_trp_ep_subset->core_id == CPU_SDM) ? ACCEL_ID_SDM : ACCEL_ID_CDED;
 
-        s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.seq_number.as_uint16 = this_core_seq_number.as_uint16;
+            if (accel_is_isolation_enabled(accel_id))
+            {
+                FPFW_DBGPRINT_INFO("[MTS_SVC-%d] %s is ISOLATED. Skipping TRP EP Init\n",
+                                   __LINE__,
+                                   p_trp_ep_subset->p_subsystem_name);
+                continue;
+            }
 
-        s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx =
-            (fpfw_icc_base_ctx_t*)fpfw_init_get_handle("icc_sdm_mbx");
-        FPFW_RUNTIME_ASSERT(s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx != NULL);
-        s_trp_icc_endpoint_table[num_icc_endpoints].icc_payload_protocol = LARGE_FIFO_MAILBOX_MSG_TRP;
+            FPFW_RUNTIME_ASSERT(number_of_routes < TRP_MAX_ROUTES);
+            FPFW_RUNTIME_ASSERT(num_icc_endpoints < TRP_MAX_ENDPOINTS);
 
-        s_trp_routing_table[number_of_routes].dest.die_id =
-            s_config.trp_general_config.this_die_id; // the icc context handle above is on the same die
-        s_trp_routing_table[number_of_routes].dest.core_id = CPU_SDM;
-        s_trp_routing_table[number_of_routes].trp_endpoint =
-            (p_trp_endpoint_t)&s_trp_icc_endpoint_table[num_icc_endpoints];
+            p_trp_icc_ep->base_endpt.transport_type = TRP_TRANSPORT_TYPE_ICC_LARGE_MBOX;
+            p_trp_icc_ep->base_endpt.async_recv_buffer = p_trp_ep_subset->p_async_recv_buffer;
+            p_trp_icc_ep->base_endpt.async_recv_buffer_size = p_trp_ep_subset->buf_size;
 
-        num_icc_endpoints++;
-        number_of_routes++;
+            sprintf(p_trp_icc_ep->base_endpt.name,
+                    "DIE_%d_%s_TRP",
+                    s_config.trp_general_config.this_die_id,
+                    p_trp_ep_subset->p_subsystem_name);
 
+            p_trp_icc_ep->base_endpt.seq_number.as_uint16 = this_core_seq_number.as_uint16;
+
+            p_trp_icc_ep->icc_base_ctx =
+                (fpfw_icc_base_ctx_t*)fpfw_init_get_handle(p_trp_ep_subset->p_fpfw_init_handle_name);
+            FPFW_RUNTIME_ASSERT(p_trp_icc_ep->icc_base_ctx != NULL);
+
+            p_trp_icc_ep->icc_payload_protocol = LARGE_FIFO_MAILBOX_MSG_TRP;
+
+            s_trp_routing_table[number_of_routes].dest.die_id =
+                s_config.trp_general_config.this_die_id; // the icc context handle above is on the same die
+            s_trp_routing_table[number_of_routes].dest.core_id = p_trp_ep_subset->core_id;
+            s_trp_routing_table[number_of_routes].trp_endpoint =
+                (p_trp_endpoint_t)&s_trp_icc_endpoint_table[num_icc_endpoints];
+
+            num_icc_endpoints++;
+            number_of_routes++;
+        }
         // ---------------------------------------------------------------------------------------------
-        // add local cded-sdm trp endpoint
-        FPFW_RUNTIME_ASSERT(number_of_routes < TRP_MAX_ROUTES);
-        FPFW_RUNTIME_ASSERT(num_icc_endpoints < TRP_MAX_ENDPOINTS);
-
-        s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.transport_type = TRP_TRANSPORT_TYPE_ICC_LARGE_MBOX;
-        s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.async_recv_buffer = s_local_cded_icc_endpt_rx_buffer;
-        s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.async_recv_buffer_size =
-            sizeof(s_local_cded_icc_endpt_rx_buffer);
-        sprintf(s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.name,
-                "DIE_%d_%s_TRP",
-                s_config.trp_general_config.this_die_id,
-                "CDED");
-
-        s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.seq_number.as_uint16 = this_core_seq_number.as_uint16;
-
-        s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx =
-            (fpfw_icc_base_ctx_t*)fpfw_init_get_handle("icc_cded_mbx");
-        FPFW_RUNTIME_ASSERT(s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx != NULL);
-        s_trp_icc_endpoint_table[num_icc_endpoints].icc_payload_protocol = LARGE_FIFO_MAILBOX_MSG_TRP;
-
-        s_trp_routing_table[number_of_routes].dest.die_id =
-            s_config.trp_general_config.this_die_id; // the icc context handle above is on the same die
-        s_trp_routing_table[number_of_routes].dest.core_id = CPU_CDED_SDM;
-        s_trp_routing_table[number_of_routes].trp_endpoint =
-            (p_trp_endpoint_t)&s_trp_icc_endpoint_table[num_icc_endpoints];
-
-        num_icc_endpoints++;
-        number_of_routes++;
     }
 
     // ---------------------------------------------------------------------------------------------

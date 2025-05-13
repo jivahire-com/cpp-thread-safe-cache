@@ -15,6 +15,7 @@
 extern "C" {
 #include <../src/warm_start_i.h>
 #include <FpFwUtils.h> // for FPFW_UNUSED
+#include <mscp_exp_rmss_memory_map.h>
 #include <warm_start.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -75,8 +76,8 @@ TEST_FUNCTION(ws_init_function, NULL, NULL)
 
     warm_start_init();
 
-    assert_int_equal(p_ws_list, SCP_WARM_START_BASE);
-    assert_int_equal(ws_size, SCP_WARM_START_SIZE);
+    assert_int_equal(p_ws_list, SCP_EXP_SCP_WARM_START_DATA_BASE);
+    assert_int_equal(ws_size, SCP_EXP_SCP_WARM_START_DATA_SIZE);
 }
 
 TEST_FUNCTION(ws_data_get_null_psize, setup, teardown)
@@ -108,6 +109,15 @@ TEST_FUNCTION(ws_data_get_magicid_test, setup, teardown)
 TEST_FUNCTION(ws_data_put_update_size, setup, teardown)
 {
     expect_function_call(__wrap__txe_mutex_get);
+    expect_any(SCB_CleanDCache_by_Addr, addr);
+    expect_any(SCB_CleanDCache_by_Addr, dsize);
+    expect_function_call(SCB_CleanDCache_by_Addr);
+    expect_any(SCB_CleanDCache_by_Addr, addr);
+    expect_any(SCB_CleanDCache_by_Addr, dsize);
+    expect_function_call(SCB_CleanDCache_by_Addr);
+    expect_any(SCB_CleanDCache_by_Addr, addr);
+    expect_any(SCB_CleanDCache_by_Addr, dsize);
+    expect_function_call(SCB_CleanDCache_by_Addr);
     expect_function_call(__wrap__txe_mutex_put);
 
     ws_data_entry_t test_p_next = {.id = WARM_START_ID_LAST, .checksum = -255, .size = 0x1, .data = 0xFF};
@@ -127,6 +137,9 @@ TEST_FUNCTION(ws_data_put_update_size, setup, teardown)
 TEST_FUNCTION(ws_data_put_expect_id_last, setup, teardown)
 {
     expect_function_call(__wrap__txe_mutex_get);
+    expect_any(SCB_CleanDCache_by_Addr, addr);
+    expect_any(SCB_CleanDCache_by_Addr, dsize);
+    expect_function_call(SCB_CleanDCache_by_Addr);
     expect_function_call(__wrap__txe_mutex_put);
 
     ws_data_entry_t test_p_next = {.id = WARM_START_ID_LAST, .checksum = -255, .size = 0x1, .data = 0xFF};
@@ -142,6 +155,9 @@ TEST_FUNCTION(ws_data_put_expect_id_last, setup, teardown)
     assert_non_null(ws_data_put(WARM_START_ID_RESERVED, p_data, size));
 
     expect_function_call(__wrap__txe_mutex_get);
+    expect_any(SCB_CleanDCache_by_Addr, addr);
+    expect_any(SCB_CleanDCache_by_Addr, dsize);
+    expect_function_call(SCB_CleanDCache_by_Addr);
     expect_function_call(__wrap__txe_mutex_put);
 
     assert_ptr_equal(ws_data_put(WARM_START_ID_LAST, p_data, size), &(test_p_next.data));
@@ -150,6 +166,9 @@ TEST_FUNCTION(ws_data_put_expect_id_last, setup, teardown)
 TEST_FUNCTION(ws_data_put_expect_id_reserved, setup, teardown)
 {
     expect_function_call(__wrap__txe_mutex_get);
+    expect_any(SCB_CleanDCache_by_Addr, addr);
+    expect_any(SCB_CleanDCache_by_Addr, dsize);
+    expect_function_call(SCB_CleanDCache_by_Addr);
     expect_function_call(__wrap__txe_mutex_put);
 
     ws_data_entry_t test_p_next = {.id = WARM_START_ID_RESERVED, .checksum = -255, .size = 0x1, .data = 0xFF};
@@ -168,6 +187,9 @@ TEST_FUNCTION(ws_data_put_expect_id_reserved, setup, teardown)
 TEST_FUNCTION(ws_data_put_current_expected_id_reserved, setup, teardown)
 {
     expect_function_call(__wrap__txe_mutex_get);
+    expect_any(SCB_CleanDCache_by_Addr, addr);
+    expect_any(SCB_CleanDCache_by_Addr, dsize);
+    expect_function_call(SCB_CleanDCache_by_Addr);
     expect_function_call(__wrap__txe_mutex_put);
 
     ws_data_entry_t test_p_next = {.id = WARM_START_ID_RESERVED, .checksum = -255, .size = 0x1, .data = 0xFF};
@@ -186,6 +208,9 @@ TEST_FUNCTION(ws_data_put_current_expected_id_reserved, setup, teardown)
 TEST_FUNCTION(ws_data_put_current_expected_id_last, setup, teardown)
 {
     expect_function_call(__wrap__txe_mutex_get);
+    expect_any(SCB_CleanDCache_by_Addr, addr);
+    expect_any(SCB_CleanDCache_by_Addr, dsize);
+    expect_function_call(SCB_CleanDCache_by_Addr);
     expect_function_call(__wrap__txe_mutex_put);
 
     ws_data_entry_t test_p_next = {.id = WARM_START_ID_LAST, .checksum = -255, .size = 0x1, .data = 0xFF};
@@ -204,6 +229,9 @@ TEST_FUNCTION(ws_data_put_current_expected_id_last, setup, teardown)
 TEST_FUNCTION(ws_data_put_current_expected_id_reserved_cli_test, setup, teardown)
 {
     expect_function_call(__wrap__txe_mutex_get);
+    expect_any(SCB_CleanDCache_by_Addr, addr);
+    expect_any(SCB_CleanDCache_by_Addr, dsize);
+    expect_function_call(SCB_CleanDCache_by_Addr);
     expect_function_call(__wrap__txe_mutex_put);
 
     ws_data_entry_t test_p_next = {.id = WARM_START_ID_RESERVED_CLI_TEST, .checksum = -255, .size = 0x1, .data = 0xFF};
@@ -222,6 +250,15 @@ TEST_FUNCTION(ws_data_put_current_expected_id_reserved_cli_test, setup, teardown
 TEST_FUNCTION(ws_data_expected_equal_value_for_cli_id, setup, teardown)
 {
     expect_function_call(__wrap__txe_mutex_get);
+    expect_any(SCB_CleanDCache_by_Addr, addr);
+    expect_any(SCB_CleanDCache_by_Addr, dsize);
+    expect_function_call(SCB_CleanDCache_by_Addr);
+    expect_any(SCB_CleanDCache_by_Addr, addr);
+    expect_any(SCB_CleanDCache_by_Addr, dsize);
+    expect_function_call(SCB_CleanDCache_by_Addr);
+    expect_any(SCB_CleanDCache_by_Addr, addr);
+    expect_any(SCB_CleanDCache_by_Addr, dsize);
+    expect_function_call(SCB_CleanDCache_by_Addr);
     expect_function_call(__wrap__txe_mutex_put);
 
     ws_data_entry_t test_p_next = {.id = WARM_START_ID_LAST, .checksum = -255, .size = 0x1, .data = 0xFF};

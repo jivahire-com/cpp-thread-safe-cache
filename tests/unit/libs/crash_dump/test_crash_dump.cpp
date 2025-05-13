@@ -935,6 +935,14 @@ TEST_FUNCTION(test_crash_dump_handler, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_icc_base_send_sync);
 
+    expect_value(__wrap_fpfw_icc_base_recv_sync, icc_ctx, context.icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP]);
+    will_return(__wrap_fpfw_icc_base_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_recv_sync);
+
+    expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, context.icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP]);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_send_sync);
+
     crash_dump_handler(errorCode, p1, p2, p3, p4);
 }
 
@@ -1115,6 +1123,14 @@ TEST_FUNCTION(test_crash_dump_handler_send_sync_fail, nullptr, nullptr)
     will_return(__wrap_crash_dump_get_is_dump_complete, true);
 
     // Sending warm reset
+    expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, context.icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP]);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_send_sync);
+
+    expect_value(__wrap_fpfw_icc_base_recv_sync, icc_ctx, context.icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP]);
+    will_return(__wrap_fpfw_icc_base_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_recv_sync);
+
     expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, context.icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP]);
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_icc_base_send_sync);

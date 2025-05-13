@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
     PRIVATE
         ms::cmocka::testrunner
         ms::lib::warm_start
+        silibs::kng_silibs_platform
     PUBLIC
         fwlib.lib.assert
         fwlib.lib.utils

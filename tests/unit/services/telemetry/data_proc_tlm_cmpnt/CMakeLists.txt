@@ -2,8 +2,10 @@ set(TARGET  kng.service.telemetry.cmpnt.data_process.test)
 
 set(SOURCES
     data_proc_mock.c
-    test_logging.cpp
-    test_pack_get_apis.cpp
+    test_compute_metrics.cpp
+    test_data_sampling.cpp
+    test_data_utilities.cpp
+    test_package_interface.cpp
 )
 
 add_subdirectory(functional)
@@ -17,7 +19,7 @@ target_link_libraries(${TARGET}
     ms::cmocka::testrunner
     ms::lib::error_handler
     ms::lib::power_fuse
-    ms::service::sensor_fifo 
+    ms::service::sensor_fifo
     silibs::dvfs
 )
 
@@ -44,6 +46,6 @@ mock_target(${TARGET}
     sensor_fifo_svc_poll_soc_pvt_temperature
     sensor_fifo_svc_poll_dimm_info
     platform_power_fuses_get_dts_coeff_tile
-    data_proc_tlm_cmpnt_aggregate_update_mgr
+    comp_metrics_for_sample_period
     exec_tlm_cmpnt_get_timestamp_microseconds
 )

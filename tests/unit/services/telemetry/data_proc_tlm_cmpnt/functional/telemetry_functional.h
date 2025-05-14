@@ -21,7 +21,7 @@ extern "C" {
 #include <sensor_fifo_service.h>
 #include <event_trace_providers.h>
 #include <telemetry_package_defs.h>
-#include <tlm_logger_i.h>
+#include <data_sampling_i.h>
 #include <package_creation_i.h>
 
 

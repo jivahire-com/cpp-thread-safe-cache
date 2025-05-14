@@ -161,7 +161,7 @@ void tlm_svc_thread(ULONG thread_input)
             }
             else
             {
-                data_proc_tlm_cmpnt_aggregate_pwr_tlm_data();
+                data_proc_tlm_cmpnt_process_input_data();
             }
         }
 
@@ -170,7 +170,7 @@ void tlm_svc_thread(ULONG thread_input)
             // handles case where timer may have set expiration event while mode change was in progress
             if (current_bits & INST_SAMPLE_TMR_EXPIRED)
             {
-                data_proc_tlm_cmpnt_aggregate_inst_tlm_data();
+                data_proc_tlm_cmpnt_prepare_data_for_inst_sample();
                 in_band_tlm_cmpnt_add_inst_sample();
             }
 
@@ -191,7 +191,7 @@ void tlm_svc_thread(ULONG thread_input)
                 // the data_proc api will kick off those requests.
                 // when the next pwr package expires, then the 24hr package will be generated
                 _24_pkg_pending = true;
-                data_proc_tlm_cmpnt_aggregate_24hr_tlm_data();
+                data_proc_tlm_cmpnt_prepare_data_for_24hr_pkg();
             }
         }
 

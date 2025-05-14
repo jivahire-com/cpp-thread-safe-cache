@@ -46,13 +46,13 @@ extern "C" {
 #include <FpFwCMocka.h>
 #include <FpFwUtils.h>
 #include <data_proc_tlm_cmpnt.h>
+#include <data_sampling_i.h>
 #include <fpfw_status.h>
 #include <libs/event_trace/trace/inc/event_trace_providers.h>
 #include <package_creation_i.h>
 #include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h>
 #include <telemetry_package_defs.h>
-#include <tlm_logger_i.h>
 }
 
 // Calculate latest value (convert raw sensor value to millivolts)
@@ -274,7 +274,7 @@ TEST_FUNCTION(test_tile_voltage_collection_functional, test_setup, test_teardown
         will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, &mock_voltage_data);
 
         // Process the data
-        data_proc_tlm_cmpnt_aggregate_pwr_tlm_data();
+        data_proc_tlm_cmpnt_process_input_data();
 
         // Create voltage record
         pwr_core_record_voltage_t voltage_record;

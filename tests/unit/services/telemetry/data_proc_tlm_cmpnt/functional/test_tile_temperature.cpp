@@ -40,13 +40,13 @@ extern "C" {
 #include <FpFwCMocka.h>
 #include <FpFwUtils.h>
 #include <data_proc_tlm_cmpnt.h>
+#include <data_sampling_i.h>
 #include <fpfw_status.h>
 #include <libs/event_trace/trace/inc/event_trace_providers.h>
 #include <package_creation_i.h>
 #include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h>
 #include <telemetry_package_defs.h>
-#include <tlm_logger_i.h>
 }
 
 #define TEST_TEMP2DOUT(temp) \
@@ -312,7 +312,7 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
         will_return(__wrap_sensor_fifo_svc_poll_soc_pvt_temperature, false); // more_entries
 
         // Process the data
-        data_proc_tlm_cmpnt_aggregate_pwr_tlm_data();
+        data_proc_tlm_cmpnt_process_input_data();
 
         // Create temperature record
         pwr_core_record_temperature_t temperature_record;
@@ -430,12 +430,12 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
         }
 
         // Assertions based on understanding of tlm_logger.c
-        // latest_value_dC: Set in tlm_logger_log_tile_temperature to max of current sensors
+        // latest_value_dC: Set in data_smpl_parse_tile_temperature_entry to max of current sensors
         assert_int_equal(temperature_record.temperature_collection[0].temperature_element.latest_value_dC,
                          expected_core0_latest);
-        // min_dC: Updated in tlm_calculate_mma_res only if latest_value < current min or min == 0
+        // min_dC: Updated in data_util_calc_mma_res only if latest_value < current min or min == 0
         assert_int_equal(temperature_record.temperature_collection[0].temperature_element.min_dC, expected_core0_min);
-        // max_dC: Updated in tlm_calculate_mma_res if latest_value > current max
+        // max_dC: Updated in data_util_calc_mma_res if latest_value > current max
         assert_int_equal(temperature_record.temperature_collection[0].temperature_element.max_dC, expected_core0_max);
         // average_dC: Calculated using weighted average when conditions are met
         assert_int_equal(temperature_record.temperature_collection[0].temperature_element.average_dC, expected_core0_avg);

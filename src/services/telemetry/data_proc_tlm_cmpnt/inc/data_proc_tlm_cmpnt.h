@@ -41,21 +41,21 @@ void data_proc_tlm_cmpnt_enable_disable_transition(bool enable);
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_aggregate_pwr_tlm_data(void);
+void data_proc_tlm_cmpnt_process_input_data(void);
 
 /**
  * @brief Primary instantaneous data collection entry point.  Read raw data from sensor fifo and/or registers and update telemetry aggregation structures.
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_aggregate_inst_tlm_data(void);
+void data_proc_tlm_cmpnt_prepare_data_for_inst_sample(void);
 
 /**
  * @brief Primary 24 hour data collection entry point.  Read raw data from sensor fifo and/or registers and update telemetry aggregation structures.
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_aggregate_24hr_tlm_data(void);
+void data_proc_tlm_cmpnt_prepare_data_for_24hr_pkg(void);
 
 
 /**
@@ -255,13 +255,13 @@ void data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(uint16_t sensor_id, p_inst_
 void data_proc_tlm_cmpnt_clear_pwr_tlm_data(void);
 
 /**
- * @brief This API clear the aggregated telemetry data after the collection window, 
- * @return None 
+ * @brief This API clear the aggregated telemetry data after the collection window,
+ * @return None
  */
-void data_proc_tlm_cmpnt_reset_aggregated_data(void);
+void data_proc_tlm_cmpnt_pwr_pkg_completed(void);
 
 /**
- * @brief This API clear the aggregated 24hr telemetry data after the collection. 
- * @return None 
+ * @brief This API clear the aggregated 24hr telemetry data after the collection.
+ * @return None
  */
-void data_proc_tlm_cmpnt_reset_aggregated_24hr_data(void);
+void data_proc_tlm_cmpnt_24hr_pkg_completed(void);

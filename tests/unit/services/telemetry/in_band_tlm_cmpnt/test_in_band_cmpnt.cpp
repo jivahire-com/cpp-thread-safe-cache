@@ -155,7 +155,7 @@ TEST_FUNCTION(test_gen_pwr_report_no_records, test_setup, test_teardown)
     will_return(__wrap__txe_queue_receive, &mock_data);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
-    expect_function_calls(__wrap_data_proc_tlm_cmpnt_reset_aggregated_data, 1);
+    expect_function_calls(__wrap_data_proc_tlm_cmpnt_pwr_pkg_completed, 1);
 
     in_band_tlm_cmpnt_generate_pwr_pkg();
 }
@@ -177,7 +177,7 @@ TEST_FUNCTION(test_gen_pwr_report_some_records, test_setup, test_teardown)
 
     // for  mts_manager_queue_tlm_package
     will_return(__wrap_mts_is_primary_instance, true);
-    expect_function_calls(__wrap_data_proc_tlm_cmpnt_reset_aggregated_data, 1);
+    expect_function_calls(__wrap_data_proc_tlm_cmpnt_pwr_pkg_completed, 1);
     in_band_tlm_cmpnt_generate_pwr_pkg();
 }
 
@@ -196,7 +196,7 @@ TEST_FUNCTION(test_gen_24hr_report_no_records, test_setup, test_teardown)
     will_return(__wrap__txe_queue_receive, sizeof(uint32_t));
     will_return(__wrap__txe_queue_receive, &mock_data);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
-    expect_function_calls(__wrap_data_proc_tlm_cmpnt_reset_aggregated_24hr_data, 1);
+    expect_function_calls(__wrap_data_proc_tlm_cmpnt_24hr_pkg_completed, 1);
     in_band_tlm_cmpnt_generate_24hr_pkg();
 }
 
@@ -217,7 +217,7 @@ TEST_FUNCTION(test_gen_24hr_report_some_records, test_setup, test_teardown)
 
     // for  mts_manager_queue_tlm_package
     will_return(__wrap_mts_is_primary_instance, true);
-    expect_function_calls(__wrap_data_proc_tlm_cmpnt_reset_aggregated_24hr_data, 1);
+    expect_function_calls(__wrap_data_proc_tlm_cmpnt_24hr_pkg_completed, 1);
     in_band_tlm_cmpnt_generate_24hr_pkg();
 }
 

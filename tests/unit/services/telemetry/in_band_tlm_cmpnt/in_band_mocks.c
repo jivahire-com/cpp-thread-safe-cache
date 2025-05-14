@@ -254,12 +254,12 @@ void exec_tlm_cmpnt_notify_new_in_band_mts_message(void)
     function_called();
 }
 
-void __wrap_data_proc_tlm_cmpnt_reset_aggregated_data(void)
+void __wrap_data_proc_tlm_cmpnt_pwr_pkg_completed(void)
 {
     function_called();
 }
 
-void __wrap_data_proc_tlm_cmpnt_reset_aggregated_24hr_data(void)
+void __wrap_data_proc_tlm_cmpnt_24hr_pkg_completed(void)
 {
     function_called();
 }

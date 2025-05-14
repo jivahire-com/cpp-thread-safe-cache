@@ -35,17 +35,17 @@ void __wrap_FpFwAssertWithArgs(int expression, uintptr_t arg0, uintptr_t arg1, u
     function_called();
 }
 
-void data_proc_tlm_cmpnt_aggregate_pwr_tlm_data(void)
+void data_proc_tlm_cmpnt_process_input_data(void)
 {
     function_called();
 }
 
-void data_proc_tlm_cmpnt_aggregate_inst_tlm_data(void)
+void data_proc_tlm_cmpnt_prepare_data_for_inst_sample(void)
 {
     function_called();
 }
 
-void data_proc_tlm_cmpnt_aggregate_24hr_tlm_data(void)
+void data_proc_tlm_cmpnt_prepare_data_for_24hr_pkg(void)
 {
     function_called();
 }

@@ -41,13 +41,13 @@ extern "C" {
 #include <FpFwCMocka.h>
 #include <FpFwUtils.h>
 #include <data_proc_tlm_cmpnt.h>
+#include <data_sampling_i.h>
 #include <fpfw_status.h>
 #include <libs/event_trace/trace/inc/event_trace_providers.h>
 #include <package_creation_i.h>
 #include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h>
 #include <telemetry_package_defs.h>
-#include <tlm_logger_i.h>
 }
 
 #define NO_OF_ITERATIONS 4
@@ -173,7 +173,7 @@ TEST_FUNCTION(test_tlm_logger_log_dimm_information, test_setup, test_teardown)
         will_return(__wrap_sensor_fifo_svc_poll_dimm_info, &mock_dimm_data);
 
         // Process the data
-        data_proc_tlm_cmpnt_aggregate_pwr_tlm_data();
+        data_proc_tlm_cmpnt_process_input_data();
 
         // Create dimm temp record
         pwr_soc_record_dimm_temp_t dimm_temp_record;

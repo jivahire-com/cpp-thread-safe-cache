@@ -2,8 +2,11 @@ set(TARGET kng.service.telemetry.cmpnt.data_process)
 
 add_library(${TARGET}
     STATIC
+        compute_metrics.c
         data_proc_tlm_cmpnt.c
-        tlm_logger.c
+        data_sampling.c
+        data_utilities.c
+        package_interface.c
 )
 
 target_include_directories(${TARGET}
@@ -23,7 +26,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.status
         fwlib.lib.utils
         ms::lib::error_codes
-        ms::lib::power_fuse    
+        ms::lib::power_fuse
         silibs::dvfs
 )
 

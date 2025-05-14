@@ -12,10 +12,10 @@
 
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <data_sampling_i.h>
 #include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdint.h>              // for uint32_t, uint64_t, int32_t
-#include <tlm_logger_i.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -84,7 +84,7 @@ fpfw_status_t __wrap_platform_power_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dt
     check_expected_ptr(dts_coeff);
     return mock_type(int32_t);
 }
-void __wrap_data_proc_tlm_cmpnt_aggregate_update_mgr(void)
+void __wrap_comp_metrics_for_sample_period(void)
 {
 }
 uint64_t __wrap_exec_tlm_cmpnt_get_timestamp_microseconds(void)

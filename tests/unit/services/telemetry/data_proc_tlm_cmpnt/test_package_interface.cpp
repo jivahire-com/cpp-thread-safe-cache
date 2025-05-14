@@ -17,11 +17,11 @@ extern "C" {
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <data_proc_tlm_cmpnt.h>
+#include <data_sampling_i.h>
 #include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdint.h>              // for uint32_t, uint64_t, int32_t
 #include <string.h>              // for memcmp
-#include <tlm_logger_i.h>
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -237,9 +237,6 @@ TEST_FUNCTION(test_get_pwr_core_rack_priority_data, test_setup, test_teardown)
 
 TEST_FUNCTION(test_get_pwr_core_voltage_data, test_setup, test_teardown)
 {
-
-    fpfw_status_t status;
-
     // runtime information manager test
     tile_voltage_t voltage_data = {
         .timestamp = 0,
@@ -253,8 +250,7 @@ TEST_FUNCTION(test_get_pwr_core_voltage_data, test_setup, test_teardown)
     };
 
     uint8_t index = 0;
-    status = tlm_logger_log_tile_voltage(&voltage_data, index);
-    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+    data_smpl_parse_tile_voltage_entry(&voltage_data, index);
 
     // Check core 0 and core 1 voltage
     pwr_core_element_voltage_t voltage_get_data = {0};
@@ -264,8 +260,8 @@ TEST_FUNCTION(test_get_pwr_core_voltage_data, test_setup, test_teardown)
     // test index out of range
 
     voltage_data.data.vcore0 = 6; // update voltage
-    status = tlm_logger_log_tile_voltage(&voltage_data, index);
-    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+    data_smpl_parse_tile_voltage_entry(&voltage_data, index);
+
     // updated index to out of range: enter in fail case.
     index = NUMBER_OF_CORES_PER_DIE;
     data_proc_tlm_cmpnt_get_pwr_core_voltage_data(index, &voltage_get_data);
@@ -351,9 +347,9 @@ TEST_FUNCTION(test_get_pwr_soc_vr_rail_data, test_setup, test_teardown)
         .vr_temp_dC = {15, 25, 35, 45, 55, 65, 75, 85},
     };
     // Baseline log for vr current and voltage
-    tlm_logger_log_vr_current(&data);
+    data_smpl_parse_vr_current_entry(&data);
     // Baseline log for vr temperature
-    tlm_logger_log_vr_temp(&vr_temperature);
+    data_smpl_parse_vr_temperature_entry(&vr_temperature);
 
     data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(TEST_RAIL_ID_2, &vr_rail_data);
     // Check VR Current and voltage for packaging api.
@@ -365,9 +361,9 @@ TEST_FUNCTION(test_get_pwr_soc_vr_rail_data, test_setup, test_teardown)
     data.vr_current_mA[TEST_RAIL_ID_2] = 35;
     data.vr_voltage_mV[TEST_RAIL_ID_2] = 810;
     // Log again with new values and compare new valuse.
-    tlm_logger_log_vr_current(&data);
+    data_smpl_parse_vr_current_entry(&data);
     vr_temperature.vr_temp_dC[TEST_RAIL_ID_2] = 45;
-    tlm_logger_log_vr_temp(&vr_temperature);
+    data_smpl_parse_vr_temperature_entry(&vr_temperature);
 
     data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(MAX_NUM_OF_VR_RAILS, &vr_rail_data);
     assert_int_not_equal(vr_rail_data.current.latest_value_mA, (data.vr_current_mA[TEST_RAIL_ID_2]));
@@ -378,7 +374,6 @@ TEST_FUNCTION(test_get_pwr_soc_vr_rail_data, test_setup, test_teardown)
 TEST_FUNCTION(test_get_pwr_soc_hnf_data, test_setup, test_teardown)
 {
     pwr_soc_element_hnf_t hnf_data = {0};
-    fpfw_status_t status;
     uint8_t hnf_channel_id = 0;
     // to log the data .
     tile_temp_t temperature_data = {
@@ -408,8 +403,7 @@ TEST_FUNCTION(test_get_pwr_soc_hnf_data, test_setup, test_teardown)
     };
 
     uint8_t index = 0;
-    status = tlm_logger_log_tile_temperature(&temperature_data, index);
-    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+    data_smpl_parse_tile_temperature_entry(&temperature_data, index);
 
     // for hnf channel id 0
     data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(hnf_channel_id, &hnf_data);
@@ -422,8 +416,7 @@ TEST_FUNCTION(test_get_pwr_soc_hnf_data, test_setup, test_teardown)
     hnf_channel_id = 0;
     temperature_data.temp2.temp6 = 60; // First HNF on the tile.
     temperature_data.temp2.temp7 = 70; // Second HNF on the tile.
-    status = tlm_logger_log_tile_temperature(&temperature_data, hnf_channel_id);
-    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+    data_smpl_parse_tile_temperature_entry(&temperature_data, hnf_channel_id);
 
     hnf_channel_id = NUMBER_OF_HNF_CHANNELS_PER_DIE; // max range should fail to get updated data.
     data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(hnf_channel_id, &hnf_data);
@@ -440,7 +433,6 @@ TEST_FUNCTION(test_get_pwr_soc_hnf_data, test_setup, test_teardown)
 TEST_FUNCTION(test_get_pwr_soc_dimm_data, test_setup, test_teardown)
 {
     pwr_soc_element_dimm_temp_t dimm_data = {{0}};
-    fpfw_status_t status;
     sensor_ram_dimm_info_t dimm_info = {
         .timestamp = 0,
         .dimm_temp_s0_dC = 26,
@@ -451,8 +443,7 @@ TEST_FUNCTION(test_get_pwr_soc_dimm_data, test_setup, test_teardown)
         .dimm_memory_frequency_id = 0,
     };
     // Baseline log
-    status = telmain_log_dimm_info(&dimm_info);
-    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+    data_smpl_parse_dimm_entry(&dimm_info);
 
     // Check DIMM information
     data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(TEST_DIMM_CHANN_ID_3, &dimm_data);
@@ -466,8 +457,7 @@ TEST_FUNCTION(test_get_pwr_soc_dimm_data, test_setup, test_teardown)
     dimm_info.dimm_throttling = 1;
     dimm_info.dimm_memory_frequency_id = 100;
 
-    status = telmain_log_dimm_info(&dimm_info);
-    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+    data_smpl_parse_dimm_entry(&dimm_info);
     data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(NUMBER_OF_DIMM_MODULES, &dimm_data);
     assert_int_not_equal(dimm_data.s0.latest_value_dC, (dimm_info.dimm_temp_s0_dC));
     assert_int_not_equal(dimm_data.s1.latest_value_dC, (dimm_info.dimm_temp_s1_dC));
@@ -481,7 +471,7 @@ TEST_FUNCTION(test_get_pwr_soc_snsr_temp_data, test_setup, test_teardown)
         .timestamp = 0,
         .sensor_temp_dC = {20, 30, 40, 50, 60, 26, 27, 21, 12, 21, 31, 13, 41, 14},
     };
-    tlm_logger_log_soc_pvt_temp(&pvt_temperature);
+    data_smpl_parse_pvt_temperature_entry(&pvt_temperature);
 
     data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(TEST_SNSR_ID_0, &snsr_temp_data);
     // assert_int_equal(pvt_temperature.sensor_temp_dC[TEST_SNSR_ID_0], snsr_temp_data.latest_value_dC);

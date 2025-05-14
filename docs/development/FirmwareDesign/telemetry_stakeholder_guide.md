@@ -46,28 +46,30 @@ NOTE: These values are pending final specification approval and are subject to c
 | Provider ID | Event ID | Record / Event Name |
 |-------------|----------|---------------------|
 | 0x201    | 0x00   | CORE_PSTATE              |
-|          | 0x01   | CORE_THROTTLE            |
-|          | 0x02   | CORE_RACK_PRIORITIES     |
-|          | 0x03   | CORE_VOLTAGE             |
-|          | 0x04   | CORE_CURRENT             |
-|          | 0x05   | CORE_TEMPERATURE         |
-|          | 0x06   | CORE_POWER               |
-|          | 0x07   | CORE_HISTOGRAM           |
-|          | 0x08   | CORE_DROOPS              |
-|          | 0x09   | SOC_PKG_MON              |
-|          | 0x0A   | SOC_VR_RAILS             |
-|          | 0x0B   | SOC_DIMM_TEMPERATURE     |
-|          | 0x0C   | SOC_DIMM_POWER           |
-|          | 0x0D   | SOC_HNF_TEMP             |
-|          | 0x0E   | SOC_SENSOR_TEMP          |
-|          | 0x0F   | SOC_PER_DIE_MESH         |
-|          | 0x10   | SOC_DIE_TO_DIE_LINK_STATE|
-|          | 0x11   | SOC_PER_DIE_PHY_COUNTERS |
-|          | 0x12   | SOC_MAX_TEMPERATURE      |
-|          | 0x13   | SOC_ACCEL_COUNTERS       |
-|          | 0x14   | SOC_VM_MPAM              |
-|          | 0x15   | SOC_VM_MPAM_THROTTLE     |
-|          | 0x16   | SOC_VM_MPAM_POWER        |
+|          | 0x01   | CORE_CSTATE              |
+|          | 0x02   | CORE_THROTTLE            |
+|          | 0x03   | CORE_RACK_PRIORITIES     |
+|          | 0x04   | CORE_VOLTAGE             |
+|          | 0x05   | CORE_CURRENT             |
+|          | 0x06   | CORE_TEMPERATURE         |
+|          | 0x07   | CORE_POWER               |
+|          | 0x08   | CORE_HISTOGRAM           |
+|          | 0x09   | CORE_AGING               |
+|          | 0x0A   | CORE_DROOPS              |
+|          | 0x0B   | SOC_PKG_MON              |
+|          | 0x0C   | SOC_VR_RAILS             |
+|          | 0x0D   | SOC_DIMM_TEMPERATURE     |
+|          | 0x0E   | SOC_DIMM_POWER           |
+|          | 0x0F   | SOC_HNF_TEMP             |
+|          | 0x10   | SOC_SENSOR_TEMP          |
+|          | 0x11   | SOC_PER_DIE_MESH         |
+|          | 0x12   | SOC_DIE_TO_DIE_LINK_STATE|
+|          | 0x13   | SOC_PER_DIE_PHY_COUNTERS |
+|          | 0x14   | SOC_MAX_TEMPERATURE      |
+|          | 0x15   | SOC_ACCEL_COUNTERS       |
+|          | 0x16   | SOC_VM_MPAM              |
+|          | 0x17   | SOC_VM_MPAM_THROTTLE     |
+|          | 0x18   | SOC_VM_MPAM_POWER        |
 
 | Provider ID | Event ID | Record / Event Name |
 |-------------|----------|---------------------|

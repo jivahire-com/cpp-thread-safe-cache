@@ -115,7 +115,7 @@ void in_band_tlm_cmpnt_generate_pwr_pkg(void)
             ddr_manager_deallocate_mem(&pkg_location);
         }
     }
-    data_proc_tlm_cmpnt_reset_aggregated_data();
+    data_proc_tlm_cmpnt_pwr_pkg_completed();
 }
 
 void in_band_tlm_cmpnt_generate_24hr_pkg(void)
@@ -140,7 +140,7 @@ void in_band_tlm_cmpnt_generate_24hr_pkg(void)
         }
     }
 
-    data_proc_tlm_cmpnt_reset_aggregated_24hr_data();
+    data_proc_tlm_cmpnt_24hr_pkg_completed();
 }
 
 void in_band_tlm_cmpnt_tlm_mode_exit_actions(tlm_operating_mode_t exiting_mode)

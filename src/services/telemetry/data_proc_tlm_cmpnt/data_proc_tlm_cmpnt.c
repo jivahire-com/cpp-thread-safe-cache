@@ -10,7 +10,8 @@
 /*------------- Includes -----------------*/
 #include "data_proc_tlm_cmpnt.h"
 
-#include "tlm_logger_i.h" // internal APIs
+#include "data_sampling_i.h" // internal APIs
+#include "package_interface_i.h"
 
 #include <FpFwUtils.h>
 #include <telemetry_events_i.h>
@@ -26,11 +27,9 @@
 
 void data_proc_tlm_cmpnt_init(void)
 {
-    /* Initialize dts coeff data at startup */
-    tlm_logger_init_fuse_dts_coeff_data();
+    data_smpl_init();
 
-    /* Initialize the data that doesn't update */
-    tlm_logger_init_constant_data();
+    package_inf_init();
 }
 
 void data_proc_tlm_cmpnt_enable_disable_transition(bool enable)

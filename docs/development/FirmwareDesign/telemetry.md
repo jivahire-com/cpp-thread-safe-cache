@@ -147,9 +147,25 @@ stateDiagram-v2
 
 ### Data Processing Component
 
-- Polls data from Sensor Fifo.
-- Sensor fifo poll API's are synchronous driver framework calls, resulting in no additional run time latency.
-- Update telemetry summary usage data from raw data
+This component is responsible for processing the input data and computing metrics for export either via the In Band
+Telemetry Component or the Out of Band Telemetry Component.
+
+This component is further partitioned into 4 modules or classes.
+
+- Data Sampling
+  - Polls input data from Sensor Fifo.
+  - Sensor fifo poll API's are synchronous driver framework calls, resulting in no additional run time latency.
+  - Manages state and other data tracking across multiple sampling periods.
+
+- Compute Metrics
+  - Computes various metrics and/or statistics of the Sampled Data.
+
+- Data Utilities
+  - Small module that provides math helper functions related to the data that is processed.
+
+- Packaging Interface
+  - This module contains the API's called from In band and out of Band telemetry packaging.
+  - These API's output the computed metrics via the packaging API interface.
 
 ### In Band Telemetry Component
 

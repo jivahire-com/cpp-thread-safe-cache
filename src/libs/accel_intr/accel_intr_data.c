@@ -81,13 +81,6 @@ const accel_intr_irq_data_t accel_irq_scp_data[ACCEL_SCP_INTR_MAX] = {
             .accel_irq_fn = accel_intr_single_level_irq_fn
         },
 
-    [ACCEL_SCP_INTR_STYRESE_REQ_ERR] =
-        {
-            .accel_irq_bit = SDM_EXT_STYRESE_REQ_ERR_INTR,
-            .accel_irq_init_fn = accel_intr_single_level_irq_init,
-            .accel_irq_fn = accel_intr_single_level_irq_fn
-        },
-
     [ACCEL_SCP_INTR_MBX_I2E] =
         {
             .accel_irq_bit = SDM_EXT_MBX_I2E_INTR,
@@ -139,7 +132,7 @@ static const CDED_INT_CATEGORY aes_f_cat_arr[1] = {
 
 /**
  * @brief Below list represents configuration "CDED configuration" interrupts
- * 
+ *
  * Note: .brief string should not exceed length of (CDED_CP_INT_TRACE_STR_LEN - 1)
  */
 const cded_cp_l2_irq_data_t cded_cp_fatal_intr[] = {
@@ -231,8 +224,6 @@ eACCEL_SCP_INTR accel_scp_get_intr_enum(SDM_EXT_INTERRUPT_NUMBER irq_bit)
         return ACCEL_SCP_INTR_FAB_WDT_ERR;
     case SDM_EXT_AXI_UNSUPP_INTR_STATUS_INTR:
         return ACCEL_SCP_INTR_AXI_UNSUPP_INTR_STATUS;
-    case SDM_EXT_STYRESE_REQ_ERR_INTR:
-        return ACCEL_SCP_INTR_STYRESE_REQ_ERR;
     case SDM_EXT_MBX_I2E_INTR:
         return ACCEL_SCP_INTR_MBX_I2E;
     default:

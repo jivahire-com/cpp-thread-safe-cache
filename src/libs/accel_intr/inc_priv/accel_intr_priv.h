@@ -33,7 +33,6 @@ typedef enum {
     ACCEL_SCP_INTR_SDM_WDT_ERR,             // Maps to SDM_EXT_SDM_WDT_ERR_INTR
     ACCEL_SCP_INTR_FAB_WDT_ERR,             // Maps to SDM_EXT_FAB_WDT_ERR_INTR
     ACCEL_SCP_INTR_AXI_UNSUPP_INTR_STATUS,  // Maps to SDM_EXT_AXI_UNSUPP_INTR_STATUS_INTR
-    ACCEL_SCP_INTR_STYRESE_REQ_ERR,         // Maps to SDM_EXT_STYRESE_REQ_ERR_INTR
     ACCEL_SCP_INTR_MBX_I2E,                 // Maps to SDM_EXT_MBX_I2E_INTR
     ACCEL_SCP_INTR_MAX
 } eACCEL_SCP_INTR;
@@ -104,7 +103,7 @@ typedef struct
 {
     ACCEL_ID    accel_type;                 // Accel type (SDM /CDED)
     uint32_t    timeout_count;              // Timeout count. This is needed to take different action based on timeout
-    bool        is_soc_reset;               // Indicate if this is SoC reset 
+    bool        is_soc_reset;               // Indicate if this is SoC reset
     bool        is_collecting_crashdump;    // Indicates if crash dump collection has started
 } accel_intr_crash_dump_collection_timer_data_t, *paccel_intr_crash_dump_collection_timer_data_t;
 
@@ -133,7 +132,7 @@ typedef union
 /**
  * This array will store following data per interrupt bit
  * accel_irq_bit : Corresponding bit number from sdm_ext_cfg_regs.misc.sys_ext_intr2
- * accel_irq_init_fn : Init function for this bit of interrupt 
+ * accel_irq_init_fn : Init function for this bit of interrupt
  * accel_irq_fn : Validate the IRQ in SDM IP interrupt tree or process if specified by parameter
  */
 extern const accel_intr_irq_data_t accel_irq_scp_data[ACCEL_SCP_INTR_MAX];
@@ -144,7 +143,7 @@ extern const cded_cp_l2_irq_data_t cded_cp_fatal_intr[];
 
 /*--------------------------- Function Prototypes ---------------------------*/
 /**
- * @brief Helper function to get eACCEL_SCP_INTR enum 
+ * @brief Helper function to get eACCEL_SCP_INTR enum
  *
  * \b Description:
  * This function will have mapping of eACCEL_SCP_INTR to sdm_ext_cfg_regs.misc.sys_ext_intr2 bit
@@ -163,13 +162,13 @@ eACCEL_SCP_INTR accel_scp_get_intr_enum(SDM_EXT_INTERRUPT_NUMBER irq_bit);
  *************************************************************************/
 
 /**
- * @brief Enable / Disable ACCEL emCPU Watchdog 
+ * @brief Enable / Disable ACCEL emCPU Watchdog
  *
  *
  * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
  * @param[in] enable : 0x1 for enable and 0x0 for disable
  *
- * @retval 
+ * @retval
  * void
  */
 void accel_intr_emcpu_wdt_control(uint32_t ext_cfg_addr, uint8_t enable);
@@ -189,7 +188,7 @@ void accel_intr_emcpu_wdt_control(uint32_t ext_cfg_addr, uint8_t enable);
 void accel_intr_clear_disable_irq_in_sdm_intr_tree(uint32_t ext_cfg_addr, SDM_EXT_INT_CATEGORY category_id, uint32_t interrupt_mask, sdm_ext_int_t parent_vector);
 
 /**
- * @brief Clear and enable interrupt in given interrupt tree, 
+ * @brief Clear and enable interrupt in given interrupt tree,
  * parent vector is not needed since silibs take cares of enabling it at both levels
  *
  * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
@@ -254,7 +253,7 @@ void accel_intr_unmask_interrupt_level_1(uint32_t ext_cfg_addr, SDM_EXT_INTERRUP
 
 /**
  * @brief Initialize SDM/CDED interrupts for SCP core
- * 
+ *
  * @param[in] accel_type : Accel type (SDM /CDED)
  * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
  */
@@ -266,7 +265,7 @@ void accel_intr_scp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr);
 
 /**
  * @brief Initialize EMCPU_WDT_ERR Interrupt
- * 
+ *
  * \b Description:
  * Clear and unmask interrupt in SDM interrupt tree
  *
@@ -281,7 +280,7 @@ uint32_t accel_intr_emcpu_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NU
 
 /**
  * @brief Initialize UE_ECC_ERR Interrupt
- * 
+ *
  * \b Description:
  * Clear and unmask interrupt in SDM interrupt tree
  *
@@ -296,7 +295,7 @@ uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBE
 
 /**
  * @brief Initialize all ACCEL interrupts that have only level 1 register
- * 
+ *
  * \b Description:
  * Clear and unmask interrupt in SDM interrupt tree
  *
@@ -311,7 +310,7 @@ uint32_t accel_intr_single_level_irq_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT
 
 /**
  * @brief Initialize SDM_WDT_ERR Interrupt
- * 
+ *
  * \b Description:
  * Clear and unmask interrupt in SDM interrupt tree
  *
@@ -326,7 +325,7 @@ uint32_t accel_intr_sdm_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMB
 
 /**
  * @brief Initialize FAB_WDT_ERR Interrupt
- * 
+ *
  *
  * \b Description:
  * Clear and unmask interrupt in SDM interrupt tree
@@ -342,7 +341,7 @@ uint32_t accel_intr_fab_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMB
 
 /**
  * @brief Initialize CDED_CP_FATAL_ERR Interrupt
- * 
+ *
  *
  * \b Description:
  * Clear and unmask interrupt in SDM interrupt tree only for CDEDSS
@@ -377,7 +376,7 @@ uint32_t accel_intr_cded_cp_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMB
  * Bit 1 : Valid interrupt detected
  * Bit 2 : SoC reset is needed
  * Bit 3 : ACCEL emCPU reset is needed
- * 
+ *
  */
 uint32_t accel_intr_emcpu_wdt_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index, bool process_this_fatal_intr);
 
@@ -397,7 +396,7 @@ uint32_t accel_intr_emcpu_wdt_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM
  * Bit 1 : Valid interrupt detected
  * Bit 2 : SoC reset is needed
  * Bit 3 : ACCEL emCPU reset is needed
- * 
+ *
  */
 uint32_t accel_intr_single_level_irq_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index, bool process_this_fatal_intr);
 
@@ -418,7 +417,7 @@ uint32_t accel_intr_single_level_irq_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, 
  * Bit 1 : Valid interrupt detected
  * Bit 2 : SoC reset is needed
  * Bit 3 : ACCEL emCPU reset is needed
- * 
+ *
  */
 uint32_t accel_intr_ue_ecc_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index, bool process_this_fatal_intr);
 
@@ -439,7 +438,7 @@ uint32_t accel_intr_ue_ecc_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_EX
  * Bit 1 : Valid interrupt detected
  * Bit 2 : SoC reset is needed
  * Bit 3 : ACCEL emCPU reset is needed
- * 
+ *
  */
 uint32_t accel_intr_sdm_wdt_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index, bool process_this_fatal_intr);
 
@@ -460,7 +459,7 @@ uint32_t accel_intr_sdm_wdt_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_E
  * Bit 1 : Valid interrupt detected
  * Bit 2 : SoC reset is needed
  * Bit 3 : ACCEL emCPU reset is needed
- * 
+ *
  */
 uint32_t accel_intr_fab_wdt_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index, bool process_this_fatal_intr);
 
@@ -489,7 +488,7 @@ uint32_t accel_intr_cded_cp_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_E
  * @brief Loop through all FATAL interrupts.
  * When called from ISR : This will only validate the interrupts
  * When called from handler thread : The interrupts will also be processed
- * 
+ *
  * @param[in] IRQnum : IRQnum on which interrupt is received
  * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
  * @param[in] process_this_fatal_intr : Boolean value indicating whether to process or only validate interrupt
@@ -504,7 +503,7 @@ uint32_t accel_intr_process_fatal_interrupts(uint32_t IRQnum, uint32_t ext_cfg_a
 
 /**
  * @brief ISR function for ACCEL IP interrupt on SCP core
- * 
+ *
  * @param[in] callback_param : This will have IRQNum to identify if interrupt is received for CDED / SDM
  *
  * @retval void
@@ -528,10 +527,10 @@ void accel_intr_isr_mcp(void* callback_param);
 
 /**
  * @brief Create timer used during crash dump collection handshake between Accel emCPU and SCP
- * 
+ *
  * @param[in] accel_type : Accelerator type SDM / CDED
  *
- * @retval 
+ * @retval
  * ACCEL_INTR_RET_SUCCESS : On Success
  * ACCEL_INTR_RET_FAIL_TIMER_CREATE : On Failure
  *

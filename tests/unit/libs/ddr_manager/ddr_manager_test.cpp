@@ -677,9 +677,6 @@ TEST_FUNCTION(ddr_create_bdat_test_single_die, NULL, NULL)
         will_return(__wrap_mmio_read16, 0xFFFF);
     }
 
-    // Account for the new struct size being 29795 Bytes..
-    will_return(__wrap_mmio_read16, 0xFFFF);
-
     // CRC16 values
     expect_function_calls(__wrap_mmio_write16, 2);
 
@@ -800,8 +797,6 @@ TEST_FUNCTION(ddr_create_bdat_test_die_0, NULL, NULL)
     {
         will_return(__wrap_mmio_read16, 0xFFFF);
     }
-
-    will_return(__wrap_mmio_read16, 0xFFFF);
 
     // CRC16 values
     expect_function_calls(__wrap_mmio_write16, 2);

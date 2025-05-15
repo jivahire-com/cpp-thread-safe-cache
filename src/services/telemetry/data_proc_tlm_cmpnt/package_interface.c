@@ -229,11 +229,16 @@ void data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(uint16_t dimm_channel, p_pwr
     }
     else
     {
-        // TODO: fill in complete data structure https://azurecsi.visualstudio.com/Dev/_workitems/edit/2592133
         // DIMM temperature s0
-        dimm_data->s0.latest_value_dC = soc_info.dimm[dimm_channel].s0.latest_value_dC;
+        dimm_data->s0.max_dC = soc_dimm.dimm_temp[dimm_channel].s0.max_dC;
+        dimm_data->s0.min_dC = soc_dimm.dimm_temp[dimm_channel].s0.min_dC;
+        dimm_data->s0.average_dC = soc_dimm.dimm_temp[dimm_channel].s0.average_dC;
+        dimm_data->s0.latest_value_dC = soc_dimm.dimm_temp[dimm_channel].s0.latest_value_dC;
         // DIMM temperature s1
-        dimm_data->s1.latest_value_dC = soc_info.dimm[dimm_channel].s1.latest_value_dC;
+        dimm_data->s1.max_dC = soc_dimm.dimm_temp[dimm_channel].s1.max_dC;
+        dimm_data->s1.min_dC = soc_dimm.dimm_temp[dimm_channel].s1.min_dC;
+        dimm_data->s1.average_dC = soc_dimm.dimm_temp[dimm_channel].s1.average_dC;
+        dimm_data->s1.latest_value_dC = soc_dimm.dimm_temp[dimm_channel].s1.latest_value_dC;
     }
 }
 

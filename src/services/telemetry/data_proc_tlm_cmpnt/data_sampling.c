@@ -43,6 +43,7 @@ typedef struct
 core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
 tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
 soc_runtime_info_t soc_info;
+soc_runtime_dimm_info_t soc_dimm;
 dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE] = {0};
 
 /* per core power samples's averaged value in mW,  used for averaging , samples are  averaged and multiplied
@@ -221,6 +222,7 @@ void data_proc_tlm_cmpnt_process_input_data(void)
         if (status.curr_data_is_valid == true)
         {
             data_smpl_parse_dimm_entry(dimm_info);
+            comp_metrics_for_single_soc_dimm(dimm_info);
         }
     } while (status.more_entries == true);
 
@@ -477,12 +479,10 @@ void data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info)
 {
     // TODO: update via https://azurecsi.visualstudio.com/Dev/_workitems/edit/2592133
 
-    // DIMM(Dual inline memory module)- Convert Sensor Data into DIMM Entries
-    // Check for which DIMM channel is this entry, do not process anything beyond the valid DIMM index
     if (dimm_info->dimm_id < NUMBER_OF_DIMM_MODULES)
     {
-        soc_info.dimm[dimm_info->dimm_id].s0.latest_value_dC = dimm_info->dimm_temp_s0_dC;
-        soc_info.dimm[dimm_info->dimm_id].s1.latest_value_dC = dimm_info->dimm_temp_s1_dC;
+        soc_dimm.dimm_temp[dimm_info->dimm_id].s0.latest_value_dC = dimm_info->dimm_temp_s0_dC;
+        soc_dimm.dimm_temp[dimm_info->dimm_id].s1.latest_value_dC = dimm_info->dimm_temp_s1_dC;
     }
     else
     {
@@ -773,9 +773,12 @@ void data_smpl_reset_core_data()
 void data_smpl_reset_soc_data(void)
 {
     soc_runtime_info_t soc_info_temp;
+    uint64_t soc_dimm_timestamp;
     // TODO: optimize soc_runtime_info_t struct : https://azurecsi.visualstudio.com/Dev/_workitems/edit/2602180
+    soc_dimm_timestamp = soc_dimm.previous_soc_dimm_timestamp_uS;
     memcpy(&soc_info_temp, &soc_info, sizeof(soc_runtime_info_t));
     memset(&soc_info, 0, sizeof(soc_runtime_info_t));
+    memset(&soc_dimm, 0, sizeof(soc_runtime_dimm_info_t));
 
     /* Restore selective data from the local copy */
     for (uint8_t rail_id = 0; rail_id < MAX_NUM_OF_VR_RAILS; rail_id++)
@@ -794,6 +797,7 @@ void data_smpl_reset_soc_data(void)
     {
         soc_info.sensor_temp[pvt_index].latest_value_dC = soc_info_temp.sensor_temp[pvt_index].latest_value_dC;
     }
+    soc_dimm.previous_soc_dimm_timestamp_uS = soc_dimm_timestamp;
 }
 
 void data_smpl_reset_tile_data(void)

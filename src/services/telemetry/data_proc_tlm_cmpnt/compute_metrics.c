@@ -137,13 +137,6 @@ void comp_metrics_for_soc_for_sampling_period(void)
         comp_metrics_for_single_soc_temp_sensor(pvt_index, time_diff_uS, soc_info.time_counter_uS);
     }
 
-    // Update for DIMM temperature
-    for (uint8_t dimm_module_index = 0; dimm_module_index < NUMBER_OF_DIMM_MODULES; dimm_module_index++)
-    {
-        // Update each temperature data for S0 and S1.
-        comp_metrics_for_single_soc_dimm(dimm_module_index, time_diff_uS, soc_info.time_counter_uS);
-    }
-
     // Check current cstate for all cores
     // only if ALL cores are in pc3, increment residency
     // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023433
@@ -314,23 +307,38 @@ void comp_metrics_for_single_soc_temp_sensor(uint8_t pvt_index, uint32_t time_di
                            residency_uS);
 }
 
-void comp_metrics_for_single_soc_dimm(uint8_t dimm_module_index, uint32_t time_diff_uS, uint32_t residency_uS)
+void comp_metrics_for_single_soc_dimm(sensor_ram_dimm_info_t* dimm_info)
 {
-    /* For soc dimm info :min, max avg calculation :Update each temperature data for S0 and S1*/
-    // Update the soc dimm info min, max average
-    data_util_calc_mma_res(&soc_info.dimm[dimm_module_index].s0.min_dC,
-                           &soc_info.dimm[dimm_module_index].s0.max_dC,
-                           &soc_info.dimm[dimm_module_index].s0.average_dC,
-                           &soc_info.dimm[dimm_module_index].s0.latest_value_dC,
-                           time_diff_uS,
-                           residency_uS);
-    // Update each temperature data for S1
-    data_util_calc_mma_res(&soc_info.dimm[dimm_module_index].s1.min_dC,
-                           &soc_info.dimm[dimm_module_index].s1.max_dC,
-                           &soc_info.dimm[dimm_module_index].s1.average_dC,
-                           &soc_info.dimm[dimm_module_index].s1.latest_value_dC,
-                           time_diff_uS,
-                           residency_uS);
+    uint8_t dimm_module_index = dimm_info->dimm_id;
+    // TODO:  replace with the data helper API: data_util_convert_systick_to_microseconds(uint64_t tick_count);
+    uint64_t time_stamp_uS = dimm_info->timestamp;
+    uint64_t time_diff_uS = 0;
+
+    if (dimm_info->dimm_id < NUMBER_OF_DIMM_MODULES)
+    {
+        time_diff_uS =
+            data_utils_update_residency(time_stamp_uS, &soc_dimm.previous_soc_dimm_timestamp_uS, &soc_dimm.residency_uS);
+
+        /* For soc dimm info :min, max avg calculation :Update each temperature data for S0 and S1*/
+        // Update the soc dimm info min, max average
+        data_util_calc_mma_res(&soc_dimm.dimm_temp[dimm_module_index].s0.min_dC,
+                               &soc_dimm.dimm_temp[dimm_module_index].s0.max_dC,
+                               &soc_dimm.dimm_temp[dimm_module_index].s0.average_dC,
+                               &soc_dimm.dimm_temp[dimm_module_index].s0.latest_value_dC,
+                               time_diff_uS,
+                               soc_dimm.residency_uS);
+        // Update each temperature data for S1
+        data_util_calc_mma_res(&soc_dimm.dimm_temp[dimm_module_index].s1.min_dC,
+                               &soc_dimm.dimm_temp[dimm_module_index].s1.max_dC,
+                               &soc_dimm.dimm_temp[dimm_module_index].s1.average_dC,
+                               &soc_dimm.dimm_temp[dimm_module_index].s1.latest_value_dC,
+                               time_diff_uS,
+                               soc_dimm.residency_uS);
+    }
+    else
+    {
+        FPFW_ET_LOG(DIMMInfoInvalidDimmId, FPFW_STATUS_INVALID_ARGS);
+    }
 }
 
 fpfw_status_t comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp_uS)

@@ -183,11 +183,9 @@ void comp_metrics_for_single_soc_temp_sensor(uint8_t pvt_index, uint32_t time_di
  * It updates the temperature data for both S0 and S1 sensors of the DIMM module. It utilizes
  * the data_util_calc_mma_res function to perform the calculations.
  *
- * @param[in] dimm_module_index The identifier of the DIMM module for which the temperature values are being updated.
- * @param[in] time_diff_uS -The time difference in microseconds between the current and previous measurements.
- * @param[in] residency_uS  -The total residency time in microseconds over which the average is calculated.
+ * @param[in] dimm_info sensor_ram_dimm_info_t - SCF RAM formatted resource for dimm
  */
-void comp_metrics_for_single_soc_dimm(uint8_t dimm_module_index, uint32_t time_diff_uS, uint32_t residency_uS);
+void comp_metrics_for_single_soc_dimm(sensor_ram_dimm_info_t* dimm_info);
 
 
 /**

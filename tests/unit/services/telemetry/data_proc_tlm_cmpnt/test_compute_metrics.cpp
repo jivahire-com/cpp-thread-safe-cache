@@ -365,33 +365,47 @@ TEST_FUNCTION(test_comp_metrics_for_single_soc_temp_sensor, test_setup, test_tea
 
 TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm, test_setup, test_teardown)
 {
-    uint8_t dimm_module_index = 0;
-    uint32_t time_diff_uS = 100;
-    uint32_t residency_uS = 200;
+
+    sensor_ram_dimm_info_t dimm_info = {
+        .timestamp = 2000,
+        .dimm_temp_s0_dC = 260,
+        .dimm_temp_s1_dC = 280,
+        .dimm_power_mW = 100,
+        .dimm_id = 0,
+        .dimm_throttling = 0,
+        .dimm_memory_frequency_id = 0,
+    };
+    soc_dimm.previous_soc_dimm_timestamp_uS = 1000;
+    soc_dimm.residency_uS = 5000;
+
+    uint8_t dimm_module_index = dimm_info.dimm_id;
 
     // Initialize soc_info with some test values
-    soc_info.dimm[dimm_module_index].s0.min_dC = 0;
-    soc_info.dimm[dimm_module_index].s0.max_dC = 0;
-    soc_info.dimm[dimm_module_index].s0.average_dC = 0;
-    soc_info.dimm[dimm_module_index].s0.latest_value_dC = 10;
+    soc_dimm.dimm_temp[dimm_module_index].s0.min_dC = 80;
+    soc_dimm.dimm_temp[dimm_module_index].s0.max_dC = 90;
+    soc_dimm.dimm_temp[dimm_module_index].s0.average_dC = 0;
+    soc_dimm.dimm_temp[dimm_module_index].s0.latest_value_dC = 100;
 
-    soc_info.dimm[dimm_module_index].s1.min_dC = 0;
-    soc_info.dimm[dimm_module_index].s1.max_dC = 0;
-    soc_info.dimm[dimm_module_index].s1.average_dC = 0;
-    soc_info.dimm[dimm_module_index].s1.latest_value_dC = 20;
+    soc_dimm.dimm_temp[dimm_module_index].s1.min_dC = 90;
+    soc_dimm.dimm_temp[dimm_module_index].s1.max_dC = 100;
+    soc_dimm.dimm_temp[dimm_module_index].s1.average_dC = 0;
+    soc_dimm.dimm_temp[dimm_module_index].s1.latest_value_dC = 20;
+
+    // Baseline log
+    data_smpl_parse_dimm_entry(&dimm_info);
 
     // Call the function to be tested
-    comp_metrics_for_single_soc_dimm(dimm_module_index, time_diff_uS, residency_uS);
+    comp_metrics_for_single_soc_dimm(&dimm_info);
 
     // Add assertions to verify the expected behavior
-    assert_int_equal(soc_info.dimm[dimm_module_index].s0.min_dC, 10);
-    assert_int_equal(soc_info.dimm[dimm_module_index].s0.max_dC, 10);
-    assert_int_equal(soc_info.dimm[dimm_module_index].s0.average_dC, 10);
-    assert_int_equal(soc_info.dimm[dimm_module_index].s0.latest_value_dC, 10);
-    assert_int_equal(soc_info.dimm[dimm_module_index].s1.min_dC, 20);
-    assert_int_equal(soc_info.dimm[dimm_module_index].s1.max_dC, 20);
-    assert_int_equal(soc_info.dimm[dimm_module_index].s1.average_dC, 20);
-    assert_int_equal(soc_info.dimm[dimm_module_index].s1.latest_value_dC, 20);
+    assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s0.latest_value_dC, 260);
+    assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s1.latest_value_dC, 280);
+
+    assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s0.min_dC, 80);
+    assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s1.min_dC, 90);
+
+    assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s0.max_dC, 260);
+    assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s1.max_dC, 280);
 }
 
 TEST_FUNCTION(test_comp_metrics_for_single_core_pstate, test_setup, test_teardown)

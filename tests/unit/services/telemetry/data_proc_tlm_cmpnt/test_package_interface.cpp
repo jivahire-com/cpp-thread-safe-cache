@@ -447,7 +447,7 @@ TEST_FUNCTION(test_get_pwr_soc_dimm_data, test_setup, test_teardown)
 
     // Check DIMM information
     data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(TEST_DIMM_CHANN_ID_3, &dimm_data);
-    assert_int_equal(dimm_data.s0.latest_value_dC, (dimm_info.dimm_temp_s0_dC));
+    assert_int_equal(dimm_data.s0.latest_value_dC, dimm_info.dimm_temp_s0_dC);
     assert_int_equal(dimm_data.s1.latest_value_dC, (dimm_info.dimm_temp_s1_dC));
 
     // setup and test for fail case.

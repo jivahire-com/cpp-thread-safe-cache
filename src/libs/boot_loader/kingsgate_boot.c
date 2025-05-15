@@ -22,9 +22,10 @@
     #include <scp_top_regs.h>
 #endif
 #include <boot_status.h> // for _mscp_boot_status_code_t, mscp_boot_status_code_t
-#include <stdbool.h>     // for false, bool, true
-#include <stddef.h>      // for NULL
-#include <stdint.h>      // for uint32_t
+#include <boot_status_codes.h>
+#include <stdbool.h> // for false, bool, true
+#include <stddef.h>  // for NULL
+#include <stdint.h>  // for uint32_t
 #include <system_info.h>
 #include <unpack_image.h> // for unpack_image
 
@@ -36,22 +37,32 @@
 #define MAX_RETRY_HSP_MBOX (500)
 
 /*-------------- Typedefs ----------------*/
-typedef enum _HSP_MBOX_STATUS_EX
-{
-    HSP_MBOX_STATUS_NOT_FATAL = 0,
-    HSP_MBOX_STATUS_FATAL,
-    HSP_MBOX_STATUS_COMPLETE,
-} HSP_MBOX_STATUS_EX;
 
 /*--------- Function Prototypes ----------*/
 extern void __disable_irq(void);
 
 /*-- Declarations (Statics and globals) --*/
 static FPFW_MBX_PRIMITIVE_CTX g_mail_box_context;
+static struct kng_hsp_mailbox_boot_status_extd_notify g_hsp_mbox_data = {
+    .header =
+        {
+            .cmd = HSP_MAILBOX_CMD_BOOT_STATUS_EXTD_NOTIFY,
+            .seq = 0,
+            .context = 0,
+            .flags = 0,
+        },
+    .id = HSP_FIRMWARE_ID_SCP,
+    .boot_status = MSCP_BOOT_STATUS_CODE_SCP_OK,
+    .boot_status_ex =
+        {
+            .component_group = COMPONENT_GROUP_SCP,
+            .component_subgroup = MSCP_BOOTLOADER,
+            .component_instance = SCP_PRIMARY,
+            .reserved = 0x0,
+        },
+};
 
 /*------------- Functions ----------------*/
-
-#ifndef MBOX_STUB
 void sleep_ms(uint32_t millisecond)
 {
     uint32_t count = 0;
@@ -66,25 +77,9 @@ void sleep_ms(uint32_t millisecond)
         count++;
     }
 }
-#endif
-bool send_post_code(mscp_boot_status_code_t boot_post_code, bool is_scp, bool is_fatal)
-{
-    // TODO: Replace the  mail box data and response with proper structure once it has been defined on HSP
-    // side ADO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1793271
-    struct kng_hsp_mailbox_boot_status_notify hsp_mbox_data = {
-        .header.cmd = HSP_MAILBOX_CMD_BOOT_STATUS_NOTIFY,
-        .header.seq = 0,
-        .header.context = 0,
-        .header.flags = 0,
-        .id = is_scp ? HSP_FIRMWARE_ID_SCP : HSP_FIRMWARE_ID_MCP,
-        .boot_status = boot_post_code,
-        .boot_status_ex = is_fatal ? HSP_MBOX_STATUS_FATAL : HSP_MBOX_STATUS_NOT_FATAL};
-    kng_hsp_mailbox_msg hsp_mbox_rsp;
 
-    FPFW_MBX_PAYLOAD mail_box_send_payload = {.payloadBuffer = &hsp_mbox_data,
-                                              .payloadSize = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t))};
-    FPFW_MBX_PAYLOAD mail_box_receive_payload = {.payloadBuffer = &hsp_mbox_rsp,
-                                                 .payloadSize = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t))};
+bool send_post_code(void* boot_status_msg)
+{
     uint32_t count = 0;
     bool ret_code = true;
 
@@ -93,42 +88,40 @@ bool send_post_code(mscp_boot_status_code_t boot_post_code, bool is_scp, bool is
         // If HSP is not present simply return true so boot loader can proceed
         return ret_code;
     }
-    if (is_scp && (boot_post_code >= MSCP_BOOT_STATUS_CODE_SCP_MAX))
+
+    if (boot_status_msg == NULL)
+    {
+        return false;
+    }
+    struct kng_hsp_mailbox_boot_status_extd_notify* msg = (struct kng_hsp_mailbox_boot_status_extd_notify*)boot_status_msg;
+
+    //! Verify range of the boot status code
+    if ((msg->id == HSP_FIRMWARE_ID_MCP) &&
+        ((msg->boot_status < MSCP_BOOT_STATUS_CODE_MCP_OK) || (msg->boot_status >= MSCP_BOOT_STATUS_CODE_MCP_MAX)))
+    {
+        // Post code is out of range of MCP
+        return false;
+    }
+    if ((msg->id == HSP_FIRMWARE_ID_SCP) &&
+        ((msg->boot_status < MSCP_BOOT_STATUS_CODE_SCP_OK) || (msg->boot_status >= MSCP_BOOT_STATUS_CODE_SCP_MAX)))
     {
         // Post code is out of range of SCP
         return false;
     }
 
-    if (!is_scp && ((boot_post_code < MSCP_BOOT_STATUS_CODE_MCP_OK) || (boot_post_code >= MSCP_BOOT_STATUS_CODE_MCP_MAX)))
-    {
-        // Post code is out of range of MCP
-        return false;
-    }
-    // TODO ADO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1793271
-    // HSP mailbox integration is still not done, hence these apis from SCP/MCP are
-    // stubbed out. Stub will be disabled once HSP enables mailbox
-#ifdef MBOX_STUB
-    // Stubs to make compiler happy
-    (void)mail_box_send_payload;
-    (void)mail_box_receive_payload;
-#else
-    // Wait until the mailbox is able to transmit the post code.  At this stage in the boot process this is acceptable.
+    FPFW_MBX_PAYLOAD mail_box_send_payload = {.payloadBuffer = msg,
+                                              .payloadSize = (HSP_MBX_FIFO_DEPTH * sizeof(uint32_t))};
+
+    //! Wait until the mailbox is able to transmit the post code.  At this stage in the boot process this is acceptable.
     while ((count < MAX_RETRY_HSP_MBOX) && (FpFwMailboxSend(&g_mail_box_context, &mail_box_send_payload) != FPFW_MBX_SUCCESS))
     {
-        // mailbox send may fail if response is in fifo (w/ additional response also queued); attempt to read/clear any pending response.
-        FpFwMailboxReceive(&g_mail_box_context, &mail_box_receive_payload);
-
         sleep_ms(MIN_SLEEP_MS_RETRY);
-
         count++;
     }
-#endif
-
     if (count >= MAX_RETRY_HSP_MBOX)
     {
         ret_code = false;
     }
-
     return ret_code;
 }
 
@@ -187,21 +180,33 @@ void* load_image(kingsgate_boot_config_t* boot_config)
 
     // Boot metadata is expected to be stored at the beginning of the MSCP_EXP SRAM chosen
     boot_meta_data = (HSP_BOOT_METADATA*)(boot_config->boot_meta_base);
+    if (!boot_meta_data)
+    {
+        // Boot metadata is not available, can't proceed, return NULL
+        return NULL;
+    }
 
+    uint8_t current_die = boot_meta_data->CurrentDie;
     if (boot_config->cpu_type == MSCP_CPU_SCP)
     {
         is_scp = true;
-
-        boot_status = MSCP_BOOT_STATUS_CODE_SCP_START;
-
+        g_hsp_mbox_data.id = HSP_FIRMWARE_ID_SCP;
+        g_hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_SCP_OK;
+        g_hsp_mbox_data.boot_status_ex.component_group = COMPONENT_GROUP_SCP;
+        g_hsp_mbox_data.boot_status_ex.component_subgroup = MSCP_BOOTLOADER;
+        g_hsp_mbox_data.boot_status_ex.component_instance = (current_die == 0) ? SCP_PRIMARY : SCP_SECONDARY;
+        g_hsp_mbox_data.boot_status_ex.reserved = (current_die == 0) ? BOOT_STATUS_CODE_SCP0_OK : BOOT_STATUS_CODE_SCP1_OK;
         mail_box_address = SCP_TOP_SCP2HSP_MAILBOX_ADDRESS;
     }
     else if (boot_config->cpu_type == MSCP_CPU_MCP)
     {
         is_scp = false;
-
-        boot_status = MSCP_BOOT_STATUS_CODE_MCP_START;
-
+        g_hsp_mbox_data.id = HSP_FIRMWARE_ID_MCP;
+        g_hsp_mbox_data.boot_status = MSCP_BOOT_STATUS_CODE_MCP_OK;
+        g_hsp_mbox_data.boot_status_ex.component_group = COMPONENT_GROUP_MCP;
+        g_hsp_mbox_data.boot_status_ex.component_subgroup = MSCP_BOOTLOADER;
+        g_hsp_mbox_data.boot_status_ex.component_instance = (current_die == 0) ? MCP_PRIMARY : MCP_SECONDARY;
+        g_hsp_mbox_data.boot_status_ex.reserved = (current_die == 0) ? BOOT_STATUS_CODE_MCP0_OK : BOOT_STATUS_CODE_MCP1_OK;
         mail_box_address = MCP_TOP_MCP2HSP_MAILBOX_ADDRESS;
     }
     else
@@ -215,13 +220,17 @@ void* load_image(kingsgate_boot_config_t* boot_config)
     {
         return NULL;
     }
-    // Init system info here
+    //! Init system info here
     system_info_init(NULL);
-    if (send_post_code(boot_status, is_scp, false) == false)
+    //! Send the very 1st boot status to HSP
+    if (send_post_code(&g_hsp_mbox_data) == false)
     {
         goto hsp_send_failed;
     }
+    //! Reset hsp led code post sending the 1st boot status
+    g_hsp_mbox_data.boot_status_ex.reserved = 0x0;
 
+    //! Validate the boot config
     if (boot_config->data_src_base == 0)
     {
         boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
@@ -269,28 +278,29 @@ void* load_image(kingsgate_boot_config_t* boot_config)
 
     if (is_error_config)
     {
+        g_hsp_mbox_data.boot_status = boot_status;
         goto load_image_failed;
     }
 
     __disable_irq();
 
-    boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_IRQ_DISABLED : MSCP_BOOT_STATUS_CODE_MCP_IRQ_DISABLED;
+    g_hsp_mbox_data.boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_IRQ_DISABLED : MSCP_BOOT_STATUS_CODE_MCP_IRQ_DISABLED;
 
-    if (send_post_code(boot_status, is_scp, false) == false)
+    if (send_post_code(&g_hsp_mbox_data) == false)
     {
         goto hsp_send_failed;
     }
 
     if (boot_meta_data->ResetReason & BITMASK_WARM_BOOT)
     {
-        boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_WARM_BOOT : MSCP_BOOT_STATUS_CODE_MCP_WARM_BOOT;
+        g_hsp_mbox_data.boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_WARM_BOOT : MSCP_BOOT_STATUS_CODE_MCP_WARM_BOOT;
     }
     else
     {
-        boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_COLD_BOOT : MSCP_BOOT_STATUS_CODE_MCP_COLD_BOOT;
+        g_hsp_mbox_data.boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_COLD_BOOT : MSCP_BOOT_STATUS_CODE_MCP_COLD_BOOT;
     }
 
-    if (send_post_code(boot_status, is_scp, false) == false)
+    if (send_post_code(&g_hsp_mbox_data) == false)
     {
         goto hsp_send_failed;
     }
@@ -308,21 +318,21 @@ void* load_image(kingsgate_boot_config_t* boot_config)
     {
         // Unpack image mainly fails due to size mismatch or decompress failure. However no status code
         // for decompress failure.
-        boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+        g_hsp_mbox_data.boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
         goto load_image_failed;
     }
 
     return (void*)boot_config->itc_ram_base;
 
 load_image_failed:
-    if (send_post_code(boot_status, is_scp, true) == true)
+    if (send_post_code(&g_hsp_mbox_data) == true)
     {
         return NULL;
     }
 
 hsp_send_failed:
     // There is a boot status for this , but there is no way to send this out
-    boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
-    (void)boot_status;
+    g_hsp_mbox_data.boot_status = is_scp ? MSCP_BOOT_STATUS_CODE_SCP_E_BOOT_CONFIG : MSCP_BOOT_STATUS_CODE_MCP_E_BOOT_CONFIG;
+    (void)g_hsp_mbox_data.boot_status;
     return NULL;
 }

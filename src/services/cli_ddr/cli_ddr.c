@@ -117,6 +117,13 @@ STATIC FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv)
     uint64_t p_addr = 0;
     uint16_t BIT_Value = 0;
     bool check_null = false;
+    KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
+
+    if ((platform_id == PLATFORM_FPGA_LARGE) || (platform_id == PLATFORM_FPGA_LARGE_RVP))
+    {
+        FpFwCliPrint("Cannot support ecc_ue_error_injection in FPGA series platform! \n");
+        return CLI_ERROR;
+    }
 
     if (Argc == 1) // no argument passed
     {
@@ -214,6 +221,7 @@ STATIC FPFW_CLI_STATUS wrrtydat_ue_error_injection(int Argc, const char** Argv)
 
     // TODO Silibs to provide APIs with exact arguments list
     // https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/584974
+
     FpFwCliPrint("Work in progress: wrrtydat_ue_error_injection\n");
 
     return CLI_SUCCESS;

@@ -40,6 +40,11 @@
 ## SVP Teardown
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 
+## Single Die ddrboot Tests
+./../../../tests/functional/test_suites/ddrboot_tests/mscp_ddrboot_hsp_boot.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+
 ## Crash Dump Tests
 ./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_trigger_exception_test.robot
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot

@@ -28,3 +28,6 @@
 
 ## Warm Start Tests
 ./../../../tests/functional/test_suites/warm_start_tests/warm_start_test_die1.robot
+
+## Dual Die ddrboot Tests
+./../../../tests/functional/test_suites/ddrboot_tests/mscp_ddrboot_hsp_boot_dual.robot

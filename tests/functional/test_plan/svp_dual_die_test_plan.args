@@ -43,6 +43,11 @@
 ./../../../tests/functional/test_suites/power_tests/mod_power_telemetry_loop_health.robot
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 
+## Dual Die DDRBoot Tests
+./../../../tests/functional/test_suites/ddrboot_tests/mscp_ddrboot_hsp_boot_dual.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+
 ## Warm Start Tests
 ./../../../tests/functional/test_suites/warm_start_tests/warm_start_test_die1.robot
 

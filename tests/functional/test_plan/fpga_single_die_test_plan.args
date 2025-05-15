@@ -30,6 +30,9 @@
 ./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_stack_overflow_test.robot
 ./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_set_single_core_mode_test.robot
 
+## Single Die ddrboot Tests
+./../../../tests/functional/test_suites/ddrboot_tests/mscp_ddrboot_hsp_boot.robot
+
 ## Sensor FIFO Tests
 #TODO - FPGA implementation to be done soon by Hara
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot

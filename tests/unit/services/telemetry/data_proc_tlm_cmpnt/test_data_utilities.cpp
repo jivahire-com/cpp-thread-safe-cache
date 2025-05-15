@@ -97,3 +97,77 @@ TEST_FUNCTION(test_data_util_calc_mma_res, test_setup, test_teardown)
     assert_int_equal(mma_max, 100);
     assert_int_equal(mma_average, 52);
 }
+
+TEST_FUNCTION(test_data_util_convert_systick_to_microseconds, test_setup, test_teardown)
+{
+    will_return(__wrap_gtimer_prodfw_get_frequency, 0);
+    uint64_t micro_seconds = data_util_convert_systick_to_microseconds(0x1FFFFFFFF);
+    assert_int_equal(micro_seconds, 0);
+
+    will_return(__wrap_gtimer_prodfw_get_frequency, 0x10000000);
+    micro_seconds = data_util_convert_systick_to_microseconds(0x1FFFFFFFF);
+    assert_int_equal(micro_seconds, (0x1FFFFFFFF * 1000000) / 0x10000000);
+}
+
+TEST_FUNCTION(test_data_util_running_avg_update, test_setup, test_teardown)
+{
+    running_avg_t running_avg;
+    running_avg.average = 1000;
+    running_avg.num_samples = 10;
+    uint16_t new_value = 1200;
+
+    data_util_running_avg_update(&running_avg, new_value);
+    assert_int_equal(running_avg.average, 1018);
+    assert_int_equal(running_avg.num_samples, 11);
+}
+
+TEST_FUNCTION(test_data_util_running_avg_update_corner, test_setup, test_teardown)
+{
+    running_avg_t running_avg;
+    running_avg.average = 0;
+    running_avg.num_samples = 0;
+    uint16_t new_value = 1500;
+
+    data_util_running_avg_update(&running_avg, new_value);
+    assert_int_equal(running_avg.average, 1500);
+    assert_int_equal(running_avg.num_samples, 1);
+
+    data_util_running_avg_update(nullptr, new_value);
+
+    running_avg.average = UINT16_MAX;
+    running_avg.num_samples = UINT16_MAX;
+    new_value = UINT16_MAX;
+
+    data_util_running_avg_update(&running_avg, new_value);
+    assert_int_equal(running_avg.average, UINT16_MAX);
+    assert_int_equal(running_avg.num_samples, UINT16_MAX);
+}
+
+TEST_FUNCTION(test_data_util_running_avg_reset, test_setup, test_teardown)
+{
+    running_avg_t running_avg;
+    running_avg.average = 1000;
+    running_avg.num_samples = 5;
+
+    data_util_running_avg_reset(&running_avg);
+
+    assert_int_equal(running_avg.average, 0);
+    assert_int_equal(running_avg.num_samples, 0);
+
+    data_util_running_avg_reset(nullptr);
+}
+
+TEST_FUNCTION(test_data_util_mean_of_means, test_setup, test_teardown)
+{
+    uint16_t mean = data_util_mean_of_means(1000, 10, 2000, 5);
+    assert_int_equal(mean, 1333);
+}
+
+TEST_FUNCTION(test_data_util_mean_of_means_corner, test_setup, test_teardown)
+{
+    uint16_t mean = data_util_mean_of_means(1000, 0, 2000, 0);
+    assert_int_equal(mean, 0);
+
+    mean = data_util_mean_of_means(UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX);
+    assert_int_equal(mean, UINT16_MAX);
+}

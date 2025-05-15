@@ -91,3 +91,8 @@ uint64_t __wrap_exec_tlm_cmpnt_get_timestamp_microseconds(void)
 {
     return mock_type(int64_t);
 }
+
+uint32_t __wrap_gtimer_prodfw_get_frequency(void)
+{
+    return mock_type(uint32_t);
+}

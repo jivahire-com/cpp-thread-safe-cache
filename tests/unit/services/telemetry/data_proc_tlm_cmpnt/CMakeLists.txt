@@ -48,4 +48,5 @@ mock_target(${TARGET}
     platform_power_fuses_get_dts_coeff_tile
     comp_metrics_for_sample_period
     exec_tlm_cmpnt_get_timestamp_microseconds
+    gtimer_prodfw_get_frequency
 )

@@ -27,6 +27,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.utils
         ms::lib::error_codes
         ms::lib::power_fuse
+        ms::lib::gtimer
         silibs::dvfs
 )
 

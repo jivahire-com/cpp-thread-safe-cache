@@ -13,7 +13,10 @@
 #include "telemetry_events_i.h"
 
 #include <exec_tlm_cmpnt.h>
+#include <gtimer_prodfw.h>
+
 /*-- Symbolic Constant Macros (defines) --*/
+#define MICROSECONDS_PER_SECOND (1000000)
 
 /*------------- Typedefs -----------------*/
 
@@ -96,4 +99,95 @@ void data_util_calc_mma_res(uint16_t* mma_min,
             *mma_average = *mma_latest_value;
         }
     }
+}
+
+uint64_t data_util_convert_systick_to_microseconds(uint64_t tick_count)
+{
+    uint32_t frequency = gtimer_prodfw_get_frequency();
+
+    if (frequency == 0)
+    {
+        FPFW_ET_LOG(GtimerIsZero);
+        return 0; // Avoid division by zero
+    }
+
+    uint64_t timestamp_us = (tick_count * MICROSECONDS_PER_SECOND) / frequency;
+    return timestamp_us;
+}
+
+void data_util_running_avg_update(running_avg_t* running_avg, uint16_t new_value)
+{
+    if (running_avg == NULL)
+    {
+        FPFW_ET_LOG(RunningAverageNullPointer);
+        return;
+    }
+
+    if (running_avg->num_samples == 0)
+    {
+        running_avg->average = new_value;
+        running_avg->num_samples = 1;
+        return;
+    }
+
+    // Cap sample count at UINT16_MAX to prevent rollover
+    if (running_avg->num_samples < UINT16_MAX)
+    {
+        running_avg->num_samples += 1;
+    }
+
+    uint32_t total = (uint32_t)(running_avg->average) * (running_avg->num_samples - 1) + new_value;
+    uint32_t updated_avg = (total + running_avg->num_samples / 2) / running_avg->num_samples;
+
+    // Clamping to UINT16_MAX for average is not needed here because:
+    //  - Both the existing average and the new input are uint16_t values (max 65535).
+    //  - The updated average is a weighted mean of these two values.
+    //  - A weighted mean of two bounded values can never exceed the maximum of those values.
+    //  - Integer overflow is prevented by computing the sum and mean using uint32_t.
+    running_avg->average = (uint16_t)updated_avg;
+}
+
+void data_util_running_avg_reset(running_avg_t* running_avg)
+{
+    if (running_avg == NULL)
+    {
+        FPFW_ET_LOG(RunningAverageNullPointer);
+        return;
+    }
+    running_avg->average = 0;
+    running_avg->num_samples = 0;
+}
+
+uint16_t data_util_mean_of_means(uint16_t mean1, uint16_t count1, uint16_t mean2, uint16_t count2)
+{
+    // Reduce counts directly to ensure no overflow in (mean * count)
+    // unlikely for counts to be that high and preferable to uint64_t calculations
+    if (count1 > UINT16_MAX / 2)
+    {
+        FPFW_ET_LOG(MeanofMeansHighCount, count1);
+        count1 = UINT16_MAX / 2;
+    }
+
+    if (count2 > UINT16_MAX / 2)
+    {
+        FPFW_ET_LOG(MeanofMeansHighCount, count2);
+        count2 = UINT16_MAX / 2;
+    }
+
+    uint32_t weighted_sum1 = (uint32_t)mean1 * count1;
+    uint32_t weighted_sum2 = (uint32_t)mean2 * count2;
+    uint32_t total_sum = weighted_sum1 + weighted_sum2;
+    uint32_t total_count = (uint32_t)count1 + count2;
+
+    if (total_count == 0)
+    {
+        FPFW_ET_LOG(MeansBadDivisor);
+        return 0; // Avoid division by zero
+    }
+
+    uint32_t mean = (total_sum + total_count / 2) / total_count; // round up
+
+    // Clamping to UINT16_MAX is not needed either because of the same reasons as above.
+
+    return mean;
 }

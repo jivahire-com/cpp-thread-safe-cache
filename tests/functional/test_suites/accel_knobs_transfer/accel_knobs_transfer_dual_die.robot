@@ -16,9 +16,9 @@ Suite Teardown    Dut Teardown
 Test Tags        accel_knobs_transfer_dual_die
 
 *** Variables ***
-@{DIE0_PASS_RESPONSE}               SoC ID: --0x0--
-@{DIE1_PASS_RESPONSE}               SoC ID: --0x1--
-@{FAIL_RESPONSE}                    SoC ID: --0x2--
+@{DIE0_PASS_RESPONSE}               Die ID: --0x0--
+@{DIE1_PASS_RESPONSE}               Die ID: --0x1--
+@{FAIL_RESPONSE}                    Die ID: --0x2--
 ${TIMEOUT}                          ${20}
 ${IGNORE_NUMBERS}                   ${True}
 

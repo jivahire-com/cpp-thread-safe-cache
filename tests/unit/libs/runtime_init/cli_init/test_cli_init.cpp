@@ -52,8 +52,8 @@ int32_t __wrap_FpFwCliInitialize(PFPFW_CLI_CONFIG pCliConfig)
     //! Verify expected cli configuration settings
     assert_non_null(pCliConfig);
     assert_non_null(pCliConfig->CommandHistory);
-    assert_int_equal(pCliConfig->MaxCommandLength, 300);
-    assert_int_equal(pCliConfig->CommandHistorySize, 2 * 300);
+    assert_int_equal(pCliConfig->MaxCommandLength, 512);
+    assert_int_equal(pCliConfig->CommandHistorySize, 2 * 512);
     assert_non_null(pCliConfig->OutputStream);
     assert_non_null(pCliConfig->InputStream);
     //! function expected to be called in init

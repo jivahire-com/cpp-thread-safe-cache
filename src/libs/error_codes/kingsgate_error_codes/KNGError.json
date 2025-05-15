@@ -352,7 +352,22 @@
         {
           "Name": "KNG_HM_RMSS_RAM1_OF",
           "Value": 9,
-          "Description": "Overflow Error in RMSS RAM1"
+          "Description": "Overflow Error in TCM RAM1"
+        },
+        {
+          "Name": "KNG_HM_TCM_OF",
+          "Value": 10,
+          "Description": "Overflow Error in TCM"
+        },
+        {
+          "Name": "KNG_HM_TCM_UE",
+          "Value": 11,
+          "Description": "Uncorrectable Error in TCM"
+        },
+        {
+          "Name": "KNG_HM_TCM_CE",
+          "Value": 12,
+          "Description": "Correctable Error in TCM"
         }
       ]
     }

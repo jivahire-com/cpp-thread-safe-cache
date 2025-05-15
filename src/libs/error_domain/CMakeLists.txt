@@ -5,7 +5,8 @@
 set(TARGET kng.lib.error_domain.scp)
 
 set (SOURCES 
-        src/error_domain_register_scp.c
+        src/error_domain_scp.c
+        src/error_injection_scp.c
 )
 
 add_library(${TARGET}

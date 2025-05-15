@@ -2,7 +2,8 @@ set(TARGET scp_error_domain.test)
 
 set(SOURCES
     test_error_domain_register_scp.cpp
-    ${CMAKE_SOURCE_DIR}/src/libs/error_domain/src/error_domain_register_scp.c
+    ${CMAKE_SOURCE_DIR}/src/libs/error_domain/src/error_domain_scp.c
+    ${CMAKE_SOURCE_DIR}/src/libs/error_domain/src/error_injection_scp.c
 )
 
 # Compile test

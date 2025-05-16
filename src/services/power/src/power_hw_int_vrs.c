@@ -571,6 +571,11 @@ static void calculate_soc_power()
             sizeof(s_power_vrs_ctx.vcpu_current_log[0]) * (SOC_POWER_AVG_COUNT - 1));
     // save most recent measurement to index 0
     s_power_vrs_ctx.vcpu_current_log[0] = rail_vcpu_current;
+
+    POWER_LOG_TRACE(" VCPU power = %f, VCPU current = %f, SOC power = %f\n",
+                    s_power_vrs_ctx.vcpu_power_log[0],
+                    s_power_vrs_ctx.vcpu_current_log[0],
+                    s_power_vrs_ctx.soc_power[0]);
 }
 
 uint32_t power_vrs_get_recent_power_mw()

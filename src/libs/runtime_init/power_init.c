@@ -34,9 +34,20 @@
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(
-    pwr_svc,
-    FPFW_INIT_DEPENDENCIES("dfwk", "fuse_post_mesh", "atu_svc", "gpio_lib", "icc_die2die", "avs0_int", "avs1_int", "avs2_int", "avs3_int", "hw_ver", "cfg_mgr", "core_info", "ws_init"))
+FPFW_INIT_COMPONENT(pwr_svc,
+                    FPFW_INIT_DEPENDENCIES("dfwk",
+                                           "fuse_post_mesh",
+                                           "atu_svc",
+                                           "gpio_lib",
+                                           "icc_die2die",
+                                           "avs0_int",
+                                           "avs1_int",
+                                           "avs2_int",
+                                           "avs3_int",
+                                           "hw_ver",
+                                           "cfg_mgr",
+                                           "core_info",
+                                           "ws_init"))
 {
     static power_service_t power_service;
     corebits_t* sys_cores_in_die1 = core_info_get_enable_cores_result();

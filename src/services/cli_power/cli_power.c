@@ -137,7 +137,7 @@ static FPFW_CLI_STATUS cli_power_config_command(int argc, const char** argv)
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg vcpucalc", "VCPU calc inputs \n");
         FpFwCliPrint("\n");
 
-        return CLI_ERROR;
+        return CLI_SUCCESS;
     }
 
     /* Die - 0 (Default), Cmd ID - CLI_COMMANDS_POWER_CONFIG, subcommand - argv[1], setval - None (Unused), callback - cli_power_config_async_print */
@@ -214,7 +214,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
             FpFwCliPrint("%-72s%s", "Usage: pwr set pstate_freq <pstate 0-31> <freq_ctrl> <fb_div> <frac_div>", pwr_strings[POWER_IF_CMD_SET_PSTATE_FREQ]);
             FpFwCliPrint("\n");
 
-            return CLI_ERROR;
+            return CLI_SUCCESS;
         }
     }
 
@@ -402,13 +402,13 @@ static FPFW_CLI_STATUS cli_power_log_cmd_param_conversion(int argc, const char**
         if( (strcmp(argv[1], "??") == 0) )
         {
             FpFwCliPrint("\n");
-            FpFwCliPrint("%-72s%s", "Usage: pwr log ??", "- help menu\n");
-            FpFwCliPrint("%-72s%s", "Usage: pwr log list", "- list power log entries\n");
-            FpFwCliPrint("%-72s%s", "Usage: pwr log useddr <0/1>", "- enable/disable power log DDR\n");
-            FpFwCliPrint("%-72s%s", "Usage: pwr log mask <mask>", "- set power log mask\n");
+            FpFwCliPrint("%-72s%s", "Usage: pwr log ??", "- Help menu\n");
+            FpFwCliPrint("%-72s%s", "Usage: pwr log list", "- Dump the DDR power log entries\n");
+            FpFwCliPrint("%-72s%s", "Usage: pwr log ddr <1/0>", "- Enable/Disable power logging in DDR\n");
+            FpFwCliPrint("%-72s%s", "Usage: pwr log mask <mask>", "- Set or display current power log mask\n");
             FpFwCliPrint("\n");
 
-            return CLI_ERROR;
+            return CLI_SUCCESS;
         }
     }
     int subcommand_id = cli_power_log_get_cmd_id(argv[1]);
@@ -426,12 +426,15 @@ static FPFW_CLI_STATUS cli_power_log_cmd_param_conversion(int argc, const char**
         }
 
         case POWER_IF_CMD_LOG_MASK : {
-            if(argc != cli_power_cmd_arg_count(subcommand_id))
+            if(argc == cli_power_cmd_arg_count(subcommand_id))
             {
-                FpFwCliPrint("%-72s%s", "Usage: pwr log mask <value>", "- sets the power log MASK enable\n");
-                return CLI_ERROR;
+                p_pwrset_sub_command_args->minupdate_val = (uint16_t)strtoul(argv[2],0,0);
             }
-            p_pwrset_sub_command_args->minupdate_val = (uint16_t)strtoul(argv[2],0,0);
+            else{
+                FpFwCliPrint("%-72s%s", "Usage: pwr log mask <value>", "- Updates power log mask\n");
+                FpFwCliPrint("%-72s%s", "Usage: pwr log mask", "- Display Current power log mask\n");
+                p_pwrset_sub_command_args->minupdate_val = 0xFFFF;
+            }
             break;
         }
 
@@ -478,7 +481,7 @@ static FPFW_CLI_STATUS cli_power_status_command(int argc, const char** argv)
         FpFwCliPrint("%-72s%s", "Usage: pwr status pvttl", "PVT telemetry loop info\n");
         FpFwCliPrint("\n");
 
-        return CLI_ERROR;
+        return CLI_SUCCESS;
     }
     
     /* Die - 0 (Default), Cmd ID - CLI_COMMANDS_POWER_CONFIG, subcommand - argv[1], setval - None (Unused), callback - cli_power_config_async_print */
@@ -488,7 +491,7 @@ static FPFW_CLI_STATUS cli_power_status_command(int argc, const char** argv)
 static FPFW_CLI_STATUS cli_power_log_command(int argc, const char** argv)
 {
     if (argc < 2) {
-        FpFwCliPrint("Usage: pwr log <sub_cmd>\n");
+        FpFwCliPrint("Usage: pwr log <sub_cmd>\nTo see available subcmds-> pwr log ??\n");
         return CLI_ERROR;
     }
 

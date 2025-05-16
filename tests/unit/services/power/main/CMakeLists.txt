@@ -91,6 +91,7 @@ mock_target(${TARGET}
     mmio_write8
     atu_map
     atu_unmap
+    atu_find_map
     idsw_get_die_id
     config_get_power_vcpu0_offset
     config_get_power_vcpu1_offset

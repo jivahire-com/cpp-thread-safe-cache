@@ -42,75 +42,117 @@ static_assert(sizeof(power_log_entry_t) <= (sizeof(uint64_t) * POWER_ET_LOG_TRAC
 
 #define MAX_LOG_CHARS 256
 static char string_buffer[MAX_LOG_CHARS];
-static bool should_use_ddr = false;
+static bool ddr_logging_enabled = false;
 static power_log_data_t log = {};
 
 /*------------- Functions ----------------*/
-
-int mmio_ap_mem_cpy(uint64_t globalAddr, uintptr_t localAddr, uint64_t numBytes)
+int power_log_ddr_map_unmap(bool map, KNG_DIE_ID die_id)
 {
     int status = SILIBS_SUCCESS;
-    uint64_t bytesCopied = 0;
     atu_map_entry_t log_mem_atu_map_struct;
     atu_entry_attr_t log_test_atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT};
-
     uint64_t start_addr = 0;
-    uint64_t end_addr = 0;
+    uint32_t size = 0;
 
     // set up the mapping for the DDR log
-    start_addr = globalAddr;
-    if (idsw_get_die_id() == DIE_0)
+    if (die_id == DIE_0)
     {
-        end_addr = (POWER_LOG_DDR_BASE_DIE0 + POWER_LOG_DDR_SIZE_DIE0);
-        BUG_ASSERT((start_addr + numBytes < end_addr) && (start_addr >= POWER_LOG_DDR_BASE_DIE0));
+        start_addr = POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE0, 0);
+        size = POWER_LOG_DDR_SIZE_DIE0;
     }
     else
     {
-        end_addr = (POWER_LOG_DDR_BASE_DIE1 + POWER_LOG_DDR_SIZE_DIE1);
-        BUG_ASSERT((start_addr + numBytes < end_addr) && (start_addr >= POWER_LOG_DDR_BASE_DIE1));
+        start_addr = POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE1, 0);
+        size = POWER_LOG_DDR_SIZE_DIE1;
     }
-    log_mem_atu_map_struct.ap_base_address = start_addr;
+
+    //! In atu_lib implementation, if mscp_start_addr is 0, a free mscp address region will be assigned for
+    //! mapping in that case, the size of the region is given by mscp_end_addr - 1
+    log_mem_atu_map_struct.ap_base_address = ALIGN_DOWN(start_addr, ATU_PAGE_SIZE);
     log_mem_atu_map_struct.mscp_start_address = 0;
-    log_mem_atu_map_struct.mscp_end_address = end_addr - 1;
+    log_mem_atu_map_struct.mscp_end_address = ALIGN_UP(size, ATU_PAGE_SIZE) - 1;
     log_mem_atu_map_struct.attribute.as_uint32 = log_test_atu_root_attr.as_uint32;
 
-    status = atu_map(ATU_ID_MSCP, &log_mem_atu_map_struct);
-    if (status != SILIBS_SUCCESS)
+    //! Check if the mapping already exists
+    if (atu_find_map(ATU_ID_MSCP, &log_mem_atu_map_struct) == SILIBS_SUCCESS)
     {
-        POWER_LOG_ERR("Pwr Log DDR failed due to ATU mapping failure, Stat:%d\n", status);
-        return status;
+        POWER_LOG_INFO("Found existing mapping for address 0x%" PRIx64 " at 0x%" PRIx32 "\n",
+                       log_mem_atu_map_struct.ap_base_address,
+                       log_mem_atu_map_struct.mscp_start_address);
+
+        //! If the mapping is not needed, unmap it
+        if (!map)
+        {
+            status = atu_unmap(ATU_ID_MSCP, &log_mem_atu_map_struct);
+            if (status != SILIBS_SUCCESS)
+            {
+                POWER_LOG_ERR("Pwr Log DDR failed due to ATU unmapping failure, Stat:%d\n", status);
+                return status;
+            }
+            //! Unmap was successful, reset the cached mscp start address
+            log.mapped_mscp_addr = 0UL;
+        }
     }
+    else //! No mapping found, map if requested
+    {
+        POWER_LOG_INFO("No existing mapping for address 0x%" PRIx64 "\n", log_mem_atu_map_struct.ap_base_address);
+        if (map)
+        {
+            status = atu_map(ATU_ID_MSCP, &log_mem_atu_map_struct);
+            if (status != SILIBS_SUCCESS)
+            {
+                POWER_LOG_ERR("Pwr Log DDR failed due to ATU mapping failure, Stat:%d\n", status);
+            }
+            else
+            {
+                //! Map was successful, save the mscp start address
+                log.mapped_mscp_addr = log_mem_atu_map_struct.mscp_start_address;
+                POWER_LOG_INFO("Pwr Log DDR mapping successful, AP addr:0x%" PRIx64 ", MSCP addr:0x%" PRIx32
+                               ", Size: 0x%" PRIx32 "\n",
+                               log_mem_atu_map_struct.ap_base_address,
+                               log.mapped_mscp_addr,
+                               ALIGN_UP(size, ATU_PAGE_SIZE));
+            }
+        }
+    }
+    return status;
+}
+
+void mmio_ap_mem_cpy(uintptr_t mscpMappedAddr, uintptr_t localAddr, uint32_t numBytes)
+{
+    uint32_t bytesCopied = 0;
+    uint32_t MscpPwrLogBaseAddr = (uint32_t)mscpMappedAddr;
+
+    BUG_ASSERT(mscpMappedAddr != 0);
+    BUG_ASSERT(localAddr != 0);
+    BUG_ASSERT(numBytes != 0);
+    BUG_ASSERT(numBytes <= POWER_LOG_DDR_SIZE_DIE0);
 
     while (bytesCopied < numBytes)
     {
-        uint64_t bytesLeft = numBytes - bytesCopied;
+        uint32_t bytesLeft = numBytes - bytesCopied;
 
         if (bytesLeft >= sizeof(uint64_t))
         {
-            MMIO_WRITE64(log_mem_atu_map_struct.mscp_start_address + bytesCopied,
-                         *(uint64_t*)((uint8_t*)localAddr + bytesCopied));
+            MMIO_WRITE64(MscpPwrLogBaseAddr + bytesCopied, *(uint64_t*)((uint8_t*)localAddr + bytesCopied));
             bytesCopied += sizeof(uint64_t);
         }
         else if (bytesLeft >= sizeof(uint32_t))
         {
-            MMIO_WRITE32(log_mem_atu_map_struct.mscp_start_address + bytesCopied,
-                         *(uint32_t*)((uint8_t*)localAddr + bytesCopied));
+            MMIO_WRITE32(MscpPwrLogBaseAddr + bytesCopied, *(uint32_t*)((uint8_t*)localAddr + bytesCopied));
             bytesCopied += sizeof(uint32_t);
         }
         else if (bytesLeft >= sizeof(uint16_t))
         {
-            MMIO_WRITE16(log_mem_atu_map_struct.mscp_start_address + bytesCopied,
-                         *(uint16_t*)((uint8_t*)localAddr + bytesCopied));
+            MMIO_WRITE16(MscpPwrLogBaseAddr + bytesCopied, *(uint16_t*)((uint8_t*)localAddr + bytesCopied));
             bytesCopied += sizeof(uint16_t);
         }
         else
         {
-            MMIO_WRITE8(log_mem_atu_map_struct.mscp_start_address + bytesCopied,
-                        *(uint8_t*)((uint8_t*)localAddr + bytesCopied));
+            MMIO_WRITE8(MscpPwrLogBaseAddr + bytesCopied, *(uint8_t*)((uint8_t*)localAddr + bytesCopied));
             bytesCopied += sizeof(uint8_t);
         }
     }
-    return atu_unmap(ATU_ID_MSCP, &log_mem_atu_map_struct);
 }
 
 power_log_data_t* get_instance()
@@ -178,43 +220,33 @@ void power_log_init()
 /* sets the use DDR flag and resets the DDR content (on enable) */
 int power_log_use_ddr(bool use_ddr)
 {
-    int status = SILIBS_SUCCESS;
     KNG_DIE_ID die_id = idsw_get_die_id();
-    should_use_ddr = use_ddr;
-    if ((use_ddr) && (log.initialized))
+    if (log.initialized == false)
+    {
+        POWER_LOG_ERR("Power log not initialized\n");
+        return SILIBS_E_INIT;
+    }
+
+    //! Map/unmap as per user input, takes care of case where DDR is already mapped
+    BUG_ASSERT(power_log_ddr_map_unmap(use_ddr, die_id) == SILIBS_SUCCESS);
+
+    //! compare previous ddr enable status, if not enabled already, reset ddr entries, add an invalid entry to DDR
+    if (!ddr_logging_enabled && (use_ddr == true))
     {
         power_log_entry_t invalid_entry = {.type = POWER_LOG_INVALID_TYPE};
         // reset DDR log & create an initial invalid entry
         log.last_ddr_entry = 0;
         log.oldest_ddr_entry = 0;
-        if (die_id == DIE_0)
-        {
-            log.max_ddr_entries = (POWER_LOG_DDR_SIZE_DIE0) / sizeof(power_log_entry_t);
-            status = mmio_ap_mem_cpy(POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE0, 0),
-                                     (uintptr_t)&invalid_entry,
-                                     sizeof(power_log_entry_t));
-        }
-        else
-        {
-            log.max_ddr_entries = (POWER_LOG_DDR_SIZE_DIE1) / sizeof(power_log_entry_t);
-            status = mmio_ap_mem_cpy(POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE1, 0),
-                                     (uintptr_t)&invalid_entry,
-                                     sizeof(power_log_entry_t));
-        }
+        log.max_ddr_entries = (POWER_LOG_DDR_SIZE_DIE0) / sizeof(power_log_entry_t);
+        mmio_ap_mem_cpy((uintptr_t)POWER_LOG_DDR_MAPPED_MSCP_ENTRY_ADDR(log.mapped_mscp_addr, 0),
+                        (uintptr_t)&invalid_entry,
+                        sizeof(power_log_entry_t));
+    }
 
-        if (status != SILIBS_SUCCESS)
-        {
-            POWER_LOG_ERR("Power log DDR failure, Stat:%d\n", status);
-            should_use_ddr = false;
-            return status;
-        }
-        POWER_LOG_INFO("Power log using DDR, Die ID[%d]\n", die_id);
-    }
-    else
-    {
-        POWER_LOG_INFO("Power log not using DDR, Die ID[%d]\n", die_id);
-    }
-    return status;
+    //! Update the ddr log status
+    ddr_logging_enabled = use_ddr;
+    POWER_LOG_INFO("DDR Power Logging %s for Die ID[%d]\n", ddr_logging_enabled ? "Enabled" : "Disabled", die_id);
+    return SILIBS_SUCCESS;
 }
 
 /* for a given entry index, returns the next, wrapping at end of log */
@@ -254,19 +286,9 @@ static void add_ddr_entry(power_log_entry_t* log_entry)
     {
         log.oldest_ddr_entry = next_ddr_entry(log.oldest_ddr_entry);
     }
-    // copy entry to DDR
-    if (idsw_get_die_id() == DIE_0)
-    {
-        mmio_ap_mem_cpy(POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE0, log.last_ddr_entry),
-                        (uintptr_t)log_entry,
-                        sizeof(power_log_entry_t));
-    }
-    else
-    {
-        mmio_ap_mem_cpy(POWER_LOG_DDR_ENTRY_ADDR(POWER_LOG_DDR_BASE_DIE1, log.last_ddr_entry),
-                        (uintptr_t)log_entry,
-                        sizeof(power_log_entry_t));
-    }
+    mmio_ap_mem_cpy((uintptr_t)POWER_LOG_DDR_MAPPED_MSCP_ENTRY_ADDR(log.mapped_mscp_addr, log.last_ddr_entry),
+                    (uintptr_t)log_entry,
+                    sizeof(power_log_entry_t));
 }
 
 void power_log_update_timestamp(uint64_t timestamp)
@@ -289,7 +311,7 @@ void power_log_update_timestamp(uint64_t timestamp)
     while (previous_last != log.last_timestamp_entry)
     {
         // copy to DDR
-        if (should_use_ddr)
+        if (ddr_logging_enabled)
         {
             add_ddr_entry(&log.entries[previous_last]);
         }

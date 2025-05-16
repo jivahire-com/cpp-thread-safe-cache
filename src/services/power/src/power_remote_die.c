@@ -219,7 +219,13 @@ static void power_remote_die_exchange(power_runconfig_t* p_runconfig, power_d2d_
         //! Populate the power event data to be sent to the remote die
         power_d2d_data_ex_input_t* p_input_data = (power_d2d_data_ex_input_t*)p_arsm_data->pwr_data_addr;
         //! Populate the power cap if current die is die 0
-        p_input_data->vrcpu_cap_die0 = (idsw_get_die_id() == DIE_0) ? get_current_soc_power_cap() : 0;
+        p_input_data->vrcpu_cap_die0 = 0;
+        if (idsw_get_die_id() == DIE_0)
+        {
+            p_input_data->vrcpu_cap_die0 =
+                FPFW_MIN(get_current_soc_power_cap(), p_runconfig->derived.soc_maximum_thermal_watts_limit);
+            POWER_LOG_TRACE("VRCPU cap = %d\n", p_input_data->vrcpu_cap_die0);
+        }
         //! Populate with the latest local power calculated, priority histogram, boost priority histogram & max resources from control loop
         memcpy((uint8_t*)&p_input_data->remote_data_snapshot, (uint8_t*)&ctrl_loop_ctx->local, sizeof(power_remote_data_t));
     }

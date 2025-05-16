@@ -329,6 +329,10 @@ static void distribute_available_handler(int event, const void* event_data)
         s_ctrl_loop.rack_limit = rack_limit;
         if ((rack_limit) || (s_ctrl_loop.loop_failure))
         {
+            POWER_LOG_TRACE(
+                "[POWER CTRL LOOP] [distribute_available_handler] rack limit[%d] loop failure[%d]\n",
+                rack_limit,
+                s_ctrl_loop.loop_failure);
             // if we're rack limited via gpio or in a loop failure scenario, reset PID and set resources to 0, so that loop selections
             // (all minimum perf) will match forced HW state; has the side-effect of lowering Vcpu
 
@@ -344,6 +348,12 @@ static void distribute_available_handler(int event, const void* event_data)
                                         (s_ctrl_loop.local.power.vcpu_power + s_ctrl_loop.remote.power.vcpu_power));
         }
 
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [distribute_available_handler] soc_pwr %f vcpu_pwr %f soc_cap %f "
+                        "vcpu_cap %f\n",
+                        s_ctrl_loop.local.power.soc_power,
+                        s_ctrl_loop.local.power.vcpu_power,
+                        (float)FPFW_MIN(get_current_soc_power_cap(), p_runconfig->derived.soc_maximum_thermal_watts_limit),
+                        temp);
         //! enable power log
         power_log_cores_ts(
             power_timer_get_counter(),

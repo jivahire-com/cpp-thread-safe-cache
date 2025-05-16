@@ -27,7 +27,8 @@
 #define POWER_LOG_DDR_SIZE_DIE0                            (FW_UPDATE_USED_DIE0)
 #define POWER_LOG_DDR_SIZE_DIE1                             (FW_UPDATE_USED_DIE1)
 #define POWER_LOG_DDR_ENTRY_ADDR(base_addr, entry_idx) (((uint64_t)(base_addr)) + (sizeof(power_log_entry_t) * entry_idx))
-
+#define POWER_LOG_DDR_ENTRY_SIZE (sizeof(power_log_entry_t))
+#define POWER_LOG_DDR_MAPPED_MSCP_ENTRY_ADDR(base_addr, entry_idx) ((uint32_t)(base_addr) + (sizeof(power_log_entry_t) * entry_idx))  // for mmio_ap_mem_cpy
 #define POWER_LOG_LOCAL_SIZE (2048)  // local log size; always present
 
 // below are the log types, their associated payload types, and a string to print for the given entry
@@ -118,6 +119,7 @@ typedef struct _power_log_data {
     unsigned oldest_ddr_entry;
     uint32_t mask;
     bool initialized;
+    uint32_t mapped_mscp_addr;
 } power_log_data_t;
 
 // generates log type enums
@@ -136,8 +138,7 @@ POWER_LOG_GENERATOR(MASK_BITS)
 
 
 /*--------- Function Prototypes ----------*/
-
-int mmio_ap_mem_cpy(uint64_t globalAddr, uintptr_t localAddr, uint64_t numBytes);
+void mmio_ap_mem_cpy(uintptr_t mscpMappedAddr, uintptr_t localAddr, uint32_t numBytes);
 power_log_data_t *get_instance();
 void power_log_init();
 int power_log_use_ddr(bool use_ddr);

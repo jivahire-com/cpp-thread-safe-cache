@@ -8,6 +8,7 @@
 /*------------- Includes -----------------*/
 #include "pid_resource.h"
 
+#include "power_i.h"
 #include "power_log.h" // for power_log_cores
 
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
@@ -94,6 +95,13 @@ uint32_t pid_calculate_resources(float delta_time, float measured_value)
         pidctx.available_resources = pidcfg.max;
     }
 
+    POWER_LOG_TRACE("PID: %d  %d  %d  %d  %d  %d\n",
+                    (int)pidctx.available_resources,
+                    (int)pidcfg.max,
+                    (int)error,
+                    (int)proportional,
+                    (int)pidctx.integral,
+                    (int)derivative);
     //! enable power log, log current PID state
     power_log_cores(&ALLCORES,
                     POWER_LOG_DATA(PID,

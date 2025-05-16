@@ -120,10 +120,10 @@ void power_log_ddr(ppower_service_cli_request_t p_cli_request)
         printf("  Failed to set log use ddr\n");
         return;
     }
-    printf("  log use ddr: %s\n", (value != 0) ? "true" : "false");
+    printf("    log use ddr: %s\n", (value != 0) ? "true" : "false");
     uint64_t start_addr = POWER_LOG_RESERVATION_BASE;
     uint64_t end_addr   = POWER_LOG_RESERVATION_END - 1;
-    printf("   DDR range: 0x%" PRIx32 "%08" PRIx32 "--0x%" PRIx32 "%08" PRIx32 "\n",
+    printf("    DDR range: 0x%" PRIx32 "%08" PRIx32 "--0x%" PRIx32 "%08" PRIx32 "\n",
        (uint32_t)(start_addr >> 32),
        (uint32_t)start_addr,
        (uint32_t)(end_addr >> 32),
@@ -134,11 +134,14 @@ void power_log_ddr(ppower_service_cli_request_t p_cli_request)
 void power_log_mask(ppower_service_cli_request_t p_cli_request)
 {
     power_log_data_t *log = get_instance();
-
+    printf("    Current Log Mask: %08" PRIx32 "\n", log->mask);
+    if (p_cli_request->pwrset_sub_command_args.minupdate_val != 0xFFFF) {
         log->mask = p_cli_request->pwrset_sub_command_args.minupdate_val;
-
-   printf("  mask: %08" PRIx32 "\n", log->mask);
+        printf("    Updated Log Mask: %08" PRIx32 "\n", log->mask);
+        return;
+    }
 }
+
 void cli_power_log_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* completion_context)
 {
     FPFW_UNUSED(p_request);

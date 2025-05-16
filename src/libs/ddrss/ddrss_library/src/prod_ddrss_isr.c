@@ -39,26 +39,38 @@
 
 /*-------------- Functions ---------------*/
 
-static int ddrss_get_and_probe_ras_agent(uint32_t mc,
-                                         DDRSS_RAS_NODE_ID ras_agent_entity_id,
-                                         ras_agent_entity_t** ras_agent,
-                                         ras_error_record_t* record)
+static int ddrss_get_and_probe_ras_agent(uint32_t mc, DDRSS_RAS_NODE_ID ras_agent_entity_id, ras_agent_entity_t** ras_agent)
 {
     uint32_t sub_sts;
-    acpi_err_sec_memory_t ddr_ras_cper;
-    acpi_err_sec_mem_vendor_err_info_t ddr_vendor_cper;
+    acpi_err_sec_memory_t ddr_ras_cper = {0};
+    acpi_err_sec_mem_vendor_t ddr_vendor_cper = {0};
+    ras_error_record_t record = {0};
 
     sub_sts = ddrss_get_ras_agent(mc, ras_agent_entity_id, ras_agent);
     if (sub_sts == SILIBS_SUCCESS)
     {
-        ras_arm_agent_probe(*ras_agent, record);
-        ras_print_record(record);
-        sub_sts = ddrss_convert_ras_rec_to_cper(mc, record, &ddr_ras_cper, &ddr_vendor_cper);
+        ras_arm_agent_probe(*ras_agent, &record);
+        ras_print_record(&record);
+        sub_sts = ddrss_convert_ras_rec_to_cper(mc, &record, &ddr_ras_cper, &ddr_vendor_cper);
         // TODO: Uncomment below API when silibs PR is merged
         ddrss_print_cper(&ddr_ras_cper, &ddr_vendor_cper);
-        if (record->handler)
+        if (sub_sts == SILIBS_SUCCESS)
         {
-            if (record->handler(record))
+            acpi_error_severity_t severity = (record.err_type & RAS_UNCORRECTABLE_ERROR)
+                                                 ? ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL
+                                                 : ACPI_ERROR_SEVERITY_CORRECTED;
+            acpi_cper_section_t std_cper_section;
+            std_cper_section.sec_mem = ddr_ras_cper;
+            hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, severity, &std_cper_section, sizeof(std_cper_section));
+
+            acpi_cper_section_t vendor_cper_section;
+            vendor_cper_section.sec_ddr_mem_vendor = ddr_vendor_cper;
+            hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, severity, &vendor_cper_section, sizeof(vendor_cper_section));
+        }
+
+        if (record.handler)
+        {
+            if (record.handler(&record))
             {
                 printf("Error encountered while handling record!\n");
             }
@@ -143,7 +155,6 @@ void prod_ddrss_interrupt_handler(void* context)
     uint32_t ddr_intu_sts = 0;
     uintptr_t ddrss_base = 0;
     ras_agent_entity_t* ras_agent[2];
-    ras_error_record_t record;
     int sts = SILIBS_SUCCESS;
     int sub_sts = SILIBS_SUCCESS;
 
@@ -189,9 +200,11 @@ void prod_ddrss_interrupt_handler(void* context)
         ddr_cper.error_status.error_type = ddr_cper.error_type;
         ddr_cper.error_status.data = 1;
         ddr_cper.valid_error_status = 1;
+
         acpi_cper_section_t cper_section;
         cper_section.sec_ddr_mem_vendor = ddr_cper;
         hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(ddr_cper));
+        memset(&ddr_cper, 0, sizeof(ddr_cper));
     }
 
     uint32_t int_mask;
@@ -199,7 +212,7 @@ void prod_ddrss_interrupt_handler(void* context)
     if (ddr_intu_sts & int_mask)
     {
         printf("MC0 CRI int\n");
-        sub_sts = ddrss_probe_ras_agent(mc, DDRSS_RAS_NODE_ID_MC_ERG1);
+        sub_sts = ddrss_get_and_probe_ras_agent(mc, DDRSS_RAS_NODE_ID_MC_ERG1, &ras_agent[1]);
         if (sub_sts != SILIBS_SUCCESS)
         {
             ddr_intu_err |= int_mask;
@@ -211,7 +224,7 @@ void prod_ddrss_interrupt_handler(void* context)
     if (ddr_intu_sts & int_mask)
     {
         printf("MC1 CRI int\n");
-        sub_sts = ddrss_get_and_probe_ras_agent(mc + 1, DDRSS_RAS_NODE_ID_MC_ERG1, &ras_agent[1], &record);
+        sub_sts = ddrss_get_and_probe_ras_agent(mc + 1, DDRSS_RAS_NODE_ID_MC_ERG1, &ras_agent[1]);
         if (sub_sts != SILIBS_SUCCESS)
         {
             ddr_intu_err |= int_mask;
@@ -229,7 +242,7 @@ void prod_ddrss_interrupt_handler(void* context)
         grp_sts = MMIO_READ32(PROD_DDRSS_MC0_RASERG_REG_ADDR(ddrss_base, errgsr_lo));
         if (grp_sts)
         {
-            sub_sts = ddrss_get_and_probe_ras_agent(mc, DDRSS_RAS_NODE_ID_MC_ERG0, &ras_agent[0], &record);
+            sub_sts = ddrss_get_and_probe_ras_agent(mc, DDRSS_RAS_NODE_ID_MC_ERG0, &ras_agent[0]);
             if (sub_sts != SILIBS_SUCCESS)
             {
                 printf("Failed to get RAS agent for MC%d ERG0\n", (unsigned int)mc);
@@ -239,7 +252,7 @@ void prod_ddrss_interrupt_handler(void* context)
         grp_sts = MMIO_READ32(PROD_DDRSS_MC1_RASERG_REG_ADDR(ddrss_base, errgsr_lo));
         if (grp_sts)
         {
-            sub_sts = ddrss_get_and_probe_ras_agent(mc + 1, DDRSS_RAS_NODE_ID_MC_ERG0, &ras_agent[0], &record);
+            sub_sts = ddrss_get_and_probe_ras_agent(mc + 1, DDRSS_RAS_NODE_ID_MC_ERG0, &ras_agent[0]);
             if (sub_sts != SILIBS_SUCCESS)
             {
                 printf("Failed to get RAS agent for MC%d ERG0\n", (unsigned int)mc);
@@ -272,6 +285,7 @@ void prod_ddrss_interrupt_handler(void* context)
         acpi_cper_section_t cper_section;
         cper_section.sec_ddr_mem_vendor = ddr_cper;
         hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(ddr_cper));
+        memset(&ddr_cper, 0, sizeof(ddr_cper));
     }
 
     int_mask = (1 << DDRSS_INTU_PCR_PAR_ERR);
@@ -285,6 +299,7 @@ void prod_ddrss_interrupt_handler(void* context)
         acpi_cper_section_t cper_section;
         cper_section.sec_ddr_mem_vendor = ddr_cper;
         hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(ddr_cper));
+        memset(&ddr_cper, 0, sizeof(ddr_cper));
     }
 
     int_mask = (1 << DDRSS_INTU_INTU_PAR_ERR);
@@ -298,6 +313,7 @@ void prod_ddrss_interrupt_handler(void* context)
         acpi_cper_section_t cper_section;
         cper_section.sec_ddr_mem_vendor = ddr_cper;
         hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(ddr_cper));
+        memset(&ddr_cper, 0, sizeof(ddr_cper));
     }
 
     int_mask = (1 << DDRSS_INTU_MC0_SCP_INT);
@@ -450,6 +466,7 @@ int prod_ddrss_phy_interrupt_handler(uint32_t mc)
         acpi_cper_section_t cper_section;
         cper_section.sec_ddr_mem_vendor = ddr_cper;
         hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &cper_section, sizeof(ddr_cper));
+        memset(&ddr_cper, 0, sizeof(ddr_cper));
     }
 
     // Clear interrupt
@@ -524,6 +541,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         acpi_cper_section_t cper_section;
         cper_section.sec_ddr_mem_vendor = ddr_cper;
         hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(acpi_err_sec_mem_vendor_t));
+        memset(&ddr_cper, 0, sizeof(ddr_cper));
     }
 
     if (mc_intu_sts & (1 << DDRSS_INTU_MC_MEDIAREFTEMPCHANGED))
@@ -543,6 +561,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         acpi_cper_section_t cper_section;
         cper_section.sec_ddr_mem_vendor = ddr_cper;
         hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(acpi_err_sec_mem_vendor_t));
+        memset(&ddr_cper, 0, sizeof(ddr_cper));
     }
 
     if (mc_intu_sts & (1 << DDRSS_INTU_MC_MEDIAREFTEMPHIGH))
@@ -562,6 +581,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         acpi_cper_section_t cper_section;
         cper_section.sec_ddr_mem_vendor = ddr_cper;
         hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(acpi_err_sec_mem_vendor_t));
+        memset(&ddr_cper, 0, sizeof(ddr_cper));
     }
 
     if (mc_intu_sts & (1 << DDRSS_INTU_MC_PHYINLP3))

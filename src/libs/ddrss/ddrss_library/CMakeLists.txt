@@ -45,7 +45,8 @@ target_link_libraries(${TARGET}
     fwlib.lib.interface.platform.interrupts
 )
 
-
+# Enable DDRSS new CPER implementation
+add_compile_definitions(DDRSS_USE_NEW_CPER)
 
 target_include_directories(${TARGET}
     PUBLIC

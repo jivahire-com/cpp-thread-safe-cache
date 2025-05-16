@@ -39,6 +39,7 @@ extern uint32_t g_phy_int_sts;
 extern uint32_t g_mc_intu_sts;
 extern uint32_t g_mc_intu_dest_enable;
 extern bool g_mmio_read32_mocktype;
+extern bool g_should_check_cper_section;
 
 /*------------- Functions ----------------*/
 static int setup(void** state)
@@ -313,6 +314,11 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_unexpected_interrupt, setup, tea
 {
     g_ddr_intu_sts = (1 << DDRSS_INTU_MC0_HSP_INT); // This is unexpected
     g_intu_enable = 0xFFFFFFFF;                     // This is a mask
+
+    // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
+
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_MC0_HSP_INT));
     prod_ddrss_interrupt_handler((void*)&ddrss_num[1]);
 }
@@ -322,8 +328,20 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_MC0_CRI_INT, setup, teardown)
     // Test MC0_CRI_INT
     g_ddr_intu_sts = (1 << DDRSS_INTU_MC0_CRI_INT);
     g_intu_enable = 0xFFFFFFFF; // This is a mask
+    will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
+    expect_function_call(__wrap_ras_arm_agent_probe);
+    expect_function_call(__wrap_ras_print_record);
+    expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
+
+    // Std. CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+
+    // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
+
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_MC0_CRI_INT));
-    will_return(__wrap_ddrss_probe_ras_agent, SILIBS_E_PARAM);
     prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
 }
 
@@ -343,6 +361,15 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_MC1_CRI_INT, setup, teardown)
     expect_function_call(__wrap_ras_arm_agent_probe);
     expect_function_call(__wrap_ras_print_record);
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
+
+    // Std. CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+
+    // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
+
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_MC1_CRI_INT));
     prod_ddrss_interrupt_handler((void*)&ddrss_num[5]);
 }
@@ -371,11 +398,29 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_ERI, setup, teard
     expect_function_call(__wrap_ras_arm_agent_probe);
     expect_function_call(__wrap_ras_print_record);
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
+
+    // Std. CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+
+    // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
+
     will_return(__wrap_mmio_read32, 1); // This is the (non-zero) mock return value for the second MMIO_READ32
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
     expect_function_call(__wrap_ras_arm_agent_probe);
     expect_function_call(__wrap_ras_print_record);
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
+
+    // Std. CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+
+    // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
+
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_SRA_ERI));
     prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
 }
@@ -388,6 +433,11 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_phy, setup, teardown)
     g_phy_int_sts = csr_PhyTrngFailEn_MASK | csr_PhyTrngCmpltEn_MASK | csr_PhyInitCmpltEn_MASK |
                     csr_PhyAcsmParityErrEn_MASK | csr_PhyPIEParityErrEn_MASK | csr_PhyRdfPtrChkErrEn_MASK |
                     csr_PhyEccEn_MASK | csr_PhyPIEProgErrEn_MASK | csr_PhyTxPPTEn_MASK | csr_PhyAlertEn_MASK;
+
+    // Vendor CPER - ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
+
     expect_value(__wrap_ddrss_clear_phy_interrupt_status, phy_int_sts, g_phy_int_sts);
     expect_any_always(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask);
     prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
@@ -407,11 +457,84 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_mc, setup, teardown)
 
 TEST_FUNCTION(test_prod_ddrss_interrupt_handler_others, setup, teardown)
 {
+    g_should_check_cper_section = true;
+    acpi_err_sec_mem_vendor_t ddr_vendor_cper = {0};
+
     g_ddr_intu_sts = (1 << DDRSS_INTU_MC0_HSP_INT) | (1 << DDRSS_INTU_PLL_INTERRUPT_OUT) |
                      (1 << DDRSS_INTU_PCR_PAR_ERR) | (1 << DDRSS_INTU_INTU_PAR_ERR);
     g_intu_enable = 0xFFFFFFFF; // This is a mask
+
+    // Vendor CPER #1 - not set by ddrss_convert_ras_rec_to_cper
+    ddr_vendor_cper.module = 6;
+    ddr_vendor_cper.valid_module = 1;
+    ddr_vendor_cper.device = 1;
+    ddr_vendor_cper.valid_device = 1;
+    ddr_vendor_cper.error_type = DDRSS_CPER_ERROR_UNKNOWN;
+    ddr_vendor_cper.valid_error_type = 1;
+    ddr_vendor_cper.error_status.error_type = ddr_vendor_cper.error_type;
+    ddr_vendor_cper.error_status.data = 1;
+    ddr_vendor_cper.valid_error_status = 1;
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_memory(__wrap_hm_submit_cper, err_record_section, &ddr_vendor_cper, sizeof(acpi_err_sec_mem_vendor_t));
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+
+    // Vendor CPER #2 - not set by ddrss_convert_ras_rec_to_cper
+    memset(&ddr_vendor_cper, 0, sizeof(ddr_vendor_cper));
+    ddr_vendor_cper.vendor_err_info.misc.ddr_intu_pll_out = 1;
+    ddr_vendor_cper.vendor_err_info.misc.valid_ddr_intu_pll_out = 1;
+    ddr_vendor_cper.error_type = DDRSS_CPER_INTU_PLL_INTERRUPT;
+    ddr_vendor_cper.module = 6;
+    ddr_vendor_cper.valid_module = 1;
+    ddr_vendor_cper.device = 1;
+    ddr_vendor_cper.valid_device = 1;
+    ddr_vendor_cper.valid_error_type = 1;
+    ddr_vendor_cper.error_status.error_type = ddr_vendor_cper.error_type;
+    ddr_vendor_cper.error_status.control = 1;
+    ddr_vendor_cper.valid_error_status = 1;
+    ddr_vendor_cper.valid_vendor_err_info = 1;
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_memory(__wrap_hm_submit_cper, err_record_section, &ddr_vendor_cper, sizeof(acpi_err_sec_mem_vendor_t));
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
+
+    // Vendor CPER #3 - not set by ddrss_convert_ras_rec_to_cper
+    memset(&ddr_vendor_cper, 0, sizeof(ddr_vendor_cper));
+    ddr_vendor_cper.vendor_err_info.misc.ddr_pcr_par_err = 1;
+    ddr_vendor_cper.vendor_err_info.misc.valid_ddr_pcr_par_err = 1;
+    ddr_vendor_cper.error_type = DDRSS_CPER_INTU_PCR_PAR_ERR;
+    ddr_vendor_cper.module = 6;
+    ddr_vendor_cper.valid_module = 1;
+    ddr_vendor_cper.device = 1;
+    ddr_vendor_cper.valid_device = 1;
+    ddr_vendor_cper.valid_error_type = 1;
+    ddr_vendor_cper.error_status.error_type = ddr_vendor_cper.error_type;
+    ddr_vendor_cper.error_status.control = 1;
+    ddr_vendor_cper.valid_error_status = 1;
+    ddr_vendor_cper.valid_vendor_err_info = 1;
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_memory(__wrap_hm_submit_cper, err_record_section, &ddr_vendor_cper, sizeof(acpi_err_sec_mem_vendor_t));
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
+
+    // Vendor CPER #4 - not set by ddrss_convert_ras_rec_to_cper
+    memset(&ddr_vendor_cper, 0, sizeof(ddr_vendor_cper));
+    ddr_vendor_cper.vendor_err_info.misc.ddr_intu_par_err = 1;
+    ddr_vendor_cper.vendor_err_info.misc.valid_ddr_intu_par_err = 1;
+    ddr_vendor_cper.error_type = DDRSS_CPER_INTU_PAR_ERR;
+    ddr_vendor_cper.module = 6;
+    ddr_vendor_cper.valid_module = 1;
+    ddr_vendor_cper.device = 1;
+    ddr_vendor_cper.valid_device = 1;
+    ddr_vendor_cper.valid_error_type = 1;
+    ddr_vendor_cper.error_status.error_type = ddr_vendor_cper.error_type;
+    ddr_vendor_cper.error_status.control = 1;
+    ddr_vendor_cper.valid_error_status = 1;
+    ddr_vendor_cper.valid_vendor_err_info = 1;
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_memory(__wrap_hm_submit_cper, err_record_section, &ddr_vendor_cper, sizeof(acpi_err_sec_mem_vendor_t));
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
+
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, g_ddr_intu_sts);
     prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
+    g_should_check_cper_section = false;
 }
 
 // Test prod_ddrss_interrupt_pending

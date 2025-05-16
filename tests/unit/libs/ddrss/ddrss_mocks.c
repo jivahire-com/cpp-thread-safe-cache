@@ -3,8 +3,8 @@
 //
 
 /**
- * @file tower_mocks.c
- * Mock functions for tower sequence
+ * @file ddrss_mocks.c
+ * Mock functions for DDRSS unit tests
  */
 
 /*------------- Includes -----------------*/
@@ -35,6 +35,7 @@ uint32_t g_mc_intu_sts;
 uint32_t g_mc_intu_dest_enable;
 bool g_mmio_read32_mocktype;
 bool g_should_check_reset_reason_cfg_knobs = false;
+bool g_should_check_cper_section = false;
 
 /*------------- Functions ----------------*/
 
@@ -190,14 +191,14 @@ int __wrap_ddrss_ddr_intu_clear_interrupt(uint32_t mc, uint32_t intr_mask)
 bool __wrap_ras_arm_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* record)
 {
     FPFW_UNUSED(agent);
-    record->handler = 0;
+    FPFW_UNUSED(record);
     function_called();
     return SILIBS_SUCCESS;
 }
 int __wrap_ddrss_convert_ras_rec_to_cper(uint32_t mc,
                                          ras_error_record_t* record,
                                          acpi_err_sec_memory_t* ddr_ras_cper,
-                                         acpi_err_sec_mem_vendor_err_info_t* ddr_vendor_cper)
+                                         acpi_err_sec_mem_vendor_t* ddr_vendor_cper)
 {
     FPFW_UNUSED(mc);
     FPFW_UNUSED(record);
@@ -259,4 +260,20 @@ int __wrap_ddrss_physical_to_media_addr(uint64_t pa, ddrss_media_addr_t* ma, uin
 bool __wrap_system_info_is_warm_start(void)
 {
     return mock_type(bool);
+}
+
+void __wrap_hm_submit_cper(uint16_t error_domain_idx,
+                           acpi_error_severity_t err_severity,
+                           acpi_cper_section_t* err_record_section,
+                           uint32_t err_record_section_size)
+{
+    assert_int_equal(error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
+    check_expected(err_severity);
+
+    if (g_should_check_cper_section)
+    {
+        check_expected_ptr(err_record_section);
+    }
+    FPFW_UNUSED(err_record_section);
+    check_expected(err_record_section_size);
 }

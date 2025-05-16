@@ -10,6 +10,7 @@
 #pragma once
 
 /*--------------- Includes ---------------*/
+#include <health_monitor.h>
 
 /*
 "[Event Data1]
@@ -68,6 +69,20 @@ MSB of Mesh Node ID
 #define D2DSS_CE_COUNTER_MAX                    (0x7FFFULL)
 #define D2DSS_ERR0MISC0_HI                      (0x24)
 
+typedef enum
+{
+    COMPONENT_TYPE_MESH = 0x0,
+    COMPONENT_TYPE_D2D  = 0x1,
+    COMPONENT_TYPE_MAX,
+} mesh_ras_component_type;
+
+typedef enum
+{
+    OPERATION_STATUS_ERR_INJ = 0x0,
+    OPERATION_STATUS_PSEUDO_FAULT_ERR_GEN = 0x1,
+    OPERATION_STATUS_MAX,
+} mesh_ras_operation_status;
+
 /**
  * Mesh Fault ISR
  * This function is called when a Mesh Fault ISR is triggered by the hardware INT
@@ -124,3 +139,13 @@ void d2d_ras_init(void);
  * @return void
  **/
 void d2d_ras_error_inj(uint8_t d2d_subsystem, uint32_t err_inj, uint32_t err_cnt_down);
+
+/**
+ * Mesh/D2D Error Injection Callback
+ * This function is called when a Mesh/D2D Error Injection Callback is triggered
+ * from the Health Monitor module
+ * @param einj_payload
+ * @param ctx
+ * @return acpi_einj_cmd_status_t
+ **/
+acpi_einj_cmd_status_t mesh_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx);

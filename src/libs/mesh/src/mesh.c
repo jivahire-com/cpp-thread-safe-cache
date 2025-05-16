@@ -46,6 +46,7 @@ const int MEANINGLESS_NUMBER_MESH = 10;
 static int unused_parameter_not_null = MEANINGLESS_NUMBER_MESH;
 extern NUMA_CFG numa_cfg;
 static var_service_req_ctx_t s_req_ctx = {};
+static const guid_t MESH_ERROR_DOMAIN_FRU_GUID = {0xBF32D4D5, 0xB427, 0x4025, {0x84, 0x95, 0x8A, 0x9E, 0x5D, 0x40, 0x30, 0xE4}};
 
 /*------------- Functions ----------------*/
 
@@ -834,4 +835,7 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         hsp_send_recv_progress_msg(HSP_MAILBOX_CMD_CML_READY_NOTIFY, HSP_MAILBOX_CMD_MAX);
         MESH_INFO("Send CML Ready Notify Done\n");
     }
+
+    // Register the error domain for mesh in Health Monitor
+    hm_register_error_domain(ACPI_ERROR_DOMAIN_MESH, &MESH_ERROR_DOMAIN_FRU_GUID, "Mesh Error Domain", mesh_error_injection_cb, NULL);
 }

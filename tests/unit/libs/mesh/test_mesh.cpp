@@ -89,6 +89,11 @@ ccg_cfg_t unit_test_default_ccg_cfg = {.por_ccg_ha_aux_ctl = 0x3C0008ULL,
 
 /*------------- Functions ----------------*/
 //! Mocks for mailbox primitives called inside hsp_send_recv_enable_smmu()
+KNG_DIE_ID __wrap_idsw_get_die_id()
+{
+    return g_test_die;
+}
+
 fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, void* payload_buffer, size_t buffer_size, size_t* output_recv_bytes)
 {
     FPFW_UNUSED(icc_ctx);
@@ -333,6 +338,35 @@ nvic_status_t __wrap_nvic_irq_enable(uint32_t irq_num)
 {
     check_expected(irq_num);
     return (NVIC_STATUS_SUCCESS);
+}
+
+void __wrap_cmn800_error_injection(uint8_t node_type, uint8_t node_id, uint16_t node_control_reg, uint32_t err_inj, uint8_t byte_par_err_inj, uint8_t die_num)
+{
+    check_expected(node_type);
+    check_expected(node_id);
+    check_expected(node_control_reg);
+    check_expected(err_inj);
+    check_expected(byte_par_err_inj);
+    check_expected(die_num);
+    function_called();
+}
+
+void __wrap_cmn800_pseudo_fault_error_injection(uint8_t node_type,
+                                                uint8_t node_id,
+                                                uint16_t node_control_reg,
+                                                uint32_t err_inj,
+                                                uint32_t err_cnt_down,
+                                                uint8_t die_num,
+                                                bool non_secure)
+{
+    check_expected(node_type);
+    check_expected(node_id);
+    check_expected(node_control_reg);
+    check_expected(err_inj);
+    check_expected(err_cnt_down);
+    check_expected(die_num);
+    check_expected(non_secure);
+    function_called();
 }
 
 void __wrap_interrupt_handler_mesh_ras_error(acpi_err_sec_generic_t* mesh_cper, bool fault, bool non_secure, uint8_t die_num)
@@ -1453,5 +1487,160 @@ TEST_FUNCTION(test_mesh_init_print_numa_info, setup_svp_platform, setup_undefine
 
     // Call API under test
     print_numa_info(&numa_cfg);
+}
+
+// Test Mesh RAS Health Monitor Module
+TEST_FUNCTION(test_mesh_error_injection_cb_err_inj_1D, setup_svp_platform, setup_undefined_platform)
+{
+    // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+    ras_einj_info_t einj_payload = {0x0};
+
+    // hm_inject_err <group> <type> <instance> <status_operation> <err_type> <err_severity> <err_addr>
+    // <err_value> hm_inject_err 0x1 0x0 0x0 0x0 0x10C 0x0 0x40d 0x1
+    einj_payload.component_group = ACPI_ERROR_DOMAIN_MESH;
+    einj_payload.component_type = COMPONENT_TYPE_MESH;
+    einj_payload.component_instance = test_die;
+    einj_payload.status_operation.value = OPERATION_STATUS_ERR_INJ;
+    einj_payload.param_type.error_parameters[0] = 0x10C;
+    einj_payload.param_type.error_parameters[1] = 0x40d;
+    einj_payload.value_type.data_64 = 0x1;
+
+    expect_value(__wrap_cmn800_error_injection, node_type, 0x1);
+    expect_value(__wrap_cmn800_error_injection, node_id, 0xC);
+    expect_value(__wrap_cmn800_error_injection, node_control_reg, 0x40d);
+    expect_value(__wrap_cmn800_error_injection, err_inj, 0x1);
+    expect_value(__wrap_cmn800_error_injection, byte_par_err_inj, 0x0);
+    expect_value(__wrap_cmn800_error_injection, die_num, test_die);
+
+    expect_function_call(__wrap_cmn800_error_injection);
+    // Call API under test
+    mesh_error_injection_cb(&einj_payload, NULL);
+}
+
+// Test Mesh RAS Health Monitor Module
+TEST_FUNCTION(test_mesh_error_injection_cb_pseudo_fault_err_inj_1D, setup_svp_platform, setup_undefined_platform)
+{
+    // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+    ras_einj_info_t einj_payload = {0x0};
+
+    // hm_inject_err <group> <type> <instance> <status_operation> <err_type> <err_severity> <err_addr>
+    // <err_value>
+    // hm_inject_err 0x1 0x0 0x0 0x1 0x10C 0x0 0x401 0x100080000A20
+    einj_payload.component_group = ACPI_ERROR_DOMAIN_MESH;
+    einj_payload.component_type = COMPONENT_TYPE_MESH;
+    einj_payload.component_instance = test_die;
+    einj_payload.status_operation.value = OPERATION_STATUS_PSEUDO_FAULT_ERR_GEN;
+    einj_payload.param_type.error_parameters[0] = 0x10C;
+    einj_payload.param_type.error_parameters[1] = 0x401;
+    einj_payload.value_type.data_64 = 0x100080000A20;
+
+    expect_value(__wrap_cmn800_pseudo_fault_error_injection, node_type, 0x1);
+    expect_value(__wrap_cmn800_pseudo_fault_error_injection, node_id, 0xC);
+    expect_value(__wrap_cmn800_pseudo_fault_error_injection, node_control_reg, 0x401);
+    expect_value(__wrap_cmn800_pseudo_fault_error_injection, err_inj, 0x80000A20);
+    expect_value(__wrap_cmn800_pseudo_fault_error_injection, err_cnt_down, 0x1000);
+    expect_value(__wrap_cmn800_pseudo_fault_error_injection, die_num, test_die);
+    expect_value(__wrap_cmn800_pseudo_fault_error_injection, non_secure, 0x0);
+
+    expect_function_call(__wrap_cmn800_pseudo_fault_error_injection);
+    // Call API under test
+    mesh_error_injection_cb(&einj_payload, NULL);
+}
+
+// Test Mesh RAS Health Monitor Module
+TEST_FUNCTION(test_mesh_error_injection_cb_d2d_ras_error_inj_1D, setup_svp_platform, setup_undefined_platform)
+{
+    // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+    ras_einj_info_t einj_payload = {0x0};
+
+    // hm_inject_err <group> <type> <instance> <status_operation> <err_type> <err_severity> <err_addr>
+    // <err_value>
+    // hm_inject_err 0x1 0x1 0x0 0x0 0x0 0x0 0x0 0xF000000102000
+    einj_payload.component_group = ACPI_ERROR_DOMAIN_MESH;
+    einj_payload.component_type = COMPONENT_TYPE_D2D;
+    einj_payload.component_instance = test_die;
+    einj_payload.status_operation.value = OPERATION_STATUS_ERR_INJ;
+    einj_payload.param_type.error_parameters[0] = 0x1; // D2D Subsystem 1
+    einj_payload.param_type.error_parameters[1] = 0x0;
+    einj_payload.value_type.data_64 = 0xF000000102000;
+
+    expect_value(__wrap_ras_arm_agent_set_base, agent, &d2dss2_agent[1]);
+    expect_function_call(__wrap_ras_arm_agent_set_base);
+    expect_value(__wrap_ras_arm_agent_trigger_by_type, agent, &d2dss2_agent[1]);
+    expect_function_call(__wrap_ras_arm_agent_trigger_by_type);
+
+    // Call API under test
+    mesh_error_injection_cb(&einj_payload, NULL);
+}
+
+// Test for Failures in the CB function 1
+TEST_FUNCTION(test_mesh_error_injection_cb_failure_1, setup_svp_platform, setup_undefined_platform)
+{
+    // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+    ras_einj_info_t einj_payload = {0x0};
+    acpi_einj_cmd_status_t status = ACPI_EINJ_SUCCESS;
+
+    einj_payload.component_group = ACPI_ERROR_DOMAIN_MESH + 1; // Invalid component group for this CB fnc
+
+    // Call API under test
+    status = mesh_error_injection_cb(&einj_payload, NULL);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+}
+
+// Test for Failures in the CB function 2
+TEST_FUNCTION(test_mesh_error_injection_cb_failure_2, setup_svp_platform, setup_undefined_platform)
+{
+    // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+    acpi_einj_cmd_status_t status = ACPI_EINJ_SUCCESS;
+
+    // Call API under test
+    status = mesh_error_injection_cb(NULL, NULL);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+}
+
+// Test for Failures in the CB function 3
+TEST_FUNCTION(test_mesh_error_injection_cb_failure_3, setup_svp_platform, setup_undefined_platform)
+{
+    // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+    ras_einj_info_t einj_payload = {0x0};
+    acpi_einj_cmd_status_t status = ACPI_EINJ_SUCCESS;
+
+    einj_payload.component_group = ACPI_ERROR_DOMAIN_MESH;
+    einj_payload.component_type = COMPONENT_TYPE_MAX; // Invalid component type for this CB fnc
+
+    // Call API under test
+    status = mesh_error_injection_cb(&einj_payload, NULL);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+}
+
+// Test for Failures in the CB function 4
+TEST_FUNCTION(test_mesh_error_injection_cb_failure_4, setup_svp_platform, setup_undefined_platform)
+{
+    // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+    ras_einj_info_t einj_payload = {0x0};
+    acpi_einj_cmd_status_t status = ACPI_EINJ_SUCCESS;
+
+    einj_payload.component_group = ACPI_ERROR_DOMAIN_MESH;
+    einj_payload.component_type = COMPONENT_TYPE_MESH;
+    einj_payload.component_instance = test_die;
+    einj_payload.status_operation.value = OPERATION_STATUS_MAX; // Invalid status operation for this CB fnc
+
+    // Call API under test
+    status = mesh_error_injection_cb(&einj_payload, NULL);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
 }
 }

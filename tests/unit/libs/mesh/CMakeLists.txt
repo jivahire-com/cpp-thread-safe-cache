@@ -56,6 +56,7 @@ mock_target(${TARGET}
     cmn800_sequence
     idhw_is_single_die_boot_en
     idhw_get_die_id
+    idsw_get_die_id
     nvic_irq_set_isr_with_param
     nvic_irq_clear_pending
     nvic_irq_enable
@@ -96,4 +97,6 @@ mock_target(${TARGET}
     crash_dump_bug_check
     d2d_cntr_sync_enable
     cmn800_generate_ddr_mc_map_from_snf_config
+    cmn800_error_injection
+    cmn800_pseudo_fault_error_injection
 )

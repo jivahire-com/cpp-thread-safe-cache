@@ -11,6 +11,7 @@
 
 /*--------------- Includes ---------------*/
 #include <DbgPrint.h>
+#include <cper.h>
 #include <numa_config_variable.h>
 
 #define MESH_INFO(...) FPFW_DBGPRINT_INFO("[CMN800] " __VA_ARGS__)

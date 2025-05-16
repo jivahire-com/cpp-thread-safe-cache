@@ -426,3 +426,122 @@ void d2d_ras_error_inj(uint8_t d2d_subsystem, uint32_t err_inj, uint32_t err_cnt
 d2d_ras_error_inj_exit:
     d2d_clear_atu_map(d2d_subsystem);
 }
+
+/**
+ * Mesh/D2D Error Injection Callback
+ * This function is called when a Mesh/D2D Error Injection Callback is triggered
+ * from the Health Monitor module
+ * @param einj_payload
+ * @param ctx
+ * @return acpi_einj_cmd_status_t
+ **/
+acpi_einj_cmd_status_t mesh_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx)
+{
+    FPFW_UNUSED(ctx);
+    MESH_INFO("Mesh Error Injection Callback Start\n");
+    if (einj_payload == NULL)
+    {
+        MESH_CRIT("Set error with address struct pointer invalid\n");
+        return ACPI_EINJ_INVALID_ACCESS;
+    }
+
+    if (einj_payload->component_group != ACPI_ERROR_DOMAIN_MESH)
+    {
+        MESH_ERR("Invalid Mesh error domain(%d)\n", einj_payload->component_group);
+        return ACPI_EINJ_INVALID_ACCESS;
+    }
+
+    if (idhw_is_single_die_boot_en() == true)
+    {
+        if (einj_payload->component_instance != idsw_get_die_id())
+        {
+            MESH_ERR("Invalid DIE_ID(%d)", einj_payload->component_instance);
+            return ACPI_EINJ_INVALID_ACCESS;
+        }
+    }
+    if (einj_payload->component_type == COMPONENT_TYPE_MESH)
+    {
+        if (einj_payload->component_instance <= SOC_D1)
+        {
+            // error_injection (0x0)
+            if (einj_payload->status_operation.value == OPERATION_STATUS_ERR_INJ)
+            {
+                uint8_t node_type = (uint8_t)((einj_payload->param_type.error_parameters[0] >> 8) & 0xFF);
+                uint8_t node_id = (uint8_t)(einj_payload->param_type.error_parameters[0] & 0xFF);
+                uint16_t node_control_reg = (uint16_t)(einj_payload->param_type.error_parameters[1] & 0xFFFF);
+                uint32_t err_inj = (uint32_t)(einj_payload->value_type.data_64 & 0xFFFFFFFF);
+                uint8_t byte_par_err_inj = (uint32_t)((einj_payload->value_type.data_64 >> 32) & 0xFF);
+                MESH_INFO("cmn800_error_injection Start\n");
+                MESH_INFO("node_type: 0x%x, node_id: 0x%x, node_control_reg: 0x%x, err_inj: 0x%x, "
+                          "byte_par_err_inj: 0x%x, die_num: %d\n",
+                          node_type,
+                          node_id,
+                          node_control_reg,
+                          err_inj,
+                          byte_par_err_inj,
+                          (uint8_t)idhw_get_die_id());
+                cmn800_error_injection(node_type, node_id, node_control_reg, err_inj, byte_par_err_inj, (uint8_t)idhw_get_die_id());
+                MESH_INFO("cmn800_error_injection End\n");
+            }
+            else if (einj_payload->status_operation.value == OPERATION_STATUS_PSEUDO_FAULT_ERR_GEN)
+            {
+                // pseudo_fault_error generation (0x1)
+                uint8_t non_secure = (uint8_t)((einj_payload->param_type.error_parameters[0] >> 16) & 0x1);
+                uint8_t node_type = (uint8_t)((einj_payload->param_type.error_parameters[0] >> 8) & 0xFF);
+                uint8_t node_id = (uint8_t)(einj_payload->param_type.error_parameters[0] & 0xFF);
+                uint16_t node_control_reg = (uint16_t)(einj_payload->param_type.error_parameters[1] & 0xFFFF);
+                uint32_t err_inj = (uint32_t)(einj_payload->value_type.data_64 & 0xFFFFFFFF);
+                uint32_t err_cnt_down = (uint32_t)((einj_payload->value_type.data_64 >> 32) & 0xFFFFFFFF);
+                MESH_INFO("cmn800_pseudo_fault_error_injection Start\n");
+                MESH_INFO("%s node_type: 0x%x, node_id: 0x%x, node_control_reg: 0x%x, err_inj: 0x%x, "
+                          "err_cnt_down: 0x%x, die_num: %d\n",
+                          (non_secure == 0x0) ? "Secure" : "Non-Secure",
+                          node_type,
+                          node_id,
+                          node_control_reg,
+                          err_inj,
+                          err_cnt_down,
+                          (uint8_t)idhw_get_die_id());
+                cmn800_pseudo_fault_error_injection(node_type,
+                                                    node_id,
+                                                    node_control_reg,
+                                                    err_inj,
+                                                    err_cnt_down,
+                                                    (uint8_t)idhw_get_die_id(),
+                                                    (bool)non_secure);
+                MESH_INFO("cmn800_pseudo_fault_error_injection End\n");
+            }
+            else
+            {
+                MESH_ERR("Invalid value(%d)\n", einj_payload->status_operation.value);
+                return ACPI_EINJ_INVALID_ACCESS;
+            }
+        }
+    }
+    else if (einj_payload->component_type == COMPONENT_TYPE_D2D)
+    {
+        if (einj_payload->component_instance <= SOC_D1)
+        {
+            uint8_t node_id = (uint8_t)(einj_payload->param_type.error_parameters[0] & 0xFF);
+            uint32_t err_inj = (uint32_t)(einj_payload->value_type.data_64 & 0xFFFFFFFF);
+            uint32_t err_cnt_down = (uint32_t)((einj_payload->value_type.data_64 >> 32) & 0xFFFFFFFF);
+            MESH_INFO("d2d_pseudo_error_injection Start\n");
+            MESH_INFO("node_id: 0x%x, err_inj: 0x%x, "
+                      "err_cnt_down: 0x%x, die_num: %d\n",
+                      node_id,
+                      err_inj,
+                      err_cnt_down,
+                      (uint8_t)idhw_get_die_id());
+            d2d_ras_error_inj(node_id, err_inj, err_cnt_down);
+            MESH_INFO("d2d_pseudo_error_injection End\n");
+        }
+    }
+    else
+    {
+        MESH_ERR("Invalid component type(%d)\n", einj_payload->component_type);
+        return ACPI_EINJ_INVALID_ACCESS;
+    }
+    MESH_INFO("Mesh Error Injection Callback End\n");
+
+    return ACPI_EINJ_SUCCESS;
+}

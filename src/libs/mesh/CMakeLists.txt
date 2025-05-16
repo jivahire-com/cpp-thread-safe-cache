@@ -9,7 +9,7 @@ add_library(${TARGET}
 target_link_libraries(${TARGET}
     PUBLIC
     fwlib.lib.interface.platform.dbgprint
-
+    ms::service::health_monitor
     PRIVATE
     fwlib.lib.cfg_mgr
     fwlib.lib.assert
@@ -24,6 +24,7 @@ target_link_libraries(${TARGET}
     ms::lib::scp_interrupts
     ms::lib::system_info
     ms::lib::variable_services
+    ms::service::health_monitor
     silibs::atu
     ms::lib::i3c_controller
     silibs::cml
@@ -42,6 +43,8 @@ target_link_libraries(${TARGET}
 )
 
 target_include_directories(${TARGET}
+    PRIVATE
+        $<TARGET_PROPERTY:ms::service::health_monitor,INCLUDE_DIRECTORIES>
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
 )

@@ -4,7 +4,7 @@ import os
 import sys
 from enum import IntEnum
 import ctypes
-from ctypes import Structure
+from ctypes import Structure, c_uint16, c_uint8, c_uint32
 
 
 # Add paths for both package and direct imports
@@ -59,7 +59,6 @@ class transfer_relay_protocol:
         TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE    = 0x7
         TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE    = 0x8
 
-
     class trp_msg_hdr_t(ctypes.LittleEndianStructure):
         _pack_ = 1  # Force no padding
         _fields_ = [
@@ -85,3 +84,22 @@ class transfer_relay_protocol:
             self.incoming_endpt = 0
             self.source_seq_num = 0
             self.payload_size = 0
+
+    class trp_block_read_req_t(Structure):
+        _pack_ = 1
+        _fields_ = [
+            ("block_id", c_uint16),  # DCP client-specific
+        ]
+
+    class trp_msg_read_block_rsp_t(ctypes.LittleEndianStructure):
+        _pack_ = 1
+        _fields_ = [
+            ("block_id", ctypes.c_uint16),
+            ("block_version", ctypes.c_uint16),
+            ("source_die_id", ctypes.c_uint8),
+            ("source_core_id", ctypes.c_uint8),  # mts_platform_core_id_t
+            ("reserved", ctypes.c_uint16),
+            ("addr_offset", ctypes.c_uint32),  # Offset from the beginning of the client-mapped block region
+            ("block_size", ctypes.c_uint32),
+            ("crc", ctypes.c_uint32),  # fpfw_crc32
+        ]

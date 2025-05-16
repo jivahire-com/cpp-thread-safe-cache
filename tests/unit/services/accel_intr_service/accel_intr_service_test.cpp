@@ -198,24 +198,6 @@ TEST_FUNCTION(test_accel_intr_service_dispatch_fatal, NULL, NULL)
 }
 
 /**
- * @brief Tests path for mailbox dispatch
- */
-TEST_FUNCTION(test_accel_intr_service_dispatch_mbox, NULL, NULL)
-{
-    accel_intr_service_request_t accel_intr_service_request;
-    accel_intr_service_t accel_intr_service_device;
-    accel_intr_service_request.header.RequestType = ACCEL_INTR_SERVICE_MBOX_RECVD;
-    accel_intr_service_request.accel_type = ACCEL_ID_SDM;
-
-    expect_value(__wrap_accel_intr_handle_mbox_recvd, accel, accel_intr_service_request.accel_type);
-
-    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &accel_intr_service_request.header);
-
-    assert_non_null(s_dispatch_routine);
-    s_dispatch_routine(&(accel_intr_service_request.header), &accel_intr_service_device.header);
-}
-
-/**
  * @brief Tests path for async dispatch
  */
 TEST_FUNCTION(test_accel_intr_service_dispatch_default, NULL, NULL)

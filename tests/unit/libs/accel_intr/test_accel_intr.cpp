@@ -330,8 +330,6 @@ TEST_FUNCTION(test_accel_intr_isr_scp_pass, nullptr, nullptr)
     expect_any_always(__wrap_mmio_write32, data);
 
     // accel_intr_mbox_isr()
-    will_return(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
-    expect_value(__wrap_send_mailbox_async_request, accel_type, accel_type);
     expect_value(__wrap_send_fatal_intr_async_request, accel_type, accel_type);
 
     expect_value(__wrap_nvic_irq_disable, irq_num, irq_num);
@@ -344,8 +342,6 @@ TEST_FUNCTION(test_accel_intr_isr_scp_pass, nullptr, nullptr)
  */
 TEST_FUNCTION(test_accel_intr_isr_mcp_pass, nullptr, nullptr)
 {
-    ACCEL_ID accel_type = accel_intr_get_accel_type_from_irq_num(irq_num);
-
     mmio_set_mock_data(0x12345678, 0xFFFFFFFF);
     mmio_set_mock_data(0xABCDEF12, 0x0);
 
@@ -353,11 +349,8 @@ TEST_FUNCTION(test_accel_intr_isr_mcp_pass, nullptr, nullptr)
 
     // ATU map address base is always 0
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0x0);
-    will_return_always(__wrap_is_sdm_ext_int_status_set, SILIBS_SUCCESS);
 
     // accel_intr_mbox_isr()
-    will_return(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
-    expect_value(__wrap_send_mailbox_async_request, accel_type, accel_type);
 
     accel_intr_isr_mcp((void*)irq_num);
 }
@@ -400,8 +393,6 @@ TEST_FUNCTION(test_sdm_intr_isr_scp_pass_no_level2_intr, nullptr, nullptr)
  */
 TEST_FUNCTION(test_accel_intr_isr_scp_pass_no_interrupt, nullptr, nullptr)
 {
-    ACCEL_ID accel_type = accel_intr_get_accel_type_from_irq_num(irq_num);
-
     mmio_set_mock_data(0x12345678, 0x0);
     mmio_set_mock_data(0xABCDEF12, 0xFFFFFFFF);
 
@@ -410,15 +401,15 @@ TEST_FUNCTION(test_accel_intr_isr_scp_pass_no_interrupt, nullptr, nullptr)
     // ATU map address base is always 0
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0x0);
 
-    will_return_always(__wrap_is_sdm_ext_int_status_set, SILIBS_SUCCESS);
+    // will_return_always(__wrap_is_sdm_ext_int_status_set, SILIBS_SUCCESS);
     will_return_always(__wrap_sdm_ext_get_category_mask_reg_addr, 0xABCDEF12);
     will_return_always(__wrap_sdm_ext_get_category_status_reg_addr, 0x12345678);
 
     expect_any_always(__wrap_mmio_read32, addr);
 
     // accel_intr_mbox_isr()
-    will_return(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
-    expect_value(__wrap_send_mailbox_async_request, accel_type, accel_type);
+    // will_return(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
+    // expect_value(__wrap_send_mailbox_async_request, accel_type, accel_type);
 
     accel_intr_isr_scp((void*)irq_num);
 }
@@ -608,28 +599,6 @@ TEST_FUNCTION(test_accel_intr_handle_sdm_msg_recv_timeout_count_cd_soc_reset, NU
     expect_function_call(__wrap_crash_dump_bug_check_external);
 
     timer_cb(&accel_intr_crash_dump_collection_timer_data, 0x0);
-}
-
-TEST_FUNCTION(test_accel_intr_handle_mbox_recvd_sdm__pass, NULL, NULL)
-{
-    void* cb_ctx = (void*)0x12345678;
-
-    accel_intr_set_mbx_ctx(ACCEL_ID_SDM, (void*)cb_ctx);
-
-    // ATU map address base is always 0
-    will_return(__wrap_atu_svc_accel_atu_addr, 0x0);
-    expect_value(__wrap_accel_mbox_sw_intr_cb, ctx, cb_ctx);
-    will_return_always(__wrap_sdm_ext_int_mask_status_clear, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_ext_int_mask_enable, SILIBS_SUCCESS);
-
-    accel_intr_handle_mbox_recvd(ACCEL_ID_SDM);
-}
-
-TEST_FUNCTION(test_accel_intr_handle_mbox_recvd_sdm__fail1, NULL, NULL)
-{
-    accel_intr_set_mbx_ctx(ACCEL_ID_SDM, (void*)NULL);
-
-    accel_intr_handle_mbox_recvd(ACCEL_ID_SDM);
 }
 
 TEST_FUNCTION(test_accel_intr_init_sdm_scp__pass, NULL, NULL)

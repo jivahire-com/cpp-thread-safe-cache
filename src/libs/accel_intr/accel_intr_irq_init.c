@@ -114,7 +114,7 @@ static uint32_t accel_intr_register_virtual_irq(ACCEL_ID accel_type, SDM_EXT_INT
 
 /*----------------------------- Global Functions ----------------------------*/
 
-// TODO ADO: 2500310 Make default type as error
+// TODO ADO: 2617263 Make default type as error
 void accel_intr_set_irq_num_for_accel(ACCEL_ID accel_type, uint32_t irq_num)
 {
     switch (accel_type)
@@ -129,7 +129,7 @@ void accel_intr_set_irq_num_for_accel(ACCEL_ID accel_type, uint32_t irq_num)
     }
 }
 
-// TODO ADO: 2500310 Make default type as error
+// TODO ADO: 2617263 Make default type as error
 uint32_t accel_intr_get_irq_num_from_accel_type(ACCEL_ID accel_type)
 {
     switch (accel_type)
@@ -142,7 +142,7 @@ uint32_t accel_intr_get_irq_num_from_accel_type(ACCEL_ID accel_type)
     }
 }
 
-// TODO ADO: 2500310 Make default type as error
+// TODO ADO: 2617263 Make default type as error
 ACCEL_ID accel_intr_get_accel_type_from_irq_num(uint32_t IRQnum)
 {
     switch (IRQnum)

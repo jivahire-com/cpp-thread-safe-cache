@@ -9,7 +9,7 @@
 #include <DfwkHost.h>                // for DfwkDeviceInitialize
 #include <DfwkThreadXHost.h>         // for PDFWK_THREADX_HOST
 #include <MboxPrimitives.h>          // for ACCEL_MBOX_OFFSET_AFTER_0X100000
-#include <accel_intr.h>              // for accel_intr_init, accel_intr_set_mbx_ctx
+#include <accel_intr.h>              // for accel_intr_init
 #include <accel_intr_virt_irq.h>     // for SDM_DOMAIN, CDED_SDM_DOMAIN
 #include <accelerator_ip.h>          // for accel_is_isolation_enabled
 #include <accelip_id.h>              // for ACCEL_ID_CDED, ACCEL_ID_SDM

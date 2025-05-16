@@ -35,7 +35,6 @@ target_link_libraries(${TARGET}
         fwlib.lib.interface.platform.timers
         fwlib.lib.platform.impl.timers.threadx
         fwlib.lib.status
-        ms::lib::accel_mbox_icc_transport
         ms::lib::cortex_m7::atomics
         ms::lib::cortex_m7::nvic
         ms::lib::cortex_m7::virt_irq

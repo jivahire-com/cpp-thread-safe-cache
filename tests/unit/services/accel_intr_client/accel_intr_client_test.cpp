@@ -126,14 +126,9 @@ TEST_FUNCTION(test_accel_intr_client, NULL, NULL)
 
     accel_intr_client_init(&accel_intr_interface);
 
-    expect_value_count(__wrap_DfwkInterfaceSendAsync, Interface, &accel_intr_interface, 2);
-
+    expect_value_count(__wrap_DfwkInterfaceSendAsync, Interface, &accel_intr_interface, 1);
     send_fatal_intr_async_request(ACCEL_ID_SDM);
 
-    assert_non_null(CurCompletionRoutine);
-    CurCompletionRoutine(CurHeader, NULL);
-
-    send_mailbox_async_request(ACCEL_ID_SDM);
     assert_non_null(CurCompletionRoutine);
     CurCompletionRoutine(CurHeader, NULL);
 }

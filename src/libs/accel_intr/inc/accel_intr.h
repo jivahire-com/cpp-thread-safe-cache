@@ -111,28 +111,6 @@ int32_t accel_mcp_intr_init(ACCEL_ID accel_type);
 void accel_intr_handle_fatal_intr_recvd(ACCEL_ID accel_type);
 
 /**
- * @brief Function called when ASYNC request for mailbox interrupt is received
- *
- * @param[in] accel_type : CDED / SDM accelerator_type
- *
- * @retval void
- *
- */
-void accel_intr_handle_mbox_recvd(ACCEL_ID accel);
-
-/**
- * @brief Setup interrupt context for Mailbox interrupts.
- *
- * @param[in] accel : Accel device corresponding to the given context
- *
- * @param[in] ctx : Mailbox interrupt context
- *
- * @retval void
- *
- */
-void accel_intr_set_mbx_ctx(ACCEL_ID accel, void* ctx);
-
-/**
  * @brief enable interrupt in NVIC
  *
  * @param[in] accel_type : CDED / SDM accelerator_type

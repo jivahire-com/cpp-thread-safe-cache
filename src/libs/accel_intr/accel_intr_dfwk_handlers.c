@@ -14,20 +14,19 @@
 #include "accel_intr_events.h"
 #include "accel_intr_priv.h"
 
-#include <DfwkDriver.h>               // for DfwkInterfaceInitialize, DfwkQueueInitia...
-#include <DfwkHost.h>                 // for DfwkDeviceInitialize
-#include <FPFwInterrupts.h>           // for FPFwCoreInterruptDisableVector
-#include <FpFwUtils.h>                // for FPFW_UNUSED
-#include <accel_mbox_icc_transport.h> // for accel_mbox_sw_intr_cb
-#include <accelip_id.h>               // for ACCEL_ID_CDED, ACCEL_ID_SDM
-#include <atu_init.h>                 // for atu_svc_accel_atu_addr
-#include <bug_check.h>                // for BUG_CHECK_EXTERNAL
-#include <cortex_m7_atomics.h>        // for cortex_m7_atomic_call_data_memory_barrier
-#include <crash_dump.h>               // for crash_dump_is_accel_cd_complete
-#include <fpfw_timer.h>               // for fpfw_timer_create, fpfw_timer_enable...
-#include <fpfw_timer_port.h>          // for fpfw_timer_create, fpfw_timer_enable...
-#include <sdm_ext_cfg_regs.h>         // for _addressblock_0x100000_misc_sys_ext_intr2_msg_send_intr
-#include <stdbool.h>                  // for true, false
+#include <DfwkDriver.h>        // for DfwkInterfaceInitialize, DfwkQueueInitia...
+#include <DfwkHost.h>          // for DfwkDeviceInitialize
+#include <FPFwInterrupts.h>    // for FPFwCoreInterruptDisableVector
+#include <FpFwUtils.h>         // for FPFW_UNUSED
+#include <accelip_id.h>        // for ACCEL_ID_CDED, ACCEL_ID_SDM
+#include <atu_init.h>          // for atu_svc_accel_atu_addr
+#include <bug_check.h>         // for BUG_CHECK_EXTERNAL
+#include <cortex_m7_atomics.h> // for cortex_m7_atomic_call_data_memory_barrier
+#include <crash_dump.h>        // for crash_dump_is_accel_cd_complete
+#include <fpfw_timer.h>        // for fpfw_timer_create, fpfw_timer_enable...
+#include <fpfw_timer_port.h>   // for fpfw_timer_create, fpfw_timer_enable...
+#include <sdm_ext_cfg_regs.h>  // for _addressblock_0x100000_misc_sys_ext_intr2_msg_send_intr
+#include <stdbool.h>           // for true, false
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 /**
@@ -60,13 +59,6 @@
  * Timer structure per Accel type / IRQ number
  */
 static struct _fpfw_timer_t accel_intr_crash_dump_collection_timers[NUM_VALID_ACCEL_ID];
-
-/**
- * @brief accel_intr_mbox_ctx:
- * Mailbox Interrupt callback context to pass to ICC stack
- *
- */
-static void* accel_intr_mbox_ctx[NUM_VALID_ACCEL_ID] = {NULL};
 
 /**
  * Timer data structure per Accel type / IRQ number
@@ -238,25 +230,4 @@ void accel_intr_handle_fatal_intr_recvd(ACCEL_ID accel_type)
         accel_intr_scp_init(accel_type, ext_cfg_addr);
         FPFwCoreInterruptEnableVector(IRQnum);
     }
-}
-
-void accel_intr_set_mbx_ctx(ACCEL_ID accel, void* ctx)
-{
-    accel_intr_mbox_ctx[accel] = ctx;
-}
-
-void accel_intr_handle_mbox_recvd(ACCEL_ID accel)
-{
-    uint32_t ext_cfg_addr;
-
-    if (accel_intr_mbox_ctx[accel] == NULL)
-    {
-        critical_print("Mailbox not supported for Accel id %lu\n", accel);
-        return;
-    }
-
-    ext_cfg_addr = atu_svc_accel_atu_addr(accel);
-    accel_mbox_sw_intr_cb(accel_intr_mbox_ctx[accel]);
-    accel_intr_clear_interrupt_level_1(ext_cfg_addr, SDM_EXT_MBX_I2E_INTR);
-    accel_intr_unmask_interrupt_level_1(ext_cfg_addr, SDM_EXT_MBX_I2E_INTR);
 }

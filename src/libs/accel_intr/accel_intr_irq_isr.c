@@ -80,26 +80,6 @@ static void accel_intr_fatal_isr(ACCEL_ID accel_type, uint32_t IRQnum, uint32_t 
     send_fatal_intr_async_request(accel_type);
 }
 
-// TODO ADO: 2500310 Redundant code to be removed
-static void accel_intr_mbox_isr(ACCEL_ID accel_type, uint32_t IRQnum, uint32_t ext_cfg_addr)
-{
-    // Mailbox interrupt is received.
-    bool irq_status = false;
-
-    (void)is_sdm_ext_int_status_set(ext_cfg_addr, SDM_EXT_MBX_I2E_INTR_VECTOR, &irq_status);
-
-    if (irq_status == true)
-    {
-        FPFW_ET_LOG(AccelIntr, IRQnum, SDM_EXT_MBX_I2E_INTR);
-
-        // Mask interrupt at level 1 to avoid re-trigger
-        accel_intr_mask_interrupt_level_1(ext_cfg_addr, SDM_EXT_MBX_I2E_INTR);
-
-        // Send ASYNC message that Mailbox interrupt is received
-        send_mailbox_async_request(accel_type);
-    }
-}
-
 /**
  * @brief Handle level 3 CDED CP fatal interrupt and log it
  *
@@ -584,9 +564,6 @@ void accel_intr_isr_scp(void* callback_param)
     uint32_t validate_irq_status =
         accel_intr_process_fatal_interrupts(IRQnum, ext_cfg_addr, ACCEL_INTR_PROCESS_INTR_IN_TOP_HALF);
 
-    // TODO ADO: 2500310 Redundant code to be removed
-    accel_intr_mbox_isr(accel_type, IRQnum, ext_cfg_addr);
-
     if (ACCEL_INTR_IS_INTERRUPT_VALID_SET(validate_irq_status))
     {
         accel_intr_fatal_isr(accel_type, IRQnum, ext_cfg_addr);
@@ -602,8 +579,8 @@ void accel_intr_isr_scp(void* callback_param)
      */
 }
 
-// TODO ADO: 2500310 Redundant code to be removed - no longer
-// needed with virt irq
+// TODO ADO: 2617263 This IRQ appears to be no longer needed
+// Need to check if it needs to be retained
 void accel_intr_isr_mcp(void* callback_param)
 {
     uint32_t IRQnum = (uint32_t)callback_param;
@@ -611,5 +588,6 @@ void accel_intr_isr_mcp(void* callback_param)
     // Based on ATU MAP get sdm_ext_cfg base address
     uint32_t ext_cfg_addr = atu_svc_accel_atu_addr(accel_type);
 
-    accel_intr_mbox_isr(accel_type, IRQnum, ext_cfg_addr);
+    FPFW_UNUSED(accel_type);
+    FPFW_UNUSED(ext_cfg_addr);
 }

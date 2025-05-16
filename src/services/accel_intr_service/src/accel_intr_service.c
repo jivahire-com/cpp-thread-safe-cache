@@ -53,20 +53,6 @@ static void accel_intr_service_async_request(PDFWK_ASYNC_REQUEST_HEADER p_reques
     }
     break;
 
-    /**
-     * Handle Accel IP Mailbox interrupt
-     */
-    // TODO ADO: 2500310 Redundant code to be removed
-    case ACCEL_INTR_SERVICE_MBOX_RECVD: {
-        paccel_intr_service_request_t p_accel_intr_service_request = (paccel_intr_service_request_t)p_request;
-
-        // Call handler
-        accel_intr_handle_mbox_recvd(p_accel_intr_service_request->accel_type);
-
-        DfwkAsyncRequestComplete(p_request);
-    }
-    break;
-
     default:
         FPFW_RUNTIME_ASSERT(false);
         break;

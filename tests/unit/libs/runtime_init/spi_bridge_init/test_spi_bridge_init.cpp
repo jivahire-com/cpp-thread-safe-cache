@@ -63,9 +63,10 @@ int __wrap_spi_bridge_clear_error_interrupts(uintptr_t spi_bridge_reg)
 TEST_FUNCTION(test_spi_bridge_init, nullptr, nullptr)
 {
     will_return(__wrap_spi_bridge_init, SILIBS_SUCCESS);
-    will_return(__wrap_spi_bridge_check_errors, SILIBS_SUCCESS);
+    will_return(__wrap_spi_bridge_check_errors, 1);
     will_return(__wrap_spi_bridge_clear_error_interrupts, SILIBS_SUCCESS);
     will_return(__wrap_spi_controller_init, SILIBS_SUCCESS);
+    will_return(__wrap_spi_bridge_check_errors, SILIBS_SUCCESS);
     will_return(__wrap_spi_controller_check_errors, SILIBS_SUCCESS);
 
     // Call the function under test

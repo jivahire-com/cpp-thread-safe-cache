@@ -13,7 +13,6 @@
   <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
     <!-- crash dump config knobs -->
     <Knob name="crash_dump_enable" type="bool" default="true" help="Enable/Disable Crash Dump when crash occurs." />
-    <Knob name="crash_dump_warm_reset" type="bool" default="true" help="Enable/Disable warm reset after Crash Dump is complete." />
     <Knob name="crash_dump_emit_only_minidump" type="bool" default="false" help="Only emit minidump, even if full dump is available" />
     <!-- end crash dump config knobs -->
   </Knobs>

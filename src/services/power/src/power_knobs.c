@@ -168,6 +168,8 @@ void power_knobs_read(power_knobs_t* p_knobs)
 
     p_knobs->itd_cfg = config_get_power_itd_cfg();
 
+    p_knobs->avs_ds = config_get_power_avs_ds();
+
     // perform the knob updates for p_knobs which can also be updated after warmstart restoration
     power_knobs_ws_update(p_knobs);
 }

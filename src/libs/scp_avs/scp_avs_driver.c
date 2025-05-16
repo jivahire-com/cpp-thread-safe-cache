@@ -9,6 +9,7 @@
  */
 
 /*------------- Includes -----------------*/
+
 #include <DfwkDriver.h>
 #include <DfwkHost.h> // for DfwkDeviceInitialize
 #include <DfwkThreadXHost.h>
@@ -17,6 +18,8 @@
 #include <arm_intrinsic.h>
 #include <fpfw_init.h>
 #include <nvic.h>
+#include <padring_southeast_regs.h>
+#include <power_runconfig.h>
 #include <scp_avs.h>
 #include <scp_avs_cli.h>
 #include <scp_avs_driver.h>
@@ -426,11 +429,69 @@ int32_t scp_avs_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER Request)
 
 void scp_avs_driver_initialize(pscp_avs_device Device)
 {
-
     // Set up the queue for each driver, based on the driver config. Any event that is put on the queue will call scp_avs_dispatch.
     DfwkQueueInitialize(&Device->avs_queue, &Device->Header, scp_avs_dispatch, &Device->Header, DfwkQueueType_SerializedDispatch);
     // Set up the queue for each driver to hold the AVS data read.
     DfwkQueueInitialize(&Device->avs_isr_resp_queue, &Device->Header, scp_avs_isr_dispatch, &Device->Header, DfwkQueueType_SerializedDispatch);
+
+    // Set the clk and mdata drive strength based off of the knob configuration.
+    uintptr_t avs_afm_csr_clk_address = Device->config.afm_csr_avs_clk_addr;
+    uintptr_t avs_afm_csr_mdata_address = Device->config.afm_csr_mdata_addr;
+
+    switch (Device->avs_bus_num)
+    {
+    case AVS_BUS0:
+        volatile padring_southeast_southeast_afm_csr_avs0_clk* afm_clk_addr0 =
+            (volatile padring_southeast_southeast_afm_csr_avs0_clk*)avs_afm_csr_clk_address;
+        afm_clk_addr0->ds = config_get_power_avs_ds().array[Device->avs_bus_num].clk;
+        AVS_LOG_TRACE(" AVS0 Device clk ds = %d \n", afm_clk_addr0->ds);
+
+        volatile padring_southeast_southeast_afm_csr_avs0_mdata* afm_mdata_addr0 =
+            (volatile padring_southeast_southeast_afm_csr_avs0_mdata*)avs_afm_csr_mdata_address;
+        afm_mdata_addr0->ds = config_get_power_avs_ds().array[Device->avs_bus_num].mdata;
+        AVS_LOG_TRACE(" AVS0 Device mdata ds = %d \n", afm_mdata_addr0->ds);
+        break;
+
+    case AVS_BUS1:
+        volatile padring_southeast_southeast_afm_csr_avs1_clk* afm_clk_addr1 =
+            (volatile padring_southeast_southeast_afm_csr_avs1_clk*)avs_afm_csr_clk_address;
+        afm_clk_addr1->ds = config_get_power_avs_ds().array[Device->avs_bus_num].clk;
+        AVS_LOG_TRACE(" AVS1 Device clk ds = %d \n", afm_clk_addr1->ds);
+
+        volatile padring_southeast_southeast_afm_csr_avs1_mdata* afm_mdata_addr1 =
+            (volatile padring_southeast_southeast_afm_csr_avs1_mdata*)avs_afm_csr_mdata_address;
+        afm_mdata_addr1->ds = config_get_power_avs_ds().array[Device->avs_bus_num].mdata;
+        AVS_LOG_TRACE(" AVS1 Device mdata ds = %d \n", afm_mdata_addr1->ds);
+        break;
+
+    case AVS_BUS2:
+        volatile padring_southeast_southeast_afm_csr_avs2_clk* afm_clk_addr2 =
+            (volatile padring_southeast_southeast_afm_csr_avs2_clk*)avs_afm_csr_clk_address;
+        afm_clk_addr2->ds = config_get_power_avs_ds().array[Device->avs_bus_num].clk;
+        AVS_LOG_TRACE(" AVS2 Device clk ds = %d \n", afm_clk_addr2->ds);
+
+        volatile padring_southeast_southeast_afm_csr_avs2_mdata* afm_mdata_addr2 =
+            (volatile padring_southeast_southeast_afm_csr_avs2_mdata*)avs_afm_csr_mdata_address;
+        afm_mdata_addr2->ds = config_get_power_avs_ds().array[Device->avs_bus_num].mdata;
+        AVS_LOG_TRACE(" AVS2 Device mdata ds = %d \n", afm_mdata_addr2->ds);
+        break;
+
+    case AVS_BUS3:
+        volatile padring_southeast_southeast_afm_csr_avs3_clk* afm_clk_addr3 =
+            (volatile padring_southeast_southeast_afm_csr_avs3_clk*)avs_afm_csr_clk_address;
+        afm_clk_addr3->ds = config_get_power_avs_ds().array[Device->avs_bus_num].clk;
+        AVS_LOG_TRACE(" AVS3 Device clk ds = %d \n", afm_clk_addr3->ds);
+
+        volatile padring_southeast_southeast_afm_csr_avs2_mdata* afm_mdata_addr3 =
+            (volatile padring_southeast_southeast_afm_csr_avs2_mdata*)avs_afm_csr_mdata_address;
+        afm_mdata_addr3->ds = config_get_power_avs_ds().array[Device->avs_bus_num].mdata;
+        AVS_LOG_TRACE(" AVS3 Device mdata ds = %d \n", afm_mdata_addr3->ds);
+        break;
+
+    default:
+        FPFW_RUNTIME_ASSERT(false);
+        break;
+    }
 
     avs_init((uint32_t)Device->avs_bus_num, NULL);
 

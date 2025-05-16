@@ -47,6 +47,9 @@ mock_target(${TARGET}
     nvic_irq_enable
 )
 
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
+
 # Supressing warnings, needed for scp_avs.h
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers -Wno-bitfield-constant-conversion)
 

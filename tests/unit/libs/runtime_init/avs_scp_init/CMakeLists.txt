@@ -9,6 +9,7 @@ set(SOURCES
 add_executable(${TARGET} ${SOURCES})
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
 target_link_libraries(${TARGET}
     PRIVATE

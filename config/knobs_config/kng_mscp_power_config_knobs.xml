@@ -135,6 +135,14 @@
       <Member name="mask_locktimeout" type="bool" help="Mask locktimeout errors" />
       <Member name="mask_freqerror" type="bool" help="Mask freq error" />
     </Struct>
+        <Struct name="avs_ds_cfg_t">
+        <Member name="clk" type="uint8_t" help="Sets the drive strength (0-7) for associated padring (clk)" max="7"/>
+        <Member name="mdata" type="uint8_t" help="Sets the drive strength (0-7) for associated padring (mdata)" max="7"/>
+    </Struct>
+    <Struct name="avs_ds_cfg_array_t">
+        <Member name="array" count="4" type="avs_ds_cfg_t" help="AVS drive strength config array" />
+    </Struct>
+
     <Struct name="power_knobs_t" help="Struct for power module configuration knobs">
       <Member name="loops_disable" type="power_loops_disable_t" help="disabled loops (control, vr telem, pvt telem)" />
       <Member name="capping_mode" type="power_capping_mode_t" />
@@ -191,7 +199,9 @@
       <Member name="nominal_pstate" type="uint8_t" help="Pstate to use for nominal" />
       <Member name="ldo_offset" type="int8_t" help="ldo dac code offset" />
       <Member name="itd_cfg" type="bool" help="Controls whether ITD is enabled or disabled" />
+      <Member name="avs_ds" type="avs_ds_cfg_array_t" help="AVS drive strength" />
     </Struct>
+
   </Structs>
 
   <!-- namespace indicates the GUID namespace the values are stored in -->
@@ -266,7 +276,8 @@
     <Knob name="power_nominal_pstate" type="uint8_t" default="16" help="Nominal pstate number, 0 uses SOC fused default" />
     <Knob name="power_c1_telemetry_enable" type="bool" default="false" help="Enable C1 telemetry in DVFS" />
     <Knob name="power_soc_static_rails" type="uint16_t" default="0" help="Static power in mW to add to SOC power calculations" />
-
+    <Knob name="power_avs_ds" type="avs_ds_cfg_array_t" default="{{{3,3},{3,3},{3,3},{3,3}}}" help="AVS drive strength" />
+ 
     <!-- Document Only
     <Knob name="power_itd_cfg" type="" default="" help="Inverse Temperature Dependence enable, configuration" />
     <Knob name="power_aging_telemetry" type="" default="" help="Configuration details for aging sensor telemetry collection" />

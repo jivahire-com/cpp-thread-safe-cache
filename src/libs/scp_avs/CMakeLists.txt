@@ -21,6 +21,7 @@ target_link_libraries(
             silibs::avs
             ms::lib::arm_intrinsic
             ms::lib::cortex_m7::nvic
+            ms::service::power
             silibs::ddrss
             scp_avs_cli
         PUBLIC
@@ -30,6 +31,8 @@ target_link_libraries(
             fwlib.lib.init
             fwlib.lib.linkedlist
             fwlib.lib.utils
+            silibs::dvfs
+            silibs::kng_silibs_platform
             silibs_platform
 )
 

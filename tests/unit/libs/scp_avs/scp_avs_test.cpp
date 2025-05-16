@@ -20,6 +20,7 @@ extern "C" {
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <avs_lib.h>   // for AVS_VOLTAGE_RW, AVS_CMD_READ, AVS_IRQ_...
 #include <interrupts.h>
+#include <padring_southeast_regs.h>
 #include <scp_avs.h>
 #include <scp_avs_cli.h>
 #include <scp_avs_driver.h>
@@ -83,8 +84,21 @@ static int test_cleanup(void** pContext)
     return 0;
 }
 
-TEST_FUNCTION(scp_avs_driver_init_test, test_setup, test_cleanup)
+TEST_FUNCTION(scp_avs0_driver_init_test, test_setup, test_cleanup)
 {
+    padring_southeast_southeast_afm_csr_avs0_clk avs_clk = {};
+    padring_southeast_southeast_afm_csr_avs0_mdata avs_mdata = {};
+
+    scp_avs_device_t test_avs_device = {
+        .config =
+            {
+                .avs_irq = HW_INT_AVS_CTRL_0_INT,
+                .afm_csr_avs_clk_addr = (uintptr_t)&avs_clk,
+                .afm_csr_mdata_addr = (uintptr_t)&avs_mdata,
+            },
+        .avs_bus_num = AVS_BUS0,
+    };
+
     expect_value(__wrap_avs_init, avs_base_addr, test_avs_device.avs_bus_num);
 
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_AVS_CTRL_0_INT);
@@ -101,6 +115,113 @@ TEST_FUNCTION(scp_avs_driver_init_test, test_setup, test_cleanup)
 
     scp_avs_driver_initialize(&test_avs_device);
     assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
+    assert_int_equal(avs_clk.ds, 3);
+    assert_int_equal(avs_mdata.ds, 3);
+}
+
+TEST_FUNCTION(scp_avs1_driver_init_test, test_setup, test_cleanup)
+{
+    padring_southeast_southeast_afm_csr_avs1_clk avs_clk = {};
+    padring_southeast_southeast_afm_csr_avs1_mdata avs_mdata = {};
+
+    scp_avs_device_t test_avs_device = {
+        .config =
+            {
+                .avs_irq = HW_INT_AVS_CTRL_1_INT,
+                .afm_csr_avs_clk_addr = (uintptr_t)&avs_clk,
+                .afm_csr_mdata_addr = (uintptr_t)&avs_mdata,
+            },
+        .avs_bus_num = AVS_BUS1,
+    };
+
+    expect_value(__wrap_avs_init, avs_base_addr, test_avs_device.avs_bus_num);
+
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_AVS_CTRL_1_INT);
+
+    expect_any(__wrap_nvic_irq_set_isr_with_param, isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (uintptr_t)&test_avs_device);
+
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_AVS_CTRL_1_INT);
+
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_AVS_CTRL_1_INT);
+
+    expect_value(__wrap_avs_enable_interrupt, avs_id, test_avs_device.avs_bus_num);
+    expect_value(__wrap_avs_enable_interrupt, intr, AVS_IRQ_CMD_DONE);
+
+    scp_avs_driver_initialize(&test_avs_device);
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS1);
+    assert_int_equal(avs_clk.ds, 3);
+    assert_int_equal(avs_mdata.ds, 3);
+}
+
+TEST_FUNCTION(scp_avs2_driver_init_test, test_setup, test_cleanup)
+{
+    padring_southeast_southeast_afm_csr_avs2_clk avs_clk = {};
+    padring_southeast_southeast_afm_csr_avs2_mdata avs_mdata = {};
+
+    scp_avs_device_t test_avs_device = {
+        .config =
+            {
+                .avs_irq = HW_INT_AVS_CTRL_2_INT,
+                .afm_csr_avs_clk_addr = (uintptr_t)&avs_clk,
+                .afm_csr_mdata_addr = (uintptr_t)&avs_mdata,
+            },
+        .avs_bus_num = AVS_BUS2,
+    };
+
+    expect_value(__wrap_avs_init, avs_base_addr, test_avs_device.avs_bus_num);
+
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_AVS_CTRL_2_INT);
+
+    expect_any(__wrap_nvic_irq_set_isr_with_param, isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (uintptr_t)&test_avs_device);
+
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_AVS_CTRL_2_INT);
+
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_AVS_CTRL_2_INT);
+
+    expect_value(__wrap_avs_enable_interrupt, avs_id, test_avs_device.avs_bus_num);
+    expect_value(__wrap_avs_enable_interrupt, intr, AVS_IRQ_CMD_DONE);
+
+    scp_avs_driver_initialize(&test_avs_device);
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS2);
+    assert_int_equal(avs_clk.ds, 3);
+    assert_int_equal(avs_mdata.ds, 3);
+}
+
+TEST_FUNCTION(scp_avs3_driver_init_test, test_setup, test_cleanup)
+{
+    padring_southeast_southeast_afm_csr_avs3_clk avs_clk = {};
+    padring_southeast_southeast_afm_csr_avs3_mdata avs_mdata = {};
+
+    scp_avs_device_t test_avs_device = {
+        .config =
+            {
+                .avs_irq = HW_INT_AVS_CTRL_3_INT,
+                .afm_csr_avs_clk_addr = (uintptr_t)&avs_clk,
+                .afm_csr_mdata_addr = (uintptr_t)&avs_mdata,
+            },
+        .avs_bus_num = AVS_BUS3,
+    };
+
+    expect_value(__wrap_avs_init, avs_base_addr, test_avs_device.avs_bus_num);
+
+    expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_AVS_CTRL_3_INT);
+
+    expect_any(__wrap_nvic_irq_set_isr_with_param, isr);
+    expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (uintptr_t)&test_avs_device);
+
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_AVS_CTRL_3_INT);
+
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_AVS_CTRL_3_INT);
+
+    expect_value(__wrap_avs_enable_interrupt, avs_id, test_avs_device.avs_bus_num);
+    expect_value(__wrap_avs_enable_interrupt, intr, AVS_IRQ_CMD_DONE);
+
+    scp_avs_driver_initialize(&test_avs_device);
+    assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS3);
+    assert_int_equal(avs_clk.ds, 3);
+    assert_int_equal(avs_mdata.ds, 3);
 }
 
 TEST_FUNCTION(scp_avs_interface_init_test, test_setup, test_cleanup)

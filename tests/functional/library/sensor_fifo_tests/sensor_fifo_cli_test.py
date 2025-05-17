@@ -103,6 +103,15 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         Test function to execute sensor fifo CLI commands and validate the response.
         Optionally executes a first command before the actual command.
         """
+        # Perform an additional OOB reset if the device type is bigFPGA. Being added to avoid the issue of the SCP/MCP not responding after some time. 
+        # Adding it in here as all the tests call this method and it will be executed every time.
+        # This is a temporary fix and should be removed after the root cause is found and fixed.
+        # Bug: https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/2587745
+        # TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2592872
+        if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+            self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
+            KngPythiaTestSetup.fpga_oob_reset(self.log)
+
         self.log.info(f"Running SENSOR FIFO CLI TEST with command: {command}")
         
         try:
@@ -428,9 +437,6 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         try:
             self.log.info("Setting up DUT...")
             self.dut.setup()
-            if self.dut.get_dut_type() == DeviceType.BIGFPGA:
-                self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
-                KngPythiaTestSetup.fpga_oob_reset(self.log)
                 
             if self.dut.mb.node_0.soc.secondary_die is not None:
                 self.log.info("Current Test is executing on DualDie Config, so secondary die will be used to open channel on SCP and MCP core")

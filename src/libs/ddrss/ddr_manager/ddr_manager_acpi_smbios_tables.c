@@ -760,8 +760,8 @@ void ddr_create_smbios_tables(void)
         for version 3.3, 64h for version 3.7 and later and later
         */
         smb_table17.Type = 17;
-        smb_table17.Length = 0x64;             // For spec ver 3.7, 64h is correct
-        smb_table17.Handle = 0;                // UEFI to populate
+        smb_table17.Length = 0x5C; // For spec ver 3.7, 64h is correct - But we are conforming to 3.3
+        smb_table17.Handle = 0;    // UEFI to populate
         smb_table17.PhysMemoryArrayHandle = 0; // UEFI to populate
         smb_table17.MemoryErrorInfoHandle = 0; // UEFI to populate
         smb_table17.TotalWidth = 80;           // with ECC bits as per PNR

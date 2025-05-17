@@ -214,4 +214,3 @@ uint64_t data_utils_update_residency(uint64_t current_timestamp_uS, uint64_t* pr
     *previous_timestamp_uS = current_timestamp_uS;
     return time_diff_uS;
 }
-

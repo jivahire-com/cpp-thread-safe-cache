@@ -197,3 +197,24 @@ TEST_FUNCTION(test_data_utils_update_residency, test_setup, test_teardown)
     assert_int_equal(soc_dimm.previous_soc_dimm_timestamp_uS, 2000);
     assert_int_equal(time_diff_uS, 0);
 }
+
+TEST_FUNCTION(test_data_util_calc_mma_u16, test_setup, test_teardown)
+{
+    mma_u16_t mma = {0};
+
+    // Feed a few test values and validate the min and max, as the average is
+    // already tested.
+
+    data_util_calc_mma_u16(&mma, 100);
+    assert_int_equal(mma.min, 100);
+    assert_int_equal(mma.max, 100);
+
+    data_util_calc_mma_u16(&mma, 50);
+    assert_int_equal(mma.min, 50);
+    assert_int_equal(mma.max, 100);
+
+    data_util_calc_mma_u16(&mma, 150);
+    assert_int_equal(mma.min, 50);
+    assert_int_equal(mma.max, 150);
+}
+

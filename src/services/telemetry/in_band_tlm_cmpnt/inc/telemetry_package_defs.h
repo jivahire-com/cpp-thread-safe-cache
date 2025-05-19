@@ -279,7 +279,7 @@ typedef struct {
 
 typedef struct {
     telemetry_record_hdr_t record_header;
-    pwr_core_collection_current_t power_collection[NUMBER_OF_CORES_PER_DIE];
+    pwr_core_collection_power_t power_collection[NUMBER_OF_CORES_PER_DIE];
 } pwr_core_record_power_t, *p_pwr_core_record_power_t;
 
 //----------------POWER_TELEMETRY_ELEMENT_CORE_HISTOGRAM----------------

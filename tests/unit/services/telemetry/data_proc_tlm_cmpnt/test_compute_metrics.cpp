@@ -643,3 +643,42 @@ TEST_FUNCTION(test_comp_metrics_for_tiles_for_sampling_period, test_setup, test_
         assert_int_equal(tile[tile_id].max_tile_id, 1);
     }
 }
+
+TEST_FUNCTION(test_comp_metrics_for_single_core_power, test_setup, test_teardown)
+{
+
+    // Feed a few values into the core power computation and validate the results
+    uint8_t core_id = 0;
+    uint16_t test_values_mW[5] = {100, 200, 300, 400, 500};
+
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        comp_metrics_for_single_core_power(core_id, test_values_mW[i]);
+    }
+
+    // Check the results
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].power_mW.min, 100);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].power_mW.max, 500);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].power_mW.running_avg.average, 300);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].power_mW.running_avg.num_samples, 5);
+}
+
+TEST_FUNCTION(test_comp_metrics_reset_2_mins_metrics, test_setup, test_teardown)
+{
+    memset(&computed_metrics_2_mins, 0xFF, sizeof(computed_metrics_2_mins));
+    comp_metrics_reset_2_mins_metrics();
+    for (uint32_t byte = 0; byte < sizeof(computed_metrics_2_mins); byte++)
+    {
+        assert_int_equal(((uint8_t*)&computed_metrics_2_mins)[byte], 0);
+    }
+}
+
+TEST_FUNCTION(test_comp_metrics_reset_24_hrs_metrics, test_setup, test_teardown)
+{
+    memset(&computed_metrics_24_hrs, 0xFF, sizeof(computed_metrics_24_hrs));
+    comp_metrics_reset_24_hrs_metrics();
+    for (uint32_t byte = 0; byte < sizeof(computed_metrics_24_hrs); byte++)
+    {
+        assert_int_equal(((uint8_t*)&computed_metrics_24_hrs)[byte], 0);
+    }
+}

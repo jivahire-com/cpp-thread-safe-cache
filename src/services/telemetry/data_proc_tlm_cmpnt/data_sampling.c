@@ -161,8 +161,10 @@ void data_proc_tlm_cmpnt_process_input_data(void)
         status = sensor_fifo_svc_poll_core_current(current_data, &core_index);
         if (status.curr_data_is_valid == true)
         {
-            // process the core current
+            // process the core current packet
             data_smpl_parse_core_current_entry(current_data, core_index);
+            // update any metrics from dat parsed from the entry
+            comp_metrics_for_single_core_power(core_index, core[core_index].latest_power_mW);
         }
     } while (status.more_entries == true);
 
@@ -348,7 +350,32 @@ void data_smpl_parse_core_current_entry(core_current_t* current_data, uint8_t co
         core[core_id].current.max_mA = current.max_mA;
     }
 
-    // Check for the change bit
+    //
+    // The current data from SCF RAM also contains the average power
+    // consumed by the core during the ODCM measurement window that
+    // produced this entry.
+    //
+    // We take this average power (per ODCM measurement window),
+    // convert  it to mW, and use it to update the min, max, and
+    // average power values for the core (regardless of p state) for
+    // our measurement window.
+    //
+    // We also use this average power (per ODCM measurement window)
+    // to calculate the min, max, average power consumed by the core
+    // for the states of the core (p state, c-state, m-mam id change)
+    // over our measurement window.
+    //
+
+    uint16_t core_power_mW = (uint16_t)(current_data->data.pwr * CORE_POWER_MW_PER_BIT);
+    core[core_index].latest_power_mW = core_power_mW;
+
+    //
+    // If the state has changed, reset the the information used to
+    // calculate power for the changed state.
+    //
+    // This is separate from the total power values for the core, which
+    // is tracked regardless of the state.
+    //
     if (current_data->data.change == 1)
     {
         core[core_id].flags.id_change_bit = 1;
@@ -358,11 +385,14 @@ void data_smpl_parse_core_current_entry(core_current_t* current_data, uint8_t co
     }
     else
     {
-        // Stuff the power readings here
+        //
+        // Update the power values used to track the power for the current
+        // state the core is in.
+        //
         if (core[core_id].num_pwr_samples < MAX_NUMBER_POWER_SAMPLE)
         {
             // We will keep up to a number of samples defined
-            core_pwr_samples_accumulation_mW[core_id] += current_data->data.pwr * CORE_POWER_MW_PER_BIT;
+            core_pwr_samples_accumulation_mW[core_id] += core_power_mW;
             core[core_id].num_pwr_samples++;
         }
 
@@ -382,12 +412,11 @@ void data_smpl_parse_core_current_entry(core_current_t* current_data, uint8_t co
         }
     }
 
-    // The average current reported from SCF is the average of the span of time
-    // of measurement window therefore, we will treat this as the
-    // instantaneous current @ "x" mS, depend  on the sampling rate, which will be in the range of 3 ~ 5mS.
-    // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2330778
+    // We treat the average current collected by the ODCM (during its measurement window)
+    // as the instantaneous current for the core.
     core[core_id].current.latest_value_mA = current.average_mA;
     // Log average
+    // TODO: BUG https://azurecsi.visualstudio.com/Dev/_workitems/edit/2609385
     core[core_id].current.average_mA = current.average_mA;
 
     // Log the Ldo Voltage at this instant
@@ -712,8 +741,12 @@ void data_smpl_parse_rack_throttling(pstate_telem_t* pstate_telemetry, int throt
 //----------------Power telemetry update manager  ----------------
 
 //----------------Power telemetry resources reset when packages are completed  ----------------
+
 void data_proc_tlm_cmpnt_pwr_pkg_completed(void)
 {
+    // Reset the computed per core metrics
+    comp_metrics_reset_2_mins_metrics();
+
     data_smpl_reset_core_data();
     data_smpl_reset_soc_data();
     data_smpl_reset_tile_data();
@@ -721,8 +754,7 @@ void data_proc_tlm_cmpnt_pwr_pkg_completed(void)
 
 void data_proc_tlm_cmpnt_24hr_pkg_completed(void)
 {
-    // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2601165
-    //  Implement the reset function for the power telemetry data for 24hr specific record.
+    comp_metrics_reset_24_hrs_metrics();
 }
 
 void data_smpl_reset_core_data()

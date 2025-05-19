@@ -151,6 +151,13 @@ uint32_t package_create_pwr_core_current_record(p_pwr_core_record_current_t curr
 uint32_t package_create_pwr_core_temperature_record(p_pwr_core_record_temperature_t temperature_record);
 
 /**
+ * @brief   Create a power core power record
+ * @param[out] power_record - location where the record will be stored
+ * @return uint32_t - Number of bytes in the record
+ */
+uint32_t package_create_pwr_core_power_record(p_pwr_core_record_power_t power_record);
+
+/**
  * @brief   Create a power core histogram record
  * @param[out] histogram_record - location where the record will be stored
  * @return uint32_t - Number of bytes in the record

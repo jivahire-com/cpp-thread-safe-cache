@@ -27,6 +27,9 @@
 
 /*-- Declarations (Statics and globals) --*/
 
+computed_metrics_2_min_t computed_metrics_2_mins = {0};
+computed_metrics_24_hrs_t computed_metrics_24_hrs = {0};
+
 /*------------- Functions ----------------*/
 
 void data_proc_tlm_cmpnt_prepare_data_for_inst_sample(void)
@@ -219,6 +222,11 @@ void comp_metrics_for_single_core_temperature(uint8_t core_id, uint32_t time_dif
                            &core[core_id].temperature.latest_value_dC,
                            time_diff_uS,
                            residency_uS);
+}
+
+void comp_metrics_for_single_core_power(uint8_t core_id, uint16_t latest_power_mW)
+{
+    data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].power_mW, latest_power_mW);
 }
 
 void comp_metrics_for_single_tile_vcpu(uint8_t tile_id, uint32_t time_diff_uS, uint32_t residency_uS)
@@ -457,4 +465,14 @@ void comp_metrics_for_single_core_histogram(uint8_t core_id)
 {
     FPFW_UNUSED(core_id);
     // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2319991
+}
+
+void comp_metrics_reset_2_mins_metrics()
+{
+    memset(&computed_metrics_2_mins, 0, sizeof(computed_metrics_2_mins));
+}
+
+void comp_metrics_reset_24_hrs_metrics()
+{
+    memset(&computed_metrics_24_hrs, 0, sizeof(computed_metrics_24_hrs));
 }

@@ -129,6 +129,16 @@ void data_proc_tlm_cmpnt_get_pwr_core_current_data(uint16_t core_id, p_pwr_core_
 void data_proc_tlm_cmpnt_get_pwr_core_temperature_data(uint16_t core_id, p_pwr_core_element_temperature_t temperature_data);
 
 /**
+ * @brief Get the core power data for the specified core.
+ * 
+ * @param core_id[in] - The core id to get the power data for. 0 .. NUMBER_OF_CORES_PER_DIE-1
+ * @param power_data[out] - Pointer to the structure to store the power data in.
+ * 
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_core_power_data(uint16_t core_id, p_pwr_core_element_power_t power_data);
+
+/**
  * @brief Get the core histogram data for the specified core.
  *
  * @param[in] core_id - The core id to get the histogram data for. 0 .. NUMBER_OF_CORES_PER_DIE-1

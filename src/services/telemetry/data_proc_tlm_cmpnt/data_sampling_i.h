@@ -124,6 +124,7 @@ typedef struct {
     pwr_core_element_rack_priorities_t priorities[NUMBER_OF_RACK_PRIORITIES];
     voltage_t voltage;
     current_t current;
+    uint16_t latest_power_mW;
     temperature_t temperature;
     uint16_t active_sample_mpam_id;
     bool core_throttling_tracker[NUMBER_OF_THROTTLE_TYPES];

@@ -8,6 +8,8 @@
  */
 
 /*------------- Includes -----------------*/
+
+#include "compute_metrics_i.h"
 #include "data_proc_tlm_cmpnt.h"
 #include "data_sampling_i.h" // internal APIs
 #include "package_interface_i.h"
@@ -164,6 +166,22 @@ void data_proc_tlm_cmpnt_get_pwr_core_temperature_data(uint16_t core_id, p_pwr_c
     }
 }
 
+void data_proc_tlm_cmpnt_get_pwr_core_power_data(uint16_t core_id, p_pwr_core_element_power_t power_data)
+{
+    // parameter check: core_id, check if correct
+    if (core_id >= NUMBER_OF_CORES_PER_DIE || power_data == NULL)
+    {
+        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_CORE_POWER);
+    }
+    else
+    {
+        // Going with assignment over memcpy for clarity due to different structs
+        power_data->min_mW = computed_metrics_2_mins.cores[core_id].power_mW.min;
+        power_data->max_mW = computed_metrics_2_mins.cores[core_id].power_mW.max;
+        power_data->average_mW = computed_metrics_2_mins.cores[core_id].power_mW.running_avg.average;
+    }
+}
+
 void data_proc_tlm_cmpnt_get_pwr_core_histogram_data(
     uint16_t core_id,
     pwr_core_element_histogram_t (*histogram_array)[NUMBER_OF_HS_VOLTAGE_SCALES][NUMBER_OF_HS_TEMP_SCALES])
@@ -294,7 +312,7 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
         core_summary_data->pstate = current_pstate;
         core_summary_data->cstate = core[core_id].cstate_from_pstate_pkt;
         core_summary_data->frequency_Mhz = core[core_id].pstate[current_pstate].frequency_Mhz;
-        core_summary_data->power_mW = core[core_id].average_pwr_mW;
+        core_summary_data->power_mW = core[core_id].latest_power_mW;
         core_summary_data->voltage_mV = core[core_id].voltage.latest_value_mV;
         core_summary_data->current_mA = core[core_id].current.latest_value_mA;
         core_summary_data->temperature_dC = core[core_id].temperature.latest_value_dC;

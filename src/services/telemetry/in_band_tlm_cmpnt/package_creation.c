@@ -185,8 +185,12 @@ uint32_t package_create_power_pkg(uintptr_t pkg_location, size_t pkg_available_s
         pkg_location += package_create_pwr_core_temperature_record(temperature_record);
         package_hdr->payload_header.number_of_records++;
     }
-
-    // TODO: POWER_TELEMETRY_ELEMENT_CORE_POWER
+    if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_POWER])
+    {
+        p_pwr_core_record_power_t power_record = (p_pwr_core_record_power_t)pkg_location;
+        pkg_location += package_create_pwr_core_power_record(power_record);
+        package_hdr->payload_header.number_of_records++;
+    }
 
     // TODO: POWER_TELEMETRY_ELEMENT_CORE_AGING,
 
@@ -517,6 +521,26 @@ uint32_t package_create_pwr_core_temperature_record(p_pwr_core_record_temperatur
                                                           &temperature_record->temperature_collection[core_id].temperature_element);
     }
     return sizeof(pwr_core_record_temperature_t);
+}
+
+uint32_t package_create_pwr_core_power_record(p_pwr_core_record_power_t power_record)
+{
+    populate_record_hdr(&power_record->record_header,
+                        ++power_pkg_record_number[POWER_TELEMETRY_ELEMENT_CORE_POWER],
+                        NUMBER_OF_CORES_PER_DIE,
+                        sizeof(pwr_core_record_power_t));
+
+    for (uint16_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        populate_pwr_collection_hdr(&power_record->power_collection[core_id].collection_header,
+                                    POWER_TELEMETRY_ELEMENT_CORE_POWER,
+                                    CORE_ID_WITH_DIE_OFFSET(core_id),
+                                    1,
+                                    sizeof(pwr_core_collection_power_t));
+
+        data_proc_tlm_cmpnt_get_pwr_core_power_data(core_id, &power_record->power_collection[core_id].power_element);
+    }
+    return sizeof(pwr_core_record_power_t);
 }
 
 uint32_t package_create_pwr_core_histogram_record(p_pwr_core_record_histogram_t histogram_record)

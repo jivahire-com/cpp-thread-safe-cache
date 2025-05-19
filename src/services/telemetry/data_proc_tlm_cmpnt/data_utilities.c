@@ -101,6 +101,25 @@ void data_util_calc_mma_res(uint16_t* mma_min,
     }
 }
 
+void data_util_calc_mma_u16(mma_u16_t* mma, uint16_t mma_latest_value)
+{
+
+    if (mma == NULL)
+    {
+        FPFW_ET_LOG(MMAU16NullPointer);
+        return;
+    }
+    if (mma_latest_value > mma->max)
+    {
+        mma->max = mma_latest_value;
+    }
+    if ((mma_latest_value < mma->min) || (mma->min == 0))
+    {
+        mma->min = mma_latest_value;
+    }
+    data_util_running_avg_update(&mma->running_avg, mma_latest_value);
+}
+
 uint64_t data_util_convert_systick_to_microseconds(uint64_t tick_count)
 {
     uint32_t frequency = gtimer_prodfw_get_frequency();

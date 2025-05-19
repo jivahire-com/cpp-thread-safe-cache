@@ -10,6 +10,7 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+
 #include "data_sampling_i.h" // internal APIs
 
 #include <stdint.h>
@@ -17,10 +18,17 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
+
 typedef struct {
     uint16_t average;
     uint16_t num_samples;
 } running_avg_t;
+
+typedef struct {
+    uint16_t min;
+    uint16_t max;
+    running_avg_t running_avg;
+} mma_u16_t, *p_mma_u16_t;
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -64,7 +72,18 @@ uint64_t data_util_calc_time_diff(uint64_t* previous_timestamp_uS, uint64_t* tim
  */
 void data_util_calc_mma_res(uint16_t* mma_min, uint16_t* mma_max, uint16_t* mma_average, uint16_t* mma_latest_value, uint32_t time_diff_uS, uint32_t residency_uS);
 
- /*
+
+/**
+ * @brief Update the min, max, and average using the latest value. Only supports uint16_t values.
+ * 
+ * @param[in,out] mma - Pointer to the mma_u16_t structure containing min, max, and average values.
+ * @param[in] mma_latest_value - The latest value to be used for updating the min, max, and average.
+ * 
+ * @return None
+ */
+void data_util_calc_mma_u16(mma_u16_t* mma, uint16_t mma_latest_value);
+
+/**
  * @brief data_util_convert_systick_to_microseconds function converts a given tick count to microseconds.
  *
  * @param[in] tick_count - The tick count to be converted.

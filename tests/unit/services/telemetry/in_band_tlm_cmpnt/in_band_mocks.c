@@ -139,6 +139,14 @@ void data_proc_tlm_cmpnt_get_pwr_core_temperature_data(uint16_t core_id, p_pwr_c
     function_called();
 }
 
+void data_proc_tlm_cmpnt_get_pwr_core_power_data(uint16_t core_id, p_pwr_core_element_power_t power_data)
+{
+    FPFW_UNUSED(core_id);
+    memset(power_data, 0xFF, sizeof(pwr_core_element_power_t));
+
+    function_called();
+}
+
 void data_proc_tlm_cmpnt_get_pwr_core_histogram_data(
     uint16_t core_id,
     pwr_core_element_histogram_t (*histogram_array)[NUMBER_OF_HS_VOLTAGE_SCALES][NUMBER_OF_HS_TEMP_SCALES])

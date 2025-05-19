@@ -16,6 +16,7 @@
 extern "C" {
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <compute_metrics_i.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <data_sampling_i.h>
 #include <power_tlm_fuse.h>
@@ -530,7 +531,7 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
     assert_int_equal(core_summary_data.cstate, core[TEST_CORE_ID_5].cstate[cstate_index].cstate_id);
 
     assert_int_equal(core_summary_data.plimit, core[TEST_CORE_ID_5].active_sample_plimit);
-    assert_int_equal(core_summary_data.power_mW, core[TEST_CORE_ID_5].average_pwr_mW);
+    assert_int_equal(core_summary_data.power_mW, core[TEST_CORE_ID_5].latest_power_mW);
     assert_int_equal(core_summary_data.frequency_Mhz, core[TEST_CORE_ID_5].pstate[pstate_index].frequency_Mhz);
 
     assert_int_equal(core_summary_data.voltage_mV, core[TEST_CORE_ID_5].voltage.latest_value_mV);
@@ -560,4 +561,22 @@ TEST_FUNCTION(test_get_inst_soc_snsr_temp_data, test_setup, test_teardown)
     // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     inst_soc_element_die_temp_t snsr_temp_data = {0};
     data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(TEST_SNSR_ID_0, &snsr_temp_data);
+}
+
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_core_power_data, test_setup, test_teardown)
+{
+    // Test validates that the records published to consumers is using the correct data source
+
+    pwr_core_element_power_t power_data = {0};
+
+    uint8_t core_id = 0;
+    computed_metrics_2_mins.cores[core_id].power_mW.min = 10;
+    computed_metrics_2_mins.cores[core_id].power_mW.max = 20;
+    computed_metrics_2_mins.cores[core_id].power_mW.running_avg.average = 15;
+
+    data_proc_tlm_cmpnt_get_pwr_core_power_data(core_id, &power_data);
+
+    assert_int_equal(power_data.min_mW, computed_metrics_2_mins.cores[core_id].power_mW.min);
+    assert_int_equal(power_data.max_mW, computed_metrics_2_mins.cores[core_id].power_mW.max);
+    assert_int_equal(power_data.average_mW, computed_metrics_2_mins.cores[core_id].power_mW.running_avg.average);
 }

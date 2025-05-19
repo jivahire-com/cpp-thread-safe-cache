@@ -10,16 +10,60 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+
 #include "data_sampling_i.h" // internal APIs
+#include "data_utilities_i.h"
 
 #include <fpfw_status.h>
 #include <stdint.h>
 #include <telemetry_package_defs.h>
+
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
 
+//
+// TODO: Some of these structs currently have stub metrics (to get the organization in place),
+//       these will be replaced with actual metrics as each computed metric is added to
+//       this design.
+//
+
+typedef struct
+{
+    mma_u16_t power_mW;
+} computed_per_core_metrics_t;
+
+typedef struct
+{
+    uint16_t stub_metric;
+} computed_per_mpam_metrics_t;
+
+typedef struct
+{
+    uint16_t stub_metric;
+} computed_per_tile_metrics_t;
+
+typedef struct
+{
+    uint16_t stub_metric;
+} computed_per_soc_metrics_t;
+
+typedef struct {
+    computed_per_core_metrics_t cores[NUMBER_OF_CORES_PER_DIE];
+    computed_per_mpam_metrics_t mpams[NUMBER_OF_CORES_PER_DIE];
+    computed_per_tile_metrics_t tiles[NUMBER_OF_TILES_PER_DIE];
+    computed_per_soc_metrics_t soc;
+} computed_metrics_2_min_t;
+
+typedef struct
+{
+    uint16_t stub_metric;
+} computed_metrics_24_hrs_t;
+
 /*-- Declarations (Statics and globals) --*/
+
+extern computed_metrics_2_min_t computed_metrics_2_mins;
+extern computed_metrics_24_hrs_t computed_metrics_24_hrs;
 
 /*--------- Function Prototypes ----------*/
 
@@ -106,6 +150,16 @@ void comp_metrics_for_single_core_voltage(uint8_t core_id, uint32_t time_diff_uS
  * @param[in] residency_uS  The total residency time in microseconds over which the average is calculated.
  */
 void comp_metrics_for_single_core_temperature(uint8_t core_id, uint32_t time_diff_uS, uint32_t residency_uS);
+
+/**
+ * @brief function updates the minimum, maximum, and average power values for a specified core based on the provided
+ * 
+ * @param[in] core_id  core for which the power values are being updated.
+ * @param[in] latest_power_mW  The latest power value in mW
+ * 
+ * @return None
+ */
+void comp_metrics_for_single_core_power(uint8_t core_id, uint16_t latest_power_mW);
 
 /**
  * @brief    function updates the minimum, maximum, and average voltage values for the
@@ -232,3 +286,17 @@ void comp_metrics_for_single_core_pstate_power(uint8_t core_id, uint8_t pstate_i
  * @param[in] pstate - The PState associated with the MPAM residency update.
  */
 void comp_metrics_for_mpam(uint8_t core_id, uint16_t mpam_id, uint8_t pstate);
+
+/**
+ * @brief Resets all metrics that get reported every two minutes.
+ * 
+ * @return none
+ */
+void comp_metrics_reset_2_mins_metrics();
+
+/**
+ * @brief Resets all metrics that get reported every 24 hours.
+ * 
+ * @return none
+ */
+void comp_metrics_reset_24_hrs_metrics();

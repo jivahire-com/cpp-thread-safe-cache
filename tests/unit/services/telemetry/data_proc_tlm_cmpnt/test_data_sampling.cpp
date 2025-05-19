@@ -87,7 +87,8 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data, test_setup, test_tear
 
     data_proc_tlm_cmpnt_process_input_data();
 }
-// Test for tlm_logger to init dts coefficient structures
+
+// Test for data sampling to init dts coefficient structures
 TEST_FUNCTION(test_data_smpl_init_dts_coefficients, test_setup, test_teardown)
 {
     expect_value(__wrap_platform_power_fuses_get_dts_coeff_tile, dts_coeff, tileDtsCoefficients);
@@ -238,6 +239,9 @@ TEST_FUNCTION(test_data_smpl_parse_core_current_entry, test_setup, test_teardown
     assert_int_equal(core[index].ldo_voltage, (uint16_t)(current_data.data.volt));
     assert_int_equal(core[index].pstate_from_current_pkt, (current_data.data.pstate));
     assert_int_equal(core[index].active_sample_mpam_id, (current_data.data.mpam_id_low));
+
+    // Check core 0 power
+    assert_int_equal(core[index].latest_power_mW, (uint16_t)(current_data.data.pwr * CORE_POWER_MW_PER_BIT));
 
     // test index out of range
     index = NUMBER_OF_CORES_PER_DIE;

@@ -115,23 +115,14 @@ typedef union {
     uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
 } hm_accel_error_injection_payload_t;
 
-typedef union _accel_hmm_msg {
-	struct {
-		large_fifo_mailbox_msg_header header;
-		struct {
-			uint32_t dtcm_mem_offset;
-		};
-		uint32_t hmm_msg_bytes[MBOX_HMM_DATA_DEPTH];
-	};
-	uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
+typedef struct _accel_hmm_msg {
+	large_fifo_mailbox_msg_header header;
+	uint32_t dtcm_mem_offset;
 } hm_accel_msg_t;
 
-typedef union _accel_hmm_msg_ack {
-    struct {
-		large_fifo_mailbox_msg_header header;
-		uint32_t cper_buffer_offset;
-	};
-    uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
+typedef struct _accel_hmm_msg_ack {
+	large_fifo_mailbox_msg_header header;
+	uint32_t cper_buffer_offset;
 } hm_accel_msg_ack_t;
 
 typedef struct _hm_accel_cper_payload_t

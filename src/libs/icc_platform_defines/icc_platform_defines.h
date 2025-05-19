@@ -261,14 +261,11 @@ typedef union _large_fifo_mailbox_msg {
  * @brief CD metadata Large Fifo Mailbox message
  *
  */
-typedef union _accel_cd_msg {
-	struct {
-		large_fifo_mailbox_msg_header hdr;
-		uint32_t cd_file_offset;
-		uint32_t cd_file_size;
-		uint32_t magic_nr_offset;
-	};
-	uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
+typedef struct _accel_cd_msg {
+	large_fifo_mailbox_msg_header hdr;
+	uint32_t cd_file_offset;
+	uint32_t cd_file_size;
+	uint32_t magic_nr_offset;
 } accel_cd_addr_msg;
 
 /**
@@ -284,10 +281,8 @@ typedef struct _accel_cd_params {
  * @brief Boot status code Fifo Mailbox message
  * 
  */
-typedef union _accel_boot_status_msg {
-	struct {
-		large_fifo_mailbox_msg_header hdr;
-		uint32_t boot_status;
-	};
-	uint32_t as_uint32[LARGE_FIFO_MBOX_FIFO_DEPTH];
+typedef struct _accel_boot_status_msg {
+	large_fifo_mailbox_msg_header hdr;
+		uint8_t boot_status;
+		uint8_t reserved[3];
 } accel_boot_status_msg;

@@ -11,10 +11,19 @@
 /*----------- Nested includes ------------*/
 #include <FpFwCli.h>                      // for FpFwCliPrint, FPFW_CLI_STATUS
 #include <fpfw_icc_base.h>                // for fpfw_icc_base_recv_req_t
+#include <icc_platform_defines.h>         // for large_fifo_mailbox_msg_header
 
 /*-- Symbolic Constant Macros (defines) --*/
 
+#define LARGE_FIFO_MBOX_MAX_PAYLOAD_WORD (4)
+
 /*-------------- Typedefs ----------------*/
+
+typedef struct _large_fifo_cli_mailbox_msg
+{
+    large_fifo_mailbox_msg_header hdr;
+    uint32_t data[LARGE_FIFO_MBOX_MAX_PAYLOAD_WORD];
+} large_fifo_cli_mailbox_msg;
 
 /*-------------Statics & Globals----------*/
 extern fpfw_icc_base_ctx_t *icc_base_sdm_mbx_ctx;

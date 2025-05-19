@@ -22,8 +22,6 @@
 #include <string.h>               // for memset
 
 //*-- Symbolic Constant Macros (defines) --*/
-#define LARGE_FIFO_MSG_PAYLOAD_DEPTH \
-    ((sizeof(large_fifo_mailbox_msg) - sizeof(large_fifo_mailbox_msg_header)) / MBOX_WORD_SIZE_BYTE)
 
 /*-------------- Typedefs ----------------*/
 
@@ -34,9 +32,9 @@ fpfw_icc_base_ctx_t* icc_base_sdm_mbx_ctx = NULL;
 fpfw_icc_base_ctx_t* icc_base_cded_mbx_ctx = NULL;
 
 //! hsp mbox message buffers for send/recv/echo
-static large_fifo_mailbox_msg accel_recv_msg;
-static large_fifo_mailbox_msg accel_send_msg;
-static large_fifo_mailbox_msg accel_echo_msg = {
+static large_fifo_cli_mailbox_msg accel_recv_msg;
+static large_fifo_cli_mailbox_msg accel_send_msg;
+static large_fifo_cli_mailbox_msg accel_echo_msg = {
     .hdr.cmd = 0xDEAD,
     .hdr.seq = 0,
     .hdr.context = 0,
@@ -65,7 +63,7 @@ static void my_icc_large_fifo_send_recv_complete_notify(void* context, size_t ou
     }
     else
     {
-        large_fifo_mailbox_msg* recv_msg = (void*)req_params->recv_entry.payload_buffer; // NOLINT
+        large_fifo_cli_mailbox_msg* recv_msg = (void*)req_params->recv_entry.payload_buffer; // NOLINT
         //! verify success, output status
         FpFwCliPrint("[ECHO TEST] Recv Complete: Status[0x%x] ReceivedBytes[%d] CmdCode[0x%x] "
                      "Payload[0x%x 0x%x "
@@ -117,7 +115,7 @@ FPFW_CLI_STATUS large_fifo_mbox_echo(int argc, const char** argv)
     }
 
     accel_echo_msg.hdr.cmd = atoi(argv[1]);
-    for (i = 0; i < LARGE_FIFO_MSG_PAYLOAD_DEPTH; i++)
+    for (i = 0; i < LARGE_FIFO_MBOX_MAX_PAYLOAD_WORD; i++)
     {
         accel_echo_msg.data[i] = i;
     }
@@ -214,7 +212,7 @@ FPFW_CLI_STATUS large_fifo_mbox_send(int argc, const char** argv)
     }
 
     accel_send_msg.hdr.cmd = atoi(argv[1]);
-    for (i = 0; i < LARGE_FIFO_MSG_PAYLOAD_DEPTH; i++)
+    for (i = 0; i < LARGE_FIFO_MBOX_MAX_PAYLOAD_WORD; i++)
     {
         accel_send_msg.data[i] = i;
     }

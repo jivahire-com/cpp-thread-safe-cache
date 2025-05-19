@@ -56,9 +56,10 @@ void __wrap_system_counter_init(const uintptr_t gen_counter_ctrl_base, uint32_t 
     check_expected(increment_val);
 }
 
-void __wrap_gtimer_init(const uintptr_t timer_cntrl_addr)
+void __wrap_gtimer_init_with_freq(const uintptr_t timer_cntrl_addr, uint32_t frequency_hz)
 {
     check_expected(timer_cntrl_addr);
+    check_expected(frequency_hz);
 }
 
 void __wrap_gtimer_enable_timer(const uintptr_t timer_base_addr)
@@ -174,7 +175,8 @@ TEST_FUNCTION(test_gtimer_init_single_die_scp, nullptr, nullptr)
     expect_value(__wrap_system_counter_init, frequency_hz, test_config.frequency_hz);
     expect_value(__wrap_system_counter_init, increment_val, test_config.scaling_factor);
 
-    expect_value(__wrap_gtimer_init, timer_cntrl_addr, test_config.timer_control_base);
+    expect_value(__wrap_gtimer_init_with_freq, timer_cntrl_addr, test_config.timer_control_base);
+    expect_value(__wrap_gtimer_init_with_freq, frequency_hz, test_config.frequency_hz);
     expect_value(__wrap_gtimer_enable_timer, timer_base_addr, test_config.timer_base_address);
 
     expect_value(__wrap_FPFwCoreInterruptRegisterCallback, irqnum, 45);
@@ -202,7 +204,8 @@ TEST_FUNCTION(test_gtimer_init_mcp, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_cpu_type, CPU_MCP);
     //! no sys counter init & d2d counter sync SPI synchronization for MCP
 
-    expect_value(__wrap_gtimer_init, timer_cntrl_addr, test_config.timer_control_base);
+    expect_value(__wrap_gtimer_init_with_freq, timer_cntrl_addr, test_config.timer_control_base);
+    expect_value(__wrap_gtimer_init_with_freq, frequency_hz, test_config.frequency_hz);
     expect_value(__wrap_gtimer_enable_timer, timer_base_addr, test_config.timer_base_address);
 
     expect_value(__wrap_FPFwCoreInterruptRegisterCallback, irqnum, 45);
@@ -235,7 +238,8 @@ TEST_FUNCTION(test_gtimer_init_dual_die_scp, nullptr, nullptr)
     expect_value(__wrap_system_counter_init, frequency_hz, test_config.frequency_hz);
     expect_value(__wrap_system_counter_init, increment_val, test_config.scaling_factor);
 
-    expect_value(__wrap_gtimer_init, timer_cntrl_addr, test_config.timer_control_base);
+    expect_value(__wrap_gtimer_init_with_freq, timer_cntrl_addr, test_config.timer_control_base);
+    expect_value(__wrap_gtimer_init_with_freq, frequency_hz, test_config.frequency_hz);
     expect_value(__wrap_gtimer_enable_timer, timer_base_addr, test_config.timer_base_address);
 
     expect_value(__wrap_FPFwCoreInterruptRegisterCallback, irqnum, 45);

@@ -36,7 +36,7 @@ mock_target(${TARGET}
     idhw_get_die_id
     idhw_is_single_die_boot_en
     system_counter_init
-    gtimer_init
+    gtimer_init_with_freq
     gtimer_enable_timer
     gtimer_set_timer
     gtimer_get_counter

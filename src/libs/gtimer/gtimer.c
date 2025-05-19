@@ -85,7 +85,7 @@ void gtimer_prodfw_init(gtimer_prodfw_init_config_t* config)
         system_counter_init(config->counter_control_base, config->frequency_hz, config->scaling_factor);
     }
     //! Initialize & enable counter for the given device & update frequency
-    gtimer_init(config->timer_control_base);
+    gtimer_init_with_freq(config->timer_control_base, config->frequency_hz);
     gtimer_enable_timer(config->timer_base_address);
 
     fpfw_status_t status = fpfw_tmr_queue_init(&s_timer_queue, gtimer_prodfw_get_counter);

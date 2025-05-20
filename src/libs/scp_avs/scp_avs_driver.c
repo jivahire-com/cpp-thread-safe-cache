@@ -429,6 +429,22 @@ int32_t scp_avs_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER Request)
 
 void scp_avs_driver_initialize(pscp_avs_device Device)
 {
+/*
+Per AVS SPEC Sec 5.6, need 34 1's to sync slave
+*/
+#define AVS_RESYNC_LEN (34)
+
+/* Add some delay between commands and resync */
+#define AVS_RESYNC_GAP (16)
+
+    // Master Prescaler
+    // With i_clk = 200 and n = 3 (n = avs_cfg_default->clk_prescaler)
+    // avs_clk = (i_clk/((n+1)*2)) = 25Mhz
+    const avs_master_cfg_t avs_cfg_default = {.periodic_rsync_en = true,
+                                              .periodic_rsync_len = AVS_RESYNC_LEN,
+                                              .periodic_rsync_gap = AVS_RESYNC_GAP,
+                                              .clk_prescaler = 3};
+
     // Set up the queue for each driver, based on the driver config. Any event that is put on the queue will call scp_avs_dispatch.
     DfwkQueueInitialize(&Device->avs_queue, &Device->Header, scp_avs_dispatch, &Device->Header, DfwkQueueType_SerializedDispatch);
     // Set up the queue for each driver to hold the AVS data read.
@@ -493,7 +509,7 @@ void scp_avs_driver_initialize(pscp_avs_device Device)
         break;
     }
 
-    avs_init((uint32_t)Device->avs_bus_num, NULL);
+    avs_init((uint32_t)Device->avs_bus_num, &avs_cfg_default);
 
     AVS_LOG_INFO("AVS bus num =  %d, IRQ =  %d", Device->avs_bus_num, Device->config.avs_irq);
 

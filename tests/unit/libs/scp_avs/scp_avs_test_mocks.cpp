@@ -76,10 +76,12 @@ void __wrap_avs_enable_interrupt(uint32_t avs_id, uint32_t intr)
     check_expected(intr);
 }
 
-void __wrap_avs_init(uintptr_t avs_base_addr)
+void __wrap_avs_init(uintptr_t avs_base_addr, const avs_master_cfg_t* avs_cfg)
 {
     check_expected(avs_base_addr);
+    check_expected(avs_cfg);
 }
+
 int __wrap_avs_send_cmd_frame(uint32_t avs_id, uint32_t cmd_num, avs_master_command_t* cmd_mem)
 {
     check_expected(avs_id);

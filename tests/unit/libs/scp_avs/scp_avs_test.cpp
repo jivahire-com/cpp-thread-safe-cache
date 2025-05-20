@@ -99,7 +99,10 @@ TEST_FUNCTION(scp_avs0_driver_init_test, test_setup, test_cleanup)
         .avs_bus_num = AVS_BUS0,
     };
 
+    avs_master_cfg_t test_avs_cfg = {.periodic_rsync_en = true, .periodic_rsync_len = 34, .periodic_rsync_gap = 16, .clk_prescaler = 3};
+
     expect_value(__wrap_avs_init, avs_base_addr, test_avs_device.avs_bus_num);
+    expect_memory(__wrap_avs_init, avs_cfg, &test_avs_cfg, sizeof(test_avs_cfg));
 
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_AVS_CTRL_0_INT);
 
@@ -134,7 +137,10 @@ TEST_FUNCTION(scp_avs1_driver_init_test, test_setup, test_cleanup)
         .avs_bus_num = AVS_BUS1,
     };
 
+    avs_master_cfg_t test_avs_cfg = {.periodic_rsync_en = true, .periodic_rsync_len = 34, .periodic_rsync_gap = 16, .clk_prescaler = 3};
+
     expect_value(__wrap_avs_init, avs_base_addr, test_avs_device.avs_bus_num);
+    expect_memory(__wrap_avs_init, avs_cfg, &test_avs_cfg, sizeof(test_avs_cfg));
 
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_AVS_CTRL_1_INT);
 
@@ -169,7 +175,10 @@ TEST_FUNCTION(scp_avs2_driver_init_test, test_setup, test_cleanup)
         .avs_bus_num = AVS_BUS2,
     };
 
+    avs_master_cfg_t test_avs_cfg = {.periodic_rsync_en = true, .periodic_rsync_len = 34, .periodic_rsync_gap = 16, .clk_prescaler = 3};
+
     expect_value(__wrap_avs_init, avs_base_addr, test_avs_device.avs_bus_num);
+    expect_memory(__wrap_avs_init, avs_cfg, &test_avs_cfg, sizeof(test_avs_cfg));
 
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_AVS_CTRL_2_INT);
 
@@ -204,7 +213,10 @@ TEST_FUNCTION(scp_avs3_driver_init_test, test_setup, test_cleanup)
         .avs_bus_num = AVS_BUS3,
     };
 
+    avs_master_cfg_t test_avs_cfg = {.periodic_rsync_en = true, .periodic_rsync_len = 34, .periodic_rsync_gap = 16, .clk_prescaler = 3};
+
     expect_value(__wrap_avs_init, avs_base_addr, test_avs_device.avs_bus_num);
+    expect_memory(__wrap_avs_init, avs_cfg, &test_avs_cfg, sizeof(test_avs_cfg));
 
     expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, HW_INT_AVS_CTRL_3_INT);
 

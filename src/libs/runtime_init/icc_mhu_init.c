@@ -154,6 +154,147 @@ FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_icc_mscp_2_tfa_if};
 }
+//
+// RT MailBox ICC
+//
+#ifdef SCP_RUNTIME_INIT
+FPFW_INIT_COMPONENT(icc_mscp2aprt, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "mesh", "sysinfo"))
+#else
+FPFW_INIT_COMPONENT(icc_mscp2aprt, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "sysinfo"))
+#endif
+{
+    idsw_die_id_t die_id = idsw_get_die_id();
+
+    KNG_CPU_TYPE cpu_id = idsw_get_cpu_type();
+
+    // This component is not needed on MCP. Create the init node anyways to follow existing icc
+    // init patterns.
+    if (cpu_id == CPU_MCP)
+    {
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+
+    static mhu_icc_transport_device_t s_icc_mscp_2_ap_rt_dev = {};
+
+    uintptr_t recv_payload_address =
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_TFA_AP_2_SCP_RT_SEND_BASE);
+    uintptr_t send_payload_address =
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_TFA_AP_2_SCP_RT_RECEIVE_BASE);
+
+    uint32_t recv_ch_id = MHU_INTERFACE_ID(AP_CORE_RT, SCP_LOCAL);
+    uint32_t send_ch_id = MHU_INTERFACE_ID(SCP_LOCAL, AP_CORE_RT);
+
+    if (die_id == DIE_1)
+    {
+        recv_payload_address =
+            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_TFA_AP_2_SCP_RT_SEND_BASE);
+        send_payload_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR +
+                               ARSM_GET_REGION_OFFSET(D1_ARSM_TFA_AP_2_SCP_RT_RECEIVE_BASE);
+    }
+
+    mhu_icc_transport_device_config_t dev_config = {
+        .recv_reset_on_init = system_info_is_warm_start(),
+        .recv_irq_num = HW_INT_AP2MSCP_MHU_RT_INT,
+        .recv_channel =
+            {
+                .mhu_addr = MHU_SCP_AP_RT_REC_BASE_ADDRESS,
+                .ch_id = recv_ch_id,
+                .ch_shared_mem_cacheable = false,
+                .ch_shared_mem_size = D0_ARSM_TFA_AP_2_SCP_RT_RECEIVE_SIZE,
+                .ch_shared_mem_addr = recv_payload_address,
+                .ch_db_config =
+                    {
+                        .channel_num = 0,
+                        .flag_num = 0,
+                    },
+            },
+        .send_channel =
+            {
+                .mhu_addr = MHU_SCP_AP_RT_SEND_BASE_ADDRESS,
+                .ch_id = send_ch_id,
+                .ch_shared_mem_cacheable = false,
+                .ch_shared_mem_size = D0_ARSM_TFA_AP_2_SCP_RT_SEND_SIZE,
+                .ch_shared_mem_addr = send_payload_address,
+                .ch_db_config =
+                    {
+                        .channel_num = 0,
+                        .flag_num = 0,
+                    },
+            },
+        .async_send_retry_period = ASYNC_SEND_RETRY_PERIOD_NS,
+        .async_send_retry_max = ASYNC_SEND_RETRY_MAX,
+    };
+
+    // Initialize the driver framework device
+    fpfw_status_t status = mhu_icc_transport_device_init(&s_icc_mscp_2_ap_rt_dev,
+                                                         &((PDFWK_THREADX_HOST)fpfw_init_get_handle("dfwk"))->Schedule,
+                                                         &dev_config);
+    if (FPFW_STATUS_FAILED(status))
+    {
+        return (fpfw_init_result_t){status, NULL};
+    }
+
+    /* Setup the Interface */
+    static mhu_icc_transport_intrf_t s_icc_mscp_2_ap_rt_if = {};
+
+    status = mhu_icc_transport_interface_init(&s_icc_mscp_2_ap_rt_dev, &s_icc_mscp_2_ap_rt_if);
+    if (FPFW_STATUS_FAILED(status))
+    {
+        return (fpfw_init_result_t){status, NULL};
+    }
+
+    /* Setup the ICC Base Context */
+    static uint8_t s_icc_dispatch_buf_mscp_ap_rt[D0_ARSM_TFA_AP_2_SCP_RT_SEND_SIZE] = {0};
+    static fpfw_icc_base_ctx_t s_icc_base_mscp_ap_rt_ctx;
+    static fpfw_icc_base_config s_icc_base_mscp_ap_rt_cfg = {
+        .transport_interface = &s_icc_mscp_2_ap_rt_if.base_interface,
+        .dispatch_cfg =
+            {
+                .transport_interface = &s_icc_mscp_2_ap_rt_if,
+                .dispatcher_buffer = &s_icc_dispatch_buf_mscp_ap_rt,
+                .dispatcher_buffer_size = sizeof(s_icc_dispatch_buf_mscp_ap_rt),
+                .strategy =
+                    {
+                        .cmd_code =
+                            {
+                                .is_used = true,
+                                .start_pos = ICC_MHU_CMD_BIT_OFFSET,
+                                .size_bits = ICC_MHU_CMD_SIZE_BITS - 1,
+                                .valid_max = UINT32_MAX >> 1,
+                                .valid_min = 0,
+                            },
+                        .seq_num =
+                            {
+                                .is_used = true,
+                                .start_pos = ICC_MHU_TOKEN_BIT_OFFSET,
+                                .size_bits = ICC_MHU_TOKEN_SIZE_BITS - 1,
+                                .valid_max = UINT32_MAX >> 1,
+                                .valid_min = 0,
+                            },
+                    },
+                .match_strategy_cb = mhu_icc_transport_dispatcher_match_cb,
+                .match_strategy_ctx = NULL,
+            },
+        .ctx = NULL,
+        .sync_loop_count = MAX_SYNC_RETRY_COUNT,
+    };
+
+    // Initialize ICC base ctx
+    status = fpfw_icc_base_init(&s_icc_base_mscp_ap_rt_ctx, &s_icc_base_mscp_ap_rt_cfg);
+    if (FPFW_STATUS_FAILED(status))
+    {
+        return (fpfw_init_result_t){status, NULL};
+    }
+
+    // start the dispatcher to receive data
+    status = fpfw_icc_dispatcher_start(&s_icc_base_mscp_ap_rt_ctx.dispatch_ctx);
+    if (FPFW_STATUS_FAILED(status))
+    {
+        return (fpfw_init_result_t){status, NULL};
+    }
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_icc_base_mscp_ap_rt_ctx};
+}
 
 FPFW_INIT_COMPONENT(icc_mscp2mscp, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "sysinfo"))
 {

@@ -23,7 +23,7 @@
 /*------------- Functions ----------------*/
 
 FPFW_INIT_COMPONENT(icc_cli,
-                    FPFW_INIT_DEPENDENCIES("cli", "icc_hspmbx", "icc_d2dmbx", "icc_sdm_mbx", "icc_cded_mbx", "icc_mscp2mscp", "icc_mscp2apns", "icc_die2die"))
+                    FPFW_INIT_DEPENDENCIES("cli", "icc_hspmbx", "icc_d2dmbx", "icc_sdm_mbx", "icc_cded_mbx", "icc_mscp2mscp", "icc_mscp2apns", "icc_die2die", "icc_mscp2aprt"))
 {
     static icc_cli_init_params_t icc_cli_params;
     //! set the available transport interfaces
@@ -34,7 +34,7 @@ FPFW_INIT_COMPONENT(icc_cli,
     icc_cli_params.icc_base_ctx[ICC_CLI_MSCP_MHU] = fpfw_init_get_handle("icc_mscp2mscp");
     icc_cli_params.icc_base_ctx[ICC_CLI_AP_NS_MHU] = fpfw_init_get_handle("icc_mscp2apns");
     icc_cli_params.icc_base_ctx[ICC_CLI_AP_S_MHU] = NULL;
-    icc_cli_params.icc_base_ctx[ICC_CLI_AP_RT_MHU] = NULL;
+    icc_cli_params.icc_base_ctx[ICC_CLI_AP_RT_MHU] = fpfw_init_get_handle("icc_mscp2aprt");
     icc_cli_params.icc_base_ctx[ICC_CLI_AP_RL_MHU] = NULL;
     icc_cli_params.icc_base_ctx[ICC_CLI_D2D_MHU] = fpfw_init_get_handle("icc_die2die");
 

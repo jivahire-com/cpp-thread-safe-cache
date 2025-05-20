@@ -28,7 +28,7 @@ parameters:
   type: string
   default: RDU-120015-DH6
   values:
-  - RDU-120015-DH3 (Only for URGENT Debug)
+  - RDU-120015-DH3
   - RDU-120015-DE3
   - RDU-120015-DH5
   - RDU-120015-DH6
@@ -38,7 +38,7 @@ parameters:
   - RDU-120015-DH13
   - RDU-120015-DF2
   - RDU-120015-DF5
-  - RDU-120015-DF8 (Only for URGENT Debug)
+  - RDU-120015-DF8
   - RDU-120015-DF11
   - RDU-120015-DF14
 

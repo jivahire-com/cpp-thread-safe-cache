@@ -109,9 +109,10 @@ class dcp_commands:
 
         byte_response = src_endpoint.send_dcp_message(dest_die=dest_die, dest_cpu=dest_cpu, client_id=client_id, dcp_msg=dcp_msg_bytes)
         response_dcp_msg_hdr = dcp_msg_hdr_t.from_buffer_copy(byte_response)
+        msg_status = data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status)
 
-        if not dcp_commands.validate_response(data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status), logger):
-            raise ValueError(f"Message Error: {data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status).name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
+        if not dcp_commands.validate_response(msg_status, logger):
+            raise ValueError(f"Message Error: {msg_status.name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
 
     # Using * in the method definition to enforce named parameters
     @staticmethod
@@ -145,9 +146,10 @@ class dcp_commands:
 
         byte_response = src_endpoint.send_dcp_message(dest_die=dest_die, dest_cpu=dest_cpu, client_id=client_id, dcp_msg=dcp_msg_bytes)
         response_dcp_msg_hdr = dcp_msg_hdr_t.from_buffer_copy(byte_response)
+        msg_status = data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status)
 
-        if not dcp_commands.validate_response(data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status), logger):
-            raise ValueError(f"Message Error: {data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status).name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
+        if not dcp_commands.validate_response(msg_status, logger):
+            raise ValueError(f"Message Error: {msg_status.name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
 
     @staticmethod
     def client_get_state(*,src_endpoint: trp_endpoint, dest_die: int, dest_cpu: transfer_relay_protocol.cpu_type, client_id: data_collection_protocol.mts_client_id_t) -> str:
@@ -172,15 +174,55 @@ class dcp_commands:
 
         byte_response = src_endpoint.send_dcp_message(dest_die=dest_die, dest_cpu=dest_cpu, client_id=client_id, dcp_msg=dcp_msg_bytes)
         response_dcp_msg_hdr = dcp_msg_hdr_t.from_buffer_copy(byte_response)
+        msg_status = data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status)
 
-        if not dcp_commands.validate_response(data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status), logger):
-            raise ValueError(f"Message Error: {data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status).name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
+        if not dcp_commands.validate_response(msg_status, logger):
+            raise ValueError(f"Message Error: {msg_status.name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
 
         client_payload = data_collection_protocol.client_get_state_msg.dcp_msg_get_client_state_t.from_buffer_copy(byte_response[ctypes.sizeof(dcp_msg_hdr_t):])
 
         state = data_collection_protocol.client_get_state_msg.dcp_client_state_t(client_payload.state)
         logger.debug(f"Client state = : {state.name}")
         return state
+    
+    @staticmethod
+    def client_get_manifest(*,src_endpoint: trp_endpoint, dest_die: int, dest_cpu: transfer_relay_protocol.cpu_type, client_id: data_collection_protocol.mts_client_id_t) -> str:
+        """Manifest data from client
+        Args:
+            src_endpoint: endpoint that message is sent from
+            dest_die: Destination die
+            dest_cpu: Destination CPU
+            client_id: Client identifier
+        Returns:
+            msg_status
+            manifest_rsp
+        """
+        # Create complete message with client_id
+        dcp_msg_bytes = dcp_commands.create_header(
+            data_collection_protocol.dcp_msg_id_t.DCP_MSG_ID_GET_MANIFEST,
+            0,
+            client_id
+        )
+
+        # Log raw message for debugging
+        logger.debug("Sending client_get_manifest message")
+
+        byte_response = src_endpoint.send_dcp_message(dest_die=dest_die, dest_cpu=dest_cpu, client_id=client_id, dcp_msg=dcp_msg_bytes)
+        response_dcp_msg_hdr = dcp_msg_hdr_t.from_buffer_copy(byte_response)
+
+        msg_status = data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status)
+
+        logger.debug("Message Status for client_get_manifest : {msg_status}")
+
+        if not dcp_commands.validate_response(msg_status, logger):
+            raise ValueError(f"Message Error: {msg_status.name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
+        
+        manifest_rsp = None
+        manifest_rsp = data_collection_protocol.client_get_manifest_msg.dcp_msg_get_manifest_t.from_buffer_copy(byte_response[ctypes.sizeof(dcp_msg_hdr_t):])
+        logger.debug(f"Response for client_get_manifest : {manifest_rsp}")
+
+        return msg_status, manifest_rsp
+
 
     @staticmethod
     def client_read_data(*,src_endpoint: trp_endpoint, dest_die: int, dest_cpu: transfer_relay_protocol.cpu_type, client_id: data_collection_protocol.mts_client_id_t) -> str:
@@ -208,14 +250,10 @@ class dcp_commands:
 
         msg_status = data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status)
 
-        if not dcp_commands.validate_response(data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status), logger):
-            if msg_status != data_collection_protocol.dcp_status_t.DATA_COLLECTION_E_BUSY:
-                raise ValueError(f"Message Error: {data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status).name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
-            else:
-                return msg_status, None
+        if not dcp_commands.validate_response(msg_status, logger):
+            raise ValueError(f"Message Error: {data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status).name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
 
         read_data_rsp = None
-
         if(msg_status == data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_VALID_MORE or msg_status == data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_VALID_LAST):
             read_data_rsp = data_collection_protocol.client_read_data_msg.dcp_msg_read_data_t.from_buffer_copy(byte_response[ctypes.sizeof(dcp_msg_hdr_t):])
 
@@ -258,7 +296,6 @@ class dcp_commands:
         if not dcp_commands.validate_response(msg_status, logger):
             raise ValueError(f"Message Error: {msg_status.name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
 
-
         return msg_status
 
     @staticmethod
@@ -286,10 +323,12 @@ class dcp_commands:
         response_dcp_msg_hdr = dcp_msg_hdr_t.from_buffer_copy(byte_response)
 
         msg_status = data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status)
+        logger.info(f"Msg header for reset {response_dcp_msg_hdr} and status {msg_status}")
 
-        if not dcp_commands.validate_response(data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status), logger):
-            raise ValueError(f"Message Error: {data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status).name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
+        if not dcp_commands.validate_response(msg_status, logger):
+            raise ValueError(f"Message Error: {msg_status.name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
 
+        return msg_status
 
     @staticmethod
     def validate_response(response: data_collection_protocol.dcp_status_t, logger: Optional[logging.Logger] = None) -> bool:

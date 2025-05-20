@@ -148,7 +148,23 @@ class data_collection_protocol:
                 self.rd_data_addr_offset = rd_data_addr_offset
                 self.rd_data_size = rd_data_size
                 self.crc = crc
+    
+    class client_get_manifest_msg:
 
+        class dcp_msg_get_manifest_t(ctypes.LittleEndianStructure):
+            """CLIENT_GET_MANIFEST message format as per protocol spec"""
+            _pack_ = 1  # Force no padding
+            _fields_ = [
+                ("physical_start_addr", ctypes.c_uint64),
+                ("start_addr_offset", ctypes.c_uint64),
+                ("total_size", ctypes.c_uint64)
+            ]
+
+            def __init__(self, physical_start_addr: ctypes.c_uint64, start_addr_offset: ctypes.c_uint64, total_size: ctypes.c_uint64):
+                super().__init__()
+                self.physical_start_addr = physical_start_addr
+                self.start_addr_offset = start_addr_offset
+                self.total_size = total_size
 
     class client_read_data_complete_msg:
 

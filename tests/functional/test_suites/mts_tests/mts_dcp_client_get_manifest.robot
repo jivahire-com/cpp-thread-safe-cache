@@ -3,7 +3,7 @@
 *** Settings ***
 Documentation    Verifies Message Transfer System (MTS) Data Collection Protocol (DCP) functionality.
 ...
-...    This robot test verifies the MTS library functionality by:
+...    This robot test verifies the [DCP] CLIENT_GET_MANIFEST functionality by:
 ...    1. Testing the DCP commands
 ...    2. Verifying command responses
 ...    3. Validating proper setup and teardown of test environment
@@ -31,15 +31,15 @@ Teardown Test Environment
     Run Keyword And Ignore Error    Call Method    ${test_lib}    teardown
 
 *** Test Cases ***
-Test Case - MTS Client Start Stop Test
-    [Documentation]    Verifies MTS client start and stop command functionality.
+Test Case - [DCP] CLIENT_GET_MANIFEST Test
+    [Documentation]    Verifies MTS client get manifest command functionality.
     ...
     ...    Test Steps:
 
-    [Tags]    ssi    ssi_mts_event_start_stop    mts    mts_client    TEST_CASE_ID:2356228
+    [Tags]    ssi    ssi_mts_event_get_manifest    mts    mts_client    TEST_CASE_ID:2572755
 
     ${test_lib} =    Get Library Instance    mts_dcp_test_lib
-    Log To Console    \nExecuting MTS Client Start/Stop Test...
-    ${test_result} =    Call Method    ${test_lib}    test_client_start_stop
+    Log To Console    \nExecuting CLIENT_GET_MANIFEST Test...
+    ${test_result} =    Call Method    ${test_lib}    test_client_get_manifest
 
     Should be True    ${test_result}

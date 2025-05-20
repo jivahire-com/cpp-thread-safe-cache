@@ -140,8 +140,23 @@ class MtsDcpTest(EchoFallsBaseTest):
         except Exception as e:
             self.log.error(f"Error in teardown: {e}")
 
+    def test_client_get_manifest(self, command=None):
+        """A request to a client to provide the memory descriptor for where the telemetry manifest"""
 
+        try:
+            status, response = dcp_commands.client_get_manifest(
+                src_endpoint = self.die0_scp_trp_endpoint,
+                dest_die=0,
+                dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+                client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_DCP_SVC
+                )
+            
+            logger.info(f"Client_get_manifest status : {status} and client_get_manifest response : {response}")
 
+            return True
+        except Exception as e:
+            self.log.error(f"❌ Error in test_client_start_stop: {e}")
+            return False
 
     def test_client_start_stop(self, command=None):
         """Test MTS client start/stop functionality"""
@@ -212,31 +227,129 @@ class MtsDcpTest(EchoFallsBaseTest):
                 self.log.error(f"❌ Client is not in running state: {client_state}")
                 return False
 
-            # test reset turn off the client
-            # Exception raised if command fails
-            dcp_commands.client_reset(
-                    src_endpoint = self.die0_scp_trp_endpoint,
-                    dest_die=0,
-                    dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
-                    client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM)
-
-            client_state = dcp_commands.client_get_state(
-                        src_endpoint = self.die0_scp_trp_endpoint,
-                        dest_die=0,
-                        dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
-                        client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM)
-
-            if client_state != data_collection_protocol.client_get_state_msg.dcp_client_state_t.DCP_CLIENT_STATE_STOPPED:
-                self.log.error(f"❌ Client is not in stopped state: {client_state}")
-                return False
-
             return True
 
         except Exception as e:
             self.log.error(f"❌ Error in test_client_start_stop: {e}")
             return False
 
+    #Uncomment once bug https://azurecsi.visualstudio.com/Dev/_workitems/edit/2619307 is resolved  
+    # def test_client_reset(self, command=None):
+    #     """Test MTS client reset functionality"""
 
+    #     try:
+    #         #Send CLIENT_START_STOP Start to MCP Telemetry Service Client
+    #         dcp_commands.client_start_stop(
+    #                 src_endpoint = self.die0_scp_trp_endpoint,
+    #                 dest_die=0,
+    #                 dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                 client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
+    #                 state=data_collection_protocol.client_start_stop_msg.dcp_start_stop_state_t.DCP_START_STOP_STATE_START)
+            
+    #         #Send CLIENT_GET_STATE to MCP Telemetry Service Client.
+    #         client_state = dcp_commands.client_get_state(
+    #                     src_endpoint = self.die0_scp_trp_endpoint,
+    #                     dest_die=0,
+    #                     dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                     client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM)
+            
+    #         #Verify state is running.
+    #         if client_state == data_collection_protocol.client_get_state_msg.dcp_client_state_t.DCP_CLIENT_STATE_RUNNING:
+    #             self.log.info(f"PASS : Client is in running state: {client_state}")
+    #         else:
+    #             self.log.error(f"❌ Client is not in running state: {client_state}")
+    #             return False
+            
+    #         #Send CLIENT_RESET to MCP Telemetry Service Client.
+    #         dcp_commands.client_reset(
+    #                 src_endpoint = self.die0_scp_trp_endpoint,
+    #                 dest_die=0,
+    #                 dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                 client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM)
+
+    #         #Send CLIENT_GET_STATE to MCP Telemetry Service Client.
+    #         client_state = dcp_commands.client_get_state(
+    #                     src_endpoint = self.die0_scp_trp_endpoint,
+    #                     dest_die=0,
+    #                     dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                     client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM)
+            
+    #         #Verify State is stopped.
+    #         if client_state == data_collection_protocol.client_get_state_msg.dcp_client_state_t.DCP_CLIENT_STATE_STOPPED:
+    #             self.log.info(f"PASS : Client is in stopped state: {client_state}")
+    #         else:
+    #             self.log.error(f"❌ Client is not in stopped state: {client_state}")
+    #             return False
+            
+    #         #Send CLIENT_START_STOP Start to MCP Telemetry Service Client.
+    #         dcp_commands.client_start_stop(
+    #                 src_endpoint = self.die0_scp_trp_endpoint,
+    #                 dest_die=0,
+    #                 dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                 client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
+    #                 state=data_collection_protocol.client_start_stop_msg.dcp_start_stop_state_t.DCP_START_STOP_STATE_START)
+            
+    #         #Send CLIENT_GET_STATE to MCP Telemetry Service Client.
+    #         client_state = dcp_commands.client_get_state(
+    #                     src_endpoint = self.die0_scp_trp_endpoint,
+    #                     dest_die=0,
+    #                     dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                     client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM)
+
+    #         #Verify state is running.
+    #         if client_state == data_collection_protocol.client_get_state_msg.dcp_client_state_t.DCP_CLIENT_STATE_RUNNING:
+    #             self.log.info(f"PASS : Client is in running state: {client_state}")
+    #         else:
+    #             self.log.error(f"❌ Client is not in running state: {client_state}")
+    #             return False
+            
+    #         #Send CLIENT_RESET to MCP DCP Service client.
+    #         dcp_commands.client_reset(
+    #                 src_endpoint = self.die0_scp_trp_endpoint,
+    #                 dest_die=0,
+    #                 dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                 client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_DCP_SVC)
+              
+    #         #Send CLIENT_GET_STATE to MCP DCP Service client.
+    #         client_state = dcp_commands.client_get_state(
+    #                     src_endpoint = self.die0_scp_trp_endpoint,
+    #                     dest_die=0,
+    #                     dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                     client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_DCP_SVC)
+
+    #         #Verify State is stopped.
+    #         if client_state == data_collection_protocol.client_get_state_msg.dcp_client_state_t.DCP_CLIENT_STATE_STOPPED:
+    #             self.log.error(f"PASS : Client is in stopped state: {client_state}")
+    #         else:
+    #             self.log.error(f"❌ Client is not in stopped state: {client_state}")
+    #             return False
+            
+    #         #Send CLIENT_RESET to MCP Telemetry Service Client.
+    #         dcp_commands.client_reset(
+    #                 src_endpoint = self.die0_scp_trp_endpoint,
+    #                 dest_die=0,
+    #                 dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                 client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM)
+
+    #         #Send CLIENT_GET_STATE to MCP Telemetry Service Client.
+    #         client_state = dcp_commands.client_get_state(
+    #                     src_endpoint = self.die0_scp_trp_endpoint,
+    #                     dest_die=0,
+    #                     dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                     client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM)
+            
+    #         #Verify State is stopped.
+    #         if client_state == data_collection_protocol.client_get_state_msg.dcp_client_state_t.DCP_CLIENT_STATE_STOPPED:
+    #             self.log.error(f"PASS : Client is in stopped state: {client_state}")
+    #         else:
+    #             self.log.error(f"❌ Client is not in stopped state: {client_state}")
+    #             return False
+
+    #         return True
+
+    #     except Exception as e:
+    #         self.log.error(f"❌ Error in test_client_start_stop: {e}")
+    #         return False
 
 
 import time

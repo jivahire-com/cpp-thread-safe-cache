@@ -1082,6 +1082,12 @@ size_t get_dimm_part_number_string(const uint8_t* spd_buff, char* buffer, size_t
     memcpy(buffer, &spd_buff[PARTNUM_SPD_OFFSET - START_OF_VENDOR_INFO], PARTNUM_NUMBYTES);
     buffer[PARTNUM_NUMBYTES] = '\0';
     trim_trailing_whitespace(buffer, PARTNUM_NUMBYTES);
+
+    if (strlen(buffer) == 0)
+    {
+        return snprintf(buffer, bufferSize, "N/A");
+    }
+
     return strlen(buffer);
 }
 

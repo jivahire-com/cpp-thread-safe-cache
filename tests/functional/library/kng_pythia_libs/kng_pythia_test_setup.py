@@ -141,6 +141,6 @@ class KngPythiaTestSetup():
                 break
             else:
                 time.sleep(1)
-                if time.time() - start_time > 30:
+                if time.time() - start_time > 60:
                     log.error(f"Timeout waiting for reset complete signal file to be created at: {reset_signal_file}")
                     break

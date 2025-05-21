@@ -28,6 +28,10 @@
 #define MCP_EXP_RAM0_ADDRESS (MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM0_ADDRESS)
 #define MCP_EXP_RAM1_ADDRESS (MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM1_ADDRESS)
 
+// This is the workaround until HSP handles warm reset after crash dump collection.
+// Please remove this flag and the code guarded by it after HSP handles warm reset after crash dump collection.
+#define WORKAROUND_HSP_WARM_RESET_REQ 1
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -113,3 +117,12 @@ FPFW_INIT_COMPONENT(cd_mhu_loc, FPFW_INIT_DEPENDENCIES("cd_init", "icc_mscp2mscp
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
+
+#ifdef WORKAROUND_HSP_WARM_RESET_REQ
+FPFW_INIT_COMPONENT(cd_hsp, FPFW_INIT_DEPENDENCIES("cd_init", "icc_hspmbx"))
+{
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_HSP, fpfw_init_get_handle("icc_hspmbx"));
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+#endif

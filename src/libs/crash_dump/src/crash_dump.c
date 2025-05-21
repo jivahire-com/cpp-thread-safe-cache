@@ -182,6 +182,13 @@ void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p
                 CRASH_DUMP_ET_INFO(CRASH_DUMP_ET_TYPE_CD_CRASH);
             }
         }
+
+        // Make warm reset request to HSP once all crash dumps are done
+        if (config_get_crash_dump_warm_reset())
+        {
+            crash_dump_request_hsp_warm_reset();
+            CRASH_DUMP_ET_INFO(CRASH_DUMP_ET_TYPE_CD_HSP_RESET);
+        }
     }
 }
 

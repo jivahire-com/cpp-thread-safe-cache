@@ -22,6 +22,12 @@
 void crash_dump_remote_trigger();
 
 /**
+ * @brief Requests HSP to perform a warm reset.
+ * 
+ */
+void crash_dump_request_hsp_warm_reset();
+
+/**
  * @brief Transfers full crash dump to BMC.
  * 
  */

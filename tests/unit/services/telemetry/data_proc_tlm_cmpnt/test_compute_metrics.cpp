@@ -147,33 +147,20 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_current, test_setup, test_teardo
 // Unit test for  comp_metrics_for_single_core_voltage
 TEST_FUNCTION(test_comp_metrics_for_single_core_voltage, test_setup, test_teardown)
 {
+    // Feed a few values into the core power computation and validate the results
     uint8_t core_id = 0;
-    uint32_t time_diff_uS = 100;
-    uint32_t residency_uS = 200;
+    uint16_t test_values_mV[5] = {180, 200, 300, 400, 500};
 
-    // Test case: Initial values
-    core[core_id].voltage.min_mV = 0;
-    core[core_id].voltage.max_mV = 0;
-    core[core_id].voltage.average_mV = 0;
-    core[core_id].voltage.latest_value_mV = 1200;
-    comp_metrics_for_single_core_voltage(core_id, time_diff_uS, residency_uS);
-    assert_int_equal(core[core_id].voltage.min_mV, 1200);
-    assert_int_equal(core[core_id].voltage.max_mV, 1200);
-    assert_int_equal(core[core_id].voltage.average_mV, 1200); // First time no average value to we assign 1200.
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        comp_metrics_for_single_core_voltage(core_id, test_values_mV[i]);
+    }
 
-    // Test case: Update with new latest value
-    core[core_id].voltage.latest_value_mV = 1300;
-    comp_metrics_for_single_core_voltage(core_id, time_diff_uS, residency_uS);
-    assert_int_equal(core[core_id].voltage.min_mV, 1200);
-    assert_int_equal(core[core_id].voltage.max_mV, 1300);
-    assert_int_equal(core[core_id].voltage.average_mV, 1250); // (1200 + 1300) / 2
-
-    // Test case: Update with lower latest value
-    core[core_id].voltage.latest_value_mV = 1100;
-    comp_metrics_for_single_core_voltage(core_id, time_diff_uS, residency_uS);
-    assert_int_equal(core[core_id].voltage.min_mV, 1100);
-    assert_int_equal(core[core_id].voltage.max_mV, 1300);
-    assert_int_equal(core[core_id].voltage.average_mV, 1175); // (1250 + 1100) / 2
+    // Check the results
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].voltage_mV.min, 180);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].voltage_mV.max, 500);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].voltage_mV.running_avg.average, 316);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].voltage_mV.running_avg.num_samples, 5);
 }
 
 // Unit test for  comp_metrics_for_single_core_temperature
@@ -363,49 +350,28 @@ TEST_FUNCTION(test_comp_metrics_for_single_soc_temp_sensor, test_setup, test_tea
     assert_int_equal(soc_info.sensor_temp[pvt_index].latest_value_dC, 65);
 }
 
-TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm, test_setup, test_teardown)
+TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm_temp, test_setup, test_teardown)
 {
 
-    sensor_ram_dimm_info_t dimm_info = {
-        .timestamp = 2000,
-        .dimm_temp_s0_dC = 260,
-        .dimm_temp_s1_dC = 280,
-        .dimm_power_mW = 100,
-        .dimm_id = 0,
-        .dimm_throttling = 0,
-        .dimm_memory_frequency_id = 0,
+    uint8_t dimm_id = 0;
+    uint16_t test_values_dC[5][2] = {
+        {180, 300},
+        {190, 310},
+        {200, 320},
+        {210, 330},
+        {220, 340},
     };
-    soc_dimm.previous_soc_dimm_timestamp_uS = 1000;
-    soc_dimm.residency_uS = 5000;
 
-    uint8_t dimm_module_index = dimm_info.dimm_id;
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        comp_metrics_for_single_soc_dimm_temp(dimm_id, test_values_dC[i][0], test_values_dC[i][1]);
+    }
 
-    // Initialize soc_info with some test values
-    soc_dimm.dimm_temp[dimm_module_index].s0.min_dC = 80;
-    soc_dimm.dimm_temp[dimm_module_index].s0.max_dC = 90;
-    soc_dimm.dimm_temp[dimm_module_index].s0.average_dC = 0;
-    soc_dimm.dimm_temp[dimm_module_index].s0.latest_value_dC = 100;
+    // Check the results
 
-    soc_dimm.dimm_temp[dimm_module_index].s1.min_dC = 90;
-    soc_dimm.dimm_temp[dimm_module_index].s1.max_dC = 100;
-    soc_dimm.dimm_temp[dimm_module_index].s1.average_dC = 0;
-    soc_dimm.dimm_temp[dimm_module_index].s1.latest_value_dC = 20;
-
-    // Baseline log
-    data_smpl_parse_dimm_entry(&dimm_info);
-
-    // Call the function to be tested
-    comp_metrics_for_single_soc_dimm(&dimm_info);
-
-    // Add assertions to verify the expected behavior
-    assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s0.latest_value_dC, 260);
-    assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s1.latest_value_dC, 280);
-
-    assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s0.min_dC, 80);
-    assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s1.min_dC, 90);
-
-    assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s0.max_dC, 260);
-    assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s1.max_dC, 280);
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s0_dC.min, 180);
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s0_dC.max, 220);
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s0_dC.running_avg.average, 200);
 }
 
 TEST_FUNCTION(test_comp_metrics_for_single_core_pstate, test_setup, test_teardown)

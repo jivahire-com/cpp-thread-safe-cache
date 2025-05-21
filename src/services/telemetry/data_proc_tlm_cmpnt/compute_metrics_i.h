@@ -31,7 +31,14 @@
 typedef struct
 {
     mma_u16_t power_mW;
+    mma_u16_t voltage_mV;
 } computed_per_core_metrics_t;
+
+typedef struct
+{
+    mma_u16_t temperature_s0_dC;
+    mma_u16_t temperature_s1_dC;
+} computed_per_dimm_metrics_t;
 
 typedef struct
 {
@@ -45,7 +52,7 @@ typedef struct
 
 typedef struct
 {
-    uint16_t stub_metric;
+    computed_per_dimm_metrics_t dimm[NUMBER_OF_DIMM_MODULES];
 } computed_per_soc_metrics_t;
 
 typedef struct {
@@ -136,10 +143,10 @@ void comp_metrics_for_single_core_current(uint8_t core_id, uint32_t time_diff_uS
  * on the provided time difference and residency time
  *
  * @param[in] core_id  core for which the current values are being updated.
- * @param[in] time_diff_uS  time_diff_uS: The time difference in microseconds between the current and previous measurements.
- * @param[in] residency_uS  The total residency time in microseconds over which the average is calculated.
+ * @param[in] latest_value_mV latest value of the core voltage from telmetry packet.
+ * 
  */
-void comp_metrics_for_single_core_voltage(uint8_t core_id, uint32_t time_diff_uS, uint32_t residency_uS);
+void comp_metrics_for_single_core_voltage(uint8_t core_id, uint16_t latest_value_mV);
 
 /**
  * @brief    function updates the minimum, maximum, and average temperature values for
@@ -237,9 +244,11 @@ void comp_metrics_for_single_soc_temp_sensor(uint8_t pvt_index, uint32_t time_di
  * It updates the temperature data for both S0 and S1 sensors of the DIMM module. It utilizes
  * the data_util_calc_mma_res function to perform the calculations.
  *
- * @param[in] dimm_info sensor_ram_dimm_info_t - SCF RAM formatted resource for dimm
+ * @param[in] dimm_id - dimm_id from SCF RAM  
+ * @param[in] latest_dimm_temp_s0_dC - latest temp for S0 in dC
+ * @param[in] latest_dimm_temp_s1_dC - latest temp for S1 in dC
  */
-void comp_metrics_for_single_soc_dimm(sensor_ram_dimm_info_t* dimm_info);
+void comp_metrics_for_single_soc_dimm_temp(uint8_t dimm_id, uint16_t latest_dimm_temp_s0_dC, uint16_t latest_dimm_temp_s1_dC );
 
 
 /**

@@ -217,4 +217,3 @@ TEST_FUNCTION(test_data_util_calc_mma_u16, test_setup, test_teardown)
     assert_int_equal(mma.min, 50);
     assert_int_equal(mma.max, 150);
 }
-

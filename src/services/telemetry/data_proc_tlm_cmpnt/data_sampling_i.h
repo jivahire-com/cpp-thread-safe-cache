@@ -122,7 +122,7 @@ typedef struct {
     pwr_cstate_t cstate[NUMBER_OF_CSTATES];
     pwr_core_element_throttle_t throttle_info[NUMBER_OF_THROTTLE_TYPES];
     pwr_core_element_rack_priorities_t priorities[NUMBER_OF_RACK_PRIORITIES];
-    voltage_t voltage;
+    uint16_t latest_voltage_mV;
     current_t current;
     uint16_t latest_power_mW;
     temperature_t temperature;
@@ -225,9 +225,9 @@ void data_smpl_parse_tile_temperature_entry(tile_temp_t* temperature_data, uint8
  * @param[in] voltage_data - SCF RAM formatted resource for voltage packets
  * @param[in] tile_index - index to the tile id being referenced by the entry
  *
- * @return None
+ * @return true if valid
  */
-void data_smpl_parse_tile_voltage_entry(tile_voltage_t* voltage_data, uint8_t tile_index);
+bool data_smpl_parse_tile_voltage_entry(tile_voltage_t* voltage_data, uint8_t tile_index);
 
 /**
  * @brief Internal API to log core currents and power
@@ -271,9 +271,9 @@ void data_smpl_parse_pvt_temperature_entry(soc_pvt_temp_t* pvt_temperature);
  *
  * @param[in] sensor_ram_dimm_info_t - SCF RAM formatted resource for dimm
  *
- * @return None
+ * @return true if valid
  */
-void data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info);
+bool  data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info);
 
 /**
  * @brief Internal API to log pstate telemetry packets, for pstate, cstate and throttling info

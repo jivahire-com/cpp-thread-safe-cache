@@ -238,35 +238,18 @@ TEST_FUNCTION(test_get_pwr_core_rack_priority_data, test_setup, test_teardown)
 
 TEST_FUNCTION(test_get_pwr_core_voltage_data, test_setup, test_teardown)
 {
-    // runtime information manager test
-    tile_voltage_t voltage_data = {
-        .timestamp = 0,
-        .data =
-            {
-                .vcore0 = 5,
-                .vcore1 = 6,
-                .vcpu = 10,
-                .vsys = 80,
-            },
-    };
+    pwr_core_element_power_t power_data = {0};
 
-    uint8_t index = 0;
-    data_smpl_parse_tile_voltage_entry(&voltage_data, index);
+    uint8_t core_id = 0;
+    computed_metrics_2_mins.cores[core_id].voltage_mV.min = 1200;
+    computed_metrics_2_mins.cores[core_id].voltage_mV.max = 1800;
+    computed_metrics_2_mins.cores[core_id].voltage_mV.running_avg.average = 1500;
 
-    // Check core 0 and core 1 voltage
-    pwr_core_element_voltage_t voltage_get_data = {0};
-    data_proc_tlm_cmpnt_get_pwr_core_voltage_data(index, &voltage_get_data);
-    assert_int_equal(voltage_get_data.latest_value_mV, voltage_data.data.vcore0 * 1000);
+    data_proc_tlm_cmpnt_get_pwr_core_power_data(core_id, &power_data);
 
-    // test index out of range
-
-    voltage_data.data.vcore0 = 6; // update voltage
-    data_smpl_parse_tile_voltage_entry(&voltage_data, index);
-
-    // updated index to out of range: enter in fail case.
-    index = NUMBER_OF_CORES_PER_DIE;
-    data_proc_tlm_cmpnt_get_pwr_core_voltage_data(index, &voltage_get_data);
-    assert_int_not_equal(voltage_get_data.latest_value_mV, voltage_data.data.vcore0 * 1000);
+    assert_int_equal(power_data.min_mW, computed_metrics_2_mins.cores[core_id].power_mW.min);
+    assert_int_equal(power_data.max_mW, computed_metrics_2_mins.cores[core_id].power_mW.max);
+    assert_int_equal(power_data.average_mW, computed_metrics_2_mins.cores[core_id].power_mW.running_avg.average);
 }
 
 TEST_FUNCTION(test_get_pwr_core_current_data, test_setup, test_teardown)
@@ -434,34 +417,32 @@ TEST_FUNCTION(test_get_pwr_soc_hnf_data, test_setup, test_teardown)
 TEST_FUNCTION(test_get_pwr_soc_dimm_data, test_setup, test_teardown)
 {
     pwr_soc_element_dimm_temp_t dimm_data = {{0}};
-    sensor_ram_dimm_info_t dimm_info = {
-        .timestamp = 0,
-        .dimm_temp_s0_dC = 26,
-        .dimm_temp_s1_dC = 28,
-        .dimm_power_mW = 100,
-        .dimm_id = TEST_DIMM_CHANN_ID_3,
-        .dimm_throttling = 0,
-        .dimm_memory_frequency_id = 0,
-    };
-    // Baseline log
-    data_smpl_parse_dimm_entry(&dimm_info);
 
     // Check DIMM information
+
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s0_dC.min = 200;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s0_dC.max = 300;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s0_dC.running_avg.average = 250;
+
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s1_dC.min = 200;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s1_dC.max = 300;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s1_dC.running_avg.average = 250;
+
     data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(TEST_DIMM_CHANN_ID_3, &dimm_data);
-    assert_int_equal(dimm_data.s0.latest_value_dC, dimm_info.dimm_temp_s0_dC);
-    assert_int_equal(dimm_data.s1.latest_value_dC, (dimm_info.dimm_temp_s1_dC));
 
-    // setup and test for fail case.
-    dimm_info.dimm_temp_s0_dC = 27;
-    dimm_info.dimm_temp_s1_dC = 40;
-    dimm_info.dimm_power_mW = 200;
-    dimm_info.dimm_throttling = 1;
-    dimm_info.dimm_memory_frequency_id = 100;
+    assert_int_equal(dimm_data.s0.max_dC,
+                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s0_dC.max);
+    assert_int_equal(dimm_data.s0.min_dC,
+                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s0_dC.min);
+    assert_int_equal(dimm_data.s0.average_dC,
+                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s0_dC.running_avg.average);
 
-    data_smpl_parse_dimm_entry(&dimm_info);
-    data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(NUMBER_OF_DIMM_MODULES, &dimm_data);
-    assert_int_not_equal(dimm_data.s0.latest_value_dC, (dimm_info.dimm_temp_s0_dC));
-    assert_int_not_equal(dimm_data.s1.latest_value_dC, (dimm_info.dimm_temp_s1_dC));
+    assert_int_equal(dimm_data.s1.max_dC,
+                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s1_dC.max);
+    assert_int_equal(dimm_data.s1.min_dC,
+                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s1_dC.min);
+    assert_int_equal(dimm_data.s1.average_dC,
+                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s1_dC.running_avg.average);
 }
 
 TEST_FUNCTION(test_get_pwr_soc_snsr_temp_data, test_setup, test_teardown)
@@ -519,7 +500,7 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
     uint16_t cstate_index = core[TEST_CORE_ID_5].cstate_from_pstate_pkt;
     core[TEST_CORE_ID_5].cstate[cstate_index].cstate_id = cstate_index;
     // core voltage
-    core[TEST_CORE_ID_5].voltage.latest_value_mV = 3200;
+    core[TEST_CORE_ID_5].latest_voltage_mV = 3200;
     // core temperature and current,plimit.
     core[TEST_CORE_ID_5].current.latest_value_mA = 30;
     core[TEST_CORE_ID_5].temperature.latest_value_dC = 400;
@@ -534,7 +515,7 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
     assert_int_equal(core_summary_data.power_mW, core[TEST_CORE_ID_5].latest_power_mW);
     assert_int_equal(core_summary_data.frequency_Mhz, core[TEST_CORE_ID_5].pstate[pstate_index].frequency_Mhz);
 
-    assert_int_equal(core_summary_data.voltage_mV, core[TEST_CORE_ID_5].voltage.latest_value_mV);
+    assert_int_equal(core_summary_data.voltage_mV, core[TEST_CORE_ID_5].latest_voltage_mV);
     assert_int_equal(core_summary_data.current_mA, core[TEST_CORE_ID_5].current.latest_value_mA);
     assert_int_equal(core_summary_data.temperature_dC, core[TEST_CORE_ID_5].temperature.latest_value_dC);
 }

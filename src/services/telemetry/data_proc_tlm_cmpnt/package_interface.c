@@ -127,10 +127,9 @@ void data_proc_tlm_cmpnt_get_pwr_core_voltage_data(uint16_t core_id, p_pwr_core_
     }
     else
     {
-        voltage_data->latest_value_mV = core[core_id].voltage.latest_value_mV;
-        voltage_data->average_mV = core[core_id].voltage.average_mV;
-        voltage_data->max_mV = core[core_id].voltage.max_mV;
-        voltage_data->min_mV = core[core_id].voltage.min_mV;
+        voltage_data->average_mV = computed_metrics_2_mins.cores[core_id].voltage_mV.running_avg.average;
+        voltage_data->max_mV = computed_metrics_2_mins.cores[core_id].voltage_mV.max;
+        voltage_data->min_mV = computed_metrics_2_mins.cores[core_id].voltage_mV.min;
     }
 }
 
@@ -248,15 +247,15 @@ void data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(uint16_t dimm_channel, p_pwr
     else
     {
         // DIMM temperature s0
-        dimm_data->s0.max_dC = soc_dimm.dimm_temp[dimm_channel].s0.max_dC;
-        dimm_data->s0.min_dC = soc_dimm.dimm_temp[dimm_channel].s0.min_dC;
-        dimm_data->s0.average_dC = soc_dimm.dimm_temp[dimm_channel].s0.average_dC;
-        dimm_data->s0.latest_value_dC = soc_dimm.dimm_temp[dimm_channel].s0.latest_value_dC;
+        dimm_data->s0.max_dC = computed_metrics_2_mins.soc.dimm[dimm_channel].temperature_s0_dC.max;
+        dimm_data->s0.min_dC = computed_metrics_2_mins.soc.dimm[dimm_channel].temperature_s0_dC.min;
+        dimm_data->s0.average_dC =
+            computed_metrics_2_mins.soc.dimm[dimm_channel].temperature_s0_dC.running_avg.average;
         // DIMM temperature s1
-        dimm_data->s1.max_dC = soc_dimm.dimm_temp[dimm_channel].s1.max_dC;
-        dimm_data->s1.min_dC = soc_dimm.dimm_temp[dimm_channel].s1.min_dC;
-        dimm_data->s1.average_dC = soc_dimm.dimm_temp[dimm_channel].s1.average_dC;
-        dimm_data->s1.latest_value_dC = soc_dimm.dimm_temp[dimm_channel].s1.latest_value_dC;
+        dimm_data->s1.max_dC = computed_metrics_2_mins.soc.dimm[dimm_channel].temperature_s1_dC.max;
+        dimm_data->s1.min_dC = computed_metrics_2_mins.soc.dimm[dimm_channel].temperature_s1_dC.min;
+        dimm_data->s1.average_dC =
+            computed_metrics_2_mins.soc.dimm[dimm_channel].temperature_s1_dC.running_avg.average;
     }
 }
 
@@ -313,7 +312,7 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
         core_summary_data->cstate = core[core_id].cstate_from_pstate_pkt;
         core_summary_data->frequency_Mhz = core[core_id].pstate[current_pstate].frequency_Mhz;
         core_summary_data->power_mW = core[core_id].latest_power_mW;
-        core_summary_data->voltage_mV = core[core_id].voltage.latest_value_mV;
+        core_summary_data->voltage_mV = core[core_id].latest_voltage_mV;
         core_summary_data->current_mA = core[core_id].current.latest_value_mA;
         core_summary_data->temperature_dC = core[core_id].temperature.latest_value_dC;
         core_summary_data->plimit = core[core_id].active_sample_plimit;

@@ -193,8 +193,8 @@ TEST_FUNCTION(test_data_smpl_parse_tile_voltage_entry, test_setup, test_teardown
     data_smpl_parse_tile_voltage_entry(&voltage_data, index);
 
     // Check core 0 and core 1 voltage
-    assert_int_equal(core[index].voltage.latest_value_mV, (uint16_t)(voltage_data.data.vcore0 * 1000));
-    assert_int_equal(core[index + 1].voltage.latest_value_mV, (uint16_t)(voltage_data.data.vcore1 * 1000));
+    assert_int_equal(core[index].latest_voltage_mV, (uint16_t)(voltage_data.data.vcore0 * 1000));
+    assert_int_equal(core[index + 1].latest_voltage_mV, (uint16_t)(voltage_data.data.vcore1 * 1000));
     assert_int_equal(tile[index].vcpu.latest_value_mV, (uint16_t)(voltage_data.data.vcpu * 1000));
     assert_int_equal(tile[index].vsys.latest_value_mV, (uint16_t)(voltage_data.data.vsys * 1000));
 
@@ -281,7 +281,6 @@ TEST_FUNCTION(test_data_smpl_parse_pstate_no_throttling, test_setup, test_teardo
     pstate_data.timestamp = 120;
     pstate_data.data.throttle_status = RACK_THROTTLE_START;
     data_smpl_parse_pstate_no_throttling(&pstate_data);
-
     // Do Throttling start
     pstate_data.timestamp = 500;
     pstate_data.data.throttle_status = RACK_THROTTLE_END;
@@ -665,10 +664,7 @@ TEST_FUNCTION(test_data_smpl_reset_core_data, test_setup, test_teardown)
     core[core_id].throttle_info[throttle_index].avg_pstate = 10;
     core[core_id].throttle_info[throttle_index].max_pstate = 5;
 
-    core[core_id].voltage.min_mV = 0;
-    core[core_id].voltage.max_mV = 0;
-    core[core_id].voltage.average_mV = 0;
-    core[core_id].voltage.latest_value_mV = 1200;
+    core[core_id].latest_voltage_mV = 1200;
 
     data_smpl_reset_core_data();
 

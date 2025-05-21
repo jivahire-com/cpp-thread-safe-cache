@@ -59,4 +59,5 @@ mock_target(${TARGET}
     sensor_fifo_svc_poll_soc_pvt_temperature
     sensor_fifo_svc_poll_dimm_info
     exec_tlm_cmpnt_get_timestamp_microseconds
+    gtimer_prodfw_get_frequency
 )

@@ -120,6 +120,7 @@ void data_proc_tlm_cmpnt_process_input_data(void)
     // Allocate enough buffer for 8 strides from sensor fifo. Please review this if the sensor fifo may have more entries, optimize when less
     uint64_t buffer_data[MAX_BUFFER_ENTRIES];
     sensor_ram_poll_status_t status;
+    bool valid_entry = false;
 
     // NOTE: All sensor fifo API to check and poll data availability is guaranteed to return
     //  more_entries as false once all entries that was latched during the initial call has been
@@ -148,7 +149,16 @@ void data_proc_tlm_cmpnt_process_input_data(void)
         if (status.curr_data_is_valid == true)
         {
             // process the tile voltage
-            data_smpl_parse_tile_voltage_entry(voltage_data, tile_index);
+            valid_entry = data_smpl_parse_tile_voltage_entry(voltage_data, tile_index);
+            if (valid_entry)
+            {
+                uint8_t core_id = tile_index * 2;
+                // first core in the tile
+                comp_metrics_for_single_core_voltage(core_id, core[core_id].latest_voltage_mV);
+                core_id++;
+                // Second core in the tile
+                comp_metrics_for_single_core_voltage(core_id, core[core_id].latest_voltage_mV);
+            }
         }
 
     } while (status.more_entries == true);
@@ -223,8 +233,13 @@ void data_proc_tlm_cmpnt_process_input_data(void)
         status = sensor_fifo_svc_poll_dimm_info(dimm_info);
         if (status.curr_data_is_valid == true)
         {
-            data_smpl_parse_dimm_entry(dimm_info);
-            comp_metrics_for_single_soc_dimm(dimm_info);
+            valid_entry = data_smpl_parse_dimm_entry(dimm_info);
+            if (valid_entry)
+            {
+                comp_metrics_for_single_soc_dimm_temp(dimm_info->dimm_id,
+                                                      dimm_info->dimm_temp_s0_dC,
+                                                      dimm_info->dimm_temp_s1_dC);
+            }
         }
     } while (status.more_entries == true);
 
@@ -293,7 +308,7 @@ void data_smpl_parse_tile_temperature_entry(tile_temp_t* temperature_data, uint8
     tile[tile_index].active_sample_max_id = temperature_data->temp0.max_id;
 }
 
-void data_smpl_parse_tile_voltage_entry(tile_voltage_t* voltage_data, uint8_t tile_index)
+bool data_smpl_parse_tile_voltage_entry(tile_voltage_t* voltage_data, uint8_t tile_index)
 {
     // For all details on the reference how this code was implemented, please
     // refer to the Power Management, Power Telemetry and Sensor Hardware Architecture Specifications (HAS)
@@ -302,17 +317,19 @@ void data_smpl_parse_tile_voltage_entry(tile_voltage_t* voltage_data, uint8_t ti
     if (tile_index >= NUMBER_OF_TILES_PER_DIE)
     {
         FPFW_ET_LOG(LogInvalidTileId, tile_index);
-        return;
+        return false;
     }
 
     // Since this is a tile voltage, log the core where the tile voltage belongs
     uint8_t core_id = tile_index * 2;
-    core[core_id].voltage.latest_value_mV = DOUT2MILLIVOLTS(voltage_data->data.vcore0);
-    core[core_id + 1].voltage.latest_value_mV = DOUT2MILLIVOLTS(voltage_data->data.vcore1);
+    core[core_id].latest_voltage_mV = DOUT2MILLIVOLTS(voltage_data->data.vcore0);
+    core[core_id + 1].latest_voltage_mV = DOUT2MILLIVOLTS(voltage_data->data.vcore1);
 
     // Log the tile vcpu and vsys
     tile[tile_index].vcpu.latest_value_mV = DOUT2MILLIVOLTS(voltage_data->data.vcpu);
     tile[tile_index].vsys.latest_value_mV = DOUT2MILLIVOLTS(voltage_data->data.vsys);
+
+    return true;
 }
 
 void data_smpl_parse_core_current_entry(core_current_t* current_data, uint8_t core_index)
@@ -504,7 +521,7 @@ void data_smpl_parse_pvt_temperature_entry(soc_pvt_temp_t* pvt_temperature)
     }
 }
 
-void data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info)
+bool data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info)
 {
     // TODO: update via https://azurecsi.visualstudio.com/Dev/_workitems/edit/2592133
 
@@ -516,7 +533,9 @@ void data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info)
     else
     {
         FPFW_ET_LOG(DIMMInfoInvalidDimmId, FPFW_STATUS_INVALID_ARGS);
+        return false;
     }
+    return true;
 }
 
 // parser helper functions
@@ -785,7 +804,6 @@ void data_smpl_reset_core_data()
         core[core_id].throttling_priority_id = temp_core.throttling_priority_id;
         core[core_id].pstate_from_current_pkt = temp_core.pstate_from_current_pkt;
         core[core_id].average_pwr_mW = temp_core.average_pwr_mW;
-        core[core_id].voltage.latest_value_mV = temp_core.voltage.latest_value_mV;
         core[core_id].current.latest_value_mA = temp_core.current.latest_value_mA;
         core[core_id].temperature.latest_value_dC = temp_core.temperature.latest_value_dC;
 

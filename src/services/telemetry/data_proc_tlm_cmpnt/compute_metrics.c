@@ -76,9 +76,6 @@ void comp_metrics_for_cores_for_sampling_period(void)
         /* Note that even if a core is disabled, voltage and temperature sensors
             are still running on those disabled cores */
 
-        // Check to update Core Voltage
-        comp_metrics_for_single_core_voltage(core_id, time_diff_uS, core[core_id].time_counter_uS);
-
         // Check to update Core temperature
         comp_metrics_for_single_core_temperature(core_id, time_diff_uS, core[core_id].time_counter_uS);
 
@@ -202,15 +199,10 @@ void comp_metrics_for_single_core_current(uint8_t core_id, uint32_t time_diff_uS
                            residency_uS);
 }
 
-void comp_metrics_for_single_core_voltage(uint8_t core_id, uint32_t time_diff_uS, uint32_t residency_uS)
+void comp_metrics_for_single_core_voltage(uint8_t core_id, uint16_t latest_value_mV)
 {
     /* For core voltage :min, max avg calculation*/
-    data_util_calc_mma_res(&core[core_id].voltage.min_mV,
-                           &core[core_id].voltage.max_mV,
-                           &core[core_id].voltage.average_mV,
-                           &core[core_id].voltage.latest_value_mV,
-                           time_diff_uS,
-                           residency_uS);
+    data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].voltage_mV, latest_value_mV);
 }
 
 void comp_metrics_for_single_core_temperature(uint8_t core_id, uint32_t time_diff_uS, uint32_t residency_uS)
@@ -315,38 +307,12 @@ void comp_metrics_for_single_soc_temp_sensor(uint8_t pvt_index, uint32_t time_di
                            residency_uS);
 }
 
-void comp_metrics_for_single_soc_dimm(sensor_ram_dimm_info_t* dimm_info)
+void comp_metrics_for_single_soc_dimm_temp(uint8_t dimm_id, uint16_t latest_dimm_temp_s0_dC, uint16_t latest_dimm_temp_s1_dC)
 {
-    uint8_t dimm_module_index = dimm_info->dimm_id;
-    // TODO:  replace with the data helper API: data_util_convert_systick_to_microseconds(uint64_t tick_count);
-    uint64_t time_stamp_uS = dimm_info->timestamp;
-    uint64_t time_diff_uS = 0;
-
-    if (dimm_info->dimm_id < NUMBER_OF_DIMM_MODULES)
-    {
-        time_diff_uS =
-            data_utils_update_residency(time_stamp_uS, &soc_dimm.previous_soc_dimm_timestamp_uS, &soc_dimm.residency_uS);
-
-        /* For soc dimm info :min, max avg calculation :Update each temperature data for S0 and S1*/
-        // Update the soc dimm info min, max average
-        data_util_calc_mma_res(&soc_dimm.dimm_temp[dimm_module_index].s0.min_dC,
-                               &soc_dimm.dimm_temp[dimm_module_index].s0.max_dC,
-                               &soc_dimm.dimm_temp[dimm_module_index].s0.average_dC,
-                               &soc_dimm.dimm_temp[dimm_module_index].s0.latest_value_dC,
-                               time_diff_uS,
-                               soc_dimm.residency_uS);
-        // Update each temperature data for S1
-        data_util_calc_mma_res(&soc_dimm.dimm_temp[dimm_module_index].s1.min_dC,
-                               &soc_dimm.dimm_temp[dimm_module_index].s1.max_dC,
-                               &soc_dimm.dimm_temp[dimm_module_index].s1.average_dC,
-                               &soc_dimm.dimm_temp[dimm_module_index].s1.latest_value_dC,
-                               time_diff_uS,
-                               soc_dimm.residency_uS);
-    }
-    else
-    {
-        FPFW_ET_LOG(DIMMInfoInvalidDimmId, FPFW_STATUS_INVALID_ARGS);
-    }
+    // Update  min, max average S0
+    data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_id].temperature_s0_dC, latest_dimm_temp_s0_dC);
+    // Update each temperature data for S1
+    data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_id].temperature_s1_dC, latest_dimm_temp_s1_dC);
 }
 
 fpfw_status_t comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp_uS)

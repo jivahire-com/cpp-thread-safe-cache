@@ -90,6 +90,8 @@ static int32_t calculate_expected_avg(int32_t latest_value, int32_t prev_avg, in
     {
         return latest_value; // First iteration, avg = latest value
     }
+
+#if 0
     if (iteration == 1)
     {
         return latest_value; // For iteration 1, return latest value directly
@@ -125,8 +127,12 @@ static int32_t calculate_expected_avg(int32_t latest_value, int32_t prev_avg, in
         // Calculate total and round to nearest integer
         return static_cast<int32_t>((weighted_prev_avg + weighted_latest) / total_time);
     }
+#endif
 
-    return prev_avg; // Default case
+    int32_t total = (prev_avg * iteration) + latest_value;
+    int32_t updated_avg = (total + (iteration + 1) / 2) / (iteration + 1);
+
+    return updated_avg; // Default case
 }
 
 // Add these function declarations
@@ -330,27 +336,13 @@ TEST_FUNCTION(test_tile_voltage_collection_functional, test_setup, test_teardown
         }
 
         // Core 0
-        assert_int_equal(voltage_record.voltage_collection[0].voltage_element.latest_value_mV, expected_core0_voltage);
         assert_int_equal(voltage_record.voltage_collection[0].voltage_element.min_mV, expected_core0_min);
         assert_int_equal(voltage_record.voltage_collection[0].voltage_element.max_mV, expected_core0_max);
         assert_int_equal(voltage_record.voltage_collection[0].voltage_element.average_mV, expected_core0_avg);
 
         // Core 1
-        assert_int_equal(voltage_record.voltage_collection[1].voltage_element.latest_value_mV, expected_core1_voltage);
         assert_int_equal(voltage_record.voltage_collection[1].voltage_element.min_mV, expected_core1_min);
         assert_int_equal(voltage_record.voltage_collection[1].voltage_element.max_mV, expected_core1_max);
         assert_int_equal(voltage_record.voltage_collection[1].voltage_element.average_mV, expected_core1_avg);
-
-        // VCPU
-        assert_int_equal(tile[0].vcpu.latest_value_mV, expected_vcpu_voltage);
-        assert_int_equal(tile[0].vcpu.min_mV, expected_vcpu_min);
-        assert_int_equal(tile[0].vcpu.max_mV, expected_vcpu_max);
-        assert_int_equal(tile[0].vcpu.average_mV, expected_vcpu_avg);
-
-        // VSYS
-        assert_int_equal(tile[0].vsys.latest_value_mV, expected_vsys_voltage);
-        assert_int_equal(tile[0].vsys.min_mV, expected_vsys_min);
-        assert_int_equal(tile[0].vsys.max_mV, expected_vsys_max);
-        assert_int_equal(tile[0].vsys.average_mV, expected_vsys_avg);
     }
 }

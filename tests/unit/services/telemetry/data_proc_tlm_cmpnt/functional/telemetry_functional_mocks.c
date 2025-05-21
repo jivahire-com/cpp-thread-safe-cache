@@ -167,6 +167,11 @@ sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_dimm_info(sensor_ram_dimm_i
     return status;
 }
 
+uint32_t __wrap_gtimer_prodfw_get_frequency(void)
+{
+    return mock_type(uint32_t);
+}
+
 // Reset Time
 void reset_time(void)
 {

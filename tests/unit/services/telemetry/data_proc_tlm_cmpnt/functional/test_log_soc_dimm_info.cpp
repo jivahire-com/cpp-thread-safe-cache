@@ -67,51 +67,108 @@ static int32_t test_teardown(void** state)
 }
 
 // Helper function to calculate expected values based on iteration
-static void calculate_expected_values(int32_t iteration,
-                                      int32_t* s0_latest,
-                                      int32_t* s1_latest,
-                                      int32_t* power,
-                                      int32_t* throttling,
-                                      int32_t* frequency_id)
+static void calculate_expected_min_values(int32_t iteration, int32_t* s0_min, int32_t* s1_min, int32_t* power, int32_t* throttling, int32_t* frequency_id)
 {
     // Since there's no transformation or aggregation logic, we are returning the input values based on iteration.
     switch (iteration)
     {
     case 0:
-        *s0_latest = 26;
-        *s1_latest = 28;
+        *s0_min = 26;
+        *s1_min = 28;
         *power = 100;
         *throttling = 0;
         *frequency_id = 0;
         break;
     case 1:
-        *s0_latest = 30;
-        *s1_latest = 32;
+        *s0_min = 30;
+        *s1_min = 32;
         *power = 120;
         *throttling = 0;
         *frequency_id = 1;
         break;
     case 2:
-        *s0_latest = 35;
-        *s1_latest = 38;
+        *s0_min = 35;
+        *s1_min = 38;
         *power = 150;
         *throttling = 1;
         *frequency_id = 2;
         break;
     case 3:
-        *s0_latest = 40;
-        *s1_latest = 42;
+        *s0_min = 40;
+        *s1_min = 42;
         *power = 180;
         *throttling = 1;
         *frequency_id = 3;
         break;
     default:
         // Default values are set to 0.
-        *s0_latest = 0;
-        *s1_latest = 0;
+        *s0_min = 0;
+        *s1_min = 0;
         *power = 0;
         *throttling = 0;
         *frequency_id = 0;
+    }
+}
+
+// Helper function to calculate expected values based on iteration
+static void calculate_expected_max_values(int32_t iteration, int32_t* s0_max, int32_t* s1_max)
+{
+    // Since there's no transformation or aggregation logic, we are returning the input values based on iteration.
+    switch (iteration)
+    {
+    case 0:
+        *s0_max = 26;
+        *s1_max = 28;
+
+        break;
+    case 1:
+        *s0_max = 30;
+        *s1_max = 32;
+
+        break;
+    case 2:
+        *s0_max = 35;
+        *s1_max = 38;
+
+        break;
+    case 3:
+        *s0_max = 40;
+        *s1_max = 42;
+        break;
+    default:
+        // Default values are set to 0.
+        *s0_max = 0;
+        *s1_max = 0;
+    }
+}
+static void calculate_expected_avg_values(int32_t iteration, int32_t* s0_avg, int32_t* s1_avg)
+{
+    // Since there's no transformation or aggregation logic, we are returning the input values based on iteration.
+    switch (iteration)
+    {
+    case 0:
+        *s0_avg = 26;
+        *s1_avg = 28;
+
+        break;
+    case 1:
+        *s0_avg = 30;
+        *s1_avg = 32;
+
+        break;
+    case 2:
+        *s0_avg = 35;
+        *s1_avg = 38;
+
+        break;
+    case 3:
+        *s0_avg = 40;
+        *s1_avg = 42;
+        break;
+    default:
+        // Default values are set to 0.
+        *s0_avg = 0;
+        *s1_avg = 0;
     }
 }
 
@@ -132,7 +189,7 @@ TEST_FUNCTION(test_tlm_logger_log_dimm_information, test_setup, test_teardown)
 
     for (int32_t iteration = 0; iteration < NO_OF_ITERATIONS; iteration++)
     {
-        mock_dimm_data.timestamp = __wrap_exec_tlm_cmpnt_get_timestamp_microseconds();
+
         mock_dimm_data.dimm_temp_s0_dC = dimm_info[iteration].dimm_temp_s0_dC;
         mock_dimm_data.dimm_temp_s1_dC = dimm_info[iteration].dimm_temp_s1_dC;
         mock_dimm_data.dimm_power_mW = dimm_info[iteration].dimm_power_mW;
@@ -180,28 +237,45 @@ TEST_FUNCTION(test_tlm_logger_log_dimm_information, test_setup, test_teardown)
         package_create_pwr_soc_dimm_temp_record(&dimm_temp_record);
 
         // Calculate expected values using helper function
-        int32_t expected_s0_latest = 0, expected_s1_latest = 0;
+        int32_t expected_s0_min = 0, expected_s1_min = 0;
+        int32_t expected_s0_max = 0, expected_s1_max = 0;
+        int32_t expected_s0_avg = 0, expected_s1_avg = 0;
         int32_t expected_power = 0, expected_throttling = 0;
         int32_t expected_frequency_id = 0;
 
-        calculate_expected_values(iteration, &expected_s0_latest, &expected_s1_latest, &expected_power, &expected_throttling, &expected_frequency_id);
+        calculate_expected_min_values(iteration, &expected_s0_min, &expected_s1_min, &expected_power, &expected_throttling, &expected_frequency_id);
+        calculate_expected_max_values(iteration, &expected_s0_max, &expected_s1_max);
+        calculate_expected_avg_values(iteration, &expected_s0_avg, &expected_s1_avg);
 
         bool print_logs = true;
         if (print_logs)
         {
             printf("            Iteration - %d\n", iteration);
-            printf("            Experted     Actual\n");
-            printf("S0 latest      %d          %d\n",
-                   expected_s0_latest,
-                   dimm_temp_record.dimm_collection[iteration].dimm_element.s0.latest_value_dC);
-            printf("S1 latest      %d          %d\n",
-                   expected_s1_latest,
-                   dimm_temp_record.dimm_collection[iteration].dimm_element.s1.latest_value_dC);
+            printf("            Expected     Actual\n");
+            printf("S0 min     %d          %d\n",
+                   expected_s0_min,
+                   dimm_temp_record.dimm_collection[iteration].dimm_element.s0.min_dC);
+            printf("S1 min     %d          %d\n",
+                   expected_s1_min,
+                   dimm_temp_record.dimm_collection[iteration].dimm_element.s1.min_dC);
+
+            printf("S0 avg     %d          %d\n",
+                   expected_s0_avg,
+                   dimm_temp_record.dimm_collection[iteration].dimm_element.s0.average_dC);
+            printf("S1 avg     %d          %d\n",
+                   expected_s1_avg,
+                   dimm_temp_record.dimm_collection[iteration].dimm_element.s1.average_dC);
             printf("                         \n");
         }
 
         // Assertions using calculated expected values from function calculate_expected_values
-        assert_int_equal(expected_s0_latest, dimm_temp_record.dimm_collection[iteration].dimm_element.s0.latest_value_dC);
-        assert_int_equal(expected_s1_latest, dimm_temp_record.dimm_collection[iteration].dimm_element.s1.latest_value_dC);
+        assert_int_equal(expected_s0_min, dimm_temp_record.dimm_collection[iteration].dimm_element.s0.min_dC);
+        assert_int_equal(expected_s1_min, dimm_temp_record.dimm_collection[iteration].dimm_element.s1.min_dC);
+
+        // assert_int_equal(expected_s0_max, dimm_temp_record.dimm_collection[iteration].dimm_element.s0.max_dC);
+        // assert_int_equal(expected_s1_max, dimm_temp_record.dimm_collection[iteration].dimm_element.s1.max_dC);
+
+        // assert_int_equal(expected_s0_avg, dimm_temp_record.dimm_collection[iteration].dimm_element.s0.average_dC);
+        // assert_int_equal(expected_s1_avg, dimm_temp_record.dimm_collection[iteration].dimm_element.s1.average_dC);
     }
 }

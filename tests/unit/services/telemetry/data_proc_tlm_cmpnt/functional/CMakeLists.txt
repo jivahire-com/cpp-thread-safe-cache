@@ -7,6 +7,7 @@ set(SOURCES
     telemetry_functional_mocks.c
     test_core_current.cpp
     test_soc_rails_vr_current_and_voltage.cpp
+    test_soc_rails_vr_temperature.cpp
 )
 
 add_executable(${TARGET} ${SOURCES})

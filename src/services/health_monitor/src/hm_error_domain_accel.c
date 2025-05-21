@@ -74,7 +74,7 @@ static fpfw_status_t hm_accel_error_record_ack_tx(fpfw_icc_base_ctx_t* icc_ctx, 
 
     static fpfw_icc_base_send_req_t hm_icc_sdm_cper_acq_req[NUM_VALID_ACCEL_ID] = {0};
     hm_icc_sdm_cper_acq_req[accel_id].payload_buffer = &hm_accel_ack_payload[accel_id];
-    hm_icc_sdm_cper_acq_req[accel_id].buffer_size = sizeof(hm_accel_error_injection_payload_t);
+    hm_icc_sdm_cper_acq_req[accel_id].buffer_size = sizeof(hm_accel_msg_ack_t);
     hm_icc_sdm_cper_acq_req[accel_id].cb = hm_accel_ack_tx_cb;
     hm_icc_sdm_cper_acq_req[accel_id].cb_ctx = NULL;
 
@@ -169,12 +169,12 @@ static void hm_accel_register_error_domain(hm_accel_error_domain_register_payloa
     hm_config_t* hm_config = get_hm_config();
     hm_accel_error_record_submit_listener(hm_config->icc_ctx[core_type], &accel_cper_info[accel_id]);
 
-    // Send an ack message back to the accelerator to inform HMM support is enabled and registered
-    // Reuse the einj payload as the message contents are not used by accel recv api
-    accel_err_injection_payload[accel_id].header.cmd = ICC_HM_ERROR_DOMAIN_REGISTER_DONE_ACK_ACCEL(accel_id);
+    // Using the ack message as payload as the mailbox primitives have been
+    // updated allowing for smaller packets to be sent
+    accel_cper_info[accel_id].msg_payload.header.cmd = ICC_HM_ERROR_DOMAIN_REGISTER_DONE_ACK_ACCEL(accel_id);
 
-    hm_icc_accel_err_injection_req[accel_id].payload_buffer = &accel_err_injection_payload[accel_id];
-    hm_icc_accel_err_injection_req[accel_id].buffer_size = sizeof(hm_accel_error_injection_payload_t);
+    hm_icc_accel_err_injection_req[accel_id].payload_buffer = &accel_cper_info[accel_id].msg_payload;
+    hm_icc_accel_err_injection_req[accel_id].buffer_size = sizeof(hm_accel_msg_t);
     hm_icc_accel_err_injection_req[accel_id].cb = hm_accel_tx_cb;
     hm_icc_accel_err_injection_req[accel_id].cb_ctx = NULL;
 

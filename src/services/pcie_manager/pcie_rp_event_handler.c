@@ -58,25 +58,25 @@ static bool rp_is_overlake(uint8_t rpss_idx, uint8_t rp_idx)
 /*-- Global Functions --*/
 void process_wait_for_event_data(pcie_manager_context_t* ctx, pciess_completion_request_t* req)
 {
-    uint32_t data = req->async_data.data;
+    uint32_t int_mask = req->async_data.int_mask;
     uint8_t rpss_idx = ctx->rpss_idx;
     uint8_t rp_idx = req->rp_index;
 
     static uint8_t ovl_lt_retries = 0;
     silibs_status_t status = SILIBS_SUCCESS;
 
-    while (data)
+    while (int_mask)
     {
-        unsigned idx = __builtin_ctzll(data);
+        unsigned idx = __builtin_ctzll(int_mask);
         switch (idx)
         {
         case PCIESS_RP_INT_LINK_DOWN: {
-            data = CLEAR_BIT(data, PCIESS_RP_INT_LINK_DOWN);
+            int_mask = CLEAR_BIT(int_mask, PCIESS_RP_INT_LINK_DOWN);
             handle_pcie_link_down_event(ctx, req);
             break;
         }
         case PCIESS_RP_INT_LINK_UP: {
-            data = CLEAR_BIT(data, PCIESS_RP_INT_LINK_UP);
+            int_mask = CLEAR_BIT(int_mask, PCIESS_RP_INT_LINK_UP);
             status = send_sync_rp_get_link_status((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
 
             if (rp_is_overlake(rpss_idx, rp_idx) && config_get_enable_overlake_sbr_workaround())
@@ -113,8 +113,7 @@ void process_wait_for_event_data(pcie_manager_context_t* ctx, pciess_completion_
         case PCIESS_RP_INT_SEND_F:
         case PCIESS_RP_INT_DPC:
         default: {
-            // Clear the mask and do  nothing
-            data = CLEAR_BIT(data, idx);
+            int_mask = CLEAR_BIT(int_mask, idx);
             break;
         }
         }

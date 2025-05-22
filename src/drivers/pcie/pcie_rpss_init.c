@@ -29,7 +29,6 @@
 #include <silibs_status.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <vab.h>
 #include <vab_rpss_top_regs.h>
 

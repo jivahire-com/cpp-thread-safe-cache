@@ -414,7 +414,7 @@ TEST_FUNCTION(test_completion_callback, NULL, NULL) // abe
 {
     auto& async_req = ctx.async_req[0];
     async_req.status = SILIBS_E_TIMEOUT;
-    async_req.async_data.data = 0;
+    async_req.async_data.int_mask = 0;
 
     expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
     expect_any(__wrap_DfwkAsyncRequestSetCompletionRoutine, Request);
@@ -463,7 +463,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkdown_rp_ready, NULL, NULL)
 {
     /* Setup BIT0 (link down) in the wait for event completion */
     pciess_completion_request_t cmpl_req;
-    cmpl_req.async_data.data = 0x0001;
+    cmpl_req.async_data.int_mask = 0x0001;
 
     for (uint8_t i = RPSS0; i < RPSS7; i++)
     {
@@ -488,7 +488,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkdown_rp_not_ready, NULL, NULL)
 {
     /* Setup BIT0 (link down) in the wait for event completion */
     pciess_completion_request_t cmpl_req;
-    cmpl_req.async_data.data = 0x0001;
+    cmpl_req.async_data.int_mask = 0x0001;
 
     for (uint8_t i = RPSS0; i < RPSS7; i++)
     {
@@ -507,7 +507,7 @@ TEST_FUNCTION(test_process_wait_for_event_dpc_handler, NULL, NULL)
 {
     /* Setup BIT14 (DPC) in the wait for event completion */
     pciess_completion_request_t cmpl_req;
-    cmpl_req.async_data.data = (1 << 14);
+    cmpl_req.async_data.int_mask = (1 << 14);
 
     for (uint8_t i = RPSS0; i < RPSS7; i++)
     {
@@ -522,7 +522,7 @@ TEST_FUNCTION(test_process_wait_for_event_unhandled, NULL, NULL)
     for (uint8_t i = 1; i <= 12; i++)
     {
         pciess_completion_request_t cmpl_req;
-        cmpl_req.async_data.data = (1 << i);
+        cmpl_req.async_data.int_mask = (1 << i);
 
         for (uint8_t i = RPSS0; i < RPSS7; i++)
         {
@@ -537,7 +537,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkup, NULL, NULL)
 {
     /* Setup BIT0 (link up) in the wait for event completion */
     pciess_completion_request_t cmpl_req;
-    cmpl_req.async_data.data = 1 << PCIESS_RP_INT_LINK_UP;
+    cmpl_req.async_data.int_mask = 1 << PCIESS_RP_INT_LINK_UP;
 
     ctx.rpss_idx = (RPSS_INSTANCE)0;
     cmpl_req.rp_index = 0;
@@ -565,7 +565,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkup_overlake_failure, NULL, NULL)
 {
     /* Setup BIT0 (link up) in the wait for event completion */
     pciess_completion_request_t cmpl_req;
-    cmpl_req.async_data.data = 1 << PCIESS_RP_INT_LINK_UP;
+    cmpl_req.async_data.int_mask = 1 << PCIESS_RP_INT_LINK_UP;
 
     ctx.rpss_idx = (RPSS_INSTANCE)0;
     cmpl_req.rp_index = 0;

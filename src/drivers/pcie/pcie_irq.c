@@ -9,6 +9,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <FpFwAssert.h>
 #include <idsw.h>
 #include <interrupts.h>
@@ -25,7 +26,6 @@
 #include <silibs_common.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -36,6 +36,7 @@ static pcie_ss_entity_t* get_rpss_entity_from_irq_num(uint32_t irq_num);
 
 /*-- Declarations (Statics and globals) --*/
 static pciess_int_probe_t int_info = {0};
+
 /*------------- Functions ----------------*/
 static pcie_ss_entity_t* get_rpss_entity_from_irq_num(uint32_t irq_num)
 {
@@ -81,75 +82,95 @@ void rpss_irq_callback(uint32_t irq_num)
 
     memset(&int_info, 0x0, sizeof(pciess_int_probe_t));
 
-    /* Probe all PCIESS INT */
+    /* Probe all pciess interrupts */
     if (pciess_probe(ss, &int_info, INTU_TO_SCP))
     {
         for (uint8_t rp_idx = 0; rp_idx < PCIESS_NUM_PORTS; rp_idx++)
         {
             bool int_present = false;
-            uint32_t int_data = 0; // for Now this is the only data filled into the request
+            uint32_t int_mask = 0;
+            uint32_t int_data = 0;
             for (uint32_t int_idx = 0; int_idx < PCIESS_RP_NUM_INTERRUPTS; int_idx++)
             {
-                if (int_info.rp_ints[rp_idx].ints[int_idx].asserted == true)
+                if (int_info.rp_ints[rp_idx].ints[int_idx].asserted == false)
                 {
-                    switch (int_idx)
-                    {
-                    case PCIESS_RP_INT_LINK_DOWN: {
-                        if (int_info.rp_ints[rp_idx].ints[int_idx].asserted == true)
-                        {
-                            int_present = true;
-                            int_data |= 0x1 << PCIESS_RP_INT_LINK_DOWN;
-                            printf("Link Down : RPSS IRQ: 0x%x \t RP: 0x%x \n", (unsigned int)irq_num, rp_idx);
-                        }
-                        break;
-                    }
-                    case PCIESS_RP_INT_LINK_UP: {
-                        if (int_info.rp_ints[rp_idx].ints[int_idx].asserted == true)
-                        {
-                            int_present = true;
-                            int_data |= 0x1 << PCIESS_RP_INT_LINK_UP;
-                            printf("Link Up : RPSS IRQ: 0x%x \t RP: 0x%x \n", (unsigned int)irq_num, rp_idx);
-                        }
-                        break;
-                    }
+                    continue;
+                }
 
-                    case PCIESS_RP_INT_DTIM:
-                    case PCIESS_RP_INT_LTIM:
-                    case PCIESS_RP_INT_RASDP:
-                    case PCIESS_RP_INT_HP_PME:
-                    case PCIESS_RP_INT_WAKEUP:
-                    case PCIESS_RP_INT_PM_PME:
-                    case PCIESS_RP_INT_PM_TO_ACK:
-                    case PCIESS_RP_INT_GLOBAL_IDE:
-                    case PCIESS_RP_INT_AES_HCFG:
-                    case PCIESS_RP_INT_SEND_C:
-                    case PCIESS_RP_INT_SEND_NF:
-                    case PCIESS_RP_INT_SEND_F:
-                    case PCIESS_RP_INT_DPC:
-                    default: {
-                        printf("Default:: Unhandled FW PCIE INT \n");
-                        break;
-                    }
-                    }
+                switch (int_idx)
+                {
+                case PCIESS_RP_INT_LINK_DOWN:
+                    int_present = true;
+                    int_mask |= 0x1 << PCIESS_RP_INT_LINK_DOWN;
+                    FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d] IRQ[%d]: Link down!\n", ss->id, rp_idx, (unsigned int)irq_num);
+                    break;
+                case PCIESS_RP_INT_LINK_UP:
+                    int_present = true;
+                    int_mask |= 0x1 << PCIESS_RP_INT_LINK_UP;
+                    FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d] IRQ[%d]: Link up!\n", ss->id, rp_idx, (unsigned int)irq_num);
+                    break;
+                case PCIESS_RP_INT_DTIM:
+                    int_present = true;
+                    int_mask |= 0x1 << PCIESS_RP_INT_DTIM;
+                    int_data = int_info.rp_ints[rp_idx].ints[int_idx].status;
+                    break;
+                case PCIESS_RP_INT_LTIM:
+                    int_present = true;
+                    int_mask |= 0x1 << PCIESS_RP_INT_LTIM;
+                    int_data = int_info.rp_ints[rp_idx].ints[int_idx].status;
+                    break;
+                case PCIESS_RP_INT_RASDP:
+                    int_present = true;
+                    int_mask |= 0x1 << PCIESS_RP_INT_RASDP;
+                    /*
+                     * vsecras probing is deferred to the service layer as
+                     * it is a much slower operation to handle in the ISR.
+                     */
+                    pcie_rp_vsecras_clear_rasdp_error_mode(&(ss->rps[rp_idx]));
+                    break;
+                case PCIESS_RP_INT_DPC:
+                    int_present = true;
+                    int_mask |= 0x1 << PCIESS_RP_INT_DPC;
+                    break;
+                case PCIESS_RP_INT_GLOBAL_IDE:
+                case PCIESS_RP_INT_AES_HCFG:
+                    FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d] IRQ[%d]: IDE interrupt!\n", ss->id, rp_idx, (unsigned int)irq_num);
+                    break;
+                /* Fall through for all non-por interrupts that aren't handled */
+                case PCIESS_RP_INT_HP_PME:
+                case PCIESS_RP_INT_WAKEUP:
+                case PCIESS_RP_INT_PM_PME:
+                case PCIESS_RP_INT_PM_TO_ACK:
+                case PCIESS_RP_INT_SEND_C:
+                case PCIESS_RP_INT_SEND_NF:
+                case PCIESS_RP_INT_SEND_F:
+                default:
+                    FPFW_DBGPRINT_WARNING("RPSS[%d] RP[%d] IRQ[%d]: Non-POR interrupt (%d) fired\n!\n",
+                                          ss->id,
+                                          rp_idx,
+                                          (unsigned int)irq_num,
+                                          (unsigned int)int_idx);
+                    break;
                 }
             }
-            // If int_present is set for a given RP, then complete the request for that
-            // specific RP
+
+            /*
+             * If int_present is set for a given RP, then complete the request
+             * for that specific RP
+             */
             if (int_present)
             {
                 pending_req = get_pending_async_req_for_this_rp(ss->id, rp_idx, WAIT_FOR_EVENT);
                 if (pending_req)
                 {
-                    // Update Req Completion Data
-                    // Update pending_req with INT data
-                    pending_req->async_data.data = int_data;
-
+                    pending_req->async_data.int_mask = int_mask;
+                    pending_req->async_data.int_data = int_data;
                     complete_async_req_for_this_rp(pending_req);
                 }
             }
         }
-    }
 
-    /* Clear Pending PCIESS INT  */
-    pciess_clear_handler(ss, &int_info, INTU_TO_SCP);
+        /* Clear all pending interrupts */
+        pciess_clear_handler(ss, &int_info, INTU_TO_SCP);
+    }
 }

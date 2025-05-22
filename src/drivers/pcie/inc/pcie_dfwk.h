@@ -36,7 +36,7 @@ typedef enum _pcie_rp_sync_request_t
     INITIAL_CONFIG_REQUEST = 0x00,
     PRE_RP_INIT_REQUEST,
     POST_RP_INIT_REQUEST,
-	INITIATE_LINK_TRAINING,
+    INITIATE_LINK_TRAINING,
     SET_SECONDARY_BUS_RESET_REQUEST,
     CLEAR_SECONDARY_BUS_RESET_REQUEST,
     GET_RPSS_ENTITY_REQUEST,
@@ -52,8 +52,9 @@ typedef enum _pcie_rp_sync_request_t
  */
 typedef struct _pcie_async_data_t
 {
-    uint32_t data;
-}pcie_async_data_t;
+    uint32_t int_mask;
+    uint64_t int_data;
+} pcie_async_data_t;
 
 typedef enum _pcie_cli_req_op_t
 {

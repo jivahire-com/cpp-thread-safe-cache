@@ -9,6 +9,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <DfwkDriver.h>
 #include <DfwkPtrTypes.h>
 #include <FpFwUtils.h>
@@ -17,7 +18,6 @@
 #include <silibs_kng_soc.h>
 #include <silibs_status.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -131,7 +131,7 @@ void pcie_per_rp_dispatch(PDFWK_ASYNC_REQUEST_HEADER req, void* context)
         unsigned int status = add_async_req_to_pool(r);
         if (status != TX_SUCCESS)
         {
-            printf("Failed to enqueue request for RPSS: %d | RP Index: %d! Status: %d\n", r->rpss_index, r->rp_index, status);
+            FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Failed to enqueue request! Status: %d\n", r->rpss_index, r->rp_index, status);
             DfwkAsyncRequestComplete(req);
             return;
         }
@@ -143,7 +143,7 @@ void pcie_per_rp_dispatch(PDFWK_ASYNC_REQUEST_HEADER req, void* context)
             break;
         }
         default: {
-            printf("Received an unknown request for RPSS: %d | RP Index: %d!\n", r->rpss_index, r->rp_index);
+            FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Received an unknown request!\n", r->rpss_index, r->rp_index);
             r->status = SILIBS_E_PARAM;
             complete_async_req_for_this_rp(r);
             break;
@@ -169,7 +169,7 @@ void pcie_default_dispatch(PDFWK_ASYNC_REQUEST_HEADER incoming, void* context)
 
     if (r->rp_index >= PCIESS_NUM_PORTS || r->rpss_index >= PCIE_NUM_RPSS)
     {
-        printf("Root port invalid for RPSS: %d | RP Index: %d!\n", r->rpss_index, r->rp_index);
+        FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Root port ranges invalid!\n", r->rpss_index, r->rp_index);
         r->status = SILIBS_E_PARAM;
         DfwkAsyncRequestComplete(incoming);
         return;

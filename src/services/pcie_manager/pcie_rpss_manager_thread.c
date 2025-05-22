@@ -103,11 +103,11 @@ void rpss_service_thread_fn(ULONG thread_input)
         (void)tx_queue_receive(&(ctx->work_queue), (void*)&cmpl_req, TX_WAIT_FOREVER);
 
         /* Handle completion based on request type */
-        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: WAIT_FOR_EVENT completed | Op: %d | Status: %d |\n",
+        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: WAIT_FOR_EVENT completed | Op: %d | Interrupt Mask: %d |\n",
                            ctx->rpss_idx,
                            cmpl_req.rp_index,
                            cmpl_req.op,
-                           (int)cmpl_req.async_data.data);
+                           (int)cmpl_req.async_data.int_mask);
 
         process_wait_for_event_data(ctx, &cmpl_req);
         fflush(stdout);

@@ -24,6 +24,8 @@
 #include <tx_port.h>
 
 extern "C" {
+#include "pcie_silibs_mocks.h"
+
 #include <DfwkPtrTypes.h>
 #include <error_handler.h>
 #include <kng_soc_constants.h>
@@ -56,7 +58,6 @@ bool __real_config_get_pcie_configuration_mirroring(void);
 static pciess_device_t dev;
 static pciess_device_interface_t iface;
 static pcie_async_request_t r;
-static pciess_int_probe_t mock_int_info;
 /* mock entity*/
 pcie_ss_entity_t mock_pcie_ent;
 
@@ -597,7 +598,7 @@ TEST_FUNCTION(test_complete_async_req_error_paths, test_setup, test_teardown)
     complete_async_req_for_this_rp(nullptr);
 }
 
-TEST_FUNCTION(test_rpss_int, test_setup, test_teardown)
+TEST_FUNCTION(test_rpss_int_link_up, test_setup, test_teardown)
 {
     will_return_always(__wrap_idsw_get_die_id, 0);
     expect_any_always(__wrap__txe_semaphore_get, semaphore_ptr);
@@ -610,10 +611,53 @@ TEST_FUNCTION(test_rpss_int, test_setup, test_teardown)
     for (uint8_t i = RPSS0; i < RPSS4; i++, irq_num++)
     {
         /* Setup the request */
+        memset(&r, 0x0, sizeof(r));
+        memset(&mock_int_info, 0x0, sizeof(mock_int_info));
         iface.dev = &dev;
         r.header.OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
         r.rpss_index = (RPSS_INSTANCE)i;
-        ;
+        r.rp_index = 0;
+        r.rp_op = WAIT_FOR_EVENT;
+
+        add_async_req_to_pool(&r);
+        mock_pcie_ent.id = (RPSS_INSTANCE)i;
+        mock_pcie_ent.rps[0].enabled = true;
+        mock_pcie_ent.rps[1].enabled = false;
+        mock_pcie_ent.rps[2].enabled = false;
+        mock_pcie_ent.rps[3].enabled = false;
+
+        mock_int_info.rp_ints[0].ints[PCIESS_RP_INT_LINK_UP].asserted = true;
+
+        /* Setup silibs expectations */
+        expect_value(__wrap_pciess_get_entity, rpss_idx, i);
+        will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+        expect_value(__wrap_DfwkAsyncRequestComplete, Request, &(r.header));
+        will_return(__wrap_pciess_probe, true);
+
+        rpss_irq_callback(irq_num);
+        assert_int_equal(r.async_data.int_mask, (1 << PCIESS_RP_INT_LINK_UP));
+        assert_int_equal(r.async_data.int_data, 0);
+    }
+}
+
+TEST_FUNCTION(test_rpss_int_link_down, test_setup, test_teardown)
+{
+    will_return_always(__wrap_idsw_get_die_id, 0);
+    expect_any_always(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_value_count(__wrap__txe_semaphore_get, wait_option, TX_NO_WAIT, -1);
+    will_return_always(__wrap__txe_semaphore_get, TX_SUCCESS);
+    expect_any_always(__wrap__txe_semaphore_put, semaphore_ptr);
+    will_return_always(__wrap__txe_semaphore_put, TX_SUCCESS);
+
+    uint32_t irq_num = HW_INT_VAB0_COMBINED_SCP_INT;
+    for (uint8_t i = RPSS0; i < RPSS4; i++, irq_num++)
+    {
+        /* Setup the request */
+        memset(&r, 0x0, sizeof(r));
+        memset(&mock_int_info, 0x0, sizeof(mock_int_info));
+        iface.dev = &dev;
+        r.header.OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
+        r.rpss_index = (RPSS_INSTANCE)i;
         r.rp_index = 0;
         r.rp_op = WAIT_FOR_EVENT;
 
@@ -625,8 +669,6 @@ TEST_FUNCTION(test_rpss_int, test_setup, test_teardown)
         mock_pcie_ent.rps[3].enabled = false;
 
         mock_int_info.rp_ints[0].ints[PCIESS_RP_INT_LINK_DOWN].asserted = true;
-        mock_int_info.rp_ints[0].ints[PCIESS_RP_INT_LINK_UP].asserted = true;
-        mock_int_info.rp_ints[0].ints[PCIESS_RP_INT_DPC].asserted = true;
 
         /* Setup silibs expectations */
         expect_value(__wrap_pciess_get_entity, rpss_idx, i);
@@ -635,6 +677,273 @@ TEST_FUNCTION(test_rpss_int, test_setup, test_teardown)
         will_return(__wrap_pciess_probe, true);
 
         rpss_irq_callback(irq_num);
+        assert_int_equal(r.async_data.int_mask, (1 << PCIESS_RP_INT_LINK_DOWN));
+        assert_int_equal(r.async_data.int_data, 0);
+    }
+}
+
+TEST_FUNCTION(test_rpss_int_dtim, test_setup, test_teardown)
+{
+    will_return_always(__wrap_idsw_get_die_id, 0);
+    expect_any_always(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_value_count(__wrap__txe_semaphore_get, wait_option, TX_NO_WAIT, -1);
+    will_return_always(__wrap__txe_semaphore_get, TX_SUCCESS);
+    expect_any_always(__wrap__txe_semaphore_put, semaphore_ptr);
+    will_return_always(__wrap__txe_semaphore_put, TX_SUCCESS);
+
+    uint32_t irq_num = HW_INT_VAB0_COMBINED_SCP_INT;
+    for (uint8_t i = RPSS0; i < RPSS4; i++, irq_num++)
+    {
+        /* Setup the request */
+        memset(&r, 0x0, sizeof(r));
+        memset(&mock_int_info, 0x0, sizeof(mock_int_info));
+        iface.dev = &dev;
+        r.header.OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
+        r.rpss_index = (RPSS_INSTANCE)i;
+        r.rp_index = 0;
+        r.rp_op = WAIT_FOR_EVENT;
+
+        add_async_req_to_pool(&r);
+        mock_pcie_ent.id = (RPSS_INSTANCE)i;
+        mock_pcie_ent.rps[0].enabled = true;
+        mock_pcie_ent.rps[1].enabled = false;
+        mock_pcie_ent.rps[2].enabled = false;
+        mock_pcie_ent.rps[3].enabled = false;
+
+        mock_int_info.rp_ints[0].ints[PCIESS_RP_INT_DTIM].asserted = true;
+        mock_int_info.rp_ints[0].ints[PCIESS_RP_INT_DTIM].status = 0x101;
+
+        /* Setup silibs expectations */
+        expect_value(__wrap_pciess_get_entity, rpss_idx, i);
+        will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+        expect_value(__wrap_DfwkAsyncRequestComplete, Request, &(r.header));
+        will_return(__wrap_pciess_probe, true);
+
+        rpss_irq_callback(irq_num);
+        assert_int_equal(r.async_data.int_mask, (1 << PCIESS_RP_INT_DTIM));
+        assert_int_equal(r.async_data.int_data, 0x101);
+    }
+}
+
+TEST_FUNCTION(test_rpss_int_ltim, test_setup, test_teardown)
+{
+    will_return_always(__wrap_idsw_get_die_id, 0);
+    expect_any_always(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_value_count(__wrap__txe_semaphore_get, wait_option, TX_NO_WAIT, -1);
+    will_return_always(__wrap__txe_semaphore_get, TX_SUCCESS);
+    expect_any_always(__wrap__txe_semaphore_put, semaphore_ptr);
+    will_return_always(__wrap__txe_semaphore_put, TX_SUCCESS);
+
+    uint32_t irq_num = HW_INT_VAB0_COMBINED_SCP_INT;
+    for (uint8_t i = RPSS0; i < RPSS4; i++, irq_num++)
+    {
+        /* Setup the request */
+        memset(&r, 0x0, sizeof(r));
+        memset(&mock_int_info, 0x0, sizeof(mock_int_info));
+        iface.dev = &dev;
+        r.header.OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
+        r.rpss_index = (RPSS_INSTANCE)i;
+        r.rp_index = 0;
+        r.rp_op = WAIT_FOR_EVENT;
+
+        add_async_req_to_pool(&r);
+        mock_pcie_ent.id = (RPSS_INSTANCE)i;
+        mock_pcie_ent.rps[0].enabled = true;
+        mock_pcie_ent.rps[1].enabled = false;
+        mock_pcie_ent.rps[2].enabled = false;
+        mock_pcie_ent.rps[3].enabled = false;
+
+        mock_int_info.rp_ints[0].ints[PCIESS_RP_INT_LTIM].asserted = true;
+        mock_int_info.rp_ints[0].ints[PCIESS_RP_INT_LTIM].status = 0xC001;
+
+        /* Setup silibs expectations */
+        expect_value(__wrap_pciess_get_entity, rpss_idx, i);
+        will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+        expect_value(__wrap_DfwkAsyncRequestComplete, Request, &(r.header));
+        will_return(__wrap_pciess_probe, true);
+
+        rpss_irq_callback(irq_num);
+        assert_int_equal(r.async_data.int_mask, (1 << PCIESS_RP_INT_LTIM));
+        assert_int_equal(r.async_data.int_data, 0xC001);
+    }
+}
+
+TEST_FUNCTION(test_rpss_int_rasdp, test_setup, test_teardown)
+{
+    will_return_always(__wrap_idsw_get_die_id, 0);
+    expect_any_always(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_value_count(__wrap__txe_semaphore_get, wait_option, TX_NO_WAIT, -1);
+    will_return_always(__wrap__txe_semaphore_get, TX_SUCCESS);
+    expect_any_always(__wrap__txe_semaphore_put, semaphore_ptr);
+    will_return_always(__wrap__txe_semaphore_put, TX_SUCCESS);
+
+    uint32_t irq_num = HW_INT_VAB0_COMBINED_SCP_INT;
+    for (uint8_t i = RPSS0; i < RPSS4; i++, irq_num++)
+    {
+        /* Setup the request */
+        memset(&r, 0x0, sizeof(r));
+        memset(&mock_int_info, 0x0, sizeof(mock_int_info));
+        iface.dev = &dev;
+        r.header.OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
+        r.rpss_index = (RPSS_INSTANCE)i;
+        r.rp_index = 0;
+        r.rp_op = WAIT_FOR_EVENT;
+
+        add_async_req_to_pool(&r);
+        mock_pcie_ent.id = (RPSS_INSTANCE)i;
+        mock_pcie_ent.rps[0].enabled = true;
+        mock_pcie_ent.rps[1].enabled = false;
+        mock_pcie_ent.rps[2].enabled = false;
+        mock_pcie_ent.rps[3].enabled = false;
+
+        mock_int_info.rp_ints[0].ints[PCIESS_RP_INT_RASDP].asserted = true;
+        mock_int_info.rp_ints[0].ints[PCIESS_RP_INT_RASDP].status = 0x0;
+
+        /* Setup silibs expectations */
+        expect_value(__wrap_pciess_get_entity, rpss_idx, i);
+        will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+        expect_value(__wrap_DfwkAsyncRequestComplete, Request, &(r.header));
+        will_return(__wrap_pciess_probe, true);
+        will_return(__wrap_pcie_rp_vsecras_clear_rasdp_error_mode, SILIBS_SUCCESS);
+
+        rpss_irq_callback(irq_num);
+        assert_int_equal(r.async_data.int_mask, (1 << PCIESS_RP_INT_RASDP));
+        assert_int_equal(r.async_data.int_data, 0x0);
+    }
+}
+
+TEST_FUNCTION(test_rpss_int_dpc, test_setup, test_teardown)
+{
+    will_return_always(__wrap_idsw_get_die_id, 0);
+    expect_any_always(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_value_count(__wrap__txe_semaphore_get, wait_option, TX_NO_WAIT, -1);
+    will_return_always(__wrap__txe_semaphore_get, TX_SUCCESS);
+    expect_any_always(__wrap__txe_semaphore_put, semaphore_ptr);
+    will_return_always(__wrap__txe_semaphore_put, TX_SUCCESS);
+
+    uint32_t irq_num = HW_INT_VAB0_COMBINED_SCP_INT;
+    for (uint8_t i = RPSS0; i < RPSS4; i++, irq_num++)
+    {
+        /* Setup the request */
+        memset(&r, 0x0, sizeof(r));
+        memset(&mock_int_info, 0x0, sizeof(mock_int_info));
+        iface.dev = &dev;
+        r.header.OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
+        r.rpss_index = (RPSS_INSTANCE)i;
+        r.rp_index = 0;
+        r.rp_op = WAIT_FOR_EVENT;
+
+        add_async_req_to_pool(&r);
+        mock_pcie_ent.id = (RPSS_INSTANCE)i;
+        mock_pcie_ent.rps[0].enabled = true;
+        mock_pcie_ent.rps[1].enabled = false;
+        mock_pcie_ent.rps[2].enabled = false;
+        mock_pcie_ent.rps[3].enabled = false;
+
+        mock_int_info.rp_ints[0].ints[PCIESS_RP_INT_DPC].asserted = true;
+        mock_int_info.rp_ints[0].ints[PCIESS_RP_INT_DPC].status = 0x0;
+
+        /* Setup silibs expectations */
+        expect_value(__wrap_pciess_get_entity, rpss_idx, i);
+        will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+        expect_value(__wrap_DfwkAsyncRequestComplete, Request, &(r.header));
+        will_return(__wrap_pciess_probe, true);
+
+        rpss_irq_callback(irq_num);
+        assert_int_equal(r.async_data.int_mask, (1 << PCIESS_RP_INT_DPC));
+        assert_int_equal(r.async_data.int_data, 0x0);
+    }
+}
+
+TEST_FUNCTION(test_rpss_int_ide, test_setup, test_teardown)
+{
+    will_return_always(__wrap_idsw_get_die_id, 0);
+
+    for (uint8_t ide_int_idx = PCIESS_RP_INT_GLOBAL_IDE; ide_int_idx <= PCIESS_RP_INT_AES_HCFG; ide_int_idx++)
+    {
+        uint32_t irq_num = HW_INT_VAB0_COMBINED_SCP_INT;
+        for (uint8_t i = RPSS0; i < RPSS4; i++, irq_num++)
+        {
+            memset(&mock_int_info, 0x0, sizeof(mock_int_info));
+
+            mock_pcie_ent.id = (RPSS_INSTANCE)i;
+            mock_pcie_ent.rps[0].enabled = true;
+            mock_pcie_ent.rps[1].enabled = false;
+            mock_pcie_ent.rps[2].enabled = false;
+            mock_pcie_ent.rps[3].enabled = false;
+
+            mock_int_info.rp_ints[0].ints[ide_int_idx].asserted = true;
+            mock_int_info.rp_ints[0].ints[ide_int_idx].status = 0x0;
+
+            /* Setup silibs expectations */
+            expect_value(__wrap_pciess_get_entity, rpss_idx, i);
+            will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+            will_return(__wrap_pciess_probe, true);
+
+            /* IDE interrupts are unhandled at the moment */
+            rpss_irq_callback(irq_num);
+            assert_int_equal(r.async_data.int_mask, 0x0);
+            assert_int_equal(r.async_data.int_data, 0x0);
+        }
+    }
+}
+
+TEST_FUNCTION(test_rpss_int_non_por, test_setup, test_teardown)
+{
+    will_return_always(__wrap_idsw_get_die_id, 0);
+
+    for (uint8_t non_por_idx = PCIESS_RP_INT_HP_PME; non_por_idx <= PCIESS_RP_INT_PM_TO_ACK; non_por_idx++)
+    {
+        uint32_t irq_num = HW_INT_VAB0_COMBINED_SCP_INT;
+        for (uint8_t i = RPSS0; i < RPSS4; i++, irq_num++)
+        {
+            memset(&mock_int_info, 0x0, sizeof(mock_int_info));
+
+            mock_pcie_ent.id = (RPSS_INSTANCE)i;
+            mock_pcie_ent.rps[0].enabled = true;
+            mock_pcie_ent.rps[1].enabled = false;
+            mock_pcie_ent.rps[2].enabled = false;
+            mock_pcie_ent.rps[3].enabled = false;
+
+            mock_int_info.rp_ints[0].ints[non_por_idx].asserted = true;
+            mock_int_info.rp_ints[0].ints[non_por_idx].status = 0x0;
+
+            /* Setup silibs expectations */
+            expect_value(__wrap_pciess_get_entity, rpss_idx, i);
+            will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+            will_return(__wrap_pciess_probe, true);
+
+            rpss_irq_callback(irq_num);
+            assert_int_equal(r.async_data.int_mask, 0x0);
+            assert_int_equal(r.async_data.int_data, 0x0);
+        }
+    }
+
+    for (uint8_t non_por_idx = PCIESS_RP_INT_SEND_C; non_por_idx <= PCIESS_RP_INT_SEND_F; non_por_idx++)
+    {
+        uint32_t irq_num = HW_INT_VAB0_COMBINED_SCP_INT;
+        for (uint8_t i = RPSS0; i < RPSS4; i++, irq_num++)
+        {
+            memset(&mock_int_info, 0x0, sizeof(mock_int_info));
+
+            mock_pcie_ent.id = (RPSS_INSTANCE)i;
+            mock_pcie_ent.rps[0].enabled = true;
+            mock_pcie_ent.rps[1].enabled = false;
+            mock_pcie_ent.rps[2].enabled = false;
+            mock_pcie_ent.rps[3].enabled = false;
+
+            mock_int_info.rp_ints[0].ints[non_por_idx].asserted = true;
+            mock_int_info.rp_ints[0].ints[non_por_idx].status = 0x0;
+
+            /* Setup silibs expectations */
+            expect_value(__wrap_pciess_get_entity, rpss_idx, i);
+            will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+            will_return(__wrap_pciess_probe, true);
+
+            rpss_irq_callback(irq_num);
+            assert_int_equal(r.async_data.int_mask, 0x0);
+            assert_int_equal(r.async_data.int_data, 0x0);
+        }
     }
 }
 

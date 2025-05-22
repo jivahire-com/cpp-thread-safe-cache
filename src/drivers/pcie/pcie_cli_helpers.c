@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <pcie_dfwk.h>
 #include <pcie_rp_common.h>
 #include <pcie_rp_dbi.h>
@@ -17,7 +18,6 @@
 #include <rc4sx16_pf0_type1_hdr_regs.h>
 #include <silibs_status.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -75,7 +75,7 @@ void handle_cli_request(pcie_sync_request_t* r)
     pcie_cli_req_op_t* p_cli_req = (pcie_cli_req_op_t*)(r->p_sent_data);
     if (p_cli_req == NULL)
     {
-        printf("%s: p_cli_req is NULL - cannot process cli request!\n", __FUNCTION__);
+        FPFW_DBGPRINT_ERROR("[PCIe CLI] p_cli_req is NULL - cannot process request!\n");
         return;
     }
 
@@ -91,7 +91,7 @@ void handle_cli_request(pcie_sync_request_t* r)
         get_rp_dbi_cfg_hdr(r);
         break;
     default:
-        printf("%s: Unknown CLI_REQUEST OP: %d\n", __FUNCTION__, *(p_cli_req));
+        FPFW_DBGPRINT_ERROR("[PCIe CLI] Unknown CLI_REQUEST OP: %d\n", *(p_cli_req));
         break;
     }
 }

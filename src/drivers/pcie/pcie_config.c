@@ -9,6 +9,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <FpFwAssert.h>
 #include <fpfw_cfg_mgr.h>
 #include <kng_soc_constants.h>
@@ -19,7 +20,6 @@
 #include <pcie_struct_defaults.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <system_info.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -163,7 +163,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id,
     default:
         /* Invalid RPSS ID */
         /* This should never happen */
-        printf("[PCIe Configuration] Critical error! Invalid RPSS ID: %d\n", rpss_id);
+        FPFW_DBGPRINT_ERROR("[PCIe Configuration] Critical error! Invalid RPSS ID: %d\n", rpss_id);
         FPFW_RUNTIME_ASSERT(false);
         break;
     }
@@ -268,7 +268,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
     default:
         /* Invalid RPSS ID */
         /* This should never happen */
-        printf("[PCIe Configuration] Critical error! Invalid RPSS ID: %d\n", rpss_id);
+        FPFW_DBGPRINT_ERROR("[PCIe Configuration] Critical error! Invalid RPSS ID: %d\n", rpss_id);
         FPFW_RUNTIME_ASSERT(false);
         break;
     }
@@ -386,7 +386,7 @@ pcie_cfg_t* get_configuration_for_rpss(uint8_t rpss_id)
     {
         /* Invalid RPSS ID */
         /* This should never happen */
-        printf("[PCIe Configuration] Critical error! Invalid RPSS ID: %d\n", rpss_id);
+        FPFW_DBGPRINT_ERROR("[PCIe Configuration] Critical error! Invalid RPSS ID: %d\n", rpss_id);
         FPFW_RUNTIME_ASSERT(false);
     }
 
@@ -401,7 +401,7 @@ pcie_prod_cfg_workarounds_t* get_workaround_for_rpss(uint8_t rpss_id)
     {
         /* Invalid RPSS ID */
         /* This should never happen */
-        printf("[PCIe Workaround] Critical error! Invalid RPSS ID: %d\n", rpss_id);
+        FPFW_DBGPRINT_ERROR("[PCIe Workaround] Critical error! Invalid RPSS ID: %d\n", rpss_id);
         FPFW_RUNTIME_ASSERT(false);
     }
 

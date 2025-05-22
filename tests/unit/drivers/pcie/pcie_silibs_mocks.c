@@ -8,6 +8,8 @@
  */
 
 /*------------- Includes -----------------*/
+#include "pcie_silibs_mocks.h"
+
 #include <FpFwCMocka.h>       // IWYU pragma: keep
 #include <FpFwUtils.h>        // for FPFW_UNUSED
 #include <atu_lib.h>          // for atu_id_t, atu_map_entry_t
@@ -27,6 +29,7 @@
 #include <silibs_status.h>         // for silibs_status_t
 #include <stdbool.h>               // for bool
 #include <stdint.h>                // for uintptr_t, uint64_t
+#include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -39,6 +42,7 @@ static pcie_x16_general_reg mock_general_reg_block;
 static pcie_x16_e32_phy_reg mock_phy_block;
 static e32_mem_map_reg mock_bcast_block;
 static rpss_p1_reg mock_p1_block;
+pciess_int_probe_t mock_int_info;
 
 /*------------- Functions ----------------*/
 idsw_die_id_t __wrap_idsw_get_die_id(void)
@@ -171,10 +175,7 @@ bool __wrap_pciess_probe(pcie_ss_entity_t* ss, pciess_int_probe_t* info, INTU_DE
     assert_non_null(info);
     assert_non_null(ss);
 
-    info->rp_ints[0].ints[PCIESS_RP_INT_LINK_DOWN].asserted = true;
-    info->rp_ints[0].ints[PCIESS_RP_INT_LINK_UP].asserted = true;
-    info->rp_ints[0].ints[PCIESS_RP_INT_DPC].asserted = true;
-
+    memcpy(info, &mock_int_info, sizeof(pciess_int_probe_t));
     (void)(dest);
 
     return mock_type(bool);
@@ -226,5 +227,11 @@ silibs_status_t __wrap_oi_pcie_ss_set_laattr_rp_overrides(pcie_ss_entity_t* ss, 
     assert_non_null(overrides);
     FPFW_UNUSED(wr_rd);
     FPFW_UNUSED(rp_index);
+    return mock_type(silibs_status_t);
+}
+
+int __wrap_pcie_rp_vsecras_clear_rasdp_error_mode(pcie_rp_entity_t* rp)
+{
+    assert_non_null(rp);
     return mock_type(silibs_status_t);
 }

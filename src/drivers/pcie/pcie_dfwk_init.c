@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <DfwkDriver.h>
 #include <DfwkHost.h>
 #include <FpFwAssert.h>
@@ -21,7 +22,6 @@
 #include <pciess_int.h>
 #include <silibs_status.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -42,7 +42,7 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
 
     if (r->rp_index >= PCIESS_NUM_PORTS || r->rpss_index >= PCIE_NUM_RPSS)
     {
-        printf("pcie sync request out of bounds: RPSS[%d] | RP Index[%d]!\n", r->rpss_index, r->rp_index);
+        FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: pcie sync request out of bounds!\n", r->rpss_index, r->rp_index);
         r->status = SILIBS_E_PARAM;
         return 0;
     }
@@ -50,19 +50,19 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
     switch (r->header.RequestType)
     {
     case (INITIAL_CONFIG_REQUEST):
-        printf("Begin initial RPSS: %1d programming!\n", r->rpss_index);
+        FPFW_DBGPRINT_INFO("RPSS[%d]: Begin initial programming!\n", r->rpss_index);
         sts = begin_rpss_init(incoming);
         break;
     case (PRE_RP_INIT_REQUEST):
-        printf("Begin RPSS: %1d pre-rp ready programming!\n", r->rpss_index);
+        FPFW_DBGPRINT_INFO("RPSS[%d]: Begin pre-rp ready programming!\n", r->rpss_index);
         sts = begin_rpss_pre_rp_ready_init(incoming);
         break;
     case (POST_RP_INIT_REQUEST):
-        printf("Begin RPSS: %1d post-rp ready programming!\n", r->rpss_index);
+        FPFW_DBGPRINT_INFO("RPSS[%d]: Begin post-rp ready programming!\n", r->rpss_index);
         sts = begin_rpss_post_rp_ready_init(incoming);
         break;
     case (INITIATE_LINK_TRAINING):
-        printf("Begin RPSS: %1d Link Training!\n", r->rpss_index);
+        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: Begin link training!\n", r->rpss_index, r->rp_index);
         begin_link_training(incoming);
         break;
     case (GET_RPSS_ENTITY_REQUEST):
@@ -91,7 +91,7 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
         handle_cli_request(r);
         break;
     default:
-        printf("Bad sync req type on RPSS: %d!\n", r->rpss_index);
+        FPFW_DBGPRINT_ERROR("RPSS[%d]: Bad sync req received!\n", r->rpss_index);
         sts = SILIBS_E_PARAM;
         break;
     }

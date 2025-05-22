@@ -89,10 +89,10 @@ void ddr_telemetry_report()
         dimm_info.dimm_power_mW = power_mW;
 
         ddr_manager_i3c_temperature_t temp0 = ddr_telemetry_get_dimm_temp(dimm_idx, 0);
-        dimm_info.dimm_temp_s0_dC = (10 * temp0.temp_int + (temp0.temp_frac / 10));
+        dimm_info.dimm_temp_s0_dC = (10 * temp0.temp_int) + temp0.temp_frac;
 
         ddr_manager_i3c_temperature_t temp1 = ddr_telemetry_get_dimm_temp(dimm_idx, 1);
-        dimm_info.dimm_temp_s1_dC = (10 * temp1.temp_int + (temp1.temp_frac / 10));
+        dimm_info.dimm_temp_s1_dC = (10 * temp1.temp_int) + temp1.temp_frac;
 
         // Send the telemetry data to the telemetry service
         sensor_fifo_svc_add_dimm_info(&dimm_info);

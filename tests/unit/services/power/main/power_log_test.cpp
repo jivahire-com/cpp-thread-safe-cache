@@ -38,7 +38,8 @@ extern "C" {
 power_log_data_t* log1;
 static char log_data[POWER_LOG_LOCAL_SIZE] = {};
 bool use_wrap = false;
-static uint8_t mapped_buffer[POWER_LOG_DDR_ENTRY_SIZE] = {0};
+
+static __declspec(align(16)) uint8_t mapped_buffer[POWER_LOG_DDR_ENTRY_SIZE] = {0};
 
 /*-------- Function Prototypes -----------*/
 void __real_mmio_write64(volatile uint64_t* addr, uint64_t data);
@@ -154,7 +155,6 @@ static int setup(void** state)
     power_log_update_timestamp(0);
 
     use_wrap = true;
-
     return 0;
 }
 

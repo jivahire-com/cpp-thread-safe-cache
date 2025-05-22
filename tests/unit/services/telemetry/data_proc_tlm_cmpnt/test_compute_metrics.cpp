@@ -1,4 +1,3 @@
-
 //
 // Copyright (c) Microsoft Corporation. All rights reserved.
 //
@@ -36,6 +35,8 @@ extern uint32_t pstate_accum_uS[NUMBER_OF_CORES_PER_DIE][NUMBER_OF_PSTATES]; // 
 static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
+    comp_metrics_reset_2_mins_metrics();
+    comp_metrics_reset_24_hrs_metrics();
     return 0;
 }
 
@@ -81,33 +82,6 @@ TEST_FUNCTION(test_comp_metrics_for_cores_for_sampling_period, test_setup, test_
     {
         assert_int_equal(core[core_id].time_counter_uS, 5);
     }
-}
-
-TEST_FUNCTION(test_comp_metrics_for_soc_for_sampling_period, test_setup, test_teardown)
-{
-    // Initialize soc_info
-    soc_info.time_counter_uS = 0;
-    // Set up mock return values
-    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5);
-
-    // Call the function to be tested
-    comp_metrics_for_soc_for_sampling_period();
-    //  Add assertions to verify the expected behavior
-    assert_int_equal(soc_info.time_counter_uS, 0);
-
-    // here soc_info.time_counter_uS will be 5 ;
-    // Test :updated previous timestamp on next update.
-
-    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 10);
-    comp_metrics_for_soc_for_sampling_period();
-    //  Add assertions to verify the expected behavior
-    assert_int_equal(soc_info.time_counter_uS, 5); // 10-5 =5
-
-    // Test :update again.
-    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 15);
-    comp_metrics_for_soc_for_sampling_period();
-    //  Add assertions to verify the expected behavior
-    assert_int_equal(soc_info.time_counter_uS, 10); // 15-5 =5
 }
 
 // Unit test for  comp_metrics_for_single_core_current
@@ -167,34 +141,29 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_voltage, test_setup, test_teardo
 TEST_FUNCTION(test_comp_metrics_for_single_core_temperature, test_setup, test_teardown)
 {
     uint8_t core_id = 0;
-    uint32_t time_diff_uS = 100;
-    uint32_t residency_uS = 200;
 
     // Test case: Initial values
-    core[core_id].temperature.min_dC = 0;
-    core[core_id].temperature.max_dC = 0;
-    core[core_id].temperature.average_dC = 0;
-    core[core_id].temperature.latest_value_dC = 500;
+    computed_metrics_2_mins.cores[core_id].temperature_dC.min = 0;
+    computed_metrics_2_mins.cores[core_id].temperature_dC.max = 0;
+    computed_metrics_2_mins.cores[core_id].temperature_dC.running_avg.average = 0;
 
-    comp_metrics_for_single_core_temperature(core_id, time_diff_uS, residency_uS);
+    comp_metrics_for_single_core_temperature(core_id, 500);
 
-    assert_int_equal(core[core_id].temperature.min_dC, 500);
-    assert_int_equal(core[core_id].temperature.max_dC, 500);
-    assert_int_equal(core[core_id].temperature.average_dC, 500); // first time we keep it 500
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].temperature_dC.min, 500);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].temperature_dC.max, 500);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].temperature_dC.running_avg.average, 500);
 
     // Test case: Update with new latest value
-    core[core_id].temperature.latest_value_dC = 600;
-    comp_metrics_for_single_core_temperature(core_id, time_diff_uS, residency_uS);
-    assert_int_equal(core[core_id].temperature.min_dC, 500);
-    assert_int_equal(core[core_id].temperature.max_dC, 600);
-    assert_int_equal(core[core_id].temperature.average_dC, 550); // (500 + 600) / 2
+    comp_metrics_for_single_core_temperature(core_id, 600);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].temperature_dC.min, 500);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].temperature_dC.max, 600);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].temperature_dC.running_avg.average, 550);
 
     // Test case: Update with lower latest value
-    core[core_id].temperature.latest_value_dC = 400;
-    comp_metrics_for_single_core_temperature(core_id, time_diff_uS, residency_uS);
-    assert_int_equal(core[core_id].temperature.min_dC, 400);
-    assert_int_equal(core[core_id].temperature.max_dC, 600);
-    assert_int_equal(core[core_id].temperature.average_dC, 475); // (550 + 400) / 2
+    comp_metrics_for_single_core_temperature(core_id, 400);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].temperature_dC.min, 400);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].temperature_dC.max, 600);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].temperature_dC.running_avg.average, 500);
 }
 
 // Unit test for  comp_metrics_for_single_tile_vcpu
@@ -263,91 +232,82 @@ TEST_FUNCTION(test_comp_metrics_for_single_tile_vsys, test_setup, test_teardown)
 
 TEST_FUNCTION(test_comp_metrics_for_soc_rail_voltage, test_setup, test_teardown)
 {
-
     uint8_t vr_index = 2;
-    uint32_t time_diff_uS = 100;
-    uint32_t residency_uS = 200;
 
-    // Initialize soc_info with some values
-    soc_info.rail[vr_index].voltage.min_mV = 1000;
-    soc_info.rail[vr_index].voltage.max_mV = 2000;
-    soc_info.rail[vr_index].voltage.average_mV = 1500;
-    soc_info.rail[vr_index].voltage.latest_value_mV = 1800;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.min = 1000;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.max = 2000;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.running_avg.average = 1500;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.running_avg.num_samples = 3;
 
+    soc_info.latest_rail_voltage_mV[vr_index] = 3000;
     // Call the function to be tested
-    comp_metrics_for_soc_rail_voltage(vr_index, time_diff_uS, residency_uS);
+    comp_metrics_for_soc_rail_voltage(&soc_info.latest_rail_voltage_mV);
 
     // Add assertions to verify the expected behavior
-    assert_int_equal(soc_info.rail[vr_index].voltage.min_mV, 1000);
-    assert_int_equal(soc_info.rail[vr_index].voltage.max_mV, 2000);
-    assert_int_equal(soc_info.rail[vr_index].voltage.average_mV, 1650);
-    assert_int_equal(soc_info.rail[vr_index].voltage.latest_value_mV, 1800);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.min, 1000);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.max, 3000);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.running_avg.average, 1875);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.running_avg.num_samples, 4);
 }
 
 TEST_FUNCTION(test_comp_metrics_for_soc_rail_current, test_setup, test_teardown)
 {
     uint8_t vr_index = 2;
-    uint32_t time_diff_uS = 100;
-    uint32_t residency_uS = 200;
 
-    // Initialize soc_info with some values
-    soc_info.rail[vr_index].current.min_mA = 500;
-    soc_info.rail[vr_index].current.max_mA = 1000;
-    soc_info.rail[vr_index].current.average_mA = 750;
-    soc_info.rail[vr_index].current.latest_value_mA = 900;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.min = 500;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.max = 1000;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.running_avg.average = 750;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.running_avg.num_samples = 3;
 
+    soc_info.latest_rail_current_mA[vr_index] = 2000;
     // Call the function to be tested
-    comp_metrics_for_soc_rail_current(vr_index, time_diff_uS, residency_uS);
+    comp_metrics_for_soc_rail_current(&soc_info.latest_rail_current_mA);
 
     // Add assertions to verify the expected behavior
-    assert_int_equal(soc_info.rail[vr_index].current.min_mA, 500);
-    assert_int_equal(soc_info.rail[vr_index].current.max_mA, 1000);
-    assert_int_equal(soc_info.rail[vr_index].current.average_mA, 825);
-    assert_int_equal(soc_info.rail[vr_index].current.latest_value_mA, 900);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.min, 500);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.max, 2000);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.running_avg.average, 1063);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.running_avg.num_samples, 4);
 }
 
 TEST_FUNCTION(test_comp_metrics_for_single_hnf_channel, test_setup, test_teardown)
 {
-    uint8_t hnf_index = 2;
-    uint32_t time_diff_uS = 100;
-    uint32_t residency_uS = 200;
+    uint8_t hnf_channel = 2;
 
     // Initialize soc_info with some values
-    soc_info.hnf[hnf_index].min_dC = 30;
-    soc_info.hnf[hnf_index].max_dC = 70;
-    soc_info.hnf[hnf_index].average_dC = 50;
-    soc_info.hnf[hnf_index].latest_value_dC = 60;
+    computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].min = 30;
+    computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].max = 70;
+    computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].running_avg.average = 50;
+    computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].running_avg.num_samples = 1;
 
     // Call the function to be tested
-    comp_metrics_for_single_hnf_channel(hnf_index, time_diff_uS, residency_uS);
+    comp_metrics_for_single_hnf_channel(hnf_channel, 60);
 
     // Add assertions to verify the expected behavior
-    assert_int_equal(soc_info.hnf[hnf_index].min_dC, 30);
-    assert_int_equal(soc_info.hnf[hnf_index].max_dC, 70);
-    assert_int_equal(soc_info.hnf[hnf_index].average_dC, 55);
-    assert_int_equal(soc_info.hnf[hnf_index].latest_value_dC, 60);
+    assert_int_equal(computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].min, 30);
+    assert_int_equal(computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].max, 70);
+    assert_int_equal(computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].running_avg.average, 55);
 }
 
-TEST_FUNCTION(test_comp_metrics_for_single_soc_temp_sensor, test_setup, test_teardown)
+TEST_FUNCTION(test_comp_metrics_for_soc_top_temp_sensor, test_setup, test_teardown)
 {
-    uint8_t pvt_index = 2;
-    uint32_t time_diff_uS = 100;
-    uint32_t residency_uS = 200;
+    // Arrange
+    uint16_t test_values[NUMBER_OF_SOC_TEMP_SENSORS];
+    for (uint16_t i = 0; i < NUMBER_OF_SOC_TEMP_SENSORS; ++i)
+    {
+        test_values[i] = 20 + i; // Assign unique values for each sensor
+    }
 
-    // Initialize soc_info with some values
-    soc_info.sensor_temp[pvt_index].min_dC = 25;
-    soc_info.sensor_temp[pvt_index].max_dC = 75;
-    soc_info.sensor_temp[pvt_index].average_dC = 50;
-    soc_info.sensor_temp[pvt_index].latest_value_dC = 65;
+    // Act
+    comp_metrics_for_soc_top_temp_sensor(&test_values);
 
-    // Call the function to be tested
-    comp_metrics_for_single_soc_temp_sensor(pvt_index, time_diff_uS, residency_uS);
-
-    // Add assertions to verify the expected behavior
-    assert_int_equal(soc_info.sensor_temp[pvt_index].min_dC, 25);
-    assert_int_equal(soc_info.sensor_temp[pvt_index].max_dC, 75);
-    assert_int_equal(soc_info.sensor_temp[pvt_index].average_dC, 57);
-    assert_int_equal(soc_info.sensor_temp[pvt_index].latest_value_dC, 65);
+    // Assert
+    for (uint16_t i = 0; i < NUMBER_OF_SOC_TEMP_SENSORS; ++i)
+    {
+        assert_int_equal(computed_metrics_2_mins.soc.top_sensor_temp_dC[i].min, test_values[i]);
+        assert_int_equal(computed_metrics_2_mins.soc.top_sensor_temp_dC[i].max, test_values[i]);
+        assert_int_equal(computed_metrics_2_mins.soc.top_sensor_temp_dC[i].running_avg.average, test_values[i]);
+    }
 }
 
 TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm_temp, test_setup, test_teardown)
@@ -568,10 +528,8 @@ TEST_FUNCTION(test_comp_metrics_for_tiles_for_sampling_period, test_setup, test_
     for (uint8_t tile_id = 0; tile_id < NUMBER_OF_TILES_PER_DIE; tile_id++)
     {
         tile[tile_id].time_counter_uS = 0;
-        tile[tile_id].active_sample_max_temperature_dC = 50;
-        tile[tile_id].max_tile_temperature_dC = 40;
-        tile[tile_id].active_sample_max_id = 1;
-        tile[tile_id].max_tile_id = 0;
+        tile[tile_id].latest_max_tile_temp_dC = 50;
+        tile[tile_id].latest_max_temp_tile_index = 1;
     }
     // Set up mock return values for tlm_get_timestamp_microseconds
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5);
@@ -581,32 +539,28 @@ TEST_FUNCTION(test_comp_metrics_for_tiles_for_sampling_period, test_setup, test_
     for (uint8_t tile_id = 0; tile_id < NUMBER_OF_TILES_PER_DIE; tile_id++)
     {
         assert_int_equal(tile[tile_id].time_counter_uS, 0);
-        assert_int_equal(tile[tile_id].max_tile_temperature_dC, 50);
-        assert_int_equal(tile[tile_id].max_tile_id, 1);
+        assert_int_equal(tile[tile_id].latest_max_tile_temp_dC, 50);
     }
 
-    uint8_t temp_active_sample_max_temperature_dC = 60;
+    uint8_t mock_max_tile_temp_dC = 60;
     for (uint8_t tile_id = 0; tile_id < NUMBER_OF_TILES_PER_DIE; tile_id++)
     {
 
-        tile[tile_id].active_sample_max_temperature_dC = temp_active_sample_max_temperature_dC;
-        temp_active_sample_max_temperature_dC++;
-        tile[tile_id].max_tile_temperature_dC = 40;
-        tile[tile_id].active_sample_max_id = 1;
-        tile[tile_id].max_tile_id = 0;
+        tile[tile_id].latest_max_tile_temp_dC = mock_max_tile_temp_dC;
+        mock_max_tile_temp_dC++;
+        tile[tile_id].latest_max_temp_tile_index = 1;
     }
 
     //  Set up mock return values for tlm_get_timestamp_microseconds
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 10);
 
     comp_metrics_for_tiles_for_sampling_period();
-    temp_active_sample_max_temperature_dC = 60;
+    mock_max_tile_temp_dC = 60;
     for (uint8_t tile_id = 0; tile_id < NUMBER_OF_TILES_PER_DIE; tile_id++)
     {
         assert_int_equal(tile[tile_id].time_counter_uS, 5);
-        assert_int_equal(tile[tile_id].max_tile_temperature_dC, temp_active_sample_max_temperature_dC);
-        temp_active_sample_max_temperature_dC++;
-        assert_int_equal(tile[tile_id].max_tile_id, 1);
+        assert_int_equal(tile[tile_id].latest_max_tile_temp_dC, mock_max_tile_temp_dC);
+        mock_max_tile_temp_dC++;
     }
 }
 

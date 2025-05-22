@@ -126,7 +126,7 @@ typedef struct {
     uint16_t max_dC;
     uint16_t min_dC;
     uint16_t average_dC;
-    uint16_t latest_value_dC; // defined as reserved for tlm packages
+    uint16_t latest_value_dC; // some items store latest value
 } temperature_t;
 
 typedef struct {

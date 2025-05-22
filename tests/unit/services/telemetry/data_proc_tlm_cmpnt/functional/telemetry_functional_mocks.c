@@ -20,6 +20,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+void update_stats(stats_t* stats, uint16_t latest_value)
+{
+    if (latest_value < stats->min || stats->count == 0)
+    {
+        stats->min = latest_value;
+    }
+    if (latest_value > stats->max || stats->count == 0)
+    {
+        stats->max = latest_value;
+    }
+    // Integer rounding up: add (count + 1) / 2 to numerator
+    stats->avg =
+        (uint16_t)(((stats->avg * stats->count) + latest_value + ((stats->count + 1) / 2)) / (stats->count + 1));
+    stats->count++;
+}
+
 uint32_t time_t0 = 100;
 sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_tile_temperature(tile_temp_t* temperature_data, uint16_t* tile_index)
 {

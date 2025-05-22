@@ -44,7 +44,6 @@ void comp_metrics_for_sample_period(void)
 {
     comp_metrics_for_cores_for_sampling_period();
     comp_metrics_for_tiles_for_sampling_period();
-    comp_metrics_for_soc_for_sampling_period();
 }
 
 void comp_metrics_for_cores_for_sampling_period(void)
@@ -76,9 +75,6 @@ void comp_metrics_for_cores_for_sampling_period(void)
         /* Note that even if a core is disabled, voltage and temperature sensors
             are still running on those disabled cores */
 
-        // Check to update Core temperature
-        comp_metrics_for_single_core_temperature(core_id, time_diff_uS, core[core_id].time_counter_uS);
-
         // update residency to generate volt/temp histogram
         comp_metrics_for_single_core_histogram(core_id);
     }
@@ -96,50 +92,11 @@ void comp_metrics_for_tiles_for_sampling_period(void)
     {
         // update the time counter
         tile[tile_id].time_counter_uS += time_diff_uS;
-        if (tile[tile_id].active_sample_max_temperature_dC > tile[tile_id].max_tile_temperature_dC)
-        {
-            // Update the new Max tile temperature
-            tile[tile_id].max_tile_temperature_dC = tile[tile_id].active_sample_max_temperature_dC;
-            tile[tile_id].max_tile_id = tile[tile_id].active_sample_max_id;
-        }
 
         // Update the tile Vcpu and Vsys MMA
         comp_metrics_for_single_tile_vcpu(tile_id, time_diff_uS, tile[tile_id].time_counter_uS);
         comp_metrics_for_single_tile_vsys(tile_id, time_diff_uS, tile[tile_id].time_counter_uS);
     }
-}
-
-void comp_metrics_for_soc_for_sampling_period(void)
-{
-    static uint64_t previous_soc_timestamp_uS = 0;
-    uint64_t time_stamp_uS = 0;
-
-    // calculate the timestamp and time difference
-    uint64_t time_diff_uS = data_util_calc_time_diff(&previous_soc_timestamp_uS, &time_stamp_uS, PWR_TLM_SOC_UPDATE);
-
-    // Update the Rail information
-    for (uint8_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
-    {
-        comp_metrics_for_soc_rail_voltage(vr_index, time_diff_uS, soc_info.time_counter_uS);
-        comp_metrics_for_soc_rail_current(vr_index, time_diff_uS, soc_info.time_counter_uS);
-        comp_metrics_for_soc_rail_temperature(vr_index, time_diff_uS, soc_info.time_counter_uS);
-    }
-
-    // Update the HNF Temperature information'
-    for (uint8_t hnf_index = 0; hnf_index < NUMBER_OF_HNF_CHANNELS_PER_DIE; hnf_index++)
-    {
-        comp_metrics_for_single_hnf_channel(hnf_index, time_diff_uS, soc_info.time_counter_uS);
-    }
-
-    // Update the PVT Sensor information'
-    for (uint8_t pvt_index = 0; pvt_index < NUMBER_OF_SOC_TEMP_SENSORS; pvt_index++)
-    {
-        comp_metrics_for_single_soc_temp_sensor(pvt_index, time_diff_uS, soc_info.time_counter_uS);
-    }
-
-    // Check current cstate for all cores
-    // only if ALL cores are in pc3, increment residency
-    // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023433
 }
 
 void comp_metrics_for_single_core_pstate(uint8_t core_id, uint64_t time_stamp_uS)
@@ -205,15 +162,9 @@ void comp_metrics_for_single_core_voltage(uint8_t core_id, uint16_t latest_value
     data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].voltage_mV, latest_value_mV);
 }
 
-void comp_metrics_for_single_core_temperature(uint8_t core_id, uint32_t time_diff_uS, uint32_t residency_uS)
+void comp_metrics_for_single_core_temperature(uint8_t core_id, uint16_t latest_temperature_dC)
 {
-    /* For core temperature :min, max avg calculation*/
-    data_util_calc_mma_res(&core[core_id].temperature.min_dC,
-                           &core[core_id].temperature.max_dC,
-                           &core[core_id].temperature.average_dC,
-                           &core[core_id].temperature.latest_value_dC,
-                           time_diff_uS,
-                           residency_uS);
+    data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].temperature_dC, latest_temperature_dC);
 }
 
 void comp_metrics_for_single_core_power(uint8_t core_id, uint16_t latest_power_mW)
@@ -246,65 +197,47 @@ void comp_metrics_for_single_tile_vsys(uint8_t tile_id, uint32_t time_diff_uS, u
 }
 
 /* SOC VR rails update */
-void comp_metrics_for_soc_rail_voltage(uint8_t vr_index, uint32_t time_diff_uS, uint32_t residency_uS)
+void comp_metrics_for_soc_rail_voltage(uint16_t (*latest_rail_voltage_mV)[MAX_NUM_OF_VR_RAILS])
 {
-    /* For soc vr rail voltage :min, max avg calculation*/
-    // Update the rail voltage min, max average
-    data_util_calc_mma_res(&soc_info.rail[vr_index].voltage.min_mV,
-                           &soc_info.rail[vr_index].voltage.max_mV,
-                           &soc_info.rail[vr_index].voltage.average_mV,
-                           &soc_info.rail[vr_index].voltage.latest_value_mV,
-                           time_diff_uS,
-                           residency_uS);
+    for (uint16_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
+    {
+        // Update the rail voltage
+        data_util_calc_mma_u16(&computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV,
+                               (*latest_rail_voltage_mV)[vr_index]);
+    }
 }
 
-void comp_metrics_for_soc_rail_current(uint8_t vr_index, uint32_t time_diff_uS, uint32_t residency_uS)
+void comp_metrics_for_soc_rail_current(uint16_t (*latest_rail_current_mA)[MAX_NUM_OF_VR_RAILS])
 {
-    /* For soc vr rail current:min, max avg calculation*/
-    // Update the rail current min, max average
-    data_util_calc_mma_res(&soc_info.rail[vr_index].current.min_mA,
-                           &soc_info.rail[vr_index].current.max_mA,
-                           &soc_info.rail[vr_index].current.average_mA,
-                           &soc_info.rail[vr_index].current.latest_value_mA,
-                           time_diff_uS,
-                           residency_uS);
+    for (uint16_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
+    {
+        // Update the rail current
+        data_util_calc_mma_u16(&computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA,
+                               (*latest_rail_current_mA)[vr_index]);
+    }
 }
 
-void comp_metrics_for_soc_rail_temperature(uint8_t vr_index, uint32_t time_diff_uS, uint32_t residency_uS)
+void comp_metrics_for_soc_rail_temperature(uint16_t (*latest_rail_temperature_dC)[MAX_NUM_OF_VR_RAILS])
 {
-    /* For soc vr rail temperature:min, max avg calculation*/
-    // Update the vr rails temperature min, max average
-    data_util_calc_mma_res(&soc_info.rail[vr_index].temperature.min_dC,
-                           &soc_info.rail[vr_index].temperature.max_dC,
-                           &soc_info.rail[vr_index].temperature.average_dC,
-                           &soc_info.rail[vr_index].temperature.latest_value_dC,
-                           time_diff_uS,
-                           residency_uS);
+    for (uint16_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
+    {
+        data_util_calc_mma_u16(&computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC,
+                               (*latest_rail_temperature_dC)[vr_index]);
+    }
 }
 
-void comp_metrics_for_single_hnf_channel(uint8_t hnf_index, uint32_t time_diff_uS, uint32_t residency_uS)
+void comp_metrics_for_single_hnf_channel(uint8_t hnf_channel, uint16_t latest_temperature_dC)
 {
-    /* For soc hnf temperature :min, max avg calculation*/
-    // Update the hnf temp min, max average
-    data_util_calc_mma_res(&soc_info.hnf[hnf_index].min_dC,
-                           &soc_info.hnf[hnf_index].max_dC,
-                           &soc_info.hnf[hnf_index].average_dC,
-                           &soc_info.hnf[hnf_index].latest_value_dC,
-                           time_diff_uS,
-                           residency_uS);
+    data_util_calc_mma_u16(&computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel], latest_temperature_dC);
 }
 
-void comp_metrics_for_single_soc_temp_sensor(uint8_t pvt_index, uint32_t time_diff_uS, uint32_t residency_uS)
+void comp_metrics_for_soc_top_temp_sensor(uint16_t (*latest_soc_top_temp_dC)[NUMBER_OF_SOC_TEMP_SENSORS])
 {
-    /* For soc pvt temperature :min, max avg calculation*/
-    // Update the soc pvt temp min, max average
-    // Store new values
-    data_util_calc_mma_res(&soc_info.sensor_temp[pvt_index].min_dC,
-                           &soc_info.sensor_temp[pvt_index].max_dC,
-                           &soc_info.sensor_temp[pvt_index].average_dC,
-                           &soc_info.sensor_temp[pvt_index].latest_value_dC,
-                           time_diff_uS,
-                           residency_uS);
+    for (uint16_t sensor_index = 0; sensor_index < NUMBER_OF_SOC_TEMP_SENSORS; sensor_index++)
+    {
+        data_util_calc_mma_u16(&computed_metrics_2_mins.soc.top_sensor_temp_dC[sensor_index],
+                               (*latest_soc_top_temp_dC)[sensor_index]);
+    }
 }
 
 void comp_metrics_for_single_soc_dimm_temp(uint8_t dimm_id, uint16_t latest_dimm_temp_s0_dC, uint16_t latest_dimm_temp_s1_dC)

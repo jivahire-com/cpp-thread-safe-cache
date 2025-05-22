@@ -121,6 +121,18 @@ TEST_FUNCTION(test_power_fuses_init, NULL, NULL)
     assert_int_equal(isFuseServiceUp, true);
 }
 
+TEST_FUNCTION(test_macro_conversions, NULL, NULL)
+{
+    // Temperature = ((( 𝒅𝒐𝒖𝒕 /16384 ) ∗ 𝒀+𝑲) * 10) + .5 [dC]]
+    uint16_t actual_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(10000, 4, 200);
+    uint16_t expected_dC = (uint16_t)(((10000.0F / 16384.0F * 200.0F) - 4.0F) * 10.0F + 0.5F);
+
+    assert_int_equal(actual_dC, expected_dC);
+
+    uint16_t reversed = (uint16_t)(PWR_TLM_FUSE_TEMP_DC_TO_DOUT(actual_dC, 4, 200));
+    assert_true(abs(reversed - 10000) <= 8);
+}
+
 TEST_FUNCTION(test_platform_power_fuses_get_dts_coeff_tile_supported, set_power_fuse_parameters_tile, NULL)
 {
     isFuseServiceUp = true;

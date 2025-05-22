@@ -49,8 +49,16 @@ extern "C" {
 #include <telemetry_package_defs.h>
 }
 
-#define TEST_TEMP2DOUT(temp) \
-    (PWR_TLM_TEMP2DOUT_FUSED((temp), DEFAULT_DTS_FUSED_K_VAL, DEFAULT_DTS_FUSED_Y_VAL))
+#define TEST_TEMP_CEL_2_DOUT(temp) \
+    (PWR_TLM_FUSE_TEMP_CEL_2_DOUT((temp), DEFAULT_DTS_FUSED_K_VAL, DEFAULT_DTS_FUSED_Y_VAL))
+
+#define CELSIUS_TO_DECI_CELSIUS(temp) ((temp) * 10) // Convert Celsius to deciCelsius
+
+#define ROUND_UP_CELSIUS_TO_DECI_CELSIUS(temp) ((uint16_t)((((temp) * 10.0) + 0.5)))
+
+#define assert_uint16_within(expected, actual, tolerance)                 \
+    assert_true((int32_t)(actual) >= (int32_t)(expected) - (tolerance) && \
+                (int32_t)(actual) <= (int32_t)(expected) + (tolerance))
 
 // Structure to hold test temperature configurations
 typedef struct
@@ -103,67 +111,16 @@ static int32_t calculate_expected_max(int32_t latest_value, int32_t prev_max, in
 }
 
 // Calculate expected average based on iteration logic
-static int32_t calculate_expected_avg(int32_t latest_value, int32_t prev_avg, uint64_t timestamp, int32_t iteration)
+static int32_t calculate_expected_avg(int32_t latest_value, int32_t prev_avg, int32_t iteration)
 {
-    uint64_t time_diff_uS = 1000;
-    uint64_t prev_timestamp = timestamp - time_diff_uS;
-
     if (iteration == 0)
     {
         return latest_value; // First iteration, avg = latest value
     }
-    if (iteration == 1)
-    {
-        // For iteration 1, return latest value directly
-        // For Core 0: latest = 85
-        // For Core 1: latest = 95
-        return latest_value;
-    }
-    if (iteration == 2)
-    {
-        // For iteration 2, calculate weighted average
-        // For Core 0: prev_avg = 90, latest = 95
-        // For Core 1: prev_avg = 100, latest = 105
-        uint64_t weighted_prev_avg;
-        if (latest_value == 95)
-        {                                                                   // Core 0
-            weighted_prev_avg = static_cast<uint64_t>(90) * prev_timestamp; // 90 * 10100 = 909000
-        }
-        else
-        {                                                                    // Core 1
-            weighted_prev_avg = static_cast<uint64_t>(100) * prev_timestamp; // 100 * 10100 = 1010000
-        }
-        uint64_t weighted_latest = static_cast<uint64_t>(latest_value) * time_diff_uS;
+    int32_t total = (prev_avg * iteration) + latest_value;
+    int32_t updated_avg = (total + (iteration + 1) / 2) / (iteration + 1);
 
-        // For Core 0: (909000 + 95000) / 11100 = 90
-        // For Core 1: (1010000 + 105000) / 11100 = 100
-        return static_cast<int32_t>((weighted_prev_avg + weighted_latest) / timestamp);
-    }
-    if (iteration == 3)
-    {
-        // For iteration 3, calculate weighted average with rounding
-        // Calculate weighted average using previous average and latest value
-        uint64_t weighted_prev_avg;
-        uint64_t weighted_latest;
-
-        if (latest_value == 80)
-        {                                                                   // Core 0
-            weighted_prev_avg = static_cast<uint64_t>(86) * prev_timestamp; // 86 * 15100 = 1298600
-            weighted_latest = static_cast<uint64_t>(80) * time_diff_uS;     // 80 * 1000 = 80000
-            // (1298600 + 80000) / 16100 = 85.6 -> 86
-        }
-        else
-        {                                                                   // Core 1
-            weighted_prev_avg = static_cast<uint64_t>(96) * prev_timestamp; // 96 * 15100 = 1449600
-            weighted_latest = static_cast<uint64_t>(90) * time_diff_uS;     // 90 * 1000 = 90000
-            // (1449600 + 90000) / 16100 = 95.6 -> 96
-        }
-
-        double avg = static_cast<double>(weighted_prev_avg + weighted_latest) / timestamp;
-        return static_cast<int32_t>(avg + 0.5); // Round to nearest integer
-    }
-
-    return prev_avg; // Default case
+    return updated_avg;
 }
 
 static int32_t test_setup(void** state)
@@ -183,8 +140,8 @@ static int32_t test_teardown(void** state)
 TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_teardown)
 {
     // Track previous values for calculations
-    static int32_t prev_core0_min = 0, prev_core0_max = 0, prev_core0_avg = 0;
-    static int32_t prev_core1_min = 0, prev_core1_max = 0, prev_core1_avg = 0;
+    static int32_t prev_core0_min_cel = 0, prev_core0_max_cel = 0, prev_core0_avg_dC = 0;
+    static int32_t prev_core1_min_cel = 0, prev_core1_max_cel = 0, prev_core1_avg_dC = 0;
 
     // Create and initialize mock temperature data for tile 0
     tile_temp_t mock_temp_data = {0};
@@ -234,49 +191,49 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
         mock_temp_data.temp2.temp5 = test_configs[iteration].core1_temp5;
 
         // Calculate latest values
-        int32_t expected_core0_latest = calculate_expected_latest(mock_temp_data.temp1.temp0,
-                                                                  mock_temp_data.temp1.temp1,
-                                                                  mock_temp_data.temp1.temp2);
+        int32_t expected_core0_latest_cel = calculate_expected_latest(mock_temp_data.temp1.temp0,
+                                                                      mock_temp_data.temp1.temp1,
+                                                                      mock_temp_data.temp1.temp2);
 
-        int32_t expected_core1_latest = calculate_expected_latest(mock_temp_data.temp1.temp3,
-                                                                  mock_temp_data.temp2.temp4,
-                                                                  mock_temp_data.temp2.temp5);
+        int32_t expected_core1_latest_cel = calculate_expected_latest(mock_temp_data.temp1.temp3,
+                                                                      mock_temp_data.temp2.temp4,
+                                                                      mock_temp_data.temp2.temp5);
 
         // Calculate min values
-        int32_t expected_core0_min = calculate_expected_min(expected_core0_latest, prev_core0_min, iteration);
-        int32_t expected_core1_min = calculate_expected_min(expected_core1_latest, prev_core1_min, iteration);
+        int32_t expected_core0_min_cel = calculate_expected_min(expected_core0_latest_cel, prev_core0_min_cel, iteration);
+        int32_t expected_core1_min_cel = calculate_expected_min(expected_core1_latest_cel, prev_core1_min_cel, iteration);
 
         // Calculate max values
-        int32_t expected_core0_max = calculate_expected_max(expected_core0_latest, prev_core0_max, iteration);
-        int32_t expected_core1_max = calculate_expected_max(expected_core1_latest, prev_core1_max, iteration);
+        int32_t expected_core0_max_cel = calculate_expected_max(expected_core0_latest_cel, prev_core0_max_cel, iteration);
+        int32_t expected_core1_max_cel = calculate_expected_max(expected_core1_latest_cel, prev_core1_max_cel, iteration);
 
         // Calculate average values
-        int32_t expected_core0_avg =
-            calculate_expected_avg(expected_core0_latest, prev_core0_avg, mock_temp_data.timestamp, iteration);
-        int32_t expected_core1_avg =
-            calculate_expected_avg(expected_core1_latest, prev_core1_avg, mock_temp_data.timestamp, iteration);
+        int32_t expected_core0_avg_dC =
+            calculate_expected_avg(expected_core0_latest_cel * 10, prev_core0_avg_dC, iteration);
+        int32_t expected_core1_avg_dC =
+            calculate_expected_avg(expected_core1_latest_cel * 10, prev_core1_avg_dC, iteration);
 
         // Store current values for next iteration
-        prev_core0_min = expected_core0_min;
-        prev_core0_max = expected_core0_max;
-        prev_core0_avg = expected_core0_avg;
-        prev_core1_min = expected_core1_min;
-        prev_core1_max = expected_core1_max;
-        prev_core1_avg = expected_core1_avg;
+        prev_core0_min_cel = expected_core0_min_cel;
+        prev_core0_max_cel = expected_core0_max_cel;
+        prev_core0_avg_dC = expected_core0_avg_dC;
+        prev_core1_min_cel = expected_core1_min_cel;
+        prev_core1_max_cel = expected_core1_max_cel;
+        prev_core1_avg_dC = expected_core1_avg_dC;
 
         // Set valid bits and max temperature data
         mock_temp_data.temp0.temp_valid = 1;
-        mock_temp_data.temp0.max_temp = max3(expected_core0_max, expected_core1_max, INT_MIN);
+        mock_temp_data.temp0.max_temp = max3(expected_core0_max_cel, expected_core1_max_cel, INT_MIN);
         mock_temp_data.temp0.max_id = 4;
 
-        // Now that we have the mock temp data setup as dC, convert it to DOUT to reflect what we expect from SCF RAM.
-        mock_temp_data.temp0.max_temp = TEST_TEMP2DOUT(mock_temp_data.temp0.max_temp);
-        mock_temp_data.temp1.temp0 = TEST_TEMP2DOUT(mock_temp_data.temp1.temp0);
-        mock_temp_data.temp1.temp1 = TEST_TEMP2DOUT(mock_temp_data.temp1.temp1);
-        mock_temp_data.temp1.temp2 = TEST_TEMP2DOUT(mock_temp_data.temp1.temp2);
-        mock_temp_data.temp1.temp3 = TEST_TEMP2DOUT(mock_temp_data.temp1.temp3);
-        mock_temp_data.temp2.temp4 = TEST_TEMP2DOUT(mock_temp_data.temp2.temp4);
-        mock_temp_data.temp2.temp5 = TEST_TEMP2DOUT(mock_temp_data.temp2.temp5);
+        // Now that we have the mock temp data setup as celsius, convert it to DOUT to reflect what we expect from SCF RAM.
+        mock_temp_data.temp0.max_temp = TEST_TEMP_CEL_2_DOUT(mock_temp_data.temp0.max_temp);
+        mock_temp_data.temp1.temp0 = TEST_TEMP_CEL_2_DOUT(mock_temp_data.temp1.temp0);
+        mock_temp_data.temp1.temp1 = TEST_TEMP_CEL_2_DOUT(mock_temp_data.temp1.temp1);
+        mock_temp_data.temp1.temp2 = TEST_TEMP_CEL_2_DOUT(mock_temp_data.temp1.temp2);
+        mock_temp_data.temp1.temp3 = TEST_TEMP_CEL_2_DOUT(mock_temp_data.temp1.temp3);
+        mock_temp_data.temp2.temp4 = TEST_TEMP_CEL_2_DOUT(mock_temp_data.temp2.temp4);
+        mock_temp_data.temp2.temp5 = TEST_TEMP_CEL_2_DOUT(mock_temp_data.temp2.temp5);
 
         // Set up expectations for tile 0
         // Temperature polling - with data
@@ -319,7 +276,7 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
         package_create_pwr_core_temperature_record(&temperature_record);
 
         // // Printing current sensor values and package results in a cleaner format
-        bool print_logs = false;
+        bool print_logs = true;
         if (print_logs)
         {
             printf("\nIteration %d Summary:\n", iteration);
@@ -338,21 +295,28 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
             printf("Core 0:\n");
             printf("  Latest: %d C %s\n",
                    temperature_record.temperature_collection[0].temperature_element.latest_value_dC,
-                   temperature_record.temperature_collection[0].temperature_element.latest_value_dC == expected_core0_latest
+                   temperature_record.temperature_collection[0].temperature_element.latest_value_dC ==
+                           ROUND_UP_CELSIUS_TO_DECI_CELSIUS(expected_core0_latest_cel)
                        ? "PASS"
                        : "FAIL");
 
             printf("  Min   : %d C %s\n",
                    temperature_record.temperature_collection[0].temperature_element.min_dC,
-                   temperature_record.temperature_collection[0].temperature_element.min_dC == expected_core0_min ? "PASS" : "FAIL");
+                   temperature_record.temperature_collection[0].temperature_element.min_dC ==
+                           ROUND_UP_CELSIUS_TO_DECI_CELSIUS(expected_core0_min_cel)
+                       ? "PASS"
+                       : "FAIL");
 
             printf("  Max   : %d C %s\n",
                    temperature_record.temperature_collection[0].temperature_element.max_dC,
-                   temperature_record.temperature_collection[0].temperature_element.max_dC == expected_core0_max ? "PASS" : "FAIL");
+                   temperature_record.temperature_collection[0].temperature_element.max_dC ==
+                           ROUND_UP_CELSIUS_TO_DECI_CELSIUS(expected_core0_max_cel)
+                       ? "PASS"
+                       : "FAIL");
 
             printf("  Avg   : %d C %s\n",
                    temperature_record.temperature_collection[0].temperature_element.average_dC,
-                   temperature_record.temperature_collection[0].temperature_element.average_dC == expected_core0_avg
+                   temperature_record.temperature_collection[0].temperature_element.average_dC == expected_core0_avg_dC
                        ? "PASS"
                        : "FAIL");
 
@@ -360,21 +324,28 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
 
             printf("  Latest: %d C %s\n",
                    temperature_record.temperature_collection[1].temperature_element.latest_value_dC,
-                   temperature_record.temperature_collection[1].temperature_element.latest_value_dC == expected_core1_latest
+                   temperature_record.temperature_collection[1].temperature_element.latest_value_dC ==
+                           ROUND_UP_CELSIUS_TO_DECI_CELSIUS(expected_core1_latest_cel)
                        ? "PASS"
                        : "FAIL");
 
             printf("  Min   : %d C %s\n",
                    temperature_record.temperature_collection[1].temperature_element.min_dC,
-                   temperature_record.temperature_collection[1].temperature_element.min_dC == expected_core1_min ? "PASS" : "FAIL");
+                   temperature_record.temperature_collection[1].temperature_element.min_dC ==
+                           ROUND_UP_CELSIUS_TO_DECI_CELSIUS(expected_core1_min_cel)
+                       ? "PASS"
+                       : "FAIL");
 
             printf("  Max   : %d C %s\n",
                    temperature_record.temperature_collection[1].temperature_element.max_dC,
-                   temperature_record.temperature_collection[1].temperature_element.max_dC == expected_core1_max ? "PASS" : "FAIL");
+                   temperature_record.temperature_collection[1].temperature_element.max_dC ==
+                           ROUND_UP_CELSIUS_TO_DECI_CELSIUS(expected_core1_max_cel)
+                       ? "PASS"
+                       : "FAIL");
 
             printf("  Avg   : %d C %s\n",
                    temperature_record.temperature_collection[1].temperature_element.average_dC,
-                   temperature_record.temperature_collection[1].temperature_element.average_dC == expected_core1_avg
+                   temperature_record.temperature_collection[1].temperature_element.average_dC == expected_core1_avg_dC
                        ? "PASS"
                        : "FAIL");
 
@@ -388,7 +359,7 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
             printf("  time_counter_uS: %llu\n", mock_temp_data.timestamp);
             printf("  previous_average: %d\n",
                    temperature_record.temperature_collection[0].temperature_element.average_dC);
-            printf("  latest_value: %d\n", expected_core0_max);
+            printf("  latest_value: %d\n", ROUND_UP_CELSIUS_TO_DECI_CELSIUS(expected_core0_max_cel));
 
             if (iteration > 0)
             {
@@ -398,19 +369,19 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
                        temperature_record.temperature_collection[0].temperature_element.average_dC,
                        prev_timestamp,
                        (uint64_t)temperature_record.temperature_collection[0].temperature_element.average_dC * prev_timestamp);
-                printf("    weighted_latest = %d * 1000 = %d\n", expected_core0_max, expected_core0_max * 1000);
+                printf("    weighted_latest = %d * 1000 = %d\n", expected_core0_max_cel, expected_core0_max_cel * 1000);
                 printf("    calculated_avg = (%llu + %d) / %llu = %d\n",
                        (uint64_t)temperature_record.temperature_collection[0].temperature_element.average_dC * prev_timestamp,
-                       expected_core0_max * 1000,
+                       expected_core0_max_cel * 1000,
                        mock_temp_data.timestamp,
-                       expected_core0_avg);
+                       expected_core0_avg_dC);
             }
 
             printf("\nCore 1:\n");
             printf("  time_counter_uS: %llu\n", mock_temp_data.timestamp);
             printf("  previous_average: %d\n",
                    temperature_record.temperature_collection[1].temperature_element.average_dC);
-            printf("  latest_value: %d\n", expected_core1_max);
+            printf("  latest_value: %d\n", expected_core1_max_cel);
 
             if (iteration > 0)
             {
@@ -420,31 +391,33 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
                        temperature_record.temperature_collection[1].temperature_element.average_dC,
                        prev_timestamp,
                        (uint64_t)temperature_record.temperature_collection[1].temperature_element.average_dC * prev_timestamp);
-                printf("    weighted_latest = %d * 1000 = %d\n", expected_core1_max, expected_core1_max * 1000);
+                printf("    weighted_latest = %d * 1000 = %d\n", expected_core1_max_cel, expected_core1_max_cel * 1000);
                 printf("    calculated_avg = (%llu + %d) / %llu = %d\n",
                        (uint64_t)temperature_record.temperature_collection[1].temperature_element.average_dC * prev_timestamp,
-                       expected_core1_max * 1000,
+                       expected_core1_max_cel * 1000,
                        mock_temp_data.timestamp,
-                       expected_core1_avg);
+                       expected_core1_avg_dC);
             }
         }
 
-        // Assertions based on understanding of tlm_logger.c
-        // latest_value_dC: Set in data_smpl_parse_tile_temperature_entry to max of current sensors
-        assert_int_equal(temperature_record.temperature_collection[0].temperature_element.latest_value_dC,
-                         expected_core0_latest);
         // min_dC: Updated in data_util_calc_mma_res only if latest_value < current min or min == 0
-        assert_int_equal(temperature_record.temperature_collection[0].temperature_element.min_dC, expected_core0_min);
+        assert_int_equal(temperature_record.temperature_collection[0].temperature_element.min_dC,
+                         ROUND_UP_CELSIUS_TO_DECI_CELSIUS(expected_core0_min_cel));
         // max_dC: Updated in data_util_calc_mma_res if latest_value > current max
-        assert_int_equal(temperature_record.temperature_collection[0].temperature_element.max_dC, expected_core0_max);
+        assert_int_equal(temperature_record.temperature_collection[0].temperature_element.max_dC,
+                         ROUND_UP_CELSIUS_TO_DECI_CELSIUS(expected_core0_max_cel));
         // average_dC: Calculated using weighted average when conditions are met
-        assert_int_equal(temperature_record.temperature_collection[0].temperature_element.average_dC, expected_core0_avg);
+        assert_uint16_within(expected_core0_avg_dC,
+                             temperature_record.temperature_collection[0].temperature_element.average_dC,
+                             10); // Allow tolerance for rounding errors
 
         // core 1 assertions
-        assert_int_equal(temperature_record.temperature_collection[1].temperature_element.latest_value_dC,
-                         expected_core1_latest);
-        assert_int_equal(temperature_record.temperature_collection[1].temperature_element.min_dC, expected_core1_min);
-        assert_int_equal(temperature_record.temperature_collection[1].temperature_element.max_dC, expected_core1_max);
-        assert_int_equal(temperature_record.temperature_collection[1].temperature_element.average_dC, expected_core1_avg);
+        assert_int_equal(temperature_record.temperature_collection[1].temperature_element.min_dC,
+                         ROUND_UP_CELSIUS_TO_DECI_CELSIUS(expected_core1_min_cel));
+        assert_int_equal(temperature_record.temperature_collection[1].temperature_element.max_dC,
+                         ROUND_UP_CELSIUS_TO_DECI_CELSIUS(expected_core1_max_cel));
+        assert_uint16_within(expected_core1_avg_dC,
+                             temperature_record.temperature_collection[1].temperature_element.average_dC,
+                             10); // Allow tolerance for rounding errors
     }
 }

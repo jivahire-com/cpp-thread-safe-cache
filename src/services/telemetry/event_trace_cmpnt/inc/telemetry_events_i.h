@@ -352,29 +352,29 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     60,
                     GtimerIsZero,
                     FPFW_ET_LEVEL_ERROR)
-    
+
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     61,
                     RunningAverageNullPointer,
                     FPFW_ET_LEVEL_ERROR)
-    
+
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     62,
                     RunningAverageOverflow,
                     FPFW_ET_LEVEL_ERROR,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, value))
-    
+
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     63,
                     MeansBadDivisor,
                     FPFW_ET_LEVEL_ERROR)
-    
+
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     64,
                     MeansOverflow,
                     FPFW_ET_LEVEL_ERROR,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, value))
-    
+
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     65,
                     MeanofMeansHighCount,
@@ -384,13 +384,14 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     66,
-                    DataHelperResidencyUpdateInValidTimeStamp,
-                    FPFW_ET_LEVEL_DEBUG)
+                    MMAU16NullPointer,
+                    FPFW_ET_LEVEL_ERROR)
+
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     67,
-                    MMAU16NullPointer,
-                    FPFW_ET_LEVEL_ERROR)
+                    DataHelperResidencyUpdateInValidTimeStamp,
+                    FPFW_ET_LEVEL_DEBUG)
 
 /*--------- Function Prototypes ----------*/
 

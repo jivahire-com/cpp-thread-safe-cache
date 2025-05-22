@@ -550,12 +550,12 @@ TEST_FUNCTION(test_data_smpl_parse_vr_temperature_entry, test_setup, test_teardo
     // Check VR Temp
     for (uint8_t index = 0; index < MAX_NUM_OF_VR_RAILS; index++)
     {
-        assert_int_equal(soc_info.rail[index].temperature.latest_value_dC, (vr_temperature.vr_temp_dC[index]));
+        assert_int_equal(soc_info.latest_rail_temperature_dC[index], (vr_temperature.vr_temp_dC[index]));
     }
 }
 
 // Test for tlm_logger_log_pvt_soc_temp
-TEST_FUNCTION(test_tlm_logger_log_pvt_soc_temp, test_setup, test_teardown)
+TEST_FUNCTION(test_data_smpl_parse_pvt_temperature_entry, test_setup, test_teardown)
 {
     soc_pvt_temp_t pvt_temperature = {
         .timestamp = 0,
@@ -566,7 +566,7 @@ TEST_FUNCTION(test_tlm_logger_log_pvt_soc_temp, test_setup, test_teardown)
 
     for (uint8_t pvt_index = 0; pvt_index < NUMBER_OF_SOC_TEMP_SENSORS; pvt_index++)
     {
-        assert_int_equal(soc_info.sensor_temp[pvt_index].latest_value_dC, (pvt_temperature.sensor_temp_dC[pvt_index]));
+        assert_int_equal(soc_info.latest_soc_top_temp_dC[pvt_index], (pvt_temperature.sensor_temp_dC[pvt_index]));
     }
 }
 
@@ -609,8 +609,8 @@ TEST_FUNCTION(test_data_smpl_parse_vr_current_entry, test_setup, test_teardown)
     // Check VR Current and voltage
     for (uint8_t index = 0; index < MAX_NUM_OF_VR_RAILS; index++)
     {
-        assert_int_equal(soc_info.rail[index].current.latest_value_mA, (data.vr_current_mA[index]));
-        assert_int_equal(soc_info.rail[index].voltage.latest_value_mV, (data.vr_voltage_mV[index]));
+        assert_int_equal(soc_info.latest_rail_current_mA[index], (data.vr_current_mA[index]));
+        assert_int_equal(soc_info.latest_rail_voltage_mV[index], (data.vr_voltage_mV[index]));
     }
 }
 
@@ -692,35 +692,6 @@ TEST_FUNCTION(test_data_smpl_reset_soc_data, test_setup, test_teardown)
 
     assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s0.latest_value_dC, 0);
     assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s1.latest_value_dC, 0);
-}
-
-// Unit test function
-TEST_FUNCTION(test_data_smpl_reset_tile_data, test_setup, test_teardown)
-{
-    uint8_t tile_id = 0;
-
-    // Test case: Initial values
-    tile[tile_id].vcpu.min_mV = 10;
-    tile[tile_id].vcpu.max_mV = 40;
-    tile[tile_id].vcpu.average_mV = 30;
-    tile[tile_id].vcpu.latest_value_mV = 1200;
-
-    tile[tile_id].active_sample_max_id = 1;
-    tile[tile_id].active_sample_max_temperature_dC = 900;
-    tile[tile_id].max_tile_id = 0;
-    tile[tile_id].max_tile_temperature_dC = 450;
-
-    // Test case: Update with new latest value
-    tile[tile_id].vcpu.latest_value_mV = 1300;
-
-    data_smpl_reset_tile_data();
-
-    assert_int_not_equal(tile[tile_id].vcpu.min_mV, 10);
-    assert_int_not_equal(tile[tile_id].vcpu.max_mV, 40);
-    assert_int_not_equal(tile[tile_id].vcpu.average_mV, 30);
-
-    assert_int_equal(tile[tile_id].active_sample_max_temperature_dC, 900);
-    assert_int_equal(tile[tile_id].max_tile_temperature_dC, 450);
 }
 
 // Unit test function

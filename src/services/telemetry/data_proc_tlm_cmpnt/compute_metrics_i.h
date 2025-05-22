@@ -31,6 +31,7 @@
 typedef struct
 {
     mma_u16_t power_mW;
+    mma_u16_t temperature_dC;
     mma_u16_t voltage_mV;
 } computed_per_core_metrics_t;
 
@@ -52,6 +53,16 @@ typedef struct
 
 typedef struct
 {
+    mma_u16_t voltage_mV;
+    mma_u16_t current_mA;
+    mma_u16_t temperature_dC;
+} computed_per_rail_metrics_t;
+
+typedef struct
+{
+    mma_u16_t top_sensor_temp_dC[NUMBER_OF_SOC_TEMP_SENSORS];
+    computed_per_rail_metrics_t vr_rail[MAX_NUM_OF_VR_RAILS];
+    mma_u16_t hnf_temperature_dC[NUMBER_OF_HNF_CHANNELS_PER_DIE];
     computed_per_dimm_metrics_t dimm[NUMBER_OF_DIMM_MODULES];
 } computed_per_soc_metrics_t;
 
@@ -100,16 +111,6 @@ void comp_metrics_for_cores_for_sampling_period(void);
 void comp_metrics_for_tiles_for_sampling_period(void);
 
 /**
- * @brief The comp_metrics_for_soc_for_sampling_period function updates various SOC (System on Chip) components,
- * including VR (Voltage Regulator) rails, HNF temperatures, PVT (Process, Voltage, Temperature) sensors
- * and DIMM (Dual In-line Memory Module) temperatures. It calculates the time difference
- * since the last update and uses this information to update the residency and metrics for each component.
- * @param   None
- * @return  None
- */
-void comp_metrics_for_soc_for_sampling_period(void);
-
-/**
  * @brief The comp_metrics_for_single_core_pstate function updates the power state (PState) residency and power metrics
  * for a specified core based on the provided timestamp. It handles both throttling and
  * non-throttling scenarios and updates the minimum, maximum, and average power values
@@ -144,26 +145,25 @@ void comp_metrics_for_single_core_current(uint8_t core_id, uint32_t time_diff_uS
  *
  * @param[in] core_id  core for which the current values are being updated.
  * @param[in] latest_value_mV latest value of the core voltage from telmetry packet.
- * 
+ *
  */
 void comp_metrics_for_single_core_voltage(uint8_t core_id, uint16_t latest_value_mV);
 
 /**
  * @brief    function updates the minimum, maximum, and average temperature values for
- * a specified core based on the provided time difference and residency time
+ * a specified core
  *
  * @param[in] core_id  core for which the current values are being updated.
- * @param[in] time_diff_uS  time_diff_uS: The time difference in microseconds between the current and previous measurements.
- * @param[in] residency_uS  The total residency time in microseconds over which the average is calculated.
+ * @param[in] latest_temperature_dC  Most recent measured temeprature
  */
-void comp_metrics_for_single_core_temperature(uint8_t core_id, uint32_t time_diff_uS, uint32_t residency_uS);
+void comp_metrics_for_single_core_temperature(uint8_t core_id, uint16_t latest_temperature_dC);
 
 /**
  * @brief function updates the minimum, maximum, and average power values for a specified core based on the provided
- * 
+ *
  * @param[in] core_id  core for which the power values are being updated.
  * @param[in] latest_power_mW  The latest power value in mW
- * 
+ *
  * @return None
  */
 void comp_metrics_for_single_core_power(uint8_t core_id, uint16_t latest_power_mW);
@@ -193,50 +193,41 @@ void comp_metrics_for_single_tile_vsys(uint8_t tile_id, uint32_t time_diff_uS, u
  * a specified SOC VR (Voltage Regulator) rail based on the provided time difference and residency time
  *
  * @param[in] vr_index The identifier of the VR rail for which the voltage values are being updated.
- * @param[in] time_diff_uS
- * @param[in] residency_uS
+ * @param[in] latest_voltage_mV  Array of latest vr rail voltages
  */
-void comp_metrics_for_soc_rail_voltage(uint8_t vr_index, uint32_t time_diff_uS, uint32_t residency_uS);
+void comp_metrics_for_soc_rail_voltage(uint16_t (*latest_rail_voltage_mV)[MAX_NUM_OF_VR_RAILS]);
 
 /**
  * @brief  function updates the minimum, maximum, and average current values for
  * a specified SOC VR (Voltage Regulator) rail based on the provided time difference and residency time
  *
  * @param[in] vr_index
- * @param[in] time_diff_uS
- * @param[in] residency_uS
+ * @param[in] latest_current_mA Array of latest vr rail currents
  */
-void comp_metrics_for_soc_rail_current(uint8_t vr_index, uint32_t time_diff_uS, uint32_t residency_uS);
+void comp_metrics_for_soc_rail_current(uint16_t (*latest_rail_current_mA)[MAX_NUM_OF_VR_RAILS]);
 
 /**
  * @brief  function updates the minimum, maximum, and average temperature values for
  * a specified SOC VR (Voltage Regulator) rail based on the provided time difference and residency time
  *
- * @param[in] vr_index - The identifier of the VR rail for which the voltage values are being updated.
- * @param[in] time_diff_uS
- * @param[in] residency_uS
+ * @param[in] latest_rail_temperature_dC Array of latest vr rail temperatures.
  */
-void comp_metrics_for_soc_rail_temperature(uint8_t vr_index, uint32_t time_diff_uS, uint32_t residency_uS);
+void comp_metrics_for_soc_rail_temperature(uint16_t (*latest_rail_temperature_dC)[MAX_NUM_OF_VR_RAILS]);
 
 /**
  * @brief function updates the minimum, maximum, and average temperature values for
- * a specified SOC HNF  based on the provided time difference and residency time
+ * a specified SOC HNF channel
  *
- * @param[in] hnf_index The identifier of the HNF for which the temperature values are being updated.
- * @param[in] time_diff_uS  The time difference in microseconds between the current and previous measurements
- * @param[in] residency_uS  The total residency time in microseconds over which the average is calculated.
+ * @param[in] hnf_channel The identifier of the HNF for which the temperature values are being updated.
+ * @param[in] latest_temperature_dC  Latest temperature for hnf channel.
  */
-void comp_metrics_for_single_hnf_channel(uint8_t hnf_index, uint32_t time_diff_uS, uint32_t residency_uS);
+void comp_metrics_for_single_hnf_channel(uint8_t hnf_channel, uint16_t latest_temperature_dC);
 
 /**
- * @brief function updates the minimum, maximum, and average temperature values for
- * a specified SOC PVT  sensor based on
- * the provided time difference and residency time.
- * @param[in] pvt_index  The identifier of the PVT sensor for which the temperature values are being updated.
- * @param[in] time_diff_uS The time difference in microseconds between the current and previous measurements
- * @param[in] residency_uS The total residency time in microseconds over which the average is calculated.
+ * @brief function updates the minimum, maximum, and average temperature values for soc temp sensors
+ * @param[in] latest_soc_top_temp_dC  Array of latest soc top temperatures.
  */
-void comp_metrics_for_single_soc_temp_sensor(uint8_t pvt_index, uint32_t time_diff_uS, uint32_t residency_uS);
+void comp_metrics_for_soc_top_temp_sensor(uint16_t (*latest_soc_top_temp_dC)[NUMBER_OF_SOC_TEMP_SENSORS]);
 
 /**
  * @brief  function updates the minimum, maximum, and average temperature values for a specified
@@ -244,7 +235,7 @@ void comp_metrics_for_single_soc_temp_sensor(uint8_t pvt_index, uint32_t time_di
  * It updates the temperature data for both S0 and S1 sensors of the DIMM module. It utilizes
  * the data_util_calc_mma_res function to perform the calculations.
  *
- * @param[in] dimm_id - dimm_id from SCF RAM  
+ * @param[in] dimm_id - dimm_id from SCF RAM
  * @param[in] latest_dimm_temp_s0_dC - latest temp for S0 in dC
  * @param[in] latest_dimm_temp_s1_dC - latest temp for S1 in dC
  */
@@ -298,14 +289,14 @@ void comp_metrics_for_mpam(uint8_t core_id, uint16_t mpam_id, uint8_t pstate);
 
 /**
  * @brief Resets all metrics that get reported every two minutes.
- * 
+ *
  * @return none
  */
 void comp_metrics_reset_2_mins_metrics();
 
 /**
  * @brief Resets all metrics that get reported every 24 hours.
- * 
+ *
  * @return none
  */
 void comp_metrics_reset_24_hrs_metrics();

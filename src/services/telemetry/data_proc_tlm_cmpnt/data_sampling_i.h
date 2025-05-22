@@ -125,17 +125,15 @@ typedef struct {
     uint16_t latest_voltage_mV;
     current_t current;
     uint16_t latest_power_mW;
-    temperature_t temperature;
+    uint16_t latest_max_value_dC;
     uint16_t active_sample_mpam_id;
     bool core_throttling_tracker[NUMBER_OF_THROTTLE_TYPES];
 } core_runtime_info_t;
 
 typedef struct {
     uint32_t time_counter_uS;
-    uint16_t active_sample_max_temperature_dC;
-    uint16_t max_tile_temperature_dC;
-    uint8_t active_sample_max_id;
-    uint8_t max_tile_id;
+    uint16_t latest_max_tile_temp_dC;
+    uint8_t latest_max_temp_tile_index;
     voltage_t vcpu;
     voltage_t vsys;
 } tile_runtime_info_t;
@@ -144,9 +142,11 @@ typedef struct {
     uint32_t time_counter_uS;//time counter for residency calculation, add time_diff on every iteration.
     uint32_t soc_pc3_residency_mS;
     uint32_t soc_pc4_residency_mS;
-    pwr_soc_element_vr_rail_t rail[MAX_NUM_OF_VR_RAILS];
-    pwr_soc_element_hnf_t hnf[NUMBER_OF_HNF_CHANNELS_PER_DIE];
-    pwr_soc_element_sensor_temp_t sensor_temp[NUMBER_OF_SOC_TEMP_SENSORS];
+    uint16_t latest_rail_temperature_dC[MAX_NUM_OF_VR_RAILS];
+    uint16_t latest_rail_voltage_mV[MAX_NUM_OF_VR_RAILS];
+    uint16_t latest_rail_current_mA[MAX_NUM_OF_VR_RAILS];
+    uint16_t latest_hnf_max_temp_dC[NUMBER_OF_HNF_CHANNELS_PER_DIE];
+    uint16_t latest_soc_top_temp_dC[NUMBER_OF_SOC_TEMP_SENSORS];
 } soc_runtime_info_t;
 
 typedef struct {
@@ -215,9 +215,9 @@ void data_smpl_init_constants();
  * @param[in] temperature_data - SCF RAM formatted resource for temperature packets
  * @param[in] tile_index - index to the tile id being referenced by the entry
  *
- * @return None
+ * @return true if valid
  */
-void data_smpl_parse_tile_temperature_entry(tile_temp_t* temperature_data, uint8_t tile_index);
+bool data_smpl_parse_tile_temperature_entry(tile_temp_t* temperature_data, uint8_t tile_index);
 
 /**
  * @brief Internal API to log tile/core voltages
@@ -349,8 +349,3 @@ void data_smpl_reset_core_data(void);
  */
 void data_smpl_reset_soc_data(void);
 
-/**
- * @brief function reset the tiles data after a collection window .
- *
- */
-void data_smpl_reset_tile_data(void);

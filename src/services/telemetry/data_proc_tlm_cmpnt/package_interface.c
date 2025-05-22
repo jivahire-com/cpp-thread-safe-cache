@@ -158,10 +158,9 @@ void data_proc_tlm_cmpnt_get_pwr_core_temperature_data(uint16_t core_id, p_pwr_c
     }
     else
     {
-        temperature_data->latest_value_dC = core[core_id].temperature.latest_value_dC;
-        temperature_data->average_dC = core[core_id].temperature.average_dC;
-        temperature_data->max_dC = core[core_id].temperature.max_dC;
-        temperature_data->min_dC = core[core_id].temperature.min_dC;
+        temperature_data->average_dC = computed_metrics_2_mins.cores[core_id].temperature_dC.running_avg.average;
+        temperature_data->max_dC = computed_metrics_2_mins.cores[core_id].temperature_dC.max;
+        temperature_data->min_dC = computed_metrics_2_mins.cores[core_id].temperature_dC.min;
     }
 }
 
@@ -204,20 +203,19 @@ void data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(uint16_t rail_id, p_pwr_soc_el
     else
     {
         // get VR Current. voltage and temperature entry.
-        rail_data->current.average_mA = soc_info.rail[rail_id].current.average_mA;
-        rail_data->current.latest_value_mA = soc_info.rail[rail_id].current.latest_value_mA;
-        rail_data->current.max_mA = soc_info.rail[rail_id].current.max_mA;
-        rail_data->current.min_mA = soc_info.rail[rail_id].current.min_mA;
+        rail_data->current.average_mA = computed_metrics_2_mins.soc.vr_rail[rail_id].current_mA.running_avg.average;
+        rail_data->current.max_mA = computed_metrics_2_mins.soc.vr_rail[rail_id].current_mA.max;
+        rail_data->current.min_mA = computed_metrics_2_mins.soc.vr_rail[rail_id].current_mA.min;
+
         // get VR Temperature
-        rail_data->temperature.latest_value_dC = soc_info.rail[rail_id].temperature.latest_value_dC;
-        rail_data->temperature.average_dC = soc_info.rail[rail_id].temperature.average_dC;
-        rail_data->temperature.max_dC = soc_info.rail[rail_id].temperature.max_dC;
-        rail_data->temperature.min_dC = soc_info.rail[rail_id].temperature.min_dC;
+        rail_data->temperature.average_dC =
+            computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.running_avg.average;
+        rail_data->temperature.max_dC = computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.max;
+        rail_data->temperature.min_dC = computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.min;
         // get VR voltage
-        rail_data->voltage.latest_value_mV = soc_info.rail[rail_id].voltage.latest_value_mV;
-        rail_data->voltage.average_mV = soc_info.rail[rail_id].voltage.average_mV;
-        rail_data->voltage.max_mV = soc_info.rail[rail_id].voltage.max_mV;
-        rail_data->voltage.min_mV = soc_info.rail[rail_id].voltage.min_mV;
+        rail_data->voltage.average_mV = computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.running_avg.average;
+        rail_data->voltage.max_mV = computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.max;
+        rail_data->voltage.min_mV = computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.min;
     }
 }
 
@@ -230,10 +228,9 @@ void data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(uint16_t hnf_channel, p_pwr_soc_el
     }
     else
     {
-        hnf_data->latest_value_dC = soc_info.hnf[hnf_channel].latest_value_dC;
-        hnf_data->average_dC = soc_info.hnf[hnf_channel].average_dC;
-        hnf_data->max_dC = soc_info.hnf[hnf_channel].max_dC;
-        hnf_data->min_dC = soc_info.hnf[hnf_channel].min_dC;
+        hnf_data->average_dC = computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].running_avg.average;
+        hnf_data->max_dC = computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].max;
+        hnf_data->min_dC = computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].min;
     }
 }
 
@@ -268,10 +265,9 @@ void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_so
     }
     else
     {
-        sensor_temp_data->latest_value_dC = soc_info.sensor_temp[sensor_id].latest_value_dC;
-        sensor_temp_data->average_dC = soc_info.sensor_temp[sensor_id].average_dC;
-        sensor_temp_data->max_dC = soc_info.sensor_temp[sensor_id].max_dC;
-        sensor_temp_data->min_dC = soc_info.sensor_temp[sensor_id].min_dC;
+        sensor_temp_data->average_dC = computed_metrics_2_mins.soc.top_sensor_temp_dC[sensor_id].running_avg.average;
+        sensor_temp_data->max_dC = computed_metrics_2_mins.soc.top_sensor_temp_dC[sensor_id].max;
+        sensor_temp_data->min_dC = computed_metrics_2_mins.soc.top_sensor_temp_dC[sensor_id].min;
     }
 }
 
@@ -314,7 +310,7 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
         core_summary_data->power_mW = core[core_id].latest_power_mW;
         core_summary_data->voltage_mV = core[core_id].latest_voltage_mV;
         core_summary_data->current_mA = core[core_id].current.latest_value_mA;
-        core_summary_data->temperature_dC = core[core_id].temperature.latest_value_dC;
+        core_summary_data->temperature_dC = core[core_id].latest_max_value_dC;
         core_summary_data->plimit = core[core_id].active_sample_plimit;
 
         // TODO :Below items need to be updated, when corresponding records will have implementation.
@@ -343,9 +339,9 @@ void data_proc_tlm_cmpnt_get_inst_soc_rail_data(uint16_t rail_id, p_inst_soc_ele
     else
     {
         // Create Voltage, Current and Temperature Information
-        rail_data->current_mA = soc_info.rail[rail_id].current.average_mA;
-        rail_data->temperature_dC = soc_info.rail[rail_id].temperature.latest_value_dC;
-        rail_data->voltage_mV = soc_info.rail[rail_id].voltage.latest_value_mV;
+        rail_data->current_mA = soc_info.latest_rail_current_mA[rail_id];
+        rail_data->temperature_dC = soc_info.latest_rail_temperature_dC[rail_id];
+        rail_data->voltage_mV = soc_info.latest_rail_voltage_mV[rail_id];
     }
 }
 

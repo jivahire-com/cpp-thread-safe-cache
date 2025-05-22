@@ -134,8 +134,21 @@ void data_proc_tlm_cmpnt_process_input_data(void)
         status = sensor_fifo_svc_poll_tile_temperature(temperature_data, &tile_index);
         if (status.curr_data_is_valid == true)
         {
-            // process the tile temperature
-            data_smpl_parse_tile_temperature_entry(temperature_data, tile_index);
+            // process the tile temperature, this function updates the core[] and sof_info[] values used below
+            valid_entry = data_smpl_parse_tile_temperature_entry(temperature_data, tile_index);
+
+            if (valid_entry)
+            {
+
+                uint16_t core_id_1 = tile_index * 2;
+                uint16_t core_id_2 = core_id_1 + 1;
+                comp_metrics_for_single_core_temperature(core_id_1, core[core_id_1].latest_max_value_dC);
+                comp_metrics_for_single_core_temperature(core_id_2, core[core_id_2].latest_max_value_dC);
+
+                // hnf channel is mapped the same as core id
+                comp_metrics_for_single_hnf_channel(core_id_1, soc_info.latest_hnf_max_temp_dC[core_id_1]);
+                comp_metrics_for_single_hnf_channel(core_id_2, soc_info.latest_hnf_max_temp_dC[core_id_2]);
+            }
         }
 
     } while (status.more_entries == true);
@@ -174,6 +187,7 @@ void data_proc_tlm_cmpnt_process_input_data(void)
             // process the core current packet
             data_smpl_parse_core_current_entry(current_data, core_index);
             // update any metrics from dat parsed from the entry
+
             comp_metrics_for_single_core_power(core_index, core[core_index].latest_power_mW);
         }
     } while (status.more_entries == true);
@@ -197,8 +211,10 @@ void data_proc_tlm_cmpnt_process_input_data(void)
         status = sensor_fifo_svc_poll_vr_temperature(vr_temperature);
         if (status.curr_data_is_valid == true)
         {
-            // process the VR Temperatures
+            // process the VR Temperatures, entries are array bound, so always valid
+            // updates soc_info.latest_rail_temperature_dC for call below
             data_smpl_parse_vr_temperature_entry(vr_temperature);
+            comp_metrics_for_soc_rail_temperature(&soc_info.latest_rail_temperature_dC);
         }
     } while (status.more_entries == true);
 
@@ -209,9 +225,12 @@ void data_proc_tlm_cmpnt_process_input_data(void)
         status = sensor_fifo_svc_poll_vr_current(vr_current);
         if (status.curr_data_is_valid == true)
         {
-            // process the VR Current and Voltage
+            // process the VR Current and Voltage, entries are array bound, so always valid
+            // updates soc_info.latest_rail_voltage_mV for call below
             data_smpl_parse_vr_current_entry(vr_current);
         }
+        comp_metrics_for_soc_rail_voltage(&soc_info.latest_rail_voltage_mV);
+        comp_metrics_for_soc_rail_current(&soc_info.latest_rail_current_mA);
     } while (status.more_entries == true);
 
     do
@@ -220,8 +239,10 @@ void data_proc_tlm_cmpnt_process_input_data(void)
         status = sensor_fifo_svc_poll_soc_pvt_temperature(pvt_temperature);
         if (status.curr_data_is_valid == true)
         {
-            // process the soc PVT temperature
+            // process the soc PVT temperature, updates soc_info.latest_soc_top_temp_dC for call below
             data_smpl_parse_pvt_temperature_entry(pvt_temperature);
+
+            comp_metrics_for_soc_top_temp_sensor(&soc_info.latest_soc_top_temp_dC);
         }
     } while (status.more_entries == true);
 
@@ -249,7 +270,7 @@ void data_proc_tlm_cmpnt_process_input_data(void)
 
 // sensor fifo parsers
 
-void data_smpl_parse_tile_temperature_entry(tile_temp_t* temperature_data, uint8_t tile_index)
+bool data_smpl_parse_tile_temperature_entry(tile_temp_t* temperature_data, uint8_t tile_index)
 {
     // For all details on the reference how this code was implemented, please
     // refer to the Power Management, Power Telemetry and Sensor Hardware Architecture Specifications (HAS)
@@ -258,7 +279,7 @@ void data_smpl_parse_tile_temperature_entry(tile_temp_t* temperature_data, uint8
     if (tile_index >= NUMBER_OF_TILES_PER_DIE)
     {
         FPFW_ET_LOG(LogInvalidTileId, tile_index);
-        return;
+        return false;
     }
 
     // Since this is a tile temperature, log the temperature where the tile temp belongs for the core
@@ -272,40 +293,51 @@ void data_smpl_parse_tile_temperature_entry(tile_temp_t* temperature_data, uint8
     if (temperature_data->temp0.temp_valid == 1)
     {
         // Check between which is bigger to log for tile core0
-        uint16_t inst_temp_0_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp1.temp0,
-                                                             tileDtsCoefficients[tile_index].k_val,
-                                                             tileDtsCoefficients[tile_index].y_val);
-        uint16_t inst_temp_1_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp1.temp1,
-                                                             tileDtsCoefficients[tile_index].k_val,
-                                                             tileDtsCoefficients[tile_index].y_val);
-        uint16_t inst_temp_2_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp1.temp2,
-                                                             tileDtsCoefficients[tile_index].k_val,
-                                                             tileDtsCoefficients[tile_index].y_val);
+        uint16_t inst_temp_0_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(temperature_data->temp1.temp0,
+                                                               tileDtsCoefficients[tile_index].k_val,
+                                                               tileDtsCoefficients[tile_index].y_val);
+        uint16_t inst_temp_1_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(temperature_data->temp1.temp1,
+                                                               tileDtsCoefficients[tile_index].k_val,
+                                                               tileDtsCoefficients[tile_index].y_val);
+        uint16_t inst_temp_2_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(temperature_data->temp1.temp2,
+                                                               tileDtsCoefficients[tile_index].k_val,
+                                                               tileDtsCoefficients[tile_index].y_val);
 
-        core[core_id].temperature.latest_value_dC = data_util_get_max_val(inst_temp_0_dC, inst_temp_1_dC, inst_temp_2_dC);
+        core[core_id].latest_max_value_dC = data_util_get_max_val(inst_temp_0_dC, inst_temp_1_dC, inst_temp_2_dC);
 
         // Check between which is bigger to log for tile core1
-        inst_temp_0_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp1.temp3,
-                                                    tileDtsCoefficients[tile_index].k_val,
-                                                    tileDtsCoefficients[tile_index].y_val);
-        inst_temp_1_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp2.temp4,
-                                                    tileDtsCoefficients[tile_index].k_val,
-                                                    tileDtsCoefficients[tile_index].y_val);
-        inst_temp_2_dC = PWR_TLM_DOUT2TEMP_FUSED_DC(temperature_data->temp2.temp5,
-                                                    tileDtsCoefficients[tile_index].k_val,
-                                                    tileDtsCoefficients[tile_index].y_val);
-        core[core_id + 1].temperature.latest_value_dC =
-            data_util_get_max_val(inst_temp_0_dC, inst_temp_1_dC, inst_temp_2_dC);
+        inst_temp_0_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(temperature_data->temp1.temp3,
+                                                      tileDtsCoefficients[tile_index].k_val,
+                                                      tileDtsCoefficients[tile_index].y_val);
+        inst_temp_1_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(temperature_data->temp2.temp4,
+                                                      tileDtsCoefficients[tile_index].k_val,
+                                                      tileDtsCoefficients[tile_index].y_val);
+        inst_temp_2_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(temperature_data->temp2.temp5,
+                                                      tileDtsCoefficients[tile_index].k_val,
+                                                      tileDtsCoefficients[tile_index].y_val);
 
-        // Log all the HNF Temperature, review raw HNF data for units.
-        // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2289685
-        soc_info.hnf[core_id].latest_value_dC = temperature_data->temp2.temp6;
-        soc_info.hnf[core_id + 1].latest_value_dC = temperature_data->temp2.temp7;
+        core[core_id + 1].latest_max_value_dC = data_util_get_max_val(inst_temp_0_dC, inst_temp_1_dC, inst_temp_2_dC);
+
+        // HNF channel is calculated the same as core_id so can re-use the same index
+        soc_info.latest_hnf_max_temp_dC[core_id] =
+            PWR_TLM_FUSE_DOUT_TO_TEMP_DC(temperature_data->temp2.temp6,
+                                         tileDtsCoefficients[tile_index].k_val,
+                                         tileDtsCoefficients[tile_index].y_val);
+
+        soc_info.latest_hnf_max_temp_dC[core_id + 1] =
+            PWR_TLM_FUSE_DOUT_TO_TEMP_DC(temperature_data->temp2.temp7,
+                                         tileDtsCoefficients[tile_index].k_val,
+                                         tileDtsCoefficients[tile_index].y_val);
     }
 
     // Also store the Max tile temperatures and its ID
-    tile[tile_index].active_sample_max_temperature_dC = temperature_data->temp0.max_temp;
-    tile[tile_index].active_sample_max_id = temperature_data->temp0.max_id;
+    tile[tile_index].latest_max_tile_temp_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(temperature_data->temp0.max_temp,
+                                                                            tileDtsCoefficients[tile_index].k_val,
+                                                                            tileDtsCoefficients[tile_index].y_val);
+
+    tile[tile_index].latest_max_temp_tile_index = temperature_data->temp0.max_id;
+
+    return true;
 }
 
 bool data_smpl_parse_tile_voltage_entry(tile_voltage_t* voltage_data, uint8_t tile_index)
@@ -497,7 +529,7 @@ void data_smpl_parse_vr_temperature_entry(vr_temp_t* vr_temperature)
     // Extract VR Temperature entries for all VR Rails
     for (uint8_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
     {
-        soc_info.rail[vr_index].temperature.latest_value_dC = vr_temperature->vr_temp_dC[vr_index];
+        soc_info.latest_rail_temperature_dC[vr_index] = vr_temperature->vr_temp_dC[vr_index];
     }
 }
 
@@ -506,18 +538,16 @@ void data_smpl_parse_vr_current_entry(vr_current_t* vr_current)
     // Extract VR Current and voltage entries for all VR Rails
     for (uint8_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
     {
-        soc_info.rail[vr_index].current.latest_value_mA = vr_current->vr_current_mA[vr_index];
-        soc_info.rail[vr_index].voltage.latest_value_mV = vr_current->vr_voltage_mV[vr_index];
+        soc_info.latest_rail_current_mA[vr_index] = vr_current->vr_current_mA[vr_index];
+        soc_info.latest_rail_voltage_mV[vr_index] = vr_current->vr_voltage_mV[vr_index];
     }
 }
 
-// TODO : soc_pvt_temp_t only have :sensor_temp_dC entry need to check for min, max, avg etc as per schema.
-// https://azurecsi.visualstudio.com/Dev/_workitems/edit/2305957
 void data_smpl_parse_pvt_temperature_entry(soc_pvt_temp_t* pvt_temperature)
 {
     for (uint8_t pvt_index = 0; pvt_index < NUMBER_OF_SOC_TEMP_SENSORS; pvt_index++)
     {
-        soc_info.sensor_temp[pvt_index].latest_value_dC = pvt_temperature->sensor_temp_dC[pvt_index];
+        soc_info.latest_soc_top_temp_dC[pvt_index] = pvt_temperature->sensor_temp_dC[pvt_index];
     }
 }
 
@@ -768,7 +798,6 @@ void data_proc_tlm_cmpnt_pwr_pkg_completed(void)
 
     data_smpl_reset_core_data();
     data_smpl_reset_soc_data();
-    data_smpl_reset_tile_data();
 }
 
 void data_proc_tlm_cmpnt_24hr_pkg_completed(void)
@@ -805,7 +834,6 @@ void data_smpl_reset_core_data()
         core[core_id].pstate_from_current_pkt = temp_core.pstate_from_current_pkt;
         core[core_id].average_pwr_mW = temp_core.average_pwr_mW;
         core[core_id].current.latest_value_mA = temp_core.current.latest_value_mA;
-        core[core_id].temperature.latest_value_dC = temp_core.temperature.latest_value_dC;
 
         for (uint8_t pstate_index = 0; pstate_index < NUMBER_OF_PSTATES; pstate_index++)
         {
@@ -830,39 +858,5 @@ void data_smpl_reset_soc_data(void)
     memset(&soc_info, 0, sizeof(soc_runtime_info_t));
     memset(&soc_dimm, 0, sizeof(soc_runtime_dimm_info_t));
 
-    /* Restore selective data from the local copy */
-    for (uint8_t rail_id = 0; rail_id < MAX_NUM_OF_VR_RAILS; rail_id++)
-    {
-        soc_info.rail[rail_id].voltage.latest_value_mV = soc_info_temp.rail[rail_id].voltage.latest_value_mV;
-        soc_info.rail[rail_id].temperature.latest_value_dC = soc_info_temp.rail[rail_id].temperature.latest_value_dC;
-        soc_info.rail[rail_id].current.latest_value_mA = soc_info_temp.rail[rail_id].current.latest_value_mA;
-    }
-
-    for (uint8_t hnf_channel = 0; hnf_channel < NUMBER_OF_HNF_CHANNELS_PER_DIE; hnf_channel++)
-    {
-        soc_info.hnf[hnf_channel].latest_value_dC = soc_info_temp.hnf[hnf_channel].latest_value_dC;
-    }
-
-    for (uint8_t pvt_index = 0; pvt_index < NUMBER_OF_SOC_TEMP_SENSORS; pvt_index++)
-    {
-        soc_info.sensor_temp[pvt_index].latest_value_dC = soc_info_temp.sensor_temp[pvt_index].latest_value_dC;
-    }
     soc_dimm.previous_soc_dimm_timestamp_uS = soc_dimm_timestamp;
-}
-
-void data_smpl_reset_tile_data(void)
-{
-    // Reset data for tiles
-    for (uint8_t tile_id = 0; tile_id < NUMBER_OF_TILES_PER_DIE; tile_id++)
-    {
-
-        tile_runtime_info_t temp_tile = tile[tile_id];
-        memset(&tile[tile_id], 0, sizeof(tile[tile_id]));
-
-        // Restore selective tile data
-        tile[tile_id].active_sample_max_temperature_dC = temp_tile.active_sample_max_temperature_dC;
-        tile[tile_id].max_tile_temperature_dC = temp_tile.max_tile_temperature_dC;
-        tile[tile_id].active_sample_max_id = temp_tile.active_sample_max_id;
-        tile[tile_id].max_tile_id = temp_tile.max_tile_id;
-    }
 }

@@ -47,6 +47,8 @@ extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
 static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
+    comp_metrics_reset_2_mins_metrics();
+    comp_metrics_reset_24_hrs_metrics();
     return 0;
 }
 static int test_teardown(void** pContext)
@@ -280,26 +282,26 @@ TEST_FUNCTION(test_get_pwr_core_current_data, test_setup, test_teardown)
 TEST_FUNCTION(test_get_pwr_core_temperature_data, test_setup, test_teardown)
 {
     pwr_core_element_temperature_t temp_data = {0};
-    temperature_t test_temperature = {0};
 
-    core[TEST_CORE_ID_5].temperature.latest_value_dC = 30;
-    core[TEST_CORE_ID_5].temperature.average_dC = 30;
-    core[TEST_CORE_ID_5].temperature.max_dC = 40;
-    core[TEST_CORE_ID_5].temperature.min_dC = 20;
-    memcpy(&test_temperature, &core[TEST_CORE_ID_5].temperature, sizeof(core[TEST_CORE_ID_5].temperature));
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.running_avg.average = 30;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.max = 40;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.min = 20;
+
     data_proc_tlm_cmpnt_get_pwr_core_temperature_data(TEST_CORE_ID_5, &temp_data);
-    // check for valid data into full temperaure array.
-    assert_int_equal(memcmp(&temp_data, &test_temperature, sizeof(test_temperature)), 0);
+
+    assert_int_equal(temp_data.min_dC, computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.min);
+    assert_int_equal(temp_data.max_dC, computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.max);
+    assert_int_equal(temp_data.average_dC,
+                     computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.running_avg.average);
 
     // setup for fail case .
-    core[TEST_CORE_ID_5].temperature.latest_value_dC = 0;
-    core[TEST_CORE_ID_5].temperature.average_dC = 0;
-    core[TEST_CORE_ID_5].temperature.max_dC = 0;
-    core[TEST_CORE_ID_5].temperature.min_dC = 0;
+
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.running_avg.average = 0;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.max = 0;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.min = 0;
 
     data_proc_tlm_cmpnt_get_pwr_core_temperature_data(NUMBER_OF_CORES_PER_DIE, &temp_data);
-    // check for valid data into full temperaure array.
-    assert_int_not_equal(memcmp(&temp_data, &core[TEST_CORE_ID_5].temperature, sizeof(core[TEST_CORE_ID_5].temperature)), 0);
+    data_proc_tlm_cmpnt_get_pwr_core_temperature_data(TEST_CORE_ID_5, nullptr);
 }
 
 TEST_FUNCTION(test_get_pwr_core_histogram_data, test_setup, test_teardown)
@@ -320,98 +322,64 @@ TEST_FUNCTION(test_get_pwr_soc_pkg_mon_data, test_setup, test_teardown)
 
 TEST_FUNCTION(test_get_pwr_soc_vr_rail_data, test_setup, test_teardown)
 {
-    pwr_soc_element_vr_rail_t vr_rail_data = {{0}};
-    vr_current_t data = {
-        .timestamp = 0,
-        .vr_current_mA = {10, 20, 30, 40, 50, 60, 70, 80},
-        .vr_voltage_mV = {1000, 900, 800, 700, 600, 700, 800, 900},
-    };
-    vr_temp_t vr_temperature = {
-        .timestamp = 0,
-        .vr_temp_dC = {15, 25, 35, 45, 55, 65, 75, 85},
-    };
-    // Baseline log for vr current and voltage
-    data_smpl_parse_vr_current_entry(&data);
-    // Baseline log for vr temperature
-    data_smpl_parse_vr_temperature_entry(&vr_temperature);
+    pwr_soc_element_vr_rail_t rail_data = {{0}};
+    uint16_t rail_id = TEST_RAIL_ID_2;
 
-    data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(TEST_RAIL_ID_2, &vr_rail_data);
-    // Check VR Current and voltage for packaging api.
-    assert_int_equal(vr_rail_data.current.latest_value_mA, (data.vr_current_mA[TEST_RAIL_ID_2]));
-    assert_int_equal(vr_rail_data.voltage.latest_value_mV, (data.vr_voltage_mV[TEST_RAIL_ID_2]));
-    assert_int_equal(vr_rail_data.temperature.latest_value_dC, (vr_temperature.vr_temp_dC[TEST_RAIL_ID_2]));
+    // Set up test values in computed_metrics_2_mins for this rail
+    computed_metrics_2_mins.soc.vr_rail[rail_id].current_mA.running_avg.average = 123;
+    computed_metrics_2_mins.soc.vr_rail[rail_id].current_mA.max = 150;
+    computed_metrics_2_mins.soc.vr_rail[rail_id].current_mA.min = 100;
+    computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.running_avg.average = 1100;
+    computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.max = 1200;
+    computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.min = 1000;
+    computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.running_avg.average = 55;
+    computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.max = 60;
+    computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.min = 50;
 
-    // fail case for current, voltage and temperature.
-    data.vr_current_mA[TEST_RAIL_ID_2] = 35;
-    data.vr_voltage_mV[TEST_RAIL_ID_2] = 810;
-    // Log again with new values and compare new valuse.
-    data_smpl_parse_vr_current_entry(&data);
-    vr_temperature.vr_temp_dC[TEST_RAIL_ID_2] = 45;
-    data_smpl_parse_vr_temperature_entry(&vr_temperature);
+    // Call the API
+    data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(rail_id, &rail_data);
 
-    data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(MAX_NUM_OF_VR_RAILS, &vr_rail_data);
-    assert_int_not_equal(vr_rail_data.current.latest_value_mA, (data.vr_current_mA[TEST_RAIL_ID_2]));
-    assert_int_not_equal(vr_rail_data.voltage.latest_value_mV, (data.vr_voltage_mV[TEST_RAIL_ID_2]));
-    assert_int_not_equal(vr_rail_data.temperature.latest_value_dC, (vr_temperature.vr_temp_dC[TEST_RAIL_ID_2]));
+    // Check current
+    assert_int_equal(rail_data.current.average_mA, 123);
+    assert_int_equal(rail_data.current.max_mA, 150);
+    assert_int_equal(rail_data.current.min_mA, 100);
+    // Check voltage
+    assert_int_equal(rail_data.voltage.average_mV, 1100);
+    assert_int_equal(rail_data.voltage.max_mV, 1200);
+    assert_int_equal(rail_data.voltage.min_mV, 1000);
+    // Check temperature
+    assert_int_equal(rail_data.temperature.average_dC, 55);
+    assert_int_equal(rail_data.temperature.max_dC, 60);
+    assert_int_equal(rail_data.temperature.min_dC, 50);
+
+    // Negative test: invalid rail_id
+    memset(&rail_data, 0, sizeof(rail_data));
+    data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(MAX_NUM_OF_VR_RAILS, &rail_data);
+    // Should not match the values set above
+    assert_int_not_equal(rail_data.current.average_mA, 123);
+    assert_int_not_equal(rail_data.voltage.average_mV, 1100);
+    assert_int_not_equal(rail_data.temperature.average_dC, 55);
+
+    // Negative test: null pointer
+    data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(rail_id, NULL);
 }
 
 TEST_FUNCTION(test_get_pwr_soc_hnf_data, test_setup, test_teardown)
 {
     pwr_soc_element_hnf_t hnf_data = {0};
-    uint8_t hnf_channel_id = 0;
-    // to log the data .
-    tile_temp_t temperature_data = {
-        .timestamp = 7485463, // non -zero to run the calculation in logger.
-        .temp0 =
-            {
-                .temp_valid = 1,
-                .max_id = 7,
-                .max_temp = 80,
-                .core0 = 40,
-                .core1 = 40,
-            },
-        .temp1 =
-            {
-                .temp0 = 20,
-                .temp1 = 30,
-                .temp2 = 40,
-                .temp3 = 40,
-            },
-        .temp2 =
-            {
-                .temp4 = 30,
-                .temp5 = 20,
-                .temp6 = 40,
-                .temp7 = 80,
-            },
-    };
+    uint8_t hnf_channel = 4;
 
-    uint8_t index = 0;
-    data_smpl_parse_tile_temperature_entry(&temperature_data, index);
+    computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].running_avg.average = 100;
+    computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].max = 200;
+    computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].min = 40;
 
-    // for hnf channel id 0
-    data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(hnf_channel_id, &hnf_data);
-    assert_int_equal(hnf_data.latest_value_dC, (temperature_data.temp2.temp6));
-    hnf_channel_id = TEST_HNF_CHANN_ID_1;
-    data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(hnf_channel_id, &hnf_data);
-    assert_int_equal(hnf_data.latest_value_dC, (temperature_data.temp2.temp7));
+    data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(hnf_channel, &hnf_data);
+    assert_int_equal(hnf_data.average_dC, 100);
+    assert_int_equal(hnf_data.max_dC, 200);
+    assert_int_equal(hnf_data.min_dC, 40);
 
-    // Fail case : update hnf data from logger on previously loggged data for HNF and test via packaging api.
-    hnf_channel_id = 0;
-    temperature_data.temp2.temp6 = 60; // First HNF on the tile.
-    temperature_data.temp2.temp7 = 70; // Second HNF on the tile.
-    data_smpl_parse_tile_temperature_entry(&temperature_data, hnf_channel_id);
-
-    hnf_channel_id = NUMBER_OF_HNF_CHANNELS_PER_DIE; // max range should fail to get updated data.
-    data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(hnf_channel_id, &hnf_data);
-    // last read value in hnf_data was temp7(second sensor on the tile)so compare with that.
-    assert_int_not_equal(hnf_data.latest_value_dC, (temperature_data.temp2.temp7));
-
-    // Check fail case for first sensor on tile :temp6.
-    hnf_data = {0};
-    hnf_channel_id = NUMBER_OF_HNF_CHANNELS_PER_DIE; // max range should fail to get updated data.
-    data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(hnf_channel_id, &hnf_data);
-    assert_int_not_equal(hnf_data.latest_value_dC, (temperature_data.temp2.temp7));
+    data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(NUMBER_OF_HNF_CHANNELS_PER_DIE, &hnf_data);
+    data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(hnf_channel, nullptr);
 }
 
 TEST_FUNCTION(test_get_pwr_soc_dimm_data, test_setup, test_teardown)
@@ -445,27 +413,33 @@ TEST_FUNCTION(test_get_pwr_soc_dimm_data, test_setup, test_teardown)
                      computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s1_dC.running_avg.average);
 }
 
-TEST_FUNCTION(test_get_pwr_soc_snsr_temp_data, test_setup, test_teardown)
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data, test_setup, test_teardown)
 {
-    pwr_soc_element_sensor_temp_t snsr_temp_data = {0};
+    pwr_soc_element_sensor_temp_t sensor_temp_data = {0};
+    uint16_t sensor_id = 1;
 
-    soc_pvt_temp_t pvt_temperature = {
-        .timestamp = 0,
-        .sensor_temp_dC = {20, 30, 40, 50, 60, 26, 27, 21, 12, 21, 31, 13, 41, 14},
-    };
-    data_smpl_parse_pvt_temperature_entry(&pvt_temperature);
+    // Set up test values in computed_metrics_2_mins for this sensor
+    computed_metrics_2_mins.soc.top_sensor_temp_dC[sensor_id].running_avg.average = 77;
+    computed_metrics_2_mins.soc.top_sensor_temp_dC[sensor_id].max = 88;
+    computed_metrics_2_mins.soc.top_sensor_temp_dC[sensor_id].min = 66;
 
-    data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(TEST_SNSR_ID_0, &snsr_temp_data);
-    // assert_int_equal(pvt_temperature.sensor_temp_dC[TEST_SNSR_ID_0], snsr_temp_data.latest_value_dC);
-    assert_int_equal(memcmp(&snsr_temp_data.latest_value_dC,
-                            &pvt_temperature.sensor_temp_dC[TEST_SNSR_ID_0],
-                            sizeof(pvt_temperature.sensor_temp_dC[TEST_SNSR_ID_0])),
-                     0);
+    // Call the API
+    data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(sensor_id, &sensor_temp_data);
 
-    // Fail case, fill data with zero
-    snsr_temp_data = {0};
-    data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(NUMBER_OF_SOC_TEMP_SENSORS, &snsr_temp_data);
-    assert_int_not_equal(pvt_temperature.sensor_temp_dC[TEST_SNSR_ID_0], snsr_temp_data.latest_value_dC);
+    // Check values
+    assert_int_equal(sensor_temp_data.average_dC, 77);
+    assert_int_equal(sensor_temp_data.max_dC, 88);
+    assert_int_equal(sensor_temp_data.min_dC, 66);
+
+    // Negative test: invalid sensor_id
+    memset(&sensor_temp_data, 0, sizeof(sensor_temp_data));
+    data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(NUMBER_OF_SOC_TEMP_SENSORS, &sensor_temp_data);
+    assert_int_not_equal(sensor_temp_data.average_dC, 77);
+    assert_int_not_equal(sensor_temp_data.max_dC, 88);
+    assert_int_not_equal(sensor_temp_data.min_dC, 66);
+
+    // Negative test: null pointer
+    data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(sensor_id, NULL);
 }
 
 TEST_FUNCTION(test_get_pwr_mpam_pstate_data, test_setup, test_teardown)
@@ -503,7 +477,7 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
     core[TEST_CORE_ID_5].latest_voltage_mV = 3200;
     // core temperature and current,plimit.
     core[TEST_CORE_ID_5].current.latest_value_mA = 30;
-    core[TEST_CORE_ID_5].temperature.latest_value_dC = 400;
+    core[TEST_CORE_ID_5].latest_max_value_dC = 400;
     // plimit
     core[TEST_CORE_ID_5].active_sample_plimit = 1;
 
@@ -517,7 +491,7 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
 
     assert_int_equal(core_summary_data.voltage_mV, core[TEST_CORE_ID_5].latest_voltage_mV);
     assert_int_equal(core_summary_data.current_mA, core[TEST_CORE_ID_5].current.latest_value_mA);
-    assert_int_equal(core_summary_data.temperature_dC, core[TEST_CORE_ID_5].temperature.latest_value_dC);
+    assert_int_equal(core_summary_data.temperature_dC, core[TEST_CORE_ID_5].latest_max_value_dC);
 }
 
 TEST_FUNCTION(test_get_inst_soc_rail_data, test_setup, test_teardown)

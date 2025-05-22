@@ -5,7 +5,7 @@
 /**
  *  @file power_tlm_fuse.h
  *  This library provide apis to read the power fuses for telemetry.
- * 
+ *
  *  Note: This library can be used on both the processor MCP and SCP,
  *        see the runtime init component for dependency details.
  */
@@ -14,7 +14,7 @@
 
 /*--------------- Includes ---------------*/
 
-#include <stdint.h> 
+#include <stdint.h>
 #include <fpfw_status.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -34,17 +34,22 @@
 
 /**
  * @brief To obtain the temperature value, the following equation should be applied to the dout output of the DTS.
- * Temperature = ( 𝒅𝒐𝒖𝒕 /16384 ) ∗ 𝒀+𝑲 [℃]. We want to round up so we add a half a degree.
+ * Temperature = ((( 𝒅𝒐𝒖𝒕 /16384 ) ∗ 𝒀+𝑲) * 10) + 0.5 [dC]. We want to round up so we add half a dC.
  * Reference : Synopsys Cores Sensors  Distributed Thermal Sensor (Series 2) section 6.2
  */
 
-#ifndef PWR_TLM_DOUT2TEMP_FUSED_DC
-    #define PWR_TLM_DOUT2TEMP_FUSED_DC(dout, fused_k, fused_y) \
-    ((uint16_t)((((dout) / (16384.0F)) * PWR_TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y)) + PWR_TLM_DTS_K_COEFF_FUSED_TEMP(fused_k) + (0.5F)))
+#ifndef PWR_TLM_FUSE_DOUT_TO_TEMP_DC
+    #define PWR_TLM_FUSE_DOUT_TO_TEMP_DC(dout, fused_k, fused_y) \
+    ((uint16_t)(((((dout) / 16384.0F) * PWR_TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y) + PWR_TLM_DTS_K_COEFF_FUSED_TEMP(fused_k)) * 10.0F) + 0.5F))
 #endif
 
-#ifndef PWR_TLM_TEMP2DOUT_FUSED
-    #define PWR_TLM_TEMP2DOUT_FUSED(temp, fused_k, fused_y) \
+#ifndef PWR_TLM_FUSE_TEMP_DC_TO_DOUT
+    #define PWR_TLM_FUSE_TEMP_DC_TO_DOUT(temp, fused_k, fused_y) \
+    ((uint16_t)(16384.0F * ((((double)(temp) - 0.5F) / 10.0F - PWR_TLM_DTS_K_COEFF_FUSED_TEMP(fused_k)) / PWR_TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y)) + 0.5F))
+#endif
+
+#ifndef PWR_TLM_FUSE_TEMP_CEL_2_DOUT
+    #define PWR_TLM_FUSE_TEMP_CEL_2_DOUT(temp, fused_k, fused_y) \
     ((uint16_t)((16384.0F) * (((temp) - PWR_TLM_DTS_K_COEFF_FUSED_TEMP(fused_k)) / PWR_TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y))))
 #endif
 
@@ -65,7 +70,7 @@ typedef struct _dts_tlm_coeff_t
 /**
  * @brief Initialize the library. Captures status of dependencies being initialized.
  *
- * @return None 
+ * @return None
  */
 void power_fuse_init(void);
 

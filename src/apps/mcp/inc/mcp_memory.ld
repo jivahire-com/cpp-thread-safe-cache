@@ -9,6 +9,7 @@
  * The __ITCMSTART__ has been moved to 0x80 as the M7 VTOR register only accepts addresses with 128 byte offset (https://developer.arm.com/documentation/dui0646/b/Cortex-M7-Peripherals/System-control-block/Vector-Table-Offset-Register?lang=en)
  * The __DTCMEND__ is reduced to 0x20077FFF, this is because the last 32KB is used by the boot loader for decompression and hence the firmware image needs to leave the region untouched.
  * The RMSS Data size for MCP is 64kb
+ * The __RESERVED_CODE_SIZE is used to create a 32KB region to reserve ITCM for future use.
 */
 __ITCMSTART__        = 0x00000080;
 __ITCMEND__          = 0x0007FFFF;
@@ -16,6 +17,7 @@ __DTCMSTART__        = 0x20000000;
 __DTCMEND__          = 0x20077FFF;
 __RMSSDATASTART__    = 0x0137D000;
 __RMSSDATAEND__      = 0x0138CFFF;
+__RESERVED_CODE_SIZE = 0x8000;
 
 /* 
  * CODE and DATA sizes map directly to the sizes of the respective TCM (plus one for size).
@@ -28,7 +30,7 @@ __RMSSDATAEND__      = 0x0138CFFF;
 */
 
 __CODE_START__ = __ITCMSTART__;
-__CODE_SIZE__  = (__ITCMEND__ - __ITCMSTART__) + 1;
+__CODE_SIZE__  = (__ITCMEND__ - __ITCMSTART__) - (__RESERVED_CODE_SIZE) + 1;
 __DATA_START__ = __DTCMSTART__;
 __DATA_SIZE__  = (__DTCMEND__ - __DTCMSTART__) + 1;
 __STACKSIZE__  = 0x1000;

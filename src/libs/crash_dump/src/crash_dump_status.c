@@ -29,9 +29,7 @@ static bool crash_dump_get_is_single_dump_complete(crash_dump_type_context_t* ty
     bool is_complete = true;
 
     wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
-    if (type_context->header->status == CRASH_DUMP_IN_USE &&
-        (type_context->header->cores[core_id] == CRASH_DUMP_STATE_READY ||
-         type_context->header->cores[core_id] == CRASH_DUMP_STATE_IN_PROGRESS))
+    if (type_context->header->status == CRASH_DUMP_IN_USE && type_context->header->cores[core_id] == CRASH_DUMP_STATE_IN_PROGRESS)
     {
         is_complete = false;
     }
@@ -49,7 +47,7 @@ static bool crash_dump_get_are_all_dump_complete(crash_dump_type_context_t* type
     {
         for (uint16_t i = 0; i < CRASH_DUMP_CORE_NUM * 2; i++)
         {
-            if (type_context->header->cores[i] == CRASH_DUMP_STATE_READY || type_context->header->cores[i] == CRASH_DUMP_STATE_IN_PROGRESS)
+            if (type_context->header->cores[i] == CRASH_DUMP_STATE_IN_PROGRESS)
             {
                 is_complete = false;
                 break;
@@ -93,6 +91,41 @@ bool crash_dump_get_is_dump_complete(crash_dump_type_context_t* type_context)
     }
 
     return is_complete;
+}
+
+bool crash_dump_get_is_dump_transferring(crash_dump_type_context_t* type_context)
+{
+    bool is_transferring = false;
+
+    if (type_context == NULL)
+    {
+        // Check all types of dumps
+        crash_dump_context_t* ctx = crash_dump_context();
+
+        for (uint16_t i = 0; i < CRASH_DUMP_TYPE_NUM; i++)
+        {
+            crash_dump_type_context_t* type_ctx = ctx->type_ctx[i];
+            if (type_ctx != NULL)
+            {
+                wait_for_semaphore(type_ctx->semaphore.id, type_ctx->semaphore.key);
+                is_transferring = (type_ctx->header->status == CRASH_DUMP_IN_TRANSFER);
+                release_semaphore(type_ctx->semaphore.id);
+
+                if (is_transferring)
+                {
+                    break;
+                }
+            }
+        }
+    }
+    else
+    {
+        wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
+        is_transferring = (type_context->header->status == CRASH_DUMP_IN_TRANSFER);
+        release_semaphore(type_context->semaphore.id);
+    }
+
+    return is_transferring;
 }
 
 void initialize_crash_dump_header(crash_dump_type_context_t* type_context)
@@ -162,6 +195,63 @@ void crash_dump_update_core_state(crash_dump_type_context_t* type_context, crash
         wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
         type_context->header->cores[ctx->die_index * CRASH_DUMP_CORE_NUM + ctx->core_index] = (uint8_t)state;
         release_semaphore(type_context->semaphore.id);
+    }
+}
+
+static const char* crash_dump_core_state_to_string(crash_dump_core_state_t state)
+{
+    switch (state)
+    {
+    case CRASH_DUMP_STATE_NOT_AVAILABLE:
+        return "NA";
+    case CRASH_DUMP_STATE_READY:
+        return "RD";
+    case CRASH_DUMP_STATE_IN_PROGRESS:
+        return "IP";
+    case CRASH_DUMP_STATE_COMPLETED:
+        return "CP";
+    default:
+        return "Unknown";
+    }
+}
+
+static void crash_dump_type_dump_status(crash_dump_type_context_t* type_context)
+{
+    if (type_context)
+    {
+        wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
+        FPFwCDPrintf("CD[%d]: %02d [%s, %s, %s, %s, %s, %s] [%s, %s, %s, %s, %s, %s]\n",
+                     type_context->type,
+                     type_context->header->status,
+                     crash_dump_core_state_to_string(type_context->header->cores[0]),   // MCP0
+                     crash_dump_core_state_to_string(type_context->header->cores[1]),   // SCP0
+                     crash_dump_core_state_to_string(type_context->header->cores[2]),   // HSP0
+                     crash_dump_core_state_to_string(type_context->header->cores[3]),   // SDM0
+                     crash_dump_core_state_to_string(type_context->header->cores[4]),   // CDED0
+                     crash_dump_core_state_to_string(type_context->header->cores[5]),   // KMP0
+                     crash_dump_core_state_to_string(type_context->header->cores[6]),   // MCP1
+                     crash_dump_core_state_to_string(type_context->header->cores[7]),   // SCP1
+                     crash_dump_core_state_to_string(type_context->header->cores[8]),   // HSP1
+                     crash_dump_core_state_to_string(type_context->header->cores[9]),   // SDM1
+                     crash_dump_core_state_to_string(type_context->header->cores[10]),  // CDED1
+                     crash_dump_core_state_to_string(type_context->header->cores[11])); // KMP1
+        release_semaphore(type_context->semaphore.id);
+    }
+}
+
+void crash_dump_dump_status(crash_dump_type_context_t* type_context)
+{
+    if (type_context)
+    {
+        crash_dump_type_dump_status(type_context);
+    }
+    else
+    {
+        crash_dump_context_t* ctx = crash_dump_context();
+        for (uint16_t i = 0; i < CRASH_DUMP_TYPE_NUM; i++)
+        {
+            crash_dump_type_dump_status(ctx->type_ctx[i]);
+        }
     }
 }
 

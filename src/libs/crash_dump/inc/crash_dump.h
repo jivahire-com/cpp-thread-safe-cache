@@ -322,6 +322,15 @@ void crash_dump_register_address32_pointer_array(FPFwCdDumpPriority priority, ui
 bool crash_dump_get_is_dump_complete(crash_dump_type_context_t* type_context);
 
 /**
+ * @brief Check crash dump is in transferring
+ * 
+ * @param type_context Crash dump context applied to specific type (mini or full)
+ *                     If NULL, check all types of crash dump.
+ * @return true if MCP is transferring full dumps to the BMC, otherwise false.
+ */
+bool crash_dump_get_is_dump_transferring(crash_dump_type_context_t* type_context);
+
+/**
  * @brief Registers crash dump CLI commands
  * 
  */

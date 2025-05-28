@@ -23,6 +23,7 @@ target_link_libraries(${TARGET}
     fwlib.lib.crashDump
     fwlib.service.cli
     ms::build_data
+    ms::client_interface::startup_shutdown
     ms::cmocka::testrunner
     ms::cmsis::interface
     ms::lib::cortex_m7::nvic
@@ -47,6 +48,10 @@ unit_test_target(${TARGET})
 # Mock the functions needed
 mock_target(${TARGET}
     __NVIC_SetPriority
+    DfwkAsyncRequestComplete
+    DfwkDeviceInitialize
+    DfwkInterfaceInitialize
+    DfwkQueueInitialize
     FPFwCDInitMemoryPool
     FPFwCDMemPoolOverrideCacheFlush
     FPFwCDMemPoolOverrideCacheInvalidate
@@ -77,8 +82,11 @@ mock_target(${TARGET}
     fpfw_icc_base_recv_sync
     fpfw_icc_base_send_sync
     _txe_mutex_create
+    _txe_timer_create
+    _txe_timer_deactivate
     _tx_mutex_get
     _tx_mutex_put
+    _tx_thread_sleep
     gpio_set_output
     crash_dump_context
     initialize_semaphore

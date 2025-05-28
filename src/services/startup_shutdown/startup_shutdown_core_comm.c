@@ -104,11 +104,34 @@ void quiesce_complete_notify(DFWK_ASYNC_REQUEST_HEADER* request, void* p_complet
     }
 }
 
-// Callback function for the asynchronous PrepareForCoreReset receive operation
-void prepare_reset_recv_cb(void* context, size_t cmd_code, fpfw_status_t status)
+// Utility function to convert HSP reset reason to shutdown type
+// ToDo: Need to review how this mapping should be.
+static ssi_shutdown_type_t convert_HSP_reset_reason_to_shutdown_type(uint32_t reset_reason)
 {
-    FPFW_UNUSED(cmd_code);
-    FPFW_UNUSED(context);
+    switch (reset_reason)
+    {
+    case HSP_FIRMWARE_RESET_REASON_HSP_RECOVERY_MODE:
+    case HSP_FIRMWARE_RESET_REASON_CRASH:
+    case HSP_FIRMWARE_RESET_REASON_UPDATE:
+    case HSP_FIRMWARE_RESET_REASON_WARM_RESET:
+    case HSP_FIRMWARE_RESET_REASON_HSP_ONLY_WARM_RESET:
+        return MSCP_SUBSYS_RESET;
+    case HSP_FIRMWARE_RESET_REASON_DEBUG_UNLOCK:
+    case HSP_FIRMWARE_RESET_REASON_COLD_BOOT:
+        return COLD_RESET;
+    case HSP_FIRMWARE_RESET_REASON_UNDEFINED:
+    case HSP_FIRMWARE_RESET_REASON_SHUTDOWN:
+    default:
+        break;
+    }
+
+    return SHUTDOWN; // Default
+}
+
+// Callback function for the asynchronous PrepareForCoreReset receive operation
+void prepare_reset_recv_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    FPFW_UNUSED(output_size_bytes);
     fpfw_icc_base_recv_req_t* recv_context = (fpfw_icc_base_recv_req_t*)context;
 
     if (status != DFWK_SUCCESS)
@@ -117,8 +140,19 @@ void prepare_reset_recv_cb(void* context, size_t cmd_code, fpfw_status_t status)
     }
     else
     {
+        FPFW_RUNTIME_ASSERT(recv_context->recv_cmd_code == HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
+        FPFW_RUNTIME_ASSERT(recv_context->payload_buffer != NULL);
+        FPFW_RUNTIME_ASSERT(recv_context->buffer_size >= sizeof(kng_hsp_mailbox_msg));
+        kng_hsp_mailbox_msg* hsp_recv_msg = (kng_hsp_mailbox_msg*)(recv_context->payload_buffer);
+
+        // Prepare the queisce request with shutdown type.
         static startup_shutdown_request_t shutdown_request;
         DfwkAsyncRequestInitialize((void*)&shutdown_request.header, sizeof(shutdown_request));
+
+        shutdown_request.header.RequestType = STARTUP_REQUEST_QUIESCE_ASYNC;
+        shutdown_request.shutdown_type =
+            convert_HSP_reset_reason_to_shutdown_type(hsp_recv_msg->prepare_for_core_reset_req.reason);
+
         sos_quiesce((void*)fpfw_init_get_handle("sos_int"), &shutdown_request, quiesce_complete_notify, recv_context);
     }
 }

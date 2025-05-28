@@ -8,11 +8,13 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DfwkThreadXHost.h>         // for DFWK_THREADX_HOST
 #include <FpFwAssert.h>              // for FPFW_RUNTIME_ASSERT
 #include <accelerator_ip.h>          // for accel_is_isolation_enabled
 #include <addressblock0_regs.h>      // for ADDRESSBLOCK0_WDOGLOAD_ADDRESS, ADDRESSBLOCK0_WDOGRIS_ADDRESS
 #include <bug_check.h>               // for BUG_CHECK
 #include <crash_dump.h>              // for crash_dump_init
+#include <crash_dump_dfwk.h>         // for crash_dump_device_t, crash_dump_interface_t
 #include <crash_dump_memory.h>       // for CRASH_DUMP_MINI_HEADER_ADDR, CRASH_DUMP_MINI_HEADER_SIZE
 #include <exception_handler.h>       // for exception_handler_init
 #include <fpfw_init.h>               // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
@@ -22,7 +24,8 @@
 #include <kng_error.h>               // for KNG_SUCCESS
 #include <silibs_scp_exp_top_regs.h> // for SCP_EXP_TOP_SCF_RAM_ADDRESS, SCP_EXP_TOP_SCF_RAM_SIZE
 #include <silibs_scp_top_regs.h> // for SCP_TOP_SCP_EXP_ADDRESS, SCP_TOP_SCP_INST_RAM_ADDRESS, SCP_TOP_SCP_INST_RAM_SIZE
-#include <stddef.h>              // for NULL
+#include <startup_shutdown.h> // for sos_register_ssi
+#include <stddef.h>           // for NULL
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define SCP_SCF_RAM_ADDRESS  (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCF_RAM_ADDRESS)
@@ -112,6 +115,25 @@ FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("hw_ver", "gpio_lib"))
     crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_MHU_LOCAL, fpfw_init_get_handle("icc_mscp2mscp"));
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
+FPFW_INIT_COMPONENT(cd_drv, FPFW_INIT_DEPENDENCIES("cd_init", "dfwk", "sos_int"))
+{
+    // Initialize the crash dump driver
+    static crash_dump_device_t crash_dump_device;
+    static crash_dump_interface_t crash_dump_interface;
+    DFWK_THREADX_HOST* dfwk_host = (DFWK_THREADX_HOST*)fpfw_init_get_handle("dfwk");
+
+    crash_dump_device_initialize(&crash_dump_device, &(dfwk_host->Schedule));
+    crash_dump_interface_initialize(&crash_dump_interface, &crash_dump_device);
+
+    // static data for SSI registration
+    static startup_ssi_registration_t ssi_registration;
+    int32_t status =
+        sos_register_ssi(fpfw_init_get_handle("sos_int"), &ssi_registration, &crash_dump_interface.Header);
+    FPFW_RUNTIME_ASSERT(status == FPFW_INIT_STATUS_SUCCESS);
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &crash_dump_interface};
 }
 
 FPFW_INIT_COMPONENT(cd_mhu_loc, FPFW_INIT_DEPENDENCIES("cd_init", "icc_mscp2mscp"))

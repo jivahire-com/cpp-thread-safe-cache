@@ -44,6 +44,13 @@ void crash_dump_update_state(crash_dump_type_context_t *type_context, crash_dump
 void crash_dump_update_core_state(crash_dump_type_context_t *type_context, crash_dump_core_state_t state);
 
 /**
+ * @brief Dump crash dump status.
+ * 
+ * @param type_context Crash dump type context. If null dump all types.
+ */
+void crash_dump_dump_status(crash_dump_type_context_t *type_context);
+
+/**
  * @brief Update crash dump state of accelerators.
  * 
  * @param accel_type Accelerator type.

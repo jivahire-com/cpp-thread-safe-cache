@@ -167,6 +167,6 @@ void sos_quiesce(PDFWK_INTERFACE_HEADER p_interface,
                     void* p_completion_context);
 
 void shutdown_req_cb(void* context, fpfw_status_t status);
-void prepare_reset_recv_cb(void* context, size_t cmd_code, fpfw_status_t status);
+void prepare_reset_recv_cb(void* context, size_t output_size_bytes, fpfw_status_t status);
 void receive_prep_core_reset();
 void quiesce_complete_notify(DFWK_ASYNC_REQUEST_HEADER* request, void* p_completion_context);

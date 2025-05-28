@@ -6,6 +6,7 @@ set (SOURCES
         src/crash_dump_accel.c
         src/crash_dump_cli.c
         src/crash_dump_context.c
+        src/crash_dump_dfwk.c
         src/crash_dump_gpio.c
         src/crash_dump_icc.c
         src/crash_dump_init.c
@@ -37,11 +38,14 @@ target_link_libraries(${TARGET}
         silibs::sdm_command_desc
         silibs::semaphore
     PRIVATE
+        fwlib.dfwk
         fwlib.lib.assert
         fwlib.lib.cfg_mgr
+        fwlib.lib.init
         fwlib.service.cli
         kng.lib.hsp_firmware_headers
         ms::build_data
+        ms::client_interface::startup_shutdown
         ms::cmsis::interface
         ms::lib::cortex_m7::nvic
         ms::lib::icc_platform_defines

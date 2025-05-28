@@ -82,6 +82,8 @@ void __wrap_sos_quiesce(PDFWK_INTERFACE_HEADER p_interface,
     FPFW_UNUSED(p_request);
     FPFW_UNUSED(completion_routine);
     FPFW_UNUSED(p_completion_context);
+
+    function_called();
 }
 
 } // extern "C"
@@ -206,13 +208,19 @@ SOS_TEST(prepare_reset_recv_cb, NULL, NULL)
     will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
     sos_icc_init(test_icc_ctx);
 
-    kng_hsp_mailbox_cmd_core_reset_complete_notify test_send_params = {
-        .header.cmd = HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_RSP,
-    };
+    fpfw_icc_base_recv_req_t test_recv_context = {};
+    kng_hsp_mailbox_msg hsp_mailbox_msg = {};
+
+    test_recv_context.recv_cmd_code = HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ;
+    test_recv_context.payload_buffer = &hsp_mailbox_msg;
+    test_recv_context.buffer_size = sizeof(hsp_mailbox_msg);
+
     expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
     expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(startup_shutdown_request_t));
 
-    prepare_reset_recv_cb(&test_send_params, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_RSP, DFWK_SUCCESS);
+    expect_function_call(__wrap_sos_quiesce);
+
+    prepare_reset_recv_cb(&test_recv_context, 0x0c, DFWK_SUCCESS);
 }
 
 // test for quiesce_complete_cb

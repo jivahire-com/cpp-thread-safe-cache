@@ -24,14 +24,17 @@ extern "C" {
 #include <../src/crash_dump_icc.h>       // for crash_dump_transfer_full_dump_to_bmc
 #include <../src/crash_dump_overrides.h> // for inMemoryOverride
 #include <../src/crash_dump_payload.h>   // for CD_THREADX_DATA, crash_dump_capture_threadx
+#include <../src/crash_dump_status.h>    // for crash_dump_dump_status
 #include <cmsis_m7.h>                    // for SCB
 #include <crash_dump.h>                  // for crash_dump_init
+#include <crash_dump_dfwk.h>             // for crash_dump_device_t, crash_dump_interface_t
 #include <crash_dump_memory.h>           // for CRASH_DUMP_MINI_SCP_ADDR, CRASH_DUMP_MINI_SCP_SIZE...
 #include <icc_platform_defines.h>        // for accel_cd_addr_msg
 #include <kng_icc_shared.h>              // for ICC_SIGNAL_CRASH_DUMP_COLLECT
 #include <nvic.h>                        // for NVIC_STATUS_SUCCESS
 #include <sdm_ext_cfg_regs.h>            // for SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS...
 #include <silibs_platform_mock.h>        // for mmio_set_mock_data
+#include <startup_shutdown_ssi.h>        // for sos_register_ssi
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define CD_DEFAULT_MEM_POOL_SIZE 1024
@@ -57,6 +60,9 @@ extern icc_base_recv_complete_notify fw_load_cb;
 extern void* cb_ctx;
 extern bool memcpy_mock;
 extern jmp_buf cd_test_setjmp_context;
+
+extern DFWK_ASYNC_REQUEST_DISPATCH static_dispatch_routine;
+extern VOID (*static_timer_cb)(ULONG id);
 
 bool __real_crash_dump_get_is_dump_complete(crash_dump_type_context_t* type_context);
 bool __use_real_crash_dump_get_is_dump_complete = false;
@@ -1758,5 +1764,161 @@ TEST_FUNCTION(test_crash_dump_mem_api_override, nullptr, nullptr)
     addr64 = 0x123456789ABCDEF0;
     data64 = crash_dump_aligned_read64((uint64_t)&addr64);
     assert_int_equal(data64, addr64);
+}
+
+TEST_FUNCTION(test_crash_dump_dfwk, nullptr, nullptr)
+{
+    crash_dump_device_t crash_dump_device;
+    crash_dump_interface_t crash_dump_interface;
+    DFWK_SCHEDULE dfwk_schedule;
+
+    // Set up expectations
+    expect_value(__wrap_DfwkDeviceInitialize, Device, &crash_dump_device);
+    expect_value(__wrap_DfwkDeviceInitialize, Schedule, &dfwk_schedule);
+    expect_function_call(__wrap_DfwkDeviceInitialize);
+
+    expect_any(__wrap_DfwkQueueInitialize, Queue);
+    expect_value(__wrap_DfwkQueueInitialize, Device, &crash_dump_device);
+    expect_any(__wrap_DfwkQueueInitialize, DispatchRoutine);
+    expect_any(__wrap_DfwkQueueInitialize, DispatchContext);
+    expect_any(__wrap_DfwkQueueInitialize, QueueType);
+    expect_function_call(__wrap_DfwkQueueInitialize);
+
+    expect_value(__wrap_DfwkInterfaceInitialize, Interface, &crash_dump_interface);
+    expect_value(__wrap_DfwkInterfaceInitialize, Device, &crash_dump_device);
+    expect_any(__wrap_DfwkInterfaceInitialize, DispatchQueue);
+    expect_value(__wrap_DfwkInterfaceInitialize, DispatchSync, NULL);
+    expect_function_call(__wrap_DfwkInterfaceInitialize);
+
+    crash_dump_device_initialize(&crash_dump_device, &dfwk_schedule);
+    crash_dump_interface_initialize(&crash_dump_interface, &crash_dump_device);
+
+    {
+        // Test crash_dump_dispatch with supported request
+        ssi_shutdown_notification_request_t ssi_request = {};
+        crash_dump_device_t cd_device = {};
+
+        ssi_request.header.RequestType = SSI_QUIESCE_ASYNC;
+        ssi_request.shutdown_type = MSCP_SUBSYS_RESET;
+
+        expect_string(__wrap__txe_timer_create, name_ptr, "cd_quiesce");
+        expect_function_call(__wrap__txe_timer_create);
+
+        static_dispatch_routine(&ssi_request.header, &cd_device);
+    }
+
+    {
+        // Test crash_dump_dispath with unsupported request
+        ssi_shutdown_notification_request_t ssi_request = {};
+        crash_dump_device_t cd_device = {};
+
+        ssi_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+        ssi_request.shutdown_type = SHUTDOWN;
+
+        expect_value(__wrap_DfwkAsyncRequestComplete, Request, &ssi_request);
+        expect_function_call(__wrap_DfwkAsyncRequestComplete);
+
+        static_dispatch_routine(&ssi_request.header, &cd_device);
+    }
+
+    {
+        // Test crash_dump_quiesce_thread
+        ssi_shutdown_notification_request_t ssi_request = {};
+        ssi_request.header.RequestType = SSI_QUIESCE_ASYNC;
+        ssi_request.shutdown_type = MSCP_SUBSYS_RESET;
+
+        crash_dump_header_t header = {.status = CRASH_DUMP_IN_USE};
+
+        crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL,
+                                                  .mem_pool_addr = CRASH_DUMP_FULL_MCP_ADDR,
+                                                  .mem_pool_size = CRASH_DUMP_FULL_MCP_SIZE,
+                                                  .semaphore = {.id = SEM_ID_DIE0_IOSS_0, .key = 1},
+                                                  .header = &header};
+
+        crash_dump_context_t context = {.type_ctx = {NULL, &type_context}, .die_index = 0, .core_index = CRASH_DUMP_CORE_SCP};
+
+        will_return_always(__wrap_crash_dump_context, &context);
+
+        // crash_dump_get_is_dump_transferring
+        expect_value(__wrap_wait_for_semaphore, id, SEM_ID_DIE0_IOSS_0);
+        expect_value(__wrap_wait_for_semaphore, key, 1);
+        expect_function_call(__wrap_wait_for_semaphore);
+        expect_value(__wrap_release_semaphore, id, SEM_ID_DIE0_IOSS_0);
+        expect_function_call(__wrap_release_semaphore);
+
+        // crash_dump_get_is_dump_complete
+        will_return(__wrap_crash_dump_get_is_dump_complete, false);
+
+        static_timer_cb((ULONG)&ssi_request);
+
+        // crash_dump_get_is_dump_transferring
+        expect_value(__wrap_wait_for_semaphore, id, SEM_ID_DIE0_IOSS_0);
+        expect_value(__wrap_wait_for_semaphore, key, 1);
+        expect_function_call(__wrap_wait_for_semaphore);
+        expect_value(__wrap_release_semaphore, id, SEM_ID_DIE0_IOSS_0);
+        expect_function_call(__wrap_release_semaphore);
+
+        // crash_dump_get_is_dump_complete
+        will_return(__wrap_crash_dump_get_is_dump_complete, true);
+
+        expect_function_call(__wrap__txe_timer_deactivate);
+
+        expect_value(__wrap_DfwkAsyncRequestComplete, Request, &ssi_request);
+        expect_function_call(__wrap_DfwkAsyncRequestComplete);
+
+        static_timer_cb((ULONG)&ssi_request);
+    }
+}
+
+TEST_FUNCTION(test_crash_dump_dump, nullptr, nullptr)
+{
+    crash_dump_header_t header = {.status = CRASH_DUMP_IN_TRANSFER,
+                                  .cores = {CRASH_DUMP_STATE_NOT_AVAILABLE,
+                                            CRASH_DUMP_STATE_READY,
+                                            CRASH_DUMP_STATE_IN_PROGRESS,
+                                            CRASH_DUMP_STATE_COMPLETED,
+                                            CRASH_DUMP_STATE_NOT_AVAILABLE,
+                                            CRASH_DUMP_STATE_READY,
+                                            CRASH_DUMP_STATE_NOT_AVAILABLE,
+                                            CRASH_DUMP_STATE_READY,
+                                            CRASH_DUMP_STATE_IN_PROGRESS,
+                                            CRASH_DUMP_STATE_COMPLETED,
+                                            CRASH_DUMP_STATE_NOT_AVAILABLE,
+                                            CRASH_DUMP_STATE_READY}};
+
+    crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL,
+                                              .mem_pool_addr = CRASH_DUMP_FULL_MCP_ADDR,
+                                              .mem_pool_size = CRASH_DUMP_FULL_MCP_SIZE,
+                                              .semaphore = {.id = SEM_ID_DIE0_IOSS_0, .key = 1},
+                                              .header = &header};
+
+    crash_dump_context_t context = {.type_ctx = {NULL, &type_context}, .die_index = 0, .core_index = CRASH_DUMP_CORE_SCP};
+
+    will_return_always(__wrap_crash_dump_context, &context);
+
+    expect_value(__wrap_wait_for_semaphore, id, SEM_ID_DIE0_IOSS_0);
+    expect_value(__wrap_wait_for_semaphore, key, 1);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_value(__wrap_release_semaphore, id, SEM_ID_DIE0_IOSS_0);
+    expect_function_call(__wrap_release_semaphore);
+
+    crash_dump_dump_status(NULL);
+
+    expect_value(__wrap_wait_for_semaphore, id, SEM_ID_DIE0_IOSS_0);
+    expect_value(__wrap_wait_for_semaphore, key, 1);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_value(__wrap_release_semaphore, id, SEM_ID_DIE0_IOSS_0);
+    expect_function_call(__wrap_release_semaphore);
+
+    crash_dump_dump_status(&type_context);
+
+    expect_value(__wrap_wait_for_semaphore, id, SEM_ID_DIE0_IOSS_0);
+    expect_value(__wrap_wait_for_semaphore, key, 1);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_value(__wrap_release_semaphore, id, SEM_ID_DIE0_IOSS_0);
+    expect_function_call(__wrap_release_semaphore);
+
+    bool is_transfering = crash_dump_get_is_dump_transferring(&type_context);
+    assert_true(is_transfering);
 }
 }

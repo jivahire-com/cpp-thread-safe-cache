@@ -21,7 +21,10 @@ target_link_libraries(${TARGET}
         fwlib.lib.assert
         fwlib.lib.init
         fwlib.lib.crashDump
+        fwlib.platform.dfwkhost.threadx
         fwlib.service.iccBase
+        kng.lib.hsp_firmware_headers
+        ms::client_interface::startup_shutdown
         ms::cmocka::testrunner
         ms::cmsis::interface
         ms::lib::accelerator_ip
@@ -56,6 +59,9 @@ mock_target(${TARGET}
     CdRegisterMMIORegisterSet
     accel_is_isolation_enabled
     atu_svc_accel_atu_addr
+    crash_dump_device_initialize
+    crash_dump_interface_initialize
+    sos_register_ssi
     crash_dump_context
     crash_dump_init
     crash_dump_register_dump

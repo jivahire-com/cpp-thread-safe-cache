@@ -33,7 +33,6 @@ extern "C" {
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
-
 void* __real_memcpy(void* __a, const void* __b, size_t __c);
 
 /*-- Declarations (Statics and globals) --*/
@@ -42,6 +41,9 @@ jmp_buf cd_test_setjmp_context;
 icc_base_recv_complete_notify fw_load_cb = NULL;
 void* cb_ctx = NULL;
 bool memcpy_mock = false;
+
+DFWK_ASYNC_REQUEST_DISPATCH static_dispatch_routine = NULL;
+VOID (*static_timer_cb)(ULONG id) = NULL;
 
 /*------------- Functions ----------------*/
 //
@@ -56,6 +58,51 @@ void crash_dump_wait_forever()
 crash_dump_context_t* __wrap_crash_dump_context()
 {
     return mock_type(crash_dump_context_t*);
+}
+
+void __wrap_DfwkAsyncRequestComplete(PDFWK_ASYNC_REQUEST_HEADER Request)
+{
+    check_expected_ptr(Request);
+
+    function_called();
+}
+
+void __wrap_DfwkDeviceInitialize(PDFWK_DEVICE_HEADER Device, PDFWK_SCHEDULE Schedule)
+{
+    check_expected_ptr(Device);
+    check_expected_ptr(Schedule);
+
+    function_called();
+}
+
+void __wrap_DfwkQueueInitialize(PDFWK_QUEUE Queue,
+                                PDFWK_DEVICE_HEADER Device,
+                                DFWK_ASYNC_REQUEST_DISPATCH DispatchRoutine,
+                                void* DispatchContext,
+                                DFWK_QUEUE_TYPE QueueType)
+{
+    check_expected_ptr(Queue);
+    check_expected_ptr(Device);
+    check_expected_ptr(DispatchRoutine);
+    check_expected_ptr(DispatchContext);
+    check_expected(QueueType);
+
+    static_dispatch_routine = DispatchRoutine;
+
+    function_called();
+}
+
+void __wrap_DfwkInterfaceInitialize(PDFWK_INTERFACE_HEADER Interface,
+                                    PDFWK_DEVICE_HEADER Device,
+                                    PDFWK_QUEUE DispatchQueue,
+                                    DFWK_REQUEST_DISPATCH_SYNC DispatchSync)
+{
+    check_expected_ptr(Interface);
+    check_expected_ptr(Device);
+    check_expected_ptr(DispatchQueue);
+    check_expected_ptr(DispatchSync);
+
+    function_called();
 }
 
 bool __wrap_FPFwCDInitMemoryPool(FPFwCDMemPoolCtx* ctx, uint64_t baseAddr, uint32_t poolSize)
@@ -346,6 +393,47 @@ UINT __wrap__tx_mutex_get(TX_MUTEX* mutex_ptr, ULONG wait_option)
 UINT __wrap__tx_mutex_put(TX_MUTEX* mutex_ptr)
 {
     assert_non_null(mutex_ptr);
+
+    return 0;
+}
+
+UINT __wrap__txe_timer_create(TX_TIMER* timer_ptr,
+                              CHAR* name_ptr,
+                              VOID (*expiration_function)(ULONG id),
+                              ULONG expiration_input,
+                              ULONG initial_ticks,
+                              ULONG reschedule_ticks,
+                              UINT auto_activate,
+                              UINT timer_control_block_size)
+{
+    assert_non_null(timer_ptr);
+    check_expected(name_ptr);
+    assert_non_null(expiration_function);
+    FPFW_UNUSED(expiration_input);
+    assert_true(initial_ticks > 0);
+    assert_true(reschedule_ticks > 0);
+    FPFW_UNUSED(auto_activate);
+    FPFW_UNUSED(timer_control_block_size);
+
+    static_timer_cb = expiration_function;
+
+    function_called();
+
+    return 0;
+}
+
+UINT __wrap__txe_timer_deactivate(TX_TIMER* timer_ptr)
+{
+    assert_non_null(timer_ptr);
+
+    function_called();
+
+    return 0;
+}
+
+UINT __wrap__tx_thread_sleep(ULONG timer_ticks)
+{
+    FPFW_UNUSED(timer_ticks);
 
     return 0;
 }

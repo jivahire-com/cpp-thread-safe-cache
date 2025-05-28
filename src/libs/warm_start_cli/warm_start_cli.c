@@ -254,8 +254,8 @@ void cold_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion
 void subsys_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
 {
     FPFW_UNUSED(p_completion_context);
-    printf("Request (%x)\n is completed", (uintptr_t)request);
-    printf("Subsys Boot Completed");
+    printf("Request (%x) is completed\n", (uintptr_t)request);
+    printf("Subsys Boot Completed\n");
 }
 
 void shutdown_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
@@ -268,8 +268,8 @@ void shutdown_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_
 void warm_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
 {
     FPFW_UNUSED(p_completion_context);
-    printf("Request (%x)\n is completed", (uintptr_t)request);
-    printf("AP Warm Boot Completed");
+    printf("Request (%x) is completed\n", (uintptr_t)request);
+    printf("AP Warm Boot Completed\n");
 }
 
 /**

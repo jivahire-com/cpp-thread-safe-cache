@@ -23,6 +23,7 @@ typedef struct kng_hsp_mailbox_cmd_load_fw_req kng_hsp_mailbox_cmd_load_fw_req;
 typedef struct kng_hsp_mailbox_cmd_set_variable kng_hsp_mailbox_cmd_set_variable;
 typedef struct kng_hsp_mailbox_cmd_get_variable kng_hsp_mailbox_cmd_get_variable;
 typedef struct kng_hsp_mailbox_cmd_load_fw_64bit_req kng_hsp_mailbox_cmd_load_fw_64bit_req;
+typedef struct kng_hsp_mailbox_cmd_prepare_for_core_reset_req kng_hsp_mailbox_cmd_prepare_for_core_reset_req;
 
 typedef enum _HSP_MAILBOX_RSP_STATUS {
 	HSP_MAILBOX_RSP_STATUS_SUCCESS = 0,
@@ -52,6 +53,7 @@ typedef union _kng_hsp_mailbox_msg {
 	struct kng_hsp_mailbox_msg_rsp rsp;	        /**< outgoing mailbox message from handler to protocol. */
 	struct kng_hsp_mailbox_cmd_get_security_state_rsp policy_status_rsp; /**<Security status of the HSP. */
 	struct kng_hsp_mailbox_cmd_telemetry_ddr_addr_notify telm_ddr_addr_notify; /**< SCP will send a notification to HSP regarding the base address of the DDR region allocated to HSP. */
+	struct kng_hsp_mailbox_cmd_prepare_for_core_reset_req prepare_for_core_reset_req; /**< outgoing mailbox message to notify other cores to do quiscing */
     uint32_t as_uint32[HSP_MBOX_FIFO_DEPTH];
 } kng_hsp_mailbox_msg;
 

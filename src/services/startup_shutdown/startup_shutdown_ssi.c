@@ -91,7 +91,7 @@ void ssi_quiesce(PDFWK_INTERFACE_HEADER p_interface,
 
     p_request->shutdown_notification.header.RequestType = SSI_QUIESCE_ASYNC;
     p_request->shutdown_notification.shutdown_type = shutdown_type;
-    DfwkAsyncRequestSetCompletionRoutine(&p_request->startup_notification.header, completion_routine, p_completion_context);
+    DfwkAsyncRequestSetCompletionRoutine(&p_request->shutdown_notification.header, completion_routine, p_completion_context);
     // send the async request
-    DfwkInterfaceSendAsync(p_interface, (void*)p_request);
+    DfwkInterfaceSendAsync(p_interface, &p_request->shutdown_notification.header);
 }

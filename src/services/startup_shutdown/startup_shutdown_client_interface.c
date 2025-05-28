@@ -104,8 +104,8 @@ void sos_quiesce(PDFWK_INTERFACE_HEADER p_interface,
     FPFW_RUNTIME_ASSERT(p_interface != NULL);
     FPFW_RUNTIME_ASSERT(p_request != NULL);
     FPFW_RUNTIME_ASSERT(p_request->header.AllocatedSize >= sizeof(startup_shutdown_request_t));
+    FPFW_RUNTIME_ASSERT(p_request->header.RequestType == STARTUP_REQUEST_QUIESCE_ASYNC);
 
-    p_request->header.RequestType = STARTUP_REQUEST_QUIESCE_ASYNC;
     DfwkAsyncRequestSetCompletionRoutine(&p_request->header, completion_routine, p_completion_context);
     // send the async request
     DfwkInterfaceSendAsync(p_interface, (void*)p_request);

@@ -15,11 +15,15 @@ extern "C" {
 #include <FpFwUtils.h>
 #include <accelip_id.h>
 #include <crash_dump.h>
+#include <crash_dump_dfwk.h>
 #include <fpfw_icc_base.h>
 #include <fpfw_init.h>
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <kng_error.h>
+#if defined(SCP_RUNTIME_INIT)
+    #include <startup_shutdown.h>
+#endif
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -31,12 +35,13 @@ extern bool in_memory(uintptr_t start_addr, uintptr_t end_addr);
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_cd_init;
 extern fpfw_init_component_t _fpfw_component_cd_mhu_loc;
+extern fpfw_init_component_t _fpfw_component_cd_hsp;
 #if defined(SCP_RUNTIME_INIT)
 extern fpfw_init_component_t _fpfw_component_cd_mhu_rem;
 extern fpfw_init_component_t _fpfw_component_cd_spi_rem;
-extern fpfw_init_component_t _fpfw_component_cd_hsp;
 extern fpfw_init_component_t _fpfw_component_cd_pomesh;
 extern fpfw_init_component_t _fpfw_component_cd_accel;
+extern fpfw_init_component_t _fpfw_component_cd_drv;
 #endif
 
 /*------------- Functions ----------------*/
@@ -129,6 +134,37 @@ bool __wrap_accel_is_isolation_enabled(ACCEL_ID accel_type)
 
     return mock_type(bool);
 }
+
+#if defined(SCP_RUNTIME_INIT)
+void __wrap_crash_dump_device_initialize(pcrash_dump_device_t device, PDFWK_SCHEDULE schedule)
+{
+    FPFW_UNUSED(schedule);
+    assert_non_null(device);
+
+    function_called();
+}
+
+void __wrap_crash_dump_interface_initialize(pcrash_dump_interface_t intf, pcrash_dump_device_t device)
+{
+    assert_non_null(intf);
+    assert_non_null(device);
+
+    function_called();
+}
+
+int32_t __wrap_sos_register_ssi(PDFWK_INTERFACE_HEADER p_interface,
+                                pstartup_ssi_registration_t p_registration,
+                                PDFWK_INTERFACE_HEADER p_ssi_interface)
+{
+    FPFW_UNUSED(p_interface);
+    assert_non_null(p_registration);
+    assert_non_null(p_ssi_interface);
+
+    function_called();
+
+    return 0;
+}
+#endif
 
 //
 // Tests
@@ -226,7 +262,29 @@ TEST_FUNCTION(test_cd_mhu_loc, nullptr, nullptr)
     _fpfw_component_cd_mhu_loc.init_fn();
 }
 
+TEST_FUNCTION(test_cd_hsp, nullptr, nullptr)
+{
+    expect_value(__wrap_crash_dump_config_icc, type, CRASH_DUMP_ICC_CONFIG_HSP);
+    expect_function_call(__wrap_crash_dump_config_icc);
+
+    // Check dependencies
+    assert_string_equal("cd_init", _fpfw_component_cd_hsp.children[0]);
+    assert_string_equal("icc_hspmbx", _fpfw_component_cd_hsp.children[1]);
+
+    // Call API under test
+    _fpfw_component_cd_hsp.init_fn();
+}
+
 #if defined(SCP_RUNTIME_INIT)
+TEST_FUNCTION(test_cd_drv, nullptr, nullptr)
+{
+    expect_function_call(__wrap_crash_dump_device_initialize);
+    expect_function_call(__wrap_crash_dump_interface_initialize);
+    expect_function_call(__wrap_sos_register_ssi);
+
+    _fpfw_component_cd_drv.init_fn();
+}
+
 TEST_FUNCTION(test_cd_mhu_rem, nullptr, nullptr)
 {
     will_return_always(__wrap_idhw_is_single_die_boot_en, false);
@@ -257,19 +315,6 @@ TEST_FUNCTION(test_cd_spi_rem, nullptr, nullptr)
 
     // Call API under test
     _fpfw_component_cd_spi_rem.init_fn();
-}
-
-TEST_FUNCTION(test_cd_hsp, nullptr, nullptr)
-{
-    expect_value(__wrap_crash_dump_config_icc, type, CRASH_DUMP_ICC_CONFIG_HSP);
-    expect_function_call(__wrap_crash_dump_config_icc);
-
-    // Check dependencies
-    assert_string_equal("cd_init", _fpfw_component_cd_hsp.children[0]);
-    assert_string_equal("icc_hspmbx", _fpfw_component_cd_hsp.children[1]);
-
-    // Call API under test
-    _fpfw_component_cd_hsp.init_fn();
 }
 
 TEST_FUNCTION(test_cd_pomesh, nullptr, nullptr)

@@ -92,7 +92,6 @@ class data_collection_protocol:
         class dcp_msg_events_enable_disable_t(ctypes.LittleEndianStructure):
             """DCP_MSG_ID_EVENTS_ENABLE_DISABLE message format as per protocol spec"""
             _pack_ = 1  # Force no padding
-            pass
 
 
     class client_start_stop_msg:
@@ -183,6 +182,33 @@ class data_collection_protocol:
                 self.rd_data_size = rd_data_size
                 self.reserved1 = 0
                 self.reserved2 = 0
+
+    class dcp_msg_get_plat_info_t(ctypes.LittleEndianStructure):
+        """Platform information structure"""
+        COBALT_200 = 2
+        _pack_ = 1
+        _fields_ = [
+            ("dcp_ver_major", ctypes.c_uint32),
+            ("dcp_ver_minor", ctypes.c_uint32),
+            ("dcp_ver_patch", ctypes.c_uint32),
+            ("ifwi_ver_major", ctypes.c_uint32),
+            ("ifwi_ver_minor", ctypes.c_uint32),
+            ("ifwi_ver_patch", ctypes.c_uint32),
+            ("ifwi_ver_rev", ctypes.c_uint32),
+            ("plat_id", ctypes.c_uint64)
+        ]
+
+        def __init__(self, dcp_ver_major, dcp_ver_minor, dcp_ver_patch, ifwi_ver_major, ifwi_ver_minor, ifwi_ver_patch, ifwi_ver_rev,plat_id):
+            super().__init__()
+            self.dcp_ver_major = dcp_ver_major
+            self.dcp_ver_minor = dcp_ver_minor
+            self.dcp_ver_patch = dcp_ver_patch
+            self.ifwi_ver_major = ifwi_ver_major
+            self.ifwi_ver_minor = ifwi_ver_minor
+            self.ifwi_ver_patch = ifwi_ver_patch
+            self.ifwi_ver_rev = ifwi_ver_rev
+            self.plat_id = plat_id
+
 
 
 # these are required to be defined outside of the class definition because it references the class itself before it is fully constructed

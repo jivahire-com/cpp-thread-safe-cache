@@ -223,6 +223,42 @@ class dcp_commands:
 
         return msg_status, manifest_rsp
 
+    @staticmethod
+    def client_get_platform_information(*,src_endpoint: trp_endpoint, dest_die: int, dest_cpu: transfer_relay_protocol.cpu_type, client_id: data_collection_protocol.mts_client_id_t) -> str:
+        """Manifest data from client
+        Args:
+            src_endpoint: endpoint that message is sent from
+            dest_die: Destination die
+            dest_cpu: Destination CPU
+            client_id: Client identifier
+        Returns:
+            msg_status
+            platform_rsp
+        """
+        # Create complete message with client_id
+        dcp_msg_bytes = dcp_commands.create_header(
+            data_collection_protocol.dcp_msg_id_t.DCP_MSG_ID_GET_PLAT_INFO,
+            0,
+            client_id
+        )
+
+        # Log raw message for debugging
+        logger.debug("Sending client_get_platform_information message")
+
+        byte_response = src_endpoint.send_dcp_message(dest_die=dest_die, dest_cpu=dest_cpu, client_id=client_id, dcp_msg=dcp_msg_bytes)
+        response_dcp_msg_hdr = dcp_msg_hdr_t.from_buffer_copy(byte_response)
+
+        msg_status = data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status)
+
+        logger.debug("Message Status for client_get_platform_information: {msg_status}")
+
+        if not dcp_commands.validate_response(msg_status, logger):
+            raise ValueError(f"Message Error: {msg_status.name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} ")
+
+        platform_rsp = None
+        platform_rsp = data_collection_protocol.dcp_msg_get_plat_info_t.from_buffer_copy(byte_response[ctypes.sizeof(dcp_msg_hdr_t):])
+        logger.debug(f"Response for client_get_platform_information: {platform_rsp}")
+        return msg_status, platform_rsp
 
     @staticmethod
     def client_read_data(*,src_endpoint: trp_endpoint, dest_die: int, dest_cpu: transfer_relay_protocol.cpu_type, client_id: data_collection_protocol.mts_client_id_t) -> str:

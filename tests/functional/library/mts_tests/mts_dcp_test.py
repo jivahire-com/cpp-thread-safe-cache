@@ -155,7 +155,53 @@ class MtsDcpTest(EchoFallsBaseTest):
 
             return True
         except Exception as e:
-            self.log.error(f"❌ Error in test_client_start_stop: {e}")
+            self.log.error(f"❌ Error in test_client_get_manifest: {e}")
+            return False
+    
+    def test_client_get_platform_information(self, command=None):
+        """A request to a client to determine platform details: DCP version, IFWI version, Platform ID, etc"""
+
+        try:
+            status, response = dcp_commands.client_get_platform_information(
+                src_endpoint = self.die0_scp_trp_endpoint,
+                dest_die=0,
+                dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+                client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_DCP_SVC
+                )
+            
+            logger.info(f"client_get_platform_information status : {status} and client_get_platform_information response : {response}")
+            logger.info(f"DCP Version - Major : {response.dcp_ver_major}")
+            logger.info(f"DCP Version - Minor : {response.dcp_ver_minor}")
+            logger.info(f"DCP Version - Patch : {response.dcp_ver_patch}")
+            logger.info(f"IFWI Version - Major : {response.ifwi_ver_major}") 
+            logger.info(f"IFWI Version - Minor : {response.ifwi_ver_minor}")
+            logger.info(f"IFWI Version - Patch : {response.ifwi_ver_patch}")
+            logger.info(f"IFWI Version - Revision : {response.ifwi_ver_rev}")
+            logger.info(f"Platform ID : {response.plat_id}")
+            
+            
+            if response.dcp_ver_major == 1:
+                self.log.info(f"PASS :DCP Version Major is as expected: {response.dcp_ver_major}")
+            else:
+                self.log.error(f"❌ FAIL :DCP Version Major is NOT as expected: {response.dcp_ver_major}")
+                return False
+            
+            if response.dcp_ver_minor == 0:
+                self.log.info(f"PASS :DCP Version Minor is as expected: {response.dcp_ver_minor}")
+            else:
+                self.log.error(f"❌ FAIL :DCP Version Minor is NOT as expected: {response.dcp_ver_minor}")
+                return False
+            
+            if response.plat_id == data_collection_protocol.dcp_msg_get_plat_info_t.COBALT_200:
+                self.log.info(f"PASS : Fetched Platform ID {response.plat_id} is matching with DCP_PLATFORM_COBALT_200 {data_collection_protocol.dcp_msg_get_plat_info_t.COBALT_200}")
+            else:
+                self.log.info(f"PASS : Fetched Platform ID {response.plat_id} is NOT matching with DCP_PLATFORM_COBALT_200 {data_collection_protocol.dcp_msg_get_plat_info_t.COBALT_200}")
+                return False
+            
+            return True
+        
+        except Exception as e:
+            self.log.error(f"❌ Error in test_client_get_platform_information: {e}")
             return False
 
     def test_client_start_stop(self, command=None):

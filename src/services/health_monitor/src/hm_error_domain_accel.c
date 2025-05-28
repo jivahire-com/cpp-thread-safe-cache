@@ -115,7 +115,7 @@ static void hm_accel_error_record_submit_listener_cb(void* context, size_t outpu
 
     hm_config_t* hm_config = get_hm_config();
     hm_accel_error_record_submit_listener(hm_config->icc_ctx[core_type], curr_cper_info);
-    hm_accel_error_record_ack_tx(hm_config->icc_ctx[core_type], (hm_accel_msg_t*)context, curr_cper_info->accel_id);
+    hm_accel_error_record_ack_tx(hm_config->icc_ctx[core_type], payload, curr_cper_info->accel_id);
 }
 
 static acpi_einj_cmd_status_t hm_accel_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx)

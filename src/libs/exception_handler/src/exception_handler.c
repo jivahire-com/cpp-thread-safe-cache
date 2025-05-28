@@ -13,12 +13,14 @@
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <bug_check.h>  // for BUG_CHECK
 #include <cmsdk_wd.h>   // for wdog_cmsdk_apb_disable
+#include <cper.h>
 #include <crash_dump.h> // for crash_dump_handler, crash_dump_bug_check_initiated_dump
-#include <kng_error.h>  // for KNG_CD_DEFAULT_EXCEPTION, KNG_CD_HARDFAULT_EXCEPTION ...
-#include <nvic.h>       // for nvic_set_isr_fault, nvic_irq_set_isr ...
-#include <stddef.h>     // for NULL
-#include <stdint.h>     // for uint32_t
-#include <tx_api.h>     // for TX_THREAD, tx_thread_stack_error_notify
+#include <health_monitor.h>
+#include <kng_error.h> // for KNG_CD_DEFAULT_EXCEPTION, KNG_CD_HARDFAULT_EXCEPTION ...
+#include <nvic.h>      // for nvic_set_isr_fault, nvic_irq_set_isr ...
+#include <stddef.h>    // for NULL
+#include <stdint.h>    // for uint32_t
+#include <tx_api.h>    // for TX_THREAD, tx_thread_stack_error_notify
 
 /*------------- Typedefs -----------------*/
 
@@ -134,6 +136,14 @@ void exception_handler(exception_stack_frame_t* stack_frame)
     uint32_t bugCheckParams[4] = {};
     const int exceptionIdx = get_active_exception();
 
+#if defined(MCP_RUNTIME_INIT)
+    acpi_error_domain_t err_domain = ACPI_ERROR_DOMAIN_MCP_PROC;
+    const guid_t status_guid = exceptionIdx == NonMaskableInt_IRQn ? (guid_t)MCP_WD : (guid_t)MCP_EXCEPTION;
+#else
+    acpi_error_domain_t err_domain = ACPI_ERROR_DOMAIN_SCP_PROC;
+    const guid_t status_guid = exceptionIdx == NonMaskableInt_IRQn ? (guid_t)SCP_WD : (guid_t)SCP_EXCEPTION;
+#endif
+
     switch (exceptionIdx)
     {
     case HardFault_IRQn:
@@ -188,6 +198,17 @@ void exception_handler(exception_stack_frame_t* stack_frame)
 
     // Provide printout for debugging
     print_context_info(&g_core_crash_context);
+
+    // Send CPER
+    acpi_err_sec_firmware_t sec_fw_cper_section = {
+        .severity = ACPI_ERROR_SEVERITY_CORRECTED,
+        .record_id = status_guid,
+        .param = {errorCode, bugCheckParams[0], bugCheckParams[1], bugCheckParams[2]}};
+
+    acpi_cper_section_t cper_section;
+    cper_section.sec_fw = sec_fw_cper_section;
+
+    hm_submit_cper(err_domain, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(cper_section));
 
     // Call the crash dump handler
     crash_dump_handler(errorCode, bugCheckParams[0], bugCheckParams[1], bugCheckParams[2], bugCheckParams[3]);

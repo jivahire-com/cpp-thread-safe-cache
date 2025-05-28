@@ -352,7 +352,7 @@
         {
           "Name": "KNG_HM_RMSS_RAM1_OF",
           "Value": 9,
-          "Description": "Overflow Error in TCM RAM1"
+          "Description": "Overflow Error in RMSS RAM1"
         },
         {
           "Name": "KNG_HM_TCM_OF",
@@ -368,6 +368,46 @@
           "Name": "KNG_HM_TCM_CE",
           "Value": 12,
           "Description": "Correctable Error in TCM"
+        },
+        {
+          "Name": "KNG_HM_DCACHE_UE",
+          "Value": 13,
+          "Description": "Uncorrectable Error in Data Cache"
+        },
+        {
+          "Name": "KNG_HM_DCACHE_CE",
+          "Value": 14,
+          "Description": "Correctable Error in Data Cache"
+        },
+        {
+          "Name": "KNG_HM_DCACHE_TAG_UE",
+          "Value": 15,
+          "Description": "Uncorrectable Error in Data Tag Cache"
+        },
+        {
+          "Name": "KNG_HM_DCACHE_TAG_CE",
+          "Value": 16,
+          "Description": "Correctable Error in Data Tag Cache"
+        },
+        {
+          "Name": "KNG_HM_ICACHE_UE",
+          "Value": 17,
+          "Description": "Uncorrectable Error in Instruction Cache"
+        },
+        {
+          "Name": "KNG_HM_ICACHE_CE",
+          "Value": 18,
+          "Description": "Correctable Error in Instruction Cache"
+        },
+        {
+          "Name": "KNG_HM_ICACHE_TAG_UE",
+          "Value": 19,
+          "Description": "Uncorrectable Error in Instruction Tag Cache"
+        },
+        {
+          "Name": "KNG_HM_ICACHE_TAG_CE",
+          "Value": 20,
+          "Description": "Correctable Error in Instruction Tag Cache"
         }
       ]
     }

@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         ms::lib::error_codes
         ms::lib::threadx
         silibs::cmsdk_wd
+        ms::service::health_monitor
 )
 
 target_include_directories(${TARGET}

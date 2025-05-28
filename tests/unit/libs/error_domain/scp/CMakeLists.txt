@@ -32,6 +32,13 @@ target_link_libraries(${TARGET}
         ms::lib::scp_interrupts
 )
 
+# Get private includes for module under test
+target_include_directories(${TARGET}
+    PRIVATE
+        $<TARGET_PROPERTY:ms::lib::error_domain::scp,INCLUDE_DIRECTORIES>
+        ./
+)
+
 # Generic ports implement within this project
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
@@ -57,4 +64,8 @@ mock_target(${TARGET}
     nvic_global_disable
     nvic_irq_set_isr
     nvic_irq_enable
+    nvic_irq_clear_pending
+    wdog_cmsdk_apb_disable
+    wdog_cmsdk_apb_init
+    mmu_fault
 )

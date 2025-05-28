@@ -11,6 +11,7 @@
 #include <CMockaWrapper.h> // for assert_int_equal, Cmock...
 
 extern "C" {
+#include <cper.h>
 #include <crash_dump.h>
 #include <exception_handler.h>   // for exception_handler, threadx_stack_error_handler
 #include <exception_handler_i.h> // for exception_stack_frame_t
@@ -110,6 +111,15 @@ UINT __wrap__tx_thread_stack_error_notify(VOID (*stack_error_handler)(TX_THREAD*
     return mock_type(UINT);
 }
 
+void __wrap_hm_submit_cper(uint16_t error_domain_idx, acpi_error_severity_t err_severity, void* err_record_section, uint32_t err_record_section_size)
+{
+    assert_true(error_domain_idx == ACPI_ERROR_DOMAIN_SCP_PROC || error_domain_idx == ACPI_ERROR_DOMAIN_MCP_PROC);
+    check_expected(err_severity);
+    assert_true(err_record_section != NULL);
+    assert_true(err_record_section_size > 0);
+    function_called();
+}
+
 //
 // Tests
 //
@@ -127,6 +137,9 @@ void test_exception_handler_params(int exception, uint32_t error_code)
 
     expect_function_call(get_active_exception);
     will_return(get_active_exception, exception);
+
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_function_call(__wrap_hm_submit_cper);
 
     expect_value(__wrap_crash_dump_handler, errorCode, error_code);
     expect_any(__wrap_crash_dump_handler, p1); // __FILE__
@@ -201,6 +214,9 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
     expect_function_call(__wrap_crash_dump_bug_check_initiated_dump);
     will_return(__wrap_crash_dump_bug_check_initiated_dump, true);
 
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_function_call(__wrap_hm_submit_cper);
+
     expect_value(__wrap_crash_dump_handler, errorCode, (uint32_t)KNG_E_NOTIMPL);
     expect_value(__wrap_crash_dump_handler, p1, 1);
     expect_value(__wrap_crash_dump_handler, p2, 2);
@@ -226,6 +242,9 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
 
     expect_function_call(__wrap_crash_dump_bug_check_initiated_dump);
     will_return(__wrap_crash_dump_bug_check_initiated_dump, false);
+
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_function_call(__wrap_hm_submit_cper);
 
     expect_value(__wrap_crash_dump_handler, errorCode, (uint32_t)KNG_CD_EXTERNAL_REQUEST);
     expect_value(__wrap_crash_dump_handler, p1, 0);

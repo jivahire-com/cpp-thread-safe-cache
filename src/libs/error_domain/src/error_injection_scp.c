@@ -12,6 +12,7 @@
 #include <FpFwUtils.h>
 #include <arm_intrinsic.h> // for __DSB on Windows builds (empty define)
 #include <cper.h>
+#include <error_domain_i.h>
 #include <health_monitor.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <mscp_ras_and_init_ctrl_registers_regs.h>
@@ -62,7 +63,7 @@ static void inject_err_by_access(uint32_t addr)
     MMIO_READ32(addr);
 }
 
-acpi_einj_cmd_status_t scp_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
+acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
 {
     FPFW_UNUSED(ctx);
 
@@ -137,6 +138,46 @@ acpi_einj_cmd_status_t scp_error_injection_handler(ras_einj_info_t* einj_payload
                       TCM_TGT_RAM_DTCM0RAM | MASK_CE);
         inject_err_by_access(DTC_RAM_ADDRESS);
         nvic_global_enable();
+        break;
+    case SCP_ERROR_TYPE_DATA_CACHE_CE:
+        dcache_ce_isr();
+        break;
+    case SCP_ERROR_TYPE_DATA_CACHE_UE:
+        dcache_ue_isr();
+        break;
+    case SCP_ERROR_TYPE_DATA_CACHE_TAG_CE:
+        dcache_tag_ce_isr();
+        break;
+    case SCP_ERROR_TYPE_DATA_CACHE_TAG_UE:
+        dcache_tag_ue_isr();
+        break;
+    case SCP_ERROR_TYPE_INSTRUCTION_CACHE_CE:
+        icache_ce_isr();
+        break;
+    case SCP_ERROR_TYPE_INSTRUCTION_CACHE_UE:
+        icache_ue_isr();
+        break;
+    case SCP_ERROR_TYPE_INSTRUCTION_CACHE_TAG_CE:
+        icache_tag_ce_isr();
+        break;
+    case SCP_ERROR_TYPE_INSTRUCTION_CACHE_TAG_UE:
+        icache_tag_ue_isr();
+        break;
+    case SCP_ERROR_TYPE_HARD_FAULT:
+        trigger_hard_fault();
+        break;
+    case SCP_ERROR_TYPE_BUS_FAULT:
+        trigger_bus_fault();
+        break;
+    case SCP_ERROR_TYPE_MMU_FAULT:
+        trigger_mmu_fault();
+        break;
+    case SCP_ERROR_TYPE_USAGE_FAULT:
+    case SCP_ERROR_TYPE_FW_FAULT:
+        trigger_usage_fault();
+        break;
+    case SCP_ERROR_TYPE_WATCHDOG:
+        trigger_mscp_watchdog_fault();
         break;
     default:
         FPFW_DBGPRINT_ERROR("Invalid/Unsupported SCP error type(%d)\n", einj_payload->component_type);

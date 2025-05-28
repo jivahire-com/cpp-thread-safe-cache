@@ -12,6 +12,7 @@
 #include <FpFwUtils.h>
 #include <bug_check.h>
 #include <cper.h>
+#include <error_domain_i.h>
 #include <health_monitor.h>
 #include <interrupts.h>
 #include <mscp_error_domain.h>
@@ -44,8 +45,8 @@ typedef struct
     acpi_error_severity_t err_severity;
     KNG_STATUS err_code;
     bool bugcheck_required;
-    uint32_t* err_status_addr;
-    uint32_t* err_address_addr;
+    uint32_t* param1;
+    uint32_t* param2;
     uint32_t err_status_mask;
 } mscp_ecc_isr_params_t;
 
@@ -55,15 +56,42 @@ static vptr_scp_exp_csr_reg scp_exp_csr_regs =
     (vptr_scp_exp_csr_reg)(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS);
 static vptr_mscp_ras_and_init_ctrl_registers_reg scp_ras_and_init_ctrl_registers_reg =
     (vptr_mscp_ras_and_init_ctrl_registers_reg)(SCP_TOP_SCP_RAS_INIT_CTRL_ADDRESS);
+static vptr_systemcontrol_reg scp_system_control_reg =
+    (vptr_systemcontrol_reg)(SCP_TOP_CORTEX_M7_ADDRESS + CORTEXM7INTEGRATIONCS_SCP_SYSTEMCONTROL_ADDRESS);
 
 /*-------------- Functions ---------------*/
-static void ram_ecc_isr(const mscp_ecc_isr_params_t* params)
+static void cache_ecc_isr(const mscp_ecc_isr_params_t* params)
 {
-    uint32_t status = MMIO_READ32(params->err_status_addr);
-    uint32_t address = MMIO_READ32(params->err_address_addr);
+    // Save stored error info from DEBR0 and DEBR1
+    uint32_t err_bank_register0 = MMIO_READ32(params->param1);
+    uint32_t err_bank_register1 = MMIO_READ32(params->param2);
 
     // Clear interrupt source
-    MMIO_SET_MASK32(params->err_status_addr, params->err_status_mask);
+    nvic_irq_clear_pending(params->err_source_irq);
+
+    // Submit CPER
+    acpi_err_sec_firmware_t sec_fw_cper_section = {.severity = params->err_severity,
+                                                   .record_id = params->err_source_id,
+                                                   .param = {err_bank_register0, err_bank_register1, params->err_code, 0}};
+
+    acpi_cper_section_t cper_section;
+    cper_section.sec_fw = sec_fw_cper_section;
+
+    hm_submit_cper(ACPI_ERROR_DOMAIN_SCP_PROC, params->err_severity, &cper_section, sizeof(cper_section));
+
+    if (params->bugcheck_required)
+    {
+        BUG_CHECK(params->err_code, err_bank_register0, err_bank_register1);
+    }
+}
+
+static void ram_ecc_isr(const mscp_ecc_isr_params_t* params)
+{
+    uint32_t status = MMIO_READ32(params->param1);
+    uint32_t address = MMIO_READ32(params->param2);
+
+    // Clear interrupt source
+    MMIO_SET_MASK32(params->param1, params->err_status_mask);
     nvic_irq_clear_pending(params->err_source_irq);
 
     if (status & params->err_status_mask)
@@ -92,8 +120,8 @@ static void rmss_scfram_ecc_ce_isr()
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_SCF_CE,
                                     .bugcheck_required = false,
-                                    .err_status_addr = (uint32_t*)&scp_exp_csr_regs->scfram_scp_errstatus_reg,
-                                    .err_address_addr = (uint32_t*)&scp_exp_csr_regs->scfram_scp_erraddr_reg,
+                                    .param1 = (uint32_t*)&scp_exp_csr_regs->scfram_scp_errstatus_reg,
+                                    .param2 = (uint32_t*)&scp_exp_csr_regs->scfram_scp_erraddr_reg,
                                     .err_status_mask = SCP_EXP_CSR_SCFRAM_SCP_ERRSTATUS_REG_CE_MASK};
 
     ram_ecc_isr(&params);
@@ -106,8 +134,8 @@ static void rmss_scfram_ecc_of_isr()
                                     .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
                                     .err_code = KNG_HM_SCF_OF,
                                     .bugcheck_required = true,
-                                    .err_status_addr = (uint32_t*)&scp_exp_csr_regs->scfram_scp_errstatus_reg,
-                                    .err_address_addr = (uint32_t*)&scp_exp_csr_regs->scfram_scp_erraddr_reg,
+                                    .param1 = (uint32_t*)&scp_exp_csr_regs->scfram_scp_errstatus_reg,
+                                    .param2 = (uint32_t*)&scp_exp_csr_regs->scfram_scp_erraddr_reg,
                                     .err_status_mask = SCP_EXP_CSR_SCFRAM_SCP_ERRSTATUS_REG_OF_MASK};
 
     ram_ecc_isr(&params);
@@ -120,8 +148,8 @@ static void rmss_ram0_ecc_ce_isr()
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_RMSS_RAM0_CE,
                                     .bugcheck_required = false,
-                                    .err_status_addr = (uint32_t*)&scp_exp_csr_regs->rmss_ram0_scp_errstatus_reg,
-                                    .err_address_addr = (uint32_t*)&scp_exp_csr_regs->rmss_ram0_scp_erraddr_reg,
+                                    .param1 = (uint32_t*)&scp_exp_csr_regs->rmss_ram0_scp_errstatus_reg,
+                                    .param2 = (uint32_t*)&scp_exp_csr_regs->rmss_ram0_scp_erraddr_reg,
                                     .err_status_mask = SCP_EXP_CSR_RMSS_RAM0_SCP_ERRSTATUS_REG_CE_MASK};
 
     ram_ecc_isr(&params);
@@ -134,8 +162,8 @@ static void rmss_ram0_ecc_of_isr()
                                     .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
                                     .err_code = KNG_HM_RMSS_RAM0_OF,
                                     .bugcheck_required = true,
-                                    .err_status_addr = (uint32_t*)&scp_exp_csr_regs->rmss_ram0_scp_errstatus_reg,
-                                    .err_address_addr = (uint32_t*)&scp_exp_csr_regs->rmss_ram0_scp_erraddr_reg,
+                                    .param1 = (uint32_t*)&scp_exp_csr_regs->rmss_ram0_scp_errstatus_reg,
+                                    .param2 = (uint32_t*)&scp_exp_csr_regs->rmss_ram0_scp_erraddr_reg,
                                     .err_status_mask = SCP_EXP_CSR_RMSS_RAM0_SCP_ERRSTATUS_REG_OF_MASK};
 
     ram_ecc_isr(&params);
@@ -148,8 +176,8 @@ static void rmss_ram1_ecc_ce_isr()
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_RMSS_RAM1_CE,
                                     .bugcheck_required = false,
-                                    .err_status_addr = (uint32_t*)&scp_exp_csr_regs->rmss_ram1_scp_errstatus_reg,
-                                    .err_address_addr = (uint32_t*)&scp_exp_csr_regs->rmss_ram1_scp_erraddr_reg,
+                                    .param1 = (uint32_t*)&scp_exp_csr_regs->rmss_ram1_scp_errstatus_reg,
+                                    .param2 = (uint32_t*)&scp_exp_csr_regs->rmss_ram1_scp_erraddr_reg,
                                     .err_status_mask = SCP_EXP_CSR_RMSS_RAM1_SCP_ERRSTATUS_REG_CE_MASK};
 
     ram_ecc_isr(&params);
@@ -162,8 +190,8 @@ static void rmss_ram1_ecc_of_isr()
                                     .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
                                     .err_code = KNG_HM_RMSS_RAM1_OF,
                                     .bugcheck_required = true,
-                                    .err_status_addr = (uint32_t*)&scp_exp_csr_regs->rmss_ram1_scp_errstatus_reg,
-                                    .err_address_addr = (uint32_t*)&scp_exp_csr_regs->rmss_ram1_scp_erraddr_reg,
+                                    .param1 = (uint32_t*)&scp_exp_csr_regs->rmss_ram1_scp_errstatus_reg,
+                                    .param2 = (uint32_t*)&scp_exp_csr_regs->rmss_ram1_scp_erraddr_reg,
                                     .err_status_mask = SCP_EXP_CSR_RMSS_RAM1_SCP_ERRSTATUS_REG_OF_MASK};
 
     ram_ecc_isr(&params);
@@ -176,8 +204,8 @@ static void tcm_overflow_isr()
                                     .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
                                     .err_code = KNG_HM_TCM_OF,
                                     .bugcheck_required = true,
-                                    .err_status_addr = (uint32_t*)&scp_ras_and_init_ctrl_registers_reg->tcmecc_errstatus,
-                                    .err_address_addr = (uint32_t*)&scp_ras_and_init_ctrl_registers_reg->tcmecc_erraddr,
+                                    .param1 = (uint32_t*)&scp_ras_and_init_ctrl_registers_reg->tcmecc_errstatus,
+                                    .param2 = (uint32_t*)&scp_ras_and_init_ctrl_registers_reg->tcmecc_erraddr,
                                     .err_status_mask = MSCP_RAS_AND_INIT_CTRL_REGISTERS_TCMECC_ERRSTATUS_OF_MASK};
 
     ram_ecc_isr(&params);
@@ -190,8 +218,8 @@ static void tcm_ce_isr()
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_TCM_CE,
                                     .bugcheck_required = false,
-                                    .err_status_addr = (uint32_t*)&scp_ras_and_init_ctrl_registers_reg->tcmecc_errstatus,
-                                    .err_address_addr = (uint32_t*)&scp_ras_and_init_ctrl_registers_reg->tcmecc_erraddr,
+                                    .param1 = (uint32_t*)&scp_ras_and_init_ctrl_registers_reg->tcmecc_errstatus,
+                                    .param2 = (uint32_t*)&scp_ras_and_init_ctrl_registers_reg->tcmecc_erraddr,
                                     .err_status_mask = MSCP_RAS_AND_INIT_CTRL_REGISTERS_TCMECC_ERRSTATUS_CE_MASK};
 
     ram_ecc_isr(&params);
@@ -204,11 +232,115 @@ static void tcm_ue_isr()
                                     .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
                                     .err_code = KNG_HM_TCM_UE,
                                     .bugcheck_required = true,
-                                    .err_status_addr = (uint32_t*)&scp_ras_and_init_ctrl_registers_reg->tcmecc_errstatus,
-                                    .err_address_addr = (uint32_t*)&scp_ras_and_init_ctrl_registers_reg->tcmecc_erraddr,
+                                    .param1 = (uint32_t*)&scp_ras_and_init_ctrl_registers_reg->tcmecc_errstatus,
+                                    .param2 = (uint32_t*)&scp_ras_and_init_ctrl_registers_reg->tcmecc_erraddr,
                                     .err_status_mask = MSCP_RAS_AND_INIT_CTRL_REGISTERS_TCMECC_ERRSTATUS_UE_MASK};
 
     ram_ecc_isr(&params);
+}
+
+void dcache_ue_isr()
+{
+    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_DCACHE,
+                                    .err_source_irq = HW_INT_DCDET_DATA_UE,
+                                    .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                    .err_code = KNG_HM_DCACHE_UE,
+                                    .bugcheck_required = true,
+                                    .param1 = (uint32_t*)&scp_system_control_reg->debr0h,
+                                    .param2 = (uint32_t*)&scp_system_control_reg->debr1h};
+
+    cache_ecc_isr(&params);
+}
+
+void dcache_ce_isr()
+{
+    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_DCACHE,
+                                    .err_source_irq = HW_INT_DCDET_DATA_CE,
+                                    .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
+                                    .err_code = KNG_HM_DCACHE_CE,
+                                    .bugcheck_required = false,
+                                    .param1 = (uint32_t*)&scp_system_control_reg->debr0h,
+                                    .param2 = (uint32_t*)&scp_system_control_reg->debr1h};
+
+    cache_ecc_isr(&params);
+}
+
+void dcache_tag_ue_isr()
+{
+    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_DCACHE,
+                                    .err_source_irq = HW_INT_DCDET_TAG_UE,
+                                    .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                    .err_code = KNG_HM_DCACHE_TAG_UE,
+                                    .bugcheck_required = true,
+                                    .param1 = (uint32_t*)&scp_system_control_reg->debr0h,
+                                    .param2 = (uint32_t*)&scp_system_control_reg->debr1h};
+
+    cache_ecc_isr(&params);
+}
+
+void dcache_tag_ce_isr()
+{
+    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_DCACHE,
+                                    .err_source_irq = HW_INT_DCDET_TAG_CE,
+                                    .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
+                                    .err_code = KNG_HM_DCACHE_TAG_CE,
+                                    .bugcheck_required = false,
+                                    .param1 = (uint32_t*)&scp_system_control_reg->debr0h,
+                                    .param2 = (uint32_t*)&scp_system_control_reg->debr1h};
+
+    cache_ecc_isr(&params);
+}
+
+void icache_ue_isr()
+{
+    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_ICACHE,
+                                    .err_source_irq = HW_INT_ICDET_DATA_UE,
+                                    .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                    .err_code = KNG_HM_ICACHE_UE,
+                                    .bugcheck_required = true,
+                                    .param1 = (uint32_t*)&scp_system_control_reg->iebr0,
+                                    .param2 = (uint32_t*)&scp_system_control_reg->iebr1h};
+
+    cache_ecc_isr(&params);
+}
+
+void icache_ce_isr()
+{
+    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_ICACHE,
+                                    .err_source_irq = HW_INT_ICDET_DATA_CE,
+                                    .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
+                                    .err_code = KNG_HM_ICACHE_CE,
+                                    .bugcheck_required = false,
+                                    .param1 = (uint32_t*)&scp_system_control_reg->iebr0,
+                                    .param2 = (uint32_t*)&scp_system_control_reg->iebr1h};
+
+    cache_ecc_isr(&params);
+}
+
+void icache_tag_ue_isr()
+{
+    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_ICACHE,
+                                    .err_source_irq = HW_INT_ICDET_TAG_UE,
+                                    .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                    .err_code = KNG_HM_ICACHE_TAG_UE,
+                                    .bugcheck_required = true,
+                                    .param1 = (uint32_t*)&scp_system_control_reg->iebr0,
+                                    .param2 = (uint32_t*)&scp_system_control_reg->iebr1h};
+
+    cache_ecc_isr(&params);
+}
+
+void icache_tag_ce_isr()
+{
+    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_ICACHE,
+                                    .err_source_irq = HW_INT_ICDET_TAG_CE,
+                                    .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
+                                    .err_code = KNG_HM_ICACHE_TAG_CE,
+                                    .bugcheck_required = false,
+                                    .param1 = (uint32_t*)&scp_system_control_reg->iebr0,
+                                    .param2 = (uint32_t*)&scp_system_control_reg->iebr1h};
+
+    cache_ecc_isr(&params);
 }
 
 static void enable_scp_ecc_error()
@@ -256,6 +388,18 @@ static void enable_scp_ecc_interrupts()
     register_scp_ecc_isr(HW_INT_SCP_TCM_ECCCE_INT, tcm_ce_isr);       // TCM CE
     register_scp_ecc_isr(HW_INT_SCP_TCM_ECCUE_INT, tcm_ue_isr);       // TCM UE
     register_scp_ecc_isr(HW_INT_SCP_TCM_ECCOF_INT, tcm_overflow_isr); // TCM overflow
+
+    // Data Cache ECC
+    register_scp_ecc_isr(HW_INT_DCDET_DATA_UE, dcache_ue_isr);    // D-cache Data RAM UE
+    register_scp_ecc_isr(HW_INT_DCDET_DATA_CE, dcache_ce_isr);    // D-cache Data RAM CE
+    register_scp_ecc_isr(HW_INT_DCDET_TAG_UE, dcache_tag_ue_isr); // D-cache Tag RAM UE
+    register_scp_ecc_isr(HW_INT_DCDET_TAG_CE, dcache_tag_ce_isr); // D-cache Tag RAM CE
+
+    // Instruction Cache ECC
+    register_scp_ecc_isr(HW_INT_ICDET_DATA_UE, icache_ue_isr);    // I-cache Data RAM UE
+    register_scp_ecc_isr(HW_INT_ICDET_DATA_CE, icache_ce_isr);    // I-cache Data RAM CE
+    register_scp_ecc_isr(HW_INT_ICDET_TAG_UE, icache_tag_ue_isr); // I-cache Tag RAM UE
+    register_scp_ecc_isr(HW_INT_ICDET_TAG_CE, icache_tag_ce_isr); // I-cache Tag RAM CE
 }
 
 void register_scp_error_domain()
@@ -264,7 +408,7 @@ void register_scp_error_domain()
     enable_scp_ecc_error();
 
     // Register the error domain
-    hm_register_error_domain(ACPI_ERROR_DOMAIN_SCP_PROC, &SCP_ERROR_DOMAIN_GUID, SCP_PROC_FRU, scp_error_injection_handler, NULL);
+    hm_register_error_domain(ACPI_ERROR_DOMAIN_SCP_PROC, &SCP_ERROR_DOMAIN_GUID, SCP_PROC_FRU, mscp_error_injection_handler, NULL);
 
     // Register the error interrupt handlers
     enable_scp_ecc_interrupts();

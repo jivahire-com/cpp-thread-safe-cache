@@ -39,4 +39,5 @@ mock_target(${TARGET}
     wdog_cmsdk_apb_disable
     wdog_cmsdk_apb_lock_unlock
     _tx_thread_stack_error_notify
+    hm_submit_cper
 )

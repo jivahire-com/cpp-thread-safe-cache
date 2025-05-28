@@ -7,6 +7,7 @@ set(TARGET kng.lib.error_domain.scp)
 set (SOURCES 
         src/error_domain_scp.c
         src/error_injection_scp.c
+        src/exception_trigger.c
 )
 
 add_library(${TARGET}
@@ -27,11 +28,14 @@ target_link_libraries(
             ms::lib::error_codes
             ms::lib::scp_interrupts
             ms::service::health_monitor
+            silibs::cmsdk_wd
 )
 
 target_include_directories(${TARGET}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_compile_definitions(

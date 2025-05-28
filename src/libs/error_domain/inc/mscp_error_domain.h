@@ -25,11 +25,6 @@
  */
 void register_scp_error_domain();
 
-/**
- * @brief scp error injection handler.
- */
-acpi_einj_cmd_status_t scp_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx);
-
 #elif defined (MCP_RUNTIME_INIT)
 /**
  * @brief Register the MCP error domain.

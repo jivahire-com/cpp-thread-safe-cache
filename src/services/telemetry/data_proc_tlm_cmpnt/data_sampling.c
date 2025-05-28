@@ -11,13 +11,15 @@
 #include "compute_metrics_i.h"
 #include "data_sampling_i.h" // internal APIs
 #include "data_utilities_i.h"
+#include "die_2_die_exchange_i.h"
 #include "telemetry_events_i.h"
 
 #include <FpFwAssert.h>
 #include <assert.h> // IWYU pragma: keep for static_assert
 #include <dvfs.h>
 #include <exec_tlm_cmpnt.h>
-#include <fpfw_status.h>         // for FPFW_STATUS_SUCCEEDED, fpf...
+#include <fpfw_status.h> // for FPFW_STATUS_SUCCEEDED, fpf...
+#include <in_band_tlm_cmpnt.h>
 #include <power_tlm_fuse.h>      //for power fuse
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdbool.h>             // for false, true
@@ -25,6 +27,10 @@
 #include <stdint.h>              // for uint8_t, uint16_t
 #include <string.h>              // for memset
 /*-- Symbolic Constant Macros (defines) --*/
+
+#ifndef MAX
+    #define MAX(x, y) ((x) > (y) ? (x) : (y))
+#endif
 
 /*------------- Typedefs -----------------*/
 
@@ -122,11 +128,14 @@ void data_proc_tlm_cmpnt_process_input_data(void)
     sensor_ram_poll_status_t status;
     bool valid_entry = false;
 
+    bool update_max_die_temp = false;
+
     // NOTE: All sensor fifo API to check and poll data availability is guaranteed to return
     //  more_entries as false once all entries that was latched during the initial call has been
     //  consumed. This guarantees that we can exit the loops within this API
 
     // Check and poll for tile temperatures
+    bool max_tile_temp_cleared = false;
     do
     {
         tile_temp_t* temperature_data = (tile_temp_t*)buffer_data;
@@ -134,11 +143,19 @@ void data_proc_tlm_cmpnt_process_input_data(void)
         status = sensor_fifo_svc_poll_tile_temperature(temperature_data, &tile_index);
         if (status.curr_data_is_valid == true)
         {
+            if (!max_tile_temp_cleared)
+            {
+                // Clear the max tile temperature at the start of the first tile temperature entry
+                // updated in data_smpl_parse_tile_temperature_entry
+                soc_info.latest_max_tile_temp_dC = 0;
+                max_tile_temp_cleared = true;
+            }
             // process the tile temperature, this function updates the core[] and sof_info[] values used below
             valid_entry = data_smpl_parse_tile_temperature_entry(temperature_data, tile_index);
 
             if (valid_entry)
             {
+                update_max_die_temp = true;
 
                 uint16_t core_id_1 = tile_index * 2;
                 uint16_t core_id_2 = core_id_1 + 1;
@@ -239,6 +256,8 @@ void data_proc_tlm_cmpnt_process_input_data(void)
         status = sensor_fifo_svc_poll_soc_pvt_temperature(pvt_temperature);
         if (status.curr_data_is_valid == true)
         {
+            update_max_die_temp = true;
+
             // process the soc PVT temperature, updates soc_info.latest_soc_top_temp_dC for call below
             data_smpl_parse_pvt_temperature_entry(pvt_temperature);
 
@@ -264,8 +283,26 @@ void data_proc_tlm_cmpnt_process_input_data(void)
         }
     } while (status.more_entries == true);
 
+    if (update_max_die_temp)
+    {
+        // update the max die temp
+        data_smpl_update_max_die_temp();
+    }
+
     // run algorithms to update the aggregated telemetry data, used to generate packaged telemetry events.
     comp_metrics_for_sample_period();
+}
+
+void data_smpl_update_max_die_temp(void)
+{
+    soc_info.latest_max_die_temp_dC = MAX(soc_info.latest_max_tile_temp_dC, soc_info.latest_max_soc_top_temp_dC);
+
+    if (in_band_tlm_cmpnt_is_inst_record_enabled(INST_TELEMETRY_ELEMENT_SOC_MAX_TEMP) &&
+        (die_2_die_exchange_get_this_die_id() != 0))
+    {
+        // only write on secondary dies
+        die_2_die_exchange_write_max_die_temp(soc_info.latest_max_die_temp_dC);
+    }
 }
 
 // sensor fifo parsers
@@ -331,11 +368,16 @@ bool data_smpl_parse_tile_temperature_entry(tile_temp_t* temperature_data, uint8
     }
 
     // Also store the Max tile temperatures and its ID
-    tile[tile_index].latest_max_tile_temp_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(temperature_data->temp0.max_temp,
-                                                                            tileDtsCoefficients[tile_index].k_val,
-                                                                            tileDtsCoefficients[tile_index].y_val);
+    tile[tile_index].latest_max_temp_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(temperature_data->temp0.max_temp,
+                                                                       tileDtsCoefficients[tile_index].k_val,
+                                                                       tileDtsCoefficients[tile_index].y_val);
 
-    tile[tile_index].latest_max_temp_tile_index = temperature_data->temp0.max_id;
+    if (tile[tile_index].latest_max_temp_dC > soc_info.latest_max_tile_temp_dC)
+    {
+        soc_info.latest_max_tile_temp_dC = tile[tile_index].latest_max_temp_dC;
+    }
+
+    tile[tile_index].latest_max_temp_sensor_index = temperature_data->temp0.max_id;
 
     return true;
 }
@@ -545,9 +587,15 @@ void data_smpl_parse_vr_current_entry(vr_current_t* vr_current)
 
 void data_smpl_parse_pvt_temperature_entry(soc_pvt_temp_t* pvt_temperature)
 {
+    soc_info.latest_max_soc_top_temp_dC = 0;
+
     for (uint8_t pvt_index = 0; pvt_index < NUMBER_OF_SOC_TEMP_SENSORS; pvt_index++)
     {
         soc_info.latest_soc_top_temp_dC[pvt_index] = pvt_temperature->sensor_temp_dC[pvt_index];
+        if (soc_info.latest_soc_top_temp_dC[pvt_index] > soc_info.latest_max_soc_top_temp_dC)
+        {
+            soc_info.latest_max_soc_top_temp_dC = soc_info.latest_soc_top_temp_dC[pvt_index];
+        }
     }
 }
 

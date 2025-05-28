@@ -24,8 +24,9 @@
 
 /**
  * @brief Initialize the data processing component.
+ * @param[in] die_id The ID of the die to initialize.
  */
-void data_proc_tlm_cmpnt_init(void);
+void data_proc_tlm_cmpnt_init(uint8_t die_id);
 
 /**
  * @brief Notification on telemetry collection transitioning to disabled or enabled.
@@ -130,10 +131,10 @@ void data_proc_tlm_cmpnt_get_pwr_core_temperature_data(uint16_t core_id, p_pwr_c
 
 /**
  * @brief Get the core power data for the specified core.
- * 
+ *
  * @param core_id[in] - The core id to get the power data for. 0 .. NUMBER_OF_CORES_PER_DIE-1
  * @param power_data[out] - Pointer to the structure to store the power data in.
- * 
+ *
  * @return None
  */
 void data_proc_tlm_cmpnt_get_pwr_core_power_data(uint16_t core_id, p_pwr_core_element_power_t power_data);
@@ -256,6 +257,15 @@ void data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(uint16_t dimm_module, p_
  * @return None
  */
 void data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(uint16_t sensor_id, p_inst_soc_element_die_temp_t sensor_temp_data);
+
+/**
+ * @brief Get the soc maximum temperature data.
+ *
+ * @param[out] max_temp_data - Pointer to the location to store the maximum temperature data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_inst_soc_max_temp_data(p_inst_soc_element_max_temp_t max_temp_data);
 
 /**
  * @brief Clear the power telemetry data. Used for testing purposes.

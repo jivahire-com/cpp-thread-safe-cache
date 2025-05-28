@@ -241,3 +241,10 @@ uint32_t package_create_inst_soc_dimm_runtime_record(p_inst_soc_record_dimm_runt
  */
 uint32_t package_create_inst_soc_sensor_temp_record(p_inst_soc_record_die_temp_t snsr_temp_record);
 
+/**
+ * @brief   Create a instantaneous soc max temperature record
+ * @param[out] max_temp_record - location where the record will be stored
+ * @return uint32_t - Number of bytes in the record
+ */
+uint32_t package_create_inst_soc_max_temp_record(p_inst_soc_record_max_temp_t max_temp_record);
+

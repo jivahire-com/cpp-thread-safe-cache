@@ -528,8 +528,8 @@ TEST_FUNCTION(test_comp_metrics_for_tiles_for_sampling_period, test_setup, test_
     for (uint8_t tile_id = 0; tile_id < NUMBER_OF_TILES_PER_DIE; tile_id++)
     {
         tile[tile_id].time_counter_uS = 0;
-        tile[tile_id].latest_max_tile_temp_dC = 50;
-        tile[tile_id].latest_max_temp_tile_index = 1;
+        tile[tile_id].latest_max_temp_dC = 50;
+        tile[tile_id].latest_max_temp_sensor_index = 1;
     }
     // Set up mock return values for tlm_get_timestamp_microseconds
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5);
@@ -539,16 +539,16 @@ TEST_FUNCTION(test_comp_metrics_for_tiles_for_sampling_period, test_setup, test_
     for (uint8_t tile_id = 0; tile_id < NUMBER_OF_TILES_PER_DIE; tile_id++)
     {
         assert_int_equal(tile[tile_id].time_counter_uS, 0);
-        assert_int_equal(tile[tile_id].latest_max_tile_temp_dC, 50);
+        assert_int_equal(tile[tile_id].latest_max_temp_dC, 50);
     }
 
     uint8_t mock_max_tile_temp_dC = 60;
     for (uint8_t tile_id = 0; tile_id < NUMBER_OF_TILES_PER_DIE; tile_id++)
     {
 
-        tile[tile_id].latest_max_tile_temp_dC = mock_max_tile_temp_dC;
+        tile[tile_id].latest_max_temp_dC = mock_max_tile_temp_dC;
         mock_max_tile_temp_dC++;
-        tile[tile_id].latest_max_temp_tile_index = 1;
+        tile[tile_id].latest_max_temp_sensor_index = 1;
     }
 
     //  Set up mock return values for tlm_get_timestamp_microseconds
@@ -559,7 +559,7 @@ TEST_FUNCTION(test_comp_metrics_for_tiles_for_sampling_period, test_setup, test_
     for (uint8_t tile_id = 0; tile_id < NUMBER_OF_TILES_PER_DIE; tile_id++)
     {
         assert_int_equal(tile[tile_id].time_counter_uS, 5);
-        assert_int_equal(tile[tile_id].latest_max_tile_temp_dC, mock_max_tile_temp_dC);
+        assert_int_equal(tile[tile_id].latest_max_temp_dC, mock_max_tile_temp_dC);
         mock_max_tile_temp_dC++;
     }
 }

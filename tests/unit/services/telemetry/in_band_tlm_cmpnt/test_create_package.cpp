@@ -712,6 +712,32 @@ TEST_FUNCTION(test_get_inst_soc_sensor_temp_data, test_setup, test_teardown)
     }
 }
 
+TEST_FUNCTION(test_package_create_inst_soc_max_temp_record, test_setup, test_teardown)
+{
+    inst_soc_record_max_temp_t record = {{0}};
+
+    expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_max_temp_data, 1);
+    uint32_t record_size = package_create_inst_soc_max_temp_record(&record);
+
+    assert_int_equal(record_size, sizeof(inst_soc_record_max_temp_t));
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
+    assert_int_not_equal(record.record_header.record_number, 0);
+    assert_int_equal(record.record_header.number_of_collections, 1);
+    assert_int_equal(record.record_header.record_payload_size,
+                     (sizeof(inst_soc_record_max_temp_t) - sizeof(telemetry_record_hdr_t)));
+
+    assert_int_equal(record.temperature_collection.collection_header.provider_id, EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA);
+    assert_int_equal(record.temperature_collection.collection_header.element_id, INST_TELEMETRY_ELEMENT_SOC_MAX_TEMP);
+    assert_int_equal(record.temperature_collection.collection_header.collection_id, 1);
+    assert_int_equal(record.temperature_collection.collection_header.number_of_elements, 1);
+    assert_int_equal(record.temperature_collection.collection_header.collection_payload_size,
+                     sizeof(inst_soc_collection_max_temp_t) - sizeof(telemetry_collection_hdr_t));
+
+    // event data ranges are initialized to 0, the mock Get Api sets them to 0xFF
+    // This verifies that the correct data ranges are passed to the data processing component get data api's
+    assert_memset_to_ff((uint8_t*)&record.temperature_collection.temperature_element, sizeof(inst_soc_element_max_temp_t));
+}
+
 TEST_FUNCTION(test_package_create_power_pkg_none_enabled, test_setup, test_teardown)
 {
     for (uint16_t i = 0; i < POWER_TELEMETRY_ELEMENT_ID_MAX; i++)
@@ -848,6 +874,8 @@ TEST_FUNCTION(test_package_create_append_to_inst_pkg_none_enabled, test_setup, t
 
 TEST_FUNCTION(test_package_create_append_to_inst_pkg_all_enabled, test_setup, test_teardown)
 {
+    inband_die_id = 0;
+
     for (uint16_t i = 0; i < INST_TELEMETRY_ELEMENT_ID_MAX; i++)
     {
         inst_pkg_element_enable[i] = true;
@@ -856,6 +884,7 @@ TEST_FUNCTION(test_package_create_append_to_inst_pkg_all_enabled, test_setup, te
     expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_rail_data, MAX_NUM_OF_VR_RAILS);
     expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data, NUMBER_OF_DIMM_MODULES);
     expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data, NUMBER_OF_SOC_TEMP_SENSORS);
+    expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_max_temp_data, 1);
 
     uint32_t pkg_size = package_create_append_to_inst_pkg((uintptr_t)cr_max_package_mem, INST_PKG_MAX_SIZE, &pkg_header);
 
@@ -866,7 +895,29 @@ TEST_FUNCTION(test_package_create_append_to_inst_pkg_all_enabled, test_setup, te
     printf("sensor record: %d\n", sizeof(inst_soc_record_die_temp_t));
     printf("max temprecord: %d\n", sizeof(inst_soc_record_max_temp_t));
 
-    // TODO: soc max temp not implemented yet, once it is added remove the subtraction
+    assert_int_equal(pkg_size, sizeof(inst_full_package_t));
+
+    // verify max soc temp not included on die 1
+    inband_die_id = 1;
+
+    for (uint16_t i = 0; i < INST_TELEMETRY_ELEMENT_ID_MAX; i++)
+    {
+        inst_pkg_element_enable[i] = true;
+    }
+    expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_core_summary_data, NUMBER_OF_CORES_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_rail_data, MAX_NUM_OF_VR_RAILS);
+    expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data, NUMBER_OF_DIMM_MODULES);
+    expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data, NUMBER_OF_SOC_TEMP_SENSORS);
+
+    pkg_size = package_create_append_to_inst_pkg((uintptr_t)cr_max_package_mem, INST_PKG_MAX_SIZE, &pkg_header);
+
+    printf("full package: %d\n", sizeof(inst_full_package_t));
+    printf("core summary record: %d\n", sizeof(inst_core_record_summary_t));
+    printf("rail record: %d\n", sizeof(inst_soc_record_rail_t));
+    printf("dimm record: %d\n", sizeof(inst_soc_record_dimm_runtime_t));
+    printf("sensor record: %d\n", sizeof(inst_soc_record_die_temp_t));
+    printf("max temprecord: %d\n", sizeof(inst_soc_record_max_temp_t));
+
     assert_int_equal(pkg_size, sizeof(inst_full_package_t) - sizeof(inst_soc_record_max_temp_t));
 }
 
@@ -924,17 +975,17 @@ TEST_FUNCTION(test_package_create_append_to_inst_pkg_too_small, test_setup, test
     assert_int_equal(pkg_size, 0);
 }
 
-TEST_FUNCTION(test_in_band_tlm_cmpnt_is_instantaneous_enabled, test_setup, test_teardown)
+TEST_FUNCTION(test_in_band_tlm_cmpnt_is_any_instantaneous_enabled, test_setup, test_teardown)
 {
     for (uint32_t i = 0; i < INST_TELEMETRY_ELEMENT_ID_MAX; i++)
     {
         inst_pkg_element_enable[i] = false;
     }
-    bool is_enabled = in_band_tlm_cmpnt_is_instantaneous_enabled();
+    bool is_enabled = in_band_tlm_cmpnt_is_any_instantaneous_enabled();
     assert_int_equal(is_enabled, false);
 
     inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_SOC_VOLTAGE_RAILS] = true;
-    is_enabled = in_band_tlm_cmpnt_is_instantaneous_enabled();
+    is_enabled = in_band_tlm_cmpnt_is_any_instantaneous_enabled();
     assert_int_equal(is_enabled, true);
 }
 
@@ -1246,4 +1297,34 @@ TEST_FUNCTION(test_in_band_tlm_cmpnt_temp_id_die_offset, test_setup, test_teardo
                              TEMP_ID_WITH_DIE_OFFSET(temp_id));
         }
     }
+}
+
+TEST_FUNCTION(test_in_band_tlm_cmpnt_is_power_record_enable, test_setup, test_teardown)
+{
+    power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_PSTATE] = true;
+
+    bool is_enabled = in_band_tlm_cmpnt_is_power_record_enabled(POWER_TELEMETRY_ELEMENT_CORE_PSTATE);
+    assert_int_equal(is_enabled, true);
+
+    power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_PSTATE] = false;
+    is_enabled = in_band_tlm_cmpnt_is_power_record_enabled(POWER_TELEMETRY_ELEMENT_CORE_PSTATE);
+    assert_int_equal(is_enabled, false);
+
+    is_enabled = in_band_tlm_cmpnt_is_power_record_enabled(POWER_TELEMETRY_ELEMENT_ID_MAX);
+    assert_int_equal(is_enabled, false);
+}
+
+TEST_FUNCTION(test_in_band_tlm_cmpnt_is_inst_record_enabled, test_setup, test_teardown)
+{
+    inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_SOC_DIE_TEMP] = true;
+
+    bool is_enabled = in_band_tlm_cmpnt_is_inst_record_enabled(INST_TELEMETRY_ELEMENT_SOC_DIE_TEMP);
+    assert_int_equal(is_enabled, true);
+
+    inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_SOC_DIE_TEMP] = false;
+    is_enabled = in_band_tlm_cmpnt_is_inst_record_enabled(INST_TELEMETRY_ELEMENT_SOC_DIE_TEMP);
+    assert_int_equal(is_enabled, false);
+
+    is_enabled = in_band_tlm_cmpnt_is_inst_record_enabled(INST_TELEMETRY_ELEMENT_ID_MAX);
+    assert_int_equal(is_enabled, false);
 }

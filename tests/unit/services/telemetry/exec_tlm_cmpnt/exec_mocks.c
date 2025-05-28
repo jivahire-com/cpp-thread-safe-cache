@@ -87,7 +87,7 @@ void in_band_tlm_cmpnt_tlm_mode_enter_actions(tlm_operating_mode_t entering_mode
     function_called();
 }
 
-bool in_band_tlm_cmpnt_is_instantaneous_enabled(void)
+bool in_band_tlm_cmpnt_is_any_instantaneous_enabled(void)
 {
     return mock_type(bool);
 }

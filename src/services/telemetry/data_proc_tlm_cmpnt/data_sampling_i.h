@@ -132,8 +132,8 @@ typedef struct {
 
 typedef struct {
     uint32_t time_counter_uS;
-    uint16_t latest_max_tile_temp_dC;
-    uint8_t latest_max_temp_tile_index;
+    uint16_t latest_max_temp_dC;
+    uint8_t latest_max_temp_sensor_index;
     voltage_t vcpu;
     voltage_t vsys;
 } tile_runtime_info_t;
@@ -147,6 +147,9 @@ typedef struct {
     uint16_t latest_rail_current_mA[MAX_NUM_OF_VR_RAILS];
     uint16_t latest_hnf_max_temp_dC[NUMBER_OF_HNF_CHANNELS_PER_DIE];
     uint16_t latest_soc_top_temp_dC[NUMBER_OF_SOC_TEMP_SENSORS];
+    uint16_t latest_max_tile_temp_dC;
+    uint16_t latest_max_soc_top_temp_dC;
+    uint16_t latest_max_die_temp_dC; // max of latest_max_tile_temp_dC and latest_max_soc_top_temp_dC
 } soc_runtime_info_t;
 
 typedef struct {
@@ -208,6 +211,15 @@ void data_smpl_init_dts_coefficients(void);
  * @return none
  */
 void data_smpl_init_constants();
+
+/**
+ * @brief   Update the maximum die temperature based on the latest tile and SOC top temperatures.
+ *          This function compares the latest maximum tile temperature and the latest maximum SOC top temperature,
+ *          and updates the maximum die temperature accordingly.
+ *          The maximum die temperature is the greater of the two values.
+ * @param none
+ */
+void data_smpl_update_max_die_temp(void);
 
 /**
  * @brief Internal API to log tile/core/hnf temperature parameters

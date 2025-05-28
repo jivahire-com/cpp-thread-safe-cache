@@ -245,6 +245,13 @@ void data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(uint16_t sensor_id, p_inst_
     function_called();
 }
 
+void data_proc_tlm_cmpnt_get_inst_soc_max_temp_data(p_inst_soc_element_max_temp_t max_temp_data)
+{
+    memset(max_temp_data, 0xFF, sizeof(inst_soc_element_max_temp_t));
+
+    function_called();
+}
+
 bool exec_tlm_cmpnt_is_telemetry_publishing_enabled(void)
 {
     return mock_type(bool);

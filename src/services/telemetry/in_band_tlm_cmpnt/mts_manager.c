@@ -285,7 +285,7 @@ void mts_manager_handle_trp_msg(p_trp_msg_t trp_msg)
 
     case TRP_MSG_ID_CLIENT_DEFINED: {
         p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg->payload.client_msg;
-        if (tlm_client_msg->cmd == TLM_CLIENT_CMD_SET_MODE)
+        if (tlm_client_msg->cmd == TLM_CLIENT_CMD_SET_MODE_PUSH)
         {
             // set the telemetry mode to the requested mode
             exec_tlm_cmpnt_change_telemetry_mode(tlm_client_msg->payload.mode);
@@ -689,7 +689,7 @@ void mts_manager_send_mode_to_sec_cores(tlm_operating_mode_t new_mode)
         trp_msg.hdr.payload_size = TLM_CLIENT_SET_MODE_MSG_SIZE;
 
         p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
-        tlm_client_msg->cmd = TLM_CLIENT_CMD_SET_MODE;
+        tlm_client_msg->cmd = TLM_CLIENT_CMD_SET_MODE_PUSH;
         tlm_client_msg->payload.mode = new_mode;
 
         // api copies message, ok to use stack memory

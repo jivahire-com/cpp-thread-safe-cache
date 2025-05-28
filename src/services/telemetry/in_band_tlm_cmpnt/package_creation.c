@@ -71,7 +71,7 @@ void package_creation_init()
     temp_id_offset_per_die = die_id * NUMBER_OF_SOC_TEMP_SENSORS;
 }
 
-bool in_band_tlm_cmpnt_is_instantaneous_enabled(void)
+bool in_band_tlm_cmpnt_is_any_instantaneous_enabled(void)
 {
     for (uint32_t i = 0; i < INST_TELEMETRY_ELEMENT_ID_MAX; i++)
     {
@@ -81,6 +81,16 @@ bool in_band_tlm_cmpnt_is_instantaneous_enabled(void)
         }
     }
     return false;
+}
+
+bool in_band_tlm_cmpnt_is_power_record_enabled(pwr_telemetry_element_id_t element_id)
+{
+    return (element_id < POWER_TELEMETRY_ELEMENT_ID_MAX) && power_pkg_element_enable[element_id];
+}
+
+bool in_band_tlm_cmpnt_is_inst_record_enabled(instantaneous_telemetry_element_id_t element_id)
+{
+    return (element_id < INST_TELEMETRY_ELEMENT_ID_MAX) && inst_pkg_element_enable[element_id];
 }
 
 void package_create_enable_disable_pwr_record(pwr_telemetry_element_id_t element_id, bool enable_record)
@@ -340,7 +350,16 @@ uint32_t package_create_append_to_inst_pkg(uintptr_t curr_pkg_position, size_t p
         pkg_hdr->payload_header.number_of_records++;
     }
 
-    // TODO: INST_TELEMETRY_ELEMENT_SOC_MAX_TEMP
+    if (inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_SOC_MAX_TEMP])
+    {
+        if (inband_die_id == 0)
+        {
+            // this record only exported on die 0.
+            p_inst_soc_record_max_temp_t max_temp_record = (p_inst_soc_record_max_temp_t)next_position;
+            next_position += package_create_inst_soc_max_temp_record(max_temp_record);
+            pkg_hdr->payload_header.number_of_records++;
+        }
+    }
 
     return next_position - curr_pkg_position;
 }
@@ -791,4 +810,22 @@ uint32_t package_create_inst_soc_sensor_temp_record(p_inst_soc_record_die_temp_t
     }
 
     return sizeof(inst_soc_record_die_temp_t);
+}
+
+uint32_t package_create_inst_soc_max_temp_record(p_inst_soc_record_max_temp_t max_temp_record)
+{
+    populate_record_hdr(&max_temp_record->record_header,
+                        ++inst_pkg_record_number[INST_TELEMETRY_ELEMENT_SOC_MAX_TEMP],
+                        1,
+                        sizeof(inst_soc_record_max_temp_t));
+
+    populate_inst_collection_hdr(&max_temp_record->temperature_collection.collection_header,
+                                 INST_TELEMETRY_ELEMENT_SOC_MAX_TEMP,
+                                 1, // only produced for die 0
+                                 1,
+                                 sizeof(inst_soc_collection_max_temp_t));
+
+    data_proc_tlm_cmpnt_get_inst_soc_max_temp_data(&max_temp_record->temperature_collection.temperature_element);
+
+    return sizeof(inst_soc_record_max_temp_t);
 }

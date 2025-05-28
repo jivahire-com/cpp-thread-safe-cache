@@ -19,6 +19,7 @@ extern "C" {
 #include <compute_metrics_i.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <data_sampling_i.h>
+#include <die_2_die_exchange_i.h>
 #include <dvfs.h>
 #include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
@@ -535,6 +536,28 @@ TEST_FUNCTION(test_data_smpl_parse_throttling_end, test_setup, test_teardown)
     assert_int_equal(core[0].throttle_info[1].residency_mS, 1);
 }
 
+TEST_FUNCTION(test_data_smpl_parse_throttling_exit, test_setup, test_teardown)
+{
+    for (uint8_t i = 0; i < NUMBER_OF_THROTTLE_TYPES; i++)
+    {
+        core[5].core_throttling_tracker[i] = 0;
+    }
+
+    core[5].core_throttling_tracker[2] = 1;
+    core[5].throttle_info[2].residency_mS = 1000;
+
+    // Call the function to be tested
+    data_smpl_parse_throttling_exit_transition(5, 1000000);
+
+    assert_int_equal(core[5].throttle_info[2].residency_mS, 2000);
+
+    // Check that all throttling trackers are reset
+    for (uint8_t i = 0; i < NUMBER_OF_THROTTLE_TYPES; i++)
+    {
+        assert_int_equal(core[5].core_throttling_tracker[i], 0);
+    }
+}
+
 // Test for data_smpl_parse_vr_temperature_entry
 TEST_FUNCTION(test_data_smpl_parse_vr_temperature_entry, test_setup, test_teardown)
 {
@@ -694,16 +717,30 @@ TEST_FUNCTION(test_data_smpl_reset_soc_data, test_setup, test_teardown)
     assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s1.latest_value_dC, 0);
 }
 
-// Unit test function
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_24hr_pkg_completed, test_setup, test_teardown)
 {
     // TODO - complete with the records will be collected with 24hr window.
     data_proc_tlm_cmpnt_24hr_pkg_completed();
 }
 
-// Unit test function
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_pwr_pkg_completed, test_setup, test_teardown)
 {
-    // TODO - complete with the records will be collected with 24hr window.
-    // data_proc_tlm_cmpnt_pwr_pkg_completed();
+    data_proc_tlm_cmpnt_pwr_pkg_completed();
+}
+
+TEST_FUNCTION(test_data_smpl_update_max_die_temp, test_setup, test_teardown)
+{
+    die_2_die_exchange_init(0);
+    soc_info.latest_max_die_temp_dC = 0;
+    soc_info.latest_max_tile_temp_dC = 400;
+    soc_info.latest_max_soc_top_temp_dC = 300;
+    will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, false);
+    data_smpl_update_max_die_temp();
+
+    will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, true);
+    data_smpl_update_max_die_temp();
+
+    die_2_die_exchange_init(1);
+    will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, true);
+    data_smpl_update_max_die_temp();
 }

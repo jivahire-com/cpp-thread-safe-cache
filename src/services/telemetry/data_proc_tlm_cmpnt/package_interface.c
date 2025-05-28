@@ -12,6 +12,7 @@
 #include "compute_metrics_i.h"
 #include "data_proc_tlm_cmpnt.h"
 #include "data_sampling_i.h" // internal APIs
+#include "die_2_die_exchange_i.h"
 #include "package_interface_i.h"
 #include "telemetry_events_i.h"
 
@@ -379,4 +380,11 @@ void data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(uint16_t sensor_id, p_inst_
         // sensor_temp_data->max_dC = soc_info.sensor_temp->max_dC;
         // sensor_temp_data->min_dC = soc_info.sensor_temp->min_dC;
     }
+}
+
+void data_proc_tlm_cmpnt_get_inst_soc_max_temp_data(p_inst_soc_element_max_temp_t max_temp_data)
+{
+    // note:  packaging won't call this api for secondary dies
+    max_temp_data->die0_max_temperature_dC = soc_info.latest_max_die_temp_dC;
+    max_temp_data->die1_max_temperature_dC = die_2_die_exchange_read_max_die_temp_dC(1);
 }

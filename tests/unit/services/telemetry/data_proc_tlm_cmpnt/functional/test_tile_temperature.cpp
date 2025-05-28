@@ -127,7 +127,7 @@ static int32_t test_setup(void** state)
 {
     FPFW_UNUSED(state);
     reset_pwr_tlm_data();
-    data_proc_tlm_cmpnt_init();
+    data_proc_tlm_cmpnt_init(0);
     return 0;
 }
 

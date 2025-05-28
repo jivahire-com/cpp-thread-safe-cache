@@ -9,6 +9,11 @@ target_include_directories(tlm.service.cmpnt.interfaces
         ${CMAKE_CURRENT_SOURCE_DIR}/out_of_band_tlm_cmpnt/inc
 )
 
+if (i386-pc-windows-msvc)
+    # allows unit test to override product memory locations
+    target_compile_options(tlm.service.cmpnt.interfaces INTERFACE -DPWR_TLM_TEST_OVERRIDE=1)
+endif()
+
 # add dependencies that are common to all internal telemetry libs
 target_link_libraries(tlm.service.cmpnt.interfaces
     INTERFACE

@@ -11,6 +11,7 @@
 #include "data_proc_tlm_cmpnt.h"
 
 #include "data_sampling_i.h" // internal APIs
+#include "die_2_die_exchange_i.h"
 #include "package_interface_i.h"
 
 #include <FpFwUtils.h>
@@ -25,8 +26,10 @@
 
 /*------------- Functions ----------------*/
 
-void data_proc_tlm_cmpnt_init(void)
+void data_proc_tlm_cmpnt_init(uint8_t die_id)
 {
+    die_2_die_exchange_init(die_id);
+
     data_smpl_init();
 
     package_inf_init();

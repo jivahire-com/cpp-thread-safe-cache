@@ -391,7 +391,7 @@ void run_timer_enter_actions(tlm_operating_mode_t entering_mode)
     switch (entering_mode)
     {
     case TLM_OP_MODE_PUBLISHING:
-        if (in_band_tlm_cmpnt_is_instantaneous_enabled())
+        if (in_band_tlm_cmpnt_is_any_instantaneous_enabled())
         {
             tx_timer_activate(&inst_sample_tmr);
         }

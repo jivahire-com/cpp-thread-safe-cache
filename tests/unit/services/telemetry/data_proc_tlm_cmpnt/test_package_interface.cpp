@@ -19,6 +19,7 @@ extern "C" {
 #include <compute_metrics_i.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <data_sampling_i.h>
+#include <die_2_die_exchange_i.h>
 #include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdint.h>              // for uint32_t, uint64_t, int32_t
@@ -516,6 +517,18 @@ TEST_FUNCTION(test_get_inst_soc_snsr_temp_data, test_setup, test_teardown)
     // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     inst_soc_element_die_temp_t snsr_temp_data = {0};
     data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(TEST_SNSR_ID_0, &snsr_temp_data);
+}
+
+TEST_FUNCTION(test_get_inst_soc_sensor_temp_data, test_setup, test_teardown)
+{
+    inst_soc_element_max_temp_t read_data = {0};
+
+    soc_info.latest_max_die_temp_dC = 200;
+    die_2_die_exchange_write_max_die_temp(400);
+    data_proc_tlm_cmpnt_get_inst_soc_max_temp_data(&read_data);
+
+    assert_int_equal(read_data.die0_max_temperature_dC, 200);
+    assert_int_equal(read_data.die1_max_temperature_dC, 400);
 }
 
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_core_power_data, test_setup, test_teardown)

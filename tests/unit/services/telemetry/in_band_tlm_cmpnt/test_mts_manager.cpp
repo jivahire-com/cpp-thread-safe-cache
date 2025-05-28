@@ -494,7 +494,7 @@ TEST_FUNCTION(test_mts_manager_handle_trp_msg_client_defined, test_setup, nullpt
 
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_CLIENT_DEFINED;
     p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
-    tlm_client_msg->cmd = TLM_CLIENT_CMD_SET_MODE;
+    tlm_client_msg->cmd = TLM_CLIENT_CMD_SET_MODE_PUSH;
     tlm_client_msg->payload.mode = TLM_OP_MODE_COLLECTING_DATA;
     expect_function_call(exec_tlm_cmpnt_change_telemetry_mode);
 

@@ -10,6 +10,8 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include "telemetry_package_defs.h"
+
 #include <exec_tlm_cmpnt.h>
 #include <stdint.h>
 
@@ -67,7 +69,21 @@ void in_band_tlm_cmpnt_tlm_mode_enter_actions(tlm_operating_mode_t entering_mode
  * @brief Check if any instantaneous telemetry record is enabled. If not inst packages will not be generated.
  * @return true if enabled, false if disabled.
  */
-bool in_band_tlm_cmpnt_is_instantaneous_enabled(void);
+bool in_band_tlm_cmpnt_is_any_instantaneous_enabled(void);
+
+/**
+ * @brief Check if power telemetry record is enabled.
+ * @param[in] element_id The power telemetry element id.
+ * @return true if enabled, false if disabled.
+ */
+bool in_band_tlm_cmpnt_is_power_record_enabled(pwr_telemetry_element_id_t element_id);
+
+/**
+ * @brief Check if instantaneous telemetry record is enabled.
+ * @param[in] element_id The instantaneous telemetry element id.
+ * @return true if enabled, false if disabled.
+ */
+bool in_band_tlm_cmpnt_is_inst_record_enabled(instantaneous_telemetry_element_id_t element_id);
 
 /**
  * @brief Collect raw sensor fifo data for debug packages.

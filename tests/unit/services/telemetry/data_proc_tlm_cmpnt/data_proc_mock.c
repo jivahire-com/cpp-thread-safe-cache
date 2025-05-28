@@ -96,3 +96,9 @@ uint32_t __wrap_gtimer_prodfw_get_frequency(void)
 {
     return mock_type(uint32_t);
 }
+
+bool __wrap_in_band_tlm_cmpnt_is_inst_record_enabled(uint32_t inst_record_id)
+{
+    FPFW_UNUSED(inst_record_id);
+    return mock_type(bool);
+}

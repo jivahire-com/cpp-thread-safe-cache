@@ -393,5 +393,10 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     DataHelperResidencyUpdateInValidTimeStamp,
                     FPFW_ET_LEVEL_DEBUG)
 
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    68,
+                    InvalidDieId,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, die_id))
 /*--------- Function Prototypes ----------*/
 

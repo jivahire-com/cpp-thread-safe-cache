@@ -26,7 +26,11 @@
 /*-------------- Typedefs ----------------*/
 typedef enum
 {
-   TLM_CLIENT_CMD_SET_MODE = 1,
+   TLM_CLIENT_CMD_SET_MODE_PUSH = 1,
+   TLM_CLIENT_CMD_PWR_PACKAGE_MCP_2_SCP_REQ = 2,
+   TLM_CLIENT_CMD_PWR_PACKAGE_SCP_2_MCP_RSP = 3,
+   TLM_CLIENT_CMD_PWR_PACKAGE_PRIM_MCP_2_SEC_MCP_REQ = 4,
+   TLM_CLIENT_CMD_PWR_PACKAGE_SEC_MCP_2_PRIM_MCP_RSP = 5,
 } tlm_client_cmd_t;
 
 typedef struct __attribute__((packed)) tlm_client_msg_t{

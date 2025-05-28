@@ -6,6 +6,7 @@ add_library(${TARGET}
         data_proc_tlm_cmpnt.c
         data_sampling.c
         data_utilities.c
+        die_2_die_exchange.c
         package_interface.c
 )
 
@@ -28,6 +29,7 @@ target_link_libraries(${TARGET}
         ms::lib::error_codes
         ms::lib::power_fuse
         ms::lib::gtimer
+        ms::lib::pwr_tlm_core_ex
         silibs::dvfs
 )
 

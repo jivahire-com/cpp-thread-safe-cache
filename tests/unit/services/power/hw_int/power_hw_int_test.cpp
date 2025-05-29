@@ -618,6 +618,7 @@ void init_core_base_expect()
     will_return_count(__wrap_dvfs_init, DVFS_SUCCESS, TEST_CORE_COUNT);
     will_return_count(__wrap_odcm_init, ODCM_SUCCESS, TEST_CORE_COUNT);
     will_return_count(__wrap_tile_pvt_init, PVT_SUCCESS, (TEST_CORE_COUNT + 1) / 2);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 }
 
 void init_ws_core_base_expect(unsigned core_count, uint8_t pstate)
@@ -937,6 +938,7 @@ POWER_TEST(hwi_init_core__forced_pstate, setup, teardown)
     will_return_count(__wrap_dvfs_init, DVFS_SUCCESS, 1);
     will_return_count(__wrap_odcm_init, ODCM_SUCCESS, 1);
     will_return_count(__wrap_tile_pvt_init, PVT_SUCCESS, 1);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
 
     fgpll_reg fake_regs = {};
 

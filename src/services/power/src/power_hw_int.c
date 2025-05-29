@@ -58,6 +58,7 @@ void core_pll_mask_error_sr(const power_runconfig_t* p_runconfig, int core);
 
 // Define an FLL cal timeout
 #define FLL_CAL_TIMEOUT_US          1200
+#define FLL_CAL_TIMEOUT_FPGA_US     5000
 #define SW_BOOT_PLL_LOCK_TIMEOUT_US 60
 
 // Define settings structures large enough for both SOC and tile PVT config
@@ -829,7 +830,8 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
         if (core_enabled)
         {
             // wait for FLL calibration done
-            return_value = wait_for_FLLCalDone(cluster_pex_base_addr, FLL_CAL_TIMEOUT_US);
+            uint32_t fll_cal_timeout = IS_PLATFORM_FPGA() ? FLL_CAL_TIMEOUT_FPGA_US : FLL_CAL_TIMEOUT_US;
+            return_value = wait_for_FLLCalDone(cluster_pex_base_addr, fll_cal_timeout);
             if (return_value != DVFS_SUCCESS)
             {
                 POWER_LOG_CRIT("wait_for_FLLCalDone on core %d returned %d", core, return_value);

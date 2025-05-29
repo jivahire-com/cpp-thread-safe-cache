@@ -20,7 +20,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(tower_cfg, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh", "atu_svc", "icc_hspmbx", "sysinfo"))
+FPFW_INIT_COMPONENT(tower_cfg, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh_stg_1", "atu_svc", "icc_hspmbx", "sysinfo"))
 {
     uint8_t die_num = (uint8_t)idsw_get_die_id();
 

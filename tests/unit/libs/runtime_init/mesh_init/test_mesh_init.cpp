@@ -26,7 +26,8 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-extern fpfw_init_component_t _fpfw_component_mesh;
+extern fpfw_init_component_t _fpfw_component_mesh_stg_1;
+extern fpfw_init_component_t _fpfw_component_mesh_stg_2;
 static uint32_t dummy_icc_ctx = 0;
 
 /*------------- Functions ----------------*/
@@ -37,6 +38,14 @@ void* __wrap_fpfw_init_get_handle(const char* id)
 }
 
 int __wrap_mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
+{
+    check_expected(die_num);
+    assert_non_null(icc_ctx);
+
+    return SILIBS_SUCCESS;
+}
+
+int __wrap_d2d_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 {
     check_expected(die_num);
     assert_non_null(icc_ctx);
@@ -55,6 +64,15 @@ TEST_FUNCTION(test_mesh_init, nullptr, nullptr)
     const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idhw_get_die_id, test_die);
     expect_value(__wrap_mesh_init, die_num, test_die);
-    _fpfw_component_mesh.init_fn();
+    _fpfw_component_mesh_stg_1.init_fn();
+}
+
+TEST_FUNCTION(test_d2d_init, nullptr, nullptr)
+{
+    // Set up expectations
+    const auto test_die = (KNG_DIE_ID)1;
+    will_return_always(__wrap_idhw_get_die_id, test_die);
+    expect_value(__wrap_d2d_init, die_num, test_die);
+    _fpfw_component_mesh_stg_2.init_fn();
 }
 }

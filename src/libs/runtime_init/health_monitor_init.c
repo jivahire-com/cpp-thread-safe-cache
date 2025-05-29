@@ -55,7 +55,7 @@ FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &hm_config};
 }
 
-FPFW_INIT_COMPONENT(hm_post_init, FPFW_INIT_DEPENDENCIES("hm_svc", "atu_svc", "mesh", "ddr", "gpio_dev", "hw_sem"))
+FPFW_INIT_COMPONENT(hm_post_init, FPFW_INIT_DEPENDENCIES("hm_svc", "atu_svc", "mesh_stg_2", "ddr", "gpio_dev", "hw_sem"))
 {
     hm_post_ddr_init();
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

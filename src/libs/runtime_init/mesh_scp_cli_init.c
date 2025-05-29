@@ -19,7 +19,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(mesh_cli, FPFW_INIT_DEPENDENCIES("hw_ver", "cli", "mesh"))
+FPFW_INIT_COMPONENT(mesh_cli, FPFW_INIT_DEPENDENCIES("hw_ver", "cli", "mesh_stg_2"))
 {
 
     mesh_cli_initialize();

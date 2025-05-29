@@ -58,7 +58,7 @@ FPFW_INIT_COMPONENT(fuse_pre_mesh, FPFW_INIT_DEPENDENCIES("icc_hspmbx"))
 }
 
 FPFW_INIT_COMPONENT(fuse_post_mesh,
-                    FPFW_INIT_DEPENDENCIES("sds_svc", "fuse_pre_mesh", "css_pome", "ddr_pcr", "tower_cfg", "vab", "hw_ver"))
+                    FPFW_INIT_DEPENDENCIES("sds_svc", "fuse_pre_mesh", "css_pome", "ddr_pcr", "mesh_stg_2", "vab", "hw_ver"))
 {
     platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT);
     platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT_BRIDGE_INIT);

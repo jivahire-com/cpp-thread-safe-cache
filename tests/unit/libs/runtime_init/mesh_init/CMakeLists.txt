@@ -38,4 +38,5 @@ mock_target(${TARGET}
     idhw_get_die_id
     fpfw_init_get_handle
     mesh_init
+    d2d_init
 )

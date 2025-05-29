@@ -17,7 +17,7 @@
 
 /*------------- Functions ----------------*/
 #if defined(SCP_RUNTIME_INIT)
-FPFW_INIT_COMPONENT(hw_sem, FPFW_INIT_DEPENDENCIES("atu_svc", "mesh"))
+FPFW_INIT_COMPONENT(hw_sem, FPFW_INIT_DEPENDENCIES("atu_svc", "mesh_stg_2"))
 #elif defined(MCP_RUNTIME_INIT)
 FPFW_INIT_COMPONENT(hw_sem, FPFW_INIT_DEPENDENCIES("atu_svc"))
 #endif

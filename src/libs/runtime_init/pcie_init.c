@@ -31,7 +31,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh", "dfwk", "tower_cfg", "vab", "cfg_mgr"))
+FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh_stg_2", "dfwk", "tower_cfg", "vab", "cfg_mgr"))
 {
     fpfw_init_component_id_t dfwk_id = "dfwk";
     PDFWK_THREADX_HOST host = fpfw_init_get_handle(dfwk_id);
@@ -114,7 +114,7 @@ FPFW_INIT_COMPONENT(pcie_cli, FPFW_INIT_DEPENDENCIES("pcie", "cli"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(cxl_chbcr, FPFW_INIT_DEPENDENCIES("mesh", "cfg_mgr", "pcie", "ddr", "atu_svc"))
+FPFW_INIT_COMPONENT(cxl_chbcr, FPFW_INIT_DEPENDENCIES("mesh_stg_2", "cfg_mgr", "pcie", "ddr", "atu_svc"))
 {
     KNG_DIE_ID die_id = (KNG_DIE_ID)idsw_get_die_id();
 

@@ -766,6 +766,33 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         hsp_send_recv_progress_msg(HSP_MAILBOX_CMD_ENABLE_SMMU_ACCESS_REQ, HSP_MAILBOX_CMD_ENABLE_SMMU_ACCESS_RSP);
     }
 
+    MESH_CRIT("Mesh Init Done\n");
+}
+
+void d2d_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
+{
+    FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
+    s_mbx_icc_ctx = icc_ctx;
+
+    int sts = 0x0;
+
+    MESH_CRIT("d2d_init Cold start Flow\n");
+
+    cmn800_sequence_params_t cmn800_sequence_param = {};
+
+    mesh_read_cfg_knobs_from_spi(&cmn800_sequence_param);
+
+    MESH_INFO("cmn800_sequence_param.cmn_config_enum 0x%x\n", (uint8_t)cmn800_sequence_param.cmn_config_enum);
+
+    if (system_info_is_warm_start())
+    {
+        MESH_CRIT("d2d_init Warm restart Flow\n");
+
+        // Call to re-init the D2D RAS Agents (API to be added)
+
+        return;
+    }
+
     if (cmn800_sequence_param.BOOT_2D_ENABLE)
     {
         sts = d2dss_sequence(cmn800_sequence_param);
@@ -825,7 +852,7 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     }
     MESH_INFO("save_numa_info done\n");
 
-    MESH_CRIT("Mesh Init Done\n");
+    MESH_CRIT("D2D Init Done\n");
 
     // ADO 1513835: The INT HW_INT_VAB4_COMBINED_SCP_INT ISR and Vector needs to be enabled as part of INTU combined
 

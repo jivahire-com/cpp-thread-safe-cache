@@ -70,6 +70,16 @@ typedef enum{
 void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx);
 
 /**
+ * @brief Initializes the D2D.
+ *
+ * This function initializes the D2D with the specified die number and mailbox primitive context.
+ *
+ * @param die_num The die number.
+ * @param icc_ctx The mailbox primitive context.
+ */
+void d2d_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx);
+
+/**
  * @brief Print the NUMA Data Structure that is filled out
  *
  * @param numa_cfg Pointer to the numa cfg to print

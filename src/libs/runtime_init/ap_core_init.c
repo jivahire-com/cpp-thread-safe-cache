@@ -41,7 +41,7 @@ static void setup_ap_loop_to_self(uint64_t rvbaraddr)
     *(volatile uint32_t*)translated_rvbar = ARM64_LOOP;
 }
 
-FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "tower_cfg", "icc_hspmbx", "atu_svc", "sysinfo", "pex_rng"), "core_info")
+FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "mesh_stg_2", "icc_hspmbx", "atu_svc", "sysinfo", "pex_rng"), "core_info")
 {
     // only call idsw_get_platform_sdv() once
     KNG_PLAT_ID platform_sdv = idsw_get_platform_sdv();
@@ -74,7 +74,7 @@ FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "tower_cfg", "ic
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &ap_core_service};
 }
 
-FPFW_INIT_COMPONENT(ap_core_int, FPFW_INIT_DEPENDENCIES("ap_core_svc", "sos_int", "mesh"))
+FPFW_INIT_COMPONENT(ap_core_int, FPFW_INIT_DEPENDENCIES("ap_core_svc", "sos_int", "mesh_stg_2"))
 {
     static ap_core_interface_t ap_core_interface;
     ap_core_interface_init(fpfw_init_get_handle("ap_core_svc"), &ap_core_interface);

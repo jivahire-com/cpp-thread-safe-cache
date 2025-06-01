@@ -166,6 +166,8 @@ void i3c_controller_read_cfg_knobs_from_spi(void)
     temp_lib_i3c_cfg.reg_scl_i2c_fm_timing = config_get_reg_scl_i2c_fm_timing();
     temp_lib_i3c_cfg.reg_scl_i2c_fmp_timing = config_get_reg_scl_i2c_fmp_timing();
     temp_lib_i3c_cfg.reg_scl_ext_lcnt_timing = config_get_reg_scl_ext_lcnt_timing();
+    temp_lib_i3c_cfg.vdd = config_get_vdd();
+    temp_lib_i3c_cfg.vddq = config_get_vddq();
 
     FPFW_DBGPRINT_INFO("i3c_speed 0x%x\n", temp_lib_i3c_cfg.i3c_speed);
     FPFW_DBGPRINT_INFO("reg_scl_ext_termn_lcnt_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_ext_termn_lcnt_timing);
@@ -176,6 +178,8 @@ void i3c_controller_read_cfg_knobs_from_spi(void)
     FPFW_DBGPRINT_INFO("reg_scl_i2c_fm_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_i2c_fm_timing);
     FPFW_DBGPRINT_INFO("reg_scl_i2c_fmp_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_i2c_fmp_timing);
     FPFW_DBGPRINT_INFO("reg_scl_ext_lcnt_timing 0x%x\n", temp_lib_i3c_cfg.reg_scl_ext_lcnt_timing);
+    FPFW_DBGPRINT_INFO("vdd %d\n", temp_lib_i3c_cfg.vdd);
+    FPFW_DBGPRINT_INFO("vddq %d\n", temp_lib_i3c_cfg.vddq);
 
     // Set the Config Knobs in lib_i3c
     i3c_master_set_cfg_knobs(&temp_lib_i3c_cfg);

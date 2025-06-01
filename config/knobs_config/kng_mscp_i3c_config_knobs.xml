@@ -21,6 +21,8 @@
     <Knob name="reg_scl_i2c_fm_timing" type="uint32_t" default="0x100010" help="Set value for REG_SCL_I2C_FM_TIMING" />
     <Knob name="reg_scl_i2c_fmp_timing" type="uint32_t" default="0x100010" help="Set value for REG_SCL_I2C_FMP_TIMING" />
     <Knob name="reg_scl_ext_lcnt_timing" type="uint32_t" default="0x20202020" help="Set value for REG_SCL_EXT_LCNT_TIMING" />
+    <Knob name="vdd" type="uint16_t" default="0x0" help="Set PMIC value for VDD to the DIMM (Rails SWA, SWB), PMIC Internal default if knob is 0, Range 1000 to 1200" />
+    <Knob name="vddq" type="uint16_t" default="0x0" help="Set PMIC value for VDDQ to the DIMM (Rails SWC), PMIC Internal default if knob is 0, Range 1000 to 1200" />
   </Knobs>
 
 </ConfigSchema>

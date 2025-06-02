@@ -255,6 +255,7 @@ add_library(${TARGET}
         cli_init.c
         debug_init.c
         dfwk_init.c
+        dma_init.c
         err_domain_mcp_init.c
         etc_etd_init.c
         etr_init.c

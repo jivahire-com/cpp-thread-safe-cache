@@ -48,6 +48,7 @@ extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
 static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
+    data_smpl_init_constants();
     comp_metrics_reset_2_mins_metrics();
     comp_metrics_reset_24_hrs_metrics();
     return 0;
@@ -152,7 +153,6 @@ TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
     uint32_t entry_count = 10;
     uint32_t residency_mS = 100;
     uint8_t max_pstate = 5;
-    uint8_t type_id = THROTTLE_SOURCE_TEMPERATURE;
 
     for (throttle_index = 0; throttle_index < NUMBER_OF_THROTTLE_TYPES; throttle_index++)
     {
@@ -160,7 +160,6 @@ TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
         core[TEST_CORE_ID_5].throttle_info[throttle_index].entry_count = entry_count;
         core[TEST_CORE_ID_5].throttle_info[throttle_index].max_pstate = max_pstate;
         core[TEST_CORE_ID_5].throttle_info[throttle_index].residency_mS = residency_mS;
-        core[TEST_CORE_ID_5].throttle_info[throttle_index].type_id = type_id;
     }
     data_proc_tlm_cmpnt_get_pwr_core_throttle_data(TEST_CORE_ID_5, &throttle_array);
 
@@ -170,7 +169,7 @@ TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
         assert_int_equal(throttle_array[throttle_index].entry_count, entry_count);
         assert_int_equal(throttle_array[throttle_index].max_pstate, max_pstate);
         assert_int_equal(throttle_array[throttle_index].residency_mS, residency_mS);
-        assert_int_equal(throttle_array[throttle_index].type_id, type_id);
+        assert_int_equal(throttle_array[throttle_index].type_id, throttle_index);
     }
 
     // setup for failure case.
@@ -179,7 +178,6 @@ TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
     core[TEST_CORE_ID_5].throttle_info[index].entry_count = 12;
     core[TEST_CORE_ID_5].throttle_info[index].max_pstate = 28;
     core[TEST_CORE_ID_5].throttle_info[index].residency_mS = 110;
-    core[TEST_CORE_ID_5].throttle_info[index].type_id = THROTTLE_SOURCE_TEMPERATURE;
     data_proc_tlm_cmpnt_get_pwr_core_throttle_data(NUMBER_OF_CORES_PER_DIE, &throttle_array);
 
     throttle_index = 0;
@@ -194,8 +192,6 @@ TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
                      core[TEST_CORE_ID_5].throttle_info[throttle_index].reserved);
     assert_int_not_equal(throttle_array[throttle_index].residency_mS,
                          core[TEST_CORE_ID_5].throttle_info[throttle_index].residency_mS);
-    assert_int_equal(throttle_array[throttle_index].type_id,
-                     core[TEST_CORE_ID_5].throttle_info[throttle_index].type_id);
 }
 
 TEST_FUNCTION(test_get_pwr_core_rack_priority_data, test_setup, test_teardown)

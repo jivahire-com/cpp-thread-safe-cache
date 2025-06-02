@@ -109,6 +109,11 @@ void data_smpl_init_constants()
             core[core_id].pstate[pstate_id].pstate_id = pstate_id;
             core[core_id].pstate[pstate_id].frequency_Mhz = dvfs_get_freq_from_plimit(pstate_id);
         }
+
+        for (uint8_t throttle_type = 0; throttle_type < NUMBER_OF_THROTTLE_TYPES; throttle_type++)
+        {
+            core[core_id].throttle_info[throttle_type].type_id = throttle_type;
+        }
     }
 }
 

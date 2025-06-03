@@ -28,6 +28,7 @@ extern "C" {
 
 /*-------- Function Prototypes -----------*/
 d2d_counter_sync_knobs_t __real_config_get_d2d_counter_sync_knobs(void);
+bool __real_config_get_d2d_counter_sync_enable_die1();
 
 /*-- Declarations (Statics and globals) --*/
 jmp_buf cd_mock_jump_buf;
@@ -91,6 +92,13 @@ d2d_counter_sync_knobs_t __wrap_config_get_d2d_counter_sync_knobs(void)
     d2d_counter_sync_knobs_t* d2d_config = mock_ptr_type(d2d_counter_sync_knobs_t*);
     function_called();
     return *d2d_config;
+}
+
+bool __wrap_config_get_d2d_counter_sync_enable_die1()
+{
+    bool enable_die1 = mock_type(bool);
+    function_called();
+    return enable_die1;
 }
 
 //! Test Helper APIs
@@ -209,6 +217,22 @@ TEST_FUNCTION(test_d2d_cntr_sync_enable_die1_fail, nullptr, nullptr)
     }
 }
 
+TEST_FUNCTION(test_d2d_cntr_sync_enable_die1_knob_override, nullptr, cleanup)
+{
+    //! Setup expectations for die 1
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON); //! anything but SVP
+    expect_value_wrap_d2d_counter_sync_configure_d1_params();                   //! die 1 config only
+    d2d_cntr_sync_init(DIE_1, CPU_SCP);
+    //! Override the knob to disable die 1 sync
+    will_return(__wrap_config_get_d2d_counter_sync_enable_die1, false);
+    expect_function_call(__wrap_config_get_d2d_counter_sync_enable_die1);
+
+    //! FUT, expect pass, d2d_counter_sync_enable(DIE_1) will not be called
+    d2d_cntr_sync_enable();
+}
+
+
 TEST_FUNCTION(test_d2d_cntr_sync_enable_die1_success, nullptr, cleanup)
 {
     //! Setup expectations for die 1
@@ -216,6 +240,10 @@ TEST_FUNCTION(test_d2d_cntr_sync_enable_die1_success, nullptr, cleanup)
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON); //! anything but SVP
     expect_value_wrap_d2d_counter_sync_configure_d1_params();                   //! die 1 config only
     d2d_cntr_sync_init(DIE_1, CPU_SCP);
+    //! Setup default cfg knob expectations
+    bool default_knob_value = __real_config_get_d2d_counter_sync_enable_die1();
+    will_return(__wrap_config_get_d2d_counter_sync_enable_die1, default_knob_value);
+    expect_function_call(__wrap_config_get_d2d_counter_sync_enable_die1);
 
     //! FUT, expect pass
     expect_value(__wrap_d2d_counter_sync_enable, die_num, DIE_1);

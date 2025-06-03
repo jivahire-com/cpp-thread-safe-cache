@@ -17,6 +17,8 @@
   <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
     <!--  D2d counter Knobs -->
     <Knob name="d2d_counter_sync_knobs" type="d2d_counter_sync_knobs_t" help="D2D counter sync knob structure" />
+    <Knob name="d2d_counter_sync_enable_die1" type="bool" default="true" help="Enable/Disable die 1 d2d counter sync logic" />
+    <!-- End D2d counter Knobs -->
   </Knobs>
 
 </ConfigSchema>

@@ -105,8 +105,15 @@ void d2d_cntr_sync_enable(void)
         //! Enable d2d counter sync for SCP DIE 1
         if ((d2d_cntr_sync_data.die_num == DIE_1) && (d2d_cntr_sync_data.cpu_type == CPU_SCP))
         {
-            d2d_counter_sync_enable(SOC_D1);
-            FPFW_DBGPRINT_INFO("[D2D CNTR SYNC] Enabled for DIE 1\n");
+            if (config_get_d2d_counter_sync_enable_die1())
+            {
+                d2d_counter_sync_enable(SOC_D1);
+                FPFW_DBGPRINT_INFO("[D2D CNTR SYNC] Enabled for DIE 1, Default Knob Setting\n");
+            }
+            else
+            {
+                FPFW_DBGPRINT_INFO("[D2D CNTR SYNC] Not Enabled for DIE 1, Override default Knob Setting\n");
+            }
         }
     }
 }

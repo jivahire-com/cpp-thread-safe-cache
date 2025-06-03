@@ -23,3 +23,8 @@ FE3ED49F-B173-41ED-9076-356661D46A42,core_disable_value_64_95,0xFFFFFFFF,"overri
 *,pcie_rpss2_rp0_cfg.silibs_rp_cfg.pcie_rp_cap_gen_speed,PCIE_GEN_5,"override to Gen5 for Speed Adapter"
 *,pcie_rpss5_rp0_cfg.silibs_rp_cfg.pcie_rp_cap_gen_speed,PCIE_GEN_5,"override to Gen5 for Speed Adapter"
 FE3ED49F-B173-41ED-9076-356661D46A42,usb_cfg.power_on_port1,false,"override for fpga"
+FE3ED49F-B173-41ED-9076-356661D46A42,d2d_counter_sync_knobs.d2d_counter_sync_d0_cfg.network_delay,0x5000,"override for fpga"
+FE3ED49F-B173-41ED-9076-356661D46A42,d2d_counter_sync_knobs.d2d_counter_sync_d0_cfg.round_trip_delay,0x3F,"override for fpga"
+FE3ED49F-B173-41ED-9076-356661D46A42,d2d_counter_sync_knobs.d2d_counter_sync_d0_cfg.turn_ar_time,0x3F,"override for fpga"
+FE3ED49F-B173-41ED-9076-356661D46A42,d2d_counter_sync_knobs.d2d_counter_sync_d1_cfg.turn_ar_time,0x3F,"override for fpga"
+FE3ED49F-B173-41ED-9076-356661D46A42,d2d_counter_sync_knobs.d2d_counter_sync_d1_cfg.exp_updtime_threshold,0x100,"override for fpga"

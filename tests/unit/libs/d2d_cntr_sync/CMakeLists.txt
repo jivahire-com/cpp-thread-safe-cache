@@ -37,4 +37,5 @@ mock_target(${TARGET}
     idhw_is_single_die_boot_en
     crash_dump_bug_check
     config_get_d2d_counter_sync_knobs
+    config_get_d2d_counter_sync_enable_die1
 )

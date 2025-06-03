@@ -73,6 +73,10 @@ mock_target(${TARGET}
     pciess_rp_get_link_train_done
     intu_get_interrupt_status
     idsw_get_platform_sdv
+    oi_pcie_rp_dbi_hide_dpc_cap
+    oi_pcie_ss_set_laattr_rp_overrides
+    oi_pcie_rp_dbi_set_write_cacheability
+    oi_pcie_rp_dbi_set_read_cacheability
     pciess_get_entity
     pciess_config_entity
     pciess_config_ss_for_bifur
@@ -88,8 +92,7 @@ mock_target(${TARGET}
     pciess_probe
     pciess_phys_program_fw
     pcie_rp_vsecras_clear_rasdp_error_mode
-    oi_pcie_rp_dbi_hide_dpc_cap
-    oi_pcie_ss_set_laattr_rp_overrides
-    oi_pcie_rp_dbi_set_write_cacheability
-    oi_pcie_rp_dbi_set_read_cacheability
+    ras_pcie_vsecras_agent_probe
+    ras_pcie_dtim_agent_probe
+    ras_pcie_ltim_agent_probe
 )

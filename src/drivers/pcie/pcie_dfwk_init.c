@@ -16,6 +16,7 @@
 #include <pcie_cli_helpers_i.h>
 #include <pcie_dfwk.h>
 #include <pcie_dfwk_i.h>
+#include <pcie_ras_i.h>
 #include <pcie_rpss_init_i.h>
 #include <pcie_ss_common.h>
 #include <pciess.h>
@@ -86,6 +87,15 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
     case (CLEAR_SECONDARY_BUS_RESET_REQUEST):
         rpss = pciess_get_entity(r->rpss_index);
         sts = oi_pcie_rp_dbi_reset_secondary_bus_reset(&rpss->rps[r->rp_index]);
+        break;
+    case (PROBE_VSECRAS_NODE):
+        sts = handle_pcie_vsecras_probe_request(incoming);
+        break;
+    case (PROBE_DTIM_NODE):
+        sts = handle_pcie_dtim_probe_request(incoming);
+        break;
+    case (PROBE_LTIM_NODE):
+        sts = handle_pcie_ltim_probe_request(incoming);
         break;
     case (CLI_REQUEST):
         handle_cli_request(r);

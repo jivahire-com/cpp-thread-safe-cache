@@ -34,7 +34,8 @@ extern "C" {
 #include <pcie_dfwk_i.h>
 #include <pcie_irq.h>
 #include <pcie_ss_common.h> // for pcie_ss_entity_t
-#include <silibs_status.h>  // for SILIBS_E_PARAM, SILIBS_SUCCESS
+#include <ras_common.h>
+#include <silibs_status.h> // for SILIBS_E_PARAM, SILIBS_SUCCESS
 #include <tx_api.h>
 
 cxl_region_params_t __real_config_get_cxl_params_die0(void);
@@ -368,7 +369,7 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_success, test_setup, test_teardo
     assert_int_equal(r.status, SILIBS_SUCCESS);
 }
 
-/* Test hide dpc is called if workaround is set*/
+/* Test hide dpc is called if workaround is set */
 TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_hide_dpc, test_setup, test_teardown)
 {
     /* Setup the request for an rpss */
@@ -382,7 +383,7 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_hide_dpc, test_setup, test_teard
 
     pcie_prod_cfg_workarounds_t* rpss_workarounds = get_workaround_for_rpss(r.rpss_index);
 
-    /* Set the workaround to true*/
+    /* Set the workaround to true */
     rpss_workarounds->prod_rp_cfgs[0].hide_dpc = true;
 
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
@@ -473,6 +474,141 @@ TEST_FUNCTION(test_get_rp_link_status, test_setup, test_teardown)
     int32_t ret = pcie_sched_sync_op(&(r.header));
     assert_int_equal(ret, 0);
     assert_int_equal(r.status, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_probe_vsecras_node, test_setup, test_teardown)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    ras_error_record_t error_record;
+    r.header.RequestType = PROBE_VSECRAS_NODE;
+    r.req_type = PROBE_VSECRAS_NODE;
+    r.rpss_index = RPSS2;
+    r.rp_index = 0;
+    r.p_requested_data = &error_record;
+    mock_pcie_ent.id = r.rpss_index;
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    will_return(__wrap_ras_pcie_vsecras_agent_probe, false);
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    will_return(__wrap_ras_pcie_vsecras_agent_probe, true);
+    ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_E_DEVICE);
+}
+
+TEST_FUNCTION(test_probe_vsecras_node_null_record, test_setup, test_teardown)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    r.header.RequestType = PROBE_VSECRAS_NODE;
+    r.req_type = PROBE_VSECRAS_NODE;
+    r.rpss_index = RPSS2;
+    r.rp_index = 0;
+    r.p_requested_data = nullptr;
+    mock_pcie_ent.id = r.rpss_index;
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_E_PARAM);
+}
+
+TEST_FUNCTION(test_probe_dtim_node_no_errors, test_setup, test_teardown)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    ras_error_record_t error_record;
+    r.header.RequestType = PROBE_DTIM_NODE;
+    r.req_type = PROBE_DTIM_NODE;
+    r.rpss_index = RPSS2;
+    r.rp_index = 0;
+    r.p_requested_data = &error_record;
+    mock_pcie_ent.id = r.rpss_index;
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    will_return(__wrap_ras_pcie_dtim_agent_probe, false);
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    will_return(__wrap_ras_pcie_dtim_agent_probe, true);
+    ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_E_DEVICE);
+}
+
+TEST_FUNCTION(test_probe_dtim_node_null_record, test_setup, test_teardown)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    r.header.RequestType = PROBE_DTIM_NODE;
+    r.req_type = PROBE_DTIM_NODE;
+    r.rpss_index = RPSS2;
+    r.rp_index = 0;
+    r.p_requested_data = nullptr;
+    mock_pcie_ent.id = r.rpss_index;
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_E_PARAM);
+}
+
+TEST_FUNCTION(test_probe_ltim_node_no_errors, test_setup, test_teardown)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    ras_error_record_t error_record;
+    r.header.RequestType = PROBE_LTIM_NODE;
+    r.req_type = PROBE_LTIM_NODE;
+    r.rpss_index = RPSS2;
+    r.rp_index = 0;
+    r.p_requested_data = &error_record;
+    mock_pcie_ent.id = r.rpss_index;
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    will_return(__wrap_ras_pcie_ltim_agent_probe, false);
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    will_return(__wrap_ras_pcie_ltim_agent_probe, true);
+    ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_E_DEVICE);
+}
+
+TEST_FUNCTION(test_probe_ltim_node_null_record, test_setup, test_teardown)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    r.header.RequestType = PROBE_LTIM_NODE;
+    r.req_type = PROBE_LTIM_NODE;
+    r.rpss_index = RPSS2;
+    r.rp_index = 0;
+    r.p_requested_data = nullptr;
+    mock_pcie_ent.id = r.rpss_index;
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_E_PARAM);
 }
 
 TEST_FUNCTION(test_default_async_dispatch, test_setup, test_teardown)

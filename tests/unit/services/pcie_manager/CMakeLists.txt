@@ -50,38 +50,43 @@ mock_target(${TARGET}
     # DFWK mocks
     DfwkAsyncRequestInitialize
     DfwkAsyncRequestSetCompletionRoutine
+    DfwkClientInterfaceOpen
     DfwkInterfaceSendAsync
     DfwkInterfaceSendSync
+
     # Thread X mocks
-    _txe_queue_create
-    _txe_thread_create
-    _txe_queue_send
-    _txe_queue_receive
     _txe_event_flags_create
-    _txe_event_flags_set
-    _txe_event_flags_get
     _txe_event_flags_delete
-    _txe_timer_delete
+    _txe_event_flags_get
+    _txe_event_flags_set
+    _txe_queue_create
+    _txe_queue_receive
+    _txe_queue_send
+    _txe_thread_create
+    _tx_thread_sleep
     _txe_timer_create
-    # Driver mocks
+    _txe_timer_delete
+
+    # Silibs mocks
     idsw_get_die_id
+    ras_print_record
+
+    # Driver mocks
     pcie_dfwk_init
+    pcie_dfwk_interface_init
     scp_pcie_get_manager_context
+
     # SCP support mocks
     accel_is_isolation_enabled
-    crash_dump_bug_check
-    memcpy
-    memset
-    variable_serv_copy_to_rmss_ram
-    variable_service_initialize_ctx
-    variable_service_async_set_variable
-
-    pcie_dfwk_interface_init
-    DfwkClientInterfaceOpen
-    pcie_phyfw_wait_load_event
-    _tx_thread_sleep
-    system_info_get_board_id
     config_get_overlake_rpss_index_secondary_soc
     config_get_overlake_rpss_index_primary_soc
     config_get_enable_overlake_sbr_workaround
+    crash_dump_bug_check
+    memcpy
+    memset
+    pcie_phyfw_wait_load_event
+    system_info_get_board_id
+    variable_serv_copy_to_rmss_ram
+    variable_service_async_set_variable
+    variable_service_initialize_ctx
 )

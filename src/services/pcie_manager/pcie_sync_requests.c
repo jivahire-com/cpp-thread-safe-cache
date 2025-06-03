@@ -19,6 +19,7 @@
 #include <pcie_ss_common.h>
 #include <pcie_sync_requests_i.h>
 #include <pciess.h>
+#include <ras_common.h>
 #include <silibs_status.h>
 #include <stdint.h>
 
@@ -277,7 +278,7 @@ silibs_status_t send_sync_rp_get_link_status(PDFWK_INTERFACE_HEADER iface, uint8
     return sync_req.status;
 }
 
-silibs_status_t send_sync_set_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx)
+silibs_status_t send_sync_rp_set_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx)
 {
     int32_t dfwk_status = DFWK_SUCCESS;
 
@@ -295,7 +296,6 @@ silibs_status_t send_sync_set_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface, 
     };
 
     dfwk_status = DfwkInterfaceSendSync(iface, &sync_req.header);
-
     if (DFWK_FAILED(dfwk_status))
     {
         FPFW_DBGPRINT_ERROR(
@@ -309,7 +309,7 @@ silibs_status_t send_sync_set_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface, 
     return sync_req.status;
 }
 
-silibs_status_t send_sync_clear_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx)
+silibs_status_t send_sync_rp_clear_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx)
 {
     int32_t dfwk_status = DFWK_SUCCESS;
 
@@ -327,7 +327,6 @@ silibs_status_t send_sync_clear_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface
     };
 
     dfwk_status = DfwkInterfaceSendSync(iface, &sync_req.header);
-
     if (DFWK_FAILED(dfwk_status))
     {
         FPFW_DBGPRINT_ERROR(
@@ -335,6 +334,111 @@ silibs_status_t send_sync_clear_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface
             rpss_idx,
             rp_idx,
             dfwk_status);
+        BUG_ASSERT_PARAM((dfwk_status == DFWK_SUCCESS), dfwk_status, 0);
+    }
+
+    return sync_req.status;
+}
+
+silibs_status_t send_sync_rp_probe_vsecras(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx, ras_error_record_t* error_record)
+{
+    int32_t dfwk_status = DFWK_SUCCESS;
+
+    if ((rpss_idx >= NUM_RPSS) || (rp_idx >= PCIESS_NUM_PORTS))
+    {
+        FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Invalid RPSS/RP index!\n", rpss_idx, rp_idx);
+        BUG_ASSERT_PARAM(((rpss_idx < NUM_RPSS) && (rp_idx < PCIESS_NUM_PORTS)), rpss_idx, rp_idx);
+    }
+
+    if (error_record == NULL)
+    {
+        FPFW_DBGPRINT_ERROR(
+            "RPSS[%d] RP[%d]: RAS error record pointer is NULL - cannot probe VSECRAS node!\n",
+            rpss_idx,
+            rp_idx);
+        BUG_ASSERT_PARAM((error_record != NULL), rpss_idx, rp_idx);
+    }
+
+    pcie_sync_request_t sync_req = {
+        .header = {.RequestType = PROBE_VSECRAS_NODE},
+        .rpss_index = rpss_idx,
+        .req_type = PROBE_VSECRAS_NODE,
+        .rp_index = rp_idx,
+        .p_requested_data = error_record,
+    };
+
+    dfwk_status = DfwkInterfaceSendSync(iface, &sync_req.header);
+    if (DFWK_FAILED(dfwk_status))
+    {
+        FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Failed to send PROBE_VSECRAS_NODE! dfwk_status: %d\n", rpss_idx, rp_idx, dfwk_status);
+        BUG_ASSERT_PARAM((dfwk_status == DFWK_SUCCESS), dfwk_status, 0);
+    }
+
+    return sync_req.status;
+}
+
+silibs_status_t send_sync_rp_probe_dtim(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx, ras_error_record_t* error_record)
+{
+    int32_t dfwk_status = DFWK_SUCCESS;
+
+    if ((rpss_idx >= NUM_RPSS) || (rp_idx >= PCIESS_NUM_PORTS))
+    {
+        FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Invalid RPSS/RP index!\n", rpss_idx, rp_idx);
+        BUG_ASSERT_PARAM(((rpss_idx < NUM_RPSS) && (rp_idx < PCIESS_NUM_PORTS)), rpss_idx, rp_idx);
+    }
+
+    if (error_record == NULL)
+    {
+        FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: RAS error record pointer is NULL - cannot probe DTIM node!\n", rpss_idx, rp_idx);
+        BUG_ASSERT_PARAM((error_record != NULL), rpss_idx, rp_idx);
+    }
+
+    pcie_sync_request_t sync_req = {
+        .header = {.RequestType = PROBE_DTIM_NODE},
+        .rpss_index = rpss_idx,
+        .req_type = PROBE_DTIM_NODE,
+        .rp_index = rp_idx,
+        .p_requested_data = error_record,
+    };
+
+    dfwk_status = DfwkInterfaceSendSync(iface, &sync_req.header);
+    if (DFWK_FAILED(dfwk_status))
+    {
+        FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Failed to send PROBE_DTIM_NODE! dfwk_status: %d\n", rpss_idx, rp_idx, dfwk_status);
+        BUG_ASSERT_PARAM((dfwk_status == DFWK_SUCCESS), dfwk_status, 0);
+    }
+
+    return sync_req.status;
+}
+
+silibs_status_t send_sync_rp_probe_ltim(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx, ras_error_record_t* error_record)
+{
+    int32_t dfwk_status = DFWK_SUCCESS;
+
+    if ((rpss_idx >= NUM_RPSS) || (rp_idx >= PCIESS_NUM_PORTS))
+    {
+        FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Invalid RPSS/RP index!\n", rpss_idx, rp_idx);
+        BUG_ASSERT_PARAM(((rpss_idx < NUM_RPSS) && (rp_idx < PCIESS_NUM_PORTS)), rpss_idx, rp_idx);
+    }
+
+    if (error_record == NULL)
+    {
+        FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: RAS error record pointer is NULL - cannot probe LTIM node!\n", rpss_idx, rp_idx);
+        BUG_ASSERT_PARAM((error_record != NULL), rpss_idx, rp_idx);
+    }
+
+    pcie_sync_request_t sync_req = {
+        .header = {.RequestType = PROBE_LTIM_NODE},
+        .rpss_index = rpss_idx,
+        .req_type = PROBE_LTIM_NODE,
+        .rp_index = rp_idx,
+        .p_requested_data = error_record,
+    };
+
+    dfwk_status = DfwkInterfaceSendSync(iface, &sync_req.header);
+    if (DFWK_FAILED(dfwk_status))
+    {
+        FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Failed to send PROBE_LTIM_NODE! dfwk_status: %d\n", rpss_idx, rp_idx, dfwk_status);
         BUG_ASSERT_PARAM((dfwk_status == DFWK_SUCCESS), dfwk_status, 0);
     }
 

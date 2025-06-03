@@ -14,6 +14,7 @@
 #include <DfwkCommon.h>     // for PDFWK_ASYNC_REQUEST_HEADER, DFWK_ASYNC_REQUE...
 #include <FpFwCMocka.h>     // for check_expected_ptr, assert_non_null, assert_...
 #include <accelerator_ip.h> // For Accel isolation
+#include <cmocka.h>
 #include <fpfw_status.h>
 #include <idsw_kng.h>
 #include <pcie_dfwk.h>      // for pcie_async_request_t, pciess_device_t
@@ -221,4 +222,9 @@ uint8_t __wrap_config_get_overlake_rpss_index_primary_soc(void)
 uint8_t __wrap_config_get_enable_overlake_sbr_workaround(void)
 {
     return mock_type(uint8_t);
+}
+
+void __wrap_ras_print_record(ras_error_record_t* record)
+{
+    assert_non_null(record);
 }

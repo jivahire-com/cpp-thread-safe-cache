@@ -7,6 +7,7 @@ add_library(${TARGET}
     pcie_cli_helpers.c
     pcie_dfwk_init.c
     pcie_irq.c
+    pcie_ras.c
     pcie_rpss_init.c
     pcie_platform_overrides.c
 )

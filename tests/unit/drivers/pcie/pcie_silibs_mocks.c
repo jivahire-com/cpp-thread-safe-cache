@@ -235,3 +235,24 @@ int __wrap_pcie_rp_vsecras_clear_rasdp_error_mode(pcie_rp_entity_t* rp)
     assert_non_null(rp);
     return mock_type(silibs_status_t);
 }
+
+bool __wrap_ras_pcie_vsecras_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* record)
+{
+    assert_non_null(agent);
+    assert_non_null(record);
+    return mock_type(bool);
+}
+
+bool __wrap_ras_pcie_dtim_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* record)
+{
+    assert_non_null(agent);
+    assert_non_null(record);
+    return mock_type(bool);
+}
+
+bool __wrap_ras_pcie_ltim_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* record)
+{
+    assert_non_null(agent);
+    assert_non_null(record);
+    return mock_type(bool);
+}

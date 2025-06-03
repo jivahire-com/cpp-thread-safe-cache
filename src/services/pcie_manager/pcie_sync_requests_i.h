@@ -111,7 +111,7 @@ silibs_status_t send_sync_rp_get_link_status(PDFWK_INTERFACE_HEADER iface, uint8
  * @retval SILIBS_SUCCESS: SBR bit set successfully.
  * @retval Other:          Error occurred while setting SBR bit.
  */
-silibs_status_t send_sync_set_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx);
+silibs_status_t send_sync_rp_set_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx);
 
 /**
  * @brief Send a synchronous request to clear the secondary bus reset for the specified RP.
@@ -122,4 +122,46 @@ silibs_status_t send_sync_set_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface, 
  * @retval SILIBS_SUCCESS: SBR bit cleared successfully.
  * @retval Other:          Error occurred while clearing SBR bit.
  */
-silibs_status_t send_sync_clear_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx);
+silibs_status_t send_sync_rp_clear_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx);
+
+/**
+ * @brief Send a synchronous request to probe the VSECRAS RAS agent for
+ *        the specified RPSS and RP combination.
+ *
+ * @param[in] iface         - Pointer to the driver interface header for this RPSS.
+ * @param[in] rpss_idx      - The RPSS instance index.
+ * @param[in] rp_idx        - The root port index.
+ * @param[out] error_record - Pointer to a RAS error record structure to store any errors found during probing.
+ *
+ * @retval SILIBS_SUCCESS:      No errors found after probing the VSECRAS agent.
+ * @retval SILIBS_E_DEVICE:     Errors found and returned during probing.
+ */
+silibs_status_t send_sync_rp_probe_vsecras(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx, ras_error_record_t* error_record);
+
+/**
+ * @brief Send a synchronous request to probe the DTIM RAS agent for
+ *        the specified RPSS and RP combination.
+ *
+ * @param[in] iface         - Pointer to the driver interface header for this RPSS.
+ * @param[in] rpss_idx      - The RPSS instance index.
+ * @param[in] rp_idx        - The root port index.
+ * @param[out] error_record - Pointer to a RAS error record structure to store any errors found during probing.
+ *
+ * @retval SILIBS_SUCCESS:      No errors found after probing the dtim agent.
+ * @retval SILIBS_E_DEVICE:     Errors found and returned during probing.
+ */
+silibs_status_t send_sync_rp_probe_dtim(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx, ras_error_record_t* error_record);
+
+/**
+ * @brief Send a synchronous request to probe the LTIM RAS agent for
+ *        the specified RPSS and RP combination.
+ *
+ * @param[in] iface         - Pointer to the driver interface header for this RPSS.
+ * @param[in] rpss_idx      - The RPSS instance index.
+ * @param[in] rp_idx        - The root port index.
+ * @param[out] error_record - Pointer to a RAS error record structure to store any errors found during probing.
+ *
+ * @retval SILIBS_SUCCESS:      No errors found after probing the ltim agent.
+ * @retval SILIBS_E_DEVICE:     Errors found and returned during probing.
+ */
+silibs_status_t send_sync_rp_probe_ltim(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx, ras_error_record_t* error_record);

@@ -42,6 +42,9 @@ typedef enum _pcie_rp_sync_request_t
     GET_RPSS_ENTITY_REQUEST,
     GET_RP_READY_REQUEST,
     GET_LINK_STATUS,
+    PROBE_VSECRAS_NODE,
+    PROBE_DTIM_NODE,
+    PROBE_LTIM_NODE,
     CLI_REQUEST,
     PCIE_MAX_SYNC_REQ
 } pcie_rp_sync_request_t;

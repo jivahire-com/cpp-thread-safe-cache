@@ -13,6 +13,7 @@
 #include <DfwkPtrTypes.h>
 #include <fpfw_cfg_mgr.h>
 #include <pcie_dfwk.h> // for pcie_async_request_t, pcie_dfwk_interf...
+#include <pcie_error_management_i.h>
 #include <pcie_link_management_i.h>
 #include <pcie_manager_i.h> // for rpss_req_completion_cb, rpss_service_t...
 #include <pcie_rp_event_handler.h>
@@ -39,14 +40,13 @@ inline uint32_t CLEAR_BIT(uint32_t number, unsigned bit_pos)
 /*-- Declarations (Statics and globals) --*/
 /*-- Static Functions --*/
 static bool rp_is_overlake(uint8_t rpss_idx, uint8_t rp_idx)
-
 {
     if (rp_idx != 0)
     {
         return false;
     }
 
-    /* Check for mirrored config for 2S*/
+    /* Check for mirrored config for 2S */
     uint8_t soc_position = BOARD_ID_GET_SOC_POSITION(system_info_get_board_id());
     if (soc_position == 0x01)
     {
@@ -55,6 +55,7 @@ static bool rp_is_overlake(uint8_t rpss_idx, uint8_t rp_idx)
 
     return (config_get_overlake_rpss_index_primary_soc() == rpss_idx);
 }
+
 /*-- Global Functions --*/
 void process_wait_for_event_data(pcie_manager_context_t* ctx, pciess_completion_request_t* req)
 {
@@ -75,6 +76,7 @@ void process_wait_for_event_data(pcie_manager_context_t* ctx, pciess_completion_
             handle_pcie_link_down_event(ctx, req);
             break;
         }
+
         case PCIESS_RP_INT_LINK_UP: {
             int_mask = CLEAR_BIT(int_mask, PCIESS_RP_INT_LINK_UP);
             status = send_sync_rp_get_link_status((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
@@ -85,23 +87,39 @@ void process_wait_for_event_data(pcie_manager_context_t* ctx, pciess_completion_
                 {
                     FPFW_DBGPRINT_INFO("Link training failed for Overlake RP on PCIe SS %d, issue SBR\n", rpss_idx);
                     /* Send the SBR, this will result in link-down flow being triggered */
-                    send_sync_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
+                    send_sync_rp_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
                     tx_thread_sleep(WAIT_SBR_MS);
-                    send_sync_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
+                    send_sync_rp_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
                     ovl_lt_retries++;
                 }
                 else if (status == SILIBS_SUCCESS)
                 {
-                    /* We should only retry on cold reset so set it to the max to ensure any future link down events don't trigger SBR flow */
+                    /*
+                     * We should only retry on cold reset so set it to the max
+                     * to ensure any future link down events don't trigger SBR
+                     * flow
+                     */
                     ovl_lt_retries = OVL_LT_RETRIES_MAX;
                 }
             }
             break;
         }
 
-        case PCIESS_RP_INT_DTIM:
-        case PCIESS_RP_INT_LTIM:
         case PCIESS_RP_INT_RASDP:
+            int_mask = CLEAR_BIT(int_mask, PCIESS_RP_INT_RASDP);
+            handle_pcie_vsecras_event(ctx, req);
+            break;
+
+        case PCIESS_RP_INT_DTIM:
+            int_mask = CLEAR_BIT(int_mask, PCIESS_RP_INT_DTIM);
+            handle_pcie_dtim_event(ctx, req);
+            break;
+
+        case PCIESS_RP_INT_LTIM:
+            int_mask = CLEAR_BIT(int_mask, PCIESS_RP_INT_LTIM);
+            handle_pcie_ltim_event(ctx, req);
+            break;
+
         case PCIESS_RP_INT_HP_PME:
         case PCIESS_RP_INT_WAKEUP:
         case PCIESS_RP_INT_PM_PME:

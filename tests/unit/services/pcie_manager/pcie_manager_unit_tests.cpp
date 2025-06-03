@@ -502,6 +502,81 @@ TEST_FUNCTION(test_process_wait_for_event_linkdown_rp_not_ready, NULL, NULL)
     }
 }
 
+/* Test RASDP event */
+TEST_FUNCTION(test_process_wait_for_event_rasdp, NULL, NULL)
+{
+    /* Setup BIT3 (RASDP) in the wait for event completion */
+    pciess_completion_request_t cmpl_req;
+    cmpl_req.async_data.int_mask = (1 << 3);
+
+    for (uint8_t i = RPSS0; i < RPSS7; i++)
+    {
+        ctx.rpss_idx = (RPSS_INSTANCE)i;
+        cmpl_req.rp_index = 0;
+        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_VSECRAS_NODE);
+        will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+        will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_DEVICE);
+        will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_VSECRAS_NODE);
+        will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+        will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+        will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+        process_wait_for_event_data(&ctx, &cmpl_req);
+    }
+}
+
+/* Test DTIM event */
+TEST_FUNCTION(test_process_wait_for_event_dtim, NULL, NULL)
+{
+    /* Setup BIT1 (DTIM) in the wait for event completion */
+    pciess_completion_request_t cmpl_req;
+    cmpl_req.async_data.int_mask = (1 << 1);
+
+    for (uint8_t i = RPSS0; i < RPSS7; i++)
+    {
+        ctx.rpss_idx = (RPSS_INSTANCE)i;
+        cmpl_req.rp_index = 0;
+        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_DTIM_NODE);
+        will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+        will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_DEVICE);
+        will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_DTIM_NODE);
+        will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+        will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+        will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+        process_wait_for_event_data(&ctx, &cmpl_req);
+    }
+}
+
+/* Test LTIM event */
+TEST_FUNCTION(test_process_wait_for_event_ltim, NULL, NULL)
+{
+    /* Setup BIT2 (LTIM) in the wait for event completion */
+    pciess_completion_request_t cmpl_req;
+    cmpl_req.async_data.int_mask = (1 << 2);
+
+    for (uint8_t i = RPSS0; i < RPSS7; i++)
+    {
+        ctx.rpss_idx = (RPSS_INSTANCE)i;
+        cmpl_req.rp_index = 0;
+        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_LTIM_NODE);
+        will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+        will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_DEVICE);
+        will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_LTIM_NODE);
+        will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+        will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+        will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+        process_wait_for_event_data(&ctx, &cmpl_req);
+    }
+}
+
 /* Test other cases which we don't currently handle */
 TEST_FUNCTION(test_process_wait_for_event_dpc_handler, NULL, NULL)
 {
@@ -519,7 +594,7 @@ TEST_FUNCTION(test_process_wait_for_event_dpc_handler, NULL, NULL)
 /* Test other cases which we don't currently handle */
 TEST_FUNCTION(test_process_wait_for_event_unhandled, NULL, NULL)
 {
-    for (uint8_t i = 1; i <= 12; i++)
+    for (uint8_t i = 4; i <= 12; i++)
     {
         pciess_completion_request_t cmpl_req;
         cmpl_req.async_data.int_mask = (1 << i);
@@ -862,7 +937,7 @@ TEST_FUNCTION(test_send_sync_rp_get_link_status_dfwk_fail, NULL, NULL)
     }
 }
 
-TEST_FUNCTION(test_send_sync_set_secondary_bus_reset_pass, NULL, NULL)
+TEST_FUNCTION(test_send_sync_rp_set_secondary_bus_reset_pass, NULL, NULL)
 {
     ctx.rpss_idx = (RPSS_INSTANCE)0x01;
 
@@ -871,11 +946,11 @@ TEST_FUNCTION(test_send_sync_set_secondary_bus_reset_pass, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
 
-    silibs_status_t sts = send_sync_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
+    silibs_status_t sts = send_sync_rp_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
     assert_int_equal(sts, SILIBS_SUCCESS);
 }
 
-TEST_FUNCTION(test_send_sync_set_secondary_bus_reset_fail, NULL, NULL)
+TEST_FUNCTION(test_send_sync_rp_set_secondary_bus_reset_dfwk_fail, NULL, NULL)
 {
     ctx.rpss_idx = (RPSS_INSTANCE)0x01;
 
@@ -885,11 +960,11 @@ TEST_FUNCTION(test_send_sync_set_secondary_bus_reset_fail, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, -1);
     expect_function_calls(__wrap_crash_dump_bug_check, 1);
 
-    silibs_status_t sts = send_sync_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
+    silibs_status_t sts = send_sync_rp_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
     assert_int_equal(sts, SILIBS_SUCCESS);
 }
 
-TEST_FUNCTION(test_send_sync_clear_secondary_bus_reset_pass, NULL, NULL)
+TEST_FUNCTION(test_send_sync_rp_clear_secondary_bus_reset_pass, NULL, NULL)
 {
     ctx.rpss_idx = (RPSS_INSTANCE)0x01;
 
@@ -898,11 +973,11 @@ TEST_FUNCTION(test_send_sync_clear_secondary_bus_reset_pass, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
 
-    silibs_status_t sts = send_sync_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
+    silibs_status_t sts = send_sync_rp_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
     assert_int_equal(sts, SILIBS_SUCCESS);
 }
 
-TEST_FUNCTION(test_send_sync_clear_secondary_bus_reset_fail, NULL, NULL)
+TEST_FUNCTION(test_send_sync_rp_clear_secondary_bus_reset_dfwk_fail, NULL, NULL)
 {
     ctx.rpss_idx = (RPSS_INSTANCE)0x01;
 
@@ -912,7 +987,94 @@ TEST_FUNCTION(test_send_sync_clear_secondary_bus_reset_fail, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, -1);
     expect_function_calls(__wrap_crash_dump_bug_check, 1);
 
-    silibs_status_t sts = send_sync_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
+    silibs_status_t sts = send_sync_rp_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
+    assert_int_equal(sts, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_send_sync_rp_probe_vsecras_pass, NULL, NULL)
+{
+    ctx.rpss_idx = (RPSS_INSTANCE)0x01;
+    ras_error_record_t mock_record;
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_VSECRAS_NODE);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    silibs_status_t sts = send_sync_rp_probe_vsecras((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01, &mock_record);
+    assert_int_equal(sts, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_send_sync_rp_probe_vsecras_dfwk_fail, NULL, NULL)
+{
+    ctx.rpss_idx = (RPSS_INSTANCE)0x01;
+    ras_error_record_t mock_record;
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_VSECRAS_NODE);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, -1);
+    expect_function_calls(__wrap_crash_dump_bug_check, 1);
+
+    silibs_status_t sts = send_sync_rp_probe_vsecras((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01, &mock_record);
+    assert_int_equal(sts, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_send_sync_rp_probe_dtim_pass, NULL, NULL)
+{
+    ctx.rpss_idx = (RPSS_INSTANCE)0x01;
+    ras_error_record_t mock_record;
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_DTIM_NODE);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    silibs_status_t sts = send_sync_rp_probe_dtim((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01, &mock_record);
+    assert_int_equal(sts, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_send_sync_rp_probe_dtim_dfwk_fail, NULL, NULL)
+{
+    ctx.rpss_idx = (RPSS_INSTANCE)0x01;
+    ras_error_record_t mock_record;
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_DTIM_NODE);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, -1);
+    expect_function_calls(__wrap_crash_dump_bug_check, 1);
+
+    silibs_status_t sts = send_sync_rp_probe_dtim((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01, &mock_record);
+    assert_int_equal(sts, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_send_sync_rp_probe_ltim_pass, NULL, NULL)
+{
+    ctx.rpss_idx = (RPSS_INSTANCE)0x01;
+    ras_error_record_t mock_record;
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_LTIM_NODE);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    silibs_status_t sts = send_sync_rp_probe_ltim((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01, &mock_record);
+    assert_int_equal(sts, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_send_sync_rp_probe_ltim_dfwk_fail, NULL, NULL)
+{
+    ctx.rpss_idx = (RPSS_INSTANCE)0x01;
+    ras_error_record_t mock_record;
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_LTIM_NODE);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, -1);
+    expect_function_calls(__wrap_crash_dump_bug_check, 1);
+
+    silibs_status_t sts = send_sync_rp_probe_ltim((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01, &mock_record);
     assert_int_equal(sts, SILIBS_SUCCESS);
 }
 
@@ -922,8 +1084,9 @@ TEST_FUNCTION(test_all_sync_req_invalid_ids, NULL, NULL)
     RPSS_INSTANCE invalid_rpss_id = (RPSS_INSTANCE)0xFF;
     uint8_t valid_rp_id = 0x03;
     uint8_t invalid_rp_id = 0xFF;
+    ras_error_record_t mock_record;
 
-    expect_function_calls(__wrap_crash_dump_bug_check, 14);
+    expect_function_calls(__wrap_crash_dump_bug_check, 20);
     should_return = false;
 
     if (!bugcheck_mock_return())
@@ -978,22 +1141,52 @@ TEST_FUNCTION(test_all_sync_req_invalid_ids, NULL, NULL)
 
     if (!bugcheck_mock_return())
     {
-        send_sync_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, invalid_rpss_id, valid_rp_id);
+        send_sync_rp_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, invalid_rpss_id, valid_rp_id);
     }
 
     if (!bugcheck_mock_return())
     {
-        send_sync_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id);
+        send_sync_rp_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id);
     }
 
     if (!bugcheck_mock_return())
     {
-        send_sync_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, invalid_rpss_id, valid_rp_id);
+        send_sync_rp_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, invalid_rpss_id, valid_rp_id);
     }
 
     if (!bugcheck_mock_return())
     {
-        send_sync_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id);
+        send_sync_rp_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        send_sync_rp_probe_vsecras((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id, &mock_record);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        send_sync_rp_probe_dtim((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id, &mock_record);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        send_sync_rp_probe_ltim((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id, &mock_record);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        send_sync_rp_probe_vsecras((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, valid_rp_id, nullptr);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        send_sync_rp_probe_dtim((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, valid_rp_id, nullptr);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        send_sync_rp_probe_ltim((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, valid_rp_id, nullptr);
     }
 }
 

@@ -41,7 +41,9 @@ static void setup_ap_loop_to_self(uint64_t rvbaraddr)
     *(volatile uint32_t*)translated_rvbar = ARM64_LOOP;
 }
 
-FPFW_INIT_COMPONENT(ap_core_svc, FPFW_INIT_DEPENDENCIES("dfwk", "mesh_stg_2", "icc_hspmbx", "atu_svc", "sysinfo", "pex_rng"), "core_info")
+FPFW_INIT_COMPONENT(ap_core_svc,
+                    FPFW_INIT_DEPENDENCIES("dfwk", "mesh_stg_2", "icc_hspmbx", "atu_svc", "sysinfo", "pex_rng"),
+                    "core_info")
 {
     // only call idsw_get_platform_sdv() once
     KNG_PLAT_ID platform_sdv = idsw_get_platform_sdv();

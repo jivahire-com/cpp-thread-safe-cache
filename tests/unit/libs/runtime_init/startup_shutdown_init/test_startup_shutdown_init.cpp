@@ -133,6 +133,8 @@ TEST_FUNCTION(sos_init_sos_int, nullptr, nullptr)
     expect_value(__wrap_sos_interface_init, p_device, &sos_device);
     expect_value(__wrap_sos_interface_init, shared, false);
 
+    will_return(__wrap_fpfw_init_get_handle, &sos_device);
+
     // now the ssi registration
     expect_not_value(__wrap_sos_register_ssi, p_interface, NULL);
     // p_registration and p_ssi_interface come from static allocations in the function
@@ -146,6 +148,10 @@ TEST_FUNCTION(sos_init_sos_int, nullptr, nullptr)
 
     expect_any(__wrap_fpfw_icc_base_recv, icc_ctx);
     expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    expect_any(__wrap_fpfw_icc_base_recv, icc_ctx);
+    expect_any(__wrap_fpfw_icc_base_recv, params->recv_cmd_code);
     will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
 
     // now handle unit test of phase start requests

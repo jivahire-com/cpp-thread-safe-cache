@@ -269,6 +269,13 @@ void sos_worker_thread_function(ULONG service_ctx)
             pstartup_shutdown_request_t shutdown_req = (pstartup_shutdown_request_t)message.p_request;
             shutdown_req->result = KNG_SUCCESS;
 
+            // Send D2D shutdown request to initiate shutdown sequence on remote die
+            if (message.data.shutdown_type != REMOTE_SCP_SHUTDOWN)
+            {
+                SOS_LOG_INFO("Sending D2D shutdown request for type %d", message.data.shutdown_type);
+                sos_send_d2d_shutdown_request();
+            }
+
             // notify all registered interfaces
             sos_notify_ssi_shutdown(p_sos_ctx, message.data.shutdown_type);
 

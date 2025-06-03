@@ -25,10 +25,9 @@ extern "C" {
 } // extern "C"
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define TEST_TYPE_COLD          COLD_BOOT
-#define TEST_STAGE_BOOT         STARTUP_PHASE_MSCP_ASYNC
-#define TEST_COMPLETION_ROUTINE ((DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE)0x123456)
-#define TEST_COMPLETION_CONTEXT ((void*)0x65430)
+#define TEST_TYPE_COLD  COLD_BOOT
+#define TEST_STAGE_BOOT STARTUP_PHASE_MSCP_ASYNC
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/

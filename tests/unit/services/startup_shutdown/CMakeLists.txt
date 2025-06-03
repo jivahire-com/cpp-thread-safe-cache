@@ -15,6 +15,7 @@ target_link_libraries(${TARGET}
         ms::lib::threadx
         ms::lib::error_codes
         ms::lib::system_info
+        ms::driver::icc_mhu_trans
         ms::mocks::event_trace
         ms::mocks::threadx
         ms::service::scp_startup_shutdown
@@ -38,6 +39,8 @@ target_include_directories(${TARGET}
 
 # Generic ports implmented within this project
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
 lint_target(${TARGET})
 format_target(${TARGET})
@@ -64,6 +67,7 @@ mock_target(${TARGET}
     sos_queue_start_phase
     sos_thread_init
     sos_quiesce
+    sos_shutdown
     ssi_shutdown
     ssi_quiesce
     ssi_startup_stage_complete

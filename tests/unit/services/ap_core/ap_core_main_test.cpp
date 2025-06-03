@@ -543,6 +543,7 @@ AP_CORE_TEST(dispatch_shutdown, setup, NULL)
     test_request.header.RequestType = SSI_SHUTDOWN_ASYNC;
     expect_not_value(__wrap_FpFwAssert, expression, false);
     expect_not_value(__wrap_FpFwAssert, expression, false);
+    expect_not_value(__wrap_FpFwAssert, expression, false);
 
     assert_non_null(s_dispatch_routine);
 

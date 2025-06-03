@@ -91,6 +91,7 @@ typedef enum _shutdown_type
     COLD_RESET,
     COLD_RESET_SCP_INITIATED,
     MSCP_SUBSYS_RESET,
+    REMOTE_SCP_SHUTDOWN,
     AP_WARM_RESET, /* Drivers should ignore unless they have specific requirements around AP warm reset */
 } ssi_shutdown_type_t;
 

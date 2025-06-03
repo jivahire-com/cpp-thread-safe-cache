@@ -170,3 +170,8 @@ void shutdown_req_cb(void* context, fpfw_status_t status);
 void prepare_reset_recv_cb(void* context, size_t output_size_bytes, fpfw_status_t status);
 void receive_prep_core_reset();
 void quiesce_complete_notify(DFWK_ASYNC_REQUEST_HEADER* request, void* p_completion_context);
+void sos_send_d2d_shutdown_request();
+void sos_d2d_shutdown_send_cb(void* context, fpfw_status_t status);
+void recv_d2d_shutdown_request();
+void d2d_shutdown_req_complete_notify(DFWK_ASYNC_REQUEST_HEADER* request, void* context);
+void d2d_shutdown_recv_cb(void* context, size_t output_size_bytes, fpfw_status_t status);

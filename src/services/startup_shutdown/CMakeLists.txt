@@ -52,6 +52,7 @@ set(STARTUP_COMMON_LIBS
     ms::lib::crash_dump
     ms::lib::icc_platform_defines
     ms::lib::hsp_firmware_headers
+    ms::driver::icc_mhu_trans
     ms::client_interface::startup_shutdown
     silibs::idhw
     silibs::idsw

@@ -14,10 +14,13 @@
 
 extern "C" {
 
-#include <CMockaWrapper.h>        // for check_expected, check_expected_ptr
-#include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
+#include <CMockaWrapper.h>                // for check_expected, check_expected_ptr
+#include <fpfw_icc_transport_interface.h> // Leverage the transport library interrface
+#include <hsp_firmware_headers.h>         // for HSP_FIRMWARE_ID
 #include <hsp_firmware_headers.h>
+#include <icc_mhu.h>
 #include <icc_platform_defines.h>
+#include <mhu_icc_transport.h>
 #include <startup_shutdown.h>   // for sos_queue_entry_t, sos_queue_start_phase
 #include <startup_shutdown_i.h> // for sos_queue_start_phase, sos_thread_...
 #include <startup_shutdown_init.h>
@@ -26,6 +29,8 @@ extern "C" {
 } // extern "C"
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define TEST_SHARED_MEM_SIZE (sizeof(icc_mhu_header_t) + (8))
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -41,6 +46,12 @@ unsigned __real_sos_core_boot_stage_count();
 const startup_shutdown_boot_stage_t* __real_sos_core_boot_stages();
 static icc_base_recv_complete_notify fw_load_cb = NULL;
 static void* cb_ctx = NULL;
+bool wrap_sos_shutdown = false;
+void __real_sos_shutdown(PDFWK_INTERFACE_HEADER p_interface,
+                         pstartup_shutdown_request_t p_request,
+                         ssi_shutdown_type_t shutdown_type,
+                         DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                         void* p_completion_context);
 
 int32_t __wrap_FpFwLockAcquire(PFPFW_LOCK Lock)
 {
@@ -84,6 +95,27 @@ void __wrap_sos_quiesce(PDFWK_INTERFACE_HEADER p_interface,
     FPFW_UNUSED(p_completion_context);
 
     function_called();
+}
+
+void __wrap_sos_shutdown(PDFWK_INTERFACE_HEADER p_interface,
+                         pstartup_shutdown_request_t p_request,
+                         ssi_shutdown_type_t shutdown_type,
+                         DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                         void* p_completion_context)
+{
+    if (!(wrap_sos_shutdown))
+    {
+        __real_sos_shutdown(p_interface, p_request, shutdown_type, completion_routine, p_completion_context);
+    }
+    else
+    {
+        FPFW_UNUSED(p_interface);
+        FPFW_UNUSED(p_request);
+        FPFW_UNUSED(shutdown_type);
+        FPFW_UNUSED(completion_routine);
+        FPFW_UNUSED(p_completion_context);
+        wrap_sos_shutdown = false; // reset the flag after the call
+    }
 }
 
 } // extern "C"
@@ -168,11 +200,16 @@ SOS_TEST(sos_shutdown_timeout, NULL, NULL)
 SOS_TEST(sos_core_shutdown_handler_shutdown, NULL, NULL)
 {
     fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
+    fpfw_icc_base_ctx_t* test_icc_d2dctx = (fpfw_icc_base_ctx_t*)0xDEADBEEF;
     expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xBADDBEEF);
     expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
     will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
 
-    sos_icc_init(test_icc_ctx);
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xDEADBEEF);
+    expect_any(__wrap_fpfw_icc_base_recv, params->recv_cmd_code);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    sos_icc_init(test_icc_ctx, test_icc_d2dctx);
 
     expect_function_call(__wrap_FpFwLockAcquire);
     expect_function_call(__wrap_FpFwLockRelease);
@@ -188,11 +225,17 @@ SOS_TEST(sos_shutdown_req_cb, NULL, NULL)
 {
     void* request = (void*)0x12345678;
     fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
+    fpfw_icc_base_ctx_t* test_icc_d2dctx = (fpfw_icc_base_ctx_t*)0xDEADBEEF;
 
     expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xBADDBEEF);
     expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
     will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
-    sos_icc_init(test_icc_ctx);
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xDEADBEEF);
+    expect_any(__wrap_fpfw_icc_base_recv, params->recv_cmd_code);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    sos_icc_init(test_icc_ctx, test_icc_d2dctx);
 
     expect_function_call(__wrap_FpFwLockAcquire);
     expect_function_call(__wrap_FpFwLockRelease);
@@ -203,10 +246,17 @@ SOS_TEST(sos_shutdown_req_cb, NULL, NULL)
 SOS_TEST(prepare_reset_recv_cb, NULL, NULL)
 {
     fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
+    fpfw_icc_base_ctx_t* test_icc_d2dctx = (fpfw_icc_base_ctx_t*)0xDEADBEEF;
+
     expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xBADDBEEF);
     expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
     will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
-    sos_icc_init(test_icc_ctx);
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xDEADBEEF);
+    expect_any(__wrap_fpfw_icc_base_recv, params->recv_cmd_code);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    sos_icc_init(test_icc_ctx, test_icc_d2dctx);
 
     fpfw_icc_base_recv_req_t test_recv_context = {};
     kng_hsp_mailbox_msg hsp_mailbox_msg = {};
@@ -237,15 +287,186 @@ SOS_TEST(quiese_complete_notify, NULL, NULL)
     quiesce_complete_notify((DFWK_ASYNC_REQUEST_HEADER*)test_icc_ctx, &test_send_params);
 }
 
-// test for sos_core_shutdown_handler COLD_RESET case
-SOS_TEST(sos_core_shutdown_handler_cold_reset, NULL, NULL)
+// test for d2d_shutdown_recv_cb
+SOS_TEST(d2d_shutdown_recv_cb, NULL, NULL)
 {
     fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
+    fpfw_icc_base_ctx_t* test_icc_d2dctx = (fpfw_icc_base_ctx_t*)0xDEADBEEF;
+    size_t output_size_bytes = 8;
+    wrap_sos_shutdown = true;
+
     expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xBADDBEEF);
     expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
     will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
 
-    sos_icc_init(test_icc_ctx);
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xDEADBEEF);
+    expect_any(__wrap_fpfw_icc_base_recv, params->recv_cmd_code);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    sos_icc_init(test_icc_ctx, test_icc_d2dctx);
+
+    startup_shutdown_request_t test_shutdown_request = {
+        .shutdown_type = REMOTE_SCP_SHUTDOWN,
+    };
+    test_shutdown_request.header.AllocatedSize = sizeof(startup_shutdown_request_t);
+
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(startup_shutdown_request_t));
+
+    d2d_shutdown_recv_cb(&test_shutdown_request, output_size_bytes, DFWK_SUCCESS);
+}
+
+// test for sos_send_d2d_shutdown_request
+SOS_TEST(sos_send_d2d_shutdown_request, NULL, NULL)
+{
+    static uint8_t s_test_send_buffer[TEST_SHARED_MEM_SIZE];
+
+    static icc_mhu_packet_t* s_test_send_packet = (icc_mhu_packet_t*)s_test_send_buffer;
+
+    static fpfw_icc_base_send_req_t test_ppu_shutdown_send_params;
+
+    test_ppu_shutdown_send_params.payload_buffer = (void*)s_test_send_packet; // Buffer containing the message to send
+    test_ppu_shutdown_send_params.buffer_size = TEST_SHARED_MEM_SIZE;         // Size of the buffer
+    test_ppu_shutdown_send_params.cb = NULL;     // Callback function for handling the send completion
+    test_ppu_shutdown_send_params.cb_ctx = NULL; // Context for the callback
+
+    fpfw_icc_base_ctx_t* test_icc_d2dctx = (fpfw_icc_base_ctx_t*)0xDEADBEEF;
+
+    will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_send, icc_ctx, test_icc_d2dctx);
+
+    sos_send_d2d_shutdown_request();
+}
+
+// test for sos_send_d2d_shutdown_request
+SOS_TEST(sos_send_d2d_shutdown_request_fail, NULL, NULL)
+{
+    static uint8_t s_test_send_buffer[TEST_SHARED_MEM_SIZE];
+
+    static icc_mhu_packet_t* s_test_send_packet = (icc_mhu_packet_t*)s_test_send_buffer;
+
+    static fpfw_icc_base_send_req_t test_ppu_shutdown_send_params;
+
+    test_ppu_shutdown_send_params.payload_buffer = (void*)s_test_send_packet; // Buffer containing the message to send
+    test_ppu_shutdown_send_params.buffer_size = TEST_SHARED_MEM_SIZE;         // Size of the buffer
+    test_ppu_shutdown_send_params.cb = NULL;     // Callback function for handling the send completion
+    test_ppu_shutdown_send_params.cb_ctx = NULL; // Context for the callback
+
+    fpfw_icc_base_ctx_t* test_icc_d2dctx = (fpfw_icc_base_ctx_t*)0xDEADBEEF;
+
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_ASYNC_SEND_REQ_ERR);
+    expect_value(__wrap_fpfw_icc_base_send, icc_ctx, test_icc_d2dctx);
+
+    sos_send_d2d_shutdown_request();
+}
+
+// test for recv_d2d_shutdown_request
+SOS_TEST(recv_d2d_shutdown_request, NULL, NULL)
+{
+    fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
+    fpfw_icc_base_ctx_t* test_icc_d2dctx = (fpfw_icc_base_ctx_t*)0xDEADBEEF;
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xBADDBEEF);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xDEADBEEF);
+    expect_any(__wrap_fpfw_icc_base_recv, params->recv_cmd_code);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    sos_icc_init(test_icc_ctx, test_icc_d2dctx);
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xDEADBEEF);
+    expect_any(__wrap_fpfw_icc_base_recv, params->recv_cmd_code);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    recv_d2d_shutdown_request();
+}
+
+// test for recv_d2d_shutdown_request
+SOS_TEST(recv_d2d_shutdown_request_fail, NULL, NULL)
+{
+    fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
+    fpfw_icc_base_ctx_t* test_icc_d2dctx = (fpfw_icc_base_ctx_t*)0xDEADBEEF;
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xBADDBEEF);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xDEADBEEF);
+    expect_any(__wrap_fpfw_icc_base_recv, params->recv_cmd_code);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    sos_icc_init(test_icc_ctx, test_icc_d2dctx);
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xDEADBEEF);
+    expect_any(__wrap_fpfw_icc_base_recv, params->recv_cmd_code);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_NULL_ARG_ERR);
+
+    recv_d2d_shutdown_request();
+}
+
+// test for d2d_shutdown_send_cb
+SOS_TEST(sos_d2d_shutdown_send_cb, NULL, NULL)
+{
+    fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
+    fpfw_icc_base_ctx_t* test_icc_d2dctx = (fpfw_icc_base_ctx_t*)0xDEADBEEF;
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xBADDBEEF);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xDEADBEEF);
+    expect_any(__wrap_fpfw_icc_base_recv, params->recv_cmd_code);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    sos_icc_init(test_icc_ctx, test_icc_d2dctx);
+    startup_shutdown_request_t test_shutdown_request = {
+        .shutdown_type = REMOTE_SCP_SHUTDOWN,
+    };
+    test_shutdown_request.header.AllocatedSize = sizeof(startup_shutdown_request_t);
+
+    sos_d2d_shutdown_send_cb(&test_shutdown_request, FPFW_ICC_BASE_STATUS_SUCCESS);
+}
+
+// test for d2d_shutdown_send_cb
+SOS_TEST(sos_d2d_shutdown_send_cb_fail, NULL, NULL)
+{
+    fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
+    fpfw_icc_base_ctx_t* test_icc_d2dctx = (fpfw_icc_base_ctx_t*)0xDEADBEEF;
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xBADDBEEF);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xDEADBEEF);
+    expect_any(__wrap_fpfw_icc_base_recv, params->recv_cmd_code);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    sos_icc_init(test_icc_ctx, test_icc_d2dctx);
+    startup_shutdown_request_t test_shutdown_request = {
+        .shutdown_type = REMOTE_SCP_SHUTDOWN,
+    };
+    test_shutdown_request.header.AllocatedSize = sizeof(startup_shutdown_request_t);
+
+    sos_d2d_shutdown_send_cb(&test_shutdown_request, FPFW_ICC_BASE_STATUS_ASYNC_SEND_REQ_ERR);
+}
+
+// test for sos_core_shutdown_handler COLD_RESET case
+SOS_TEST(sos_core_shutdown_handler_cold_reset, NULL, NULL)
+{
+    fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
+    fpfw_icc_base_ctx_t* test_icc_d2dctx = (fpfw_icc_base_ctx_t*)0xDEADBEEF;
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xBADDBEEF);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xDEADBEEF);
+    expect_any(__wrap_fpfw_icc_base_recv, params->recv_cmd_code);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    sos_icc_init(test_icc_ctx, test_icc_d2dctx);
 
     expect_function_call(__wrap_FpFwLockAcquire);
     expect_function_call(__wrap_FpFwLockRelease);

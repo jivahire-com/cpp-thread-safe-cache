@@ -22,4 +22,7 @@
 
 /*-- Declarations (Statics and globals) --*/
 
+#define TEST_COMPLETION_ROUTINE ((DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE)0x123456)
+#define TEST_COMPLETION_CONTEXT ((void*)0x65430)
+
 /*--------- Function Prototypes ----------*/

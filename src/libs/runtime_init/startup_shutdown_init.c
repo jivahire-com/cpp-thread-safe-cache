@@ -44,7 +44,7 @@ void boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_cont
     post_led_status(&boot_status_req, LED_STATUS_CODE_SCP_BOOT_COMPLETE);
 }
 
-FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "sysinfo"))
+FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "icc_die2die", "sysinfo"))
 {
     static sos_interface_t sos_interface;
     sos_interface_init(fpfw_init_get_handle("sos_svc"), &sos_interface, true);
@@ -58,7 +58,7 @@ FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "sy
     FPFW_RUNTIME_ASSERT(status == FPFW_INIT_STATUS_SUCCESS);
 
     // initialize the intercore communication
-    sos_icc_init(fpfw_init_get_handle("icc_hspmbx"));
+    sos_icc_init(fpfw_init_get_handle("icc_hspmbx"), fpfw_init_get_handle("icc_die2die"));
 
     // send synchronous and asynchronous startup stage start requests
     static startup_start_phase_request_t startup_phase_request;

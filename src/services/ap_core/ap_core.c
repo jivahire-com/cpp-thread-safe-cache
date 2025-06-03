@@ -154,7 +154,8 @@ static void ap_core_ssi_shutdown(pssi_shutdown_notification_request_t p_request)
         return;
     }
 
-    if ((p_request->shutdown_type == COLD_RESET_SCP_INITIATED) || (p_request->shutdown_type == SHUTDOWN_SCP_INITIATED))
+    if ((p_request->shutdown_type == COLD_RESET_SCP_INITIATED) ||
+        (p_request->shutdown_type == SHUTDOWN_SCP_INITIATED) || (p_request->shutdown_type == REMOTE_SCP_SHUTDOWN))
     {
         // turn off PPU handshaking
         APCORE_LOG_INFO("Disabling PPU handshaking");

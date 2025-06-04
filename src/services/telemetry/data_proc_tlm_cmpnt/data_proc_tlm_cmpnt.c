@@ -15,6 +15,7 @@
 #include "package_interface_i.h"
 
 #include <FpFwUtils.h>
+#include <in_band_tlm_cmpnt.h>
 #include <telemetry_events_i.h>
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -38,4 +39,20 @@ void data_proc_tlm_cmpnt_init(uint8_t die_id)
 void data_proc_tlm_cmpnt_enable_disable_transition(bool enable)
 {
     FPFW_UNUSED(enable);
+}
+
+void data_proc_tlm_cmpnt_prepare_data_for_inst_sample(void)
+{
+}
+
+void data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg(void)
+{
+    if (die_2_die_exchange_get_this_die_id() == PRIMARY_DIE_ID)
+    {
+        in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg();
+    }
+}
+
+void data_proc_tlm_cmpnt_prepare_data_for_24hr_pkg(void)
+{
 }

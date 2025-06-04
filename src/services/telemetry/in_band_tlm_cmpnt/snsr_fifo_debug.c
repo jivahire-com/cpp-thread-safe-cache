@@ -84,7 +84,6 @@ void in_band_tlm_cmpnt_sample_sensor_fifo_dbg_data(void)
     if (all_empty)
     {
         // Exit early if no FIFOs have data
-        printf("all empty\n");
         return;
     }
 

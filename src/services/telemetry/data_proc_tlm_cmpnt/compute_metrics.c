@@ -12,6 +12,7 @@
 #include "data_proc_tlm_cmpnt.h"
 #include "data_sampling_i.h" // internal APIs
 #include "data_utilities_i.h"
+#include "die_2_die_exchange_i.h"
 #include "telemetry_events_i.h"
 
 #include <stdbool.h> // for false, true
@@ -29,15 +30,17 @@
 
 computed_metrics_2_min_t computed_metrics_2_mins = {0};
 computed_metrics_24_hrs_t computed_metrics_24_hrs = {0};
+computed_metrics_d2d_2_min_t computed_metrics_d2d_2mins = {0};
 
 /*------------- Functions ----------------*/
 
-void data_proc_tlm_cmpnt_prepare_data_for_inst_sample(void)
+void data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core(void)
 {
-}
+    die_2_die_exchange_write_pwr_pkg_max_die_temp(computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.average,
+                                                  computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.num_samples,
+                                                  computed_metrics_d2d_2mins.max_soc_temp_dC.max);
 
-void data_proc_tlm_cmpnt_prepare_data_for_24hr_pkg(void)
-{
+    memset(&computed_metrics_d2d_2mins, 0, sizeof(computed_metrics_d2d_2mins));
 }
 
 void comp_metrics_for_sample_period(void)
@@ -240,6 +243,11 @@ void comp_metrics_for_soc_top_temp_sensor(uint16_t (*latest_soc_top_temp_dC)[NUM
     }
 }
 
+void comp_metrics_for_soc_max_temp(uint16_t latest_max_soc_temp_dC)
+{
+    data_util_calc_mma_u16(&computed_metrics_d2d_2mins.max_soc_temp_dC, latest_max_soc_temp_dC);
+}
+
 void comp_metrics_for_single_soc_dimm_temp(uint8_t dimm_id, uint16_t latest_dimm_temp_s0_dC, uint16_t latest_dimm_temp_s1_dC)
 {
     // Update  min, max average S0
@@ -369,6 +377,13 @@ void comp_metrics_for_single_core_histogram(uint8_t core_id)
 void comp_metrics_reset_2_mins_metrics()
 {
     memset(&computed_metrics_2_mins, 0, sizeof(computed_metrics_2_mins));
+
+    if (die_2_die_exchange_get_this_die_id() == PRIMARY_DIE_ID)
+    {
+        // primary die can clear now as the data was just sent to the host
+        // secondary die's will clear as soon as they write to the data exchange
+        memset(&computed_metrics_d2d_2mins, 0, sizeof(computed_metrics_d2d_2mins));
+    }
 }
 
 void comp_metrics_reset_24_hrs_metrics()

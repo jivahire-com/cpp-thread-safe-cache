@@ -232,7 +232,6 @@ TEST_FUNCTION(test_d2d_cntr_sync_enable_die1_knob_override, nullptr, cleanup)
     d2d_cntr_sync_enable();
 }
 
-
 TEST_FUNCTION(test_d2d_cntr_sync_enable_die1_success, nullptr, cleanup)
 {
     //! Setup expectations for die 1

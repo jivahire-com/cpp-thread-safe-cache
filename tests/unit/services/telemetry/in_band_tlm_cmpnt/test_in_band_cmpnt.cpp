@@ -267,3 +267,9 @@ TEST_FUNCTION(test_in_band_tlm_cmpnt_tlm_mode_enter_actions, test_setup, test_te
     will_return(__wrap_mts_is_primary_instance, false);
     in_band_tlm_cmpnt_tlm_mode_enter_actions((tlm_operating_mode_t)(TLM_OP_MODE_SENSOR_FIFO_RAW_DATA + 10));
 }
+
+TEST_FUNCTION(test_in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg, test_setup, test_teardown)
+{
+    will_return(__wrap_mts_is_primary_instance, false);
+    in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg();
+}

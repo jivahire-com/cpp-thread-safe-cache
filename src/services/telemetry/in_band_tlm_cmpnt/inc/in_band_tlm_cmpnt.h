@@ -86,6 +86,11 @@ bool in_band_tlm_cmpnt_is_power_record_enabled(pwr_telemetry_element_id_t elemen
 bool in_band_tlm_cmpnt_is_inst_record_enabled(instantaneous_telemetry_element_id_t element_id);
 
 /**
+ * @brief Notify the secondary MCPS to prepare for a power package. In band component has stack to notify.
+ */
+void in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg(void);
+
+/**
  * @brief Collect raw sensor fifo data for debug packages.
  */
 void in_band_tlm_cmpnt_sample_sensor_fifo_dbg_data(void);

@@ -22,6 +22,7 @@
 #include <FpFwUtils.h>
 #include <gtimer_prodfw.h> //for timestamp
 #include <stdbool.h>
+#include <stdio.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -44,6 +45,13 @@
 
 #define ALL_EVENT_GROUP_BITS (0xFFFFFFFF)
 
+// Both power package and 24 hour package need to get data from other cores. This is the amount of delay
+// for data to be written for the package
+#define PACKAGE_GENERATION_DELAY_MS (100)
+
+#define PACKAGE_GENERATION_DELAY_TICKS \
+    (PACKAGE_GENERATION_DELAY_MS / tlm_executive_status.data_aggr_period_ms)
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -52,6 +60,11 @@
 static TX_THREAD s_tlm_svc_thread;
 static uint8_t s_tlm_svc_thread_stack[TLM_SVC_STACK_SIZE];
 static FPFW_LOCK s_lock;
+static uint8_t this_die_id;
+static bool _24_pkg_pending = false;
+static bool _pwr_pkg_pending = false;
+static uint8_t _pwr_pkg_gen_count = 0;
+static uint8_t _24_pkg_gen_count = 0;
 
 TX_TIMER data_aggr_tmr;
 TX_TIMER inst_sample_tmr;
@@ -60,8 +73,6 @@ TX_TIMER _24hr_pkg_tmr;
 
 TX_EVENT_FLAGS_GROUP s_thread_control;
 tlm_operating_mode_t pending_mode_change;
-
-bool _24_pkg_pending = false;
 
 telemetry_executive_status_t tlm_executive_status = {
     .op_mode = TLM_OP_MODE_COLLECTING_DATA,
@@ -76,8 +87,9 @@ telemetry_executive_status_t tlm_executive_status = {
 };
 
 /*------------- Functions ----------------*/
-void exec_tlm_cmpnt_init(uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_period_ms)
+void exec_tlm_cmpnt_init(uint8_t die_id, uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_period_ms)
 {
+    this_die_id = die_id;
     tlm_executive_status.pwr_pkg_period_ms = pwr_pkg_period_ms;
     tlm_executive_status.inst_pkg_sample_period_ms = inst_pkg_sample_period_ms;
 
@@ -107,22 +119,23 @@ void exec_tlm_cmpnt_init(uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_pe
                                TX_AUTO_ACTIVATE);                       /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
-    txStatus = tx_timer_create(&inst_sample_tmr,      /* TX_TIMER *timer_ptr */
-                               "tlm_svc_inst_sample", /* CHAR *name_ptr */
-                               inst_sample_timer_cb,  /* VOID (*expiration_function)(ULONG input) */
-                               0,                     /* ULONG expiration_input */
-                               MS_TO_TX_TICKS(inst_pkg_sample_period_ms), /* ULONG initial_ticks >= 1 */
-                               MS_TO_TX_TICKS(inst_pkg_sample_period_ms), /* ULONG reschedule_ticks */
-                               TX_NO_ACTIVATE);                           /* UINT auto_activate) */
+    txStatus =
+        tx_timer_create(&inst_sample_tmr,      /* TX_TIMER *timer_ptr */
+                        "tlm_svc_inst_sample", /* CHAR *name_ptr */
+                        inst_sample_timer_cb,  /* VOID (*expiration_function)(ULONG input) */
+                        0,                     /* ULONG expiration_input */
+                        MS_TO_TX_TICKS(tlm_executive_status.inst_pkg_sample_period_ms), /* ULONG initial_ticks >= 1 */
+                        MS_TO_TX_TICKS(tlm_executive_status.inst_pkg_sample_period_ms), /* ULONG reschedule_ticks */
+                        TX_NO_ACTIVATE); /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
     txStatus = tx_timer_create(&power_pkg_tmr,    /* TX_TIMER *timer_ptr */
                                "tlm_svc_pwr_pkg", /* CHAR *name_ptr */
                                pwr_pkg_timer_cb,  /* VOID (*expiration_function)(ULONG input) */
                                0,                 /* ULONG expiration_input */
-                               MS_TO_TX_TICKS(pwr_pkg_period_ms), /* ULONG initial_ticks >= 1 */
-                               MS_TO_TX_TICKS(pwr_pkg_period_ms), /* ULONG reschedule_ticks */
-                               TX_NO_ACTIVATE);                   /* UINT auto_activate) */
+                               MS_TO_TX_TICKS(tlm_executive_status.pwr_pkg_period_ms), /* ULONG initial_ticks >= 1 */
+                               MS_TO_TX_TICKS(tlm_executive_status.pwr_pkg_period_ms), /* ULONG reschedule_ticks */
+                               TX_NO_ACTIVATE); /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
     txStatus = tx_timer_create(&_24hr_pkg_tmr,          /* TX_TIMER *timer_ptr */
@@ -163,6 +176,15 @@ void tlm_svc_thread(ULONG thread_input)
             {
                 data_proc_tlm_cmpnt_process_input_data();
             }
+
+            if (_pwr_pkg_pending && (_pwr_pkg_gen_count > 0))
+            {
+                _pwr_pkg_gen_count--;
+            }
+            if (_24_pkg_pending && (_24_pkg_gen_count > 0))
+            {
+                _24_pkg_gen_count--;
+            }
         }
 
         if (tlm_executive_status.op_mode == TLM_OP_MODE_PUBLISHING)
@@ -176,22 +198,35 @@ void tlm_svc_thread(ULONG thread_input)
 
             if (current_bits & PWR_PKG_TMR_EXPIRED)
             {
-                in_band_tlm_cmpnt_generate_pwr_pkg();
-
-                if (_24_pkg_pending)
-                {
-                    in_band_tlm_cmpnt_generate_24hr_pkg();
-                    _24_pkg_pending = false;
-                }
+                // power package generation is delayed to allow other cores to write their data
+                // this is to ensure that the power package has all the data from all cores.
+                // _pwr_pkg_gen_count is a decrementing counter that is initialized here, when it reaches
+                // zero, then the power package is generated.
+                _pwr_pkg_pending = true;
+                _pwr_pkg_gen_count = PACKAGE_GENERATION_DELAY_TICKS;
+                data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg();
             }
 
             if (current_bits & EVERY_24HR_PKG_TMR_EXPIRED)
             {
                 // data for the 24hr package requires data collected from other sources
-                // the data_proc api will kick off those requests.
-                // when the next pwr package expires, then the 24hr package will be generated
+                // the data_proc api will kick off those requests. _24_pkg_gen_count is a decrementing counter
+                // that is initialized here, when it reaches zero, then the 24hr package is generated.
                 _24_pkg_pending = true;
+                _24_pkg_gen_count = PACKAGE_GENERATION_DELAY_TICKS;
                 data_proc_tlm_cmpnt_prepare_data_for_24hr_pkg();
+            }
+
+            if (_pwr_pkg_pending && (_pwr_pkg_gen_count == 0))
+            {
+                in_band_tlm_cmpnt_generate_pwr_pkg();
+                _pwr_pkg_pending = false;
+            }
+
+            if (_24_pkg_pending && (_24_pkg_gen_count == 0))
+            {
+                in_band_tlm_cmpnt_generate_24hr_pkg();
+                _24_pkg_pending = false;
             }
         }
 
@@ -397,6 +432,10 @@ void run_timer_enter_actions(tlm_operating_mode_t entering_mode)
         }
         tx_timer_activate(&power_pkg_tmr);
         tx_timer_activate(&_24hr_pkg_tmr);
+        _24_pkg_pending = false;
+        _pwr_pkg_pending = false;
+        _pwr_pkg_gen_count = 0;
+        _24_pkg_gen_count = 0;
         break;
 
     case TLM_OP_MODE_DISABLED:

@@ -13,9 +13,17 @@
 #include <stdint.h> // for uint8_t
 
 /*-- Symbolic Constant Macros (defines) --*/
-
+#define PRIMARY_DIE_ID (0)
+#define NUMBER_OF_SECONDARY_DIES (1)
+#define FIRST_SECONDARY_DIE_ID   (1)
 
 /*-------------- Typedefs ----------------*/
+typedef struct
+{
+    uint16_t average_max_temp_dC;
+    uint16_t num_samples;
+    uint16_t peak_temp_dC;
+} max_die_temps_t, *p_max_die_temps_t;
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -44,7 +52,7 @@ uint8_t die_2_die_exchange_get_this_die_id(void);
  *
  * @param[in] max_die_temperature_dC The maximum die temperature in deci-Celsius.
  */
-void die_2_die_exchange_write_max_die_temp(uint16_t max_die_temperature_dC);
+void die_2_die_exchange_write_inst_max_die_temp(uint16_t max_die_temperature_dC);
 
 /**
  * @brief Read the maximum die temperature from the die to die exchange.
@@ -53,4 +61,25 @@ void die_2_die_exchange_write_max_die_temp(uint16_t max_die_temperature_dC);
  * @param[in] die_id The ID of the die to read the temperature from.
  * @return The maximum die temperature in deci-Celsius.
  */
-uint16_t die_2_die_exchange_read_max_die_temp_dC(uint8_t die_id);
+uint16_t die_2_die_exchange_read_inst_max_die_temp_dC(uint8_t die_id);
+
+/**
+ * @brief Write the maximum die temperature for the power package to the die to die exchange.
+ * This function writes the average maximum temperature, number of samples, and peak temperature for the power package
+ * to the exchange. It writes the location for the die specified by `this_die_id`, which should be initialized using
+ * `die_2_die_exchange_init`.
+ *
+ * @param[in] average_max_temp_dC The average maximum temperature in deci-Celsius.
+ * @param[in] num_samples The number of samples used to calculate the average.
+ * @param[in] peak_temp_dC The peak temperature in deci-Celsius.
+ */
+void die_2_die_exchange_write_pwr_pkg_max_die_temp(uint16_t average_max_temp_dC, uint16_t num_samples, uint16_t peak_temp_dC);
+
+/**
+ * @brief Read the maximum die temperature for the power package from the die to die exchange.
+ * This function reads the maximum die temperature for the power package for a specific die.
+ *
+ * @param[in] die_id The ID of the die to read the temperature from.
+ * @param[out] max_die_temperature Pointer to a structure to store the maximum die temperature data.
+ */
+void die_2_die_exchange_read_pwr_pkg_max_die_temp_dC(uint8_t die_id, p_max_die_temps_t max_die_temperature);

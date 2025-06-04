@@ -28,10 +28,6 @@
 #include <string.h>              // for memset
 /*-- Symbolic Constant Macros (defines) --*/
 
-#ifndef MAX
-    #define MAX(x, y) ((x) > (y) ? (x) : (y))
-#endif
-
 /*------------- Typedefs -----------------*/
 
 typedef struct
@@ -302,11 +298,13 @@ void data_smpl_update_max_die_temp(void)
 {
     soc_info.latest_max_die_temp_dC = MAX(soc_info.latest_max_tile_temp_dC, soc_info.latest_max_soc_top_temp_dC);
 
+    comp_metrics_for_soc_max_temp(soc_info.latest_max_die_temp_dC);
+
     if (in_band_tlm_cmpnt_is_inst_record_enabled(INST_TELEMETRY_ELEMENT_SOC_MAX_TEMP) &&
-        (die_2_die_exchange_get_this_die_id() != 0))
+        (die_2_die_exchange_get_this_die_id() != PRIMARY_DIE_ID))
     {
         // only write on secondary dies
-        die_2_die_exchange_write_max_die_temp(soc_info.latest_max_die_temp_dC);
+        die_2_die_exchange_write_inst_max_die_temp(soc_info.latest_max_die_temp_dC);
     }
 }
 

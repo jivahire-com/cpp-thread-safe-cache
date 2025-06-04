@@ -217,7 +217,7 @@ TEST_FUNCTION(test_exec_tlm_cmpnt_init, test_setup, test_teardown)
 
     expect_function_calls(__wrap_FpFwAssertWithArgs, 6);
 
-    exec_tlm_cmpnt_init(1000, 100);
+    exec_tlm_cmpnt_init(1, 1000, 100);
 
     assert_int_equal(tlm_executive_status.pwr_pkg_period_ms, 1000);
     assert_int_equal(tlm_executive_status.inst_pkg_sample_period_ms, 100);

@@ -14,6 +14,7 @@
 
 #include <FpFwUtils.h>
 #include <data_collection_protocol.h>
+#include <data_proc_tlm_cmpnt.h>
 #include <exec_tlm_cmpnt.h>
 #include <in_band_tlm_cmpnt.h>
 #include <message_transfer_service.h>
@@ -285,14 +286,17 @@ void mts_manager_handle_trp_msg(p_trp_msg_t trp_msg)
 
     case TRP_MSG_ID_CLIENT_DEFINED: {
         p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg->payload.client_msg;
-        if (tlm_client_msg->cmd == TLM_CLIENT_CMD_SET_MODE_PUSH)
+        switch (tlm_client_msg->cmd)
         {
-            // set the telemetry mode to the requested mode
+        case TLM_CLIENT_CMD_SET_MODE_PUSH:
             exec_tlm_cmpnt_change_telemetry_mode(tlm_client_msg->payload.mode);
-        }
+            break;
 
-        else
-        {
+        case TLM_CLIENT_CMD_GEN_PWR_PACKAGE_PRIM_MCP_2_SEC_MCP_PUSH:
+            data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core();
+            break;
+
+        default:
             FPFW_ET_LOG(MtsMgrClientUnexpectedCmd, tlm_client_msg->cmd);
         }
         break;
@@ -672,25 +676,45 @@ void mts_manager_free_publish_resources()
     FPFW_ET_LOG(MtsMgrPackagesFlushed);
 }
 
+void mts_manager_init_trp_header_for_broadcast(p_trp_msg_t trp_msg, uint16_t payload_size)
+{
+    trp_msg->hdr.src_node.die_id = mts_get_this_die_id();
+    trp_msg->hdr.src_node.core_id = mts_get_this_core_id();
+    // dest is assigned during broadcast, this is just a placeholder
+    trp_msg->hdr.dest_node.die_id = mts_get_this_die_id() + 1;
+    trp_msg->hdr.dest_node.core_id = mts_get_this_core_id();
+    trp_msg->hdr.mts_client_id = MTS_CLIENT_ID_PWR_INST_TELEM;
+    trp_msg->hdr.trp_msg_id = TRP_MSG_ID_CLIENT_DEFINED;
+    trp_msg->hdr.trp_msg_status = TRP_STATUS_SUCCESS;
+    trp_msg->hdr.broadcast_type = TRP_BROADCAST_PRIM_TO_SEC_PEER_ONLY;
+    trp_msg->hdr.payload_size = payload_size;
+}
+
 void mts_manager_send_mode_to_sec_cores(tlm_operating_mode_t new_mode)
 {
     if (mts_is_primary_instance() == true)
     {
         trp_msg_t trp_msg = {0};
-        trp_msg.hdr.src_node.die_id = mts_get_this_die_id();
-        trp_msg.hdr.src_node.core_id = mts_get_this_core_id();
-        trp_msg.hdr.dest_node.die_id =
-            mts_get_this_die_id() + 1; // dest is assigned during broadcast, this is just a placeholder
-        trp_msg.hdr.dest_node.core_id = mts_get_this_core_id();
-        trp_msg.hdr.mts_client_id = MTS_CLIENT_ID_PWR_INST_TELEM;
-        trp_msg.hdr.trp_msg_id = TRP_MSG_ID_CLIENT_DEFINED;
-        trp_msg.hdr.trp_msg_status = TRP_STATUS_SUCCESS;
-        trp_msg.hdr.broadcast_type = TRP_BROADCAST_PRIM_TO_SEC_PEER_ONLY;
-        trp_msg.hdr.payload_size = TLM_CLIENT_SET_MODE_MSG_SIZE;
+        mts_manager_init_trp_header_for_broadcast(&trp_msg, TLM_CLIENT_SET_MODE_MSG_SIZE);
 
         p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
         tlm_client_msg->cmd = TLM_CLIENT_CMD_SET_MODE_PUSH;
         tlm_client_msg->payload.mode = new_mode;
+
+        // api copies message, ok to use stack memory
+        mts_client_forward_trp_msg(&trp_msg, TRP_BROADCAST_PRIM_TO_SEC_PEER_ONLY);
+    }
+}
+
+void mts_manager_send_prep_pwr_pkg_notification_to_sec_mcps(void)
+{
+    if (mts_is_primary_instance() == true)
+    {
+        trp_msg_t trp_msg = {0};
+        mts_manager_init_trp_header_for_broadcast(&trp_msg, MEMBER_SIZE(tlm_client_msg_t, cmd));
+
+        p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
+        tlm_client_msg->cmd = TLM_CLIENT_CMD_GEN_PWR_PACKAGE_PRIM_MCP_2_SEC_MCP_PUSH;
 
         // api copies message, ok to use stack memory
         mts_client_forward_trp_msg(&trp_msg, TRP_BROADCAST_PRIM_TO_SEC_PEER_ONLY);

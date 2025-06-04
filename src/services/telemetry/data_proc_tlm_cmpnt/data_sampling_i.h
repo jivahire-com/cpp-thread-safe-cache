@@ -14,6 +14,7 @@
 
 /*----------- Nested includes ------------*/
 
+#include <FpFwUtils.h>
 #include <fpfw_status.h>
 #include <sensor_fifo_service.h> // for sensor ram data structures
 #include <stdint.h>
@@ -37,6 +38,7 @@
 #endif
 
 #define ROUND_USEC_TO_MSEC(usec) ((usec + 500) / 1000)
+
 
 /*-------------- Typedefs ----------------*/
 typedef enum

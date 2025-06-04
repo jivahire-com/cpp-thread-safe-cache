@@ -23,14 +23,14 @@
 /*-- Symbolic Constant Macros (defines) --*/
 #define TLM_CLIENT_SET_MODE_MSG_SIZE (4)
 
+#define MEMBER_SIZE(type, member) (sizeof( ((type *)0)->member ))
+
 /*-------------- Typedefs ----------------*/
 typedef enum
 {
    TLM_CLIENT_CMD_SET_MODE_PUSH = 1,
-   TLM_CLIENT_CMD_PWR_PACKAGE_MCP_2_SCP_REQ = 2,
-   TLM_CLIENT_CMD_PWR_PACKAGE_SCP_2_MCP_RSP = 3,
-   TLM_CLIENT_CMD_PWR_PACKAGE_PRIM_MCP_2_SEC_MCP_REQ = 4,
-   TLM_CLIENT_CMD_PWR_PACKAGE_SEC_MCP_2_PRIM_MCP_RSP = 5,
+   TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH = 2,
+   TLM_CLIENT_CMD_GEN_PWR_PACKAGE_PRIM_MCP_2_SEC_MCP_PUSH = 4,
 } tlm_client_cmd_t;
 
 typedef struct __attribute__((packed)) tlm_client_msg_t{
@@ -178,6 +178,14 @@ void mts_manager_send_trp_package_helper(p_tlm_package_t tlm_pkg, trp_msg_id_t m
 void mts_manager_free_publish_resources(void);
 
 /**
+ * @brief Initialize the TRP header for a new telemetry message.
+ *
+ * @param[in,out] trp_msg - Pointer to the new TRP message
+ * @param[in] payload_size - Size of the payload in bytes
+ */
+void mts_manager_init_trp_header_for_broadcast(p_trp_msg_t trp_msg, uint16_t payload_size);
+
+/**
  * @brief Changes the telemetry service mode and notifies secondary cores if called from
  * the primary core.
  * @param[in] new_mode The new telemetry mode.
@@ -185,3 +193,11 @@ void mts_manager_free_publish_resources(void);
  *
  */
 void mts_manager_send_mode_to_sec_cores(tlm_operating_mode_t new_mode);
+
+/**
+ * @brief Notify the secondary MCPS to prepare for a power package.
+ *
+ *
+ * @return None
+ */
+void mts_manager_send_prep_pwr_pkg_notification_to_sec_mcps(void);

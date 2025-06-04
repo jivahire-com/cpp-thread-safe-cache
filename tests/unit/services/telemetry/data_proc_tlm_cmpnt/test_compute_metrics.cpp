@@ -270,6 +270,26 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rail_current, test_setup, test_teardown)
     assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.running_avg.num_samples, 4);
 }
 
+TEST_FUNCTION(test_comp_metrics_for_soc_rail_TEMP, test_setup, test_teardown)
+{
+    uint8_t vr_index = 4;
+
+    computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.min = 500;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.max = 1000;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.running_avg.average = 750;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.running_avg.num_samples = 3;
+
+    soc_info.latest_rail_temperature_dC[vr_index] = 2000;
+    // Call the function to be tested
+    comp_metrics_for_soc_rail_temperature(&soc_info.latest_rail_temperature_dC);
+
+    // Add assertions to verify the expected behavior
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.min, 500);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.max, 2000);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.running_avg.average, 1063);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.running_avg.num_samples, 4);
+}
+
 TEST_FUNCTION(test_comp_metrics_for_single_hnf_channel, test_setup, test_teardown)
 {
     uint8_t hnf_channel = 2;
@@ -600,5 +620,15 @@ TEST_FUNCTION(test_comp_metrics_reset_24_hrs_metrics, test_setup, test_teardown)
     for (uint32_t byte = 0; byte < sizeof(computed_metrics_24_hrs); byte++)
     {
         assert_int_equal(((uint8_t*)&computed_metrics_24_hrs)[byte], 0);
+    }
+}
+
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core, test_setup, test_teardown)
+{
+    memset(&computed_metrics_d2d_2mins, 0xFF, sizeof(computed_metrics_d2d_2mins));
+    data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core();
+    for (uint32_t byte = 0; byte < sizeof(computed_metrics_d2d_2mins); byte++)
+    {
+        assert_int_equal(((uint8_t*)&computed_metrics_d2d_2mins)[byte], 0);
     }
 }

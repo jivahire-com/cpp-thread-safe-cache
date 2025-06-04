@@ -81,6 +81,11 @@ mts_platform_core_id_t __wrap_mts_get_this_core_id(void)
     return 2;
 }
 
+void data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core(void)
+{
+    function_called();
+}
+
 void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_element_pstate_t (*pstate_array)[NUMBER_OF_PSTATES])
 {
     FPFW_UNUSED(core_id);
@@ -248,6 +253,13 @@ void data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(uint16_t sensor_id, p_inst_
 void data_proc_tlm_cmpnt_get_inst_soc_max_temp_data(p_inst_soc_element_max_temp_t max_temp_data)
 {
     memset(max_temp_data, 0xFF, sizeof(inst_soc_element_max_temp_t));
+
+    function_called();
+}
+
+void data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data(p_pwr_soc_element_max_soc_temp_t max_temp_data)
+{
+    memset(max_temp_data, 0xFF, sizeof(pwr_soc_element_max_soc_temp_t));
 
     function_called();
 }

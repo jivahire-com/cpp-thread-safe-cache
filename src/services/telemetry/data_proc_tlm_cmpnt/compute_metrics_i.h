@@ -78,10 +78,20 @@ typedef struct
     uint16_t stub_metric;
 } computed_metrics_24_hrs_t;
 
+typedef struct
+{
+    mma_u16_t max_soc_temp_dC;
+} computed_metrics_d2d_2_min_t;
+
 /*-- Declarations (Statics and globals) --*/
 
 extern computed_metrics_2_min_t computed_metrics_2_mins;
 extern computed_metrics_24_hrs_t computed_metrics_24_hrs;
+
+// these metrics are used for die-to-die exchange but are cleared differently depending on the die
+// The primary die may clear with the computed_metrics_2_min_t values, but secondary die will clear after
+// copying to the die to die exchange
+extern computed_metrics_d2d_2_min_t computed_metrics_d2d_2mins;
 
 /*--------- Function Prototypes ----------*/
 
@@ -169,6 +179,42 @@ void comp_metrics_for_single_core_temperature(uint8_t core_id, uint16_t latest_t
 void comp_metrics_for_single_core_power(uint8_t core_id, uint16_t latest_power_mW);
 
 /**
+ * @brief  This API used during cores are throttling, MMA calculation is triggerd by this APIs
+ *
+ * @param[in] core_id
+ * @param[in] throttle_index  Throttling type.
+ * @param[in] time_diff_uS    time diff between current timestamp and previous time stamp
+ * @param[in] residency_mS  - residency in mS
+ */
+void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id, int8_t throttle_index, uint32_t time_diff_uS, uint32_t residency_mS);
+
+/**
+ * @brief function is intended to update the histogram data for a specified core
+ *
+ * @param[in] core_id
+ */
+void comp_metrics_for_single_core_histogram(uint8_t core_id);
+
+/**
+ * @brief helper function to update the pstate runtime timestamp
+ *
+ * @param[in] core_id - core that is referenced to that owns this timestamp
+ * @param[in] pstate - pstate that is reference to where it needs to be updated
+ * @param[in] timestamp - timestamp used for the update
+ *
+ * @return fpfw_status_t
+ */
+fpfw_status_t comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp);
+
+/**
+ * @brief function is intended to update the core power state (PState) based on the provided core ID and PState index.
+ *
+ * @param[in] core_id - The identifier of the core for which the PState is being updated.
+ * @param[in] pstate_index - The index of the PState to be updated.
+ */
+void comp_metrics_for_single_core_pstate_power(uint8_t core_id, uint8_t pstate_index);
+
+/**
  * @brief    function updates the minimum, maximum, and average voltage values for the
  * vCPU of a specified tile based on the provided time difference and residency time
  *
@@ -230,6 +276,14 @@ void comp_metrics_for_single_hnf_channel(uint8_t hnf_channel, uint16_t latest_te
 void comp_metrics_for_soc_top_temp_sensor(uint16_t (*latest_soc_top_temp_dC)[NUMBER_OF_SOC_TEMP_SENSORS]);
 
 /**
+ * @brief function updates the maximum SOC temperature value based on the latest maximum SOC temperature
+ * in degrees Celsius (dC).
+ *
+ * @param[in] latest_max_soc_temp_dC - The latest maximum SOC temperature in dC.
+ */
+void comp_metrics_for_soc_max_temp(uint16_t latest_max_soc_temp_dC);
+
+/**
  * @brief  function updates the minimum, maximum, and average temperature values for a specified
  * SOC DIMM (Dual In-line Memory Module) based on the provided time difference and residency time.
  * It updates the temperature data for both S0 and S1 sensors of the DIMM module. It utilizes
@@ -241,42 +295,6 @@ void comp_metrics_for_soc_top_temp_sensor(uint16_t (*latest_soc_top_temp_dC)[NUM
  */
 void comp_metrics_for_single_soc_dimm_temp(uint8_t dimm_id, uint16_t latest_dimm_temp_s0_dC, uint16_t latest_dimm_temp_s1_dC );
 
-
-/**
- * @brief  This API used during cores are throttling, MMA calculation is triggerd by this APIs
- *
- * @param[in] core_id
- * @param[in] throttle_index  Throttling type.
- * @param[in] time_diff_uS    time diff between current timestamp and previous time stamp
- * @param[in] residency_mS  - residency in mS
- */
-void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id, int8_t throttle_index, uint32_t time_diff_uS, uint32_t residency_mS);
-
-/**
- * @brief function is intended to update the histogram data for a specified core
- *
- * @param[in] core_id
- */
-void comp_metrics_for_single_core_histogram(uint8_t core_id);
-
-/**
- * @brief helper function to update the pstate runtime timestamp
- *
- * @param[in] core_id - core that is referenced to that owns this timestamp
- * @param[in] pstate - pstate that is reference to where it needs to be updated
- * @param[in] timestamp - timestamp used for the update
- *
- * @return fpfw_status_t
- */
-fpfw_status_t comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp);
-
-/**
- * @brief function is intended to update the core power state (PState) based on the provided core ID and PState index.
- *
- * @param[in] core_id - The identifier of the core for which the PState is being updated.
- * @param[in] pstate_index - The index of the PState to be updated.
- */
-void comp_metrics_for_single_core_pstate_power(uint8_t core_id, uint8_t pstate_index);
 
 /**
  * @brief function is intended to update the MPAM residency for a specified core and MPAM ID.

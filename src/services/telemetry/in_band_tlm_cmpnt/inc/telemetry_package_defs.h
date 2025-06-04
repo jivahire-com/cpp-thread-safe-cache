@@ -99,7 +99,6 @@ typedef struct {
 
 } telemetry_package_hdr_t, *p_telemetry_package_hdr_t;
 
-
 typedef struct {
     uint16_t provider_id;
     uint16_t element_id;
@@ -670,6 +669,7 @@ typedef struct {
 
 typedef struct {
     uint16_t temperature_dC;
+    uint8_t sensor_id; // Sensor ID for identification
 } inst_soc_element_die_temp_t, *p_inst_soc_element_die_temp_t;
 
 typedef struct {

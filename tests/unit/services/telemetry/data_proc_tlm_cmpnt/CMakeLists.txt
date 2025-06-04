@@ -3,6 +3,7 @@ set(TARGET  kng.service.telemetry.cmpnt.data_process.test)
 set(SOURCES
     data_proc_mock.c
     test_compute_metrics.cpp
+    test_data_proc_cmpnt.cpp
     test_data_sampling.cpp
     test_data_utilities.cpp
     test_die_2_die_exch.cpp
@@ -51,4 +52,5 @@ mock_target(${TARGET}
     exec_tlm_cmpnt_get_timestamp_microseconds
     gtimer_prodfw_get_frequency
     in_band_tlm_cmpnt_is_inst_record_enabled
+    in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg
 )

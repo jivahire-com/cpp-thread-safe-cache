@@ -439,6 +439,28 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data, test_setup, t
     data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(sensor_id, NULL);
 }
 
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data, test_setup, test_teardown)
+{
+    pwr_soc_element_max_soc_temp_t max_temp_data = {0};
+
+    die_2_die_exchange_init(1);
+    die_2_die_exchange_write_pwr_pkg_max_die_temp(500, 10, 600);
+
+    computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.average = 300;
+    computed_metrics_d2d_2mins.max_soc_temp_dC.max = 400;
+    computed_metrics_d2d_2mins.max_soc_temp_dC.min = 200;
+    computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.num_samples = 5;
+
+    data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data(&max_temp_data);
+
+    assert_int_equal(max_temp_data.average_max_dC, 433);
+    assert_int_equal(max_temp_data.peak_max_dC, 600);
+
+    computed_metrics_d2d_2mins.max_soc_temp_dC.max = 800;
+    data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data(&max_temp_data);
+    assert_int_equal(max_temp_data.peak_max_dC, 800);
+}
+
 TEST_FUNCTION(test_get_pwr_mpam_pstate_data, test_setup, test_teardown)
 {
     // the api is currently just stubbed out
@@ -507,12 +529,17 @@ TEST_FUNCTION(test_get_inst_soc_dimm_runtime_data, test_setup, test_teardown)
     data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(TEST_DIMM_CHANN_ID_3, &dimm_runtime_data);
 }
 
-TEST_FUNCTION(test_get_inst_soc_snsr_temp_data, test_setup, test_teardown)
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
-    inst_soc_element_die_temp_t snsr_temp_data = {0};
-    data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(TEST_SNSR_ID_0, &snsr_temp_data);
+    inst_soc_element_die_temp_t sensor_temp_data = {0};
+
+    soc_info.latest_soc_top_temp_dC[7] = 0x23;
+    data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(7, &sensor_temp_data);
+
+    assert_int_equal(sensor_temp_data.temperature_dC, 0x23);
+
+    data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(NUMBER_OF_SOC_TEMP_SENSORS, &sensor_temp_data);
+    data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(7, nullptr);
 }
 
 TEST_FUNCTION(test_get_inst_soc_sensor_temp_data, test_setup, test_teardown)
@@ -520,7 +547,7 @@ TEST_FUNCTION(test_get_inst_soc_sensor_temp_data, test_setup, test_teardown)
     inst_soc_element_max_temp_t read_data = {0};
 
     soc_info.latest_max_die_temp_dC = 200;
-    die_2_die_exchange_write_max_die_temp(400);
+    die_2_die_exchange_write_inst_max_die_temp(400);
     data_proc_tlm_cmpnt_get_inst_soc_max_temp_data(&read_data);
 
     assert_int_equal(read_data.die0_max_temperature_dC, 200);

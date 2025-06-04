@@ -43,10 +43,11 @@ typedef struct
 
 /**
  * @brief Initialize the telemetry executive component.
+ * @param[in] die_id The ID of this die
  * param[in] pwr_pkg_period_ms The power package period in milliseconds.
  * param[in] inst_pkg_sample_period_ms The instantaneous package period in milliseconds.
  */
-void exec_tlm_cmpnt_init(uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_period_ms);
+void exec_tlm_cmpnt_init(uint8_t die_id, uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_period_ms);
 
 /**
  * @brief Check if the telemetry collection is enabled.

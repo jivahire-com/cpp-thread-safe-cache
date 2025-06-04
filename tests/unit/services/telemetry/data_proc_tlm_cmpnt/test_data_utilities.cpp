@@ -161,6 +161,9 @@ TEST_FUNCTION(test_data_util_mean_of_means, test_setup, test_teardown)
 {
     uint16_t mean = data_util_mean_of_means(1000, 10, 2000, 5);
     assert_int_equal(mean, 1333);
+
+    mean = data_util_mean_of_means(0, 0, 0, 0);
+    assert_int_equal(mean, 0);
 }
 
 TEST_FUNCTION(test_data_util_mean_of_means_corner, test_setup, test_teardown)
@@ -216,4 +219,6 @@ TEST_FUNCTION(test_data_util_calc_mma_u16, test_setup, test_teardown)
     data_util_calc_mma_u16(&mma, 150);
     assert_int_equal(mma.min, 50);
     assert_int_equal(mma.max, 150);
+
+    data_util_calc_mma_u16(nullptr, 150);
 }

@@ -45,19 +45,25 @@ void data_proc_tlm_cmpnt_enable_disable_transition(bool enable);
 void data_proc_tlm_cmpnt_process_input_data(void);
 
 /**
- * @brief Primary instantaneous data collection entry point.  Read raw data from sensor fifo and/or registers and update telemetry aggregation structures.
+ * @brief Call prior to generating an instantaneous telemetry package.
  *
  * @return None
  */
 void data_proc_tlm_cmpnt_prepare_data_for_inst_sample(void);
 
 /**
- * @brief Primary 24 hour data collection entry point.  Read raw data from sensor fifo and/or registers and update telemetry aggregation structures.
+ * @brief Call prior to generating a power telemetry package.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg(void);
+
+/**
+ * @brief Call prior to generating a 24 hour telemetry package.
  *
  * @return None
  */
 void data_proc_tlm_cmpnt_prepare_data_for_24hr_pkg(void);
-
 
 /**
  * @brief Get the core pstate data for the specified core.
@@ -199,6 +205,15 @@ void data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(uint16_t dimm_channel, p_pwr
 void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_soc_element_sensor_temp_t sensor_temp_data);
 
 /**
+ * @brief Get the soc maximum temperature data.
+ *
+ * @param[out] max_temp_data - Pointer to the structure to store the maximum temperature data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data(p_pwr_soc_element_max_soc_temp_t max_temp_data);
+
+/**
  * @brief Get the mpam pstate data for the specified mpam.
  *
  * @param[in] mpam_id - The mpam_id to get the data for. 0 .. NUMBER_OF_MPAMS-1
@@ -285,3 +300,11 @@ void data_proc_tlm_cmpnt_pwr_pkg_completed(void);
  * @return None
  */
 void data_proc_tlm_cmpnt_24hr_pkg_completed(void);
+
+/**
+ * @brief Received notification from primary die to copy data to exchange that requires data from all dies.
+ *
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core(void);

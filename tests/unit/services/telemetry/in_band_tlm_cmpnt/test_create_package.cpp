@@ -769,6 +769,7 @@ TEST_FUNCTION(test_package_create_power_pkg_all_enabled, test_setup, test_teardo
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data, NUMBER_OF_DIMM_MODULES);
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_hnf_data, NUMBER_OF_HNF_CHANNELS_PER_DIE);
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data, NUMBER_OF_SOC_TEMP_SENSORS);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data, 1);
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data, NUMBER_OF_MPAMS);
     // TODO: uncommented when record is added
     // expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data, NUMBER_OF_MPAMS);
@@ -777,9 +778,9 @@ TEST_FUNCTION(test_package_create_power_pkg_all_enabled, test_setup, test_teardo
 
     // TODO: remove records below when added to the package
     assert_int_equal(pkg_size,
-                     POWER_PKG_MAX_SIZE - sizeof(pwr_core_record_droop_count_t) - sizeof(pwr_soc_record_dimm_power_t) -
-                         sizeof(pwr_soc_record_die_mesh_t) - sizeof(pwr_soc_record_d2d_link_t) -
-                         sizeof(pwr_soc_record_die_phy_t) - sizeof(pwr_soc_record_max_soc_temp_t) -
+                     POWER_PKG_MAX_SIZE - sizeof(pwr_core_record_droop_count_t) -
+                         sizeof(pwr_soc_record_dimm_power_t) - sizeof(pwr_soc_record_die_mesh_t) -
+                         sizeof(pwr_soc_record_d2d_link_t) - sizeof(pwr_soc_record_die_phy_t) -
                          sizeof(pwr_soc_record_mpam_power_t) - sizeof(pwr_core_record_guard_band_t));
 }
 

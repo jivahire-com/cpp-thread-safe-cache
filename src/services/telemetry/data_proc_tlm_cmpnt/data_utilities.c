@@ -200,8 +200,7 @@ uint16_t data_util_mean_of_means(uint16_t mean1, uint16_t count1, uint16_t mean2
 
     if (total_count == 0)
     {
-        FPFW_ET_LOG(MeansBadDivisor);
-        return 0; // Avoid division by zero
+        return 0; // Avoid division by zero, is expected to happen in some cases with zero'd out data
     }
 
     uint32_t mean = (total_sum + total_count / 2) / total_count; // round up

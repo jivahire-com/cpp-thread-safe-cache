@@ -192,3 +192,8 @@ void in_band_tlm_cmpnt_tlm_mode_enter_actions(tlm_operating_mode_t entering_mode
 
     mts_manager_send_mode_to_sec_cores(entering_mode);
 }
+
+void in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg(void)
+{
+    mts_manager_send_prep_pwr_pkg_notification_to_sec_mcps();
+}

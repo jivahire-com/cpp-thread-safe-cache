@@ -6,9 +6,13 @@
 /*------------- Includes -----------------*/
 #include <atu_api.h>
 #include <fpfw_init.h>
+#include <kng_scp_tfa_shared.h>
 #include <mpu.h>
 #include <silibs_mcp_exp_top_regs.h>
 #include <silibs_mcp_top_regs.h>
+
+/*-- Symbolic Constant Macros (defines) --*/
+#define PWR_TLM_D2D_SIZE (512)
 
 /*------------- Typedefs -----------------*/
 
@@ -22,7 +26,7 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
 {
     // clang-format off
     // Setup regions
-    //  - All regions must have a start address that is aligned to the size of the region. 
+    //  - All regions must have a start address that is aligned to the size of the region.
     const ARM_MPU_Region_t regions[] = {
         /**
          * MPU Region 0 - Background   0x00000000 - 0xFFFFFFFF
@@ -44,7 +48,7 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
         },
        /**
         * MPU Region 1 - ITCM
-        *                Normal Non-Cacheable, Non-Shareable 
+        *                Normal Non-Cacheable, Non-Shareable
         *                M7 won't cache TCM regardless of MPU configuration
         *                see Cortex-M7 TRM section 5.7.1 TCM attributes and permissions
         *                Privileged R/W (so bootRAM relocation can write) FIXME: Make R/O after bootRAM relocation?
@@ -65,7 +69,7 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
          *                Normal Non-Cacheable, Non-Shareable, XN=1
          *                M7 won't cache TCM regardless of MPU configuration
          *                (see Cortex-M7 TRM section 5.7.1 TCM attributes and permissions)
-         *                Priviledged R/W     
+         *                Priviledged R/W
          */
         {
             .RBAR = ARM_MPU_RBAR(2, MCP_TOP_MCP_DATA_RAM_ADDRESS),  // NOLINT
@@ -212,6 +216,24 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
                                  NON_BUFFERABLE,
                                  DISABLE_SUBREGION,
                                  ARM_MPU_REGION_SIZE_1MB),
+        },
+        /**
+         * MPU Region 13 - Power Telemetry ARSM Die to Die
+         *                currently D0_ARSM_PWR_TLM_MCP_2_MCP_BASE does not start with a region alignment so rounding up
+         *                Normal Noncacheable
+         *                Priviledged R/W
+         */
+        {
+            .RBAR = ARM_MPU_RBAR(13, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR +
+                                   ARSM_GET_REGION_OFFSET(ALIGN_UP(D0_ARSM_PWR_TLM_MCP_2_MCP_BASE, PWR_TLM_D2D_SIZE))), // NOLINT
+            .RASR = ARM_MPU_RASR(DISABLE_EXEC,
+                                 ARM_MPU_AP_PRIV,
+                                 TYPE_EXT_1,
+                                 SHAREABLE,
+                                 NON_CACHEABLE,
+                                 NON_BUFFERABLE,
+                                 DISABLE_SUBREGION,
+                                 ARM_MPU_REGION_SIZE_512B),
         },
     };
     // clang-format on

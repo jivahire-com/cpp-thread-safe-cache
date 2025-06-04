@@ -45,6 +45,11 @@ void data_proc_tlm_cmpnt_prepare_data_for_inst_sample(void)
     function_called();
 }
 
+void data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg(void)
+{
+    function_called();
+}
+
 void data_proc_tlm_cmpnt_prepare_data_for_24hr_pkg(void)
 {
     function_called();

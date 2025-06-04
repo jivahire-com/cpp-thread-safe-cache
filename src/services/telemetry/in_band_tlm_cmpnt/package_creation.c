@@ -241,7 +241,16 @@ uint32_t package_create_power_pkg(uintptr_t pkg_location, size_t pkg_available_s
 
     // TODO: POWER_TELEMETRY_ELEMENT_SOC_PER_DIE_PHY_COUNTERS
 
-    // TODO: POWER_TELEMETRY_ELEMENT_SOC_MAX_TEMPERATURE
+    if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_MAX_TEMPERATURE])
+    {
+        if (inband_die_id == 0)
+        {
+            // this record only exported on die 0.
+            p_pwr_soc_record_max_soc_temp_t max_temp_record = (p_pwr_soc_record_max_soc_temp_t)pkg_location;
+            pkg_location += package_create_pwr_soc_max_temp_record(max_temp_record);
+            package_hdr->payload_header.number_of_records++;
+        }
+    }
 
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM])
     {
@@ -684,6 +693,24 @@ uint32_t package_create_pwr_soc_sensor_temp_record(p_pwr_soc_record_sensor_temp_
     return sizeof(pwr_soc_record_sensor_temp_t);
 }
 
+uint32_t package_create_pwr_soc_max_temp_record(p_pwr_soc_record_max_soc_temp_t max_temp_record)
+{
+    populate_record_hdr(&max_temp_record->record_header,
+                        ++power_pkg_record_number[POWER_TELEMETRY_ELEMENT_SOC_MAX_TEMPERATURE],
+                        1,
+                        sizeof(pwr_soc_record_max_soc_temp_t));
+
+    populate_pwr_collection_hdr(&max_temp_record->max_soc_temp_collection.collection_header,
+                                POWER_TELEMETRY_ELEMENT_SOC_MAX_TEMPERATURE,
+                                1,
+                                1,
+                                sizeof(pwr_soc_collection_max_soc_temp_t));
+
+    data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data(&max_temp_record->max_soc_temp_collection.max_soc_temp_element);
+
+    return sizeof(pwr_soc_record_max_soc_temp_t);
+}
+
 uint32_t package_create_pwr_mpam_pstate_record(p_pwr_soc_record_mpam_pstate_t mpam_record)
 {
     populate_record_hdr(&mpam_record->record_header,
@@ -805,6 +832,8 @@ uint32_t package_create_inst_soc_sensor_temp_record(p_inst_soc_record_die_temp_t
                                      1,
                                      sizeof(inst_soc_collection_die_temp_t));
 
+        snsr_temp_record->temperature_collection[snsr_id].temperature_element.sensor_id =
+            TEMP_ID_WITH_DIE_OFFSET(snsr_id);
         data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(snsr_id,
                                                         &snsr_temp_record->temperature_collection[snsr_id].temperature_element);
     }

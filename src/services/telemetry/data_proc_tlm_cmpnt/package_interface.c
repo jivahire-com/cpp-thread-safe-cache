@@ -272,6 +272,20 @@ void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_so
     }
 }
 
+void data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data(p_pwr_soc_element_max_soc_temp_t max_temp_data)
+{
+    // record is only created on die 0
+    max_die_temps_t die1_max_temp = {0};
+    die_2_die_exchange_read_pwr_pkg_max_die_temp_dC(1, &die1_max_temp);
+
+    max_temp_data->average_max_dC =
+        data_util_mean_of_means(computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.average,
+                                computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.num_samples,
+                                die1_max_temp.average_max_temp_dC,
+                                die1_max_temp.num_samples);
+    max_temp_data->peak_max_dC = FPFW_MAX(computed_metrics_d2d_2mins.max_soc_temp_dC.max, die1_max_temp.peak_temp_dC);
+}
+
 void data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data(uint16_t mpam_id,
                                                   pwr_soc_element_mpam_pstate_t (*mpam_pstate_array)[NUMBER_OF_PSTATES])
 {
@@ -366,19 +380,13 @@ void data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(uint16_t dimm_module, p_
 
 void data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(uint16_t sensor_id, p_inst_soc_element_die_temp_t sensor_temp_data)
 {
-    // perf_soc_temp_fill_data for sensor
     if (sensor_id >= NUMBER_OF_SOC_TEMP_SENSORS || sensor_temp_data == NULL)
     {
         FPFW_ET_LOG(DataPackageInstRecordError, INST_TELEMETRY_ELEMENT_SOC_DIE_TEMP);
     }
     else
     {
-        // TODO: update via  https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584944
-
-        // sensor_temp_data->latest_value_dC = soc_info.sensor_temp->latest_value_dC;
-        // sensor_temp_data->average_dC = soc_info.sensor_temp->average_dC;
-        // sensor_temp_data->max_dC = soc_info.sensor_temp->max_dC;
-        // sensor_temp_data->min_dC = soc_info.sensor_temp->min_dC;
+        sensor_temp_data->temperature_dC = soc_info.latest_soc_top_temp_dC[sensor_id];
     }
 }
 
@@ -386,5 +394,5 @@ void data_proc_tlm_cmpnt_get_inst_soc_max_temp_data(p_inst_soc_element_max_temp_
 {
     // note:  packaging won't call this api for secondary dies
     max_temp_data->die0_max_temperature_dC = soc_info.latest_max_die_temp_dC;
-    max_temp_data->die1_max_temperature_dC = die_2_die_exchange_read_max_die_temp_dC(1);
+    max_temp_data->die1_max_temperature_dC = die_2_die_exchange_read_inst_max_die_temp_dC(1);
 }

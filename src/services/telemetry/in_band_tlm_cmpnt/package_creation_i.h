@@ -200,6 +200,13 @@ uint32_t package_create_pwr_soc_dimm_temp_record(p_pwr_soc_record_dimm_temp_t di
 uint32_t package_create_pwr_soc_sensor_temp_record(p_pwr_soc_record_sensor_temp_t snsr_temp_record);
 
 /**
+ * @brief   Create a power soc max soc temperature record
+ * @param[out] max_temp_record - location where the record will be stored
+ * @return uint32_t - Number of bytes in the record
+ */
+uint32_t package_create_pwr_soc_max_temp_record(p_pwr_soc_record_max_soc_temp_t max_temp_record);
+
+/**
  * @brief   Create a power mpam pstate record
  * @param[out] mpam_record - location where the record will be stored
  * @return uint32_t - Number of bytes in the record

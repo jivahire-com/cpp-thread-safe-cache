@@ -506,6 +506,19 @@ TEST_FUNCTION(test_mts_manager_handle_trp_msg_client_defined, test_setup, nullpt
     mts_manager_handle_trp_msg(&trp_msg);
 }
 
+TEST_FUNCTION(test_mts_manager_handle_trp_msg_client_defined_2, test_setup, nullptr)
+{
+    trp_msg_t trp_msg = {{{{0}}}};
+
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_CLIENT_DEFINED;
+    p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
+    tlm_client_msg->cmd = TLM_CLIENT_CMD_GEN_PWR_PACKAGE_PRIM_MCP_2_SEC_MCP_PUSH;
+
+    expect_function_call(data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core);
+
+    mts_manager_handle_trp_msg(&trp_msg);
+}
+
 TEST_FUNCTION(test_mts_manager_free_tlm_package_from_primary_mcp, test_setup, nullptr)
 {
     uint8_t buffer[1000] = {0};
@@ -814,4 +827,11 @@ TEST_FUNCTION(test_mts_manager_send_mode_to_sec_cores, test_setup, nullptr)
     will_return(__wrap_mts_is_primary_instance, true);
     expect_function_call(__wrap_mts_client_forward_trp_msg);
     mts_manager_send_mode_to_sec_cores(TLM_OP_MODE_PUBLISHING);
+}
+
+TEST_FUNCTION(test_mts_manager_send_prep_pwr_pkg_notification_to_sec_mcps, test_setup, test_teardown)
+{
+    will_return(__wrap_mts_is_primary_instance, true);
+    expect_function_call(__wrap_mts_client_forward_trp_msg);
+    mts_manager_send_prep_pwr_pkg_notification_to_sec_mcps();
 }

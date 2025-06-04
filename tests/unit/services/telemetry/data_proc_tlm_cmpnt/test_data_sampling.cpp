@@ -167,7 +167,13 @@ TEST_FUNCTION(test_data_smpl_parse_tile_temperature_entry, test_setup, test_tear
 
     index = 1;
     temperature_data.temp1.temp1 = 60;
+    temperature_data.temp0.max_temp = 16384;
+    tileDtsCoefficients[index].k_val = 281;
+    tileDtsCoefficients[index].y_val = 648;
+    soc_info.latest_max_tile_temp_dC = 0;
+
     data_smpl_parse_tile_temperature_entry(&temperature_data, index);
+    assert_int_equal(soc_info.latest_max_tile_temp_dC, 3670);
 
     // test index out of range
     index = NUMBER_OF_TILES_PER_DIE;
@@ -637,18 +643,6 @@ TEST_FUNCTION(test_data_smpl_parse_vr_current_entry, test_setup, test_teardown)
     }
 }
 
-TEST_FUNCTION(test_data_proc_tlm_cmpnt_prepare_data_for_inst_sample, test_setup, test_teardown)
-{
-    // expand unit test once implementation is available
-    data_proc_tlm_cmpnt_prepare_data_for_inst_sample();
-}
-
-TEST_FUNCTION(test_data_proc_tlm_cmpnt_prepare_data_for_24hr_pkg, test_setup, test_teardown)
-{
-    // expand unit test once implementation is available
-    data_proc_tlm_cmpnt_prepare_data_for_24hr_pkg();
-}
-
 TEST_FUNCTION(test_data_smpl_parse_rack_throttling, test_setup, test_teardown)
 {
     uint8_t core_id = 0;
@@ -740,6 +734,8 @@ TEST_FUNCTION(test_data_smpl_update_max_die_temp, test_setup, test_teardown)
     will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, true);
     data_smpl_update_max_die_temp();
 
+    soc_info.latest_max_tile_temp_dC = 200;
+    soc_info.latest_max_soc_top_temp_dC = 300;
     die_2_die_exchange_init(1);
     will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, true);
     data_smpl_update_max_die_temp();

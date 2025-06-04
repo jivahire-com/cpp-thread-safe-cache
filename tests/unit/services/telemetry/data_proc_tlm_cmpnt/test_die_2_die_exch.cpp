@@ -44,9 +44,9 @@ static int test_teardown(void** pContext)
 
 TEST_FUNCTION(test_droop_counts, test_setup, test_teardown)
 {
-    die_2_die_exchange_write_max_die_temp(MAX_DIE_TEMPERATURE_DC);
+    die_2_die_exchange_write_inst_max_die_temp(MAX_DIE_TEMPERATURE_DC);
 
-    uint16_t read_temp_dC = die_2_die_exchange_read_max_die_temp_dC(1); // Read from die 0
+    uint16_t read_temp_dC = die_2_die_exchange_read_inst_max_die_temp_dC(1); // Read from die 0
 
     assert_int_equal(read_temp_dC, MAX_DIE_TEMPERATURE_DC); // Verify the read value matches the written value
 }
@@ -54,17 +54,46 @@ TEST_FUNCTION(test_droop_counts, test_setup, test_teardown)
 TEST_FUNCTION(test_write_errors, test_setup, test_teardown)
 {
     die_2_die_exchange_init(0);
-    die_2_die_exchange_write_max_die_temp(MAX_DIE_TEMPERATURE_DC); // die 0 doesn't write to exchange
+    die_2_die_exchange_write_inst_max_die_temp(MAX_DIE_TEMPERATURE_DC); // die 0 doesn't write to exchange
 
     die_2_die_exchange_init(2);
-    die_2_die_exchange_write_max_die_temp(MAX_DIE_TEMPERATURE_DC); // die 2 doesn't exist
+    die_2_die_exchange_write_inst_max_die_temp(MAX_DIE_TEMPERATURE_DC); // die 2 doesn't exist
 }
 
 TEST_FUNCTION(test_read_errors, test_setup, test_teardown)
 {
-    uint16_t read_temp_dC = die_2_die_exchange_read_max_die_temp_dC(0); // die 0 doesn't write to exchange
+    uint16_t read_temp_dC = die_2_die_exchange_read_inst_max_die_temp_dC(0); // die 0 doesn't write to exchange
     assert_int_equal(read_temp_dC, 0); // Verify the read value is 0 for die 0
 
-    read_temp_dC = die_2_die_exchange_read_max_die_temp_dC(2); // die 2 doesn't exist
-    assert_int_equal(read_temp_dC, 0);                         // Verify the read value is 0 for die 2
+    read_temp_dC = die_2_die_exchange_read_inst_max_die_temp_dC(2); // die 2 doesn't exist
+    assert_int_equal(read_temp_dC, 0);                              // Verify the read value is 0 for die 2
+}
+
+TEST_FUNCTION(test_die_2_die_exchange_write_pwr_pkg_max_die_temp, test_setup, test_teardown)
+{
+    die_2_die_exchange_init(1);
+    die_2_die_exchange_write_pwr_pkg_max_die_temp(500, 10, 600);
+
+    max_die_temps_t read_temps = {0};
+    die_2_die_exchange_read_pwr_pkg_max_die_temp_dC(1, &read_temps);
+    assert_int_equal(read_temps.average_max_temp_dC, 500);
+    assert_int_equal(read_temps.num_samples, 10);
+    assert_int_equal(read_temps.peak_temp_dC, 600);
+}
+
+TEST_FUNCTION(test_die_2_die_exchange_write_pwr_pkg_max_die_temp_negative, test_setup, test_teardown)
+{
+    die_2_die_exchange_init(1);
+    die_2_die_exchange_write_pwr_pkg_max_die_temp(500, 10, 600);
+
+    max_die_temps_t read_temps = {0};
+    die_2_die_exchange_read_pwr_pkg_max_die_temp_dC(0, &read_temps);
+    assert_int_equal(read_temps.average_max_temp_dC, 0);
+    assert_int_equal(read_temps.num_samples, 0);
+    assert_int_equal(read_temps.peak_temp_dC, 0);
+
+    die_2_die_exchange_read_pwr_pkg_max_die_temp_dC(1, nullptr);
+    assert_int_equal(read_temps.average_max_temp_dC, 0);
+    assert_int_equal(read_temps.num_samples, 0);
+    assert_int_equal(read_temps.peak_temp_dC, 0);
 }

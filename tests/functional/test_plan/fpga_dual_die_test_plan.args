@@ -1,5 +1,8 @@
 --variable HOST_JSON:hsp_scp_bl_embed_fw_dual_die.json
 
+## Boot tests
+./../../../tests/functional/test_suites/boot_tests/uefi_boot_dual_die.robot
+
 ## AVS Die 1 Tests
 ./../../../tests/functional/test_suites/avs_tests/avs_read_tests_die1.robot
 ./../../../tests/functional/test_suites/avs_tests/avs_write_tests_die1.robot

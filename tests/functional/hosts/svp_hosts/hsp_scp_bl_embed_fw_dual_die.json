@@ -28,7 +28,7 @@
                                 }, 
                                 "default": "telnet" 
                             } 
-                        } 
+                        }
                     },
                     "secondary_die": { 
                         "is_present": true, 

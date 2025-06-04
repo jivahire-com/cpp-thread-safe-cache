@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.lib.utils
         fwlib.lib.interface.platform.interrupts
+        fwlib.lib.assert
         idhw
         ms::cmocka::testrunner
         ms::lib::register_headers

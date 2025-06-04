@@ -319,6 +319,18 @@ KNG_DIE_ID __wrap_idhw_get_die_id(void)
     return g_test_die;
 }
 
+void __wrap_hm_submit_cper(uint16_t error_domain_idx,
+                           acpi_error_severity_t err_severity,
+                           acpi_cper_section_t* err_record_section,
+                           uint32_t err_record_section_size)
+{
+    assert_int_equal(error_domain_idx, ACPI_ERROR_DOMAIN_MESH);
+    check_expected(err_severity);
+    assert_non_null(err_record_section);
+    check_expected(err_record_section_size);
+    function_called();
+}
+
 nvic_status_t __wrap_nvic_irq_set_isr_with_param(uint32_t irq_num, isr_callback_fn_with_params_t isr, void* parameter)
 {
     check_expected(irq_num);
@@ -436,6 +448,7 @@ bool __wrap_ras_arm_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* r
     record->handler = mock_type(ras_generic_handler_t);
     record->err_code = mock_type(uint32_t);
     record->err_code_valid = mock_type(bool);
+    record->status = BIT29;     // Set to ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL
     function_called();
     return mock_type(bool);
 }
@@ -962,6 +975,10 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_error_isr_Die_0_SVP, setup_svp_platfo
     expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
     expect_function_call(__wrap_interrupt_handler_mesh_ras_error);
 
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_INFORMATIONAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
+
     // Call API under test
     mesh_error_isr(NULL);
 }
@@ -976,6 +993,10 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_error_isr_Die_1_SVP, setup_svp_platfo
     expect_value(__wrap_interrupt_handler_mesh_ras_error, non_secure, false);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
     expect_function_call(__wrap_interrupt_handler_mesh_ras_error);
+
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_INFORMATIONAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
 
     // Call API under test
     mesh_error_isr(NULL);
@@ -993,6 +1014,10 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_fault_isr_Die_0_SVP, setup_svp_platfo
     expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
     expect_function_call(__wrap_interrupt_handler_mesh_ras_error);
 
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_INFORMATIONAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
+
     // Call API under test
     mesh_fault_isr(NULL);
 }
@@ -1007,6 +1032,10 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_fault_isr_Die_1_SVP, setup_svp_platfo
     expect_value(__wrap_interrupt_handler_mesh_ras_error, non_secure, false);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
     expect_function_call(__wrap_interrupt_handler_mesh_ras_error);
+
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_INFORMATIONAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
 
     // Call API under test
     mesh_fault_isr(NULL);
@@ -1024,6 +1053,10 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_ns_error_isr_Die_0_SVP, setup_svp_pla
     expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
     expect_function_call(__wrap_interrupt_handler_mesh_ras_error);
 
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_INFORMATIONAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
+
     // Call API under test
     mesh_ns_error_isr(NULL);
 }
@@ -1038,6 +1071,10 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_ns_error_isr_Die_1_SVP, setup_svp_pla
     expect_value(__wrap_interrupt_handler_mesh_ras_error, non_secure, true);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
     expect_function_call(__wrap_interrupt_handler_mesh_ras_error);
+
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_INFORMATIONAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
 
     // Call API under test
     mesh_ns_error_isr(NULL);
@@ -1055,6 +1092,10 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_ns_fault_isr_Die_0_SVP, setup_svp_pla
     expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
     expect_function_call(__wrap_interrupt_handler_mesh_ras_error);
 
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_INFORMATIONAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
+
     // Call API under test
     mesh_ns_fault_isr(NULL);
 }
@@ -1069,6 +1110,10 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_ns_fault_isr_Die_1_SVP, setup_svp_pla
     expect_value(__wrap_interrupt_handler_mesh_ras_error, non_secure, true);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
     expect_function_call(__wrap_interrupt_handler_mesh_ras_error);
+
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_INFORMATIONAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
 
     // Call API under test
     mesh_ns_fault_isr(NULL);
@@ -1139,6 +1184,9 @@ TEST_FUNCTION(test_mesh_error_handler_d2d_ras_error_isr, setup_svp_platform, set
         will_return(__wrap_ras_arm_agent_probe, true); // return
         expect_function_call(__wrap_ras_arm_agent_probe);
         expect_function_call(__wrap_ras_print_record);
+        expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+        expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+        expect_function_call(__wrap_hm_submit_cper);
     }
     // Call API under test
     d2d_error_isr(NULL);
@@ -1156,6 +1204,10 @@ TEST_FUNCTION(test_mesh_error_handler_d2d_ras_error_isr_crash, setup_svp_platfor
     will_return(__wrap_ras_arm_agent_probe, true);       // return
     expect_function_call(__wrap_ras_arm_agent_probe);
     expect_function_call(__wrap_ras_print_record);
+
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
 
     expect_value(__wrap_ras_arm_agent_set_base, agent, &d2dss2_agent[1]);
     expect_function_call(__wrap_ras_arm_agent_set_base);
@@ -1175,6 +1227,10 @@ TEST_FUNCTION(test_mesh_error_handler_d2d_ras_error_isr_crash, setup_svp_platfor
     will_return(__wrap_ras_arm_agent_probe, true);             // return
     expect_function_call(__wrap_ras_arm_agent_probe);
     expect_function_call(__wrap_ras_print_record);
+
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
 
     expect_value(__wrap_crash_dump_bug_check, errorCode, 0x80000001);
     expect_any(__wrap_crash_dump_bug_check, p1);

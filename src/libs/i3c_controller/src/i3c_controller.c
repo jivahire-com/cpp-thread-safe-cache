@@ -341,16 +341,20 @@ int i3c_controller(uint8_t die_num)
             {
                 FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMMs Read Err, status 0x%x\n", status);
                 // Error or BUGCHECK
-                goto exit;
+                goto check1;
             }
             SLEEP_US(DELAY_10_MS);
             FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMM Detected: 0x%x\n", ddrss_en);
-            status = ddr_i3c_interface_read_dimm_capacity(&s_i3c_cmd_test, ddrss_en, &dimm_cap_per_ch, &dimm_sku);
+            // ddrss_en needs to be converted to ddrss_index
+            // ddrss_en = 1, ddrss_index = 0
+            // Need to read the DIMM capacity from only 1 DIMM, so find the lowest bit set in the ddrss_en
+            uint8_t ddrss_index = __builtin_ffs(ddrss_en) - 1;
+            status = ddr_i3c_interface_read_dimm_capacity(&s_i3c_cmd_test, ddrss_index, &dimm_cap_per_ch, &dimm_sku);
             if (status != SILIBS_SUCCESS)
             {
                 FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMM Capacity/SKU Read Err, status 0x%x\n", status);
                 // Error or BUGCHECK
-                goto exit;
+                goto check1;
             }
             SLEEP_US(DELAY_10_MS);
             FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMM Capacity: 0x%x, SKU: 0x%x\n", dimm_cap_per_ch, dimm_sku);
@@ -363,7 +367,7 @@ int i3c_controller(uint8_t die_num)
             g_dimm_sku = DDR5_RDIMM_2Rx4_16Gb_64GB;
             ddrss_en = (die_num == SOC_D0) ? (0x3F) : (0xFC0);
         }
-
+    check1:
         // I3C Sync point with Remote Die on a 2-Die Config
         if (!idhw_is_single_die_boot_en()) // 2 Die
         {

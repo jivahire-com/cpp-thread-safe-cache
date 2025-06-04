@@ -99,4 +99,5 @@ mock_target(${TARGET}
     cmn800_generate_ddr_mc_map_from_snf_config
     cmn800_error_injection
     cmn800_pseudo_fault_error_injection
+    hm_submit_cper
 )

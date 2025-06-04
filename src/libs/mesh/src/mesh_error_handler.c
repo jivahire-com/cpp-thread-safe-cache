@@ -40,6 +40,7 @@ ras_agent_entity_t d2dss2_agent[NUM_OF_CCG_WITH_D2D] = {0};
 bool g_mesh_error_print = false;
 // Create a FW CPER
 static acpi_err_sec_generic_t mesh_cper = {0x0};
+static ras_error_record_t record = {0x0};
 
 atu_map_entry_t atu_d2d2_map[NUM_OF_CCG_WITH_D2D] = {
     {.ap_base_address = AP_TOP_D0_D2DSS_0_ADDRESS + D2DSS_CXS_D2D_RAS_ADDRESS,
@@ -155,6 +156,35 @@ static void print_mesh_cper(acpi_err_sec_generic_t* mesh_cper)
 }
 
 /**
+ * Function to decode the Mesh Error Status
+ **/
+void fnc_decode_mesh_cper_status(acpi_err_sec_generic_t* mesh_cper, uint8_t* acpi_severity)
+{
+    print_mesh_cper(mesh_cper);
+
+    if ((mesh_cper->err_status) & BIT29)
+    { // UE
+        *acpi_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
+        MESH_INFO("UE - ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL");
+    }
+    else if ((mesh_cper->err_status) & BIT23)
+    { // DE
+        *acpi_severity = ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL;
+        MESH_INFO("DE - ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL");
+    }
+    else if ((mesh_cper->err_status) & BIT25)
+    { // CE
+        *acpi_severity = ACPI_ERROR_SEVERITY_CORRECTED;
+        MESH_INFO("CE - ACPI_ERROR_SEVERITY_CORRECTED");
+    }
+    else
+    {
+        *acpi_severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
+        MESH_INFO("ACPI_ERROR_SEVERITY_INFORMATIONAL");
+    }
+}
+
+/**
  * Mesh Fault ISR
  * This function is called when a Mesh Fault ISR is triggered by the hardware INT
  * @param context
@@ -176,6 +206,12 @@ void mesh_fault_isr(void* context)
     print_mesh_cper(&mesh_cper);
 
     mesh_error_print(false);
+
+    uint8_t acpi_severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
+    acpi_cper_section_t cper_section;
+    cper_section.sec_mesh = mesh_cper;
+    fnc_decode_mesh_cper_status(&mesh_cper, &acpi_severity);
+    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, acpi_severity, &cper_section, sizeof(cper_section));
 }
 
 /**
@@ -200,6 +236,12 @@ void mesh_error_isr(void* context)
     print_mesh_cper(&mesh_cper);
 
     mesh_error_print(false);
+
+    uint8_t acpi_severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
+    acpi_cper_section_t cper_section;
+    cper_section.sec_mesh = mesh_cper;
+    fnc_decode_mesh_cper_status(&mesh_cper, &acpi_severity);
+    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, acpi_severity, &cper_section, sizeof(cper_section));
 }
 
 /**
@@ -224,6 +266,12 @@ void mesh_ns_fault_isr(void* context)
     print_mesh_cper(&mesh_cper);
 
     mesh_error_print(false);
+
+    uint8_t acpi_severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
+    acpi_cper_section_t cper_section;
+    cper_section.sec_mesh = mesh_cper;
+    fnc_decode_mesh_cper_status(&mesh_cper, &acpi_severity);
+    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, acpi_severity, &cper_section, sizeof(cper_section));
 }
 
 /**
@@ -248,6 +296,12 @@ void mesh_ns_error_isr(void* context)
     print_mesh_cper(&mesh_cper);
 
     mesh_error_print(false);
+
+    uint8_t acpi_severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
+    acpi_cper_section_t cper_section;
+    cper_section.sec_mesh = mesh_cper;
+    fnc_decode_mesh_cper_status(&mesh_cper, &acpi_severity);
+    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, acpi_severity, &cper_section, sizeof(cper_section));
 }
 
 uint32_t d2d_set_atu_map(uint8_t d2d_subsystem)
@@ -277,6 +331,35 @@ void d2d_clear_atu_map(uint8_t d2d_subsystem)
     atu_d2d2_map[d2d_subsystem].mscp_end_address = ALIGN_UP(D2DSS_CXS_D2D_RAS_SIZE, _8KB) - 1;
 }
 
+int mesh_error_handler_convert_d2d_ras_record_to_cper(ras_error_record_t* record, acpi_err_sec_generic_t* mesh_cper, uint8_t d2d_subsystem)
+{
+    if (record == NULL || mesh_cper == NULL)
+    {
+        MESH_CRIT("Invalid Record or Mesh CPER\n");
+        return SILIBS_E_DEVICE;
+    }
+
+    // Convert the RAS record to CPER
+    mesh_cper->node_id.vendor_specific_data[MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_0] = MESH_ERROR_NODE_ID_CCG + 1; //  MESH_ERROR_NODE_ID_D2D;
+    mesh_cper->node_id.vendor_specific_data[MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_1] = MESH_ERROR_RAS_FAULT + 1; // D2D_ERROR_RAS_ERROR
+    mesh_cper->node_id.vendor_specific_data[MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_2] = d2d_subsystem;
+    mesh_cper->node_id.vendor_specific_data[MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_3] = 0;
+    mesh_cper->err_record_num = 0; // Error Record Number
+    mesh_cper->version = 0;        // Version of the CPER
+
+    // Fill in the error record details
+    mesh_cper->err_fr = record->syndrome;
+    mesh_cper->err_ctrl = record->status; // Status is used for Error Control Register
+    mesh_cper->err_status = record->status;
+    mesh_cper->err_addr = record->err_address;
+    mesh_cper->err_misc0 = record->misc_0;
+    mesh_cper->err_misc1 = record->misc_1;
+    mesh_cper->err_misc2 = record->misc_2;
+    mesh_cper->err_misc3 = record->misc_3;
+
+    return SILIBS_SUCCESS;
+}
+
 /**
  * D2D Error ISR
  * This function is called when a D2D Error ISR is triggered by the hardware INT
@@ -289,8 +372,10 @@ void d2d_error_isr(void* context)
 
     MESH_CRIT("D2D Error ISR\n");
     uint32_t translated_addr_ras2 = 0x0;
+    uint8_t acpi_severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
 
-    ras_error_record_t record;
+    // Clear the d2d ras error record
+    record = (ras_error_record_t){0};
     for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
     {
 
@@ -308,6 +393,27 @@ void d2d_error_isr(void* context)
         {
             MESH_CRIT("Error found in D2DSS2_AGENT%d\n", d2d_subsystem);
             ras_print_record(&record);
+            // Convert the error record to CPER
+            // Clear mesh_cper
+            mesh_cper = (acpi_err_sec_generic_t){0x0};
+            int status = mesh_error_handler_convert_d2d_ras_record_to_cper(&record, &mesh_cper, d2d_subsystem);
+            if (status == SILIBS_SUCCESS)
+            {
+                MESH_CRIT("Converted D2D RAS Record to CPER successfully\n");
+                // Print the CPER
+                mesh_error_print(true);
+                print_mesh_cper(&mesh_cper);
+                mesh_error_print(false);
+                // Submit the CPER to the Health Monitor
+                acpi_cper_section_t cper_section;
+                cper_section.sec_mesh = mesh_cper;
+                fnc_decode_mesh_cper_status(&mesh_cper, &acpi_severity);
+                hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, acpi_severity, &cper_section, sizeof(cper_section));
+            }
+            else
+            {
+                MESH_CRIT("Failed to convert D2D RAS Record to CPER, status: %d\n", status);
+            }
             if (record.handler)
             {
                 if (record.handler(&record))
@@ -325,7 +431,12 @@ void d2d_error_isr(void* context)
             // ADO 1513835 The combined INT is cleared outside this module
 
             d2d_clear_atu_map(d2d_subsystem); // Clear the ATU Map since error was found and we are jumping out of the loop
-            BUG_CHECK(record.err_code_valid ? (KNG_STATUS)record.err_code : KNG_E_FAIL, 0, 0);
+            if (acpi_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)
+            {
+                // If the severity is fatal, we need to bug check
+                MESH_CRIT("Fatal Error in D2D Subsystem %d, Bug Check\n", d2d_subsystem);
+                BUG_CHECK(record.err_code_valid ? (KNG_STATUS)record.err_code : KNG_E_FAIL, 0, 0);
+            }
             break; // Break out of the loop
         }
     d2d_ras_error_isr_exit:

@@ -214,14 +214,14 @@
     <Knob name="power_soc_maximum_thermal_watts_limit" type="uint16_t" default="0" help="SOC maximum power limit specific to thermal (W). Defaults to fused value if set to 0" />
     <Knob name="power_soc_maximum_electrical_current_limit_vcpu0" type="uint16_t" default="497" help="Vcpu0 current maximum value (A) used to determine the maximum electrical power limit." />
     <Knob name="power_soc_maximum_electrical_current_limit_vcpu1" type="uint16_t" default="497" help="Vcpu1 current maximum value (A) used to determine the maximum electrical power limit." />
-    <Knob name="power_r_loadline_vcpu0" type="uint16_t" default="400" help="Loadline resistance (uOhm - used in Vcpu calculation)" />
-    <Knob name="power_r_loadline_vcpu1" type="uint16_t" default="400" help="Loadline resistance (uOhm - used in Vcpu calculation)" />
-    <Knob name="power_vsys_r_loadline" type="uint16_t" default="300" help="Loadline resistance (uOhm - used in Vsys power calculation)" />
+    <Knob name="power_r_loadline_vcpu0" type="uint16_t" default="500 " help="Loadline resistance (uOhm - used in Vcpu calculation)" />
+    <Knob name="power_r_loadline_vcpu1" type="uint16_t" default="500 " help="Loadline resistance (uOhm - used in Vcpu calculation)" />
+    <Knob name="power_vsys_r_loadline" type="uint16_t" default="600" help="Loadline resistance (uOhm - used in Vsys power calculation)" />
 
     <!-- Double Check default values (Different between code and doc) -->
     <Knob name="power_activity_factor_mpmm_enabled" type="uint8_t" default="80" help="Activity factor adjustment against dhrystone when MPMM enabled (percentage, used in Vcpu/dynamic current calculation)" />
     <Knob name="power_activity_factor_mpmm_disabled" type="uint8_t" default="100" help="Activity factor adjustment against dhrystone when MPMM disabled (percentage, used in Vcpu/dynamic current calculation)" />
-    <Knob name="power_activity_factor_dhry_adjustment" type="uint8_t" default="100" help="Activity factor with mpmm disabled" />
+    <Knob name="power_activity_factor_dhry_adjustment" type="uint8_t" default="217" help="Activity factor with mpmm disabled" />
 
     <Knob name="power_capping_mode" type="power_capping_mode_t" default="power_capping_mode_t_PER_VM" help="Power capping mode" />
     <Knob name="power_enable_velocity_boost" type="bool" default="true" help="Enable for velocity boost (priority-based turbo). Disabling leaves turbo enabled, without priority" />
@@ -242,7 +242,7 @@
     <Knob name="power_current_throttling_cfg" type="" default="" help="Current threshold percentages per P-state" />
     -->
   
-    <Knob name="power_current_throt" type="power_currthrot_cfg_t" default="{5, 10, 31, 31, 0, 1, 2}" help="Configuration for core current throttling" />
+    <Knob name="power_current_throt" type="power_currthrot_cfg_t" default="{5, 14, 31, 31, 0, 1, 2}" help="Configuration for core current throttling" />
 
     <Knob name="power_tile_temp_throt" type="power_tile_tempthrot_cfg_t" default="{{930, 950}, {1130, 1150}, 15, 15, 0, 1}" help="Configuration for tile temperature throttling" />
     <Knob name="power_tile_vms" type="power_pvt_tile_vm_cfg_t" default="{{{{1050, 1100}, {0, 0}}, {{1050, 1100}, {0, 0}}, {{1383, 1433}, {680, 630}}, {{1006, 1056}, {775, 725}}}}" help="Configuration for tile voltage monitor thresholds" />

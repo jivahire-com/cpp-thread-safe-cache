@@ -124,9 +124,9 @@ These knobs are available for debug and test purposes.  Once the project reaches
 |power_soc_maximum_thermal_watts_limit|SOC maximum power limit specific to thermal (W). Defaults to fused value if set to 0.|350|
 |*power_soc_maximum_electrical_current_limit_vcpu0*|Vcpu0 current maximum value (A) used to determine the maximum electrical power limit. |500|
 |*power_soc_maximum_electrical_current_limit_vcpu1*|Vcpu1 current maximum value (A) used to determine the maximum electrical power limit. |500|
-|*power_r_loadline_vcpu0*|Loadline resistance (uOhm - used in Vcpu calculation). Default: 400. |400|
-|*power_r_loadline_vcpu1*|Loadline resistance (uOhm - used in Vcpu calculation). Default: 400. |400|
-|power_vsys_r_loadline|Loadline resistance (uOhm - used in Vsys power calculation)|700|
+|*power_r_loadline_vcpu0*|Loadline resistance (uOhm - used in Vcpu calculation). Default: 500. |500|
+|*power_r_loadline_vcpu1*|Loadline resistance (uOhm - used in Vcpu calculation). Default: 500. |500|
+|power_vsys_r_loadline|Loadline resistance (uOhm - used in Vsys power calculation)|600|
 |power_activity_factor_mpmm_enabled|Activity factor adjustment against dhrystone when MPMM enabled (percentage, used in Vcpu/dynamic current calculation).|200|
 |power_activity_factor_mpmm_disabled|Activity factor adjustment against dhrystone when MPMM disabled (percentage, used in Vcpu/dynamic current calculation). update: need to add 3 current threshold knobs|250|
 |power_capping_mode|Power capping mode (type: power_capping_mode_t). Default: PER_VM.|PER_VM|

@@ -26,6 +26,8 @@
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
+int __real_ddrss_get_config(ddrss_cfg_knobs_t* ddrss_cfgs);
+int __real_ddrss_inject_media_ca_err(uint32_t mc, ddrss_media_ca_err_inj_info_t* ca_err_inj);
 
 /*-- Declarations (Statics and globals) --*/
 uint32_t g_ddr_intu_sts;
@@ -36,6 +38,9 @@ uint32_t g_mc_intu_dest_enable;
 bool g_mmio_read32_mocktype;
 bool g_should_check_reset_reason_cfg_knobs = false;
 bool g_should_check_cper_section = false;
+bool g_should_check_ras_agent_entity_id = false;
+bool g_should_wrap_ddrss_get_config = false;
+bool g_should_wrap_ddrss_inject_media_ca_err = false;
 
 /*------------- Functions ----------------*/
 
@@ -218,6 +223,12 @@ int __wrap_ddrss_get_ras_agent(uint32_t mc, DDRSS_RAS_NODE_ID ras_agent_entity_i
     FPFW_UNUSED(mc);
     FPFW_UNUSED(ras_agent_entity_id);
     FPFW_UNUSED(ras_agent);
+    if (g_should_check_ras_agent_entity_id)
+    {
+        check_expected(ras_agent_entity_id);
+        *ras_agent = mock_type(ras_agent_entity_t*);
+    }
+
     return mock_type(int);
 }
 
@@ -276,4 +287,38 @@ void __wrap_hm_submit_cper(uint16_t error_domain_idx,
     }
     FPFW_UNUSED(err_record_section);
     check_expected(err_record_section_size);
+}
+
+int __wrap_ddrss_get_config(ddrss_cfg_knobs_t* ddrss_cfgs)
+{
+    if (g_should_wrap_ddrss_get_config)
+    {
+        PLATFORM_MEMCPY(ddrss_cfgs, mock_type(ddrss_cfg_knobs_t*), sizeof(ddrss_cfg_knobs_t));
+        return SILIBS_SUCCESS;
+    }
+
+    return __real_ddrss_get_config(ddrss_cfgs);
+}
+
+int __wrap_ddrss_inject_media_data_err(uint32_t mc, const ddrss_media_data_err_inj_info_t* media_err_inj)
+{
+    check_expected(mc);
+    check_expected(media_err_inj->err_rs_sym);
+    check_expected(media_err_inj->err_inj_rw);
+    check_expected(media_err_inj->err_inj_beat);
+    check_expected(media_err_inj->err_inj_cnt);
+    return 0;
+}
+
+int __wrap_ddrss_inject_media_ca_err(uint32_t mc, ddrss_media_ca_err_inj_info_t* ca_err_inj)
+{
+    FPFW_UNUSED(mc);
+    FPFW_UNUSED(ca_err_inj);
+    if (g_should_wrap_ddrss_inject_media_ca_err)
+    {
+        function_called();
+        return SILIBS_SUCCESS;
+    }
+
+    return __real_ddrss_inject_media_ca_err(mc, ca_err_inj);
 }

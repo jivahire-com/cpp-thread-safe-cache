@@ -13,31 +13,34 @@
 #include <FpFwUtils.h>
 #include <arm_intrinsic.h> // for __DSB on Windows builds (empty define)
 #include <bug_check.h>
+#include <cper.h> // Ensure ACPI_EINJ_INVALID_ACCESS and related macros are defined
 #include <ddr_err_inj.h>
 #include <ddrss.h>
 #include <ddrss_lib.h>
 #include <fpfw_cfg_mgr.h>
 #include <health_monitor.h>
 #include <kng_soc_constants.h>
-#include <nvic.h> // Has nested include of cmsis_gcc_m.h for __DSB() intrinsic
+#include <nvic.h>      // Has nested include of cmsis_gcc_m.h for __DSB() intrinsic
+#include <ras_agent.h> // Include for ras_agent_entity_t
 #include <silibs_ap_top_regs.h>
 #include <silibs_platform.h>
-#include <stdint.h>
+#include <stdint.h> // Ensure uint32_t is defined
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define DDR_ASSERT ASSERT_FAIL
-
+#define DDR_ASSERT    ASSERT_FAIL
 #define UINT64_FMT(x) ((unsigned long)((x) >> 32)), (unsigned long)(x)
+
+ddr_err_inj_syndrome_t named_syndrome[] = {DDR_ERR_INJ_SYNDROME_LIST(NAMED_SYNDROME_STRUCT_INIT)};
 
 /*-------------- Typedefs ----------------*/
 
 /*--------- Function Prototypes ----------*/
 
 /*---------------- Function ---------------*/
-bool ddrss_ue_ce_err_inj_validation(uint32_t mc, uint16_t BIT)
+bool ddr_ecc_err_inj_validation(uint32_t mc, uint16_t BIT)
 {
     bool ret = true;
     if (mc >= DDRSS_MAX_SS_NUM)
@@ -51,12 +54,19 @@ bool ddrss_ue_ce_err_inj_validation(uint32_t mc, uint16_t BIT)
     return ret;
 }
 
-void ddrss_ue_ce_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, uint16_t Bit)
+void ddr_ecc_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, uint16_t Bit)
 {
     silibs_status_t sts;
     ddrss_media_addr_t m_addr;
     uint64_t p_addr_new;
     uint32_t tgt_mc;
+    KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
+
+    if ((platform_id == PLATFORM_FPGA_LARGE) || (platform_id == PLATFORM_FPGA_LARGE_RVP))
+    {
+        printf("Cannot support ecc_ue_error_injection in FPGA series platform! \n");
+        return;
+    }
 
     // Check that cmd_merge_en is 0 or 1
     if (config_get_cmd_merge_en() != 0 && config_get_cmd_merge_en() != 1)
@@ -148,10 +158,390 @@ void ddrss_ue_ce_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, 
     ddrss_atu_unmap_media_addr(p_addr_8K_aligned);
 }
 
+// Note that CA Parity errors are fatal
+int ddr_ca_parity_error_injection(uint32_t mc, DDRSS_MEDIA_CA_INJ_CMD cmd)
+{
+    bool valid_cmd = false;
+    int sts = SILIBS_SUCCESS;
+    KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
+
+    if ((platform_id == PLATFORM_FPGA_LARGE) || (platform_id == PLATFORM_FPGA_LARGE_RVP))
+    {
+        printf("Cannot support CA parity error injection in FPGA series platform!\n");
+        return SILIBS_E_DEVICE;
+    }
+
+    // Check if cmd is one of the valid enum values from DDRSS_MEDIA_CA_INJ_CMD
+    for (int i = 0; i <= DDRSS_MEDIA_CA_INJ_CMD_DRFMSB; i++)
+    {
+        if (cmd == i)
+        {
+            valid_cmd = true;
+            break;
+        }
+    }
+    if (!valid_cmd)
+    {
+        printf("Invalid command for CA parity error injection: 0x%X\n", cmd);
+        return SILIBS_E_PARAM;
+    }
+
+    ddrss_media_ca_err_inj_info_t ca_err_inj = {0};
+    ca_err_inj.cmd = cmd;
+    // 5/20/2025  Maurice says cmd_count can be 0-255.  It controls how soon you will see alert signal after
+    // the parity error in MC cycles. No real world visisble difference.
+    ca_err_inj.cmd_count = 128;
+    ca_err_inj.phase = 0;
+    ca_err_inj.alert_latency = 32;
+
+    sts = ddrss_inject_media_ca_err(mc, &ca_err_inj);
+    __DSB();
+    return sts;
+}
+
 acpi_einj_cmd_status_t ddr_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx)
 {
-    FPFW_UNUSED(einj_payload);
     FPFW_UNUSED(ctx);
 
+    if (einj_payload == NULL)
+    {
+        printf("Error: Invalid EINJ payload (null)\n");
+        return ACPI_EINJ_INVALID_ACCESS;
+    }
+
+    if ((einj_payload->component_group != ACPI_ERROR_DOMAIN_DDR) &&
+        (einj_payload->component_group != ACPI_ERROR_DOMAIN_STD_MEMORY))
+    {
+        // Only support DDR and standard memory error domains for now
+        printf("Error: Unsupported component group (0X%x)for DDR error injection\n", einj_payload->component_group);
+        return ACPI_EINJ_INVALID_ACCESS;
+    }
+
+    switch (einj_payload->param_type.error_type)
+    {
+    case ACPI_ERR_SEC_MEM_VENDOR_PHY_FATAL:
+        // This will need some experimentation to map the error parameters to the correct error type
+        printf("param_type.error_type = ACPI_ERR_SEC_MEM_VENDOR_PHY_FATAL\n");
+        printf("error_parameters[0] = 0x%X\n", (unsigned int)einj_payload->param_type.error_parameters[0]);
+        printf("error_parameters[1] = 0x%X\n", (unsigned int)einj_payload->param_type.error_parameters[1]);
+
+        // Handle PHY fatal errors
+        break;
+    case ACPI_ERR_SEC_MEM_VENDOR_MISC:
+        // This will need some experimentation to map the error parameters to the correct error type
+        printf("param_type.error_type = ACPI_ERR_SEC_MEM_VENDOR_MISC\n");
+        printf("error_parameters[0] = 0x%X\n", (unsigned int)einj_payload->param_type.error_parameters[0]);
+        printf("error_parameters[1] = 0x%X\n", (unsigned int)einj_payload->param_type.error_parameters[1]);
+
+        // Handle miscellaneous vendor errors
+        break;
+    case ACPI_ERR_SEC_MEM_VENDOR_MC_ERRORS:
+        // This will need some experimentation to map the error parameters to the correct error type
+        printf("param_type.error_type = ACPI_ERR_SEC_MEM_VENDOR_MC_ERRORS\n");
+        printf("error_parameters[0] = 0x%X\n", (unsigned int)einj_payload->param_type.error_parameters[0]);
+        printf("error_parameters[1] = 0x%X\n", (unsigned int)einj_payload->param_type.error_parameters[1]);
+
+        // Handle vendor-specific memory controller errors
+        break;
+    default:
+        printf("Invalid/Unsupported DDR error type(%d)\n", einj_payload->component_type);
+        return ACPI_EINJ_INVALID_ACCESS;
+    }
+
     return ACPI_EINJ_SUCCESS;
+}
+
+// Support test case 1541196
+void ddr_err_inj_media_patrol_scrub_ce(uint32_t mc)
+{
+    ras_agent_entity_t* ddrss_ras_agent = NULL; // Initialize to NULL
+    uint64_t types = 0;
+
+    int idx = get_syndrome_index("DDR_ERR_INJ_MREB_PATROL_SCRUB_CE");
+    if (idx < 0)
+    {
+        printf("Error: Syndrome not found\n");
+        return;
+    }
+    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS ||
+        ddrss_ras_agent == NULL)
+    {
+        printf("Error: Failed to get RAS agent\n");
+        return;
+    }
+    types = named_syndrome[idx].ras_arm_err_bitmask;
+    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
+
+    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to trigger error injection\n");
+    }
+    else
+    {
+        printf("Patrol scrub CE injected successfully\n");
+    }
+}
+
+// Support test case 1828223
+void ddr_err_inj_fedb_merge_data_ce(uint32_t mc)
+{
+    ras_agent_entity_t* ddrss_ras_agent = NULL; // Initialize to NULL
+    uint64_t types = 0;
+
+    int idx = get_syndrome_index("DDR_ERR_INJ_FECQ_FEDB_MERGE_DATA_CE");
+    if (idx < 0)
+    {
+        printf("Error: Syndrome not found\n");
+        return;
+    }
+    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS ||
+        ddrss_ras_agent == NULL)
+    {
+        printf("Error: Failed to get RAS agent\n");
+        return;
+    }
+    types = named_syndrome[idx].ras_arm_err_bitmask;
+    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
+
+    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to trigger error injection\n");
+    }
+    else
+    {
+        printf("FEDB merge data CE injected successfully\n");
+    }
+}
+
+// Support test case 1831500
+void ddr_err_inj_media_patrol_scrub_ue(uint32_t mc)
+{
+    ras_agent_entity_t* ddrss_ras_agent = {0};
+    uint64_t types = 0;
+
+    int idx = get_syndrome_index("DDR_ERR_INJ_MREB_PATROL_SCRUB_UE");
+    if (idx < 0)
+    {
+        printf("Error: Syndrome not found\n");
+        return;
+    }
+    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to get RAS agent\n");
+        return;
+    }
+    types = named_syndrome[idx].ras_arm_err_bitmask;
+    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
+
+    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to trigger error injection\n");
+    }
+    else
+    {
+        printf("Media Patrol Scrub UE injected successfully\n");
+    }
+}
+
+// Support test case 1877177
+void ddr_err_inj_mainline_traffic_ce(uint32_t mc)
+{
+    ras_agent_entity_t* ddrss_ras_agent = {0};
+    uint64_t types = 0;
+
+    int idx = get_syndrome_index("DDR_ERR_INJ_MREB_MAINLINE_TRAFFIC_CE");
+    if (idx < 0)
+    {
+        printf("Error: Syndrome not found\n");
+        return;
+    }
+    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to get RAS agent\n");
+        return;
+    }
+    types = named_syndrome[idx].ras_arm_err_bitmask;
+    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
+
+    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to trigger error injection\n");
+    }
+    else
+    {
+        printf("Mainline traffic CE injected successfully\n");
+    }
+}
+
+// Support test case 1877181
+void ddr_err_inj_mrdp_parity_ue(uint32_t mc)
+{
+    ras_agent_entity_t* ddrss_ras_agent = {0};
+    uint64_t types = 0;
+    KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
+
+    if ((platform_id == PLATFORM_FPGA_LARGE) || (platform_id == PLATFORM_FPGA_LARGE_RVP))
+    {
+        printf("Cannot support MRDP parity error injection in FPGA series platform!\n");
+        return;
+    }
+
+    int idx = get_syndrome_index("DDR_ERR_INJ_MRDP_PARITY_ERROR");
+    if (idx < 0)
+    {
+        printf("Error: Syndrome not found\n");
+        return;
+    }
+    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to get RAS agent\n");
+        return;
+    }
+    types = named_syndrome[idx].ras_arm_err_bitmask;
+    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
+
+    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to trigger error injection\n");
+    }
+    else
+    {
+        printf("MRDP Parity error injected successfully\n");
+    }
+}
+
+// Support test case 2031570
+void ddr_err_inj_mainline_traffic_ue(uint32_t mc)
+{
+    ras_agent_entity_t* ddrss_ras_agent = {0};
+    uint64_t types = 0;
+
+    int idx = get_syndrome_index("DDR_ERR_INJ_MREB_MAINLINE_TRAFFIC_UE");
+    if (idx < 0)
+    {
+        printf("Error: Syndrome not found\n");
+        return;
+    }
+    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to get RAS agent\n");
+        return;
+    }
+    types = named_syndrome[idx].ras_arm_err_bitmask;
+    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
+
+    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to trigger error injection\n");
+    }
+    else
+    {
+        printf("Mainline traffic CE injected successfully\n");
+    }
+}
+
+// Support test case 2031571
+void ddr_err_inj_ca_parity_persistent(uint32_t mc)
+{
+    ddrss_cfg_knobs_t ddrss_cfgs;
+
+    // Use API to inject CA parity error
+    ddrss_get_config(&ddrss_cfgs);
+
+    if (ddrss_cfgs.ext_knobs.ca_parity_err_recovery_en != 1)
+    {
+        printf("Error: ca_parity_err_recovery_en must be 1 to support this type of error injection.  "
+               "Aborting.\n");
+        return;
+    };
+    ddr_ca_parity_error_injection(mc, DDRSS_MEDIA_CA_INJ_CMD_RD);
+}
+
+// Support test case 2093837
+void ddr_err_inj_ca_parity_transient(uint32_t mc)
+{
+    ddrss_cfg_knobs_t ddrss_cfgs;
+
+    // Use API to inject CA parity error
+    ddrss_get_config(&ddrss_cfgs);
+
+    if (ddrss_cfgs.ext_knobs.ca_parity_err_recovery_en != 0)
+    {
+        printf("Error: ca_parity_err_recovery_en must be 0 to support this type of error injection.  "
+               "Aborting.\n");
+        return;
+    };
+    ddr_ca_parity_error_injection(mc, DDRSS_MEDIA_CA_INJ_CMD_RD);
+}
+
+// Support test case TBD
+void ddr_err_rh_counters_sram_parity(uint32_t mc)
+{
+    ras_agent_entity_t* ddrss_ras_agent = {0};
+    uint64_t types = 0;
+
+    int idx = get_syndrome_index("DDR_ERR_INJ_RH_COUNTERS_SRAM_PARITY");
+    if (idx < 0)
+    {
+        printf("Error: Syndrome not found\n");
+        return;
+    }
+    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to get RAS agent\n");
+        return;
+    }
+    types = named_syndrome[idx].ras_arm_err_bitmask;
+    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
+
+    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to trigger error injection\n");
+    }
+    else
+    {
+        printf("Row hammer counters SRAM parity error injected successfully\n");
+    }
+}
+
+// Support test case TBD
+void ddr_err_rh_drfm_sram_parity(uint32_t mc)
+{
+    ras_agent_entity_t* ddrss_ras_agent = {0};
+    uint64_t types = 0;
+
+    int idx = get_syndrome_index("DDR_ERR_INJ_RH_DRFM_SRAM_PARITY");
+    if (idx < 0)
+    {
+        printf("Error: Syndrome not found\n");
+        return;
+    }
+    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to get RAS agent\n");
+        return;
+    }
+    types = named_syndrome[idx].ras_arm_err_bitmask;
+    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
+
+    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to trigger error injection\n");
+    }
+    else
+    {
+        printf("Row hammer DRFM SRAM parity error injected successfully\n");
+    }
+}
+
+int get_syndrome_index(const char* name)
+{
+    for (int i = 0; i < (int)(sizeof(named_syndrome) / sizeof(named_syndrome[0])); i++)
+    {
+        if (strcmp(named_syndrome[i].name, name) == 0)
+        {
+            return i;
+        }
+    }
+    return -1;
 }

@@ -33,6 +33,7 @@ target_link_libraries(${TARGET}
         silibs::idsw_kng
         silibs::kng_silibs_platform
         silibs::ras_arm
+        silibs::ras_framework
         fwlib.lib.interface.platform.interrupts
 )
 
@@ -46,32 +47,34 @@ mock_target(${TARGET}
     atu_map
     atu_unmap
     cmn800_generate_ddr_mc_map_from_cached_config
-    ddrss_get_phy_interrupt_status
-    ddrss_clear_phy_interrupt_status
-    nvic_irq_set_isr_with_param
-    nvic_irq_clear_pending
-    nvic_irq_enable
-    mmio_read32
-    mmio_write32
-    ddrss_init
-    idhw_is_single_die_boot_en
-    intu_get_interrupt_status
-    ddrss_ddr_intu_get_interrupt_dest_enable
-    ddrss_probe_ras_agent
-    ddrss_get_phy_interrupt_status
-    ddrss_mc_intu_get_interrupt_dest_enable
-    ddrss_mc_event_clear_interrupt
-    ddrss_ddr_intu_clear_interrupt
-    ddrss_ddr_intu_clear_destination_interrupt
-    ras_arm_agent_probe
-    ras_print_record
-    ddrss_get_ras_agent
-    ddrss_convert_ras_rec_to_cper
-    ddrss_mc_intu_get_interrupt_status
     ddrss_atu_map_cfg_space
     ddrss_atu_unmap_cfg_space
+    ddrss_clear_phy_interrupt_status
+    ddrss_convert_ras_rec_to_cper
+    ddrss_ddr_intu_clear_destination_interrupt
+    ddrss_ddr_intu_clear_interrupt
+    ddrss_ddr_intu_get_interrupt_dest_enable
+    ddrss_get_config
+    ddrss_get_phy_interrupt_status
+    ddrss_get_phy_interrupt_status
+    ddrss_get_ras_agent
+    ddrss_init
+    ddrss_inject_media_ca_err
     ddrss_inject_media_data_err
+    ddrss_mc_event_clear_interrupt
+    ddrss_mc_intu_get_interrupt_dest_enable
+    ddrss_mc_intu_get_interrupt_status
     ddrss_physical_to_media_addr
-    system_info_is_warm_start
+    ddrss_probe_ras_agent
     hm_submit_cper
+    idhw_is_single_die_boot_en
+    intu_get_interrupt_status
+    mmio_read32
+    mmio_write32
+    nvic_irq_clear_pending
+    nvic_irq_enable
+    nvic_irq_set_isr_with_param
+    ras_arm_agent_probe
+    ras_print_record
+    system_info_is_warm_start
 )

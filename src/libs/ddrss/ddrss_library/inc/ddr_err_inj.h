@@ -9,6 +9,7 @@
 
 
 /*------------- Includes -----------------*/
+#include <ddrss_runtime_api.h>
 #include <health_monitor.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -17,7 +18,53 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
+
+
+#define ERG0 0
+#define ERG1 1
+
+// Macro list for all error injection syndromes
+#define DDR_ERR_INJ_SYNDROME_LIST(MACRO)                                                                     \
+    MACRO(DDR_ERR_INJ_MREB_MAINLINE_TRAFFIC_CE,         ERG0, RAS_ARM_INJ_CE_PERSISTENT | RAS_ARM_INJ_AV, 0x0000000000000001, 1, 0x02, 0x0C, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_MREB_MAINLINE_TRAFFIC_UE,         ERG0, RAS_ARM_INJ_DE | RAS_ARM_INJ_AV, 0x0000000000000020, 1, 0x03, 0x0C, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_MREB_PATROL_SCRUB_CE,             ERG0, RAS_ARM_INJ_CE_PERSISTENT | RAS_ARM_INJ_AV, 0x0000000000000300, 1, 0x04, 0x0C, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_MREB_PATROL_SCRUB_UE,             ERG0, RAS_ARM_INJ_DE | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x05, 0x0C, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_FECQ_FEDB_DATA_ARRAY_UE,          ERG0, RAS_ARM_INJ_DE | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x21, 0x02, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_FECQ_FEDB_MERGE_DATA_UE,          ERG0, RAS_ARM_INJ_DE | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x21, 0x10, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_FECQ_FEDB_MERGE_DATA_CE,          ERG0, RAS_ARM_INJ_CE_PERSISTENT | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x22, 0x10, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_FECQ_FEDB_MERGE_DATA_PARITY_UE,   ERG0, RAS_ARM_INJ_DE | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x31, 0x11, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_FECQ_FEDB_MERGE_STROBE_UE,        ERG0, RAS_ARM_INJ_DE | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x32, 0x11, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_FECQ_FEDB_MERGE_STROBE_PARITY_UE, ERG0, RAS_ARM_INJ_DE | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x31, 0x11, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_FECQ_FEDB_STROBE_ARRAY_UE,        ERG0, RAS_ARM_INJ_DE | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x31, 0x02, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_HKE_PERSISTENT_CA_PARITY_UE,      ERG0, RAS_ARM_INJ_UEU | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x03, 0x0B, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_HKE_TRANSIENT_CA_PARITY_UE,       ERG0, RAS_ARM_INJ_CE_TRANSIENT | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x02, 0x0B, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_RH_COUNTERS_SRAM_PARITY,          ERG0, RAS_ARM_INJ_CE_PERSISTENT | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x41, 0x02, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_RH_DRFM_SRAM_PARITY,              ERG0, RAS_ARM_INJ_CE_PERSISTENT | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x42, 0x02, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_XTS_AES_KEYSTORE_CE,              ERG0, RAS_ARM_INJ_CE_PERSISTENT | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x08, 0x11, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_XTS_AES_KEYSTORE_UE,              ERG0, RAS_ARM_INJ_DE | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x09, 0x11, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_BCP_READ_ADDR_NOT_IN_DDR,         ERG0, RAS_ARM_INJ_UER | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x01, 0x0D, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_BCP_READ_BLOCKED_BY_PAS,          ERG0, RAS_ARM_INJ_UER | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x01, 0x0E, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_BCP_WRITE_ADDR_NOT_IN_DDR,        ERG0, RAS_ARM_INJ_UEO | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x02, 0x0D, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_BCP_WRITE_BLOCKED_BY_PAS,         ERG0, RAS_ARM_INJ_UEO | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x02, 0x0E, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_BCP_CHI_UNSUPPORTED_OPCODE,       ERG0, RAS_ARM_INJ_UC | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x01, 0x04, 0, 0, 0, 0, 1, 1) \
+    MACRO(DDR_ERR_INJ_MRDP_PARITY_ERROR,                ERG1, RAS_ARM_INJ_UC | RAS_ARM_INJ_CI | RAS_ARM_INJ_AV, 0x0000000000000000, 1, 0x50, 0x11, 0, 0, 0, 0, 1, 1) 
+
+#define NAMED_SYNDROME_STRUCT_INIT(token, erg, ras_arm_err_bitmask, addr, inj_counter, ierr, serr, ns, nse, si, ai, va, valid) \
+    {#token, erg, ras_arm_err_bitmask, {addr, inj_counter, ierr, serr, ns, nse, si, ai, va, valid}},
+
 /*-------------- Typedefs ----------------*/
+/**
+ * @brief Enum for RAS injection syndrome types
+ * This enum provides indexed access to the ras_syndrome array
+ * The order matches the array definition in ddr_err_inj.c
+ */
+typedef struct _ddr_err_inj_syndrome
+{
+    const char* name; // Name of the syndrome
+    uint8_t erg; // 0 or 1
+    uint32_t ras_arm_err_bitmask; // RAS_ARM_ERROR_TYPE(s)
+    ras_inj_syndrome_t syndrome; // Syndrome value
+} ddr_err_inj_syndrome_t;
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -25,6 +72,24 @@
 
 void ddrss_err_inj_atu_map(uint32_t die_num);
 void ddrss_err_inj_atu_unmap();
-void ddrss_ue_ce_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, uint16_t Bit);
-bool ddrss_ue_ce_err_inj_validation(uint32_t mc, uint16_t BIT);
+void ddr_ecc_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, uint16_t Bit);
+int ddr_ca_parity_error_injection(uint32_t mc, DDRSS_MEDIA_CA_INJ_CMD cmd);
+bool ddr_ecc_err_inj_validation(uint32_t mc, uint16_t BIT);
+
+void ddr_err_inj_media_patrol_scrub_ce(uint32_t mc);
+void ddr_err_inj_media_patrol_scrub_ue(uint32_t mc);
+
+void ddr_err_inj_fedb_merge_data_ce(uint32_t mc);
+void ddr_err_inj_mainline_traffic_ce(uint32_t mc);
+void ddr_err_inj_mainline_traffic_ue(uint32_t mc);
+
+void ddr_err_inj_ca_parity_persistent(uint32_t mc);
+void ddr_err_inj_ca_parity_transient(uint32_t mc);
+
+void ddr_err_rh_counters_sram_parity(uint32_t mc);
+void ddr_err_rh_drfm_sram_parity(uint32_t mc);
+
+void ddr_err_inj_mrdp_parity_ue(uint32_t mc);
+
 acpi_einj_cmd_status_t ddr_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx);
+int get_syndrome_index(const char* name);

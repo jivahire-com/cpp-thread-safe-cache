@@ -1,5 +1,5 @@
 Guid,Knob,Value,Help
-FE3ED49F-B173-41ED-9076-356661D46A42,power_control_loop_interval,10,"override for svp"
+FE3ED49F-B173-41ED-9076-356661D46A42,power_control_loop_interval,100,"override for svp"
 FE3ED49F-B173-41ED-9076-356661D46A42,power_pvt_loop_interval,100,"override for svp"
 FE3ED49F-B173-41ED-9076-356661D46A42,power_soc_maximum_thermal_watts_limit,400,"Temp override until fuse value is verified"
 *,gpio_knobs.gpio_afm_init,false,"override for svp"

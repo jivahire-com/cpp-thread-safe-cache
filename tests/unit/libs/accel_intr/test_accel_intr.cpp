@@ -18,7 +18,8 @@ extern "C" {
 #include "silibs_platform_mock.h" // for mmio_set_mock_data
 
 #include <accelerator_ip.h>
-#include <accelip_id.h> // for ACCEL_ID_CDED, ACCEL_ID_SDM
+#include <accelerator_knobs.h> // for scp_download_accel_knobs
+#include <accelip_id.h>        // for ACCEL_ID_CDED, ACCEL_ID_SDM
 #include <cdedss_config_regs.h>
 #include <idsw_kng.h>      // for KNG_PLAT_ID
 #include <nvic.h>          // for NVIC_STATUS_SUCCESS
@@ -36,6 +37,11 @@ extern "C" {
 /*------------------- Declarations (Statics and globals) --------------------*/
 
 static uint32_t irq_num = SDMSS_IRQ_NUMBER;
+
+crash_dump_cb_t g_pre_cb_fun = NULL;
+void* g_pre_cb_ctx = NULL;
+crash_dump_cb_t g_post_cb_fun = NULL;
+void* g_post_cb_ctx = NULL;
 
 /*--------------------------------- Externs ---------------------------------*/
 
@@ -118,6 +124,28 @@ bool __wrap_crash_dump_is_accel_cd_complete(ACCEL_ID accel_type)
     return mock_type(bool);
 }
 
+void __wrap_accel_core_warm_reset(ACCEL_ID accel_type, crash_dump_cb_t pre_cb_fun, void* pre_cb_ctx, crash_dump_cb_t post_cb_fun, void* post_cb_ctx)
+{
+    g_pre_cb_fun = pre_cb_fun;
+    g_pre_cb_ctx = pre_cb_ctx;
+    g_post_cb_fun = post_cb_fun;
+    g_post_cb_ctx = post_cb_ctx;
+    check_expected(accel_type);
+    assert_non_null(pre_cb_fun);
+    assert_non_null(post_cb_fun);
+    check_expected(pre_cb_ctx);
+    check_expected(post_cb_ctx);
+    function_called();
+}
+
+knob_transfer_status_t __wrap_scp_download_accel_knobs(ACCEL_ID accel_type)
+{
+    check_expected(accel_type);
+
+    // This is a mock function, so we don't actually download anything
+    return mock_type(knob_transfer_status_t);
+}
+
 } // extern "c"
 
 /**
@@ -145,9 +173,9 @@ TEST_FUNCTION(test_accel_scp_intr_init_pass_sdm, nullptr, nullptr)
     FPFW_UNUSED(irq_num);
 
     // FPFwCoreInterruptRegisterCallback
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_scp, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER, 8);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_scp, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
     will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
     // Need to set the global SDM and CDED irq num which is usually set as part of init
@@ -179,9 +207,9 @@ TEST_FUNCTION(test_accel_scp_intr_init_pass_cded, nullptr, nullptr)
     expect_any_always(__wrap_mmio_update32, mask);
 
     // FPFwCoreInterruptRegisterCallback
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, CDEDSS_IRQ_NUMBER, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_scp, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER, 8);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_scp, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
     will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
     accel_intr_set_irq_num_for_accel(ACCEL_ID_CDED, CDEDSS_IRQ_NUMBER);
@@ -264,9 +292,9 @@ TEST_FUNCTION(test_accel_scp_intr_init_fail_virt_irq_init, nullptr, nullptr)
     will_return_always(__wrap_set_ext_int_sub_system, SILIBS_SUCCESS);
 
     // FPFwCoreInterruptRegisterCallback
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_scp, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER, 8);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_scp, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
     will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_ERROR);
 
     accel_scp_intr_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER));
@@ -421,6 +449,7 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass, NULL, NULL)
 {
     mmio_set_mock_data(0x12345678, 0xFFFFFFFF);
     mmio_set_mock_data(0xABCDEF12, 0x0);
+    ACCEL_ID accel_type = ACCEL_ID_SDM;
 
     set_int_status(true);
 
@@ -439,7 +468,7 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass, NULL, NULL)
     expect_any(__wrap_fpfw_timer_enable, timer);
     will_return_always(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
 
-    accel_intr_handle_fatal_intr_recvd(ACCEL_ID_SDM);
+    accel_intr_handle_fatal_intr_recvd(accel_type);
 }
 
 /**
@@ -450,12 +479,14 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass_accel_emcpu_reset, NU
 {
     mmio_set_mock_data(0x12345678, 0x3);
     mmio_set_mock_data(0xABCDEF12, 0x0);
+    ACCEL_ID accel_type = ACCEL_ID_CDED;
 
     set_int_status(true);
 
     // ATU map address base is always 0
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0x0);
 
+    // Expectations for accel_intr_process_fatal_interrupts()
     will_return_always(__wrap_is_sdm_ext_int_status_set, SILIBS_SUCCESS);
     will_return_always(__wrap_sdm_ext_get_category_mask_reg_addr, 0xABCDEF12);
     will_return_always(__wrap_sdm_ext_get_category_status_reg_addr, 0x12345678);
@@ -463,10 +494,120 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass_accel_emcpu_reset, NU
 
     expect_any_always(__wrap_mmio_read32, addr);
 
+    // Expectations for accel_core_warm_reset()
+    expect_value(__wrap_accel_core_warm_reset, accel_type, accel_type);
+    expect_value(__wrap_accel_core_warm_reset, pre_cb_ctx, (void*)accel_type);
+    expect_value(__wrap_accel_core_warm_reset, post_cb_ctx, (void*)accel_type);
+    expect_function_call(__wrap_accel_core_warm_reset);
+
+    accel_intr_handle_fatal_intr_recvd(accel_type);
+
+    // Expectations for accel_pre_warm_reset_cb()
+    expect_value(__wrap_scp_download_accel_knobs, accel_type, accel_type);
+    will_return(__wrap_scp_download_accel_knobs, STATUS_KNOB_TRANSFER_SUCCESS);
+    will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return_always(__wrap_sdm_ext_int_mask_status_clear, SILIBS_SUCCESS);
+    will_return_always(__wrap_sdm_ext_int_mask_enable, SILIBS_SUCCESS);
+    expect_any_always(__wrap_mmio_update32, addr);
+    expect_any_always(__wrap_mmio_update32, data);
+    expect_any_always(__wrap_mmio_update32, mask);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_scp, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
+    will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
+    g_pre_cb_fun(g_pre_cb_ctx);
+    // Expectations for accel_post_warm_reset_cb()
+    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, CDEDSS_IRQ_NUMBER);
+    will_return(__wrap_FPFwCoreInterruptEnableVector, NVIC_STATUS_SUCCESS);
+    g_post_cb_fun(g_post_cb_ctx);
+}
+
+TEST_FUNCTION(test_accel_intr_handle_ecc_itcm_ue, NULL, NULL)
+{
+    mmio_set_mock_data(0x12345678, 1 << SDM_EXT_UE_ECC_ERR_INTR);
+    mmio_set_mock_data(0xABCDEF12, 0x0);
+    mmio_set_mock_data(0xDEADCAFE, 1 << SDM_EXT_ITCM_ERR_INTR);
+    mmio_set_mock_data(0xDEADFAB, 0x0);
+    ACCEL_ID accel_type = ACCEL_ID_CDED;
+
+    set_int_status(true);
+
+    // ATU map address base is always 0
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0x0);
+
+    // Expectations for accel_intr_process_fatal_interrupts()
+    will_return_always(__wrap_sdm_ext_get_category_mask_reg_addr, 0xABCDEF12);
+    will_return(__wrap_sdm_ext_get_category_status_reg_addr, 0x12345678);
+    will_return_always(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
+
+    expect_any_always(__wrap_mmio_read32, addr);
+
+    // Expectations for accel_intr_ue_ecc_err_fn()
+    will_return_always(__wrap_is_sdm_ext_int_mask_status_clear, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_ext_get_category_status_reg_addr, 0xDEADCAFE);
+    will_return(__wrap_sdm_ext_get_category_status_reg_addr, 0xDEADFAB);
+
+    // Expectations for accel_intr_request_crash_dump_collection()
     expect_any(__wrap_fpfw_timer_enable, timer);
     will_return_always(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
 
-    accel_intr_handle_fatal_intr_recvd(ACCEL_ID_CDED);
+    accel_intr_handle_fatal_intr_recvd(accel_type);
+}
+
+TEST_FUNCTION(test_accel_intr_handle_ecc_dtcm0_ue, NULL, NULL)
+{
+    mmio_set_mock_data(0x12345678, 1 << SDM_EXT_UE_ECC_ERR_INTR);
+    mmio_set_mock_data(0xABCDEF12, 0x0);
+    mmio_set_mock_data(0xDEADCAFE, 1 << SDM_EXT_DTCM0_ERR_INTR);
+    mmio_set_mock_data(0xDEADFAB, 0x0);
+    ACCEL_ID accel_type = ACCEL_ID_CDED;
+
+    set_int_status(true);
+
+    // ATU map address base is always 0
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0x0);
+
+    // Expectations for accel_intr_process_fatal_interrupts()
+    will_return_always(__wrap_sdm_ext_get_category_mask_reg_addr, 0xABCDEF12);
+    will_return(__wrap_sdm_ext_get_category_status_reg_addr, 0x12345678);
+    will_return_always(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
+
+    expect_any_always(__wrap_mmio_read32, addr);
+
+    // Expectations for accel_intr_ue_ecc_err_fn()
+    will_return_always(__wrap_is_sdm_ext_int_mask_status_clear, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_ext_get_category_status_reg_addr, 0xDEADCAFE);
+    will_return(__wrap_sdm_ext_get_category_status_reg_addr, 0xDEADFAB);
+
+    accel_intr_handle_fatal_intr_recvd(accel_type);
+}
+
+TEST_FUNCTION(test_accel_intr_handle_ecc_dtcm1_ue, NULL, NULL)
+{
+    mmio_set_mock_data(0x12345678, 1 << SDM_EXT_UE_ECC_ERR_INTR);
+    mmio_set_mock_data(0xABCDEF12, 0x0);
+    mmio_set_mock_data(0xDEADCAFE, 1 << SDM_EXT_DTCM1_ERR_INTR);
+    mmio_set_mock_data(0xDEADFAB, 0x0);
+    ACCEL_ID accel_type = ACCEL_ID_CDED;
+
+    set_int_status(true);
+
+    // ATU map address base is always 0
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0x0);
+
+    // Expectations for accel_intr_process_fatal_interrupts()
+    will_return_always(__wrap_sdm_ext_get_category_mask_reg_addr, 0xABCDEF12);
+    will_return(__wrap_sdm_ext_get_category_status_reg_addr, 0x12345678);
+    will_return_always(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
+
+    expect_any_always(__wrap_mmio_read32, addr);
+
+    // Expectations for accel_intr_ue_ecc_err_fn()
+    will_return_always(__wrap_is_sdm_ext_int_mask_status_clear, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_ext_get_category_status_reg_addr, 0xDEADCAFE);
+    will_return(__wrap_sdm_ext_get_category_status_reg_addr, 0xDEADFAB);
+
+    accel_intr_handle_fatal_intr_recvd(accel_type);
 }
 
 /**
@@ -507,7 +648,7 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass_no_interrupt, NULL, N
     // ATU map address base is always 0
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0x0);
 
-    will_return_count(__wrap_idsw_get_cpu_type, CPU_MCP, 8);
+    will_return_count(__wrap_idsw_get_cpu_type, CPU_MCP, ACCEL_SCP_INTR_MAX);
     will_return_always(__wrap_sdm_ext_get_category_mask_reg_addr, 0xABCDEF12);
     will_return_always(__wrap_sdm_ext_get_category_status_reg_addr, 0x12345678);
     will_return_always(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
@@ -519,9 +660,9 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass_no_interrupt, NULL, N
     expect_any_always(__wrap_mmio_update32, data);
     expect_any_always(__wrap_mmio_update32, mask);
 
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_mcp, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER, 8);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_mcp, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
     will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
     // FPFwCoreInterruptEnableVector
@@ -667,7 +808,7 @@ TEST_FUNCTION(test_sdm_intr_handle_cded_cp_fatal_intr_recvd__pass1, NULL, NULL)
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0x0);
 
     // accel_intr_process_fatal_interrupts()
-    will_return_count(__wrap_idsw_get_cpu_type, CPU_MCP, 8);
+    will_return_count(__wrap_idsw_get_cpu_type, CPU_MCP, ACCEL_SCP_INTR_MAX);
     will_return(__wrap_sdm_ext_get_category_mask_reg_addr, 0xABCDEF12);
     will_return(__wrap_sdm_ext_get_category_status_reg_addr, 0x12345678);
     expect_any_always(__wrap_mmio_read32, addr);
@@ -683,9 +824,9 @@ TEST_FUNCTION(test_sdm_intr_handle_cded_cp_fatal_intr_recvd__pass1, NULL, NULL)
     expect_any_always(__wrap_mmio_update32, data);
     expect_any_always(__wrap_mmio_update32, mask);
 
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_mcp, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER, 8);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_mcp, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
     will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
     // FPFwCoreInterruptEnableVector
@@ -842,7 +983,7 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__fail1, NULL, NULL)
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0x0);
 
     // accel_intr_process_fatal_interrupts()
-    will_return_count(__wrap_idsw_get_cpu_type, CPU_MCP, 8);
+    will_return_count(__wrap_idsw_get_cpu_type, CPU_MCP, ACCEL_SCP_INTR_MAX);
     will_return(__wrap_sdm_ext_get_category_mask_reg_addr, 0xABCDEF12);
     will_return(__wrap_sdm_ext_get_category_status_reg_addr, 0x12345678);
     expect_any_always(__wrap_mmio_read32, addr);
@@ -859,9 +1000,9 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__fail1, NULL, NULL)
     expect_any_always(__wrap_mmio_update32, data);
     expect_any_always(__wrap_mmio_update32, mask);
 
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, CDEDSS_IRQ_NUMBER, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_mcp, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER, 8);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_mcp, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
     will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
     // FPFwCoreInterruptEnableVector
@@ -892,7 +1033,7 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__fail2, NULL, NULL)
     // ATU map address base is always 0
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0x0);
 
-    will_return_count(__wrap_idsw_get_cpu_type, CPU_MCP, 8);
+    will_return_count(__wrap_idsw_get_cpu_type, CPU_MCP, ACCEL_SCP_INTR_MAX);
     // accel_intr_process_fatal_interrupts()
     will_return(__wrap_sdm_ext_get_category_mask_reg_addr, 0xABCDEF12);
     will_return(__wrap_sdm_ext_get_category_status_reg_addr, 0x12345678);
@@ -914,9 +1055,9 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__fail2, NULL, NULL)
     expect_any_always(__wrap_mmio_update32, data);
     expect_any_always(__wrap_mmio_update32, mask);
 
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, CDEDSS_IRQ_NUMBER, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_mcp, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER, 8);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_mcp, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
     will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
     // FPFwCoreInterruptEnableVector
@@ -947,7 +1088,7 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__fail3, NULL, NULL)
     // ATU map address base is always 0
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0x0);
 
-    will_return_count(__wrap_idsw_get_cpu_type, CPU_MCP, 8);
+    will_return_count(__wrap_idsw_get_cpu_type, CPU_MCP, ACCEL_SCP_INTR_MAX);
     // accel_intr_process_fatal_interrupts()
     will_return(__wrap_sdm_ext_get_category_mask_reg_addr, 0xABCDEF12);
     will_return(__wrap_sdm_ext_get_category_status_reg_addr, 0x12345678);
@@ -969,9 +1110,9 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__fail3, NULL, NULL)
     expect_any_always(__wrap_mmio_update32, data);
     expect_any_always(__wrap_mmio_update32, mask);
 
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, CDEDSS_IRQ_NUMBER, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_mcp, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER, 8);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_mcp, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
     will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
     // FPFwCoreInterruptEnableVector
@@ -1001,7 +1142,7 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__fail4, NULL, NULL)
     // ATU map address base is always 0
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0x0);
 
-    will_return_count(__wrap_idsw_get_cpu_type, CPU_MCP, 8);
+    will_return_count(__wrap_idsw_get_cpu_type, CPU_MCP, ACCEL_SCP_INTR_MAX);
     // accel_intr_process_fatal_interrupts()
     will_return(__wrap_sdm_ext_get_category_mask_reg_addr, 0xABCDEF12);
     will_return(__wrap_sdm_ext_get_category_status_reg_addr, 0x12345678);
@@ -1023,9 +1164,9 @@ TEST_FUNCTION(test_cded_intr_handle_cded_cp_fatal_intr_recvd__fail4, NULL, NULL)
     expect_any_always(__wrap_mmio_update32, data);
     expect_any_always(__wrap_mmio_update32, mask);
 
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, CDEDSS_IRQ_NUMBER, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_mcp, 8);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER, 8);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_mcp, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
     will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
     // FPFwCoreInterruptEnableVector

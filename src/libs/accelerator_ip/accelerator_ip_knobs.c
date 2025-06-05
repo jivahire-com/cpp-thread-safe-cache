@@ -49,6 +49,9 @@ const char* knob_transfer_list[] = {
     "kmp_safe_state",
 };
 
+static uint32_t reboot_reason = E_REBOOT_COLD_BOOT;
+static uint32_t boot_type = E_COLD_BOOT;
+
 // Clean up FPFW_DBGPRINT_ after all PRs in the series are merged : ADO 2503735
 
 /*--------------------------------- Externs ---------------------------------*/
@@ -151,9 +154,9 @@ static knob_transfer_status_t transfer_accel_sys_info(uint8_t* p_addr, uint8_t* 
         {"m7_soc_id", (uint8_t)(sizeof(uint32_t)), (uint8_t*)&soc_id},
         {"m7_die_id", (uint8_t)(sizeof(uint8_t)), (uint8_t*)&die_id},
         {"m7_plat_id", (uint8_t)(sizeof(uint32_t)), (uint8_t*)&platform_id},
-        {"reboot_reason", (uint8_t)(sizeof(uint32_t)), NULL},
+        {"reboot_reason", (uint8_t)(sizeof(uint32_t)), (uint8_t*)&reboot_reason},
         {"et_log_lvl", (uint8_t)(sizeof(uint32_t)), NULL},
-        {"boot_type", (uint8_t)(sizeof(uint32_t)), NULL},
+        {"boot_type", (uint8_t)(sizeof(uint32_t)), (uint8_t*)&boot_type},
         {"soc_sec_state", (uint8_t)(sizeof(uint32_t)), NULL},
         {"sdm_emcpu_wdt_enable", (uint8_t)(sizeof(uint16_t)), NULL},
         {"cded_emcpu_wdt_enable", (uint8_t)(sizeof(uint16_t)), NULL},
@@ -292,4 +295,10 @@ knob_transfer_status_t scp_download_accel_knobs(ACCEL_ID accel_type)
     }
 
     return STATUS_KNOB_TRANSFER_SUCCESS;
+}
+
+void set_reboot_reason(E_REBOOT_REASON reason)
+{
+    reboot_reason = reason;
+    boot_type = reason == E_REBOOT_COLD_BOOT ? E_COLD_BOOT : E_WARM_BOOT;
 }

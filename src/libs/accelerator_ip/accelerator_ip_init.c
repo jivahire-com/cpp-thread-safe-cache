@@ -11,9 +11,11 @@
 /*-------------------------------- Features ---------------------------------*/
 
 /*-------------------------------- Includes ---------------------------------*/
-#include "accelerator_ip.h" // for accel_wait_for_mbox_boot_status
+#include "accelerator_ip.h"    // for accel_wait_for_mbox_boot_status
+#include "accelerator_knobs.h" // for scp_download_accel_knobs
 
 #include <DbgPrint.h>                    // for FPFW_DBGPRINT_INFO, FPFW_DBGPRINT_ERROR
+#include <FPFwInterrupts.h>              // for FPFwCoreInterruptEnableVector
 #include <FpFwAssert.h>                  // for FPFW_RUNTIME_ASSERT
 #include <_addressblock_0x100000_regs.h> // for fpfw_init_get_handle
 #include <accel_intr.h>                  // for accel_intr_irq_init
@@ -80,15 +82,30 @@ typedef struct _emcpu_mbox_struct
     fpfw_icc_base_recv_req_t recv_params;
     fpfw_icc_base_send_req_t send_params;
     emcpu_fw_load_t load_stage;
-    bool is_cold_boot;
 } emcpu_mbox_struct_t;
 
 typedef struct _emcpu_rst_struct
 {
     emcpu_mbox_struct_t mbox_params;
-    crash_dump_cb_t cb_fun;      // Callback post embed cpu recovery (one per accelerator instance)
-    void* cb_ctx;                // Context to be pass to the function (one per accelerator instance)
-    emcpu_stage_t cpu_rst_stage; // Variable to track current stage of recovery
+    /**
+     * @brief  Callback pre accel core recovery
+     * This CB will be invoked just before CPU reset/wait
+     * register is released.
+     */
+    crash_dump_cb_t pre_cb_fun;
+    /* Context to be pass to pre_cb_fun */
+    void* pre_cb_ctx;
+    /* Callback post accel core recovery */
+    /**
+     * @brief  Callback post accel core recovery
+     * This CB will be invoked just after CPU reset/wait
+     * register is released.
+     */
+    crash_dump_cb_t post_cb_fun;
+    /* Context to be pass to post_cb_fun */
+    void* post_cb_ctx;
+    /* Variable to track current stage of recovery */
+    emcpu_stage_t cpu_rst_stage;
 } emcpu_rst_struct_t;
 
 /*--------------------------- Function Prototypes ---------------------------*/
@@ -158,6 +175,7 @@ static uint32_t get_accel_name_and_offset_addr(ACCEL_ID accel_type, char* accel_
 static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
 {
     fpfw_status_t status = FPFW_STATUS_SUCCESS;
+    emcpu_rst_struct_t* p_cpu_rst_info = NULL;
 
     fpfw_icc_base_ctx_t* icc_ctx = fpfw_init_get_handle("icc_hspmbx");
     if (icc_ctx == NULL)
@@ -167,45 +185,45 @@ static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
 
     ACCEL_ID accel_type = get_accelip_type(p_ss_ctxt->accelip_metadata.accel_type);
 
-    char accel_name[ACCEL_NAME_LEN];
-    uint32_t ext_cfg_offset_addr = get_accel_name_and_offset_addr(accel_type, accel_name);
-    size_t recv_msg_size_bytes = 0x0;
-
     /* Form the packet to request HSP to load accelerator firmware.
     Each accelerator (SDM/CDED-SDM) has 2 bins to be loaded; one each for ITCM and DTCM.
     After both bins are requested, there's one more stage where the SCP releases the accelerator's CPU wait.
     This function executes 3 times for each accelerator in case of cold boot */
     mbox_buffs[accel_type].send_buff.header.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ;
+    p_cpu_rst_info = &cpu_rst_info[accel_type];
 
-    switch (cpu_rst_info[accel_type].mbox_params.load_stage)
+    switch (p_cpu_rst_info->mbox_params.load_stage)
     {
     case EMCPU_ITCM_LOAD:
-        cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_DTCM_LOAD;
+        p_cpu_rst_info->mbox_params.load_stage = EMCPU_DTCM_LOAD;
         mbox_buffs[accel_type].send_buff.id =
             (accel_type == ACCEL_ID_SDM) ? HSP_FIRMWARE_ID_SDM_ITCM : HSP_FIRMWARE_ID_CDED_ITCM;
         mbox_buffs[accel_type].send_buff.load_addr_low = p_ss_ctxt->mem_info.itcm_load_addr_low;
         mbox_buffs[accel_type].send_buff.load_addr_high = p_ss_ctxt->mem_info.itcm_load_addr_high;
-        cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_ITCM_FW_LOAD_INVOKED;
+        p_cpu_rst_info->cpu_rst_stage = EMCPU_ITCM_FW_LOAD_INVOKED;
         break;
 
     case EMCPU_DTCM_LOAD:
-        cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_RELEASE_CPU_WAIT;
+        p_cpu_rst_info->mbox_params.load_stage = EMCPU_RELEASE_CPU_WAIT;
         mbox_buffs[accel_type].send_buff.id =
             (accel_type == ACCEL_ID_SDM) ? HSP_FIRMWARE_ID_SDM_DTCM : HSP_FIRMWARE_ID_CDED_DTCM;
         mbox_buffs[accel_type].send_buff.load_addr_low = p_ss_ctxt->mem_info.dtcm_load_addr_low;
         mbox_buffs[accel_type].send_buff.load_addr_high = p_ss_ctxt->mem_info.dtcm_load_addr_high;
-        cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_DTCM_FW_LOAD_INVOKED;
+        p_cpu_rst_info->cpu_rst_stage = EMCPU_DTCM_FW_LOAD_INVOKED;
         break;
 
     case EMCPU_RELEASE_CPU_WAIT:
-        // Load complete, this is the final load callback hence returning
-        sdm_init_disable_cpu_wait((accel_intr_atu_map_address[accel_type] + ext_cfg_offset_addr));
-        cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_CPU_RECOVERY_COMPLETE;
-        // skip callback for cold boot
-        if (!cpu_rst_info[accel_type].mbox_params.is_cold_boot)
+        if (p_cpu_rst_info->pre_cb_fun != NULL)
         {
-            cpu_rst_info[accel_type].cb_fun(cpu_rst_info[accel_type].cb_ctx);
+            p_cpu_rst_info->pre_cb_fun(p_cpu_rst_info->pre_cb_ctx);
         }
+        // Release CPU reset register
+        accel_disable_cpu_wait(accel_type);
+        if (p_cpu_rst_info->post_cb_fun != NULL)
+        {
+            p_cpu_rst_info->post_cb_fun(p_cpu_rst_info->post_cb_ctx);
+        }
+        p_cpu_rst_info->cpu_rst_stage = EMCPU_CPU_RECOVERY_COMPLETE;
         return status;
 
     default:
@@ -215,20 +233,10 @@ static fpfw_status_t invoke_hsp_accel_fw_download(subsystem_ctxt_t* p_ss_ctxt)
 
     if (system_info_is_hsp_present())
     {
-        if (cpu_rst_info[accel_type].mbox_params.is_cold_boot)
-        {
-            status = fpfw_icc_base_send_recv_sync(icc_ctx,
-                                                  &mbox_buffs[accel_type].send_buff,
-                                                  sizeof(kng_hsp_mailbox_msg),
-                                                  &recv_msg_size_bytes);
-        }
-        else
-        {
-            status = fpfw_icc_base_recv(icc_ctx, &cpu_rst_info[accel_type].mbox_params.recv_params);
-            BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
-            status = fpfw_icc_base_send(icc_ctx, &cpu_rst_info[accel_type].mbox_params.send_params);
-            BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
-        }
+        status = fpfw_icc_base_recv(icc_ctx, &p_cpu_rst_info->mbox_params.recv_params);
+        BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
+        status = fpfw_icc_base_send(icc_ctx, &p_cpu_rst_info->mbox_params.send_params);
+        BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
     }
 
     return status;
@@ -269,19 +277,11 @@ static void request_accel_fw_load_complete_notify(void* context, size_t output_s
     FPFW_UNUSED(context);
     FPFW_UNUSED(output_size_bytes);
     cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_MBOX_RSP_RXED;
-    debug_print("%s: Accel Load Complete RXed(0x%x)\n", __func__, status);
     BUG_ASSERT(status == FPFW_STATUS_SUCCESS);
+    BUG_ASSERT(mbox_buffs[accel_type].recv_buff.header.cmd == HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    BUG_ASSERT(mbox_buffs[accel_type].recv_buff.rsp.status == FPFW_STATUS_SUCCESS);
 
-    if (!cpu_rst_info[accel_type].mbox_params.is_cold_boot)
-    {
-        BUG_ASSERT(mbox_buffs[accel_type].recv_buff.header.cmd == HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
-        BUG_ASSERT(mbox_buffs[accel_type].recv_buff.rsp.status == FPFW_STATUS_SUCCESS);
-        invoke_hsp_accel_fw_download(p_ss_ctxt);
-    }
-    else
-    {
-        BUG_ASSERT(mbox_buffs[accel_type].send_buff.header.cmd == HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
-    }
+    invoke_hsp_accel_fw_download(p_ss_ctxt);
 }
 
 static void emcpu_recovery_sequence(uintptr_t sdm_ext_cfg_base, subsystem_ctxt_t* p_ss_ctxt)
@@ -313,7 +313,6 @@ static void emcpu_recovery_sequence(uintptr_t sdm_ext_cfg_base, subsystem_ctxt_t
     cpu_rst_info[accel_type].cpu_rst_stage = EMCPU_RESET_SEQ_COMPLETE;
 
     cpu_rst_info[accel_type].mbox_params.load_stage = EMCPU_ITCM_LOAD;
-    cpu_rst_info[accel_type].mbox_params.is_cold_boot = false;
     invoke_hsp_accel_fw_download(p_ss_ctxt);
     debug_print("%s: FW LOAD SENT\n", __func__);
 }
@@ -532,8 +531,27 @@ accel_init_failed:
     return ACCEL_RET_FAIL_GENERAL;
 }
 
-/* TODO: Review use of BUG_ASSERT (vis a vis ASSERT) in accelIP init sequence https://azurecsi.visualstudio.com/Dev/_workitems/edit/2025877/ */
-void scp_accelerators_emcpu_reset(ACCEL_ID accel_type, crash_dump_cb_t cb_fun, void* cb_ctx)
+void accel_pre_warm_reset_cb(void* ctx)
+{
+    ACCEL_ID accel_type = (ACCEL_ID)ctx;
+    uint32_t ext_cfg_addr = atu_svc_accel_atu_addr(accel_type);
+
+    /* Download the latest KNOBs value into accel core DTCM */
+    scp_download_accel_knobs(accel_type);
+
+    /* Initialize the Accel core interrupt registers */
+    accel_intr_scp_init(accel_type, ext_cfg_addr);
+}
+
+void accel_post_warm_reset_cb(void* ctx)
+{
+    ACCEL_ID accel_type = (ACCEL_ID)ctx;
+    uint32_t IRQnum = accel_intr_get_irq_num_from_accel_type(accel_type);
+
+    FPFwCoreInterruptEnableVector(IRQnum);
+}
+
+void accel_core_warm_reset(ACCEL_ID accel_type, crash_dump_cb_t pre_cb_fun, void* pre_cb_ctx, crash_dump_cb_t post_cb_fun, void* post_cb_ctx)
 {
     uint32_t accel_ctxt_size = 0x0;
     subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
@@ -542,7 +560,6 @@ void scp_accelerators_emcpu_reset(ACCEL_ID accel_type, crash_dump_cb_t cb_fun, v
     uint32_t ext_cfg_offset_addr = get_accel_name_and_offset_addr(accel_type, accel_name);
 
     BUG_ASSERT(accel_type < NUM_VALID_ACCEL_ID);
-    BUG_ASSERT(cb_fun != NULL);
 
     if (cpu_rst_info[accel_type].cpu_rst_stage != EMCPU_CPU_RECOVERY_COMPLETE)
     {
@@ -562,8 +579,10 @@ void scp_accelerators_emcpu_reset(ACCEL_ID accel_type, crash_dump_cb_t cb_fun, v
         }
     }
 
-    cpu_rst_info[accel_type].cb_fun = cb_fun;
-    cpu_rst_info[accel_type].cb_ctx = cb_ctx;
+    cpu_rst_info[accel_type].pre_cb_fun = pre_cb_fun;
+    cpu_rst_info[accel_type].pre_cb_ctx = pre_cb_ctx;
+    cpu_rst_info[accel_type].post_cb_fun = post_cb_fun;
+    cpu_rst_info[accel_type].post_cb_ctx = post_cb_ctx;
     cpu_rst_info[accel_type].mbox_params.recv_params.cb_ctx = (void*)p_ss_ctxt;
 
     emcpu_recovery_sequence((ext_cfg_offset_addr + accel_intr_atu_map_address[accel_type]), p_ss_ctxt);

@@ -15,26 +15,24 @@
 #include "accel_intr_events.h"
 #include "accel_intr_priv.h"
 
-#include <DfwkDriver.h>     // for DfwkInterfaceInitialize, DfwkQueueInitia...
-#include <DfwkHost.h>       // for DfwkDeviceInitialize
-#include <FPFwInterrupts.h> // for FPFwCoreInterruptDisableVector,...
-#include <FpFwAssert.h>     // for FPFW_RUNTIME_ASSERT
-#include <FpFwUtils.h>      // for FPFW_UNUSED
-#include <accel_intr_client.h>
-#include <accel_intr_service.h>
-#include <accelerator_ip.h> // for ACCELERATOR_CDEDSS, ACCELERATOR_SDMSS
-#include <atu_init.h>       // for atu_svc_accel_atu_addr
-#include <bitops.h>
-#include <bug_check.h> // for BUG_CHECK
-#include <cded_interrupts.h>
-#include <cded_regs_regs_regs.h>
-#include <cdedss_config_regs.h>
-#include <cortex_m7_atomics.h> // for cortex_m7_atomic_call_data_memory_barrier
-#include <kng_error.h>         // for KNG_E_SPURIOUS_INTR
-#include <nvic.h>
-#include <sdm_ext_cfg_regs.h>
-#include <stdbool.h> // for false
-#include <stdint.h>
+#include <DfwkDriver.h>         // for DfwkInterfaceInitialize, DfwkQueueInitia...
+#include <DfwkHost.h>           // for DfwkDeviceInitialize
+#include <FPFwInterrupts.h>     // for FPFwCoreInterruptDisableVector,...
+#include <FpFwAssert.h>         // for FPFW_RUNTIME_ASSERT
+#include <FpFwUtils.h>          // for FPFW_UNUSED
+#include <accel_intr_client.h>  // for send_fatal_intr_async_request
+#include <accelerator_ip.h>     // for ACCELERATOR_CDEDSS, ACCELERATOR_SDMSS
+#include <accelerator_knobs.h>  // for set_reboot_reason
+#include <atu_init.h>           // for atu_svc_accel_atu_addr
+#include <bitops.h>             // for GET_LOWEST_SET_BIT_INDEX, BITWISE_AND
+#include <bug_check.h>          // for BUG_CHECK
+#include <cded_interrupts.h>    // for cded_int_get_category_status_reg_addr
+#include <cdedss_config_regs.h> // for CDEDSS_CONFIG_CDED_REGS_REGS_ADDRESS
+#include <cmsis_m7.h>           // for __CLZ
+#include <cortex_m7_atomics.h>  // for cortex_m7_atomic_call_data_memory_barrier
+#include <kng_error.h>          // for KNG_E_SPURIOUS_INTR
+#include <stdbool.h>            // for false
+#include <stdint.h>             // for uint32_t, uintptr_t
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
@@ -248,6 +246,7 @@ uint32_t accel_intr_emcpu_wdt_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM
             FPFW_ET_LOG(AccelIntr, IRQnum, bit_index);
 
             // Set to reset Accel emCPU
+            set_reboot_reason(E_REBOOT_WDT_EXPIRY);
             ret_val = ACCEL_INTR_SET_RESET_ACCEL_EMCPU(ret_val);
 
             // Mask interrupt at level 1 to avoid re-trigger
@@ -369,6 +368,18 @@ uint32_t accel_intr_ue_ecc_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_EX
             // Set reset flags based on interrupt status, for interrupts other than ITCM, D0TCM and D1TCM, SOC reset is needed
             if (BITWISE_AND(interrupt_status, SL_GET_BIT_MASK_RANGE(SDM_EXT_ITCM_ERR_INTR, SDM_EXT_DTCM1_ERR_INTR)) != 0x0)
             {
+                if (interrupt_status & SL_GET_SINGLE_BIT_MASK(SDM_EXT_ITCM_ERR_INTR))
+                {
+                    set_reboot_reason(E_REBOOT_ITCM_UE);
+                }
+                else if (interrupt_status & SL_GET_SINGLE_BIT_MASK(SDM_EXT_DTCM0_ERR_INTR))
+                {
+                    set_reboot_reason(E_REBOOT_DTCM0_UE);
+                }
+                else if (interrupt_status & SL_GET_SINGLE_BIT_MASK(SDM_EXT_DTCM1_ERR_INTR))
+                {
+                    set_reboot_reason(E_REBOOT_DTCM1_UE);
+                }
                 ret_val = ACCEL_INTR_SET_RESET_ACCEL_EMCPU(ret_val);
             }
 

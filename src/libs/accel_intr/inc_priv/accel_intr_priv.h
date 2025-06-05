@@ -33,7 +33,6 @@ typedef enum {
     ACCEL_SCP_INTR_SDM_WDT_ERR,             // Maps to SDM_EXT_SDM_WDT_ERR_INTR
     ACCEL_SCP_INTR_FAB_WDT_ERR,             // Maps to SDM_EXT_FAB_WDT_ERR_INTR
     ACCEL_SCP_INTR_AXI_UNSUPP_INTR_STATUS,  // Maps to SDM_EXT_AXI_UNSUPP_INTR_STATUS_INTR
-    ACCEL_SCP_INTR_MBX_I2E,                 // Maps to SDM_EXT_MBX_I2E_INTR
     ACCEL_SCP_INTR_MAX
 } eACCEL_SCP_INTR;
 
@@ -250,14 +249,6 @@ void accel_intr_mask_interrupt_level_1(uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_
  *
  */
 void accel_intr_unmask_interrupt_level_1(uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index);
-
-/**
- * @brief Initialize SDM/CDED interrupts for SCP core
- *
- * @param[in] accel_type : Accel type (SDM /CDED)
- * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- */
-void accel_intr_scp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr);
 
 /*************************************************************************
  * IRQ Init functions

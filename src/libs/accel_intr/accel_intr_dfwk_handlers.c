@@ -18,6 +18,7 @@
 #include <DfwkHost.h>          // for DfwkDeviceInitialize
 #include <FPFwInterrupts.h>    // for FPFwCoreInterruptDisableVector
 #include <FpFwUtils.h>         // for FPFW_UNUSED
+#include <accelerator_ip.h>    // for accel_core_warm_reset
 #include <accelip_id.h>        // for ACCEL_ID_CDED, ACCEL_ID_SDM
 #include <atu_init.h>          // for atu_svc_accel_atu_addr
 #include <bug_check.h>         // for BUG_CHECK_EXTERNAL
@@ -214,12 +215,7 @@ void accel_intr_handle_fatal_intr_recvd(ACCEL_ID accel_type)
     }
     else if (ACCEL_INTR_IS_RESET_ACCEL_EMCPU_SET(irq_status))
     {
-        /**
-         * 1. Send request to ACCEL emCPU to collect crash dump. This is done by raising doorbell interrupt SYS2_MSG0_INTR
-         * 2. Enable IRQ from ACCEL IP
-         * 3. Create timer to wait on doorbell interrupt SDM_MSG0_INTR using fpfw_timer_create
-         */
-        accel_intr_request_crash_dump_collection(accel_type, ACCEL_INTR_REQUEST_ACCEL_EMCPU_RESET);
+        accel_core_warm_reset(accel_type, accel_pre_warm_reset_cb, (void*)accel_type, accel_post_warm_reset_cb, (void*)accel_type);
     }
     else
     {

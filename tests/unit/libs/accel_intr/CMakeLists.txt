@@ -67,6 +67,7 @@ unit_test_target(${TARGET})
 # Mock the functions needed
 mock_target(${TARGET}
     FPFwCoreInterruptEnableVector
+    accel_core_warm_reset
     accel_intr_service_get_cfg_address
     accel_mbox_sw_intr_cb
     atu_svc_accel_atu_addr
@@ -91,6 +92,7 @@ mock_target(${TARGET}
     nvic_irq_disable
     nvic_irq_enable
     nvic_irq_set_isr_with_param
+    scp_download_accel_knobs
     sdm_ext_get_category_mask_reg_addr
     sdm_ext_get_category_status_reg_addr
     sdm_ext_int_mask_disable

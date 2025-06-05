@@ -50,6 +50,7 @@ static void* s_icc_recv_ctx = NULL;
 static icc_base_send_complete_notify s_icc_send_resp_cb = NULL;
 static void* s_icc_send_resp_ctx = NULL;
 static kng_hsp_mailbox_msg* mbox_recv_buffs = NULL;
+static icc_base_send_complete_notify s_icc_send_cb = NULL;
 
 static uint32_t atu_map_buff[FOUR_MB_SIZE];
 static fpfw_icc_base_ctx_t* icc_ctx = nullptr;
@@ -188,8 +189,8 @@ void* __wrap_fpfw_init_get_handle(const char* id)
 
 fpfw_status_t __wrap_fpfw_icc_base_send(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_send_req_t* params)
 {
-    UNUSED(params);
     assert_non_null(icc_ctx);
+    s_icc_send_cb = params->cb;
     return mock_type(fpfw_status_t);
 }
 
@@ -562,7 +563,7 @@ TEST_FUNCTION(accelip_emcpu_reset_sdm_test, nullptr, nullptr)
     will_return_always(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_sdm_init_disable_cpu_wait, SILIBS_SUCCESS);
 
-    scp_accelerators_emcpu_reset(ACCEL_ID_SDM, cb_fun, NULL);
+    accel_core_warm_reset(ACCEL_ID_SDM, cb_fun, NULL, cb_fun, NULL);
     s_icc_recv_cb(&p_ss_ctxt[0], 0, FPFW_STATUS_SUCCESS);
     s_icc_recv_cb(&p_ss_ctxt[0], 0, FPFW_STATUS_SUCCESS);
 }
@@ -595,9 +596,56 @@ TEST_FUNCTION(accelip_emcpu_reset_cded_test, nullptr, nullptr)
     will_return_always(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_sdm_init_disable_cpu_wait, SILIBS_SUCCESS);
 
-    scp_accelerators_emcpu_reset(ACCEL_ID_CDED, cb_fun, NULL);
+    accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, cb_fun, NULL);
     s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
     s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
+}
+
+/**
+ * Test case to verify that the emcpu reset flow works correctly when the callback function is NULL.
+ * This test case is designed to ensure that the accelerator core warm reset can be invoked without
+ * a callback function.
+ */
+TEST_FUNCTION(accelip_emcpu_reset_null_cb_test, nullptr, nullptr)
+{
+    uint32_t accel_ctxt_size = 0x0;
+    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
+
+    will_return_always(__wrap_idsw_get_die_id, SOC_D0);
+
+    // Set common expectations of emcpu_recovery_sequence()
+    will_return_always(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
+    will_return_always(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
+    will_return_always(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
+    will_return_always(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
+    will_return_always(__wrap_sdm_init_deassert_nsysreset, SILIBS_SUCCESS);
+
+    // In invoke_hsp_accel_fw_download
+    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
+    will_return_always(__wrap_fpfw_init_get_handle, &icc_ctx);
+    will_return_always(__wrap_system_info_is_hsp_present, true);
+
+    // Setting up the ICC flow
+    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return_always(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return_always(__wrap_sdm_init_disable_cpu_wait, SILIBS_SUCCESS);
+
+    // Set specific expectations of emcpu_recovery_sequence()
+    will_return(__wrap_mmio_read32, 0);
+    will_return(__wrap_mmio_read32, 0xFFFFFFFF);
+    accel_core_warm_reset(ACCEL_ID_CDED, NULL, NULL, cb_fun, NULL);
+    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
+    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
+
+    // Set specific expectations of emcpu_recovery_sequence()
+    will_return(__wrap_mmio_read32, 0);
+    will_return(__wrap_mmio_read32, 0xFFFFFFFF);
+    accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, NULL, NULL);
+    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
+    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
+
+    // Expectations for request_send_complete_cb
+    s_icc_send_cb(NULL, FPFW_STATUS_SUCCESS);
 }
 
 TEST_FUNCTION(accelip_emcpu_reset_invalid_state_test, nullptr, nullptr)
@@ -633,12 +681,12 @@ TEST_FUNCTION(accelip_emcpu_reset_invalid_state_test, nullptr, nullptr)
     will_return(__wrap_sdm_init_disable_cpu_wait, SILIBS_SUCCESS);
 
     should_return = false;
-    scp_accelerators_emcpu_reset(ACCEL_ID_CDED, cb_fun, NULL);
+    accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, cb_fun, NULL);
 
     // Invoke emcpu reset again to trigger failure scenario
     if (!bugcheck_mock_return())
     {
-        scp_accelerators_emcpu_reset(ACCEL_ID_CDED, cb_fun, NULL);
+        accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, cb_fun, NULL);
     }
     else
     {
@@ -686,7 +734,7 @@ TEST_FUNCTION(accelip_emcpu_reset_recv_fail_test, nullptr, nullptr)
 
     // The first recv call will fail - BUT WE FORCIBLY CONTINUE EXECUTION
     // IF WE DON'T THE RESET STATE WILL STUCK IN ITCM LOAD PREVENTING FURTHER TESTS
-    scp_accelerators_emcpu_reset(ACCEL_ID_CDED, cb_fun, NULL);
+    accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, cb_fun, NULL);
 
     // Invoking callback to trigger reset to normal flow
     s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
@@ -731,7 +779,7 @@ TEST_FUNCTION(accelip_emcpu_reset_send_fail_test, nullptr, nullptr)
 
     // The first recv call will fail - BUT WE FORCIBLY CONTINUE EXECUTION
     // IF WE DON'T THE RESET STATE WILL STUCK IN ITCM LOAD PREVENTING FURTHER TESTS
-    scp_accelerators_emcpu_reset(ACCEL_ID_CDED, cb_fun, NULL);
+    accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, cb_fun, NULL);
 
     // Invoking callback to trigger reset to normal flow
     s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
@@ -776,7 +824,7 @@ TEST_FUNCTION(accelip_emcpu_reset_send_fail_mbox_cmd_cb, nullptr, nullptr)
 
     // The first recv call will fail - BUT WE FORCIBLY CONTINUE EXECUTION
     // IF WE DON'T THE RESET STATE WILL STUCK IN ITCM LOAD PREVENTING FURTHER TESTS
-    scp_accelerators_emcpu_reset(ACCEL_ID_CDED, cb_fun, NULL);
+    accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, cb_fun, NULL);
 
     // Invoking callback to trigger reset to normal flow
     mbox_recv_buffs->header.cmd = HSP_MAILBOX_CMD_MAX;
@@ -822,7 +870,7 @@ TEST_FUNCTION(accelip_emcpu_reset_send_fail_mbox_status_cb, nullptr, nullptr)
 
     // The first recv call will fail - BUT WE FORCIBLY CONTINUE EXECUTION
     // IF WE DON'T THE RESET STATE WILL STUCK IN ITCM LOAD PREVENTING FURTHER TESTS
-    scp_accelerators_emcpu_reset(ACCEL_ID_CDED, cb_fun, NULL);
+    accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, cb_fun, NULL);
 
     // Invoking callback to trigger reset to normal flow
     mbox_recv_buffs->rsp.status = FPFW_STATUS_FAIL;
@@ -838,19 +886,7 @@ TEST_FUNCTION(accelip_emcpu_reset_send_invalid_accel, nullptr, nullptr)
     should_return = false;
     if (!bugcheck_mock_return())
     {
-        scp_accelerators_emcpu_reset(NUM_VALID_ACCEL_ID, cb_fun, NULL);
-    }
-}
-
-TEST_FUNCTION(accelip_emcpu_reset_send_invalid_cb, nullptr, nullptr)
-{
-    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
-
-    should_return = false;
-    if (!bugcheck_mock_return())
-    {
-        scp_accelerators_emcpu_reset(ACCEL_ID_CDED, NULL, NULL);
+        accel_core_warm_reset(NUM_VALID_ACCEL_ID, cb_fun, NULL, cb_fun, NULL);
     }
 }
 

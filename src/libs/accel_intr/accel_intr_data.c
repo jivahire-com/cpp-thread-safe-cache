@@ -80,13 +80,6 @@ const accel_intr_irq_data_t accel_irq_scp_data[ACCEL_SCP_INTR_MAX] = {
             .accel_irq_init_fn = accel_intr_single_level_irq_init,
             .accel_irq_fn = accel_intr_single_level_irq_fn
         },
-
-    [ACCEL_SCP_INTR_MBX_I2E] =
-        {
-            .accel_irq_bit = SDM_EXT_MBX_I2E_INTR,
-            .accel_irq_init_fn = accel_intr_single_level_irq_init,
-            .accel_irq_fn = NULL,
-        },
 };
 
 const accel_intr_irq_data_t accel_irq_mcp_data[ACCEL_MCP_INTR_MAX] = {
@@ -224,8 +217,6 @@ eACCEL_SCP_INTR accel_scp_get_intr_enum(SDM_EXT_INTERRUPT_NUMBER irq_bit)
         return ACCEL_SCP_INTR_FAB_WDT_ERR;
     case SDM_EXT_AXI_UNSUPP_INTR_STATUS_INTR:
         return ACCEL_SCP_INTR_AXI_UNSUPP_INTR_STATUS;
-    case SDM_EXT_MBX_I2E_INTR:
-        return ACCEL_SCP_INTR_MBX_I2E;
     default:
         return ACCEL_SCP_INTR_MAX;
     }

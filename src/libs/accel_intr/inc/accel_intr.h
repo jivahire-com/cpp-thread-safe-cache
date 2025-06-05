@@ -121,3 +121,11 @@ void accel_intr_handle_fatal_intr_recvd(ACCEL_ID accel_type);
  *
  */
 int32_t accel_intr_init(ACCEL_ID accel_type);
+
+/**
+ * @brief Initialize SDM/CDED interrupts for SCP core
+ *
+ * @param[in] accel_type : Accel type (SDM /CDED)
+ * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
+ */
+void accel_intr_scp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr);

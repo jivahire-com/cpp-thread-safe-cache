@@ -25,6 +25,7 @@
 #define C_DYN_PF_TO_F    (1.0f / 1000000000000.0f)
 #define VOLT_MV_TO_V     (1.0f / 1000.0f)
 #define CURRENT_MA_TO_A  (1.0f / 1000.0f)
+#define TEMP_C_TO_DC     (10.0f)
 
 #define FUSE_VCPU_TEMP_OFFSET  (128)
 #define MAX_CURRENT_PER_CORE_A (8.0f)
@@ -328,7 +329,7 @@ void power_vcpu_precalculate_vf_currents(power_runconfig_t* p_runconfig, dvfs_co
             // get the scaler associated with the temp the reference was taken at - likely result is 1
             const float leakage_scaler = power_vcpu_calc_core_leakage_scaler(
                 p_runconfig,
-                (p_runconfig->fuses.vcpu_leakage[0].current.temp_offset - FUSE_VCPU_TEMP_OFFSET));
+                (p_runconfig->fuses.vcpu_leakage[0].current.temp_offset - FUSE_VCPU_TEMP_OFFSET) * TEMP_C_TO_DC);
             // store the leakage current as leakage / scaler - leakage current is affected by temperature
             precalc->leakage = leakage_current / leakage_scaler;
 

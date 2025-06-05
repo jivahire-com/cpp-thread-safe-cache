@@ -21,6 +21,7 @@ extern "C" {
 #include <power_runconfig_i.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+const double TOLERANCE = 0.0001;
 
 /*------------- Typedefs -----------------*/
 
@@ -293,10 +294,13 @@ POWER_TEST(power_vcpu_interpolate_from_points, NULL, NULL)
 POWER_TEST(power_vcpu_precalculate_vf_currents, NULL, NULL)
 {
 
-#define TEST_CORE_TDP                        66
-#define TEST_LDO_DYNANMIC_CURRENT_CALCULATED 0.073909
-#define TEST_LEAKAGE_CURRENT_CALCULATED      0.377212
-#define TEST_DYNAMIC_CURRENT_CALCULATED      984
+#define TEST_CORE_TDP 66
+
+#define TEST_DYNAMIC_CURRENT_CALCULATED     7.696859
+#define TEST_LEAKAGE_CURRENT_CALCULATED     0.503301
+#define TEST_LDO_DYNAMIC_CURRENT_CALCULATED 0.073909
+#define TEST_REF_LEAKAGE_CURRENT_CALCULATED 0.377212
+#define TEST_CDYN_PF_CALCULATED             984.0000
 
     power_runconfig_t test_runconfig;
     dvfs_config_t test_dvfs_cfg = DVFS_DEFAULT_CONFIG;
@@ -327,7 +331,12 @@ POWER_TEST(power_vcpu_precalculate_vf_currents, NULL, NULL)
     test_runconfig.fuses.vcpu_leakage[0].cdyn.cdyn_pf = 17100;
 
     test_runconfig.derived.vfts[0].assigned_cores = {0xFF, 0x0, 0x0}; // all cores assigned to curve 0
+    test_runconfig.fuses.process_id = PROCESS_UNKNOWN;                // PROCESS_UNKNOWN
 
+    test_runconfig.knobs.leakage_temp_scaler.poly_coefficients[PROCESS_FF] =
+        (power_leakage_poly_t){.a = 3.0000001e-6f, .b = -300.00001e-6f, .c = 0.0141, .d = -0.1239f};
+
+    test_runconfig.knobs.activity_factor_dhry_adjustment = 217; // 80% activity factor
     power_core_vft_point_t test_vf[NUM_PSTATES] = {
         {.freq_Mhz = 0, .voltage_mv = 0},       {.freq_Mhz = 0, .voltage_mv = 0},
         {.freq_Mhz = 3500, .voltage_mv = 1020}, {.freq_Mhz = 3450, .voltage_mv = 1016},
@@ -375,8 +384,13 @@ POWER_TEST(power_vcpu_precalculate_vf_currents, NULL, NULL)
     expect_value_count(__wrap_FpFwAssert, expression, true, 840); // for p_runconfig,p_dvfs_cfg
 
     power_vcpu_precalculate_vf_currents(&test_runconfig, &test_dvfs_cfg);
-    assert_int_equal(TEST_LDO_DYNANMIC_CURRENT_CALCULATED,
-                     test_runconfig.precalculated_current.curveset[0].vf[2].dynamic_ldo);
-    assert_int_equal(TEST_LEAKAGE_CURRENT_CALCULATED, test_runconfig.precalculated_current.curveset[0].vf[2].ref_leakage);
-    assert_int_equal(TEST_DYNAMIC_CURRENT_CALCULATED, test_runconfig.precalculated_current.curveset[0].vf[2].cdyn_pf);
+    assert_float_equal(test_runconfig.precalculated_current.curveset[0].vf[2].dynamic, TEST_DYNAMIC_CURRENT_CALCULATED, TOLERANCE);
+    assert_float_equal(test_runconfig.precalculated_current.curveset[0].vf[2].leakage, TEST_LEAKAGE_CURRENT_CALCULATED, TOLERANCE);
+    assert_float_equal(test_runconfig.precalculated_current.curveset[0].vf[2].dynamic_ldo,
+                       TEST_LDO_DYNAMIC_CURRENT_CALCULATED,
+                       TOLERANCE);
+    assert_float_equal(test_runconfig.precalculated_current.curveset[0].vf[2].ref_leakage,
+                       TEST_REF_LEAKAGE_CURRENT_CALCULATED,
+                       TOLERANCE);
+    assert_float_equal(test_runconfig.precalculated_current.curveset[0].vf[2].cdyn_pf, TEST_CDYN_PF_CALCULATED, TOLERANCE);
 }

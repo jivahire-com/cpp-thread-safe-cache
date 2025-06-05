@@ -259,6 +259,54 @@ class dcp_commands:
         platform_rsp = data_collection_protocol.dcp_msg_get_plat_info_t.from_buffer_copy(byte_response[ctypes.sizeof(dcp_msg_hdr_t):])
         logger.debug(f"Response for client_get_platform_information: {platform_rsp}")
         return msg_status, platform_rsp
+    
+    @staticmethod
+    def client_get_capabilities(*, src_endpoint, dest_die, dest_cpu, client_id):
+        """
+        Request capability bitfield from a client.
+
+        Args:
+        src_endpoint: Endpoint that message is sent from
+        dest_die: Destination die
+        dest_cpu: Destination CPU
+        client_id: Client identifier
+
+        Returns:
+        Tuple of (msg_status, capabilities_response)
+        """
+        # Create message header for GET_CAPABILITIES
+        dcp_msg_bytes = dcp_commands.create_header(
+        data_collection_protocol.dcp_msg_id_t.DCP_MSG_ID_GET_CAPABILITIES,
+        0,
+        client_id
+        )
+
+        logger.debug("Sending client_get_capabilities message")
+
+        # Send message and receive response
+        byte_response = src_endpoint.send_dcp_message(
+        dest_die=dest_die,
+        dest_cpu=dest_cpu,
+        client_id=client_id,
+        dcp_msg=dcp_msg_bytes
+        )
+
+        # Parse header
+        response_dcp_msg_hdr = dcp_msg_hdr_t.from_buffer_copy(byte_response)
+        msg_status = data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status)
+
+        logger.debug(f"Message Status for client_get_capabilities: {msg_status}")
+
+        # Validate response
+        if not dcp_commands.validate_response(msg_status, logger):
+            raise ValueError(f"Message Error: {msg_status.name} for command "f"{data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name}")
+
+        # Parse capabilities response
+        capabilities_response = data_collection_protocol.dcp_msg_get_caps_t.from_buffer_copy(byte_response[ctypes.sizeof(dcp_msg_hdr_t):])
+
+        logger.debug(f"Response for client_get_capabilities: {capabilities_response}")
+        return msg_status, capabilities_response
+
 
     @staticmethod
     def client_read_data(*,src_endpoint: trp_endpoint, dest_die: int, dest_cpu: transfer_relay_protocol.cpu_type, client_id: data_collection_protocol.mts_client_id_t) -> str:

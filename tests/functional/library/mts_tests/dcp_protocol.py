@@ -210,6 +210,55 @@ class data_collection_protocol:
             self.plat_id = plat_id
 
 
+    class dcp_msg_get_caps_t(ctypes.LittleEndianStructure):
+        _pack_ = 1
+        _fields_ = [
+            ("DCP_MSG_ID_GET_CAPABILITIES", ctypes.c_uint32, 1),
+            ("DCP_MSG_ID_GET_STATE", ctypes.c_uint32, 1),
+            ("DCP_MSG_ID_GET_MANIFEST", ctypes.c_uint32, 1),
+            ("DCP_MSG_ID_EVENTS_ENABLE_DISABLE", ctypes.c_uint32, 1),
+            ("DCP_MSG_ID_EVENTS_DISABLE", ctypes.c_uint32, 1),
+            ("DCP_MSG_ID_START_STOP", ctypes.c_uint32, 1),
+            ("DCP_MSG_ID_STOP", ctypes.c_uint32, 1),
+            ("DCP_MSG_ID_READ_DATA", ctypes.c_uint32, 1),
+            ("DCP_MSG_ID_READ_DATA_COMPLETE", ctypes.c_uint32, 1),
+            ("DCP_MSG_ID_UTC_SYNC", ctypes.c_uint32, 1),
+            ("DCP_MSG_ID_RESET", ctypes.c_uint32, 1),
+            ("DCP_MSG_ID_NOTIFICATION", ctypes.c_uint32, 1),
+            ("DCP_MSG_ID_GET_PLAT_INFO", ctypes.c_uint32, 1),
+            ("reserved", ctypes.c_uint32, 19)
+        ]
+
+        def __init__(self,
+                    get_cap,
+                    get_state,
+                    get_manifest,
+                    events_enable_disable,
+                    events_disable,
+                    start_stop,
+                    stop,
+                    read_data,
+                    read_data_complete,
+                    utc_sync,
+                    reset,
+                    notification,
+                    get_plat_info,
+                    reserved):
+            super().__init__()
+            self.DCP_MSG_ID_GET_CAPABILITIES = get_cap
+            self.DCP_MSG_ID_GET_STATE = get_state
+            self.DCP_MSG_ID_GET_MANIFEST = get_manifest
+            self.DCP_MSG_ID_EVENTS_ENABLE_DISABLE = events_enable_disable
+            self.DCP_MSG_ID_EVENTS_DISABLE = events_disable
+            self.DCP_MSG_ID_START_STOP = start_stop
+            self.DCP_MSG_ID_STOP = stop
+            self.DCP_MSG_ID_READ_DATA = read_data
+            self.DCP_MSG_ID_READ_DATA_COMPLETE = read_data_complete
+            self.DCP_MSG_ID_UTC_SYNC = utc_sync
+            self.DCP_MSG_ID_RESET = reset
+            self.DCP_MSG_ID_NOTIFICATION = notification
+            self.DCP_MSG_ID_GET_PLAT_INFO = get_plat_info
+            self.reserved = reserved
 
 # these are required to be defined outside of the class definition because it references the class itself before it is fully constructed
 data_collection_protocol.client_events_enable_disable_msg.dcp_msg_events_enable_disable_t._fields_ = [

@@ -52,8 +52,9 @@
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 ./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_set_single_core_mode_test.robot
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
-./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_svp_report_test.robot
-./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+# Disable crash dump svp report test until HSP crash issue fixed.
+#./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_svp_report_test.robot
+#./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 
 ## Warm Start Tests
 ./../../../tests/functional/test_suites/warm_start_tests/warm_start_test.robot

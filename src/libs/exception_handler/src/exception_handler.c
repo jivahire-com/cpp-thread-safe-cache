@@ -50,6 +50,7 @@ static void print_context_info(core_crash_context_t* crash_context)
     FPFwCDPrintf("SP : [%08lX]\n", crash_context->sp);
     FPFwCDPrintf("LR : [%08lX]\n", crash_context->lr);
     FPFwCDPrintf("PC : [%08lX]\n", crash_context->pc);
+    FPFwCDPrintf("xPSR: [%08lX]\n", crash_context->xpsr);
     FPFwCDPrintf("==============\n");
 
     FPFwCDPrintf("HFSR  : [%08lX]\n", SCB->HFSR);
@@ -106,6 +107,7 @@ __attribute__((__weak__)) void save_crash_context(exception_stack_frame_t* stack
     g_core_crash_context.r12 = stack_frame->R12;
     g_core_crash_context.lr = stack_frame->LR;
     g_core_crash_context.pc = stack_frame->PC;
+    g_core_crash_context.xpsr = stack_frame->PSR;
     g_core_crash_context.sp = (uint32_t)(stack_frame) + sizeof(exception_stack_frame_t);
 }
 

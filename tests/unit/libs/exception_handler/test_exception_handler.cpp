@@ -48,21 +48,6 @@ void __wrap_wdog_cmsdk_apb_disable()
     function_called();
 }
 
-void save_crash_context(exception_stack_frame_t* stack_frame)
-{
-    check_expected_ptr(stack_frame);
-    function_called();
-
-    // Store registers from exception stack frame into crash context
-    g_core_crash_context.r0 = stack_frame->R0;
-    g_core_crash_context.r1 = stack_frame->R1;
-    g_core_crash_context.r2 = stack_frame->R2;
-    g_core_crash_context.r3 = stack_frame->R3;
-    g_core_crash_context.r12 = stack_frame->R12;
-    g_core_crash_context.lr = stack_frame->LR;
-    g_core_crash_context.pc = stack_frame->PC;
-}
-
 int get_active_exception(void)
 {
     function_called();
@@ -125,12 +110,9 @@ void __wrap_hm_submit_cper(uint16_t error_domain_idx, acpi_error_severity_t err_
 //
 void test_exception_handler_params(int exception, uint32_t error_code)
 {
-    exception_stack_frame_t stack_frame;
+    exception_stack_frame_t stack_frame = {1, 2, 3, 4, 5, 6, 7, 8};
 
     // Set up expectations
-    expect_value(save_crash_context, stack_frame, &stack_frame);
-    expect_function_call(save_crash_context);
-
     expect_function_call(__wrap_wdog_cmsdk_apb_disable);
     expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, true);
     expect_function_call(__wrap_wdog_cmsdk_apb_lock_unlock);
@@ -201,9 +183,6 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
     g_core_crash_context.r4 = 4; // p4
 
     // Set up expectations
-    expect_value(save_crash_context, stack_frame, &stack_frame);
-    expect_function_call(save_crash_context);
-
     expect_function_call(__wrap_wdog_cmsdk_apb_disable);
     expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, true);
     expect_function_call(__wrap_wdog_cmsdk_apb_lock_unlock);
@@ -230,9 +209,6 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
     exception_handler(&stack_frame);
 
     // Set up expectations
-    expect_value(save_crash_context, stack_frame, &stack_frame);
-    expect_function_call(save_crash_context);
-
     expect_function_call(__wrap_wdog_cmsdk_apb_disable);
     expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, true);
     expect_function_call(__wrap_wdog_cmsdk_apb_lock_unlock);

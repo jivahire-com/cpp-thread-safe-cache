@@ -14,7 +14,6 @@
 #include <modules/CdDumpManager.h>    // for CdRegisterAddress32, CdRegiste...
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define CORE_BUILTIN_REG_COUNT 16
 #define CORE_BUILTIN_REG_INDEX 0
 
 /*-------------- Typedefs ----------------*/
@@ -37,7 +36,7 @@ void crash_dump_register_core_registers(crash_dump_type_context_t* type_context)
         CdRegisterRegisterSet(&type_context->crash_dump_ctx,
                               &g_core_crash_context,
                               CORE_BUILTIN_REG_INDEX,
-                              CORE_BUILTIN_REG_COUNT,
+                              sizeof(g_core_crash_context) / sizeof(uint32_t),
                               FPFW_CD_DUMP_PRIORITY_CRITICAL);
     }
 }

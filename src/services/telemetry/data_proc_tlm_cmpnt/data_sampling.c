@@ -48,12 +48,6 @@ soc_runtime_info_t soc_info;
 soc_runtime_dimm_info_t soc_dimm;
 dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE] = {0};
 
-/* per core power samples's averaged value in mW,  used for averaging , samples are  averaged and multiplied
-by a fator(22 , CORE_POWER_MW_PER_BIT) to get in mW*/
-uint32_t core_pwr_samples_accumulation_mW[NUMBER_OF_CORES_PER_DIE] = {0}; // power samples values  in mW .
-/* used only for MPAM*/
-uint32_t pstate_accum_uS[NUMBER_OF_CORES_PER_DIE][NUMBER_OF_PSTATES] = {0};
-
 static throttling_lookup_tbl_t throttling_tbl[] = {
     // throttle  status             throttle source                     // Status from KNG RMSSHASv0.p14 Document index value
     {CURRENT_THROTTLING_START, THROTTLE_SOURCE_CURRENT},       //   b0001 - Current Throttling Start
@@ -75,9 +69,6 @@ void data_smpl_init(void)
 {
     /* Initialize dts coeff data at startup */
     data_smpl_init_dts_coefficients();
-
-    /* Initialize the data that doesn't update */
-    data_smpl_init_constants();
 }
 
 void data_smpl_init_dts_coefficients(void)
@@ -88,28 +79,6 @@ void data_smpl_init_dts_coefficients(void)
     if (FPFW_STATUS_FAILED(status))
     {
         FPFW_ET_LOG(DTSCoefficientReadFailedInit, status);
-    }
-}
-
-void data_smpl_init_constants()
-{
-    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
-    {
-        for (uint8_t cstate_id = 0; cstate_id < NUMBER_OF_CSTATES; cstate_id++)
-        {
-            core[core_id].cstate[cstate_id].cstate_id = cstate_id;
-        }
-
-        for (uint8_t pstate_id = 0; pstate_id < NUMBER_OF_PSTATES; pstate_id++)
-        {
-            core[core_id].pstate[pstate_id].pstate_id = pstate_id;
-            core[core_id].pstate[pstate_id].frequency_Mhz = dvfs_get_freq_from_plimit(pstate_id);
-        }
-
-        for (uint8_t throttle_type = 0; throttle_type < NUMBER_OF_THROTTLE_TYPES; throttle_type++)
-        {
-            core[core_id].throttle_info[throttle_type].type_id = throttle_type;
-        }
     }
 }
 
@@ -194,6 +163,43 @@ void data_proc_tlm_cmpnt_process_input_data(void)
 
     } while (status.more_entries == true);
 
+    // Note : pstate packet need to be processed first before the current telemetry packet
+    // to handle throttling state changes so the following current packets utlize the correct throttling state
+    uint8_t pstate_scf_entry_count = 0;
+    do
+    {
+        pstate_telem_t* state_data = (pstate_telem_t*)buffer_data;
+        status = sensor_fifo_svc_poll_core_pstate(state_data);
+        if (status.curr_data_is_valid == true)
+        {
+            // used to determine if no pstate packets were processed this sampling period
+            pstate_scf_entry_count++;
+            // process the core states(pstate/cstate)
+            core_state_metrics_flags_t flags = data_smpl_parse_core_states_entry(state_data);
+            // A true value of "valid_entry_pstate" indicate we have valid pstate packet and need to update residency and entry count.
+            if (flags.valid_entry_pstate)
+            {
+                comp_metrics_for_single_core_single_pstate(flags.core_id,
+                                                           core[flags.core_id].latest_pstate,
+                                                           flags.pstate_time_diff_uS,
+                                                           flags.new_pstate);
+            }
+            // A valid "valid_entry_cstate" indicate we have valid cstate packet and need to update residency and entry count.
+            if (flags.valid_entry_cstate)
+            {
+                comp_metrics_for_single_core_single_cstate(flags.core_id,
+                                                           core[flags.core_id].latest_cstate,
+                                                           flags.cstate_time_diff_uS,
+                                                           flags.new_ctstate);
+            }
+
+            // TODO:Update when implementing MPAM https://azurecsi.visualstudio.com/Dev/_workitems/edit/2319779
+            comp_metrics_for_mpam(flags.core_id,
+                                  core[flags.core_id].active_sample_mpam_id,
+                                  core[flags.core_id].latest_pstate);
+        }
+    } while (status.more_entries == true);
+
     // Check and poll for core currents
     do
     {
@@ -203,24 +209,32 @@ void data_proc_tlm_cmpnt_process_input_data(void)
         if (status.curr_data_is_valid == true)
         {
             // process the core current packet
-            data_smpl_parse_core_current_entry(current_data, core_index);
-            // update any metrics from dat parsed from the entry
-
-            comp_metrics_for_single_core_power(core_index, core[core_index].latest_power_mW);
+            bool valid_entry = data_smpl_parse_core_current_entry(current_data, core_index);
+            // update any metrics from data parsed from the entry
+            if (valid_entry)
+            {
+                comp_metrics_for_single_core_current(core_index, core[core_index].latest_current_mA);
+                comp_metrics_for_single_core_power(core_index, core[core_index].latest_power_mW);
+                comp_metrics_for_single_core_power_per_pstate(core_index,
+                                                              core[core_index].pstate_from_current_pkt,
+                                                              core[core_index].latest_power_mW);
+            }
         }
     } while (status.more_entries == true);
 
-    // Check and poll for core pstate packets
-    do
+    /* In case we don't have a pstate temetry packet from scf ram,
+     we still need to update the general residency.*/
+
+    /*Note: To handle no-pstate telemetry packet scenario correctly, moved processing of general core states metrics compute
+    after parsing both pstate and current telemetry packet. we may see below cases:
+    A core may be in a no throttling state in which case lastest pstate info is coming from pstate packet.
+    On following sample periods, there may be no pstate packet, so the following call udpates metrics appropriately.
+    The other scenario is that a core is in a throttling state, and the current state will come from the current
+    packet which will update latest pstate. Then the following call will also update metrics appropriately.*/
+    if (pstate_scf_entry_count == 0)
     {
-        pstate_telem_t* state_data = (pstate_telem_t*)buffer_data;
-        status = sensor_fifo_svc_poll_core_pstate(state_data);
-        if (status.curr_data_is_valid == true)
-        {
-            // process the core states(pstate/cstate)
-            data_smpl_parse_core_states_entry(state_data);
-        }
-    } while (status.more_entries == true);
+        data_smpl_update_comp_metrics_cores_states_for_no_pstate_entry();
+    }
 
     // Check and poll for VR Temperatures
     do
@@ -292,6 +306,40 @@ void data_proc_tlm_cmpnt_process_input_data(void)
 
     // run algorithms to update the aggregated telemetry data, used to generate packaged telemetry events.
     comp_metrics_for_sample_period();
+}
+
+void data_smpl_update_comp_metrics_cores_states_for_no_pstate_entry(void)
+{
+    uint64_t timestamp_uS = 0;
+    // calculate the timestamp and time difference
+    // Note :  soc_info.latest_core_states_proc_timestamp_uS will be updated by helper here.
+    uint64_t time_diff_uS =
+        data_util_calc_time_diff(&soc_info.latest_core_states_proc_timestamp_uS, &timestamp_uS, PWR_TLM_CORE_UPDATE);
+
+    // Go over all cores
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        /* Calculate  the general residency for the core*/
+        /* Do not do any update for this core if the current packet timestamp is zero: disable core */
+        // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2659115
+        if (core[core_id].current_pkt_timestamp_uS != 0)
+        {
+
+            if (core[core_id].throttling_status == NO_THROTTLING)
+            {
+                /*Update the current pstate residencies*/
+                comp_metrics_for_single_core_single_pstate(core_id, core[core_id].latest_pstate, time_diff_uS, false);
+
+                // Update the core - mpam - matrics
+                comp_metrics_for_mpam(core_id, core[core_id].active_sample_mpam_id, core[core_id].latest_pstate);
+            }
+            else
+            {
+                // Check to update throttling and priorities
+                comp_metrics_for_single_core_throttling(core_id, timestamp_uS);
+            }
+        }
+    }
 }
 
 void data_smpl_update_max_die_temp(void)
@@ -409,40 +457,30 @@ bool data_smpl_parse_tile_voltage_entry(tile_voltage_t* voltage_data, uint8_t ti
     return true;
 }
 
-void data_smpl_parse_core_current_entry(core_current_t* current_data, uint8_t core_index)
+bool data_smpl_parse_core_current_entry(core_current_t* current_data, uint8_t core_index)
 {
+    bool valid_entry = false;
+
+    uint64_t timestamp_uS = data_util_convert_systick_to_microseconds(current_data->timestamp);
     // Each index here refers to the core, check if correct
     if (core_index >= NUMBER_OF_CORES_PER_DIE)
     {
         FPFW_ET_LOG(LogInvalidCoreId, core_index);
-        return;
+        return valid_entry;
     }
 
     uint8_t core_id = core_index;
-    core[core_id].current_pkt_timestamp = current_data->timestamp;
+    core[core_id].current_pkt_timestamp_uS = timestamp_uS;
     if (current_data->timestamp == 0)
     {
-        return;
+        return valid_entry;
     }
 
     // Get the current conversions. Conversion factors for the currents needs to be fine tuned
     // by the SVT and Silicon team.
-    current_t current;
-    current.min_mA = (uint16_t)(current_data->data.min * CORE_CURRENT_CONVERSION_FACTOR);
-    current.average_mA = (uint16_t)(current_data->data.avg * CORE_CURRENT_CONVERSION_FACTOR);
-    current.max_mA = (uint16_t)(current_data->data.max * CORE_CURRENT_CONVERSION_FACTOR);
-
-    // check for Minimum currents, where the initial minimum is 0
-    if (core[core_id].current.min_mA > current.min_mA || core[core_id].current.min_mA == 0)
-    {
-        core[core_id].current.min_mA = current.min_mA;
-    }
-
-    // check for Maximum currents
-    if (core[core_id].current.max_mA < current.max_mA)
-    {
-        core[core_id].current.max_mA = current.max_mA;
-    }
+    // We treat the average current collected by the ODCM (during its measurement window)
+    // as the instantaneous current for the core.
+    core[core_id].latest_current_mA = (uint16_t)(current_data->data.avg * CORE_CURRENT_CONVERSION_FACTOR);
 
     //
     // The current data from SCF RAM also contains the average power
@@ -460,77 +498,55 @@ void data_smpl_parse_core_current_entry(core_current_t* current_data, uint8_t co
     // over our measurement window.
     //
 
+    /* Core power sample value in mW,  used for averaging , samples are  multiplied
+    by a factor(CORE_POWER_MW_PER_BIT) to get in mW*/
     uint16_t core_power_mW = (uint16_t)(current_data->data.pwr * CORE_POWER_MW_PER_BIT);
     core[core_index].latest_power_mW = core_power_mW;
 
-    //
-    // If the state has changed, reset the the information used to
-    // calculate power for the changed state.
-    //
-    // This is separate from the total power values for the core, which
-    // is tracked regardless of the state.
-    //
-    if (current_data->data.change == 1)
+    // Log the mpam id for this core
+    core[core_id].active_sample_mpam_id = current_data->data.mpam_id_low;
+
+    valid_entry = true;
+    // Note: We handled  state changes duing no throttling under pstate/cstate processing
+    if (core[core_id].throttling_status == NO_THROTTLING)
     {
-        core[core_id].flags.id_change_bit = 1;
-        core[core_id].num_pwr_samples = 0;
-        core_pwr_samples_accumulation_mW[core_id] = 0;
-        core[core_id].pstate_timestamp_uS = current_data->timestamp;
+        return valid_entry;
     }
-    else
-    {
-        //
-        // Update the power values used to track the power for the current
-        // state the core is in.
-        //
-        if (core[core_id].num_pwr_samples < MAX_NUMBER_POWER_SAMPLE)
-        {
-            // We will keep up to a number of samples defined
-            core_pwr_samples_accumulation_mW[core_id] += core_power_mW;
-            core[core_id].num_pwr_samples++;
-        }
-
-        // NOTE: Based on pioneer throttling scenarios there are corner cases on the
-        // SCF RAM Current Telemetry packet that doesn't indicate the change bit set but
-        // a Pstate change happens at the end of the Current telemetry sampling. For this
-        // situation, we consider the power measurement to be valid and should belong to
-        // the previous pstate before the change. On situations where the core is throttling,
-        // pstate change packets may not appear or be delayed, while current telemetry may
-        // indicate a change on pstate first. - We may revisit this after the real silicon for
-        // KNG comes in https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1753817
-        //
-        if (core[core_id].pstate_from_current_pkt != current_data->data.pstate)
-        {
-            core[core_id].flags.pstate_change = 1;
-            core[core_id].pstate_timestamp_uS = current_data->timestamp;
-        }
-    }
-
-    // We treat the average current collected by the ODCM (during its measurement window)
-    // as the instantaneous current for the core.
-    core[core_id].current.latest_value_mA = current.average_mA;
-    // Log average
-    // TODO: BUG https://azurecsi.visualstudio.com/Dev/_workitems/edit/2609385
-    core[core_id].current.average_mA = current.average_mA;
-
-    // Log the Ldo Voltage at this instant
-    core[core_id].ldo_voltage = current_data->data.volt;
-
     // Got the current telemetry pstate
     core[core_id].pstate_from_current_pkt = current_data->data.pstate;
+    core[core_id].latest_pstate = current_data->data.pstate;
 
-    // Log the average power of the core in this instant
-    core[core_id].active_sample_mpam_id = current_data->data.mpam_id_low;
+    return valid_entry;
 }
 
-void data_smpl_parse_core_states_entry(pstate_telem_t* pstate_telemetry)
+core_state_metrics_flags_t data_smpl_parse_core_states_entry(pstate_telem_t* pstate_telemetry)
 {
+    core_state_metrics_flags_t metrics = {0};
+
     // Convert Sensor Data into Pstate Entry
     uint8_t core_id = pstate_telemetry->data.core;
+    uint8_t pstate = pstate_telemetry->data.pstate;
+    uint8_t cstate = pstate_telemetry->data.cstate;
+
+    uint64_t timestamp_uS = data_util_convert_systick_to_microseconds(pstate_telemetry->timestamp);
+    // Note: update soc_info.latest_core_states_proc_timestamp_uS to keep it latest.
+    //  this timestamp used as previous timestamp for all cores, when there is no pstate packet.
+    //  maintained on soc data strcuture because used for all the cores.
+    soc_info.latest_core_states_proc_timestamp_uS = timestamp_uS;
     if (core_id >= NUMBER_OF_CORES_PER_DIE)
     {
-        FPFW_ET_LOG(LogCoreThrottleInValidCoreId, core_id);
-        return;
+        FPFW_ET_LOG(LogInvalidCoreId, core_id);
+        return metrics;
+    }
+    if (pstate >= NUMBER_OF_PSTATES)
+    {
+        FPFW_ET_LOG(LogInValidPstateId, pstate);
+        return metrics;
+    }
+    if (cstate >= NUMBER_OF_CSTATES)
+    {
+        FPFW_ET_LOG(LogInValidCstateId, cstate);
+        return metrics;
     }
     // Check for throttling indication first. If System is throttling, do not
     // take snapshots of Pstates and Cstates
@@ -539,10 +555,36 @@ void data_smpl_parse_core_states_entry(pstate_telem_t* pstate_telemetry)
     switch (status)
     {
     case NO_THROTTLING:
-        // log pstate
-        data_smpl_parse_pstate_no_throttling(pstate_telemetry);
-        // log cstate
-        data_smpl_parse_cstate_no_throttling(pstate_telemetry);
+        // Log pstate
+        // Note :  frist check if there is a new pstate, becuase we update the latest pstate in the parser function data_smpl_parse_pstate_no_throttling.
+        metrics.new_pstate = (core[core_id].latest_pstate != pstate) ? true : false;
+        data_smpl_parse_pstate_no_throttling(pstate_telemetry, timestamp_uS);
+
+        if (core[core_id].pstate_timestamp_uS != 0)
+        {
+            metrics.valid_entry_pstate = true;
+            metrics.pstate_time_diff_uS = (timestamp_uS > core[core_id].pstate_timestamp_uS)
+                                              ? timestamp_uS - core[core_id].pstate_timestamp_uS
+                                              : 0;
+        }
+
+        // update timestamp only after time diff calculation done for residency.
+        core[core_id].pstate_timestamp_uS = timestamp_uS;
+
+        // Log cstate
+        // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2651433
+        data_smpl_parse_cstate_no_throttling(pstate_telemetry, timestamp_uS);
+        if (core[core_id].cstate_timestamp_uS != 0)
+        {
+            metrics.valid_entry_cstate = true;
+            metrics.new_ctstate = core[core_id].flags.cstate_change ? true : false;
+            metrics.cstate_time_diff_uS = (timestamp_uS > core[core_id].cstate_timestamp_uS)
+                                              ? timestamp_uS - core[core_id].cstate_timestamp_uS
+                                              : 0;
+        }
+        // update timestamp for cstate only after time diff calculation done for residency.
+        core[core_id].cstate_timestamp_uS = timestamp_uS;
+        metrics.core_id = core_id;
         break;
     case CURRENT_THROTTLING_START:
     case TEMP_THROTTLING_START:
@@ -555,7 +597,7 @@ void data_smpl_parse_core_states_entry(pstate_telem_t* pstate_telemetry)
     case CURRENT_THROTTLING_OVERRUN: // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2571672
     case ADPT_CLK_THROTTLING_OVERRUN:
         // Throttling information is logged based on status code (status_index)
-        data_smpl_parse_throttling(pstate_telemetry);
+        data_smpl_parse_throttling_state_change(pstate_telemetry);
         break;
 
     case RACK_THROTTLING_START:
@@ -567,6 +609,7 @@ void data_smpl_parse_core_states_entry(pstate_telem_t* pstate_telemetry)
     }
     //! update  throttling status
     core[core_id].throttling_status = pstate_telemetry->data.throttle_status;
+    return metrics;
 }
 
 void data_smpl_parse_vr_temperature_entry(vr_temp_t* vr_temperature)
@@ -621,121 +664,95 @@ bool data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info)
 
 // parser helper functions
 
-void data_smpl_parse_pstate_no_throttling(pstate_telem_t* pstate_telemetry)
+void data_smpl_parse_pstate_no_throttling(pstate_telem_t* pstate_telemetry, uint64_t timestamp_uS)
 {
     // Power information per P State Per Core is updated based on current
-    // telemetry (which also provides power information). See the update
-    // in tlm_logger_chk_upd_pstate().
-
+    // telemetry (which also provides power information).
     // Convert Sensor Data into Pstate Entry
     uint8_t core_id = pstate_telemetry->data.core;
-    if (core_id >= NUMBER_OF_CORES_PER_DIE)
-    {
-        FPFW_ET_LOG(LogCoreThrottleInValidCoreId, core_id);
-        return;
-    }
-
     // take snapshots of Pstates and Cstates
     // check to log the Core Pstate if there are changes
     if (pstate_telemetry->data.pstate != core[core_id].pstate_from_pstate_pkt)
     {
         core[core_id].pstate_from_pstate_pkt = pstate_telemetry->data.pstate;
-        core[core_id].pstate[pstate_telemetry->data.pstate].entry_count++;
-        // TODO: Investigation task to check if we need an API for timestamp conversion :
-        // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2571666
-        core[core_id].pstate_timestamp_uS = pstate_telemetry->timestamp;
     }
 
     // if previous throttling status was throttling, check all type of active throttling
     // end and update the tracker.
     if (core[core_id].throttling_status != NO_THROTTLING)
     {
-        data_smpl_parse_throttling_exit_transition(core_id, pstate_telemetry->timestamp);
+        data_smpl_parse_throttling_state_change_exit_transition(core_id, timestamp_uS);
     }
     // Save the current plimit
     core[core_id].active_sample_plimit = pstate_telemetry->data.plimit;
+    // update lastest pstate based on throttle status
+    core[core_id].latest_pstate = core[core_id].pstate_from_pstate_pkt;
 }
 
-void data_smpl_parse_cstate_no_throttling(pstate_telem_t* cstate_telemetry)
+void data_smpl_parse_cstate_no_throttling(pstate_telem_t* cstate_telemetry, uint64_t timestamp_uS)
 {
     // Power information per P State Per Core is updated based on current
     // telemetry (which also provides power information). See the update
 
     // Convert Sensor Data into Pstate Entry
     uint8_t core_id = cstate_telemetry->data.core;
-    if (core_id >= NUMBER_OF_CORES_PER_DIE)
+    // Check for throttling indication first. If System is throttling, do not
+    // take snapshots of Pstates and Cstates
+
+    /* Log cstate */
+    uint8_t new_cstate = cstate_telemetry->data.cstate;
+    if (new_cstate >= NUMBER_OF_CSTATES)
     {
-        FPFW_ET_LOG(LogCoreThrottleInValidCoreId, core_id);
+        FPFW_ET_LOG(LogInValidCstateId, new_cstate);
         return;
     }
 
-    // Check for throttling indication first. If System is throttling, do not
-    // take snapshots of Pstates and Cstates
-    if (cstate_telemetry->data.throttle_status == NO_THROTTLE)
+    if (new_cstate != core[core_id].latest_cstate) // if there is a change in cstate, we have to handle it.
     {
-        /* Log cstate */
-        uint8_t new_cstate = cstate_telemetry->data.cstate;
-        uint64_t timestamp_us = cstate_telemetry->timestamp;
 
-        if (new_cstate != core[core_id].cstate_from_pstate_pkt) // if there is a change in cstate, we have to handle it.
+        /*Note : There will be no valid case for CState to be changing between C1, C2 and C3 directly.
+                Everything should go through C0 first before we can get into C1 or C2 or C3, so if there
+                are cases such as C1 to C3 then we discard that kind of calculations.
+                Hardware logic is responsible to make sure change happen in proper order.
+                TODO: only logging warining but updating calculation, need to be updated
+                based on real time scenario.
+                https://azurecsi.visualstudio.com/Dev/_workitems/edit/2507082
+        */
+        // Case 1 :Invalid cstate change- return.
+        if (new_cstate > core[core_id].latest_cstate + 1)
         {
-
-            /*Note : There will be no valid case for CState to be changing between C1, C2 and C3 directly.
-                    Everything should go through C0 first before we can get into C1 or C2 or C3, so if there
-                    are cases such as C1 to C3 then we discard that kind of calculations.
-                    Hardware logic is responsible to make sure change happen in proper order.
-                    TODO: only logging warining but updating calculation, need to be updated
-                    based on real time scenario.
-                    https://azurecsi.visualstudio.com/Dev/_workitems/edit/2507082
-            */
-            // case 1 : Invalid cstate change- return.
-            if (new_cstate > core[core_id].cstate_from_pstate_pkt + 1)
-            {
-                FPFW_ET_LOG(CstateUnexpectedLevelChange);
-                return;
-            }
-            // case 2 : First time entering in a cstate -if timestamp is 0 so continue and update entry and
-            // timestamp. At first entry on start all core timestamp are 0 , so log entry,timestamp and state.
-            if (core[core_id].cstate_timestamp_uS == 0)
-            {
-                core[core_id].flags.cstate_change = 1;
-                core[core_id].cstate_from_pstate_pkt = new_cstate;
-                core[core_id].cstate_timestamp_uS = timestamp_us;
-                // Update the entry count
-                core[core_id].cstate[new_cstate].entry_count++;
-                return;
-            }
-            // normal cstate entry/residency update.
-            if (timestamp_us > core[core_id].cstate_timestamp_uS)
-            {
-                // Update the previous Cstate residency
-                uint64_t cstate_time_diff_uS = 0;
-                uint8_t cstate_index = core[core_id].cstate_from_pstate_pkt;
-                cstate_time_diff_uS = timestamp_us - core[core_id].cstate_timestamp_uS;
-                core[core_id].cstate[cstate_index].residency_uS += cstate_time_diff_uS;
-            }
-            else
-            {
-                // case 3 : return if timestamp < core[core_id].cstate_timestamp_uS return. eg. Network time sync issue.
-                FPFW_ET_LOG(LogCstateValidTimeStamp);
-                return;
-            }
-            // TODO: Implement cstate entry/exit latency calculation.
-            // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2492944
-            //  Indicate the changes
-            core[core_id].flags.cstate_change = 1;
-            core[core_id].cstate_from_pstate_pkt = new_cstate;
-            core[core_id].cstate_timestamp_uS = timestamp_us;
-            // Update the entry count
-            core[core_id].cstate[new_cstate].entry_count++;
+            FPFW_ET_LOG(CstateUnexpectedLevelChange, core_id, new_cstate, core[core_id].latest_cstate);
+            return;
         }
+        // case 2 : First time entering in a cstate -if timestamp is 0 so continue and update entry and
+        // timestamp. At first entry on start all core timestamp are 0 , so log entry,timestamp and state.
+        if (core[core_id].cstate_timestamp_uS == 0)
+        {
+            core[core_id].flags.cstate_change = 1;
+            core[core_id].latest_cstate = new_cstate;
+            return;
+        }
+        if (timestamp_uS < core[core_id].cstate_timestamp_uS)
+        {
+            // return if timestamp < core[core_id].cstate_timestamp_uS return. eg. Network time sync issue.
+            FPFW_ET_LOG(LogCstateValidTimeStamp);
+            return;
+        }
+        // Case 3: valid case and moved forward for the residency update to compute module.
+        //  TODO: Implement cstate entry/exit latency calculation.
+        //  https://azurecsi.visualstudio.com/Dev/_workitems/edit/2492944
+
+        //   update the changes
+        core[core_id].flags.cstate_change = 1;
+        core[core_id].latest_cstate = new_cstate;
     }
 }
 
-void data_smpl_parse_throttling(pstate_telem_t* pstate_telemetry)
+void data_smpl_parse_throttling_state_change(pstate_telem_t* pstate_telemetry)
 {
     uint8_t core_id = pstate_telemetry->data.core;
     pstate_throttle_status_t status = pstate_telemetry->data.throttle_status;
+    uint64_t timestamp_uS = data_util_convert_systick_to_microseconds(pstate_telemetry->timestamp);
 
     // 1. There may be multiple throttling at the same time.e.g Rack throttle  and Temperature throttle.
     // 2. During throttle get the pstate from current pkt, at the time of logging throttling (pstate packet), we have processed
@@ -747,7 +764,7 @@ void data_smpl_parse_throttling(pstate_telem_t* pstate_telemetry)
     int8_t throttle_index = 0;
 
     /* throttle_index will always be within limits of 0 ~6 or -1, based on lkp tbl*/
-    throttle_index = data_smpl_parse_throttling_get_index_from_status(status);
+    throttle_index = data_smpl_parse_throttling_state_change_get_index_from_status(status);
     if (throttle_index < 0)
     {
         FPFW_ET_LOG(LogCoreThrottleInValidStatus, status);
@@ -763,7 +780,7 @@ void data_smpl_parse_throttling(pstate_telem_t* pstate_telemetry)
         if (status >= CURRENT_THROTTLING_END)
         {
             if (!(core[core_id].throttle_previous_timestamp_uS[throttle_index] != 0 &&
-                  pstate_telemetry->timestamp > core[core_id].throttle_previous_timestamp_uS[throttle_index]))
+                  timestamp_uS > core[core_id].throttle_previous_timestamp_uS[throttle_index]))
             {
                 // return if timestamp < core[core_id].throttle_info[throttle_index].previous_timestamp_uS return. eg. Network time sync issue.
                 // Invalid timestamp : not to update the residency with wrong data, but update the exit count and end status.
@@ -772,7 +789,7 @@ void data_smpl_parse_throttling(pstate_telem_t* pstate_telemetry)
                 return;
             }
             // Get the Throttling time stamp now and subtract from previous
-            time_diff_uS = (pstate_telemetry->timestamp - core[core_id].throttle_previous_timestamp_uS[throttle_index]);
+            time_diff_uS = (timestamp_uS - core[core_id].throttle_previous_timestamp_uS[throttle_index]);
 
             // This is the per core and per type throttling residency in uS
             core[core_id].throttle_info[throttle_index].residency_mS += MICROSECONDS_TO_MILLISECONDS(time_diff_uS);
@@ -784,7 +801,7 @@ void data_smpl_parse_throttling(pstate_telem_t* pstate_telemetry)
         {
             core[core_id].core_throttling_tracker[throttle_index] = 1;
             core[core_id].throttle_info[throttle_index].entry_count++;
-            core[core_id].throttle_previous_timestamp_uS[throttle_index] = pstate_telemetry->timestamp;
+            core[core_id].throttle_previous_timestamp_uS[throttle_index] = timestamp_uS;
         }
     }
 
@@ -792,7 +809,7 @@ void data_smpl_parse_throttling(pstate_telem_t* pstate_telemetry)
     data_smpl_parse_rack_throttling(pstate_telemetry, throttle_index, core_id);
 }
 
-int8_t data_smpl_parse_throttling_get_index_from_status(pstate_throttle_status_t status)
+int8_t data_smpl_parse_throttling_state_change_get_index_from_status(pstate_throttle_status_t status)
 {
     /*Calculate source of the throttling,
      inputs =>  1-12
@@ -811,7 +828,7 @@ int8_t data_smpl_parse_throttling_get_index_from_status(pstate_throttle_status_t
     return ret;
 }
 
-void data_smpl_parse_throttling_exit_transition(uint8_t core_id, uint64_t timestamp_uS)
+void data_smpl_parse_throttling_state_change_exit_transition(uint8_t core_id, uint64_t timestamp_uS)
 {
     int i = 0;
     // End all active throttling and update residency
@@ -873,23 +890,16 @@ void data_smpl_reset_core_data()
 
         core[core_id].cstate_timestamp_uS = temp_core.cstate_timestamp_uS;
         core[core_id].pstate_timestamp_uS = temp_core.pstate_timestamp_uS;
-        core[core_id].current_pkt_timestamp = temp_core.current_pkt_timestamp;
+        core[core_id].current_pkt_timestamp_uS = temp_core.current_pkt_timestamp_uS;
         core[core_id].flags = temp_core.flags;
         core[core_id].pstate_from_pstate_pkt = temp_core.pstate_from_pstate_pkt;
-        core[core_id].cstate_from_pstate_pkt = temp_core.cstate_from_pstate_pkt;
-        core[core_id].ldo_voltage = temp_core.ldo_voltage;
+        core[core_id].latest_cstate = temp_core.latest_cstate;
         core[core_id].throttling_status = temp_core.throttling_status;
         core[core_id].throttle_event = temp_core.throttle_event;
         core[core_id].throttle_source = temp_core.throttle_source;
         core[core_id].throttling_priority_id = temp_core.throttling_priority_id;
         core[core_id].pstate_from_current_pkt = temp_core.pstate_from_current_pkt;
-        core[core_id].average_pwr_mW = temp_core.average_pwr_mW;
-        core[core_id].current.latest_value_mA = temp_core.current.latest_value_mA;
 
-        for (uint8_t pstate_index = 0; pstate_index < NUMBER_OF_PSTATES; pstate_index++)
-        {
-            core[core_id].pstate[pstate_index].frequency_Mhz = dvfs_get_freq_from_plimit(pstate_index);
-        }
         for (uint8_t throttle_index = 0; throttle_index < NUMBER_OF_THROTTLE_TYPES; throttle_index++)
         {
             core[core_id].throttle_previous_timestamp_uS[throttle_index] =
@@ -902,12 +912,12 @@ void data_smpl_reset_core_data()
 void data_smpl_reset_soc_data(void)
 {
     soc_runtime_info_t soc_info_temp;
-    uint64_t soc_dimm_timestamp;
+    uint64_t soc_dimm_timestamp_uS;
     // TODO: optimize soc_runtime_info_t struct : https://azurecsi.visualstudio.com/Dev/_workitems/edit/2602180
-    soc_dimm_timestamp = soc_dimm.previous_soc_dimm_timestamp_uS;
+    soc_dimm_timestamp_uS = soc_dimm.previous_soc_dimm_timestamp_uS;
     memcpy(&soc_info_temp, &soc_info, sizeof(soc_runtime_info_t));
     memset(&soc_info, 0, sizeof(soc_runtime_info_t));
     memset(&soc_dimm, 0, sizeof(soc_runtime_dimm_info_t));
 
-    soc_dimm.previous_soc_dimm_timestamp_uS = soc_dimm_timestamp;
+    soc_dimm.previous_soc_dimm_timestamp_uS = soc_dimm_timestamp_uS;
 }

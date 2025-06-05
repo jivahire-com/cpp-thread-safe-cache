@@ -30,9 +30,25 @@
 
 typedef struct
 {
+    mma_u16_t  power_mW;//This is per pstate power metrics within a core.
+    uint32_t  residency_uS;
+    uint32_t  entry_count;
+} pstate_metrics_t;
+
+typedef struct
+{
+    uint32_t  residency_uS;
+    uint32_t  entry_count;
+} cstate_metrics_t;
+
+typedef struct
+{
     mma_u16_t power_mW;
     mma_u16_t temperature_dC;
     mma_u16_t voltage_mV;
+    mma_u16_t current_mA;
+    pstate_metrics_t pstate[NUMBER_OF_PSTATES];
+    cstate_metrics_t cstate[NUMBER_OF_CSTATES];
 } computed_per_core_metrics_t;
 
 typedef struct
@@ -121,17 +137,6 @@ void comp_metrics_for_cores_for_sampling_period(void);
 void comp_metrics_for_tiles_for_sampling_period(void);
 
 /**
- * @brief The comp_metrics_for_single_core_pstate function updates the power state (PState) residency and power metrics
- * for a specified core based on the provided timestamp. It handles both throttling and
- * non-throttling scenarios and updates the minimum, maximum, and average power values
- * for the current PState.
- *
- * @param[in] core_id -The identifier of the core for which the PState is being updated.
- * @param[in] time_stamp_uS -The current timestamp in microseconds.
- */
-void comp_metrics_for_single_core_pstate(uint8_t core_id, uint64_t time_stamp_uS);
-
-/**
  * @brief comp_metrics_for_single_core_throttling from runtime update manager.
  *
  * @param[in] core_id
@@ -144,10 +149,9 @@ void comp_metrics_for_single_core_throttling(uint8_t core_id, uint64_t time_stam
  * time difference and residency time
  *
  * @param[in] core_id  core for which the current values are being updated.
- * @param[in] time_diff_uS  time_diff_uS: The time difference in microseconds between the current and previous measurements.
- * @param[in] residency_uS  The total residency time in microseconds over which the average is calculated.
+ * @param[in] latest_value_mA  Latest value from sensor fifo.
  */
-void comp_metrics_for_single_core_current(uint8_t core_id, uint32_t time_diff_uS, uint32_t residency_uS);
+void comp_metrics_for_single_core_current(uint8_t core_id, uint16_t latest_value_mA);
 
 /**
  * @brief    function updates the minimum, maximum, and average voltage values for a specified core based
@@ -194,17 +198,6 @@ void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id, int8_t thro
  * @param[in] core_id
  */
 void comp_metrics_for_single_core_histogram(uint8_t core_id);
-
-/**
- * @brief helper function to update the pstate runtime timestamp
- *
- * @param[in] core_id - core that is referenced to that owns this timestamp
- * @param[in] pstate - pstate that is reference to where it needs to be updated
- * @param[in] timestamp - timestamp used for the update
- *
- * @return fpfw_status_t
- */
-fpfw_status_t comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp);
 
 /**
  * @brief function is intended to update the core power state (PState) based on the provided core ID and PState index.
@@ -295,6 +288,47 @@ void comp_metrics_for_soc_max_temp(uint16_t latest_max_soc_temp_dC);
  */
 void comp_metrics_for_single_soc_dimm_temp(uint8_t dimm_id, uint16_t latest_dimm_temp_s0_dC, uint16_t latest_dimm_temp_s1_dC );
 
+/**
+ * @brief  This API used during cores are throttling, MMA calculation is triggerd by this APIs
+ *
+ * @param[in] core_id
+ * @param[in] throttle_index  Throttling type.
+ * @param[in] time_diff_uS    time diff between current timestamp and previous time stamp
+ * @param[in] residency_mS  - residency in mS
+ */
+void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id, int8_t throttle_index, uint32_t time_diff_uS, uint32_t residency_mS);
+
+/**
+ * @brief helper function to update the pstate runtime timestamp
+ *
+ * @param[in] core_id - core that is referenced to that owns this timestamp
+ * @param[in] pstate - pstate that is reference to where it needs to be updated
+ * @param[in] timestamp_diff_uS diff of timestamp from previous and new .
+ * @param[in] update_pstate_entry new entry in this state  .
+ *
+ * @return none
+ */
+void comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp_diff_uS, uint8_t update_pstate_entry);
+
+/**
+ * @brief helper function to update the cstate compute metrics
+ * 
+ *
+ * @param[in] core_id  core that is referenced to that owns this timestamp
+ * @param[in] cstate  -cstate that is reference to where it needs to be updated
+ * @param[in] timestamp_diff_uS diff of timestamp from previous and new .
+ * @param[in] update_cstate_entry new entry in this state  .
+ */
+void comp_metrics_for_single_core_single_cstate(uint8_t core_id, uint8_t cstate, uint64_t timestamp_diff_uS, uint8_t update_cstate_entry);
+
+/**
+ * @brief function is intended to update the core power state (PState) based on the provided core ID and PState index.
+ *
+ * @param[in] core_id - The identifier of the core for which the PState is being updated.
+ * @param[in] pstate_index - The index of the PState to be updated.
+ * @param[in] latest_power_mW
+ */
+void comp_metrics_for_single_core_power_per_pstate(uint8_t core_id, uint8_t pstate_index,  uint16_t latest_power_mW);
 
 /**
  * @brief function is intended to update the MPAM residency for a specified core and MPAM ID.

@@ -110,10 +110,10 @@ typedef struct
 // Raw values: avg=115, min=25, max=165
 // Converted to mA: Latest=3047mA, Min=265mA (kept), Max=4505mA (kept), Avg=3047mA
 // To test handling of current decrease and weighted average updates
-const test_config_t test_configs[] = {{.avg = 100, .min = 10, .max = 150, .volt = 100, .pwr = 50, .pstate = 13},
-                                      {.avg = 110, .min = 20, .max = 160, .volt = 110, .pwr = 60, .pstate = 14},
-                                      {.avg = 120, .min = 30, .max = 170, .volt = 120, .pwr = 70, .pstate = 15},
-                                      {.avg = 115, .min = 25, .max = 165, .volt = 115, .pwr = 65, .pstate = 14}};
+const test_config_t test_configs[] = {{.avg = 5, .min = 5, .max = 5, .volt = 100, .pwr = 50, .pstate = 13},
+                                      {.avg = 6, .min = 6, .max = 6, .volt = 110, .pwr = 60, .pstate = 14},
+                                      {.avg = 7, .min = 7, .max = 7, .volt = 120, .pwr = 70, .pstate = 15},
+                                      {.avg = 8, .min = 8, .max = 8, .volt = 115, .pwr = 65, .pstate = 14}};
 
 // Calculate expected latest value (average current is used as latest value)
 static int32_t calculate_expected_latest(int32_t avg_value)
@@ -150,40 +150,19 @@ static int32_t calculate_expected_max(int32_t max_value, int32_t prev_max, int32
 }
 
 // Calculate expected average based on iteration logic
-static int32_t calculate_expected_avg(int32_t avg_value, int32_t prev_avg, int32_t iteration)
+static int32_t calculate_expected_avg(int32_t latest_value, int32_t prev_avg, int32_t iteration)
 {
     // Convert the raw average value to mA
-    int32_t current_avg_mA = avg_value * CORE_CURRENT_CONVERSION_FACTOR;
+    latest_value = latest_value * CORE_CURRENT_CONVERSION_FACTOR;
 
     if (iteration == 0)
     {
-        return current_avg_mA; // First iteration, avg = current avg value
+        return latest_value; // First iteration, avg = latest value
     }
-    if (iteration == 1)
-    {
-        return current_avg_mA; // For iteration 1, return current avg value directly
-    }
+    int32_t total = (prev_avg * iteration) + latest_value;
+    int32_t updated_avg = (total + (iteration + 1) / 2) / (iteration + 1);
 
-    // For iterations 2 and 3, use the current_avg_mA value for calculations
-    uint64_t time_diff_uS = 5000;
-
-    if (iteration == 2)
-    {
-        uint64_t total_time = 10000;
-        uint64_t weighted_prev_avg = static_cast<uint64_t>(current_avg_mA) * time_diff_uS;
-        uint64_t weighted_latest = static_cast<uint64_t>(current_avg_mA) * time_diff_uS;
-        return static_cast<int32_t>((weighted_prev_avg + weighted_latest) / total_time);
-    }
-    else if (iteration == 3)
-    {
-        uint64_t total_time = 15000;
-        uint64_t prev_time = 10000;
-        uint64_t weighted_prev_avg = static_cast<uint64_t>(current_avg_mA) * prev_time;
-        uint64_t weighted_latest = static_cast<uint64_t>(current_avg_mA) * time_diff_uS;
-        return static_cast<int32_t>((weighted_prev_avg + weighted_latest) / total_time);
-    }
-
-    return prev_avg;
+    return updated_avg;
 }
 
 TEST_FUNCTION(test_core_current_collection_functional, test_setup, test_teardown)
@@ -218,6 +197,7 @@ TEST_FUNCTION(test_core_current_collection_functional, test_setup, test_teardown
         prev_avg = expected_average_mA;
 
         // Current polling - with data
+        will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
         will_return(__wrap_sensor_fifo_svc_poll_core_current, 0);     // core_index
         will_return(__wrap_sensor_fifo_svc_poll_core_current, true);  // curr_data_is_valid
         will_return(__wrap_sensor_fifo_svc_poll_core_current, false); // more_entries
@@ -255,7 +235,7 @@ TEST_FUNCTION(test_core_current_collection_functional, test_setup, test_teardown
         pwr_core_record_current_t current_record;
         package_create_pwr_core_current_record(&current_record);
 
-        bool print_log = false;
+        bool print_log = true;
         if (print_log)
         {
             printf("Iteration - %d\n", iteration);

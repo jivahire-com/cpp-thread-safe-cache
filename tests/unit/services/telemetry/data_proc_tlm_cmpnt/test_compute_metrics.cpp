@@ -24,8 +24,6 @@ extern "C" {
 
 /*-- Symbolic Constant Macros (defines) --*/
 extern "C" {
-
-extern uint32_t pstate_accum_uS[NUMBER_OF_CORES_PER_DIE][NUMBER_OF_PSTATES]; // /* used only for MPAM*/
 }
 
 /*------------- Typedefs -----------------*/
@@ -50,72 +48,24 @@ static int test_teardown(void** pContext)
 // Tests
 //
 
-TEST_FUNCTION(test_comp_metrics_for_cores_for_sampling_period, test_setup, test_teardown)
-{
-    // Initialize core data for testing
-    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
-    {
-        core[core_id].time_counter_uS = 0;
-        core[core_id].current_pkt_timestamp = 1000; // Non-zero to trigger updates
-    }
-
-    // Set up mock return values for tlm_get_timestamp_microseconds
-    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5);
-
-    // Call the function to be tested
-    comp_metrics_for_cores_for_sampling_period();
-
-    // Add assertions to verify the expected behavior
-    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
-    {
-        assert_int_equal(core[core_id].time_counter_uS, 0);
-    }
-
-    // Test to updae : core[core_id].time_counter_uS in all core by time diff
-    //  Set up mock return values for tlm_get_timestamp_microseconds
-    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 10);
-
-    // Call the function to be tested
-    comp_metrics_for_cores_for_sampling_period();
-
-    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
-    {
-        assert_int_equal(core[core_id].time_counter_uS, 5);
-    }
-}
-
 // Unit test for  comp_metrics_for_single_core_current
 TEST_FUNCTION(test_comp_metrics_for_single_core_current, test_setup, test_teardown)
 {
 
+    // Feed a few values into the core current computation and validate the results
     uint8_t core_id = 0;
-    uint32_t time_diff_uS = 100;
-    uint32_t residency_uS = 200;
+    uint16_t test_values_mA[5] = {18, 20, 30, 40, 50};
 
-    // Test case: Initial values
-    core[core_id].current.min_mA = 0;
-    core[core_id].current.max_mA = 0;
-    core[core_id].current.average_mA = 0;
-    core[core_id].current.latest_value_mA = 50;
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        comp_metrics_for_single_core_current(core_id, test_values_mA[i]);
+    }
 
-    comp_metrics_for_single_core_current(core_id, time_diff_uS, residency_uS);
-    assert_int_equal(core[core_id].current.min_mA, 50);
-    assert_int_equal(core[core_id].current.max_mA, 50);
-    assert_int_equal(core[core_id].current.average_mA, 50); // init avg is 0 so avg will be assigned to 50
-
-    // Test case: Update with new latest value
-    core[core_id].current.latest_value_mA = 100;
-    comp_metrics_for_single_core_current(core_id, time_diff_uS, residency_uS);
-    assert_int_equal(core[core_id].current.min_mA, 50);
-    assert_int_equal(core[core_id].current.max_mA, 100);
-    assert_int_equal(core[core_id].current.average_mA, 75); // (50 + 100) / 2
-
-    // Test case: Update with lower latest value
-    core[core_id].current.latest_value_mA = 30;
-    comp_metrics_for_single_core_current(core_id, time_diff_uS, residency_uS);
-    assert_int_equal(core[core_id].current.min_mA, 30);
-    assert_int_equal(core[core_id].current.max_mA, 100);
-    assert_int_equal(core[core_id].current.average_mA, 52); // (75 + 30) / 2
+    // Check the results
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].current_mA.min, 18);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].current_mA.max, 50);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].current_mA.running_avg.average, 32);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].current_mA.running_avg.num_samples, 5);
 }
 
 // Unit test for  comp_metrics_for_single_core_voltage
@@ -354,127 +304,22 @@ TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm_temp, test_setup, test_teard
     assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s0_dC.running_avg.average, 200);
 }
 
-TEST_FUNCTION(test_comp_metrics_for_single_core_pstate, test_setup, test_teardown)
+TEST_FUNCTION(test_comp_metrics_for_single_core_power_per_pstate, test_setup, test_teardown)
 {
     uint8_t core_id = 0;
-    uint64_t time_stamp_uS = 1000;
+    int pstate_index = 0;
+    // Feed a few values into the core power computation and validate the results
+    uint16_t test_values_mW[5] = {100, 200, 300, 400, 500};
 
-    // Test case: No throttling, no id_change_bit, no pstate_change
-    core[core_id].throttling_status = NO_THROTTLE;
-    core[core_id].pstate_timestamp_uS = 500;
-
-    core[core_id].pstate_from_pstate_pkt = 1;
-    int pstate_index = core[core_id].pstate_from_pstate_pkt;
-    core[core_id].num_pwr_samples = 5;
-    core[core_id].flags.id_change_bit = 0;
-    core[core_id].flags.pstate_change = 0;
-    core_pwr_samples_accumulation_mW[core_id] = 50;
-    core[core_id].pstate[pstate_index].residency_uS = 200;
-
-    comp_metrics_for_single_core_pstate(core_id, time_stamp_uS);
-
-    assert_int_equal(core[core_id].pstate[pstate_index].latest_value_mW, 10);
-    assert_int_equal(core[core_id].pstate[pstate_index].min_power_mW, 10);
-    assert_int_equal(core[core_id].pstate[pstate_index].max_power_mW, 10);
-    assert_int_equal(core[core_id].pstate[pstate_index].avg_power_mW, 10);
-    // Test case: Throttling, no id_change_bit, no pstate_change
-    core[core_id].throttling_status = TEMP_THROTTLE_START;
-    core[core_id].pstate_from_current_pkt = 2;
-    pstate_index = core[core_id].pstate_from_current_pkt;
-    core[core_id].flags.id_change_bit = 0;
-    core[core_id].flags.pstate_change = 0;
-    core[core_id].num_pwr_samples = 12;
-    core_pwr_samples_accumulation_mW[core_id] = 60;
-    core[core_id].pstate[pstate_index].residency_uS = 300;
-
-    comp_metrics_for_single_core_pstate(core_id, time_stamp_uS);
-
-    assert_int_equal(core[core_id].pstate[pstate_index].latest_value_mW, 5);
-    assert_int_equal(core[core_id].pstate[pstate_index].min_power_mW, 5);
-    assert_int_equal(core[core_id].pstate[pstate_index].max_power_mW, 5);
-    assert_int_equal(core[core_id].pstate[pstate_index].avg_power_mW, 5);
-
-    // Test case: id_change_bit set
-    core[core_id].flags.id_change_bit = 1;
-    core[core_id].flags.pstate_change = 0;
-
-    comp_metrics_for_single_core_pstate(core_id, time_stamp_uS);
-
-    assert_int_equal(core[core_id].flags.id_change_bit, 0);
-    assert_int_equal(core[core_id].flags.pstate_change, 0);
-    assert_int_equal(pstate_accum_uS[core_id][pstate_index], 0);
-
-    // Test case: pstate_change set
-    core[core_id].flags.id_change_bit = 0;
-    core[core_id].flags.pstate_change = 1;
-
-    comp_metrics_for_single_core_pstate(core_id, time_stamp_uS);
-
-    assert_int_equal(core[core_id].flags.id_change_bit, 0);
-    assert_int_equal(core[core_id].flags.pstate_change, 0);
-    assert_int_equal(pstate_accum_uS[core_id][pstate_index], 0);
-}
-
-TEST_FUNCTION(test_comp_metrics_for_single_core_pstate_pwr, test_setup, test_teardown)
-{
-    uint8_t core_id = 0;
-    uint64_t time_stamp_uS = 1000;
-    // Test case: No throttling, no id_change_bit, no pstate_change
-    core[core_id].throttling_status = NO_THROTTLE;
-    core[core_id].pstate_timestamp_uS = 500;
-
-    core[core_id].pstate_from_pstate_pkt = 1;
-    int pstate_index = core[core_id].pstate_from_pstate_pkt;
-    core[core_id].num_pwr_samples = 5;
-    core[core_id].flags.id_change_bit = 0;
-    core[core_id].flags.pstate_change = 0;
-    core_pwr_samples_accumulation_mW[core_id] = 50;
-    core[core_id].pstate[pstate_index].residency_uS = 200;
-
-    comp_metrics_for_single_core_pstate(core_id, time_stamp_uS);
-
-    assert_int_equal(core[core_id].pstate[pstate_index].latest_value_mW, 10);
-    assert_int_equal(core[core_id].pstate[pstate_index].min_power_mW, 10);
-    assert_int_equal(core[core_id].pstate[pstate_index].max_power_mW, 10);
-    assert_int_equal(core[core_id].pstate[pstate_index].avg_power_mW, 10);
-
-    // update pstate index and
-    core[core_id].num_pwr_samples++;
-    core_pwr_samples_accumulation_mW[core_id] += 20;
-    core[core_id].pstate[pstate_index].residency_uS += 100;
-
-    comp_metrics_for_single_core_pstate(core_id, time_stamp_uS);
-
-    assert_int_equal(core[core_id].pstate[pstate_index].latest_value_mW, 11); // 22 * 5
-    assert_int_equal(core[core_id].pstate[pstate_index].min_power_mW, 10);
-    assert_int_equal(core[core_id].pstate[pstate_index].max_power_mW, 11);
-    assert_int_equal(core[core_id].pstate[pstate_index].avg_power_mW, 11);
-
-    uint16_t test_latest_pwr_mW = 0;
-
-    uint32_t test_weighted_previous_average = 0;
-    uint32_t test_weighted_latest_value = 0;
-    uint32_t test_new_avg_power_mW = 0;
-
-    for (uint8_t i = 0; i < 10; i++)
+    for (uint8_t i = 0; i < 5; i++)
     {
-        core[core_id].num_pwr_samples++;
-        core_pwr_samples_accumulation_mW[core_id] += 10;
-        core[core_id].pstate[pstate_index].residency_uS += 100;
-        test_latest_pwr_mW = (core_pwr_samples_accumulation_mW[core_id] / core[core_id].num_pwr_samples);
-        time_stamp_uS += 10;
-
-        test_weighted_previous_average =
-            core[core_id].pstate[pstate_index].avg_power_mW * (core[core_id].num_pwr_samples - 1);
-        test_weighted_latest_value = test_latest_pwr_mW;
-        test_new_avg_power_mW = (test_weighted_previous_average + test_weighted_latest_value) / core[core_id].num_pwr_samples;
-
-        comp_metrics_for_single_core_pstate(core_id, time_stamp_uS);
-
-        assert_int_equal(core[core_id].pstate[pstate_index].latest_value_mW, test_latest_pwr_mW);
-
-        assert_int_equal(core[core_id].pstate[pstate_index].avg_power_mW, test_new_avg_power_mW);
+        comp_metrics_for_single_core_power_per_pstate(core_id, pstate_index, test_values_mW[i]);
     }
+
+    // Check the results
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.min, 100);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.max, 500);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg.average, 300);
 }
 
 // Unit test function
@@ -485,7 +330,7 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_throttling, test_setup, test_tea
     uint64_t time_stamp_uS = 5000;
     core[core_id].core_throttling_tracker[throttle_index] = 1;
     core[core_id].throttle_previous_timestamp_uS[throttle_index] = 1000;
-    core[core_id].pstate_from_current_pkt = 20;
+    core[core_id].latest_pstate = core[core_id].pstate_from_current_pkt = 20;
 
     core[core_id].throttle_info[throttle_index].residency_mS = 10;
     core[core_id].throttle_info[throttle_index].avg_pstate = 10;
@@ -517,7 +362,7 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_throttling_pstate, test_setup, t
 
     core[core_id].core_throttling_tracker[throttle_index] = 1;
     core[core_id].throttle_previous_timestamp_uS[throttle_index] = 1000;
-    core[core_id].pstate_from_current_pkt = 20;
+    core[core_id].latest_pstate = core[core_id].pstate_from_current_pkt = 20;
 
     core[core_id].throttle_info[throttle_index].residency_mS = 10;
     core[core_id].throttle_info[throttle_index].avg_pstate = 10;
@@ -530,15 +375,6 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_throttling_pstate, test_setup, t
 
     assert_int_equal(core[core_id].throttle_info[throttle_index].max_pstate, 20);
     assert_int_equal(core[core_id].throttle_info[throttle_index].avg_pstate, 14);
-}
-
-TEST_FUNCTION(test_comp_metrics_for_single_core_histogram, test_setup, test_teardown)
-{
-    uint8_t core_id = 0;
-    // Call the function to be tested TODO:: update when implemented
-    comp_metrics_for_single_core_histogram(core_id);
-    // Add assertions to verify the expected behavior
-    // Since the function does nothing for now, there is nothing to assert
 }
 
 // Unit test function
@@ -601,6 +437,30 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_power, test_setup, test_teardown
     assert_int_equal(computed_metrics_2_mins.cores[core_id].power_mW.max, 500);
     assert_int_equal(computed_metrics_2_mins.cores[core_id].power_mW.running_avg.average, 300);
     assert_int_equal(computed_metrics_2_mins.cores[core_id].power_mW.running_avg.num_samples, 5);
+}
+
+TEST_FUNCTION(test_comp_metrics_for_single_core_single_pstate, test_setup, test_teardown)
+{
+    uint8_t core_id = 5;
+    uint8_t pstate_id = 0;
+    uint64_t timestamp_diff_uS = 1000;
+    uint8_t update_pstate_entry = 1;
+    comp_metrics_for_single_core_single_pstate(core_id, pstate_id, timestamp_diff_uS, update_pstate_entry);
+
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_id].residency_uS, 1000);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_id].entry_count, 1);
+}
+
+TEST_FUNCTION(test_comp_metrics_for_single_core_single_cstate, test_setup, test_teardown)
+{
+    uint8_t core_id = 5;
+    uint8_t cstate_id = 0;
+    uint64_t timestamp_diff_uS = 1000;
+    uint8_t update_cstate_entry = 1;
+    comp_metrics_for_single_core_single_cstate(core_id, cstate_id, timestamp_diff_uS, update_cstate_entry);
+
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].cstate[cstate_id].residency_uS, 1000);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].cstate[cstate_id].entry_count, 1);
 }
 
 TEST_FUNCTION(test_comp_metrics_reset_2_mins_metrics, test_setup, test_teardown)

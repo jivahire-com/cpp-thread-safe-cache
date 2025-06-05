@@ -32,7 +32,6 @@ extern core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
 extern soc_runtime_info_t soc_info;
 extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
-extern uint32_t pstate_accum_uS[NUMBER_OF_CORES_PER_DIE][NUMBER_OF_PSTATES]; // /* used only for MPAM*/
 }
 
 /*------------- Typedefs -----------------*/

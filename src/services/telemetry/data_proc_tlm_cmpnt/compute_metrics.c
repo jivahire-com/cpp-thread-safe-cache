@@ -45,42 +45,7 @@ void data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core(void)
 
 void comp_metrics_for_sample_period(void)
 {
-    comp_metrics_for_cores_for_sampling_period();
     comp_metrics_for_tiles_for_sampling_period();
-}
-
-void comp_metrics_for_cores_for_sampling_period(void)
-{
-    static uint64_t previous_core_timestamp_uS = 0;
-    uint64_t time_stamp_uS = 0;
-    // calculate the timestamp and time difference
-    uint64_t time_diff_uS = data_util_calc_time_diff(&previous_core_timestamp_uS, &time_stamp_uS, PWR_TLM_CORE_UPDATE);
-
-    // Go over all cores
-    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
-    {
-        /* Calculate  the general residency for the core*/
-        core[core_id].time_counter_uS += time_diff_uS;
-
-        /* Do not do any update for this core if the current packet timestamp is zero: disable core */
-        if (core[core_id].current_pkt_timestamp != 0)
-        {
-            /* update pstate residency and power */
-            comp_metrics_for_single_core_pstate(core_id, time_stamp_uS);
-
-            // Check to update throttling and priorities
-            comp_metrics_for_single_core_throttling(core_id, time_stamp_uS);
-
-            /* update Core current*/
-            comp_metrics_for_single_core_current(core_id, time_diff_uS, core[core_id].time_counter_uS);
-        }
-
-        /* Note that even if a core is disabled, voltage and temperature sensors
-            are still running on those disabled cores */
-
-        // update residency to generate volt/temp histogram
-        comp_metrics_for_single_core_histogram(core_id);
-    }
 }
 
 void comp_metrics_for_tiles_for_sampling_period(void)
@@ -102,61 +67,10 @@ void comp_metrics_for_tiles_for_sampling_period(void)
     }
 }
 
-void comp_metrics_for_single_core_pstate(uint8_t core_id, uint64_t time_stamp_uS)
-{
-    // Check if the current core has a pstate update
-    // Update the PState Residency
-    uint8_t pstate_index;
-    // Check first if we are throttling
-    if (core[core_id].throttling_status == NO_THROTTLE)
-    {
-        /* get pstate from pstate packet/pstate fifo */
-        pstate_index = core[core_id].pstate_from_pstate_pkt;
-    }
-    else
-    {
-        /* in case of throttle pstate is not reported by pstate packet, get from current telemetry packet*/
-        pstate_index = core[core_id].pstate_from_current_pkt;
-    }
-
-    if (core[core_id].flags.id_change_bit == 0 && core[core_id].flags.pstate_change == 0)
-    {
-        /*Update the current pstate residencies*/
-        comp_metrics_for_single_core_single_pstate(core_id, pstate_index, time_stamp_uS);
-        // Check if there are power samples for this core
-        if (core[core_id].num_pwr_samples > 0)
-        {
-            /* average of all the sample reported so far*/
-            core[core_id].average_pwr_mW = (core_pwr_samples_accumulation_mW[core_id] / core[core_id].num_pwr_samples);
-        }
-        /* core[core_id].average_power_samples_value has running average of the power samples, update latest_value_mW */
-        core[core_id].pstate[pstate_index].latest_value_mW = core[core_id].average_pwr_mW;
-        if (core[core_id].average_pwr_mW)
-        {
-            comp_metrics_for_single_core_pstate_power(core_id, pstate_index);
-        }
-        // Update the core - mpam - pstate instantaneous power
-        comp_metrics_for_mpam(core_id, core[core_id].active_sample_mpam_id, pstate_index);
-    }
-    else
-    {
-        // Clear the pstate change indicator for this core
-        core[core_id].flags.id_change_bit = 0;
-        core[core_id].flags.pstate_change = 0;
-        pstate_accum_uS[core_id][pstate_index] = 0;
-    }
-}
-
-void comp_metrics_for_single_core_current(uint8_t core_id, uint32_t time_diff_uS, uint32_t residency_uS)
+void comp_metrics_for_single_core_current(uint8_t core_id, uint16_t latest_value_mA)
 {
     /* For core current :min, max avg calculation*/
-    // Update the core current min, max average.
-    data_util_calc_mma_res(&core[core_id].current.min_mA,
-                           &core[core_id].current.max_mA,
-                           &core[core_id].current.average_mA,
-                           &core[core_id].current.latest_value_mA,
-                           time_diff_uS,
-                           residency_uS);
+    data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].current_mA, latest_value_mA);
 }
 
 void comp_metrics_for_single_core_voltage(uint8_t core_id, uint16_t latest_value_mV)
@@ -256,65 +170,28 @@ void comp_metrics_for_single_soc_dimm_temp(uint8_t dimm_id, uint16_t latest_dimm
     data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_id].temperature_s1_dC, latest_dimm_temp_s1_dC);
 }
 
-fpfw_status_t comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp_uS)
+void comp_metrics_for_single_core_single_cstate(uint8_t core_id, uint8_t cstate, uint64_t timestamp_diff_uS, uint8_t update_cstate_entry)
 {
-    // Update the residency of the previous pstate
-    if (core[core_id].pstate_timestamp_uS != 0 && core[core_id].pstate_timestamp_uS < timestamp_uS)
+    computed_metrics_2_mins.cores[core_id].cstate[cstate].residency_uS += timestamp_diff_uS;
+    // update entry count on compute matrics.
+    if (update_cstate_entry)
     {
-        //  obtain the time stamp difference @ uS
-        uint64_t timestamp_diff_uS = timestamp_uS - core[core_id].pstate_timestamp_uS;
-        core[core_id].pstate[pstate].residency_uS += timestamp_diff_uS;
-        pstate_accum_uS[core_id][pstate] += timestamp_diff_uS; // for MPAM only .
+        computed_metrics_2_mins.cores[core_id].cstate[cstate].entry_count += 1;
     }
-
-    core[core_id].pstate_timestamp_uS = timestamp_uS;
-    return FPFW_STATUS_SUCCESS;
 }
 
-void comp_metrics_for_single_core_pstate_power(uint8_t core_id, uint8_t pstate_index)
+void comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp_diff_uS, uint8_t update_pstate_entry)
 {
-
-    pwr_pstate_t* pstate = &core[core_id].pstate[pstate_index];
-    uint16_t latest_value_mW = pstate->latest_value_mW;
-
-    // Update min, max, and average power values
-    if (latest_value_mW < pstate->min_power_mW || pstate->min_power_mW == 0)
+    computed_metrics_2_mins.cores[core_id].pstate[pstate].residency_uS += timestamp_diff_uS;
+    if (update_pstate_entry)
     {
-        pstate->min_power_mW = latest_value_mW;
+        computed_metrics_2_mins.cores[core_id].pstate[pstate].entry_count += 1;
     }
-    if (latest_value_mW > pstate->max_power_mW)
-    {
-        pstate->max_power_mW = latest_value_mW;
-    }
+}
 
-    // Calculate the weighted average power value
-    if (core[core_id].num_pwr_samples <= 1)
-    {
-        pstate->avg_power_mW = latest_value_mW;
-    }
-    else
-    {
-        uint32_t weighted_previous_average = (uint32_t)pstate->avg_power_mW * (core[core_id].num_pwr_samples - 1);
-        uint32_t weighted_latest_value = latest_value_mW;
-        uint32_t new_avg_power_mW = (weighted_previous_average + weighted_latest_value) / core[core_id].num_pwr_samples;
-
-        // Ensure the calculated average does not exceed UINT16_MAX
-        if (new_avg_power_mW > UINT16_MAX)
-        {
-            new_avg_power_mW = UINT16_MAX;
-            FPFW_ET_LOG(PstatePWRUpdateMMAvgOverflow);
-        }
-
-        // Check if the calculated average goes lower but not lower than the new value
-        if (new_avg_power_mW < latest_value_mW)
-        {
-            pstate->avg_power_mW = latest_value_mW;
-        }
-        else
-        {
-            pstate->avg_power_mW = new_avg_power_mW;
-        }
-    }
+void comp_metrics_for_single_core_power_per_pstate(uint8_t core_id, uint8_t pstate_index, uint16_t latest_power_mW)
+{
+    data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW, latest_power_mW);
 }
 
 void comp_metrics_for_mpam(uint8_t core_id, uint16_t mpam_id, uint8_t pstate)
@@ -341,6 +218,7 @@ void comp_metrics_for_single_core_throttling(uint8_t core_id, uint64_t time_stam
                 // Get the Throttling time stamp now and subtract from previous
                 uint64_t time_diff_uS = time_stamp_uS - core[core_id].throttle_previous_timestamp_uS[i];
                 // This is the per core and per type throttling residency in uS
+                // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2659000
                 core[core_id].throttle_info[i].residency_mS += MICROSECONDS_TO_MILLISECONDS(time_diff_uS);
                 // Use per throttle type accumualated residency for max and avg calculation.
                 /* For core pstate- min, max avg calculation during throttle*/
@@ -360,18 +238,12 @@ void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id, int8_t thro
     uint16_t temp_min_pstate = 0;
     uint16_t temp_avg_pstate = core[core_id].throttle_info[throttle_index].avg_pstate;
     uint16_t temp_max_pstate = core[core_id].throttle_info[throttle_index].max_pstate;
-    uint16_t temp_pstate = core[core_id].pstate_from_current_pkt;
+    uint16_t temp_pstate = core[core_id].latest_pstate;
     /* For core pstate- min, max avg calculation during throttle*/
     data_util_calc_mma_res(&temp_min_pstate, &temp_max_pstate, &temp_avg_pstate, &temp_pstate, time_diff_uS, residency_mS * 1000);
     // Update core throttle info
     core[core_id].throttle_info[throttle_index].avg_pstate = temp_avg_pstate;
     core[core_id].throttle_info[throttle_index].max_pstate = temp_max_pstate;
-}
-
-void comp_metrics_for_single_core_histogram(uint8_t core_id)
-{
-    FPFW_UNUSED(core_id);
-    // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2319991
 }
 
 void comp_metrics_reset_2_mins_metrics()

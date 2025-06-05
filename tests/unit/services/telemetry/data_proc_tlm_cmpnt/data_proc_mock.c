@@ -16,6 +16,7 @@
 #include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdint.h>              // for uint32_t, uint64_t, int32_t
+#include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -50,8 +51,19 @@ sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_core_current(core_current_t
 
 sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_core_pstate(pstate_telem_t* state_data)
 {
-    FPFW_UNUSED(state_data);
-    return *(sensor_ram_poll_status_t*)mock();
+    sensor_ram_poll_status_t status;
+    status.curr_data_is_valid = mock_type(bool);
+    status.more_entries = mock_type(bool);
+
+    if (status.curr_data_is_valid)
+    {
+        pstate_telem_t* mock_data = mock_ptr_type(pstate_telem_t*);
+        assert_non_null(mock_data);
+        assert_non_null(state_data);
+        memcpy(state_data, mock_data, sizeof(pstate_telem_t));
+        state_data->data.throttle_status = NO_THROTTLING;
+    }
+    return status;
 }
 
 sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_vr_temperature(vr_temp_t* vr_temperature)

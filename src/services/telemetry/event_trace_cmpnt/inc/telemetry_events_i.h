@@ -275,7 +275,10 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     48,
                     CstateUnexpectedLevelChange,
-                    FPFW_ET_LEVEL_ERROR)
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, core_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, new_state),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, last_state))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      49,
@@ -393,10 +396,26 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     DataHelperResidencyUpdateInValidTimeStamp,
                     FPFW_ET_LEVEL_DEBUG)
 
+
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     68,
                     InvalidDieId,
                     FPFW_ET_LEVEL_ERROR,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, die_id))
+
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    69,
+                    LogInValidCstateId,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, value))
+
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    70,
+                    LogInValidPstateId,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, value))
+
 /*--------- Function Prototypes ----------*/
 

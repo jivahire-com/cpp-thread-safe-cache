@@ -16,6 +16,7 @@
 #include "package_interface_i.h"
 #include "telemetry_events_i.h"
 
+#include <dvfs.h>
 #include <stdbool.h> // for false, true
 #include <stddef.h>  // for size_t
 #include <stdint.h>  // for uint8_t, uint16_t
@@ -47,14 +48,18 @@ void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_ele
     {
         for (uint16_t pstate_index = 0; pstate_index < NUMBER_OF_PSTATES; pstate_index++)
         {
-            (*pstate_array)[pstate_index].pstate_id = core[core_id].pstate[pstate_index].pstate_id;
-            (*pstate_array)[pstate_index].avg_power_mW = core[core_id].pstate[pstate_index].avg_power_mW;
-            (*pstate_array)[pstate_index].min_power_mW = core[core_id].pstate[pstate_index].min_power_mW;
-            (*pstate_array)[pstate_index].max_power_mW = core[core_id].pstate[pstate_index].max_power_mW;
-            (*pstate_array)[pstate_index].frequency_Mhz = core[core_id].pstate[pstate_index].frequency_Mhz;
+            (*pstate_array)[pstate_index].pstate_id = pstate_index;
+            (*pstate_array)[pstate_index].avg_power_mW =
+                computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg.average;
+            (*pstate_array)[pstate_index].min_power_mW =
+                computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.min;
+            (*pstate_array)[pstate_index].max_power_mW =
+                computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.max;
+            (*pstate_array)[pstate_index].frequency_Mhz = dvfs_get_freq_from_plimit(pstate_index);
             (*pstate_array)[pstate_index].residency_mS =
-                ROUND_USEC_TO_MSEC(core[core_id].pstate[pstate_index].residency_uS);
-            (*pstate_array)[pstate_index].entry_count = core[core_id].pstate[pstate_index].entry_count;
+                ROUND_USEC_TO_MSEC(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].residency_uS);
+            (*pstate_array)[pstate_index].entry_count =
+                computed_metrics_2_mins.cores[core_id].pstate[pstate_index].entry_count;
         }
     }
 }
@@ -70,10 +75,11 @@ void data_proc_tlm_cmpnt_get_pwr_core_cstate_data(uint16_t core_id, pwr_core_ele
     {
         for (uint16_t cstate_index = 0; cstate_index < NUMBER_OF_CSTATES; cstate_index++)
         {
-            (*cstate_array)[cstate_index].cstate_id = core[core_id].cstate[cstate_index].cstate_id;
+            (*cstate_array)[cstate_index].cstate_id = cstate_index;
             (*cstate_array)[cstate_index].residency_mS =
-                ROUND_USEC_TO_MSEC(core[core_id].cstate[cstate_index].residency_uS);
-            (*cstate_array)[cstate_index].entry_count = core[core_id].cstate[cstate_index].entry_count;
+                ROUND_USEC_TO_MSEC(computed_metrics_2_mins.cores[core_id].cstate[cstate_index].residency_uS);
+            (*cstate_array)[cstate_index].entry_count =
+                computed_metrics_2_mins.cores[core_id].cstate[cstate_index].entry_count;
         }
     }
 }
@@ -94,7 +100,7 @@ void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id,
             (*throttle_array)[throttle_index].entry_count = core[core_id].throttle_info[throttle_index].entry_count;
             (*throttle_array)[throttle_index].max_pstate = core[core_id].throttle_info[throttle_index].max_pstate;
             (*throttle_array)[throttle_index].residency_mS = core[core_id].throttle_info[throttle_index].residency_mS;
-            (*throttle_array)[throttle_index].type_id = core[core_id].throttle_info[throttle_index].type_id;
+            (*throttle_array)[throttle_index].type_id = throttle_index;
         }
     }
 }
@@ -143,10 +149,10 @@ void data_proc_tlm_cmpnt_get_pwr_core_current_data(uint16_t core_id, p_pwr_core_
     }
     else
     {
-        current_data->latest_value_mA = core[core_id].current.latest_value_mA;
-        current_data->average_mA = core[core_id].current.average_mA;
-        current_data->max_mA = core[core_id].current.max_mA;
-        current_data->min_mA = core[core_id].current.min_mA;
+        current_data->latest_value_mA = core[core_id].latest_current_mA;
+        current_data->average_mA = computed_metrics_2_mins.cores[core_id].current_mA.running_avg.average;
+        current_data->max_mA = computed_metrics_2_mins.cores[core_id].current_mA.max;
+        current_data->min_mA = computed_metrics_2_mins.cores[core_id].current_mA.min;
     }
 }
 
@@ -320,11 +326,11 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
         }
 
         core_summary_data->pstate = current_pstate;
-        core_summary_data->cstate = core[core_id].cstate_from_pstate_pkt;
-        core_summary_data->frequency_Mhz = core[core_id].pstate[current_pstate].frequency_Mhz;
+        core_summary_data->cstate = core[core_id].latest_cstate;
+        core_summary_data->frequency_Mhz = dvfs_get_freq_from_plimit(current_pstate);
         core_summary_data->power_mW = core[core_id].latest_power_mW;
         core_summary_data->voltage_mV = core[core_id].latest_voltage_mV;
-        core_summary_data->current_mA = core[core_id].current.latest_value_mA;
+        core_summary_data->current_mA = core[core_id].latest_current_mA;
         core_summary_data->temperature_dC = core[core_id].latest_max_value_dC;
         core_summary_data->plimit = core[core_id].active_sample_plimit;
 
@@ -340,7 +346,7 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
         core_summary_data->velocity_boost_priority = 0;
         // TODO: what if not throttling and what if rack throttling (rack type + vm priority )?
         core_summary_data->throttling_type_and_rack_priority =
-            data_smpl_parse_throttling_get_index_from_status(core[core_id].throttling_status);
+            data_smpl_parse_throttling_state_change_get_index_from_status(core[core_id].throttling_status);
     }
 }
 

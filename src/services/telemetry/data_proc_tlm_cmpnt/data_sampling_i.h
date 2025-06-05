@@ -72,26 +72,6 @@ typedef enum
  */
 
 typedef struct {
-    uint8_t pstate_id;
-    uint32_t residency_uS;
-    uint32_t entry_count;
-    uint16_t frequency_Mhz;
-    uint16_t max_power_mW;
-    uint16_t min_power_mW;
-    uint16_t avg_power_mW;
-    uint16_t latest_value_mW;// latest power
-} pwr_pstate_t;
-
-typedef struct {
-    uint8_t cstate_id;
-    uint32_t residency_uS;
-    uint32_t entry_count;
-    uint16_t max_power_mW;
-    uint16_t min_power_mW;
-    uint16_t avg_power_mW;
-} pwr_cstate_t;
-
-typedef struct {
     uint8_t pstate_change : 1;
     uint8_t cstate_change : 1;
     uint8_t throttling_ev_change : 1;
@@ -106,11 +86,10 @@ typedef struct {
     core_control_flags_t flags;
     uint64_t cstate_timestamp_uS; //for cstate residency update.
     uint64_t pstate_timestamp_uS;
-    uint64_t current_pkt_timestamp;
+    uint64_t current_pkt_timestamp_uS;
     uint8_t pstate_from_pstate_pkt; /* pstate from pstate packet*/
-    uint8_t cstate_from_pstate_pkt; /* cstate from pstate packet from sensor fifo*/
+    uint8_t latest_cstate; /* cstate from pstate packet from sensor fifo*/
     uint8_t active_sample_plimit;
-    uint8_t ldo_voltage;
     uint8_t throttling_status;
     uint8_t throttle_event;
     uint8_t throttle_source;
@@ -118,18 +97,17 @@ typedef struct {
     uint64_t throttle_previous_timestamp_uS[NUMBER_OF_THROTTLE_TYPES];
     uint32_t time_counter_uS; // for general residency calculation for the core in uS
     uint8_t pstate_from_current_pkt; /* pstate from current packet, during throttling */
-    uint32_t average_pwr_mW; //running average of power samples values in mW .
-    uint8_t num_pwr_samples;
-    pwr_pstate_t pstate[NUMBER_OF_PSTATES];
-    pwr_cstate_t cstate[NUMBER_OF_CSTATES];
     pwr_core_element_throttle_t throttle_info[NUMBER_OF_THROTTLE_TYPES];
     pwr_core_element_rack_priorities_t priorities[NUMBER_OF_RACK_PRIORITIES];
     uint16_t latest_voltage_mV;
-    current_t current;
+    uint16_t latest_current_mA;
     uint16_t latest_power_mW;
     uint16_t latest_max_value_dC;
     uint16_t active_sample_mpam_id;
     bool core_throttling_tracker[NUMBER_OF_THROTTLE_TYPES];
+    /* depending on the throttling state of the core
+    this may update either from pstate packet or current packet */
+    uint8_t latest_pstate; //instantaneous pstate
 } core_runtime_info_t;
 
 typedef struct {
@@ -152,6 +130,7 @@ typedef struct {
     uint16_t latest_max_tile_temp_dC;
     uint16_t latest_max_soc_top_temp_dC;
     uint16_t latest_max_die_temp_dC; // max of latest_max_tile_temp_dC and latest_max_soc_top_temp_dC
+    uint64_t latest_core_states_proc_timestamp_uS; //a timestamp used for all core states processing ,when no pstate packet occurred.
 } soc_runtime_info_t;
 
 typedef struct {
@@ -183,14 +162,22 @@ typedef enum _pstate_throttle_status_t
     ADPT_CLK_THROTTLING_OVERRUN
 } pstate_throttle_status_t;
 
+typedef struct {
+    bool valid_entry_pstate;
+    bool valid_entry_cstate;
+    bool new_pstate;
+    bool new_ctstate;
+    uint64_t cstate_time_diff_uS;
+    uint64_t pstate_time_diff_uS;
+    uint8_t core_id;
+} core_state_metrics_flags_t;
+
 /*-- Declarations (Statics and globals) --*/
 
 extern core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
 extern soc_runtime_info_t soc_info;
 extern soc_runtime_dimm_info_t soc_dimm;
-extern uint32_t core_pwr_samples_accumulation_mW[NUMBER_OF_CORES_PER_DIE];
-extern uint32_t pstate_accum_uS[NUMBER_OF_CORES_PER_DIE][NUMBER_OF_PSTATES];
 
 /*--------- Function Prototypes ----------*/
 /**
@@ -207,12 +194,6 @@ void data_smpl_init(void);
  */
 void data_smpl_init_dts_coefficients(void);
 
-/**
- * @brief Initialize the static information, like cstate id, pstate, etc..
- *
- * @return none
- */
-void data_smpl_init_constants();
 
 /**
  * @brief   Update the maximum die temperature based on the latest tile and SOC top temperatures.
@@ -249,9 +230,10 @@ bool data_smpl_parse_tile_voltage_entry(tile_voltage_t* voltage_data, uint8_t ti
  * @param[in] current_data - SCF RAM formatted resource for core current packets
  * @param[in] core_index - index to the core id being referenced by the entry
  *
- * @return void
+ * @return bool   - true if a valid current entry
  */
-void data_smpl_parse_core_current_entry(core_current_t* current_data, uint8_t core_index);
+bool data_smpl_parse_core_current_entry(core_current_t* current_data, uint8_t core_index);
+
 
 /**
  * @brief Internal API to log voltage regulator (VR) temperatures
@@ -294,26 +276,28 @@ bool  data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info);
  *
  * @param[in] pstate_telemetry - SCF RAM formatted resource for pstate packets
  *        NOTE: The Pstate packet contains the core id reference internally.
+ * @param[in] timestamp_uS - latest timestamp 
  *
- * @return None
+ * @return none
  */
-void data_smpl_parse_pstate_no_throttling(pstate_telem_t* pstate_telemetry);
+void data_smpl_parse_pstate_no_throttling(pstate_telem_t* pstate_telemetry, uint64_t timestamp_uS);
 
 /**
  * @brief Internal API to log cstate telemetry.
  * @param[in] cstate_telemetry - SCF RAM formatted resource for pstate packets
  *        (IMPORTANT : pstate telemetry packet provide both p state/c state))
  *        NOTE: The Pstate packet contains the core id reference internally.
- * @return None
+ * @param[in] timestamp_uS - latest timestamp 
+ * @return none
  */
-void data_smpl_parse_cstate_no_throttling(pstate_telem_t* cstate_telemetry);
+void  data_smpl_parse_cstate_no_throttling(pstate_telem_t* cstate_telemetry, uint64_t timestamp_uS);
 
 /**
  * @brief update rack throttling
  *
  * @param[in] pstate_telemetry  provide pstate tlm pkt.
- * @param throttle_index - source of throttle , in this case rack.
- * @param core_id
+ * @param[in] throttle_index - source of throttle , in this case rack.
+ * @param[in] core_id
  */
 void data_smpl_parse_rack_throttling(pstate_telem_t* pstate_telemetry, int throttle_index, uint8_t core_id);
 
@@ -322,9 +306,12 @@ void data_smpl_parse_rack_throttling(pstate_telem_t* pstate_telemetry, int throt
  * @param[in] pstate_telemetry - SCF RAM formatted resource for pstate packets
  *        (IMPORTANT : pstate telemetry packet provide both p state/c state and throttling status))
  *
- * @return void
+ * @return core_state_metrics_flags_t - returning flags based on the core states processing to 
+ *         handle the compute update in the main sensor fifo loop.
+ *         boolean value in the flag structure "valid_entry_pstate" indicate a valid pstate entry and update residency.
+ *         "new_pstate" boolean on the return flag indidate for the "enrtry count" update if pstate change.                                     
  */
-void data_smpl_parse_core_states_entry(pstate_telem_t* pstate_telemetry);
+core_state_metrics_flags_t data_smpl_parse_core_states_entry(pstate_telem_t* pstate_telemetry);
 
 /**
  * @brief  calculate throttling index based on throttle status in telemetry pkt.
@@ -332,7 +319,7 @@ void data_smpl_parse_core_states_entry(pstate_telem_t* pstate_telemetry);
  * @param[in] status  1-12 if success or -1 in case of a error.
  * @return int return index for throttle info array.
  */
-int8_t data_smpl_parse_throttling_get_index_from_status(pstate_throttle_status_t status);
+int8_t data_smpl_parse_throttling_state_change_get_index_from_status(pstate_throttle_status_t status);
 
 /**
  * @brief log the throttling states, based on pstate pkt and start/end event
@@ -341,7 +328,7 @@ int8_t data_smpl_parse_throttling_get_index_from_status(pstate_throttle_status_t
  * @param[in] pstate_telemetry
  * @return None
  */
-void data_smpl_parse_throttling(pstate_telem_t* pstate_telemetry);
+void data_smpl_parse_throttling_state_change(pstate_telem_t* pstate_telemetry);
 
 /**
  * @brief This api clear the throttling tracker.
@@ -349,7 +336,7 @@ void data_smpl_parse_throttling(pstate_telem_t* pstate_telemetry);
  * @param[in] core_id
  * @param[in] timestamp_uS
  */
-void data_smpl_parse_throttling_exit_transition(uint8_t core_id, uint64_t timestamp_uS);
+void data_smpl_parse_throttling_state_change_exit_transition(uint8_t core_id, uint64_t timestamp_uS);
 
 /**
  * @brief function reset the cores data after a collection window .
@@ -363,3 +350,9 @@ void data_smpl_reset_core_data(void);
  */
 void data_smpl_reset_soc_data(void);
 
+/**
+ * @brief This API update the core pstate compute for a sampling period,
+ *         when SCF does not report a pstate telemetry packet.
+ * @param  none 
+ */
+void data_smpl_update_comp_metrics_cores_states_for_no_pstate_entry(void);

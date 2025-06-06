@@ -19,14 +19,6 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
-// BWL State bitmask values
-typedef enum
-{
-    BWL_STATE_DISABLED = 0,
-    BWL_STATE_ENABLED_I3C = 0x1,
-    BWL_STATE_ENABLED_MR4 = 0x2,
-    BWL_STATE_ENABLED_FORCED = 0x4,
-} bwl_state_t;
 
 /*-------- Function Prototypes -----------*/
 
@@ -70,6 +62,11 @@ static void ddr_manager_disengage_bwl()
 bool ddr_manager_get_bwl_engaged()
 {
     return s_bwlEngaged;
+}
+
+uint8_t ddr_manager_get_bwl_state()
+{
+    return (uint8_t)bwl_state;
 }
 
 void ddr_manager_enable_bwl_i3c()

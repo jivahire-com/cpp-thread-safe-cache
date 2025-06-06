@@ -97,6 +97,7 @@ TEST_FUNCTION(test_ddr_manager_enable_bwl_i3c, setup_disengaged_all, setup_disen
 
     // Assert
     assert_true(ddr_manager_get_bwl_engaged());
+    assert_int_equal(ddr_manager_get_bwl_state(), BWL_STATE_ENABLED_I3C);
 }
 
 TEST_FUNCTION(test_ddr_manager_disable_bwl_i3c, setup_engaged_i3c, setup_disengaged_all)
@@ -113,6 +114,7 @@ TEST_FUNCTION(test_ddr_manager_disable_bwl_i3c, setup_engaged_i3c, setup_disenga
 
     // Assert
     assert_false(ddr_manager_get_bwl_engaged());
+    assert_int_equal(ddr_manager_get_bwl_state(), BWL_STATE_DISABLED);
 }
 
 TEST_FUNCTION(test_ddr_manager_enable_bwl_mr4, setup_disengaged_all, setup_disengaged_all)
@@ -127,6 +129,7 @@ TEST_FUNCTION(test_ddr_manager_enable_bwl_mr4, setup_disengaged_all, setup_disen
 
     // Assert
     assert_true(ddr_manager_get_bwl_engaged());
+    assert_int_equal(ddr_manager_get_bwl_state(), BWL_STATE_ENABLED_MR4);
 }
 
 TEST_FUNCTION(test_ddr_manager_disable_bwl_mr4, setup_engaged_mr4, setup_disengaged_all)
@@ -141,6 +144,7 @@ TEST_FUNCTION(test_ddr_manager_disable_bwl_mr4, setup_engaged_mr4, setup_disenga
 
     // Assert
     assert_false(ddr_manager_get_bwl_engaged());
+    assert_int_equal(ddr_manager_get_bwl_state(), BWL_STATE_DISABLED);
 }
 
 TEST_FUNCTION(test_ddr_manager_enable_bwl_force, setup_disengaged_all, setup_disengaged_all)
@@ -155,6 +159,7 @@ TEST_FUNCTION(test_ddr_manager_enable_bwl_force, setup_disengaged_all, setup_dis
 
     // Assert
     assert_true(ddr_manager_get_bwl_engaged());
+    assert_int_equal(ddr_manager_get_bwl_state(), BWL_STATE_ENABLED_FORCED);
 }
 
 TEST_FUNCTION(test_ddr_manager_disable_bwl_force, setup_engaged_force, setup_disengaged_all)
@@ -169,6 +174,7 @@ TEST_FUNCTION(test_ddr_manager_disable_bwl_force, setup_engaged_force, setup_dis
 
     // Assert
     assert_false(ddr_manager_get_bwl_engaged());
+    assert_int_equal(ddr_manager_get_bwl_state(), BWL_STATE_DISABLED);
 }
 
 TEST_FUNCTION(test_ddr_manager_enable_i3c_bwl_enable_mr4_disable_mr4, setup_disengaged_all, setup_disengaged_all)
@@ -178,13 +184,16 @@ TEST_FUNCTION(test_ddr_manager_enable_i3c_bwl_enable_mr4_disable_mr4, setup_dise
     will_return(__wrap_mmio_read32, 0);
     expect_function_call(__wrap_mmio_write32);
 
-    // Act
+    // Act & Assert
     ddr_manager_enable_bwl_i3c();
     ddr_manager_enable_bwl_mr4();
+    assert_int_equal(ddr_manager_get_bwl_state(), BWL_STATE_ENABLED_I3C | BWL_STATE_ENABLED_MR4);
+
     ddr_manager_disable_bwl_mr4();
 
     // Assert
     assert_true(ddr_manager_get_bwl_engaged());
+    assert_int_equal(ddr_manager_get_bwl_state(), BWL_STATE_ENABLED_I3C);
 }
 
 TEST_FUNCTION(test_ddr_manager_enable_mr4_bwl_enable_i3c_disable_mr4, setup_disengaged_all, setup_disengaged_all)
@@ -203,15 +212,18 @@ TEST_FUNCTION(test_ddr_manager_enable_mr4_bwl_enable_i3c_disable_mr4, setup_dise
     // Act
     ddr_manager_enable_bwl_mr4();
     ddr_manager_enable_bwl_i3c();
+    assert_int_equal(ddr_manager_get_bwl_state(), BWL_STATE_ENABLED_I3C | BWL_STATE_ENABLED_MR4);
     ddr_manager_disable_bwl_mr4();
 
     // Assert
     assert_true(ddr_manager_get_bwl_engaged());
+    assert_int_equal(ddr_manager_get_bwl_state(), BWL_STATE_ENABLED_I3C);
 
     // This one does not touch GPIOs since BWL is already disengaged
     ddr_manager_disable_bwl_i3c();
 
     assert_false(ddr_manager_get_bwl_engaged());
+    assert_int_equal(ddr_manager_get_bwl_state(), BWL_STATE_DISABLED);
 }
 
 TEST_FUNCTION(test_ddr_manager_enable_mr4_bwl_enable_i3c_disable_i3c, setup_disengaged_all, setup_disengaged_all)
@@ -236,10 +248,12 @@ TEST_FUNCTION(test_ddr_manager_enable_mr4_bwl_enable_i3c_disable_i3c, setup_dise
 
     // Assert
     assert_true(ddr_manager_get_bwl_engaged());
+    assert_int_equal(ddr_manager_get_bwl_state(), BWL_STATE_ENABLED_MR4);
 
     ddr_manager_disable_bwl_mr4();
 
     assert_false(ddr_manager_get_bwl_engaged());
+    assert_int_equal(ddr_manager_get_bwl_state(), BWL_STATE_DISABLED);
 }
 
 TEST_FUNCTION(test_ddr_manager_enable_i3c_force_disable_i3c, setup_disengaged_all, setup_disengaged_all)
@@ -260,12 +274,15 @@ TEST_FUNCTION(test_ddr_manager_enable_i3c_force_disable_i3c, setup_disengaged_al
     // Act
     ddr_manager_enable_bwl_i3c();
     ddr_manager_enable_bwl_force();
+    assert_int_equal(ddr_manager_get_bwl_state(), BWL_STATE_ENABLED_I3C | BWL_STATE_ENABLED_FORCED);
     ddr_manager_disable_bwl_i3c();
 
     // Assert
     assert_true(ddr_manager_get_bwl_engaged());
+    assert_int_equal(ddr_manager_get_bwl_state(), BWL_STATE_ENABLED_FORCED);
 
     ddr_manager_disable_bwl_force();
 
     assert_false(ddr_manager_get_bwl_engaged());
+    assert_int_equal(ddr_manager_get_bwl_state(), BWL_STATE_DISABLED);
 }

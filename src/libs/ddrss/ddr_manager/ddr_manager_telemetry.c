@@ -76,7 +76,7 @@ void ddr_telemetry_report()
     uint16_t power_mW = 0;
 
     dimm_info.timestamp = gtimer_prodfw_get_counter();
-    dimm_info.dimm_throttling = ddr_manager_get_bwl_engaged();
+    dimm_info.dimm_throttling = ddr_manager_get_bwl_state();
     dimm_info.dimm_memory_frequency_id = (uint8_t)config_get_ddr_speed_grade();
 
     for (int dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)

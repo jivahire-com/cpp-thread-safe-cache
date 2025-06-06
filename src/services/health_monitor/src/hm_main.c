@@ -104,6 +104,9 @@ void hm_post_intercore_init(hm_intercore_type_t intercore_type, fpfw_icc_base_ct
     case HM_INTERCORE_HSP:
         hm_prepare_hsp_listener(icc_ctx);
         break;
+    case HM_INTERCORE_APCORE:
+        hm_prepare_ap_listener(icc_ctx);
+        break;
     default:
         break;
     }

@@ -16,7 +16,7 @@
 #include <hm_cli.h>
 #include <idhw.h>
 #include <idsw.h>
-#include <mscp_exp_rmss_memory_map.h> // debug purpose
+#include <mscp_exp_rmss_memory_map.h>
 #include <semaphore_lib.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -44,6 +44,7 @@ FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver"))
     hm_config.mscp_ghes_base_apcore_offset = 0;
     hm_config.mscp_error_injection_addr_base = (ras_einj_info_t*)einj_payload;
     hm_config.mscp_hsp_ras_payload_base = (uint8_t*)SCP_EXP_HSP_RAS_PAYLOAD_BASE;
+    hm_config.mscp_full_cper_record_base = (uint8_t*)SCP_EXP_MSCP_CPER_REPORT_BASE;
 
     // To Do
     // SVP Bug on IOSS Semaphore -  https://azurecsi.visualstudio.com/1P-SoC-Modeling/_workitems/edit/2327121
@@ -101,20 +102,14 @@ FPFW_INIT_COMPONENT(hm_hsp, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_hspmbx")
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
+FPFW_INIT_COMPONENT(hm_ap, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_mscp2apns"))
+{
+    hm_post_intercore_init(HM_INTERCORE_APCORE, fpfw_init_get_handle("icc_mscp2apns"));
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
 FPFW_INIT_COMPONENT(hm_cli_init, FPFW_INIT_DEPENDENCIES("hm_post_init", "hm_scp"))
 {
     hm_cli_init();
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
-
-/*
-FPFW_INIT_COMPONENT(hm_svc_ap_init,
-                    FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_mscp2apns"))
-{
-    hm_config_t* hm_config = (hm_config_t*)fpfw_init_get_handle("hm_svc");
-    hm_config->icc_apcore = fpfw_init_get_handle("icc_mscp2apns");
-
-    hm_post_intercore_init(HM_INTERCORE_APCORE);
-    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
-}
-*/

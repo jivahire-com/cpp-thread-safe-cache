@@ -52,7 +52,8 @@ static acpi_einj_cmd_status_t hm_hsp_error_injection_cb(ras_einj_info_t* einj_pa
 
     // copy into hsp payload buffer
     hm_config_t* hm_config = get_hm_config();
-    volatile uint8_t* hsp_ras_einj_payload = hm_config->mscp_hsp_ras_payload_base + HM_HSP_ERROR_INJECTION_OFFSET;
+    volatile uint8_t* hsp_ras_einj_payload =
+        (volatile uint8_t*)(uintptr_t)hm_config->mscp_hsp_ras_payload_base + HM_HSP_ERROR_INJECTION_OFFSET;
 
     for (uint32_t i = 0; i < sizeof(ras_einj_info_t); i++)
     {
@@ -118,7 +119,16 @@ static void hm_hsp_error_record_submit_listener_cb(void* context, size_t output_
     hm_submit_cper(hm_err_submit_payload->error_domain_idx,
                    hm_err_submit_payload->err_severity,
                    &hm_err_submit_payload->cper_section,
-                   hm_err_submit_payload->section_size);
+                   sizeof(acpi_err_sec_hsp_processor_t));
+
+    // HSP request, clear payload after consuming it
+    volatile uint8_t* hsp_cper_section_base =
+        (volatile uint8_t*)(hm_config->mscp_hsp_ras_payload_base + HM_HSP_ERROR_RECORD_OFFSET);
+
+    for (uint32_t i = 0; i < (SCP_EXP_HSP_RAS_PAYLOAD_SIZE - HM_HSP_ERROR_RECORD_OFFSET); ++i)
+    {
+        hsp_cper_section_base[i] = 0;
+    }
 
     hm_hsp_error_record_submit_listener(hm_config->icc_ctx[HM_INTERCORE_HSP]);
 }

@@ -11,6 +11,7 @@ add_library(${TARGET}
         hm_error_domain_mcp.c
         hm_error_domain_accel.c
         hm_error_domain_hsp.c
+        hm_error_domain_apcore.c
         hm_main.c
 )
 

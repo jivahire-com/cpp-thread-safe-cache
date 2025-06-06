@@ -69,6 +69,7 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
     static bool hsp_register_tested = false;
     static bool mcp_cper_tested = false;
     static bool hsp_cper_tested = false;
+    static bool apcore_listener_tested = false;
 
     if (icc_ctx == (fpfw_icc_base_ctx_t*)ICC_HM_ERROR_DOMAIN_REGISTER_MCP && mcp_register_tested == false)
     {
@@ -138,6 +139,11 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
         hsp_err_submit_icc_payload.payload_buffer = &hsp_err_report_payload;
 
         params->cb(&hsp_err_submit_icc_payload, sizeof(fpfw_icc_base_recv_req_t), FPFW_STATUS_SUCCESS);
+    }
+    else if (icc_ctx == (fpfw_icc_base_ctx_t*)ICC_HM_ERROR_INJECTION_AP2SCP && apcore_listener_tested == false)
+    {
+        apcore_listener_tested = true;
+        params->cb(NULL, 0, FPFW_STATUS_SUCCESS);
     }
     else
     {

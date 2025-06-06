@@ -56,7 +56,9 @@ typedef struct {
     // ICC context for intercore communication
     fpfw_icc_base_ctx_t *icc_ctx[HM_INTERCORE_TYPE_MAX];
     // HSP ICC Payload related
-    uint8_t* mscp_hsp_ras_payload_base;
+    const uint8_t* mscp_hsp_ras_payload_base;
+    // MSCP CPER record location on RMSS memory
+    const uint8_t* mscp_full_cper_record_base;
     // Semaphore related
     SEMAPHORE_ID semaphore_id;
     uint32_t semaphore_key;

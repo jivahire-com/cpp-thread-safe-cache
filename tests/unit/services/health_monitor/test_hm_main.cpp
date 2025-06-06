@@ -159,3 +159,10 @@ TEST_FUNCTION(test_hm_post_intercore_init_hsp, pre_ddr_setup, nullptr)
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     hm_post_intercore_init(HM_INTERCORE_HSP, (fpfw_icc_base_ctx_t*)1234);
 }
+
+TEST_FUNCTION(test_hm_post_intercore_init_apcore, pre_ddr_setup, nullptr)
+{
+    expect_function_calls(__wrap_fpfw_icc_base_recv, 1);
+    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    hm_post_intercore_init(HM_INTERCORE_APCORE, (fpfw_icc_base_ctx_t*)1234);
+}

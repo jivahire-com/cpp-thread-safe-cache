@@ -10,6 +10,7 @@ set(SOURCES
     test_hm_error_domain_mcp.cpp
     test_hm_error_domain_accel.cpp
     test_hm_error_domain_hsp.cpp
+    test_hm_error_domain_apcore.cpp
     ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_main.c
     ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_domain_register.c
     ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_report_ghes.c

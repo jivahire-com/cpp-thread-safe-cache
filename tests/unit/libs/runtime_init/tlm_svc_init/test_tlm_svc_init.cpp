@@ -52,12 +52,17 @@ power_tlm_knobs_t __wrap_config_get_pwr_tlm_knobs(void)
     return *((power_tlm_knobs_t*)mock_type(power_tlm_knobs_t*));
 }
 
-void __wrap_telemetry_service_init(uint8_t die_id, uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_period_ms, uint16_t inst_samples_per_pkg)
+void __wrap_telemetry_service_init(uint8_t die_id,
+                                   uint32_t pwr_pkg_period_ms,
+                                   uint32_t inst_pkg_sample_period_ms,
+                                   uint16_t inst_samples_per_pkg,
+                                   uint32_t _24_hr_pkg_sample_period_ms)
 {
     check_expected(die_id);
     check_expected(pwr_pkg_period_ms);
     check_expected(inst_pkg_sample_period_ms);
     check_expected(inst_samples_per_pkg);
+    check_expected(_24_hr_pkg_sample_period_ms);
 }
 
 void __wrap_telemetry_cli_svc_initialize(void)
@@ -74,6 +79,7 @@ TEST_FUNCTION(test_tlm_svc_init, nullptr, nullptr)
     pwr_tlm_knobs.prod_pkg_period = PWR_TLM_PROD_PKG_PERIOD_30_SEC;
     pwr_tlm_knobs.inst_sample_period = PWR_TLM_INST_SAMPLE_PERIOD_20_MS;
     pwr_tlm_knobs.inst_samples_per_pkg = 10;
+    pwr_tlm_knobs._24hr_sample_period = PWR_TLM_24HR_PKG_PERIOD_60_MIN; // 1 hour period
 
     will_return(__wrap_config_get_pwr_tlm_knobs, &pwr_tlm_knobs);
     will_return(__wrap_idsw_get_die_id, DIE_0);
@@ -82,6 +88,7 @@ TEST_FUNCTION(test_tlm_svc_init, nullptr, nullptr)
     expect_value(__wrap_telemetry_service_init, pwr_pkg_period_ms, 30000);
     expect_value(__wrap_telemetry_service_init, inst_pkg_sample_period_ms, 20);
     expect_value(__wrap_telemetry_service_init, inst_samples_per_pkg, 10);
+    expect_value(__wrap_telemetry_service_init, _24_hr_pkg_sample_period_ms, 3600000); // 1 hour in ms
 
     expect_function_call(__wrap_telemetry_cli_svc_initialize);
 
@@ -98,7 +105,8 @@ TEST_FUNCTION(test_tlm_svc_init_other_branches, nullptr, nullptr)
     power_tlm_knobs_t pwr_tlm_knobs;
     pwr_tlm_knobs.prod_pkg_period = PWR_TLM_PROD_PKG_PERIOD_1_MIN;
     pwr_tlm_knobs.inst_sample_period = PWR_TLM_INST_SAMPLE_PERIOD_100_MS;
-    pwr_tlm_knobs.inst_samples_per_pkg = 21; // Exceeding the max limit
+    pwr_tlm_knobs.inst_samples_per_pkg = 21;                                   // Exceeding the max limit
+    pwr_tlm_knobs._24hr_sample_period = (power_tlm_24hr_package_period_t)0xFF; // Exceeding the max duration
 
     will_return(__wrap_config_get_pwr_tlm_knobs, &pwr_tlm_knobs);
     will_return(__wrap_idsw_get_die_id, DIE_1);
@@ -107,6 +115,7 @@ TEST_FUNCTION(test_tlm_svc_init_other_branches, nullptr, nullptr)
     expect_value(__wrap_telemetry_service_init, pwr_pkg_period_ms, 60000);
     expect_value(__wrap_telemetry_service_init, inst_pkg_sample_period_ms, 100);
     expect_value(__wrap_telemetry_service_init, inst_samples_per_pkg, 20);
+    expect_value(__wrap_telemetry_service_init, _24_hr_pkg_sample_period_ms, 86400000); // default value
 
     expect_function_call(__wrap_telemetry_cli_svc_initialize);
 
@@ -124,6 +133,7 @@ TEST_FUNCTION(test_tlm_svc_init_range_limit, nullptr, nullptr)
     pwr_tlm_knobs.prod_pkg_period = _power_tlm_prod_package_period_t_PADDING;
     pwr_tlm_knobs.inst_sample_period = PWR_TLM_INST_SAMPLE_PERIOD_20_MS;
     pwr_tlm_knobs.inst_samples_per_pkg = 10;
+    pwr_tlm_knobs._24hr_sample_period = PWR_TLM_24HR_PKG_PERIOD_30_MIN; // 1 hour period
 
     will_return(__wrap_config_get_pwr_tlm_knobs, &pwr_tlm_knobs);
     will_return(__wrap_idsw_get_die_id, DIE_0);
@@ -132,6 +142,7 @@ TEST_FUNCTION(test_tlm_svc_init_range_limit, nullptr, nullptr)
     expect_value(__wrap_telemetry_service_init, pwr_pkg_period_ms, 120000);
     expect_value(__wrap_telemetry_service_init, inst_pkg_sample_period_ms, 20);
     expect_value(__wrap_telemetry_service_init, inst_samples_per_pkg, 10);
+    expect_value(__wrap_telemetry_service_init, _24_hr_pkg_sample_period_ms, 1800000); // 30 minutes in ms
 
     expect_function_call(__wrap_telemetry_cli_svc_initialize);
 

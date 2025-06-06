@@ -203,7 +203,7 @@ void set_expectations_crash_dump_register_core_registers()
 {
     expect_function_call(__wrap_CdRegisterRegisterSet);
     expect_value(__wrap_CdRegisterRegisterSet, address, &g_core_crash_context);
-    expect_value(__wrap_CdRegisterRegisterSet, regIndex, 0);  // CORE_BUILTIN_REG_INDEX
+    expect_value(__wrap_CdRegisterRegisterSet, regIndex, 0); // CORE_BUILTIN_REG_INDEX
     expect_value(__wrap_CdRegisterRegisterSet, regCount, 17); // sizeof(g_core_crash_context) / sizeof(uint32_t)
     expect_value(__wrap_CdRegisterRegisterSet, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
 }

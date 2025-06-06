@@ -448,7 +448,7 @@ bool __wrap_ras_arm_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* r
     record->handler = mock_type(ras_generic_handler_t);
     record->err_code = mock_type(uint32_t);
     record->err_code_valid = mock_type(bool);
-    record->status = BIT29;     // Set to ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL
+    record->status = BIT29; // Set to ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL
     function_called();
     return mock_type(bool);
 }

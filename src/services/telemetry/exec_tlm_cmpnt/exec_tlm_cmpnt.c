@@ -36,13 +36,6 @@
 #define DATA_AGGR_START_TICK    (TX_TIMER_TICKS_PER_SECOND / 2)
 #define DATA_AGGR_PKG_PERIOD_MS (10)
 
-#define MILLISECONDS_PER_SECOND 1000
-#define SECONDS_PER_MINUTE      60
-#define MINUTES_PER_HOUR        60
-#define HOURS_PER_DAY           24
-
-#define MILLISECONDS_PER_DAY (MILLISECONDS_PER_SECOND * SECONDS_PER_MINUTE * MINUTES_PER_HOUR * HOURS_PER_DAY)
-
 #define ALL_EVENT_GROUP_BITS (0xFFFFFFFF)
 
 // Both power package and 24 hour package need to get data from other cores. This is the amount of delay
@@ -79,7 +72,7 @@ telemetry_executive_status_t tlm_executive_status = {
     .pwr_pkg_period_ms = 0,
     .inst_pkg_sample_period_ms = 0,
     .data_aggr_period_ms = DATA_AGGR_PKG_PERIOD_MS,
-    .twenty_four_hr_pkg_period_ms = MILLISECONDS_PER_DAY,
+    .twenty_four_hr_pkg_period_ms = 0,
     .pwr_pkg_timer_active = false,
     .inst_sample_timer_active = false,
     .data_aggr_timer_active = false,
@@ -87,11 +80,12 @@ telemetry_executive_status_t tlm_executive_status = {
 };
 
 /*------------- Functions ----------------*/
-void exec_tlm_cmpnt_init(uint8_t die_id, uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_period_ms)
+void exec_tlm_cmpnt_init(uint8_t die_id, uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_period_ms, uint32_t _24_hr_pkg_sample_period_ms)
 {
     this_die_id = die_id;
     tlm_executive_status.pwr_pkg_period_ms = pwr_pkg_period_ms;
     tlm_executive_status.inst_pkg_sample_period_ms = inst_pkg_sample_period_ms;
+    tlm_executive_status.twenty_four_hr_pkg_period_ms = _24_hr_pkg_sample_period_ms;
 
     FpFwLockInitialize(&s_lock);
 
@@ -138,13 +132,14 @@ void exec_tlm_cmpnt_init(uint8_t die_id, uint32_t pwr_pkg_period_ms, uint32_t in
                                TX_NO_ACTIVATE); /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
-    txStatus = tx_timer_create(&_24hr_pkg_tmr,          /* TX_TIMER *timer_ptr */
-                               "tlm_svc_24hr_pkg",      /* CHAR *name_ptr */
-                               every_24hr_pkg_timer_cb, /* VOID (*expiration_function)(ULONG input)*/
-                               0,                       /* ULONG expiration_input */
-                               MS_TO_TX_TICKS(MILLISECONDS_PER_DAY), /* ULONG initial_ticks >= 1 */
-                               MS_TO_TX_TICKS(MILLISECONDS_PER_DAY), /* ULONG  reschedule_ticks */
-                               TX_NO_ACTIVATE);                      /* UINT auto_activate) */
+    txStatus = tx_timer_create(
+        &_24hr_pkg_tmr,          /* TX_TIMER *timer_ptr */
+        "tlm_svc_24hr_pkg",      /* CHAR *name_ptr */
+        every_24hr_pkg_timer_cb, /* VOID (*expiration_function)(ULONG input)*/
+        0,                       /* ULONG expiration_input */
+        MS_TO_TX_TICKS(tlm_executive_status.twenty_four_hr_pkg_period_ms), /* ULONG initial_ticks >= 1 */
+        MS_TO_TX_TICKS(tlm_executive_status.twenty_four_hr_pkg_period_ms), /* ULONG  reschedule_ticks */
+        TX_NO_ACTIVATE);                                                   /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
     txStatus = tx_event_flags_create(&s_thread_control, "Telemetry Service Event");

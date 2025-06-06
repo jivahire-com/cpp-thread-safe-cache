@@ -16,6 +16,11 @@
       <Value name="PWR_TLM_PROD_PKG_PERIOD_1_MIN" prettyname="1 minute" value="2" help="create production package every minute" />
       <Value name="PWR_TLM_PROD_PKG_PERIOD_2_MIN" prettyname="2 minute" value="3" help="create production package every 2 minutes" />
     </Enum>
+    <Enum name="power_tlm_24hr_package_period_t" help="">
+      <Value name="PWR_TLM_24HR_PKG_PERIOD_24_HR" prettyname="24 hours" value="1" help="create production package every 24 hours" />
+      <Value name="PWR_TLM_24HR_PKG_PERIOD_60_MIN" prettyname="60 minutes" value="2" help="create production package every 60 minutes" />
+      <Value name="PWR_TLM_24HR_PKG_PERIOD_30_MIN" prettyname="30 minutes" value="3" help="create production package every 30 minutess" />
+    </Enum>
   </Enums>
 
   <Structs>
@@ -23,6 +28,7 @@
       <Member name="inst_sample_period" type="power_tlm_inst_sample_period_t" default="PWR_TLM_INST_SAMPLE_PERIOD_10_MS" help="Inst Record Sampling Period" />
       <Member name="prod_pkg_period" type="power_tlm_prod_package_period_t" default="PWR_TLM_PROD_PKG_PERIOD_2_MIN" help="Production Package Period" />
       <Member name="inst_samples_per_pkg" type="uint16_t" default="10" help="Package generated every n inst_sample_period" />
+      <Member name="_24hr_sample_period" type="power_tlm_24hr_package_period_t" default="PWR_TLM_24HR_PKG_PERIOD_24_HR" help="24 Hr Package Sampling Period" />
     </Struct>
   </Structs>
 

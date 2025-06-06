@@ -65,14 +65,18 @@ FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk", "nvic"))
     fpfw_init_component_id_t dfwk_id = "dfwk";
     static textio_pl011_config_t pl011_config = {
         .base_address = UART_BASE_ADDR,
+        .vuart_base_address = VUART_BASE_ADDR, // Base address for virtual UART, if applicable
         .interrupt = UART_IRQ,
+        .vuart_interrupt = VUART_IRQ, // Interrupt for virtual UART, if applicable
         .baud_rate = 115200,
         .clk_freq = 10000000,
         .wlen = UART_PL011_WLEN_8,
         .stop_bits = UART_PL011_STOP_BITS_1,
         .parity = UART_PL011_PARITY_NONE,
         .config_type = TEXTIO_PL011_CONFIG_TYPE_INTERRUPT,
+        .is_vuart_enabled = true,
     };
+
     static textio_pl011_device_t pl011_device = {0};
 
     // get driver fwk threadx handle

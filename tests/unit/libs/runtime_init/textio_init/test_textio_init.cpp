@@ -22,9 +22,8 @@ extern "C" {
 #include <uart_pl011.h>      // for UART_PL011_PARITY_NONE, UART_PL011_STOP...
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define UART_BAUD_RATE         (115200)
-#define UART_CLK_FREQ          (10000000)
-#define TEST_UART_BASE_ADDRESS (123456) //! As provided in  the cmake
+#define UART_BAUD_RATE (115200)
+#define UART_CLK_FREQ  (10000000)
 
 /*------------- Typedefs -----------------*/
 
@@ -49,14 +48,18 @@ void __wrap_textio_pl011_device_initialize(textio_pl011_device_t* device, const 
     assert_non_null(device);
     assert_non_null(config);
     check_expected_ptr(schedule);
-    //! Verify expected uart configuration settings set by the init function
-    assert_int_equal(config->base_address, TEST_UART_BASE_ADDRESS);
+    //! Verify default expected uart configuration settings set by the init function
+    assert_int_equal(config->base_address, UART_BASE_ADDR);
+    assert_int_equal(config->vuart_base_address, VUART_BASE_ADDR);
     assert_int_equal(config->interrupt, UART_IRQ);
+    assert_int_equal(config->vuart_interrupt, VUART_IRQ);
     assert_int_equal(config->baud_rate, UART_BAUD_RATE);
     assert_int_equal(config->clk_freq, UART_CLK_FREQ);
     assert_int_equal(config->wlen, UART_PL011_WLEN_8);
     assert_int_equal(config->stop_bits, UART_PL011_STOP_BITS_1);
     assert_int_equal(config->parity, UART_PL011_PARITY_NONE);
+    assert_int_equal(config->config_type, TEXTIO_PL011_CONFIG_TYPE_INTERRUPT);
+    assert_true(config->is_vuart_enabled); // Verify virtual UART is enabled
     function_called();
 }
 

@@ -29,7 +29,9 @@ target_link_libraries(${TARGET}
 target_compile_definitions(${TARGET} 
     PRIVATE 
         UART_BASE_ADDR=123456
-        UART_IRQ=654321)
+        UART_IRQ=654321
+        VUART_BASE_ADDR=123456
+        VUART_IRQ=654321)
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")

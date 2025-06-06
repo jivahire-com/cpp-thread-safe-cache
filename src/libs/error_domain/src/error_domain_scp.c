@@ -14,6 +14,7 @@
 #include <cper.h>
 #include <error_domain_i.h>
 #include <health_monitor.h>
+#include <idhw.h>
 #include <interrupts.h>
 #include <mscp_error_domain.h>
 #include <mscp_ras_and_init_ctrl_registers_regs.h>
@@ -195,6 +196,36 @@ static void rmss_ram1_ecc_of_isr()
                                     .err_status_mask = SCP_EXP_CSR_RMSS_RAM1_SCP_ERRSTATUS_REG_OF_MASK};
 
     ram_ecc_isr(&params);
+}
+
+static void rmss_remote_scp_scfram_bootram_isr()
+{
+    // Once silib PR approved, this will be removed.
+#ifndef SCP_REMOTE_SCP_RAM
+    #define SCP_REMOTE_SCP_RAM                                 \
+        {                                                      \
+            0x633a8127, 0xd1b0, 0x4bfb,                        \
+            {                                                  \
+                0xba, 0x9b, 0xf9, 0xf8, 0x1e, 0xa3, 0xad, 0xb2 \
+            }                                                  \
+        }
+#endif
+    // Cross-die error monitoring once remote die scp ECC detected on SCF/BOOTRAM0/1
+    uint32_t scf_status = MMIO_READ32((uint32_t*)&scp_exp_csr_regs->scfram_rem_scp_errstatus_reg);
+    uint32_t ram0_status = MMIO_READ32((uint32_t*)&scp_exp_csr_regs->rmss_ram0_rem_scp_errstatus_reg);
+    uint32_t ram1_status = MMIO_READ32((uint32_t*)&scp_exp_csr_regs->rmss_ram1_rem_scp_errstatus_reg);
+
+    nvic_irq_clear_pending(HW_INT_REMOTE_SCP_RAM_CE_OF_INT);
+
+    // Submit CPER
+    acpi_err_sec_firmware_t sec_fw_cper_section = {.severity = ACPI_ERROR_SEVERITY_CORRECTED,
+                                                   .record_id = (guid_t)SCP_REMOTE_SCP_RAM,
+                                                   .param = {scf_status, ram0_status, ram1_status, KNG_HM_REMOTE_SCP_CE_OF}};
+
+    acpi_cper_section_t cper_section;
+    cper_section.sec_fw = sec_fw_cper_section;
+
+    hm_submit_cper(ACPI_ERROR_DOMAIN_SCP_PROC, sec_fw_cper_section.severity, &cper_section, sizeof(cper_section));
 }
 
 static void tcm_overflow_isr()
@@ -383,6 +414,12 @@ static void enable_scp_ecc_interrupts()
 
     register_scp_ecc_isr(HW_INT_SCP_RAM1_ECCOF_INT, rmss_ram1_ecc_of_isr); // RMSS RAM1 overflow
     register_scp_ecc_isr(HW_INT_SCP_RAM1_ECCCE_INT, rmss_ram1_ecc_ce_isr); // RMSS RAM1 CE
+
+    if (!idhw_is_single_die_boot_en())
+    {
+        // Remote SCP ECC on SCF/RAM0/RAM1
+        register_scp_ecc_isr(HW_INT_REMOTE_SCP_RAM_CE_OF_INT, rmss_remote_scp_scfram_bootram_isr);
+    }
 
     // TCM ECC
     register_scp_ecc_isr(HW_INT_SCP_TCM_ECCCE_INT, tcm_ce_isr);       // TCM CE

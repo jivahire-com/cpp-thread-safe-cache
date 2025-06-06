@@ -35,6 +35,12 @@ extern "C" {
 #define SCP_CSR_RAM1_ERRCTRL_REG      (SCP_CSR_ADDRESS + SCP_EXP_CSR_RMSS_RAM1_ERRCTRL_REG_ADDRESS)
 #define SCP_CSR_RAM1_ERRSTATUS_REG    (SCP_CSR_ADDRESS + SCP_EXP_CSR_RMSS_RAM1_SCP_ERRSTATUS_REG_ADDRESS)
 #define SCP_CSR_RAM1_ERRADDRESS_REG   (SCP_CSR_ADDRESS + SCP_EXP_CSR_RMSS_RAM1_SCP_ERRADDR_REG_ADDRESS)
+#define SCP_CSR_REMOTE_SCP_SCFRAM_ERRSTATUS_REG \
+    (SCP_CSR_ADDRESS + SCP_EXP_CSR_SCFRAM_REM_SCP_ERRSTATUS_REG_ADDRESS)
+#define SCP_CSR_REMOTE_SCP_RAM0_ERRSTATUS_REG \
+    (SCP_CSR_ADDRESS + SCP_EXP_CSR_RMSS_RAM0_REM_SCP_ERRSTATUS_REG_ADDRESS)
+#define SCP_CSR_REMOTE_SCP_RAM1_ERRSTATUS_REG \
+    (SCP_CSR_ADDRESS + SCP_EXP_CSR_RMSS_RAM1_REM_SCP_ERRSTATUS_REG_ADDRESS)
 #define SCP_TCM_ERRCTRL_REG \
     (SCP_TOP_SCP_RAS_INIT_CTRL_ADDRESS + MSCP_RAS_AND_INIT_CTRL_REGISTERS_TCMECC_ERRCTRL_ADDRESS)
 #define SCP_TCM_ERRSTATUS_REG \
@@ -84,6 +90,7 @@ isr_callback_fn_sans_params_t g_icache_ue_isr = NULL;
 isr_callback_fn_sans_params_t g_icache_ce_isr = NULL;
 isr_callback_fn_sans_params_t g_icache_tag_ue_isr = NULL;
 isr_callback_fn_sans_params_t g_icache_tag_ce_isr = NULL;
+isr_callback_fn_sans_params_t g_rmss_remote_scp_scfram_bootram_isr = NULL;
 
 /*------------- Functions ----------------*/
 //
@@ -189,6 +196,9 @@ nvic_status_t __wrap_nvic_irq_set_isr(uint32_t irq_num, isr_callback_fn_sans_par
     case HW_INT_ICDET_TAG_CE:
         g_icache_tag_ce_isr = isr;
         break;
+    case HW_INT_REMOTE_SCP_RAM_CE_OF_INT:
+        g_rmss_remote_scp_scfram_bootram_isr = isr;
+        break;
     default:
         assert_true(false);
         break;
@@ -243,6 +253,11 @@ void __wrap_wdog_cmsdk_apb_init(uint32_t reload_timeout, bool reset_enable)
     assert_true(reset_enable);
 
     function_called();
+}
+
+bool __wrap_idhw_is_single_die_boot_en(void)
+{
+    return mock_type(bool);
 }
 }
 
@@ -314,6 +329,12 @@ TEST_FUNCTION(test_register_scp_error_domain, nullptr, nullptr)
     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_RAM1_ECCCE_INT);
     expect_function_call(__wrap_nvic_irq_enable);
 
+    // Remote SCP ECC on SCF/RAM0/RAM1
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_REMOTE_SCP_RAM_CE_OF_INT
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_REMOTE_SCP_RAM_CE_OF_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+
     // TCM ECC
     expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_TCM_ECCCE_INT
     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_TCM_ECCCE_INT);
@@ -363,8 +384,8 @@ static int test_setup(void** ctx)
     if (g_err_inject_cb == NULL || g_scfram_of_isr == NULL || g_scfram_ce_isr == NULL || g_ram0_of_isr == NULL ||
         g_ram0_ce_isr == NULL || g_ram1_of_isr == NULL || g_ram1_ce_isr == NULL || g_tcm_ce_isr == NULL ||
         g_tcm_ue_isr == NULL || g_tcm_of_isr == NULL || g_dcache_ue_isr == NULL || g_dcache_ce_isr == NULL ||
-        g_dcache_tag_ue_isr == NULL || g_dcache_tag_ce_isr == NULL || g_icache_ue_isr == NULL ||
-        g_icache_ce_isr == NULL || g_icache_tag_ue_isr == NULL || g_icache_tag_ce_isr == NULL)
+        g_dcache_tag_ue_isr == NULL || g_dcache_tag_ce_isr == NULL || g_icache_ue_isr == NULL || g_icache_ce_isr == NULL ||
+        g_icache_tag_ue_isr == NULL || g_icache_tag_ce_isr == NULL || g_rmss_remote_scp_scfram_bootram_isr == NULL)
     {
         test_register_scp_error_domain(NULL);
     }
@@ -424,6 +445,17 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
 
             expect_function_call(__wrap_nvic_global_enable);
             break;
+        case SCP_ERROR_TYPE_SCF_RAM_UE:
+            expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_SCFRAM_ERRCTRL_REG);
+            will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->scfram_errctrl_reg
+            expect_function_call(__wrap_mmio_read32); // scp_exp_csr_regs->scfram_errctrl_reg
+            expect_value(__wrap_mmio_write32, addr, (uint32_t)SCP_CSR_SCFRAM_ERRCTRL_REG);
+            expect_value(__wrap_mmio_write32, data, 0x40);
+            expect_function_call(__wrap_mmio_write32);
+            expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_TOP_SCF_RAM_ADDRESS);
+            will_return(__wrap_mmio_read32, 0);       // SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCF_RAM_ADDRESS
+            expect_function_call(__wrap_mmio_read32); // CP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCF_RAM_ADDRESS
+            break;
         case SCP_ERROR_TYPE_RMSS_RAM0_CE:
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_RAM0_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->rmss_ram0_errctrl_reg
@@ -469,6 +501,20 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
 
             expect_function_call(__wrap_nvic_global_enable);
             break;
+        case SCP_ERROR_TYPE_RMSS_RAM0_UE:
+            expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_RAM0_ERRCTRL_REG);
+            will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->rmss_ram0_errctrl_reg
+            expect_function_call(__wrap_mmio_read32); // scp_exp_csr_regs->rmss_ram0_errctrl_reg
+            expect_value(__wrap_mmio_write32, addr, (uint32_t)SCP_CSR_RAM0_ERRCTRL_REG);
+            expect_value(__wrap_mmio_write32, data, 0x40);
+            expect_function_call(__wrap_mmio_write32);
+            expect_any(SCB_InvalidateDCache_by_Addr, addr);
+            expect_any(SCB_InvalidateDCache_by_Addr, dsize);
+            expect_function_call(SCB_InvalidateDCache_by_Addr);
+            expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_TOP_RAM0_ADDRESS);
+            will_return(__wrap_mmio_read32, 0);       // SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS
+            expect_function_call(__wrap_mmio_read32); // SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS
+            break;
         case SCP_ERROR_TYPE_RMSS_RAM1_CE:
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_RAM1_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->rmss_ram1_errctrl_reg
@@ -513,6 +559,20 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_mmio_read32); // SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS
 
             expect_function_call(__wrap_nvic_global_enable);
+            break;
+        case SCP_ERROR_TYPE_RMSS_RAM1_UE:
+            expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_RAM1_ERRCTRL_REG);
+            will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->rmss_ram1_errctrl_reg
+            expect_function_call(__wrap_mmio_read32); // scp_exp_csr_regs->rmss_ram1_errctrl_reg
+            expect_value(__wrap_mmio_write32, addr, (uint32_t)SCP_CSR_RAM1_ERRCTRL_REG);
+            expect_value(__wrap_mmio_write32, data, 0x40);
+            expect_function_call(__wrap_mmio_write32);
+            expect_any(SCB_InvalidateDCache_by_Addr, addr);
+            expect_any(SCB_InvalidateDCache_by_Addr, dsize);
+            expect_function_call(SCB_InvalidateDCache_by_Addr);
+            expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_TOP_RAM1_ADDRESS);
+            will_return(__wrap_mmio_read32, 0);       // SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS
+            expect_function_call(__wrap_mmio_read32); // SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS
             break;
         case SCP_ERROR_TYPE_TCM_CE:
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_TCM_ERRCTRL_REG);
@@ -609,10 +669,13 @@ TEST_FUNCTION(test_scp_error_injection_handler, test_setup, nullptr)
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, 0);
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_SCF_RAM_CE);
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_SCF_RAM_OVERFLOW);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_SCF_RAM_UE);
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_RMSS_RAM0_CE);
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_RMSS_RAM0_OVERFLOW);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_RMSS_RAM0_UE);
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_RMSS_RAM1_CE);
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_RMSS_RAM1_OVERFLOW);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_RMSS_RAM1_UE);
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_TCM_CE);
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_TCM_UE);
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_TCM_OVERFLOW);
@@ -762,6 +825,27 @@ TEST_FUNCTION(test_rmss_ram1_ecc_of_isr, test_setup, nullptr)
     expect_function_call(__wrap_hm_submit_cper);
     expect_function_call(__wrap_crash_dump_bug_check);
     g_ram1_of_isr();
+}
+
+TEST_FUNCTION(test_rmss_remote_scp_scfram_bootram_isr, test_setup, nullptr)
+{
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_REMOTE_SCP_SCFRAM_ERRSTATUS_REG);
+    will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->scfram_rem_scp_errstatus_reg
+    expect_function_call(__wrap_mmio_read32); // scp_exp_csr_regs->scfram_rem_scp_errstatus_reg
+
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_REMOTE_SCP_RAM0_ERRSTATUS_REG);
+    will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->rmss_ram0_rem_scp_errstatus_reg
+    expect_function_call(__wrap_mmio_read32); // scp_exp_csr_regs->rmss_ram0_rem_scp_errstatus_reg
+
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_REMOTE_SCP_RAM1_ERRSTATUS_REG);
+    will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->rmss_ram1_rem_scp_errstatus_reg
+    expect_function_call(__wrap_mmio_read32); // scp_exp_csr_regs->rmss_ram1_rem_scp_errstatus_reg
+
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_REMOTE_SCP_RAM_CE_OF_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+
+    expect_function_call(__wrap_hm_submit_cper);
+    g_rmss_remote_scp_scfram_bootram_isr();
 }
 
 // Test function to check the behavior of the TCM ECC OF ISR

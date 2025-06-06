@@ -29,6 +29,7 @@ target_link_libraries(
             ms::lib::scp_interrupts
             ms::service::health_monitor
             silibs::cmsdk_wd
+            silibs::idhw
 )
 
 target_include_directories(${TARGET}

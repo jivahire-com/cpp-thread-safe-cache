@@ -68,4 +68,5 @@ mock_target(${TARGET}
     wdog_cmsdk_apb_disable
     wdog_cmsdk_apb_init
     mmu_fault
+    idhw_is_single_die_boot_en
 )

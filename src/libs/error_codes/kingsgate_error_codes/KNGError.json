@@ -408,6 +408,11 @@
           "Name": "KNG_HM_ICACHE_TAG_CE",
           "Value": 20,
           "Description": "Correctable Error in Instruction Tag Cache"
+        },
+        {
+          "Name": "KNG_HM_REMOTE_SCP_CE_OF",
+          "Value": 21,
+          "Description": "Remote SCP to SCF/RAM0/RAM1"
         }
       ]
     }

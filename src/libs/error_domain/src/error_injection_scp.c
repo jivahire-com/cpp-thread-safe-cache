@@ -79,6 +79,10 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
         MMIO_UPDATE32(&scp_exp_csr_regs->scfram_errctrl_reg, SCP_EXP_CSR_SCFRAM_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_CE);
         inject_err_by_access(SCF_RAM_ADDRESS);
         break;
+    case SCP_ERROR_TYPE_SCF_RAM_UE:
+        MMIO_UPDATE32(&scp_exp_csr_regs->scfram_errctrl_reg, SCP_EXP_CSR_SCFRAM_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_UE);
+        inject_err_by_access(SCF_RAM_ADDRESS);
+        break;
     case SCP_ERROR_TYPE_SCF_RAM_OVERFLOW:
         nvic_global_disable();
         MMIO_UPDATE32(&scp_exp_csr_regs->scfram_errctrl_reg, SCP_EXP_CSR_SCFRAM_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_CE);
@@ -91,6 +95,10 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
         MMIO_UPDATE32(&scp_exp_csr_regs->rmss_ram0_errctrl_reg, SCP_EXP_CSR_RMSS_RAM0_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_CE);
         inject_err_by_access(RMSS_RAM0_ADDRESS);
         break;
+    case SCP_ERROR_TYPE_RMSS_RAM0_UE:
+        MMIO_UPDATE32(&scp_exp_csr_regs->rmss_ram0_errctrl_reg, SCP_EXP_CSR_RMSS_RAM0_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_UE);
+        inject_err_by_access(RMSS_RAM0_ADDRESS);
+        break;
     case SCP_ERROR_TYPE_RMSS_RAM0_OVERFLOW:
         nvic_global_disable();
         MMIO_UPDATE32(&scp_exp_csr_regs->rmss_ram0_errctrl_reg, SCP_EXP_CSR_RMSS_RAM0_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_CE);
@@ -101,6 +109,10 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
         break;
     case SCP_ERROR_TYPE_RMSS_RAM1_CE:
         MMIO_UPDATE32(&scp_exp_csr_regs->rmss_ram1_errctrl_reg, SCP_EXP_CSR_RMSS_RAM1_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_CE);
+        inject_err_by_access(RMSS_RAM1_ADDRESS);
+        break;
+    case SCP_ERROR_TYPE_RMSS_RAM1_UE:
+        MMIO_UPDATE32(&scp_exp_csr_regs->rmss_ram1_errctrl_reg, SCP_EXP_CSR_RMSS_RAM1_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_UE);
         inject_err_by_access(RMSS_RAM1_ADDRESS);
         break;
     case SCP_ERROR_TYPE_RMSS_RAM1_OVERFLOW:

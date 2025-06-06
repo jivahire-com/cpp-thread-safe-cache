@@ -10,7 +10,7 @@
 /*------------- Includes -----------------*/
 #include "power_knobs_i.h"     // for POWER_KNOB_FORCE_PSTATE_DISABLE
 #include "power_runconfig.h"   // for power_knobs_t, power_adclk_offset_cfg_t
-#include "power_runconfig_i.h" // for power_knobs_read, power_knobs_ws_update
+#include "power_runconfig_i.h" // for power_knobs_read
 
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <fpfw_cfg_mgr.h>
@@ -29,23 +29,6 @@
 #define MILLIWATTS_UINT_TO_WATTS_FLOAT(val_mw) (((float)(val_mw)) / 1000.0f)
 
 /*------------- Functions ----------------*/
-
-void power_knobs_ws_update(power_knobs_t* p_knobs)
-{
-    /* define any knob updates that may depend on state stored in warm start data */
-    FPFW_RUNTIME_ASSERT(p_knobs != NULL);
-
-    if (p_knobs->mpmm.enable)
-    {
-        // FWK_LOG_INFO(MODULE_NAME "Disabled mpmm");
-        p_knobs->activity_factor_dhry_adjustment = config_get_power_activity_factor_mpmm_enabled();
-    }
-    else
-    {
-        p_knobs->activity_factor_dhry_adjustment = config_get_power_activity_factor_mpmm_disabled();
-    }
-}
-
 void power_knobs_read(power_knobs_t* p_knobs)
 {
     FPFW_RUNTIME_ASSERT(p_knobs != NULL);
@@ -65,8 +48,6 @@ void power_knobs_read(power_knobs_t* p_knobs)
     p_knobs->vsys_r_loadline_uohm = config_get_power_vsys_r_loadline();
     p_knobs->ldo_offset = config_get_power_ldo_offset();
     p_knobs->activity_factor_dhry_adjustment = config_get_power_activity_factor_dhry_adjustment();
-
-    p_knobs->mpmm = config_get_power_mpmm();
 
     p_knobs->capping_mode = config_get_power_capping_mode();
     p_knobs->power_enable_velocity_boost = config_get_power_enable_velocity_boost();
@@ -169,7 +150,4 @@ void power_knobs_read(power_knobs_t* p_knobs)
     p_knobs->itd_cfg = config_get_power_itd_cfg();
 
     p_knobs->avs_ds = config_get_power_avs_ds();
-
-    // perform the knob updates for p_knobs which can also be updated after warmstart restoration
-    power_knobs_ws_update(p_knobs);
 }

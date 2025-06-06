@@ -41,9 +41,6 @@ static void power_ws_generate_fuse_data(const power_runconfig_t* runconfig, powe
 
     ws_fuse_data->version = POWER_WARMSTART_CURRENT_VER;
     ws_fuse_data->valid_cores = runconfig->fuses.valid_cores;
-    ws_fuse_data->mpmm.enable = runconfig->knobs.mpmm.enable;
-    ws_fuse_data->mpmm.gear = runconfig->knobs.mpmm.gear;
-
     // store the freq/voltage points configured at boot to use in control loop after a warm reset
     for (unsigned vf_idx = 0; vf_idx < WS_VFT_COUNT; ++vf_idx)
     {
@@ -125,8 +122,7 @@ void power_ws_recover_fuse_init(power_runconfig_t* runconfig)
             BUG_CHECK(KNG_SC_WARMSTART_DATA_CORRUPT, ws_fuse_data->version, ws_size);
         }
         runconfig->fuses.valid_cores = ws_fuse_data->valid_cores;
-        runconfig->knobs.mpmm.enable = ws_fuse_data->mpmm.enable;
-        runconfig->knobs.mpmm.gear = ws_fuse_data->mpmm.gear;
+
         // Restore the freq/voltage points configured at boot to use in control loop after a warm reset
         for (unsigned vf_idx = 0; vf_idx < WS_VFT_COUNT; ++vf_idx)
         {

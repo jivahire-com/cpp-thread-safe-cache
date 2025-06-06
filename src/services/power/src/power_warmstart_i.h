@@ -52,7 +52,6 @@ typedef struct
 {
     uint32_t version;           // version of warmstart data
     corebits_t valid_cores;     // fuse data for valid cores
-    power_mpmm_config_t mpmm;   // mpmm is saved because it is shared with TFA; lifetime of TFA is different than SCP
     power_ws_vft_t vfts[VFT_CURVESET_COUNT];
 
 /* TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1491054/

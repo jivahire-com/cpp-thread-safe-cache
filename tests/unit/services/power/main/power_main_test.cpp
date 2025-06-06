@@ -333,7 +333,7 @@ POWER_TEST(init_ws, NULL, NULL)
     will_return(__wrap_power_hw_full_init_allowed, false);
     expect_value(__wrap_power_runconfig_init, p_config, &test_config);
     will_return(__wrap_power_runconfig_get, &test_runconfig);
-    expect_value_count(__wrap_FpFwAssert, expression, true, 5); // power_ws_recover_fuse_init checks runconfig.
+    expect_value_count(__wrap_FpFwAssert, expression, true, 4); // power_ws_recover_fuse_init checks runconfig.
     expect_value(__wrap_ws_data_get, id, WARM_START_ID_POWER_FUSE);
     will_return(__wrap_ws_data_get, sizeof(test_ws_stored));
     will_return(__wrap_ws_data_get, &test_ws_stored);

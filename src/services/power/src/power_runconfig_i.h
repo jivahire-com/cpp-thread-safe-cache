@@ -70,7 +70,6 @@ dvfs_config_t* power_get_dvfs_config();
 
 /* Knob specific APIs */
 void power_knobs_read(power_knobs_t* p_knobs);
-void power_knobs_ws_update(power_knobs_t* p_knobs);
 
 /* Fuse specific APIs */
 void power_fuses_read(power_fuse_data_t* p_fuses);

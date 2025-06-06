@@ -40,10 +40,6 @@
       <Member name="kdt" type="uint32_t" help="derivative coefficient *1000" />
       <Member name="setpoint_offset" type="uint32_t" help="offset in mW" />
     </Struct>
-    <Struct name="power_mpmm_config_t" help="">
-      <Member name="enable" type="bool" help="Enable MPMM" />
-      <Member name="gear" type="uint8_t" help="MPMM Gear" />
-    </Struct>
     <Struct name="power_currthrot_cfg_t" help="">
       <Member name="rolling_window_count" type="uint8_t" help="max 7" />
       <Member name="telemetry_epoch_count" type="uint8_t" help="10-20 is valid" />
@@ -155,7 +151,6 @@
       <Member name="adclk_throt" type="power_adclk_cfg_t" help="configuration for adaptive clock throttling" />
       <Member name="adclk_offset" type="power_adclk_offset_cfg_t" help="configuration for adaptive clock offset (one per die; pick the right one during knob init)" />
       <Member name="pid" type="power_pid_config_t" help="pid configuration" />
-      <Member name="mpmm" type="power_mpmm_config_t" help="mpmm configuration" />
       <Member name="forced_vrs" type="power_force_vrs_t" help="0 or voltage_in mv for each VR" />
       <Member name="leakage_temp_scaler" type="power_leakage_temp_scaler_t" help="polynomial coefficients for temperature scaling of leakage" />
       <Member name="fllcal_pstate_bounds" type="power_fllcal_pstate_bounds_t" help="bounds to limit ftable frequency calibration" />
@@ -219,8 +214,6 @@
     <Knob name="power_vsys_r_loadline" type="uint16_t" default="600" help="Loadline resistance (uOhm - used in Vsys power calculation)" />
 
     <!-- Double Check default values (Different between code and doc) -->
-    <Knob name="power_activity_factor_mpmm_enabled" type="uint8_t" default="80" help="Activity factor adjustment against dhrystone when MPMM enabled (percentage, used in Vcpu/dynamic current calculation)" />
-    <Knob name="power_activity_factor_mpmm_disabled" type="uint8_t" default="100" help="Activity factor adjustment against dhrystone when MPMM disabled (percentage, used in Vcpu/dynamic current calculation)" />
     <Knob name="power_activity_factor_dhry_adjustment" type="uint8_t" default="217" help="Activity factor with mpmm disabled" />
 
     <Knob name="power_capping_mode" type="power_capping_mode_t" default="power_capping_mode_t_PER_VM" help="Power capping mode" />
@@ -235,7 +228,6 @@
     <Knob name="power_max_plimit_step_size_up" type="uint8_t" default="31" min="0" max="31" help="Limits control loop plimit selection. Max number of steps up" />
     <Knob name="power_max_plimit_step_size_down" type="uint8_t" default="31" min="0" max="31" help="Limits control loop plimit selection. Max number of steps down" />
     <Knob name="power_force_pstate" type="uint8_t" default="32" help="Limits plimit to forced pstate and rewrites pll/vma tables for lower performance states to prevent HW throttle" />
-    <Knob name="power_mpmm" type="power_mpmm_config_t" default="{false, 2}" help="Enable Configuration for power mpmm enable/gear" />
     <Knob name="power_itd_cfg" type="bool" default="false" help="Controls whether ITD is enabled or disabled" />
 
     <!-- Document only

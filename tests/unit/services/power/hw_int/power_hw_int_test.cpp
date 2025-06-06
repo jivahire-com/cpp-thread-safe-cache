@@ -206,9 +206,6 @@ void base_config()
 
     power_knobs_t* knobs = &s_runconfig.knobs;
 
-    knobs->mpmm.enable = true;
-    knobs->mpmm.gear = 2; // Throttle power viruses only. - POR
-
     knobs->current_threshold.iref_to_max_percent = 80;
     knobs->current_threshold.t1_percent = 90;
     knobs->current_threshold.t2_percent = 95;
@@ -1030,31 +1027,6 @@ POWER_TEST(hwi_init_core__disabled_core, setup, teardown)
     assert_int_equal(mock_dvfs_last_config()->fuse_cfg.core_disabled, true);
 }
 #endif
-
-POWER_TEST(hwi_init_core__mpmm_enable, setup, teardown)
-{
-
-    power_knobs_t* knobs = &s_runconfig.knobs;
-    knobs->mpmm.enable = true;
-
-    // this is the default expectation setup for running init_core
-    init_core_base_expect();
-    // run core init
-    power_init_core(&s_runconfig, &s_telcfg);
-}
-
-POWER_TEST(hwi_init_core__mpmm_gear, setup, teardown)
-{
-
-    power_knobs_t* knobs = &s_runconfig.knobs;
-    knobs->mpmm.enable = true;
-    knobs->mpmm.gear = 1;
-
-    // this is the default expectation setup for running init_core
-    init_core_base_expect();
-    // run core init
-    power_init_core(&s_runconfig, &s_telcfg);
-}
 
 POWER_TEST(hwi_init_core__c1_telem_enable, setup, teardown)
 {

@@ -36,7 +36,6 @@ static void print_power_config_dts(power_fuse_data_t* fuses);
 static void print_power_config_memasst(power_fuse_data_t* fuses);
 static void print_power_config_interval(power_knobs_t* knobs);
 static void print_power_config_limits(power_knobs_t* knobs);
-static void print_power_config_mpmm(power_knobs_t* knobs);
 static void print_power_config_pidcfg(power_knobs_t* knobs);
 static void print_power_config_thresholds(power_knobs_t* knobs);
 static void print_power_config_loopcfg(power_knobs_t* knobs);
@@ -61,7 +60,6 @@ const power_cli_sub_command_dictionary_element_t power_cli_config_sub_command_di
     {"memasst",             (print_function)print_power_config_memasst,             POWER_IF_CMD_GET_RUNCONFIG_FUSES},
     {"intervals",           (print_function)print_power_config_interval,            POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
     {"limits",              (print_function)print_power_config_limits,              POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
-    {"mpmm",                (print_function)print_power_config_mpmm,                POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
     {"pid",                 (print_function)print_power_config_pidcfg,              POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
     {"pvt",                 (print_function)print_power_config_thresholds,          POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
     {"ctrlloop",            (print_function)print_power_config_loopcfg,             POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
@@ -202,14 +200,6 @@ static void print_power_config_limits(power_knobs_t* knobs)
 /* -------------------------------------- */
 
 /* -------------------------------------- */
-static void print_power_config_mpmm(power_knobs_t* knobs)
-{
-    FpFwCliPrint("\nMPMM config.\n");
-    FpFwCliPrint("------------\n");
-    FpFwCliPrint("Enabled : %s\n", knobs->mpmm.enable ? s_true_str : s_false_str);
-    FpFwCliPrint("Gear    : %u\n", knobs->mpmm.gear);
-    FpFwCliPrint("\n");
-}
 /* -------------------------------------- */
 
 /* -------------------------------------- */
@@ -462,7 +452,6 @@ static void print_power_config_knobs(power_knobs_t* knobs)
     print_power_config_tel(knobs);
     print_power_config_limits(knobs);
     print_power_config_vcpucalc(knobs);
-    print_power_config_mpmm(knobs);
     print_power_config_pidcfg(knobs);
     print_power_config_loopcfg(knobs);
     print_power_config_throttling(knobs);

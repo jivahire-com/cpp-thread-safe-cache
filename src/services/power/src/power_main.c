@@ -144,7 +144,6 @@ void power_init(ppower_service_t p_device, PDFWK_SCHEDULE p_schedule, const powe
 
         // if not a full init, then we need to restore the warm start data
         power_ws_recover_fuse_init(p_runconfig);
-        power_knobs_ws_update(&p_runconfig->knobs);
     }
 
     // setup control and telemetry loops

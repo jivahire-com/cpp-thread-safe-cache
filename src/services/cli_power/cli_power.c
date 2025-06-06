@@ -121,7 +121,6 @@ static FPFW_CLI_STATUS cli_power_config_command(int argc, const char** argv)
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg memasst", "Memasst values\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg intervals", "Config loop intervals\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg limits", "Config control loop limits\n");
-        FpFwCliPrint("%-72s%s", "Usage: pwr cfg mpmm", "MPMM config\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg pid", "Control loop PID config\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg pvt", "PVT thresholds\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg ctrlloop", "Control loop configs\n");

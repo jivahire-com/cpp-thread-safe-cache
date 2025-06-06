@@ -8,9 +8,13 @@
  */
 
 /*------------- Includes -----------------*/
+#include <atu_api.h>
 #include <bug_check.h>
+#include <gicd_regs.h>
 #include <gpio_lib.h>
 #include <health_monitor_i.h>
+#include <ras.h>
+#include <silibs_platform.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define FATAL_ERROR_REPORT  0
@@ -37,7 +41,11 @@ void hm_report_error_varsrv(bool trigger)
 
 void hm_report_error_interrupt(bool trigger)
 {
-    FPFW_UNUSED(trigger);
+    // inform to AP
+    if (trigger)
+    {
+        MMIO_WRITE32(MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR + GICD_GICD_SETSPI_NSR_ADDRESS, OS_CPER_ERROR_DEVICE_EVT);
+    }
 }
 
 void hm_report_error_event(hm_error_report_type_t type, bool trigger)

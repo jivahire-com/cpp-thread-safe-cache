@@ -13,13 +13,16 @@
 extern "C" {
 
 #include <FpFwUtils.h> // for FPFW_UNUSED
+#include <atu_api.h>
 #include <fpfw_init.h> // for fpfw_init_result_t, fpfw_init_component_t
+#include <gicd_regs.h>
 #include <health_monitor.h>
 #include <health_monitor_i.h>
 #include <health_monitor_icc.h>
 #include <hm_test.h>
 #include <idsw.h>
 #include <idsw_kng.h>
+#include <ras.h>
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -93,6 +96,10 @@ TEST_FUNCTION(hm_mcp_error_record_submit_listener, post_ddr_setup, nullptr)
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_value_count(__wrap_mmio_write32, addr, (uint32_t)MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR + GICD_GICD_SETSPI_NSR_ADDRESS, -1);
+    expect_value_count(__wrap_mmio_write32, data, OS_CPER_ERROR_DEVICE_EVT, -1);
+    expect_function_call_any(__wrap_mmio_write32);
+
     hm_mcp_error_record_submit_listener((fpfw_icc_base_ctx_t*)ICC_HM_ERROR_RECORD_SUBMIT_MCP);
 }
 

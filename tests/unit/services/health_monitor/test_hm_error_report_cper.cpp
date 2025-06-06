@@ -11,14 +11,16 @@
 #include <CMockaWrapper.h> // for assert_int_equal, assert_non_null, expe...
 
 extern "C" {
-
 #include <FpFwUtils.h> // for FPFW_UNUSED
+#include <atu_api.h>
 #include <fpfw_init.h> // for fpfw_init_result_t, fpfw_init_component_t
+#include <gicd_regs.h>
 #include <health_monitor.h>
 #include <health_monitor_i.h>
 #include <hm_test.h>
 #include <idsw.h>
 #include <idsw_kng.h>
+#include <ras.h>
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -37,6 +39,13 @@ void __wrap_gpio_set_output(uint32_t gpio_ctrl_pin_id, uint32_t level)
     function_called();
 }
 
+void __wrap_mmio_write32(volatile uint32_t* addr, uint32_t data)
+{
+    check_expected(addr);
+    check_expected(data);
+    function_called();
+}
+
 //
 // Mocks
 //
@@ -49,6 +58,9 @@ TEST_FUNCTION(test_hm_submit_cper_ce, post_ddr_setup, nullptr)
 {
     expect_function_call(__wrap_wait_for_semaphore);
     expect_function_call(__wrap_release_semaphore);
+    expect_value(__wrap_mmio_write32, addr, (uint32_t)MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR + GICD_GICD_SETSPI_NSR_ADDRESS);
+    expect_value(__wrap_mmio_write32, data, OS_CPER_ERROR_DEVICE_EVT);
+    expect_function_call(__wrap_mmio_write32);
 
     acpi_err_sec_generic_t general_cper_section = {};
     general_cper_section.err_misc0 = 0x12;
@@ -80,6 +92,9 @@ TEST_FUNCTION(test_hm_submit_cper_ce_multi, post_ddr_setup, nullptr)
 {
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
+    expect_value_count(__wrap_mmio_write32, addr, (uint32_t)MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR + GICD_GICD_SETSPI_NSR_ADDRESS, -1);
+    expect_value_count(__wrap_mmio_write32, data, OS_CPER_ERROR_DEVICE_EVT, -1);
+    expect_function_call_any(__wrap_mmio_write32);
 
     acpi_err_sec_generic_t general_cper_section = {};
     general_cper_section.err_misc0 = 0x12;
@@ -112,6 +127,9 @@ TEST_FUNCTION(test_hm_submit_cper_ue, post_ddr_setup, nullptr)
 {
     expect_function_call(__wrap_wait_for_semaphore);
     expect_function_call(__wrap_release_semaphore);
+    expect_value(__wrap_mmio_write32, addr, (uint32_t)MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR + GICD_GICD_SETSPI_NSR_ADDRESS);
+    expect_value(__wrap_mmio_write32, data, OS_CPER_ERROR_DEVICE_EVT);
+    expect_function_call(__wrap_mmio_write32);
     expect_function_call(__wrap_gpio_set_output);
 
     acpi_err_sec_generic_t general_cper_section = {};
@@ -144,6 +162,9 @@ TEST_FUNCTION(test_hm_submit_cper_ue_multi, post_ddr_setup, nullptr)
 {
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
+    expect_value_count(__wrap_mmio_write32, addr, (uint32_t)MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR + GICD_GICD_SETSPI_NSR_ADDRESS, -1);
+    expect_value_count(__wrap_mmio_write32, data, OS_CPER_ERROR_DEVICE_EVT, -1);
+    expect_function_call_any(__wrap_mmio_write32);
     expect_function_call_any(__wrap_gpio_set_output);
 
     acpi_err_sec_generic_t general_cper_section = {};

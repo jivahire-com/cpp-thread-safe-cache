@@ -66,4 +66,5 @@ mock_target(${TARGET}
     fpfw_icc_base_recv
     fpfw_icc_base_send_recv
     gpio_set_output
+    mmio_write32
 )

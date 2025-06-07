@@ -27,6 +27,11 @@
 
 FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver"))
 {
+    // Once https://dev.azure.com/ms-tsd/Kingsgate/_git/silibs/pullrequest/285315 merged, we can remove this
+    #ifndef RAS_EINJ_VENDOR_DEFINED_STRUCT_OFFSET
+    #define RAS_EINJ_VENDOR_DEFINED_STRUCT_OFFSET (0x10)
+    #endif
+
     uintptr_t mscp_ghes_base = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_GHES_TABLE_BLOCK_BASE);
     uintptr_t mscp_ghes_error_record_addr_table_base =
         MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_ERROR_RECORD_ADDRESS_TABLE_BASE);
@@ -34,7 +39,7 @@ FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver"))
         MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_ACK_ADDRESS_TABLE_BASE);
     uintptr_t mscp_ghes_error_record_addr_base =
         MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_GHES_ERROR_RECORD_BASE);
-    uintptr_t einj_payload = MSCP_ATU_AP_WINDOW_ERROR_INJECTION_BASE_ADDR;
+    uintptr_t einj_payload = MSCP_ATU_AP_WINDOW_ERROR_INJECTION_BASE_ADDR + RAS_EINJ_VENDOR_DEFINED_STRUCT_OFFSET;
 
     static hm_config_t hm_config = {0};
     hm_config.mscp_ghes_base = (acpi_ghes_t*)mscp_ghes_base;

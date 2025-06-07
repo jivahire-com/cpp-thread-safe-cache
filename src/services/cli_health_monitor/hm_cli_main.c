@@ -489,17 +489,21 @@ void print_einj_payload(ras_einj_info_t* payload)
     }
 
     FpFwCliPrint("EINJ Payload\n");
-    FpFwCliPrint(" einj ver %ld\n", payload->version);
+    FpFwCliPrint(" einj version %ld\n", payload->version);
     FpFwCliPrint(" einj group %ld\n", payload->component_group);
     FpFwCliPrint(" einj type %ld\n", payload->component_type);
     FpFwCliPrint(" einj instance %ld\n", payload->component_instance);
-    FpFwCliPrint(" einj stat_op status %d\n", payload->status_operation.value & 0xFF);
-    FpFwCliPrint(" einj stat_op operation %d\n", (payload->status_operation.value >> 8) & 0xFF);
-    FpFwCliPrint(" einj param err_type %d\n", (uint16_t)((payload->param_type.error_parameters[0]) & 0xFFFF));
-    FpFwCliPrint(" einj param sev %d\n", (uint16_t)((payload->param_type.error_parameters[0] >> 16) & 0xFFFF));
-    FpFwCliPrint(" einj param reserved %d\n", (uint16_t)((payload->param_type.error_parameters[0] >> 32) & 0xFFFFFFFF));
-    FpFwCliPrint(" einj param addr %p\n", (void*)(uintptr_t)payload->param_type.error_parameters[1]);
-    FpFwCliPrint(" einj param err_val %p\n", (void*)(uintptr_t)payload->value_type.error_values);
+    FpFwCliPrint(" einj stat_op.value %d\n", payload->status_operation.value);
+    FpFwCliPrint(" einj stat_op.status %d\n", payload->status_operation.value & 0xFF);
+    FpFwCliPrint(" einj stat_op.operation %d\n", (payload->status_operation.value >> 8) & 0xFF);
+    FpFwCliPrint(" einj param_type.err_type %d\n", (uint16_t)((payload->param_type.error_parameters[0]) & 0xFFFF));
+    FpFwCliPrint(" einj param_type.sev %d\n", (uint16_t)((payload->param_type.error_parameters[0] >> 16) & 0xFFFF));
+    FpFwCliPrint(" einj param_type.reserved %d\n", (uint16_t)((payload->param_type.error_parameters[0] >> 32) & 0xFFFFFFFF));
+    FpFwCliPrint(" einj param_type.addr64 %p\n", (void*)(uintptr_t)payload->param_type.address_64);
+    FpFwCliPrint(" einj param_type.addr32 %p\n", (void*)(uintptr_t)payload->param_type.address_32);
+    FpFwCliPrint(" einj value_type.err_val %p\n", (void*)(uintptr_t)payload->value_type.error_values);
+    FpFwCliPrint(" einj value_type.data_64 %p\n", (void*)(uintptr_t)payload->value_type.data_64);
+    FpFwCliPrint(" einj value_type.data_32 %p\n", (void*)(uintptr_t)payload->value_type.data_32);
 }
 
 const char* get_section_name(guid_t section_type)

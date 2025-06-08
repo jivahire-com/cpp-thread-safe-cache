@@ -164,6 +164,7 @@ bool power_loops_retry_fail(power_loop_context_t *context, power_loop_retries_t 
 void power_loops_control_handle_event(power_ctrl_loop_signal_t event, const void* event_data); 
 void power_loops_vr_telem_handle_event(power_vr_telem_signal_t event, const void* event_data);
 void power_loops_pvt_telem_handle_event(power_pvt_telem_signal_t event, const void* event_data);
+void power_loops_warmstart_entry();
 void power_loops_adclk_telem_handle_event(power_adclk_telem_signal_t event, const void* event_data);
 
 power_ctrl_loop_detail_t* power_ctrl_loop_get();

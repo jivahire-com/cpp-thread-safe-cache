@@ -189,11 +189,16 @@ void power_ap_soc_init()
 
 void power_ap_soc_init_post_remote_sync()
 {
+    const bool full_init = power_hw_full_init_allowed();
+    const power_runconfig_t* p_runconfig = power_runconfig_get();
     // enable telemetry before we start loops
     power_telemetry_enable();
 
-    // TODO: add warm start state entry code here
-    // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2037273
+    // if control loop is enabled and this is warmboot/!full_init, then enter warmstart entry in control loop
+    if ((!full_init) && ((p_runconfig->knobs.loops_disable & power_loops_disable_t_CTRL_LOOP) == 0))
+    {
+        power_loops_warmstart_entry();
+    }
 
     // start loop timers
     power_timer_start_loop_timers();

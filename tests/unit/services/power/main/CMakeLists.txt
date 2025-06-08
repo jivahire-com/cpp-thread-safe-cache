@@ -97,6 +97,7 @@ mock_target(${TARGET}
     config_get_power_vcpu1_offset
     power_hw_force_pmin
     DfwkAsyncRequestComplete
+    power_loops_warmstart_entry
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

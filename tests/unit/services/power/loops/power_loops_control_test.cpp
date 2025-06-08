@@ -274,6 +274,11 @@ void __wrap_power_hw_capture_cppc_state(power_hw_update_cb_t p_update_cb)
     function_called();
 }
 
+void __wrap_power_control_loop_change_state()
+{
+    function_called();
+}
+
 void __wrap_power_log_cores_ts(uint64_t timestamp, const corebits_t* cores, uint8_t type, power_log_payload_t* payload)
 {
     UNUSED(timestamp);
@@ -1266,4 +1271,12 @@ POWER_TEST(control_success_message_cb, NULL, NULL)
 {
     success_test(true);
     success_test(false);
+}
+
+POWER_TEST(power_loops_warmstart, NULL, NULL)
+{
+    setup_expectations_for_state_change(POWER_CONTROL_STATE_WARMSTART_ENTRY);
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
+
+    power_loops_warmstart_entry();
 }

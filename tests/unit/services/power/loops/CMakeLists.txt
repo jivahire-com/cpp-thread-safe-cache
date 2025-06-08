@@ -115,6 +115,7 @@ mock_target(${TARGET}
     get_arsm_mem_to_write
     get_arsm_mem_to_read
     cortex_m7_atomic_call_data_synchronization_barrier
+    power_control_loop_change_state
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

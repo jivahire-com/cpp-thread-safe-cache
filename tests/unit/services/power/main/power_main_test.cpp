@@ -281,6 +281,11 @@ void __wrap_power_hw_force_pmin(power_pmin_type_t type)
     function_called();
 }
 
+void __wrap_power_loops_warmstart_entry()
+{
+    function_called();
+}
+
 } // extern "C"
 
 //
@@ -371,7 +376,24 @@ POWER_TEST(init_ap_soc, NULL, NULL)
 
 POWER_TEST(init_ap_soc_post_remote_sync, NULL, NULL)
 {
+    power_runconfig_t test_runconfig = {.knobs = {.loops_disable = power_loops_disable_t_NONE}};
+    will_return(__wrap_power_hw_full_init_allowed, true);
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
     expect_function_call(__wrap_power_telemetry_enable);
+    expect_function_call(__wrap_power_timer_start_loop_timers);
+    expect_function_call(__wrap_power_hw_clear_force_pmin);
+    expect_value(__wrap_power_hw_clear_force_pmin, type, PM_PMIN_ALL);
+
+    power_ap_soc_init_post_remote_sync();
+}
+
+POWER_TEST(init_ap_soc_post_remote_sync_subsys_reset, NULL, NULL)
+{
+    power_runconfig_t test_runconfig = {.knobs = {.loops_disable = power_loops_disable_t_NONE}};
+    will_return(__wrap_power_hw_full_init_allowed, false);
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+    expect_function_call(__wrap_power_telemetry_enable);
+    expect_function_call(__wrap_power_loops_warmstart_entry);
     expect_function_call(__wrap_power_timer_start_loop_timers);
     expect_function_call(__wrap_power_hw_clear_force_pmin);
     expect_value(__wrap_power_hw_clear_force_pmin, type, PM_PMIN_ALL);

@@ -288,6 +288,11 @@ static void warmstart_entry_handler(int event, const void* event_data)
     return power_control_loop_change_state(POWER_CONTROL_STATE_SET_VR_BEFORE_PLIMIT);
 }
 
+void power_loops_warmstart_entry()
+{
+    return power_control_loop_change_state(POWER_CONTROL_STATE_WARMSTART_ENTRY);
+}
+
 static void distribute_available_handler(int event, const void* event_data)
 {
     UNUSED(event_data);

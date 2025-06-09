@@ -298,9 +298,11 @@ void override_default_pcie_cfg(uint8_t rpss_id)
         apply_one_to_one_configurations(rpss_id, pcie_cfg, &pcie_cfg_knob, &phy_cfg_knob, pcie_cfg_workarounds);
     }
 
-    pcie_cfg->pcie_ss_override = false; // Disable so that individual RPSS settings are used
+    pcie_cfg->pcie_ss_override = false; /* Always disable so that individual RPSS settings are used */
     pcie_cfg->pcie_ss_en = pcie_cfg_knob.pcie_ss_en;
     pcie_cfg->pcie_bifurcation_mode = pcie_cfg_knob.pcie_bifurcation_mode;
+    pcie_cfg->pcie_system_counter_delay = pcie_cfg_knob.pcie_system_counter_delay;
+
     /* pcie_cfg->pcie_cxl_support set below */
     pcie_cfg->pcie_cxl_sync_header_bypass = pcie_cfg_knob.pcie_cxl_sync_header_bypass;
 

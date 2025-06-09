@@ -176,6 +176,11 @@ TEST_FUNCTION(test_mts_manager_handle_dcp_msg_get_capabilities, test_setup, test
     exp_caps.caps.DCP_MSG_ID_RESET = 1;
     p_dcp_msg_get_caps_t act_caps = &trp_msg.payload.dcp_msg.payload.get_caps;
     assert_int_equal(act_caps->caps.as_uint32, exp_caps.caps.as_uint32);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.payload_size, sizeof(dcp_msg_get_caps_t));
+
+    will_return(__wrap_mts_is_primary_instance, false);
+    mts_manager_handle_dcp_msg(&trp_msg);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_E_UNSUPPORTED_MSG);
 }
 
 TEST_FUNCTION(test_mts_manager_handle_dcp_msg_get_state, test_setup, test_teardown)
@@ -191,6 +196,7 @@ TEST_FUNCTION(test_mts_manager_handle_dcp_msg_get_state, test_setup, test_teardo
     mts_manager_handle_dcp_msg(&trp_msg);
 
     assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.payload_size, sizeof(dcp_msg_get_client_state_t));
     assert_int_equal(trp_msg.payload.dcp_msg.payload.get_state.state, DCP_CLIENT_STATE_RUNNING);
 
     will_return(__wrap_mts_is_primary_instance, true);
@@ -202,6 +208,7 @@ TEST_FUNCTION(test_mts_manager_handle_dcp_msg_get_state, test_setup, test_teardo
     mts_manager_handle_dcp_msg(&trp_msg);
 
     assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.payload_size, sizeof(dcp_msg_get_client_state_t));
     assert_int_equal(trp_msg.payload.dcp_msg.payload.get_state.state, DCP_CLIENT_STATE_STOPPED);
 }
 

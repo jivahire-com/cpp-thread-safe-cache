@@ -144,22 +144,27 @@ void mts_manager_handle_dcp_msg(p_trp_msg_t trp_msg)
     bool primary_instance = mts_is_primary_instance();
     bool forward = false;
     uint16_t response_dcp_payload_size = 0;
+    // overwrite if supported. NOTE: if not primary instance, no reply is sent
+    trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_E_UNSUPPORTED_MSG;
 
     switch (trp_msg->payload.dcp_msg.hdr.msg_id)
     {
     case DCP_MSG_ID_GET_CAPABILITIES:
-        p_dcp_msg_get_caps_t get_caps = &trp_msg->payload.dcp_msg.payload.get_caps;
-        get_caps->caps.as_uint32 = 0;
-        get_caps->caps.DCP_MSG_ID_GET_CAPABILITIES = 1;
-        get_caps->caps.DCP_MSG_ID_GET_STATE = 1;
-        get_caps->caps.DCP_MSG_ID_EVENTS_ENABLE_DISABLE = 1;
-        get_caps->caps.DCP_MSG_ID_START_STOP = 1;
-        get_caps->caps.DCP_MSG_ID_READ_DATA = 1;
-        get_caps->caps.DCP_MSG_ID_READ_DATA_COMPLETE = 1;
-        get_caps->caps.DCP_MSG_ID_RESET = 1;
+        if (primary_instance)
+        {
+            p_dcp_msg_get_caps_t get_caps = &trp_msg->payload.dcp_msg.payload.get_caps;
+            get_caps->caps.as_uint32 = 0;
+            get_caps->caps.DCP_MSG_ID_GET_CAPABILITIES = 1;
+            get_caps->caps.DCP_MSG_ID_GET_STATE = 1;
+            get_caps->caps.DCP_MSG_ID_EVENTS_ENABLE_DISABLE = 1;
+            get_caps->caps.DCP_MSG_ID_START_STOP = 1;
+            get_caps->caps.DCP_MSG_ID_READ_DATA = 1;
+            get_caps->caps.DCP_MSG_ID_READ_DATA_COMPLETE = 1;
+            get_caps->caps.DCP_MSG_ID_RESET = 1;
 
-        trp_msg->payload.dcp_msg.hdr.payload_size = sizeof(dcp_msg_get_caps_t);
-        trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
+            response_dcp_payload_size = sizeof(dcp_msg_get_caps_t);
+            trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
+        }
         break;
 
     case DCP_MSG_ID_GET_STATE:
@@ -171,14 +176,11 @@ void mts_manager_handle_dcp_msg(p_trp_msg_t trp_msg)
             response_dcp_payload_size = sizeof(dcp_msg_get_client_state_t);
             trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
         }
-        else
-        {
-            trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_E_UNSUPPORTED_MSG;
-        }
         break;
 
     case DCP_MSG_ID_EVENTS_ENABLE_DISABLE:
         forward = true;
+        // trp_msg->payload.dcp_msg.hdr.msg_status is set in the function below
         mts_manager_handle_record_enable_disable(trp_msg);
         break;
 
@@ -201,15 +203,13 @@ void mts_manager_handle_dcp_msg(p_trp_msg_t trp_msg)
         if (primary_instance)
         {
             response_dcp_payload_size = sizeof(dcp_msg_read_data_t);
+            // trp_msg->payload.dcp_msg.hdr.msg_status is set in the function below
             mts_manager_handle_read_msg(trp_msg);
-        }
-        else
-        {
-            trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_E_UNSUPPORTED_MSG;
         }
         break;
 
     case DCP_MSG_ID_READ_DATA_COMPLETE:
+        // trp_msg->payload.dcp_msg.hdr.msg_status is set in the function below
         mts_manager_handle_read_complete_msg(trp_msg);
         break;
 
@@ -223,7 +223,6 @@ void mts_manager_handle_dcp_msg(p_trp_msg_t trp_msg)
     default:
         FPFW_ET_LOG(MtsMgrClientUnexpectedDcpMsg, trp_msg->payload.dcp_msg.hdr.msg_id);
 
-        trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_E_UNSUPPORTED_MSG;
         break;
     };
 

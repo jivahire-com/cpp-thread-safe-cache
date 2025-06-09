@@ -32,8 +32,6 @@
 
 #define PWR_MW 1000
 
-#define MAX_VR_PER_DIE 8
-
 static_assert(MAX_VR_PER_DIE == MAX_NUM_OF_VR_RAILS, "MAX_VR_PER_DIE != MAX_NUM_OF_VR_RAILS");
 
 #define DO_ONLY_ONCE(...)                    \
@@ -48,21 +46,6 @@ static_assert(MAX_VR_PER_DIE == MAX_NUM_OF_VR_RAILS, "MAX_VR_PER_DIE != MAX_NUM_
     } while (0)
 
 /*------------- Typedefs -----------------*/
-// context structure for VRs
-typedef struct _power_vrs_context
-{
-    // latest current/temp/voltage here
-    power_vrs_avs_latest_t vr_inputs[MAX_VR_PER_DIE];
-    power_latest_calcs_t latest_power;
-
-    // store recent power calculations
-    float soc_power[SOC_POWER_AVG_COUNT];        /* most recent x soc power measurements,
-                                                    most recent in 0 index */
-    float remote_soc_power[SOC_POWER_AVG_COUNT]; /* most recent x soc power measurements,
-                                             most recent in 0 index */
-    float vcpu_power_log[SOC_POWER_AVG_COUNT];
-    float vcpu_current_log[SOC_POWER_AVG_COUNT];
-} power_vrs_context_t;
 
 /*-------- Function Prototypes -----------*/
 static void calculate_soc_power();
@@ -615,4 +598,9 @@ void store_remote_soc_power(power_latest_calcs_t* p_remote_power)
             sizeof(s_power_vrs_ctx.remote_soc_power[0]) * (SOC_POWER_AVG_COUNT - 1));
     // save most recent measurement to index 0
     s_power_vrs_ctx.remote_soc_power[0] = p_remote_power->soc_power;
+}
+
+power_vrs_context_t* get_power_vrs_context()
+{
+    return &s_power_vrs_ctx;
 }

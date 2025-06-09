@@ -17,6 +17,7 @@ target_include_directories(
             ${CMAKE_CURRENT_SOURCE_DIR}/inc
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/../power/src
 )
 
 target_link_libraries(
@@ -30,6 +31,7 @@ target_link_libraries(
             fwlib.dfwk
             fwlib.service.cli
             fwlib.lib.assert
+            ms::lib::error_codes
 )
 
 lint_target(${TARGET})

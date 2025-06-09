@@ -27,7 +27,9 @@ static uint16_t s_local_soc_power_cap_watts = NO_POWER_CAP; /* tracks locally th
 static uint16_t s_requested_soc_power_cap_watts = NO_POWER_CAP; /* tracks locally the power cap being used on last loop query */
 static uint16_t s_previous_power_cap_watts; /* store previous cap when updating for diagnostic purpose */
 static power_cap_completed_callback_t s_power_cap_callback = NULL;
-
+static float s_inst_max_electrical_limit0 = 0.0F; /* store instantaneous max electrical limit for diagnostic purpose */
+static float s_inst_max_electrical_limit1 = 0.0F; /* store instantaneous max electrical limit for diagnostic purpose */
+static float s_inst_vrcpu_cap = 0.0F; /* store instantaneous max electrical limit for diagnostic purpose */
 /*------------- Functions ----------------*/
 
 float max_electrical_limit(power_runconfig_t* p_runconfig, power_latest_calcs_t* p_local_power, power_latest_calcs_t* p_remote_power)
@@ -58,6 +60,9 @@ float max_electrical_limit(power_runconfig_t* p_runconfig, power_latest_calcs_t*
                    (cpuin_v1 * cpuin_i1); // soc_maximum_electrical_current_limit knob is in amps
     float P_MEL1 = (cpuin_v0 * cpuin_i0 + (cpuin_v1 * p_runconfig->knobs.soc_maximum_electrical_current_limit_vcpu1)); // soc_maximum_electrical_current_limit knob is in amps
 
+    // store instantaneous max electrical limit for diagnostic purpose
+    s_inst_max_electrical_limit0 = P_MEL0;
+    s_inst_max_electrical_limit1 = P_MEL1;
     return FPFW_MIN(P_MEL0, P_MEL1); // soc_maximum_electrical_current_limit
                                      // knob is in amps
 }
@@ -88,7 +93,8 @@ float power_cap_get_vrcpu_cap(bool* p_new_cap, power_latest_calcs_t* p_local_pow
 
     // now get the min of thermal/rack cap and vcpu-based electrical limit
     cpu_power_cap = FPFW_MIN(cpu_power_cap, MEL_W);
-
+    // store inst vrcpu cap for diagnostic purpose
+    s_inst_vrcpu_cap = cpu_power_cap;
     return cpu_power_cap;
 }
 
@@ -146,4 +152,18 @@ bool power_cap_is_capped()
 uint16_t get_current_soc_power_cap()
 {
     return s_local_soc_power_cap_watts;
+}
+
+float get_current_vrcpu_cap()
+{
+    return s_inst_vrcpu_cap;
+}
+
+float get_inst_max_electrical_limit(uint8_t die_num)
+{
+    if (die_num == 0)
+    {
+        return s_inst_max_electrical_limit0;
+    }
+    return s_inst_max_electrical_limit1;
 }

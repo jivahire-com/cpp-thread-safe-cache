@@ -83,6 +83,7 @@
         (dout / 16384.0F * DTS_Y_COEFF_FUSED_TEMP(fused_y) + DTS_K_COEFF_FUSED_TEMP(fused_k))
 #endif
 
+#define MAX_VR_PER_DIE 8
 /* Only Die0 has VSYS */
 
 /*-------------- Typedefs ----------------*/
@@ -350,6 +351,7 @@ typedef enum
     POWER_IF_CMD_GET_RUNCONFIG_KNOBS,
     POWER_IF_CMD_GET_RUNCONFIG_FUSES,
     POWER_IF_CMD_GET_RUNCONFIG_VFTPRE,
+    POWER_IF_CMD_GET_RUNCONFIG,
 
     //! All set commands
     POWER_IF_CMD_SET_CAP,
@@ -366,6 +368,16 @@ typedef enum
     POWER_IF_CMD_STATUS_CL,
     POWER_IF_CMD_STATUS_VRTL,
     POWER_IF_CMD_STATUS_PVTTL,
+    POWER_IF_CMD_STATUS_CAP,
+    POWER_IF_CMD_STATUS_DROOPCOUNT,
+    POWER_IF_CMD_STATUS_MAXTEMP,
+    POWER_IF_CMD_STATUS_POWER,
+    POWER_IF_CMD_STATUS_PLIMIT,
+    POWER_IF_CMD_STATUS_PRIMARY_CORE,
+    POWER_IF_CMD_STATUS_SELECTIONS,
+    POWER_IF_CMD_STATUS_VCPU,
+    POWER_IF_CMD_STATUS_WARMSTART,
+
     
     //! All log commands
     POWER_IF_CMD_LOG_DUMP,
@@ -618,6 +630,22 @@ typedef struct _power_vrs_avs_latest
     uint16_t current;     // Raw AVS value, 1LSB=10mA
     uint16_t temperature; // Raw AVS value, 1LSB=0.1 Celsius
 } power_vrs_avs_latest_t;
+
+// context structure for VRs
+typedef struct _power_vrs_context
+{
+    // latest current/temp/voltage here
+    power_vrs_avs_latest_t vr_inputs[MAX_VR_PER_DIE];
+    power_latest_calcs_t latest_power;
+
+    // store recent power calculations
+    float soc_power[SOC_POWER_AVG_COUNT];        /* most recent x soc power measurements,
+                                                    most recent in 0 index */
+    float remote_soc_power[SOC_POWER_AVG_COUNT]; /* most recent x soc power measurements,
+                                             most recent in 0 index */
+    float vcpu_power_log[SOC_POWER_AVG_COUNT];
+    float vcpu_current_log[SOC_POWER_AVG_COUNT];
+} power_vrs_context_t;
 /**
  *  @brief Struct for telemetry loops state
  */

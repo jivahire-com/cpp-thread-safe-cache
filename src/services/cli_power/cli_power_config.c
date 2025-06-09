@@ -14,8 +14,10 @@
 #include <cli_power_config.h>
 #include <cli_power_interface.h>
 #include <corebits.h>
+#include <dvfs.h>
 #include <power_dfwk.h>
 #include <power_runconfig.h>
+#include <power_runconfig_i.h>
 #include <silibs_common.h>
 #include <string.h>
 #include <tx_api.h>
@@ -47,6 +49,8 @@ static void print_power_config_fgpll(power_knobs_t* knobs);
 static void print_power_config_knobs(power_knobs_t* knobs);
 static void print_power_config_max_allowed_plimit(power_knobs_t* knobs);
 static void print_power_config_min_allowed_plimit(power_knobs_t* knobs);
+static void print_power_config_vf(power_fuse_data_t* fuses);
+static void print_power_config_vft(power_runconfig_t* p_runconfig);
 static void print_power_config_vftpre(power_vft_curveset_precalc_t* precalculated_current);
 static void print_power_config_vcpucalc(power_knobs_t* knobs);
 
@@ -77,6 +81,8 @@ const power_cli_sub_command_dictionary_element_t power_cli_config_sub_command_di
     {"coremin",             (print_function)print_power_config_min_plimit,          POWER_IF_CMD_GET_RUNCONFIG_FUSES},
     {"lkgcalc",             (print_function)print_power_config_lkg,                 POWER_IF_CMD_GET_RUNCONFIG_FUSES},
     */
+    {"vf",                  (print_function)print_power_config_vf,                  POWER_IF_CMD_GET_RUNCONFIG_FUSES},
+    {"vft",                 (print_function)print_power_config_vft,                 POWER_IF_CMD_GET_RUNCONFIG},
     {"vftpre",              (print_function)print_power_config_vftpre,              POWER_IF_CMD_GET_RUNCONFIG_VFTPRE},
     {"vcpucalc",            (print_function)print_power_config_vcpucalc,            POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
 };
@@ -440,9 +446,9 @@ static void print_power_config_fgpll(power_knobs_t* knobs)
 
 static void print_power_config_itd_cfg(power_knobs_t* knobs)
 {
-    printf("\nITD Config\n");
-    printf("--------------\n");
-    printf("ITD Enabled : %d\n", knobs->itd_cfg);
+    FpFwCliPrint("\nITD Config\n");
+    FpFwCliPrint("--------------\n");
+    FpFwCliPrint("ITD Enabled : %d\n", knobs->itd_cfg);
 }
 
 /* -------------------------------------- */
@@ -522,6 +528,30 @@ void cli_power_config_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* co
     }
 
     FpFwCliPrint("Invalid sub cmd.\n");
+}
+
+static void print_power_config_vf(power_fuse_data_t* fuses)
+{
+    //! @brief Print the VF curveset from fuses
+    power_fuse_vf_curveset_t* vf_curves = &fuses->vf;
+    FpFwCliPrint("\nRaw VF Curveset From Fuses\n");
+    FpFwCliPrint("%-12s %-10s %-8s %-16s %-14s\n", "CurveSet", "Curve", "Pair", "Frequency (MHz)", "LDO DAC Code");
+    FpFwCliPrint("=======================================================================\n");
+
+    for (int cs = 0; cs < VFT_CURVESET_COUNT; ++cs) {
+        for (int curve = 0; curve < VFT_CURVE_COUNT_PER_CURVESET; ++curve) {
+            for (int pair = 0; pair < DVFS_FUSED_PAIRS_COUNT; ++pair) {
+                const dvfs_vf_pair_t* p = &vf_curves->curveset[cs].curve[curve].pair[pair];
+                FpFwCliPrint("%-12d %-10d %-8d %-16u %-14u\n", cs, curve, pair, p->freq_Mhz, p->ldo_dac_in);
+            }
+        }
+    }
+}
+
+static void print_power_config_vft(power_runconfig_t* p_runconfig)
+{
+    FPFW_UNUSED(p_runconfig);
+    FpFwCliPrint("TBD :Dump VFT curveset from runconfig\n");
 }
 
 static void print_power_config_vftpre(power_vft_curveset_precalc_t* precalculated_current)

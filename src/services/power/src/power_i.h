@@ -321,6 +321,13 @@ uint32_t power_vrs_get_recent_power_mw();
 void store_remote_soc_power(power_latest_calcs_t* p_remote_power);
 
 /**
+ * @brief Get the power vrs context
+ * 
+ * @return power_vrs_context_t* 
+ */
+power_vrs_context_t* get_power_vrs_context();
+
+/**
  * @brief Initiates send of vcpu voltage write, will lead to signal of voltage change pending/done
  *
  * @param[in] voltage_mv - Voltage in mV
@@ -426,6 +433,20 @@ bool power_cap_is_capped();
  * @return uint16_t 
  */
 uint16_t get_current_soc_power_cap();
+
+/**
+ * @brief Get the inst max electrical limit calculated for the respective die
+ * 
+ * @return float 
+ */
+float get_inst_max_electrical_limit(uint8_t die_num);
+
+/**
+ * @brief Get the current vrcpu cap object
+ * 
+ * @return float 
+ */
+float get_current_vrcpu_cap();
 
 /**
  * @brief Find maximum of all cores plimit voltage requirement

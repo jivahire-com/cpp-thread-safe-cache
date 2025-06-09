@@ -132,6 +132,8 @@ static FPFW_CLI_STATUS cli_power_config_command(int argc, const char** argv)
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg allowed_max_plimit", "Allowed plimit max\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg fgpll", "FGPLL config\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg knobs", "Power config knobs\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg vf", "VF curveset from fuses\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg vft", "Derived VFT from fuses, memasst\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg vftpre", "Pre-calculated current\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg vcpucalc", "VCPU calc inputs \n");
         FpFwCliPrint("\n");
@@ -172,6 +174,10 @@ static uint8_t cli_power_cmd_arg_count(int subcommand_id)
             expected_argc = 6;
             break;
 
+        case POWER_IF_CMD_STATUS_DROOPCOUNT:
+            expected_argc = 1;
+            break;
+
         default:
             break;
     }
@@ -182,6 +188,7 @@ static uint8_t cli_power_cmd_arg_count(int subcommand_id)
 static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char** argv, _pwrset_subcommand_args* p_pwrset_sub_command_args)
 {
     char* pwr_strings[] = {
+        "", // intentional empty string to align with enum
         "", // intentional empty string to align with enum
         "", // intentional empty string to align with enum
         "", // intentional empty string to align with enum
@@ -478,13 +485,50 @@ static FPFW_CLI_STATUS cli_power_status_command(int argc, const char** argv)
         FpFwCliPrint("%-72s%s", "Usage: pwr status cl", "Control loop info\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr status vrtl", "VR telemetry loop info\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr status pvttl", "PVT telemetry loop info\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr status cap", "Power Cap Info\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr status droopcount <core>", "Droop count for a specific core\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr status maxtemp", "Max temperature info\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr status power", "Power info\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr status plimit", "Plimit info\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr status primary_core", "Primary core info\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr status selections <clear>", "Dump plimit selection counts and clear if desired\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr status vcpu", "VCPU calc inputs\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr status warmstart", "Warmstart info\n");
         FpFwCliPrint("\n");
 
         return CLI_SUCCESS;
     }
     
+    _pwrset_subcommand_args pwrset_sub_command_args = {};
+    int subcommand_id = cli_power_status_get_cmd_id(argv[1]);
+
+    switch (subcommand_id)
+    {
+        case POWER_IF_CMD_STATUS_DROOPCOUNT : {
+            if(argc != cli_power_cmd_arg_count(subcommand_id))
+            {
+                FpFwCliPrint("%-72s%s", "Usage: pwr status droopcount <core>", "- gets droop count for a specific core\n");
+                return CLI_ERROR;
+            }
+            pwrset_sub_command_args.minupdate_val = (uint16_t)strtoul(argv[2],0,0);
+            break;
+        }
+        case POWER_IF_CMD_STATUS_SELECTIONS : {
+            if(argc == cli_power_cmd_arg_count(subcommand_id) && strcmp(argv[2], "clear") == 0)
+            {
+                FpFwCliPrint("%-72s%s", "Usage: pwr status selections <clear>", "- Dump plimit selection counts and clear if desired\n");
+                pwrset_sub_command_args.minupdate_val = 0x1;
+            }
+            else{
+                FpFwCliPrint("%-72s%s", "Usage: pwr status selections", "- Dump plimit selection counts\n");
+                pwrset_sub_command_args.minupdate_val = 0x0;
+            }
+            break;
+        }
+
+    }
     /* Die - 0 (Default), Cmd ID - CLI_COMMANDS_POWER_CONFIG, subcommand - argv[1], setval - None (Unused), callback - cli_power_config_async_print */
-    return dispatch_power_cli_async_request((uint8_t)idsw_get_die_id(), CLI_COMMANDS_POWER_STATUS, (char*)argv[1], NULL, cli_power_status_async_print);
+    return dispatch_power_cli_async_request((uint8_t)idsw_get_die_id(), CLI_COMMANDS_POWER_STATUS, (char*)argv[1], &pwrset_sub_command_args, cli_power_status_async_print);
 }
 
 static FPFW_CLI_STATUS cli_power_log_command(int argc, const char** argv)

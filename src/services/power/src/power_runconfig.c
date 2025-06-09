@@ -52,6 +52,7 @@ power_runconfig_read_dictionary_element_t power_runconfig_read_dictionary[] = {
     {POWER_IF_CMD_GET_RUNCONFIG_FUSES, &power_runconfig.fuses},
     {POWER_IF_CMD_GET_RUNCONFIG_KNOBS, &power_runconfig.knobs},
     {POWER_IF_CMD_GET_RUNCONFIG_VFTPRE, &power_runconfig.precalculated_current},
+    {POWER_IF_CMD_GET_RUNCONFIG, &power_runconfig},
 };
 
 // clang-format off

@@ -222,9 +222,9 @@ static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, vo
         }
 
         case POWER_IF_CMD_SET_RACK_LIMIT: {
+            power_hw_gpio_set_rack_limit_override(p_cli_request->pwrset_sub_command_args.racklimit != 0);
             s_ctrl_loop->rack_limit = (p_cli_request->pwrset_sub_command_args.racklimit != 0);
             p_cli_request->fetch_data.pwrset_response_val.racklimit = s_ctrl_loop->rack_limit;
-
             DfwkAsyncRequestComplete(p_request);
             break;
         }

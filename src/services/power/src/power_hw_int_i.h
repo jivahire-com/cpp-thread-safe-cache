@@ -16,7 +16,7 @@
 #include <power_runconfig_i.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <telemetry_data_struct.h>   // for plimit_data_msg_t
+#include <telemetry_data_struct.h> // for plimit_data_msg_t
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define CORES_PER_TILE (NUM_AP_CORES_PER_DIE / NUM_CPU_TILES)
@@ -52,17 +52,18 @@ typedef struct _avs_pwr_request_context_t
     bool error;
 } avs_pwr_request_context_t;
 
-enum plimit_telem_msg_types {
+enum plimit_telem_msg_types
+{
     PLIMIT_SUCCESS_TYPE = 0,
     PLIMIT_UPDATE_TYPE = 1,
-}; 
+};
 
 // Enum for pmin type used in hw interface function
 typedef enum _power_pmin_type_t
 {
     PM_PMIN_ALL = 0,
-    PM_LOCKUP_UE_RR, //Lockup or UE Or ResetReq
-    PM_FW_PMIN_CONTROL, //Firmware PMIN Control
+    PM_LOCKUP_UE_RR,    // Lockup or UE Or ResetReq
+    PM_FW_PMIN_CONTROL, // Firmware PMIN Control
 } power_pmin_type_t;
 
 // Callback function pointer types for update/success message handling
@@ -85,8 +86,8 @@ extern "C" {
 void power_hw_force_pmin(power_pmin_type_t type);
 
 /**
- * @brief Clears force PMIN bit 
- *  
+ * @brief Clears force PMIN bit
+ *
  * @param[in] type   - type of pmin to force
  *
  * @return none
@@ -195,6 +196,16 @@ bool power_hw_gpio_connected();
 bool power_hw_gpio_rack_limit_asserted();
 
 /**
+ * @brief Set or clear the rack limit override.
+ *
+ * @param[in] state - If true, assert the rack limit override; if false, clear the override.
+ *
+ * @return none
+ *
+ */
+void power_hw_gpio_set_rack_limit_override(bool state);
+
+/**
  * @brief Finds pstate associated with given frequency
  *
  * @param[in] freq_MHz - The frequency in MHz to find associated pstate for
@@ -220,7 +231,7 @@ uint32_t power_hw_get_adclk_count(const power_runconfig_t* p_runconfig, unsigned
  *
  * \b Description:
  *      Used to get the cppc state from all cores.
- * 
+ *
  * @param[in] p_update_cb - callback function to update cppc state
  *
  * @return none
@@ -250,7 +261,7 @@ void power_telemetry_enable();
 void power_telemetry_message_poll(power_hw_update_cb_t p_update_cb, power_hw_success_cb_t p_success_cb);
 
 /**
- * @brief Checks the config knob voltage regulators during initialization. 
+ * @brief Checks the config knob voltage regulators during initialization.
 
  * \b Description: If not zero, then the write that value to the voltage regulator.
  *

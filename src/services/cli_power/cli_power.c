@@ -305,10 +305,6 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
 
             p_pwrset_sub_command_args->racklimit = (uint16_t)strtoul(argv[2],NULL,0);
 
-            if (power_hw_gpio_connected()) {
-                FpFwCliPrint("\n  pwr set racklimit does not work on this platform (GPIO connected)\n");
-                return CLI_SUCCESS;
-            }
             break;
         }
 

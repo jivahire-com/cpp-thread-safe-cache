@@ -22,7 +22,15 @@
 /*-- Declarations (Statics and globals) --*/
 #define GPIO_RACK_LIM_ASSERTED GPIO_CTRL_PIN_ID(MSCP_EXP_GPIO_4, 5)
 
+static bool state_rack_limit_override = false;
+
 /*------------- Functions ----------------*/
+
+void power_hw_gpio_set_rack_limit_override(bool state)
+{
+    // set the rack limit override
+    state_rack_limit_override = state;
+}
 
 bool power_hw_gpio_connected()
 {
@@ -31,7 +39,6 @@ bool power_hw_gpio_connected()
     {
         return true;
     }
-
     // Return false for any other platform
     return false;
 }
@@ -40,8 +47,14 @@ bool power_hw_gpio_connected()
 bool power_hw_gpio_rack_limit_asserted()
 {
     uint32_t state_rack_limit_gpio;
-    gpio_get_input(GPIO_RACK_LIM_ASSERTED, &state_rack_limit_gpio);
-
+    if (state_rack_limit_override)
+    {
+        state_rack_limit_gpio = 0;
+    }
+    else
+    {
+        gpio_get_input(GPIO_RACK_LIM_ASSERTED, &state_rack_limit_gpio);
+    }
     // Active low signal, so return inverted value of state_rack_limit_gpio
-    return !state_rack_limit_gpio;
+    return state_rack_limit_gpio == 0;
 }

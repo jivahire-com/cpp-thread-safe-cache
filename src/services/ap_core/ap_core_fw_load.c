@@ -316,7 +316,7 @@ void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t 
         break;
     case AP_FW_ID_MCP:
         send_request.load_fw_req.id = HSP_FIRMWARE_ID_MCP;
-        send_request.load_fw_req.address = MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM0_ADDRESS;
+        send_request.load_fw_req.address = SCP_EXP_MSCP_BOOT_DATA_BASE;
         break;
     case AP_FW_ID_SDM_ITCM:
         send_request.load_fw_64bit_req.id = HSP_FIRMWARE_ID_SDM_ITCM;

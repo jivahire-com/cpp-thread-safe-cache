@@ -12,12 +12,17 @@
 #include <error_domain_i.h>
 #include <nvic.h>
 #define __NO_LARGE_ADDRMAP_TYPEDEFS__
+#include <mcp_top_regs.h>
 #include <scp_top_regs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define DTCM_DISABLED_EXECUTION_ADDRESS (SCP_TOP_SCP_DATA_RAM_ADDRESS)
-#define MSCP_EXP_RESERVED_ADDRESS       (SCP_TOP_UNUSED10_ADDRESS)
-
+#if defined(SCP_RUNTIME_INIT)
+    #define DTCM_DISABLED_EXECUTION_ADDRESS (SCP_TOP_SCP_DATA_RAM_ADDRESS)
+    #define MSCP_EXP_RESERVED_ADDRESS       (SCP_TOP_UNUSED10_ADDRESS)
+#elif defined(MCP_RUNTIME_INIT)
+    #define DTCM_DISABLED_EXECUTION_ADDRESS (MCP_TOP_MCP_DATA_RAM_ADDRESS)
+    #define MSCP_EXP_RESERVED_ADDRESS       (MCP_TOP_UNUSED0_ADDRESS)
+#endif
 /*-------- Function Prototypes -----------*/
 
 /*-------------- Typedefs ----------------*/

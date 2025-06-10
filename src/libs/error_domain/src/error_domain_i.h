@@ -13,6 +13,12 @@
 #include <cper.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define MMIO_SET_MASK32(addr, mask)   MMIO_WRITE32(addr, (MMIO_READ32(addr) | (mask)))
+#define MMIO_CLEAR_MASK32(addr, mask) MMIO_WRITE32(addr, (MMIO_READ32(addr) & ~(mask)))
+
+#define TCM_TGT_RAM_DTCM0RAM (0x80)
+#define MASK_CE              0x20
+#define MASK_UE              0x40
 
 /*------------- Typedefs -----------------*/
 

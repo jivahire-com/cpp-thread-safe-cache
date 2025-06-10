@@ -58,7 +58,9 @@ add_library(ms::lib::error_domain::scp ALIAS ${TARGET})
 set(TARGET kng.lib.error_domain.mcp)
 
 set (SOURCES 
-        src/error_domain_register_mcp.c
+        src/error_domain_mcp.c
+        src/error_injection_mcp.c
+        src/exception_trigger.c
 )
 
 add_library(${TARGET}
@@ -69,24 +71,29 @@ add_library(${TARGET}
 target_link_libraries(
     ${TARGET}
         PUBLIC
+            fwlib.lib.interface.platform.dbgprint
+            ms::lib::cortex_m7::nvic
+            ms::lib::mcp_interrupts
             fwlib.lib.status
         PRIVATE
             fwlib.lib.assert
-            fwlib.lib.interface.platform.dbgprint
             fwlib.service.iccBase
-            ms::lib::cortex_m7::nvic
+            ms::lib::arm_intrinsic
             ms::lib::crash_dump
             ms::lib::error_codes
             ms::lib::icc_platform_defines
-            ms::lib::mcp_interrupts
             ms::service::health_monitor
             silibs::icc_mhu
+            silibs::cmsdk_wd
             
 )
 
 target_include_directories(${TARGET}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+
 )
 
 target_compile_definitions(

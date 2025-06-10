@@ -31,10 +31,6 @@
 // clang-format on
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define TCM_TGT_RAM_DTCM0RAM (0x80)
-#define MASK_CE              0x20
-#define MASK_UE              0x40
-
 #define SCF_RAM_ADDRESS   (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCF_RAM_ADDRESS)
 #define RMSS_RAM0_ADDRESS (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS)
 #define RMSS_RAM1_ADDRESS (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS)
@@ -192,7 +188,7 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
         trigger_mscp_watchdog_fault();
         break;
     default:
-        FPFW_DBGPRINT_ERROR("Invalid/Unsupported SCP error type(%d)\n", einj_payload->component_type);
+        FPFW_DBGPRINT_ERROR("Invalid/Unsupported SCP error type(%d)\n", einj_payload->param_type.error_type);
         return ACPI_EINJ_INVALID_ACCESS;
     }
 

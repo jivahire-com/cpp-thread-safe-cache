@@ -35,4 +35,12 @@ void register_mcp_error_domain(fpfw_icc_base_ctx_t* icc_ctx);
  * @brief start ICC listener for MCP error injection request
  */
 void start_mcp_error_injection_listener(fpfw_icc_base_ctx_t* icc_ctx);
+
+/**
+ * @brief Get MHU handle
+ *  
+ * @return
+ *      pointer to handle.
+ */
+fpfw_icc_base_ctx_t* get_mhu_handle(void);
 #endif

@@ -34,8 +34,6 @@
         }                                                  \
     }
 
-#define MMIO_SET_MASK32(addr, mask)   MMIO_WRITE32(addr, (MMIO_READ32(addr) | (mask)))
-#define MMIO_CLEAR_MASK32(addr, mask) MMIO_WRITE32(addr, (MMIO_READ32(addr) & ~(mask)))
 /*-------- Function Prototypes -----------*/
 
 /*-------------- Typedefs ----------------*/

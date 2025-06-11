@@ -41,15 +41,24 @@ static int test_teardown(void** pContext)
 TEST_FUNCTION(test_droop_counts, test_setup, test_teardown)
 {
     uint64_t droop_count_array[NUM_AP_CORES_PER_DIE];
-    memset(droop_count_array, 0xFF, sizeof(droop_count_array));
+    memset(droop_count_array, 0xAB, sizeof(droop_count_array));
+
+    uint64_t verify_array[NUM_AP_CORES_PER_DIE];
+    memset(verify_array, 0x00, sizeof(verify_array));
+
+    pwr_tlm_core_exch_init();
+
+    uint8_t seq_num = pwr_tlm_core_exch_mcp_read_droop_counts(&verify_array);
+    assert_int_equal(seq_num, 0);
 
     pwr_tlm_core_exch_scp_write_droop_counts(&droop_count_array);
 
-    pwr_tlm_core_exch_mcp_read_droop_counts(&droop_count_array);
+    seq_num = pwr_tlm_core_exch_mcp_read_droop_counts(&verify_array);
+    assert_int_equal(seq_num, 1);
 
     // stub just clears for now
     for (size_t i = 0; i < NUM_AP_CORES_PER_DIE; ++i)
     {
-        assert_int_equal(droop_count_array[i], 0);
+        assert_true(verify_array[i] == 0xABABABABABABABAB);
     }
 }

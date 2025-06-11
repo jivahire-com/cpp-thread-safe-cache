@@ -8,7 +8,7 @@ add_library(${TARGET}
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.utils
-
+        ms::cmsis::interface
 
     PUBLIC
         silibs::kng_silibs_platform

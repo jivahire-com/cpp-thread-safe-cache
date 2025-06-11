@@ -55,6 +55,7 @@ add_library(${TARGET}
         pex_rng_init.c
         power_fuse_init.c
         power_init.c
+        pwr_tlm_core_ex_init.c
         scmi_init.c
         scmi_cli_init.c
         scp_crash_dump_init.c
@@ -138,6 +139,7 @@ target_link_libraries(
         ms::lib::pex_rng
         ms::lib::power_fuse
         ms::lib::power::cli
+        ms::lib::pwr_tlm_core_ex
         ms::lib::register_headers
         ms::lib::scmi::cli
         ms::lib::scp_avs

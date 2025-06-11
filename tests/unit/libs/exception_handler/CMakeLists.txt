@@ -12,14 +12,22 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::lib::cortex_m7::nvic
         ms::lib::error_codes
-        ms::lib::exception_handler
+        ms::lib::error_domain::scp
+        ms::lib::exception_handler::scp
         ms::lib::threadx
         ms::lib::crash_dump
+        silibs::atu
 )
 
 target_include_directories(${TARGET}
     PRIVATE
         ${CMAKE_SOURCE_DIR}/src/libs/exception_handler/src
+)
+
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+       SCP_RUNTIME_INIT
 )
 
 # Defining platform APIs
@@ -40,4 +48,9 @@ mock_target(${TARGET}
     wdog_cmsdk_apb_lock_unlock
     _tx_thread_stack_error_notify
     hm_submit_cper
+    get_shared_sram_ecc_atu_entry
+    atu_map
+    atu_unmap
+    mmio_read32
+    mmio_write32
 )

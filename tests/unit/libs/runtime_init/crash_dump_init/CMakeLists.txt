@@ -29,7 +29,7 @@ target_link_libraries(${TARGET}
         ms::cmsis::interface
         ms::lib::accelerator_ip
         ms::lib::crash_dump
-        ms::lib::exception_handler
+        ms::lib::exception_handler::scp
         silibs::icc_mhu
         silibs::idhw
         silibs::idsw
@@ -99,7 +99,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::cmsis::interface
         ms::lib::crash_dump
-        ms::lib::exception_handler
+        ms::lib::exception_handler::mcp
         silibs::icc_mhu
         silibs::idhw
         silibs::idsw

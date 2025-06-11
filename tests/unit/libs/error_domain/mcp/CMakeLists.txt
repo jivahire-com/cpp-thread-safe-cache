@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.interface.platform.dbgprint
         fwlib.lib.utils
         fwlib.platform.dfwkhost.threadx
+        silibs::atu
         silibs::idsw_kng
         silibs::semaphore
         silibs::kng_silibs_platform

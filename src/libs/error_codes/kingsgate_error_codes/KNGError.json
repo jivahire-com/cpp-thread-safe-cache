@@ -413,6 +413,21 @@
           "Name": "KNG_HM_REMOTE_SCP_CE_OF",
           "Value": 21,
           "Description": "Remote SCP to SCF/RAM0/RAM1"
+        },
+        {
+          "Name": "KNG_HM_ARSM_UE",
+          "Value": 22,
+          "Description": "Uncorrectable Error in Shared SRAM"
+        },
+        {
+          "Name": "KNG_HM_ARSM_CE",
+          "Value": 23,
+          "Description": "Correctable Error in Shared SRAM"
+        },
+        {
+          "Name": "KNG_HM_ARSM_OF",
+          "Value": 24,
+          "Description": "Overflow Error in Shared SRAM"
         }
       ]
     }

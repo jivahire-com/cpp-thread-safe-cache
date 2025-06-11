@@ -123,7 +123,7 @@ target_link_libraries(
         ms::lib::debug
         ms::lib::d2d_cntr_sync
         ms::lib::error_domain::scp
-        ms::lib::exception_handler
+        ms::lib::exception_handler::scp
         ms::lib::gtimer
         ms::lib::hsp_firmware_headers
         ms::lib::hw_semaphore
@@ -320,7 +320,7 @@ target_link_libraries(
         ms::lib::crash_dump
         ms::lib::debug
         ms::lib::error_domain::mcp
-        ms::lib::exception_handler
+        ms::lib::exception_handler::mcp
         ms::lib::gtimer
         ms::lib::hw_semaphore
         ms::lib::icc::cli

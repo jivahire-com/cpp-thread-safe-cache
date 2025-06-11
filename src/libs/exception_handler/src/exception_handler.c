@@ -11,16 +11,25 @@
 #include "exception_handler_i.h"
 
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
-#include <bug_check.h>  // for BUG_CHECK
-#include <cmsdk_wd.h>   // for wdog_cmsdk_apb_disable
+#include <atu_api.h>
+#include <atu_lib.h>
+#include <bug_check.h> // for BUG_CHECK
+#include <cmsdk_wd.h>  // for wdog_cmsdk_apb_disable
 #include <cper.h>
 #include <crash_dump.h> // for crash_dump_handler, crash_dump_bug_check_initiated_dump
 #include <health_monitor.h>
-#include <kng_error.h> // for KNG_CD_DEFAULT_EXCEPTION, KNG_CD_HARDFAULT_EXCEPTION ...
-#include <nvic.h>      // for nvic_set_isr_fault, nvic_irq_set_isr ...
-#include <stddef.h>    // for NULL
-#include <stdint.h>    // for uint32_t
-#include <tx_api.h>    // for TX_THREAD, tx_thread_stack_error_notify
+#include <idsw_kng.h>
+#include <interrupts.h>
+#include <kng_atu_mappings.h> // for ATU_MAPPING_SDMSS_BASE, ATU_MAPPING_SDM_RCIEP_ECAM_BASE ...
+#include <kng_error.h>        // for KNG_CD_DEFAULT_EXCEPTION, KNG_CD_HARDFAULT_EXCEPTION ...
+#include <mscp_error_domain.h>
+#include <nvic.h> // for nvic_set_isr_fault, nvic_irq_set_isr ...
+#define __NO_LARGE_ADDRMAP_TYPEDEFS__
+#include <scp_top_regs.h>
+#include <shared_sram_ecc_ras_registers_regs.h>
+#include <stddef.h> // for NULL
+#include <stdint.h> // for uint32_t
+#include <tx_api.h> // for TX_THREAD, tx_thread_stack_error_notify
 
 /*------------- Typedefs -----------------*/
 
@@ -121,6 +130,86 @@ __attribute__((__weak__)) int get_active_exception(void)
     return (SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk) - NVIC_USER_IRQ_OFFSET;
 }
 
+#ifdef SCP_RUNTIME_INIT
+// #define DUMP_ARSM_ECC_STATUS_VERBOSE 1
+static bool check_shared_sram_ecc_ras_fault(void)
+{
+    for (scp_arsm_ram_type_t i = SCP_S_ARSM_RAM; i < SCP_ARSM_RAM_COUNT; i++)
+    {
+        atu_map_entry_t atu_entry;
+        get_shared_sram_ecc_atu_entry(i, &atu_entry);
+        atu_map(ATU_ID_MSCP, &atu_entry);
+        uint32_t err_status =
+            MMIO_READ32(atu_entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+        uint32_t err_addr =
+            MMIO_READ32(atu_entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
+
+        if (err_status != 0)
+        {
+            bool is_pending = false;
+            nvic_is_irq_pending(get_irq_num_for_scp_ecc_isr(i), &is_pending);
+
+            FPFwCDPrintf("type_%d : err_status = 0x%08lx at addr = 0x%08lx, irq = %s\n",
+                         i,
+                         err_status,
+                         err_addr,
+                         is_pending ? "PENDING" : "CLEAR");
+    #ifdef DUMP_ARSM_ECC_STATUS_VERBOSE
+            FPFwCDPrintf("type_%d : SERR = 0x%08lx\n", i, err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_SERR_MASK);
+            FPFwCDPrintf("type_%d : UET = 0x%08lx\n",
+                         i,
+                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UET_MASK) >>
+                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UET_LSB);
+            FPFwCDPrintf("type_%d : PN = 0x%08lx\n",
+                         i,
+                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_PN_MASK) >>
+                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_PN_LSB);
+            FPFwCDPrintf("type_%d : DE = 0x%08lx\n",
+                         i,
+                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_DE_MASK) >>
+                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_DE_LSB);
+            FPFwCDPrintf("type_%d : CE = 0x%08lx\n",
+                         i,
+                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK) >>
+                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_LSB);
+            FPFwCDPrintf("type_%d : MV = 0x%08lx\n",
+                         i,
+                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_MV_MASK) >>
+                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_MV_LSB);
+            FPFwCDPrintf("type_%d : OF = 0x%08lx\n",
+                         i,
+                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK) >>
+                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_LSB);
+            FPFwCDPrintf("type_%d : ER = 0x%08lx\n",
+                         i,
+                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ER_MASK) >>
+                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ER_LSB);
+            FPFwCDPrintf("type_%d : UE = 0x%08lx\n",
+                         i,
+                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK) >>
+                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_LSB);
+            FPFwCDPrintf("type_%d : V = 0x%08lx\n",
+                         i,
+                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK) >>
+                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_LSB);
+            FPFwCDPrintf("type_%d : AV = 0x%08lx\n",
+                         i,
+                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK) >>
+                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_LSB);
+    #endif
+        }
+        atu_unmap(ATU_ID_MSCP, &atu_entry);
+
+        if (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK) // SRAMECC_ERRSTATUS is valid
+        {
+            return true; // ECC error detected
+        }
+    }
+
+    return false; // No ECC error detected
+}
+#endif
+
 /**
  * @brief Exception handler for Cortex-M7. This function is called when an exception occurs.
  *
@@ -129,6 +218,11 @@ __attribute__((__weak__)) int get_active_exception(void)
 void exception_handler(exception_stack_frame_t* stack_frame)
 {
     save_crash_context(stack_frame);
+
+#ifdef SCP_RUNTIME_INIT
+    bool is_shared_sram_ecc_fault = check_shared_sram_ecc_ras_fault();
+    FPFwCDPrintf("Shared SRAM ECC RAS Fault: %s\n", is_shared_sram_ecc_fault ? "Detected" : "Not Detected");
+#endif
 
     // Disable Watchdog
     wdog_cmsdk_apb_disable();         // Disable watchdog

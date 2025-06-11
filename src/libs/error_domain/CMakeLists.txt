@@ -28,8 +28,10 @@ target_link_libraries(
             ms::lib::error_codes
             ms::lib::scp_interrupts
             ms::service::health_monitor
+            silibs::atu
             silibs::cmsdk_wd
             silibs::idhw
+            silibs::idsw_kng
 )
 
 target_include_directories(${TARGET}
@@ -83,9 +85,10 @@ target_link_libraries(
             ms::lib::error_codes
             ms::lib::icc_platform_defines
             ms::service::health_monitor
+            silibs::atu
             silibs::icc_mhu
             silibs::cmsdk_wd
-            
+            silibs::idsw_kng
 )
 
 target_include_directories(${TARGET}

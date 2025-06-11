@@ -11,9 +11,13 @@
 #include <DbgPrint.h>
 #include <FpFwUtils.h>
 #include <arm_intrinsic.h> // for __DSB on Windows builds (empty define)
+#include <atu_api.h>
+#include <bug_check.h>
 #include <cper.h>
 #include <error_domain_i.h>
 #include <health_monitor.h>
+#include <idsw_kng.h>
+#include <mscp_error_domain.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <mscp_ras_and_init_ctrl_registers_regs.h>
 #include <nvic.h>
@@ -21,6 +25,7 @@
 #include <scp_exp_top_regs.h>
 #define __NO_LARGE_ADDRMAP_TYPEDEFS__
 #include <scp_top_regs.h>
+#include <shared_sram_ecc_ras_registers_regs.h>
 
 // clang-format off
 #include <cmsis_m7.h>
@@ -31,6 +36,8 @@
 // clang-format on
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define ARSM_RAM_DEFAULT_OFFSET (0x10)
+
 #define SCF_RAM_ADDRESS   (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCF_RAM_ADDRESS)
 #define RMSS_RAM0_ADDRESS (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS)
 #define RMSS_RAM1_ADDRESS (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS)
@@ -59,6 +66,45 @@ static void inject_err_by_access(uint32_t addr)
     MMIO_READ32(addr);
 }
 
+static void trigger_shared_sram_fault(scp_arsm_ram_type_t type, uint32_t target_addr, uint32_t err_mask)
+{
+    atu_map_entry_t entry;
+    get_shared_sram_ecc_atu_entry(type, &entry);
+    int status = atu_map(ATU_ID_MSCP, &entry);
+    BUG_ASSERT(status == SILIBS_SUCCESS);
+
+    if (err_mask & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK)
+    {
+        MMIO_UPDATE32(entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_CE_MASK,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_CE_MASK);
+        inject_err_by_access(target_addr);
+    }
+    else if (err_mask & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK)
+    {
+        MMIO_UPDATE32(entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
+        inject_err_by_access(target_addr);
+    }
+    else if (err_mask & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK)
+    {
+        nvic_global_disable();
+        MMIO_UPDATE32(entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
+        inject_err_by_access(target_addr);
+        MMIO_UPDATE32(entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
+        inject_err_by_access(target_addr);
+        nvic_global_enable();
+    }
+
+    status = atu_unmap(ATU_ID_MSCP, &entry);
+    BUG_ASSERT(status == SILIBS_SUCCESS);
+}
+
 acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
 {
     FPFW_UNUSED(ctx);
@@ -68,6 +114,13 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
         FPFW_DBGPRINT_ERROR("Invalid SCP error domain(%d)\n", einj_payload->component_group);
         return ACPI_EINJ_INVALID_ACCESS;
     }
+
+    // ARSM RAM error injection address
+    uint32_t arsm_addr = ((idsw_get_die_id() == DIE_0) ? MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR
+                                                       : MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR);
+    arsm_addr = (einj_payload->param_type.address_64 == 0)
+                    ? arsm_addr + ARSM_RAM_DEFAULT_OFFSET
+                    : arsm_addr + (uint32_t)(uintptr_t)einj_payload->param_type.address_64;
 
     switch (einj_payload->param_type.error_type)
     {
@@ -186,6 +239,66 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
         break;
     case SCP_ERROR_TYPE_WATCHDOG:
         trigger_mscp_watchdog_fault();
+        break;
+    case SCP_ERROR_TYPE_S_ARSM_CE:
+        trigger_shared_sram_fault(SCP_S_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+        break;
+    case SCP_ERROR_TYPE_S_ARSM_UE:
+        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_S_ARSM_UE is not supported in this build.\n");
+        // trigger_shared_sram_fault(SCP_S_ARSM_RAM,
+        //                           arsm_addr,
+        //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+        break;
+    case SCP_ERROR_TYPE_S_ARSM_OVERFLOW:
+        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_S_ARSM_OVERFLOW is not supported in this build.\n");
+        // trigger_shared_sram_fault(SCP_S_ARSM_RAM,
+        //                           arsm_addr,
+        //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+        break;
+    case SCP_ERROR_TYPE_NS_ARSM_CE:
+        trigger_shared_sram_fault(SCP_NS_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+        break;
+    case SCP_ERROR_TYPE_NS_ARSM_UE:
+        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_NS_ARSM_UE is not supported in this build.\n");
+        // trigger_shared_sram_fault(SCP_NS_ARSM_RAM,
+        //                           arsm_addr,
+        //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+        break;
+    case SCP_ERROR_TYPE_NS_ARSM_OVERFLOW:
+        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_NS_ARSM_OVERFLOW is not supported in this build.\n");
+        // trigger_shared_sram_fault(SCP_NS_ARSM_RAM,
+        //                           arsm_addr,
+        //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+        break;
+    case SCP_ERROR_TYPE_RT_ARSM_CE:
+        trigger_shared_sram_fault(SCP_RT_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+        break;
+    case SCP_ERROR_TYPE_RT_ARSM_UE:
+        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_RT_ARSM_UE is not supported in this build.\n");
+        // trigger_shared_sram_fault(SCP_RT_ARSM_RAM,
+        //                           arsm_addr,
+        //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+        break;
+    case SCP_ERROR_TYPE_RT_ARSM_OVERFLOW:
+        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_RT_ARSM_OVERFLOW is not supported in this build.\n");
+        // trigger_shared_sram_fault(SCP_RT_ARSM_RAM,
+        //                           arsm_addr,
+        //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+        break;
+    case SCP_ERROR_TYPE_RL_ARSM_CE:
+        trigger_shared_sram_fault(SCP_RL_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+        break;
+    case SCP_ERROR_TYPE_RL_ARSM_UE:
+        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_RL_ARSM_UE is not supported in this build.\n");
+        // trigger_shared_sram_fault(SCP_RL_ARSM_RAM,
+        //                           arsm_addr,
+        //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+        break;
+    case SCP_ERROR_TYPE_RL_ARSM_OVERFLOW:
+        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_RL_ARSM_OVERFLOW is not supported in this build.\n");
+        // trigger_shared_sram_fault(SCP_RL_ARSM_RAM,
+        //                           arsm_addr,
+        //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
         break;
     default:
         FPFW_DBGPRINT_ERROR("Invalid/Unsupported SCP error type(%d)\n", einj_payload->param_type.error_type);

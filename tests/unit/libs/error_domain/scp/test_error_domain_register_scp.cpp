@@ -13,15 +13,22 @@
 extern "C" {
 
 #include <FpFwUtils.h> // for FPFW_UNUSED
+#include <atu_api.h>
+#include <atu_lib.h> // for atu_map_entry_t
+#include <cortexm7integrationcs_scp_regs.h>
 #include <fpfw_init.h> // for fpfw_init_result_t, fpfw_init_component_t
 #include <health_monitor.h>
+#include <idsw_kng.h>
 #include <interrupts.h>
+#include <kng_atu_mappings.h>
 #include <mscp_error_domain.h>
+#include <mscp_ras_and_init_ctrl_registers_regs.h>
 #include <nvic.h> // for nvic_status_t
 #include <scp_exp_csr_regs.h>
 #include <scp_exp_top_regs.h>
 #define __NO_LARGE_ADDRMAP_TYPEDEFS__
 #include <scp_top_regs.h>
+#include <shared_sram_ecc_ras_registers_regs.h>
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -70,6 +77,7 @@ void test_icache_tag_ce_isr();
 void test_hard_fault_handler();
 void test_bus_fault_handler();
 void test_watchdog_handler();
+void test_trigger_shared_sram_fault(uint32_t err_mask);
 
 /*-- Declarations (Statics and globals) --*/
 hm_error_injection_cb_t g_err_inject_cb = NULL;
@@ -91,6 +99,7 @@ isr_callback_fn_sans_params_t g_icache_ce_isr = NULL;
 isr_callback_fn_sans_params_t g_icache_tag_ue_isr = NULL;
 isr_callback_fn_sans_params_t g_icache_tag_ce_isr = NULL;
 isr_callback_fn_sans_params_t g_rmss_remote_scp_scfram_bootram_isr = NULL;
+isr_callback_fn_with_params_t g_s_arsm_ecc_isr = NULL;
 
 /*------------- Functions ----------------*/
 //
@@ -208,6 +217,37 @@ nvic_status_t __wrap_nvic_irq_set_isr(uint32_t irq_num, isr_callback_fn_sans_par
     return NVIC_STATUS_SUCCESS;
 }
 
+nvic_status_t __wrap_nvic_irq_set_isr_with_param(uint32_t irq_num, isr_callback_fn_with_params_t isr, void* parameter)
+{
+    FPFW_UNUSED(parameter);
+    switch (irq_num)
+    {
+    case HW_INT_SCP_S_ARSM_ECC_FHI_INT:
+    case HW_INT_SCP_NS_ARSM_ECC_FHI_INT:
+    case HW_INT_SCP_RT_ARSM_ECC_FHI_INT:
+    case HW_INT_SCP_RL_ARSM_ECC_FHI_INT:
+        if (g_s_arsm_ecc_isr == NULL)
+        {
+            g_s_arsm_ecc_isr = isr;
+        }
+        break;
+    default:
+        break;
+    }
+
+    function_called();
+    return NVIC_STATUS_SUCCESS;
+}
+
+nvic_status_t __wrap_nvic_get_current_irq(uint32_t* irq_num)
+{
+    assert_non_null(irq_num);
+    *irq_num = mock_type(uint32_t);
+    function_called();
+
+    return NVIC_STATUS_SUCCESS;
+}
+
 nvic_status_t __wrap_nvic_irq_enable(uint32_t irq_num)
 {
     check_expected(irq_num);
@@ -255,6 +295,35 @@ void __wrap_wdog_cmsdk_apb_init(uint32_t reload_timeout, bool reset_enable)
     function_called();
 }
 
+static uint8_t mapped_region[0x20000] = {0};
+
+int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    assert_true(atu_id == ATU_ID_MSCP);
+    assert_non_null(atu_map_entry);
+
+    atu_map_entry->mscp_start_address = (uint32_t)mapped_region;
+
+    function_called();
+
+    return 0;
+}
+
+int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    assert_true(atu_id == ATU_ID_MSCP);
+    assert_non_null(atu_map_entry);
+
+    function_called();
+
+    return 0;
+}
+
+idsw_die_id_t __wrap_idsw_get_die_id(void)
+{
+    return 0; // DIE0 for testing purposes
+}
+
 bool __wrap_idhw_is_single_die_boot_en(void)
 {
     return mock_type(bool);
@@ -267,6 +336,135 @@ bool __wrap_idhw_is_single_die_boot_en(void)
 
 TEST_FUNCTION(test_register_scp_error_domain, nullptr, nullptr)
 {
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    // SCF RAM ECC
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_SCFRAM_ECCOF_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SCP_SCFRAM_ECCOF_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_SCFRAM_ECCOF_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_SCFRAM_ECCCE_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SCP_SCFRAM_ECCCE_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_SCFRAM_ECCCE_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+
+    // Boot RAM ECC
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_RAM0_ECCOF_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SCP_RAM0_ECCOF_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_RAM0_ECCOF_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_RAM0_ECCCE_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SCP_RAM0_ECCCE_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_RAM0_ECCCE_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_RAM1_ECCOF_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SCP_RAM1_ECCOF_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_RAM1_ECCOF_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_RAM1_ECCCE_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SCP_RAM1_ECCCE_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_RAM1_ECCCE_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+
+    // Remote SCP ECC on SCF/RAM0/RAM1
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_REMOTE_SCP_RAM_CE_OF_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_REMOTE_SCP_RAM_CE_OF_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_REMOTE_SCP_RAM_CE_OF_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+
+    // TCM ECC
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_TCM_ECCCE_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SCP_TCM_ECCCE_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_TCM_ECCCE_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_TCM_ECCUE_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SCP_TCM_ECCUE_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_TCM_ECCUE_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_TCM_ECCOF_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SCP_TCM_ECCOF_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_TCM_ECCOF_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+
+    // Data Cache ECC
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_DCDET_DATA_UE
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_DCDET_DATA_UE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_DCDET_DATA_UE);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_DCDET_DATA_CE
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_DCDET_DATA_CE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_DCDET_DATA_CE);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_DCDET_TAG_UE
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_DCDET_TAG_UE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_DCDET_TAG_UE);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_DCDET_TAG_CE
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_DCDET_TAG_CE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_DCDET_TAG_CE);
+    expect_function_call(__wrap_nvic_irq_enable);
+
+    // Instruction Cache ECC
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_ICDET_DATA_UE
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_ICDET_DATA_UE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_ICDET_DATA_UE);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_ICDET_DATA_CE
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_ICDET_DATA_CE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_ICDET_DATA_CE);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_ICDET_TAG_UE
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_ICDET_TAG_UE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_ICDET_TAG_UE);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_ICDET_TAG_CE
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_ICDET_TAG_CE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_ICDET_TAG_CE);
+    expect_function_call(__wrap_nvic_irq_enable);
+
+    expect_function_call(__wrap_nvic_irq_set_isr_with_param); // HW_INT_SCP_S_ARSM_ECC_FHI_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SCP_S_ARSM_ECC_FHI_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_S_ARSM_ECC_FHI_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+
+    expect_function_call(__wrap_nvic_irq_set_isr_with_param); // HW_INT_SCP_NS_ARSM_ECC_FHI_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SCP_NS_ARSM_ECC_FHI_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_NS_ARSM_ECC_FHI_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+
+    expect_function_call(__wrap_nvic_irq_set_isr_with_param); // HW_INT_SCP_RT_ARSM_ECC_FHI_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SCP_RT_ARSM_ECC_FHI_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_RT_ARSM_ECC_FHI_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+
+    expect_function_call(__wrap_nvic_irq_set_isr_with_param); // HW_INT_SCP_RL_ARSM_ECC_FHI_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SCP_RL_ARSM_ECC_FHI_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_RL_ARSM_ECC_FHI_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+
     // SCF RAM ECC
     expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_SCFRAM_ERRCTRL_REG);
     will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->scfram_errctrl_reg
@@ -305,74 +503,28 @@ TEST_FUNCTION(test_register_scp_error_domain, nullptr, nullptr)
     expect_value(__wrap_mmio_write32, data, MSCP_RAS_AND_INIT_CTRL_REGISTERS_TCMECC_ERRCTRL_ITCMRAM_ECC_EN_MASK);
     expect_function_call(__wrap_mmio_write32);
 
-    expect_function_call(__wrap_hm_register_error_domain);
-
-    // SCF RAM ECC
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_SCFRAM_ECCOF_INT
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_SCFRAM_ECCOF_INT);
-    expect_function_call(__wrap_nvic_irq_enable);
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_SCFRAM_ECCCE_INT
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_SCFRAM_ECCCE_INT);
-    expect_function_call(__wrap_nvic_irq_enable);
-
-    // Boot RAM ECC
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_RAM0_ECCOF_INT
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_RAM0_ECCOF_INT);
-    expect_function_call(__wrap_nvic_irq_enable);
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_RAM0_ECCCE_INT
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_RAM0_ECCCE_INT);
-    expect_function_call(__wrap_nvic_irq_enable);
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_RAM1_ECCOF_INT
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_RAM1_ECCOF_INT);
-    expect_function_call(__wrap_nvic_irq_enable);
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_RAM1_ECCCE_INT
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_RAM1_ECCCE_INT);
-    expect_function_call(__wrap_nvic_irq_enable);
-
-    // Remote SCP ECC on SCF/RAM0/RAM1
-    will_return(__wrap_idhw_is_single_die_boot_en, false);
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_REMOTE_SCP_RAM_CE_OF_INT
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_REMOTE_SCP_RAM_CE_OF_INT);
-    expect_function_call(__wrap_nvic_irq_enable);
-
-    // TCM ECC
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_TCM_ECCCE_INT
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_TCM_ECCCE_INT);
-    expect_function_call(__wrap_nvic_irq_enable);
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_TCM_ECCUE_INT
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_TCM_ECCUE_INT);
-    expect_function_call(__wrap_nvic_irq_enable);
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_TCM_ECCOF_INT
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_TCM_ECCOF_INT);
-    expect_function_call(__wrap_nvic_irq_enable);
-
-    // Data Cache ECC
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_DCDET_DATA_UE
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_DCDET_DATA_UE);
-    expect_function_call(__wrap_nvic_irq_enable);
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_DCDET_DATA_CE
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_DCDET_DATA_CE);
-    expect_function_call(__wrap_nvic_irq_enable);
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_SCP_TCM_ECCOF_INT
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_DCDET_TAG_UE);
-    expect_function_call(__wrap_nvic_irq_enable);
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_DCDET_TAG_CE
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_DCDET_TAG_CE);
-    expect_function_call(__wrap_nvic_irq_enable);
-
-    // Instruction Cache ECC
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_ICDET_DATA_UE
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_ICDET_DATA_UE);
-    expect_function_call(__wrap_nvic_irq_enable);
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_ICDET_DATA_CE
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_ICDET_DATA_CE);
-    expect_function_call(__wrap_nvic_irq_enable);
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_ICDET_TAG_UE
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_ICDET_TAG_UE);
-    expect_function_call(__wrap_nvic_irq_enable);
-    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_ICDET_TAG_CE
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_ICDET_TAG_CE);
-    expect_function_call(__wrap_nvic_irq_enable);
+    // Shared SRAM ECC
+    for (int i = SCP_S_ARSM_RAM; i < SCP_ARSM_RAM_COUNT; i++)
+    {
+        expect_function_call(__wrap_atu_map);
+        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRFR_ADDRESS);
+        will_return(__wrap_mmio_read32,
+                    SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRFR_ED_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRFR_FI_MASK |
+                        SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRFR_UE_MASK |
+                        SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRFR_CFI_MASK);
+        expect_function_call(__wrap_mmio_read32);
+        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRCTRL_ADDRESS);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+        expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRCTRL_ADDRESS);
+        expect_value(__wrap_mmio_write32,
+                     data,
+                     SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRCTRL_ED_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRCTRL_FI_MASK |
+                         SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRCTRL_UE_MASK |
+                         SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRCTRL_CFI_MASK);
+        expect_function_call(__wrap_mmio_write32);
+        expect_function_call(__wrap_atu_unmap);
+    }
 
     register_scp_error_domain();
 }
@@ -381,16 +533,79 @@ static int test_setup(void** ctx)
 {
     FPFW_UNUSED(ctx);
 
-    if (g_err_inject_cb == NULL || g_scfram_of_isr == NULL || g_scfram_ce_isr == NULL || g_ram0_of_isr == NULL ||
-        g_ram0_ce_isr == NULL || g_ram1_of_isr == NULL || g_ram1_ce_isr == NULL || g_tcm_ce_isr == NULL ||
-        g_tcm_ue_isr == NULL || g_tcm_of_isr == NULL || g_dcache_ue_isr == NULL || g_dcache_ce_isr == NULL ||
-        g_dcache_tag_ue_isr == NULL || g_dcache_tag_ce_isr == NULL || g_icache_ue_isr == NULL || g_icache_ce_isr == NULL ||
-        g_icache_tag_ue_isr == NULL || g_icache_tag_ce_isr == NULL || g_rmss_remote_scp_scfram_bootram_isr == NULL)
+    if (g_err_inject_cb == NULL || g_scfram_of_isr == NULL || g_scfram_ce_isr == NULL ||
+        g_ram0_of_isr == NULL || g_ram0_ce_isr == NULL || g_ram1_of_isr == NULL || g_ram1_ce_isr == NULL ||
+        g_tcm_ce_isr == NULL || g_tcm_ue_isr == NULL || g_tcm_of_isr == NULL || g_dcache_ue_isr == NULL ||
+        g_dcache_ce_isr == NULL || g_dcache_tag_ue_isr == NULL || g_dcache_tag_ce_isr == NULL ||
+        g_icache_ue_isr == NULL || g_icache_ce_isr == NULL || g_icache_tag_ue_isr == NULL ||
+        g_icache_tag_ce_isr == NULL || g_rmss_remote_scp_scfram_bootram_isr == NULL || g_s_arsm_ecc_isr == NULL)
     {
         test_register_scp_error_domain(NULL);
     }
 
     return 0;
+}
+
+void test_trigger_shared_sram_fault(uint32_t err_mask)
+{
+    expect_function_call(__wrap_atu_map);
+
+    if (err_mask & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK)
+    {
+        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+        expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
+        expect_value(__wrap_mmio_write32, data, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_CE_MASK);
+        expect_function_call(__wrap_mmio_write32);
+
+        expect_value(__wrap_mmio_read32, addr, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + 0x10);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+    }
+    else if (err_mask & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK)
+    {
+        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+        expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
+        expect_value(__wrap_mmio_write32, data, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
+        expect_function_call(__wrap_mmio_write32);
+
+        expect_value(__wrap_mmio_read32, addr, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + 0x10);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+    }
+    else if (err_mask & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK)
+    {
+        expect_function_call(__wrap_nvic_global_disable);
+
+        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+        expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
+        expect_value(__wrap_mmio_write32, data, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
+        expect_function_call(__wrap_mmio_write32);
+
+        expect_value(__wrap_mmio_read32, addr, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + 0x10);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+
+        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+        expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
+        expect_value(__wrap_mmio_write32, data, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
+        expect_function_call(__wrap_mmio_write32);
+
+        expect_value(__wrap_mmio_read32, addr, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + 0x10);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+
+        expect_function_call(__wrap_nvic_global_enable);
+    }
+
+    expect_function_call(__wrap_atu_unmap);
 }
 
 void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_type)
@@ -652,6 +867,24 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
         case SCP_ERROR_TYPE_WATCHDOG:
             test_watchdog_handler();
             break;
+        case SCP_ERROR_TYPE_S_ARSM_CE:
+        case SCP_ERROR_TYPE_NS_ARSM_CE:
+        case SCP_ERROR_TYPE_RT_ARSM_CE:
+        case SCP_ERROR_TYPE_RL_ARSM_CE:
+            test_trigger_shared_sram_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+            break;
+        case SCP_ERROR_TYPE_S_ARSM_UE:
+        case SCP_ERROR_TYPE_NS_ARSM_UE:
+        case SCP_ERROR_TYPE_RT_ARSM_UE:
+        case SCP_ERROR_TYPE_RL_ARSM_UE:
+            // test_trigger_shared_sram_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+            break;
+        case SCP_ERROR_TYPE_S_ARSM_OVERFLOW:
+        case SCP_ERROR_TYPE_NS_ARSM_OVERFLOW:
+        case SCP_ERROR_TYPE_RT_ARSM_OVERFLOW:
+        case SCP_ERROR_TYPE_RL_ARSM_OVERFLOW:
+            // test_trigger_shared_sram_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+            break;
         default:
             expected_status = ACPI_EINJ_INVALID_ACCESS;
             break;
@@ -689,6 +922,20 @@ TEST_FUNCTION(test_scp_error_injection_handler, test_setup, nullptr)
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_HARD_FAULT);
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_BUS_FAULT);
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_WATCHDOG);
+
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_S_ARSM_CE);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_S_ARSM_UE);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_S_ARSM_OVERFLOW);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_NS_ARSM_CE);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_NS_ARSM_UE);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_NS_ARSM_OVERFLOW);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_RT_ARSM_CE);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_RT_ARSM_UE);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_RT_ARSM_OVERFLOW);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_RL_ARSM_CE);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_RL_ARSM_UE);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_RL_ARSM_OVERFLOW);
+
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_COUNT);
 }
 
@@ -1170,4 +1417,110 @@ void test_watchdog_handler()
     expect_function_call(__wrap_wdog_cmsdk_apb_disable);
     expect_value(__wrap_wdog_cmsdk_apb_init, reload_timeout, 1);
     expect_function_call(__wrap_wdog_cmsdk_apb_init);
+}
+
+TEST_FUNCTION(test_shared_sram_ecc_isr_ue, test_setup, nullptr)
+{
+    atu_map_entry_t atu_entry = ATU_MAPPING_SCP_S_ARSM_RAM_ECC(0);
+
+    expect_function_call(__wrap_atu_map);
+
+    // Read error status
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+    will_return(__wrap_mmio_read32,
+                SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK |
+                    SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK | 0x02);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Read error address if applicable
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
+    will_return(__wrap_mmio_read32, 0x12345678);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Clear the error status
+    expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+    expect_value(__wrap_mmio_write32,
+                 data,
+                 SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK |
+                     SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+    expect_function_call(__wrap_mmio_write32);
+
+    expect_function_call(__wrap_hm_submit_cper);
+
+    // Unmap the shared SRAM ECC registers
+    expect_function_call(__wrap_atu_unmap);
+
+    expect_function_call(__wrap_crash_dump_bug_check);
+
+    g_s_arsm_ecc_isr((void*)&atu_entry);
+}
+
+TEST_FUNCTION(test_shared_sram_ecc_isr_ce, test_setup, nullptr)
+{
+    atu_map_entry_t atu_entry = ATU_MAPPING_SCP_S_ARSM_RAM_ECC(0);
+
+    expect_function_call(__wrap_atu_map);
+
+    // Read error status
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+    will_return(__wrap_mmio_read32,
+                SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK |
+                    SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK | 0x02);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Read error address if applicable
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
+    will_return(__wrap_mmio_read32, 0x12345678);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Clear the error status
+    expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+    expect_value(__wrap_mmio_write32,
+                 data,
+                 SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK |
+                     SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+    expect_function_call(__wrap_mmio_write32);
+
+    expect_function_call(__wrap_hm_submit_cper);
+
+    // Unmap the shared SRAM ECC registers
+    expect_function_call(__wrap_atu_unmap);
+
+    g_s_arsm_ecc_isr((void*)&atu_entry);
+}
+
+TEST_FUNCTION(test_shared_sram_ecc_isr_of, test_setup, nullptr)
+{
+    atu_map_entry_t atu_entry = ATU_MAPPING_SCP_S_ARSM_RAM_ECC(0);
+
+    expect_function_call(__wrap_atu_map);
+
+    // Read error status
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+    will_return(__wrap_mmio_read32,
+                SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK |
+                    SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK | 0x02);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Read error address if applicable
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
+    will_return(__wrap_mmio_read32, 0x12345678);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Clear the error status
+    expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+    expect_value(__wrap_mmio_write32,
+                 data,
+                 SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK |
+                     SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+    expect_function_call(__wrap_mmio_write32);
+
+    expect_function_call(__wrap_hm_submit_cper);
+
+    // Unmap the shared SRAM ECC registers
+    expect_function_call(__wrap_atu_unmap);
+
+    expect_function_call(__wrap_crash_dump_bug_check);
+
+    g_s_arsm_ecc_isr((void*)&atu_entry);
 }

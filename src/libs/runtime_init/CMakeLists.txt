@@ -259,8 +259,8 @@ add_library(${TARGET}
         gtimer_init.c
         hw_semaphore_init.c
         hw_version_mcp_init.c
-        i3c_target_mcp_cli_init.c
-        i3c_target_mcp_init.c
+        oob_telm_mcp_init.c
+        oob_telm_mcp_cli_init.c
         icc_accel_mbx_init.c
         icc_cli_init.c
         icc_d2dmbx_init.c
@@ -291,6 +291,8 @@ target_link_libraries(
         fwlib.lib.crashDump
         fwlib.lib.init
         fwlib.lib.mboxPrimitives
+        fwlib.lib.mctp
+        fwlib.lib.mctp_i3c_binding
         fwlib.lib.interface.platform.dbgprint
         fwlib.lib.platform.impl.timers.threadx
         fwlib.lib.utils
@@ -298,6 +300,7 @@ target_link_libraries(
         fwlib.platform.dfwkhost.threadx
         fwlib.service.cli
         fwlib.service.i3c.cli
+        fwlib.service.mctp.cli
         fwlib.service.iccBase
         fwlib.service.icc_dispatcher
         fwlib.service.mts.cli

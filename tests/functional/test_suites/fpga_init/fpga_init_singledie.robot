@@ -5,7 +5,7 @@
 # Pythia returns an error if this is not followed
 
 *** Settings ***
-Documentation    Robot file to restore ROM and Fuses using HSPprepHSP.cmm
+Documentation    Robot file to restore Fuses using HSPprepHSP_kng_fuses_test.cmm
 
 # Import the Python library. Class name must match filename when using file paths.
 # Importing also calls __init__().
@@ -24,6 +24,6 @@ Suite Teardown    Dut Teardown
 *** Variables ***
 
 *** Test Cases ***
-Test Case - 0.Reset/Restore FPGA ROM and Fuses
+Test Case - 0.Reset/Restore FPGA Fuses
     [Documentation]     Reset and Restore FPGA to a known good state    
-    FPGA Reset ROM+Fuses
+    FPGA Reset Fuses

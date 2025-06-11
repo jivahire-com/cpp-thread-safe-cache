@@ -73,22 +73,23 @@ class APBaremetalTests(EchoFallsBaseTest):
 
         self.log.info("Resetting FPGA Done!!!")
 
-    @keyword("FPGA Reset ROM+Fuses")
+    @keyword("FPGA Reset Fuses")
     def reset_fpga_fuses(self):
 
-        script_path = "R:/Kingsgate/Kingsgate_TRACE32/Prep_R22/"
-        script_name = "HSPprepHSP.cmm"
-        script = Path(r"{}".format(os.path.join(script_path, script_name)))
+        relative_path = "Kingsgate.MSCP\\.externs\\azpkg/fpga_device_state_scripts.0.0.2\\fpga_device_state_scripts\\HSPprepHSP_kng_fuses_test.cmm"
+        base_dir = os.path.join(os.getcwd().split('Kingsgate.MSCP')[0], relative_path)
+        script = Path(r"{}".format(base_dir))
 
-        self.log.info("Restoring FPGA ROM and Fuses . . .")
-        self.log.info(f"Calling HSP CMM Script to restore ROM and Fuses: {script}")
+        self.log.info("Restoring FPGA Fuses . . .")
+        self.log.info(f"Calling HSP CMM Script to restore Fuses: {script}")
         hsp = self.dut.mb.node_0.soc.primary_die.get_core("hsp")
         hsp.debugger.execute_script(script)
-        
-        # Wait 20 seconds for the script to run. This is the worst case delay for the script to complete
-        time.sleep(20)
+        # Wait 15 seconds for the script to run. This is the worst case delay for the script to complete
+        time.sleep(15)
+        self.log.info(f"Calling HSP CMM Script to reset Soc")
+        self.reset_fpga()
 
-        self.log.info("Restoring FPGA ROM and Fuses Done!!!")
+        self.log.info("Restoring FPGA Fuses Done!!!")
 
     @keyword("Dut Force Teardown")
     def test_teardown_force(self):

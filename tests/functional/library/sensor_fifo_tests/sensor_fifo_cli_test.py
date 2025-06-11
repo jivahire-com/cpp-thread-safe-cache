@@ -98,6 +98,37 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             if self.core_com_channel_mcp.is_open():
                 self.core_com_channel_mcp.close()    
 
+    def read_serial_until(self, channel, read_until_key: str, timeout_seconds: int = 60) -> Union[str, bool]:
+        """
+        Helper method to handle command response reading and error handling.
+        
+        Args:
+            channel: The communication channel to read from (core_com_channel_scp or core_com_channel_mcp)
+            read_until_key: The key to read until
+            timeout_seconds: Timeout in seconds for reading response
+            
+        Returns:
+            Union[str, bool]: Command response string if successful, False if failed and logs the error/UART-buffer.
+        """
+        try:
+            command_response = channel.read_until(key=read_until_key, timeout_seconds=timeout_seconds)
+            self.log.debug("Received Response Successfully from UART . . .")
+            self.log.debug(command_response)
+            return command_response
+        except Exception as e:
+            error_msg = f"Error reading UART: {e}"
+            buffer_content = e.incomplete_line if hasattr(e, 'incomplete_line') else str(e)
+            
+            # Log everything
+            self.log.error(f"{error_msg}\n"
+                         f"=== REMAINING BUFFER ===\n"
+                         f"Time: {time.strftime('%Y-%m-%d %H:%M:%S')}\n"
+                         f"Read until key: {read_until_key}\n"
+                         f"Buffer content:\n{buffer_content}\n"
+                         f"=== END BUFFER ===")
+            
+            return False
+
     def sensor_fifo_cli_test(self, command: str, read_until_key: str, pass_logs: Union[List[str], str] = None, optional_first_command: Optional[str] = None) -> bool:
         """
         Test function to execute sensor fifo CLI commands and validate the response.
@@ -127,13 +158,9 @@ class SensorFifoCliTest(EchoFallsBaseTest):
                     self.core_com_channel_scp.write_line(write_string=optional_first_command)
                 self.log.info(f"Executing command: {command}")
                 self.core_com_channel_scp.write_line(write_string=command)
-                try:
-                    command_response = self.core_com_channel_scp.read_until(key=read_until_key, timeout_seconds=60)
-                    self.log.info("Received Response Successfully from UART . . .")
-                    self.log.info(command_response)
-                except Exception as e:
-                    self.log.error(f"Error reading UART: {e}")
-                    self.core_com_channel_scp.close()
+                
+                command_response = self.read_serial_until(self.core_com_channel_scp, read_until_key)
+                if not command_response:
                     return False
 
                 if pass_logs is not None:
@@ -183,12 +210,8 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             self.log.info(f"Executing command: {command}")
             self.core_com_channel_mcp.write_line(write_string=command)
             
-            try:
-                command_response = self.core_com_channel_mcp.read_until(key=read_until_key, timeout_seconds=60)
-                self.log.info("Received Response Successfully from MCP . . .")
-                self.log.info(command_response)
-            except Exception as e:
-                self.log.error(f"Error reading MCP: {e}")
+            command_response = self.read_serial_until(self.core_com_channel_mcp, read_until_key)
+            if not command_response:
                 return False
 
             if pass_logs is not None:
@@ -213,6 +236,38 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             return False
         finally:
             self.core_com_channel_mcp.close()
+
+    def run_command_on_scp(self, command: str, read_until_key: str) -> Union[str, bool]:
+        """
+        Execute a single command on scp and get its output. This function doesn't handle dut setup and teardown. Added this function to handle the command execution only.
+        Args:
+            command (str): The command to execute
+            read_until_key (str): The key to read until (Most of the cases it's 'Ok')
+        Returns:
+            Union[str, bool]: Command response string if successful, False if failed
+        """
+        self.log.info(f"Running command: {command}")
+
+        try:
+            if self.dut.get_dut_type() in [DeviceType.BIGFPGA,DeviceType.SVP]:
+                self.log.info(f"Testing and Opening channel for {self.dut.get_dut_type().value}")
+                self.core_com_channel_scp.open()
+                if not self.core_com_channel_scp.is_open():
+                    self.log.error("Failed to open core communication channel")
+                    return False
+
+                self.log.info(f"Executing command: {command}")
+                self.core_com_channel_scp.write_line(write_string=command)
+                
+                return self.read_serial_until(self.core_com_channel_scp, read_until_key)
+            else:
+                raise ValueError("Unsupported DUT type")
+            
+        except Exception as e:
+            self.log.error(f"Error during command execution: {str(e)}")
+            return False
+        finally:
+            self.core_com_channel_scp.close()
 
     #Creating a separate keyword for validating test_result as the return value can be True or a string(Command response)
     def validate_test_result(self, test_result):
@@ -471,45 +526,6 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             self.log.error(f"Error during DUT teardown: {str(e)}")
             return False
         
-    def run_command_on_scp(self, command: str, read_until_key: str) -> Union[str, bool]:
-        """
-        Execute a single command on scp and get its output. This function doesn't handle dut setup and teardown. Added this function to handle the command execution only.
-        Args:
-            command (str): The command to execute
-            read_until_key (str): The key to read until (Most of the cases it's 'Ok')
-        Returns:
-            Union[str, bool]: Command response string if successful, False if failed
-        """
-        self.log.info(f"Running command: {command}")
-
-        try:
-            if self.dut.get_dut_type() in [DeviceType.BIGFPGA,DeviceType.SVP]:
-                self.log.info(f"Testing and Opening channel for {self.dut.get_dut_type().value}")
-                self.core_com_channel_scp.open()
-                if not self.core_com_channel_scp.is_open():
-                    self.log.error("Failed to open core communication channel")
-                    return False
-
-                self.log.info(f"Executing command: {command}")
-                self.core_com_channel_scp.write_line(write_string=command)
-                
-                try:
-                    command_response = self.core_com_channel_scp.read_until(key=read_until_key, timeout_seconds=60)
-                    self.log.info("Received Response Successfully from UART . . .")
-                    # self.log.info(command_response)
-                    return command_response
-                except Exception as e:
-                    self.log.error(f"Error reading UART: {e}")
-                    return False
-                finally:
-                    self.core_com_channel_scp.close()
-            else:
-                raise ValueError("Unsupported DUT type")
-            
-        except Exception as e:
-            self.log.error(f"Error during command execution: {str(e)}")
-            return False
-
     def setup_fifo_prerequisites(self) -> bool:
         """
         Sets up prerequisites required for FIFO testing.

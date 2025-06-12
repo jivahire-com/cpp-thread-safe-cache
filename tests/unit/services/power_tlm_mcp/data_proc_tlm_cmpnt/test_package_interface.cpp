@@ -501,7 +501,7 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
     // pstate
     core[TEST_CORE_ID_5].throttling_status = NO_THROTTLE;
     core[TEST_CORE_ID_5].pstate_from_pstate_pkt = 10;
-    uint8_t pstate_index = core[TEST_CORE_ID_5].pstate_from_pstate_pkt;
+    uint8_t pstate_index = core[TEST_CORE_ID_5].latest_pstate;
 
     // core[TEST_CORE_ID_5].pstate[pstate_index].frequency_Mhz = 150;
     //  cstate
@@ -516,6 +516,11 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
     // plimit
     core[TEST_CORE_ID_5].active_sample_plimit = 1;
 
+    uint8_t core_id = TEST_CORE_ID_5;
+    for (uint8_t i = 0; i < NUMBER_OF_THROTTLE_TYPES; i++)
+    { // make all active
+        core[core_id].core_throttling_tracker[i] = 1;
+    }
     data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(TEST_CORE_ID_5, &core_summary_data);
     assert_int_equal(core_summary_data.pstate, pstate_index);
     assert_int_equal(core_summary_data.cstate, cstate_index);
@@ -527,6 +532,8 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
     assert_int_equal(core_summary_data.voltage_mV, core[TEST_CORE_ID_5].latest_voltage_mV);
     assert_int_equal(core_summary_data.current_mA, core[TEST_CORE_ID_5].latest_current_mA);
     assert_int_equal(core_summary_data.temperature_dC, core[TEST_CORE_ID_5].latest_max_value_dC);
+    assert_int_equal(core_summary_data.throttling_type, 0x7f);
+    assert_int_equal(core_summary_data.throttling_rack_priority, core[TEST_CORE_ID_5].latest_rack_throttling_priority_id);
 }
 
 TEST_FUNCTION(test_get_inst_soc_rail_data, test_setup, test_teardown)

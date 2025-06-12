@@ -962,6 +962,19 @@ int8_t data_smpl_parse_throttling_state_change_get_index_from_status(pstate_thro
     return ret;
 }
 
+uint8_t data_smpl_get_active_throttling_for_single_core(uint8_t core_id)
+{
+    uint8_t active_throttlings = 0;
+    for (int i = 0; i < NUMBER_OF_THROTTLE_TYPES; ++i)
+    {
+        if (core[core_id].core_throttling_tracker[i])
+        {
+            active_throttlings |= (1 << i);
+        }
+    }
+    return active_throttlings;
+}
+
 void data_smpl_parse_throttling_state_change_exit_transition(uint8_t core_id, uint64_t timestamp_uS)
 {
     int i = 0;

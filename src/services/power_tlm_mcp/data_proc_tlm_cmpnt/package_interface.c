@@ -324,7 +324,7 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
     {
         // Depending on the throttling status, we need to use a different source for what pstate id the
         // core is currently in.
-        uint8_t current_pstate = core[core_id].pstate_from_pstate_pkt;
+        uint8_t current_pstate = core[core_id].latest_pstate;
         if (core[core_id].throttling_status != NO_THROTTLE)
         {
             /* Note : DVFS engine can generate a lot of Pstate changes during throttling the
@@ -352,9 +352,11 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
         // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584939
         core_summary_data->guard_band_voltage_mV = 0;
         core_summary_data->velocity_boost_priority = 0;
-        // TODO: what if not throttling and what if rack throttling (rack type + vm priority )?
-        core_summary_data->throttling_type_and_rack_priority =
-            data_smpl_parse_throttling_state_change_get_index_from_status(core[core_id].throttling_status);
+        /* Note : Every bit represt an active throttling*/
+        // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2684261
+        core_summary_data->throttling_type = data_smpl_get_active_throttling_for_single_core(core_id);
+        /* Note:  latest rack priority id*/
+        core_summary_data->throttling_rack_priority = core[core_id].latest_rack_throttling_priority_id;
     }
 }
 

@@ -614,7 +614,8 @@ typedef struct {
     uint8_t plimit;
     uint8_t mpam_id;
     uint8_t velocity_boost_priority;
-    uint8_t throttling_type_and_rack_priority;
+    uint8_t throttling_type;
+    uint8_t throttling_rack_priority;
 } inst_core_element_summary_t, *p_inst_core_element_summary_t;
 
 typedef struct {

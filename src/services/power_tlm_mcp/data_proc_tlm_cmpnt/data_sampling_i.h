@@ -373,3 +373,12 @@ void data_smpl_update_metrics_for_single_core_during_throttling(uint8_t core_id,
  * @param time_stamp_uS  this is latest system timestamp.
  */
 void data_smpl_update_metrics_for_single_core_during_rack_throttling(uint8_t core_id, uint64_t time_stamp_uS);
+
+/**
+ * @brief get currently active throttling for a core.
+ * 
+ * @param[in] core_id 
+ * @return   currently active throttling for a core
+ */
+uint8_t  data_smpl_get_active_throttling_for_single_core(uint8_t core_id);
+

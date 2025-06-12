@@ -1172,3 +1172,25 @@ TEST_FUNCTION(test_data_smpl_update_metrics_for_single_core_during_throttling, t
 
     assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate, 12);
 }
+
+// Unit test function
+TEST_FUNCTION(test_data_smpl_get_active_throttling_for_single_core, test_setup, test_teardown)
+{
+    uint8_t core_id = 0;
+    for (uint8_t i = 0; i < NUMBER_OF_THROTTLE_TYPES; i++)
+    { // make all active
+        core[core_id].core_throttling_tracker[i] = 1;
+    }
+    // Call the function to be tested
+    uint8_t active_throttlings = data_smpl_get_active_throttling_for_single_core(core_id);
+    assert_int_equal(active_throttlings, 0x7F);
+
+    // make all inactive
+    for (uint8_t i = 0; i < NUMBER_OF_THROTTLE_TYPES; i++)
+    {
+        core[core_id].core_throttling_tracker[i] = 0;
+    }
+    active_throttlings = data_smpl_get_active_throttling_for_single_core(core_id);
+
+    assert_int_equal(active_throttlings, 0);
+}

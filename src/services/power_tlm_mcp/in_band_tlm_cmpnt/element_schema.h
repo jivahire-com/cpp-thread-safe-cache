@@ -314,7 +314,8 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, plimit),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, mpam_id),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, velocity_boost_priority),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, throttling_type_and_rack_priority))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, throttling_type),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, throttling_rack_priority))
 
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA,

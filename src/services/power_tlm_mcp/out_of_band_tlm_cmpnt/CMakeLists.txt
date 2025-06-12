@@ -1,13 +1,9 @@
-set(TARGET kng.service.telemetry.cmpnt.in_band_tlm)
+set(TARGET kng.service.pwr_tlm_mcp.cmpnt.out_of_band_tlm)
 
 add_library(${TARGET}
     STATIC
-        mts_manager.c
-        ddr_manager.c
-        element_schema.c
-        in_band_tlm_cmpnt.c
-        package_creation.c
-        snsr_fifo_debug.c
+        out_of_band_tlm_cmpnt.c
+        pldm_comm.c
 )
 
 target_include_directories(${TARGET}
@@ -15,24 +11,19 @@ target_include_directories(${TARGET}
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
-
 )
 
 target_link_libraries(${TARGET}
     PUBLIC
 
     PRIVATE
-        tlm.service.cmpnt.interfaces
+        pwr_tlm_mcp.service.cmpnt.interfaces
         fwlib.lib.assert
         fwlib.lib.status
         fwlib.lib.utils
-        fwlib.lib.interface.platform.threadx
+        fwlib.lib.pldm.protocol
+        fwlib.service.pldm
         ms::lib::error_codes
-        ms::lib::event_trace::trace
-        ms::lib::interface::in_band_telemetry_ddr
-        ms::service::mts
-
-
 )
 
 lint_target(${TARGET})

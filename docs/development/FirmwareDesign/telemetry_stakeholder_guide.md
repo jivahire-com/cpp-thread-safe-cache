@@ -33,7 +33,7 @@ Those interested in the internal design may find more detail in the design link 
 | Data Collection Protocol Specification  | [Link](https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/_layouts/15/Doc.aspx?sourcedoc=%7B41EF1114-520C-42F3-B134-80AE7C0741E6%7D&file=Data_Collection_Protocol_Specification_v1_0_6.docx&action=default&mobileredirect=true) |
 | Telemetry Service Design| [Link](./telemetry.md) |
 | Diagnostic Decoder User Guide| [Link](https://azurecsi.visualstudio.com/DuvallFw/_wiki/wikis/1PFw%20Host%20Libraries/30850/DiagnosticDecoder) |
-| Sensor Fifo Debug Package Decoder| [Link](../../../tests/functional/library/telemetry_tests/parse_snsr_fifo_pkg.py) |
+| Sensor Fifo Debug Package Decoder| [Link](../../../tests/functional/library/power_telemetry_tests/parse_snsr_fifo_pkg.py) |
 
 ## Enabling Specific In-band Telemetry Records
 

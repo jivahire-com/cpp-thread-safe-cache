@@ -27,10 +27,10 @@
 
 FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver"))
 {
-    // Once https://dev.azure.com/ms-tsd/Kingsgate/_git/silibs/pullrequest/285315 merged, we can remove this
-    #ifndef RAS_EINJ_VENDOR_DEFINED_STRUCT_OFFSET
+// Once https://dev.azure.com/ms-tsd/Kingsgate/_git/silibs/pullrequest/285315 merged, we can remove this
+#ifndef RAS_EINJ_VENDOR_DEFINED_STRUCT_OFFSET
     #define RAS_EINJ_VENDOR_DEFINED_STRUCT_OFFSET (0xB0)
-    #endif
+#endif
 
     uintptr_t mscp_ghes_base = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_GHES_TABLE_BLOCK_BASE);
     uintptr_t mscp_ghes_error_record_addr_table_base =

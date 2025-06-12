@@ -1,9 +1,8 @@
-set(TARGET kng.service.telemetry.cmpnt.out_of_band_tlm)
+set(TARGET kng.service.pwr_tlm_mcp.cmpnt.exec)
 
 add_library(${TARGET}
     STATIC
-        out_of_band_tlm_cmpnt.c
-        pldm_comm.c
+        exec_tlm_cmpnt.c
 )
 
 target_include_directories(${TARGET}
@@ -17,13 +16,16 @@ target_link_libraries(${TARGET}
     PUBLIC
 
     PRIVATE
-        tlm.service.cmpnt.interfaces
+        pwr_tlm_mcp.service.cmpnt.interfaces
         fwlib.lib.assert
         fwlib.lib.status
+        fwlib.lib.tmr_queue
         fwlib.lib.utils
-        fwlib.lib.pldm.protocol
-        fwlib.service.pldm
+        fwlib.lib.interface.platform.errorhandler
+        fwlib.lib.interface.platform.threadx
         ms::lib::error_codes
+        ms::lib::gtimer
+
 )
 
 lint_target(${TARGET})

@@ -1,4 +1,4 @@
-set(TARGET kng.service.telemetry.cmpnt.data_process)
+set(TARGET kng.service.pwr_tlm_mcp.cmpnt.data_process)
 
 add_library(${TARGET}
     STATIC
@@ -22,7 +22,7 @@ target_link_libraries(${TARGET}
     PUBLIC
 
     PRIVATE
-        tlm.service.cmpnt.interfaces
+        pwr_tlm_mcp.service.cmpnt.interfaces
         fwlib.lib.assert
         fwlib.lib.status
         fwlib.lib.utils

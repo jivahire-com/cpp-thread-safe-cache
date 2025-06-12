@@ -1,4 +1,4 @@
-set(TARGET  kng.service.telemetry.cmpnt.exec.test)
+set(TARGET  kng.service.pwr_tlm_mcp.cmpnt.exec.test)
 
 set(SOURCES
     exec_mocks.c
@@ -9,7 +9,7 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-    kng.service.telemetry.cmpnt.exec
+    kng.service.pwr_tlm_mcp.cmpnt.exec
     fwlib.lib.status
     ms::cmocka::mocks
     ms::cmocka::testrunner
@@ -25,8 +25,8 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::a
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
 # Get private includes for module under test
-target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.service.telemetry,INCLUDE_DIRECTORIES>)
-target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.service.telemetry.cmpnt.exec,INCLUDE_DIRECTORIES>)
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.service.pwr_tlm_mcp,INCLUDE_DIRECTORIES>)
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.service.pwr_tlm_mcp.cmpnt.exec,INCLUDE_DIRECTORIES>)
 
 lint_target(${TARGET})
 format_target(${TARGET})

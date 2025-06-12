@@ -244,19 +244,19 @@
                     ],
                     [
                         "Telemetry Service - Data Proc Cmpnt",
-                        "kng.service.telemetry.cmpnt.data_process.test"
+                        "kng.service.pwr_tlm_mcp.cmpnt.data_process.test"
                     ],
                     [
                         "Telemetry Service - Exec Cmpnt",
-                        "kng.service.telemetry.cmpnt.exec.test"
+                        "kng.service.pwr_tlm_mcp.cmpnt.exec.test"
                     ],
                     [
                         "Telemetry Service - In Band Cmpnt",
-                        "kng.service.telemetry.cmpnt.in_band_tlm.test"
+                        "kng.service.pwr_tlm_mcp.cmpnt.in_band_tlm.test"
                     ],
                     [
                         "Telemetry Service - Data Proc Functional",
-                        "kng.service.telemetry.cmpnt.data_proc.functional.test"
+                        "kng.service.pwr_tlm_mcp.cmpnt.data_proc.functional.test"
                     ],
                     [
                         "PCIe manager service",

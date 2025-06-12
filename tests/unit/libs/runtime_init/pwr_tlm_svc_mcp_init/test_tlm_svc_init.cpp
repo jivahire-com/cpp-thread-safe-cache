@@ -28,7 +28,7 @@ extern "C" {
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
-extern fpfw_init_component_t _fpfw_component_tlm_svc;
+extern fpfw_init_component_t _fpfw_component_pwr_tlm_svc_mcp;
 
 /*-- Declarations (Statics and globals) --*/
 uint8_t _ProviderMetadata_et_msdata_start; // Pointer to the start of the .ProviderMetadata section
@@ -93,7 +93,7 @@ TEST_FUNCTION(test_tlm_svc_init, nullptr, nullptr)
     expect_function_call(__wrap_telemetry_cli_svc_initialize);
 
     // Call the function under test
-    fpfw_init_result_t result = _fpfw_component_tlm_svc.init_fn();
+    fpfw_init_result_t result = _fpfw_component_pwr_tlm_svc_mcp.init_fn();
 
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
@@ -120,7 +120,7 @@ TEST_FUNCTION(test_tlm_svc_init_other_branches, nullptr, nullptr)
     expect_function_call(__wrap_telemetry_cli_svc_initialize);
 
     // Call the function under test
-    fpfw_init_result_t result = _fpfw_component_tlm_svc.init_fn();
+    fpfw_init_result_t result = _fpfw_component_pwr_tlm_svc_mcp.init_fn();
 
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
@@ -147,7 +147,7 @@ TEST_FUNCTION(test_tlm_svc_init_range_limit, nullptr, nullptr)
     expect_function_call(__wrap_telemetry_cli_svc_initialize);
 
     // Call the function under test
-    fpfw_init_result_t result = _fpfw_component_tlm_svc.init_fn();
+    fpfw_init_result_t result = _fpfw_component_pwr_tlm_svc_mcp.init_fn();
 
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);

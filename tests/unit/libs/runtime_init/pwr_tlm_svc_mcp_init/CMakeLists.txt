@@ -1,8 +1,8 @@
-set(TARGET tlm_svc_init.test)
+set(TARGET pwr_tlm_svc_mcp_init.test)
 
 set(SOURCES
     test_tlm_svc_init.cpp
-    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/telemetry_service_init.c
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/pwr_tlm_svc_mcp_init.c
 )
 
 # Compile test
@@ -13,8 +13,8 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.lib.utils
         ms::lib::config_manager
-        ms::service::telemetry
-        ms::service::telemetry::cli
+        ms::service::pwr_tlm_mcp
+        ms::service::pwr_tlm_mcp::cli
         ms::cmocka::testrunner
         silibs::idhw
         silibs::idsw

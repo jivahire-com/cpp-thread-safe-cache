@@ -276,15 +276,15 @@ add_library(${TARGET}
         mts_init.c
         nvic_init.c
         power_fuse_init.c
+        pwr_tlm_svc_mcp_init.c
         sensor_fifo_init.c
         spi_bridge_init.c
         system_info_init.c
-        telemetry_service_init.c
+        systick_update_init.c
         textio_init.c
         variable_services_init.c
         virt_irq_init.c
         watchdog_init.c
-        systick_update_init.c
 )
 
 target_link_libraries(
@@ -353,8 +353,8 @@ target_link_libraries(
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
         ms::service::sys_info::cli
-        ms::service::telemetry
-        ms::service::telemetry::cli
+        ms::service::pwr_tlm_mcp
+        ms::service::pwr_tlm_mcp::cli
         ms::service::wdog
         silibs::atu
         silibs::common::lib_uart_pl011

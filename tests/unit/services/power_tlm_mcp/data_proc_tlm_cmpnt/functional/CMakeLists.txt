@@ -1,4 +1,4 @@
-set(TARGET kng.service.telemetry.cmpnt.data_proc.functional.test)
+set(TARGET kng.service.pwr_tlm_mcp.cmpnt.data_proc.functional.test)
 
 set(SOURCES
     test_tile_temperature.cpp
@@ -15,9 +15,9 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-    kng.service.telemetry.cmpnt.data_process
-    kng.service.telemetry
-    kng.service.telemetry.cmpnt.in_band_tlm
+    kng.service.pwr_tlm_mcp.cmpnt.data_process
+    kng.service.pwr_tlm_mcp
+    kng.service.pwr_tlm_mcp.cmpnt.in_band_tlm
     ms::lib::event_trace::trace
     fwlib.lib.status
     ms::cmocka::mocks
@@ -34,13 +34,13 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms:
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
-target_include_directories(${TARGET} 
-    PRIVATE 
+target_include_directories(${TARGET}
+    PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/libs/event_trace/trace/inc
-    $<TARGET_PROPERTY:kng.service.telemetry,INCLUDE_DIRECTORIES>
-    $<TARGET_PROPERTY:kng.service.telemetry.cmpnt.data_process,INCLUDE_DIRECTORIES>
-    $<TARGET_PROPERTY:kng.service.telemetry.cmpnt.in_band_tlm,INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:kng.service.pwr_tlm_mcp,INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:kng.service.pwr_tlm_mcp.cmpnt.data_process,INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:kng.service.pwr_tlm_mcp.cmpnt.in_band_tlm,INCLUDE_DIRECTORIES>
 )
 
 lint_target(${TARGET})

@@ -1,4 +1,4 @@
-set(TARGET  kng.service.telemetry.cmpnt.data_process.test)
+set(TARGET  kng.service.pwr_tlm_mcp.cmpnt.data_process.test)
 
 set(SOURCES
     data_proc_mock.c
@@ -15,7 +15,7 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-    kng.service.telemetry.cmpnt.data_process
+    kng.service.pwr_tlm_mcp.cmpnt.data_process
     fwlib.lib.status
     ms::cmocka::mocks
     ms::cmocka::testrunner
@@ -30,8 +30,8 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms:
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 # Get private includes for module under test
-target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.service.telemetry,INCLUDE_DIRECTORIES>)
-target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.service.telemetry.cmpnt.data_process,INCLUDE_DIRECTORIES>)
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.service.pwr_tlm_mcp,INCLUDE_DIRECTORIES>)
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.service.pwr_tlm_mcp.cmpnt.data_process,INCLUDE_DIRECTORIES>)
 
 lint_target(${TARGET})
 format_target(${TARGET})

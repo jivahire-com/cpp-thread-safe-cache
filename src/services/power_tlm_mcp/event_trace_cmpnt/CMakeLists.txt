@@ -1,4 +1,4 @@
-set(TARGET kng.service.telemetry.cmpnt.event_trace)
+set(TARGET kng.service.pwr_tlm_mcp.cmpnt.event_trace)
 
 add_library(${TARGET}
     STATIC

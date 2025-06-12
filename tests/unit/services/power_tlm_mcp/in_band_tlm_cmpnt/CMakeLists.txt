@@ -1,4 +1,4 @@
-set(TARGET  kng.service.telemetry.cmpnt.in_band_tlm.test)
+set(TARGET  kng.service.pwr_tlm_mcp.cmpnt.in_band_tlm.test)
 
 set(SOURCES
     in_band_mocks.c
@@ -13,7 +13,7 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-    kng.service.telemetry.cmpnt.in_band_tlm
+    kng.service.pwr_tlm_mcp.cmpnt.in_band_tlm
     ms::lib::interface::in_band_telemetry_ddr
     fwlib.lib.status
     ms::cmocka::mocks
@@ -29,8 +29,8 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::a
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
 # Get private includes for module under test
-target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.service.telemetry,INCLUDE_DIRECTORIES>)
-target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.service.telemetry.cmpnt.in_band_tlm,INCLUDE_DIRECTORIES>)
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.service.pwr_tlm_mcp,INCLUDE_DIRECTORIES>)
+target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.service.pwr_tlm_mcp.cmpnt.in_band_tlm,INCLUDE_DIRECTORIES>)
 
 lint_target(${TARGET})
 format_target(${TARGET})

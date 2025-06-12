@@ -96,11 +96,17 @@ void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id,
     {
         for (uint16_t throttle_index = 0; throttle_index < NUMBER_OF_THROTTLE_TYPES; throttle_index++)
         {
-            (*throttle_array)[throttle_index].avg_pstate = core[core_id].throttle_info[throttle_index].avg_pstate;
-            (*throttle_array)[throttle_index].entry_count = core[core_id].throttle_info[throttle_index].entry_count;
-            (*throttle_array)[throttle_index].max_pstate = core[core_id].throttle_info[throttle_index].max_pstate;
-            (*throttle_array)[throttle_index].residency_mS = core[core_id].throttle_info[throttle_index].residency_mS;
+            (*throttle_array)[throttle_index].avg_pstate =
+                computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate;
+            (*throttle_array)[throttle_index].entry_count =
+                computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].entry_count;
+            (*throttle_array)[throttle_index].max_pstate =
+                computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate;
+            (*throttle_array)[throttle_index].residency_mS =
+                computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS;
             (*throttle_array)[throttle_index].type_id = throttle_index;
+            (*throttle_array)[throttle_index].overrun_count =
+                computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].overrun_count;
         }
     }
 }
@@ -118,9 +124,11 @@ void data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(uint16_t core_id,
     {
         for (uint16_t rack_index = 0; rack_index < NUMBER_OF_RACK_PRIORITIES; rack_index++)
         {
-            (*rack_priority_array)[rack_index].priority_id = core[core_id].priorities[rack_index].priority_id;
-            (*rack_priority_array)[rack_index].entry_count = core[core_id].priorities[rack_index].entry_count;
-            (*rack_priority_array)[rack_index].residency_mS = core[core_id].priorities[rack_index].residency_mS;
+            (*rack_priority_array)[rack_index].priority_id = rack_index;
+            (*rack_priority_array)[rack_index].entry_count =
+                computed_metrics_2_mins.cores[core_id].rack_priorities[rack_index].entry_count;
+            (*rack_priority_array)[rack_index].residency_mS =
+                computed_metrics_2_mins.cores[core_id].rack_priorities[rack_index].residency_mS;
         }
     }
 }

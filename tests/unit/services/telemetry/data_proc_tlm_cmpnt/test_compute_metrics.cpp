@@ -322,37 +322,6 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_power_per_pstate, test_setup, te
     assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg.average, 300);
 }
 
-// Unit test function
-TEST_FUNCTION(test_comp_metrics_for_single_core_throttling, test_setup, test_teardown)
-{
-    uint8_t core_id = 0;
-    uint8_t throttle_index = 4;
-    uint64_t time_stamp_uS = 5000;
-    core[core_id].core_throttling_tracker[throttle_index] = 1;
-    core[core_id].throttle_previous_timestamp_uS[throttle_index] = 1000;
-    core[core_id].latest_pstate = core[core_id].pstate_from_current_pkt = 20;
-
-    core[core_id].throttle_info[throttle_index].residency_mS = 10;
-    core[core_id].throttle_info[throttle_index].avg_pstate = 10;
-    core[core_id].throttle_info[throttle_index].max_pstate = 5;
-
-    comp_metrics_for_single_core_throttling(core_id, time_stamp_uS);
-
-    assert_int_equal(core[core_id].throttle_info[throttle_index].residency_mS, 14);
-    assert_int_equal(core[core_id].throttle_previous_timestamp_uS[throttle_index], 5000);
-    assert_int_equal(core[core_id].throttle_info[throttle_index].max_pstate, 20);
-
-    assert_int_equal(core[core_id].throttle_info[throttle_index].avg_pstate, 12);
-
-    // inactive throttling
-    core[core_id].core_throttling_tracker[throttle_index] = 0;
-    time_stamp_uS = 10000;
-    comp_metrics_for_single_core_throttling(core_id, time_stamp_uS);
-
-    assert_int_not_equal(core[core_id].throttle_info[throttle_index].residency_mS, 19);
-    assert_int_equal(core[core_id].throttle_previous_timestamp_uS[throttle_index], 10000);
-}
-
 // comp_metrics_for_single_core_throttling_pstate(core_id, i, time_diff_uS, core[core_id].throttle_info[i].residency_mS);
 TEST_FUNCTION(test_comp_metrics_for_single_core_throttling_pstate, test_setup, test_teardown)
 {
@@ -361,20 +330,21 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_throttling_pstate, test_setup, t
     uint64_t time_stamp_uS = 5000;
 
     core[core_id].core_throttling_tracker[throttle_index] = 1;
-    core[core_id].throttle_previous_timestamp_uS[throttle_index] = 1000;
+    core[core_id].latest_throttle_type_previous_timestamp_uS[throttle_index] = 1000;
     core[core_id].latest_pstate = core[core_id].pstate_from_current_pkt = 20;
 
-    core[core_id].throttle_info[throttle_index].residency_mS = 10;
-    core[core_id].throttle_info[throttle_index].avg_pstate = 10;
-    core[core_id].throttle_info[throttle_index].max_pstate = 5;
-    uint32_t time_diff_uS = time_stamp_uS - core[core_id].throttle_previous_timestamp_uS[throttle_index];
-    comp_metrics_for_single_core_throttling_pstate(core_id,
-                                                   throttle_index,
-                                                   time_diff_uS,
-                                                   core[core_id].throttle_info[throttle_index].residency_mS);
-
-    assert_int_equal(core[core_id].throttle_info[throttle_index].max_pstate, 20);
-    assert_int_equal(core[core_id].throttle_info[throttle_index].avg_pstate, 14);
+    computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS = 10;
+    computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate = 10;
+    computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate = 5;
+    uint32_t time_diff_uS = time_stamp_uS - core[core_id].latest_throttle_type_previous_timestamp_uS[throttle_index];
+    comp_metrics_for_single_core_throttling_pstate(
+        core_id,
+        throttle_index,
+        time_diff_uS,
+        computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS,
+        core[core_id].latest_pstate);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate, 20);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate, 14);
 }
 
 // Unit test function
@@ -437,6 +407,60 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_power, test_setup, test_teardown
     assert_int_equal(computed_metrics_2_mins.cores[core_id].power_mW.max, 500);
     assert_int_equal(computed_metrics_2_mins.cores[core_id].power_mW.running_avg.average, 300);
     assert_int_equal(computed_metrics_2_mins.cores[core_id].power_mW.running_avg.num_samples, 5);
+}
+
+TEST_FUNCTION(test_comp_metrics_for_single_core_single_throttle_overrun_count_update, test_setup, test_teardown)
+{
+    uint8_t core_id = 0;
+    uint8_t throttle_index = THROTTLE_SOURCE_CURRENT;
+
+    comp_metrics_for_single_core_single_throttle_overrun_count_update(core_id, throttle_index);
+
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].overrun_count, 1);
+    throttle_index = THROTTLE_SOURCE_ADAPTIVE_CLK;
+    comp_metrics_for_single_core_single_throttle_overrun_count_update(core_id, throttle_index);
+
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].overrun_count, 1);
+}
+
+TEST_FUNCTION(test_comp_metrics_for_single_core_single_throttle_update, test_setup, test_teardown)
+{
+    uint8_t core_id = 0;
+    uint8_t throttle_index = THROTTLE_SOURCE_CURRENT;
+    uint64_t timestamp_diff_uS = 1000;
+    bool throttle_start = true;
+    computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].entry_count = 0;
+    computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS = 10;
+
+    comp_metrics_for_single_core_single_throttle_update(core_id, throttle_index, timestamp_diff_uS, throttle_start);
+
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].entry_count, 1);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS, 10);
+
+    throttle_start = false;
+    comp_metrics_for_single_core_single_throttle_update(core_id, throttle_index, timestamp_diff_uS, throttle_start);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].entry_count, 1);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS, 11);
+}
+
+TEST_FUNCTION(test_comp_metrics_for_single_core_single_rack_throttle_update, test_setup, test_teardown)
+{
+    uint8_t core_id = 0;
+    uint8_t priority_id = 0;
+    uint64_t timestamp_diff_uS = 1000;
+    computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].residency_mS = 10;
+    bool rack_throttle_priority_start = true;
+
+    comp_metrics_for_single_core_single_rack_throttle_update(core_id, priority_id, timestamp_diff_uS, rack_throttle_priority_start);
+
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].entry_count, 1);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].residency_mS, 10);
+
+    rack_throttle_priority_start = false;
+    comp_metrics_for_single_core_single_rack_throttle_update(core_id, priority_id, timestamp_diff_uS, rack_throttle_priority_start);
+
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].entry_count, 1);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].residency_mS, 11);
 }
 
 TEST_FUNCTION(test_comp_metrics_for_single_core_single_pstate, test_setup, test_teardown)

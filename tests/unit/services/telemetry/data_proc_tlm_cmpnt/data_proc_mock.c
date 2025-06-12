@@ -45,7 +45,7 @@ sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_tile_voltage(tile_voltage_t
 sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_core_current(core_current_t* current_data, uint16_t* core_index)
 {
     FPFW_UNUSED(current_data);
-    FPFW_UNUSED(core_index);
+    *core_index = (uint16_t)mock();
     return *(sensor_ram_poll_status_t*)mock();
 }
 
@@ -61,7 +61,6 @@ sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_core_pstate(pstate_telem_t*
         assert_non_null(mock_data);
         assert_non_null(state_data);
         memcpy(state_data, mock_data, sizeof(pstate_telem_t));
-        state_data->data.throttle_status = NO_THROTTLING;
     }
     return status;
 }

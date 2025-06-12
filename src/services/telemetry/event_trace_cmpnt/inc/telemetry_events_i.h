@@ -323,9 +323,11 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     55,
-                    LogCoreThrottleValidTimeStamp,
+                    LogCoreInValidTimeStamp,
                     FPFW_ET_LEVEL_ERROR,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, status))
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, status),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, new_timestamp_uS),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, prev_timestamp_uS))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     56,
@@ -416,6 +418,19 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     LogInValidPstateId,
                     FPFW_ET_LEVEL_ERROR,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, value))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    71,
+                    LogCoreStateSameInValidEntry,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, status),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, previous_status))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    72,
+                    LogCoreRackThrottleInValidPriority,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, rack_priority_id))
 
 /*--------- Function Prototypes ----------*/
 

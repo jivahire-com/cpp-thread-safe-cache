@@ -49,6 +49,8 @@ typedef struct
     mma_u16_t current_mA;
     pstate_metrics_t pstate[NUMBER_OF_PSTATES];
     cstate_metrics_t cstate[NUMBER_OF_CSTATES];
+    pwr_core_element_throttle_t throttle_info[NUMBER_OF_THROTTLE_TYPES];
+    pwr_core_element_rack_priorities_t rack_priorities[NUMBER_OF_RACK_PRIORITIES];
 } computed_per_core_metrics_t;
 
 typedef struct
@@ -137,14 +139,6 @@ void comp_metrics_for_cores_for_sampling_period(void);
 void comp_metrics_for_tiles_for_sampling_period(void);
 
 /**
- * @brief comp_metrics_for_single_core_throttling from runtime update manager.
- *
- * @param[in] core_id
- * @param[in] time_stamp_uS -system time stamp
- */
-void comp_metrics_for_single_core_throttling(uint8_t core_id, uint64_t time_stamp_uS);
-
-/**
  * @brief  function updates the minimum, maximum, and average current values for a specified core based on the provided
  * time difference and residency time
  *
@@ -181,16 +175,6 @@ void comp_metrics_for_single_core_temperature(uint8_t core_id, uint16_t latest_t
  * @return None
  */
 void comp_metrics_for_single_core_power(uint8_t core_id, uint16_t latest_power_mW);
-
-/**
- * @brief  This API used during cores are throttling, MMA calculation is triggerd by this APIs
- *
- * @param[in] core_id
- * @param[in] throttle_index  Throttling type.
- * @param[in] time_diff_uS    time diff between current timestamp and previous time stamp
- * @param[in] residency_mS  - residency in mS
- */
-void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id, int8_t throttle_index, uint32_t time_diff_uS, uint32_t residency_mS);
 
 /**
  * @brief function is intended to update the histogram data for a specified core
@@ -295,8 +279,36 @@ void comp_metrics_for_single_soc_dimm_temp(uint8_t dimm_id, uint16_t latest_dimm
  * @param[in] throttle_index  Throttling type.
  * @param[in] time_diff_uS    time diff between current timestamp and previous time stamp
  * @param[in] residency_mS  - residency in mS
+ * @param[in] latest_pstate - latest_pstate
  */
-void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id, int8_t throttle_index, uint32_t time_diff_uS, uint32_t residency_mS);
+void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id, int8_t throttle_index, uint32_t time_diff_uS, uint32_t residency_mS, uint8_t latest_pstate);
+
+/**
+ * @brief This API used during cores's throttling for  overrun counter update.
+ * @param[in] core_id 
+ * @param[in] throttle_index  for which type of throttle counter need to be updated.
+ */
+void comp_metrics_for_single_core_single_throttle_overrun_count_update(uint8_t core_id, uint8_t throttle_index);
+
+/**
+ * @brief  This API used during cores's throttling for residency update and entry count update.
+ *
+ * @param[in] core_id
+ * @param[in] throttle_index  Throttling type.
+ * @param[in] time_diff_uS    time diff between current timestamp and previous time stamp
+ * @param[in] throttle_start - a new throttling started.
+ */
+void comp_metrics_for_single_core_single_throttle_update(uint8_t core_id, uint8_t throttle_index, uint64_t timestamp_diff_uS, bool throttle_start);
+
+/**
+ * @brief  This API used during cores's rack throttling for residency update and entry count update.
+ *
+ * @param[in] core_id
+ * @param[in] priority_id  Rack priority id
+ * @param[in] time_diff_uS    time diff between current timestamp and previous time stamp
+ * @param[in] rack_throttle_priority_start - a new rack throttling priority started..
+ */
+void comp_metrics_for_single_core_single_rack_throttle_update(uint8_t core_id, uint8_t priority_id, uint64_t timestamp_diff_uS, bool rack_throttle_priority_start);
 
 /**
  * @brief helper function to update the pstate runtime timestamp
@@ -312,8 +324,6 @@ void comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate,
 
 /**
  * @brief helper function to update the cstate compute metrics
- * 
- *
  * @param[in] core_id  core that is referenced to that owns this timestamp
  * @param[in] cstate  -cstate that is reference to where it needs to be updated
  * @param[in] timestamp_diff_uS diff of timestamp from previous and new .

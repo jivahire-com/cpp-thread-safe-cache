@@ -189,12 +189,12 @@ typedef struct {
 
 //----------------POWER_TELEMETRY_ELEMENT_CORE_THROTTLE----------------
 typedef struct {
+    uint32_t entry_count;
+    uint32_t residency_mS;
+    uint16_t overrun_count;
     uint8_t type_id;
     uint8_t max_pstate;
     uint8_t avg_pstate;
-    uint8_t reserved;
-    uint32_t entry_count;
-    uint32_t residency_mS;
 } pwr_core_element_throttle_t, *p_pwr_core_element_throttle_t;
 
 typedef struct {

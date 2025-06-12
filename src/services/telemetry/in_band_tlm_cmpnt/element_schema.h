@@ -63,12 +63,12 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_CORE_THROTTLE,
                      pwr_core_element_throttle,
                      FPFW_ET_LEVEL_DEBUG,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, entry_count),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, residency_mS),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, overrun_count),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, type_id),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, max_pstate),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, avg_pstate),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, reserved),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, entry_count),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, residency_mS))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, avg_pstate))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_CORE_RACK_PRIORITIES,

@@ -189,6 +189,45 @@ void comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate,
     }
 }
 
+void comp_metrics_for_single_core_single_throttle_overrun_count_update(uint8_t core_id, uint8_t throttle_index)
+{
+
+    if (throttle_index == THROTTLE_SOURCE_ADAPTIVE_CLK || throttle_index == THROTTLE_SOURCE_CURRENT)
+    {
+        computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].overrun_count += 1;
+    }
+}
+
+void comp_metrics_for_single_core_single_throttle_update(uint8_t core_id, uint8_t throttle_index, uint64_t timestamp_diff_uS, bool throttle_start)
+{
+    if (throttle_start)
+    {
+        computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].entry_count += 1;
+    }
+    else
+    {
+        computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS +=
+            MICROSECONDS_TO_MILLISECONDS(timestamp_diff_uS);
+    }
+}
+
+void comp_metrics_for_single_core_single_rack_throttle_update(uint8_t core_id,
+                                                              uint8_t priority_id,
+                                                              uint64_t timestamp_diff_uS,
+                                                              bool rack_throttle_priority_start)
+{
+    /* Note :  rack_throttle_priority_start means a new rack prority started */
+    if (rack_throttle_priority_start)
+    {
+        computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].entry_count += 1;
+    }
+    else
+    {
+        computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].residency_mS +=
+            MICROSECONDS_TO_MILLISECONDS(timestamp_diff_uS);
+    }
+}
+
 void comp_metrics_for_single_core_power_per_pstate(uint8_t core_id, uint8_t pstate_index, uint16_t latest_power_mW)
 {
     data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW, latest_power_mW);
@@ -204,46 +243,22 @@ void comp_metrics_for_mpam(uint8_t core_id, uint16_t mpam_id, uint8_t pstate)
     // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2319779
 }
 
-void comp_metrics_for_single_core_throttling(uint8_t core_id, uint64_t time_stamp_uS)
-{
-    int8_t i = 0;
-    // End all active throttling and update residency
-    for (i = 0; i < NUMBER_OF_THROTTLE_TYPES; i++)
-    {
-        if (core[core_id].core_throttling_tracker[i])
-        {
-            if (core[core_id].throttle_previous_timestamp_uS[i] != 0 &&
-                time_stamp_uS > core[core_id].throttle_previous_timestamp_uS[i])
-            {
-                // Get the Throttling time stamp now and subtract from previous
-                uint64_t time_diff_uS = time_stamp_uS - core[core_id].throttle_previous_timestamp_uS[i];
-                // This is the per core and per type throttling residency in uS
-                // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2659000
-                core[core_id].throttle_info[i].residency_mS += MICROSECONDS_TO_MILLISECONDS(time_diff_uS);
-                // Use per throttle type accumualated residency for max and avg calculation.
-                /* For core pstate- min, max avg calculation during throttle*/
-                comp_metrics_for_single_core_throttling_pstate(core_id,
-                                                               i,
-                                                               time_diff_uS,
-                                                               core[core_id].throttle_info[i].residency_mS);
-            }
-        }
-        core[core_id].throttle_previous_timestamp_uS[i] = time_stamp_uS;
-    }
-}
-
-void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id, int8_t throttle_index, uint32_t time_diff_uS, uint32_t residency_mS)
+void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id,
+                                                    int8_t throttle_index,
+                                                    uint32_t time_diff_uS,
+                                                    uint32_t residency_mS,
+                                                    uint8_t latest_pstate)
 {
     /* For core throttling : max avg pstate calculation*/
     uint16_t temp_min_pstate = 0;
-    uint16_t temp_avg_pstate = core[core_id].throttle_info[throttle_index].avg_pstate;
-    uint16_t temp_max_pstate = core[core_id].throttle_info[throttle_index].max_pstate;
-    uint16_t temp_pstate = core[core_id].latest_pstate;
+    uint16_t temp_avg_pstate = computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate;
+    uint16_t temp_max_pstate = computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate;
+    uint16_t temp_pstate = latest_pstate;
     /* For core pstate- min, max avg calculation during throttle*/
     data_util_calc_mma_res(&temp_min_pstate, &temp_max_pstate, &temp_avg_pstate, &temp_pstate, time_diff_uS, residency_mS * 1000);
     // Update core throttle info
-    core[core_id].throttle_info[throttle_index].avg_pstate = temp_avg_pstate;
-    core[core_id].throttle_info[throttle_index].max_pstate = temp_max_pstate;
+    computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate = temp_avg_pstate;
+    computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate = temp_max_pstate;
 }
 
 void comp_metrics_reset_2_mins_metrics()

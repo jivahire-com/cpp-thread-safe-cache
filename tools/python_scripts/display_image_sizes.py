@@ -18,7 +18,7 @@ READELF_FORMAT = "\.{}[\s]+[a-zA-Z]+[\s]+[0-9a-f]+[\s]+[0-9a-f]+[\s]+([0-9a-f]+)
 READELF_PATH = f"{os.environ['REPO_APP_PATH_gcc.arm.eabi.aarch-win64']}/bin/arm-none-eabi-readelf.exe"
 FW_PATH_FORMAT = os.environ['REPO_APP_TARGET_BUILD_DIR'] + "/bin/{core}/"
 FW_CORES = ["scp", "mcp"]
-ELF_SECTIONS = ["text", "rodata", "data", "bss", "stack", "heap"]
+ELF_SECTIONS = ["text", "rodata.itcm", "rodata.rmss", "data", "bss", "stack", "heap"]
 
 comment_string = ""
 for core in FW_CORES:
@@ -61,9 +61,13 @@ for core in FW_CORES:
 
     section_sizes = {}
     for section in ELF_SECTIONS:
-        section_size = re.search(
+        section_desc = re.search(
             READELF_FORMAT.format(section), readelf_output
-        ).groups()[0]
+        )
+        if not section_desc:
+            continue
+
+        section_size = section_desc.groups()[0]
         section_size = int(section_size, 16)
         section_sizes[section] = section_size
 

@@ -63,6 +63,7 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
         ARGS -O binary 
             --only-section .vectors 
             --only-section .text 
+            --only-section .rodata.itcm
             --only-section .BuildBinaryVersion
             --only-section .EventMetadata.et.msdata
             --only-section .ProviderMetadata.et.msdata
@@ -94,7 +95,7 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
         OUTPUT "${RMSS_BIN_PATH}"
         COMMAND ${OBJCOPY}
         ARGS -O binary 
-            --only-section .rodata
+            --only-section .rodata.rmss
             "${FW_IMAGE_PATH}"
             "${RMSS_BIN_PATH}"
         DEPENDS "${FW_IMAGE_PATH}"

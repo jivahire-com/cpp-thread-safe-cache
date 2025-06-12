@@ -59,9 +59,25 @@ target_link_options(
             -T ${CMAKE_CURRENT_LIST_DIR}/../inc/scp_memory.ld
             -Wl,-Map=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/scp/${TARGET}.map
             -L${CMAKE_CURRENT_SOURCE_DIR}/../inc
+            -L${CMAKE_BINARY_DIR}/ld/scp
             -ereset_handler
             -Wl,--build-id
 )
+
+# Set rodata memory region
+set(RODATA_REGION RMSS_DATA)
+set(RODATA_SECTION .rodata.rmss)
+set(LD_SCRIPT_IN "${CMAKE_SOURCE_DIR}/tools/cmakes/toolchain/arm-eabi-aarch/ld/kernel.ld.in")
+set(LD_SCRIPT_OUT "${CMAKE_BINARY_DIR}/ld/scp/kernel.ld")
+
+configure_file(
+    ${LD_SCRIPT_IN}
+    ${LD_SCRIPT_OUT}
+    @ONLY
+)
+
+add_custom_target(SCP_LINKER_SCRIPT ALL DEPENDS ${LD_SCRIPT_OUT})
+add_dependencies(${TARGET} SCP_LINKER_SCRIPT)
 
 set_property(
     TARGET ${TARGET}

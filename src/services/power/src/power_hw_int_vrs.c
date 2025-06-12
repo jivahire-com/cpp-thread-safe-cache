@@ -223,10 +223,14 @@ void AVSPwrReadRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Compl
             // voltage is the first ,current is the 2nd response, and temperature the 3rd in the multi-read;
             // 0 = voltage rail 0, 1 = current rail 0, 3 = temperature rail 0
             s_power_vrs_ctx.latest_power.vcpu_avs_voltage =
-                s_power_vrs_ctx.vr_inputs[p_config->vr_idx_info.vcpu_idx].voltage;
+                s_power_vrs_ctx
+                    .vr_inputs[p_config->vr_idx_info.vcpu_idx - p_config->vr_idx_info.flattened_vr_start_idx]
+                    .voltage;
 
             s_power_vrs_ctx.latest_power.vcpu_avs_current =
-                s_power_vrs_ctx.vr_inputs[p_config->vr_idx_info.vcpu_idx].current;
+                s_power_vrs_ctx
+                    .vr_inputs[p_config->vr_idx_info.vcpu_idx - p_config->vr_idx_info.flattened_vr_start_idx]
+                    .current;
 
             power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VR_READ, &s_power_vrs_ctx.latest_power);
             power_loops_vr_telem_handle_event(POWER_VR_TELEM_SIGNAL_VR_CURRENT, s_power_vrs_ctx.vr_inputs);

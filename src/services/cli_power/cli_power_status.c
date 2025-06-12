@@ -471,7 +471,7 @@ static void print_power_status_power_info(ppower_service_cli_request_t p_cli_req
     printf("\nVCPU Avg Power: %d.%03dW", avg_mw / 1000, avg_mw % 1000);
     printf("\n\n");
     avg_mw = power_vrs_get_recent_vcpu_curr_ma();
-    printf("\nVCPU Avg Current: %d.%03dW", avg_mw / 1000, avg_mw % 1000);
+    printf("\nVCPU Avg Current: %d.%03dA", avg_mw / 1000, avg_mw % 1000);
     printf("\n\n");
 }
 

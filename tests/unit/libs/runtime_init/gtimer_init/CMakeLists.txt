@@ -17,6 +17,7 @@ target_link_libraries(${TARGET}
         ms::lib::interrupts
         ms::lib::register_headers
         ms::lib::scp_interrupts
+        ms::lib::systick_update
         silibs::idsw
         silibs::idsw_kng
         silibs::kng_silibs_platform
@@ -40,4 +41,5 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     idsw_get_platform_sdv
     gtimer_prodfw_init
+    systick_get_emcpu_clock
 )

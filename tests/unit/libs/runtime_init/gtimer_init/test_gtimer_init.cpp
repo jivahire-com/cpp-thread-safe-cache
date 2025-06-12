@@ -43,6 +43,12 @@ void __wrap_gtimer_prodfw_init(gtimer_prodfw_init_config_t* config)
     check_expected_ptr(config);
 }
 
+uint32_t __wrap_systick_get_emcpu_clock(void)
+{
+    // Mocked to return a fixed clock frequency for testing purposes
+    return mock_type(uint32_t);
+}
+
 /* Tests */
 TEST_FUNCTION(test_gtimer_init_soc, NULL, NULL)
 {
@@ -51,11 +57,12 @@ TEST_FUNCTION(test_gtimer_init_soc, NULL, NULL)
         .counter_control_base = SCP_TOP_GEN_CNTR_CTRL_ADDRESS,
         .timer_control_base = SCP_TOP_SCP_TIMER_CTRL_ADDRESS,
         .timer_base_address = SCP_TOP_SCP_TIMER_BASE_ADDRESS,
-        .frequency_hz = (1000 * 1000 * 1000),
+        .frequency_hz = (250 * 1000 * 1000), /* 250 MHz */
         .scaling_factor = 4,
         .timer_irq = HW_INT_SCP_GENERIC_TIMER_INT,
     };
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return_always(__wrap_systick_get_emcpu_clock, 250 * 1000 * 1000); // 250 MHz
 
     expect_memory(__wrap_gtimer_prodfw_init, config, &test_config, sizeof(gtimer_prodfw_init_config_t));
 
@@ -73,6 +80,7 @@ TEST_FUNCTION(test_gtimer_init_fpga, NULL, NULL)
         .timer_irq = HW_INT_SCP_GENERIC_TIMER_INT,
     };
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
+    will_return_always(__wrap_systick_get_emcpu_clock, 10 * 1000 * 1000); // 10 MHz
 
     expect_memory(__wrap_gtimer_prodfw_init, config, &test_config, sizeof(gtimer_prodfw_init_config_t));
 
@@ -91,6 +99,7 @@ TEST_FUNCTION(test_gtimer_init_svp, NULL, NULL)
     };
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    will_return_always(__wrap_systick_get_emcpu_clock, 125 * 1000 * 1000); // 125 MHz
 
     expect_memory(__wrap_gtimer_prodfw_init, config, &test_config, sizeof(gtimer_prodfw_init_config_t));
 
@@ -109,6 +118,7 @@ TEST_FUNCTION(test_gtimer_init_svp_min_config, NULL, NULL)
     };
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_MIN_CONFIG_SIM);
+    will_return_always(__wrap_systick_get_emcpu_clock, 125 * 1000 * 1000); // 125 MHz
 
     expect_memory(__wrap_gtimer_prodfw_init, config, &test_config, sizeof(gtimer_prodfw_init_config_t));
 

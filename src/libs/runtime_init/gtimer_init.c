@@ -16,6 +16,7 @@
 #include <silibs_mcp_top_regs.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <systick_update.h> // for systick_get_emcpu_clock
 
 #define __NO_CSR_TYPEDEFS__
 #include <scp_top_regs.h>
@@ -28,30 +29,20 @@
  * requirements.
  * Base frequency = 250 MHz
  */
-#define SOC_REFCLK_FREQUENCY_HZ        250000000ULL
-#define SOC_GTIMER_TARGET_FREQUENCY_HZ 1000000000ULL
-#define SOC_REFCLK_SCALING_FACTOR      ((SOC_GTIMER_TARGET_FREQUENCY_HZ) / (SOC_REFCLK_FREQUENCY_HZ))
-static_assert(SOC_REFCLK_FREQUENCY_HZ * SOC_REFCLK_SCALING_FACTOR == 1000000000,
-              "SOC_REFCLK_FREQUENCY_HZ * SOC_REFCLK_SCALING_FACTOR must equal 1GHz");
+#define SOC_GTIMER_TARGET_FREQUENCY_HZ 1000000000ULL // 1 GHz
 
 /*
  * Big FPGA does not support a 250 MHz refclk. The counter frequency on the
  * FPGA instead runs at 10 MHz (with a potential to scale it 16x - up to 160 MHz).
  */
-#define FPGA_REFCLK_FREQUENCY 10000000ULL
-#define FPGA_SCALING_FACTOR   1ULL
-static_assert(FPGA_REFCLK_FREQUENCY * FPGA_SCALING_FACTOR == 10000000,
-              "FPGA_REFCLK_FREQUENCY * FPGA_SCALING_FACTOR must equal 10MHz");
+#define FPGA_GTIMER_TARGET_FREQUENCY_HZ 10000000ULL // 10 MHz
 
 /*
  * SVP does not support a 250 MHz refclk. The counter frequency on the
  * SVP instead runs at 125 MHz (with a potential to scale it 8x - to make it
  * appear to tick at 1 GHz).
  */
-#define SVP_REFCLK_FREQUENCY 125000000ULL
-#define SVP_SCALING_FACTOR   1ULL
-static_assert(SVP_REFCLK_FREQUENCY * SVP_SCALING_FACTOR == 125000000,
-              "SVP_REFCLK_FREQUENCY * SVP_SCALING_FACTOR must equal 125MHz");
+#define SVP_GTIMER_TARGET_FREQUENCY_HZ 125000000ULL // 125 MHz
 
 /*------------- Typedefs -----------------*/
 
@@ -60,11 +51,11 @@ static_assert(SVP_REFCLK_FREQUENCY * SVP_SCALING_FACTOR == 125000000,
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "spi_bridge"))
+FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "spi_bridge", "systick_upd"))
 {
     gtimer_prodfw_init_config_t config;
-    config.frequency_hz = SOC_GTIMER_TARGET_FREQUENCY_HZ;
-    config.scaling_factor = SOC_REFCLK_SCALING_FACTOR;
+    config.frequency_hz = systick_get_emcpu_clock();
+    config.scaling_factor = SOC_GTIMER_TARGET_FREQUENCY_HZ / config.frequency_hz;
 
 #if defined(SCP_RUNTIME_INIT)
     config.counter_control_base = SCP_TOP_GEN_CNTR_CTRL_ADDRESS;
@@ -80,13 +71,11 @@ FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "spi_brid
     /* Override default settings in case dev. platforms have different capabilities */
     if (IS_PLATFORM_FPGA())
     {
-        config.frequency_hz = FPGA_REFCLK_FREQUENCY;
-        config.scaling_factor = FPGA_SCALING_FACTOR;
+        config.scaling_factor = FPGA_GTIMER_TARGET_FREQUENCY_HZ / config.frequency_hz;
     }
     else if (IS_PLATFORM_SVP())
     {
-        config.frequency_hz = SVP_REFCLK_FREQUENCY;
-        config.scaling_factor = SVP_SCALING_FACTOR;
+        config.scaling_factor = SVP_GTIMER_TARGET_FREQUENCY_HZ / config.frequency_hz;
     }
 
     gtimer_prodfw_init(&config);

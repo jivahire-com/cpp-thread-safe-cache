@@ -17,6 +17,7 @@
 #include <silibs_scp_top_regs.h> // IWYU pragma: keep
 #include <stddef.h>              // for NULL
 #include <stdio_textio.h>        // for stdio_textio_init
+#include <systick_update.h>      // for systick_get_emcpu_clock
 #include <textio_pl011.h>        // for textio_pl011_device_t, textio_pl011_dev...
 #include <uart_pl011.h>          // for UART_PL011_PARITY_NONE, UART_PL011_STOP...
 
@@ -60,7 +61,7 @@ static void print_build_info()
     CRITICAL_PRINT("\n");
 }
 
-FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk", "nvic"))
+FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk", "nvic", "systick_upd"))
 {
     fpfw_init_component_id_t dfwk_id = "dfwk";
     static textio_pl011_config_t pl011_config = {
@@ -69,13 +70,13 @@ FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk", "nvic"))
         .interrupt = UART_IRQ,
         .vuart_interrupt = VUART_IRQ, // Interrupt for virtual UART, if applicable
         .baud_rate = 115200,
-        .clk_freq = 10000000,
         .wlen = UART_PL011_WLEN_8,
         .stop_bits = UART_PL011_STOP_BITS_1,
         .parity = UART_PL011_PARITY_NONE,
         .config_type = TEXTIO_PL011_CONFIG_TYPE_INTERRUPT,
         .is_vuart_enabled = true,
     };
+    pl011_config.clk_freq = systick_get_emcpu_clock(); // Set clock frequency from systick
 
     static textio_pl011_device_t pl011_device = {0};
 

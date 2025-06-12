@@ -43,6 +43,12 @@ void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
     return mock_type(void*);
 }
 
+uint32_t __wrap_systick_get_emcpu_clock(void)
+{
+    // Mocked to return a fixed clock frequency for testing purposes
+    return mock_type(uint32_t);
+}
+
 void __wrap_textio_pl011_device_initialize(textio_pl011_device_t* device, const textio_pl011_config_t* config, DFWK_SCHEDULE* schedule)
 {
     assert_non_null(device);
@@ -54,7 +60,7 @@ void __wrap_textio_pl011_device_initialize(textio_pl011_device_t* device, const 
     assert_int_equal(config->interrupt, UART_IRQ);
     assert_int_equal(config->vuart_interrupt, VUART_IRQ);
     assert_int_equal(config->baud_rate, UART_BAUD_RATE);
-    assert_int_equal(config->clk_freq, UART_CLK_FREQ);
+    check_expected(config->clk_freq);
     assert_int_equal(config->wlen, UART_PL011_WLEN_8);
     assert_int_equal(config->stop_bits, UART_PL011_STOP_BITS_1);
     assert_int_equal(config->parity, UART_PL011_PARITY_NONE);
@@ -79,8 +85,11 @@ TEST_FUNCTION(textio_init_uart, nullptr, nullptr)
     //! Set up expectations
     DFWK_THREADX_HOST test_host = {};
 
+    will_return_always(__wrap_systick_get_emcpu_clock, 125000000U); //! SVP_REFCLK_FREQUENCY
+
     will_return(__wrap_fpfw_init_get_handle, &test_host); //! driver fmwk host handle
     expect_value(__wrap_textio_pl011_device_initialize, schedule, &(test_host.Schedule));
+    expect_value(__wrap_textio_pl011_device_initialize, config->clk_freq, 125000000U);
     expect_function_call(__wrap_textio_pl011_device_initialize);
 
     //! Call the function under test

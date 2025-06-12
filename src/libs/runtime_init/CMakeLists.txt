@@ -75,6 +75,7 @@ add_library(${TARGET}
         warm_start_cli_init.c
         warm_start_init.c
         watchdog_init.c
+        systick_update_init.c
 )
 
 target_link_libraries(
@@ -153,6 +154,7 @@ target_link_libraries(
         ms::lib::variable_services::cli
         ms::lib::warm_start
         ms::lib::warm_start::cli
+        ms::lib::systick_update
         ms::service::accel_intr_client
         ms::service::accel_intr_service
         ms::service::ap_core
@@ -282,6 +284,7 @@ add_library(${TARGET}
         variable_services_init.c
         virt_irq_init.c
         watchdog_init.c
+        systick_update_init.c
 )
 
 target_link_libraries(
@@ -339,6 +342,7 @@ target_link_libraries(
         ms::lib::system_info
         ms::lib::threadx
         ms::lib::variable_services
+        ms::lib::systick_update
         ms::service::atu_service
         ms::service::event_trace::collector
         ms::service::event_trace::decoder

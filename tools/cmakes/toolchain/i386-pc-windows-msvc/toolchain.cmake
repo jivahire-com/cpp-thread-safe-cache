@@ -36,6 +36,10 @@ add_link_options("LINKER:/guard:cf,/CETCOMPAT")
 # Set repo utilities
 set(REPO_CLANG_FORMAT $ENV{REPO_APP_PATH_llvm.win64}/bin/clang-format.exe)
 
+# Add Cortex m7 clock speed, ticks per second
+SET(TX_CORE_CLOCK_SPEED "6250000")        # Default to 6.5MHz which is the clock speed on FPGA for mscp
+SET(TX_CORE_TICKS_PER_SECOND "100")
+
 # Enable features
 option(REPO_ENABLE_TESTS "Compiles unit tests" ON)
 option(REPO_ENABLE_COVERAGE "Enables code coverage in compilation" ON)

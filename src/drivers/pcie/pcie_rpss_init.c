@@ -111,7 +111,11 @@ int begin_rpss_pre_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
     pcie_sync_request_t* r = (pcie_sync_request_t*)req;
     silibs_status_t sts = SILIBS_SUCCESS;
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
-    pcie_phy_fw_t* phyfw = (pcie_phy_fw_t*)(SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
+    pcie_phy_fw_t phyfw = {0};
+
+    // Set PCIE PHY Loaded flag
+    phyfw.loaded = true;
+    phyfw.base = (uintptr_t)SCP_EXP_PCIE_PHY_FW_BASE;
 
     FPFW_RUNTIME_ASSERT(rpss != NULL);
 
@@ -122,7 +126,7 @@ int begin_rpss_pre_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
 
         // There is no PHY Loaded other than the this, so any failure here should be
         // treated as FATAL
-        sts = pciess_phys_program_fw(rpss, phyfw);
+        sts = pciess_phys_program_fw(rpss, &phyfw);
         FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
     }
 

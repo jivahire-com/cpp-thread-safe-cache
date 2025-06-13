@@ -322,3 +322,47 @@ int __wrap_ddrss_inject_media_ca_err(uint32_t mc, ddrss_media_ca_err_inj_info_t*
 
     return __real_ddrss_inject_media_ca_err(mc, ca_err_inj);
 }
+
+int __wrap_variable_service_initialize_ctx(var_service_req_ctx_t* var_serv_ctx, var_service_shared_mem_t* mem_ctx)
+{
+    FPFW_UNUSED(var_serv_ctx);
+    static uint8_t dummy_payload[128] = {0};
+    mem_ctx->payload_base = (uintptr_t)dummy_payload;
+    mem_ctx->max_payload_size = sizeof(dummy_payload);
+    return mock_type(int);
+}
+
+void __wrap_variable_service_unlock_get_var_ctx(var_service_req_ctx_t* var_serv_ctx)
+{
+    FPFW_UNUSED(var_serv_ctx);
+}
+
+int32_t __wrap_variable_service_sync_get_variable(var_service_req_ctx_t* var_serv_ctx, var_service_req_params_t* req_params)
+{
+    FPFW_UNUSED(var_serv_ctx);
+    FPFW_UNUSED(req_params);
+    return mock_type(int);
+}
+
+void __wrap_variable_service_sync_set_variable(var_service_req_ctx_t* var_serv_ctx, var_service_req_params_t* req_params)
+{
+    FPFW_UNUSED(var_serv_ctx);
+    FPFW_UNUSED(req_params);
+}
+
+int32_t __wrap_get_ppr_run_var(var_service_shared_mem_t* mem_ctx, PPR_RUN_TYPE* ppr_type_req)
+{
+    static uint8_t dummy_payload[64] = {0};
+    mem_ctx->payload_base = (uintptr_t)dummy_payload;
+    mem_ctx->max_payload_size = sizeof(dummy_payload);
+
+    *ppr_type_req = RUN_hPPR;
+    return mock_type(int32_t);
+}
+
+void __wrap_ppr_type_reset_variable(var_service_shared_mem_t* mem_ctx)
+{
+    static uint8_t dummy_payload[64] = {0};
+    mem_ctx->payload_base = (uintptr_t)dummy_payload;
+    mem_ctx->max_payload_size = sizeof(dummy_payload);
+}

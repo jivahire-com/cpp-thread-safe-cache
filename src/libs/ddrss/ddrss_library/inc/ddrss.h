@@ -19,6 +19,7 @@
 #include <silibs_platform.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <variable_services.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define DDRSS_PRINT(lvl, statement)  
@@ -58,7 +59,30 @@
 
 #define tDRTUB 0xc0000u
 #define csr_ArcEccIndications_ADDR 0x82u
+
+#define PPR_RUN_CFG_VAR_NAME                    \
+    {                                           \
+        'P', 'P', 'R', '_', 'R', 'U', 'N', '\0' \
+    }
+#define PPR_RUN_CFG_VAR_GUID                               \
+    {                                                      \
+        0xa3fcb701, 0x4e5f, 0x44db,                        \
+        {                                                  \
+            0x93, 0x2d, 0x8b, 0x2f, 0xca, 0x10, 0xd9, 0x45 \
+        }                                                  \
+    }
+
 /*-------------- Typedefs ----------------*/
+typedef enum _PPR_RUN_TYPE
+{
+    RUN_hPPR = 0,
+    MOCK_hPPR,
+    RUN_mPPR,
+    MOCK_mPPR,
+    RUN_sPPR,  /* Not supported for KNG */
+    MOCK_sPPR, /* Not supported for KNG */
+    NO_ACTION,
+} PPR_RUN_TYPE;
 
 /* Internal parameters calculated from configurations */
 
@@ -84,3 +108,7 @@ void prod_ddrss_pcr_init(KNG_DIE_ID die_num);
 int ddrss_probe_ras_agent(uint32_t mc, uint32_t ras_agent_entity_id);
 ddrss_phy_training_dq_margin_t* ddrss_get_training_margin_base(void);
 
+// PPR VAR in ddrss.c
+int32_t get_ppr_run_var(var_service_shared_mem_t* mem_ctx, PPR_RUN_TYPE* ppr_type_req);
+void ppr_reset_variable_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size);
+void ppr_type_reset_variable(var_service_shared_mem_t* mem_ctx);

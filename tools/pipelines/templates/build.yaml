@@ -17,6 +17,9 @@ jobs:
   displayName: Build
   pool: 
     name: 1pfw-kingsgate-windows
+    demands: 
+      - ImageOverride -equals 1pfw-win2022vNext
+      - ImageVersionOverride -equals 144.0.0
     isCustom: true
     type: windows
 

@@ -43,6 +43,12 @@ void init_pex_rng(pex_rng_config_t* rng_config)
     }
 }
 
+void reset_pex_rng(uintptr_t ap_rng_base)
+{
+    rng_disable_r(ap_rng_base);
+    rng_enable_r(ap_rng_base, 1);
+}
+
 // Adding dummy implementations for static declarations in rng.h
 // TODO: Change the static declarations in rng.h
 // ADO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/1917157/?workitem=2063037
@@ -53,10 +59,9 @@ static void rng_write_ctrl(uint32_t val)
     FPFW_UNUSED(val);
 }
 
-static uint32_t rng_read_ctrl(uint32_t val)
+static uint32_t rng_read_ctrl()
 {
     /* dummy function, do nothing */
-    FPFW_UNUSED(val);
     return 0;
 }
 

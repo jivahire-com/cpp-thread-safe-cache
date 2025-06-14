@@ -15,7 +15,7 @@
 #include <error_domain_i.h>
 #include <health_monitor.h>
 #include <idhw.h>
-#include <idsw_kng.h>
+#include <idsw_kng.h> // for KNG_DIE_ID, idsw_get_die_id
 #include <interrupts.h>
 #include <mscp_error_domain.h>
 #include <mscp_ras_and_init_ctrl_registers_regs.h>
@@ -87,7 +87,6 @@ uint32_t get_irq_num_for_scp_ecc_isr(scp_arsm_ram_type_t type)
 
     return irq_nums[type];
 }
-
 static void cache_ecc_isr(const mscp_ecc_isr_params_t* params)
 {
     // Save stored error info from DEBR0 and DEBR1
@@ -546,7 +545,7 @@ static void register_scp_ecc_isr(uint32_t irq_num, isr_callback_fn_sans_params_t
     BUG_ASSERT_PARAM(nvic_status == NVIC_STATUS_SUCCESS, nvic_status, irq_num);
 }
 
-static void register_scp_ecc_isr_with_param(uint32_t irq_num, isr_callback_fn_with_params_t isr, void* isr_param)
+void register_scp_ecc_isr_with_param(uint32_t irq_num, isr_callback_fn_with_params_t isr, void* isr_param)
 {
     nvic_status_t nvic_status = NVIC_STATUS_SUCCESS;
 

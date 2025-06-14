@@ -6,6 +6,7 @@ set(TARGET kng.lib.error_domain.scp)
 
 set (SOURCES 
         src/error_domain_scp.c
+        src/error_domain_pex.c
         src/error_injection_scp.c
         src/exception_trigger.c
 )
@@ -22,6 +23,7 @@ target_link_libraries(
         PRIVATE
             fwlib.lib.assert
             fwlib.lib.interface.platform.dbgprint
+            fwlib.lib.init
             ms::lib::arm_intrinsic
             ms::lib::cortex_m7::nvic
             ms::lib::crash_dump
@@ -31,7 +33,10 @@ target_link_libraries(
             silibs::atu
             silibs::cmsdk_wd
             silibs::idhw
+            ms::lib::pex_rng
+            silibs::idsw
             silibs::idsw_kng
+            silibs::crypto::rng
 )
 
 target_include_directories(${TARGET}

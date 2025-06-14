@@ -44,7 +44,10 @@ void __wrap_rng_enable_r(uint32_t base, uint8_t div)
     check_expected(base);
     check_expected(div);
 }
-
+void __wrap_rng_disable_r(uint32_t base)
+{
+    check_expected(base);
+}
 //
 // Tests
 //
@@ -57,5 +60,14 @@ TEST_FUNCTION(test_init_pex_rng, nullptr, nullptr)
     expect_value(__wrap_rng_enable_r, div, 1);
 
     init_pex_rng(&test_config);
+}
+
+TEST_FUNCTION(test_rset_pex_rng, nullptr, nullptr)
+{
+    expect_value(__wrap_rng_disable_r, base, (PEX_RNG_ADDRESS));
+    expect_value(__wrap_rng_enable_r, base, (PEX_RNG_ADDRESS));
+    expect_value(__wrap_rng_enable_r, div, 1);
+
+    reset_pex_rng(PEX_RNG_ADDRESS);
 }
 }

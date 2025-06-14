@@ -28,4 +28,5 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     FpFwAssert
     rng_enable_r
+    rng_disable_r
 )

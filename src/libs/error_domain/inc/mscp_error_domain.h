@@ -36,6 +36,10 @@ typedef enum
  * @brief Register the SCP error domain.
  */
 void register_scp_error_domain();
+/**
+ * @brief Register the SCP error domain.
+ */
+void register_pex_error_domain();
 
 /**
  * @brief Get Shared ATU entry for Shared SRAM ECC Registers.

@@ -11,6 +11,8 @@
 
 /*------------- Includes -----------------*/
 #include <cper.h>
+#include <idsw_kng.h>             // for KNG_DIE_ID, idsw_get_die_id
+#include <nvic.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define MMIO_SET_MASK32(addr, mask)   MMIO_WRITE32(addr, (MMIO_READ32(addr) | (mask)))
@@ -40,4 +42,5 @@ void trigger_bus_fault();
 void trigger_usage_fault();
 void trigger_mmu_fault();
 void trigger_mscp_watchdog_fault();
+void register_scp_ecc_isr_with_param(uint32_t irq_num, isr_callback_fn_with_params_t isr, void* isr_param);
 acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx);

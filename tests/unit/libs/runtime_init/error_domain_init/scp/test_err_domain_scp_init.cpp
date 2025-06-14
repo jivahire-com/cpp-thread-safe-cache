@@ -24,13 +24,16 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_scp_ras;
-
 /*------------- Functions ----------------*/
 //
 // Mocks
 //
 
 void __wrap_register_scp_error_domain()
+{
+    function_called();
+}
+void __wrap_register_pex_error_domain()
 {
     function_called();
 }
@@ -43,6 +46,7 @@ void __wrap_register_scp_error_domain()
 TEST_FUNCTION(scp_ras, nullptr, nullptr)
 {
     expect_function_call(__wrap_register_scp_error_domain);
+    expect_function_call(__wrap_register_pex_error_domain);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_scp_ras.init_fn();

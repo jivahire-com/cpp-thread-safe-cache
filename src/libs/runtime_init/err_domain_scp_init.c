@@ -21,5 +21,7 @@
 FPFW_INIT_COMPONENT(scp_ras, FPFW_INIT_DEPENDENCIES("hm_svc", "nvic"))
 {
     register_scp_error_domain();
+    register_pex_error_domain();
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

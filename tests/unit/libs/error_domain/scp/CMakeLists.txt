@@ -29,6 +29,7 @@ target_link_libraries(${TARGET}
         ms::lib::cortex_m7::nvic
         ms::lib::error_domain::scp
         ms::lib::crash_dump
+        ms::lib::pex_rng
         ms::lib::scp_interrupts
 )
 
@@ -41,6 +42,8 @@ target_include_directories(${TARGET}
 
 # Generic ports implement within this project
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+
+target_compile_options(scp_error_domain.test PRIVATE -Wno-unused-function)
 
 target_compile_definitions(
     ${TARGET}
@@ -70,8 +73,11 @@ mock_target(${TARGET}
     nvic_irq_set_isr_with_param
     nvic_irq_enable
     nvic_irq_clear_pending
+    nvic_irq_set_isr_with_param
+    nvic_get_current_irq
     wdog_cmsdk_apb_disable
     wdog_cmsdk_apb_init
     mmu_fault
     idhw_is_single_die_boot_en
+    get_rng_config
 )

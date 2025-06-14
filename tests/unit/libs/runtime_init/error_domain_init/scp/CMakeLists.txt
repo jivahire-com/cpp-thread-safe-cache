@@ -44,4 +44,5 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     register_scp_error_domain
+    register_pex_error_domain
 )

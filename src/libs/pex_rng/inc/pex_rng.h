@@ -30,3 +30,4 @@ typedef struct _pex_rng_config_t
  *  @param rng_config config structure is used to get the base address of the RNG instance and iterate through clusters
  */
 void init_pex_rng(pex_rng_config_t* rng_config);
+void reset_pex_rng(uintptr_t ap_rng_base);

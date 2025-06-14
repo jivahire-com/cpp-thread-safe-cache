@@ -3,7 +3,7 @@
 //
 
 /**
- * @file pcie_error_management.c
+ * @file pcie_error_handling.c
  *
  * Implements PCIe error and RAS event handling functions as well as invokes
  * the relevant APIs to log CPER and/or SEL events.
@@ -11,6 +11,8 @@
 
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
+#include <common_types.h>
+#include <cper.h>
 #include <pcie_sync_requests_i.h>
 #include <ras_common.h>
 #include <scp_pcie_manager.h>
@@ -24,8 +26,14 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+static const guid_t pcie_vendor_defined_error_domain_guid = ACPI_ERROR_TYPE_VENDOR_DEFINED_PCIE;
 
 /*------------- Functions ----------------*/
+const guid_t* get_pcie_vendor_defined_error_domain_guid(void)
+{
+    return &pcie_vendor_defined_error_domain_guid;
+}
+
 void handle_pcie_vsecras_event(pcie_manager_context_t* ctx, pciess_completion_request_t* cmpl)
 {
     RPSS_INSTANCE rpss_idx = ctx->rpss_idx;

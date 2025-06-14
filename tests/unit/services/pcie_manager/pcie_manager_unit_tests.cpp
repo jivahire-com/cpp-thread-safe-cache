@@ -17,14 +17,19 @@ extern "C" {
 
 #include <DfwkPtrTypes.h> // for PDFWK_SCHEDULE
 #include <atu_api.h>
+#include <cper.h>
 #include <errno.h>             // for EINVAL
 #include <error_handler.h>     // for set_error_handler_return
 #include <kng_soc_constants.h> // for RPSS0
 #include <mscp_exp_rmss_memory_map.h>
 #include <pcie_async_requests_i.h>
-#include <pcie_dfwk.h>             // for pciess_device_interface_t, pciess_dev...
+#include <pcie_dfwk.h> // for pciess_device_interface_t, pciess_dev...
+#include <pcie_einj_structs.h>
+#include <pcie_error_injection_i.h>
 #include <pcie_manager_i.h>        // for rpss_req_completion_cb, send_start_li...
 #include <pcie_rp_event_handler.h> // for process_wait_for_event_data
+#include <pcie_rp_rasdes.h>
+#include <pcie_ss.h>
 #include <pcie_sync_requests_i.h>
 #include <pciess_int.h>
 #include <scp_pcie_manager.h> // for scp_pcie_initialize, pcie_manager_con...
@@ -1085,8 +1090,9 @@ TEST_FUNCTION(test_all_sync_req_invalid_ids, NULL, NULL)
     uint8_t valid_rp_id = 0x03;
     uint8_t invalid_rp_id = 0xFF;
     ras_error_record_t mock_record;
+    pcie_einj_params_t mock_einj_params;
 
-    expect_function_calls(__wrap_crash_dump_bug_check, 20);
+    expect_function_calls(__wrap_crash_dump_bug_check, 21);
     should_return = false;
 
     if (!bugcheck_mock_return())
@@ -1107,6 +1113,11 @@ TEST_FUNCTION(test_all_sync_req_invalid_ids, NULL, NULL)
     if (!bugcheck_mock_return())
     {
         send_sync_rpss_post_rp_init_request((PDFWK_INTERFACE_HEADER)ctx.iface, invalid_rpss_id);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        send_sync_rpss_inject_pcie_error((PDFWK_INTERFACE_HEADER)ctx.iface, invalid_rpss_id, &mock_einj_params);
     }
 
     if (!bugcheck_mock_return())
@@ -1218,4 +1229,245 @@ TEST_FUNCTION(test_init_wait_for_event_queue_on_rpss, NULL, NULL)
     expect_any(__wrap_DfwkInterfaceSendAsync, Request);
 
     init_wait_for_event_queue_on_rpss(&ctx);
+}
+
+TEST_FUNCTION(test_pcie_error_injection_cb_aer, NULL, NULL)
+{
+    ras_einj_info_t mock_einj_info;
+    acpi_einj_cmd_status_t status;
+    pcie_einj_params_t* pcie_params = (pcie_einj_params_t*)&(mock_einj_info.param_type.error_parameters[0]);
+    mock_einj_info.component_instance = 0;
+    mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
+    pcie_params->sbdf.segment = 0;
+
+    pcie_params->error_type = PCIE_ERROR_TYPE_AER;
+    pcie_params->error_data.aer = PCIE_SS_APP_ERR_MALFORMED_TLP;
+    pcie_params->error_count = 1;
+
+    for (uint8_t i = RPSS0; i <= RPSS7; i++)
+    {
+        ctx.rpss_idx = (RPSS_INSTANCE)i;
+        pcie_params->sbdf.bus = (i * 30) + 15;
+        will_return(__wrap_idsw_get_die_id, SOC_D0);
+        will_return(__wrap_scp_pcie_get_manager_context, &ctx);
+        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, INJECT_PCIE_ERROR);
+        will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+        will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+        will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+        status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+        assert_int_equal(status, ACPI_EINJ_SUCCESS);
+    }
+}
+
+TEST_FUNCTION(test_pcie_error_injection_cb_internal, NULL, NULL)
+{
+    ras_einj_info_t mock_einj_info;
+    acpi_einj_cmd_status_t status;
+    pcie_einj_params_t* pcie_params = (pcie_einj_params_t*)&(mock_einj_info.param_type.error_parameters[0]);
+    mock_einj_info.component_instance = 0;
+    mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
+    pcie_params->sbdf.segment = 0;
+
+    pcie_params->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_CRC;
+    pcie_params->error_data.internal.crc = PCIE_RASDES_INJ_ECRC;
+    pcie_params->error_count = 10;
+
+    for (uint8_t i = RPSS0; i <= RPSS7; i++)
+    {
+        ctx.rpss_idx = (RPSS_INSTANCE)i;
+        pcie_params->sbdf.bus = (i * 30) + 15;
+        will_return(__wrap_idsw_get_die_id, SOC_D0);
+        will_return(__wrap_scp_pcie_get_manager_context, &ctx);
+        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, INJECT_PCIE_ERROR);
+        will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+        will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+        will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+        status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+        assert_int_equal(status, ACPI_EINJ_SUCCESS);
+    }
+}
+
+TEST_FUNCTION(test_pcie_error_injection_silibs_error, NULL, NULL)
+{
+    ras_einj_info_t mock_einj_info;
+    acpi_einj_cmd_status_t status;
+    pcie_einj_params_t* pcie_params = (pcie_einj_params_t*)&(mock_einj_info.param_type.error_parameters[0]);
+    mock_einj_info.component_instance = 0;
+    mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
+    pcie_params->sbdf.segment = 0;
+
+    pcie_params->error_type = PCIE_ERROR_TYPE_AER;
+    pcie_params->error_data.aer = PCIE_SS_APP_ERR_MALFORMED_TLP;
+    pcie_params->error_count = 1;
+
+    for (uint8_t i = RPSS0; i <= RPSS7; i++)
+    {
+        ctx.rpss_idx = (RPSS_INSTANCE)i;
+        pcie_params->sbdf.bus = (i * 30) + 15;
+        will_return(__wrap_idsw_get_die_id, SOC_D0);
+        will_return(__wrap_scp_pcie_get_manager_context, &ctx);
+        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, INJECT_PCIE_ERROR);
+        will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+        will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_DEVICE);
+        will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+        status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+        assert_int_equal(status, ACPI_EINJ_UNKNOWN_FAILURE);
+    }
+}
+
+TEST_FUNCTION(test_pcie_error_injection_cb_bad_einj_buffer, NULL, NULL)
+{
+    ras_einj_info_t mock_einj_info;
+    acpi_einj_cmd_status_t status;
+    pcie_einj_params_t* pcie_params = (pcie_einj_params_t*)&(mock_einj_info.param_type.error_parameters[0]);
+
+    /* Null buffer */
+    status = pcie_error_injection_cb(nullptr, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad component instance */
+    mock_einj_info.component_instance = 0;
+    will_return(__wrap_idsw_get_die_id, SOC_D1);
+    will_return(__wrap_idsw_get_die_id, SOC_D1);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad component group */
+    mock_einj_info.component_instance = 0;
+    mock_einj_info.component_group = ACPI_ERROR_DOMAIN_DDR;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad segment */
+    mock_einj_info.component_instance = 0;
+    mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
+    pcie_params->sbdf.segment = 1;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad bus number */
+    mock_einj_info.component_instance = 0;
+    mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
+    pcie_params->sbdf.segment = 0;
+    pcie_params->sbdf.bus = 248;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad error type */
+    mock_einj_info.component_instance = 0;
+    mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
+    pcie_params->sbdf.segment = 0;
+    pcie_params->sbdf.bus = 247;
+    pcie_params->error_type = PCIE_ERROR_TYPE_MAX;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad AER type */
+    mock_einj_info.component_instance = 0;
+    mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
+    pcie_params->sbdf.segment = 0;
+    pcie_params->sbdf.bus = 247;
+    pcie_params->error_type = PCIE_ERROR_TYPE_AER;
+    pcie_params->error_data.aer = (PCIE_SS_RP_APP_ERROR)0x8000000;
+    pcie_params->error_count = 10;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad internal CRC error type  */
+    mock_einj_info.component_instance = 0;
+    mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
+    pcie_params->sbdf.segment = 0;
+    pcie_params->sbdf.bus = 247;
+    pcie_params->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_CRC;
+    pcie_params->error_data.internal.crc = (PCIE_RASDES_INJ_CRC_TYPE)0x8000000;
+    pcie_params->error_count = 10;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad internal seqnum error type  */
+    mock_einj_info.component_instance = 0;
+    mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
+    pcie_params->sbdf.segment = 0;
+    pcie_params->sbdf.bus = 247;
+    pcie_params->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_SEQNUM;
+    pcie_params->error_data.internal.seqnum = (PCIE_RASDES_INJ_SEQNUM_TYPE)0x8000000;
+    pcie_params->error_count = 10;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad internal dllp error type  */
+    mock_einj_info.component_instance = 0;
+    mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
+    pcie_params->sbdf.segment = 0;
+    pcie_params->sbdf.bus = 247;
+    pcie_params->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_DLLP;
+    pcie_params->error_data.internal.dllp = (PCIE_RASDES_INJ_DLLP_TYPE)0x8000000;
+    pcie_params->error_count = 10;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad internal symbol error type  */
+    mock_einj_info.component_instance = 0;
+    mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
+    pcie_params->sbdf.segment = 0;
+    pcie_params->sbdf.bus = 247;
+    pcie_params->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_SYMBOL;
+    pcie_params->error_data.internal.symbol = (PCIE_RASDES_INJ_SYMBOL_TYPE)0x8000000;
+    pcie_params->error_count = 10;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad internal fc error type  */
+    mock_einj_info.component_instance = 0;
+    mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
+    pcie_params->sbdf.segment = 0;
+    pcie_params->sbdf.bus = 247;
+    pcie_params->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_FC;
+    pcie_params->error_data.internal.fc = (PCIE_RASDES_INJ_FC_TYPE)0x8000000;
+    pcie_params->error_count = 10;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad internal retry TLP error type  */
+    mock_einj_info.component_instance = 0;
+    mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
+    pcie_params->sbdf.segment = 0;
+    pcie_params->sbdf.bus = 247;
+    pcie_params->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_RETRY_TLP;
+    pcie_params->error_data.internal.retry_tlp = (PCIE_RASDES_INJ_RETRY_TLP_TYPE)0x8000000;
+    pcie_params->error_count = 10;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Test dfwk error  */
+    mock_einj_info.component_instance = 0;
+    mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
+    pcie_params->sbdf.segment = 0;
+    pcie_params->sbdf.bus = 247;
+    pcie_params->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_RETRY_TLP;
+    pcie_params->error_data.internal.retry_tlp = PCIE_RASDES_INJ_DUPLICATE_TLP;
+    pcie_params->error_count = 10;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return(__wrap_scp_pcie_get_manager_context, &ctx);
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, INJECT_PCIE_ERROR);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, -1);
+    expect_function_calls(__wrap_crash_dump_bug_check, 1);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
 }

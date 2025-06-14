@@ -11,6 +11,7 @@
 
 /*----------- Nested includes ------------*/
 #include <DfwkPtrTypes.h>
+#include <pcie_einj_structs.h>
 #include <pcie_ss_common.h>
 #include <silibs_status.h>
 
@@ -65,6 +66,20 @@ silibs_status_t send_sync_rpss_pre_rp_init_request(PDFWK_INTERFACE_HEADER iface,
  * @retval Other:          Error occurred while sending post-RP initialization.
  */
 silibs_status_t send_sync_rpss_post_rp_init_request(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx);
+
+/**
+ * @brief Send a synchronous request to inject a PCIe error for the specified RPSS instance.
+ *
+ * @param[in] iface     - Pointer to the driver interface header for this RPSS.
+ * @param[in] rpss_idx  - The RPSS instance index.
+ * @param[in] einj_params - Pointer to the PCIe error injection parameters structure.
+ *
+ * @retval SILIBS_SUCCESS: Error injection request sent successfully.
+ * @retval Other:          Error occurred while sending error injection request.
+ */
+silibs_status_t send_sync_rpss_inject_pcie_error(PDFWK_INTERFACE_HEADER iface,
+                                                 RPSS_INSTANCE rpss_idx,
+                                                 pcie_einj_params_t* einj_params);
 
 /*--------------- Root port (RP) level synchronous requests -----------------*/
 /**

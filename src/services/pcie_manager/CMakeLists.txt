@@ -3,7 +3,8 @@ set(TARGET kng.service.scp_pcie_manager)
 add_library(${TARGET}
     STATIC
         pcie_async_requests.c
-        pcie_error_management.c
+        pcie_error_handling.c
+        pcie_error_injection.c
         pcie_manager_init.c
         pcie_rpss_manager_thread.c
         pcie_config_manager_thread.c
@@ -31,6 +32,7 @@ target_link_libraries(
         ms::lib::crash_dump
         ms::lib::system_info
         ms::lib::accelerator_ip
+        ms::service::health_monitor
         silibs::idsw
         silibs::idsw_kng
         silibs::pciess

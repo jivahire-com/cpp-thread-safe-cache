@@ -13,7 +13,7 @@
 #include <DfwkPtrTypes.h>
 #include <fpfw_cfg_mgr.h>
 #include <pcie_dfwk.h> // for pcie_async_request_t, pcie_dfwk_interf...
-#include <pcie_error_management_i.h>
+#include <pcie_error_handling_i.h>
 #include <pcie_link_management_i.h>
 #include <pcie_manager_i.h> // for rpss_req_completion_cb, rpss_service_t...
 #include <pcie_rp_event_handler.h>

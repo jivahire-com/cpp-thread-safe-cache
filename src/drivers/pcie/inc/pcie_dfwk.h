@@ -45,6 +45,7 @@ typedef enum _pcie_rp_sync_request_t
     PROBE_VSECRAS_NODE,
     PROBE_DTIM_NODE,
     PROBE_LTIM_NODE,
+    INJECT_PCIE_ERROR,
     CLI_REQUEST,
     PCIE_MAX_SYNC_REQ
 } pcie_rp_sync_request_t;

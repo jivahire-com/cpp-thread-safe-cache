@@ -16,6 +16,7 @@
 #include <kng_soc_constants.h>
 #include <pcie_common.h>
 #include <pcie_dfwk.h>
+#include <pcie_einj_structs.h>
 #include <pcie_ss_common.h>
 #include <pcie_sync_requests_i.h>
 #include <pciess.h>
@@ -145,6 +146,33 @@ silibs_status_t send_sync_rpss_post_rp_init_request(PDFWK_INTERFACE_HEADER iface
             rpss_idx,
             dfwk_status,
             sync_req.status);
+        BUG_ASSERT_PARAM(((sync_req.status == SILIBS_SUCCESS) && (dfwk_status == DFWK_SUCCESS)), sync_req.status, 0);
+    }
+
+    return sync_req.status;
+}
+
+silibs_status_t send_sync_rpss_inject_pcie_error(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx, pcie_einj_params_t* einj_params)
+{
+    int32_t dfwk_status = DFWK_SUCCESS;
+
+    if (rpss_idx >= NUM_RPSS)
+    {
+        FPFW_DBGPRINT_ERROR("RPSS[%d]: Invalid RPSS index!\n", rpss_idx);
+        BUG_ASSERT_PARAM((rpss_idx < NUM_RPSS), rpss_idx, 0);
+    }
+
+    pcie_sync_request_t sync_req = {
+        .header = {.RequestType = INJECT_PCIE_ERROR},
+        .rpss_index = rpss_idx,
+        .req_type = INJECT_PCIE_ERROR,
+        .p_requested_data = (void*)einj_params,
+    };
+
+    dfwk_status = DfwkInterfaceSendSync(iface, &sync_req.header);
+    if (DFWK_FAILED(dfwk_status))
+    {
+        FPFW_DBGPRINT_ERROR("RPSS[%d]: Failed to send error injection request! dfwk_status: %d\n", rpss_idx, dfwk_status);
         BUG_ASSERT_PARAM(((sync_req.status == SILIBS_SUCCESS) && (dfwk_status == DFWK_SUCCESS)), sync_req.status, 0);
     }
 

@@ -1,0 +1,221 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+/**
+ * @file pcie_error_injection.c
+ * Implements PCIe error injection functions.
+ */
+
+/*------------- Includes -----------------*/
+#include <DbgPrint.h>
+#include <DfwkPtrTypes.h>
+#include <FpFwUtils.h>
+#include <cper.h>
+#include <idsw.h>
+#include <kng_soc_constants.h>
+#include <pcie_einj_structs.h>
+#include <pcie_manager_i.h>
+#include <pcie_rp_rasdes.h>
+#include <pcie_ss.h>
+#include <pcie_sync_requests_i.h>
+#include <scp_pcie_manager.h>
+#include <silibs_status.h>
+#include <stdbool.h>
+#include <stdint.h>
+
+/*-- Symbolic Constant Macros (defines) --*/
+
+/*------------- Typedefs -----------------*/
+
+/*-------- Function Prototypes -----------*/
+
+/*-- Declarations (Statics and globals) --*/
+/* PCIe bus ranges - current as of Kingsgate address map r1p11 */
+#define PCIE_RPSS0_BUS_MAX (30)
+#define PCIE_RPSS1_BUS_MAX (61)
+#define PCIE_RPSS2_BUS_MAX (92)
+#define PCIE_RPSS3_BUS_MAX (123)
+#define PCIE_RPSS4_BUS_MAX (154)
+#define PCIE_RPSS5_BUS_MAX (185)
+#define PCIE_RPSS6_BUS_MAX (216)
+#define PCIE_RPSS7_BUS_MAX (247)
+
+/*------------- Functions ----------------*/
+static bool validate_einj_payload(ras_einj_info_t* info)
+{
+    bool is_valid_payload = false;
+
+    if (info == NULL)
+    {
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: NULL einj payload received!\n");
+        goto done;
+    }
+
+    pcie_einj_params_t* pcie_params = (pcie_einj_params_t*)&(info->param_type.error_parameters[0]);
+
+    if (info->component_instance != idsw_get_die_id())
+    {
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Component Instance: %d does not match Die Id: %d",
+                            info->component_instance,
+                            idsw_get_die_id());
+        goto done;
+    }
+
+    if (info->component_group != ACPI_ERROR_DOMAIN_PCIE)
+    {
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid component group: 0x%x\n", info->component_group);
+        goto done;
+    }
+
+    if (pcie_params->sbdf.segment != 0)
+    {
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid segment number: %d\n", pcie_params->sbdf.segment);
+        goto done;
+    }
+
+    if (pcie_params->sbdf.bus > PCIE_RPSS7_BUS_MAX)
+    {
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid bus number: %d\n", pcie_params->sbdf.bus);
+        goto done;
+    }
+
+    if (pcie_params->error_type >= PCIE_ERROR_TYPE_MAX)
+    {
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid error type: %d\n", pcie_params->error_type);
+        goto done;
+    }
+
+    if (pcie_params->error_type == PCIE_ERROR_TYPE_AER && (pcie_params->error_data.aer > PCIE_SS_APP_ERR_HEADER_LOG_OVERFLOW))
+    {
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid AER error data: %d\n", pcie_params->error_data.aer);
+        goto done;
+    }
+
+    if (pcie_params->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_CRC &&
+        (pcie_params->error_data.internal.crc > PCIE_RASDES_INJ_ECRC))
+    {
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid CRC error data: %d\n", pcie_params->error_data.internal.crc);
+        goto done;
+    }
+
+    if (pcie_params->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_SEQNUM &&
+        (pcie_params->error_data.internal.seqnum > PCIE_RASDES_INJ_DLLP_ACK_NACK_SEQNUM))
+    {
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid SEQNUM error data: %d\n", pcie_params->error_data.internal.seqnum);
+        goto done;
+    }
+
+    if (pcie_params->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_DLLP &&
+        (pcie_params->error_data.internal.dllp > PCIE_RASDES_INJ_DLLP_NACK_TIMEOUT))
+    {
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid DLLP error data: %d\n", pcie_params->error_data.internal.dllp);
+        goto done;
+    }
+
+    if (pcie_params->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_SYMBOL &&
+        (pcie_params->error_data.internal.symbol > PCIE_RASDES_INJ_SKP_SYMBOL))
+    {
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid SYMBOL error data: %d\n", pcie_params->error_data.internal.symbol);
+        goto done;
+    }
+
+    if (pcie_params->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_FC &&
+        (pcie_params->error_data.internal.fc > PCIE_RASDES_INJ_CPL_TLP_DATA_CREDIT))
+    {
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid FC error data: %d\n", pcie_params->error_data.internal.fc);
+        goto done;
+    }
+
+    if (pcie_params->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_RETRY_TLP &&
+        (pcie_params->error_data.internal.retry_tlp > PCIE_RASDES_INJ_NULLIFIED_TLP))
+    {
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid RETRY TLP error data: %d\n",
+                            pcie_params->error_data.internal.retry_tlp);
+        goto done;
+    }
+
+    is_valid_payload = true;
+
+done:
+    return is_valid_payload;
+}
+
+static RPSS_INSTANCE get_rpss_instance_from_sbdf(pcie_sbdf_t* sbdf)
+{
+    /*
+     * Kingsgate divides bus distributions (0-255) per RPSS, we simply need to
+     * get the bus number from the SBDF and choose the RPSS bucket it falls into.
+     *
+     * Note: SDM/CDED do not support error injections through this interface, so
+     *       we can safely reject the SBDF ranges for those devices.
+     */
+    RPSS_INSTANCE rpss_idx = NUM_RPSS;
+    uint32_t bus_number = sbdf->bus;
+
+    if (bus_number <= PCIE_RPSS0_BUS_MAX)
+    {
+        rpss_idx = RPSS0;
+    }
+    else if (bus_number <= PCIE_RPSS1_BUS_MAX)
+    {
+        rpss_idx = RPSS1;
+    }
+    else if (bus_number <= PCIE_RPSS2_BUS_MAX)
+    {
+        rpss_idx = RPSS2;
+    }
+    else if (bus_number <= PCIE_RPSS3_BUS_MAX)
+    {
+        rpss_idx = RPSS3;
+    }
+    else if (bus_number <= PCIE_RPSS4_BUS_MAX)
+    {
+        rpss_idx = RPSS4;
+    }
+    else if (bus_number <= PCIE_RPSS5_BUS_MAX)
+    {
+        rpss_idx = RPSS5;
+    }
+    else if (bus_number <= PCIE_RPSS6_BUS_MAX)
+    {
+        rpss_idx = RPSS6;
+    }
+    else if (bus_number <= PCIE_RPSS7_BUS_MAX)
+    {
+        rpss_idx = RPSS7;
+    }
+
+    return rpss_idx;
+}
+
+acpi_einj_cmd_status_t pcie_error_injection_cb(ras_einj_info_t* einj_payload, void* error_domain_context)
+{
+    FPFW_UNUSED(error_domain_context);
+
+    if (validate_einj_payload(einj_payload) == false)
+    {
+        return ACPI_EINJ_INVALID_ACCESS;
+    }
+
+    /* Get error injection parameters specific to PCIe */
+    pcie_einj_params_t* pcie_params = (pcie_einj_params_t*)&(einj_payload->param_type.error_parameters[0]);
+
+    RPSS_INSTANCE rpss_idx = get_rpss_instance_from_sbdf(&(pcie_params->sbdf));
+    if (rpss_idx >= NUM_RPSS)
+    {
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: SBDF from payload cannot be matched to a rpss!\n");
+        return ACPI_EINJ_INVALID_ACCESS;
+    }
+
+    /* Request the driver to inject the requested error */
+    pcie_manager_context_t* ctx = scp_pcie_get_manager_context(rpss_idx);
+    silibs_status_t status = send_sync_rpss_inject_pcie_error((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, pcie_params);
+    if (status != SILIBS_SUCCESS)
+    {
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: The PCIe driver failed to inject an error! Status: %d\n", status);
+        return ACPI_EINJ_UNKNOWN_FAILURE;
+    }
+
+    return ACPI_EINJ_SUCCESS;
+}

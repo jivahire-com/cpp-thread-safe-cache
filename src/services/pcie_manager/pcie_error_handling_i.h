@@ -3,7 +3,7 @@
 //
 
 /**
- * @file pcie_error_management_i.h
+ * @file pcie_error_handling_i.h
  * Implements PCIe error and RAS event handling functions as well as invokes
  * the relevant APIs to log CPER and/or SEL events.
  */
@@ -11,6 +11,7 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <common_types.h>
 #include <scp_pcie_manager.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -20,6 +21,13 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
+/**
+ * @brief Get the GUID for the vendor-defined PCIe error domain.
+ *
+ * @retval Pointer to the GUID for the vendor-defined PCIe error domain.
+ */
+const guid_t* get_pcie_vendor_defined_error_domain_guid(void);
+
 /**
  * @brief Handle a PCIe VSECRAS event by iteratively probing the VSECRAS RAS node
  *        on an RP for errors.

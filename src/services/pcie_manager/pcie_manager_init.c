@@ -12,10 +12,14 @@
 #include <DbgPrint.h>
 #include <DfwkPtrTypes.h>
 #include <ErrorHandler.h>
+#include <cper.h>
 #include <errno.h>
+#include <health_monitor.h>
 #include <idsw_kng.h>
 #include <kng_soc_constants.h>
 #include <pcie_dfwk.h>
+#include <pcie_error_handling_i.h>
+#include <pcie_error_injection_i.h>
 #include <pcie_manager_i.h>
 #include <pcie_phy_load_events.h>
 #include <scp_pcie_manager.h>
@@ -77,6 +81,16 @@ void scp_pcie_config_service_initialize(uint16_t rpss_to_init)
     pcie_cfg_mgr_ctx.vab_config_var = &vab_config_var;
 }
 
+/* Register the vendor defined PCIe error domain with the health monitor */
+static void register_pcie_error_domains(void)
+{
+    hm_register_error_domain(ACPI_ERROR_DOMAIN_PCIE,
+                             get_pcie_vendor_defined_error_domain_guid(),
+                             "PCIe Error Domain",
+                             pcie_error_injection_cb,
+                             NULL);
+}
+
 /* Start the thread to be alerted when all configs are populated */
 void scp_pcie_start_config_service_thread(void)
 {
@@ -117,6 +131,8 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
      *       be enabled.
      */
     pcie_phyfw_create_event(&pcie_phyfw_load_event);
+
+    register_pcie_error_domains();
 
     uint16_t rpss_to_init_per_die = (die_id == DIE_1) ? (rpss_to_init >> PCIE_RPSS_PER_DIE) : (rpss_to_init);
 

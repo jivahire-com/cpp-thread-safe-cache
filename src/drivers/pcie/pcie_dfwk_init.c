@@ -100,6 +100,10 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
     case (CLI_REQUEST):
         handle_cli_request(r);
         break;
+    case (INJECT_PCIE_ERROR):
+        /* To be done in a follow up PR - need to invoke silibs error injection APIs here */
+        sts = SILIBS_SUCCESS;
+        break;
     default:
         FPFW_DBGPRINT_ERROR("RPSS[%d]: Bad sync req received!\n", r->rpss_index);
         sts = SILIBS_E_PARAM;

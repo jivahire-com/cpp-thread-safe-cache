@@ -28,7 +28,7 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 extern knob_data_t g_knob_data[];
-static uint8_t rmss_shared_ram_region[1024] = {0};
+static uint8_t rmss_shared_ram_region[1028] = {0};
 static uint32_t test_data = 1234;
 
 fpfw_cfg_mgr_config_t config_manager_setting = {.mission_mode = false,

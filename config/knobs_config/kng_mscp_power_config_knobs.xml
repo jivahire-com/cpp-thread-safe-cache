@@ -289,6 +289,9 @@
     <Knob name="core_disable_value_0_31" type="uint32_t" default="0" />
     <Knob name="core_disable_value_32_63" type="uint32_t" default="0" />
     <Knob name="core_disable_value_64_95" type="uint32_t" default="0" />
+    <Knob name="core_spare_en_0_31" type="uint32_t" default="0"  help="Can be used to enable previously disabled but not defective cores, set to 1 to enable"/>
+    <Knob name="core_spare_en_32_63" type="uint32_t" default="0" help="Can be used to enable previously disabled but not defective cores, set to 1 to enable"/>
+    <Knob name="core_spare_en_64_95" type="uint32_t" default="0" help="Can be used to enable previously disabled but not defective cores, set to 1 to enable"/>
   </Knobs>
 
 </ConfigSchema>

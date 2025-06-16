@@ -66,6 +66,12 @@ mock_target(${TARGET}
     sds_block_write
     idhw_is_single_die_boot_en
     system_info_is_warm_start
+    config_get_core_disable_value_0_31
+    config_get_core_disable_value_32_63
+    config_get_core_disable_value_64_95
+    config_get_core_spare_en_0_31
+    config_get_core_spare_en_32_63
+    config_get_core_spare_en_64_95
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

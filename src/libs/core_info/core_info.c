@@ -45,18 +45,28 @@ void core_info_get_platform_disable_cores()
     printf("Start process disable cores.\n");
     kng_fuse_disable_core_t p_fuse_disable = {};
     kng_fuse_disable_core_t p_config_disable = {};
+    kng_fuse_disable_core_t p_config_spare_en = {};
     kng_fuse_disable_core_t p_result_disable = {};
     p_config_disable.fuse_dis_core_0_31 = config_get_core_disable_value_0_31();
     p_config_disable.fuse_dis_core_32_63 = config_get_core_disable_value_32_63();
     p_config_disable.fuse_dis_core_64_95 = config_get_core_disable_value_64_95();
+
+    p_config_spare_en.fuse_dis_core_0_31 = config_get_core_spare_en_0_31();
+    p_config_spare_en.fuse_dis_core_32_63 = config_get_core_spare_en_32_63();
+    p_config_spare_en.fuse_dis_core_64_95 = config_get_core_spare_en_64_95();
+
     read_core_defect_fuses(&(p_fuse_disable.fuse_dis_core_64_95),
                            &(p_fuse_disable.fuse_dis_core_32_63),
                            &(p_fuse_disable.fuse_dis_core_0_31));
-    p_result_disable.fuse_dis_core_0_31 = ~(p_fuse_disable.fuse_dis_core_0_31 | p_config_disable.fuse_dis_core_0_31);
-    p_result_disable.fuse_dis_core_32_63 = ~(p_fuse_disable.fuse_dis_core_32_63 | p_config_disable.fuse_dis_core_32_63);
+    p_result_disable.fuse_dis_core_0_31 = ~((p_fuse_disable.fuse_dis_core_0_31 | p_config_disable.fuse_dis_core_0_31) &
+                                            (~p_config_spare_en.fuse_dis_core_0_31));
+    p_result_disable.fuse_dis_core_32_63 = ~((p_fuse_disable.fuse_dis_core_32_63 | p_config_disable.fuse_dis_core_32_63) &
+                                             (~p_config_spare_en.fuse_dis_core_32_63));
     p_result_disable.fuse_dis_core_64_95 =
-        (~(p_fuse_disable.fuse_dis_core_64_95 | (p_config_disable.fuse_dis_core_64_95 & 0x0F))) & 0x0F;
-    printf("core0-31=0x%" PRIx32 " core32-63=0x%" PRIx32 "core64-95=0x%" PRIx32 " \n",
+        ~(((p_fuse_disable.fuse_dis_core_64_95 | p_config_disable.fuse_dis_core_64_95) & (~p_config_spare_en.fuse_dis_core_64_95)) &
+          0x0F);
+
+    printf("core0-31=0x%" PRIx32 " core32-63=0x%" PRIx32 " core64-95=0x%" PRIx32 " \n",
            p_result_disable.fuse_dis_core_0_31,
            p_result_disable.fuse_dis_core_32_63,
            p_result_disable.fuse_dis_core_64_95);

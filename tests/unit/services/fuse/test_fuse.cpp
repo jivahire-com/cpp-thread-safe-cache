@@ -73,6 +73,36 @@ bool __wrap_idhw_is_single_die_boot_en(void)
     return mock_type(bool);
 }
 
+uint32_t __wrap_config_get_core_disable_value_0_31()
+{
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_config_get_core_disable_value_32_63()
+{
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_config_get_core_disable_value_64_95()
+{
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_config_get_core_spare_en_0_31()
+{
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_config_get_core_spare_en_32_63()
+{
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_config_get_core_spare_en_64_95()
+{
+    return mock_type(uint32_t);
+}
+
 silibs_status_t __wrap_fuse_dma_copy_to_ram_blocking()
 {
     // function_called();
@@ -714,7 +744,18 @@ TEST_FUNCTION(test_fuse_distribution_emulation_POST_MESH, NULL, NULL)
 TEST_FUNCTION(test_fuse_core_to_ap, NULL, NULL)
 {
     // mocks
-    kng_fuse_disable_core_t DIE0_core_disable_post_knob_test = {0x00, 0x00, 0xFFFFFFF0, 0xFFFFFFFF};
+    kng_fuse_disable_core_t DIE0_core_disable_post_knob_test = {0x02, 0x00, 0xFFFFFFF3, 0xFFFFFFFF};
+    fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(1);
+    // Disable Core 1, Core 64-67
+    will_return(__wrap_config_get_core_disable_value_0_31, 0x00000002);
+    will_return(__wrap_config_get_core_disable_value_32_63, 0x00000000);
+    will_return(__wrap_config_get_core_disable_value_64_95, 0x0000000F);
+
+    // Enable Core 66, Core 67
+    will_return(__wrap_config_get_core_spare_en_0_31, 0x00000000);
+    will_return(__wrap_config_get_core_spare_en_32_63, 0x00000000);
+    will_return(__wrap_config_get_core_spare_en_64_95, 0x0000000C);
+    fuse_init(dummy_icc_hspmbx_ctx);
 
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     expect_value(__wrap_sds_block_write, sds_module_id, FUSE_DISABLE_CORE_DIE0_STRUCT_ID);
@@ -731,7 +772,7 @@ TEST_FUNCTION(test_fuse_core_to_ap, NULL, NULL)
 TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
 {
     // mocks
-    kng_fuse_disable_core_t DIE0_core_disable_post_knob_test = {0x00, 0x00, 0xFFFFFFF0, 0xFFFFFFFF};
+    kng_fuse_disable_core_t DIE0_core_disable_post_knob_test = {0x02, 0x00, 0xFFFFFFF3, 0xFFFFFFFF};
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
@@ -784,4 +825,19 @@ TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
         platform_fuse_override();
     }
 }
+}
+
+TEST_FUNCTION(test_fuse_init, NULL, NULL)
+{
+    fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(1);
+
+    will_return(__wrap_config_get_core_disable_value_0_31, 0x00000000);
+    will_return(__wrap_config_get_core_disable_value_32_63, 0x00000001);
+    will_return(__wrap_config_get_core_disable_value_64_95, 0x00000003);
+
+    // Enable Core 65
+    will_return(__wrap_config_get_core_spare_en_0_31, 0x00000000);
+    will_return(__wrap_config_get_core_spare_en_32_63, 0x00000000);
+    will_return(__wrap_config_get_core_spare_en_64_95, 0x00000002);
+    fuse_init(dummy_icc_hspmbx_ctx);
 }

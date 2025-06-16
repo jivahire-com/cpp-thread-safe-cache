@@ -63,6 +63,11 @@ static uint32_t config_knob_0_31 = 0;
 static uint32_t config_knob_32_63 = 0;
 static uint32_t config_knob_64_95 = 0;
 
+// Enable spare cores
+static uint32_t config_spare_core_en_0_31 = 0;
+static uint32_t config_spare_core_en_32_63 = 0;
+static uint32_t config_spare_core_en_64_95 = 0;
+
 /*------------- Functions ----------------*/
 
 static bool platform_requires_fuse_distribution()
@@ -178,6 +183,12 @@ int write_fuse_info_to_ap()
         DIE0_fuse_disable.fuse_dis_core_32_63 |= config_knob_32_63;
         DIE0_fuse_disable.fuse_dis_core_64_95 |= (config_knob_64_95 | 0xFFFFFFF0);
         DIE0_fuse_disable.fuse_dis_core_96_127 = 0xFFFFFFFF;
+
+        // Enable disabled but not defective cores.
+        DIE0_fuse_disable.fuse_dis_core_0_31 &= ~config_spare_core_en_0_31;
+        DIE0_fuse_disable.fuse_dis_core_32_63 &= ~config_spare_core_en_32_63;
+        DIE0_fuse_disable.fuse_dis_core_64_95 &= ~config_spare_core_en_64_95;
+
         result = sds_block_write(FUSE_DISABLE_CORE_DIE0_STRUCT_ID, &DIE0_fuse_disable, FUSE_DISABLE_CORE_DIE0_SIZE);
         BUG_ASSERT(result == KNG_SUCCESS);
         if (!idhw_is_single_die_boot_en())
@@ -188,6 +199,12 @@ int write_fuse_info_to_ap()
             DIE1_fuse_disable.fuse_dis_core_32_63 |= config_knob_32_63;
             DIE1_fuse_disable.fuse_dis_core_64_95 |= (config_knob_64_95 | 0xFFFFFFF0);
             DIE1_fuse_disable.fuse_dis_core_96_127 = 0xFFFFFFFF;
+
+            // Enable disabled but not defective cores.
+            DIE1_fuse_disable.fuse_dis_core_0_31 &= ~config_spare_core_en_0_31;
+            DIE1_fuse_disable.fuse_dis_core_32_63 &= ~config_spare_core_en_32_63;
+            DIE1_fuse_disable.fuse_dis_core_64_95 =
+                (DIE1_fuse_disable.fuse_dis_core_64_95 & ~config_spare_core_en_64_95) | 0xFFFFFFF0;
 
             // TODO: TASK 2598729 : [SCP] DIE1 sends fuse info to DIE0 to write. Since, core info is same for both dies, we write the DIE0 struct for now.
             result = sds_block_write(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, &DIE0_fuse_disable, FUSE_DISABLE_CORE_DIE1_SIZE);
@@ -437,6 +454,11 @@ void fuse_init(fpfw_icc_base_ctx_t* icc_base_ctx)
     config_knob_0_31 = config_get_core_disable_value_0_31();
     config_knob_32_63 = config_get_core_disable_value_32_63();
     config_knob_64_95 = config_get_core_disable_value_64_95();
+
+    // core‐spare‐enable masks
+    config_spare_core_en_0_31 = config_get_core_spare_en_0_31();
+    config_spare_core_en_32_63 = config_get_core_spare_en_32_63();
+    config_spare_core_en_64_95 = config_get_core_spare_en_64_95();
 
     FUSE_ET_STATUS(FUSE_ET_TYPE_SVC_START);
 }

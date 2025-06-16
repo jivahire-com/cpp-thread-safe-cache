@@ -110,6 +110,8 @@ void dma_write_async_polling_timer_cb(ULONG input)
 
 uint32_t initialize_stall_timer(dma_device_t* device, uint32_t channel)
 {
+    uint32_t timeout_ms = device->config->stall_timeout_ms;
+
     if (channel >= DMAC_MAX_CHANNELS)
     {
         DMA_LOG_INFO("Invalid DMA channel %d\n", (int)channel);
@@ -128,7 +130,7 @@ uint32_t initialize_stall_timer(dma_device_t* device, uint32_t channel)
         "DMA_Stall",
         dma_stall_timer_cb,
         (ULONG)&device_channel_pair[channel],
-        TIMER_INIT_TICKS,
+        ((TX_TIMER_TICKS_PER_SECOND * timeout_ms) / 1000UL),
         0U,
         TX_NO_ACTIVATE
     );

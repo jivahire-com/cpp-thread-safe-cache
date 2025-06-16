@@ -145,6 +145,7 @@ typedef struct {
     };
 } device_identifier_pair_t;
 
+
 /*-- Declarations (Statics and globals) --*/
 #define TIMER_INIT_TICKS       (1)
 #define TIMER_RESCHEDULE_TICKS (1)
@@ -157,7 +158,7 @@ typedef struct {
 #define FPFW_ERROR_DMA_REMAINING_BYTES_INVALID (0x00000001)
 #define FPFW_ERROR_DMA_INVALID_INTERRUPT       (0x00000002)
 #define FPFW_ERROR_DMA_TIMER_ERROR             (0x00000003)
-#define FPFW_ERROR_DMA_STALLED                 (0x00000004)
+#define FPFW_ERROR_DMA_FATAL_ERROR             (0x00000004)
 
 //*--------- Function Prototypes ----------*/
 #ifdef __cplusplus

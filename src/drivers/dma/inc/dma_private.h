@@ -16,6 +16,9 @@
 /*-- Symbolic Constant Macros (defines) --*/
 #define MODULE_NAME "[DMA] "
 #define NEWLINE     "\n"
+#define INFO
+#define WARN        "[WARN] "
+#define CRIT        "[CRIT] "
 
 // set to 1 for more verbose logs
 #define DMA_ENABLE_TRACE_LEVEL_LOG 0
@@ -25,9 +28,9 @@
 #else
 #define DMA_LOG_TRACE(fmt, ...)
 #endif
-#define DMA_LOG_INFO(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
-#define DMA_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
-#define DMA_LOG_CRIT(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
+#define DMA_LOG_INFO(fmt, ...) printf(MODULE_NAME INFO fmt NEWLINE, ##__VA_ARGS__)
+#define DMA_LOG_WARN(fmt, ...) printf(MODULE_NAME WARN fmt NEWLINE, ##__VA_ARGS__)
+#define DMA_LOG_CRIT(fmt, ...) printf(MODULE_NAME CRIT fmt NEWLINE, ##__VA_ARGS__)
 
 // Channel Interrupts Mask Aliases
 #define DMAC_CH_INT_CHANNEL_ABORTED                 (0x1ULL << 31)
@@ -46,7 +49,9 @@
 #define DMAC_CH_INT_DMA_TFR_DONE                    (0x1ULL << 1)
 #define DMAC_CH_INT_BLOCK_TFR_DONE                  (0x1ULL << 0)
 
-#define DMAC_ENABLED_CH_INTS_MASK                   (                                               \
+/* Mask for all enabled channel interrupts */
+#define DMAC_ENABLED_CH_INTS_MASK                                                                   \
+(                                                                                                   \
     DMAC_CH_INT_CHANNEL_ABORTED | DMAC_CH_INT_CHANNEL_DISABLED | DMAC_CH_INT_CHANNEL_SUSPENDED |    \
     DMAC_CH_INT_CHANNEL_LOCK_CLEARED | DMAC_CH_INT_SHADOWREG_OR_LLI_INVALID_ERR |                   \
     DMAC_CH_INT_LLI_WR_SLV_ERR | DMAC_CH_INT_LLI_RD_SLV_ERR | DMAC_CH_INT_LLI_WR_DEC_ERR |          \
@@ -54,6 +59,19 @@
     DMAC_CH_INT_DST_TRANSCOMP | DMAC_CH_INT_SRC_TRANSCOMP | DMAC_CH_INT_DMA_TFR_DONE |              \
     DMAC_CH_INT_BLOCK_TFR_DONE                                                                      \
 )
+
+/* Mask for all enabled channel ERROR interrupts */
+#define DMAC_ENABLED_CH_ERR_INTS_MASK               \
+(                                                   \
+    DMAC_CH_INT_SHADOWREG_OR_LLI_INVALID_ERR |      \
+    DMAC_CH_INT_LLI_WR_SLV_ERR |                    \
+    DMAC_CH_INT_LLI_RD_SLV_ERR |                    \
+    DMAC_CH_INT_LLI_WR_DEC_ERR |                    \
+    DMAC_CH_INT_LLI_RD_DEC_ERR |                    \
+    DMAC_CH_INT_DST_SLV_ERR |                       \
+    DMAC_CH_INT_SRC_SLV_ERR                         \
+)
+
 
 /*--------- Function Prototypes ----------*/
 // Interrupts

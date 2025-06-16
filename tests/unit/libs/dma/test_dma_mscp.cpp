@@ -464,7 +464,7 @@ TEST_FUNCTION(test_dma_channel_0_queue_dispatch_pass_starts_polling_timer, setup
 TEST_FUNCTION(test_dma_isr_ch0, setup, teardown)
 {
     // Arrange
-    device.config->config_type = DMA_CONFIG_TYPE_POLLING;
+    device.config->config_type = DMA_CONFIG_TYPE_INTERRUPT;
     device.config->cpu_type = CPU_SCP;
     device.config->base_address = DMAC_SCP_BASE_ADDR;
 
@@ -485,7 +485,7 @@ TEST_FUNCTION(test_dma_isr_ch0, setup, teardown)
     device_identifier_pair_t device_interrupt_pair;
     device_interrupt_pair.device = &device;
     device_interrupt_pair.interrupt_id = DMAC_CH0_INT;
-    will_return(__wrap_dmac_get_ch_interrupt_status, 0x1); // DMAC_CH0_INT is pending
+    will_return(__wrap_dmac_get_ch_interrupt_status, DMAC_CH_INT_DMA_TFR_DONE); // DMAC_CH0_INT is pending
     dma_isr(static_cast<void*>(&device_interrupt_pair));
 
     // Assert
@@ -495,7 +495,7 @@ TEST_FUNCTION(test_dma_isr_ch0, setup, teardown)
 TEST_FUNCTION(test_dma_isr_ch1, setup, teardown)
 {
     // Arrange
-    device.config->config_type = DMA_CONFIG_TYPE_POLLING;
+    device.config->config_type = DMA_CONFIG_TYPE_INTERRUPT;
     device.config->cpu_type = CPU_SCP;
     device.config->base_address = DMAC_SCP_BASE_ADDR;
 
@@ -516,7 +516,7 @@ TEST_FUNCTION(test_dma_isr_ch1, setup, teardown)
     device_identifier_pair_t device_interrupt_pair;
     device_interrupt_pair.device = &device;
     device_interrupt_pair.interrupt_id = DMAC_CH1_INT;
-    will_return(__wrap_dmac_get_ch_interrupt_status, 0x1); // DMAC_CH1_INT is pending
+    will_return(__wrap_dmac_get_ch_interrupt_status, DMAC_CH_INT_DMA_TFR_DONE); // DMAC_CH1_INT is pending
     dma_isr(static_cast<void*>(&device_interrupt_pair));
 
     // Assert
@@ -646,7 +646,10 @@ TEST_FUNCTION(test_dma_channel_interrupts, setup, teardown)
             device.Channel[chan].current_request = &TestRequest;
             device.Channel[chan].current_request->status = FPFW_DMA_STATUS_IN_PROGRESS;
             device.Channel[chan].remaining_bytes_all_requests = req_byte_sz;
-            expect_value(__wrap_DfwkAsyncRequestComplete, Request, &TestRequest.header);
+            if (i == DMAC_CH_INT_DMA_TFR_DONE || i == DMAC_CH_INT_CHANNEL_ABORTED || (i & DMAC_ENABLED_CH_ERR_INTS_MASK))
+            {
+                expect_value(__wrap_DfwkAsyncRequestComplete, Request, &TestRequest.header);
+            }
 
             // Set up device_interrupt_pair with and interrupt ID = DMAC_CH0_INT
             device_identifier_pair_t device_interrupt_pair;
@@ -657,7 +660,17 @@ TEST_FUNCTION(test_dma_channel_interrupts, setup, teardown)
             dma_isr(static_cast<void*>(&device_interrupt_pair));
 
             // Assert
-            assert_ptr_equal(device.Channel[chan].current_request, NULL);
+            if (i == DMAC_CH_INT_DMA_TFR_DONE)
+            {
+                assert_ptr_equal(device.Channel[chan].current_request, NULL);
+                assert_int_equal(TestRequest.status, FPFW_DMA_STATUS_SUCCESS);
+            }
+
+            else if (i & DMAC_ENABLED_CH_ERR_INTS_MASK || i == DMAC_CH_INT_CHANNEL_ABORTED)
+            {
+                assert_ptr_equal(device.Channel[chan].current_request, NULL);
+                assert_int_equal(TestRequest.status, FPFW_DMA_STATUS_FAIL);
+            }
         }
     }
 }
@@ -700,7 +713,7 @@ TEST_FUNCTION(test_dma_timer_cb_stall_timeout_abort, setup, teardown)
     dev_pair.channel = CH_1;
     dma_req.dma_private.assigned_channel = dev_pair.channel;
     device.Channel[dma_req.dma_private.assigned_channel].current_request = &dma_req;
-    will_return(__wrap_get_dmac_chen_reg, (1ULL << dev_pair.channel)); // Channel not Available
+    will_return_count(__wrap_get_dmac_chen_reg, (1ULL << dev_pair.channel), 2); // Channel not Available
     will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &dma_req);
 
@@ -725,7 +738,7 @@ TEST_FUNCTION(test_dma_timer_cb_stall_timeout_timer_fail, setup, teardown)
     dev_pair.channel = CH_1;
     dma_req.dma_private.assigned_channel = dev_pair.channel;
     device.Channel[dma_req.dma_private.assigned_channel].current_request = &dma_req;
-    will_return(__wrap_get_dmac_chen_reg, (1ULL << dev_pair.channel)); // Channel not Available
+    will_return_count(__wrap_get_dmac_chen_reg, (1ULL << dev_pair.channel), 2); // Channel not Available
     will_return(__wrap__txe_timer_deactivate, TX_SUSPEND_ERROR);
     expect_value(FPFwErrorRaise, error, (uint32_t)FPFW_ERROR_DMA_TIMER_ERROR);
 

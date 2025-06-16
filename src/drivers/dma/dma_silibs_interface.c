@@ -82,12 +82,11 @@ void dma_start_transfer(dma_device_t* device, uint32_t channel, PDFWK_ASYNC_REQU
 
 void dma_abort_transaction(dma_device_t* device, uint32_t channel)
 {
-    // Disable the DMA channel
-    dmac_disable_channel(device->config->base_address, channel);
+    uint16_t timeout_us = 10;
 
     // Abort the DMA transfer
-    dmac_abort_transfer(device->config->base_address, channel);
+    dmac_abort_transfer_w_timeout(device->config->base_address, channel, timeout_us);
 
-    // Enable back the DMA channel
+    // Enable the DMA channel, since the abort disables the channel.
     dmac_enable_channel(device->config->base_address, channel);
 }

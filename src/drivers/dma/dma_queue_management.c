@@ -18,8 +18,8 @@
 #include <FpFwAssert.h>   // for FPFW_RUNTIME_ASSERT#include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <atu_lib.h>      // for atu_map
 #include <idsw_kng.h>     // for idsw_get_cpu_type
-#include <mcp_top_regs.h>
-#include <scp_top_regs.h>
+#include <silibs_mcp_top_regs.h>
+#include <silibs_scp_top_regs.h>
 #include <stdbool.h> // for bool
 #include <stdio.h>   // for DMA_LOG_INFO
 

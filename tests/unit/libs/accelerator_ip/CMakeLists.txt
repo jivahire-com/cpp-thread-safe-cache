@@ -88,4 +88,5 @@ mock_target(${TARGET}
     sdm_init_enable_fence
     sdm_init_itcm_enable
     system_info_is_hsp_present
+    system_info_is_warm_start
 )

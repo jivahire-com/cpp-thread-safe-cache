@@ -334,13 +334,19 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
         p_ss_ctxt->p_init_params->fw_preload_enabled = false;
     }
 
-    ret = accelip_ss_init(accel_intr_atu_map_address[accel_type],
-                          p_ss_ctxt->accelip_metadata.accel_type,
-                          p_ss_ctxt->p_init_params);
-    if (ret != SILIBS_SUCCESS)
+    /**
+     * Do not initialize the accelerator subsystem in case of SCP warm reboot
+     */
+    if (!system_info_is_warm_start())
     {
-        critical_print("Accel IP: init_accelerator: accelip_ss_init failed.\n");
-        return ACCEL_RET_FAIL_SS_INIT;
+        ret = accelip_ss_init(accel_intr_atu_map_address[accel_type],
+                              p_ss_ctxt->accelip_metadata.accel_type,
+                              p_ss_ctxt->p_init_params);
+        if (ret != SILIBS_SUCCESS)
+        {
+            critical_print("Accel IP: init_accelerator: accelip_ss_init failed.\n");
+            return ACCEL_RET_FAIL_SS_INIT;
+        }
     }
 
     /*
@@ -395,14 +401,7 @@ static void update_accel_ctxt_from_knobs(subsystem_ctxt_t* p_ss_ctxt)
             config_get_sdm_tot_dwq_num_entries_avail().tot_dwq_num_entries_avail[die_id];
         pre_pcie_cfg->rd_lim_cnt = config_get_sdm_rd_lim_cnt().rd_lim_cnt[die_id];
         pre_pcie_cfg->wr_lim_cnt = config_get_sdm_wr_lim_cnt().wr_lim_cnt[die_id];
-#ifdef WORKAROUND_ACCEL_WARM_RESET
-        // ToDo: Remove this flag and the code guarded by it after SDM/CDED warm reset implemented.
-        //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2496178/
-        ss_cfg->isolation_enable =
-            system_info_is_warm_start() ? true : config_get_sdm_isolation_enable().isolation_enable[die_id];
-#else
         ss_cfg->isolation_enable = config_get_sdm_isolation_enable().isolation_enable[die_id];
-#endif
         ss_cfg->emm_resp_code = config_get_sdm_emm_resp_code().emm_resp_code[die_id];
     }
     else
@@ -439,14 +438,7 @@ static void update_accel_ctxt_from_knobs(subsystem_ctxt_t* p_ss_ctxt)
             config_get_cded_tot_dwq_num_entries_avail().tot_dwq_num_entries_avail[die_id];
         pre_pcie_cfg->rd_lim_cnt = config_get_cded_rd_lim_cnt().rd_lim_cnt[die_id];
         pre_pcie_cfg->wr_lim_cnt = config_get_cded_wr_lim_cnt().wr_lim_cnt[die_id];
-#ifdef WORKAROUND_ACCEL_WARM_RESET
-        // ToDo: Remove this flag and the code guarded by it after SDM/CDED warm reset implemented.
-        //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2496178/
-        ss_cfg->isolation_enable =
-            system_info_is_warm_start() ? true : config_get_cded_isolation_enable().isolation_enable[die_id];
-#else
         ss_cfg->isolation_enable = config_get_cded_isolation_enable().isolation_enable[die_id];
-#endif
         ss_cfg->emm_resp_code = config_get_cded_emm_resp_code().emm_resp_code[die_id];
     }
 }
@@ -486,7 +478,7 @@ int32_t scp_accelerators_init(void)
 
     if (!accel_is_isolation_enabled(ACCEL_ID_SDM) || !accel_is_isolation_enabled(ACCEL_ID_CDED))
     {
-        accel_send_led_boot_status(LED_STATUS_CODE_SCP_ACCEL_FAILED);
+        accel_send_led_boot_status(LED_STATUS_CODE_SCP_ACCEL_INIT_START);
     }
 
     subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);

@@ -180,6 +180,11 @@ bool __wrap_system_info_is_hsp_present()
     return mock_type(bool);
 }
 
+bool __wrap_system_info_is_warm_start()
+{
+    return mock_type(bool);
+}
+
 void* __wrap_fpfw_init_get_handle(const char* id)
 {
     FPFW_UNUSED(id);
@@ -393,7 +398,30 @@ TEST_FUNCTION(accelip_pre_boot_config_pass_test, nullptr, nullptr)
     // In init_accelerator()
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return_always(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_system_info_is_warm_start, false);
     will_return_always(__wrap_accelip_ss_init, SILIBS_SUCCESS);
+    will_return_always(__wrap_accel_scp_intr_init, ACCEL_INTR_RET_SUCCESS);
+
+    assert_int_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
+
+TEST_FUNCTION(scp_accelerators_init_warm_reset_pass, nullptr, nullptr)
+{
+    DIE_INSTANCE die_id = SOC_D0;
+
+    will_return_always(__wrap_idsw_get_die_id, die_id);
+
+    accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
+    will_return_always(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
+    will_return_always(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
+
+    // Check boot status code
+    expect_in_set(__wrap_post_led_status, status, expected_led_status);
+
+    // In init_accelerator()
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
+    will_return_always(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_system_info_is_warm_start, true);
     will_return_always(__wrap_accel_scp_intr_init, ACCEL_INTR_RET_SUCCESS);
 
     assert_int_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
@@ -415,6 +443,7 @@ TEST_FUNCTION(accelip_pre_boot_config_pass_test_no_hsp, nullptr, nullptr)
     // In init_accelerator()
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return_always(__wrap_system_info_is_hsp_present, false);
+    will_return_always(__wrap_system_info_is_warm_start, false);
     will_return_always(__wrap_accelip_ss_init, SILIBS_SUCCESS);
     will_return_always(__wrap_accel_scp_intr_init, ACCEL_INTR_RET_SUCCESS);
 
@@ -446,6 +475,7 @@ TEST_FUNCTION(accelip_pre_boot_config_accelip_ss_init_fail_test, nullptr, nullpt
 
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return_always(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_system_info_is_warm_start, false);
     will_return_always(__wrap_accelip_ss_init, SILIBS_E_PARAM);
 
     // Check boot status code ACCEL FAILED
@@ -469,6 +499,7 @@ TEST_FUNCTION(accelip_pre_boot_config_accelip_ss_init_fail_die1_test, nullptr, n
 
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return_always(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_system_info_is_warm_start, false);
     will_return_always(__wrap_accelip_ss_init, SILIBS_E_PARAM);
 
     // Check boot status code ACCEL FAILED
@@ -525,6 +556,7 @@ TEST_FUNCTION(test_scp_accelerators_init_intr_init_failed, nullptr, nullptr)
     // In init_accelerator()
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return_always(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_system_info_is_warm_start, false);
     will_return_always(__wrap_accelip_ss_init, SILIBS_SUCCESS);
     will_return_always(__wrap_accel_scp_intr_init, ACCEL_INTR_RET_FAIL_INTR_NVIC);
 

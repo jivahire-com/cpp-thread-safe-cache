@@ -24,14 +24,34 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 // Default value for all workaround knobs
-#define DEFAULT_PCIE_PROD_CFG_WORKAROUNDS_T                                                   \
-    {                                                                                         \
-        .prod_rp_cfgs = {                                                                     \
-            {.hide_dpc = false, .force_read_allocate = false, .force_write_allocate = false}, \
-            {.hide_dpc = false, .force_read_allocate = false, .force_write_allocate = false}, \
-            {.hide_dpc = false, .force_read_allocate = false, .force_write_allocate = false}, \
-            {.hide_dpc = false, .force_read_allocate = false, .force_write_allocate = false}, \
-        }                                                                                     \
+#define DEFAULT_PCIE_PROD_CFG_WORKAROUNDS_T      \
+    {                                            \
+        .prod_rp_cfgs = {                        \
+            {.hide_dpc = false,                  \
+             .force_read_allocate = false,       \
+             .force_write_allocate = false,      \
+             .hest_aer_ue_mask = 0x04400000,     \
+             .hest_aer_ue_severity = 0x10462030, \
+             .hest_aer_ce_mask = 0x0000E000},    \
+            {.hide_dpc = false,                  \
+             .force_read_allocate = false,       \
+             .force_write_allocate = false,      \
+             .hest_aer_ue_mask = 0x04400000,     \
+             .hest_aer_ue_severity = 0x10462030, \
+             .hest_aer_ce_mask = 0x0000E000},    \
+            {.hide_dpc = false,                  \
+             .force_read_allocate = false,       \
+             .force_write_allocate = false,      \
+             .hest_aer_ue_mask = 0x04400000,     \
+             .hest_aer_ue_severity = 0x10462030, \
+             .hest_aer_ce_mask = 0x0000E000},    \
+            {.hide_dpc = false,                  \
+             .force_read_allocate = false,       \
+             .force_write_allocate = false,      \
+             .hest_aer_ue_mask = 0x04400000,     \
+             .hest_aer_ue_severity = 0x10462030, \
+             .hest_aer_ce_mask = 0x0000E000},    \
+        }                                        \
     }
 
 /*------------- Typedefs -----------------*/
@@ -353,6 +373,7 @@ void override_default_pcie_cfg(uint8_t rpss_id)
 void populate_rb_configs_from_rpss_entity(pcie_ss_entity_t* rpss, pcie_root_bridge_config* rb_configs)
 {
     pcie_cfg_t* pcie_cfg = &pcie_cfg_np[rpss->id];
+    pcie_prod_cfg_workarounds_t* pcie_cfg_workarounds = &pcie_cfg_workarounds_np[rpss->id];
     for (uint8_t i = 0; i < PCIESS_NUM_PORTS; i++)
     {
         if (rpss->rps[i].valid == false || rpss->rps[i].enabled == false)
@@ -360,6 +381,10 @@ void populate_rb_configs_from_rpss_entity(pcie_ss_entity_t* rpss, pcie_root_brid
             rb_configs[i].flags.is_enabled = false;
             continue;
         }
+
+        rb_configs[i].aer_ue_mask = pcie_cfg_workarounds->prod_rp_cfgs[i].hest_aer_ue_mask;
+        rb_configs[i].aer_ue_severity = pcie_cfg_workarounds->prod_rp_cfgs[i].hest_aer_ue_severity;
+        rb_configs[i].aer_ce_mask = pcie_cfg_workarounds->prod_rp_cfgs[i].hest_aer_ce_mask;
 
         rb_configs[i].flags.is_enabled = rpss->rps[i].enabled;
         rb_configs[i].flags.hot_plug_enabled = pcie_cfg->rp_cfgs[i].pcie_rp_hotplug_capable;

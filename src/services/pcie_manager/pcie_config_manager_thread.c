@@ -146,6 +146,9 @@ void config_variable_service_thread_fn(ULONG thread_input)
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].bus.limit = D0_SDM_RCEC_BUS;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_enabled = sdm_enable;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_integrated_endpoint = true;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].aer_ue_mask = 0x0;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].aer_ce_mask = 0x0;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].aer_ue_severity = 0x0;
 
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmiol.base = UINT32_MAX;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmiol.limit = 0x0;
@@ -155,6 +158,9 @@ void config_variable_service_thread_fn(ULONG thread_input)
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].bus.limit = D0_CDED_RCEC_BUS;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].flags.is_enabled = cded_enable;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].flags.is_integrated_endpoint = true;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].aer_ue_mask = 0x0;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].aer_ce_mask = 0x0;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].aer_ue_severity = 0x0;
     }
     else
     {
@@ -167,6 +173,9 @@ void config_variable_service_thread_fn(ULONG thread_input)
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].bus.limit = D1_SDM_RCEC_BUS;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_enabled = sdm_enable;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].flags.is_integrated_endpoint = true;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].aer_ue_mask = 0x0;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].aer_ce_mask = 0x0;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS].aer_ue_severity = 0x0;
 
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmiol.base = UINT32_MAX;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].mmiol.limit = 0x0;
@@ -176,6 +185,9 @@ void config_variable_service_thread_fn(ULONG thread_input)
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].bus.limit = D1_CDED_RCEC_BUS;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].flags.is_enabled = cded_enable;
         rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].flags.is_integrated_endpoint = true;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].aer_ue_mask = 0x0;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].aer_ce_mask = 0x0;
+        rb_config_var->rootbridge_config[PCIE_RPSS_PER_DIE * PCIESS_NUM_PORTS + 1].aer_ue_severity = 0x0;
     }
 
     /* Print RB configurations */
@@ -191,6 +203,18 @@ void config_variable_service_thread_fn(ULONG thread_input)
         }
 
         FPFW_DBGPRINT_INFO("RB[%d]: Enabled\n", i);
+
+        FPFW_DBGPRINT_INFO("RB[%d]: HEST AER UE Mask: 0x%08lx\n",
+                           i,
+                           (unsigned long)(rb_config->aer_ue_mask));
+
+        FPFW_DBGPRINT_INFO("RB[%d]: HEST AER UE Severity: 0x%08lx\n",
+                           i,
+                           (unsigned long)(rb_config->aer_ue_severity));
+
+        FPFW_DBGPRINT_INFO("RB[%d]: HEST AER CE Mask: 0x%08lx\n",
+                           i,
+                           (unsigned long)(rb_config->aer_ce_mask));
 
         FPFW_DBGPRINT_INFO("RB[%d]: MMIO64 range 0x%08lx%08lx - 0x%08lx%08lx\n",
                            i,

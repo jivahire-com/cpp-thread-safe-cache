@@ -517,6 +517,7 @@ void validate_dvfs_cfg(unsigned int core)
     dvfs_cfg.pll_adclk_cfg.adclk_comp_config = knobs->adclk_throt.adclk_comp_config;
     dvfs_cfg.pll_adclk_cfg.throttle_threshold = knobs->adclk_throt.throttle_threshold;
     dvfs_cfg.pll_adclk_cfg.throttle_window_count = knobs->adclk_throt.throttle_window_count;
+    dvfs_cfg.pll_adclk_cfg.input_sense_enable = knobs->adclk_throt.input_sense_enable;
 
     // c1
     dvfs_cfg.init_cfg.c1_telem_en = knobs->c1_tel_enable;

@@ -424,6 +424,7 @@ static void print_power_config_throttling(power_knobs_t* knobs)
     FpFwCliPrint(" Comparator Config: %u\n", knobs->adclk_throt.adclk_comp_config);
     FpFwCliPrint(" Throttle Threshold: %u\n", knobs->adclk_throt.throttle_threshold);
     FpFwCliPrint(" Thrttl Windw Count: %u\n", knobs->adclk_throt.throttle_window_count);
+    FpFwCliPrint(" Input Sense Enable: %s\n", knobs->adclk_throt.input_sense_enable ? "LDO input" : "LDO output");
     FpFwCliPrint("\n");
 }
 /* -------------------------------------- */

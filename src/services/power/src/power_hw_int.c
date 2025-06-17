@@ -275,6 +275,7 @@ static void power_init_update_dvfs_cfg_common(const power_runconfig_t* p_runconf
     p_dvfs_cfg->pll_adclk_cfg.adclk_comp_config = p_knobs->adclk_throt.adclk_comp_config;
     p_dvfs_cfg->pll_adclk_cfg.throttle_threshold = p_knobs->adclk_throt.throttle_threshold;
     p_dvfs_cfg->pll_adclk_cfg.throttle_window_count = p_knobs->adclk_throt.throttle_window_count;
+    p_dvfs_cfg->pll_adclk_cfg.input_sense_enable = p_knobs->adclk_throt.input_sense_enable;
     // get the default pstate config for the survivability mode
     dvfs_pll_pstate_config_t pll_config;
     int status = dvfs_pll_get_default_pstate_config(p_knobs->survivability_mode_pstate, &pll_config);

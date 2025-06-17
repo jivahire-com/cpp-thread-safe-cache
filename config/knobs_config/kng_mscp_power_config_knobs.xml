@@ -71,6 +71,7 @@
       <Member name="adclk_comp_config" type="uint8_t" help="Comparator configuration (see ADCLK_CR2)" />
       <Member name="throttle_threshold" type="uint8_t" help="Number of droop events seen within throttle window before throttle request is asserted (see ADCLK_CR2)" />
       <Member name="throttle_window_count" type="uint8_t" help="Window for counting droop events before triggering throttle request (see ADCLK_CR2)" />
+      <Member name="input_sense_enable" type="uint8_t" help="Select between LDO input vs LDO output to monitor droops (0 = output, 1 = input)" />
     </Struct>
     <Struct name="power_adclk_offset_cfg_t" help="">
       <Member name="enable" type="bool" help="enable adaptive clocking offset writes" />
@@ -246,7 +247,7 @@
     <Knob name="power_adclk_vcpu1_offset_cfg" type="" default="Disabled" help="Override for per-core value added/subtracted to/from the ldoDacIn[8:0] value driven by DVFS" />
     -->
     <!-- Undocumented -->
-    <Knob name="power_adclk_throt" type="power_adclk_cfg_t" default="{false, 0, 31, 31, 0, 1, 0, 0, 2, 16, 16, 0, 10, 50}" help="configuration for adaptive clocking/throttling" />
+    <Knob name="power_adclk_throt" type="power_adclk_cfg_t" default="{false, 0, 31, 31, 0, 1, 0, 0, 2, 16, 16, 0, 10, 50, 0}" help="configuration for adaptive clocking/throttling" />
     <Knob name="power_adclk_offset_cfg" type="power_adclk_offset_cfg_t" default="{false, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}" />
 
     <Knob name="power_soc_temp" type="power_soc_temp_cfg_t" default="{{930, 950}, {1130, 1150}}" help="Configuration for SOC temperature thresholds" />

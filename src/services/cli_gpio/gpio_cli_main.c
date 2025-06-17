@@ -11,8 +11,9 @@
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwCli.h>    // for FPFW_CLI_COMMAND, FpFwCliRegisterTable
 #include <FpFwUtils.h>  // for FPFW_ARRAY_SIZE, FPFW_UNUSED
-#include <gpio.h>       // for gpio_request_t
-#include <gpio_lib.h>   // for gpio_set_int_enable, gpio_get_int...
+#include <fpfw_cfg_mgr.h>
+#include <gpio.h>     // for gpio_request_t
+#include <gpio_lib.h> // for gpio_set_int_enable, gpio_get_int...
 #include <idsw_kng.h>
 #include <kng_error.h> // for KNG_FAILED, KNG_SUCCESS
 #include <stdlib.h>    // for atoi
@@ -46,8 +47,8 @@ static FPFW_CLI_COMMAND s_gpio_cmd_list[] = {
     {NULL_LIST_ENTRY, "gpio", "set_pin", gpio_cli_set_pin, "Set GPIO pin output", "Usage: set_pin <ctrl_id> <pin_id> <level [0|1]>"},
     {NULL_LIST_ENTRY, "gpio", "get_pin", gpio_cli_get_pin, "Get GPIO pin input", "Usage: get_pin <ctrl_id> <pin_id>"},
     {NULL_LIST_ENTRY, "gpio", "register_isr", gpio_cli_register_isr, "Register single GPIO interrupt callback", "Usage: register_isr <ctrl_id> <pin_id>"},
-    {NULL_LIST_ENTRY, "gpio", "restore", gpio_cli_restore, "Restore initial GPIO configuration", "Usage: restore (no arguments)"},
-    {NULL_LIST_ENTRY, "gpio", "uart_afm", gpio_cli_uart_afm, "Update UART AFM Config", "Usage: uart_afm <afmsel_uart0> <afmsel_uart1> <afmsel_uart2> <afmsel_uart3>"},
+    {NULL_LIST_ENTRY, "gpio", "restore", gpio_cli_restore, "Restore initial GPIO config", "Usage: restore (no arguments)"},
+    {NULL_LIST_ENTRY, "gpio", "uart_afm", gpio_cli_uart_afm, "Set UART AFM", "Usage: uart_afm <afm_u0> <afm_u1> <afm_u2> <afm_u3>"},
 };
 
 // Cache the GPIO configuration table to restore the GPIO configuration
@@ -133,7 +134,7 @@ static FPFW_CLI_STATUS gpio_cli_get_int_enable(int argc, const char** pp_argv)
     }
     else
     {
-        FpFwCliPrint("Failed: Invalid Parameter\n");
+        FpFwCliPrint("Failed: Invalid Args\n");
         return CLI_ERROR;
     }
 
@@ -172,7 +173,7 @@ static FPFW_CLI_STATUS gpio_cli_set_dir(int argc, const char** pp_argv)
             dir = GPIO_DIR_OUT;
             break;
         default:
-            FpFwCliPrint("Failed: Invalid Direction Parameter\n");
+            FpFwCliPrint("Failed: Invalid Direction\n");
             return CLI_ERROR;
         }
     }
@@ -342,7 +343,7 @@ static FPFW_CLI_STATUS gpio_cli_register_isr(int argc, const char** pp_argv)
 
     if (KNG_FAILED(status))
     {
-        FpFwCliPrint("Failed to register GPIO ISR - 0x%08x\n", status);
+        FpFwCliPrint("Failed - 0x%08x\n", status);
         return CLI_ERROR;
     }
 
@@ -351,16 +352,38 @@ static FPFW_CLI_STATUS gpio_cli_register_isr(int argc, const char** pp_argv)
     return CLI_SUCCESS;
 }
 
+/** uart_afm x x x 3  will update only COM7 for example*/
 static FPFW_CLI_STATUS gpio_cli_uart_afm(int argc, const char** pp_argv)
 {
-    uart_afm_cfg_t afm_knobs;
+    static uart_afm_cfg_t afm_knobs;
+    static bool is_initialized = false;
+
+    uint8_t die_id = idsw_get_die_id();
+
+    if (!is_initialized)
+    {
+        if (die_id == DIE_0)
+        {
+            afm_knobs = config_get_uart_afm_cfg_die0();
+        }
+        else
+        {
+            afm_knobs = config_get_uart_afm_cfg_die1();
+        }
+        is_initialized = true;
+    }
 
     if (argc == 5)
     {
-        afm_knobs.uart_afm[0] = atoi(pp_argv[1]);
-        afm_knobs.uart_afm[1] = atoi(pp_argv[2]);
-        afm_knobs.uart_afm[2] = atoi(pp_argv[3]);
-        afm_knobs.uart_afm[3] = atoi(pp_argv[4]);
+        uint8_t uart_afm = 0;
+        for (int i = 1; i <= argc - 1; i++)
+        {
+            if (pp_argv[i][0] >= '0' && pp_argv[i][0] <= '3')
+            {
+                uart_afm = atoi(pp_argv[i]);
+                afm_knobs.uart_afm[i - 1] = uart_afm;
+            }
+        }
     }
     else
     {
@@ -368,13 +391,17 @@ static FPFW_CLI_STATUS gpio_cli_uart_afm(int argc, const char** pp_argv)
         return CLI_ERROR;
     }
 
-    FpFwCliPrint("Updating UART config temporarily. Use cfg_mgr_set for persistent update!\n");
+    FpFwCliPrint("Set to AFM %x %x %x %x temporarily. Use cfg_mgr_set for persistence!\n",
+                 afm_knobs.uart_afm[0],
+                 afm_knobs.uart_afm[1],
+                 afm_knobs.uart_afm[2],
+                 afm_knobs.uart_afm[3]);
 
-    uint32_t status = gpio_override_uart_afmsel(idsw_get_die_id(), &afm_knobs);
+    uint32_t status = gpio_override_uart_afmsel(die_id, &afm_knobs);
 
     if (KNG_FAILED(status))
     {
-        FpFwCliPrint("Failed to register GPIO ISR - 0x%08x\n", status);
+        FpFwCliPrint("Failed - 0x%08x\n", status);
         return CLI_ERROR;
     }
 

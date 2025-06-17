@@ -9,6 +9,7 @@ target_link_libraries(
     ${TARGET}
     PRIVATE
     fwlib.dfwk
+    fwlib.lib.cfg_mgr
     fwlib.service.cli
     ms::driver::gpio
     silibs::idsw_kng

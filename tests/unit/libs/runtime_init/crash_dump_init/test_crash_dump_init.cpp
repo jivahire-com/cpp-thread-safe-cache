@@ -35,8 +35,8 @@ extern bool in_memory(uintptr_t start_addr, uintptr_t end_addr);
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_cd_init;
 extern fpfw_init_component_t _fpfw_component_cd_mhu_loc;
-extern fpfw_init_component_t _fpfw_component_cd_hsp;
 #if defined(SCP_RUNTIME_INIT)
+extern fpfw_init_component_t _fpfw_component_cd_hsp;
 extern fpfw_init_component_t _fpfw_component_cd_mhu_rem;
 extern fpfw_init_component_t _fpfw_component_cd_spi_rem;
 extern fpfw_init_component_t _fpfw_component_cd_pomesh;
@@ -262,6 +262,7 @@ TEST_FUNCTION(test_cd_mhu_loc, nullptr, nullptr)
     _fpfw_component_cd_mhu_loc.init_fn();
 }
 
+#if defined(SCP_RUNTIME_INIT)
 TEST_FUNCTION(test_cd_hsp, nullptr, nullptr)
 {
     expect_value(__wrap_crash_dump_config_icc, type, CRASH_DUMP_ICC_CONFIG_HSP);
@@ -275,7 +276,6 @@ TEST_FUNCTION(test_cd_hsp, nullptr, nullptr)
     _fpfw_component_cd_hsp.init_fn();
 }
 
-#if defined(SCP_RUNTIME_INIT)
 TEST_FUNCTION(test_cd_drv, nullptr, nullptr)
 {
     expect_function_call(__wrap_crash_dump_device_initialize);

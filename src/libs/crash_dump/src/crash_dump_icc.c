@@ -26,9 +26,6 @@
 #include <kng_icc_shared.h>       // for ICC_SIGNAL_CRASH_DUMP_COLLECT
 
 /*-- Symbolic Constant Macros (defines) --*/
-// This is the workaround until HSP handles warm reset after crash dump collection.
-// Please remove this flag and the code guarded by it after HSP handles warm reset after crash dump collection.
-#define WORKAROUND_HSP_WARM_RESET_REQ 1
 
 /*------------- Typedefs -----------------*/
 
@@ -214,7 +211,10 @@ void crash_dump_notify_hsp()
         return;
     }
 
-    crash_dump_send_hsp_command(HSP_MAILBOX_CMD_CRASHDUMP_REQ);
+    if (ctx->core_index == CRASH_DUMP_CORE_SCP)
+    {
+        crash_dump_send_hsp_command(HSP_MAILBOX_CMD_CRASHDUMP_REQ);
+    }
 }
 
 /**
@@ -353,95 +353,6 @@ void crash_dump_remote_trigger()
 
     // Notify to HSP
     crash_dump_notify_hsp();
-}
-
-#ifdef WORKAROUND_HSP_WARM_RESET_REQ
-static void handle_prepare_reset_from_hsp()
-{
-    crash_dump_context_t* ctx = crash_dump_context();
-
-    if (ctx == NULL)
-    {
-        FPFwCDPrintf("Crash dump context is not set to handle prepare reset from HSP\n");
-        return;
-    }
-
-    if (ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP] == NULL)
-    {
-        FPFwCDPrintf("HSP ICC context is not set to handle prepare reset from HSP\n");
-        return;
-    }
-
-    size_t output_recv_bytes = 0; // Initialize the output bytes to 0
-    static kng_hsp_mailbox_msg hsp_recv_msg = {
-        .header.cmd = HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ,
-    };
-
-    FPFwCDPrintf("Waiting for PrepareForCoreReset Cmd from HSP\n");
-    fpfw_status_t recv_status =
-        fpfw_icc_base_recv_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP], &hsp_recv_msg, sizeof(hsp_recv_msg), &output_recv_bytes);
-    //! Print the status message
-    if (recv_status != FPFW_ICC_BASE_STATUS_SUCCESS)
-    {
-        FPFwCDPrintf("Crashdump failed to receive PrepareForCoreReset Cmd from HSP: Status[0x%x]\n", (int)recv_status);
-    }
-    else
-    {
-        FPFwCDPrintf("Crashdump received PrepareForCoreReset Cmd from HSP\n");
-        static kng_hsp_mailbox_msg hsp_ack_msg = {};
-
-        memcpy(&hsp_ack_msg, &hsp_recv_msg, sizeof(kng_hsp_mailbox_msg));
-        hsp_ack_msg.header.cmd = HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_RSP;
-
-        fpfw_status_t status =
-            fpfw_icc_base_send_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP], &hsp_ack_msg, sizeof(hsp_ack_msg));
-
-        if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
-        {
-            FPFwCDPrintf("Failed to send HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_RSP command to HSP: status = "
-                         "0x%08lx\n",
-                         status);
-            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_ERROR, status);
-        }
-        else
-        {
-            FPFwCDPrintf("Crashdump sent PrepareForCoreReset Cmd ACK to HSP\n");
-        }
-    }
-}
-#endif
-
-void crash_dump_request_hsp_warm_reset()
-{
-    crash_dump_context_t* ctx = crash_dump_context();
-
-    if (ctx == NULL)
-    {
-        FPFwCDPrintf("Crash dump context is not set to request warm reset\n");
-        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ICC_INVALID_ADDRESS);
-        return;
-    }
-
-    // Only SCP core in die 0 can request warm reset to HSP0
-    if (ctx->core_index == CRASH_DUMP_CORE_SCP)
-    {
-        if (ctx->die_index == 0)
-        {
-            // Wait until all cores are in CRASH_DUMP_STATE_COMPLETED
-            while (crash_dump_get_is_dump_complete(NULL) == false)
-            {
-            }
-
-#ifdef WORKAROUND_HSP_WARM_RESET_REQ
-            // Request HSP to warm reset
-            FPFwCDPrintf("Sending WARM RESET REQ to HSP\n");
-            crash_dump_send_hsp_command(HSP_MAILBOX_CMD_WARM_RESET_REQ);
-#endif
-        }
-    }
-#ifdef WORKAROUND_HSP_WARM_RESET_REQ
-    handle_prepare_reset_from_hsp();
-#endif
 }
 
 void crash_dump_transfer_full_dump_to_bmc()

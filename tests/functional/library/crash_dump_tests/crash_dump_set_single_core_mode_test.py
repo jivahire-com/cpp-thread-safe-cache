@@ -129,7 +129,6 @@ class crash_dump_set_single_core_mode_test(EchoFallsBaseTest):
         scp_channel.write_line(write_string=command)
         try:
             scp_channel.read_until(key="BugCheck: 0x80380005", timeout_seconds=30)
-            mcp_channel.read_until(key="McpHeartBeat", timeout_seconds=300)
         except Exception as e:
             self.log.error(f"Error Crash Dump set single core mode. Die0: {e}")
             self.test_notify(step="Crash Dump set single core mode.", msg="Test Fail", _is_error=True)
@@ -138,6 +137,20 @@ class crash_dump_set_single_core_mode_test(EchoFallsBaseTest):
             self.dut.teardown()
             time.sleep(30)
             return False
+
+        try:
+            mcp_channel.read_until(key="Debug Monitor Exception occurred", timeout_seconds=60)
+        except Exception as e:
+            self.log.info(f"No crash on MCP channel: {e}")
+        else:
+            self.log.error(f"MCP Crash Dump on single core mode. Die0")
+            self.test_notify(step="Crash Dump set single core mode.", msg="Test Fail", _is_error=True)
+            scp_channel.close()
+            mcp_channel.close()
+            self.dut.teardown()
+            time.sleep(30)
+            return False
+
 
         # Close connection to SCP MCP
         self.test_notify(step="Crash Dump set single core mode Die0", msg="Test Done", _is_error=False)

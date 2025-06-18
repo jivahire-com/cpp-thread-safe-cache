@@ -297,6 +297,10 @@
                         "MTS Init",
                         "mts_init.test.exe"
                     ],
+                     [
+                        "Pwr Tlm Data Proc Functional",
+                        "kng.service.pwr_tlm_mcp.cmpnt.data_proc.functional.test"
+                    ],
                 ],
             },
         },

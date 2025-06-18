@@ -3,7 +3,7 @@
 //
 
 /**
- * @file tlm_logger.c
+ * @file data_sampling.c
  * Consume sensor fifo data and log telemetry data
  */
 
@@ -418,10 +418,10 @@ void data_smpl_update_max_die_temp(void)
     comp_metrics_for_soc_max_temp(soc_info.latest_max_die_temp_dC);
 
     if (in_band_tlm_cmpnt_is_inst_record_enabled(INST_TELEMETRY_ELEMENT_SOC_MAX_TEMP) &&
-        (die_2_die_exchange_get_this_die_id() != PRIMARY_DIE_ID))
+        (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID))
     {
         // only write on secondary dies
-        die_2_die_exchange_write_inst_max_die_temp(soc_info.latest_max_die_temp_dC);
+        die_2_die_exch_ib_write_inst_max_die_temp(soc_info.latest_max_die_temp_dC);
     }
 }
 

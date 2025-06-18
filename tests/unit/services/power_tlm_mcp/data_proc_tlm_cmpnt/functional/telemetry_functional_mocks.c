@@ -14,6 +14,7 @@
 #include <FpFwUtils.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <power_tlm_fuse.h>
+#include <semaphore_lib.h>
 #include <sensor_fifo_service.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -207,6 +208,28 @@ uint64_t __wrap_exec_tlm_cmpnt_get_timestamp_microseconds(void)
     // time_t0 += (int)mock();
     time_t0 += 1000; // Increment by 1000μs or 1ms  each time
     return time_t0;
+}
+
+void __wrap_initialize_semaphore(SEMAPHORE_ID id)
+{
+    FPFW_UNUSED(id);
+}
+
+uint32_t __wrap_read_semaphore(SEMAPHORE_ID id)
+{
+    FPFW_UNUSED(id);
+    return 0; // Return a dummy value
+}
+
+void __wrap_wait_for_semaphore(SEMAPHORE_ID id, uint32_t key)
+{
+    FPFW_UNUSED(id);
+    FPFW_UNUSED(key);
+}
+
+void __wrap_release_semaphore(SEMAPHORE_ID id)
+{
+    FPFW_UNUSED(id);
 }
 
 // Mock event trace metadata symbols

@@ -36,9 +36,9 @@ computed_metrics_d2d_2_min_t computed_metrics_d2d_2mins = {0};
 
 void data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core(void)
 {
-    die_2_die_exchange_write_pwr_pkg_max_die_temp(computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.average,
-                                                  computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.num_samples,
-                                                  computed_metrics_d2d_2mins.max_soc_temp_dC.max);
+    die_2_die_exch_ib_write_pwr_pkg_max_die_temp(computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.average,
+                                                 computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.num_samples,
+                                                 computed_metrics_d2d_2mins.max_soc_temp_dC.max);
 
     memset(&computed_metrics_d2d_2mins, 0, sizeof(computed_metrics_d2d_2mins));
 }
@@ -271,7 +271,7 @@ void comp_metrics_reset_2_mins_metrics()
 {
     memset(&computed_metrics_2_mins, 0, sizeof(computed_metrics_2_mins));
 
-    if (die_2_die_exchange_get_this_die_id() == PRIMARY_DIE_ID)
+    if (die_2_die_exch_get_this_die_id() == PRIMARY_DIE_ID)
     {
         // primary die can clear now as the data was just sent to the host
         // secondary die's will clear as soon as they write to the data exchange

@@ -1068,7 +1068,7 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_pwr_pkg_completed, test_setup, test_teard
 
 TEST_FUNCTION(test_data_smpl_update_max_die_temp, test_setup, test_teardown)
 {
-    die_2_die_exchange_init(0);
+    die_2_die_exch_init(0);
     soc_info.latest_max_die_temp_dC = 0;
     soc_info.latest_max_tile_temp_dC = 400;
     soc_info.latest_max_soc_top_temp_dC = 300;
@@ -1080,7 +1080,7 @@ TEST_FUNCTION(test_data_smpl_update_max_die_temp, test_setup, test_teardown)
 
     soc_info.latest_max_tile_temp_dC = 200;
     soc_info.latest_max_soc_top_temp_dC = 300;
-    die_2_die_exchange_init(1);
+    die_2_die_exch_init(1);
     will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, true);
     data_smpl_update_max_die_temp();
 }

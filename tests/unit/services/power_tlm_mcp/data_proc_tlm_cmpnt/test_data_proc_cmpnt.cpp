@@ -60,11 +60,11 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_init, test_setup, test_teardown)
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg, test_setup, test_teardown)
 {
 
-    die_2_die_exchange_init(0);
+    die_2_die_exch_init(0);
     expect_function_call(__wrap_in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg);
     data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg();
 
-    die_2_die_exchange_init(1);
+    die_2_die_exch_init(1);
     data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg();
 }
 

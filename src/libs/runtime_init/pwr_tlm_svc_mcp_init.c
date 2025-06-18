@@ -3,8 +3,8 @@
 //
 
 /**
- * @file telemetry_service_init.c
- * Initializes the telemetry service.
+ * @file pwr_tlm_svc_mcp_init.c
+ * Initializes the MCP telemetry service.
  */
 
 /*------------- Includes -----------------*/
@@ -39,7 +39,8 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(pwr_tlm_svc_mcp, FPFW_INIT_DEPENDENCIES("sensor_fifo", "mts_svc", "hw_ver", "atu_svc", "gtimer"))
+FPFW_INIT_COMPONENT(pwr_tlm_svc_mcp,
+                    FPFW_INIT_DEPENDENCIES("sensor_fifo", "mts_svc", "hw_ver", "atu_svc", "gtimer", "hw_sem"))
 {
     power_tlm_knobs_t pwr_tlm_knobs = config_get_pwr_tlm_knobs();
 

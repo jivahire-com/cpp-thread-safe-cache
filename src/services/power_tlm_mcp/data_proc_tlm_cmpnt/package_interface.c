@@ -303,7 +303,7 @@ void data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data(p_pwr_soc_element_max_soc_tem
 {
     // record is only created on die 0
     max_die_temps_t die1_max_temp = {0};
-    die_2_die_exchange_read_pwr_pkg_max_die_temp_dC(1, &die1_max_temp);
+    die_2_die_exch_ib_read_pwr_pkg_max_die_temp_dC(1, &die1_max_temp);
 
     max_temp_data->average_max_dC =
         data_util_mean_of_means(computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.average,
@@ -425,5 +425,5 @@ void data_proc_tlm_cmpnt_get_inst_soc_max_temp_data(p_inst_soc_element_max_temp_
 {
     // note:  packaging won't call this api for secondary dies
     max_temp_data->die0_max_temperature_dC = soc_info.latest_max_die_temp_dC;
-    max_temp_data->die1_max_temperature_dC = die_2_die_exchange_read_inst_max_die_temp_dC(1);
+    max_temp_data->die1_max_temperature_dC = die_2_die_exch_ib_read_inst_max_die_temp_dC(1);
 }

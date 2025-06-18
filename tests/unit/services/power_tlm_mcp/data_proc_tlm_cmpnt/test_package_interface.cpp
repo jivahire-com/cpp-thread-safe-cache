@@ -3,7 +3,7 @@
 //
 
 /**
- * @file test_pack_get_apis.cpp
+ * @file test_package_interface.cpp
  * This tests the api's used to retrieve data for in band and out of band telemetry reporting.
  */
 
@@ -488,8 +488,8 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data, test_setup, te
 {
     pwr_soc_element_max_soc_temp_t max_temp_data = {0};
 
-    die_2_die_exchange_init(1);
-    die_2_die_exchange_write_pwr_pkg_max_die_temp(500, 10, 600);
+    die_2_die_exch_init(1);
+    die_2_die_exch_ib_write_pwr_pkg_max_die_temp(500, 10, 600);
 
     computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.average = 300;
     computed_metrics_d2d_2mins.max_soc_temp_dC.max = 400;
@@ -599,7 +599,7 @@ TEST_FUNCTION(test_get_inst_soc_sensor_temp_data, test_setup, test_teardown)
     inst_soc_element_max_temp_t read_data = {0};
 
     soc_info.latest_max_die_temp_dC = 200;
-    die_2_die_exchange_write_inst_max_die_temp(400);
+    die_2_die_exch_ib_write_inst_max_die_temp(400);
     data_proc_tlm_cmpnt_get_inst_soc_max_temp_data(&read_data);
 
     assert_int_equal(read_data.die0_max_temperature_dC, 200);

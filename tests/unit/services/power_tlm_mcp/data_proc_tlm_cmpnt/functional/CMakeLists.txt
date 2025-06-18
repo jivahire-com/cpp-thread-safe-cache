@@ -61,4 +61,8 @@ mock_target(${TARGET}
     sensor_fifo_svc_poll_dimm_info
     exec_tlm_cmpnt_get_timestamp_microseconds
     gtimer_prodfw_get_frequency
+    initialize_semaphore
+    read_semaphore
+    wait_for_semaphore
+    release_semaphore
 )

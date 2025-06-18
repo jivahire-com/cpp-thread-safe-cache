@@ -29,7 +29,7 @@
 
 void data_proc_tlm_cmpnt_init(uint8_t die_id)
 {
-    die_2_die_exchange_init(die_id);
+    die_2_die_exch_init(die_id);
 
     data_smpl_init();
 
@@ -47,7 +47,7 @@ void data_proc_tlm_cmpnt_prepare_data_for_inst_sample(void)
 
 void data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg(void)
 {
-    if (die_2_die_exchange_get_this_die_id() == PRIMARY_DIE_ID)
+    if (die_2_die_exch_get_this_die_id() == PRIMARY_DIE_ID)
     {
         in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg();
     }

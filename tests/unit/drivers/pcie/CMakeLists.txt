@@ -91,6 +91,15 @@ mock_target(${TARGET}
     pciess_rps_post_rp_ready_init
     pciess_probe
     pciess_phys_program_fw
+    pcie_rp_rasdes_inject_crc_error
+    pcie_rp_rasdes_inject_dllp_error
+    pcie_rp_rasdes_inject_fc_error
+    pcie_rp_rasdes_inject_retry_tlp_error
+    pcie_rp_rasdes_inject_seqnum_error
+    pcie_rp_rasdes_inject_symbol_error
+    pcie_ss_rp_aer_spoof
+    pcie_phy_setup_error_injection
+    pcie_phy_clear_injection
     pcie_rp_vsecras_clear_rasdp_error_mode
     ras_pcie_vsecras_agent_probe
     ras_pcie_dtim_agent_probe

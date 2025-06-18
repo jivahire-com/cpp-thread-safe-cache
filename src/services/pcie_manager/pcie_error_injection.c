@@ -16,6 +16,7 @@
 #include <kng_soc_constants.h>
 #include <pcie_einj_structs.h>
 #include <pcie_manager_i.h>
+#include <pcie_phy.h>
 #include <pcie_rp_rasdes.h>
 #include <pcie_ss.h>
 #include <pcie_sync_requests_i.h>
@@ -52,6 +53,7 @@ static bool validate_einj_payload(ras_einj_info_t* info)
         goto done;
     }
 
+    pcie_einj_operation_t* op = (pcie_einj_operation_t*)&(info->status_operation);
     pcie_einj_params_t* pcie_params = (pcie_einj_params_t*)&(info->param_type.error_parameters[0]);
 
     if (info->component_instance != idsw_get_die_id())
@@ -80,59 +82,65 @@ static bool validate_einj_payload(ras_einj_info_t* info)
         goto done;
     }
 
-    if (pcie_params->error_type >= PCIE_ERROR_TYPE_MAX)
+    if (op->error_type >= PCIE_ERROR_TYPE_MAX)
     {
-        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid error type: %d\n", pcie_params->error_type);
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid error type: %d\n", op->error_type);
         goto done;
     }
 
-    if (pcie_params->error_type == PCIE_ERROR_TYPE_AER && (pcie_params->error_data.aer > PCIE_SS_APP_ERR_HEADER_LOG_OVERFLOW))
+    if (op->error_type == PCIE_ERROR_TYPE_AER && (pcie_params->error_data.aer > PCIE_SS_APP_ERR_HEADER_LOG_OVERFLOW))
     {
         FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid AER error data: %d\n", pcie_params->error_data.aer);
         goto done;
     }
 
-    if (pcie_params->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_CRC &&
-        (pcie_params->error_data.internal.crc > PCIE_RASDES_INJ_ECRC))
+    if (op->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_CRC && (pcie_params->error_data.crc > PCIE_RASDES_INJ_ECRC))
     {
-        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid CRC error data: %d\n", pcie_params->error_data.internal.crc);
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid CRC error data: %d\n", pcie_params->error_data.crc);
         goto done;
     }
 
-    if (pcie_params->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_SEQNUM &&
-        (pcie_params->error_data.internal.seqnum > PCIE_RASDES_INJ_DLLP_ACK_NACK_SEQNUM))
+    if (op->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_SEQNUM &&
+        (pcie_params->error_data.seqnum > PCIE_RASDES_INJ_DLLP_ACK_NACK_SEQNUM))
     {
-        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid SEQNUM error data: %d\n", pcie_params->error_data.internal.seqnum);
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid SEQNUM error data: %d\n", pcie_params->error_data.seqnum);
         goto done;
     }
 
-    if (pcie_params->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_DLLP &&
-        (pcie_params->error_data.internal.dllp > PCIE_RASDES_INJ_DLLP_NACK_TIMEOUT))
+    if (op->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_DLLP && (pcie_params->error_data.dllp > PCIE_RASDES_INJ_DLLP_NACK_TIMEOUT))
     {
-        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid DLLP error data: %d\n", pcie_params->error_data.internal.dllp);
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid DLLP error data: %d\n", pcie_params->error_data.dllp);
         goto done;
     }
 
-    if (pcie_params->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_SYMBOL &&
-        (pcie_params->error_data.internal.symbol > PCIE_RASDES_INJ_SKP_SYMBOL))
+    if (op->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_SYMBOL && (pcie_params->error_data.symbol > PCIE_RASDES_INJ_SKP_SYMBOL))
     {
-        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid SYMBOL error data: %d\n", pcie_params->error_data.internal.symbol);
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid SYMBOL error data: %d\n", pcie_params->error_data.symbol);
         goto done;
     }
 
-    if (pcie_params->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_FC &&
-        (pcie_params->error_data.internal.fc > PCIE_RASDES_INJ_CPL_TLP_DATA_CREDIT))
+    if (op->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_FC && (pcie_params->error_data.fc > PCIE_RASDES_INJ_CPL_TLP_DATA_CREDIT))
     {
-        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid FC error data: %d\n", pcie_params->error_data.internal.fc);
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid FC error data: %d\n", pcie_params->error_data.fc);
         goto done;
     }
 
-    if (pcie_params->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_RETRY_TLP &&
-        (pcie_params->error_data.internal.retry_tlp > PCIE_RASDES_INJ_NULLIFIED_TLP))
+    if (op->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_RETRY_TLP &&
+        (pcie_params->error_data.retry_tlp > PCIE_RASDES_INJ_NULLIFIED_TLP))
     {
-        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid RETRY TLP error data: %d\n",
-                            pcie_params->error_data.internal.retry_tlp);
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid RETRY TLP error data: %d\n", pcie_params->error_data.retry_tlp);
         goto done;
+    }
+
+    if (op->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_PHY_SET_SRAM_ERROR ||
+        op->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_PHY_CLEAR_SRAM_ERROR)
+    {
+        /* We cannot validate addresses or masks, just check that the phy instance is within bounds */
+        if (pcie_params->error_data.phy_sram.phy_inst > PCIE_PHY_BCAST)
+        {
+            FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid PHY instance: %d\n", pcie_params->error_data.phy_sram.phy_inst);
+            goto done;
+        }
     }
 
     is_valid_payload = true;

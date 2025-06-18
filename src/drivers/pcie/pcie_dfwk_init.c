@@ -16,6 +16,7 @@
 #include <pcie_cli_helpers_i.h>
 #include <pcie_dfwk.h>
 #include <pcie_dfwk_i.h>
+#include <pcie_einj_helpers_i.h>
 #include <pcie_ras_i.h>
 #include <pcie_rpss_init_i.h>
 #include <pcie_ss_common.h>
@@ -101,8 +102,7 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
         handle_cli_request(r);
         break;
     case (INJECT_PCIE_ERROR):
-        /* To be done in a follow up PR - need to invoke silibs error injection APIs here */
-        sts = SILIBS_SUCCESS;
+        sts = handle_pcie_error_injection(incoming);
         break;
     default:
         FPFW_DBGPRINT_ERROR("RPSS[%d]: Bad sync req received!\n", r->rpss_index);

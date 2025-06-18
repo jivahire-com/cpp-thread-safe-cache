@@ -18,9 +18,11 @@
 #include <idsw.h>             // for platform ID declarations
 #include <idsw_kng.h>         // for KNG_PLAT_ID
 #include <intu_lib.h>
-#include <kng_soc_constants.h>     // for RPSS_INSTANCE
-#include <oi_pcie.h>               // for  pcie_laattr_ovrd_t
-#include <pcie_knobs.h>            // for pcie_cfg_t
+#include <kng_soc_constants.h> // for RPSS_INSTANCE
+#include <oi_pcie.h>           // for  pcie_laattr_ovrd_t
+#include <pcie_knobs.h>        // for pcie_cfg_t
+#include <pcie_phy.h>
+#include <pcie_rp_rasdes.h>
 #include <pcie_ss_common.h>        // for pcie_ss_entity_t
 #include <pcie_x16_e32_phy_regs.h> // for pcie_x16_e32_phy_reg
 #include <pcie_x16_general_regs.h> // for pcie_x16_general_reg
@@ -255,4 +257,84 @@ bool __wrap_ras_pcie_ltim_agent_probe(ras_agent_entity_t* agent, ras_error_recor
     assert_non_null(agent);
     assert_non_null(record);
     return mock_type(bool);
+}
+
+silibs_status_t __wrap_pcie_ss_rp_aer_spoof(pcie_ss_entity_t* ss, unsigned rp_index, uint32_t app_errors)
+{
+    assert_non_null(ss);
+    FPFW_UNUSED(app_errors);
+    assert_in_range(rp_index, 0, 3);
+
+    return mock_type(silibs_status_t);
+}
+
+int __wrap_pcie_rp_rasdes_inject_crc_error(pcie_rp_entity_t* rp, PCIE_RASDES_INJ_CRC_TYPE type, uint8_t count)
+{
+    assert_non_null(rp);
+    FPFW_UNUSED(type);
+    assert_in_range(count, 1, 255);
+
+    return mock_type(silibs_status_t);
+}
+
+int __wrap_pcie_rp_rasdes_inject_seqnum_error(pcie_rp_entity_t* rp, PCIE_RASDES_INJ_SEQNUM_TYPE type, uint8_t count)
+{
+    assert_non_null(rp);
+    FPFW_UNUSED(type);
+    assert_in_range(count, 1, 255);
+
+    return mock_type(silibs_status_t);
+}
+int __wrap_pcie_rp_rasdes_inject_dllp_error(pcie_rp_entity_t* rp, PCIE_RASDES_INJ_DLLP_TYPE type, uint8_t count)
+{
+    assert_non_null(rp);
+    FPFW_UNUSED(type);
+    assert_in_range(count, 1, 255);
+
+    return mock_type(silibs_status_t);
+}
+int __wrap_pcie_rp_rasdes_inject_symbol_error(pcie_rp_entity_t* rp, PCIE_RASDES_INJ_SYMBOL_TYPE type, uint8_t count)
+{
+    assert_non_null(rp);
+    FPFW_UNUSED(type);
+    assert_in_range(count, 1, 255);
+
+    return mock_type(silibs_status_t);
+}
+
+int __wrap_pcie_rp_rasdes_inject_fc_error(pcie_rp_entity_t* rp, PCIE_RASDES_INJ_FC_TYPE type, uint8_t count)
+{
+    assert_non_null(rp);
+    FPFW_UNUSED(type);
+    assert_in_range(count, 1, 255);
+
+    return mock_type(silibs_status_t);
+}
+
+int __wrap_pcie_rp_rasdes_inject_retry_tlp_error(pcie_rp_entity_t* rp, PCIE_RASDES_INJ_RETRY_TLP_TYPE type, uint8_t count)
+{
+    assert_non_null(rp);
+    FPFW_UNUSED(type);
+    assert_in_range(count, 1, 255);
+
+    return mock_type(silibs_status_t);
+}
+
+silibs_status_t __wrap_pcie_phy_setup_error_injection(uintptr_t base, PCIE_PHY_INST inst, uint32_t inj_mask, uint16_t addr_low, uint16_t addr_high)
+{
+    assert_non_null(base);
+    assert_in_range(inst, PCIE_PHY_0, PCIE_PHY_BCAST);
+    FPFW_UNUSED(inj_mask);
+    FPFW_UNUSED(addr_low);
+    FPFW_UNUSED(addr_high);
+
+    return mock_type(silibs_status_t);
+}
+
+silibs_status_t __wrap_pcie_phy_clear_injection(uintptr_t base, PCIE_PHY_INST inst)
+{
+    assert_non_null(base);
+    assert_in_range(inst, PCIE_PHY_0, PCIE_PHY_BCAST);
+
+    return mock_type(silibs_status_t);
 }

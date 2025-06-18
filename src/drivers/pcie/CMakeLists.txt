@@ -6,6 +6,7 @@ add_library(${TARGET}
     pcie_config.c
     pcie_cli_helpers.c
     pcie_dfwk_init.c
+    pcie_einj_helpers.c
     pcie_irq.c
     pcie_ras.c
     pcie_rpss_init.c
@@ -31,6 +32,7 @@ target_link_libraries(${TARGET}
     silibs::pcr_rpss
     silibs::tower_rpss
     ms::driver::vab
+    ms::lib::crash_dump
     ms::lib::scp_interrupts
     ms::lib::system_info
     ms::lib::threadx

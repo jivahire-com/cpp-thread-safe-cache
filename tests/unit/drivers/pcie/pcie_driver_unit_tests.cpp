@@ -27,12 +27,16 @@ extern "C" {
 #include "pcie_silibs_mocks.h"
 
 #include <DfwkPtrTypes.h>
+#include <cper.h>
 #include <error_handler.h>
 #include <kng_soc_constants.h>
 #include <pcie_config_i.h>
 #include <pcie_dfwk.h>
 #include <pcie_dfwk_i.h>
+#include <pcie_einj_structs.h>
 #include <pcie_irq.h>
+#include <pcie_rp_common.h>
+#include <pcie_rp_rasdes.h>
 #include <pcie_ss_common.h> // for pcie_ss_entity_t
 #include <ras_common.h>
 #include <silibs_status.h> // for SILIBS_E_PARAM, SILIBS_SUCCESS
@@ -607,6 +611,145 @@ TEST_FUNCTION(test_probe_ltim_node_null_record, test_setup, test_teardown)
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
     int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_E_PARAM);
+}
+
+TEST_FUNCTION(test_error_injections, test_setup, test_teardown)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    ras_einj_info_t einj_info;
+    pcie_einj_operation_t* op = (pcie_einj_operation_t*)&(einj_info.status_operation);
+    pcie_einj_params_t* pcie_params = (pcie_einj_params_t*)&(einj_info.param_type.error_parameters[0]);
+
+    r.header.RequestType = INJECT_PCIE_ERROR;
+    r.req_type = INJECT_PCIE_ERROR;
+    r.rpss_index = RPSS2;
+    r.rp_index = 0;
+    r.p_requested_data = &einj_info;
+    mock_pcie_ent.id = r.rpss_index;
+    mock_pcie_ent.rps[0].bases._base = 0xdeadbeef;
+
+    expect_any_always(__wrap_pciess_get_entity, rpss_idx);
+    will_return_always(__wrap_pciess_get_entity, &mock_pcie_ent);
+
+    pcie_params->sbdf.bus = 2;
+    mock_pcie_ent.rps[0].valid = true;
+    mock_pcie_ent.rps[0].bus_cfg.primary_bus = 0;
+    mock_pcie_ent.rps[0].bus_cfg.subordinate_bus = 3;
+
+    op->error_type = PCIE_ERROR_TYPE_AER;
+    op->error_count = 1;
+    pcie_params->error_data.aer = PCIE_SS_APP_ERR_BAD_TLP;
+    will_return(__wrap_pcie_ss_rp_aer_spoof, SILIBS_SUCCESS);
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+
+    op->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_CRC;
+    op->error_count = 0;
+    pcie_params->error_data.crc = PCIE_RASDES_INJ_DLLP_UPDATE_FC_CRC;
+    will_return(__wrap_pcie_rp_rasdes_inject_crc_error, SILIBS_SUCCESS);
+    ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+
+    op->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_SEQNUM;
+    op->error_count = 2;
+    pcie_params->error_data.seqnum = PCIE_RASDES_INJ_TLP_SEQNUM;
+    will_return(__wrap_pcie_rp_rasdes_inject_seqnum_error, SILIBS_SUCCESS);
+    ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+
+    op->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_DLLP;
+    op->error_count = 2;
+    pcie_params->error_data.dllp = PCIE_RASDES_INJ_DLLP_NACK_TIMEOUT;
+    will_return(__wrap_pcie_rp_rasdes_inject_dllp_error, SILIBS_SUCCESS);
+    ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+
+    op->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_SYMBOL;
+    op->error_count = 2;
+    pcie_params->error_data.symbol = PCIE_RASDES_INJ_EIDL_SYMBOL;
+    will_return(__wrap_pcie_rp_rasdes_inject_symbol_error, SILIBS_SUCCESS);
+    ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+
+    op->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_FC;
+    op->error_count = 2;
+    pcie_params->error_data.fc = PCIE_RASDES_INJ_POSTED_TLP_DATA_CREDIT;
+    will_return(__wrap_pcie_rp_rasdes_inject_fc_error, SILIBS_SUCCESS);
+    ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+
+    op->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_RETRY_TLP;
+    op->error_count = 2;
+    pcie_params->error_data.retry_tlp = PCIE_RASDES_INJ_DUPLICATE_TLP;
+    will_return(__wrap_pcie_rp_rasdes_inject_retry_tlp_error, SILIBS_SUCCESS);
+    ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+
+    op->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_PHY_SET_SRAM_ERROR;
+    op->error_count = 1;
+    pcie_params->error_data.phy_sram.phy_inst = 3;
+    will_return(__wrap_pcie_phy_setup_error_injection, SILIBS_SUCCESS);
+    ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+
+    op->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_PHY_CLEAR_SRAM_ERROR;
+    op->error_count = 1;
+    pcie_params->error_data.phy_sram.phy_inst = 4;
+    will_return(__wrap_pcie_phy_clear_injection, SILIBS_SUCCESS);
+    ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_error_injection_errors, test_setup, test_teardown)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    ras_einj_info_t einj_info;
+    pcie_einj_operation_t* op = (pcie_einj_operation_t*)&(einj_info.status_operation);
+    pcie_einj_params_t* pcie_params = (pcie_einj_params_t*)&(einj_info.param_type.error_parameters[0]);
+
+    r.header.RequestType = INJECT_PCIE_ERROR;
+    r.req_type = INJECT_PCIE_ERROR;
+    r.rpss_index = RPSS2;
+    r.rp_index = 0;
+    r.p_requested_data = &einj_info;
+    mock_pcie_ent.id = r.rpss_index;
+    mock_pcie_ent.rps[0].bases._base = 0xdeadbeef;
+
+    expect_any_always(__wrap_pciess_get_entity, rpss_idx);
+    will_return_always(__wrap_pciess_get_entity, &mock_pcie_ent);
+
+    pcie_params->sbdf.bus = 4;
+    mock_pcie_ent.rps[0].valid = true;
+    mock_pcie_ent.rps[0].bus_cfg.primary_bus = 0;
+    mock_pcie_ent.rps[0].bus_cfg.subordinate_bus = 3;
+
+    op->error_type = PCIE_ERROR_TYPE_AER;
+    op->error_count = 1;
+    pcie_params->error_data.aer = PCIE_SS_APP_ERR_BAD_TLP;
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_E_PARAM);
+
+    pcie_params->sbdf.bus = 2;
+    mock_pcie_ent.rps[0].valid = true;
+    mock_pcie_ent.rps[0].bus_cfg.primary_bus = 0;
+    mock_pcie_ent.rps[0].bus_cfg.subordinate_bus = 3;
+
+    op->error_type = PCIE_ERROR_TYPE_MAX;
+    ret = pcie_sched_sync_op(&(r.header));
     assert_int_equal(ret, 0);
     assert_int_equal(r.status, SILIBS_E_PARAM);
 }

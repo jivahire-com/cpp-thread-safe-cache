@@ -15,6 +15,7 @@
 
 #include <FpFwUtils.h>
 #include <bug_check.h>
+#include <cmsis_m7.h>
 #include <fpfw_icc_base.h>
 #include <fpfw_init.h>
 #include <fpfw_status.h>
@@ -72,6 +73,16 @@ void receive_prep_core_reset()
     }
 }
 
+// Hang the core after quiesce is complete
+void reset_complete_wait_forever()
+{
+    SOS_LOG_INFO("Reset complete, waiting forever...");
+    while (1)
+    {
+        __WFI(); // Wait for interrupt
+    }
+}
+
 // Callback function for the completion of the reset notification
 void reset_complete_notify(void* context, fpfw_status_t status)
 {
@@ -83,6 +94,7 @@ void reset_complete_notify(void* context, fpfw_status_t status)
     else
     {
         SOS_LOG_INFO("Reset complete notification sent successfully.");
+        reset_complete_wait_forever();
     }
 }
 

@@ -85,6 +85,7 @@ mock_target(${TARGET}
     FpFwLockRelease
     fpfw_icc_base_send
     fpfw_icc_base_recv
+    reset_complete_wait_forever
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

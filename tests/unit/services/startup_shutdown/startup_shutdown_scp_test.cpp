@@ -118,6 +118,11 @@ void __wrap_sos_shutdown(PDFWK_INTERFACE_HEADER p_interface,
     }
 }
 
+void __wrap_reset_complete_wait_forever()
+{
+    function_called();
+}
+
 } // extern "C"
 
 //
@@ -285,6 +290,15 @@ SOS_TEST(quiese_complete_notify, NULL, NULL)
     expect_value(__wrap_fpfw_icc_base_send, icc_ctx, test_icc_ctx);
 
     quiesce_complete_notify((DFWK_ASYNC_REQUEST_HEADER*)test_icc_ctx, &test_send_params);
+}
+
+// test for quiesce_complete_cb
+SOS_TEST(reset_complete_notify, NULL, NULL)
+{
+    fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
+    expect_function_call(__wrap_reset_complete_wait_forever);
+
+    reset_complete_notify((DFWK_ASYNC_REQUEST_HEADER*)test_icc_ctx, DFWK_SUCCESS);
 }
 
 // test for d2d_shutdown_recv_cb

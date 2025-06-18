@@ -174,32 +174,6 @@ TEST_FUNCTION(test_data_util_mean_of_means_corner, test_setup, test_teardown)
     assert_int_equal(mean, UINT16_MAX);
 }
 
-// Unit test for data_utils_update_residency
-TEST_FUNCTION(test_data_utils_update_residency, test_setup, test_teardown)
-{
-    uint64_t time_stamp_uS = 2000;
-    soc_dimm.previous_soc_dimm_timestamp_uS = 1000;
-    soc_dimm.residency_uS = 800;
-    uint64_t time_diff_uS = 0;
-
-    time_diff_uS =
-        data_utils_update_residency(time_stamp_uS, &soc_dimm.previous_soc_dimm_timestamp_uS, &soc_dimm.residency_uS);
-
-    assert_int_equal(soc_dimm.residency_uS, 1800);
-    assert_int_equal(soc_dimm.previous_soc_dimm_timestamp_uS, 2000);
-    assert_int_equal(time_diff_uS, 1000);
-
-    // Invalid case
-    soc_dimm.previous_soc_dimm_timestamp_uS = 0;
-    time_diff_uS = 0;
-    time_diff_uS =
-        data_utils_update_residency(time_stamp_uS, &soc_dimm.previous_soc_dimm_timestamp_uS, &soc_dimm.residency_uS);
-
-    assert_int_equal(soc_dimm.residency_uS, 1800); // will not update
-    assert_int_equal(soc_dimm.previous_soc_dimm_timestamp_uS, 2000);
-    assert_int_equal(time_diff_uS, 0);
-}
-
 TEST_FUNCTION(test_data_util_calc_mma_u16, test_setup, test_teardown)
 {
     mma_u16_t mma = {0};

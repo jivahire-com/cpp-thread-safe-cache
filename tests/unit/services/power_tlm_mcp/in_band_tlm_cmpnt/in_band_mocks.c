@@ -193,6 +193,14 @@ void data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(uint16_t dimm_channel, p_pwr
     function_called();
 }
 
+void data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data(uint16_t dimm_module, p_pwr_soc_element_dimm_power_t dimm_data)
+{
+    FPFW_UNUSED(dimm_module);
+    memset(dimm_data, 0xFF, sizeof(pwr_soc_element_dimm_power_t));
+
+    function_called();
+}
+
 void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_soc_element_sensor_temp_t sensor_temp_data)
 {
     FPFW_UNUSED(sensor_id);

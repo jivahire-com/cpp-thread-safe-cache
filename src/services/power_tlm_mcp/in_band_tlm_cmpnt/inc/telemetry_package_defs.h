@@ -34,8 +34,8 @@
 #define NUMBER_OF_HS_TEMP_SCALES    (7)
 
 // TODO: These values are placeholders and need to be verified
-#define NUMBER_OF_DIMM_MODULES      (12)
-#define NUMBER_OF_DIMM_CHANNELS     (24)
+/*Note : total DIMM in SoC is 12, per Die 6 module*/
+#define NUMBER_OF_DIMM_MODULES_PER_DIE      (6)
 #define NUMBER_OF_MPAMS             (128)
 
 
@@ -395,6 +395,7 @@ typedef struct {
 typedef struct {
     temperature_t s0;
     temperature_t s1;
+    uint8_t dimm_id; // DIMM module ID for identification
 } pwr_soc_element_dimm_temp_t, *p_pwr_soc_element_dimm_temp_t;
 
 typedef struct {
@@ -404,12 +405,15 @@ typedef struct {
 
 typedef struct {
     telemetry_record_hdr_t record_header;
-    pwr_soc_collection_dimm_temp_t dimm_collection[NUMBER_OF_DIMM_MODULES];
+    pwr_soc_collection_dimm_temp_t dimm_collection[NUMBER_OF_DIMM_MODULES_PER_DIE];
 } pwr_soc_record_dimm_temp_t, *p_pwr_soc_record_dimm_temp_t;
 
 //----------------POWER_TELEMETRY_ELEMENT_SOC_DIMM_POWER----------------
 
-typedef power_t pwr_soc_element_dimm_power_t, *p_pwr_soc_element_dimm_power_t;
+typedef struct {
+    power_t power_mW;
+    uint8_t dimm_id;   
+} pwr_soc_element_dimm_power_t, *p_pwr_soc_element_dimm_power_t;
 
 typedef struct {
     telemetry_collection_hdr_t collection_header;
@@ -418,7 +422,7 @@ typedef struct {
 
 typedef struct {
     telemetry_record_hdr_t record_header;
-    pwr_soc_collection_dimm_power_t dimm_collection[NUMBER_OF_DIMM_MODULES];
+    pwr_soc_collection_dimm_power_t dimm_collection[NUMBER_OF_DIMM_MODULES_PER_DIE];
 } pwr_soc_record_dimm_power_t, *p_pwr_soc_record_dimm_power_t;
 
 //----------------POWER_TELEMETRY_ELEMENT_SOC_HNF_TEMP----------------
@@ -663,7 +667,7 @@ typedef struct {
 
 typedef struct {
     telemetry_record_hdr_t record_header;
-    inst_soc_collection_dimm_runtime_t dimm_collection[NUMBER_OF_DIMM_MODULES];
+    inst_soc_collection_dimm_runtime_t dimm_collection[NUMBER_OF_DIMM_MODULES_PER_DIE];
 } inst_soc_record_dimm_runtime_t, *p_inst_soc_record_dimm_runtime_t;
 
 //----------------INST_TELEMETRY_ELEMENT_SOC_DIE_TEMP----------------

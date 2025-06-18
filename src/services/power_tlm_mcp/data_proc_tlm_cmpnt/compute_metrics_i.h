@@ -57,6 +57,7 @@ typedef struct
 {
     mma_u16_t temperature_s0_dC;
     mma_u16_t temperature_s1_dC;
+    mma_u16_t power_mW;
 } computed_per_dimm_metrics_t;
 
 typedef struct
@@ -81,7 +82,7 @@ typedef struct
     mma_u16_t top_sensor_temp_dC[NUMBER_OF_SOC_TEMP_SENSORS];
     computed_per_rail_metrics_t vr_rail[MAX_NUM_OF_VR_RAILS];
     mma_u16_t hnf_temperature_dC[NUMBER_OF_HNF_CHANNELS_PER_DIE];
-    computed_per_dimm_metrics_t dimm[NUMBER_OF_DIMM_MODULES];
+    computed_per_dimm_metrics_t dimm[NUMBER_OF_DIMM_MODULES_PER_DIE];
 } computed_per_soc_metrics_t;
 
 typedef struct {
@@ -271,6 +272,14 @@ void comp_metrics_for_soc_max_temp(uint16_t latest_max_soc_temp_dC);
  * @param[in] latest_dimm_temp_s1_dC - latest temp for S1 in dC
  */
 void comp_metrics_for_single_soc_dimm_temp(uint8_t dimm_id, uint16_t latest_dimm_temp_s0_dC, uint16_t latest_dimm_temp_s1_dC );
+
+/**
+ * @brief  function updates the minimum, maximum, and average power values for a specified
+ *         DIMM module.
+ * @param[in] dimm_id - dimm_id from SCF RAM
+ * @param[in] latest_dimm_power_mW - latest dimm power in mW
+ */
+void comp_metrics_for_single_soc_dimm_power(uint8_t dimm_id, uint16_t latest_dimm_power_mW);
 
 /**
  * @brief  This API used during cores are throttling, MMA calculation is triggerd by this APIs

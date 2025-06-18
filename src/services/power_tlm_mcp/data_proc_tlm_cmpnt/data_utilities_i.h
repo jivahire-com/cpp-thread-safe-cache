@@ -118,17 +118,3 @@ void data_util_running_avg_reset(running_avg_t *running_avg);
  */
 uint16_t data_util_mean_of_means(uint16_t mean1, uint16_t count1, uint16_t mean2, uint16_t count2);
 
-/**
- * @brief data_utils_update_residency -  Calculates the time difference between the current and previous timestamps
- *              and updates the residency time accordingly. This function is intended to be used in telemetry monitoring
- *              routines where timestamp-based residency tracking is required
- *
- * @param current_timestamp_uS -  The current timestamp in microseconds.
- * @param previous_timestamp_uS - Pointer to the variable holding the previous timestamp in microseconds. This value will be updated to current_timestamp_uS after the calculation.
- * @param residency_uS  - Pointer to the variable holding the accumulated residency time in microseconds.
- *                        This will be incremented by the time difference if the current timestamp is valid.
- * @return uint64_t - The computed time difference in microseconds between the
- *      current and previous timestamps. Returns 0 if the previous timestamp
- *      is zero or if the current timestamp is not greater than the previous one.
- */
-uint64_t data_utils_update_residency(uint64_t current_timestamp_uS, uint64_t* previous_timestamp_uS, uint64_t* residency_uS);

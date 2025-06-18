@@ -249,25 +249,38 @@ void data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(uint16_t hnf_channel, p_pwr_soc_el
     }
 }
 
-void data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(uint16_t dimm_channel, p_pwr_soc_element_dimm_temp_t dimm_data)
+void data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(uint16_t dimm_module, p_pwr_soc_element_dimm_temp_t dimm_data)
 {
     // parameter check: dimm_channel, check if correct
-    if (dimm_channel >= NUMBER_OF_DIMM_CHANNELS || dimm_data == NULL)
+    if (dimm_module >= NUMBER_OF_DIMM_MODULES_PER_DIE || dimm_data == NULL)
     {
         FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_SOC_DIMM_TEMPERATURE);
     }
     else
     {
         // DIMM temperature s0
-        dimm_data->s0.max_dC = computed_metrics_2_mins.soc.dimm[dimm_channel].temperature_s0_dC.max;
-        dimm_data->s0.min_dC = computed_metrics_2_mins.soc.dimm[dimm_channel].temperature_s0_dC.min;
-        dimm_data->s0.average_dC =
-            computed_metrics_2_mins.soc.dimm[dimm_channel].temperature_s0_dC.running_avg.average;
+        dimm_data->s0.max_dC = computed_metrics_2_mins.soc.dimm[dimm_module].temperature_s0_dC.max;
+        dimm_data->s0.min_dC = computed_metrics_2_mins.soc.dimm[dimm_module].temperature_s0_dC.min;
+        dimm_data->s0.average_dC = computed_metrics_2_mins.soc.dimm[dimm_module].temperature_s0_dC.running_avg.average;
         // DIMM temperature s1
-        dimm_data->s1.max_dC = computed_metrics_2_mins.soc.dimm[dimm_channel].temperature_s1_dC.max;
-        dimm_data->s1.min_dC = computed_metrics_2_mins.soc.dimm[dimm_channel].temperature_s1_dC.min;
-        dimm_data->s1.average_dC =
-            computed_metrics_2_mins.soc.dimm[dimm_channel].temperature_s1_dC.running_avg.average;
+        dimm_data->s1.max_dC = computed_metrics_2_mins.soc.dimm[dimm_module].temperature_s1_dC.max;
+        dimm_data->s1.min_dC = computed_metrics_2_mins.soc.dimm[dimm_module].temperature_s1_dC.min;
+        dimm_data->s1.average_dC = computed_metrics_2_mins.soc.dimm[dimm_module].temperature_s1_dC.running_avg.average;
+    }
+}
+
+void data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data(uint16_t dimm_module, p_pwr_soc_element_dimm_power_t dimm_data)
+{
+    // parameter check: dimm_module, check if correct
+    if (dimm_module >= NUMBER_OF_DIMM_MODULES_PER_DIE || dimm_data == NULL)
+    {
+        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_SOC_DIMM_POWER);
+    }
+    else
+    {
+        dimm_data->power_mW.min_mW = computed_metrics_2_mins.soc.dimm[dimm_module].power_mW.min;
+        dimm_data->power_mW.max_mW = computed_metrics_2_mins.soc.dimm[dimm_module].power_mW.max;
+        dimm_data->power_mW.average_mW = computed_metrics_2_mins.soc.dimm[dimm_module].power_mW.running_avg.average;
     }
 }
 
@@ -378,19 +391,21 @@ void data_proc_tlm_cmpnt_get_inst_soc_rail_data(uint16_t rail_id, p_inst_soc_ele
 
 void data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(uint16_t dimm_module, p_inst_soc_element_dimm_runtime_t dimm_data)
 {
-    // parameter check: dimm_channel, check if correct
-    if (dimm_module >= NUMBER_OF_DIMM_CHANNELS || dimm_data == NULL)
+    // parameter check: dimm_module, check if correct
+    if (dimm_module >= NUMBER_OF_DIMM_MODULES_PER_DIE || dimm_data == NULL)
     {
         FPFW_ET_LOG(DataPackageInstRecordError, INST_TELEMETRY_ELEMENT_SOC_DIMM_RT);
     }
     else
     {
+        /* Note : DIMM Temperatures obtained shall be the max of the two sensors in each DIMM. Each DIMM has two temperature sensors.  */
+        dimm_data->temperature_dC = latest_dimm[dimm_module].temperature_dC;
+        dimm_data->throttling_flags = latest_dimm[dimm_module].throttling_flags;
+        dimm_data->memory_freq_id = latest_dimm[dimm_module].memory_freq_id;
+        dimm_data->power_mW = latest_dimm[dimm_module].power_mW;
 
-        // TODO: update via https://azurecsi.visualstudio.com/Dev/_workitems/edit/2592610
-        // // DIMM temperature s0
-        // dimm_data->temp_s0_latest_dC = soc_info.dimm[dimm_module].s0.latest_value_dC;
-        // // DIMM temperature s1
-        // dimm_data->temp_s1_latest_dC = soc_info.dimm[dimm_module].s1.latest_value_dC;
+        // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2592610
+        dimm_data->threshold_dC = latest_dimm[dimm_module].threshold_dC;
     }
 }
 

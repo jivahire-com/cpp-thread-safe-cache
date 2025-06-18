@@ -175,7 +175,7 @@ static void calculate_expected_avg_values(int32_t iteration, int32_t* s0_avg, in
 TEST_FUNCTION(test_tlm_logger_log_dimm_information, test_setup, test_teardown)
 {
 
-    /* Note: dimm_id will less than NUMBER_OF_DIMM_MODULES(12) */
+    /* Note: dimm_id will less than NUMBER_OF_DIMM_MODULES_PER_DIE(12) */
     // Expected values are set to the input values for each iteration.
     // As there is no transformation, conversion, or aggregation logic for these fields in tlm_logger,
     // they are copied as-is and validated and asserted accordingly.

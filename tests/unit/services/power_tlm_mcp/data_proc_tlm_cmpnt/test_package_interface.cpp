@@ -36,12 +36,12 @@ extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define TEST_SNSR_ID_0       (0)
-#define TEST_HNF_CHANN_ID_1  (1)
-#define TEST_RAIL_ID_2       (2)
-#define TEST_DIMM_CHANN_ID_3 (3)
-#define TEST_MPAM_ID_4       (4)
-#define TEST_CORE_ID_5       (5)
+#define TEST_SNSR_ID_0      (0)
+#define TEST_HNF_CHANN_ID_1 (1)
+#define TEST_RAIL_ID_2      (2)
+#define TEST_DIMM_MOD_ID_3  (3)
+#define TEST_MPAM_ID_4      (4)
+#define TEST_CORE_ID_5      (5)
 
 /*------------- Typedefs -----------------*/
 
@@ -391,41 +391,68 @@ TEST_FUNCTION(test_get_pwr_soc_hnf_data, test_setup, test_teardown)
     data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(hnf_channel, nullptr);
 }
 
-TEST_FUNCTION(test_get_pwr_soc_dimm_data, test_setup, test_teardown)
+TEST_FUNCTION(test_get_pwr_soc_dimm_temp_data, test_setup, test_teardown)
 {
     pwr_soc_element_dimm_temp_t dimm_data = {{0}};
 
     // Check DIMM information
 
-    computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s0_dC.min = 200;
-    computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s0_dC.max = 300;
-    computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s0_dC.running_avg.average = 250;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.min = 200;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.max = 300;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.running_avg.average = 250;
 
-    computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s1_dC.min = 200;
-    computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s1_dC.max = 300;
-    computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s1_dC.running_avg.average = 250;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s1_dC.min = 200;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s1_dC.max = 300;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s1_dC.running_avg.average = 250;
 
-    data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(TEST_DIMM_CHANN_ID_3, &dimm_data);
+    data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(TEST_DIMM_MOD_ID_3, &dimm_data);
 
     assert_int_equal(dimm_data.s0.max_dC,
-                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s0_dC.max);
+                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.max);
     assert_int_equal(dimm_data.s0.min_dC,
-                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s0_dC.min);
+                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.min);
     assert_int_equal(dimm_data.s0.average_dC,
-                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s0_dC.running_avg.average);
+                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.running_avg.average);
 
     assert_int_equal(dimm_data.s1.max_dC,
-                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s1_dC.max);
+                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s1_dC.max);
     assert_int_equal(dimm_data.s1.min_dC,
-                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s1_dC.min);
+                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s1_dC.min);
     assert_int_equal(dimm_data.s1.average_dC,
-                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s1_dC.running_avg.average);
+                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s1_dC.running_avg.average);
 
     // Invalid case
-    computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s0_dC.min = 400;
-    data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(NUMBER_OF_DIMM_CHANNELS, &dimm_data);
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.min = 400;
+    data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(NUMBER_OF_DIMM_MODULES_PER_DIE, &dimm_data);
     assert_int_not_equal(dimm_data.s0.min_dC,
-                         computed_metrics_2_mins.soc.dimm[TEST_DIMM_CHANN_ID_3].temperature_s0_dC.min);
+                         computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.min);
+}
+
+TEST_FUNCTION(test_get_pwr_soc_dimm_power_data, test_setup, test_teardown)
+{
+
+    pwr_soc_element_dimm_power_t dimm_data = {{0}};
+    // Check DIMM information
+
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.min = 200;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.max = 300;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.running_avg.average = 250;
+
+    // Check DIMM information
+    data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data(TEST_DIMM_MOD_ID_3, &dimm_data);
+
+    assert_int_equal(dimm_data.power_mW.average_mW,
+                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.running_avg.average);
+
+    assert_int_equal(dimm_data.power_mW.min_mW, computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.min);
+
+    assert_int_equal(dimm_data.power_mW.max_mW, computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.max);
+
+    // Invalid case
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.min = 300;
+    data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data(NUMBER_OF_DIMM_MODULES_PER_DIE, &dimm_data);
+    assert_int_not_equal(dimm_data.power_mW.min_mW,
+                         computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.min);
 }
 
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data, test_setup, test_teardown)
@@ -550,8 +577,8 @@ TEST_FUNCTION(test_get_inst_soc_dimm_runtime_data, test_setup, test_teardown)
     // the api is currently just stubbed out
     // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     inst_soc_element_dimm_runtime_t dimm_runtime_data = {0};
-    data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(TEST_DIMM_CHANN_ID_3, &dimm_runtime_data);
-    data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(NUMBER_OF_DIMM_CHANNELS, &dimm_runtime_data);
+    data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(TEST_DIMM_MOD_ID_3, &dimm_runtime_data);
+    data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(NUMBER_OF_DIMM_MODULES_PER_DIE, &dimm_runtime_data);
 }
 
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data, test_setup, test_teardown)

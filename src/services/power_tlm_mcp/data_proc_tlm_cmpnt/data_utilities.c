@@ -209,26 +209,3 @@ uint16_t data_util_mean_of_means(uint16_t mean1, uint16_t count1, uint16_t mean2
 
     return mean;
 }
-
-uint64_t data_utils_update_residency(uint64_t current_timestamp_uS, uint64_t* previous_timestamp_uS, uint64_t* residency_uS)
-{
-    // Calculate the general residency
-    uint64_t time_diff_uS = 0;
-    /* Invalid case :
-       Example :
-       On boot up , when previous timestamp is 0 and new timestamp may be in the order of 10000 us,
-       that will add to the overall residency, which will not be a true reflection of residency calculation.
-    */
-    if (*previous_timestamp_uS != 0)
-    {
-        time_diff_uS = current_timestamp_uS - *previous_timestamp_uS;
-        *residency_uS += time_diff_uS;
-    }
-    else
-    {
-        FPFW_ET_LOG(DataHelperResidencyUpdateInValidTimeStamp);
-    }
-
-    *previous_timestamp_uS = current_timestamp_uS;
-    return time_diff_uS;
-}

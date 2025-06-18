@@ -32,11 +32,13 @@ extern uint8_t core_id_offset_per_die;
 extern uint8_t voltage_rail_id_offset_per_die;
 extern uint8_t hnf_id_offset_per_die;
 extern uint8_t temp_id_offset_per_die;
+extern uint8_t dimm_id_offset_per_die;
 
 #define CORE_ID_WITH_DIE_OFFSET(core_id) ((core_id) + (core_id_offset_per_die))
 #define VOLTAGE_RAIL_ID_WITH_DIE_OFFSET(rail_id) ((rail_id) + (voltage_rail_id_offset_per_die))
 #define HNF_ID_WITH_DIE_OFFSET(hnf_id) ((hnf_id) + (hnf_id_offset_per_die))
 #define TEMP_ID_WITH_DIE_OFFSET(temp_id) ((temp_id) + (temp_id_offset_per_die))
+#define DIMM_ID_WITH_DIE_OFFSET(dimm_id) ((dimm_id) + (dimm_id_offset_per_die))
 
 /*--------- Function Prototypes ----------*/
 
@@ -191,6 +193,13 @@ uint32_t package_create_pwr_soc_hnf_record(p_pwr_soc_record_hnf_t hnf_record);
  * @return uint32_t - Number of bytes in the record
  */
 uint32_t package_create_pwr_soc_dimm_temp_record(p_pwr_soc_record_dimm_temp_t dimm_temp_record);
+
+/**
+ * @brief  Create a power soc dimm power record
+ * @param[out]  dimm_power_record - location where the record will be stored
+ * @return  uint32_t - Number of bytes in the record
+ */
+uint32_t package_create_pwr_soc_dimm_power_record(p_pwr_soc_record_dimm_power_t dimm_power_record);
 
 /**
  * @brief   Create a power soc sensor temp record

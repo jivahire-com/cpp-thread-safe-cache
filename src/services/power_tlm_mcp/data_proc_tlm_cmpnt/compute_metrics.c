@@ -170,6 +170,12 @@ void comp_metrics_for_single_soc_dimm_temp(uint8_t dimm_id, uint16_t latest_dimm
     data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_id].temperature_s1_dC, latest_dimm_temp_s1_dC);
 }
 
+void comp_metrics_for_single_soc_dimm_power(uint8_t dimm_id, uint16_t latest_dimm_power_mW)
+{
+    // Update  min, max average dimm power
+    data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_id].power_mW, latest_dimm_power_mW);
+}
+
 void comp_metrics_for_single_core_single_cstate(uint8_t core_id, uint8_t cstate, uint64_t timestamp_diff_uS, uint8_t update_cstate_entry)
 {
     computed_metrics_2_mins.cores[core_id].cstate[cstate].residency_uS += timestamp_diff_uS;

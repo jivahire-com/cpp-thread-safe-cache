@@ -304,6 +304,24 @@ TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm_temp, test_setup, test_teard
     assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s0_dC.running_avg.average, 200);
 }
 
+TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm_power, test_setup, test_teardown)
+{
+
+    uint8_t dimm_id = 0;
+    uint16_t test_values_mW[5] = {180, 190, 200, 210, 220};
+
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        comp_metrics_for_single_soc_dimm_power(dimm_id, test_values_mW[i]);
+    }
+
+    // Check the results
+
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].power_mW.min, 180);
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].power_mW.max, 220);
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].power_mW.running_avg.average, 200);
+}
+
 TEST_FUNCTION(test_comp_metrics_for_single_core_power_per_pstate, test_setup, test_teardown)
 {
     uint8_t core_id = 0;

@@ -133,14 +133,6 @@ typedef struct {
     uint64_t latest_core_states_proc_timestamp_uS; //a timestamp used for all core states processing ,when no pstate packet occurred.
 } soc_runtime_info_t;
 
-typedef struct {
-    uint64_t residency_uS;//time counter for residency calculation, add time_diff on every iteration.
-    uint64_t previous_soc_dimm_timestamp_uS;
-    pwr_soc_element_dimm_temp_t      dimm_temp[NUMBER_OF_DIMM_MODULES];
-    pwr_soc_element_dimm_power_t     dimm_pwr[NUMBER_OF_DIMM_MODULES];
-    inst_soc_element_dimm_runtime_t  dimm_inst[NUMBER_OF_DIMM_MODULES];
-} soc_runtime_dimm_info_t;
-
 /**
  *  @brief Enum for Pstate message throttle status codes
  * // Status from KNG RMSSHASv0.p14 Document index value
@@ -184,7 +176,7 @@ typedef struct {
 extern core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
 extern soc_runtime_info_t soc_info;
-extern soc_runtime_dimm_info_t soc_dimm;
+extern inst_soc_element_dimm_runtime_t  latest_dimm[NUMBER_OF_DIMM_MODULES_PER_DIE];
 
 /*--------- Function Prototypes ----------*/
 /**
@@ -344,12 +336,6 @@ bool data_smpl_parse_throttling_state_change(pstate_telem_t* pstate_telemetry);
  * @param[in] timestamp_uS
  */
 void data_smpl_parse_throttling_state_change_exit_transition(uint8_t core_id, uint64_t timestamp_uS);
-
-/**
- * @brief function reset the soc data after a collection window .
- *
- */
-void data_smpl_reset_soc_data(void);
 
 /**
  * @brief This API update the core pstate compute for a sampling period,

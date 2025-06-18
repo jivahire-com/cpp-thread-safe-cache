@@ -979,8 +979,8 @@ TEST_FUNCTION(test_tlm_logger_log_dimm_information, test_setup, test_teardown)
     data_smpl_parse_dimm_entry(&dimm_info);
 
     // Check DIMM information
-    assert_int_equal(soc_dimm.dimm_temp[dimm_info.dimm_id].s0.latest_value_dC, (dimm_info.dimm_temp_s0_dC));
-    assert_int_equal(soc_dimm.dimm_temp[dimm_info.dimm_id].s1.latest_value_dC, (dimm_info.dimm_temp_s1_dC));
+    assert_int_equal(latest_dimm[dimm_info.dimm_id].power_mW, (dimm_info.dimm_power_mW));
+    assert_int_equal(latest_dimm[dimm_info.dimm_id].temperature_dC, (dimm_info.dimm_temp_s1_dC));
 
     // invalid DIMM id.
     dimm_info.dimm_id = 17;
@@ -1053,28 +1053,6 @@ TEST_FUNCTION(test_data_smpl_parse_rack_throttling, test_setup, test_teardown)
     pstate_data.data.throttle_status = 13;
     status = data_smpl_parse_rack_throttling(&pstate_data);
     assert_int_equal(status, false);
-}
-
-// Unit test function
-TEST_FUNCTION(test_data_smpl_reset_soc_data, test_setup, test_teardown)
-{
-    uint8_t dimm_module_index = 0;
-
-    // Initialize soc_info with some test values
-    soc_dimm.dimm_temp[dimm_module_index].s0.min_dC = 0;
-    soc_dimm.dimm_temp[dimm_module_index].s0.max_dC = 0;
-    soc_dimm.dimm_temp[dimm_module_index].s0.average_dC = 0;
-    soc_dimm.dimm_temp[dimm_module_index].s0.latest_value_dC = 10;
-
-    soc_dimm.dimm_temp[dimm_module_index].s1.min_dC = 0;
-    soc_dimm.dimm_temp[dimm_module_index].s1.max_dC = 0;
-    soc_dimm.dimm_temp[dimm_module_index].s1.average_dC = 0;
-    soc_dimm.dimm_temp[dimm_module_index].s1.latest_value_dC = 20;
-
-    data_smpl_reset_soc_data();
-
-    assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s0.latest_value_dC, 0);
-    assert_int_equal(soc_dimm.dimm_temp[dimm_module_index].s1.latest_value_dC, 0);
 }
 
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_24hr_pkg_completed, test_setup, test_teardown)

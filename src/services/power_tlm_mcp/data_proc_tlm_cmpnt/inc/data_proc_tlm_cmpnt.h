@@ -185,14 +185,23 @@ void data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(uint16_t rail_id, p_pwr_soc_el
 void data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(uint16_t hnf_channel, p_pwr_soc_element_hnf_t hnf_data);
 
 /**
- * @brief Get the soc dimm temperature data for the specified dimm channel.
+ * @brief Get the soc dimm temperature data for the specified dimm module.
  *
- * @param[in] dimm_channel - The dimm channel to get the dimm data for. 0 .. NUMBER_OF_DIMM_MODULES-1
+ * @param[in] dimm_module - The dimm module to get the dimm data for. 0 .. NUMBER_OF_DIMM_MODULES_PER_DIE-1
  * @param[out] dimm_data - Pointer to the structure to store the dimm temperature data in.
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(uint16_t dimm_channel, p_pwr_soc_element_dimm_temp_t dimm_data);
+void data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(uint16_t dimm_module, p_pwr_soc_element_dimm_temp_t dimm_data);
+
+/**
+ * @brief Get the soc dimm power data for the specified dimm module.
+ * 
+ *
+ * @param[in] dimm_module - The dimm module to get the dimm data for. 0 .. NUMBER_OF_DIMM_MODULES_PER_DIE-1
+ * @param[out] dimm_data - Pointer to the structure to store the dimm power data in.
+ */
+void data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data(uint16_t dimm_module, p_pwr_soc_element_dimm_power_t dimm_data);
 
 /**
  * @brief Get the soc sensor temperature data for the specified sensor.
@@ -254,9 +263,9 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
 void data_proc_tlm_cmpnt_get_inst_soc_rail_data(uint16_t rail_id, p_inst_soc_element_rail_t rail_data);
 
 /**
- * @brief Get the soc instantaneous dimm data for the specified dimm channel.
+ * @brief Get the soc instantaneous dimm data for the specified dimm module.
  *
- * @param[in] dimm_module - The dimm module to get the data for. 0 .. NUMBER_OF_DIMM_MODULES-1
+ * @param[in] dimm_module - The dimm module to get the data for. 0 .. NUMBER_OF_DIMM_MODULES_PER_DIE-1
  * @param[out] dimm_data - Pointer to the location to store the dimm data in.
  *
  * @return None

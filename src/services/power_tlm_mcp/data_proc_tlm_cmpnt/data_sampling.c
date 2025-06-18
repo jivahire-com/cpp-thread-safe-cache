@@ -45,7 +45,7 @@ typedef struct
 core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
 tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
 soc_runtime_info_t soc_info;
-soc_runtime_dimm_info_t soc_dimm;
+inst_soc_element_dimm_runtime_t latest_dimm[NUMBER_OF_DIMM_MODULES_PER_DIE];
 dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE] = {0};
 
 static throttling_lookup_tbl_t throttling_tbl[] = {
@@ -315,6 +315,7 @@ void data_proc_tlm_cmpnt_process_input_data(void)
                 comp_metrics_for_single_soc_dimm_temp(dimm_info->dimm_id,
                                                       dimm_info->dimm_temp_s0_dC,
                                                       dimm_info->dimm_temp_s1_dC);
+                comp_metrics_for_single_soc_dimm_power(dimm_info->dimm_id, dimm_info->dimm_power_mW);
             }
         }
     } while (status.more_entries == true);
@@ -774,12 +775,18 @@ void data_smpl_parse_pvt_temperature_entry(soc_pvt_temp_t* pvt_temperature)
 
 bool data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info)
 {
-    // TODO: update via https://azurecsi.visualstudio.com/Dev/_workitems/edit/2592133
-
-    if (dimm_info->dimm_id < NUMBER_OF_DIMM_MODULES)
+    if (dimm_info->dimm_id < NUMBER_OF_DIMM_MODULES_PER_DIE)
     {
-        soc_dimm.dimm_temp[dimm_info->dimm_id].s0.latest_value_dC = dimm_info->dimm_temp_s0_dC;
-        soc_dimm.dimm_temp[dimm_info->dimm_id].s1.latest_value_dC = dimm_info->dimm_temp_s1_dC;
+        /* Note :  dimm instantaneous record entry*/
+        latest_dimm[dimm_info->dimm_id].temperature_dC = (dimm_info->dimm_temp_s0_dC > dimm_info->dimm_temp_s1_dC)
+                                                             ? dimm_info->dimm_temp_s0_dC
+                                                             : dimm_info->dimm_temp_s1_dC;
+        latest_dimm[dimm_info->dimm_id].power_mW = dimm_info->dimm_power_mW;
+        latest_dimm[dimm_info->dimm_id].memory_freq_id = dimm_info->dimm_memory_frequency_id;
+        latest_dimm[dimm_info->dimm_id].throttling_flags = dimm_info->dimm_throttling;
+
+        // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2592610
+        latest_dimm[dimm_info->dimm_id].threshold_dC = 0;
     }
     else
     {
@@ -1051,26 +1058,9 @@ void data_proc_tlm_cmpnt_pwr_pkg_completed(void)
 {
     // Reset the computed per core metrics
     comp_metrics_reset_2_mins_metrics();
-    data_smpl_reset_soc_data();
 }
 
 void data_proc_tlm_cmpnt_24hr_pkg_completed(void)
 {
     comp_metrics_reset_24_hrs_metrics();
-}
-
-void data_smpl_reset_soc_data(void)
-{
-    soc_runtime_info_t soc_info_temp;
-    uint64_t soc_dimm_timestamp_uS;
-    uint64_t soc_core_timestamp_uS;
-    // TODO: optimize soc_runtime_info_t struct : https://azurecsi.visualstudio.com/Dev/_workitems/edit/2602180
-    soc_dimm_timestamp_uS = soc_dimm.previous_soc_dimm_timestamp_uS;
-    soc_core_timestamp_uS = soc_info.latest_core_states_proc_timestamp_uS;
-    memcpy(&soc_info_temp, &soc_info, sizeof(soc_runtime_info_t));
-    memset(&soc_info, 0, sizeof(soc_runtime_info_t));
-    memset(&soc_dimm, 0, sizeof(soc_runtime_dimm_info_t));
-
-    soc_info.latest_core_states_proc_timestamp_uS = soc_core_timestamp_uS;
-    soc_dimm.previous_soc_dimm_timestamp_uS = soc_dimm_timestamp_uS;
 }

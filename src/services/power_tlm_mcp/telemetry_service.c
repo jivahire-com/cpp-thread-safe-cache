@@ -34,5 +34,5 @@ void telemetry_service_init(uint8_t die_id,
 
     data_proc_tlm_cmpnt_init(die_id);
     in_band_tlm_cmpnt_init(die_id, inst_samples_per_pkg);
-    out_of_band_tlm_cmpnt_init();
+    out_of_band_tlm_cmpnt_init(die_id);
 }

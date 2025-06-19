@@ -1,3 +1,4 @@
 add_subdirectory(data_proc_tlm_cmpnt)
 add_subdirectory(exec_tlm_cmpnt)
 add_subdirectory(in_band_tlm_cmpnt)
+add_subdirectory(out_of_band_tlm_cmpnt)

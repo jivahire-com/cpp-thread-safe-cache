@@ -33,8 +33,7 @@
 
 #define TLM_SVC_STACK_SIZE (TX_MINIMUM_STACK + 4096)
 
-#define DATA_AGGR_START_TICK    (TX_TIMER_TICKS_PER_SECOND / 2)
-#define DATA_AGGR_PKG_PERIOD_MS (10)
+#define DATA_AGGR_START_TICK (TX_TIMER_TICKS_PER_SECOND / 2)
 
 #define ALL_EVENT_GROUP_BITS (0xFFFFFFFF)
 
@@ -161,6 +160,11 @@ void tlm_svc_thread(ULONG thread_input)
             exec_tlm_cmpnt_change_telemetry_mode(pending_mode_change);
         }
 
+        if (current_bits & NEW_OUT_OF_BAND_PLDM_REQ)
+        {
+            out_of_band_tlm_cmpnt_handle_new_pldm_requests();
+        }
+
         if (current_bits & DATA_AGGR_TMR_EXPIRED)
         {
             if (tlm_executive_status.op_mode == TLM_OP_MODE_SENSOR_FIFO_RAW_DATA)
@@ -267,6 +271,12 @@ void every_24hr_pkg_timer_cb(ULONG context)
 void exec_tlm_cmpnt_notify_new_in_band_mts_message(void)
 {
     UINT txStatus = tx_event_flags_set(&s_thread_control, NEW_INBAND_MTS_MESSAGE, TX_OR);
+    FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
+}
+
+void exec_tlm_cmpnt_notify_new_out_of_band_pldm_request(void)
+{
+    UINT txStatus = tx_event_flags_set(&s_thread_control, NEW_OUT_OF_BAND_PLDM_REQ, TX_OR);
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 

@@ -14,6 +14,7 @@
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define DATA_AGGR_PKG_PERIOD_MS (10)
 
 /*-------------- Typedefs ----------------*/
 typedef enum
@@ -90,6 +91,13 @@ void exec_tlm_cmpnt_get_status(telemetry_executive_status_t *status);
  * @return None
  */
 void exec_tlm_cmpnt_notify_new_in_band_mts_message(void);
+
+/**
+ * @brief Notify the telemetry executive component that a new out of band PLDM request  has been received.
+ *
+ * @return None
+ */
+void exec_tlm_cmpnt_notify_new_out_of_band_pldm_request(void);
 
 /**
  * @brief The exec_tlm_get_timestamp_microseconds function retrieves the current timestamp in microseconds.

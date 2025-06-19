@@ -283,6 +283,19 @@ TEST_FUNCTION(test_exec_tlm_cmpnt_notify_new_in_band_mts_message, test_setup, te
     exec_tlm_cmpnt_notify_new_in_band_mts_message();
 }
 
+// test exec_tlm_cmpnt_notify_new_in_band_mts_message
+TEST_FUNCTION(test_exec_tlm_cmpnt_notify_new_out_of_band_pldm_request, test_setup, test_teardown)
+{
+    expect_any_always(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, NEW_OUT_OF_BAND_PLDM_REQ);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+    exec_tlm_cmpnt_notify_new_out_of_band_pldm_request();
+}
+
 TEST_FUNCTION(test_exec_tlm_cmpnt_notify_new_mode_change, test_setup, test_teardown)
 {
     pending_mode_change = TLM_OP_MODE_PUBLISHING;

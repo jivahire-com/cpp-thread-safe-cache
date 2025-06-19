@@ -30,6 +30,15 @@ typedef struct {
     running_avg_t running_avg;
 } mma_u16_t, *p_mma_u16_t;
 
+typedef struct {
+    uint16_t* samples;         // Pointer to circular sample array
+    uint16_t   sample_capacity; // Total capacity of the sample array
+    uint16_t   sample_index;    // Current circular write index
+    uint16_t   sample_count;    // Current number of valid samples (<= sample_capacity)
+    uint32_t  total_sum;       // Running sum of all values
+} moving_avg_t;
+
+
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
@@ -118,3 +127,68 @@ void data_util_running_avg_reset(running_avg_t *running_avg);
  */
 uint16_t data_util_mean_of_means(uint16_t mean1, uint16_t count1, uint16_t mean2, uint16_t count2);
 
+/**
+ * @brief data_util_mean_of_summations function calculates the mean of two summations, taking into account their respective counts.
+ *
+ * @param[in] summation1 - The first summation value.
+ * @param[in] count1 - The count associated with the first summation.
+ * @param[in] summation2 - The second summation value.
+ * @param[in] count2 - The count associated with the second summation.
+ *
+ * @return The calculated mean of the two summations.
+ */
+uint16_t data_util_mean_of_summations(uint32_t summation1, uint16_t count1, uint32_t summation2, uint16_t count2);
+
+/**
+ * Moving Average handler
+ *
+ * Implements an efficient circular-buffer based simple moving average for
+ * streaming uint16_t data.
+ *
+ * - The caller provides external storage for the sample buffer.
+ * - Each new sample replaces the oldest sample when the buffer is full.
+ * - The total sum is maintained incrementally to allow O(1) insertion and O(1) average calculation.
+ * - Overflow protection is applied on the running sum; if an overflow occurs during summation,
+ *   the total sum saturates to UINT32_MAX.
+ * - Invalid parameters (NULL pointers or zero capacity) are safely rejected by initialization.
+ * - After initialization, all public functions are safe to call with NULL; they will return 0 or no-op.
+ * - The `data_util_mov_avg_clear()` function clears sample history while preserving configuration.
+ */
+
+ /**
+ * Initialize moving average structure.
+ *
+ * @param[in/out] ma Pointer to moving_avg_t object.
+ * @param[in/out] samples Pointer to user-provided sample array (uint16_t array).
+ * @param[in] sample_capacity Capacity of the sample array ie, number of uint16_t samples it can hold.
+ * @return None
+ */
+void data_util_mov_avg_init(moving_avg_t* ma, uint16_t* samples, uint16_t sample_capacity);
+
+/**
+ * Add one sample to the moving average.
+ *
+ * @param ma Pointer to moving_avg_t object.
+ * @param value The new sample to add.
+ * @return None
+ */
+void data_util_mov_avg_add_sample(moving_avg_t* ma, uint16_t value);
+
+/**
+ * Retrieve the current moving average.
+ *
+ * @param ma Pointer to moving_avg_t object.
+ * @return Current average, or 0 if no samples or NULL input.
+ * @return None
+ */
+uint16_t data_util_mov_avg_get(const moving_avg_t* ma);
+
+/**
+ * Clear accumulated samples and reset running sum.
+ *
+ * Keeps configuration and sample buffer intact.
+ *
+ * @param ma Pointer to moving_avg_t object.
+ * @return None
+ */
+void data_util_mov_avg_clear(moving_avg_t* ma);

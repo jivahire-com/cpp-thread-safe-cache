@@ -10,9 +10,10 @@
 /*------------- Includes -----------------*/
 #include "data_proc_tlm_cmpnt.h"
 
+#include "compute_metrics_i.h"
 #include "data_sampling_i.h" // internal APIs
 #include "die_2_die_exchange_i.h"
-#include "package_interface_i.h"
+#include "in_band_package_interface_i.h"
 
 #include <FpFwUtils.h>
 #include <in_band_tlm_cmpnt.h>
@@ -26,6 +27,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
+extern void oob_inf_init(void);
 
 void data_proc_tlm_cmpnt_init(uint8_t die_id)
 {
@@ -33,7 +35,11 @@ void data_proc_tlm_cmpnt_init(uint8_t die_id)
 
     data_smpl_init();
 
+    comp_metrics_init();
+
     package_inf_init();
+
+    oob_inf_init();
 }
 
 void data_proc_tlm_cmpnt_enable_disable_transition(bool enable)

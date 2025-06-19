@@ -14,11 +14,14 @@
 #include "data_sampling_i.h" // internal APIs
 #include "data_utilities_i.h"
 
+#include <exec_tlm_cmpnt.h>
 #include <fpfw_status.h>
 #include <stdint.h>
 #include <telemetry_package_defs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define MOVING_AVG_DURATION_MS (250)
+#define MOVING_AVG_NUM_SAMPLES (MOVING_AVG_DURATION_MS / DATA_AGGR_PKG_PERIOD_MS)
 
 /*-------------- Typedefs ----------------*/
 
@@ -102,6 +105,13 @@ typedef struct
     mma_u16_t max_soc_temp_dC;
 } computed_metrics_d2d_2_min_t;
 
+typedef struct
+{
+    uint16_t max_soc_temp_samples_dC[MOVING_AVG_NUM_SAMPLES];
+    moving_avg_t max_soc_temp_mov_avg_dC;
+} computed_metrics_oob_t;
+
+
 /*-- Declarations (Statics and globals) --*/
 
 extern computed_metrics_2_min_t computed_metrics_2_mins;
@@ -111,8 +121,16 @@ extern computed_metrics_24_hrs_t computed_metrics_24_hrs;
 // The primary die may clear with the computed_metrics_2_min_t values, but secondary die will clear after
 // copying to the die to die exchange
 extern computed_metrics_d2d_2_min_t computed_metrics_d2d_2mins;
+extern computed_metrics_oob_t computed_metrics_oob;
 
 /*--------- Function Prototypes ----------*/
+
+/**
+ * @brief Initialize the compute metrics module
+ * @param   None
+ * @return  None
+ */
+void comp_metrics_init(void);
 
 /**
  * @brief Comput metrics every sample period
@@ -294,7 +312,7 @@ void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id, int8_t thro
 
 /**
  * @brief This API used during cores's throttling for  overrun counter update.
- * @param[in] core_id 
+ * @param[in] core_id
  * @param[in] throttle_index  for which type of throttle counter need to be updated.
  */
 void comp_metrics_for_single_core_single_throttle_overrun_count_update(uint8_t core_id, uint8_t throttle_index);

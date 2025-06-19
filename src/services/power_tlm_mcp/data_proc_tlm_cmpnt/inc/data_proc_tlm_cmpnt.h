@@ -196,7 +196,7 @@ void data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(uint16_t dimm_module, p_pwr_
 
 /**
  * @brief Get the soc dimm power data for the specified dimm module.
- * 
+ *
  *
  * @param[in] dimm_module - The dimm module to get the dimm data for. 0 .. NUMBER_OF_DIMM_MODULES_PER_DIE-1
  * @param[out] dimm_data - Pointer to the structure to store the dimm power data in.
@@ -317,3 +317,11 @@ void data_proc_tlm_cmpnt_24hr_pkg_completed(void);
  * @return None
  */
 void data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core(void);
+
+/**
+ * @brief Get the out-of-band critical sensor maximum SoC temperature.
+ *
+ * @return The maximum SoC temperature in degrees deci-Celsius.
+ */
+uint16_t data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC(void);
+

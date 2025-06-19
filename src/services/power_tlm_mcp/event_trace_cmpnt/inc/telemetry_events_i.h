@@ -432,5 +432,16 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     FPFW_ET_LEVEL_ERROR,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, rack_priority_id))
 
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    73,
+                    MeanofSummationHighCount,
+                    FPFW_ET_LEVEL_WARNING,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, value))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    74,
+                    MovingAvgParamError,
+                    FPFW_ET_LEVEL_ERROR)
+
 /*--------- Function Prototypes ----------*/
 

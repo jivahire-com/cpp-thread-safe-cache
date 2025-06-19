@@ -13,7 +13,7 @@
 #include "data_proc_tlm_cmpnt.h"
 #include "data_sampling_i.h" // internal APIs
 #include "die_2_die_exchange_i.h"
-#include "package_interface_i.h"
+#include "in_band_package_interface_i.h"
 #include "telemetry_events_i.h"
 
 #include <dvfs.h>

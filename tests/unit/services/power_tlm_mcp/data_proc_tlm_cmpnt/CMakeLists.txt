@@ -7,6 +7,7 @@ set(SOURCES
     test_data_sampling.cpp
     test_data_utilities.cpp
     test_die_2_die_exch.cpp
+    test_oob_interface.cpp
     test_package_interface.cpp
 )
 

@@ -5,7 +5,11 @@
 /**
  * @file test_snsr_fifo_dbg.cpp
  * Test sensor fifo debug mode functionality
+ *
  */
+
+// @SSI_Unit_Test
+// @SSI_Unit_Test:telemetry
 
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h> // for assert_int_equal, Cmock...

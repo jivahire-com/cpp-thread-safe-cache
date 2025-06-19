@@ -3,7 +3,7 @@
 //
 
 /**
- * @file die_to_die_exchange_i.h
+ * @file die_2_die_exchange_i.h
  * This file contains the private interface for the data exchange
  */
 

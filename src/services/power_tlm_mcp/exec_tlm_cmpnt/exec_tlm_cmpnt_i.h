@@ -24,6 +24,7 @@
 #define PWR_PKG_TMR_EXPIRED        (1 << 3)
 #define EVERY_24HR_PKG_TMR_EXPIRED (1 << 4)
 #define NEW_INBAND_MTS_MESSAGE     (1 << 5)
+#define NEW_OUT_OF_BAND_PLDM_REQ   (1 << 6)
 
 /*-------------- Typedefs ----------------*/
 

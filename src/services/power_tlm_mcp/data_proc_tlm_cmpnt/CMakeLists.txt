@@ -7,7 +7,8 @@ add_library(${TARGET}
         data_sampling.c
         data_utilities.c
         die_2_die_exchange.c
-        package_interface.c
+        in_band_package_interface.c
+        out_of_band_interface.c
 )
 
 target_include_directories(${TARGET}

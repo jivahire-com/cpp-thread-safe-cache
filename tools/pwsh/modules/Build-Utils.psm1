@@ -122,31 +122,43 @@ Function Install-AzCli()
 {
     $Message = "AzureCLI"
     $Message = $Message + (" " + "." * (70 - $Message.Length) + " ")
-    Write-Host  $Message -NoNewLine -ForegroundColor Cyan
+    Write-Host $Message -NoNewLine -ForegroundColor Cyan
 
     $ExpectedPath = "${env:ProgramFiles(x86)}\Microsoft SDKs\Azure\CLI2\wbin\"
 
     if (-not (Test-Path $ExpectedPath))
     {
-        Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\AzureCLI.msi
-        $Return = Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet /passive' -PassThru
-        rm .\AzureCLI.msi
+        # Uninstall existing Azure CLI if present
+        Get-WmiObject -Class Win32_Product |
+            Where-Object { $_.Name -match "Azure CLI" } |
+            ForEach-Object {
+                $_.Uninstall() | Out-Null
+            }
 
-        if ($Return.ExitCode -ne 0)
-        {
-            Write-Host "Failed" -ForegroundColor Red
-            throw "Unable to install AzCli"
-        }
+        # Install version 2.73.0
+        Invoke-WebRequest -Uri "https://azcliprod.blob.core.windows.net/msi/azure-cli-2.73.0.msi" -OutFile ".\AzureCLI.msi"
+        $Return = Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet /norestart' -PassThru
+        Remove-Item .\AzureCLI.msi
 
-        if (-not (Test-Path $ExpectedPath))
+        if ($Return.ExitCode -ne 0 -or -not (Test-Path $ExpectedPath))
         {
             Write-Host "Failed" -ForegroundColor Red
             throw "Unable to install AzCli"
         }
 
         $env:Path += ";$ExpectedPath"
-
         Write-Host "Done" -ForegroundColor Green
+        # Show installed version
+        try {
+            $azVersion = az --version | Select-String "azure-cli" | ForEach-Object {
+                ($_ -split '\s+')[1]
+            }
+            Write-Host "Installed Azure CLI Version: $azVersion" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "Unable to determine Azure CLI version." -ForegroundColor Red
+        }
+
     }
     else
     {
@@ -156,7 +168,7 @@ Function Install-AzCli()
         }
         catch
         {
-            Write-Host "Azure Devops install failed" -ForegroundColor Yellow
+            Write-Host "Azure DevOps extension install failed" -ForegroundColor Yellow
             Write-Host $Return
         }
         Write-Host "Exists" -ForegroundColor Green

@@ -29,10 +29,7 @@ jobs:
   timeoutInMinutes: ${{ parameters.TimeoutInMinutes }}
   displayName: SVP Pythia Tests
   pool: 
-    name: 1pfw-kingsgate-windows
-    demands: 
-      - ImageOverride -equals 1pfw-win2022vNext
-      - ImageVersionOverride -equals 144.0.0
+    name: ${{ parameters.Pool }}
     isCustom: true
     type: windows
 

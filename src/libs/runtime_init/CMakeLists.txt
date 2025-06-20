@@ -225,9 +225,7 @@ target_compile_definitions(
     PRIVATE
         UART_BASE_ADDR=SCP_TOP_SCP_UART_ADDRESS
         UART_IRQ=HW_INT_SCP_UART_INT
-        # Wait for SVP to fix https://dev.azure.com/AzureCSI/1P-SoC-Modeling/_workitems/edit/2651274
-        #VUART_BASE_ADDR=SCP_TOP_DBGR_SCP_UART_ADDRESS
-        VUART_BASE_ADDR=SCP_TOP_DBGR_MCP_UART_ADDRESS
+        VUART_BASE_ADDR=SCP_TOP_DBGR_SCP_UART_ADDRESS
         VUART_IRQ=HW_INT_SCP_VUART_INT
 )
 
@@ -406,9 +404,7 @@ target_compile_definitions(
     PRIVATE
         UART_BASE_ADDR=MCP_TOP_MCP_UART_ADDRESS
         UART_IRQ=HW_INT_MCP_UART_INT
-        # Wait for SVP to fix https://dev.azure.com/AzureCSI/1P-SoC-Modeling/_workitems/edit/2651274
-        #VUART_BASE_ADDR=MCP_TOP_DBGR_MCP_UART_ADDRESS
-        VUART_BASE_ADDR=MCP_TOP_DBGR_SCP_UART_ADDRESS
+        VUART_BASE_ADDR=MCP_TOP_DBGR_MCP_UART_ADDRESS
         VUART_IRQ=HW_INT_MCP_VUART_INT
 )
 

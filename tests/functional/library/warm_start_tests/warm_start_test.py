@@ -130,7 +130,35 @@ class warm_start_test(EchoFallsBaseTest):
             self.dut.teardown()
             time.sleep(30)
             return False
-               
+
+        self.log.info("Wait for SCP to come up after subsys reset . . .")
+        try:
+            self.log.info("Waiting for Heartbeat Msg")
+            core_com_channel.read_until(key="SOS boot completed", timeout_seconds=1800)
+        except Exception as e:
+            self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
+            self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
+            self.dut.teardown()
+            time.sleep(30)
+            return False
+
+        self.log.info("Submitting MSCP shutdown command . . .") 
+        command="warm_start wsreset shutdown"
+        core_com_channel.write_line(write_string=command)
+
+        try:
+            core_com_channel.read_until(key="Disabling PPU handshaking", timeout_seconds=300)
+            self.log.info("Mailbox cmd sent to HSP requesting MSCP shutdown.. ")
+            core_com_channel.read_until(key="Shutdown completion", timeout_seconds=300)
+            self.log.info("SCP shutdown request sent successfully - waiting on HSP to reset SCP")
+        except Exception as e:
+            self.log.error(f"Error reading SCP UART: {e}")
+            core_com_channel.close()
+            self.test_notify(step="wsreset shutdown command failed", msg="Test Fail", _is_error=True)
+            self.dut.teardown()
+            time.sleep(30)
+            return False
+        
         core_com_channel.close()
         self.test_notify(step="Warm start CLI tests done", msg="Test Done", _is_error=False)
         self.dut.teardown()

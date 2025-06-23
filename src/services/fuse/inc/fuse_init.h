@@ -43,13 +43,14 @@ typedef enum {
     FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT_BRIDGE_INIT = 3
 } fuse_distribution_stage_t;
 
+typedef void (*ap_core_die_cfg_cb)(void* context);
 
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void fuse_init(fpfw_icc_base_ctx_t* icc_base_ctx);
+void fuse_init(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, fpfw_icc_base_ctx_t* icc_d2dmbx_ctx);
 /**
  * Read fuse API
  *
@@ -86,6 +87,7 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage);
  *
  */
 int platform_read_for_fuse(const uintptr_t , const uint64_t , const uint32_t );
+
 /**
  * write fuse disable core to AP API
  *
@@ -97,6 +99,14 @@ int platform_read_for_fuse(const uintptr_t , const uint64_t , const uint32_t );
  *
  */
 int write_fuse_info_to_ap();
+
+/**
+ * Register a callback to be called when the remote die configuration is received on die 0
+ *
+ * @param[in] cb - Cb that completes the STARTUP_DIE_CONFIG_INIT boot stage request
+ * @param[in] ctx - Context for the callback
+ */
+void register_remote_die_cfg_completion_cb(ap_core_die_cfg_cb cb, void* ctx);
 
 /**
  * Print fuse artifacts version used in the FW code

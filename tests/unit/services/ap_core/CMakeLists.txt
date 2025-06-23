@@ -81,6 +81,7 @@ mock_target(${TARGET}
     pik_clock_power_transition
 
     write_fuse_info_to_ap
+    register_remote_die_cfg_completion_cb
 
     system_info_is_hsp_present
 

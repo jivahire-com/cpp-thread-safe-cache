@@ -36,7 +36,7 @@
 //
 
 #if defined(SCP_RUNTIME_INIT)
-FPFW_INIT_COMPONENT(fuse_pre_mesh, FPFW_INIT_DEPENDENCIES("icc_hspmbx"))
+FPFW_INIT_COMPONENT(fuse_pre_mesh, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "icc_d2dmbx"))
 {
     fpfw_icc_base_ctx_t* icc_hspmbx_ctx = fpfw_init_get_handle("icc_hspmbx");
     if (icc_hspmbx_ctx == NULL)
@@ -46,7 +46,15 @@ FPFW_INIT_COMPONENT(fuse_pre_mesh, FPFW_INIT_DEPENDENCIES("icc_hspmbx"))
         return (fpfw_init_result_t){FPFW_INIT_STATUS_E_CYCLE, NULL};
     }
 
-    fuse_init(icc_hspmbx_ctx);
+    fpfw_icc_base_ctx_t* icc_d2dmbx_ctx = fpfw_init_get_handle("icc_d2dmbx");
+    if (icc_d2dmbx_ctx == NULL)
+    {
+        FPFW_DBGPRINT_ERROR(FUSE_NAME "icc_d2dmbx is null\n");
+        BUG_CHECK(FPFW_INIT_STATUS_E_CYCLE, icc_hspmbx_ctx, "icc_d2dmbx");
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_E_CYCLE, NULL};
+    }
+
+    fuse_init(icc_hspmbx_ctx, icc_d2dmbx_ctx);
     fuse_print_version();
     platform_fuse_override();
 

@@ -55,6 +55,12 @@ static ap_core_service_context_t s_ap_core_ctx = {0};
 static fpfw_icc_base_ctx_t* s_icc_base_ctx = NULL;
 
 /*------------- Functions ----------------*/
+void ap_core_die_config_handover_completion(void* p_request)
+{
+    APCORE_LOG_INFO("Dual die cfg handover complete\n");
+    DfwkAsyncRequestComplete(&((pssi_startup_notification_request_t)p_request)->header);
+}
+
 static void ap_core_die_config_handover(pssi_startup_notification_request_t p_request)
 {
 
@@ -71,8 +77,8 @@ static void ap_core_die_config_handover(pssi_startup_notification_request_t p_re
         result = sds_block_write(SDS_DIE_CONFIG_STRUCT_ID, &die_config_val, SDS_DIE_CONFIG_SIZE);
         BUG_ASSERT(result == KNG_SUCCESS);
     }
+    register_remote_die_cfg_completion_cb(ap_core_die_config_handover_completion, p_request);
     write_fuse_info_to_ap();
-    DfwkAsyncRequestComplete(&p_request->header);
 }
 
 // dispatcher function to handle set of rvbaraddr

@@ -77,9 +77,13 @@ void __wrap_fuse_feature_enable(const bool enable)
 TEST_FUNCTION(test_fuse_pre_mesh, NULL, NULL)
 {
     fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(1);
+    fpfw_icc_base_ctx_t* dummy_icc_d2dmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(2);
     // Mock ICC context initialization
     expect_string(__wrap_fpfw_init_get_handle, name, "icc_hspmbx");
     will_return(__wrap_fpfw_init_get_handle, dummy_icc_hspmbx_ctx);
+    expect_function_call(__wrap_fpfw_init_get_handle);
+    expect_string(__wrap_fpfw_init_get_handle, name, "icc_d2dmbx");
+    will_return(__wrap_fpfw_init_get_handle, dummy_icc_d2dmbx_ctx);
     expect_function_call(__wrap_fpfw_init_get_handle);
     expect_value(__wrap_fuse_init, icc_base_ctx, dummy_icc_hspmbx_ctx);
     will_return(__wrap_platform_fuse_override, CLI_SUCCESS);

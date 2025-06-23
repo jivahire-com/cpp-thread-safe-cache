@@ -82,3 +82,4 @@ void ap_core_util_get_fuse_enabled_cores(corebits_t* p_enabled_cores);
 void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t fw_id);
 void ap_core_request_mcp_load(fpfw_icc_base_ctx_t* icc_hspmbx_ctx);
 pap_core_asynchronous_request_t ap_core_get_outstanding_request();
+void ap_core_die_config_handover_completion(void* p_request);

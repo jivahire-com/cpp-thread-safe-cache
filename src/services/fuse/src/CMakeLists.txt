@@ -11,6 +11,7 @@ add_library(${TARGET}
 target_include_directories(${TARGET}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/../inc
+        ${REPO_ROOT_DIR}/src/libs/icc_platform_defines
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
 )

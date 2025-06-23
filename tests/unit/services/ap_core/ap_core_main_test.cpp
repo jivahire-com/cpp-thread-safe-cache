@@ -25,6 +25,7 @@ extern "C" {
 #include <corebits.h>
 #include <fpfw_timer.h>           // for fpfw_timer_create, fpfw_timer_enable...
 #include <fpfw_timer_port.h>      // for _fpfw_timer_t
+#include <fuse_init.h>            // for write_fuse_info_to_ap
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
 #define __NO_CSR_TYPEDEFS__
 #include <mcp_top_regs.h>
@@ -214,6 +215,12 @@ bool __wrap_config_get_kmp_safe_state()
 int __wrap_write_fuse_info_to_ap()
 {
     return mock_type(int);
+}
+
+void __wrap_register_remote_die_cfg_completion_cb(ap_core_die_cfg_cb cb, void* ctx)
+{
+    check_expected_ptr(cb);
+    check_expected_ptr(ctx);
 }
 
 uint32_t __wrap_mmio_read32(volatile uint32_t* addr)
@@ -452,9 +459,10 @@ AP_CORE_TEST(dispatch_die_config, setup, NULL)
     expect_value(__wrap_sds_block_write, sds_module_id, SDS_DIE_CONFIG_STRUCT_ID);
     expect_memory(__wrap_sds_block_write, buffer, &test_die_config, sizeof(test_die_config));
     expect_value(__wrap_sds_block_write, buffer_size, sizeof(test_die_config));
-    will_return(__wrap_write_fuse_info_to_ap, 0);
 
-    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+    expect_value(__wrap_register_remote_die_cfg_completion_cb, cb, ap_core_die_config_handover_completion);
+    expect_value(__wrap_register_remote_die_cfg_completion_cb, ctx, &test_request.header);
+    will_return(__wrap_write_fuse_info_to_ap, 0);
 
     assert_non_null(s_dispatch_routine);
     s_dispatch_routine(&test_request.header, &test_device.header);

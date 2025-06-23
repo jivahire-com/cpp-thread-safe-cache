@@ -30,11 +30,18 @@ coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
 mock_target(${TARGET}
+   idsw_get_die_id
    read_core_defect_fuses
-   config_get_core_disable_value_0_31
-   config_get_core_disable_value_32_63
-   config_get_core_disable_value_64_95
-   config_get_core_spare_en_0_31
-   config_get_core_spare_en_32_63
-   config_get_core_spare_en_64_95
+   config_get_die0_core_disable_value_0_31
+   config_get_die0_core_disable_value_32_63
+   config_get_die0_core_disable_value_64_95
+   config_get_die1_core_disable_value_0_31
+   config_get_die1_core_disable_value_32_63
+   config_get_die1_core_disable_value_64_95
+   config_get_die0_core_spare_en_0_31
+   config_get_die0_core_spare_en_32_63
+   config_get_die0_core_spare_en_64_95
+   config_get_die1_core_spare_en_0_31
+   config_get_die1_core_spare_en_32_63
+   config_get_die1_core_spare_en_64_95
 ) 

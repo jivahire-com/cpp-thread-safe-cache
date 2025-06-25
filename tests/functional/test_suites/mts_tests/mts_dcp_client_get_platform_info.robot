@@ -36,7 +36,7 @@ Test Case - [DCP] CLIENT_GET_PLATFORM_INFORMATION Test
     ...
     ...    Test Steps:
 
-    [Tags]    ssi    ssi_mts_event_get_platform_info    mts    mts_client    TEST_CASE_ID:2572935
+    [Tags]    ssi    ssi_mts_event_get_platform_info    mts    mts_client    TEST_CASE_ID:2572937
 
     ${test_lib} =    Get Library Instance    mts_dcp_test_lib
     Log To Console    \nExecuting client_get_platform_information Test...

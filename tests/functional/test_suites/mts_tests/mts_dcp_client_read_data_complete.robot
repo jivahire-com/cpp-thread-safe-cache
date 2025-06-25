@@ -3,7 +3,7 @@
 *** Settings ***
 Documentation    Verifies Message Transfer System (MTS) Data Collection Protocol (DCP) functionality.
 ...
-...    This robot test verifies [DCP] CLIENT_GET_CAPABILITIES functionality by:
+...    This robot test verifies [DCP] Test CLIENT_READ_DATA and CLIENT_READ_DATA_COMPLETE functionality by:
 ...    1. Testing the DCP commands
 ...    2. Verifying command responses
 ...    3. Validating proper setup and teardown of test environment
@@ -31,15 +31,15 @@ Teardown Test Environment
     Run Keyword And Ignore Error    Call Method    ${test_lib}    teardown
 
 *** Test Cases ***
-Test Case - [DCP] CLIENT_GET_CAPABILITIES Test
-    [Documentation]    Verifies MTS CLIENT_GET_CAPABILITIES command functionality.
+Test Case - [DCP] CLIENT_READ_DATA and CLIENT_READ_DATA_COMPLETE Test
+    [Documentation]    Verifies MTS CLIENT_READ_DATA and CLIENT_READ_DATA_COMPLETE command functionality.
     ...
     ...    Test Steps:
 
-    [Tags]    ssi    ssi_mts_event_get_platform_info    mts    mts_client    TEST_CASE_ID:2572717
+    [Tags]    ssi    ssi_mts_event_get_platform_info    mts    mts_client    TEST_CASE_ID:2650957
 
     ${test_lib} =    Get Library Instance    mts_dcp_test_lib
-    Log To Console    \nExecuting client_get_capabilities Test...
-    ${test_result} =    Call Method    ${test_lib}    test_client_get_capabilities
+    Log To Console    \nExecuting client_read_data and client_read_data_complete Test...
+    ${test_result} =    Call Method    ${test_lib}    test_client_read_data_polling
     Should be True    ${test_result}
     

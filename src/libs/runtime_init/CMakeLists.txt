@@ -273,6 +273,8 @@ add_library(${TARGET}
         mcp_mpu_init.c
         mts_init.c
         nvic_init.c
+        pdr_repo_init.c
+        pdr_dummy_init.c
         power_fuse_init.c
         pwr_tlm_svc_mcp_init.c
         sensor_fifo_init.c
@@ -303,10 +305,13 @@ target_link_libraries(
         fwlib.platform.dfwkhost.threadx
         fwlib.service.cli
         fwlib.service.i3c.cli
+        fwlib.service.i3c_hw.cli
         fwlib.service.mctp.cli
+        fwlib.service.pldm.cli
         fwlib.service.iccBase
         fwlib.service.icc_dispatcher
         fwlib.service.mts.cli
+        fwlib.service.pldm
         ms::build_data
         ms::driver::dma::mcp
         ms::driver::gpio
@@ -334,6 +339,7 @@ target_link_libraries(
         ms::lib::interface::in_band_telemetry_ddr
         ms::lib::interface::mhu_icc_payloads
         ms::lib::mcp_interrupts
+        ms::lib::pldm_pdr
         ms::lib::power_fuse
         ms::lib::register_headers
         ms::lib::stdio_textio
@@ -368,6 +374,7 @@ target_link_libraries(
         silibs::sdm_command_desc
         silibs::sensor_ram_bridge
         silibs::spi_bridge
+        extern.libpldm
 )
 
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)

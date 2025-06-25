@@ -20,9 +20,11 @@ extern "C" {
 #include <fpfw_init.h>
 #include <fpfw_mctp.h>             // for fpfw_mctp_config, fpfw_mctp
 #include <fpfw_mctp_i3c_binding.h> // for fpfw_mctp_i3c_binding_ctx, fpfw_mctp_i3c_binding_config
+#include <fpfw_pldm_service.h>     // for pldm_service_config_t, pldm_platform_event_ready_notification
 #include <idsw.h>
 #include <idsw_kng.h> // for KNG_DIE_ID
 #include <mcp_exp_top_regs.h>
+#include <pldm_pdr.h> // for pldm_pdr_timestamp_t
 #include <silibs_mcp_top_regs.h>
 #define __NO_CSR_TYPEDEFS__
 #include <scp_top_regs.h>
@@ -36,6 +38,8 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_i3c_target;
 extern fpfw_init_component_t _fpfw_component_mctp;
+extern fpfw_init_component_t _fpfw_component_pdr_repo;
+extern fpfw_init_component_t _fpfw_component_pldm;
 
 /*------------- Functions ----------------*/
 /* Mocks */
@@ -85,6 +89,27 @@ fpfw_status_t __wrap_fpfw_mctp_init(fpfw_mctp* mctp_ctx, fpfw_mctp_config* confi
     assert_non_null(mctp_ctx);
     assert_non_null(config);
     return mock_type(fpfw_status_t);
+}
+
+pldm_pdr_timestamp_t __wrap_pldm_pdr_get_timestamp(void)
+{
+    pldm_pdr_timestamp_t timestamp;
+    timestamp.as_raw = {{0}};
+    function_called();
+    return timestamp;
+}
+
+fpfw_status_t __wrap_fpfw_pldm_service_init(pldm_service_config_t* config)
+{
+    assert_non_null(config);
+    function_called();
+    return mock_type(fpfw_status_t);
+}
+
+void __wrap_fpfw_pldm_service_register_platform_event_ready_notification(pldm_platform_event_ready_notification* notification)
+{
+    assert_non_null(notification);
+    function_called();
 }
 
 /* Tests */
@@ -169,4 +194,53 @@ TEST_FUNCTION(test_mctp_init_fail_mctp_init, NULL, NULL)
     assert_null(result.associated_handle);
 }
 
-} /* extern C */
+TEST_FUNCTION(test_pldm_init, NULL, NULL)
+{
+    // Mock the timestamp function
+    expect_function_call(__wrap_pldm_pdr_get_timestamp);
+
+    // Mock dependency handles
+    static fpfw_mctp mock_mctp_ctx;
+    static void* mock_pdr_repo;
+
+    // First call is for mctp handle, second is for pdr_repo handle
+    will_return(__wrap_fpfw_init_get_handle, &mock_mctp_ctx);
+    will_return(__wrap_fpfw_init_get_handle, &mock_pdr_repo);
+
+    // Mock successful PLDM service initialization
+    will_return(__wrap_fpfw_pldm_service_init, FPFW_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_pldm_service_init);
+
+    // Expect platform event notification registration
+    expect_function_call(__wrap_fpfw_pldm_service_register_platform_event_ready_notification);
+
+    fpfw_init_result_t result = _fpfw_component_pldm.init_fn();
+
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+    assert_null(result.associated_handle); // PLDM init returns NULL handle
+}
+
+TEST_FUNCTION(test_pldm_init_fail_service_init, NULL, NULL)
+{
+    // Mock the timestamp function
+    expect_function_call(__wrap_pldm_pdr_get_timestamp);
+
+    // Mock dependency handles
+    static fpfw_mctp mock_mctp_ctx;
+    static void* mock_pdr_repo;
+
+    // First call is for mctp handle, second is for pdr_repo handle
+    will_return(__wrap_fpfw_init_get_handle, &mock_mctp_ctx);
+    will_return(__wrap_fpfw_init_get_handle, &mock_pdr_repo);
+
+    // Mock failed PLDM service initialization
+    will_return(__wrap_fpfw_pldm_service_init, FPFW_STATUS_FAIL);
+    expect_function_call(__wrap_fpfw_pldm_service_init);
+
+    fpfw_init_result_t result = _fpfw_component_pldm.init_fn();
+
+    assert_true(result.status != FPFW_STATUS_SUCCESS);
+    assert_null(result.associated_handle);
+}
+
+} /* extern "C" */

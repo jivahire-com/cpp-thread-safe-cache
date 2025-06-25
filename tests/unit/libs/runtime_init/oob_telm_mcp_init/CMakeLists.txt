@@ -13,6 +13,7 @@ target_link_libraries(${TARGET}
         fwlib.driver.dw_i3c
         fwlib.lib.mctp
         fwlib.lib.mctp_i3c_binding
+        fwlib.service.pldm
         fwlib.lib.init
         fwlib.lib.status
         fwlib.platform.dfwkhost.threadx
@@ -21,6 +22,7 @@ target_link_libraries(${TARGET}
         ms::lib::interrupts
         ms::lib::register_headers
         ms::lib::mcp_interrupts
+        ms::lib::pldm_pdr
         ms::lib::threadx
         silibs::idsw
         silibs::idsw_kng
@@ -48,6 +50,9 @@ mock_target(${TARGET}
     fpfw_dw_i3c_initialize
     fpfw_dw_i3c_interface_initialize
     fpfw_mctp_i3c_binding_init
+    fpfw_pldm_service_init
+    fpfw_pldm_service_register_platform_event_ready_notification
+    pldm_pdr_get_timestamp
     fpfw_mctp_init
     idsw_get_die_id   
 )

@@ -13,10 +13,13 @@
 #include <fpfw_init.h>             // for FPFW_INIT_COMPONENT, FPFW_INIT_D...
 #include <fpfw_mctp.h>             // for fpfw_mctp_config, fpfw_mctp_i3c_binding_config
 #include <fpfw_mctp_i3c_binding.h> // for fpfw_mctp_i3c_binding_ctx
+#include <fpfw_pldm_service.h>     // for pldm_service_config_t, pldm_platform_event_ready_notification
 #include <idsw_kng.h>
 #include <interrupts.h>
 #include <mcp_exp_top_regs.h>
+#include <pldm_pdr.h> // for pldm_pdr_timestamp_t
 #include <silibs_mcp_top_regs.h>
+
 /*------------- Typedefs -----------------*/
 
 /**
@@ -50,13 +53,16 @@ FPFW_INIT_COMPONENT(i3c_target, FPFW_INIT_DEPENDENCIES("hw_ver", "nvic", "dfwk",
 
     static fpfw_dw_i3c_device_t s_i3c_target_device;
     static fpfw_dw_i3c_config_t s_i3c_target_config = {
+        // 0x1070000U + 0x3d0000U = 0x1440000U
         .dw_i3c_config.register_base_addr = MCP_TOP_MCP_EXP_ADDRESS + MSCP_EXP_TOP_I3C_2_ADDRESS,
         .dw_i3c_config.address = TARGET_ADDRESS,
         .dw_i3c_config.irq_num = HW_INT_I3C_CTRL_2_INT,
         .dw_i3c_config.index = 2,
         .dw_i3c_config.slv_mfg_id = MSFT_MFR_ID,
         .dw_i3c_config.slv_pid = MSFT_TARGET_PID,
-        .dw_i3c_config.slv_dcr = 0xCC, // 0xC3 = 0b11000011 [i3c device node] 0xCC = 0b11001100 [mctp device node]
+        .dw_i3c_config.slv_dcr = 0xCC,
+        // 0xC3 = 0b11000011 [i3c device node]
+        // 0xCC = 0b11001100 [mctp device node]
         .dw_i3c_config.slv_rx_resp_buf = (uintptr_t)s_target_response_buf,
         .dw_i3c_config.slv_rx_resp_buf_len = sizeof(s_target_response_buf),
         .dw_i3c_config.slv_rx_data_buf = (uintptr_t)s_target_rx_data_buf,
@@ -119,4 +125,70 @@ FPFW_INIT_COMPONENT(mctp, FPFW_INIT_DEPENDENCIES("i3c_target"))
     }
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &mctp_context};
+}
+
+#define PLDM_NUM_INCOMING_MSGS 7
+#define PLDM_INCOMING_MSG_SIZE 0x100
+#define PLDM_NUM_OUTGOING_MSGS 7
+#define PLDM_OUTGOING_MSG_SIZE 0x400
+
+static void platform_event_ready_callback(uint16_t event_id, void* context)
+{
+    uint16_t* last_event_id = (uint16_t*)context;
+    *last_event_id = event_id;
+    DEBUG_PRINT("PLDM platform event ready callback called with event ID: %u\n", event_id);
+}
+
+#define SYS_THREAD_STACK_SIZE_PLDM_SERVICE ((TX_MINIMUM_STACK) + ((2) * (FPFW_KB)))
+#define SYS_THREAD_TIME_SLICE_PLDM_SERVICE (TX_NO_TIME_SLICE)
+#define MCP_THREAD_PRIORITY_PLDM_SERVICE   (8)
+
+FPFW_INIT_COMPONENT(pldm, FPFW_INIT_DEPENDENCIES("mctp", "pdr_repo"))
+{
+    static uint16_t last_event_id = 0;
+    static pldm_platform_event_ready_notification pe_ready_notification = {
+        .CallBack = platform_event_ready_callback,
+        .context = &last_event_id,
+    };
+
+    static uint8_t pldm_service_stack[SYS_THREAD_STACK_SIZE_PLDM_SERVICE];
+
+    static uint8_t pldm_rx_msgs[PLDM_MESSAGE_BUFFER_SIZE(PLDM_INCOMING_MSG_SIZE, PLDM_NUM_INCOMING_MSGS)]
+        __attribute__((aligned(8)));
+    static uint8_t pldm_tx_msgs[PLDM_MESSAGE_BUFFER_SIZE(PLDM_OUTGOING_MSG_SIZE, PLDM_NUM_OUTGOING_MSGS)]
+        __attribute__((aligned(8)));
+
+    static pldm_service_config_t pldmConfig = {.thread_config = {.p_stack = (void*)pldm_service_stack,
+                                                                 .stack_size = SYS_THREAD_STACK_SIZE_PLDM_SERVICE,
+                                                                 .priority = MCP_THREAD_PRIORITY_PLDM_SERVICE,
+                                                                 .should_yield = true,
+                                                                 .time_slice_option = SYS_THREAD_TIME_SLICE_PLDM_SERVICE},
+
+                                               .incoming_messages = (void*)pldm_rx_msgs,
+                                               .incoming_msg_payload_size = PLDM_INCOMING_MSG_SIZE,
+                                               .num_incoming_messages = PLDM_NUM_INCOMING_MSGS,
+
+                                               .outgoing_messages = (void*)pldm_tx_msgs,
+                                               .outgoing_msg_payload_size = PLDM_OUTGOING_MSG_SIZE,
+                                               .num_outgoing_messages = PLDM_NUM_OUTGOING_MSGS,
+                                               .max_platform_event_size = PLDM_OUTGOING_MSG_SIZE};
+
+    pldmConfig.mctp_ctx = (fpfw_mctp*)fpfw_init_get_handle("mctp");
+    pldmConfig.pdr_repo = (void*)fpfw_init_get_handle("pdr_repo");
+
+    pldm_pdr_timestamp_t time = pldm_pdr_get_timestamp();
+    pldmConfig.pdr_config.repo_timestamp = time.as_raw;
+    pldmConfig.pdr_config.oam_timestamp = time.as_raw;
+
+    pldmConfig.pdr_config.UUID = (fpfw_pldm_uuid_t){0};
+
+    fpfw_status_t status = fpfw_pldm_service_init(&pldmConfig);
+    if (FPFW_STATUS_FAILED(status))
+    {
+        return (fpfw_init_result_t){status, NULL};
+    }
+
+    fpfw_pldm_service_register_platform_event_ready_notification(&pe_ready_notification);
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

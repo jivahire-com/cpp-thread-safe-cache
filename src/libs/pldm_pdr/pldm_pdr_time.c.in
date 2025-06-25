@@ -1,0 +1,38 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+/**
+ * @file pldm_pdr.h
+ * @brief Provides a method to access a build timestamp formatted for pldm service.
+ * @link
+ *  https://www.dmtf.org/sites/default/files/standards/documents/DSP0267_1.3.0.pdf
+ */
+
+/*----------- Nested includes ------------*/
+
+#include <pldm_pdr.h>
+#include <stdint.h>
+
+#define TIME_FORMAT (0)
+
+/*-------------- Typedefs ----------------*/
+
+
+/*-- Declarations (Statics and globals) --*/
+
+static pldm_pdr_timestamp_t s_timestamp = {
+    .Seconds = @BUILD_SECONDS@,
+    .Minutes = @BUILD_MINUTES@,
+    .Hours = @BUILD_HOURS@,
+    .DayOfTheMonth = @BUILD_DAY@,
+    .Month = @BUILD_MONTH@,
+    .Year = @BUILD_YEAR@,
+    .Format = TIME_FORMAT,
+    .Reserved = {0}
+};
+
+pldm_pdr_timestamp_t pldm_pdr_get_timestamp(void)
+{
+    return s_timestamp;
+}

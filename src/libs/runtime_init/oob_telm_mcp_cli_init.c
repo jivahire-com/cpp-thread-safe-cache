@@ -10,8 +10,10 @@
 #include <DfwkThreadXHost.h>
 #include <fpfw_dw_i3c.h>    // for fpfw_dw_i3c_config_t, fpfw_dw_i3c_device_t
 #include <fpfw_i3c_cli.h>   // for fpfw_dw_i3c_interface_initialize
+#include <fpfw_i3c_hw_cli.h>
 #include <fpfw_init.h>      // for FPFW_INIT_COMPONENT, FPFW_INIT_D...
 #include <fpfw_mctp_cli.h>
+#include <fpfw_pldm_cli.h>
 #include <idsw_kng.h>
 #include <interrupts.h>
 #include <mcp_exp_top_regs.h>
@@ -23,17 +25,9 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-/**
- * @brief Initialize I3C target CLI
- *  
- */
+
 FPFW_INIT_COMPONENT(i3c_target_cli, FPFW_INIT_DEPENDENCIES("cli", "i3c_target"))
 {
-    if (idsw_get_die_id() == DIE_1)
-    { // DIE_1 I3C_2 not in use.
-        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
-    }
-
     fpfw_dw_i3c_device_t* i3c_target_device = (fpfw_dw_i3c_device_t*)fpfw_init_get_handle("i3c_target");
 
     static fpfw_dw_i3c_interface_t i3c_target_interface;
@@ -45,8 +39,20 @@ FPFW_INIT_COMPONENT(i3c_target_cli, FPFW_INIT_DEPENDENCIES("cli", "i3c_target"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
+FPFW_INIT_COMPONENT(i3c_hw_cli, FPFW_INIT_DEPENDENCIES("cli", "i3c_target"))
+{
+    fpfw_dw_i3c_device_t* i3c_target_device = (fpfw_dw_i3c_device_t*)fpfw_init_get_handle("i3c_target");
+    static fpfw_i3c_hw_cli_config i3c_hw_cli_config = {
+        .verbose_mode = true,
+        .default_dcr_value = 0xCC
+    };
+    i3c_hw_cli_config.dw_i3c_handle = &i3c_target_device->dw_i3c_device,
+    fpfw_i3c_hw_cli_initialize(&i3c_hw_cli_config);
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
 #define NUM_MCTP_INSTANCES 1
-FPFW_INIT_COMPONENT(mctp_cli, FPFW_INIT_DEPENDENCIES("mctp"))
+FPFW_INIT_COMPONENT(mctp_cli, FPFW_INIT_DEPENDENCIES("cli", "mctp"))
 {
     // Get the MCTP context from the mctp init component.
     fpfw_mctp* mctp_context = (fpfw_mctp*)fpfw_init_get_handle("mctp");
@@ -61,6 +67,13 @@ FPFW_INIT_COMPONENT(mctp_cli, FPFW_INIT_DEPENDENCIES("mctp"))
 
     // Initialize MCTP CLI context
     fpfw_mctp_cli_initialize(mctp_cli_config, NUM_MCTP_INSTANCES);
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
+FPFW_INIT_COMPONENT(pldm_cli, FPFW_INIT_DEPENDENCIES("cli", "pldm"))
+{
+    fpfw_pldm_cli_initialize();
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

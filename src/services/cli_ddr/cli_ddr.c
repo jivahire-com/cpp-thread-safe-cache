@@ -11,19 +11,13 @@
 #include <FpFwCli.h>        // for FPFW_CLI_STATUS, CLI_SUCCESS, FpFwCliReg...
 #include <FpFwLinkedList.h> // for NULL_LIST_ENTRY
 #include <FpFwUtils.h>      // for FPFW_UNUSED, FPFW_ARRAY_SIZE
-#include <atu_api.h>
-#include <bug_check.h>
-#include <cli_ddr.h>
 #include <ddr_err_inj.h>
 #include <ddr_manager_i3c.h>
 #include <ddr_memory_map.h>
-#include <ddrss.h>
 #include <ddrss_lib.h>
 #include <idsw_kng.h> // for idsw_get_die_id
-#include <mscp_exp_rmss_memory_map.h>
-#include <stdio.h> // for printf
+#include <stdio.h>    // for printf
 #include <stdlib.h>
-#include <variable_services.h> // for var_service_shared_mem_t, var_serv...
 
 #ifdef UNIT_TEST
     #define STATIC
@@ -59,12 +53,8 @@ STATIC FPFW_CLI_STATUS rh_drfm_sram_parity_error_injection(int Argc, const char*
 
 STATIC FPFW_CLI_STATUS read_dimm_pmic_power(int Argc, const char** Argv);
 STATIC FPFW_CLI_STATUS read_dimm_temp_sensor(int Argc, const char** Argv);
-STATIC FPFW_CLI_STATUS set_ppr_uefi_var(int Argc, const char** Argv);
-STATIC void ppr_set_variable_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size);
 
 /*-- Declarations (Statics and globals) --*/
-static var_service_req_ctx_t ppr_set_var_ctx = {};
-static PPR_RUN_TYPE ppr_run_type = NO_ACTION;
 
 // TODO Silibs to provide APIs with arguments list
 // https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/584974
@@ -86,7 +76,6 @@ STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     {NULL_LIST_ENTRY, "ddr_i3c", "read_dimm_pmic_power", read_dimm_pmic_power, "Read PMIC power", "Usage: read_dimm_pmic_power <dimm_idx>"},
     {NULL_LIST_ENTRY, "ddr_i3c", "read_dimm_temp_sensor", read_dimm_temp_sensor, "Read DIMM temperature sensor", "Usage: read_dimm_temp_sensor <dimm_idx> <channel_idx>"},
-    {NULL_LIST_ENTRY, "ddr_ppr", "ppr_run", set_ppr_uefi_var, "Run DDR PPR on next boot\nPPR Type: 0=hPPR, 1=mock hPPR, 2=mPPR, 3=mock mPPR", "Usage: ppr_run <ppr enum value >"},
 };
 
 // ecc_ce_err (mc) (phy_add) {error bit}
@@ -504,69 +493,6 @@ static bool is_mc_are_belong_to_die(uint32_t mc)
     }
 
     return true;
-}
-
-STATIC FPFW_CLI_STATUS set_ppr_uefi_var(int Argc, const char** Argv)
-{
-    if (Argc != 2)
-    {
-        FpFwCliPrint("[DDRPPR] Invalid # of arguments");
-        return CLI_ERROR;
-    }
-
-    uint8_t temp_ppr_run_type = (uint8_t)(strtoul(Argv[1], NULL, 0));
-    if (temp_ppr_run_type >= 4)
-    {
-        FpFwCliPrint("[DDRPPR] Invalid PPR_RUN type. Must be between 0 and 3.\n");
-        return CLI_ERROR;
-    }
-    ppr_run_type = temp_ppr_run_type;
-    FpFwCliPrint("[DDRPPR] Setting PPR_RUN type = %d\n", ppr_run_type);
-
-    KNG_DIE_ID die_id = idsw_get_die_id();
-    var_service_shared_mem_t mem_ctx = {0};
-    if (die_id == DIE_0)
-    {
-        mem_ctx.payload_base = (uintptr_t)SCP_EXP_SCP_DDRSS_PPR_VARIABLE_SERVICE_PAYLOAD_BASE;
-        mem_ctx.max_payload_size = SCP_EXP_SCP_DDRSS_PPR_VARIABLE_SERVICE_PAYLOAD_SIZE;
-    }
-    else
-    {
-        mem_ctx.payload_base = (uintptr_t)MSCP_ATU_AP_WINDOW_VAR_SVC_PPR_PAYLOAD_BASE;
-        mem_ctx.max_payload_size = MSCP_ATU_AP_WINDOW_VAR_SVC_PPR_PAYLOAD_SIZE;
-    }
-    variable_service_initialize_ctx(&ppr_set_var_ctx, &mem_ctx);
-
-    uint16_t ppr_var_name[] = PPR_RUN_CFG_VAR_NAME;
-    static const guid_t ppr_var_guid[] = {PPR_RUN_CFG_VAR_GUID};
-    var_service_req_params_t req_params = {0};
-    req_params.variable_name_ptr = (uint16_t*)ppr_var_name;
-    req_params.variable_name_size = sizeof(ppr_var_name);
-    FpFwCliPrint("[DDRPPR] variable_name_size = %d\n", req_params.variable_name_size);
-    memcpy(&req_params.vendor_namespace_guid, ppr_var_guid, sizeof(req_params.vendor_namespace_guid));
-    req_params.data = (uint8_t*)&ppr_run_type;
-    req_params.data_size = sizeof(ppr_run_type);
-    req_params.attributes.as_uint32 = EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS;
-
-    int status = variable_service_async_set_variable(&ppr_set_var_ctx, &req_params, ppr_set_variable_cb, NULL);
-    if (status != SILIBS_SUCCESS)
-    {
-        FpFwCliPrint("[DDRPPR] Failed to start async variable set: 0x%x\n", status);
-        return CLI_ERROR;
-    }
-
-    return CLI_SUCCESS;
-}
-
-void ppr_set_variable_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size)
-{
-    FPFW_UNUSED(context);
-    BUG_ASSERT(var_serv_ctx != NULL);   // NOLINT
-    BUG_ASSERT(data_start_ptr != NULL); // NOLINT
-    BUG_ASSERT(data_size > 0);
-
-    variable_service_unlock_get_var_ctx(&ppr_set_var_ctx);
-    FpFwCliPrint("[DDRPPR] variable async set completed successfully.\n");
 }
 
 void cli_ddr_init(void)

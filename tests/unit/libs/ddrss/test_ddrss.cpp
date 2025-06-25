@@ -27,8 +27,6 @@ extern "C" {
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
-int32_t __real_get_ppr_run_var(var_service_shared_mem_t* mem_ctx, PPR_RUN_TYPE* ppr_type_req);
-void __real_ppr_type_reset_variable(var_service_shared_mem_t* mem_ctx);
 
 /*-- Declarations (Statics and globals) --*/
 static const int HW_INT_DDRSS0(106);
@@ -103,7 +101,6 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_partial_or_skip, setup, teardown)
 
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_1);
-    will_return(__wrap_get_ppr_run_var, SILIBS_SUCCESS);
 
     prod_ddrss_lib_init(test_die);
 
@@ -166,7 +163,6 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga, setup, teardown)
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
-    will_return(__wrap_get_ppr_run_var, SILIBS_SUCCESS);
 
     prod_ddrss_lib_init(test_die);
 }
@@ -224,7 +220,6 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga_warm_start, setup, teardown)
     expect_value(__wrap_ddrss_init, cfg_knobs->reset_reason, DDRSS_SYS_RESET_WARM);
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
-    will_return(__wrap_get_ppr_run_var, SILIBS_SUCCESS);
 
     prod_ddrss_lib_init(test_die);
     g_should_check_reset_reason_cfg_knobs = false;
@@ -270,7 +265,6 @@ TEST_FUNCTION(test_ddrss_lib_init_emu, setup, teardown)
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_1);
-    will_return(__wrap_get_ppr_run_var, SILIBS_SUCCESS);
 
     prod_ddrss_lib_init(test_die);
 }
@@ -312,7 +306,6 @@ TEST_FUNCTION(test_ddrss_lib_init_rvp, setup, teardown)
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
-    will_return(__wrap_get_ppr_run_var, SILIBS_SUCCESS);
 
     prod_ddrss_lib_init(test_die);
 }
@@ -649,55 +642,5 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_pending, setup, teardown)
 
     result = prod_ddrss_interrupt_pending((void*)&ddrss_num[4]);
     assert_int_equal(result, true);
-}
-
-TEST_FUNCTION(test_get_ppr_run_var, setup, teardown)
-{
-    PPR_RUN_TYPE ppr_type_req = RUN_hPPR;
-    var_service_shared_mem_t mem_ctx = {0};
-    int32_t result;
-    will_return(__wrap_variable_service_initialize_ctx, 0);
-    will_return(__wrap_variable_service_sync_get_variable, 0);
-    result = __real_get_ppr_run_var(&mem_ctx, &ppr_type_req);
-    assert_int_equal(result, SILIBS_SUCCESS);
-
-    will_return(__wrap_variable_service_initialize_ctx, 0);
-    __real_ppr_type_reset_variable(&mem_ctx);
-
-    ppr_type_req = RUN_hPPR;
-    will_return(__wrap_variable_service_initialize_ctx, 0);
-    will_return(__wrap_variable_service_sync_get_variable, 1);
-    result = __real_get_ppr_run_var(&mem_ctx, &ppr_type_req);
-    assert_int_equal(result, SILIBS_E_SUPPORT);
-
-    ppr_type_req = MOCK_hPPR;
-    will_return(__wrap_variable_service_initialize_ctx, 0);
-    will_return(__wrap_variable_service_sync_get_variable, 0);
-    result = __real_get_ppr_run_var(&mem_ctx, &ppr_type_req);
-    assert_int_equal(result, SILIBS_SUCCESS);
-
-    ppr_type_req = RUN_mPPR;
-    will_return(__wrap_variable_service_initialize_ctx, 0);
-    will_return(__wrap_variable_service_sync_get_variable, 0);
-    result = __real_get_ppr_run_var(&mem_ctx, &ppr_type_req);
-    assert_int_equal(result, SILIBS_SUCCESS);
-
-    ppr_type_req = MOCK_mPPR;
-    will_return(__wrap_variable_service_initialize_ctx, 0);
-    will_return(__wrap_variable_service_sync_get_variable, 0);
-    result = __real_get_ppr_run_var(&mem_ctx, &ppr_type_req);
-    assert_int_equal(result, SILIBS_SUCCESS);
-
-    ppr_type_req = NO_ACTION;
-    will_return(__wrap_variable_service_initialize_ctx, 0);
-    will_return(__wrap_variable_service_sync_get_variable, 0);
-    result = __real_get_ppr_run_var(&mem_ctx, &ppr_type_req);
-    assert_int_equal(result, SILIBS_SUCCESS);
-
-    ppr_type_req = static_cast<PPR_RUN_TYPE>(0xF);
-    will_return(__wrap_variable_service_initialize_ctx, 0);
-    will_return(__wrap_variable_service_sync_get_variable, 0);
-    result = __real_get_ppr_run_var(&mem_ctx, &ppr_type_req);
-    assert_int_equal(result, SILIBS_E_PARAM);
 }
 }

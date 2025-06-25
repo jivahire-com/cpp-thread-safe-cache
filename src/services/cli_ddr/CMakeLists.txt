@@ -11,7 +11,6 @@ target_include_directories(
     ${TARGET}
         PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}/inc
-            ${REPO_ROOT_DIR}/.externs/repo/silibs/soc_fw_shared/include
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -24,7 +23,6 @@ target_link_libraries(
         ms::lib::ddrss_init
         PRIVATE
         fwlib.service.cli
-        ms::lib::variable_services
         silibs::idsw
         silibs::platform
         silibs::kng_silibs_platform

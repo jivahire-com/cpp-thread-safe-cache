@@ -77,10 +77,4 @@ mock_target(${TARGET}
     ras_arm_agent_probe
     ras_print_record
     system_info_is_warm_start
-    get_ppr_run_var
-    ppr_type_reset_variable
-    variable_service_initialize_ctx
-    variable_service_unlock_get_var_ctx
-    variable_service_sync_get_variable
-    variable_service_sync_set_variable
 )

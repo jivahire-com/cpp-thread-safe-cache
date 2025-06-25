@@ -12,7 +12,6 @@
 
 #include <FPFwInterrupts.h>
 #include <FpFwAssert.h>
-#include <atu_api.h>
 #include <atu_lib.h>
 #include <cmn800.h>
 #include <cmsdk_wd.h> // for wdog_cmsdk_apb_disable
@@ -26,14 +25,12 @@
 #include <interrupts.h>
 #include <memory_map/ddrss_reserved_regions.h>
 #include <memory_map/mscp_exp_rmss_memory_map.h>
-#include <mscp_exp_rmss_memory_map.h>
 #include <pcr_ddrss.h>
 #include <silibs_ap_top_regs.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <system_info.h>
-#include <variable_services.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define TEXT_DDR_SPEED_GRADE_LOCKED "DDRSS - ddr_speed_grade locked to %s for %s\n"
@@ -45,8 +42,6 @@
 /*-- Declarations (Statics and globals) --*/
 static uint32_t ddrss_interrupt_id[6] = {0, 1, 2, 3, 4, 5};
 ddrss_phy_training_dq_margin_t ddrss_phy_training_dq_margin = {0};
-static var_service_req_ctx_t ppr_get_var_svc_ctx = {};
-static var_service_req_ctx_t ppr_set_var_svc_ctx = {};
 
 // Refer to N.2.5 Memory Error Section of UEFI Specification, Version 2.8 Errata C
 static const guid_t STD_MEMORY_ERROR_DOMAIN_GUID = {0xB7E2A3C9, 0x4F1D, 0x4569, {0xA3, 0x9D, 0xD6, 0x5B, 0xAF, 0x10, 0x92, 0xEE}};
@@ -438,31 +433,6 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         wdog_cmsdk_apb_lock_unlock(true); // Lock counter
     }
 
-    // Run DDR PPR var sevice
-    PPR_RUN_TYPE ppr_type_req = NO_ACTION;
-    var_service_shared_mem_t mem_ctx = {0};
-    if (die_num == DIE_0)
-    {
-        mem_ctx.payload_base = (uintptr_t)SCP_EXP_SCP_DDRSS_PPR_VARIABLE_SERVICE_PAYLOAD_BASE;
-        mem_ctx.max_payload_size = SCP_EXP_SCP_DDRSS_PPR_VARIABLE_SERVICE_PAYLOAD_SIZE;
-    }
-    else
-    {
-        mem_ctx.payload_base = (uintptr_t)MSCP_ATU_AP_WINDOW_VAR_SVC_PPR_PAYLOAD_BASE;
-        mem_ctx.max_payload_size = MSCP_ATU_AP_WINDOW_VAR_SVC_PPR_PAYLOAD_SIZE;
-    }
-
-    int32_t status = get_ppr_run_var(&mem_ctx, &ppr_type_req);
-    if (status != SILIBS_SUCCESS)
-    {
-        printf("[DDRPPR] Skip PPR on ddrss init\n");
-    }
-    // reset ppr variable
-    if (ppr_type_req != NO_ACTION)
-    {
-        ppr_type_reset_variable(&mem_ctx);
-    }
-
     // Set up per-lane margin buffer
     ddrss_cfgs.dq_lane_margin_base = (uint64_t)(uintptr_t)&ddrss_phy_training_dq_margin;
 
@@ -501,78 +471,4 @@ void prod_ddrss_pcr_init(KNG_DIE_ID die_num)
 ddrss_phy_training_dq_margin_t* ddrss_get_training_margin_base(void)
 {
     return &ddrss_phy_training_dq_margin;
-}
-
-int32_t get_ppr_run_var(var_service_shared_mem_t* mem_ctx, PPR_RUN_TYPE* ppr_type_req)
-{
-    uint16_t ppr_var_name[] = PPR_RUN_CFG_VAR_NAME;
-    static const guid_t ppr_var_guid[] = {PPR_RUN_CFG_VAR_GUID};
-
-    memset((void*)mem_ctx->payload_base, 0, mem_ctx->max_payload_size);
-    //! initialize variable services ctx for the region
-    variable_service_initialize_ctx(&ppr_get_var_svc_ctx, mem_ctx);
-
-    var_service_req_params_t ppr_get_var_req = {0};
-    ppr_get_var_req.variable_name_ptr = (uint16_t*)ppr_var_name;
-    ppr_get_var_req.variable_name_size = sizeof(ppr_var_name);
-    memcpy(&ppr_get_var_req.vendor_namespace_guid, ppr_var_guid, sizeof(ppr_get_var_req.vendor_namespace_guid));
-    ppr_get_var_req.data_size = sizeof(*ppr_type_req);
-    ppr_get_var_req.data = (uint8_t*)ppr_type_req;
-    ppr_get_var_req.attributes_size = 0;
-
-    int status = variable_service_sync_get_variable(&ppr_get_var_svc_ctx, &ppr_get_var_req);
-    if (status != SILIBS_SUCCESS)
-    {
-        printf("[DDRPPR] GetVariable failed with status 0x%x\n", status);
-        return SILIBS_E_SUPPORT;
-    }
-    variable_service_unlock_get_var_ctx(&ppr_get_var_svc_ctx);
-    printf("[DDRPPR] GetVariable succeeded\n");
-    switch (*ppr_type_req)
-    {
-    case RUN_hPPR:
-        printf("[DDRPPR] PPR_RUN type = hPPR\n");
-        break;
-    case MOCK_hPPR:
-        printf("[DDRPPR] PPR_RUN type = MOCK_HPPR\n");
-        break;
-    case RUN_mPPR:
-        printf("[DDRPPR] PPR_RUN type = mPPR\n");
-        break;
-    case MOCK_mPPR:
-        printf("[DDRPPR] PPR_RUN type = MOCK_MPPR\n");
-        break;
-    case NO_ACTION:
-        printf("[DDRPPR] PPR_RUN type = NO_ACTION\n");
-        break;
-    default:
-        printf("[DDRPPR] Invalid PPR_RUN type\n ");
-        return SILIBS_E_PARAM;
-        break;
-    }
-    return SILIBS_SUCCESS;
-}
-
-void ppr_type_reset_variable(var_service_shared_mem_t* mem_ctx)
-{
-    uint16_t ppr_var_name[] = PPR_RUN_CFG_VAR_NAME;
-    static const guid_t ppr_var_guid[] = {PPR_RUN_CFG_VAR_GUID};
-
-    memset((void*)mem_ctx->payload_base, 0, mem_ctx->max_payload_size);
-    //! initialize variable services ctx for the region
-    variable_service_initialize_ctx(&ppr_set_var_svc_ctx, mem_ctx);
-
-    PPR_RUN_TYPE no_action = NO_ACTION;
-
-    var_service_req_params_t ppr_set_var_req = {0};
-    ppr_set_var_req.variable_name_ptr = (uint16_t*)ppr_var_name;
-    ppr_set_var_req.variable_name_size = sizeof(ppr_var_name);
-    memcpy(&ppr_set_var_req.vendor_namespace_guid, ppr_var_guid, sizeof(ppr_set_var_req.vendor_namespace_guid));
-    ppr_set_var_req.data_size = sizeof(no_action);
-    ppr_set_var_req.data = (uint8_t*)&no_action;
-    ppr_set_var_req.attributes.as_uint32 =
-        EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS;
-
-    printf("[DDRPPR] SetVariable PPR_RUN type = NO_ACTION\n");
-    variable_service_sync_set_variable(&ppr_set_var_svc_ctx, &ppr_set_var_req);
 }

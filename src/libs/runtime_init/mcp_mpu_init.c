@@ -12,7 +12,7 @@
 #include <silibs_mcp_top_regs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define PWR_TLM_D2D_SIZE (512)
+#define IS_ALIGNED_4K(addr) (((uintptr_t)(addr) & 0xFFF) == 0)
 
 /*------------- Typedefs -----------------*/
 
@@ -21,6 +21,13 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
+
+// NOTE:  these asserts are for memory regions 13 and 14 below.
+
+static_assert(IS_ALIGNED_4K(MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_SDS_AP_BASE)),
+              "mpu region not 4k aligned");
+
+static_assert(((D0_ARSM_SDS_AP_BASE + 0x2000 - 1) < D0_ARSM_TFA_RP_DATA_BASE), "overlap TFA");
 
 FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
 {
@@ -218,14 +225,17 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
                                  ARM_MPU_REGION_SIZE_1MB),
         },
         /**
-         * MPU Region 13 - Power Telemetry ARSM Die to Die
-         *                currently D0_ARSM_PWR_TLM_MCP_2_MCP_BASE does not start with a region alignment so rounding up
+         * MPU Region 13 - SDS, the first few ICC buffers. Allows unaligned access
+         *                There is 8K of ARSM used by MSCP starting with the SDS address.
+         *                However the start address is not 8K aligned which needs to match the
+         *                region size, so two 4k mpu regions are used. This is the first 4k
+         *                Note static asserts above.
          *                Normal Noncacheable
          *                Priviledged R/W
          */
         {
             .RBAR = ARM_MPU_RBAR(13, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR +
-                                   ARSM_GET_REGION_OFFSET(ALIGN_UP(D0_ARSM_PWR_TLM_MCP_2_MCP_BASE, PWR_TLM_D2D_SIZE))), // NOLINT
+                                   ARSM_GET_REGION_OFFSET(D0_ARSM_SDS_AP_BASE)), // NOLINT
             .RASR = ARM_MPU_RASR(DISABLE_EXEC,
                                  ARM_MPU_AP_PRIV,
                                  TYPE_EXT_1,
@@ -233,7 +243,28 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
                                  NON_CACHEABLE,
                                  NON_BUFFERABLE,
                                  DISABLE_SUBREGION,
-                                 ARM_MPU_REGION_SIZE_512B),
+                                 ARM_MPU_REGION_SIZE_4KB),
+        },
+         /**
+         * MPU Region 14 - Remaining ICC buffers and Power Telemetry die to die exchange. Allows unaligned access
+         *                There is 8K of ARSM used by MSCP starting with the SDS address.
+         *                However the start address is not 8K aligned which needs to match the
+         *                region size, so two 4k mpu regions are used. This is the second 4k.
+         *                Note static asserts above.
+         *                Normal Noncacheable
+         *                Priviledged R/W
+         */
+        {
+            .RBAR = ARM_MPU_RBAR(14, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR +
+                                   ARSM_GET_REGION_OFFSET(D0_ARSM_SDS_AP_BASE + 0x1000)), // NOLINT
+            .RASR = ARM_MPU_RASR(DISABLE_EXEC,
+                                 ARM_MPU_AP_PRIV,
+                                 TYPE_EXT_1,
+                                 SHAREABLE,
+                                 NON_CACHEABLE,
+                                 NON_BUFFERABLE,
+                                 DISABLE_SUBREGION,
+                                 ARM_MPU_REGION_SIZE_4KB),
         },
     };
     // clang-format on

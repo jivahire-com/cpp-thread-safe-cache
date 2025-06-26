@@ -18,7 +18,6 @@
 #include <telemetry_events_i.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define PWR_TLM_D2D_SIZE (512)
 
 //                                                  Ascii of 'P''T'
 #define PWR_TLM_SEM_KEY(die_id) (((die_id) << 16) | (0x5054 & 0xFFFF))
@@ -51,15 +50,12 @@ static uint8_t test_array[D0_ARSM_PWR_TLM_MCP_2_MCP_SIZE];
     #define MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR (test_array)
 #endif
 
-// also need mpu alignment for D0_ARSM_PWR_TLM_MCP_2_MCP_BASE,  it is of size 1k, but not on a 1k boundary.
-// so round up to a 512 byte boundary as a workaround, coordinate with mpu configuration in mcp_mpu_init.c
-static die_2_die_exch_t* const s_die_2_die_exch =
-    (die_2_die_exch_t*)(uintptr_t)((MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR +
-                                    ARSM_GET_REGION_OFFSET(ALIGN_UP(D0_ARSM_PWR_TLM_MCP_2_MCP_BASE, PWR_TLM_D2D_SIZE))));
+static die_2_die_exch_t* const s_die_2_die_exch = (die_2_die_exch_t*)(uintptr_t)((
+    MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_PWR_TLM_MCP_2_MCP_BASE)));
 
 /*------------- Functions ----------------*/
 
-static_assert(sizeof(die_2_die_exch_t) <= PWR_TLM_D2D_SIZE /*D0_ARSM_PWR_TLM_MCP_2_MCP_SIZE*/,
+static_assert(sizeof(die_2_die_exch_t) <= D0_ARSM_PWR_TLM_MCP_2_MCP_SIZE,
               "die_2_die_exch_t size exceeds reserved memory region");
 
 /**
@@ -124,7 +120,7 @@ void die_2_die_exch_init(uint8_t die_id)
 
         d2d_exch_wait_for_sem();
 
-        zero_fortified_memory(s_die_2_die_exch, PWR_TLM_D2D_SIZE); // sizeof(die_2_die_exch_t));
+        zero_fortified_memory(s_die_2_die_exch, sizeof(die_2_die_exch_t));
 
         d2d_exch_release_sem();
     }

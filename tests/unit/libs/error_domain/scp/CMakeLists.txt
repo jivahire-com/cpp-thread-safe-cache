@@ -80,4 +80,5 @@ mock_target(${TARGET}
     mmu_fault
     idhw_is_single_die_boot_en
     get_rng_config
+    idsw_get_platform_sdv
 )

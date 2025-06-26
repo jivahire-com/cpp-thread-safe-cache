@@ -131,7 +131,7 @@ int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
     return 0;
 }
 
-void __wrap_get_shared_sram_ecc_atu_entry(scp_arsm_ram_type_t type, atu_map_entry_t* atu_entry)
+void __wrap_get_arsm_ecc_atu_entry(scp_arsm_ram_type_t type, atu_map_entry_t* atu_entry)
 {
     FPFW_UNUSED(type);
     static atu_map_entry_t dummy_entry = {};
@@ -166,7 +166,7 @@ void test_exception_handler_params(int exception, uint32_t error_code)
     // Set up expectations for check_shared_sram_ecc_ras_fault()
     for (int i = SCP_S_ARSM_RAM; i < SCP_ARSM_RAM_COUNT; i++)
     {
-        expect_function_call(__wrap_get_shared_sram_ecc_atu_entry);
+        expect_function_call(__wrap_get_arsm_ecc_atu_entry);
         expect_function_call(__wrap_atu_map);
         expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
         will_return(__wrap_mmio_read32, 0); // Simulate no error status
@@ -250,7 +250,7 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
 
 #ifdef SCP_RUNTIME_INIT
     // Set up expectations for check_shared_sram_ecc_ras_fault()
-    expect_function_call(__wrap_get_shared_sram_ecc_atu_entry);
+    expect_function_call(__wrap_get_arsm_ecc_atu_entry);
     expect_function_call(__wrap_atu_map);
     expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
     will_return(__wrap_mmio_read32,
@@ -291,7 +291,7 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
 
 #ifdef SCP_RUNTIME_INIT
     // Set up expectations for check_shared_sram_ecc_ras_fault()
-    expect_function_call(__wrap_get_shared_sram_ecc_atu_entry);
+    expect_function_call(__wrap_get_arsm_ecc_atu_entry);
     expect_function_call(__wrap_atu_map);
     expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
     will_return(__wrap_mmio_read32,

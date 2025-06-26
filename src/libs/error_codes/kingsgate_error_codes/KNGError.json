@@ -433,6 +433,16 @@
           "Name": "KNG_PEX_RNG_ERR",
           "Value": 25,
           "Description": "Error in Crypto PEX block"
+        },
+        {
+          "Name": "KNG_HM_RSM_UE",
+          "Value": 26,
+          "Description": "Uncorrectable Error in Shared SRAM, RSM"
+        },
+        {
+          "Name": "KNG_HM_RSM_CE",
+          "Value": 27,
+          "Description": "Correctable Error in Shared SRAM, RSM"
         }
       ]
     }

@@ -164,7 +164,8 @@ static FPFW_CLI_STATUS hm_inject_err_cli(int argc, const char** argv)
     input_einj_payload.status_operation.value = (uint16_t)strtol(argv[4], NULL, 0);
     input_einj_payload.param_type.error_type = (uint16_t)strtol(argv[5], NULL, 0);
     input_einj_payload.param_type.severity = (uint16_t)strtol(argv[6], NULL, 0);
-    input_einj_payload.param_type.address_64 = (uint64_t*)(uintptr_t)strtoull(argv[7], NULL, 0);
+    // ADO 2721417 - we will prevent using address_64 until new silibs is available
+    // input_einj_payload.param_type.address_64 = (uint64_t*)(uintptr_t)strtoull(argv[7], NULL, 0);
     input_einj_payload.value_type.error_values = (uint64_t)strtoull(argv[8], NULL, 0);
 
     print_einj_payload(&input_einj_payload);

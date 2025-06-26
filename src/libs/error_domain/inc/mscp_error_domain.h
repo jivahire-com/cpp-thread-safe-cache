@@ -26,6 +26,13 @@ typedef enum
     SCP_RL_ARSM_RAM,
     SCP_ARSM_RAM_COUNT
 } scp_arsm_ram_type_t;
+
+typedef enum
+{
+    SCP_S_RSM_RAM = 0,
+    SCP_NS_RSM_RAM,
+    SCP_RSM_RAM_COUNT
+} scp_rsm_ram_type_t;
 #endif
 
 /*-- Declarations (Statics and globals) --*/
@@ -42,9 +49,14 @@ void register_scp_error_domain();
 void register_pex_error_domain();
 
 /**
- * @brief Get Shared ATU entry for Shared SRAM ECC Registers.
+ * @brief Get Shared ATU entry for Shared SRAM, ARSM, ECC Registers.
  */
-void get_shared_sram_ecc_atu_entry(scp_arsm_ram_type_t type, atu_map_entry_t* atu_entry);
+void get_arsm_ecc_atu_entry(scp_arsm_ram_type_t type, atu_map_entry_t* atu_entry);
+
+/**
+ * @brief Get Shared ATU entry for Shared SRAM, RSM, ECC Registers.
+ */
+void get_rsm_ecc_atu_entry(scp_rsm_ram_type_t type, atu_map_entry_t* atu_entry);
 
 /**
  * @brief Get IRQ number for SCP ECC ISR based on the type of ARSM RAM.

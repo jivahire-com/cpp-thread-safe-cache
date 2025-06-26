@@ -137,7 +137,7 @@ static bool check_shared_sram_ecc_ras_fault(void)
     for (scp_arsm_ram_type_t i = SCP_S_ARSM_RAM; i < SCP_ARSM_RAM_COUNT; i++)
     {
         atu_map_entry_t atu_entry;
-        get_shared_sram_ecc_atu_entry(i, &atu_entry);
+        get_arsm_ecc_atu_entry(i, &atu_entry);
         atu_map(ATU_ID_MSCP, &atu_entry);
         uint32_t err_status =
             MMIO_READ32(atu_entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);

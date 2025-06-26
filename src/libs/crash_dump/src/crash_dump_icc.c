@@ -11,6 +11,7 @@
 #include "crash_dump_icc.h"
 
 #include "crash_dump_accel.h"
+#include "crash_dump_pldm.h"
 #include "crash_dump_status.h"
 
 #include <FpFwUtils.h>            // for FPFW_UNUSED
@@ -364,7 +365,5 @@ void crash_dump_transfer_full_dump_to_bmc()
         // HSP will transfer mini dump to BMC
         return;
     }
-
-    // ToDo: Die0 MCP will Transfer full dump to BMC
-    // https://azurecsi.visualstudio.com/Dev/_workitems/edit/1484995
+    crash_dump_pldm_transfer_dump();
 }

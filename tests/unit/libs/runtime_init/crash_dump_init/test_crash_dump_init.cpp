@@ -21,6 +21,7 @@ extern "C" {
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <kng_error.h>
+#include <system_info.h>
 #if defined(SCP_RUNTIME_INIT)
     #include <startup_shutdown.h>
 #endif
@@ -35,6 +36,10 @@ extern bool in_memory(uintptr_t start_addr, uintptr_t end_addr);
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_cd_init;
 extern fpfw_init_component_t _fpfw_component_cd_mhu_loc;
+extern fpfw_init_component_t _fpfw_component_cd_hsp;
+#if defined(MCP_RUNTIME_INIT)
+extern fpfw_init_component_t _fpfw_component_cd_pldm;
+#endif
 #if defined(SCP_RUNTIME_INIT)
 extern fpfw_init_component_t _fpfw_component_cd_hsp;
 extern fpfw_init_component_t _fpfw_component_cd_mhu_rem;
@@ -134,7 +139,16 @@ bool __wrap_accel_is_isolation_enabled(ACCEL_ID accel_type)
 
     return mock_type(bool);
 }
-
+#if defined(MCP_RUNTIME_INIT)
+bool __wrap_system_info_is_warm_start()
+{
+    return mock_type(bool);
+}
+void __wrap_crash_dump_transfer_full_dump_to_bmc()
+{
+    function_called();
+}
+#endif
 #if defined(SCP_RUNTIME_INIT)
 void __wrap_crash_dump_device_initialize(pcrash_dump_device_t device, PDFWK_SCHEDULE schedule)
 {
@@ -275,7 +289,20 @@ TEST_FUNCTION(test_cd_hsp, nullptr, nullptr)
     // Call API under test
     _fpfw_component_cd_hsp.init_fn();
 }
+#endif
+#if defined(MCP_RUNTIME_INIT)
+TEST_FUNCTION(test_cd_bmc, nullptr, nullptr)
+{
+    will_return_always(__wrap_system_info_is_warm_start, true);
+    expect_function_call(__wrap_crash_dump_transfer_full_dump_to_bmc);
+    // Check dependencies
+    assert_string_equal("cd_init", _fpfw_component_cd_pldm.children[0]);
+    assert_string_equal("icc_hspmbx", _fpfw_component_cd_pldm.children[1]);
 
+    _fpfw_component_cd_pldm.init_fn();
+}
+#endif
+#if defined(SCP_RUNTIME_INIT)
 TEST_FUNCTION(test_cd_drv, nullptr, nullptr)
 {
     expect_function_call(__wrap_crash_dump_device_initialize);

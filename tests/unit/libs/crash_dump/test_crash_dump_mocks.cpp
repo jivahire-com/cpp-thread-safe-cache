@@ -57,6 +57,7 @@ void crash_dump_wait_forever()
 
 crash_dump_context_t* __wrap_crash_dump_context()
 {
+    printf(" __wrap_crash_dump_context called\n");
     return mock_type(crash_dump_context_t*);
 }
 

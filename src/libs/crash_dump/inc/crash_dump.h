@@ -352,6 +352,12 @@ void crash_dump_register_accel_ext_mmio(ACCEL_ID accel_type);
  */
 bool crash_dump_is_accel_cd_complete(ACCEL_ID accel_type);
 
+/**
+ * @brief Transfers full crash dump to BMC.
+ * 
+ */
+void crash_dump_transfer_full_dump_to_bmc();
+
 #ifdef __cplusplus
 }
 #endif

@@ -10,6 +10,7 @@
 /*--------------- Includes ---------------*/
 #include "crash_dump_gpio.h" // for cd_gpio_assert_cd_in_progress
 #include "crash_dump_icc.h"
+#include "crash_dump_pldm.h"
 #include "crash_dump_status.h" // for crash_dump_update_core_state
 
 #include <FpFwUtils.h>         // for FPFW_UNUSED

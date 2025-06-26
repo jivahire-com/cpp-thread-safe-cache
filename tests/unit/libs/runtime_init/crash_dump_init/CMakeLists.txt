@@ -30,6 +30,7 @@ target_link_libraries(${TARGET}
         ms::lib::accelerator_ip
         ms::lib::crash_dump
         ms::lib::exception_handler::scp
+        ms::lib::system_info
         silibs::icc_mhu
         silibs::idhw
         silibs::idsw
@@ -99,6 +100,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::cmsis::interface
         ms::lib::crash_dump
+        ms::lib::system_info
         ms::lib::exception_handler::mcp
         silibs::icc_mhu
         silibs::idhw
@@ -131,4 +133,6 @@ mock_target(${TARGET}
     idsw_get_die_id
     idsw_get_cpu_type
     idsw_get_platform_sdv
+    system_info_is_warm_start
+    crash_dump_transfer_full_dump_to_bmc
 )

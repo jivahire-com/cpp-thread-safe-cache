@@ -21,7 +21,9 @@ target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.assert
     fwlib.lib.crashDump
+    fwlib.lib.pldm.protocol
     fwlib.service.cli
+    fwlib.service.pldm
     ms::build_data
     ms::client_interface::startup_shutdown
     ms::cmocka::testrunner
@@ -32,6 +34,7 @@ target_link_libraries(${TARGET}
     ms::lib::threadx
     ms::mocks::silibs_platform
     silibs::idhw
+    silibs::ddrss
     silibs::kng_silibs_platform
     silibs::gpio
     silibs_platform
@@ -98,4 +101,8 @@ mock_target(${TARGET}
     idhw_is_single_die_boot_en
     idsw_get_platform_sdv
     crash_dump_get_is_dump_complete
+    crash_dump_is_dump_complete
+    crash_dump_get_dump_size
+    fpfw_pldm_service_raise_platform_event
+    FPFwCDMemcpyGlobalToLocal
 )

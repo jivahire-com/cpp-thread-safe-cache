@@ -22,7 +22,7 @@
 #include <silibs_mcp_exp_top_regs.h> // for MCP_EXP_TOP_SCF_RAM_ADDRESS, MCP_EXP_TOP_SCF_RAM_SIZE
 #include <silibs_mcp_top_regs.h>     // for MCP_TOP_MCP_EXP_ADDRESS
 #include <stddef.h>                  // for NULL
-
+#include <system_info.h>
 /*-- Symbolic Constant Macros (defines) --*/
 #define MCP_SCF_RAM_ADDRESS  (MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_SCF_RAM_ADDRESS)
 #define MCP_EXP_RAM0_ADDRESS (MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM0_ADDRESS)
@@ -111,5 +111,13 @@ FPFW_INIT_COMPONENT(cd_mhu_loc, FPFW_INIT_DEPENDENCIES("cd_init", "icc_mscp2mscp
 {
     crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_MHU_LOCAL, fpfw_init_get_handle("icc_mscp2mscp"));
 
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+FPFW_INIT_COMPONENT(cd_pldm, FPFW_INIT_DEPENDENCIES("cd_init", "icc_hspmbx"))
+{
+    if (system_info_is_warm_start())
+    {
+        crash_dump_transfer_full_dump_to_bmc();
+    }
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

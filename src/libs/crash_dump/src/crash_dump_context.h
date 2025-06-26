@@ -22,3 +22,4 @@
  * @param ctx Pointer to crash dump context.
  */
 void set_crash_dump_context(crash_dump_context_t* ctx);
+

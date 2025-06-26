@@ -14,6 +14,7 @@ set (SOURCES
         src/crash_dump_payload_core.c
         src/crash_dump_payload_msft.c
         src/crash_dump_payload_threadx.c
+        src/crash_dump_pldm.c
         src/crash_dump_status.c
         src/crash_dump_events.c
 )
@@ -42,7 +43,9 @@ target_link_libraries(${TARGET}
         fwlib.lib.assert
         fwlib.lib.cfg_mgr
         fwlib.lib.init
+        fwlib.lib.pldm.protocol
         fwlib.service.cli
+        fwlib.service.pldm
         kng.lib.hsp_firmware_headers
         ms::build_data
         ms::client_interface::startup_shutdown

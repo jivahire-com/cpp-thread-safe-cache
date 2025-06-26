@@ -551,8 +551,15 @@ static void print_power_config_vf(power_fuse_data_t* fuses)
 
 static void print_power_config_vft(power_runconfig_t* p_runconfig)
 {
-    FPFW_UNUSED(p_runconfig);
-    FpFwCliPrint("TBD :Dump VFT curveset from runconfig\n");
+    FpFwCliPrint("\nMax Voltage for Every Curve\n");
+    FpFwCliPrint("%-12s %-10s %-16s %-14s\n", "CurveSet", "PState", "Frequency (MHz)", "LDO_DAC To Voltage(mV)");
+    FpFwCliPrint("=======================================================================\n");
+
+    for (unsigned vf_idx = 0; vf_idx < VFT_CURVESET_COUNT; ++vf_idx){
+        for (unsigned pstate_idx = p_runconfig->derived.vfts[vf_idx].min_plimit; pstate_idx < NUM_PSTATES; ++pstate_idx){
+                 FpFwCliPrint("%-12d %-10d %-16u %-14u\n",vf_idx,  pstate_idx,p_runconfig->derived.vfts[vf_idx].vf[pstate_idx].freq_Mhz, p_runconfig->derived.vfts[vf_idx].vf[pstate_idx].voltage_mv);
+        }
+    }
 }
 
 static void print_power_config_vftpre(power_vft_curveset_precalc_t* precalculated_current)

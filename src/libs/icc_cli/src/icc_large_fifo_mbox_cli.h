@@ -33,3 +33,4 @@ extern fpfw_icc_base_ctx_t *icc_base_cded_mbx_ctx;
 FPFW_CLI_STATUS large_fifo_mbox_echo(int argc, const char** argv);
 FPFW_CLI_STATUS large_fifo_mbox_send(int argc, const char** argv);
 FPFW_CLI_STATUS large_fifo_mbox_recv(int argc, const char** argv);
+FPFW_CLI_STATUS large_fifo_mbox_loopback(int argc, const char** argv);

@@ -1,3 +1,7 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
 /**
  * @file icc_large_fifo_mbox_cli.c
  *
@@ -23,6 +27,9 @@
 
 //*-- Symbolic Constant Macros (defines) --*/
 
+#define ICC_LARGE_FIFO_MBOX_LPBK_TRIGGER_CMD          0xF0F0
+#define ICC_LARGE_FIFO_MBOX_LPBK_TRIGGER_RESPONSE_CMD 0xF0F1
+
 /*-------------- Typedefs ----------------*/
 
 /*-- Declarations (Statics and globals) --*/
@@ -40,16 +47,21 @@ static large_fifo_cli_mailbox_msg accel_echo_msg = {
     .hdr.context = 0,
     .hdr.flags = 0,
 };
+static large_fifo_cli_mailbox_msg loopback_send_msg;
+static large_fifo_cli_mailbox_msg loopback_recv_msg;
 
 //! icc base send, recv & send/recv params for hsp mbox
 static fpfw_icc_base_send_recv_req_t accel_send_recv_params;
 static fpfw_icc_base_send_req_t accel_send_params;
 static fpfw_icc_base_recv_req_t accel_recv_params;
+static fpfw_icc_base_send_req_t loopback_send_params;
+static fpfw_icc_base_recv_req_t loopback_recv_params;
 
 //! test flags to prevent overlapping of send/recv operations
 static bool is_accel_echo_test_active = false;
 static bool is_accel_send_test_active = false;
 static bool is_accel_recv_test_active = false;
+static bool is_accel_loopback_test_active = false;
 
 /*------------- Functions ----------------*/
 
@@ -327,6 +339,155 @@ FPFW_CLI_STATUS large_fifo_mbox_recv(int argc, const char** argv)
         FpFwCliPrint("[RECV TEST] Recv Initiated: Status[0x%x] CmdCode[0x%x]\n", status, recv_cmd_code);
         //! Status is success, Set the flag to indicate the test is active
         is_accel_recv_test_active = true;
+        cli_status = CLI_SUCCESS;
+    }
+
+    return cli_status;
+}
+
+static void my_icc_large_fifo_loopback_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    fpfw_icc_base_recv_req_t* req_params = (fpfw_icc_base_recv_req_t*)context; // NOLINT
+    bool mismatch = false;
+
+    if (status != DFWK_SUCCESS)
+    {
+        FpFwCliPrint("[LOOPBACK_RECV] Recv Failed: Status[0x%x] CmdCode[0x%x]\n", status, req_params->recv_cmd_code);
+    }
+    else
+    {
+        //! verify success, output status
+        FpFwCliPrint("[LOOPBACK_RECV] Recv Complete: Status[0x%x] ReceivedBytes[%d] CmdCode[0x%x]\n",
+                     status,
+                     output_size_bytes,
+                     req_params->recv_cmd_code);
+        // Compare the send and recv payloads
+        large_fifo_cli_mailbox_msg* recv_msg = (large_fifo_cli_mailbox_msg*)req_params->payload_buffer; // NOLINT
+        if (recv_msg->hdr.cmd != ICC_LARGE_FIFO_MBOX_LPBK_TRIGGER_RESPONSE_CMD)
+        {
+            FpFwCliPrint("[LOOPBACK_RECV] [FAIL] Invalid CmdCode: Expected[0x%x] Received[0x%x]\n",
+                         ICC_LARGE_FIFO_MBOX_LPBK_TRIGGER_RESPONSE_CMD,
+                         recv_msg->hdr.cmd);
+        }
+        else
+        {
+            for (unsigned int i = 0; i < LARGE_FIFO_MBOX_MAX_PAYLOAD_WORD; i++)
+            {
+                if (recv_msg->data[i] != loopback_send_msg.data[i])
+                {
+                    mismatch = true;
+                    //! Data mismatch, print the error
+                    FpFwCliPrint("[LOOPBACK_RECV] [FAIL] Data Mismatch at index %d: Expected[0x%x] Received[0x%x]\n",
+                                 i,
+                                 loopback_send_msg.data[i],
+                                 recv_msg->data[i]);
+                }
+            }
+
+            if(!mismatch)
+            {
+                FpFwCliPrint("[LOOPBACK_RECV] Data Match: All data received correctly\n");
+            }
+        }
+    }
+    is_accel_loopback_test_active = false;
+}
+
+static void my_icc_large_fifo_loopback_send_complete_notify(void* context, fpfw_status_t status)
+{
+    fpfw_icc_base_send_req_t* req_params = (fpfw_icc_base_send_req_t*)context; // NOLINT
+    if (status != DFWK_SUCCESS)
+    {
+        FpFwCliPrint("[LOOPBACK_SEND] [FAIL] Send Failed: Status[0x%x] Internal Status[0x%x]\n",
+                     status,
+                     req_params->send_req.Output.Status);
+    }
+    else
+    {
+        //! verify success, output status
+        FpFwCliPrint("[LOOPBACK_SEND] Send Complete: Status[0x%x] CmdCode[0x%x]\n",
+                     status,
+                     loopback_send_msg.hdr.cmd);
+    }
+}
+
+FPFW_CLI_STATUS large_fifo_mbox_loopback(int argc, const char** argv)
+{
+    FPFW_CLI_STATUS cli_status = CLI_ERROR;
+    fpfw_icc_base_ctx_t* icc_base;
+    unsigned int i;
+
+    FPFW_UNUSED(argc);
+
+    //! Prevent overwriting of the send payload buffer
+    if (is_accel_loopback_test_active)
+    {
+        FpFwCliPrint("[FAIL] Loopback cmd: Test ongoing\n");
+        return cli_status;
+    }
+
+    if (strcmp(argv[0], "sdm_loopback") == 0)
+    {
+        icc_base = icc_base_sdm_mbx_ctx;
+    }
+    else if (strcmp(argv[0], "cded_loopback") == 0)
+    {
+        icc_base = icc_base_cded_mbx_ctx;
+    }
+    else
+    {
+        FpFwCliPrint("[FAIL] Invalid CLI %s\n", argv[0]);
+        return cli_status;
+    }
+
+    loopback_send_msg.hdr.cmd = ICC_LARGE_FIFO_MBOX_LPBK_TRIGGER_CMD;
+    for (i = 0; i < LARGE_FIFO_MBOX_MAX_PAYLOAD_WORD; i++)
+    {
+        loopback_send_msg.data[i] = i;
+    }
+
+    //! Prepare send request
+    loopback_send_params.payload_buffer = &loopback_send_msg;
+    loopback_send_params.buffer_size = sizeof(loopback_send_msg);
+    loopback_send_params.cb = my_icc_large_fifo_loopback_send_complete_notify;
+    loopback_send_params.cb_ctx = &loopback_send_params;
+
+    //! Prepare recv request
+    memset(&loopback_recv_msg, 0, sizeof(loopback_recv_msg));
+    loopback_recv_params.payload_buffer = &loopback_recv_msg;
+    loopback_recv_params.buffer_size = sizeof(loopback_recv_msg);
+    loopback_recv_params.recv_cmd_code = ICC_LARGE_FIFO_MBOX_LPBK_TRIGGER_RESPONSE_CMD;
+    loopback_recv_params.cb = my_icc_large_fifo_loopback_recv_complete_notify;
+    loopback_recv_params.cb_ctx = &loopback_recv_params;
+
+    //! Register for recv thru icc base
+    fpfw_status_t status = fpfw_icc_base_recv(icc_base, &loopback_recv_params);
+
+    //! Print the status message
+    if (status != DFWK_SUCCESS)
+    {
+        FpFwCliPrint("[LOOPBACK_RECV] [FAIL] Recv Failed: Status[0x%x] CmdCode[0x%x]\n", status, ICC_LARGE_FIFO_MBOX_LPBK_TRIGGER_RESPONSE_CMD);
+    }
+    else
+    {
+        FpFwCliPrint("[LOOPBACK_RECV] Recv Initiated: Status[0x%x] CmdCode[0x%x]\n", status, ICC_LARGE_FIFO_MBOX_LPBK_TRIGGER_RESPONSE_CMD);
+    }
+
+    //! Send the payload & wait for response
+    status = fpfw_icc_base_send(icc_base, &loopback_send_params);
+
+    //! print status message
+    if (status != DFWK_SUCCESS)
+    {
+        FpFwCliPrint("[LOOPBACK_SEND] [FAIL] Send Failed: Status[0x%x]\n", status);
+    }
+    else
+    {
+        FpFwCliPrint("[LOOPBACK_SEND] Send Initiated: Status[0x%x] CmdCode[0x%x]\n",
+                     status,
+                     loopback_send_msg.hdr.cmd);
+        //! Status is success, Set the flag to indicate the test is active
+        is_accel_loopback_test_active = true;
         cli_status = CLI_SUCCESS;
     }
 

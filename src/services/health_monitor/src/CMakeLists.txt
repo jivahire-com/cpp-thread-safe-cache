@@ -41,8 +41,8 @@ target_link_libraries(${TARGET}
         silibs::spi_bridge
         ms::lib::crash_dump
         ms::lib::icc_platform_defines
-        ms::service::atu_service      
-        kng.lib.hsp_firmware_headers 
+        ms::service::atu_service
+        kng.lib.hsp_firmware_headers
 )
 
 lint_target(${TARGET})

@@ -96,12 +96,14 @@ static FPFW_CLI_COMMAND s_icc_sdm_large_fifo_mbx_cmd_list[] = {
     {NULL_LIST_ENTRY, "icc_largembx", "sdm_send", large_fifo_mbox_send, "Recv mailbox msg from SDM", "Usage: sdm_send <(cmd code)>"},
     {NULL_LIST_ENTRY, "icc_largembx", "sdm_recv", large_fifo_mbox_recv, "Send mailbox msg to SDM", "Usage: sdm_recv <(cmd code)>"},
     {NULL_LIST_ENTRY, "icc_largembx", "sdm_echo", large_fifo_mbox_echo, "Send & receive mailbox msg to SDM", "Usage: sdm_echo <(cmd code)>"},
+    {NULL_LIST_ENTRY, "icc_largembx", "sdm_loopback", large_fifo_mbox_loopback, "Send & receive mailbox msg to SDM", "Usage: sdm_loopback"},
 };
 
 static FPFW_CLI_COMMAND s_icc_cded_large_fifo_mbx_cmd_list[] = {
     {NULL_LIST_ENTRY, "icc_largembx", "cded_send", large_fifo_mbox_send, "Recv mailbox msg from CDED", "Usage: cded_send <(cmd code)>"},
     {NULL_LIST_ENTRY, "icc_largembx", "cded_recv", large_fifo_mbox_recv, "Send mailbox msg to CDED", "Usage: cded_recv <(cmd code)>"},
     {NULL_LIST_ENTRY, "icc_largembx", "cded_echo", large_fifo_mbox_echo, "Send & receive mailbox msg to CDED", "Usage: cded_echo <(cmd code)>"},
+    {NULL_LIST_ENTRY, "icc_largembx", "cded_loopback", large_fifo_mbox_loopback, "Send & receive mailbox msg to CDED", "Usage: cded_loopback"},
 };
 
 /*------------- Functions ----------------*/

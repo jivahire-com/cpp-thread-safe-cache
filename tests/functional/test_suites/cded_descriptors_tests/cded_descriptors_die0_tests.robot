@@ -71,7 +71,6 @@ ${TIMEOUT}              ${900}
 ...                                   workload: opcode = Decompression (0x440)
 ...                                   wait_for_cmd_completion-: INFO: Status: exp=0x0, rx=0x0
 ...                                   wait_for_cmd_completion-: INFO: RX: SUCCESS
-...                                   Received valid data.
 ...                                   CDED Test DONE
 
 @{PASS_RESPONSE_USER_DEF_OPCODE}       Starting  CDED Test

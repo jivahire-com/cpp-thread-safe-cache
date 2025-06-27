@@ -656,7 +656,7 @@ core_state_metrics_flags_t data_smpl_parse_core_states_entry(pstate_telem_t* pst
                                               : 0;
             if (metrics.pstate_time_diff_uS)
             {
-                FPFW_ET_LOG(LogCoreInValidTimeStamp, status, timestamp_uS, core[core_id].pstate_timestamp_uS);
+                FPFW_ET_LOG(LogCoreInValidTimeStamp, timestamp_uS, core[core_id].pstate_timestamp_uS, status);
             }
         }
 
@@ -675,7 +675,7 @@ core_state_metrics_flags_t data_smpl_parse_core_states_entry(pstate_telem_t* pst
                                               : 0;
             if (metrics.cstate_time_diff_uS)
             {
-                FPFW_ET_LOG(LogCoreInValidTimeStamp, status, timestamp_uS, core[core_id].cstate_timestamp_uS);
+                FPFW_ET_LOG(LogCoreInValidTimeStamp, timestamp_uS, core[core_id].cstate_timestamp_uS, status);
             }
         }
         // update timestamp for cstate only after time diff calculation done for residency.
@@ -696,9 +696,9 @@ core_state_metrics_flags_t data_smpl_parse_core_states_entry(pstate_telem_t* pst
             if (metrics.rack_throttle_time_diff_uS == 0)
             {
                 FPFW_ET_LOG(LogCoreInValidTimeStamp,
-                            status,
                             timestamp_uS,
-                            core[core_id].latest_rack_priority_previous_timestamp_uS[priority_id]);
+                            core[core_id].latest_rack_priority_previous_timestamp_uS[priority_id],
+                            status);
             }
         }
         // update flag once , entry count updated.

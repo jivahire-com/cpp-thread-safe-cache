@@ -97,6 +97,7 @@ void in_band_tlm_cmpnt_handle_incoming_mts_msgs(void)
         {
             // debug level trace
             FPFW_ET_LOG(TlmSvcDebugIncomingTrpMsg,
+                        GET_BASE_SEQ_NUM(trp_msg->hdr.source_seq_num.as_uint16),
                         trp_msg->hdr.src_node.die_id,
                         trp_msg->hdr.src_node.core_id,
                         trp_msg->hdr.dest_node.die_id,
@@ -104,8 +105,7 @@ void in_band_tlm_cmpnt_handle_incoming_mts_msgs(void)
                         trp_msg->hdr.mts_client_id,
                         trp_msg->hdr.trp_msg_id,
                         trp_msg->hdr.trp_msg_status,
-                        GET_INT_CMD_BIT(trp_msg->hdr.source_seq_num.as_uint16),
-                        GET_BASE_SEQ_NUM(trp_msg->hdr.source_seq_num.as_uint16)); // remove init_cmd bit
+                        GET_INT_CMD_BIT(trp_msg->hdr.source_seq_num.as_uint16)); // remove init_cmd bit
 
             if (trp_msg->hdr.trp_msg_id == TRP_MSG_ID_DCP_FORWARD)
             {
@@ -386,6 +386,7 @@ void mts_manager_send_trp_package_helper(p_tlm_package_t tlm_pkg, trp_msg_id_t m
 
     // debug level trace
     FPFW_ET_LOG(TlmSvcDebugOutgoingTrpMsg,
+                GET_BASE_SEQ_NUM(trp_msg.hdr.source_seq_num.as_uint16),
                 trp_msg.hdr.src_node.die_id,
                 trp_msg.hdr.src_node.core_id,
                 trp_msg.hdr.dest_node.die_id,
@@ -393,8 +394,7 @@ void mts_manager_send_trp_package_helper(p_tlm_package_t tlm_pkg, trp_msg_id_t m
                 trp_msg.hdr.mts_client_id,
                 trp_msg.hdr.trp_msg_id,
                 trp_msg.hdr.trp_msg_status,
-                GET_INT_CMD_BIT(trp_msg.hdr.source_seq_num.as_uint16),
-                GET_BASE_SEQ_NUM(trp_msg.hdr.source_seq_num.as_uint16)); // remove init_cmd bit
+                GET_INT_CMD_BIT(trp_msg.hdr.source_seq_num.as_uint16)); // remove init_cmd bit
 
     // api copies message, ok to use stack memory
     mts_client_send_new_trp_msg(&trp_msg);

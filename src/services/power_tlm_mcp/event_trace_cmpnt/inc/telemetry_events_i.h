@@ -10,7 +10,6 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
-#define FPFW_ET_NO_ALIGNMENT_CHECKS
 
 #include <event_trace_providers.h>
 #include <event_trace.h>
@@ -166,6 +165,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     32,
                     TlmSvcDebugIncomingTrpMsg,
                     FPFW_ET_LEVEL_DEBUG,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, source_seq_num),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_die_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_core_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, dest_die_id),
@@ -173,13 +173,13 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, mts_client_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, trp_msg_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_INT16, trp_msg_status),
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, init_cmd),
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, source_seq_num))
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, init_cmd))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     33,
                     TlmSvcDebugOutgoingTrpMsg,
                     FPFW_ET_LEVEL_DEBUG,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, source_seq_num),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_die_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, source_core_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, dest_die_id),
@@ -187,8 +187,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, mts_client_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, trp_msg_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_INT16, trp_msg_status),
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, init_cmd),
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, source_seq_num))
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, init_cmd))
 
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
@@ -318,16 +317,16 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     54,
                     TimerChangeFail,
                     FPFW_ET_LEVEL_WARNING,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, tmr_id),
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status))
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, tmr_id))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     55,
                     LogCoreInValidTimeStamp,
                     FPFW_ET_LEVEL_ERROR,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, status),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, new_timestamp_uS),
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, prev_timestamp_uS))
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, prev_timestamp_uS),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, status))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     56,

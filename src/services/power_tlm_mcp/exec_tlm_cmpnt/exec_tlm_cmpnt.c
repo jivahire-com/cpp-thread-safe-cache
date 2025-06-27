@@ -356,22 +356,22 @@ void exec_tlm_cmpnt_udpdate_timer_periods(uint32_t data_aggr_period_ms,
     UINT tx_status = tx_timer_change(&data_aggr_tmr, 1, data_aggr_period_ticks);
     if (tx_status != TX_SUCCESS)
     {
-        FPFW_ET_LOG(TimerChangeFail, 1, tx_status);
+        FPFW_ET_LOG(TimerChangeFail, tx_status, 1);
     }
     tx_status = tx_timer_change(&inst_sample_tmr, 1, inst_sample_period_ticks);
     if (tx_status != TX_SUCCESS)
     {
-        FPFW_ET_LOG(TimerChangeFail, 2, tx_status);
+        FPFW_ET_LOG(TimerChangeFail, tx_status, 2);
     }
     tx_status = tx_timer_change(&power_pkg_tmr, 1, pwr_pkg_period_ticks);
     if (tx_status != TX_SUCCESS)
     {
-        FPFW_ET_LOG(TimerChangeFail, 3, tx_status);
+        FPFW_ET_LOG(TimerChangeFail, tx_status, 3);
     }
     tx_status = tx_timer_change(&_24hr_pkg_tmr, 1, twenty_four_hr_pkg_period_ticks);
     if (tx_status != TX_SUCCESS)
     {
-        FPFW_ET_LOG(TimerChangeFail, 4, tx_status);
+        FPFW_ET_LOG(TimerChangeFail, tx_status, 4);
     }
 }
 

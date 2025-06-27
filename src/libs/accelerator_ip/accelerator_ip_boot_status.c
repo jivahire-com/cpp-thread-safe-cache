@@ -50,7 +50,7 @@ static accel_boot_status_msg msg[NUM_VALID_ACCEL_ID] = {0};
 static accel_boot_status_msg ack[NUM_VALID_ACCEL_ID] = {0};
 static accel_cd_params recv_params[NUM_VALID_ACCEL_ID];
 static fpfw_icc_base_send_rsp_t send_params[NUM_VALID_ACCEL_ID];
-static boot_status_req_t boot_status_req = {0};
+static boot_status_req_t boot_status_req[NUM_VALID_ACCEL_ID] = {0};
 
 /*--------------------------------- Externs ---------------------------------*/
 
@@ -116,14 +116,26 @@ static fpfw_status_t accel_send_ack(ACCEL_ID accel_type)
     return fpfw_icc_base_send_resp(icc_ctx, &send_params[accel_type]);
 }
 
+static void accel_boot_status_send_complete_cb(void* ctx)
+{
+    ACCEL_ID accel_type = (ACCEL_ID)ctx;
+
+    /* Queue receive buffer to receive boot status code from accel core */
+    accel_recv_boot_status_msg(accel_type);
+    /* Send ACK back to the accel core indicating message received and send to HSP */
+    accel_send_ack(accel_type);
+}
+
 static void accel_send_boot_status(ACCEL_ID accel_type, uint8_t boot_status)
 {
     uint8_t group;
     uint8_t instance;
 
     accel_get_group_and_instance(accel_type, &group, &instance);
+    boot_status_req[accel_type].cb = accel_boot_status_send_complete_cb;
+    boot_status_req[accel_type].cb_ctx = (void*)accel_type;
 
-    boot_status_notify_extd(&boot_status_req, 0, GEN_BOOT_STATUS_EX_LED_CODE(group, MSCP_ACCEL, instance, boot_status));
+    boot_status_notify_extd(&boot_status_req[accel_type], 0, GEN_BOOT_STATUS_EX_LED_CODE(group, MSCP_ACCEL, instance, boot_status));
 }
 
 static void accel_recv_boot_status_msg_icc_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -138,10 +150,9 @@ static void accel_recv_boot_status_msg_icc_cb(void* context, size_t output_size_
 
     accel_boot_status_msg* msg = (accel_boot_status_msg*)recv_params->params.payload_buffer;
 
-    // Send boot status code to HSP
-    accel_send_boot_status(accel_type, msg->boot_status);
-
     /**
+     * Prepare the ACK message to be sent back to the accel core.
+     *
      * The ACK message is sent to the accelerator core to indicate that the boot
      * status code has been received and send to the HSP. Since the accelerator
      * core is waiting for ACK message using std. fpfw_icc_base_send_recv/_sync
@@ -151,31 +162,43 @@ static void accel_recv_boot_status_msg_icc_cb(void* context, size_t output_size_
     ack[accel_type].hdr = msg->hdr;
     ack[accel_type].hdr.cmd = LARGE_FIFO_MAILBOX_MSG_BOOT_STATUS_RSP;
 
-    /* Queue receive buffer to receive boot status code from accel core */
-    accel_recv_boot_status_msg(accel_type);
-    /* Send ACK back to the accel core indicating message received and send to HSP */
-    accel_send_ack(accel_type);
+    // Send boot status code to HSP
+    accel_send_boot_status(accel_type, msg->boot_status);
 }
 
 static void accel_boot_status_timeout_cb(void* ctx, fpfw_dur_t latency)
 {
-    FPFW_UNUSED(latency);
-    FPFW_UNUSED(ctx);
+    ACCEL_ID accel_type = (ACCEL_ID)ctx;
 
+    FPFW_UNUSED(latency);
+
+    /* Clear any previous stale data */
+    boot_status_req[accel_type].cb = NULL;
+    boot_status_req[accel_type].cb_ctx = NULL;
     // Send failure boot status code to HSP
-    post_led_status(&boot_status_req, LED_STATUS_CODE_SCP_ACCEL_FAILED);
+    post_led_status(&boot_status_req[accel_type], LED_STATUS_CODE_SCP_ACCEL_FAILED);
 }
 
 static fpfw_status_t accel_intr_crash_dump_collection_timer_init(ACCEL_ID accel_type)
 {
-    return FPFW_TIMER_CREATE_ONESHOT(&accel_boot_status_timers[accel_type], accel_boot_status_timeout_cb, NULL);
+    return FPFW_TIMER_CREATE_ONESHOT(&accel_boot_status_timers[accel_type], accel_boot_status_timeout_cb, (void*)accel_type);
 }
 
 /*----------------------------- Global Functions ----------------------------*/
 
 void accel_send_led_boot_status(led_status_codes_t led_boot_status)
 {
-    post_led_status(&boot_status_req, led_boot_status);
+    /**
+     * This boot status code is being send by SCP on its own i.e. it is not associated
+     * with any accel core. As any request buffer will do use SDM's boot status request
+     * buffer to send this boot status code to HSP.
+     */
+    ACCEL_ID accel_type = ACCEL_ID_SDM;
+
+    /* Clear any previous stale data */
+    boot_status_req[accel_type].cb = NULL;
+    boot_status_req[accel_type].cb_ctx = NULL;
+    post_led_status(&boot_status_req[accel_type], led_boot_status);
 }
 
 fpfw_status_t accel_setup_boot_status_code(ACCEL_ID accel_type)

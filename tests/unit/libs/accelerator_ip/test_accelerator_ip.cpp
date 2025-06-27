@@ -58,6 +58,9 @@ static uint32_t dummy_icc_ctx = 0;
 static jmp_buf mock_jump_buf;
 static bool should_return;
 
+static boot_status_send_complete_notify s_boot_status_send_cb = NULL;
+static void* s_boot_status_send_ctx = NULL;
+
 static fpfw_timer_callback s_timer_cb = NULL;
 
 static LargestIntegralType expected_led_status[] = {
@@ -342,6 +345,8 @@ void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_
     assert_non_null(p_req_mem);
     assert_true(boot_status == 0);
     check_expected(boot_status_ex);
+    s_boot_status_send_cb = p_req_mem->cb;
+    s_boot_status_send_ctx = p_req_mem->cb_ctx;
 }
 
 void __wrap_post_led_status(boot_status_req_t* p_req_mem, led_status_codes_t status)
@@ -1175,17 +1180,19 @@ TEST_FUNCTION(test_accel_setup_boot_status_code_sdm, nullptr, nullptr)
     will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
     will_return(__wrap_idsw_get_die_id, SOC_D0);
     expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
+    s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_send_resp, FPFW_ICC_BASE_STATUS_SUCCESS);
-    s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
+    s_boot_status_send_cb(s_boot_status_send_ctx);
 
     // Unit test accel_recv_boot_status_msg_icc_cb() for SDM DIE1
     will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
     will_return(__wrap_idsw_get_die_id, SOC_D1);
     expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
+    s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_send_resp, FPFW_ICC_BASE_STATUS_SUCCESS);
-    s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
+    s_boot_status_send_cb(s_boot_status_send_ctx);
 
     // Unit test accel_boot_status_timeout_cb() for SDM DIE0
     expect_in_set(__wrap_post_led_status, status, expected_led_status);
@@ -1209,17 +1216,19 @@ TEST_FUNCTION(test_accel_setup_boot_status_code_cded, nullptr, nullptr)
     will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
     will_return(__wrap_idsw_get_die_id, SOC_D0);
     expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
+    s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_send_resp, FPFW_ICC_BASE_STATUS_SUCCESS);
-    s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
+    s_boot_status_send_cb(s_boot_status_send_ctx);
 
     // Unit test accel_recv_boot_status_msg_icc_cb() for CDED DIE1
     will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
     will_return(__wrap_idsw_get_die_id, SOC_D1);
     expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
+    s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_send_resp, FPFW_ICC_BASE_STATUS_SUCCESS);
-    s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
+    s_boot_status_send_cb(s_boot_status_send_ctx);
 
     // Unit test accel_boot_status_timeout_cb() for CDED DIE0
     expect_in_set(__wrap_post_led_status, status, expected_led_status);

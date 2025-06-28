@@ -53,7 +53,6 @@
 /*-------- Function Prototypes -----------*/
 static bool platform_requires_fuse_distribution();
 static int platform_fuse_copy_to_ram();
-static int read_override_from_spi();
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -68,21 +67,21 @@ static fpfw_icc_base_recv_req_t scp_recv_params;
 static rmss_d2d_mailbox_msg d2d_recv_msg;
 static rmss_d2d_mailbox_msg d2d_send_msg;
 
-static uint32_t die0_core_disable_config_knob_0_31 = 0;
-static uint32_t die0_core_disable_config_knob_32_63 = 0;
-static uint32_t die0_core_disable_config_knob_64_95 = 0;
+static uint32_t die0_core_disable_config_knob_31_0 = 0;
+static uint32_t die0_core_disable_config_knob_63_32 = 0;
+static uint32_t die0_core_disable_config_knob_95_64 = 0;
 
-static uint32_t die1_core_disable_config_knob_0_31 = 0;
-static uint32_t die1_core_disable_config_knob_32_63 = 0;
-static uint32_t die1_core_disable_config_knob_64_95 = 0;
+static uint32_t die1_core_disable_config_knob_31_0 = 0;
+static uint32_t die1_core_disable_config_knob_63_32 = 0;
+static uint32_t die1_core_disable_config_knob_95_64 = 0;
 // Enable spare cores
-static uint32_t die0_config_spare_core_en_0_31 = 0;
-static uint32_t die0_config_spare_core_en_32_63 = 0;
-static uint32_t die0_config_spare_core_en_64_95 = 0;
+static uint32_t die0_config_spare_core_en_31_0 = 0;
+static uint32_t die0_config_spare_core_en_63_32 = 0;
+static uint32_t die0_config_spare_core_en_95_64 = 0;
 
-static uint32_t die1_config_spare_core_en_0_31 = 0;
-static uint32_t die1_config_spare_core_en_32_63 = 0;
-static uint32_t die1_config_spare_core_en_64_95 = 0;
+static uint32_t die1_config_spare_core_en_31_0 = 0;
+static uint32_t die1_config_spare_core_en_63_32 = 0;
+static uint32_t die1_config_spare_core_en_95_64 = 0;
 
 struct ap_core_die_cfg_cb_t
 {
@@ -112,10 +111,10 @@ void save_remote_die_config_cb(void* context, size_t output_size_bytes, fpfw_sta
     }
     uint32_t* recv_payload = (uint32_t*)req_params->payload_buffer;
 
-    remote_die_core_disable.fuse_dis_core_0_31 = recv_payload[1];
-    remote_die_core_disable.fuse_dis_core_32_63 = recv_payload[2];
-    remote_die_core_disable.fuse_dis_core_64_95 = recv_payload[3];
-    remote_die_core_disable.fuse_dis_core_96_127 = recv_payload[4];
+    remote_die_core_disable.fuse_dis_core_31_0 = recv_payload[1];
+    remote_die_core_disable.fuse_dis_core_63_32 = recv_payload[2];
+    remote_die_core_disable.fuse_dis_core_95_64 = recv_payload[3];
+    remote_die_core_disable.fuse_dis_core_127_96 = recv_payload[4];
 
     result = sds_block_creation(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, FUSE_DISABLE_CORE_DIE1_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
     BUG_ASSERT(result == KNG_SUCCESS);
@@ -191,30 +190,6 @@ static int platform_fuse_copy_to_ram()
     return fuse_dma_copy_to_ram_blocking();
 }
 
-static int read_override_from_spi()
-{
-    fpfw_status_t icc_status = 0;
-
-    size_t recv_msg_size_bytes = 0;
-
-    kng_hsp_fuse_mailbox_msg fuse_fw_load = {};
-    fuse_fw_load.fuse_req.header.cmd = HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ;
-    if (idsw_get_die_id() == DIE_0)
-    {
-        fuse_fw_load.fuse_req.id = HSP_FIRMWARE_ID_FUSE_OVERRIDE_DIE_0;
-    }
-    else
-    {
-        fuse_fw_load.fuse_req.id = HSP_FIRMWARE_ID_FUSE_OVERRIDE_DIE_1;
-    }
-    fuse_fw_load.fuse_req.address = SCP_EXP_FUSE_DATA_BASE;
-    fuse_fw_load.fuse_req.size = SCP_EXP_FUSE_DATA_SIZE;
-    icc_status =
-        fpfw_icc_base_send_recv_sync(icc_base_ctx_fuse, &fuse_fw_load, sizeof(kng_hsp_fuse_mailbox_msg), &recv_msg_size_bytes);
-
-    return icc_status;
-}
-
 int read_core_disables()
 {
     kng_fuse_disable_core_t* p_fuse_disable;
@@ -228,9 +203,9 @@ int read_core_disables()
         p_die_num = 0;
 
         // Read Core fuses for die0
-        status = read_core_defect_fuses(&(p_fuse_disable->fuse_dis_core_64_95),
-                                        &(p_fuse_disable->fuse_dis_core_32_63),
-                                        &(p_fuse_disable->fuse_dis_core_0_31));
+        status = read_core_defect_fuses(&(p_fuse_disable->fuse_dis_core_95_64),
+                                        &(p_fuse_disable->fuse_dis_core_63_32),
+                                        &(p_fuse_disable->fuse_dis_core_31_0));
         if (status != SILIBS_SUCCESS)
         {
             printf(FUSE_NAME "Unable to read cores fuses for DIE%d\n", p_die_num);
@@ -238,17 +213,17 @@ int read_core_disables()
         }
 
         // Apply Core disable knobs
-        p_fuse_disable->fuse_dis_core_0_31 |= die0_core_disable_config_knob_0_31;
-        p_fuse_disable->fuse_dis_core_32_63 |= die0_core_disable_config_knob_32_63;
-        p_fuse_disable->fuse_dis_core_64_95 |= (die0_core_disable_config_knob_64_95 | 0xFFFFFFF0);
-        p_fuse_disable->fuse_dis_core_96_127 = 0xFFFFFFFF;
+        p_fuse_disable->fuse_dis_core_31_0 |= die0_core_disable_config_knob_31_0;
+        p_fuse_disable->fuse_dis_core_63_32 |= die0_core_disable_config_knob_63_32;
+        p_fuse_disable->fuse_dis_core_95_64 |= (die0_core_disable_config_knob_95_64 | 0xFFFFFFF0);
+        p_fuse_disable->fuse_dis_core_127_96 = 0xFFFFFFFF;
 
         // Apply Spare Enable knobs
-        p_fuse_disable->fuse_dis_core_0_31 &= ~die0_config_spare_core_en_0_31;
-        p_fuse_disable->fuse_dis_core_32_63 &= ~die0_config_spare_core_en_32_63;
-        p_fuse_disable->fuse_dis_core_64_95 &=
-            ((p_fuse_disable->fuse_dis_core_64_95 & ~die0_config_spare_core_en_64_95) | 0xFFFFFFF0);
-        p_fuse_disable->fuse_dis_core_96_127 = 0xFFFFFFFF;
+        p_fuse_disable->fuse_dis_core_31_0 &= ~die0_config_spare_core_en_31_0;
+        p_fuse_disable->fuse_dis_core_63_32 &= ~die0_config_spare_core_en_63_32;
+        p_fuse_disable->fuse_dis_core_95_64 &=
+            ((p_fuse_disable->fuse_dis_core_95_64 & ~die0_config_spare_core_en_95_64) | 0xFFFFFFF0);
+        p_fuse_disable->fuse_dis_core_127_96 = 0xFFFFFFFF;
 
         printf(FUSE_NAME "Save Core Disable fuse and knob info for DIE%d done\n", p_die_num);
     }
@@ -258,9 +233,9 @@ int read_core_disables()
         p_die_num = 1;
 
         // Read Core fuses for die1
-        status = read_core_defect_fuses(&(p_fuse_disable->fuse_dis_core_64_95),
-                                        &(p_fuse_disable->fuse_dis_core_32_63),
-                                        &(p_fuse_disable->fuse_dis_core_0_31));
+        status = read_core_defect_fuses(&(p_fuse_disable->fuse_dis_core_95_64),
+                                        &(p_fuse_disable->fuse_dis_core_63_32),
+                                        &(p_fuse_disable->fuse_dis_core_31_0));
         if (status != SILIBS_SUCCESS)
         {
             printf(FUSE_NAME "Unable to read cores fuses for DIE%d\n", p_die_num);
@@ -268,17 +243,17 @@ int read_core_disables()
         }
 
         // Apply Core disable knobs
-        p_fuse_disable->fuse_dis_core_0_31 |= die1_core_disable_config_knob_0_31;
-        p_fuse_disable->fuse_dis_core_32_63 |= die1_core_disable_config_knob_32_63;
-        p_fuse_disable->fuse_dis_core_64_95 |= (die1_core_disable_config_knob_64_95 | 0xFFFFFFF0);
-        p_fuse_disable->fuse_dis_core_96_127 = 0xFFFFFFFF;
+        p_fuse_disable->fuse_dis_core_31_0 |= die1_core_disable_config_knob_31_0;
+        p_fuse_disable->fuse_dis_core_63_32 |= die1_core_disable_config_knob_63_32;
+        p_fuse_disable->fuse_dis_core_95_64 |= (die1_core_disable_config_knob_95_64 | 0xFFFFFFF0);
+        p_fuse_disable->fuse_dis_core_127_96 = 0xFFFFFFFF;
 
         // Apply Spare Enable knobs
-        p_fuse_disable->fuse_dis_core_0_31 &= ~die1_config_spare_core_en_0_31;
-        p_fuse_disable->fuse_dis_core_32_63 &= ~die1_config_spare_core_en_32_63;
-        p_fuse_disable->fuse_dis_core_64_95 &=
-            ((p_fuse_disable->fuse_dis_core_64_95 & ~die1_config_spare_core_en_64_95) | 0xFFFFFFF0);
-        p_fuse_disable->fuse_dis_core_96_127 = 0xFFFFFFFF;
+        p_fuse_disable->fuse_dis_core_31_0 &= ~die1_config_spare_core_en_31_0;
+        p_fuse_disable->fuse_dis_core_63_32 &= ~die1_config_spare_core_en_63_32;
+        p_fuse_disable->fuse_dis_core_95_64 &=
+            ((p_fuse_disable->fuse_dis_core_95_64 & ~die1_config_spare_core_en_95_64) | 0xFFFFFFF0);
+        p_fuse_disable->fuse_dis_core_127_96 = 0xFFFFFFFF;
 
         printf(FUSE_NAME "Save Core Disable fuse and knob info for DIE%d done\n", p_die_num);
     }
@@ -320,10 +295,10 @@ int write_fuse_info_to_ap()
     {
         d2d_send_msg.as_uint32[0] = SET_RMSS_D2D_MAILBOX_HEADER_ASUNIT32(RMSS_D2D_MAILBOX_DIE_CONFIG_REQ, 0, 0);
         // set d2d_send_msg_.as_uint32[1] to asuint32_t[3] same as DIE1_fuse_disable[0] to [3]
-        d2d_send_msg.as_uint32[1] = DIE1_fuse_disable.fuse_dis_core_0_31;
-        d2d_send_msg.as_uint32[2] = DIE1_fuse_disable.fuse_dis_core_32_63;
-        d2d_send_msg.as_uint32[3] = DIE1_fuse_disable.fuse_dis_core_64_95;
-        d2d_send_msg.as_uint32[4] = DIE1_fuse_disable.fuse_dis_core_96_127;
+        d2d_send_msg.as_uint32[1] = DIE1_fuse_disable.fuse_dis_core_31_0;
+        d2d_send_msg.as_uint32[2] = DIE1_fuse_disable.fuse_dis_core_63_32;
+        d2d_send_msg.as_uint32[3] = DIE1_fuse_disable.fuse_dis_core_95_64;
+        d2d_send_msg.as_uint32[4] = DIE1_fuse_disable.fuse_dis_core_127_96;
 
         scp_send_params.payload_buffer = &d2d_send_msg;
         scp_send_params.buffer_size = sizeof(d2d_send_msg);
@@ -371,13 +346,16 @@ int platform_read_for_fuse(const uintptr_t fuse_store_addr, const uint64_t fuse_
 int platform_fuse_override()
 {
     int status = 0;
-    uint32_t Kingsgate_fuse_override_buffer_location = (uint32_t)(SCP_EXP_FUSE_DATA_BASE);
     DIE_INSTANCE die_id = (DIE_INSTANCE)idsw_get_die_id();
     KNG_PLAT_ID plat_id = idsw_get_platform_sdv();
 
     // Skip for platforms that do not support fuses
     if (platform_requires_fuse_distribution())
     {
+        // adjust fuse load address based on die_id
+        uint32_t Kingsgate_fuse_override_buffer_location =
+            (die_id == SOC_D0) ? (uint32_t)SCP_EXP_FUSE_DIE0_DATA_BASE : (uint32_t)SCP_EXP_FUSE_DIE1_DATA_BASE;
+
         // Cache base fuse data from efuse blocks into SoC RAM location
         status = platform_fuse_copy_to_ram();
         FUSE_ET_STATUS(FUSE_ET_TYPE_RAM_DMA_COPY);
@@ -392,19 +370,20 @@ int platform_fuse_override()
             const bool is_fused_part =
                 (fuse_read(SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH) != 0);
             printf(FUSE_NAME "if fused part [%d] \n", is_fused_part);
-            // wait for the HSP Fuse for HSP_MAILBOX_MSG_FUSE_AND_IMAGE_LOAD_REQ so I will only pass for SVP
+
+            bool fuse_overrides_present = false;
             if (plat_id == PLATFORM_RVP_EVT_SILICON)
             {
-                status = read_override_from_spi(); // Read override buffer from SPI Flash and apply to fuses if present
+                printf("Skipping fuse override read from HSP because it has already been loaded & will crash "
+                       "HSP\n");
+                fuse_overrides_present = true;
             }
             else
             {
-                printf(FUSE_NAME "Non_support_machine!\n");
-                status = SILIBS_E_SUPPORT;
+                printf(FUSE_NAME "Non_support_machine! %d\n", plat_id);
+                fuse_overrides_present = false; // For other platforms, we assume fuse overrides are not present
             }
 
-            FUSE_ET_STATUS(FUSE_ET_TYPE_MAILBOX_REQUEST_OVERRIDES);
-            const bool fuse_overrides_present = (status == SILIBS_SUCCESS);
             if (!is_fused_part && !fuse_overrides_present)
             {
                 FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_NO_OVERRIDES);
@@ -447,6 +426,9 @@ int platform_fuse_override()
                 }
             }
         }
+
+        trigger_debugger_for_manual_overrides();
+
         if (!system_info_is_warm_start())
         {
             status = read_core_disables();
@@ -457,8 +439,6 @@ int platform_fuse_override()
                 return status;
             }
         }
-
-        trigger_debugger_for_manual_overrides();
     }
     FUSE_ET_STATUS(FUSE_ET_TYPE_OVERRIDE_COMPLETE);
     printf(FUSE_NAME "Fuse Override complete\n");
@@ -595,23 +575,23 @@ void fuse_init(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, fpfw_icc_base_ctx_t* icc_d2d
 
     if (idsw_get_die_id() == DIE_0)
     {
-        die0_core_disable_config_knob_0_31 = config_get_die0_core_disable_value_0_31();
-        die0_core_disable_config_knob_32_63 = config_get_die0_core_disable_value_32_63();
-        die0_core_disable_config_knob_64_95 = config_get_die0_core_disable_value_64_95();
+        die0_core_disable_config_knob_31_0 = config_get_die0_core_disable_value_31_0();
+        die0_core_disable_config_knob_63_32 = config_get_die0_core_disable_value_63_32();
+        die0_core_disable_config_knob_95_64 = config_get_die0_core_disable_value_95_64();
 
-        die0_config_spare_core_en_0_31 = config_get_die0_core_spare_en_0_31();
-        die0_config_spare_core_en_32_63 = config_get_die0_core_spare_en_32_63();
-        die0_config_spare_core_en_64_95 = config_get_die0_core_spare_en_64_95();
+        die0_config_spare_core_en_31_0 = config_get_die0_core_spare_en_31_0();
+        die0_config_spare_core_en_63_32 = config_get_die0_core_spare_en_63_32();
+        die0_config_spare_core_en_95_64 = config_get_die0_core_spare_en_95_64();
     }
     else
     {
-        die1_core_disable_config_knob_0_31 = config_get_die1_core_disable_value_0_31();
-        die1_core_disable_config_knob_32_63 = config_get_die1_core_disable_value_32_63();
-        die1_core_disable_config_knob_64_95 = config_get_die1_core_disable_value_64_95();
+        die1_core_disable_config_knob_31_0 = config_get_die1_core_disable_value_31_0();
+        die1_core_disable_config_knob_31_0 = config_get_die1_core_disable_value_63_32();
+        die1_core_disable_config_knob_31_0 = config_get_die1_core_disable_value_95_64();
         // core‐spare‐enable masks
-        die1_config_spare_core_en_0_31 = config_get_die1_core_spare_en_0_31();
-        die1_config_spare_core_en_32_63 = config_get_die1_core_spare_en_32_63();
-        die1_config_spare_core_en_64_95 = config_get_die1_core_spare_en_64_95();
+        die1_config_spare_core_en_31_0 = config_get_die1_core_spare_en_31_0();
+        die1_config_spare_core_en_63_32 = config_get_die1_core_spare_en_63_32();
+        die1_config_spare_core_en_95_64 = config_get_die1_core_spare_en_95_64();
     }
     FUSE_ET_STATUS(FUSE_ET_TYPE_SVC_START);
 }

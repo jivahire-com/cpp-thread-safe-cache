@@ -38,8 +38,8 @@ void init_pex_rng(pex_rng_config_t* rng_config)
 
         const uintptr_t cluster_pex_base_addr = (rng_config->cluster_pex_base + (rng_config->cluster_stride * core));
         uint32_t ap_rng_base = cluster_pex_base_addr + PEX_RNG_ADDRESS;
-
-        rng_enable_r(ap_rng_base, 1);
+        // Clk divider initially set to 1 with CPU at 50MHz was too fast for Si TODO: div value still needs to be optimized based on characterization
+        rng_enable_r(ap_rng_base, 0xC0);
     }
 }
 

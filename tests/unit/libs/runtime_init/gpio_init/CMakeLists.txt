@@ -52,4 +52,6 @@ mock_target(${TARGET}
     idsw_get_cpu_type
     idsw_get_die_id
     idsw_get_platform_sdv
+    mmio_read32
+    mmio_write32
 )

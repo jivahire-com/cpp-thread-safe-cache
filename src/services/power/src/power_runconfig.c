@@ -178,6 +178,7 @@ static uint8_t get_global_min_plimit()
 
 static void runconfig_generate_derived_vfts()
 {
+    const dvfs_vft_t default_vft = DVFS_VFT_DEFAULT_CONFIG;
     // setup assigned vft/core mappings
     for (unsigned core_idx = 0; core_idx < NUM_AP_CORES_PER_DIE; ++core_idx)
     {
@@ -247,7 +248,6 @@ static void runconfig_generate_derived_vfts()
         if ((vf_idx == 0) && (power_runconfig.derived.vfts[vf_idx].min_plimit == NUM_PSTATES))
         {
             // put default DVFS curve in slot 0
-            const dvfs_vft_t default_vft = DVFS_VFT_DEFAULT_CONFIG;
             for (unsigned crv_idx = 0; crv_idx < VFT_CURVESET_COUNT; ++crv_idx)
             {
                 power_runconfig.dvfs_vft.curveset[crv_idx] = default_vft;
@@ -277,6 +277,12 @@ static void runconfig_generate_derived_vfts()
             power_runconfig.derived.vfts[vf_idx].vf[pstate_idx].voltage_mv = found_voltage_mv;
             power_runconfig.derived.vfts[vf_idx].vf[pstate_idx].freq_Mhz = dvfs_get_freq_from_plimit(pstate_idx);
         }
+
+        //! Set the CPPC Abstract value for different pstates into the curveset, Kingsgate addition
+        //! In Pioneer these values were hardcoded in the RTL design, now it is configurable via these programming registers.
+        memcpy(power_runconfig.dvfs_vft.curveset[vf_idx].cppc_perf_table,
+               default_vft.cppc_perf_table,
+               sizeof(default_vft.cppc_perf_table));
     }
 }
 

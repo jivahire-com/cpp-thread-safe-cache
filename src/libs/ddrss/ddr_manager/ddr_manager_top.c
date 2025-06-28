@@ -14,8 +14,9 @@
 #include <ErrorHandler.h> // for FPFwErrorRaise
 #include <bug_check.h>
 #include <crash_dump.h>
-#include <ddr_manager_events.h>   // for DDR_MANAGER_ET_FATAL, DDR_MANAGER_ET_TYPE_CURVE_H...
-#include <ddrss.h>                // for ddr_manager_init
+#include <ddr_manager_events.h> // for DDR_MANAGER_ET_FATAL, DDR_MANAGER_ET_TYPE_CURVE_H...
+#include <ddrss.h>              // for ddr_manager_init
+#include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
 #include <hsp_firmware_headers.h> // for mbox command codes
 #include <stdint.h>               // for uint32_t
@@ -79,7 +80,11 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
 
             case DDR_CREATE_SMBIOS_TABLES_EVENT:
                 ddr_create_smbios_tables();
-                enable_i3c_dimm_polling_timer();
+
+                if (config_get_ddrmanager_bwl_polling_en())
+                {
+                    enable_i3c_dimm_polling_timer();
+                }
                 break;
 
             case DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT:

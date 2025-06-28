@@ -91,7 +91,7 @@ def plot(data, plotkeys):
     printPerc(0)
     fig, graphs = plt.subplots(figsize = (16,8), nrows=len(plotkeys), ncols=1, sharex=True, constrained_layout=True)
     fig.suptitle('', fontsize=16)
-        
+    
     for plotidx in range(0, len(plotkeys)):
         printPerc(plotidx, len(plotkeys))
         if len(plotkeys) > 1:
@@ -107,13 +107,15 @@ def plot(data, plotkeys):
                 if keyidx in entry:
                     times.append(entry['ts'])
                     values.append(entry[keyidx])
-            graph.plot(times, values, label=[keyidx])
+            # Set color to yellow for 'soccap', else use default
+            if keyidx == 'soccap':
+                graph.plot(times, values, label=[keyidx], color='yellow')
+            else:
+                graph.plot(times, values, label=[keyidx])
             graph.legend(bbox_to_anchor=(1,1), loc="upper left")
 
     plt.xlabel("Time (s)")
     printPerc(100)
-    plt.show()
-    plt.savefig("pwr_log_plot.png")
     return
 
 # generate a csv, with the keys given in csvkeys
@@ -146,7 +148,7 @@ def getPlotKeys(keystring, foundKeys):
     if keystring != None:
         plotkeys=keystring.split(",")
         # for every key we've been asked to plot, if there's not an exact match, try to partial match
-        newkeys = [entry for key in plotkeys for entry in foundKeys if (key not in foundKeys) and re.match(key, entry)]
+        newkeys = [entry for key in plotkeys for entry in foundKeys if (key not in FoundKeys) and re.match(key, entry)]
         # sort the partial matches
         newkeys.sort()
         # remove the keys from the original list if they didn't exist
@@ -155,6 +157,24 @@ def getPlotKeys(keystring, foundKeys):
         keys = keys + newkeys
 
     return keys
+
+# Function to sort datalist entries by timestamp
+
+def sortDataListByTimestamp(datalist):
+    """
+    Sorts the datalist entries in ascending order based on the 'ts' (timestamp) key.
+    Returns a new list with entries sorted by timestamp.
+    """
+    return sorted(datalist, key=lambda entry: entry['ts'])
+
+# Function to filter out entries with type 0xFF and sort by timestamp
+
+def filterAndSortByTimestamp(datalist):
+    """
+    Returns a new list with entries that do not have type 0xFF, sorted by the 'ts' (timestamp) key.
+    """
+    filtered = [entry for entry in datalist if entry.get('type') != 0xFF]
+    return sorted(filtered, key=lambda entry: entry['ts'])
 
 if __name__ == "__main__":
     
@@ -168,6 +188,7 @@ if __name__ == "__main__":
     parser.add_argument("--csvfile", help="Name of CSV output file (default=power.csv)", default="power.csv")
     parser.add_argument("--csv", help="comma separated list of values to add to .csv file")
     parser.add_argument("--entry_type", help="Specify the entry type to display", type=int)
+    parser.add_argument("--platform", help="Platform type: EV (default), SVP, FPGA", choices=["EV", "SVP", "FPGA"], default="EV")
     args = parser.parse_args()
     
     print ("Opening file {}".format(args.input_file))
@@ -182,6 +203,10 @@ if __name__ == "__main__":
     entries = []
     foundKeys = set()
 
+    # Set frequency based on platform
+    platform_freqs = {"EV": 1_000_000_000, "SVP": 125_000_000, "FPGA": 10_000_000}
+    freq = platform_freqs.get(args.platform, 1_000_000_000)
+
     with open(args.input_file, "rb") as f:
         while True:
             data = f.read(log_len)
@@ -190,43 +215,54 @@ if __name__ == "__main__":
                 break
             #print(f"Raw data: {data}")  # Debug print
             (timestamp,) = struct.unpack(log_struct, data)
-            #print(f"Unpacked timestamp: {timestamp}")  # Debug print
+            #print(f"Unpacked data: {timestamp}")  # Debug print
             # upper 8 bits are type
             type = (timestamp >> 56) & 0xFF
             #print(f"Entry type: {type}")  # Debug print
             # timestamp is the rest
-            timestamp = (timestamp & ((1 << 56)-1)) / 125000000
+            timestamp = (timestamp & ((1 << 56)-1)) / freq
             #print(f"Processed timestamp: {timestamp}")  # Debug print
-            entries.append({'ts': timestamp, 'type': type, 'data': data});
+            entries.append({'ts': timestamp, 'type': type, 'data': data})
             #print(f"Entry added: {{'ts': {timestamp}, 'type': {type}}}")  # Debug print
 
     # Add a print statement to display the number of entries after reading the file
     print(f"Total number of entries read: {len(entries)}")
 
-    (sidx, eidx) = dataFirstLast(entries)
+    # Filter out entries with type 0xFF and sort by timestamp before finding start/end indices
+    filtered_sorted_entries = filterAndSortByTimestamp(entries)
 
-    # start timestamp to use for calculating time since start
-    start_ts = entries[sidx]['ts']
-    end_ts = entries[eidx]['ts']
-    end_time = end_ts - start_ts
+    # Add a print statement to display the number of filtered entries
+    # print(f"Total number of filtered and sorted entries: {len(filtered_sorted_entries)}")
 
-    print(f"Start index (sidx): {sidx}, Start timestamp (start_ts): {start_ts}")
-    print(f"End index (eidx): {eidx}, End timestamp (end_ts): {end_ts}")
+    # Remove sidx/eidx logic and iterate over the entire filtered_sorted_entries list
+    values = []
+    foundKeys = set()
+    type_counts = {}
+
+    if filtered_sorted_entries:
+        start_ts = filtered_sorted_entries[0]['ts']
+        end_ts = filtered_sorted_entries[-1]['ts']
+        end_time = end_ts - start_ts
+    else:
+        start_ts = 0
+        end_ts = 0
+        end_time = 0
+
+    # Check for DDR data overwrite
+    if start_ts > end_ts:
+        print("DDR data overwritten")
+
+    print(f"Start timestamp (start_ts): {start_ts}")
+    print(f"End timestamp (end_ts): {end_ts}")
 
     # print percentage
     print("Processing input ", end='')
     printPerc(0)
 
-    # Add a dictionary to count entries by type
-    type_counts = {}
-    
-    while (sidx != eidx):
-        entry = entries[sidx]
-        ts = entry['ts'] - start_ts
-        
+    for entry in filtered_sorted_entries:
+        ts = entry['ts'] - start_ts  # revert: use seconds as before
         # print percentage complete
         printPerc(ts, end_time)
-        
         # decode current entry
         decoded = {}
         if (entry['type'] == 1):
@@ -237,23 +273,18 @@ if __name__ == "__main__":
             decoded = decodePlimit(entry['data'])
         if (entry['type'] == 4):
             decoded = decodePrioritySelections(entry['data'])
-
         # if entry had cores field, expand entry to one per core included in cores bitfield
         if 'cores' in decoded:
             decoded = expandCores(decoded)
-
-        # add timestamp to decoded entry
+        # add timestamp and type to decoded entry
         decoded['ts'] = ts
+        decoded['type'] = entry['type']  # <-- Ensure type is preserved for per-type plotting
         values.append(decoded)
-        
         # add to foundkeys
-        newfound = {key for key in decoded if key != 'ts'}
+        newfound = {key for key in decoded if key != 'ts' and key != 'type'}
         foundKeys.update(newfound)
-
         # Increment the type count
         type_counts[entry['type']] = type_counts.get(entry['type'], 0) + 1
-
-        sidx = (sidx + 1) % len(entries)
 
     printPerc(100)
     print(f"Found {end_time:0.03f}s of log data")
@@ -263,23 +294,8 @@ if __name__ == "__main__":
     for entry_type, count in type_counts.items():
         print(f"Type {entry_type}: {count} entries")
 
-    plots = []
-    plotkeys = getPlotKeys(args.plot1, foundKeys)
-    if (len(plotkeys) > 0): plots.append(plotkeys)
-    plotkeys = getPlotKeys(args.plot2, foundKeys)
-    if (len(plotkeys) > 0): plots.append(plotkeys) 
-    plotkeys = getPlotKeys(args.plot3, foundKeys)
-    if (len(plotkeys) > 0): plots.append(plotkeys) 
-    
-    csvkeys = getPlotKeys(args.csv, foundKeys)
-    if (len(csvkeys) > 0): 
-        csvkeys = ['ts'] + csvkeys
-        generateCsv(values, csvkeys, args.csvfile)
-
-    # Modify the script to generate a plot for each type
-    plots_by_type = {}
-
     # Group data by type for plotting
+    plots_by_type = {}
     for entry in values:
         entry_type = entry.get('type', None)
         if entry_type is not None:
@@ -287,13 +303,17 @@ if __name__ == "__main__":
                 plots_by_type[entry_type] = []
             plots_by_type[entry_type].append(entry)
 
-    # Generate a plot for each type
-    for entry_type, data in plots_by_type.items():
-        print(f"Generating plot for type {entry_type}")
-        plotkeys = [key for key in data[0].keys() if key != 'ts' and key != 'type']
-        if plotkeys:
-            plot(data, [plotkeys])
-            plt.savefig(f"pwr_log_plot_type_{entry_type}.png")  # Save each plot with a unique filename
+    # Only generate per-type plots if entry_type is not provided
+    if args.entry_type is None:
+        # Generate a plot for each type
+        for entry_type, data in plots_by_type.items():
+            print(f"Generating plot for type {entry_type}")
+            plotkeys = [key for key in data[0].keys() if key != 'ts' and key != 'type']
+            if plotkeys:
+                plt.figure(figsize=(16,8))
+                plot(data, [plotkeys])
+                plt.savefig(f"pwr_log_plot_type_{entry_type}.png")  # Save each plot with a unique filename
+                plt.close()  # Close the figure to avoid overlap
 
     # Check if the user provided an entry type
     if args.entry_type is not None:
@@ -304,12 +324,15 @@ if __name__ == "__main__":
             plotkeys = [key for key in data[0].keys() if key != 'ts' and key != 'type']
             if plotkeys:
                 plot(data, [plotkeys])
+                plt.savefig(f"pwr_log_plot_type_{entry_type_to_display}.png")  # Save the plot for the specified type
                 plt.show()  # Display the plot interactively
         else:
             print(f"Entry type {entry_type_to_display} not found in the data.")
 
-    if len(plots) > 0:
-        plot(values, plots) 
+    # Only generate multi-plot if entry_type is not provided
+    if args.entry_type is None:
+        if len(plots) > 0:
+            plot(values, plots) 
 
     if (args.list):
         print("Found keys")

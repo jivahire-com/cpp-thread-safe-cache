@@ -61,7 +61,6 @@ mock_target(${TARGET}
     ap_core_ppu_init
 
     ap_core_util_boot_core
-    ap_core_util_get_fuse_enabled_cores
     ap_core_util_set_all_rvbaraddr
     ap_core_util_set_rvbaraddr
 
@@ -70,6 +69,7 @@ mock_target(${TARGET}
     fpfw_timer_enable
 
     mmio_read32
+    mmio_write32
     sds_block_creation
     sds_block_write
 

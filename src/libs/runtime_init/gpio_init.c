@@ -57,9 +57,9 @@ static const gpio_config_entry_t def_gpio_config_table_grp[] = {
 /* AFM configuration for i3c scl and sda gpios */
 static const gpio_afm_entry_t fpga_config_gpio_table_afm[] = {
     {PADRING_SE_AFM_I3C2_SCL,
-     {{.pull_down = 0, .pull_up = 0, .drive_strength = 3, .slew_rate = 0, .schmitt_trigger = 0, .afmsel = 1}}},
+     {{.pull_down = 0, .pull_up = 0, .drive_strength = 0, .slew_rate = 0, .schmitt_trigger = 0, .afmsel = 1}}},
     {PADRING_SE_AFM_I3C2_SDA,
-     {{.pull_down = 0, .pull_up = 0, .drive_strength = 3, .slew_rate = 0, .schmitt_trigger = 0, .afmsel = 1}}},
+     {{.pull_down = 0, .pull_up = 0, .drive_strength = 0, .slew_rate = 0, .schmitt_trigger = 0, .afmsel = 1}}},
 };
 
 /*------------- Functions ----------------*/
@@ -67,7 +67,7 @@ static const gpio_afm_entry_t fpga_config_gpio_table_afm[] = {
  * @brief Initialize and configure GPIO registers.
  *
  */
-FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_print", "cfg_mgr", "var_serv"))
+FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_print"))
 {
     int status = SILIBS_SUCCESS;
     static gpio_init_config_t gpio_init_config;
@@ -104,16 +104,24 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_pri
 
     FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
 
-    if (die_id == SOC_D1)
-    {
-        uart_afm_knobs = config_get_uart_afm_cfg_die1();
-    }
-    else
+    if (die_id == SOC_D0)
     {
         uart_afm_knobs = config_get_uart_afm_cfg_die0();
     }
+    else
+    {
+        uart_afm_knobs = config_get_uart_afm_cfg_die1();
+    }
 
     status = gpio_override_uart_afmsel(die_id, &uart_afm_knobs);
+
+    if (idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON)
+    {
+        // Override AFM for shared UART pins in case of PLATFORM_RVP_EVT_SILICON
+        gpio_configure_shared_uart(die_id,
+                                   config_get_uart_die_cfg().uart_die_sel[0],
+                                   config_get_uart_die_cfg().uart_die_sel[1]);
+    }
 
     FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
 

@@ -28,7 +28,7 @@ sdm_itcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm
 mscp_manifest              = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/man/etman.bin'}
 accel_manifest             = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/man/etman.bin' }
 mesh_config                = { type='file', local='${REPO_APP_PATH_kng_mesh_binary_images}/cmn800_mesh_tables.bin' }
-ddr_phy                    = { type="file",  local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
+ddr_phy                    = { type='file',  local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
 
 # Build this flavor with
 #  datwizard build --flavor "kingsgate.ifwi.soc.debug.custom"
@@ -53,7 +53,7 @@ sdm_itcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm
 mscp_manifest              = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/man/etman.bin'}
 accel_manifest             = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/man/etman.bin' }
 mesh_config                = { type='file', local='${REPO_APP_PATH_kng_mesh_binary_images}/cmn800_mesh_tables.bin' }
-ddr_phy                    = { type="file",  local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
+ddr_phy                    = { type='file',  local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
 
 # Build this flavor with
 #  datwizard build --flavor "kingsgate.ifwi.fpga.debug.custom"
@@ -78,7 +78,7 @@ sdm_itcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm
 mscp_manifest              = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/man/etman.bin'}
 accel_manifest             = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/man/etman.bin' }
 mesh_config                = { type='file', local='${REPO_APP_PATH_kng_mesh_binary_images}/cmn800_mesh_tables.bin' }
-ddr_phy                    = { type="file",  local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
+ddr_phy                    = { type='file',  local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
 
 # Build this flavor with
 #  datwizard build --flavor "kingsgate.ifwi.ap.baremetal.debug"
@@ -97,4 +97,4 @@ cded_itcm                  = { type='file', local='${REPO_APP_PATH_kingsgate.sdm
 sdm_dtcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/sdm/sdm_fw_dtcm.bin'}
 sdm_itcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/sdm/sdm_fw_itcm.bin'}
 mesh_config                = { type='file', local='${REPO_APP_PATH_kng_mesh_binary_images}/cmn800_mesh_tables.bin' }
-ddr_phy                    = { type="file",  local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
+ddr_phy                    = { type='file',  local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }

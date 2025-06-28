@@ -73,7 +73,7 @@ static int32_t SpiControllerBridgeInit(uintptr_t spi_ctrl_addr, uintptr_t spi_br
 FPFW_INIT_COMPONENT(spi_bridge, FPFW_INIT_DEPENDENCIES("hw_ver"))
 {
 #if defined(SCP_RUNTIME_INIT)
-    int32_t status = SpiControllerBridgeInit(D2D_MBOX_SPI_CTRL_BASE_ADDR, D2D_MBOX_SPI_BRIDGE_BASE_ADDR, 10);
+    int32_t status = SpiControllerBridgeInit(D2D_MBOX_SPI_CTRL_BASE_ADDR, D2D_MBOX_SPI_BRIDGE_BASE_ADDR, 20);
     if (status != 0)
     {
         return (fpfw_init_result_t){status, NULL};

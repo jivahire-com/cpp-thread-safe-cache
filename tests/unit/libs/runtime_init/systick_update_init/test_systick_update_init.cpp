@@ -41,7 +41,7 @@ idsw_plat_id_t __wrap_idsw_get_platform_sdv(void)
 //
 // Tests
 //
-TEST_FUNCTION(test_system_info_init, nullptr, nullptr)
+TEST_FUNCTION(test_systick_update_init, nullptr, nullptr)
 {
     //
     // Test for SVP
@@ -77,6 +77,6 @@ TEST_FUNCTION(test_system_info_init, nullptr, nullptr)
     // Call API under test
     _fpfw_component_systick_upd.init_fn();
 
-    assert_int_equal(systick_get_emcpu_clock(), 250000000U);
+    assert_int_equal(systick_get_emcpu_clock(), 1000000000U);
 }
 }

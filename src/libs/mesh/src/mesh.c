@@ -240,24 +240,38 @@ void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_para
             sys_cntr_delay.d2dss_sys_counter_delay[i];
     }
 
-    if (!idhw_is_single_die_boot_en()) // 2 Die
+    idsw_plat_id_t platform = idsw_get_platform_sdv();
+    bool is_single_die = idhw_is_single_die_boot_en();
+
+    switch (platform)
     {
-        MESH_INFO("Dual Die Boot\n");
-        cmn800_sequence_param->cmn_config_enum = CONFIG_2D_NUMA_64HNS_HIER_3SN_enum; // 2 Die
+    case PLATFORM_FPGA_LARGE:
+    case PLATFORM_FPGA_LARGE_RVP:
+        cmn800_sequence_param->cmn_config_enum =
+            is_single_die ? CONFIG_1D_UMA_8HNS_HIER_3SN_enum : CONFIG_2D_NUMA_8HNS_HIER_3SN_enum;
+        break;
+
+    case PLATFORM_RVP_EVT_SILICON:
+    default:
+        cmn800_sequence_param->cmn_config_enum =
+            is_single_die ? CONFIG_1D_UMA_64HNS_HIER_3SN_enum : CONFIG_2D_NUMA_64HNS_HIER_3SN_enum;
+        break;
+    }
+
+    if (!is_single_die)
+    {
         cmn800_sequence_param->BOOT_2D_ENABLE = true;
+        MESH_INFO("Dual Die Boot, platform(%d), config_value %d\n",
+                  idsw_get_platform_sdv(),
+                  cmn800_sequence_param->cmn_config_enum);
     }
-    if (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE || idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE_RVP)
+    else
     {
-        if (idhw_is_single_die_boot_en())
-        {
-            cmn800_sequence_param->cmn_config_enum = CONFIG_1D_UMA_8HNS_HIER_3SN_enum; // 1 Die FPGA
-        }
-        else
-        {
-            cmn800_sequence_param->cmn_config_enum = CONFIG_2D_NUMA_8HNS_HIER_3SN_enum; // 2 Die FPGA
-            cmn800_sequence_param->BOOT_2D_ENABLE = true;
-        }
+        MESH_INFO("Single Die Boot, platform(%d), config_value %d\n",
+                  idsw_get_platform_sdv(),
+                  cmn800_sequence_param->cmn_config_enum);
     }
+
     cmn800_sequence_param->cmn800_sequence_knobs.cmn_sam_config = cmn800_sequence_param->cmn_config_enum;
     // Read the Config Knobs from SPI
     if (config_get_mesh_d2d_override() == true) // Check if the override is enabled
@@ -741,6 +755,7 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
             FPFW_RUNTIME_ASSERT(0);
         }
         cmn800_set_i3c_dimm_params(dimm_sku, test32);
+        cmn800_sequence_param.DRAM_SIZE = get_i3c_dimm_cap_per_ch();
     }
 
     if (system_info_is_warm_start())

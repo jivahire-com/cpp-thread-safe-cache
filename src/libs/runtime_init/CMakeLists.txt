@@ -285,6 +285,7 @@ add_library(${TARGET}
         variable_services_init.c
         virt_irq_init.c
         watchdog_init.c
+        systick_update_init.c
 )
 
 target_link_libraries(

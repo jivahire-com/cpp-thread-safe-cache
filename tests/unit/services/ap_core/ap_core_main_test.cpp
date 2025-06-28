@@ -114,12 +114,6 @@ void __wrap_FpFwAssert(int expression)
     check_expected(expression);
 }
 
-void __wrap_ap_core_util_get_fuse_enabled_cores(corebits_t* p_enabled_cores)
-{
-    assert_non_null(p_enabled_cores);
-    check_expected_ptr(p_enabled_cores);
-}
-
 void __real_ap_core_ppu_init(ap_core_service_context_t* p_context);
 void __wrap_ap_core_ppu_init(ap_core_service_context_t* p_context)
 {
@@ -229,6 +223,13 @@ uint32_t __wrap_mmio_read32(volatile uint32_t* addr)
     return (mock_type(uint32_t));
 }
 
+void __wrap_mmio_write32(volatile uint32_t* addr, uint32_t data)
+{
+    check_expected(addr);
+    check_expected(data);
+    function_called();
+}
+
 int32_t __wrap_sds_block_write(uint32_t sds_module_id, void* buffer, size_t buffer_size)
 {
     check_expected(sds_module_id);
@@ -331,7 +332,6 @@ static int setup(void** state)
 
     // add the expected/check values for power internal functions
     // don't care about the actual values, just that they are passed (wrap function will confirm not null)
-    expect_any(__wrap_ap_core_util_get_fuse_enabled_cores, p_enabled_cores);
     expect_any(__wrap_ap_core_ppu_init, p_context);
 
     expect_not_value(__wrap_FpFwAssert, expression, false);
@@ -501,11 +501,19 @@ AP_CORE_TEST(dispatch_ap_core_boot, setup, NULL)
 
 AP_CORE_TEST(dispatch_cluster_core_init, setup, NULL)
 {
+#define REF_MACRO_CTRL_REG_ADDR (0x15000a4)
     ssi_startup_notification_request_t test_request;
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
     test_request.stage = STARTUP_CLUSTER_CORE_INIT;
     test_request.boot_type = COLD_BOOT;
+
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)REF_MACRO_CTRL_REG_ADDR);
+    will_return(__wrap_mmio_read32, 0);
+
+    expect_value(__wrap_mmio_write32, addr, (uint32_t)REF_MACRO_CTRL_REG_ADDR);
+    expect_value(__wrap_mmio_write32, data, 1);
+    expect_function_call(__wrap_mmio_write32);
 
     // expect a call to turn on cluster PPUs
     expect_value(__wrap_ap_core_ppu_clusters_on, p_context, s_ap_core_ctx);

@@ -133,8 +133,6 @@ int __wrap_gpio_override_uart_afmsel(uint8_t die_id, uart_afm_cfg_t* uart_afm)
 
 idsw_plat_id_t __wrap_idsw_get_platform_sdv(void)
 {
-    function_called();
-
     return mock_type(idsw_plat_id_t);
 }
 
@@ -146,6 +144,19 @@ KNG_DIE_ID __wrap_idsw_get_die_id()
 idsw_cpu_type_t __wrap_idsw_get_cpu_type()
 {
     return mock_type(idsw_cpu_type_t);
+}
+
+uint32_t __wrap_mmio_read32(volatile uint32_t* addr)
+{
+    assert_non_null(addr);
+    // return mock_type(uint32_t);
+    return 0;
+}
+
+void __wrap_mmio_write32(volatile uint32_t* addr, uint32_t data)
+{
+    FPFW_UNUSED(data);
+    assert_non_null(addr);
 }
 
 //
@@ -164,8 +175,6 @@ TEST_FUNCTION(test_gpio_lib_init_SVP, nullptr, nullptr)
     expect_value(__wrap_gpio_afm_init, num, 2);
     expect_function_call(__wrap_gpio_afm_init);
 
-    expect_function_call(__wrap_idsw_get_platform_sdv);
-    expect_function_call(__wrap_idsw_get_platform_sdv);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     expect_not_value(__wrap_gpio_init, gpio_cfg_tbl, NULL);
     expect_value(__wrap_gpio_init, num, 2);
@@ -194,8 +203,7 @@ TEST_FUNCTION(test_gpio_lib_init_FPGA, nullptr, nullptr)
     expect_value(__wrap_gpio_afm_init, num, 2);
     expect_function_call(__wrap_gpio_afm_init);
 
-    expect_function_call(__wrap_idsw_get_platform_sdv);
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
     expect_not_value(__wrap_gpio_init, gpio_cfg_tbl, NULL);
     expect_value(__wrap_gpio_init, num, 2); // Custom configuration table has 2 entries for MSCP_EXP_GPIO_4 and MSCP_EXP_GPIO_6
     expect_function_call(__wrap_gpio_init);
@@ -223,8 +231,34 @@ TEST_FUNCTION(test_gpio_lib_init_FPGA_die1, nullptr, nullptr)
     expect_value(__wrap_gpio_afm_init, num, 2);
     expect_function_call(__wrap_gpio_afm_init);
 
-    expect_function_call(__wrap_idsw_get_platform_sdv);
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
+    expect_not_value(__wrap_gpio_init, gpio_cfg_tbl, NULL);
+    expect_value(__wrap_gpio_init, num, 2); // Custom configuration table has 2 entries for MSCP_EXP_GPIO_4 and MSCP_EXP_GPIO_6
+    expect_function_call(__wrap_gpio_init);
+    will_return(__wrap_gpio_override_uart_afmsel, SILIBS_SUCCESS);
+
+    // Check dependencies
+    assert_string_equal("mpu", _fpfw_component_gpio_lib.children[0]);
+    assert_string_equal("hw_ver", _fpfw_component_gpio_lib.children[1]);
+
+    // Call API under test
+    _fpfw_component_gpio_lib.init_fn();
+}
+
+TEST_FUNCTION(test_gpio_lib_init_silicon_rvp, nullptr, nullptr)
+{
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    // Set up expectations
+    expect_value(__wrap_gpio_afm_init, gpio_afm_tbl, NULL);
+    expect_value(__wrap_gpio_afm_init, num, 0);
+    expect_function_call(__wrap_gpio_afm_init);
+
+    expect_not_value(__wrap_gpio_afm_init, gpio_afm_tbl, NULL);
+    expect_value(__wrap_gpio_afm_init, num, 2);
+    expect_function_call(__wrap_gpio_afm_init);
+
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_not_value(__wrap_gpio_init, gpio_cfg_tbl, NULL);
     expect_value(__wrap_gpio_init, num, 2); // Custom configuration table has 2 entries for MSCP_EXP_GPIO_4 and MSCP_EXP_GPIO_6
     expect_function_call(__wrap_gpio_init);

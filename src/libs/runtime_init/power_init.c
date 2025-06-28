@@ -63,20 +63,24 @@ FPFW_INIT_COMPONENT(pwr_svc,
                 {.flags = VM_FLAGS_NONE}, /* Vpciep75 */
                 {.flags = VM_FLAGS_DIV2}, /* Vddq1p1 */
                 {.flags = VM_FLAGS_DIV2}, /* Vpll1p2 */
+
+                {.flags = VM_FLAGS_NONE}, /* Vsoc */
+                {.flags = VM_FLAGS_NONE}, /* Vd2d0p55 */
+                {.flags = VM_FLAGS_NONE}, /* Vclk0p875 */
+                {.flags = VM_FLAGS_NONE}, /* Vpll0p875 */
+                {.flags = VM_FLAGS_DIV2}, /* Vddq1p1 */
+
+                {.flags = VM_FLAGS_NONE}, /* Vsoc */
+                {.flags = VM_FLAGS_NONE}, /* Vd2d0p55 */
+                {.flags = VM_FLAGS_NONE}, /* Vclk0p875 */
+                {.flags = VM_FLAGS_NONE}, /* Vpll0p875 */
+                {.flags = VM_FLAGS_DIV2}, /* Vddq1p1 */
+
                 {.flags = VM_FLAGS_NONE}, /* Vsoc */
                 {.flags = VM_FLAGS_NONE}, /* Vpciep75 */
                 {.flags = VM_FLAGS_DIV2}, /* Vddq1p1 */
                 {.flags = VM_FLAGS_DIV2}, /* Vgpio1p2 */
-                {.flags = VM_FLAGS_NONE}, /* Vsoc */
-                {.flags = VM_FLAGS_NONE}, /* Vd2d0p55 */
-                {.flags = VM_FLAGS_NONE}, /* Vclk0p875 */
-                {.flags = VM_FLAGS_NONE}, /* Vpll0p875 */
-                {.flags = VM_FLAGS_DIV2}, /* Vddq1p1 */
-                {.flags = VM_FLAGS_NONE}, /* Vsoc */
-                {.flags = VM_FLAGS_NONE}, /* Vd2d0p55 */
-                {.flags = VM_FLAGS_NONE}, /* Vclk0p875 */
-                {.flags = VM_FLAGS_NONE}, /* Vpll0p875 */
-                {.flags = VM_FLAGS_DIV2}, /* Vddq1p1 */
+
             },
         .tile_vm =
             {
@@ -168,6 +172,9 @@ FPFW_INIT_COMPONENT(pwr_svc,
     case PLATFORM_EMU_2D_8C:
         power_config.platform_core_power_support = true;
         break;
+    case PLATFORM_RVP_EVT_SILICON:
+        power_config.platform_soc_power_support = true;
+        power_config.platform_core_power_support = true;
     default:
         break;
     }

@@ -32,19 +32,19 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-silibs_status_t __wrap_read_core_defect_fuses(uint32_t* fuse_dis_core_64_67, uint32_t* fuse_dis_core_32_63, uint32_t* fuse_dis_core_0_31)
+silibs_status_t __wrap_read_core_defect_fuses(uint32_t* fuse_dis_core_64_67, uint32_t* fuse_dis_core_63_32, uint32_t* fuse_dis_core_31_0)
 {
     if (fuse_dis_core_64_67)
     {
         *fuse_dis_core_64_67 = 0; // Simulate fuse value of 0.
     }
-    if (fuse_dis_core_32_63)
+    if (fuse_dis_core_63_32)
     {
-        *fuse_dis_core_32_63 = 0; // Simulate fuse value of 0.
+        *fuse_dis_core_63_32 = 0; // Simulate fuse value of 0.
     }
-    if (fuse_dis_core_0_31)
+    if (fuse_dis_core_31_0)
     {
-        *fuse_dis_core_0_31 = 0; // Simulate fuse value of 0.
+        *fuse_dis_core_31_0 = 0; // Simulate fuse value of 0.
     }
     return mock_type(silibs_status_t);
 }
@@ -54,62 +54,62 @@ KNG_DIE_ID __wrap_idsw_get_die_id(void)
     return mock_type(KNG_DIE_ID);
 }
 
-uint32_t __wrap_config_get_die0_core_disable_value_0_31()
+uint32_t __wrap_config_get_die0_core_disable_value_31_0()
 {
     return mock_type(uint32_t);
 }
 
-uint32_t __wrap_config_get_die0_core_disable_value_32_63()
+uint32_t __wrap_config_get_die0_core_disable_value_63_32()
 {
     return mock_type(uint32_t);
 }
 
-uint32_t __wrap_config_get_die0_core_disable_value_64_95()
+uint32_t __wrap_config_get_die0_core_disable_value_95_64()
 {
     return mock_type(uint32_t);
 }
 
-uint32_t __wrap_config_get_die0_core_spare_en_0_31()
+uint32_t __wrap_config_get_die0_core_spare_en_31_0()
 {
     return mock_type(uint32_t);
 }
 
-uint32_t __wrap_config_get_die0_core_spare_en_32_63()
+uint32_t __wrap_config_get_die0_core_spare_en_63_32()
 {
     return mock_type(uint32_t);
 }
 
-uint32_t __wrap_config_get_die0_core_spare_en_64_95()
+uint32_t __wrap_config_get_die0_core_spare_en_95_64()
 {
     return mock_type(uint32_t);
 }
 
-uint32_t __wrap_config_get_die1_core_disable_value_0_31()
+uint32_t __wrap_config_get_die1_core_disable_value_31_0()
 {
     return mock_type(uint32_t);
 }
 
-uint32_t __wrap_config_get_die1_core_disable_value_32_63()
+uint32_t __wrap_config_get_die1_core_disable_value_63_32()
 {
     return mock_type(uint32_t);
 }
 
-uint32_t __wrap_config_get_die1_core_disable_value_64_95()
+uint32_t __wrap_config_get_die1_core_disable_value_95_64()
 {
     return mock_type(uint32_t);
 }
 
-uint32_t __wrap_config_get_die1_core_spare_en_0_31()
+uint32_t __wrap_config_get_die1_core_spare_en_31_0()
 {
     return mock_type(uint32_t);
 }
 
-uint32_t __wrap_config_get_die1_core_spare_en_32_63()
+uint32_t __wrap_config_get_die1_core_spare_en_63_32()
 {
     return mock_type(uint32_t);
 }
 
-uint32_t __wrap_config_get_die1_core_spare_en_64_95()
+uint32_t __wrap_config_get_die1_core_spare_en_95_64()
 {
     return mock_type(uint32_t);
 }
@@ -119,13 +119,13 @@ TEST_FUNCTION(test_core_info_get_disable_cores_result_die0, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     // Fuse all 0；Config seperately setup 0x0, 0x1, 0x3
     will_return(__wrap_read_core_defect_fuses, SILIBS_SUCCESS);
-    will_return(__wrap_config_get_die0_core_disable_value_0_31, 0x00000000);
-    will_return(__wrap_config_get_die0_core_disable_value_32_63, 0x00000001);
-    will_return(__wrap_config_get_die0_core_disable_value_64_95, 0x00000003);
+    will_return(__wrap_config_get_die0_core_disable_value_31_0, 0x00000000);
+    will_return(__wrap_config_get_die0_core_disable_value_63_32, 0x00000001);
+    will_return(__wrap_config_get_die0_core_disable_value_95_64, 0x00000003);
 
-    will_return(__wrap_config_get_die0_core_spare_en_0_31, 0x00000000);
-    will_return(__wrap_config_get_die0_core_spare_en_32_63, 0x000000000);
-    will_return(__wrap_config_get_die0_core_spare_en_64_95, 0x00000000);
+    will_return(__wrap_config_get_die0_core_spare_en_31_0, 0x00000000);
+    will_return(__wrap_config_get_die0_core_spare_en_63_32, 0x000000000);
+    will_return(__wrap_config_get_die0_core_spare_en_95_64, 0x00000000);
 
     // calculation
     core_info_get_platform_disable_cores();
@@ -146,14 +146,14 @@ TEST_FUNCTION(test_core_info_get_spare_en_cores_die0, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     // Fuse all 0；Config seperately setup 0x2, 0x1, 0x3
     will_return(__wrap_read_core_defect_fuses, SILIBS_SUCCESS);
-    will_return(__wrap_config_get_die0_core_disable_value_0_31, 0x00000002);
-    will_return(__wrap_config_get_die0_core_disable_value_32_63, 0x00000001);
-    will_return(__wrap_config_get_die0_core_disable_value_64_95, 0x0000000F);
+    will_return(__wrap_config_get_die0_core_disable_value_31_0, 0x00000002);
+    will_return(__wrap_config_get_die0_core_disable_value_63_32, 0x00000001);
+    will_return(__wrap_config_get_die0_core_disable_value_95_64, 0x0000000F);
 
     // Enable Core 1, Core 66, Core 67
-    will_return(__wrap_config_get_die0_core_spare_en_0_31, 0x00000002);
-    will_return(__wrap_config_get_die0_core_spare_en_32_63, 0x00000000);
-    will_return(__wrap_config_get_die0_core_spare_en_64_95, 0x0000000C);
+    will_return(__wrap_config_get_die0_core_spare_en_31_0, 0x00000002);
+    will_return(__wrap_config_get_die0_core_spare_en_63_32, 0x00000000);
+    will_return(__wrap_config_get_die0_core_spare_en_95_64, 0x0000000C);
 
     // calculation
     core_info_get_platform_disable_cores();
@@ -176,13 +176,13 @@ TEST_FUNCTION(test_core_info_get_disable_cores_result_die1, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_die_id, DIE_1);
     // Fuse all 0；Config seperately setup 0x0, 0x1, 0x3
     will_return(__wrap_read_core_defect_fuses, SILIBS_SUCCESS);
-    will_return(__wrap_config_get_die1_core_disable_value_0_31, 0x00000000);
-    will_return(__wrap_config_get_die1_core_disable_value_32_63, 0x00000001);
-    will_return(__wrap_config_get_die1_core_disable_value_64_95, 0x00000003);
+    will_return(__wrap_config_get_die1_core_disable_value_31_0, 0x00000000);
+    will_return(__wrap_config_get_die1_core_disable_value_63_32, 0x00000001);
+    will_return(__wrap_config_get_die1_core_disable_value_95_64, 0x00000003);
 
-    will_return(__wrap_config_get_die1_core_spare_en_0_31, 0x00000000);
-    will_return(__wrap_config_get_die1_core_spare_en_32_63, 0x000000000);
-    will_return(__wrap_config_get_die1_core_spare_en_64_95, 0x00000000);
+    will_return(__wrap_config_get_die1_core_spare_en_31_0, 0x00000000);
+    will_return(__wrap_config_get_die1_core_spare_en_63_32, 0x000000000);
+    will_return(__wrap_config_get_die1_core_spare_en_95_64, 0x00000000);
 
     // calculation
     core_info_get_platform_disable_cores();
@@ -203,14 +203,14 @@ TEST_FUNCTION(test_core_info_get_spare_en_cores_die1, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_die_id, DIE_1);
     // Fuse all 0；Config seperately setup 0x2, 0x1, 0x3
     will_return(__wrap_read_core_defect_fuses, SILIBS_SUCCESS);
-    will_return(__wrap_config_get_die1_core_disable_value_0_31, 0x00000002);
-    will_return(__wrap_config_get_die1_core_disable_value_32_63, 0x00000001);
-    will_return(__wrap_config_get_die1_core_disable_value_64_95, 0x0000000F);
+    will_return(__wrap_config_get_die1_core_disable_value_31_0, 0x00000002);
+    will_return(__wrap_config_get_die1_core_disable_value_63_32, 0x00000001);
+    will_return(__wrap_config_get_die1_core_disable_value_95_64, 0x0000000F);
 
     // Enable Core 1, Core 66, Core 67
-    will_return(__wrap_config_get_die1_core_spare_en_0_31, 0x00000002);
-    will_return(__wrap_config_get_die1_core_spare_en_32_63, 0x00000000);
-    will_return(__wrap_config_get_die1_core_spare_en_64_95, 0x0000000C);
+    will_return(__wrap_config_get_die1_core_spare_en_31_0, 0x00000002);
+    will_return(__wrap_config_get_die1_core_spare_en_63_32, 0x00000000);
+    will_return(__wrap_config_get_die1_core_spare_en_95_64, 0x0000000C);
 
     // calculation
     core_info_get_platform_disable_cores();

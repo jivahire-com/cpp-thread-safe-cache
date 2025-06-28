@@ -17,7 +17,7 @@ __DTCMSTART__        = 0x20000000;
 __DTCMEND__          = 0x20077FFF;
 __RMSSDATASTART__    = 0x0134D000;
 __RMSSDATAEND__      = 0x0138CFFF;
-__RESERVED_CODE_SIZE = 0x8000;
+__RESERVED_CODE_SIZE = 0x4000;
 
 /* 
  * CODE and DATA sizes map directly to the sizes of the respective TCM (plus one for size).

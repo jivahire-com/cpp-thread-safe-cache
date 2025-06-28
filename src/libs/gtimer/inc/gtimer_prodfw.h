@@ -40,7 +40,7 @@ typedef struct {
  *
  *    The function initializes the system counter
  *    @param config - configuration for the gtimer
- * 
+ *
  *    @retval none
  */
 void gtimer_prodfw_init(gtimer_prodfw_init_config_t* config);
@@ -64,27 +64,27 @@ void gtimer_add_oneshot(fpfw_tmr_entry_t* tmr, uint64_t tick_interval, void (*cb
  *      exp_tick - expiry tick
  *      now_tick - current tick
  *   @param ctx - context
- * 
+ *
  */
 void gtimer_add_periodic(fpfw_tmr_entry_t* tmr, uint64_t tick_interval, void (*cb)(void* ctx, uint64_t exp_tick, uint64_t now_tick), void* ctx);
 
 /**
  * Removes a timer from the queue
- * 
+ *
  * @param   tmr pointer to the timer entry
  */
 void gtimer_remove(fpfw_tmr_entry_t* tmr);
 
 /**
  * Get the frequency of the gtimer
- * 
+ *
  * @return  frequency of the gtimer
  */
 uint32_t gtimer_prodfw_get_frequency();
 
 /**
  * Get the current counter value of the gtimer
- * 
+ *
  * @return  current counter value of the gtimer
  */
 uint64_t gtimer_prodfw_get_counter();

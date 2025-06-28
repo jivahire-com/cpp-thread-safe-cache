@@ -22,7 +22,7 @@
 // TODO - Move this into config system knob
 #define SVP_REFCLK_FREQUENCY  125000000U
 #define FPGA_REFCLK_FREQUENCY 10000000U
-#define SOC_REFCLK_FREQUENCY  250000000U
+#define SOC_REFCLK_FREQUENCY  1000000000U
 
 /*-------------------------------- Typedefs ---------------------------------*/
 

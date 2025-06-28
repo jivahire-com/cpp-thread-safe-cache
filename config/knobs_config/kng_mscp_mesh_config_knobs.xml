@@ -85,7 +85,7 @@
   <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
     <!-- Mesh Sequence -->
     <Knob name="mesh_d2d_override" type="bool" default="false" help="Enable and Use the Mesh D2D Knobs listed" />
-    <Knob name="cmn_sam_config" type="CMN_SAM_CONFIG_TYPE" default="CMN_SAM_CONFIG_1D_UMA_64HNS_HIER_3SN" help="Select Mesh config" />
+    <Knob name="cmn_sam_config" type="CMN_SAM_CONFIG_TYPE" default="CMN_SAM_CONFIG_2D_NUMA_64HNS_HIER_3SN" help="Select Mesh config" />
     <!-- <Knob name="cmn_cxl_interleave" type="uint8_t" default="0" help="Selct CXL intearleave value 0,3 or 4" />
     <Knob name="cmn_cxl_device_interleave_size" type="uint8_t" default="2" help="This field controls the interleave size across all aggregated CXSA/CXLSA Devices 4'h0: 64B Interleaved 4'h1: 128B Interleaved 4'h2: 256B Interleaved 4'h3: 512B Interleaved 4'h4: 1KB Interleaved 4'h5: 2KB Interleaved 4'h6: 4KB Interleaved 4'h7: 8KB Interleaved 4'h8: 16KB" /> -->
     <Knob name="cxl_params_die0" type="cxl_region_params_t" help="cxl region parameters for die 0" default="{false, INTERLEAVE_NONE, INTERLEAVE_SIZE_256B, false, false, {CXL_PORT_EMPTY,CXL_PORT_EMPTY,CXL_PORT_EMPTY,CXL_PORT_EMPTY}}"/>

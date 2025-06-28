@@ -118,8 +118,8 @@ TEST_FUNCTION(scp_avs0_driver_init_test, test_setup, test_cleanup)
 
     scp_avs_driver_initialize(&test_avs_device);
     assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS0);
-    assert_int_equal(avs_clk.ds, 3);
-    assert_int_equal(avs_mdata.ds, 3);
+    assert_int_equal(avs_clk.ds, 2);
+    assert_int_equal(avs_mdata.ds, 2);
 }
 
 TEST_FUNCTION(scp_avs1_driver_init_test, test_setup, test_cleanup)
@@ -156,8 +156,8 @@ TEST_FUNCTION(scp_avs1_driver_init_test, test_setup, test_cleanup)
 
     scp_avs_driver_initialize(&test_avs_device);
     assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS1);
-    assert_int_equal(avs_clk.ds, 3);
-    assert_int_equal(avs_mdata.ds, 3);
+    assert_int_equal(avs_clk.ds, 2);
+    assert_int_equal(avs_mdata.ds, 2);
 }
 
 TEST_FUNCTION(scp_avs2_driver_init_test, test_setup, test_cleanup)
@@ -194,8 +194,8 @@ TEST_FUNCTION(scp_avs2_driver_init_test, test_setup, test_cleanup)
 
     scp_avs_driver_initialize(&test_avs_device);
     assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS2);
-    assert_int_equal(avs_clk.ds, 3);
-    assert_int_equal(avs_mdata.ds, 3);
+    assert_int_equal(avs_clk.ds, 2);
+    assert_int_equal(avs_mdata.ds, 2);
 }
 
 TEST_FUNCTION(scp_avs3_driver_init_test, test_setup, test_cleanup)
@@ -232,8 +232,8 @@ TEST_FUNCTION(scp_avs3_driver_init_test, test_setup, test_cleanup)
 
     scp_avs_driver_initialize(&test_avs_device);
     assert_int_equal(test_avs_device.avs_bus_num, AVS_BUS3);
-    assert_int_equal(avs_clk.ds, 3);
-    assert_int_equal(avs_mdata.ds, 3);
+    assert_int_equal(avs_clk.ds, 2);
+    assert_int_equal(avs_mdata.ds, 2);
 }
 
 TEST_FUNCTION(scp_avs_interface_init_test, test_setup, test_cleanup)

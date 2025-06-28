@@ -38,7 +38,7 @@ class warm_start_test_die1(EchoFallsBaseTest):
         host_config: Path | str = None,
         host_name: str | None = None,
     ):
-        
+
         # Call parent class init
         super().__init__(
             name,
@@ -50,16 +50,16 @@ class warm_start_test_die1(EchoFallsBaseTest):
             host_config,
             host_name,
         )
-    
+
     def warm_start_test_die1(self):
-        """ 
-        Test function: 
-            1. Setup the Test. 
+        """
+        Test function:
+            1. Setup the Test.
             2. Wait for AP to be up
             3. Send Wswr command, followed by wsrd command
             4. Read response and check if data written is read back
             5. Submit wsreset CLI cmd and wait for SCP to successfully come up after a warm reset
-            6. Teardown Test. 
+            6. Teardown Test.
         """
         self.log.info("Running Warm start CLI Die1 command Test. . .")
         self.dut.setup()
@@ -70,10 +70,10 @@ class warm_start_test_die1(EchoFallsBaseTest):
         core_com_channel=self.dut.mb.node_0.soc.secondary_die.scp.channel_manager.get_current_channel()
         core_com_channel.open()
         assert core_com_channel.is_open()
-        
+
         try:
             self.log.info("Waiting for Heartbeat Msg")
-            core_com_channel.read_until(key="ScpHeartBeat", timeout_seconds=900)
+            core_com_channel.read_until(key="ScpHeartBeat", timeout_seconds=1800)
         except Exception as e:
             self.log.error(f"Error reading self.dut.mb.node_0.soc.secondary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
@@ -81,7 +81,7 @@ class warm_start_test_die1(EchoFallsBaseTest):
             time.sleep(30)
             return False
 
-        self.log.info("Submitting warm start data write command . . .") 
+        self.log.info("Submitting warm start data write command . . .")
         command="warm_start wswr 1 10 11 12 13"
         core_com_channel.write_line(write_string=command)
 
@@ -95,8 +95,8 @@ class warm_start_test_die1(EchoFallsBaseTest):
             self.dut.teardown()
             time.sleep(30)
             return False
-            
-        self.log.info("Submitting warm start data read command . . .") 
+
+        self.log.info("Submitting warm start data read command . . .")
         command="warm_start wsrd 1"
         core_com_channel.write_line(write_string=command)
 
@@ -112,7 +112,7 @@ class warm_start_test_die1(EchoFallsBaseTest):
             self.dut.teardown()
             time.sleep(30)
             return False
-               
+
         core_com_channel.close()
         self.test_notify(step="Warm start CLI Die1 tests done", msg="Test Done", _is_error=False)
         self.dut.teardown()

@@ -12,22 +12,41 @@
 #include <DfwkThreadXHost.h>     // for PDFWK_THREADX_HOST
 #include <build_data.h>          // for BUILD_PC, BUILD_TIMESTAMP, GIT_BRANCH
 #include <fpfw_init.h>           // for FPFW_INIT_STATUS_SUCCESS, fpfw_init_get...
+#include <idsw.h>                // for idsw_get_platform_sdv,
+#include <idsw_kng.h>            // for PLATFORM_FPGA_LARGE
 #include <interrupts.h>          // IWYU pragma: keep
 #include <silibs_mcp_top_regs.h> // IWYU pragma: keep
 #include <silibs_scp_top_regs.h> // IWYU pragma: keep
 #include <stddef.h>              // for NULL
 #include <stdio_textio.h>        // for stdio_textio_init
-#include <systick_update.h>      // for systick_get_emcpu_clock
 #include <textio_pl011.h>        // for textio_pl011_device_t, textio_pl011_dev...
 #include <uart_pl011.h>          // for UART_PL011_PARITY_NONE, UART_PL011_STOP...
 
 /*------------- Typedefs -----------------*/
+#define SVP_UART_APB_FREQUENCY  125000000U
+#define FPGA_UART_APB_FREQUENCY 10000000U
+#define SOC_UART_APB_FREQUENCY  250000000U
 
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
+static uint32_t get_uart_apb_frequency()
+{
+    switch (idsw_get_platform_sdv())
+    {
+    case PLATFORM_SVP_SIM:
+    case PLATFORM_SVP_MIN_CONFIG_SIM:
+        return SVP_UART_APB_FREQUENCY;
+    case PLATFORM_FPGA_LARGE:
+    case PLATFORM_FPGA_LARGE_RVP:
+        return FPGA_UART_APB_FREQUENCY;
+    default:
+        return SOC_UART_APB_FREQUENCY;
+    }
+}
+
 static void print_build_info()
 {
 
@@ -76,7 +95,7 @@ FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk", "nvic", "systick_upd"))
         .config_type = TEXTIO_PL011_CONFIG_TYPE_INTERRUPT,
         .is_vuart_enabled = true,
     };
-    pl011_config.clk_freq = systick_get_emcpu_clock(); // Set clock frequency from systick
+    pl011_config.clk_freq = get_uart_apb_frequency(); // Set clock frequency from APB clock
 
     static textio_pl011_device_t pl011_device = {0};
 

@@ -14,6 +14,7 @@
 #include <pcie_async_requests_i.h>
 #include <pcie_config_variable.h>
 #include <pcie_link_management_i.h>
+#include <pcie_lt_events.h>
 #include <pcie_manager_i.h>
 #include <pcie_phy_load_events.h>  // PhyFW load event
 #include <pcie_rp_event_handler.h> // Process Events/misc RP helper functions
@@ -33,7 +34,7 @@
  * within an rpss.
  */
 #define PRE_SI_WORKER_YIELD_TICKS  (2)
-#define POST_SI_WORKER_YIELD_TICKS (200)
+#define POST_SI_WORKER_YIELD_TICKS (8000)
 
 /*------------- Typedefs -----------------*/
 
@@ -57,7 +58,6 @@ static void send_full_pciess_init(pcie_manager_context_t* ctx)
      */
     send_sync_rpss_initial_config((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx);
     tx_event_flags_set(ctx->event_ptr, (1 << ctx->rpss_idx), TX_OR);
-    tx_thread_sleep(worker_yield_ticks);
 
     /*
      * Send pre root port initialization request to setup the RPSS.
@@ -95,6 +95,9 @@ void rpss_service_thread_fn(ULONG thread_input)
 
     /* Send Start LT */
     initiate_link_training_on_rpss(ctx);
+    /* Set event flag to indicate link training has begun */
+    FPFW_DBGPRINT_INFO("RPSS[%d]: Setting link training event\n", ctx->rpss_idx);
+    pcie_link_training_set_event(&pcie_lt_event);
 
     while (true)
     {

@@ -38,6 +38,7 @@
 // default for TDP power
 #define TDP_DEFAULT_POWER_A 400
 
+#define VF_CURVE_TEMP_RANGE_OFFSET 0x7F // offset for VF curve temp ranges in fuses
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -827,6 +828,7 @@ int32_t power_fuses_get_curve_temp(int8_t* core_max_temp, uint32_t count)
         }
 
         core_max_temp[entry_idx] = (int8_t)fuse_data;
+        core_max_temp[entry_idx] -= VF_CURVE_TEMP_RANGE_OFFSET;
     }
 
     return FPFW_STATUS_SUCCESS;

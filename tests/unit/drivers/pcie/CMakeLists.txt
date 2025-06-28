@@ -83,7 +83,8 @@ mock_target(${TARGET}
     pciess_deassert_por_reset
     pciess_rp_clear_intus
     pciess_rp_initiate_link_training
-    pciess_phys_sram_init_done
+    pciess_phys_toggle_clocks
+    pciess_poll_phys_sram_init_done
     pciess_rps_clear_intus
     pciess_rps_pre_rp_ready_init
     pciess_rp_ready

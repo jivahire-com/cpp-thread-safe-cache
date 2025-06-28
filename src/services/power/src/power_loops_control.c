@@ -420,6 +420,7 @@ static void set_vr_handler(power_ctrl_loop_state_t next_state_set,
         break;
     case POWER_CTRL_LOOP_SIGNAL_VCPU_DONE:
         POWER_LOG_TRACE("[POWER CTRL LOOP] [set_vr_handler] POWER_CTRL_LOOP_SIGNAL_VCPU_DONE\n");
+        s_ctrl_loop.current_vcpu = (uint16_t)(uintptr_t)event_data;
         power_control_loop_change_state(next_state_done);
         break;
     case POWER_CTRL_LOOP_SIGNAL_VCPU_PENDING:

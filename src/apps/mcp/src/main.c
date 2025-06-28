@@ -104,7 +104,11 @@ void main_thread(ULONG thread_input)
     uint32_t rtos_ticks = 0;
     while (true)
     {
-        FPFW_ET_LOG(McpHeartBeat, rtos_ticks);
+        if (rtos_ticks % 1000 == 0)
+        {
+            // reduce print frequency
+            FPFW_ET_LOG(McpHeartBeat, rtos_ticks);
+        }
         tx_thread_sleep(SLEEP_TICKS);
         rtos_ticks += SLEEP_TICKS;
     }

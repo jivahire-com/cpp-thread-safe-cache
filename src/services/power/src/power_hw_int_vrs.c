@@ -98,7 +98,9 @@ void AVSPwrWriteRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Comp
     case AVS_REQUEST_WRITE_DATA:
         if (pwr_avs_request[pwr_avs_bus].request.avs_response_single_resp.error.v_done == 1)
         {
-            power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
+            //! Send the current voltage set to the power control loop
+            uint16_t current_vcpu = pwr_avs_request[pwr_avs_bus].request.avs_params.avs_data;
+            power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, (void*)(uintptr_t)current_vcpu);
             POWER_LOG_TRACE("\n AVS PWR Write complete\n");
         }
         else
@@ -237,6 +239,7 @@ void AVSPwrReadRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Compl
         }
         else if (all_requests_completed(pwr_avs_request, (p_config->num_vr / MAX_AVS_RAILS))) // if all requests are completed but there are errors
         {
+            printf("AVS PWR read error, some VRs failed to read\n");
             power_loops_vr_telem_handle_event(POWER_VR_TELEM_SIGNAL_VR_CURRENT_FAIL, NULL);
         }
         break;
@@ -477,12 +480,6 @@ void power_vrs_read_vcpu_voltage()
     uint8_t vcpu_index;
     vcpu_index = p_config->vr_idx_info.vcpu_idx;
 
-    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_response_single_resp.error.as_uint8 = AVS_ERROR_NONE;
-    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].in_use = true;
-    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_params.avs_cmd_info.rail_id =
-        p_config->avs_details->rail_id;
-    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_params.avs_cmd_info.cmd_type = AVS_VOLTAGE_RW;
-
     if (!(all_requests_completed(pwr_avs_request, (p_config->num_vr / MAX_AVS_RAILS))))
     {
         // can't send another request until the previous one is complete, just signal failure and wait for retry
@@ -490,12 +487,17 @@ void power_vrs_read_vcpu_voltage()
         return;
     }
 
+    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_response_single_resp.error.as_uint8 = AVS_ERROR_NONE;
+    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].in_use = true;
+    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_params.avs_cmd_info.rail_id =
+        p_config->avs_details[vcpu_index].rail_id;
+    pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.avs_params.avs_cmd_info.cmd_type = AVS_VOLTAGE_RW;
     pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].error = false;
 
     scp_avs_client_read(&pwr_avs_interfaces[p_config->avs_details[vcpu_index].bus_id]->Header,
                         &pwr_avs_request[p_config->avs_details[vcpu_index].bus_id].request.Header,
                         AVSPwrReadRequestCompletion,
-                        (void*)(uintptr_t)p_config->avs_details->bus_id);
+                        (void*)(uintptr_t)p_config->avs_details[vcpu_index].bus_id);
 
     POWER_LOG_TRACE(" PWR AVS read compl. \n");
 }

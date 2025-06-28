@@ -789,17 +789,17 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_dual_die, setup_svp_platform_dual_di
     expect_value(__wrap_mscp_exp_spi_invalidate_region, die_id, die_num);
     expect_function_call(__wrap_mscp_exp_spi_invalidate_region);
 
+    // mscp_exp_spi_read_d1_to_d0_data
+    expect_value(__wrap_mscp_exp_spi_read_d1_to_d0_data, sync_point_data, &i3c_test_sync);
+    expect_value(__wrap_mscp_exp_spi_read_d1_to_d0_data, die_id, die_num);
+    expect_function_call(__wrap_mscp_exp_spi_read_d1_to_d0_data);
+
     // mscp_exp_spi_write_d0_to_d1_data
     i3c_test_sync.data_d0_to_d1_data = (die_num == SOC_D0) ? (0x3F) : (0xFC0);
     i3c_test_sync.data_ack_d0_to_d1_data = SPI_SYNC_DATA_VALID;
     expect_value(__wrap_mscp_exp_spi_write_d0_to_d1_data, sync_point_data, &i3c_test_sync);
     expect_value(__wrap_mscp_exp_spi_write_d0_to_d1_data, die_id, die_num);
     expect_function_call(__wrap_mscp_exp_spi_write_d0_to_d1_data);
-
-    // mscp_exp_spi_read_d1_to_d0_data
-    expect_value(__wrap_mscp_exp_spi_read_d1_to_d0_data, sync_point_data, &i3c_test_sync);
-    expect_value(__wrap_mscp_exp_spi_read_d1_to_d0_data, die_id, die_num);
-    expect_function_call(__wrap_mscp_exp_spi_read_d1_to_d0_data);
 
     // Call the function under test
     int status = i3c_controller(die_num);
@@ -1219,17 +1219,17 @@ TEST_FUNCTION(test_i3c_controller_fpga_die_0_dual_die, setup_fpga_platform_dual_
     expect_value(__wrap_mscp_exp_spi_invalidate_region, die_id, die_num);
     expect_function_call(__wrap_mscp_exp_spi_invalidate_region);
 
+    // mscp_exp_spi_read_d1_to_d0_data
+    expect_value(__wrap_mscp_exp_spi_read_d1_to_d0_data, sync_point_data, &i3c_test_sync);
+    expect_value(__wrap_mscp_exp_spi_read_d1_to_d0_data, die_id, die_num);
+    expect_function_call(__wrap_mscp_exp_spi_read_d1_to_d0_data);
+
     // mscp_exp_spi_write_d0_to_d1_data
     i3c_test_sync.data_d0_to_d1_data = 0x0;
     i3c_test_sync.data_ack_d0_to_d1_data = SPI_SYNC_DATA_VALID;
     expect_value(__wrap_mscp_exp_spi_write_d0_to_d1_data, sync_point_data, &i3c_test_sync);
     expect_value(__wrap_mscp_exp_spi_write_d0_to_d1_data, die_id, die_num);
     expect_function_call(__wrap_mscp_exp_spi_write_d0_to_d1_data);
-
-    // mscp_exp_spi_read_d1_to_d0_data
-    expect_value(__wrap_mscp_exp_spi_read_d1_to_d0_data, sync_point_data, &i3c_test_sync);
-    expect_value(__wrap_mscp_exp_spi_read_d1_to_d0_data, die_id, die_num);
-    expect_function_call(__wrap_mscp_exp_spi_read_d1_to_d0_data);
 
     // Call the function under test
     int status = i3c_controller(die_num);
@@ -1665,17 +1665,17 @@ TEST_FUNCTION(test_i3c_controller_fpga_rvp_die_0_dual_die, setup_fpga_rvp_platfo
     expect_value(__wrap_mscp_exp_spi_invalidate_region, die_id, die_num);
     expect_function_call(__wrap_mscp_exp_spi_invalidate_region);
 
+    // mscp_exp_spi_read_d1_to_d0_data
+    expect_value(__wrap_mscp_exp_spi_read_d1_to_d0_data, sync_point_data, &i3c_test_sync);
+    expect_value(__wrap_mscp_exp_spi_read_d1_to_d0_data, die_id, die_num);
+    expect_function_call(__wrap_mscp_exp_spi_read_d1_to_d0_data);
+
     // mscp_exp_spi_write_d0_to_d1_data
     i3c_test_sync.data_d0_to_d1_data = 0x0;
     i3c_test_sync.data_ack_d0_to_d1_data = SPI_SYNC_DATA_VALID;
     expect_value(__wrap_mscp_exp_spi_write_d0_to_d1_data, sync_point_data, &i3c_test_sync);
     expect_value(__wrap_mscp_exp_spi_write_d0_to_d1_data, die_id, die_num);
     expect_function_call(__wrap_mscp_exp_spi_write_d0_to_d1_data);
-
-    // mscp_exp_spi_read_d1_to_d0_data
-    expect_value(__wrap_mscp_exp_spi_read_d1_to_d0_data, sync_point_data, &i3c_test_sync);
-    expect_value(__wrap_mscp_exp_spi_read_d1_to_d0_data, die_id, die_num);
-    expect_function_call(__wrap_mscp_exp_spi_read_d1_to_d0_data);
 
     int status = i3c_controller(die_num);
     assert_int_equal(status, SILIBS_SUCCESS);

@@ -77,10 +77,10 @@ void css_configure_system_tower(uint8_t die_num)
 
     int sts = atu_map(ATU_ID_MSCP, &atu_system_tower_map[die_num]);
     FPFW_RUNTIME_ASSERT(sts == 0);
-    tower_system_control_configure_aon_apu(atu_system_tower_map[die_num].mscp_start_address, die_num);
+    tower_system_control_configure_apu_aon(atu_system_tower_map[die_num].mscp_start_address, die_num, false);
     tower_system_control_configure_aon_sam(atu_system_tower_map[die_num].mscp_start_address, die_num);
 
-    tower_system_control_configure_systop_apu(atu_system_tower_map[die_num].mscp_start_address, die_num);
+    tower_system_control_configure_apu_systop(atu_system_tower_map[die_num].mscp_start_address, die_num, false);
     tower_system_control_configure_systop_sam(atu_system_tower_map[die_num].mscp_start_address, die_num);
     sts = atu_unmap(ATU_ID_MSCP, &atu_system_tower_map[die_num]);
     FPFW_RUNTIME_ASSERT(sts == 0);

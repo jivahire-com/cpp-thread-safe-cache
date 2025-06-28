@@ -117,12 +117,13 @@ void pex_irq_handle(KNG_DIE_ID die_num, uint32_t pex_num, pex_rng_config_t* rng_
 
 static void enable_pex_interrupts()
 {
+    // Temporary disable PEX interrupts to avoid spurious interrupts on Silicon
     // Cluster PEX Int
-    pex_rng_config_t* rng_cfg = (pex_rng_config_t*)fpfw_init_get_handle("pex_rng");
-    register_scp_ecc_isr_with_param(HW_INT_CPU_CLSTR_31_0_PEX_INT, cons_pex_isr, rng_cfg); // Clusters 0-31 PEX Interrupts
-    register_scp_ecc_isr_with_param(HW_INT_CPU_CLSTR_63_32_PEX_INT, cons_pex_isr, rng_cfg); // Clusters 32-63 PEX Interrupts
-    register_scp_ecc_isr_with_param(HW_INT_CPU_CLSTR_67_64_PEX_INT, cons_pex_isr, rng_cfg); // Clusters 64-67 (64-95) PEX Interrupts
-    register_scp_ecc_isr_with_param(HW_INT_CPU_CLSTR_127_96_PEX_INT, cons_pex_isr, rng_cfg); // Clusters 96-127 PEX Interrupts
+    // pex_rng_config_t* rng_cfg = (pex_rng_config_t*)fpfw_init_get_handle("pex_rng");
+    // register_scp_ecc_isr_with_param(HW_INT_CPU_CLSTR_31_0_PEX_INT, cons_pex_isr, rng_cfg); // Clusters 0-31 PEX Interrupts
+    // register_scp_ecc_isr_with_param(HW_INT_CPU_CLSTR_63_32_PEX_INT, cons_pex_isr, rng_cfg); // Clusters 32-63 PEX Interrupts
+    // register_scp_ecc_isr_with_param(HW_INT_CPU_CLSTR_67_64_PEX_INT, cons_pex_isr, rng_cfg); // Clusters 64-67 (64-95) PEX Interrupts
+    // register_scp_ecc_isr_with_param(HW_INT_CPU_CLSTR_127_96_PEX_INT, cons_pex_isr, rng_cfg); // Clusters 96-127 PEX Interrupts
 }
 
 void register_pex_error_domain()

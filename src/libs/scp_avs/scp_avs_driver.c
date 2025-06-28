@@ -110,9 +110,6 @@ void scp_avs_isr(void* context)
     int status = avs_get_interrupt_status(device->avs_bus_num, &intr_status);
     FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
 
-    status = avs_clear_interrupt_status(device->avs_bus_num, AVS_IRQ_CMD_DONE);
-    FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
-
     // Note - the AVS_IRQ_CMD_DONE is also set with the AVS_IRQ_SLV_STATUS_CRC_ERR.
     if ((intr_status & (AVS_IRQ_SLV_STATUS_CRC_ERR)))
     {
@@ -127,6 +124,9 @@ void scp_avs_isr(void* context)
         device->isr_request.outstanding_client_request = device->outstanding_request;
         DfwkQueueEnqueueRequest(&device->avs_isr_resp_queue, (PDFWK_ASYNC_REQUEST_HEADER)&device->isr_request);
     }
+
+    status = avs_clear_interrupt_status(device->avs_bus_num, AVS_IRQ_CMD_DONE);
+    FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
 
     __DSB();
 }

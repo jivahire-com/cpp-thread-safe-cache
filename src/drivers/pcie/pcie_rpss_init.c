@@ -29,6 +29,7 @@
 #include <silibs_status.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <vab.h>
 #include <vab_rpss_top_regs.h>
 
@@ -98,6 +99,9 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
     sts = pciess_deassert_por_reset(rpss);
     FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
 
+    sts = pciess_phys_toggle_clocks(rpss);
+    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+
     pciess_device_interface_t* iface = (pciess_device_interface_t*)(req->OwningInterface);
     pciess_device_t* dev = (pciess_device_t*)(iface->dev);
     populate_rb_configs_from_rpss_entity(rpss, dev->rb_configs);
@@ -121,8 +125,11 @@ int begin_rpss_pre_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
 
     if (plat_get_phy_programming_support() == true)
     {
-        sts = pciess_phys_sram_init_done(rpss);
-        FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+        sts = pciess_poll_phys_sram_init_done(rpss);
+        if (sts == SILIBS_E_TIMEOUT)
+        {
+            printf("RPSS[%d]: PHY SRAM init not asserted, timeout!\n", rpss->id);
+        }
 
         // There is no PHY Loaded other than the this, so any failure here should be
         // treated as FATAL

@@ -464,6 +464,9 @@ void validate_dvfs_cfg(unsigned int core)
     dvfs_cfg.fuse_cfg.vft = &s_runconfig.dvfs_vft.curveset[assigned_vft];
     // init cfg
     // configure default cppc settings
+
+    // TODO: set based on nominal p state
+    // ADO: 2688397
     dvfs_cfg.init_cfg.cppc.highest_perf = dvfs_get_cppc_from_pstate(s_runconfig.derived.vfts[assigned_vft].min_plimit);
     dvfs_cfg.init_cfg.cppc.lowest_perf = dvfs_get_cppc_from_pstate(MAX_PLIMIT);
     dvfs_cfg.init_cfg.cppc.nominal_perf = dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL);

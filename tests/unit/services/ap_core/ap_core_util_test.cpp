@@ -36,7 +36,6 @@ extern "C" {
 unsigned int __real_ap_core_util_boot_core(ap_core_service_context_t* p_context);
 void __real_ap_core_util_set_rvbaraddr(ap_core_service_context_t* p_context, unsigned core_idx, uint64_t rvbaraddr);
 void __real_ap_core_util_set_all_rvbaraddr(ap_core_service_context_t* p_context, uint64_t rvbaraddr);
-void __real_ap_core_util_get_fuse_enabled_cores(corebits_t* enabled_cores);
 }
 /*-- Declarations (Statics and globals) --*/
 
@@ -128,15 +127,4 @@ AP_CORE_TEST(util_set_all_rvbaraddr, NULL, NULL)
     expect_value(__wrap_ap_core_util_set_rvbaraddr, rvbaraddr, TEST_RVBARADDR);
 
     __real_ap_core_util_set_all_rvbaraddr(&test_context, TEST_RVBARADDR);
-}
-
-AP_CORE_TEST(util_get_fuse_enabled_cores, NULL, NULL)
-{
-    corebits_t test_enabled_cores = {0};
-
-    // expect null check
-    expect_value(__wrap_FpFwAssert, expression, true);
-
-    // no other expectations for now
-    __real_ap_core_util_get_fuse_enabled_cores(&test_enabled_cores);
 }

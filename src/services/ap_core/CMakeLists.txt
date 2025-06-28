@@ -58,6 +58,7 @@ target_link_libraries(${TARGET}
         ms::lib::threadx
         ms::lib::utils
 	    ms::lib::mesh
+        ms::lib::bandgap
         ms::client_interface::ap_core
         ms::client_interface::startup_shutdown
         ms::service::fuse

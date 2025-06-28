@@ -293,6 +293,7 @@ static void power_init_update_dvfs_cfg_common(const power_runconfig_t* p_runconf
     p_dvfs_cfg->init_cfg.cppc.nominal_perf = dvfs_get_cppc_from_pstate(p_runconfig->derived.pnominal);
     p_dvfs_cfg->init_cfg.cppc.nominal_freq = dvfs_get_freq_from_plimit(p_runconfig->derived.pnominal);
     p_dvfs_cfg->init_cfg.cppc.gtd_perf = dvfs_get_cppc_from_pstate(p_runconfig->derived.pnominal);
+
     // config static pll
     p_dvfs_cfg->static_pll_cfg.dco1_lckcntsel = p_knobs->plllock_cfg.lckcntsel;
     // enable c1 telemetry based on knob
@@ -371,6 +372,14 @@ static void power_init_update_dvfs_cfg_core(const power_runconfig_t* p_runconfig
     memcpy((void*)p_dvfs_cfg->fuse_cfg.vft->itd_temp_boundaries,
            temp_itd_temp_boundaries,
            sizeof(uint16_t) * (NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1));
+
+    //! Print just to cross-check the temp boundaries
+    for (uint8_t temp_idx = 0; temp_idx < sizeof(p_runconfig->fuses.curve_max_temp); ++temp_idx)
+    {
+        uint16_t temp = power_hw_dts_pvt_raw_to_temp_dC(temp_itd_temp_boundaries[temp_idx],
+                                                        p_runconfig->fuses.dts_coeff_tile[tile_num]);
+        POWER_LOG_INFO("Temp idx %d, Temp dC:[%d] C:[%d]\n", temp_idx, temp, temp / 10);
+    }
 
     // update highest perf based on curve
     p_dvfs_cfg->init_cfg.cppc.highest_perf = dvfs_get_cppc_from_pstate(p_runconfig->derived.vfts[assigned_vft].min_plimit);
@@ -587,6 +596,13 @@ static void power_init_update_socpvt_cfg(const power_runconfig_t* p_runconfig, p
         alarm_setting.alarmb_thresholds.alarm_threshold =
             VOLTTHRESHOLD2DOUT(p_knobs->soc_vm.thresholds[vm_idx].undervolt.alarm_threshold, div_by_2);
         s_pvt_vm_alarm_settings[vm_idx] = alarm_setting;
+
+        FPFW_DBGPRINT_INFO("VM %d: overvolt hyst %d, alarm %d, undervolt hyst %d, alarm %d",
+                           vm_idx,
+                           s_pvt_vm_alarm_settings[vm_idx].alarma_thresholds.hyst_threshold,
+                           s_pvt_vm_alarm_settings[vm_idx].alarma_thresholds.alarm_threshold,
+                           s_pvt_vm_alarm_settings[vm_idx].alarmb_thresholds.hyst_threshold,
+                           s_pvt_vm_alarm_settings[vm_idx].alarmb_thresholds.alarm_threshold);
     }
 }
 

@@ -95,7 +95,7 @@ static uint16_t vab_instances_to_be_enabled(uint8_t die_num)
     return vab_instances_to_init;
 }
 
-FPFW_INIT_COMPONENT(vab, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc"))
+FPFW_INIT_COMPONENT(vab, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc", "css_pome"))
 {
     uint8_t die_num = (uint8_t)idsw_get_die_id();
     FPFW_DBGPRINT_INFO("VAB Initialization: Begin for die:0x%x\n", die_num);

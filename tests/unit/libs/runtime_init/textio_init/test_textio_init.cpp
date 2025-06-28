@@ -18,8 +18,10 @@ extern "C" {
 #include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
 #include <FpFwUtils.h>       // for FPFW_UNUSED
 #include <fpfw_init.h>       // for fpfw_init_result_t, fpfw_init_component_t
-#include <textio_pl011.h>    // for textio_pl011_config_t, textio_pl011_dev...
-#include <uart_pl011.h>      // for UART_PL011_PARITY_NONE, UART_PL011_STOP...
+#include <idsw.h>
+#include <idsw_kng.h>
+#include <textio_pl011.h> // for textio_pl011_config_t, textio_pl011_dev...
+#include <uart_pl011.h>   // for UART_PL011_PARITY_NONE, UART_PL011_STOP...
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define UART_BAUD_RATE (115200)
@@ -37,6 +39,11 @@ extern fpfw_init_component_t _fpfw_component_std_io;
 //
 // Mocks
 //
+idsw_plat_id_t __wrap_idsw_get_platform_sdv(void)
+{
+    return mock_type(idsw_plat_id_t);
+}
+
 void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
 {
     FPFW_UNUSED(id);
@@ -85,11 +92,11 @@ TEST_FUNCTION(textio_init_uart, nullptr, nullptr)
     //! Set up expectations
     DFWK_THREADX_HOST test_host = {};
 
-    will_return_always(__wrap_systick_get_emcpu_clock, 125000000U); //! SVP_REFCLK_FREQUENCY
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
     will_return(__wrap_fpfw_init_get_handle, &test_host); //! driver fmwk host handle
     expect_value(__wrap_textio_pl011_device_initialize, schedule, &(test_host.Schedule));
-    expect_value(__wrap_textio_pl011_device_initialize, config->clk_freq, 125000000U);
+    expect_value(__wrap_textio_pl011_device_initialize, config->clk_freq, 250000000U);
     expect_function_call(__wrap_textio_pl011_device_initialize);
 
     //! Call the function under test

@@ -20,6 +20,7 @@
 #include <pcie_dfwk.h>
 #include <pcie_error_handling_i.h>
 #include <pcie_error_injection_i.h>
+#include <pcie_lt_events.h>
 #include <pcie_manager_i.h>
 #include <pcie_phy_load_events.h>
 #include <scp_pcie_manager.h>
@@ -38,6 +39,7 @@
 
 /*-- Declarations (Statics and globals) --*/
 TX_EVENT_FLAGS_GROUP pcie_phyfw_load_event;
+TX_EVENT_FLAGS_GROUP pcie_lt_event;
 
 static pcie_manager_context_t pcie_mgr_ctx[PCIE_RPSS_PER_DIE] = {0};
 static uint8_t stacks[PCIE_RPSS_PER_DIE * PCIE_RP_SERVICE_THREAD_STACK_SIZE] = {0};
@@ -131,6 +133,7 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
      *       be enabled.
      */
     pcie_phyfw_create_event(&pcie_phyfw_load_event);
+    pcie_link_training_create_event(&pcie_lt_event);
 
     register_pcie_error_domains();
 

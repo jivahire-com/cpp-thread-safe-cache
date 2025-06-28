@@ -98,7 +98,7 @@ void main_thread(ULONG thread_input)
     uint32_t rtos_ticks = 0;
     while (true)
     {
-        if (rtos_ticks % 100 == 0)
+        if (rtos_ticks % 1000 == 0)
         {
             // reduce print frequency
             FPFW_ET_LOG(ScpHeartBeat, rtos_ticks);

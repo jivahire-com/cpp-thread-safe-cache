@@ -57,7 +57,7 @@ TEST_FUNCTION(test_init_pex_rng, nullptr, nullptr)
     pex_rng_config_t test_config = {.cluster_pex_base = 0, .platform_cores_in_die = &test_platform_cores, .core_count = 1};
     expect_value(__wrap_FpFwAssert, expression, 1);
     expect_value(__wrap_rng_enable_r, base, (PEX_RNG_ADDRESS));
-    expect_value(__wrap_rng_enable_r, div, 1);
+    expect_value(__wrap_rng_enable_r, div, 0xC0);
 
     init_pex_rng(&test_config);
 }

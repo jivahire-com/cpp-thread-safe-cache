@@ -30,6 +30,7 @@
  * Base frequency = 250 MHz
  */
 #define SOC_GTIMER_TARGET_FREQUENCY_HZ 1000000000ULL // 1 GHz
+#define SOC_GTIMER_SCALING_FACTOR      4             // 250 MHz / 1 GHz
 
 /*
  * Big FPGA does not support a 250 MHz refclk. The counter frequency on the
@@ -44,6 +45,8 @@
  */
 #define SVP_GTIMER_TARGET_FREQUENCY_HZ 125000000ULL // 125 MHz
 
+#define PRESIL_SCALING_FACTOR 1
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -54,8 +57,26 @@
 FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "spi_bridge", "systick_upd"))
 {
     gtimer_prodfw_init_config_t config;
-    config.frequency_hz = systick_get_emcpu_clock();
-    config.scaling_factor = SOC_GTIMER_TARGET_FREQUENCY_HZ / config.frequency_hz;
+    config.frequency_hz = SOC_GTIMER_TARGET_FREQUENCY_HZ;
+
+    if (idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON || IS_PLATFORM_EMU())
+    {
+        config.scaling_factor = SOC_GTIMER_SCALING_FACTOR;
+    }
+    else
+    {
+        config.scaling_factor = PRESIL_SCALING_FACTOR;
+    }
+
+    /* Override default settings in case dev. platforms have different capabilities */
+    if (IS_PLATFORM_FPGA())
+    {
+        config.frequency_hz = FPGA_GTIMER_TARGET_FREQUENCY_HZ;
+    }
+    else if (IS_PLATFORM_SVP())
+    {
+        config.frequency_hz = SVP_GTIMER_TARGET_FREQUENCY_HZ;
+    }
 
 #if defined(SCP_RUNTIME_INIT)
     config.counter_control_base = SCP_TOP_GEN_CNTR_CTRL_ADDRESS;
@@ -67,16 +88,6 @@ FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "spi_brid
     config.timer_base_address = MCP_TOP_MCP_TIMER_BASE_ADDRESS;
     config.timer_irq = HW_INT_MCP_GENERIC_TIMER_INT;
 #endif
-
-    /* Override default settings in case dev. platforms have different capabilities */
-    if (IS_PLATFORM_FPGA())
-    {
-        config.scaling_factor = FPGA_GTIMER_TARGET_FREQUENCY_HZ / config.frequency_hz;
-    }
-    else if (IS_PLATFORM_SVP())
-    {
-        config.scaling_factor = SVP_GTIMER_TARGET_FREQUENCY_HZ / config.frequency_hz;
-    }
 
     gtimer_prodfw_init(&config);
 

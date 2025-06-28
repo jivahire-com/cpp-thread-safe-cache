@@ -7,14 +7,24 @@
   </Enums>
 
   <Structs>
+    <Struct name="uart_die_sel_t">
+      <!-- Default routing, UART 1-> Die1, UART 2 -> Die1 --> <!-- GPIO Knobs for Die 1 Accel Debug
+      <Member name="uart_die_sel" type="uint8_t" count="2" default="{1, 1}" help="Die to route Shared UARTs to" />  -->
+
+      <!-- Default routing, UART 1-> Die0, UART 2 -> Die0 --> <!-- GPIO Knobs for Die 0 Accel Debug 
+      <Member name="uart_die_sel" type="uint8_t" count="2" default="{0, 0}" help="Die to route Shared UARTs to" /> -->
+
+      <!-- Default routing, UART 1-> Die0, UART 2 -> Die1 --> <!-- GPIO Knobs for to fetch both SCPs for flexibility  -->
+      <Member name="uart_die_sel" type="uint8_t" count="2" default="{0, 1}" help="Die to route Shared UARTs to" />
+    </Struct>
   </Structs>
   
-  <!-- namespace indicates the GUID namespace the values are stored in -->
+  <!-- namespace indicates the GUID namespace the values are stored in -->s
   <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
-    <!-- USB -->
     <Knob name="gpio_knobs" type="gpio_cfg_t" help="GPIO config knobs"/>
-    <Knob name="uart_afm_cfg_die0" type="uart_afm_cfg_t" help="UART AFM config knobs for Die 0"/>
-    <Knob name="uart_afm_cfg_die1" type="uart_afm_cfg_t" help="UART AFM config knobs for Die 1"/>
+    <Knob name="uart_afm_cfg_die0" type="uart_afm_cfg_t" default="{{0, 0, 0, 0}}" help="UART AFM config knobs for Die 0"/>
+    <Knob name="uart_afm_cfg_die1" type="uart_afm_cfg_t" default="{{0, 0, 1, 0}}" help="UART AFM config knobs for Die 1"/>
+    <Knob name="uart_die_cfg" type="uart_die_sel_t" help="Die Config for Shared UARTs (UART1 and UART2 respectively)"/>
   </Knobs>
 
 </ConfigSchema>

@@ -250,6 +250,62 @@ TEST_FUNCTION(power_init_pwr_svc__bigfpga, nullptr, nullptr)
     assert_false(s_saved_config.platform_is_multi_die);
 }
 
+TEST_FUNCTION(power_init_pwr_svc__evt_silicon, nullptr, nullptr)
+{
+    //! Set up expectations
+    DFWK_THREADX_HOST test_host = {};
+    const auto test_die = (KNG_DIE_ID)0;
+
+    scp_avs_interface_t* avs_test_array[4] = {0};
+    scp_avs_interface_t avs0_test_host = {};
+    scp_avs_interface_t avs1_test_host = {};
+    scp_avs_interface_t avs2_test_host = {};
+    scp_avs_interface_t avs3_test_host = {};
+
+    // when single die boot is not enabled, there will be a call to get icc handle
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    will_return(__wrap_fpfw_init_get_handle, TEST_HANDLE);
+    expect_any(__wrap_fpfw_init_get_handle, id);
+
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+
+    will_return_always(__wrap_idsw_get_die_id, test_die);
+
+    will_return(__wrap_fpfw_init_get_handle, &avs0_test_host);
+    will_return(__wrap_fpfw_init_get_handle, &avs1_test_host);
+    will_return(__wrap_fpfw_init_get_handle, &avs2_test_host);
+    will_return(__wrap_fpfw_init_get_handle, &avs3_test_host);
+
+    avs_test_array[0] = &avs0_test_host;
+    avs_test_array[1] = &avs1_test_host;
+    avs_test_array[2] = &avs2_test_host;
+    avs_test_array[3] = &avs3_test_host;
+
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    expect_any(__wrap_fpfw_init_get_handle, id);
+
+    will_return(__wrap_fpfw_init_get_handle, &test_host); //! driver fmwk host handle
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    expect_value(__wrap_power_init, p_schedule, &(test_host.Schedule));
+
+    expect_memory(__wrap_pwr_avs_initialize, avs_array, avs_test_array, sizeof(avs_test_array));
+
+    //! Call the function under test
+    fpfw_init_result_t result = _fpfw_component_pwr_svc.init_fn();
+
+    //! Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+    assert_non_null(result.associated_handle);
+
+    assert_int_equal(s_saved_config.platform_die_core_count, NUM_AP_CORES_PER_DIE);
+    assert_true(s_saved_config.platform_is_multi_die);
+    assert_int_equal(s_saved_config.icc_d2d_ctx, TEST_HANDLE);
+    assert_true(s_saved_config.platform_soc_power_support);
+    assert_true(s_saved_config.platform_core_power_support);
+}
+
 TEST_FUNCTION(power_init_pwr_int, nullptr, nullptr)
 {
     // Set up expectations

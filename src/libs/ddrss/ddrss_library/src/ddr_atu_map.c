@@ -66,6 +66,9 @@ uintptr_t ddrss_atu_map_cfg_space(uint32_t die_num)
         sts = atu_map(ATU_ID_MSCP, &ddrss_cfg_space_mem_atu_map_struct[die_num]);
         BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
         ddrss_atu_map_flags[die_num] |= BIT1;
+        printf("ATU region mapped to Die 0x%lx 0x%lX\n",
+               (unsigned long)die_num,
+               (unsigned long)ddrss_cfg_space_mem_atu_map_struct[die_num].mscp_start_address);
     }
 
     info_print("DDR mem  base: %08x\n", ddrss_cfg_space_mem_atu_map_struct[die_num].mscp_start_address);
@@ -77,8 +80,12 @@ void ddrss_atu_unmap_cfg_space(uint32_t die_num)
 {
     if (ddrss_atu_map_flags[die_num] & BIT1)
     {
+        printf("ATU region unmapped from Die 0x%lx 0x%lX\n",
+               (unsigned long)die_num,
+               (unsigned long)ddrss_cfg_space_mem_atu_map_struct[die_num].mscp_start_address);
         int sts = atu_unmap(ATU_ID_MSCP, &ddrss_cfg_space_mem_atu_map_struct[die_num]);
         BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
+        ddrss_atu_map_flags[die_num] &= ~BIT1;
     }
 }
 

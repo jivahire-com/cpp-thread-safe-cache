@@ -9,6 +9,7 @@ add_library(${TARGET}
         pcie_rpss_manager_thread.c
         pcie_config_manager_thread.c
         pcie_link_management.c
+        pcie_lt_events.c
         pcie_manager_callbacks.c
         pcie_rp_event_handler.c
         pcie_sync_requests.c

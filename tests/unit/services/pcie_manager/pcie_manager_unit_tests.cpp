@@ -627,6 +627,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkup, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
     will_return(__wrap_system_info_get_board_id, 0);
     will_return(__wrap_config_get_overlake_rpss_index_primary_soc, 1); // not this RPSS
+    expect_value(__wrap__tx_thread_sleep, timer_ticks, 1000);
 
     process_wait_for_event_data(&ctx, &cmpl_req);
 
@@ -636,6 +637,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkup, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+    expect_value(__wrap__tx_thread_sleep, timer_ticks, 1000);
 
     process_wait_for_event_data(&ctx, &cmpl_req);
 }
@@ -661,7 +663,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkup_overlake_failure, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
-
+    expect_value(__wrap__tx_thread_sleep, timer_ticks, 1000);
     expect_value(__wrap__tx_thread_sleep, timer_ticks, 1);
 
     expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, CLEAR_SECONDARY_BUS_RESET_REQUEST);
@@ -685,6 +687,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkup_overlake_failure, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
 
+    expect_value(__wrap__tx_thread_sleep, timer_ticks, 1000);
     expect_value(__wrap__tx_thread_sleep, timer_ticks, 1);
 
     expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, CLEAR_SECONDARY_BUS_RESET_REQUEST);

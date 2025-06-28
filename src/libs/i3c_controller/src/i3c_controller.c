@@ -197,6 +197,7 @@ void i3c_controller_read_cfg_knobs_from_spi(void)
 int i3c_controller(uint8_t die_num)
 {
     int status = 0;
+    bool cold_reset = true;
 
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
     FPFW_DBGPRINT_ALWAYS(MOD_NAME "%s Start, die_num: [%u]\n", __func__, die_num);
@@ -304,27 +305,35 @@ int i3c_controller(uint8_t die_num)
         {
             ddr_i3c_interface_set_instance(get_i3c0(), get_i3c1());
         }
-
+        if (system_info_is_warm_start())
+        {
+            FPFW_DBGPRINT_ALWAYS(MOD_NAME "Warm Reset FLow\n");
+            // In warm reset flow, we do not need to power up PMIC
+            cold_reset = false;
+        }
         // Send PMIC ON
         i3c_cmd_t s_i3c_cmd = {0};
-        for (uint8_t i = 0; i < num_i3c_configs_platform; i++)
+        if (cold_reset == true)
         {
-            status = ddr_i3c_interface_power_up_pmic_on(i3c_instance[i], &s_i3c_cmd);
-            if (status != SILIBS_SUCCESS)
+            for (uint8_t i = 0; i < num_i3c_configs_platform; i++)
             {
-                // Error in sending PMIC ON
-                FPFW_DBGPRINT_ALWAYS(MOD_NAME "Error in sending PMIC ON, I3C 0x%x\n", i);
-                // Error or BUGCHECK
-                goto exit;
-            }
-            // Set all addresses to static addresses
-            status = i3c_master_set_aasa(i3c_instance[i], I3C_SPEED_I2C_FM, NULL, NULL);
-            if (status != SILIBS_SUCCESS)
-            {
-                // Error in setting all addresses to static addresses
-                FPFW_DBGPRINT_ALWAYS(MOD_NAME "Err to set static addresses, I3C 0x%x\n", i);
-                // Error or BUGCHECK
-                goto exit;
+                status = ddr_i3c_interface_power_up_pmic_on(i3c_instance[i], &s_i3c_cmd);
+                if (status != SILIBS_SUCCESS)
+                {
+                    // Error in sending PMIC ON
+                    FPFW_DBGPRINT_ALWAYS(MOD_NAME "Error in sending PMIC ON, I3C 0x%x\n", i);
+                    // Error or BUGCHECK
+                    goto exit;
+                }
+                // Set all addresses to static addresses
+                status = i3c_master_set_aasa(i3c_instance[i], I3C_SPEED_I2C_FM, NULL, NULL);
+                if (status != SILIBS_SUCCESS)
+                {
+                    // Error in setting all addresses to static addresses
+                    FPFW_DBGPRINT_ALWAYS(MOD_NAME "Err to set static addresses, I3C 0x%x\n", i);
+                    // Error or BUGCHECK
+                    goto exit;
+                }
             }
         }
         uint8_t dimm_cap_per_ch = 0x0;
@@ -378,10 +387,10 @@ int i3c_controller(uint8_t die_num)
             {
                 i3c_test_sync.data_d0_to_d1_data = ddrss_en;
                 i3c_test_sync.data_ack_d0_to_d1_data = SPI_SYNC_DATA_VALID;
-                ASSERT_FAIL(mscp_exp_spi_write_d0_to_d1_data(&i3c_test_sync, die_num) == SILIBS_SUCCESS);
-                FPFW_DBGPRINT_VERBOSE("Data written to D1 0x%x\n", i3c_test_sync.data_d0_to_d1_data);
                 ASSERT_FAIL(mscp_exp_spi_read_d1_to_d0_data(&i3c_test_sync, die_num) == SILIBS_SUCCESS);
                 FPFW_DBGPRINT_VERBOSE("Data from D1 0x%x\n", i3c_test_sync.data_d1_to_d0_data);
+                ASSERT_FAIL(mscp_exp_spi_write_d0_to_d1_data(&i3c_test_sync, die_num) == SILIBS_SUCCESS);
+                FPFW_DBGPRINT_VERBOSE("Data written to D1 0x%x\n", i3c_test_sync.data_d0_to_d1_data);
                 g_ddrss_en = (ddrss_en | i3c_test_sync.data_d1_to_d0_data);
             }
             else

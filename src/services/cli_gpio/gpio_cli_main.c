@@ -37,6 +37,7 @@ static FPFW_CLI_STATUS gpio_cli_get_pin(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS gpio_cli_register_isr(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS gpio_cli_restore(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS gpio_cli_uart_afm(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS gpio_cli_uart_die(int argc, const char** pp_argv);
 
 /*-- Declarations (Statics and globals) --*/
 static FPFW_CLI_COMMAND s_gpio_cmd_list[] = {
@@ -49,6 +50,7 @@ static FPFW_CLI_COMMAND s_gpio_cmd_list[] = {
     {NULL_LIST_ENTRY, "gpio", "register_isr", gpio_cli_register_isr, "Register single GPIO interrupt callback", "Usage: register_isr <ctrl_id> <pin_id>"},
     {NULL_LIST_ENTRY, "gpio", "restore", gpio_cli_restore, "Restore initial GPIO config", "Usage: restore (no arguments)"},
     {NULL_LIST_ENTRY, "gpio", "uart_afm", gpio_cli_uart_afm, "Set UART AFM", "Usage: uart_afm <afm_u0> <afm_u1> <afm_u2> <afm_u3>"},
+    {NULL_LIST_ENTRY, "gpio", "uart_die", gpio_cli_uart_die, "Set UART die configuration", "Usage: uart_die <die_id_u1> <die_id_u2>"},
 };
 
 // Cache the GPIO configuration table to restore the GPIO configuration
@@ -402,6 +404,35 @@ static FPFW_CLI_STATUS gpio_cli_uart_afm(int argc, const char** pp_argv)
     if (KNG_FAILED(status))
     {
         FpFwCliPrint("Failed - 0x%08x\n", status);
+        return CLI_ERROR;
+    }
+
+    return CLI_SUCCESS;
+}
+
+static FPFW_CLI_STATUS gpio_cli_uart_die(int argc, const char** pp_argv)
+{
+    uart_die_cfg_t die_cfg_knobs;
+
+    if (argc == 3)
+    {
+        die_cfg_knobs.uart1_die_id = atoi(pp_argv[1]);
+        die_cfg_knobs.uart2_die_id = atoi(pp_argv[2]);
+    }
+    else
+    {
+        FpFwCliPrint("Failed: Invalid Args\n");
+        return CLI_ERROR;
+    }
+
+    FpFwCliPrint("Updating UART config temporarily. Use cfg_mgr_set for persistent update!\n");
+
+    uint32_t status =
+        gpio_configure_shared_uart(idsw_get_die_id(), die_cfg_knobs.uart1_die_id, die_cfg_knobs.uart2_die_id);
+
+    if (KNG_FAILED(status))
+    {
+        FpFwCliPrint("Failed to register GPIO ISR - 0x%08x\n", status);
         return CLI_ERROR;
     }
 

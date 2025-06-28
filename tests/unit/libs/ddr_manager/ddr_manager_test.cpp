@@ -1035,6 +1035,7 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_1_and_will_start_i3c_timer, NULL
     // end of ddr_create_smbios_tables()
 
     // Check that timer is created/started
+    will_return(__wrap_config_get_ddrmanager_bwl_polling_en, true);
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
 
     // Exit the while (1) loop

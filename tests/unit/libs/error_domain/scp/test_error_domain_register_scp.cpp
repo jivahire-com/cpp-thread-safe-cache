@@ -589,37 +589,38 @@ TEST_FUNCTION(test_register_scp_error_domain, nullptr, nullptr)
     register_scp_error_domain();
 }
 
-TEST_FUNCTION(test_register_pex_error_domain, nullptr, nullptr)
-{
-    expect_function_call(__wrap_hm_register_error_domain);
+// Temporary disable PEX interrupts to avoid spurious interrupts on Silicon
+// TEST_FUNCTION(test_register_pex_error_domain, nullptr, nullptr)
+// {
+//     expect_function_call(__wrap_hm_register_error_domain);
 
-    // CPU PEX interrupts
-    expect_function_call(__wrap_nvic_irq_set_isr_with_param); // HW_INT_CPU_CLSTR_31_0_PEX_INT
-    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_CPU_CLSTR_31_0_PEX_INT);
-    expect_function_call(__wrap_nvic_irq_clear_pending);
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_CPU_CLSTR_31_0_PEX_INT);
-    expect_function_call(__wrap_nvic_irq_enable);
+//     // CPU PEX interrupts
+//     expect_function_call(__wrap_nvic_irq_set_isr_with_param); // HW_INT_CPU_CLSTR_31_0_PEX_INT
+//     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_CPU_CLSTR_31_0_PEX_INT);
+//     expect_function_call(__wrap_nvic_irq_clear_pending);
+//     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_CPU_CLSTR_31_0_PEX_INT);
+//     expect_function_call(__wrap_nvic_irq_enable);
 
-    expect_function_call(__wrap_nvic_irq_set_isr_with_param); // HW_INT_CPU_CLSTR_63_32_PEX_INT
-    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_CPU_CLSTR_63_32_PEX_INT);
-    expect_function_call(__wrap_nvic_irq_clear_pending);
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_CPU_CLSTR_63_32_PEX_INT);
-    expect_function_call(__wrap_nvic_irq_enable);
+//     expect_function_call(__wrap_nvic_irq_set_isr_with_param); // HW_INT_CPU_CLSTR_63_32_PEX_INT
+//     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_CPU_CLSTR_63_32_PEX_INT);
+//     expect_function_call(__wrap_nvic_irq_clear_pending);
+//     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_CPU_CLSTR_63_32_PEX_INT);
+//     expect_function_call(__wrap_nvic_irq_enable);
 
-    expect_function_call(__wrap_nvic_irq_set_isr_with_param); // HW_INT_CPU_CLSTR_67_64_PEX_INT
-    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_CPU_CLSTR_67_64_PEX_INT);
-    expect_function_call(__wrap_nvic_irq_clear_pending);
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_CPU_CLSTR_67_64_PEX_INT);
-    expect_function_call(__wrap_nvic_irq_enable);
+//     expect_function_call(__wrap_nvic_irq_set_isr_with_param); // HW_INT_CPU_CLSTR_67_64_PEX_INT
+//     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_CPU_CLSTR_67_64_PEX_INT);
+//     expect_function_call(__wrap_nvic_irq_clear_pending);
+//     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_CPU_CLSTR_67_64_PEX_INT);
+//     expect_function_call(__wrap_nvic_irq_enable);
 
-    expect_function_call(__wrap_nvic_irq_set_isr_with_param); // HW_INT_CPU_CLSTR_127_96_PEX_INT
-    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_CPU_CLSTR_127_96_PEX_INT);
-    expect_function_call(__wrap_nvic_irq_clear_pending);
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_CPU_CLSTR_127_96_PEX_INT);
-    expect_function_call(__wrap_nvic_irq_enable);
+//     expect_function_call(__wrap_nvic_irq_set_isr_with_param); // HW_INT_CPU_CLSTR_127_96_PEX_INT
+//     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_CPU_CLSTR_127_96_PEX_INT);
+//     expect_function_call(__wrap_nvic_irq_clear_pending);
+//     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_CPU_CLSTR_127_96_PEX_INT);
+//     expect_function_call(__wrap_nvic_irq_enable);
 
-    register_pex_error_domain();
-}
+//     register_pex_error_domain();
+// }
 
 static int test_setup(void** ctx)
 {
@@ -637,7 +638,8 @@ static int test_setup(void** ctx)
 
     if (g_scp_pex_isr == NULL)
     {
-        test_register_pex_error_domain(NULL);
+        // Temporary disable PEX interrupts to avoid spurious interrupts on Silicon
+        // test_register_pex_error_domain(NULL);
     }
 
     return 0;
@@ -1640,96 +1642,98 @@ TEST_FUNCTION(test_shared_sram_ecc_isr_of, test_setup, nullptr)
     g_s_arsm_ecc_isr((void*)&atu_entry);
 }
 
-TEST_FUNCTION(test_pex_irq_handle, test_setup, nullptr)
-{
-    // pex_num = 1, die_num = 0, so .err_source_irq = HW_INT_CPU_CLSTR_31_0_PEX_INT
-    const corebits_t test_platform_cores = (corebits_t)COREBITS_INIT_UINT32(0x00000001, 0x00000000, 0x0);
-    pex_rng_config_t rng_config = {.cluster_pex_base = 0, .platform_cores_in_die = &test_platform_cores, .core_count = 1};
+// Temporary disable PEX interrupts to avoid spurious interrupts on Silicon
 
-    // Expect MMIO_READ32 for the PEX interrupt status register
-    expect_any(__wrap_mmio_read32, addr);
-    will_return(__wrap_mmio_read32, 0x2); // Bit 1 set
-    expect_function_call(__wrap_mmio_read32);
+// TEST_FUNCTION(test_pex_irq_handle, test_setup, nullptr)
+// {
+//     // pex_num = 1, die_num = 0, so .err_source_irq = HW_INT_CPU_CLSTR_31_0_PEX_INT
+//     const corebits_t test_platform_cores = (corebits_t)COREBITS_INIT_UINT32(0x00000001, 0x00000000, 0x0);
+//     pex_rng_config_t rng_config = {.cluster_pex_base = 0, .platform_cores_in_die = &test_platform_cores, .core_count = 1};
 
-    // Expect MMIO_READ32 for the DVFS register
-    expect_any(__wrap_mmio_read32, addr);
-    will_return(__wrap_mmio_read32, 0x2);
-    expect_function_call(__wrap_mmio_read32);
+//     // Expect MMIO_READ32 for the PEX interrupt status register
+//     expect_any(__wrap_mmio_read32, addr);
+//     will_return(__wrap_mmio_read32, 0x2); // Bit 1 set
+//     expect_function_call(__wrap_mmio_read32);
 
-    expect_any(__wrap_mmio_read32, addr);
-    will_return(__wrap_mmio_read32, 0);
-    expect_function_call(__wrap_mmio_read32);
+//     // Expect MMIO_READ32 for the DVFS register
+//     expect_any(__wrap_mmio_read32, addr);
+//     will_return(__wrap_mmio_read32, 0x2);
+//     expect_function_call(__wrap_mmio_read32);
 
-    expect_function_call(__wrap_nvic_get_current_irq);
-    will_return(__wrap_nvic_get_current_irq, HW_INT_CPU_CLSTR_31_0_PEX_INT);
-    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_CPU_CLSTR_31_0_PEX_INT);
-    expect_function_call(__wrap_nvic_irq_clear_pending);
+//     expect_any(__wrap_mmio_read32, addr);
+//     will_return(__wrap_mmio_read32, 0);
+//     expect_function_call(__wrap_mmio_read32);
 
-    expect_any(__wrap_mmio_read32, addr); // For MMIO_SET_MASK32 read
-    will_return(__wrap_mmio_read32, 0x2); // Simulate current value
-    expect_function_call(__wrap_mmio_read32);
+//     expect_function_call(__wrap_nvic_get_current_irq);
+//     will_return(__wrap_nvic_get_current_irq, HW_INT_CPU_CLSTR_31_0_PEX_INT);
+//     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_CPU_CLSTR_31_0_PEX_INT);
+//     expect_function_call(__wrap_nvic_irq_clear_pending);
 
-    expect_any(__wrap_mmio_write32, addr);
-    expect_any(__wrap_mmio_write32, data);
-    expect_function_call(__wrap_mmio_write32);
+//     expect_any(__wrap_mmio_read32, addr); // For MMIO_SET_MASK32 read
+//     will_return(__wrap_mmio_read32, 0x2); // Simulate current value
+//     expect_function_call(__wrap_mmio_read32);
 
-    // Submit CPER
-    expect_function_call(__wrap_hm_submit_cper);
+//     expect_any(__wrap_mmio_write32, addr);
+//     expect_any(__wrap_mmio_write32, data);
+//     expect_function_call(__wrap_mmio_write32);
 
-    expect_any(__wrap_mmio_read32, addr);
-    will_return(__wrap_mmio_read32, 0); // No rng_error
-    expect_function_call(__wrap_mmio_read32);
-    expect_any(__wrap_mmio_read32, addr);
-    will_return(__wrap_mmio_read32, 0); // No rng_error
-    expect_function_call(__wrap_mmio_read32);
+//     // Submit CPER
+//     expect_function_call(__wrap_hm_submit_cper);
 
-    // pex_irq_handle(DIE_0, 1, &rng_config);
-    g_scp_pex_isr(&rng_config);
-}
+//     expect_any(__wrap_mmio_read32, addr);
+//     will_return(__wrap_mmio_read32, 0); // No rng_error
+//     expect_function_call(__wrap_mmio_read32);
+//     expect_any(__wrap_mmio_read32, addr);
+//     will_return(__wrap_mmio_read32, 0); // No rng_error
+//     expect_function_call(__wrap_mmio_read32);
 
-TEST_FUNCTION(test_cons_pex_isr_single_bit, test_setup, nullptr)
-{
-    // Dummy config for context
-    const corebits_t test_platform_cores = (corebits_t)COREBITS_INIT_UINT32(0x00000001, 0x00000000, 0x0);
-    static pex_rng_config_t dummy_rng_cfg = {.cluster_pex_base = 0,
-                                             .platform_cores_in_die = &test_platform_cores,
-                                             .core_count = 1};
+//     // pex_irq_handle(DIE_0, 1, &rng_config);
+//     g_scp_pex_isr(&rng_config);
+// }
 
-    expect_any(__wrap_mmio_read32, addr);
-    will_return(__wrap_mmio_read32, 0x2);
-    expect_function_call(__wrap_mmio_read32);
+// TEST_FUNCTION(test_cons_pex_isr_single_bit, test_setup, nullptr)
+// {
+//     // Dummy config for context
+//     const corebits_t test_platform_cores = (corebits_t)COREBITS_INIT_UINT32(0x00000001, 0x00000000, 0x0);
+//     static pex_rng_config_t dummy_rng_cfg = {.cluster_pex_base = 0,
+//                                              .platform_cores_in_die = &test_platform_cores,
+//                                              .core_count = 1};
 
-    expect_any(__wrap_mmio_read32, addr);
-    will_return(__wrap_mmio_read32, 0x0);
-    expect_function_call(__wrap_mmio_read32);
+//     expect_any(__wrap_mmio_read32, addr);
+//     will_return(__wrap_mmio_read32, 0x2);
+//     expect_function_call(__wrap_mmio_read32);
 
-    expect_any(__wrap_mmio_read32, addr);
-    will_return(__wrap_mmio_read32, 0x0);
-    expect_function_call(__wrap_mmio_read32);
+//     expect_any(__wrap_mmio_read32, addr);
+//     will_return(__wrap_mmio_read32, 0x0);
+//     expect_function_call(__wrap_mmio_read32);
 
-    expect_function_call(__wrap_nvic_get_current_irq);
-    will_return(__wrap_nvic_get_current_irq, HW_INT_CPU_CLSTR_31_0_PEX_INT);
-    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_CPU_CLSTR_31_0_PEX_INT);
-    expect_function_call(__wrap_nvic_irq_clear_pending);
+//     expect_any(__wrap_mmio_read32, addr);
+//     will_return(__wrap_mmio_read32, 0x0);
+//     expect_function_call(__wrap_mmio_read32);
 
-    expect_any(__wrap_mmio_read32, addr);
-    will_return(__wrap_mmio_read32, 0);
-    expect_function_call(__wrap_mmio_read32);
+//     expect_function_call(__wrap_nvic_get_current_irq);
+//     will_return(__wrap_nvic_get_current_irq, HW_INT_CPU_CLSTR_31_0_PEX_INT);
+//     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_CPU_CLSTR_31_0_PEX_INT);
+//     expect_function_call(__wrap_nvic_irq_clear_pending);
 
-    expect_any(__wrap_mmio_write32, addr);
-    expect_any(__wrap_mmio_write32, data);
-    expect_function_call(__wrap_mmio_write32);
+//     expect_any(__wrap_mmio_read32, addr);
+//     will_return(__wrap_mmio_read32, 0);
+//     expect_function_call(__wrap_mmio_read32);
 
-    expect_any(__wrap_mmio_read32, addr);
-    will_return(__wrap_mmio_read32, 0);
-    expect_function_call(__wrap_mmio_read32);
+//     expect_any(__wrap_mmio_write32, addr);
+//     expect_any(__wrap_mmio_write32, data);
+//     expect_function_call(__wrap_mmio_write32);
 
-    expect_function_call(__wrap_mmio_read32);
-    expect_any(__wrap_mmio_read32, addr);
-    will_return(__wrap_mmio_read32, 0x0);
+//     expect_any(__wrap_mmio_read32, addr);
+//     will_return(__wrap_mmio_read32, 0);
+//     expect_function_call(__wrap_mmio_read32);
 
-    cons_pex_isr(&dummy_rng_cfg);
-}
+//     expect_function_call(__wrap_mmio_read32);
+//     expect_any(__wrap_mmio_read32, addr);
+//     will_return(__wrap_mmio_read32, 0x0);
+
+//     cons_pex_isr(&dummy_rng_cfg);
+// }
 
 TEST_FUNCTION(test_rsm_ecc_isr_ce, test_setup, nullptr)
 {

@@ -41,7 +41,7 @@
 
 /*-- Declarations (Statics and globals) --*/
 static uint32_t ddrss_interrupt_id[6] = {0, 1, 2, 3, 4, 5};
-ddrss_phy_training_dq_margin_t ddrss_phy_training_dq_margin = {0};
+ddrss_phy_training_dq_margin_t ddrss_phy_training_dq_margin[6] = {0};
 
 // Refer to N.2.5 Memory Error Section of UEFI Specification, Version 2.8 Errata C
 static const guid_t STD_MEMORY_ERROR_DOMAIN_GUID = {0xB7E2A3C9, 0x4F1D, 0x4569, {0xA3, 0x9D, 0xD6, 0x5B, 0xAF, 0x10, 0x92, 0xEE}};
@@ -147,9 +147,11 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.ext_knobs.dq_margin_extract_pattern_len = config_get_dq_margin_extract_pattern_len();
     ddrss_cfgs.ext_knobs.dq_margin_extract_pattern_seed = config_get_dq_margin_extract_pattern_seed();
     ddrss_cfgs.ext_knobs.dq_margin_extract_step_size = config_get_dq_margin_extract_step_size();
+    ddrss_cfgs.ext_knobs.dq_margin_th = config_get_dq_margin_th();
     ddrss_cfgs.ext_knobs.dqs_interval_timer_run_time = config_get_dqs_interval_timer_run_time();
     ddrss_cfgs.ext_knobs.dram_active_power_down_en = config_get_dram_active_power_down_en();
     ddrss_cfgs.ext_knobs.dram_init_mode = config_get_dram_init_mode();
+    ddrss_cfgs.ext_knobs.dram_power_down_en = config_get_dram_power_down_en();
     ddrss_cfgs.ext_knobs.dram_power_down_entry_delay = config_get_dram_power_down_entry_delay();
     ddrss_cfgs.ext_knobs.dram_refresh_mode = config_get_dram_refresh_mode();
     ddrss_cfgs.ext_knobs.drfm_type_1x = config_get_drfm_type_1x();
@@ -257,8 +259,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.ext_knobs.ppr_type = config_get_ppr_type();
     ddrss_cfgs.ext_knobs.prio_map_to_fecq = config_get_prio_map_to_fecq();
 
-    // Default changed in prod. fw xml from 0 to 1
-    ddrss_cfgs.ext_knobs.ras_init_en = config_get_ras_init_en();
+    ddrss_cfgs.ext_knobs.ras_init_en = config_get_ras_init_en(); // This may need to be set to 1 for Prod. FW
     ddrss_cfgs.ext_knobs.rcb_depth = config_get_rcb_depth();
     ddrss_cfgs.ext_knobs.rcb_en = config_get_rcb_en();
     ddrss_cfgs.ext_knobs.rcb_occ_limit_prio0 = config_get_rcb_occ_limit_prio0();
@@ -373,7 +374,14 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         ddrss_cfgs.phy_type = DDRSS_PHY_TYPE_REAL;
         ddrss_cfgs.phy_fw_type = DDRSS_PHY_FW_TRAINING;
         ddrss_cfgs.phy_fw_img_info.fimg_base = SCP_EXP_DDR_PHY_DATA_BASE;
-        ddrss_cfgs.phy_fw_img_info.fimg_check = 1;
+        if (ddrss_cfgs.reset_reason == DDRSS_SYS_RESET_WARM)
+        {
+            ddrss_cfgs.phy_fw_img_info.fimg_check = 0;
+        }
+        else
+        {
+            ddrss_cfgs.phy_fw_img_info.fimg_check = 1;
+        }
     }
     else if (platform_id == PLATFORM_SVP_SIM || platform_id == PLATFORM_SVP_MIN_CONFIG_SIM)
     {
@@ -470,5 +478,5 @@ void prod_ddrss_pcr_init(KNG_DIE_ID die_num)
 
 ddrss_phy_training_dq_margin_t* ddrss_get_training_margin_base(void)
 {
-    return &ddrss_phy_training_dq_margin;
+    return &ddrss_phy_training_dq_margin[0];
 }

@@ -105,7 +105,7 @@
       <Member name="thermtrip" type="power_pvt_threshold_config_dts_t" help="thermtrip thresholds" />
     </Struct>
     <Struct name="power_pvt_soc_vm_cfg_t" help="">
-      <Member type="power_pvt_vm_cfg_t" name="thresholds" count="18" help="SOC VM thresholds (VSOC, VPCIE0P75, VDDQ1P1, VPLL_VGPIO_1P2, VSOC, VD2D0P55, VCLK_VPLL_0P875, VCLK_VPLL_0P875, VDDQ1P1, VSOC, VD2D0P55, VCLK_VPLL_0P875, VCLK_VPLL_0P875, VDDQ1P1, VSOC, VPCIE0P75, VDDQ1P1, VPLL_VGPIO_1P2)"/>
+      <Member type="power_pvt_vm_cfg_t" name="thresholds" count="18" help="SOC VM thresholds (VSOC, VPCIE0P75, VDDQ1P1, VGPIO1P2, VSOC, VD2D0P55, VCLK_VPLL_0P875, VCLK_VPLL_0P875, VDDQ1P1, VSOC, VD2D0P55, VCLK_VPLL_0P875, VCLK_VPLL_0P875, VDDQ1P1, VSOC, VPCIE0P75, VDDQ1P1, VPLL1P2)"/>
     </Struct>
     <Struct name="power_fllcal_pstate_bounds_t" help="">
       <Member name="pstate_min" type="uint8_t" help="" />
@@ -203,8 +203,8 @@
   <!-- namespace indicates the GUID namespace the values are stored in -->
   <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
     <!-- Power knobs -->
-    <Knob name="power_control_loop_interval" type="uint16_t" default="100" help="Control loop interval in milliseconds" />
-    <Knob name="power_pvt_loop_interval" type="uint16_t" default="1000" help="PVT telemetry loop interval in milliseconds" /> <!-- Default should be 10ms, but setting to 1000ms for interim -->
+    <Knob name="power_control_loop_interval" type="uint16_t" default="10" help="Control loop interval in milliseconds" />
+    <Knob name="power_pvt_loop_interval" type="uint16_t" default="100" help="PVT telemetry loop interval in milliseconds" /> <!-- Default should be 10ms, but setting to 1000ms for interim -->
     <Knob name="power_temp_telemetry_divider" type="uint16_t" default="10" help="Number of control loop intervals per 1 VR temperature telemetry" />
     <Knob name="power_pid" type="power_pid_config_t" default="{15000, 2000000, 0, 5000}" help="Power PID configuration" />
     <Knob name="power_soc_maximum_thermal_watts_limit" type="uint16_t" default="0" help="SOC maximum power limit specific to thermal (W). Defaults to fused value if set to 0" />
@@ -238,7 +238,7 @@
     <Knob name="power_current_throt" type="power_currthrot_cfg_t" default="{5, 14, 31, 31, 0, 1, 2}" help="Configuration for core current throttling" />
 
     <Knob name="power_tile_temp_throt" type="power_tile_tempthrot_cfg_t" default="{{930, 950}, {1130, 1150}, 15, 15, 0, 1}" help="Configuration for tile temperature throttling" />
-    <Knob name="power_tile_vms" type="power_pvt_tile_vm_cfg_t" default="{{{{1050, 1100}, {0, 0}}, {{1050, 1100}, {0, 0}}, {{1383, 1433}, {680, 630}}, {{1006, 1056}, {775, 725}}}}" help="Configuration for tile voltage monitor thresholds" />
+    <Knob name="power_tile_vms" type="power_pvt_tile_vm_cfg_t" default="{{{{1050, 1100}, {0, 0}}, {{1050, 1100}, {0, 0}}, {{1320, 1450}, {710, 710}}, {{960, 1050}, {730, 730}}}}" help="Configuration for tile voltage monitor thresholds" />
 
     <!-- Document only
     <Knob name="power_adclk_throt_vcpu0" type="" default="" help="FGPLL and DVFS config for adaptive clocking" />
@@ -251,7 +251,29 @@
     <Knob name="power_adclk_offset_cfg" type="power_adclk_offset_cfg_t" default="{false, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}" />
 
     <Knob name="power_soc_temp" type="power_soc_temp_cfg_t" default="{{930, 950}, {1130, 1150}}" help="Configuration for SOC temperature thresholds" />
-    <Knob name="power_soc_vms" type="power_pvt_soc_vm_cfg_t" default="{{{{1281, 1331}, {941, 891}}, {{858, 908}, {689, 639}}, {{933, 983}, {777, 727}}, {{858, 908}, {689, 639}}, {{1006, 1056}, {775, 725}}, {{1281, 1331}, {941, 891}}, {{933, 983}, {777, 727}}, {{1006, 1056}, {775, 725}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}, {{0, 0}, {0,0}}}}" help="Configuration for SOC voltage monitor thresholds" />
+    <Knob name="power_soc_vms" type="power_pvt_soc_vm_cfg_t" default="{{
+    {{830, 910}, {640, 640}},
+    {{790, 870}, {640, 640}},
+    {{1170, 1280}, {960, 960}},
+    {{1320, 1350}, {1090, 1090}},
+
+    {{830, 910}, {640, 640}},
+    {{590, 640}, {460, 460}},
+    {{970, 1060}, {710, 710}},
+    {{970, 1060}, {710, 710}},
+    {{1170, 1280}, {960, 960}},
+
+    {{830, 910}, {640, 640}},
+    {{590, 640}, {460, 460}},
+    {{970, 1060}, {710, 710}},
+    {{970, 1060}, {710, 710}},
+    {{1170, 1280}, {960, 960}},
+
+    {{830, 910}, {640, 640}},
+    {{790, 870}, {640, 640}},
+    {{1170, 1280}, {960, 960}},
+    {{1320, 1350}, {1090, 1090}} 
+    }}" help="Configuration for SOC voltage monitor thresholds" />
 
     <Knob name="power_vcpu0_offset" type="int16_t" default="0" help="Offset in mV to add to final Vcpu calculation" />
     <Knob name="power_vcpu1_offset" type="int16_t" default="0" help="Offset in mV to add to final Vcpu calculation" />
@@ -266,10 +288,10 @@
     <Knob name="power_enable_fgpll_calsm" type="bool" default="true" help="True to enable FGPLL calibration" />
     <Knob name="power_fllcal_pstate_bounds" type="power_fllcal_pstate_bounds_t" default="{0, 31}" help="Start and end of fll calibration" />
     <Knob name="power_plllock_cfg" type="power_plllock_cfg_t" default="{true, 2, true, false, false, false, false}" help="Use to configure core PLL lock interrupt settings" />
-    <Knob name="power_nominal_pstate" type="uint8_t" default="16" help="Nominal pstate number, 0 uses SOC fused default" />
+    <Knob name="power_nominal_pstate" type="uint8_t" default="20" help="Nominal pstate number, 0 uses SOC fused default" />
     <Knob name="power_c1_telemetry_enable" type="bool" default="false" help="Enable C1 telemetry in DVFS" />
     <Knob name="power_soc_static_rails" type="uint16_t" default="0" help="Static power in mW to add to SOC power calculations" />
-    <Knob name="power_avs_ds" type="avs_ds_cfg_array_t" default="{{{3,3},{3,3},{3,3},{3,3}}}" help="AVS drive strength" />
+    <Knob name="power_avs_ds" type="avs_ds_cfg_array_t" default="{{{2,2},{2,2},{2,2},{2,2}}}" help="AVS drive strength" />
  
     <!-- Document Only
     <Knob name="power_itd_cfg" type="" default="" help="Inverse Temperature Dependence enable, configuration" />
@@ -287,18 +309,18 @@
     <Knob name="power_soc_thermtrip_en" type="bool" default="true" />
     <Knob name="power_tile_hot_en" type="bool" default="true" />
     <Knob name="power_tile_thermtrip_en" type="bool" default="true" />
-    <Knob name="die0_core_disable_value_0_31" type="uint32_t" default="0" />
-    <Knob name="die0_core_disable_value_32_63" type="uint32_t" default="0" />
-    <Knob name="die0_core_disable_value_64_95" type="uint32_t" default="0" />
-    <Knob name="die1_core_disable_value_0_31" type="uint32_t" default="0" />
-    <Knob name="die1_core_disable_value_32_63" type="uint32_t" default="0" />
-    <Knob name="die1_core_disable_value_64_95" type="uint32_t" default="0" />
-    <Knob name="die0_core_spare_en_0_31" type="uint32_t" default="0"  help="Can be used to enable previously disabled but not defective cores, set to 1 to enable"/>
-    <Knob name="die0_core_spare_en_32_63" type="uint32_t" default="0" help="Can be used to enable previously disabled but not defective cores, set to 1 to enable"/>
-    <Knob name="die0_core_spare_en_64_95" type="uint32_t" default="0" help="Can be used to enable previously disabled but not defective cores, set to 1 to enable"/>
-    <Knob name="die1_core_spare_en_0_31" type="uint32_t" default="0"  help="Can be used to enable previously disabled but not defective cores, set to 1 to enable"/>
-    <Knob name="die1_core_spare_en_32_63" type="uint32_t" default="0" help="Can be used to enable previously disabled but not defective cores, set to 1 to enable"/>
-    <Knob name="die1_core_spare_en_64_95" type="uint32_t" default="0" help="Can be used to enable previously disabled but not defective cores, set to 1 to enable"/>
+    <Knob name="die0_core_disable_value_31_0" type="uint32_t" default="0" />
+    <Knob name="die0_core_disable_value_63_32" type="uint32_t" default="0" />
+    <Knob name="die0_core_disable_value_95_64" type="uint32_t" default="0" />
+    <Knob name="die1_core_disable_value_31_0" type="uint32_t" default="0" />
+    <Knob name="die1_core_disable_value_63_32" type="uint32_t" default="0" />
+    <Knob name="die1_core_disable_value_95_64" type="uint32_t" default="0" />
+    <Knob name="die0_core_spare_en_31_0" type="uint32_t" default="0"  help="Can be used to enable previously disabled but not defective cores, set to 1 to enable"/>
+    <Knob name="die0_core_spare_en_63_32" type="uint32_t" default="0" help="Can be used to enable previously disabled but not defective cores, set to 1 to enable"/>
+    <Knob name="die0_core_spare_en_95_64" type="uint32_t" default="0" help="Can be used to enable previously disabled but not defective cores, set to 1 to enable"/>
+    <Knob name="die1_core_spare_en_31_0" type="uint32_t" default="0"  help="Can be used to enable previously disabled but not defective cores, set to 1 to enable"/>
+    <Knob name="die1_core_spare_en_63_32" type="uint32_t" default="0" help="Can be used to enable previously disabled but not defective cores, set to 1 to enable"/>
+    <Knob name="die1_core_spare_en_95_64" type="uint32_t" default="0" help="Can be used to enable previously disabled but not defective cores, set to 1 to enable"/>
   </Knobs>
 
 </ConfigSchema>

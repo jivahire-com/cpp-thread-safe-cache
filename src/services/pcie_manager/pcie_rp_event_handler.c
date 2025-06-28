@@ -26,8 +26,9 @@
 #include <tx_api.h> // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define WAIT_SBR_MS        (FPFW_MAX((TX_TIMER_TICKS_PER_SECOND / (200UL)), (1UL))) // 5ms
-#define OVL_LT_RETRIES_MAX (3)
+#define LINK_TRAINING_SETTLE_TICKS (1000)
+#define WAIT_SBR_MS                (FPFW_MAX((TX_TIMER_TICKS_PER_SECOND / (200UL)), (1UL))) // 5ms
+#define OVL_LT_RETRIES_MAX         (3)
 
 inline uint32_t CLEAR_BIT(uint32_t number, unsigned bit_pos)
 {
@@ -79,6 +80,7 @@ void process_wait_for_event_data(pcie_manager_context_t* ctx, pciess_completion_
 
         case PCIESS_RP_INT_LINK_UP: {
             int_mask = CLEAR_BIT(int_mask, PCIESS_RP_INT_LINK_UP);
+            tx_thread_sleep(LINK_TRAINING_SETTLE_TICKS);
             status = send_sync_rp_get_link_status((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
 
             if (rp_is_overlake(rpss_idx, rp_idx) && config_get_enable_overlake_sbr_workaround())

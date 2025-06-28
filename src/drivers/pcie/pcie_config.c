@@ -68,6 +68,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
                                           pcie_prod_cfg_t* pcie_cfg_knob,
                                           pcie_prod_phy_cfg_t* phy_cfg_knob,
                                           pcie_prod_cfg_workarounds_t* pcie_cfg_workarounds);
+static void force_rpss2_resource_allocation_override(pcie_cfg_t* pcie_cfg);
 
 /*-- Declarations (Statics and globals) --*/
 static pcie_cfg_t pcie_cfg_np[NUM_RPSS] = {
@@ -107,6 +108,48 @@ static bool mirror_rpss_configurations()
     return config_mirroring;
 }
 
+static void force_rpss2_resource_allocation_override(pcie_cfg_t* pcie_cfg)
+{
+    /*
+     * This will force an override for rpss2 resource allocations to ensure that
+     * the Matrox G200ew3 display port gets enough MMIOL space (> 24 MB).
+     */
+    pcie_cfg->pcie_en_resource_alloc_override = true;
+
+    /* Redistribute resources between rp0 and rp1 */
+    pcie_cfg->pcie_rp_resources[0].bus_start = 0x3E;
+    pcie_cfg->pcie_rp_resources[0].bus_count = 16;
+    pcie_cfg->pcie_rp_resources[0].ecam_start = 0x4003E00000;
+    pcie_cfg->pcie_rp_resources[0].mmiol_start = 0x44000000;
+    pcie_cfg->pcie_rp_resources[0].mmiol_size = 0x02000000;
+    pcie_cfg->pcie_rp_resources[0].mmioh_start = 0x014000000000;
+    pcie_cfg->pcie_rp_resources[0].mmioh_size = 0x1000000000;
+
+    pcie_cfg->pcie_rp_resources[1].bus_start = 0;
+    pcie_cfg->pcie_rp_resources[1].bus_count = 0;
+    pcie_cfg->pcie_rp_resources[1].ecam_start = 0;
+    pcie_cfg->pcie_rp_resources[1].mmiol_start = 0;
+    pcie_cfg->pcie_rp_resources[1].mmiol_size = 0;
+    pcie_cfg->pcie_rp_resources[1].mmioh_start = 0;
+    pcie_cfg->pcie_rp_resources[1].mmioh_size = 0;
+
+    pcie_cfg->pcie_rp_resources[2].bus_start = 0;
+    pcie_cfg->pcie_rp_resources[2].bus_count = 0;
+    pcie_cfg->pcie_rp_resources[2].ecam_start = 0;
+    pcie_cfg->pcie_rp_resources[2].mmiol_start = 0;
+    pcie_cfg->pcie_rp_resources[2].mmiol_size = 0;
+    pcie_cfg->pcie_rp_resources[2].mmioh_start = 0;
+    pcie_cfg->pcie_rp_resources[2].mmioh_size = 0;
+
+    pcie_cfg->pcie_rp_resources[3].bus_start = 0x4E;
+    pcie_cfg->pcie_rp_resources[3].bus_count = 15;
+    pcie_cfg->pcie_rp_resources[3].ecam_start = 0x4004E00000;
+    pcie_cfg->pcie_rp_resources[3].mmiol_start = 0x46000000;
+    pcie_cfg->pcie_rp_resources[3].mmiol_size = 0x02000000;
+    pcie_cfg->pcie_rp_resources[3].mmioh_start = 0x15000000000;
+    pcie_cfg->pcie_rp_resources[3].mmioh_size = 0x1000000000;
+}
+
 static void apply_one_to_one_configurations(uint8_t rpss_id,
                                             pcie_cfg_t* pcie_cfg,
                                             pcie_prod_cfg_t* pcie_cfg_knob,
@@ -139,6 +182,12 @@ static void apply_one_to_one_configurations(uint8_t rpss_id,
         rp_knobs[1] = config_get_pcie_rpss2_rp1_cfg();
         rp_knobs[2] = config_get_pcie_rpss2_rp2_cfg();
         rp_knobs[3] = config_get_pcie_rpss2_rp3_cfg();
+        if (config_get_enable_dp_mmiol_reallocation() == true)
+        {
+            rp_knobs[1].silibs_rp_cfg.pcie_rp_en = false;
+            rp_knobs[2].silibs_rp_cfg.pcie_rp_en = false;
+            force_rpss2_resource_allocation_override(pcie_cfg);
+        }
         break;
     case RPSS3:
         *pcie_cfg_knob = config_get_pcie_rpss3_cfg();
@@ -244,6 +293,12 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
         rp_knobs[1] = config_get_pcie_rpss1_rp1_cfg();
         rp_knobs[2] = config_get_pcie_rpss1_rp2_cfg();
         rp_knobs[3] = config_get_pcie_rpss1_rp3_cfg();
+        if (config_get_enable_dp_mmiol_reallocation() == true)
+        {
+            rp_knobs[1].silibs_rp_cfg.pcie_rp_en = false;
+            rp_knobs[2].silibs_rp_cfg.pcie_rp_en = false;
+            force_rpss2_resource_allocation_override(pcie_cfg);
+        }
         break;
     case RPSS3:
         *pcie_cfg_knob = config_get_pcie_rpss0_cfg();

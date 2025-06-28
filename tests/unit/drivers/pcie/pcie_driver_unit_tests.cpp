@@ -177,6 +177,7 @@ TEST_FUNCTION(test_pcie_rpss_init_soc1_success, test_setup, test_teardown)
         will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
         will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
         will_return(__wrap_pciess_deassert_por_reset, SILIBS_SUCCESS);
+        will_return(__wrap_pciess_phys_toggle_clocks, SILIBS_SUCCESS);
         will_return(__wrap_idsw_get_die_id, DIE_0);
 
         cxl_region_params_t cxl_region_params_die0 = __real_config_get_cxl_params_die0();
@@ -228,6 +229,7 @@ TEST_FUNCTION(test_pcie_rpss_init_soc2_success, test_setup, test_teardown)
         will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
         will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
         will_return(__wrap_pciess_deassert_por_reset, SILIBS_SUCCESS);
+        will_return(__wrap_pciess_phys_toggle_clocks, SILIBS_SUCCESS);
         will_return(__wrap_idsw_get_die_id, DIE_0);
 
         cxl_region_params_t cxl_region_params_die0 = __real_config_get_cxl_params_die0();
@@ -278,6 +280,7 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
     will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
     will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
     will_return(__wrap_pciess_deassert_por_reset, SILIBS_SUCCESS);
+    will_return(__wrap_pciess_phys_toggle_clocks, SILIBS_SUCCESS);
     will_return(__wrap_idsw_get_die_id, DIE_0);
 
     cxl_region_params_t cxl_region_params_die0 = __real_config_get_cxl_params_die0();
@@ -323,7 +326,7 @@ TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success, test_setup, test_teardow
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
-    will_return(__wrap_pciess_phys_sram_init_done, SILIBS_SUCCESS);
+    will_return(__wrap_pciess_poll_phys_sram_init_done, SILIBS_SUCCESS);
     will_return(__wrap_pciess_phys_program_fw, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_pre_rp_ready_init, SILIBS_SUCCESS);
     int32_t ret = pcie_sched_sync_op(&(r.header));
@@ -1263,6 +1266,7 @@ TEST_FUNCTION(test_rpss_init_cxl, test_setup, test_teardown)
     will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
     will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
     will_return(__wrap_pciess_deassert_por_reset, SILIBS_SUCCESS);
+    will_return(__wrap_pciess_phys_toggle_clocks, SILIBS_SUCCESS);
     will_return(__wrap_idsw_get_die_id, DIE_1);
 
     cxl_region_params_t cxl_region_params_die1 = __real_config_get_cxl_params_die1();

@@ -23,6 +23,8 @@ target_link_libraries(${TARGET}
         ms::lib::systick_update
         ms::lib::threadx
         silibs::common::lib_uart_pl011
+        silibs::idsw
+        silibs::idsw_kng
         silibs::platform
         silibs::kng_silibs_platform
 )
@@ -48,4 +50,5 @@ mock_target(${TARGET}
     systick_get_emcpu_clock
     textio_pl011_device_initialize
     textio_pl011_device_interface_initialize
+    idsw_get_platform_sdv
 )

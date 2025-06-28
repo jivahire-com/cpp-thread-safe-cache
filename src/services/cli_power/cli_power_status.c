@@ -391,7 +391,7 @@ static void print_power_status_capinfo(ppower_service_cli_request_t p_cli_reques
     else {
         printf("%dW\n", soc_cap);
     }
-    printf("Vcpu Power Cap: %ffW\n", get_current_vrcpu_cap());
+    printf("Vcpu Power Cap: %fW\n", get_current_vrcpu_cap());
     printf("Inst Max Electrical Limit: Die0: %fW Die1: %fW\n", get_inst_max_electrical_limit(0), get_inst_max_electrical_limit(1));
     printf("Soc Max Thermal Limit: %dW\n", p_knobs->soc_maximum_thermal_watts_limit);
     printf("Soc Max Electrical Current Limit: (Vcpu0: %dA Vcpu1: %dA)\n", p_knobs->soc_maximum_electrical_current_limit_vcpu0, p_knobs->soc_maximum_electrical_current_limit_vcpu1);

@@ -15,7 +15,7 @@ endif()
 
 target_link_libraries(${TARGET}
     PUBLIC
-    ms::lib::crash_dump 
+    ms::lib::crash_dump
     ms::lib::register_headers
     ras_arm
     silibs::cmn800

@@ -19,6 +19,7 @@
 #include <DfwkHost.h>
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
+#include <bandgap.h>
 #include <bug_check.h>
 #include <corebits.h>
 #include <fpfw_cfg_mgr.h>
@@ -32,6 +33,7 @@
 #include <scp_exp_top_regs.h>
 #include <scp_top_regs.h>
 #undef __NO_CSR_TYPEDEFS__
+#include <pcie_lt_events.h>
 #include <pik_clock_lib.h>
 #include <sds_api.h>
 #include <sds_configuration.h>
@@ -43,6 +45,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <system_info.h>
+#include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -135,6 +138,9 @@ static void ap_core_ssi_start_cluster_init(pssi_startup_notification_request_t p
 // dispatcher function to handle boot stage for primary AP core boot
 static void ap_core_ssi_start_primary_ap_core_boot(pssi_startup_notification_request_t p_request, ssi_startup_type_t boot_type)
 {
+    APCORE_LOG_INFO("Waiting for PCIe init complete before powering on primary AP core!");
+    pcie_link_training_wait_event(&pcie_lt_event);
+
     unsigned int boot_core = ap_core_util_boot_core(&s_ap_core_ctx);
     APCORE_LOG_INFO("Primary AP core power on (%d)", boot_core);
 
@@ -213,6 +219,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
         switch (ssi_request->stage)
         {
         case STARTUP_CLUSTER_CORE_INIT:
+            enable_bandgap_circuitry(true);
             ap_core_ssi_start_cluster_init(ssi_request);
             break;
         case STARTUP_PCIE_PHY_LOAD:
@@ -442,10 +449,8 @@ void ap_core_init(pap_core_service_t p_device,
     s_ap_core_ctx.p_config = p_config;
     s_icc_base_ctx = icc_base_ctx;
 
-    // read fuses to get enabled cores
-    ap_core_util_get_fuse_enabled_cores(&s_ap_core_ctx.enabled_cores);
     // limit enabled cores to those that are actually present
-    corebits_and(&s_ap_core_ctx.enabled_cores, p_config->platform_cores_in_die);
+    corebits_or(&s_ap_core_ctx.enabled_cores, p_config->platform_cores_in_die);
 
     // initialize pik cluster remap base
     pik_clock_set_cluster_remapped_base(p_config->cluster_pex_base);

@@ -5,6 +5,8 @@
 /**
  * @file ddrss_mocks.c
  * Mock functions for DDRSS unit tests
+ * @file ddrss_mocks.c
+ * Mock functions for DDRSS unit tests
  */
 
 /*------------- Includes -----------------*/
@@ -196,6 +198,7 @@ int __wrap_ddrss_ddr_intu_clear_interrupt(uint32_t mc, uint32_t intr_mask)
 bool __wrap_ras_arm_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* record)
 {
     FPFW_UNUSED(agent);
+    FPFW_UNUSED(record);
     FPFW_UNUSED(record);
     function_called();
     return SILIBS_SUCCESS;

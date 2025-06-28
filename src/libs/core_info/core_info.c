@@ -49,44 +49,44 @@ void core_info_get_platform_disable_cores()
     kng_fuse_disable_core_t p_result_disable = {};
     if (idsw_get_die_id() == DIE_0)
     {
-        p_config_disable.fuse_dis_core_0_31 = config_get_die0_core_disable_value_0_31();
-        p_config_disable.fuse_dis_core_32_63 = config_get_die0_core_disable_value_32_63();
-        p_config_disable.fuse_dis_core_64_95 = config_get_die0_core_disable_value_64_95();
+        p_config_disable.fuse_dis_core_31_0 = config_get_die0_core_disable_value_31_0();
+        p_config_disable.fuse_dis_core_63_32 = config_get_die0_core_disable_value_63_32();
+        p_config_disable.fuse_dis_core_95_64 = config_get_die0_core_disable_value_95_64();
 
-        p_config_spare_en.fuse_dis_core_0_31 = config_get_die0_core_spare_en_0_31();
-        p_config_spare_en.fuse_dis_core_32_63 = config_get_die0_core_spare_en_32_63();
-        p_config_spare_en.fuse_dis_core_64_95 = config_get_die0_core_spare_en_64_95();
+        p_config_spare_en.fuse_dis_core_31_0 = config_get_die0_core_spare_en_31_0();
+        p_config_spare_en.fuse_dis_core_63_32 = config_get_die0_core_spare_en_63_32();
+        p_config_spare_en.fuse_dis_core_95_64 = config_get_die0_core_spare_en_95_64();
     }
     else
     {
-        p_config_disable.fuse_dis_core_0_31 = config_get_die1_core_disable_value_0_31();
-        p_config_disable.fuse_dis_core_32_63 = config_get_die1_core_disable_value_32_63();
-        p_config_disable.fuse_dis_core_64_95 = config_get_die1_core_disable_value_64_95();
+        p_config_disable.fuse_dis_core_31_0 = config_get_die1_core_disable_value_31_0();
+        p_config_disable.fuse_dis_core_63_32 = config_get_die1_core_disable_value_63_32();
+        p_config_disable.fuse_dis_core_95_64 = config_get_die1_core_disable_value_95_64();
 
-        p_config_spare_en.fuse_dis_core_0_31 = config_get_die1_core_spare_en_0_31();
-        p_config_spare_en.fuse_dis_core_32_63 = config_get_die1_core_spare_en_32_63();
-        p_config_spare_en.fuse_dis_core_64_95 = config_get_die1_core_spare_en_64_95();
+        p_config_spare_en.fuse_dis_core_31_0 = config_get_die1_core_spare_en_31_0();
+        p_config_spare_en.fuse_dis_core_63_32 = config_get_die1_core_spare_en_63_32();
+        p_config_spare_en.fuse_dis_core_95_64 = config_get_die1_core_spare_en_95_64();
     }
 
-    read_core_defect_fuses(&(p_fuse_disable.fuse_dis_core_64_95),
-                           &(p_fuse_disable.fuse_dis_core_32_63),
-                           &(p_fuse_disable.fuse_dis_core_0_31));
-    p_result_disable.fuse_dis_core_0_31 = ~((p_fuse_disable.fuse_dis_core_0_31 | p_config_disable.fuse_dis_core_0_31) &
-                                            (~p_config_spare_en.fuse_dis_core_0_31));
-    p_result_disable.fuse_dis_core_32_63 = ~((p_fuse_disable.fuse_dis_core_32_63 | p_config_disable.fuse_dis_core_32_63) &
-                                             (~p_config_spare_en.fuse_dis_core_32_63));
-    p_result_disable.fuse_dis_core_64_95 =
-        ~(((p_fuse_disable.fuse_dis_core_64_95 | p_config_disable.fuse_dis_core_64_95) & (~p_config_spare_en.fuse_dis_core_64_95)) &
+    read_core_defect_fuses(&(p_fuse_disable.fuse_dis_core_95_64),
+                           &(p_fuse_disable.fuse_dis_core_63_32),
+                           &(p_fuse_disable.fuse_dis_core_31_0));
+    p_result_disable.fuse_dis_core_31_0 = ~((p_fuse_disable.fuse_dis_core_31_0 | p_config_disable.fuse_dis_core_31_0) &
+                                            (~p_config_spare_en.fuse_dis_core_31_0));
+    p_result_disable.fuse_dis_core_63_32 = ~((p_fuse_disable.fuse_dis_core_63_32 | p_config_disable.fuse_dis_core_63_32) &
+                                             (~p_config_spare_en.fuse_dis_core_63_32));
+    p_result_disable.fuse_dis_core_95_64 =
+        ~(((p_fuse_disable.fuse_dis_core_95_64 | p_config_disable.fuse_dis_core_95_64) & (~p_config_spare_en.fuse_dis_core_95_64)) &
           0x0F);
 
     printf("DIE [%d] : core0-31=0x%" PRIx32 " core32-63=0x%" PRIx32 " core64-95=0x%" PRIx32 " \n",
            idsw_get_die_id(),
-           p_result_disable.fuse_dis_core_0_31,
-           p_result_disable.fuse_dis_core_32_63,
-           p_result_disable.fuse_dis_core_64_95);
-    sys_cores_in_die = (corebits_t)COREBITS_INIT_UINT32(p_result_disable.fuse_dis_core_0_31,
-                                                        p_result_disable.fuse_dis_core_32_63,
-                                                        p_result_disable.fuse_dis_core_64_95);
+           p_result_disable.fuse_dis_core_31_0,
+           p_result_disable.fuse_dis_core_63_32,
+           p_result_disable.fuse_dis_core_95_64);
+    sys_cores_in_die = (corebits_t)COREBITS_INIT_UINT32(p_result_disable.fuse_dis_core_31_0,
+                                                        p_result_disable.fuse_dis_core_63_32,
+                                                        p_result_disable.fuse_dis_core_95_64);
 }
 
 corebits_t* core_info_get_enable_cores_result()

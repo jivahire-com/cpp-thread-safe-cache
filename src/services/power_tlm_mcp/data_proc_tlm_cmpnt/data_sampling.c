@@ -654,9 +654,10 @@ core_state_metrics_flags_t data_smpl_parse_core_states_entry(pstate_telem_t* pst
             metrics.pstate_time_diff_uS = (timestamp_uS > core[core_id].pstate_timestamp_uS)
                                               ? timestamp_uS - core[core_id].pstate_timestamp_uS
                                               : 0;
-            if (metrics.pstate_time_diff_uS)
+            if (metrics.pstate_time_diff_uS == 0)
             {
-                FPFW_ET_LOG(LogCoreInValidTimeStamp, timestamp_uS, core[core_id].pstate_timestamp_uS, status);
+                // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2721348
+                //FPFW_ET_LOG(LogCoreInValidTimeStamp, timestamp_uS, core[core_id].pstate_timestamp_uS, status);
             }
         }
 
@@ -673,9 +674,10 @@ core_state_metrics_flags_t data_smpl_parse_core_states_entry(pstate_telem_t* pst
             metrics.cstate_time_diff_uS = (timestamp_uS > core[core_id].cstate_timestamp_uS)
                                               ? timestamp_uS - core[core_id].cstate_timestamp_uS
                                               : 0;
-            if (metrics.cstate_time_diff_uS)
+            if (metrics.cstate_time_diff_uS == 0)
             {
-                FPFW_ET_LOG(LogCoreInValidTimeStamp, timestamp_uS, core[core_id].cstate_timestamp_uS, status);
+                // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2721348
+                //FPFW_ET_LOG(LogCoreInValidTimeStamp, timestamp_uS, core[core_id].cstate_timestamp_uS, status);
             }
         }
         // update timestamp for cstate only after time diff calculation done for residency.
@@ -695,10 +697,11 @@ core_state_metrics_flags_t data_smpl_parse_core_states_entry(pstate_telem_t* pst
                     : 0;
             if (metrics.rack_throttle_time_diff_uS == 0)
             {
-                FPFW_ET_LOG(LogCoreInValidTimeStamp,
+                // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2721348
+                /*FPFW_ET_LOG(LogCoreInValidTimeStamp,
                             timestamp_uS,
                             core[core_id].latest_rack_priority_previous_timestamp_uS[priority_id],
-                            status);
+                            status);*/
             }
         }
         // update flag once , entry count updated.
@@ -855,7 +858,8 @@ void data_smpl_parse_cstate_no_throttling(pstate_telem_t* cstate_telemetry, uint
         // Case 1 :Invalid cstate change- return.
         if (new_cstate > core[core_id].latest_cstate + 1)
         {
-            FPFW_ET_LOG(CstateUnexpectedLevelChange, core_id, new_cstate, core[core_id].latest_cstate);
+            // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2721348
+            //  FPFW_ET_LOG(CstateUnexpectedLevelChange, core_id, new_cstate, core[core_id].latest_cstate);
             return;
         }
         // case 2 : First time entering in a cstate -if timestamp is 0 so continue and update entry and

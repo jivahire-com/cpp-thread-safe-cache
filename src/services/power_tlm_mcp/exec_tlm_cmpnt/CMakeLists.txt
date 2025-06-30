@@ -25,7 +25,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.interface.platform.threadx
         ms::lib::error_codes
         ms::lib::gtimer
-
+        
 )
 
 lint_target(${TARGET})

@@ -53,20 +53,25 @@ sdm_itcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm
 mscp_manifest              = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/man/etman.bin'}
 accel_manifest             = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/man/etman.bin' }
 mesh_config                = { type='file', local='${REPO_APP_PATH_kng_mesh_binary_images}/cmn800_mesh_tables.bin' }
-ddr_phy                    = { type='file',  local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
+ddr_phy                    = { type='file', local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
+rp_exe                     = { type='file', local='${REPO_APP_PATH_echofalls.rp_exe.build}/build/echofalls/debug/rp_exe.bin' }
+rp_data                    = { type='file', local='${REPO_APP_PATH_echofalls.rp_data.build}/build/echofalls/debug/rp_data.bin' }
+pcie_phy                   = { type='file', local='${REPO_APP_PATH_pcie.phy.bin}/pcie_phy_fw.bin' }
+fuse_override_die0         = { type='file', local='${REPO_APP_ROOT}/config/fuse_overrides/fuse_overrides_d0_fpga.bin'}
+fuse_override_die1         = { type='file', local='${REPO_APP_ROOT}/config/fuse_overrides/fuse_overrides_d0_fpga.bin'}
 
 # Build this flavor with
-#  datwizard build --flavor "kingsgate.ifwi.fpga.debug.custom"
-[dat."kingsgate.ifwi.fpga.debug.custom"]
-extends = "kingsgate.ifwi.fpga.debug"
+#  datwizard build --flavor "kingsgate.ifwi.ap.baremetal.debug"
+[dat."kingsgate.ifwi.ap.baremetal.debug"]
+extends = "kingsgate.ifwi.soc.debug"
 build = true
-[dat."kingsgate.ifwi.fpga.debug.custom".partition]
+[dat."kingsgate.ifwi.ap.baremetal.debug".partition]
 
 mcp                        = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/mcp/mcp_boot_loader_embed_fw.bin'}
-pe_management_mode         = { type='file', local='${REPO_APP_PATH_echofalls.fpga.stmm.build}/build/DEBUG/stmm.pkg'}
-pe_security_monitor        = { type='file', local='${REPO_APP_PATH_echofalls.atf.build}/build/echofalls/debug/bl31.bin'}
+pe_management_mode         = { type='file', local='${REPO_APP_PATH_echofalls.soc.stmm.build}/build/DEBUG/stmm.pkg'}
+pe_security_monitor        = { type='file', local='${REPO_APP_PATH_kingsgate.ap.baremetal}/build/bin/arm-aarch64-none/Debug/ap_test.bin'}
 pe_spm                     = { type='file', local='${REPO_APP_PATH_echofalls.hafnium.build}/build/kingsgate/debug/echofalls_clang/hafnium.bin'}
-pe_uefi                    = { type='file', local='${REPO_APP_PATH_echofalls.fpga.uefi.build}/build/DEBUG/BL33_AP_UEFI.fd'}
+pe_uefi                    = { type='file', local='${REPO_APP_PATH_echofalls.soc.uefi.build}/build/DEBUG/BL33_AP_UEFI.fd'}
 rmm                        = { type='file', local='${REPO_APP_PATH_echofalls.rmm.build}/build/echofalls/debug/rmm.img'}
 rom_section                = { type='file', local='${REPO_APP_PATH_kingsgate.sprt.release}/release/sp1/sp1.img'}
 scp                        = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/scp/scp_boot_loader_embed_fw.bin'}
@@ -78,23 +83,9 @@ sdm_itcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm
 mscp_manifest              = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/man/etman.bin'}
 accel_manifest             = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/man/etman.bin' }
 mesh_config                = { type='file', local='${REPO_APP_PATH_kng_mesh_binary_images}/cmn800_mesh_tables.bin' }
-ddr_phy                    = { type='file',  local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
-
-# Build this flavor with
-#  datwizard build --flavor "kingsgate.ifwi.ap.baremetal.debug"
-[dat."kingsgate.ifwi.ap.baremetal.debug"]
-extends = "kingsgate.ifwi.fpga.debug"
-build = true
-[dat."kingsgate.ifwi.ap.baremetal.debug".partition]
-
-mcp                        = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/mcp/mcp_boot_loader_embed_fw.bin'}
-pe_security_monitor        = { type='file', local='${REPO_APP_PATH_kingsgate.ap.baremetal}/build/bin/arm-aarch64-none/Debug/ap_test.bin'}
-rom_section                = { type='file', local='${REPO_APP_PATH_kingsgate.sprt.release}/release/sp1/sp1.img'}
-scp                        = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/scp/scp_boot_loader_embed_fw.bin'}
-sprt                       = { type='file', local='${REPO_APP_PATH_kingsgate.sprt.release}/release/sprt/sprt.bin'}
-cded_dtcm                  = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/cded/cded_fw_dtcm.bin'}
-cded_itcm                  = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/cded/cded_fw_itcm.bin'}
-sdm_dtcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/sdm/sdm_fw_dtcm.bin'}
-sdm_itcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/sdm/sdm_fw_itcm.bin'}
-mesh_config                = { type='file', local='${REPO_APP_PATH_kng_mesh_binary_images}/cmn800_mesh_tables.bin' }
-ddr_phy                    = { type='file',  local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
+ddr_phy                    = { type='file', local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
+rp_exe                     = { type='file', local='${REPO_APP_PATH_echofalls.rp_exe.build}/build/echofalls/debug/rp_exe.bin' }
+rp_data                    = { type='file', local='${REPO_APP_PATH_echofalls.rp_data.build}/build/echofalls/debug/rp_data.bin' }
+pcie_phy                   = { type='file', local='${REPO_APP_PATH_pcie.phy.bin}/pcie_phy_fw.bin' }
+fuse_override_die0         = { type='file', local='${REPO_APP_ROOT}/config/fuse_overrides/fuse_overrides_d0_fpga.bin'}
+fuse_override_die1         = { type='file', local='${REPO_APP_ROOT}/config/fuse_overrides/fuse_overrides_d0_fpga.bin'}

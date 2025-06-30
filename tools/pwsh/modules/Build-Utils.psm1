@@ -618,7 +618,6 @@ Function Invoke-CreateIfwi()
         --manifest-path $env:REPO_APP_ROOT/config/dat_config/dat.toml `
         --flavor kingsgate.ifwi.svp.debug.custom `
         --flavor kingsgate.ifwi.soc.debug.custom `
-        --flavor kingsgate.ifwi.fpga.debug.custom `
         --flavor kingsgate.ifwi.ap.baremetal.debug `
         --outdir $env:REPO_APP_TARGET_FLASH_DIR
 }

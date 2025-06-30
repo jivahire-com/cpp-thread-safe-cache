@@ -204,11 +204,17 @@ void config_variable_service_thread_fn(ULONG thread_input)
 
         FPFW_DBGPRINT_INFO("RB[%d]: Enabled\n", i);
 
-        FPFW_DBGPRINT_INFO("RB[%d]: HEST AER UE Mask: 0x%08lx\n", i, (unsigned long)(rb_config->aer_ue_mask));
+        FPFW_DBGPRINT_INFO("RB[%d]: HEST AER UE Mask: 0x%08lx\n",
+                           i,
+                           (unsigned long)(rb_config->aer_ue_mask));
 
-        FPFW_DBGPRINT_INFO("RB[%d]: HEST AER UE Severity: 0x%08lx\n", i, (unsigned long)(rb_config->aer_ue_severity));
+        FPFW_DBGPRINT_INFO("RB[%d]: HEST AER UE Severity: 0x%08lx\n",
+                           i,
+                           (unsigned long)(rb_config->aer_ue_severity));
 
-        FPFW_DBGPRINT_INFO("RB[%d]: HEST AER CE Mask: 0x%08lx\n", i, (unsigned long)(rb_config->aer_ce_mask));
+        FPFW_DBGPRINT_INFO("RB[%d]: HEST AER CE Mask: 0x%08lx\n",
+                           i,
+                           (unsigned long)(rb_config->aer_ce_mask));
 
         FPFW_DBGPRINT_INFO("RB[%d]: MMIO64 range 0x%08lx%08lx - 0x%08lx%08lx\n",
                            i,

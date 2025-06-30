@@ -245,6 +245,7 @@ add_library(${TARGET}
         accel_intr_client_init.c
         accel_intr_service_init.c
         atu_init.c
+        bitrot_service_init.c
         boot_status_init.c
         cfg_mgr_init.c
         core_info_init.c
@@ -304,6 +305,7 @@ target_link_libraries(
         fwlib.lib.utils
         fwlib.lib.tmr_queue
         fwlib.platform.dfwkhost.threadx
+        fwlib.service.bitrot
         fwlib.service.cli
         fwlib.service.i3c.cli
         fwlib.service.i3c_hw.cli

@@ -14,6 +14,7 @@
 #include <fpfw_init.h>
 #include <idsw_kng.h>
 #include <mscp_exp_rmss_memory_map.h>
+#include <system_info.h>
 #include <variable_services.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -23,6 +24,10 @@
 #define MSCP_CONFIG_PROFILE_SVP            2
 #define MSCP_CONFIG_PROFILE_SVP_MIN_CONFIG 3
 #define MSCP_CONFIG_PROFILE_EMU            4
+#define MSCP_CONFIG_BMC_PROFILE_COMPUTE    5 // override / compute
+
+// BMC Profiles
+#define BMC_PROFILE_COMPUTE 0x01 // override / compute
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -33,6 +38,14 @@
 /*-------------- Functions ---------------*/
 static uint8_t get_profile_id()
 {
+    switch (system_info_get_bmc_profile())
+    {
+    case BMC_PROFILE_COMPUTE:
+        return MSCP_CONFIG_BMC_PROFILE_COMPUTE;
+    default:
+        break;
+    }
+
     switch (idsw_get_platform_sdv())
     {
     case PLATFORM_FPGA:

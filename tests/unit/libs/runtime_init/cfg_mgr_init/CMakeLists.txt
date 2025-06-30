@@ -28,6 +28,7 @@ target_link_libraries(${TARGET}
         ms::lib::variable_services
         ms::service::atu_service
         fwlib.lib.interface.platform.dbgprint
+         ms::lib::system_info
 )
 
 # Provide compile time definition
@@ -48,4 +49,5 @@ mock_target(${TARGET}
     cfg_mgr_init
     cfg_mgr_cli_init
     idsw_get_platform_sdv
+    system_info_get_bmc_profile
 )

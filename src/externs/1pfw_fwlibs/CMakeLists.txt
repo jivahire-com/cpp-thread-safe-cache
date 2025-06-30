@@ -36,7 +36,8 @@ if (${FPFW_CFG_MGR_ENABLE})
                               ${PROD_FW_KNOBS_PATH}/kng_mscp_config_fpga.csv
                               ${PROD_FW_KNOBS_PATH}/kng_mscp_config_svp.csv
                               ${PROD_FW_KNOBS_PATH}/kng_mscp_config_svp_min.csv
-                              ${PROD_FW_KNOBS_PATH}/kng_mscp_config_emu.csv)
+                              ${PROD_FW_KNOBS_PATH}/kng_mscp_config_emu.csv
+                              ${PROD_FW_KNOBS_PATH}/kng_mscp_config_bmc_compute.csv)
     set(KNOB_SVC_OPTIONS  -nc)
 
 endif()

@@ -38,6 +38,7 @@ static uint8_t reset_reason = HSP_FIRMWARE_RESET_REASON_UNDEFINED;
 static bool mission_mode = false;
 static bool cli_enable = false;
 static bool watchdog_enable = false;
+static uint8_t bmc_profile = 0x0;
 
 /*------------- Functions ----------------*/
 static void hsp_send_recv_security_state_msg(uint16_t req_msg, uint16_t rsp_msg)
@@ -56,6 +57,7 @@ static void hsp_send_recv_security_state_msg(uint16_t req_msg, uint16_t rsp_msg)
     assert(recv_msg_size_bytes > 0);
     assert(msg.header.cmd == rsp_msg);
 
+    bmc_profile = msg.policy_status_rsp.policy_status.profile;
     security_state = msg.policy_status_rsp.policy_status.security_state;
     mission_mode = (msg.policy_status_rsp.policy_status.mission_mode == 1) ? true : false;
     cli_enable = (msg.policy_status_rsp.policy_status.cli_enable == 1) ? true : false;
@@ -167,4 +169,9 @@ bool system_info_get_watchdog_disable_allowed(void)
 uint8_t system_info_get_reset_reason(void)
 {
     return reset_reason;
+}
+
+uint8_t system_info_get_bmc_profile(void)
+{
+    return bmc_profile;
 }

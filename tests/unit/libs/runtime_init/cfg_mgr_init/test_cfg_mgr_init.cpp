@@ -54,6 +54,12 @@ void __wrap_cfg_mgr_cli_init()
     function_called();
 }
 
+uint8_t __wrap_system_info_get_bmc_profile(void)
+{
+    return mock_type(uint8_t);
+    ;
+}
+
 KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
 {
     return mock_type(KNG_PLAT_ID);
@@ -66,6 +72,7 @@ TEST_FUNCTION(test_cfg_mgr_init_platform, nullptr, nullptr)
 {
     // Set up expectations
     expect_function_call(__wrap_cfg_mgr_init);
+    will_return(__wrap_system_info_get_bmc_profile, 0);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_value(__wrap_cfg_mgr_init, cfg_mgr_config->profile_id, 0);
 
@@ -77,6 +84,7 @@ TEST_FUNCTION(test_cfg_mgr_init_fpga, nullptr, nullptr)
 {
     // Set up expectations
     expect_function_call(__wrap_cfg_mgr_init);
+    will_return(__wrap_system_info_get_bmc_profile, 0);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     expect_value(__wrap_cfg_mgr_init, cfg_mgr_config->profile_id, 1);
 
@@ -88,6 +96,7 @@ TEST_FUNCTION(test_cfg_mgr_init_svp, nullptr, nullptr)
 {
     // Set up expectations
     expect_function_call(__wrap_cfg_mgr_init);
+    will_return(__wrap_system_info_get_bmc_profile, 0);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     expect_value(__wrap_cfg_mgr_init, cfg_mgr_config->profile_id, 2);
 
@@ -106,5 +115,16 @@ TEST_FUNCTION(test_cfg_mgr_cli_init, nullptr, nullptr)
 
     // Call API under test
     _fpfw_component_cfg_mgr_cli.init_fn();
+}
+
+TEST_FUNCTION(test_cfg_mgr_init_bmc_compute, nullptr, nullptr)
+{
+    // Set up expectations
+    expect_function_call(__wrap_cfg_mgr_init);
+    will_return(__wrap_system_info_get_bmc_profile, 1);
+    expect_value(__wrap_cfg_mgr_init, cfg_mgr_config->profile_id, 5);
+
+    // Call API under test
+    _fpfw_component_cfg_mgr.init_fn();
 }
 }

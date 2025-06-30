@@ -124,3 +124,11 @@ uint8_t system_info_get_reset_reason(void);
  * @return The 7-bit board ID read from the platform.
  */
 uint8_t system_info_get_board_id();
+
+/**
+ * @brief Retrieves the BMC Profile. The BMC profile is shared by HSP as part
+ *        of boot metadata.
+ *
+ * @return BMC profile.
+ */
+uint8_t system_info_get_bmc_profile();

@@ -40,6 +40,7 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, 
     output_message->policy_status_rsp.policy_status.mission_mode = mock_type(bool);
     output_message->policy_status_rsp.policy_status.cli_enable = mock_type(bool);
     output_message->policy_status_rsp.policy_status.watchdog_enable = mock_type(bool);
+    output_message->policy_status_rsp.policy_status.profile = mock_type(uint8_t);
 
     *output_recv_bytes = sizeof(kng_hsp_mailbox_msg);
 
@@ -90,6 +91,8 @@ TEST_FUNCTION(system_info_init_hsp_present, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // bmc_profile
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     HSP_BOOT_METADATA boot_meta_data;
     boot_meta_data.MetadataVersion = 1;
@@ -117,6 +120,8 @@ TEST_FUNCTION(system_info_init_warm_start, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // bmc_profile
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     HSP_BOOT_METADATA boot_meta_data;
     boot_meta_data.MetadataVersion = 1;
@@ -144,6 +149,8 @@ TEST_FUNCTION(system_info_init_secure_mode, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // bmc_profile
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     HSP_BOOT_METADATA boot_meta_data;
     boot_meta_data.MetadataVersion = 1;
@@ -171,6 +178,8 @@ TEST_FUNCTION(system_info_init_nonsecure_mode, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // bmc_profile
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     HSP_BOOT_METADATA boot_meta_data;
     boot_meta_data.MetadataVersion = 1;
@@ -198,6 +207,8 @@ TEST_FUNCTION(system_info_init_mission_mode, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // bmc_profile
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     HSP_BOOT_METADATA boot_meta_data;
     boot_meta_data.MetadataVersion = 1;
@@ -225,6 +236,8 @@ TEST_FUNCTION(system_info_init_cli_enable, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // bmc_profile
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     HSP_BOOT_METADATA boot_meta_data;
     boot_meta_data.MetadataVersion = 1;
@@ -249,6 +262,8 @@ TEST_FUNCTION(system_info_init_cli_enable, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // bmc_profile
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     boot_meta_data.MetadataVersion = 1;
     boot_meta_data.ResetReason = 7;
@@ -290,6 +305,8 @@ TEST_FUNCTION(system_info_init_watchdog_disable_allowed, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // bmc_profile
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     HSP_BOOT_METADATA boot_meta_data;
     boot_meta_data.MetadataVersion = 1;
@@ -314,6 +331,8 @@ TEST_FUNCTION(system_info_init_watchdog_disable_allowed, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
+    // bmc_profile
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     boot_meta_data.MetadataVersion = 1;
     boot_meta_data.ResetReason = 7;
@@ -340,6 +359,8 @@ TEST_FUNCTION(system_info_init_reset_reason, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // bmc_profile
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     HSP_BOOT_METADATA boot_meta_data;
     boot_meta_data.MetadataVersion = 1;
@@ -380,6 +401,35 @@ TEST_FUNCTION(test_system_info_get_platform, nullptr, nullptr)
 
     // Verify API expectations
     assert_true(system_info_get_platform() == 0x41);
+}
+
+TEST_FUNCTION(system_info_init_bmc_profile, nullptr, nullptr)
+{
+    // Set up expectations
+    fpfw_icc_base_ctx_t* icc_base_ctx = (fpfw_icc_base_ctx_t*)0x1234;
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_SECURITY_STATE_RSP);
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_SECURITY_STATE_SECURE);
+    // mission_mode
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // cli_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
+    // watchdog_enable
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
+    // bmc_profile
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x01);
+
+    HSP_BOOT_METADATA boot_meta_data;
+    boot_meta_data.MetadataVersion = 1;
+    boot_meta_data.ResetReason = 7;
+
+    expect_any(__wrap_mmio_read32, addr);
+    will_return(__wrap_mmio_read32, boot_meta_data.AsUint32);
+
+    // Call API under test
+    system_info_init(icc_base_ctx);
+
+    // Verify expectations
+    assert_true(system_info_get_bmc_profile() == 0x01);
 }
 
 } // extern "C"

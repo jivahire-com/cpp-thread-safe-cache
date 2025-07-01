@@ -416,7 +416,7 @@ void d2d_error_isr(void* context)
             }
             if (record.handler)
             {
-                if (record.handler(&record))
+                if (record.handler(&record))    // Clears the Error Record Status Register
                 {
                     MESH_CRIT("Error encountered while handling record\n");
                 }

@@ -201,6 +201,32 @@ SOS_TEST(sos_shutdown_timeout, NULL, NULL)
     assert_int_equal(return_timeout, test_time_out);
 }
 
+// test for sos_core_override_timeout
+SOS_TEST(sos_core_override_timeout_boot_stage, NULL, NULL)
+{
+    will_return_always(__wrap_sos_core_boot_stage_count, __real_sos_core_boot_stage_count());
+
+    startup_reset_timeout_request_t test_request = {
+        .timeout = {.stage_category = BOOT_STAGE, .operation_stage.boot = STARTUP_PCIE_PHY_LOAD, .timeout_ms = 100 * 1000},
+    };
+
+    sos_core_override_timeout(&test_request);
+
+    assert_true(__real_sos_core_boot_stages()[0].timeout_ms == test_request.timeout.timeout_ms);
+}
+
+SOS_TEST(sos_core_override_timeout_shutdown_stage, NULL, NULL)
+{
+
+    startup_reset_timeout_request_t test_request = {
+        .timeout = {.stage_category = SHUTDOWN_STAGE, .operation_stage.shutdown = SHUTDOWN, .timeout_ms = 100 * 1000},
+    };
+
+    sos_core_override_timeout(&test_request);
+
+    assert_true(sos_core_shutdown_stages()[0].timeout_ms == test_request.timeout.timeout_ms);
+}
+
 // test for sos_core_shutdown_handler SHUTDOWN case
 SOS_TEST(sos_core_shutdown_handler_shutdown, NULL, NULL)
 {

@@ -29,6 +29,7 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+
 static startup_shutdown_boot_stage_t scp_boot_stages[] = {
     {STARTUP_PHASE_MSCP_ASYNC, STARTUP_PCIE_PHY_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
     {STARTUP_PHASE_MSCP_ASYNC, STARTUP_MCP_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
@@ -39,7 +40,8 @@ static startup_shutdown_boot_stage_t scp_boot_stages[] = {
     {STARTUP_PHASE_MSCP_ASYNC, STARTUP_KMP_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
     {STARTUP_PHASE_MSCP_ASYNC, STARTUP_CLUSTER_CORE_INIT, DEFAULT_SOS_TIMEOUT_MS, false, false},
     {STARTUP_PHASE_MSCP_ASYNC, STARTUP_AP_SOC_POWER_INIT, DEFAULT_SOS_TIMEOUT_MS, false, false},
-    {STARTUP_PHASE_MSCP_ASYNC, STARTUP_AP_SOC_POWER_INIT_POST_SYNC, DEFAULT_SOS_TIMEOUT_MS, false, true},
+    // This stage is synced across dies (SCP <-> SCP) and across die local MSCP cores.
+    {STARTUP_PHASE_MSCP_ASYNC, STARTUP_AP_SOC_POWER_INIT_POST_SYNC, DEFAULT_SOS_TIMEOUT_MS, true, true},
     {STARTUP_PHASE_AP_ASYNC, STARTUP_BL31_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
     {STARTUP_PHASE_AP_ASYNC, STARTUP_STMM_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
     {STARTUP_PHASE_AP_ASYNC, STARTUP_BL33_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
@@ -130,21 +132,4 @@ uint32_t sos_shutdown_timeout(sos_stage_timeout_t current_stage)
     }
 
     return DEFAULT_SOS_TIMEOUT_MS;
-}
-
-void sos_core_override_timeout(pstartup_reset_timeout_request_t request)
-{
-    if (request->timeout.stage_category == BOOT_STAGE)
-    {
-        sos_boot_timeout_override(request->timeout);
-    }
-    else if (request->timeout.stage_category == SHUTDOWN_STAGE)
-    {
-        sos_shutdown_timeout_override(request->timeout);
-    }
-    else
-    {
-        SOS_LOG_CRIT("Invalid stage type %d", request->timeout.stage_category);
-        FPFW_RUNTIME_ASSERT(false);
-    }
 }

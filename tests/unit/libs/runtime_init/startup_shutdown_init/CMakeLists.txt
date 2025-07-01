@@ -30,6 +30,8 @@ target_link_libraries(${TARGET}
         silibs::idsw
 )
 
+target_compile_definitions(${TARGET} PRIVATE SCP_RUNTIME_INIT)
+
 # Generic ports implmented within this project
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 

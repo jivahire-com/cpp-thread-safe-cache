@@ -243,6 +243,10 @@
                         "service.sensor_fifo.test.exe"
                     ],
                     [
+                        "Startup and Shutdown Service",
+                        "sos.test.exe"
+                    ],
+                    [
                         "Telemetry Service - Data Proc Cmpnt",
                         "kng.service.pwr_tlm_mcp.cmpnt.data_process.test"
                     ],

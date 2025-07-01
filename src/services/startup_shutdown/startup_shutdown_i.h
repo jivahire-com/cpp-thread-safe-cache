@@ -21,7 +21,7 @@
 #include <kng_error.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-/*-- Symbolic Constant Macros (defines) --*/
+
 #define MODULE_NAME "[SoS] "
 #define NEWLINE     "\n"
 
@@ -78,7 +78,7 @@ typedef struct _startup_shutdown_boot_stage_t
     ssi_startup_stage_t phase;
     ssi_startup_stage_t stage;
     unsigned timeout_ms;
-    bool local_core_sync_required; // placeholder for synchronization across local cores
+    bool local_core_sync_required; // If true, the stage waits for the other, die local, MSCP core to notify the current core that it has completed the stage. It notifies that it has completed it's side of the stages.
     bool remote_die_sync_required; // placeholder for synchronization across dies (TBD: if local core sync and remote die sync are both required, expect remote die handles local core sync before acking die sync?)
 } startup_shutdown_boot_stage_t;
 
@@ -124,4 +124,16 @@ void sos_notify_ssi_boot_stage_and_wait(psos_service_context_t p_context,
                                         bool start);
 
 bool wait_for_remote_die_boot_stage(startup_shutdown_boot_stage_t current_boot_stage);
+
+/**
+ * @brief Wait for a stage from a local core to complete. Will poll the remote core's
+ *        boot stage until it matches the local core's stage. Will sleep on each
+ *        poll iteration to allow other threads to run.
+ * 
+ * @param[in] current_boot_stage 
+ * 
+ * @return true if the local sync was successful or not needed.
+ */
+bool wait_for_local_core_boot_stage(startup_shutdown_boot_stage_t current_boot_stage);
+
 KNG_STATUS sos_request_shutdown(ssi_shutdown_type_t type);

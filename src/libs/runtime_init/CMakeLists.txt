@@ -280,6 +280,7 @@ add_library(${TARGET}
         pwr_tlm_svc_mcp_init.c
         sensor_fifo_init.c
         spi_bridge_init.c
+        startup_shutdown_init.c
         system_info_init.c
         systick_update_init.c
         textio_init.c
@@ -345,6 +346,7 @@ target_link_libraries(
         ms::lib::pldm_pdr
         ms::lib::power_fuse
         ms::lib::register_headers
+        ms::service::mcp_startup_shutdown
         ms::lib::stdio_textio
         ms::lib::system_info
         ms::lib::threadx

@@ -241,6 +241,12 @@ void sos_worker_thread_function(ULONG service_ctx)
                                      sos_core_boot_stages()[stage_idx].stage);
                     }
 
+                    // Local core sync if needed
+                    if (!wait_for_local_core_boot_stage(sos_core_boot_stages()[stage_idx]))
+                    {
+                        SOS_LOG_WARN("Local Sync Failed for stage (%d)\n", sos_core_boot_stages()[stage_idx].stage);
+                    }
+
                     // notify stage entry
                     sos_notify_ssi_boot_stage_and_wait(p_sos_ctx,
                                                        sos_core_boot_stages()[stage_idx].stage,

@@ -176,6 +176,76 @@ The default timeout for each stage in the Startup and Shutdown sequence is set t
 
 It is [TBD](https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1821528/) which boot phases or stages need to be synchronized with secondary cores and how this will be done.  It's entirely possible for a registered SSI to force the synchronization before completing a request as well as possible that the service could implement the synchronization with a remote copy of the service.
 
+#### Local MSCP Synchronization
+
+It's possible that a boot stage needs to be synchronized across the MCP and SCP on the local die before notifying registers clients of the stage starting / stopping. To support this stages can be configured to locally sync before proceeding.
+
+Below is a sequence diagram showing how the local core sync stage is performed, if enabled on a stage.
+
+:::mermaid
+sequenceDiagram
+    autonumber;
+    participant SSSCP as Startup & Shutdown Service SCP;
+    participant HWS as HW Semaphore;
+    participant SRAM as EXP SRAM;
+    participant SSMCP as Startup & Shutdown Service MCP;
+
+    note over SSSCP,SRAM: Init Stage - SCP;
+
+    SSSCP->>SSSCP: Queue STARTUP_PHASE_MSCP_ASYNC;
+    SSSCP->>SSSCP: Queue STARTUP_PHASE_AP_ASYNC;
+
+    note over SSSCP,SRAM: Threads Running - SCP;
+ 
+    SSSCP->>SSSCP: Dequeue Phase;
+    loop STAGES IN PHASE - SCP;
+ 
+      note over SSSCP: Sync with Remote Die SCP if needed.<br/>Only the STARTUP_PRIMARY_AP_CORE_BOOT<br/>stage does this die sync;
+ 
+      note over SSMCP: The MCP processing occurs during one of<br/>the SCP's stages;
+      
+      note over HWS,SSMCP: Init Stage - MCP;
+      SSMCP->>SSMCP: Queue STARTUP_PHASE_MSCP_ASYNC;
+      note over HWS,SSMCP: Threads Running - MCP;
+      SSMCP->>SSMCP: Dequeue Phase;
+      note over SSMCP: No stages on MCP need remote<br/>die MCP syncing (for now);
+      
+      note over SSSCP,SSMCP: New Local Core Sync;          
+      alt Sync Across MSCP;
+        SSSCP->>HWS: Lock Semaphore - SCP;
+        HWS-->>SSSCP: Ack;
+        SSSCP->>SRAM: Update Local Core Stage - SCP;
+        SRAM-->>SSSCP: Ack
+        SSSCP->>HWS: Release Semaphore - SCP;
+        HWS-->>SSSCP: Ack;
+
+        SSMCP->>HWS: Lock Semaphore - MCP;
+        HWS-->>SSMCP: Ack;
+        SSMCP->>SRAM: Update Local Core Stage - MCP;
+        SRAM-->>SSMCP: Ack
+        SSMCP->>HWS: Release Semaphore - MCP;
+        HWS-->>SSMCP: Ack;
+        
+        loop Local != Remote;
+          SSSCP->>HWS: Lock Semaphore - SCP;
+          HWS-->>SSSCP: Ack;
+          SSSCP->>SRAM: Read Remote Core Stage - SCP;
+          SRAM-->>SSSCP: Ack
+          SSSCP->>HWS: Release Semaphore - SCP;
+          HWS-->>SSSCP: Ack;
+
+          SSMCP->>HWS: Lock Semaphore - MCP;
+          HWS-->>SSMCP: Ack;
+          SSMCP->>SRAM: Read Remote Core Stage - MCP;
+          SRAM-->>SSMCP: Ack;
+          SSMCP->>HWS: Release Semaphore - MCP;
+          HWS-->>SSMCP: Ack;                          
+        end;                        
+      end;
+      note over SSSCP,SSMCP: Notify Observers of Stage Start;
+      note over SSSCP,SSMCP: Notify Observers of Stage End;
+    end;
+:::
 
 ### Service Core-Specific Config
 

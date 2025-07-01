@@ -12,7 +12,6 @@
 #include <hw_semaphore.h>
 #include <idhw.h>
 #include <ioss_csr_regs.h>
-#include <semaphore_lib.h>
 
 /*------------- Typedefs -----------------*/
 

@@ -44,6 +44,8 @@ void boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_cont
     post_led_status(&boot_status_req, LED_STATUS_CODE_SCP_BOOT_COMPLETE);
 }
 
+#ifdef SCP_RUNTIME_INIT
+
 FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "icc_die2die", "sysinfo"))
 {
     static sos_interface_t sos_interface;
@@ -77,5 +79,35 @@ FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "ic
         sos_start_phase((void*)&sos_interface, NULL, WARM_BOOT_POST_AP, STARTUP_PHASE_MSCP_ASYNC, NULL, NULL); // synchronous
         sos_start_phase((void*)&sos_interface, &startup_phase_request, WARM_BOOT_POST_AP, STARTUP_PHASE_AP_ASYNC, boot_completion, NULL); // asynchronous
     }
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &sos_interface};
 }
+
+#elif MCP_RUNTIME_INIT
+
+FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc"))
+{
+    // Initialize the public SOS Interface
+    static sos_interface_t sos_interface;
+    sos_interface_init(fpfw_init_get_handle("sos_svc"), &sos_interface, true);
+
+    // Create a private interface specifically for SSI and register it
+    static sos_interface_t ssi_interface;
+    sos_interface_init(fpfw_init_get_handle("sos_svc"), &ssi_interface, false);
+
+    // Register the against the private interface
+    static startup_ssi_registration_t ssi_registration;
+    int32_t status = sos_register_ssi((void*)&sos_interface, &ssi_registration, &ssi_interface.header);
+    FPFW_RUNTIME_ASSERT(status == FPFW_INIT_STATUS_SUCCESS);
+
+    // Build and queue the request for the MCP boot phase, to be handled by the SOS service
+    static startup_start_phase_request_t startup_phase_request;
+    DfwkAsyncRequestInitialize((void*)&startup_phase_request.header.async, sizeof(startup_phase_request));
+
+    // queue the boot phases for this reset type, handled by the SOS service thread
+    sos_start_phase((void*)&sos_interface, NULL, COLD_BOOT, STARTUP_PHASE_MSCP_ASYNC, NULL, NULL);
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &sos_interface};
+}
+
+#endif

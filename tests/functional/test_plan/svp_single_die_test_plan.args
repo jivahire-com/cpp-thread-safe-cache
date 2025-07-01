@@ -26,6 +26,13 @@
 ./../../../tests/functional/test_suites/hspmbx_tests/hsp_mailbox_cli_test.robot
 ./../../../tests/functional/test_suites/hspmbx_tests/hsp_mailbox_cli_test_send_recv.robot
 
+## SVP Teardown
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+## Power Tests
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+./../../../tests/functional/test_suites/power_tests/mod_power_telemetry_sync.robot
+
 ## Sensor FIFO short duration tests
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_read_wrentry_single_fifo_test.robot
@@ -43,7 +50,6 @@
 ## Single Die ddrboot Tests
 ./../../../tests/functional/test_suites/ddrboot_tests/mscp_ddrboot_hsp_boot.robot
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
-
 
 ## Crash Dump Tests
 ./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_trigger_exception_test.robot

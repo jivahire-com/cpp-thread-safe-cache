@@ -7,7 +7,10 @@ add_executable(${TARGET}
     startup_shutdown_test.cpp
     startup_shutdown_thread_test.cpp
     startup_shutdown_remote_sync_test.cpp
+    startup_shutdown_local_sync_test.cpp
 )
+
+target_compile_definitions(kng.service.scp_startup_shutdown PRIVATE START_SHUTDOWN_TEST_OVERRIDE)
 
 target_link_libraries(${TARGET}
     PRIVATE
@@ -72,6 +75,7 @@ mock_target(${TARGET}
     ssi_quiesce
     ssi_startup_stage_complete
     ssi_startup_stage_start
+    _tx_thread_sleep
     _txe_event_flags_create
     _txe_event_flags_get
     _txe_event_flags_set
@@ -79,6 +83,7 @@ mock_target(${TARGET}
     _txe_queue_send
     _txe_thread_create
     idhw_is_single_die_boot_en
+    idsw_get_cpu_type
     idsw_get_die_id
     mscp_exp_spi_synchronize_dies
     FpFwLockAcquire
@@ -86,6 +91,8 @@ mock_target(${TARGET}
     fpfw_icc_base_send
     fpfw_icc_base_recv
     reset_complete_wait_forever
+    wait_for_semaphore
+    release_semaphore
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

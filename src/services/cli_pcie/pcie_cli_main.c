@@ -142,14 +142,11 @@ static void get_variable_cb(void* context, struct _variable_service_req_ctx* var
 
             printf("RB config %d is enabled\n", i);
 
-            printf("HEST AER UE Mask: 0x%08lx\n",
-                   (unsigned long)(rb_config->aer_ue_mask));
+            printf("HEST AER UE Mask: 0x%08lx\n", (unsigned long)(rb_config->aer_ue_mask));
 
-            printf("HEST AER UE Severity: 0x%08lx\n",
-                   (unsigned long)(rb_config->aer_ue_severity));
+            printf("HEST AER UE Severity: 0x%08lx\n", (unsigned long)(rb_config->aer_ue_severity));
 
-            printf("HEST AER CE Mask: 0x%08lx\n",
-                   (unsigned long)(rb_config->aer_ce_mask));
+            printf("HEST AER CE Mask: 0x%08lx\n", (unsigned long)(rb_config->aer_ce_mask));
 
             printf("MMIO64 range 0x%08lx%08lx - 0x%08lx%08lx\n",
                    (unsigned long)(rb_config->mmioh.base >> 32),

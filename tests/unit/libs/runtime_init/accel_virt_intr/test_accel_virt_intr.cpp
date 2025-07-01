@@ -192,11 +192,6 @@ TEST_FUNCTION(test_accel_virt_irq_test, nullptr, nullptr)
 
     will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_ERROR);
 
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SDM_NVIC_INT);
-    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SDM_NVIC_INT);
-    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_CDED_SDM_NVIC_INT);
-    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_CDED_SDM_NVIC_INT);
-
     _fpfw_component_virt_irq.init_fn();
 
     // Set CDED and SDM IRQ numbers

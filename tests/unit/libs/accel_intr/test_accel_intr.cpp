@@ -178,6 +178,10 @@ TEST_FUNCTION(test_accel_scp_intr_init_pass_sdm, nullptr, nullptr)
     expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
     will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
+    // Expectations for FPFwCoreInterruptEnableVector()
+    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, SDMSS_IRQ_NUMBER);
+    will_return(__wrap_FPFwCoreInterruptEnableVector, NVIC_STATUS_SUCCESS);
+
     // Need to set the global SDM and CDED irq num which is usually set as part of init
     accel_intr_set_irq_num_for_accel(ACCEL_ID_SDM, SDMSS_IRQ_NUMBER);
 
@@ -212,6 +216,10 @@ TEST_FUNCTION(test_accel_scp_intr_init_pass_cded, nullptr, nullptr)
     expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
     will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
+    // Expectations for FPFwCoreInterruptEnableVector()
+    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, CDEDSS_IRQ_NUMBER);
+    will_return(__wrap_FPFwCoreInterruptEnableVector, NVIC_STATUS_SUCCESS);
+
     accel_intr_set_irq_num_for_accel(ACCEL_ID_CDED, CDEDSS_IRQ_NUMBER);
 
     assert_int_equal(accel_scp_intr_init(accel_intr_get_accel_type_from_irq_num(CDEDSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
@@ -237,6 +245,10 @@ TEST_FUNCTION(test_accel_mcp_intr_init_pass_sdm, nullptr, nullptr)
     expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER, 1);
     will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
+    // Expectations for FPFwCoreInterruptEnableVector()
+    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, SDMSS_IRQ_NUMBER);
+    will_return(__wrap_FPFwCoreInterruptEnableVector, NVIC_STATUS_SUCCESS);
+
     assert_int_equal(accel_mcp_intr_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
 }
 
@@ -259,6 +271,10 @@ TEST_FUNCTION(test_accel_mcp_intr_init_pass_cded, nullptr, nullptr)
     expect_value(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_mcp);
     expect_value(__wrap_virt_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER);
     will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
+
+    // Expectations for FPFwCoreInterruptEnableVector()
+    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, CDEDSS_IRQ_NUMBER);
+    will_return(__wrap_FPFwCoreInterruptEnableVector, NVIC_STATUS_SUCCESS);
 
     assert_int_equal(accel_mcp_intr_init(accel_intr_get_accel_type_from_irq_num(CDEDSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
 }
@@ -296,6 +312,10 @@ TEST_FUNCTION(test_accel_scp_intr_init_fail_virt_irq_init, nullptr, nullptr)
     expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_scp, ACCEL_SCP_INTR_MAX);
     expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
     will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_ERROR);
+
+    // Expectations for FPFwCoreInterruptEnableVector()
+    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, SDMSS_IRQ_NUMBER);
+    will_return(__wrap_FPFwCoreInterruptEnableVector, NVIC_STATUS_SUCCESS);
 
     accel_scp_intr_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER));
 }

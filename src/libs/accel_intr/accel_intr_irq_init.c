@@ -316,6 +316,9 @@ int32_t accel_scp_intr_init(ACCEL_ID accel_type)
     // Initialize each interrupt
     accel_intr_scp_init(accel_type, ext_cfg_addr);
 
+    // Enabled interrupts in NVIC
+    FPFwCoreInterruptEnableVector(accel_intr_get_irq_num_from_accel_type(accel_type));
+
     return ACCEL_INTR_RET_SUCCESS;
 }
 
@@ -344,6 +347,9 @@ int32_t accel_mcp_intr_init(ACCEL_ID accel_type)
 
     // Initialize each interrupt
     accel_intr_mcp_init(accel_type, ext_cfg_addr);
+
+    // Enabled interrupts in NVIC
+    FPFwCoreInterruptEnableVector(accel_intr_get_irq_num_from_accel_type(accel_type));
 
     return ACCEL_INTR_RET_SUCCESS;
 }

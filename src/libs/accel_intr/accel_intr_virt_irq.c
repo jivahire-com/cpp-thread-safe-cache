@@ -237,12 +237,10 @@ void accel_intr_virt_irq_register_isr(uint32_t sdm_nvic_int, uint32_t cded_nvic_
     if (!accel_is_isolation_enabled(ACCEL_ID_SDM))
     {
         FPFwCoreInterruptRegisterCallback(sdm_nvic_int, accel_intr_virt_irq_level1_wrapper_isr, (void*)sdm_nvic_int);
-        FPFwCoreInterruptEnableVector(sdm_nvic_int);
     }
     if (!accel_is_isolation_enabled(ACCEL_ID_CDED))
     {
         FPFwCoreInterruptRegisterCallback(cded_nvic_int, accel_intr_virt_irq_level1_wrapper_isr, (void*)cded_nvic_int);
-        FPFwCoreInterruptEnableVector(cded_nvic_int);
     }
 }
 

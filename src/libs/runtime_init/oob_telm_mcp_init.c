@@ -141,7 +141,8 @@ static void platform_event_ready_callback(uint16_t event_id, void* context)
 
 #define SYS_THREAD_STACK_SIZE_PLDM_SERVICE ((TX_MINIMUM_STACK) + ((2) * (FPFW_KB)))
 #define SYS_THREAD_TIME_SLICE_PLDM_SERVICE (TX_NO_TIME_SLICE)
-#define MCP_THREAD_PRIORITY_PLDM_SERVICE   (8)
+// TODO: Modify priority later https://azurecsi.visualstudio.com/Dev/_workitems/edit/2743962
+#define MCP_THREAD_PRIORITY_PLDM_SERVICE   (3)
 
 FPFW_INIT_COMPONENT(pldm, FPFW_INIT_DEPENDENCIES("mctp", "pdr_repo"))
 {

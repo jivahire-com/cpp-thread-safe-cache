@@ -74,14 +74,14 @@ d2d_cfg_t unit_test_default_d2d_cfg = {
     .d2d_tx_interface_clk_alignment = 0,
     .d2d_ras_enable = 0,
     .d2d_sleep_cfg = 1,
-    .d2d_sleep_cfg_entry = 0,
+    .d2d_sleep_cfg_entry = 100000,
     .d2d_rxcal_find_goodlanes_skip = 1,
 };
 
 ccg_cfg_t unit_test_default_ccg_cfg = {.por_ccg_ha_aux_ctl = 0x3C0008ULL,
                                        .por_ccg_ha_cfg_ctl = 0x40040ULL,
                                        .por_ccg_ha_cxprtcl_link0_ctl = 0x1C0000ULL,
-                                       .por_ccg_ra_cfg_ctl = 0x7C1007ULL,
+                                       .por_ccg_ra_cfg_ctl = 0x7C4007ULL,
                                        .por_ccg_ra_aux_ctl = 0x1B1F343CC3846ULL,
                                        .por_ccg_ra_ccprtcl_link0_ctl = 0x2C00000ULL,
                                        .por_ccg_ra_cbusy_limit_ctl = 0x181008ULL,
@@ -1369,6 +1369,7 @@ void verify_mesh_config_knobs(void)
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_class_retry_weight_ctl, 0x0);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_misc_retry_weight_ctl, 0x0);
     assert_int_equal(default_sam_cfg_knb.mesh_sbsx_cbusy_limit_ctl, 0x483018);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_r2_aux_ctl, 0x0);
 
     assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[0].qos_control, 0x0);
     assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[0].qos_lat_tagt, 0x0);
@@ -1433,7 +1434,7 @@ void verify_ccg_config_knobs(void)
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_aux_ctl, 0x3C0008);
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_cfg_ctl, 0x40040);
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_cxprtcl_link0_ctl, 0x1C0000);
-    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cfg_ctl, 0x7C1007);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cfg_ctl, 0x7C4007);
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_aux_ctl, 0x1B1F343CC3846);
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_ccprtcl_link0_ctl, 0x2C00000);
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cbusy_limit_ctl, 0x181008);
@@ -1450,7 +1451,7 @@ void verify_d2d_config_knobs(void)
     assert_int_equal(unit_test_default_d2d_cfg.d2d_tx_interface_clk_alignment, 0);
     assert_int_equal(unit_test_default_d2d_cfg.d2d_ras_enable, 0);
     assert_int_equal(unit_test_default_d2d_cfg.d2d_sleep_cfg, 1);
-    assert_int_equal(unit_test_default_d2d_cfg.d2d_sleep_cfg_entry, 0);
+    assert_int_equal(unit_test_default_d2d_cfg.d2d_sleep_cfg_entry, 100000);
     assert_int_equal(unit_test_default_d2d_cfg.d2d_rxcal_find_goodlanes_skip, 1);
 }
 

@@ -126,6 +126,7 @@
     <Knob name="mesh_rni_qos_cfg_knob" type="mesh_rni_qos_cfg_t" help="Set RN-I QoS Cfg"/>
     <Knob name="mesh_rnd_qos_cfg_knob" type="mesh_rnd_qos_cfg_t" help="Set RN-D QoS Cfg"/>
     <Knob name="mesh_mxp_qos_cfg_knob" type="mesh_mxp_qos_cfg_t" help="Set MXP QoS Cfg"/>
+    <Knob name="mesh_hnf_r2_aux_ctl" type="uint64_t" default="0x3001005A900"/>
 
     <!-- Mesh RAS -->
     <Knob name="mesh_RAS_Error_Detection_Disable" type="bool" default="0" help="If true, disable Mesh RAS Error Detection in the Mesh RAS Control registers. Default: false."/>
@@ -139,7 +140,7 @@
     <Knob name="por_ccg_ha_aux_ctl" type="uint64_t" default="0x3C0008" help="CCG HA aux control"/>
     <Knob name="por_ccg_ha_cfg_ctl" type="uint64_t" default="0x40040" help="CCG HA config control"/>
     <Knob name="por_ccg_ha_cxprtcl_link0_ctl" type="uint64_t" default="0x1C0000" help="CCG HA config control 1"/>
-    <Knob name="por_ccg_ra_cfg_ctl" type="uint64_t" default="0x7C1007" help="CCG RA config control"/>
+    <Knob name="por_ccg_ra_cfg_ctl" type="uint64_t" default="0x7C4007" help="CCG RA config control"/>
     <Knob name="por_ccg_ra_aux_ctl" type="uint64_t" default="0x1B1F343CC3846" help="CCG RA aux control"/>
     <Knob name="por_ccg_ra_ccprtcl_link0_ctl" type="uint64_t" default="0x2C00000" help="CCG RA config control 1"/>
     <Knob name="por_ccg_ra_cbusy_limit_ctl" type="uint64_t" default="0x181008" help="CCG RA config control 2"/>
@@ -152,7 +153,7 @@
     <Knob name="d2d_ecc_cfg" type="uint8_t" default="0" help="Configure Bit 9 and 10 of D2D Config to enable or disable RX/TX ECC "/>
     <Knob name="d2d_tx_interface_clk_alignment" type="uint32_t" default="0" help="run calibration to center TX interface"/>
     <Knob name="d2d_sleep_cfg" type="uint8_t" default="1" help="Sleep configuration 1: enable 0:disable"/>
-    <Knob name="d2d_sleep_cfg_entry" type="uint32_t" default="0" help="Sleep configuration entry: Idle entry time, Number of clock cycle the channel must be Idle"/>
+    <Knob name="d2d_sleep_cfg_entry" type="uint32_t" default="100000" help="Sleep configuration entry: Idle entry time, Number of clock cycle the channel must be Idle"/>
     <Knob name="d2d_rxcal_find_goodlanes_skip" type="bool" default="1" help="Skip the D2D PHY stage to find the good/bad lanes in the Dual Link"/>
     <Knob name="d2d_ecc_ce_counter" type="uint16_t" default="0x0" max="0x7FFF" help="Set the total CE Counts before triggering a RAS CE Interrupt"/>
   </Knobs>

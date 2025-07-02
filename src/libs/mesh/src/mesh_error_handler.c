@@ -149,9 +149,12 @@ static void print_mesh_cper(acpi_err_sec_generic_t* mesh_cper)
         MESH_INFO("Error Record Address 0x%08x_%08x\n",
                   (uint32_t)(mesh_cper->err_addr >> 32),
                   (uint32_t)mesh_cper->err_addr);
-        MESH_INFO("Error Record Misc 0x%08x_%08x\n",
+        MESH_INFO("Error Record Misc0 0x%08x_%08x\n",
                   (uint32_t)(mesh_cper->err_misc0 >> 32),
                   (uint32_t)mesh_cper->err_misc0);
+        MESH_INFO("Error Record Misc1 0x%08x_%08x\n",
+                  (uint32_t)(mesh_cper->err_misc1 >> 32),
+                  (uint32_t)mesh_cper->err_misc1);
     }
 }
 
@@ -416,7 +419,7 @@ void d2d_error_isr(void* context)
             }
             if (record.handler)
             {
-                if (record.handler(&record))    // Clears the Error Record Status Register
+                if (record.handler(&record)) // Clears the Error Record Status Register
                 {
                     MESH_CRIT("Error encountered while handling record\n");
                 }

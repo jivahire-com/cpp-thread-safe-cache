@@ -10,47 +10,47 @@
 
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
+#include <DfwkDriver.h>
 #include <bug_check.h>
+#include <kng_soc_constants.h>
 #include <pcie_lt_events.h>
+#include <startup_shutdown_ssi.h>
+#include <stdbool.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define PCI_LT_EVENT_TIMEOUT_TICKS (60000)
 
-/*--------- Function Prototypes ----------*/
-UINT pcie_link_training_create_event(TX_EVENT_FLAGS_GROUP* pcie_lt_event)
+/*------------- Typedefs -----------------*/
+
+/*-------- Function Prototypes -----------*/
+
+/*-- Declarations (Statics and globals) --*/
+static pssi_startup_notification_request_t req;
+static bool req_pending = false;
+static bool ltssm_en_set = false;
+
+/*------------- Functions ----------------*/
+void cache_ssi_ltssm_startup_request(pssi_startup_notification_request_t ltssm_req)
 {
-    UINT tx_sts = tx_event_flags_create(pcie_lt_event, "pcie_lt_event");
-    if (tx_sts != TX_SUCCESS)
-    {
-        FPFW_DBGPRINT_ERROR("[PCIe]: Failed to create PCIe link training event! TX_STATUS: %d\n", tx_sts);
-        BUG_ASSERT_PARAM((tx_sts == TX_SUCCESS), tx_sts, 0);
-    }
-
-    return tx_sts;
+    req = ltssm_req;
+    req_pending = true;
 }
 
-UINT pcie_link_training_wait_event(TX_EVENT_FLAGS_GROUP* pcie_lt_event)
+void complete_ssi_ltssm_startup_req(RPSS_INSTANCE rpss_idx)
 {
-    ULONG event;
-    UINT tx_sts = tx_event_flags_get(pcie_lt_event, 0x1, TX_AND, &event, PCI_LT_EVENT_TIMEOUT_TICKS);
-    if (tx_sts != TX_SUCCESS)
+    if (ltssm_en_set == false)
     {
-        FPFW_DBGPRINT_ERROR(
-            "[PCIe]: PCIe link training event was not set in time - booting without PCIe! TX_STATUS: %d\n",
-            tx_sts);
+        ltssm_en_set = true;
     }
 
-    return tx_sts;
+    if (req_pending == true)
+    {
+        FPFW_DBGPRINT_INFO("RPSS[%d]: Completing link training startup request\n", rpss_idx);
+        DfwkAsyncRequestComplete(&(req->header));
+        req_pending = false;
+    }
 }
 
-UINT pcie_link_training_set_event(TX_EVENT_FLAGS_GROUP* pcie_lt_event)
+bool scp_is_pcie_ltssm_en_set()
 {
-    UINT tx_sts = tx_event_flags_set(pcie_lt_event, 0x1, TX_OR);
-    if (tx_sts != TX_SUCCESS)
-    {
-        FPFW_DBGPRINT_ERROR("[PCIe]: Failed to set PCIe link training done event! TX_STATUS: %d\n", tx_sts);
-        BUG_ASSERT_PARAM((tx_sts == TX_SUCCESS), tx_sts, 0);
-    }
-
-    return tx_sts;
+    return ltssm_en_set;
 }

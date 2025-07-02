@@ -59,6 +59,7 @@ typedef enum _ssi_startup_stage
     STARTUP_RP_EXE_LOAD,
     STARTUP_RP_DATA_LOAD,
     STARTUP_DIE_CONFIG_INIT,
+    STARTUP_PCIE_LTSSM_INIT,
     STARTUP_PRIMARY_AP_CORE_BOOT,
     STARTUP_PCIE_PHY_LOAD
 } ssi_startup_stage_t;
@@ -190,4 +191,3 @@ void ssi_quiesce(PDFWK_INTERFACE_HEADER p_interface,
                             ssi_shutdown_type_t shutdown_type,
                             DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
                             void* p_completion_context);
-  

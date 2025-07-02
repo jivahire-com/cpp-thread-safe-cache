@@ -26,7 +26,7 @@ coverage_target(${TARGET})
 
 add_library(ms::client_interface::ap_core ALIAS kng.client_interface.ap_core)
 
-# service 
+# service
 set(TARGET kng.service.ap_core)
 
 add_library(${TARGET}
@@ -43,6 +43,7 @@ target_link_libraries(${TARGET}
         ms::lib::corebits
     PRIVATE
         fwlib.dfwk
+        fwlib.platform.dfwkhost.threadx
         fwlib.lib.cfg_mgr
         fwlib.lib.interface.platform.dbgprint
         fwlib.lib.interface.platform.errorhandler
@@ -61,6 +62,7 @@ target_link_libraries(${TARGET}
         ms::lib::bandgap
         ms::client_interface::ap_core
         ms::client_interface::startup_shutdown
+        ms::driver::pcie
         ms::service::fuse
         ms::service::pcie_manager
         ms::service::sds_service
@@ -68,9 +70,10 @@ target_link_libraries(${TARGET}
         silibs::idsw
         silibs::idsw_kng
         silibs::kng_silibs_platform
+        silibs::pcie
         silibs::pik_clock
         silibs::platform
-        silibs::ppu_v1        
+        silibs::ppu_v1
 )
 
 target_include_directories(${TARGET}
@@ -85,4 +88,3 @@ format_target(${TARGET})
 coverage_target(${TARGET})
 
 add_library(ms::service::ap_core ALIAS kng.service.ap_core)
-

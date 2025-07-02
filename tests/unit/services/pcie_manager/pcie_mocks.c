@@ -85,6 +85,11 @@ void __wrap_DfwkInterfaceSendAsync(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC
     check_expected_ptr(Request);
 }
 
+void __wrap_DfwkAsyncRequestComplete(PDFWK_ASYNC_REQUEST_HEADER Request)
+{
+    check_expected_ptr(Request);
+}
+
 UINT __wrap__txe_event_flags_delete(TX_EVENT_FLAGS_GROUP* group_ptr)
 {
     check_expected(group_ptr);

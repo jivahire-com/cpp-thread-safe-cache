@@ -95,9 +95,9 @@ void rpss_service_thread_fn(ULONG thread_input)
 
     /* Send Start LT */
     initiate_link_training_on_rpss(ctx);
-    /* Set event flag to indicate link training has begun */
-    FPFW_DBGPRINT_INFO("RPSS[%d]: Setting link training event\n", ctx->rpss_idx);
-    pcie_link_training_set_event(&pcie_lt_event);
+
+    /* Complete the link training startup ssi phase */
+    complete_ssi_ltssm_startup_req(ctx->rpss_idx);
 
     while (true)
     {

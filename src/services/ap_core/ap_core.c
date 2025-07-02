@@ -35,6 +35,7 @@
 #undef __NO_CSR_TYPEDEFS__
 #include <pcie_lt_events.h>
 #include <pik_clock_lib.h>
+#include <scp_pcie_manager.h>
 #include <sds_api.h>
 #include <sds_configuration.h>
 #include <sds_init.h>
@@ -82,6 +83,11 @@ static void ap_core_die_config_handover(pssi_startup_notification_request_t p_re
     }
     register_remote_die_cfg_completion_cb(ap_core_die_config_handover_completion, p_request);
     write_fuse_info_to_ap();
+}
+
+static void ap_core_cache_ltssm_init_request(pssi_startup_notification_request_t p_request)
+{
+    cache_ssi_ltssm_startup_request(p_request);
 }
 
 // dispatcher function to handle set of rvbaraddr
@@ -138,9 +144,6 @@ static void ap_core_ssi_start_cluster_init(pssi_startup_notification_request_t p
 // dispatcher function to handle boot stage for primary AP core boot
 static void ap_core_ssi_start_primary_ap_core_boot(pssi_startup_notification_request_t p_request, ssi_startup_type_t boot_type)
 {
-    APCORE_LOG_INFO("Waiting for PCIe init complete before powering on primary AP core!");
-    pcie_link_training_wait_event(&pcie_lt_event);
-
     unsigned int boot_core = ap_core_util_boot_core(&s_ap_core_ctx);
     APCORE_LOG_INFO("Primary AP core power on (%d)", boot_core);
 
@@ -243,6 +246,22 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
                 DfwkAsyncRequestComplete(p_request);
             }
 
+            break;
+        case STARTUP_PCIE_LTSSM_INIT:
+            // This request will be cached if:
+            // 1. PCIe RPSS are enabled on this die and,
+            // 2. LTSSM_EN is not set on even a single RPSS till now.
+            // In other cases, the phase will be completed immediately.
+            // The goal is to not power on an AP core until LTSSM_EN is set on at
+            // least one RPSS.
+            if ((scp_pcie_is_disabled() == false) && (scp_is_pcie_ltssm_en_set() == false))
+            {
+                ap_core_cache_ltssm_init_request(ssi_request);
+            }
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
             break;
         case STARTUP_PRIMARY_AP_CORE_BOOT:
             if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())

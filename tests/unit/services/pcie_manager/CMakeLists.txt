@@ -23,6 +23,7 @@ target_link_libraries(${TARGET}
     ms::mocks::threadx
     ms::service::pcie_manager
     ms::service::atu_service
+    ms::service::scp_startup_shutdown
     silibs::kng_silibs_platform
     silibs::pcie
     silibs::pciess
@@ -48,6 +49,7 @@ unit_test_target(${TARGET})
 
 mock_target(${TARGET}
     # DFWK mocks
+    DfwkAsyncRequestComplete
     DfwkAsyncRequestInitialize
     DfwkAsyncRequestSetCompletionRoutine
     DfwkClientInterfaceOpen

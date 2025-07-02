@@ -83,3 +83,12 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
  *  @retval     None. Errors raised if failure in initialization.
  */
 void scp_pcie_start_config_service_thread(void);
+
+/**
+ *  @brief      Returns true if all PCIess on this die are disabled.
+ *
+ *  @param[in]  None
+ *
+ *  @retval     true if all PCIess on this die are disabled, false otherwise.
+ */
+bool scp_pcie_is_disabled(void);

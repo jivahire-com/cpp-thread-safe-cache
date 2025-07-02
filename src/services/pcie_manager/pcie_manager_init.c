@@ -53,6 +53,8 @@ static TX_EVENT_FLAGS_GROUP event_ptr;
 static kingsgate_pcie_root_bridge_config rb_config_var = {{{0}}};
 static kingsgate_pcie_vab_config vab_config_var = {0};
 
+static bool pciess_disabled = true;
+
 /*------------- Functions ----------------*/
 
 pcie_manager_context_t* scp_pcie_get_manager_context(uint8_t rpss_idx)
@@ -113,6 +115,11 @@ void scp_pcie_start_config_service_thread(void)
     }
 }
 
+bool scp_pcie_is_disabled(void)
+{
+    return pciess_disabled;
+}
+
 void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DIE_ID die_id)
 {
     if (schedule == NULL)
@@ -133,7 +140,6 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
      *       be enabled.
      */
     pcie_phyfw_create_event(&pcie_phyfw_load_event);
-    pcie_link_training_create_event(&pcie_lt_event);
 
     register_pcie_error_domains();
 
@@ -146,6 +152,9 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
             vab_config_var.vab_config[i].vab_disable = true;
             continue;
         }
+
+        /* PCIe is enabled even if a single RPSS is enabled */
+        pciess_disabled = false;
 
         /* Initialize PCIe rpss drivers before starting up service threads */
         pcie_dfwk_init(&(dev[i]), schedule);

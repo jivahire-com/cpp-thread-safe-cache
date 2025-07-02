@@ -26,6 +26,7 @@ extern "C" {
 #include <pcie_dfwk.h> // for pciess_device_interface_t, pciess_dev...
 #include <pcie_einj_structs.h>
 #include <pcie_error_injection_i.h>
+#include <pcie_lt_events.h>
 #include <pcie_manager_i.h>        // for rpss_req_completion_cb, send_start_li...
 #include <pcie_rp_event_handler.h> // for process_wait_for_event_data
 #include <pcie_rp_rasdes.h>
@@ -36,7 +37,8 @@ extern "C" {
 #include <setjmp.h>
 #include <silibs_kng_soc.h>
 #include <silibs_status.h> // for SILIBS_E_TIMEOUT
-#include <tx_api.h>        // for TX_NOT_DONE, TX_NO_MEMORY, TX_NO_WAIT
+#include <startup_shutdown_ssi.h>
+#include <tx_api.h> // for TX_NOT_DONE, TX_NO_MEMORY, TX_NO_WAIT
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -1477,4 +1479,23 @@ TEST_FUNCTION(test_pcie_error_injection_cb_bad_einj_buffer, NULL, NULL)
     expect_function_calls(__wrap_crash_dump_bug_check, 1);
     status = pcie_error_injection_cb(&mock_einj_info, nullptr);
     assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+}
+
+TEST_FUNCTION(test_ltssm_ssi_events, NULL, NULL)
+{
+    ssi_startup_notification_request_t ltssm_req;
+    cache_ssi_ltssm_startup_request(&ltssm_req);
+
+    bool pci_disabled = scp_pcie_is_disabled();
+    assert_int_equal(pci_disabled, false);
+
+    bool ltssm_en_set = scp_is_pcie_ltssm_en_set();
+    assert_int_equal(ltssm_en_set, false);
+
+    expect_any(__wrap_DfwkAsyncRequestComplete, Request);
+    complete_ssi_ltssm_startup_req(RPSS0);
+    complete_ssi_ltssm_startup_req(RPSS1);
+
+    ltssm_en_set = scp_is_pcie_ltssm_en_set();
+    assert_int_equal(ltssm_en_set, true);
 }

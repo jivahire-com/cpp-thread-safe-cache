@@ -5,47 +5,44 @@
 /**
  * @file pcie_lt_events.h
  * Implements the shared data/functions that are used for signalling that
- * link training sequence has begun.
+ * link training sequence has begun. Primary use is to sequence primary AP core
+ * boot such that it happens post link training.
  */
 
 #pragma once
-/*------------- Includes -----------------*/
-#include <tx_api.h>
+
+/*----------- Nested includes ------------*/
+#include <kng_soc_constants.h>
+#include <startup_shutdown_ssi.h>
+
+/*-- Symbolic Constant Macros (defines) --*/
+
+/*-------------- Typedefs ----------------*/
+
+/*-- Declarations (Statics and globals) --*/
+
+/*--------- Function Prototypes ----------*/
+/*
+ *  @brief      Caches the link training startup phase request which will be
+ *              completed once ltssm_en is set (on the first enabled RPSS).
+ *
+ * @retval     None
+ */
+void cache_ssi_ltssm_startup_request(pssi_startup_notification_request_t ltssm_req);
 
 /*
- * Global event to signal PCIe link training sequence has begun.
- * This is done from the ap_core service which manages all the loading from flash.
+ * @brief      Completes the cached link training startup phase request.
+ *
+ * @param[in]  rpss_idx  RPSS index signaling the completion.
+ *
+ * @retval     None
  */
-extern TX_EVENT_FLAGS_GROUP pcie_lt_event;
+void complete_ssi_ltssm_startup_req(RPSS_INSTANCE rpss_idx);
 
-/**
- *  @brief      Used to create a shared ThreadX event to indicate PCIe link
- *              training has been issued.
+/*
+ * @brief      Checks if the link training sequence has been initiated on the
+ *            first enabled RPSS.
  *
- *  @param[in]  pcie_lt_event  ThreadX primitive event
- *
- *  @retval     TX_SUCCESS on no error
- *              in case of errors, FpFwErrorRaise is called to crash the system
+ * @retval     true if link training sequence has been initiated, false otherwise.
  */
-UINT pcie_link_training_create_event(TX_EVENT_FLAGS_GROUP* pcie_lt_event);
-
-/**
- *  @brief      Wait for PCIe init sequences to complete till link training.
- *
- *  @param[in]  pcie_lt_event  ThreadX primitive event to wait on
- *
- *  @retval     TX_SUCCESS on no error
- *              in case of errors, FpFwErrorRaise is called to crash the system
- */
-UINT pcie_link_training_wait_event(TX_EVENT_FLAGS_GROUP* pcie_lt_event);
-
-/**
- *  @brief      Set link training event to indicate that link training has
- *              been initiated.
- *
- *  @param[in]  pcie_lt_event  ThreadX primitive event to set
- *
- *  @retval     TX_SUCCESS on no error
- *              in case of errors, FpFwErrorRaise is called to crash the system
- */
-UINT pcie_link_training_set_event(TX_EVENT_FLAGS_GROUP* pcie_lt_event);
+bool scp_is_pcie_ltssm_en_set();

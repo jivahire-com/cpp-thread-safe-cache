@@ -34,6 +34,7 @@ target_link_libraries(
         ms::lib::system_info
         ms::lib::accelerator_ip
         ms::service::health_monitor
+        ms::service::scp_startup_shutdown
         silibs::idsw
         silibs::idsw_kng
         silibs::pciess

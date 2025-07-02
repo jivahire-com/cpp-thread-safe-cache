@@ -26,7 +26,7 @@
     <Knob name="intu_init_en" type="uint8_t" default="0" help="DDRSS INTU init enable. 0 - Disable, 1 - Enable" />
     <Knob name="ddrss_mask" type="uint16_t" default="0x0001" help="DDRSS enable mask for both dies (12 DDRSSes). Each bit is one DDRSS. (0 ~ 0xFFF)" />
     <Knob name="cfg_profile" type="uint32_t" default="0" help="DIMM configuration profile for DV only. Please refer to ddrss_cfg_profile_t for encoding. (0 ~ 0xFFFFFFFF)" />
-    <Knob name="ddr_speed_grade" type="DDRSS_SPEED_GRADE" default="DDRSS_SPEED_3200" help="DDR Speed Grade" />
+    <Knob name="ddr_speed_grade" type="DDRSS_SPEED_GRADE" default="DDRSS_SPEED_7200" help="DDR Speed Grade" />
     <Knob name="dfi_ratio" type="uint8_t" default="2" help="DFI to MC frequency ratio.  2 - 1:2 ratio;  4 - 1:4 ratio;  Other values are invalid." />
     <Knob name="rcd_delay" type="uint16_t" default="0" help="Set DDR PHY RCD delay. (0 ~ 1300, 0xffff means using predefined delay)" />
     <Knob name="data_comp_delay" type="uint16_t" default="0xffff" help="Set DDR PHY data delay. (0 ~ 1300, 0xffff means using predefined delay)" />

@@ -468,6 +468,10 @@ void d2d_ras_init(void)
 
         // Create ARM RAS Agents
         ras_arm_agent_setup_entity(&d2dss2_agent[d2d_subsystem]);
+        if (system_info_is_warm_start())
+        {
+            ras_arm_agent_notify_warm(&d2dss2_agent[d2d_subsystem]);
+        }
         ASSERT_FAIL(ras_arm_agent_init(&d2dss2_agent[d2d_subsystem], translated_addr_ras2, "D2DSS2_AGENT") == SILIBS_SUCCESS);
 
         // Enable CRI signaling

@@ -100,4 +100,5 @@ mock_target(${TARGET}
     cmn800_error_injection
     cmn800_pseudo_fault_error_injection
     hm_submit_cper
+    ras_arm_agent_notify_warm
 )

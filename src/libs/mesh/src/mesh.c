@@ -761,9 +761,6 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     if (system_info_is_warm_start())
     {
         MESH_CRIT("mesh_init Warm restart Flow\n");
-
-        // Call to re-init the D2D RAS Agents (API to be added)
-
         return;
     }
 
@@ -790,8 +787,7 @@ void d2d_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     s_mbx_icc_ctx = icc_ctx;
 
     int sts = 0x0;
-
-    MESH_CRIT("d2d_init Cold start Flow\n");
+    bool cold_reset = true;
 
     cmn800_sequence_params_t cmn800_sequence_param = {};
 
@@ -802,17 +798,20 @@ void d2d_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     if (system_info_is_warm_start())
     {
         MESH_CRIT("d2d_init Warm restart Flow\n");
-
-        // Call to re-init the D2D RAS Agents (API to be added)
-
-        return;
+        cold_reset = false;
     }
-
+    else
+    {
+        MESH_CRIT("d2d_init Cold start Flow\n");
+    }
     if (cmn800_sequence_param.BOOT_2D_ENABLE)
     {
-        sts = d2dss_sequence(cmn800_sequence_param);
-        MESH_INFO("d2dss_sequence sts 0x%x\n", sts);
-        FPFW_RUNTIME_ASSERT(sts == 0);
+        if (cold_reset == true)
+        {
+            sts = d2dss_sequence(cmn800_sequence_param);
+            MESH_INFO("d2dss_sequence sts 0x%x\n", sts);
+            FPFW_RUNTIME_ASSERT(sts == 0);
+        }
         // Setup the D2D RAS Agents for Interrupt Handling
         d2d_ras_init();
         //! Enable die 1 sync counter for uniform timestamps across dies
@@ -853,9 +852,12 @@ void d2d_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 
     // Publish NUMA info regardless of single or dual die boot
     // This is required for the OS to be able to read the NUMA info from the SPI flash
-    if (die_num == SOC_D0)
+    if (cold_reset == true)
     {
-        save_numa_info();
+        if (die_num == SOC_D0)
+        {
+            save_numa_info();
+        }
     }
     // Sync between D0 and D1 in case of dual die boot
     if (cmn800_sequence_param.BOOT_2D_ENABLE)
@@ -869,15 +871,15 @@ void d2d_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 
     MESH_CRIT("D2D Init Done\n");
 
-    // ADO 1513835: The INT HW_INT_VAB4_COMBINED_SCP_INT ISR and Vector needs to be enabled as part of INTU combined
-
-    if (system_info_is_hsp_present())
+    if (cold_reset == true)
     {
-        MESH_INFO("Send CML Ready Notify\n");
-        hsp_send_recv_progress_msg(HSP_MAILBOX_CMD_CML_READY_NOTIFY, HSP_MAILBOX_CMD_MAX);
-        MESH_INFO("Send CML Ready Notify Done\n");
+        if (system_info_is_hsp_present())
+        {
+            MESH_INFO("Send CML Ready Notify\n");
+            hsp_send_recv_progress_msg(HSP_MAILBOX_CMD_CML_READY_NOTIFY, HSP_MAILBOX_CMD_MAX);
+            MESH_INFO("Send CML Ready Notify Done\n");
+        }
     }
-
     // Register the error domain for mesh in Health Monitor
     hm_register_error_domain(ACPI_ERROR_DOMAIN_MESH, &MESH_ERROR_DOMAIN_FRU_GUID, "Mesh Error Domain", mesh_error_injection_cb, NULL);
 }

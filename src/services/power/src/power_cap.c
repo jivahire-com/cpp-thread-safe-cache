@@ -63,6 +63,13 @@ float max_electrical_limit(power_runconfig_t* p_runconfig, power_latest_calcs_t*
     // store instantaneous max electrical limit for diagnostic purpose
     s_inst_max_electrical_limit0 = P_MEL0;
     s_inst_max_electrical_limit1 = P_MEL1;
+
+    if (!p_runconfig->p_sconfig->platform_is_multi_die)
+    {
+        //! if this is single die, return the max electrical limit for die 0
+        return P_MEL0;
+    }
+    //! For dual die, return the minimum of the electrical limits for both dies (for the soc) that will be used to cap the vcpu power.
     return FPFW_MIN(P_MEL0, P_MEL1); // soc_maximum_electrical_current_limit
                                      // knob is in amps
 }

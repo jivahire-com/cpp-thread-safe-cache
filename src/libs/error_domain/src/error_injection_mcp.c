@@ -11,10 +11,12 @@
 #include <DbgPrint.h>
 #include <FpFwUtils.h>
 #include <arm_intrinsic.h> // for __DSB on Windows builds (empty define)
+#include <atu_api.h>
 #include <bug_check.h>
 #include <cper.h>
 #include <error_domain_i.h>
 #include <health_monitor_icc.h>
+#include <idsw_kng.h>
 #include <mcp_exp_top_regs.h>
 #include <mscp_error_domain.h>
 #include <mscp_exp_rmss_memory_map.h>
@@ -24,6 +26,7 @@
 #include <scp_exp_top_regs.h>
 #define __NO_LARGE_ADDRMAP_TYPEDEFS__
 #include <mcp_top_regs.h>
+#include <shared_sram_ecc_ras_registers_regs.h>
 
 // clang-format off
 #include <cmsis_m7.h>
@@ -39,12 +42,6 @@
 #define RMSS_RAM1_ADDRESS (MCP_TOP_SCP_EXP_ADDRESS + MCP_EXP_TOP_RAM1_ADDRESS)
 #define DTC_RAM_ADDRESS   (MCP_TOP_MCP_DATA_RAM_ADDRESS)
 
-#define MCP_EXP_TOP_RAM0_BASE (MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM0_ADDRESS)
-// // CACHEABLE SECTION 1856KB
-#define MCP_EXP_CACHEABLE_SIZE         (1856 * SL_1KB)
-#define MCP_EXP_CACHEABLE_SECTION_BASE (MCP_EXP_TOP_RAM0_BASE)
-#define MCP_EXP_CACHEABLE_SECTION_END  (MCP_EXP_CACHEABLE_SECTION_BASE + MCP_EXP_CACHEABLE_SIZE - 1)
-
 /*-------- Function Prototypes -----------*/
 
 /*-------------- Typedefs ----------------*/
@@ -56,18 +53,6 @@ static vptr_mscp_ras_and_init_ctrl_registers_reg mcp_ras_and_init_ctrl_registers
 
 /*-------------- Functions ---------------*/
 
-static void inject_err_by_access(uint32_t addr)
-{
-    __DSB();
-
-    if (MCP_EXP_CACHEABLE_SECTION_BASE <= addr && addr <= MCP_EXP_CACHEABLE_SECTION_END)
-    {
-        SCB_InvalidateDCache_by_Addr((uint32_t*)addr, sizeof(uint32_t));
-    }
-
-    MMIO_READ32(addr);
-}
-
 static void mcp_error_injection_request_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     FPFW_UNUSED(context);
@@ -77,12 +62,19 @@ static void mcp_error_injection_request_cb(void* context, size_t output_size_byt
     {
         hm_mhu_error_injection_payload_t* hm_err_injection_payload = (hm_mhu_error_injection_payload_t*)context;
 
+        // ARSM RAM error injection address
+        uint32_t arsm_addr = ((idsw_get_die_id() == DIE_0) ? MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR
+                                                           : MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR);
+
+        arsm_addr =
+            (hm_err_injection_payload->error_injection_info.param_type.address_64 == 0)
+                ? arsm_addr + ARSM_RAM_DEFAULT_OFFSET
+                : arsm_addr + (uint32_t)(uintptr_t)hm_err_injection_payload->error_injection_info.param_type.address_64;
+
         if (hm_err_injection_payload != NULL && hm_err_injection_payload->header.msg_header.command == ICC_HM_ERROR_INJECTION_MCP)
         {
-            // TODO: (https://azurecsi.visualstudio.com/Dev/_workitems/edit/2583683/?view=edit)
+            // TODO: (https://azurecsi.visualstudio.com/Dev/_workitems/edit/2662274/?view=edit)
             // Port SCP RAS handling to MCP (part 2) for error types with missing errctrl_reg
-            // TODO: (https://azurecsi.visualstudio.com/Dev/_workitems/edit/2583683/)
-            // Port SCP RAS handling to MCP for RSM, M7, etc.
             switch (hm_err_injection_payload->error_injection_info.param_type.error_type)
             {
             case MCP_ERROR_TYPE_TCM_CE:
@@ -128,6 +120,67 @@ static void mcp_error_injection_request_cb(void* context, size_t output_size_byt
                 break;
             case MCP_ERROR_TYPE_WATCHDOG:
                 trigger_mscp_watchdog_fault();
+                break;
+
+            case MCP_ERROR_TYPE_S_ARSM_CE:
+                trigger_shared_sram_arsm_fault(MSCP_RT_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+                break;
+            case MCP_ERROR_TYPE_S_ARSM_UE:
+                FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_S_ARSM_UE is not supported in this build.\n");
+                // trigger_shared_sram_arsm_fault(MSCP_RT_ARSM_RAM,
+                //                           arsm_addr,
+                //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+                break;
+            case MCP_ERROR_TYPE_S_ARSM_OVERFLOW:
+                FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_S_ARSM_OVERFLOW is not supported in this build.\n");
+                // trigger_shared_sram_arsm_fault(MSCP_RT_ARSM_RAM,
+                //                           arsm_addr,
+                //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+                break;
+            case MCP_ERROR_TYPE_NS_ARSM_CE:
+                trigger_shared_sram_arsm_fault(MSCP_NS_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+                break;
+            case MCP_ERROR_TYPE_NS_ARSM_UE:
+                FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_NS_ARSM_UE is not supported in this build.\n");
+                // trigger_shared_sram_arsm_fault(MSCP_NS_ARSM_RAM,
+                //                           arsm_addr,
+                //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+                break;
+            case MCP_ERROR_TYPE_NS_ARSM_OVERFLOW:
+                FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_NS_ARSM_OVERFLOW is not supported in this build.\n");
+                // trigger_shared_sram_arsm_fault(MSCP_NS_ARSM_RAM,
+                //                           arsm_addr,
+                //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+                break;
+            case MCP_ERROR_TYPE_RT_ARSM_CE:
+                trigger_shared_sram_arsm_fault(MSCP_RT_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+                break;
+            case MCP_ERROR_TYPE_RT_ARSM_UE:
+                FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_RT_ARSM_UE is not supported in this build.\n");
+                // trigger_shared_sram_arsm_fault(MSCP_RT_ARSM_RAM,
+                //                           arsm_addr,
+                //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+                break;
+            case MCP_ERROR_TYPE_RT_ARSM_OVERFLOW:
+                FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_RT_ARSM_OVERFLOW is not supported in this build.\n");
+                // trigger_shared_sram_arsm_fault(MSCP_RT_ARSM_RAM,
+                //                           arsm_addr,
+                //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+                break;
+            case MCP_ERROR_TYPE_RL_ARSM_CE:
+                trigger_shared_sram_arsm_fault(MSCP_RL_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+                break;
+            case MCP_ERROR_TYPE_RL_ARSM_UE:
+                FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_RL_ARSM_UE is not supported in this build.\n");
+                // trigger_shared_sram_arsm_fault(MSCP_RL_ARSM_RAM,
+                //                           arsm_addr,
+                //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+                break;
+            case MCP_ERROR_TYPE_RL_ARSM_OVERFLOW:
+                FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_RL_ARSM_OVERFLOW is not supported in this build.\n");
+                // trigger_shared_sram_arsm_fault(MSCP_RL_ARSM_RAM,
+                //                           arsm_addr,
+                //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
                 break;
 
             default:

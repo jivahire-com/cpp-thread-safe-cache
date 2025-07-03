@@ -73,8 +73,6 @@ mock_target(${TARGET}
     nvic_irq_set_isr_with_param
     nvic_irq_enable
     nvic_irq_clear_pending
-    nvic_irq_set_isr_with_param
-    nvic_get_current_irq
     wdog_cmsdk_apb_disable
     wdog_cmsdk_apb_init
     mmu_fault

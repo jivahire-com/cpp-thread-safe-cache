@@ -6,6 +6,7 @@ set(TARGET kng.lib.error_domain.scp)
 
 set (SOURCES 
         src/error_domain_scp.c
+        src/error_domain_shared.c
         src/error_domain_pex.c
         src/error_injection_scp.c
         src/exception_trigger.c
@@ -66,6 +67,7 @@ set(TARGET kng.lib.error_domain.mcp)
 
 set (SOURCES 
         src/error_domain_mcp.c
+        src/error_domain_shared.c
         src/error_injection_mcp.c
         src/exception_trigger.c
 )
@@ -93,6 +95,7 @@ target_link_libraries(
             silibs::atu
             silibs::icc_mhu
             silibs::cmsdk_wd
+            silibs::idhw
             silibs::idsw_kng
 )
 

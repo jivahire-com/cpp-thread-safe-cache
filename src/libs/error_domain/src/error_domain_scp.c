@@ -62,36 +62,10 @@ static vptr_mscp_ras_and_init_ctrl_registers_reg scp_ras_and_init_ctrl_registers
 static vptr_systemcontrol_reg scp_system_control_reg =
     (vptr_systemcontrol_reg)(SCP_TOP_CORTEX_M7_ADDRESS + CORTEXM7INTEGRATIONCS_SCP_SYSTEMCONTROL_ADDRESS);
 
-static const atu_map_entry_t s_hm_arsm_atu_entries[2][SCP_ARSM_RAM_COUNT] = {
-    {ATU_MAPPING_SCP_S_ARSM_RAM_ECC(DIE_0),
-     ATU_MAPPING_SCP_NS_ARSM_RAM_ECC(DIE_0),
-     ATU_MAPPING_SCP_RT_ARSM_RAM_ECC(DIE_0),
-     ATU_MAPPING_SCP_RL_ARSM_RAM_ECC(DIE_0)},
-    {ATU_MAPPING_SCP_S_ARSM_RAM_ECC(DIE_1),
-     ATU_MAPPING_SCP_NS_ARSM_RAM_ECC(DIE_1),
-     ATU_MAPPING_SCP_RT_ARSM_RAM_ECC(DIE_1),
-     ATU_MAPPING_SCP_RL_ARSM_RAM_ECC(DIE_1)}};
-
-static const atu_map_entry_t s_hm_rsm_atu_entries[2][SCP_RSM_RAM_COUNT] = {
-    {ATU_MAPPING_SCP_S_RSM_RAM_ECC(DIE_0), ATU_MAPPING_SCP_NS_RSM_RAM_ECC(DIE_0)},
-    {ATU_MAPPING_SCP_S_RSM_RAM_ECC(DIE_1), ATU_MAPPING_SCP_NS_RSM_RAM_ECC(DIE_1)}};
-
 /*-------------- Functions ---------------*/
-void get_arsm_ecc_atu_entry(scp_arsm_ram_type_t type, atu_map_entry_t* atu_entry)
-{
-    BUG_ASSERT(type < SCP_ARSM_RAM_COUNT);
-    *atu_entry = s_hm_arsm_atu_entries[idsw_get_die_id()][type];
-}
-
-void get_rsm_ecc_atu_entry(scp_rsm_ram_type_t type, atu_map_entry_t* atu_entry)
-{
-    BUG_ASSERT(type < SCP_RSM_RAM_COUNT);
-    *atu_entry = s_hm_rsm_atu_entries[idsw_get_die_id()][type];
-}
-
 static void get_arsm_ecc_atu_entry_wrapper(int type, atu_map_entry_t* entry)
 {
-    get_arsm_ecc_atu_entry((scp_arsm_ram_type_t)type, entry);
+    get_arsm_ecc_atu_entry((mscp_arsm_ram_type_t)type, entry);
 }
 
 static void get_rsm_ecc_atu_entry_wrapper(int type, atu_map_entry_t* entry)
@@ -99,13 +73,13 @@ static void get_rsm_ecc_atu_entry_wrapper(int type, atu_map_entry_t* entry)
     get_rsm_ecc_atu_entry((scp_rsm_ram_type_t)type, entry);
 }
 
-uint32_t get_irq_num_for_scp_ecc_isr(scp_arsm_ram_type_t type)
+uint32_t get_irq_num_for_scp_ecc_isr(mscp_arsm_ram_type_t type)
 {
-    const uint32_t irq_nums[SCP_ARSM_RAM_COUNT] = {
-        HW_INT_SCP_S_ARSM_ECC_FHI_INT,  // SCP_S_ARSM_RAM
-        HW_INT_SCP_NS_ARSM_ECC_FHI_INT, // SCP_NS_ARSM_RAM
-        HW_INT_SCP_RT_ARSM_ECC_FHI_INT, // SCP_RT_ARSM_RAM
-        HW_INT_SCP_RL_ARSM_ECC_FHI_INT  // SCP_RL_ARSM_RAM
+    const uint32_t irq_nums[MSCP_ARSM_RAM_COUNT] = {
+        HW_INT_SCP_S_ARSM_ECC_FHI_INT,  // MSCP_RT_ARSM_RAM
+        HW_INT_SCP_NS_ARSM_ECC_FHI_INT, // MSCP_NS_ARSM_RAM
+        HW_INT_SCP_RT_ARSM_ECC_FHI_INT, // MSCP_RT_ARSM_RAM
+        HW_INT_SCP_RL_ARSM_ECC_FHI_INT  // MSCP_RL_ARSM_RAM
     };
 
     return irq_nums[type];
@@ -423,98 +397,6 @@ void icache_tag_ce_isr()
     cache_ecc_isr(&params);
 }
 
-void shared_sram_ecc_isr(void* ctx)
-{
-    bool is_rsm = false;
-    uint32_t err_status = 0;
-    uint32_t err_addr = 0;
-    KNG_STATUS err_code = KNG_SUCCESS;
-    acpi_error_severity_t severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
-    atu_map_entry_t atu_entry = *(atu_map_entry_t*)ctx;
-
-    // check ctx is one of the item in s_hm_rsm_atu_entries
-    for (scp_rsm_ram_type_t i = SCP_S_RSM_RAM; i < SCP_RSM_RAM_COUNT; i++)
-    {
-        const atu_map_entry_t* rsm_entry = &s_hm_rsm_atu_entries[idsw_get_die_id()][i];
-        if (ctx == rsm_entry)
-        {
-            is_rsm = true;
-            break;
-        }
-    }
-
-    // Map the shared SRAM ECC registers
-    int status = atu_map(ATU_ID_MSCP, &atu_entry);
-    BUG_ASSERT(status == SILIBS_SUCCESS);
-
-    // Read error status
-    err_status = MMIO_READ32(atu_entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
-
-    if ((err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK) && // SRAMECC_ERRSTATUS is valid
-        (err_status & (SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK |
-                       SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_PN_MASK |
-                       SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_DE_MASK)))
-    {
-        uint32_t err_clr_mask = err_status & ~SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_SERR_MASK;
-
-        // Read error address if applicable
-        err_addr = (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK)
-                       ? MMIO_READ32(atu_entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS)
-                       : 0;
-
-        // Determine error severity and code based on the error status
-        if (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK)
-        {
-            severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
-            err_code = (is_rsm) ? KNG_HM_RSM_UE : KNG_HM_ARSM_UE;
-        }
-        else if (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK)
-        {
-            severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
-            err_code = KNG_HM_ARSM_OF;
-        }
-        else if (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_PN_MASK)
-        {
-            severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
-            err_code = KNG_HM_ARSM_UE;
-
-            // Write to the poison address register
-            MMIO_WRITE32(err_addr, 0x00000000);
-        }
-        else if (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK)
-        {
-            severity = ACPI_ERROR_SEVERITY_CORRECTED;
-            err_code = (is_rsm) ? KNG_HM_RSM_CE : KNG_HM_ARSM_CE;
-            err_clr_mask |= SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK; // 0x11 is used to clear CE bit
-        }
-
-        // Clear error status
-        MMIO_WRITE32(atu_entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS, err_clr_mask);
-
-        // Submit CPER
-        guid_t err_record_id = (is_rsm) ? (guid_t)SCP_RSM_RAM : (guid_t)SCP_ARSM_RAM;
-
-        acpi_err_sec_firmware_t sec_fw_cper_section = {.severity = severity,
-                                                       .record_id = err_record_id,
-                                                       .param = {err_status, err_addr, err_code, 0}};
-
-        acpi_cper_section_t cper_section;
-        cper_section.sec_fw = sec_fw_cper_section;
-
-        hm_submit_cper(ACPI_ERROR_DOMAIN_SCP_PROC, severity, &cper_section, sizeof(cper_section));
-    }
-
-    // Unmap the shared SRAM ECC registers
-    status = atu_unmap(ATU_ID_MSCP, &atu_entry);
-    BUG_ASSERT(status == SILIBS_SUCCESS);
-
-    // Bug check if the error is uncorrectable fatal
-    if (severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)
-    {
-        BUG_CHECK(err_code, err_status, err_addr);
-    }
-}
-
 void shared_sram_ecc_isr_ext()
 {
     // RSM secure/non-secure share same interrupt
@@ -582,7 +464,7 @@ static void enable_scp_ecc_error()
                     MSCP_RAS_AND_INIT_CTRL_REGISTERS_TCMECC_ERRCTRL_ITCMRAM_ECC_EN_MASK);
 
     // Enable ARSM ECC errors
-    enable_shared_sram_errors(get_arsm_ecc_atu_entry_wrapper, SCP_ARSM_RAM_COUNT);
+    enable_shared_sram_errors(get_arsm_ecc_atu_entry_wrapper, MSCP_ARSM_RAM_COUNT);
 
     // Enable RSM ECC errors
     KNG_PLAT_ID plat = idsw_get_platform_sdv();
@@ -658,16 +540,16 @@ static void enable_scp_ecc_interrupts()
     KNG_DIE_ID die_id = idsw_get_die_id();
     register_scp_ecc_isr_with_param(HW_INT_SCP_S_ARSM_ECC_FHI_INT,
                                     shared_sram_ecc_isr,
-                                    (void*)&s_hm_arsm_atu_entries[die_id][SCP_S_ARSM_RAM]); // Secure onchip shared ARSM RAM ECC FHI Interrupt for SCP accesses
+                                    (void*)&s_hm_arsm_atu_entries[die_id][MSCP_S_ARSM_RAM]); // Secure onchip shared ARSM RAM ECC FHI Interrupt for SCP accesses
     register_scp_ecc_isr_with_param(HW_INT_SCP_NS_ARSM_ECC_FHI_INT,
                                     shared_sram_ecc_isr,
-                                    (void*)&s_hm_arsm_atu_entries[die_id][SCP_NS_ARSM_RAM]); // Non-secure onchip shared ARSM RAM ECC FHI Interrupt for SCP accesses
+                                    (void*)&s_hm_arsm_atu_entries[die_id][MSCP_NS_ARSM_RAM]); // Non-secure onchip shared ARSM RAM ECC FHI Interrupt for SCP accesses
     register_scp_ecc_isr_with_param(HW_INT_SCP_RT_ARSM_ECC_FHI_INT,
                                     shared_sram_ecc_isr,
-                                    (void*)&s_hm_arsm_atu_entries[die_id][SCP_RT_ARSM_RAM]); // Root onchip shared ARSM RAM ECC FHI Interrupt for SCP accesses
+                                    (void*)&s_hm_arsm_atu_entries[die_id][MSCP_RT_ARSM_RAM]); // Root onchip shared ARSM RAM ECC FHI Interrupt for SCP accesses
     register_scp_ecc_isr_with_param(HW_INT_SCP_RL_ARSM_ECC_FHI_INT,
                                     shared_sram_ecc_isr,
-                                    (void*)&s_hm_arsm_atu_entries[die_id][SCP_RL_ARSM_RAM]); // Realm onchip shared ARSM RAM ECC FHI Interrupt for SCP accesses
+                                    (void*)&s_hm_arsm_atu_entries[die_id][MSCP_RL_ARSM_RAM]); // Realm onchip shared ARSM RAM ECC FHI Interrupt for SCP accesses
 
     // RSM ECC FHI
     register_scp_ecc_isr(HW_INT_SCP_RSM_RAM_FHI_INT, shared_sram_ecc_isr_ext); // SCP Secure&Non-Secure RSM RAM ECC

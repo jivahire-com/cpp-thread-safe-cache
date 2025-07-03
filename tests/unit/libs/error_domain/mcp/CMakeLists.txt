@@ -55,10 +55,13 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    atu_map
+    atu_unmap
     crash_dump_bug_check
     fpfw_icc_base_send
     fpfw_icc_base_recv
     hm_submit_cper
+    idsw_get_die_id
     mmio_read32
     mmio_write32
     nvic_global_enable
@@ -66,6 +69,7 @@ mock_target(${TARGET}
     nvic_irq_set_isr
     nvic_irq_enable
     nvic_irq_clear_pending
+    nvic_irq_set_isr_with_param
     wdog_cmsdk_apb_disable
     wdog_cmsdk_apb_init
 )

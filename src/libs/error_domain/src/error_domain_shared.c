@@ -1,0 +1,245 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+/**
+ * @file error_domain_shared.c
+ * This file contains scp and mcp ras related functionality.
+ */
+
+/*------------- Includes -----------------*/
+// #include <atu_lib.h>
+#include <DbgPrint.h>
+#include <FpFwUtils.h>
+#include <arm_intrinsic.h> // for __DSB on Windows builds (empty define)
+#include <atu_api.h>
+#include <bug_check.h>
+#include <cper.h>
+#include <error_domain_i.h>
+#include <health_monitor.h>
+#include <idsw_kng.h>
+#include <mscp_error_domain.h>
+#include <mscp_exp_rmss_memory_map.h>
+#include <mscp_ras_and_init_ctrl_registers_regs.h>
+#include <nvic.h>
+#include <scp_exp_csr_regs.h>
+#include <scp_exp_top_regs.h>
+#define __NO_LARGE_ADDRMAP_TYPEDEFS__
+#include <mcp_top_regs.h>
+#include <scp_top_regs.h>
+#include <shared_sram_ecc_ras_registers_regs.h>
+
+// clang-format off
+#include <cmsis_m7.h>
+#ifdef PLATFORM_CACHING_ENABLED
+#include <cmsis_compiler.h>
+#include <m-profile/armv7m_cachel1.h>
+#endif
+// clang-format on
+
+/*-- Symbolic Constant Macros (defines) --*/
+#if defined(SCP_RUNTIME_INIT)
+#else
+    #define MCP_EXP_TOP_RAM0_BASE          (MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM0_ADDRESS)
+    // // CACHEABLE SECTION 1856KB
+    #define MCP_EXP_CACHEABLE_SIZE         (1856 * SL_1KB)
+    #define MCP_EXP_CACHEABLE_SECTION_BASE (MCP_EXP_TOP_RAM0_BASE)
+    #define MCP_EXP_CACHEABLE_SECTION_END  (MCP_EXP_CACHEABLE_SECTION_BASE + MCP_EXP_CACHEABLE_SIZE - 1)
+#endif
+
+/*-------- Function Prototypes -----------*/
+
+/*-------------- Typedefs ----------------*/
+
+/*-- Declarations (Statics and globals) --*/
+
+/*-------------- Functions ---------------*/
+
+void get_shared_sram_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entry)
+{
+    BUG_ASSERT(type < MSCP_ARSM_RAM_COUNT);
+    *atu_entry = s_hm_arsm_atu_entries[idsw_get_die_id()][type];
+}
+
+void inject_err_by_access(uint32_t addr)
+{
+    __DSB();
+
+#if defined(SCP_RUNTIME_INIT)
+    if (SCP_EXP_CACHEABLE_SECTION_BASE <= addr && addr <= SCP_EXP_CACHEABLE_SECTION_END)
+#else
+    if (MCP_EXP_CACHEABLE_SECTION_BASE <= addr && addr <= MCP_EXP_CACHEABLE_SECTION_END)
+#endif
+    {
+        SCB_InvalidateDCache_by_Addr((uint32_t*)addr, sizeof(uint32_t));
+    }
+
+    MMIO_READ32(addr);
+}
+
+void get_arsm_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entry)
+{
+    BUG_ASSERT(type < MSCP_ARSM_RAM_COUNT);
+    *atu_entry = s_hm_arsm_atu_entries[idsw_get_die_id()][type];
+}
+
+void get_rsm_ecc_atu_entry(scp_rsm_ram_type_t type, atu_map_entry_t* atu_entry)
+{
+    BUG_ASSERT(type < SCP_RSM_RAM_COUNT);
+    *atu_entry = s_hm_rsm_atu_entries[idsw_get_die_id()][type];
+}
+
+void trigger_shared_sram_fault(bool arsm, int type, uint32_t target_addr, uint32_t err_mask)
+{
+    atu_map_entry_t entry;
+
+    if (arsm)
+    {
+        BUG_ASSERT(type < MSCP_ARSM_RAM_COUNT);
+        get_arsm_ecc_atu_entry((mscp_arsm_ram_type_t)type, &entry);
+    }
+    else
+    {
+        BUG_ASSERT(type < SCP_RSM_RAM_COUNT);
+        get_rsm_ecc_atu_entry((scp_rsm_ram_type_t)type, &entry);
+    }
+
+    int status = atu_map(ATU_ID_MSCP, &entry);
+    BUG_ASSERT(status == SILIBS_SUCCESS);
+
+    if (err_mask & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK)
+    {
+        MMIO_UPDATE32(entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_CE_MASK,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_CE_MASK);
+        inject_err_by_access(target_addr);
+    }
+    else if (err_mask & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK)
+    {
+        MMIO_UPDATE32(entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
+        inject_err_by_access(target_addr);
+    }
+    else if (err_mask & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK)
+    {
+        nvic_global_disable();
+        MMIO_UPDATE32(entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
+        inject_err_by_access(target_addr);
+        MMIO_UPDATE32(entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
+        inject_err_by_access(target_addr);
+        nvic_global_enable();
+    }
+
+    status = atu_unmap(ATU_ID_MSCP, &entry);
+    BUG_ASSERT(status == SILIBS_SUCCESS);
+}
+
+void trigger_shared_sram_arsm_fault(mscp_arsm_ram_type_t type, uint32_t target_addr, uint32_t err_mask)
+{
+    BUG_ASSERT(type < MSCP_ARSM_RAM_COUNT);
+    trigger_shared_sram_fault(true, (int)type, target_addr, err_mask);
+}
+
+void shared_sram_ecc_isr(void* ctx)
+{
+    bool is_rsm = false;
+    uint32_t err_status = 0;
+    uint32_t err_addr = 0;
+    KNG_STATUS err_code = KNG_SUCCESS;
+    acpi_error_severity_t severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
+    atu_map_entry_t atu_entry = *(atu_map_entry_t*)ctx;
+
+    // check ctx is one of the item in s_hm_rsm_atu_entries
+    for (scp_rsm_ram_type_t i = SCP_S_RSM_RAM; i < SCP_RSM_RAM_COUNT; i++)
+    {
+        const atu_map_entry_t* rsm_entry = &s_hm_rsm_atu_entries[idsw_get_die_id()][i];
+        if (ctx == rsm_entry)
+        {
+            is_rsm = true;
+            break;
+        }
+    }
+
+    // Map the shared SRAM ECC registers
+    int status = atu_map(ATU_ID_MSCP, &atu_entry);
+    BUG_ASSERT(status == SILIBS_SUCCESS);
+
+    // Read error status
+    err_status = MMIO_READ32(atu_entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+
+    if ((err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK) && // SRAMECC_ERRSTATUS is valid
+        (err_status & (SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK |
+                       SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_PN_MASK |
+                       SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_DE_MASK)))
+    {
+        uint32_t err_clr_mask = err_status & ~SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_SERR_MASK;
+
+        // Read error address if applicable
+        err_addr = (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK)
+                       ? MMIO_READ32(atu_entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS)
+                       : 0;
+
+        // Determine error severity and code based on the error status
+        if (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK)
+        {
+            severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
+            err_code = (is_rsm) ? KNG_HM_RSM_UE : KNG_HM_ARSM_UE;
+        }
+        else if (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK)
+        {
+            severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
+            err_code = KNG_HM_ARSM_OF;
+        }
+        else if (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_PN_MASK)
+        {
+            severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
+            err_code = KNG_HM_ARSM_UE;
+
+            // Write to the poison address register
+            MMIO_WRITE32(err_addr, 0x00000000);
+        }
+        else if (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK)
+        {
+            severity = ACPI_ERROR_SEVERITY_CORRECTED;
+            err_code = (is_rsm) ? KNG_HM_RSM_CE : KNG_HM_ARSM_CE;
+            err_clr_mask |= SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK; // 0x11 is used to clear CE bit
+        }
+
+        // Clear error status
+        MMIO_WRITE32(atu_entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS, err_clr_mask);
+
+        // Submit CPER
+#if defined(SCP_RUNTIME_INIT)
+        guid_t err_record_id = (is_rsm) ? (guid_t)SCP_RSM_RAM : (guid_t)SCP_ARSM_RAM;
+#else
+        guid_t err_record_id = (is_rsm) ? (guid_t)MCP_RSM_RAM : (guid_t)MCP_ARSM_RAM;
+#endif
+
+        acpi_err_sec_firmware_t sec_fw_cper_section = {.severity = severity,
+                                                       .record_id = err_record_id,
+                                                       .param = {err_status, err_addr, err_code, 0}};
+
+        acpi_cper_section_t cper_section;
+        cper_section.sec_fw = sec_fw_cper_section;
+#if defined(SCP_RUNTIME_INIT)
+        hm_submit_cper(ACPI_ERROR_DOMAIN_SCP_PROC, severity, &cper_section, sizeof(cper_section));
+#else
+        hm_submit_cper(ACPI_ERROR_DOMAIN_MCP_PROC, severity, &cper_section, sizeof(cper_section));
+#endif
+    }
+
+    // Unmap the shared SRAM ECC registers
+    status = atu_unmap(ATU_ID_MSCP, &atu_entry);
+    BUG_ASSERT(status == SILIBS_SUCCESS);
+
+    // Bug check if the error is uncorrectable fatal
+    if (severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)
+    {
+        BUG_CHECK(err_code, err_status, err_addr);
+    }
+}

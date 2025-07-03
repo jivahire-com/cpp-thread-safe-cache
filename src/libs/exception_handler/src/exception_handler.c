@@ -134,7 +134,7 @@ __attribute__((__weak__)) int get_active_exception(void)
 // #define DUMP_ARSM_ECC_STATUS_VERBOSE 1
 static bool check_shared_sram_ecc_ras_fault(void)
 {
-    for (scp_arsm_ram_type_t i = SCP_S_ARSM_RAM; i < SCP_ARSM_RAM_COUNT; i++)
+    for (mscp_arsm_ram_type_t i = MSCP_S_ARSM_RAM; i < MSCP_ARSM_RAM_COUNT; i++)
     {
         atu_map_entry_t atu_entry;
         get_arsm_ecc_atu_entry(i, &atu_entry);

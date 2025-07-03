@@ -82,7 +82,7 @@ void test_icache_tag_ce_isr();
 void test_hard_fault_handler();
 void test_bus_fault_handler();
 void test_watchdog_handler();
-void test_trigger_shared_sram_arsm_fault(uint32_t err_mask);
+void test_trigger_shared_sram_arsm_fault(uint32_t err_mask, uint32_t access_offset);
 
 /*-- Declarations (Statics and globals) --*/
 hm_error_injection_cb_t g_err_inject_cb = NULL;
@@ -540,7 +540,7 @@ TEST_FUNCTION(test_register_scp_error_domain, nullptr, nullptr)
     expect_function_call(__wrap_mmio_write32);
 
     // Shared SRAM ECC
-    for (int i = SCP_S_ARSM_RAM; i < SCP_ARSM_RAM_COUNT; i++)
+    for (int i = MSCP_S_ARSM_RAM; i < MSCP_ARSM_RAM_COUNT; i++)
     {
         expect_function_call(__wrap_atu_map);
         expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRFR_ADDRESS);
@@ -977,7 +977,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
         case SCP_ERROR_TYPE_NS_ARSM_UE:
         case SCP_ERROR_TYPE_RT_ARSM_UE:
         case SCP_ERROR_TYPE_RL_ARSM_UE:
-            // test_ttrigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
+            // test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
             break;
         case SCP_ERROR_TYPE_S_ARSM_OVERFLOW:
         case SCP_ERROR_TYPE_NS_ARSM_OVERFLOW:

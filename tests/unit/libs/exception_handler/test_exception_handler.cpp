@@ -131,7 +131,7 @@ int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
     return 0;
 }
 
-void __wrap_get_arsm_ecc_atu_entry(scp_arsm_ram_type_t type, atu_map_entry_t* atu_entry)
+void __wrap_get_arsm_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entry)
 {
     FPFW_UNUSED(type);
     static atu_map_entry_t dummy_entry = {};
@@ -164,7 +164,7 @@ void test_exception_handler_params(int exception, uint32_t error_code)
 
 #ifdef SCP_RUNTIME_INIT
     // Set up expectations for check_shared_sram_ecc_ras_fault()
-    for (int i = SCP_S_ARSM_RAM; i < SCP_ARSM_RAM_COUNT; i++)
+    for (int i = MSCP_S_ARSM_RAM; i < MSCP_ARSM_RAM_COUNT; i++)
     {
         expect_function_call(__wrap_get_arsm_ecc_atu_entry);
         expect_function_call(__wrap_atu_map);

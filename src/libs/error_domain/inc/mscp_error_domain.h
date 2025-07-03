@@ -17,15 +17,14 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
-#ifdef SCP_RUNTIME_INIT
 typedef enum
 {
-    SCP_S_ARSM_RAM = 0,
-    SCP_NS_ARSM_RAM,
-    SCP_RT_ARSM_RAM,
-    SCP_RL_ARSM_RAM,
-    SCP_ARSM_RAM_COUNT
-} scp_arsm_ram_type_t;
+    MSCP_S_ARSM_RAM = 0,
+    MSCP_NS_ARSM_RAM,
+    MSCP_RT_ARSM_RAM,
+    MSCP_RL_ARSM_RAM,
+    MSCP_ARSM_RAM_COUNT
+} mscp_arsm_ram_type_t;
 
 typedef enum
 {
@@ -33,12 +32,20 @@ typedef enum
     SCP_NS_RSM_RAM,
     SCP_RSM_RAM_COUNT
 } scp_rsm_ram_type_t;
-#endif
 
-/*-- Declarations (Statics and globals) --*/
+/*--------- Function Prototypes ----------*/
+/**
+ * @brief Get Shared ATU entry for Shared SRAM ECC Registers.
+ */
+void get_shared_sram_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entry);
+
+/**
+ * @brief Get Shared ATU entry for Shared SRAM, RSM, ECC Registers.
+ */
+void get_rsm_ecc_atu_entry(scp_rsm_ram_type_t type, atu_map_entry_t* atu_entry);
+
 
 #if defined (SCP_RUNTIME_INIT)
-/*--------- Function Prototypes ----------*/
 /**
  * @brief Register the SCP error domain.
  */
@@ -51,17 +58,12 @@ void register_pex_error_domain();
 /**
  * @brief Get Shared ATU entry for Shared SRAM, ARSM, ECC Registers.
  */
-void get_arsm_ecc_atu_entry(scp_arsm_ram_type_t type, atu_map_entry_t* atu_entry);
-
-/**
- * @brief Get Shared ATU entry for Shared SRAM, RSM, ECC Registers.
- */
-void get_rsm_ecc_atu_entry(scp_rsm_ram_type_t type, atu_map_entry_t* atu_entry);
+void get_arsm_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entry);
 
 /**
  * @brief Get IRQ number for SCP ECC ISR based on the type of ARSM RAM.
  */
-uint32_t get_irq_num_for_scp_ecc_isr(scp_arsm_ram_type_t type);
+uint32_t get_irq_num_for_scp_ecc_isr(mscp_arsm_ram_type_t type);
 
 #elif defined (MCP_RUNTIME_INIT)
 /**

@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+int g_enable_mock_pstate = 0;
+
 void update_stats(stats_t* stats, uint16_t latest_value)
 {
     if (latest_value < stats->min || stats->count == 0)
@@ -108,9 +110,29 @@ sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_core_current(core_current_t
 
 sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_core_pstate(pstate_telem_t* state_data)
 {
-    FPFW_UNUSED(state_data);
+    sensor_ram_poll_status_t status;
 
-    sensor_ram_poll_status_t status = {.curr_data_is_valid = false, .more_entries = false};
+    if (g_enable_mock_pstate)
+    {
+        status.curr_data_is_valid = mock_type(bool);
+        status.more_entries = mock_type(bool);
+
+        if (status.curr_data_is_valid && state_data != NULL)
+        {
+            pstate_telem_t* mock_data = mock_ptr_type(pstate_telem_t*);
+            if (mock_data != NULL)
+            {
+                memcpy(state_data, mock_data, sizeof(pstate_telem_t));
+            }
+        }
+    }
+    else
+    {
+        // No mock values provided - return "no data" by default
+        status.curr_data_is_valid = false;
+        status.more_entries = false;
+    }
+
     return status;
 }
 

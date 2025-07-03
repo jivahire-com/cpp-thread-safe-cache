@@ -174,13 +174,30 @@ void data_proc_tlm_cmpnt_process_input_data(void)
         {
             // used to determine if no pstate packets were processed this sampling period
             pstate_scf_entry_count++;
+
+            // if (flags.valid_entry_pstate)
+            // {
+            //     comp_metrics_for_single_core_single_pstate(flags.core_id,
+            //                                                core[flags.core_id].latest_pstate,
+            //                                                flags.pstate_time_diff_uS,
+            //                                                flags.new_pstate);
+            // }
+
+            // Capture previous PSTATE in a variable so that can be used to update residency for the previous PSTATE
+            uint8_t core_id = state_data->data.core;
+            uint8_t previous_pstate = core[core_id].latest_pstate;
+
             // process the core states(pstate/cstate)
             core_state_metrics_flags_t flags = data_smpl_parse_core_states_entry(state_data);
             // A true value of "valid_entry_pstate" indicate we have valid pstate packet and need to update residency and entry count.
             if (flags.valid_entry_pstate)
             {
+                // if flags.new_pstate == true: residency goes to the previous PSTATE (time spent before switch)
+                // if flags.new_pstate == false: residency goes to the current PSTATE (same PSTATE continues)
+                uint8_t target_pstate = flags.new_pstate ? previous_pstate : core[core_id].latest_pstate;
+
                 comp_metrics_for_single_core_single_pstate(flags.core_id,
-                                                           core[flags.core_id].latest_pstate,
+                                                           target_pstate, // Use the right PSTATE based on flags.new_pstate
                                                            flags.pstate_time_diff_uS,
                                                            flags.new_pstate);
             }
@@ -237,7 +254,7 @@ void data_proc_tlm_cmpnt_process_input_data(void)
                 comp_metrics_for_single_core_current(core_index, core[core_index].latest_current_mA);
                 comp_metrics_for_single_core_power(core_index, core[core_index].latest_power_mW);
                 comp_metrics_for_single_core_power_per_pstate(core_index,
-                                                              core[core_index].pstate_from_current_pkt,
+                                                              core[core_index].latest_pstate,
                                                               core[core_index].latest_power_mW);
             }
         }

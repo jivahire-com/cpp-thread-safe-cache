@@ -9,6 +9,7 @@ set(SOURCES
     test_soc_rails_vr_current_and_voltage.cpp
     test_soc_rails_vr_temperature.cpp
     test_soc_pvt_temperature.cpp
+    test_core_pstate_data.cpp
 )
 
 add_executable(${TARGET} ${SOURCES})

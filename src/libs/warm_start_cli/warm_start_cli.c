@@ -44,7 +44,7 @@ static FPFW_CLI_COMMAND warm_start_cli_list[] = {
     {NULL_LIST_ENTRY, "warm_start", "wsrd", ws_read_cli, "Warm Start Read Data", "syntax: wsrd <id>\n"},
     {NULL_LIST_ENTRY, "warm_start", "wswr", ws_write_cli, "Warm Start Write Data", "syntax: wswr <id> <byte>..\n"},
     {NULL_LIST_ENTRY, "warm_start", "wsdisp", ws_disp_cli, "Warm Start Display Data", "syntax: wsdisp\n"},
-    {NULL_LIST_ENTRY, "warm_start", "wsreset", ws_reset, "Warm Start Cli to perform Reset", "syntax: wsreset [cold, subsys, warm, shutdown]"},
+    {NULL_LIST_ENTRY, "warm_start", "wsreset", ws_reset, "Warm Start Cli to perform Reset", "syntax: wsreset [cold, subsys, shutdown]"},
 };
 
 char* ws_reason_strings[] = {"Reset Reason unknown\n", "Power On Reset\n", "Pre AP core boot Warm Reset\n", "Post AP core boot Warm Reset\n"};
@@ -265,13 +265,6 @@ void shutdown_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_
     printf("Shutdown completion\n");
 }
 
-void warm_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
-{
-    FPFW_UNUSED(p_completion_context);
-    printf("Request (%x) is completed\n", (uintptr_t)request);
-    printf("AP Warm Boot Completed\n");
-}
-
 /**
  *  CLI command for performing a warm reset
  *
@@ -311,10 +304,6 @@ static FPFW_CLI_STATUS ws_reset(int argc, const char** argv)
         else if (strcmp(argv[1], "shutdown") == 0)
         {
             sos_shutdown((void*)&sos_interface, &shutdown_request, SHUTDOWN_SCP_INITIATED, shutdown_completion, NULL);
-        }
-        else if (strcmp(argv[1], "warm") == 0)
-        {
-            sos_shutdown((void*)&sos_interface, &shutdown_request, AP_WARM_RESET, warm_boot_completion, NULL);
         }
         else
         {

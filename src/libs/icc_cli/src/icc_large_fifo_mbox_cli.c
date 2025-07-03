@@ -377,14 +377,15 @@ static void my_icc_large_fifo_loopback_recv_complete_notify(void* context, size_
                 {
                     mismatch = true;
                     //! Data mismatch, print the error
-                    FpFwCliPrint("[LOOPBACK_RECV] [FAIL] Data Mismatch at index %d: Expected[0x%x] Received[0x%x]\n",
-                                 i,
-                                 loopback_send_msg.data[i],
-                                 recv_msg->data[i]);
+                    FpFwCliPrint(
+                        "[LOOPBACK_RECV] [FAIL] Data Mismatch at index %d: Expected[0x%x] Received[0x%x]\n",
+                        i,
+                        loopback_send_msg.data[i],
+                        recv_msg->data[i]);
                 }
             }
 
-            if(!mismatch)
+            if (!mismatch)
             {
                 FpFwCliPrint("[LOOPBACK_RECV] Data Match: All data received correctly\n");
             }
@@ -466,7 +467,9 @@ FPFW_CLI_STATUS large_fifo_mbox_loopback(int argc, const char** argv)
     //! Print the status message
     if (status != DFWK_SUCCESS)
     {
-        FpFwCliPrint("[LOOPBACK_RECV] [FAIL] Recv Failed: Status[0x%x] CmdCode[0x%x]\n", status, ICC_LARGE_FIFO_MBOX_LPBK_TRIGGER_RESPONSE_CMD);
+        FpFwCliPrint("[LOOPBACK_RECV] [FAIL] Recv Failed: Status[0x%x] CmdCode[0x%x]\n",
+                     status,
+                     ICC_LARGE_FIFO_MBOX_LPBK_TRIGGER_RESPONSE_CMD);
     }
     else
     {

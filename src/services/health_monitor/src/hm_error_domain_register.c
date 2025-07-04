@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include <bug_check.h>
+#include <health_monitor_events.h>
 #include <health_monitor_i.h>
 #include <string.h>
 
@@ -51,6 +52,7 @@ void hm_register_error_domain(uint16_t error_domain_idx,
             }
             else
             {
+                HM_ET_ERROR_PARAM(HM_ET_TYPE_REGISTER_INVALID_PARAMS, (int)strlen(error_domain_name));
                 BUG_ASSERT_PARAM(false, error_domain_name, ACPI_FRU_TEXT_LENGTH);
             }
 
@@ -80,6 +82,7 @@ void hm_register_error_domain(uint16_t error_domain_idx,
     }
     else
     {
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_REGISTER_INVALID_PARAMS, error_domain_idx);
         BUG_ASSERT_PARAM(false, err_inject_cb, error_domain_idx);
     }
 }
@@ -107,5 +110,6 @@ hm_error_domain_info_t* hm_get_registered_error_domain(acpi_error_domain_t error
         return &error_domain_info[error_domain_idx];
     }
 
+    HM_ET_ERROR_PARAM(HM_ET_TYPE_REGISTER_INVALID_PARAMS, error_domain_idx);
     return NULL;
 }

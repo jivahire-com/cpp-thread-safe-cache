@@ -3,6 +3,7 @@ set(TARGET kng.service.health_monitor)
 
 add_library(${TARGET}
     STATIC
+        health_monitor_events.c
         hm_error_report_ghes.c
         hm_error_domain_register.c
         hm_error_report_cper.c
@@ -42,6 +43,7 @@ target_link_libraries(${TARGET}
         ms::lib::crash_dump
         ms::lib::icc_platform_defines
         ms::service::atu_service
+        ms::lib::event_trace::trace
         kng.lib.hsp_firmware_headers
 )
 

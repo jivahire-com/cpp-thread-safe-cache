@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include <bug_check.h>
+#include <health_monitor_events.h>
 #include <health_monitor_i.h>
 #include <icc_platform_defines.h>
 #include <idhw.h>
@@ -55,6 +56,7 @@ void hm_prepare_error_injection_listener(fpfw_icc_base_ctx_t* icc_ctx)
     };
 
     fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &scp_recv_params);
+    HM_ET_INFO_PARAM(HM_ET_TYPE_INJECTION_ICC_TRANSFER, status);
     BUG_ASSERT_PARAM(status == FPFW_ICC_BASE_STATUS_SUCCESS, status, icc_ctx);
 }
 
@@ -70,6 +72,7 @@ acpi_einj_cmd_status_t hm_inject_error(void)
         if (einj_payload->component_instance != idsw_get_die_id())
         {
             HM_LOG_CRIT("Invalid DIE_ID(%d)", einj_payload->component_instance);
+            HM_ET_ERROR_PARAM(HM_ET_TYPE_INJECTION_INVALID_ACCESS, einj_payload->component_instance);
             return ACPI_EINJ_INVALID_ACCESS;
         }
     }
@@ -95,6 +98,7 @@ acpi_einj_cmd_status_t hm_inject_error(void)
             if (icc_status != FPFW_ICC_BASE_STATUS_SUCCESS)
             {
                 HM_LOG_CRIT("failed to send injection request to remote");
+                HM_ET_ERROR_PARAM(HM_ET_TYPE_INJECTION_ICC_TRANSFER, icc_status);
                 status = ACPI_EINJ_UNKNOWN_FAILURE;
             }
         }
@@ -106,6 +110,7 @@ acpi_einj_cmd_status_t hm_inject_error(void)
     else
     {
         HM_LOG_CRIT("Invalid DIE_ID(%d)", einj_payload->component_instance);
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_INJECTION_INVALID_ACCESS, einj_payload->component_instance);
         status = ACPI_EINJ_INVALID_ACCESS;
     }
 
@@ -127,6 +132,7 @@ acpi_einj_cmd_status_t hm_inject_error_local(void)
     if (einj_payload.version != (uint32_t)ERROR_INJECTION_PAYLOAD_VERSION)
     {
         HM_LOG_CRIT("Invalid EINJ payload version(%d)", (int)einj_payload.version);
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_INJECTION_INVALID_ACCESS, (int)einj_payload.version);
         return ACPI_EINJ_INVALID_ACCESS;
     }
 
@@ -139,6 +145,7 @@ acpi_einj_cmd_status_t hm_inject_error_local(void)
     else
     {
         HM_LOG_CRIT("Invalid err domain in EINJ payload(%d)", einj_payload.component_group);
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_INJECTION_INVALID_ACCESS, einj_payload.component_group);
         return ACPI_EINJ_INVALID_ACCESS;
     }
 
@@ -152,6 +159,7 @@ acpi_einj_cmd_status_t hm_inject_error_local(void)
     else
     {
         HM_LOG_INFO("%s error domain not activated", get_error_domain_name(target_error_domain_idx));
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_INJECTION_INVALID_ACCESS, target_error_domain_idx);
         return ACPI_EINJ_INVALID_ACCESS;
     }
 

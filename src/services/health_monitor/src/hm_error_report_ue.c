@@ -12,6 +12,7 @@
 #include <bug_check.h>
 #include <gicd_regs.h>
 #include <gpio_lib.h>
+#include <health_monitor_events.h>
 #include <health_monitor_i.h>
 #include <ras.h>
 #include <silibs_platform.h>
@@ -66,6 +67,7 @@ void hm_report_error_event(hm_error_report_type_t type, bool trigger)
         break;
     }
     default:
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_UE_INVALID_PARAMS, type);
         BUG_ASSERT_PARAM(false, type, 0);
     }
 }

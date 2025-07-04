@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include <bug_check.h>
+#include <health_monitor_events.h>
 #include <health_monitor_i.h>
 #include <idhw.h>
 #include <idsw.h>
@@ -31,6 +32,7 @@ void set_ghes_table_ready()
 
 void construct_mscp_ghes_table()
 {
+    HM_ET_INFO_PARAM(HM_ET_TYPE_GHES_CONSTRUCT_TBL, ACPI_ERROR_DOMAIN_COUNT * sizeof(acpi_ghes_error_record_dual_die_t));
     static_assert((ACPI_ERROR_DOMAIN_COUNT * sizeof(acpi_ghes_error_record_dual_die_t) < RAS_GHES_ERROR_RECORD_SIZE),
                   "GHES error record size is too small");
 
@@ -154,10 +156,12 @@ void activate_error_domain(uint16_t error_domain_idx, const guid_t* error_domain
 
     if (ghes_table_init == false)
     {
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_GHES_INVALID_PARAMS, ghes_table_init);
         BUG_ASSERT_PARAM(false, ghes_table_init, 0);
     }
 
     hm_config_t* hm_config = get_hm_config();
+    HM_ET_INFO(HM_ET_TYPE_GHES_GET_CONFIG);
     BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
 
     // locate the GHES base of current error domain
@@ -239,10 +243,12 @@ void update_error_record_section(uint16_t error_domain_idx,
     {
         if (ghes_table_init == false)
         {
+            HM_ET_ERROR_PARAM(HM_ET_TYPE_GHES_INVALID_PARAMS, ghes_table_init);
             BUG_ASSERT_PARAM(false, ghes_table_init, 0);
         }
 
         hm_config_t* hm_config = get_hm_config();
+        HM_ET_INFO(HM_ET_TYPE_GHES_GET_CONFIG);
         BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
 
         // locate the GHES base of current error domain
@@ -312,6 +318,7 @@ void update_error_record_section(uint16_t error_domain_idx,
     }
     else
     {
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_GHES_INVALID_PARAMS, error_domain_idx);
         BUG_ASSERT_PARAM(false, error_domain_idx, err_record_section_size);
     }
 }

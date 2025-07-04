@@ -11,6 +11,7 @@
 #include <FpFwUtils.h>
 #include <bug_check.h>
 #include <fpfw_init.h>
+#include <health_monitor_events.h>
 #include <health_monitor_i.h>
 #include <idhw.h>
 #include <idsw.h>
@@ -41,6 +42,7 @@ void hm_post_ddr_init()
     ddr_subsystem_up = true;
 
     hm_config_t* hm_config = get_hm_config();
+    HM_ET_INFO(HM_ET_TYPE_MAIN_GET_CONFIG);
     BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
 
     if (hm_config->is_primary == true)
@@ -83,6 +85,7 @@ void hm_post_ddr_init()
 void hm_post_intercore_init(hm_intercore_type_t intercore_type, fpfw_icc_base_ctx_t* icc_ctx)
 {
     hm_config_t* hm_config = get_hm_config();
+    HM_ET_INFO(HM_ET_TYPE_MAIN_GET_CONFIG);
     BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
     BUG_ASSERT_PARAM(icc_ctx != NULL, icc_ctx, 0);
     hm_config->icc_ctx[intercore_type] = icc_ctx;
@@ -108,6 +111,7 @@ void hm_post_intercore_init(hm_intercore_type_t intercore_type, fpfw_icc_base_ct
         hm_prepare_ap_listener(icc_ctx);
         break;
     default:
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_MAIN_INVALID_PARAMS, intercore_type);
         break;
     }
 }
@@ -127,6 +131,7 @@ void wait_for_ghes_construction()
     d2d_sync_point.value = D2D_HM_SIGNATURE;
 
     int d2d_sync_status = mscp_exp_spi_synchronize_dies(d2d_sync_point, idsw_get_die_id());
+    HM_ET_INFO_PARAM(HM_ET_TYPE_MAIN_SYNC_DIES, d2d_sync_status);
     BUG_ASSERT_PARAM(d2d_sync_status == SILIBS_SUCCESS, d2d_sync_status, SILIBS_SUCCESS);
 
     set_ghes_table_ready();
@@ -158,5 +163,6 @@ const char* get_error_domain_name(acpi_error_domain_t domain)
         return enum_names[domain];
     }
 
+    HM_ET_ERROR_PARAM(HM_ET_TYPE_MAIN_INVALID_PARAMS, domain);
     return "NA";
 }

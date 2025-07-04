@@ -12,6 +12,7 @@
 #include <bug_check.h>
 #include <fpfw_icc_base.h>
 #include <health_monitor.h>
+#include <health_monitor_events.h>
 #include <health_monitor_i.h>
 #include <health_monitor_icc.h>
 #include <hsp_firmware_headers.h>
@@ -76,6 +77,7 @@ static acpi_einj_cmd_status_t hm_hsp_error_injection_cb(ras_einj_info_t* einj_pa
     if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
     {
         HM_LOG_CRIT("HSP error injection request failed(%d)", (int)status);
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_HSP_ICC_TRANSFER, status);
         result = ACPI_EINJ_UNKNOWN_FAILURE;
     }
     else
@@ -95,6 +97,7 @@ static void hm_hsp_error_record_submit_listener_cb(void* context, size_t output_
     if (status != FPFW_STATUS_SUCCESS)
     {
         HM_LOG_CRIT("HSP CPER ICC get failed(%d)", (int)status);
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_HSP_CPER_ERROR, status);
         return;
     }
 
@@ -113,6 +116,7 @@ static void hm_hsp_error_record_submit_listener_cb(void* context, size_t output_
     if (hm_err_submit_payload == NULL || hsp_payload_end_addr < cper_end_addr)
     {
         HM_LOG_CRIT("Invalid HSP CPER payload(%p - %p)", hm_err_submit_payload, (void*)cper_end_addr);
+        HM_ET_ERROR(HM_ET_TYPE_HSP_CPER_ERROR);
         return;
     }
 
@@ -142,6 +146,7 @@ static void hm_hsp_error_domain_register_listener_cb(void* context, size_t outpu
     if (status != FPFW_STATUS_SUCCESS)
     {
         HM_LOG_CRIT("HSP registration failed(%d)", (int)status);
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_ED_HSP_REGISTRATION, status);
         return;
     }
 
@@ -156,6 +161,7 @@ static void hm_hsp_error_domain_register_listener_cb(void* context, size_t outpu
         HM_LOG_CRIT("Invalid HSP registration payload(%p), expected(%p)",
                     hm_err_register_payload,
                     (void*)(SCP_EXP_HSP_RAS_PAYLOAD_BASE + HM_HSP_ERROR_REGISTRATION_OFFSET));
+        HM_ET_ERROR(HM_ET_TYPE_ED_HSP_REGISTRATION);
         return;
     }
 
@@ -181,6 +187,7 @@ void hm_hsp_error_domain_register_listener(fpfw_icc_base_ctx_t* icc_ctx)
     hm_icc_hsp_err_register_req.cb_ctx = &hm_icc_hsp_err_register_req;
 
     fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &hm_icc_hsp_err_register_req);
+    HM_ET_INFO_PARAM(HM_ET_TYPE_HSP_ICC_TRANSFER, status);
     BUG_ASSERT_PARAM(status == FPFW_ICC_BASE_STATUS_SUCCESS, status, FPFW_ICC_BASE_STATUS_SUCCESS);
 }
 
@@ -198,6 +205,7 @@ void hm_hsp_error_record_submit_listener(fpfw_icc_base_ctx_t* icc_ctx)
     hm_icc_hsp_err_submit_recv_req.cb_ctx = &hm_icc_hsp_err_submit_recv_req;
 
     fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &hm_icc_hsp_err_submit_recv_req);
+    HM_ET_INFO_PARAM(HM_ET_TYPE_HSP_ICC_TRANSFER, status);
     BUG_ASSERT_PARAM(status == FPFW_ICC_BASE_STATUS_SUCCESS, status, FPFW_ICC_BASE_STATUS_SUCCESS);
 }
 

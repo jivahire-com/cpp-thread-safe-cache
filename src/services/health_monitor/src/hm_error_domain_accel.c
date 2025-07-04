@@ -15,6 +15,7 @@
 #include <cper.h>
 #include <fpfw_icc_base.h>
 #include <health_monitor.h>
+#include <health_monitor_events.h>
 #include <health_monitor_i.h>
 #include <health_monitor_icc.h>
 #include <icc_platform_defines.h>
@@ -95,12 +96,14 @@ static void hm_accel_error_record_submit_listener_cb(void* context, size_t outpu
     if (status != FPFW_STATUS_SUCCESS)
     {
         HM_LOG_CRIT("%s CPER ICC get failed(%d)", curr_cper_info->accel_id == ACCEL_ID_SDM ? "SDM" : "CDED", (int)status);
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_ACCEL_CPER_ERROR, status);
         return;
     }
 
     if (curr_cper_info == NULL || payload->header.cmd != ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(curr_cper_info->accel_id))
     {
         HM_LOG_CRIT("Invalid %s CPER payload(%p)", curr_cper_info->accel_id == ACCEL_ID_SDM ? "SDM" : "CDED", curr_cper_info);
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_ACCEL_CPER_ERROR, curr_cper_info->accel_id);
         return;
     }
 
@@ -139,6 +142,7 @@ static acpi_einj_cmd_status_t hm_accel_error_injection_cb(ras_einj_info_t* einj_
     if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
     {
         HM_LOG_CRIT("%s error injection request failed(%d)", accel_id == ACCEL_ID_SDM ? "SDM" : "CDED", (int)status);
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_ACCEL_ICC_TRANSFER, status);
         result = ACPI_EINJ_UNKNOWN_FAILURE;
     }
     else
@@ -157,6 +161,7 @@ static void hm_accel_register_error_domain(hm_accel_error_domain_register_payloa
         hm_err_register_payload->header.cmd != ICC_HM_ERROR_DOMAIN_REGISTER_ACCEL(accel_id))
     {
         HM_LOG_CRIT("Invalid %s registration payload", accel_id == ACCEL_ID_SDM ? "SDM" : "CDED");
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_ACCEL_REGISTRATION, accel_id);
         return;
     }
 
@@ -182,6 +187,7 @@ static void hm_accel_register_error_domain(hm_accel_error_domain_register_payloa
     if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
     {
         HM_LOG_CRIT("%s registration ack failed (%d)", accel_id == ACCEL_ID_SDM ? "SDM" : "CDED", (int)status);
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_ACCEL_ICC_TRANSFER, status);
     }
 }
 
@@ -192,6 +198,7 @@ static void hm_sdm_error_domain_register_listener_cb(void* context, size_t outpu
     if (status != FPFW_STATUS_SUCCESS)
     {
         HM_LOG_CRIT("SDM registration failed(%d)", (int)status);
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_ACCEL_REGISTRATION, status);
         return;
     }
 
@@ -205,6 +212,7 @@ static void hm_cded_sdm_error_domain_register_listener_cb(void* context, size_t 
     if (status != FPFW_STATUS_SUCCESS)
     {
         HM_LOG_CRIT("CDED registration failed(%d)", (int)status);
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_ACCEL_REGISTRATION, status);
         return;
     }
 
@@ -232,6 +240,7 @@ void hm_prepare_sdm_listener(fpfw_icc_base_ctx_t* icc_ctx)
     hm_icc_accel_err_register_recv_req[ACCEL_ID_SDM].cb_ctx = (void*)&hm_icc_accel_err_register_payload[ACCEL_ID_SDM];
 
     fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &hm_icc_accel_err_register_recv_req[ACCEL_ID_SDM]);
+    HM_ET_INFO_PARAM(HM_ET_TYPE_ACCEL_ICC_TRANSFER, status);
     BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
 }
 
@@ -257,5 +266,6 @@ void hm_prepare_cded_sdm_listener(fpfw_icc_base_ctx_t* icc_ctx)
     hm_icc_accel_err_register_recv_req[ACCEL_ID_CDED].cb_ctx = (void*)&hm_icc_accel_err_register_payload[ACCEL_ID_CDED];
 
     fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &hm_icc_accel_err_register_recv_req[ACCEL_ID_CDED]);
+    HM_ET_INFO_PARAM(HM_ET_TYPE_ACCEL_ICC_TRANSFER, status);
     BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
 }

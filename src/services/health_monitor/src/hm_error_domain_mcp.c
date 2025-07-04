@@ -12,6 +12,7 @@
 #include <bug_check.h>
 #include <fpfw_icc_base.h>
 #include <health_monitor.h>
+#include <health_monitor_events.h>
 #include <health_monitor_i.h>
 #include <health_monitor_icc.h>
 #include <mscp_exp_rmss_memory_map.h>
@@ -55,6 +56,7 @@ static acpi_einj_cmd_status_t hm_mcp_error_injection_cb(ras_einj_info_t* einj_pa
     if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
     {
         HM_LOG_CRIT("MCP error injection request failed(%d)", (int)status);
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_MCP_ICC_TRANSFER, status);
         result = ACPI_EINJ_UNKNOWN_FAILURE;
     }
     else
@@ -72,6 +74,7 @@ static void hm_mcp_error_domain_register_listener_cb(void* context, size_t outpu
     if (status != FPFW_STATUS_SUCCESS)
     {
         HM_LOG_CRIT("MCP registration failed(%d)", (int)status);
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_MCP_REGISTRATION, status);
         return;
     }
 
@@ -80,6 +83,7 @@ static void hm_mcp_error_domain_register_listener_cb(void* context, size_t outpu
     if (hm_err_register_payload == NULL || hm_err_register_payload->header.msg_header.command != ICC_HM_ERROR_DOMAIN_REGISTER_MCP)
     {
         HM_LOG_CRIT("Invalid MCP registration payload(%p)", hm_err_register_payload);
+        HM_ET_ERROR(HM_ET_TYPE_MCP_REGISTRATION);
         return;
     }
 
@@ -97,6 +101,7 @@ static void hm_mcp_error_record_submit_listener_cb(void* context, size_t output_
     if (status != FPFW_STATUS_SUCCESS)
     {
         HM_LOG_CRIT("MCP CPER ICC get failed(%d)", (int)status);
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_MCP_CPER_ERROR, status);
         return;
     }
 
@@ -105,6 +110,7 @@ static void hm_mcp_error_record_submit_listener_cb(void* context, size_t output_
     if (hm_err_submit_payload == NULL || hm_err_submit_payload->header.msg_header.command != ICC_HM_ERROR_RECORD_SUBMIT_MCP)
     {
         HM_LOG_CRIT("Invalid MCP CPER payload(%p)", hm_err_submit_payload);
+        HM_ET_ERROR(HM_ET_TYPE_MCP_CPER_ERROR);
         return;
     }
 

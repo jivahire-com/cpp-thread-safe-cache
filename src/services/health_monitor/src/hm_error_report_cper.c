@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include <bug_check.h>
 #include <cper.h>
+#include <health_monitor_events.h>
 #include <health_monitor_i.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <string.h>
@@ -81,6 +82,7 @@ void hm_submit_cper(uint16_t error_domain_idx,
         else
         {
             HM_LOG_CRIT("CPER cache full (%s)", get_error_domain_name(error_domain_idx));
+            HM_ET_ERROR_PARAM(HM_ET_TYPE_CPER_CACHE_ERROR, error_domain_idx);
 
             // cache is full, report uncorrectable error first
             for (uint32_t non_fatal_cper_idx = 0; non_fatal_cper_idx < local_cper_count; non_fatal_cper_idx++)
@@ -101,6 +103,7 @@ void hm_submit_cper(uint16_t error_domain_idx,
     }
     else
     {
+        HM_ET_ERROR_PARAM(HM_ET_TYPE_CPER_INVALID_PARAMS, error_domain_idx);
         BUG_ASSERT_PARAM(false, error_domain_idx, err_record_section_size);
     }
 }

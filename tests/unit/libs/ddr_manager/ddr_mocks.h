@@ -1,5 +1,6 @@
 #include <atu_lib.h>
 #include <ddrss_runtime_api.h>
+#include <cper.h>
 #include <idsw_kng.h>
 #include <stdint.h>
 
@@ -22,4 +23,6 @@ bool __wrap_config_get_ddrmanager_bwl_polling_en();
 ddrss_phy_training_dq_margin_t* __wrap_ddrss_get_training_margin_base();
 KNG_DIE_ID __wrap_idsw_get_die_id();
 KNG_PLAT_ID __wrap_idsw_get_platform_sdv();
+int __wrap_prod_ddrss_get_intr_event_cper(uint32_t mc, uint32_t intr_event, acpi_err_sec_mem_vendor_t* ddr_cper);
+void __wrap_hm_submit_cper(uint16_t error_domain_idx, acpi_error_severity_t err_severity, void* err_record_section, uint32_t err_record_section_size);
 }

@@ -97,6 +97,8 @@ mock_target(${TARGET}
     system_info_is_hsp_present
     system_info_is_warm_start
     sensor_fifo_svc_add_dimm_info
+    prod_ddrss_get_intr_event_cper
+    hm_submit_cper
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

@@ -20,8 +20,12 @@
 #include "ddr_manager_i3c.h"
 
 #include <bug_check.h>
+#include <cper.h>
 #include <ddr_manager_events.h>
+#include <ddrss.h>
+#include <ddrss_intu.h>
 #include <fpfw_cfg_mgr.h>
+#include <health_monitor.h>
 #include <stdio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -70,6 +74,9 @@ void check_dimm_temp_thresholds()
     static bool is_first_run = true;
     static ddr_dimm_temp_thresholds_t thresholds = {};
 
+    acpi_err_sec_mem_vendor_t ddr_cper = {0};
+    acpi_cper_section_t cper_section = {0};
+
     if (is_first_run)
     {
         init_thresholds(&thresholds);
@@ -104,9 +111,15 @@ void check_dimm_temp_thresholds()
         {
             DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_DIMM_EXCEEDED_CRITICAL_TEMPERATURE_THRESHOLD, dimm_idx);
 
+            memset(&ddr_cper, 0x0, sizeof(ddr_cper));
+            prod_ddrss_get_intr_event_cper(dimm_idx * 2, DDRSS_INTU_MC_MEDIAREFTEMPCHANGED, &ddr_cper);
+
+            memset(&cper_section, 0x0, sizeof(cper_section));
+            cper_section.sec_ddr_mem_vendor = ddr_cper;
+            hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &cper_section, sizeof(acpi_err_sec_mem_vendor_t));
+
             // Blow things up
             ddr_manager_set_thermal_trip_gpio();
-
             // And BUG_CHECK here?
             // Task 2584104: Determine correct behavior when DDR exceeds critical temperature
         }

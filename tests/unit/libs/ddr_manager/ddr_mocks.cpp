@@ -189,4 +189,23 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
     }
 }
 
+int __wrap_prod_ddrss_get_intr_event_cper(uint32_t mc, uint32_t intr_event, acpi_err_sec_mem_vendor_t* ddr_cper)
+{
+    check_expected(mc);
+    check_expected(intr_event);
+    assert_true(ddr_cper != NULL);
+
+    return mock_type(int);
+}
+
+void __wrap_hm_submit_cper(uint16_t error_domain_idx, acpi_error_severity_t err_severity, void* err_record_section, uint32_t err_record_section_size)
+{
+    check_expected(error_domain_idx);
+    check_expected(err_severity);
+    assert_true(err_record_section != NULL);
+    assert_true(err_record_section_size > 0);
+
+    function_called();
+}
+
 } // extern "C"

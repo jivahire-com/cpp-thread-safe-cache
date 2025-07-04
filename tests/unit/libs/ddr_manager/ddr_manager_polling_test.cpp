@@ -17,6 +17,7 @@ extern "C" {
 #include <ddr_i3c.h>
 #include <ddr_manager_bwl.h>
 #include <ddr_manager_i.h> // for ddr_poll_dimms, ddr_worker_thread_func
+#include <ddrss_intu.h>
 #include <idhw.h>
 } // extern "C"
 
@@ -124,6 +125,14 @@ TEST_FUNCTION(test_ddr_manager_poll_crit_thresh, NULL, NULL)
     // Expect a GPIO Read/Write for critical temperature
     for (uint8_t dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)
     {
+        expect_value(__wrap_prod_ddrss_get_intr_event_cper, mc, dimm_idx * 2);
+        expect_value(__wrap_prod_ddrss_get_intr_event_cper, intr_event, DDRSS_INTU_MC_MEDIAREFTEMPCHANGED);
+        will_return(__wrap_prod_ddrss_get_intr_event_cper, SILIBS_SUCCESS);
+
+        expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
+        expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+        expect_function_call(__wrap_hm_submit_cper);
+
         expect_function_call(__wrap_mmio_read32);
         will_return(__wrap_mmio_read32, 0);
         expect_function_call(__wrap_mmio_write32);

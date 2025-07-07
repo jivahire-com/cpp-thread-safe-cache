@@ -4,7 +4,7 @@
 
 /**
  * @file pldm_pdr.h
- * Provides definitions and types for the static pdr repo init. 
+ * Provides definitions and types for the static pdr repo init.
  */
 
  #pragma once
@@ -13,15 +13,15 @@
 #include <assert.h>                      // IWYU pragma: keep
 #include <stdint.h>
 #include <platform_management_component/platform_description_record.h>
- 
+
  /*-- Symbolic Constant Macros (defines) --*/
 /*-------------- Typedefs ----------------*/
 
 typedef struct
-{   
+{
     union
     {
-        struct 
+        struct
         {
             uint8_t Reserved[5];
             uint8_t Seconds; // 0-59
@@ -31,7 +31,7 @@ typedef struct
             uint8_t Month; // 1-12
             uint16_t Year;
             uint8_t Format;
-        }; 
+        };
         fpfw_pldm_timestamp_104_t as_raw;
     };
 
@@ -47,37 +47,37 @@ typedef struct
      PLDM_BASE_UNIT_WATTS = 7,
      PLDM_BASE_UNIT_HERTZ = 20
  } PLDM_BASE_UNIT;
- 
+
 typedef enum PLDM_PDR_SENSOR_ID
 {
-    PLDM_SENSOR_ID_BASE_DUMMY = 0x0000,
-    PLDM_SENSOR_ID_MCP_DUMMY_0, 
-    PLDM_SENSOR_ID_MCP_DUMMY_1, 
-    PLDM_SENSOR_ID_MCP_DUMMY_2, 
-    PLDM_SENSOR_ID_MCP_DUMMY_3, 
-    PLDM_SENSOR_ID_MCP_DUMMY_4, 
-    PLDM_SENSOR_ID_MCP_DUMMY_5, 
+    PLDM_SENSOR_ID_MCP_DUMMY_BASE = 0x0000,
+    PLDM_SENSOR_ID_MCP_DUMMY_0,
+    PLDM_SENSOR_ID_MCP_DUMMY_1,
+    PLDM_SENSOR_ID_MCP_DUMMY_2,
+    PLDM_SENSOR_ID_MCP_DUMMY_3,
+    PLDM_SENSOR_ID_MCP_DUMMY_4,
+    PLDM_SENSOR_ID_MCP_DUMMY_5,
     PLDM_SENSOR_ID_MCP_DUMMY_6,
 
-    PLDM_SENSOR_ID_BASE_POWER_TLM = 0x1000,
+    PLDM_SENSOR_ID_POWER_TLM_BASE = 0x1000,
+    PLDM_SENSOR_ID_POWER_TLM_SOC_TEMP_MAX_NUM_SENS,
+    PLDM_SENSOR_ID_POWER_TLM_LAST,
 
-    PLDM_SENSOR_ID_BASE_PWR_CTRL_LOOP = 0x2000,
-
+    PLDM_SENSOR_ID_BASE_PWR_CTRL_LOOP_BASE = 0x2000,
     PLDM_SENSOR_ID_MAX
 } PLDM_PDR_SENSOR_ID;
 
 typedef enum PLDM_PDR_EFFECTER_ID
 {
-    PLDM_EFFECTER_ID_BASE_DUMMY = 0x0000, 
-    PLDM_EFFECTER_ID_MCP_DUMMY_0, 
+    PLDM_EFFECTER_ID_MCP_DUMMY_BASE = 0x0000,
+    PLDM_EFFECTER_ID_MCP_DUMMY_0,
     PLDM_EFFECTER_ID_MCP_DUMMY_1,
-    
     PLDM_EFFECTER_ID_MAX
 } PLDM_PDR_EFFECTER_ID;
 
 /**
  * @brief Retrieves the build timestamp of the PDR repository and formats in pldm_timestamp_t format.
- * @param None 
+ * @param None
  * @return pldm_pdr_timestamp_t
  */
 pldm_pdr_timestamp_t pldm_pdr_get_timestamp(void);

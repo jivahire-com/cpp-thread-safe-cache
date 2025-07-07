@@ -451,3 +451,19 @@ TEST_FUNCTION(test_exec_tlm_update_timers_tx_fail, test_setup, test_teardown)
 
     exec_tlm_cmpnt_udpdate_timer_periods(200, 201, 202, 203);
 }
+
+TEST_FUNCTION(test_exec_tlm_cmpnt_is_oob_data_valid, test_setup, test_teardown)
+{
+    tlm_executive_status.op_mode = TLM_OP_MODE_PUBLISHING;
+
+    assert_true(exec_tlm_cmpnt_is_oob_data_valid());
+
+    tlm_executive_status.op_mode = TLM_OP_MODE_COLLECTING_DATA;
+    assert_true(exec_tlm_cmpnt_is_oob_data_valid());
+
+    tlm_executive_status.op_mode = TLM_OP_MODE_DISABLED;
+    assert_false(exec_tlm_cmpnt_is_oob_data_valid());
+
+    tlm_executive_status.op_mode = TLM_OP_MODE_SENSOR_FIFO_RAW_DATA;
+    assert_false(exec_tlm_cmpnt_is_oob_data_valid());
+}

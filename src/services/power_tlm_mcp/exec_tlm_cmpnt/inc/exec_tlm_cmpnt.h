@@ -59,6 +59,13 @@ void exec_tlm_cmpnt_init(uint8_t die_id, uint32_t pwr_pkg_period_ms, uint32_t in
 bool exec_tlm_cmpnt_is_telemetry_publishing_enabled(void);
 
 /**
+ * @brief Check if the telemetry executive component is in a valid state to process out of band data.
+ *
+ * @return true if the telemetry executive component is in a valid state, false otherwise.
+ */
+bool exec_tlm_cmpnt_is_oob_data_valid(void);
+
+/**
  * @brief Change Telemetry operating mode
  * param[in] new_mode switch to this mode
  *

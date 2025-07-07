@@ -442,5 +442,23 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     MovingAvgParamError,
                     FPFW_ET_LEVEL_ERROR)
 
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    75,
+                    UnexpectedSensorId,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, expected),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, actual))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    76,
+                    OobNoActiveHandler,
+                    FPFW_ET_LEVEL_ERROR)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    77,
+                    OobSensorAlreadyActive,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, active_sensor),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, active_handler))
 /*--------- Function Prototypes ----------*/
 

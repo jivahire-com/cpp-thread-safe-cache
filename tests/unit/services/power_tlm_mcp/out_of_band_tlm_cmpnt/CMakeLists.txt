@@ -14,6 +14,7 @@ target_link_libraries(${TARGET}
     ms::cmocka::mocks
     ms::cmocka::testrunner
     ms::lib::error_handler
+    ms::mocks::threadx
 
 )
 
@@ -32,5 +33,14 @@ coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
 mock_target(${TARGET}
-
+    fpfw_pldm_service_register_numeric_sensor
+    fpfw_pldm_service_numeric_sensor_set
+    fpfw_pldm_service_numeric_sensor_not_ready
+    FpFwAssertWithArgs
+    _txe_event_flags_create
+    _txe_event_flags_get
+    _txe_event_flags_set
+    exec_tlm_cmpnt_is_oob_data_valid
+    exec_tlm_cmpnt_notify_new_out_of_band_pldm_request
+    data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC
 )

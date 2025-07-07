@@ -24,6 +24,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.pldm.protocol
         fwlib.service.pldm
         ms::lib::error_codes
+        ms::lib::pldm_pdr
 )
 
 lint_target(${TARGET})

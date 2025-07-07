@@ -17,8 +17,11 @@ extern "C" {
 
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <fpfw_status.h>
 #include <out_of_band_tlm_cmpnt.h>
+#include <out_of_band_tlm_cmpnt_i.h>
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
+#include <tx_api.h>
 }
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -43,12 +46,118 @@ static int test_teardown(void** pContext)
 
 TEST_FUNCTION(test_out_of_band_tlm_cmpnt_init, test_setup, test_teardown)
 {
+    expect_any_always(__wrap__txe_event_flags_create, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_create, name_ptr);
+    expect_any_always(__wrap__txe_event_flags_create, event_control_block_size);
+    will_return(__wrap__txe_event_flags_create, TX_SUCCESS);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+
+    will_return(__wrap_fpfw_pldm_service_register_numeric_sensor, FPFW_STATUS_SUCCESS);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+
     out_of_band_tlm_cmpnt_init(0);
 
     out_of_band_tlm_cmpnt_init(1);
 }
 
+TEST_FUNCTION(test_on_pwr_tlm_numeric_sensor_get_ext_entry, test_setup, test_teardown)
+{
+    active_sensor = nullptr;
+    active_handler = nullptr;
+
+    will_return(__wrap_exec_tlm_cmpnt_is_oob_data_valid, true);
+
+    expect_function_call(__wrap_exec_tlm_cmpnt_notify_new_out_of_band_pldm_request);
+    expect_any(__wrap__txe_event_flags_get, group_ptr);
+    expect_value(__wrap__txe_event_flags_get, requested_flags, RELEASE_PLDM_SERVICE);
+    expect_value(__wrap__txe_event_flags_get, get_option, TX_OR_CLEAR);
+    expect_any(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_value(__wrap__txe_event_flags_get, wait_option, TX_WAIT_FOREVER);
+
+    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
+
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+
+    on_pwr_tlm_numeric_sensor_get_ext_entry(
+        &pwr_tlm_numeric_sensor_ctxts[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_SOC_TEMP_MAX_NUM_SENS)],
+        (void*)pwr_tlm_oob_get_max_soc_temp);
+}
+
+TEST_FUNCTION(test_on_pwr_tlm_numeric_sensor_get_ext_entry_negative, test_setup, test_teardown)
+{
+    will_return(__wrap_exec_tlm_cmpnt_is_oob_data_valid, false);
+    expect_function_call(__wrap_fpfw_pldm_service_numeric_sensor_not_ready);
+    on_pwr_tlm_numeric_sensor_get_ext_entry(
+        &pwr_tlm_numeric_sensor_ctxts[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_SOC_TEMP_MAX_NUM_SENS)],
+        (void*)pwr_tlm_oob_get_max_soc_temp);
+
+    will_return(__wrap_exec_tlm_cmpnt_is_oob_data_valid, true);
+    active_sensor = (pldm_numeric_sensor_context_t*)0x1234;
+    active_handler = nullptr;
+    on_pwr_tlm_numeric_sensor_get_ext_entry(
+        &pwr_tlm_numeric_sensor_ctxts[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_SOC_TEMP_MAX_NUM_SENS)],
+        (void*)pwr_tlm_oob_get_max_soc_temp);
+
+    will_return(__wrap_exec_tlm_cmpnt_is_oob_data_valid, true);
+    active_sensor = nullptr;
+    active_handler = (pwr_tlm_numeric_sensor_get_handler_t)0x1234;
+    on_pwr_tlm_numeric_sensor_get_ext_entry(
+        &pwr_tlm_numeric_sensor_ctxts[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_SOC_TEMP_MAX_NUM_SENS)],
+        (void*)pwr_tlm_oob_get_max_soc_temp);
+}
+
 TEST_FUNCTION(test_out_of_band_tlm_cmpnt_handle_new_pldm_requests, test_setup, test_teardown)
 {
+    active_sensor =
+        &pwr_tlm_numeric_sensor_ctxts[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_SOC_TEMP_MAX_NUM_SENS)];
+    active_handler = pwr_tlm_oob_get_max_soc_temp;
+    active_sensor->sensor_state.config.sensor_id = PLDM_SENSOR_ID_POWER_TLM_SOC_TEMP_MAX_NUM_SENS; // fake sensor init
+
+    will_return(__wrap_data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC, 1000);
+
+    expect_value(__wrap_fpfw_pldm_service_numeric_sensor_set,
+                 p_sensor,
+                 &pwr_tlm_numeric_sensor_ctxts[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_SOC_TEMP_MAX_NUM_SENS)]);
+    expect_value(__wrap_fpfw_pldm_service_numeric_sensor_set, value.numeric.u16, 1000);
+    will_return(__wrap_fpfw_pldm_service_numeric_sensor_set, FPFW_STATUS_SUCCESS);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+
+    expect_any_always(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, RELEASE_PLDM_SERVICE);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+
     out_of_band_tlm_cmpnt_handle_new_pldm_requests();
+}
+
+TEST_FUNCTION(test_out_of_band_tlm_cmpnt_handle_new_pldm_requests_negative, test_setup, test_teardown)
+{
+    active_sensor = nullptr;
+    active_handler = pwr_tlm_oob_get_max_soc_temp;
+
+    expect_any(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, RELEASE_PLDM_SERVICE);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+
+    out_of_band_tlm_cmpnt_handle_new_pldm_requests();
+
+    active_sensor =
+        &pwr_tlm_numeric_sensor_ctxts[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_SOC_TEMP_MAX_NUM_SENS)];
+    active_handler = nullptr;
+
+    expect_any(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, RELEASE_PLDM_SERVICE);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+
+    out_of_band_tlm_cmpnt_handle_new_pldm_requests();
+}
+
+TEST_FUNCTION(test_pwr_tlm_oob_get_max_soc_temp_negative, test_setup, test_teardown)
+{
+    pwr_tlm_oob_get_max_soc_temp(PLDM_SENSOR_ID_POWER_TLM_LAST, nullptr);
 }

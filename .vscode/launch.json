@@ -258,6 +258,10 @@
                         "Telemetry Service - In Band Cmpnt",
                         "kng.service.pwr_tlm_mcp.cmpnt.in_band_tlm.test"
                     ],
+                     [
+                        "Telemetry Service - Out Of Band Cmpnt",
+                        "kng.service.pwr_tlm_mcp.cmpnt.out_of_band_tlm.test"
+                    ],
                     [
                         "Telemetry Service - Data Proc Functional",
                         "kng.service.pwr_tlm_mcp.cmpnt.data_proc.functional.test"

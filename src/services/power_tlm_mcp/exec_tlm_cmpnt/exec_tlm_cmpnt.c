@@ -293,6 +293,12 @@ bool exec_tlm_cmpnt_is_telemetry_publishing_enabled(void)
     return tlm_executive_status.op_mode == TLM_OP_MODE_PUBLISHING;
 }
 
+bool exec_tlm_cmpnt_is_oob_data_valid(void)
+{
+    tlm_operating_mode_t mode = tlm_executive_status.op_mode;
+    return ((mode == TLM_OP_MODE_PUBLISHING) || (mode == TLM_OP_MODE_COLLECTING_DATA));
+}
+
 void exec_tlm_cmpnt_get_status(telemetry_executive_status_t* status)
 {
     UINT active;

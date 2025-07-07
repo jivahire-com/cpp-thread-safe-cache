@@ -674,7 +674,7 @@ core_state_metrics_flags_t data_smpl_parse_core_states_entry(pstate_telem_t* pst
             if (metrics.pstate_time_diff_uS == 0)
             {
                 // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2721348
-                //FPFW_ET_LOG(LogCoreInValidTimeStamp, timestamp_uS, core[core_id].pstate_timestamp_uS, status);
+                // FPFW_ET_LOG(LogCoreInValidTimeStamp, timestamp_uS, core[core_id].pstate_timestamp_uS, status);
             }
         }
 
@@ -694,7 +694,7 @@ core_state_metrics_flags_t data_smpl_parse_core_states_entry(pstate_telem_t* pst
             if (metrics.cstate_time_diff_uS == 0)
             {
                 // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2721348
-                //FPFW_ET_LOG(LogCoreInValidTimeStamp, timestamp_uS, core[core_id].cstate_timestamp_uS, status);
+                // FPFW_ET_LOG(LogCoreInValidTimeStamp, timestamp_uS, core[core_id].cstate_timestamp_uS, status);
             }
         }
         // update timestamp for cstate only after time diff calculation done for residency.

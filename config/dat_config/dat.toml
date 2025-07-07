@@ -57,8 +57,8 @@ ddr_phy                    = { type='file', local='${REPO_APP_PATH_kng_ddrss_phy
 rp_exe                     = { type='file', local='${REPO_APP_PATH_echofalls.rp_exe.build}/build/echofalls/debug/rp_exe.bin' }
 rp_data                    = { type='file', local='${REPO_APP_PATH_echofalls.rp_data.build}/build/echofalls/debug/rp_data.bin' }
 pcie_phy                   = { type='file', local='${REPO_APP_PATH_pcie.phy.bin}/pcie_phy_fw.bin' }
-fuse_override_die0         = { type='file', local='${REPO_APP_ROOT}/config/fuse_overrides/fuse_overrides_d0_fpga.bin'}
-fuse_override_die1         = { type='file', local='${REPO_APP_ROOT}/config/fuse_overrides/fuse_overrides_d0_fpga.bin'}
+fuse_override_die0         = { type='file', local='${REPO_APP_PATH_kng_system_fuse_data}/kng_fpga_override_fuse_values_silicon.bin' }
+fuse_override_die1         = { type='file', local='${REPO_APP_PATH_kng_system_fuse_data}/kng_fpga_override_fuse_values_silicon.bin' }
 
 # Build this flavor with
 #  datwizard build --flavor "kingsgate.ifwi.ap.baremetal.debug"
@@ -87,5 +87,5 @@ ddr_phy                    = { type='file', local='${REPO_APP_PATH_kng_ddrss_phy
 rp_exe                     = { type='file', local='${REPO_APP_PATH_echofalls.rp_exe.build}/build/echofalls/debug/rp_exe.bin' }
 rp_data                    = { type='file', local='${REPO_APP_PATH_echofalls.rp_data.build}/build/echofalls/debug/rp_data.bin' }
 pcie_phy                   = { type='file', local='${REPO_APP_PATH_pcie.phy.bin}/pcie_phy_fw.bin' }
-fuse_override_die0         = { type='file', local='${REPO_APP_ROOT}/config/fuse_overrides/fuse_overrides_d0_fpga.bin'}
-fuse_override_die1         = { type='file', local='${REPO_APP_ROOT}/config/fuse_overrides/fuse_overrides_d0_fpga.bin'}
+fuse_override_die0         = { type='file', local='${REPO_APP_PATH_kng_system_fuse_data}/kng_fpga_override_fuse_values_silicon.bin' }
+fuse_override_die1         = { type='file', local='${REPO_APP_PATH_kng_system_fuse_data}/kng_fpga_override_fuse_values_silicon.bin' }

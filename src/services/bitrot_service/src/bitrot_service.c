@@ -33,10 +33,9 @@
 
 void bitrot_thread_worker_function(ULONG thread_input);
 
-/*------------------- Declarations (Statics and globals) --------------------*/
+void bitrot_walk_function(mscp_bitrotservice_ctx_t* context);
 
-// static TX_THREAD s_bitrot_thread;
-// __attribute__((aligned(8))) static uint8_t s_stack_pool_memory[BITROT_THREAD_STACKSIZE];
+/*------------------- Declarations (Statics and globals) --------------------*/
 
 /*----------------------------- Static Functions ----------------------------*/
 
@@ -81,30 +80,35 @@ void bitrot_thread_init(mscp_bitrotservice_ctx_t* context)
     }
 }
 
+void bitrot_walk_function(mscp_bitrotservice_ctx_t* context)
+{
+    context->sleep_period = (BITROT_TICKS_PER_SECOND * config_get_bitrot_TCM_delay()) / MILISECONDS_PER_SECOND;
+    if (context->sleep_period > 0)
+    {
+        for (size_t i = 0; i < context->mem_table_len; i++)
+        {
+            if (context->mem_table[i].len > 0)
+            {
+                FpFwCliPrint("[Bitrot Service] Reading %s\n", context->mem_table[i].p_mem_type_name);
+                sdm_mem_walk(context->mem_table[i].start_addr, context->mem_table[i].len);
+            }
+        }
+        // sleep for 8 hours @100 ticks per second
+        FpFwCliPrint("[Bitrot Service] Sleeping for %d ms.\n", context->sleep_period);
+        tx_thread_sleep(context->sleep_period);
+    }
+    else
+    {
+        /* Delay is set to 0 ms. Assuming bitrot service was meant to be disabled, so do a dummy sleep for 1 second . */
+        tx_thread_sleep(BITROT_TICKS_PER_SECOND);
+    }
+}
+
 void bitrot_thread_worker_function(ULONG thread_input)
 {
     mscp_bitrotservice_ctx_t* context = (mscp_bitrotservice_ctx_t*)thread_input;
     while (true)
     {
-        context->sleep_period = (BITROT_TICKS_PER_SECOND * config_get_bitrot_TCM_delay()) / MILISECONDS_PER_SECOND;
-        if (context->sleep_period > 0)
-        {
-            for (size_t i = 0; i < context->mem_table_len; i++)
-            {
-                if (context->mem_table[i].len > 0)
-                {
-                    FpFwCliPrint("[Bitrot Service] Reading %s\n", context->mem_table[i].p_mem_type_name);
-                    sdm_mem_walk(context->mem_table[i].start_addr, context->mem_table[i].len);
-                }
-            }
-            // sleep for 8 hours @100 ticks per second
-            FpFwCliPrint("[Bitrot Service] Sleeping for %d ms.\n", context->sleep_period);
-            tx_thread_sleep(context->sleep_period);
-        }
-        else
-        {
-            /* Delay is set to 0 ms. Assuming bitrot service was meant to be disabled, so do a dummy sleep for 1 second . */
-            tx_thread_sleep(BITROT_TICKS_PER_SECOND);
-        }
+        bitrot_walk_function(context);
     }
 }

@@ -1,6 +1,7 @@
 add_subdirectory(accel_intr_client)
 add_subdirectory(accel_intr_service)
 add_subdirectory(ap_core)
+add_subdirectory(bitrot_service)
 add_subdirectory(event_trace)
 add_subdirectory(fuse)
 add_subdirectory(pcie_manager)

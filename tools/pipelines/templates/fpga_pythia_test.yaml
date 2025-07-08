@@ -172,12 +172,37 @@ jobs:
         publishRunAttachments: true
         mergeTestResults: true
 
+    - task: PowerShell@2
+      displayName: 'Prepare Pythia Logs for Publishing'
+      condition: always()
+      inputs:
+        targetType: 'inline'
+        script: |
+          $source = "$(Build.SourcesDirectory)\.testlogs\pythia"
+          $target = "$(Build.ArtifactStagingDirectory)\pythia_clean"
+          New-Item -ItemType Directory -Force -Path $target
+
+          Get-ChildItem -Path $source -Recurse | ForEach-Object {
+            try {
+              $relativePath = $_.FullName.Substring($source.Length)
+              $destPath = Join-Path -Path $target -ChildPath $relativePath
+              $destDir = Split-Path -Path $destPath -Parent
+              New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+
+              $stream = [System.IO.File]::Open($_.FullName, 'Open', 'Read', 'None')
+              $stream.Close()
+              Copy-Item $_.FullName -Destination $destPath -Force
+            } catch {
+              Write-Host "Skipping locked file: $($_.FullName)"
+            }
+          }
+
     # Publish results as a pipeline artifact
     - task: PublishPipelineArtifact@1
       displayName: 'Publish: Pipeline Artifacts'
-      condition: succeededOrFailed()
+      condition: always()
       inputs:
-        targetPath: $(Build.SourcesDirectory)\.testlogs\pythia
+        targetPath: $(Build.ArtifactStagingDirectory)\pythia_clean
         artifact: 'drop_${{ parameters.ArtifactName }}_FPGA_Pythia_Tests$(System.JobAttempt)'
         publishLocation: 'pipeline'
         parallel: true

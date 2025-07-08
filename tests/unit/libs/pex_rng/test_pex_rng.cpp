@@ -48,6 +48,12 @@ void __wrap_rng_disable_r(uint32_t base)
 {
     check_expected(base);
 }
+
+void __wrap_rng_wait_for_rng_complete_r(uint32_t base)
+{
+    check_expected(base);
+}
+
 //
 // Tests
 //
@@ -58,7 +64,8 @@ TEST_FUNCTION(test_init_pex_rng, nullptr, nullptr)
     expect_value(__wrap_FpFwAssert, expression, 1);
     expect_value(__wrap_rng_enable_r, base, (PEX_RNG_ADDRESS));
     expect_value(__wrap_rng_enable_r, div, 0xC0);
-
+    expect_value(__wrap_rng_wait_for_rng_complete_r, base, (PEX_RNG_ADDRESS));
+    expect_value(__wrap_FpFwAssert, expression, 1);
     init_pex_rng(&test_config);
 }
 
@@ -66,8 +73,9 @@ TEST_FUNCTION(test_rset_pex_rng, nullptr, nullptr)
 {
     expect_value(__wrap_rng_disable_r, base, (PEX_RNG_ADDRESS));
     expect_value(__wrap_rng_enable_r, base, (PEX_RNG_ADDRESS));
-    expect_value(__wrap_rng_enable_r, div, 1);
-
+    expect_value(__wrap_rng_enable_r, div, 0xC0);
+    expect_value(__wrap_rng_wait_for_rng_complete_r, base, (PEX_RNG_ADDRESS));
+    expect_value(__wrap_FpFwAssert, expression, 1);
     reset_pex_rng(PEX_RNG_ADDRESS);
 }
 }

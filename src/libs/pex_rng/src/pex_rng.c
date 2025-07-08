@@ -40,13 +40,15 @@ void init_pex_rng(pex_rng_config_t* rng_config)
         uint32_t ap_rng_base = cluster_pex_base_addr + PEX_RNG_ADDRESS;
         // Clk divider initially set to 1 with CPU at 50MHz was too fast for Si TODO: div value still needs to be optimized based on characterization
         rng_enable_r(ap_rng_base, 0xC0);
+        FPFW_RUNTIME_ASSERT(rng_wait_for_rng_complete_r(ap_rng_base) == 0x0);
     }
 }
 
 void reset_pex_rng(uintptr_t ap_rng_base)
 {
     rng_disable_r(ap_rng_base);
-    rng_enable_r(ap_rng_base, 1);
+    rng_enable_r(ap_rng_base, 0xC0);
+    FPFW_RUNTIME_ASSERT(rng_wait_for_rng_complete_r(ap_rng_base) == 0x0);
 }
 
 // Adding dummy implementations for static declarations in rng.h

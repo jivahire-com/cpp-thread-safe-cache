@@ -10,7 +10,8 @@ set(SOURCES
     test_soc_rails_vr_temperature.cpp
     test_soc_pvt_temperature.cpp
     test_core_pstate_data.cpp
-)
+    test_cstate_data.cpp
+    )
 
 add_executable(${TARGET} ${SOURCES})
 

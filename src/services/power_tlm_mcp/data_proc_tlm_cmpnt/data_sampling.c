@@ -855,6 +855,10 @@ void data_smpl_parse_cstate_no_throttling(pstate_telem_t* cstate_telemetry, uint
 
     /* Log cstate */
     uint8_t new_cstate = cstate_telemetry->data.cstate;
+
+    // Always reset cstate_change flag to 0 at the start to handle all error cases and early returns
+    core[core_id].flags.cstate_change = 0;
+
     if (new_cstate >= NUMBER_OF_CSTATES)
     {
         FPFW_ET_LOG(LogInValidCstateId, new_cstate);

@@ -288,7 +288,7 @@
     <Knob name="power_enable_fgpll_calsm" type="bool" default="true" help="True to enable FGPLL calibration" />
     <Knob name="power_fllcal_pstate_bounds" type="power_fllcal_pstate_bounds_t" default="{0, 31}" help="Start and end of fll calibration" />
     <Knob name="power_plllock_cfg" type="power_plllock_cfg_t" default="{true, 2, true, false, false, false, false}" help="Use to configure core PLL lock interrupt settings" />
-    <Knob name="power_nominal_pstate" type="uint8_t" default="20" help="Nominal pstate number, 0 uses SOC fused default" />
+    <Knob name="power_nominal_pstate" type="uint8_t" default="0" help="Nominal pstate number, 0 uses SOC fused default" />
     <Knob name="power_c1_telemetry_enable" type="bool" default="false" help="Enable C1 telemetry in DVFS" />
     <Knob name="power_soc_static_rails" type="uint16_t" default="0" help="Static power in mW to add to SOC power calculations" />
     <Knob name="power_avs_ds" type="avs_ds_cfg_array_t" default="{{{2,2},{2,2},{2,2},{2,2}}}" help="AVS drive strength" />

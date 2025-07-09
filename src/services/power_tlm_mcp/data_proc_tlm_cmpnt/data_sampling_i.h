@@ -130,6 +130,7 @@ typedef struct {
     uint16_t latest_max_tile_temp_dC;
     uint16_t latest_max_soc_top_temp_dC;
     uint16_t latest_max_die_temp_dC; // max of latest_max_tile_temp_dC and latest_max_soc_top_temp_dC
+    uint16_t latest_max_dimm_temp_dC;
     uint64_t latest_core_states_proc_timestamp_uS; //a timestamp used for all core states processing ,when no pstate packet occurred.
 } soc_runtime_info_t;
 
@@ -275,7 +276,7 @@ bool  data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info);
  *
  * @param[in] pstate_telemetry - SCF RAM formatted resource for pstate packets
  *        NOTE: The Pstate packet contains the core id reference internally.
- * @param[in] timestamp_uS - latest timestamp 
+ * @param[in] timestamp_uS - latest timestamp
  *
  * @return none
  */
@@ -286,7 +287,7 @@ void data_smpl_parse_pstate_no_throttling(pstate_telem_t* pstate_telemetry, uint
  * @param[in] cstate_telemetry - SCF RAM formatted resource for pstate packets
  *        (IMPORTANT : pstate telemetry packet provide both p state/c state))
  *        NOTE: The Pstate packet contains the core id reference internally.
- * @param[in] timestamp_uS - latest timestamp 
+ * @param[in] timestamp_uS - latest timestamp
  * @return none
  */
 void  data_smpl_parse_cstate_no_throttling(pstate_telem_t* cstate_telemetry, uint64_t timestamp_uS);
@@ -295,7 +296,7 @@ void  data_smpl_parse_cstate_no_throttling(pstate_telem_t* cstate_telemetry, uin
  * @brief update rack throttling
  *
  * @param[in] pstate_telemetry  provide pstate tlm pkt.
- * @return  true -if there is rack throttle start or rack throttle end,  
+ * @return  true -if there is rack throttle start or rack throttle end,
  *          false - in case there is a invalid rack_priority_id or throttle index
  */
 bool data_smpl_parse_rack_throttling(pstate_telem_t* pstate_telemetry);
@@ -305,10 +306,10 @@ bool data_smpl_parse_rack_throttling(pstate_telem_t* pstate_telemetry);
  * @param[in] pstate_telemetry - SCF RAM formatted resource for pstate packets
  *        (IMPORTANT : pstate telemetry packet provide both p state/c state and throttling status))
  *
- * @return core_state_metrics_flags_t - returning flags based on the core states processing to 
+ * @return core_state_metrics_flags_t - returning flags based on the core states processing to
  *         handle the compute update in the main sensor fifo loop.
  *         boolean value in the flag structure "valid_entry_pstate" indicate a valid pstate entry and update residency.
- *         "new_pstate" boolean on the return flag indidate for the "enrtry count" update if pstate change.                                     
+ *         "new_pstate" boolean on the return flag indicates for the "enrtry count" update if pstate change.
  */
 core_state_metrics_flags_t data_smpl_parse_core_states_entry(pstate_telem_t* pstate_telemetry);
 
@@ -340,30 +341,30 @@ void data_smpl_parse_throttling_state_change_exit_transition(uint8_t core_id, ui
 /**
  * @brief This API update the core pstate compute for a sampling period,
  *         when SCF does not report a pstate telemetry packet.
- * @param  none 
+ * @param  none
  */
 void data_smpl_update_comp_metrics_cores_states_for_no_pstate_entry(void);
 
 /**
  * @brief This API update throttling for signgle core when there is no pstate packet,
  *         when SCF does not report a pstate telemetry packet.
- * @param[in] core_id  current core 
- * @param[in] timestamp_uS system timestamp 
+ * @param[in] core_id  current core
+ * @param[in] timestamp_uS system timestamp
  */
 void data_smpl_update_metrics_for_single_core_during_throttling(uint8_t core_id, uint64_t time_stamp_uS);
 
 /**
- * @brief  This api is Rack throttling specific , when we dont get a pstate packet and we are in rack 
+ * @brief  This api is Rack throttling specific , when we dont get a pstate packet and we are in rack
  *          throttling already so this api update the compute matrics .
- * @param core_id 
+ * @param core_id
  * @param time_stamp_uS  this is latest system timestamp.
  */
 void data_smpl_update_metrics_for_single_core_during_rack_throttling(uint8_t core_id, uint64_t time_stamp_uS);
 
 /**
  * @brief get currently active throttling for a core.
- * 
- * @param[in] core_id 
+ *
+ * @param[in] core_id
  * @return   currently active throttling for a core
  */
 uint8_t  data_smpl_get_active_throttling_for_single_core(uint8_t core_id);

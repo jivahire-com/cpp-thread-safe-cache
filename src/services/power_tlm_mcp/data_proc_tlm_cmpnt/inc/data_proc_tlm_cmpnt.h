@@ -325,3 +325,10 @@ void data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core(void);
  */
 uint16_t data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC(void);
 
+/**
+ * @brief Get the out-of-band critical sensor maximum DIMM temperature.
+ *
+ * @return The maximum DIMM temperature in degrees deci-Celsius.
+ */
+uint16_t data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC(void);
+

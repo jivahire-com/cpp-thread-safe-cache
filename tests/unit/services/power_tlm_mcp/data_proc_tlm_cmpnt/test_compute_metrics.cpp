@@ -19,6 +19,7 @@ extern "C" {
 #include <compute_metrics_i.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <data_sampling_i.h>
+#include <die_2_die_exchange_i.h>
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
 }
 
@@ -533,4 +534,32 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core, tes
     {
         assert_int_equal(((uint8_t*)&computed_metrics_d2d_2mins)[byte], 0);
     }
+}
+
+TEST_FUNCTION(test_comp_metrics_for_max_dimm_temp, test_setup, test_teardown)
+{
+    uint16_t test_values_dC[5] = {180, 190, 200, 210, 220};
+    die_2_die_exch_init(0);
+    comp_metrics_init();
+
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        comp_metrics_for_max_dimm_temp(test_values_dC[i]);
+    }
+
+    // Check the results
+    assert_int_equal(computed_metrics_oob.max_dimm_temp_mov_avg_dC.total_sum, 1000);
+    assert_int_equal(computed_metrics_oob.max_dimm_temp_mov_avg_dC.sample_count, 5);
+
+    die_2_die_exch_init(1);
+    comp_metrics_init();
+
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        comp_metrics_for_max_dimm_temp(test_values_dC[i]);
+    }
+
+    // Check the results
+    assert_int_equal(computed_metrics_oob.max_dimm_temp_mov_avg_dC.total_sum, 1000);
+    assert_int_equal(computed_metrics_oob.max_dimm_temp_mov_avg_dC.sample_count, 5);
 }

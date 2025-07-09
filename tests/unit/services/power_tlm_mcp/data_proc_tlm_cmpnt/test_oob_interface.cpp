@@ -61,3 +61,13 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC, test_setup,
     uint16_t temp_dC = data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC();
     assert_int_equal(temp_dC, 120);
 }
+
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1);
+    die_2_die_exch_oob_write_window_max_dimm_temp(5000, 30);
+    computed_metrics_oob.max_dimm_temp_mov_avg_dC.total_sum = 1000;
+    computed_metrics_oob.max_dimm_temp_mov_avg_dC.sample_count = 20;
+    uint16_t temp_dC = data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC();
+    assert_int_equal(temp_dC, 120);
+}

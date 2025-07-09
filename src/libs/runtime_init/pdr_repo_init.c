@@ -123,6 +123,7 @@ static fpfw_pldm_pdr_sensor_auxiliary_name_t s_##NAME##_pdr_aux_name =          
 FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
 {
     DEFINE_POWER_TLM_TEMPERATURE_SENSOR(SOC_TEMP_MAX);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_TEMP_MAX);
 
     static fpfw_pldm_pdr_sensor_auxiliary_name_t s_dummy0_name = {
         .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
@@ -507,6 +508,8 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
     static void* pdr_list[] = {
         &s_SOC_TEMP_MAX_pdr,
         &s_SOC_TEMP_MAX_pdr_aux_name,
+        &s_DIMM_TEMP_MAX_pdr,
+        &s_DIMM_TEMP_MAX_pdr_aux_name,
         &s_dummy0_name,
         &s_dummy0,
         &s_dummy1_name,

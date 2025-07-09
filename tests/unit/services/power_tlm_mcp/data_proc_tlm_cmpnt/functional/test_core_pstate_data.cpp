@@ -817,5 +817,4 @@ TEST_FUNCTION(test_core_pstate_realistic_residency_functional, test_setup, test_
     assert_int_equal(expected_pstate11_residency_mS, pstate_array_exit[11].residency_mS);
     // Note: Residency is higher than expected due to polling time accumulation
     assert_true(pstate_array_exit[10].residency_mS >= expected_pstate10_residency_mS);
-
 }

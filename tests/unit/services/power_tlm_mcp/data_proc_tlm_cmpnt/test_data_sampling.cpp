@@ -151,7 +151,6 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data_pstate_entry_test, tes
     sensor_ram_poll_status_t status_expected = {.curr_data_is_valid = false, .more_entries = false};
     sensor_ram_poll_status_t status_expected_current = {.curr_data_is_valid = true, .more_entries = false};
     sensor_ram_poll_status_t status_expected_dimm = {.curr_data_is_valid = true, .more_entries = false};
-    sensor_ram_poll_status_t status_expected_pvt = {.curr_data_is_valid = true, .more_entries = false};
 
     will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, &status_expected);
     will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, &status_expected);
@@ -169,7 +168,7 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data_pstate_entry_test, tes
     will_return(__wrap_sensor_fifo_svc_poll_vr_current, &status_expected);
     will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, false);
     will_return(__wrap_sensor_fifo_svc_poll_soc_pvt_temperature, &status_expected_dimm);
-    will_return(__wrap_sensor_fifo_svc_poll_dimm_info, &status_expected_pvt);
+    will_return(__wrap_sensor_fifo_svc_poll_dimm_info, &status_expected);
 
     data_proc_tlm_cmpnt_process_input_data();
 }
@@ -188,7 +187,6 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data_pstate_entry_with_rack
     sensor_ram_poll_status_t status_expected = {.curr_data_is_valid = false, .more_entries = false};
     sensor_ram_poll_status_t status_expected_current = {.curr_data_is_valid = true, .more_entries = false};
     sensor_ram_poll_status_t status_expected_dimm = {.curr_data_is_valid = true, .more_entries = false};
-    sensor_ram_poll_status_t status_expected_pvt = {.curr_data_is_valid = true, .more_entries = false};
 
     will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, &status_expected);
     will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, &status_expected);
@@ -208,7 +206,7 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data_pstate_entry_with_rack
     will_return(__wrap_sensor_fifo_svc_poll_vr_current, &status_expected);
     will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, false);
     will_return(__wrap_sensor_fifo_svc_poll_soc_pvt_temperature, &status_expected_dimm);
-    will_return(__wrap_sensor_fifo_svc_poll_dimm_info, &status_expected_pvt);
+    will_return(__wrap_sensor_fifo_svc_poll_dimm_info, &status_expected);
 
     data_proc_tlm_cmpnt_process_input_data();
     assert_int_equal(core[0].throttling_status, RACK_THROTTLE_START);
@@ -228,7 +226,6 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data_pstate_entry_with_over
     sensor_ram_poll_status_t status_expected = {.curr_data_is_valid = false, .more_entries = false};
     sensor_ram_poll_status_t status_expected_current = {.curr_data_is_valid = true, .more_entries = false};
     sensor_ram_poll_status_t status_expected_dimm = {.curr_data_is_valid = true, .more_entries = false};
-    sensor_ram_poll_status_t status_expected_pvt = {.curr_data_is_valid = true, .more_entries = false};
 
     will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, &status_expected);
     will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, &status_expected);
@@ -248,7 +245,7 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data_pstate_entry_with_over
     will_return(__wrap_sensor_fifo_svc_poll_vr_current, &status_expected);
     will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, false);
     will_return(__wrap_sensor_fifo_svc_poll_soc_pvt_temperature, &status_expected_dimm);
-    will_return(__wrap_sensor_fifo_svc_poll_dimm_info, &status_expected_pvt);
+    will_return(__wrap_sensor_fifo_svc_poll_dimm_info, &status_expected);
 
     data_proc_tlm_cmpnt_process_input_data();
     assert_int_equal(core[0].latest_throttle_type, THROTTLE_SOURCE_CURRENT_OVERRUN);
@@ -268,7 +265,6 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data_pstate_entry_with_thro
     sensor_ram_poll_status_t status_expected = {.curr_data_is_valid = false, .more_entries = false};
     sensor_ram_poll_status_t status_expected_current = {.curr_data_is_valid = true, .more_entries = false};
     sensor_ram_poll_status_t status_expected_dimm = {.curr_data_is_valid = true, .more_entries = false};
-    sensor_ram_poll_status_t status_expected_pvt = {.curr_data_is_valid = true, .more_entries = false};
 
     will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, &status_expected);
     will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, &status_expected);
@@ -289,10 +285,41 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data_pstate_entry_with_thro
     will_return(__wrap_sensor_fifo_svc_poll_vr_current, &status_expected);
     will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, false);
     will_return(__wrap_sensor_fifo_svc_poll_soc_pvt_temperature, &status_expected_dimm);
-    will_return(__wrap_sensor_fifo_svc_poll_dimm_info, &status_expected_pvt);
+    will_return(__wrap_sensor_fifo_svc_poll_dimm_info, &status_expected);
 
     data_proc_tlm_cmpnt_process_input_data();
     assert_int_equal(core[0].throttling_status, CURRENT_THROTTLE_START);
+}
+
+TEST_FUNCTION(test_max_dimm_temp, test_setup, test_teardown)
+{
+    comp_metrics_init();
+    //  runtime information manager test
+    sensor_ram_poll_status_t status_expected = {.curr_data_is_valid = false, .more_entries = false};
+    sensor_ram_poll_status_t status_expected_dimm_info = {.curr_data_is_valid = true, .more_entries = false};
+    will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, &status_expected);
+    will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, &status_expected);
+    will_return(__wrap_sensor_fifo_svc_poll_core_current, 0);
+    will_return(__wrap_sensor_fifo_svc_poll_core_current, &status_expected);
+
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5);
+    will_return(__wrap_sensor_fifo_svc_poll_core_pstate, false);
+    will_return(__wrap_sensor_fifo_svc_poll_core_pstate, false);
+
+    will_return(__wrap_sensor_fifo_svc_poll_vr_temperature, &status_expected);
+    will_return(__wrap_sensor_fifo_svc_poll_vr_current, &status_expected);
+    will_return(__wrap_sensor_fifo_svc_poll_soc_pvt_temperature, &status_expected);
+    will_return(__wrap_sensor_fifo_svc_poll_dimm_info, &status_expected_dimm_info);
+
+    sensor_ram_dimm_info_t dimm_info = {0};
+    dimm_info.dimm_temp_s0_dC = 500;
+    dimm_info.dimm_temp_s1_dC = 600;
+
+    will_return(__wrap_sensor_fifo_svc_poll_dimm_info, &dimm_info);
+    data_proc_tlm_cmpnt_process_input_data();
+
+    uint16_t max_temp = data_util_mov_avg_get(&computed_metrics_oob.max_dimm_temp_mov_avg_dC);
+    assert_int_equal(max_temp, 600);
 }
 
 // Test for data sampling to init dts coefficient structures
@@ -966,6 +993,7 @@ TEST_FUNCTION(test_data_smpl_parse_pvt_temperature_entry, test_setup, test_teard
 // Test for tlm_logger_log_dimm_infromation
 TEST_FUNCTION(test_tlm_logger_log_dimm_information, test_setup, test_teardown)
 {
+    soc_info.latest_max_dimm_temp_dC = 42;
     sensor_ram_dimm_info_t dimm_info = {
         .timestamp = 0,
         .dimm_temp_s0_dC = 26,
@@ -981,6 +1009,11 @@ TEST_FUNCTION(test_tlm_logger_log_dimm_information, test_setup, test_teardown)
     // Check DIMM information
     assert_int_equal(latest_dimm[dimm_info.dimm_id].power_mW, (dimm_info.dimm_power_mW));
     assert_int_equal(latest_dimm[dimm_info.dimm_id].temperature_dC, (dimm_info.dimm_temp_s1_dC));
+    assert_int_equal(soc_info.latest_max_dimm_temp_dC, 42);
+
+    soc_info.latest_max_dimm_temp_dC = 16;
+    data_smpl_parse_dimm_entry(&dimm_info);
+    assert_int_equal(soc_info.latest_max_dimm_temp_dC, 28);
 
     // invalid DIMM id.
     dimm_info.dimm_id = 17;

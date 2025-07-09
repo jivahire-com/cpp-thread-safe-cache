@@ -49,6 +49,10 @@ void comp_metrics_init(void)
     data_util_mov_avg_init(&computed_metrics_oob.max_soc_temp_mov_avg_dC,
                            computed_metrics_oob.max_soc_temp_samples_dC,
                            MOVING_AVG_NUM_SAMPLES);
+
+    data_util_mov_avg_init(&computed_metrics_oob.max_dimm_temp_mov_avg_dC,
+                           computed_metrics_oob.max_dimm_temp_samples_dC,
+                           MOVING_AVG_NUM_SAMPLES);
 }
 
 void comp_metrics_for_sample_period(void)
@@ -180,7 +184,7 @@ void comp_metrics_for_soc_max_temp(uint16_t latest_max_soc_temp_dC)
 
 void comp_metrics_for_single_soc_dimm_temp(uint8_t dimm_id, uint16_t latest_dimm_temp_s0_dC, uint16_t latest_dimm_temp_s1_dC)
 {
-    // Update  min, max average S0
+    // Update min, max average S0
     data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_id].temperature_s0_dC, latest_dimm_temp_s0_dC);
     // Update each temperature data for S1
     data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_id].temperature_s1_dC, latest_dimm_temp_s1_dC);
@@ -190,6 +194,17 @@ void comp_metrics_for_single_soc_dimm_power(uint8_t dimm_id, uint16_t latest_dim
 {
     // Update  min, max average dimm power
     data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_id].power_mW, latest_dimm_power_mW);
+}
+
+void comp_metrics_for_max_dimm_temp(uint16_t latest_max_dimm_temp_dC)
+{
+    data_util_mov_avg_add_sample(&computed_metrics_oob.max_dimm_temp_mov_avg_dC, latest_max_dimm_temp_dC);
+
+    if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
+    {
+        die_2_die_exch_oob_write_window_max_dimm_temp(computed_metrics_oob.max_dimm_temp_mov_avg_dC.total_sum,
+                                                      computed_metrics_oob.max_dimm_temp_mov_avg_dC.sample_count);
+    }
 }
 
 void comp_metrics_for_single_core_single_cstate(uint8_t core_id, uint8_t cstate, uint64_t timestamp_diff_uS, uint8_t update_cstate_entry)

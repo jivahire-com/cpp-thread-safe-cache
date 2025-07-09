@@ -43,4 +43,5 @@ mock_target(${TARGET}
     exec_tlm_cmpnt_is_oob_data_valid
     exec_tlm_cmpnt_notify_new_out_of_band_pldm_request
     data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC
+    data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC
 )

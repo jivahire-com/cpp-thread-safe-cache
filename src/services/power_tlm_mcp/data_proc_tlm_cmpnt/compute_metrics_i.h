@@ -109,6 +109,8 @@ typedef struct
 {
     uint16_t max_soc_temp_samples_dC[MOVING_AVG_NUM_SAMPLES];
     moving_avg_t max_soc_temp_mov_avg_dC;
+    uint16_t max_dimm_temp_samples_dC[MOVING_AVG_NUM_SAMPLES];
+    moving_avg_t max_dimm_temp_mov_avg_dC;
 } computed_metrics_oob_t;
 
 
@@ -298,6 +300,13 @@ void comp_metrics_for_single_soc_dimm_temp(uint8_t dimm_id, uint16_t latest_dimm
  * @param[in] latest_dimm_power_mW - latest dimm power in mW
  */
 void comp_metrics_for_single_soc_dimm_power(uint8_t dimm_id, uint16_t latest_dimm_power_mW);
+
+/**
+ * @brief  This API used to update the maximum DIMM temperature in dC.
+ *
+ * @param[in] latest_max_dimm_temp_dC - latest maximum DIMM temperature in dC.
+ */
+void comp_metrics_for_max_dimm_temp(uint16_t latest_max_dimm_temp_dC);
 
 /**
  * @brief  This API used during cores are throttling, MMA calculation is triggerd by this APIs

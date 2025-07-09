@@ -86,8 +86,17 @@ sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_soc_pvt_temperature(soc_pvt
 
 sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_dimm_info(sensor_ram_dimm_info_t* dimm_info)
 {
-    FPFW_UNUSED(dimm_info);
-    return *(sensor_ram_poll_status_t*)mock();
+    sensor_ram_poll_status_t status = *(sensor_ram_poll_status_t*)mock();
+
+    if (status.curr_data_is_valid)
+    {
+        sensor_ram_dimm_info_t* mock_data = mock_ptr_type(sensor_ram_dimm_info_t*);
+        assert_non_null(mock_data);
+        assert_non_null(dimm_info);
+        memcpy(dimm_info, mock_data, sizeof(sensor_ram_dimm_info_t));
+    }
+
+    return status;
 }
 
 fpfw_status_t __wrap_platform_power_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dts_coeff, uint32_t count)

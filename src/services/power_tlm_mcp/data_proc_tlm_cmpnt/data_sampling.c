@@ -99,6 +99,7 @@ void data_proc_tlm_cmpnt_process_input_data(void)
     bool valid_entry = false;
 
     bool update_max_die_temp = false;
+    bool update_max_dimm_temp = false;
 
     // NOTE: All sensor fifo API to check and poll data availability is guaranteed to return
     //  more_entries as false once all entries that was latched during the initial call has been
@@ -326,6 +327,7 @@ void data_proc_tlm_cmpnt_process_input_data(void)
         status = sensor_fifo_svc_poll_dimm_info(dimm_info);
         if (status.curr_data_is_valid == true)
         {
+            update_max_dimm_temp = true;
             valid_entry = data_smpl_parse_dimm_entry(dimm_info);
             if (valid_entry)
             {
@@ -341,6 +343,12 @@ void data_proc_tlm_cmpnt_process_input_data(void)
     {
         // update the max die temp
         data_smpl_update_max_die_temp();
+    }
+
+    if (update_max_dimm_temp)
+    {
+        comp_metrics_for_max_dimm_temp(soc_info.latest_max_dimm_temp_dC);
+        soc_info.latest_max_dimm_temp_dC = 0; // reset for next dimm entry parsing
     }
 
     // run algorithms to update the aggregated telemetry data, used to generate packaged telemetry events.
@@ -801,6 +809,12 @@ bool data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info)
         latest_dimm[dimm_info->dimm_id].temperature_dC = (dimm_info->dimm_temp_s0_dC > dimm_info->dimm_temp_s1_dC)
                                                              ? dimm_info->dimm_temp_s0_dC
                                                              : dimm_info->dimm_temp_s1_dC;
+
+        if (latest_dimm[dimm_info->dimm_id].temperature_dC > soc_info.latest_max_dimm_temp_dC)
+        {
+            soc_info.latest_max_dimm_temp_dC = latest_dimm[dimm_info->dimm_id].temperature_dC;
+        }
+
         latest_dimm[dimm_info->dimm_id].power_mW = dimm_info->dimm_power_mW;
         latest_dimm[dimm_info->dimm_id].memory_freq_id = dimm_info->dimm_memory_frequency_id;
         latest_dimm[dimm_info->dimm_id].throttling_flags = dimm_info->dimm_throttling;

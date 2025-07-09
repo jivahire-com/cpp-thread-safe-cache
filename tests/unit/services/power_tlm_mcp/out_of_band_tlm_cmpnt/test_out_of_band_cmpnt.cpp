@@ -55,6 +55,9 @@ TEST_FUNCTION(test_out_of_band_tlm_cmpnt_init, test_setup, test_teardown)
     will_return(__wrap_fpfw_pldm_service_register_numeric_sensor, FPFW_STATUS_SUCCESS);
     expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
 
+    will_return(__wrap_fpfw_pldm_service_register_numeric_sensor, FPFW_STATUS_SUCCESS);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+
     out_of_band_tlm_cmpnt_init(0);
 
     out_of_band_tlm_cmpnt_init(1);
@@ -157,7 +160,30 @@ TEST_FUNCTION(test_out_of_band_tlm_cmpnt_handle_new_pldm_requests_negative, test
     out_of_band_tlm_cmpnt_handle_new_pldm_requests();
 }
 
+TEST_FUNCTION(test_pwr_tlm_oob_get_max_soc_temp, test_setup, test_teardown)
+{
+    fpfw_pldm_composite_value_t sensor_value = {{{0}}};
+    will_return(__wrap_data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC, 800);
+    pwr_tlm_oob_get_max_soc_temp(PLDM_SENSOR_ID_POWER_TLM_SOC_TEMP_MAX_NUM_SENS, &sensor_value);
+    assert_int_equal(sensor_value.numeric.u16, 800);
+}
+
 TEST_FUNCTION(test_pwr_tlm_oob_get_max_soc_temp_negative, test_setup, test_teardown)
 {
-    pwr_tlm_oob_get_max_soc_temp(PLDM_SENSOR_ID_POWER_TLM_LAST, nullptr);
+    fpfw_pldm_composite_value_t sensor_value = {{{0}}};
+    pwr_tlm_oob_get_max_soc_temp(PLDM_SENSOR_ID_POWER_TLM_LAST, &sensor_value);
+}
+
+TEST_FUNCTION(test_pwr_tlm_oob_get_max_dimm_temp, test_setup, test_teardown)
+{
+    fpfw_pldm_composite_value_t sensor_value = {{{0}}};
+    will_return(__wrap_data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC, 1000);
+    pwr_tlm_oob_get_max_dimm_temp(PLDM_SENSOR_ID_POWER_TLM_DIMM_TEMP_MAX_NUM_SENS, &sensor_value);
+    assert_int_equal(sensor_value.numeric.u16, 1000);
+}
+
+TEST_FUNCTION(test_pwr_tlm_oob_get_max_dimm_temp_negative, test_setup, test_teardown)
+{
+    fpfw_pldm_composite_value_t sensor_value = {{{0}}};
+    pwr_tlm_oob_get_max_dimm_temp(PLDM_SENSOR_ID_POWER_TLM_LAST, &sensor_value);
 }

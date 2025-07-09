@@ -128,3 +128,34 @@ TEST_FUNCTION(test_die_2_die_exch_oob_write_window_max_die_temp_negative, test_s
     assert_int_equal(read_window.sum, 0);
     assert_int_equal(read_window.num_samples, 0);
 }
+
+TEST_FUNCTION(test_die_2_die_exch_oob_write_window_max_dimm_temp, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1);
+    die_2_die_exch_oob_write_window_max_dimm_temp(1000, 10);
+
+    sliding_window_data_t read_window = {0};
+    die_2_die_exch_oob_read_window_max_dimm_temp(1, &read_window);
+    assert_int_equal(read_window.sum, 1000);
+    assert_int_equal(read_window.num_samples, 10);
+}
+
+TEST_FUNCTION(test_die_2_die_exch_oob_write_window_max_dimm_temp_negative, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1);
+    die_2_die_exch_oob_write_window_max_dimm_temp(1000, 10);
+
+    sliding_window_data_t read_window = {0};
+    die_2_die_exch_oob_read_window_max_dimm_temp(0, &read_window);
+    assert_int_equal(read_window.sum, 0);
+    assert_int_equal(read_window.num_samples, 0);
+
+    die_2_die_exch_oob_read_window_max_dimm_temp(1, nullptr);
+    assert_int_equal(read_window.sum, 0);
+    assert_int_equal(read_window.num_samples, 0);
+
+    die_2_die_exch_init(0);
+    die_2_die_exch_oob_write_window_max_dimm_temp(1000, 10);
+    assert_int_equal(read_window.sum, 0);
+    assert_int_equal(read_window.num_samples, 0);
+}
